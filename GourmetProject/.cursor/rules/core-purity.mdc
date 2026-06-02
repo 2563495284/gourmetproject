@@ -1,0 +1,26 @@
+---
+description: Core 程序集必须保持引擎无关
+globs: Assets/GameMain/Scripts/Core/**/*.cs
+alwaysApply: false
+---
+
+# Core 纯净性
+
+`GourmetProject.Core` 是 `noEngineReferences` 的纯 C#，必须可在 EditMode/独立环境单测。
+
+## 禁止
+- 引用 `UnityEngine`、`UnityGameFramework`、任何引擎类型（`Debug`、`MonoBehaviour`、`Vector3`、`Application` 等）。
+
+## 日志走门面
+```csharp
+// ❌ BAD：Core 里直接用引擎日志
+UnityEngine.Debug.Log("x");
+
+// ✅ GOOD：用 Core.Diagnostics.Log 门面（Runtime 通过 UnityLogSink 注入实现）
+using GourmetProject.Core.Diagnostics;
+Log.Info("message", "Tag");
+```
+
+## 确定性
+- 随机只能走 `RandomService`/`IRandomStream`，禁止 `System.Random` 或时间相关的非确定输入参与可复现逻辑。
+- 需要持久化的随机/存档状态，提供 `[Serializable]` 结构并支持快照/恢复。

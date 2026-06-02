@@ -1,0 +1,14 @@
+<module name="">
+    <!--
+        GlobalConst：跑通 Luban 接入用的占位表（与玩法无关）。
+        玩法层接入后，在 Defines 下新增 *.xml 定义自己的 bean/table，在 Datas 下放 JSON 数据即可。
+    -->
+    <bean name="GlobalConst">
+        <var name="id" type="string"/>
+        <var name="intValue" type="int"/>
+        <var name="floatValue" type="float"/>
+        <var name="desc" type="string"/>
+    </bean>
+
+    <table name="TbGlobalConst" value="GlobalConst" index="id" input="*@globalconst.json"/>
+</module>

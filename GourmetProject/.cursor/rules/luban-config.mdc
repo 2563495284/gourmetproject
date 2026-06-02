@@ -1,0 +1,31 @@
+---
+description: Luban 配置表的新增与生成流程
+globs: GameConfig/**
+alwaysApply: false
+---
+
+# Luban 配置
+
+配置源在 `GameConfig/`，用纯文本（XML schema + JSON 数据），便于版本管理；不使用 xlsx。
+
+## 新增一张表
+1. 在 `GameConfig/Defines/*.xml` 定义 `<bean>` 与 `<table>`。数组数据用 `*@` 选择器：
+   ```xml
+   <table name="TbXxx" value="Xxx" index="id" input="*@xxx.json"/>
+   ```
+2. 在 `GameConfig/Datas/xxx.json` 放数据（JSON 数组）。
+3. 生成：
+   ```bash
+   bash GameConfig/gen.sh
+   ```
+
+## 输出位置（勿手改）
+- 代码 → `Assets/GameMain/Scripts/Config/Gen/`（每次生成会被清空重写）。
+- 数据 → `Assets/StreamingAssets/Config/`（运行时按表名小写 `.json` 读取）。
+
+## 运行时加载
+- 统一走 `GameApp.Config`（`ConfigService`）。访问示例：`GameApp.Config.Tables.TbXxx.Get(id)`。
+- 加载入口在 `ProcedurePreload`，整局只加载一次。
+
+## 红线
+- 不要在 `Config/Gen/` 放手写代码（会丢失）；手写的加载/包装放 `Config/` 根目录。

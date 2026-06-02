@@ -1,0 +1,19 @@
+---
+description: 内嵌 GameFramework 包与 Unity 6 兼容性注意事项
+globs: Packages/com.jiangyin.gameframework/**
+alwaysApply: false
+---
+
+# 内嵌 GameFramework 包
+
+`com.jiangyin.gameframework` 是内嵌 UPM 包，可直接改源码以适配 Unity 6，但要谨慎并加注释说明原因。
+
+## 已知 Unity 6 适配点（改动需保留）
+- `package.json` 版本须符合 semver（无前导零），用 `2021.5.31` 而非 `2021.05.31`。
+- `ResourceBuilderController` 不可用已废弃且报错的 `BuildAssetBundleOptions.DeterministicAssetBundle`，改用 `None`。
+- `DebuggerComponent` 的 `TextEditor` 不能在静态字段初始化器里 new（会触发 `realtimeSinceStartup` 非法调用），改为懒加载。
+
+## 约定
+- 改动 GameFramework 源码时，加中文注释说明「为何为 Unity 6 兼容而改」。
+- 升级该包前先记录这些本地改动，升级后逐项复核。
+- 与 `UnityGameFramework.Runtime.Log` 等同名类型冲突时，在使用方用 `using Log = GourmetProject.Core.Diagnostics.Log;` 别名消歧。

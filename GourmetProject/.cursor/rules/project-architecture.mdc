@@ -1,0 +1,24 @@
+---
+description: GourmetProject 整体架构与分层约定（Unity 6 + GameFramework + Luban）
+alwaysApply: true
+---
+
+# 架构与分层
+
+本项目是基于 GameFramework 的小丑牌-like 肉鸽游戏，基础设施与玩法严格分离。
+
+## 程序集分层（asmdef 边界）
+- `GourmetProject.Core`：纯 C#，`noEngineReferences: true`，禁止引用 `UnityEngine`/GameFramework。放随机、存档、工具、日志门面。
+- `GourmetProject.Runtime`：Unity + GameFramework 集成层，引用 `UnityGameFramework.Runtime`、`Core`、`Config`。
+- `GourmetProject.Config`：Luban 生成代码（`Gen/` 子目录由工具清空重写，勿手写）。
+- `GourmetProject.Tests.EditMode`：EditMode 测试，`overrideReferences: true`，显式引用 `nunit.framework.dll` 与 `Newtonsoft.Json.dll`。
+
+依赖方向只能 `Runtime → Config/Core`，绝不反向。
+
+## 统一入口
+- 所有基础设施通过 `GourmetProject.Runtime.GameApp` 访问：`GameApp.Random/Save/Settings/Config` 与内置组件 `GameApp.Event/UI/Sound/...`，封装 `GameApp.Assets/Audio/Scenes/L10n`。
+- 启动链路：`Launch.unity` → `ProcedureLaunch`(初始化服务) → `ProcedurePreload`(加载配置) → `ProcedureMain`。玩法从 `ProcedureMain` 切换到自己的流程。
+
+## 红线
+- 基础库（Core/Runtime/Config 封装）中不写任何玩法内容（卡牌、回合、数值规则等）。
+- 新增玩法代码放独立程序集，依赖基础层，不要污染基础层。

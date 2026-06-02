@@ -1,0 +1,36 @@
+---
+description: 通过 Unity MCP(unity-mcp-cli) 实时编译/运行/测试的工作流
+alwaysApply: true
+---
+
+# Unity MCP 验证工作流
+
+本项目已接入 Unity MCP，改代码后用实时编辑器验证，而非独立 dotnet 构建。
+
+## 改完 C# 后必做：刷新 + 查编译错误
+```bash
+unity-mcp-cli run-tool console-clear-logs --input '{}'
+unity-mcp-cli run-tool assets-refresh --input '{"options":"ForceSynchronousImport"}'
+unity-mcp-cli run-tool console-get-logs --input-file - <<'EOF' | grep -i "error CS" | sort -u || echo NONE
+{"maxEntries":200,"logTypeFilter":"Error","includeStackTrace":false}
+EOF
+```
+
+## 运行启动链路验证（Play 模式）
+```bash
+unity-mcp-cli run-tool editor-application-set-state --input '{"isPlaying":true}'
+# sleep 几秒后读日志，最后务必停止：
+unity-mcp-cli run-tool editor-application-set-state --input '{"isPlaying":false}'
+```
+
+## 跑 EditMode 测试
+```bash
+unity-mcp-cli run-tool tests-run --input-file - <<'EOF'
+{"testMode":"EditMode","testAssembly":"GourmetProject.Tests.EditMode"}
+EOF
+```
+
+## 注意
+- `console-get-logs` 的 `logTypeFilter` 偶发不接受 `null`，改为省略该字段。
+- 日志缓存会累积旧记录，看最新编译结果前先 `console-clear-logs`。
+- 优先用 MCP 工具（scene/gameobject/component/assets）改场景与组件，避免手改 `.unity` YAML。
