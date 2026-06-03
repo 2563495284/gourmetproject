@@ -1,5 +1,6 @@
 using System;
 using GourmetProject.Core.Diagnostics;
+using UnityEngine;
 using UnityGameFramework.Runtime;
 using Log = GourmetProject.Core.Diagnostics.Log;
 
@@ -22,6 +23,14 @@ namespace GourmetProject.Runtime.Settings
         public const string KeySoundVolume = "Audio.SoundVolume";
         public const string KeyLanguage = "App.Language";
         public const string KeyMuted = "Audio.Muted";
+
+        // 画面显示偏好键（与玩法无关的通用偏好）。
+        public const string KeyResolutionWidth = "Display.ResolutionWidth";
+        public const string KeyResolutionHeight = "Display.ResolutionHeight";
+        public const string KeyRefreshRate = "Display.RefreshRate";
+        public const string KeyFullScreenMode = "Display.FullScreenMode";
+        public const string KeyVSync = "Display.VSync";
+        public const string KeyTargetFrameRate = "Display.TargetFrameRate";
 
         public SettingsService(SettingComponent setting)
         {
@@ -56,6 +65,87 @@ namespace GourmetProject.Runtime.Settings
         {
             get => _setting.GetString(KeyLanguage, string.Empty);
             set => _setting.SetString(KeyLanguage, value ?? string.Empty);
+        }
+
+        // —— 画面显示偏好。默认值取自当前屏幕状态，保证首次进入与系统一致。——
+
+        public int ResolutionWidth
+        {
+            get => _setting.GetInt(KeyResolutionWidth, Screen.currentResolution.width);
+            set => _setting.SetInt(KeyResolutionWidth, value);
+        }
+
+        public int ResolutionHeight
+        {
+            get => _setting.GetInt(KeyResolutionHeight, Screen.currentResolution.height);
+            set => _setting.SetInt(KeyResolutionHeight, value);
+        }
+
+        /// <summary>目标刷新率（Hz）。0 表示沿用当前显示器刷新率。</summary>
+        public int RefreshRate
+        {
+            get => _setting.GetInt(KeyRefreshRate, Mathf.RoundToInt((float)Screen.currentResolution.refreshRateRatio.value));
+            set => _setting.SetInt(KeyRefreshRate, value);
+        }
+
+        public FullScreenMode FullScreenMode
+        {
+            get => (FullScreenMode)_setting.GetInt(KeyFullScreenMode, (int)Screen.fullScreenMode);
+            set => _setting.SetInt(KeyFullScreenMode, (int)value);
+        }
+
+        public bool VSync
+        {
+            get => _setting.GetBool(KeyVSync, QualitySettings.vSyncCount > 0);
+            set => _setting.SetBool(KeyVSync, value);
+        }
+
+        /// <summary>目标帧率。-1 表示不限制（由平台/垂直同步决定）。</summary>
+        public int TargetFrameRate
+        {
+            get => _setting.GetInt(KeyTargetFrameRate, -1);
+            set => _setting.SetInt(KeyTargetFrameRate, value);
+        }
+
+        /// <summary>
+        /// 把当前画面偏好应用到引擎（分辨率/全屏模式/垂直同步/目标帧率）。
+        /// 不负责落盘，落盘请另行调用 <see cref="Save"/>。
+        /// </summary>
+        public void ApplyDisplaySettings()
+        {
+            int width = ResolutionWidth;
+            int height = ResolutionHeight;
+            int refreshRate = RefreshRate;
+            FullScreenMode mode = FullScreenMode;
+
+            if (width > 0 && height > 0)
+            {
+                if (refreshRate > 0)
+                {
+                    Screen.SetResolution(width, height, mode, new RefreshRate { numerator = (uint)refreshRate, denominator = 1u });
+                }
+                else
+                {
+                    Screen.SetResolution(width, height, mode);
+                }
+            }
+            else
+            {
+                Screen.fullScreenMode = mode;
+            }
+
+            QualitySettings.vSyncCount = VSync ? 1 : 0;
+            Application.targetFrameRate = TargetFrameRate;
+
+            Log.Debug(
+                $"Display applied: {width}x{height}@{refreshRate} mode={mode} vsync={VSync} fps={TargetFrameRate}.",
+                Tag);
+        }
+
+        /// <summary>把所有可在运行时即时生效的设置统一应用一次（目前为画面偏好）。</summary>
+        public void ApplyAll()
+        {
+            ApplyDisplaySettings();
         }
 
         // 透传访问，便于玩法层存放自定义偏好而不必再包一层。

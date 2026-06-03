@@ -1,0 +1,19 @@
+{
+    "name": "GourmetProject.Game",
+    "rootNamespace": "GourmetProject.Game",
+    "references": [
+        "UnityGameFramework.Runtime",
+        "GourmetProject.Runtime",
+        "GourmetProject.Core",
+        "GourmetProject.Config"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

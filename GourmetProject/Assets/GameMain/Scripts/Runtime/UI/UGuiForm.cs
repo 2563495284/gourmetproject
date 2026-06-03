@@ -16,6 +16,18 @@ namespace GourmetProject.Runtime.UI
         {
             base.OnInit(userData);
             CachedTransform = transform;
+
+            // 界面统一填满所属界面组容器：用 stretch 锚点 + 清零偏移，避免预制体残留的
+            // 尺寸/偏移导致界面塌缩或错位。所有界面共用此约定。
+            if (CachedTransform is RectTransform rect)
+            {
+                rect.anchorMin = Vector2.zero;
+                rect.anchorMax = Vector2.one;
+                rect.offsetMin = Vector2.zero;
+                rect.offsetMax = Vector2.zero;
+                rect.localScale = Vector3.one;
+                rect.localPosition = Vector3.zero;
+            }
         }
 
         protected override void OnOpen(object userData)
