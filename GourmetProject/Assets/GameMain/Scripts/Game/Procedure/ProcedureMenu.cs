@@ -14,13 +14,29 @@ namespace GourmetProject.Game.Procedure
     {
         private const string Tag = "Menu";
 
+        private IFsm<IProcedureManager> _owner;
+
         protected override void OnEnter(IFsm<IProcedureManager> procedureOwner)
         {
             base.OnEnter(procedureOwner);
 
+            _owner = procedureOwner;
             EnsureUIGroups();
             GameApp.UI.OpenUIForm(UIForms.MainMenu, UIForms.GroupDefault);
+            GameplayLauncher.StartRequested += OnStartRequested;
             Log.Info("ProcedureMenu entered: main menu opened.", Tag);
+        }
+
+        protected override void OnLeave(IFsm<IProcedureManager> procedureOwner, bool isShutdown)
+        {
+            GameplayLauncher.StartRequested -= OnStartRequested;
+            base.OnLeave(procedureOwner, isShutdown);
+        }
+
+        private void OnStartRequested()
+        {
+            Log.Info("ProcedureMenu: start requested, switching to gameplay.", Tag);
+            ChangeState<ProcedureGameplay>(_owner);
         }
 
         private static void EnsureUIGroups()

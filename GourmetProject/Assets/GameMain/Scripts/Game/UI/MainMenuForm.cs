@@ -42,9 +42,8 @@ namespace GourmetProject.Game.UI
 
         private void OnStartClicked()
         {
-            // 具体玩法尚未实现，这里仅占位。后续从此处切换到对局流程或加载存档。
-            bool hasSave = GameApp.Save.Has(UIForms.GameSaveSlot);
-            Log.Info(hasSave ? "Continue game (gameplay not implemented yet)." : "Start new game (gameplay not implemented yet).", Tag);
+            Log.Info("Start clicked: requesting gameplay procedure.", Tag);
+            GourmetProject.Game.Procedure.GameplayLauncher.RequestStart();
         }
 
         private void OnSettingsClicked()
