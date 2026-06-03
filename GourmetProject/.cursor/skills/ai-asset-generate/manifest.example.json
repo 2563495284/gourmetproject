@@ -1,0 +1,46 @@
+{
+  "stylePrefix": "pixel art, top-down view, fantasy RPG style, clean pixel edges, game asset",
+  "assets": [
+    {
+      "name": "potion_health",
+      "type": "item",
+      "prompt": "red health potion in a round glass bottle with cork stopper, glowing liquid, centered"
+    },
+    {
+      "name": "potion_mana",
+      "type": "item",
+      "prompt": "blue mana potion in a triangular glass flask, sparkling magical liquid, centered"
+    },
+    {
+      "name": "sword_iron",
+      "type": "item",
+      "prompt": "iron short sword with leather-wrapped grip and a simple crossguard, centered diagonally"
+    },
+    {
+      "name": "shield_wooden",
+      "type": "item",
+      "prompt": "round wooden shield with iron rim and a simple boss in the center, front view"
+    },
+    {
+      "name": "btn_start",
+      "type": "ui",
+      "prompt": "wooden button with gold trim, medieval fantasy UI, 9-slice friendly with clear border padding, centered"
+    },
+    {
+      "name": "btn_settings",
+      "type": "ui",
+      "prompt": "gear icon button, metallic silver frame, medieval fantasy UI, 9-slice friendly, centered"
+    },
+    {
+      "name": "panel_wood",
+      "type": "ui",
+      "prompt": "wooden panel background with subtle grain, dark aged oak, medieval fantasy UI, 9-slice friendly with clear border area"
+    },
+    {
+      "name": "forest_bg",
+      "type": "background",
+      "prompt": "dense enchanted forest with tall trees, glowing mushrooms, soft mist, distant mountain silhouette, parallax-ready with clear depth layers",
+      "size": "1536x1024"
+    }
+  ]
+}
