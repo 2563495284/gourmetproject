@@ -15,6 +15,9 @@ namespace GourmetProject.Game.UI
         public const string Settings = "Assets/GameMain/UI/SettingsForm.prefab";
         public const string ConfirmDialog = "Assets/GameMain/UI/ConfirmDialogForm.prefab";
 
+        // 到达检查点时的 3 选 1 技能选择界面。
+        public const string SkillPick = "Assets/GameMain/UI/SkillPickForm.prefab";
+
         // 主存档槽位：用于判断“开始游戏 / 继续游戏”。
         public const string GameSaveSlot = "slot0";
     }

@@ -1,0 +1,41 @@
+{
+  "stylePrefix": "monochrome grayscale, Limbo video game art style, high contrast black silhouette, cinematic horror atmosphere, ultra-detailed creature anatomy, film grain, 4k quality, sharp defined edges, isolated on white background, no pixel art, no flat vector, no cartoon, no bright color, no text, no watermark, no signature",
+  "assets": [
+    {
+      "name": "mosquito",
+      "type": "character",
+      "prompt": "A giant mosquito in pure black silhouette viewed from the side. Extremely detailed: long needle-like proboscis with fine serrations visible at the tip, delicate segmented antennae curving forward, six thin jointed legs with tiny bristles at each joint hanging below the body, translucent wing shape suggested through faint grey veining patterns, elongated abdomen with subtle segmentation lines. Legs spread in a hovering pose. Menacing and alien but naturalistic. Giant insect enemy.",
+      "transparent": true
+    },
+    {
+      "name": "shadow",
+      "type": "character",
+      "prompt": "An amorphous shadow creature with no fixed form. A mass of darkness with tendrils and wisps bleeding outward at the edges like ink dissolving in water. The core suggests a vaguely humanoid torso and head but boundaries are intentionally unclear — the creature merges with darkness itself. Fine tendril details, smoke-like curling wisps, subtle texture variations within the darkness suggesting depth. A living shadow not a solid creature. Ethereal horror entity.",
+      "transparent": true
+    },
+    {
+      "name": "moth",
+      "type": "character",
+      "prompt": "A large moth in black silhouette with wings fully spread. Intricately detailed wing patterns rendered as subtle grey-on-black tonal variations — delicate veins radiating from wing base, subtle eye-like pattern markings on forewings, fine powdery texture along wing edges. Plump body with visible abdominal segments. Feathery antennae with fine branching detail. Wings have slightly irregular tattered edges suggesting age. Drawn to light. Beautiful but dangerous.",
+      "transparent": true
+    },
+    {
+      "name": "light_eater",
+      "type": "character",
+      "prompt": "A parasitic insect creature in black silhouette with a segmented armored body that curls into a defensive spiral. Each body segment has detailed chitinous plate texture with subtle ridges and serrated edges. Multiple small grasping legs along the underside each with tiny claw-like tips. The head end has feeding mandibles with mechanical-looking joint detail. The silhouette suggests it can wrap around and consume light sources. Biomechanical horror parasite.",
+      "transparent": true
+    },
+    {
+      "name": "light_scale",
+      "type": "character",
+      "prompt": "A small flying creature combining fish and insect features in black silhouette. Delicate scale-like wing structures with subtle texture suggested through fine grey tonal variations. Long trailing tail fins with flowing ribbon-like curves extending behind the body. Small streamlined body with subtle scale pattern texture along the sides. Fragile beauty with hidden danger. Drawn toward light sources.",
+      "transparent": true
+    },
+    {
+      "name": "firefly",
+      "type": "character",
+      "prompt": "A dense cluster of small firefly silhouettes orbiting a central faint glow point. Each individual firefly has visible wing detail and tiny body structure. The swarm has dynamic organic clustering — denser near the center light dispersing outward. The faint central glow creates subtle rim lighting on the nearest fireflies. Insects overlap creating complex silhouette intersections. Deceptive beauty hiding danger in numbers.",
+      "transparent": true
+    }
+  ]
+}

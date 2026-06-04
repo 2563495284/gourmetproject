@@ -1,7 +1,8 @@
 #!/bin/bash
 # Luban 配置生成脚本（PC/macOS/Linux）。需要 .NET SDK 8.0+。
+# 配置源：Defines/*.xml 定义 schema，Datas/*.xlsx 存数据（策划用 Excel 编辑）。
 # 代码输出到 Assets/GameMain/Scripts/Config/Gen（该目录会被 Luban 清空，勿放手写代码）。
-# 数据输出到 Assets/StreamingAssets/Config（运行时按 JSON 读取）。
+# 数据输出到 Assets/StreamingAssets/Config（Luban 把 xlsx 转成 JSON，运行时按 JSON 读取）。
 set -e
 
 WORKSPACE="$(cd "$(dirname "$0")" && pwd)"

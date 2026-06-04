@@ -22,7 +22,17 @@ namespace GourmetProject.Game.Platformer.Monsters
                 MonsterBase monster = spawn.Kind switch
                 {
                     MonsterKind.Mosquito => go.AddComponent<Mosquito>(),
+                    MonsterKind.Moth => go.AddComponent<Moth>(),
+                    MonsterKind.LightEater => go.AddComponent<LightEater>(),
+                    MonsterKind.LightScale => go.AddComponent<LightScale>(),
+                    MonsterKind.Firefly => go.AddComponent<Firefly>(),
                     MonsterKind.Shadow => go.AddComponent<Shadow>(),
+                    MonsterKind.Vine => go.AddComponent<Vine>(),
+                    MonsterKind.AmbushSpider => go.AddComponent<AmbushSpider>(),
+                    MonsterKind.FogWraith => go.AddComponent<FogWraith>(),
+                    MonsterKind.EchoBat => go.AddComponent<EchoBat>(),
+                    MonsterKind.StoneEye => go.AddComponent<StoneEye>(),
+                    MonsterKind.LightShadowBug => go.AddComponent<LightShadowBug>(),
                     _ => go.AddComponent<Mosquito>(),
                 };
 

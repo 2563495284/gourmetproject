@@ -15,6 +15,7 @@ namespace GourmetProject.Game.Procedure
         private const string Tag = "Menu";
 
         private IFsm<IProcedureManager> _owner;
+        private GameObject _metaPanelGo;
 
         protected override void OnEnter(IFsm<IProcedureManager> procedureOwner)
         {
@@ -24,12 +25,24 @@ namespace GourmetProject.Game.Procedure
             EnsureUIGroups();
             GameApp.UI.OpenUIForm(UIForms.MainMenu, UIForms.GroupDefault);
             GameplayLauncher.StartRequested += OnStartRequested;
+
+            // 局外成长面板（代码构建 Overlay，右上角"成长"按钮入口）。
+            _metaPanelGo = new GameObject("MetaPanel");
+            _metaPanelGo.AddComponent<GourmetProject.Game.UI.MetaPanel>();
+
             Log.Info("ProcedureMenu entered: main menu opened.", Tag);
         }
 
         protected override void OnLeave(IFsm<IProcedureManager> procedureOwner, bool isShutdown)
         {
             GameplayLauncher.StartRequested -= OnStartRequested;
+
+            if (_metaPanelGo != null)
+            {
+                UnityEngine.Object.Destroy(_metaPanelGo);
+                _metaPanelGo = null;
+            }
+
             base.OnLeave(procedureOwner, isShutdown);
         }
 

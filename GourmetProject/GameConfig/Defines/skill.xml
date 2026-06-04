@@ -1,0 +1,37 @@
+<module name="">
+    <!--
+        肉鸽技能表（设计文档第 13.5/13.6/13.7 节）。
+        三池 T1/T2/T3 + Tag 软引导 + 连锁(前置/互斥/不重复/叠加上限)规则的数据来源。
+
+        字段约定：
+          tier        段位池：1=T1(CP1-2) 2=T2(CP3-4) 3=T3(CP5-6)
+          tag         软引导标签：Move/Light/Survival/Economy/Monster
+          weight      基础抽取权重(>0)
+          isMovement  核心移动技(#1-#9)：true 表示全局唯一、不重复出现
+          maxStacks   同一技能可被选取次数上限：0=无限(经济系)，1=一次性/唯一，N=最多 N 层
+          prereqAny   前置技能 id 列表，拥有其中任一即解锁；空=无前置
+          mutex       互斥技能 id 列表，拥有其中任一则本技能不再出现
+    -->
+    <enum name="SkillTag">
+        <var name="Move" value="0"/>
+        <var name="Light" value="1"/>
+        <var name="Survival" value="2"/>
+        <var name="Economy" value="3"/>
+        <var name="Monster" value="4"/>
+    </enum>
+
+    <bean name="Skill">
+        <var name="id" type="string"/>
+        <var name="tier" type="int"/>
+        <var name="tag" type="SkillTag"/>
+        <var name="name" type="string"/>
+        <var name="desc" type="string"/>
+        <var name="weight" type="float"/>
+        <var name="isMovement" type="bool"/>
+        <var name="maxStacks" type="int"/>
+        <var name="prereqAny" type="(list#sep=,),string"/>
+        <var name="mutex" type="(list#sep=,),string"/>
+    </bean>
+
+    <table name="TbSkill" value="Skill" index="id" input="skill.xlsx"/>
+</module>

@@ -1,0 +1,47 @@
+{
+  "stylePrefix": "monochrome grayscale, Limbo video game art style, high contrast black silhouette, cinematic horror atmosphere, ultra-detailed creature anatomy, film grain, 4k quality, sharp defined edges, isolated on white background, no pixel art, no flat vector, no cartoon, no bright color, no text, no watermark, no signature",
+  "assets": [
+    {
+      "name": "vine",
+      "type": "character",
+      "prompt": "A thorned vine tendril in pure black silhouette, curling and reaching with organic menace. Extremely detailed: each thorn is sharp and slightly curved spaced irregularly along the stem. The vine surface has subtle wood-grain texture and small nodes where leaves once grew. The main stem twists naturally with two secondary tendrils branching off and curling inward. It feels like a living grasping thing. Multiple overlapping curves create a complex dangerous silhouette. Carnivorous plant hazard.",
+      "transparent": true
+    },
+    {
+      "name": "ambush_spider",
+      "type": "character",
+      "prompt": "An ambush predator spider in black silhouette, compact body with eight long angular jointed legs poised to strike. Detailed leg segmentation with visible joints and subtle hairs along each segment. Body has subtle textural detail — small hairs, faint abdominal pattern. Multiple eyes suggested as tiny points of slightly lighter grey on the head. Crouched and ready to spring pose with front legs slightly raised. Creepy threatening lurking hunter.",
+      "transparent": true
+    },
+    {
+      "name": "mist_spirit",
+      "type": "character",
+      "prompt": "A spectral figure made entirely of swirling mist and fog. A vaguely humanoid shape with tattered flowing edges bleeding into the surrounding air. Upper body suggests shoulders and a head but lower body dissolves completely into drifting fog tendrils. Fine details of swirling vapor, layered mist density creating a sense of volume within transparency. Edges intentionally soft and undefined with wispy strands of fog trailing outward. Ethereal haunting barely present. Ghostly apparition.",
+      "transparent": true
+    },
+    {
+      "name": "echo_bat",
+      "type": "character",
+      "prompt": "A bat creature in black silhouette with wings fully spread in mid-flight. Extremely detailed wing membrane structure with visible veins and subtle textural variation — slightly translucent grey in the thinner parts of the membrane between wing fingers. Large pointed ears with inner ear detail. Small furry body with subtle texture suggested at the contour edges. Wing fingers create a dramatic angular silhouette. Mouth slightly open for echolocation. Dynamic flying pose. Sound hunter.",
+      "transparent": true
+    },
+    {
+      "name": "stone_eye_closed",
+      "type": "character",
+      "prompt": "An ancient carved stone eye embedded in a wall surface. The eye is closed with a weathered stone eyelid showing detailed masonry texture — visible chisel marks, fine cracks spreading across the surface, small chips at the edges. The surrounding stone block has subtle carved ornamental patterns suggesting an ancient lost civilization. The closed eyelid has a slight curve with realistic anatomical suggestion but entirely made of stone. Ominous dormant sentinel. Ancient guardian trap.",
+      "transparent": true
+    },
+    {
+      "name": "stone_eye_open",
+      "type": "character",
+      "prompt": "The same ancient stone eye now opened revealing a hollow dark void within the socket. The eyelid is retracted showing the carved stone socket interior. The inside is pure pitch black — an unsettling absolute absence. Fine cracks radiate from the edges of the socket into the surrounding stone. Stone texture around the eye has subtle wear patterns from the eyelid movement. Creepy and watchful. It sees you. Awakened ancient guardian.",
+      "transparent": true
+    },
+    {
+      "name": "light_shadow_bug",
+      "type": "character",
+      "prompt": "A beetle-like insect creature in black silhouette that absorbs and extinguishes light. Detailed carapace with segmented armor plates and subtle ridges running along the back. Six jointed legs with small gripping claws. Short thick antennae with sensory bristles. The carapace has areas of slightly lighter grey suggesting where light is being absorbed like a dimming effect on its own surface. Compact armored skittering menace. Light-eating darkness beetle.",
+      "transparent": true
+    }
+  ]
+}

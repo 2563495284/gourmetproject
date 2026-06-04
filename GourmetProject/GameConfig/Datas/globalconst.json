@@ -1,4 +1,0 @@
-[
-    { "id": "sample_int", "intValue": 42, "floatValue": 0.0, "desc": "占位示例：一个整数常量" },
-    { "id": "sample_float", "intValue": 0, "floatValue": 3.14, "desc": "占位示例：一个浮点常量" }
-]

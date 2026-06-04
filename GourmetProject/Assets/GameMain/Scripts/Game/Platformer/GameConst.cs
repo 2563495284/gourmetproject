@@ -59,8 +59,14 @@ namespace GourmetProject.Game.Platformer
         public const float RespawnDelay = 1.0f;
         public const float InvincibleDuration = 2.0f;
 
-        // —— 怪物（设计文档 5.x）——
-        public const float MosquitoFirstPlatform = 8;
-        public const float ShadowFirstPlatform = 12;
+        // —— 怪物威胁数值 ——
+        public const float LightEaterDrainPerSec = 8f;    // 光食虫附着每秒吸取能量 %
+        public const float FogWraithDrainPerSec = 10f;    // 雾灵接触每秒扣减能量 %（不致死，逼移动）
+        public const float ScaleStunDuration = 0.3f;      // 趋光飞鳞撞击硬直
+        public const float EchoStunDuration = 0.5f;       // 回声蝠声波眩晕
+
+        // —— 局外成长（设计文档 13.10）——
+        public const float MetaEnergyCapPerLevel = 10f;   // 每级初始能量上限 +10
+        public const int MetaEnergyCapMaxLevel = 3;       // 能量上限最多 +30（上限明确）
     }
 }

@@ -1,3 +1,4 @@
+using GourmetProject.Game.Roguelike;
 using GourmetProject.Runtime;
 using GourmetProject.Runtime.UI;
 using UnityEngine.UI;
@@ -42,7 +43,18 @@ namespace GourmetProject.Game.UI
 
         private void OnStartClicked()
         {
-            Log.Info("Start clicked: requesting gameplay procedure.", Tag);
+            if (GameApp.Save.Has(UIForms.GameSaveSlot)
+                && GameApp.Save.TryLoad(UIForms.GameSaveSlot, out RunSaveData saved))
+            {
+                RunSession.PendingLoad = saved;
+                Log.Info("Continue clicked: loaded run save.", Tag);
+            }
+            else
+            {
+                RunSession.Clear();
+                Log.Info("Start clicked: requesting new run.", Tag);
+            }
+
             GourmetProject.Game.Procedure.GameplayLauncher.RequestStart();
         }
 

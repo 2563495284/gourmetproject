@@ -38,12 +38,32 @@ namespace GourmetProject.Game.Platformer
         public const string CheckpointEndpoint = "Sprites/Items/checkpoint_endpoint";
         public const string Lighthouse = "Sprites/Items/lighthouse";
 
+        // —— 怪物（Sprites/Characters/Monsters/）——
         public const string Mosquito = "Sprites/Characters/Monsters/mosquito";
         public const string Shadow = "Sprites/Characters/Monsters/shadow";
+        public const string Moth = "Sprites/Characters/Monsters/moth";
+        public const string LightEater = "Sprites/Characters/Monsters/light_eater";
+        public const string LightScale = "Sprites/Characters/Monsters/light_scale";
+        public const string Firefly = "Sprites/Characters/Monsters/firefly";
+        public const string Vine = "Sprites/Characters/Monsters/vine";
+        public const string AmbushSpider = "Sprites/Characters/Monsters/ambush_spider";
+        public const string MistSpirit = "Sprites/Characters/Monsters/mist_spirit";
+        public const string EchoBat = "Sprites/Characters/Monsters/echo_bat";
+        public const string StoneEyeClosed = "Sprites/Characters/Monsters/stone_eye_closed";
+        public const string StoneEyeOpen = "Sprites/Characters/Monsters/stone_eye_open";
+        public const string LightShadowBug = "Sprites/Characters/Monsters/light_shadow_bug";
 
         public const string RedDot = "Sprites/UI/red_dot";
         public const string BlueDot = "Sprites/UI/blue_dot";
         public const string ParticleDust = "Sprites/UI/particle_dust";
         public const string InvincibilityRing = "Sprites/UI/invincibility_ring";
+
+        // —— 远景背景（Limbo 风格分层）——
+        public const string BgSky = "Sprites/Backgrounds/bg_sky";
+        public const string BgFarMountains = "Sprites/Backgrounds/bg_far_mountains";
+        public const string BgMidForest = "Sprites/Backgrounds/bg_mid_forest";
+        public const string BgNearTrees = "Sprites/Backgrounds/bg_near_trees";
+        public const string BgStar = "Sprites/Backgrounds/star_background";
+        public const string BgMountain = "Sprites/Backgrounds/mountain_silhouette";
     }
 }

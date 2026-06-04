@@ -1,0 +1,103 @@
+---
+description: 《光影》Limbo 风格美术方向 & 分层远景背景系统——提示词清单、素材规范、ParallaxBackground 实现，纵向固定远景不随镜头攀爬而移动
+globs: Assets/GameMain/Scripts/Game/Platformer/ParallaxBackground.cs,Assets/GameMain/Resources/Sprites/Backgrounds/**
+alwaysApply: false
+---
+
+# 美术方向：Limbo 风格 & 分层远景背景
+
+## 核心审美
+
+全盘走《地狱边境》(Limbo) 路线：**黑白剪影、胶片颗粒感、雾气大气景深、极简阴郁**。
+前景游戏对象（玩家/地形/怪物）为纯黑剪影，背景分层由远及近逐渐加深，借雾气营造空间纵深感。
+
+## 素材清单 & 生成提示词
+
+所有素材用 Midjourney / Stable Diffusion 生成，核心 prompt 尾缀：
+`monochrome grayscale, film grain texture, Limbo game art style, 2D platformer sprite, isolated on black background --no color`
+
+### 分层远景背景（4 层，32:9 超宽比）
+
+| 图层 | 文件名 | parallaxX | 提示词要点 |
+|------|--------|-----------|-----------|
+| Layer 0 天空 | `bg_sky.png` | 0（完全静态） | 雾中隐月、大气散射、暗灰到苍白渐变、无地面 |
+| Layer 1 远山 | `bg_far_mountains.png` | 0.05 | 远山轮廓隐于浓雾、柔和大气候透视、苍白灰 |
+| Layer 2 枯树林中景 | `bg_mid_forest.png` | 0.10 | 枯树剪影、细瘦枝干、中等灰度、雾气柔化轮廓 |
+| Layer 3 前景树林 | `bg_near_trees.png` | 0.18 | 前景黑色松/橡树剪影、枝干结构清晰、强对比 |
+
+### 游戏对象（1:1 或 1:2 比例，纯黑剪影）
+
+| 类别 | 素材 | 提示词要点 |
+|------|------|-----------|
+| 玩家 | 小男孩剪影（16×32px 比例）+ 打火机火焰光环 | 剪影无内部细节、发光眼睛、手持打火机微光 |
+| 地形 | 平台砖/墙砖/左右斜坡/地刺 | 风化石材剪影、粗糙边缘、极简纹理 |
+| 检查点 | 未激活石灯 / 激活微光石灯 / 终点灯塔 | 远古石质结构、激活态有柔光散发 |
+| 怪物×12 | 蚊子/暗影/飞蛾/光食虫/飞鳞/萤火虫群/藤蔓/伏击蜘蛛/雾灵/回声蝠/石眼/光暗虫 | 各自剪影特色，强调威胁感但不血腥 |
+
+### UI/粒子
+
+红色提示点、蓝色提示点、灰尘粒子、无敌光环——孤立的 UI 精灵，透明/黑色底。
+
+---
+
+## 分层远景背景系统（ParallaxBackground）
+
+### 架构
+
+```
+ParallaxBackground (纯代码类，非 MonoBehaviour)
+  └── Container: "ParallaxBackground" (Transform)
+        ├── BgLayer_0 (sortingOrder -100, parallaxX=0,     unlit, Tiled)
+        ├── BgLayer_1 (sortingOrder -99,  parallaxX=0.05,  unlit, Tiled)
+        ├── BgLayer_2 (sortingOrder -98,  parallaxX=0.10,  unlit, Tiled)
+        └── BgLayer_3 (sortingOrder -97,  parallaxX=0.18,  unlit, Tiled)
+```
+
+### 关键设计决策
+
+**1. 纵向固定、仅水平视差**
+每个背景层的 Y 坐标固定在关卡最低点 (`worldMinY`)，每帧 `Tick()` 只更新 `position.x = cameraCenter.x * parallaxX`。
+玩家攀爬时镜头 Y 上移，背景层原封不动——远景始终在远处，营造"无限深远"的假象。
+
+**2. Tiled 平铺覆盖全关卡**
+每个背景 sprite 用 `SpriteDrawMode.Tiled`，`size` 覆盖整个关卡高度 + 宽度 + 留白边际（`worldMinY - 10` 到 `worldMaxY + 10`），保证镜头在任何位置都有背景可见。
+素材本身不需要巨大——Tiled 模式会用小素材重复填充。
+
+**3. Unlit 材质，不受光照影响**
+背景用默认 sprite 材质（非 URP 2D Lit），不受 GlobalLight 低强度黑暗影响。颜色压暗到 `(0.25, 0.28, 0.32)` 融入阴郁氛围，但始终作为剪影可见。这一点与前景的 Lit 地形/玩家形成对比——前景随光照明暗变化，背景恒定。
+
+**4. 素材容错回退**
+`Build()` 先尝试加载新 Limbo 素材（`bg_sky` / `bg_far_mountains` 等），失败则回退到 `Art.cs` 中已有的 `star_background.png` / `mountain_silhouette.png`。素材就位后无需改代码，直接替换文件即生效。
+
+**5. 排序层隔离**
+背景层 `sortingOrder = -100 ~ -97`，远低于所有游戏对象（地形/怪物 5、玩家 10、无敌环 40），确保绝不遮挡任何前景元素。
+
+### 集成方式
+
+- **构建**：`GameWorld.BuildWorld()` 中，在 `SetupCamera()` 之后、`Lighting` 之前创建。
+- **更新**：`GameWorld.LateUpdate()` 末尾，相机位置确定后调用 `_background.Tick(camPos)`。
+- **悬挂依赖**：`GameWorld` 持有 `ParallaxBackground` 实例引用，生命周期跟随对局。
+
+### 参数速查
+
+| 参数 | 值 | 说明 |
+|------|-----|------|
+| 层数 | 4 | 天空 / 远山 / 中景枯林 / 近景树林 |
+| parallaxX 范围 | 0 ~ 0.18 | 0=跟随镜头不动，1=完全跟随（远景不应接近1） |
+| parallaxY | 0 | 所有层统一，绝不纵向跟随 |
+| sortingOrder | -100 ~ -97 | 每层递增 1 |
+| sprite color | (0.25, 0.28, 0.32) | 压暗但始终可见 |
+| drawMode | Tiled | 小素材覆盖大区域 |
+| coverWidth | `worldWidth + 30f` | 关卡宽度 + 两侧各 15 单位留白 |
+| coverHeight | `worldMaxY - worldMinY + 20` | 关卡最高点到最低点 + 上下各 10 单位留白 |
+
+---
+
+## 光照系统与背景的配合
+
+- **Global Light**（强度 0.05）：冷蓝灰极暗全局光，将 Lit 前景精灵压到几乎全黑。Unlit 背景不受影响，始终以 `(0.25, 0.28, 0.32)` 颜色渲染。
+- **Player Vision Light**（冷蓝光圈，半径 95px）：照亮玩家周围的地形/怪物，背景不参与此光照。
+- **Lighter Light**（暖橙光圈，半径 230px × sqrt(能量)）：同上，背景不受影响。
+- **Reveal All 模式**（逗号键）：Global Light 强度拉到 1.0，Lit 前景全亮，背景依然保持恒定。
+
+这种 "前景有光/背景剪影" 的双重读感，正是 Limbo 的核心视觉基调。

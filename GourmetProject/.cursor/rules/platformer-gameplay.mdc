@@ -1,0 +1,32 @@
+---
+description: 《光影》平台跳跃玩法层（Game/Platformer）约定：单位、预制段拼接、Unity 物理、更新顺序
+globs: Assets/GameMain/Scripts/Game/Platformer/**/*.cs
+alwaysApply: false
+---
+
+# 光影玩法层约定
+
+玩法代码全部在 `GourmetProject.Game` 程序集的 `Game/Platformer/` 下，依赖基础层，不污染 Core/Runtime/Config。
+
+## 单位换算（PPU = 16）
+- 设计文档用像素，工程渲染 16px = 1 Unity unit。所有 px 数值统一经 `GameConst.Px(float)` 转世界单位，禁止在玩法代码里散落魔法除法。
+- 物理/光照/尺寸常量集中在 `GameConst`，新增数值也放这里。
+
+## 关卡：预制段（chunk）随机拼接
+- 关卡 = `Resources/Chunks` 下若干预制段（Grid+Tilemap 预制体）随机拼接，**地形/斜坡/地刺/怪物/检查点直接摆在预制段里**，不再程序化生成。
+- 预制段契约（`Game/Platformer/Chunks/`）：根节点挂 `ChunkInfo`（Role/Difficulty/ThemeTag/Entry/Exit）；用 `MonsterMarker`/`CheckpointMarker`/`SpawnMarker` 标记怪物/检查点/起点。
+- `ChunkLibrary` 按角色/难度分桶加载；`LevelAssembler.Assemble` 按「起点→各难度段×n→休息段→终点」确定性选段，按 Entry/Exit 锚点首尾对齐拼接，产出 `LevelData`（仅元数据：起点/检查点/怪物 spawn/世界边界）。
+- 地形碰撞由预制段内 `TilemapCollider2D`+`CompositeCollider2D` 承载，坡用带 `PolygonCollider2D` 的精灵；都放 `Terrain` 层并挂 `ShadowCaster2D`。地刺放 `Spike` 层（触发）。
+
+## Unity 物理（Kinematic + BoxCast）
+- `PlayerController` 用 Kinematic `Rigidbody2D` + `BoxCollider2D`，手动积分 + 分轴 `Physics2D.BoxCast`（先 X 后 Y）+ 子步进防穿透；扫描对象是 `Terrain` 层碰撞体。地面/墙/坡由命中法线判定，斜坡由 `SnapToGround` 吸附。
+- 地刺死亡用 `Physics2D.OverlapBox`（`Spike` 层）；坠落死亡用 `LevelData.FallDeathY`。
+- 拼接/瞬移后调用 `Physics2D.SyncTransforms()`，保证 BoxCast 读到最新碰撞体。
+- 层定义见 `WorldRender`（Terrain/Spike/Checkpoint/Monster/Player），同步在 `ProjectSettings/TagManager.asset`。
+
+## 统一更新顺序
+- 由 `GameWorld.Update` 显式驱动：输入 → 能量 → `Player.Tick()` → 怪物 → 检查点 → 相机（`LateUpdate`）。新系统接入此顺序，不要各自写 `Update` 抢顺序。
+- 跨系统/HUD 读状态走 `GameWorld.Current`（静态单例）。
+
+## 确定性随机
+- 关卡选段/玩法随机只走 `GameApp.Random.Stream(name)`（关卡用 `"level"` 流），禁止 `UnityEngine.Random`/`System.Random` 参与可复现逻辑（`GameApp.Random.Init` 未调用时先 Init）。预制段池加载后按名排序再抽，保证同种子可复现。

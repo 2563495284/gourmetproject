@@ -1,0 +1,338 @@
+[
+  {
+    "id": "ms_double_jump",
+    "tier": 1,
+    "tag": 0,
+    "name": "二段跳",
+    "desc": "空中可再跳一次",
+    "weight": 10,
+    "isMovement": true,
+    "maxStacks": 1,
+    "prereqAny": [],
+    "mutex": [
+      "ms_wall_cling"
+    ]
+  },
+  {
+    "id": "ms_wall_cling",
+    "tier": 1,
+    "tag": 0,
+    "name": "附着墙",
+    "desc": "接触墙壁自动吸附，不可再跳",
+    "weight": 10,
+    "isMovement": true,
+    "maxStacks": 1,
+    "prereqAny": [],
+    "mutex": [
+      "ms_double_jump"
+    ]
+  },
+  {
+    "id": "ms_glide",
+    "tier": 1,
+    "tag": 0,
+    "name": "悬浮缓降",
+    "desc": "空中按住 C 大幅降低下落速度；会打断二段跳",
+    "weight": 10,
+    "isMovement": true,
+    "maxStacks": 1,
+    "prereqAny": [],
+    "mutex": []
+  },
+  {
+    "id": "mv_move_speed",
+    "tier": 1,
+    "tag": 0,
+    "name": "移速 +15%",
+    "desc": "地面移动速度 +15%",
+    "weight": 10,
+    "isMovement": false,
+    "maxStacks": 3,
+    "prereqAny": [],
+    "mutex": []
+  },
+  {
+    "id": "lt_aura_10",
+    "tier": 1,
+    "tag": 1,
+    "name": "光圈 +10%",
+    "desc": "打火机光照半径 +10%",
+    "weight": 10,
+    "isMovement": false,
+    "maxStacks": 3,
+    "prereqAny": [],
+    "mutex": []
+  },
+  {
+    "id": "lt_cost_10",
+    "tier": 1,
+    "tag": 1,
+    "name": "能耗 −10%",
+    "desc": "打火机能耗 17%→15.3%/s",
+    "weight": 10,
+    "isMovement": false,
+    "maxStacks": 3,
+    "prereqAny": [],
+    "mutex": []
+  },
+  {
+    "id": "lt_pulse",
+    "tier": 1,
+    "tag": 1,
+    "name": "全图脉冲",
+    "desc": "每 15s 一次全屏微光脉冲(0.5s)；光圈范围永久 −70%",
+    "weight": 8,
+    "isMovement": false,
+    "maxStacks": 1,
+    "prereqAny": [],
+    "mutex": []
+  },
+  {
+    "id": "ec_energy_cap",
+    "tier": 1,
+    "tag": 3,
+    "name": "能量上限 +15%",
+    "desc": "打火机能量上限 +15%；可无限叠加",
+    "weight": 10,
+    "isMovement": false,
+    "maxStacks": 0,
+    "prereqAny": [],
+    "mutex": []
+  },
+  {
+    "id": "mo_mosquito_repel",
+    "tier": 1,
+    "tag": 4,
+    "name": "蚊子驱避",
+    "desc": "蚊子感知半径 −30%",
+    "weight": 10,
+    "isMovement": false,
+    "maxStacks": 3,
+    "prereqAny": [],
+    "mutex": []
+  },
+  {
+    "id": "ms_air_dash",
+    "tier": 2,
+    "tag": 0,
+    "name": "空中冲刺",
+    "desc": "空中按 Shift 横向冲刺(按一下触发)；附着墙时也可用；若持有二段跳，冲刺后二段跳被打断",
+    "weight": 10,
+    "isMovement": true,
+    "maxStacks": 1,
+    "prereqAny": [],
+    "mutex": []
+  },
+  {
+    "id": "ms_wall_jump",
+    "tier": 2,
+    "tag": 0,
+    "name": "附着墙跳跃",
+    "desc": "附着墙时可再跳一次",
+    "weight": 10,
+    "isMovement": true,
+    "maxStacks": 1,
+    "prereqAny": [
+      "ms_wall_cling"
+    ],
+    "mutex": []
+  },
+  {
+    "id": "ms_dash_keep_jump",
+    "tier": 2,
+    "tag": 0,
+    "name": "冲刺不断跳",
+    "desc": "空中冲刺不再打断二段跳",
+    "weight": 10,
+    "isMovement": true,
+    "maxStacks": 1,
+    "prereqAny": [
+      "ms_double_jump",
+      "ms_wall_cling"
+    ],
+    "mutex": []
+  },
+  {
+    "id": "ms_dash_cancel",
+    "tier": 2,
+    "tag": 0,
+    "name": "冲刺可中断",
+    "desc": "冲刺中途再按一次 Shift 停止冲刺",
+    "weight": 10,
+    "isMovement": true,
+    "maxStacks": 1,
+    "prereqAny": [],
+    "mutex": []
+  },
+  {
+    "id": "ms_glide_plus",
+    "tier": 2,
+    "tag": 0,
+    "name": "缓降增强",
+    "desc": "悬浮缓降速度再 −15%",
+    "weight": 10,
+    "isMovement": true,
+    "maxStacks": 1,
+    "prereqAny": [
+      "ms_glide"
+    ],
+    "mutex": []
+  },
+  {
+    "id": "lt_pulse_cd_half",
+    "tier": 2,
+    "tag": 1,
+    "name": "脉冲冷却 −0.5s",
+    "desc": "全图脉冲冷却 −0.5s；可重复选取",
+    "weight": 10,
+    "isMovement": false,
+    "maxStacks": 2,
+    "prereqAny": [
+      "lt_pulse"
+    ],
+    "mutex": []
+  },
+  {
+    "id": "ec_regen",
+    "tier": 2,
+    "tag": 3,
+    "name": "被动回能",
+    "desc": "每秒回复 0.5% 能量；可无限叠加",
+    "weight": 10,
+    "isMovement": false,
+    "maxStacks": 0,
+    "prereqAny": [],
+    "mutex": []
+  },
+  {
+    "id": "sv_spike_warn",
+    "tier": 2,
+    "tag": 2,
+    "name": "地刺预警",
+    "desc": "黑暗中地刺发出微弱红色脉动",
+    "weight": 10,
+    "isMovement": false,
+    "maxStacks": 3,
+    "prereqAny": [],
+    "mutex": []
+  },
+  {
+    "id": "mo_shadow_sense",
+    "tier": 2,
+    "tag": 4,
+    "name": "暗影感知",
+    "desc": "暗影靠近时屏幕边缘泛红警示",
+    "weight": 10,
+    "isMovement": false,
+    "maxStacks": 3,
+    "prereqAny": [],
+    "mutex": []
+  },
+  {
+    "id": "ms_dash_invuln",
+    "tier": 3,
+    "tag": 0,
+    "name": "冲刺无敌",
+    "desc": "空中冲刺期间保持无敌状态",
+    "weight": 10,
+    "isMovement": true,
+    "maxStacks": 1,
+    "prereqAny": [
+      "ms_air_dash"
+    ],
+    "mutex": []
+  },
+  {
+    "id": "lt_aura_30",
+    "tier": 3,
+    "tag": 1,
+    "name": "光圈 +30%",
+    "desc": "光照半径 +30%(与光圈 +10% 叠加)",
+    "weight": 10,
+    "isMovement": false,
+    "maxStacks": 3,
+    "prereqAny": [],
+    "mutex": []
+  },
+  {
+    "id": "lt_cost_30",
+    "tier": 3,
+    "tag": 1,
+    "name": "能耗 −30%",
+    "desc": "能耗 −30%(与能耗 −10% 叠加)",
+    "weight": 10,
+    "isMovement": false,
+    "maxStacks": 3,
+    "prereqAny": [],
+    "mutex": []
+  },
+  {
+    "id": "lt_pulse_cd_3",
+    "tier": 3,
+    "tag": 1,
+    "name": "脉冲冷却 −3s",
+    "desc": "全图脉冲冷却 −3s(最短冷却 ≥ 3s)",
+    "weight": 10,
+    "isMovement": false,
+    "maxStacks": 1,
+    "prereqAny": [
+      "lt_pulse"
+    ],
+    "mutex": []
+  },
+  {
+    "id": "sv_revive",
+    "tier": 3,
+    "tag": 2,
+    "name": "复活一次",
+    "desc": "死亡后原地复活，保留当前能量",
+    "weight": 10,
+    "isMovement": false,
+    "maxStacks": 1,
+    "prereqAny": [],
+    "mutex": []
+  },
+  {
+    "id": "sv_invuln_ext",
+    "tier": 3,
+    "tag": 2,
+    "name": "无敌延长",
+    "desc": "复活无敌时间 2s → 4s",
+    "weight": 10,
+    "isMovement": false,
+    "maxStacks": 1,
+    "prereqAny": [
+      "sv_revive"
+    ],
+    "mutex": []
+  },
+  {
+    "id": "mo_light_burst",
+    "tier": 3,
+    "tag": 4,
+    "name": "光爆震退",
+    "desc": "点亮打火机瞬间震退周围怪物(冷却 8s)",
+    "weight": 10,
+    "isMovement": false,
+    "maxStacks": 1,
+    "prereqAny": [
+      "mo_mosquito_repel",
+      "mo_shadow_sense"
+    ],
+    "mutex": []
+  },
+  {
+    "id": "mo_shadow_repel_aura",
+    "tier": 3,
+    "tag": 4,
+    "name": "暗影退散光环",
+    "desc": "玩家周围 80px 暗影自动退避(即使关灯)",
+    "weight": 10,
+    "isMovement": false,
+    "maxStacks": 1,
+    "prereqAny": [
+      "mo_shadow_sense"
+    ],
+    "mutex": []
+  }
+]

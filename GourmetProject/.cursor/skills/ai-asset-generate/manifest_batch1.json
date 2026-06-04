@@ -1,0 +1,31 @@
+{
+  "stylePrefix": "monochrome grayscale, Limbo video game art style, high contrast black silhouette, cinematic atmosphere, ultra-detailed texture, film grain, 4k quality, sharp defined edges, photorealistic rendering, no pixel art, no flat vector, no cartoon, no bright color, no text, no watermark, no signature",
+  "assets": [
+    {
+      "name": "bg_sky",
+      "type": "background",
+      "prompt": "A vast empty sky shrouded in thick atmospheric fog and mist. A barely visible pale moon hidden behind multiple layers of haze, subtle radial light gradient emanating from behind the fog near the upper center. Dark charcoal grey at the very top gradually fading into pale silvery white mist near the lower edge. No ground visible, no trees, no stars. Soft volumetric light rays faintly penetrating the fog from above. The fog itself has subtle wispy texture and uneven density, creating a sense of infinite depth and melancholy"
+    },
+    {
+      "name": "bg_far_mountains",
+      "type": "background",
+      "prompt": "A distant mountain range barely visible through dense morning fog. Multiple layers of mountain peaks receding into the mist with strong atmospheric perspective. The closest peaks are medium grey silhouettes with subtle rocky texture and jagged ridgelines. Each successive range becomes lighter and more obscured by fog until the farthest peaks dissolve completely into pale mist. No trees, no foreground elements. Realistic geological shapes — sharp granite peaks, weathered ridgelines. Mist swirling between the valleys"
+    },
+    {
+      "name": "bg_mid_forest",
+      "type": "background",
+      "prompt": "A midground forest of dead bare trees stretching across a misty landscape. Tall skeletal oak and birch trees with twisted gnarled branches reaching upward like dark veins. Each tree has detailed bark texture — rough cracked peeling surface. The branches fork and twist naturally, some broken and hanging. Multiple trees overlapping at various distances, farther ones fading into fog. No leaves. The ground is not visible — only tree tops emerge from dense ground fog below. Uneven spacing creates natural gaps and clusters"
+    },
+    {
+      "name": "bg_near_trees",
+      "type": "background",
+      "prompt": "Foreground dark silhouettes of massive dead pine and oak trees framing the scene. Thick black silhouettes against misty background with extremely detailed branch structure — individual twigs, broken branch stubs, rough bark texture visible. Some branches cross over each other creating intricate negative space patterns. Ancient monumental trees with wide trunks showing detailed bark fissures and moss-like texture. A few bent windswept trees leaning at dramatic angles. Lowest portions fade into thick ground fog. These are the closest background elements before gameplay layer"
+    },
+    {
+      "name": "player_idle",
+      "type": "character",
+      "prompt": "A young boy in pure black silhouette against white background, approximately 1:2 tall proportion, standing in a neutral pose facing right. Detailed clean silhouette showing subtle shape of short messy hair with individual strand suggestions, a thin hoodie with realistic fabric folds at elbows and waist, slim trousers with subtle wrinkle contours, simple shoes with visible sole texture. No internal facial features except faint glowing white eyes. Natural edge quality — not perfectly smooth, suggesting fabric texture and hair strands at the contour. Full body from head to toe. Game character sprite",
+      "size": "1024x1536"
+    }
+  ]
+}

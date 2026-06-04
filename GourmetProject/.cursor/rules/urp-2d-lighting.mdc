@@ -1,0 +1,21 @@
+---
+description: URP 2D Light2D 关键坑：程序集 GUID 引用、运行时排序层、Lit/Unlit 材质
+globs: Assets/GameMain/Scripts/Game/Platformer/**/*.cs
+alwaysApply: false
+---
+
+# URP 2D 光照（Light2D）注意事项
+
+本项目光照走 URP 2D Renderer（`Assets/Settings/Renderer2D.asset`，已在 QualitySettings 生效）。
+
+## Light2D 在独立程序集
+- `Light2D` 类位于 `Unity.RenderPipelines.Universal.2D.Runtime`（**不是**主 URP runtime），但命名空间同为 `UnityEngine.Rendering.Universal`，所以 `using` 不会报错、只在用到类型时报 CS0246。
+- `GourmetProject.Game.asmdef` 已用 GUID 引用该 2D 程序集（`GUID:516a5277b8c3b4f4c8cc86b77b1591ff`）。新增依赖 URP 2D 的程序集也要加这个引用。
+
+## 运行时创建 Light2D 的两个坑
+1. **排序层**：运行时 `AddComponent<Light2D>()` 不触发编辑器 `Reset`，`m_ApplyToSortingLayers` 为空 → 光不照亮任何精灵。必须反射补齐（见 `LightingSystem.ApplyAllSortingLayers`），统一走 `LightingSystem.CreateLight/CreatePointLight`。
+2. **材质**：默认 `Sprites/Default` 不受 2D 光影响。受光精灵（地形/玩家/怪物本体）用 `WorldRender.LitMaterial`（`Universal Render Pipeline/2D/Sprite-Lit-Default`）。
+
+## Lit vs Unlit
+- 需被黑暗笼罩、靠光照亮的 → `WorldRender.Create/CreateTiled`（Lit）。
+- 需在黑暗中**始终可见**的指示物（迷雾红/蓝光点、无敌环、HUD）→ `WorldRender.CreateUnlit` 或屏幕 Overlay Canvas。

@@ -1,0 +1,57 @@
+{
+  "stylePrefix": "monochrome grayscale, Limbo video game art style, high contrast black silhouette, ultra-detailed stone texture, film grain, 4k quality, sharp defined edges, photorealistic rendering, no pixel art, no flat vector, no cartoon, no bright color, no text, no watermark, no signature",
+  "assets": [
+    {
+      "name": "platform_tile",
+      "type": "item",
+      "prompt": "A weathered floating stone platform block seen from the side view. Pure black silhouette against white background with richly detailed rough jagged edges. Top surface shows irregular wear — small chips, deep cracks, pitting from erosion. Sides have rough quarried stone texture with irregular facets and fissures. Not a perfect rectangle — irregular worn corners. Bottom edge slightly uneven. Ancient weathered masonry. Game terrain tile.",
+      "transparent": true
+    },
+    {
+      "name": "wall_tile",
+      "type": "item",
+      "prompt": "Vertical stone wall block seen from the front. Pure black silhouette against white background with detailed surface texture. Natural stratification lines, small cracks, rough chisel marks, subtle unevenness across the face. Slightly irregular vertical edges with worn corners. Ancient weathered masonry with centuries of wear. Game wall tile.",
+      "transparent": true
+    },
+    {
+      "name": "slope_left",
+      "type": "item",
+      "prompt": "A slanted stone slope ascending diagonally to the left. Pure black silhouette against white background with jagged weathered surface. The diagonal edge is rough and irregular like natural rock formation. Subtle horizontal strata lines visible along the slope face. Angular and natural looking. Isolated game terrain sprite.",
+      "size": "1536x1024",
+      "transparent": true
+    },
+    {
+      "name": "slope_right",
+      "type": "item",
+      "prompt": "A slanted stone slope ascending diagonally to the right. Pure black silhouette against white background with jagged weathered surface. The diagonal edge is rough and irregular like natural rock formation. Subtle horizontal strata lines visible along the slope face. Angular and natural looking. Isolated game terrain sprite.",
+      "size": "1536x1024",
+      "transparent": true
+    },
+    {
+      "name": "spikes",
+      "type": "item",
+      "prompt": "A row of menacing sharp spikes protruding upward from a stone base. Pure black silhouette against white background. Each spike is a thin needle-sharp shape with subtle irregularity — some slightly bent, others with tiny barbs or chips at the tip. Spikes vary subtly in height and angle for organic natural feel. Base is rough cracked stone. Dangerous deadly trap hazard. Isolated game sprite.",
+      "size": "1536x1024",
+      "transparent": true
+    },
+    {
+      "name": "checkpoint_inactive",
+      "type": "item",
+      "prompt": "An ancient stone lantern pillar dormant and unlit. Pure black silhouette against white background. Carved stone column with subtle ornamental details — faded runic patterns etched into the surface, weathered edges, small cracks throughout. A lantern chamber sits atop the pillar, dark and empty inside. Stone has visible age: dark moss-like texture patches, erosion marks, chipped corners. Mysterious archaeological artifact. Dark and foreboding. Isolated game sprite.",
+      "transparent": true
+    },
+    {
+      "name": "checkpoint_active",
+      "type": "item",
+      "prompt": "An ancient stone lantern pillar now glowing with faint ethereal light from within its chamber. The stone silhouette remains dark but the lantern chamber emits a soft diffused pale glow that bleeds slightly beyond the edges, creating subtle rim light on the pillar contours. The glow is gentle and mysterious. Supernatural awakening. Hope in darkness. Isolated game sprite.",
+      "transparent": true
+    },
+    {
+      "name": "checkpoint_endpoint",
+      "type": "item",
+      "prompt": "A tall imposing lighthouse tower in pure black silhouette against white background. Tower is slightly tapered wider at the base with subtle architectural details — a narrow window slit partway up, small balcony railing near the top, lantern room at the very top crowned with a domed roof. Stone texture shows vertical masonry lines and weather wear. At the very top a faint warm glow emanates from the lantern room. Monumental beacon in darkness. Isolated game sprite.",
+      "size": "1024x1536",
+      "transparent": true
+    }
+  ]
+}

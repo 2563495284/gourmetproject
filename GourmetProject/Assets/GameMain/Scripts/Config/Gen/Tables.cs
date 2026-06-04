@@ -15,16 +15,19 @@ namespace cfg
 public partial class Tables
 {
     public TbGlobalConst TbGlobalConst {get; }
+    public TbSkill TbSkill {get; }
 
     public Tables(System.Func<string, JSONNode> loader)
     {
         TbGlobalConst = new TbGlobalConst(loader("tbglobalconst"));
+        TbSkill = new TbSkill(loader("tbskill"));
         ResolveRef();
     }
     
     private void ResolveRef()
     {
         TbGlobalConst.ResolveRef(this);
+        TbSkill.ResolveRef(this);
     }
 }
 

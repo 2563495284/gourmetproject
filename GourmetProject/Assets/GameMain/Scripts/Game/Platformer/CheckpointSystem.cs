@@ -65,6 +65,39 @@ namespace GourmetProject.Game.Platformer
             }
         }
 
+        /// <summary>
+        /// 继续游戏：预先激活前 <paramref name="count"/> 个普通检查点（恢复视觉与重生点），
+        /// 返回最后一个被激活检查点的重生坐标（无则返回起点）。
+        /// </summary>
+        public Vector2 PreActivate(int count)
+        {
+            int done = 0;
+            for (int i = 0; i < _cps.Count && done < count; i++)
+            {
+                Cp cp = _cps[i];
+                if (cp.Data.IsEndpoint || cp.Activated) continue;
+
+                cp.Activated = true;
+                RespawnPoint = cp.RespawnBottomLeft;
+                ApplyActivatedVisual(cp);
+                done++;
+            }
+
+            return RespawnPoint;
+        }
+
+        private static void ApplyActivatedVisual(Cp cp)
+        {
+            cp.Renderer.sprite = Art.Load(Art.CheckpointActive);
+            if (cp.Light != null)
+            {
+                cp.Light.color = GreenGlow;
+                cp.Light.pointLightOuterRadius = GameConst.CheckpointActiveRadius;
+                cp.Light.pointLightInnerRadius = GameConst.CheckpointActiveRadius * 0.2f;
+                cp.Light.intensity = 1.0f;
+            }
+        }
+
         public void Tick(Vector2 playerCenter)
         {
             for (int i = 0; i < _cps.Count; i++)
@@ -86,14 +119,10 @@ namespace GourmetProject.Game.Platformer
                 {
                     cp.Activated = true;
                     RespawnPoint = cp.RespawnBottomLeft;
-                    cp.Renderer.sprite = Art.Load(Art.CheckpointActive);
-                    if (cp.Light != null)
-                    {
-                        cp.Light.color = GreenGlow;
-                        cp.Light.pointLightOuterRadius = GameConst.CheckpointActiveRadius;
-                        cp.Light.pointLightInnerRadius = GameConst.CheckpointActiveRadius * 0.2f;
-                        cp.Light.intensity = 1.0f;
-                    }
+                    ApplyActivatedVisual(cp);
+
+                    // 首次激活普通检查点 → 暂停对局并弹出 3 选 1 技能选择。
+                    _world.OnCheckpointActivated();
                 }
             }
         }

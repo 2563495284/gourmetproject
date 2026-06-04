@@ -51,6 +51,9 @@ namespace GourmetProject.Game.Platformer
             _vision.pointLightOuterRadius = GameConst.DefaultVisionRadius;
             _vision.pointLightInnerRadius = GameConst.DefaultVisionRadius * 0.25f;
             _vision.falloffIntensity = 0.6f;
+            // 真实遮挡：默认视野投射较弱阴影（地形背后变暗）。
+            _vision.shadowsEnabled = true;
+            _vision.shadowIntensity = 0.5f;
 
             _lighter = CreateLight("LighterLight", Light2D.LightType.Point, player);
             _lighter.color = WarmLighter;
@@ -58,6 +61,9 @@ namespace GourmetProject.Game.Platformer
             _lighter.pointLightOuterRadius = GameConst.LighterBaseRadius;
             _lighter.pointLightInnerRadius = GameConst.LighterBaseRadius * 0.2f;
             _lighter.falloffIntensity = 0.55f;
+            // 真实遮挡：打火机投射明显阴影（地形/墙体背后形成暗区）。
+            _lighter.shadowsEnabled = true;
+            _lighter.shadowIntensity = 0.75f;
             _lighter.enabled = false;
         }
 
@@ -65,10 +71,21 @@ namespace GourmetProject.Game.Platformer
         {
             if (_energy == null) return;
 
+            // 视野遮挡（飞蛾贴附 / 萤火群光团）：收缩视野与打火机光圈，但不归零。
+            float occ = GameWorld.Current != null ? GameWorld.Current.VisionOcclusion : 0f;
+            float occMul = 1f - occ * 0.8f;
+
+            if (_vision != null)
+            {
+                float vr = GameConst.DefaultVisionRadius * occMul;
+                _vision.pointLightOuterRadius = vr;
+                _vision.pointLightInnerRadius = vr * 0.25f;
+            }
+
             if (_energy.LighterOn)
             {
                 if (!_lighter.enabled) _lighter.enabled = true;
-                float baseR = _energy.LighterRadius;
+                float baseR = _energy.LighterRadius * occMul;
                 // 火焰闪烁：正弦低频 + 随机高频抖动，半径波动 ±5%。
                 float t = Time.time;
                 float flicker = 1f

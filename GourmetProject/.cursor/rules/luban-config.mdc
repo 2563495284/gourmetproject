@@ -6,14 +6,24 @@ alwaysApply: false
 
 # Luban 配置
 
-配置源在 `GameConfig/`，用纯文本（XML schema + JSON 数据），便于版本管理；不使用 xlsx。
+配置源在 `GameConfig/`：schema 用 XML（`Defines/*.xml`），数据用 **xlsx 表格**（`Datas/*.xlsx`），方便策划用 Excel 直接编辑。
+
+## xlsx 表格式（策划填表约定）
+- **第 1 列是「标记列」，字段从第 2 列(B)开始**；数据行的第 1 列留空。
+- 第 1 行：`##var` + 各字段名（必须与 `<bean>` 的 `<var name>` 同名）。
+- 第 2 行：`##comment` + 中文列说明（可选，以 `##` 开头会被忽略，同时作为生成代码里的字段注释）。
+- 第 3 行起：数据行。
+- 注释规则：数据行第 1 列以 `##` 开头则整行被忽略；标题行某列字段名为空或以 `#`/`_` 开头则整列被忽略。
+- 取值：枚举字段填枚举名（如 `Move`/`Light`）；`bool` 填 `true`/`false`；空值留空单元格。
+- 列表/数组：在 schema 的 `type` 上用 `(list#sep=,),T` 指定分隔符（例：`(list#sep=,),string`），单元格内用逗号分隔多个值，空列表留空。
+- sheet 名任意，但不要以 `#` 开头；有效单元薄要求 A1 单元格为 `##var`/`##`（标记列起始）。
 
 ## 新增一张表
-1. 在 `GameConfig/Defines/*.xml` 定义 `<bean>` 与 `<table>`。数组数据用 `*@` 选择器：
+1. 在 `GameConfig/Defines/*.xml` 定义 `<bean>` 与 `<table>`，`input` 指向 xlsx：
    ```xml
-   <table name="TbXxx" value="Xxx" index="id" input="*@xxx.json"/>
+   <table name="TbXxx" value="Xxx" index="id" input="xxx.xlsx"/>
    ```
-2. 在 `GameConfig/Datas/xxx.json` 放数据（JSON 数组）。
+2. 在 `GameConfig/Datas/xxx.xlsx` 按上面的 xlsx 格式建表填数据。
 3. 生成：
    ```bash
    bash GameConfig/gen.sh
@@ -21,7 +31,7 @@ alwaysApply: false
 
 ## 输出位置（勿手改）
 - 代码 → `Assets/GameMain/Scripts/Config/Gen/`（每次生成会被清空重写）。
-- 数据 → `Assets/StreamingAssets/Config/`（运行时按表名小写 `.json` 读取）。
+- 数据 → `Assets/StreamingAssets/Config/`（Luban 把 xlsx 转成表名小写 `.json`，运行时按 JSON 读取）。
 
 ## 运行时加载
 - 统一走 `GameApp.Config`（`ConfigService`）。访问示例：`GameApp.Config.Tables.TbXxx.Get(id)`。
@@ -29,3 +39,4 @@ alwaysApply: false
 
 ## 红线
 - 不要在 `Config/Gen/` 放手写代码（会丢失）；手写的加载/包装放 `Config/` 根目录。
+- xlsx 是二进制，改表后务必跑 `bash GameConfig/gen.sh`，并连同生成的 `Config/Gen/*.cs` 与 `StreamingAssets/Config/*.json` 一起提交。

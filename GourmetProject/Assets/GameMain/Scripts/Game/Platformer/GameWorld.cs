@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
+using GourmetProject.Game.Platformer.Chunks;
 using GourmetProject.Game.Platformer.Monsters;
+using GourmetProject.Game.Roguelike;
 using UnityEngine;
 
 namespace GourmetProject.Game.Platformer
@@ -18,24 +20,40 @@ namespace GourmetProject.Game.Platformer
         public CheckpointSystem Checkpoints { get; private set; }
         public EnergySystem Energy { get; private set; } = new EnergySystem();
 
-        public List<AABB> Solids => _level.Solids;
-        public List<SlopeData> Slopes => _level.Slopes;
         public float FallDeathY => _level.FallDeathY;
 
         public bool ControlEnabled { get; private set; } = true;
         public bool IsDead { get; private set; }
         public bool IsVictory { get; private set; }
+
+        /// <summary>对局是否因技能选择等弹窗而暂停（暂停时跳过玩家/怪物/检查点更新）。</summary>
+        public bool IsPaused { get; private set; }
+
+        /// <summary>当前 build 的技能运行时视图（供玩家/光照/怪物按语义查询）。</summary>
+        public SkillRuntimeState Skills => _skills?.Runtime;
         public float InvincibleRemaining { get; private set; }
         public bool IsInvincible => InvincibleRemaining > 0f;
 
         public float EnergyFraction => Energy.Fraction;
         public float Progress { get; private set; }
+
+        /// <summary>本局达到过的最高进度（0..1），用于局外成长结算。</summary>
+        public float MaxProgress { get; private set; }
+
+        /// <summary>本帧视野遮挡强度（0..1）：飞蛾贴附 / 萤火群光团遮盖玩家光圈，由怪物累加，光照系统消费。</summary>
+        public float VisionOcclusion { get; private set; }
+        private float _visionOcclusionAccum;
+
+        /// <summary>怪物施加视野遮挡（取累加，本帧上限钳制）。</summary>
+        public void AddVisionOcclusion(float strength) => _visionOcclusionAccum += Mathf.Max(0f, strength);
         public Vector2 DebugPos => Player != null ? Player.Center : Vector2.zero;
         public Vector2 DebugVel => Player != null ? Player.Velocity : Vector2.zero;
         public float DebugLightRadius => Energy.LighterOn ? Energy.LighterRadius : GameConst.DefaultVisionRadius;
 
         private LevelData _level;
         private MonsterManager _monsters;
+        private RunSkillController _skills;
+        private ParallaxBackground _background;
         private Camera _cam;
         private SpriteRenderer _playerRenderer;
         private SpriteRenderer _invRing;
@@ -45,6 +63,7 @@ namespace GourmetProject.Game.Platformer
         private float _endY;
         private float _shake;
         private DeathCause _lastCause;
+        private LayerMask _spikeMask;
 
         private void Awake()
         {
@@ -63,14 +82,23 @@ namespace GourmetProject.Game.Platformer
 
         private void BuildWorld()
         {
-            // —— 关卡数据 + 可见体 ——
-            _level = LevelGenerator.Generate();
-            LevelBuilder.Build(_level, transform);
+            // —— 局外成长：注入初始能量上限加成（设计文档 13.10）——
+            Energy.SetMaxBonus(MetaProfile.Current.EnergyCapBonus);
+
+            // —— 关卡：预制段拼接（地形/碰撞/怪物/检查点直接来自预制段）——
+            _spikeMask = LayerMask.GetMask(WorldRender.LayerSpike);
+            _level = LevelAssembler.Assemble(transform);
+            // 预制段刚实例化，立即同步物理变换，保证玩家首帧 BoxCast 读到地形碰撞体。
+            Physics2D.SyncTransforms();
             _startY = _level.StartPos.y;
             _endY = _level.Checkpoints.Count > 0 ? _level.Checkpoints[_level.Checkpoints.Count - 1].Pos.y : _level.WorldHeight;
 
             // —— 相机 ——
             SetupCamera();
+
+            // —— 远景背景（分层，纵向固定）——
+            _background = new ParallaxBackground();
+            _background.Build(transform, _cam, _level);
 
             // —— 光照 ——
             Lighting = gameObject.AddComponent<LightingSystem>();
@@ -104,6 +132,20 @@ namespace GourmetProject.Game.Platformer
             // —— HUD ——
             gameObject.AddComponent<GameplayHud>().Init(this);
 
+            // —— 肉鸽技能（图鉴 + 本局状态）——
+            _skills = new RunSkillController();
+            if (RunSession.HasPendingLoad)
+            {
+                _skills.RestoreFrom(RunSession.PendingLoad);
+                int activated = _skills.ActivatedCheckpointCount;
+                if (activated > 0)
+                {
+                    Vector2 respawn = Checkpoints.PreActivate(activated);
+                    Player.SetPosition(respawn);
+                }
+                RunSession.Clear();
+            }
+
             SnapCameraToPlayer();
         }
 
@@ -135,6 +177,9 @@ namespace GourmetProject.Game.Platformer
             float dt = Time.deltaTime;
             if (dt <= 0f) return;
 
+            // 技能选择等弹窗期间冻结对局（UI 仍可交互）。
+            if (IsPaused) return;
+
             if (GameInput.RevealTogglePressed)
             {
                 Lighting.RevealAll = !Lighting.RevealAll;
@@ -147,9 +192,11 @@ namespace GourmetProject.Game.Platformer
             // 玩家物理。
             if (Player != null) Player.Tick();
 
-            // 怪物。
+            // 怪物（先清空本帧视野遮挡累加，怪物 Behave 内按需累加）。
+            _visionOcclusionAccum = 0f;
             float visionRadius = Energy.LighterOn ? Energy.LighterRadius : GameConst.DefaultVisionRadius;
             _monsters.Tick(dt, Player.Center, Energy.LighterOn, visionRadius);
+            VisionOcclusion = Mathf.Clamp01(_visionOcclusionAccum);
 
             // 检查点 / 终点。
             if (ControlEnabled) Checkpoints.Tick(Player.Center);
@@ -158,6 +205,7 @@ namespace GourmetProject.Game.Platformer
             if (_endY > _startY)
             {
                 Progress = Mathf.Clamp01((Player.Center.y - _startY) / (_endY - _startY));
+                if (Progress > MaxProgress) MaxProgress = Progress;
             }
 
             // 无敌计时 + 闪烁。
@@ -185,8 +233,10 @@ namespace GourmetProject.Game.Platformer
 
             float aspect = _cam.aspect;
             float halfW = _cam.orthographicSize * aspect;
-            float targetX = Mathf.Clamp(Player.Center.x, halfW, GameConst.WorldWidth - halfW);
-            if (GameConst.WorldWidth < halfW * 2f) targetX = GameConst.WorldWidth * 0.5f;
+            float minX = _level.WorldMinX;
+            float maxX = _level.WorldMaxX;
+            float targetX = Mathf.Clamp(Player.Center.x, minX + halfW, maxX - halfW);
+            if (maxX - minX < halfW * 2f) targetX = (minX + maxX) * 0.5f;
             float targetY = Player.Center.y + GameConst.Px(40f);
 
             Vector3 cur = _cam.transform.position;
@@ -198,6 +248,9 @@ namespace GourmetProject.Game.Platformer
                 : Vector2.zero;
 
             _cam.transform.position = new Vector3(follow.x + shakeOff.x, follow.y + shakeOff.y, -10f);
+
+            // 远景背景：仅水平视差，纵向不跟随
+            _background?.Tick(_cam.transform.position);
         }
 
         private void SnapCameraToPlayer()
@@ -205,7 +258,10 @@ namespace GourmetProject.Game.Platformer
             if (_cam == null || Player == null) return;
             float aspect = _cam.aspect;
             float halfW = _cam.orthographicSize * aspect;
-            float targetX = Mathf.Clamp(Player.Center.x, halfW, GameConst.WorldWidth - halfW);
+            float minX = _level.WorldMinX;
+            float maxX = _level.WorldMaxX;
+            float targetX = Mathf.Clamp(Player.Center.x, minX + halfW, maxX - halfW);
+            if (maxX - minX < halfW * 2f) targetX = (minX + maxX) * 0.5f;
             _cam.transform.position = new Vector3(targetX, Player.Center.y + GameConst.Px(40f), -10f);
         }
 
@@ -213,16 +269,30 @@ namespace GourmetProject.Game.Platformer
 
         public bool OverlapsSpike(in AABB box)
         {
-            for (int i = 0; i < _level.Spikes.Count; i++)
-            {
-                if (box.Overlaps(_level.Spikes[i])) return true;
-            }
-            return false;
+            // 地刺为 Spike 层触发体，用物理重叠查询（略收缩避免贴边误判）。
+            var center = new Vector2(box.MinX + box.Width * 0.5f, box.MinY + box.Height * 0.5f);
+            var size = new Vector2(Mathf.Max(0.01f, box.Width - 0.1f), Mathf.Max(0.01f, box.Height - 0.1f));
+            return Physics2D.OverlapBox(center, size, 0f, _spikeMask) != null;
         }
 
         public void AddShake(float amount)
         {
             _shake = Mathf.Max(_shake, amount);
+        }
+
+        /// <summary>暂停/恢复对局（技能选择弹窗期间使用）。</summary>
+        public void SetPaused(bool paused)
+        {
+            IsPaused = paused;
+            ControlEnabled = !paused && !IsDead && !IsVictory;
+        }
+
+        /// <summary>由检查点系统在普通检查点首次激活时调用：暂停对局并弹出 3 选 1 技能界面。</summary>
+        public void OnCheckpointActivated()
+        {
+            if (_skills == null) return;
+            SetPaused(true);
+            _skills.BeginCheckpointDraft(() => SetPaused(false));
         }
 
         public void RequestDie(DeathCause cause)

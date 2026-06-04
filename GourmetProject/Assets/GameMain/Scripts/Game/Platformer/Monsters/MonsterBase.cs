@@ -14,8 +14,11 @@ namespace GourmetProject.Game.Platformer.Monsters
         protected SpriteRenderer Dot;
         protected Vector2 Pos;
 
-        /// <summary>true = 光吸引型（红点），false = 光驱赶型（蓝点）。</summary>
+        /// <summary>true = 光吸引型（红点），false = 光驱赶型（蓝点）。混合型按主要威胁态归类。</summary>
         public abstract bool IsAttract { get; }
+
+        /// <summary>本体精灵缩放（大型/特殊怪物可重写）。</summary>
+        protected virtual Vector2 BodyScale => Vector2.one;
 
         public virtual void Init(GameWorld world, Vector2 spawn)
         {
@@ -24,6 +27,7 @@ namespace GourmetProject.Game.Platformer.Monsters
             Pos = spawn;
 
             Body = WorldRender.Create("Body", BodySprite(), spawn, transform, 5);
+            Body.transform.localScale = new Vector3(BodyScale.x, BodyScale.y, 1f);
             SetBodyAlpha(0f);
 
             Sprite dotSprite = Art.Load(IsAttract ? Art.RedDot : Art.BlueDot);
