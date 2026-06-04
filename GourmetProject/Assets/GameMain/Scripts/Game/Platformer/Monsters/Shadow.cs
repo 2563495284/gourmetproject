@@ -16,8 +16,6 @@ namespace GourmetProject.Game.Platformer.Monsters
 
         public override bool IsAttract => false;
 
-        protected override Sprite BodySprite() => Art.Load(Art.Shadow);
-
         protected override void Behave(float dt, Vector2 playerCenter, bool lighterOn, float distToPlayer)
         {
             _phase += dt;

@@ -17,7 +17,6 @@ namespace GourmetProject.Game.Platformer.Monsters
         private float _growth;
 
         public override bool IsAttract => false;
-        protected override Sprite BodySprite() => Art.Load(Art.Vine);
 
         protected override void Behave(float dt, Vector2 playerCenter, bool lighterOn, float distToPlayer)
         {

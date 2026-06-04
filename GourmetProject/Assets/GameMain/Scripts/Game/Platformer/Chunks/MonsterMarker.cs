@@ -3,9 +3,9 @@ using UnityEngine;
 namespace GourmetProject.Game.Platformer.Chunks
 {
     /// <summary>
-    /// 怪物摆放标记（挂在预制段内的空 GameObject 上）。运行时由 <see cref="LevelAssembler"/> 读取，
-    /// 把世界坐标 + 种类写入 <see cref="LevelData.Spawns"/>，再由 MonsterManager 实例化。
-    /// 取代旧的程序化 SpawnRules：怪物直接摆在预制段里。
+    /// [已废弃] 旧版怪物摆放标记。现在怪物由设计师把 Monster_*.prefab 直接摆进预制段，
+    /// 运行时 <see cref="LevelAssembler"/> 收集 <see cref="Monsters.MonsterBase"/> 实例驱动。
+    /// 保留此类仅为兼容旧预制段引用；AnimationAuthoring 的迁移会把旧 marker 替换成 prefab 实例。
     /// </summary>
     public sealed class MonsterMarker : MonoBehaviour
     {

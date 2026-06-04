@@ -5,17 +5,14 @@ using UnityEngine.Rendering.Universal;
 namespace GourmetProject.Game.Platformer
 {
     /// <summary>
-    /// 光照视野系统（URP 2D Light2D，设计文档第四节 / 9）：
-    /// 全局极暗冷光作黑暗基底；玩家默认视野（冷蓝灰小光圈）；打火机（暖橙，能量驱动半径 + 火焰闪烁）；
-    /// 逗号键全图照亮（拉高全局光强度）。检查点光由此处工厂方法创建。
+    /// 光照视野系统（URP 2D Light2D + 屏幕战争迷雾）：
+    /// 全局月光；圈内点光（冷视野 / 暖打火机）；圆外由 <see cref="VisionFogOverlay"/> 完全遮挡。
+    /// 逗号键全图照亮时关闭迷雾并抬全局光。
     /// </summary>
     public sealed class LightingSystem : MonoBehaviour
     {
-        private static readonly Color CoolVision = new Color(80f / 255f, 110f / 255f, 160f / 255f);
+        private static readonly Color CoolVision = new Color(130f / 255f, 155f / 255f, 200f / 255f);
         private static readonly Color WarmLighter = new Color(255f / 255f, 180f / 255f, 90f / 255f);
-
-        private const float GlobalDarkIntensity = 0.05f;
-        private const float GlobalRevealIntensity = 1.0f;
 
         private Light2D _global;
         private Light2D _vision;
@@ -25,13 +22,16 @@ namespace GourmetProject.Game.Platformer
         private float _flickerSeed;
         private bool _revealAll;
 
+        private float _lighterIntensityBase = 1.25f;
+
         public bool RevealAll
         {
             get => _revealAll;
             set
             {
+                if (_revealAll == value) return;
                 _revealAll = value;
-                if (_global != null) _global.intensity = _revealAll ? GlobalRevealIntensity : GlobalDarkIntensity;
+                ApplyRevealState();
             }
         }
 
@@ -42,59 +42,98 @@ namespace GourmetProject.Game.Platformer
             _flickerSeed = Random.value * 1000f;
 
             _global = CreateLight("GlobalLight", Light2D.LightType.Global, transform);
-            _global.color = new Color(0.5f, 0.6f, 0.8f);
-            _global.intensity = GlobalDarkIntensity;
+            _global.color = GameConst.GlobalMoonColor;
+            _global.intensity = GameConst.GlobalMoonIntensity;
 
             _vision = CreateLight("VisionLight", Light2D.LightType.Point, player);
             _vision.color = CoolVision;
-            _vision.intensity = 0.9f;
+            _vision.intensity = GameConst.VisionLightIntensity;
             _vision.pointLightOuterRadius = GameConst.DefaultVisionRadius;
-            _vision.pointLightInnerRadius = GameConst.DefaultVisionRadius * 0.25f;
-            _vision.falloffIntensity = 0.6f;
-            // 真实遮挡：默认视野投射较弱阴影（地形背后变暗）。
+            ApplyPointLightFogProfile(_vision, GameConst.DefaultVisionRadius, GameConst.VisionLightInnerRatio, GameConst.VisionLightFalloff);
             _vision.shadowsEnabled = true;
-            _vision.shadowIntensity = 0.5f;
+            _vision.shadowIntensity = 0.12f;
 
             _lighter = CreateLight("LighterLight", Light2D.LightType.Point, player);
             _lighter.color = WarmLighter;
-            _lighter.intensity = 1.2f;
+            _lighter.intensity = _lighterIntensityBase;
             _lighter.pointLightOuterRadius = GameConst.LighterBaseRadius;
-            _lighter.pointLightInnerRadius = GameConst.LighterBaseRadius * 0.2f;
-            _lighter.falloffIntensity = 0.55f;
-            // 真实遮挡：打火机投射明显阴影（地形/墙体背后形成暗区）。
+            ApplyPointLightFogProfile(_lighter, GameConst.LighterBaseRadius, GameConst.LighterLightInnerRatio, GameConst.LighterLightFalloff);
             _lighter.shadowsEnabled = true;
             _lighter.shadowIntensity = 0.75f;
             _lighter.enabled = false;
+
+            ApplyRevealState();
+        }
+
+        private void ApplyRevealState()
+        {
+            if (_global != null)
+            {
+                _global.color = _revealAll ? GameConst.GlobalRevealColor : GameConst.GlobalMoonColor;
+                _global.intensity = _revealAll ? GameConst.GlobalRevealIntensity : GameConst.GlobalMoonIntensity;
+            }
+
+            if (_vision != null)
+            {
+                _vision.shadowsEnabled = !_revealAll;
+                _vision.intensity = _revealAll ? GameConst.VisionLightIntensity * 0.55f : GameConst.VisionLightIntensity;
+                _vision.falloffIntensity = _revealAll ? 0.6f : 1f;
+            }
+
+            if (_lighter != null)
+            {
+                _lighter.shadowsEnabled = !_revealAll;
+                _lighter.falloffIntensity = _revealAll ? 0.55f : 1f;
+                if (!_lighter.enabled)
+                    _lighter.intensity = _revealAll ? _lighterIntensityBase * 0.5f : _lighterIntensityBase;
+            }
         }
 
         private void LateUpdate()
         {
             if (_energy == null) return;
 
-            // 视野遮挡（飞蛾贴附 / 萤火群光团）：收缩视野与打火机光圈，但不归零。
             float occ = GameWorld.Current != null ? GameWorld.Current.VisionOcclusion : 0f;
             float occMul = 1f - occ * 0.8f;
 
+            bool lighterOn = _energy.LighterOn;
+
             if (_vision != null)
             {
-                float vr = GameConst.DefaultVisionRadius * occMul;
-                _vision.pointLightOuterRadius = vr;
-                _vision.pointLightInnerRadius = vr * 0.25f;
+                _vision.enabled = !lighterOn || _revealAll;
+                if (_vision.enabled)
+                {
+                    float vr = GameConst.DefaultVisionRadius * occMul;
+                    _vision.pointLightOuterRadius = vr;
+                    if (_revealAll)
+                        _vision.pointLightInnerRadius = vr * 0.25f;
+                    else
+                        ApplyPointLightFogProfile(_vision, vr, GameConst.VisionLightInnerRatio, GameConst.VisionLightFalloff);
+                }
             }
 
-            if (_energy.LighterOn)
+            if (lighterOn)
             {
                 if (!_lighter.enabled) _lighter.enabled = true;
+
                 float baseR = _energy.LighterRadius * occMul;
-                // 火焰闪烁：正弦低频 + 随机高频抖动，半径波动 ±5%。
                 float t = Time.time;
                 float flicker = 1f
                     + Mathf.Sin((t + _flickerSeed) * 11f) * 0.03f
                     + (Mathf.PerlinNoise((t + _flickerSeed) * 25f, 0f) - 0.5f) * 0.04f;
                 float r = Mathf.Max(0.01f, baseR * flicker);
                 _lighter.pointLightOuterRadius = r;
-                _lighter.pointLightInnerRadius = r * 0.2f;
-                _lighter.intensity = 1.2f * flicker;
+                if (_revealAll)
+                {
+                    _lighter.pointLightInnerRadius = r * 0.2f;
+                }
+                else
+                {
+                    ApplyPointLightFogProfile(_lighter, r, GameConst.LighterLightInnerRatio, GameConst.LighterLightFalloff);
+                }
+
+                float litBase = _revealAll ? _lighterIntensityBase * 0.5f : _lighterIntensityBase;
+                _lighter.intensity = litBase * flicker;
             }
             else if (_lighter.enabled)
             {
@@ -102,7 +141,13 @@ namespace GourmetProject.Game.Platformer
             }
         }
 
-        /// <summary>工厂：创建并修正目标排序层（运行时 AddComponent 不会触发 Reset，需补齐）。</summary>
+        private static void ApplyPointLightFogProfile(Light2D light, float outerRadius, float innerRatio, float falloff)
+        {
+            light.pointLightOuterRadius = outerRadius;
+            light.pointLightInnerRadius = outerRadius * innerRatio;
+            light.falloffIntensity = falloff;
+        }
+
         public Light2D CreateLight(string name, Light2D.LightType type, Transform parent)
         {
             var go = new GameObject(name);
@@ -113,7 +158,6 @@ namespace GourmetProject.Game.Platformer
             return light;
         }
 
-        /// <summary>创建跟随世界坐标的点光（检查点等用）。</summary>
         public Light2D CreatePointLight(string name, Vector2 worldPos, Color color, float radius, float intensity)
         {
             var light = CreateLight(name, Light2D.LightType.Point, transform);
@@ -141,7 +185,6 @@ namespace GourmetProject.Game.Platformer
             }
             catch
             {
-                // 反射失败时退化为默认行为，不致命。
             }
         }
     }

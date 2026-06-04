@@ -13,7 +13,6 @@ namespace GourmetProject.Game.Platformer.Monsters
         private static readonly float AttachDist = GameConst.Px(22f);
 
         public override bool IsAttract => true;
-        protected override Sprite BodySprite() => Art.Load(Art.LightEater);
 
         protected override void Behave(float dt, Vector2 playerCenter, bool lighterOn, float distToPlayer)
         {

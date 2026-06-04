@@ -16,7 +16,6 @@ namespace GourmetProject.Game.Platformer.Monsters
 
         public override bool IsAttract => true;
         protected override Vector2 BodyScale => new Vector2(0.5f, 0.5f);
-        protected override Sprite BodySprite() => Art.Load(Art.Firefly);
 
         protected override void Behave(float dt, Vector2 playerCenter, bool lighterOn, float distToPlayer)
         {

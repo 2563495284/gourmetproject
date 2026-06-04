@@ -54,6 +54,7 @@ namespace GourmetProject.Game.Platformer
         private MonsterManager _monsters;
         private RunSkillController _skills;
         private ParallaxBackground _background;
+        private VisionFogOverlay _fogOverlay;
         private Camera _cam;
         private SpriteRenderer _playerRenderer;
         private SpriteRenderer _invRing;
@@ -96,24 +97,23 @@ namespace GourmetProject.Game.Platformer
             // —— 相机 ——
             SetupCamera();
 
-            // —— 远景背景（分层，纵向固定）——
-            _background = new ParallaxBackground();
-            _background.Build(transform, _cam, _level);
+            // —— 远景背景（分层，纵向固定；Unlit 月光雾）——
+            // _background = new ParallaxBackground();
+            // _background.Build(transform, _cam, _level);
 
             // —— 光照 ——
             Lighting = gameObject.AddComponent<LightingSystem>();
 
-            // —— 玩家 ——
-            var playerGo = new GameObject("Player");
-            playerGo.transform.SetParent(transform, false);
-            _playerRenderer = playerGo.AddComponent<SpriteRenderer>();
-            _playerRenderer.sprite = Art.Load(Art.PlayerIdle);
-            _playerRenderer.sharedMaterial = WorldRender.LitMaterial;
-            _playerRenderer.sortingOrder = 10;
-            playerGo.transform.localScale = Vector3.one;
-            Player = playerGo.AddComponent<PlayerController>();
+            // —— 玩家（Player.prefab：SpriteRenderer + Animator + 物理 + 控制器）——
+            GameObject playerGo = InstantiatePlayer();
+            _playerRenderer = playerGo.GetComponent<SpriteRenderer>();
+            Player = playerGo.GetComponent<PlayerController>();
             Player.Init(this, _level.StartPos);
-            playerGo.AddComponent<PlayerAnimator>().Init(_playerRenderer, Player, Energy);
+            var playerAnimator = playerGo.GetComponent<PlayerAnimator>();
+            if (playerAnimator != null)
+            {
+                playerAnimator.Init(playerGo.GetComponent<Animator>(), Player, Energy);
+            }
 
             // 无敌环（不受光照，始终可见），默认隐藏。
             _invRing = WorldRender.CreateUnlit("InvRing", Art.Load(Art.InvincibilityRing), Vector2.zero, playerGo.transform, 40);
@@ -125,9 +125,9 @@ namespace GourmetProject.Game.Platformer
             Checkpoints = gameObject.AddComponent<CheckpointSystem>();
             Checkpoints.Build(this, Lighting, _level);
 
-            // —— 怪物 ——
+            // —— 怪物（设计师摆进 chunk，拼接时已收集为实例）——
             _monsters = gameObject.AddComponent<MonsterManager>();
-            _monsters.Build(this, _level);
+            _monsters.Register(this, _level.Monsters);
 
             // —— HUD ——
             gameObject.AddComponent<GameplayHud>().Init(this);
@@ -149,6 +149,32 @@ namespace GourmetProject.Game.Platformer
             SnapCameraToPlayer();
         }
 
+        private const string PlayerPrefabPath = "Prefabs/Player";
+
+        /// <summary>实例化玩家 prefab；缺失时兜底用代码搭建（保证可运行）。返回的 GameObject 已挂好渲染/物理/控制器。</summary>
+        private GameObject InstantiatePlayer()
+        {
+            var prefab = Resources.Load<GameObject>(PlayerPrefabPath);
+            if (prefab != null)
+            {
+                GameObject go = Instantiate(prefab, transform);
+                go.name = "Player";
+                go.transform.localScale = Vector3.one;
+                return go;
+            }
+
+            Debug.LogWarning("[GameWorld] 未找到 Player.prefab，使用代码兜底搭建玩家（无 Animator）。请运行 Tools/光影/重建动画资源。");
+            var fallback = new GameObject("Player");
+            fallback.transform.SetParent(transform, false);
+            var sr = fallback.AddComponent<SpriteRenderer>();
+            sr.sprite = Art.Load(Art.PlayerIdle);
+            sr.sharedMaterial = WorldRender.LitMaterial;
+            sr.sortingOrder = 10;
+            fallback.transform.localScale = Vector3.one;
+            fallback.AddComponent<PlayerController>();
+            return fallback;
+        }
+
         private void SetupCamera()
         {
             // 禁用其它相机（Launch 场景的 Main Camera 等），避免叠加加载时多相机冲突。
@@ -167,9 +193,12 @@ namespace GourmetProject.Game.Platformer
             _cam.orthographic = true;
             _cam.orthographicSize = 9f;
             _cam.clearFlags = CameraClearFlags.SolidColor;
-            _cam.backgroundColor = new Color(0.015f, 0.02f, 0.04f);
+            _cam.backgroundColor = GameConst.AtmosphereCameraBgNight;
             _cam.transform.position = new Vector3(_level.StartPos.x, _level.StartPos.y, -10f);
             _cam.tag = "MainCamera";
+
+            _fogOverlay = camGo.AddComponent<VisionFogOverlay>();
+            _fogOverlay.Build(_cam);
         }
 
         private void Update()
@@ -183,6 +212,7 @@ namespace GourmetProject.Game.Platformer
             if (GameInput.RevealTogglePressed)
             {
                 Lighting.RevealAll = !Lighting.RevealAll;
+                ApplyAtmosphereReveal(Lighting.RevealAll);
             }
 
             // 能量（打火机）。
@@ -249,8 +279,24 @@ namespace GourmetProject.Game.Platformer
 
             _cam.transform.position = new Vector3(follow.x + shakeOff.x, follow.y + shakeOff.y, -10f);
 
-            // 远景背景：仅水平视差，纵向不跟随
             _background?.Tick(_cam.transform.position);
+
+            if (_fogOverlay != null && Lighting != null)
+            {
+                _fogOverlay.Sync(Player.Center, Lighting.RevealAll, VisionOcclusion, Energy);
+            }
+        }
+
+        private void ApplyAtmosphereReveal(bool reveal)
+        {
+            if (_cam != null)
+            {
+                _cam.backgroundColor = reveal
+                    ? GameConst.AtmosphereCameraBgReveal
+                    : GameConst.AtmosphereCameraBgNight;
+            }
+
+            _background?.SetRevealAll(reveal);
         }
 
         private void SnapCameraToPlayer()
@@ -267,12 +313,11 @@ namespace GourmetProject.Game.Platformer
 
         // —— 对外回调 ——
 
-        public bool OverlapsSpike(in AABB box)
+        public bool OverlapsSpike(Vector2 center, Vector2 size)
         {
             // 地刺为 Spike 层触发体，用物理重叠查询（略收缩避免贴边误判）。
-            var center = new Vector2(box.MinX + box.Width * 0.5f, box.MinY + box.Height * 0.5f);
-            var size = new Vector2(Mathf.Max(0.01f, box.Width - 0.1f), Mathf.Max(0.01f, box.Height - 0.1f));
-            return Physics2D.OverlapBox(center, size, 0f, _spikeMask) != null;
+            var querySize = new Vector2(Mathf.Max(0.01f, size.x - 0.1f), Mathf.Max(0.01f, size.y - 0.1f));
+            return Physics2D.OverlapBox(center, querySize, 0f, _spikeMask) != null;
         }
 
         public void AddShake(float amount)

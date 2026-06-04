@@ -1,50 +1,5 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &116821498063738701
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1438782475147170279}
-  - component: {fileID: 4437974870348005345}
-  m_Layer: 0
-  m_Name: Monster_LightScale
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1438782475147170279
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 116821498063738701}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -6, y: 9, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 265523066965172709}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &4437974870348005345
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 116821498063738701}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 53f15b284a42847f89050b47d7127ea6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Platformer.Chunks.MonsterMarker
-  Kind: 3
 --- !u!1 &2438680118712132065
 GameObject:
   m_ObjectHideFlags: 0
@@ -784,51 +739,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 265523066965172709}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &5749209709643264160
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 6397090341844631686}
-  - component: {fileID: 5199878112602931778}
-  m_Layer: 0
-  m_Name: Monster_Vine
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &6397090341844631686
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5749209709643264160}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 4, y: 3, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 265523066965172709}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5199878112602931778
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5749209709643264160}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 53f15b284a42847f89050b47d7127ea6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Platformer.Chunks.MonsterMarker
-  Kind: 6
 --- !u!1 &7288783471580246335
 GameObject:
   m_ObjectHideFlags: 0
@@ -895,8 +805,8 @@ Transform:
   - {fileID: 4905832127811194236}
   - {fileID: 6117771903119746282}
   - {fileID: 4779743530271004158}
-  - {fileID: 6397090341844631686}
-  - {fileID: 1438782475147170279}
+  - {fileID: 9170513174813073229}
+  - {fileID: 6739213028814166770}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!156049354 &8092223350719983119
@@ -928,3 +838,127 @@ MonoBehaviour:
   ThemeTag: cave
   Entry: {fileID: 6117771903119746282}
   Exit: {fileID: 4779743530271004158}
+--- !u!1001 &2963759949433772449
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 265523066965172709}
+    m_Modifications:
+    - target: {fileID: 6718351009804252650, guid: 932d71dce0a8a4d52854aa27bd329cee, type: 3}
+      propertyPath: m_Name
+      value: Monster_LightScale
+      objectReference: {fileID: 0}
+    - target: {fileID: 8405719611711980371, guid: 932d71dce0a8a4d52854aa27bd329cee, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -6
+      objectReference: {fileID: 0}
+    - target: {fileID: 8405719611711980371, guid: 932d71dce0a8a4d52854aa27bd329cee, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 8405719611711980371, guid: 932d71dce0a8a4d52854aa27bd329cee, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8405719611711980371, guid: 932d71dce0a8a4d52854aa27bd329cee, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8405719611711980371, guid: 932d71dce0a8a4d52854aa27bd329cee, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8405719611711980371, guid: 932d71dce0a8a4d52854aa27bd329cee, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8405719611711980371, guid: 932d71dce0a8a4d52854aa27bd329cee, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8405719611711980371, guid: 932d71dce0a8a4d52854aa27bd329cee, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8405719611711980371, guid: 932d71dce0a8a4d52854aa27bd329cee, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8405719611711980371, guid: 932d71dce0a8a4d52854aa27bd329cee, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 932d71dce0a8a4d52854aa27bd329cee, type: 3}
+--- !u!4 &6739213028814166770 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8405719611711980371, guid: 932d71dce0a8a4d52854aa27bd329cee, type: 3}
+  m_PrefabInstance: {fileID: 2963759949433772449}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &8092374858492516530
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 265523066965172709}
+    m_Modifications:
+    - target: {fileID: 1083627171688892415, guid: e298d0eabebe5418aa0a02b4d6b61239, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 1083627171688892415, guid: e298d0eabebe5418aa0a02b4d6b61239, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 1083627171688892415, guid: e298d0eabebe5418aa0a02b4d6b61239, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1083627171688892415, guid: e298d0eabebe5418aa0a02b4d6b61239, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1083627171688892415, guid: e298d0eabebe5418aa0a02b4d6b61239, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1083627171688892415, guid: e298d0eabebe5418aa0a02b4d6b61239, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1083627171688892415, guid: e298d0eabebe5418aa0a02b4d6b61239, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1083627171688892415, guid: e298d0eabebe5418aa0a02b4d6b61239, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1083627171688892415, guid: e298d0eabebe5418aa0a02b4d6b61239, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1083627171688892415, guid: e298d0eabebe5418aa0a02b4d6b61239, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2180607830819874208, guid: e298d0eabebe5418aa0a02b4d6b61239, type: 3}
+      propertyPath: m_Name
+      value: Monster_Vine
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: e298d0eabebe5418aa0a02b4d6b61239, type: 3}
+--- !u!4 &9170513174813073229 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1083627171688892415, guid: e298d0eabebe5418aa0a02b4d6b61239, type: 3}
+  m_PrefabInstance: {fileID: 8092374858492516530}
+  m_PrefabAsset: {fileID: 0}

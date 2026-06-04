@@ -4,25 +4,32 @@ namespace GourmetProject.Game.Platformer
 {
     /// <summary>
     /// 分层远景背景：多层剪影 sprite，水平轻微视差，纵向完全不跟随镜头（远景固定）。
-    /// 使用 unlit 材质不受游戏光照影响，始终可见，模拟《地狱边境》的大气景深效果。
+    /// 使用 unlit 材质不受游戏光照影响；颜色与 <see cref="GameConst.ParallaxLayerColorsNight"/> 同步，
+    /// 逗号全图照亮时由 <see cref="SetRevealAll"/> 切换到更亮 palette。
     /// </summary>
     public sealed class ParallaxBackground
     {
         private Transform _container;
         private Camera _cam;
+        private bool _revealAll;
 
         private struct Layer
         {
             public Transform Xform;
             public SpriteRenderer Renderer;
             public float ParallaxX;
+            public int ColorIndex;
         }
 
         private Layer[] _layers;
 
-        /// <summary>
-        /// 根据关卡数据构建背景层。每层铺满整个关卡高度，纵向固定，仅水平视差滚动。
-        /// </summary>
+        public void SetRevealAll(bool reveal)
+        {
+            if (_revealAll == reveal) return;
+            _revealAll = reveal;
+            ApplyLayerColors();
+        }
+
         public void Build(Transform parent, Camera cam, LevelData level)
         {
             _cam = cam;
@@ -36,8 +43,6 @@ namespace GourmetProject.Game.Platformer
             float coverHeight = worldMaxY - worldMinY;
             float coverWidth = level.WorldMaxX - level.WorldMinX + 30f;
 
-            // 4 层远景：parallaxX 0=完全静态（天空），越大越跟随镜头
-            // 若新 Limbo 风格素材不存在，回退到现有 background 素材
             var configs = new (string primary, string fallback, float px)[]
             {
                 ("Sprites/Backgrounds/bg_sky",           "Sprites/Backgrounds/star_background",        0f),
@@ -61,15 +66,8 @@ namespace GourmetProject.Game.Platformer
                 var sr = go.AddComponent<SpriteRenderer>();
                 sr.sprite = sprite;
                 sr.sortingOrder = -100 + i;
-                // unlit 远景：不受游戏光照影响，始终保持可见
-                // 但稍微压暗以融入黑暗氛围
-                sr.color = new Color(0.25f, 0.28f, 0.32f, 1f);
-
-                // Tiled 模式：用小素材平铺覆盖整个关卡区域
                 sr.drawMode = SpriteDrawMode.Tiled;
                 sr.size = new Vector2(coverWidth, coverHeight);
-
-                // 所有层的 Y 固定在关卡最低点，纵向绝不跟随相机
                 go.transform.position = new Vector3(0f, worldMinY, 0f);
 
                 _layers[validCount] = new Layer
@@ -77,6 +75,7 @@ namespace GourmetProject.Game.Platformer
                     Xform = go.transform,
                     Renderer = sr,
                     ParallaxX = configs[i].px,
+                    ColorIndex = validCount,
                 };
                 validCount++;
             }
@@ -84,12 +83,12 @@ namespace GourmetProject.Game.Platformer
             if (validCount < _layers.Length)
                 System.Array.Resize(ref _layers, validCount);
 
-            // 初始对齐
+            ApplyLayerColors();
+
             if (_cam != null)
                 Tick(_cam.transform.position);
         }
 
-        /// <summary>每帧在相机跟随之后调用。仅更新水平视差，纵向保持固定。</summary>
         public void Tick(Vector2 cameraCenter)
         {
             if (_layers == null) return;
@@ -101,7 +100,23 @@ namespace GourmetProject.Game.Platformer
                 Vector3 pos = layer.Xform.position;
                 pos.x = cameraCenter.x * layer.ParallaxX;
                 layer.Xform.position = pos;
-                // Y 不更新 —— 远景固定
+            }
+        }
+
+        private void ApplyLayerColors()
+        {
+            if (_layers == null) return;
+
+            Color[] palette = _revealAll
+                ? GameConst.ParallaxLayerColorsReveal
+                : GameConst.ParallaxLayerColorsNight;
+
+            for (int i = 0; i < _layers.Length; i++)
+            {
+                SpriteRenderer sr = _layers[i].Renderer;
+                if (sr == null) continue;
+                int idx = _layers[i].ColorIndex;
+                sr.color = idx < palette.Length ? palette[idx] : palette[^1];
             }
         }
     }

@@ -96,8 +96,8 @@ Transform:
   - {fileID: 2917281058376278400}
   - {fileID: 4019114838824822219}
   - {fileID: 5896563994704454586}
-  - {fileID: 999635380438541159}
-  - {fileID: 9098912921661122483}
+  - {fileID: 9060665825773319866}
+  - {fileID: 7945925853447452484}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!156049354 &8939173156810851273
@@ -129,51 +129,6 @@ MonoBehaviour:
   ThemeTag: forest
   Entry: {fileID: 4019114838824822219}
   Exit: {fileID: 5896563994704454586}
---- !u!1 &6757411177867882652
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 999635380438541159}
-  - component: {fileID: 8069647740988030446}
-  m_Layer: 0
-  m_Name: Monster_Firefly
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &999635380438541159
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6757411177867882652}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3, y: 8, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 6293253492627738953}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &8069647740988030446
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6757411177867882652}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 53f15b284a42847f89050b47d7127ea6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Platformer.Chunks.MonsterMarker
-  Kind: 4
 --- !u!1 &6957404759984015447
 GameObject:
   m_ObjectHideFlags: 0
@@ -702,48 +657,127 @@ MonoBehaviour:
     - rid: 8183257196960940144
       type: {class: ShadowShape2DProvider_Collider2D, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
       data: 
---- !u!1 &7993513561031754778
-GameObject:
+--- !u!1001 &1518446197437449047
+PrefabInstance:
   m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 9098912921661122483}
-  - component: {fileID: 213474307793804688}
-  m_Layer: 0
-  m_Name: Monster_AmbushSpider
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &9098912921661122483
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7993513561031754778}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -4, y: 5, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 6293253492627738953}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &213474307793804688
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 6293253492627738953}
+    m_Modifications:
+    - target: {fileID: 2549917481956382185, guid: 5badb3aad3ad44aecbfe1ad850f88b62, type: 3}
+      propertyPath: m_Name
+      value: Monster_Firefly
+      objectReference: {fileID: 0}
+    - target: {fileID: 7543363717437601261, guid: 5badb3aad3ad44aecbfe1ad850f88b62, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7543363717437601261, guid: 5badb3aad3ad44aecbfe1ad850f88b62, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 7543363717437601261, guid: 5badb3aad3ad44aecbfe1ad850f88b62, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7543363717437601261, guid: 5badb3aad3ad44aecbfe1ad850f88b62, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7543363717437601261, guid: 5badb3aad3ad44aecbfe1ad850f88b62, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7543363717437601261, guid: 5badb3aad3ad44aecbfe1ad850f88b62, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7543363717437601261, guid: 5badb3aad3ad44aecbfe1ad850f88b62, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7543363717437601261, guid: 5badb3aad3ad44aecbfe1ad850f88b62, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7543363717437601261, guid: 5badb3aad3ad44aecbfe1ad850f88b62, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7543363717437601261, guid: 5badb3aad3ad44aecbfe1ad850f88b62, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 5badb3aad3ad44aecbfe1ad850f88b62, type: 3}
+--- !u!4 &9060665825773319866 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7543363717437601261, guid: 5badb3aad3ad44aecbfe1ad850f88b62, type: 3}
+  m_PrefabInstance: {fileID: 1518446197437449047}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7993513561031754778}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 53f15b284a42847f89050b47d7127ea6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Platformer.Chunks.MonsterMarker
-  Kind: 7
+--- !u!1001 &3960200140526850415
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 6293253492627738953}
+    m_Modifications:
+    - target: {fileID: 2904905191474390877, guid: ec6cfd0f43b464bdf96a6fd953164491, type: 3}
+      propertyPath: m_Name
+      value: Monster_AmbushSpider
+      objectReference: {fileID: 0}
+    - target: {fileID: 6390867894294406699, guid: ec6cfd0f43b464bdf96a6fd953164491, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -4
+      objectReference: {fileID: 0}
+    - target: {fileID: 6390867894294406699, guid: ec6cfd0f43b464bdf96a6fd953164491, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6390867894294406699, guid: ec6cfd0f43b464bdf96a6fd953164491, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6390867894294406699, guid: ec6cfd0f43b464bdf96a6fd953164491, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6390867894294406699, guid: ec6cfd0f43b464bdf96a6fd953164491, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6390867894294406699, guid: ec6cfd0f43b464bdf96a6fd953164491, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6390867894294406699, guid: ec6cfd0f43b464bdf96a6fd953164491, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6390867894294406699, guid: ec6cfd0f43b464bdf96a6fd953164491, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6390867894294406699, guid: ec6cfd0f43b464bdf96a6fd953164491, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6390867894294406699, guid: ec6cfd0f43b464bdf96a6fd953164491, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: ec6cfd0f43b464bdf96a6fd953164491, type: 3}
+--- !u!4 &7945925853447452484 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6390867894294406699, guid: ec6cfd0f43b464bdf96a6fd953164491, type: 3}
+  m_PrefabInstance: {fileID: 3960200140526850415}
+  m_PrefabAsset: {fileID: 0}

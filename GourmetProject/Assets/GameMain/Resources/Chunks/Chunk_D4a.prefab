@@ -97,8 +97,8 @@ Transform:
   - {fileID: 8777510186354252573}
   - {fileID: 1263196790637971428}
   - {fileID: 197348770712433917}
-  - {fileID: 3851979490541775871}
-  - {fileID: 5678709994976043681}
+  - {fileID: 6372086560830554417}
+  - {fileID: 8663368880508189906}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!156049354 &3337461184358539072
@@ -130,51 +130,6 @@ MonoBehaviour:
   ThemeTag: ruin
   Entry: {fileID: 1263196790637971428}
   Exit: {fileID: 197348770712433917}
---- !u!1 &5911043427502681536
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 5678709994976043681}
-  - component: {fileID: 5976067223153966218}
-  m_Layer: 0
-  m_Name: Monster_EchoBat
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &5678709994976043681
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5911043427502681536}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 4, y: 5, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1292316090554196307}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5976067223153966218
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5911043427502681536}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 53f15b284a42847f89050b47d7127ea6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Platformer.Chunks.MonsterMarker
-  Kind: 9
 --- !u!1 &6129115511978924459
 GameObject:
   m_ObjectHideFlags: 0
@@ -725,51 +680,6 @@ MonoBehaviour:
     - rid: 8183257196960940145
       type: {class: ShadowShape2DProvider_Collider2D, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
       data: 
---- !u!1 &7774223641555691237
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 3851979490541775871}
-  - component: {fileID: 7563889121781481248}
-  m_Layer: 0
-  m_Name: Monster_FogWraith
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &3851979490541775871
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7774223641555691237}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -5, y: 8, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1292316090554196307}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &7563889121781481248
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7774223641555691237}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 53f15b284a42847f89050b47d7127ea6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Platformer.Chunks.MonsterMarker
-  Kind: 8
 --- !u!1 &9171118507014631496
 GameObject:
   m_ObjectHideFlags: 0
@@ -908,3 +818,127 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 1, y: 1}
   m_EdgeRadius: 0
+--- !u!1001 &2129397129914834143
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1292316090554196307}
+    m_Modifications:
+    - target: {fileID: 2822973052744595535, guid: d7f9f7dd9cb964212aaedaaf4a3d8f0a, type: 3}
+      propertyPath: m_Name
+      value: Monster_FogWraith
+      objectReference: {fileID: 0}
+    - target: {fileID: 5035888183902461422, guid: d7f9f7dd9cb964212aaedaaf4a3d8f0a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5035888183902461422, guid: d7f9f7dd9cb964212aaedaaf4a3d8f0a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 5035888183902461422, guid: d7f9f7dd9cb964212aaedaaf4a3d8f0a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5035888183902461422, guid: d7f9f7dd9cb964212aaedaaf4a3d8f0a, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5035888183902461422, guid: d7f9f7dd9cb964212aaedaaf4a3d8f0a, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5035888183902461422, guid: d7f9f7dd9cb964212aaedaaf4a3d8f0a, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5035888183902461422, guid: d7f9f7dd9cb964212aaedaaf4a3d8f0a, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5035888183902461422, guid: d7f9f7dd9cb964212aaedaaf4a3d8f0a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5035888183902461422, guid: d7f9f7dd9cb964212aaedaaf4a3d8f0a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5035888183902461422, guid: d7f9f7dd9cb964212aaedaaf4a3d8f0a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: d7f9f7dd9cb964212aaedaaf4a3d8f0a, type: 3}
+--- !u!4 &6372086560830554417 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5035888183902461422, guid: d7f9f7dd9cb964212aaedaaf4a3d8f0a, type: 3}
+  m_PrefabInstance: {fileID: 2129397129914834143}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &6560093058295600684
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1292316090554196307}
+    m_Modifications:
+    - target: {fileID: 2535625518773578494, guid: 1e70f594e95814e1481fefeb01e1761f, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 2535625518773578494, guid: 1e70f594e95814e1481fefeb01e1761f, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2535625518773578494, guid: 1e70f594e95814e1481fefeb01e1761f, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2535625518773578494, guid: 1e70f594e95814e1481fefeb01e1761f, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2535625518773578494, guid: 1e70f594e95814e1481fefeb01e1761f, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2535625518773578494, guid: 1e70f594e95814e1481fefeb01e1761f, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2535625518773578494, guid: 1e70f594e95814e1481fefeb01e1761f, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2535625518773578494, guid: 1e70f594e95814e1481fefeb01e1761f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2535625518773578494, guid: 1e70f594e95814e1481fefeb01e1761f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2535625518773578494, guid: 1e70f594e95814e1481fefeb01e1761f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2960220434540073115, guid: 1e70f594e95814e1481fefeb01e1761f, type: 3}
+      propertyPath: m_Name
+      value: Monster_EchoBat
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 1e70f594e95814e1481fefeb01e1761f, type: 3}
+--- !u!4 &8663368880508189906 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2535625518773578494, guid: 1e70f594e95814e1481fefeb01e1761f, type: 3}
+  m_PrefabInstance: {fileID: 6560093058295600684}
+  m_PrefabAsset: {fileID: 0}

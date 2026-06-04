@@ -19,7 +19,6 @@ namespace GourmetProject.Game.Platformer.Monsters
         private State _state = State.Hanging;
 
         public override bool IsAttract => false;
-        protected override Sprite BodySprite() => Art.Load(Art.AmbushSpider);
 
         protected override void Behave(float dt, Vector2 playerCenter, bool lighterOn, float distToPlayer)
         {

@@ -78,7 +78,16 @@ namespace GourmetProject.Tests
             // 篡改 data 内的字符串值，但不修正校验和（"Bob" 不会出现在小写十六进制校验和中）。
             File.WriteAllText(path, json.Replace("Bob", "Haxed"));
 
-            Assert.IsFalse(svc.TryLoad<Profile>("slot", out _), "tampered save must fail checksum verification");
+            var minLevel = GourmetProject.Core.Diagnostics.Log.MinLevel;
+            GourmetProject.Core.Diagnostics.Log.MinLevel = GourmetProject.Core.Diagnostics.LogLevel.None;
+            try
+            {
+                Assert.IsFalse(svc.TryLoad<Profile>("slot", out _), "tampered save must fail checksum verification");
+            }
+            finally
+            {
+                GourmetProject.Core.Diagnostics.Log.MinLevel = minLevel;
+            }
         }
 
         [Test]

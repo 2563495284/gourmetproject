@@ -22,12 +22,11 @@ namespace GourmetProject.Game.Platformer.Monsters
         private float _phase;
 
         public override bool IsAttract => false;
-        protected override Sprite BodySprite() => Art.Load(Art.EchoBat);
 
-        public override void Init(GameWorld world, Vector2 spawn)
+        public override void Init(GameWorld world)
         {
-            base.Init(world, spawn);
-            _ring = WorldRender.CreateUnlit("SonicRing", Art.Load(Art.InvincibilityRing), spawn, transform, 49);
+            base.Init(world);
+            _ring = WorldRender.CreateUnlit("SonicRing", Art.Load(Art.InvincibilityRing), Spawn, transform, 49);
             _ring.transform.localPosition = Vector3.zero; // 跟随蝠本体（父级），声波以本体为中心。
             _ring.color = new Color(0.4f, 0.7f, 1f, 0f);
             _ring.enabled = false;

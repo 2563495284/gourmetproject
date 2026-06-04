@@ -48,7 +48,9 @@ namespace GourmetProject.Game.Platformer
         public Vector2 Velocity => new Vector2(_vx, _vy);
         public bool Grounded => _grounded;
         public int Facing => _facing;
-        public AABB Box => new AABB(_pos.x, _pos.y, GameConst.PlayerWidth, GameConst.PlayerHeight);
+
+        /// <summary>是否正贴墙（供动画 wallslide 状态查询）。</summary>
+        public bool OnWall => _onWall != 0;
         public Vector2 Center => new Vector2(_pos.x + GameConst.PlayerWidth * 0.5f, _pos.y + GameConst.PlayerHeight * 0.5f);
 
         public void Init(GameWorld world, Vector2 startBottomLeft)
@@ -237,7 +239,7 @@ namespace GourmetProject.Game.Platformer
                 return;
             }
 
-            if (control && _world.OverlapsSpike(Box))
+            if (control && _world.OverlapsSpike(BoxCenter, CastSize))
             {
                 _world.RequestDie(DeathCause.Spike);
             }

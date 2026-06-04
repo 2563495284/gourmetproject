@@ -4,40 +4,22 @@ using UnityEngine;
 namespace GourmetProject.Game.Platformer.Monsters
 {
     /// <summary>
-    /// 怪物管理器：按关卡 spawn 点生成怪物并统一驱动。首版支持蚊群与暗影，其余种类可在此扩展。
+    /// 怪物管理器：怪物由设计师以 Monster_*.prefab 直接摆进 chunk，关卡拼接时被 <see cref="Chunks.LevelAssembler"/>
+    /// 收集为 <see cref="MonsterBase"/> 实例列表，这里只负责注册（统一 Init）与逐帧驱动，不再程序化实例化。
     /// </summary>
     public sealed class MonsterManager : MonoBehaviour
     {
         private readonly List<MonsterBase> _monsters = new List<MonsterBase>();
-        private GameWorld _world;
 
-        public void Build(GameWorld world, LevelData data)
+        public void Register(GameWorld world, IReadOnlyList<MonsterBase> monsters)
         {
-            _world = world;
-            foreach (MonsterSpawn spawn in data.Spawns)
+            if (monsters == null) return;
+            for (int i = 0; i < monsters.Count; i++)
             {
-                var go = new GameObject($"Monster_{spawn.Kind}");
-                go.transform.SetParent(transform, false);
-
-                MonsterBase monster = spawn.Kind switch
-                {
-                    MonsterKind.Mosquito => go.AddComponent<Mosquito>(),
-                    MonsterKind.Moth => go.AddComponent<Moth>(),
-                    MonsterKind.LightEater => go.AddComponent<LightEater>(),
-                    MonsterKind.LightScale => go.AddComponent<LightScale>(),
-                    MonsterKind.Firefly => go.AddComponent<Firefly>(),
-                    MonsterKind.Shadow => go.AddComponent<Shadow>(),
-                    MonsterKind.Vine => go.AddComponent<Vine>(),
-                    MonsterKind.AmbushSpider => go.AddComponent<AmbushSpider>(),
-                    MonsterKind.FogWraith => go.AddComponent<FogWraith>(),
-                    MonsterKind.EchoBat => go.AddComponent<EchoBat>(),
-                    MonsterKind.StoneEye => go.AddComponent<StoneEye>(),
-                    MonsterKind.LightShadowBug => go.AddComponent<LightShadowBug>(),
-                    _ => go.AddComponent<Mosquito>(),
-                };
-
-                monster.Init(world, spawn.Pos);
-                _monsters.Add(monster);
+                MonsterBase m = monsters[i];
+                if (m == null) continue;
+                m.Init(world);
+                _monsters.Add(m);
             }
         }
 

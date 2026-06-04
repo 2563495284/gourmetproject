@@ -120,11 +120,9 @@ namespace GourmetProject.GameEditor
             Transform entry = NewChild(root.transform, "Entry", new Vector2(0f, 0f)).transform;
             Transform exit = NewChild(root.transform, "Exit", new Vector2(0f, spec.Height)).transform;
 
-            foreach (var m in spec.Monsters)
-            {
-                var go = NewChild(root.transform, "Monster_" + m.Item1, m.Item2);
-                go.AddComponent<MonsterMarker>().Kind = m.Item1;
-            }
+            // 注意：怪物不再由此工具程序化生成。怪物由设计师把 Monster_*.prefab 直接拖进
+            // Resources/Chunks/*.prefab 摆放，运行时 LevelAssembler 收集 MonsterBase 实例驱动。
+            // 重跑本工具会覆盖同名预制段（含已摆放的怪物），仅用于地形 bootstrap。
 
             foreach (var c in spec.Checkpoints)
             {

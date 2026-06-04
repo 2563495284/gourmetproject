@@ -54,12 +54,12 @@ namespace GourmetProject.Game.Platformer
             return sr;
         }
 
-        /// <summary>创建平铺精灵（用于宽度可变的平台/地刺）。size 为世界单位。</summary>
-        public static SpriteRenderer CreateTiled(string name, Sprite sprite, AABB rect, Transform parent, int order = 0)
+        /// <summary>创建平铺精灵（用于宽度可变的平台/地刺）。center/size 为世界单位。</summary>
+        public static SpriteRenderer CreateTiled(string name, Sprite sprite, Vector2 center, Vector2 size, Transform parent, int order = 0)
         {
-            var sr = Create(name, sprite, rect.Center, parent, order);
+            var sr = Create(name, sprite, center, parent, order);
             sr.drawMode = SpriteDrawMode.Tiled;
-            sr.size = new Vector2(rect.Width, rect.Height);
+            sr.size = size;
             return sr;
         }
     }

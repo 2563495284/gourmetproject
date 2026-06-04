@@ -17,7 +17,6 @@ namespace GourmetProject.Game.Platformer.Monsters
         private float _fuse = -1f;   // <0 未进入引爆倒计时
 
         public override bool IsAttract => true;
-        protected override Sprite BodySprite() => Art.Load(Art.LightShadowBug);
 
         protected override void Behave(float dt, Vector2 playerCenter, bool lighterOn, float distToPlayer)
         {

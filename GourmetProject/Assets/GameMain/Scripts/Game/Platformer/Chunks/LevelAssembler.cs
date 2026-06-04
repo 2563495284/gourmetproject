@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using GourmetProject.Core.Rng;
+using GourmetProject.Game.Platformer.Monsters;
 using GourmetProject.Runtime;
 using UnityEngine;
 using UnityEngine.Tilemaps;
@@ -123,11 +124,11 @@ namespace GourmetProject.Game.Platformer.Chunks
                 }
             }
 
-            // 怪物（直接摆在预制段里）。
-            MonsterMarker[] monsters = inst.GetComponentsInChildren<MonsterMarker>(true);
-            foreach (MonsterMarker mm in monsters)
+            // 怪物（设计师把 Monster_*.prefab 直接摆在预制段里，这里收集实例交给 MonsterManager 驱动）。
+            MonsterBase[] monsters = inst.GetComponentsInChildren<MonsterBase>(true);
+            foreach (MonsterBase mb in monsters)
             {
-                data.Spawns.Add(new MonsterSpawn { Kind = mm.Kind, Pos = mm.transform.position });
+                if (mb != null) data.Monsters.Add(mb);
             }
 
             // 检查点 / 终点（按拼接顺序入列，PreActivate 依赖有序）。
