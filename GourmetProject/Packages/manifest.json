@@ -2,7 +2,7 @@
   "dependencies": {
     "com.boxqkrtm.ide.cursor": "https://github.com/boxqkrtm/com.unity.ide.cursor.git",
     "com.code-philosophy.luban": "https://github.com/focus-creative-games/luban_unity.git",
-    "com.ivanmurzak.unity.mcp": "0.77.1",
+    "com.ivanmurzak.unity.mcp": "0.79.0",
     "com.unity.2d.animation": "13.0.4",
     "com.unity.2d.aseprite": "3.0.1",
     "com.unity.2d.psdimporter": "12.0.1",
