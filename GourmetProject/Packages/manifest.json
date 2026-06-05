@@ -2,7 +2,7 @@
   "dependencies": {
     "com.boxqkrtm.ide.cursor": "https://github.com/boxqkrtm/com.unity.ide.cursor.git",
     "com.code-philosophy.luban": "https://github.com/focus-creative-games/luban_unity.git",
-    "com.ivanmurzak.unity.mcp": "0.77.1",
+    "com.ivanmurzak.unity.mcp": "0.79.0",
     "com.unity.2d.animation": "13.0.4",
     "com.unity.2d.aseprite": "3.0.1",
     "com.unity.2d.psdimporter": "12.0.1",
@@ -55,7 +55,17 @@
     "com.unity.modules.video": "1.0.0",
     "com.unity.modules.vr": "1.0.0",
     "com.unity.modules.wind": "1.0.0",
-    "com.unity.modules.xr": "1.0.0"
+    "com.unity.modules.xr": "1.0.0",
+    "com.ivanmurzak.unity.mcp.animation": "1.2.15",
+    "com.ivanmurzak.unity.mcp.particlesystem": "1.2.15",
+    "com.ivanmurzak.unity.mcp.probuilder": "1.2.15",
+    "com.ivanmurzak.unity.mcp.timeline": "1.0.1",
+    "com.ivanmurzak.unity.mcp.terrain": "1.0.1",
+    "com.ivanmurzak.unity.mcp.splines": "1.0.1",
+    "com.ivanmurzak.unity.mcp.tilemap": "1.0.1",
+    "com.ivanmurzak.unity.mcp.inputsystem": "1.0.1",
+    "com.ivanmurzak.unity.mcp.navigation": "1.0.1",
+    "com.ivanmurzak.unity.mcp.cinemachine": "1.0.1"
   },
   "scopedRegistries": [
     {
@@ -63,7 +73,11 @@
       "url": "https://package.openupm.com",
       "scopes": [
         "com.ivanmurzak",
-        "extensions.unity"
+        "extensions.unity",
+        "org.nuget.com.ivanmurzak",
+        "org.nuget.microsoft",
+        "org.nuget.system",
+        "org.nuget.r3"
       ]
     }
   ]

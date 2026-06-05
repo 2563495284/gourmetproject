@@ -14,6 +14,7 @@ namespace GourmetProject.Game.UI
         public const string MainMenu = "Assets/GameMain/UI/MainMenuForm.prefab";
         public const string Settings = "Assets/GameMain/UI/SettingsForm.prefab";
         public const string ConfirmDialog = "Assets/GameMain/UI/ConfirmDialogForm.prefab";
+        public const string CartoonSceneTransition = "Assets/GameMain/UI/CartoonSceneTransitionForm.prefab";
 
         // 主存档槽位：用于判断“开始游戏 / 继续游戏”。
         public const string GameSaveSlot = "slot0";

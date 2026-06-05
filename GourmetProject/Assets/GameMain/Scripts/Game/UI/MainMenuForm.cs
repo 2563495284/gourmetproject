@@ -1,5 +1,6 @@
 using GourmetProject.Runtime;
 using GourmetProject.Runtime.UI;
+using UnityEngine;
 using UnityEngine.UI;
 using UnityGameFramework.Runtime;
 using Log = GourmetProject.Core.Diagnostics.Log;
@@ -17,14 +18,26 @@ namespace GourmetProject.Game.UI
         private Button _settingsButton;
         private Button _quitButton;
         private Text _startLabel;
+        private int _transitionPreviewIndex;
+        private readonly CartoonTransitionType[] _transitionPreviewTypes =
+        {
+            CartoonTransitionType.FoodWipe,
+            CartoonTransitionType.IrisWipe,
+            CartoonTransitionType.Fade,
+            CartoonTransitionType.Curtain,
+            CartoonTransitionType.PageTurn,
+            CartoonTransitionType.SauceSplat,
+            CartoonTransitionType.CartoonBurst,
+            CartoonTransitionType.FoodCurtain,
+        };
 
         protected override void OnInit(object userData)
         {
             base.OnInit(userData);
 
-            _startButton = CachedTransform.Find("StartButton").GetComponent<Button>();
-            _settingsButton = CachedTransform.Find("SettingsButton").GetComponent<Button>();
-            _quitButton = CachedTransform.Find("QuitButton").GetComponent<Button>();
+            _startButton = FindRequiredComponentInChildren<Button>("StartButton");
+            _settingsButton = FindRequiredComponentInChildren<Button>("SettingsButton");
+            _quitButton = FindRequiredComponentInChildren<Button>("QuitButton");
             _startLabel = _startButton.transform.Find("Text").GetComponent<Text>();
 
             _startButton.onClick.AddListener(OnStartClicked);
@@ -42,9 +55,25 @@ namespace GourmetProject.Game.UI
 
         private void OnStartClicked()
         {
-            // 具体玩法尚未实现，这里仅占位。后续从此处切换到对局流程或加载存档。
             bool hasSave = GameApp.Save.Has(UIForms.GameSaveSlot);
-            Log.Info(hasSave ? "Continue game (gameplay not implemented yet)." : "Start new game (gameplay not implemented yet).", Tag);
+            var data = new CartoonSceneTransitionData
+            {
+                TransitionType = NextTransitionPreviewType(),
+                Message = hasSave ? "继续开饭！" : "开饭啦！",
+                CoverDuration = 0.42f,
+                HoldDuration = 0.2f,
+                RevealDuration = 0.34f,
+                OnCovered = () => Log.Info(hasSave ? "Continue game (gameplay not implemented yet)." : "Start new game (gameplay not implemented yet).", Tag),
+            };
+
+            GameApp.UI.OpenUIForm(UIForms.CartoonSceneTransition, UIForms.GroupDialog, data);
+        }
+
+        private CartoonTransitionType NextTransitionPreviewType()
+        {
+            var type = _transitionPreviewTypes[_transitionPreviewIndex % _transitionPreviewTypes.Length];
+            _transitionPreviewIndex++;
+            return type;
         }
 
         private void OnSettingsClicked()
@@ -63,6 +92,19 @@ namespace GourmetProject.Game.UI
                 OnConfirm = () => GameEntry.Shutdown(ShutdownType.Quit),
             };
             GameApp.UI.OpenUIForm(UIForms.ConfirmDialog, UIForms.GroupDialog, data);
+        }
+
+        private T FindRequiredComponentInChildren<T>(string childName) where T : Component
+        {
+            foreach (Transform child in CachedTransform.GetComponentsInChildren<Transform>(true))
+            {
+                if (child.name == childName && child.TryGetComponent(out T component))
+                {
+                    return component;
+                }
+            }
+
+            throw new MissingComponentException($"MainMenuForm requires child '{childName}' with component {typeof(T).Name}.");
         }
     }
 }

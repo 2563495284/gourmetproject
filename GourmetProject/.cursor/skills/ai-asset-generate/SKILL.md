@@ -1,11 +1,11 @@
 ---
 name: ai-asset-generate
-description: Generate 2D game assets (sprites, items, backgrounds, UI elements, animation frames) for Unity using OpenAI's gpt-image-1 model. Use this skill when the user asks to create, generate, or batch-produce visual game assets — item icons, character sprites, backgrounds, buttons, panels, animation frames, etc.
+description: Generate 2D game assets (sprites, items, backgrounds, UI elements, animation frames) for Unity using Gemini's gemini-3.1-flash-image-preview model. Use this skill when the user asks to create, generate, or batch-produce visual game assets — item icons, character sprites, backgrounds, buttons, panels, animation frames, etc.
 ---
 
 # AI Asset Generator
 
-Generates 2D game assets via OpenAI's gpt-image-1 API and saves them directly into the Unity project's `Assets/` folder for immediate use.
+Generates 2D game assets via Gemini's `gemini-3.1-flash-image-preview` API and saves them directly into the Unity project's `Assets/` folder for immediate use.
 
 ## When to use this skill
 
@@ -34,19 +34,15 @@ Generates 2D game assets via OpenAI's gpt-image-1 API and saves them directly in
 
 ### Prerequisites
 
-The script requires `openai` Python package. If not installed, run:
-
-```bash
-pip install openai
-```
+The script uses only Python's standard library.
 
 API key must be set as an environment variable:
 
 ```bash
-export OPENAI_API_KEY="your-key-here"
+export GEMINI_API_KEY="your-key-here"
 ```
 
-The base URL defaults to `https://sapi-ai.hortorgames.com`. Override with `OPENAI_BASE_URL` if needed.
+The model defaults to `gemini-3.1-flash-image-preview`. The base URL defaults to `https://sapi-ai.hortorgames.com/gemini`. Override with `GEMINI_IMAGE_MODEL` or `GEMINI_BASE_URL` if needed.
 
 ### Single asset
 
@@ -113,15 +109,30 @@ Create a JSON file with an array of asset requests:
 
 ## Best practices for prompts
 
-When crafting prompts for gpt-image-1, include these elements for usable game assets:
+When crafting prompts for Gemini image generation, include these elements for usable game assets:
 
 - **Style anchor**: "pixel art", "hand-drawn", "flat vector", "cartoon", "realistic"
 - **Perspective**: "top-down", "isometric", "side view", "front view"
 - **Clean separation**: "clean edges", "solid white background", or "transparent background"
 - **Game context**: "fantasy game item", "RPG icon", " mobile game UI element"
 - **Technical hints for UI**: "9-slice compatible with clear border", "centered and symmetrical"
-- **No text**: gpt-image-1 often garbles text — avoid requesting text in images
+- **No text**: image models often garble text — avoid requesting text in images
 
 ## After generation
 
 Unity auto-imports new files in `Assets/`. The script outputs the file path. If the user needs the sprite settings adjusted (pixels per unit, filter mode, sprite border for 9-slice), use the `assets-modify` or `assetDatabase-refresh` MCP tools.
+
+## Style pipelines
+
+Named style manifests live in `.cursor/skills/ai-asset-generate/manifests/`. Each manifest is a reusable visual style definition:
+
+- `style-90s-grotesque-cartoon.json` — 90s American grotesque cartoon style for GourmetProject's menu/background/character assets
+
+To regenerate all assets for a style:
+
+```bash
+python .cursor/skills/ai-asset-generate/scripts/generate.py \
+  --manifest .cursor/skills/ai-asset-generate/manifests/style-90s-grotesque-cartoon.json
+```
+
+To add a new asset to an existing style, append an entry to that manifest's `assets` array and re-run the command. Keep the shared look in `stylePrefix`; keep each asset prompt focused on subject, composition, and technical constraints.

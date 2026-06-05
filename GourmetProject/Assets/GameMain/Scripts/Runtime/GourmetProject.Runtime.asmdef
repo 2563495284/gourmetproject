@@ -4,7 +4,9 @@
     "references": [
         "UnityGameFramework.Runtime",
         "GourmetProject.Core",
-        "GourmetProject.Config"
+        "GourmetProject.Config",
+        "Unity.RenderPipelines.Core.Runtime",
+        "Unity.RenderPipelines.Universal.Runtime"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

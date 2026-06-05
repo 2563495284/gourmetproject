@@ -1,0 +1,106 @@
+{
+  "stylePrefix": "90s American cable TV cartoon style, SpongeBob-like absurd facial energy, CatDog-inspired weird animal comedy, surreal proportions, family-friendly dark humor, thick clean black ink outlines, flat cel animation colors, hand-drawn 2D animation look, warm appetizing color palette, polished game asset quality, funny, weird, charming, no text, no logo, no watermark",
+  "assets": [
+    {
+      "name": "main_menu_hungry_dog",
+      "type": "background",
+      "size": "1920x1080",
+      "prompt": "Main menu background for a 2D game, 16:9 composition. A complete cozy restaurant or kitchen interior filling the entire screen, visible wall planes, warm muted wallpaper, soft ambient lighting, simple tiled floor perspective, distant low-detail shelves, cabinets, wall trim, or kitchen decor. Do not leave an empty UI panel or blank negative space on the left; the whole image should feel like a finished illustrated environment. On the right side, a larger funny stylized cartoon dog stands upright as the main visual focus, occupying roughly 45 to 55 percent of the image width and most of the image height. The dog has an exaggerated round belly, wears only a white dinner napkin around its neck, and holds a fork in one paw and a knife in the other. The dog looks directly at the viewer with hungry excitement, a playful mischievous smile, expressive bulging eyes, appealing and cute. No dining table, no plate, no chair, no foreground furniture, no props except the neck napkin, fork, and knife. Full body or nearly full body visible, head close to the upper right area and feet near the bottom edge. Avoid blank left side, empty UI panel, white rectangle, dining table, plate, chair, foreground furniture, tablecloth, food, extra props, realistic, photorealistic, 3d render, anime, manga, detailed fur, noisy details, text, logo, watermark, existing buttons, UI text, extra characters"
+    },
+    {
+      "name": "main_menu_button_frame",
+      "type": "ui",
+      "size": "1024x1024",
+      "prompt": "A reusable main menu button frame for a 2D cartoon game UI, centered, horizontal rounded rectangle, chunky hand-drawn black outline, slightly uneven organic shape, warm yellow-orange fill with subtle painted texture, darker brown edge shadow, high readability area in the center for future text, 9-slice friendly with clear border padding, isolated on transparent-looking plain background, no text, no icon, no logo, no watermark"
+    },
+    {
+      "name": "main_menu_panel",
+      "type": "ui",
+      "size": "1024x1024",
+      "prompt": "A reusable menu panel background for a 2D cartoon game UI, centered vertical panel with rounded corners, thick hand-drawn black outline, warm muted cream and orange colors, subtle restaurant wallpaper texture, simple playful imperfect silhouette, clear inner area for menu content, 9-slice friendly with generous border padding, no text, no icons, no logo, no watermark"
+    },
+    {
+      "name": "hungry_dog_standing",
+      "type": "character",
+      "size": "1024x1024",
+      "transparent": true,
+      "prompt": "A standalone funny stylized cartoon dog character standing upright, exaggerated round belly, white dinner napkin tied around its neck, holding a fork in one paw and a knife in the other, looking directly at the viewer with hungry excitement, playful mischievous smile, expressive bulging eyes, cute and appealing, full body visible, clean silhouette, game character sprite, no dining table, no plate, no chair, no foreground furniture, no text, no logo, no watermark"
+    },
+    {
+      "name": "cartoon_transition_tablecloth",
+      "type": "ui",
+      "size": "1536x1024",
+      "prompt": "Full-screen scene transition wipe texture for a 2D cartoon food game UI. A warm red and cream restaurant tablecloth pattern fills the entire image, with chunky hand-drawn irregular checker shapes, broad diagonal cloth folds, soft painted texture, and a few uneven black ink accents around pattern edges. It must read clearly as a wipe overlay background when stretched across the screen, playful and appetizing but not busy. No characters, no dog, no food, no plates, no utensils, no tableware, no UI buttons, no text, no logo, no watermark, avoid realistic cloth photo texture, avoid tiny noisy details."
+    },
+    {
+      "name": "cartoon_transition_plate_wipe",
+      "type": "ui",
+      "size": "1024x1024",
+      "transparent": true,
+      "prompt": "A large funny cartoon dinner plate used as the leading edge of a scene transition wipe, isolated on transparent background. The plate is shown from a slightly top-down front angle and feels like it is rushing from left to right. Exaggerated oval plate, thick clean black outline, warm cream ceramic rim, simple rice mound, steak, tomato, broccoli and carrot pieces arranged in bold readable shapes. Add a tiny wobble feeling through asymmetrical silhouette and energetic composition, but keep the asset centered with a clean silhouette. No tablecloth, no background, no dog, no extra characters, no text, no logo, no watermark."
+    },
+    {
+      "name": "cartoon_transition_speed_line",
+      "type": "ui",
+      "size": "1024x1024",
+      "transparent": true,
+      "prompt": "A reusable hand-drawn cartoon speed line slash for a food-themed scene transition UI, isolated on transparent background. Long horizontal cream-yellow brush streak with chunky uneven black cartoon outline, a few small red accent streaks, energetic whoosh shape, flat cel colors, clean readable silhouette, centered with empty transparent padding around it. No characters, no food, no plates, no text, no logo, no watermark, no background."
+    },
+    {
+      "name": "cartoon_transition_sauce_splat",
+      "type": "ui",
+      "size": "1024x1024",
+      "transparent": true,
+      "prompt": "A single huge irregular cartoon sauce splat for a 2D scene transition UI, isolated on transparent background. Tomato ketchup red mixed with mustard yellow drips and blobs, thick clean black hand-inked outline, weird playful organic silhouette that can scale up to cover the whole screen, bold readable shape, flat cel colors, polished game UI asset. Centered with transparent padding, no characters, no plate, no utensils, no text, no logo, no watermark, no background."
+    },
+    {
+      "name": "cartoon_transition_burst_ring",
+      "type": "ui",
+      "size": "1024x1024",
+      "transparent": true,
+      "prompt": "A reusable comic burst transition ring, isolated on transparent background. Thick wobbly black ink outline around a jagged circular explosion ring, warm cream yellow fill with orange-red accents, hollow center, energetic 2D cartoon camera transition asset, flat cel colors, clean readable silhouette, centered. No characters, no food, no text, no logo, no watermark, no background."
+    },
+    {
+      "name": "cartoon_transition_food_curtain_01",
+      "type": "ui",
+      "size": "512x512",
+      "transparent": true,
+      "prompt": "A single food icon for a cartoon scene transition food curtain, isolated on transparent background: funny oversized roasted chicken drumstick with bone, glossy brown skin. Thick clean black hand-drawn outline, flat cel animation colors, playful weird 1990s American cable TV cartoon proportions, bold readable silhouette, centered with transparent padding. No plate, no table, no utensils, no text, no logo, no watermark, no background."
+    },
+    {
+      "name": "cartoon_transition_food_curtain_02",
+      "type": "ui",
+      "size": "512x512",
+      "transparent": true,
+      "prompt": "A single food icon for a cartoon scene transition food curtain, isolated on transparent background: funny whole fish with bulging eye, simple blue-green body. Thick clean black hand-drawn outline, flat cel animation colors, playful weird 1990s American cable TV cartoon proportions, bold readable silhouette, centered with transparent padding. No plate, no table, no utensils, no text, no logo, no watermark, no background."
+    },
+    {
+      "name": "cartoon_transition_food_curtain_03",
+      "type": "ui",
+      "size": "512x512",
+      "transparent": true,
+      "prompt": "A single food icon for a cartoon scene transition food curtain, isolated on transparent background: chunky orange carrot with leafy green top. Thick clean black hand-drawn outline, flat cel animation colors, playful weird 1990s American cable TV cartoon proportions, bold readable silhouette, centered with transparent padding. No plate, no table, no utensils, no text, no logo, no watermark, no background."
+    },
+    {
+      "name": "cartoon_transition_food_curtain_04",
+      "type": "ui",
+      "size": "512x512",
+      "transparent": true,
+      "prompt": "A single food icon for a cartoon scene transition food curtain, isolated on transparent background: pink frosted donut with sprinkles, absurd cartoon bite mark. Thick clean black hand-drawn outline, flat cel animation colors, playful weird 1990s American cable TV cartoon proportions, bold readable silhouette, centered with transparent padding. No plate, no table, no utensils, no text, no logo, no watermark, no background."
+    },
+    {
+      "name": "cartoon_transition_food_curtain_05",
+      "type": "ui",
+      "size": "512x512",
+      "transparent": true,
+      "prompt": "A single food icon for a cartoon scene transition food curtain, isolated on transparent background: red chili pepper with mischievous curved shape. Thick clean black hand-drawn outline, flat cel animation colors, playful weird 1990s American cable TV cartoon proportions, bold readable silhouette, centered with transparent padding. No plate, no table, no utensils, no text, no logo, no watermark, no background."
+    },
+    {
+      "name": "cartoon_transition_food_curtain_06",
+      "type": "ui",
+      "size": "512x512",
+      "transparent": true,
+      "prompt": "A single food icon for a cartoon scene transition food curtain, isolated on transparent background: round rice ball with tiny seaweed patch and sesame dots. Thick clean black hand-drawn outline, flat cel animation colors, playful weird 1990s American cable TV cartoon proportions, bold readable silhouette, centered with transparent padding. No plate, no table, no utensils, no text, no logo, no watermark, no background."
+    }
+  ]
+}
