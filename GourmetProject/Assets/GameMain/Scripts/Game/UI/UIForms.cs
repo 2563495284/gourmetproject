@@ -12,6 +12,7 @@ namespace GourmetProject.Game.UI
 
         // 界面预制体资源路径（编辑器资源模式下直接用工程内路径）。
         public const string MainMenu = "Assets/GameMain/UI/MainMenuForm.prefab";
+        public const string CharacterSelect = "Assets/GameMain/UI/CharacterSelectForm.prefab";
         public const string Settings = "Assets/GameMain/UI/SettingsForm.prefab";
         public const string ConfirmDialog = "Assets/GameMain/UI/ConfirmDialogForm.prefab";
         public const string CartoonSceneTransition = "Assets/GameMain/UI/CartoonSceneTransitionForm.prefab";

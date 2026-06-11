@@ -3,7 +3,6 @@ using GourmetProject.Runtime.UI;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityGameFramework.Runtime;
-using Log = GourmetProject.Core.Diagnostics.Log;
 
 namespace GourmetProject.Game.UI
 {
@@ -12,24 +11,10 @@ namespace GourmetProject.Game.UI
     /// </summary>
     public sealed class MainMenuForm : UGuiForm
     {
-        private const string Tag = "MainMenu";
-
         private Button _startButton;
         private Button _settingsButton;
         private Button _quitButton;
         private Text _startLabel;
-        private int _transitionPreviewIndex;
-        private readonly CartoonTransitionType[] _transitionPreviewTypes =
-        {
-            CartoonTransitionType.FoodWipe,
-            CartoonTransitionType.IrisWipe,
-            CartoonTransitionType.Fade,
-            CartoonTransitionType.Curtain,
-            CartoonTransitionType.PageTurn,
-            CartoonTransitionType.SauceSplat,
-            CartoonTransitionType.CartoonBurst,
-            CartoonTransitionType.FoodCurtain,
-        };
 
         protected override void OnInit(object userData)
         {
@@ -55,25 +40,10 @@ namespace GourmetProject.Game.UI
 
         private void OnStartClicked()
         {
-            bool hasSave = GameApp.Save.Has(UIForms.GameSaveSlot);
-            var data = new CartoonSceneTransitionData
-            {
-                TransitionType = NextTransitionPreviewType(),
-                Message = hasSave ? "继续开饭！" : "开饭啦！",
-                CoverDuration = 0.42f,
-                HoldDuration = 0.2f,
-                RevealDuration = 0.34f,
-                OnCovered = () => Log.Info(hasSave ? "Continue game (gameplay not implemented yet)." : "Start new game (gameplay not implemented yet).", Tag),
-            };
-
-            GameApp.UI.OpenUIForm(UIForms.CartoonSceneTransition, UIForms.GroupDialog, data);
-        }
-
-        private CartoonTransitionType NextTransitionPreviewType()
-        {
-            var type = _transitionPreviewTypes[_transitionPreviewIndex % _transitionPreviewTypes.Length];
-            _transitionPreviewIndex++;
-            return type;
+            // 杀戮尖塔流程：主菜单 -> 角色选择 -> 确认开局。
+            // 关闭主菜单后打开角色选择界面，开局转场由角色选择界面在“确认”时触发。
+            GameApp.UI.CloseUIForm(UIForm);
+            GameApp.UI.OpenUIForm(UIForms.CharacterSelect, UIForms.GroupDefault);
         }
 
         private void OnSettingsClicked()

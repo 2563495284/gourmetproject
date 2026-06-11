@@ -1,0 +1,61 @@
+{
+  "stylePrefix": "90s American cable TV cartoon style, SpongeBob-like absurd facial energy, CatDog-inspired weird animal comedy, surreal proportions, family-friendly dark humor, thick clean black ink outlines, flat cel animation colors, warm appetizing color palette, polished game asset quality, funny, weird, charming, no text, no logo, no watermark",
+  "assets": [
+    {
+      "name": "char_glutton_dog",
+      "type": "character",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Full body standing character portrait of a chubby cartoon glutton dog, the 'Big-Belly Hound', exaggerated enormous round belly, tiny chef apron stained with sauce, drooling tongue out, holding an oversized fork and spoon like weapons, hungry confident grin, expressive bulging eyes, energetic heroic stance facing the viewer, clean readable silhouette, centered with transparent padding, game character select portrait. No background, no plate, no table, no extra characters, no text, no logo, no watermark"
+    },
+    {
+      "name": "char_wok_cat",
+      "type": "character",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Full body standing character portrait of a cool cartoon chef cat, the 'Iron-Wok Cat', slim athletic body, wearing a tall white chef hat and a tied bandana, twirling a black cast-iron wok in one paw and a cleaver in the other, focused confident smirk, narrow determined eyes, dynamic martial-arts cooking stance facing the viewer, clean readable silhouette, centered with transparent padding, game character select portrait. No background, no plate, no table, no extra characters, no text, no logo, no watermark"
+    },
+    {
+      "name": "char_chili_rat",
+      "type": "character",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Full body standing character portrait of a fiery cartoon rat, the 'Chili Devil Rat', wiry mischievous body glowing slightly red-hot, tiny devil horns made of chili peppers, holding a flaming red chili pepper like a torch, smoke puffing from its ears, wild grin showing sharp teeth, crazy excited eyes, springy aggressive stance facing the viewer, clean readable silhouette, centered with transparent padding, game character select portrait. No background, no plate, no table, no extra characters, no text, no logo, no watermark"
+    },
+    {
+      "name": "char_select_arrow",
+      "type": "ui",
+      "size": "1024x1024",
+      "transparent": true,
+      "prompt": "A single left-pointing navigation arrow button for a 2D cartoon food game UI, chunky rounded triangular arrow shape pointing left, thick hand-drawn black outline, warm yellow-orange fill with a darker brown edge shadow, slightly uneven organic playful silhouette, bold and readable, centered with generous transparent padding. No text, no icon, no logo, no watermark, no background"
+    },
+    {
+      "name": "char_select_dot",
+      "type": "ui",
+      "size": "512x512",
+      "transparent": true,
+      "prompt": "A single small round page indicator dot for a 2D cartoon food game UI, simple circle with a thick hand-drawn black outline, warm cream fill, slightly imperfect hand-inked silhouette, bold and readable, centered with generous transparent padding so it can be tinted by code for selected and unselected states. No text, no icon, no logo, no watermark, no background"
+    },
+    {
+      "name": "char_select_portrait_frame",
+      "type": "ui",
+      "size": "1024x1024",
+      "transparent": true,
+      "prompt": "A reusable rounded square portrait frame for a 2D cartoon food game character select UI, chunky hand-drawn black outline, warm cream and orange wooden menu-board look with subtle painted texture, decorative corner accents like small forks or food motifs around the border, large clear empty inner area for a character image, 9-slice friendly with generous border padding, centered with transparent padding. No character, no text, no logo, no watermark, no background"
+    },
+    {
+      "name": "char_select_title_banner",
+      "type": "ui",
+      "size": "1536x1024",
+      "transparent": true,
+      "prompt": "A reusable horizontal title banner ribbon frame for a 2D cartoon food game UI, wide rounded plaque with a thick hand-drawn black outline, warm yellow-orange fill with darker brown edge shadow, playful uneven hand-inked silhouette, small cartoon food accents at the two ends, large clear empty center area for future title text, centered with transparent padding. No text, no logo, no watermark, no background"
+    },
+    {
+      "name": "char_select_confirm_button",
+      "type": "ui",
+      "size": "1024x1024",
+      "transparent": true,
+      "prompt": "A reusable chunky round confirm button frame for a 2D cartoon food game UI, circular plate-like button with a thick hand-drawn black outline, warm appetizing red and cream fill with a glossy highlight, playful uneven hand-inked silhouette, clear empty center for future label text, 9-slice unfriendly but centered and symmetrical, centered with generous transparent padding. No text, no icon, no logo, no watermark, no background"
+    }
+  ]
+}
