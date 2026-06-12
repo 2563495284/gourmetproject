@@ -13,26 +13,33 @@ namespace GourmetProject.Gameplay.Data
         private readonly Dictionary<string, DishDef> _dishes;
         private readonly Dictionary<string, TagDef> _tags;
         private readonly Dictionary<string, RecipeDef> _recipes;
+        private readonly Dictionary<string, StomachFragmentDef> _fragments;
 
         public GameplayDatabase(
             IEnumerable<DishDef> dishes,
             IEnumerable<TagDef> tags,
-            IEnumerable<RecipeDef> recipes)
+            IEnumerable<RecipeDef> recipes,
+            IEnumerable<StomachFragmentDef> fragments = null)
         {
             _dishes = ToMap(dishes, d => d.Id, nameof(dishes));
             _tags = ToMap(tags, t => t.Id, nameof(tags));
             _recipes = ToMap(recipes, r => r.Id, nameof(recipes));
+            _fragments = ToMap(fragments ?? System.Array.Empty<StomachFragmentDef>(), f => f.Id, nameof(fragments));
         }
 
         public IReadOnlyCollection<DishDef> AllDishes => _dishes.Values;
 
         public IReadOnlyCollection<TagDef> AllTags => _tags.Values;
 
+        public IReadOnlyCollection<StomachFragmentDef> AllFragments => _fragments.Values;
+
         public DishDef GetDish(string id) => _dishes.TryGetValue(id, out DishDef d) ? d : null;
 
         public TagDef GetTag(string id) => _tags.TryGetValue(id, out TagDef t) ? t : null;
 
         public RecipeDef GetRecipe(string id) => _recipes.TryGetValue(id, out RecipeDef r) ? r : null;
+
+        public StomachFragmentDef GetFragment(string id) => id != null && _fragments.TryGetValue(id, out StomachFragmentDef f) ? f : null;
 
         public bool TryGetDish(string id, out DishDef dish) => _dishes.TryGetValue(id, out dish);
 

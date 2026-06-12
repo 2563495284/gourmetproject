@@ -15,10 +15,13 @@ namespace cfg
 public partial class Tables
 {
     public TbGlobalConst TbGlobalConst {get; }
-    public TbDish TbDish {get; }
+    public TbDishBase TbDishBase {get; }
+    public TbDishVariant TbDishVariant {get; }
     public TbTag TbTag {get; }
     public TbTerm TbTerm {get; }
     public TbCharacter TbCharacter {get; }
+    public TbStomachFragment TbStomachFragment {get; }
+    public TbFragmentCellTag TbFragmentCellTag {get; }
     public TbRecipe TbRecipe {get; }
     public TbItem TbItem {get; }
     public TbWeek TbWeek {get; }
@@ -27,10 +30,13 @@ public partial class Tables
     public Tables(System.Func<string, JSONNode> loader)
     {
         TbGlobalConst = new TbGlobalConst(loader("tbglobalconst"));
-        TbDish = new TbDish(loader("tbdish"));
+        TbDishBase = new TbDishBase(loader("tbdishbase"));
+        TbDishVariant = new TbDishVariant(loader("tbdishvariant"));
         TbTag = new TbTag(loader("tbtag"));
         TbTerm = new TbTerm(loader("tbterm"));
         TbCharacter = new TbCharacter(loader("tbcharacter"));
+        TbStomachFragment = new TbStomachFragment(loader("tbstomachfragment"));
+        TbFragmentCellTag = new TbFragmentCellTag(loader("tbfragmentcelltag"));
         TbRecipe = new TbRecipe(loader("tbrecipe"));
         TbItem = new TbItem(loader("tbitem"));
         TbWeek = new TbWeek(loader("tbweek"));
@@ -41,10 +47,13 @@ public partial class Tables
     private void ResolveRef()
     {
         TbGlobalConst.ResolveRef(this);
-        TbDish.ResolveRef(this);
+        TbDishBase.ResolveRef(this);
+        TbDishVariant.ResolveRef(this);
         TbTag.ResolveRef(this);
         TbTerm.ResolveRef(this);
         TbCharacter.ResolveRef(this);
+        TbStomachFragment.ResolveRef(this);
+        TbFragmentCellTag.ResolveRef(this);
         TbRecipe.ResolveRef(this);
         TbItem.ResolveRef(this);
         TbWeek.ResolveRef(this);

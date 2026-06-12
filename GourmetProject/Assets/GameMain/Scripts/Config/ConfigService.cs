@@ -33,7 +33,7 @@ namespace GourmetProject.Config
             });
 
             Log.Info(
-                $"Config loaded. dishes={Tables.TbDish.DataList.Count}, tags={Tables.TbTag.DataList.Count}, " +
+                $"dishBases={Tables.TbDishBase.DataList.Count}, dishVariants={Tables.TbDishVariant.DataList.Count}, tags={Tables.TbTag.DataList.Count}, " +
                 $"characters={Tables.TbCharacter.DataList.Count}, recipes={Tables.TbRecipe.DataList.Count}, " +
                 $"weeks={Tables.TbWeek.DataList.Count}",
                 Tag);

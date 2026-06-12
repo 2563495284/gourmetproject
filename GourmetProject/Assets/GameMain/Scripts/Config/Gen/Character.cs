@@ -22,6 +22,9 @@ public sealed partial class Character : Luban.BeanBase
         { if(!_buf["desc"].IsString) { throw new SerializationException(); }  Desc = _buf["desc"]; }
         { if(!_buf["portrait"].IsString) { throw new SerializationException(); }  Portrait = _buf["portrait"]; }
         { if(!_buf["initialRecipeId"].IsString) { throw new SerializationException(); }  InitialRecipeId = _buf["initialRecipeId"]; }
+        { if(!_buf["initialFragmentId"].IsString) { throw new SerializationException(); }  InitialFragmentId = _buf["initialFragmentId"]; }
+        { if(!_buf["maxStomachWidth"].IsNumber) { throw new SerializationException(); }  MaxStomachWidth = _buf["maxStomachWidth"]; }
+        { if(!_buf["maxStomachHeight"].IsNumber) { throw new SerializationException(); }  MaxStomachHeight = _buf["maxStomachHeight"]; }
         { var __json0 = _buf["startItems"]; if(!__json0.IsArray) { throw new SerializationException(); } StartItems = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  StartItems.Add(__v0); }   }
     }
 
@@ -35,6 +38,9 @@ public sealed partial class Character : Luban.BeanBase
     public readonly string Desc;
     public readonly string Portrait;
     public readonly string InitialRecipeId;
+    public readonly string InitialFragmentId;
+    public readonly int MaxStomachWidth;
+    public readonly int MaxStomachHeight;
     public readonly System.Collections.Generic.List<string> StartItems;
    
     public const int __ID__ = -726803703;
@@ -52,6 +58,9 @@ public sealed partial class Character : Luban.BeanBase
         + "desc:" + Desc + ","
         + "portrait:" + Portrait + ","
         + "initialRecipeId:" + InitialRecipeId + ","
+        + "initialFragmentId:" + InitialFragmentId + ","
+        + "maxStomachWidth:" + MaxStomachWidth + ","
+        + "maxStomachHeight:" + MaxStomachHeight + ","
         + "startItems:" + Luban.StringUtil.CollectionToString(StartItems) + ","
         + "}";
     }

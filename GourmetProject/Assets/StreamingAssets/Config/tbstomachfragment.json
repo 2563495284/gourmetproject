@@ -1,0 +1,58 @@
+[
+  {
+    "id": "gut_4x4",
+    "hiddenMin": 0,
+    "hiddenMax": 0,
+    "baseWeight": 0,
+    "price": 0,
+    "shapeRows": [
+      "XXXX",
+      "XXXX",
+      "XXXX",
+      "XXXX"
+    ]
+  },
+  {
+    "id": "frag_1x2",
+    "hiddenMin": 1,
+    "hiddenMax": 10,
+    "baseWeight": 100,
+    "price": 2,
+    "shapeRows": [
+      "XX"
+    ]
+  },
+  {
+    "id": "frag_2x1",
+    "hiddenMin": 1,
+    "hiddenMax": 10,
+    "baseWeight": 100,
+    "price": 2,
+    "shapeRows": [
+      "X",
+      "X"
+    ]
+  },
+  {
+    "id": "frag_L",
+    "hiddenMin": 10,
+    "hiddenMax": 25,
+    "baseWeight": 70,
+    "price": 4,
+    "shapeRows": [
+      "XX",
+      ".X"
+    ]
+  },
+  {
+    "id": "frag_gold2x2",
+    "hiddenMin": 25,
+    "hiddenMax": 45,
+    "baseWeight": 40,
+    "price": 6,
+    "shapeRows": [
+      "XX",
+      "XX"
+    ]
+  }
+]

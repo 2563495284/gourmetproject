@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using GourmetProject.Gameplay.Battle;
+using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Library;
 using GourmetProject.Gameplay.Model;
@@ -143,16 +144,10 @@ namespace GourmetProject.Game.Gameplay
             }
 
             string modifier = CurrentWeek?.Modifier ?? string.Empty;
-            int boardW = BoardWidth;
-            int boardH = BoardHeight;
-            if (modifier == "small_board")
-            {
-                boardW = 3;
-                boardH = 3;
-            }
+            GpBoard board = BuildBoard(character, modifier);
 
             var battleStream = GameApp.Random.Stream($"battle_w{WeekIndex}");
-            var session = new BattleSession(new GpBoard(boardW, boardH), Database, battleStream, slots, RequiredScore);
+            var session = new BattleSession(board, Database, battleStream, slots, RequiredScore);
 
             if (modifier == "limit_serve")
             {
@@ -161,6 +156,31 @@ namespace GourmetProject.Game.Gameplay
 
             ApplyPassiveItems(session);
             return session;
+        }
+
+        /// <summary>
+        /// 由角色配置构建本局胃部棋盘：初始胃形状取自碎片库，最大包围盒取角色 max 尺寸。
+        /// Boss「small_board」修正收缩最大包围盒（初始碎片超出部分自动裁掉）。
+        /// </summary>
+        private GpBoard BuildBoard(cfg.Character character, string modifier)
+        {
+            int maxW = character != null && character.MaxStomachWidth > 0 ? character.MaxStomachWidth : BoardWidth;
+            int maxH = character != null && character.MaxStomachHeight > 0 ? character.MaxStomachHeight : BoardHeight;
+
+            if (modifier == "small_board")
+            {
+                maxW = System.Math.Min(maxW, 3);
+                maxH = System.Math.Min(maxH, 3);
+            }
+
+            StomachFragmentDef fragment = Database.GetFragment(character?.InitialFragmentId);
+            if (fragment == null)
+            {
+                Log.Warning($"Character '{CharacterId}' 无有效初始胃碎片 '{character?.InitialFragmentId}'，回退为满 {maxW}x{maxH} 棋盘。", "GameRun");
+                return new GpBoard(maxW, maxH);
+            }
+
+            return StomachBuilder.BuildInitial(fragment, maxW, maxH);
         }
 
         /// <summary>当前周是否为 Boss 周（用于表现层展示）。</summary>

@@ -5,17 +5,37 @@ using GourmetProject.Gameplay.Model;
 namespace GourmetProject.Gameplay.Board
 {
     /// <summary>
-    /// 局内棋盘。维护占用网格与已摆放菜品实例，提供合法摆放查询与相邻/空位统计。
+    /// 局内棋盘（胃）。在最大 Width×Height 包围盒内，每格有三态：不存在(胃外)/存在且空/被占用。
+    /// 每个存在格还可携带强化标签（结算时附加给占据它的菜品）。
     /// 不含随机与计分逻辑，便于独立单测。
     /// </summary>
     public sealed class Board
     {
         public const int Empty = -1;
 
-        private readonly int[] _cells; // 存放占用该格的实例 Id，Empty 表示空。
-        private readonly List<DishInstance> _dishes = new List<DishInstance>();
+        private static readonly IReadOnlyList<string> NoTags = Array.Empty<string>();
 
+        private readonly int[] _cells;       // 占用该格的实例 Id，Empty 表示空。
+        private readonly bool[] _exists;      // 该格是否属于胃。
+        private readonly List<string>[] _cellTags; // 该格携带的强化标签（可为 null）。
+        private readonly List<DishInstance> _dishes = new List<DishInstance>();
+        private int _existingCount;
+
+        /// <summary>构造一个全存在的矩形棋盘（无格标签）。</summary>
         public Board(int width, int height)
+            : this(width, height, null, null)
+        {
+        }
+
+        /// <summary>
+        /// 构造不规则棋盘。<paramref name="existingCells"/> 为 null 时所有格都存在（矩形）；
+        /// 否则仅列出的格存在。<paramref name="cellTags"/> 给指定格附加强化标签。
+        /// </summary>
+        public Board(
+            int width,
+            int height,
+            IEnumerable<GridPos> existingCells,
+            IReadOnlyDictionary<GridPos, IReadOnlyList<string>> cellTags)
         {
             if (width <= 0 || height <= 0)
             {
@@ -25,9 +45,64 @@ namespace GourmetProject.Gameplay.Board
             Width = width;
             Height = height;
             _cells = new int[width * height];
+            _exists = new bool[width * height];
+            _cellTags = new List<string>[width * height];
+
             for (int i = 0; i < _cells.Length; i++)
             {
                 _cells[i] = Empty;
+            }
+
+            if (existingCells == null)
+            {
+                for (int i = 0; i < _exists.Length; i++)
+                {
+                    _exists[i] = true;
+                }
+
+                _existingCount = _cells.Length;
+            }
+            else
+            {
+                foreach (GridPos cell in existingCells)
+                {
+                    if (!InBounds(cell))
+                    {
+                        continue;
+                    }
+
+                    int idx = Index(cell);
+                    if (!_exists[idx])
+                    {
+                        _exists[idx] = true;
+                        _existingCount++;
+                    }
+                }
+            }
+
+            if (cellTags != null)
+            {
+                foreach (KeyValuePair<GridPos, IReadOnlyList<string>> kv in cellTags)
+                {
+                    if (!Exists(kv.Key) || kv.Value == null)
+                    {
+                        continue;
+                    }
+
+                    var list = new List<string>();
+                    foreach (string tagId in kv.Value)
+                    {
+                        if (!string.IsNullOrEmpty(tagId))
+                        {
+                            list.Add(tagId);
+                        }
+                    }
+
+                    if (list.Count > 0)
+                    {
+                        _cellTags[Index(kv.Key)] = list;
+                    }
+                }
             }
         }
 
@@ -35,7 +110,8 @@ namespace GourmetProject.Gameplay.Board
 
         public int Height { get; }
 
-        public int CellCapacity => Width * Height;
+        /// <summary>存在格总数（容量）。不规则胃下小于 Width×Height。</summary>
+        public int CellCapacity => _existingCount;
 
         public IReadOnlyList<DishInstance> Dishes => _dishes;
 
@@ -43,7 +119,23 @@ namespace GourmetProject.Gameplay.Board
 
         public bool InBounds(GridPos p) => p.X >= 0 && p.X < Width && p.Y >= 0 && p.Y < Height;
 
-        public bool IsEmpty(GridPos p) => InBounds(p) && _cells[Index(p)] == Empty;
+        /// <summary>该格是否属于胃（在界内且被标记为存在）。</summary>
+        public bool Exists(GridPos p) => InBounds(p) && _exists[Index(p)];
+
+        /// <summary>该格是否存在且未被占用。</summary>
+        public bool IsEmpty(GridPos p) => Exists(p) && _cells[Index(p)] == Empty;
+
+        /// <summary>该存在格携带的强化标签（无则空列表）。</summary>
+        public IReadOnlyList<string> TagsAt(GridPos p)
+        {
+            if (!Exists(p))
+            {
+                return NoTags;
+            }
+
+            List<string> tags = _cellTags[Index(p)];
+            return tags ?? NoTags;
+        }
 
         public int OccupiedCellCount
         {
@@ -62,9 +154,10 @@ namespace GourmetProject.Gameplay.Board
             }
         }
 
-        public int EmptyCellCount => CellCapacity - OccupiedCellCount;
+        /// <summary>存在且空的格数。</summary>
+        public int EmptyCellCount => _existingCount - OccupiedCellCount;
 
-        /// <summary>判断某朝向形状能否放在以 origin 为左上的位置（全部格在界内且为空）。</summary>
+        /// <summary>判断某朝向形状能否放在以 origin 为左上的位置（全部格存在且为空）。</summary>
         public bool CanPlace(DishShape orientation, GridPos origin)
         {
             if (orientation == null)
@@ -75,7 +168,7 @@ namespace GourmetProject.Gameplay.Board
             foreach (GridPos cell in orientation.Cells)
             {
                 GridPos abs = cell.Offset(origin.X, origin.Y);
-                if (!InBounds(abs) || _cells[Index(abs)] != Empty)
+                if (!Exists(abs) || _cells[Index(abs)] != Empty)
                 {
                     return false;
                 }
@@ -126,7 +219,7 @@ namespace GourmetProject.Gameplay.Board
 
             foreach (GridPos cell in dish.OccupiedCells)
             {
-                if (!InBounds(cell) || _cells[Index(cell)] != Empty)
+                if (!Exists(cell) || _cells[Index(cell)] != Empty)
                 {
                     throw new InvalidOperationException($"Cannot place dish '{dish.Def.Id}' at occupied/out-of-bounds cell {cell}.");
                 }

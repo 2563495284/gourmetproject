@@ -33,21 +33,35 @@
         <var name="maxCount" type="int"/>
     </bean>
 
-    <!-- 菜品库：纯配置随机池。 -->
-    <bean name="Dish">
+    <!-- 菜品本体：不随标签变化的物理属性。形状只在此写一次，被所有变体共享。 -->
+    <bean name="DishBase">
         <var name="id" type="string"/>
         <var name="name" type="string"/>
         <var name="deliciousness" type="int"/>
+        <var name="icon" type="string"/>
+        <var name="allowRotate" type="bool"/>
         <var name="shapeRows" type="list,string"/>
+    </bean>
+    <table name="TbDishBase" value="DishBase" index="id" input="dish_base.xlsx"/>
+
+    <!--
+        菜品变体：真正的「随机菜品库」条目。引用本体 + 自带标签组合 + 自己的隐藏分/权重/价格。
+        同一 baseId 的不同变体即「带不同标签视为不同菜品」。
+        aTagId/bTagId 为空串表示该唯一标签槽位为空；inherentTags 放末列以支持多元素多行模式。
+    -->
+    <bean name="DishVariant">
+        <var name="id" type="string"/>
+        <var name="baseId" type="string"/>
+        <var name="aTagId" type="string"/>
+        <var name="bTagId" type="string"/>
         <var name="hiddenMin" type="int"/>
         <var name="hiddenMax" type="int"/>
         <var name="baseWeight" type="float"/>
-        <var name="inherentTags" type="list,string"/>
-        <var name="icon" type="string"/>
-        <var name="allowRotate" type="bool"/>
+        <var name="price" type="int"/>
         <var name="maxRollCount" type="int"/>
+        <var name="inherentTags" type="list,string"/>
     </bean>
-    <table name="TbDish" value="Dish" index="id" input="dish.xlsx"/>
+    <table name="TbDishVariant" value="DishVariant" index="id" input="dish_variant.xlsx"/>
 
     <!-- 标签（技能）。category 区分固有/唯一A/唯一B；termId 非空时菜品详情额外展示该名词。 -->
     <bean name="Tag">
@@ -70,16 +84,40 @@
     </bean>
     <table name="TbTerm" value="Term" index="id" input="term.xlsx"/>
 
-    <!-- 角色：替换 Game 层硬编码占位列表。 -->
+    <!-- 角色：替换 Game 层硬编码占位列表。initialFragmentId 指向初始胃形状(碎片库)；maxStomachWidth/Height 为胃最大包围盒。 -->
     <bean name="Character">
         <var name="id" type="string"/>
         <var name="name" type="string"/>
         <var name="desc" type="string"/>
         <var name="portrait" type="string"/>
         <var name="initialRecipeId" type="string"/>
+        <var name="initialFragmentId" type="string"/>
+        <var name="maxStomachWidth" type="int"/>
+        <var name="maxStomachHeight" type="int"/>
         <var name="startItems" type="list,string"/>
     </bean>
     <table name="TbCharacter" value="Character" index="id" input="character.xlsx"/>
+
+    <!-- 胃部碎片库：也用作「初始胃」的形状来源。碎片不旋转(1x2 与 2x1 视为两个碎片)。'X'=存在格。 -->
+    <bean name="StomachFragment">
+        <var name="id" type="string"/>
+        <var name="hiddenMin" type="int"/>
+        <var name="hiddenMax" type="int"/>
+        <var name="baseWeight" type="float"/>
+        <var name="price" type="int"/>
+        <var name="shapeRows" type="list,string"/>
+    </bean>
+    <table name="TbStomachFragment" value="StomachFragment" index="id" input="stomach_fragment.xlsx"/>
+
+    <!-- 碎片格强化标签：分开配置。一行 = 碎片某格(x,y)挂一个标签 id（引用 TbTag）。 -->
+    <bean name="FragmentCellTag">
+        <var name="id" type="string"/>
+        <var name="fragmentId" type="string"/>
+        <var name="x" type="int"/>
+        <var name="y" type="int"/>
+        <var name="tagId" type="string"/>
+    </bean>
+    <table name="TbFragmentCellTag" value="FragmentCellTag" index="id" input="fragment_cell_tag.xlsx"/>
 
     <!-- 菜谱：固定菜品 + 加权放回随机池，随机到累计初始分 >= requiredInitScore 为止。 -->
     <bean name="Recipe">

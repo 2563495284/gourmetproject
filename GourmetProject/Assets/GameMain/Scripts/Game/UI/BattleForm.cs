@@ -23,7 +23,8 @@ namespace GourmetProject.Game.UI
         private static readonly Color Bg = new(0.12f, 0.12f, 0.15f, 0.96f);
         private static readonly Color Panel = new(1f, 1f, 1f, 0.08f);
         private static readonly Color CellEmpty = new(1f, 1f, 1f, 0.10f);
-        private static readonly Color CellBlocked = new(0f, 0f, 0f, 0.55f);
+        private static readonly Color CellVoid = new(0f, 0f, 0f, 0.55f);
+        private static readonly Color CellTagTint = new(1f, 0.85f, 0.35f, 0.22f);
         private static readonly Color Accent = new(1f, 0.6f, 0.16f, 1f);
 
         /// <summary>当前打开的战斗界面，供事件/奖励弹窗回调推进周循环。</summary>
@@ -40,8 +41,12 @@ namespace GourmetProject.Game.UI
         private Text _messageText;
         private Text _itemsText;
         private readonly List<Button> _recipeButtons = new();
+        private RectTransform _boardRoot;
         private Image[,] _cells;
         private Text[,] _cellLabels;
+        private Text[,] _cellBadges;
+        private int _boardW;
+        private int _boardH;
         private Button _eatButton;
 
         private RectTransform _activeItemsRoot;
@@ -102,6 +107,7 @@ namespace GourmetProject.Game.UI
             _session = _run.BuildBattleSession();
             _usedActiveItems.Clear();
             HideResult();
+            RebuildBoardCells(_session.Board.Width, _session.Board.Height);
             RebuildActiveItems();
             RefreshAll();
             string head = string.IsNullOrEmpty(eventFeedback) ? string.Empty : eventFeedback + " ";
@@ -143,10 +149,9 @@ namespace GourmetProject.Game.UI
                 _recipeButtons.Add(button);
             }
 
-            // 中间：棋盘容器 + 4x4 格子。
-            RectTransform boardRoot = UiBuilder.NewRect("BoardRoot", CachedTransform);
-            UiBuilder.Anchor(boardRoot, 0.34f, 0.30f, 0.66f, 0.82f);
-            BuildBoardCells(boardRoot);
+            // 中间：棋盘容器。格子按对局的胃尺寸动态构建（见 RebuildBoardCells）。
+            _boardRoot = UiBuilder.NewRect("BoardRoot", CachedTransform);
+            UiBuilder.Anchor(_boardRoot, 0.34f, 0.30f, 0.66f, 0.82f);
 
             // 棋盘下方：吃!
             _eatButton = UiBuilder.AddButton(CachedTransform, "EatButton", "吃!", Accent,
@@ -168,14 +173,26 @@ namespace GourmetProject.Game.UI
             BuildResultPanel();
         }
 
-        private void BuildBoardCells(RectTransform boardRoot)
+        /// <summary>按本局胃的包围盒尺寸（重）构建棋盘格子。不同角色 max 尺寸不同，需销毁旧格重建。</summary>
+        private void RebuildBoardCells(int w, int h)
         {
-            UiBuilder.AddImage(boardRoot, "BoardBg", new Color(1f, 1f, 1f, 0.06f), 0f, 0f, 1f, 1f);
+            if (_boardRoot == null || w <= 0 || h <= 0)
+            {
+                return;
+            }
 
-            int w = GameRun.BoardWidth;
-            int h = GameRun.BoardHeight;
+            for (int i = _boardRoot.childCount - 1; i >= 0; i--)
+            {
+                Destroy(_boardRoot.GetChild(i).gameObject);
+            }
+
+            _boardW = w;
+            _boardH = h;
             _cells = new Image[w, h];
             _cellLabels = new Text[w, h];
+            _cellBadges = new Text[w, h];
+
+            UiBuilder.AddImage(_boardRoot, "BoardBg", new Color(1f, 1f, 1f, 0.06f), 0f, 0f, 1f, 1f);
 
             for (int y = 0; y < h; y++)
             {
@@ -187,9 +204,11 @@ namespace GourmetProject.Game.UI
                     float minY = 1f - (float)(y + 1) / h;
                     float maxY = 1f - (float)y / h;
 
-                    Image cell = UiBuilder.AddImage(boardRoot, $"Cell_{x}_{y}", CellEmpty, minX, minY, maxX, maxY, 4f);
+                    Image cell = UiBuilder.AddImage(_boardRoot, $"Cell_{x}_{y}", CellEmpty, minX, minY, maxX, maxY, 4f);
                     _cells[x, y] = cell;
                     _cellLabels[x, y] = UiBuilder.AddText(cell.transform, "Label", "", 20, Color.white, 0f, 0f, 1f, 1f);
+                    // 右上角的格子强化标签角标。
+                    _cellBadges[x, y] = UiBuilder.AddText(cell.transform, "Badge", "", 14, new Color(1f, 0.92f, 0.5f, 1f), 0.5f, 0.62f, 1f, 1f);
 
                     int cx = x;
                     int cy = y;
@@ -293,9 +312,28 @@ namespace GourmetProject.Game.UI
                 return;
             }
 
-            DishInstance inst = _session.Board.DishAt(new GridPos(x, y));
+            var pos = new GridPos(x, y);
+            DishInstance inst = _session.Board.DishAt(pos);
             if (inst == null)
             {
+                // 空的强化格：提示该格携带的标签。
+                IReadOnlyList<string> cellTags = _session.Board.TagsAt(pos);
+                if (cellTags.Count > 0)
+                {
+                    var sb = new System.Text.StringBuilder("强化格：");
+                    for (int i = 0; i < cellTags.Count; i++)
+                    {
+                        TagDef tag = _run.Database.GetTag(cellTags[i]);
+                        sb.Append(tag != null ? tag.Name : cellTags[i]);
+                        if (i < cellTags.Count - 1)
+                        {
+                            sb.Append('、');
+                        }
+                    }
+
+                    SetMessage(sb.ToString());
+                }
+
                 return;
             }
 
@@ -420,25 +458,32 @@ namespace GourmetProject.Game.UI
 
         private void RefreshBoard()
         {
-            int boardW = _session?.Board.Width ?? GameRun.BoardWidth;
-            int boardH = _session?.Board.Height ?? GameRun.BoardHeight;
-
-            for (int y = 0; y < GameRun.BoardHeight; y++)
+            if (_session == null || _cells == null)
             {
-                for (int x = 0; x < GameRun.BoardWidth; x++)
+                return;
+            }
+
+            GpBoard board = _session.Board;
+            for (int y = 0; y < _boardH; y++)
+            {
+                for (int x = 0; x < _boardW; x++)
                 {
-                    // 超出本局棋盘范围（Boss「缩盘」）的格子标记为不可用。
-                    if (x >= boardW || y >= boardH)
+                    var pos = new GridPos(x, y);
+
+                    // 胃外「虚格」：不存在的格子，不可放、不可点。
+                    if (!board.Exists(pos))
                     {
-                        _cells[x, y].color = CellBlocked;
+                        _cells[x, y].color = CellVoid;
                         _cellLabels[x, y].text = string.Empty;
+                        _cellBadges[x, y].text = string.Empty;
                         continue;
                     }
 
-                    DishInstance inst = _session?.Board.DishAt(new GridPos(x, y));
+                    DishInstance inst = board.DishAt(pos);
+                    bool hasTag = board.TagsAt(pos).Count > 0;
                     if (inst == null)
                     {
-                        _cells[x, y].color = CellEmpty;
+                        _cells[x, y].color = hasTag ? CellTagTint : CellEmpty;
                         _cellLabels[x, y].text = string.Empty;
                     }
                     else
@@ -446,8 +491,23 @@ namespace GourmetProject.Game.UI
                         _cells[x, y].color = UiBuilder.ColorFromString(inst.Def.Id);
                         _cellLabels[x, y].text = ShortName(inst.Def.Name);
                     }
+
+                    _cellBadges[x, y].text = hasTag ? CellTagBadge(board.TagsAt(pos)) : string.Empty;
                 }
             }
+        }
+
+        /// <summary>格子强化标签角标：取首个标签短名，多个时加「+」。</summary>
+        private string CellTagBadge(IReadOnlyList<string> tagIds)
+        {
+            if (tagIds.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            TagDef tag = _run.Database.GetTag(tagIds[0]);
+            string label = ShortName(tag != null ? tag.Name : tagIds[0]);
+            return tagIds.Count > 1 ? label + "+" : label;
         }
 
         private void RefreshRecipes()

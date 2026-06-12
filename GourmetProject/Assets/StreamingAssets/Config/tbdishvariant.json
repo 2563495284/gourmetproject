@@ -1,0 +1,140 @@
+[
+  {
+    "id": "rice",
+    "baseId": "rice",
+    "aTagId": "",
+    "bTagId": "",
+    "hiddenMin": 1,
+    "hiddenMax": 10,
+    "baseWeight": 150,
+    "price": 2,
+    "maxRollCount": 0,
+    "inherentTags": []
+  },
+  {
+    "id": "egg",
+    "baseId": "egg",
+    "aTagId": "",
+    "bTagId": "",
+    "hiddenMin": 5,
+    "hiddenMax": 20,
+    "baseWeight": 120,
+    "price": 3,
+    "maxRollCount": 0,
+    "inherentTags": [
+      "t_fresh"
+    ]
+  },
+  {
+    "id": "soup",
+    "baseId": "soup",
+    "aTagId": "",
+    "bTagId": "",
+    "hiddenMin": 8,
+    "hiddenMax": 24,
+    "baseWeight": 100,
+    "price": 3,
+    "maxRollCount": 0,
+    "inherentTags": [
+      "t_lonely"
+    ]
+  },
+  {
+    "id": "fish",
+    "baseId": "fish",
+    "aTagId": "",
+    "bTagId": "",
+    "hiddenMin": 20,
+    "hiddenMax": 40,
+    "baseWeight": 80,
+    "price": 5,
+    "maxRollCount": 0,
+    "inherentTags": [
+      "t_fresh"
+    ]
+  },
+  {
+    "id": "noodle",
+    "baseId": "noodle",
+    "aTagId": "",
+    "bTagId": "",
+    "hiddenMin": 15,
+    "hiddenMax": 35,
+    "baseWeight": 90,
+    "price": 4,
+    "maxRollCount": 0,
+    "inherentTags": [
+      "t_hearty"
+    ]
+  },
+  {
+    "id": "dumpling",
+    "baseId": "dumpling",
+    "aTagId": "",
+    "bTagId": "",
+    "hiddenMin": 12,
+    "hiddenMax": 32,
+    "baseWeight": 90,
+    "price": 4,
+    "maxRollCount": 0,
+    "inherentTags": [
+      "t_hearty"
+    ]
+  },
+  {
+    "id": "chili",
+    "baseId": "chili",
+    "aTagId": "",
+    "bTagId": "",
+    "hiddenMin": 3,
+    "hiddenMax": 18,
+    "baseWeight": 110,
+    "price": 2,
+    "maxRollCount": 0,
+    "inherentTags": [
+      "t_spicy"
+    ]
+  },
+  {
+    "id": "orange",
+    "baseId": "orange",
+    "aTagId": "",
+    "bTagId": "",
+    "hiddenMin": 10,
+    "hiddenMax": 30,
+    "baseWeight": 100,
+    "price": 3,
+    "maxRollCount": 0,
+    "inherentTags": [
+      "t_sweet"
+    ]
+  },
+  {
+    "id": "cake",
+    "baseId": "cake",
+    "aTagId": "",
+    "bTagId": "",
+    "hiddenMin": 30,
+    "hiddenMax": 50,
+    "baseWeight": 60,
+    "price": 6,
+    "maxRollCount": 2,
+    "inherentTags": [
+      "t_sweet"
+    ]
+  },
+  {
+    "id": "feast",
+    "baseId": "feast",
+    "aTagId": "",
+    "bTagId": "",
+    "hiddenMin": 40,
+    "hiddenMax": 70,
+    "baseWeight": 40,
+    "price": 8,
+    "maxRollCount": 1,
+    "inherentTags": [
+      "t_feast"
+    ]
+  }
+]
