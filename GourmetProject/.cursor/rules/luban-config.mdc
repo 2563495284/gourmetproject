@@ -6,26 +6,41 @@ alwaysApply: false
 
 # Luban 配置
 
-配置源在 `GameConfig/`，用纯文本（XML schema + JSON 数据），便于版本管理；不使用 xlsx。
+配置源在 `GameConfig/`：XML schema 定义结构，**xlsx 表配置数据**。
+**强制：数据表一律用 xlsx，禁止用 json 手写数据。** 运行时产物（`StreamingAssets/Config/*.json`）由 Luban 自动生成，属生成物，勿手改、勿提交当作源。
 
 ## 新增一张表
-1. 在 `GameConfig/Defines/*.xml` 定义 `<bean>` 与 `<table>`。数组数据用 `*@` 选择器：
+1. 在 `GameConfig/Defines/*.xml` 定义 `<bean>` 与 `<table>`，`input` 指向 xlsx：
    ```xml
-   <table name="TbXxx" value="Xxx" index="id" input="*@xxx.json"/>
+   <table name="TbXxx" value="Xxx" index="id" input="xxx.xlsx"/>
    ```
-2. 在 `GameConfig/Datas/xxx.json` 放数据（JSON 数组）。
-3. 生成：
+   - 指定 sheet：`input="xxx.xlsx@Sheet1"`；单例表用 `mode="one"`，xlsx 首列写 `##column` 走竖表。
+2. 在 `GameConfig/Datas/xxx.xlsx` 放数据。表头放在最前几行，第 1 列单元格作行类型标记：
+   - `##var` 行：字段名（与 schema `<var name>` 一致），数据行第 1 列留空。
+   - `##type` 行（可选）：类型，schema 已声明可省。
+   - `##` / `##comment` 行：注释，被忽略。
+   - 枚举写名字字符串（如 `Inherent`）。
+3. 多元素 list（本项目 Luban 版本已实测，务必遵守）：
+   - 单格 `#sep=` / `(list#sep=…)` 与「横向流式多列」均**不生效**，不要用。
+   - 多元素 list 用**多行模式**：字段名前加 `*`（如 `*shapeRows`、`*pool`）放在 ##var 行末（多行字段须是最后一列）。
+     每个元素占一行，续行的所有前导字段列**留空**（靠 index 列是否为空区分记录）。
+   - `list,Bean`：每个元素写在一个单元格里，靠 schema 给该 bean 加 `sep=","` 切分字段：
+     `<bean name="RecipeEntry" sep=","> … </bean>`，单元格写 `rice,150,0`。
+   - 仅含 0/1 个元素的 list 可直接用单格，无需多行。
+   - 转换/校验可参考脚本 `GameConfig/Tools/json_to_xlsx.py`。
+4. 生成：
    ```bash
    bash GameConfig/gen.sh
    ```
 
 ## 输出位置（勿手改）
 - 代码 → `Assets/GameMain/Scripts/Config/Gen/`（每次生成会被清空重写）。
-- 数据 → `Assets/StreamingAssets/Config/`（运行时按表名小写 `.json` 读取）。
+- 数据 → `Assets/StreamingAssets/Config/`（运行时按表名小写 `.json` 读取，由 Luban 生成）。
 
 ## 运行时加载
 - 统一走 `GameApp.Config`（`ConfigService`）。访问示例：`GameApp.Config.Tables.TbXxx.Get(id)`。
 - 加载入口在 `ProcedurePreload`，整局只加载一次。
 
 ## 红线
+- 不要在 `GameConfig/Datas/` 放 `*.json` 源数据（已废弃，改用 xlsx）。
 - 不要在 `Config/Gen/` 放手写代码（会丢失）；手写的加载/包装放 `Config/` 根目录。

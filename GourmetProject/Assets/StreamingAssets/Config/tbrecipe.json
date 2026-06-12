@@ -1,0 +1,94 @@
+[
+  {
+    "id": "recipe_glutton",
+    "fixedDishes": [
+      "rice"
+    ],
+    "pool": [
+      {
+        "dishId": "rice",
+        "weight": 150,
+        "maxCount": 0
+      },
+      {
+        "dishId": "egg",
+        "weight": 120,
+        "maxCount": 0
+      },
+      {
+        "dishId": "soup",
+        "weight": 100,
+        "maxCount": 0
+      },
+      {
+        "dishId": "noodle",
+        "weight": 90,
+        "maxCount": 0
+      },
+      {
+        "dishId": "feast",
+        "weight": 40,
+        "maxCount": 1
+      }
+    ],
+    "requiredInitScore": 40
+  },
+  {
+    "id": "recipe_wok",
+    "fixedDishes": [
+      "egg"
+    ],
+    "pool": [
+      {
+        "dishId": "egg",
+        "weight": 120,
+        "maxCount": 0
+      },
+      {
+        "dishId": "fish",
+        "weight": 100,
+        "maxCount": 0
+      },
+      {
+        "dishId": "dumpling",
+        "weight": 90,
+        "maxCount": 0
+      },
+      {
+        "dishId": "cake",
+        "weight": 60,
+        "maxCount": 2
+      }
+    ],
+    "requiredInitScore": 45
+  },
+  {
+    "id": "recipe_chili",
+    "fixedDishes": [
+      "chili"
+    ],
+    "pool": [
+      {
+        "dishId": "chili",
+        "weight": 130,
+        "maxCount": 0
+      },
+      {
+        "dishId": "rice",
+        "weight": 120,
+        "maxCount": 0
+      },
+      {
+        "dishId": "soup",
+        "weight": 90,
+        "maxCount": 0
+      },
+      {
+        "dishId": "orange",
+        "weight": 80,
+        "maxCount": 0
+      }
+    ],
+    "requiredInitScore": 38
+  }
+]

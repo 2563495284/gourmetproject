@@ -10,5 +10,5 @@
         <var name="desc" type="string"/>
     </bean>
 
-    <table name="TbGlobalConst" value="GlobalConst" index="id" input="*@globalconst.json"/>
+    <table name="TbGlobalConst" value="GlobalConst" index="id" input="globalconst.xlsx"/>
 </module>

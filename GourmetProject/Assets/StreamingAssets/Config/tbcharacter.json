@@ -1,0 +1,32 @@
+[
+  {
+    "id": "glutton_dog",
+    "name": "大胃汪",
+    "desc": "暴食流。胃口越大，桌上的菜越不够看。",
+    "portrait": "Sprites/Characters/char_glutton_dog",
+    "initialRecipeId": "recipe_glutton",
+    "startItems": [
+      "item_big_plate"
+    ]
+  },
+  {
+    "id": "wok_cat",
+    "name": "铁锅喵",
+    "desc": "料理流。一手颠勺，一手挥刀，火候即是胜负。",
+    "portrait": "Sprites/Characters/char_wok_cat",
+    "initialRecipeId": "recipe_wok",
+    "startItems": [
+      "item_chef_knife"
+    ]
+  },
+  {
+    "id": "chili_rat",
+    "name": "辣魔鼠",
+    "desc": "火辣流。越吃越上头，辣到对手举旗投降。",
+    "portrait": "Sprites/Characters/char_chili_rat",
+    "initialRecipeId": "recipe_chili",
+    "startItems": [
+      "item_pepper_jar"
+    ]
+  }
+]

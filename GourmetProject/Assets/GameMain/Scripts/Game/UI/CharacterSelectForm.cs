@@ -98,7 +98,11 @@ namespace GourmetProject.Game.UI
                 CoverDuration = 0.42f,
                 HoldDuration = 0.2f,
                 RevealDuration = 0.34f,
-                OnCovered = () => Log.Info($"Selected character '{option.Id}' (gameplay not implemented yet).", Tag),
+                OnCovered = () =>
+                {
+                    Log.Info($"Selected character '{option.Id}', starting run.", Tag);
+                    Gameplay.GameplayEntryRequest.RequestNewRun(option.Id);
+                },
             };
 
             GameApp.UI.OpenUIForm(UIForms.CartoonSceneTransition, UIForms.GroupDialog, data);

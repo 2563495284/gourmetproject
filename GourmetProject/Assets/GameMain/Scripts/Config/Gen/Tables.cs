@@ -15,16 +15,40 @@ namespace cfg
 public partial class Tables
 {
     public TbGlobalConst TbGlobalConst {get; }
+    public TbDish TbDish {get; }
+    public TbTag TbTag {get; }
+    public TbTerm TbTerm {get; }
+    public TbCharacter TbCharacter {get; }
+    public TbRecipe TbRecipe {get; }
+    public TbItem TbItem {get; }
+    public TbWeek TbWeek {get; }
+    public TbEvent TbEvent {get; }
 
     public Tables(System.Func<string, JSONNode> loader)
     {
         TbGlobalConst = new TbGlobalConst(loader("tbglobalconst"));
+        TbDish = new TbDish(loader("tbdish"));
+        TbTag = new TbTag(loader("tbtag"));
+        TbTerm = new TbTerm(loader("tbterm"));
+        TbCharacter = new TbCharacter(loader("tbcharacter"));
+        TbRecipe = new TbRecipe(loader("tbrecipe"));
+        TbItem = new TbItem(loader("tbitem"));
+        TbWeek = new TbWeek(loader("tbweek"));
+        TbEvent = new TbEvent(loader("tbevent"));
         ResolveRef();
     }
     
     private void ResolveRef()
     {
         TbGlobalConst.ResolveRef(this);
+        TbDish.ResolveRef(this);
+        TbTag.ResolveRef(this);
+        TbTerm.ResolveRef(this);
+        TbCharacter.ResolveRef(this);
+        TbRecipe.ResolveRef(this);
+        TbItem.ResolveRef(this);
+        TbWeek.ResolveRef(this);
+        TbEvent.ResolveRef(this);
     }
 }
 

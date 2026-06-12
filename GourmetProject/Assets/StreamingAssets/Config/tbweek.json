@@ -1,0 +1,58 @@
+[
+  {
+    "id": 1,
+    "requiredScore": 80,
+    "rewardType": "Gold",
+    "isBoss": false,
+    "modifier": ""
+  },
+  {
+    "id": 2,
+    "requiredScore": 130,
+    "rewardType": "Gold",
+    "isBoss": false,
+    "modifier": ""
+  },
+  {
+    "id": 3,
+    "requiredScore": 200,
+    "rewardType": "Dish",
+    "isBoss": false,
+    "modifier": ""
+  },
+  {
+    "id": 4,
+    "requiredScore": 320,
+    "rewardType": "Boss",
+    "isBoss": true,
+    "modifier": "limit_serve"
+  },
+  {
+    "id": 5,
+    "requiredScore": 480,
+    "rewardType": "Gold",
+    "isBoss": false,
+    "modifier": ""
+  },
+  {
+    "id": 6,
+    "requiredScore": 700,
+    "rewardType": "Item",
+    "isBoss": false,
+    "modifier": ""
+  },
+  {
+    "id": 7,
+    "requiredScore": 1000,
+    "rewardType": "Gold",
+    "isBoss": false,
+    "modifier": ""
+  },
+  {
+    "id": 8,
+    "requiredScore": 1500,
+    "rewardType": "Boss",
+    "isBoss": true,
+    "modifier": "small_board"
+  }
+]

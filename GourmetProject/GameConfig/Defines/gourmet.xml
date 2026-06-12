@@ -1,0 +1,125 @@
+<module name="">
+    <!--
+        美食构筑肉鸽玩法配置。
+        枚举值在 JSON 数据里用名字字符串书写（如 "Inherent"）。
+        菜品形状用字符行表示：'X'/'1' 为占用格，其它字符为空，行从上到下、列从左到右。
+    -->
+
+    <enum name="TagCategory">
+        <var name="Inherent" value="0"/>
+        <var name="UniqueA" value="1"/>
+        <var name="UniqueB" value="2"/>
+    </enum>
+
+    <enum name="TagEffectType">
+        <var name="None" value="0"/>
+        <var name="AddFlat" value="1"/>
+        <var name="AddMult" value="2"/>
+        <var name="PerAdjacentDish" value="3"/>
+        <var name="PerEmptyCell" value="4"/>
+        <var name="PerOccupiedCell" value="5"/>
+        <var name="PerDishOnBoard" value="6"/>
+    </enum>
+
+    <enum name="ItemKind">
+        <var name="Passive" value="0"/>
+        <var name="Active" value="1"/>
+    </enum>
+
+    <!-- sep="," 让 RecipeEntry 在单元格内按逗号分隔字段；list,RecipeEntry 按字段数循环切出元素。 -->
+    <bean name="RecipeEntry" sep=",">
+        <var name="dishId" type="string"/>
+        <var name="weight" type="float"/>
+        <var name="maxCount" type="int"/>
+    </bean>
+
+    <!-- 菜品库：纯配置随机池。 -->
+    <bean name="Dish">
+        <var name="id" type="string"/>
+        <var name="name" type="string"/>
+        <var name="deliciousness" type="int"/>
+        <var name="shapeRows" type="list,string"/>
+        <var name="hiddenMin" type="int"/>
+        <var name="hiddenMax" type="int"/>
+        <var name="baseWeight" type="float"/>
+        <var name="inherentTags" type="list,string"/>
+        <var name="icon" type="string"/>
+        <var name="allowRotate" type="bool"/>
+        <var name="maxRollCount" type="int"/>
+    </bean>
+    <table name="TbDish" value="Dish" index="id" input="dish.xlsx"/>
+
+    <!-- 标签（技能）。category 区分固有/唯一A/唯一B；termId 非空时菜品详情额外展示该名词。 -->
+    <bean name="Tag">
+        <var name="id" type="string"/>
+        <var name="name" type="string"/>
+        <var name="desc" type="string"/>
+        <var name="category" type="TagCategory"/>
+        <var name="effectType" type="TagEffectType"/>
+        <var name="effectValue" type="float"/>
+        <var name="effectParam" type="string"/>
+        <var name="termId" type="string"/>
+    </bean>
+    <table name="TbTag" value="Tag" index="id" input="tag.xlsx"/>
+
+    <!-- 专有名词：菜品详情右侧框单独解释。 -->
+    <bean name="Term">
+        <var name="id" type="string"/>
+        <var name="name" type="string"/>
+        <var name="desc" type="string"/>
+    </bean>
+    <table name="TbTerm" value="Term" index="id" input="term.xlsx"/>
+
+    <!-- 角色：替换 Game 层硬编码占位列表。 -->
+    <bean name="Character">
+        <var name="id" type="string"/>
+        <var name="name" type="string"/>
+        <var name="desc" type="string"/>
+        <var name="portrait" type="string"/>
+        <var name="initialRecipeId" type="string"/>
+        <var name="startItems" type="list,string"/>
+    </bean>
+    <table name="TbCharacter" value="Character" index="id" input="character.xlsx"/>
+
+    <!-- 菜谱：固定菜品 + 加权放回随机池，随机到累计初始分 >= requiredInitScore 为止。 -->
+    <bean name="Recipe">
+        <var name="id" type="string"/>
+        <var name="fixedDishes" type="list,string"/>
+        <var name="pool" type="list,RecipeEntry"/>
+        <var name="requiredInitScore" type="int"/>
+    </bean>
+    <table name="TbRecipe" value="Recipe" index="id" input="recipe.xlsx"/>
+
+    <!-- 道具：被动常驻 / 主动可触发。 -->
+    <bean name="Item">
+        <var name="id" type="string"/>
+        <var name="name" type="string"/>
+        <var name="desc" type="string"/>
+        <var name="kind" type="ItemKind"/>
+        <var name="effectType" type="string"/>
+        <var name="effectValue" type="float"/>
+        <var name="icon" type="string"/>
+    </bean>
+    <table name="TbItem" value="Item" index="id" input="item.xlsx"/>
+
+    <!-- 周/关卡：要求分随周递增；isBoss 为特殊天。 -->
+    <bean name="Week">
+        <var name="id" type="int"/>
+        <var name="requiredScore" type="int"/>
+        <var name="rewardType" type="string"/>
+        <var name="isBoss" type="bool"/>
+        <var name="modifier" type="string"/>
+    </bean>
+    <table name="TbWeek" value="Week" index="id" input="week.xlsx"/>
+
+    <!-- 三选一事件。 -->
+    <bean name="GameEvent">
+        <var name="id" type="string"/>
+        <var name="name" type="string"/>
+        <var name="desc" type="string"/>
+        <var name="timeCost" type="int"/>
+        <var name="effectType" type="string"/>
+        <var name="effectValue" type="float"/>
+    </bean>
+    <table name="TbEvent" value="GameEvent" index="id" input="event.xlsx"/>
+</module>

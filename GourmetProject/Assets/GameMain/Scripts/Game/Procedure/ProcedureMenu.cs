@@ -1,5 +1,6 @@
 using GameFramework.Fsm;
 using GameFramework.Procedure;
+using GourmetProject.Game.Gameplay;
 using GourmetProject.Game.UI;
 using GourmetProject.Runtime;
 using UnityEngine;
@@ -21,6 +22,18 @@ namespace GourmetProject.Game.Procedure
             EnsureUIGroups();
             GameApp.UI.OpenUIForm(UIForms.MainMenu, UIForms.GroupDefault);
             Log.Info("ProcedureMenu entered: main menu opened.", Tag);
+        }
+
+        protected override void OnUpdate(IFsm<IProcedureManager> procedureOwner, float elapseSeconds, float realElapseSeconds)
+        {
+            base.OnUpdate(procedureOwner, elapseSeconds, realElapseSeconds);
+
+            // 菜单界面登记了「开始局内」请求时，切入玩法流程。
+            if (GameplayEntryRequest.Pending)
+            {
+                Log.Info("ProcedureMenu: gameplay entry requested, switching to gameplay procedure.", Tag);
+                ChangeState<ProcedureGameplay>(procedureOwner);
+            }
         }
 
         private static void EnsureUIGroups()

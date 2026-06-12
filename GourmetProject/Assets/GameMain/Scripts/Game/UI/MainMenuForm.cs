@@ -1,3 +1,4 @@
+using GourmetProject.Game.Gameplay;
 using GourmetProject.Runtime;
 using GourmetProject.Runtime.UI;
 using UnityEngine;
@@ -40,8 +41,16 @@ namespace GourmetProject.Game.UI
 
         private void OnStartClicked()
         {
-            // 杀戮尖塔流程：主菜单 -> 角色选择 -> 确认开局。
-            // 关闭主菜单后打开角色选择界面，开局转场由角色选择界面在“确认”时触发。
+            // 有存档则「继续游戏」：登记继续请求，由 ProcedureMenu 轮询切入玩法流程并读档。
+            if (GameApp.Save.Has(UIForms.GameSaveSlot))
+            {
+                GameApp.UI.CloseUIForm(UIForm);
+                GameplayEntryRequest.RequestContinue();
+                return;
+            }
+
+            // 否则杀戮尖塔流程：主菜单 -> 角色选择 -> 确认开局。
+            // 开局转场由角色选择界面在“确认”时触发。
             GameApp.UI.CloseUIForm(UIForm);
             GameApp.UI.OpenUIForm(UIForms.CharacterSelect, UIForms.GroupDefault);
         }

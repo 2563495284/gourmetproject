@@ -1,0 +1,47 @@
+[
+  {
+    "id": "item_big_plate",
+    "name": "大餐盘",
+    "desc": "被动：每局结算最终分数额外 +50。",
+    "kind": 0,
+    "effectType": "FinalAddFlat",
+    "effectValue": 50,
+    "icon": "Sprites/Items/big_plate"
+  },
+  {
+    "id": "item_chef_knife",
+    "name": "主厨刀",
+    "desc": "被动：每局结算最终分数 ×1.2。",
+    "kind": 0,
+    "effectType": "FinalAddMult",
+    "effectValue": 1.2,
+    "icon": "Sprites/Items/chef_knife"
+  },
+  {
+    "id": "item_pepper_jar",
+    "name": "胡椒罐",
+    "desc": "被动：每道带「麻辣」的菜额外 +10 美味度。",
+    "kind": 0,
+    "effectType": "TagBonus",
+    "effectValue": 10,
+    "icon": "Sprites/Items/pepper_jar"
+  },
+  {
+    "id": "item_reroll",
+    "name": "重摆铃",
+    "desc": "主动：清空棋盘上的菜品，可重新上菜。",
+    "kind": 1,
+    "effectType": "ClearBoard",
+    "effectValue": 0,
+    "icon": "Sprites/Items/reroll_bell"
+  },
+  {
+    "id": "item_extra_serve",
+    "name": "加菜券",
+    "desc": "主动：立即额外上一道菜。",
+    "kind": 1,
+    "effectType": "ExtraServe",
+    "effectValue": 1,
+    "icon": "Sprites/Items/extra_serve"
+  }
+]

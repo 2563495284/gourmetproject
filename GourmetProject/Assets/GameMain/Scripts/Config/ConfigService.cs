@@ -32,7 +32,11 @@ namespace GourmetProject.Config
                 return JSON.Parse(text);
             });
 
-            Log.Info($"Config loaded. TbGlobalConst rows = {Tables.TbGlobalConst.DataList.Count}", Tag);
+            Log.Info(
+                $"Config loaded. dishes={Tables.TbDish.DataList.Count}, tags={Tables.TbTag.DataList.Count}, " +
+                $"characters={Tables.TbCharacter.DataList.Count}, recipes={Tables.TbRecipe.DataList.Count}, " +
+                $"weeks={Tables.TbWeek.DataList.Count}",
+                Tag);
         }
     }
 }

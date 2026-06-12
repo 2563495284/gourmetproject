@@ -5,7 +5,9 @@
         "UnityGameFramework.Runtime",
         "GourmetProject.Runtime",
         "GourmetProject.Core",
-        "GourmetProject.Config"
+        "GourmetProject.Config",
+        "GourmetProject.Gameplay",
+        "Luban.Runtime"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

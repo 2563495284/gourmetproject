@@ -1,0 +1,16 @@
+{
+    "name": "GourmetProject.Gameplay",
+    "rootNamespace": "GourmetProject.Gameplay",
+    "references": [
+        "GourmetProject.Core"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}
