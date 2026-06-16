@@ -3,7 +3,11 @@ using UnityEngine;
 
 namespace GourmetProject.Game.Gameplay.Presentation
 {
-    /// <summary>简单场景内按钮，避免战斗操作继续依赖 uGUI。</summary>
+    /// <summary>
+    /// 简单场景内按钮，避免战斗操作继续依赖 uGUI。
+    /// 现以脚本根 prefab 形式存在：场景里摆好的固定按钮直接 <see cref="Configure"/>，
+    /// 运行时动态按钮（主动道具）由控制器 Instantiate 后再 Configure。
+    /// </summary>
     public sealed class WorldButtonView : MonoBehaviour
     {
         private SpriteRenderer _background;
@@ -13,23 +17,21 @@ namespace GourmetProject.Game.Gameplay.Presentation
         private Color _disabledColor;
         private Action _clicked;
         private bool _interactable = true;
+        private bool _built;
 
-        public static WorldButtonView Create(
-            Transform parent,
-            string name,
-            Vector3 position,
-            Vector2 size,
-            string label,
-            Color color,
-            Action clicked)
+        /// <summary>构建（若未构建）并设置外观与点击回调。可重复调用以更新颜色/文案/回调。</summary>
+        public void Configure(Vector2 size, string label, Color color, Action clicked)
         {
-            var go = new GameObject(name);
-            go.transform.SetParent(parent, false);
-            go.transform.position = position;
+            EnsureBuilt(size);
+            _clicked = clicked;
+            _normalColor = color;
+            _disabledColor = new Color(color.r * 0.45f, color.g * 0.45f, color.b * 0.45f, 0.75f);
+            if (_background != null)
+            {
+                _background.color = _interactable ? _normalColor : _disabledColor;
+            }
 
-            var view = go.AddComponent<WorldButtonView>();
-            view.Build(size, label, color, clicked);
-            return view;
+            SetLabel(label);
         }
 
         public void SetLabel(string label)
@@ -49,20 +51,32 @@ namespace GourmetProject.Game.Gameplay.Presentation
             }
         }
 
-        private void Build(Vector2 size, string label, Color color, Action clicked)
+        private void EnsureBuilt(Vector2 size)
         {
-            _clicked = clicked;
-            _normalColor = color;
-            _disabledColor = new Color(color.r * 0.45f, color.g * 0.45f, color.b * 0.45f, 0.75f);
+            transform.localScale = new Vector3(size.x, size.y, 1f);
+            if (_built)
+            {
+                return;
+            }
 
-            _background = gameObject.AddComponent<SpriteRenderer>();
+            _built = true;
+
+            _background = gameObject.GetComponent<SpriteRenderer>();
+            if (_background == null)
+            {
+                _background = gameObject.AddComponent<SpriteRenderer>();
+            }
+
             _background.sprite = CreatePixelSprite();
-            _background.color = color;
             BattleSorting.Apply(_background, BattleSorting.WorldUi, BattleSorting.OrderButtonBg);
             SpriteRenderStyle.ApplyUnlitMaterial(_background);
-            transform.localScale = new Vector3(size.x, size.y, 1f);
 
-            _collider = gameObject.AddComponent<BoxCollider2D>();
+            _collider = gameObject.GetComponent<BoxCollider2D>();
+            if (_collider == null)
+            {
+                _collider = gameObject.AddComponent<BoxCollider2D>();
+            }
+
             _collider.size = Vector2.one;
 
             GameObject textGo = new GameObject("Label");
@@ -70,7 +84,7 @@ namespace GourmetProject.Game.Gameplay.Presentation
             textGo.transform.localPosition = new Vector3(0f, -0.08f, -0.01f);
             textGo.transform.localScale = new Vector3(0.08f / size.x, 0.08f / size.y, 1f);
             _label = textGo.AddComponent<TextMesh>();
-            _label.text = label;
+            _label.text = string.Empty;
             _label.anchor = TextAnchor.MiddleCenter;
             _label.alignment = TextAlignment.Center;
             _label.color = Color.white;

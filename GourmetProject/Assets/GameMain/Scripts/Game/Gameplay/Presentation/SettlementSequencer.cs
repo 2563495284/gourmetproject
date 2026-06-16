@@ -25,6 +25,9 @@ namespace GourmetProject.Game.Gameplay.Presentation
         private const float DishPunchDuration = 0.2f;
         private const float ScoreTweenStep = 0.28f;
 
+        [SerializeField] private AdjacencyLinkView _linkPrefab;
+        [SerializeField] private FloatingTextView _floatingTextPrefab;
+
         public IEnumerator Play(
             BattleSession session,
             ScoreResult result,
@@ -61,13 +64,13 @@ namespace GourmetProject.Game.Gameplay.Presentation
                 {
                     foreach (DishInstance neighbor in board.GetAdjacentDishes(instance))
                     {
-                        AdjacencyLinkView.Spawn(fxRoot, center, DishCenter(neighbor, mapper), LinkColor);
+                        AdjacencyLinkView.Spawn(_linkPrefab, fxRoot, center, DishCenter(neighbor, mapper), LinkColor);
                     }
                 }
 
                 if (fxRoot != null)
                 {
-                    FloatingTextView.Spawn(fxRoot, center + new Vector3(0f, 0.35f, 0f), FormatGain(dishScore), GainColor);
+                    FloatingTextView.Spawn(_floatingTextPrefab, fxRoot, center + new Vector3(0f, 0.35f, 0f), FormatGain(dishScore), GainColor);
                 }
 
                 float from = runningTotal;
@@ -98,7 +101,7 @@ namespace GourmetProject.Game.Gameplay.Presentation
                     summary += $"{(result.FinalFlat >= 0 ? "+" : string.Empty)}{result.FinalFlat:0.#}";
                 }
 
-                FloatingTextView.Spawn(fxRoot, mapper.Center + new Vector3(0f, 0.6f, 0f), $"局加成 {summary}", FinalColor, 0.18f, 0.7f, 1.1f);
+                FloatingTextView.Spawn(_floatingTextPrefab, fxRoot, mapper.Center + new Vector3(0f, 0.6f, 0f), $"局加成 {summary}", FinalColor, 0.18f, 0.7f, 1.1f);
                 yield return new WaitForSeconds(0.4f);
             }
 

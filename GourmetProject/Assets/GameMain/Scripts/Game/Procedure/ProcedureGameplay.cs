@@ -1,22 +1,31 @@
 using System;
+using GameFramework.Event;
 using GameFramework.Fsm;
 using GameFramework.Procedure;
 using GourmetProject.Game.Gameplay;
 using GourmetProject.Game.UI;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Runtime;
+using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityGameFramework.Runtime;
 using Log = GourmetProject.Core.Diagnostics.Log;
 
 namespace GourmetProject.Game.Procedure
 {
     /// <summary>
-    /// 玩法流程：从菜单切入后，建立（或继续）一次肉鸽运行并打开局内战斗界面。
-    /// 局外周循环（领奖、事件、商店）后续在此流程内通过 UI 切换推进。
+    /// 玩法流程：从菜单切入后，建立（或继续）一次肉鸽运行，加载独立战斗场景并打开局内战斗界面。
+    /// 局外周循环（领奖、事件、商店）在此流程内通过 UI 切换推进；战斗全程停留在 Battle.unity。
     /// </summary>
     public sealed class ProcedureGameplay : ProcedureBase
     {
         private const string Tag = "Gameplay";
+        private const string BattleSceneName = "Battle";
+
+        // 进入战斗时缓存的菜单相机（Launch 场景），战斗期间禁用、返回时恢复。
+        private Camera _menuCamera;
+        private bool _battleSceneRequested;
+        private bool _sceneEventsSubscribed;
 
         protected override void OnEnter(IFsm<IProcedureManager> procedureOwner)
         {
@@ -53,8 +62,7 @@ namespace GourmetProject.Game.Procedure
             }
 
             GameplayFlowSignal.Consume();
-            GameApp.UI.OpenUIForm(UIForms.Battle, UIForms.GroupDefault);
-            Log.Info($"ProcedureGameplay entered. character={GameRunContext.Current.CharacterId}, week={GameRunContext.Current.WeekIndex}.", Tag);
+            LoadBattleScene();
         }
 
         protected override void OnUpdate(IFsm<IProcedureManager> procedureOwner, float elapseSeconds, float realElapseSeconds)
@@ -66,18 +74,110 @@ namespace GourmetProject.Game.Procedure
                 GameplayFlowSignal.Consume();
                 CloseGameplayForms();
                 GameRunContext.Clear();
+                UnloadBattleScene();
                 Log.Info("ProcedureGameplay: returning to menu.", Tag);
                 ChangeState<ProcedureMenu>(procedureOwner);
             }
         }
 
-        private static void CloseGameplayForms()
+        protected override void OnLeave(IFsm<IProcedureManager> procedureOwner, bool isShutdown)
         {
-            CloseIfOpen(UIForms.Battle);
-            CloseIfOpen(UIForms.Reward);
-            CloseIfOpen(UIForms.WeekMap);
-            CloseIfOpen(UIForms.Shop);
-            CloseIfOpen(UIForms.DishDetail);
+            UnsubscribeSceneEvents();
+            base.OnLeave(procedureOwner, isShutdown);
+        }
+
+        // —— 战斗场景加载 / 卸载 ——
+
+        private void LoadBattleScene()
+        {
+            _menuCamera = Camera.main;
+            _battleSceneRequested = true;
+            SubscribeSceneEvents();
+
+            if (GameApp.Scenes.IsLoaded(SceneNames.Battle))
+            {
+                ActivateBattleScene();
+                return;
+            }
+
+            GameApp.Scenes.Load(SceneNames.Battle);
+            Log.Info("ProcedureGameplay: loading battle scene...", Tag);
+        }
+
+        private void ActivateBattleScene()
+        {
+            UnityEngine.SceneManagement.Scene battle = SceneManager.GetSceneByName(BattleSceneName);
+            if (battle.IsValid() && battle.isLoaded)
+            {
+                SceneManager.SetActiveScene(battle);
+            }
+
+            // 单场景观感：战斗相机就绪后再禁用菜单相机，避免出现「无相机渲染」帧。
+            if (_menuCamera != null)
+            {
+                _menuCamera.gameObject.SetActive(false);
+            }
+
+            GameApp.UI.OpenUIForm(UIForms.Battle, UIForms.GroupDefault);
+            Log.Info($"ProcedureGameplay entered. character={GameRunContext.Current.CharacterId}, week={GameRunContext.Current.WeekIndex}.", Tag);
+        }
+
+        private void UnloadBattleScene()
+        {
+            UnsubscribeSceneEvents();
+
+            if (_menuCamera != null)
+            {
+                _menuCamera.gameObject.SetActive(true);
+                _menuCamera = null;
+            }
+
+            if (_battleSceneRequested && GameApp.Scenes.IsLoaded(SceneNames.Battle))
+            {
+                GameApp.Scenes.Unload(SceneNames.Battle);
+            }
+
+            _battleSceneRequested = false;
+        }
+
+        private void SubscribeSceneEvents()
+        {
+            if (_sceneEventsSubscribed)
+            {
+                return;
+            }
+
+            GameApp.Event.Subscribe(LoadSceneSuccessEventArgs.EventId, OnLoadSceneSuccess);
+            GameApp.Event.Subscribe(LoadSceneFailureEventArgs.EventId, OnLoadSceneFailure);
+            _sceneEventsSubscribed = true;
+        }
+
+        private void UnsubscribeSceneEvents()
+        {
+            if (!_sceneEventsSubscribed || GameApp.Event == null)
+            {
+                return;
+            }
+
+            GameApp.Event.Unsubscribe(LoadSceneSuccessEventArgs.EventId, OnLoadSceneSuccess);
+            GameApp.Event.Unsubscribe(LoadSceneFailureEventArgs.EventId, OnLoadSceneFailure);
+            _sceneEventsSubscribed = false;
+        }
+
+        private void OnLoadSceneSuccess(object sender, GameEventArgs e)
+        {
+            if (e is LoadSceneSuccessEventArgs args && args.SceneAssetName == SceneNames.Battle)
+            {
+                ActivateBattleScene();
+            }
+        }
+
+        private void OnLoadSceneFailure(object sender, GameEventArgs e)
+        {
+            if (e is LoadSceneFailureEventArgs args && args.SceneAssetName == SceneNames.Battle)
+            {
+                Log.Error($"ProcedureGameplay: failed to load battle scene: {args.ErrorMessage}", Tag);
+            }
         }
 
         private static void StartNewRun(string characterId)
@@ -98,6 +198,15 @@ namespace GourmetProject.Game.Procedure
             CloseIfOpen(UIForms.MainMenu);
             CloseIfOpen(UIForms.CharacterSelect);
             CloseIfOpen(UIForms.Settings);
+        }
+
+        private static void CloseGameplayForms()
+        {
+            CloseIfOpen(UIForms.Battle);
+            CloseIfOpen(UIForms.Reward);
+            CloseIfOpen(UIForms.WeekMap);
+            CloseIfOpen(UIForms.Shop);
+            CloseIfOpen(UIForms.DishDetail);
         }
 
         private static void CloseIfOpen(string assetName)

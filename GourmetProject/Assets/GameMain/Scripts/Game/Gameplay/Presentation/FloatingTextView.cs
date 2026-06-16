@@ -7,6 +7,7 @@ namespace GourmetProject.Game.Gameplay.Presentation
     internal sealed class FloatingTextView : MonoBehaviour
     {
         public static void Spawn(
+            FloatingTextView prefab,
             Transform parent,
             Vector3 worldPos,
             string text,
@@ -15,11 +16,25 @@ namespace GourmetProject.Game.Gameplay.Presentation
             float rise = 0.9f,
             float duration = 0.9f)
         {
-            var go = new GameObject("FloatingText");
-            go.transform.SetParent(parent, false);
+            GameObject go;
+            if (prefab != null)
+            {
+                go = Instantiate(prefab, parent).gameObject;
+            }
+            else
+            {
+                go = new GameObject("FloatingText");
+                go.transform.SetParent(parent, false);
+            }
+
             go.transform.position = worldPos;
 
-            TextMesh tm = go.AddComponent<TextMesh>();
+            TextMesh tm = go.GetComponent<TextMesh>();
+            if (tm == null)
+            {
+                tm = go.AddComponent<TextMesh>();
+            }
+
             tm.text = text;
             tm.anchor = TextAnchor.MiddleCenter;
             tm.alignment = TextAlignment.Center;
@@ -30,7 +45,12 @@ namespace GourmetProject.Game.Gameplay.Presentation
             MeshRenderer mr = go.GetComponent<MeshRenderer>();
             BattleSorting.Apply(mr, BattleSorting.Fx, BattleSorting.OrderFloatingText);
 
-            FloatingTextView view = go.AddComponent<FloatingTextView>();
+            FloatingTextView view = go.GetComponent<FloatingTextView>();
+            if (view == null)
+            {
+                view = go.AddComponent<FloatingTextView>();
+            }
+
             view.StartCoroutine(view.Animate(tm, worldPos, rise, duration));
         }
 

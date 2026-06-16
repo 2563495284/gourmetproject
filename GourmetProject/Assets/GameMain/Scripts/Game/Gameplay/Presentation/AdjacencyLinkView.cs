@@ -9,11 +9,20 @@ namespace GourmetProject.Game.Gameplay.Presentation
         private LineRenderer _line;
         private Color _color = Color.white;
 
-        public static void Spawn(Transform parent, Vector3 a, Vector3 b, Color color, float duration = 0.4f)
+        public static void Spawn(AdjacencyLinkView prefab, Transform parent, Vector3 a, Vector3 b, Color color, float duration = 0.4f)
         {
-            var go = new GameObject("AdjacencyLink");
-            go.transform.SetParent(parent, false);
-            AdjacencyLinkView view = go.AddComponent<AdjacencyLinkView>();
+            AdjacencyLinkView view;
+            if (prefab != null)
+            {
+                view = Instantiate(prefab, parent);
+            }
+            else
+            {
+                var go = new GameObject("AdjacencyLink");
+                go.transform.SetParent(parent, false);
+                view = go.AddComponent<AdjacencyLinkView>();
+            }
+
             view.Build(color);
             view.StartCoroutine(view.Flash(a, b, duration));
         }
@@ -21,7 +30,12 @@ namespace GourmetProject.Game.Gameplay.Presentation
         private void Build(Color color)
         {
             _color = color;
-            _line = gameObject.AddComponent<LineRenderer>();
+            _line = gameObject.GetComponent<LineRenderer>();
+            if (_line == null)
+            {
+                _line = gameObject.AddComponent<LineRenderer>();
+            }
+
             _line.useWorldSpace = true;
             _line.positionCount = 2;
             _line.numCapVertices = 4;

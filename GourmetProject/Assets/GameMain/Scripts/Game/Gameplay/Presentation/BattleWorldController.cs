@@ -11,7 +11,11 @@ using GpBoard = GourmetProject.Gameplay.Board.Board;
 
 namespace GourmetProject.Game.Gameplay.Presentation
 {
-    /// <summary>战斗内场景表现根控制器：棋盘、后厨、手牌区与拖拽放置。</summary>
+    /// <summary>
+    /// 战斗内场景表现根控制器：棋盘、后厨、手牌区与拖拽放置。
+    /// 现以场景内组件存在：背景/棋盘根/各锚点/分数文本/固定按钮均在 Battle.unity 摆好并通过 SerializeField 注入，
+    /// 运行时只生成数据驱动内容（棋盘格随胃尺寸、菜品、主动道具按钮、结算特效）。
+    /// </summary>
     public sealed class BattleWorldController : MonoBehaviour
     {
         public const float Gap = 0f;
@@ -21,6 +25,28 @@ namespace GourmetProject.Game.Gameplay.Presentation
         // 回退视口半宽/半高（16:9 参考：orthographicSize 5.4）。
         private const float FallbackHalfW = 9.6f;
         private const float FallbackHalfH = 5.4f;
+
+        // —— 场景内摆好的静态引用 ——
+        [Header("Scene Refs")]
+        [SerializeField] private Camera _camera;
+        [SerializeField] private SpriteRenderer _background;
+        [SerializeField] private BoardView _boardView;
+        [SerializeField] private Transform _piecesRoot;
+        [SerializeField] private Transform _fxRoot;
+        [SerializeField] private Transform _activeItemsRoot;
+        [SerializeField] private TextMesh _scoreText;
+        [SerializeField] private TextMesh _messageText;
+        [SerializeField] private TextMesh _itemsText;
+        [SerializeField] private WorldButtonView _overviewButton;
+        [SerializeField] private WorldButtonView _eatButton;
+        [SerializeField] private WorldButtonView[] _recipeButtons;
+        [SerializeField] private SettlementSequencer _sequencer;
+
+        // —— 运行时实例化用的 prefab ——
+        [Header("Prefabs")]
+        [SerializeField] private BoardCellView _boardCellPrefab;
+        [SerializeField] private DishPieceView _dishPiecePrefab;
+        [SerializeField] private WorldButtonView _worldButtonPrefab;
 
         // 按棋盘尺寸自适应的单格世界尺寸与棋盘中心，BuildBoard 中计算。
         private float _cellSize = MaxCellSize;
@@ -35,17 +61,6 @@ namespace GourmetProject.Game.Gameplay.Presentation
 
         private GameRun _run;
         private BattleSession _session;
-        private BoardView _boardView;
-        private Transform _piecesRoot;
-        private Transform _menuRoot;
-        private Transform _fxRoot;
-        private Camera _camera;
-        private TextMesh _scoreText;
-        private TextMesh _messageText;
-        private TextMesh _itemsText;
-        private WorldButtonView[] _recipeButtons;
-        private WorldButtonView _eatButton;
-        private SettlementSequencer _sequencer;
         private bool _settling;
 
         private Action<string> _messageSink;
@@ -55,21 +70,20 @@ namespace GourmetProject.Game.Gameplay.Presentation
         private Action<DishInstance> _dishClicked;
         private Action _stateChanged;
 
-        public static BattleWorldController GetOrCreate()
+        /// <summary>当前已加载战斗场景里的控制器实例（由战斗 UI/流程取用）。</summary>
+        public static BattleWorldController Instance { get; private set; }
+
+        private void Awake()
         {
-            GameObject root = GameObject.Find("BattleWorldRoot");
-            if (root == null)
-            {
-                root = new GameObject("BattleWorldRoot");
-            }
+            Instance = this;
+        }
 
-            BattleWorldController controller = root.GetComponent<BattleWorldController>();
-            if (controller == null)
+        private void OnDestroy()
+        {
+            if (Instance == this)
             {
-                controller = root.AddComponent<BattleWorldController>();
+                Instance = null;
             }
-
-            return controller;
         }
 
         public void Initialize(
@@ -90,17 +104,19 @@ namespace GourmetProject.Game.Gameplay.Presentation
             _overviewClicked = overviewClicked;
             _activeItemClicked = activeItemClicked;
             _dishClicked = dishClicked;
-            _camera = Camera.main;
+            if (_camera == null)
+            {
+                _camera = Camera.main;
+            }
 
             gameObject.SetActive(true);
+            StopAllCoroutines();
             _settling = false;
             ComputeViewport();
-            ClearChildren();
-            BuildRoots();
-            BuildBackground();
+            FitBackground();
             BuildBoard(session.Board);
-            BuildSequencer();
-            BuildMenus();
+            EnsureSequencer();
+            ConfigureFixedButtons();
             RebuildPlacedPieces();
             RefreshAll();
         }
@@ -195,13 +211,6 @@ namespace GourmetProject.Game.Gameplay.Presentation
             piece.SetFlying(false);
         }
 
-        private void BuildRoots()
-        {
-            _menuRoot = NewChild("SceneBattleMenu");
-            _piecesRoot = NewChild("SceneDishPieces");
-            _fxRoot = NewChild("SceneSettlementFx");
-        }
-
         private void ComputeViewport()
         {
             if (_camera != null && _camera.orthographic && _camera.orthographicSize > 0f)
@@ -216,31 +225,27 @@ namespace GourmetProject.Game.Gameplay.Presentation
             }
         }
 
-        private void BuildSequencer()
+        private void EnsureSequencer()
         {
-            _sequencer = gameObject.GetComponent<SettlementSequencer>();
             if (_sequencer == null)
             {
-                _sequencer = gameObject.AddComponent<SettlementSequencer>();
+                _sequencer = GetComponent<SettlementSequencer>();
             }
         }
 
-        private void BuildBackground()
+        private void FitBackground()
         {
-            Transform backgroundRoot = NewChild("SceneBackground");
-            var go = new GameObject("TableclothBackground");
-            go.transform.SetParent(backgroundRoot, false);
-            go.transform.position = new Vector3(0f, 0f, 0.2f);
+            if (_background == null)
+            {
+                return;
+            }
 
-            SpriteRenderer renderer = go.AddComponent<SpriteRenderer>();
-            renderer.sprite = Resources.Load<Sprite>("Sprites/Backgrounds/battle_table_backpack") ?? CreatePixelSprite();
-            renderer.color = Color.white;
-            BattleSorting.Apply(renderer, BattleSorting.Background);
-            SpriteRenderStyle.ApplyUnlitMaterial(renderer);
+            BattleSorting.Apply(_background, BattleSorting.Background);
+            SpriteRenderStyle.ApplyUnlitMaterial(_background);
 
             float height = _camera != null && _camera.orthographic ? _camera.orthographicSize * 2f : 10.8f;
             float width = height * (_camera != null ? _camera.aspect : 16f / 9f);
-            FitSpriteToCover(go.transform, renderer, width, height);
+            FitSpriteToCover(_background.transform, _background, width, height);
         }
 
         private void BuildBoard(GpBoard board)
@@ -258,53 +263,37 @@ namespace GourmetProject.Game.Gameplay.Presentation
             _cellSize = Mathf.Clamp(Mathf.Min(availW / w, availH / h), MinCellSize, MaxCellSize);
             _boardCenter = new Vector3((boardLeft + boardRight) * 0.5f, (boardTop + boardBottom) * 0.5f, 0f);
 
-            Transform boardRoot = NewChild("SceneBoard");
-            _boardView = boardRoot.gameObject.AddComponent<BoardView>();
-            _boardView.Build(board, _cellSize, Gap, _boardCenter, OnCellClicked);
+            _boardView.Build(board, _cellSize, Gap, _boardCenter, OnCellClicked, _boardCellPrefab);
         }
 
-        private void BuildMenus()
+        private void ConfigureFixedButtons()
         {
-            // 控件按 image1.png 线框分区，锚定到视口半宽/半高边缘。
-            // 分数：顶部居中。被动道具：右侧竖栏。
-            _scoreText = CreateText(_menuRoot, "ScoreText", new Vector3(0f, _halfH - 0.55f, 0f), 56, TextAnchor.MiddleCenter);
-            _messageText = CreateText(_menuRoot, "MessageText", new Vector3(0f, -_halfH + 1.6f, 0f), 34, TextAnchor.MiddleCenter);
-            _itemsText = CreateText(_menuRoot, "ItemsText", new Vector3(_halfW - 2.1f, _halfH - 1.6f, 0f), 28, TextAnchor.UpperCenter);
-
-            // 总览：左上角。
-            WorldButtonView.Create(
-                _menuRoot,
-                "OverviewButton",
-                new Vector3(-_halfW + 1.1f, _halfH - 0.5f, 0f),
+            _overviewButton?.Configure(
                 new Vector2(1.15f, 0.52f),
                 "总览",
                 new Color(0.38f, 0.31f, 0.26f, 1f),
                 () => _overviewClicked?.Invoke());
 
-            // 后厨：左侧竖排菜谱 +「上菜/剩N」。
-            _recipeButtons = new WorldButtonView[GameRun.RecipeSlotCount];
+            _eatButton?.Configure(
+                new Vector2(1.55f, 0.72f),
+                "吃!",
+                new Color(0.95f, 0.35f, 0.12f, 1f),
+                () => _eatClicked?.Invoke());
+
+            if (_recipeButtons == null)
+            {
+                return;
+            }
+
             for (int i = 0; i < _recipeButtons.Length; i++)
             {
                 int index = i;
-                _recipeButtons[i] = WorldButtonView.Create(
-                    _menuRoot,
-                    $"RecipeButton_{i}",
-                    new Vector3(-_halfW + 1.7f, 0.8f - i * 1.1f, 0f),
+                _recipeButtons[i]?.Configure(
                     new Vector2(1.7f, 0.78f),
                     $"菜谱{i + 1}",
                     new Color(0.82f, 0.48f, 0.18f, 1f),
                     () => TryServeDish(index));
             }
-
-            // 吃!：棋盘正下方居中。
-            _eatButton = WorldButtonView.Create(
-                _menuRoot,
-                "EatButton",
-                new Vector3(_boardCenter.x, -_halfH + 0.85f, 0f),
-                new Vector2(1.55f, 0.72f),
-                "吃!",
-                new Color(0.95f, 0.35f, 0.12f, 1f),
-                () => _eatClicked?.Invoke());
         }
 
         private void RebuildPlacedPieces()
@@ -332,11 +321,20 @@ namespace GourmetProject.Game.Gameplay.Presentation
 
         private DishPieceView CreatePlacedPiece(DishInstance dish)
         {
-            GameObject go = new GameObject($"Dish_{dish.Id}_{dish.Def.Id}");
-            go.transform.SetParent(_piecesRoot, false);
-            go.transform.position = _boardView.Mapper.CellCenter(dish.Placement.Origin);
+            DishPieceView piece;
+            if (_dishPiecePrefab != null)
+            {
+                piece = Instantiate(_dishPiecePrefab, _piecesRoot);
+            }
+            else
+            {
+                var go = new GameObject("Dish");
+                go.transform.SetParent(_piecesRoot, false);
+                piece = go.AddComponent<DishPieceView>();
+            }
 
-            DishPieceView piece = go.AddComponent<DishPieceView>();
+            piece.gameObject.name = $"Dish_{dish.Id}_{dish.Def.Id}";
+            piece.transform.position = _boardView.Mapper.CellCenter(dish.Placement.Origin);
             piece.BuildPlaced(dish, _spriteProvider.Get(dish.Def), _cellSize, _cellSize + Gap, _dishClicked);
             _placedPieces.Add(piece);
             _dishViewsById[dish.Id] = piece;
@@ -352,6 +350,11 @@ namespace GourmetProject.Game.Gameplay.Presentation
 
             for (int i = 0; i < _recipeButtons.Length; i++)
             {
+                if (_recipeButtons[i] == null)
+                {
+                    continue;
+                }
+
                 if (_session == null || i >= _session.Slots.Count)
                 {
                     _recipeButtons[i].SetLabel($"菜谱{i + 1}");
@@ -412,6 +415,10 @@ namespace GourmetProject.Game.Gameplay.Presentation
             }
 
             _activeButtons.Clear();
+            if (_run == null || _activeItemsRoot == null)
+            {
+                return;
+            }
 
             int index = 0;
             foreach (string itemId in _run.ItemIds)
@@ -424,10 +431,10 @@ namespace GourmetProject.Game.Gameplay.Presentation
 
                 // 主动道具：右下角区，自下而上排列。
                 string captured = itemId;
-                WorldButtonView button = WorldButtonView.Create(
-                    _menuRoot,
-                    $"ActiveItem_{itemId}",
-                    new Vector3(_halfW - 1.7f, -_halfH + 1.3f + index * 0.7f, 0f),
+                WorldButtonView button = InstantiateWorldButton();
+                button.gameObject.name = $"ActiveItem_{itemId}";
+                button.transform.position = new Vector3(_halfW - 1.7f, -_halfH + 1.3f + index * 0.7f, 0f);
+                button.Configure(
                     new Vector2(1.45f, 0.54f),
                     item.Name,
                     new Color(0.28f, 0.45f, 0.72f, 1f),
@@ -436,6 +443,18 @@ namespace GourmetProject.Game.Gameplay.Presentation
                 _activeButtons.Add(button);
                 index++;
             }
+        }
+
+        private WorldButtonView InstantiateWorldButton()
+        {
+            if (_worldButtonPrefab != null)
+            {
+                return Instantiate(_worldButtonPrefab, _activeItemsRoot);
+            }
+
+            var go = new GameObject("WorldButton");
+            go.transform.SetParent(_activeItemsRoot, false);
+            return go.AddComponent<WorldButtonView>();
         }
 
         private void OnCellClicked(GridPos pos)
@@ -477,21 +496,6 @@ namespace GourmetProject.Game.Gameplay.Presentation
             }
         }
 
-        private Transform NewChild(string name)
-        {
-            var go = new GameObject(name);
-            go.transform.SetParent(transform, false);
-            return go.transform;
-        }
-
-        private static Sprite CreatePixelSprite()
-        {
-            var texture = new Texture2D(1, 1, TextureFormat.RGBA32, false);
-            texture.SetPixel(0, 0, Color.white);
-            texture.Apply();
-            return Sprite.Create(texture, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);
-        }
-
         private static void FitSpriteToCover(Transform target, SpriteRenderer renderer, float width, float height)
         {
             if (renderer.sprite == null)
@@ -503,22 +507,6 @@ namespace GourmetProject.Game.Gameplay.Presentation
             Vector2 size = renderer.sprite.bounds.size;
             float scale = Mathf.Max(width / size.x, height / size.y);
             target.localScale = new Vector3(scale, scale, 1f);
-        }
-
-        private TextMesh CreateText(Transform parent, string name, Vector3 position, int fontSize, TextAnchor anchor)
-        {
-            var go = new GameObject(name);
-            go.transform.SetParent(parent, false);
-            go.transform.position = position;
-            TextMesh text = go.AddComponent<TextMesh>();
-            text.anchor = anchor;
-            text.alignment = TextAlignment.Center;
-            text.color = Color.white;
-            text.fontSize = fontSize;
-            text.characterSize = 0.08f;
-            MeshRenderer renderer = go.GetComponent<MeshRenderer>();
-            BattleSorting.Apply(renderer, BattleSorting.WorldUi);
-            return text;
         }
 
         /// <summary>播放背包乱斗式逐菜结算演出，完成后回调上层决定过关/失败 UI。</summary>
@@ -578,18 +566,6 @@ namespace GourmetProject.Game.Gameplay.Presentation
             {
                 button?.SetInteractable(interactable);
             }
-        }
-
-        private void ClearChildren()
-        {
-            StopAllCoroutines();
-            for (int i = transform.childCount - 1; i >= 0; i--)
-            {
-                Destroy(transform.GetChild(i).gameObject);
-            }
-
-            _activeButtons.Clear();
-            _placedPieces.Clear();
         }
     }
 }

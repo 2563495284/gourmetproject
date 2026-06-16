@@ -14,6 +14,8 @@ namespace GourmetProject.Game.Gameplay.Presentation
         private static readonly Color VoidColor = new Color(0.07f, 0.04f, 0.03f, 0.0f);
         private static readonly Color TagColor = new Color(1f, 0.88f, 0.32f, 0.95f);
 
+        [SerializeField] private BoardCellView _cellPrefab;
+
         private readonly Dictionary<GridPos, BoardCellView> _cells = new Dictionary<GridPos, BoardCellView>();
         private Sprite _cellSprite;
         private GpBoard _board;
@@ -21,11 +23,16 @@ namespace GourmetProject.Game.Gameplay.Presentation
 
         public BoardCoordinateMapper Mapper { get; private set; }
 
-        public void Build(GpBoard board, float cellSize, float gap, Vector3 center, Action<GridPos> clicked)
+        public void Build(GpBoard board, float cellSize, float gap, Vector3 center, Action<GridPos> clicked, BoardCellView cellPrefab = null)
         {
             Clear();
             _board = board ?? throw new ArgumentNullException(nameof(board));
             _clicked = clicked;
+            if (cellPrefab != null)
+            {
+                _cellPrefab = cellPrefab;
+            }
+
             Mapper = new BoardCoordinateMapper(board.Width, board.Height, cellSize, gap, center);
             _cellSprite = Resources.Load<Sprite>("Sprites/UI/board_cell") ?? CreatePixelSprite();
 
@@ -34,18 +41,27 @@ namespace GourmetProject.Game.Gameplay.Presentation
                 for (int x = 0; x < board.Width; x++)
                 {
                     var pos = new GridPos(x, y);
-                    BoardCellView cell = BoardCellView.Create(
-                        transform,
-                        pos,
-                        Mapper.CellCenter(pos),
-                        cellSize,
-                        _cellSprite,
-                        _clicked);
+                    BoardCellView cell = InstantiateCell();
+                    cell.Configure(pos, Mapper.CellCenter(pos), cellSize, _cellSprite, _clicked);
                     _cells[pos] = cell;
                 }
             }
 
             Sync();
+        }
+
+        private BoardCellView InstantiateCell()
+        {
+            if (_cellPrefab != null)
+            {
+                BoardCellView cell = Instantiate(_cellPrefab, transform);
+                return cell;
+            }
+
+            // 兜底：无 prefab 时退回脚本根（保持可运行，不应是常态）。
+            var go = new GameObject("Cell");
+            go.transform.SetParent(transform, false);
+            return go.AddComponent<BoardCellView>();
         }
 
         public void Sync()
