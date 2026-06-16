@@ -1,0 +1,44 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using GourmetProject.Gameplay.Board;
+using GourmetProject.Gameplay.Data;
+using GpBoard = GourmetProject.Gameplay.Board.Board;
+
+namespace GourmetProject.Gameplay.Scoring
+{
+    /// <summary>一次结算开始时捕获的只读输入。</summary>
+    public sealed class ScoreSnapshot
+    {
+        public ScoreSnapshot(
+            GpBoard board,
+            GameplayDatabase db,
+            float finalFlat = 0f,
+            float finalMultiplier = 1f,
+            IEnumerable<IScoreEffectSource> effectSources = null)
+        {
+            Board = board ?? throw new ArgumentNullException(nameof(board));
+            Db = db ?? throw new ArgumentNullException(nameof(db));
+            InitialFinalFlat = finalFlat;
+            InitialFinalMultiplier = finalMultiplier;
+            EffectSources = (effectSources ?? Array.Empty<IScoreEffectSource>()).ToArray();
+            DishesInDefaultOrder = Board.Dishes
+                .OrderBy(d => d.Placement.Origin.Y)
+                .ThenBy(d => d.Placement.Origin.X)
+                .ThenBy(d => d.Id)
+                .ToArray();
+        }
+
+        public GpBoard Board { get; }
+
+        public GameplayDatabase Db { get; }
+
+        public IReadOnlyList<DishInstance> DishesInDefaultOrder { get; }
+
+        public float InitialFinalFlat { get; }
+
+        public float InitialFinalMultiplier { get; }
+
+        public IReadOnlyList<IScoreEffectSource> EffectSources { get; }
+    }
+}

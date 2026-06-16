@@ -186,7 +186,8 @@ namespace GourmetProject.Gameplay.Board
             }
 
             var placements = new List<Placement>();
-            IReadOnlyList<DishShape> orientations = def.Shape.GetOrientations(def.AllowRotate);
+            // 设计案规定上菜筛选时允许菜品 90 度任意旋转；配置的 AllowRotate 不限制自动上菜。
+            IReadOnlyList<DishShape> orientations = def.Shape.GetOrientations(allowRotate: true);
 
             for (int r = 0; r < orientations.Count; r++)
             {

@@ -7,7 +7,9 @@
         "GourmetProject.Core",
         "GourmetProject.Config",
         "GourmetProject.Gameplay",
-        "Luban.Runtime"
+        "Luban.Runtime",
+        "Unity.InputSystem",
+        "Unity.RenderPipelines.Universal.2D.Runtime"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

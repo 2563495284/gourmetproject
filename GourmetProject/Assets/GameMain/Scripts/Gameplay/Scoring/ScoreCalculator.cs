@@ -1,88 +1,123 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
-using GourmetProject.Gameplay.Model;
 using GpBoard = GourmetProject.Gameplay.Board.Board;
 
 namespace GourmetProject.Gameplay.Scoring
 {
     /// <summary>
-    /// 「吃」的结算器：先按棋盘行优先（左上→右下）顺序逐菜结算标签（技能），
-    /// 再把各菜贡献汇总，最后施加局级修正（道具/Buff）。
+    /// 「吃」的结算器：把食品标签、格子标签以及额外来源收集为阶段化效果队列，
+    /// 再按确定性顺序执行并输出可解释明细。
     /// </summary>
     public sealed class ScoreCalculator
     {
         private readonly TagEffectRegistry _registry;
+        private readonly IScoreEffectSource[] _effectSources;
 
-        public ScoreCalculator(TagEffectRegistry registry = null)
+        public ScoreCalculator(TagEffectRegistry registry = null, IEnumerable<IScoreEffectSource> effectSources = null)
         {
             _registry = registry ?? TagEffectRegistry.CreateDefault();
+            _effectSources = (effectSources ?? Array.Empty<IScoreEffectSource>()).ToArray();
         }
 
-        public ScoreResult Calculate(GpBoard board, GameplayDatabase db, float finalFlat = 0f, float finalMultiplier = 1f)
+        public ScoreResult Calculate(
+            GpBoard board,
+            GameplayDatabase db,
+            float finalFlat = 0f,
+            float finalMultiplier = 1f,
+            IEnumerable<IScoreEffectSource> extraSources = null)
         {
-            var dishScores = new List<DishScore>();
-            float rawSum = 0f;
+            IScoreEffectSource[] sources = MergeSources(extraSources);
+            return Calculate(new ScoreSnapshot(board, db, finalFlat, finalMultiplier, sources));
+        }
 
-            foreach (DishInstance dish in OrderedDishes(board))
+        public ScoreResult Calculate(ScoreSnapshot snapshot)
+        {
+            if (snapshot == null)
             {
-                var ctx = new EffectContext(board, db, dish);
+                throw new ArgumentNullException(nameof(snapshot));
+            }
 
-                // 1) 菜品自身的合成标签（固有 + 唯一 A/B）。
-                foreach (string tagId in dish.TagIds)
+            List<ScoreEffectEntry> entries = CollectEntries(snapshot);
+            var ctx = new ScoreContext(snapshot);
+            ctx.EmitEvent(ScoreEventType.CalculationStarted, "开始分数结算");
+
+            RunGlobalPhase(ctx, entries, ScorePhase.BeforeAll);
+
+            foreach (DishInstance dish in snapshot.DishesInDefaultOrder)
+            {
+                ctx.BeginDish(dish);
+                RunDishPhase(ctx, entries, ScorePhase.BeforeDish, dish);
+                ctx.RecordDishBase();
+                RunDishPhase(ctx, entries, ScorePhase.DishBase, dish);
+                RunDishPhase(ctx, entries, ScorePhase.DishTags, dish);
+                RunDishPhase(ctx, entries, ScorePhase.CellTags, dish);
+                RunDishPhase(ctx, entries, ScorePhase.AfterDish, dish);
+                ctx.CompleteDish();
+            }
+
+            RunGlobalPhase(ctx, entries, ScorePhase.AfterAllDishes);
+            ctx.RecordInitialFinalModifiers();
+            RunGlobalPhase(ctx, entries, ScorePhase.Final);
+            ctx.EmitEvent(ScoreEventType.CalculationFinished, "结束分数结算");
+            return ctx.ToResult();
+        }
+
+        private List<ScoreEffectEntry> CollectEntries(ScoreSnapshot snapshot)
+        {
+            var collector = new ScoreEffectCollector();
+            new TagScoreEffectSource(_registry).CollectEffects(snapshot, collector);
+
+            foreach (IScoreEffectSource source in snapshot.EffectSources)
+            {
+                source?.CollectEffects(snapshot, collector);
+            }
+
+            return collector.Entries
+                .OrderBy(e => e.Phase)
+                .ThenBy(e => e.BoardOrder)
+                .ThenBy(e => e.Source.Type)
+                .ThenBy(e => e.Priority)
+                .ThenBy(e => e.Sequence)
+                .ToList();
+        }
+
+        private static void RunGlobalPhase(ScoreContext ctx, IEnumerable<ScoreEffectEntry> entries, ScorePhase phase)
+        {
+            foreach (ScoreEffectEntry entry in entries)
+            {
+                if (entry.Phase == phase && entry.Dish == null)
                 {
-                    ApplyTag(ctx, db, tagId);
+                    ctx.Apply(entry);
                 }
+            }
+        }
 
-                // 2) 统一：菜品所占据的每个格子上的强化标签，逐格附加（同一套效果，不过 TagComposer）。
-                foreach (GridPos cell in dish.OccupiedCells)
+        private static void RunDishPhase(
+            ScoreContext ctx,
+            IEnumerable<ScoreEffectEntry> entries,
+            ScorePhase phase,
+            DishInstance dish)
+        {
+            foreach (ScoreEffectEntry entry in entries)
+            {
+                if (entry.Phase == phase && (entry.Dish == null || entry.Dish.Id == dish.Id))
                 {
-                    foreach (string cellTagId in board.TagsAt(cell))
-                    {
-                        ApplyTag(ctx, db, cellTagId);
-                    }
+                    ctx.Apply(entry);
                 }
-
-                var score = new DishScore(dish.Id, dish.Def.Id, dish.Def.Deliciousness, ctx.FlatBonus, ctx.Multiplier);
-                dishScores.Add(score);
-                rawSum += score.Contribution;
             }
-
-            return new ScoreResult(dishScores, rawSum, finalFlat, finalMultiplier);
         }
 
-        /// <summary>把单个标签的效果施加到上下文（标签缺失或无对应效果时静默跳过）。</summary>
-        private void ApplyTag(EffectContext ctx, GameplayDatabase db, string tagId)
+        private IScoreEffectSource[] MergeSources(IEnumerable<IScoreEffectSource> extraSources)
         {
-            if (string.IsNullOrEmpty(tagId))
+            if (extraSources == null)
             {
-                return;
+                return _effectSources;
             }
 
-            TagDef tag = db.GetTag(tagId);
-            if (tag == null)
-            {
-                return;
-            }
-
-            ITagEffect effect = _registry.Get(tag.EffectType);
-            if (effect == null)
-            {
-                return;
-            }
-
-            ctx.Tag = tag;
-            effect.Apply(ctx);
-        }
-
-        /// <summary>结算顺序：行优先（先 Y 后 X），并以实例 Id 兜底保证稳定。</summary>
-        private static IEnumerable<DishInstance> OrderedDishes(GpBoard board)
-        {
-            return board.Dishes
-                .OrderBy(d => d.Placement.Origin.Y)
-                .ThenBy(d => d.Placement.Origin.X)
-                .ThenBy(d => d.Id);
+            return _effectSources.Concat(extraSources).ToArray();
         }
     }
 }

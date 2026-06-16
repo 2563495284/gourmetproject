@@ -9,11 +9,11 @@ namespace GourmetProject.Gameplay.Scoring
     /// </summary>
     public sealed class TagEffectRegistry
     {
-        private readonly Dictionary<TagEffectType, ITagEffect> _effects = new Dictionary<TagEffectType, ITagEffect>();
+        private readonly Dictionary<TagEffectType, IScoreEffect> _effects = new Dictionary<TagEffectType, IScoreEffect>();
 
-        public void Register(TagEffectType type, ITagEffect effect) => _effects[type] = effect;
+        public void Register(TagEffectType type, IScoreEffect effect) => _effects[type] = effect;
 
-        public ITagEffect Get(TagEffectType type) => _effects.TryGetValue(type, out ITagEffect e) ? e : null;
+        public IScoreEffect Get(TagEffectType type) => _effects.TryGetValue(type, out IScoreEffect e) ? e : null;
 
         public static TagEffectRegistry CreateDefault()
         {

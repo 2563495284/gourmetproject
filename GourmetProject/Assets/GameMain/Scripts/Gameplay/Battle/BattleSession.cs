@@ -81,33 +81,34 @@ namespace GourmetProject.Gameplay.Battle
                 return ServeResult.Fail(ServeOutcome.SlotEmpty);
             }
 
-            // 收集该槽内「能放下」的菜品下标（保证能放得下，符合策划要求）。
-            var fittingIndices = new List<int>();
+            var candidates = new List<ServeCandidate>();
+            var weights = new List<float>();
             for (int i = 0; i < slot.Remaining.Count; i++)
             {
-                DishDef def = _db.GetDish(slot.Remaining[i]);
-                if (def != null && Board.CanFit(def))
+                DishDef dish = _db.GetDish(slot.Remaining[i]);
+                if (dish == null)
                 {
-                    fittingIndices.Add(i);
+                    continue;
+                }
+
+                List<Placement> placements = Board.FindValidPlacements(dish);
+                foreach (Placement placement in placements)
+                {
+                    candidates.Add(new ServeCandidate(i, dish, placement));
+                    weights.Add(Math.Max(1, dish.Shape.CellCount));
                 }
             }
 
-            if (fittingIndices.Count == 0)
+            if (candidates.Count == 0)
             {
                 return ServeResult.Fail(ServeOutcome.NoFittingDish);
             }
 
-            int chosen = fittingIndices[_rng.Range(0, fittingIndices.Count)];
-            DishDef dish = _db.GetDish(slot.Remaining[chosen]);
-
-            List<Placement> placements = Board.FindValidPlacements(dish);
-            Placement placement = placements[_rng.Range(0, placements.Count)];
-
-            List<string> tags = TagComposer.Compose(dish.InherentTags, _db);
-            var instance = new DishInstance(_nextInstanceId++, dish, placement, tags);
-
+            ServeCandidate chosen = candidates[_rng.WeightedPickIndex(weights)];
+            List<string> tags = TagComposer.Compose(chosen.Dish.InherentTags, _db);
+            var instance = new DishInstance(_nextInstanceId++, chosen.Dish, chosen.Placement, tags);
             Board.Place(instance);
-            slot.RemoveAt(chosen);
+            slot.RemoveAt(chosen.SlotEntryIndex);
             ServesUsed++;
 
             return new ServeResult(ServeOutcome.Placed, instance);
@@ -166,6 +167,22 @@ namespace GourmetProject.Gameplay.Battle
             }
 
             return false;
+        }
+
+        private readonly struct ServeCandidate
+        {
+            public ServeCandidate(int slotEntryIndex, DishDef dish, Placement placement)
+            {
+                SlotEntryIndex = slotEntryIndex;
+                Dish = dish;
+                Placement = placement;
+            }
+
+            public int SlotEntryIndex { get; }
+
+            public DishDef Dish { get; }
+
+            public Placement Placement { get; }
         }
     }
 }

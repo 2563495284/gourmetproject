@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using GourmetProject.Core.Diagnostics;
 using GourmetProject.Core.Save;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
@@ -78,7 +80,18 @@ namespace GourmetProject.Tests
             // 篡改 data 内的字符串值，但不修正校验和（"Bob" 不会出现在小写十六进制校验和中）。
             File.WriteAllText(path, json.Replace("Bob", "Haxed"));
 
-            Assert.IsFalse(svc.TryLoad<Profile>("slot", out _), "tampered save must fail checksum verification");
+            var sink = new CaptureLogSink();
+            Log.SetSink(sink);
+            try
+            {
+                Assert.IsFalse(svc.TryLoad<Profile>("slot", out _), "tampered save must fail checksum verification");
+            }
+            finally
+            {
+                Log.SetSink(null);
+            }
+
+            Assert.IsTrue(sink.Contains(LogLevel.Error, "Save", "failed checksum"), "checksum failure should be logged");
         }
 
         [Test]
@@ -106,6 +119,48 @@ namespace GourmetProject.Tests
                 var obj = (JObject)data;
                 obj["Name"] = "Migrated";
                 return obj;
+            }
+        }
+
+        private sealed class CaptureLogSink : ILogSink
+        {
+            private readonly List<Entry> _entries = new List<Entry>();
+
+            public void Log(LogLevel level, string tag, string message)
+            {
+                _entries.Add(new Entry(level, tag, message));
+            }
+
+            public bool Contains(LogLevel level, string tag, string messagePart)
+            {
+                foreach (Entry entry in _entries)
+                {
+                    if (entry.Level == level
+                        && entry.Tag == tag
+                        && entry.Message != null
+                        && entry.Message.Contains(messagePart))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            private readonly struct Entry
+            {
+                public Entry(LogLevel level, string tag, string message)
+                {
+                    Level = level;
+                    Tag = tag;
+                    Message = message;
+                }
+
+                public LogLevel Level { get; }
+
+                public string Tag { get; }
+
+                public string Message { get; }
             }
         }
     }

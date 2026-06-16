@@ -1,0 +1,33 @@
+---
+description: Gameplay 分数结算管线与命令队列约定
+globs: Assets/GameMain/Scripts/Gameplay/Scoring/**/*.cs,Assets/GameMain/Tests/EditMode/*Score*Tests.cs
+alwaysApply: false
+---
+
+# 分数结算管线
+
+本项目的分数结算采用“小丑牌式阶段结算”，不是全局钩子注册系统。修改 `Gameplay/Scoring` 时保持结算可预测、可解释、可单测。
+
+## 核心边界
+
+- `ScoreCalculator` 只负责编排：收集 `ScoreEffectEntry`，按 `ScorePhase`、棋盘顺序、来源类型、priority、sequence 稳定执行。
+- `IScoreEffectSource` 负责把食品、食品标签、棋盘格标签、棋盘标签、遗物、周规则等来源转换成效果条目。
+- `IScoreEffect` 不应直接绕过上下文改结果；通过 `ScoreContext.SubmitCommand()` 或兼容方法 `AddFlat()`、`MultiplyBy()`、`AddFinalFlat()`、`MultiplyFinalBy()` 提交命令。
+- `IScoreCommand` 是实际改分层；需要连锁触发时提交 `ResolveScoreEffectCommand`，不要在外部做全局事件广播。
+- `ScoreLine` 记录分数变化来源；`ScoreEvent` 记录结算生命周期。新增效果时优先保证这两者能解释结果。
+
+## 设计约束
+
+- 默认顺序遵循设计文档：食品标签先于格子标签，棋盘行优先从上到下、从左到右。
+- 命令入队时必须保留当前 `ScoreSource` / `ScorePhase` / `Cell` / `Tag`，避免连锁效果的明细归属错误。
+- 保持玩法层纯 C#，不要在 `Gameplay/Scoring` 中引用 `UnityEngine` 或 GameFramework。
+- 新增效果必须补 EditMode 测试，至少覆盖总分、执行顺序或 `ScoreLines` 来源。
+
+## 示例
+
+```csharp
+public void Apply(ScoreContext context)
+{
+    context.SubmitCommand(new ResolveScoreEffectCommand(chainedEntry));
+}
+```

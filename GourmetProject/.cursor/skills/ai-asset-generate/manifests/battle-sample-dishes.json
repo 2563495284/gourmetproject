@@ -1,0 +1,40 @@
+{
+  "stylePrefix": "90s American cable TV cartoon food illustration style, thick clean black ink outlines, flat cel animation colors, hand-drawn 2D animation look, warm appetizing color palette, polished game asset quality, playful exaggerated food shapes, no face, no eyes, no mouth, no smile, no character, no creature, no limbs, no hands, no text, no logo, no watermark",
+  "assets": [
+    {
+      "name": "rice",
+      "type": "item",
+      "size": "1024x1024",
+      "transparent": true,
+      "prompt": "single-cell battle board food sprite: one plump rice ball with tiny sesame dots and a dark green seaweed wrap, pure food only, centered, clean silhouette, strong contact shadow painted into the sprite, transparent background, readable at small size"
+    },
+    {
+      "name": "egg",
+      "type": "item",
+      "size": "1024x1024",
+      "transparent": true,
+      "prompt": "two-cell horizontal battle board food sprite: long fried egg stretched across two grid cells, two round yolks as food ingredients only, glossy egg white edge, pure food only, centered, clean wide silhouette, strong contact shadow painted into the sprite, transparent background"
+    },
+    {
+      "name": "noodle",
+      "type": "item",
+      "size": "1024x1024",
+      "transparent": true,
+      "prompt": "L-shaped three-cell battle board food sprite: crooked pile of noodles shaped like an L tetromino, sauce streaks, scallion garnish, pure food only, thick black outline, centered, clear polyomino footprint, strong contact shadow painted into the sprite, transparent background"
+    },
+    {
+      "name": "orange",
+      "type": "item",
+      "size": "1024x1024",
+      "transparent": true,
+      "prompt": "two by two square battle board food sprite: chunky orange fruit cut into four connected cartoon wedges with peel texture and juicy pulp, pure food only, centered, clear 2x2 square footprint, strong contact shadow painted into the sprite, transparent background"
+    },
+    {
+      "name": "cake",
+      "type": "item",
+      "size": "1024x1024",
+      "transparent": true,
+      "prompt": "T-shaped four-cell battle board dessert sprite: slice cluster of cake shaped like a T tetromino, frosting drips, cherry garnish as food decoration only, pure food only, centered, clear polyomino footprint, strong contact shadow painted into the sprite, transparent background"
+    }
+  ]
+}

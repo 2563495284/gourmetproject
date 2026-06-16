@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using GourmetProject.Gameplay.Model;
 
 namespace GourmetProject.Gameplay.Scoring
 {
@@ -35,12 +36,16 @@ namespace GourmetProject.Gameplay.Scoring
             IReadOnlyList<DishScore> dishScores,
             float rawSum,
             float finalFlat,
-            float finalMultiplier)
+            float finalMultiplier,
+            IReadOnlyList<ScoreLine> scoreLines = null,
+            IReadOnlyList<ScoreEvent> scoreEvents = null)
         {
             DishScores = dishScores;
             RawSum = rawSum;
             FinalFlat = finalFlat;
             FinalMultiplier = finalMultiplier;
+            ScoreLines = scoreLines ?? System.Array.Empty<ScoreLine>();
+            ScoreEvents = scoreEvents ?? System.Array.Empty<ScoreEvent>();
         }
 
         /// <summary>逐菜结算明细（按结算顺序）。</summary>
@@ -55,7 +60,61 @@ namespace GourmetProject.Gameplay.Scoring
         /// <summary>局级乘区修正（道具/Buff 注入）。</summary>
         public float FinalMultiplier { get; }
 
+        /// <summary>可解释结算明细（按实际执行顺序）。</summary>
+        public IReadOnlyList<ScoreLine> ScoreLines { get; }
+
+        /// <summary>结算生命周期事件（按实际发生顺序）。</summary>
+        public IReadOnlyList<ScoreEvent> ScoreEvents { get; }
+
         /// <summary>最终得分（四舍五入到整数，0.5 向上取整）。</summary>
         public int Total => (int)System.Math.Round((RawSum + FinalFlat) * FinalMultiplier, System.MidpointRounding.AwayFromZero);
+    }
+
+    /// <summary>结算生命周期事件。它记录“发生了什么”，不直接改变分数。</summary>
+    public enum ScoreEventType
+    {
+        CalculationStarted = 0,
+        CalculationFinished = 1,
+        DishStarted = 2,
+        DishCompleted = 3,
+        EffectStarted = 4,
+        EffectFinished = 5,
+        CommandExecuted = 6,
+    }
+
+    /// <summary>一次结算事件记录，供调试、回放或 UI 演出使用。</summary>
+    public sealed class ScoreEvent
+    {
+        public ScoreEvent(
+            ScoreEventType type,
+            ScorePhase phase,
+            ScoreSource source,
+            int dishInstanceId,
+            string dishId,
+            GridPos? cell,
+            string message)
+        {
+            Type = type;
+            Phase = phase;
+            Source = source;
+            DishInstanceId = dishInstanceId;
+            DishId = dishId ?? string.Empty;
+            Cell = cell;
+            Message = message ?? string.Empty;
+        }
+
+        public ScoreEventType Type { get; }
+
+        public ScorePhase Phase { get; }
+
+        public ScoreSource Source { get; }
+
+        public int DishInstanceId { get; }
+
+        public string DishId { get; }
+
+        public GridPos? Cell { get; }
+
+        public string Message { get; }
     }
 }

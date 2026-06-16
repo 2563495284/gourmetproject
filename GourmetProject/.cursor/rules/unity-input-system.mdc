@@ -1,0 +1,25 @@
+---
+description: Require Unity's new Input System in C# scripts
+globs: Assets/**/*.cs
+alwaysApply: false
+---
+
+# Unity Input System
+
+本项目 Player Settings 已切到新版 Input System。所有 Unity C# 脚本禁止使用旧输入 API：
+
+```csharp
+// BAD
+Input.GetMouseButtonDown(0);
+Input.GetKeyDown(KeyCode.R);
+Input.mousePosition;
+
+// GOOD
+Mouse.current.leftButton.wasPressedThisFrame;
+Keyboard.current.rKey.wasPressedThisFrame;
+Mouse.current.position.ReadValue();
+```
+
+- 使用 `UnityEngine.InputSystem`，不要使用 `UnityEngine.Input` / `KeyCode` / `Input.mousePosition`。
+- 新增场景交互时优先封装输入读取，例如 `WorldInput`，避免散落在多个组件里。
+- 如果脚本所在 asmdef 需要输入 API，显式引用 `Unity.InputSystem`。

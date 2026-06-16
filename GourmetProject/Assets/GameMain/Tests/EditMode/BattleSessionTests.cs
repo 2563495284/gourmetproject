@@ -48,6 +48,23 @@ namespace GourmetProject.Tests
         }
 
         [Test]
+        public void Serve_AllowsRotationEvenWhenDishConfigDisallowsIt()
+        {
+            var rng = new RandomService();
+            rng.Init("serve-rotate");
+            DishDef bar = GameplayTestFactory.Dish("bar", new[] { "XX" }, allowRotate: false);
+            var db = new GameplayDatabase(new[] { bar }, new List<TagDef>(), new List<RecipeDef>());
+            var slots = new[] { new RecipeSlot("slot0", new[] { "bar" }) };
+            var session = new BattleSession(new GpBoard(1, 2), db, rng.Stream("battle"), slots, requiredScore: 1);
+
+            ServeResult result = session.Serve(0);
+
+            Assert.AreEqual(ServeOutcome.Placed, result.Outcome);
+            Assert.AreEqual(1, result.Dish.Placement.Orientation.Width);
+            Assert.AreEqual(2, result.Dish.Placement.Orientation.Height);
+        }
+
+        [Test]
         public void Serve_IsDeterministicForSameSeed()
         {
             var rngA = new RandomService();

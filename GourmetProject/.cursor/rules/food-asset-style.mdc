@@ -1,0 +1,17 @@
+---
+description: Food asset generation must avoid anthropomorphic designs
+alwaysApply: true
+---
+
+# Food Asset Style
+
+生成或修改食品 / 菜品 / 道具食物 sprite 时，必须画成纯食品，不要拟人化。
+
+```text
+BAD: eyes, face, mouth, smile, character, mascot, creature, limbs, hands
+GOOD: clean food sprite, appetizing shape, sauce, garnish, texture, strong silhouette
+```
+
+- 食品可以有夸张卡通轮廓、厚黑描边、赛璐璐色块，但不能有五官或角色表情。
+- Prompt 中避免 `goofy face`、`eyes`、`smiling`、`character`、`creature` 等词。
+- 棋盘菜品 sprite 按格子原生尺寸生成/整理，例如 1x1=`512x512`、2x1=`1024x512`、2x2=`1024x1024`。

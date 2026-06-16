@@ -1,0 +1,11 @@
+{
+  "stylePrefix": "2D top-down game background, Backpack Battles inspired inventory board scene, warm cozy tabletop, hand-drawn cartoon style, thick clean black ink accents, flat cel animation colors, polished game asset quality, no characters, no food items, no text, no logo, no watermark",
+  "assets": [
+    {
+      "name": "battle_table_backpack",
+      "type": "background",
+      "size": "1536x1024",
+      "prompt": "A warm wooden table surface with a soft cloth mat and subtle backpack/inventory game mood, top-down view, enough empty center area for a 4x4 grid board, darker vignette around edges, small non-interactive kitchen and backpack details at the border only, no UI buttons, no item icons, no readable text"
+    }
+  ]
+}

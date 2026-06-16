@@ -15,6 +15,9 @@ from urllib.request import Request, urlopen
 PROJECT_ROOT = Path(__file__).resolve().parents[4]
 GEMINI_MODEL = "gemini-3.1-flash-image-preview"
 DEFAULT_GEMINI_BASE_URL = "https://sapi-ai.hortorgames.com/gemini"
+# 注意：明文密钥兜底，仅供本地生成使用；切勿将本文件提交到公开仓库。
+# 优先使用环境变量 GEMINI_API_KEY，留空时回退到此默认值。
+DEFAULT_API_KEY = "sk-hortor-09f38819c14fa3e2a3551b6de96c3168952239efbc0b04fd"
 
 TYPE_DIRS = {
     "item": "Assets/GameMain/Resources/Sprites/Items",
@@ -218,7 +221,7 @@ def main():
     base_url = DEFAULT_GEMINI_BASE_URL
     model = GEMINI_MODEL
     if not args.dry_run:
-        api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("OPENAI_API_KEY")
+        api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("OPENAI_API_KEY") or DEFAULT_API_KEY
         if not api_key:
             print("ERROR: GEMINI_API_KEY environment variable is not set.")
             print("  export GEMINI_API_KEY='your-key-here'")

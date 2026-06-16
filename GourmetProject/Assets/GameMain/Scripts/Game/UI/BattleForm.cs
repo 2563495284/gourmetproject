@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using GourmetProject.Game.Gameplay;
+using GourmetProject.Game.Gameplay.Presentation;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Model;
@@ -32,6 +33,7 @@ namespace GourmetProject.Game.UI
 
         private GameRun _run;
         private BattleSession _session;
+        private BattleWorldController _world;
 
         public GameRun Run => _run;
         public BattleSession Session => _session;
@@ -85,6 +87,11 @@ namespace GourmetProject.Game.UI
                 Active = null;
             }
 
+            if (_world != null)
+            {
+                _world.HideWorld();
+            }
+
             base.OnClose(isShutdown, userData);
         }
 
@@ -93,6 +100,11 @@ namespace GourmetProject.Game.UI
         {
             _run.RequiredScoreOverride = -1;
             _session = null;
+            if (_world != null)
+            {
+                _world.HideWorld();
+            }
+
             _usedActiveItems.Clear();
             HideResult();
             RefreshAll();
@@ -107,69 +119,26 @@ namespace GourmetProject.Game.UI
             _session = _run.BuildBattleSession();
             _usedActiveItems.Clear();
             HideResult();
-            RebuildBoardCells(_session.Board.Width, _session.Board.Height);
-            RebuildActiveItems();
+            _world = BattleWorldController.GetOrCreate();
+            _world.Initialize(
+                _run,
+                _session,
+                SetMessage,
+                RefreshAll,
+                OnEatClicked,
+                OnOverviewClicked,
+                OnActiveItemClicked,
+                OnDishClicked);
             RefreshAll();
             string head = string.IsNullOrEmpty(eventFeedback) ? string.Empty : eventFeedback + " ";
-            SetMessage($"{head}点击菜谱上菜，凑够分数后点「吃!」");
+            SetMessage($"{head}点击菜谱上菜，系统会从所有可放入方式中随机摆上棋盘。");
         }
 
         // —— 布局构建 ——
 
         private void BuildLayout()
         {
-            AddImage("Background", Bg, 0f, 0f, 1f, 1f);
-
-            // 顶部：分数 + 要求分 + 周。
-            UiBuilder.AddImage(CachedTransform, "ScorePanel", Panel, 0.34f, 0.86f, 0.66f, 0.98f, 6f);
-            _scoreText = UiBuilder.AddText(CachedTransform, "ScoreText", "0", 52, Color.white, 0.34f, 0.90f, 0.66f, 0.99f);
-            _weekText = UiBuilder.AddText(CachedTransform, "WeekText", "", 24, new Color(1f, 1f, 1f, 0.8f), 0.34f, 0.855f, 0.66f, 0.90f);
-
-            // 顶部右：3 个 Buff 槽（占位）。
-            UiBuilder.AddText(CachedTransform, "BuffTitle", "Buff", 18, new Color(1f, 1f, 1f, 0.7f), 0.68f, 0.92f, 0.74f, 0.97f);
-            for (int i = 0; i < 3; i++)
-            {
-                float minX = 0.74f + i * 0.055f;
-                UiBuilder.AddImage(CachedTransform, $"BuffSlot{i}", new Color(1f, 1f, 1f, 0.12f), minX, 0.90f, minX + 0.05f, 0.98f, 3f);
-            }
-
-            // 左上：总览（放弃本局回菜单）。
-            UiBuilder.AddButton(CachedTransform, "OverviewButton", "总览", new Color(0.3f, 0.3f, 0.35f, 1f),
-                0.02f, 0.88f, 0.10f, 0.97f, OnOverviewClicked, 22);
-
-            // 左侧：后厨（菜谱1/2 + 上菜）。
-            UiBuilder.AddImage(CachedTransform, "KitchenPanel", Panel, 0.03f, 0.40f, 0.22f, 0.80f, 4f);
-            UiBuilder.AddText(CachedTransform, "KitchenTitle", "后厨", 26, Color.white, 0.03f, 0.74f, 0.22f, 0.80f);
-            for (int i = 0; i < GameRun.RecipeSlotCount; i++)
-            {
-                int index = i;
-                float top = 0.71f - i * 0.16f;
-                Button button = UiBuilder.AddButton(CachedTransform, $"Recipe{i}", $"菜谱{i + 1}", new Color(0.85f, 0.7f, 0.4f, 1f),
-                    0.04f, top - 0.12f, 0.21f, top, () => OnServeClicked(index), 22);
-                _recipeButtons.Add(button);
-            }
-
-            // 中间：棋盘容器。格子按对局的胃尺寸动态构建（见 RebuildBoardCells）。
-            _boardRoot = UiBuilder.NewRect("BoardRoot", CachedTransform);
-            UiBuilder.Anchor(_boardRoot, 0.34f, 0.30f, 0.66f, 0.82f);
-
-            // 棋盘下方：吃!
-            _eatButton = UiBuilder.AddButton(CachedTransform, "EatButton", "吃!", Accent,
-                0.43f, 0.18f, 0.57f, 0.28f, OnEatClicked, 34);
-
-            // 右侧：被动道具栏（汇总文本展示）。
-            UiBuilder.AddImage(CachedTransform, "ItemsPanel", Panel, 0.88f, 0.34f, 0.98f, 0.95f, 4f);
-            UiBuilder.AddText(CachedTransform, "ItemsTitle", "被动道具", 20, Color.white, 0.88f, 0.90f, 0.98f, 0.95f);
-            _itemsText = UiBuilder.AddText(CachedTransform, "ItemsText", "", 16, new Color(1f, 1f, 1f, 0.85f), 0.88f, 0.34f, 0.98f, 0.90f, TextAnchor.UpperCenter);
-
-            // 右下：主动道具按钮区。
-            UiBuilder.AddText(CachedTransform, "ActiveTitle", "主动道具", 20, Color.white, 0.78f, 0.30f, 0.88f, 0.34f);
-            _activeItemsRoot = UiBuilder.NewRect("ActiveItems", CachedTransform);
-            UiBuilder.Anchor(_activeItemsRoot, 0.78f, 0.04f, 0.88f, 0.30f);
-
-            // 底部消息条。
-            _messageText = UiBuilder.AddText(CachedTransform, "MessageText", "", 22, new Color(1f, 1f, 1f, 0.9f), 0.2f, 0.04f, 0.8f, 0.12f);
-
+            // 战斗棋盘与操作按钮改由场景内 SpriteRenderer 构建；BattleForm 仅保留结果弹窗等流程 UI。
             BuildResultPanel();
         }
 
@@ -246,24 +215,7 @@ namespace GourmetProject.Game.UI
                 return;
             }
 
-            ServeResult result = _session.Serve(slotIndex);
-            switch (result.Outcome)
-            {
-                case ServeOutcome.Placed:
-                    SetMessage($"上菜：{result.Dish.Def.Name}");
-                    break;
-                case ServeOutcome.SlotEmpty:
-                    SetMessage($"菜谱{slotIndex + 1} 已空。");
-                    break;
-                case ServeOutcome.NoFittingDish:
-                    SetMessage("棋盘放不下这本菜谱里的菜了，试试「吃!」结算。");
-                    break;
-                case ServeOutcome.LimitReached:
-                    SetMessage($"限量供应：本局最多上 {_session.MaxServes} 道菜，点「吃!」结算吧。");
-                    break;
-            }
-
-            RefreshAll();
+            _world?.TryServeDish(slotIndex);
         }
 
         private void OnEatClicked()
@@ -280,6 +232,20 @@ namespace GourmetProject.Game.UI
             }
 
             ScoreResult result = _session.Settle();
+
+            // 结算改为背包乱斗式逐菜演出，演出完成后再决定过关/失败 UI。
+            if (_world != null)
+            {
+                _world.PlaySettlement(result, () => OnSettlementComplete(result));
+            }
+            else
+            {
+                OnSettlementComplete(result);
+            }
+        }
+
+        private void OnSettlementComplete(ScoreResult result)
+        {
             RefreshAll();
 
             if (_session.IsWin)
@@ -341,6 +307,17 @@ namespace GourmetProject.Game.UI
             GameApp.UI.OpenUIForm(UIForms.DishDetail, UIForms.GroupDialog, data);
         }
 
+        private void OnDishClicked(DishInstance inst)
+        {
+            if (inst == null || _run == null)
+            {
+                return;
+            }
+
+            var data = new DishDetailData(inst.Def, _run.Database, inst.TagIds);
+            GameApp.UI.OpenUIForm(UIForms.DishDetail, UIForms.GroupDialog, data);
+        }
+
         private void OnActiveItemClicked(string itemId)
         {
             if (_session == null || _session.IsSettled || _usedActiveItems.Contains(itemId))
@@ -377,6 +354,7 @@ namespace GourmetProject.Game.UI
             }
 
             _usedActiveItems.Add(itemId);
+            _world?.SyncBoardFromSession();
             RefreshAll();
         }
 
@@ -386,6 +364,7 @@ namespace GourmetProject.Game.UI
             {
                 if (_session.Serve(i).Success)
                 {
+                    _world?.SyncBoardFromSession();
                     return true;
                 }
             }
@@ -397,6 +376,7 @@ namespace GourmetProject.Game.UI
 
         private void RefreshAll()
         {
+            _world?.RefreshAll();
             RefreshBoard();
             RefreshRecipes();
             RefreshScore();
@@ -529,6 +509,11 @@ namespace GourmetProject.Game.UI
 
         private void RefreshScore()
         {
+            if (_scoreText == null || _weekText == null)
+            {
+                return;
+            }
+
             if (_session == null)
             {
                 _scoreText.text = "0";
@@ -556,6 +541,11 @@ namespace GourmetProject.Game.UI
 
         private void RefreshItems()
         {
+            if (_itemsText == null || _run == null)
+            {
+                return;
+            }
+
             if (_run.ItemIds.Count == 0)
             {
                 _itemsText.text = "（无）";
@@ -583,7 +573,10 @@ namespace GourmetProject.Game.UI
                 : $"失败…\n得分 {total} / 目标 {_session.RequiredScore}";
             UiBuilder.SetButtonLabel(_resultButton, "返回菜单");
             RefreshRecipes();
-            _eatButton.interactable = false;
+            if (_eatButton != null)
+            {
+                _eatButton.interactable = false;
+            }
         }
 
         private void HideResult()
