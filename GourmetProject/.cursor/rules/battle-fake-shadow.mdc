@@ -1,0 +1,35 @@
+---
+description: 战斗表现层的阴影与受光约定（用假阴影，不用 2D 光照实现阴影）
+globs: Assets/GameMain/Scripts/Game/Gameplay/Presentation/**/*.cs
+alwaysApply: false
+---
+
+# 战斗阴影 / 受光约定
+
+阴影一律用「假阴影」（drop shadow），**禁止**用 URP 2D 光照（`Light2D` + `ShadowCaster2D`）实现真实投影。这是经过对比后定下的方向，不要回退。
+
+## 为什么
+
+- 玩法是俯视格子摆盘 + 固定视角，真实 2D 阴影的卖点（动态方向）用不上。
+- 背包乱斗式「悬浮举高 / 落定贴桌」的高度感只能靠假阴影的偏移/缩放/透明度表现，`ShadowCaster2D` 做不出高度。
+- 真实阴影要为异形 footprint 生成轮廓、密集摆放互相投影显脏，性价比低。
+
+## 实现方式（现状，照此维护）
+
+- 阴影 = 程序生成的径向羽化软暗斑（`DishPieceView.CreateContactShadow` / `SoftShadowSprite`），缩放铺在菜品脚下，不依赖菜品图的透明留白。
+- 高度感用 `SetLift(0..1)` 调暗斑的偏移/大小/透明度，飞行举高、落定贴桌。
+
+## 受光：全程 Unlit 平涂
+
+战斗 sprite 一律走 `SpriteRenderStyle.ApplyUnlitMaterial`（`Sprite-Unlit-Default`），画面靠原色 + URP 2D 卡通后处理出味。
+
+```csharp
+// BAD：套 Lit 材质又依赖 Light2D 受光 —— 删灯/分层就全黑，且与「灯目标排序层」强耦合
+renderer.sharedMaterial = SpriteLitMaterial; // Sprite-Lit-Default
+
+// GOOD：Unlit 平涂，不依赖任何 Light2D
+SpriteRenderStyle.ApplyUnlitMaterial(renderer);
+```
+
+- 不要为了「阴影 / 立体感」往战斗场景加 `Light2D`。`Light2D` 默认只照亮其 `targetSortingLayers`（场景预置灯常年只认 `Default`），一旦 sprite 分到命名层就会失光变黑。
+- 渲染前后顺序用命名 Sorting Layer（见 `BattleSorting`），不要堆裸 `sortingOrder` magic number。

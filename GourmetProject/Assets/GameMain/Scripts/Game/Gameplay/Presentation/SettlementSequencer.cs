@@ -16,7 +16,6 @@ namespace GourmetProject.Game.Gameplay.Presentation
     /// </summary>
     public sealed class SettlementSequencer : MonoBehaviour
     {
-        private static readonly Color DishPulseColor = new Color(1f, 0.82f, 0.45f, 1f);
         private static readonly Color LinkColor = new Color(1f, 0.78f, 0.32f, 1f);
         private static readonly Color GainColor = new Color(1f, 0.92f, 0.5f, 1f);
         private static readonly Color FinalColor = new Color(0.6f, 0.95f, 1f, 1f);
@@ -31,7 +30,6 @@ namespace GourmetProject.Game.Gameplay.Presentation
             ScoreResult result,
             IReadOnlyDictionary<int, DishPieceView> dishViews,
             BoardCoordinateMapper mapper,
-            BattleLighting lighting,
             Transform fxRoot,
             Action<int> renderScore,
             Action onComplete)
@@ -58,7 +56,6 @@ namespace GourmetProject.Game.Gameplay.Presentation
                 Vector3 center = DishCenter(instance, mapper);
 
                 yield return PresentationTween.PunchScale(view.transform, DishPunch, DishPunchDuration);
-                lighting?.Pulse(center, DishPulseColor);
 
                 if (board != null && fxRoot != null)
                 {

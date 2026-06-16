@@ -21,7 +21,6 @@ namespace GourmetProject.Game.Gameplay.Presentation
             Vector2 size,
             string label,
             Color color,
-            int sortingOrder,
             Action clicked)
         {
             var go = new GameObject(name);
@@ -29,7 +28,7 @@ namespace GourmetProject.Game.Gameplay.Presentation
             go.transform.position = position;
 
             var view = go.AddComponent<WorldButtonView>();
-            view.Build(size, label, color, sortingOrder, clicked);
+            view.Build(size, label, color, clicked);
             return view;
         }
 
@@ -50,7 +49,7 @@ namespace GourmetProject.Game.Gameplay.Presentation
             }
         }
 
-        private void Build(Vector2 size, string label, Color color, int sortingOrder, Action clicked)
+        private void Build(Vector2 size, string label, Color color, Action clicked)
         {
             _clicked = clicked;
             _normalColor = color;
@@ -59,8 +58,8 @@ namespace GourmetProject.Game.Gameplay.Presentation
             _background = gameObject.AddComponent<SpriteRenderer>();
             _background.sprite = CreatePixelSprite();
             _background.color = color;
-            _background.sortingOrder = sortingOrder;
-            SpriteRenderStyle.ApplyLitMaterial(_background);
+            BattleSorting.Apply(_background, BattleSorting.WorldUi, BattleSorting.OrderButtonBg);
+            SpriteRenderStyle.ApplyUnlitMaterial(_background);
             transform.localScale = new Vector3(size.x, size.y, 1f);
 
             _collider = gameObject.AddComponent<BoxCollider2D>();
@@ -78,7 +77,7 @@ namespace GourmetProject.Game.Gameplay.Presentation
             _label.fontSize = 48;
             _label.characterSize = 1f;
             var meshRenderer = textGo.GetComponent<MeshRenderer>();
-            meshRenderer.sortingOrder = sortingOrder + 1;
+            BattleSorting.Apply(meshRenderer, BattleSorting.WorldUi, BattleSorting.OrderButtonLabel);
         }
 
         private void Update()

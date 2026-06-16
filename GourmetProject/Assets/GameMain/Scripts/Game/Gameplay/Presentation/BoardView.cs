@@ -40,7 +40,6 @@ namespace GourmetProject.Game.Gameplay.Presentation
                         Mapper.CellCenter(pos),
                         cellSize,
                         _cellSprite,
-                        sortingOrder: 10,
                         _clicked);
                     _cells[pos] = cell;
                 }

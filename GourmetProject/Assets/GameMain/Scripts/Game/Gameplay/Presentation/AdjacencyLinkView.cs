@@ -27,7 +27,7 @@ namespace GourmetProject.Game.Gameplay.Presentation
             _line.numCapVertices = 4;
             _line.widthMultiplier = 0.07f;
             _line.textureMode = LineTextureMode.Stretch;
-            _line.sortingOrder = 55;
+            BattleSorting.Apply(_line, BattleSorting.Fx, BattleSorting.OrderLink);
 
             Shader shader = Shader.Find("Sprites/Default");
             if (shader != null)

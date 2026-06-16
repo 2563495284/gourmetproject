@@ -45,7 +45,6 @@ namespace GourmetProject.Game.Gameplay.Presentation
         private TextMesh _itemsText;
         private WorldButtonView[] _recipeButtons;
         private WorldButtonView _eatButton;
-        private BattleLighting _lighting;
         private SettlementSequencer _sequencer;
         private bool _settling;
 
@@ -100,7 +99,7 @@ namespace GourmetProject.Game.Gameplay.Presentation
             BuildRoots();
             BuildBackground();
             BuildBoard(session.Board);
-            BuildLighting();
+            BuildSequencer();
             BuildMenus();
             RebuildPlacedPieces();
             RefreshAll();
@@ -157,6 +156,9 @@ namespace GourmetProject.Game.Gameplay.Presentation
 
             DishPieceView placed = CreatePlacedPiece(result.Dish);
             placed.transform.position = start;
+            // 飞行途中切到 PiecesFlying 层 + 举高悬浮，确保压在已摆放的棋盘食品之上并带高度感。
+            placed.SetFlying(true);
+            placed.SetLift(1f);
             StartCoroutine(AnimateServe(placed, _boardView.Mapper.CellCenter(result.Dish.Placement.Origin)));
             _boardView.Sync();
             SetMessage($"上菜：{result.Dish.Def.Name}");
@@ -165,14 +167,32 @@ namespace GourmetProject.Game.Gameplay.Presentation
 
         private IEnumerator AnimateServe(DishPieceView piece, Vector3 target)
         {
+            // 飞行途中保持举高（阴影远、大、淡）。
             yield return PresentationTween.MoveTo(piece != null ? piece.transform : null, target, 0.26f);
             if (piece == null)
             {
                 yield break;
             }
 
-            yield return PresentationTween.PunchScale(piece.transform, 1.18f, 0.18f);
-            _lighting?.Pulse(piece.transform.position, new Color(1f, 0.85f, 0.5f, 1f));
+            // 落定：阴影从举高收回贴桌，形成「啪」地放下的接触感。
+            float t = 0f;
+            const float landDuration = 0.14f;
+            while (t < landDuration && piece != null)
+            {
+                t += Time.deltaTime;
+                piece.SetLift(1f - Mathf.Clamp01(t / landDuration));
+                yield return null;
+            }
+
+            if (piece == null)
+            {
+                yield break;
+            }
+
+            piece.SetLift(0f);
+            yield return PresentationTween.PunchScale(piece.transform, 1.12f, 0.16f);
+            // 落定后切回 Pieces 层，回到与其它棋盘食品一致的渲染顺序。
+            piece.SetFlying(false);
         }
 
         private void BuildRoots()
@@ -196,9 +216,8 @@ namespace GourmetProject.Game.Gameplay.Presentation
             }
         }
 
-        private void BuildLighting()
+        private void BuildSequencer()
         {
-            _lighting = BattleLighting.Create(transform, _boardCenter);
             _sequencer = gameObject.GetComponent<SettlementSequencer>();
             if (_sequencer == null)
             {
@@ -216,8 +235,8 @@ namespace GourmetProject.Game.Gameplay.Presentation
             SpriteRenderer renderer = go.AddComponent<SpriteRenderer>();
             renderer.sprite = Resources.Load<Sprite>("Sprites/Backgrounds/battle_table_backpack") ?? CreatePixelSprite();
             renderer.color = Color.white;
-            renderer.sortingOrder = -100;
-            SpriteRenderStyle.ApplyLitMaterial(renderer);
+            BattleSorting.Apply(renderer, BattleSorting.Background);
+            SpriteRenderStyle.ApplyUnlitMaterial(renderer);
 
             float height = _camera != null && _camera.orthographic ? _camera.orthographicSize * 2f : 10.8f;
             float width = height * (_camera != null ? _camera.aspect : 16f / 9f);
@@ -260,7 +279,6 @@ namespace GourmetProject.Game.Gameplay.Presentation
                 new Vector2(1.15f, 0.52f),
                 "总览",
                 new Color(0.38f, 0.31f, 0.26f, 1f),
-                60,
                 () => _overviewClicked?.Invoke());
 
             // 后厨：左侧竖排菜谱 +「上菜/剩N」。
@@ -275,7 +293,6 @@ namespace GourmetProject.Game.Gameplay.Presentation
                     new Vector2(1.7f, 0.78f),
                     $"菜谱{i + 1}",
                     new Color(0.82f, 0.48f, 0.18f, 1f),
-                    60,
                     () => TryServeDish(index));
             }
 
@@ -287,7 +304,6 @@ namespace GourmetProject.Game.Gameplay.Presentation
                 new Vector2(1.55f, 0.72f),
                 "吃!",
                 new Color(0.95f, 0.35f, 0.12f, 1f),
-                60,
                 () => _eatClicked?.Invoke());
         }
 
@@ -415,7 +431,6 @@ namespace GourmetProject.Game.Gameplay.Presentation
                     new Vector2(1.45f, 0.54f),
                     item.Name,
                     new Color(0.28f, 0.45f, 0.72f, 1f),
-                    60,
                     () => _activeItemClicked?.Invoke(captured));
                 button.SetInteractable(_session != null && !_session.IsSettled);
                 _activeButtons.Add(button);
@@ -502,7 +517,7 @@ namespace GourmetProject.Game.Gameplay.Presentation
             text.fontSize = fontSize;
             text.characterSize = 0.08f;
             MeshRenderer renderer = go.GetComponent<MeshRenderer>();
-            renderer.sortingOrder = 80;
+            BattleSorting.Apply(renderer, BattleSorting.WorldUi);
             return text;
         }
 
@@ -527,7 +542,6 @@ namespace GourmetProject.Game.Gameplay.Presentation
                 result,
                 _dishViewsById,
                 _boardView.Mapper,
-                _lighting,
                 _fxRoot,
                 RenderSettlementScore,
                 null);

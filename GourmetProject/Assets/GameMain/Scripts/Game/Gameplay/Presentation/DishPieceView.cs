@@ -8,9 +8,27 @@ namespace GourmetProject.Game.Gameplay.Presentation
 {
     public sealed class DishPieceView : MonoBehaviour
     {
+        // 接触阴影（软边暗斑）参数：贴桌态。偏移按单格尺寸 _cellSize 取比例，适配不同棋盘缩放。
+        private const float ShadowBaseAlpha = 0.5f;
+        private const float ShadowGroundScale = 1.22f;
+        private const float ShadowGroundDrop = 0.16f;
+        private const float ShadowGroundSide = 0.06f;
+
+        // 举高态（飞行中）相对贴桌的附加：阴影更远、更大、更淡，模拟悬浮高度。
+        private const float ShadowLiftScale = 1.3f;
+        private const float ShadowLiftAlphaMul = 0.55f;
+        private const float ShadowLiftDrop = 0.24f;
+        private const float ShadowLiftSide = 0.12f;
+
+        private static Sprite _softShadowSprite;
+
         private Sprite _sprite;
         private float _cellSize;
         private float _pitch;
+        private float _lift;
+        private SpriteRenderer _shadowRenderer;
+        private Vector3 _shadowBaseLocalPos;
+        private Vector3 _shadowBaseScale;
         private BoxCollider2D _collider;
         private Action<DishInstance> _clicked;
 
@@ -42,6 +60,16 @@ namespace GourmetProject.Game.Gameplay.Presentation
             }
         }
 
+        /// <summary>飞入棋盘时切到 PiecesFlying 层，整体压在已摆放食品之上；落定后切回 Pieces 层。</summary>
+        public void SetFlying(bool flying)
+        {
+            string layer = flying ? BattleSorting.PiecesFlying : BattleSorting.Pieces;
+            foreach (SpriteRenderer renderer in GetComponentsInChildren<SpriteRenderer>())
+            {
+                renderer.sortingLayerName = layer;
+            }
+        }
+
         private void RebuildCells(DishShape shape)
         {
             for (int i = transform.childCount - 1; i >= 0; i--)
@@ -49,8 +77,9 @@ namespace GourmetProject.Game.Gameplay.Presentation
                 Destroy(transform.GetChild(i).gameObject);
             }
 
-            CreateFootprintSprite(shape, shadow: true);
-            CreateFootprintSprite(shape, shadow: false);
+            CreateContactShadow(shape);
+            CreateFootprintSprite(shape);
+            ApplyLift(_lift);
 
             if (_collider == null)
             {
@@ -63,30 +92,53 @@ namespace GourmetProject.Game.Gameplay.Presentation
             _collider.offset = new Vector2((shape.Width - 1) * _pitch * 0.5f, -(shape.Height - 1) * _pitch * 0.5f);
         }
 
-        private void CreateFootprintSprite(DishShape shape, bool shadow)
+        /// <summary>脚下软边接触阴影：用径向羽化暗斑铺满整个脚印，不依赖菜品图留白，必定可见。</summary>
+        private void CreateContactShadow(DishShape shape)
         {
-            var go = new GameObject(shadow ? "Shadow" : "Sprite");
+            var go = new GameObject("Shadow");
             go.transform.SetParent(transform, false);
 
-            Vector3 offset = new Vector3(
+            Sprite blob = SoftShadowSprite;
+            var renderer = go.AddComponent<SpriteRenderer>();
+            renderer.sprite = blob;
+            BattleSorting.Apply(renderer, BattleSorting.Pieces, BattleSorting.OrderShadow);
+            renderer.color = new Color(0f, 0f, 0f, ShadowBaseAlpha);
+            SpriteRenderStyle.ApplyUnlitMaterial(renderer);
+
+            // 阴影覆盖旋转后的实际占格脚印（软边自然探出本体轮廓），无需随朝向旋转。
+            float spanX = (shape.Width - 1) * _pitch + _cellSize;
+            float spanY = (shape.Height - 1) * _pitch + _cellSize;
+            Vector2 bounds = blob != null ? (Vector2)blob.bounds.size : Vector2.one;
+            float sx = bounds.x > 0f ? spanX / bounds.x : spanX;
+            float sy = bounds.y > 0f ? spanY / bounds.y : spanY;
+            _shadowBaseScale = new Vector3(sx * ShadowGroundScale, sy * ShadowGroundScale, 1f);
+            go.transform.localScale = _shadowBaseScale;
+
+            Vector3 center = new Vector3(
                 (shape.Width - 1) * _pitch * 0.5f,
                 -(shape.Height - 1) * _pitch * 0.5f,
-                shadow ? 0.03f : 0f);
-            if (shadow)
-            {
-                offset += new Vector3(0.08f, -0.08f, 0f);
-            }
+                0.05f);
+            _shadowBaseLocalPos = center + new Vector3(_cellSize * ShadowGroundSide, -_cellSize * ShadowGroundDrop, 0f);
+            go.transform.localPosition = _shadowBaseLocalPos;
 
-            go.transform.localPosition = offset;
+            _shadowRenderer = renderer;
+        }
+
+        private void CreateFootprintSprite(DishShape shape)
+        {
+            var go = new GameObject("Sprite");
+            go.transform.SetParent(transform, false);
+
+            go.transform.localPosition = new Vector3(
+                (shape.Width - 1) * _pitch * 0.5f,
+                -(shape.Height - 1) * _pitch * 0.5f,
+                0f);
 
             SpriteRenderer renderer = go.AddComponent<SpriteRenderer>();
             renderer.sprite = _sprite;
-            renderer.sortingOrder = shadow ? 35 : 40;
-            renderer.color = shadow ? new Color(0f, 0f, 0f, 0.28f) : Color.white;
-            if (!shadow)
-            {
-                SpriteRenderStyle.ApplyLitMaterial(renderer);
-            }
+            BattleSorting.Apply(renderer, BattleSorting.Pieces, BattleSorting.OrderBody);
+            renderer.color = Color.white;
+            SpriteRenderStyle.ApplyUnlitMaterial(renderer);
 
             // sprite 按"基础朝向"绘制；摆放时若发生 90° 旋转，需把 sprite 一并旋转，
             // 并以基础朝向的占格尺寸做缩放，再旋转，才能贴格无缝且不被挤压。
@@ -104,6 +156,76 @@ namespace GourmetProject.Game.Gameplay.Presentation
             go.transform.localScale = new Vector3(scaleX, scaleY, 1f);
             // DishShape.Rotate90 为顺时针；Unity +Z 为逆时针，故顺时针旋转取负角。
             go.transform.localRotation = Quaternion.Euler(0f, 0f, -90f * rot);
+        }
+
+        private static Sprite SoftShadowSprite
+        {
+            get
+            {
+                if (_softShadowSprite == null)
+                {
+                    _softShadowSprite = CreateSoftShadowSprite();
+                }
+
+                return _softShadowSprite;
+            }
+        }
+
+        /// <summary>生成一张径向羽化的圆形软暗斑（白色 + alpha falloff），缩放后即可当椭圆接触阴影用。</summary>
+        private static Sprite CreateSoftShadowSprite()
+        {
+            const int size = 64;
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
+            {
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Bilinear,
+            };
+
+            float center = (size - 1) * 0.5f;
+            float maxRadius = size * 0.5f;
+            var pixels = new Color32[size * size];
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dx = (x - center) / maxRadius;
+                    float dy = (y - center) / maxRadius;
+                    float dist = Mathf.Sqrt(dx * dx + dy * dy);
+                    // 中心 0.4 半径内基本实心，向边缘 1.0 平滑渐隐。
+                    float a = Mathf.SmoothStep(1f, 0f, Mathf.InverseLerp(0.4f, 1f, dist));
+                    byte alpha = (byte)Mathf.Clamp(Mathf.RoundToInt(a * 255f), 0, 255);
+                    pixels[(y * size) + x] = new Color32(255, 255, 255, alpha);
+                }
+            }
+
+            texture.SetPixels32(pixels);
+            texture.Apply();
+            return Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), size);
+        }
+
+        /// <summary>设置悬浮高度：0=贴桌，1=举高（飞行中）。阴影随高度变远、变大、变淡，模拟接触投影的高度感。</summary>
+        public void SetLift(float lift01)
+        {
+            _lift = Mathf.Clamp01(lift01);
+            ApplyLift(_lift);
+        }
+
+        private void ApplyLift(float lift)
+        {
+            if (_shadowRenderer == null)
+            {
+                return;
+            }
+
+            Transform t = _shadowRenderer.transform;
+            t.localPosition = _shadowBaseLocalPos + new Vector3(_cellSize * ShadowLiftSide * lift, -_cellSize * ShadowLiftDrop * lift, 0f);
+
+            float scaleMul = Mathf.Lerp(1f, ShadowLiftScale, lift);
+            t.localScale = new Vector3(_shadowBaseScale.x * scaleMul, _shadowBaseScale.y * scaleMul, 1f);
+
+            Color c = _shadowRenderer.color;
+            c.a = ShadowBaseAlpha * Mathf.Lerp(1f, ShadowLiftAlphaMul, lift);
+            _shadowRenderer.color = c;
         }
 
         private void Update()

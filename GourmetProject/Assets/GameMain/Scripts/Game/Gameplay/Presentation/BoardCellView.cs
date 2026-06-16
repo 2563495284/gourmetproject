@@ -18,7 +18,6 @@ namespace GourmetProject.Game.Gameplay.Presentation
             Vector3 worldPosition,
             float size,
             Sprite sprite,
-            int sortingOrder,
             Action<GridPos> clicked)
         {
             var go = new GameObject($"Cell_{position.X}_{position.Y}");
@@ -37,8 +36,8 @@ namespace GourmetProject.Game.Gameplay.Presentation
             view._clicked = clicked;
             view._renderer = go.AddComponent<SpriteRenderer>();
             view._renderer.sprite = sprite;
-            view._renderer.sortingOrder = sortingOrder;
-            SpriteRenderStyle.ApplyLitMaterial(view._renderer);
+            BattleSorting.Apply(view._renderer, BattleSorting.Board);
+            SpriteRenderStyle.ApplyUnlitMaterial(view._renderer);
 
             // 碰撞体取 sprite 局部包围盒，配合上面的缩放后世界尺寸正好等于 size。
             var collider = go.AddComponent<BoxCollider2D>();

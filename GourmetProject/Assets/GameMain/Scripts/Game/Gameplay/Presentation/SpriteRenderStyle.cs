@@ -2,35 +2,39 @@ using UnityEngine;
 
 namespace GourmetProject.Game.Gameplay.Presentation
 {
+    /// <summary>
+    /// 战斗世界统一使用 Unlit 平涂材质：不依赖 Light2D 受光，画面靠 sprite 原色 + URP 2D 卡通后处理出味，
+    /// 避免「分层 ↔ 灯目标排序层」的耦合坑。SpriteRenderer 在 URP 2D 下默认材质是 Lit，必须显式改 Unlit。
+    /// </summary>
     internal static class SpriteRenderStyle
     {
-        private static Material _spriteLitMaterial;
+        private static Material _spriteUnlitMaterial;
 
-        public static Material SpriteLitMaterial
+        public static Material SpriteUnlitMaterial
         {
             get
             {
-                if (_spriteLitMaterial == null)
+                if (_spriteUnlitMaterial == null)
                 {
-                    Shader shader = Shader.Find("Universal Render Pipeline/2D/Sprite-Lit-Default");
+                    Shader shader = Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default");
                     if (shader != null)
                     {
-                        _spriteLitMaterial = new Material(shader)
+                        _spriteUnlitMaterial = new Material(shader)
                         {
-                            name = "RuntimeSpriteLitDefault",
+                            name = "RuntimeSpriteUnlitDefault",
                         };
                     }
                 }
 
-                return _spriteLitMaterial;
+                return _spriteUnlitMaterial;
             }
         }
 
-        public static void ApplyLitMaterial(SpriteRenderer renderer)
+        public static void ApplyUnlitMaterial(SpriteRenderer renderer)
         {
-            if (renderer != null && SpriteLitMaterial != null)
+            if (renderer != null && SpriteUnlitMaterial != null)
             {
-                renderer.sharedMaterial = SpriteLitMaterial;
+                renderer.sharedMaterial = SpriteUnlitMaterial;
             }
         }
     }

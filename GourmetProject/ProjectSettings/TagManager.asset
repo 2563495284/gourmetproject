@@ -41,3 +41,21 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: Background
+    uniqueID: 1633673475
+    locked: 0
+  - name: Board
+    uniqueID: 1633673476
+    locked: 0
+  - name: Pieces
+    uniqueID: 1633673477
+    locked: 0
+  - name: WorldUI
+    uniqueID: 1633673478
+    locked: 0
+  - name: Fx
+    uniqueID: 1633673479
+    locked: 0
+  - name: PiecesFlying
+    uniqueID: 1633673480
+    locked: 0

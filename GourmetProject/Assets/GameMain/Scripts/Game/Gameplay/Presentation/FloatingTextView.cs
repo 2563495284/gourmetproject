@@ -28,7 +28,7 @@ namespace GourmetProject.Game.Gameplay.Presentation
             tm.characterSize = characterSize;
 
             MeshRenderer mr = go.GetComponent<MeshRenderer>();
-            mr.sortingOrder = 90;
+            BattleSorting.Apply(mr, BattleSorting.Fx, BattleSorting.OrderFloatingText);
 
             FloatingTextView view = go.AddComponent<FloatingTextView>();
             view.StartCoroutine(view.Animate(tm, worldPos, rise, duration));
