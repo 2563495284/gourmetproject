@@ -2,6 +2,7 @@
   "dependencies": {
     "com.boxqkrtm.ide.cursor": "https://github.com/boxqkrtm/com.unity.ide.cursor.git",
     "com.code-philosophy.luban": "https://github.com/focus-creative-games/luban_unity.git",
+    "com.coffee.ui-effect": "5.10.9",
     "com.coplaydev.unity-mcp": "https://github.com/CoplayDev/unity-mcp.git?path=/MCPForUnity#main",
     "com.unity.2d.animation": "13.0.4",
     "com.unity.2d.aseprite": "3.0.1",
@@ -65,6 +66,7 @@
       "name": "package.openupm.com",
       "url": "https://package.openupm.com",
       "scopes": [
+        "com.coffee",
         "com.ivanmurzak",
         "extensions.unity",
         "org.nuget.com.ivanmurzak",

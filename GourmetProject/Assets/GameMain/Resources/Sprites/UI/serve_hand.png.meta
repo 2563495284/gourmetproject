@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 6a887a0fe599f458fbab9cc9ee566164
+guid: 39eda4822be0f456680664492ca3c1d0
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -5501949562651456804
-    second: dumpling_0
+      213: 7489411474003230322
+    second: serve_hand_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -24,7 +24,7 @@ TextureImporter:
     heightScale: 0.25
     normalMapFilter: 0
     flipGreenChannel: 0
-  isReadable: 0
+  isReadable: 1
   streamingMipmaps: 0
   streamingMipmapsPriority: 0
   vTOnly: 0
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: dumpling_0
+      name: serve_hand_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 699
-        height: 647
+        width: 1408
+        height: 768
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: cda4b0af50625a3b0800000000000000
-      internalID: -5501949562651456804
+      spriteID: 27e72b41e0cbfe760800000000000000
+      internalID: 7489411474003230322
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      dumpling_0: -5501949562651456804
+      serve_hand_0: 7489411474003230322
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

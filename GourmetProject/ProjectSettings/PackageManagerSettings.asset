@@ -34,6 +34,7 @@ MonoBehaviour:
     m_Name: package.openupm.com
     m_Url: https://package.openupm.com
     m_Scopes:
+    - com.coffee
     - com.ivanmurzak
     - extensions.unity
     - org.nuget.com.ivanmurzak

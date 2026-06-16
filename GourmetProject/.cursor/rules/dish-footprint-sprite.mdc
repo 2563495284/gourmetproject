@@ -1,0 +1,26 @@
+---
+description: 菜品脚印贴图必须与 dish_base 的 shapeRows 形状一致，否则会和邻格菜视觉重合
+globs: Assets/GameMain/Resources/Sprites/Dishes/**,Assets/StreamingAssets/Config/tbdishbase.json,GameConfig/Datas/dish_base.xlsx,Assets/GameMain/Scripts/Game/Gameplay/Presentation/DishPieceView.cs
+alwaysApply: false
+---
+
+# 菜品脚印贴图 ↔ 形状对齐
+
+非矩形菜品（L/T 等）的贴图必须与 `dish_base.shapeRows` 的占格形状一致。否则贴图会盖住邻格已摆放的菜（如煎蛋合法占了拌面 L 形的缺角，却被拌面方形贴图盖住）。
+
+## 渲染机制（DishPieceView）
+- 整张菜品图按「基础朝向占格包围盒」等比拉伸铺满，再按 `RotationIndex` 旋转 `-90°*rot`。
+- 单元格映射（rot=0）：`shapeRows` 行=Y(上→下)、列=X(左→右)。图的 4 象限 → 左上=cell(0,0)、右上=(1,0)、左下=(0,1)、右下=(1,1)。
+- 包围盒每格正方：1x1=512、2x1=1024x512、2x2=1024x1024（见 food-asset-style）。
+
+## 红线
+- 配置为 `.`（空）的格，贴图对应象限必须**透明**；为 `X` 的格必须有食物。铺满或缺口方向错都会重合。
+- 贴图缺口方向与配置必须一致：对不上时，改其一对齐另一即可（不要两边都不动）。
+- 改形状只动 `GameConfig/Datas/dish_base.xlsx` 的 `*shapeRows` 再跑 `bash GameConfig/gen.sh`（见 luban-config），**禁止手改** `tbdishbase.json` 生成物。
+
+## 生成与验收
+- 生成时把食物摆进 `X` 格、空出 `.` 格（prompt 明确「某象限完全透明、无任何绘制」，并禁止网格/边框线）。
+- 抠图后裁剪到「填充象限」的包围盒。
+- 验收：按象限统计 alpha 占比，`.` 格应≈0、`X` 格应明显 >0。
+
+例：`shapeRows = ["X.","XX"]`（缺右上）→ 贴图 TL/BL/BR 有食物、TR 透明。

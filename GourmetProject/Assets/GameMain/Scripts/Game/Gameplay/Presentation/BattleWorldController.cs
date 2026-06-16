@@ -47,6 +47,8 @@ namespace GourmetProject.Game.Gameplay.Presentation
         [SerializeField] private BoardCellView _boardCellPrefab;
         [SerializeField] private DishPieceView _dishPiecePrefab;
         [SerializeField] private WorldButtonView _worldButtonPrefab;
+        [SerializeField] private MenuBookWorldView _menuBookPrefab;
+        [SerializeField] private ServeHandView _serveHandPrefab;
 
         // 按棋盘尺寸自适应的单格世界尺寸与棋盘中心，BuildBoard 中计算。
         private float _cellSize = MaxCellSize;
@@ -56,12 +58,14 @@ namespace GourmetProject.Game.Gameplay.Presentation
 
         private readonly DishSpriteProvider _spriteProvider = new DishSpriteProvider();
         private readonly List<WorldButtonView> _activeButtons = new List<WorldButtonView>();
+        private readonly List<MenuBookWorldView> _recipeBooks = new List<MenuBookWorldView>();
         private readonly List<DishPieceView> _placedPieces = new List<DishPieceView>();
         private readonly Dictionary<int, DishPieceView> _dishViewsById = new Dictionary<int, DishPieceView>();
 
         private GameRun _run;
         private BattleSession _session;
         private bool _settling;
+        private bool _serving;
 
         private Action<string> _messageSink;
         private Action _eatClicked;
@@ -117,6 +121,7 @@ namespace GourmetProject.Game.Gameplay.Presentation
             BuildBoard(session.Board);
             EnsureSequencer();
             ConfigureFixedButtons();
+            BuildRecipeBooks();
             RebuildPlacedPieces();
             RefreshAll();
         }
@@ -153,14 +158,10 @@ namespace GourmetProject.Game.Gameplay.Presentation
 
         public void TryServeDish(int slotIndex)
         {
-            if (_session == null || _session.IsSettled || _settling)
+            if (_session == null || _session.IsSettled || _settling || _serving)
             {
                 return;
             }
-
-            Vector3 start = _recipeButtons != null && slotIndex >= 0 && slotIndex < _recipeButtons.Length
-                ? _recipeButtons[slotIndex].transform.position
-                : new Vector3(-4.2f, 2f, 0f);
 
             ServeResult result = _session.Serve(slotIndex);
             if (!result.Success)
@@ -171,44 +172,150 @@ namespace GourmetProject.Game.Gameplay.Presentation
             }
 
             DishPieceView placed = CreatePlacedPiece(result.Dish);
-            placed.transform.position = start;
-            // 飞行途中切到 PiecesFlying 层 + 举高悬浮，确保压在已摆放的棋盘食品之上并带高度感。
-            placed.SetFlying(true);
-            placed.SetLift(1f);
-            StartCoroutine(AnimateServe(placed, _boardView.Mapper.CellCenter(result.Dish.Placement.Origin)));
+            Vector3 target = _boardView.Mapper.CellCenter(result.Dish.Placement.Origin);
+            StartCoroutine(AnimateServe(placed, target));
             _boardView.Sync();
             SetMessage($"上菜：{result.Dish.Def.Name}");
             _stateChanged?.Invoke();
         }
 
+        /// <summary>
+        /// 商人手上菜：一只摊开手掌的手托着菜品从屏幕上方垂直降到目标格上方（悬停），
+        /// 随后手向上抽离屏幕、菜品脱手落到格子并落定。手与菜全程带假阴影。
+        /// </summary>
         private IEnumerator AnimateServe(DishPieceView piece, Vector3 target)
         {
-            // 飞行途中保持举高（阴影远、大、淡）。
-            yield return PresentationTween.MoveTo(piece != null ? piece.transform : null, target, 0.26f);
-            if (piece == null)
+            _serving = true;
+
+            // 手世界高度：约 4 格高，受半屏高约束，保证起点能完全藏到屏幕上方外。
+            float handHeight = Mathf.Clamp(_cellSize * 4.2f, 2.4f, _halfH * 1.5f);
+
+            ServeHandView hand = null;
+            if (_serveHandPrefab != null)
             {
-                yield break;
+                hand = Instantiate(_serveHandPrefab, transform);
+                hand.gameObject.name = "ServeHand";
+                hand.Build(_camera, handHeight);
             }
 
-            // 落定：阴影从举高收回贴桌，形成「啪」地放下的接触感。
+            // 悬停点：目标格正上方一点（菜品在此脱手）。起点：屏幕上方外。
+            // 注意菜品 transform 锚在「原点格」，真正的图在脚印中心；这里一律按「图的中心」对位，
+            // 才能让掌心始终托在食品正中央（多格菜也居中），落下时也不会横向漂移。
+            Vector3 footCenter = FootprintCenterOffset(piece);
+            Vector3 centerWorld = target + footCenter; // 落定后食品图的世界中心
+            float hoverGap = Mathf.Max(0.3f, _cellSize * 0.6f);
+            Vector3 hover = centerWorld + new Vector3(0f, hoverGap, 0f);
+            Vector3 topPalm = new Vector3(centerWorld.x, _halfH + handHeight, 0f);
+
+            // 飞行途中切到 PiecesFlying 层 + 举高悬浮，确保压在已摆放食品之上并带高度感。
+            piece.SetFlying(true);
+            piece.SetLift(1f);
+            PlacePieceAtPalm(piece, hand, topPalm);
+
+            // —— 阶段1：手托菜垂直下降到悬停点 ——
+            const float descend = 0.34f;
             float t = 0f;
-            const float landDuration = 0.14f;
-            while (t < landDuration && piece != null)
+            while (t < descend && piece != null)
             {
                 t += Time.deltaTime;
-                piece.SetLift(1f - Mathf.Clamp01(t / landDuration));
+                float k = Mathf.Clamp01(t / descend);
+                float eased = 1f - Mathf.Pow(1f - k, 3f); // 缓出
+                Vector3 palm = Vector3.Lerp(topPalm, hover, eased);
+                if (hand != null)
+                {
+                    hand.SetHeight(1f - eased * 0.8f); // 高空 1 → 贴近 0.2
+                }
+
+                PlacePieceAtPalm(piece, hand, palm);
                 yield return null;
             }
 
             if (piece == null)
             {
+                if (hand != null)
+                {
+                    Destroy(hand.gameObject);
+                }
+
+                _serving = false;
                 yield break;
             }
 
-            piece.SetLift(0f);
-            yield return PresentationTween.PunchScale(piece.transform, 1.12f, 0.16f);
-            // 落定后切回 Pieces 层，回到与其它棋盘食品一致的渲染顺序。
-            piece.SetFlying(false);
+            PlacePieceAtPalm(piece, hand, hover);
+
+            // —— 阶段2：手向上抽离屏幕 + 菜品脱手落到格子 ——
+            Vector3 pieceStart = piece.transform.position;
+            const float drop = 0.26f;
+            t = 0f;
+            while (t < drop && piece != null)
+            {
+                t += Time.deltaTime;
+                float k = Mathf.Clamp01(t / drop);
+
+                // 菜品落下：缓出，lift 从举高收回贴桌。
+                float pe = 1f - Mathf.Pow(1f - k, 3f);
+                piece.transform.position = Vector3.Lerp(pieceStart, target, pe);
+                piece.SetLift(1f - k);
+
+                // 手抽走：缓入回到屏幕上方外，阴影淡出。
+                if (hand != null)
+                {
+                    float he = k * k;
+                    hand.SetPalmWorld(Vector3.Lerp(hover, topPalm, he));
+                    hand.SetHeight(0.2f + 0.8f * he);
+                }
+
+                yield return null;
+            }
+
+            if (hand != null)
+            {
+                Destroy(hand.gameObject);
+            }
+
+            if (piece != null)
+            {
+                piece.transform.position = target;
+                piece.SetLift(0f);
+                yield return PresentationTween.PunchScale(piece.transform, 1.12f, 0.16f);
+                // 落定后切回 Pieces 层，回到与其它棋盘食品一致的渲染顺序。
+                piece.SetFlying(false);
+            }
+
+            _serving = false;
+        }
+
+        /// <summary>把菜品「图的中心」对齐到手掌心（无手时直接对到 palm 世界点）。</summary>
+        /// <remarks>菜品 transform 锚在原点格、图在脚印中心，故减去脚印中心偏移，让图正好落在掌心。</remarks>
+        private void PlacePieceAtPalm(DishPieceView piece, ServeHandView hand, Vector3 palm)
+        {
+            if (piece == null)
+            {
+                return;
+            }
+
+            Vector3 anchor = palm;
+            if (hand != null)
+            {
+                hand.SetPalmWorld(palm);
+                anchor = hand.PalmWorldPosition;
+            }
+
+            piece.transform.position = anchor - FootprintCenterOffset(piece);
+        }
+
+        /// <summary>菜品「图的中心」相对其 transform（原点格）的偏移 = 脚印中心，按朝向后的占格尺寸算。</summary>
+        private Vector3 FootprintCenterOffset(DishPieceView piece)
+        {
+            if (piece == null)
+            {
+                return Vector3.zero;
+            }
+
+            float pitch = _cellSize + Gap;
+            int w = Mathf.Max(1, piece.CurrentShape.Width);
+            int h = Mathf.Max(1, piece.CurrentShape.Height);
+            return new Vector3((w - 1) * pitch * 0.5f, -(h - 1) * pitch * 0.5f, 0f);
         }
 
         private void ComputeViewport()
@@ -285,15 +392,81 @@ namespace GourmetProject.Game.Gameplay.Presentation
                 return;
             }
 
-            for (int i = 0; i < _recipeButtons.Length; i++)
+            // 世界菜谱按钮已由菜单书替代，隐藏场景里原有按钮以免重复展示。
+            foreach (WorldButtonView button in _recipeButtons)
             {
-                int index = i;
-                _recipeButtons[i]?.Configure(
-                    new Vector2(1.7f, 0.78f),
-                    $"菜谱{i + 1}",
-                    new Color(0.82f, 0.48f, 0.18f, 1f),
-                    () => TryServeDish(index));
+                if (button != null)
+                {
+                    button.gameObject.SetActive(false);
+                }
             }
+        }
+
+        private void BuildRecipeBooks()
+        {
+            foreach (MenuBookWorldView book in _recipeBooks)
+            {
+                if (book != null)
+                {
+                    Destroy(book.gameObject);
+                }
+            }
+
+            _recipeBooks.Clear();
+            if (_session == null)
+            {
+                return;
+            }
+
+            int count = _session.Slots.Count;
+            if (count <= 0)
+            {
+                return;
+            }
+
+            // 左侧后厨区：以屏幕左缘为基准向右铺开各菜谱书，竖直均分。
+            // sizeMul 放大书体（>1 会向右压到棋盘区，属空间取舍）。场景物体书按世界尺寸直接摆放（高=宽*aspect）。
+            const float margin = 0.2f;
+            const float gap = 0.3f;
+            const float aspect = 0.66f;
+            const float sizeMul = 2.0f;
+            float areaLeft = -_halfW + margin;
+            float baseW = Mathf.Max(0.5f, 3.0f - margin * 2f);
+            float worldW = baseW * sizeMul;
+
+            float bookH = worldW * aspect;
+            float availH = 2f * _halfH - 2f * margin;
+            float needH = count * bookH + (count - 1) * gap;
+            if (needH > availH && needH > 0f)
+            {
+                float k = availH / needH;
+                worldW *= k;
+                bookH *= k;
+                needH = availH;
+            }
+
+            if (_menuBookPrefab == null)
+            {
+                Debug.LogWarning("[BattleWorldController] 未配置 _menuBookPrefab，菜谱书无法生成。");
+                return;
+            }
+
+            float centerX = areaLeft + worldW * 0.5f;
+            float blockTop = needH * 0.5f;
+            for (int i = 0; i < count; i++)
+            {
+                MenuBookWorldView book = Instantiate(_menuBookPrefab, transform);
+                book.gameObject.name = $"MenuBook_{i}";
+                book.Build(i, _camera, OnBellServe, worldW, bookH);
+                float y = blockTop - bookH * 0.5f - i * (bookH + gap);
+                book.transform.position = new Vector3(centerX, y, 0f);
+                _recipeBooks.Add(book);
+            }
+        }
+
+        private void OnBellServe(int slotIndex)
+        {
+            TryServeDish(slotIndex);
         }
 
         private void RebuildPlacedPieces()
@@ -343,28 +516,31 @@ namespace GourmetProject.Game.Gameplay.Presentation
 
         private void RefreshRecipes()
         {
-            if (_recipeButtons == null)
+            if (_session == null || _run == null)
             {
                 return;
             }
 
-            for (int i = 0; i < _recipeButtons.Length; i++)
+            for (int i = 0; i < _recipeBooks.Count; i++)
             {
-                if (_recipeButtons[i] == null)
+                MenuBookWorldView book = _recipeBooks[i];
+                if (book == null)
                 {
                     continue;
                 }
 
-                if (_session == null || i >= _session.Slots.Count)
+                if (i >= _session.Slots.Count)
                 {
-                    _recipeButtons[i].SetLabel($"菜谱{i + 1}");
-                    _recipeButtons[i].SetInteractable(false);
+                    book.SetData(System.Array.Empty<string>(), _run.Database);
+                    book.SetTitle($"菜谱{i + 1}");
+                    book.SetInteractable(false);
                     continue;
                 }
 
                 RecipeSlot slot = _session.Slots[i];
-                _recipeButtons[i].SetLabel($"菜谱{i + 1}\n剩 {slot.Count}");
-                _recipeButtons[i].SetInteractable(!_session.IsSettled && !slot.IsEmpty);
+                book.SetData(slot.Remaining, _run.Database);
+                book.SetTitle($"菜谱{i + 1} · 剩 {slot.Count}");
+                book.SetInteractable(!_session.IsSettled && !slot.IsEmpty);
             }
         }
 
@@ -565,6 +741,11 @@ namespace GourmetProject.Game.Gameplay.Presentation
             foreach (WorldButtonView button in _activeButtons)
             {
                 button?.SetInteractable(interactable);
+            }
+
+            foreach (MenuBookWorldView book in _recipeBooks)
+            {
+                book?.SetInteractable(interactable);
             }
         }
     }

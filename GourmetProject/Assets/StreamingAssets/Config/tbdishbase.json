@@ -46,8 +46,8 @@
     "icon": "Sprites/Dishes/noodle",
     "allowRotate": true,
     "shapeRows": [
-      "XX",
-      "X."
+      "X.",
+      "XX"
     ]
   },
   {

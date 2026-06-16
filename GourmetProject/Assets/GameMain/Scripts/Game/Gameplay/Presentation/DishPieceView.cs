@@ -20,8 +20,6 @@ namespace GourmetProject.Game.Gameplay.Presentation
         private const float ShadowLiftDrop = 0.24f;
         private const float ShadowLiftSide = 0.12f;
 
-        private static Sprite _softShadowSprite;
-
         private Sprite _sprite;
         private float _cellSize;
         private float _pitch;
@@ -98,7 +96,7 @@ namespace GourmetProject.Game.Gameplay.Presentation
             var go = new GameObject("Shadow");
             go.transform.SetParent(transform, false);
 
-            Sprite blob = SoftShadowSprite;
+            Sprite blob = BattleShadow.SoftShadowSprite;
             var renderer = go.AddComponent<SpriteRenderer>();
             renderer.sprite = blob;
             BattleSorting.Apply(renderer, BattleSorting.Pieces, BattleSorting.OrderShadow);
@@ -156,51 +154,6 @@ namespace GourmetProject.Game.Gameplay.Presentation
             go.transform.localScale = new Vector3(scaleX, scaleY, 1f);
             // DishShape.Rotate90 为顺时针；Unity +Z 为逆时针，故顺时针旋转取负角。
             go.transform.localRotation = Quaternion.Euler(0f, 0f, -90f * rot);
-        }
-
-        private static Sprite SoftShadowSprite
-        {
-            get
-            {
-                if (_softShadowSprite == null)
-                {
-                    _softShadowSprite = CreateSoftShadowSprite();
-                }
-
-                return _softShadowSprite;
-            }
-        }
-
-        /// <summary>生成一张径向羽化的圆形软暗斑（白色 + alpha falloff），缩放后即可当椭圆接触阴影用。</summary>
-        private static Sprite CreateSoftShadowSprite()
-        {
-            const int size = 64;
-            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
-            {
-                wrapMode = TextureWrapMode.Clamp,
-                filterMode = FilterMode.Bilinear,
-            };
-
-            float center = (size - 1) * 0.5f;
-            float maxRadius = size * 0.5f;
-            var pixels = new Color32[size * size];
-            for (int y = 0; y < size; y++)
-            {
-                for (int x = 0; x < size; x++)
-                {
-                    float dx = (x - center) / maxRadius;
-                    float dy = (y - center) / maxRadius;
-                    float dist = Mathf.Sqrt(dx * dx + dy * dy);
-                    // 中心 0.4 半径内基本实心，向边缘 1.0 平滑渐隐。
-                    float a = Mathf.SmoothStep(1f, 0f, Mathf.InverseLerp(0.4f, 1f, dist));
-                    byte alpha = (byte)Mathf.Clamp(Mathf.RoundToInt(a * 255f), 0, 255);
-                    pixels[(y * size) + x] = new Color32(255, 255, 255, alpha);
-                }
-            }
-
-            texture.SetPixels32(pixels);
-            texture.Apply();
-            return Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), size);
         }
 
         /// <summary>设置悬浮高度：0=贴桌，1=举高（飞行中）。阴影随高度变远、变大、变淡，模拟接触投影的高度感。</summary>

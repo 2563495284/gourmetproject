@@ -4,31 +4,50 @@ using UnityEngine;
 namespace GourmetProject.Game.Gameplay.Presentation
 {
     /// <summary>
-    /// 简单场景内按钮，避免战斗操作继续依赖 uGUI。
-    /// 现以脚本根 prefab 形式存在：场景里摆好的固定按钮直接 <see cref="Configure"/>，
-    /// 运行时动态按钮（主动道具）由控制器 Instantiate 后再 Configure。
+    /// 场景内按钮：固定结构（底色块 + 文案 + 碰撞盒）摆在 prefab 里，由 <see cref="Configure"/> 喂尺寸/颜色/文案/回调。
+    /// 尺寸是数据驱动的（不同按钮大小不一），运行时按传入 size 缩放根节点，文案子物体反向缩放保持世界字号恒定。
     /// </summary>
+    [RequireComponent(typeof(SpriteRenderer), typeof(BoxCollider2D))]
     public sealed class WorldButtonView : MonoBehaviour
     {
-        private SpriteRenderer _background;
-        private TextMesh _label;
-        private BoxCollider2D _collider;
-        private Color _normalColor;
+        [Tooltip("按钮底色块（prefab 根节点上的 SpriteRenderer）。")]
+        [SerializeField] private SpriteRenderer _background;
+
+        [Tooltip("按钮文案（prefab 子物体 Label 上的 TextMesh）。")]
+        [SerializeField] private TextMesh _label;
+
+        [Tooltip("点击命中碰撞盒（prefab 根节点上的 BoxCollider2D）。")]
+        [SerializeField] private BoxCollider2D _collider;
+
+        private Color _normalColor = Color.white;
         private Color _disabledColor;
         private Action _clicked;
         private bool _interactable = true;
-        private bool _built;
 
-        /// <summary>构建（若未构建）并设置外观与点击回调。可重复调用以更新颜色/文案/回调。</summary>
+        /// <summary>设置外观与点击回调。可重复调用以更新尺寸/颜色/文案/回调。</summary>
         public void Configure(Vector2 size, string label, Color color, Action clicked)
         {
-            EnsureBuilt(size);
+            EnsureRefs();
+
+            transform.localScale = new Vector3(size.x, size.y, 1f);
+
+            // Label 反向缩放抵消根缩放，使世界字号不随按钮尺寸变化。
+            if (_label != null)
+            {
+                _label.transform.localScale = new Vector3(
+                    0.08f / Mathf.Max(size.x, 0.0001f),
+                    0.08f / Mathf.Max(size.y, 0.0001f),
+                    1f);
+            }
+
             _clicked = clicked;
             _normalColor = color;
             _disabledColor = new Color(color.r * 0.45f, color.g * 0.45f, color.b * 0.45f, 0.75f);
             if (_background != null)
             {
                 _background.color = _interactable ? _normalColor : _disabledColor;
+                BattleSorting.Apply(_background, BattleSorting.WorldUi, BattleSorting.OrderButtonBg);
+                SpriteRenderStyle.ApplyUnlitMaterial(_background);
             }
 
             SetLabel(label);
@@ -51,47 +70,42 @@ namespace GourmetProject.Game.Gameplay.Presentation
             }
         }
 
-        private void EnsureBuilt(Vector2 size)
+        /// <summary>兜底解析 prefab 里的渲染体/文案/碰撞盒引用，容忍未在 prefab 里手动赋值的情况。</summary>
+        private void EnsureRefs()
         {
-            transform.localScale = new Vector3(size.x, size.y, 1f);
-            if (_built)
-            {
-                return;
-            }
-
-            _built = true;
-
-            _background = gameObject.GetComponent<SpriteRenderer>();
             if (_background == null)
             {
-                _background = gameObject.AddComponent<SpriteRenderer>();
+                _background = GetComponent<SpriteRenderer>();
+                if (_background == null)
+                {
+                    _background = gameObject.AddComponent<SpriteRenderer>();
+                }
             }
 
-            _background.sprite = CreatePixelSprite();
-            BattleSorting.Apply(_background, BattleSorting.WorldUi, BattleSorting.OrderButtonBg);
-            SpriteRenderStyle.ApplyUnlitMaterial(_background);
+            if (_background.sprite == null)
+            {
+                _background.sprite = Resources.Load<Sprite>("Sprites/UI/white");
+            }
 
-            _collider = gameObject.GetComponent<BoxCollider2D>();
             if (_collider == null)
             {
-                _collider = gameObject.AddComponent<BoxCollider2D>();
+                _collider = GetComponent<BoxCollider2D>();
+                if (_collider == null)
+                {
+                    _collider = gameObject.AddComponent<BoxCollider2D>();
+                }
             }
 
             _collider.size = Vector2.one;
 
-            GameObject textGo = new GameObject("Label");
-            textGo.transform.SetParent(transform, false);
-            textGo.transform.localPosition = new Vector3(0f, -0.08f, -0.01f);
-            textGo.transform.localScale = new Vector3(0.08f / size.x, 0.08f / size.y, 1f);
-            _label = textGo.AddComponent<TextMesh>();
-            _label.text = string.Empty;
-            _label.anchor = TextAnchor.MiddleCenter;
-            _label.alignment = TextAlignment.Center;
-            _label.color = Color.white;
-            _label.fontSize = 48;
-            _label.characterSize = 1f;
-            var meshRenderer = textGo.GetComponent<MeshRenderer>();
-            BattleSorting.Apply(meshRenderer, BattleSorting.WorldUi, BattleSorting.OrderButtonLabel);
+            if (_label == null)
+            {
+                Transform t = transform.Find("Label");
+                if (t != null)
+                {
+                    _label = t.GetComponent<TextMesh>();
+                }
+            }
         }
 
         private void Update()
@@ -112,14 +126,6 @@ namespace GourmetProject.Game.Gameplay.Presentation
             {
                 _clicked?.Invoke();
             }
-        }
-
-        private static Sprite CreatePixelSprite()
-        {
-            var texture = new Texture2D(1, 1, TextureFormat.RGBA32, false);
-            texture.SetPixel(0, 0, Color.white);
-            texture.Apply();
-            return Sprite.Create(texture, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);
         }
     }
 }

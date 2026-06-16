@@ -103,16 +103,10 @@ namespace GourmetProject.Game.UI
             float rowH = 0.16f;
             int shown = 0;
 
-            var terms = new List<string>();
+            List<string> lines = DishInfoText.TagLines(data.TagIds, db, out List<string> terms);
 
-            foreach (string tagId in data.TagIds)
+            foreach (string line in lines)
             {
-                TagDef tag = db.GetTag(tagId);
-                if (tag == null)
-                {
-                    continue;
-                }
-
                 float rowTop = top - shown * rowH;
                 float rowBottom = rowTop - rowH + 0.01f;
                 if (rowBottom < 0f)
@@ -120,22 +114,18 @@ namespace GourmetProject.Game.UI
                     break;
                 }
 
-                UiBuilder.AddText(tagRoot, $"Tag_{tagId}", $"【{tag.Name}】{tag.Desc}", 20, Color.white,
+                UiBuilder.AddText(tagRoot, $"Tag_{shown}", line, 20, Color.white,
                     0f, rowBottom, 1f, rowTop, TextAnchor.UpperLeft);
                 shown++;
-
-                if (tag.HasTerm && !terms.Contains(tag.TermId))
-                {
-                    terms.Add(tag.TermId);
-                }
             }
 
-            BuildTermBox(db, terms);
+            BuildTermBox(terms);
         }
 
-        private void BuildTermBox(GameplayDatabase db, List<string> termIds)
+        private void BuildTermBox(List<string> termIds)
         {
-            if (termIds.Count == 0)
+            string termText = DishInfoText.TermBlock(termIds);
+            if (string.IsNullOrEmpty(termText))
             {
                 return;
             }
@@ -144,17 +134,7 @@ namespace GourmetProject.Game.UI
             UiBuilder.Anchor(termRoot, 0.44f, 0.14f, 0.96f, 0.30f);
             UiBuilder.AddImage(termRoot, "TermBg", new Color(1f, 1f, 1f, 0.06f), 0f, 0f, 1f, 1f, 2f);
 
-            var sb = new System.Text.StringBuilder();
-            foreach (string termId in termIds)
-            {
-                cfg.Term term = GameApp.Config.Tables.TbTerm.GetOrDefault(termId);
-                if (term != null)
-                {
-                    sb.AppendLine($"※ {term.Name}：{term.Desc}");
-                }
-            }
-
-            UiBuilder.AddText(termRoot, "TermText", sb.ToString(), 18, new Color(0.9f, 0.9f, 0.7f, 1f), 0.03f, 0.05f, 0.97f, 0.95f, TextAnchor.UpperLeft);
+            UiBuilder.AddText(termRoot, "TermText", termText, 18, new Color(0.9f, 0.9f, 0.7f, 1f), 0.03f, 0.05f, 0.97f, 0.95f, TextAnchor.UpperLeft);
         }
 
         private void Close()

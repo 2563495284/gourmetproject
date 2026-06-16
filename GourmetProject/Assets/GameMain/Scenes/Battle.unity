@@ -427,6 +427,8 @@ MonoBehaviour:
   _boardCellPrefab: {fileID: 6341408356780686608, guid: 51f2e9c520382400dbab9879cf9e2308, type: 3}
   _dishPiecePrefab: {fileID: 8981609610198139403, guid: 6cfc41d91a00c45199a5910983b1608b, type: 3}
   _worldButtonPrefab: {fileID: 7008792684074489567, guid: f6a4e9f4890bc4629b5d7a85ab280e8e, type: 3}
+  _menuBookPrefab: {fileID: 3528741960012345673, guid: 5f3a9c2e1b7d44869a9c0e8f12d3b6a4, type: 3}
+  _serveHandPrefab: {fileID: 6071260432894370099, guid: 959711ce1de1f489f86e491f9e943669, type: 3}
 --- !u!4 &420685136
 Transform:
   m_ObjectHideFlags: 0

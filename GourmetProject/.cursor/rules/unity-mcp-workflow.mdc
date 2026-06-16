@@ -1,36 +1,44 @@
 ---
-description: 通过 Unity MCP(unity-mcp-cli) 实时编译/运行/测试的工作流
-alwaysApply: true
+description: Unity MCP（mcp-for-unity）实时验证工作流，改代码后用实时编辑器验证，而非独立 dotnet 构建
+globs:
+alwaysApply: false
 ---
 
 # Unity MCP 验证工作流
 
-本项目已接入 Unity MCP，改代码后用实时编辑器验证，而非独立 dotnet 构建。
+本项目已接入 **mcp-for-unity**（server v3.x，HTTP 端点见 `.cursor/mcp.json`）。所有 Unity 操作通过 Cursor 的 MCP 通道调用 server `user-unityMCP` 的工具（`CallMcpTool` / `FetchMcpResource`），改代码后用实时编辑器验证，而非独立 dotnet 构建。
 
-## 改完 C# 后必做：刷新 + 查编译错误
-```bash
-unity-mcp-cli run-tool console-clear-logs --input '{}'
-unity-mcp-cli run-tool assets-refresh --input '{"options":"ForceSynchronousImport"}'
-unity-mcp-cli run-tool console-get-logs --input-file - <<'EOF' | grep -i "error CS" | sort -u || echo NONE
-{"maxEntries":200,"logTypeFilter":"Error","includeStackTrace":false}
-EOF
-```
+> 注意：本项目里的 `unity-mcp-cli` 与 `.claude/skills/*`（`gameobject-create`、`assets-prefab-open` 等细粒度工具、端口 27242）属于**另一套** IvanMurzak Unity-MCP，与当前在跑的 mcp-for-unity **不兼容**，不要用。当前这套是 `manage_*` 粗粒度工具 + `execute_code`。
+
+## 工具速查（server: user-unityMCP）
+
+- 读编辑器状态：资源 `mcpforunity://instances`、`mcpforunity://editor_state` 等（`FetchMcpResource`）。
+- 控制台：`read_console`（`action: clear|get`，`types: ["error"]`，`filter_text`，`format`）。
+- 刷新/编译：`refresh_unity`（`mode: force`，`scope: scripts`，`compile: request`，`wait_for_ready: true`）。
+- 播放控制：`manage_editor`（`action: play|pause|stop`）。
+- 跑测试：`run_tests`（异步，返回 `job_id`）+ `get_test_job`（轮询，带 `wait_timeout`）。
+- 场景/物体/组件/资产：`manage_scene`、`manage_gameobject`、`manage_components`、`manage_asset`、`manage_prefabs`。
+- 任意 Editor C#：`execute_code`（`action: execute`，`code` 为方法体，可访问 `UnityEngine`/`UnityEditor`，`return` 取回数据）。
+
+## 改完 C# 后必做：清日志 → 刷新编译 → 查错
+
+1. `read_console` → `{"action":"clear"}`
+2. `refresh_unity` → `{"mode":"force","scope":"scripts","compile":"request","wait_for_ready":true}`
+3. 等编译完成（几秒，或轮询 `mcpforunity://editor_state` 的 `isCompiling`），再
+4. `read_console` → `{"action":"get","types":["error"],"format":"plain","filter_text":"CS"}`，确认无 `error CS`。
 
 ## 运行启动链路验证（Play 模式）
-```bash
-unity-mcp-cli run-tool editor-application-set-state --input '{"isPlaying":true}'
-# sleep 几秒后读日志，最后务必停止：
-unity-mcp-cli run-tool editor-application-set-state --input '{"isPlaying":false}'
-```
+
+- `manage_editor` → `{"action":"play"}`，等几秒后 `read_console` 读日志，**务必**再 `{"action":"stop"}`。
 
 ## 跑 EditMode 测试
-```bash
-unity-mcp-cli run-tool tests-run --input-file - <<'EOF'
-{"testMode":"EditMode","testAssembly":"GourmetProject.Tests.EditMode"}
-EOF
-```
+
+- `run_tests` → `{"mode":"EditMode","assembly_names":["GourmetProject.Tests.EditMode"]}`，拿到 `job_id`
+- `get_test_job` → `{"job_id":"...","wait_timeout":60,"include_failed_tests":true}`
 
 ## 注意
-- `console-get-logs` 的 `logTypeFilter` 偶发不接受 `null`，改为省略该字段。
-- 日志缓存会累积旧记录，看最新编译结果前先 `console-clear-logs`。
-- 优先用 MCP 工具（scene/gameobject/component/assets）改场景与组件，避免手改 `.unity` YAML。
+
+- 看最新编译/运行结果前先 `read_console {"action":"clear"}`，日志缓存会累积旧记录。
+- `read_console` 偶发把 `RequireComponent` 自动补组件、Inspector 画临时对象的异常也列为 error——只认 `error CS` 判断编译是否通过。
+- 改场景/prefab/组件优先用 `manage_*` 或 `execute_code`（`PrefabUtility.LoadPrefabContents` + `SerializedObject` 连引用 + `SaveAsPrefabAsset`），避免手改 `.unity`/`.prefab` YAML 对错 `fileID`。
+- `execute_code` 的 `code` 是方法体，**不能写 `using` 指令**，类型用全限定名（如 `GourmetProject.Game.Gameplay.Presentation.MenuBookWorldView`）。
