@@ -4,37 +4,39 @@ using GourmetProject.Gameplay.Battle;
 using GourmetProject.Runtime;
 using GourmetProject.Runtime.UI;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace GourmetProject.Game.UI
 {
     /// <summary>
     /// 过关领奖界面：展示本周得分与发放的奖励，点「继续」推进到下一周（或通关返回菜单）。
+    /// 结构全固定、落在 RewardForm.prefab，脚本只赋文本并按是否最终周切换按钮组。
     /// 奖励经 RewardGranter 按周命名流发放，并在推进时存档以支持「继续游戏」。
     /// </summary>
     public sealed class RewardForm : UGuiForm
     {
-        private static readonly Color Dim = new(0f, 0f, 0f, 0.82f);
-        private static readonly Color Box = new(0.14f, 0.18f, 0.16f, 1f);
+        [SerializeField] private Text _titleText;
+        [SerializeField] private Text _scoreText;
+        [SerializeField] private Text _rewardText;
+        [SerializeField] private Text _goldText;
+        [SerializeField] private Button _continueButton;
+        [SerializeField] private Button _endlessButton;
+        [SerializeField] private Button _menuButton;
 
-        private RectTransform _content;
         private GameRun _run;
         private bool _isFinalWeek;
 
         protected override void OnInit(object userData)
         {
             base.OnInit(userData);
-            UiBuilder.AddImage(CachedTransform, "Dim", Dim, 0f, 0f, 1f, 1f);
+            _continueButton.onClick.AddListener(OnContinue);
+            _endlessButton.onClick.AddListener(OnContinue);
+            _menuButton.onClick.AddListener(OnReturnMenu);
         }
 
         protected override void OnOpen(object userData)
         {
             base.OnOpen(userData);
-
-            if (_content != null)
-            {
-                Destroy(_content.gameObject);
-                _content = null;
-            }
 
             _run = GameRunContext.Current;
             if (_run == null)
@@ -51,34 +53,28 @@ namespace GourmetProject.Game.UI
             string reward = RewardGranter.Grant(_run, _run.CurrentWeek, rng);
             _isFinalWeek = !_run.HasNextWeek;
 
-            Build(total, target, reward);
+            Refresh(total, target, reward);
         }
 
-        private void Build(int total, int target, string reward)
+        private void Refresh(int total, int target, string reward)
         {
-            _content = UiBuilder.NewRect("Content", CachedTransform);
-            UiBuilder.Anchor(_content, 0.24f, 0.26f, 0.76f, 0.74f);
-            UiBuilder.AddImage(_content, "Box", Box, 0f, 0f, 1f, 1f);
+            _titleText.text = _isFinalWeek ? "通关！" : $"第 {_run.WeekIndex} 周 · 过关！";
+            _scoreText.text = $"得分 {total} / 目标 {target}";
+            _rewardText.text = reward;
+            _goldText.text = $"当前金币 {_run.Gold}";
 
-            string title = _isFinalWeek ? "通关！" : $"第 {_run.WeekIndex} 周 · 过关！";
-            UiBuilder.AddText(_content, "Title", title, 38, new Color(1f, 0.85f, 0.4f, 1f), 0.05f, 0.80f, 0.95f, 0.96f);
-            UiBuilder.AddText(_content, "Score", $"得分 {total} / 目标 {target}", 26, Color.white, 0.05f, 0.66f, 0.95f, 0.80f);
-            UiBuilder.AddText(_content, "Reward", reward, 24, new Color(0.7f, 1f, 0.7f, 1f), 0.05f, 0.46f, 0.95f, 0.64f);
-            UiBuilder.AddText(_content, "Gold", $"当前金币 {_run.Gold}", 22, new Color(1f, 0.9f, 0.5f, 1f), 0.05f, 0.34f, 0.95f, 0.46f);
+            // 配置周打完后进入（或继续）无尽模式或返回菜单；否则只给「进入下一周」。
+            _continueButton.gameObject.SetActive(!_isFinalWeek);
+            _endlessButton.gameObject.SetActive(_isFinalWeek);
+            _menuButton.gameObject.SetActive(_isFinalWeek);
 
             if (_isFinalWeek)
             {
-                // 配置周打完后进入（或继续）无尽模式，或带着存档返回菜单。
-                string nextLabel = _run.IsEndless ? "继续挑战" : "进入无尽模式";
-                UiBuilder.AddButton(_content, "Endless", nextLabel, new Color(0.9f, 0.55f, 0.2f, 1f),
-                    0.08f, 0.08f, 0.48f, 0.22f, OnContinue, 24);
-                UiBuilder.AddButton(_content, "Menu", "返回菜单", new Color(0.35f, 0.35f, 0.4f, 1f),
-                    0.52f, 0.08f, 0.92f, 0.22f, OnReturnMenu, 24);
-            }
-            else
-            {
-                UiBuilder.AddButton(_content, "Continue", "进入下一周", new Color(0.9f, 0.55f, 0.2f, 1f),
-                    0.32f, 0.08f, 0.68f, 0.22f, OnContinue, 26);
+                Text endlessLabel = _endlessButton.GetComponentInChildren<Text>();
+                if (endlessLabel != null)
+                {
+                    endlessLabel.text = _run.IsEndless ? "继续挑战" : "进入无尽模式";
+                }
             }
         }
 

@@ -10,31 +10,28 @@ namespace GourmetProject.Game.UI
 {
     /// <summary>
     /// 周循环「三选一」事件界面：每周开局弹出，玩家选择一个事件，结算其效果后进入本周对局。
-    /// 事件从 TbEvent 按周命名流确定性抽取，全部代码构建。
+    /// 固定壳（遮罩/面板/标题/商店与跳过按钮/卡片容器）在 WeekMapForm.prefab，
+    /// 事件卡按周命名流确定性抽取后用 WeekEventCardView 子 prefab 数据驱动实例化。
     /// </summary>
     public sealed class WeekMapForm : UGuiForm
     {
-        private static readonly Color Dim = new(0f, 0f, 0f, 0.78f);
-        private static readonly Color Box = new(0.16f, 0.16f, 0.2f, 1f);
-        private static readonly Color CardColor = new(0.22f, 0.26f, 0.34f, 1f);
+        [SerializeField] private Text _titleText;
+        [SerializeField] private Button _shopButton;
+        [SerializeField] private Button _skipButton;
+        [SerializeField] private RectTransform _cardsContainer;
+        [SerializeField] private WeekEventCardView _cardPrefab;
 
-        private RectTransform _content;
+        private readonly List<WeekEventCardView> _cards = new();
 
         protected override void OnInit(object userData)
         {
             base.OnInit(userData);
-            UiBuilder.AddImage(CachedTransform, "Dim", Dim, 0f, 0f, 1f, 1f);
+            _shopButton.onClick.AddListener(OpenShop);
         }
 
         protected override void OnOpen(object userData)
         {
             base.OnOpen(userData);
-
-            if (_content != null)
-            {
-                Destroy(_content.gameObject);
-                _content = null;
-            }
 
             GameRun run = GameRunContext.Current;
             if (run == null)
@@ -46,26 +43,30 @@ namespace GourmetProject.Game.UI
             Build(run);
         }
 
+        protected override void OnClose(bool isShutdown, object userData)
+        {
+            ClearCards();
+            base.OnClose(isShutdown, userData);
+        }
+
         private void Build(GameRun run)
         {
-            _content = UiBuilder.NewRect("Content", CachedTransform);
-            UiBuilder.Anchor(_content, 0.12f, 0.20f, 0.88f, 0.82f);
-            UiBuilder.AddImage(_content, "Box", Box, 0f, 0f, 1f, 1f);
+            ClearCards();
 
             string weekLabel = run.IsEndless ? $"无尽 第 {run.WeekIndex - run.TotalWeeks} 关" : $"第 {run.WeekIndex} 周";
-            UiBuilder.AddText(_content, "Title", $"{weekLabel} · 选择今日行动", 34, Color.white,
-                0.05f, 0.86f, 0.72f, 0.98f);
-
-            // 商店为可选系统事件，不消耗当日行动，逛完回到本界面继续选事件。
-            UiBuilder.AddButton(_content, "Shop", "前往商店", new Color(0.7f, 0.5f, 0.2f, 1f),
-                0.74f, 0.87f, 0.96f, 0.97f, OpenShop, 20);
+            _titleText.text = $"{weekLabel} · 选择今日行动";
 
             List<cfg.GameEvent> events = PickEvents(run);
-            if (events.Count == 0)
+            bool hasEvents = events.Count > 0;
+
+            // 没有可选事件时隐藏卡片容器、显示「直接开工」。
+            _cardsContainer.gameObject.SetActive(hasEvents);
+            _skipButton.gameObject.SetActive(!hasEvents);
+            _skipButton.onClick.RemoveAllListeners();
+            _skipButton.onClick.AddListener(() => Choose(run, null));
+
+            if (!hasEvents)
             {
-                // 没有可选事件时直接进入对局。
-                UiBuilder.AddButton(_content, "Skip", "直接开工", new Color(0.3f, 0.5f, 0.35f, 1f),
-                    0.38f, 0.1f, 0.62f, 0.22f, () => Choose(run, null), 26);
                 return;
             }
 
@@ -77,25 +78,36 @@ namespace GourmetProject.Game.UI
                 cfg.GameEvent ev = events[i];
                 float minX = gap + i * (cardW + gap);
                 float maxX = minX + cardW;
-                BuildCard(run, ev, minX, maxX);
+                SpawnCard(run, ev, minX, maxX);
             }
         }
 
-        private void BuildCard(GameRun run, cfg.GameEvent ev, float minX, float maxX)
+        private void SpawnCard(GameRun run, cfg.GameEvent ev, float minX, float maxX)
         {
-            RectTransform card = UiBuilder.NewRect($"Card_{ev.Id}", _content);
-            UiBuilder.Anchor(card, minX, 0.12f, maxX, 0.82f);
-            UiBuilder.AddImage(card, "Bg", CardColor, 0f, 0f, 1f, 1f, 6f);
-
-            UiBuilder.AddText(card, "Name", ev.Name, 26, Color.white, 0.06f, 0.82f, 0.94f, 0.96f);
-            UiBuilder.AddText(card, "Desc", ev.Desc, 19, new Color(0.9f, 0.9f, 0.9f, 1f),
-                0.08f, 0.30f, 0.92f, 0.80f, TextAnchor.UpperLeft);
-            UiBuilder.AddText(card, "Time", $"耗时 {ev.TimeCost}", 17, new Color(1f, 0.8f, 0.4f, 1f),
-                0.08f, 0.20f, 0.92f, 0.30f, TextAnchor.MiddleLeft);
+            WeekEventCardView card = Instantiate(_cardPrefab, _cardsContainer);
+            var rect = (RectTransform)card.transform;
+            rect.anchorMin = new Vector2(minX, 0.12f);
+            rect.anchorMax = new Vector2(maxX, 0.82f);
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            rect.localScale = Vector3.one;
 
             cfg.GameEvent captured = ev;
-            UiBuilder.AddButton(card, "Pick", "选择", new Color(0.9f, 0.55f, 0.2f, 1f),
-                0.12f, 0.04f, 0.88f, 0.16f, () => Choose(run, captured), 22);
+            card.Bind(ev, () => Choose(run, captured));
+            _cards.Add(card);
+        }
+
+        private void ClearCards()
+        {
+            foreach (WeekEventCardView card in _cards)
+            {
+                if (card != null)
+                {
+                    Destroy(card.gameObject);
+                }
+            }
+
+            _cards.Clear();
         }
 
         private List<cfg.GameEvent> PickEvents(GameRun run)

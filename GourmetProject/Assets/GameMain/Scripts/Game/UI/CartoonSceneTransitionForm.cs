@@ -8,71 +8,75 @@ using UnityGameFramework.Runtime;
 
 namespace GourmetProject.Game.UI
 {
+    /// <summary>
+    /// 卡通风格转场界面。固定层级（食物擦除/速度线/消息文字 + 7 套转场根及其子物体、IrisWipeGraphic）
+    /// 全部落在 CartoonSceneTransitionForm.prefab，sprite 在 prefab 里连好。
+    /// 本脚本只负责按 <see cref="CartoonSceneTransitionData"/> 选择并逐帧驱动这些已存在节点的动画。
+    /// </summary>
     public sealed class CartoonSceneTransitionForm : UGuiForm
     {
-        private const int SpeedLineCount = 10;
-        private const int BurstRingCount = 3;
-        private const int FoodCurtainCount = 6;
-        private const string TableclothSpritePath = "Sprites/UI/cartoon_transition_tablecloth";
-        private const string PlateSpritePath = "Sprites/UI/cartoon_transition_plate_wipe";
-        private const string SpeedLineSpritePath = "Sprites/UI/cartoon_transition_speed_line";
-        private const string SauceSplatSpritePath = "Sprites/UI/cartoon_transition_sauce_splat";
-        private const string BurstRingSpritePath = "Sprites/UI/cartoon_transition_burst_ring";
-        private const string FoodCurtainSpritePathPrefix = "Sprites/UI/cartoon_transition_food_curtain_";
+        [Header("食物擦除 / 速度线 / 消息")]
+        [SerializeField] private RectTransform _wipeMask;
+        [SerializeField] private RectTransform _tableclothRect;
+        [SerializeField] private RectTransform _plateRect;
+        [SerializeField] private Image _plateImage;
+        [SerializeField] private RectTransform[] _speedLines;
+        [SerializeField] private Image[] _speedLineImages;
+        [SerializeField] private Text _messageText;
+        [SerializeField] private Outline _messageOutline;
 
-        private RectTransform _wipeMask;
-        private RectTransform _tableclothRect;
-        private RectTransform _plateRect;
-        private Image _plateImage;
-        private RectTransform[] _speedLines;
-        private Image[] _speedLineImages;
-        private RectTransform _fadeRoot;
-        private Image _fadeBackdrop;
-        private RectTransform _irisRoot;
-        private IrisWipeGraphic _irisGraphic;
-        private RectTransform _irisRing;
-        private Image _irisRingImage;
-        private RectTransform _curtainRoot;
-        private RectTransform _curtainLeft;
-        private RectTransform _curtainRight;
-        private Image _curtainLeftImage;
-        private Image _curtainRightImage;
-        private RectTransform _pageRoot;
-        private RectTransform _pagePanel;
-        private Image _pagePanelImage;
-        private Image _pageShadowImage;
-        private Image _pageEdgeImage;
-        private RectTransform _sauceSplatRoot;
-        private Image _sauceBackdrop;
-        private RectTransform _sauceSplatRect;
-        private Image _sauceSplatImage;
-        private RectTransform _burstRoot;
-        private Image _burstBackdrop;
-        private RectTransform[] _burstRings;
-        private Image[] _burstRingImages;
-        private RectTransform _foodCurtainRoot;
-        private Image _foodCurtainBackdrop;
-        private RectTransform[] _foodCurtainItems;
-        private Image[] _foodCurtainImages;
-        private Text _messageText;
-        private Outline _messageOutline;
+        [Header("Fade")]
+        [SerializeField] private RectTransform _fadeRoot;
+        [SerializeField] private Image _fadeBackdrop;
+
+        [Header("IrisWipe")]
+        [SerializeField] private RectTransform _irisRoot;
+        [SerializeField] private IrisWipeGraphic _irisGraphic;
+        [SerializeField] private RectTransform _irisRing;
+        [SerializeField] private Image _irisRingImage;
+
+        [Header("Curtain")]
+        [SerializeField] private RectTransform _curtainRoot;
+        [SerializeField] private RectTransform _curtainLeft;
+        [SerializeField] private RectTransform _curtainRight;
+        [SerializeField] private Image _curtainLeftImage;
+        [SerializeField] private Image _curtainRightImage;
+
+        [Header("PageTurn")]
+        [SerializeField] private RectTransform _pageRoot;
+        [SerializeField] private RectTransform _pagePanel;
+        [SerializeField] private Image _pagePanelImage;
+        [SerializeField] private Image _pageShadowImage;
+        [SerializeField] private Image _pageEdgeImage;
+
+        [Header("SauceSplat")]
+        [SerializeField] private RectTransform _sauceSplatRoot;
+        [SerializeField] private Image _sauceBackdrop;
+        [SerializeField] private RectTransform _sauceSplatRect;
+        [SerializeField] private Image _sauceSplatImage;
+
+        [Header("CartoonBurst")]
+        [SerializeField] private RectTransform _burstRoot;
+        [SerializeField] private Image _burstBackdrop;
+        [SerializeField] private RectTransform[] _burstRings;
+        [SerializeField] private Image[] _burstRingImages;
+
+        [Header("FoodCurtain")]
+        [SerializeField] private RectTransform _foodCurtainRoot;
+        [SerializeField] private Image _foodCurtainBackdrop;
+        [SerializeField] private RectTransform[] _foodCurtainItems;
+        [SerializeField] private Image[] _foodCurtainImages;
+
         private CartoonSceneTransitionData _data;
         private Coroutine _animation;
         private bool _isWaitingForScene;
         private bool _subscribedSceneEvents;
-
-        protected override void OnInit(object userData)
-        {
-            base.OnInit(userData);
-            BuildView();
-        }
 
         protected override void OnOpen(object userData)
         {
             base.OnOpen(userData);
 
             _data = userData as CartoonSceneTransitionData ?? new CartoonSceneTransitionData();
-            EnsureTransitionBuilt(_data.TransitionType);
             SetTransitionObjectsVisible(_data.TransitionType);
             MoveForegroundToFront(_data.TransitionType);
             _messageText.text = _data.Message;
@@ -100,377 +104,6 @@ namespace GourmetProject.Game.UI
             _isWaitingForScene = false;
             _data = null;
             base.OnClose(isShutdown, userData);
-        }
-
-        private void BuildView()
-        {
-            var root = CachedTransform as RectTransform;
-            root.anchorMin = Vector2.zero;
-            root.anchorMax = Vector2.one;
-            root.offsetMin = Vector2.zero;
-            root.offsetMax = Vector2.zero;
-
-            var blocker = new GameObject("Blocker", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            blocker.transform.SetParent(CachedTransform, false);
-            Stretch((RectTransform)blocker.transform);
-            var blockerImage = blocker.GetComponent<Image>();
-            blockerImage.color = new Color(0f, 0f, 0f, 0.001f);
-            blockerImage.raycastTarget = true;
-
-            BuildFoodWipeLayer();
-            BuildSpeedLines();
-            BuildMessage();
-        }
-
-        private void BuildFoodWipeLayer()
-        {
-            var maskObject = new GameObject("TableclothMask", typeof(RectTransform), typeof(RectMask2D));
-            maskObject.transform.SetParent(CachedTransform, false);
-            _wipeMask = (RectTransform)maskObject.transform;
-            _wipeMask.anchorMin = Vector2.zero;
-            _wipeMask.anchorMax = new Vector2(0f, 1f);
-            _wipeMask.pivot = new Vector2(0f, 0.5f);
-            _wipeMask.anchoredPosition = Vector2.zero;
-            _wipeMask.sizeDelta = Vector2.zero;
-
-            var tableclothObject = new GameObject("Tablecloth", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            tableclothObject.transform.SetParent(_wipeMask, false);
-            _tableclothRect = (RectTransform)tableclothObject.transform;
-            _tableclothRect.anchorMin = Vector2.zero;
-            _tableclothRect.anchorMax = new Vector2(0f, 1f);
-            _tableclothRect.pivot = new Vector2(0f, 0.5f);
-            _tableclothRect.anchoredPosition = Vector2.zero;
-            _tableclothRect.sizeDelta = Vector2.zero;
-
-            var tableclothImage = tableclothObject.GetComponent<Image>();
-            tableclothImage.sprite = RequireSprite(TableclothSpritePath);
-            tableclothImage.type = Image.Type.Simple;
-            tableclothImage.raycastTarget = false;
-
-            var plateObject = new GameObject("PlateWipe", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            plateObject.transform.SetParent(CachedTransform, false);
-            _plateRect = (RectTransform)plateObject.transform;
-            _plateRect.anchorMin = new Vector2(0.5f, 0.5f);
-            _plateRect.anchorMax = new Vector2(0.5f, 0.5f);
-            _plateRect.pivot = new Vector2(0.5f, 0.5f);
-            _plateImage = plateObject.GetComponent<Image>();
-            _plateImage.sprite = RequireSprite(PlateSpritePath);
-            _plateImage.preserveAspect = true;
-            _plateImage.raycastTarget = false;
-        }
-
-        private void BuildSpeedLines()
-        {
-            _speedLines = new RectTransform[SpeedLineCount];
-            _speedLineImages = new Image[SpeedLineCount];
-            var speedLineSprite = RequireSprite(SpeedLineSpritePath);
-
-            for (int i = 0; i < SpeedLineCount; i++)
-            {
-                var lineObject = new GameObject($"FoodWhoosh_{i}", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-                lineObject.transform.SetParent(CachedTransform, false);
-
-                var rect = (RectTransform)lineObject.transform;
-                rect.anchorMin = new Vector2(0.5f, 0.5f);
-                rect.anchorMax = new Vector2(0.5f, 0.5f);
-                rect.pivot = new Vector2(0.5f, 0.5f);
-                rect.sizeDelta = new Vector2(270f + i % 4 * 54f, 82f + i % 3 * 12f);
-                rect.localRotation = Quaternion.Euler(0f, 0f, -10f + i % 4 * 5f);
-
-                var image = lineObject.GetComponent<Image>();
-                image.sprite = speedLineSprite;
-                image.preserveAspect = true;
-                image.color = new Color(1f, 1f, 1f, 0f);
-                image.raycastTarget = false;
-
-                _speedLines[i] = rect;
-                _speedLineImages[i] = image;
-            }
-        }
-
-        private void BuildMessage()
-        {
-            var label = new GameObject("Message", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text), typeof(Outline));
-            label.transform.SetParent(CachedTransform, false);
-            _messageText = label.GetComponent<Text>();
-            _messageText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            _messageText.fontSize = 72;
-            _messageText.fontStyle = FontStyle.Bold;
-            _messageText.alignment = TextAnchor.MiddleCenter;
-            _messageText.color = new Color(1f, 0.9f, 0.18f, 0f);
-            _messageText.raycastTarget = false;
-
-            _messageOutline = label.GetComponent<Outline>();
-            _messageOutline.effectColor = new Color(0.12f, 0.04f, 0.01f, 0f);
-            _messageOutline.effectDistance = new Vector2(7f, -7f);
-
-            var labelRect = (RectTransform)label.transform;
-            labelRect.anchorMin = new Vector2(0.5f, 0.5f);
-            labelRect.anchorMax = new Vector2(0.5f, 0.5f);
-            labelRect.sizeDelta = new Vector2(860f, 170f);
-            labelRect.anchoredPosition = new Vector2(0f, -12f);
-            labelRect.localRotation = Quaternion.Euler(0f, 0f, -3.5f);
-        }
-
-        private void EnsureTransitionBuilt(CartoonTransitionType type)
-        {
-            switch (type)
-            {
-                case CartoonTransitionType.Fade:
-                    EnsureFadeBuilt();
-                    break;
-                case CartoonTransitionType.IrisWipe:
-                    EnsureIrisBuilt();
-                    break;
-                case CartoonTransitionType.Curtain:
-                    EnsureCurtainBuilt();
-                    break;
-                case CartoonTransitionType.PageTurn:
-                    EnsurePageTurnBuilt();
-                    break;
-                case CartoonTransitionType.SauceSplat:
-                    EnsureSauceSplatBuilt();
-                    break;
-                case CartoonTransitionType.CartoonBurst:
-                    EnsureCartoonBurstBuilt();
-                    break;
-                case CartoonTransitionType.FoodCurtain:
-                    EnsureFoodCurtainBuilt();
-                    break;
-            }
-        }
-
-        private void EnsureFadeBuilt()
-        {
-            if (_fadeRoot != null)
-            {
-                return;
-            }
-
-            _fadeRoot = CreateFullScreenRoot("FadeTransition");
-            _fadeBackdrop = CreateFullScreenImage("FadeBackdrop", _fadeRoot, new Color(0.12f, 0.07f, 0.045f, 0f));
-        }
-
-        private void EnsureIrisBuilt()
-        {
-            if (_irisRoot != null)
-            {
-                return;
-            }
-
-            _irisRoot = CreateFullScreenRoot("IrisWipeTransition");
-            var irisObject = new GameObject("IrisOverlay", typeof(RectTransform), typeof(CanvasRenderer), typeof(IrisWipeGraphic));
-            irisObject.transform.SetParent(_irisRoot, false);
-            Stretch((RectTransform)irisObject.transform);
-            _irisGraphic = irisObject.GetComponent<IrisWipeGraphic>();
-            _irisGraphic.color = new Color(0.13f, 0.075f, 0.035f, 1f);
-
-            var ringObject = new GameObject("IrisRing", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            ringObject.transform.SetParent(_irisRoot, false);
-            _irisRing = (RectTransform)ringObject.transform;
-            _irisRing.anchorMin = new Vector2(0.5f, 0.5f);
-            _irisRing.anchorMax = new Vector2(0.5f, 0.5f);
-            _irisRing.pivot = new Vector2(0.5f, 0.5f);
-            _irisRingImage = ringObject.GetComponent<Image>();
-            _irisRingImage.sprite = RequireSprite(PlateSpritePath);
-            _irisRingImage.preserveAspect = true;
-            _irisRingImage.color = new Color(1f, 0.82f, 0.18f, 0f);
-            _irisRingImage.raycastTarget = false;
-        }
-
-        private void EnsureCurtainBuilt()
-        {
-            if (_curtainRoot != null)
-            {
-                return;
-            }
-
-            _curtainRoot = CreateFullScreenRoot("CurtainTransition");
-            _curtainLeftImage = CreatePanel("CurtainLeft", _curtainRoot, new Color(0.78f, 0.08f, 0.08f, 0f), out _curtainLeft);
-            _curtainRightImage = CreatePanel("CurtainRight", _curtainRoot, new Color(0.62f, 0.035f, 0.04f, 0f), out _curtainRight);
-            CreateCurtainFolds(_curtainLeft, false);
-            CreateCurtainFolds(_curtainRight, true);
-        }
-
-        private void EnsurePageTurnBuilt()
-        {
-            if (_pageRoot != null)
-            {
-                return;
-            }
-
-            _pageRoot = CreateFullScreenRoot("PageTurnTransition");
-
-            var shadowObject = new GameObject("PageShadow", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            shadowObject.transform.SetParent(_pageRoot, false);
-            Stretch((RectTransform)shadowObject.transform);
-            _pageShadowImage = shadowObject.GetComponent<Image>();
-            _pageShadowImage.color = new Color(0.05f, 0.025f, 0.015f, 0f);
-            _pageShadowImage.raycastTarget = false;
-
-            var pageObject = new GameObject("ComicPage", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            pageObject.transform.SetParent(_pageRoot, false);
-            _pagePanel = (RectTransform)pageObject.transform;
-            _pagePanel.anchorMin = new Vector2(0.5f, 0.5f);
-            _pagePanel.anchorMax = new Vector2(0.5f, 0.5f);
-            _pagePanel.pivot = new Vector2(1f, 0.5f);
-            _pagePanelImage = pageObject.GetComponent<Image>();
-            _pagePanelImage.color = new Color(1f, 0.88f, 0.55f, 0f);
-            _pagePanelImage.raycastTarget = false;
-
-            var edgeObject = new GameObject("PageInkEdge", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            edgeObject.transform.SetParent(_pagePanel, false);
-            var edgeRect = (RectTransform)edgeObject.transform;
-            edgeRect.anchorMin = new Vector2(0f, 0f);
-            edgeRect.anchorMax = new Vector2(0f, 1f);
-            edgeRect.pivot = new Vector2(0.5f, 0.5f);
-            edgeRect.sizeDelta = new Vector2(18f, 0f);
-            edgeRect.anchoredPosition = Vector2.zero;
-            _pageEdgeImage = edgeObject.GetComponent<Image>();
-            _pageEdgeImage.color = new Color(0.12f, 0.055f, 0.02f, 0f);
-            _pageEdgeImage.raycastTarget = false;
-        }
-
-        private void EnsureSauceSplatBuilt()
-        {
-            if (_sauceSplatRoot != null)
-            {
-                return;
-            }
-
-            _sauceSplatRoot = CreateFullScreenRoot("SauceSplatTransition");
-            _sauceBackdrop = CreateFullScreenImage("SauceBackdrop", _sauceSplatRoot, new Color(0.84f, 0.12f, 0.035f, 0f));
-
-            var splatObject = new GameObject("SauceSplat", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            splatObject.transform.SetParent(_sauceSplatRoot, false);
-            _sauceSplatRect = (RectTransform)splatObject.transform;
-            _sauceSplatRect.anchorMin = new Vector2(0.5f, 0.5f);
-            _sauceSplatRect.anchorMax = new Vector2(0.5f, 0.5f);
-            _sauceSplatRect.pivot = new Vector2(0.5f, 0.5f);
-            _sauceSplatImage = splatObject.GetComponent<Image>();
-            _sauceSplatImage.sprite = RequireSprite(SauceSplatSpritePath);
-            _sauceSplatImage.preserveAspect = true;
-            _sauceSplatImage.color = new Color(1f, 1f, 1f, 0f);
-            _sauceSplatImage.raycastTarget = false;
-        }
-
-        private void EnsureCartoonBurstBuilt()
-        {
-            if (_burstRoot != null)
-            {
-                return;
-            }
-
-            _burstRoot = CreateFullScreenRoot("CartoonBurstTransition");
-            _burstBackdrop = CreateFullScreenImage("BurstBackdrop", _burstRoot, new Color(1f, 0.68f, 0.14f, 0f));
-
-            _burstRings = new RectTransform[BurstRingCount];
-            _burstRingImages = new Image[BurstRingCount];
-            var ringSprite = RequireSprite(BurstRingSpritePath);
-
-            for (int i = 0; i < BurstRingCount; i++)
-            {
-                var ringObject = new GameObject($"BurstRing_{i}", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-                ringObject.transform.SetParent(_burstRoot, false);
-                var rect = (RectTransform)ringObject.transform;
-                rect.anchorMin = new Vector2(0.5f, 0.5f);
-                rect.anchorMax = new Vector2(0.5f, 0.5f);
-                rect.pivot = new Vector2(0.5f, 0.5f);
-                rect.localRotation = Quaternion.Euler(0f, 0f, i * 17f);
-
-                var image = ringObject.GetComponent<Image>();
-                image.sprite = ringSprite;
-                image.preserveAspect = true;
-                image.color = new Color(1f, 1f, 1f, 0f);
-                image.raycastTarget = false;
-
-                _burstRings[i] = rect;
-                _burstRingImages[i] = image;
-            }
-        }
-
-        private void EnsureFoodCurtainBuilt()
-        {
-            if (_foodCurtainRoot != null)
-            {
-                return;
-            }
-
-            _foodCurtainRoot = CreateFullScreenRoot("FoodCurtainTransition");
-            _foodCurtainBackdrop = CreateFullScreenImage("FoodCurtainBackdrop", _foodCurtainRoot, new Color(0.98f, 0.72f, 0.22f, 0f));
-            _foodCurtainItems = new RectTransform[FoodCurtainCount];
-            _foodCurtainImages = new Image[FoodCurtainCount];
-
-            for (int i = 0; i < FoodCurtainCount; i++)
-            {
-                var itemObject = new GameObject($"FoodCurtainItem_{i}", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-                itemObject.transform.SetParent(_foodCurtainRoot, false);
-                var rect = (RectTransform)itemObject.transform;
-                rect.anchorMin = new Vector2(0.5f, 0.5f);
-                rect.anchorMax = new Vector2(0.5f, 0.5f);
-                rect.pivot = new Vector2(0.5f, 0.5f);
-
-                var image = itemObject.GetComponent<Image>();
-                image.sprite = RequireSprite($"{FoodCurtainSpritePathPrefix}{i + 1:00}");
-                image.preserveAspect = true;
-                image.color = new Color(1f, 1f, 1f, 0f);
-                image.raycastTarget = false;
-
-                _foodCurtainItems[i] = rect;
-                _foodCurtainImages[i] = image;
-            }
-        }
-
-        private RectTransform CreateFullScreenRoot(string name)
-        {
-            var rootObject = new GameObject(name, typeof(RectTransform));
-            rootObject.transform.SetParent(CachedTransform, false);
-            var root = (RectTransform)rootObject.transform;
-            Stretch(root);
-            return root;
-        }
-
-        private Image CreateFullScreenImage(string name, Transform parent, Color color)
-        {
-            var imageObject = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            imageObject.transform.SetParent(parent, false);
-            Stretch((RectTransform)imageObject.transform);
-            var image = imageObject.GetComponent<Image>();
-            image.color = color;
-            image.raycastTarget = false;
-            return image;
-        }
-
-        private Image CreatePanel(string name, Transform parent, Color color, out RectTransform rect)
-        {
-            var panelObject = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            panelObject.transform.SetParent(parent, false);
-            rect = (RectTransform)panelObject.transform;
-            rect.anchorMin = new Vector2(0.5f, 0.5f);
-            rect.anchorMax = new Vector2(0.5f, 0.5f);
-            rect.pivot = new Vector2(0.5f, 0.5f);
-            var image = panelObject.GetComponent<Image>();
-            image.color = color;
-            image.raycastTarget = false;
-            return image;
-        }
-
-        private void CreateCurtainFolds(RectTransform parent, bool rightSide)
-        {
-            for (int i = 0; i < 5; i++)
-            {
-                var foldObject = new GameObject($"Fold_{i}", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-                foldObject.transform.SetParent(parent, false);
-                var foldRect = (RectTransform)foldObject.transform;
-                foldRect.anchorMin = new Vector2((i + 0.5f) / 5f, 0f);
-                foldRect.anchorMax = new Vector2((i + 0.5f) / 5f, 1f);
-                foldRect.pivot = new Vector2(0.5f, 0.5f);
-                foldRect.sizeDelta = new Vector2(24f, 0f);
-                foldRect.anchoredPosition = Vector2.zero;
-                var foldImage = foldObject.GetComponent<Image>();
-                foldImage.color = rightSide ? new Color(0.18f, 0.015f, 0.02f, 0.2f) : new Color(1f, 0.72f, 0.32f, 0.16f);
-                foldImage.raycastTarget = false;
-            }
         }
 
         private void SetTransitionObjectsVisible(CartoonTransitionType type)
@@ -537,16 +170,6 @@ namespace GourmetProject.Game.UI
         private static bool IsFoodWipe(CartoonTransitionType type)
         {
             return type == CartoonTransitionType.PlateWipe || type == CartoonTransitionType.FoodWipe;
-        }
-
-        private static void Stretch(RectTransform rect)
-        {
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-            rect.localScale = Vector3.one;
-            rect.localPosition = Vector3.zero;
         }
 
         private IEnumerator PlayTransition()
@@ -852,24 +475,6 @@ namespace GourmetProject.Game.UI
             image.color = color;
         }
 
-        private static Sprite RequireSprite(string path)
-        {
-            var sprite = Resources.Load<Sprite>(path);
-            if (sprite != null)
-            {
-                return sprite;
-            }
-
-            var texture = Resources.Load<Texture2D>(path);
-            if (texture != null)
-            {
-                return Sprite.Create(texture, new Rect(0f, 0f, texture.width, texture.height), new Vector2(0.5f, 0.5f), 100f);
-            }
-
-            Log.Error($"Missing UI sprite resource: {path}");
-            return null;
-        }
-
         private static float EaseOutBack(float t)
         {
             const float c1 = 1.70158f;
@@ -906,44 +511,6 @@ namespace GourmetProject.Game.UI
 
             t -= 2.625f / d1;
             return n1 * t * t + 0.984375f;
-        }
-    }
-
-    public sealed class IrisWipeGraphic : MaskableGraphic
-    {
-        public float Radius { get; set; }
-
-        protected override void OnPopulateMesh(VertexHelper vh)
-        {
-            vh.Clear();
-            Rect rect = rectTransform.rect;
-            Vector2 center = rect.center;
-            float outerRadius = Mathf.Sqrt(rect.width * rect.width + rect.height * rect.height) * 0.56f + 32f;
-            float innerRadius = Mathf.Clamp(Radius, 0f, outerRadius);
-            const int segments = 96;
-
-            for (int i = 0; i < segments; i++)
-            {
-                float a0 = i * Mathf.PI * 2f / segments;
-                float a1 = (i + 1) * Mathf.PI * 2f / segments;
-                Vector2 dir0 = new Vector2(Mathf.Cos(a0), Mathf.Sin(a0));
-                Vector2 dir1 = new Vector2(Mathf.Cos(a1), Mathf.Sin(a1));
-                int index = vh.currentVertCount;
-                AddVert(vh, center + dir0 * outerRadius);
-                AddVert(vh, center + dir1 * outerRadius);
-                AddVert(vh, center + dir1 * innerRadius);
-                AddVert(vh, center + dir0 * innerRadius);
-                vh.AddTriangle(index, index + 1, index + 2);
-                vh.AddTriangle(index + 2, index + 3, index);
-            }
-        }
-
-        private void AddVert(VertexHelper vh, Vector2 position)
-        {
-            UIVertex vert = UIVertex.simpleVert;
-            vert.color = color;
-            vert.position = position;
-            vh.AddVert(vert);
         }
     }
 }

@@ -1,0 +1,102 @@
+{
+  "stylePrefix": "90s American cable TV cartoon game art style, thick clean hand-drawn black ink outlines, flat cel animation colors, warm appetizing cream yellow and orange palette, slightly uneven organic hand-drawn silhouette, polished 2D game asset, no text, no letters, no numbers, no logo, no watermark",
+  "assets": [
+    {
+      "name": "ui_panel_window",
+      "type": "ui",
+      "size": "1024x1024",
+      "transparent": true,
+      "prompt": "A reusable popup window panel background for a 2D cartoon food game UI, centered square panel with rounded corners, chunky hand-drawn black outline, warm muted cream fill with a slightly darker brown inner border and soft restaurant wallpaper texture, simple playful imperfect rectangular silhouette, large clear flat inner area for content, 9-slice friendly with generous even border padding on all four sides, isolated on transparent background, no text, no icons, no logo, no watermark"
+    },
+    {
+      "name": "ui_panel_card",
+      "type": "ui",
+      "size": "1024x1024",
+      "transparent": true,
+      "prompt": "A reusable item card frame for a 2D cartoon food game UI, centered vertical rounded rectangle slot, chunky hand-drawn black outline, warm light cream fill with a subtle darker inset panel area, gentle painted texture, playful slightly imperfect silhouette, clear flat inner area to hold an icon and label, 9-slice friendly with even border padding, isolated on transparent background, no text, no icons, no logo, no watermark"
+    },
+    {
+      "name": "ui_btn_primary",
+      "type": "ui",
+      "size": "1024x1024",
+      "transparent": true,
+      "prompt": "A reusable primary action button for a 2D cartoon food game UI, centered horizontal rounded rectangle pill, chunky hand-drawn black outline, warm saturated orange fill with a soft yellow top highlight and darker orange bottom edge shadow, slightly uneven organic shape, clear flat readable center area for future text, 9-slice friendly with even border padding, isolated on transparent background, no text, no icon, no logo, no watermark"
+    },
+    {
+      "name": "ui_btn_secondary",
+      "type": "ui",
+      "size": "1024x1024",
+      "transparent": true,
+      "prompt": "A reusable secondary button for a 2D cartoon food game UI, centered horizontal rounded rectangle pill, chunky hand-drawn black outline, muted warm cream and tan fill with a soft top highlight and darker bottom edge shadow, slightly uneven organic shape, clear flat readable center area for future text, 9-slice friendly with even border padding, isolated on transparent background, no text, no icon, no logo, no watermark"
+    },
+    {
+      "name": "ui_btn_close",
+      "type": "ui",
+      "size": "512x512",
+      "transparent": true,
+      "prompt": "A small round close button for a 2D cartoon food game UI, centered circle, chunky hand-drawn black outline, warm red-orange fill with a soft top highlight, a bold simple black cross X mark drawn with thick hand-inked strokes in the middle, playful slightly imperfect circle silhouette, isolated on transparent background, clean readable shape, no extra text, no logo, no watermark"
+    },
+    {
+      "name": "ui_banner_title",
+      "type": "ui",
+      "size": "1024x512",
+      "transparent": true,
+      "prompt": "A reusable title banner ribbon for a 2D cartoon food game UI header, centered horizontal wavy ribbon plaque, chunky hand-drawn black outline, warm orange and cream fill with small folded ribbon tails at the left and right ends, soft painted shading, playful imperfect hand-drawn silhouette, clear flat center area for a title, 9-slice friendly along the horizontal middle, isolated on transparent background, no text, no logo, no watermark"
+    },
+    {
+      "name": "ui_tag_box",
+      "type": "ui",
+      "size": "512x512",
+      "transparent": true,
+      "prompt": "A small rounded tag label box for a 2D cartoon food game UI, centered short horizontal rounded rectangle, chunky hand-drawn black outline, soft warm cream fill with a subtle darker edge, gentle painted texture, playful slightly imperfect silhouette, clear flat inner area for a short word, 9-slice friendly with even border padding, isolated on transparent background, no text, no logo, no watermark"
+    },
+    {
+      "name": "icon_coin",
+      "type": "ui",
+      "size": "512x512",
+      "transparent": true,
+      "prompt": "A single shiny gold coin icon for a 2D cartoon food game UI, centered front-facing round coin, chunky hand-drawn black outline, warm golden yellow fill with a lighter highlight crescent and darker rim, a simple embossed fork-and-knife or star motif suggested with bold black strokes, flat cel colors, bold readable silhouette, isolated on transparent background, no text, no numbers, no logo, no watermark"
+    },
+    {
+      "name": "char_select_bg",
+      "type": "background",
+      "size": "1920x1080",
+      "prompt": "Character selection screen background for a 2D cartoon food game, 16:9 composition, a cozy warm restaurant kitchen interior filling the entire screen, visible wall planes with muted warm wallpaper, soft ambient lighting, simple shelves, hanging pots and pans, cabinets and wall trim, gentle vignette at the edges, the central area kept calmer and less busy so a character portrait frame reads clearly on top, finished illustrated environment, thick clean black ink outlines, flat cel colors, no characters, no people, no animals, no UI panels, no text, no logo, no watermark"
+    },
+    {
+      "name": "big_plate",
+      "type": "item",
+      "size": "1024x1024",
+      "transparent": true,
+      "prompt": "A single large empty dinner plate game item icon, slightly top-down front angle, oversized round ceramic plate with a wide rim, chunky hand-drawn black outline, warm cream white fill with a soft blue-grey rim accent and gentle highlight, pure object, no face, no eyes, no mouth, no smile, no character, no creature, no limbs, no hands, bold readable silhouette, centered with contact shadow, isolated on transparent background, no text, no logo, no watermark"
+    },
+    {
+      "name": "chef_knife",
+      "type": "item",
+      "size": "1024x1024",
+      "transparent": true,
+      "prompt": "A single chef's knife game item icon, diagonal side view, wide steel blade with a soft highlight and a chunky dark wooden handle, chunky hand-drawn black outline, flat cel colors, pure object, no face, no eyes, no mouth, no smile, no character, no creature, no limbs, no hands, bold readable silhouette, centered with contact shadow, isolated on transparent background, no text, no logo, no watermark"
+    },
+    {
+      "name": "pepper_jar",
+      "type": "item",
+      "size": "1024x1024",
+      "transparent": true,
+      "prompt": "A single pepper shaker jar game item icon, front view, rounded glass jar full of dark pepper with a metal perforated cap, chunky hand-drawn black outline, warm flat cel colors with a soft highlight on the glass, pure object, no face, no eyes, no mouth, no smile, no character, no creature, no limbs, no hands, bold readable silhouette, centered with contact shadow, isolated on transparent background, no text, no logo, no watermark"
+    },
+    {
+      "name": "reroll_bell",
+      "type": "item",
+      "size": "1024x1024",
+      "transparent": true,
+      "prompt": "A single shiny service reception desk bell game item icon, front view, rounded metal dome bell with a small round push button on top sitting on a flat base, chunky hand-drawn black outline, warm silver and gold flat cel colors with a soft highlight crescent, pure object, no face, no eyes, no mouth, no smile, no character, no creature, no limbs, no hands, bold readable silhouette, centered with contact shadow, isolated on transparent background, no text, no logo, no watermark"
+    },
+    {
+      "name": "extra_serve",
+      "type": "item",
+      "size": "1024x1024",
+      "transparent": true,
+      "prompt": "A single meal coupon ticket game item icon, slightly angled, rectangular paper ticket with rounded perforated edge and a small fork-and-knife emblem stamped in bold black strokes, chunky hand-drawn black outline, warm cream and orange flat cel colors with a soft highlight, pure object, no face, no eyes, no mouth, no smile, no character, no creature, no limbs, no hands, bold readable silhouette, centered with contact shadow, isolated on transparent background, no text, no logo, no watermark"
+    }
+  ]
+}
