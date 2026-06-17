@@ -14,6 +14,12 @@ namespace GourmetProject.Game.Gameplay.Presentation
         public static bool SecondaryPressedThisFrame
             => Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame;
 
+        public static bool SecondaryHeld
+            => Mouse.current != null && Mouse.current.rightButton.isPressed;
+
+        public static bool SecondaryReleasedThisFrame
+            => Mouse.current != null && Mouse.current.rightButton.wasReleasedThisFrame;
+
         public static bool RotatePressedThisFrame
             => Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame;
 

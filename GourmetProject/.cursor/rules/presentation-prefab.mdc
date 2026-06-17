@@ -11,7 +11,8 @@ alwaysApply: false
 ## 约定
 
 - **脚本根 prefab**：prefab 里只挂逻辑脚本（如 `WorldButtonView`/`BoardCellView`/`MenuBookWorldView`），渲染体（`SpriteRenderer`/`TextMesh`/`Collider`）可由脚本运行时补齐——这是项目既定风格。
-- **数据驱动才动态**：随数量/数据变化的内容（菜名列表、分页、动态按钮等）用代码生成填充，其余结构不要凭空 `new`。
+- **数据驱动才动态**：数量随运行数据变化的内容（菜名列表、分页、主动道具按钮等）用代码生成填充，其余结构不要凭空 `new` 或 `Instantiate`。
+- **固定数量 = 固定结构**：HUD 上数量恒定的按钮/单例元素（如「吃!」「总览」「清空涂鸦」「显隐」），即使是 `WorldButtonView` 这类脚本根 prefab，也要**预置在场景**里、用 `[SerializeField]` 引用，运行时只 `Configure`（喂文案/颜色/回调），位置交给场景。别借用数据驱动按钮的运行时 `Instantiate` 套路去造它们。
 - **新增 prefab 后**：在场景里给控制器对应 `[SerializeField] xxxPrefab` 字段赋值（优先用 MCP 改场景，避免手改 `.unity` YAML）。
 
 ## 示例
@@ -25,4 +26,14 @@ MenuBookWorldView book = go.GetComponent<MenuBookWorldView>();
 MenuBookWorldView book = Instantiate(_menuBookPrefab, transform);
 book.gameObject.name = $"MenuBook_{i}";
 book.SetData(dishIds, db); // 动态内容由数据驱动填充
+```
+
+```csharp
+// ❌ BAD：固定数量按钮（永远 2 个）用数据驱动那套运行时造，还在代码里摆位置
+_clearButton = InstantiateWorldButton();
+_clearButton.transform.position = new Vector3(_halfW - 0.9f, -_halfH + 0.45f, 0f);
+
+// ✅ GOOD：场景预置 + SerializeField，运行时只喂外观/回调（位置在场景里摆好）
+[SerializeField] private WorldButtonView _clearButton;
+_clearButton?.Configure(size, "清空涂鸦", color, () => _doodle.Clear());
 ```

@@ -41,6 +41,9 @@ namespace GourmetProject.Game.Gameplay.Presentation
         [SerializeField] private WorldButtonView _eatButton;
         [SerializeField] private WorldButtonView[] _recipeButtons;
         [SerializeField] private SettlementSequencer _sequencer;
+        [SerializeField] private BattleDoodleController _doodle;
+        [SerializeField] private WorldButtonView _clearDoodleButton;
+        [SerializeField] private WorldButtonView _toggleDoodleButton;
 
         // —— 运行时实例化用的 prefab ——
         [Header("Prefabs")]
@@ -123,6 +126,7 @@ namespace GourmetProject.Game.Gameplay.Presentation
             ConfigureFixedButtons();
             BuildRecipeBooks();
             RebuildPlacedPieces();
+            ConfigureDoodleHud();
             RefreshAll();
         }
 
@@ -631,6 +635,51 @@ namespace GourmetProject.Game.Gameplay.Presentation
             var go = new GameObject("WorldButton");
             go.transform.SetParent(_activeItemsRoot, false);
             return go.AddComponent<WorldButtonView>();
+        }
+
+        /// <summary>
+        /// 配置右下角涂鸦 HUD（清空 / 显隐）：两个按钮在 Battle.unity 里预置好、通过 SerializeField 注入，
+        /// 这里只喂外观/回调（位置来自场景），并在每次进入战斗时清空笔迹、复位为可见。
+        /// </summary>
+        private void ConfigureDoodleHud()
+        {
+            if (_doodle == null)
+            {
+                return;
+            }
+
+            var buttonSize = new Vector2(1.4f, 0.5f);
+
+            _clearDoodleButton?.Configure(
+                buttonSize,
+                "清空涂鸦",
+                new Color(0.62f, 0.4f, 0.32f, 1f),
+                () => _doodle.Clear());
+
+            _toggleDoodleButton?.Configure(
+                buttonSize,
+                "隐藏涂鸦",
+                new Color(0.4f, 0.55f, 0.42f, 1f),
+                ToggleDoodleVisible);
+
+            _doodle.Clear();
+            _doodle.SetVisible(true);
+            _toggleDoodleButton?.SetLabel("隐藏涂鸦");
+        }
+
+        private void ToggleDoodleVisible()
+        {
+            if (_doodle == null)
+            {
+                return;
+            }
+
+            bool next = !_doodle.IsVisible;
+            _doodle.SetVisible(next);
+            if (_toggleDoodleButton != null)
+            {
+                _toggleDoodleButton.SetLabel(next ? "隐藏涂鸦" : "显示涂鸦");
+            }
         }
 
         private void OnCellClicked(GridPos pos)

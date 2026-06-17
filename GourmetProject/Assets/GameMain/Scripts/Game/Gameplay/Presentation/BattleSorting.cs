@@ -27,6 +27,9 @@ namespace GourmetProject.Game.Gameplay.Presentation
         /// <summary>上菜飞行中的菜品，临时压在所有静态层之上。</summary>
         public const string PiecesFlying = "PiecesFlying";
 
+        /// <summary>玩家自由涂鸦笔迹，压在所有战斗内容之上（最顶层）。</summary>
+        public const string Doodle = "Doodle";
+
         // —— 层内细分 order ——
         public const int OrderShadow = 0;
         public const int OrderBody = 10;
