@@ -6,28 +6,39 @@ using UnityEngine;
 
 namespace GourmetProject.Game.Gameplay.Presentation
 {
+    /// <summary>
+    /// 已摆放菜品表现：固定结构（接触阴影 + 菜品本体 + 碰撞盒）预拼在 prefab 上，由 <see cref="BuildPlaced"/> 喂数据。
+    /// sprite/缩放/旋转/碰撞尺寸随形状(1x1/2x1/L/T...)与朝向变化，必须运行时计算（见 dish-footprint-sprite 规则）。
+    /// 阴影一律走假阴影软暗斑（见 battle-fake-shadow 规则），全程 Unlit 平涂，不依赖 Light2D。
+    /// </summary>
     public sealed class DishPieceView : MonoBehaviour
     {
-        // 接触阴影（软边暗斑）参数：贴桌态。偏移按单格尺寸 _cellSize 取比例，适配不同棋盘缩放。
-        private const float ShadowBaseAlpha = 0.5f;
-        private const float ShadowGroundScale = 1.22f;
-        private const float ShadowGroundDrop = 0.16f;
-        private const float ShadowGroundSide = 0.06f;
+        [Header("接触阴影：贴桌态（偏移按单格尺寸取比例，适配不同棋盘缩放）")]
+        [SerializeField] private float _shadowBaseAlpha = 0.5f;
+        [SerializeField] private float _shadowGroundScale = 1.22f;
+        [SerializeField] private float _shadowGroundDrop = 0.16f;
+        [SerializeField] private float _shadowGroundSide = 0.06f;
 
-        // 举高态（飞行中）相对贴桌的附加：阴影更远、更大、更淡，模拟悬浮高度。
-        private const float ShadowLiftScale = 1.3f;
-        private const float ShadowLiftAlphaMul = 0.55f;
-        private const float ShadowLiftDrop = 0.24f;
-        private const float ShadowLiftSide = 0.12f;
+        [Header("接触阴影：举高态（飞行中）相对贴桌的附加（更远/更大/更淡）")]
+        [SerializeField] private float _shadowLiftScale = 1.3f;
+        [SerializeField] private float _shadowLiftAlphaMul = 0.55f;
+        [SerializeField] private float _shadowLiftDrop = 0.24f;
+        [SerializeField] private float _shadowLiftSide = 0.12f;
+
+        [Header("固定结构（prefab 预拼，运行时引用）")]
+        [Tooltip("菜品本体渲染体（子物体 Sprite 上的 SpriteRenderer）。")]
+        [SerializeField] private SpriteRenderer _spriteRenderer;
+        [Tooltip("脚下接触阴影（子物体 Shadow 上的 SpriteRenderer）。")]
+        [SerializeField] private SpriteRenderer _shadowRenderer;
+        [Tooltip("点击命中碰撞盒（prefab 根节点上的 BoxCollider2D）。")]
+        [SerializeField] private BoxCollider2D _collider;
 
         private Sprite _sprite;
         private float _cellSize;
         private float _pitch;
         private float _lift;
-        private SpriteRenderer _shadowRenderer;
         private Vector3 _shadowBaseLocalPos;
         private Vector3 _shadowBaseScale;
-        private BoxCollider2D _collider;
         private Action<DishInstance> _clicked;
 
         public DishInstance Instance { get; private set; }
@@ -70,19 +81,11 @@ namespace GourmetProject.Game.Gameplay.Presentation
 
         private void RebuildCells(DishShape shape)
         {
-            for (int i = transform.childCount - 1; i >= 0; i--)
-            {
-                Destroy(transform.GetChild(i).gameObject);
-            }
+            EnsureRefs();
 
-            CreateContactShadow(shape);
-            CreateFootprintSprite(shape);
+            ConfigureContactShadow(shape);
+            ConfigureFootprintSprite(shape);
             ApplyLift(_lift);
-
-            if (_collider == null)
-            {
-                _collider = gameObject.AddComponent<BoxCollider2D>();
-            }
 
             _collider.size = new Vector2(
                 Mathf.Max(_cellSize, shape.Width * _pitch - (_pitch - _cellSize)),
@@ -91,17 +94,13 @@ namespace GourmetProject.Game.Gameplay.Presentation
         }
 
         /// <summary>脚下软边接触阴影：用径向羽化暗斑铺满整个脚印，不依赖菜品图留白，必定可见。</summary>
-        private void CreateContactShadow(DishShape shape)
+        private void ConfigureContactShadow(DishShape shape)
         {
-            var go = new GameObject("Shadow");
-            go.transform.SetParent(transform, false);
-
             Sprite blob = BattleShadow.SoftShadowSprite;
-            var renderer = go.AddComponent<SpriteRenderer>();
-            renderer.sprite = blob;
-            BattleSorting.Apply(renderer, BattleSorting.Pieces, BattleSorting.OrderShadow);
-            renderer.color = new Color(0f, 0f, 0f, ShadowBaseAlpha);
-            SpriteRenderStyle.ApplyUnlitMaterial(renderer);
+            _shadowRenderer.sprite = blob;
+            BattleSorting.Apply(_shadowRenderer, BattleSorting.Pieces, BattleSorting.OrderShadow);
+            _shadowRenderer.color = new Color(0f, 0f, 0f, _shadowBaseAlpha);
+            SpriteRenderStyle.ApplyUnlitMaterial(_shadowRenderer);
 
             // 阴影覆盖旋转后的实际占格脚印（软边自然探出本体轮廓），无需随朝向旋转。
             float spanX = (shape.Width - 1) * _pitch + _cellSize;
@@ -109,34 +108,31 @@ namespace GourmetProject.Game.Gameplay.Presentation
             Vector2 bounds = blob != null ? (Vector2)blob.bounds.size : Vector2.one;
             float sx = bounds.x > 0f ? spanX / bounds.x : spanX;
             float sy = bounds.y > 0f ? spanY / bounds.y : spanY;
-            _shadowBaseScale = new Vector3(sx * ShadowGroundScale, sy * ShadowGroundScale, 1f);
-            go.transform.localScale = _shadowBaseScale;
+            _shadowBaseScale = new Vector3(sx * _shadowGroundScale, sy * _shadowGroundScale, 1f);
+
+            Transform t = _shadowRenderer.transform;
+            t.localScale = _shadowBaseScale;
 
             Vector3 center = new Vector3(
                 (shape.Width - 1) * _pitch * 0.5f,
                 -(shape.Height - 1) * _pitch * 0.5f,
                 0.05f);
-            _shadowBaseLocalPos = center + new Vector3(_cellSize * ShadowGroundSide, -_cellSize * ShadowGroundDrop, 0f);
-            go.transform.localPosition = _shadowBaseLocalPos;
-
-            _shadowRenderer = renderer;
+            _shadowBaseLocalPos = center + new Vector3(_cellSize * _shadowGroundSide, -_cellSize * _shadowGroundDrop, 0f);
+            t.localPosition = _shadowBaseLocalPos;
         }
 
-        private void CreateFootprintSprite(DishShape shape)
+        private void ConfigureFootprintSprite(DishShape shape)
         {
-            var go = new GameObject("Sprite");
-            go.transform.SetParent(transform, false);
-
-            go.transform.localPosition = new Vector3(
+            Transform t = _spriteRenderer.transform;
+            t.localPosition = new Vector3(
                 (shape.Width - 1) * _pitch * 0.5f,
                 -(shape.Height - 1) * _pitch * 0.5f,
                 0f);
 
-            SpriteRenderer renderer = go.AddComponent<SpriteRenderer>();
-            renderer.sprite = _sprite;
-            BattleSorting.Apply(renderer, BattleSorting.Pieces, BattleSorting.OrderBody);
-            renderer.color = Color.white;
-            SpriteRenderStyle.ApplyUnlitMaterial(renderer);
+            _spriteRenderer.sprite = _sprite;
+            BattleSorting.Apply(_spriteRenderer, BattleSorting.Pieces, BattleSorting.OrderBody);
+            _spriteRenderer.color = Color.white;
+            SpriteRenderStyle.ApplyUnlitMaterial(_spriteRenderer);
 
             // sprite 按"基础朝向"绘制；摆放时若发生 90° 旋转，需把 sprite 一并旋转，
             // 并以基础朝向的占格尺寸做缩放，再旋转，才能贴格无缝且不被挤压。
@@ -151,9 +147,9 @@ namespace GourmetProject.Game.Gameplay.Presentation
             Vector2 bounds = _sprite != null ? (Vector2)_sprite.bounds.size : Vector2.one;
             float scaleX = bounds.x > 0f ? spanX / bounds.x : 1f;
             float scaleY = bounds.y > 0f ? spanY / bounds.y : 1f;
-            go.transform.localScale = new Vector3(scaleX, scaleY, 1f);
+            t.localScale = new Vector3(scaleX, scaleY, 1f);
             // DishShape.Rotate90 为顺时针；Unity +Z 为逆时针，故顺时针旋转取负角。
-            go.transform.localRotation = Quaternion.Euler(0f, 0f, -90f * rot);
+            t.localRotation = Quaternion.Euler(0f, 0f, -90f * rot);
         }
 
         /// <summary>设置悬浮高度：0=贴桌，1=举高（飞行中）。阴影随高度变远、变大、变淡，模拟接触投影的高度感。</summary>
@@ -171,14 +167,49 @@ namespace GourmetProject.Game.Gameplay.Presentation
             }
 
             Transform t = _shadowRenderer.transform;
-            t.localPosition = _shadowBaseLocalPos + new Vector3(_cellSize * ShadowLiftSide * lift, -_cellSize * ShadowLiftDrop * lift, 0f);
+            t.localPosition = _shadowBaseLocalPos + new Vector3(_cellSize * _shadowLiftSide * lift, -_cellSize * _shadowLiftDrop * lift, 0f);
 
-            float scaleMul = Mathf.Lerp(1f, ShadowLiftScale, lift);
+            float scaleMul = Mathf.Lerp(1f, _shadowLiftScale, lift);
             t.localScale = new Vector3(_shadowBaseScale.x * scaleMul, _shadowBaseScale.y * scaleMul, 1f);
 
             Color c = _shadowRenderer.color;
-            c.a = ShadowBaseAlpha * Mathf.Lerp(1f, ShadowLiftAlphaMul, lift);
+            c.a = _shadowBaseAlpha * Mathf.Lerp(1f, _shadowLiftAlphaMul, lift);
             _shadowRenderer.color = c;
+        }
+
+        /// <summary>兜底解析/补齐 prefab 预拼的渲染体与碰撞盒，容忍未在 prefab 里手动赋值的情况。</summary>
+        private void EnsureRefs()
+        {
+            if (_collider == null)
+            {
+                _collider = GetComponent<BoxCollider2D>();
+                if (_collider == null)
+                {
+                    _collider = gameObject.AddComponent<BoxCollider2D>();
+                }
+            }
+
+            _shadowRenderer = ResolveChildRenderer(_shadowRenderer, "Shadow");
+            _spriteRenderer = ResolveChildRenderer(_spriteRenderer, "Sprite");
+        }
+
+        private SpriteRenderer ResolveChildRenderer(SpriteRenderer current, string childName)
+        {
+            if (current != null)
+            {
+                return current;
+            }
+
+            Transform t = transform.Find(childName);
+            if (t == null)
+            {
+                var go = new GameObject(childName);
+                go.transform.SetParent(transform, false);
+                t = go.transform;
+            }
+
+            SpriteRenderer renderer = t.GetComponent<SpriteRenderer>();
+            return renderer != null ? renderer : t.gameObject.AddComponent<SpriteRenderer>();
         }
 
         private void Update()
@@ -200,6 +231,5 @@ namespace GourmetProject.Game.Gameplay.Presentation
                 _clicked?.Invoke(Instance);
             }
         }
-
     }
 }

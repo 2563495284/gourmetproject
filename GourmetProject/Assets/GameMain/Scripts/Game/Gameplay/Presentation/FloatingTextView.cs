@@ -3,55 +3,74 @@ using UnityEngine;
 
 namespace GourmetProject.Game.Gameplay.Presentation
 {
-    /// <summary>结算演出用的飘字：从某处缓缓上浮并淡出后自毁。</summary>
+    /// <summary>
+    /// 结算演出用的飘字：从某处缓缓上浮并淡出后自毁。
+    /// 渲染体（TextMesh）预拼在 prefab 上、默认参数走 SerializeField（见 presentation-prefab 规则），
+    /// 缺 prefab 时运行时补齐。<see cref="Spawn"/> 传 null 的可选参数表示沿用 prefab 里的默认值。
+    /// </summary>
     internal sealed class FloatingTextView : MonoBehaviour
     {
+        [Header("默认参数（prefab 可调，Spawn 不传时沿用）")]
+        [SerializeField] private float _characterSize = 0.14f;
+        [SerializeField] private float _rise = 0.9f;
+        [SerializeField] private float _duration = 0.9f;
+        [SerializeField] private int _fontSize = 64;
+
         public static void Spawn(
             FloatingTextView prefab,
             Transform parent,
             Vector3 worldPos,
             string text,
             Color color,
-            float characterSize = 0.14f,
-            float rise = 0.9f,
-            float duration = 0.9f)
+            float? characterSize = null,
+            float? rise = null,
+            float? duration = null)
         {
-            GameObject go;
+            FloatingTextView view;
             if (prefab != null)
             {
-                go = Instantiate(prefab, parent).gameObject;
+                view = Instantiate(prefab, parent);
             }
             else
             {
-                go = new GameObject("FloatingText");
+                var go = new GameObject("FloatingText");
                 go.transform.SetParent(parent, false);
-            }
-
-            go.transform.position = worldPos;
-
-            TextMesh tm = go.GetComponent<TextMesh>();
-            if (tm == null)
-            {
-                tm = go.AddComponent<TextMesh>();
-            }
-
-            tm.text = text;
-            tm.anchor = TextAnchor.MiddleCenter;
-            tm.alignment = TextAlignment.Center;
-            tm.color = color;
-            tm.fontSize = 64;
-            tm.characterSize = characterSize;
-
-            MeshRenderer mr = go.GetComponent<MeshRenderer>();
-            BattleSorting.Apply(mr, BattleSorting.Fx, BattleSorting.OrderFloatingText);
-
-            FloatingTextView view = go.GetComponent<FloatingTextView>();
-            if (view == null)
-            {
                 view = go.AddComponent<FloatingTextView>();
             }
 
-            view.StartCoroutine(view.Animate(tm, worldPos, rise, duration));
+            view.transform.position = worldPos;
+            view.Play(text, color, characterSize, rise, duration);
+        }
+
+        private void Play(string text, Color color, float? characterSize, float? rise, float? duration)
+        {
+            float cs = characterSize ?? _characterSize;
+            float r = rise ?? _rise;
+            float d = duration ?? _duration;
+
+            TextMesh tm = EnsureText();
+            tm.text = text;
+            tm.color = color;
+            tm.characterSize = cs;
+
+            StartCoroutine(Animate(tm, transform.position, r, d));
+        }
+
+        /// <summary>兜底解析/补齐 prefab 预拼的 TextMesh 并归一化锚点/排序。</summary>
+        private TextMesh EnsureText()
+        {
+            TextMesh tm = GetComponent<TextMesh>();
+            if (tm == null)
+            {
+                tm = gameObject.AddComponent<TextMesh>();
+            }
+
+            tm.anchor = TextAnchor.MiddleCenter;
+            tm.alignment = TextAlignment.Center;
+            tm.fontSize = _fontSize;
+
+            BattleSorting.Apply(GetComponent<MeshRenderer>(), BattleSorting.Fx, BattleSorting.OrderFloatingText);
+            return tm;
         }
 
         private IEnumerator Animate(TextMesh tm, Vector3 start, float rise, float duration)
