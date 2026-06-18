@@ -85,6 +85,11 @@ namespace GourmetProject.Game.Gameplay.Presentation
 
         private void OnMouseDown()
         {
+            if (WorldInput.PointerOverUi)
+            {
+                return;
+            }
+
             _clicked?.Invoke(_position);
         }
     }

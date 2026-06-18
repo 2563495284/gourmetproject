@@ -70,15 +70,17 @@ namespace GourmetProject.Game.UI
                 return;
             }
 
+            // 卡片在容器内按比例等分横向排布（gap 为左右与卡间留白占容器宽度的比例）。
+            // 卡片 prefab 的根尺寸（430x470）仅用于编辑器预览，运行时由下面的锚点拉伸决定，
+            // 二者数值接近，保证 prefab 预览与场景实际大小基本一致。
             int n = events.Count;
             float gap = 0.03f;
             float cardW = (1f - gap * (n + 1)) / n;
             for (int i = 0; i < n; i++)
             {
-                cfg.GameEvent ev = events[i];
                 float minX = gap + i * (cardW + gap);
                 float maxX = minX + cardW;
-                SpawnCard(run, ev, minX, maxX);
+                SpawnCard(run, events[i], minX, maxX);
             }
         }
 

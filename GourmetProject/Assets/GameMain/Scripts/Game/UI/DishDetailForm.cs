@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using GourmetProject.Game.Gameplay.Presentation;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Runtime;
@@ -12,12 +13,11 @@ namespace GourmetProject.Game.UI
     /// 菜品详情界面（对应原型图 image2）：左侧菜品形状格子，顶部美味度，
     /// 中部标签（名称+描述），右侧专有名词解释框。
     /// 固定壳（遮罩/面板/名称/美味度/关闭/各容器/名词框）在 DishDetailForm.prefab，
-    /// 形状格子与标签行用 DishShapeCell / DishTagLine 子 prefab 按 userData 数据驱动实例化。
+    /// 菜品图、棋盘网格与标签行按 userData 数据驱动实例化。
     /// </summary>
     public sealed class DishDetailForm : UGuiForm
     {
-        private static readonly Color CellOn = new(1f, 0.72f, 0.3f, 1f);
-        private static readonly Color CellOff = new(1f, 1f, 1f, 0.06f);
+        private static readonly Color GridCell = Color.white;
 
         [SerializeField] private Button _dimButton;
         [SerializeField] private Text _nameText;
@@ -31,6 +31,8 @@ namespace GourmetProject.Game.UI
         [SerializeField] private DishTagLine _tagLinePrefab;
 
         private readonly List<GameObject> _spawned = new();
+        private readonly DishSpriteProvider _spriteProvider = new();
+        private Sprite _boardCellSprite;
 
         protected override void OnInit(object userData)
         {
@@ -75,12 +77,41 @@ namespace GourmetProject.Game.UI
             int w = def.Shape.Width;
             int h = def.Shape.Height;
             int dim = Mathf.Max(w, h);
-            var filled = new HashSet<GridPos>(def.Shape.Cells);
 
             // 居中放在 dim×dim 网格里。
             int offX = (dim - w) / 2;
             int offY = (dim - h) / 2;
 
+            BuildBoardGrid(dim);
+            BuildFoodImage(def, dim, offX, offY);
+        }
+
+        private void BuildFoodImage(DishDef def, int dim, int offX, int offY)
+        {
+            var go = new GameObject("DishImage", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            go.transform.SetParent(_shapeContainer, false);
+
+            Image image = go.GetComponent<Image>();
+            image.sprite = _spriteProvider.Get(def);
+            image.color = Color.white;
+            image.raycastTarget = false;
+            image.preserveAspect = false;
+
+            int w = def.Shape.Width;
+            int h = def.Shape.Height;
+            var rect = (RectTransform)go.transform;
+            rect.anchorMin = new Vector2((float)offX / dim, 1f - (float)(offY + h) / dim);
+            rect.anchorMax = new Vector2((float)(offX + w) / dim, 1f - (float)offY / dim);
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            rect.localScale = Vector3.one;
+            rect.SetAsLastSibling();
+
+            _spawned.Add(go);
+        }
+
+        private void BuildBoardGrid(int dim)
+        {
             for (int y = 0; y < dim; y++)
             {
                 for (int x = 0; x < dim; x++)
@@ -89,7 +120,6 @@ namespace GourmetProject.Game.UI
                     float maxX = (float)(x + 1) / dim;
                     float minY = 1f - (float)(y + 1) / dim;
                     float maxY = 1f - (float)y / dim;
-                    bool on = filled.Contains(new GridPos(x - offX, y - offY));
 
                     DishShapeCell cell = Instantiate(_cellPrefab, _shapeContainer);
                     var rect = (RectTransform)cell.transform;
@@ -98,9 +128,23 @@ namespace GourmetProject.Game.UI
                     rect.offsetMin = new Vector2(3f, 3f);
                     rect.offsetMax = new Vector2(-3f, -3f);
                     rect.localScale = Vector3.one;
-                    cell.SetColor(on ? CellOn : CellOff);
+                    cell.SetSprite(BoardCellSprite);
+                    cell.SetColor(GridCell);
                     _spawned.Add(cell.gameObject);
                 }
+            }
+        }
+
+        private Sprite BoardCellSprite
+        {
+            get
+            {
+                if (_boardCellSprite == null)
+                {
+                    _boardCellSprite = Resources.Load<Sprite>("Sprites/UI/board_cell");
+                }
+
+                return _boardCellSprite;
             }
         }
 
