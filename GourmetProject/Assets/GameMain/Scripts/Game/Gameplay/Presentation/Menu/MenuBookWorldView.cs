@@ -38,8 +38,10 @@ namespace GourmetProject.Game.Gameplay.Presentation
         [SerializeField] private Color _pageTextColor = new(0.30f, 0.22f, 0.12f, 1f);
         [SerializeField] private Color _navColor = new(0.55f, 0.38f, 0.20f, 1f);
         [SerializeField] private Color _bellColor = new(0.92f, 0.72f, 0.22f, 1f);
-        [SerializeField] private Color _tooltipBgColor = new(0.10f, 0.08f, 0.05f, 0.97f);
-        [SerializeField] private Color _tooltipTextColor = new(0.98f, 0.95f, 0.86f, 1f);
+        [Tooltip("tooltip 背景用 ui_tag_box 手绘奶油标签(已上色),tint 一般保持白。")]
+        [SerializeField] private Color _tooltipBgColor = Color.white;
+        [Tooltip("tooltip 文字:奶油底用深棕最清晰。")]
+        [SerializeField] private Color _tooltipTextColor = new(0.28f, 0.18f, 0.08f, 1f);
 
         [Header("图标按钮 tint（图标本身已上色，这里只做态切换）")]
         [Tooltip("常态：图标原色直出，一般保持白色不染色。")]
@@ -477,13 +479,30 @@ namespace GourmetProject.Game.Gameplay.Presentation
 
             string[] lines = e.Tooltip.Split('\n');
             const float lineH = 0.135f;
-            const float padX = 0.09f;
-            const float padY = 0.07f;
-            float ttW = Mathf.Max(_w * 0.7f, 1.7f);
-            float ttH = Mathf.Max(lines.Length, 1) * lineH + padY * 2f;
+            // padX/padY 要盖过 ui_tag_box 的 9-slice 描边圈(left/right≈0.22, top/bottom≈0.17 世界单位),
+            // 文字才落在奶油内区而不压到棕橙边框上。
+            const float padX = 0.22f;
+            const float padY = 0.16f;
+            float ttW = Mathf.Max(_w * 0.66f, 1.9f);
+            // 9-slice 竖向最小高度须 ≥ 上下描边和,否则圆角会被挤压变形。
+            float ttH = Mathf.Max(Mathf.Max(lines.Length, 1) * lineH + padY * 2f, 0.55f);
 
-            _tooltipRoot.transform.localPosition = new Vector3(_w * 0.5f + ttW * 0.5f + 0.06f, e.Go.transform.localPosition.y, -0.05f);
-            _tooltipBg.transform.localScale = new Vector3(ttW, ttH, 1f);
+            _tooltipRoot.transform.localPosition = new Vector3(_w * 0.5f + ttW * 0.5f + 0.04f, e.Go.transform.localPosition.y, -0.05f);
+
+            if (_tooltipBg != null)
+            {
+                if (_tooltipBg.drawMode == SpriteDrawMode.Simple)
+                {
+                    // 兜底纯色块:无 9-slice,用缩放铺满。
+                    _tooltipBg.transform.localScale = new Vector3(ttW, ttH, 1f);
+                }
+                else
+                {
+                    // 常态:ui_tag_box 9-slice,描边随尺寸保持不变形。
+                    _tooltipBg.size = new Vector2(ttW, ttH);
+                }
+            }
+
             _tooltipText.text = e.Tooltip;
             _tooltipText.characterSize = (lineH * 0.82f) / TextUnit;
             _tooltipText.transform.localPosition = new Vector3(-ttW * 0.5f + padX, ttH * 0.5f - padY, -0.01f);

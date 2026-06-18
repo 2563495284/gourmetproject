@@ -13,6 +13,7 @@ namespace GourmetProject.Game.UI
     public sealed class MainMenuForm : UGuiForm
     {
         private Button _startButton;
+        private Button _abandonButton;
         private Button _settingsButton;
         private Button _quitButton;
         private Text _startLabel;
@@ -22,11 +23,13 @@ namespace GourmetProject.Game.UI
             base.OnInit(userData);
 
             _startButton = FindRequiredComponentInChildren<Button>("StartButton");
+            _abandonButton = FindRequiredComponentInChildren<Button>("AbandonButton");
             _settingsButton = FindRequiredComponentInChildren<Button>("SettingsButton");
             _quitButton = FindRequiredComponentInChildren<Button>("QuitButton");
             _startLabel = _startButton.transform.Find("Text").GetComponent<Text>();
 
             _startButton.onClick.AddListener(OnStartClicked);
+            _abandonButton.onClick.AddListener(OnAbandonClicked);
             _settingsButton.onClick.AddListener(OnSettingsClicked);
             _quitButton.onClick.AddListener(OnQuitClicked);
         }
@@ -35,8 +38,15 @@ namespace GourmetProject.Game.UI
         {
             base.OnOpen(userData);
 
+            RefreshState();
+        }
+
+        // 刷新「开始/继续」文案与「放弃」按钮可见性：仅在存在存档（可继续）时显示放弃。
+        private void RefreshState()
+        {
             bool hasSave = GameApp.Save.Has(UIForms.GameSaveSlot);
             _startLabel.text = hasSave ? "继续游戏" : "开始游戏";
+            _abandonButton.gameObject.SetActive(hasSave);
         }
 
         private void OnStartClicked()
@@ -53,6 +63,26 @@ namespace GourmetProject.Game.UI
             // 开局转场由角色选择界面在“确认”时触发。
             GameApp.UI.CloseUIForm(UIForm);
             GameApp.UI.OpenUIForm(UIForms.CharacterSelect, UIForms.GroupDefault);
+        }
+
+        private void OnAbandonClicked()
+        {
+            // 放弃当前游戏：二次确认后删除存档，回到「开始游戏」状态。
+            var data = new ConfirmDialogData
+            {
+                Title = "放弃游戏",
+                Message = "确定要放弃当前的游戏进度吗？此操作无法撤销。",
+                ConfirmText = "放弃",
+                CancelText = "取消",
+                OnConfirm = AbandonCurrentRun,
+            };
+            GameApp.UI.OpenUIForm(UIForms.ConfirmDialog, UIForms.GroupDialog, data);
+        }
+
+        private void AbandonCurrentRun()
+        {
+            RunPersistence.Delete();
+            RefreshState();
         }
 
         private void OnSettingsClicked()
