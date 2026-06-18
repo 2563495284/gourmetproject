@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: da9e89f9c553e4136ac5634ccd65511f
+guid: eaaa1f9fad18244b1abdbf147e2ca9cf
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 6291030039227731362
-    second: big_plate_0
+      213: -5356521012627579858
+    second: menu_book_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -51,7 +51,7 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 100
+  spritePixelsToUnits: 1024
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -75,7 +75,7 @@ TextureImporter:
     maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
-    textureCompression: 0
+    textureCompression: 1
     compressionQuality: 50
     crunchedCompression: 0
     allowsAlphaSplitting: 0
@@ -100,23 +100,23 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: big_plate_0
+      name: menu_book_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 820
-        height: 860
+        width: 1536
+        height: 1024
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 2ad0b774d7a3e4750800000000000000
-      internalID: 6291030039227731362
+      spriteID: e2cda62e480d9a5b0800000000000000
+      internalID: -5356521012627579858
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      big_plate_0: 6291030039227731362
+      menu_book_0: -5356521012627579858
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

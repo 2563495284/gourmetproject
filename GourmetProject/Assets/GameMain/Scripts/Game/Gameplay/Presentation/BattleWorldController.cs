@@ -14,13 +14,16 @@ namespace GourmetProject.Game.Gameplay.Presentation
     /// <summary>
     /// 战斗内场景表现根控制器：棋盘、后厨、手牌区与拖拽放置。
     /// 现以场景内组件存在：背景/棋盘根/各锚点/分数文本/固定按钮均在 Battle.unity 摆好并通过 SerializeField 注入，
-    /// 运行时只生成数据驱动内容（棋盘格随胃尺寸、菜品、主动道具按钮、结算特效）。
+    /// 运行时只生成数据驱动内容（棋盘格随胃尺寸、菜品、道具槽、结算特效）。
     /// </summary>
     public sealed class BattleWorldController : MonoBehaviour
     {
         public const float Gap = 0f;
         private const float MaxCellSize = 1.2f;
         private const float MinCellSize = 0.42f;
+        private const int PassiveSlotCapacity = 10;
+        private const int PassiveSlotColumns = 2;
+        private const int ActiveSlotCapacity = 2;
 
         // 回退视口半宽/半高（16:9 参考：orthographicSize 5.4）。
         private const float FallbackHalfW = 9.6f;
@@ -33,6 +36,7 @@ namespace GourmetProject.Game.Gameplay.Presentation
         [SerializeField] private BoardView _boardView;
         [SerializeField] private Transform _piecesRoot;
         [SerializeField] private Transform _fxRoot;
+        [SerializeField] private Transform _passiveItemsRoot;
         [SerializeField] private Transform _activeItemsRoot;
         [SerializeField] private TextMesh _scoreText;
         [SerializeField] private TextMesh _messageText;
@@ -49,7 +53,7 @@ namespace GourmetProject.Game.Gameplay.Presentation
         [Header("Prefabs")]
         [SerializeField] private BoardCellView _boardCellPrefab;
         [SerializeField] private DishPieceView _dishPiecePrefab;
-        [SerializeField] private WorldButtonView _worldButtonPrefab;
+        [SerializeField] private WorldItemSlotView _itemSlotPrefab;
         [SerializeField] private MenuBookWorldView _menuBookPrefab;
         [SerializeField] private ServeHandView _serveHandPrefab;
 
@@ -60,7 +64,8 @@ namespace GourmetProject.Game.Gameplay.Presentation
         private float _halfH = FallbackHalfH;
 
         private readonly DishSpriteProvider _spriteProvider = new DishSpriteProvider();
-        private readonly List<WorldButtonView> _activeButtons = new List<WorldButtonView>();
+        private readonly List<WorldItemSlotView> _passiveItemSlots = new List<WorldItemSlotView>();
+        private readonly List<WorldItemSlotView> _activeItemSlots = new List<WorldItemSlotView>();
         private readonly List<MenuBookWorldView> _recipeBooks = new List<MenuBookWorldView>();
         private readonly List<DishPieceView> _placedPieces = new List<DishPieceView>();
         private readonly Dictionary<int, DishPieceView> _dishViewsById = new Dictionary<int, DishPieceView>();
@@ -123,6 +128,7 @@ namespace GourmetProject.Game.Gameplay.Presentation
             FitBackground();
             BuildBoard(session.Board);
             EnsureSequencer();
+            EnsureItemRoots();
             ConfigureFixedButtons();
             BuildRecipeBooks();
             RebuildPlacedPieces();
@@ -342,6 +348,32 @@ namespace GourmetProject.Game.Gameplay.Presentation
             {
                 _sequencer = GetComponent<SettlementSequencer>();
             }
+        }
+
+        private void EnsureItemRoots()
+        {
+            if (_passiveItemsRoot == null)
+            {
+                _passiveItemsRoot = EnsureChildRoot("PassiveItemsRoot");
+            }
+
+            if (_activeItemsRoot == null)
+            {
+                _activeItemsRoot = EnsureChildRoot("ActiveItemsRoot");
+            }
+        }
+
+        private Transform EnsureChildRoot(string childName)
+        {
+            Transform child = transform.Find(childName);
+            if (child != null)
+            {
+                return child;
+            }
+
+            var go = new GameObject(childName);
+            go.transform.SetParent(transform, false);
+            return go.transform;
         }
 
         private void FitBackground()
@@ -564,44 +596,67 @@ namespace GourmetProject.Game.Gameplay.Presentation
 
         private void RefreshItems()
         {
-            if (_itemsText == null || _run == null)
+            ClearItemSlots(_passiveItemSlots);
+            if (_run == null || _passiveItemsRoot == null)
             {
                 return;
             }
 
-            var sb = new System.Text.StringBuilder("被动道具\n");
-            bool any = false;
+            if (_itemsText != null)
+            {
+                _itemsText.text = "被动道具";
+            }
+
+            var passiveStates = new List<RunItemState>();
             foreach (RunItemState state in _run.Items)
             {
                 cfg.Item item = GameApp.Config.Tables.TbItem.GetOrDefault(state.ItemId);
                 if (item != null && item.Kind == cfg.ItemKind.Passive && !state.IsEmpty)
                 {
-                    string level = state.Level > 1 ? $" Lv.{state.Level}" : string.Empty;
-                    sb.AppendLine($"{item.Name}{level}");
-                    any = true;
+                    passiveStates.Add(state);
                 }
             }
 
-            _itemsText.text = any ? sb.ToString() : "被动道具\n（无）";
+            const float slotSize = 0.56f;
+            const float gapX = 0.16f;
+            const float gapY = 0.14f;
+            float rightX = _halfW - 0.55f;
+            float topY = _halfH - 0.78f;
+            int shown = Mathf.Min(PassiveSlotCapacity, passiveStates.Count);
+            for (int i = 0; i < shown; i++)
+            {
+                WorldItemSlotView slot = InstantiateItemSlot(_passiveItemsRoot);
+                slot.gameObject.name = $"PassiveItemSlot_{i}";
+                int col = i % PassiveSlotColumns;
+                int row = i / PassiveSlotColumns;
+                float x = rightX - col * (slotSize + gapX);
+                float y = topY - row * (slotSize + gapY);
+                slot.transform.position = new Vector3(x, y, 0f);
+
+                RunItemState state = passiveStates[i];
+                cfg.Item item = GameApp.Config.Tables.TbItem.GetOrDefault(state.ItemId);
+                string badge = state.Level > 1 ? $"Lv{state.Level}" : string.Empty;
+                slot.Bind(
+                    new Vector2(slotSize, slotSize),
+                    LoadItemIcon(item),
+                    ShortName(item.Name),
+                    badge,
+                    QualityColor(item.Quality),
+                    true,
+                    () => ShowItemMessage(item, state));
+                _passiveItemSlots.Add(slot);
+            }
         }
 
         private void RefreshActiveItems()
         {
-            foreach (WorldButtonView button in _activeButtons)
-            {
-                if (button != null)
-                {
-                    Destroy(button.gameObject);
-                }
-            }
-
-            _activeButtons.Clear();
+            ClearItemSlots(_activeItemSlots);
             if (_run == null || _activeItemsRoot == null)
             {
                 return;
             }
 
-            int index = 0;
+            var activeStates = new List<RunItemState>();
             foreach (RunItemState state in _run.Items)
             {
                 cfg.Item item = GameApp.Config.Tables.TbItem.GetOrDefault(state.ItemId);
@@ -610,34 +665,117 @@ namespace GourmetProject.Game.Gameplay.Presentation
                     continue;
                 }
 
-                // 主动道具：右下角区，自下而上排列。
-                string captured = state.ItemId;
-                WorldButtonView button = InstantiateWorldButton();
-                button.gameObject.name = $"ActiveItem_{state.ItemId}";
-                button.transform.position = new Vector3(_halfW - 1.7f, -_halfH + 1.3f + index * 0.7f, 0f);
-                string count = state.Count > 1 ? $" x{state.Count}" : string.Empty;
-                button.Configure(
-                    new Vector2(1.45f, 0.54f),
-                    $"{item.Name}{count}",
-                    new Color(0.28f, 0.45f, 0.72f, 1f),
-                    () => _activeItemClicked?.Invoke(captured));
-                bool usableNow = item.TriggerTiming == cfg.ItemTriggerTiming.BeforeEat;
-                button.SetInteractable(_session != null && !_session.IsSettled && usableNow);
-                _activeButtons.Add(button);
-                index++;
+                activeStates.Add(state);
+            }
+
+            const float slotSize = 0.58f;
+            const float gap = 0.34f;
+            float startX = _halfW - 2.25f;
+            float y = -_halfH + 0.55f;
+            int shown = Mathf.Min(ActiveSlotCapacity, activeStates.Count);
+
+            for (int i = 0; i < ActiveSlotCapacity; i++)
+            {
+                WorldItemSlotView slot = InstantiateItemSlot(_activeItemsRoot);
+                slot.gameObject.name = $"ActiveItemSlot_{i}";
+                slot.transform.position = new Vector3(startX + i * (slotSize + gap), y, 0f);
+
+                if (i < shown)
+                {
+                    RunItemState state = activeStates[i];
+                    cfg.Item item = GameApp.Config.Tables.TbItem.GetOrDefault(state.ItemId);
+                    string captured = state.ItemId;
+                    bool usableNow = _session != null && !_session.IsSettled && item.TriggerTiming == cfg.ItemTriggerTiming.BeforeEat;
+                    string badge = state.Count > 1 ? $"x{state.Count}" : string.Empty;
+                    slot.Bind(
+                        new Vector2(slotSize, slotSize),
+                        LoadItemIcon(item),
+                        ShortName(item.Name),
+                        badge,
+                        QualityColor(item.Quality),
+                        usableNow,
+                        () => _activeItemClicked?.Invoke(captured));
+                }
+                else
+                {
+                    slot.Bind(new Vector2(slotSize, slotSize), null, string.Empty, string.Empty, Color.white, false, null);
+                }
+
+                _activeItemSlots.Add(slot);
             }
         }
 
-        private WorldButtonView InstantiateWorldButton()
+        private void ClearItemSlots(List<WorldItemSlotView> slots)
         {
-            if (_worldButtonPrefab != null)
+            foreach (WorldItemSlotView slot in slots)
             {
-                return Instantiate(_worldButtonPrefab, _activeItemsRoot);
+                if (slot != null)
+                {
+                    Destroy(slot.gameObject);
+                }
             }
 
-            var go = new GameObject("WorldButton");
-            go.transform.SetParent(_activeItemsRoot, false);
-            return go.AddComponent<WorldButtonView>();
+            slots.Clear();
+        }
+
+        private WorldItemSlotView InstantiateItemSlot(Transform root)
+        {
+            if (_itemSlotPrefab != null)
+            {
+                return Instantiate(_itemSlotPrefab, root);
+            }
+
+            var go = new GameObject("WorldItemSlot", typeof(BoxCollider2D));
+            go.transform.SetParent(root, false);
+            return go.AddComponent<WorldItemSlotView>();
+        }
+
+        private static Sprite LoadItemIcon(cfg.Item item)
+        {
+            if (item == null || string.IsNullOrEmpty(item.Icon))
+            {
+                return null;
+            }
+
+            return Resources.Load<Sprite>(item.Icon);
+        }
+
+        private static string ShortName(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                return string.Empty;
+            }
+
+            return name.Length <= 2 ? name : name.Substring(0, 2);
+        }
+
+        private static Color QualityColor(cfg.ItemQuality quality)
+        {
+            switch (quality)
+            {
+                case cfg.ItemQuality.Uncommon:
+                    return new Color(0.50f, 0.86f, 0.46f, 1f);
+                case cfg.ItemQuality.Rare:
+                    return new Color(0.35f, 0.62f, 1f, 1f);
+                case cfg.ItemQuality.Epic:
+                    return new Color(0.74f, 0.42f, 1f, 1f);
+                case cfg.ItemQuality.Legendary:
+                    return new Color(1f, 0.72f, 0.22f, 1f);
+                default:
+                    return new Color(0.92f, 0.86f, 0.74f, 1f);
+            }
+        }
+
+        private void ShowItemMessage(cfg.Item item, RunItemState state)
+        {
+            if (item == null || state == null)
+            {
+                return;
+            }
+
+            string level = item.Kind == cfg.ItemKind.Passive && state.Level > 1 ? $" Lv.{state.Level}" : string.Empty;
+            SetMessage($"{item.Name}{level}：{item.Desc}");
         }
 
         /// <summary>
@@ -795,9 +933,9 @@ namespace GourmetProject.Game.Gameplay.Presentation
                 }
             }
 
-            foreach (WorldButtonView button in _activeButtons)
+            foreach (WorldItemSlotView slot in _activeItemSlots)
             {
-                button?.SetInteractable(interactable);
+                slot?.SetInteractable(interactable);
             }
 
             foreach (MenuBookWorldView book in _recipeBooks)
