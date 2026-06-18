@@ -38,12 +38,36 @@ TABLES = {
     ],
     "item": [
         ("id", "string", "s"), ("name", "string", "s"), ("desc", "string", "s"),
-        ("kind", "ItemKind", "s"), ("effectType", "string", "s"), ("effectValue", "float", "s"),
-        ("icon", "string", "s"),
+        ("kind", "ItemKind", "s"), ("quality", "ItemQuality", "s"), ("specialTags", "string", "s"),
+        ("maxLevel", "int", "s"), ("nextLevelWeightMultiplier", "float", "s"),
+        ("unlockCondition", "string", "s"), ("triggerTiming", "ItemTriggerTiming", "s"),
+        ("acquireLimit", "int", "s"), ("holdLimit", "int", "s"), ("consumeOnUse", "bool", "b"),
+        ("baseWeight", "float", "s"), ("hiddenMin", "int", "s"), ("hiddenMax", "int", "s"),
+        ("effectType", "string", "s"), ("effectValue", "float", "s"),
+        ("effectParam", "string", "s"), ("icon", "string", "s"),
     ],
     "week": [
-        ("id", "int", "s"), ("requiredScore", "int", "s"), ("rewardType", "string", "s"),
+        ("id", "int", "s"), ("scoreProfileId", "string", "s"), ("rewardPackageId", "string", "s"),
+        ("rewardHiddenScore", "int", "s"),
         ("isBoss", "bool", "b"), ("modifier", "string", "s"),
+    ],
+    "score_profile": [
+        ("id", "string", "s"), ("baseScore", "int", "s"), ("difficultyMul", "float", "s"),
+        ("bossMul", "float", "s"), ("endlessGrowthMul", "float", "s"), ("roundTo", "int", "s"),
+    ],
+    "reward_package": [
+        ("id", "string", "s"), ("goldMin", "int", "s"), ("goldMax", "int", "s"),
+        ("mainSlotGroupId", "string", "s"), ("extraSlotGroupId", "string", "s"),
+        ("extraChance", "float", "s"), ("fallbackGold", "int", "s"),
+    ],
+    "reward_slot": [
+        ("id", "string", "s"), ("groupId", "string", "s"), ("kind", "RewardKind", "s"),
+        ("choiceCount", "int", "s"), ("weight", "float", "s"), ("poolId", "string", "s"),
+        ("hiddenOffset", "int", "s"), ("fallbackGold", "int", "s"),
+    ],
+    "reward_pool": [
+        ("id", "string", "s"), ("kind", "RewardPoolKind", "s"), ("specialTags", "string", "s"),
+        ("qualityWeights", "string", "s"), ("allowFallback", "bool", "b"), ("distanceFloor", "int", "s"),
     ],
     "event": [
         ("id", "string", "s"), ("name", "string", "s"), ("desc", "string", "s"),

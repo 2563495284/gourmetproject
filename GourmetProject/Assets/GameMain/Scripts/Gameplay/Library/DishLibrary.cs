@@ -8,12 +8,13 @@ namespace GourmetProject.Gameplay.Library
     /// <summary>
     /// 菜品库的隐藏分加权随机：给定一个「要求隐藏分」，在隐藏分范围覆盖它的候选菜品中按权重随机取一个。
     ///
-    /// 权重公式遵循策划文档：w = 1000 * |a - b| / a，其中 a = 要求隐藏分，b = 菜品隐藏分均值。
-    /// 注意：当某菜品均值恰等于要求隐藏分时权重为 0；当全部候选权重之和为 0 时退化为均匀随机，避免无法取出。
+    /// 权重公式遵循策划文档：w = 基础权重 / max(|a - b|, c)，其中 a = 要求隐藏分，
+    /// b = 菜品隐藏分均值，c 为距离下限，避免均值完全命中时除零。
     /// </summary>
     public sealed class DishLibrary
     {
         private readonly List<DishDef> _dishes;
+        private const int DefaultDistanceFloor = 5;
 
         public DishLibrary(IEnumerable<DishDef> dishes)
         {
@@ -30,6 +31,11 @@ namespace GourmetProject.Gameplay.Library
         /// <summary>计算单个菜品在给定要求隐藏分下的权重（含基础权重系数）。</summary>
         public static float ComputeWeight(DishDef dish, int requiredHidden)
         {
+            return ComputeWeight(dish, requiredHidden, DefaultDistanceFloor);
+        }
+
+        public static float ComputeWeight(DishDef dish, int requiredHidden, int distanceFloor)
+        {
             if (requiredHidden == 0)
             {
                 return dish.BaseWeight;
@@ -37,8 +43,9 @@ namespace GourmetProject.Gameplay.Library
 
             float a = requiredHidden;
             float b = dish.HiddenMean;
-            float w = 1000f * Math.Abs(a - b) / Math.Abs(a);
-            return w * Math.Max(0f, dish.BaseWeight) / 1000f;
+            float distance = Math.Abs(a - b);
+            float divisor = Math.Max(distance, Math.Max(1, distanceFloor));
+            return Math.Max(0f, dish.BaseWeight) / divisor;
         }
 
         /// <summary>

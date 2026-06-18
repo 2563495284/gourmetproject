@@ -571,12 +571,13 @@ namespace GourmetProject.Game.Gameplay.Presentation
 
             var sb = new System.Text.StringBuilder("被动道具\n");
             bool any = false;
-            foreach (string itemId in _run.ItemIds)
+            foreach (RunItemState state in _run.Items)
             {
-                cfg.Item item = GameApp.Config.Tables.TbItem.GetOrDefault(itemId);
-                if (item != null && item.Kind == cfg.ItemKind.Passive)
+                cfg.Item item = GameApp.Config.Tables.TbItem.GetOrDefault(state.ItemId);
+                if (item != null && item.Kind == cfg.ItemKind.Passive && !state.IsEmpty)
                 {
-                    sb.AppendLine(item.Name);
+                    string level = state.Level > 1 ? $" Lv.{state.Level}" : string.Empty;
+                    sb.AppendLine($"{item.Name}{level}");
                     any = true;
                 }
             }
@@ -601,25 +602,27 @@ namespace GourmetProject.Game.Gameplay.Presentation
             }
 
             int index = 0;
-            foreach (string itemId in _run.ItemIds)
+            foreach (RunItemState state in _run.Items)
             {
-                cfg.Item item = GameApp.Config.Tables.TbItem.GetOrDefault(itemId);
-                if (item == null || item.Kind != cfg.ItemKind.Active)
+                cfg.Item item = GameApp.Config.Tables.TbItem.GetOrDefault(state.ItemId);
+                if (item == null || item.Kind != cfg.ItemKind.Active || state.Count <= 0)
                 {
                     continue;
                 }
 
                 // 主动道具：右下角区，自下而上排列。
-                string captured = itemId;
+                string captured = state.ItemId;
                 WorldButtonView button = InstantiateWorldButton();
-                button.gameObject.name = $"ActiveItem_{itemId}";
+                button.gameObject.name = $"ActiveItem_{state.ItemId}";
                 button.transform.position = new Vector3(_halfW - 1.7f, -_halfH + 1.3f + index * 0.7f, 0f);
+                string count = state.Count > 1 ? $" x{state.Count}" : string.Empty;
                 button.Configure(
                     new Vector2(1.45f, 0.54f),
-                    item.Name,
+                    $"{item.Name}{count}",
                     new Color(0.28f, 0.45f, 0.72f, 1f),
                     () => _activeItemClicked?.Invoke(captured));
-                button.SetInteractable(_session != null && !_session.IsSettled);
+                bool usableNow = item.TriggerTiming == cfg.ItemTriggerTiming.BeforeEat;
+                button.SetInteractable(_session != null && !_session.IsSettled && usableNow);
                 _activeButtons.Add(button);
                 index++;
             }
@@ -704,6 +707,11 @@ namespace GourmetProject.Game.Gameplay.Presentation
             }
 
             _messageSink?.Invoke(message);
+        }
+
+        public void ShowMessage(string message)
+        {
+            SetMessage(message);
         }
 
         private string ServeMessage(ServeOutcome outcome, int slotIndex)

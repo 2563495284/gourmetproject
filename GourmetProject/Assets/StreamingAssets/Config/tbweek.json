@@ -1,57 +1,65 @@
 [
   {
     "id": 1,
-    "requiredScore": 80,
-    "rewardType": "Gold",
+    "scoreProfileId": "score_w1",
+    "rewardPackageId": "reward_w1",
+    "rewardHiddenScore": 8,
     "isBoss": false,
     "modifier": ""
   },
   {
     "id": 2,
-    "requiredScore": 130,
-    "rewardType": "Gold",
+    "scoreProfileId": "score_w2",
+    "rewardPackageId": "reward_w2",
+    "rewardHiddenScore": 14,
     "isBoss": false,
     "modifier": ""
   },
   {
     "id": 3,
-    "requiredScore": 200,
-    "rewardType": "Dish",
+    "scoreProfileId": "score_w3",
+    "rewardPackageId": "reward_w3",
+    "rewardHiddenScore": 22,
     "isBoss": false,
     "modifier": ""
   },
   {
     "id": 4,
-    "requiredScore": 320,
-    "rewardType": "Boss",
+    "scoreProfileId": "score_w4",
+    "rewardPackageId": "reward_w4_boss",
+    "rewardHiddenScore": 30,
     "isBoss": true,
     "modifier": "limit_serve"
   },
   {
     "id": 5,
-    "requiredScore": 480,
-    "rewardType": "Gold",
+    "scoreProfileId": "score_w5",
+    "rewardPackageId": "reward_w5",
+    "rewardHiddenScore": 36,
     "isBoss": false,
     "modifier": ""
   },
   {
     "id": 6,
-    "requiredScore": 700,
-    "rewardType": "Item",
+    "scoreProfileId": "score_w6",
+    "rewardPackageId": "reward_w6",
+    "rewardHiddenScore": 44,
     "isBoss": false,
     "modifier": ""
   },
   {
     "id": 7,
-    "requiredScore": 1000,
-    "rewardType": "Gold",
+    "scoreProfileId": "score_w7",
+    "rewardPackageId": "reward_w7",
+    "rewardHiddenScore": 52,
     "isBoss": false,
     "modifier": ""
   },
   {
     "id": 8,
-    "requiredScore": 1500,
-    "rewardType": "Boss",
+    "scoreProfileId": "score_w8",
+    "rewardPackageId": "reward_w8_boss",
+    "rewardHiddenScore": 60,
     "isBoss": true,
     "modifier": "small_board"
   }

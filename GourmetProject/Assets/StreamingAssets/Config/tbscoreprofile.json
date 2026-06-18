@@ -1,0 +1,66 @@
+[
+  {
+    "id": "score_w1",
+    "baseScore": 80,
+    "difficultyMul": 1,
+    "bossMul": 1,
+    "endlessGrowthMul": 1.5,
+    "roundTo": 10
+  },
+  {
+    "id": "score_w2",
+    "baseScore": 130,
+    "difficultyMul": 1,
+    "bossMul": 1,
+    "endlessGrowthMul": 1.5,
+    "roundTo": 10
+  },
+  {
+    "id": "score_w3",
+    "baseScore": 200,
+    "difficultyMul": 1,
+    "bossMul": 1,
+    "endlessGrowthMul": 1.5,
+    "roundTo": 10
+  },
+  {
+    "id": "score_w4",
+    "baseScore": 320,
+    "difficultyMul": 1,
+    "bossMul": 1,
+    "endlessGrowthMul": 1.5,
+    "roundTo": 10
+  },
+  {
+    "id": "score_w5",
+    "baseScore": 480,
+    "difficultyMul": 1,
+    "bossMul": 1,
+    "endlessGrowthMul": 1.5,
+    "roundTo": 10
+  },
+  {
+    "id": "score_w6",
+    "baseScore": 700,
+    "difficultyMul": 1,
+    "bossMul": 1,
+    "endlessGrowthMul": 1.5,
+    "roundTo": 10
+  },
+  {
+    "id": "score_w7",
+    "baseScore": 1000,
+    "difficultyMul": 1,
+    "bossMul": 1,
+    "endlessGrowthMul": 1.5,
+    "roundTo": 10
+  },
+  {
+    "id": "score_w8",
+    "baseScore": 1500,
+    "difficultyMul": 1,
+    "bossMul": 1,
+    "endlessGrowthMul": 1.5,
+    "roundTo": 10
+  }
+]

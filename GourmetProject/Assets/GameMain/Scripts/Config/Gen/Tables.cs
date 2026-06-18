@@ -24,6 +24,10 @@ public partial class Tables
     public TbFragmentCellTag TbFragmentCellTag {get; }
     public TbRecipe TbRecipe {get; }
     public TbItem TbItem {get; }
+    public TbScoreProfile TbScoreProfile {get; }
+    public TbRewardPackage TbRewardPackage {get; }
+    public TbRewardSlot TbRewardSlot {get; }
+    public TbRewardPool TbRewardPool {get; }
     public TbWeek TbWeek {get; }
     public TbEvent TbEvent {get; }
 
@@ -39,6 +43,10 @@ public partial class Tables
         TbFragmentCellTag = new TbFragmentCellTag(loader("tbfragmentcelltag"));
         TbRecipe = new TbRecipe(loader("tbrecipe"));
         TbItem = new TbItem(loader("tbitem"));
+        TbScoreProfile = new TbScoreProfile(loader("tbscoreprofile"));
+        TbRewardPackage = new TbRewardPackage(loader("tbrewardpackage"));
+        TbRewardSlot = new TbRewardSlot(loader("tbrewardslot"));
+        TbRewardPool = new TbRewardPool(loader("tbrewardpool"));
         TbWeek = new TbWeek(loader("tbweek"));
         TbEvent = new TbEvent(loader("tbevent"));
         ResolveRef();
@@ -56,6 +64,10 @@ public partial class Tables
         TbFragmentCellTag.ResolveRef(this);
         TbRecipe.ResolveRef(this);
         TbItem.ResolveRef(this);
+        TbScoreProfile.ResolveRef(this);
+        TbRewardPackage.ResolveRef(this);
+        TbRewardSlot.ResolveRef(this);
+        TbRewardPool.ResolveRef(this);
         TbWeek.ResolveRef(this);
         TbEvent.ResolveRef(this);
     }

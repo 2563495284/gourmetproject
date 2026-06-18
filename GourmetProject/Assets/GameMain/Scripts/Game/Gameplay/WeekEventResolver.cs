@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using GourmetProject.Core.Rng;
 using GourmetProject.Runtime;
 
@@ -24,13 +23,18 @@ namespace GourmetProject.Game.Gameplay
                     return $"获得金币 {value}。";
 
                 case "LowerReq":
-                    int baseReq = run.CurrentWeek?.RequiredScore ?? 100;
+                    int baseReq = run.RequiredScore;
                     run.RequiredScoreOverride = Mathf_RoundToInt(baseReq * (1f - ev.EffectValue));
                     return $"本周目标分降低至 {run.RequiredScoreOverride}。";
 
                 case "GainItem":
-                    string granted = GrantRandomPassiveItem(run, rng);
-                    return granted != null ? $"获得道具：{ItemName(granted)}。" : "没有可获得的新道具，改为金币 +20。";
+                    ItemAcquireResult item = ItemPoolService.GrantRandom(
+                        GameApp.Config.Tables,
+                        run,
+                        cfg.ItemKind.Passive,
+                        rng,
+                        20);
+                    return item.ToRewardText("事件奖励：") + "。";
 
                 case "Gamble":
                     if (rng.NextBool())
@@ -51,35 +55,6 @@ namespace GourmetProject.Game.Gameplay
                 default:
                     return ev.Desc;
             }
-        }
-
-        private static string GrantRandomPassiveItem(GameRun run, IRandomStream rng)
-        {
-            cfg.Tables tables = GameApp.Config.Tables;
-            var candidates = new List<string>();
-            foreach (cfg.Item item in tables.TbItem.DataList)
-            {
-                if (item.Kind == cfg.ItemKind.Passive && !run.ItemIds.Contains(item.Id))
-                {
-                    candidates.Add(item.Id);
-                }
-            }
-
-            if (candidates.Count == 0)
-            {
-                run.Gold += 20;
-                return null;
-            }
-
-            string picked = candidates[rng.Range(0, candidates.Count)];
-            run.ItemIds.Add(picked);
-            return picked;
-        }
-
-        private static string ItemName(string itemId)
-        {
-            cfg.Item item = GameApp.Config.Tables.TbItem.GetOrDefault(itemId);
-            return item?.Name ?? itemId;
         }
 
         private static int Mathf_RoundToInt(float v) => (int)System.Math.Round(v, System.MidpointRounding.AwayFromZero);

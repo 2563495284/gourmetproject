@@ -21,8 +21,21 @@ public sealed partial class Item : Luban.BeanBase
         { if(!_buf["name"].IsString) { throw new SerializationException(); }  Name = _buf["name"]; }
         { if(!_buf["desc"].IsString) { throw new SerializationException(); }  Desc = _buf["desc"]; }
         { if(!_buf["kind"].IsNumber) { throw new SerializationException(); }  Kind = (ItemKind)_buf["kind"].AsInt; }
+        { if(!_buf["quality"].IsNumber) { throw new SerializationException(); }  Quality = (ItemQuality)_buf["quality"].AsInt; }
+        { if(!_buf["specialTags"].IsString) { throw new SerializationException(); }  SpecialTags = _buf["specialTags"]; }
+        { if(!_buf["maxLevel"].IsNumber) { throw new SerializationException(); }  MaxLevel = _buf["maxLevel"]; }
+        { if(!_buf["nextLevelWeightMultiplier"].IsNumber) { throw new SerializationException(); }  NextLevelWeightMultiplier = _buf["nextLevelWeightMultiplier"]; }
+        { if(!_buf["unlockCondition"].IsString) { throw new SerializationException(); }  UnlockCondition = _buf["unlockCondition"]; }
+        { if(!_buf["triggerTiming"].IsNumber) { throw new SerializationException(); }  TriggerTiming = (ItemTriggerTiming)_buf["triggerTiming"].AsInt; }
+        { if(!_buf["acquireLimit"].IsNumber) { throw new SerializationException(); }  AcquireLimit = _buf["acquireLimit"]; }
+        { if(!_buf["holdLimit"].IsNumber) { throw new SerializationException(); }  HoldLimit = _buf["holdLimit"]; }
+        { if(!_buf["consumeOnUse"].IsBoolean) { throw new SerializationException(); }  ConsumeOnUse = _buf["consumeOnUse"]; }
+        { if(!_buf["baseWeight"].IsNumber) { throw new SerializationException(); }  BaseWeight = _buf["baseWeight"]; }
+        { if(!_buf["hiddenMin"].IsNumber) { throw new SerializationException(); }  HiddenMin = _buf["hiddenMin"]; }
+        { if(!_buf["hiddenMax"].IsNumber) { throw new SerializationException(); }  HiddenMax = _buf["hiddenMax"]; }
         { if(!_buf["effectType"].IsString) { throw new SerializationException(); }  EffectType = _buf["effectType"]; }
         { if(!_buf["effectValue"].IsNumber) { throw new SerializationException(); }  EffectValue = _buf["effectValue"]; }
+        { if(!_buf["effectParam"].IsString) { throw new SerializationException(); }  EffectParam = _buf["effectParam"]; }
         { if(!_buf["icon"].IsString) { throw new SerializationException(); }  Icon = _buf["icon"]; }
     }
 
@@ -35,8 +48,21 @@ public sealed partial class Item : Luban.BeanBase
     public readonly string Name;
     public readonly string Desc;
     public readonly ItemKind Kind;
+    public readonly ItemQuality Quality;
+    public readonly string SpecialTags;
+    public readonly int MaxLevel;
+    public readonly float NextLevelWeightMultiplier;
+    public readonly string UnlockCondition;
+    public readonly ItemTriggerTiming TriggerTiming;
+    public readonly int AcquireLimit;
+    public readonly int HoldLimit;
+    public readonly bool ConsumeOnUse;
+    public readonly float BaseWeight;
+    public readonly int HiddenMin;
+    public readonly int HiddenMax;
     public readonly string EffectType;
     public readonly float EffectValue;
+    public readonly string EffectParam;
     public readonly string Icon;
    
     public const int __ID__ = 2289459;
@@ -53,8 +79,21 @@ public sealed partial class Item : Luban.BeanBase
         + "name:" + Name + ","
         + "desc:" + Desc + ","
         + "kind:" + Kind + ","
+        + "quality:" + Quality + ","
+        + "specialTags:" + SpecialTags + ","
+        + "maxLevel:" + MaxLevel + ","
+        + "nextLevelWeightMultiplier:" + NextLevelWeightMultiplier + ","
+        + "unlockCondition:" + UnlockCondition + ","
+        + "triggerTiming:" + TriggerTiming + ","
+        + "acquireLimit:" + AcquireLimit + ","
+        + "holdLimit:" + HoldLimit + ","
+        + "consumeOnUse:" + ConsumeOnUse + ","
+        + "baseWeight:" + BaseWeight + ","
+        + "hiddenMin:" + HiddenMin + ","
+        + "hiddenMax:" + HiddenMax + ","
         + "effectType:" + EffectType + ","
         + "effectValue:" + EffectValue + ","
+        + "effectParam:" + EffectParam + ","
         + "icon:" + Icon + ","
         + "}";
     }

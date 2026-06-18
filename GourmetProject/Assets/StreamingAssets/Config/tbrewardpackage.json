@@ -1,0 +1,74 @@
+[
+  {
+    "id": "reward_w1",
+    "goldMin": 45,
+    "goldMax": 60,
+    "mainSlotGroupId": "main_dish",
+    "extraSlotGroupId": "extra_mixed",
+    "extraChance": 0.15,
+    "fallbackGold": 35
+  },
+  {
+    "id": "reward_w2",
+    "goldMin": 55,
+    "goldMax": 75,
+    "mainSlotGroupId": "main_passive",
+    "extraSlotGroupId": "extra_mixed",
+    "extraChance": 0.2,
+    "fallbackGold": 40
+  },
+  {
+    "id": "reward_w3",
+    "goldMin": 65,
+    "goldMax": 85,
+    "mainSlotGroupId": "main_dish",
+    "extraSlotGroupId": "extra_mixed",
+    "extraChance": 0.25,
+    "fallbackGold": 45
+  },
+  {
+    "id": "reward_w4_boss",
+    "goldMin": 90,
+    "goldMax": 125,
+    "mainSlotGroupId": "main_boss",
+    "extraSlotGroupId": "extra_mixed",
+    "extraChance": 0.5,
+    "fallbackGold": 80
+  },
+  {
+    "id": "reward_w5",
+    "goldMin": 85,
+    "goldMax": 115,
+    "mainSlotGroupId": "main_fragment",
+    "extraSlotGroupId": "extra_mixed",
+    "extraChance": 0.3,
+    "fallbackGold": 55
+  },
+  {
+    "id": "reward_w6",
+    "goldMin": 95,
+    "goldMax": 130,
+    "mainSlotGroupId": "main_passive",
+    "extraSlotGroupId": "extra_mixed",
+    "extraChance": 0.35,
+    "fallbackGold": 60
+  },
+  {
+    "id": "reward_w7",
+    "goldMin": 110,
+    "goldMax": 145,
+    "mainSlotGroupId": "main_dish_or_passive",
+    "extraSlotGroupId": "extra_mixed",
+    "extraChance": 0.4,
+    "fallbackGold": 70
+  },
+  {
+    "id": "reward_w8_boss",
+    "goldMin": 140,
+    "goldMax": 185,
+    "mainSlotGroupId": "main_boss",
+    "extraSlotGroupId": "extra_mixed",
+    "extraChance": 0.6,
+    "fallbackGold": 100
+  }
+]

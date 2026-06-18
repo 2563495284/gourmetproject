@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using GourmetProject.Game.Gameplay;
 using GourmetProject.Game.Gameplay.Presentation;
 using GourmetProject.Gameplay.Battle;
@@ -31,8 +30,6 @@ namespace GourmetProject.Game.UI
         private GameRun _run;
         private BattleSession _session;
         private BattleWorldController _world;
-
-        private readonly HashSet<string> _usedActiveItems = new();
 
         public GameRun Run => _run;
         public BattleSession Session => _session;
@@ -84,7 +81,6 @@ namespace GourmetProject.Game.UI
                 _world.HideWorld();
             }
 
-            _usedActiveItems.Clear();
             HideResult();
             RunPersistence.Save(_run);
             GameApp.UI.OpenUIForm(UIForms.WeekMap, UIForms.GroupDialog);
@@ -94,7 +90,6 @@ namespace GourmetProject.Game.UI
         public void BeginBattleAfterEvent(string eventFeedback)
         {
             _session = _run.BuildBattleSession();
-            _usedActiveItems.Clear();
             HideResult();
             _world = BattleWorldController.Instance;
             if (_world == null)
@@ -183,56 +178,48 @@ namespace GourmetProject.Game.UI
 
         private void OnActiveItemClicked(string itemId)
         {
-            if (_session == null || _session.IsSettled || _usedActiveItems.Contains(itemId))
+            if (_session == null || _session.IsSettled)
             {
                 return;
             }
 
             cfg.Item item = GameApp.Config.Tables.TbItem.GetOrDefault(itemId);
-            if (item == null)
+            if (item == null || item.Kind != cfg.ItemKind.Active)
             {
                 return;
             }
 
-            switch (item.EffectType)
+            RunItemState state = _run.GetItemState(itemId);
+            if (state == null || state.Count <= 0)
             {
-                case "ClearBoard":
-                    _session.ClearBoard();
-                    SetMessage("重摆铃：已清空棋盘。");
-                    break;
-                case "ExtraServe":
-                    if (TryExtraServe())
-                    {
-                        SetMessage("加菜券：额外上了一道菜。");
-                    }
-                    else
-                    {
-                        SetMessage("加菜券：没有能放下的菜了。");
-                    }
-
-                    break;
-                default:
-                    SetMessage($"使用了 {item.Name}。");
-                    break;
+                _world?.ShowMessage($"{item.Name}：没有可用数量。");
+                RefreshAll();
+                return;
             }
 
-            _usedActiveItems.Add(itemId);
-            _world?.SyncBoardFromSession();
+            if (item.TriggerTiming != cfg.ItemTriggerTiming.BeforeEat)
+            {
+                _world?.ShowMessage($"{item.Name}：现在不是使用时机。");
+                RefreshAll();
+                return;
+            }
+
+            ActiveItemUseResult result = ActiveItemEffectRegistry.TryUse(_session, item);
+            _world?.ShowMessage(result.Message);
+            if (!result.Success)
+            {
+                RefreshAll();
+                return;
+            }
+
+            _run.UseActiveItem(itemId);
+            if (result.BoardChanged)
+            {
+                _world?.SyncBoardFromSession();
+            }
+
+            RunPersistence.Save(_run);
             RefreshAll();
-        }
-
-        private bool TryExtraServe()
-        {
-            for (int i = 0; i < _session.Slots.Count; i++)
-            {
-                if (_session.Serve(i).Success)
-                {
-                    _world?.SyncBoardFromSession();
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         // —— 刷新与结果 ——

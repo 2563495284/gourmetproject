@@ -1,0 +1,92 @@
+[
+  {
+    "id": "slot_main_dish",
+    "groupId": "main_dish",
+    "kind": 1,
+    "choiceCount": 3,
+    "weight": 1,
+    "poolId": "pool_dish",
+    "hiddenOffset": 0,
+    "fallbackGold": 40
+  },
+  {
+    "id": "slot_main_passive",
+    "groupId": "main_passive",
+    "kind": 2,
+    "choiceCount": 3,
+    "weight": 1,
+    "poolId": "pool_passive",
+    "hiddenOffset": 0,
+    "fallbackGold": 60
+  },
+  {
+    "id": "slot_main_fragment",
+    "groupId": "main_fragment",
+    "kind": 4,
+    "choiceCount": 3,
+    "weight": 1,
+    "poolId": "pool_fragment",
+    "hiddenOffset": 0,
+    "fallbackGold": 70
+  },
+  {
+    "id": "slot_main_dish_late",
+    "groupId": "main_dish_or_passive",
+    "kind": 1,
+    "choiceCount": 3,
+    "weight": 55,
+    "poolId": "pool_dish",
+    "hiddenOffset": 0,
+    "fallbackGold": 60
+  },
+  {
+    "id": "slot_main_passive_late",
+    "groupId": "main_dish_or_passive",
+    "kind": 2,
+    "choiceCount": 3,
+    "weight": 45,
+    "poolId": "pool_passive",
+    "hiddenOffset": 0,
+    "fallbackGold": 70
+  },
+  {
+    "id": "slot_boss_passive",
+    "groupId": "main_boss",
+    "kind": 2,
+    "choiceCount": 3,
+    "weight": 60,
+    "poolId": "pool_passive_boss",
+    "hiddenOffset": 5,
+    "fallbackGold": 90
+  },
+  {
+    "id": "slot_boss_active",
+    "groupId": "main_boss",
+    "kind": 3,
+    "choiceCount": 1,
+    "weight": 40,
+    "poolId": "pool_active",
+    "hiddenOffset": 0,
+    "fallbackGold": 50
+  },
+  {
+    "id": "slot_extra_active",
+    "groupId": "extra_mixed",
+    "kind": 3,
+    "choiceCount": 1,
+    "weight": 45,
+    "poolId": "pool_active",
+    "hiddenOffset": 0,
+    "fallbackGold": 25
+  },
+  {
+    "id": "slot_extra_gold",
+    "groupId": "extra_mixed",
+    "kind": 0,
+    "choiceCount": 1,
+    "weight": 55,
+    "poolId": "",
+    "hiddenOffset": 0,
+    "fallbackGold": 30
+  }
+]

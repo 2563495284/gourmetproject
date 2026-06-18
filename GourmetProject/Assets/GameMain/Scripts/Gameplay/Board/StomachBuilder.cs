@@ -62,6 +62,202 @@ namespace GourmetProject.Gameplay.Board
             return new Board(maxWidth, maxHeight, existing, cellTags);
         }
 
+        public static Board BuildExpanded(
+            StomachFragmentDef initial,
+            IEnumerable<StomachFragmentDef> extraFragments,
+            int maxWidth,
+            int maxHeight)
+        {
+            if (initial == null)
+            {
+                throw new ArgumentNullException(nameof(initial));
+            }
+
+            var existing = new HashSet<GridPos>();
+            var cellTags = new Dictionary<GridPos, IReadOnlyList<string>>();
+            AddFragmentCells(initial, new GridPos(0, 0), maxWidth, maxHeight, existing, cellTags, clipToBounds: true);
+
+            if (extraFragments != null)
+            {
+                foreach (StomachFragmentDef fragment in extraFragments)
+                {
+                    if (fragment == null || !TryFindAttachment(existing, fragment, maxWidth, maxHeight, out GridPos origin))
+                    {
+                        continue;
+                    }
+
+                    AddFragmentCells(fragment, origin, maxWidth, maxHeight, existing, cellTags, clipToBounds: false);
+                }
+            }
+
+            return new Board(maxWidth, maxHeight, existing, cellTags);
+        }
+
+        public static bool CanAttachFragment(
+            StomachFragmentDef initial,
+            IEnumerable<StomachFragmentDef> existingFragments,
+            StomachFragmentDef candidate,
+            int maxWidth,
+            int maxHeight)
+        {
+            if (initial == null || candidate == null || maxWidth <= 0 || maxHeight <= 0)
+            {
+                return false;
+            }
+
+            var existing = new HashSet<GridPos>();
+            AddFragmentCells(initial, new GridPos(0, 0), maxWidth, maxHeight, existing, null, clipToBounds: true);
+            if (existingFragments != null)
+            {
+                foreach (StomachFragmentDef fragment in existingFragments)
+                {
+                    if (fragment == null || !TryFindAttachment(existing, fragment, maxWidth, maxHeight, out GridPos origin))
+                    {
+                        continue;
+                    }
+
+                    AddFragmentCells(fragment, origin, maxWidth, maxHeight, existing, null, clipToBounds: false);
+                }
+            }
+
+            return TryFindAttachment(existing, candidate, maxWidth, maxHeight, out _);
+        }
+
+        private static void AddFragmentCells(
+            StomachFragmentDef fragment,
+            GridPos origin,
+            int maxWidth,
+            int maxHeight,
+            HashSet<GridPos> existing,
+            Dictionary<GridPos, IReadOnlyList<string>> cellTags,
+            bool clipToBounds)
+        {
+            foreach (GridPos local in FilledCells(fragment))
+            {
+                GridPos pos = local.Offset(origin.X, origin.Y);
+                if (pos.X < 0 || pos.Y < 0 || pos.X >= maxWidth || pos.Y >= maxHeight)
+                {
+                    if (clipToBounds)
+                    {
+                        continue;
+                    }
+
+                    return;
+                }
+
+                existing.Add(pos);
+            }
+
+            if (cellTags == null)
+            {
+                return;
+            }
+
+            foreach (CellTag ct in fragment.CellTags)
+            {
+                if (string.IsNullOrEmpty(ct.TagId))
+                {
+                    continue;
+                }
+
+                GridPos pos = ct.Pos.Offset(origin.X, origin.Y);
+                if (!existing.Contains(pos))
+                {
+                    continue;
+                }
+
+                if (!cellTags.TryGetValue(pos, out IReadOnlyList<string> list))
+                {
+                    list = new List<string>();
+                    cellTags[pos] = list;
+                }
+
+                ((List<string>)list).Add(ct.TagId);
+            }
+        }
+
+        private static bool TryFindAttachment(
+            HashSet<GridPos> existing,
+            StomachFragmentDef fragment,
+            int maxWidth,
+            int maxHeight,
+            out GridPos origin)
+        {
+            origin = default;
+            List<GridPos> cells = FilledCells(fragment);
+            if (existing == null || existing.Count == 0 || cells.Count == 0)
+            {
+                return false;
+            }
+
+            for (int y = 0; y < maxHeight; y++)
+            {
+                for (int x = 0; x < maxWidth; x++)
+                {
+                    var candidateOrigin = new GridPos(x, y);
+                    if (CanPlaceAt(existing, cells, candidateOrigin, maxWidth, maxHeight))
+                    {
+                        origin = candidateOrigin;
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static bool CanPlaceAt(
+            HashSet<GridPos> existing,
+            IReadOnlyList<GridPos> cells,
+            GridPos origin,
+            int maxWidth,
+            int maxHeight)
+        {
+            bool touchesExisting = false;
+            foreach (GridPos local in cells)
+            {
+                GridPos pos = local.Offset(origin.X, origin.Y);
+                if (pos.X < 0 || pos.Y < 0 || pos.X >= maxWidth || pos.Y >= maxHeight || existing.Contains(pos))
+                {
+                    return false;
+                }
+
+                if (TouchesExisting(existing, pos))
+                {
+                    touchesExisting = true;
+                }
+            }
+
+            return touchesExisting;
+        }
+
+        private static bool TouchesExisting(HashSet<GridPos> existing, GridPos pos)
+        {
+            return existing.Contains(pos.Offset(1, 0))
+                || existing.Contains(pos.Offset(-1, 0))
+                || existing.Contains(pos.Offset(0, 1))
+                || existing.Contains(pos.Offset(0, -1));
+        }
+
+        private static List<GridPos> FilledCells(StomachFragmentDef fragment)
+        {
+            var cells = new List<GridPos>();
+            IReadOnlyList<string> rows = fragment.ShapeRows;
+            for (int y = 0; y < rows.Count; y++)
+            {
+                string row = rows[y] ?? string.Empty;
+                for (int x = 0; x < row.Length; x++)
+                {
+                    if (IsFilled(row[x]))
+                    {
+                        cells.Add(new GridPos(x, y));
+                    }
+                }
+            }
+
+            return cells;
+        }
+
         private static bool IsFilled(char c) => c == 'X' || c == 'x' || c == '1' || c == '#';
     }
 }

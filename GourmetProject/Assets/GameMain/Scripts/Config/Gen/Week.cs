@@ -18,8 +18,9 @@ public sealed partial class Week : Luban.BeanBase
     public Week(JSONNode _buf) 
     {
         { if(!_buf["id"].IsNumber) { throw new SerializationException(); }  Id = _buf["id"]; }
-        { if(!_buf["requiredScore"].IsNumber) { throw new SerializationException(); }  RequiredScore = _buf["requiredScore"]; }
-        { if(!_buf["rewardType"].IsString) { throw new SerializationException(); }  RewardType = _buf["rewardType"]; }
+        { if(!_buf["scoreProfileId"].IsString) { throw new SerializationException(); }  ScoreProfileId = _buf["scoreProfileId"]; }
+        { if(!_buf["rewardPackageId"].IsString) { throw new SerializationException(); }  RewardPackageId = _buf["rewardPackageId"]; }
+        { if(!_buf["rewardHiddenScore"].IsNumber) { throw new SerializationException(); }  RewardHiddenScore = _buf["rewardHiddenScore"]; }
         { if(!_buf["isBoss"].IsBoolean) { throw new SerializationException(); }  IsBoss = _buf["isBoss"]; }
         { if(!_buf["modifier"].IsString) { throw new SerializationException(); }  Modifier = _buf["modifier"]; }
     }
@@ -30,8 +31,9 @@ public sealed partial class Week : Luban.BeanBase
     }
 
     public readonly int Id;
-    public readonly int RequiredScore;
-    public readonly string RewardType;
+    public readonly string ScoreProfileId;
+    public readonly string RewardPackageId;
+    public readonly int RewardHiddenScore;
     public readonly bool IsBoss;
     public readonly string Modifier;
    
@@ -46,8 +48,9 @@ public sealed partial class Week : Luban.BeanBase
     {
         return "{ "
         + "id:" + Id + ","
-        + "requiredScore:" + RequiredScore + ","
-        + "rewardType:" + RewardType + ","
+        + "scoreProfileId:" + ScoreProfileId + ","
+        + "rewardPackageId:" + RewardPackageId + ","
+        + "rewardHiddenScore:" + RewardHiddenScore + ","
         + "isBoss:" + IsBoss + ","
         + "modifier:" + Modifier + ","
         + "}";

@@ -64,22 +64,9 @@ namespace GourmetProject.Game.UI
         {
             _stock.Clear();
             cfg.Tables tables = GameApp.Config.Tables;
-            var pool = new List<string>();
-            foreach (cfg.Item item in tables.TbItem.DataList)
-            {
-                if (item.Kind == cfg.ItemKind.Passive && !_run.ItemIds.Contains(item.Id))
-                {
-                    pool.Add(item.Id);
-                }
-            }
 
             IRandomStream rng = GameApp.Random.Stream($"shop_w{_run.WeekIndex}");
-            rng.Shuffle(pool);
-            int take = Mathf.Min(MaxStock, pool.Count);
-            for (int i = 0; i < take; i++)
-            {
-                _stock.Add(pool[i]);
-            }
+            _stock.AddRange(ItemPoolService.Roll(tables, _run, cfg.ItemKind.Passive, rng, MaxStock));
         }
 
         private void Rebuild()
@@ -126,12 +113,12 @@ namespace GourmetProject.Game.UI
         {
             cfg.Tables tables = GameApp.Config.Tables;
             var owned = new List<string>();
-            foreach (string id in _run.ItemIds)
+            foreach (RunItemState state in _run.Items)
             {
-                cfg.Item item = tables.TbItem.GetOrDefault(id);
-                if (item != null && item.Kind == cfg.ItemKind.Passive)
+                cfg.Item item = tables.TbItem.GetOrDefault(state.ItemId);
+                if (item != null && item.Kind == cfg.ItemKind.Passive && !state.IsEmpty)
                 {
-                    owned.Add(id);
+                    owned.Add(state.ItemId);
                 }
             }
 
@@ -149,6 +136,11 @@ namespace GourmetProject.Game.UI
             for (int i = 0; i < shown; i++)
             {
                 cfg.Item item = tables.TbItem.GetOrDefault(owned[i]);
+                if (item == null)
+                {
+                    continue;
+                }
+
                 float minX = i * (cardW + gap);
                 ShopSellCardView card = Instantiate(_sellCardPrefab, _sellContainer);
                 PlaceInContainer(card.transform, minX, minX + cardW);
@@ -184,13 +176,13 @@ namespace GourmetProject.Game.UI
 
         private void OnBuy(string itemId)
         {
-            if (_run.Gold < BuyPrice || _run.ItemIds.Contains(itemId))
+            if (_run.Gold < BuyPrice)
             {
                 return;
             }
 
             _run.Gold -= BuyPrice;
-            _run.ItemIds.Add(itemId);
+            _run.AcquireItem(itemId, 0);
             _stock.Remove(itemId);
             RunPersistence.Save(_run);
             Rebuild();
@@ -198,7 +190,7 @@ namespace GourmetProject.Game.UI
 
         private void OnSell(string itemId)
         {
-            if (!_run.ItemIds.Remove(itemId))
+            if (!_run.RemoveItem(itemId))
             {
                 return;
             }

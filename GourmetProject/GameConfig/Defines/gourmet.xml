@@ -26,6 +26,38 @@
         <var name="Active" value="1"/>
     </enum>
 
+    <enum name="ItemQuality">
+        <var name="Common" value="0"/>
+        <var name="Uncommon" value="1"/>
+        <var name="Rare" value="2"/>
+        <var name="Epic" value="3"/>
+        <var name="Legendary" value="4"/>
+    </enum>
+
+    <enum name="ItemTriggerTiming">
+        <var name="None" value="0"/>
+        <var name="BeforeServe" value="1"/>
+        <var name="AfterServe" value="2"/>
+        <var name="BeforeEat" value="3"/>
+        <var name="AfterSettlement" value="4"/>
+        <var name="RewardScreen" value="5"/>
+    </enum>
+
+    <enum name="RewardKind">
+        <var name="Gold" value="0"/>
+        <var name="DishChoice" value="1"/>
+        <var name="PassiveItemChoice" value="2"/>
+        <var name="ActiveItemGrant" value="3"/>
+        <var name="FragmentChoice" value="4"/>
+    </enum>
+
+    <enum name="RewardPoolKind">
+        <var name="Dish" value="0"/>
+        <var name="PassiveItem" value="1"/>
+        <var name="ActiveItem" value="2"/>
+        <var name="Fragment" value="3"/>
+    </enum>
+
     <!-- sep="," 让 RecipeEntry 在单元格内按逗号分隔字段；list,RecipeEntry 按字段数循环切出元素。 -->
     <bean name="RecipeEntry" sep=",">
         <var name="dishId" type="string"/>
@@ -128,23 +160,88 @@
     </bean>
     <table name="TbRecipe" value="Recipe" index="id" input="recipe.xlsx"/>
 
-    <!-- 道具：被动常驻 / 主动可触发。 -->
+    <!--
+        道具：被动常驻 / 主动可触发。
+        specialTags 用 | 分隔多个标记，避免 Luban 多 list 字段限制；空串表示无特殊标记。
+        acquireLimit/holdLimit <= 0 表示无限制；consumeOnUse 仅对主动道具生效。
+    -->
     <bean name="Item">
         <var name="id" type="string"/>
         <var name="name" type="string"/>
         <var name="desc" type="string"/>
         <var name="kind" type="ItemKind"/>
+        <var name="quality" type="ItemQuality"/>
+        <var name="specialTags" type="string"/>
+        <var name="maxLevel" type="int"/>
+        <var name="nextLevelWeightMultiplier" type="float"/>
+        <var name="unlockCondition" type="string"/>
+        <var name="triggerTiming" type="ItemTriggerTiming"/>
+        <var name="acquireLimit" type="int"/>
+        <var name="holdLimit" type="int"/>
+        <var name="consumeOnUse" type="bool"/>
+        <var name="baseWeight" type="float"/>
+        <var name="hiddenMin" type="int"/>
+        <var name="hiddenMax" type="int"/>
         <var name="effectType" type="string"/>
         <var name="effectValue" type="float"/>
+        <var name="effectParam" type="string"/>
         <var name="icon" type="string"/>
     </bean>
     <table name="TbItem" value="Item" index="id" input="item.xlsx"/>
 
-    <!-- 周/关卡：要求分随周递增；isBoss 为特殊天。 -->
+    <!-- 目标分曲线：周/关卡引用它来生成本局要求分，无尽模式沿用最后一周的曲线增长。 -->
+    <bean name="ScoreProfile">
+        <var name="id" type="string"/>
+        <var name="baseScore" type="int"/>
+        <var name="difficultyMul" type="float"/>
+        <var name="bossMul" type="float"/>
+        <var name="endlessGrowthMul" type="float"/>
+        <var name="roundTo" type="int"/>
+    </bean>
+    <table name="TbScoreProfile" value="ScoreProfile" index="id" input="score_profile.xlsx"/>
+
+    <!-- 胜利奖励包：固定金币 + 主奖励槽组 + 可选额外奖励槽组。 -->
+    <bean name="RewardPackage">
+        <var name="id" type="string"/>
+        <var name="goldMin" type="int"/>
+        <var name="goldMax" type="int"/>
+        <var name="mainSlotGroupId" type="string"/>
+        <var name="extraSlotGroupId" type="string"/>
+        <var name="extraChance" type="float"/>
+        <var name="fallbackGold" type="int"/>
+    </bean>
+    <table name="TbRewardPackage" value="RewardPackage" index="id" input="reward_package.xlsx"/>
+
+    <!-- 奖励槽：同 groupId 内按 weight 选一个槽，再按槽规则生成候选。 -->
+    <bean name="RewardSlot">
+        <var name="id" type="string"/>
+        <var name="groupId" type="string"/>
+        <var name="kind" type="RewardKind"/>
+        <var name="choiceCount" type="int"/>
+        <var name="weight" type="float"/>
+        <var name="poolId" type="string"/>
+        <var name="hiddenOffset" type="int"/>
+        <var name="fallbackGold" type="int"/>
+    </bean>
+    <table name="TbRewardSlot" value="RewardSlot" index="id" input="reward_slot.xlsx"/>
+
+    <!-- 奖励池筛选：qualityWeights 写 Common:70|Uncommon:25|Rare:5；specialTags 用 | 分隔。 -->
+    <bean name="RewardPool">
+        <var name="id" type="string"/>
+        <var name="kind" type="RewardPoolKind"/>
+        <var name="specialTags" type="string"/>
+        <var name="qualityWeights" type="string"/>
+        <var name="allowFallback" type="bool"/>
+        <var name="distanceFloor" type="int"/>
+    </bean>
+    <table name="TbRewardPool" value="RewardPool" index="id" input="reward_pool.xlsx"/>
+
+    <!-- 周/关卡：目标分、奖励包和隐藏分随进度推进；isBoss 为特殊天。 -->
     <bean name="Week">
         <var name="id" type="int"/>
-        <var name="requiredScore" type="int"/>
-        <var name="rewardType" type="string"/>
+        <var name="scoreProfileId" type="string"/>
+        <var name="rewardPackageId" type="string"/>
+        <var name="rewardHiddenScore" type="int"/>
         <var name="isBoss" type="bool"/>
         <var name="modifier" type="string"/>
     </bean>
