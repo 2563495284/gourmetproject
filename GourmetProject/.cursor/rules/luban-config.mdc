@@ -6,21 +6,28 @@ alwaysApply: false
 
 # Luban 配置
 
-配置源在 `GameConfig/`：XML schema 定义结构，**xlsx 表配置数据**。
+配置源在 `GameConfig/`：**表结构与数据都在 xlsx 里**，XML 只留极少量"被引用的类型"与表登记。
 **强制：数据表一律用 xlsx，禁止用 json 手写数据。** 运行时产物（`StreamingAssets/Config/*.json`）由 Luban 自动生成，属生成物，勿手改、勿提交当作源。
 
+## 结构来源（重要）
+- 所有 `<table>` 均用 `readSchemaFromFile="true"`：**表结构直接读 xlsx 表头的 `##var` + `##type` 两行**，不再在 XML 写 `<bean>`。改字段=只改 xlsx 表头。
+- 枚举集中在 `GameConfig/Datas/__enums__.xlsx`（在 `luban.conf` 以 `{"fileName":"Datas/__enums__.xlsx","type":"enum"}` 挂载），策划可自助增删枚举值。
+- XML（`Defines/gourmet.xml` 等）现在只保留：① 表登记 `<table ... readSchemaFromFile="true"/>`；② 被 `list,Bean` 引用的**子结构 bean**（如 `RecipeEntry`，它不是独立表，必须在 XML 定义且带 `sep=","`）。
+
 ## 新增一张表
-1. 在 `GameConfig/Defines/*.xml` 定义 `<bean>` 与 `<table>`，`input` 指向 xlsx：
+1. 在 `GameConfig/Datas/xxx.xlsx` 放数据并写全表头。第 1 列单元格作行类型标记：
+   - `##var` 行：字段名；数据行第 1 列留空。
+   - `##type` 行：**必填**（结构来源，已开 readSchemaFromFile）。类型如 `string`/`int`/`float`/`bool`/`list,string`/枚举名/`list,RecipeEntry`。
+   - `##comment` / `##` 行：注释（会被带进生成代码的字段文档，建议写）。
+   - 枚举值写名字字符串（如 `Inherent`）。
+2. 在 `GameConfig/Defines/*.xml` 加一行表登记（这一行省不掉，Luban 不会自动扫表）：
    ```xml
-   <table name="TbXxx" value="Xxx" index="id" input="xxx.xlsx"/>
+   <table name="TbXxx" value="Xxx" index="id" input="xxx.xlsx" readSchemaFromFile="true"/>
    ```
    - 指定 sheet：`input="xxx.xlsx@Sheet1"`；单例表用 `mode="one"`，xlsx 首列写 `##column` 走竖表。
-2. 在 `GameConfig/Datas/xxx.xlsx` 放数据。表头放在最前几行，第 1 列单元格作行类型标记：
-   - `##var` 行：字段名（与 schema `<var name>` 一致），数据行第 1 列留空。
-   - `##type` 行（可选）：类型，schema 已声明可省。
-   - `##` / `##comment` 行：注释，被忽略。
-   - 枚举写名字字符串（如 `Inherent`）。
-3. 多元素 list（本项目 Luban 版本已实测，务必遵守）：
+   - 若想连这行也搬进表：可改用 `Datas/__tables__.xlsx`（`type="table"` 挂载），加表=加一行。
+3. 新增枚举：在 `Datas/__enums__.xlsx` 加（表头两行 `##var` + 子字段 `name/alias/value/comment/tags`，参见现有内容）。被 C# 代码 `switch` 的枚举改名/改值会影响生成代码，谨慎。
+4. 多元素 list（本项目 Luban 版本已实测，务必遵守）：
    - 单格 `#sep=` / `(list#sep=…)` 与「横向流式多列」均**不生效**，不要用。
    - 多元素 list 用**多行模式**：字段名前加 `*`（如 `*shapeRows`、`*pool`）放在 ##var 行末（多行字段须是最后一列）。
      每个元素占一行，续行的所有前导字段列**留空**（靠 index 列是否为空区分记录）。
@@ -28,7 +35,7 @@ alwaysApply: false
      `<bean name="RecipeEntry" sep=","> … </bean>`，单元格写 `rice,150,0`。
    - 仅含 0/1 个元素的 list 可直接用单格，无需多行。
    - 转换/校验可参考脚本 `GameConfig/Tools/json_to_xlsx.py`。
-4. 生成：
+5. 生成：
    ```bash
    bash GameConfig/gen.sh
    ```
