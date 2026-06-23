@@ -11,6 +11,9 @@
 
 namespace cfg
 { 
+    /// <summary>
+    /// 标签分类：固有/唯一A/唯一B
+    /// </summary>
     public enum TagCategory
     {
         Inherent = 0,

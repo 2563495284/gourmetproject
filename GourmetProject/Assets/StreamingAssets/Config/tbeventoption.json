@@ -1,0 +1,34 @@
+[
+  {
+    "id": "opt_market_cheap",
+    "eventId": "ev_market",
+    "text": "省着点逛（+20 金币）",
+    "resultType": "GainGold",
+    "resultValue": 20,
+    "resultParam": ""
+  },
+  {
+    "id": "opt_market_spree",
+    "eventId": "ev_market",
+    "text": "大手笔扫货（+55 金币）",
+    "resultType": "GainGold",
+    "resultValue": 55,
+    "resultParam": ""
+  },
+  {
+    "id": "opt_gamble_small",
+    "eventId": "ev_gamble",
+    "text": "小赌怡情",
+    "resultType": "Gamble",
+    "resultValue": 30,
+    "resultParam": ""
+  },
+  {
+    "id": "opt_gamble_big",
+    "eventId": "ev_gamble",
+    "text": "豪赌一把",
+    "resultType": "Gamble",
+    "resultValue": 90,
+    "resultParam": ""
+  }
+]

@@ -13,6 +13,9 @@ using Luban.SimpleJSON;
 
 namespace cfg
 {
+/// <summary>
+/// 菜品本体：不随标签变化的物理属性（id/name/deliciousness/icon/allowRotate/shapeRows）。
+/// </summary>
 public partial class TbDishBase
 {
     private readonly System.Collections.Generic.Dictionary<string, DishBase> _dataMap;

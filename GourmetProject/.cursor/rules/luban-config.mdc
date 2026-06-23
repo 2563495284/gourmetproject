@@ -25,7 +25,8 @@ alwaysApply: false
    - 枚举值写名字字符串（如 `Inherent`）。
 2. 在 `GameConfig/Datas/__tables__.xlsx` **加一行**登记（Luban 不会自动扫表，这一行省不掉）：
    填 `full_name=TbXxx`、`value_type=Xxx`、`read_schema_from_file=True`、`input=xxx.xlsx`、`index=id`、`comment=...`。
-   - 多文件源：`input` 逗号分隔；指定 sheet：`xxx.xlsx@Sheet1`；单例表 `mode=one`，数据 xlsx 首列写 `##column` 走竖表。
+   - 多文件源：`input` 逗号分隔；指定 sheet：`Sheet1@xxx.xlsx`（**sheet 名在前、@ 后是文件**，sheet 的 A1 须以 `##` 开头才被当数据表）；单例表 `mode=one`，数据 xlsx 首列写 `##column` 走竖表。
+   - 多表同文件：一个 xlsx 放多个 sheet（每 sheet 一张表），各表 `input` 各写 `表sheet名@文件.xlsx` 即可（如 `dish_base@dish.xlsx`、`dish_variant@dish.xlsx`）。
 3. 新增枚举：在 `Datas/__enums__.xlsx` 加（表头两行 `##var` + 子字段 `name/alias/value/comment/tags`，照现有行往下加）。
 4. 新增子结构 bean：在 `Datas/__beans__.xlsx` 加（含 `sep` 列与 `*fields` 子字段 `name/alias/type/...`，照现有行加）。
 5. 多元素 list（本项目 Luban 版本已实测，务必遵守）：

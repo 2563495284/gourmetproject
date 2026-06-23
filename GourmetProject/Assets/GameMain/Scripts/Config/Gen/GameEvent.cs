@@ -23,6 +23,9 @@ public sealed partial class GameEvent : Luban.BeanBase
         { if(!_buf["timeCost"].IsNumber) { throw new SerializationException(); }  TimeCost = _buf["timeCost"]; }
         { if(!_buf["effectType"].IsString) { throw new SerializationException(); }  EffectType = _buf["effectType"]; }
         { if(!_buf["effectValue"].IsNumber) { throw new SerializationException(); }  EffectValue = _buf["effectValue"]; }
+        { if(!_buf["category"].IsString) { throw new SerializationException(); }  Category = _buf["category"]; }
+        { if(!_buf["repeatable"].IsBoolean) { throw new SerializationException(); }  Repeatable = _buf["repeatable"]; }
+        { if(!_buf["preconditions"].IsString) { throw new SerializationException(); }  Preconditions = _buf["preconditions"]; }
     }
 
     public static GameEvent DeserializeGameEvent(JSONNode _buf)
@@ -36,6 +39,9 @@ public sealed partial class GameEvent : Luban.BeanBase
     public readonly int TimeCost;
     public readonly string EffectType;
     public readonly float EffectValue;
+    public readonly string Category;
+    public readonly bool Repeatable;
+    public readonly string Preconditions;
    
     public const int __ID__ = -1313800792;
     public override int GetTypeId() => __ID__;
@@ -53,6 +59,9 @@ public sealed partial class GameEvent : Luban.BeanBase
         + "timeCost:" + TimeCost + ","
         + "effectType:" + EffectType + ","
         + "effectValue:" + EffectValue + ","
+        + "category:" + Category + ","
+        + "repeatable:" + Repeatable + ","
+        + "preconditions:" + Preconditions + ","
         + "}";
     }
 }

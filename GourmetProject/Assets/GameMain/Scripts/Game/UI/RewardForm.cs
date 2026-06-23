@@ -24,7 +24,6 @@ namespace GourmetProject.Game.UI
         [SerializeField] private Button _menuButton;
 
         private GameRun _run;
-        private bool _isFinalWeek;
         private RewardOffer _offer;
         private RewardChoice _selectedMain;
         private RewardChoice _selectedExtra;
@@ -57,11 +56,11 @@ namespace GourmetProject.Game.UI
             int total = session != null && session.IsSettled ? session.LastResult.Total : 0;
             int target = session?.RequiredScore ?? _run.RequiredScore;
 
-            IRandomStream rng = GameApp.Random.Stream($"reward_w{_run.WeekIndex}");
+            // 一周内可能多次发奖（多场美食/Boss），按周+天派生独立随机流避免重复同一份奖励。
+            IRandomStream rng = GameApp.Random.Stream($"reward_w{_run.WeekIndex}_d{_run.CurrentDay}");
             _offer = RewardGranter.GenerateOffer(_run, _run.CurrentWeek, rng);
             _selectedMain = FirstOrDefault(_offer.MainChoices);
             _selectedExtra = FirstOrDefault(_offer.ExtraChoices);
-            _isFinalWeek = !_run.HasNextWeek;
             _rewardApplied = false;
             _appliedRewardText = string.Empty;
             _lastTotal = total;
@@ -72,25 +71,19 @@ namespace GourmetProject.Game.UI
 
         private void RefreshOffer()
         {
-            _titleText.text = _isFinalWeek ? "通关！" : $"第 {_run.WeekIndex} 周 · 过关！";
+            _titleText.text = "美食达成！";
             _scoreText.text = $"得分 {_lastTotal} / 目标 {_lastTarget}";
             _rewardText.text = _rewardApplied
                 ? _appliedRewardText
                 : $"固定奖励：金币 +{_offer.BaseGold}\n请选择主奖励{(_offer.HasExtraChoices ? "和额外奖励" : string.Empty)}。";
             _goldText.text = _rewardApplied ? $"当前金币 {_run.Gold}" : $"当前金币 {_run.Gold}（领取后 +{_offer.BaseGold}）";
 
-            // 配置周打完后进入（或继续）无尽模式或返回菜单；否则只给「进入下一周」。
-            _continueButton.gameObject.SetActive(!_isFinalWeek);
-            _endlessButton.gameObject.SetActive(_isFinalWeek);
-            _menuButton.gameObject.SetActive(_isFinalWeek);
+            // 行动轴模型下发奖不再推进周；只保留「领取并继续」单按钮。
+            _continueButton.gameObject.SetActive(true);
+            _endlessButton.gameObject.SetActive(false);
+            _menuButton.gameObject.SetActive(false);
 
-            SetButtonLabel(_continueButton, _rewardApplied ? "进入下一周" : "领取并进入下一周");
-            SetButtonLabel(_menuButton, _rewardApplied ? "返回菜单" : "领取并返回菜单");
-            if (_isFinalWeek)
-            {
-                string endlessText = _run.IsEndless ? "继续挑战" : "进入无尽模式";
-                SetButtonLabel(_endlessButton, _rewardApplied ? endlessText : $"领取并{endlessText}");
-            }
+            SetButtonLabel(_continueButton, _rewardApplied ? "继续" : "领取奖励");
 
             RebuildChoiceButtons();
         }
@@ -98,20 +91,17 @@ namespace GourmetProject.Game.UI
         private void OnContinue()
         {
             ApplySelectedRewardIfNeeded();
-            _run.WeekIndex++;
-            _run.RequiredScoreOverride = -1;
             RunPersistence.Save(_run);
             Close();
-            BattleForm.Active?.BeginWeek();
+            BattleForm.Active?.OnRewardConfirmed();
         }
 
         private void OnReturnMenu()
         {
             ApplySelectedRewardIfNeeded();
-            // 保留存档，便于之后从主菜单「继续游戏」回到无尽进度。
             RunPersistence.Save(_run);
             Close();
-            GameplayFlowSignal.RequestReturnToMenu();
+            BattleForm.Active?.OnRewardConfirmed();
         }
 
         private void Close()

@@ -30,11 +30,29 @@ public sealed partial class StomachFragment : Luban.BeanBase
         return new StomachFragment(_buf);
     }
 
+    /// <summary>
+    /// 胃碎片ID
+    /// </summary>
     public readonly string Id;
+    /// <summary>
+    /// 出现隐藏分下限
+    /// </summary>
     public readonly int HiddenMin;
+    /// <summary>
+    /// 出现隐藏分上限
+    /// </summary>
     public readonly int HiddenMax;
+    /// <summary>
+    /// 随机基础权重
+    /// </summary>
     public readonly float BaseWeight;
+    /// <summary>
+    /// 商店价格
+    /// </summary>
     public readonly int Price;
+    /// <summary>
+    /// 碎片形状行列表
+    /// </summary>
     public readonly System.Collections.Generic.List<string> ShapeRows;
    
     public const int __ID__ = -328277129;

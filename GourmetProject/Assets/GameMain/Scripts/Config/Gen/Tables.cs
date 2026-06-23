@@ -14,26 +14,93 @@ namespace cfg
 {
 public partial class Tables
 {
-    public TbGlobalConst TbGlobalConst {get; }
+    /// <summary>
+    /// 菜品本体：不随标签变化的物理属性（id/name/deliciousness/icon/allowRotate/shapeRows）。
+    /// </summary>
     public TbDishBase TbDishBase {get; }
+    /// <summary>
+    /// 菜品变体：随机菜品库条目。引用本体+标签组合+隐藏分/权重/价格。同 baseId 不同变体=带不同标签视为不同菜品。aTagId/bTagId 空串=唯一标签槽为空。
+    /// </summary>
     public TbDishVariant TbDishVariant {get; }
+    /// <summary>
+    /// 标签（技能）。category 区分固有/唯一A/唯一B；termId 非空时菜品详情额外展示该名词。
+    /// </summary>
     public TbTag TbTag {get; }
+    /// <summary>
+    /// 专有名词：菜品详情右侧框单独解释。
+    /// </summary>
     public TbTerm TbTerm {get; }
+    /// <summary>
+    /// 角色：initialFragmentId 指向初始胃形状(碎片库)；maxStomachWidth/Height 为胃最大包围盒。
+    /// </summary>
     public TbCharacter TbCharacter {get; }
+    /// <summary>
+    /// 胃部碎片库：也用作初始胃形状来源。碎片不旋转(1x2 与 2x1 视为两个碎片)。&#39;X&#39;=存在格。
+    /// </summary>
     public TbStomachFragment TbStomachFragment {get; }
+    /// <summary>
+    /// 碎片格强化标签：一行=碎片某格(x,y)挂一个标签 id（引用 TbTag）。
+    /// </summary>
     public TbFragmentCellTag TbFragmentCellTag {get; }
+    /// <summary>
+    /// 菜谱：固定菜品+加权放回随机池(pool: list,RecipeEntry)，随机到累计初始分&gt;=requiredInitScore 为止。
+    /// </summary>
     public TbRecipe TbRecipe {get; }
+    /// <summary>
+    /// 道具：被动常驻/主动可触发。specialTags 用 | 分隔，空串=无。acquireLimit/holdLimit&lt;=0 无限制；consumeOnUse 仅主动道具生效。
+    /// </summary>
     public TbItem TbItem {get; }
+    /// <summary>
+    /// 目标分曲线：周/关卡引用它生成本局要求分，无尽模式沿用最后一周曲线增长。
+    /// </summary>
     public TbScoreProfile TbScoreProfile {get; }
+    /// <summary>
+    /// 胜利奖励包：固定金币+主奖励槽组+可选额外奖励槽组。
+    /// </summary>
     public TbRewardPackage TbRewardPackage {get; }
+    /// <summary>
+    /// 奖励槽：同 groupId 内按 weight 选一个槽，再按槽规则生成候选。
+    /// </summary>
     public TbRewardSlot TbRewardSlot {get; }
+    /// <summary>
+    /// 奖励池筛选：qualityWeights 写 Common:70|Uncommon:25|Rare:5；specialTags 用 | 分隔。
+    /// </summary>
     public TbRewardPool TbRewardPool {get; }
+    /// <summary>
+    /// 周/关卡：目标分、奖励包和隐藏分随进度推进；isBoss 为特殊天。
+    /// </summary>
     public TbWeek TbWeek {get; }
+    /// <summary>
+    /// 事件：行动/节点触发的局外事件。effectType/effectValue 为无选项快捷事件直接结算；若 TbEventOption 有该 eventId 选项则改弹选项。repeatable=false 命中后写入 UsedEventIds。
+    /// </summary>
     public TbEvent TbEvent {get; }
+    /// <summary>
+    /// 事件选项：同 eventId 多行=该事件可选项。resultType/resultValue/resultParam 由 EventService 分发结算。
+    /// </summary>
+    public TbEventOption TbEventOption {get; }
+    /// <summary>
+    /// 行动（三选一）：行动轴每步从满足条件的行动按权重随机3个。actionType 决定执行分支；costDays 推进天数；repeatable=false 命中后写入 UsedActionIds；linkId：Event→TbEvent，Food→TbScoreProfile。
+    /// </summary>
+    public TbAction TbAction {get; }
+    /// <summary>
+    /// 行动轴库：按周筛选(weekFilter:空=任意/normal/boss/逗号分隔周号)后按 weight 随机一条。baseLengthDays 为轴长度。
+    /// </summary>
+    public TbTimeline TbTimeline {get; }
+    /// <summary>
+    /// 行动轴节点：同 timelineId 多行=该轴节点。day 为整天位置(1..baseLengthDays)。interest:payloadValue=利息阈值N,payloadParam=每阈值金币数;shop:无;boss:payloadParam=Boss池筛选;event:payloadParam=指定事件id。
+    /// </summary>
+    public TbTimelineNode TbTimelineNode {get; }
+    /// <summary>
+    /// Boss：Boss节点按权重随机。characterPool 空=任意角色；week=0 任意周；unlockCondition 空=默认解锁；scoreProfileId 空=用当前周曲线；modifier 为特殊机制(limit_serve/small_board…)。
+    /// </summary>
+    public TbBoss TbBoss {get; }
+    /// <summary>
+    /// GlobalConst：跑通 Luban 接入用的占位表（与玩法无关）。
+    /// </summary>
+    public TbGlobalConst TbGlobalConst {get; }
 
     public Tables(System.Func<string, JSONNode> loader)
     {
-        TbGlobalConst = new TbGlobalConst(loader("tbglobalconst"));
         TbDishBase = new TbDishBase(loader("tbdishbase"));
         TbDishVariant = new TbDishVariant(loader("tbdishvariant"));
         TbTag = new TbTag(loader("tbtag"));
@@ -49,12 +116,17 @@ public partial class Tables
         TbRewardPool = new TbRewardPool(loader("tbrewardpool"));
         TbWeek = new TbWeek(loader("tbweek"));
         TbEvent = new TbEvent(loader("tbevent"));
+        TbEventOption = new TbEventOption(loader("tbeventoption"));
+        TbAction = new TbAction(loader("tbaction"));
+        TbTimeline = new TbTimeline(loader("tbtimeline"));
+        TbTimelineNode = new TbTimelineNode(loader("tbtimelinenode"));
+        TbBoss = new TbBoss(loader("tbboss"));
+        TbGlobalConst = new TbGlobalConst(loader("tbglobalconst"));
         ResolveRef();
     }
     
     private void ResolveRef()
     {
-        TbGlobalConst.ResolveRef(this);
         TbDishBase.ResolveRef(this);
         TbDishVariant.ResolveRef(this);
         TbTag.ResolveRef(this);
@@ -70,6 +142,12 @@ public partial class Tables
         TbRewardPool.ResolveRef(this);
         TbWeek.ResolveRef(this);
         TbEvent.ResolveRef(this);
+        TbEventOption.ResolveRef(this);
+        TbAction.ResolveRef(this);
+        TbTimeline.ResolveRef(this);
+        TbTimelineNode.ResolveRef(this);
+        TbBoss.ResolveRef(this);
+        TbGlobalConst.ResolveRef(this);
     }
 }
 

@@ -13,6 +13,9 @@ using Luban.SimpleJSON;
 
 namespace cfg
 {
+/// <summary>
+/// 道具：被动常驻/主动可触发。specialTags 用 | 分隔，空串=无。acquireLimit/holdLimit&lt;=0 无限制；consumeOnUse 仅主动道具生效。
+/// </summary>
 public partial class TbItem
 {
     private readonly System.Collections.Generic.Dictionary<string, Item> _dataMap;

@@ -14,7 +14,7 @@ namespace GourmetProject.Game.Gameplay
     /// 一次肉鸽运行（局外状态）：角色、周进度、金币、道具，以及玩法静态数据库。
     /// 负责为「当前周」构建局内战斗会话。可被存档（见阶段 5 的 RunSaveData）。
     /// </summary>
-    public sealed class GameRun
+    public sealed class GameRun : IPreconditionContext
     {
         public const int BoardWidth = 4;
         public const int BoardHeight = 4;
@@ -24,6 +24,12 @@ namespace GourmetProject.Game.Gameplay
         private readonly List<RunItemState> _items = new List<RunItemState>();
         private readonly List<string> _bonusDishIds = new List<string>();
         private readonly List<string> _stomachFragmentIds = new List<string>();
+
+        // —— 行动轴状态 ——
+        private readonly List<string> _triggeredNodeIds = new List<string>();
+        private readonly List<string> _usedEventIds = new List<string>();
+        private readonly List<string> _usedActionIds = new List<string>();
+        private readonly List<string> _completedBossIds = new List<string>();
 
         public GameRun(cfg.Tables tables, GameplayDatabase database, string characterId, string seedText, int weekIndex = 1)
         {
@@ -64,6 +70,74 @@ namespace GourmetProject.Game.Gameplay
 
         /// <summary>本周要求分的临时覆盖（&lt;0 表示无覆盖）。事件「歇业」等可降低本周目标。</summary>
         public int RequiredScoreOverride { get; set; } = -1;
+
+        // —— 行动轴运行状态 ——
+        /// <summary>本周行动轴 id。</summary>
+        public string CurrentTimelineId { get; set; } = string.Empty;
+
+        /// <summary>本周行动轴长度（天）。</summary>
+        public int TimelineLengthDays { get; set; }
+
+        /// <summary>当前天数游标（0..TimelineLengthDays）。</summary>
+        public int CurrentDay { get; set; }
+
+        public IReadOnlyList<string> TriggeredNodeIds => _triggeredNodeIds;
+
+        public IReadOnlyList<string> UsedEventIds => _usedEventIds;
+
+        public IReadOnlyList<string> UsedActionIds => _usedActionIds;
+
+        public IReadOnlyList<string> CompletedBossIds => _completedBossIds;
+
+        public bool IsNodeTriggered(string nodeId) => !string.IsNullOrEmpty(nodeId) && _triggeredNodeIds.Contains(nodeId);
+
+        public void MarkNodeTriggered(string nodeId)
+        {
+            if (!string.IsNullOrEmpty(nodeId) && !_triggeredNodeIds.Contains(nodeId))
+            {
+                _triggeredNodeIds.Add(nodeId);
+            }
+        }
+
+        public bool IsEventUsed(string eventId) => !string.IsNullOrEmpty(eventId) && _usedEventIds.Contains(eventId);
+
+        public void MarkEventUsed(string eventId)
+        {
+            if (!string.IsNullOrEmpty(eventId) && !_usedEventIds.Contains(eventId))
+            {
+                _usedEventIds.Add(eventId);
+            }
+        }
+
+        public bool IsActionUsed(string actionId) => !string.IsNullOrEmpty(actionId) && _usedActionIds.Contains(actionId);
+
+        public void MarkActionUsed(string actionId)
+        {
+            if (!string.IsNullOrEmpty(actionId) && !_usedActionIds.Contains(actionId))
+            {
+                _usedActionIds.Add(actionId);
+            }
+        }
+
+        public bool IsBossCompleted(string bossId) => !string.IsNullOrEmpty(bossId) && _completedBossIds.Contains(bossId);
+
+        public void MarkBossCompleted(string bossId)
+        {
+            if (!string.IsNullOrEmpty(bossId) && !_completedBossIds.Contains(bossId))
+            {
+                _completedBossIds.Add(bossId);
+            }
+        }
+
+        /// <summary>开始一条新的本周行动轴：重置天数游标、节点结算记录与本周行动使用记录。</summary>
+        public void BeginTimeline(string timelineId, int lengthDays)
+        {
+            CurrentTimelineId = timelineId ?? string.Empty;
+            TimelineLengthDays = lengthDays;
+            CurrentDay = 0;
+            _triggeredNodeIds.Clear();
+            _usedActionIds.Clear();
+        }
 
         public cfg.Week CurrentWeek => _tables.TbWeek.GetOrDefault(WeekIndex);
 
@@ -121,7 +195,11 @@ namespace GourmetProject.Game.Gameplay
 
         private int ComputeRequiredScore(cfg.Week week, int endlessExtra)
         {
-            cfg.ScoreProfile profile = CurrentScoreProfile(week);
+            return ComputeRequiredScore(CurrentScoreProfile(week), week != null && week.IsBoss, endlessExtra);
+        }
+
+        private int ComputeRequiredScore(cfg.ScoreProfile profile, bool boss, int endlessExtra)
+        {
             if (profile == null)
             {
                 return 100;
@@ -129,7 +207,7 @@ namespace GourmetProject.Game.Gameplay
 
             double value = profile.BaseScore;
             value *= profile.DifficultyMul > 0f ? profile.DifficultyMul : 1f;
-            if (week.IsBoss)
+            if (boss)
             {
                 value *= profile.BossMul > 0f ? profile.BossMul : 1f;
             }
@@ -176,6 +254,13 @@ namespace GourmetProject.Game.Gameplay
                 Items = items,
                 BonusDishIds = new List<string>(_bonusDishIds),
                 StomachFragmentIds = new List<string>(_stomachFragmentIds),
+                CurrentTimelineId = CurrentTimelineId,
+                TimelineLengthDays = TimelineLengthDays,
+                CurrentDay = CurrentDay,
+                TriggeredNodeIds = new List<string>(_triggeredNodeIds),
+                UsedEventIds = new List<string>(_usedEventIds),
+                UsedActionIds = new List<string>(_usedActionIds),
+                CompletedBossIds = new List<string>(_completedBossIds),
                 ItemIds = legacyItemIds,
             };
         }
@@ -215,6 +300,29 @@ namespace GourmetProject.Game.Gameplay
                 run._stomachFragmentIds.AddRange(data.StomachFragmentIds);
             }
 
+            run.CurrentTimelineId = data.CurrentTimelineId ?? string.Empty;
+            run.TimelineLengthDays = data.TimelineLengthDays;
+            run.CurrentDay = data.CurrentDay;
+            if (data.TriggeredNodeIds != null)
+            {
+                run._triggeredNodeIds.AddRange(data.TriggeredNodeIds);
+            }
+
+            if (data.UsedEventIds != null)
+            {
+                run._usedEventIds.AddRange(data.UsedEventIds);
+            }
+
+            if (data.UsedActionIds != null)
+            {
+                run._usedActionIds.AddRange(data.UsedActionIds);
+            }
+
+            if (data.CompletedBossIds != null)
+            {
+                run._completedBossIds.AddRange(data.CompletedBossIds);
+            }
+
             return run;
         }
 
@@ -222,10 +330,14 @@ namespace GourmetProject.Game.Gameplay
 
         public bool HasNextWeek => WeekIndex < TotalWeeks;
 
-        /// <summary>为当前周构建一局战斗。菜谱、上菜都走以周编号命名的确定性随机流。</summary>
-        public BattleSession BuildBattleSession()
+        /// <summary>
+        /// 构建一局美食挑战战斗。<paramref name="requiredScore"/> 目标分、<paramref name="modifier"/> 特殊机制、
+        /// <paramref name="key"/> 用于派生确定性随机流（同一周内不同天/不同战斗需用不同 key 才能各自独立复现）。
+        /// </summary>
+        public BattleSession BuildBattleSession(int requiredScore, string modifier, string key)
         {
             ResetBattleItemUseCounts();
+            modifier ??= string.Empty;
 
             cfg.Character character = _tables.TbCharacter.GetOrDefault(CharacterId);
             string recipeId = character?.InitialRecipeId;
@@ -234,7 +346,7 @@ namespace GourmetProject.Game.Gameplay
             var slots = new List<RecipeSlot>(RecipeSlotCount);
             if (recipe != null)
             {
-                var recipeStream = GameApp.Random.Stream($"recipe_w{WeekIndex}");
+                var recipeStream = GameApp.Random.Stream($"recipe_{key}");
                 for (int i = 0; i < RecipeSlotCount; i++)
                 {
                     List<string> deck = RecipeRoller.Roll(recipe, Database, recipeStream);
@@ -254,11 +366,10 @@ namespace GourmetProject.Game.Gameplay
                 Log.Warning($"Character '{CharacterId}' has no valid recipe '{recipeId}'.", "GameRun");
             }
 
-            string modifier = CurrentWeek?.Modifier ?? string.Empty;
             GpBoard board = BuildBoard(character, modifier);
 
-            var battleStream = GameApp.Random.Stream($"battle_w{WeekIndex}");
-            var session = new BattleSession(board, Database, battleStream, slots, RequiredScore);
+            var battleStream = GameApp.Random.Stream($"battle_{key}");
+            var session = new BattleSession(board, Database, battleStream, slots, requiredScore);
 
             if (modifier == "limit_serve")
             {
@@ -267,6 +378,28 @@ namespace GourmetProject.Game.Gameplay
 
             ApplyPassiveItems(session);
             return session;
+        }
+
+        /// <summary>美食行动目标分：当前周目标分 × 倍率（倍率 &lt;= 0 视为 1）。</summary>
+        public int ComputeFoodRequiredScore(float multiplier)
+        {
+            if (multiplier <= 0f)
+            {
+                multiplier = 1f;
+            }
+
+            int baseReq = RequiredScore;
+            return System.Math.Max(1, (int)System.Math.Round(baseReq * multiplier, System.MidpointRounding.AwayFromZero));
+        }
+
+        /// <summary>Boss 目标分：用指定分数曲线（空则用当前周曲线），强制应用 Boss 倍率。</summary>
+        public int ComputeBossRequiredScore(string scoreProfileId)
+        {
+            cfg.ScoreProfile profile = !string.IsNullOrEmpty(scoreProfileId)
+                ? _tables.TbScoreProfile.GetOrDefault(scoreProfileId)
+                : CurrentScoreProfile(CurrentWeek ?? LastConfiguredWeek);
+            int endlessExtra = IsEndless ? System.Math.Max(1, WeekIndex - TotalWeeks) : 0;
+            return ComputeRequiredScore(profile, true, endlessExtra);
         }
 
         /// <summary>
@@ -394,6 +527,12 @@ namespace GourmetProject.Game.Gameplay
 
             _bonusDishIds.Add(dishId);
             return true;
+        }
+
+        /// <summary>从菜谱奖励池移除一道菜（商店删菜）。</summary>
+        public bool RemoveBonusDish(string dishId)
+        {
+            return _bonusDishIds.Remove(dishId);
         }
 
         public bool AddStomachFragment(string fragmentId)

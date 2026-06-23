@@ -27,8 +27,17 @@ public sealed partial class Term : Luban.BeanBase
         return new Term(_buf);
     }
 
+    /// <summary>
+    /// 术语ID
+    /// </summary>
     public readonly string Id;
+    /// <summary>
+    /// 术语名称
+    /// </summary>
     public readonly string Name;
+    /// <summary>
+    /// 术语解释
+    /// </summary>
     public readonly string Desc;
    
     public const int __ID__ = 2603148;

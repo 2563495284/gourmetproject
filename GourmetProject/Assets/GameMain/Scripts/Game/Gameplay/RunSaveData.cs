@@ -18,6 +18,28 @@ namespace GourmetProject.Game.Gameplay
         public List<string> BonusDishIds = new List<string>();
         public List<string> StomachFragmentIds = new List<string>();
 
+        // —— 行动轴状态（局外核心循环）——
+        /// <summary>本周行动轴 id（用于读档时按配置重建节点）。</summary>
+        public string CurrentTimelineId;
+
+        /// <summary>本周行动轴长度（天）。</summary>
+        public int TimelineLengthDays;
+
+        /// <summary>当前天数游标（0..TimelineLengthDays）。</summary>
+        public int CurrentDay;
+
+        /// <summary>本周已结算的节点 id。</summary>
+        public List<string> TriggeredNodeIds = new List<string>();
+
+        /// <summary>不可重复事件命中记录（整局）。</summary>
+        public List<string> UsedEventIds = new List<string>();
+
+        /// <summary>不可重复行动命中记录（本周内）。</summary>
+        public List<string> UsedActionIds = new List<string>();
+
+        /// <summary>已通关 Boss id（整局，含最终胜利判定）。</summary>
+        public List<string> CompletedBossIds = new List<string>();
+
         /// <summary>旧存档兼容字段：曾经只保存道具 id，读档时会迁移为 Items。</summary>
         public List<string> ItemIds = new List<string>();
     }

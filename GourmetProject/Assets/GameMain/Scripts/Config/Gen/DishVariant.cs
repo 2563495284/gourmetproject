@@ -34,15 +34,45 @@ public sealed partial class DishVariant : Luban.BeanBase
         return new DishVariant(_buf);
     }
 
+    /// <summary>
+    /// 菜品变体ID
+    /// </summary>
     public readonly string Id;
+    /// <summary>
+    /// 引用的菜品基础ID
+    /// </summary>
     public readonly string BaseId;
+    /// <summary>
+    /// 唯一A标签ID
+    /// </summary>
     public readonly string ATagId;
+    /// <summary>
+    /// 唯一B标签ID
+    /// </summary>
     public readonly string BTagId;
+    /// <summary>
+    /// 出现隐藏分下限
+    /// </summary>
     public readonly int HiddenMin;
+    /// <summary>
+    /// 出现隐藏分上限
+    /// </summary>
     public readonly int HiddenMax;
+    /// <summary>
+    /// 随机基础权重
+    /// </summary>
     public readonly float BaseWeight;
+    /// <summary>
+    /// 商店价格
+    /// </summary>
     public readonly int Price;
+    /// <summary>
+    /// 最大刷新出现次数
+    /// </summary>
     public readonly int MaxRollCount;
+    /// <summary>
+    /// 固有标签ID列表
+    /// </summary>
     public readonly System.Collections.Generic.List<string> InherentTags;
    
     public const int __ID__ = -26435221;

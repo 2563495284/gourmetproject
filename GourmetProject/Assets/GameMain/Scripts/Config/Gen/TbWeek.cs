@@ -13,6 +13,9 @@ using Luban.SimpleJSON;
 
 namespace cfg
 {
+/// <summary>
+/// 周/关卡：目标分、奖励包和隐藏分随进度推进；isBoss 为特殊天。
+/// </summary>
 public partial class TbWeek
 {
     private readonly System.Collections.Generic.Dictionary<int, Week> _dataMap;

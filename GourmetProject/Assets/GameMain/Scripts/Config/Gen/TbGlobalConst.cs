@@ -13,6 +13,9 @@ using Luban.SimpleJSON;
 
 namespace cfg
 {
+/// <summary>
+/// GlobalConst：跑通 Luban 接入用的占位表（与玩法无关）。
+/// </summary>
 public partial class TbGlobalConst
 {
     private readonly System.Collections.Generic.Dictionary<string, GlobalConst> _dataMap;

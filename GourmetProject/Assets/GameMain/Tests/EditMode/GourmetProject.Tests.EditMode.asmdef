@@ -5,7 +5,8 @@
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
         "GourmetProject.Core",
-        "GourmetProject.Gameplay"
+        "GourmetProject.Gameplay",
+        "GourmetProject.Game"
     ],
     "includePlatforms": [
         "Editor"

@@ -17,9 +17,20 @@ namespace GourmetProject.Game.UI
 
         public void Bind(cfg.GameEvent ev, Action onPick)
         {
-            _nameText.text = ev.Name;
-            _descText.text = ev.Desc;
-            _timeText.text = $"耗时 {ev.TimeCost}";
+            Bind(ev.Name, ev.Desc, ev.TimeCost, onPick);
+        }
+
+        /// <summary>行动轴「三选一行动」绑定。</summary>
+        public void Bind(cfg.GameAction action, Action onPick)
+        {
+            Bind(action.Name, action.Desc, action.CostDays, onPick);
+        }
+
+        public void Bind(string name, string desc, int costDays, Action onPick)
+        {
+            _nameText.text = name;
+            _descText.text = desc;
+            _timeText.text = $"耗时 {costDays} 天";
 
             _pickButton.onClick.RemoveAllListeners();
             _pickButton.onClick.AddListener(() => onPick?.Invoke());

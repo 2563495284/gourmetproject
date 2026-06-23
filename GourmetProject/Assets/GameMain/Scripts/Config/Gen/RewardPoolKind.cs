@@ -11,6 +11,9 @@
 
 namespace cfg
 { 
+    /// <summary>
+    /// 奖励池种类
+    /// </summary>
     public enum RewardPoolKind
     {
         Dish = 0,

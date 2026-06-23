@@ -30,11 +30,29 @@ public sealed partial class DishBase : Luban.BeanBase
         return new DishBase(_buf);
     }
 
+    /// <summary>
+    /// 菜品基础ID
+    /// </summary>
     public readonly string Id;
+    /// <summary>
+    /// 菜品名称
+    /// </summary>
     public readonly string Name;
+    /// <summary>
+    /// 基础美味度
+    /// </summary>
     public readonly int Deliciousness;
+    /// <summary>
+    /// 图标资源路径
+    /// </summary>
     public readonly string Icon;
+    /// <summary>
+    /// 是否允许旋转摆放
+    /// </summary>
     public readonly bool AllowRotate;
+    /// <summary>
+    /// 菜品形状行列表
+    /// </summary>
     public readonly System.Collections.Generic.List<string> ShapeRows;
    
     public const int __ID__ = 341086123;

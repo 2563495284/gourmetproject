@@ -13,6 +13,9 @@ using Luban.SimpleJSON;
 
 namespace cfg
 {
+/// <summary>
+/// 奖励槽：同 groupId 内按 weight 选一个槽，再按槽规则生成候选。
+/// </summary>
 public partial class TbRewardSlot
 {
     private readonly System.Collections.Generic.Dictionary<string, RewardSlot> _dataMap;

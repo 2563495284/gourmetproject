@@ -19,8 +19,8 @@ public sealed partial class Recipe : Luban.BeanBase
     {
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
         { var __json0 = _buf["fixedDishes"]; if(!__json0.IsArray) { throw new SerializationException(); } FixedDishes = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  FixedDishes.Add(__v0); }   }
-        { var __json0 = _buf["pool"]; if(!__json0.IsArray) { throw new SerializationException(); } Pool = new System.Collections.Generic.List<RecipeEntry>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { RecipeEntry __v0;  { if(!__e0.IsObject) { throw new SerializationException(); }  __v0 = global::cfg.RecipeEntry.DeserializeRecipeEntry(__e0);  }  Pool.Add(__v0); }   }
         { if(!_buf["requiredInitScore"].IsNumber) { throw new SerializationException(); }  RequiredInitScore = _buf["requiredInitScore"]; }
+        { var __json0 = _buf["pool"]; if(!__json0.IsArray) { throw new SerializationException(); } Pool = new System.Collections.Generic.List<RecipeEntry>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { RecipeEntry __v0;  { if(!__e0.IsObject) { throw new SerializationException(); }  __v0 = global::cfg.RecipeEntry.DeserializeRecipeEntry(__e0);  }  Pool.Add(__v0); }   }
     }
 
     public static Recipe DeserializeRecipe(JSONNode _buf)
@@ -28,10 +28,22 @@ public sealed partial class Recipe : Luban.BeanBase
         return new Recipe(_buf);
     }
 
+    /// <summary>
+    /// 菜谱ID
+    /// </summary>
     public readonly string Id;
+    /// <summary>
+    /// 固定初始菜品ID列表
+    /// </summary>
     public readonly System.Collections.Generic.List<string> FixedDishes;
-    public readonly System.Collections.Generic.List<RecipeEntry> Pool;
+    /// <summary>
+    /// 初始要求分
+    /// </summary>
     public readonly int RequiredInitScore;
+    /// <summary>
+    /// 随机菜品池条目列表
+    /// </summary>
+    public readonly System.Collections.Generic.List<RecipeEntry> Pool;
    
     public const int __ID__ = -1851047506;
     public override int GetTypeId() => __ID__;
@@ -46,8 +58,8 @@ public sealed partial class Recipe : Luban.BeanBase
         return "{ "
         + "id:" + Id + ","
         + "fixedDishes:" + Luban.StringUtil.CollectionToString(FixedDishes) + ","
-        + "pool:" + Luban.StringUtil.CollectionToString(Pool) + ","
         + "requiredInitScore:" + RequiredInitScore + ","
+        + "pool:" + Luban.StringUtil.CollectionToString(Pool) + ","
         + "}";
     }
 }

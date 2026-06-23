@@ -11,6 +11,9 @@
 
 namespace cfg
 { 
+    /// <summary>
+    /// 道具触发时机
+    /// </summary>
     public enum ItemTriggerTiming
     {
         None = 0,

@@ -16,8 +16,14 @@ namespace GourmetProject.Game.UI
 
         public void Bind(cfg.Item item, int price, bool affordable, Action onBuy)
         {
-            _nameText.text = item.Name;
-            _descText.text = item.Desc;
+            Bind(item.Name, item.Desc, price, affordable, onBuy);
+        }
+
+        /// <summary>通用商品绑定（被动道具 / 菜品 / 胃部碎片）。</summary>
+        public void Bind(string name, string desc, int price, bool affordable, Action onBuy)
+        {
+            _nameText.text = name;
+            _descText.text = desc;
 
             Text label = _buyButton.GetComponentInChildren<Text>();
             if (label != null)

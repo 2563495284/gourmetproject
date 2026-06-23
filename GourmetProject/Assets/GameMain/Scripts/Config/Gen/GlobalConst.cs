@@ -28,9 +28,21 @@ public sealed partial class GlobalConst : Luban.BeanBase
         return new GlobalConst(_buf);
     }
 
+    /// <summary>
+    /// 常量ID
+    /// </summary>
     public readonly string Id;
+    /// <summary>
+    /// 整数值
+    /// </summary>
     public readonly int IntValue;
+    /// <summary>
+    /// 浮点值
+    /// </summary>
     public readonly float FloatValue;
+    /// <summary>
+    /// 说明
+    /// </summary>
     public readonly string Desc;
    
     public const int __ID__ = 800373088;

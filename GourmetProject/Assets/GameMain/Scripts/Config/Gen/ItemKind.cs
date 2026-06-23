@@ -11,6 +11,9 @@
 
 namespace cfg
 { 
+    /// <summary>
+    /// 道具类型：被动/主动
+    /// </summary>
     public enum ItemKind
     {
         Passive = 0,

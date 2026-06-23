@@ -31,12 +31,33 @@ public sealed partial class RewardPackage : Luban.BeanBase
         return new RewardPackage(_buf);
     }
 
+    /// <summary>
+    /// 奖励包ID
+    /// </summary>
     public readonly string Id;
+    /// <summary>
+    /// 金币最小值
+    /// </summary>
     public readonly int GoldMin;
+    /// <summary>
+    /// 金币最大值
+    /// </summary>
     public readonly int GoldMax;
+    /// <summary>
+    /// 主奖励槽组ID
+    /// </summary>
     public readonly string MainSlotGroupId;
+    /// <summary>
+    /// 额外奖励槽组ID
+    /// </summary>
     public readonly string ExtraSlotGroupId;
+    /// <summary>
+    /// 额外奖励概率
+    /// </summary>
     public readonly float ExtraChance;
+    /// <summary>
+    /// 兜底金币数量
+    /// </summary>
     public readonly int FallbackGold;
    
     public const int __ID__ = 46008823;

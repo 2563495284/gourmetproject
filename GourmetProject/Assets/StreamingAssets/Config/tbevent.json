@@ -5,7 +5,10 @@
     "desc": "花一点时间逛集市，获得金币。",
     "timeCost": 1,
     "effectType": "GainGold",
-    "effectValue": 30
+    "effectValue": 30,
+    "category": "reward",
+    "repeatable": true,
+    "preconditions": ""
   },
   {
     "id": "ev_tasting",
@@ -13,7 +16,10 @@
     "desc": "举办试菜会，向菜谱加入一道新菜。",
     "timeCost": 1,
     "effectType": "AddDish",
-    "effectValue": 1
+    "effectValue": 1,
+    "category": "food",
+    "repeatable": true,
+    "preconditions": ""
   },
   {
     "id": "ev_rest",
@@ -21,7 +27,10 @@
     "desc": "短暂休息，降低下一关要求分。",
     "timeCost": 1,
     "effectType": "LowerReq",
-    "effectValue": 0.1
+    "effectValue": 0.1,
+    "category": "reward",
+    "repeatable": true,
+    "preconditions": ""
   },
   {
     "id": "ev_recruit",
@@ -29,7 +38,10 @@
     "desc": "招募帮厨，获得一件被动道具。",
     "timeCost": 2,
     "effectType": "GainItem",
-    "effectValue": 1
+    "effectValue": 1,
+    "category": "reward",
+    "repeatable": false,
+    "preconditions": ""
   },
   {
     "id": "ev_gamble",
@@ -37,7 +49,10 @@
     "desc": "高风险高回报：可能大赚也可能亏本。",
     "timeCost": 1,
     "effectType": "Gamble",
-    "effectValue": 50
+    "effectValue": 50,
+    "category": "negative",
+    "repeatable": true,
+    "preconditions": ""
   },
   {
     "id": "ev_upgrade",
@@ -45,6 +60,9 @@
     "desc": "钻研食谱，提升一道菜的美味度。",
     "timeCost": 2,
     "effectType": "UpgradeDish",
-    "effectValue": 5
+    "effectValue": 5,
+    "category": "food",
+    "repeatable": true,
+    "preconditions": ""
   }
 ]

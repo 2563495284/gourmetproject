@@ -13,6 +13,9 @@ using Luban.SimpleJSON;
 
 namespace cfg
 {
+/// <summary>
+/// 标签（技能）。category 区分固有/唯一A/唯一B；termId 非空时菜品详情额外展示该名词。
+/// </summary>
 public partial class TbTag
 {
     private readonly System.Collections.Generic.Dictionary<string, Tag> _dataMap;

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Gameplay;
 using GourmetProject.Runtime;
@@ -9,9 +10,9 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI
 {
     /// <summary>
-    /// 周循环「三选一」事件界面：每周开局弹出，玩家选择一个事件，结算其效果后进入本周对局。
-    /// 固定壳（遮罩/面板/标题/商店与跳过按钮/卡片容器）在 WeekMapForm.prefab，
-    /// 事件卡按周命名流确定性抽取后用 WeekEventCardView 子 prefab 数据驱动实例化。
+    /// 行动轴「三选一行动」界面：每步弹出，展示当前周/天数进度与三个可选行动。
+    /// 玩家选择一个行动后交回 <see cref="BattleForm"/> 执行（推进天数、触发节点、可能开战）。
+    /// 固定壳（遮罩/面板/标题/按钮/卡片容器）复用 WeekMapForm.prefab，卡片用 WeekEventCardView 数据驱动。
     /// </summary>
     public sealed class WeekMapForm : UGuiForm
     {
@@ -22,11 +23,13 @@ namespace GourmetProject.Game.UI
         [SerializeField] private WeekEventCardView _cardPrefab;
 
         private readonly List<WeekEventCardView> _cards = new();
+        private Text _axisText;
 
         protected override void OnInit(object userData)
         {
             base.OnInit(userData);
-            _shopButton.onClick.AddListener(OpenShop);
+            // 商店改由行动/节点进入，隐藏旧的手动商店入口。
+            _shopButton.gameObject.SetActive(false);
         }
 
         protected override void OnOpen(object userData)
@@ -54,37 +57,95 @@ namespace GourmetProject.Game.UI
             ClearCards();
 
             string weekLabel = run.IsEndless ? $"无尽 第 {run.WeekIndex - run.TotalWeeks} 关" : $"第 {run.WeekIndex} 周";
-            _titleText.text = $"{weekLabel} · 选择今日行动";
+            _titleText.text = $"{weekLabel} · 第 {run.CurrentDay}/{run.TimelineLengthDays} 天 · 选择行动";
+            BuildAxisText(run);
 
-            List<cfg.GameEvent> events = PickEvents(run);
-            bool hasEvents = events.Count > 0;
+            IRandomStream rng = GameApp.Random.Stream($"action_w{run.WeekIndex}_d{run.CurrentDay}");
+            List<cfg.GameAction> actions = ActionRandomService.GenerateChoices(run, rng);
+            bool hasActions = actions.Count > 0;
 
-            // 没有可选事件时隐藏卡片容器、显示「直接开工」。
-            _cardsContainer.gameObject.SetActive(hasEvents);
-            _skipButton.gameObject.SetActive(!hasEvents);
+            _cardsContainer.gameObject.SetActive(hasActions);
+            _skipButton.gameObject.SetActive(!hasActions);
             _skipButton.onClick.RemoveAllListeners();
-            _skipButton.onClick.AddListener(() => Choose(run, null));
+            _skipButton.onClick.AddListener(() => Choose(null));
 
-            if (!hasEvents)
+            if (!hasActions)
             {
                 return;
             }
 
-            // 卡片在容器内按比例等分横向排布（gap 为左右与卡间留白占容器宽度的比例）。
-            // 卡片 prefab 的根尺寸（430x470）仅用于编辑器预览，运行时由下面的锚点拉伸决定，
-            // 二者数值接近，保证 prefab 预览与场景实际大小基本一致。
-            int n = events.Count;
+            int n = actions.Count;
             float gap = 0.03f;
             float cardW = (1f - gap * (n + 1)) / n;
             for (int i = 0; i < n; i++)
             {
                 float minX = gap + i * (cardW + gap);
                 float maxX = minX + cardW;
-                SpawnCard(run, events[i], minX, maxX);
+                SpawnCard(actions[i], minX, maxX);
             }
         }
 
-        private void SpawnCard(GameRun run, cfg.GameEvent ev, float minX, float maxX)
+        /// <summary>在标题下方动态生成行动轴进度文本（已过/当前/未来天 + 节点标注）。</summary>
+        private void BuildAxisText(GameRun run)
+        {
+            if (_axisText == null)
+            {
+                var go = new GameObject("AxisText", typeof(RectTransform), typeof(Text));
+                go.transform.SetParent(_titleText.transform.parent, false);
+                var rect = (RectTransform)go.transform;
+                rect.anchorMin = new Vector2(0.05f, 0.84f);
+                rect.anchorMax = new Vector2(0.95f, 0.9f);
+                rect.offsetMin = Vector2.zero;
+                rect.offsetMax = Vector2.zero;
+
+                _axisText = go.GetComponent<Text>();
+                _axisText.font = _titleText.font;
+                _axisText.fontSize = Mathf.Max(14, _titleText.fontSize - 6);
+                _axisText.color = _titleText.color;
+                _axisText.alignment = TextAnchor.MiddleCenter;
+            }
+
+            var nodeByDay = new Dictionary<int, cfg.TimelineNodeType>();
+            foreach (cfg.TimelineNode node in TimelineService.GetNodes(run))
+            {
+                nodeByDay[node.Day] = node.NodeType;
+            }
+
+            var sb = new StringBuilder();
+            for (int day = 1; day <= run.TimelineLengthDays; day++)
+            {
+                if (day > 1)
+                {
+                    sb.Append(' ');
+                }
+
+                string mark = day <= run.CurrentDay ? "●" : "○";
+                if (nodeByDay.TryGetValue(day, out cfg.TimelineNodeType type))
+                {
+                    sb.Append($"{mark}{NodeShort(type)}");
+                }
+                else
+                {
+                    sb.Append(mark);
+                }
+            }
+
+            _axisText.text = sb.ToString();
+        }
+
+        private static string NodeShort(cfg.TimelineNodeType type)
+        {
+            switch (type)
+            {
+                case cfg.TimelineNodeType.Boss: return "[Boss]";
+                case cfg.TimelineNodeType.Interest: return "[利息]";
+                case cfg.TimelineNodeType.Shop: return "[商店]";
+                case cfg.TimelineNodeType.Event: return "[事件]";
+                default: return string.Empty;
+            }
+        }
+
+        private void SpawnCard(cfg.GameAction action, float minX, float maxX)
         {
             WeekEventCardView card = Instantiate(_cardPrefab, _cardsContainer);
             var rect = (RectTransform)card.transform;
@@ -94,8 +155,8 @@ namespace GourmetProject.Game.UI
             rect.offsetMax = Vector2.zero;
             rect.localScale = Vector3.one;
 
-            cfg.GameEvent captured = ev;
-            card.Bind(ev, () => Choose(run, captured));
+            cfg.GameAction captured = action;
+            card.Bind(action, () => Choose(captured));
             _cards.Add(card);
         }
 
@@ -112,32 +173,10 @@ namespace GourmetProject.Game.UI
             _cards.Clear();
         }
 
-        private List<cfg.GameEvent> PickEvents(GameRun run)
+        private void Choose(cfg.GameAction action)
         {
-            var pool = new List<cfg.GameEvent>(GameApp.Config.Tables.TbEvent.DataList);
-            IRandomStream rng = GameApp.Random.Stream($"event_w{run.WeekIndex}");
-            rng.Shuffle(pool);
-
-            int take = Mathf.Min(3, pool.Count);
-            return pool.GetRange(0, take);
-        }
-
-        private void Choose(GameRun run, cfg.GameEvent ev)
-        {
-            string feedback = string.Empty;
-            if (ev != null)
-            {
-                IRandomStream rng = GameApp.Random.Stream($"event_resolve_w{run.WeekIndex}");
-                feedback = WeekEventResolver.Apply(run, ev, rng);
-            }
-
             Close();
-            BattleForm.Active?.BeginBattleAfterEvent(feedback);
-        }
-
-        private void OpenShop()
-        {
-            GameApp.UI.OpenUIForm(UIForms.Shop, UIForms.GroupDialog);
+            BattleForm.Active?.OnActionPicked(action);
         }
 
         private void Close()

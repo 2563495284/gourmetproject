@@ -29,10 +29,25 @@ public sealed partial class FragmentCellTag : Luban.BeanBase
         return new FragmentCellTag(_buf);
     }
 
+    /// <summary>
+    /// 碎片格标签记录ID
+    /// </summary>
     public readonly string Id;
+    /// <summary>
+    /// 胃碎片ID
+    /// </summary>
     public readonly string FragmentId;
+    /// <summary>
+    /// 格子X坐标
+    /// </summary>
     public readonly int X;
+    /// <summary>
+    /// 格子Y坐标
+    /// </summary>
     public readonly int Y;
+    /// <summary>
+    /// 挂载标签ID
+    /// </summary>
     public readonly string TagId;
    
     public const int __ID__ = -1217733048;

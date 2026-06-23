@@ -13,6 +13,9 @@ using Luban.SimpleJSON;
 
 namespace cfg
 {
+/// <summary>
+/// 碎片格强化标签：一行=碎片某格(x,y)挂一个标签 id（引用 TbTag）。
+/// </summary>
 public partial class TbFragmentCellTag
 {
     private readonly System.Collections.Generic.Dictionary<string, FragmentCellTag> _dataMap;

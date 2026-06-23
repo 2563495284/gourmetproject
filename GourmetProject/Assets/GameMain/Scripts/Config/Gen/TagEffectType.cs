@@ -11,6 +11,9 @@
 
 namespace cfg
 { 
+    /// <summary>
+    /// 标签效果类型
+    /// </summary>
     public enum TagEffectType
     {
         None = 0,

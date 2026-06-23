@@ -42,6 +42,9 @@ namespace GourmetProject.Game.UI
             _messageText.text = _data.Message;
             _confirmLabel.text = _data.ConfirmText;
             _cancelLabel.text = _data.CancelText;
+
+            // 取消文案为空时作为单按钮通知弹窗（隐藏取消按钮）。
+            _cancelButton.gameObject.SetActive(!string.IsNullOrEmpty(_data.CancelText));
         }
 
         protected override void OnClose(bool isShutdown, object userData)

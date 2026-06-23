@@ -30,11 +30,29 @@ public sealed partial class Week : Luban.BeanBase
         return new Week(_buf);
     }
 
+    /// <summary>
+    /// 周/关卡ID
+    /// </summary>
     public readonly int Id;
+    /// <summary>
+    /// 分数曲线ID
+    /// </summary>
     public readonly string ScoreProfileId;
+    /// <summary>
+    /// 奖励包ID
+    /// </summary>
     public readonly string RewardPackageId;
+    /// <summary>
+    /// 奖励隐藏分
+    /// </summary>
     public readonly int RewardHiddenScore;
+    /// <summary>
+    /// 是否Boss关
+    /// </summary>
     public readonly bool IsBoss;
+    /// <summary>
+    /// 关卡修饰符
+    /// </summary>
     public readonly string Modifier;
    
     public const int __ID__ = 2692116;

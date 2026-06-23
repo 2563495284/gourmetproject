@@ -15,16 +15,22 @@ namespace GourmetProject.Game.UI
 
         public void Bind(cfg.Item item, int price, Action onSell)
         {
-            _nameText.text = item.Name;
+            Bind(item.Name, $"卖 +{price}", onSell);
+        }
+
+        /// <summary>通用「处理」绑定（出售道具 / 删除菜品）。</summary>
+        public void Bind(string name, string buttonLabel, Action onClick)
+        {
+            _nameText.text = name;
 
             Text label = _sellButton.GetComponentInChildren<Text>();
             if (label != null)
             {
-                label.text = $"卖 +{price}";
+                label.text = buttonLabel;
             }
 
             _sellButton.onClick.RemoveAllListeners();
-            _sellButton.onClick.AddListener(() => onSell?.Invoke());
+            _sellButton.onClick.AddListener(() => onClick?.Invoke());
         }
     }
 }

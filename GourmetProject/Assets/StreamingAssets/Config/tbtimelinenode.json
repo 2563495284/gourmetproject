@@ -1,0 +1,66 @@
+[
+  {
+    "id": "nd_normal_d3",
+    "timelineId": "tl_normal",
+    "day": 3,
+    "nodeType": 1,
+    "payloadValue": 10,
+    "payloadParam": "1"
+  },
+  {
+    "id": "nd_normal_d5",
+    "timelineId": "tl_normal",
+    "day": 5,
+    "nodeType": 2,
+    "payloadValue": 0,
+    "payloadParam": ""
+  },
+  {
+    "id": "nd_busy_d2",
+    "timelineId": "tl_busy",
+    "day": 2,
+    "nodeType": 3,
+    "payloadValue": 0,
+    "payloadParam": ""
+  },
+  {
+    "id": "nd_busy_d4",
+    "timelineId": "tl_busy",
+    "day": 4,
+    "nodeType": 1,
+    "payloadValue": 8,
+    "payloadParam": "1"
+  },
+  {
+    "id": "nd_busy_d6",
+    "timelineId": "tl_busy",
+    "day": 6,
+    "nodeType": 2,
+    "payloadValue": 0,
+    "payloadParam": ""
+  },
+  {
+    "id": "nd_boss_d2",
+    "timelineId": "tl_boss",
+    "day": 2,
+    "nodeType": 1,
+    "payloadValue": 10,
+    "payloadParam": "1"
+  },
+  {
+    "id": "nd_boss_d4",
+    "timelineId": "tl_boss",
+    "day": 4,
+    "nodeType": 2,
+    "payloadValue": 0,
+    "payloadParam": ""
+  },
+  {
+    "id": "nd_boss_d7",
+    "timelineId": "tl_boss",
+    "day": 7,
+    "nodeType": 0,
+    "payloadValue": 0,
+    "payloadParam": ""
+  }
+]

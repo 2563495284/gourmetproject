@@ -1,0 +1,32 @@
+[
+  {
+    "id": "boss_glutton",
+    "name": "大胃王挑战",
+    "characterPool": "",
+    "unlockCondition": "",
+    "weight": 100,
+    "week": 0,
+    "scoreProfileId": "",
+    "modifier": "limit_serve"
+  },
+  {
+    "id": "boss_iron",
+    "name": "铁胃霸主",
+    "characterPool": "",
+    "unlockCondition": "",
+    "weight": 80,
+    "week": 0,
+    "scoreProfileId": "",
+    "modifier": "small_board"
+  },
+  {
+    "id": "boss_final",
+    "name": "终极美食家",
+    "characterPool": "",
+    "unlockCondition": "",
+    "weight": 100,
+    "week": 8,
+    "scoreProfileId": "",
+    "modifier": "small_board"
+  }
+]

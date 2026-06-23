@@ -11,6 +11,9 @@
 
 namespace cfg
 { 
+    /// <summary>
+    /// 道具品质
+    /// </summary>
     public enum ItemQuality
     {
         Common = 0,

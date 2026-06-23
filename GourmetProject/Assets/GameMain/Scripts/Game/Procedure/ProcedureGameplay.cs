@@ -207,6 +207,7 @@ namespace GourmetProject.Game.Procedure
             CloseIfOpen(UIForms.WeekMap);
             CloseIfOpen(UIForms.Shop);
             CloseIfOpen(UIForms.DishDetail);
+            CloseIfOpen(UIForms.ConfirmDialog);
         }
 
         private static void CloseIfOpen(string assetName)

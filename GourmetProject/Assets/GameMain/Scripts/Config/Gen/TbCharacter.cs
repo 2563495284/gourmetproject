@@ -13,6 +13,9 @@ using Luban.SimpleJSON;
 
 namespace cfg
 {
+/// <summary>
+/// 角色：initialFragmentId 指向初始胃形状(碎片库)；maxStomachWidth/Height 为胃最大包围盒。
+/// </summary>
 public partial class TbCharacter
 {
     private readonly System.Collections.Generic.Dictionary<string, Character> _dataMap;

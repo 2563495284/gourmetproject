@@ -33,14 +33,41 @@ public sealed partial class Character : Luban.BeanBase
         return new Character(_buf);
     }
 
+    /// <summary>
+    /// 配置ID
+    /// </summary>
     public readonly string Id;
+    /// <summary>
+    /// 角色名称
+    /// </summary>
     public readonly string Name;
+    /// <summary>
+    /// 角色描述
+    /// </summary>
     public readonly string Desc;
+    /// <summary>
+    /// 角色立绘资源路径
+    /// </summary>
     public readonly string Portrait;
+    /// <summary>
+    /// 初始菜谱ID
+    /// </summary>
     public readonly string InitialRecipeId;
+    /// <summary>
+    /// 初始胃碎片ID
+    /// </summary>
     public readonly string InitialFragmentId;
+    /// <summary>
+    /// 胃最大宽度
+    /// </summary>
     public readonly int MaxStomachWidth;
+    /// <summary>
+    /// 胃最大高度
+    /// </summary>
     public readonly int MaxStomachHeight;
+    /// <summary>
+    /// 初始携带道具ID列表
+    /// </summary>
     public readonly System.Collections.Generic.List<string> StartItems;
    
     public const int __ID__ = -726803703;

@@ -30,11 +30,29 @@ public sealed partial class ScoreProfile : Luban.BeanBase
         return new ScoreProfile(_buf);
     }
 
+    /// <summary>
+    /// 分数曲线ID
+    /// </summary>
     public readonly string Id;
+    /// <summary>
+    /// 基础目标分
+    /// </summary>
     public readonly int BaseScore;
+    /// <summary>
+    /// 普通难度倍率
+    /// </summary>
     public readonly float DifficultyMul;
+    /// <summary>
+    /// Boss倍率
+    /// </summary>
     public readonly float BossMul;
+    /// <summary>
+    /// 无尽增长倍率
+    /// </summary>
     public readonly float EndlessGrowthMul;
+    /// <summary>
+    /// 目标分取整粒度
+    /// </summary>
     public readonly int RoundTo;
    
     public const int __ID__ = 1375276759;

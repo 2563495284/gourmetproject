@@ -32,13 +32,37 @@ public sealed partial class RewardSlot : Luban.BeanBase
         return new RewardSlot(_buf);
     }
 
+    /// <summary>
+    /// 奖励槽ID
+    /// </summary>
     public readonly string Id;
+    /// <summary>
+    /// 槽组ID
+    /// </summary>
     public readonly string GroupId;
+    /// <summary>
+    /// 奖励类型
+    /// </summary>
     public readonly RewardKind Kind;
+    /// <summary>
+    /// 候选数量
+    /// </summary>
     public readonly int ChoiceCount;
+    /// <summary>
+    /// 槽权重
+    /// </summary>
     public readonly float Weight;
+    /// <summary>
+    /// 使用的奖励池ID
+    /// </summary>
     public readonly string PoolId;
+    /// <summary>
+    /// 隐藏分偏移
+    /// </summary>
     public readonly int HiddenOffset;
+    /// <summary>
+    /// 兜底金币数量
+    /// </summary>
     public readonly int FallbackGold;
    
     public const int __ID__ = -610313747;

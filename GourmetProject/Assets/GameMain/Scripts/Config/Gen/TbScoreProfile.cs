@@ -13,6 +13,9 @@ using Luban.SimpleJSON;
 
 namespace cfg
 {
+/// <summary>
+/// 目标分曲线：周/关卡引用它生成本局要求分，无尽模式沿用最后一周曲线增长。
+/// </summary>
 public partial class TbScoreProfile
 {
     private readonly System.Collections.Generic.Dictionary<string, ScoreProfile> _dataMap;

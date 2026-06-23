@@ -32,13 +32,37 @@ public sealed partial class Tag : Luban.BeanBase
         return new Tag(_buf);
     }
 
+    /// <summary>
+    /// 标签ID
+    /// </summary>
     public readonly string Id;
+    /// <summary>
+    /// 标签名称
+    /// </summary>
     public readonly string Name;
+    /// <summary>
+    /// 标签描述
+    /// </summary>
     public readonly string Desc;
+    /// <summary>
+    /// 标签分类
+    /// </summary>
     public readonly TagCategory Category;
+    /// <summary>
+    /// 效果类型
+    /// </summary>
     public readonly TagEffectType EffectType;
+    /// <summary>
+    /// 效果数值
+    /// </summary>
     public readonly float EffectValue;
+    /// <summary>
+    /// 效果参数
+    /// </summary>
     public readonly string EffectParam;
+    /// <summary>
+    /// 关联术语ID
+    /// </summary>
     public readonly string TermId;
    
     public const int __ID__ = 83834;

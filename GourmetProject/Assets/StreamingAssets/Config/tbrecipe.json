@@ -4,6 +4,7 @@
     "fixedDishes": [
       "rice"
     ],
+    "requiredInitScore": 40,
     "pool": [
       {
         "dishId": "rice",
@@ -30,14 +31,14 @@
         "weight": 40,
         "maxCount": 1
       }
-    ],
-    "requiredInitScore": 40
+    ]
   },
   {
     "id": "recipe_wok",
     "fixedDishes": [
       "egg"
     ],
+    "requiredInitScore": 45,
     "pool": [
       {
         "dishId": "egg",
@@ -59,14 +60,14 @@
         "weight": 60,
         "maxCount": 2
       }
-    ],
-    "requiredInitScore": 45
+    ]
   },
   {
     "id": "recipe_chili",
     "fixedDishes": [
       "chili"
     ],
+    "requiredInitScore": 38,
     "pool": [
       {
         "dishId": "chili",
@@ -88,7 +89,6 @@
         "weight": 80,
         "maxCount": 0
       }
-    ],
-    "requiredInitScore": 38
+    ]
   }
 ]

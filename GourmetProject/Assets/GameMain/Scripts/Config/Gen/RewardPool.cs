@@ -30,11 +30,29 @@ public sealed partial class RewardPool : Luban.BeanBase
         return new RewardPool(_buf);
     }
 
+    /// <summary>
+    /// 奖励池ID
+    /// </summary>
     public readonly string Id;
+    /// <summary>
+    /// 奖励池类型
+    /// </summary>
     public readonly RewardPoolKind Kind;
+    /// <summary>
+    /// 特殊标签筛选
+    /// </summary>
     public readonly string SpecialTags;
+    /// <summary>
+    /// 品质权重配置
+    /// </summary>
     public readonly string QualityWeights;
+    /// <summary>
+    /// 是否允许兜底
+    /// </summary>
     public readonly bool AllowFallback;
+    /// <summary>
+    /// 与当前进度的隐藏分下限距离
+    /// </summary>
     public readonly int DistanceFloor;
    
     public const int __ID__ = -610400245;

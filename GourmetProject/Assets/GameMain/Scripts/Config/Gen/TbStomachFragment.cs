@@ -13,6 +13,9 @@ using Luban.SimpleJSON;
 
 namespace cfg
 {
+/// <summary>
+/// 胃部碎片库：也用作初始胃形状来源。碎片不旋转(1x2 与 2x1 视为两个碎片)。&#39;X&#39;=存在格。
+/// </summary>
 public partial class TbStomachFragment
 {
     private readonly System.Collections.Generic.Dictionary<string, StomachFragment> _dataMap;

@@ -13,6 +13,9 @@ using Luban.SimpleJSON;
 
 namespace cfg
 {
+/// <summary>
+/// 奖励池筛选：qualityWeights 写 Common:70|Uncommon:25|Rare:5；specialTags 用 | 分隔。
+/// </summary>
 public partial class TbRewardPool
 {
     private readonly System.Collections.Generic.Dictionary<string, RewardPool> _dataMap;

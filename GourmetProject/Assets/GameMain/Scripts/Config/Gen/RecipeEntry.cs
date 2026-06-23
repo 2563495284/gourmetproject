@@ -13,6 +13,9 @@ using Luban.SimpleJSON;
 
 namespace cfg
 {
+/// <summary>
+/// 菜谱池随机条目：单元格写 dishId,weight,maxCount
+/// </summary>
 public sealed partial class RecipeEntry : Luban.BeanBase
 {
     public RecipeEntry(JSONNode _buf) 
@@ -27,8 +30,17 @@ public sealed partial class RecipeEntry : Luban.BeanBase
         return new RecipeEntry(_buf);
     }
 
+    /// <summary>
+    /// 菜品ID
+    /// </summary>
     public readonly string DishId;
+    /// <summary>
+    /// 权重
+    /// </summary>
     public readonly float Weight;
+    /// <summary>
+    /// 最大数量(0=不限)
+    /// </summary>
     public readonly int MaxCount;
    
     public const int __ID__ = -652168348;

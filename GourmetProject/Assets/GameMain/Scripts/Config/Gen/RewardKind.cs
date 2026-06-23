@@ -11,6 +11,9 @@
 
 namespace cfg
 { 
+    /// <summary>
+    /// 奖励种类
+    /// </summary>
     public enum RewardKind
     {
         Gold = 0,

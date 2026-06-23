@@ -13,6 +13,9 @@ using Luban.SimpleJSON;
 
 namespace cfg
 {
+/// <summary>
+/// 胜利奖励包：固定金币+主奖励槽组+可选额外奖励槽组。
+/// </summary>
 public partial class TbRewardPackage
 {
     private readonly System.Collections.Generic.Dictionary<string, RewardPackage> _dataMap;

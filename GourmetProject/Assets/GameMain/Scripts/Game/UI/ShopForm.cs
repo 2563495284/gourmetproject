@@ -9,15 +9,12 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI
 {
     /// <summary>
-    /// 系统事件「商店」：用金币购买被动道具，或卖出已有被动道具回血金币。
-    /// 固定壳（遮罩/面板/标题/金币/分区标题/空提示/离开按钮/买卖容器）在 ShopForm.prefab，
-    /// 进货与出售卡用 ShopBuyCardView / ShopSellCardView 子 prefab 按周确定性数据驱动实例化。
+    /// 系统节点「商店」：按隐藏分刷新商品（被动道具 / 菜品 / 胃部碎片），可购买、出售被动道具、花金币删菜。
+    /// 商品逻辑集中在 <see cref="ShopService"/>；本界面只负责按周+天确定性刷新与卡片渲染。
+    /// 固定壳在 ShopForm.prefab，买/卖卡用 ShopBuyCardView / ShopSellCardView 数据驱动。
     /// </summary>
     public sealed class ShopForm : UGuiForm
     {
-        private const int BuyPrice = 45;
-        private const int SellPrice = 20;
-        private const int MaxStock = 3;
         private const int MaxSellShown = 4;
 
         [SerializeField] private Text _goldText;
@@ -30,13 +27,20 @@ namespace GourmetProject.Game.UI
         [SerializeField] private ShopSellCardView _sellCardPrefab;
 
         private GameRun _run;
-        private readonly List<string> _stock = new();
+        private readonly List<ShopEntry> _stock = new();
         private readonly List<GameObject> _spawned = new();
 
         protected override void OnInit(object userData)
         {
             base.OnInit(userData);
-            _leaveButton.onClick.AddListener(Close);
+            _leaveButton.onClick.AddListener(OnLeaveClicked);
+        }
+
+        /// <summary>玩家点「离开」：关闭商店并通知编排层继续（区别于返回菜单时的强制关闭）。</summary>
+        private void OnLeaveClicked()
+        {
+            Close();
+            BattleForm.Active?.OnShopClosed();
         }
 
         protected override void OnOpen(object userData)
@@ -63,10 +67,8 @@ namespace GourmetProject.Game.UI
         private void RollStock()
         {
             _stock.Clear();
-            cfg.Tables tables = GameApp.Config.Tables;
-
-            IRandomStream rng = GameApp.Random.Stream($"shop_w{_run.WeekIndex}");
-            _stock.AddRange(ItemPoolService.Roll(tables, _run, cfg.ItemKind.Passive, rng, MaxStock));
+            IRandomStream rng = GameApp.Random.Stream($"shop_w{_run.WeekIndex}_d{_run.CurrentDay}");
+            _stock.AddRange(ShopService.RollStock(GameApp.Config.Tables, _run, rng));
         }
 
         private void Rebuild()
@@ -93,18 +95,13 @@ namespace GourmetProject.Game.UI
             float cardW = (1f - gap * (n - 1)) / n;
             for (int i = 0; i < n; i++)
             {
-                cfg.Item item = GameApp.Config.Tables.TbItem.GetOrDefault(_stock[i]);
-                if (item == null)
-                {
-                    continue;
-                }
-
+                ShopEntry entry = _stock[i];
                 float minX = i * (cardW + gap);
                 ShopBuyCardView card = Instantiate(_buyCardPrefab, _buyContainer);
                 PlaceInContainer(card.transform, minX, minX + cardW);
 
-                string captured = item.Id;
-                card.Bind(item, BuyPrice, _run.Gold >= BuyPrice, () => OnBuy(captured));
+                ShopEntry captured = entry;
+                card.Bind(entry.Name, entry.Desc, entry.Price, _run.Gold >= entry.Price, () => OnBuy(captured));
                 _spawned.Add(card.gameObject);
             }
         }
@@ -112,17 +109,24 @@ namespace GourmetProject.Game.UI
         private void BuildSellSection()
         {
             cfg.Tables tables = GameApp.Config.Tables;
-            var owned = new List<string>();
+
+            // 出售被动道具 + 删除菜谱池菜品，合并展示在同一区。
+            var entries = new List<SellEntry>();
             foreach (RunItemState state in _run.Items)
             {
                 cfg.Item item = tables.TbItem.GetOrDefault(state.ItemId);
                 if (item != null && item.Kind == cfg.ItemKind.Passive && !state.IsEmpty)
                 {
-                    owned.Add(state.ItemId);
+                    entries.Add(SellEntry.Sell(item.Id, item.Name));
                 }
             }
 
-            bool empty = owned.Count == 0;
+            foreach (string dishId in _run.BonusDishIds)
+            {
+                entries.Add(SellEntry.Delete(dishId, DishName(tables, dishId)));
+            }
+
+            bool empty = entries.Count == 0;
             _sellEmptyText.gameObject.SetActive(empty);
             _sellContainer.gameObject.SetActive(!empty);
             if (empty)
@@ -130,25 +134,43 @@ namespace GourmetProject.Game.UI
                 return;
             }
 
-            int shown = Mathf.Min(owned.Count, MaxSellShown);
+            int shown = Mathf.Min(entries.Count, MaxSellShown);
             float gap = 0.02f / 0.9f;
             float cardW = (1f - gap * (shown - 1)) / shown;
             for (int i = 0; i < shown; i++)
             {
-                cfg.Item item = tables.TbItem.GetOrDefault(owned[i]);
-                if (item == null)
-                {
-                    continue;
-                }
-
+                SellEntry entry = entries[i];
                 float minX = i * (cardW + gap);
                 ShopSellCardView card = Instantiate(_sellCardPrefab, _sellContainer);
                 PlaceInContainer(card.transform, minX, minX + cardW);
 
-                string captured = item.Id;
-                card.Bind(item, SellPrice, () => OnSell(captured));
+                SellEntry captured = entry;
+                if (entry.IsDelete)
+                {
+                    card.Bind(entry.Name, $"删除 -{ShopService.DeleteDishCost}", () => OnDeleteDish(captured.Id));
+                }
+                else
+                {
+                    card.Bind(entry.Name, $"卖 +{ShopService.PassiveSellPrice}", () => OnSell(captured.Id));
+                }
+
                 _spawned.Add(card.gameObject);
             }
+        }
+
+        private static string DishName(cfg.Tables tables, string dishId)
+        {
+            cfg.DishVariant variant = tables.TbDishVariant.GetOrDefault(dishId);
+            if (variant != null)
+            {
+                cfg.DishBase baseDish = tables.TbDishBase.GetOrDefault(variant.BaseId);
+                if (baseDish != null)
+                {
+                    return baseDish.Name;
+                }
+            }
+
+            return dishId;
         }
 
         private static void PlaceInContainer(Transform card, float minX, float maxX)
@@ -174,35 +196,54 @@ namespace GourmetProject.Game.UI
             _spawned.Clear();
         }
 
-        private void OnBuy(string itemId)
+        private void OnBuy(ShopEntry entry)
         {
-            if (_run.Gold < BuyPrice)
+            if (ShopService.Purchase(_run, entry))
             {
-                return;
+                _stock.Remove(entry);
+                RunPersistence.Save(_run);
+                Rebuild();
             }
-
-            _run.Gold -= BuyPrice;
-            _run.AcquireItem(itemId, 0);
-            _stock.Remove(itemId);
-            RunPersistence.Save(_run);
-            Rebuild();
         }
 
         private void OnSell(string itemId)
         {
-            if (!_run.RemoveItem(itemId))
+            if (ShopService.SellPassive(_run, itemId))
             {
-                return;
+                RunPersistence.Save(_run);
+                Rebuild();
             }
+        }
 
-            _run.Gold += SellPrice;
-            RunPersistence.Save(_run);
-            Rebuild();
+        private void OnDeleteDish(string dishId)
+        {
+            if (ShopService.DeleteDish(_run, dishId))
+            {
+                RunPersistence.Save(_run);
+                Rebuild();
+            }
         }
 
         private void Close()
         {
             GameApp.UI.CloseUIForm(UIForm);
+        }
+
+        private readonly struct SellEntry
+        {
+            private SellEntry(string id, string name, bool isDelete)
+            {
+                Id = id;
+                Name = name;
+                IsDelete = isDelete;
+            }
+
+            public string Id { get; }
+            public string Name { get; }
+            public bool IsDelete { get; }
+
+            public static SellEntry Sell(string id, string name) => new SellEntry(id, name, false);
+            public static SellEntry Delete(string id, string name) => new SellEntry(id, name, true);
         }
     }
 }

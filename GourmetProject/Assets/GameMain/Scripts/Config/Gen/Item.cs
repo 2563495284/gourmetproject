@@ -44,25 +44,85 @@ public sealed partial class Item : Luban.BeanBase
         return new Item(_buf);
     }
 
+    /// <summary>
+    /// 道具ID
+    /// </summary>
     public readonly string Id;
+    /// <summary>
+    /// 道具名称
+    /// </summary>
     public readonly string Name;
+    /// <summary>
+    /// 道具描述
+    /// </summary>
     public readonly string Desc;
+    /// <summary>
+    /// 道具类型
+    /// </summary>
     public readonly ItemKind Kind;
+    /// <summary>
+    /// 道具品质
+    /// </summary>
     public readonly ItemQuality Quality;
+    /// <summary>
+    /// 特殊标签标记
+    /// </summary>
     public readonly string SpecialTags;
+    /// <summary>
+    /// 最大等级
+    /// </summary>
     public readonly int MaxLevel;
+    /// <summary>
+    /// 下一级权重倍率
+    /// </summary>
     public readonly float NextLevelWeightMultiplier;
+    /// <summary>
+    /// 解锁条件
+    /// </summary>
     public readonly string UnlockCondition;
+    /// <summary>
+    /// 触发时机
+    /// </summary>
     public readonly ItemTriggerTiming TriggerTiming;
+    /// <summary>
+    /// 获取次数限制
+    /// </summary>
     public readonly int AcquireLimit;
+    /// <summary>
+    /// 持有数量限制
+    /// </summary>
     public readonly int HoldLimit;
+    /// <summary>
+    /// 使用后是否消耗
+    /// </summary>
     public readonly bool ConsumeOnUse;
+    /// <summary>
+    /// 随机基础权重
+    /// </summary>
     public readonly float BaseWeight;
+    /// <summary>
+    /// 出现隐藏分下限
+    /// </summary>
     public readonly int HiddenMin;
+    /// <summary>
+    /// 出现隐藏分上限
+    /// </summary>
     public readonly int HiddenMax;
+    /// <summary>
+    /// 效果类型
+    /// </summary>
     public readonly string EffectType;
+    /// <summary>
+    /// 效果数值
+    /// </summary>
     public readonly float EffectValue;
+    /// <summary>
+    /// 效果参数
+    /// </summary>
     public readonly string EffectParam;
+    /// <summary>
+    /// 图标资源路径
+    /// </summary>
     public readonly string Icon;
    
     public const int __ID__ = 2289459;

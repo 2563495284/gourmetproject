@@ -13,6 +13,9 @@ using Luban.SimpleJSON;
 
 namespace cfg
 {
+/// <summary>
+/// 菜品变体：随机菜品库条目。引用本体+标签组合+隐藏分/权重/价格。同 baseId 不同变体=带不同标签视为不同菜品。aTagId/bTagId 空串=唯一标签槽为空。
+/// </summary>
 public partial class TbDishVariant
 {
     private readonly System.Collections.Generic.Dictionary<string, DishVariant> _dataMap;
