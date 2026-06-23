@@ -368,9 +368,9 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.ugui": {
-      "version": "file:/Users/yijin/uGUI/com.unity.ugui",
+      "version": "2.0.0",
       "depth": 0,
-      "source": "local",
+      "source": "builtin",
       "dependencies": {
         "com.unity.modules.ui": "1.0.0",
         "com.unity.modules.imgui": "1.0.0"
