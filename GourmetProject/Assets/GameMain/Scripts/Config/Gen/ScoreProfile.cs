@@ -31,27 +31,27 @@ public sealed partial class ScoreProfile : Luban.BeanBase
     }
 
     /// <summary>
-    /// 分数曲线ID
+    /// 目标分曲线 id；Week.scoreProfileId 和 Boss.scoreProfileId 引用它。
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 基础目标分
+    /// 基础目标分。
     /// </summary>
     public readonly int BaseScore;
     /// <summary>
-    /// 普通难度倍率
+    /// 普通难度倍率；当前周基础目标分先乘该倍率。
     /// </summary>
     public readonly float DifficultyMul;
     /// <summary>
-    /// Boss倍率
+    /// Boss 目标分倍率；Boss 节点结算时额外应用。
     /// </summary>
     public readonly float BossMul;
     /// <summary>
-    /// 无尽增长倍率
+    /// 无尽模式超出配置周数后的指数增长倍率。
     /// </summary>
     public readonly float EndlessGrowthMul;
     /// <summary>
-    /// 目标分取整粒度
+    /// 目标分向上取整粒度，例如 10 表示取整到 10 的倍数。
     /// </summary>
     public readonly int RoundTo;
    

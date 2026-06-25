@@ -23,7 +23,7 @@ namespace GourmetProject.Game.Gameplay
             cfg.GameAction action = context.Action;
             int prevDay = TimelineService.AdvanceDays(run, context.CostDays);
             run.SetLastActionContext(context);
-            ActionScheduleService.AdvanceStep(run);
+            run.AdvanceActionStep();
             if (!action.Repeatable)
             {
                 run.MarkActionUsed(action.Id);

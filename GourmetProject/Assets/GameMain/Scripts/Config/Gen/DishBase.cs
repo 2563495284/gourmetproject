@@ -20,7 +20,6 @@ public sealed partial class DishBase : Luban.BeanBase
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
         { if(!_buf["name"].IsString) { throw new SerializationException(); }  Name = _buf["name"]; }
         { if(!_buf["deliciousness"].IsNumber) { throw new SerializationException(); }  Deliciousness = _buf["deliciousness"]; }
-        { if(!_buf["initScore"].IsNumber) { throw new SerializationException(); }  InitScore = _buf["initScore"]; }
         { if(!_buf["icon"].IsString) { throw new SerializationException(); }  Icon = _buf["icon"]; }
         { if(!_buf["allowRotate"].IsBoolean) { throw new SerializationException(); }  AllowRotate = _buf["allowRotate"]; }
         { var __json0 = _buf["shapeRows"]; if(!__json0.IsArray) { throw new SerializationException(); } ShapeRows = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  ShapeRows.Add(__v0); }   }
@@ -43,10 +42,6 @@ public sealed partial class DishBase : Luban.BeanBase
     /// 基础美味度
     /// </summary>
     public readonly int Deliciousness;
-    /// <summary>
-    /// 初始分
-    /// </summary>
-    public readonly int InitScore;
     /// <summary>
     /// 图标资源路径
     /// </summary>
@@ -73,7 +68,6 @@ public sealed partial class DishBase : Luban.BeanBase
         + "id:" + Id + ","
         + "name:" + Name + ","
         + "deliciousness:" + Deliciousness + ","
-        + "initScore:" + InitScore + ","
         + "icon:" + Icon + ","
         + "allowRotate:" + AllowRotate + ","
         + "shapeRows:" + Luban.StringUtil.CollectionToString(ShapeRows) + ","

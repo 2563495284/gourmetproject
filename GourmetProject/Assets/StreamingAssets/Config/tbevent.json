@@ -7,6 +7,7 @@
     "effectType": "GainGold",
     "effectValue": 30,
     "category": "reward",
+    "weight": 80,
     "repeatable": true,
     "preconditions": ""
   },
@@ -18,6 +19,7 @@
     "effectType": "AddDish",
     "effectValue": 1,
     "category": "food",
+    "weight": 60,
     "repeatable": true,
     "preconditions": ""
   },
@@ -29,6 +31,7 @@
     "effectType": "LowerReq",
     "effectValue": 0.1,
     "category": "reward",
+    "weight": 45,
     "repeatable": true,
     "preconditions": ""
   },
@@ -40,6 +43,7 @@
     "effectType": "GainItem",
     "effectValue": 1,
     "category": "reward",
+    "weight": 35,
     "repeatable": false,
     "preconditions": ""
   },
@@ -51,6 +55,7 @@
     "effectType": "Gamble",
     "effectValue": 50,
     "category": "negative",
+    "weight": 30,
     "repeatable": true,
     "preconditions": ""
   },
@@ -62,6 +67,7 @@
     "effectType": "UpgradeDish",
     "effectValue": 5,
     "category": "food",
+    "weight": 50,
     "repeatable": true,
     "preconditions": ""
   }

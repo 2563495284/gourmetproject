@@ -33,35 +33,35 @@ public sealed partial class Boss : Luban.BeanBase
     }
 
     /// <summary>
-    /// Boss ID
+    /// Boss配置ID。
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// Boss名称
+    /// Boss显示名称。
     /// </summary>
     public readonly string Name;
     /// <summary>
-    /// 角色池ID
+    /// Boss自身角色池，空=任意角色；逗号分隔 character.id。
     /// </summary>
     public readonly string CharacterPool;
     /// <summary>
-    /// 解锁条件
+    /// 解锁条件，空=默认解锁。
     /// </summary>
     public readonly string UnlockCondition;
     /// <summary>
-    /// 随机权重
+    /// 同一候选池内按该权重随机。
     /// </summary>
     public readonly float Weight;
     /// <summary>
-    /// 所属周数
+    /// 限定周序号；0=任意Boss周。
     /// </summary>
     public readonly int Week;
     /// <summary>
-    /// 分数曲线ID
+    /// Boss目标分曲线；空=使用当前周目标分曲线。
     /// </summary>
     public readonly string ScoreProfileId;
     /// <summary>
-    /// 关卡修饰符
+    /// Boss特殊机制标识。
     /// </summary>
     public readonly string Modifier;
    

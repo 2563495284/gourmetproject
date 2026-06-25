@@ -31,7 +31,7 @@ public partial class Tables
     /// </summary>
     public TbTerm TbTerm {get; }
     /// <summary>
-    /// 角色：initialFragmentId 指向初始胃形状(碎片库)；maxStomachWidth/Height 为胃最大包围盒。
+    /// 角色：配置初始菜谱/胃形状/道具，并通过 timelinePool/bossPool 限制该角色可随机到的行动轴和 Boss。
     /// </summary>
     public TbCharacter TbCharacter {get; }
     /// <summary>
@@ -71,7 +71,7 @@ public partial class Tables
     /// </summary>
     public TbWeek TbWeek {get; }
     /// <summary>
-    /// 事件：行动/节点触发的局外事件。effectType/effectValue 为无选项快捷事件直接结算；若 TbEventOption 有该 eventId 选项则改弹选项。repeatable=false 命中后写入 UsedEventIds。
+    /// 事件：行动/节点触发的局外事件。weight 用于事件节点随机；repeatable=false 命中后写入 UsedEventIds。
     /// </summary>
     public TbEvent TbEvent {get; }
     /// <summary>
@@ -98,18 +98,6 @@ public partial class Tables
     /// GlobalConst：跑通 Luban 接入用的占位表（与玩法无关）。
     /// </summary>
     public TbGlobalConst TbGlobalConst {get; }
-    /// <summary>
-    /// 行动组：一段可展示的行动组合。
-    /// </summary>
-    public TbActionGroup TbActionGroup {get; }
-    /// <summary>
-    /// 行动组成员：组内行动、耗时随机范围与权重。
-    /// </summary>
-    public TbActionGroupMember TbActionGroupMember {get; }
-    /// <summary>
-    /// 行动日程规则：区间/窗口约束和优先级。
-    /// </summary>
-    public TbActionScheduleRule TbActionScheduleRule {get; }
     /// <summary>
     /// 隐藏分曲线：基础隐藏分与派生隐藏分。
     /// </summary>
@@ -142,9 +130,6 @@ public partial class Tables
         TbTimelineNode = new TbTimelineNode(loader("tbtimelinenode"));
         TbBoss = new TbBoss(loader("tbboss"));
         TbGlobalConst = new TbGlobalConst(loader("tbglobalconst"));
-        TbActionGroup = new TbActionGroup(loader("tbactiongroup"));
-        TbActionGroupMember = new TbActionGroupMember(loader("tbactiongroupmember"));
-        TbActionScheduleRule = new TbActionScheduleRule(loader("tbactionschedulerule"));
         TbHiddenScoreCurve = new TbHiddenScoreCurve(loader("tbhiddenscorecurve"));
         TbGoldRewardCurve = new TbGoldRewardCurve(loader("tbgoldrewardcurve"));
         ResolveRef();
@@ -173,9 +158,6 @@ public partial class Tables
         TbTimelineNode.ResolveRef(this);
         TbBoss.ResolveRef(this);
         TbGlobalConst.ResolveRef(this);
-        TbActionGroup.ResolveRef(this);
-        TbActionGroupMember.ResolveRef(this);
-        TbActionScheduleRule.ResolveRef(this);
         TbHiddenScoreCurve.ResolveRef(this);
         TbGoldRewardCurve.ResolveRef(this);
     }

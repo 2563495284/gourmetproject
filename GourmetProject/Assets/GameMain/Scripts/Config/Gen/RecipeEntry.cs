@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 菜谱池随机条目：单元格写 dishId,weight,maxCount
+/// 菜谱池随机条目：单元格写 dishId,weight,maxCount,initScore
 /// </summary>
 public sealed partial class RecipeEntry : Luban.BeanBase
 {
@@ -23,6 +23,7 @@ public sealed partial class RecipeEntry : Luban.BeanBase
         { if(!_buf["dishId"].IsString) { throw new SerializationException(); }  DishId = _buf["dishId"]; }
         { if(!_buf["weight"].IsNumber) { throw new SerializationException(); }  Weight = _buf["weight"]; }
         { if(!_buf["maxCount"].IsNumber) { throw new SerializationException(); }  MaxCount = _buf["maxCount"]; }
+        { if(!_buf["initScore"].IsNumber) { throw new SerializationException(); }  InitScore = _buf["initScore"]; }
     }
 
     public static RecipeEntry DeserializeRecipeEntry(JSONNode _buf)
@@ -42,6 +43,10 @@ public sealed partial class RecipeEntry : Luban.BeanBase
     /// 最大数量(0=不限)
     /// </summary>
     public readonly int MaxCount;
+    /// <summary>
+    /// 本菜谱内初始分（用于累计 requiredInitScore）
+    /// </summary>
+    public readonly int InitScore;
    
     public const int __ID__ = -652168348;
     public override int GetTypeId() => __ID__;
@@ -56,6 +61,7 @@ public sealed partial class RecipeEntry : Luban.BeanBase
         + "dishId:" + DishId + ","
         + "weight:" + Weight + ","
         + "maxCount:" + MaxCount + ","
+        + "initScore:" + InitScore + ","
         + "}";
     }
 }

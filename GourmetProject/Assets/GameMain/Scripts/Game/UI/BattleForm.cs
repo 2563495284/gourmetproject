@@ -16,9 +16,9 @@ namespace GourmetProject.Game.UI
 {
     /// <summary>
     /// 局外周循环编排枢纽 + 局内战斗结果壳。
-    /// 周循环模型（行动轴）：每周随机一条行动轴 → 反复「三选一行动」推进天数 → 经过节点按序触发（利息/商店/Boss/事件）
+    /// 周循环模型（行动轴）：每周随机一条行动轴 → 反复「n 选一行动（最多 3 个）」推进天数 → 经过节点按序触发（利息/商店/Boss/事件）
     /// → 行动轴走完进入下一周；美食行动与 Boss 节点会启动局内战斗（复用 BattleWorldController / BattleSession）。
-    /// 失败：任意美食挑战不达标。胜利：通关最终周 Boss。
+    /// 失败：常规美食/Boss 挑战不达标或事件直接失败。胜利：通关最终周 Boss。
     /// </summary>
     public sealed class BattleForm : UGuiForm
     {
@@ -39,6 +39,7 @@ namespace GourmetProject.Game.UI
         private Queue<cfg.TimelineNode> _pendingNodes;
         private Action _afterNodes;
         private Action _afterBattleWin;
+        private Action<ScoreResult> _afterBattleLose;
         private Action _afterShop;
         private bool _victory;
         private ActionExecutionContext _currentBattleActionContext;
@@ -85,7 +86,6 @@ namespace GourmetProject.Game.UI
         /// <summary>进入（或继续）一周：随机/沿用行动轴后开始行动循环。</summary>
         public void BeginWeek()
         {
-            _run.RequiredScoreOverride = -1;
             _session = null;
             _world?.HideWorld();
             HideResult();
@@ -93,20 +93,19 @@ namespace GourmetProject.Game.UI
             // 新周或上一周已走完 → 随机一条新行动轴；中途读档则沿用存档里的行动轴。
             if (string.IsNullOrEmpty(_run.CurrentTimelineId) || _run.CurrentDay >= _run.TimelineLengthDays)
             {
+                _run.RequiredScoreOverride = -1;
                 IRandomStream rng = GameApp.Random.Stream($"timeline_w{_run.WeekIndex}");
                 TimelineService.RollWeekTimeline(_run, rng);
             }
 
-            IRandomStream scheduleRng = GameApp.Random.Stream($"action_schedule_w{_run.WeekIndex}");
-            ActionScheduleService.EnsureSchedule(_run, scheduleRng);
             RunPersistence.Save(_run);
             PromptNextAction();
         }
 
-        /// <summary>行动轴未走完则弹「三选一行动」；走完则进入下一周。</summary>
+        /// <summary>行动轴未走完则弹「n 选一行动」；走完则进入下一周。</summary>
         public void PromptNextAction()
         {
-            if (ActionScheduleService.IsScheduleFinished(_run) || TimelineService.IsWeekFinished(_run))
+            if (TimelineService.IsWeekFinished(_run))
             {
                 EndWeek();
                 return;
@@ -118,22 +117,22 @@ namespace GourmetProject.Game.UI
         }
 
         /// <summary>WeekMapForm 选择行动后回调（null = 无行动可选时的「休息」）。</summary>
-        public void OnActionPicked(ScheduledActionChoice choice)
+        public void OnActionPicked(cfg.GameAction action)
         {
-            if (choice == null)
+            if (action == null)
             {
                 int restPrev = TimelineService.AdvanceDays(_run, 1);
-                ActionScheduleService.AdvanceStep(_run);
+                _run.AdvanceActionStep();
                 RunPersistence.Save(_run);
                 ResolveNodes(restPrev, PromptNextAction);
                 return;
             }
 
             int prevDay = _run.CurrentDay;
-            var context = new ActionExecutionContext(choice);
+            var context = new ActionExecutionContext(action, _run.ActionStepIndex);
             if (!context.IsValid)
             {
-                ActionScheduleService.AdvanceStep(_run);
+                _run.AdvanceActionStep();
                 RunPersistence.Save(_run);
                 ResolveNodes(prevDay, PromptNextAction);
                 return;
@@ -261,22 +260,40 @@ namespace GourmetProject.Game.UI
                 {
                     _run.MarkBossCompleted(boss.Id);
                     RunPersistence.Save(_run);
-                    if (_run.WeekIndex >= _run.TotalWeeks && !_run.IsEndless)
+                    if (IsFinalBossVictory(boss))
                     {
+                        ClearPendingNodes();
                         OnVictory();
                     }
                     else
                     {
-                        ProcessNextNode();
+                        ClearPendingNodes();
+                        EndWeek();
                     }
                 }, null));
+        }
+
+        private bool IsFinalBossVictory(cfg.Boss boss)
+        {
+            return boss != null && !_run.IsEndless && _run.WeekIndex >= _run.TotalWeeks && boss.Week == _run.TotalWeeks;
         }
 
         // —— 事件 ——
 
         private void ResolveEventById(string eventId, Action onDone)
         {
-            cfg.GameEvent ev = string.IsNullOrEmpty(eventId) ? null : GameApp.Config.Tables.TbEvent.GetOrDefault(eventId);
+            cfg.Tables tables = _run.Tables ?? GameApp.Config.Tables;
+            cfg.GameEvent ev;
+            if (string.IsNullOrEmpty(eventId))
+            {
+                IRandomStream rng = GameApp.Random.Stream($"event_action_w{_run.WeekIndex}_d{_run.CurrentDay}_s{_run.ActionStepIndex}");
+                ev = EventService.RollEvent(_run, rng);
+            }
+            else
+            {
+                ev = tables.TbEvent.GetOrDefault(eventId);
+            }
+
             ResolveEvent(ev, onDone);
         }
 
@@ -292,9 +309,9 @@ namespace GourmetProject.Game.UI
             List<cfg.EventOption> options = EventService.GetOptions(ev.Id);
             if (options.Count == 0)
             {
-                string fb = EventService.ResolveImmediate(_run, ev, rng);
+                EventResolveResult result = EventService.ResolveImmediate(_run, ev, rng);
                 RunPersistence.Save(_run);
-                ShowNotice(ev.Name, fb, onDone);
+                ContinueEventResult(ev.Name, ev.Id, result, onDone);
                 return;
             }
 
@@ -314,9 +331,73 @@ namespace GourmetProject.Game.UI
 
         private void ApplyEventOption(cfg.GameEvent ev, cfg.EventOption option, IRandomStream rng, Action onDone)
         {
-            string fb = EventService.ResolveOption(_run, ev, option, rng);
+            EventResolveResult result = EventService.ResolveOption(_run, ev, option, rng);
             RunPersistence.Save(_run);
-            ShowNotice(ev.Name, fb, onDone);
+            ContinueEventResult(ev.Name, ev.Id, result, onDone);
+        }
+
+        private void ContinueEventResult(string title, string eventId, EventResolveResult result, Action onDone)
+        {
+            if (result == null)
+            {
+                onDone?.Invoke();
+                return;
+            }
+
+            switch (result.FollowUpKind)
+            {
+                case EventFollowUpKind.Battle:
+                {
+                    string key = $"event_battle_w{_run.WeekIndex}_d{_run.CurrentDay}_{eventId}";
+                    Action start = () => StartBattle(
+                        result.RequiredScore,
+                        result.Modifier,
+                        key,
+                        false,
+                        null,
+                        onDone,
+                        null,
+                        battleResult => OnEventBattleFailed(result, battleResult, onDone));
+                    ShowNotice(title, result.Feedback, start);
+                    break;
+                }
+
+                case EventFollowUpKind.GameOver:
+                    ShowNotice(title, result.Feedback, () =>
+                    {
+                        ClearPendingNodes();
+                        _victory = false;
+                        _world?.HideWorld();
+                        ShowResult(false, 0);
+                    });
+                    break;
+
+                case EventFollowUpKind.Victory:
+                    ShowNotice(title, result.Feedback, () =>
+                    {
+                        ClearPendingNodes();
+                        OnVictory();
+                    });
+                    break;
+
+                default:
+                    ShowNotice(title, result.Feedback, onDone);
+                    break;
+            }
+        }
+
+        private void OnEventBattleFailed(EventResolveResult result, ScoreResult battleResult, Action onDone)
+        {
+            _world?.HideWorld();
+            int score = battleResult?.Total ?? 0;
+            string message = $"事件挑战未达标（{score}/{result.RequiredScore}），本次事件继续结算。";
+            ShowNotice("事件挑战失败", message, onDone);
+        }
+
+        private void ClearPendingNodes()
+        {
+            _pendingNodes = null;
+            _afterNodes = null;
         }
 
         // —— 商店 ——
@@ -344,9 +425,11 @@ namespace GourmetProject.Game.UI
             bool isBoss,
             string bossId,
             Action onWin,
-            ActionExecutionContext actionContext = null)
+            ActionExecutionContext actionContext = null,
+            Action<ScoreResult> onLose = null)
         {
             _afterBattleWin = onWin;
+            _afterBattleLose = onLose;
             _currentBattleActionContext = actionContext;
             HideResult();
             _session = _run.BuildBattleSession(requiredScore, modifier, key);
@@ -406,8 +489,19 @@ namespace GourmetProject.Game.UI
             }
             else
             {
-                // 任意美食挑战不达标即失败。
-                ShowResult(false, result.Total);
+                if (_afterBattleLose != null)
+                {
+                    Action<ScoreResult> cb = _afterBattleLose;
+                    _afterBattleLose = null;
+                    _afterBattleWin = null;
+                    _currentBattleActionContext = null;
+                    cb.Invoke(result);
+                }
+                else
+                {
+                    // 常规美食/Boss 挑战不达标即失败；事件战斗可通过 onLose 覆盖为惩罚后继续。
+                    ShowResult(false, result.Total);
+                }
             }
         }
 
@@ -416,6 +510,7 @@ namespace GourmetProject.Game.UI
         {
             Action cb = _afterBattleWin;
             _afterBattleWin = null;
+            _afterBattleLose = null;
             _currentBattleActionContext = null;
             cb?.Invoke();
         }

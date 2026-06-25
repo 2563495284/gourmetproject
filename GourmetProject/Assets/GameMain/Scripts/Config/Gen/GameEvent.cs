@@ -24,6 +24,7 @@ public sealed partial class GameEvent : Luban.BeanBase
         { if(!_buf["effectType"].IsString) { throw new SerializationException(); }  EffectType = _buf["effectType"]; }
         { if(!_buf["effectValue"].IsNumber) { throw new SerializationException(); }  EffectValue = _buf["effectValue"]; }
         { if(!_buf["category"].IsString) { throw new SerializationException(); }  Category = _buf["category"]; }
+        { if(!_buf["weight"].IsNumber) { throw new SerializationException(); }  Weight = _buf["weight"]; }
         { if(!_buf["repeatable"].IsBoolean) { throw new SerializationException(); }  Repeatable = _buf["repeatable"]; }
         { if(!_buf["preconditions"].IsString) { throw new SerializationException(); }  Preconditions = _buf["preconditions"]; }
     }
@@ -34,39 +35,43 @@ public sealed partial class GameEvent : Luban.BeanBase
     }
 
     /// <summary>
-    /// 事件ID
+    /// 事件ID。
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 事件名称
+    /// 事件名称。
     /// </summary>
     public readonly string Name;
     /// <summary>
-    /// 事件描述
+    /// 事件描述。
     /// </summary>
     public readonly string Desc;
     /// <summary>
-    /// 消耗天数
+    /// 事件默认耗时；事件行动仍以行动costDays推进。
     /// </summary>
     public readonly int TimeCost;
     /// <summary>
-    /// 效果类型
+    /// 无选项事件的直接效果类型。
     /// </summary>
     public readonly string EffectType;
     /// <summary>
-    /// 效果数值
+    /// 无选项事件的直接效果数值。
     /// </summary>
     public readonly float EffectValue;
     /// <summary>
-    /// 事件分类
+    /// 事件分类，用于后续事件池扩展。
     /// </summary>
     public readonly string Category;
     /// <summary>
-    /// 是否可重复
+    /// 事件节点随机权重；&lt;=0时运行时按1处理。
+    /// </summary>
+    public readonly float Weight;
+    /// <summary>
+    /// 是否可重复触发；false命中后写入UsedEventIds。
     /// </summary>
     public readonly bool Repeatable;
     /// <summary>
-    /// 前置条件
+    /// 前置条件表达式，空=无条件。
     /// </summary>
     public readonly string Preconditions;
    
@@ -87,6 +92,7 @@ public sealed partial class GameEvent : Luban.BeanBase
         + "effectType:" + EffectType + ","
         + "effectValue:" + EffectValue + ","
         + "category:" + Category + ","
+        + "weight:" + Weight + ","
         + "repeatable:" + Repeatable + ","
         + "preconditions:" + Preconditions + ","
         + "}";

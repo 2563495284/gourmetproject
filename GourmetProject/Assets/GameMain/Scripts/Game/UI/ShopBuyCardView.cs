@@ -5,7 +5,7 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI
 {
     /// <summary>
-    /// 商店「进货」单张被动道具卡视图。固定结构在 ShopBuyCardView.prefab，
+    /// 商店「进货」单张商品卡视图。固定结构在 ShopBuyCardView.prefab，
     /// 道具信息、价格与可购买状态由 <see cref="Bind"/> 数据驱动填充。
     /// </summary>
     public sealed class ShopBuyCardView : MonoBehaviour
@@ -19,7 +19,7 @@ namespace GourmetProject.Game.UI
             Bind(item.Name, item.Desc, price, affordable, onBuy);
         }
 
-        /// <summary>通用商品绑定（被动道具 / 菜品 / 胃部碎片）。</summary>
+        /// <summary>通用商品绑定（道具 / 菜品 / 胃部碎片）。</summary>
         public void Bind(string name, string desc, int price, bool affordable, Action onBuy)
         {
             _nameText.text = name;

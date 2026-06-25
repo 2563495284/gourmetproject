@@ -3,14 +3,15 @@ using System.Collections.Generic;
 
 namespace GourmetProject.Gameplay.Model
 {
-    /// <summary>菜谱随机池的一项：菜品 id + 权重 + 最多被选次数（0 不限）。</summary>
+    /// <summary>菜谱随机池的一项：菜品 id + 权重 + 最多被选次数（0 不限）+ 本菜谱内初始分。</summary>
     public sealed class RecipeEntryDef
     {
-        public RecipeEntryDef(string dishId, float weight, int maxCount)
+        public RecipeEntryDef(string dishId, float weight, int maxCount, int initScore)
         {
             DishId = dishId;
             Weight = weight;
             MaxCount = maxCount;
+            InitScore = initScore;
         }
 
         public string DishId { get; }
@@ -18,6 +19,8 @@ namespace GourmetProject.Gameplay.Model
         public float Weight { get; }
 
         public int MaxCount { get; }
+
+        public int InitScore { get; }
     }
 
     /// <summary>

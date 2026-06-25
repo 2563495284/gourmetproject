@@ -14,7 +14,6 @@ namespace GourmetProject.Gameplay.Model
             string id,
             string name,
             int deliciousness,
-            int initScore,
             DishShape shape,
             int hiddenMin,
             int hiddenMax,
@@ -28,7 +27,6 @@ namespace GourmetProject.Gameplay.Model
             Id = id ?? throw new ArgumentNullException(nameof(id));
             Name = name;
             Deliciousness = deliciousness;
-            InitScore = initScore;
             Shape = shape ?? throw new ArgumentNullException(nameof(shape));
             HiddenMin = hiddenMin;
             HiddenMax = hiddenMax;
@@ -49,9 +47,6 @@ namespace GourmetProject.Gameplay.Model
 
         /// <summary>美味度（基础分数），用于技能结算与分数结算。</summary>
         public int Deliciousness { get; }
-
-        /// <summary>初始菜谱生成时累计的分值。</summary>
-        public int InitScore { get; }
 
         public DishShape Shape { get; }
 

@@ -4,6 +4,55 @@ using GourmetProject.Runtime;
 
 namespace GourmetProject.Game.Gameplay
 {
+    public enum EventFollowUpKind
+    {
+        None,
+        Battle,
+        GameOver,
+        Victory,
+    }
+
+    public sealed class EventResolveResult
+    {
+        private EventResolveResult(string feedback, EventFollowUpKind followUpKind, int requiredScore, string modifier)
+        {
+            Feedback = feedback ?? string.Empty;
+            FollowUpKind = followUpKind;
+            RequiredScore = requiredScore;
+            Modifier = modifier ?? string.Empty;
+        }
+
+        public string Feedback { get; }
+
+        public EventFollowUpKind FollowUpKind { get; }
+
+        public int RequiredScore { get; }
+
+        public string Modifier { get; }
+
+        public bool IsBattle => FollowUpKind == EventFollowUpKind.Battle;
+
+        public static EventResolveResult Immediate(string feedback)
+        {
+            return new EventResolveResult(feedback, EventFollowUpKind.None, 0, string.Empty);
+        }
+
+        public static EventResolveResult Battle(string feedback, int requiredScore, string modifier)
+        {
+            return new EventResolveResult(feedback, EventFollowUpKind.Battle, requiredScore, modifier);
+        }
+
+        public static EventResolveResult GameOver(string feedback)
+        {
+            return new EventResolveResult(feedback, EventFollowUpKind.GameOver, 0, string.Empty);
+        }
+
+        public static EventResolveResult Victory(string feedback)
+        {
+            return new EventResolveResult(feedback, EventFollowUpKind.Victory, 0, string.Empty);
+        }
+    }
+
     /// <summary>
     /// 事件服务：提供事件选项查询、随机事件抽取与结算。
     /// 无选项事件直接按 effectType 结算；有选项事件由编排层弹窗后调用 <see cref="ResolveOption"/>。
@@ -36,8 +85,9 @@ namespace GourmetProject.Game.Gameplay
         /// <summary>从满足条件（可重复或未用过、前置满足）的事件中随机一个，用于事件节点。</summary>
         public static cfg.GameEvent RollEvent(GameRun run, IRandomStream rng)
         {
+            cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
             var candidates = new List<cfg.GameEvent>();
-            foreach (cfg.GameEvent ev in GameApp.Config.Tables.TbEvent.DataList)
+            foreach (cfg.GameEvent ev in tables.TbEvent.DataList)
             {
                 if ((ev.Repeatable || !run.IsEventUsed(ev.Id)) && PreconditionEvaluator.IsSatisfied(run, ev.Preconditions))
                 {
@@ -50,41 +100,95 @@ namespace GourmetProject.Game.Gameplay
                 return null;
             }
 
-            return rng.Pick(candidates);
+            var weights = new List<float>(candidates.Count);
+            foreach (cfg.GameEvent ev in candidates)
+            {
+                weights.Add(ev.Weight > 0f ? ev.Weight : 1f);
+            }
+
+            return candidates[rng.WeightedPickIndex(weights)];
         }
 
-        /// <summary>无选项事件：直接按 effectType 结算并记录使用。</summary>
-        public static string ResolveImmediate(GameRun run, cfg.GameEvent ev, IRandomStream rng)
+        /// <summary>无选项事件：直接按 effectType 结算，或返回后续动作（事件战斗/直接结局），并记录使用。</summary>
+        public static EventResolveResult ResolveImmediate(GameRun run, cfg.GameEvent ev, IRandomStream rng)
         {
             if (ev == null)
             {
-                return string.Empty;
+                return EventResolveResult.Immediate(string.Empty);
             }
 
-            string feedback = EffectResolver.Apply(run, ev.EffectType, ev.EffectValue, string.Empty, rng);
+            EventResolveResult result = ResolveEffect(run, ev.EffectType, ev.EffectValue, string.Empty, ev.Desc, rng);
             if (!ev.Repeatable)
             {
                 run.MarkEventUsed(ev.Id);
             }
 
-            return string.IsNullOrEmpty(feedback) ? ev.Desc : feedback;
+            return result;
         }
 
-        /// <summary>有选项事件：按所选选项结算并记录使用。</summary>
-        public static string ResolveOption(GameRun run, cfg.GameEvent ev, cfg.EventOption option, IRandomStream rng)
+        /// <summary>有选项事件：按所选选项结算，或返回后续动作（事件战斗/直接结局），并记录使用。</summary>
+        public static EventResolveResult ResolveOption(GameRun run, cfg.GameEvent ev, cfg.EventOption option, IRandomStream rng)
         {
             if (ev == null || option == null)
             {
-                return string.Empty;
+                return EventResolveResult.Immediate(string.Empty);
             }
 
-            string feedback = EffectResolver.Apply(run, option.ResultType, option.ResultValue, option.ResultParam, rng);
+            EventResolveResult result = ResolveEffect(run, option.ResultType, option.ResultValue, option.ResultParam, option.Text, rng);
             if (!ev.Repeatable)
             {
                 run.MarkEventUsed(ev.Id);
             }
 
-            return feedback;
+            return result;
         }
+
+        private static EventResolveResult ResolveEffect(GameRun run, string effectType, float effectValue, string effectParam, string fallback, IRandomStream rng)
+        {
+            switch (effectType)
+            {
+                case "Battle":
+                case "FoodBattle":
+                {
+                    int required = effectValue > 0f ? RoundToInt(effectValue) : EventBattleRequiredScore(run);
+                    string feedback = string.IsNullOrEmpty(fallback) ? $"触发美食挑战，目标分 {required}。" : fallback;
+                    return EventResolveResult.Battle(feedback, required, effectParam);
+                }
+
+                case "GameOver":
+                case "LoseRun":
+                {
+                    string feedback = string.IsNullOrEmpty(effectParam) ? fallback : effectParam;
+                    return EventResolveResult.GameOver(feedback);
+                }
+
+                case "Victory":
+                case "WinRun":
+                {
+                    string feedback = string.IsNullOrEmpty(effectParam) ? fallback : effectParam;
+                    return EventResolveResult.Victory(feedback);
+                }
+
+                default:
+                {
+                    string feedback = EffectResolver.Apply(run, effectType, effectValue, effectParam, rng);
+                    return EventResolveResult.Immediate(string.IsNullOrEmpty(feedback) ? fallback : feedback);
+                }
+            }
+        }
+
+        private static int EventBattleRequiredScore(GameRun run)
+        {
+            if (run == null)
+            {
+                return 0;
+            }
+
+            return run.LastActionContext != null
+                ? HiddenScoreService.TargetScore(run, run.LastActionContext)
+                : run.RequiredScore;
+        }
+
+        private static int RoundToInt(float v) => (int)System.Math.Round(v, System.MidpointRounding.AwayFromZero);
     }
 }

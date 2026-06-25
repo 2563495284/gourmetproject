@@ -17,13 +17,14 @@ namespace GourmetProject.Game.Gameplay
         /// <summary>为当前周随机一条行动轴并初始化天数游标。返回选中的行动轴 id。</summary>
         public static string RollWeekTimeline(GameRun run, IRandomStream rng)
         {
-            cfg.Tables tables = GameApp.Config.Tables;
+            cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
             bool isBoss = run.IsBossWeek;
+            cfg.Character character = tables.TbCharacter.GetOrDefault(run.CharacterId);
 
             var candidates = new List<cfg.Timeline>();
             foreach (cfg.Timeline tl in tables.TbTimeline.DataList)
             {
-                if (MatchesWeek(tl.WeekFilter, run.WeekIndex, isBoss))
+                if (MatchesWeek(tl.WeekFilter, run.WeekIndex, isBoss) && MatchesPool(character?.TimelinePool, tl.Id))
                 {
                     candidates.Add(tl);
                 }
@@ -31,7 +32,7 @@ namespace GourmetProject.Game.Gameplay
 
             if (candidates.Count == 0)
             {
-                Log.Warning($"第 {run.WeekIndex} 周无匹配行动轴（isBoss={isBoss}），回退为 {DefaultLengthDays} 天空轴。", Tag);
+                Log.Warning($"第 {run.WeekIndex} 周无匹配行动轴（character={run.CharacterId}, isBoss={isBoss}），回退为 {DefaultLengthDays} 天空轴。", Tag);
                 run.BeginTimeline(string.Empty, DefaultLengthDays);
                 return string.Empty;
             }
@@ -58,7 +59,8 @@ namespace GourmetProject.Game.Gameplay
                 return nodes;
             }
 
-            foreach (cfg.TimelineNode node in GameApp.Config.Tables.TbTimelineNode.DataList)
+            cfg.Tables tables = run.Tables ?? GameApp.Config.Tables;
+            foreach (cfg.TimelineNode node in tables.TbTimelineNode.DataList)
             {
                 if (node.TimelineId == run.CurrentTimelineId)
                 {
@@ -119,6 +121,25 @@ namespace GourmetProject.Game.Gameplay
             foreach (string part in parts)
             {
                 if (int.TryParse(part.Trim(), out int w) && w == weekIndex)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>逗号分隔池匹配：空池=任意通过；否则需包含 value。</summary>
+        private static bool MatchesPool(string pool, string value)
+        {
+            if (string.IsNullOrEmpty(pool))
+            {
+                return true;
+            }
+
+            foreach (string part in pool.Split(','))
+            {
+                if (part.Trim() == value)
                 {
                     return true;
                 }

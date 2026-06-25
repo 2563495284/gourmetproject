@@ -15,10 +15,12 @@ namespace GourmetProject.Game.Gameplay
 
         public static cfg.Boss RollBoss(GameRun run, IRandomStream rng, string poolFilter = "")
         {
+            cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
+            cfg.Character character = tables.TbCharacter.GetOrDefault(run.CharacterId);
             var candidates = new List<cfg.Boss>();
-            foreach (cfg.Boss boss in GameApp.Config.Tables.TbBoss.DataList)
+            foreach (cfg.Boss boss in tables.TbBoss.DataList)
             {
-                if (IsEligible(run, boss, poolFilter))
+                if (IsEligible(run, boss, character?.BossPool, poolFilter))
                 {
                     candidates.Add(boss);
                 }
@@ -26,7 +28,7 @@ namespace GourmetProject.Game.Gameplay
 
             if (candidates.Count == 0)
             {
-                Log.Warning($"第 {run.WeekIndex} 周无可用 Boss（filter='{poolFilter}'）。", Tag);
+                Log.Warning($"第 {run.WeekIndex} 周无可用 Boss（character={run.CharacterId}, filter='{poolFilter}'）。", Tag);
                 return null;
             }
 
@@ -39,9 +41,15 @@ namespace GourmetProject.Game.Gameplay
             return candidates[rng.WeightedPickIndex(weights)];
         }
 
-        private static bool IsEligible(GameRun run, cfg.Boss boss, string poolFilter)
+        private static bool IsEligible(GameRun run, cfg.Boss boss, string characterBossPool, string nodeBossPool)
         {
             if (boss == null)
+            {
+                return false;
+            }
+
+            bool isFinalWeek = !run.IsEndless && run.WeekIndex >= run.TotalWeeks;
+            if (isFinalWeek && boss.Week != run.TotalWeeks)
             {
                 return false;
             }
@@ -51,12 +59,22 @@ namespace GourmetProject.Game.Gameplay
                 return false;
             }
 
+            if (boss.Week == 0 && run.IsBossCompleted(boss.Id))
+            {
+                return false;
+            }
+
             if (!MatchesPool(boss.CharacterPool, run.CharacterId))
             {
                 return false;
             }
 
-            if (!MatchesPool(poolFilter, boss.Id) && !string.IsNullOrEmpty(poolFilter))
+            if (!MatchesPool(characterBossPool, boss.Id))
+            {
+                return false;
+            }
+
+            if (!MatchesPool(nodeBossPool, boss.Id))
             {
                 return false;
             }

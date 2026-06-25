@@ -26,14 +26,15 @@ namespace GourmetProject.Tests
         public void Roll_IncludesFixedDishesAndReachesRequiredScore()
         {
             GameplayDatabase db = BuildDb();
+            var pool = new[]
+            {
+                new RecipeEntryDef("egg", 100f, 0, 8),
+                new RecipeEntryDef("rice", 100f, 0, 5),
+            };
             var recipe = new RecipeDef(
                 "r",
                 new[] { "rice" },
-                new[]
-                {
-                    new RecipeEntryDef("egg", 100f, 0),
-                    new RecipeEntryDef("rice", 100f, 0),
-                },
+                pool,
                 requiredInitScore: 30);
 
             var rng = new RandomService();
@@ -45,18 +46,18 @@ namespace GourmetProject.Tests
             int rolledScore = 0;
             for (int i = 1; i < result.Count; i++)
             {
-                rolledScore += db.GetDish(result[i]).InitScore;
+                rolledScore += GetEntryScore(pool, result[i]);
             }
 
             Assert.GreaterOrEqual(rolledScore, 30, "rolled dishes should reach required init score");
         }
 
         [Test]
-        public void Roll_UsesInitScoreInsteadOfDeliciousness()
+        public void Roll_UsesRecipeEntryInitScoreInsteadOfDishStats()
         {
             var dishes = new List<DishDef>
             {
-                GameplayTestFactory.Dish("starter", new[] { "X" }, deliciousness: 1, initScore: 10),
+                GameplayTestFactory.Dish("starter", new[] { "X" }, deliciousness: 1),
             };
             var db = new GameplayDatabase(dishes, new List<TagDef>(), new List<RecipeDef>());
             var recipe = new RecipeDef(
@@ -64,7 +65,7 @@ namespace GourmetProject.Tests
                 new string[0],
                 new[]
                 {
-                    new RecipeEntryDef("starter", 100f, 0),
+                    new RecipeEntryDef("starter", 100f, 0, 10),
                 },
                 requiredInitScore: 10);
 
@@ -84,8 +85,8 @@ namespace GourmetProject.Tests
                 new string[0],
                 new[]
                 {
-                    new RecipeEntryDef("rare", 100f, 1), // 最多 1 次
-                    new RecipeEntryDef("rice", 100f, 0),
+                    new RecipeEntryDef("rare", 100f, 1, 20), // 最多 1 次
+                    new RecipeEntryDef("rice", 100f, 0, 5),
                 },
                 requiredInitScore: 100);
 
@@ -114,8 +115,8 @@ namespace GourmetProject.Tests
                 new[] { "rice" },
                 new[]
                 {
-                    new RecipeEntryDef("egg", 80f, 0),
-                    new RecipeEntryDef("rare", 40f, 0),
+                    new RecipeEntryDef("egg", 80f, 0, 8),
+                    new RecipeEntryDef("rare", 40f, 0, 20),
                 },
                 requiredInitScore: 50);
 
@@ -128,6 +129,19 @@ namespace GourmetProject.Tests
             List<string> b = RecipeRoller.Roll(recipe, db, rngB.Stream("recipe"));
 
             CollectionAssert.AreEqual(a, b);
+        }
+
+        private static int GetEntryScore(IReadOnlyList<RecipeEntryDef> entries, string dishId)
+        {
+            foreach (RecipeEntryDef entry in entries)
+            {
+                if (entry.DishId == dishId)
+                {
+                    return entry.InitScore;
+                }
+            }
+
+            return 0;
         }
     }
 }

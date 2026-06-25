@@ -34,6 +34,9 @@ TABLES = {
     "character": [
         ("id", "string", "s"), ("name", "string", "s"), ("desc", "string", "s"),
         ("portrait", "string", "s"), ("initialRecipeId", "string", "s"),
+        ("initialFragmentId", "string", "s"), ("maxStomachWidth", "int", "s"),
+        ("maxStomachHeight", "int", "s"), ("timelinePool", "string", "s"),
+        ("bossPool", "string", "s"),
         ("startItems", "list,string", "l1"),
     ],
     "item": [
@@ -72,6 +75,8 @@ TABLES = {
     "event": [
         ("id", "string", "s"), ("name", "string", "s"), ("desc", "string", "s"),
         ("timeCost", "int", "s"), ("effectType", "string", "s"), ("effectValue", "float", "s"),
+        ("category", "string", "s"), ("weight", "float", "s"), ("repeatable", "bool", "b"),
+        ("preconditions", "string", "s"),
     ],
     "globalconst": [
         ("id", "string", "s"), ("intValue", "int", "s"), ("floatValue", "float", "s"),
@@ -120,14 +125,14 @@ def write_dish(ws, rows):
 
 def write_recipe(ws, rows):
     # pool(list,RecipeEntry) 用多行模式 *pool：每个元素占一行，续行前导列留空。
-    # 单元格内靠 schema <bean sep=","> 切出 dishId,weight,maxCount。
+    # 单元格内靠 schema <bean sep=","> 切出 dishId,weight,maxCount,initScore。
     ws.append(["##var", "id", "fixedDishes", "requiredInitScore", "*pool"])
     ws.append(["##type", "string", "list,string", "int", "list,RecipeEntry"])
     for r in rows:
         fixed = r.get("fixedDishes") or []
         base = ["", r.get("id", ""), (fixed[0] if fixed else ""), r.get("requiredInitScore", "")]
         pool = r.get("pool") or [{}]
-        cells = [f"{e.get('dishId', '')},{e.get('weight', '')},{e.get('maxCount', '')}" for e in pool]
+        cells = [f"{e.get('dishId', '')},{e.get('weight', '')},{e.get('maxCount', '')},{e.get('initScore', '')}" for e in pool]
         ws.append(base + [cells[0]])
         for c in cells[1:]:
             ws.append([""] * len(base) + [c])

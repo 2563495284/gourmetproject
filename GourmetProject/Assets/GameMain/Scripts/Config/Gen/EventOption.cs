@@ -30,11 +30,29 @@ public sealed partial class EventOption : Luban.BeanBase
         return new EventOption(_buf);
     }
 
+    /// <summary>
+    /// 事件选项ID。
+    /// </summary>
     public readonly string Id;
+    /// <summary>
+    /// 所属事件ID。
+    /// </summary>
     public readonly string EventId;
+    /// <summary>
+    /// 选项显示文本。
+    /// </summary>
     public readonly string Text;
+    /// <summary>
+    /// 选项结果类型。
+    /// </summary>
     public readonly string ResultType;
+    /// <summary>
+    /// 选项结果数值。
+    /// </summary>
     public readonly float ResultValue;
+    /// <summary>
+    /// 选项结果参数。
+    /// </summary>
     public readonly string ResultParam;
    
     public const int __ID__ = 1656861583;

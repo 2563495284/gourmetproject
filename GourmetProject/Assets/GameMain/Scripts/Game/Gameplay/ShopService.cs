@@ -5,10 +5,11 @@ using GourmetProject.Runtime;
 
 namespace GourmetProject.Game.Gameplay
 {
-    /// <summary>商店一件商品的归一化描述（被动道具 / 菜品 / 胃部碎片）。</summary>
+    /// <summary>商店一件商品的归一化描述（被动道具 / 主动道具 / 菜品 / 胃部碎片）。</summary>
     public enum ShopEntryKind
     {
         PassiveItem,
+        ActiveItem,
         Dish,
         Fragment,
     }
@@ -32,16 +33,18 @@ namespace GourmetProject.Game.Gameplay
     }
 
     /// <summary>
-    /// 商店服务：根据当前进度「隐藏分」刷新商品（被动道具 + 菜品 + 胃部碎片），并处理购买、出售、删菜。
+    /// 商店服务：根据当前进度「隐藏分」刷新商品（道具 + 菜品 + 胃部碎片），并处理购买、出售、删菜。
     /// 隐藏分来自 <see cref="GameRun.RewardHiddenScore"/>，与奖励系统共用同一尺度。
     /// </summary>
     public static class ShopService
     {
         public const int PassiveItemPrice = 45;
-        public const int PassiveSellPrice = 20;
+        public const int ActiveItemPrice = 35;
+        public const int ItemSellPrice = 20;
         public const int DeleteDishCost = 15;
 
         private const int PassiveCount = 2;
+        private const int ActiveCount = 1;
         private const int DishCount = 2;
         private const int FragmentCount = 1;
 
@@ -59,6 +62,16 @@ namespace GourmetProject.Game.Gameplay
                 if (item != null)
                 {
                     stock.Add(new ShopEntry(ShopEntryKind.PassiveItem, item.Id, item.Name, item.Desc, PassiveItemPrice));
+                }
+            }
+
+            int activeHidden = HiddenScoreService.ActiveItemHiddenScore(run, run.LastActionContext);
+            foreach (string itemId in ItemPoolService.Roll(tables, run, cfg.ItemKind.Active, rng, ActiveCount, activeHidden, distanceFloor: 5))
+            {
+                cfg.Item item = tables.TbItem.GetOrDefault(itemId);
+                if (item != null)
+                {
+                    stock.Add(new ShopEntry(ShopEntryKind.ActiveItem, item.Id, item.Name, item.Desc, ActiveItemPrice));
                 }
             }
 
@@ -91,6 +104,7 @@ namespace GourmetProject.Game.Gameplay
             switch (entry.Kind)
             {
                 case ShopEntryKind.PassiveItem:
+                case ShopEntryKind.ActiveItem:
                     run.AcquireItem(entry.Id, 0);
                     applied = true;
                     break;
@@ -114,15 +128,15 @@ namespace GourmetProject.Game.Gameplay
             return true;
         }
 
-        /// <summary>出售一件被动道具，回血金币。</summary>
-        public static bool SellPassive(GameRun run, string itemId)
+        /// <summary>出售一份道具实例（被动整条移除；主动移除一份），返还金币。</summary>
+        public static bool SellItem(GameRun run, string itemId)
         {
             if (run == null || !run.RemoveItem(itemId))
             {
                 return false;
             }
 
-            run.Gold += PassiveSellPrice;
+            run.Gold += ItemSellPrice;
             return true;
         }
 

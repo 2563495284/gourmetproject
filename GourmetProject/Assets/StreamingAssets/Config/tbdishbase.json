@@ -3,7 +3,6 @@
     "id": "rice",
     "name": "米饭",
     "deliciousness": 5,
-    "initScore": 5,
     "icon": "Sprites/Dishes/rice",
     "allowRotate": false,
     "shapeRows": [
@@ -14,7 +13,6 @@
     "id": "egg",
     "name": "煎蛋",
     "deliciousness": 8,
-    "initScore": 8,
     "icon": "Sprites/Dishes/egg",
     "allowRotate": true,
     "shapeRows": [
@@ -25,7 +23,6 @@
     "id": "soup",
     "name": "鲜汤",
     "deliciousness": 9,
-    "initScore": 9,
     "icon": "Sprites/Dishes/soup",
     "allowRotate": true,
     "shapeRows": [
@@ -36,7 +33,6 @@
     "id": "fish",
     "name": "清蒸鱼",
     "deliciousness": 15,
-    "initScore": 15,
     "icon": "Sprites/Dishes/fish",
     "allowRotate": true,
     "shapeRows": [
@@ -47,7 +43,6 @@
     "id": "noodle",
     "name": "拌面",
     "deliciousness": 12,
-    "initScore": 12,
     "icon": "Sprites/Dishes/noodle",
     "allowRotate": true,
     "shapeRows": [
@@ -59,7 +54,6 @@
     "id": "dumpling",
     "name": "饺子",
     "deliciousness": 11,
-    "initScore": 11,
     "icon": "Sprites/Dishes/dumpling",
     "allowRotate": true,
     "shapeRows": [
@@ -71,7 +65,6 @@
     "id": "chili",
     "name": "辣椒",
     "deliciousness": 4,
-    "initScore": 4,
     "icon": "Sprites/Dishes/chili",
     "allowRotate": false,
     "shapeRows": [
@@ -82,7 +75,6 @@
     "id": "orange",
     "name": "橙子",
     "deliciousness": 10,
-    "initScore": 10,
     "icon": "Sprites/Dishes/orange",
     "allowRotate": false,
     "shapeRows": [
@@ -94,7 +86,6 @@
     "id": "cake",
     "name": "蛋糕",
     "deliciousness": 20,
-    "initScore": 20,
     "icon": "Sprites/Dishes/cake",
     "allowRotate": true,
     "shapeRows": [
@@ -106,7 +97,6 @@
     "id": "feast",
     "name": "满汉全席",
     "deliciousness": 25,
-    "initScore": 25,
     "icon": "Sprites/Dishes/feast",
     "allowRotate": true,
     "shapeRows": [

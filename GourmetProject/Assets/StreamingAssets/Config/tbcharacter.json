@@ -8,6 +8,8 @@
     "initialFragmentId": "gut_4x4",
     "maxStomachWidth": 4,
     "maxStomachHeight": 4,
+    "timelinePool": "tl_normal,tl_boss",
+    "bossPool": "boss_glutton,boss_final",
     "startItems": [
       "item_big_plate"
     ]
@@ -21,6 +23,8 @@
     "initialFragmentId": "gut_4x4",
     "maxStomachWidth": 4,
     "maxStomachHeight": 4,
+    "timelinePool": "tl_busy,tl_boss",
+    "bossPool": "boss_iron,boss_final",
     "startItems": [
       "item_chef_knife"
     ]
@@ -34,6 +38,8 @@
     "initialFragmentId": "gut_4x4",
     "maxStomachWidth": 4,
     "maxStomachHeight": 4,
+    "timelinePool": "",
+    "bossPool": "",
     "startItems": [
       "item_pepper_jar"
     ]

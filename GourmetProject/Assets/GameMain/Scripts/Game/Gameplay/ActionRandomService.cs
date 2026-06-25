@@ -5,13 +5,13 @@ using GourmetProject.Runtime;
 namespace GourmetProject.Game.Gameplay
 {
     /// <summary>
-    /// 行动随机：从满足前置条件、未被「不可重复」排除的行动中，按权重做不放回随机，产出三选一。
+    /// 行动随机：从满足前置条件、未被「不可重复」排除的行动中，按权重做不放回随机，产出 n 选一（最多 3 个）。
     /// </summary>
     public static class ActionRandomService
     {
-        public const int ChoiceCount = 3;
+        public const int MaxChoiceCount = 3;
 
-        public static List<cfg.GameAction> GenerateChoices(GameRun run, IRandomStream rng, int count = ChoiceCount)
+        public static List<cfg.GameAction> GenerateChoices(GameRun run, IRandomStream rng, int count = MaxChoiceCount)
         {
             var result = new List<cfg.GameAction>();
             if (run == null || rng == null || count <= 0)
@@ -19,8 +19,9 @@ namespace GourmetProject.Game.Gameplay
                 return result;
             }
 
+            cfg.Tables tables = run.Tables ?? GameApp.Config.Tables;
             var candidates = new List<cfg.GameAction>();
-            foreach (cfg.GameAction action in GameApp.Config.Tables.TbAction.DataList)
+            foreach (cfg.GameAction action in tables.TbAction.DataList)
             {
                 if (IsAvailable(run, action))
                 {
@@ -28,7 +29,8 @@ namespace GourmetProject.Game.Gameplay
                 }
             }
 
-            for (int i = 0; i < count && candidates.Count > 0; i++)
+            int choiceCount = count > MaxChoiceCount ? MaxChoiceCount : count;
+            for (int i = 0; i < choiceCount && candidates.Count > 0; i++)
             {
                 var weights = new List<float>(candidates.Count);
                 foreach (cfg.GameAction action in candidates)

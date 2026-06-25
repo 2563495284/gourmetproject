@@ -41,7 +41,7 @@ public sealed partial class Recipe : Luban.BeanBase
     /// </summary>
     public readonly int RequiredInitScore;
     /// <summary>
-    /// 随机菜品池条目列表
+    /// 随机菜品池条目列表（dishId,weight,maxCount,initScore）
     /// </summary>
     public readonly System.Collections.Generic.List<RecipeEntry> Pool;
    

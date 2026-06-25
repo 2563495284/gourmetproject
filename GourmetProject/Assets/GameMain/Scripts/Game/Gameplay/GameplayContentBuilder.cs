@@ -104,7 +104,6 @@ namespace GourmetProject.Game.Gameplay
                 v.Id,
                 b.Name,
                 b.Deliciousness,
-                b.InitScore,
                 DishShape.FromRows(b.ShapeRows),
                 v.HiddenRange.Min,
                 v.HiddenRange.Max,
@@ -135,7 +134,7 @@ namespace GourmetProject.Game.Gameplay
             var pool = new List<RecipeEntryDef>(r.Pool.Count);
             foreach (cfg.RecipeEntry e in r.Pool)
             {
-                pool.Add(new RecipeEntryDef(e.DishId, e.Weight, e.MaxCount));
+                pool.Add(new RecipeEntryDef(e.DishId, e.Weight, e.MaxCount, e.InitScore));
             }
 
             return new RecipeDef(r.Id, new List<string>(r.FixedDishes), pool, r.RequiredInitScore);

@@ -9,7 +9,7 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI
 {
     /// <summary>
-    /// 系统节点「商店」：按隐藏分刷新商品（被动道具 / 菜品 / 胃部碎片），可购买、出售被动道具、花金币删菜。
+    /// 系统节点「商店」：按隐藏分刷新商品（道具 / 菜品 / 胃部碎片），可购买、出售道具、花金币管理菜谱。
     /// 商品逻辑集中在 <see cref="ShopService"/>；本界面只负责按周+天确定性刷新与卡片渲染。
     /// 固定壳在 ShopForm.prefab，买/卖卡用 ShopBuyCardView / ShopSellCardView 数据驱动。
     /// </summary>
@@ -29,6 +29,7 @@ namespace GourmetProject.Game.UI
         private GameRun _run;
         private readonly List<ShopEntry> _stock = new();
         private readonly List<GameObject> _spawned = new();
+        private bool _notifiedClosed;
 
         protected override void OnInit(object userData)
         {
@@ -40,7 +41,6 @@ namespace GourmetProject.Game.UI
         private void OnLeaveClicked()
         {
             Close();
-            BattleForm.Active?.OnShopClosed();
         }
 
         protected override void OnOpen(object userData)
@@ -48,6 +48,7 @@ namespace GourmetProject.Game.UI
             base.OnOpen(userData);
 
             _run = GameRunContext.Current;
+            _notifiedClosed = false;
             if (_run == null)
             {
                 Close();
@@ -61,6 +62,7 @@ namespace GourmetProject.Game.UI
         protected override void OnClose(bool isShutdown, object userData)
         {
             ClearSpawned();
+            NotifyClosedOnce();
             base.OnClose(isShutdown, userData);
         }
 
@@ -110,20 +112,21 @@ namespace GourmetProject.Game.UI
         {
             cfg.Tables tables = GameApp.Config.Tables;
 
-            // 出售被动道具 + 删除菜谱池菜品，合并展示在同一区。
+            // 出售道具 + 删除菜谱池菜品，合并展示在同一区作为轻量菜谱管理入口。
             var entries = new List<SellEntry>();
             foreach (RunItemState state in _run.Items)
             {
                 cfg.Item item = tables.TbItem.GetOrDefault(state.ItemId);
-                if (item != null && item.Kind == cfg.ItemKind.Passive)
+                if (item != null)
                 {
-                    entries.Add(SellEntry.Sell(item.Id, item.Name));
+                    string prefix = item.Kind == cfg.ItemKind.Active ? "主动道具" : "被动道具";
+                    entries.Add(SellEntry.Sell(item.Id, $"{prefix}：{item.Name}"));
                 }
             }
 
             foreach (string dishId in _run.BonusDishIds)
             {
-                entries.Add(SellEntry.Delete(dishId, DishName(tables, dishId)));
+                entries.Add(SellEntry.Delete(dishId, $"菜谱管理：{DishName(tables, dishId)}"));
             }
 
             bool empty = entries.Count == 0;
@@ -151,7 +154,7 @@ namespace GourmetProject.Game.UI
                 }
                 else
                 {
-                    card.Bind(entry.Name, $"卖 +{ShopService.PassiveSellPrice}", () => OnSell(captured.Id));
+                    card.Bind(entry.Name, $"卖 +{ShopService.ItemSellPrice}", () => OnSell(captured.Id));
                 }
 
                 _spawned.Add(card.gameObject);
@@ -208,7 +211,7 @@ namespace GourmetProject.Game.UI
 
         private void OnSell(string itemId)
         {
-            if (ShopService.SellPassive(_run, itemId))
+            if (ShopService.SellItem(_run, itemId))
             {
                 RunPersistence.Save(_run);
                 Rebuild();
@@ -227,6 +230,17 @@ namespace GourmetProject.Game.UI
         private void Close()
         {
             GameApp.UI.CloseUIForm(UIForm);
+        }
+
+        private void NotifyClosedOnce()
+        {
+            if (_notifiedClosed)
+            {
+                return;
+            }
+
+            _notifiedClosed = true;
+            BattleForm.Active?.OnShopClosed();
         }
 
         private readonly struct SellEntry

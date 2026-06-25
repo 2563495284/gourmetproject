@@ -35,11 +35,12 @@ namespace GourmetProject.Game.Gameplay
             body.AppendLine($"胃部碎片：{run.StomachFragmentIds.Count} 块");
             body.AppendLine($"触发事件：{run.UsedEventIds.Count} 次（不可重复计）");
 
-            string unlocks = NewUnlocks(run);
+            string unlocks = NewUnlocks(run, won);
             if (!string.IsNullOrEmpty(unlocks))
             {
                 body.AppendLine();
-                body.AppendLine($"新解锁：{unlocks}");
+                body.AppendLine("新解锁 / 新发现：");
+                body.Append(unlocks);
             }
 
             return new SettlementSummary
@@ -59,9 +60,10 @@ namespace GourmetProject.Game.Gameplay
             }
 
             var names = new List<string>(run.CompletedBossIds.Count);
+            cfg.Tables tables = run.Tables ?? GameApp.Config.Tables;
             foreach (string bossId in run.CompletedBossIds)
             {
-                cfg.Boss boss = GameApp.Config.Tables.TbBoss.GetOrDefault(bossId);
+                cfg.Boss boss = tables.TbBoss.GetOrDefault(bossId);
                 names.Add(boss != null ? boss.Name : bossId);
             }
 
@@ -73,10 +75,58 @@ namespace GourmetProject.Game.Gameplay
             return run.Items.Count;
         }
 
-        /// <summary>解锁系统占位：当前没有跨局解锁记录，返回空（后续接入存档解锁表时填充）。</summary>
-        private static string NewUnlocks(GameRun run)
+        /// <summary>
+        /// 当前还没有跨局解锁表，这里先把本局达成项整理为结算展示；
+        /// 后续接入持久化解锁时，可把这些达成项改为真正的 unlock id。
+        /// </summary>
+        private static string NewUnlocks(GameRun run, bool won)
         {
-            return string.Empty;
+            var unlocks = new List<string>();
+            if (won)
+            {
+                unlocks.Add("无尽模式入口");
+                unlocks.Add("胜利结算图鉴记录");
+            }
+
+            cfg.Tables tables = run.Tables ?? GameApp.Config.Tables;
+            foreach (string bossId in run.CompletedBossIds)
+            {
+                cfg.Boss boss = tables.TbBoss.GetOrDefault(bossId);
+                unlocks.Add($"Boss 图鉴：{(boss != null ? boss.Name : bossId)}");
+            }
+
+            if (run.WeekIndex >= 4)
+            {
+                unlocks.Add("困难美食行动池记录");
+            }
+
+            if (run.BonusDishIds.Count > 0)
+            {
+                unlocks.Add($"菜谱扩展记录 x{run.BonusDishIds.Count}");
+            }
+
+            if (run.StomachFragmentIds.Count > 0)
+            {
+                unlocks.Add($"胃部碎片记录 x{run.StomachFragmentIds.Count}");
+            }
+
+            if (run.UsedEventIds.Count > 0)
+            {
+                unlocks.Add($"事件图鉴记录 x{run.UsedEventIds.Count}");
+            }
+
+            if (unlocks.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            var sb = new StringBuilder();
+            foreach (string unlock in unlocks)
+            {
+                sb.AppendLine($"- {unlock}");
+            }
+
+            return sb.ToString().TrimEnd();
         }
     }
 }

@@ -2,7 +2,7 @@
 """生成「胃部棋盘 + 格子标签」相关的 xlsx 表：
 - stomach_fragment.xlsx：胃部碎片库（含初始胃 gut_4x4）。
 - fragment_cell_tag.xlsx：碎片格强化标签（分开配置）。
-- 重写 character.xlsx：追加 initialFragmentId / maxStomachWidth / maxStomachHeight 三列。
+- 重写 character.xlsx：补齐 initialFragmentId / maxStomachWidth / maxStomachHeight / timelinePool / bossPool。
 - 重写 tag.xlsx：追加 2 个「格子强化」标签 t_cell_gold / t_cell_warm。
 
 用法：python3 GameConfig/Tools/gen_stomach_tables.py
@@ -67,22 +67,44 @@ def write_cell_tags():
 def rewrite_characters():
     src = os.path.join(DATAS, "character.xlsx")
     rows = list(load_workbook(src, data_only=True).active.iter_rows(values_only=True))
-    # 旧列: id,name,desc,portrait,initialRecipeId,startItems(末列)
-    data = rows[2:]
+    header = next(row for row in rows if row and row[0] == "##var")
+    index = {name: i for i, name in enumerate(header) if name}
+    data = [row for row in rows if row and row[0] not in ("##var", "##comment", "##type")]
     wb = Workbook()
     ws = wb.active
     ws.title = "character"
     ws.append(["##var", "id", "name", "desc", "portrait", "initialRecipeId",
-               "initialFragmentId", "maxStomachWidth", "maxStomachHeight", "startItems"])
+               "initialFragmentId", "maxStomachWidth", "maxStomachHeight",
+               "timelinePool", "bossPool", "startItems"])
+    ws.append(["##comment", "配置ID", "角色名称", "角色描述", "角色立绘资源路径", "初始菜谱ID",
+               "初始胃碎片ID", "胃最大宽度", "胃最大高度",
+               "可用行动轴池，空=全部，逗号分隔 timeline.id",
+               "可用Boss池，空=全部，逗号分隔 boss.id", "初始携带道具ID列表"])
     ws.append(["##type", "string", "string", "string", "string", "string",
-               "string", "int", "int", "list,string"])
+               "string", "int", "int", "string", "string", "list,string"])
     for r in data:
-        vals = [("" if c is None else c) for c in r]
-        # vals[0] 为 ##var 标记列(空)。
-        _mark, cid, name, desc, portrait, recipe, start = vals[0], vals[1], vals[2], vals[3], vals[4], vals[5], vals[6]
-        ws.append(["", cid, name, desc, portrait, recipe, "gut_4x4", 4, 4, start])
+        def value(name, default=""):
+            i = index.get(name)
+            if i is None or i >= len(r) or r[i] is None:
+                return default
+            return r[i]
+
+        ws.append([
+            "",
+            value("id"),
+            value("name"),
+            value("desc"),
+            value("portrait"),
+            value("initialRecipeId"),
+            value("initialFragmentId", "gut_4x4"),
+            value("maxStomachWidth", 4),
+            value("maxStomachHeight", 4),
+            value("timelinePool"),
+            value("bossPool"),
+            value("startItems"),
+        ])
     wb.save(src)
-    print(f"  character.xlsx 重写 (+3 列, {len(data)} 角色)")
+    print(f"  character.xlsx 重写/补齐字段 ({len(data)} 角色)")
 
 
 def append_tags():

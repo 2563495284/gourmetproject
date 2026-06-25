@@ -38,55 +38,55 @@ public sealed partial class GoldRewardCurve : Luban.BeanBase
     }
 
     /// <summary>
-    /// 曲线ID
+    /// 金币奖励曲线ID。
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 金币下限基础值
+    /// 金币下限基础值。
     /// </summary>
     public readonly int MinBase;
     /// <summary>
-    /// 金币上限基础值
+    /// 金币上限基础值。
     /// </summary>
     public readonly int MaxBase;
     /// <summary>
-    /// 下限每周加成
+    /// 金币下限每周递增值。
     /// </summary>
     public readonly float MinPerWeek;
     /// <summary>
-    /// 上限每周加成
+    /// 金币上限每周递增值。
     /// </summary>
     public readonly float MaxPerWeek;
     /// <summary>
-    /// 下限每天加成
+    /// 金币下限每行动轴天数递增值。
     /// </summary>
     public readonly float MinPerDay;
     /// <summary>
-    /// 上限每天加成
+    /// 金币上限每行动轴天数递增值。
     /// </summary>
     public readonly float MaxPerDay;
     /// <summary>
-    /// 普通下限加成
+    /// 普通难度金币下限加成。
     /// </summary>
     public readonly int NormalMinBonus;
     /// <summary>
-    /// 普通上限加成
+    /// 普通难度金币上限加成。
     /// </summary>
     public readonly int NormalMaxBonus;
     /// <summary>
-    /// 困难下限加成
+    /// 困难难度金币下限加成。
     /// </summary>
     public readonly int HardMinBonus;
     /// <summary>
-    /// 困难上限加成
+    /// 困难难度金币上限加成。
     /// </summary>
     public readonly int HardMaxBonus;
     /// <summary>
-    /// Boss下限加成
+    /// Boss难度金币下限加成。
     /// </summary>
     public readonly int BossMinBonus;
     /// <summary>
-    /// Boss上限加成
+    /// Boss难度金币上限加成。
     /// </summary>
     public readonly int BossMaxBonus;
    

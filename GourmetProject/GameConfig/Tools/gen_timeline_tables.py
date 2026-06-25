@@ -2,7 +2,7 @@
 """生成「行动轴」相关 xlsx 表，并扩展 event.xlsx。
 
 新表/工作簿：
-- action.xlsx         : 行动、v2 行动组合、行动组合成员、行动序列约束。
+- action.xlsx         : 行动池；每轮实时按权重随机 n 选一，最多 3 个。
 - reward_curve.xlsx   : v2 隐藏分曲线、金币曲线。
 - timeline.xlsx       : 周配置、目标分曲线、奖励包、行动轴库、行动轴节点。
 - boss.xlsx                 : Boss 池。
@@ -76,12 +76,12 @@ def write_workbook(filename, sheets):
 
 # —— action.xlsx ——
 ACTION_FIELDS = [
-    ("id", "string"), ("name", "string"), ("desc", "string"),
-    ("actionType", "ActionType"), ("costDays", "int"), ("weight", "float"),
-    ("repeatable", "bool"), ("preconditions", "string"),
-    ("payloadType", "string"), ("payloadValue", "float"), ("payloadParam", "string"),
-    ("linkId", "string"), ("foodDifficulty", "string"), ("rewardKind", "RewardKind"),
-    ("rewardPackageId", "string"), ("goldCurveId", "string"), ("hiddenScoreBonus", "int"),
+    ("id", "string", "行动ID"), ("name", "string", "行动名称"), ("desc", "string", "行动描述"),
+    ("actionType", "ActionType", "行动类型"), ("costDays", "int", "默认消耗天数"), ("weight", "float", "随机权重"),
+    ("repeatable", "bool", "是否可重复"), ("preconditions", "string", "前置条件"),
+    ("payloadType", "string", "载荷类型"), ("payloadValue", "float", "载荷数值"), ("payloadParam", "string", "载荷参数"),
+    ("linkId", "string", "关联配置ID"), ("foodDifficulty", "string", "美食难度(Normal/Hard/Boss)"), ("rewardKind", "RewardKind", "美食奖励外观类型"),
+    ("rewardPackageId", "string", "美食奖励包ID"), ("goldCurveId", "string", "金币曲线ID"), ("hiddenScoreBonus", "int", "行动隐藏分加成"),
 ]
 ACTIONS = [
     # 美食挑战：payloadValue 保留为目标分倍率兼容字段；v2 主要读取难度、奖励包、金币曲线和隐藏分加成。
@@ -108,56 +108,20 @@ ACTIONS = [
     ("act_shop", "逛逛商店", "去食材店转转，买卖道具。", "Shop", 1, 40, "true", "", "", 0, "", "", "Normal", "Gold", "", "", 0),
 ]
 
-
-ACTION_GROUP_FIELDS = [
-    ("id", "string"), ("name", "string"), ("weight", "float"), ("weekFilter", "string"), ("preventRepeat", "bool"),
-]
-ACTION_GROUPS = [
-    ("grp_food_normal", "普通美食组", 100, "normal", "true"),
-    ("grp_food_hard", "普通更难美食组", 65, "", "true"),
-    ("grp_event_food", "事件美食组", 55, "", "true"),
-    ("grp_reward", "纯奖励组", 35, "", "true"),
-    ("grp_boss_food", "Boss美食组", 100, "boss", "true"),
-]
-
-
-ACTION_GROUP_MEMBER_FIELDS = [
-    ("id", "string"), ("groupId", "string"), ("actionId", "string"),
-    ("costDaysMin", "int"), ("costDaysMax", "int"), ("weight", "float"),
-]
-ACTION_GROUP_MEMBERS = [
-    ("gm_normal_gold", "grp_food_normal", "act_food_gold", 1, 1, 100),
-    ("gm_normal_fragment", "grp_food_normal", "act_food_fragment", 1, 2, 85),
-    ("gm_normal_passive", "grp_food_normal", "act_food_passive", 1, 2, 75),
-    ("gm_hard_gold", "grp_food_hard", "act_food_gold", 1, 1, 90),
-    ("gm_hard_fragment", "grp_food_hard", "act_food_hard_fragment", 2, 3, 80),
-    ("gm_hard_passive", "grp_food_hard", "act_food_hard_passive", 2, 3, 75),
-    ("gm_event_market", "grp_event_food", "act_market", 1, 1, 70),
-    ("gm_event_food", "grp_event_food", "act_food_passive", 1, 2, 100),
-    ("gm_reward_tip", "grp_reward", "act_tip", 1, 1, 100),
-    ("gm_boss_food", "grp_boss_food", "act_food_hard_passive", 2, 3, 100),
-    ("gm_boss_fragment", "grp_boss_food", "act_food_hard_fragment", 2, 3, 90),
-]
-
-
-ACTION_SCHEDULE_RULE_FIELDS = [
-    ("id", "string"), ("priority", "int"), ("ruleType", "string"), ("groupId", "string"),
-    ("startIndex", "int"), ("endIndex", "int"), ("windowSize", "int"), ("windowStart", "int"),
-    ("windowEnd", "int"), ("minCount", "int"), ("maxCount", "int"), ("weekFilter", "string"),
-]
-ACTION_SCHEDULE_RULES = [
-    ("rule_reward_early", 10, "RangeCount", "grp_reward", 3, 6, 0, 0, 0, 1, 1, ""),
-    ("rule_reward_late", 20, "RangeCount", "grp_reward", 10, 12, 0, 0, 0, 1, 1, ""),
-    ("rule_event_decade", 30, "WindowCount", "grp_event_food", 0, 0, 10, 2, 8, 1, 2, ""),
-    ("rule_boss_group", 5, "RangeCount", "grp_boss_food", 11, 12, 0, 0, 0, 1, 1, "boss"),
-]
-
-
 HIDDEN_SCORE_CURVE_FIELDS = [
-    ("id", "string"), ("purpose", "string"), ("baseValue", "int"), ("baseMultiplier", "float"),
-    ("perWeek", "float"), ("perDay", "float"), ("perStep", "float"),
-    ("normalBonus", "int"), ("hardBonus", "int"), ("bossBonus", "int"),
-    ("itemBonusMultiplier", "float"), ("roundTo", "int"), ("minValue", "int"),
+    ("id", "string", "隐藏分曲线ID。"),
+    ("purpose", "string", "曲线用途：Base/TargetScore/Dish/PassiveItem/ActiveItem/Fragment。"),
+    ("baseValue", "int", "基础值。"),
+    ("baseMultiplier", "float", "基础倍率。"),
+    ("perWeek", "float", "每周递增值。"),
+    ("perDay", "float", "每推进一天递增值。"),
+    ("perStep", "float", "每执行一次行动递增值。"),
+    ("normalBonus", "int", "普通美食难度加成。"),
+    ("hardBonus", "int", "困难美食难度加成。"),
+    ("bossBonus", "int", "Boss难度加成。"),
+    ("itemBonusMultiplier", "float", "道具隐藏分派生倍率。"),
+    ("roundTo", "int", "向上取整粒度。"),
+    ("minValue", "int", "最小值。"),
 ]
 HIDDEN_SCORE_CURVES = [
     ("hidden_base", "Base", 0, 0, 7, 1, 2, 0, 8, 16, 1, 1, 0),
@@ -170,11 +134,19 @@ HIDDEN_SCORE_CURVES = [
 
 
 GOLD_REWARD_CURVE_FIELDS = [
-    ("id", "string"), ("minBase", "int"), ("maxBase", "int"),
-    ("minPerWeek", "float"), ("maxPerWeek", "float"), ("minPerDay", "float"), ("maxPerDay", "float"),
-    ("normalMinBonus", "int"), ("normalMaxBonus", "int"),
-    ("hardMinBonus", "int"), ("hardMaxBonus", "int"),
-    ("bossMinBonus", "int"), ("bossMaxBonus", "int"),
+    ("id", "string", "金币奖励曲线ID。"),
+    ("minBase", "int", "金币下限基础值。"),
+    ("maxBase", "int", "金币上限基础值。"),
+    ("minPerWeek", "float", "金币下限每周递增值。"),
+    ("maxPerWeek", "float", "金币上限每周递增值。"),
+    ("minPerDay", "float", "金币下限每行动轴天数递增值。"),
+    ("maxPerDay", "float", "金币上限每行动轴天数递增值。"),
+    ("normalMinBonus", "int", "普通难度金币下限加成。"),
+    ("normalMaxBonus", "int", "普通难度金币上限加成。"),
+    ("hardMinBonus", "int", "困难难度金币下限加成。"),
+    ("hardMaxBonus", "int", "困难难度金币上限加成。"),
+    ("bossMinBonus", "int", "Boss难度金币下限加成。"),
+    ("bossMaxBonus", "int", "Boss难度金币上限加成。"),
 ]
 GOLD_REWARD_CURVES = [
     ("gold_normal", 18, 30, 4, 6, 0.5, 1, 0, 0, 10, 16, 30, 45),
@@ -257,7 +229,7 @@ TIMELINE_FIELDS = [
     ("id", "string", "行动轴模板 id；运行态只保存该 id，读档时按它重建节点。"),
     ("weekFilter", "string", "周筛选：空=任意，normal=非 Boss 周，boss=Boss 周，也可填逗号分隔周号。"),
     ("weight", "float", "同一周筛选命中的行动轴之间按该权重随机。"),
-    ("baseLengthDays", "int", "行动轴基础长度；行动日程步数更多时，运行时会扩展本周长度以容纳日程。"),
+    ("baseLengthDays", "int", "行动轴基础长度；当前主循环按7天时间轴推进，行动只移动天数游标。"),
 ]
 TIMELINES = [
     ("tl_normal", "normal", 100, 7),
@@ -292,9 +264,14 @@ NODES = [
 
 # —— boss.xlsx ——
 BOSS_FIELDS = [
-    ("id", "string"), ("name", "string"), ("characterPool", "string"),
-    ("unlockCondition", "string"), ("weight", "float"), ("week", "int"),
-    ("scoreProfileId", "string"), ("modifier", "string"),
+    ("id", "string", "Boss配置ID。"),
+    ("name", "string", "Boss显示名称。"),
+    ("characterPool", "string", "Boss自身角色池，空=任意角色；逗号分隔 character.id。"),
+    ("unlockCondition", "string", "解锁条件，空=默认解锁。"),
+    ("weight", "float", "同一候选池内按该权重随机。"),
+    ("week", "int", "限定周序号；0=任意Boss周。"),
+    ("scoreProfileId", "string", "Boss目标分曲线；空=使用当前周目标分曲线。"),
+    ("modifier", "string", "Boss特殊机制标识。"),
 ]
 BOSSES = [
     ("boss_glutton", "大胃王挑战", "", "", 100, 0, "", "limit_serve"),
@@ -305,8 +282,12 @@ BOSSES = [
 
 # —— event_option.xlsx ——
 OPTION_FIELDS = [
-    ("id", "string"), ("eventId", "string"), ("text", "string"),
-    ("resultType", "string"), ("resultValue", "float"), ("resultParam", "string"),
+    ("id", "string", "事件选项ID。"),
+    ("eventId", "string", "所属事件ID。"),
+    ("text", "string", "选项显示文本。"),
+    ("resultType", "string", "选项结果类型。"),
+    ("resultValue", "float", "选项结果数值。"),
+    ("resultParam", "string", "选项结果参数。"),
 ]
 OPTIONS = [
     ("opt_market_cheap", "ev_market", "省着点逛（+20 金币）", "GainGold", 20, ""),
@@ -318,17 +299,24 @@ OPTIONS = [
 
 # —— event.xlsx（重写，追加 category/repeatable/preconditions）——
 EVENT_FIELDS = [
-    ("id", "string"), ("name", "string"), ("desc", "string"),
-    ("timeCost", "int"), ("effectType", "string"), ("effectValue", "float"),
-    ("category", "string"), ("repeatable", "bool"), ("preconditions", "string"),
+    ("id", "string", "事件ID。"),
+    ("name", "string", "事件名称。"),
+    ("desc", "string", "事件描述。"),
+    ("timeCost", "int", "事件默认耗时；事件行动仍以行动costDays推进。"),
+    ("effectType", "string", "无选项事件的直接效果类型。"),
+    ("effectValue", "float", "无选项事件的直接效果数值。"),
+    ("category", "string", "事件分类，用于后续事件池扩展。"),
+    ("weight", "float", "事件节点随机权重；<=0时运行时按1处理。"),
+    ("repeatable", "bool", "是否可重复触发；false命中后写入UsedEventIds。"),
+    ("preconditions", "string", "前置条件表达式，空=无条件。"),
 ]
 EVENTS = [
-    ("ev_market", "集市采购", "花一点时间逛集市，获得金币。", 1, "GainGold", 30, "reward", "true", ""),
-    ("ev_tasting", "试菜会", "举办试菜会，向菜谱加入一道新菜。", 1, "AddDish", 1, "food", "true", ""),
-    ("ev_rest", "歇业一天", "短暂休息，降低下一关要求分。", 1, "LowerReq", 0.1, "reward", "true", ""),
-    ("ev_recruit", "招募帮厨", "招募帮厨，获得一件被动道具。", 2, "GainItem", 1, "reward", "false", ""),
-    ("ev_gamble", "豪赌一桌", "高风险高回报：可能大赚也可能亏本。", 1, "Gamble", 50, "negative", "true", ""),
-    ("ev_upgrade", "钻研食谱", "钻研食谱，提升一道菜的美味度。", 2, "UpgradeDish", 5, "food", "true", ""),
+    ("ev_market", "集市采购", "花一点时间逛集市，获得金币。", 1, "GainGold", 30, "reward", 80, "true", ""),
+    ("ev_tasting", "试菜会", "举办试菜会，向菜谱加入一道新菜。", 1, "AddDish", 1, "food", 60, "true", ""),
+    ("ev_rest", "歇业一天", "短暂休息，降低下一关要求分。", 1, "LowerReq", 0.1, "reward", 45, "true", ""),
+    ("ev_recruit", "招募帮厨", "招募帮厨，获得一件被动道具。", 2, "GainItem", 1, "reward", 35, "false", ""),
+    ("ev_gamble", "豪赌一桌", "高风险高回报：可能大赚也可能亏本。", 1, "Gamble", 50, "negative", 30, "true", ""),
+    ("ev_upgrade", "钻研食谱", "钻研食谱，提升一道菜的美味度。", 2, "UpgradeDish", 5, "food", 50, "true", ""),
 ]
 
 
@@ -336,9 +324,6 @@ def main():
     print(f"Datas 目录: {DATAS}")
     write_workbook("action", [
         ("action", ACTION_FIELDS, ACTIONS),
-        ("action_group", ACTION_GROUP_FIELDS, ACTION_GROUPS),
-        ("action_group_member", ACTION_GROUP_MEMBER_FIELDS, ACTION_GROUP_MEMBERS),
-        ("action_schedule_rule", ACTION_SCHEDULE_RULE_FIELDS, ACTION_SCHEDULE_RULES),
     ])
     write_workbook("reward_curve", [
         ("hidden_score_curve", HIDDEN_SCORE_CURVE_FIELDS, HIDDEN_SCORE_CURVES),

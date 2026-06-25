@@ -32,31 +32,31 @@ public sealed partial class RewardPackage : Luban.BeanBase
     }
 
     /// <summary>
-    /// 奖励包ID
+    /// 奖励包 id；Week.rewardPackageId 或 Action.rewardPackageId 引用它。
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 金币最小值
+    /// 基础金币奖励下限；实际奖励会结合隐藏分/行动曲线派生。
     /// </summary>
     public readonly int GoldMin;
     /// <summary>
-    /// 金币最大值
+    /// 基础金币奖励上限；实际奖励会结合隐藏分/行动曲线派生。
     /// </summary>
     public readonly int GoldMax;
     /// <summary>
-    /// 主奖励槽组ID
+    /// 主奖励槽组 id，对应 reward.xlsx/reward_slot.groupId。
     /// </summary>
     public readonly string MainSlotGroupId;
     /// <summary>
-    /// 额外奖励槽组ID
+    /// 额外奖励槽组 id；extraChance 命中时额外抽取。
     /// </summary>
     public readonly string ExtraSlotGroupId;
     /// <summary>
-    /// 额外奖励概率
+    /// 额外奖励出现概率，0..1。
     /// </summary>
     public readonly float ExtraChance;
     /// <summary>
-    /// 兜底金币数量
+    /// 奖励候选无法生成或溢出时的兜底金币。
     /// </summary>
     public readonly int FallbackGold;
    

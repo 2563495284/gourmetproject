@@ -32,7 +32,6 @@ namespace GourmetProject.Game.Gameplay
         private readonly List<string> _usedEventIds = new List<string>();
         private readonly List<string> _usedActionIds = new List<string>();
         private readonly List<string> _completedBossIds = new List<string>();
-        private readonly List<ActionScheduleStep> _scheduledActionSteps = new List<ActionScheduleStep>();
 
         public GameRun(cfg.Tables tables, GameplayDatabase database, string characterId, string seedText, int weekIndex = 1)
         {
@@ -94,8 +93,7 @@ namespace GourmetProject.Game.Gameplay
 
         public IReadOnlyList<string> CompletedBossIds => _completedBossIds;
 
-        public IReadOnlyList<ActionScheduleStep> ScheduledActionSteps => _scheduledActionSteps;
-
+        /// <summary>本周已执行的行动次数，用于 UI、随机流和隐藏分进度。</summary>
         public int ActionStepIndex { get; private set; }
 
         public ActionExecutionContext LastActionContext { get; private set; }
@@ -147,37 +145,19 @@ namespace GourmetProject.Game.Gameplay
             TimelineLengthDays = lengthDays;
             CurrentDay = 0;
             ActionStepIndex = 0;
-            _scheduledActionSteps.Clear();
             _triggeredNodeIds.Clear();
             _usedActionIds.Clear();
             LastActionContext = null;
         }
 
-        public void SetActionSchedule(List<ActionScheduleStep> steps)
-        {
-            _scheduledActionSteps.Clear();
-            if (steps != null)
-            {
-                _scheduledActionSteps.AddRange(steps);
-            }
-
-            ActionStepIndex = 0;
-        }
-
-        public void RestoreActionSchedule(List<ActionScheduleStep> steps, int actionStepIndex)
-        {
-            _scheduledActionSteps.Clear();
-            if (steps != null)
-            {
-                _scheduledActionSteps.AddRange(steps);
-            }
-
-            ActionStepIndex = System.Math.Max(0, actionStepIndex);
-        }
-
         public void AdvanceActionStep()
         {
-            ActionStepIndex = System.Math.Min(ActionStepIndex + 1, _scheduledActionSteps.Count);
+            ActionStepIndex++;
+        }
+
+        public void RestoreActionStepIndex(int actionStepIndex)
+        {
+            ActionStepIndex = System.Math.Max(0, actionStepIndex);
         }
 
         public void SetLastActionContext(ActionExecutionContext context)
@@ -301,7 +281,9 @@ namespace GourmetProject.Game.Gameplay
                 TimelineLengthDays = TimelineLengthDays,
                 CurrentDay = CurrentDay,
                 ActionStepIndex = ActionStepIndex,
-                ScheduledActionSteps = CloneActionSchedule(_scheduledActionSteps),
+                RequiredScoreOverride = RequiredScoreOverride,
+                LastActionId = LastActionContext?.Action?.Id ?? string.Empty,
+                LastActionStepIndex = LastActionContext?.StepIndex ?? 0,
                 TriggeredNodeIds = new List<string>(_triggeredNodeIds),
                 UsedEventIds = new List<string>(_usedEventIds),
                 UsedActionIds = new List<string>(_usedActionIds),
@@ -363,7 +345,17 @@ namespace GourmetProject.Game.Gameplay
             run.CurrentTimelineId = data.CurrentTimelineId ?? string.Empty;
             run.TimelineLengthDays = data.TimelineLengthDays;
             run.CurrentDay = data.CurrentDay;
-            run.RestoreActionSchedule(CloneActionSchedule(data.ScheduledActionSteps), data.ActionStepIndex);
+            run.RestoreActionStepIndex(data.ActionStepIndex);
+            run.RequiredScoreOverride = data.RequiredScoreOverride;
+            if (!string.IsNullOrEmpty(data.LastActionId))
+            {
+                cfg.GameAction lastAction = tables.TbAction.GetOrDefault(data.LastActionId);
+                if (lastAction != null)
+                {
+                    run.SetLastActionContext(new ActionExecutionContext(lastAction, data.LastActionStepIndex));
+                }
+            }
+
             if (data.TriggeredNodeIds != null)
             {
                 run._triggeredNodeIds.AddRange(data.TriggeredNodeIds);
@@ -385,41 +377,6 @@ namespace GourmetProject.Game.Gameplay
             }
 
             return run;
-        }
-
-        private static List<ActionScheduleStep> CloneActionSchedule(IReadOnlyList<ActionScheduleStep> source)
-        {
-            var steps = new List<ActionScheduleStep>();
-            if (source == null)
-            {
-                return steps;
-            }
-
-            for (int i = 0; i < source.Count; i++)
-            {
-                ActionScheduleStep step = source[i];
-                if (step == null)
-                {
-                    continue;
-                }
-
-                var choices = new List<ScheduledActionChoice>();
-                if (step.Choices != null)
-                {
-                    for (int j = 0; j < step.Choices.Count; j++)
-                    {
-                        ScheduledActionChoice choice = step.Choices[j];
-                        if (choice != null)
-                        {
-                            choices.Add(new ScheduledActionChoice(choice.GroupId, choice.ActionId, choice.CostDays, choice.StepIndex));
-                        }
-                    }
-                }
-
-                steps.Add(new ActionScheduleStep(step.Index, step.GroupId, choices));
-            }
-
-            return steps;
         }
 
         public int TotalWeeks => _tables.TbWeek.DataList.Count;

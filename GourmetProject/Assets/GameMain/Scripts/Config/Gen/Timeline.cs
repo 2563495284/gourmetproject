@@ -41,7 +41,7 @@ public sealed partial class Timeline : Luban.BeanBase
     /// </summary>
     public readonly float Weight;
     /// <summary>
-    /// 行动轴基础长度；行动日程步数更多时，运行时会扩展本周长度以容纳日程。
+    /// 行动轴基础长度；当前主循环按7天时间轴推进，行动只移动天数游标。
     /// </summary>
     public readonly int BaseLengthDays;
    

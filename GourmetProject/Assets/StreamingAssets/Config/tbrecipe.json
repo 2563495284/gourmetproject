@@ -9,27 +9,32 @@
       {
         "dishId": "rice",
         "weight": 150,
-        "maxCount": 0
+        "maxCount": 0,
+        "initScore": 5
       },
       {
         "dishId": "egg",
         "weight": 120,
-        "maxCount": 0
+        "maxCount": 0,
+        "initScore": 8
       },
       {
         "dishId": "soup",
         "weight": 100,
-        "maxCount": 0
+        "maxCount": 0,
+        "initScore": 9
       },
       {
         "dishId": "noodle",
         "weight": 90,
-        "maxCount": 0
+        "maxCount": 0,
+        "initScore": 12
       },
       {
         "dishId": "feast",
         "weight": 40,
-        "maxCount": 1
+        "maxCount": 1,
+        "initScore": 25
       }
     ]
   },
@@ -43,22 +48,26 @@
       {
         "dishId": "egg",
         "weight": 120,
-        "maxCount": 0
+        "maxCount": 0,
+        "initScore": 8
       },
       {
         "dishId": "fish",
         "weight": 100,
-        "maxCount": 0
+        "maxCount": 0,
+        "initScore": 15
       },
       {
         "dishId": "dumpling",
         "weight": 90,
-        "maxCount": 0
+        "maxCount": 0,
+        "initScore": 11
       },
       {
         "dishId": "cake",
         "weight": 60,
-        "maxCount": 2
+        "maxCount": 2,
+        "initScore": 20
       }
     ]
   },
@@ -72,22 +81,26 @@
       {
         "dishId": "chili",
         "weight": 130,
-        "maxCount": 0
+        "maxCount": 0,
+        "initScore": 4
       },
       {
         "dishId": "rice",
         "weight": 120,
-        "maxCount": 0
+        "maxCount": 0,
+        "initScore": 5
       },
       {
         "dishId": "soup",
         "weight": 90,
-        "maxCount": 0
+        "maxCount": 0,
+        "initScore": 9
       },
       {
         "dishId": "orange",
         "weight": 80,
-        "maxCount": 0
+        "maxCount": 0,
+        "initScore": 10
       }
     ]
   }

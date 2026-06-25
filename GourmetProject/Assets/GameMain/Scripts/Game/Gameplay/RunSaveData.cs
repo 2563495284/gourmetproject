@@ -28,11 +28,17 @@ namespace GourmetProject.Game.Gameplay
         /// <summary>当前天数游标（0..TimelineLengthDays）。</summary>
         public int CurrentDay;
 
-        /// <summary>当前行动组序列步索引。</summary>
+        /// <summary>本周已执行行动次数。</summary>
         public int ActionStepIndex;
 
-        /// <summary>预生成行动组序列，保存展开后的行动和本次耗时，读档不重新随机。</summary>
-        public List<ActionScheduleStep> ScheduledActionSteps = new List<ActionScheduleStep>();
+        /// <summary>本周要求分临时覆盖；小于 0 表示无覆盖。</summary>
+        public int RequiredScoreOverride = -1;
+
+        /// <summary>最近一次行动 id；用于读档后恢复奖励/商店隐藏分上下文。</summary>
+        public string LastActionId;
+
+        /// <summary>最近一次行动发生时的本周行动序号。</summary>
+        public int LastActionStepIndex;
 
         /// <summary>本周已结算的节点 id。</summary>
         public List<string> TriggeredNodeIds = new List<string>();

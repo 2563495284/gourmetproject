@@ -25,6 +25,8 @@ public sealed partial class Character : Luban.BeanBase
         { if(!_buf["initialFragmentId"].IsString) { throw new SerializationException(); }  InitialFragmentId = _buf["initialFragmentId"]; }
         { if(!_buf["maxStomachWidth"].IsNumber) { throw new SerializationException(); }  MaxStomachWidth = _buf["maxStomachWidth"]; }
         { if(!_buf["maxStomachHeight"].IsNumber) { throw new SerializationException(); }  MaxStomachHeight = _buf["maxStomachHeight"]; }
+        { if(!_buf["timelinePool"].IsString) { throw new SerializationException(); }  TimelinePool = _buf["timelinePool"]; }
+        { if(!_buf["bossPool"].IsString) { throw new SerializationException(); }  BossPool = _buf["bossPool"]; }
         { var __json0 = _buf["startItems"]; if(!__json0.IsArray) { throw new SerializationException(); } StartItems = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  StartItems.Add(__v0); }   }
     }
 
@@ -66,6 +68,14 @@ public sealed partial class Character : Luban.BeanBase
     /// </summary>
     public readonly int MaxStomachHeight;
     /// <summary>
+    /// 可用行动轴池，空=全部，逗号分隔 timeline.id
+    /// </summary>
+    public readonly string TimelinePool;
+    /// <summary>
+    /// 可用Boss池，空=全部，逗号分隔 boss.id
+    /// </summary>
+    public readonly string BossPool;
+    /// <summary>
     /// 初始携带道具ID列表
     /// </summary>
     public readonly System.Collections.Generic.List<string> StartItems;
@@ -88,6 +98,8 @@ public sealed partial class Character : Luban.BeanBase
         + "initialFragmentId:" + InitialFragmentId + ","
         + "maxStomachWidth:" + MaxStomachWidth + ","
         + "maxStomachHeight:" + MaxStomachHeight + ","
+        + "timelinePool:" + TimelinePool + ","
+        + "bossPool:" + BossPool + ","
         + "startItems:" + Luban.StringUtil.CollectionToString(StartItems) + ","
         + "}";
     }

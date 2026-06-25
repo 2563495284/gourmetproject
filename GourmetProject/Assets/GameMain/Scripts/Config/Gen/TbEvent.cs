@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 事件：行动/节点触发的局外事件。effectType/effectValue 为无选项快捷事件直接结算；若 TbEventOption 有该 eventId 选项则改弹选项。repeatable=false 命中后写入 UsedEventIds。
+/// 事件：行动/节点触发的局外事件。weight 用于事件节点随机；repeatable=false 命中后写入 UsedEventIds。
 /// </summary>
 public partial class TbEvent
 {

@@ -38,55 +38,55 @@ public sealed partial class HiddenScoreCurve : Luban.BeanBase
     }
 
     /// <summary>
-    /// 曲线ID
+    /// 隐藏分曲线ID。
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// Base/TargetScore/Dish/PassiveItem/ActiveItem/Fragment
+    /// 曲线用途：Base/TargetScore/Dish/PassiveItem/ActiveItem/Fragment。
     /// </summary>
     public readonly string Purpose;
     /// <summary>
-    /// 固定值
+    /// 基础值。
     /// </summary>
     public readonly int BaseValue;
     /// <summary>
-    /// 基础隐藏分倍率
+    /// 基础倍率。
     /// </summary>
     public readonly float BaseMultiplier;
     /// <summary>
-    /// 每周加成
+    /// 每周递增值。
     /// </summary>
     public readonly float PerWeek;
     /// <summary>
-    /// 每天加成
+    /// 每推进一天递增值。
     /// </summary>
     public readonly float PerDay;
     /// <summary>
-    /// 每行动步加成
+    /// 每执行一次行动递增值。
     /// </summary>
     public readonly float PerStep;
     /// <summary>
-    /// 普通行动加成
+    /// 普通美食难度加成。
     /// </summary>
     public readonly int NormalBonus;
     /// <summary>
-    /// 困难行动加成
+    /// 困难美食难度加成。
     /// </summary>
     public readonly int HardBonus;
     /// <summary>
-    /// Boss行动加成
+    /// Boss难度加成。
     /// </summary>
     public readonly int BossBonus;
     /// <summary>
-    /// 道具隐藏分加成倍率
+    /// 道具隐藏分派生倍率。
     /// </summary>
     public readonly float ItemBonusMultiplier;
     /// <summary>
-    /// 取整粒度
+    /// 向上取整粒度。
     /// </summary>
     public readonly int RoundTo;
     /// <summary>
-    /// 最小值
+    /// 最小值。
     /// </summary>
     public readonly int MinValue;
    
