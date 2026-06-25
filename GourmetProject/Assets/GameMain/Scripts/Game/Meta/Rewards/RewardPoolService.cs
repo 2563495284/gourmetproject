@@ -197,11 +197,12 @@ namespace GourmetProject.Game.Meta
             bool strictQuality)
         {
             var candidates = new List<cfg.Item>();
+            MetaProgressSaveData progress = context.Progress ?? MetaProgressPersistence.Load();
             foreach (cfg.Item item in context.Tables.TbItem.DataList)
             {
                 if (item.Kind != kind ||
                     !ItemPoolService.CanEnterPool(context.Run, item) ||
-                    !PreconditionEvaluator.IsSatisfied(context.Run, item.UnlockCondition))
+                    !MetaProgressService.IsItemUnlockedForPool(context.Tables, item, progress))
                 {
                     continue;
                 }

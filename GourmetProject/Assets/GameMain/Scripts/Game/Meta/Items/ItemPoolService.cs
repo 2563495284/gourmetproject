@@ -15,9 +15,10 @@ namespace GourmetProject.Game.Meta
             GameRun run,
             cfg.ItemKind kind,
             IRandomStream rng,
-            int fallbackGold)
+            int fallbackGold,
+            MetaProgressSaveData progress = null)
         {
-            List<string> picked = Roll(tables, run, kind, rng, 1);
+            List<string> picked = Roll(tables, run, kind, rng, 1, progress);
             if (picked.Count == 0)
             {
                 run.Gold += fallbackGold;
@@ -32,12 +33,13 @@ namespace GourmetProject.Game.Meta
             GameRun run,
             cfg.ItemKind kind,
             IRandomStream rng,
-            int count)
+            int count,
+            MetaProgressSaveData progress = null)
         {
             int hidden = kind == cfg.ItemKind.Active
                 ? HiddenScoreService.ActiveItemHiddenScore(run, run?.LastActionContext)
                 : HiddenScoreService.PassiveItemHiddenScore(run, run?.LastActionContext);
-            return Roll(tables, run, kind, rng, count, hidden, distanceFloor: 5);
+            return Roll(tables, run, kind, rng, count, hidden, distanceFloor: 5, progress);
         }
 
         public static List<string> Roll(
@@ -47,7 +49,8 @@ namespace GourmetProject.Game.Meta
             IRandomStream rng,
             int count,
             int hidden,
-            int distanceFloor)
+            int distanceFloor,
+            MetaProgressSaveData progress = null)
         {
             var result = new List<string>();
             if (tables == null || run == null || rng == null || count <= 0)
@@ -56,10 +59,11 @@ namespace GourmetProject.Game.Meta
             }
 
             bool activeItem = kind == cfg.ItemKind.Active;
-            List<cfg.Item> candidates = BuildCandidates(tables, run, kind, hidden, strictHidden: !activeItem);
+            progress ??= MetaProgressPersistence.Load();
+            List<cfg.Item> candidates = BuildCandidates(tables, run, kind, hidden, strictHidden: !activeItem, progress);
             if (candidates.Count == 0 && !activeItem)
             {
-                candidates = BuildCandidates(tables, run, kind, hidden, strictHidden: false);
+                candidates = BuildCandidates(tables, run, kind, hidden, strictHidden: false, progress);
             }
 
             for (int i = 0; i < count && candidates.Count > 0; i++)
@@ -127,12 +131,18 @@ namespace GourmetProject.Game.Meta
             return item.Kind == cfg.ItemKind.Passive ? item.EffectValue * level : item.EffectValue;
         }
 
-        private static List<cfg.Item> BuildCandidates(cfg.Tables tables, GameRun run, cfg.ItemKind kind, int hidden, bool strictHidden)
+        private static List<cfg.Item> BuildCandidates(
+            cfg.Tables tables,
+            GameRun run,
+            cfg.ItemKind kind,
+            int hidden,
+            bool strictHidden,
+            MetaProgressSaveData progress)
         {
             var candidates = new List<cfg.Item>();
             foreach (cfg.Item item in tables.TbItem.DataList)
             {
-                if (item.Kind != kind || !CanEnterPool(run, item) || !PreconditionEvaluator.IsSatisfied(run, item.UnlockCondition))
+                if (item.Kind != kind || !CanEnterPool(run, item) || !MetaProgressService.IsItemUnlockedForPool(tables, item, progress))
                 {
                     continue;
                 }

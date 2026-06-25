@@ -260,13 +260,22 @@ namespace GourmetProject.Tests
             run.MarkEventUsed("ev_recruit");
             Assert.IsTrue(run.AddBonusDish("rice"));
 
-            SettlementSummary summary = SettlementService.Build(run, won: true, lastTotal: 360, lastTarget: 320);
+            var update = new MetaProgressUpdate
+            {
+                Statistics = RunStatisticsService.Build(run, won: true, lastTotal: 360, lastTarget: 320),
+                NewUnlocks = new List<UnlockEntry>
+                {
+                    new UnlockEntry("item_chef_knife", "主厨刀", "被动道具", string.Empty),
+                },
+            };
+
+            SettlementSummary summary = SettlementService.Build(run, won: true, lastTotal: 360, lastTarget: 320, update);
 
             StringAssert.Contains("通关", summary.Title);
             StringAssert.Contains("金币：123", summary.Body);
-            StringAssert.Contains("Boss 图鉴", summary.Body);
-            StringAssert.Contains("新解锁 / 新发现", summary.Body);
-            StringAssert.Contains("菜谱扩展记录", summary.Body);
+            StringAssert.Contains("击败 Boss：1 个", summary.Body);
+            StringAssert.Contains("新解锁", summary.Body);
+            StringAssert.Contains("被动道具：主厨刀", summary.Body);
         }
 
         [Test]

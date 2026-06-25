@@ -14,7 +14,8 @@ namespace GourmetProject.Game.Meta
             cfg.Week week,
             cfg.RewardPackage package,
             IRandomStream rng,
-            ActionExecutionContext actionContext = null)
+            ActionExecutionContext actionContext = null,
+            MetaProgressSaveData progress = null)
         {
             Tables = tables;
             Run = run;
@@ -22,6 +23,7 @@ namespace GourmetProject.Game.Meta
             Package = package;
             Rng = rng;
             ActionContext = actionContext;
+            Progress = progress;
         }
 
         public cfg.Tables Tables { get; }
@@ -35,6 +37,8 @@ namespace GourmetProject.Game.Meta
         public IRandomStream Rng { get; }
 
         public ActionExecutionContext ActionContext { get; }
+
+        public MetaProgressSaveData Progress { get; }
 
         public int RewardHiddenScore => DishHiddenScore;
 

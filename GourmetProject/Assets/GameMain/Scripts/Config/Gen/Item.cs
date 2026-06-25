@@ -23,7 +23,6 @@ public sealed partial class Item : Luban.BeanBase
         { if(!_buf["kind"].IsNumber) { throw new SerializationException(); }  Kind = (ItemKind)_buf["kind"].AsInt; }
         { if(!_buf["quality"].IsNumber) { throw new SerializationException(); }  Quality = (ItemQuality)_buf["quality"].AsInt; }
         { if(!_buf["specialTags"].IsString) { throw new SerializationException(); }  SpecialTags = _buf["specialTags"]; }
-        { if(!_buf["unlockCondition"].IsString) { throw new SerializationException(); }  UnlockCondition = _buf["unlockCondition"]; }
         { if(!_buf["triggerTiming"].IsNumber) { throw new SerializationException(); }  TriggerTiming = (ItemTriggerTiming)_buf["triggerTiming"].AsInt; }
         { if(!_buf["holdLimit"].IsNumber) { throw new SerializationException(); }  HoldLimit = _buf["holdLimit"]; }
         { if(!_buf["effectType"].IsString) { throw new SerializationException(); }  EffectType = _buf["effectType"]; }
@@ -63,10 +62,6 @@ public sealed partial class Item : Luban.BeanBase
     /// 特殊标签标记
     /// </summary>
     public readonly string SpecialTags;
-    /// <summary>
-    /// 解锁条件
-    /// </summary>
-    public readonly string UnlockCondition;
     /// <summary>
     /// 触发时机
     /// </summary>
@@ -118,7 +113,6 @@ public sealed partial class Item : Luban.BeanBase
         + "kind:" + Kind + ","
         + "quality:" + Quality + ","
         + "specialTags:" + SpecialTags + ","
-        + "unlockCondition:" + UnlockCondition + ","
         + "triggerTiming:" + TriggerTiming + ","
         + "holdLimit:" + HoldLimit + ","
         + "effectType:" + EffectType + ","

@@ -118,6 +118,14 @@ public partial class Tables
     /// 整局行动日程规则：按整局行动序号窗口和优先级填充行动组序列。
     /// </summary>
     public TbActionScheduleRule TbActionScheduleRule {get; }
+    /// <summary>
+    /// 解锁规则：一条规则定义一个跨局可解锁目标。
+    /// </summary>
+    public TbUnlockRule TbUnlockRule {get; }
+    /// <summary>
+    /// 解锁条件：同 ruleId 的条件按 groupId 组成 OR-of-AND。
+    /// </summary>
+    public TbUnlockCondition TbUnlockCondition {get; }
 
     public Tables(System.Func<string, JSONNode> loader)
     {
@@ -147,6 +155,8 @@ public partial class Tables
         TbActionGroup = new TbActionGroup(loader("tbactiongroup"));
         TbActionGroupMember = new TbActionGroupMember(loader("tbactiongroupmember"));
         TbActionScheduleRule = new TbActionScheduleRule(loader("tbactionschedulerule"));
+        TbUnlockRule = new TbUnlockRule(loader("tbunlockrule"));
+        TbUnlockCondition = new TbUnlockCondition(loader("tbunlockcondition"));
         ResolveRef();
     }
     
@@ -178,6 +188,8 @@ public partial class Tables
         TbActionGroup.ResolveRef(this);
         TbActionGroupMember.ResolveRef(this);
         TbActionScheduleRule.ResolveRef(this);
+        TbUnlockRule.ResolveRef(this);
+        TbUnlockCondition.ResolveRef(this);
     }
 }
 

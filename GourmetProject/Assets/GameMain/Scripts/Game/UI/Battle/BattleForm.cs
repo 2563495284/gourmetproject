@@ -47,6 +47,7 @@ namespace GourmetProject.Game.UI.Battle
 
         private WeekLoopController _loop;
         private bool _victory;
+        private MetaProgressUpdate _pendingProgressUpdate;
 
         public GameRun Run => _run;
         public BattleSession Session => _session;
@@ -71,6 +72,7 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             Active = this;
+            _pendingProgressUpdate = null;
             _loop = new WeekLoopController(_run, this);
             _loop.BeginWeek();
         }
@@ -278,6 +280,12 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnResultConfirm()
         {
+            if (_pendingProgressUpdate?.Progress != null)
+            {
+                MetaProgressPersistence.Save(_pendingProgressUpdate.Progress);
+                _pendingProgressUpdate = null;
+            }
+
             if (_victory)
             {
                 // 通关：保留存档（可继续无尽），返回菜单。
@@ -295,7 +303,9 @@ namespace GourmetProject.Game.UI.Battle
         {
             _resultPanel.SetActive(true);
             int target = _session?.RequiredScore ?? _run.RequiredScore;
-            SettlementSummary summary = SettlementService.Build(_run, win, total, target);
+            MetaProgressSaveData progress = MetaProgressPersistence.Load();
+            _pendingProgressUpdate = MetaProgressService.EvaluateRunEnd(_run, win, total, target, progress);
+            SettlementSummary summary = SettlementService.Build(_run, win, total, target, _pendingProgressUpdate);
             _resultText.text = $"{summary.Title}\n\n{summary.Body}";
 
             Text resultLabel = _resultButton.GetComponentInChildren<Text>();

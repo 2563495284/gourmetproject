@@ -22,109 +22,78 @@ namespace GourmetProject.Game.Meta
     {
         public static SettlementSummary Build(GameRun run, bool won, int lastTotal, int lastTarget)
         {
+            return Build(run, won, lastTotal, lastTarget, null);
+        }
+
+        public static SettlementSummary Build(GameRun run, bool won, int lastTotal, int lastTarget, MetaProgressUpdate progressUpdate)
+        {
+            RunStatistics statistics = progressUpdate?.Statistics ?? RunStatisticsService.Build(run, won, lastTotal, lastTarget);
             var body = new StringBuilder();
-            body.AppendLine(won
+            body.AppendLine(statistics.Won
                 ? "你征服了最终美食家，餐厅名扬四海！"
                 : "美食挑战失败，餐厅黯然歇业…");
             body.AppendLine();
-            body.AppendLine($"周数：第 {run.WeekIndex} 周{(run.IsEndless ? "（无尽）" : string.Empty)}");
-            body.AppendLine($"本场得分：{lastTotal} / 目标 {lastTarget}");
-            body.AppendLine($"击败 Boss：{run.CompletedBossIds.Count} 个{BossNames(run)}");
-            body.AppendLine($"金币：{run.Gold}");
-            body.AppendLine($"持有道具：{CountOwnedItems(run)} 件");
-            body.AppendLine($"菜谱附加菜品：{run.BonusDishIds.Count} 道");
-            body.AppendLine($"胃部碎片：{run.StomachFragmentIds.Count} 块");
-            body.AppendLine($"触发事件：{run.UsedEventIds.Count} 次（不可重复计）");
+            body.AppendLine($"周数：第 {statistics.WeekIndex} 周{(statistics.IsEndless ? "（无尽）" : string.Empty)}");
+            body.AppendLine($"天数：第 {statistics.CurrentDay} 天");
+            body.AppendLine($"本场得分：{statistics.LastTotal} / 目标 {statistics.LastTarget}");
+            body.AppendLine($"击败 Boss：{statistics.CompletedBossIds.Count} 个{BossNames(run, statistics.CompletedBossIds)}");
+            body.AppendLine($"金币：{statistics.Gold}");
+            body.AppendLine($"持有道具：{statistics.OwnedItemCount} 件");
+            body.AppendLine($"菜谱附加菜品：{statistics.BonusDishCount} 道");
+            body.AppendLine($"胃部碎片：{statistics.StomachFragmentCount} 块");
+            body.AppendLine($"触发事件：{statistics.TriggeredEventCount} 次（不可重复计）");
 
-            string unlocks = NewUnlocks(run, won);
+            string unlocks = FormatUnlocks(progressUpdate?.NewUnlocks);
             if (!string.IsNullOrEmpty(unlocks))
             {
                 body.AppendLine();
-                body.AppendLine("新解锁 / 新发现：");
+                body.AppendLine("新解锁：");
                 body.Append(unlocks);
             }
 
             return new SettlementSummary
             {
-                Won = won,
-                Title = won ? "通关！" : "失败…",
+                Won = statistics.Won,
+                Title = statistics.Won ? "通关！" : "失败…",
                 Body = body.ToString().TrimEnd(),
                 ButtonLabel = "返回菜单",
             };
         }
 
-        private static string BossNames(GameRun run)
+        private static string BossNames(GameRun run, IReadOnlyList<string> bossIds)
         {
-            if (run.CompletedBossIds.Count == 0)
+            if (bossIds == null || bossIds.Count == 0)
             {
                 return string.Empty;
             }
 
-            var names = new List<string>(run.CompletedBossIds.Count);
-            cfg.Tables tables = run.Tables ?? GameApp.Config.Tables;
-            foreach (string bossId in run.CompletedBossIds)
+            var names = new List<string>(bossIds.Count);
+            cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
+            foreach (string bossId in bossIds)
             {
-                cfg.Boss boss = tables.TbBoss.GetOrDefault(bossId);
+                cfg.Boss boss = tables?.TbBoss.GetOrDefault(bossId);
                 names.Add(boss != null ? boss.Name : bossId);
             }
 
             return "（" + string.Join("、", names) + "）";
         }
 
-        private static int CountOwnedItems(GameRun run)
+        private static string FormatUnlocks(IReadOnlyList<UnlockEntry> unlocks)
         {
-            return run.Items.Count;
-        }
-
-        /// <summary>
-        /// 当前还没有跨局解锁表，这里先把本局达成项整理为结算展示；
-        /// 后续接入持久化解锁时，可把这些达成项改为真正的 unlock id。
-        /// </summary>
-        private static string NewUnlocks(GameRun run, bool won)
-        {
-            var unlocks = new List<string>();
-            if (won)
-            {
-                unlocks.Add("无尽模式入口");
-                unlocks.Add("胜利结算图鉴记录");
-            }
-
-            cfg.Tables tables = run.Tables ?? GameApp.Config.Tables;
-            foreach (string bossId in run.CompletedBossIds)
-            {
-                cfg.Boss boss = tables.TbBoss.GetOrDefault(bossId);
-                unlocks.Add($"Boss 图鉴：{(boss != null ? boss.Name : bossId)}");
-            }
-
-            if (run.WeekIndex >= 4)
-            {
-                unlocks.Add("困难美食行动池记录");
-            }
-
-            if (run.BonusDishIds.Count > 0)
-            {
-                unlocks.Add($"菜谱扩展记录 x{run.BonusDishIds.Count}");
-            }
-
-            if (run.StomachFragmentIds.Count > 0)
-            {
-                unlocks.Add($"胃部碎片记录 x{run.StomachFragmentIds.Count}");
-            }
-
-            if (run.UsedEventIds.Count > 0)
-            {
-                unlocks.Add($"事件图鉴记录 x{run.UsedEventIds.Count}");
-            }
-
-            if (unlocks.Count == 0)
+            if (unlocks == null || unlocks.Count == 0)
             {
                 return string.Empty;
             }
 
             var sb = new StringBuilder();
-            foreach (string unlock in unlocks)
+            foreach (UnlockEntry unlock in unlocks)
             {
-                sb.AppendLine($"- {unlock}");
+                if (unlock == null)
+                {
+                    continue;
+                }
+
+                sb.AppendLine($"- {unlock.Kind}：{unlock.Name}");
             }
 
             return sb.ToString().TrimEnd();

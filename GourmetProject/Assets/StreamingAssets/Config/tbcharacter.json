@@ -6,8 +6,8 @@
     "portrait": "Sprites/Characters/char_glutton_dog",
     "initialRecipeId": "recipe_glutton",
     "initialFragmentId": "gut_4x4",
-    "maxStomachWidth": 4,
-    "maxStomachHeight": 4,
+    "maxStomachWidth": 8,
+    "maxStomachHeight": 8,
     "timelinePool": "tl_normal,tl_boss",
     "bossPool": "boss_glutton,boss_final",
     "startItems": [
@@ -21,8 +21,8 @@
     "portrait": "Sprites/Characters/char_wok_cat",
     "initialRecipeId": "recipe_wok",
     "initialFragmentId": "gut_4x4",
-    "maxStomachWidth": 4,
-    "maxStomachHeight": 4,
+    "maxStomachWidth": 8,
+    "maxStomachHeight": 8,
     "timelinePool": "tl_busy,tl_boss",
     "bossPool": "boss_iron,boss_final",
     "startItems": [
@@ -36,8 +36,8 @@
     "portrait": "Sprites/Characters/char_chili_rat",
     "initialRecipeId": "recipe_chili",
     "initialFragmentId": "gut_4x4",
-    "maxStomachWidth": 4,
-    "maxStomachHeight": 4,
+    "maxStomachWidth": 8,
+    "maxStomachHeight": 8,
     "timelinePool": "",
     "bossPool": "",
     "startItems": [

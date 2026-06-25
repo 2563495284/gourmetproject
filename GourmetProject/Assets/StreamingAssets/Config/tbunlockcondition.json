@@ -1,0 +1,32 @@
+[
+  {
+    "id": "cond_item_chef_knife_runs",
+    "ruleId": "unlock_item_chef_knife",
+    "groupId": "default",
+    "type": 8,
+    "intParam": 1,
+    "stringParam": "",
+    "targetTypeParam": 0,
+    "targetIdParam": ""
+  },
+  {
+    "id": "cond_item_extra_serve_actions",
+    "ruleId": "unlock_item_extra_serve",
+    "groupId": "default",
+    "type": 5,
+    "intParam": 3,
+    "stringParam": "",
+    "targetTypeParam": 0,
+    "targetIdParam": ""
+  },
+  {
+    "id": "cond_item_pepper_jar_boss",
+    "ruleId": "unlock_item_pepper_jar",
+    "groupId": "default",
+    "type": 6,
+    "intParam": 0,
+    "stringParam": "boss_glutton",
+    "targetTypeParam": 0,
+    "targetIdParam": ""
+  }
+]
