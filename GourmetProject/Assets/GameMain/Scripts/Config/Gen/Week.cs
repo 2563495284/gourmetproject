@@ -31,27 +31,27 @@ public sealed partial class Week : Luban.BeanBase
     }
 
     /// <summary>
-    /// 周/关卡ID
+    /// 周序号，也是 GameRun.WeekIndex；按 id 顺序决定总周数。
     /// </summary>
     public readonly int Id;
     /// <summary>
-    /// 分数曲线ID
+    /// 本周基础目标分曲线；普通美食与 Boss 目标分都会以它为默认来源。
     /// </summary>
     public readonly string ScoreProfileId;
     /// <summary>
-    /// 奖励包ID
+    /// 本周默认过关奖励包；行动配置有 rewardPackageId 时优先使用行动奖励包。
     /// </summary>
     public readonly string RewardPackageId;
     /// <summary>
-    /// 奖励隐藏分
+    /// 本周默认奖励隐藏分；行动派生隐藏分大于 0 时优先使用行动隐藏分。
     /// </summary>
     public readonly int RewardHiddenScore;
     /// <summary>
-    /// 是否Boss关
+    /// 是否 Boss 周；会匹配 weekFilter=boss 的行动轴和行动组。
     /// </summary>
     public readonly bool IsBoss;
     /// <summary>
-    /// 关卡修饰符
+    /// 周级修饰符标识；当前主要用于表现/后续扩展，具体战斗仍可由行动或 Boss 单独传入 modifier。
     /// </summary>
     public readonly string Modifier;
    

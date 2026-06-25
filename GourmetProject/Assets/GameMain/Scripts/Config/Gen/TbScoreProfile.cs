@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 目标分曲线：周/关卡引用它生成本局要求分，无尽模式沿用最后一周曲线增长。
+/// 目标分曲线：与 week 同在 timeline.xlsx；Week.scoreProfileId/Boss.scoreProfileId 引用它生成普通与 Boss 目标分。
 /// </summary>
 public partial class TbScoreProfile
 {

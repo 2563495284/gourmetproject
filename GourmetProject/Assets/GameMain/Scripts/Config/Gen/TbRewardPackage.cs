@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 胜利奖励包：固定金币+主奖励槽组+可选额外奖励槽组。
+/// 奖励包：与 week 同在 timeline.xlsx；Week.rewardPackageId/Action.rewardPackageId 引用它，槽组继续指向 reward.xlsx/reward_slot。
 /// </summary>
 public partial class TbRewardPackage
 {

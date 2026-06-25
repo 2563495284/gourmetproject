@@ -29,11 +29,13 @@ GROUPS = {
         ("event_option", "event_option.xlsx"),
     ],
     "timeline.xlsx": [
+        ("week", "week.xlsx"),
+        ("score_profile", "score_profile.xlsx"),
+        ("reward_package", "reward_package.xlsx"),
         ("timeline", "timeline.xlsx"),
         ("timeline_node", "timeline_node.xlsx"),
     ],
     "reward.xlsx": [
-        ("reward_package", "reward_package.xlsx"),
         ("reward_slot", "reward_slot.xlsx"),
         ("reward_pool", "reward_pool.xlsx"),
     ],
@@ -45,9 +47,11 @@ INPUT_MAP = {
     "TbDishVariant": "dish_variant@dish.xlsx",
     "TbEvent": "event@event.xlsx",
     "TbEventOption": "event_option@event.xlsx",
+    "TbWeek": "week@timeline.xlsx",
+    "TbScoreProfile": "score_profile@timeline.xlsx",
+    "TbRewardPackage": "reward_package@timeline.xlsx",
     "TbTimeline": "timeline@timeline.xlsx",
     "TbTimelineNode": "timeline_node@timeline.xlsx",
-    "TbRewardPackage": "reward_package@reward.xlsx",
     "TbRewardSlot": "reward_slot@reward.xlsx",
     "TbRewardPool": "reward_pool@reward.xlsx",
 }

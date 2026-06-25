@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 行动轴节点：同 timelineId 多行=该轴节点。day 为整天位置(1..baseLengthDays)。interest:payloadValue=利息阈值N,payloadParam=每阈值金币数;shop:无;boss:payloadParam=Boss池筛选;event:payloadParam=指定事件id。
+/// 行动轴节点：同 timelineId 多行组成一条轴；行动推进时触发 prevDay &lt; day &lt;= newDay 且未触发过的节点，并按 day 升序结算。
 /// </summary>
 public partial class TbTimelineNode
 {

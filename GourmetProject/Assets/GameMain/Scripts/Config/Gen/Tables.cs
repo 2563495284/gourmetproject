@@ -51,11 +51,11 @@ public partial class Tables
     /// </summary>
     public TbItem TbItem {get; }
     /// <summary>
-    /// 目标分曲线：周/关卡引用它生成本局要求分，无尽模式沿用最后一周曲线增长。
+    /// 目标分曲线：与 week 同在 timeline.xlsx；Week.scoreProfileId/Boss.scoreProfileId 引用它生成普通与 Boss 目标分。
     /// </summary>
     public TbScoreProfile TbScoreProfile {get; }
     /// <summary>
-    /// 胜利奖励包：固定金币+主奖励槽组+可选额外奖励槽组。
+    /// 奖励包：与 week 同在 timeline.xlsx；Week.rewardPackageId/Action.rewardPackageId 引用它，槽组继续指向 reward.xlsx/reward_slot。
     /// </summary>
     public TbRewardPackage TbRewardPackage {get; }
     /// <summary>
@@ -67,7 +67,7 @@ public partial class Tables
     /// </summary>
     public TbRewardPool TbRewardPool {get; }
     /// <summary>
-    /// 周/关卡：目标分、奖励包和隐藏分随进度推进；isBoss 为特殊天。
+    /// 周/关卡配置：定义每周的目标分曲线、默认奖励包、奖励隐藏分与 Boss 周标记；与行动轴表同在 timeline.xlsx，进入新周时先读 Week 再按 isBoss 筛选 Timeline。
     /// </summary>
     public TbWeek TbWeek {get; }
     /// <summary>
@@ -83,11 +83,11 @@ public partial class Tables
     /// </summary>
     public TbAction TbAction {get; }
     /// <summary>
-    /// 行动轴库：按周筛选(weekFilter:空=任意/normal/boss/逗号分隔周号)后按 weight 随机一条。baseLengthDays 为轴长度。
+    /// 行动轴库：按当前 Week 的 isBoss 与 weekFilter（空=任意/normal/boss/逗号周号）筛选后按 weight 随机；baseLengthDays 为轴基础长度。
     /// </summary>
     public TbTimeline TbTimeline {get; }
     /// <summary>
-    /// 行动轴节点：同 timelineId 多行=该轴节点。day 为整天位置(1..baseLengthDays)。interest:payloadValue=利息阈值N,payloadParam=每阈值金币数;shop:无;boss:payloadParam=Boss池筛选;event:payloadParam=指定事件id。
+    /// 行动轴节点：同 timelineId 多行组成一条轴；行动推进时触发 prevDay &lt; day &lt;= newDay 且未触发过的节点，并按 day 升序结算。
     /// </summary>
     public TbTimelineNode TbTimelineNode {get; }
     /// <summary>

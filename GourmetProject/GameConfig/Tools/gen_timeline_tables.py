@@ -4,7 +4,7 @@
 新表/工作簿：
 - action.xlsx         : 行动、v2 行动组合、行动组合成员、行动序列约束。
 - reward_curve.xlsx   : v2 隐藏分曲线、金币曲线。
-- timeline.xlsx       : 行动轴库、行动轴节点。
+- timeline.xlsx       : 周配置、目标分曲线、奖励包、行动轴库、行动轴节点。
 - boss.xlsx                 : Boss 池。
 重写：
 - event.xlsx         : 事件、事件选项；事件追加 category / repeatable / preconditions 三列。
@@ -23,13 +23,31 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 DATAS = os.path.normpath(os.path.join(HERE, "..", "Datas"))
 
 
+def field_names(fields):
+    return [field[0] for field in fields]
+
+
+def field_types(fields):
+    return [field[1] for field in fields]
+
+
+def field_comments(fields):
+    return [field[2] if len(field) > 2 else "" for field in fields]
+
+
+def has_comments(fields):
+    return any(len(field) > 2 and field[2] for field in fields)
+
+
 def write_table(name, fields, rows):
-    """fields: [(col, type)]; rows: [ [v0, v1, ...], ... ]（不含首列标记列）。"""
+    """fields: [(col, type[, comment])]; rows: [ [v0, v1, ...], ... ]（不含首列标记列）。"""
     wb = Workbook()
     ws = wb.active
     ws.title = name
-    ws.append(["##var"] + [c for c, _t in fields])
-    ws.append(["##type"] + [t for _c, t in fields])
+    ws.append(["##var"] + field_names(fields))
+    if has_comments(fields):
+        ws.append(["##comment"] + field_comments(fields))
+    ws.append(["##type"] + field_types(fields))
     for row in rows:
         ws.append([""] + list(row))
     wb.save(os.path.join(DATAS, name + ".xlsx"))
@@ -37,8 +55,10 @@ def write_table(name, fields, rows):
 
 
 def fill_sheet(ws, fields, rows):
-    ws.append(["##var"] + [c for c, _t in fields])
-    ws.append(["##type"] + [t for _c, t in fields])
+    ws.append(["##var"] + field_names(fields))
+    if has_comments(fields):
+        ws.append(["##comment"] + field_comments(fields))
+    ws.append(["##type"] + field_types(fields))
     for row in rows:
         ws.append([""] + list(row))
 
@@ -165,8 +185,79 @@ GOLD_REWARD_CURVES = [
 
 
 # —— timeline.xlsx ——
+WEEK_FIELDS = [
+    ("id", "int", "周序号，也是 GameRun.WeekIndex；按 id 顺序决定总周数。"),
+    ("scoreProfileId", "string", "本周基础目标分曲线；普通美食与 Boss 目标分都会以它为默认来源。"),
+    ("rewardPackageId", "string", "本周默认过关奖励包；行动配置有 rewardPackageId 时优先使用行动奖励包。"),
+    ("rewardHiddenScore", "int", "本周默认奖励隐藏分；行动派生隐藏分大于 0 时优先使用行动隐藏分。"),
+    ("isBoss", "bool", "是否 Boss 周；会匹配 weekFilter=boss 的行动轴和行动组。"),
+    ("modifier", "string", "周级修饰符标识；当前主要用于表现/后续扩展，具体战斗仍可由行动或 Boss 单独传入 modifier。"),
+]
+WEEKS = [
+    (1, "score_w1", "reward_w1", 8, "false", ""),
+    (2, "score_w2", "reward_w2", 14, "false", ""),
+    (3, "score_w3", "reward_w3", 22, "false", ""),
+    (4, "score_w4", "reward_w4_boss", 30, "true", "limit_serve"),
+    (5, "score_w5", "reward_w5", 36, "false", ""),
+    (6, "score_w6", "reward_w6", 44, "false", ""),
+    (7, "score_w7", "reward_w7", 52, "false", ""),
+    (8, "score_w8", "reward_w8_boss", 60, "true", "small_board"),
+]
+
+
+SCORE_PROFILE_FIELDS = [
+    ("id", "string", "目标分曲线 id；Week.scoreProfileId 和 Boss.scoreProfileId 引用它。"),
+    ("baseScore", "int", "基础目标分。"),
+    ("difficultyMul", "float", "普通难度倍率；当前周基础目标分先乘该倍率。"),
+    ("bossMul", "float", "Boss 目标分倍率；Boss 节点结算时额外应用。"),
+    ("endlessGrowthMul", "float", "无尽模式超出配置周数后的指数增长倍率。"),
+    ("roundTo", "int", "目标分向上取整粒度，例如 10 表示取整到 10 的倍数。"),
+]
+SCORE_PROFILES = [
+    ("score_w1", 80, 1, 1, 1.5, 10),
+    ("score_w2", 130, 1, 1, 1.5, 10),
+    ("score_w3", 200, 1, 1, 1.5, 10),
+    ("score_w4", 320, 1, 1, 1.5, 10),
+    ("score_w5", 480, 1, 1, 1.5, 10),
+    ("score_w6", 700, 1, 1, 1.5, 10),
+    ("score_w7", 1000, 1, 1, 1.5, 10),
+    ("score_w8", 1500, 1, 1, 1.5, 10),
+]
+
+
+REWARD_PACKAGE_FIELDS = [
+    ("id", "string", "奖励包 id；Week.rewardPackageId 或 Action.rewardPackageId 引用它。"),
+    ("goldMin", "int", "基础金币奖励下限；实际奖励会结合隐藏分/行动曲线派生。"),
+    ("goldMax", "int", "基础金币奖励上限；实际奖励会结合隐藏分/行动曲线派生。"),
+    ("mainSlotGroupId", "string", "主奖励槽组 id，对应 reward.xlsx/reward_slot.groupId。"),
+    ("extraSlotGroupId", "string", "额外奖励槽组 id；extraChance 命中时额外抽取。"),
+    ("extraChance", "float", "额外奖励出现概率，0..1。"),
+    ("fallbackGold", "int", "奖励候选无法生成或溢出时的兜底金币。"),
+]
+REWARD_PACKAGES = [
+    ("reward_w1", 45, 60, "main_dish", "extra_mixed", 0.15, 35),
+    ("reward_w2", 55, 75, "main_passive", "extra_mixed", 0.2, 40),
+    ("reward_w3", 65, 85, "main_dish", "extra_mixed", 0.25, 45),
+    ("reward_w4_boss", 90, 125, "main_boss", "extra_mixed", 0.5, 80),
+    ("reward_w5", 85, 115, "main_fragment", "extra_mixed", 0.3, 55),
+    ("reward_w6", 95, 130, "main_passive", "extra_mixed", 0.35, 60),
+    ("reward_w7", 110, 145, "main_dish_or_passive", "extra_mixed", 0.4, 70),
+    ("reward_w8_boss", 140, 185, "main_boss", "extra_mixed", 0.6, 100),
+    ("reward_food_gold", 22, 36, "main_gold", "extra_mixed", 0.1, 30),
+    ("reward_food_dish", 28, 44, "main_dish", "extra_mixed", 0.15, 35),
+    ("reward_food_passive", 30, 48, "main_passive", "extra_mixed", 0.18, 40),
+    ("reward_food_fragment", 32, 52, "main_fragment", "extra_mixed", 0.18, 45),
+    ("reward_food_hard_dish", 46, 72, "main_dish", "extra_mixed", 0.28, 55),
+    ("reward_food_hard_passive", 50, 78, "main_passive", "extra_mixed", 0.3, 60),
+    ("reward_food_hard_fragment", 52, 82, "main_fragment", "extra_mixed", 0.3, 65),
+]
+
+
 TIMELINE_FIELDS = [
-    ("id", "string"), ("weekFilter", "string"), ("weight", "float"), ("baseLengthDays", "int"),
+    ("id", "string", "行动轴模板 id；运行态只保存该 id，读档时按它重建节点。"),
+    ("weekFilter", "string", "周筛选：空=任意，normal=非 Boss 周，boss=Boss 周，也可填逗号分隔周号。"),
+    ("weight", "float", "同一周筛选命中的行动轴之间按该权重随机。"),
+    ("baseLengthDays", "int", "行动轴基础长度；行动日程步数更多时，运行时会扩展本周长度以容纳日程。"),
 ]
 TIMELINES = [
     ("tl_normal", "normal", 100, 7),
@@ -175,10 +266,14 @@ TIMELINES = [
 ]
 
 
-# —— timeline_node.xlsx ——
+# —— timeline_node sheet ——
 NODE_FIELDS = [
-    ("id", "string"), ("timelineId", "string"), ("day", "int"),
-    ("nodeType", "TimelineNodeType"), ("payloadValue", "float"), ("payloadParam", "string"),
+    ("id", "string", "节点 id；同一节点每周只触发一次，触发记录按 id 保存。"),
+    ("timelineId", "string", "所属行动轴模板 id，对应 timeline.id。"),
+    ("day", "int", "整天位置；行动从 prevDay 推进到 newDay 时触发 prevDay < day <= newDay 的节点。"),
+    ("nodeType", "TimelineNodeType", "节点类型：Boss / Interest / Shop / Event。"),
+    ("payloadValue", "float", "节点数值参数；Interest 表示金币阈值 N，其它节点暂未使用。"),
+    ("payloadParam", "string", "节点字符串参数；Interest 表示每阈值金币数，Boss 表示 Boss id 池筛选，Event 表示指定事件 id。"),
 ]
 NODES = [
     # tl_normal: 利息(D3, 每满10金币给1) + 商店(D5)
@@ -250,6 +345,9 @@ def main():
         ("gold_reward_curve", GOLD_REWARD_CURVE_FIELDS, GOLD_REWARD_CURVES),
     ])
     write_workbook("timeline", [
+        ("week", WEEK_FIELDS, WEEKS),
+        ("score_profile", SCORE_PROFILE_FIELDS, SCORE_PROFILES),
+        ("reward_package", REWARD_PACKAGE_FIELDS, REWARD_PACKAGES),
         ("timeline", TIMELINE_FIELDS, TIMELINES),
         ("timeline_node", NODE_FIELDS, NODES),
     ])

@@ -28,9 +28,21 @@ public sealed partial class Timeline : Luban.BeanBase
         return new Timeline(_buf);
     }
 
+    /// <summary>
+    /// 行动轴模板 id；运行态只保存该 id，读档时按它重建节点。
+    /// </summary>
     public readonly string Id;
+    /// <summary>
+    /// 周筛选：空=任意，normal=非 Boss 周，boss=Boss 周，也可填逗号分隔周号。
+    /// </summary>
     public readonly string WeekFilter;
+    /// <summary>
+    /// 同一周筛选命中的行动轴之间按该权重随机。
+    /// </summary>
     public readonly float Weight;
+    /// <summary>
+    /// 行动轴基础长度；行动日程步数更多时，运行时会扩展本周长度以容纳日程。
+    /// </summary>
     public readonly int BaseLengthDays;
    
     public const int __ID__ = -2012006303;

@@ -30,11 +30,29 @@ public sealed partial class TimelineNode : Luban.BeanBase
         return new TimelineNode(_buf);
     }
 
+    /// <summary>
+    /// 节点 id；同一节点每周只触发一次，触发记录按 id 保存。
+    /// </summary>
     public readonly string Id;
+    /// <summary>
+    /// 所属行动轴模板 id，对应 timeline.id。
+    /// </summary>
     public readonly string TimelineId;
+    /// <summary>
+    /// 整天位置；行动从 prevDay 推进到 newDay 时触发 prevDay &lt; day &lt;= newDay 的节点。
+    /// </summary>
     public readonly int Day;
+    /// <summary>
+    /// 节点类型：Boss / Interest / Shop / Event。
+    /// </summary>
     public readonly TimelineNodeType NodeType;
+    /// <summary>
+    /// 节点数值参数；Interest 表示金币阈值 N，其它节点暂未使用。
+    /// </summary>
     public readonly float PayloadValue;
+    /// <summary>
+    /// 节点字符串参数；Interest 表示每阈值金币数，Boss 表示 Boss id 池筛选，Event 表示指定事件 id。
+    /// </summary>
     public readonly string PayloadParam;
    
     public const int __ID__ = 1630749187;
