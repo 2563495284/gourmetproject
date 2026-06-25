@@ -21,7 +21,7 @@ namespace GourmetProject.Game.Gameplay
             }
 
             int count = Math.Max(1, slot.ChoiceCount);
-            int hidden = Math.Max(0, context.RewardHiddenScore + slot.HiddenOffset);
+            int hidden = Math.Max(0, HiddenForSlot(context, slot) + slot.HiddenOffset);
             if (slot.Kind == cfg.RewardKind.Gold)
             {
                 result.Add(RewardChoice.Gold(GetFallbackGold(context, slot), "额外金币"));
@@ -138,7 +138,7 @@ namespace GourmetProject.Game.Gameplay
                 var weights = new List<float>(candidates.Count);
                 foreach (cfg.Item item in candidates)
                 {
-                    weights.Add(GetItemWeight(context.Run, item, qualityWeights));
+                    weights.Add(GetItemWeight(context.Run, item, qualityWeights, hidden, pool.DistanceFloor));
                 }
 
                 int index = PickWeightedOrUniform(context, weights, candidates.Count);
@@ -175,7 +175,8 @@ namespace GourmetProject.Game.Gameplay
                     cfg.RewardKind.FragmentChoice,
                     fragment.Id,
                     fragment.Id,
-                    $"扩展胃部，价格参考 {fragment.Price}"));
+                    $"扩展胃部，价格参考 {fragment.Price}",
+                    HiddenScoreService.FragmentFallbackGold(context.Run, context.ActionContext)));
             }
         }
 
@@ -192,12 +193,14 @@ namespace GourmetProject.Game.Gameplay
             var candidates = new List<cfg.Item>();
             foreach (cfg.Item item in context.Tables.TbItem.DataList)
             {
-                if (item.Kind != kind || !ItemPoolService.CanEnterPool(context.Run, item))
+                if (item.Kind != kind ||
+                    !ItemPoolService.CanEnterPool(context.Run, item) ||
+                    !PreconditionEvaluator.IsSatisfied(context.Run, item.UnlockCondition))
                 {
                     continue;
                 }
 
-                if (strictHidden && kind == cfg.ItemKind.Passive && (hidden < item.HiddenRange.Min || hidden > item.HiddenRange.Max))
+                if (strictHidden && !ItemCoversHidden(item, hidden))
                 {
                     continue;
                 }
@@ -290,9 +293,10 @@ namespace GourmetProject.Game.Gameplay
             return total > 0f ? context.Rng.WeightedPickIndex(weights) : context.Rng.Range(0, count);
         }
 
-        private static float GetItemWeight(GameRun run, cfg.Item item, Dictionary<cfg.ItemQuality, float> qualityWeights)
+        private static float GetItemWeight(GameRun run, cfg.Item item, Dictionary<cfg.ItemQuality, float> qualityWeights, int hidden, int distanceFloor)
         {
             float weight = item.LevelWeightParams.BaseWeight > 0f ? item.LevelWeightParams.BaseWeight : 1f;
+            weight = HiddenScoreWeight(weight, HiddenMean(item), hidden, distanceFloor);
             if (qualityWeights.Count > 0)
             {
                 weight *= qualityWeights.TryGetValue(item.Quality, out float qualityWeight) ? Math.Max(0f, qualityWeight) : 0f;
@@ -305,6 +309,43 @@ namespace GourmetProject.Game.Gameplay
             }
 
             return weight;
+        }
+
+        private static int HiddenForSlot(RewardContext context, cfg.RewardSlot slot)
+        {
+            switch (slot.Kind)
+            {
+                case cfg.RewardKind.DishChoice:
+                    return context.DishHiddenScore;
+                case cfg.RewardKind.PassiveItemChoice:
+                    return context.PassiveItemHiddenScore;
+                case cfg.RewardKind.ActiveItemGrant:
+                    return context.ActiveItemHiddenScore;
+                case cfg.RewardKind.FragmentChoice:
+                    return context.FragmentHiddenScore;
+                default:
+                    return context.RewardHiddenScore;
+            }
+        }
+
+        private static bool ItemCoversHidden(cfg.Item item, int hidden)
+        {
+            if (item.HiddenRange.Min == 0 && item.HiddenRange.Max == 0)
+            {
+                return true;
+            }
+
+            return hidden >= item.HiddenRange.Min && hidden <= item.HiddenRange.Max;
+        }
+
+        private static float HiddenMean(cfg.Item item)
+        {
+            if (item.HiddenRange.Min == 0 && item.HiddenRange.Max == 0)
+            {
+                return 0f;
+            }
+
+            return (item.HiddenRange.Min + item.HiddenRange.Max) * 0.5f;
         }
 
         private static bool MatchesAnyTag(string itemTags, string requiredTags)

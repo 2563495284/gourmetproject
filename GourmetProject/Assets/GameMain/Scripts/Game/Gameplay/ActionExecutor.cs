@@ -10,12 +10,20 @@ namespace GourmetProject.Game.Gameplay
     {
         public static ActionOutcome Execute(GameRun run, cfg.GameAction action, IRandomStream rng)
         {
-            if (run == null || action == null)
+            return Execute(run, new ActionExecutionContext(action), rng);
+        }
+
+        public static ActionOutcome Execute(GameRun run, ActionExecutionContext context, IRandomStream rng)
+        {
+            if (run == null || context == null || context.Action == null)
             {
                 return ActionOutcome.Immediate(string.Empty);
             }
 
-            int prevDay = TimelineService.AdvanceDays(run, action.CostDays);
+            cfg.GameAction action = context.Action;
+            int prevDay = TimelineService.AdvanceDays(run, context.CostDays);
+            run.SetLastActionContext(context);
+            ActionScheduleService.AdvanceStep(run);
             if (!action.Repeatable)
             {
                 run.MarkActionUsed(action.Id);
@@ -25,9 +33,9 @@ namespace GourmetProject.Game.Gameplay
             {
                 case cfg.ActionType.Food:
                 {
-                    int required = run.ComputeFoodRequiredScore(action.PayloadValue);
+                    int required = HiddenScoreService.TargetScore(run, context);
                     string modifier = action.PayloadParam ?? string.Empty;
-                    string key = $"food_w{run.WeekIndex}_d{prevDay}_{action.Id}";
+                    string key = $"food_w{run.WeekIndex}_s{context.StepIndex}_d{prevDay}_{action.Id}";
                     return ActionOutcome.Battle(required, modifier, key);
                 }
 

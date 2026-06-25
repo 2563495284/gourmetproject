@@ -29,6 +29,11 @@ public sealed partial class GameAction : Luban.BeanBase
         { if(!_buf["payloadValue"].IsNumber) { throw new SerializationException(); }  PayloadValue = _buf["payloadValue"]; }
         { if(!_buf["payloadParam"].IsString) { throw new SerializationException(); }  PayloadParam = _buf["payloadParam"]; }
         { if(!_buf["linkId"].IsString) { throw new SerializationException(); }  LinkId = _buf["linkId"]; }
+        { if(!_buf["foodDifficulty"].IsString) { throw new SerializationException(); }  FoodDifficulty = _buf["foodDifficulty"]; }
+        { if(!_buf["rewardKind"].IsNumber) { throw new SerializationException(); }  RewardKind = (RewardKind)_buf["rewardKind"].AsInt; }
+        { if(!_buf["rewardPackageId"].IsString) { throw new SerializationException(); }  RewardPackageId = _buf["rewardPackageId"]; }
+        { if(!_buf["goldCurveId"].IsString) { throw new SerializationException(); }  GoldCurveId = _buf["goldCurveId"]; }
+        { if(!_buf["hiddenScoreBonus"].IsNumber) { throw new SerializationException(); }  HiddenScoreBonus = _buf["hiddenScoreBonus"]; }
     }
 
     public static GameAction DeserializeGameAction(JSONNode _buf)
@@ -53,7 +58,7 @@ public sealed partial class GameAction : Luban.BeanBase
     /// </summary>
     public readonly ActionType ActionType;
     /// <summary>
-    /// 消耗天数
+    /// 默认消耗天数
     /// </summary>
     public readonly int CostDays;
     /// <summary>
@@ -84,6 +89,26 @@ public sealed partial class GameAction : Luban.BeanBase
     /// 关联配置ID
     /// </summary>
     public readonly string LinkId;
+    /// <summary>
+    /// 美食难度(Normal/Hard/Boss)
+    /// </summary>
+    public readonly string FoodDifficulty;
+    /// <summary>
+    /// 美食奖励外观类型
+    /// </summary>
+    public readonly RewardKind RewardKind;
+    /// <summary>
+    /// 美食奖励包ID
+    /// </summary>
+    public readonly string RewardPackageId;
+    /// <summary>
+    /// 金币曲线ID
+    /// </summary>
+    public readonly string GoldCurveId;
+    /// <summary>
+    /// 行动隐藏分加成
+    /// </summary>
+    public readonly int HiddenScoreBonus;
    
     public const int __ID__ = 2090226920;
     public override int GetTypeId() => __ID__;
@@ -107,6 +132,11 @@ public sealed partial class GameAction : Luban.BeanBase
         + "payloadValue:" + PayloadValue + ","
         + "payloadParam:" + PayloadParam + ","
         + "linkId:" + LinkId + ","
+        + "foodDifficulty:" + FoodDifficulty + ","
+        + "rewardKind:" + RewardKind + ","
+        + "rewardPackageId:" + RewardPackageId + ","
+        + "goldCurveId:" + GoldCurveId + ","
+        + "hiddenScoreBonus:" + HiddenScoreBonus + ","
         + "}";
     }
 }

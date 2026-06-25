@@ -6,7 +6,9 @@
         "UnityEditor.TestRunner",
         "GourmetProject.Core",
         "GourmetProject.Gameplay",
-        "GourmetProject.Game"
+        "GourmetProject.Config",
+        "GourmetProject.Game",
+        "Luban.Runtime"
     ],
     "includePlatforms": [
         "Editor"

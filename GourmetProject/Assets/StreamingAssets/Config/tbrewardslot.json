@@ -88,5 +88,15 @@
     "poolId": "",
     "hiddenOffset": 0,
     "fallbackGold": 30
+  },
+  {
+    "id": "slot_main_gold",
+    "groupId": "main_gold",
+    "kind": 0,
+    "choiceCount": 1,
+    "weight": 1,
+    "poolId": "",
+    "hiddenOffset": 0,
+    "fallbackGold": 35
   }
 ]

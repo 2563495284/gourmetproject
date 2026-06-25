@@ -1,4 +1,5 @@
 using System;
+using GourmetProject.Game.Gameplay;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -24,6 +25,19 @@ namespace GourmetProject.Game.UI
         public void Bind(cfg.GameAction action, Action onPick)
         {
             Bind(action.Name, action.Desc, action.CostDays, onPick);
+        }
+
+        /// <summary>v2 行动组序列绑定：使用本次展开后的耗时。</summary>
+        public void Bind(ScheduledActionChoice choice, Action onPick)
+        {
+            cfg.GameAction action = choice?.Action;
+            if (action == null)
+            {
+                Bind("休息", "没有可执行行动。", 1, onPick);
+                return;
+            }
+
+            Bind(action.Name, action.Desc, choice.CostDays, onPick);
         }
 
         public void Bind(string name, string desc, int costDays, Action onPick)

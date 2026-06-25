@@ -1,0 +1,90 @@
+[
+  {
+    "id": "gm_normal_gold",
+    "groupId": "grp_food_normal",
+    "actionId": "act_food_gold",
+    "costDaysMin": 1,
+    "costDaysMax": 1,
+    "weight": 100
+  },
+  {
+    "id": "gm_normal_fragment",
+    "groupId": "grp_food_normal",
+    "actionId": "act_food_fragment",
+    "costDaysMin": 1,
+    "costDaysMax": 2,
+    "weight": 85
+  },
+  {
+    "id": "gm_normal_passive",
+    "groupId": "grp_food_normal",
+    "actionId": "act_food_passive",
+    "costDaysMin": 1,
+    "costDaysMax": 2,
+    "weight": 75
+  },
+  {
+    "id": "gm_hard_gold",
+    "groupId": "grp_food_hard",
+    "actionId": "act_food_gold",
+    "costDaysMin": 1,
+    "costDaysMax": 1,
+    "weight": 90
+  },
+  {
+    "id": "gm_hard_fragment",
+    "groupId": "grp_food_hard",
+    "actionId": "act_food_hard_fragment",
+    "costDaysMin": 2,
+    "costDaysMax": 3,
+    "weight": 80
+  },
+  {
+    "id": "gm_hard_passive",
+    "groupId": "grp_food_hard",
+    "actionId": "act_food_hard_passive",
+    "costDaysMin": 2,
+    "costDaysMax": 3,
+    "weight": 75
+  },
+  {
+    "id": "gm_event_market",
+    "groupId": "grp_event_food",
+    "actionId": "act_market",
+    "costDaysMin": 1,
+    "costDaysMax": 1,
+    "weight": 70
+  },
+  {
+    "id": "gm_event_food",
+    "groupId": "grp_event_food",
+    "actionId": "act_food_passive",
+    "costDaysMin": 1,
+    "costDaysMax": 2,
+    "weight": 100
+  },
+  {
+    "id": "gm_reward_tip",
+    "groupId": "grp_reward",
+    "actionId": "act_tip",
+    "costDaysMin": 1,
+    "costDaysMax": 1,
+    "weight": 100
+  },
+  {
+    "id": "gm_boss_food",
+    "groupId": "grp_boss_food",
+    "actionId": "act_food_hard_passive",
+    "costDaysMin": 2,
+    "costDaysMax": 3,
+    "weight": 100
+  },
+  {
+    "id": "gm_boss_fragment",
+    "groupId": "grp_boss_food",
+    "actionId": "act_food_hard_fragment",
+    "costDaysMin": 2,
+    "costDaysMax": 3,
+    "weight": 90
+  }
+]

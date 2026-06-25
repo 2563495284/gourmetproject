@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Text;
-using GourmetProject.Core.Rng;
 using GourmetProject.Game.Gameplay;
 using GourmetProject.Runtime;
 using GourmetProject.Runtime.UI;
@@ -57,12 +56,12 @@ namespace GourmetProject.Game.UI
             ClearCards();
 
             string weekLabel = run.IsEndless ? $"无尽 第 {run.WeekIndex - run.TotalWeeks} 关" : $"第 {run.WeekIndex} 周";
-            _titleText.text = $"{weekLabel} · 第 {run.CurrentDay}/{run.TimelineLengthDays} 天 · 选择行动";
+            _titleText.text = $"{weekLabel} · 第 {run.CurrentDay}/{run.TimelineLengthDays} 天 · 行动 {run.ActionStepIndex + 1}/{run.ScheduledActionSteps.Count}";
             BuildAxisText(run);
 
-            IRandomStream rng = GameApp.Random.Stream($"action_w{run.WeekIndex}_d{run.CurrentDay}");
-            List<cfg.GameAction> actions = ActionRandomService.GenerateChoices(run, rng);
-            bool hasActions = actions.Count > 0;
+            ActionScheduleStep step = ActionScheduleService.CurrentStep(run);
+            List<ScheduledActionChoice> choices = AvailableChoices(run, step);
+            bool hasActions = choices.Count > 0;
 
             _cardsContainer.gameObject.SetActive(hasActions);
             _skipButton.gameObject.SetActive(!hasActions);
@@ -74,15 +73,35 @@ namespace GourmetProject.Game.UI
                 return;
             }
 
-            int n = actions.Count;
+            int n = choices.Count;
             float gap = 0.03f;
             float cardW = (1f - gap * (n + 1)) / n;
             for (int i = 0; i < n; i++)
             {
                 float minX = gap + i * (cardW + gap);
                 float maxX = minX + cardW;
-                SpawnCard(actions[i], minX, maxX);
+                SpawnCard(choices[i], minX, maxX);
             }
+        }
+
+        private static List<ScheduledActionChoice> AvailableChoices(GameRun run, ActionScheduleStep step)
+        {
+            var choices = new List<ScheduledActionChoice>();
+            if (run == null || step?.Choices == null)
+            {
+                return choices;
+            }
+
+            foreach (ScheduledActionChoice choice in step.Choices)
+            {
+                cfg.GameAction action = choice?.Action;
+                if (action != null && ActionRandomService.IsAvailable(run, action))
+                {
+                    choices.Add(choice);
+                }
+            }
+
+            return choices;
         }
 
         /// <summary>在标题下方动态生成行动轴进度文本（已过/当前/未来天 + 节点标注）。</summary>
@@ -145,7 +164,7 @@ namespace GourmetProject.Game.UI
             }
         }
 
-        private void SpawnCard(cfg.GameAction action, float minX, float maxX)
+        private void SpawnCard(ScheduledActionChoice choice, float minX, float maxX)
         {
             WeekEventCardView card = Instantiate(_cardPrefab, _cardsContainer);
             var rect = (RectTransform)card.transform;
@@ -155,8 +174,8 @@ namespace GourmetProject.Game.UI
             rect.offsetMax = Vector2.zero;
             rect.localScale = Vector3.one;
 
-            cfg.GameAction captured = action;
-            card.Bind(action, () => Choose(captured));
+            ScheduledActionChoice captured = choice;
+            card.Bind(choice, () => Choose(captured));
             _cards.Add(card);
         }
 
@@ -173,7 +192,7 @@ namespace GourmetProject.Game.UI
             _cards.Clear();
         }
 
-        private void Choose(cfg.GameAction action)
+        private void Choose(ScheduledActionChoice action)
         {
             Close();
             BattleForm.Active?.OnActionPicked(action);

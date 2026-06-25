@@ -49,9 +49,11 @@ namespace GourmetProject.Game.Gameplay
         public static List<ShopEntry> RollStock(cfg.Tables tables, GameRun run, IRandomStream rng)
         {
             var stock = new List<ShopEntry>();
-            int hidden = run.RewardHiddenScore;
+            int dishHidden = HiddenScoreService.DishHiddenScore(run, run.LastActionContext);
+            int passiveHidden = HiddenScoreService.PassiveItemHiddenScore(run, run.LastActionContext);
+            int fragmentHidden = HiddenScoreService.FragmentHiddenScore(run, run.LastActionContext);
 
-            foreach (string itemId in ItemPoolService.Roll(tables, run, cfg.ItemKind.Passive, rng, PassiveCount))
+            foreach (string itemId in ItemPoolService.Roll(tables, run, cfg.ItemKind.Passive, rng, PassiveCount, passiveHidden, distanceFloor: 5))
             {
                 cfg.Item item = tables.TbItem.GetOrDefault(itemId);
                 if (item != null)
@@ -60,7 +62,7 @@ namespace GourmetProject.Game.Gameplay
                 }
             }
 
-            foreach (cfg.DishVariant variant in RollDishVariants(tables, run, hidden, rng, DishCount))
+            foreach (cfg.DishVariant variant in RollDishVariants(tables, run, dishHidden, rng, DishCount))
             {
                 cfg.DishBase baseDish = tables.TbDishBase.GetOrDefault(variant.BaseId);
                 string name = baseDish != null ? baseDish.Name : variant.Id;
@@ -68,7 +70,7 @@ namespace GourmetProject.Game.Gameplay
                 stock.Add(new ShopEntry(ShopEntryKind.Dish, variant.Id, name, "加入菜谱池的菜品", price));
             }
 
-            foreach (cfg.StomachFragment fragment in RollFragments(tables, run, hidden, rng, FragmentCount))
+            foreach (cfg.StomachFragment fragment in RollFragments(tables, run, fragmentHidden, rng, FragmentCount))
             {
                 int price = fragment.Price > 0 ? fragment.Price : 40;
                 stock.Add(new ShopEntry(ShopEntryKind.Fragment, fragment.Id, "胃部碎片", "扩展胃部棋盘", price));
@@ -147,7 +149,7 @@ namespace GourmetProject.Game.Gameplay
                 }
             }
 
-            return WeightedTake(candidates, v => v.BaseWeight, count, rng);
+            return WeightedTake(candidates, v => RewardPoolService.HiddenScoreWeight(v.BaseWeight, HiddenMean(v.HiddenRange), hidden, 5), count, rng);
         }
 
         private static List<cfg.StomachFragment> RollFragments(cfg.Tables tables, GameRun run, int hidden, IRandomStream rng, int count)
@@ -172,7 +174,17 @@ namespace GourmetProject.Game.Gameplay
                 }
             }
 
-            return WeightedTake(candidates, f => f.BaseWeight, count, rng);
+            return WeightedTake(candidates, f => RewardPoolService.HiddenScoreWeight(f.BaseWeight, HiddenMean(f.HiddenRange), hidden, 5), count, rng);
+        }
+
+        private static float HiddenMean(cfg.HiddenRange range)
+        {
+            if (range.Min == 0 && range.Max == 0)
+            {
+                return 0f;
+            }
+
+            return (range.Min + range.Max) * 0.5f;
         }
 
         private static List<T> WeightedTake<T>(List<T> candidates, System.Func<T, float> weightOf, int count, IRandomStream rng)

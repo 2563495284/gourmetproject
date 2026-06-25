@@ -11,18 +11,22 @@ namespace GourmetProject.Game.Gameplay
 
         public static RewardOffer GenerateOffer(GameRun run, cfg.Week week, IRandomStream rng)
         {
+            return GenerateOffer(run, week, rng, null);
+        }
+
+        public static RewardOffer GenerateOffer(GameRun run, cfg.Week week, IRandomStream rng, ActionExecutionContext actionContext)
+        {
             cfg.Week effectiveWeek = ResolveWeek(run, week);
-            cfg.RewardPackage package = ResolvePackage(effectiveWeek);
+            cfg.RewardPackage package = ResolvePackage(run, effectiveWeek, actionContext);
             if (package == null)
             {
                 Log.Warning("Missing reward package. Falling back to gold-only reward.", Tag);
                 return new RewardOffer(30, null, null);
             }
 
-            int goldMin = System.Math.Min(package.GoldMin, package.GoldMax);
-            int goldMax = System.Math.Max(package.GoldMin, package.GoldMax);
-            int baseGold = rng.Range(goldMin, goldMax + 1);
-            var context = new RewardContext(GameApp.Config.Tables, run, effectiveWeek, package, rng);
+            GoldRange goldRange = HiddenScoreService.GoldRewardRange(run, actionContext, package);
+            int baseGold = rng.Range(goldRange.Min, goldRange.Max + 1);
+            var context = new RewardContext(GameApp.Config.Tables, run, effectiveWeek, package, rng, actionContext);
             return new RewardOffer(
                 baseGold,
                 RollSlotGroup(context, package.MainSlotGroupId),
@@ -73,11 +77,20 @@ namespace GourmetProject.Game.Gameplay
             return run.TotalWeeks > 0 ? GameApp.Config.Tables.TbWeek.GetOrDefault(run.TotalWeeks) : null;
         }
 
-        private static cfg.RewardPackage ResolvePackage(cfg.Week week)
+        private static cfg.RewardPackage ResolvePackage(GameRun run, cfg.Week week, ActionExecutionContext actionContext)
         {
-            return week == null
-                ? null
-                : GameApp.Config.Tables.TbRewardPackage.GetOrDefault(week.RewardPackageId);
+            cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
+            string packageId = actionContext?.Action?.RewardPackageId;
+            if (!string.IsNullOrEmpty(packageId))
+            {
+                cfg.RewardPackage actionPackage = tables.TbRewardPackage.GetOrDefault(packageId);
+                if (actionPackage != null)
+                {
+                    return actionPackage;
+                }
+            }
+
+            return week == null ? null : tables.TbRewardPackage.GetOrDefault(week.RewardPackageId);
         }
 
         private static System.Collections.Generic.List<RewardChoice> RollSlotGroup(RewardContext context, string groupId)
@@ -138,8 +151,9 @@ namespace GourmetProject.Game.Gameplay
                         return $"获得胃部碎片：{choice.Name}";
                     }
 
-                    run.Gold += 40;
-                    return $"胃部碎片已折算：金币 +40";
+                    int convertedGold = choice.GoldAmount > 0 ? choice.GoldAmount : HiddenScoreService.FragmentFallbackGold(run, run.LastActionContext);
+                    run.Gold += convertedGold;
+                    return $"胃部碎片已折算：金币 +{convertedGold}";
                 default:
                     return string.Empty;
             }

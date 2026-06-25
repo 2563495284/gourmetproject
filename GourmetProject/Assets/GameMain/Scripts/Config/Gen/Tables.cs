@@ -98,6 +98,26 @@ public partial class Tables
     /// GlobalConst：跑通 Luban 接入用的占位表（与玩法无关）。
     /// </summary>
     public TbGlobalConst TbGlobalConst {get; }
+    /// <summary>
+    /// 行动组：一段可展示的行动组合。
+    /// </summary>
+    public TbActionGroup TbActionGroup {get; }
+    /// <summary>
+    /// 行动组成员：组内行动、耗时随机范围与权重。
+    /// </summary>
+    public TbActionGroupMember TbActionGroupMember {get; }
+    /// <summary>
+    /// 行动日程规则：区间/窗口约束和优先级。
+    /// </summary>
+    public TbActionScheduleRule TbActionScheduleRule {get; }
+    /// <summary>
+    /// 隐藏分曲线：基础隐藏分与派生隐藏分。
+    /// </summary>
+    public TbHiddenScoreCurve TbHiddenScoreCurve {get; }
+    /// <summary>
+    /// 金币奖励曲线：按进度和行动难度计算上下限。
+    /// </summary>
+    public TbGoldRewardCurve TbGoldRewardCurve {get; }
 
     public Tables(System.Func<string, JSONNode> loader)
     {
@@ -122,6 +142,11 @@ public partial class Tables
         TbTimelineNode = new TbTimelineNode(loader("tbtimelinenode"));
         TbBoss = new TbBoss(loader("tbboss"));
         TbGlobalConst = new TbGlobalConst(loader("tbglobalconst"));
+        TbActionGroup = new TbActionGroup(loader("tbactiongroup"));
+        TbActionGroupMember = new TbActionGroupMember(loader("tbactiongroupmember"));
+        TbActionScheduleRule = new TbActionScheduleRule(loader("tbactionschedulerule"));
+        TbHiddenScoreCurve = new TbHiddenScoreCurve(loader("tbhiddenscorecurve"));
+        TbGoldRewardCurve = new TbGoldRewardCurve(loader("tbgoldrewardcurve"));
         ResolveRef();
     }
     
@@ -148,6 +173,11 @@ public partial class Tables
         TbTimelineNode.ResolveRef(this);
         TbBoss.ResolveRef(this);
         TbGlobalConst.ResolveRef(this);
+        TbActionGroup.ResolveRef(this);
+        TbActionGroupMember.ResolveRef(this);
+        TbActionScheduleRule.ResolveRef(this);
+        TbHiddenScoreCurve.ResolveRef(this);
+        TbGoldRewardCurve.ResolveRef(this);
     }
 }
 

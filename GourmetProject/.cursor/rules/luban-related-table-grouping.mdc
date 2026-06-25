@@ -1,0 +1,14 @@
+---
+description: Luban 相关配置表的工作簿组织规则
+globs: GameConfig/**
+alwaysApply: false
+---
+
+# Luban 表分组
+
+新增或重构 Luban 配置时，相关表优先合并到同一个 `.xlsx` 工作簿，用不同 sheet 区分，而不是为每张小表创建独立文件。
+
+- 行动相关表放在 `action.xlsx`：例如 `action`、`action_group`、`action_group_member`、`action_schedule_rule`。
+- 奖励或数值曲线相关表放在同一主题工作簿：例如 `reward_curve.xlsx` 中的 `hidden_score_curve`、`gold_reward_curve`。
+- 在 `__tables__.xlsx` 登记多 sheet 表时，`input` 使用 `sheet@file.xlsx`，例如 `action_group@action.xlsx`。
+- 生成脚本也要输出同样的多 sheet 结构，避免重新生成时把表拆回多个文件。

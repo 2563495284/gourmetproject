@@ -12,13 +12,15 @@ namespace GourmetProject.Game.Gameplay
             GameRun run,
             cfg.Week week,
             cfg.RewardPackage package,
-            IRandomStream rng)
+            IRandomStream rng,
+            ActionExecutionContext actionContext = null)
         {
             Tables = tables;
             Run = run;
             Week = week;
             Package = package;
             Rng = rng;
+            ActionContext = actionContext;
         }
 
         public cfg.Tables Tables { get; }
@@ -31,6 +33,16 @@ namespace GourmetProject.Game.Gameplay
 
         public IRandomStream Rng { get; }
 
-        public int RewardHiddenScore => Run?.RewardHiddenScore ?? Week?.RewardHiddenScore ?? 0;
+        public ActionExecutionContext ActionContext { get; }
+
+        public int RewardHiddenScore => DishHiddenScore;
+
+        public int DishHiddenScore => Run == null ? Week?.RewardHiddenScore ?? 0 : HiddenScoreService.DishHiddenScore(Run, ActionContext);
+
+        public int PassiveItemHiddenScore => Run == null ? Week?.RewardHiddenScore ?? 0 : HiddenScoreService.PassiveItemHiddenScore(Run, ActionContext);
+
+        public int ActiveItemHiddenScore => Run == null ? 0 : HiddenScoreService.ActiveItemHiddenScore(Run, ActionContext);
+
+        public int FragmentHiddenScore => Run == null ? Week?.RewardHiddenScore ?? 0 : HiddenScoreService.FragmentHiddenScore(Run, ActionContext);
     }
 }

@@ -41,9 +41,11 @@ namespace GourmetProject.Game.UI
         private Action _afterBattleWin;
         private Action _afterShop;
         private bool _victory;
+        private ActionExecutionContext _currentBattleActionContext;
 
         public GameRun Run => _run;
         public BattleSession Session => _session;
+        public ActionExecutionContext CurrentBattleActionContext => _currentBattleActionContext;
 
         protected override void OnInit(object userData)
         {
@@ -95,6 +97,8 @@ namespace GourmetProject.Game.UI
                 TimelineService.RollWeekTimeline(_run, rng);
             }
 
+            IRandomStream scheduleRng = GameApp.Random.Stream($"action_schedule_w{_run.WeekIndex}");
+            ActionScheduleService.EnsureSchedule(_run, scheduleRng);
             RunPersistence.Save(_run);
             PromptNextAction();
         }
@@ -102,7 +106,7 @@ namespace GourmetProject.Game.UI
         /// <summary>行动轴未走完则弹「三选一行动」；走完则进入下一周。</summary>
         public void PromptNextAction()
         {
-            if (TimelineService.IsWeekFinished(_run))
+            if (ActionScheduleService.IsScheduleFinished(_run) || TimelineService.IsWeekFinished(_run))
             {
                 EndWeek();
                 return;
@@ -114,25 +118,35 @@ namespace GourmetProject.Game.UI
         }
 
         /// <summary>WeekMapForm 选择行动后回调（null = 无行动可选时的「休息」）。</summary>
-        public void OnActionPicked(cfg.GameAction action)
+        public void OnActionPicked(ScheduledActionChoice choice)
         {
-            if (action == null)
+            if (choice == null)
             {
                 int restPrev = TimelineService.AdvanceDays(_run, 1);
+                ActionScheduleService.AdvanceStep(_run);
                 RunPersistence.Save(_run);
                 ResolveNodes(restPrev, PromptNextAction);
                 return;
             }
 
             int prevDay = _run.CurrentDay;
-            IRandomStream rng = GameApp.Random.Stream($"action_exec_w{_run.WeekIndex}_d{prevDay}_{action.Id}");
-            ActionOutcome outcome = ActionExecutor.Execute(_run, action, rng);
+            var context = new ActionExecutionContext(choice);
+            if (!context.IsValid)
+            {
+                ActionScheduleService.AdvanceStep(_run);
+                RunPersistence.Save(_run);
+                ResolveNodes(prevDay, PromptNextAction);
+                return;
+            }
+
+            IRandomStream rng = GameApp.Random.Stream($"action_exec_w{_run.WeekIndex}_s{context.StepIndex}_{context.Action.Id}");
+            ActionOutcome outcome = ActionExecutor.Execute(_run, context, rng);
             RunPersistence.Save(_run);
 
             switch (outcome.Kind)
             {
                 case ActionOutcomeKind.Immediate:
-                    ShowNotice(action.Name, outcome.Feedback, () => ResolveNodes(prevDay, PromptNextAction));
+                    ShowNotice(context.Action.Name, outcome.Feedback, () => ResolveNodes(prevDay, PromptNextAction));
                     break;
                 case ActionOutcomeKind.Shop:
                     OpenShopThen(() => ResolveNodes(prevDay, PromptNextAction));
@@ -142,7 +156,8 @@ namespace GourmetProject.Game.UI
                     break;
                 case ActionOutcomeKind.Battle:
                     StartBattle(outcome.RequiredScore, outcome.Modifier, outcome.BattleKey, false, null,
-                        () => ResolveNodes(prevDay, PromptNextAction));
+                        () => ResolveNodes(prevDay, PromptNextAction),
+                        context);
                     break;
             }
         }
@@ -254,7 +269,7 @@ namespace GourmetProject.Game.UI
                     {
                         ProcessNextNode();
                     }
-                }));
+                }, null));
         }
 
         // —— 事件 ——
@@ -322,9 +337,17 @@ namespace GourmetProject.Game.UI
 
         // —— 战斗 ——
 
-        private void StartBattle(int requiredScore, string modifier, string key, bool isBoss, string bossId, Action onWin)
+        private void StartBattle(
+            int requiredScore,
+            string modifier,
+            string key,
+            bool isBoss,
+            string bossId,
+            Action onWin,
+            ActionExecutionContext actionContext = null)
         {
             _afterBattleWin = onWin;
+            _currentBattleActionContext = actionContext;
             HideResult();
             _session = _run.BuildBattleSession(requiredScore, modifier, key);
 
@@ -393,6 +416,7 @@ namespace GourmetProject.Game.UI
         {
             Action cb = _afterBattleWin;
             _afterBattleWin = null;
+            _currentBattleActionContext = null;
             cb?.Invoke();
         }
 

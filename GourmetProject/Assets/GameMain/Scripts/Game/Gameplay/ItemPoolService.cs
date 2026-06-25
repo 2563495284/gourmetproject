@@ -33,19 +33,39 @@ namespace GourmetProject.Game.Gameplay
             IRandomStream rng,
             int count)
         {
+            int hidden = kind == cfg.ItemKind.Active
+                ? HiddenScoreService.ActiveItemHiddenScore(run, run?.LastActionContext)
+                : HiddenScoreService.PassiveItemHiddenScore(run, run?.LastActionContext);
+            return Roll(tables, run, kind, rng, count, hidden, distanceFloor: 5);
+        }
+
+        public static List<string> Roll(
+            cfg.Tables tables,
+            GameRun run,
+            cfg.ItemKind kind,
+            IRandomStream rng,
+            int count,
+            int hidden,
+            int distanceFloor)
+        {
             var result = new List<string>();
             if (tables == null || run == null || rng == null || count <= 0)
             {
                 return result;
             }
 
-            List<cfg.Item> candidates = BuildCandidates(tables, run, kind);
+            List<cfg.Item> candidates = BuildCandidates(tables, run, kind, hidden, strictHidden: true);
+            if (candidates.Count == 0)
+            {
+                candidates = BuildCandidates(tables, run, kind, hidden, strictHidden: false);
+            }
+
             for (int i = 0; i < count && candidates.Count > 0; i++)
             {
                 var weights = new List<float>(candidates.Count);
                 foreach (cfg.Item item in candidates)
                 {
-                    weights.Add(GetWeight(run, item));
+                    weights.Add(GetWeight(run, item, hidden, distanceFloor));
                 }
 
                 int index = rng.WeightedPickIndex(weights);
@@ -102,23 +122,31 @@ namespace GourmetProject.Game.Gameplay
             return item.Kind == cfg.ItemKind.Passive ? item.EffectValue * level : item.EffectValue;
         }
 
-        private static List<cfg.Item> BuildCandidates(cfg.Tables tables, GameRun run, cfg.ItemKind kind)
+        private static List<cfg.Item> BuildCandidates(cfg.Tables tables, GameRun run, cfg.ItemKind kind, int hidden, bool strictHidden)
         {
             var candidates = new List<cfg.Item>();
             foreach (cfg.Item item in tables.TbItem.DataList)
             {
-                if (item.Kind == kind && CanEnterPool(run, item))
+                if (item.Kind != kind || !CanEnterPool(run, item) || !PreconditionEvaluator.IsSatisfied(run, item.UnlockCondition))
                 {
-                    candidates.Add(item);
+                    continue;
                 }
+
+                if (strictHidden && !CoversHidden(item, hidden))
+                {
+                    continue;
+                }
+
+                candidates.Add(item);
             }
 
             return candidates;
         }
 
-        private static float GetWeight(GameRun run, cfg.Item item)
+        private static float GetWeight(GameRun run, cfg.Item item, int hidden, int distanceFloor)
         {
             float baseWeight = item.LevelWeightParams.BaseWeight > 0f ? item.LevelWeightParams.BaseWeight : 1f;
+            baseWeight = RewardPoolService.HiddenScoreWeight(baseWeight, HiddenMean(item), hidden, distanceFloor);
 
             RunItemState state = run.GetItemState(item.Id);
             if (item.Kind == cfg.ItemKind.Passive && state != null)
@@ -128,6 +156,26 @@ namespace GourmetProject.Game.Gameplay
             }
 
             return baseWeight;
+        }
+
+        private static bool CoversHidden(cfg.Item item, int hidden)
+        {
+            if (item.HiddenRange.Min == 0 && item.HiddenRange.Max == 0)
+            {
+                return true;
+            }
+
+            return hidden >= item.HiddenRange.Min && hidden <= item.HiddenRange.Max;
+        }
+
+        private static float HiddenMean(cfg.Item item)
+        {
+            if (item.HiddenRange.Min == 0 && item.HiddenRange.Max == 0)
+            {
+                return 0f;
+            }
+
+            return (item.HiddenRange.Min + item.HiddenRange.Max) * 0.5f;
         }
     }
 }
