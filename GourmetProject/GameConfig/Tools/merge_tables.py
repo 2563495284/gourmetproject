@@ -20,6 +20,12 @@ DATAS = os.path.normpath(os.path.join(HERE, "..", "Datas"))
 
 # 目标文件 -> [(sheet 名, 旧单表文件名)]。sheet 名同时用作 __tables__ 的 input 前缀。
 GROUPS = {
+    "action.xlsx": [
+        ("action", "action.xlsx"),
+        ("action_group", "action_group.xlsx"),
+        ("action_group_member", "action_group_member.xlsx"),
+        ("action_schedule_rule", "action_schedule_rule.xlsx"),
+    ],
     "dish.xlsx": [
         ("dish_base", "dish_base.xlsx"),
         ("dish_variant", "dish_variant.xlsx"),
@@ -43,6 +49,10 @@ GROUPS = {
 
 # full_name -> input。sheet@文件 形式精确指定数据 sheet。
 INPUT_MAP = {
+    "TbAction": "action@action.xlsx",
+    "TbActionGroup": "action_group@action.xlsx",
+    "TbActionGroupMember": "action_group_member@action.xlsx",
+    "TbActionScheduleRule": "action_schedule_rule@action.xlsx",
     "TbDishBase": "dish_base@dish.xlsx",
     "TbDishVariant": "dish_variant@dish.xlsx",
     "TbEvent": "event@event.xlsx",

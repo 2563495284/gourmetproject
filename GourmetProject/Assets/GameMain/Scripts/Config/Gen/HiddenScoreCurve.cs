@@ -19,6 +19,11 @@ public sealed partial class HiddenScoreCurve : Luban.BeanBase
     {
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
         { if(!_buf["purpose"].IsString) { throw new SerializationException(); }  Purpose = _buf["purpose"]; }
+        { if(!_buf["segmentPriority"].IsNumber) { throw new SerializationException(); }  SegmentPriority = _buf["segmentPriority"]; }
+        { if(!_buf["minWeek"].IsNumber) { throw new SerializationException(); }  MinWeek = _buf["minWeek"]; }
+        { if(!_buf["maxWeek"].IsNumber) { throw new SerializationException(); }  MaxWeek = _buf["maxWeek"]; }
+        { if(!_buf["minRunStep"].IsNumber) { throw new SerializationException(); }  MinRunStep = _buf["minRunStep"]; }
+        { if(!_buf["maxRunStep"].IsNumber) { throw new SerializationException(); }  MaxRunStep = _buf["maxRunStep"]; }
         { if(!_buf["baseValue"].IsNumber) { throw new SerializationException(); }  BaseValue = _buf["baseValue"]; }
         { if(!_buf["baseMultiplier"].IsNumber) { throw new SerializationException(); }  BaseMultiplier = _buf["baseMultiplier"]; }
         { if(!_buf["perWeek"].IsNumber) { throw new SerializationException(); }  PerWeek = _buf["perWeek"]; }
@@ -45,6 +50,26 @@ public sealed partial class HiddenScoreCurve : Luban.BeanBase
     /// 曲线用途：Base/TargetScore/Dish/PassiveItem/ActiveItem/Fragment。
     /// </summary>
     public readonly string Purpose;
+    /// <summary>
+    /// 分段优先级，数值越大越优先。
+    /// </summary>
+    public readonly int SegmentPriority;
+    /// <summary>
+    /// 适用最小周数；&lt;=0 表示不限。
+    /// </summary>
+    public readonly int MinWeek;
+    /// <summary>
+    /// 适用最大周数；&lt;=0 表示不限。
+    /// </summary>
+    public readonly int MaxWeek;
+    /// <summary>
+    /// 适用最小整局行动序号；&lt;=0 表示不限。
+    /// </summary>
+    public readonly int MinRunStep;
+    /// <summary>
+    /// 适用最大整局行动序号；&lt;=0 表示不限。
+    /// </summary>
+    public readonly int MaxRunStep;
     /// <summary>
     /// 基础值。
     /// </summary>
@@ -102,6 +127,11 @@ public sealed partial class HiddenScoreCurve : Luban.BeanBase
         return "{ "
         + "id:" + Id + ","
         + "purpose:" + Purpose + ","
+        + "segmentPriority:" + SegmentPriority + ","
+        + "minWeek:" + MinWeek + ","
+        + "maxWeek:" + MaxWeek + ","
+        + "minRunStep:" + MinRunStep + ","
+        + "maxRunStep:" + MaxRunStep + ","
         + "baseValue:" + BaseValue + ","
         + "baseMultiplier:" + BaseMultiplier + ","
         + "perWeek:" + PerWeek + ","

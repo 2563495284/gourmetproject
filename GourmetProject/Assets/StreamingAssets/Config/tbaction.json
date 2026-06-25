@@ -57,6 +57,25 @@
     "hiddenScoreBonus": 2
   },
   {
+    "id": "act_food_active",
+    "name": "秘制小物",
+    "desc": "普通美食挑战，主要奖励主动道具。",
+    "actionType": 1,
+    "costDays": 1,
+    "weight": 75,
+    "repeatable": true,
+    "preconditions": "",
+    "payloadType": "",
+    "payloadValue": 1,
+    "payloadParam": "",
+    "linkId": "",
+    "foodDifficulty": "Normal",
+    "rewardKind": 3,
+    "rewardPackageId": "reward_food_active",
+    "goldCurveId": "gold_normal",
+    "hiddenScoreBonus": 1
+  },
+  {
     "id": "act_food_dish",
     "name": "新菜试做",
     "desc": "普通美食挑战，主要奖励菜品。",
@@ -74,6 +93,25 @@
     "rewardPackageId": "reward_food_dish",
     "goldCurveId": "gold_normal",
     "hiddenScoreBonus": 1
+  },
+  {
+    "id": "act_food_hard_gold",
+    "name": "重口硬菜",
+    "desc": "更难美食挑战，主要奖励金币。",
+    "actionType": 1,
+    "costDays": 3,
+    "weight": 70,
+    "repeatable": true,
+    "preconditions": "",
+    "payloadType": "",
+    "payloadValue": 1.2,
+    "payloadParam": "",
+    "linkId": "",
+    "foodDifficulty": "Hard",
+    "rewardKind": 0,
+    "rewardPackageId": "reward_food_hard_gold",
+    "goldCurveId": "gold_hard",
+    "hiddenScoreBonus": 7
   },
   {
     "id": "act_food_hard_fragment",
@@ -112,6 +150,25 @@
     "rewardPackageId": "reward_food_hard_passive",
     "goldCurveId": "gold_hard",
     "hiddenScoreBonus": 9
+  },
+  {
+    "id": "act_food_hard_active",
+    "name": "险中取巧",
+    "desc": "更难美食挑战，主要奖励主动道具。",
+    "actionType": 1,
+    "costDays": 2,
+    "weight": 55,
+    "repeatable": true,
+    "preconditions": "",
+    "payloadType": "",
+    "payloadValue": 1.25,
+    "payloadParam": "",
+    "linkId": "",
+    "foodDifficulty": "Hard",
+    "rewardKind": 3,
+    "rewardPackageId": "reward_food_hard_active",
+    "goldCurveId": "gold_hard",
+    "hiddenScoreBonus": 7
   },
   {
     "id": "act_food_hard_dish",

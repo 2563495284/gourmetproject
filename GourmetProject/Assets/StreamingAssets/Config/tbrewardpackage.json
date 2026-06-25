@@ -99,6 +99,15 @@
     "fallbackGold": 40
   },
   {
+    "id": "reward_food_active",
+    "goldMin": 24,
+    "goldMax": 40,
+    "mainSlotGroupId": "main_active",
+    "extraSlotGroupId": "extra_mixed",
+    "extraChance": 0.15,
+    "fallbackGold": 35
+  },
+  {
     "id": "reward_food_fragment",
     "goldMin": 32,
     "goldMax": 52,
@@ -106,6 +115,15 @@
     "extraSlotGroupId": "extra_mixed",
     "extraChance": 0.18,
     "fallbackGold": 45
+  },
+  {
+    "id": "reward_food_hard_gold",
+    "goldMin": 40,
+    "goldMax": 66,
+    "mainSlotGroupId": "main_gold",
+    "extraSlotGroupId": "extra_mixed",
+    "extraChance": 0.25,
+    "fallbackGold": 50
   },
   {
     "id": "reward_food_hard_dish",
@@ -124,6 +142,15 @@
     "extraSlotGroupId": "extra_mixed",
     "extraChance": 0.3,
     "fallbackGold": 60
+  },
+  {
+    "id": "reward_food_hard_active",
+    "goldMin": 42,
+    "goldMax": 68,
+    "mainSlotGroupId": "main_active",
+    "extraSlotGroupId": "extra_mixed",
+    "extraChance": 0.25,
+    "fallbackGold": 55
   },
   {
     "id": "reward_food_hard_fragment",

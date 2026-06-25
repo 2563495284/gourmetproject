@@ -118,7 +118,8 @@ namespace GourmetProject.Game.Meta
             List<RewardChoice> result)
         {
             Dictionary<cfg.ItemQuality, float> qualityWeights = ParseQualityWeights(pool.QualityWeights);
-            List<cfg.Item> candidates = BuildItemCandidates(context, pool, kind, hidden, qualityWeights, strictHidden: true, strictTags: true, strictQuality: true);
+            bool activeItem = kind == cfg.ItemKind.Active;
+            List<cfg.Item> candidates = BuildItemCandidates(context, pool, kind, hidden, qualityWeights, strictHidden: !activeItem, strictTags: true, strictQuality: true);
             if (candidates.Count == 0 && pool.AllowFallback)
             {
                 candidates = BuildItemCandidates(context, pool, kind, hidden, qualityWeights, strictHidden: false, strictTags: true, strictQuality: true);
@@ -144,7 +145,11 @@ namespace GourmetProject.Game.Meta
 
                 int index = PickWeightedOrUniform(context, weights, candidates.Count);
                 cfg.Item chosen = candidates[index];
-                candidates.RemoveAt(index);
+                if (!activeItem)
+                {
+                    candidates.RemoveAt(index);
+                }
+
                 string desc = chosen.Kind == cfg.ItemKind.Passive ? $"被动道具 · {chosen.Quality}" : "主动道具";
                 result.Add(new RewardChoice(
                     kind == cfg.ItemKind.Passive ? cfg.RewardKind.PassiveItemChoice : cfg.RewardKind.ActiveItemGrant,

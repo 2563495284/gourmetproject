@@ -36,6 +36,20 @@ namespace GourmetProject.Game.UI.Meta
             Bind(action.Name, action.Desc, action.CostDays, onPick);
         }
 
+        /// <summary>行动组候选绑定，使用本次选择快照中的耗时。</summary>
+        public void Bind(ActionChoice choice, Action onPick)
+        {
+            if (choice == null || choice.Action == null)
+            {
+                Bind(string.Empty, string.Empty, 0, onPick);
+                return;
+            }
+
+            string groupName = choice.Group == null ? string.Empty : $"[{choice.Group.Name}] ";
+            string desc = $"{groupName}{choice.Action.Desc}\n奖励：{RewardKindText(choice.Action.RewardKind)} · 难度：{choice.Action.FoodDifficulty}";
+            Bind(choice.Action.Name, desc, choice.CostDays, onPick);
+        }
+
         public void Bind(string name, string desc, int costDays, Action onPick)
         {
             _nameText.text = name;
@@ -44,6 +58,19 @@ namespace GourmetProject.Game.UI.Meta
 
             _pickButton.onClick.RemoveAllListeners();
             _pickButton.onClick.AddListener(() => onPick?.Invoke());
+        }
+
+        private static string RewardKindText(cfg.RewardKind kind)
+        {
+            switch (kind)
+            {
+                case cfg.RewardKind.DishChoice: return "菜品";
+                case cfg.RewardKind.PassiveItemChoice: return "被动道具";
+                case cfg.RewardKind.ActiveItemGrant: return "主动道具";
+                case cfg.RewardKind.FragmentChoice: return "胃部碎片";
+                case cfg.RewardKind.Gold: return "金币";
+                default: return kind.ToString();
+            }
         }
     }
 }

@@ -2,7 +2,7 @@
 """生成「行动轴」相关 xlsx 表，并扩展 event.xlsx。
 
 新表/工作簿：
-- action.xlsx         : 行动池；每轮实时按权重随机 n 选一，最多 3 个。
+- action.xlsx         : 行动池、行动组、行动组成员、整局行动日程规则。
 - reward_curve.xlsx   : v2 隐藏分曲线、金币曲线。
 - timeline.xlsx       : 周配置、目标分曲线、奖励包、行动轴库、行动轴节点。
 - boss.xlsx                 : Boss 池。
@@ -84,13 +84,16 @@ ACTION_FIELDS = [
     ("rewardPackageId", "string", "美食奖励包ID"), ("goldCurveId", "string", "金币曲线ID"), ("hiddenScoreBonus", "int", "行动隐藏分加成"),
 ]
 ACTIONS = [
-    # 美食挑战：payloadValue 保留为目标分倍率兼容字段；v2 主要读取难度、奖励包、金币曲线和隐藏分加成。
+    # 美食挑战：payloadValue 保留为目标分倍率兼容字段；v3 主要读取难度、奖励包、金币曲线和隐藏分加成。
     ("act_food_gold", "街边小吃", "普通美食挑战，主要奖励金币。", "Food", 1, 120, "true", "", "", 1.0, "", "", "Normal", "Gold", "reward_food_gold", "gold_normal", 0),
     ("act_food_fragment", "胃口扩张", "普通美食挑战，主要奖励胃部碎片。", "Food", 2, 90, "true", "", "", 1.0, "", "", "Normal", "FragmentChoice", "reward_food_fragment", "gold_normal", 2),
     ("act_food_passive", "招牌菜试炼", "普通美食挑战，主要奖励被动道具。", "Food", 2, 85, "true", "", "", 1.0, "", "", "Normal", "PassiveItemChoice", "reward_food_passive", "gold_normal", 2),
+    ("act_food_active", "秘制小物", "普通美食挑战，主要奖励主动道具。", "Food", 1, 75, "true", "", "", 1.0, "", "", "Normal", "ActiveItemGrant", "reward_food_active", "gold_normal", 1),
     ("act_food_dish", "新菜试做", "普通美食挑战，主要奖励菜品。", "Food", 2, 100, "true", "", "", 1.0, "", "", "Normal", "DishChoice", "reward_food_dish", "gold_normal", 1),
+    ("act_food_hard_gold", "重口硬菜", "更难美食挑战，主要奖励金币。", "Food", 3, 70, "true", "", "", 1.2, "", "", "Hard", "Gold", "reward_food_hard_gold", "gold_hard", 7),
     ("act_food_hard_fragment", "硬菜扩胃", "更难美食挑战，主要奖励胃部碎片。", "Food", 3, 65, "true", "", "", 1.25, "", "", "Hard", "FragmentChoice", "reward_food_hard_fragment", "gold_hard", 8),
     ("act_food_hard_passive", "名厨考验", "更难美食挑战，主要奖励被动道具。", "Food", 3, 60, "true", "", "", 1.3, "", "", "Hard", "PassiveItemChoice", "reward_food_hard_passive", "gold_hard", 9),
+    ("act_food_hard_active", "险中取巧", "更难美食挑战，主要奖励主动道具。", "Food", 2, 55, "true", "", "", 1.25, "", "", "Hard", "ActiveItemGrant", "reward_food_hard_active", "gold_hard", 7),
     ("act_food_hard_dish", "稀有菜谱", "更难美食挑战，主要奖励菜品。", "Food", 3, 70, "true", "", "", 1.25, "", "", "Hard", "DishChoice", "reward_food_hard_dish", "gold_hard", 8),
     ("act_cook", "开火做菜", "兼容旧配置：普通美食挑战，达标得奖励。", "Food", 2, 80, "true", "", "", 1.0, "", "", "Normal", "DishChoice", "reward_food_dish", "gold_normal", 0),
     ("act_feast", "大宴宾客", "兼容旧配置：更耗时的硬仗，目标更高、奖励更厚。", "Food", 3, 55, "true", "", "", 1.5, "", "", "Hard", "PassiveItemChoice", "reward_food_hard_passive", "gold_hard", 10),
@@ -108,9 +111,75 @@ ACTIONS = [
     ("act_shop", "逛逛商店", "去食材店转转，买卖道具。", "Shop", 1, 40, "true", "", "", 0, "", "", "Normal", "Gold", "", "", 0),
 ]
 
+ACTION_GROUP_FIELDS = [
+    ("id", "string", "行动组ID。"),
+    ("name", "string", "行动组显示名。"),
+    ("desc", "string", "行动组描述。"),
+    ("groupType", "string", "行动组分类：food_normal/food_hard/event/reward 等。"),
+    ("weekFilter", "string", "周筛选：空=任意，normal=非Boss周，boss=Boss周，或逗号分隔周号。"),
+    ("weight", "float", "普通空位填充时的行动组权重。"),
+    ("preconditions", "string", "行动组前置条件。"),
+]
+ACTION_GROUPS = [
+    ("grp_food_normal", "普通美食组", "普通美食挑战，奖励外观混合金币、碎片、道具与菜品。", "food_normal", "normal", 100, ""),
+    ("grp_food_hard", "困难美食组", "更难美食挑战，目标更高、奖励更厚。", "food_hard", "", 55, ""),
+    ("grp_event_food", "事件美食组", "事件与美食穿插，调节局外节奏。", "event", "normal", 45, ""),
+    ("grp_reward", "纯奖励组", "直接奖励、商店或低风险收益。", "reward", "", 30, ""),
+]
+
+ACTION_GROUP_MEMBER_FIELDS = [
+    ("id", "string", "行动组成员ID。"),
+    ("groupId", "string", "所属行动组ID。"),
+    ("actionId", "string", "行动ID。"),
+    ("weight", "float", "组内随机权重。"),
+    ("minCostDays", "int", "本次行动最小耗时；<=0 使用 action.costDays。"),
+    ("maxCostDays", "int", "本次行动最大耗时；<=0 使用 action.costDays。"),
+]
+ACTION_GROUP_MEMBERS = [
+    ("agm_normal_gold", "grp_food_normal", "act_food_gold", 120, 1, 1),
+    ("agm_normal_fragment", "grp_food_normal", "act_food_fragment", 90, 1, 2),
+    ("agm_normal_passive", "grp_food_normal", "act_food_passive", 85, 1, 2),
+    ("agm_normal_active", "grp_food_normal", "act_food_active", 75, 1, 2),
+    ("agm_normal_dish", "grp_food_normal", "act_food_dish", 100, 1, 2),
+    ("agm_hard_gold", "grp_food_hard", "act_food_hard_gold", 70, 2, 3),
+    ("agm_hard_fragment", "grp_food_hard", "act_food_hard_fragment", 65, 2, 3),
+    ("agm_hard_passive", "grp_food_hard", "act_food_hard_passive", 60, 2, 3),
+    ("agm_hard_active", "grp_food_hard", "act_food_hard_active", 55, 2, 3),
+    ("agm_hard_dish", "grp_food_hard", "act_food_hard_dish", 70, 2, 3),
+    ("agm_event_market", "grp_event_food", "act_market", 60, 1, 1),
+    ("agm_event_tasting", "grp_event_food", "act_tasting", 50, 1, 2),
+    ("agm_event_rest", "grp_event_food", "act_rest", 40, 1, 1),
+    ("agm_event_recruit", "grp_event_food", "act_recruit", 35, 2, 2),
+    ("agm_event_study", "grp_event_food", "act_study", 30, 1, 2),
+    ("agm_reward_tip", "grp_reward", "act_tip", 90, 1, 1),
+    ("agm_reward_shop", "grp_reward", "act_shop", 70, 1, 1),
+]
+
+ACTION_SCHEDULE_RULE_FIELDS = [
+    ("id", "string", "日程规则ID。"),
+    ("priority", "int", "优先级，数值越大越先填充。"),
+    ("groupIds", "string", "候选行动组ID，多个用 | 或逗号分隔。"),
+    ("minRunStep", "int", "整局行动序号窗口起点，1-based。"),
+    ("maxRunStep", "int", "整局行动序号窗口终点，含。"),
+    ("minCount", "int", "该窗口内至少出现次数。"),
+    ("maxCount", "int", "该窗口内最多出现次数。"),
+    ("weight", "float", "同优先规则之间的权重。"),
+    ("preconditions", "string", "规则前置条件。"),
+]
+ACTION_SCHEDULE_RULES = [
+    ("rule_reward_early", 100, "grp_reward", 3, 6, 1, 1, 100, ""),
+    ("rule_reward_mid", 95, "grp_reward", 10, 12, 1, 1, 100, ""),
+    ("rule_event_opening", 80, "grp_event_food", 2, 8, 1, 2, 100, ""),
+]
+
 HIDDEN_SCORE_CURVE_FIELDS = [
     ("id", "string", "隐藏分曲线ID。"),
     ("purpose", "string", "曲线用途：Base/TargetScore/Dish/PassiveItem/ActiveItem/Fragment。"),
+    ("segmentPriority", "int", "分段优先级，数值越大越优先。"),
+    ("minWeek", "int", "适用最小周数；<=0 表示不限。"),
+    ("maxWeek", "int", "适用最大周数；<=0 表示不限。"),
+    ("minRunStep", "int", "适用最小整局行动序号；<=0 表示不限。"),
+    ("maxRunStep", "int", "适用最大整局行动序号；<=0 表示不限。"),
     ("baseValue", "int", "基础值。"),
     ("baseMultiplier", "float", "基础倍率。"),
     ("perWeek", "float", "每周递增值。"),
@@ -124,12 +193,14 @@ HIDDEN_SCORE_CURVE_FIELDS = [
     ("minValue", "int", "最小值。"),
 ]
 HIDDEN_SCORE_CURVES = [
-    ("hidden_base", "Base", 0, 0, 7, 1, 2, 0, 8, 16, 1, 1, 0),
-    ("hidden_target_score", "TargetScore", 80, 8, 10, 2, 4, 0, 30, 80, 0, 5, 30),
-    ("hidden_dish", "Dish", 0, 1, 0, 0, 0, 0, 4, 8, 0, 1, 0),
-    ("hidden_passive_item", "PassiveItem", 2, 1, 0, 0, 0, 0, 5, 10, 0, 1, 0),
-    ("hidden_active_item", "ActiveItem", 0, 0.75, 0, 0, 0, 0, 2, 4, 0, 1, 0),
-    ("hidden_fragment", "Fragment", 3, 1, 0, 0, 0, 0, 6, 12, 0, 1, 0),
+    ("hidden_base_early", "Base", 10, 1, 3, 0, 12, 0, 0, 7, 1, 2, 0, 8, 16, 1, 1, 0),
+    ("hidden_base_late", "Base", 20, 4, 0, 0, 0, 8, 0, 9, 1.2, 2.5, 0, 10, 20, 1, 1, 0),
+    ("hidden_target_score_early", "TargetScore", 10, 1, 3, 0, 12, 80, 8, 10, 2, 4, 0, 30, 80, 0, 5, 30),
+    ("hidden_target_score_late", "TargetScore", 20, 4, 0, 0, 0, 110, 9, 14, 3, 5, 0, 40, 100, 0, 5, 40),
+    ("hidden_dish", "Dish", 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 4, 8, 0, 1, 0),
+    ("hidden_passive_item", "PassiveItem", 0, 0, 0, 0, 0, 2, 1, 0, 0, 0, 0, 5, 10, 0, 1, 0),
+    ("hidden_active_item", "ActiveItem", 0, 0, 0, 0, 0, 0, 0.75, 0, 0, 0, 0, 2, 4, 0, 1, 0),
+    ("hidden_fragment", "Fragment", 0, 0, 0, 0, 0, 3, 1, 0, 0, 0, 0, 6, 12, 0, 1, 0),
 ]
 
 
@@ -218,9 +289,12 @@ REWARD_PACKAGES = [
     ("reward_food_gold", 22, 36, "main_gold", "extra_mixed", 0.1, 30),
     ("reward_food_dish", 28, 44, "main_dish", "extra_mixed", 0.15, 35),
     ("reward_food_passive", 30, 48, "main_passive", "extra_mixed", 0.18, 40),
+    ("reward_food_active", 24, 40, "main_active", "extra_mixed", 0.15, 35),
     ("reward_food_fragment", 32, 52, "main_fragment", "extra_mixed", 0.18, 45),
+    ("reward_food_hard_gold", 40, 66, "main_gold", "extra_mixed", 0.25, 50),
     ("reward_food_hard_dish", 46, 72, "main_dish", "extra_mixed", 0.28, 55),
     ("reward_food_hard_passive", 50, 78, "main_passive", "extra_mixed", 0.3, 60),
+    ("reward_food_hard_active", 42, 68, "main_active", "extra_mixed", 0.25, 55),
     ("reward_food_hard_fragment", 52, 82, "main_fragment", "extra_mixed", 0.3, 65),
 ]
 
@@ -324,6 +398,9 @@ def main():
     print(f"Datas 目录: {DATAS}")
     write_workbook("action", [
         ("action", ACTION_FIELDS, ACTIONS),
+        ("action_group", ACTION_GROUP_FIELDS, ACTION_GROUPS),
+        ("action_group_member", ACTION_GROUP_MEMBER_FIELDS, ACTION_GROUP_MEMBERS),
+        ("action_schedule_rule", ACTION_SCHEDULE_RULE_FIELDS, ACTION_SCHEDULE_RULES),
     ])
     write_workbook("reward_curve", [
         ("hidden_score_curve", HIDDEN_SCORE_CURVE_FIELDS, HIDDEN_SCORE_CURVES),

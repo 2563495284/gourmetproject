@@ -33,6 +33,9 @@ namespace GourmetProject.Game.Run
         /// <summary>本周已执行行动次数。</summary>
         public int ActionStepIndex;
 
+        /// <summary>整局累计已执行行动次数。</summary>
+        public int RunActionStepIndex;
+
         /// <summary>本周要求分临时覆盖；小于 0 表示无覆盖。</summary>
         public int RequiredScoreOverride = -1;
 
@@ -41,6 +44,18 @@ namespace GourmetProject.Game.Run
 
         /// <summary>最近一次行动发生时的本周行动序号。</summary>
         public int LastActionStepIndex;
+
+        /// <summary>最近一次行动发生时的整局行动序号。</summary>
+        public int LastRunActionStepIndex;
+
+        /// <summary>最近一次行动所属行动组 id。</summary>
+        public string LastActionGroupId;
+
+        /// <summary>最近一次行动的耗时快照。</summary>
+        public int LastActionCostDays;
+
+        /// <summary>已生成的整局行动组序列。</summary>
+        public List<string> ActionGroupSequence = new List<string>();
 
         /// <summary>本周已结算的节点 id。</summary>
         public List<string> TriggeredNodeIds = new List<string>();

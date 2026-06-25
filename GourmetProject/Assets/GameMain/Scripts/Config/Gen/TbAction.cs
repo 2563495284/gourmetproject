@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 行动（三选一）：行动轴每步从满足条件的行动按权重随机3个。actionType 决定执行分支；costDays 推进天数；repeatable=false 命中后写入 UsedActionIds；linkId：Event→TbEvent，Food→TbScoreProfile。
+/// 行动（三选一）：由行动组成员筛选后进入候选。actionType 决定执行分支；costDays 为默认耗时。
 /// </summary>
 public partial class TbAction
 {

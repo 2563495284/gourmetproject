@@ -55,8 +55,9 @@ namespace GourmetProject.Game.Meta
                 return result;
             }
 
-            List<cfg.Item> candidates = BuildCandidates(tables, run, kind, hidden, strictHidden: true);
-            if (candidates.Count == 0)
+            bool activeItem = kind == cfg.ItemKind.Active;
+            List<cfg.Item> candidates = BuildCandidates(tables, run, kind, hidden, strictHidden: !activeItem);
+            if (candidates.Count == 0 && !activeItem)
             {
                 candidates = BuildCandidates(tables, run, kind, hidden, strictHidden: false);
             }
@@ -71,7 +72,10 @@ namespace GourmetProject.Game.Meta
 
                 int index = rng.WeightedPickIndex(weights);
                 result.Add(candidates[index].Id);
-                candidates.RemoveAt(index);
+                if (!activeItem)
+                {
+                    candidates.RemoveAt(index);
+                }
             }
 
             return result;

@@ -1,0 +1,35 @@
+[
+  {
+    "id": "rule_reward_early",
+    "priority": 100,
+    "groupIds": "grp_reward",
+    "minRunStep": 3,
+    "maxRunStep": 6,
+    "minCount": 1,
+    "maxCount": 1,
+    "weight": 100,
+    "preconditions": ""
+  },
+  {
+    "id": "rule_reward_mid",
+    "priority": 95,
+    "groupIds": "grp_reward",
+    "minRunStep": 10,
+    "maxRunStep": 12,
+    "minCount": 1,
+    "maxCount": 1,
+    "weight": 100,
+    "preconditions": ""
+  },
+  {
+    "id": "rule_event_opening",
+    "priority": 80,
+    "groupIds": "grp_event_food",
+    "minRunStep": 2,
+    "maxRunStep": 8,
+    "minCount": 1,
+    "maxCount": 2,
+    "weight": 100,
+    "preconditions": ""
+  }
+]

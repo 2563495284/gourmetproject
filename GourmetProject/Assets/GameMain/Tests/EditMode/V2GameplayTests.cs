@@ -15,25 +15,99 @@ namespace GourmetProject.Tests
     public class V2GameplayTests
     {
         [Test]
-        public void RealtimeActionChoices_DoNotExpandSevenDayTimeline()
+        public void ActionScheduleChoices_UseGeneratedGroupSequence()
         {
             GameRun run = NewRun(week: 1);
             run.BeginTimeline("tl_normal", 7);
             var rng = new RandomService();
             rng.Init(123UL);
 
-            List<cfg.GameAction> choices = ActionRandomService.GenerateChoices(run, rng.Stream("choices"));
-            List<cfg.GameAction> tooManyChoices = ActionRandomService.GenerateChoices(run, rng.Stream("choices_more"), 5);
+            List<ActionChoice> choices = ActionScheduleService.GenerateChoices(run, rng.Stream("choices"));
+            List<ActionChoice> tooManyChoices = ActionScheduleService.GenerateChoices(run, rng.Stream("choices_more"), 5);
 
-            Assert.AreEqual(3, choices.Count);
-            Assert.AreEqual(ActionRandomService.MaxChoiceCount, tooManyChoices.Count);
+            Assert.Greater(choices.Count, 0);
+            Assert.LessOrEqual(choices.Count, ActionRandomService.MaxChoiceCount);
+            Assert.Greater(tooManyChoices.Count, 0);
+            Assert.LessOrEqual(tooManyChoices.Count, ActionRandomService.MaxChoiceCount);
             Assert.AreEqual(7, run.TimelineLengthDays);
+            Assert.AreEqual(1, run.ActionGroupSequence.Count);
+            Assert.IsFalse(string.IsNullOrEmpty(run.ActionGroupSequence[0]));
 
             var ids = new HashSet<string>();
-            foreach (cfg.GameAction action in choices)
+            foreach (ActionChoice choice in choices)
             {
-                Assert.IsTrue(ids.Add(action.Id), $"Duplicate action '{action.Id}' in realtime choices.");
+                Assert.IsTrue(ids.Add(choice.Action.Id), $"Duplicate action '{choice.Action.Id}' in scheduled choices.");
+                Assert.AreEqual(run.ActionGroupSequence[0], choice.ActionGroupId);
+                Assert.Greater(choice.CostDays, 0);
             }
+        }
+
+        [Test]
+        public void ActionScheduleRules_ForceRewardWindowsAndAvoidImmediateRepeat()
+        {
+            GameRun run = NewRun(week: 1);
+            var rng = new MaxWeightRandomStream();
+
+            for (int i = 0; i < 12; i++)
+            {
+                ActionScheduleService.EnsureCurrentGroup(run, rng);
+                run.AdvanceActionStep();
+            }
+
+            Assert.AreEqual("grp_event_food", run.ActionGroupSequence[1], "The opening event rule should fill the second run action.");
+            Assert.AreEqual("grp_reward", run.ActionGroupSequence[2], "The early reward rule should fill the third run action.");
+            Assert.AreEqual("grp_reward", run.ActionGroupSequence[9], "The mid reward rule should fill the tenth run action.");
+            for (int i = 1; i < run.ActionGroupSequence.Count; i++)
+            {
+                Assert.AreNotEqual(run.ActionGroupSequence[i - 1], run.ActionGroupSequence[i], $"Repeated action group at index {i}.");
+            }
+        }
+
+        [Test]
+        public void ActionChoice_RestoresCostGroupAndRunStep()
+        {
+            GameRun run = NewRun(week: 1);
+            run.BeginTimeline("tl_normal", 7);
+            cfg.GameAction action = run.Tables.TbAction.Get("act_food_hard_gold");
+            var context = new ActionExecutionContext(action, stepIndex: 2, runStepIndex: 7, actionGroupId: "grp_food_hard", costDays: 3);
+            run.AppendActionGroup("grp_food_normal");
+            run.AppendActionGroup("grp_food_hard");
+            run.RestoreRunActionStepIndex(8);
+            run.RestoreActionStepIndex(3);
+            run.SetLastActionContext(context);
+
+            GameRun restored = GameRun.FromSaveData(run.Tables, run.Database, run.ToSaveData());
+
+            Assert.AreEqual(8, restored.RunActionStepIndex);
+            Assert.AreEqual(2, restored.ActionGroupSequence.Count);
+            Assert.AreEqual("grp_food_hard", restored.LastActionContext.ActionGroupId);
+            Assert.AreEqual(7, restored.LastActionContext.RunStepIndex);
+            Assert.AreEqual(3, restored.LastActionContext.CostDays);
+        }
+
+        [Test]
+        public void HiddenScore_UsesRunStepSegments()
+        {
+            GameRun early = NewRun(week: 1);
+            GameRun late = NewRun(week: 5);
+            late.RestoreRunActionStepIndex(14);
+
+            int earlyScore = HiddenScoreService.TargetScore(early, new ActionExecutionContext(early.Tables.TbAction.Get("act_food_dish"), 0, 0, "grp_food_normal", 1));
+            int lateScore = HiddenScoreService.TargetScore(late, new ActionExecutionContext(late.Tables.TbAction.Get("act_food_dish"), 0, 14, "grp_food_normal", 1));
+
+            Assert.Greater(lateScore, earlyScore);
+        }
+
+        [Test]
+        public void ActiveItemRolls_WithReplacement()
+        {
+            GameRun run = NewRun(week: 1);
+            var rng = new MaxWeightRandomStream();
+
+            List<string> activeItems = ItemPoolService.Roll(run.Tables, run, cfg.ItemKind.Active, rng, 2, hidden: 0, distanceFloor: 5);
+
+            Assert.AreEqual(2, activeItems.Count);
+            Assert.AreEqual(activeItems[0], activeItems[1], "Active item rolls should be with replacement.");
         }
 
         [Test]
@@ -257,9 +331,9 @@ namespace GourmetProject.Tests
 
             public ulong NextULong() => throw new NotSupportedException();
 
-            public int Range(int minInclusive, int maxExclusive) => throw new NotSupportedException();
+            public int Range(int minInclusive, int maxExclusive) => minInclusive;
 
-            public float Range(float minInclusive, float maxExclusive) => throw new NotSupportedException();
+            public float Range(float minInclusive, float maxExclusive) => minInclusive;
 
             public float NextFloat() => throw new NotSupportedException();
 

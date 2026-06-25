@@ -79,7 +79,7 @@ public partial class Tables
     /// </summary>
     public TbEventOption TbEventOption {get; }
     /// <summary>
-    /// 行动（三选一）：行动轴每步从满足条件的行动按权重随机3个。actionType 决定执行分支；costDays 推进天数；repeatable=false 命中后写入 UsedActionIds；linkId：Event→TbEvent，Food→TbScoreProfile。
+    /// 行动（三选一）：由行动组成员筛选后进入候选。actionType 决定执行分支；costDays 为默认耗时。
     /// </summary>
     public TbAction TbAction {get; }
     /// <summary>
@@ -106,6 +106,18 @@ public partial class Tables
     /// 金币奖励曲线：按进度和行动难度计算上下限。
     /// </summary>
     public TbGoldRewardCurve TbGoldRewardCurve {get; }
+    /// <summary>
+    /// 行动组：控制整局行动组合序列的奖励外观、难度和节奏。
+    /// </summary>
+    public TbActionGroup TbActionGroup {get; }
+    /// <summary>
+    /// 行动组成员：指定组内候选行动、组内权重和本次耗时范围。
+    /// </summary>
+    public TbActionGroupMember TbActionGroupMember {get; }
+    /// <summary>
+    /// 整局行动日程规则：按整局行动序号窗口和优先级填充行动组序列。
+    /// </summary>
+    public TbActionScheduleRule TbActionScheduleRule {get; }
 
     public Tables(System.Func<string, JSONNode> loader)
     {
@@ -132,6 +144,9 @@ public partial class Tables
         TbGlobalConst = new TbGlobalConst(loader("tbglobalconst"));
         TbHiddenScoreCurve = new TbHiddenScoreCurve(loader("tbhiddenscorecurve"));
         TbGoldRewardCurve = new TbGoldRewardCurve(loader("tbgoldrewardcurve"));
+        TbActionGroup = new TbActionGroup(loader("tbactiongroup"));
+        TbActionGroupMember = new TbActionGroupMember(loader("tbactiongroupmember"));
+        TbActionScheduleRule = new TbActionScheduleRule(loader("tbactionschedulerule"));
         ResolveRef();
     }
     
@@ -160,6 +175,9 @@ public partial class Tables
         TbGlobalConst.ResolveRef(this);
         TbHiddenScoreCurve.ResolveRef(this);
         TbGoldRewardCurve.ResolveRef(this);
+        TbActionGroup.ResolveRef(this);
+        TbActionGroupMember.ResolveRef(this);
+        TbActionScheduleRule.ResolveRef(this);
     }
 }
 

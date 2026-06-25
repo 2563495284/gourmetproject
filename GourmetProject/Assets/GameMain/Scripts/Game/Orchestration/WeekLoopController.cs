@@ -84,9 +84,9 @@ namespace GourmetProject.Game.Orchestration
         }
 
         /// <summary>WeekMapForm 选择行动后回调（null = 无行动可选时的「休息」）。</summary>
-        public void OnActionPicked(cfg.GameAction action)
+        public void OnActionPicked(ActionChoice choice)
         {
-            if (action == null)
+            if (choice == null)
             {
                 int restPrev = TimelineService.AdvanceDays(_run, 1);
                 _run.AdvanceActionStep();
@@ -96,7 +96,7 @@ namespace GourmetProject.Game.Orchestration
             }
 
             int prevDay = _run.CurrentDay;
-            var context = new ActionExecutionContext(action, _run.ActionStepIndex);
+            ActionExecutionContext context = choice.ToExecutionContext();
             if (!context.IsValid)
             {
                 _run.AdvanceActionStep();
@@ -105,7 +105,7 @@ namespace GourmetProject.Game.Orchestration
                 return;
             }
 
-            IRandomStream rng = GameApp.Random.Stream($"action_exec_w{_run.WeekIndex}_s{context.StepIndex}_{context.Action.Id}");
+            IRandomStream rng = GameApp.Random.Stream($"action_exec_r{context.RunStepIndex}_w{_run.WeekIndex}_s{context.StepIndex}_{context.ActionGroupId}_{context.Action.Id}");
             ActionOutcome outcome = ActionExecutor.Execute(_run, context, rng);
             RunPersistence.Save(_run);
 

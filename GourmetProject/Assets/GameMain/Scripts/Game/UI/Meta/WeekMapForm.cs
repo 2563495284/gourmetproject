@@ -18,7 +18,7 @@ using GourmetProject.Game.UI.Widgets;
 namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>
-    /// 行动轴「n 选一行动」界面：每次打开时从可用行动池实时随机最多 3 个行动。
+    /// 行动轴「n 选一行动」界面：每次打开时读取整局行动组序列，并从当前行动组随机最多 3 个行动。
     /// 玩家选择一个行动后交回 <see cref="BattleForm"/> 执行（推进天数、触发节点、可能开战）。
     /// 固定壳（遮罩/面板/标题/按钮/卡片容器）复用 WeekMapForm.prefab，卡片用 WeekEventCardView 数据驱动。
     /// </summary>
@@ -65,10 +65,10 @@ namespace GourmetProject.Game.UI.Meta
             ClearCards();
 
             string weekLabel = run.IsEndless ? $"无尽 第 {run.WeekIndex - run.TotalWeeks} 关" : $"第 {run.WeekIndex} 周";
-            _titleText.text = $"{weekLabel} · 第 {run.CurrentDay}/{run.TimelineLengthDays} 天 · 第 {run.ActionStepIndex + 1} 次行动";
+            _titleText.text = $"{weekLabel} · 第 {run.CurrentDay}/{run.TimelineLengthDays} 天 · 本周第 {run.ActionStepIndex + 1} 次 · 整局第 {run.RunActionStepIndex + 1} 次";
             BuildAxisText(run);
 
-            List<cfg.GameAction> choices = RollChoices(run);
+            List<ActionChoice> choices = RollChoices(run);
             bool hasActions = choices.Count > 0;
 
             _cardsContainer.gameObject.SetActive(hasActions);
@@ -92,15 +92,15 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
-        private static List<cfg.GameAction> RollChoices(GameRun run)
+        private static List<ActionChoice> RollChoices(GameRun run)
         {
             if (run == null)
             {
-                return new List<cfg.GameAction>();
+                return new List<ActionChoice>();
             }
 
-            var rng = GameApp.Random.Stream($"action_choices_w{run.WeekIndex}_d{run.CurrentDay}_s{run.ActionStepIndex}");
-            return ActionRandomService.GenerateChoices(run, rng);
+            var rng = GameApp.Random.Stream($"action_choices_r{run.RunActionStepIndex}_w{run.WeekIndex}_d{run.CurrentDay}_s{run.ActionStepIndex}");
+            return ActionScheduleService.GenerateChoices(run, rng);
         }
 
         /// <summary>在标题下方动态生成行动轴进度文本（已过/当前/未来天 + 节点标注）。</summary>
@@ -163,7 +163,7 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
-        private void SpawnCard(cfg.GameAction action, float minX, float maxX)
+        private void SpawnCard(ActionChoice choice, float minX, float maxX)
         {
             WeekEventCardView card = Instantiate(_cardPrefab, _cardsContainer);
             var rect = (RectTransform)card.transform;
@@ -173,8 +173,8 @@ namespace GourmetProject.Game.UI.Meta
             rect.offsetMax = Vector2.zero;
             rect.localScale = Vector3.one;
 
-            cfg.GameAction captured = action;
-            card.Bind(action, () => Choose(captured));
+            ActionChoice captured = choice;
+            card.Bind(choice, () => Choose(captured));
             _cards.Add(card);
         }
 
@@ -191,10 +191,10 @@ namespace GourmetProject.Game.UI.Meta
             _cards.Clear();
         }
 
-        private void Choose(cfg.GameAction action)
+        private void Choose(ActionChoice choice)
         {
             Close();
-            BattleForm.Active?.OnActionPicked(action);
+            BattleForm.Active?.OnActionPicked(choice);
         }
 
         private void Close()

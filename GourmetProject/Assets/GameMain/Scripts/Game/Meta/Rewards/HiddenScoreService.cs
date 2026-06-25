@@ -100,7 +100,7 @@ namespace GourmetProject.Game.Meta
 
         private static int Evaluate(string purpose, GameRun run, ActionExecutionContext context, int baseHidden)
         {
-            cfg.HiddenScoreCurve curve = ResolveCurve(run?.Tables, purpose);
+            cfg.HiddenScoreCurve curve = ResolveCurve(run?.Tables, purpose, run, context);
             if (curve == null || run == null)
             {
                 return 0;
@@ -120,18 +120,68 @@ namespace GourmetProject.Game.Meta
             return Math.Max(curve.MinValue, rounded);
         }
 
-        private static cfg.HiddenScoreCurve ResolveCurve(cfg.Tables tables, string purpose)
+        private static cfg.HiddenScoreCurve ResolveCurve(cfg.Tables tables, string purpose, GameRun run, ActionExecutionContext context)
         {
             tables ??= GameApp.Config.Tables;
+            cfg.HiddenScoreCurve fallback = null;
+            cfg.HiddenScoreCurve best = null;
+            int week = run?.WeekIndex ?? 0;
+            int runStep = CurveRunStep(run, context);
             foreach (cfg.HiddenScoreCurve curve in tables.TbHiddenScoreCurve.DataList)
             {
-                if (string.Equals(curve.Purpose, purpose, StringComparison.OrdinalIgnoreCase))
+                if (!string.Equals(curve.Purpose, purpose, StringComparison.OrdinalIgnoreCase))
                 {
-                    return curve;
+                    continue;
+                }
+
+                fallback ??= curve;
+                if (!MatchesSegment(curve, week, runStep))
+                {
+                    continue;
+                }
+
+                if (best == null || curve.SegmentPriority > best.SegmentPriority)
+                {
+                    best = curve;
                 }
             }
 
-            return null;
+            return best ?? fallback;
+        }
+
+        private static bool MatchesSegment(cfg.HiddenScoreCurve curve, int week, int runStep)
+        {
+            if (curve.MinWeek > 0 && week < curve.MinWeek)
+            {
+                return false;
+            }
+
+            if (curve.MaxWeek > 0 && week > curve.MaxWeek)
+            {
+                return false;
+            }
+
+            if (curve.MinRunStep > 0 && runStep < curve.MinRunStep)
+            {
+                return false;
+            }
+
+            if (curve.MaxRunStep > 0 && runStep > curve.MaxRunStep)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private static int CurveRunStep(GameRun run, ActionExecutionContext context)
+        {
+            if (context != null)
+            {
+                return context.RunStepIndex + 1;
+            }
+
+            return Math.Max(1, run?.RunActionStepIndex ?? 0);
         }
 
         private static cfg.GoldRewardCurve ResolveGoldCurve(cfg.Tables tables, cfg.GameAction action)

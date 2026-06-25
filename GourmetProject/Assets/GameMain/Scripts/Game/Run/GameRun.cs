@@ -34,6 +34,7 @@ namespace GourmetProject.Game.Run
         private readonly List<string> _usedEventIds = new List<string>();
         private readonly List<string> _usedActionIds = new List<string>();
         private readonly List<string> _completedBossIds = new List<string>();
+        private readonly List<string> _actionGroupSequence = new List<string>();
 
         public GameRun(cfg.Tables tables, GameplayDatabase database, string characterId, string seedText, int weekIndex = 1)
         {
@@ -98,6 +99,11 @@ namespace GourmetProject.Game.Run
         /// <summary>本周已执行的行动次数，用于 UI、随机流和隐藏分进度。</summary>
         public int ActionStepIndex { get; private set; }
 
+        /// <summary>整局累计已执行行动次数，用于行动组序列和隐藏分分段。</summary>
+        public int RunActionStepIndex { get; private set; }
+
+        public IReadOnlyList<string> ActionGroupSequence => _actionGroupSequence;
+
         public ActionExecutionContext LastActionContext { get; private set; }
 
         public bool IsNodeTriggered(string nodeId) => !string.IsNullOrEmpty(nodeId) && _triggeredNodeIds.Contains(nodeId);
@@ -155,11 +161,36 @@ namespace GourmetProject.Game.Run
         public void AdvanceActionStep()
         {
             ActionStepIndex++;
+            RunActionStepIndex++;
         }
 
         public void RestoreActionStepIndex(int actionStepIndex)
         {
             ActionStepIndex = System.Math.Max(0, actionStepIndex);
+        }
+
+        public void RestoreRunActionStepIndex(int runActionStepIndex)
+        {
+            RunActionStepIndex = System.Math.Max(0, runActionStepIndex);
+        }
+
+        public void AppendActionGroup(string groupId)
+        {
+            _actionGroupSequence.Add(groupId ?? string.Empty);
+        }
+
+        public void RestoreActionGroupSequence(IEnumerable<string> groupIds)
+        {
+            _actionGroupSequence.Clear();
+            if (groupIds == null)
+            {
+                return;
+            }
+
+            foreach (string groupId in groupIds)
+            {
+                _actionGroupSequence.Add(groupId ?? string.Empty);
+            }
         }
 
         public void SetLastActionContext(ActionExecutionContext context)
@@ -283,9 +314,14 @@ namespace GourmetProject.Game.Run
                 TimelineLengthDays = TimelineLengthDays,
                 CurrentDay = CurrentDay,
                 ActionStepIndex = ActionStepIndex,
+                RunActionStepIndex = RunActionStepIndex,
                 RequiredScoreOverride = RequiredScoreOverride,
                 LastActionId = LastActionContext?.Action?.Id ?? string.Empty,
                 LastActionStepIndex = LastActionContext?.StepIndex ?? 0,
+                LastRunActionStepIndex = LastActionContext?.RunStepIndex ?? 0,
+                LastActionGroupId = LastActionContext?.ActionGroupId ?? string.Empty,
+                LastActionCostDays = LastActionContext?.CostDays ?? 0,
+                ActionGroupSequence = new List<string>(_actionGroupSequence),
                 TriggeredNodeIds = new List<string>(_triggeredNodeIds),
                 UsedEventIds = new List<string>(_usedEventIds),
                 UsedActionIds = new List<string>(_usedActionIds),
@@ -348,13 +384,21 @@ namespace GourmetProject.Game.Run
             run.TimelineLengthDays = data.TimelineLengthDays;
             run.CurrentDay = data.CurrentDay;
             run.RestoreActionStepIndex(data.ActionStepIndex);
+            run.RestoreRunActionStepIndex(data.RunActionStepIndex);
             run.RequiredScoreOverride = data.RequiredScoreOverride;
+            run.RestoreActionGroupSequence(data.ActionGroupSequence);
             if (!string.IsNullOrEmpty(data.LastActionId))
             {
                 cfg.GameAction lastAction = tables.TbAction.GetOrDefault(data.LastActionId);
                 if (lastAction != null)
                 {
-                    run.SetLastActionContext(new ActionExecutionContext(lastAction, data.LastActionStepIndex));
+                    int costDays = data.LastActionCostDays > 0 ? data.LastActionCostDays : lastAction.CostDays;
+                    run.SetLastActionContext(new ActionExecutionContext(
+                        lastAction,
+                        data.LastActionStepIndex,
+                        data.LastRunActionStepIndex,
+                        data.LastActionGroupId,
+                        costDays));
                 }
             }
 
