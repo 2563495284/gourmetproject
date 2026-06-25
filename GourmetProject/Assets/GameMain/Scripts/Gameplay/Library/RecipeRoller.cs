@@ -10,7 +10,7 @@ namespace GourmetProject.Gameplay.Library
     /// 初始菜谱生成（遵循策划文档）：
     /// 1) 固定菜品总会进入菜谱；
     /// 2) 其余从随机池按权重「放回」随机，受每菜最多次数限制；
-    /// 3) 每随机一道，累加已随机菜品的初始分（= 美味度），达到要求初始分即停止。
+    /// 3) 每随机一道，累加已随机菜品的初始分，达到要求初始分即停止。
     /// 结果为菜谱牌组的菜品 id 列表（固定在前，随机在后，顺序稳定可复现）。
     /// </summary>
     public static class RecipeRoller
@@ -66,7 +66,7 @@ namespace GourmetProject.Gameplay.Library
                 rolledCounts[picked.DishId] = c + 1;
 
                 DishDef dish = db.GetDish(picked.DishId);
-                rolledScore += dish?.Deliciousness ?? 0;
+                rolledScore += dish?.InitScore ?? 0;
             }
 
             return result;

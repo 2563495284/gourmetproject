@@ -63,19 +63,17 @@ namespace GourmetProject.Game.Gameplay
                 return false;
             }
 
-            RunItemState state = run.GetItemState(item.Id);
             if (item.Kind == cfg.ItemKind.Passive)
             {
+                RunItemState state = run.GetItemState(item.Id);
                 return state == null || state.Level < GetPassiveMaxLevel(item);
             }
 
-            int count = state?.Count ?? 0;
-            int total = state?.TotalAcquired ?? 0;
+            // 主动道具只看「持有上限」（当前持有几份实例）：达到上限则不再随机出，用掉一份腾出名额后又能被抽到。
+            // 不再用「累计获得上限」，因为那会把已用掉的也算进去、与「只有存不存在」的模型冲突。
+            int count = run.GetItemCount(item.Id);
             int holdLimit = GetActiveHoldLimit(item);
-            int acquireLimit = GetActiveAcquireLimit(item);
-            bool underHoldLimit = holdLimit <= 0 || count < holdLimit;
-            bool underAcquireLimit = acquireLimit <= 0 || total < acquireLimit;
-            return underHoldLimit && underAcquireLimit;
+            return holdLimit <= 0 || count < holdLimit;
         }
 
         public static int GetPassiveMaxLevel(cfg.Item item)
@@ -85,17 +83,12 @@ namespace GourmetProject.Game.Gameplay
                 return 1;
             }
 
-            return Math.Max(1, item.MaxLevel);
+            return Math.Max(1, item.LevelWeightParams.MaxLevel);
         }
 
         public static int GetActiveHoldLimit(cfg.Item item)
         {
             return item != null && item.Kind == cfg.ItemKind.Active ? item.HoldLimit : 1;
-        }
-
-        public static int GetActiveAcquireLimit(cfg.Item item)
-        {
-            return item != null && item.Kind == cfg.ItemKind.Active ? item.AcquireLimit : 1;
         }
 
         public static float GetScaledEffectValue(cfg.Item item, RunItemState state)
@@ -125,12 +118,12 @@ namespace GourmetProject.Game.Gameplay
 
         private static float GetWeight(GameRun run, cfg.Item item)
         {
-            float baseWeight = item.BaseWeight > 0f ? item.BaseWeight : 1f;
+            float baseWeight = item.LevelWeightParams.BaseWeight > 0f ? item.LevelWeightParams.BaseWeight : 1f;
 
             RunItemState state = run.GetItemState(item.Id);
             if (item.Kind == cfg.ItemKind.Passive && state != null)
             {
-                float multiplier = item.NextLevelWeightMultiplier > 0f ? item.NextLevelWeightMultiplier : 1f;
+                float multiplier = item.LevelWeightParams.NextLevelWeightMultiplier > 0f ? item.LevelWeightParams.NextLevelWeightMultiplier : 1f;
                 return baseWeight * multiplier;
             }
 

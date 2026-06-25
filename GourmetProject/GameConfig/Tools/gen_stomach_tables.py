@@ -38,16 +38,16 @@ NEW_TAGS = [
 
 
 def write_fragments():
+    # hiddenRange 用 HiddenRange bean(单元格写 min,max)，放在多行列 *shapeRows 之前。
     wb = Workbook()
     ws = wb.active
     ws.title = "stomach_fragment"
-    ws.append(["##var", "id", "hiddenMin", "hiddenMax", "baseWeight", "price", "*shapeRows"])
-    ws.append(["##type", "string", "int", "int", "float", "int", "list,string"])
+    ws.append(["##var", "id", "baseWeight", "price", "hiddenRange", "*shapeRows"])
+    ws.append(["##type", "string", "float", "int", "HiddenRange", "list,string"])
     for fid, hmin, hmax, w, price, rows in FRAGMENTS:
-        base = ["", fid, hmin, hmax, w, price]
-        ws.append(base + [rows[0]])
+        ws.append(["", fid, w, price, f"{hmin},{hmax}", rows[0]])
         for r in rows[1:]:
-            ws.append([""] * len(base) + [r])
+            ws.append(["", "", "", "", "", r])
     wb.save(os.path.join(DATAS, "stomach_fragment.xlsx"))
     print(f"  stomach_fragment.xlsx ({len(FRAGMENTS)} 碎片)")
 

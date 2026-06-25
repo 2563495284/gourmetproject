@@ -47,7 +47,7 @@ public partial class Tables
     /// </summary>
     public TbRecipe TbRecipe {get; }
     /// <summary>
-    /// 道具：被动常驻/主动可触发。specialTags 用 | 分隔，空串=无。acquireLimit/holdLimit&lt;=0 无限制；consumeOnUse 仅主动道具生效。
+    /// 道具：被动常驻/主动可触发。specialTags 用 | 分隔，空串=无。holdLimit&lt;=0 表示主动道具无持有上限。
     /// </summary>
     public TbItem TbItem {get; }
     /// <summary>

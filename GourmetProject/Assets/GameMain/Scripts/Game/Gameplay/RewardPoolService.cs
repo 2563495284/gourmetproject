@@ -197,7 +197,7 @@ namespace GourmetProject.Game.Gameplay
                     continue;
                 }
 
-                if (strictHidden && kind == cfg.ItemKind.Passive && (hidden < item.HiddenMin || hidden > item.HiddenMax))
+                if (strictHidden && kind == cfg.ItemKind.Passive && (hidden < item.HiddenRange.Min || hidden > item.HiddenRange.Max))
                 {
                     continue;
                 }
@@ -292,7 +292,7 @@ namespace GourmetProject.Game.Gameplay
 
         private static float GetItemWeight(GameRun run, cfg.Item item, Dictionary<cfg.ItemQuality, float> qualityWeights)
         {
-            float weight = item.BaseWeight > 0f ? item.BaseWeight : 1f;
+            float weight = item.LevelWeightParams.BaseWeight > 0f ? item.LevelWeightParams.BaseWeight : 1f;
             if (qualityWeights.Count > 0)
             {
                 weight *= qualityWeights.TryGetValue(item.Quality, out float qualityWeight) ? Math.Max(0f, qualityWeight) : 0f;
@@ -301,7 +301,7 @@ namespace GourmetProject.Game.Gameplay
             RunItemState state = run.GetItemState(item.Id);
             if (item.Kind == cfg.ItemKind.Passive && state != null)
             {
-                weight *= item.NextLevelWeightMultiplier > 0f ? item.NextLevelWeightMultiplier : 1f;
+                weight *= item.LevelWeightParams.NextLevelWeightMultiplier > 0f ? item.LevelWeightParams.NextLevelWeightMultiplier : 1f;
             }
 
             return weight;

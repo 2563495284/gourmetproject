@@ -32,13 +32,37 @@ public sealed partial class Boss : Luban.BeanBase
         return new Boss(_buf);
     }
 
+    /// <summary>
+    /// Boss ID
+    /// </summary>
     public readonly string Id;
+    /// <summary>
+    /// Boss名称
+    /// </summary>
     public readonly string Name;
+    /// <summary>
+    /// 角色池ID
+    /// </summary>
     public readonly string CharacterPool;
+    /// <summary>
+    /// 解锁条件
+    /// </summary>
     public readonly string UnlockCondition;
+    /// <summary>
+    /// 随机权重
+    /// </summary>
     public readonly float Weight;
+    /// <summary>
+    /// 所属周数
+    /// </summary>
     public readonly int Week;
+    /// <summary>
+    /// 分数曲线ID
+    /// </summary>
     public readonly string ScoreProfileId;
+    /// <summary>
+    /// 关卡修饰符
+    /// </summary>
     public readonly string Modifier;
    
     public const int __ID__ = 2076557;

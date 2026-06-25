@@ -4,11 +4,12 @@
     "baseId": "rice",
     "aTagId": "",
     "bTagId": "",
-    "hiddenMin": 1,
-    "hiddenMax": 10,
     "baseWeight": 150,
     "price": 2,
-    "maxRollCount": 0,
+    "hiddenRange": {
+      "min": 1,
+      "max": 10
+    },
     "inherentTags": []
   },
   {
@@ -16,11 +17,12 @@
     "baseId": "egg",
     "aTagId": "",
     "bTagId": "",
-    "hiddenMin": 5,
-    "hiddenMax": 20,
     "baseWeight": 120,
     "price": 3,
-    "maxRollCount": 0,
+    "hiddenRange": {
+      "min": 5,
+      "max": 20
+    },
     "inherentTags": [
       "t_fresh"
     ]
@@ -30,11 +32,12 @@
     "baseId": "soup",
     "aTagId": "",
     "bTagId": "",
-    "hiddenMin": 8,
-    "hiddenMax": 24,
     "baseWeight": 100,
     "price": 3,
-    "maxRollCount": 0,
+    "hiddenRange": {
+      "min": 8,
+      "max": 24
+    },
     "inherentTags": [
       "t_lonely"
     ]
@@ -44,11 +47,12 @@
     "baseId": "fish",
     "aTagId": "",
     "bTagId": "",
-    "hiddenMin": 20,
-    "hiddenMax": 40,
     "baseWeight": 80,
     "price": 5,
-    "maxRollCount": 0,
+    "hiddenRange": {
+      "min": 20,
+      "max": 40
+    },
     "inherentTags": [
       "t_fresh"
     ]
@@ -58,11 +62,12 @@
     "baseId": "noodle",
     "aTagId": "",
     "bTagId": "",
-    "hiddenMin": 15,
-    "hiddenMax": 35,
     "baseWeight": 90,
     "price": 4,
-    "maxRollCount": 0,
+    "hiddenRange": {
+      "min": 15,
+      "max": 35
+    },
     "inherentTags": [
       "t_hearty"
     ]
@@ -72,11 +77,12 @@
     "baseId": "dumpling",
     "aTagId": "",
     "bTagId": "",
-    "hiddenMin": 12,
-    "hiddenMax": 32,
     "baseWeight": 90,
     "price": 4,
-    "maxRollCount": 0,
+    "hiddenRange": {
+      "min": 12,
+      "max": 32
+    },
     "inherentTags": [
       "t_hearty"
     ]
@@ -86,11 +92,12 @@
     "baseId": "chili",
     "aTagId": "",
     "bTagId": "",
-    "hiddenMin": 3,
-    "hiddenMax": 18,
     "baseWeight": 110,
     "price": 2,
-    "maxRollCount": 0,
+    "hiddenRange": {
+      "min": 3,
+      "max": 18
+    },
     "inherentTags": [
       "t_spicy"
     ]
@@ -100,11 +107,12 @@
     "baseId": "orange",
     "aTagId": "",
     "bTagId": "",
-    "hiddenMin": 10,
-    "hiddenMax": 30,
     "baseWeight": 100,
     "price": 3,
-    "maxRollCount": 0,
+    "hiddenRange": {
+      "min": 10,
+      "max": 30
+    },
     "inherentTags": [
       "t_sweet"
     ]
@@ -114,11 +122,12 @@
     "baseId": "cake",
     "aTagId": "",
     "bTagId": "",
-    "hiddenMin": 30,
-    "hiddenMax": 50,
     "baseWeight": 60,
     "price": 6,
-    "maxRollCount": 2,
+    "hiddenRange": {
+      "min": 30,
+      "max": 50
+    },
     "inherentTags": [
       "t_sweet"
     ]
@@ -128,11 +137,12 @@
     "baseId": "feast",
     "aTagId": "",
     "bTagId": "",
-    "hiddenMin": 40,
-    "hiddenMax": 70,
     "baseWeight": 40,
     "price": 8,
-    "maxRollCount": 1,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
     "inherentTags": [
       "t_feast"
     ]

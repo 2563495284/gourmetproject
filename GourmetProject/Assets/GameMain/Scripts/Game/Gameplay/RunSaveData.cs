@@ -49,8 +49,8 @@ namespace GourmetProject.Game.Gameplay
     {
         public string ItemId;
         public int Level = 1;
+
+        /// <summary>旧存档兼容字段：曾经的主动道具持有数量。新档每份实例单独一条，恒为 1。</summary>
         public int Count = 1;
-        public int TotalAcquired = 1;
-        public int RunUseCount;
     }
 }

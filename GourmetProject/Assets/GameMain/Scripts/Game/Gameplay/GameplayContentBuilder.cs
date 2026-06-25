@@ -71,8 +71,8 @@ namespace GourmetProject.Game.Gameplay
                 fragments.Add(new StomachFragmentDef(
                     f.Id,
                     new List<string>(f.ShapeRows),
-                    f.HiddenMin,
-                    f.HiddenMax,
+                    f.HiddenRange.Min,
+                    f.HiddenRange.Max,
                     f.BaseWeight,
                     f.Price,
                     cellTags ?? new List<CellTag>()));
@@ -104,26 +104,27 @@ namespace GourmetProject.Game.Gameplay
                 v.Id,
                 b.Name,
                 b.Deliciousness,
+                b.InitScore,
                 DishShape.FromRows(b.ShapeRows),
-                v.HiddenMin,
-                v.HiddenMax,
+                v.HiddenRange.Min,
+                v.HiddenRange.Max,
                 v.BaseWeight,
                 seedTags,
                 b.Icon,
                 b.AllowRotate,
-                v.MaxRollCount,
                 b.Id,
                 v.Price);
         }
 
         private static TagDef ToTagDef(cfg.Tag t)
         {
+            var effectType = (TagEffectType)(int)t.EffectType;
             return new TagDef(
                 t.Id,
                 t.Name,
-                t.Desc,
+                TagDescFormatter.Format(t.Desc, t.EffectValue, signed: !effectType.IsMultiplier()),
                 (TagCategory)(int)t.Category,
-                (TagEffectType)(int)t.EffectType,
+                effectType,
                 t.EffectValue,
                 t.EffectParam,
                 t.TermId);

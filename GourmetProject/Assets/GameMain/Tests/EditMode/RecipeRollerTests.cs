@@ -45,10 +45,34 @@ namespace GourmetProject.Tests
             int rolledScore = 0;
             for (int i = 1; i < result.Count; i++)
             {
-                rolledScore += db.GetDish(result[i]).Deliciousness;
+                rolledScore += db.GetDish(result[i]).InitScore;
             }
 
             Assert.GreaterOrEqual(rolledScore, 30, "rolled dishes should reach required init score");
+        }
+
+        [Test]
+        public void Roll_UsesInitScoreInsteadOfDeliciousness()
+        {
+            var dishes = new List<DishDef>
+            {
+                GameplayTestFactory.Dish("starter", new[] { "X" }, deliciousness: 1, initScore: 10),
+            };
+            var db = new GameplayDatabase(dishes, new List<TagDef>(), new List<RecipeDef>());
+            var recipe = new RecipeDef(
+                "r",
+                new string[0],
+                new[]
+                {
+                    new RecipeEntryDef("starter", 100f, 0),
+                },
+                requiredInitScore: 10);
+
+            var rng = new RandomService();
+            rng.Init("init-score");
+            List<string> result = RecipeRoller.Roll(recipe, db, rng.Stream("recipe"));
+
+            Assert.AreEqual(1, result.Count, "init score should stop the roll even when deliciousness is lower");
         }
 
         [Test]

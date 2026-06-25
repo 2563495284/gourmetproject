@@ -14,6 +14,7 @@ namespace GourmetProject.Gameplay.Model
             string id,
             string name,
             int deliciousness,
+            int initScore,
             DishShape shape,
             int hiddenMin,
             int hiddenMax,
@@ -21,13 +22,13 @@ namespace GourmetProject.Gameplay.Model
             IReadOnlyList<string> inherentTags,
             string icon,
             bool allowRotate,
-            int maxRollCount,
             string baseId = null,
             int price = 0)
         {
             Id = id ?? throw new ArgumentNullException(nameof(id));
             Name = name;
             Deliciousness = deliciousness;
+            InitScore = initScore;
             Shape = shape ?? throw new ArgumentNullException(nameof(shape));
             HiddenMin = hiddenMin;
             HiddenMax = hiddenMax;
@@ -35,7 +36,6 @@ namespace GourmetProject.Gameplay.Model
             InherentTags = inherentTags ?? Array.Empty<string>();
             Icon = icon ?? string.Empty;
             AllowRotate = allowRotate;
-            MaxRollCount = maxRollCount;
             BaseId = baseId ?? id;
             Price = price;
         }
@@ -47,8 +47,11 @@ namespace GourmetProject.Gameplay.Model
 
         public string Name { get; }
 
-        /// <summary>美味度（基础分数）。同时作为菜谱生成时的「初始分」。</summary>
+        /// <summary>美味度（基础分数），用于技能结算与分数结算。</summary>
         public int Deliciousness { get; }
+
+        /// <summary>初始菜谱生成时累计的分值。</summary>
+        public int InitScore { get; }
 
         public DishShape Shape { get; }
 
@@ -73,9 +76,6 @@ namespace GourmetProject.Gameplay.Model
         public string Icon { get; }
 
         public bool AllowRotate { get; }
-
-        /// <summary>最多被随机次数；0 表示不限。</summary>
-        public int MaxRollCount { get; }
 
         /// <summary>要求隐藏分是否落在本菜品隐藏分范围内。</summary>
         public bool CoversHiddenScore(int requiredHidden)

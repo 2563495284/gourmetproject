@@ -12,7 +12,12 @@ alwaysApply: false
 ## schema 都在 Excel（`luban.conf` 已挂载）
 三个定义文件在 `GameConfig/Datas/`，由 `luban.conf` 的 `schemaFiles` 以对应 `type` 挂载：
 - `__tables__.xlsx`（`type:"table"`）：**表登记**。一行=一张表，列含 `full_name / value_type / read_schema_from_file(=True) / input / index / comment …`。注释写 `comment` 列。
-- `__enums__.xlsx`（`type:"enum"`）：**枚举**。被 C# `switch` 的枚举改名/改值会改动生成代码，谨慎。
+- 枚举定义拆为多个 xlsx（`luban.conf` 中多条 `type:"enum"`），每文件单 sheet、只放一类枚举：
+  - `__enums_tag.xlsx` — TagCategory、TagEffectType
+  - `__enums_item.xlsx` — ItemKind、ItemQuality、ItemTriggerTiming
+  - `__enums_reward.xlsx` — RewardKind、RewardPoolKind
+  - `__enums_action.xlsx` — ActionType、TimelineNodeType
+  被 C# `switch` 的枚举改名/改值会改动生成代码，谨慎。**勿**把枚举拆成同文件多 sheet，也勿用 openpyxl `append` 从零拼表（会破坏空单元格 `inlineStr`，导致 alias 列解析失败）。
 - `__beans__.xlsx`（`type:"bean"`）：**子结构 bean**（被 `list,Bean` 引用、又不是独立表的，如 `RecipeEntry`，带 `sep=","`）。
 - 字段结构：`read_schema_from_file=True` 时**直接读各数据 xlsx 表头的 `##var` + `##type` 两行**，不再单独写 bean。改字段=只改数据表表头。
 - `Defines/` 现仅剩框架自带的 `builtin.xml`（vec2/vec3）；玩法 schema 不再写 XML。
@@ -27,7 +32,7 @@ alwaysApply: false
    填 `full_name=TbXxx`、`value_type=Xxx`、`read_schema_from_file=True`、`input=xxx.xlsx`、`index=id`、`comment=...`。
    - 多文件源：`input` 逗号分隔；指定 sheet：`Sheet1@xxx.xlsx`（**sheet 名在前、@ 后是文件**，sheet 的 A1 须以 `##` 开头才被当数据表）；单例表 `mode=one`，数据 xlsx 首列写 `##column` 走竖表。
    - 多表同文件：一个 xlsx 放多个 sheet（每 sheet 一张表），各表 `input` 各写 `表sheet名@文件.xlsx` 即可（如 `dish_base@dish.xlsx`、`dish_variant@dish.xlsx`）。
-3. 新增枚举：在 `Datas/__enums__.xlsx` 加（表头两行 `##var` + 子字段 `name/alias/value/comment/tags`，照现有行往下加）。
+3. 新增枚举：在对应类别的 `Datas/__enums_*.xlsx` 加（表头三行 `##var`/`##var`/`##` + 子字段 `name/alias/value/comment/tags`，照现有行往下加）。新文件请从已能 `gen.sh` 通过的枚举 xlsx **复制后删行**，不要 openpyxl 从零创建。
 4. 新增子结构 bean：在 `Datas/__beans__.xlsx` 加（含 `sep` 列与 `*fields` 子字段 `name/alias/type/...`，照现有行加）。
 5. 多元素 list（本项目 Luban 版本已实测，务必遵守）：
    - 单格 `#sep=` / `(list#sep=…)` 与「横向流式多列」均**不生效**，不要用。

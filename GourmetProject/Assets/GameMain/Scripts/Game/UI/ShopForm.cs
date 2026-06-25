@@ -115,7 +115,7 @@ namespace GourmetProject.Game.UI
             foreach (RunItemState state in _run.Items)
             {
                 cfg.Item item = tables.TbItem.GetOrDefault(state.ItemId);
-                if (item != null && item.Kind == cfg.ItemKind.Passive && !state.IsEmpty)
+                if (item != null && item.Kind == cfg.ItemKind.Passive)
                 {
                     entries.Add(SellEntry.Sell(item.Id, item.Name));
                 }

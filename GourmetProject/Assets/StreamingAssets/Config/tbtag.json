@@ -2,51 +2,61 @@
   {
     "id": "t_fresh",
     "name": "新鲜",
-    "desc": "结算时美味度 +5。",
+    "desc": "结算时美味度 {0}。",
     "category": 0,
     "effectType": 1,
-    "effectValue": 5,
-    "effectParam": "",
+    "effectValue": [
+      5
+    ],
+    "effectParam": [],
     "termId": "term_deliciousness"
   },
   {
     "id": "t_sweet",
     "name": "香甜",
-    "desc": "结算时本菜品贡献的分数 ×1.5。",
+    "desc": "结算时本菜品贡献的分数 ×{0}。",
     "category": 0,
     "effectType": 2,
-    "effectValue": 1.5,
-    "effectParam": "",
+    "effectValue": [
+      1.5
+    ],
+    "effectParam": [],
     "termId": ""
   },
   {
     "id": "t_spicy",
     "name": "麻辣",
-    "desc": "每有一个相邻菜品，美味度 +3。",
+    "desc": "每有一个相邻菜品，美味度 {0}。",
     "category": 0,
     "effectType": 3,
-    "effectValue": 3,
-    "effectParam": "",
+    "effectValue": [
+      3
+    ],
+    "effectParam": [],
     "termId": "term_adjacent"
   },
   {
     "id": "t_lonely",
     "name": "孤食",
-    "desc": "棋盘上每有一个空位，美味度 +2。",
+    "desc": "棋盘上每有一个空位，美味度 {0}。",
     "category": 0,
     "effectType": 4,
-    "effectValue": 2,
-    "effectParam": "",
+    "effectValue": [
+      2
+    ],
+    "effectParam": [],
     "termId": "term_empty"
   },
   {
     "id": "t_hearty",
     "name": "扎实",
-    "desc": "本菜品每占用一格，美味度 +2。",
+    "desc": "本菜品每占用一格，美味度 {0}。",
     "category": 0,
     "effectType": 5,
-    "effectValue": 2,
-    "effectParam": "",
+    "effectValue": [
+      2
+    ],
+    "effectParam": [],
     "termId": ""
   },
   {
@@ -55,38 +65,46 @@
     "desc": "唯一A。棋盘上每有一道菜，本菜品分数 ×1.1。",
     "category": 1,
     "effectType": 6,
-    "effectValue": 0.1,
-    "effectParam": "",
+    "effectValue": [
+      0.1
+    ],
+    "effectParam": [],
     "termId": ""
   },
   {
     "id": "t_golden",
     "name": "黄金",
-    "desc": "唯一B。本菜品贡献的分数 ×2。",
+    "desc": "唯一B。本菜品贡献的分数 ×{0}。",
     "category": 2,
     "effectType": 2,
-    "effectValue": 2,
-    "effectParam": "",
+    "effectValue": [
+      2
+    ],
+    "effectParam": [],
     "termId": ""
   },
   {
     "id": "t_cell_gold",
     "name": "强化·黄金格",
-    "desc": "占据该格的菜品贡献分数 ×1.5。",
+    "desc": "占据该格的菜品贡献分数 ×{0}。",
     "category": 0,
     "effectType": 2,
-    "effectValue": 1.5,
-    "effectParam": "",
+    "effectValue": [
+      1.5
+    ],
+    "effectParam": [],
     "termId": ""
   },
   {
     "id": "t_cell_warm",
     "name": "强化·温补格",
-    "desc": "占据该格的菜品美味度 +3。",
+    "desc": "占据该格的菜品美味度 {0}。",
     "category": 0,
     "effectType": 1,
-    "effectValue": 3,
-    "effectParam": "",
+    "effectValue": [
+      3
+    ],
+    "effectParam": [],
     "termId": ""
   }
 ]

@@ -434,10 +434,9 @@ namespace GourmetProject.Game.UI
                 return;
             }
 
-            RunItemState state = _run.GetItemState(itemId);
-            if (state == null || state.Count <= 0)
+            if (!_run.HasItem(itemId))
             {
-                _world?.ShowMessage($"{item.Name}：没有可用数量。");
+                _world?.ShowMessage($"{item.Name}：没有可用道具。");
                 RefreshAll();
                 return;
             }

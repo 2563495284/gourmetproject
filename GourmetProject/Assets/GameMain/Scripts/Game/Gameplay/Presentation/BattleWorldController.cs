@@ -611,7 +611,7 @@ namespace GourmetProject.Game.Gameplay.Presentation
             foreach (RunItemState state in _run.Items)
             {
                 cfg.Item item = GameApp.Config.Tables.TbItem.GetOrDefault(state.ItemId);
-                if (item != null && item.Kind == cfg.ItemKind.Passive && !state.IsEmpty)
+                if (item != null && item.Kind == cfg.ItemKind.Passive)
                 {
                     passiveStates.Add(state);
                 }
@@ -656,16 +656,26 @@ namespace GourmetProject.Game.Gameplay.Presentation
                 return;
             }
 
+            // 主动道具多实例制：同一 id 可能有多条，这里按 id 聚合成一个槽，份数用角标 xN 展示。
             var activeStates = new List<RunItemState>();
+            var activeCounts = new Dictionary<string, int>();
             foreach (RunItemState state in _run.Items)
             {
                 cfg.Item item = GameApp.Config.Tables.TbItem.GetOrDefault(state.ItemId);
-                if (item == null || item.Kind != cfg.ItemKind.Active || state.Count <= 0)
+                if (item == null || item.Kind != cfg.ItemKind.Active)
                 {
                     continue;
                 }
 
-                activeStates.Add(state);
+                if (activeCounts.TryGetValue(state.ItemId, out int held))
+                {
+                    activeCounts[state.ItemId] = held + 1;
+                }
+                else
+                {
+                    activeCounts[state.ItemId] = 1;
+                    activeStates.Add(state);
+                }
             }
 
             const float slotSize = 0.58f;
@@ -686,7 +696,8 @@ namespace GourmetProject.Game.Gameplay.Presentation
                     cfg.Item item = GameApp.Config.Tables.TbItem.GetOrDefault(state.ItemId);
                     string captured = state.ItemId;
                     bool usableNow = _session != null && !_session.IsSettled && item.TriggerTiming == cfg.ItemTriggerTiming.BeforeEat;
-                    string badge = state.Count > 1 ? $"x{state.Count}" : string.Empty;
+                    int held = activeCounts[state.ItemId];
+                    string badge = held > 1 ? $"x{held}" : string.Empty;
                     slot.Bind(
                         new Vector2(slotSize, slotSize),
                         LoadItemIcon(item),

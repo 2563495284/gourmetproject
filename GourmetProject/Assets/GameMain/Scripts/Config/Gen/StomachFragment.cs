@@ -18,10 +18,9 @@ public sealed partial class StomachFragment : Luban.BeanBase
     public StomachFragment(JSONNode _buf) 
     {
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
-        { if(!_buf["hiddenMin"].IsNumber) { throw new SerializationException(); }  HiddenMin = _buf["hiddenMin"]; }
-        { if(!_buf["hiddenMax"].IsNumber) { throw new SerializationException(); }  HiddenMax = _buf["hiddenMax"]; }
         { if(!_buf["baseWeight"].IsNumber) { throw new SerializationException(); }  BaseWeight = _buf["baseWeight"]; }
         { if(!_buf["price"].IsNumber) { throw new SerializationException(); }  Price = _buf["price"]; }
+        { if(!_buf["hiddenRange"].IsObject) { throw new SerializationException(); }  HiddenRange = global::cfg.HiddenRange.DeserializeHiddenRange(_buf["hiddenRange"]);  }
         { var __json0 = _buf["shapeRows"]; if(!__json0.IsArray) { throw new SerializationException(); } ShapeRows = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  ShapeRows.Add(__v0); }   }
     }
 
@@ -35,14 +34,6 @@ public sealed partial class StomachFragment : Luban.BeanBase
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 出现隐藏分下限
-    /// </summary>
-    public readonly int HiddenMin;
-    /// <summary>
-    /// 出现隐藏分上限
-    /// </summary>
-    public readonly int HiddenMax;
-    /// <summary>
     /// 随机基础权重
     /// </summary>
     public readonly float BaseWeight;
@@ -50,6 +41,10 @@ public sealed partial class StomachFragment : Luban.BeanBase
     /// 商店价格
     /// </summary>
     public readonly int Price;
+    /// <summary>
+    /// 出现隐藏分区间(单元格: min,max)
+    /// </summary>
+    public readonly HiddenRange HiddenRange;
     /// <summary>
     /// 碎片形状行列表
     /// </summary>
@@ -60,16 +55,16 @@ public sealed partial class StomachFragment : Luban.BeanBase
 
     public  void ResolveRef(Tables tables)
     {
+        HiddenRange?.ResolveRef(tables);
     }
 
     public override string ToString()
     {
         return "{ "
         + "id:" + Id + ","
-        + "hiddenMin:" + HiddenMin + ","
-        + "hiddenMax:" + HiddenMax + ","
         + "baseWeight:" + BaseWeight + ","
         + "price:" + Price + ","
+        + "hiddenRange:" + HiddenRange + ","
         + "shapeRows:" + Luban.StringUtil.CollectionToString(ShapeRows) + ","
         + "}";
     }

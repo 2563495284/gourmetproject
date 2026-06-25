@@ -33,14 +33,41 @@ public sealed partial class GameEvent : Luban.BeanBase
         return new GameEvent(_buf);
     }
 
+    /// <summary>
+    /// 事件ID
+    /// </summary>
     public readonly string Id;
+    /// <summary>
+    /// 事件名称
+    /// </summary>
     public readonly string Name;
+    /// <summary>
+    /// 事件描述
+    /// </summary>
     public readonly string Desc;
+    /// <summary>
+    /// 消耗天数
+    /// </summary>
     public readonly int TimeCost;
+    /// <summary>
+    /// 效果类型
+    /// </summary>
     public readonly string EffectType;
+    /// <summary>
+    /// 效果数值
+    /// </summary>
     public readonly float EffectValue;
+    /// <summary>
+    /// 事件分类
+    /// </summary>
     public readonly string Category;
+    /// <summary>
+    /// 是否可重复
+    /// </summary>
     public readonly bool Repeatable;
+    /// <summary>
+    /// 前置条件
+    /// </summary>
     public readonly string Preconditions;
    
     public const int __ID__ = -1313800792;

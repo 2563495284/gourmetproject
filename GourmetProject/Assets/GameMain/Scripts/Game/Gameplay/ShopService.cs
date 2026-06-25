@@ -141,7 +141,7 @@ namespace GourmetProject.Game.Gameplay
             var candidates = new List<cfg.DishVariant>();
             foreach (cfg.DishVariant variant in tables.TbDishVariant.DataList)
             {
-                if (hidden >= variant.HiddenMin && hidden <= variant.HiddenMax)
+                if (hidden >= variant.HiddenRange.Min && hidden <= variant.HiddenRange.Max)
                 {
                     candidates.Add(variant);
                 }
@@ -155,12 +155,12 @@ namespace GourmetProject.Game.Gameplay
             var candidates = new List<cfg.StomachFragment>();
             foreach (cfg.StomachFragment fragment in tables.TbStomachFragment.DataList)
             {
-                if (fragment.HiddenMin == 0 && fragment.HiddenMax == 0)
+                if (fragment.HiddenRange.Min == 0 && fragment.HiddenRange.Max == 0)
                 {
                     continue; // 初始胃等不入随机池。
                 }
 
-                if (hidden < fragment.HiddenMin || hidden > fragment.HiddenMax)
+                if (hidden < fragment.HiddenRange.Min || hidden > fragment.HiddenRange.Max)
                 {
                     continue;
                 }

@@ -6,20 +6,22 @@
     "kind": 0,
     "quality": 0,
     "specialTags": "ScoreBuild",
-    "maxLevel": 3,
-    "nextLevelWeightMultiplier": 0.65,
     "unlockCondition": "",
     "triggerTiming": 0,
-    "acquireLimit": 1,
     "holdLimit": 1,
-    "consumeOnUse": false,
-    "baseWeight": 1,
-    "hiddenMin": 1,
-    "hiddenMax": 30,
     "effectType": "FinalAddFlat",
     "effectValue": 50,
     "effectParam": "",
-    "icon": "Sprites/Items/big_plate"
+    "icon": "Sprites/Items/big_plate",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 1,
+      "max": 30
+    }
   },
   {
     "id": "item_chef_knife",
@@ -28,20 +30,22 @@
     "kind": 0,
     "quality": 1,
     "specialTags": "ScoreBuild",
-    "maxLevel": 3,
-    "nextLevelWeightMultiplier": 0.65,
     "unlockCondition": "",
     "triggerTiming": 0,
-    "acquireLimit": 1,
     "holdLimit": 1,
-    "consumeOnUse": false,
-    "baseWeight": 1,
-    "hiddenMin": 10,
-    "hiddenMax": 45,
     "effectType": "FinalAddMult",
     "effectValue": 1.2,
     "effectParam": "",
-    "icon": "Sprites/Items/chef_knife"
+    "icon": "Sprites/Items/chef_knife",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 10,
+      "max": 45
+    }
   },
   {
     "id": "item_pepper_jar",
@@ -50,20 +54,22 @@
     "kind": 0,
     "quality": 1,
     "specialTags": "SpicyBuild",
-    "maxLevel": 3,
-    "nextLevelWeightMultiplier": 0.65,
     "unlockCondition": "",
     "triggerTiming": 0,
-    "acquireLimit": 1,
     "holdLimit": 1,
-    "consumeOnUse": false,
-    "baseWeight": 1,
-    "hiddenMin": 5,
-    "hiddenMax": 35,
     "effectType": "TagBonus",
     "effectValue": 10,
     "effectParam": "tag_spicy",
-    "icon": "Sprites/Items/pepper_jar"
+    "icon": "Sprites/Items/pepper_jar",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 5,
+      "max": 35
+    }
   },
   {
     "id": "item_reroll",
@@ -72,20 +78,22 @@
     "kind": 1,
     "quality": 0,
     "specialTags": "BattleActive",
-    "maxLevel": 1,
-    "nextLevelWeightMultiplier": 1,
     "unlockCondition": "",
     "triggerTiming": 3,
-    "acquireLimit": 0,
     "holdLimit": 9,
-    "consumeOnUse": true,
-    "baseWeight": 1,
-    "hiddenMin": 0,
-    "hiddenMax": 0,
     "effectType": "ClearBoard",
     "effectValue": 0,
     "effectParam": "",
-    "icon": "Sprites/Items/reroll_bell"
+    "icon": "Sprites/Items/reroll_bell",
+    "levelWeightParams": {
+      "maxLevel": 1,
+      "nextLevelWeightMultiplier": 1,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    }
   },
   {
     "id": "item_extra_serve",
@@ -94,19 +102,21 @@
     "kind": 1,
     "quality": 0,
     "specialTags": "BattleActive",
-    "maxLevel": 1,
-    "nextLevelWeightMultiplier": 1,
     "unlockCondition": "",
     "triggerTiming": 3,
-    "acquireLimit": 0,
     "holdLimit": 9,
-    "consumeOnUse": true,
-    "baseWeight": 1,
-    "hiddenMin": 0,
-    "hiddenMax": 0,
     "effectType": "ExtraServe",
     "effectValue": 1,
     "effectParam": "",
-    "icon": "Sprites/Items/extra_serve"
+    "icon": "Sprites/Items/extra_serve",
+    "levelWeightParams": {
+      "maxLevel": 1,
+      "nextLevelWeightMultiplier": 1,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    }
   }
 ]

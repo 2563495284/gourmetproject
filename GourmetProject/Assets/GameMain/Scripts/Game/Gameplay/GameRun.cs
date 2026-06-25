@@ -21,6 +21,8 @@ namespace GourmetProject.Game.Gameplay
         public const int RecipeSlotCount = 2;
 
         private readonly cfg.Tables _tables;
+
+        // 被动道具同一 id 唯一一条（带 Level）；主动道具同一 id 可有多条，每条为一份独立实例。
         private readonly List<RunItemState> _items = new List<RunItemState>();
         private readonly List<string> _bonusDishIds = new List<string>();
         private readonly List<string> _stomachFragmentIds = new List<string>();
@@ -239,10 +241,7 @@ namespace GourmetProject.Game.Gameplay
             foreach (RunItemState state in _items)
             {
                 items.Add(state.ToSaveData());
-                if (!state.IsEmpty)
-                {
-                    legacyItemIds.Add(state.ItemId);
-                }
+                legacyItemIds.Add(state.ItemId);
             }
 
             return new RunSaveData
@@ -276,9 +275,24 @@ namespace GourmetProject.Game.Gameplay
             {
                 foreach (RunItemSaveData item in data.Items)
                 {
-                    if (!string.IsNullOrEmpty(item.ItemId))
+                    if (string.IsNullOrEmpty(item.ItemId))
                     {
-                        run._items.Add(RunItemState.FromSaveData(item));
+                        continue;
+                    }
+
+                    cfg.Item def = tables.TbItem.GetOrDefault(item.ItemId);
+
+                    // 旧档迁移：主动道具曾用单条 + Count 表示堆叠，这里展开为多份实例；
+                    // Count<=0 的旧「僵尸条目」直接丢弃（用完即不存在）。被动道具恒为一条。
+                    int instances = 1;
+                    if (def != null && def.Kind == cfg.ItemKind.Active)
+                    {
+                        instances = System.Math.Max(0, item.Count);
+                    }
+
+                    for (int k = 0; k < instances; k++)
+                    {
+                        run._items.Add(new RunItemState(item.ItemId, item.Level));
                     }
                 }
             }
@@ -336,7 +350,6 @@ namespace GourmetProject.Game.Gameplay
         /// </summary>
         public BattleSession BuildBattleSession(int requiredScore, string modifier, string key)
         {
-            ResetBattleItemUseCounts();
             modifier ??= string.Empty;
 
             cfg.Character character = _tables.TbCharacter.GetOrDefault(CharacterId);
@@ -468,8 +481,27 @@ namespace GourmetProject.Game.Gameplay
 
         public bool HasItem(string itemId)
         {
-            RunItemState state = GetItemState(itemId);
-            return state != null && !state.IsEmpty;
+            return GetItemCount(itemId) > 0;
+        }
+
+        /// <summary>当前持有该道具的份数：被动道具为 0/1，主动道具为实例条目数。</summary>
+        public int GetItemCount(string itemId)
+        {
+            if (string.IsNullOrEmpty(itemId))
+            {
+                return 0;
+            }
+
+            int count = 0;
+            foreach (RunItemState state in _items)
+            {
+                if (state.ItemId == itemId)
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
 
         public ItemAcquireResult AcquireItem(string itemId, int fallbackGold)
@@ -480,42 +512,37 @@ namespace GourmetProject.Game.Gameplay
                 return default;
             }
 
-            RunItemState state = GetItemState(itemId);
             if (item.Kind == cfg.ItemKind.Passive)
             {
                 int maxLevel = ItemPoolService.GetPassiveMaxLevel(item);
+                RunItemState state = GetItemState(itemId);
                 if (state == null)
                 {
-                    state = new RunItemState(itemId, 1, 1, 1);
+                    state = new RunItemState(itemId, 1);
                     _items.Add(state);
-                    return new ItemAcquireResult(ItemAcquireOutcome.Added, itemId, item.Name, state.Level, state.Count, 0);
+                    return new ItemAcquireResult(ItemAcquireOutcome.Added, itemId, item.Name, state.Level, 1, 0);
                 }
 
                 if (state.Level < maxLevel)
                 {
                     state.IncreaseLevel(maxLevel);
-                    return new ItemAcquireResult(ItemAcquireOutcome.Upgraded, itemId, item.Name, state.Level, state.Count, 0);
+                    return new ItemAcquireResult(ItemAcquireOutcome.Upgraded, itemId, item.Name, state.Level, 1, 0);
                 }
 
                 Gold += fallbackGold;
-                return new ItemAcquireResult(ItemAcquireOutcome.ConvertedToGold, itemId, item.Name, state.Level, state.Count, fallbackGold);
+                return new ItemAcquireResult(ItemAcquireOutcome.ConvertedToGold, itemId, item.Name, state.Level, 1, fallbackGold);
             }
 
-            if (state == null)
-            {
-                state = new RunItemState(itemId, 1, 1, 1);
-                _items.Add(state);
-                return new ItemAcquireResult(ItemAcquireOutcome.Stacked, itemId, item.Name, state.Level, state.Count, 0);
-            }
-
+            // 主动道具：每获得一次新增一份独立实例；达到持有上限则折算金币。
             if (!ItemPoolService.CanEnterPool(this, item))
             {
                 Gold += fallbackGold;
-                return new ItemAcquireResult(ItemAcquireOutcome.ConvertedToGold, itemId, item.Name, state.Level, state.Count, fallbackGold);
+                return new ItemAcquireResult(ItemAcquireOutcome.ConvertedToGold, itemId, item.Name, 1, GetItemCount(itemId), fallbackGold);
             }
 
-            state.AddCount(1);
-            return new ItemAcquireResult(ItemAcquireOutcome.Stacked, itemId, item.Name, state.Level, state.Count, 0);
+            _items.Add(new RunItemState(itemId, 1));
+            int held = GetItemCount(itemId);
+            return new ItemAcquireResult(ItemAcquireOutcome.Stacked, itemId, item.Name, 1, held, 0);
         }
 
         public bool AddBonusDish(string dishId)
@@ -576,18 +603,32 @@ namespace GourmetProject.Game.Gameplay
             return fragments;
         }
 
+        /// <summary>移除一份道具（被动整条移除；主动移除其中一份实例）。供商店出售、事件移除等使用。</summary>
         public bool RemoveItem(string itemId)
         {
-            RunItemState state = GetItemState(itemId);
-            if (state == null)
+            return RemoveOneInstance(itemId);
+        }
+
+        private bool RemoveOneInstance(string itemId)
+        {
+            if (string.IsNullOrEmpty(itemId))
             {
                 return false;
             }
 
-            _items.Remove(state);
-            return true;
+            for (int i = 0; i < _items.Count; i++)
+            {
+                if (_items[i].ItemId == itemId)
+                {
+                    _items.RemoveAt(i);
+                    return true;
+                }
+            }
+
+            return false;
         }
 
+        /// <summary>使用一份主动道具：使用后该实例直接移除（不存在数量消耗的中间态）。</summary>
         public bool UseActiveItem(string itemId)
         {
             cfg.Item item = _tables.TbItem.GetOrDefault(itemId);
@@ -596,27 +637,7 @@ namespace GourmetProject.Game.Gameplay
                 return false;
             }
 
-            RunItemState state = GetItemState(itemId);
-            if (state == null)
-            {
-                return false;
-            }
-
-            if (item.ConsumeOnUse)
-            {
-                return state.ConsumeOne();
-            }
-
-            state.RecordUse();
-            return true;
-        }
-
-        private void ResetBattleItemUseCounts()
-        {
-            foreach (RunItemState state in _items)
-            {
-                state.ResetBattleUseCount();
-            }
+            return RemoveOneInstance(itemId);
         }
     }
 }

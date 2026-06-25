@@ -36,17 +36,53 @@ public sealed partial class GameAction : Luban.BeanBase
         return new GameAction(_buf);
     }
 
+    /// <summary>
+    /// 行动ID
+    /// </summary>
     public readonly string Id;
+    /// <summary>
+    /// 行动名称
+    /// </summary>
     public readonly string Name;
+    /// <summary>
+    /// 行动描述
+    /// </summary>
     public readonly string Desc;
+    /// <summary>
+    /// 行动类型
+    /// </summary>
     public readonly ActionType ActionType;
+    /// <summary>
+    /// 消耗天数
+    /// </summary>
     public readonly int CostDays;
+    /// <summary>
+    /// 随机权重
+    /// </summary>
     public readonly float Weight;
+    /// <summary>
+    /// 是否可重复
+    /// </summary>
     public readonly bool Repeatable;
+    /// <summary>
+    /// 前置条件
+    /// </summary>
     public readonly string Preconditions;
+    /// <summary>
+    /// 载荷类型
+    /// </summary>
     public readonly string PayloadType;
+    /// <summary>
+    /// 载荷数值
+    /// </summary>
     public readonly float PayloadValue;
+    /// <summary>
+    /// 载荷参数
+    /// </summary>
     public readonly string PayloadParam;
+    /// <summary>
+    /// 关联配置ID
+    /// </summary>
     public readonly string LinkId;
    
     public const int __ID__ = 2090226920;

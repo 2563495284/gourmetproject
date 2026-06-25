@@ -23,20 +23,15 @@ public sealed partial class Item : Luban.BeanBase
         { if(!_buf["kind"].IsNumber) { throw new SerializationException(); }  Kind = (ItemKind)_buf["kind"].AsInt; }
         { if(!_buf["quality"].IsNumber) { throw new SerializationException(); }  Quality = (ItemQuality)_buf["quality"].AsInt; }
         { if(!_buf["specialTags"].IsString) { throw new SerializationException(); }  SpecialTags = _buf["specialTags"]; }
-        { if(!_buf["maxLevel"].IsNumber) { throw new SerializationException(); }  MaxLevel = _buf["maxLevel"]; }
-        { if(!_buf["nextLevelWeightMultiplier"].IsNumber) { throw new SerializationException(); }  NextLevelWeightMultiplier = _buf["nextLevelWeightMultiplier"]; }
         { if(!_buf["unlockCondition"].IsString) { throw new SerializationException(); }  UnlockCondition = _buf["unlockCondition"]; }
         { if(!_buf["triggerTiming"].IsNumber) { throw new SerializationException(); }  TriggerTiming = (ItemTriggerTiming)_buf["triggerTiming"].AsInt; }
-        { if(!_buf["acquireLimit"].IsNumber) { throw new SerializationException(); }  AcquireLimit = _buf["acquireLimit"]; }
         { if(!_buf["holdLimit"].IsNumber) { throw new SerializationException(); }  HoldLimit = _buf["holdLimit"]; }
-        { if(!_buf["consumeOnUse"].IsBoolean) { throw new SerializationException(); }  ConsumeOnUse = _buf["consumeOnUse"]; }
-        { if(!_buf["baseWeight"].IsNumber) { throw new SerializationException(); }  BaseWeight = _buf["baseWeight"]; }
-        { if(!_buf["hiddenMin"].IsNumber) { throw new SerializationException(); }  HiddenMin = _buf["hiddenMin"]; }
-        { if(!_buf["hiddenMax"].IsNumber) { throw new SerializationException(); }  HiddenMax = _buf["hiddenMax"]; }
         { if(!_buf["effectType"].IsString) { throw new SerializationException(); }  EffectType = _buf["effectType"]; }
         { if(!_buf["effectValue"].IsNumber) { throw new SerializationException(); }  EffectValue = _buf["effectValue"]; }
         { if(!_buf["effectParam"].IsString) { throw new SerializationException(); }  EffectParam = _buf["effectParam"]; }
         { if(!_buf["icon"].IsString) { throw new SerializationException(); }  Icon = _buf["icon"]; }
+        { if(!_buf["levelWeightParams"].IsObject) { throw new SerializationException(); }  LevelWeightParams = global::cfg.LevelWeightParams.DeserializeLevelWeightParams(_buf["levelWeightParams"]);  }
+        { if(!_buf["hiddenRange"].IsObject) { throw new SerializationException(); }  HiddenRange = global::cfg.HiddenRange.DeserializeHiddenRange(_buf["hiddenRange"]);  }
     }
 
     public static Item DeserializeItem(JSONNode _buf)
@@ -69,14 +64,6 @@ public sealed partial class Item : Luban.BeanBase
     /// </summary>
     public readonly string SpecialTags;
     /// <summary>
-    /// 最大等级
-    /// </summary>
-    public readonly int MaxLevel;
-    /// <summary>
-    /// 下一级权重倍率
-    /// </summary>
-    public readonly float NextLevelWeightMultiplier;
-    /// <summary>
     /// 解锁条件
     /// </summary>
     public readonly string UnlockCondition;
@@ -85,29 +72,9 @@ public sealed partial class Item : Luban.BeanBase
     /// </summary>
     public readonly ItemTriggerTiming TriggerTiming;
     /// <summary>
-    /// 获取次数限制
-    /// </summary>
-    public readonly int AcquireLimit;
-    /// <summary>
     /// 持有数量限制
     /// </summary>
     public readonly int HoldLimit;
-    /// <summary>
-    /// 使用后是否消耗
-    /// </summary>
-    public readonly bool ConsumeOnUse;
-    /// <summary>
-    /// 随机基础权重
-    /// </summary>
-    public readonly float BaseWeight;
-    /// <summary>
-    /// 出现隐藏分下限
-    /// </summary>
-    public readonly int HiddenMin;
-    /// <summary>
-    /// 出现隐藏分上限
-    /// </summary>
-    public readonly int HiddenMax;
     /// <summary>
     /// 效果类型
     /// </summary>
@@ -124,12 +91,22 @@ public sealed partial class Item : Luban.BeanBase
     /// 图标资源路径
     /// </summary>
     public readonly string Icon;
+    /// <summary>
+    /// 等级权重参数(单元格: maxLevel,nextLevelWeightMultiplier,baseWeight)
+    /// </summary>
+    public readonly LevelWeightParams LevelWeightParams;
+    /// <summary>
+    /// 出现隐藏分区间(单元格: min,max)
+    /// </summary>
+    public readonly HiddenRange HiddenRange;
    
     public const int __ID__ = 2289459;
     public override int GetTypeId() => __ID__;
 
     public  void ResolveRef(Tables tables)
     {
+        LevelWeightParams?.ResolveRef(tables);
+        HiddenRange?.ResolveRef(tables);
     }
 
     public override string ToString()
@@ -141,20 +118,15 @@ public sealed partial class Item : Luban.BeanBase
         + "kind:" + Kind + ","
         + "quality:" + Quality + ","
         + "specialTags:" + SpecialTags + ","
-        + "maxLevel:" + MaxLevel + ","
-        + "nextLevelWeightMultiplier:" + NextLevelWeightMultiplier + ","
         + "unlockCondition:" + UnlockCondition + ","
         + "triggerTiming:" + TriggerTiming + ","
-        + "acquireLimit:" + AcquireLimit + ","
         + "holdLimit:" + HoldLimit + ","
-        + "consumeOnUse:" + ConsumeOnUse + ","
-        + "baseWeight:" + BaseWeight + ","
-        + "hiddenMin:" + HiddenMin + ","
-        + "hiddenMax:" + HiddenMax + ","
         + "effectType:" + EffectType + ","
         + "effectValue:" + EffectValue + ","
         + "effectParam:" + EffectParam + ","
         + "icon:" + Icon + ","
+        + "levelWeightParams:" + LevelWeightParams + ","
+        + "hiddenRange:" + HiddenRange + ","
         + "}";
     }
 }

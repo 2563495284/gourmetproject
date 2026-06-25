@@ -70,16 +70,7 @@ namespace GourmetProject.Game.Gameplay
 
         private static int CountOwnedItems(GameRun run)
         {
-            int count = 0;
-            foreach (RunItemState state in run.Items)
-            {
-                if (!state.IsEmpty)
-                {
-                    count++;
-                }
-            }
-
-            return count;
+            return run.Items.Count;
         }
 
         /// <summary>解锁系统占位：当前没有跨局解锁记录，返回空（后续接入存档解锁表时填充）。</summary>

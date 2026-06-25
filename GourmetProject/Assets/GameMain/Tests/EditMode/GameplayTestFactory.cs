@@ -11,25 +11,25 @@ namespace GourmetProject.Tests
             string id,
             string[] rows,
             int deliciousness = 10,
+            int? initScore = null,
             int hiddenMin = 0,
             int hiddenMax = 100,
             float baseWeight = 100f,
             bool allowRotate = true,
-            int maxRollCount = 0,
             IReadOnlyList<string> tags = null)
         {
             return new DishDef(
                 id,
                 id,
                 deliciousness,
+                initScore ?? deliciousness,
                 DishShape.FromRows(rows),
                 hiddenMin,
                 hiddenMax,
                 baseWeight,
                 tags ?? new List<string>(),
                 string.Empty,
-                allowRotate,
-                maxRollCount);
+                allowRotate);
         }
 
         public static TagDef Tag(
@@ -39,7 +39,7 @@ namespace GourmetProject.Tests
             TagCategory category = TagCategory.Inherent,
             string termId = "")
         {
-            return new TagDef(id, id, id, category, effectType, effectValue, string.Empty, termId);
+            return new TagDef(id, id, id, category, effectType, new[] { effectValue }, System.Array.Empty<string>(), termId);
         }
 
         public static DishInstance InstanceWithTags(int id, DishDef def, int originX, int originY, IReadOnlyList<string> tagIds, int rotationIndex = 0)

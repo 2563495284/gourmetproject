@@ -1,10 +1,12 @@
 [
   {
     "id": "gut_4x4",
-    "hiddenMin": 0,
-    "hiddenMax": 0,
     "baseWeight": 0,
     "price": 0,
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    },
     "shapeRows": [
       "XXXX",
       "XXXX",
@@ -14,20 +16,24 @@
   },
   {
     "id": "frag_1x2",
-    "hiddenMin": 1,
-    "hiddenMax": 10,
     "baseWeight": 100,
     "price": 2,
+    "hiddenRange": {
+      "min": 1,
+      "max": 10
+    },
     "shapeRows": [
       "XX"
     ]
   },
   {
     "id": "frag_2x1",
-    "hiddenMin": 1,
-    "hiddenMax": 10,
     "baseWeight": 100,
     "price": 2,
+    "hiddenRange": {
+      "min": 1,
+      "max": 10
+    },
     "shapeRows": [
       "X",
       "X"
@@ -35,10 +41,12 @@
   },
   {
     "id": "frag_L",
-    "hiddenMin": 10,
-    "hiddenMax": 25,
     "baseWeight": 70,
     "price": 4,
+    "hiddenRange": {
+      "min": 10,
+      "max": 25
+    },
     "shapeRows": [
       "XX",
       ".X"
@@ -46,10 +54,12 @@
   },
   {
     "id": "frag_gold2x2",
-    "hiddenMin": 25,
-    "hiddenMax": 45,
     "baseWeight": 40,
     "price": 6,
+    "hiddenRange": {
+      "min": 25,
+      "max": 45
+    },
     "shapeRows": [
       "XX",
       "XX"

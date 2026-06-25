@@ -41,7 +41,7 @@ TABLES = {
         ("kind", "ItemKind", "s"), ("quality", "ItemQuality", "s"), ("specialTags", "string", "s"),
         ("maxLevel", "int", "s"), ("nextLevelWeightMultiplier", "float", "s"),
         ("unlockCondition", "string", "s"), ("triggerTiming", "ItemTriggerTiming", "s"),
-        ("acquireLimit", "int", "s"), ("holdLimit", "int", "s"), ("consumeOnUse", "bool", "b"),
+        ("acquireLimit", "int", "s"), ("holdLimit", "int", "s"),
         ("baseWeight", "float", "s"), ("hiddenMin", "int", "s"), ("hiddenMax", "int", "s"),
         ("effectType", "string", "s"), ("effectValue", "float", "s"),
         ("effectParam", "string", "s"), ("icon", "string", "s"),
@@ -101,9 +101,9 @@ def write_simple(ws, fields, rows):
 def write_dish(ws, rows):
     # shapeRows(list,string) 用多行模式 *shapeRows：每个形状行占一行，续行前导列留空。
     head = ["id", "name", "deliciousness", "hiddenMin", "hiddenMax", "baseWeight",
-            "inherentTags", "icon", "allowRotate", "maxRollCount"]
+            "inherentTags", "icon", "allowRotate"]
     types = ["string", "string", "int", "int", "int", "float",
-             "list,string", "string", "bool", "int"]
+             "list,string", "string", "bool"]
     ws.append(["##var"] + head + ["*shapeRows"])
     ws.append(["##type"] + types + ["list,string"])
     for r in rows:
@@ -111,7 +111,7 @@ def write_dish(ws, rows):
         base = ["", r.get("id", ""), r.get("name", ""), r.get("deliciousness", ""),
                 r.get("hiddenMin", ""), r.get("hiddenMax", ""), r.get("baseWeight", ""),
                 (tags[0] if tags else ""), r.get("icon", ""),
-                "true" if r.get("allowRotate") else "false", r.get("maxRollCount", "")]
+                "true" if r.get("allowRotate") else "false"]
         shapes = r.get("shapeRows") or [""]
         ws.append(base + [shapes[0]])
         for s in shapes[1:]:

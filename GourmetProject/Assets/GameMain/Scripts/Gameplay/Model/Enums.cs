@@ -32,4 +32,16 @@ namespace GourmetProject.Gameplay.Model
         Passive = 0,
         Active = 1,
     }
+
+    public static class TagEffectTypeExtensions
+    {
+        /// <summary>
+        /// 倍率类效果：数值是乘数，描述里用 ×，回填时不补正负号（如 ×1.5）。
+        /// 其余（加减类）回填时正数补"+"、负数自带"-"，策划模板无需手写符号。
+        /// </summary>
+        public static bool IsMultiplier(this TagEffectType type)
+        {
+            return type == TagEffectType.AddMult || type == TagEffectType.PerDishOnBoard;
+        }
+    }
 }

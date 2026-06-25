@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace GourmetProject.Gameplay.Model
 {
     /// <summary>
@@ -5,14 +7,17 @@ namespace GourmetProject.Gameplay.Model
     /// </summary>
     public sealed class TagDef
     {
+        private static readonly IReadOnlyList<float> EmptyValues = new float[0];
+        private static readonly IReadOnlyList<string> EmptyParams = new string[0];
+
         public TagDef(
             string id,
             string name,
             string desc,
             TagCategory category,
             TagEffectType effectType,
-            float effectValue,
-            string effectParam,
+            IReadOnlyList<float> effectValues,
+            IReadOnlyList<string> effectParams,
             string termId)
         {
             Id = id;
@@ -20,8 +25,8 @@ namespace GourmetProject.Gameplay.Model
             Desc = desc;
             Category = category;
             EffectType = effectType;
-            EffectValue = effectValue;
-            EffectParam = effectParam ?? string.Empty;
+            EffectValues = effectValues ?? EmptyValues;
+            EffectParams = effectParams ?? EmptyParams;
             TermId = termId ?? string.Empty;
         }
 
@@ -35,10 +40,17 @@ namespace GourmetProject.Gameplay.Model
 
         public TagEffectType EffectType { get; }
 
-        public float EffectValue { get; }
+        /// <summary>效果数值列表；不同效果类型可按约定使用多个数值。</summary>
+        public IReadOnlyList<float> EffectValues { get; }
 
-        /// <summary>效果次要参数（如分类过滤、目标标签 id），多数效果不需要。</summary>
-        public string EffectParam { get; }
+        /// <summary>效果次要参数列表（如分类过滤、目标标签 id），多数效果不需要。</summary>
+        public IReadOnlyList<string> EffectParams { get; }
+
+        /// <summary>首个效果数值；列表为空时为 0。多数效果只用单个数值，可直接用此便捷属性。</summary>
+        public float EffectValue => EffectValues.Count > 0 ? EffectValues[0] : 0f;
+
+        /// <summary>首个效果参数；列表为空时为空串。</summary>
+        public string EffectParam => EffectParams.Count > 0 ? EffectParams[0] : string.Empty;
 
         /// <summary>关联的专有名词 id，非空时菜品详情额外展示。</summary>
         public string TermId { get; }

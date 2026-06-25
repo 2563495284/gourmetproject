@@ -21,11 +21,9 @@ public sealed partial class DishVariant : Luban.BeanBase
         { if(!_buf["baseId"].IsString) { throw new SerializationException(); }  BaseId = _buf["baseId"]; }
         { if(!_buf["aTagId"].IsString) { throw new SerializationException(); }  ATagId = _buf["aTagId"]; }
         { if(!_buf["bTagId"].IsString) { throw new SerializationException(); }  BTagId = _buf["bTagId"]; }
-        { if(!_buf["hiddenMin"].IsNumber) { throw new SerializationException(); }  HiddenMin = _buf["hiddenMin"]; }
-        { if(!_buf["hiddenMax"].IsNumber) { throw new SerializationException(); }  HiddenMax = _buf["hiddenMax"]; }
         { if(!_buf["baseWeight"].IsNumber) { throw new SerializationException(); }  BaseWeight = _buf["baseWeight"]; }
         { if(!_buf["price"].IsNumber) { throw new SerializationException(); }  Price = _buf["price"]; }
-        { if(!_buf["maxRollCount"].IsNumber) { throw new SerializationException(); }  MaxRollCount = _buf["maxRollCount"]; }
+        { if(!_buf["hiddenRange"].IsObject) { throw new SerializationException(); }  HiddenRange = global::cfg.HiddenRange.DeserializeHiddenRange(_buf["hiddenRange"]);  }
         { var __json0 = _buf["inherentTags"]; if(!__json0.IsArray) { throw new SerializationException(); } InherentTags = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  InherentTags.Add(__v0); }   }
     }
 
@@ -51,14 +49,6 @@ public sealed partial class DishVariant : Luban.BeanBase
     /// </summary>
     public readonly string BTagId;
     /// <summary>
-    /// 出现隐藏分下限
-    /// </summary>
-    public readonly int HiddenMin;
-    /// <summary>
-    /// 出现隐藏分上限
-    /// </summary>
-    public readonly int HiddenMax;
-    /// <summary>
     /// 随机基础权重
     /// </summary>
     public readonly float BaseWeight;
@@ -67,9 +57,9 @@ public sealed partial class DishVariant : Luban.BeanBase
     /// </summary>
     public readonly int Price;
     /// <summary>
-    /// 最大刷新出现次数
+    /// 出现隐藏分区间(单元格: min,max)
     /// </summary>
-    public readonly int MaxRollCount;
+    public readonly HiddenRange HiddenRange;
     /// <summary>
     /// 固有标签ID列表
     /// </summary>
@@ -80,6 +70,7 @@ public sealed partial class DishVariant : Luban.BeanBase
 
     public  void ResolveRef(Tables tables)
     {
+        HiddenRange?.ResolveRef(tables);
     }
 
     public override string ToString()
@@ -89,11 +80,9 @@ public sealed partial class DishVariant : Luban.BeanBase
         + "baseId:" + BaseId + ","
         + "aTagId:" + ATagId + ","
         + "bTagId:" + BTagId + ","
-        + "hiddenMin:" + HiddenMin + ","
-        + "hiddenMax:" + HiddenMax + ","
         + "baseWeight:" + BaseWeight + ","
         + "price:" + Price + ","
-        + "maxRollCount:" + MaxRollCount + ","
+        + "hiddenRange:" + HiddenRange + ","
         + "inherentTags:" + Luban.StringUtil.CollectionToString(InherentTags) + ","
         + "}";
     }
