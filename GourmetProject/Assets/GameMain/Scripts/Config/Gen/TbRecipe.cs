@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 菜谱：固定菜品+加权放回随机池(pool: list,RecipeEntry)，随机到累计初始分&gt;=requiredInitScore 为止。
+/// 菜谱：固定菜品(fixedDishes 用 | 分隔)+加权放回随机池(pool: list,RecipeEntry)，随机到累计初始分&gt;=requiredInitScore 为止。
 /// </summary>
 public partial class TbRecipe
 {

@@ -8,7 +8,8 @@
 - 单元格内 list 多元素无法用 ##type 的 #sep 语法，必须用「流式多单元格」：把 list 放到行末，
   每个元素占一个单元格向右铺开。因此 dish.shapeRows、recipe.pool 放在各自表的最后一列。
 - bean 在单元格内的字段分隔靠 schema 中 <bean sep=",">（见 RecipeEntry）。
-- 其余 list 字段(inherentTags/startItems/fixedDishes)数据均为 0/1 个元素，单格即可。
+- 其余 list 字段(inherentTags/startItems)数据均为 0/1 个元素，单格即可。
+- recipe.fixedDishes 写成普通字符串，多个菜品用 `|` 分隔，避免与行末 `*pool` 冲突。
 - bool 写 true/false；枚举写名字字符串。
 依赖：openpyxl（pip install openpyxl）。
 """
@@ -126,11 +127,12 @@ def write_dish(ws, rows):
 def write_recipe(ws, rows):
     # pool(list,RecipeEntry) 用多行模式 *pool：每个元素占一行，续行前导列留空。
     # 单元格内靠 schema <bean sep=","> 切出 dishId,weight,maxCount,initScore。
+    ws.title = "recipe"
     ws.append(["##var", "id", "fixedDishes", "requiredInitScore", "*pool"])
-    ws.append(["##type", "string", "list,string", "int", "list,RecipeEntry"])
+    ws.append(["##type", "string", "string", "int", "list,RecipeEntry"])
     for r in rows:
-        fixed = r.get("fixedDishes") or []
-        base = ["", r.get("id", ""), (fixed[0] if fixed else ""), r.get("requiredInitScore", "")]
+        fixed = "|".join(r.get("fixedDishes") or [])
+        base = ["", r.get("id", ""), fixed, r.get("requiredInitScore", "")]
         pool = r.get("pool") or [{}]
         cells = [f"{e.get('dishId', '')},{e.get('weight', '')},{e.get('maxCount', '')},{e.get('initScore', '')}" for e in pool]
         ws.append(base + [cells[0]])

@@ -18,7 +18,7 @@ public sealed partial class Recipe : Luban.BeanBase
     public Recipe(JSONNode _buf) 
     {
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
-        { var __json0 = _buf["fixedDishes"]; if(!__json0.IsArray) { throw new SerializationException(); } FixedDishes = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  FixedDishes.Add(__v0); }   }
+        { if(!_buf["fixedDishes"].IsString) { throw new SerializationException(); }  FixedDishes = _buf["fixedDishes"]; }
         { if(!_buf["requiredInitScore"].IsNumber) { throw new SerializationException(); }  RequiredInitScore = _buf["requiredInitScore"]; }
         { var __json0 = _buf["pool"]; if(!__json0.IsArray) { throw new SerializationException(); } Pool = new System.Collections.Generic.List<RecipeEntry>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { RecipeEntry __v0;  { if(!__e0.IsObject) { throw new SerializationException(); }  __v0 = global::cfg.RecipeEntry.DeserializeRecipeEntry(__e0);  }  Pool.Add(__v0); }   }
     }
@@ -33,9 +33,9 @@ public sealed partial class Recipe : Luban.BeanBase
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 固定初始菜品ID列表
+    /// 固定初始菜品ID列表，多个用 | 分隔
     /// </summary>
-    public readonly System.Collections.Generic.List<string> FixedDishes;
+    public readonly string FixedDishes;
     /// <summary>
     /// 初始要求分
     /// </summary>
@@ -57,7 +57,7 @@ public sealed partial class Recipe : Luban.BeanBase
     {
         return "{ "
         + "id:" + Id + ","
-        + "fixedDishes:" + Luban.StringUtil.CollectionToString(FixedDishes) + ","
+        + "fixedDishes:" + FixedDishes + ","
         + "requiredInitScore:" + RequiredInitScore + ","
         + "pool:" + Luban.StringUtil.CollectionToString(Pool) + ","
         + "}";

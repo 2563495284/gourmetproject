@@ -43,7 +43,7 @@ namespace GourmetProject.Tests
             RecipeDef recipe = db.GetRecipe("recipe_test");
             Assert.NotNull(recipe);
             Assert.AreEqual(15, recipe.RequiredInitScore);
-            CollectionAssert.AreEqual(new[] { "dish_sushi_hot" }, recipe.FixedDishes);
+            CollectionAssert.AreEqual(new[] { "dish_sushi_hot", "dish_sushi_cold" }, recipe.FixedDishes);
             Assert.AreEqual(1, recipe.Pool.Count);
             Assert.AreEqual("dish_sushi_hot", recipe.Pool[0].DishId);
             Assert.AreEqual(3f, recipe.Pool[0].Weight);
@@ -109,6 +109,16 @@ namespace GourmetProject.Tests
     ""price"": 12,
     ""hiddenRange"": { ""min"": 3, ""max"": 9 },
     ""inherentTags"": [""tag_inherent""]
+  },
+  {
+    ""id"": ""dish_sushi_cold"",
+    ""baseId"": ""base_sushi"",
+    ""aTagId"": """",
+    ""bTagId"": """",
+    ""baseWeight"": 1.5,
+    ""price"": 9,
+    ""hiddenRange"": { ""min"": 2, ""max"": 6 },
+    ""inherentTags"": []
   }
 ]";
                 case "tbtag":
@@ -128,7 +138,7 @@ namespace GourmetProject.Tests
                     return @"[
   {
     ""id"": ""recipe_test"",
-    ""fixedDishes"": [""dish_sushi_hot""],
+    ""fixedDishes"": ""dish_sushi_hot|dish_sushi_cold"",
     ""requiredInitScore"": 15,
     ""pool"": [
       { ""dishId"": ""dish_sushi_hot"", ""weight"": 3, ""maxCount"": 2, ""initScore"": 6 }

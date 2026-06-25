@@ -137,7 +137,27 @@ namespace GourmetProject.Game.Adapter
                 pool.Add(new RecipeEntryDef(e.DishId, e.Weight, e.MaxCount, e.InitScore));
             }
 
-            return new RecipeDef(r.Id, new List<string>(r.FixedDishes), pool, r.RequiredInitScore);
+            return new RecipeDef(r.Id, SplitPipeList(r.FixedDishes), pool, r.RequiredInitScore);
+        }
+
+        private static List<string> SplitPipeList(string value)
+        {
+            var result = new List<string>();
+            if (string.IsNullOrEmpty(value))
+            {
+                return result;
+            }
+
+            foreach (string item in value.Split('|'))
+            {
+                string trimmed = item.Trim();
+                if (!string.IsNullOrEmpty(trimmed))
+                {
+                    result.Add(trimmed);
+                }
+            }
+
+            return result;
         }
     }
 }
