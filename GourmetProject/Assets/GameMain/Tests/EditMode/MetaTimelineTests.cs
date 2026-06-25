@@ -1,6 +1,6 @@
 using System.Collections.Generic;
-using GourmetProject.Game.Gameplay;
 using NUnit.Framework;
+using GourmetProject.Game.Meta;
 
 namespace GourmetProject.Tests
 {

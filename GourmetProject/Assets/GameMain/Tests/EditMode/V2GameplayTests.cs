@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using GourmetProject.Core.Rng;
-using GourmetProject.Game.Gameplay;
 using GourmetProject.Gameplay.Data;
 using Luban.SimpleJSON;
 using NUnit.Framework;
+using GourmetProject.Game.Adapter;
+using GourmetProject.Game.Meta;
+using GourmetProject.Game.Run;
 
 namespace GourmetProject.Tests
 {
