@@ -252,7 +252,8 @@ namespace GourmetProject.Game.Orchestration
 
         private void HandleBossNode(cfg.TimelineNode node)
         {
-            IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Boss, $"w{_run.WeekIndex}");
+            // key 含节点唯一 id：同一周若存在多个 Boss 节点，各自独立抽取，避免共用同一条 boss 流按调用顺序续掷。
+            IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Boss, $"w{_run.WeekIndex}_{node.Id}");
             cfg.Boss boss = BossService.RollBoss(_run, rng, node.PayloadParam);
             if (boss == null)
             {

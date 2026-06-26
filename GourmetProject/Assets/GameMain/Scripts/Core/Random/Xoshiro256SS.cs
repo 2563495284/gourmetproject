@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using GourmetProject.Core.Diagnostics;
 
 namespace GourmetProject.Core.Rng
 {
@@ -108,6 +109,15 @@ namespace GourmetProject.Core.Rng
         {
             if (maxExclusive <= minInclusive)
             {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                // 倒置区间多半是配置写错，开发期告警暴露问题；空区间（==）是合法用法，不告警。
+                if (maxExclusive < minInclusive)
+                {
+                    Log.Warning(
+                        $"Range 收到倒置区间 [{minInclusive}, {maxExclusive})，已兜底返回下界 {minInclusive}，请检查配置。",
+                        "Rng");
+                }
+#endif
                 return minInclusive;
             }
 

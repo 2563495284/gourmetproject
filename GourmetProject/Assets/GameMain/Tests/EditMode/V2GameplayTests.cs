@@ -369,6 +369,77 @@ namespace GourmetProject.Tests
             Assert.AreEqual("boss_final", BossService.RollBoss(run, rng, "boss_final")?.Id);
         }
 
+        [Test]
+        public void RunSaveData_RestoresPendingShopStockContent()
+        {
+            GameRun run = NewRun(week: 1);
+            var rng = new RandomService();
+            rng.Init("pending-shop");
+
+            string key = GameRun.BuildShopKey(run.WeekIndex, run.CurrentDay);
+            List<ShopEntry> rolled = ShopService.RollStock(
+                run.Tables,
+                run,
+                rng.DomainStream(SeedDomains.Shop, key),
+                rng.DomainStream(SeedDomains.Loot, $"shop_{key}"));
+            Assert.Greater(rolled.Count, 0, "Precondition: shop should roll a non-empty stock.");
+            run.SetPendingShopStock(key, rolled);
+
+            GameRun restored = GameRun.FromSaveData(run.Tables, run.Database, run.ToSaveData());
+            List<ShopEntry> restoredStock = restored.GetPendingShopStock(key);
+
+            Assert.IsTrue(restored.HasPendingShopStock(key));
+            Assert.AreEqual(rolled.Count, restoredStock.Count);
+            for (int i = 0; i < rolled.Count; i++)
+            {
+                Assert.AreEqual(rolled[i].Kind, restoredStock[i].Kind);
+                Assert.AreEqual(rolled[i].Id, restoredStock[i].Id);
+                Assert.AreEqual(rolled[i].Name, restoredStock[i].Name);
+                Assert.AreEqual(rolled[i].Price, restoredStock[i].Price);
+            }
+        }
+
+        [Test]
+        public void PendingShopStock_ClearedByBeginTimelineNotByActionStep()
+        {
+            GameRun run = NewRun(week: 1);
+            run.BeginTimeline("tl_normal", 7);
+            string key = GameRun.BuildShopKey(run.WeekIndex, run.CurrentDay);
+            run.SetPendingShopStock(key, new List<ShopEntry>
+            {
+                new ShopEntry(ShopEntryKind.Dish, "rice", "米饭", "测试菜品", 10),
+            });
+
+            // 推进行动步只清行动候选，不应影响商店库存：离开商店后同一步内再进仍沿用同一份库存。
+            run.AdvanceActionStep();
+            Assert.IsTrue(run.HasPendingShopStock(key), "Advancing the action step must not refresh shop stock.");
+
+            // 进入下一刷新点（新行动轴）才清空商店库存。
+            run.BeginTimeline("tl_normal", 7);
+            Assert.IsFalse(run.HasPendingShopStock(key), "BeginTimeline is the shop refresh point and should clear pending stock.");
+        }
+
+        [Test]
+        public void BossRoll_PerNodeKeyIsOrderIndependent()
+        {
+            GameRun runForward = NewRun(week: 4, characterId: "glutton_dog");
+            GameRun runReverse = NewRun(week: 4, characterId: "glutton_dog");
+
+            var forward = new RandomService();
+            forward.Init("boss-order");
+            string alphaFirst = BossService.RollBoss(runForward, forward.DomainStream(SeedDomains.Boss, "w4_alpha"))?.Id;
+            string betaSecond = BossService.RollBoss(runForward, forward.DomainStream(SeedDomains.Boss, "w4_beta"))?.Id;
+
+            var reverse = new RandomService();
+            reverse.Init("boss-order");
+            string betaFirst = BossService.RollBoss(runReverse, reverse.DomainStream(SeedDomains.Boss, "w4_beta"))?.Id;
+            string alphaSecond = BossService.RollBoss(runReverse, reverse.DomainStream(SeedDomains.Boss, "w4_alpha"))?.Id;
+
+            // 每个节点的 boss 只由自己的 key 决定，与同周其它 Boss 节点的抽取顺序无关。
+            Assert.AreEqual(alphaFirst, alphaSecond, "Boss for node 'alpha' must not depend on whether node 'beta' rolled first.");
+            Assert.AreEqual(betaFirst, betaSecond, "Boss for node 'beta' must not depend on whether node 'alpha' rolled first.");
+        }
+
         private static GameRun NewRun(int week, string characterId = "glutton_dog", cfg.Tables tables = null)
         {
             tables ??= LoadTables();

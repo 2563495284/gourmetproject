@@ -47,11 +47,18 @@ namespace GourmetProject.Game.UI.Meta
             _leaveButton.onClick.AddListener(OnLeaveClicked);
         }
 
-        /// <summary>玩家点「离开」：关闭商店并通知编排层继续（区别于返回菜单时的强制关闭）。</summary>
+        /// <summary>
+        /// 玩家点「离开」：关闭商店并通知编排层继续（区别于返回菜单时的强制关闭）。
+        /// 不清空 pending 库存：库存按周+天 key 持久化，离开后同日再进沿用同一份库存，
+        /// 避免“反复进出刷新商品”的可刷点。库存在进入下一刷新点（新行动轴 BeginTimeline）时统一清空。
+        /// </summary>
         private void OnLeaveClicked()
         {
-            _run?.ClearPendingShopStock();
-            RunPersistence.Save(_run);
+            if (_run != null)
+            {
+                RunPersistence.Save(_run);
+            }
+
             Close();
         }
 
