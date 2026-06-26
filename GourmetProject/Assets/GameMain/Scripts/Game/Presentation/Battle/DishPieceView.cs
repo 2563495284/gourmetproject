@@ -46,6 +46,17 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private float _landWobbleDuration = 0.18f;
         [SerializeField] private float _landWobbleCycles = 1.5f;
 
+        [Header("上菜落格砰反馈（仅缩放）")]
+        [SerializeField] private float _serveLandImpactScale = 1.2f;
+        [SerializeField] private float _serveLandImpactDuration = 0.14f;
+
+        [Header("结算标签反馈：美味度增加（仅作用于本体视觉枢轴）")]
+        [SerializeField] private float _deliciousnessGainPunchScale = 1.18f;
+        [SerializeField] private float _deliciousnessGainPunchDuration = 0.18f;
+        [SerializeField] private float _deliciousnessGainWobbleDegrees = 5f;
+        [SerializeField] private float _deliciousnessGainWobbleDuration = 0.22f;
+        [SerializeField] private float _deliciousnessGainWobbleCycles = 2f;
+
         private Sprite _sprite;
         private float _cellSize;
         private float _pitch;
@@ -92,17 +103,70 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
+        /// <summary>只缩放菜品本体视觉枢轴，不改变根节点格子锚点、阴影计算和碰撞盒。</summary>
+        public void SetVisualScaleMultiplier(float scale)
+        {
+            EnsureRefs();
+            Transform target = VisualAnimationTarget();
+            if (target != null)
+            {
+                float safeScale = Mathf.Max(0.0001f, scale);
+                target.localScale = new Vector3(safeScale, safeScale, 1f);
+            }
+        }
+
+        /// <summary>指定视觉缩放下，食品实际渲染中心相对根节点（原点格锚点）的偏移。</summary>
+        public Vector3 VisualCenterOffsetForScale(float scale)
+        {
+            EnsureRefs();
+
+            Transform target = VisualAnimationTarget();
+            if (target == null || _spriteRenderer == null || _spriteRenderer.sprite == null)
+            {
+                return CurrentShape != null ? FootprintCenterLocal(CurrentShape) : Vector3.zero;
+            }
+
+            float safeScale = Mathf.Max(0.0001f, scale);
+            Vector3 savedScale = target.localScale;
+
+            target.localScale = new Vector3(safeScale, safeScale, 1f);
+            Vector3 offset = transform.InverseTransformPoint(_spriteRenderer.bounds.center);
+            target.localScale = savedScale;
+
+            return offset;
+        }
+
         public IEnumerator PlayLandFeedback()
         {
             EnsureRefs();
-            Transform target = _visualPivot != null ? _visualPivot : (_spriteRenderer != null ? _spriteRenderer.transform : transform);
             yield return PresentationTween.PunchScaleAndWobble(
-                target,
+                VisualAnimationTarget(),
                 _landPunchScale,
                 _landPunchDuration,
                 _landWobbleDegrees,
                 _landWobbleCycles,
                 _landWobbleDuration);
+        }
+
+        public IEnumerator PlayServeLandImpactFeedback()
+        {
+            EnsureRefs();
+            yield return PresentationTween.PunchLocalScale(
+                VisualAnimationTarget(),
+                _serveLandImpactScale,
+                _serveLandImpactDuration);
+        }
+
+        public IEnumerator PlayDeliciousnessGainFeedback()
+        {
+            EnsureRefs();
+            yield return PresentationTween.PunchScaleAndWobble(
+                VisualAnimationTarget(),
+                _deliciousnessGainPunchScale,
+                _deliciousnessGainPunchDuration,
+                _deliciousnessGainWobbleDegrees,
+                _deliciousnessGainWobbleCycles,
+                _deliciousnessGainWobbleDuration);
         }
 
         private void RebuildCells(DishShape shape)
@@ -312,6 +376,11 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _spriteRenderer.transform.SetParent(_visualPivot, false);
+        }
+
+        private Transform VisualAnimationTarget()
+        {
+            return _visualPivot != null ? _visualPivot : (_spriteRenderer != null ? _spriteRenderer.transform : transform);
         }
 
         private void Update()

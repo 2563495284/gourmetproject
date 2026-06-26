@@ -23,7 +23,7 @@ namespace GourmetProject.Game.Presentation.Battle
         /// <summary>场景内按钮与分数/提示文字等世界 UI。</summary>
         public const string WorldUi = "WorldUI";
 
-        /// <summary>结算演出特效：邻接连线、飘字、光脉冲等。</summary>
+        /// <summary>结算演出特效：飘字、光脉冲等。</summary>
         public const string Fx = "Fx";
 
         /// <summary>上菜飞行中的菜品，临时压在所有静态层之上。</summary>
@@ -37,7 +37,7 @@ namespace GourmetProject.Game.Presentation.Battle
         public const int OrderBody = 10;
         public const int OrderButtonBg = 0;
         public const int OrderButtonLabel = 1;
-        public const int OrderLink = 0;
+        public const int OrderScoreFire = 5;
         public const int OrderFloatingText = 10;
 
         /// <summary>把任意 Renderer（Sprite/Mesh/Line 等）归入指定 Sorting Layer 与层内 order。</summary>
