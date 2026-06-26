@@ -122,6 +122,33 @@ namespace GourmetProject.Gameplay.Board
         /// <summary>该格是否属于胃（在界内且被标记为存在）。</summary>
         public bool Exists(GridPos p) => InBounds(p) && _exists[Index(p)];
 
+        /// <summary>
+        /// 求所有「存在格」的最小包围盒（闭区间），用于把不规则/偏置的胃整体居中显示。
+        /// 没有任何存在格时返回 false。
+        /// </summary>
+        public bool TryGetExistingBounds(out int minX, out int minY, out int maxX, out int maxY)
+        {
+            minX = minY = int.MaxValue;
+            maxX = maxY = int.MinValue;
+            for (int y = 0; y < Height; y++)
+            {
+                for (int x = 0; x < Width; x++)
+                {
+                    if (!_exists[y * Width + x])
+                    {
+                        continue;
+                    }
+
+                    if (x < minX) minX = x;
+                    if (x > maxX) maxX = x;
+                    if (y < minY) minY = y;
+                    if (y > maxY) maxY = y;
+                }
+            }
+
+            return maxX >= minX;
+        }
+
         /// <summary>该格是否存在且未被占用。</summary>
         public bool IsEmpty(GridPos p) => Exists(p) && _cells[Index(p)] == Empty;
 

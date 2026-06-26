@@ -247,6 +247,13 @@ MonoBehaviour:
   _landWobbleDegrees: 4
   _landWobbleDuration: 0.18
   _landWobbleCycles: 1.5
+  _serveLandImpactScale: 1.02
+  _serveLandImpactDuration: 0.14
+  _deliciousnessGainPunchScale: 1.18
+  _deliciousnessGainPunchDuration: 0.18
+  _deliciousnessGainWobbleDegrees: 5
+  _deliciousnessGainWobbleDuration: 0.22
+  _deliciousnessGainWobbleCycles: 2
 --- !u!61 &8981609610198139404
 BoxCollider2D:
   m_ObjectHideFlags: 0

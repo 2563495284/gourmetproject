@@ -418,10 +418,30 @@ namespace GourmetProject.Game.Presentation.Battle
             float availW = Mathf.Max(1f, boardRight - boardLeft);
             float availH = Mathf.Max(1f, boardTop - boardBottom);
 
-            int w = Mathf.Max(1, board.Width);
-            int h = Mathf.Max(1, board.Height);
-            _cellSize = Mathf.Clamp(Mathf.Min(availW / w, availH / h), MinCellSize, MaxCellSize);
-            _boardCenter = new Vector3((boardLeft + boardRight) * 0.5f, (boardTop + boardBottom) * 0.5f, 0f);
+            // 只按「实际存在的格子」(胃) 求包围盒：8×8 只是最大容量，真正可见的胃可能更小且偏置。
+            // 用胃的包围盒来定格子尺寸与居中，保证不论胃多大、落在 8×8 哪个角，都铺满可用区且居中。
+            if (!board.TryGetExistingBounds(out int minX, out int minY, out int maxX, out int maxY))
+            {
+                minX = minY = 0;
+                maxX = board.Width - 1;
+                maxY = board.Height - 1;
+            }
+
+            int boxW = Mathf.Max(1, maxX - minX + 1);
+            int boxH = Mathf.Max(1, maxY - minY + 1);
+            _cellSize = Mathf.Clamp(Mathf.Min(availW / boxW, availH / boxH), MinCellSize, MaxCellSize);
+
+            // mapper 仍按完整 Width×Height 排布；这里反推 Center，使胃包围盒的几何中心落在可用区中心。
+            Vector3 areaCenter = new Vector3((boardLeft + boardRight) * 0.5f, (boardTop + boardBottom) * 0.5f, 0f);
+            float pitch = _cellSize + Gap;
+            float fullWorldWidth = board.Width * _cellSize + Mathf.Max(0, board.Width - 1) * Gap;
+            float fullWorldHeight = board.Height * _cellSize + Mathf.Max(0, board.Height - 1) * Gap;
+            float boxCenterIndexX = (minX + maxX) * 0.5f;
+            float boxCenterIndexY = (minY + maxY) * 0.5f;
+            _boardCenter = new Vector3(
+                areaCenter.x + fullWorldWidth * 0.5f - boxCenterIndexX * pitch - _cellSize * 0.5f,
+                areaCenter.y - fullWorldHeight * 0.5f + boxCenterIndexY * pitch + _cellSize * 0.5f,
+                0f);
 
             _boardView.Build(board, _cellSize, Gap, _boardCenter, OnCellClicked, _boardCellPrefab);
         }

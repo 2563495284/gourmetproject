@@ -47,7 +47,7 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private float _landWobbleCycles = 1.5f;
 
         [Header("上菜落格砰反馈（仅缩放）")]
-        [SerializeField] private float _serveLandImpactScale = 1.2f;
+        [SerializeField] private float _serveLandImpactScale = 1.02f;
         [SerializeField] private float _serveLandImpactDuration = 0.14f;
 
         [Header("结算标签反馈：美味度增加（仅作用于本体视觉枢轴）")]

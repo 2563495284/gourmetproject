@@ -16,8 +16,8 @@ namespace GourmetProject.Game.Presentation.Battle
     /// </summary>
     public sealed class SettlementSequencer : MonoBehaviour
     {
-        private static readonly Color GainColor = new Color(1f, 0.92f, 0.5f, 1f);
-        private static readonly Color FinalColor = new Color(0.6f, 0.95f, 1f, 1f);
+        private static readonly Color GainColor = Color.red;
+        private static readonly Color FinalColor = Color.red;
 
         private const float PerDishInterval = 0.32f;
         private const float ScoreTweenStep = 0.28f;
