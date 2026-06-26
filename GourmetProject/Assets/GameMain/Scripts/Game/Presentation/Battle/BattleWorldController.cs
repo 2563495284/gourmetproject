@@ -289,7 +289,7 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 piece.transform.position = target;
                 piece.SetLift(0f);
-                yield return PresentationTween.PunchScale(piece.transform, 1.12f, 0.16f);
+                yield return piece.PlayLandFeedback();
                 // 落定后切回 Pieces 层，回到与其它棋盘食品一致的渲染顺序。
                 piece.SetFlying(false);
             }

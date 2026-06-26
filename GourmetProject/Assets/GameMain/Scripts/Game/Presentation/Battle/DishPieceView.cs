@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Model;
@@ -30,10 +31,20 @@ namespace GourmetProject.Game.Presentation.Battle
         [Header("固定结构（prefab 预拼，运行时引用）")]
         [Tooltip("菜品本体渲染体（子物体 Sprite 上的 SpriteRenderer）。")]
         [SerializeField] private SpriteRenderer _spriteRenderer;
+        [Tooltip("菜品本体动画枢轴（子物体 VisualPivot）。多格菜的缩放/晃动绕这里执行，根节点保持贴格。")]
+        [SerializeField] private Transform _visualPivot;
         [Tooltip("脚下接触阴影（子物体 Shadow 上的 SpriteRenderer）。")]
         [SerializeField] private SpriteRenderer _shadowRenderer;
         [Tooltip("点击命中碰撞盒（prefab 根节点上的 BoxCollider2D）。")]
         [SerializeField] private BoxCollider2D _collider;
+
+        [Header("落定反馈（仅作用于本体视觉枢轴，不影响格子锚点/碰撞盒）")]
+        [SerializeField] private bool _useOccupiedCentroidPivot = true;
+        [SerializeField] private float _landPunchScale = 1.12f;
+        [SerializeField] private float _landPunchDuration = 0.16f;
+        [SerializeField] private float _landWobbleDegrees = 4f;
+        [SerializeField] private float _landWobbleDuration = 0.18f;
+        [SerializeField] private float _landWobbleCycles = 1.5f;
 
         private Sprite _sprite;
         private float _cellSize;
@@ -81,6 +92,19 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
+        public IEnumerator PlayLandFeedback()
+        {
+            EnsureRefs();
+            Transform target = _visualPivot != null ? _visualPivot : (_spriteRenderer != null ? _spriteRenderer.transform : transform);
+            yield return PresentationTween.PunchScaleAndWobble(
+                target,
+                _landPunchScale,
+                _landPunchDuration,
+                _landWobbleDegrees,
+                _landWobbleCycles,
+                _landWobbleDuration);
+        }
+
         private void RebuildCells(DishShape shape)
         {
             EnsureRefs();
@@ -125,11 +149,15 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void ConfigureFootprintSprite(DishShape shape)
         {
+            Transform pivot = _visualPivot != null ? _visualPivot : transform;
+            Vector3 footprintCenter = FootprintCenterLocal(shape);
+            Vector3 visualCenter = VisualPivotLocal(shape);
+            pivot.localPosition = visualCenter;
+            pivot.localRotation = Quaternion.identity;
+            pivot.localScale = Vector3.one;
+
             Transform t = _spriteRenderer.transform;
-            t.localPosition = new Vector3(
-                (shape.Width - 1) * _pitch * 0.5f,
-                -(shape.Height - 1) * _pitch * 0.5f,
-                0f);
+            t.localPosition = footprintCenter - visualCenter;
 
             _spriteRenderer.sprite = _sprite;
             BattleSorting.Apply(_spriteRenderer, BattleSorting.Pieces, BattleSorting.OrderBody);
@@ -152,6 +180,35 @@ namespace GourmetProject.Game.Presentation.Battle
             t.localScale = new Vector3(scaleX, scaleY, 1f);
             // DishShape.Rotate90 为顺时针；Unity +Z 为逆时针，故顺时针旋转取负角。
             t.localRotation = Quaternion.Euler(0f, 0f, -90f * rot);
+        }
+
+        private Vector3 FootprintCenterLocal(DishShape shape)
+        {
+            if (shape == null)
+            {
+                return Vector3.zero;
+            }
+
+            return new Vector3(
+                (shape.Width - 1) * _pitch * 0.5f,
+                -(shape.Height - 1) * _pitch * 0.5f,
+                0f);
+        }
+
+        private Vector3 VisualPivotLocal(DishShape shape)
+        {
+            if (!_useOccupiedCentroidPivot || shape == null || shape.CellCount == 0)
+            {
+                return FootprintCenterLocal(shape);
+            }
+
+            Vector3 sum = Vector3.zero;
+            foreach (GridPos cell in shape.Cells)
+            {
+                sum += new Vector3(cell.X * _pitch, -cell.Y * _pitch, 0f);
+            }
+
+            return sum / shape.CellCount;
         }
 
         /// <summary>设置悬浮高度：0=贴桌，1=举高（飞行中）。阴影随高度变远、变大、变淡，模拟接触投影的高度感。</summary>
@@ -191,8 +248,17 @@ namespace GourmetProject.Game.Presentation.Battle
                 }
             }
 
+            _visualPivot = ResolveChildTransform(_visualPivot, "VisualPivot");
+            if (_visualPivot == null)
+            {
+                var pivot = new GameObject("VisualPivot");
+                pivot.transform.SetParent(transform, false);
+                _visualPivot = pivot.transform;
+            }
+
             _shadowRenderer = ResolveChildRenderer(_shadowRenderer, "Shadow");
             _spriteRenderer = ResolveChildRenderer(_spriteRenderer, "Sprite");
+            EnsureSpriteUnderVisualPivot();
         }
 
         private SpriteRenderer ResolveChildRenderer(SpriteRenderer current, string childName)
@@ -202,7 +268,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return current;
             }
 
-            Transform t = transform.Find(childName);
+            Transform t = ResolveChildTransform(null, childName);
             if (t == null)
             {
                 var go = new GameObject(childName);
@@ -212,6 +278,40 @@ namespace GourmetProject.Game.Presentation.Battle
 
             SpriteRenderer renderer = t.GetComponent<SpriteRenderer>();
             return renderer != null ? renderer : t.gameObject.AddComponent<SpriteRenderer>();
+        }
+
+        private Transform ResolveChildTransform(Transform current, string childName)
+        {
+            if (current != null)
+            {
+                return current;
+            }
+
+            Transform direct = transform.Find(childName);
+            if (direct != null)
+            {
+                return direct;
+            }
+
+            foreach (Transform child in GetComponentsInChildren<Transform>(true))
+            {
+                if (child != transform && child.name == childName)
+                {
+                    return child;
+                }
+            }
+
+            return null;
+        }
+
+        private void EnsureSpriteUnderVisualPivot()
+        {
+            if (_visualPivot == null || _spriteRenderer == null || _spriteRenderer.transform.parent == _visualPivot)
+            {
+                return;
+            }
+
+            _spriteRenderer.transform.SetParent(_visualPivot, false);
         }
 
         private void Update()
