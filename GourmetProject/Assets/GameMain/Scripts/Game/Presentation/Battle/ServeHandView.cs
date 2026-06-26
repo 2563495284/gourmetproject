@@ -7,7 +7,7 @@ namespace GourmetProject.Game.Presentation.Battle
     /// <summary>
     /// 上菜「商人手」：一只摊开的狗爪，掌垫托着菜品从屏幕上方降到目标格上方，再抽走让菜品落下。
     /// 固定结构（爪 sprite + 假阴影 + 手臂延伸条）摆在 prefab 里，脚本只在运行时布局/驱动（见 presentation-prefab 规则）。
-    /// 阴影一律走假阴影软暗斑（见 battle-fake-shadow 规则），不依赖 Light2D。
+    /// 爪与手臂走 Lit 受光（真实 URP 2D Light2D 明暗）；阴影仍走假阴影软暗斑（见 battle-fake-shadow 规则）。
     /// 手只做平移、不旋转：掌心锚点 = 根坐标 + 固定世界偏移，菜品贴在掌心、抽手时菜品独立落下。
     /// 手臂用程序条（取爪图顶行像素竖直无缝延伸到屏幕外）补齐，保证爪子降到任意低处都不会露出手臂尽头。
     /// </summary>
@@ -83,9 +83,9 @@ namespace GourmetProject.Game.Presentation.Battle
             _pawWidth = bounds.x * _handScale;
             _hand.transform.localScale = new Vector3(_handScale, _handScale, 1f);
 
-            SpriteRenderStyle.ApplyUnlitMaterial(_hand);
-            // 飞行覆盖层：压在棋盘所有静态层之上；order 低于菜品本体(OrderBody=10)，让掌心托的菜显示在手之上。
-            BattleSorting.Apply(_hand, BattleSorting.PiecesFlying, 5);
+        SpriteRenderStyle.ApplyLitMaterial(_hand);
+        // 飞行覆盖层：压在棋盘所有静态层之上；order 低于菜品本体(OrderBody=10)，让掌心托的菜显示在手之上。
+        BattleSorting.Apply(_hand, BattleSorting.PiecesFlying, 5);
         }
 
         /// <summary>从爪图顶行像素生成一条竖直手臂 sprite（pivot 底边中心），用于无缝延伸到屏幕外。</summary>
@@ -104,7 +104,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _arm.transform.localRotation = Quaternion.identity;
-            SpriteRenderStyle.ApplyUnlitMaterial(_arm);
+            SpriteRenderStyle.ApplyLitMaterial(_arm);
             // 手臂在爪之下（order 更低），接缝被爪盖住；同 PiecesFlying 层。
             BattleSorting.Apply(_arm, BattleSorting.PiecesFlying, 3);
         }

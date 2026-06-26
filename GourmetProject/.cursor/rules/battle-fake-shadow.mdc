@@ -1,35 +1,43 @@
 ---
-description: 战斗表现层的阴影与受光约定（用假阴影，不用 2D 光照实现阴影）
+description: 战斗表现层的阴影与受光约定（受光走真实 Light2D，阴影用假阴影）
 globs: Assets/GameMain/Scripts/Game/Gameplay/Presentation/**/*.cs
 alwaysApply: false
 ---
 
 # 战斗阴影 / 受光约定
 
-阴影一律用「假阴影」（drop shadow），**禁止**用 URP 2D 光照（`Light2D` + `ShadowCaster2D`）实现真实投影。这是经过对比后定下的方向，不要回退。
+阴影一律用「假阴影」（drop shadow），**禁止**用 `ShadowCaster2D` 实现真实投影。这是经过对比后定下的方向，不要回退。**受光**则相反：菜品与上菜手走真实 URP 2D `Light2D`（见下「受光」一节）。
 
 ## 为什么
 
-- 玩法是俯视格子摆盘 + 固定视角，真实 2D 阴影的卖点（动态方向）用不上。
+- 玩法是俯视格子摆盘 + 固定视角，真实 2D 投影阴影的卖点（动态方向）用不上。
 - 背包乱斗式「悬浮举高 / 落定贴桌」的高度感只能靠假阴影的偏移/缩放/透明度表现，`ShadowCaster2D` 做不出高度。
-- 真实阴影要为异形 footprint 生成轮廓、密集摆放互相投影显脏，性价比低。
+- 真实投影要为异形 footprint 生成轮廓、密集摆放互相投影显脏，性价比低。
+- 注意：这里反对的只是「用光照算**投影阴影**」；用 `Light2D` 给 sprite **受光出明暗**没有这些问题，见下。
 
 ## 实现方式（现状，照此维护）
 
 - 阴影 = 程序生成的径向羽化软暗斑（`DishPieceView.CreateContactShadow` / `SoftShadowSprite`），缩放铺在菜品脚下，不依赖菜品图的透明留白。
 - 高度感用 `SetLift(0..1)` 调暗斑的偏移/大小/透明度，飞行举高、落定贴桌。
 
-## 受光：全程 Unlit 平涂
+## 受光：菜品 / 手走真实 Light2D，其余 Unlit 平涂
 
-战斗 sprite 一律走 `SpriteRenderStyle.ApplyUnlitMaterial`（`Sprite-Unlit-Default`），画面靠原色 + URP 2D 卡通后处理出味。
+- **菜品本体（`DishPieceView`）与上菜手（`ServeHandView` 的爪 + 手臂）**走 `SpriteRenderStyle.ApplyLitMaterial`（`Sprite-Lit-Default`），接受真实 URP 2D `Light2D` 受光，出明暗 / 高光立体感。
+- **棋盘、背景、世界 UI、飘字、涂鸦，以及假阴影本身**仍走 `SpriteRenderStyle.ApplyUnlitMaterial`（`Sprite-Unlit-Default`）平涂，不受光。假阴影是纯暗斑，绝不能改 Lit。
 
 ```csharp
-// BAD：套 Lit 材质又依赖 Light2D 受光 —— 删灯/分层就全黑，且与「灯目标排序层」强耦合
-renderer.sharedMaterial = SpriteLitMaterial; // Sprite-Lit-Default
+// GOOD：菜品 / 手受光
+SpriteRenderStyle.ApplyLitMaterial(dishRenderer);
 
-// GOOD：Unlit 平涂，不依赖任何 Light2D
-SpriteRenderStyle.ApplyUnlitMaterial(renderer);
+// GOOD：棋盘 / 背景 / 假阴影平涂
+SpriteRenderStyle.ApplyUnlitMaterial(boardRenderer);
 ```
 
-- 不要为了「阴影 / 立体感」往战斗场景加 `Light2D`。`Light2D` 默认只照亮其 `targetSortingLayers`（场景预置灯常年只认 `Default`），一旦 sprite 分到命名层就会失光变黑。
-- 渲染前后顺序用命名 Sorting Layer（见 `BattleSorting`），不要堆裸 `sortingOrder` magic number。
+### 关键坑：灯的 Target Sorting Layers 必须覆盖受光层
+
+`Light2D` 默认只照亮 `Default` 排序层。Lit 的菜品 / 手在 `Pieces` / `PiecesFlying` 层（见 `BattleSorting`），**灯的 Target Sorting Layers 必须显式包含这两层，否则 Lit sprite 会全黑**。
+
+- 场景 `Battle.unity` 预置两盏灯：`GlobalLight2D`（Global，基础可见度）+ `KeyLight2D`（Point，棋盘上方偏上的暖色主光，制造上下明暗渐变）。两盏灯 Target Sorting Layers 都勾 `Pieces` + `PiecesFlying`。
+- 改排序层 / 新增受光表现单元时，记得同步灯的 Target Sorting Layers。
+- 渲染前后顺序仍用命名 Sorting Layer（见 `BattleSorting`），不要堆裸 `sortingOrder` magic number。
+- 平面 sprite 无法线贴图时，`Light2D` 只产生「位置渐变亮度」而非真凹凸；想要更强体积感可后续为关键 sprite 配 Secondary Normal Map。
