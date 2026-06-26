@@ -11,6 +11,9 @@ namespace GourmetProject.Core.Rng
     /// </summary>
     public sealed class RandomService
     {
+        /// <summary>域流缓存键里「域名」与「实例 key」之间的分隔符，取不可见控制字符避免与普通流名冲突。</summary>
+        private const char DomainKeySeparator = '\u0001';
+
         private readonly Dictionary<string, Xoshiro256SS> _streams = new Dictionary<string, Xoshiro256SS>(StringComparer.Ordinal);
 
         /// <summary>原始种子文本（仅用于展示/分享）。</summary>
@@ -66,6 +69,49 @@ namespace GourmetProject.Core.Rng
             return stream;
         }
 
+        /// <summary>
+        /// 取「系统域」内的实例流：主种子 --域名--> 域种子 --实例 key--> 实例流，两段派生。
+        /// 相比把域名与实例信息拼成单个流名，两段派生让域之间的隔离更强、命名更规范。
+        /// domain 取 <see cref="SeedDomains"/> 常量，instanceKey 用上下文（如 $"w{Week}_d{Day}"）。
+        /// </summary>
+        public IRandomStream DomainStream(string domain, string instanceKey)
+        {
+            if (!IsInitialized)
+            {
+                throw new InvalidOperationException("RandomService.Init must be called before accessing streams.");
+            }
+
+            if (string.IsNullOrEmpty(domain))
+            {
+                throw new ArgumentException("Domain must not be empty.", nameof(domain));
+            }
+
+            if (string.IsNullOrEmpty(instanceKey))
+            {
+                throw new ArgumentException("Instance key must not be empty.", nameof(instanceKey));
+            }
+
+            string cacheKey = domain + DomainKeySeparator + instanceKey;
+            if (!_streams.TryGetValue(cacheKey, out Xoshiro256SS stream))
+            {
+                ulong domainSeed = DeriveStreamSeed(MasterSeed, domain);
+                ulong instanceSeed = DeriveStreamSeed(domainSeed, instanceKey);
+                stream = new Xoshiro256SS(instanceSeed);
+                _streams.Add(cacheKey, stream);
+            }
+
+            return stream;
+        }
+
+        /// <summary>
+        /// 取表现域（<see cref="SeedDomains.Cosmetic"/>）实例流。表现层随机专用，
+        /// 不参与玩法复现、不入存档（见 <see cref="Capture"/>）。
+        /// </summary>
+        public IRandomStream Cosmetic(string instanceKey)
+        {
+            return DomainStream(SeedDomains.Cosmetic, instanceKey);
+        }
+
         /// <summary>按权重从候选中取一个元素。</summary>
         public T WeightedPick<T>(string streamName, IReadOnlyList<T> items, IReadOnlyList<float> weights)
         {
@@ -78,7 +124,7 @@ namespace GourmetProject.Core.Rng
             return items[index];
         }
 
-        /// <summary>捕获当前所有流状态，用于写入存档。</summary>
+        /// <summary>捕获当前所有玩法流状态，用于写入存档；表现域（cosmetic）刻意排除，避免污染玩法复现。</summary>
         public RandomSnapshot Capture()
         {
             var snapshot = new RandomSnapshot
@@ -88,8 +134,14 @@ namespace GourmetProject.Core.Rng
                 Streams = new Dictionary<string, RngState>(_streams.Count, StringComparer.Ordinal),
             };
 
+            string cosmeticPrefix = SeedDomains.Cosmetic + DomainKeySeparator;
             foreach (KeyValuePair<string, Xoshiro256SS> pair in _streams)
             {
+                if (pair.Key.StartsWith(cosmeticPrefix, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
                 snapshot.Streams[pair.Key] = pair.Value.State;
             }
 

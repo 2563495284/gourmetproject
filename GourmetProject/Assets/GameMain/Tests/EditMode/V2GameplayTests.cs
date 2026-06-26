@@ -230,7 +230,7 @@ namespace GourmetProject.Tests
             run.Gold = 100;
             var rng = new MaxWeightRandomStream();
 
-            List<ShopEntry> stock = ShopService.RollStock(run.Tables, run, rng);
+            List<ShopEntry> stock = ShopService.RollStock(run.Tables, run, rng, new MaxWeightRandomStream());
 
             ShopEntry active = stock.Find(entry => entry.Kind == ShopEntryKind.ActiveItem);
             Assert.NotNull(active, "Shop stock should include active items from the action-design shop pool.");
@@ -296,6 +296,65 @@ namespace GourmetProject.Tests
             Assert.AreEqual("act_food_hard_passive", restored.LastActionContext?.Action?.Id);
             Assert.AreEqual(4, restored.LastActionContext?.StepIndex);
             Assert.AreEqual(5, restored.ActionStepIndex);
+        }
+
+        [Test]
+        public void RunSaveData_RestoresPendingActionChoices()
+        {
+            GameRun run = NewRun(week: 1);
+            run.BeginTimeline("tl_normal", 7);
+            var rng = new RandomService();
+            rng.Init("pending-action");
+
+            string key = GameRun.BuildActionChoiceKey(run.RunActionStepIndex, run.WeekIndex, run.CurrentDay, run.ActionStepIndex);
+            List<ActionChoice> choices = ActionScheduleService.GenerateChoices(run, rng.Stream("choices"));
+            run.SetPendingActionChoices(key, choices);
+
+            GameRun restored = GameRun.FromSaveData(run.Tables, run.Database, run.ToSaveData());
+            List<ActionChoice> restoredChoices = restored.GetPendingActionChoices(key);
+
+            Assert.IsTrue(restored.HasPendingActionChoices(key));
+            Assert.AreEqual(choices.Count, restoredChoices.Count);
+            for (int i = 0; i < choices.Count; i++)
+            {
+                Assert.AreEqual(choices[i].Action.Id, restoredChoices[i].Action.Id);
+                Assert.AreEqual(choices[i].ActionGroupId, restoredChoices[i].ActionGroupId);
+                Assert.AreEqual(choices[i].CostDays, restoredChoices[i].CostDays);
+            }
+        }
+
+        [Test]
+        public void RunSaveData_RestoresEmptyPendingShopStock()
+        {
+            GameRun run = NewRun(week: 1);
+            string key = GameRun.BuildShopKey(run.WeekIndex, run.CurrentDay);
+            run.SetPendingShopStock(key, new List<ShopEntry>());
+
+            GameRun restored = GameRun.FromSaveData(run.Tables, run.Database, run.ToSaveData());
+
+            Assert.IsTrue(restored.HasPendingShopStock(key));
+            Assert.AreEqual(0, restored.GetPendingShopStock(key).Count);
+        }
+
+        [Test]
+        public void RunSaveData_RestoresPendingRewardOffer()
+        {
+            GameRun run = NewRun(week: 1);
+            string key = GameRun.BuildRewardKey(run.WeekIndex, run.CurrentDay, null);
+            var offer = new RewardOffer(
+                25,
+                new[] { new RewardChoice(cfg.RewardKind.DishChoice, "rice", "米饭", "加入菜谱池") },
+                new[] { RewardChoice.Gold(8, "额外金币") });
+
+            run.SetPendingRewardOffer(key, offer);
+
+            GameRun restored = GameRun.FromSaveData(run.Tables, run.Database, run.ToSaveData());
+            RewardOffer restoredOffer = restored.GetPendingRewardOffer(key);
+
+            Assert.NotNull(restoredOffer);
+            Assert.AreEqual(25, restoredOffer.BaseGold);
+            Assert.AreEqual("rice", restoredOffer.MainChoices[0].Id);
+            Assert.AreEqual(8, restoredOffer.ExtraChoices[0].GoldAmount);
         }
 
         [Test]

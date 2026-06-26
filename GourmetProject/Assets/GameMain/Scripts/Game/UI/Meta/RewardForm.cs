@@ -64,10 +64,18 @@ namespace GourmetProject.Game.UI.Meta
             BattleSession session = BattleForm.Active?.Session;
             int total = session != null && session.IsSettled ? session.LastResult.Total : 0;
             int target = session?.RequiredScore ?? _run.RequiredScore;
+            ActionExecutionContext actionContext = BattleForm.Active?.CurrentBattleActionContext;
+            string rewardKey = GameRun.BuildRewardKey(_run.WeekIndex, _run.CurrentDay, actionContext);
 
-            // 一周内可能多次发奖（多场美食/Boss），按周+天派生独立随机流避免重复同一份奖励。
-            IRandomStream rng = GameApp.Random.Stream($"reward_w{_run.WeekIndex}_d{_run.CurrentDay}");
-            _offer = RewardGranter.GenerateOffer(_run, _run.CurrentWeek, rng, BattleForm.Active?.CurrentBattleActionContext);
+            _offer = _run.GetPendingRewardOffer(rewardKey);
+            if (_offer == null)
+            {
+                IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Reward, rewardKey);
+                _offer = RewardGranter.GenerateOffer(_run, _run.CurrentWeek, rng, actionContext);
+                _run.SetPendingRewardOffer(rewardKey, _offer);
+                RunPersistence.Save(_run);
+            }
+
             _selectedMain = FirstOrDefault(_offer.MainChoices);
             _selectedExtra = FirstOrDefault(_offer.ExtraChoices);
             _rewardApplied = false;
@@ -128,6 +136,8 @@ namespace GourmetProject.Game.UI.Meta
             _selectedMain ??= FirstOrDefault(_offer.MainChoices);
             _selectedExtra ??= FirstOrDefault(_offer.ExtraChoices);
             _appliedRewardText = RewardGranter.Apply(_run, _offer, _selectedMain, _selectedExtra);
+            _run.ClearPendingRewardOffer();
+            RunPersistence.Save(_run);
             _rewardApplied = true;
             RefreshOffer();
         }

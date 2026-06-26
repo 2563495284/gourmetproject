@@ -29,7 +29,9 @@ namespace GourmetProject.Game.Run
                 return;
             }
 
-            GameApp.Save.Save(UIForms.GameSaveSlot, run.ToSaveData());
+            RunSaveData data = run.ToSaveData();
+            data.RandomSnapshot = GameApp.Random.Capture();
+            GameApp.Save.Save(UIForms.GameSaveSlot, data);
             Log.Info($"Run saved. week={run.WeekIndex}, gold={run.Gold}.", Tag);
         }
 
@@ -48,7 +50,15 @@ namespace GourmetProject.Game.Run
 
             cfg.Tables tables = GameApp.Config.Tables;
             GameplayDatabase db = GameplayContentBuilder.BuildDatabase(tables);
-            GameApp.Random.Init(data.SeedText);
+            if (data.RandomSnapshot != null)
+            {
+                GameApp.Random.Restore(data.RandomSnapshot);
+            }
+            else
+            {
+                GameApp.Random.Init(data.SeedText);
+            }
+
             GameRun run = GameRun.FromSaveData(tables, db, data);
             Log.Info($"Run loaded. character={run.CharacterId}, week={run.WeekIndex}.", Tag);
             return run;

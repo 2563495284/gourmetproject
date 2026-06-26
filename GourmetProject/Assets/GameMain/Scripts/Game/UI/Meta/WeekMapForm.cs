@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Text;
+using GourmetProject.Core.Rng;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Flow;
 using GourmetProject.Game.Meta;
@@ -99,8 +100,17 @@ namespace GourmetProject.Game.UI.Meta
                 return new List<ActionChoice>();
             }
 
-            var rng = GameApp.Random.Stream($"action_choices_r{run.RunActionStepIndex}_w{run.WeekIndex}_d{run.CurrentDay}_s{run.ActionStepIndex}");
-            return ActionScheduleService.GenerateChoices(run, rng);
+            string key = GameRun.BuildActionChoiceKey(run.RunActionStepIndex, run.WeekIndex, run.CurrentDay, run.ActionStepIndex);
+            if (run.HasPendingActionChoices(key))
+            {
+                return run.GetPendingActionChoices(key);
+            }
+
+            var rng = GameApp.Random.DomainStream(SeedDomains.Action, key);
+            List<ActionChoice> choices = ActionScheduleService.GenerateChoices(run, rng);
+            run.SetPendingActionChoices(key, choices);
+            RunPersistence.Save(run);
+            return choices;
         }
 
         /// <summary>在标题下方动态生成行动轴进度文本（已过/当前/未来天 + 节点标注）。</summary>
@@ -193,6 +203,7 @@ namespace GourmetProject.Game.UI.Meta
 
         private void Choose(ActionChoice choice)
         {
+            GameRunContext.Current?.ClearPendingActionChoices();
             Close();
             BattleForm.Active?.OnActionPicked(choice);
         }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using GourmetProject.Core.Rng;
 using GourmetProject.Game.Meta;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
@@ -26,7 +27,7 @@ namespace GourmetProject.Game.Run
             var slots = new List<RecipeSlot>(GameRun.RecipeSlotCount);
             if (recipe != null)
             {
-                var recipeStream = GameApp.Random.Stream($"recipe_{key}");
+                var recipeStream = GameApp.Random.DomainStream(SeedDomains.Recipe, key);
                 for (int i = 0; i < GameRun.RecipeSlotCount; i++)
                 {
                     List<string> deck = RecipeRoller.Roll(recipe, run.Database, recipeStream);
@@ -48,7 +49,7 @@ namespace GourmetProject.Game.Run
 
             GpBoard board = BuildBoard(run, character, modifier);
 
-            var battleStream = GameApp.Random.Stream($"battle_{key}");
+            var battleStream = GameApp.Random.DomainStream(SeedDomains.Combat, key);
             var session = new BattleSession(board, run.Database, battleStream, slots, requiredScore);
 
             if (modifier == "limit_serve")

@@ -61,7 +61,7 @@ namespace GourmetProject.Game.Orchestration
             if (string.IsNullOrEmpty(_run.CurrentTimelineId) || _run.CurrentDay >= _run.TimelineLengthDays)
             {
                 _run.RequiredScoreOverride = -1;
-                IRandomStream rng = GameApp.Random.Stream($"timeline_w{_run.WeekIndex}");
+                IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Map, $"w{_run.WeekIndex}");
                 TimelineService.RollWeekTimeline(_run, rng);
             }
 
@@ -105,7 +105,7 @@ namespace GourmetProject.Game.Orchestration
                 return;
             }
 
-            IRandomStream rng = GameApp.Random.Stream($"action_exec_r{context.RunStepIndex}_w{_run.WeekIndex}_s{context.StepIndex}_{context.ActionGroupId}_{context.Action.Id}");
+            IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Effect, $"exec_r{context.RunStepIndex}_w{_run.WeekIndex}_s{context.StepIndex}_{context.ActionGroupId}_{context.Action.Id}");
             ActionOutcome outcome = ActionExecutor.Execute(_run, context, rng);
             RunPersistence.Save(_run);
 
@@ -243,7 +243,7 @@ namespace GourmetProject.Game.Orchestration
             }
             else
             {
-                IRandomStream rng = GameApp.Random.Stream($"event_node_w{_run.WeekIndex}_d{node.Day}");
+                IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Event, $"node_w{_run.WeekIndex}_d{node.Day}");
                 ev = EventService.RollEvent(_run, rng);
             }
 
@@ -252,7 +252,7 @@ namespace GourmetProject.Game.Orchestration
 
         private void HandleBossNode(cfg.TimelineNode node)
         {
-            IRandomStream rng = GameApp.Random.Stream($"boss_w{_run.WeekIndex}");
+            IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Boss, $"w{_run.WeekIndex}");
             cfg.Boss boss = BossService.RollBoss(_run, rng, node.PayloadParam);
             if (boss == null)
             {
@@ -291,7 +291,7 @@ namespace GourmetProject.Game.Orchestration
             cfg.GameEvent ev;
             if (string.IsNullOrEmpty(eventId))
             {
-                IRandomStream rng = GameApp.Random.Stream($"event_action_w{_run.WeekIndex}_d{_run.CurrentDay}_s{_run.ActionStepIndex}");
+                IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Event, $"action_w{_run.WeekIndex}_d{_run.CurrentDay}_s{_run.ActionStepIndex}");
                 ev = EventService.RollEvent(_run, rng);
             }
             else
@@ -310,7 +310,7 @@ namespace GourmetProject.Game.Orchestration
                 return;
             }
 
-            IRandomStream rng = GameApp.Random.Stream($"event_resolve_w{_run.WeekIndex}_d{_run.CurrentDay}_{ev.Id}");
+            IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Event, $"resolve_w{_run.WeekIndex}_d{_run.CurrentDay}_{ev.Id}");
             List<cfg.EventOption> options = EventService.GetOptions(ev.Id);
             if (options.Count == 0)
             {

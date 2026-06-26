@@ -35,6 +35,12 @@ namespace GourmetProject.Game.Run
         private readonly List<string> _usedActionIds = new List<string>();
         private readonly List<string> _completedBossIds = new List<string>();
         private readonly List<string> _actionGroupSequence = new List<string>();
+        private readonly List<RunActionChoiceSaveData> _pendingActionChoices = new List<RunActionChoiceSaveData>();
+        private readonly List<ShopEntrySaveData> _pendingShopStock = new List<ShopEntrySaveData>();
+        private string _pendingActionChoiceKey = string.Empty;
+        private string _pendingShopKey = string.Empty;
+        private string _pendingRewardKey = string.Empty;
+        private RewardOfferSaveData _pendingRewardOffer;
 
         public GameRun(cfg.Tables tables, GameplayDatabase database, string characterId, string seedText, int weekIndex = 1)
         {
@@ -106,6 +112,26 @@ namespace GourmetProject.Game.Run
 
         public ActionExecutionContext LastActionContext { get; private set; }
 
+        public static string BuildActionChoiceKey(int runStepIndex, int weekIndex, int currentDay, int actionStepIndex)
+        {
+            return $"r{runStepIndex}_w{weekIndex}_d{currentDay}_s{actionStepIndex}";
+        }
+
+        public static string BuildShopKey(int weekIndex, int currentDay)
+        {
+            return $"w{weekIndex}_d{currentDay}";
+        }
+
+        public static string BuildRewardKey(int weekIndex, int currentDay, ActionExecutionContext context)
+        {
+            if (context != null && context.IsValid)
+            {
+                return $"r{context.RunStepIndex}_w{weekIndex}_d{currentDay}_s{context.StepIndex}_{context.ActionGroupId}_{context.Action.Id}";
+            }
+
+            return $"w{weekIndex}_d{currentDay}";
+        }
+
         public bool IsNodeTriggered(string nodeId) => !string.IsNullOrEmpty(nodeId) && _triggeredNodeIds.Contains(nodeId);
 
         public void MarkNodeTriggered(string nodeId)
@@ -156,10 +182,14 @@ namespace GourmetProject.Game.Run
             _triggeredNodeIds.Clear();
             _usedActionIds.Clear();
             LastActionContext = null;
+            ClearPendingActionChoices();
+            ClearPendingShopStock();
+            ClearPendingRewardOffer();
         }
 
         public void AdvanceActionStep()
         {
+            ClearPendingActionChoices();
             ActionStepIndex++;
             RunActionStepIndex++;
         }
@@ -196,6 +226,143 @@ namespace GourmetProject.Game.Run
         public void SetLastActionContext(ActionExecutionContext context)
         {
             LastActionContext = context;
+        }
+
+        public List<ActionChoice> GetPendingActionChoices(string key)
+        {
+            var result = new List<ActionChoice>();
+            if (!HasPendingActionChoices(key))
+            {
+                return result;
+            }
+
+            foreach (RunActionChoiceSaveData data in _pendingActionChoices)
+            {
+                cfg.GameAction action = _tables.TbAction.GetOrDefault(data.ActionId);
+                if (action == null)
+                {
+                    continue;
+                }
+
+                cfg.ActionGroup group = _tables.TbActionGroup.GetOrDefault(data.ActionGroupId);
+                result.Add(new ActionChoice(action, group, data.WeekStepIndex, data.RunStepIndex, data.CostDays));
+            }
+
+            return result;
+        }
+
+        public bool HasPendingActionChoices(string key)
+        {
+            return !string.IsNullOrEmpty(key) && key == _pendingActionChoiceKey;
+        }
+
+        public void SetPendingActionChoices(string key, IReadOnlyList<ActionChoice> choices)
+        {
+            _pendingActionChoiceKey = key ?? string.Empty;
+            _pendingActionChoices.Clear();
+            if (choices == null)
+            {
+                return;
+            }
+
+            foreach (ActionChoice choice in choices)
+            {
+                if (choice == null || !choice.IsValid)
+                {
+                    continue;
+                }
+
+                _pendingActionChoices.Add(new RunActionChoiceSaveData
+                {
+                    ActionId = choice.Action.Id,
+                    ActionGroupId = choice.ActionGroupId,
+                    WeekStepIndex = choice.WeekStepIndex,
+                    RunStepIndex = choice.RunStepIndex,
+                    CostDays = choice.CostDays,
+                });
+            }
+        }
+
+        public void ClearPendingActionChoices()
+        {
+            _pendingActionChoiceKey = string.Empty;
+            _pendingActionChoices.Clear();
+        }
+
+        public List<ShopEntry> GetPendingShopStock(string key)
+        {
+            var result = new List<ShopEntry>();
+            if (!HasPendingShopStock(key))
+            {
+                return result;
+            }
+
+            foreach (ShopEntrySaveData entry in _pendingShopStock)
+            {
+                result.Add(new ShopEntry(entry.Kind, entry.Id, entry.Name, entry.Desc, entry.Price));
+            }
+
+            return result;
+        }
+
+        public bool HasPendingShopStock(string key)
+        {
+            return !string.IsNullOrEmpty(key) && key == _pendingShopKey;
+        }
+
+        public void SetPendingShopStock(string key, IReadOnlyList<ShopEntry> stock)
+        {
+            _pendingShopKey = key ?? string.Empty;
+            _pendingShopStock.Clear();
+            if (stock == null)
+            {
+                return;
+            }
+
+            foreach (ShopEntry entry in stock)
+            {
+                if (entry == null)
+                {
+                    continue;
+                }
+
+                _pendingShopStock.Add(new ShopEntrySaveData
+                {
+                    Kind = entry.Kind,
+                    Id = entry.Id,
+                    Name = entry.Name,
+                    Desc = entry.Desc,
+                    Price = entry.Price,
+                });
+            }
+        }
+
+        public void ClearPendingShopStock()
+        {
+            _pendingShopKey = string.Empty;
+            _pendingShopStock.Clear();
+        }
+
+        public RewardOffer GetPendingRewardOffer(string key)
+        {
+            if (string.IsNullOrEmpty(key) || key != _pendingRewardKey || _pendingRewardOffer == null)
+            {
+                return null;
+            }
+
+            return FromSaveData(_pendingRewardOffer);
+        }
+
+        public void SetPendingRewardOffer(string key, RewardOffer offer)
+        {
+            _pendingRewardKey = key ?? string.Empty;
+            _pendingRewardOffer = ToSaveData(offer);
+        }
+
+        public void ClearPendingRewardOffer()
+        {
+            _pendingRewardKey = string.Empty;
+            _pendingRewardOffer = null;
         }
 
         public cfg.Week CurrentWeek => _tables.TbWeek.GetOrDefault(WeekIndex);
@@ -326,6 +493,12 @@ namespace GourmetProject.Game.Run
                 UsedEventIds = new List<string>(_usedEventIds),
                 UsedActionIds = new List<string>(_usedActionIds),
                 CompletedBossIds = new List<string>(_completedBossIds),
+                PendingActionChoiceKey = _pendingActionChoiceKey,
+                PendingActionChoices = new List<RunActionChoiceSaveData>(_pendingActionChoices),
+                PendingShopKey = _pendingShopKey,
+                PendingShopStock = new List<ShopEntrySaveData>(_pendingShopStock),
+                PendingRewardKey = _pendingRewardKey,
+                PendingRewardOffer = _pendingRewardOffer,
                 ItemIds = legacyItemIds,
             };
         }
@@ -422,7 +595,100 @@ namespace GourmetProject.Game.Run
                 run._completedBossIds.AddRange(data.CompletedBossIds);
             }
 
+            run._pendingActionChoiceKey = data.PendingActionChoiceKey ?? string.Empty;
+            if (data.PendingActionChoices != null)
+            {
+                run._pendingActionChoices.AddRange(data.PendingActionChoices);
+            }
+
+            run._pendingShopKey = data.PendingShopKey ?? string.Empty;
+            if (data.PendingShopStock != null)
+            {
+                run._pendingShopStock.AddRange(data.PendingShopStock);
+            }
+
+            run._pendingRewardKey = data.PendingRewardKey ?? string.Empty;
+            run._pendingRewardOffer = data.PendingRewardOffer;
+
             return run;
+        }
+
+        private static RewardOfferSaveData ToSaveData(RewardOffer offer)
+        {
+            if (offer == null)
+            {
+                return null;
+            }
+
+            return new RewardOfferSaveData
+            {
+                BaseGold = offer.BaseGold,
+                MainChoices = ToSaveData(offer.MainChoices),
+                ExtraChoices = ToSaveData(offer.ExtraChoices),
+            };
+        }
+
+        private static List<RewardChoiceSaveData> ToSaveData(IReadOnlyList<RewardChoice> choices)
+        {
+            var result = new List<RewardChoiceSaveData>();
+            if (choices == null)
+            {
+                return result;
+            }
+
+            foreach (RewardChoice choice in choices)
+            {
+                if (choice == null)
+                {
+                    continue;
+                }
+
+                result.Add(new RewardChoiceSaveData
+                {
+                    Kind = choice.Kind,
+                    Id = choice.Id,
+                    Name = choice.Name,
+                    Description = choice.Description,
+                    GoldAmount = choice.GoldAmount,
+                    IsFallbackGold = choice.IsFallbackGold,
+                });
+            }
+
+            return result;
+        }
+
+        private static RewardOffer FromSaveData(RewardOfferSaveData data)
+        {
+            return data == null
+                ? null
+                : new RewardOffer(data.BaseGold, FromSaveData(data.MainChoices), FromSaveData(data.ExtraChoices));
+        }
+
+        private static List<RewardChoice> FromSaveData(List<RewardChoiceSaveData> choices)
+        {
+            var result = new List<RewardChoice>();
+            if (choices == null)
+            {
+                return result;
+            }
+
+            foreach (RewardChoiceSaveData choice in choices)
+            {
+                if (choice == null)
+                {
+                    continue;
+                }
+
+                result.Add(new RewardChoice(
+                    choice.Kind,
+                    choice.Id,
+                    choice.Name,
+                    choice.Description,
+                    choice.GoldAmount,
+                    choice.IsFallbackGold));
+            }
+
+            return result;
         }
 
         public int TotalWeeks => _tables.TbWeek.DataList.Count;

@@ -39,6 +39,7 @@ namespace GourmetProject.Game.UI.Meta
         private readonly List<ShopEntry> _stock = new();
         private readonly List<GameObject> _spawned = new();
         private bool _notifiedClosed;
+        private string _shopKey;
 
         protected override void OnInit(object userData)
         {
@@ -49,6 +50,8 @@ namespace GourmetProject.Game.UI.Meta
         /// <summary>玩家点「离开」：关闭商店并通知编排层继续（区别于返回菜单时的强制关闭）。</summary>
         private void OnLeaveClicked()
         {
+            _run?.ClearPendingShopStock();
+            RunPersistence.Save(_run);
             Close();
         }
 
@@ -78,8 +81,18 @@ namespace GourmetProject.Game.UI.Meta
         private void RollStock()
         {
             _stock.Clear();
-            IRandomStream rng = GameApp.Random.Stream($"shop_w{_run.WeekIndex}_d{_run.CurrentDay}");
-            _stock.AddRange(ShopService.RollStock(GameApp.Config.Tables, _run, rng));
+            _shopKey = GameRun.BuildShopKey(_run.WeekIndex, _run.CurrentDay);
+            if (_run.HasPendingShopStock(_shopKey))
+            {
+                _stock.AddRange(_run.GetPendingShopStock(_shopKey));
+                return;
+            }
+
+            IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Shop, _shopKey);
+            IRandomStream lootRng = GameApp.Random.DomainStream(SeedDomains.Loot, $"shop_{_shopKey}");
+            _stock.AddRange(ShopService.RollStock(GameApp.Config.Tables, _run, rng, lootRng));
+            _run.SetPendingShopStock(_shopKey, _stock);
+            RunPersistence.Save(_run);
         }
 
         private void Rebuild()
@@ -213,6 +226,7 @@ namespace GourmetProject.Game.UI.Meta
             if (ShopService.Purchase(_run, entry))
             {
                 _stock.Remove(entry);
+                _run.SetPendingShopStock(_shopKey, _stock);
                 RunPersistence.Save(_run);
                 Rebuild();
             }

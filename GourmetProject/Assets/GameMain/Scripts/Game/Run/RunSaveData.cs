@@ -1,19 +1,21 @@
 using System;
 using System.Collections.Generic;
+using GourmetProject.Core.Rng;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Meta;
 
 namespace GourmetProject.Game.Run
 {
     /// <summary>
-    /// 一次肉鸽运行的存档数据（可被 JsonSaveService 序列化）。随机以「种子 + 周编号命名流」复现，
-    /// 因此只需存种子与进度，无需存完整随机快照。
+    /// 一次肉鸽运行的存档数据（可被 JsonSaveService 序列化）。
+    /// 随机系统保存完整快照，读档后可从已消费的位置继续。
     /// </summary>
     [Serializable]
     public sealed class RunSaveData
     {
         public string CharacterId;
         public string SeedText;
+        public RandomSnapshot RandomSnapshot;
         public int WeekIndex;
         public int Gold;
         public List<RunItemSaveData> Items = new List<RunItemSaveData>();
@@ -69,6 +71,21 @@ namespace GourmetProject.Game.Run
         /// <summary>已通关 Boss id（整局，含最终胜利判定）。</summary>
         public List<string> CompletedBossIds = new List<string>();
 
+        /// <summary>当前行动选择快照 key；同一步 UI 重开时沿用已有候选。</summary>
+        public string PendingActionChoiceKey;
+
+        public List<RunActionChoiceSaveData> PendingActionChoices = new List<RunActionChoiceSaveData>();
+
+        /// <summary>当前商店实例 key；离开商店后清空。</summary>
+        public string PendingShopKey;
+
+        public List<ShopEntrySaveData> PendingShopStock = new List<ShopEntrySaveData>();
+
+        /// <summary>当前待领取奖励 key；领取后清空。</summary>
+        public string PendingRewardKey;
+
+        public RewardOfferSaveData PendingRewardOffer;
+
         /// <summary>旧存档兼容字段：曾经只保存道具 id，读档时会迁移为 Items。</summary>
         public List<string> ItemIds = new List<string>();
     }
@@ -81,5 +98,44 @@ namespace GourmetProject.Game.Run
 
         /// <summary>旧存档兼容字段：曾经的主动道具持有数量。新档每份实例单独一条，恒为 1。</summary>
         public int Count = 1;
+    }
+
+    [Serializable]
+    public sealed class RunActionChoiceSaveData
+    {
+        public string ActionId;
+        public string ActionGroupId;
+        public int WeekStepIndex;
+        public int RunStepIndex;
+        public int CostDays;
+    }
+
+    [Serializable]
+    public sealed class ShopEntrySaveData
+    {
+        public ShopEntryKind Kind;
+        public string Id;
+        public string Name;
+        public string Desc;
+        public int Price;
+    }
+
+    [Serializable]
+    public sealed class RewardOfferSaveData
+    {
+        public int BaseGold;
+        public List<RewardChoiceSaveData> MainChoices = new List<RewardChoiceSaveData>();
+        public List<RewardChoiceSaveData> ExtraChoices = new List<RewardChoiceSaveData>();
+    }
+
+    [Serializable]
+    public sealed class RewardChoiceSaveData
+    {
+        public cfg.RewardKind Kind;
+        public string Id;
+        public string Name;
+        public string Description;
+        public int GoldAmount;
+        public bool IsFallbackGold;
     }
 }
