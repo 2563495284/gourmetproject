@@ -24,6 +24,7 @@ namespace GourmetProject.Editor
                 return;
             }
 
+            PreserveSpriteBorderWorldSize(importer);
             importer.textureType = TextureImporterType.Sprite;
             importer.spritePixelsPerUnit = ProjectSpritePixelsPerUnit;
             importer.mipmapEnabled = false;
@@ -108,6 +109,42 @@ namespace GourmetProject.Editor
             return !string.IsNullOrEmpty(path) &&
                    path.StartsWith(SpriteRoot, System.StringComparison.Ordinal) &&
                    path.EndsWith(".png", System.StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static void PreserveSpriteBorderWorldSize(TextureImporter importer)
+        {
+            float previousPpu = importer.spritePixelsPerUnit;
+            if (previousPpu <= 0f || Mathf.Approximately(previousPpu, ProjectSpritePixelsPerUnit))
+            {
+                return;
+            }
+
+            Vector4 border = importer.spriteBorder;
+            if (!HasBorder(border))
+            {
+                return;
+            }
+
+            importer.spriteBorder = ScaleBorder(border, ProjectSpritePixelsPerUnit / previousPpu);
+        }
+
+        private static bool HasBorder(Vector4 border)
+        {
+            return border.x > 0f || border.y > 0f || border.z > 0f || border.w > 0f;
+        }
+
+        private static Vector4 ScaleBorder(Vector4 border, float scale)
+        {
+            return new Vector4(
+                RoundBorder(border.x * scale),
+                RoundBorder(border.y * scale),
+                RoundBorder(border.z * scale),
+                RoundBorder(border.w * scale));
+        }
+
+        private static float RoundBorder(float value)
+        {
+            return Mathf.Round(value * 1000f) / 1000f;
         }
     }
 }

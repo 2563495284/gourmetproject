@@ -56,6 +56,8 @@ namespace GourmetProject.Game.Presentation.Battle
         private void ConfigureBackground(Color frameColor, bool occupied)
         {
             _background.sprite = WhiteSprite;
+            _background.drawMode = SpriteDrawMode.Sliced;
+            _background.size = Vector2.one;
             _background.color = occupied ? frameColor : new Color(0.18f, 0.16f, 0.14f, 0.35f);
             BattleSorting.Apply(_background, BattleSorting.WorldUi, BattleSorting.OrderButtonBg);
             SpriteRenderStyle.ApplyUnlitMaterial(_background);

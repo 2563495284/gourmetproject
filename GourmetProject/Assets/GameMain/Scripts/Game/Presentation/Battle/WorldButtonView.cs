@@ -47,6 +47,8 @@ namespace GourmetProject.Game.Presentation.Battle
             _disabledColor = new Color(color.r * 0.45f, color.g * 0.45f, color.b * 0.45f, 0.75f);
             if (_background != null)
             {
+                _background.drawMode = SpriteDrawMode.Sliced;
+                _background.size = Vector2.one;
                 _background.color = _interactable ? _normalColor : _disabledColor;
                 BattleSorting.Apply(_background, BattleSorting.WorldUi, BattleSorting.OrderButtonBg);
                 SpriteRenderStyle.ApplyUnlitMaterial(_background);
