@@ -201,7 +201,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         /// <summary>
         /// 商人手上菜：手托着放大的菜品从屏幕上方降到目标格上方，
-        /// 随后手先抽离，菜品再从大变小落到格子并落定。手带假阴影，菜品无阴影。
+        /// 随后手先抽离，菜品再从大变小落到格子并落定。手与菜全程带假阴影。
         /// </summary>
         private IEnumerator AnimateServe(DishPieceView piece, Vector3 target)
         {
@@ -225,8 +225,9 @@ namespace GourmetProject.Game.Presentation.Battle
             Vector3 arrivalPalm = target + carryCenterOffset;
             Vector3 topPalm = new Vector3(arrivalPalm.x, _halfH + handHeight, 0f);
 
-            // 飞行途中切到 PiecesFlying 层，确保压在已摆放食品之上。
+            // 飞行途中切到 PiecesFlying 层 + 举高悬浮，确保压在已摆放食品之上并带高度感。
             piece.SetFlying(true);
+            piece.SetLift(1f);
             piece.SetVisualScaleMultiplier(carryScale);
             PlacePieceAtPalm(piece, hand, topPalm, carryScale);
 
@@ -278,6 +279,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 }
 
                 piece.transform.position = target;
+                piece.SetLift(1f);
                 piece.SetVisualScaleMultiplier(carryScale);
                 yield return null;
             }
@@ -305,6 +307,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 float shrink = k * k * (3f - 2f * k);
                 float visualScale = Mathf.Lerp(carryScale, 1f, shrink);
                 piece.transform.position = target;
+                piece.SetLift(1f - k);
                 piece.SetVisualScaleMultiplier(visualScale);
 
                 yield return null;
@@ -313,6 +316,7 @@ namespace GourmetProject.Game.Presentation.Battle
             if (piece != null)
             {
                 piece.transform.position = target;
+                piece.SetLift(0f);
                 piece.SetVisualScaleMultiplier(1f);
                 yield return piece.PlayServeLandImpactFeedback();
                 // 落定后切回 Pieces 层，回到与其它棋盘食品一致的渲染顺序。

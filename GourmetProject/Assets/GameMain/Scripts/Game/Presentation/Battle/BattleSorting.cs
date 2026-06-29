@@ -17,7 +17,7 @@ namespace GourmetProject.Game.Presentation.Battle
         /// <summary>棋盘格子。</summary>
         public const string Board = "Board";
 
-        /// <summary>已摆放的菜品本体。</summary>
+        /// <summary>已摆放的菜品（阴影 + 本体）。</summary>
         public const string Pieces = "Pieces";
 
         /// <summary>场景内按钮与分数/提示文字等世界 UI。</summary>
@@ -33,6 +33,7 @@ namespace GourmetProject.Game.Presentation.Battle
         public const string Doodle = "Doodle";
 
         // —— 层内细分 order ——
+        public const int OrderShadow = 0;
         public const int OrderBody = 10;
         public const int OrderButtonBg = 0;
         public const int OrderButtonLabel = 1;
