@@ -225,9 +225,10 @@ namespace GourmetProject.Game.Presentation.Battle
             Vector3 arrivalPalm = target + carryCenterOffset;
             Vector3 topPalm = new Vector3(arrivalPalm.x, _halfH + handHeight, 0f);
 
-            // 飞行途中切到 PiecesFlying 层 + 举高悬浮，确保压在已摆放食品之上并带高度感。
+            // 根节点全程钉在目标格（阴影留在地面），只用本体局部抬升表现飞行高度；
+            // 本体切到 PiecesFlying 压在已摆放食品之上，阴影留在 Pieces 地面层不盖菜。
+            piece.transform.position = target;
             piece.SetFlying(true);
-            piece.SetLift(1f);
             piece.SetVisualScaleMultiplier(carryScale);
             PlacePieceAtPalm(piece, hand, topPalm, carryScale);
 
@@ -263,7 +264,10 @@ namespace GourmetProject.Game.Presentation.Battle
             PlacePieceAtPalm(piece, hand, arrivalPalm, carryScale);
             piece.SetVisualScaleMultiplier(carryScale);
 
-            // —— 阶段2：手先抽离屏幕，菜品留在目标锚点并保持放大 ——
+            // 到位高度：本体视觉中心对齐到位掌心时的离地抬升量，供脱手悬停 / 落下阶段复用。
+            float arrivalLift = arrivalPalm.y - (piece.transform.position.y + piece.VisualCenterOffsetForScale(carryScale).y);
+
+            // —— 阶段2：手先抽离屏幕，菜品悬停在到位高度（脱手不再跟手）——
             float withdraw = Mathf.Max(0.0001f, _serveWithdrawDuration);
             t = 0f;
             while (t < withdraw && piece != null)
@@ -278,8 +282,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     hand.SetHeight(0.2f + 0.8f * he);
                 }
 
-                piece.transform.position = target;
-                piece.SetLift(1f);
+                piece.SetLiftHeight(arrivalLift);
                 piece.SetVisualScaleMultiplier(carryScale);
                 yield return null;
             }
@@ -303,12 +306,11 @@ namespace GourmetProject.Game.Presentation.Battle
                 t += Time.deltaTime;
                 float k = Mathf.Clamp01(t / drop);
 
-                // 菜品已经对齐目标锚点；落下阶段只收缩视觉高度，根节点不再漂移。
+                // 根节点早已钉在目标格；落下阶段只把本体从到位高度收回贴桌、并缩回原尺寸，阴影随高度收紧变实。
                 float shrink = k * k * (3f - 2f * k);
                 float visualScale = Mathf.Lerp(carryScale, 1f, shrink);
-                piece.transform.position = target;
-                piece.SetLift(1f - k);
                 piece.SetVisualScaleMultiplier(visualScale);
+                piece.SetLiftHeight(Mathf.Lerp(arrivalLift, 0f, shrink));
 
                 yield return null;
             }
@@ -316,7 +318,7 @@ namespace GourmetProject.Game.Presentation.Battle
             if (piece != null)
             {
                 piece.transform.position = target;
-                piece.SetLift(0f);
+                piece.SetLiftHeight(0f);
                 piece.SetVisualScaleMultiplier(1f);
                 yield return piece.PlayServeLandImpactFeedback();
                 // 落定后切回 Pieces 层，回到与其它棋盘食品一致的渲染顺序。
@@ -327,7 +329,7 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>把掌心锚点与当前缩放下的食品视觉中心对齐。</summary>
-        /// <remarks>菜品 transform 锚在原点格；传入的掌心点需要包含视觉中心相对根锚点的偏移。</remarks>
+        /// <remarks>根节点全程钉在目标格、水平不动；这里只把本体沿世界 Y 抬升到掌心高度，阴影留在地面脚印中心。</remarks>
         private void PlacePieceAtPalm(DishPieceView piece, ServeHandView hand, Vector3 palm, float visualScale)
         {
             if (piece == null)
@@ -342,7 +344,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 anchor = hand.PalmWorldPosition;
             }
 
-            piece.transform.position = anchor - piece.VisualCenterOffsetForScale(visualScale);
+            float groundCenterY = piece.transform.position.y + piece.VisualCenterOffsetForScale(visualScale).y;
+            piece.SetLiftHeight(anchor.y - groundCenterY);
         }
 
         private void ComputeViewport()

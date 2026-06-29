@@ -12,22 +12,40 @@ namespace GourmetProject.Game.Presentation.Battle
     internal static class BattleShadow
     {
         private static Sprite _softShadowSprite;
+        private static Sprite _diffuseShadowSprite;
 
-        /// <summary>径向羽化软暗斑（白色 + alpha falloff），缩放后即可当椭圆接触阴影用。</summary>
+        /// <summary>径向羽化软暗斑（白色 + alpha falloff），中心带实心核，缩放后即可当椭圆接触阴影用（锐利核心层）。</summary>
         public static Sprite SoftShadowSprite
         {
             get
             {
                 if (_softShadowSprite == null)
                 {
-                    _softShadowSprite = CreateSoftShadowSprite();
+                    // 中心 0.4 半径内基本实心，向边缘 1.0 平滑渐隐。
+                    _softShadowSprite = CreateRadialShadowSprite(0.4f);
                 }
 
                 return _softShadowSprite;
             }
         }
 
-        private static Sprite CreateSoftShadowSprite()
+        /// <summary>全程从中心羽化的弥散软斑（无实心核），读起来更糊，用作高空"光晕"层。</summary>
+        public static Sprite DiffuseShadowSprite
+        {
+            get
+            {
+                if (_diffuseShadowSprite == null)
+                {
+                    // 无实心核：从中心一路渐隐到边缘，整体糊成一团弥散投影。
+                    _diffuseShadowSprite = CreateRadialShadowSprite(0f);
+                }
+
+                return _diffuseShadowSprite;
+            }
+        }
+
+        /// <summary>生成径向羽化暗斑：<paramref name="solidInnerRadius"/>（0..1）以内基本实心，向边缘 1.0 平滑渐隐。</summary>
+        private static Sprite CreateRadialShadowSprite(float solidInnerRadius)
         {
             const int size = 64;
             var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
@@ -38,6 +56,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             float center = (size - 1) * 0.5f;
             float maxRadius = size * 0.5f;
+            float inner = Mathf.Clamp01(solidInnerRadius);
             var pixels = new Color32[size * size];
             for (int y = 0; y < size; y++)
             {
@@ -46,8 +65,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     float dx = (x - center) / maxRadius;
                     float dy = (y - center) / maxRadius;
                     float dist = Mathf.Sqrt(dx * dx + dy * dy);
-                    // 中心 0.4 半径内基本实心，向边缘 1.0 平滑渐隐。
-                    float a = Mathf.SmoothStep(1f, 0f, Mathf.InverseLerp(0.4f, 1f, dist));
+                    float a = Mathf.SmoothStep(1f, 0f, Mathf.InverseLerp(inner, 1f, dist));
                     byte alpha = (byte)Mathf.Clamp(Mathf.RoundToInt(a * 255f), 0, 255);
                     pixels[(y * size) + x] = new Color32(255, 255, 255, alpha);
                 }

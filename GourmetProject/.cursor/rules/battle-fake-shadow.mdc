@@ -16,8 +16,11 @@ alwaysApply: false
 
 ## 实现方式（现状，照此维护）
 
-- 阴影 = 程序生成的径向羽化软暗斑（`DishPieceView.CreateContactShadow` / `SoftShadowSprite`），缩放铺在菜品脚下，不依赖菜品图的透明留白。
-- 高度感用 `SetLift(0..1)` 调暗斑的偏移/大小/透明度，飞行举高、落定贴桌。
+- 阴影 = 程序生成的径向羽化软暗斑（`BattleShadow.SoftShadowSprite` / `DiffuseShadowSprite`，在 `DishPieceView.ConfigureContactShadow` 里装配），缩放铺在菜品脚下，不依赖菜品图的透明留白。
+- **高度 = 本体局部抬升，阴影钉地面**：`DishPieceView.SetLiftHeight(worldHeight)` 只把本体视觉枢轴（`VisualPivot`）沿世界 +Y 抬高，根节点保持贴格、接触阴影始终留在地面脚印中心。`SetLift(0..1)` 保留为映射到参考举高高度的便捷封装。
+  - 切忌再用「移动整个根节点（连带阴影子物体）」来表现飞行高度——那会让阴影飞到半空、还在飞行层盖住沿途菜品。
+- **双层阴影做高度虚化**：核心层（`SoftShadowSprite`，有实心核）贴桌锐利、随高度淡出；弥散光晕层（`DiffuseShadowSprite`，无实心核，挂在 `ShadowHalo` 子物体）贴桌隐形、随高度放大显现。离地越高 → 越大、越淡、越虚；落定 → 收紧变实。参数都在 `DishPieceView` 上 `[SerializeField]`（`_shadowLiftRefCells`/`_coreGrow`/`_coreFadeWhenHigh`/`_haloGrow`/`_haloAlphaWhenHigh`）。
+- **分层只飞本体、阴影留地面**：`SetFlying(true)` 只把<b>本体</b>切到 `PiecesFlying` 压在已摆放菜品之上（这是需要的，因为飞行菜在上层）；阴影核心/光晕固定留在 `Pieces` 的 `OrderShadow`（光晕再低一档），排在所有菜本体之下，铺在桌面、被沿途菜品遮挡，不会盖出脏暗斑。
 
 ## 受光：全程 Unlit 平涂
 
