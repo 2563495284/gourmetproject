@@ -1,5 +1,19 @@
 {
   "stylePrefix": "pixel art, top-down view, fantasy RPG style, clean pixel edges, game asset",
+  "typeDefaults": {
+    "item": {
+      "outputDir": "Assets/GameMain/Resources/Sprites/Items",
+      "postprocess": "magenta-alpha"
+    },
+    "dish": {
+      "outputDir": "Assets/GameMain/Resources/Sprites/Dishes",
+      "postprocess": "magenta-alpha"
+    }
+  },
+  "typePromptPrefixes": {
+    "item": "Item icon rule: one centered prop object on a square icon canvas, readable silhouette, not a grid-footprint dish.",
+    "dish": "Dish sprite rule: grid-footprint food sprite, one cell is 512x512, X cells contain food and . cells remain pure #FF00FF for alpha removal."
+  },
   "assets": [
     {
       "name": "potion_health",
@@ -22,6 +36,22 @@
       "prompt": "round wooden shield with iron rim and a simple boss in the center, front view"
     },
     {
+      "name": "rice",
+      "type": "dish",
+      "size": "512x512",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "shapeRows": ["X"],
+      "prompt": "one plump rice ball with sesame dots and seaweed wrap"
+    },
+    {
+      "name": "noodle",
+      "type": "dish",
+      "size": "1024x1024",
+      "shapeRows": ["X.", "XX"],
+      "prompt": "crooked pile of stir-fried noodles arranged as an L-shaped connected food mass"
+    },
+    {
       "name": "btn_start",
       "type": "ui",
       "prompt": "wooden button with gold trim, medieval fantasy UI, 9-slice friendly with clear border padding, centered"
@@ -29,7 +59,11 @@
     {
       "name": "btn_settings",
       "type": "ui",
-      "prompt": "gear icon button, metallic silver frame, medieval fantasy UI, 9-slice friendly, centered"
+      "prompt": "gear icon button, metallic silver frame, medieval fantasy UI, 9-slice friendly, centered",
+      "provider": "openai",
+      "model": "gpt-image-2",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512"
     },
     {
       "name": "panel_wood",
@@ -41,6 +75,21 @@
       "type": "background",
       "prompt": "dense enchanted forest with tall trees, glowing mushrooms, soft mist, distant mountain silhouette, parallax-ready with clear depth layers",
       "size": "1536x1024"
+    },
+    {
+      "name": "serve_hand_wave",
+      "type": "animation",
+      "provider": "openai",
+      "model": "gpt-image-2",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "same stylized server hand, clean silhouette, consistent camera, same line weight",
+      "frames": [
+        "idle pose, wrist relaxed",
+        "anticipation pose, wrist bends upward",
+        "wave peak, palm open",
+        "settle pose, returns toward idle"
+      ]
     }
   ]
 }

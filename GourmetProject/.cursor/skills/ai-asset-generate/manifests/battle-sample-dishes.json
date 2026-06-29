@@ -1,40 +1,57 @@
 {
   "stylePrefix": "90s American cable TV cartoon food illustration style, thick clean black ink outlines, flat cel animation colors, hand-drawn 2D animation look, warm appetizing color palette, polished game asset quality, playful exaggerated food shapes, no face, no eyes, no mouth, no smile, no character, no creature, no limbs, no hands, no text, no logo, no watermark",
+  "provider": "openai",
+  "model": "gpt-image-2",
+  "typeDefaults": {
+    "dish": {
+      "outputDir": "Assets/GameMain/Resources/Sprites/Dishes",
+      "postprocess": "magenta-alpha",
+      "outputFormat": "png",
+      "quality": "high"
+    }
+  },
+  "typePromptPrefixes": {
+    "dish": "Dish sprite rule: this is a grid-footprint food sprite, not an inventory prop icon. One grid cell is 512 by 512 pixels. Place the whole final rectangular canvas on a SOLID FLAT UNIFORM bright magenta background, pure #FF00FF, for local alpha removal. Empty footprint cells must stay pure #FF00FF. Do not draw grid lines, cell borders, rectangles, guides, or checkerboards. Do not add cast shadows outside occupied food cells; the game renders a separate runtime contact shadow."
+  },
   "assets": [
     {
       "name": "rice",
-      "type": "item",
-      "size": "1024x1024",
-      "transparent": true,
-      "prompt": "single-cell battle board food sprite: one plump rice ball with tiny sesame dots and a dark green seaweed wrap, pure food only, centered, clean silhouette, strong contact shadow painted into the sprite, transparent background, readable at small size"
+      "type": "dish",
+      "size": "512x512",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "shapeRows": ["X"],
+      "prompt": "single-cell battle board food sprite: one plump rice ball with tiny sesame dots and a dark green seaweed wrap, pure food only, centered, clean silhouette, strong contact shadow painted into the sprite, readable at small size"
     },
     {
       "name": "egg",
-      "type": "item",
-      "size": "1024x1024",
-      "transparent": true,
-      "prompt": "two-cell horizontal battle board food sprite: long fried egg stretched across two grid cells, two round yolks as food ingredients only, glossy egg white edge, pure food only, centered, clean wide silhouette, strong contact shadow painted into the sprite, transparent background"
+      "type": "dish",
+      "size": "1024x512",
+      "requestSize": "1536x768",
+      "targetSize": "1024x512",
+      "shapeRows": ["XX"],
+      "prompt": "two-cell horizontal battle board food sprite: long fried egg stretched across two grid cells, two round yolks as food ingredients only, glossy egg white edge, pure food only, centered, clean wide silhouette, strong contact shadow painted into the sprite"
     },
     {
       "name": "noodle",
-      "type": "item",
+      "type": "dish",
       "size": "1024x1024",
-      "transparent": true,
-      "prompt": "L-shaped three-cell battle board food sprite: crooked pile of noodles shaped like an L tetromino, sauce streaks, scallion garnish, pure food only, thick black outline, centered, clear polyomino footprint, strong contact shadow painted into the sprite, transparent background"
+      "shapeRows": ["X.", "XX"],
+      "prompt": "L-shaped three-cell battle board food sprite: crooked pile of noodles shaped like an L tetromino, sauce streaks, scallion garnish, pure food only, thick black outline, centered, clear polyomino footprint, strong contact shadow painted into the sprite"
     },
     {
       "name": "orange",
-      "type": "item",
+      "type": "dish",
       "size": "1024x1024",
-      "transparent": true,
-      "prompt": "two by two square battle board food sprite: chunky orange fruit cut into four connected cartoon wedges with peel texture and juicy pulp, pure food only, centered, clear 2x2 square footprint, strong contact shadow painted into the sprite, transparent background"
+      "shapeRows": ["XX", "XX"],
+      "prompt": "two by two square battle board food sprite: chunky orange fruit cut into four connected cartoon wedges with peel texture and juicy pulp, pure food only, centered, clear 2x2 square footprint, strong contact shadow painted into the sprite"
     },
     {
       "name": "cake",
-      "type": "item",
-      "size": "1024x1024",
-      "transparent": true,
-      "prompt": "T-shaped four-cell battle board dessert sprite: slice cluster of cake shaped like a T tetromino, frosting drips, cherry garnish as food decoration only, pure food only, centered, clear polyomino footprint, strong contact shadow painted into the sprite, transparent background"
+      "type": "dish",
+      "size": "1536x1024",
+      "shapeRows": ["XXX", ".X."],
+      "prompt": "T-shaped four-cell battle board dessert sprite: slice cluster of cake shaped like a T tetromino, frosting drips, cherry garnish as food decoration only, pure food only, centered, clear polyomino footprint, strong contact shadow painted into the sprite"
     }
   ]
 }

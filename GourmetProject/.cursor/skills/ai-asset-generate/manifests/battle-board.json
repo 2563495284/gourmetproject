@@ -1,5 +1,18 @@
 {
   "stylePrefix": "90s American cable TV cartoon food illustration style, thick clean black ink outlines, flat cel animation colors, hand-drawn 2D animation look, warm appetizing color palette, polished game asset quality, playful exaggerated food shapes, pure food only, no face, no eyes, no mouth, no smile, no character, no creature, no limbs, no hands, no text, no logo, no watermark",
+  "provider": "openai",
+  "model": "gpt-image-2",
+  "typeDefaults": {
+    "dish": {
+      "outputDir": "Assets/GameMain/Resources/Sprites/Dishes",
+      "postprocess": "magenta-alpha",
+      "outputFormat": "png",
+      "quality": "high"
+    }
+  },
+  "typePromptPrefixes": {
+    "dish": "Dish sprite rule: this is a grid-footprint food sprite, not an inventory prop icon. Use one food object or one connected food cluster arranged to match the occupied cells exactly. Place the whole final rectangular canvas on a SOLID FLAT UNIFORM bright magenta background, pure #FF00FF, for local alpha removal. Empty footprint cells must stay pure #FF00FF. Keep the food centered inside its occupied cells, with a readable bold silhouette. Do not add cast shadows outside the occupied food cells; the game renders a separate runtime contact shadow."
+  },
   "assets": [
     {
       "name": "battle_table_backpack",
@@ -11,73 +24,90 @@
       "name": "board_cell",
       "type": "ui",
       "size": "512x512",
-      "transparent": true,
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
       "prompt": "A single seamless tileable stomach/plate board grid cell tile for a 2D backpack-battles board, exactly one square cell that fills the entire image edge to edge with NO outer padding, a thin chunky hand-drawn black ink border drawn on all four edges so that when many copies are placed directly adjacent with zero gap they form a continuous clean grid, soft warm translucent cream-beige fill with subtle painted texture inside, flat cel colors, the four edges must align perfectly with neighbouring tiles, centered, no food, no icon, no text, no logo, no watermark"
     },
     {
       "name": "rice",
-      "type": "item",
+      "type": "dish",
       "size": "512x512",
-      "transparent": true,
-      "prompt": "one-by-one single cell battle board food sprite: one plump round rice ball with tiny sesame dots and a small dark green seaweed wrap, pure food only, centered, square footprint filling the cell, clean bold silhouette, strong contact shadow painted into the sprite, transparent background, readable at small size"
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "shapeRows": ["X"],
+      "prompt": "one-by-one single cell battle board food sprite: one plump round rice ball with tiny sesame dots and a small dark green seaweed wrap, pure food only, centered, square footprint filling the cell, clean bold silhouette, strong contact shadow painted into the sprite, readable at small size"
     },
     {
       "name": "egg",
-      "type": "item",
+      "type": "dish",
       "size": "1024x512",
-      "prompt": "a single long horizontal fried egg, roughly twice as wide as it is tall, two round yolks as ingredients only, glossy egg white edge, one single connected food item, pure food only, centered, strong contact shadow painted into the sprite. Place it on a SOLID FLAT UNIFORM bright magenta background (pure #FF00FF). Absolutely NO checkerboard, NO transparency pattern, NO grid, NO grid lines, NO cell divisions, NO boxes, NO frames, NO rectangle outline"
+      "requestSize": "1536x768",
+      "targetSize": "1024x512",
+      "shapeRows": ["XX"],
+      "prompt": "a single long horizontal fried egg, roughly twice as wide as it is tall, two round yolks as ingredients only, glossy egg white edge, one single connected food item, pure food only, centered, strong contact shadow painted into the sprite. Absolutely NO checkerboard, NO transparency pattern, NO grid, NO grid lines, NO cell divisions, NO boxes, NO frames, NO rectangle outline"
     },
     {
       "name": "soup",
-      "type": "item",
+      "type": "dish",
       "size": "1024x512",
-      "prompt": "a single wide low bowl of clear broth soup, roughly twice as wide as it is tall, floating vegetable and tofu pieces, gentle steam wisps, one single connected object, pure food and bowl only, centered, strong contact shadow painted into the sprite. Place it on a SOLID FLAT UNIFORM bright magenta background (pure #FF00FF). Absolutely NO checkerboard, NO transparency pattern, NO grid, NO grid lines, NO cell divisions, NO boxes, NO frames, NO rectangle outline"
+      "requestSize": "1536x768",
+      "targetSize": "1024x512",
+      "shapeRows": ["XX"],
+      "prompt": "a single wide low bowl of clear broth soup, roughly twice as wide as it is tall, floating vegetable and tofu pieces, gentle steam wisps, one single connected object, pure food and bowl only, centered, strong contact shadow painted into the sprite. Absolutely NO checkerboard, NO transparency pattern, NO grid, NO grid lines, NO cell divisions, NO boxes, NO frames, NO rectangle outline"
     },
     {
       "name": "fish",
-      "type": "item",
+      "type": "dish",
       "size": "1536x512",
-      "transparent": true,
-      "prompt": "three-by-one long horizontal battle board food sprite spanning three grid cells in a row: a whole steamed fish on a long narrow plate garnished with scallion and ginger slices, pure food only, no facial expression, centered, long rectangular footprint filling all three cells, strong contact shadow painted into the sprite, transparent background"
+      "shapeRows": ["XXX"],
+      "prompt": "three-by-one long horizontal battle board food sprite spanning three grid cells in a row: a whole steamed fish on a long narrow plate garnished with scallion and ginger slices, pure food only, no facial expression, centered, long rectangular footprint filling all three cells, strong contact shadow painted into the sprite"
     },
     {
       "name": "noodle",
-      "type": "item",
+      "type": "dish",
       "size": "1024x1024",
-      "prompt": "a single crooked pile of stir-fried noodles arranged in the bold shape of a capital letter L, sauce streaks and scallion garnish, one single connected food mass, pure food only, thick black outline, centered, strong contact shadow painted into the sprite. Place it on a SOLID FLAT UNIFORM bright magenta background (pure #FF00FF). Absolutely NO checkerboard, NO transparency pattern, NO grid, NO grid lines, NO cell divisions, NO boxes, NO frames"
+      "shapeRows": ["X.", "XX"],
+      "prompt": "a single crooked pile of stir-fried noodles arranged in the bold shape of a capital letter L, sauce streaks and scallion garnish, one single connected food mass, pure food only, thick black outline, centered. The top-right cell is empty background only. Absolutely NO checkerboard, NO transparency pattern, NO grid, NO grid lines, NO cell divisions, NO boxes, NO frames"
     },
     {
       "name": "dumpling",
-      "type": "item",
+      "type": "dish",
       "size": "1024x1024",
-      "prompt": "three plump pan-fried dumplings clustered tightly into one chunky group with a roughly square overall outline, crispy golden bottoms and pleated tops, one single connected cluster, pure food only, thick black outline, centered, strong contact shadow painted into the sprite. Place it on a SOLID FLAT UNIFORM bright magenta background (pure #FF00FF). Absolutely NO checkerboard, NO transparency pattern, NO grid, NO grid lines, NO cell divisions, NO boxes, NO frames"
+      "shapeRows": ["XX", ".X"],
+      "prompt": "three plump pan-fried dumplings clustered tightly into one chunky group matching the occupied cells: dumplings in top-left, top-right, and bottom-right cells only. The bottom-left cell is empty background only. Crispy golden bottoms and pleated tops, pure food only, thick black outline, centered. Absolutely NO checkerboard, NO transparency pattern, NO grid, NO grid lines, NO cell divisions, NO boxes, NO frames"
     },
     {
       "name": "chili",
-      "type": "item",
+      "type": "dish",
       "size": "512x512",
-      "transparent": true,
-      "prompt": "one-by-one single cell battle board food sprite: a single glossy red chili pepper with a green stem, mischievous curved shape, pure food only, no face, centered, square footprint filling the cell, clean bold silhouette, strong contact shadow painted into the sprite, transparent background, readable at small size"
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "shapeRows": ["X"],
+      "prompt": "one-by-one single cell battle board food sprite: a single glossy red chili pepper with a green stem, curved shape, pure food only, no face, centered, square footprint filling the cell, clean bold silhouette, strong contact shadow painted into the sprite, readable at small size"
     },
     {
       "name": "orange",
-      "type": "item",
+      "type": "dish",
       "size": "1024x1024",
-      "transparent": true,
-      "prompt": "two-by-two square battle board food sprite filling a full 2x2 block: a chunky orange fruit cut into four connected cartoon wedges with peel texture and juicy pulp, pure food only, centered, clear filled square footprint, strong contact shadow painted into the sprite, transparent background"
+      "shapeRows": ["XX", "XX"],
+      "prompt": "two-by-two square battle board food sprite filling a full 2x2 block: a chunky orange fruit cut into four connected cartoon wedges with peel texture and juicy pulp, pure food only, centered, clear filled square footprint, strong contact shadow painted into the sprite"
     },
     {
       "name": "cake",
-      "type": "item",
+      "type": "dish",
       "size": "1536x1024",
-      "transparent": true,
-      "prompt": "T-shaped four-cell battle board dessert sprite occupying a T tetromino footprint (a row of three cells on top plus one cell centered below): a cluster of layered cake slices arranged in that T shape, frosting drips and a cherry as food decoration only, pure food only, thick black outline, clear polyomino footprint matching the T shape, strong contact shadow painted into the sprite, transparent background"
+      "shapeRows": ["XXX", ".X."],
+      "prompt": "T-shaped four-cell battle board dessert sprite occupying a T tetromino footprint (a row of three cells on top plus one cell centered below): a cluster of layered cake slices arranged in that T shape. The bottom-left and bottom-right cells are empty background only. Frosting drips and a cherry as food decoration only, pure food only, thick black outline, clear polyomino footprint matching the T shape"
     },
     {
       "name": "feast",
-      "type": "item",
+      "type": "dish",
       "size": "2048x512",
-      "prompt": "a single very long horizontal banquet platter, roughly four times as wide as it is tall, packed end to end with roast meat, dumplings, shrimp and garnish, one single connected platter, pure food only, centered, strong contact shadow painted into the sprite. Place it on a SOLID FLAT UNIFORM bright magenta background (pure #FF00FF). Absolutely NO checkerboard, NO transparency pattern, NO grid, NO grid lines, NO cell divisions, NO boxes, NO frames, NO rectangle outline"
+      "requestSize": "2048x768",
+      "targetSize": "2048x512",
+      "targetMode": "crop",
+      "shapeRows": ["XXXX"],
+      "prompt": "a single very long horizontal banquet platter, roughly four times as wide as it is tall, packed end to end with roast meat, dumplings, shrimp and garnish, one single connected platter, pure food only, centered, strong contact shadow painted into the sprite. Absolutely NO checkerboard, NO transparency pattern, NO grid, NO grid lines, NO cell divisions, NO boxes, NO frames, NO rectangle outline"
     }
   ]
 }

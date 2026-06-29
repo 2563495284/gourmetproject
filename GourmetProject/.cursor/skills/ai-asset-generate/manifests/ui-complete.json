@@ -1,5 +1,16 @@
 {
   "stylePrefix": "90s American cable TV cartoon game art style, thick clean hand-drawn black ink outlines, flat cel animation colors, warm appetizing cream yellow and orange palette, slightly uneven organic hand-drawn silhouette, polished 2D game asset, no text, no letters, no numbers, no logo, no watermark",
+  "typeDefaults": {
+    "item": {
+      "outputDir": "Assets/GameMain/Resources/Sprites/Items",
+      "postprocess": "magenta-alpha",
+      "outputFormat": "png",
+      "quality": "high"
+    }
+  },
+  "typePromptPrefixes": {
+    "item": "Item icon rule: this is an inventory or battle prop icon, not a grid-footprint dish sprite. Generate exactly one readable object, centered on a square icon canvas with comfortable padding. Keep the silhouette bold at small size. Place it on a SOLID FLAT UNIFORM bright magenta background, pure #FF00FF, for local alpha removal. Do not arrange it to match shapeRows or board cells."
+  },
   "assets": [
     {
       "name": "ui_panel_window",
@@ -68,35 +79,35 @@
       "type": "item",
       "size": "1024x1024",
       "transparent": true,
-      "prompt": "A single large empty dinner plate game item icon, slightly top-down front angle, oversized round ceramic plate with a wide rim, chunky hand-drawn black outline, warm cream white fill with a soft blue-grey rim accent and gentle highlight, pure object, no face, no eyes, no mouth, no smile, no character, no creature, no limbs, no hands, bold readable silhouette, centered with contact shadow, isolated on transparent background, no text, no logo, no watermark"
+      "prompt": "A single large empty dinner plate game item icon, slightly top-down front angle, oversized round ceramic plate with a wide rim, chunky hand-drawn black outline, warm cream white fill with a soft blue-grey rim accent and gentle highlight, pure object, no face, no eyes, no mouth, no smile, no character, no creature, no limbs, no hands, bold readable silhouette, centered with contact shadow, no text, no logo, no watermark"
     },
     {
       "name": "chef_knife",
       "type": "item",
       "size": "1024x1024",
       "transparent": true,
-      "prompt": "A single chef's knife game item icon, diagonal side view, wide steel blade with a soft highlight and a chunky dark wooden handle, chunky hand-drawn black outline, flat cel colors, pure object, no face, no eyes, no mouth, no smile, no character, no creature, no limbs, no hands, bold readable silhouette, centered with contact shadow, isolated on transparent background, no text, no logo, no watermark"
+      "prompt": "A single chef's knife game item icon, diagonal side view, wide steel blade with a soft highlight and a chunky dark wooden handle, chunky hand-drawn black outline, flat cel colors, pure object, no face, no eyes, no mouth, no smile, no character, no creature, no limbs, no hands, bold readable silhouette, centered with contact shadow, no text, no logo, no watermark"
     },
     {
       "name": "pepper_jar",
       "type": "item",
       "size": "1024x1024",
       "transparent": true,
-      "prompt": "A single pepper shaker jar game item icon, front view, rounded glass jar full of dark pepper with a metal perforated cap, chunky hand-drawn black outline, warm flat cel colors with a soft highlight on the glass, pure object, no face, no eyes, no mouth, no smile, no character, no creature, no limbs, no hands, bold readable silhouette, centered with contact shadow, isolated on transparent background, no text, no logo, no watermark"
+      "prompt": "A single pepper shaker jar game item icon, front view, rounded glass jar full of dark pepper with a metal perforated cap, chunky hand-drawn black outline, warm flat cel colors with a soft highlight on the glass, pure object, no face, no eyes, no mouth, no smile, no character, no creature, no limbs, no hands, bold readable silhouette, centered with contact shadow, no text, no logo, no watermark"
     },
     {
       "name": "reroll_bell",
       "type": "item",
       "size": "1024x1024",
       "transparent": true,
-      "prompt": "A single shiny service reception desk bell game item icon, front view, rounded metal dome bell with a small round push button on top sitting on a flat base, chunky hand-drawn black outline, warm silver and gold flat cel colors with a soft highlight crescent, pure object, no face, no eyes, no mouth, no smile, no character, no creature, no limbs, no hands, bold readable silhouette, centered with contact shadow, isolated on transparent background, no text, no logo, no watermark"
+      "prompt": "A single shiny service reception desk bell game item icon, front view, rounded metal dome bell with a small round push button on top sitting on a flat base, chunky hand-drawn black outline, warm silver and gold flat cel colors with a soft highlight crescent, pure object, no face, no eyes, no mouth, no smile, no character, no creature, no limbs, no hands, bold readable silhouette, centered with contact shadow, no text, no logo, no watermark"
     },
     {
       "name": "extra_serve",
       "type": "item",
       "size": "1024x1024",
       "transparent": true,
-      "prompt": "A single meal coupon ticket game item icon, slightly angled, rectangular paper ticket with rounded perforated edge and a small fork-and-knife emblem stamped in bold black strokes, chunky hand-drawn black outline, warm cream and orange flat cel colors with a soft highlight, pure object, no face, no eyes, no mouth, no smile, no character, no creature, no limbs, no hands, bold readable silhouette, centered with contact shadow, isolated on transparent background, no text, no logo, no watermark"
+      "prompt": "A single meal coupon ticket game item icon, slightly angled, rectangular paper ticket with rounded perforated edge and a small fork-and-knife emblem stamped in bold black strokes, chunky hand-drawn black outline, warm cream and orange flat cel colors with a soft highlight, pure object, no face, no eyes, no mouth, no smile, no character, no creature, no limbs, no hands, bold readable silhouette, centered with contact shadow, no text, no logo, no watermark"
     }
   ]
 }
