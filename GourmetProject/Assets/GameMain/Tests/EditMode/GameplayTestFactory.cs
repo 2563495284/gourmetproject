@@ -16,7 +16,8 @@ namespace GourmetProject.Tests
             float baseWeight = 100f,
             bool allowRotate = true,
             IReadOnlyList<string> skills = null,
-            string flavor = null)
+            string flavor = null,
+            int rotationIndex = 0)
         {
             return new DishDef(
                 id,
@@ -29,7 +30,8 @@ namespace GourmetProject.Tests
                 skills ?? new List<string>(),
                 flavor ?? string.Empty,
                 string.Empty,
-                allowRotate);
+                allowRotate,
+                rotationIndex: rotationIndex);
         }
 
         public static SkillDef Skill(string id, TagEffectType effectType, float effectValue, string termId = "")
@@ -50,16 +52,14 @@ namespace GourmetProject.Tests
         /// <summary>造带指定技能（与可选风味）的棋盘菜品实例。第 5 参数即技能 id 列表。</summary>
         public static DishInstance InstanceWithTags(int id, DishDef def, int originX, int originY, IReadOnlyList<string> skillIds, string flavorId = null, int rotationIndex = 0)
         {
-            IReadOnlyList<DishShape> orientations = def.Shape.GetOrientations(def.AllowRotate);
-            DishShape orientation = orientations[rotationIndex];
+            DishShape orientation = def.Shape.RotatedBy(rotationIndex);
             var placement = new Placement(orientation, rotationIndex, new GridPos(originX, originY));
             return new DishInstance(id, def, placement, skillIds, flavorId ?? string.Empty);
         }
 
         public static DishInstance Instance(int id, DishDef def, int originX, int originY, int rotationIndex = 0)
         {
-            IReadOnlyList<DishShape> orientations = def.Shape.GetOrientations(def.AllowRotate);
-            DishShape orientation = orientations[rotationIndex];
+            DishShape orientation = def.Shape.RotatedBy(rotationIndex);
             var placement = new Placement(orientation, rotationIndex, new GridPos(originX, originY));
             return new DishInstance(id, def, placement, def.SkillIds, def.FlavorId);
         }

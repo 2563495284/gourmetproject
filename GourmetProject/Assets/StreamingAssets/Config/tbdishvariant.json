@@ -9,6 +9,7 @@
       "min": 1,
       "max": 10
     },
+    "rotation": 0,
     "skills": []
   },
   {
@@ -21,6 +22,7 @@
       "min": 5,
       "max": 20
     },
+    "rotation": 0,
     "skills": [
       "t_fresh"
     ]
@@ -35,6 +37,7 @@
       "min": 8,
       "max": 24
     },
+    "rotation": 0,
     "skills": [
       "t_lonely"
     ]
@@ -49,6 +52,7 @@
       "min": 20,
       "max": 40
     },
+    "rotation": 0,
     "skills": [
       "t_fresh"
     ]
@@ -63,6 +67,7 @@
       "min": 15,
       "max": 35
     },
+    "rotation": 0,
     "skills": [
       "t_hearty"
     ]
@@ -77,6 +82,7 @@
       "min": 12,
       "max": 32
     },
+    "rotation": 0,
     "skills": [
       "t_hearty"
     ]
@@ -91,6 +97,7 @@
       "min": 3,
       "max": 18
     },
+    "rotation": 0,
     "skills": [
       "t_spicy"
     ]
@@ -105,6 +112,7 @@
       "min": 10,
       "max": 30
     },
+    "rotation": 0,
     "skills": [
       "t_sweet"
     ]
@@ -119,6 +127,7 @@
       "min": 30,
       "max": 50
     },
+    "rotation": 0,
     "skills": [
       "t_sweet"
     ]
@@ -133,6 +142,7 @@
       "min": 40,
       "max": 70
     },
+    "rotation": 0,
     "skills": []
   }
 ]

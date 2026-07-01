@@ -213,26 +213,39 @@ namespace GourmetProject.Gameplay.Board
             }
 
             var placements = new List<Placement>();
-            // 设计案规定上菜筛选时允许菜品 90 度任意旋转；配置的 AllowRotate 不限制自动上菜。
-            IReadOnlyList<DishShape> orientations = def.Shape.GetOrientations(allowRotate: true);
 
-            for (int r = 0; r < orientations.Count; r++)
+            if (def.AllowRotate)
             {
-                DishShape shape = orientations[r];
-                for (int y = 0; y <= Height - shape.Height; y++)
+                // 允许旋转：上菜筛选枚举全部去重朝向（设计案：允许 90° 任意旋转）。
+                IReadOnlyList<DishShape> orientations = def.Shape.GetOrientations(allowRotate: true);
+                for (int r = 0; r < orientations.Count; r++)
                 {
-                    for (int x = 0; x <= Width - shape.Width; x++)
-                    {
-                        var origin = new GridPos(x, y);
-                        if (CanPlace(shape, origin))
-                        {
-                            placements.Add(new Placement(shape, r, origin));
-                        }
-                    }
+                    AddPlacementsForOrientation(orientations[r], r, placements);
                 }
+            }
+            else
+            {
+                // 不允许旋转：只以变体配置的固定朝向摆放，RotationIndex 用固定值。
+                int rot = def.RotationIndex;
+                AddPlacementsForOrientation(def.Shape.RotatedBy(rot), rot, placements);
             }
 
             return placements;
+        }
+
+        private void AddPlacementsForOrientation(DishShape shape, int rotationIndex, List<Placement> placements)
+        {
+            for (int y = 0; y <= Height - shape.Height; y++)
+            {
+                for (int x = 0; x <= Width - shape.Width; x++)
+                {
+                    var origin = new GridPos(x, y);
+                    if (CanPlace(shape, origin))
+                    {
+                        placements.Add(new Placement(shape, rotationIndex, origin));
+                    }
+                }
+            }
         }
 
         public bool CanFit(DishDef def) => FindValidPlacements(def).Count > 0;

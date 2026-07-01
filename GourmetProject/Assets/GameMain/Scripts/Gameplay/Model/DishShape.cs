@@ -79,6 +79,19 @@ namespace GourmetProject.Gameplay.Model
             return new DishShape(rotated);
         }
 
+        /// <summary>顺时针旋转指定次数（每次 90°），返回归一化后的新形状。次数按 4 取模，不去重、不受 allowRotate 影响。</summary>
+        public DishShape RotatedBy(int times)
+        {
+            int t = ((times % 4) + 4) % 4;
+            DishShape current = this;
+            for (int i = 0; i < t; i++)
+            {
+                current = current.Rotate90();
+            }
+
+            return current;
+        }
+
         /// <summary>返回该形状的全部不同朝向（最多 4 个，去重）。allowRotate=false 时仅返回自身。</summary>
         public IReadOnlyList<DishShape> GetOrientations(bool allowRotate)
         {

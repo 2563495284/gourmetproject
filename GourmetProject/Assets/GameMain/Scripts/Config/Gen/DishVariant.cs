@@ -23,6 +23,7 @@ public sealed partial class DishVariant : Luban.BeanBase
         { if(!_buf["baseWeight"].IsNumber) { throw new SerializationException(); }  BaseWeight = _buf["baseWeight"]; }
         { if(!_buf["price"].IsNumber) { throw new SerializationException(); }  Price = _buf["price"]; }
         { if(!_buf["hiddenRange"].IsObject) { throw new SerializationException(); }  HiddenRange = global::cfg.HiddenRange.DeserializeHiddenRange(_buf["hiddenRange"]);  }
+        { if(!_buf["rotation"].IsNumber) { throw new SerializationException(); }  Rotation = (DishRotation)_buf["rotation"].AsInt; }
         { var __json0 = _buf["skills"]; if(!__json0.IsArray) { throw new SerializationException(); } Skills = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  Skills.Add(__v0); }   }
     }
 
@@ -56,6 +57,10 @@ public sealed partial class DishVariant : Luban.BeanBase
     /// </summary>
     public readonly HiddenRange HiddenRange;
     /// <summary>
+    /// 固定旋转朝向(整格四向)
+    /// </summary>
+    public readonly DishRotation Rotation;
+    /// <summary>
     /// 技能标签ID列表
     /// </summary>
     public readonly System.Collections.Generic.List<string> Skills;
@@ -77,6 +82,7 @@ public sealed partial class DishVariant : Luban.BeanBase
         + "baseWeight:" + BaseWeight + ","
         + "price:" + Price + ","
         + "hiddenRange:" + HiddenRange + ","
+        + "rotation:" + Rotation + ","
         + "skills:" + Luban.StringUtil.CollectionToString(Skills) + ","
         + "}";
     }

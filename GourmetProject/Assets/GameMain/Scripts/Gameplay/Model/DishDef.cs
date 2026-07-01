@@ -23,7 +23,8 @@ namespace GourmetProject.Gameplay.Model
             string icon,
             bool allowRotate,
             string baseId = null,
-            int price = 0)
+            int price = 0,
+            int rotationIndex = 0)
         {
             Id = id ?? throw new ArgumentNullException(nameof(id));
             Name = name;
@@ -38,6 +39,7 @@ namespace GourmetProject.Gameplay.Model
             AllowRotate = allowRotate;
             BaseId = baseId ?? id;
             Price = price;
+            RotationIndex = ((rotationIndex % 4) + 4) % 4;
         }
 
         public string Id { get; }
@@ -80,6 +82,12 @@ namespace GourmetProject.Gameplay.Model
         public string Icon { get; }
 
         public bool AllowRotate { get; }
+
+        /// <summary>
+        /// 变体固定旋转朝向（0=原始，1/2/3=顺时针 90° 的次数）。<see cref="AllowRotate"/> 为 false 时，
+        /// 自动上菜只以该朝向摆放；为 true 时该值不生效（枚举全部朝向），两者预期互斥。
+        /// </summary>
+        public int RotationIndex { get; }
 
         /// <summary>要求隐藏分是否落在本菜品隐藏分范围内。</summary>
         public bool CoversHiddenScore(int requiredHidden)

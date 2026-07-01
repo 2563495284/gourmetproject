@@ -14,7 +14,7 @@
     "name": "煎蛋",
     "deliciousness": 8,
     "icon": "Sprites/Dishes/egg",
-    "allowRotate": true,
+    "allowRotate": false,
     "shapeRows": [
       "XX"
     ]
@@ -24,7 +24,7 @@
     "name": "鲜汤",
     "deliciousness": 9,
     "icon": "Sprites/Dishes/soup",
-    "allowRotate": true,
+    "allowRotate": false,
     "shapeRows": [
       "XX"
     ]
@@ -34,7 +34,7 @@
     "name": "清蒸鱼",
     "deliciousness": 15,
     "icon": "Sprites/Dishes/fish",
-    "allowRotate": true,
+    "allowRotate": false,
     "shapeRows": [
       "XXX"
     ]
@@ -44,7 +44,7 @@
     "name": "拌面",
     "deliciousness": 12,
     "icon": "Sprites/Dishes/noodle",
-    "allowRotate": true,
+    "allowRotate": false,
     "shapeRows": [
       "X.",
       "XX"
@@ -55,7 +55,7 @@
     "name": "饺子",
     "deliciousness": 11,
     "icon": "Sprites/Dishes/dumpling",
-    "allowRotate": true,
+    "allowRotate": false,
     "shapeRows": [
       "XX",
       ".X"
@@ -87,7 +87,7 @@
     "name": "蛋糕",
     "deliciousness": 20,
     "icon": "Sprites/Dishes/cake",
-    "allowRotate": true,
+    "allowRotate": false,
     "shapeRows": [
       "XXX",
       ".X."
@@ -98,7 +98,7 @@
     "name": "满汉全席",
     "deliciousness": 25,
     "icon": "Sprites/Dishes/feast",
-    "allowRotate": true,
+    "allowRotate": false,
     "shapeRows": [
       "XXXX"
     ]

@@ -116,6 +116,7 @@ namespace GourmetProject.Tests
     ""baseWeight"": 2.5,
     ""price"": 12,
     ""hiddenRange"": { ""min"": 3, ""max"": 9 },
+    ""rotation"": 0,
     ""skills"": [""tag_inherent""]
   },
   {
@@ -125,6 +126,7 @@ namespace GourmetProject.Tests
     ""baseWeight"": 1.5,
     ""price"": 9,
     ""hiddenRange"": { ""min"": 2, ""max"": 6 },
+    ""rotation"": 2,
     ""skills"": []
   }
 ]";

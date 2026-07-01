@@ -113,7 +113,8 @@ namespace GourmetProject.Game.Adapter
                 b.Icon,
                 b.AllowRotate,
                 b.Id,
-                v.Price);
+                v.Price,
+                (int)v.Rotation);
         }
 
         private static SkillDef ToSkillDef(cfg.Skill s)
