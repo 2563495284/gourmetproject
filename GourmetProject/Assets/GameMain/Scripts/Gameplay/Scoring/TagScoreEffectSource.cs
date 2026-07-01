@@ -30,6 +30,13 @@ namespace GourmetProject.Gameplay.Scoring
             int boardOrder = BoardOrder(snapshot, dish.Placement.Origin);
             foreach (string skillId in dish.SkillIds)
             {
+                // 规则技能（前提×行为）由 SkillRuleEffectSource 处理，这里只处理简易单效果技能。
+                SkillDef skillDef = snapshot.Db.GetSkill(skillId);
+                if (skillDef != null && skillDef.HasRules)
+                {
+                    continue;
+                }
+
                 IEffectDef skill = ResolveSkill(snapshot, skillId, out IScoreEffect effect);
                 if (skill == null)
                 {

@@ -16,12 +16,24 @@ alwaysApply: false
 - `IScoreCommand` 是实际改分层；需要连锁触发时提交 `ResolveScoreEffectCommand`，不要在外部做全局事件广播。
 - `ScoreLine` 记录分数变化来源；`ScoreEvent` 记录结算生命周期。新增效果时优先保证这两者能解释结果。
 
+## 技能规则（前提×行为）
+
+- 带 `TbSkillRule` 的技能由 `SkillRuleEffectSource` 处理（简易 `TagEffectType` 技能仍走 `TagScoreEffectSource`，二者互斥：`SkillDef.HasRules` 为真时跳过简易模式）。
+- 前提求值走 `SkillConditionEvaluator`（纯逻辑、无随机），产出 `count`；行为在 `SkillRuleEffect` 里按 `count` 派发。语义规格见 `docs/design/技能.md`。
+- 上菜时（OnServe）规则由 `ServeRuleResolver` 在 `BattleSession.Serve` 后处理，只做会改运行时状态的行为（层数/技能传递）与金币积累。
+
+## 跨菜与副作用（重要）
+
+- `ScoreContext` 为**每道菜独立累加器**（加法/乘区/额外结算次数），全部逐菜阶段跑完后由 `FinalizeDishes()` **统一定稿**求和；因此技能可以改到别的菜（`AddFlatTo`/`MultiplyTo`/`TransferScore`/`AddExtraSettlement`）。
+- 层数/金币/技能传递是**对外副作用**：结算中只累积（`GoldDelta`/`LayerDeltas`/`SkillTransfers`），不直接改实例，保证 `PreviewScore` 纯净、可复现；正式 `Settle` 后由 `BattleSession` 应用、`BattleForm` 写回 `GameRun.Gold` 与大局历史。
+- 历史/菜谱经 `IScoreHistory` 只读注入 `ScoreSnapshot`（读本次结算之前的状态，避免自累加）。
+
 ## 设计约束
 
 - 默认顺序遵循设计文档：食品标签先于格子标签，棋盘行优先从上到下、从左到右。
 - 命令入队时必须保留当前 `ScoreSource` / `ScorePhase` / `Cell` / `Tag`，避免连锁效果的明细归属错误。
-- 保持玩法层纯 C#，不要在 `Gameplay/Scoring` 中引用 `UnityEngine` 或 GameFramework。
-- 新增效果必须补 EditMode 测试，至少覆盖总分、执行顺序或 `ScoreLines` 来源。
+- 保持玩法层纯 C#，不要在 `Gameplay/Scoring` 中引用 `UnityEngine` 或 GameFramework；金币等外部副作用只经 `ScoreResult` 桥接。
+- 新增前提/行为必须补 EditMode 测试，至少覆盖 count 计算、行为效果、组合或 `ScoreLines` 来源。
 
 ## 示例
 

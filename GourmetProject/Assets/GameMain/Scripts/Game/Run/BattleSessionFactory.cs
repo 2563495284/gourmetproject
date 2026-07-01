@@ -50,7 +50,7 @@ namespace GourmetProject.Game.Run
             GpBoard board = BuildBoard(run, character, modifier);
 
             var battleStream = GameApp.Random.DomainStream(SeedDomains.Combat, key);
-            var session = new BattleSession(board, run.Database, battleStream, slots, requiredScore);
+            var session = new BattleSession(board, run.Database, battleStream, slots, requiredScore, runSettledCounts: run.RunSettledCounts);
 
             if (modifier == "limit_serve")
             {

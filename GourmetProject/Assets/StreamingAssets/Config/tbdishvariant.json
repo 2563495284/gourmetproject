@@ -39,7 +39,7 @@
     },
     "rotation": 0,
     "skills": [
-      "t_lonely"
+      "sk_neighbor"
     ]
   },
   {
@@ -99,7 +99,7 @@
     },
     "rotation": 0,
     "skills": [
-      "t_spicy"
+      "sk_same"
     ]
   },
   {
@@ -129,7 +129,7 @@
     },
     "rotation": 0,
     "skills": [
-      "t_sweet"
+      "cake_layer_add"
     ]
   },
   {

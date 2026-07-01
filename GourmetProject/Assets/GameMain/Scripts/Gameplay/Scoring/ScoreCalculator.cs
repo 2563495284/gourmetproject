@@ -27,10 +27,11 @@ namespace GourmetProject.Gameplay.Scoring
             GameplayDatabase db,
             float finalFlat = 0f,
             float finalMultiplier = 1f,
-            IEnumerable<IScoreEffectSource> extraSources = null)
+            IEnumerable<IScoreEffectSource> extraSources = null,
+            IScoreHistory history = null)
         {
             IScoreEffectSource[] sources = MergeSources(extraSources);
-            return Calculate(new ScoreSnapshot(board, db, finalFlat, finalMultiplier, sources));
+            return Calculate(new ScoreSnapshot(board, db, finalFlat, finalMultiplier, sources, history));
         }
 
         public ScoreResult Calculate(ScoreSnapshot snapshot)
@@ -60,6 +61,7 @@ namespace GourmetProject.Gameplay.Scoring
             }
 
             RunGlobalPhase(ctx, entries, ScorePhase.AfterAllDishes);
+            ctx.FinalizeDishes();
             ctx.RecordInitialFinalModifiers();
             RunGlobalPhase(ctx, entries, ScorePhase.Final);
             ctx.EmitEvent(ScoreEventType.CalculationFinished, "结束分数结算");
@@ -70,6 +72,7 @@ namespace GourmetProject.Gameplay.Scoring
         {
             var collector = new ScoreEffectCollector();
             new TagScoreEffectSource(_registry).CollectEffects(snapshot, collector);
+            new SkillRuleEffectSource().CollectEffects(snapshot, collector);
 
             foreach (IScoreEffectSource source in snapshot.EffectSources)
             {

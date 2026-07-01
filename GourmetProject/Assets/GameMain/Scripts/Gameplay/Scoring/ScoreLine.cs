@@ -10,6 +10,9 @@ namespace GourmetProject.Gameplay.Scoring
         DishMultiplier = 2,
         FinalFlat = 3,
         FinalMultiplier = 4,
+        Gold = 5,
+        Layer = 6,
+        ExtraSettlement = 7,
     }
 
     /// <summary>一次具体分数变化的可解释记录。</summary>

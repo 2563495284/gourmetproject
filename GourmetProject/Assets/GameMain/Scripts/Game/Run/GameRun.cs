@@ -29,6 +29,9 @@ namespace GourmetProject.Game.Run
         private readonly List<string> _bonusDishIds = new List<string>();
         private readonly List<string> _stomachFragmentIds = new List<string>();
 
+        // 整局累计已结算的菜品 BaseId 次数（供技能「大局相同检测」，随存档保存）。
+        private readonly Dictionary<string, int> _runSettledCounts = new Dictionary<string, int>();
+
         // —— 行动轴状态 ——
         private readonly List<string> _triggeredNodeIds = new List<string>();
         private readonly List<string> _usedEventIds = new List<string>();
@@ -80,6 +83,24 @@ namespace GourmetProject.Game.Run
         public IReadOnlyList<string> BonusDishIds => _bonusDishIds;
 
         public IReadOnlyList<string> StomachFragmentIds => _stomachFragmentIds;
+
+        /// <summary>整局累计已结算的菜品 BaseId 次数（大局历史）。</summary>
+        public IReadOnlyDictionary<string, int> RunSettledCounts => _runSettledCounts;
+
+        /// <summary>把一次结算的各 BaseId 增量累加进大局历史。</summary>
+        public void AddSettledCounts(IReadOnlyDictionary<string, int> increments)
+        {
+            if (increments == null)
+            {
+                return;
+            }
+
+            foreach (KeyValuePair<string, int> kv in increments)
+            {
+                _runSettledCounts.TryGetValue(kv.Key, out int cur);
+                _runSettledCounts[kv.Key] = cur + kv.Value;
+            }
+        }
 
         /// <summary>本周要求分的临时覆盖（&lt;0 表示无覆盖）。事件「歇业」等可降低本周目标。</summary>
         public int RequiredScoreOverride { get; set; } = -1;
@@ -477,6 +498,7 @@ namespace GourmetProject.Game.Run
                 Items = items,
                 BonusDishIds = new List<string>(_bonusDishIds),
                 StomachFragmentIds = new List<string>(_stomachFragmentIds),
+                RunSettledCounts = new Dictionary<string, int>(_runSettledCounts),
                 CurrentTimelineId = CurrentTimelineId,
                 TimelineLengthDays = TimelineLengthDays,
                 CurrentDay = CurrentDay,
@@ -551,6 +573,14 @@ namespace GourmetProject.Game.Run
             if (data.StomachFragmentIds != null)
             {
                 run._stomachFragmentIds.AddRange(data.StomachFragmentIds);
+            }
+
+            if (data.RunSettledCounts != null)
+            {
+                foreach (KeyValuePair<string, int> kv in data.RunSettledCounts)
+                {
+                    run._runSettledCounts[kv.Key] = kv.Value;
+                }
             }
 
             run.CurrentTimelineId = data.CurrentTimelineId ?? string.Empty;

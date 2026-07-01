@@ -204,6 +204,18 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnSettlementComplete(ScoreResult result)
         {
+            // 结算侧效果写回局外状态：金币入账（经济运营 + 上菜 OnServe）、大局结算历史累计。
+            if (_run != null && _session != null)
+            {
+                int gold = (int)System.Math.Round(_session.PendingGold, System.MidpointRounding.AwayFromZero);
+                if (gold != 0)
+                {
+                    _run.Gold = System.Math.Max(0, _run.Gold + gold);
+                }
+
+                _run.AddSettledCounts(_session.LastSettledIncrements);
+            }
+
             RefreshAll();
             _loop?.OnBattleSettled(result, _session != null && _session.IsWin);
         }

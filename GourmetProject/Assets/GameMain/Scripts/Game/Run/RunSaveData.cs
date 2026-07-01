@@ -22,6 +22,9 @@ namespace GourmetProject.Game.Run
         public List<string> BonusDishIds = new List<string>();
         public List<string> StomachFragmentIds = new List<string>();
 
+        /// <summary>整局累计已结算的菜品 BaseId 次数（技能「大局相同检测」）。</summary>
+        public Dictionary<string, int> RunSettledCounts = new Dictionary<string, int>();
+
         // —— 行动轴状态（局外核心循环）——
         /// <summary>本周行动轴 id（用于读档时按配置重建节点）。</summary>
         public string CurrentTimelineId;

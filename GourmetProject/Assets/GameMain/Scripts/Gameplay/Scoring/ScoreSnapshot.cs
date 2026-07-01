@@ -15,12 +15,14 @@ namespace GourmetProject.Gameplay.Scoring
             GameplayDatabase db,
             float finalFlat = 0f,
             float finalMultiplier = 1f,
-            IEnumerable<IScoreEffectSource> effectSources = null)
+            IEnumerable<IScoreEffectSource> effectSources = null,
+            IScoreHistory history = null)
         {
             Board = board ?? throw new ArgumentNullException(nameof(board));
             Db = db ?? throw new ArgumentNullException(nameof(db));
             InitialFinalFlat = finalFlat;
             InitialFinalMultiplier = finalMultiplier;
+            History = history ?? EmptyScoreHistory.Instance;
             EffectSources = (effectSources ?? Array.Empty<IScoreEffectSource>()).ToArray();
             DishesInDefaultOrder = Board.Dishes
                 .OrderBy(d => d.Placement.Origin.Y)
@@ -38,6 +40,8 @@ namespace GourmetProject.Gameplay.Scoring
         public float InitialFinalFlat { get; }
 
         public float InitialFinalMultiplier { get; }
+
+        public IScoreHistory History { get; }
 
         public IReadOnlyList<IScoreEffectSource> EffectSources { get; }
     }

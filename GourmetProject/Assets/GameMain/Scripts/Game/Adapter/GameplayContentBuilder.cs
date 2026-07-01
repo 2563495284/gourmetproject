@@ -32,10 +32,12 @@ namespace GourmetProject.Game.Adapter
                 dishes.Add(ToDishDef(v, b));
             }
 
+            Dictionary<string, List<SkillRuleDef>> rulesBySkill = BuildSkillRules(tables);
             var skills = new List<SkillDef>(tables.TbSkill.DataList.Count);
             foreach (cfg.Skill s in tables.TbSkill.DataList)
             {
-                skills.Add(ToSkillDef(s));
+                rulesBySkill.TryGetValue(s.Id, out List<SkillRuleDef> rules);
+                skills.Add(ToSkillDef(s, rules));
             }
 
             var flavors = new List<FlavorDef>(tables.TbFlavor.DataList.Count);
@@ -117,7 +119,45 @@ namespace GourmetProject.Game.Adapter
                 (int)v.Rotation);
         }
 
-        private static SkillDef ToSkillDef(cfg.Skill s)
+        private static Dictionary<string, List<SkillRuleDef>> BuildSkillRules(cfg.Tables tables)
+        {
+            var bySkill = new Dictionary<string, List<SkillRuleDef>>();
+            foreach (cfg.SkillRule r in tables.TbSkillRule.DataList)
+            {
+                if (!bySkill.TryGetValue(r.SkillId, out List<SkillRuleDef> list))
+                {
+                    list = new List<SkillRuleDef>();
+                    bySkill[r.SkillId] = list;
+                }
+
+                list.Add(new SkillRuleDef(
+                    r.Id,
+                    r.SkillId,
+                    r.Order,
+                    (SkillTrigger)(int)r.Trigger,
+                    (SkillConditionType)(int)r.CondType,
+                    (SkillScope)(int)r.CondScope,
+                    (CountUnit)(int)r.CondUnit,
+                    (CountMode)(int)r.CondMode,
+                    (CompareOp)(int)r.CondCompare,
+                    r.CondThreshold,
+                    r.CondParam,
+                    (SkillActionType)(int)r.ActionType,
+                    (SkillScope)(int)r.ActionScope,
+                    r.ActionCount,
+                    r.ActionValue,
+                    r.ActionParam));
+            }
+
+            foreach (List<SkillRuleDef> list in bySkill.Values)
+            {
+                list.Sort((a, b) => a.Order.CompareTo(b.Order));
+            }
+
+            return bySkill;
+        }
+
+        private static SkillDef ToSkillDef(cfg.Skill s, List<SkillRuleDef> rules)
         {
             var effectType = (TagEffectType)(int)s.EffectType;
             return new SkillDef(
@@ -127,7 +167,8 @@ namespace GourmetProject.Game.Adapter
                 effectType,
                 s.EffectValue,
                 s.EffectParam,
-                s.TermId);
+                s.TermId,
+                rules);
         }
 
         private static FlavorDef ToFlavorDef(cfg.Flavor f)

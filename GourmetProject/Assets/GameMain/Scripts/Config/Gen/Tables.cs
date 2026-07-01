@@ -134,6 +134,10 @@ public partial class Tables
     /// 棋盘格子标签：挂在胃碎片格上（TbFragmentCellTag 引用）。effectType/effectValue 定义结算效果。
     /// </summary>
     public TbCellTag TbCellTag {get; }
+    /// <summary>
+    /// 菜品技能规则：一行=一条规则(前提&#215;行为)，同skillId多行按order执行。
+    /// </summary>
+    public TbSkillRule TbSkillRule {get; }
 
     public Tables(System.Func<string, JSONNode> loader)
     {
@@ -167,6 +171,7 @@ public partial class Tables
         TbSkill = new TbSkill(loader("tbskill"));
         TbFlavor = new TbFlavor(loader("tbflavor"));
         TbCellTag = new TbCellTag(loader("tbcelltag"));
+        TbSkillRule = new TbSkillRule(loader("tbskillrule"));
         ResolveRef();
     }
     
@@ -202,6 +207,7 @@ public partial class Tables
         TbSkill.ResolveRef(this);
         TbFlavor.ResolveRef(this);
         TbCellTag.ResolveRef(this);
+        TbSkillRule.ResolveRef(this);
     }
 }
 

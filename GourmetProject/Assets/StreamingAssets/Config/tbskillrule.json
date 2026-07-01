@@ -1,0 +1,322 @@
+[
+  {
+    "id": "rr_neighbor",
+    "skillId": "sk_neighbor",
+    "order": 0,
+    "trigger": 0,
+    "condType": 4,
+    "condScope": 1,
+    "condUnit": 0,
+    "condMode": 0,
+    "condCompare": 0,
+    "condThreshold": 0,
+    "condParam": "",
+    "actionType": 1,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      3
+    ],
+    "actionParam": []
+  },
+  {
+    "id": "rr_empty",
+    "skillId": "sk_empty",
+    "order": 0,
+    "trigger": 0,
+    "condType": 2,
+    "condScope": 4,
+    "condUnit": 0,
+    "condMode": 0,
+    "condCompare": 0,
+    "condThreshold": 0,
+    "condParam": "",
+    "actionType": 1,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      2
+    ],
+    "actionParam": []
+  },
+  {
+    "id": "rr_rowfull",
+    "skillId": "sk_row_full",
+    "order": 0,
+    "trigger": 0,
+    "condType": 1,
+    "condScope": 2,
+    "condUnit": 0,
+    "condMode": 2,
+    "condCompare": 0,
+    "condThreshold": 0,
+    "condParam": "",
+    "actionType": 2,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      2
+    ],
+    "actionParam": []
+  },
+  {
+    "id": "rr_edge",
+    "skillId": "sk_edge",
+    "order": 0,
+    "trigger": 0,
+    "condType": 3,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 2,
+    "condCompare": 0,
+    "condThreshold": 0,
+    "condParam": "",
+    "actionType": 1,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      5
+    ],
+    "actionParam": []
+  },
+  {
+    "id": "rr_bigdish",
+    "skillId": "sk_bigdish",
+    "order": 0,
+    "trigger": 0,
+    "condType": 5,
+    "condScope": 4,
+    "condUnit": 0,
+    "condMode": 0,
+    "condCompare": 1,
+    "condThreshold": 2,
+    "condParam": "",
+    "actionType": 1,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      2
+    ],
+    "actionParam": []
+  },
+  {
+    "id": "rr_same",
+    "skillId": "sk_same",
+    "order": 0,
+    "trigger": 0,
+    "condType": 7,
+    "condScope": 4,
+    "condUnit": 0,
+    "condMode": 0,
+    "condCompare": 0,
+    "condThreshold": 0,
+    "condParam": "",
+    "actionType": 2,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      1.5
+    ],
+    "actionParam": []
+  },
+  {
+    "id": "rr_shape",
+    "skillId": "sk_shape",
+    "order": 0,
+    "trigger": 0,
+    "condType": 11,
+    "condScope": 4,
+    "condUnit": 0,
+    "condMode": 0,
+    "condCompare": 0,
+    "condThreshold": 0,
+    "condParam": "1x1",
+    "actionType": 1,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      1
+    ],
+    "actionParam": []
+  },
+  {
+    "id": "rr_step",
+    "skillId": "sk_step",
+    "order": 0,
+    "trigger": 0,
+    "condType": 4,
+    "condScope": 4,
+    "condUnit": 0,
+    "condMode": 1,
+    "condCompare": 1,
+    "condThreshold": 3,
+    "condParam": "",
+    "actionType": 1,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      50
+    ],
+    "actionParam": []
+  },
+  {
+    "id": "rr_transfer",
+    "skillId": "sk_transfer",
+    "order": 0,
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condCompare": 0,
+    "condThreshold": 0,
+    "condParam": "",
+    "actionType": 3,
+    "actionScope": 1,
+    "actionCount": 0,
+    "actionValue": [
+      0.3
+    ],
+    "actionParam": []
+  },
+  {
+    "id": "rr_extra",
+    "skillId": "sk_extra",
+    "order": 0,
+    "trigger": 0,
+    "condType": 4,
+    "condScope": 1,
+    "condUnit": 0,
+    "condMode": 0,
+    "condCompare": 0,
+    "condThreshold": 0,
+    "condParam": "",
+    "actionType": 4,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      1
+    ],
+    "actionParam": []
+  },
+  {
+    "id": "rr_gold",
+    "skillId": "sk_gold",
+    "order": 0,
+    "trigger": 0,
+    "condType": 4,
+    "condScope": 4,
+    "condUnit": 0,
+    "condMode": 0,
+    "condCompare": 0,
+    "condThreshold": 0,
+    "condParam": "self",
+    "actionType": 8,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      1
+    ],
+    "actionParam": []
+  },
+  {
+    "id": "rr_cake_add",
+    "skillId": "cake_layer_add",
+    "order": 0,
+    "trigger": 1,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condCompare": 0,
+    "condThreshold": 0,
+    "condParam": "",
+    "actionType": 6,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      1
+    ],
+    "actionParam": []
+  },
+  {
+    "id": "rr_cake_score",
+    "skillId": "cake_layer_add",
+    "order": 1,
+    "trigger": 0,
+    "condType": 13,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condCompare": 0,
+    "condThreshold": 0,
+    "condParam": "",
+    "actionType": 1,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      3
+    ],
+    "actionParam": []
+  },
+  {
+    "id": "rr_runsame",
+    "skillId": "sk_run_same",
+    "order": 0,
+    "trigger": 0,
+    "condType": 8,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condCompare": 0,
+    "condThreshold": 0,
+    "condParam": "",
+    "actionType": 1,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      3
+    ],
+    "actionParam": []
+  },
+  {
+    "id": "rr_recipe",
+    "skillId": "sk_recipe",
+    "order": 0,
+    "trigger": 0,
+    "condType": 12,
+    "condScope": 9,
+    "condUnit": 0,
+    "condMode": 2,
+    "condCompare": 1,
+    "condThreshold": 8,
+    "condParam": "",
+    "actionType": 2,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      2
+    ],
+    "actionParam": []
+  },
+  {
+    "id": "rr_share",
+    "skillId": "sk_share_skill",
+    "order": 0,
+    "trigger": 1,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condCompare": 0,
+    "condThreshold": 0,
+    "condParam": "",
+    "actionType": 5,
+    "actionScope": 1,
+    "actionCount": 0,
+    "actionValue": [
+      0
+    ],
+    "actionParam": []
+  }
+]

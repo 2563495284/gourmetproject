@@ -9,6 +9,7 @@ namespace GourmetProject.Gameplay.Model
     {
         private static readonly IReadOnlyList<float> EmptyValues = new float[0];
         private static readonly IReadOnlyList<string> EmptyParams = new string[0];
+        private static readonly IReadOnlyList<SkillRuleDef> EmptyRules = new SkillRuleDef[0];
 
         public SkillDef(
             string id,
@@ -17,7 +18,8 @@ namespace GourmetProject.Gameplay.Model
             TagEffectType effectType,
             IReadOnlyList<float> effectValues,
             IReadOnlyList<string> effectParams,
-            string termId)
+            string termId,
+            IReadOnlyList<SkillRuleDef> rules = null)
         {
             Id = id;
             Name = name;
@@ -26,6 +28,7 @@ namespace GourmetProject.Gameplay.Model
             EffectValues = effectValues ?? EmptyValues;
             EffectParams = effectParams ?? EmptyParams;
             TermId = termId ?? string.Empty;
+            Rules = rules ?? EmptyRules;
         }
 
         public string Id { get; }
@@ -47,5 +50,11 @@ namespace GourmetProject.Gameplay.Model
         public string TermId { get; }
 
         public bool HasTerm => !string.IsNullOrEmpty(TermId);
+
+        /// <summary>「前提×行为」组合规则（按 order 升序）。非空时忽略简易 <see cref="EffectType"/> 模式。</summary>
+        public IReadOnlyList<SkillRuleDef> Rules { get; }
+
+        /// <summary>是否使用组合规则模式（有子表规则）。</summary>
+        public bool HasRules => Rules.Count > 0;
     }
 }

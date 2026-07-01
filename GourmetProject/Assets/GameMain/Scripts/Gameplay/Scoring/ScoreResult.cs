@@ -32,13 +32,18 @@ namespace GourmetProject.Gameplay.Scoring
     /// <summary>一次结算的完整结果。</summary>
     public sealed class ScoreResult
     {
+        private static readonly IReadOnlyDictionary<int, int> EmptyLayerDeltas = new Dictionary<int, int>();
+
         public ScoreResult(
             IReadOnlyList<DishScore> dishScores,
             float rawSum,
             float finalFlat,
             float finalMultiplier,
             IReadOnlyList<ScoreLine> scoreLines = null,
-            IReadOnlyList<ScoreEvent> scoreEvents = null)
+            IReadOnlyList<ScoreEvent> scoreEvents = null,
+            float goldDelta = 0f,
+            IReadOnlyDictionary<int, int> layerDeltas = null,
+            IReadOnlyList<SkillTransferSideEffect> skillTransfers = null)
         {
             DishScores = dishScores;
             RawSum = rawSum;
@@ -46,6 +51,9 @@ namespace GourmetProject.Gameplay.Scoring
             FinalMultiplier = finalMultiplier;
             ScoreLines = scoreLines ?? System.Array.Empty<ScoreLine>();
             ScoreEvents = scoreEvents ?? System.Array.Empty<ScoreEvent>();
+            GoldDelta = goldDelta;
+            LayerDeltas = layerDeltas ?? EmptyLayerDeltas;
+            SkillTransfers = skillTransfers ?? System.Array.Empty<SkillTransferSideEffect>();
         }
 
         /// <summary>逐菜结算明细（按结算顺序）。</summary>
@@ -65,6 +73,15 @@ namespace GourmetProject.Gameplay.Scoring
 
         /// <summary>结算生命周期事件（按实际发生顺序）。</summary>
         public IReadOnlyList<ScoreEvent> ScoreEvents { get; }
+
+        /// <summary>金币增量（经济运营行为产生；正式结算后由 Game 层写回 GameRun.Gold）。</summary>
+        public float GoldDelta { get; }
+
+        /// <summary>层数改动（实例 Id → 结算后应有的层数与当前层数之差）。正式结算后应用。</summary>
+        public IReadOnlyDictionary<int, int> LayerDeltas { get; }
+
+        /// <summary>技能传递副作用。正式结算后应用到目标实例运行时技能集。</summary>
+        public IReadOnlyList<SkillTransferSideEffect> SkillTransfers { get; }
 
         /// <summary>最终得分（四舍五入到整数，0.5 向上取整）。</summary>
         public int Total => (int)System.Math.Round((RawSum + FinalFlat) * FinalMultiplier, System.MidpointRounding.AwayFromZero);

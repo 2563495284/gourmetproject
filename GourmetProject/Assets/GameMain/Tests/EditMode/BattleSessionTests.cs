@@ -53,7 +53,7 @@ namespace GourmetProject.Tests
         }
 
         [Test]
-        public void Serve_AllowsRotationEvenWhenDishConfigDisallowsIt()
+        public void Serve_UsesFixedOrientationWhenRotationDisallowed()
         {
             var rng = new RandomService();
             rng.Init("serve-rotate");
@@ -65,13 +65,35 @@ namespace GourmetProject.Tests
                 new List<CellTagDef>(),
                 new List<RecipeDef>());
             var slots = new[] { new RecipeSlot("slot0", new[] { "bar" }) };
-            var session = new BattleSession(new GpBoard(1, 2), db, rng.Stream("battle"), slots, requiredScore: 1);
 
+            // 变体禁旋：上菜只以固定朝向(2x1)摆放，不会旋转成 1x2。
+            var session = new BattleSession(new GpBoard(2, 2), db, rng.Stream("battle"), slots, requiredScore: 1);
             ServeResult result = session.Serve(0);
 
             Assert.AreEqual(ServeOutcome.Placed, result.Outcome);
-            Assert.AreEqual(1, result.Dish.Placement.Orientation.Width);
-            Assert.AreEqual(2, result.Dish.Placement.Orientation.Height);
+            Assert.AreEqual(2, result.Dish.Placement.Orientation.Width);
+            Assert.AreEqual(1, result.Dish.Placement.Orientation.Height);
+        }
+
+        [Test]
+        public void Serve_NoFittingDish_WhenFixedOrientationCannotFit()
+        {
+            var rng = new RandomService();
+            rng.Init("serve-norotate");
+            DishDef bar = GameplayTestFactory.Dish("bar", new[] { "XX" }, allowRotate: false);
+            var db = new GameplayDatabase(
+                new[] { bar },
+                new List<SkillDef>(),
+                new List<FlavorDef>(),
+                new List<CellTagDef>(),
+                new List<RecipeDef>());
+            var slots = new[] { new RecipeSlot("slot0", new[] { "bar" }) };
+
+            // 2x1 的菜在 1x2 棋盘上因禁旋无法摆放。
+            var session = new BattleSession(new GpBoard(1, 2), db, rng.Stream("battle"), slots, requiredScore: 1);
+            ServeResult result = session.Serve(0);
+
+            Assert.AreEqual(ServeOutcome.NoFittingDish, result.Outcome);
         }
 
         [Test]
@@ -140,6 +162,52 @@ namespace GourmetProject.Tests
             Assert.AreEqual(ServeOutcome.LimitReached, session.Serve(0).Outcome);
             Assert.AreEqual(2, session.Board.DishCount);
             Assert.IsFalse(session.CanServeAny());
+        }
+
+        [Test]
+        public void Serve_TriggersOnServeGoldRule()
+        {
+            var rng = new RandomService();
+            rng.Init("serve-gold");
+            SkillDef serveGold = GameplayTestFactory.RuleSkill("serve_gold",
+                GameplayTestFactory.Rule(SkillActionType.GrantGold, 3f, trigger: SkillTrigger.OnServe));
+            DishDef coin = GameplayTestFactory.Dish("coin", new[] { "X" }, deliciousness: 5, allowRotate: false, skills: new[] { "serve_gold" });
+            var db = new GameplayDatabase(
+                new[] { coin },
+                new[] { serveGold },
+                new List<FlavorDef>(),
+                new List<CellTagDef>(),
+                new List<RecipeDef>());
+            var slots = new[] { new RecipeSlot("slot0", new[] { "coin" }) };
+            var session = new BattleSession(new GpBoard(4, 4), db, rng.Stream("battle"), slots, requiredScore: 1);
+
+            session.Serve(0);
+
+            Assert.AreEqual(3f, session.PendingGold, 0.001f);
+        }
+
+        [Test]
+        public void Settle_AccumulatesGoldAndSettledCounts()
+        {
+            var rng = new RandomService();
+            rng.Init("settle-gold");
+            SkillDef gold = GameplayTestFactory.RuleSkill("gold_on_settle",
+                GameplayTestFactory.Rule(SkillActionType.GrantGold, 7f));
+            DishDef coin = GameplayTestFactory.Dish("coin", new[] { "X" }, deliciousness: 5, allowRotate: false, skills: new[] { "gold_on_settle" });
+            var db = new GameplayDatabase(
+                new[] { coin },
+                new[] { gold },
+                new List<FlavorDef>(),
+                new List<CellTagDef>(),
+                new List<RecipeDef>());
+            var slots = new[] { new RecipeSlot("slot0", new[] { "coin" }) };
+            var session = new BattleSession(new GpBoard(4, 4), db, rng.Stream("battle"), slots, requiredScore: 1);
+
+            session.Serve(0);
+            session.Settle();
+
+            Assert.AreEqual(7f, session.PendingGold, 0.001f);
+            Assert.IsTrue(session.LastSettledIncrements.TryGetValue("coin", out int c) && c == 1);
         }
 
         [Test]

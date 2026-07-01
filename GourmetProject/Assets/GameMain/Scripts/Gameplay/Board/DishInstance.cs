@@ -12,13 +12,14 @@ namespace GourmetProject.Gameplay.Board
     public sealed class DishInstance
     {
         private readonly List<GridPos> _occupiedCells;
+        private readonly List<string> _skillIds;
 
         public DishInstance(int id, DishDef def, Placement placement, IReadOnlyList<string> skillIds, string flavorId)
         {
             Id = id;
             Def = def ?? throw new ArgumentNullException(nameof(def));
             Placement = placement;
-            SkillIds = skillIds ?? Array.Empty<string>();
+            _skillIds = skillIds != null ? new List<string>(skillIds) : new List<string>();
             FlavorId = flavorId ?? string.Empty;
 
             _occupiedCells = placement.Orientation.Cells
@@ -33,11 +34,37 @@ namespace GourmetProject.Gameplay.Board
 
         public Placement Placement { get; }
 
-        /// <summary>该实例的最终技能 id 列表（数量无上限）。</summary>
-        public IReadOnlyList<string> SkillIds { get; }
+        /// <summary>该实例的运行时技能 id 列表（数量无上限，可被技能传递追加）。</summary>
+        public IReadOnlyList<string> SkillIds => _skillIds;
 
         /// <summary>该实例的最终风味 id（单槽，可空）。</summary>
         public string FlavorId { get; }
+
+        /// <summary>运行时层数资源（欢乐蛋糕层数等），初始 0。</summary>
+        public int Layers { get; private set; }
+
+        /// <summary>层数加减（下限 0）。</summary>
+        public void AddLayers(int delta)
+        {
+            Layers = Math.Max(0, Layers + delta);
+        }
+
+        /// <summary>直接设置层数（下限 0）。用于结算后按 LayerDeltas 应用。</summary>
+        public void SetLayers(int value)
+        {
+            Layers = Math.Max(0, value);
+        }
+
+        /// <summary>追加运行时技能（技能传递）。已存在则不重复。</summary>
+        public void AddSkill(string skillId)
+        {
+            if (string.IsNullOrEmpty(skillId) || _skillIds.Contains(skillId))
+            {
+                return;
+            }
+
+            _skillIds.Add(skillId);
+        }
 
         /// <summary>是否带有风味。</summary>
         public bool HasFlavor => !string.IsNullOrEmpty(FlavorId);
