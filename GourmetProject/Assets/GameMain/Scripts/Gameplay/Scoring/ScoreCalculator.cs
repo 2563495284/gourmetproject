@@ -8,7 +8,7 @@ using GpBoard = GourmetProject.Gameplay.Board.Board;
 namespace GourmetProject.Gameplay.Scoring
 {
     /// <summary>
-    /// 「吃」的结算器：把食品标签、格子标签以及额外来源收集为阶段化效果队列，
+    /// 「吃」的结算器：把菜品技能、风味、格子标签以及额外来源收集为阶段化效果队列，
     /// 再按确定性顺序执行并输出可解释明细。
     /// </summary>
     public sealed class ScoreCalculator
@@ -52,7 +52,8 @@ namespace GourmetProject.Gameplay.Scoring
                 RunDishPhase(ctx, entries, ScorePhase.BeforeDish, dish);
                 ctx.RecordDishBase();
                 RunDishPhase(ctx, entries, ScorePhase.DishBase, dish);
-                RunDishPhase(ctx, entries, ScorePhase.DishTags, dish);
+                RunDishPhase(ctx, entries, ScorePhase.DishSkills, dish);
+                RunDishPhase(ctx, entries, ScorePhase.DishFlavor, dish);
                 RunDishPhase(ctx, entries, ScorePhase.CellTags, dish);
                 RunDishPhase(ctx, entries, ScorePhase.AfterDish, dish);
                 ctx.CompleteDish();

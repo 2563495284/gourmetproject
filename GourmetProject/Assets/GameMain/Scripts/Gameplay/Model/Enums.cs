@@ -1,17 +1,7 @@
 namespace GourmetProject.Gameplay.Model
 {
     /// <summary>
-    /// 标签分类。与 Luban 的 cfg.TagCategory 一一对应，由 Game 层适配映射，保持本程序集纯净。
-    /// </summary>
-    public enum TagCategory
-    {
-        Inherent = 0,
-        UniqueA = 1,
-        UniqueB = 2,
-    }
-
-    /// <summary>
-    /// 标签效果类型。与 Luban 的 cfg.TagEffectType 一一对应。
+    /// 效果类型。与 Luban 的 cfg.TagEffectType 一一对应，技能/风味/格子标签共用。
     /// </summary>
     public enum TagEffectType
     {

@@ -19,7 +19,12 @@ namespace GourmetProject.Tests
                 GameplayTestFactory.Dish("rare", new[] { "XX", "XX" }, deliciousness: 20),
             };
 
-            return new GameplayDatabase(dishes, new List<TagDef>(), new List<RecipeDef>());
+            return new GameplayDatabase(
+                dishes,
+                new List<SkillDef>(),
+                new List<FlavorDef>(),
+                new List<CellTagDef>(),
+                new List<RecipeDef>());
         }
 
         [Test]
@@ -59,7 +64,12 @@ namespace GourmetProject.Tests
             {
                 GameplayTestFactory.Dish("starter", new[] { "X" }, deliciousness: 1),
             };
-            var db = new GameplayDatabase(dishes, new List<TagDef>(), new List<RecipeDef>());
+            var db = new GameplayDatabase(
+                dishes,
+                new List<SkillDef>(),
+                new List<FlavorDef>(),
+                new List<CellTagDef>(),
+                new List<RecipeDef>());
             var recipe = new RecipeDef(
                 "r",
                 new string[0],

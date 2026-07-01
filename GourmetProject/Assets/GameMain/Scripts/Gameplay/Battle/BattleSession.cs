@@ -105,8 +105,9 @@ namespace GourmetProject.Gameplay.Battle
             }
 
             ServeCandidate chosen = candidates[_rng.WeightedPickIndex(weights)];
-            List<string> tags = TagComposer.Compose(chosen.Dish.InherentTags, _db);
-            var instance = new DishInstance(_nextInstanceId++, chosen.Dish, chosen.Placement, tags);
+            List<string> skills = TagComposer.ComposeSkills(chosen.Dish.SkillIds);
+            string flavor = TagComposer.ComposeFlavor(new[] { chosen.Dish.FlavorId });
+            var instance = new DishInstance(_nextInstanceId++, chosen.Dish, chosen.Placement, skills, flavor);
             Board.Place(instance);
             slot.RemoveAt(chosen.SlotEntryIndex);
             ServesUsed++;

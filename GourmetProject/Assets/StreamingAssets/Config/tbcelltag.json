@@ -1,0 +1,24 @@
+[
+  {
+    "id": "t_cell_gold",
+    "name": "强化·黄金格",
+    "desc": "占据该格的菜品贡献分数 ×{0}。",
+    "effectType": 2,
+    "effectValue": [
+      1.5
+    ],
+    "effectParam": [],
+    "termId": ""
+  },
+  {
+    "id": "t_cell_warm",
+    "name": "强化·温补格",
+    "desc": "占据该格的菜品美味度 {0}。",
+    "effectType": 1,
+    "effectValue": [
+      3
+    ],
+    "effectParam": [],
+    "termId": ""
+  }
+]

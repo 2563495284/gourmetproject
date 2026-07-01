@@ -19,13 +19,9 @@ public partial class Tables
     /// </summary>
     public TbDishBase TbDishBase {get; }
     /// <summary>
-    /// 菜品变体：随机菜品库条目。引用本体+标签组合+隐藏分/权重/价格。同 baseId 不同变体=带不同标签视为不同菜品。aTagId/bTagId 空串=唯一标签槽为空。
+    /// 菜品变体：随机菜品库条目。引用本体+技能(skills→TbSkill)+风味(flavorId→TbFlavor,单槽)+隐藏分/权重/价格。同 baseId 不同组合视为不同菜品。flavorId 空串=无风味。
     /// </summary>
     public TbDishVariant TbDishVariant {get; }
-    /// <summary>
-    /// 标签（技能）。category 区分固有/唯一A/唯一B；termId 非空时菜品详情额外展示该名词。
-    /// </summary>
-    public TbTag TbTag {get; }
     /// <summary>
     /// 专有名词：菜品详情右侧框单独解释。
     /// </summary>
@@ -39,7 +35,7 @@ public partial class Tables
     /// </summary>
     public TbStomachFragment TbStomachFragment {get; }
     /// <summary>
-    /// 碎片格强化标签：一行=碎片某格(x,y)挂一个标签 id（引用 TbTag）。
+    /// 碎片格强化标签：一行=碎片某格(x,y)挂一个格子标签 id（引用 TbCellTag）。
     /// </summary>
     public TbFragmentCellTag TbFragmentCellTag {get; }
     /// <summary>
@@ -126,12 +122,23 @@ public partial class Tables
     /// 解锁条件：同 ruleId 的条件按 groupId 组成 OR-of-AND。
     /// </summary>
     public TbUnlockCondition TbUnlockCondition {get; }
+    /// <summary>
+    /// 菜品技能：数量无上限。effectType/effectValue 定义结算效果；termId 非空时详情额外展示名词。
+    /// </summary>
+    public TbSkill TbSkill {get; }
+    /// <summary>
+    /// 菜品风味：单槽，后者替换前者。effectType/effectValue 定义结算效果。
+    /// </summary>
+    public TbFlavor TbFlavor {get; }
+    /// <summary>
+    /// 棋盘格子标签：挂在胃碎片格上（TbFragmentCellTag 引用）。effectType/effectValue 定义结算效果。
+    /// </summary>
+    public TbCellTag TbCellTag {get; }
 
     public Tables(System.Func<string, JSONNode> loader)
     {
         TbDishBase = new TbDishBase(loader("tbdishbase"));
         TbDishVariant = new TbDishVariant(loader("tbdishvariant"));
-        TbTag = new TbTag(loader("tbtag"));
         TbTerm = new TbTerm(loader("tbterm"));
         TbCharacter = new TbCharacter(loader("tbcharacter"));
         TbStomachFragment = new TbStomachFragment(loader("tbstomachfragment"));
@@ -157,6 +164,9 @@ public partial class Tables
         TbActionScheduleRule = new TbActionScheduleRule(loader("tbactionschedulerule"));
         TbUnlockRule = new TbUnlockRule(loader("tbunlockrule"));
         TbUnlockCondition = new TbUnlockCondition(loader("tbunlockcondition"));
+        TbSkill = new TbSkill(loader("tbskill"));
+        TbFlavor = new TbFlavor(loader("tbflavor"));
+        TbCellTag = new TbCellTag(loader("tbcelltag"));
         ResolveRef();
     }
     
@@ -164,7 +174,6 @@ public partial class Tables
     {
         TbDishBase.ResolveRef(this);
         TbDishVariant.ResolveRef(this);
-        TbTag.ResolveRef(this);
         TbTerm.ResolveRef(this);
         TbCharacter.ResolveRef(this);
         TbStomachFragment.ResolveRef(this);
@@ -190,6 +199,9 @@ public partial class Tables
         TbActionScheduleRule.ResolveRef(this);
         TbUnlockRule.ResolveRef(this);
         TbUnlockCondition.ResolveRef(this);
+        TbSkill.ResolveRef(this);
+        TbFlavor.ResolveRef(this);
+        TbCellTag.ResolveRef(this);
     }
 }
 

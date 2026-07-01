@@ -188,7 +188,9 @@ namespace GourmetProject.Game.Presentation.Battle
                 return false;
             }
 
-            return line.Source.Type == ScoreSourceType.DishTag || line.Source.Type == ScoreSourceType.CellTag;
+            return line.Source.Type == ScoreSourceType.DishSkill
+                || line.Source.Type == ScoreSourceType.DishFlavor
+                || line.Source.Type == ScoreSourceType.CellTag;
         }
 
         private void BeginSettlementSpeed()

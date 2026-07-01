@@ -43,8 +43,8 @@ namespace GourmetProject.Gameplay.Scoring
 
         public ScorePhase Phase { get; private set; }
 
-        /// <summary>当前正在结算的标签；非标签来源时为空。</summary>
-        public TagDef Tag { get; set; }
+        /// <summary>当前正在结算的技能/风味/格子标签效果；非效果来源时为空。</summary>
+        public IEffectDef Tag { get; set; }
 
         public float FlatBonus { get; private set; }
 
@@ -113,7 +113,7 @@ namespace GourmetProject.Gameplay.Scoring
             ScorePhase previousPhase = Phase;
             ScoreSource previousSource = Source;
             GridPos? previousCell = CurrentCell;
-            TagDef previousTag = Tag;
+            IEffectDef previousTag = Tag;
             Phase = entry.Phase;
             Source = entry.Source;
             CurrentCell = entry.Cell;
@@ -274,7 +274,7 @@ namespace GourmetProject.Gameplay.Scoring
                     ScorePhase previousPhase = Phase;
                     ScoreSource previousSource = Source;
                     GridPos? previousCell = CurrentCell;
-                    TagDef previousTag = Tag;
+                    IEffectDef previousTag = Tag;
                     Phase = pending.Phase;
                     Source = pending.Source;
                     CurrentCell = pending.Cell;
@@ -315,7 +315,7 @@ namespace GourmetProject.Gameplay.Scoring
                 ScorePhase phase,
                 ScoreSource source,
                 GridPos? cell,
-                TagDef tag)
+                IEffectDef tag)
             {
                 Command = command;
                 Phase = phase;
@@ -332,7 +332,7 @@ namespace GourmetProject.Gameplay.Scoring
 
             public GridPos? Cell { get; }
 
-            public TagDef Tag { get; }
+            public IEffectDef Tag { get; }
         }
     }
 

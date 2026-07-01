@@ -13,37 +13,48 @@ using GourmetProject.Game.UI.Widgets;
 namespace GourmetProject.Game.UI.Widgets
 {
     /// <summary>
-    /// 菜品信息文本的共享生成逻辑：标签行、专有名词解释、hover tooltip 汇总。
+    /// 菜品信息文本的共享生成逻辑：技能/风味行、专有名词解释、hover tooltip 汇总。
     /// 由菜品详情界面（DishDetailForm）与菜单书 hover tips（DishTooltipView）共用，避免两处实现漂移。
     /// </summary>
     public static class DishInfoText
     {
-        /// <summary>生成标签展示行（格式「【名称】描述」），并输出去重后的关联专有名词 id。</summary>
-        public static List<string> TagLines(IReadOnlyList<string> tagIds, GameplayDatabase db, out List<string> termIds)
+        /// <summary>
+        /// 生成技能/风味展示行（格式「【名称】描述」，技能在前、风味在后），并输出去重后的关联专有名词 id。
+        /// 技能走 <see cref="GameplayDatabase.GetSkill"/>、风味走 <see cref="GameplayDatabase.GetFlavor"/>。
+        /// </summary>
+        public static List<string> TagLines(IReadOnlyList<string> skillIds, string flavorId, GameplayDatabase db, out List<string> termIds)
         {
             var lines = new List<string>();
             termIds = new List<string>();
-            if (tagIds == null || db == null)
+            if (db == null)
             {
                 return lines;
             }
 
-            foreach (string tagId in tagIds)
+            if (skillIds != null)
             {
-                TagDef tag = db.GetTag(tagId);
-                if (tag == null)
+                foreach (string skillId in skillIds)
                 {
-                    continue;
-                }
-
-                lines.Add($"【{tag.Name}】{tag.Desc}");
-                if (tag.HasTerm && !termIds.Contains(tag.TermId))
-                {
-                    termIds.Add(tag.TermId);
+                    AppendEffect(db.GetSkill(skillId), lines, termIds);
                 }
             }
 
+            AppendEffect(db.GetFlavor(flavorId), lines, termIds);
             return lines;
+        }
+
+        private static void AppendEffect(IEffectDef def, List<string> lines, List<string> termIds)
+        {
+            if (def == null)
+            {
+                return;
+            }
+
+            lines.Add($"【{def.Name}】{def.Desc}");
+            if (def.HasTerm && !termIds.Contains(def.TermId))
+            {
+                termIds.Add(def.TermId);
+            }
         }
 
         /// <summary>生成专有名词解释块（每行「※ 名称：描述」）。无名词时返回空串。</summary>
@@ -67,8 +78,8 @@ namespace GourmetProject.Game.UI.Widgets
             return sb.ToString();
         }
 
-        /// <summary>生成菜品 hover tooltip 的完整文本：名称、美味度、形状、标签、名词。</summary>
-        public static string Tooltip(DishDef def, IReadOnlyList<string> tagIds, GameplayDatabase db)
+        /// <summary>生成菜品 hover tooltip 的完整文本：名称、美味度、形状、技能/风味、名词。</summary>
+        public static string Tooltip(DishDef def, IReadOnlyList<string> skillIds, string flavorId, GameplayDatabase db)
         {
             if (def == null)
             {
@@ -79,7 +90,7 @@ namespace GourmetProject.Game.UI.Widgets
             sb.AppendLine(def.Name);
             sb.AppendLine($"美味度 {def.Deliciousness}　形状 {def.Shape.Width}x{def.Shape.Height}");
 
-            List<string> tagLines = TagLines(tagIds ?? def.InherentTags, db, out List<string> termIds);
+            List<string> tagLines = TagLines(skillIds, flavorId, db, out List<string> termIds);
             foreach (string line in tagLines)
             {
                 sb.AppendLine(line);

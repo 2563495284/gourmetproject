@@ -18,7 +18,8 @@ namespace GourmetProject.Gameplay.Model
             int hiddenMin,
             int hiddenMax,
             float baseWeight,
-            IReadOnlyList<string> inherentTags,
+            IReadOnlyList<string> skillIds,
+            string flavorId,
             string icon,
             bool allowRotate,
             string baseId = null,
@@ -31,7 +32,8 @@ namespace GourmetProject.Gameplay.Model
             HiddenMin = hiddenMin;
             HiddenMax = hiddenMax;
             BaseWeight = baseWeight;
-            InherentTags = inherentTags ?? Array.Empty<string>();
+            SkillIds = skillIds ?? Array.Empty<string>();
+            FlavorId = flavorId ?? string.Empty;
             Icon = icon ?? string.Empty;
             AllowRotate = allowRotate;
             BaseId = baseId ?? id;
@@ -63,10 +65,17 @@ namespace GourmetProject.Gameplay.Model
         public int Price { get; }
 
         /// <summary>
-        /// 种子标签集合：本体固有标签 + 变体的唯一标签 A/B。创建棋盘实例时整份交给
-        /// TagComposer，由其按 category 去重并执行唯一 A/B 的「上限 1、再次获得替换」规则。
+        /// 菜品初始技能 id 列表（数量无上限）。创建棋盘实例时整份带入，运行时可被道具追加/修改。
         /// </summary>
-        public IReadOnlyList<string> InherentTags { get; }
+        public IReadOnlyList<string> SkillIds { get; }
+
+        /// <summary>
+        /// 菜品初始风味 id（单槽，可空）。再次获得风味会替换原风味，特殊道具可解除单槽上限。
+        /// </summary>
+        public string FlavorId { get; }
+
+        /// <summary>是否带有风味。</summary>
+        public bool HasFlavor => !string.IsNullOrEmpty(FlavorId);
 
         public string Icon { get; }
 

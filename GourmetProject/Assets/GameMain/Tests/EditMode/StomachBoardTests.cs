@@ -12,9 +12,16 @@ namespace GourmetProject.Tests
     /// <summary>不规则胃部棋盘三态、格子强化标签结算统一、以及 StomachBuilder 造盘测试。</summary>
     public class StomachBoardTests
     {
-        private static GameplayDatabase Db(params TagDef[] tags)
+        private static GameplayDatabase Db(
+            IEnumerable<SkillDef> skills = null,
+            IEnumerable<CellTagDef> cellTags = null)
         {
-            return new GameplayDatabase(new List<DishDef>(), tags, new List<RecipeDef>());
+            return new GameplayDatabase(
+                new List<DishDef>(),
+                skills ?? new List<SkillDef>(),
+                new List<FlavorDef>(),
+                cellTags ?? new List<CellTagDef>(),
+                new List<RecipeDef>());
         }
 
         private static Dictionary<GridPos, IReadOnlyList<string>> CellTags(params (int x, int y, string tag)[] entries)
@@ -61,7 +68,7 @@ namespace GourmetProject.Tests
         [Test]
         public void CellTag_AppliesToOccupyingDish()
         {
-            GameplayDatabase db = Db(GameplayTestFactory.Tag("gold", TagEffectType.AddMult, 2f));
+            GameplayDatabase db = Db(cellTags: new[] { GameplayTestFactory.CellTag("gold", TagEffectType.AddMult, 2f) });
             var board = new GpBoard(2, 2, null, CellTags((0, 0, "gold")));
             DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
             board.Place(GameplayTestFactory.InstanceWithTags(1, dish, 0, 0, new string[0]));
@@ -75,7 +82,7 @@ namespace GourmetProject.Tests
         [Test]
         public void CellTag_StacksPerOccupiedTaggedCell()
         {
-            GameplayDatabase db = Db(GameplayTestFactory.Tag("gold", TagEffectType.AddMult, 2f));
+            GameplayDatabase db = Db(cellTags: new[] { GameplayTestFactory.CellTag("gold", TagEffectType.AddMult, 2f) });
             var board = new GpBoard(2, 2, null, CellTags((0, 0, "gold"), (1, 0, "gold")));
             DishDef dish = GameplayTestFactory.Dish("d", new[] { "XX" }, deliciousness: 10, allowRotate: false);
             board.Place(GameplayTestFactory.InstanceWithTags(1, dish, 0, 0, new string[0]));
@@ -90,8 +97,8 @@ namespace GourmetProject.Tests
         public void CellTag_CombinesWithDishOwnTag()
         {
             GameplayDatabase db = Db(
-                GameplayTestFactory.Tag("fresh", TagEffectType.AddFlat, 5f),
-                GameplayTestFactory.Tag("gold", TagEffectType.AddMult, 2f));
+                skills: new[] { GameplayTestFactory.Skill("fresh", TagEffectType.AddFlat, 5f) },
+                cellTags: new[] { GameplayTestFactory.CellTag("gold", TagEffectType.AddMult, 2f) });
             var board = new GpBoard(2, 2, null, CellTags((0, 0, "gold")));
             DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
             board.Place(GameplayTestFactory.InstanceWithTags(1, dish, 0, 0, new[] { "fresh" }));

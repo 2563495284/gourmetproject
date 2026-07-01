@@ -15,7 +15,8 @@ namespace GourmetProject.Tests
             int hiddenMax = 100,
             float baseWeight = 100f,
             bool allowRotate = true,
-            IReadOnlyList<string> tags = null)
+            IReadOnlyList<string> skills = null,
+            string flavor = null)
         {
             return new DishDef(
                 id,
@@ -25,27 +26,34 @@ namespace GourmetProject.Tests
                 hiddenMin,
                 hiddenMax,
                 baseWeight,
-                tags ?? new List<string>(),
+                skills ?? new List<string>(),
+                flavor ?? string.Empty,
                 string.Empty,
                 allowRotate);
         }
 
-        public static TagDef Tag(
-            string id,
-            TagEffectType effectType,
-            float effectValue,
-            TagCategory category = TagCategory.Inherent,
-            string termId = "")
+        public static SkillDef Skill(string id, TagEffectType effectType, float effectValue, string termId = "")
         {
-            return new TagDef(id, id, id, category, effectType, new[] { effectValue }, System.Array.Empty<string>(), termId);
+            return new SkillDef(id, id, id, effectType, new[] { effectValue }, System.Array.Empty<string>(), termId);
         }
 
-        public static DishInstance InstanceWithTags(int id, DishDef def, int originX, int originY, IReadOnlyList<string> tagIds, int rotationIndex = 0)
+        public static FlavorDef Flavor(string id, TagEffectType effectType, float effectValue, string termId = "")
+        {
+            return new FlavorDef(id, id, id, effectType, new[] { effectValue }, System.Array.Empty<string>(), termId);
+        }
+
+        public static CellTagDef CellTag(string id, TagEffectType effectType, float effectValue, string termId = "")
+        {
+            return new CellTagDef(id, id, id, effectType, new[] { effectValue }, System.Array.Empty<string>(), termId);
+        }
+
+        /// <summary>造带指定技能（与可选风味）的棋盘菜品实例。第 5 参数即技能 id 列表。</summary>
+        public static DishInstance InstanceWithTags(int id, DishDef def, int originX, int originY, IReadOnlyList<string> skillIds, string flavorId = null, int rotationIndex = 0)
         {
             IReadOnlyList<DishShape> orientations = def.Shape.GetOrientations(def.AllowRotate);
             DishShape orientation = orientations[rotationIndex];
             var placement = new Placement(orientation, rotationIndex, new GridPos(originX, originY));
-            return new DishInstance(id, def, placement, tagIds);
+            return new DishInstance(id, def, placement, skillIds, flavorId ?? string.Empty);
         }
 
         public static DishInstance Instance(int id, DishDef def, int originX, int originY, int rotationIndex = 0)
@@ -53,7 +61,7 @@ namespace GourmetProject.Tests
             IReadOnlyList<DishShape> orientations = def.Shape.GetOrientations(def.AllowRotate);
             DishShape orientation = orientations[rotationIndex];
             var placement = new Placement(orientation, rotationIndex, new GridPos(originX, originY));
-            return new DishInstance(id, def, placement, def.InherentTags);
+            return new DishInstance(id, def, placement, def.SkillIds, def.FlavorId);
         }
     }
 }

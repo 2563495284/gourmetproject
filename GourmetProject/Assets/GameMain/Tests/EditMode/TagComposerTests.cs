@@ -1,63 +1,51 @@
 using System.Collections.Generic;
-using GourmetProject.Gameplay.Data;
-using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Tags;
 using NUnit.Framework;
 
 namespace GourmetProject.Tests
 {
-    /// <summary>唯一标签 A/B 上限替换规则测试。</summary>
+    /// <summary>技能追加与风味单槽替换规则测试。</summary>
     public class TagComposerTests
     {
-        private static GameplayDatabase Db()
+        [Test]
+        public void ComposeSkills_KeepsAllSkillsInOrder()
         {
-            var tags = new List<TagDef>
-            {
-                GameplayTestFactory.Tag("fresh", TagEffectType.AddFlat, 5f, TagCategory.Inherent),
-                GameplayTestFactory.Tag("hearty", TagEffectType.AddFlat, 2f, TagCategory.Inherent),
-                GameplayTestFactory.Tag("feastA", TagEffectType.AddMult, 1.1f, TagCategory.UniqueA),
-                GameplayTestFactory.Tag("comboA", TagEffectType.AddMult, 1.2f, TagCategory.UniqueA),
-                GameplayTestFactory.Tag("goldB", TagEffectType.AddMult, 2f, TagCategory.UniqueB),
-                GameplayTestFactory.Tag("silverB", TagEffectType.AddMult, 1.5f, TagCategory.UniqueB),
-            };
-            return new GameplayDatabase(new List<DishDef>(), tags, new List<RecipeDef>());
+            List<string> result = TagComposer.ComposeSkills(new[] { "fresh", "hearty" });
+            CollectionAssert.AreEqual(new[] { "fresh", "hearty" }, result);
         }
 
         [Test]
-        public void Compose_KeepsAllInherentTags()
+        public void ComposeSkills_DropsEmptyIds()
         {
-            GameplayDatabase db = Db();
-            List<string> result = TagComposer.Compose(new[] { "fresh", "hearty" }, db);
-            CollectionAssert.AreEquivalent(new[] { "fresh", "hearty" }, result);
+            List<string> result = TagComposer.ComposeSkills(new[] { "fresh", "", null, "spicy" });
+            CollectionAssert.AreEqual(new[] { "fresh", "spicy" }, result);
         }
 
         [Test]
-        public void Compose_SecondUniqueAReplacesFirst()
+        public void ComposeFlavor_SingleSlot_LastReplacesEarlier()
         {
-            GameplayDatabase db = Db();
-            List<string> result = TagComposer.Compose(new[] { "fresh", "feastA", "comboA" }, db);
-
-            CollectionAssert.Contains(result, "fresh");
-            CollectionAssert.Contains(result, "comboA");
-            CollectionAssert.DoesNotContain(result, "feastA");
+            string result = TagComposer.ComposeFlavor(new[] { "feast", "golden" });
+            Assert.AreEqual("golden", result);
         }
 
         [Test]
-        public void Compose_AllowsOneUniqueAAndOneUniqueB()
+        public void ComposeFlavor_EmptyWhenNone()
         {
-            GameplayDatabase db = Db();
-            List<string> result = TagComposer.Compose(new[] { "feastA", "goldB" }, db);
-            CollectionAssert.AreEquivalent(new[] { "feastA", "goldB" }, result);
+            Assert.AreEqual(string.Empty, TagComposer.ComposeFlavor(new[] { "", null }));
         }
 
         [Test]
-        public void Compose_RemoveUniqueCap_KeepsAllUniques()
+        public void ComposeFlavors_Capped_KeepsOnlyLast()
         {
-            GameplayDatabase db = Db();
-            List<string> result = TagComposer.Compose(
-                new[] { "feastA", "comboA", "goldB", "silverB" }, db, removeUniqueCap: true);
+            List<string> result = TagComposer.ComposeFlavors(new[] { "feast", "golden" });
+            CollectionAssert.AreEqual(new[] { "golden" }, result);
+        }
 
-            CollectionAssert.AreEquivalent(new[] { "feastA", "comboA", "goldB", "silverB" }, result);
+        [Test]
+        public void ComposeFlavors_RemoveCap_KeepsAll()
+        {
+            List<string> result = TagComposer.ComposeFlavors(new[] { "feast", "golden" }, removeFlavorCap: true);
+            CollectionAssert.AreEqual(new[] { "feast", "golden" }, result);
         }
     }
 }

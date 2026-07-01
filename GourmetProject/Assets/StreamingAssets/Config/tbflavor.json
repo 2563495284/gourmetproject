@@ -1,0 +1,24 @@
+[
+  {
+    "id": "t_feast",
+    "name": "盛宴",
+    "desc": "棋盘上每有一道菜，本菜品分数 ×1.1。",
+    "effectType": 6,
+    "effectValue": [
+      0.1
+    ],
+    "effectParam": [],
+    "termId": ""
+  },
+  {
+    "id": "t_golden",
+    "name": "黄金",
+    "desc": "本菜品贡献的分数 ×{0}。",
+    "effectType": 2,
+    "effectValue": [
+      2
+    ],
+    "effectParam": [],
+    "termId": ""
+  }
+]

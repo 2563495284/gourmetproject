@@ -18,7 +18,12 @@ namespace GourmetProject.Tests
                 GameplayTestFactory.Dish("rice", new[] { "X" }, deliciousness: 5, allowRotate: false),
                 GameplayTestFactory.Dish("egg", new[] { "XX" }, deliciousness: 8, allowRotate: true),
             };
-            return new GameplayDatabase(dishes, new List<TagDef>(), new List<RecipeDef>());
+            return new GameplayDatabase(
+                dishes,
+                new List<SkillDef>(),
+                new List<FlavorDef>(),
+                new List<CellTagDef>(),
+                new List<RecipeDef>());
         }
 
         private static BattleSession BuildSession(RandomService rng, int requiredScore)
@@ -53,7 +58,12 @@ namespace GourmetProject.Tests
             var rng = new RandomService();
             rng.Init("serve-rotate");
             DishDef bar = GameplayTestFactory.Dish("bar", new[] { "XX" }, allowRotate: false);
-            var db = new GameplayDatabase(new[] { bar }, new List<TagDef>(), new List<RecipeDef>());
+            var db = new GameplayDatabase(
+                new[] { bar },
+                new List<SkillDef>(),
+                new List<FlavorDef>(),
+                new List<CellTagDef>(),
+                new List<RecipeDef>());
             var slots = new[] { new RecipeSlot("slot0", new[] { "bar" }) };
             var session = new BattleSession(new GpBoard(1, 2), db, rng.Stream("battle"), slots, requiredScore: 1);
 

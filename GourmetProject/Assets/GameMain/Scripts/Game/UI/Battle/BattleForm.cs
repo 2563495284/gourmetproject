@@ -227,7 +227,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            var data = new DishDetailData(inst.Def, _run.Database, inst.TagIds);
+            var data = new DishDetailData(inst.Def, _run.Database, inst.SkillIds, inst.FlavorId);
             GameApp.UI.OpenUIForm(UIForms.DishDetail, UIForms.GroupDialog, data);
         }
 

@@ -2,149 +2,137 @@
   {
     "id": "rice",
     "baseId": "rice",
-    "aTagId": "",
-    "bTagId": "",
+    "flavorId": "",
     "baseWeight": 150,
     "price": 2,
     "hiddenRange": {
       "min": 1,
       "max": 10
     },
-    "inherentTags": []
+    "skills": []
   },
   {
     "id": "egg",
     "baseId": "egg",
-    "aTagId": "",
-    "bTagId": "",
+    "flavorId": "",
     "baseWeight": 120,
     "price": 3,
     "hiddenRange": {
       "min": 5,
       "max": 20
     },
-    "inherentTags": [
+    "skills": [
       "t_fresh"
     ]
   },
   {
     "id": "soup",
     "baseId": "soup",
-    "aTagId": "",
-    "bTagId": "",
+    "flavorId": "",
     "baseWeight": 100,
     "price": 3,
     "hiddenRange": {
       "min": 8,
       "max": 24
     },
-    "inherentTags": [
+    "skills": [
       "t_lonely"
     ]
   },
   {
     "id": "fish",
     "baseId": "fish",
-    "aTagId": "",
-    "bTagId": "",
+    "flavorId": "",
     "baseWeight": 80,
     "price": 5,
     "hiddenRange": {
       "min": 20,
       "max": 40
     },
-    "inherentTags": [
+    "skills": [
       "t_fresh"
     ]
   },
   {
     "id": "noodle",
     "baseId": "noodle",
-    "aTagId": "",
-    "bTagId": "",
+    "flavorId": "",
     "baseWeight": 90,
     "price": 4,
     "hiddenRange": {
       "min": 15,
       "max": 35
     },
-    "inherentTags": [
+    "skills": [
       "t_hearty"
     ]
   },
   {
     "id": "dumpling",
     "baseId": "dumpling",
-    "aTagId": "",
-    "bTagId": "",
+    "flavorId": "",
     "baseWeight": 90,
     "price": 4,
     "hiddenRange": {
       "min": 12,
       "max": 32
     },
-    "inherentTags": [
+    "skills": [
       "t_hearty"
     ]
   },
   {
     "id": "chili",
     "baseId": "chili",
-    "aTagId": "",
-    "bTagId": "",
+    "flavorId": "",
     "baseWeight": 110,
     "price": 2,
     "hiddenRange": {
       "min": 3,
       "max": 18
     },
-    "inherentTags": [
+    "skills": [
       "t_spicy"
     ]
   },
   {
     "id": "orange",
     "baseId": "orange",
-    "aTagId": "",
-    "bTagId": "",
+    "flavorId": "",
     "baseWeight": 100,
     "price": 3,
     "hiddenRange": {
       "min": 10,
       "max": 30
     },
-    "inherentTags": [
+    "skills": [
       "t_sweet"
     ]
   },
   {
     "id": "cake",
     "baseId": "cake",
-    "aTagId": "",
-    "bTagId": "",
+    "flavorId": "",
     "baseWeight": 60,
     "price": 6,
     "hiddenRange": {
       "min": 30,
       "max": 50
     },
-    "inherentTags": [
+    "skills": [
       "t_sweet"
     ]
   },
   {
     "id": "feast",
     "baseId": "feast",
-    "aTagId": "",
-    "bTagId": "",
+    "flavorId": "t_feast",
     "baseWeight": 40,
     "price": 8,
     "hiddenRange": {
       "min": 40,
       "max": 70
     },
-    "inherentTags": [
-      "t_feast"
-    ]
+    "skills": []
   }
 ]

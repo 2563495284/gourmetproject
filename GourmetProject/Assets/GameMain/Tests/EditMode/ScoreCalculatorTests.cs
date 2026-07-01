@@ -12,9 +12,24 @@ namespace GourmetProject.Tests
     /// <summary>计分管线测试：加法/乘区/相邻/空位效果、贡献汇总、结算顺序、局级修正。</summary>
     public class ScoreCalculatorTests
     {
-        private static GameplayDatabase Db(params TagDef[] tags)
+        private static GameplayDatabase Db(params SkillDef[] skills)
         {
-            return new GameplayDatabase(new List<DishDef>(), tags, new List<RecipeDef>());
+            return new GameplayDatabase(
+                new List<DishDef>(),
+                skills,
+                new List<FlavorDef>(),
+                new List<CellTagDef>(),
+                new List<RecipeDef>());
+        }
+
+        private static GameplayDatabase Db(SkillDef[] skills, FlavorDef[] flavors, CellTagDef[] cellTags)
+        {
+            return new GameplayDatabase(
+                new List<DishDef>(),
+                skills,
+                flavors,
+                cellTags,
+                new List<RecipeDef>());
         }
 
         private sealed class RelicFinalMultiplierSource : IScoreEffectSource
@@ -105,7 +120,7 @@ namespace GourmetProject.Tests
         [Test]
         public void AddFlat_IncreasesContribution()
         {
-            GameplayDatabase db = Db(GameplayTestFactory.Tag("fresh", TagEffectType.AddFlat, 5f));
+            GameplayDatabase db = Db(GameplayTestFactory.Skill("fresh", TagEffectType.AddFlat, 5f));
             var board = new GpBoard(4, 4);
             DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
             board.Place(GameplayTestFactory.InstanceWithTags(1, dish, 0, 0, new[] { "fresh" }));
@@ -119,7 +134,7 @@ namespace GourmetProject.Tests
         [Test]
         public void AddMult_MultipliesContribution()
         {
-            GameplayDatabase db = Db(GameplayTestFactory.Tag("sweet", TagEffectType.AddMult, 1.5f));
+            GameplayDatabase db = Db(GameplayTestFactory.Skill("sweet", TagEffectType.AddMult, 1.5f));
             var board = new GpBoard(4, 4);
             DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
             board.Place(GameplayTestFactory.InstanceWithTags(1, dish, 0, 0, new[] { "sweet" }));
@@ -133,8 +148,8 @@ namespace GourmetProject.Tests
         public void FlatThenMult_AppliesFlatBeforeMultiplier()
         {
             GameplayDatabase db = Db(
-                GameplayTestFactory.Tag("fresh", TagEffectType.AddFlat, 5f),
-                GameplayTestFactory.Tag("sweet", TagEffectType.AddMult, 1.5f));
+                GameplayTestFactory.Skill("fresh", TagEffectType.AddFlat, 5f),
+                GameplayTestFactory.Skill("sweet", TagEffectType.AddMult, 1.5f));
             var board = new GpBoard(4, 4);
             DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
             board.Place(GameplayTestFactory.InstanceWithTags(1, dish, 0, 0, new[] { "fresh", "sweet" }));
@@ -149,7 +164,7 @@ namespace GourmetProject.Tests
         [Test]
         public void PerAdjacentDish_ScalesWithNeighborCount()
         {
-            GameplayDatabase db = Db(GameplayTestFactory.Tag("spicy", TagEffectType.PerAdjacentDish, 3f));
+            GameplayDatabase db = Db(GameplayTestFactory.Skill("spicy", TagEffectType.PerAdjacentDish, 3f));
             var board = new GpBoard(4, 4);
             DishDef single = GameplayTestFactory.Dish("s", new[] { "X" }, deliciousness: 4, allowRotate: false);
 
@@ -168,7 +183,7 @@ namespace GourmetProject.Tests
         [Test]
         public void PerEmptyCell_ScalesWithBoardEmptyCells()
         {
-            GameplayDatabase db = Db(GameplayTestFactory.Tag("lonely", TagEffectType.PerEmptyCell, 2f));
+            GameplayDatabase db = Db(GameplayTestFactory.Skill("lonely", TagEffectType.PerEmptyCell, 2f));
             var board = new GpBoard(4, 4); // 16 cells
             DishDef single = GameplayTestFactory.Dish("s", new[] { "X" }, deliciousness: 9, allowRotate: false);
             board.Place(GameplayTestFactory.InstanceWithTags(1, single, 0, 0, new[] { "lonely" }));
@@ -194,30 +209,34 @@ namespace GourmetProject.Tests
         }
 
         [Test]
-        public void ScoreLines_RecordDishTagBeforeCellTag()
+        public void ScoreLines_RecordSkillThenFlavorThenCellTag()
         {
             GameplayDatabase db = Db(
-                GameplayTestFactory.Tag("fresh", TagEffectType.AddFlat, 5f),
-                GameplayTestFactory.Tag("gold", TagEffectType.AddMult, 2f));
+                new[] { GameplayTestFactory.Skill("fresh", TagEffectType.AddFlat, 5f) },
+                new[] { GameplayTestFactory.Flavor("sweet", TagEffectType.AddMult, 1.5f) },
+                new[] { GameplayTestFactory.CellTag("gold", TagEffectType.AddMult, 2f) });
             var cellTags = new Dictionary<GridPos, IReadOnlyList<string>>
             {
                 [new GridPos(0, 0)] = new List<string> { "gold" },
             };
             var board = new GpBoard(2, 2, null, cellTags);
             DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
-            board.Place(GameplayTestFactory.InstanceWithTags(1, dish, 0, 0, new[] { "fresh" }));
+            board.Place(GameplayTestFactory.InstanceWithTags(1, dish, 0, 0, new[] { "fresh" }, flavorId: "sweet"));
 
             ScoreResult result = new ScoreCalculator().Calculate(board, db);
 
             List<ScoreLine> effectLines = result.ScoreLines
                 .Where(l => l.Kind == ScoreLineKind.DishFlat || l.Kind == ScoreLineKind.DishMultiplier)
                 .ToList();
-            Assert.AreEqual(2, effectLines.Count);
-            Assert.AreEqual(ScoreSourceType.DishTag, effectLines[0].Source.Type);
-            Assert.AreEqual(ScorePhase.DishTags, effectLines[0].Phase);
-            Assert.AreEqual(ScoreSourceType.CellTag, effectLines[1].Source.Type);
-            Assert.AreEqual(ScorePhase.CellTags, effectLines[1].Phase);
-            Assert.AreEqual(30, result.Total);
+            Assert.AreEqual(3, effectLines.Count);
+            Assert.AreEqual(ScoreSourceType.DishSkill, effectLines[0].Source.Type);
+            Assert.AreEqual(ScorePhase.DishSkills, effectLines[0].Phase);
+            Assert.AreEqual(ScoreSourceType.DishFlavor, effectLines[1].Source.Type);
+            Assert.AreEqual(ScorePhase.DishFlavor, effectLines[1].Phase);
+            Assert.AreEqual(ScoreSourceType.CellTag, effectLines[2].Source.Type);
+            Assert.AreEqual(ScorePhase.CellTags, effectLines[2].Phase);
+            // ((10 + 5(技能)) * 1.5(风味)) * 2(格子) = 45
+            Assert.AreEqual(45, result.Total);
         }
 
         [Test]

@@ -403,7 +403,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     Go = go,
                     Col = col,
                     Text = tm,
-                    Tooltip = DishInfoText.Tooltip(item.Def, item.Def.InherentTags, _db),
+                    Tooltip = DishInfoText.Tooltip(item.Def, item.Def.SkillIds, item.Def.FlavorId, _db),
                 });
             }
         }

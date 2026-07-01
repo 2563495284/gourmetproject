@@ -32,10 +32,22 @@ namespace GourmetProject.Game.Adapter
                 dishes.Add(ToDishDef(v, b));
             }
 
-            var tags = new List<TagDef>(tables.TbTag.DataList.Count);
-            foreach (cfg.Tag t in tables.TbTag.DataList)
+            var skills = new List<SkillDef>(tables.TbSkill.DataList.Count);
+            foreach (cfg.Skill s in tables.TbSkill.DataList)
             {
-                tags.Add(ToTagDef(t));
+                skills.Add(ToSkillDef(s));
+            }
+
+            var flavors = new List<FlavorDef>(tables.TbFlavor.DataList.Count);
+            foreach (cfg.Flavor f in tables.TbFlavor.DataList)
+            {
+                flavors.Add(ToFlavorDef(f));
+            }
+
+            var cellTags = new List<CellTagDef>(tables.TbCellTag.DataList.Count);
+            foreach (cfg.CellTag c in tables.TbCellTag.DataList)
+            {
+                cellTags.Add(ToCellTagDef(c));
             }
 
             var recipes = new List<RecipeDef>(tables.TbRecipe.DataList.Count);
@@ -46,7 +58,7 @@ namespace GourmetProject.Game.Adapter
 
             var fragments = BuildFragments(tables);
 
-            return new GameplayDatabase(dishes, tags, recipes, fragments);
+            return new GameplayDatabase(dishes, skills, flavors, cellTags, recipes, fragments);
         }
 
         private static List<StomachFragmentDef> BuildFragments(cfg.Tables tables)
@@ -88,18 +100,6 @@ namespace GourmetProject.Game.Adapter
 
         private static DishDef ToDishDef(cfg.DishVariant v, cfg.DishBase b)
         {
-            // 种子标签 = 本体固有标签 + 变体唯一标签 A/B（空串视为槽位为空）。
-            var seedTags = new List<string>(v.InherentTags);
-            if (!string.IsNullOrEmpty(v.ATagId))
-            {
-                seedTags.Add(v.ATagId);
-            }
-
-            if (!string.IsNullOrEmpty(v.BTagId))
-            {
-                seedTags.Add(v.BTagId);
-            }
-
             return new DishDef(
                 v.Id,
                 b.Name,
@@ -108,25 +108,51 @@ namespace GourmetProject.Game.Adapter
                 v.HiddenRange.Min,
                 v.HiddenRange.Max,
                 v.BaseWeight,
-                seedTags,
+                new List<string>(v.Skills),
+                v.FlavorId,
                 b.Icon,
                 b.AllowRotate,
                 b.Id,
                 v.Price);
         }
 
-        private static TagDef ToTagDef(cfg.Tag t)
+        private static SkillDef ToSkillDef(cfg.Skill s)
         {
-            var effectType = (TagEffectType)(int)t.EffectType;
-            return new TagDef(
-                t.Id,
-                t.Name,
-                TagDescFormatter.Format(t.Desc, t.EffectValue, signed: !effectType.IsMultiplier()),
-                (TagCategory)(int)t.Category,
+            var effectType = (TagEffectType)(int)s.EffectType;
+            return new SkillDef(
+                s.Id,
+                s.Name,
+                TagDescFormatter.Format(s.Desc, s.EffectValue, signed: !effectType.IsMultiplier()),
                 effectType,
-                t.EffectValue,
-                t.EffectParam,
-                t.TermId);
+                s.EffectValue,
+                s.EffectParam,
+                s.TermId);
+        }
+
+        private static FlavorDef ToFlavorDef(cfg.Flavor f)
+        {
+            var effectType = (TagEffectType)(int)f.EffectType;
+            return new FlavorDef(
+                f.Id,
+                f.Name,
+                TagDescFormatter.Format(f.Desc, f.EffectValue, signed: !effectType.IsMultiplier()),
+                effectType,
+                f.EffectValue,
+                f.EffectParam,
+                f.TermId);
+        }
+
+        private static CellTagDef ToCellTagDef(cfg.CellTag c)
+        {
+            var effectType = (TagEffectType)(int)c.EffectType;
+            return new CellTagDef(
+                c.Id,
+                c.Name,
+                TagDescFormatter.Format(c.Desc, c.EffectValue, signed: !effectType.IsMultiplier()),
+                effectType,
+                c.EffectValue,
+                c.EffectParam,
+                c.TermId);
         }
 
         private static RecipeDef ToRecipeDef(cfg.Recipe r)

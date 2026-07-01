@@ -161,7 +161,8 @@ namespace GourmetProject.Game.UI.Widgets
             float rowH = 0.16f;
             int shown = 0;
 
-            List<string> lines = DishInfoText.TagLines(data.TagIds, db, out List<string> terms);
+            List<string> lines = DishInfoText.TagLines(
+                data.SkillIds, data.FlavorId, db, out List<string> terms);
 
             foreach (string line in lines)
             {

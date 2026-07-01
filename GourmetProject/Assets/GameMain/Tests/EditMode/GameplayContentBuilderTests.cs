@@ -4,7 +4,6 @@ using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
 using Luban.SimpleJSON;
 using NUnit.Framework;
-using GpTagCategory = GourmetProject.Gameplay.Model.TagCategory;
 using GpTagEffectType = GourmetProject.Gameplay.Model.TagEffectType;
 
 namespace GourmetProject.Tests
@@ -30,15 +29,25 @@ namespace GourmetProject.Tests
             Assert.AreEqual(12, dish.Price);
             Assert.AreEqual("Icons/Sushi", dish.Icon);
             Assert.IsTrue(dish.AllowRotate);
-            CollectionAssert.AreEqual(new[] { "tag_inherent", "tag_a", "tag_b" }, dish.InherentTags);
+            CollectionAssert.AreEqual(new[] { "tag_inherent" }, dish.SkillIds);
+            Assert.AreEqual("tag_a", dish.FlavorId);
 
-            TagDef tag = db.GetTag("tag_a");
-            Assert.NotNull(tag);
-            Assert.AreEqual(GpTagCategory.UniqueA, tag.Category);
-            Assert.AreEqual(GpTagEffectType.AddFlat, tag.EffectType);
-            Assert.AreEqual(5f, tag.EffectValue);
-            Assert.AreEqual("dish", tag.EffectParam);
-            Assert.AreEqual("term_hot", tag.TermId);
+            SkillDef skill = db.GetSkill("tag_inherent");
+            Assert.NotNull(skill);
+            Assert.AreEqual(GpTagEffectType.AddMult, skill.EffectType);
+            Assert.AreEqual(1.5f, skill.EffectValue);
+
+            FlavorDef flavor = db.GetFlavor("tag_a");
+            Assert.NotNull(flavor);
+            Assert.AreEqual(GpTagEffectType.AddFlat, flavor.EffectType);
+            Assert.AreEqual(5f, flavor.EffectValue);
+            Assert.AreEqual("dish", flavor.EffectParam);
+            Assert.AreEqual("term_hot", flavor.TermId);
+
+            CellTagDef cellTag = db.GetCellTag("tag_a");
+            Assert.NotNull(cellTag);
+            Assert.AreEqual(GpTagEffectType.AddMult, cellTag.EffectType);
+            Assert.AreEqual(2f, cellTag.EffectValue);
 
             RecipeDef recipe = db.GetRecipe("recipe_test");
             Assert.NotNull(recipe);
@@ -103,35 +112,56 @@ namespace GourmetProject.Tests
   {
     ""id"": ""dish_sushi_hot"",
     ""baseId"": ""base_sushi"",
-    ""aTagId"": ""tag_a"",
-    ""bTagId"": ""tag_b"",
+    ""flavorId"": ""tag_a"",
     ""baseWeight"": 2.5,
     ""price"": 12,
     ""hiddenRange"": { ""min"": 3, ""max"": 9 },
-    ""inherentTags"": [""tag_inherent""]
+    ""skills"": [""tag_inherent""]
   },
   {
     ""id"": ""dish_sushi_cold"",
     ""baseId"": ""base_sushi"",
-    ""aTagId"": """",
-    ""bTagId"": """",
+    ""flavorId"": """",
     ""baseWeight"": 1.5,
     ""price"": 9,
     ""hiddenRange"": { ""min"": 2, ""max"": 6 },
-    ""inherentTags"": []
+    ""skills"": []
   }
 ]";
-                case "tbtag":
+                case "tbskill":
+                    return @"[
+  {
+    ""id"": ""tag_inherent"",
+    ""name"": ""固有"",
+    ""desc"": ""贡献 ×{0}"",
+    ""effectType"": 2,
+    ""effectValue"": [1.5],
+    ""effectParam"": [],
+    ""termId"": """"
+  }
+]";
+                case "tbflavor":
                     return @"[
   {
     ""id"": ""tag_a"",
     ""name"": ""辣味"",
     ""desc"": ""加 {0} 分"",
-    ""category"": 1,
     ""effectType"": 1,
     ""effectValue"": [5],
     ""effectParam"": [""dish""],
     ""termId"": ""term_hot""
+  }
+]";
+                case "tbcelltag":
+                    return @"[
+  {
+    ""id"": ""tag_a"",
+    ""name"": ""黄金格"",
+    ""desc"": ""贡献 ×{0}"",
+    ""effectType"": 2,
+    ""effectValue"": [2],
+    ""effectParam"": [],
+    ""termId"": """"
   }
 ]";
                 case "tbrecipe":

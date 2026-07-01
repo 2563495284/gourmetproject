@@ -1,7 +1,7 @@
 [
   {
     "id": "recipe_glutton",
-    "fixedDishes": "rice",
+    "fixedDishes": "rice|rice",
     "requiredInitScore": 40,
     "pool": [
       {

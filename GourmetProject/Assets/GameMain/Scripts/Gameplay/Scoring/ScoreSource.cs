@@ -7,12 +7,13 @@ namespace GourmetProject.Gameplay.Scoring
     public enum ScoreSourceType
     {
         Dish = 0,
-        DishTag = 1,
-        CellTag = 2,
-        BoardTag = 3,
-        Relic = 4,
-        WeekModifier = 5,
-        FinalModifier = 6,
+        DishSkill = 1,
+        DishFlavor = 2,
+        CellTag = 3,
+        BoardTag = 4,
+        Relic = 5,
+        WeekModifier = 6,
+        FinalModifier = 7,
     }
 
     /// <summary>记录一个结算效果来自哪里，供排序、调试和 UI 明细展示。</summary>
@@ -56,17 +57,27 @@ namespace GourmetProject.Gameplay.Scoring
                 dish?.Def?.Id);
         }
 
-        public static ScoreSource DishTag(TagDef tag, DishInstance dish)
+        public static ScoreSource DishSkill(IEffectDef tag, DishInstance dish)
         {
             return new ScoreSource(
-                ScoreSourceType.DishTag,
+                ScoreSourceType.DishSkill,
                 tag?.Id,
                 tag?.Name,
                 dish != null ? dish.Id : 0,
                 dish?.Def?.Id);
         }
 
-        public static ScoreSource CellTag(TagDef tag, DishInstance dish, GridPos cell)
+        public static ScoreSource DishFlavor(IEffectDef tag, DishInstance dish)
+        {
+            return new ScoreSource(
+                ScoreSourceType.DishFlavor,
+                tag?.Id,
+                tag?.Name,
+                dish != null ? dish.Id : 0,
+                dish?.Def?.Id);
+        }
+
+        public static ScoreSource CellTag(IEffectDef tag, DishInstance dish, GridPos cell)
         {
             return new ScoreSource(
                 ScoreSourceType.CellTag,
