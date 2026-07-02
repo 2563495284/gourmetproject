@@ -43,6 +43,7 @@ namespace GourmetProject.Game.Meta
         public const int ActiveItemPrice = 35;
         public const int ItemSellPrice = 20;
         public const int DeleteDishCost = 15;
+        public const int EmptyRecipeBookPrice = 20;
 
         private const int PassiveCount = 2;
         private const int ActiveCount = 1;
@@ -154,6 +155,38 @@ namespace GourmetProject.Game.Meta
 
             run.Gold -= DeleteDishCost;
             return true;
+        }
+
+        public static bool DeleteDishAt(GameRun run, int bookIndex, int dishIndex)
+        {
+            if (run == null || run.Gold < DeleteDishCost || !run.RemoveBonusDishAt(bookIndex, dishIndex))
+            {
+                return false;
+            }
+
+            run.Gold -= DeleteDishCost;
+            return true;
+        }
+
+        public static bool PurchaseRecipeBook(GameRun run)
+        {
+            if (run == null || run.Gold < EmptyRecipeBookPrice || !run.CanAddRecipeBook)
+            {
+                return false;
+            }
+
+            if (!run.AddRecipeBook())
+            {
+                return false;
+            }
+
+            run.Gold -= EmptyRecipeBookPrice;
+            return true;
+        }
+
+        public static bool MoveDish(GameRun run, int fromBookIndex, int dishIndex, int toBookIndex)
+        {
+            return run != null && run.MoveBonusDish(fromBookIndex, dishIndex, toBookIndex);
         }
 
         private static List<cfg.DishVariant> RollDishVariants(cfg.Tables tables, GameRun run, int hidden, IRandomStream rng, int count)

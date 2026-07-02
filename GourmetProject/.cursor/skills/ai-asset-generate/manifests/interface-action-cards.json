@@ -1,0 +1,111 @@
+{
+  "stylePrefix": "90s American cable TV cartoon game art style, thick clean hand-drawn black ink outlines, flat cel animation colors, warm appetizing cream yellow and orange palette, slightly uneven organic hand-drawn silhouette, polished 2D game asset, no text, no letters, no numbers, no logo, no watermark",
+  "typeDefaults": {
+    "ui": {
+      "outputDir": "Assets/GameMain/Resources/Sprites/UI",
+      "outputFormat": "png",
+      "quality": "medium",
+      "requestSize": "1024x1024",
+      "targetSize": "1024x1024",
+      "targetMode": "resize"
+    }
+  },
+  "typePromptPrefixes": {
+    "ui": "UI game asset rule: single clean centered illustration or frame on a square canvas, readable at small size, no typography, no digits, no letters, no watermark. Use bold black ink outline and flat cel colors. Keep important subject away from the edge."
+  },
+  "assets": [
+    {
+      "name": "card_action_food_gold",
+      "type": "ui",
+      "prompt": "Action card artwork for a food reward that gives coins: an overflowing dinner plate with a few shiny gold coins around it, warm cream-orange card-like composition, pure food and props only, no faces, no eyes, no characters"
+    },
+    {
+      "name": "card_action_food_fragment",
+      "type": "ui",
+      "prompt": "Action card artwork for a food reward that gives a stomach board fragment: a delicious plate beside a puzzle-like cream board tile fragment with black outline, appetizing and playful, pure props only, no faces, no eyes, no characters"
+    },
+    {
+      "name": "card_action_food_passive",
+      "type": "ui",
+      "prompt": "Action card artwork for a food reward that gives a passive item: a hearty meal with a small chef knife and plate charm beside it, warm cartoon composition, pure food and kitchen props only, no faces, no eyes, no characters"
+    },
+    {
+      "name": "card_action_food_active",
+      "type": "ui",
+      "prompt": "Action card artwork for a food reward that gives an active item: a hearty meal with a service bell and orange action spark shapes, pure food and kitchen props only, no faces, no eyes, no characters"
+    },
+    {
+      "name": "card_action_food_dish",
+      "type": "ui",
+      "prompt": "Action card artwork for a food reward that gives a new dish: a stack of different appetizing dishes on plates, rice, soup, dumpling shapes, warm cartoon composition, pure food only, no faces, no eyes, no characters"
+    },
+    {
+      "name": "card_action_food_hard",
+      "type": "ui",
+      "prompt": "Action card artwork for a harder food challenge: a dramatic oversized feast plate with chili heat marks and bold sauce splashes, energetic orange composition, pure food only, no faces, no eyes, no characters"
+    },
+    {
+      "name": "card_action_event",
+      "type": "ui",
+      "prompt": "Action card artwork for a mysterious event: one covered serving cloche on a restaurant table, with a single clear question-mark-shaped curl of steam rising above the lid, warm cream-orange mood, no letters, no numbers, no logo, no watermark"
+    },
+    {
+      "name": "card_action_reward",
+      "type": "ui",
+      "prompt": "Action card artwork for a reward: a wrapped kitchen gift box and sparkling plate, orange ribbon shapes without any symbols or text, warm celebratory cartoon mood, no letters, no numbers"
+    },
+    {
+      "name": "card_action_negative",
+      "type": "ui",
+      "prompt": "Action card artwork for a negative event: an overcooked smoky pan and spilled sauce on a table, dramatic but playful, warm orange and cream palette, pure props only, no faces, no eyes, no characters"
+    },
+    {
+      "name": "card_action_shop",
+      "type": "ui",
+      "prompt": "Action card artwork for a shop: a cozy small market stall counter with plates, coins, jars, and a striped awning shape, no signs, no words, no letters, no numbers, no characters"
+    },
+    {
+      "name": "card_node_shop",
+      "type": "ui",
+      "prompt": "Node event card artwork for shop: a compact market counter with awning, plate and coin props, no signs, no letters, no numbers, no characters"
+    },
+    {
+      "name": "card_node_interest",
+      "type": "ui",
+      "prompt": "Node event card artwork for collecting interest: a bulging coin pouch and scattered gold coins on a cream table, warm appetizing cartoon palette, no letters, no numbers"
+    },
+    {
+      "name": "card_node_boss",
+      "type": "ui",
+      "prompt": "Node event card artwork for weekend feast boss: a looming dramatic feast platter with sauce spikes, chili heat, and theatrical shadows, intimidating food challenge mood, pure food and props only, no face, no eyes, no character"
+    },
+    {
+      "name": "icon_axis_shop",
+      "type": "ui",
+      "requestSize": "1024x1024",
+      "targetSize": "256x256",
+      "prompt": "Small action-axis icon for shop: simple market stall awning and plate silhouette, thick black outline, flat cream-orange colors, no text"
+    },
+    {
+      "name": "icon_axis_interest",
+      "type": "ui",
+      "requestSize": "1024x1024",
+      "targetSize": "256x256",
+      "prompt": "Small action-axis icon for interest coins: coin pouch with two round gold coins, thick black outline, flat cream-orange colors, no text, no numbers"
+    },
+    {
+      "name": "icon_axis_boss",
+      "type": "ui",
+      "requestSize": "1024x1024",
+      "targetSize": "256x256",
+      "prompt": "Small action-axis icon for boss feast: dramatic spiky feast platter with chili heat marks, thick black outline, flat cream-orange colors, no face, no eyes, no text"
+    },
+    {
+      "name": "icon_axis_event",
+      "type": "ui",
+      "requestSize": "1024x1024",
+      "targetSize": "256x256",
+      "prompt": "Small action-axis icon for event: one covered serving cloche with a single clear question-mark-shaped curl of steam rising above the lid, thick black outline, flat cream-orange colors, no letters, no numbers, no logo, no watermark"
+    }
+  ]
+}

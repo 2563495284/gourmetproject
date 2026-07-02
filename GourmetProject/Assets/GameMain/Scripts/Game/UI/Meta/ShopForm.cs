@@ -1,65 +1,93 @@
+using System.Collections;
 using System.Collections.Generic;
 using GourmetProject.Core.Rng;
-using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Flow;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
+using GourmetProject.Gameplay.Model;
 using GourmetProject.Runtime;
 using GourmetProject.Runtime.UI;
 using UnityEngine;
 using UnityEngine.UI;
 using GourmetProject.Game.UI;
 using GourmetProject.Game.UI.Battle;
-using GourmetProject.Game.UI.Common;
-using GourmetProject.Game.UI.Menu;
-using GourmetProject.Game.UI.Meta;
-using GourmetProject.Game.UI.Widgets;
 
 namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>
-    /// 系统节点「商店」：按隐藏分刷新商品（道具 / 菜品 / 胃部碎片），可购买、出售道具、花金币管理菜谱。
-    /// 商品逻辑集中在 <see cref="ShopService"/>；本界面只负责按周+天确定性刷新与卡片渲染。
-    /// 固定壳在 ShopForm.prefab，买/卖卡用 ShopBuyCardView / ShopSellCardView 数据驱动。
+    /// 系统节点「商店」：Prefab 中固定摆好四个商品区、底部菜谱条和编辑菜谱页。
+    /// 运行时只向这些容器绑定商品卡/菜谱卡数据，布局由 Prefab 上的 LayoutGroup 交给设计师调。
     /// </summary>
     public sealed class ShopForm : UGuiForm
     {
-        private const int MaxSellShown = 4;
+        [Header("Root States")]
+        [SerializeField] private GameObject _shopPanel;
+        [SerializeField] private GameObject _recipeEditPanel;
 
+        [Header("Top")]
         [SerializeField] private Text _goldText;
-        [SerializeField] private Text _buyEmptyText;
-        [SerializeField] private Text _sellEmptyText;
-        [SerializeField] private RectTransform _buyContainer;
-        [SerializeField] private RectTransform _sellContainer;
         [SerializeField] private Button _leaveButton;
-        [SerializeField] private ShopBuyCardView _buyCardPrefab;
-        [SerializeField] private ShopSellCardView _sellCardPrefab;
 
-        private GameRun _run;
+        [Header("Shop Sections")]
+        [SerializeField] private RectTransform _foodContainer;
+        [SerializeField] private RectTransform _fragmentContainer;
+        [SerializeField] private RectTransform _passiveContainer;
+        [SerializeField] private RectTransform _activeContainer;
+        [SerializeField] private Text _foodEmptyText;
+        [SerializeField] private Text _fragmentEmptyText;
+        [SerializeField] private Text _passiveEmptyText;
+        [SerializeField] private Text _activeEmptyText;
+        [SerializeField] private ShopBuyCardView _buyCardPrefab;
+
+        [Header("Recipe Strip")]
+        [SerializeField] private RectTransform _recipeStripContainer;
+        [SerializeField] private ShopRecipeBookView _recipeBookPrefab;
+        [SerializeField] private Button _buyRecipeBookButton;
+        [SerializeField] private Button _editRecipeButton;
+        [SerializeField] private Text _recipeLimitText;
+
+        [Header("Recipe Editor")]
+        [SerializeField] private RectTransform _editBooksContainer;
+        [SerializeField] private RecipeEditBookView _editBookPrefab;
+        [SerializeField] private RecipeEditDishView _editDishPrefab;
+        [SerializeField] private RecipeTrashDropZone _trashZone;
+        [SerializeField] private Text _trashPriceText;
+        [SerializeField] private Button _exitEditButton;
+
         private readonly List<ShopEntry> _stock = new();
         private readonly List<GameObject> _spawned = new();
+        private GameRun _run;
+        private Coroutine _pendingEditorRebuild;
         private bool _notifiedClosed;
         private string _shopKey;
 
         protected override void OnInit(object userData)
         {
             base.OnInit(userData);
-            _leaveButton.onClick.AddListener(OnLeaveClicked);
-        }
 
-        /// <summary>
-        /// 玩家点「离开」：关闭商店并通知编排层继续（区别于返回菜单时的强制关闭）。
-        /// 不清空 pending 库存：库存按周+天 key 持久化，离开后同日再进沿用同一份库存，
-        /// 避免“反复进出刷新商品”的可刷点。库存在进入下一刷新点（新行动轴 BeginTimeline）时统一清空。
-        /// </summary>
-        private void OnLeaveClicked()
-        {
-            if (_run != null)
+            if (_leaveButton != null)
             {
-                RunPersistence.Save(_run);
+                _leaveButton.onClick.RemoveAllListeners();
+                _leaveButton.onClick.AddListener(OnLeaveClicked);
             }
 
-            Close();
+            if (_editRecipeButton != null)
+            {
+                _editRecipeButton.onClick.RemoveAllListeners();
+                _editRecipeButton.onClick.AddListener(OpenRecipeEditor);
+            }
+
+            if (_buyRecipeBookButton != null)
+            {
+                _buyRecipeBookButton.onClick.RemoveAllListeners();
+                _buyRecipeBookButton.onClick.AddListener(OnBuyRecipeBook);
+            }
+
+            if (_exitEditButton != null)
+            {
+                _exitEditButton.onClick.RemoveAllListeners();
+                _exitEditButton.onClick.AddListener(CloseRecipeEditor);
+            }
         }
 
         protected override void OnOpen(object userData)
@@ -75,12 +103,14 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             RollStock();
+            ShowShopPanel();
             Rebuild();
         }
 
         protected override void OnClose(bool isShutdown, object userData)
         {
             ClearSpawned();
+            _pendingEditorRebuild = null;
             NotifyClosedOnce();
             base.OnClose(isShutdown, userData);
         }
@@ -106,88 +136,220 @@ namespace GourmetProject.Game.UI.Meta
         {
             ClearSpawned();
 
-            _goldText.text = $"金币 {_run.Gold}";
-            BuildBuySection();
-            BuildSellSection();
+            SetText(_goldText, $"金币 {_run.Gold}");
+            BuildBuySection(ShopEntryKind.Dish, _foodContainer, _foodEmptyText, "暂无食物");
+            BuildBuySection(ShopEntryKind.Fragment, _fragmentContainer, _fragmentEmptyText, "暂无碎片包");
+            BuildBuySection(ShopEntryKind.PassiveItem, _passiveContainer, _passiveEmptyText, "暂无被动道具");
+            BuildBuySection(ShopEntryKind.ActiveItem, _activeContainer, _activeEmptyText, "暂无主动道具");
+            BuildRecipeStrip();
+
+            if (_recipeEditPanel != null && _recipeEditPanel.activeSelf)
+            {
+                BuildRecipeEditor();
+            }
         }
 
-        private void BuildBuySection()
+        private void BuildBuySection(ShopEntryKind kind, RectTransform container, Text emptyText, string emptyMessage)
         {
-            bool empty = _stock.Count == 0;
-            _buyEmptyText.gameObject.SetActive(empty);
-            _buyContainer.gameObject.SetActive(!empty);
-            if (empty)
+            if (container == null || _buyCardPrefab == null)
             {
+                SetEmpty(emptyText, true, emptyMessage);
                 return;
             }
 
-            int n = _stock.Count;
-            float gap = 0.03f / 0.9f;
-            float cardW = (1f - gap * (n - 1)) / n;
-            for (int i = 0; i < n; i++)
+            int count = 0;
+            foreach (ShopEntry entry in _stock)
             {
-                ShopEntry entry = _stock[i];
-                float minX = i * (cardW + gap);
-                ShopBuyCardView card = Instantiate(_buyCardPrefab, _buyContainer);
-                PlaceInContainer(card.transform, minX, minX + cardW);
+                if (entry.Kind != kind)
+                {
+                    continue;
+                }
 
+                ShopBuyCardView card = Instantiate(_buyCardPrefab, container);
+                card.gameObject.name = $"ShopBuy_{kind}_{count}";
                 ShopEntry captured = entry;
                 card.Bind(entry.Name, entry.Desc, entry.Price, _run.Gold >= entry.Price, () => OnBuy(captured));
                 _spawned.Add(card.gameObject);
+                count++;
             }
+
+            SetEmpty(emptyText, count == 0, emptyMessage);
+            container.gameObject.SetActive(count > 0);
         }
 
-        private void BuildSellSection()
+        private void BuildRecipeStrip()
         {
-            cfg.Tables tables = GameApp.Config.Tables;
-
-            // 出售道具 + 删除菜谱池菜品，合并展示在同一区作为轻量菜谱管理入口。
-            var entries = new List<SellEntry>();
-            foreach (RunItemState state in _run.Items)
+            if (_recipeStripContainer != null && _recipeBookPrefab != null)
             {
-                cfg.Item item = tables.TbItem.GetOrDefault(state.ItemId);
-                if (item != null)
+                for (int i = 0; i < _run.RecipeBookCount; i++)
                 {
-                    string prefix = item.Kind == cfg.ItemKind.Active ? "主动道具" : "被动道具";
-                    entries.Add(SellEntry.Sell(item.Id, $"{prefix}：{item.Name}"));
+                    IReadOnlyList<string> dishes = _run.GetRecipeBookDishes(i);
+                    ShopRecipeBookView book = Instantiate(_recipeBookPrefab, _recipeStripContainer);
+                    book.gameObject.name = $"RecipeBook_{i + 1}";
+                    book.Bind($"菜谱{i + 1}", $"{dishes.Count}/{GameRun.RecipeBookCapacity}", false, null);
+                    _spawned.Add(book.gameObject);
                 }
             }
 
-            foreach (string dishId in _run.BonusDishIds)
+            bool canBuy = _run.CanAddRecipeBook && _run.Gold >= ShopService.EmptyRecipeBookPrice;
+            if (_buyRecipeBookButton != null)
             {
-                entries.Add(SellEntry.Delete(dishId, $"菜谱管理：{DishName(tables, dishId)}"));
+                _buyRecipeBookButton.gameObject.SetActive(_run.CanAddRecipeBook);
+                _buyRecipeBookButton.interactable = canBuy;
+                SetButtonText(_buyRecipeBookButton, $"+ {ShopService.EmptyRecipeBookPrice}");
             }
 
-            bool empty = entries.Count == 0;
-            _sellEmptyText.gameObject.SetActive(empty);
-            _sellContainer.gameObject.SetActive(!empty);
-            if (empty)
+            SetText(_recipeLimitText, $"{_run.RecipeBookCount}/{GameRun.MaxRecipeBookCount}");
+        }
+
+        private void OpenRecipeEditor()
+        {
+            if (_recipeEditPanel == null)
             {
                 return;
             }
 
-            int shown = Mathf.Min(entries.Count, MaxSellShown);
-            float gap = 0.02f / 0.9f;
-            float cardW = (1f - gap * (shown - 1)) / shown;
-            for (int i = 0; i < shown; i++)
+            if (_shopPanel != null)
             {
-                SellEntry entry = entries[i];
-                float minX = i * (cardW + gap);
-                ShopSellCardView card = Instantiate(_sellCardPrefab, _sellContainer);
-                PlaceInContainer(card.transform, minX, minX + cardW);
-
-                SellEntry captured = entry;
-                if (entry.IsDelete)
-                {
-                    card.Bind(entry.Name, $"删除 -{ShopService.DeleteDishCost}", () => OnDeleteDish(captured.Id));
-                }
-                else
-                {
-                    card.Bind(entry.Name, $"卖 +{ShopService.ItemSellPrice}", () => OnSell(captured.Id));
-                }
-
-                _spawned.Add(card.gameObject);
+                _shopPanel.SetActive(false);
             }
+
+            _recipeEditPanel.SetActive(true);
+            BuildRecipeEditor();
+        }
+
+        private void CloseRecipeEditor()
+        {
+            ShowShopPanel();
+            Rebuild();
+        }
+
+        private void ShowShopPanel()
+        {
+            if (_shopPanel != null)
+            {
+                _shopPanel.SetActive(true);
+            }
+
+            if (_recipeEditPanel != null)
+            {
+                _recipeEditPanel.SetActive(false);
+            }
+        }
+
+        private void BuildRecipeEditor()
+        {
+            if (_editBooksContainer == null || _editBookPrefab == null || _editDishPrefab == null)
+            {
+                return;
+            }
+
+            ClearSpawned();
+            if (_trashZone != null)
+            {
+                _trashZone.Bind(OnDishDroppedToTrash);
+            }
+
+            SetText(_trashPriceText, $"-{ShopService.DeleteDishCost}");
+
+            for (int i = 0; i < _run.RecipeBookCount; i++)
+            {
+                IReadOnlyList<string> dishes = _run.GetRecipeBookDishes(i);
+                RecipeEditBookView book = Instantiate(_editBookPrefab, _editBooksContainer);
+                book.gameObject.name = $"RecipeEditBook_{i + 1}";
+                book.Bind(i, $"菜谱{i + 1}", $"{dishes.Count}/{GameRun.RecipeBookCapacity}", OnDishDroppedToBook);
+                _spawned.Add(book.gameObject);
+
+                RectTransform dishContainer = book.DishContainer;
+                if (dishContainer == null)
+                {
+                    continue;
+                }
+
+                for (int k = 0; k < dishes.Count; k++)
+                {
+                    string dishId = dishes[k];
+                    RecipeEditDishView dish = Instantiate(_editDishPrefab, dishContainer);
+                    dish.gameObject.name = $"RecipeDish_{i + 1}_{k + 1}";
+                    dish.Bind(DishName(GameApp.Config.Tables, dishId), DishShapeText(dishId), i, k);
+                    _spawned.Add(dish.gameObject);
+                }
+            }
+        }
+
+        private void OnDishDroppedToBook(RecipeEditDishView dish, int targetBookIndex)
+        {
+            if (dish == null)
+            {
+                return;
+            }
+
+            if (ShopService.MoveDish(_run, dish.BookIndex, dish.DishIndex, targetBookIndex))
+            {
+                RunPersistence.Save(_run);
+                QueueEditorRebuild();
+            }
+        }
+
+        private void OnDishDroppedToTrash(RecipeEditDishView dish)
+        {
+            if (dish == null)
+            {
+                return;
+            }
+
+            if (ShopService.DeleteDishAt(_run, dish.BookIndex, dish.DishIndex))
+            {
+                RunPersistence.Save(_run);
+                QueueEditorRebuild();
+            }
+        }
+
+        private void QueueEditorRebuild()
+        {
+            if (_pendingEditorRebuild != null)
+            {
+                StopCoroutine(_pendingEditorRebuild);
+            }
+
+            _pendingEditorRebuild = StartCoroutine(RebuildEditorNextFrame());
+        }
+
+        private IEnumerator RebuildEditorNextFrame()
+        {
+            yield return null;
+            _pendingEditorRebuild = null;
+            Rebuild();
+        }
+
+        private void OnBuyRecipeBook()
+        {
+            if (ShopService.PurchaseRecipeBook(_run))
+            {
+                RunPersistence.Save(_run);
+                Rebuild();
+            }
+        }
+
+        private void OnBuy(ShopEntry entry)
+        {
+            if (ShopService.Purchase(_run, entry))
+            {
+                _stock.Remove(entry);
+                _run.SetPendingShopStock(_shopKey, _stock);
+                RunPersistence.Save(_run);
+                Rebuild();
+            }
+        }
+
+        private void OnLeaveClicked()
+        {
+            if (_run != null)
+            {
+                RunPersistence.Save(_run);
+            }
+
+            Close();
         }
 
         private static string DishName(cfg.Tables tables, string dishId)
@@ -205,14 +367,10 @@ namespace GourmetProject.Game.UI.Meta
             return dishId;
         }
 
-        private static void PlaceInContainer(Transform card, float minX, float maxX)
+        private string DishShapeText(string dishId)
         {
-            var rect = (RectTransform)card;
-            rect.anchorMin = new Vector2(minX, 0f);
-            rect.anchorMax = new Vector2(maxX, 1f);
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-            rect.localScale = Vector3.one;
+            DishDef dish = _run?.Database.GetDish(dishId);
+            return dish?.Shape == null ? string.Empty : $"{dish.Shape.Width}x{dish.Shape.Height}";
         }
 
         private void ClearSpawned()
@@ -228,32 +386,36 @@ namespace GourmetProject.Game.UI.Meta
             _spawned.Clear();
         }
 
-        private void OnBuy(ShopEntry entry)
+        private static void SetEmpty(Text emptyText, bool visible, string message)
         {
-            if (ShopService.Purchase(_run, entry))
+            if (emptyText == null)
             {
-                _stock.Remove(entry);
-                _run.SetPendingShopStock(_shopKey, _stock);
-                RunPersistence.Save(_run);
-                Rebuild();
+                return;
+            }
+
+            emptyText.gameObject.SetActive(visible);
+            emptyText.text = message ?? string.Empty;
+        }
+
+        private static void SetText(Text text, string value)
+        {
+            if (text != null)
+            {
+                text.text = value ?? string.Empty;
             }
         }
 
-        private void OnSell(string itemId)
+        private static void SetButtonText(Button button, string value)
         {
-            if (ShopService.SellItem(_run, itemId))
+            if (button == null)
             {
-                RunPersistence.Save(_run);
-                Rebuild();
+                return;
             }
-        }
 
-        private void OnDeleteDish(string dishId)
-        {
-            if (ShopService.DeleteDish(_run, dishId))
+            Text label = button.GetComponentInChildren<Text>();
+            if (label != null)
             {
-                RunPersistence.Save(_run);
-                Rebuild();
+                label.text = value ?? string.Empty;
             }
         }
 
@@ -271,23 +433,6 @@ namespace GourmetProject.Game.UI.Meta
 
             _notifiedClosed = true;
             BattleForm.Active?.OnShopClosed();
-        }
-
-        private readonly struct SellEntry
-        {
-            private SellEntry(string id, string name, bool isDelete)
-            {
-                Id = id;
-                Name = name;
-                IsDelete = isDelete;
-            }
-
-            public string Id { get; }
-            public string Name { get; }
-            public bool IsDelete { get; }
-
-            public static SellEntry Sell(string id, string name) => new SellEntry(id, name, false);
-            public static SellEntry Delete(string id, string name) => new SellEntry(id, name, true);
         }
     }
 }

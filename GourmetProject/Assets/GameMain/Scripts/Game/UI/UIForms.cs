@@ -20,6 +20,9 @@ namespace GourmetProject.Game.UI
         // 玩法界面。
         public const string Battle = "Assets/GameMain/UI/BattleForm.prefab";
         public const string DishDetail = "Assets/GameMain/UI/DishDetailForm.prefab";
+
+        // 菜品 hover Tips（非 UGuiForm，作为 View 挂在 Canvas 下，留作后续接入 hover 的口子）。
+        public const string DishTooltip = "Assets/GameMain/UI/DishTooltipView.prefab";
         public const string Reward = "Assets/GameMain/UI/RewardForm.prefab";
         public const string WeekMap = "Assets/GameMain/UI/WeekMapForm.prefab";
         public const string Shop = "Assets/GameMain/UI/ShopForm.prefab";

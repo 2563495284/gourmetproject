@@ -24,14 +24,15 @@ namespace GourmetProject.Game.Run
             string recipeId = character?.InitialRecipeId;
             RecipeDef recipe = run.Database.GetRecipe(recipeId);
 
-            var slots = new List<RecipeSlot>(GameRun.RecipeSlotCount);
+            int recipeBookCount = System.Math.Max(GameRun.DefaultRecipeBookCount, run.RecipeBookCount);
+            var slots = new List<RecipeSlot>(recipeBookCount);
             if (recipe != null)
             {
                 var recipeStream = GameApp.Random.DomainStream(SeedDomains.Recipe, key);
-                for (int i = 0; i < GameRun.RecipeSlotCount; i++)
+                for (int i = 0; i < recipeBookCount; i++)
                 {
                     List<string> deck = RecipeRoller.Roll(recipe, run.Database, recipeStream);
-                    foreach (string dishId in run.BonusDishIds)
+                    foreach (string dishId in run.GetRecipeBookDishes(i))
                     {
                         if (run.Database.GetDish(dishId) != null)
                         {
@@ -59,6 +60,12 @@ namespace GourmetProject.Game.Run
 
             ApplyPassiveItems(run, session);
             return session;
+        }
+
+        public static GpBoard BuildBoardPreview(GameRun run, string modifier = "")
+        {
+            cfg.Character character = run?.Tables.TbCharacter.GetOrDefault(run.CharacterId);
+            return BuildBoard(run, character, modifier ?? string.Empty);
         }
 
         /// <summary>

@@ -12,6 +12,7 @@ namespace GourmetProject.Game.UI.Hud
         [SerializeField] private Image _background;
         [SerializeField] private Text _dayText;
         [SerializeField] private Text _nodeIcon;
+        [SerializeField] private Image _nodeImage;
 
         private static readonly Color PassedColor = new Color(0.72f, 0.90f, 0.70f, 1f);
         private static readonly Color FutureColor = new Color(0.97f, 0.96f, 0.92f, 1f);
@@ -21,6 +22,11 @@ namespace GourmetProject.Game.UI.Hud
         /// <paramref name="nodeLabel"/> 节点图标文案（空表示普通格）。
         /// </summary>
         public void Bind(int day, bool passed, string nodeLabel)
+        {
+            Bind(day, passed, nodeLabel, null);
+        }
+
+        public void Bind(int day, bool passed, string nodeLabel, Sprite nodeSprite)
         {
             if (_dayText != null)
             {
@@ -34,9 +40,16 @@ namespace GourmetProject.Game.UI.Hud
 
             if (_nodeIcon != null)
             {
-                bool hasNode = !string.IsNullOrEmpty(nodeLabel);
-                _nodeIcon.gameObject.SetActive(hasNode);
-                _nodeIcon.text = hasNode ? nodeLabel : string.Empty;
+                bool showTextFallback = nodeSprite == null && !string.IsNullOrEmpty(nodeLabel);
+                _nodeIcon.gameObject.SetActive(showTextFallback);
+                _nodeIcon.text = showTextFallback ? nodeLabel : string.Empty;
+            }
+
+            if (_nodeImage != null)
+            {
+                bool hasImage = nodeSprite != null;
+                _nodeImage.gameObject.SetActive(hasImage);
+                _nodeImage.sprite = nodeSprite;
             }
         }
     }

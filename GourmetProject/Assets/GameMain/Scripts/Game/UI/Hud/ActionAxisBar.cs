@@ -16,6 +16,11 @@ namespace GourmetProject.Game.UI.Hud
         [SerializeField] private RectTransform _container;
         [SerializeField] private ActionAxisCellView _cellPrefab;
         [SerializeField] private RectTransform _positionMarker;
+        [SerializeField] private Text _remainingDaysText;
+        [SerializeField] private Sprite _shopNodeSprite;
+        [SerializeField] private Sprite _interestNodeSprite;
+        [SerializeField] private Sprite _bossNodeSprite;
+        [SerializeField] private Sprite _eventNodeSprite;
         [SerializeField] private float _cellGap = 0.01f;
 
         private readonly List<ActionAxisCellView> _cells = new();
@@ -53,12 +58,15 @@ namespace GourmetProject.Game.UI.Hud
                 rect.offsetMax = Vector2.zero;
                 rect.localScale = Vector3.one;
 
-                string nodeLabel = nodeByDay.TryGetValue(day, out cfg.TimelineNodeType type) ? NodeLabel(type) : string.Empty;
-                cell.Bind(day, day <= run.CurrentDay, nodeLabel);
+                bool hasNode = nodeByDay.TryGetValue(day, out cfg.TimelineNodeType type);
+                string nodeLabel = hasNode ? NodeLabel(type) : string.Empty;
+                Sprite nodeSprite = hasNode ? NodeSprite(type) : null;
+                cell.Bind(day, day <= run.CurrentDay, nodeLabel, nodeSprite);
                 _cells.Add(cell);
             }
 
             PositionMarker(run, length, cellW);
+            RefreshRemainingDays(run, length);
         }
 
         private void PositionMarker(GameRun run, int length, float cellW)
@@ -76,6 +84,17 @@ namespace GourmetProject.Game.UI.Hud
             _positionMarker.anchorMin = new Vector2(centerX, _positionMarker.anchorMin.y);
             _positionMarker.anchorMax = new Vector2(centerX, _positionMarker.anchorMax.y);
             _positionMarker.anchoredPosition = new Vector2(0f, _positionMarker.anchoredPosition.y);
+        }
+
+        private void RefreshRemainingDays(GameRun run, int length)
+        {
+            if (_remainingDaysText == null)
+            {
+                return;
+            }
+
+            int remaining = Mathf.Max(0, length - run.CurrentDay);
+            _remainingDaysText.text = $"{remaining}天";
         }
 
         private void Clear()
@@ -100,6 +119,23 @@ namespace GourmetProject.Game.UI.Hud
                 case cfg.TimelineNodeType.Shop: return "商店";
                 case cfg.TimelineNodeType.Event: return "事件";
                 default: return string.Empty;
+            }
+        }
+
+        private Sprite NodeSprite(cfg.TimelineNodeType type)
+        {
+            switch (type)
+            {
+                case cfg.TimelineNodeType.Boss:
+                    return _bossNodeSprite != null ? _bossNodeSprite : Resources.Load<Sprite>("Sprites/UI/icon_axis_boss");
+                case cfg.TimelineNodeType.Interest:
+                    return _interestNodeSprite != null ? _interestNodeSprite : Resources.Load<Sprite>("Sprites/UI/icon_axis_interest");
+                case cfg.TimelineNodeType.Shop:
+                    return _shopNodeSprite != null ? _shopNodeSprite : Resources.Load<Sprite>("Sprites/UI/icon_axis_shop");
+                case cfg.TimelineNodeType.Event:
+                    return _eventNodeSprite != null ? _eventNodeSprite : Resources.Load<Sprite>("Sprites/UI/icon_axis_event");
+                default:
+                    return null;
             }
         }
     }

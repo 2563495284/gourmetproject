@@ -9,6 +9,7 @@ using GourmetProject.Game.Run;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
+using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
 using GourmetProject.Runtime;
 using GourmetProject.Runtime.UI;
@@ -643,8 +644,33 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnViewStomachClicked()
         {
-            // 阶段一占位：查看胃部空间界面后续接入。
-            ShowNotice("查看胃", "胃部空间预览界面稍后接入。", null);
+            ShowNotice("查看胃", BuildStomachPreviewText(), null);
+        }
+
+        private string BuildStomachPreviewText()
+        {
+            if (_run == null)
+            {
+                return "当前没有运行数据。";
+            }
+
+            Board board = _run.BuildStomachPreviewBoard(_run.WeekModifier);
+            var text = new System.Text.StringBuilder();
+            text.AppendLine($"胃容量：{board.CellCapacity} 格");
+            text.AppendLine($"胃部碎片：{_run.StomachFragmentIds.Count}");
+            text.AppendLine();
+
+            for (int y = 0; y < board.Height; y++)
+            {
+                for (int x = 0; x < board.Width; x++)
+                {
+                    text.Append(board.Exists(new GridPos(x, y)) ? "■" : "□");
+                }
+
+                text.AppendLine();
+            }
+
+            return text.ToString();
         }
 
         public void ShowRunResult(bool win, int total)

@@ -20,13 +20,16 @@ namespace GourmetProject.Game.Run
     {
         public const int BoardWidth = 4;
         public const int BoardHeight = 4;
-        public const int RecipeSlotCount = 2;
+        public const int DefaultRecipeBookCount = 2;
+        public const int MaxRecipeBookCount = 4;
+        public const int RecipeBookCapacity = 12;
 
         private readonly cfg.Tables _tables;
 
         // 被动道具同一 id 唯一一条（带 Level）；主动道具同一 id 可有多条，每条为一份独立实例。
         private readonly List<RunItemState> _items = new List<RunItemState>();
         private readonly List<string> _bonusDishIds = new List<string>();
+        private readonly List<List<string>> _recipeBooks = new List<List<string>>();
         private readonly List<string> _stomachFragmentIds = new List<string>();
 
         // 整局累计已结算的菜品 BaseId 次数（供技能「大局相同检测」，随存档保存）。
@@ -62,6 +65,8 @@ namespace GourmetProject.Game.Run
                     AcquireItem(itemId, 0);
                 }
             }
+
+            EnsureRecipeBookCount(DefaultRecipeBookCount);
         }
 
         public GameplayDatabase Database { get; }
@@ -81,6 +86,10 @@ namespace GourmetProject.Game.Run
         public IReadOnlyList<RunItemState> Items => _items;
 
         public IReadOnlyList<string> BonusDishIds => _bonusDishIds;
+
+        public IReadOnlyList<IReadOnlyList<string>> RecipeBooks => _recipeBooks;
+
+        public int RecipeBookCount => _recipeBooks.Count;
 
         public IReadOnlyList<string> StomachFragmentIds => _stomachFragmentIds;
 
@@ -497,6 +506,7 @@ namespace GourmetProject.Game.Run
                 Gold = Gold,
                 Items = items,
                 BonusDishIds = new List<string>(_bonusDishIds),
+                RecipeBooks = ToRecipeBookSaveData(),
                 StomachFragmentIds = new List<string>(_stomachFragmentIds),
                 RunSettledCounts = new Dictionary<string, int>(_runSettledCounts),
                 CurrentTimelineId = CurrentTimelineId,
@@ -565,10 +575,7 @@ namespace GourmetProject.Game.Run
                 }
             }
 
-            if (data.BonusDishIds != null)
-            {
-                run._bonusDishIds.AddRange(data.BonusDishIds);
-            }
+            run.RestoreRecipeBooks(data);
 
             if (data.StomachFragmentIds != null)
             {
@@ -734,6 +741,74 @@ namespace GourmetProject.Game.Run
             return BattleSessionFactory.Build(this, requiredScore, modifier, key);
         }
 
+        public GpBoard BuildStomachPreviewBoard(string modifier = "")
+        {
+            return BattleSessionFactory.BuildBoardPreview(this, modifier);
+        }
+
+        public IReadOnlyList<string> GetRecipeBookDishes(int bookIndex)
+        {
+            return IsRecipeBookIndexValid(bookIndex) ? _recipeBooks[bookIndex] : System.Array.Empty<string>();
+        }
+
+        public bool CanAddRecipeBook => _recipeBooks.Count < MaxRecipeBookCount;
+
+        public bool AddRecipeBook()
+        {
+            if (!CanAddRecipeBook)
+            {
+                return false;
+            }
+
+            _recipeBooks.Add(new List<string>());
+            RebuildBonusDishCache();
+            return true;
+        }
+
+        public bool MoveBonusDish(int fromBookIndex, int dishIndex, int toBookIndex)
+        {
+            if (!IsRecipeBookIndexValid(fromBookIndex) || !IsRecipeBookIndexValid(toBookIndex))
+            {
+                return false;
+            }
+
+            List<string> from = _recipeBooks[fromBookIndex];
+            List<string> to = _recipeBooks[toBookIndex];
+            if (dishIndex < 0 || dishIndex >= from.Count || to.Count >= RecipeBookCapacity)
+            {
+                return false;
+            }
+
+            if (fromBookIndex == toBookIndex)
+            {
+                return true;
+            }
+
+            string dishId = from[dishIndex];
+            from.RemoveAt(dishIndex);
+            to.Add(dishId);
+            RebuildBonusDishCache();
+            return true;
+        }
+
+        public bool RemoveBonusDishAt(int bookIndex, int dishIndex)
+        {
+            if (!IsRecipeBookIndexValid(bookIndex))
+            {
+                return false;
+            }
+
+            List<string> book = _recipeBooks[bookIndex];
+            if (dishIndex < 0 || dishIndex >= book.Count)
+            {
+                return false;
+            }
+
+            book.RemoveAt(dishIndex);
+            RebuildBonusDishCache();
+            return true;
+        }
+
         /// <summary>美食行动目标分：当前周目标分 × 倍率（倍率 &lt;= 0 视为 1）。</summary>
         public int ComputeFoodRequiredScore(float multiplier)
         {
@@ -853,14 +928,31 @@ namespace GourmetProject.Game.Run
                 return false;
             }
 
-            _bonusDishIds.Add(dishId);
+            EnsureRecipeBookCount(DefaultRecipeBookCount);
+            List<string> target = FirstRecipeBookWithSpace();
+            if (target == null)
+            {
+                return false;
+            }
+
+            target.Add(dishId);
+            RebuildBonusDishCache();
             return true;
         }
 
         /// <summary>从菜谱奖励池移除一道菜（商店删菜）。</summary>
         public bool RemoveBonusDish(string dishId)
         {
-            return _bonusDishIds.Remove(dishId);
+            foreach (List<string> book in _recipeBooks)
+            {
+                if (book.Remove(dishId))
+                {
+                    RebuildBonusDishCache();
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public bool AddStomachFragment(string fragmentId)
@@ -927,6 +1019,98 @@ namespace GourmetProject.Game.Run
             }
 
             return false;
+        }
+
+        private bool IsRecipeBookIndexValid(int index)
+        {
+            return index >= 0 && index < _recipeBooks.Count;
+        }
+
+        private void EnsureRecipeBookCount(int count)
+        {
+            while (_recipeBooks.Count < count)
+            {
+                _recipeBooks.Add(new List<string>());
+            }
+        }
+
+        private List<string> FirstRecipeBookWithSpace()
+        {
+            foreach (List<string> book in _recipeBooks)
+            {
+                if (book.Count < RecipeBookCapacity)
+                {
+                    return book;
+                }
+            }
+
+            return null;
+        }
+
+        private void RebuildBonusDishCache()
+        {
+            _bonusDishIds.Clear();
+            foreach (List<string> book in _recipeBooks)
+            {
+                foreach (string dishId in book)
+                {
+                    _bonusDishIds.Add(dishId);
+                }
+            }
+        }
+
+        private List<RunRecipeBookSaveData> ToRecipeBookSaveData()
+        {
+            var books = new List<RunRecipeBookSaveData>(_recipeBooks.Count);
+            foreach (List<string> book in _recipeBooks)
+            {
+                books.Add(new RunRecipeBookSaveData
+                {
+                    DishIds = new List<string>(book),
+                });
+            }
+
+            return books;
+        }
+
+        private void RestoreRecipeBooks(RunSaveData data)
+        {
+            _recipeBooks.Clear();
+            if (data.RecipeBooks != null && data.RecipeBooks.Count > 0)
+            {
+                int count = System.Math.Min(data.RecipeBooks.Count, MaxRecipeBookCount);
+                for (int i = 0; i < count; i++)
+                {
+                    var book = new List<string>();
+                    List<string> dishIds = data.RecipeBooks[i]?.DishIds;
+                    if (dishIds != null)
+                    {
+                        for (int k = 0; k < dishIds.Count && book.Count < RecipeBookCapacity; k++)
+                        {
+                            if (Database.GetDish(dishIds[k]) != null)
+                            {
+                                book.Add(dishIds[k]);
+                            }
+                        }
+                    }
+
+                    _recipeBooks.Add(book);
+                }
+            }
+            else
+            {
+                EnsureRecipeBookCount(DefaultRecipeBookCount);
+                if (data.BonusDishIds != null)
+                {
+                    foreach (string dishId in data.BonusDishIds)
+                    {
+                        AddBonusDish(dishId);
+                    }
+                }
+            }
+
+            EnsureRecipeBookCount(DefaultRecipeBookCount);
+            RebuildBonusDishCache();
         }
 
         /// <summary>使用一份主动道具：使用后该实例直接移除（不存在数量消耗的中间态）。</summary>

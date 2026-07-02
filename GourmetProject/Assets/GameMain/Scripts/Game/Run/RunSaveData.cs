@@ -20,6 +20,7 @@ namespace GourmetProject.Game.Run
         public int Gold;
         public List<RunItemSaveData> Items = new List<RunItemSaveData>();
         public List<string> BonusDishIds = new List<string>();
+        public List<RunRecipeBookSaveData> RecipeBooks = new List<RunRecipeBookSaveData>();
         public List<string> StomachFragmentIds = new List<string>();
 
         /// <summary>整局累计已结算的菜品 BaseId 次数（技能「大局相同检测」）。</summary>
@@ -101,6 +102,12 @@ namespace GourmetProject.Game.Run
 
         /// <summary>旧存档兼容字段：曾经的主动道具持有数量。新档每份实例单独一条，恒为 1。</summary>
         public int Count = 1;
+    }
+
+    [Serializable]
+    public sealed class RunRecipeBookSaveData
+    {
+        public List<string> DishIds = new List<string>();
     }
 
     [Serializable]

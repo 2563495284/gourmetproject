@@ -252,6 +252,45 @@ namespace GourmetProject.Tests
         }
 
         [Test]
+        public void ShopService_SupportsRecipeBooksMoveAndTrash()
+        {
+            GameRun run = NewRun(week: 1);
+            run.Gold = 100;
+
+            Assert.AreEqual(GameRun.DefaultRecipeBookCount, run.RecipeBookCount);
+            Assert.IsTrue(ShopService.PurchaseRecipeBook(run));
+            Assert.AreEqual(3, run.RecipeBookCount);
+            Assert.AreEqual(100 - ShopService.EmptyRecipeBookPrice, run.Gold);
+
+            Assert.IsTrue(run.AddBonusDish("rice"));
+            Assert.AreEqual(1, run.GetRecipeBookDishes(0).Count);
+            Assert.IsTrue(ShopService.MoveDish(run, fromBookIndex: 0, dishIndex: 0, toBookIndex: 2));
+            Assert.AreEqual(0, run.GetRecipeBookDishes(0).Count);
+            Assert.AreEqual("rice", run.GetRecipeBookDishes(2)[0]);
+
+            int beforeDeleteGold = run.Gold;
+            Assert.IsTrue(ShopService.DeleteDishAt(run, bookIndex: 2, dishIndex: 0));
+            Assert.AreEqual(0, run.GetRecipeBookDishes(2).Count);
+            Assert.AreEqual(beforeDeleteGold - ShopService.DeleteDishCost, run.Gold);
+        }
+
+        [Test]
+        public void RunSaveData_RestoresRecipeBooks()
+        {
+            GameRun run = NewRun(week: 1);
+            Assert.IsTrue(run.AddBonusDish("rice"));
+            Assert.IsTrue(run.AddRecipeBook());
+            Assert.IsTrue(run.MoveBonusDish(0, 0, 2));
+
+            GameRun restored = GameRun.FromSaveData(run.Tables, run.Database, run.ToSaveData());
+
+            Assert.AreEqual(3, restored.RecipeBookCount);
+            Assert.AreEqual(0, restored.GetRecipeBookDishes(0).Count);
+            Assert.AreEqual("rice", restored.GetRecipeBookDishes(2)[0]);
+            Assert.IsTrue(restored.BonusDishIds.Contains("rice"));
+        }
+
+        [Test]
         public void SettlementService_ShowsRunMetricsAndUnlockDiscoveries()
         {
             GameRun run = NewRun(week: 4);
