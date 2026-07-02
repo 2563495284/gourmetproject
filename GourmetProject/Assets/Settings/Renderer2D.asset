@@ -26,7 +26,6 @@ MonoBehaviour:
     probeVolumeBlendStatesCS: {fileID: 0}
   m_RendererFeatures:
   - {fileID: 6610911750246031427}
-  - {fileID: 8823014579210347711}
   m_RendererFeatureMap: 43e0def235adbe5b
   m_UseNativeRenderPass: 0
   m_LayerMask:
@@ -79,21 +78,3 @@ MonoBehaviour:
   inkStrength: 0.28
   vignetteStrength: 0.18
   warmTint: {r: 1.05, g: 0.96, b: 0.86, a: 1}
---- !u!114 &8823014579210347711
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d4e5f6a7b8c94d0e1f2a3b4c5d6e7f80, type: 3}
-  m_Name: Frosted Glass Blur Render Feature
-  m_EditorClassIdentifier: 
-  m_Active: 1
-  material: {fileID: 2100000, guid: a1f2e3d4c5b64a7089c1d2e3f4a5b6c7, type: 2}
-  injectionPoint: 600
-  iterations: 4
-  downsample: 2
-  blurRadius: 1

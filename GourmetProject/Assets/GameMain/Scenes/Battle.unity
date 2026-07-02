@@ -520,7 +520,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Gameplay.Presentation.BattleWorldController
   _camera: {fileID: 788870930}
-  _background: {fileID: 1013392160}
   _boardView: {fileID: 1262458495}
   _piecesRoot: {fileID: 943415253}
   _fxRoot: {fileID: 6451825}
@@ -544,6 +543,10 @@ MonoBehaviour:
   _itemSlotPrefab: {fileID: 0}
   _menuBookPrefab: {fileID: 3528741960012345673, guid: 5f3a9c2e1b7d44869a9c0e8f12d3b6a4, type: 3}
   _serveHandPrefab: {fileID: 6071260432894370099, guid: 959711ce1de1f489f86e491f9e943669, type: 3}
+  _serveCarryScale: 1.22
+  _serveDescendDuration: 0.34
+  _serveWithdrawDuration: 0.18
+  _serveDropDuration: 0.24
 --- !u!4 &420685136
 Transform:
   m_ObjectHideFlags: 0
@@ -557,7 +560,6 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1013392161}
   - {fileID: 1262458496}
   - {fileID: 943415253}
   - {fileID: 6451825}
@@ -725,6 +727,7 @@ GameObject:
   - component: {fileID: 788870933}
   - component: {fileID: 788870932}
   - component: {fileID: 788870931}
+  - component: {fileID: 788870935}
   m_Layer: 0
   m_Name: BattleCamera
   m_TagString: MainCamera
@@ -865,6 +868,22 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &788870935
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 788870929}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cb15ba506cd4f4e14a881a168bfaa705, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GourmetProject.Runtime::GourmetProject.Runtime.Rendering.WorldBlurCapture
+  blurMaterial: {fileID: 2100000, guid: 8baf0ce55b94e4233bdf82df3c6e863b, type: 2}
+  downsample: 4
+  iterations: 3
+  blurRadius: 1
 --- !u!1 &855308924
 GameObject:
   m_ObjectHideFlags: 0
@@ -1010,6 +1029,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1013392161}
   - component: {fileID: 1013392160}
+  - component: {fileID: 1013392162}
   m_Layer: 0
   m_Name: TableclothBackground
   m_TagString: Untagged
@@ -1084,13 +1104,27 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1013392159}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0.2}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 1.5189874, y: 1.5189874, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 420685136}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1013392162
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1013392159}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a33b816e211e249ae8c03094735cc638, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GourmetProject.Runtime::GourmetProject.Runtime.Camera.SpriteCameraCover
+  _camera: {fileID: 788870930}
+  _renderer: {fileID: 1013392160}
 --- !u!1 &1262458494
 GameObject:
   m_ObjectHideFlags: 0
@@ -6332,3 +6366,4 @@ SceneRoots:
   m_Roots:
   - {fileID: 788870934}
   - {fileID: 420685136}
+  - {fileID: 1013392161}

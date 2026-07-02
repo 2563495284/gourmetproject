@@ -34,7 +34,6 @@ namespace GourmetProject.Game.Presentation.Battle
         // —— 场景内摆好的静态引用 ——
         [Header("Scene Refs")]
         [SerializeField] private Camera _camera;
-        [SerializeField] private SpriteRenderer _background;
         [SerializeField] private BoardView _boardView;
         [SerializeField] private Transform _piecesRoot;
         [SerializeField] private Transform _fxRoot;
@@ -134,7 +133,6 @@ namespace GourmetProject.Game.Presentation.Battle
             StopAllCoroutines();
             _settling = false;
             ComputeViewport();
-            FitBackground();
             BuildBoard(session.Board);
             EnsureSequencer();
             EnsureScoreFire();
@@ -145,11 +143,29 @@ namespace GourmetProject.Game.Presentation.Battle
             RebuildPlacedPieces();
             ConfigureDoodleHud();
             RefreshAll();
+
+            // 进入美食态：专属世界按钮先瞬隐再渐显，做出「进入美食状态才出现」的淡入。
+            // 渐隐渐显口子在 WorldButtonView.SetVisible(animated)；退出侧见 SetGourmetHudVisible。
+            SetGourmetHudVisible(false, animated: false);
+            SetGourmetHudVisible(true, animated: true);
         }
 
         public void HideWorld()
         {
             gameObject.SetActive(false);
+        }
+
+        /// <summary>
+        /// 集中显隐「美食（战斗）态」专属世界按钮：总览 / 吃 / 涂鸦清空 / 涂鸦显隐。
+        /// 渐隐渐显口子由 <see cref="WorldButtonView.SetVisible"/> 提供，这里只决定谁属于美食态并统一驱动。
+        /// 菜谱按钮已由屏幕空间 RecipeDrawer 取代、恒常隐藏，故不纳入这里的显隐。
+        /// </summary>
+        public void SetGourmetHudVisible(bool visible, bool animated)
+        {
+            _overviewButton?.SetVisible(visible, animated);
+            _eatButton?.SetVisible(visible, animated);
+            _clearDoodleButton?.SetVisible(visible, animated);
+            _toggleDoodleButton?.SetVisible(visible, animated);
         }
 
         public void RefreshAll()
@@ -424,21 +440,6 @@ namespace GourmetProject.Game.Presentation.Battle
             var go = new GameObject(childName);
             go.transform.SetParent(transform, false);
             return go.transform;
-        }
-
-        private void FitBackground()
-        {
-            if (_background == null)
-            {
-                return;
-            }
-
-            BattleSorting.Apply(_background, BattleSorting.Background);
-            SpriteRenderStyle.ApplyUnlitMaterial(_background);
-
-            float height = _camera != null && _camera.orthographic ? _camera.orthographicSize * 2f : 10.8f;
-            float width = height * (_camera != null ? _camera.aspect : 16f / 9f);
-            FitSpriteToCover(_background.transform, _background, width, height);
         }
 
         private void BuildBoard(GpBoard board)
@@ -947,19 +948,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 default:
                     return "现在不能上菜。";
             }
-        }
-
-        private static void FitSpriteToCover(Transform target, SpriteRenderer renderer, float width, float height)
-        {
-            if (renderer.sprite == null)
-            {
-                target.localScale = new Vector3(width, height, 1f);
-                return;
-            }
-
-            Vector2 size = renderer.sprite.bounds.size;
-            float scale = Mathf.Max(width / size.x, height / size.y);
-            target.localScale = new Vector3(scale, scale, 1f);
         }
 
         /// <summary>播放背包乱斗式逐菜结算演出，完成后回调上层决定过关/失败 UI。</summary>

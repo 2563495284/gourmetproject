@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: FrostedGlassBlur
-  m_Shader: {fileID: 4800000, guid: f3a9c1d2e4b54a6f8c0d1e2f3a4b5c6d, type: 3}
+  m_Name: UIWorldBlur
+  m_Shader: {fileID: 4800000, guid: f0efcc5ae2b9d4ac88ed335fa9e9c1a8, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -19,12 +19,17 @@ Material:
   m_CustomRenderQueue: -1
   stringTagMap: {}
   disabledShaderPasses: []
-  m_LockedProperties:
+  m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
-    m_TexEnvs: []
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _FrostedBlurRadius: 1
+    - _BlurRadius: 1
     m_Colors: []
   m_BuildTextureStacks: []
+  m_AllowLocking: 1

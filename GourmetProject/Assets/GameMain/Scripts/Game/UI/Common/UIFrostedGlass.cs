@@ -5,9 +5,9 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI.Common
 {
     /// <summary>
-    /// 毛玻璃 UI 绑定器：把 <see cref="FrostedGlassBlurRenderFeature"/> 每帧产出的场景模糊贴图
+    /// 毛玻璃 UI 绑定器：把 <see cref="WorldBlurCapture"/> 每帧产出的世界模糊贴图
     /// 绑到本 Graphic 的材质上。挂在使用 GourmetProject/UIFrostedGlass 材质的 Image/RawImage 上即可。
-    /// （Screen Space - Overlay 的 UI draw 拿不到 SRP 内 Shader.SetGlobalTexture 设置的全局贴图，故需手动绑定。）
+    /// （Screen Space - Overlay 的 UI draw 拿不到 Shader.SetGlobalTexture 设置的全局贴图，故需手动绑定。）
     /// </summary>
     [RequireComponent(typeof(Graphic))]
     [DisallowMultipleComponent]
@@ -43,7 +43,7 @@ namespace GourmetProject.Game.UI.Common
                 }
             }
 
-            Texture blur = FrostedGlassBlurRenderFeature.ActiveBlurTexture;
+            Texture blur = WorldBlurCapture.BlurTexture;
             Material material = _graphic.material;
             if (blur == null || material == null)
             {

@@ -5,8 +5,11 @@ Shader "GourmetProject/UIFrostedGlass"
         [PerRendererData] _MainTex ("Sprite Texture", 2D) = "white" {}
         _Color ("Tint", Color) = (1,1,1,1)
 
+        // 由 UIFrostedGlass 组件每帧绑定为场景模糊贴图（Overlay Canvas 拿不到 SRP 全局贴图，需声明为材质属性才能可靠绑定）。
+        _FrostedGlassTex ("Blur Texture (auto)", 2D) = "black" {}
         _TintColor ("Glass Tint", Color) = (1,1,1,1)
         _TintStrength ("Tint Strength", Range(0,1)) = 0.35
+        _GlassAlpha ("Glass Alpha", Range(0,1)) = 0.9
         _Roundness ("Corner Roundness", Range(0,0.5)) = 0
         _Softness ("Corner Softness", Range(0.0001,0.5)) = 0.02
 
@@ -89,6 +92,7 @@ Shader "GourmetProject/UIFrostedGlass"
             sampler2D _FrostedGlassTex;
             fixed4 _TintColor;
             float _TintStrength;
+            float _GlassAlpha;
             float _Roundness;
             float _Softness;
 
@@ -120,12 +124,12 @@ Shader "GourmetProject/UIFrostedGlass"
                 float2 screenUV = IN.screenPos.xy / IN.screenPos.w;
                 fixed4 blurred = tex2D(_FrostedGlassTex, screenUV);
 
-                fixed4 sprite = tex2D(_MainTex, IN.texcoord) + _TextureSampleAdd;
-
                 fixed3 rgb = lerp(blurred.rgb, _TintColor.rgb, saturate(_TintStrength * _TintColor.a));
                 rgb *= IN.color.rgb;
 
-                fixed4 color = fixed4(rgb, IN.color.a * sprite.a);
+                // 半透明磨砂：整体不透明度由 _GlassAlpha 主控，让底下清晰世界略微透出，
+                // 不再受 _MainTex（背景 Image 无 sprite 时为白）强制拉成不透明。
+                fixed4 color = fixed4(rgb, IN.color.a * _GlassAlpha);
                 color.a *= RoundedRectMask(IN.texcoord);
 
                 #ifdef UNITY_UI_CLIP_RECT

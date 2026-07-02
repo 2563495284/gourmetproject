@@ -23,6 +23,12 @@ namespace GourmetProject.Game.UI
 
         // 菜品 hover Tips（非 UGuiForm，作为 View 挂在 Canvas 下，留作后续接入 hover 的口子）。
         public const string DishTooltip = "Assets/GameMain/UI/DishTooltipView.prefab";
+
+        // 行动轴节点 / 道具 hover Tips（同为 View，配合 TipHoverTrigger 悬停显示）。
+        public const string BossFeastTip = "Assets/GameMain/UI/BossFeastTipView.prefab";
+        public const string ShopNodeTip = "Assets/GameMain/UI/ShopNodeTipView.prefab";
+        public const string InterestNodeTip = "Assets/GameMain/UI/InterestNodeTipView.prefab";
+        public const string ItemTip = "Assets/GameMain/UI/ItemTipView.prefab";
         public const string Reward = "Assets/GameMain/UI/RewardForm.prefab";
         public const string Result = "Assets/GameMain/UI/ResultForm.prefab";
         public const string WeekMap = "Assets/GameMain/UI/WeekMapForm.prefab";

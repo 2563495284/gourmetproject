@@ -19,10 +19,14 @@ Material:
   m_CustomRenderQueue: 3000
   stringTagMap: {}
   disabledShaderPasses: []
-  m_LockedProperties:
+  m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
+    - _FrostedGlassTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _MainTex:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -30,16 +34,18 @@ Material:
     m_Ints: []
     m_Floats:
     - _ColorMask: 15
-    - _Roundness: 0
-    - _Softness: 0.02
+    - _GlassAlpha: 0.9
+    - _Roundness: 0.011
+    - _Softness: 0.0001
     - _Stencil: 0
     - _StencilComp: 8
     - _StencilOp: 0
     - _StencilReadMask: 255
     - _StencilWriteMask: 255
-    - _TintStrength: 0.35
+    - _TintStrength: 0.25
     - _UseUIAlphaClip: 0
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _TintColor: {r: 1, g: 1, b: 1, a: 1}
+    - _TintColor: {r: 1, g: 0.97, b: 0.9, a: 1}
   m_BuildTextureStacks: []
+  m_AllowLocking: 1
