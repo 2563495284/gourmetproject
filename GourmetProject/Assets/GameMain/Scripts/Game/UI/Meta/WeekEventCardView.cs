@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Flow;
 using GourmetProject.Game.Meta;
@@ -20,25 +21,101 @@ namespace GourmetProject.Game.UI.Meta
     /// </summary>
     public sealed class WeekEventCardView : MonoBehaviour
     {
+        private const string NodeEventFooter = "节点事件";
+        private const string DefaultBossTitle = "周末盛宴\n恶魔";
+
+        private static readonly Color PanelColor = new Color(1f, 0.94f, 0.78f, 0.9f);
+        private static readonly Color FooterActionColor = new Color(1f, 0.94f, 0.78f, 0.92f);
+        private static readonly Color FooterNodeColor = new Color(0.78f, 1f, 0.88f, 0.92f);
+
         [SerializeField] private Text _nameText;
         [SerializeField] private Text _descText;
         [SerializeField] private Text _timeText;
         [SerializeField] private Image _artImage;
+        [SerializeField] private Image _titleBackingImage;
+        [SerializeField] private Image _descBackingImage;
+        [SerializeField] private Image _footerBackingImage;
         [SerializeField] private Image _rewardBadgeImage;
+        [SerializeField] private Image _rewardIconImage;
         [SerializeField] private Text _rewardBadgeText;
         [SerializeField] private Button _pickButton;
 
         public void Bind(cfg.GameEvent ev, Action onPick)
         {
-            Bind(ev.Name, ev.Desc, ev.TimeCost, onPick);
+            BindNodeCard(ev?.Name ?? "事件", ev?.Desc ?? string.Empty, "card_action_event", onPick);
+        }
+
+        public void Bind(cfg.TimelineNode node, Action onPick)
+        {
+            if (node == null)
+            {
+                BindNodeCard("事件", string.Empty, "card_action_event", onPick);
+                return;
+            }
+
+            switch (node.NodeType)
+            {
+                case cfg.TimelineNodeType.Shop:
+                    BindNodeCard("商店", string.Empty, "card_node_shop", onPick);
+                    break;
+                case cfg.TimelineNodeType.Interest:
+                    int threshold = Mathf.Max(0, Mathf.RoundToInt(node.PayloadValue));
+                    int goldPer = int.TryParse(node.PayloadParam, out int parsedGoldPer) ? parsedGoldPer : 1;
+                    BindInterestNode(threshold, goldPer, null, onPick);
+                    break;
+                case cfg.TimelineNodeType.Boss:
+                    BindNodeCard(DefaultBossTitle, string.Empty, "card_node_boss", onPick);
+                    break;
+                case cfg.TimelineNodeType.Event:
+                    BindNodeCard("事件", string.Empty, "card_action_event", onPick);
+                    break;
+                default:
+                    BindNodeCard("事件", string.Empty, "card_action_event", onPick);
+                    break;
+            }
+        }
+
+        public void BindInterestNode(int threshold, int goldPer, int? maxGain, Action onPick)
+        {
+            string desc = maxGain.HasValue
+                ? $"每有{threshold}枚金币，获得{goldPer}枚，最高可获得{maxGain.Value}枚"
+                : $"每有{threshold}枚金币，获得{goldPer}枚";
+            BindNodeCard("收取利息", desc, "card_node_interest", onPick);
+        }
+
+        public void BindBossNode(cfg.Boss boss, string mechanicDesc, long requiredScore, Action onPick)
+        {
+            string bossName = string.IsNullOrWhiteSpace(boss?.Name) ? "恶魔" : boss.Name;
+            string desc = mechanicDesc ?? string.Empty;
+            if (requiredScore > 0)
+            {
+                string scoreLine = $"美味度要求：{requiredScore.ToString("N0", CultureInfo.InvariantCulture)}";
+                desc = string.IsNullOrWhiteSpace(desc) ? scoreLine : $"{desc}\n{scoreLine}";
+            }
+
+            BindNodeCard($"周末盛宴\n{bossName}", desc, "card_node_boss", onPick);
+        }
+
+        public void BindNodeCard(string title, string desc, string artSpriteName, Action onPick)
+        {
+            ApplyCommon(title, desc, onPick);
+            SetFooter(NodeEventFooter, true, FooterNodeColor);
             SetArt(Resources.Load<Sprite>("Sprites/UI/card_action_event"));
+            SetArtByName(artSpriteName);
             SetRewardBadge(false);
         }
 
         /// <summary>行动轴「n 选一行动」绑定。</summary>
         public void Bind(cfg.GameAction action, Action onPick)
         {
-            Bind(action.Name, action.Desc, action.CostDays, onPick);
+            if (action == null)
+            {
+                Bind(string.Empty, string.Empty, 0, onPick);
+                SetRewardBadge(false);
+                return;
+            }
+
+            Bind(action.Name, string.Empty, action.CostDays, onPick);
             SetArt(CardSpriteFor(action));
             SetRewardBadge(action.ActionType == cfg.ActionType.Food, action.RewardKind);
         }
@@ -52,21 +129,78 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            string groupName = choice.Group == null ? string.Empty : $"[{choice.Group.Name}] ";
-            string desc = $"{groupName}{choice.Action.Desc}\n奖励：{RewardKindText(choice.Action.RewardKind)} · 难度：{choice.Action.FoodDifficulty}";
-            Bind(choice.Action.Name, desc, choice.CostDays, onPick);
+            Bind(choice.Action.Name, string.Empty, choice.CostDays, onPick);
             SetArt(CardSpriteFor(choice.Action));
             SetRewardBadge(choice.Action.ActionType == cfg.ActionType.Food, choice.Action.RewardKind);
         }
 
-        public void Bind(string name, string desc, int costDays, Action onPick)
+        public void Bind(string name, string desc, float costDays, Action onPick)
         {
-            _nameText.text = name;
-            _descText.text = desc;
-            _timeText.text = $"耗时 {costDays} 天";
+            ApplyCommon(name, desc, onPick);
+            SetFooter($"用时：{costDays.ToString("0.#", CultureInfo.InvariantCulture)}天", true, FooterActionColor);
+        }
 
-            _pickButton.onClick.RemoveAllListeners();
-            _pickButton.onClick.AddListener(() => onPick?.Invoke());
+        private void ApplyCommon(string title, string desc, Action onPick)
+        {
+            SetText(_nameText, title);
+            SetBacking(_titleBackingImage, true, PanelColor);
+            SetDescription(desc);
+
+            if (_pickButton != null)
+            {
+                _pickButton.onClick.RemoveAllListeners();
+                _pickButton.onClick.AddListener(() => onPick?.Invoke());
+            }
+        }
+
+        private void SetDescription(string desc)
+        {
+            bool visible = !string.IsNullOrWhiteSpace(desc);
+            SetText(_descText, desc);
+            if (_descText != null)
+            {
+                _descText.gameObject.SetActive(visible);
+            }
+
+            SetBacking(_descBackingImage, visible, PanelColor);
+        }
+
+        private void SetFooter(string text, bool visible, Color backingColor)
+        {
+            SetText(_timeText, text);
+            if (_timeText != null)
+            {
+                _timeText.gameObject.SetActive(visible);
+            }
+
+            SetBacking(_footerBackingImage, visible, backingColor);
+        }
+
+        private static void SetText(Text text, string value)
+        {
+            if (text != null)
+            {
+                text.text = value ?? string.Empty;
+            }
+        }
+
+        private static void SetBacking(Image image, bool visible, Color color)
+        {
+            if (image == null)
+            {
+                return;
+            }
+
+            image.gameObject.SetActive(visible);
+            image.color = color;
+        }
+
+        private void SetArtByName(string spriteName)
+        {
+            if (!string.IsNullOrWhiteSpace(spriteName))
+            {
+                SetArt(Resources.Load<Sprite>($"Sprites/UI/{spriteName}"));
+            }
         }
 
         private void SetArt(Sprite sprite)
@@ -78,6 +212,7 @@ namespace GourmetProject.Game.UI.Meta
 
             _artImage.enabled = sprite != null;
             _artImage.sprite = sprite;
+            _artImage.color = Color.white;
         }
 
         private void SetRewardBadge(bool visible, cfg.RewardKind kind = default)
@@ -91,6 +226,13 @@ namespace GourmetProject.Game.UI.Meta
             {
                 _rewardBadgeText.gameObject.SetActive(visible);
                 _rewardBadgeText.text = visible ? "!" : string.Empty;
+            }
+
+            if (_rewardIconImage != null)
+            {
+                _rewardIconImage.gameObject.SetActive(visible);
+                _rewardIconImage.sprite = visible ? RewardIconFor(kind) : null;
+                _rewardIconImage.color = Color.white;
             }
         }
 
@@ -142,17 +284,33 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
-        private static string RewardKindText(cfg.RewardKind kind)
+        private static Sprite RewardIconFor(cfg.RewardKind kind)
         {
+            string spriteName;
             switch (kind)
             {
-                case cfg.RewardKind.DishChoice: return "菜品";
-                case cfg.RewardKind.PassiveItemChoice: return "被动道具";
-                case cfg.RewardKind.ActiveItemGrant: return "主动道具";
-                case cfg.RewardKind.FragmentChoice: return "胃部碎片";
-                case cfg.RewardKind.Gold: return "金币";
-                default: return kind.ToString();
+                case cfg.RewardKind.Gold:
+                    spriteName = "icon_coin";
+                    break;
+                case cfg.RewardKind.FragmentChoice:
+                    spriteName = "ui_icon_shop_fragment";
+                    break;
+                case cfg.RewardKind.PassiveItemChoice:
+                    spriteName = "ui_icon_shop_passive";
+                    break;
+                case cfg.RewardKind.ActiveItemGrant:
+                    spriteName = "ui_icon_shop_active";
+                    break;
+                case cfg.RewardKind.DishChoice:
+                    spriteName = "ui_icon_shop_food";
+                    break;
+                default:
+                    spriteName = "ui_icon_shop_food";
+                    break;
             }
+
+            return Resources.Load<Sprite>($"Sprites/UI/{spriteName}");
         }
+
     }
 }

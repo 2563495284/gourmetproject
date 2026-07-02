@@ -1,3 +1,4 @@
+using System.Globalization;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Run;
 
@@ -22,7 +23,7 @@ namespace GourmetProject.Game.Meta
             }
 
             cfg.GameAction action = context.Action;
-            int prevDay = TimelineService.AdvanceDays(run, context.CostDays);
+            float prevDay = TimelineService.AdvanceDays(run, context.CostDays);
             run.SetLastActionContext(context);
             run.AdvanceActionStep();
             if (!action.Repeatable)
@@ -36,7 +37,7 @@ namespace GourmetProject.Game.Meta
                 {
                     int required = HiddenScoreService.TargetScore(run, context);
                     string modifier = action.PayloadParam ?? string.Empty;
-                    string key = $"food_w{run.WeekIndex}_s{context.StepIndex}_d{prevDay}_{action.Id}";
+                    string key = $"food_w{run.WeekIndex}_s{context.StepIndex}_d{prevDay.ToString("0.0", CultureInfo.InvariantCulture)}_{action.Id}";
                     return ActionOutcome.Battle(required, modifier, key);
                 }
 

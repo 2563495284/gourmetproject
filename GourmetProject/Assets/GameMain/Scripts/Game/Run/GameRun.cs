@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
@@ -118,11 +119,11 @@ namespace GourmetProject.Game.Run
         /// <summary>本周行动轴 id。</summary>
         public string CurrentTimelineId { get; set; } = string.Empty;
 
-        /// <summary>本周行动轴长度（天）。</summary>
-        public int TimelineLengthDays { get; set; }
+        /// <summary>本周行动轴长度（天，0.1 粒度）。</summary>
+        public float TimelineLengthDays { get; set; }
 
-        /// <summary>当前天数游标（0..TimelineLengthDays）。</summary>
-        public int CurrentDay { get; set; }
+        /// <summary>当前天数游标（0..TimelineLengthDays，0.1 粒度）。</summary>
+        public float CurrentDay { get; set; }
 
         public IReadOnlyList<string> TriggeredNodeIds => _triggeredNodeIds;
 
@@ -142,24 +143,30 @@ namespace GourmetProject.Game.Run
 
         public ActionExecutionContext LastActionContext { get; private set; }
 
-        public static string BuildActionChoiceKey(int runStepIndex, int weekIndex, int currentDay, int actionStepIndex)
+        /// <summary>把天数游标格式化为跨语言环境稳定的 key 片段（一位小数，如 d1.5）。</summary>
+        private static string DayKey(float currentDay)
         {
-            return $"r{runStepIndex}_w{weekIndex}_d{currentDay}_s{actionStepIndex}";
+            return currentDay.ToString("0.0", CultureInfo.InvariantCulture);
         }
 
-        public static string BuildShopKey(int weekIndex, int currentDay)
+        public static string BuildActionChoiceKey(int runStepIndex, int weekIndex, float currentDay, int actionStepIndex)
         {
-            return $"w{weekIndex}_d{currentDay}";
+            return $"r{runStepIndex}_w{weekIndex}_d{DayKey(currentDay)}_s{actionStepIndex}";
         }
 
-        public static string BuildRewardKey(int weekIndex, int currentDay, ActionExecutionContext context)
+        public static string BuildShopKey(int weekIndex, float currentDay)
+        {
+            return $"w{weekIndex}_d{DayKey(currentDay)}";
+        }
+
+        public static string BuildRewardKey(int weekIndex, float currentDay, ActionExecutionContext context)
         {
             if (context != null && context.IsValid)
             {
-                return $"r{context.RunStepIndex}_w{weekIndex}_d{currentDay}_s{context.StepIndex}_{context.ActionGroupId}_{context.Action.Id}";
+                return $"r{context.RunStepIndex}_w{weekIndex}_d{DayKey(currentDay)}_s{context.StepIndex}_{context.ActionGroupId}_{context.Action.Id}";
             }
 
-            return $"w{weekIndex}_d{currentDay}";
+            return $"w{weekIndex}_d{DayKey(currentDay)}";
         }
 
         public bool IsNodeTriggered(string nodeId) => !string.IsNullOrEmpty(nodeId) && _triggeredNodeIds.Contains(nodeId);
@@ -203,11 +210,11 @@ namespace GourmetProject.Game.Run
         }
 
         /// <summary>开始一条新的本周行动轴：重置天数游标、节点结算记录与本周行动使用记录。</summary>
-        public void BeginTimeline(string timelineId, int lengthDays)
+        public void BeginTimeline(string timelineId, float lengthDays)
         {
             CurrentTimelineId = timelineId ?? string.Empty;
             TimelineLengthDays = lengthDays;
-            CurrentDay = 0;
+            CurrentDay = 0f;
             ActionStepIndex = 0;
             _triggeredNodeIds.Clear();
             _usedActionIds.Clear();
@@ -602,7 +609,7 @@ namespace GourmetProject.Game.Run
                 cfg.GameAction lastAction = tables.TbAction.GetOrDefault(data.LastActionId);
                 if (lastAction != null)
                 {
-                    int costDays = data.LastActionCostDays > 0 ? data.LastActionCostDays : lastAction.CostDays;
+                    float costDays = data.LastActionCostDays > 0f ? data.LastActionCostDays : lastAction.CostDays;
                     run.SetLastActionContext(new ActionExecutionContext(
                         lastAction,
                         data.LastActionStepIndex,

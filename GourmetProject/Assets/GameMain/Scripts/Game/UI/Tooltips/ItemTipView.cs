@@ -27,7 +27,6 @@ namespace GourmetProject.Game.UI.Tooltips
         /// <summary>字段级绑定。</summary>
         public void Bind(string itemName, string desc, Sprite icon = null)
         {
-            ApplyIcon(icon, DefaultEmoji);
             ApplyTexts(itemName, desc);
             ApplyFooter(null);
         }

@@ -77,7 +77,7 @@ def write_workbook(filename, sheets):
 # —— action.xlsx ——
 ACTION_FIELDS = [
     ("id", "string", "行动ID"), ("name", "string", "行动名称"), ("desc", "string", "行动描述"),
-    ("actionType", "ActionType", "行动类型"), ("costDays", "int", "默认消耗天数"), ("weight", "float", "随机权重"),
+    ("actionType", "ActionType", "行动类型"), ("costDays", "float", "默认消耗天数(0.1天粒度)"), ("weight", "float", "随机权重"),
     ("repeatable", "bool", "是否可重复"), ("preconditions", "string", "前置条件"),
     ("payloadType", "string", "载荷类型"), ("payloadValue", "float", "载荷数值"), ("payloadParam", "string", "载荷参数"),
     ("linkId", "string", "关联配置ID"), ("foodDifficulty", "string", "美食难度(Normal/Hard/Boss)"), ("rewardKind", "RewardKind", "美食奖励外观类型"),
@@ -132,8 +132,8 @@ ACTION_GROUP_MEMBER_FIELDS = [
     ("groupId", "string", "所属行动组ID。"),
     ("actionId", "string", "行动ID。"),
     ("weight", "float", "组内随机权重。"),
-    ("minCostDays", "int", "本次行动最小耗时；<=0 使用 action.costDays。"),
-    ("maxCostDays", "int", "本次行动最大耗时；<=0 使用 action.costDays。"),
+    ("minCostDays", "float", "本次行动最小耗时(0.1天粒度)；<=0 使用 action.costDays。"),
+    ("maxCostDays", "float", "本次行动最大耗时(0.1天粒度)；<=0 使用 action.costDays。"),
 ]
 ACTION_GROUP_MEMBERS = [
     ("agm_normal_gold", "grp_food_normal", "act_food_gold", 120, 1, 1),

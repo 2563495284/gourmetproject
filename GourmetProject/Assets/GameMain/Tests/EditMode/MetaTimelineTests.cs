@@ -15,18 +15,36 @@ namespace GourmetProject.Tests
         [Test]
         public void Advance_AddsCost_AndClampsToLength()
         {
-            Assert.AreEqual(2, TimelineMath.Advance(0, 2, 7));
-            Assert.AreEqual(7, TimelineMath.Advance(6, 3, 7), "推进不应超过轴长度");
-            Assert.AreEqual(5, TimelineMath.Advance(5, 0, 7), "0 消耗不推进");
-            Assert.AreEqual(5, TimelineMath.Advance(5, -3, 7), "负消耗按 0 处理");
+            Assert.AreEqual(2f, TimelineMath.Advance(0f, 2f, 7f), 1e-4f);
+            Assert.AreEqual(7f, TimelineMath.Advance(6f, 3f, 7f), 1e-4f, "推进不应超过轴长度");
+            Assert.AreEqual(5f, TimelineMath.Advance(5f, 0f, 7f), 1e-4f, "0 消耗不推进");
+            Assert.AreEqual(5f, TimelineMath.Advance(5f, -3f, 7f), 1e-4f, "负消耗按 0 处理");
+        }
+
+        [Test]
+        public void Advance_TenthDayGranularity_NoFloatDrift()
+        {
+            Assert.AreEqual(0.3f, TimelineMath.Advance(0f, 0.3f, 7f), 1e-4f);
+
+            // 连续三次 +0.1，量化后应精确为 0.3，不出现 0.30000004 之类的漂移。
+            float day = 0f;
+            day = TimelineMath.Advance(day, 0.1f, 7f);
+            day = TimelineMath.Advance(day, 0.1f, 7f);
+            day = TimelineMath.Advance(day, 0.1f, 7f);
+            Assert.AreEqual(0.3f, day, 1e-4f);
+            Assert.AreEqual("0.3", day.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture));
+
+            // 小数消耗累加到整天也应精确落在整天上，供整天节点判定。
+            Assert.AreEqual(1.2f, TimelineMath.Advance(0.5f, 0.7f, 7f), 1e-4f);
         }
 
         [Test]
         public void IsFinished_TrueAtOrBeyondLength()
         {
-            Assert.IsFalse(TimelineMath.IsFinished(6, 7));
-            Assert.IsTrue(TimelineMath.IsFinished(7, 7));
-            Assert.IsTrue(TimelineMath.IsFinished(8, 7));
+            Assert.IsFalse(TimelineMath.IsFinished(6f, 7f));
+            Assert.IsFalse(TimelineMath.IsFinished(6.9f, 7f));
+            Assert.IsTrue(TimelineMath.IsFinished(7f, 7f));
+            Assert.IsTrue(TimelineMath.IsFinished(8f, 7f));
         }
 
         // —— 区间节点检测 ——
@@ -42,12 +60,30 @@ namespace GourmetProject.Tests
                 new NodeRef("d7", 7),
             };
 
-            // 从第 1 天推进到第 5 天：应包含 day 3、5（含右端），不含 2（<=prev）与 7（>new），并按 day 升序。
-            List<NodeRef> passed = TimelineMath.CollectPassed(nodes, prevDay: 2, newDay: 5, triggered: null);
+            // 从第 2 天推进到第 5 天：应包含 day 3、5（含右端），不含 2（<=prev）与 7（>new），并按 day 升序。
+            List<NodeRef> passed = TimelineMath.CollectPassed(nodes, prevDay: 2f, newDay: 5f, triggered: null);
 
             Assert.AreEqual(2, passed.Count);
             Assert.AreEqual("d3", passed[0].Id);
             Assert.AreEqual("d5", passed[1].Id);
+        }
+
+        [Test]
+        public void CollectPassed_FractionalProgress_HitsWholeDayNodes()
+        {
+            var nodes = new List<NodeRef>
+            {
+                new NodeRef("d3", 3),
+                new NodeRef("d4", 4),
+                new NodeRef("d5", 5),
+            };
+
+            // 从 2.5 天推进到 4.0 天：命中整天节点 3、4，不含 5。
+            List<NodeRef> passed = TimelineMath.CollectPassed(nodes, prevDay: 2.5f, newDay: 4.0f, triggered: null);
+
+            Assert.AreEqual(2, passed.Count);
+            Assert.AreEqual("d3", passed[0].Id);
+            Assert.AreEqual("d4", passed[1].Id);
         }
 
         [Test]
@@ -56,7 +92,7 @@ namespace GourmetProject.Tests
             var nodes = new List<NodeRef> { new NodeRef("a", 2), new NodeRef("b", 3) };
             var triggered = new HashSet<string> { "a" };
 
-            List<NodeRef> passed = TimelineMath.CollectPassed(nodes, 0, 4, triggered);
+            List<NodeRef> passed = TimelineMath.CollectPassed(nodes, 0f, 4f, triggered);
 
             Assert.AreEqual(1, passed.Count);
             Assert.AreEqual("b", passed[0].Id);
@@ -66,7 +102,7 @@ namespace GourmetProject.Tests
         public void CollectPassed_EmptyWhenNoProgress()
         {
             var nodes = new List<NodeRef> { new NodeRef("a", 3) };
-            Assert.AreEqual(0, TimelineMath.CollectPassed(nodes, 3, 3, null).Count);
+            Assert.AreEqual(0, TimelineMath.CollectPassed(nodes, 3f, 3f, null).Count);
         }
 
         // —— 利息 ——

@@ -30,11 +30,11 @@ namespace GourmetProject.Game.Run
         /// <summary>本周行动轴 id（用于读档时按配置重建节点）。</summary>
         public string CurrentTimelineId;
 
-        /// <summary>本周行动轴长度（天）。</summary>
-        public int TimelineLengthDays;
+        /// <summary>本周行动轴长度（天，0.1 粒度）。</summary>
+        public float TimelineLengthDays;
 
-        /// <summary>当前天数游标（0..TimelineLengthDays）。</summary>
-        public int CurrentDay;
+        /// <summary>当前天数游标（0..TimelineLengthDays，0.1 粒度）。旧档为整数天，JSON 数字可直接读入。</summary>
+        public float CurrentDay;
 
         /// <summary>本周已执行行动次数。</summary>
         public int ActionStepIndex;
@@ -57,8 +57,8 @@ namespace GourmetProject.Game.Run
         /// <summary>最近一次行动所属行动组 id。</summary>
         public string LastActionGroupId;
 
-        /// <summary>最近一次行动的耗时快照。</summary>
-        public int LastActionCostDays;
+        /// <summary>最近一次行动的耗时快照（天，0.1 粒度）。</summary>
+        public float LastActionCostDays;
 
         /// <summary>已生成的整局行动组序列。</summary>
         public List<string> ActionGroupSequence = new List<string>();
@@ -117,7 +117,7 @@ namespace GourmetProject.Game.Run
         public string ActionGroupId;
         public int WeekStepIndex;
         public int RunStepIndex;
-        public int CostDays;
+        public float CostDays;
     }
 
     [Serializable]

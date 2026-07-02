@@ -118,6 +118,9 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             Active = this;
+            // 尽早绑定场景里的战斗世界单例：否则首次 StartBattle 之前 _world 为 null，
+            // BeginWeek 里的 HideBattleWorld 会变成空操作，导致进场景默认态残留美食专属按钮。
+            _world = BattleWorldController.Instance;
             _loop = new WeekLoopController(_run, this);
             _loop.BeginWeek();
         }
@@ -581,10 +584,30 @@ namespace GourmetProject.Game.UI.Battle
         {
             WeekEventCardView card = Instantiate(_cardPrefab, _cardsContainer);
             var rect = (RectTransform)card.transform;
-            rect.anchorMin = new Vector2(minX, 0f);
-            rect.anchorMax = new Vector2(maxX, 1f);
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
+            Rect parentRect = _cardsContainer.rect;
+            if (parentRect.width <= 1f || parentRect.height <= 1f)
+            {
+                Canvas.ForceUpdateCanvases();
+                parentRect = _cardsContainer.rect;
+            }
+
+            Vector2 fallbackSize = rect.sizeDelta;
+            float slotWidth = parentRect.width * (maxX - minX);
+            float maxHeight = parentRect.height * 0.92f;
+            float width = Mathf.Min(slotWidth, maxHeight * 0.67f);
+            if (width <= 1f)
+            {
+                width = Mathf.Max(1f, fallbackSize.x);
+            }
+
+            float height = width / 0.67f;
+            float centerX = parentRect.width * ((minX + maxX) * 0.5f - 0.5f);
+
+            rect.anchorMin = new Vector2(0.5f, 0.5f);
+            rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = new Vector2(centerX, 0f);
+            rect.sizeDelta = new Vector2(width, height);
             rect.localScale = Vector3.one;
 
             ActionChoice captured = choice;

@@ -6,14 +6,14 @@ namespace GourmetProject.Game.Meta
     /// <summary>行动选择快照：UI 展示和执行必须使用同一份耗时/序号数据。</summary>
     public sealed class ActionChoice
     {
-        public ActionChoice(cfg.GameAction action, cfg.ActionGroup group, int weekStepIndex, int runStepIndex, int costDays)
+        public ActionChoice(cfg.GameAction action, cfg.ActionGroup group, int weekStepIndex, int runStepIndex, float costDays)
         {
             Action = action;
             Group = group;
             ActionGroupId = group?.Id ?? string.Empty;
             WeekStepIndex = Math.Max(0, weekStepIndex);
             RunStepIndex = Math.Max(0, runStepIndex);
-            CostDays = Math.Max(0, costDays);
+            CostDays = TimelineMath.Quantize(Math.Max(0f, costDays));
         }
 
         public cfg.GameAction Action { get; }
@@ -26,7 +26,7 @@ namespace GourmetProject.Game.Meta
 
         public int RunStepIndex { get; }
 
-        public int CostDays { get; }
+        public float CostDays { get; }
 
         public bool IsValid => Action != null;
 
@@ -45,17 +45,17 @@ namespace GourmetProject.Game.Meta
         }
 
         public ActionExecutionContext(cfg.GameAction action, int stepIndex)
-            : this(action, stepIndex, stepIndex, string.Empty, action?.CostDays ?? 0)
+            : this(action, stepIndex, stepIndex, string.Empty, action?.CostDays ?? 0f)
         {
         }
 
-        public ActionExecutionContext(cfg.GameAction action, int stepIndex, int runStepIndex, string actionGroupId, int costDays)
+        public ActionExecutionContext(cfg.GameAction action, int stepIndex, int runStepIndex, string actionGroupId, float costDays)
         {
             Action = action;
             StepIndex = Math.Max(0, stepIndex);
             RunStepIndex = Math.Max(0, runStepIndex);
             ActionGroupId = actionGroupId ?? string.Empty;
-            CostDays = Math.Max(0, costDays);
+            CostDays = TimelineMath.Quantize(Math.Max(0f, costDays));
         }
 
         public cfg.GameAction Action { get; }
@@ -66,7 +66,7 @@ namespace GourmetProject.Game.Meta
 
         public string ActionGroupId { get; }
 
-        public int CostDays { get; }
+        public float CostDays { get; }
 
         public bool IsValid => Action != null;
     }

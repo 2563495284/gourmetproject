@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
@@ -88,14 +89,14 @@ namespace GourmetProject.Game.Orchestration
         {
             if (choice == null)
             {
-                int restPrev = TimelineService.AdvanceDays(_run, 1);
+                float restPrev = TimelineService.AdvanceDays(_run, 1f);
                 _run.AdvanceActionStep();
                 RunPersistence.Save(_run);
                 ResolveNodes(restPrev, PromptNextAction);
                 return;
             }
 
-            int prevDay = _run.CurrentDay;
+            float prevDay = _run.CurrentDay;
             ActionExecutionContext context = choice.ToExecutionContext();
             if (!context.IsValid)
             {
@@ -138,6 +139,11 @@ namespace GourmetProject.Game.Orchestration
 
         public void OnBattleSettled(ScoreResult result, bool isWin)
         {
+            // 结算演出已放完 → 立即退出美食态，隐藏世界棋盘与其专属按钮（总览/吃/涂鸦）。
+            // 否则战斗后到下一次 PromptNextAction 之间的发奖 / 事件 / 利息 / 通知等弹层背后，
+            // 美食态按钮会一直残留（事件选择时按钮仍显示的根因就在这里）。
+            _view.HideBattleWorld();
+
             if (isWin)
             {
                 // 达标：发奖（不推进周），奖励确认后继续编排。
@@ -179,7 +185,13 @@ namespace GourmetProject.Game.Orchestration
             BeginWeek();
         }
 
-        private void ResolveNodes(int prevDay, Action onDone)
+        /// <summary>把天数游标格式化为跨语言环境稳定的随机 key 片段（一位小数）。</summary>
+        private static string DayKey(float currentDay)
+        {
+            return currentDay.ToString("0.0", CultureInfo.InvariantCulture);
+        }
+
+        private void ResolveNodes(float prevDay, Action onDone)
         {
             _pendingNodes = new Queue<cfg.TimelineNode>(TimelineService.CollectPassedNodes(_run, prevDay, _run.CurrentDay));
             _afterNodes = onDone;
@@ -292,7 +304,7 @@ namespace GourmetProject.Game.Orchestration
             cfg.GameEvent ev;
             if (string.IsNullOrEmpty(eventId))
             {
-                IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Event, $"action_w{_run.WeekIndex}_d{_run.CurrentDay}_s{_run.ActionStepIndex}");
+                IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Event, $"action_w{_run.WeekIndex}_d{DayKey(_run.CurrentDay)}_s{_run.ActionStepIndex}");
                 ev = EventService.RollEvent(_run, rng);
             }
             else
@@ -311,7 +323,7 @@ namespace GourmetProject.Game.Orchestration
                 return;
             }
 
-            IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Event, $"resolve_w{_run.WeekIndex}_d{_run.CurrentDay}_{ev.Id}");
+            IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Event, $"resolve_w{_run.WeekIndex}_d{DayKey(_run.CurrentDay)}_{ev.Id}");
             List<cfg.EventOption> options = EventService.GetOptions(ev.Id);
             if (options.Count == 0)
             {
@@ -354,7 +366,7 @@ namespace GourmetProject.Game.Orchestration
             {
                 case EventFollowUpKind.Battle:
                 {
-                    string key = $"event_battle_w{_run.WeekIndex}_d{_run.CurrentDay}_{eventId}";
+                    string key = $"event_battle_w{_run.WeekIndex}_d{DayKey(_run.CurrentDay)}_{eventId}";
                     Action start = () => StartBattle(
                         result.RequiredScore,
                         result.Modifier,

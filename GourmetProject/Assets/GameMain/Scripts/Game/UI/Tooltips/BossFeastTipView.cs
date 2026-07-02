@@ -22,7 +22,6 @@ namespace GourmetProject.Game.UI.Tooltips
         /// <summary>字段级绑定，供无完整配置时使用。</summary>
         public void Bind(string bossName, string mechanicDesc, long requiredScore, Sprite icon = null)
         {
-            ApplyIcon(icon, DefaultEmoji);
             ApplyTexts($"盛宴主题：{bossName}", mechanicDesc);
             ApplyFooter($"美味度要求：{requiredScore:N0}");
         }

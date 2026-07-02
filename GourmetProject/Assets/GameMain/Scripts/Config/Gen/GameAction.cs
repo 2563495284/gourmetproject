@@ -58,9 +58,9 @@ public sealed partial class GameAction : Luban.BeanBase
     /// </summary>
     public readonly ActionType ActionType;
     /// <summary>
-    /// 默认消耗天数
+    /// 默认消耗天数(0.1天粒度)
     /// </summary>
-    public readonly int CostDays;
+    public readonly float CostDays;
     /// <summary>
     /// 随机权重
     /// </summary>

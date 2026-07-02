@@ -96,6 +96,10 @@ namespace GourmetProject.Game.Presentation.Battle
         private void Awake()
         {
             Instance = this;
+
+            // 默认非美食态：世界棋盘与其专属按钮（总览/吃/涂鸦）默认隐藏，只有 StartBattle→Initialize 才显示。
+            // 场景里 BattleSceneRoot 默认 active，若不在此处收起，行动选择等非美食态一进场景就会露出这堆美食专属按钮。
+            HideWorld();
         }
 
         private void OnDestroy()
@@ -152,6 +156,9 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public void HideWorld()
         {
+            // 退出美食态：先显式收起美食专属按钮（口子在 SetGourmetHudVisible / WorldButtonView.SetVisible），
+            // 再整体停用世界根。这样按钮的显隐语义只由「是否美食态」决定，不再隐式挂靠根节点的 active。
+            SetGourmetHudVisible(false, animated: false);
             gameObject.SetActive(false);
         }
 

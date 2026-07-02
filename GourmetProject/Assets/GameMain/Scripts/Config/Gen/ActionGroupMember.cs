@@ -47,13 +47,13 @@ public sealed partial class ActionGroupMember : Luban.BeanBase
     /// </summary>
     public readonly float Weight;
     /// <summary>
-    /// 本次行动最小耗时；&lt;=0 使用 action.costDays。
+    /// 本次行动最小耗时(0.1天粒度)；&lt;=0 使用 action.costDays。
     /// </summary>
-    public readonly int MinCostDays;
+    public readonly float MinCostDays;
     /// <summary>
-    /// 本次行动最大耗时；&lt;=0 使用 action.costDays。
+    /// 本次行动最大耗时(0.1天粒度)；&lt;=0 使用 action.costDays。
     /// </summary>
-    public readonly int MaxCostDays;
+    public readonly float MaxCostDays;
    
     public const int __ID__ = 1353440707;
     public override int GetTypeId() => __ID__;

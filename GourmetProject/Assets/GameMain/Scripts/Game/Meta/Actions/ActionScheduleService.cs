@@ -54,7 +54,7 @@ namespace GourmetProject.Game.Meta
                 candidates.RemoveAt(index);
 
                 cfg.GameAction action = tables.TbAction.GetOrDefault(chosen.ActionId);
-                int costDays = RollCostDays(chosen, action, rng);
+                float costDays = RollCostDays(chosen, action, rng);
                 result.Add(new ActionChoice(action, group, run.ActionStepIndex, run.RunActionStepIndex, costDays));
             }
 
@@ -241,19 +241,23 @@ namespace GourmetProject.Game.Meta
             return runStep >= min && runStep <= max;
         }
 
-        private static int RollCostDays(cfg.ActionGroupMember member, cfg.GameAction action, IRandomStream rng)
+        private static float RollCostDays(cfg.ActionGroupMember member, cfg.GameAction action, IRandomStream rng)
         {
-            int fallback = action?.CostDays ?? 0;
-            int min = member.MinCostDays > 0 ? member.MinCostDays : fallback;
-            int max = member.MaxCostDays > 0 ? member.MaxCostDays : min;
+            float fallback = action?.CostDays ?? 0f;
+            float min = member.MinCostDays > 0f ? member.MinCostDays : fallback;
+            float max = member.MaxCostDays > 0f ? member.MaxCostDays : min;
             if (max < min)
             {
-                int temp = min;
+                float temp = min;
                 min = max;
                 max = temp;
             }
 
-            return min == max ? min : rng.Range(min, max + 1);
+            // 以 0.1 天为粒度在 [min, max] 闭区间内随机（换算成十分之一天的整数步再取回），保证确定性与粒度对齐。
+            int minTenths = (int)Math.Round(min * 10f, MidpointRounding.AwayFromZero);
+            int maxTenths = (int)Math.Round(max * 10f, MidpointRounding.AwayFromZero);
+            int tenths = minTenths == maxTenths ? minTenths : rng.Range(minTenths, maxTenths + 1);
+            return TimelineMath.Quantize(tenths / 10f);
         }
 
         private static bool ContainsId(string ids, string value)

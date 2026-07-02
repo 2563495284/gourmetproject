@@ -25,7 +25,6 @@ namespace GourmetProject.Game.UI.Tooltips
         /// <summary>直接给规则描述 + 天数绑定。</summary>
         public void Bind(string desc, int nodeDays, Sprite icon = null)
         {
-            ApplyIcon(icon, DefaultEmoji);
             ApplyTexts(Title, desc);
             ApplyFooter($"节点天数：{nodeDays}天");
         }

@@ -20,10 +20,6 @@ namespace GourmetProject.Game.UI.Tooltips
         [Header("Root")]
         [SerializeField] private CanvasGroup _canvasGroup;
 
-        [Header("左侧图标（Image 优先，缺图用 Emoji/文字兜底）")]
-        [SerializeField] private Image _iconImage;
-        [SerializeField] private Text _iconLabel;
-
         [Header("卡片内容")]
         [SerializeField] private Text _titleText;
         [SerializeField] private Text _descText;
@@ -53,23 +49,6 @@ namespace GourmetProject.Game.UI.Tooltips
             }
 
             gameObject.SetActive(false);
-        }
-
-        /// <summary>设置左侧图标：有 sprite 用图，否则回退 emoji/文字。</summary>
-        protected void ApplyIcon(Sprite sprite, string emoji)
-        {
-            bool hasSprite = sprite != null;
-            if (_iconImage != null)
-            {
-                _iconImage.enabled = hasSprite;
-                _iconImage.sprite = sprite;
-            }
-
-            if (_iconLabel != null)
-            {
-                _iconLabel.gameObject.SetActive(!hasSprite && !string.IsNullOrEmpty(emoji));
-                _iconLabel.text = emoji ?? string.Empty;
-            }
         }
 
         /// <summary>设置标题与描述框正文。</summary>

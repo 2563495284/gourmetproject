@@ -21,7 +21,8 @@ namespace GourmetProject.Game.Meta
             }
 
             statistics.WeekIndex = run.WeekIndex;
-            statistics.CurrentDay = run.CurrentDay;
+            // 统计/解锁条件仍以整天为单位：向上取整为“已进入的第 N 天”。
+            statistics.CurrentDay = (int)System.Math.Ceiling((double)run.CurrentDay);
             statistics.IsEndless = run.IsEndless;
             statistics.Gold = run.Gold;
             statistics.OwnedItemCount = run.Items.Count;

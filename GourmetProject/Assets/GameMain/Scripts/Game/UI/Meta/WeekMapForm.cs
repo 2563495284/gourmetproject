@@ -66,7 +66,9 @@ namespace GourmetProject.Game.UI.Meta
             ClearCards();
 
             string weekLabel = run.IsEndless ? $"无尽 第 {run.WeekIndex - run.TotalWeeks} 关" : $"第 {run.WeekIndex} 周";
-            _titleText.text = $"{weekLabel} · 第 {run.CurrentDay}/{run.TimelineLengthDays} 天 · 本周第 {run.ActionStepIndex + 1} 次 · 整局第 {run.RunActionStepIndex + 1} 次";
+            string dayText = run.CurrentDay.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+            string lengthText = run.TimelineLengthDays.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+            _titleText.text = $"{weekLabel} · 第 {dayText}/{lengthText} 天 · 本周第 {run.ActionStepIndex + 1} 次 · 整局第 {run.RunActionStepIndex + 1} 次";
             BuildAxisText(run);
 
             List<ActionChoice> choices = RollChoices(run);
@@ -140,7 +142,8 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             var sb = new StringBuilder();
-            for (int day = 1; day <= run.TimelineLengthDays; day++)
+            int lengthDays = Mathf.RoundToInt(run.TimelineLengthDays);
+            for (int day = 1; day <= lengthDays; day++)
             {
                 if (day > 1)
                 {

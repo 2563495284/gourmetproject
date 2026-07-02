@@ -29,7 +29,7 @@ namespace GourmetProject.Tests
             Assert.LessOrEqual(choices.Count, ActionRandomService.MaxChoiceCount);
             Assert.Greater(tooManyChoices.Count, 0);
             Assert.LessOrEqual(tooManyChoices.Count, ActionRandomService.MaxChoiceCount);
-            Assert.AreEqual(7, run.TimelineLengthDays);
+            Assert.AreEqual(7f, run.TimelineLengthDays, 1e-4f);
             Assert.AreEqual(1, run.ActionGroupSequence.Count);
             Assert.IsFalse(string.IsNullOrEmpty(run.ActionGroupSequence[0]));
 
@@ -38,7 +38,7 @@ namespace GourmetProject.Tests
             {
                 Assert.IsTrue(ids.Add(choice.Action.Id), $"Duplicate action '{choice.Action.Id}' in scheduled choices.");
                 Assert.AreEqual(run.ActionGroupSequence[0], choice.ActionGroupId);
-                Assert.Greater(choice.CostDays, 0);
+                Assert.Greater(choice.CostDays, 0f);
             }
         }
 
@@ -82,7 +82,7 @@ namespace GourmetProject.Tests
             Assert.AreEqual(2, restored.ActionGroupSequence.Count);
             Assert.AreEqual("grp_food_hard", restored.LastActionContext.ActionGroupId);
             Assert.AreEqual(7, restored.LastActionContext.RunStepIndex);
-            Assert.AreEqual(3, restored.LastActionContext.CostDays);
+            Assert.AreEqual(3f, restored.LastActionContext.CostDays, 1e-4f);
         }
 
         [Test]

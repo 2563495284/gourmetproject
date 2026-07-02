@@ -1,0 +1,86 @@
+{
+  "provider": "gemini",
+  "model": "gemini-3.1-flash-image-preview",
+  "stylePrefix": "90s American cable TV grotesque cartoon game art, GourmetProject food-battle style, thick imperfect black ink outlines, chunky hand-drawn shapes, flat cel colors, warm cream base with selective accent colors, playful but slightly weird appetite mood, polished 2D Unity art sprite, no text, no letters, no numbers, no logo, no watermark",
+  "typeDefaults": {
+    "ui": {
+      "outputDir": "Assets/GameMain/Resources/Sprites/UI",
+      "outputFormat": "png",
+      "quality": "medium",
+      "requestSize": "1024x1536",
+      "targetSize": "1024x1536",
+      "targetMode": "resize",
+      "background": "opaque"
+    }
+  },
+  "typePromptPrefixes": {
+    "ui": "Pure action-card artwork rule: full-bleed vertical illustration for a game card, dense integrated composition from edge to edge, no title bar, no footer bar, no blank label zones, no reward placeholder area, no empty UI slots, no framed template layout. The image is pure art only; it may have organic decorative borders, but they must feel painted into the illustration instead of reserved UI panels. Fill the whole canvas with artwork, texture, props, motion, and atmosphere. The generated image itself must contain no typography, no symbols that look like text, no digits."
+  },
+  "assets": [
+    {
+      "name": "card_action_food_gold",
+      "type": "ui",
+      "prompt": "Food action artwork for reward: gold coins. A generous steaming plate fused with coin arcs, golden sauce rings, noodle loops, glints, crumbs, and swirling steam across the full canvas. Accents are gold and honey yellow. Abstract, no literal words."
+    },
+    {
+      "name": "card_action_food_fragment",
+      "type": "ui",
+      "prompt": "Food action artwork for reward: stomach fragment. A creamy meal plate blended with puzzle-tile and stomach-board fragment shapes, irregular tile notches, rounded grid fragments, sauce trails, steam curls, and crumbs filling the full canvas. Soft mint and pale teal accents. Abstract, no anatomy gore, no words."
+    },
+    {
+      "name": "card_action_food_passive",
+      "type": "ui",
+      "prompt": "Food action artwork for reward: passive item. A calm hearty meal surrounded by charm-like kitchen relic silhouettes, subtle shield and utensil shapes, herbs, plate shadows, and protective talisman-like shapes that are not letters. Sage green accents, full-canvas art."
+    },
+    {
+      "name": "card_action_food_active",
+      "type": "ui",
+      "prompt": "Food action artwork for reward: active item. A meal bursting with service-bell energy, spark shapes, sauce swooshes, motion streaks, flying utensils, crumbs, and steam across the whole canvas. Accents are bright red-orange and electric yellow, no text."
+    },
+    {
+      "name": "card_action_food_dish",
+      "type": "ui",
+      "prompt": "Food action artwork for reward: new dish. A stacked variety platter with abstract rice, dumpling, soup, noodle, garnish, sauce, bowl and plate shapes blended together into a rich full-canvas feast. Accents include tomato red, leafy green, and warm yellow. No recipe tabs, no words."
+    },
+    {
+      "name": "card_action_food_hard",
+      "type": "ui",
+      "prompt": "Hard food challenge artwork. A dramatic oversized feast plate with chili heat waves, heavy sauce splashes, pressure marks, jagged appetite energy, intense steam, sharp crumbs, and chaotic food motion filling the entire canvas. Accents are spicy red, burnt orange, and dark sauce brown. Still playful and food-only."
+    },
+    {
+      "name": "card_action_event",
+      "type": "ui",
+      "prompt": "Mysterious event action artwork. A covered serving cloche surrounded by strange steam spirals, odd table shadows, warped utensils, sauce wisps, and abstract question-like curls that are decorative shapes, not actual punctuation. Accents are muted teal, violet shadow, and warm cream. Full-canvas curious atmosphere."
+    },
+    {
+      "name": "card_action_reward",
+      "type": "ui",
+      "prompt": "Reward action artwork. A celebratory wrapped kitchen gift, sparkling plate halo, ribbon-like sauce swirls, prize shine shapes, confetti-like food crumbs, and warm glowing props filling the whole canvas. Accents are cheerful gold, coral red, and soft cream. No text."
+    },
+    {
+      "name": "card_action_negative",
+      "type": "ui",
+      "prompt": "Negative event action artwork. An overcooked smoky pan, spilled sauce, warped table shapes, unlucky jagged steam, burnt crumbs, sour splatters, bent utensils, and tense cartoon-food chaos across the full canvas. Accents are smoky purple, bitter green, dark brown, and warning red. No horror, no words."
+    },
+    {
+      "name": "card_action_shop",
+      "type": "ui",
+      "prompt": "Shop action artwork. A cozy food market counter blended with awning stripes, jars, plates, coins, shelves, stall fabric folds, hanging utensils, and market clutter filling the full canvas. Accents are mint green, tomato red, gold, and cream. No price tags, no signs, no text."
+    },
+    {
+      "name": "card_node_shop",
+      "type": "ui",
+      "prompt": "Node event artwork for shop. A dense cozy food market stall interior with striped awning fabric, stacked jars, plates, coins, shelves, hanging utensils, folded cloth, and warm counter clutter filling the whole vertical canvas. No price tags, no signs, no text."
+    },
+    {
+      "name": "card_node_interest",
+      "type": "ui",
+      "prompt": "Node event artwork for collecting interest. A bulging coin pouch, coin spirals, golden glints, tablecloth folds, ledger-like abstract shapes that are not writing, and warm money-flow motion filling the whole vertical canvas. No text, no numbers, no symbols that look like letters."
+    },
+    {
+      "name": "card_node_boss",
+      "type": "ui",
+      "prompt": "Node event artwork for weekend feast boss. A looming dramatic feast platter, spicy smoke, heavy sauce splashes, theatrical shadows, jagged appetite energy, crooked utensils, and intimidating food-challenge chaos filling the whole vertical canvas. Playful cartoon, no face, no eyes, no character, no horror, no text."
+    }
+  ]
+}

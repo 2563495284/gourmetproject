@@ -13,7 +13,7 @@ namespace GourmetProject.Game.Meta
     public static class TimelineService
     {
         private const string Tag = "Timeline";
-        private const int DefaultLengthDays = 7;
+        private const float DefaultLengthDays = 7f;
 
         /// <summary>为当前周随机一条行动轴并初始化天数游标。返回选中的行动轴 id。</summary>
         public static string RollWeekTimeline(GameRun run, IRandomStream rng)
@@ -45,7 +45,7 @@ namespace GourmetProject.Game.Meta
             }
 
             cfg.Timeline chosen = candidates[rng.WeightedPickIndex(weights)];
-            int length = chosen.BaseLengthDays > 0 ? chosen.BaseLengthDays : DefaultLengthDays;
+            float length = chosen.BaseLengthDays > 0 ? chosen.BaseLengthDays : DefaultLengthDays;
             run.BeginTimeline(chosen.Id, length);
             Log.Info($"第 {run.WeekIndex} 周行动轴 = {chosen.Id}（{length} 天）。", Tag);
             return chosen.Id;
@@ -73,13 +73,13 @@ namespace GourmetProject.Game.Meta
             return nodes;
         }
 
-        /// <summary>收集天数从 prevDay 推进到 newDay 经过的、尚未结算的节点（按 day 升序）。</summary>
-        public static List<cfg.TimelineNode> CollectPassedNodes(GameRun run, int prevDay, int newDay)
+        /// <summary>收集天数从 prevDay 推进到 newDay 经过的、尚未结算的节点（按 day 升序）。节点落在整天，比较含浮点容差。</summary>
+        public static List<cfg.TimelineNode> CollectPassedNodes(GameRun run, float prevDay, float newDay)
         {
             var passed = new List<cfg.TimelineNode>();
             foreach (cfg.TimelineNode node in GetNodes(run))
             {
-                if (node.Day > prevDay && node.Day <= newDay && !run.IsNodeTriggered(node.Id))
+                if (node.Day > prevDay + TimelineMath.Epsilon && node.Day <= newDay + TimelineMath.Epsilon && !run.IsNodeTriggered(node.Id))
                 {
                     passed.Add(node);
                 }
@@ -95,9 +95,9 @@ namespace GourmetProject.Game.Meta
         }
 
         /// <summary>把天数游标向前推进，结果不超过轴长度。返回推进前的天数。</summary>
-        public static int AdvanceDays(GameRun run, int days)
+        public static float AdvanceDays(GameRun run, float days)
         {
-            int prev = run.CurrentDay;
+            float prev = run.CurrentDay;
             run.CurrentDay = TimelineMath.Advance(run.CurrentDay, days, run.TimelineLengthDays);
             return prev;
         }
