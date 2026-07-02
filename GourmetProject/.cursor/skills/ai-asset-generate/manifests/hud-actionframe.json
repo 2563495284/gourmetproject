@@ -1,0 +1,60 @@
+{
+  "stylePrefix": "90s American cable TV cartoon game art style, thick clean hand-drawn black ink outlines, flat cel animation colors, warm appetizing cream yellow and orange palette, slightly uneven organic hand-drawn silhouette, polished 2D game asset, no text, no letters, no numbers, no logo, no watermark",
+  "provider": "openai",
+  "model": "gpt-image-2",
+  "typeDefaults": {
+    "ui": {
+      "outputDir": "Assets/GameMain/Resources/Sprites/UI",
+      "outputFormat": "png",
+      "quality": "high",
+      "requestSize": "1024x1024",
+      "postprocess": "magenta-alpha"
+    }
+  },
+  "assets": [
+    {
+      "name": "ui_panel_window",
+      "type": "ui",
+      "size": "1024x1024",
+      "prompt": "A reusable HUD panel background for a 2D cartoon food game, one rounded rectangle plaque that fills almost the entire square canvas edge to edge, chunky hand-drawn black outline, warm muted cream fill with a slightly darker brown inner border and soft restaurant wallpaper texture, large clear flat inner area for content, 9-slice friendly with even thick border padding on all four sides, the entire region outside the rounded plaque including all four corners is one solid flat uniform pure magenta #FF00FF, absolutely no colored corner decorations brackets tabs accents dots or shapes in the corners, no drop shadow outside the plaque, no text, no icons"
+    },
+    {
+      "name": "ui_btn_primary",
+      "type": "ui",
+      "size": "1024x1024",
+      "prompt": "A reusable primary action button plate for a 2D cartoon food game, one rounded rectangle button that fills almost the entire square canvas edge to edge, chunky hand-drawn black outline, warm saturated orange fill with a soft yellow top highlight band and a darker orange bottom edge shadow, clear flat readable center area, 9-slice friendly with even border padding, only the four rounded outside corners are pure flat magenta, place it on a solid flat uniform pure magenta #FF00FF background, no drop shadow outside the button, no text, no icon"
+    },
+    {
+      "name": "ui_btn_secondary",
+      "type": "ui",
+      "size": "1024x1024",
+      "prompt": "A reusable secondary button plate for a 2D cartoon food game, one rounded rectangle button that fills almost the entire square canvas edge to edge, chunky hand-drawn black outline, muted warm cream and tan fill with a soft top highlight and a darker bottom edge shadow, clear flat readable center area, 9-slice friendly with even border padding, only the four rounded outside corners are pure flat magenta, place it on a solid flat uniform pure magenta #FF00FF background, no drop shadow outside the button, no text, no icon"
+    },
+    {
+      "name": "ui_slot_square",
+      "type": "ui",
+      "size": "1024x1024",
+      "prompt": "A reusable square inventory item slot frame for a 2D cartoon food game, one rounded square slot that fills almost the entire canvas edge to edge, chunky hand-drawn black outline, light warm cream fill with a subtle darker inset recessed center panel to hold an icon, gentle painted texture, 9-slice friendly with even thick border padding, the entire region outside the rounded slot including all four corners is one solid flat uniform pure magenta #FF00FF, absolutely no colored corner decorations brackets tabs accents dots or shapes in the corners, no drop shadow outside the slot, no text, no icons"
+    },
+    {
+      "name": "ui_tag_box",
+      "type": "ui",
+      "size": "1024x1024",
+      "prompt": "A small rounded tag label box for a 2D cartoon food game HUD, one short rounded rectangle that fills almost the entire canvas edge to edge, chunky hand-drawn black outline, soft warm cream fill with a subtle darker bottom edge, gentle painted texture, clear flat inner area, 9-slice friendly with even border padding, only the four rounded outside corners are pure flat magenta, place it on a solid flat uniform pure magenta #FF00FF background, no drop shadow outside the box, no text"
+    },
+    {
+      "name": "icon_coin",
+      "type": "ui",
+      "size": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "A single shiny gold coin icon for a 2D cartoon food game HUD, one centered front-facing round coin with comfortable padding, chunky hand-drawn black outline, warm golden yellow fill with a lighter highlight crescent and a darker rim, a simple embossed fork-and-knife motif suggested with bold black strokes, flat cel colors, bold readable silhouette, place it on a solid flat uniform pure magenta #FF00FF background, no drop shadow, no text, no numbers"
+    },
+    {
+      "name": "ui_axis_marker",
+      "type": "ui",
+      "size": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "A single downward pointing location marker pointer for a 2D cartoon food game timeline HUD, one centered chunky rounded downward triangle arrow tip with comfortable padding, chunky hand-drawn black outline, warm saturated orange-red fill with a soft top highlight, playful slightly imperfect silhouette, bold readable shape, place it on a solid flat uniform pure magenta #FF00FF background, no drop shadow, no text"
+    }
+  ]
+}

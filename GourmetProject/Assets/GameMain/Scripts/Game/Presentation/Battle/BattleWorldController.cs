@@ -138,9 +138,10 @@ namespace GourmetProject.Game.Presentation.Battle
             BuildBoard(session.Board);
             EnsureSequencer();
             EnsureScoreFire();
-            EnsureItemRoots();
             ConfigureFixedButtons();
-            BuildRecipeBooks();
+            // 道具（被动/主动）与菜谱面板已迁到常驻屏幕空间 HUD（BattleForm），世界空间不再渲染这些面板；
+            // 世界空间只保留棋盘、菜品、上菜/结算演出与固定按钮。
+            HideWorldPanels();
             RebuildPlacedPieces();
             ConfigureDoodleHud();
             RefreshAll();
@@ -159,10 +160,39 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _boardView.Sync();
-            RefreshRecipes();
             RefreshScore();
-            RefreshItems();
-            RefreshActiveItems();
+        }
+
+        /// <summary>隐藏迁到 HUD 的世界空间面板：被动/主动道具槽、道具标题、菜谱书。</summary>
+        private void HideWorldPanels()
+        {
+            ClearItemSlots(_passiveItemSlots);
+            ClearItemSlots(_activeItemSlots);
+
+            foreach (MenuBookWorldView book in _recipeBooks)
+            {
+                if (book != null)
+                {
+                    Destroy(book.gameObject);
+                }
+            }
+
+            _recipeBooks.Clear();
+
+            if (_itemsText != null)
+            {
+                _itemsText.gameObject.SetActive(false);
+            }
+
+            if (_passiveItemsRoot != null)
+            {
+                _passiveItemsRoot.gameObject.SetActive(false);
+            }
+
+            if (_activeItemsRoot != null)
+            {
+                _activeItemsRoot.gameObject.SetActive(false);
+            }
         }
 
         public void SyncBoardFromSession()
@@ -413,11 +443,12 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void BuildBoard(GpBoard board)
         {
-            // 中央可用区：左侧让出后厨栏、右侧让出道具栏、上让分数、下让吃!/消息。
-            float boardLeft = -_halfW + 3.0f;
-            float boardRight = _halfW - 2.8f;
-            float boardTop = _halfH - 1.4f;
-            float boardBottom = -_halfH + 1.7f;
+            // 中央可用区：菜谱/道具面板已迁到常驻 HUD（左右栏 + 底部菜谱抽屉），这里为 HUD 让出四周边距，
+            // 棋盘居中在中部内容区，避免被左右栏与底部菜谱抽屉遮挡。
+            float boardLeft = -_halfW + 2.6f;
+            float boardRight = _halfW - 2.6f;
+            float boardTop = _halfH - 1.7f;
+            float boardBottom = -_halfH + 2.7f;
             float availW = Mathf.Max(1f, boardRight - boardLeft);
             float availH = Mathf.Max(1f, boardTop - boardBottom);
 
