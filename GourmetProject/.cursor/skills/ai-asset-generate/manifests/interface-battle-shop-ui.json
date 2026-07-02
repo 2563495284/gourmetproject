@@ -1,0 +1,122 @@
+{
+  "stylePrefix": "90s American cable TV cartoon game art style, thick clean hand-drawn black ink outlines, flat cel animation colors, warm appetizing cream yellow and orange palette, slightly uneven organic hand-drawn silhouette, polished 2D game asset, no text, no letters, no numbers, no logo, no watermark",
+  "provider": "gemini",
+  "model": "gemini-3.1-flash-image-preview",
+  "typeDefaults": {
+    "ui": {
+      "outputDir": "Assets/GameMain/Resources/Sprites/UI",
+      "outputFormat": "png",
+      "quality": "high",
+      "requestSize": "1024x1024",
+      "postprocess": "magenta-alpha"
+    }
+  },
+  "typePromptPrefixes": {
+    "ui": "UI game asset rule: one clean centered UI frame or icon on a square canvas, readable at small size, no typography, no digits, no letters, no watermark. Use bold black ink outline and flat cel colors. For transparent-style assets, place all outside empty space on a SOLID FLAT UNIFORM pure magenta #FF00FF background for local alpha removal, and do not use magenta in the subject."
+  },
+  "assets": [
+    {
+      "name": "ui_table_backdrop",
+      "type": "ui",
+      "postprocess": "none",
+      "requestSize": "1536x1024",
+      "targetSize": "1536x1024",
+      "prompt": "Full-screen warm tabletop backdrop for a 2D cartoon food game UI, horizontal composition, creamy yellow-orange restaurant table surface with subtle hand-painted napkin patterns and soft sauce-colored edge vignette, calm center area for UI panels, thick clean cartoon ink line accents at the far edges only, flat cel colors, no text, no icons, no characters"
+    },
+    {
+      "name": "ui_hud_panel_side",
+      "type": "ui",
+      "prompt": "Reusable tall narrow side HUD panel frame, one vertical rounded rectangle plaque filling most of the canvas, chunky uneven hand-drawn black outline, warm orange outer rim, pale cream paper center, subtle inner brown ink border, clear flat interior for status rows, 9-slice friendly with even thick border padding, pure magenta outside the rounded panel, no decorations in the corners, no text, no icons"
+    },
+    {
+      "name": "ui_hud_panel_top_axis",
+      "type": "ui",
+      "prompt": "Reusable wide top timeline HUD panel frame, one horizontal rounded rectangle plaque filling most of the canvas, chunky hand-drawn black outline, pale cream center, warm orange trim, subtle restaurant ticket texture, long clear flat inner lane for small day cells, 9-slice friendly with even border padding, pure magenta outside the rounded panel, no text, no icons"
+    },
+    {
+      "name": "ui_hud_panel_center",
+      "type": "ui",
+      "prompt": "Reusable large center action-selection panel frame, one broad rounded rectangle window filling most of the canvas, thick clean hand-drawn black ink outline, warm cream fill, orange side trim, faint hand-painted paper texture, clear flat central content area for cards, 9-slice friendly with generous even border padding, pure magenta outside the panel, no text, no icons"
+    },
+    {
+      "name": "ui_hud_panel_drawer",
+      "type": "ui",
+      "prompt": "Reusable bottom recipe drawer panel frame, one low horizontal rounded rectangle tray filling most of the canvas, chunky black ink outline, warm cream paper center, orange rim, slightly wavy hand-drawn silhouette like a restaurant order tray, clear flat interior strip for entries, 9-slice friendly, pure magenta outside the tray, no text, no icons"
+    },
+    {
+      "name": "ui_result_panel",
+      "type": "ui",
+      "prompt": "Reusable modal result panel frame, one centered square-ish rounded rectangle card, thick black cartoon outline, warm cream fill with orange rim and subtle celebratory sauce splash corners built into the border, clear flat inner area for result text and button, 9-slice friendly with readable center, pure magenta outside panel, no text, no icons"
+    },
+    {
+      "name": "ui_shop_section_panel",
+      "type": "ui",
+      "prompt": "Reusable shop goods section panel frame, one horizontal rounded rectangle market shelf card filling most of the canvas, chunky black outline, pale cream center, warm orange awning-like top rim without any signs or writing, subtle shelf line at the lower edge, clear interior for product cards, 9-slice friendly, pure magenta outside the panel, no text, no icons"
+    },
+    {
+      "name": "ui_shop_recipe_strip",
+      "type": "ui",
+      "prompt": "Reusable shop recipe strip tray frame, one long horizontal tray plaque filling most of the canvas, chunky black outline, warm orange and cream fill, slightly wavy hand-drawn restaurant ticket shape, small folded paper tabs at the ends without symbols, clear flat middle area for recipe book chips, 9-slice friendly, pure magenta outside the tray, no text"
+    },
+    {
+      "name": "ui_recipe_book_chip",
+      "type": "ui",
+      "targetSize": "512x512",
+      "prompt": "Small recipe book chip background, one squat rounded rectangle booklet tile with a simple closed cookbook silhouette built into the border, thick black ink outline, cream pages and orange cover accents, clear flat center area for UI text added later, pure magenta outside the tile, no text, no letters, no numbers"
+    },
+    {
+      "name": "ui_recipe_dish_tile",
+      "type": "ui",
+      "targetSize": "512x512",
+      "prompt": "Small draggable recipe dish tile background, one rounded rectangle card with a tiny plate rim motif in the corner but no actual text, thick black ink outline, pale cream center, warm orange bottom edge shadow, clear inner area for dish name added later, pure magenta outside tile, no text, no letters, no numbers"
+    },
+    {
+      "name": "ui_icon_stomach",
+      "type": "ui",
+      "targetSize": "512x512",
+      "prompt": "Small HUD icon for viewing stomach capacity, a simple rounded stomach-shaped pouch silhouette made appetizing and abstract, thick black ink outline, warm cream and orange fill, no gore, no anatomy detail, playful food-game symbol, centered with comfortable padding on pure magenta background, no text, no letters, no numbers"
+    },
+    {
+      "name": "ui_icon_settings_gear",
+      "type": "ui",
+      "targetSize": "512x512",
+      "prompt": "Small settings icon, one chunky hand-drawn gear shaped like a warm orange cookie cutter with cream highlights, thick black outline, readable simple cog silhouette, centered with comfortable padding on pure magenta background, no text, no letters, no numbers"
+    },
+    {
+      "name": "ui_icon_recipe_book",
+      "type": "ui",
+      "targetSize": "512x512",
+      "prompt": "Small recipe book icon, one closed cookbook with orange cover and cream page edges, fork-and-knife motif suggested only as simple black utensil shapes, thick black outline, centered with comfortable padding on pure magenta background, no text, no letters, no numbers"
+    },
+    {
+      "name": "ui_icon_trash_bin",
+      "type": "ui",
+      "targetSize": "512x512",
+      "prompt": "Small trash bin icon for deleting food in recipe editor, one rounded kitchen trash can with a loose lid and warm orange-red fill, thick black ink outline, clean simple silhouette, centered with comfortable padding on pure magenta background, no text, no letters, no numbers"
+    },
+    {
+      "name": "ui_icon_shop_food",
+      "type": "ui",
+      "targetSize": "512x512",
+      "prompt": "Small shop category icon for food purchase, one appetizing covered plate with a small garnish and steam curls, thick black outline, warm cream-orange flat colors, centered on pure magenta background, no text, no letters, no numbers"
+    },
+    {
+      "name": "ui_icon_shop_fragment",
+      "type": "ui",
+      "targetSize": "512x512",
+      "prompt": "Small shop category icon for stomach board fragment pack, one cream puzzle tile fragment with a tiny orange plate mark, thick black outline, playful board-piece silhouette, centered on pure magenta background, no text, no letters, no numbers"
+    },
+    {
+      "name": "ui_icon_shop_passive",
+      "type": "ui",
+      "targetSize": "512x512",
+      "prompt": "Small shop category icon for passive item purchase, one chef knife charm beside a small plate, pure kitchen props only, thick black outline, warm cream-orange flat colors, centered on pure magenta background, no text, no letters, no numbers"
+    },
+    {
+      "name": "ui_icon_shop_active",
+      "type": "ui",
+      "targetSize": "512x512",
+      "prompt": "Small shop category icon for active item purchase, one shiny service bell with orange action spark shapes, thick black outline, warm cream-orange flat colors, centered on pure magenta background, no text, no letters, no numbers"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+---
+description: 改已存在的 UI 界面 prefab 必须用 Unity MCP 直接连编辑器改，禁止重跑 *PrefabBuilder 生成脚本覆盖设计师的手动改动
+globs: Assets/GameMain/Editor/*PrefabBuilder.cs,Assets/GameMain/Scripts/Game/UI/**/*.cs
+alwaysApply: false
+---
+
+# 改 UI prefab：直接 MCP 连编辑器改，别重跑 Builder
+
+`Assets/GameMain/Editor/` 下的 `*PrefabBuilder`（`BattleFormPrefabBuilder`、`InterfacePrefabBuilder`、`ResultFormPrefabBuilder`、`ShopFormPrefabBuilder`、`DishTooltipPrefabBuilder` 等）是**从零重建整份 prefab** 的脚本。设计师会在 Inspector 里手动微调（位置、尺寸、颜色、字号、间距、引用等），一旦重跑 Builder 就会把这些改动**全部覆盖冲掉**。
+
+## 红线
+
+- **禁止**为了「改一处 UI」而重跑任何 `*PrefabBuilder` 菜单/脚本去 rebuild 已存在的界面 prefab。
+- 修改已存在的 UI prefab，一律**用 Unity MCP 直接连实时编辑器改**（见 `unity-mcp-workflow`）：
+  - 优先 `manage_prefabs` / `manage_gameobject` / `manage_components` 精修目标节点；
+  - 复杂改动用 `execute_code`（`PrefabUtility.LoadPrefabContents` + `SerializedObject` + `SaveAsPrefabAsset`）。
+- 不要手改 `.prefab` YAML（易错 `fileID`/引用）。
+
+## Builder 什么时候才用
+
+- **只在从零新建**一份还不存在的 prefab 时用 Builder 一次性拉起骨架；建好后交给设计师，之后的所有调整走 MCP，不再重跑。
+- 若确实要改「结构生成逻辑」本身（而非某个 prefab 实例），先跟用户确认，改完也别拿它去覆盖设计师已调过的现有 prefab。
+
+## 示例
+
+```text
+❌ BAD：用户说「战斗界面某按钮往左挪一点」→ 打开/重跑 BattleFormPrefabBuilder rebuild 整个 BattleForm.prefab
+✅ GOOD：MCP 连编辑器，定位该按钮节点，直接改它的 RectTransform，SaveAsPrefabAsset
+```

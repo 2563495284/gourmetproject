@@ -41,11 +41,6 @@ namespace GourmetProject.Game.UI.Battle
         /// <summary>当前打开的战斗界面，供各弹窗回调推进周循环。</summary>
         public static BattleForm Active { get; private set; }
 
-        [Header("Result")]
-        [SerializeField] private GameObject _resultPanel;
-        [SerializeField] private Text _resultText;
-        [SerializeField] private Button _resultButton;
-
         [Header("HUD Frame")]
         [SerializeField] private GameObject _hudFrame;
         [SerializeField] private GameObject _backdrop;
@@ -84,8 +79,6 @@ namespace GourmetProject.Game.UI.Battle
         private BattleWorldController _world;
 
         private WeekLoopController _loop;
-        private bool _victory;
-        private MetaProgressUpdate _pendingProgressUpdate;
 
         public GameRun Run => _run;
         public BattleSession Session => _session;
@@ -94,8 +87,6 @@ namespace GourmetProject.Game.UI.Battle
         protected override void OnInit(object userData)
         {
             base.OnInit(userData);
-            _resultButton.onClick.AddListener(OnResultConfirm);
-            _resultPanel.SetActive(false);
 
             if (_settingsButton != null)
             {
@@ -127,7 +118,6 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             Active = this;
-            _pendingProgressUpdate = null;
             _loop = new WeekLoopController(_run, this);
             _loop.BeginWeek();
         }
@@ -186,7 +176,14 @@ namespace GourmetProject.Game.UI.Battle
 
         public void HideResultPanel()
         {
-            HideResult();
+            if (GameApp.UI.HasUIForm(UIForms.Result))
+            {
+                var form = GameApp.UI.GetUIForm(UIForms.Result);
+                if (form != null)
+                {
+                    GameApp.UI.CloseUIForm(form);
+                }
+            }
         }
 
         /// <summary>周循环请求「n 选一行动」：在常驻 HUD 中部就地展示行动选择（不再打开独立弹层）。</summary>
@@ -675,16 +672,16 @@ namespace GourmetProject.Game.UI.Battle
 
         public void ShowRunResult(bool win, int total)
         {
-            _victory = win;
             _world?.HideWorld();
-            ShowResult(win, total);
+            HideHud();
+            GameApp.UI.OpenUIForm(UIForms.Result, UIForms.GroupDialog, new ResultFormData(win, total));
         }
 
         // —— 战斗 ——
 
         public void StartBattle(int requiredScore, string modifier, string key, ActionExecutionContext actionContext)
         {
-            HideResult();
+            HideResultPanel();
             _session = _run.BuildBattleSession(requiredScore, modifier, key);
             // 常驻框在战斗中持续显示并接管分数/道具/菜谱面板（棋盘/菜品仍在世界空间场景）。
             ShowBattleHud();
@@ -822,54 +819,6 @@ namespace GourmetProject.Game.UI.Battle
 
             RunPersistence.Save(_run);
             RefreshAll();
-        }
-
-        // —— 结果壳（胜利/失败）——
-
-        private void OnResultConfirm()
-        {
-            if (_pendingProgressUpdate?.Progress != null)
-            {
-                MetaProgressPersistence.Save(_pendingProgressUpdate.Progress);
-                _pendingProgressUpdate = null;
-            }
-
-            if (_victory)
-            {
-                // 通关：保留存档（可继续无尽），返回菜单。
-                RunPersistence.Save(_run);
-            }
-            else
-            {
-                RunPersistence.Delete();
-            }
-
-            GameplayFlowSignal.RequestReturnToMenu();
-        }
-
-        private void ShowResult(bool win, int total)
-        {
-            HideHud();
-            _resultPanel.SetActive(true);
-            int target = _session?.RequiredScore ?? _run.RequiredScore;
-            MetaProgressSaveData progress = MetaProgressPersistence.Load();
-            _pendingProgressUpdate = MetaProgressService.EvaluateRunEnd(_run, win, total, target, progress);
-            SettlementSummary summary = SettlementService.Build(_run, win, total, target, _pendingProgressUpdate);
-            _resultText.text = $"{summary.Title}\n\n{summary.Body}";
-
-            Text resultLabel = _resultButton.GetComponentInChildren<Text>();
-            if (resultLabel != null)
-            {
-                resultLabel.text = summary.ButtonLabel;
-            }
-        }
-
-        private void HideResult()
-        {
-            if (_resultPanel != null)
-            {
-                _resultPanel.SetActive(false);
-            }
         }
 
         private void SetMessage(string message)
