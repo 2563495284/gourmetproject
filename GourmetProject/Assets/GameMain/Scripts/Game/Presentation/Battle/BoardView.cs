@@ -16,6 +16,11 @@ namespace GourmetProject.Game.Presentation.Battle
         private static readonly Color VoidColor = new Color(0.07f, 0.04f, 0.03f, 0.0f);
         private static readonly Color TagColor = new Color(1f, 0.88f, 0.32f, 0.95f);
 
+        // 棋盘编辑页：把「胃外虚格」显示为浅色占位（原型里的虚线格），让玩家看到可扩展的最大网格范围。
+        private static readonly Color VoidPlaceholderColor = new Color(0.85f, 0.85f, 0.85f, 0.22f);
+
+        private bool _voidAsPlaceholder;
+
         [SerializeField] private BoardCellView _cellPrefab;
 
         private readonly Dictionary<GridPos, BoardCellView> _cells = new Dictionary<GridPos, BoardCellView>();
@@ -25,7 +30,11 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public BoardCoordinateMapper Mapper { get; private set; }
 
-        public void Build(GpBoard board, float cellSize, float gap, Vector3 center, Action<GridPos> clicked, BoardCellView cellPrefab = null)
+        /// <summary>
+        /// 生成棋盘格。棋盘以本组件 transform 为局部帧（BoardRoot）：格子挂在其下并以 localPosition 摆放，
+        /// 世界摆放/居中/缩放由调用方设置本 transform 的 position/scale 决定。
+        /// </summary>
+        public void Build(GpBoard board, float cellSize, float gap, Action<GridPos> clicked, BoardCellView cellPrefab = null)
         {
             Clear();
             _board = board ?? throw new ArgumentNullException(nameof(board));
@@ -35,7 +44,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 _cellPrefab = cellPrefab;
             }
 
-            Mapper = new BoardCoordinateMapper(board.Width, board.Height, cellSize, gap, center);
+            Mapper = new BoardCoordinateMapper(board.Width, board.Height, cellSize, gap, transform);
             _cellSprite = Resources.Load<Sprite>("Sprites/UI/board_cell") ?? CreatePixelSprite();
 
             for (int y = 0; y < board.Height; y++)
@@ -44,7 +53,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 {
                     var pos = new GridPos(x, y);
                     BoardCellView cell = InstantiateCell();
-                    cell.Configure(pos, Mapper.CellCenter(pos), cellSize, _cellSprite, _clicked);
+                    cell.Configure(pos, Mapper.CellCenterLocal(pos), cellSize, _cellSprite, _clicked);
                     _cells[pos] = cell;
                 }
             }
@@ -66,6 +75,13 @@ namespace GourmetProject.Game.Presentation.Battle
             return go.AddComponent<BoardCellView>();
         }
 
+        /// <summary>棋盘编辑页开关：把胃外虚格显示为浅色占位（最大网格提示）。需再次 Sync 生效。</summary>
+        public void ShowVoidAsPlaceholders(bool enabled)
+        {
+            _voidAsPlaceholder = enabled;
+            Sync();
+        }
+
         public void Sync()
         {
             if (_board == null)
@@ -79,7 +95,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 BoardCellView view = kv.Value;
                 if (!_board.Exists(pos))
                 {
-                    view.SetColor(VoidColor);
+                    view.SetColor(_voidAsPlaceholder ? VoidPlaceholderColor : VoidColor);
                 }
                 else if (_board.DishAt(pos) == null && _board.TagsAt(pos).Count > 0)
                 {

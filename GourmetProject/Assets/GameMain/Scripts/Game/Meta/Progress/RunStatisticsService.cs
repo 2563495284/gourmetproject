@@ -27,7 +27,7 @@ namespace GourmetProject.Game.Meta
             statistics.Gold = run.Gold;
             statistics.OwnedItemCount = run.Items.Count;
             statistics.BonusDishCount = run.BonusDishIds.Count;
-            statistics.StomachFragmentCount = run.StomachFragmentIds.Count;
+            statistics.StomachFragmentCount = run.StomachFragmentCount;
             statistics.TriggeredEventCount = run.UsedEventIds.Count;
             statistics.RunActionStepIndex = run.RunActionStepIndex;
             statistics.CompletedBossIds = new List<string>(run.CompletedBossIds);

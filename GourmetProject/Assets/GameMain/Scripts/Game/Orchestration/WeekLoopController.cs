@@ -108,22 +108,45 @@ namespace GourmetProject.Game.Orchestration
 
             IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Effect, $"exec_r{context.RunStepIndex}_w{_run.WeekIndex}_s{context.StepIndex}_{context.ActionGroupId}_{context.Action.Id}");
             ActionOutcome outcome = ActionExecutor.Execute(_run, context, rng);
-            RunPersistence.Save(_run);
+
+            // 进入行动时不推进步数、不存档；只有玩家明确结算（商店退出、事件选完、战斗结算、
+            // 通知点继续）时才 Commit（推进步数 + 标记已用）并存档。中途放弃/退出游戏则该行动不消耗。
+            void Commit()
+            {
+                ActionExecutor.Commit(_run, context);
+                RunPersistence.Save(_run);
+            }
 
             switch (outcome.Kind)
             {
                 case ActionOutcomeKind.Immediate:
-                    _view.ShowNotice(context.Action.Name, outcome.Feedback, () => ResolveNodes(prevDay, PromptNextAction));
+                    _view.ShowNotice(context.Action.Name, outcome.Feedback, () =>
+                    {
+                        Commit();
+                        ResolveNodes(prevDay, PromptNextAction);
+                    });
                     break;
                 case ActionOutcomeKind.Shop:
-                    OpenShopThen(() => ResolveNodes(prevDay, PromptNextAction));
+                    OpenShopThen(() =>
+                    {
+                        Commit();
+                        ResolveNodes(prevDay, PromptNextAction);
+                    });
                     break;
                 case ActionOutcomeKind.Event:
-                    ResolveEventById(outcome.EventId, () => ResolveNodes(prevDay, PromptNextAction));
+                    ResolveEventById(outcome.EventId, () =>
+                    {
+                        Commit();
+                        ResolveNodes(prevDay, PromptNextAction);
+                    });
                     break;
                 case ActionOutcomeKind.Battle:
                     StartBattle(outcome.RequiredScore, outcome.Modifier, outcome.BattleKey, false, null,
-                        () => ResolveNodes(prevDay, PromptNextAction),
+                        () =>
+                        {
+                            Commit();
+                            ResolveNodes(prevDay, PromptNextAction);
+                        },
                         context);
                     break;
             }

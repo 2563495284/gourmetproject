@@ -34,6 +34,10 @@ namespace GourmetProject.Game.Presentation.Battle
         public static bool RotatePressedThisFrame
             => Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame;
 
+        /// <summary>本帧鼠标滚轮竖直增量（向上为正）。用于棋盘编辑页旋转选中碎片。</summary>
+        public static float ScrollDelta
+            => Mouse.current != null ? Mouse.current.scroll.ReadValue().y : 0f;
+
         public static bool PointerOverUi
         {
             get

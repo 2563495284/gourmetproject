@@ -132,6 +132,85 @@ namespace GourmetProject.Tests
         }
 
         [Test]
+        public void StomachFragmentDef_Rotated_RotatesShapeAndTags()
+        {
+            // 水平 2x1（右格挂 tag）顺时针旋转 90° → 竖直 1x2，tag 跟随到 (0,1)。
+            var fragment = new StomachFragmentDef(
+                "t", new[] { "XX" }, 0, 0, 0f, 0,
+                new[] { new CellTag(new GridPos(1, 0), "g") });
+
+            StomachFragmentDef rotated = fragment.Rotated(1);
+
+            Assert.AreEqual(2, rotated.ShapeRows.Count);
+            Assert.AreEqual("X", rotated.ShapeRows[0]);
+            Assert.AreEqual("X", rotated.ShapeRows[1]);
+            Assert.AreEqual(1, rotated.CellTags.Count);
+            Assert.AreEqual(new GridPos(0, 1), rotated.CellTags[0].Pos);
+            Assert.AreEqual("g", rotated.CellTags[0].TagId);
+        }
+
+        [Test]
+        public void StomachFragmentDef_Rotated_FourTimesReturnsOriginalShape()
+        {
+            var fragment = new StomachFragmentDef(
+                "t", new[] { "XX", ".X" }, 0, 0, 0f, 0,
+                System.Array.Empty<CellTag>());
+
+            StomachFragmentDef back = fragment.Rotated(4);
+
+            CollectionAssert.AreEqual(fragment.ShapeRows.ToList(), back.ShapeRows.ToList());
+        }
+
+        [Test]
+        public void StomachBuilder_CanPlaceFragmentAt_ChecksBoundsOverlapAdjacency()
+        {
+            var existing = new HashSet<GridPos>
+            {
+                new GridPos(0, 0), new GridPos(1, 0), new GridPos(0, 1), new GridPos(1, 1),
+            };
+            var single = new StomachFragmentDef("d", new[] { "X" }, 0, 0, 0f, 0, System.Array.Empty<CellTag>());
+
+            // 贴边相邻、在界内、不重叠 → 合法。
+            Assert.IsTrue(StomachBuilder.CanPlaceFragmentAt(existing, single, 0, new GridPos(2, 0), 4, 4));
+            // 与已有胃重叠 → 非法。
+            Assert.IsFalse(StomachBuilder.CanPlaceFragmentAt(existing, single, 0, new GridPos(0, 0), 4, 4));
+            // 不相邻（悬空）→ 非法。
+            Assert.IsFalse(StomachBuilder.CanPlaceFragmentAt(existing, single, 0, new GridPos(3, 3), 4, 4));
+            // 越界 → 非法。
+            Assert.IsFalse(StomachBuilder.CanPlaceFragmentAt(existing, single, 0, new GridPos(4, 0), 4, 4));
+        }
+
+        [Test]
+        public void StomachBuilder_BuildFromPlacements_AddsAdjacentFragment()
+        {
+            var initial = new StomachFragmentDef("gut", new[] { "XX", "XX" }, 0, 0, 0f, 0, System.Array.Empty<CellTag>());
+            var ext = new StomachFragmentDef("ext", new[] { "X" }, 0, 0, 0f, 0, System.Array.Empty<CellTag>());
+            var placements = new[] { new StomachFragmentPlacement("ext", 0, new GridPos(2, 0)) };
+
+            Board board = StomachBuilder.BuildFromPlacements(
+                initial, placements, id => id == "ext" ? ext : null, 4, 4);
+
+            Assert.AreEqual(5, board.CellCapacity);
+            Assert.IsTrue(board.Exists(new GridPos(2, 0)));
+            Assert.IsFalse(board.Exists(new GridPos(2, 1)));
+        }
+
+        [Test]
+        public void StomachBuilder_BuildFromPlacements_SkipsIllegalPlacement()
+        {
+            var initial = new StomachFragmentDef("gut", new[] { "XX", "XX" }, 0, 0, 0f, 0, System.Array.Empty<CellTag>());
+            var ext = new StomachFragmentDef("ext", new[] { "X" }, 0, 0, 0f, 0, System.Array.Empty<CellTag>());
+            // 悬空放置（不相邻）应被跳过。
+            var placements = new[] { new StomachFragmentPlacement("ext", 0, new GridPos(3, 3)) };
+
+            Board board = StomachBuilder.BuildFromPlacements(
+                initial, placements, id => id == "ext" ? ext : null, 4, 4);
+
+            Assert.AreEqual(4, board.CellCapacity);
+            Assert.IsFalse(board.Exists(new GridPos(3, 3)));
+        }
+
+        [Test]
         public void StomachBuilder_ClampsFragmentToMaxBounds()
         {
             // 4x4 满碎片塞进 3x3 包围盒：超出部分裁掉，剩 9 格。

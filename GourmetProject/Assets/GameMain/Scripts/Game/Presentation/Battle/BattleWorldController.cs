@@ -18,7 +18,7 @@ namespace GourmetProject.Game.Presentation.Battle
     /// 现以场景内组件存在：背景/棋盘根/各锚点/分数文本/固定按钮均在 Battle.unity 摆好并通过 SerializeField 注入，
     /// 运行时只生成数据驱动内容（棋盘格随胃尺寸、菜品、道具槽、结算特效）。
     /// </summary>
-    public sealed class BattleWorldController : MonoBehaviour
+    public sealed partial class BattleWorldController : MonoBehaviour
     {
         public const float Gap = 0f;
         private const float MaxCellSize = 1.2f;
@@ -485,7 +485,22 @@ namespace GourmetProject.Game.Presentation.Battle
                 areaCenter.y - fullWorldHeight * 0.5f + boxCenterIndexY * pitch + _cellSize * 0.5f,
                 0f);
 
-            _boardView.Build(board, _cellSize, Gap, _boardCenter, OnCellClicked, _boardCellPrefab);
+            // 局部空间：棋盘以 BoardView.transform 为局部帧（BoardRoot），世界摆放/居中由其 transform 决定。
+            // 保持 scale 恒等、rotation 恒等，避免子级格子/菜品被二次缩放或旋转。
+            _boardView.transform.rotation = Quaternion.identity;
+            _boardView.transform.localScale = Vector3.one;
+            _boardView.transform.position = _boardCenter;
+
+            // 菜品根挂到 BoardRoot 下，使已放置菜品与棋盘共享同一局部帧（棋盘整体移动/缩放时随动）。
+            if (_piecesRoot != null && _piecesRoot.parent != _boardView.transform)
+            {
+                _piecesRoot.SetParent(_boardView.transform, worldPositionStays: false);
+                _piecesRoot.localPosition = Vector3.zero;
+                _piecesRoot.localRotation = Quaternion.identity;
+                _piecesRoot.localScale = Vector3.one;
+            }
+
+            _boardView.Build(board, _cellSize, Gap, OnCellClicked, _boardCellPrefab);
         }
 
         private void ConfigureFixedButtons()
@@ -586,6 +601,20 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void RebuildPlacedPieces()
         {
+            ClearPlacedPieces();
+            if (_session == null)
+            {
+                return;
+            }
+
+            foreach (DishInstance dish in _session.Board.Dishes)
+            {
+                CreatePlacedPiece(dish);
+            }
+        }
+
+        private void ClearPlacedPieces()
+        {
             foreach (DishPieceView piece in _placedPieces)
             {
                 if (piece != null)
@@ -596,15 +625,6 @@ namespace GourmetProject.Game.Presentation.Battle
 
             _placedPieces.Clear();
             _dishViewsById.Clear();
-            if (_session == null)
-            {
-                return;
-            }
-
-            foreach (DishInstance dish in _session.Board.Dishes)
-            {
-                CreatePlacedPiece(dish);
-            }
         }
 
         private DishPieceView CreatePlacedPiece(DishInstance dish)
@@ -622,7 +642,8 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             piece.gameObject.name = $"Dish_{dish.Id}_{dish.Def.Id}";
-            piece.transform.position = _boardView.Mapper.CellCenter(dish.Placement.Origin);
+            // 菜品挂在 BoardRoot 下，用局部坐标贴格（与棋盘共享局部帧）。
+            piece.transform.localPosition = _boardView.Mapper.CellCenterLocal(dish.Placement.Origin);
             piece.BuildPlaced(dish, _spriteProvider.Get(dish.Def), _cellSize, _cellSize + Gap, _dishClicked);
             _placedPieces.Add(piece);
             _dishViewsById[dish.Id] = piece;

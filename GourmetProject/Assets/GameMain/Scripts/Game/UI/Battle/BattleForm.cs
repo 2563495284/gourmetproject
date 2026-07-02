@@ -62,6 +62,9 @@ namespace GourmetProject.Game.UI.Battle
         [SerializeField] private WeekEventCardView _cardPrefab;
         [SerializeField] private Button _skipButton;
 
+        [Header("Shop (center)")]
+        [SerializeField] private ShopForm _shopPanel;
+
         [Header("Right Column - Items")]
         [SerializeField] private RectTransform _passiveItemsContainer;
         [SerializeField] private RunItemSlotView _itemSlotPrefab;
@@ -160,7 +163,7 @@ namespace GourmetProject.Game.UI.Battle
             _loop?.OnActionPicked(choice);
         }
 
-        /// <summary>ShopForm 关闭时回调，继续编排。</summary>
+        /// <summary>离开商店态时回调，继续周循环编排。</summary>
         public void OnShopClosed()
         {
             _loop?.OnShopClosed();
@@ -195,9 +198,10 @@ namespace GourmetProject.Game.UI.Battle
             ShowActionSelection();
         }
 
+        /// <summary>周循环请求商店：在常驻壳中部就地展示商店四区（不再打开独立弹层）。</summary>
         public void OpenShop()
         {
-            GameApp.UI.OpenUIForm(UIForms.Shop, UIForms.GroupDialog);
+            ShowShop();
         }
 
         // —— 常驻 HUD 框 + 行动选择（中部内容区）——
@@ -222,11 +226,14 @@ namespace GourmetProject.Game.UI.Battle
                 _backdrop.SetActive(true);
             }
 
+            HideShopPanel();
+            SetActionAxisVisible(true);
             RefreshPersistent();
             _actionAxisBar?.Build(_run);
 
             if (_recipeDrawer != null)
             {
+                _recipeDrawer.gameObject.SetActive(true);
                 _recipeDrawer.ConfigureCollapsible(false);
                 BuildRecipeDrawer();
             }
@@ -237,6 +244,106 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             BuildActionCards();
+        }
+
+        /// <summary>商店态：常驻壳（左列 / 行动轴 / 右列）保持，中部换成商店四区，底部由商店自带菜谱条承载。</summary>
+        private void ShowShop()
+        {
+            if (_run == null)
+            {
+                return;
+            }
+
+            _inBattle = false;
+
+            if (_hudFrame != null)
+            {
+                _hudFrame.SetActive(true);
+            }
+
+            if (_backdrop != null)
+            {
+                _backdrop.SetActive(true);
+            }
+
+            if (_actionSelectionPanel != null)
+            {
+                _actionSelectionPanel.SetActive(false);
+            }
+
+            SetActionAxisVisible(true);
+            RefreshPersistent();
+            _actionAxisBar?.Build(_run);
+
+            // 商店态由商店面板自带的菜谱条承载底部，隐藏常驻壳的菜谱抽屉避免重复。
+            if (_recipeDrawer != null)
+            {
+                _recipeDrawer.gameObject.SetActive(false);
+            }
+
+            if (_shopPanel != null)
+            {
+                _shopPanel.gameObject.SetActive(true);
+                _shopPanel.Open(OnShopLeave, RefreshPersistent, OnShopEditorToggled, OpenBoardEdit);
+            }
+        }
+
+        private void OnShopLeave()
+        {
+            HideShopPanel();
+            OnShopClosed();
+        }
+
+        /// <summary>购买碎片包后进入棋盘编辑页（世界空间）：隐藏商店/白底/行动轴，露出棋盘手动拼贴。</summary>
+        private void OpenBoardEdit()
+        {
+            BattleWorldController world = _world ?? BattleWorldController.Instance;
+            if (world == null || _run == null || !_run.HasPendingFragmentPack)
+            {
+                return;
+            }
+
+            HideShopPanel();
+            if (_backdrop != null)
+            {
+                _backdrop.SetActive(false);
+            }
+
+            SetActionAxisVisible(false);
+            if (_recipeDrawer != null)
+            {
+                _recipeDrawer.gameObject.SetActive(false);
+            }
+
+            world.BeginBoardEdit(_run, _run.PendingFragmentPack, OnBoardEditDone);
+        }
+
+        private void OnBoardEditDone()
+        {
+            (_world ?? BattleWorldController.Instance)?.HideWorld();
+            ShowShop();
+        }
+
+        /// <summary>进入(true)/退出(false)全屏编辑菜谱态：编辑态隐藏行动轴（左右壳仍常驻）。</summary>
+        private void OnShopEditorToggled(bool editing)
+        {
+            SetActionAxisVisible(!editing);
+        }
+
+        private void HideShopPanel()
+        {
+            if (_shopPanel != null)
+            {
+                _shopPanel.gameObject.SetActive(false);
+            }
+        }
+
+        private void SetActionAxisVisible(bool visible)
+        {
+            if (_actionAxisBar != null)
+            {
+                _actionAxisBar.gameObject.SetActive(visible);
+            }
         }
 
         /// <summary>进入战斗：常驻框覆盖在世界空间棋盘之上，隐藏行动选择与白底，菜谱抽屉锁定展开并接上菜。</summary>
@@ -260,11 +367,14 @@ namespace GourmetProject.Game.UI.Battle
                 _actionSelectionPanel.SetActive(false);
             }
 
+            HideShopPanel();
+            SetActionAxisVisible(true);
             _actionAxisBar?.Build(_run);
             RefreshPersistent();
 
             if (_recipeDrawer != null)
             {
+                _recipeDrawer.gameObject.SetActive(true);
                 _recipeDrawer.ConfigureLockedOpen();
                 BuildBattleRecipe();
             }
@@ -651,6 +761,8 @@ namespace GourmetProject.Game.UI.Battle
                 _actionSelectionPanel.SetActive(false);
             }
 
+            HideShopPanel();
+
             if (_hudFrame != null)
             {
                 _hudFrame.SetActive(false);
@@ -677,7 +789,7 @@ namespace GourmetProject.Game.UI.Battle
             Board board = _run.BuildStomachPreviewBoard(_run.WeekModifier);
             var text = new System.Text.StringBuilder();
             text.AppendLine($"胃容量：{board.CellCapacity} 格");
-            text.AppendLine($"胃部碎片：{_run.StomachFragmentIds.Count}");
+            text.AppendLine($"胃部碎片：{_run.StomachFragmentCount}");
             text.AppendLine();
 
             for (int y = 0; y < board.Height; y++)
@@ -840,7 +952,8 @@ namespace GourmetProject.Game.UI.Battle
                 _world?.SyncBoardFromSession();
             }
 
-            RunPersistence.Save(_run);
+            // 战斗过程中用道具只改内存，不即时存档；战斗结算（胜利领奖确认）时由编排层 Commit 统一入档。
+            // 中途退出游戏则未存档，重进会重做该战斗，道具不消耗。
             RefreshAll();
         }
 

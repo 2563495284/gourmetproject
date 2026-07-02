@@ -5,8 +5,10 @@ using GourmetProject.Game.Run;
 namespace GourmetProject.Game.Meta
 {
     /// <summary>
-    /// 行动执行：推进天数、记录「不可重复」行动，并按行动类型产出 <see cref="ActionOutcome"/> 交给编排层。
+    /// 行动执行：推进天数、记录上下文，并按行动类型产出 <see cref="ActionOutcome"/> 交给编排层。
     /// 真正的异步表现（战斗、商店、事件弹窗）由编排层（BattleForm）依据 outcome 处理。
+    /// 注意：这里只做「解析」——推进天数、设上下文、计算即时效果，均为内存态、不存档。
+    /// 步数推进与「不可重复」标记推迟到玩家明确结算时由 <see cref="Commit"/> 提交，避免进入即消耗行动。
     /// </summary>
     public static class ActionExecutor
     {
@@ -25,11 +27,6 @@ namespace GourmetProject.Game.Meta
             cfg.GameAction action = context.Action;
             float prevDay = TimelineService.AdvanceDays(run, context.CostDays);
             run.SetLastActionContext(context);
-            run.AdvanceActionStep();
-            if (!action.Repeatable)
-            {
-                run.MarkActionUsed(action.Id);
-            }
 
             switch (action.ActionType)
             {
@@ -56,6 +53,24 @@ namespace GourmetProject.Game.Meta
 
                 default:
                     return ActionOutcome.Immediate(action.Desc);
+            }
+        }
+
+        /// <summary>
+        /// 提交一次行动的进度：推进步数、标记「不可重复」行动。由编排层在玩家明确结算
+        /// （商店退出、事件选完、战斗结算、通知点继续）时调用，存档由调用方负责。
+        /// </summary>
+        public static void Commit(GameRun run, ActionExecutionContext context)
+        {
+            if (run == null || context == null || context.Action == null)
+            {
+                return;
+            }
+
+            run.AdvanceActionStep();
+            if (!context.Action.Repeatable)
+            {
+                run.MarkActionUsed(context.Action.Id);
             }
         }
     }

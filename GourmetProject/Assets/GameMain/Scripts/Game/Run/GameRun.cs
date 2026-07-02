@@ -33,6 +33,12 @@ namespace GourmetProject.Game.Run
         private readonly List<List<string>> _recipeBooks = new List<List<string>>();
         private readonly List<string> _stomachFragmentIds = new List<string>();
 
+        // 玩家在棋盘编辑页手动拼贴的碎片放置（id + 旋转 + 原点）；作为可复现重建胃形的权威数据。
+        private readonly List<StomachFragmentPlacement> _fragmentPlacements = new List<StomachFragmentPlacement>();
+
+        // 已购买待拼贴的碎片包内容（rolled 出的候选碎片 id）；拼贴或跳过后清空。
+        private readonly List<string> _pendingFragmentPack = new List<string>();
+
         // 整局累计已结算的菜品 BaseId 次数（供技能「大局相同检测」，随存档保存）。
         private readonly Dictionary<string, int> _runSettledCounts = new Dictionary<string, int>();
 
@@ -93,6 +99,17 @@ namespace GourmetProject.Game.Run
         public int RecipeBookCount => _recipeBooks.Count;
 
         public IReadOnlyList<string> StomachFragmentIds => _stomachFragmentIds;
+
+        /// <summary>玩家手动拼贴的碎片放置列表（棋盘编辑页产出，随存档保存）。</summary>
+        public IReadOnlyList<StomachFragmentPlacement> FragmentPlacements => _fragmentPlacements;
+
+        /// <summary>已购买待拼贴的碎片包候选碎片 id（三选一）；为空表示没有待处理的碎片包。</summary>
+        public IReadOnlyList<string> PendingFragmentPack => _pendingFragmentPack;
+
+        public bool HasPendingFragmentPack => _pendingFragmentPack.Count > 0;
+
+        /// <summary>胃部碎片总数（奖励自动附着 + 手动拼贴），供统计/预览展示。</summary>
+        public int StomachFragmentCount => _stomachFragmentIds.Count + _fragmentPlacements.Count;
 
         /// <summary>整局累计已结算的菜品 BaseId 次数（大局历史）。</summary>
         public IReadOnlyDictionary<string, int> RunSettledCounts => _runSettledCounts;
@@ -515,6 +532,8 @@ namespace GourmetProject.Game.Run
                 BonusDishIds = new List<string>(_bonusDishIds),
                 RecipeBooks = ToRecipeBookSaveData(),
                 StomachFragmentIds = new List<string>(_stomachFragmentIds),
+                FragmentPlacements = ToFragmentPlacementSaveData(),
+                PendingFragmentPackIds = new List<string>(_pendingFragmentPack),
                 RunSettledCounts = new Dictionary<string, int>(_runSettledCounts),
                 CurrentTimelineId = CurrentTimelineId,
                 TimelineLengthDays = TimelineLengthDays,
@@ -587,6 +606,25 @@ namespace GourmetProject.Game.Run
             if (data.StomachFragmentIds != null)
             {
                 run._stomachFragmentIds.AddRange(data.StomachFragmentIds);
+            }
+
+            if (data.FragmentPlacements != null)
+            {
+                foreach (StomachFragmentPlacementSaveData p in data.FragmentPlacements)
+                {
+                    if (p == null || string.IsNullOrEmpty(p.FragmentId))
+                    {
+                        continue;
+                    }
+
+                    run._fragmentPlacements.Add(new StomachFragmentPlacement(
+                        p.FragmentId, p.Rotation, new GridPos(p.OriginX, p.OriginY)));
+                }
+            }
+
+            if (data.PendingFragmentPackIds != null)
+            {
+                run._pendingFragmentPack.AddRange(data.PendingFragmentPackIds);
             }
 
             if (data.RunSettledCounts != null)
@@ -974,6 +1012,40 @@ namespace GourmetProject.Game.Run
             return true;
         }
 
+        /// <summary>记录一次玩家手动拼贴的碎片放置（棋盘编辑页调用；合法性由调用方在放置前校验）。</summary>
+        public bool AddFragmentPlacement(string fragmentId, int rotation, GridPos origin)
+        {
+            if (Database.GetFragment(fragmentId) == null)
+            {
+                return false;
+            }
+
+            _fragmentPlacements.Add(new StomachFragmentPlacement(fragmentId, rotation, origin));
+            return true;
+        }
+
+        /// <summary>置入一份已购买待拼贴的碎片包（三选一候选 id）。</summary>
+        public void SetPendingFragmentPack(IEnumerable<string> fragmentIds)
+        {
+            _pendingFragmentPack.Clear();
+            if (fragmentIds != null)
+            {
+                foreach (string id in fragmentIds)
+                {
+                    if (!string.IsNullOrEmpty(id))
+                    {
+                        _pendingFragmentPack.Add(id);
+                    }
+                }
+            }
+        }
+
+        /// <summary>清空待拼贴的碎片包（拼贴完成或跳过后调用）。</summary>
+        public void ClearPendingFragmentPack()
+        {
+            _pendingFragmentPack.Clear();
+        }
+
         public bool CanAttachStomachFragment(StomachFragmentDef fragment)
         {
             if (fragment == null)
@@ -981,26 +1053,9 @@ namespace GourmetProject.Game.Run
                 return false;
             }
 
-            cfg.Character character = _tables.TbCharacter.GetOrDefault(CharacterId);
-            StomachFragmentDef initial = Database.GetFragment(character?.InitialFragmentId);
-            int maxW = character != null && character.MaxStomachWidth > 0 ? character.MaxStomachWidth : BoardWidth;
-            int maxH = character != null && character.MaxStomachHeight > 0 ? character.MaxStomachHeight : BoardHeight;
-            return StomachBuilder.CanAttachFragment(initial, GetAcquiredFragments(), fragment, maxW, maxH);
-        }
-
-        private List<StomachFragmentDef> GetAcquiredFragments()
-        {
-            var fragments = new List<StomachFragmentDef>(_stomachFragmentIds.Count);
-            foreach (string fragmentId in _stomachFragmentIds)
-            {
-                StomachFragmentDef fragment = Database.GetFragment(fragmentId);
-                if (fragment != null)
-                {
-                    fragments.Add(fragment);
-                }
-            }
-
-            return fragments;
+            // 基于当前实际胃形（初始 + 奖励自动附着 + 手动拼贴）判断，允许旋转碎片以匹配棋盘编辑规则。
+            GpBoard board = BattleSessionFactory.BuildBoardPreview(this);
+            return StomachBuilder.CanAttachAnywhere(board, fragment, allowRotate: true);
         }
 
         /// <summary>移除一份道具（被动整条移除；主动移除其中一份实例）。供商店出售、事件移除等使用。</summary>
@@ -1078,6 +1133,23 @@ namespace GourmetProject.Game.Run
             }
 
             return books;
+        }
+
+        private List<StomachFragmentPlacementSaveData> ToFragmentPlacementSaveData()
+        {
+            var list = new List<StomachFragmentPlacementSaveData>(_fragmentPlacements.Count);
+            foreach (StomachFragmentPlacement p in _fragmentPlacements)
+            {
+                list.Add(new StomachFragmentPlacementSaveData
+                {
+                    FragmentId = p.FragmentId,
+                    Rotation = p.Rotation,
+                    OriginX = p.Origin.X,
+                    OriginY = p.Origin.Y,
+                });
+            }
+
+            return list;
         }
 
         private void RestoreRecipeBooks(RunSaveData data)

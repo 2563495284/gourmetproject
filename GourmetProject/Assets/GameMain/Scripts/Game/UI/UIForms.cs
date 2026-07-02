@@ -31,7 +31,6 @@ namespace GourmetProject.Game.UI
         public const string ItemTip = "Assets/GameMain/UI/ItemTipView.prefab";
         public const string Reward = "Assets/GameMain/UI/RewardForm.prefab";
         public const string Result = "Assets/GameMain/UI/ResultForm.prefab";
-        public const string Shop = "Assets/GameMain/UI/ShopForm.prefab";
 
         // 主存档槽位：用于判断“开始游戏 / 继续游戏”。
         public const string GameSaveSlot = "slot0";

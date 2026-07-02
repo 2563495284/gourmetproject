@@ -1,24 +1,22 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using GourmetProject.Core.Rng;
-using GourmetProject.Game.Flow;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Runtime;
-using GourmetProject.Runtime.UI;
 using UnityEngine;
 using UnityEngine.UI;
-using GourmetProject.Game.UI;
-using GourmetProject.Game.UI.Battle;
 
 namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>
-    /// 系统节点「商店」：Prefab 中固定摆好四个商品区、底部菜谱条和编辑菜谱页。
-    /// 运行时只向这些容器绑定商品卡/菜谱卡数据，布局由 Prefab 上的 LayoutGroup 交给设计师调。
+    /// 商店「中部态」面板：作为 <c>BattleForm</c> 常驻壳的中部内容之一（不再是独立弹层）。
+    /// 常驻壳（左列信息 / 行动轴 / 右列道具 / 底部抽屉）由 BattleForm 提供，本面板只负责中部四区、
+    /// 底部菜谱条与全屏编辑菜谱页。由 BattleForm 通过 <see cref="Open"/> / SetActive 驱动显隐。
     /// </summary>
-    public sealed class ShopForm : UGuiForm
+    public sealed class ShopForm : MonoBehaviour
     {
         [Header("Root States")]
         [SerializeField] private GameObject _shopPanel;
@@ -58,12 +56,65 @@ namespace GourmetProject.Game.UI.Meta
         private readonly List<GameObject> _spawned = new();
         private GameRun _run;
         private Coroutine _pendingEditorRebuild;
-        private bool _notifiedClosed;
         private string _shopKey;
+        private bool _wired;
 
-        protected override void OnInit(object userData)
+        private Action _onLeave;
+        private Action _onChanged;
+        private Action<bool> _onEditorToggled;
+        private Action _onOpenBoardEdit;
+
+        /// <summary>行动轴处于「编辑菜谱态」时为 true：此时应隐藏行动轴（由 BattleForm 查询）。</summary>
+        public bool IsEditingRecipe => _recipeEditPanel != null && _recipeEditPanel.activeSelf;
+
+        private void Awake()
         {
-            base.OnInit(userData);
+            EnsureWired();
+        }
+
+        private void OnDisable()
+        {
+            ClearSpawned();
+            if (_pendingEditorRebuild != null)
+            {
+                StopCoroutine(_pendingEditorRebuild);
+                _pendingEditorRebuild = null;
+            }
+        }
+
+        /// <summary>由 BattleForm 进入商店态时调用：刷新库存并展示商店购买区。</summary>
+        /// <param name="onLeave">点「离开商店」时回调（BattleForm 继续周循环编排）。</param>
+        /// <param name="onChanged">商店内数据变化（买卖 / 删菜）后回调，用于刷新常驻壳金币/道具。</param>
+        /// <param name="onEditorToggled">进入(true)/退出(false)全屏编辑菜谱态时回调（BattleForm 隐藏/恢复行动轴）。</param>
+        /// <param name="onOpenBoardEdit">购买碎片包后回调：BattleForm 切到棋盘编辑页手动拼贴。</param>
+        public void Open(Action onLeave, Action onChanged, Action<bool> onEditorToggled = null, Action onOpenBoardEdit = null)
+        {
+            EnsureWired();
+            _onLeave = onLeave;
+            _onChanged = onChanged;
+            _onEditorToggled = onEditorToggled;
+            _onOpenBoardEdit = onOpenBoardEdit;
+
+            _run = GameRunContext.Current;
+            if (_run == null)
+            {
+                _onLeave?.Invoke();
+                return;
+            }
+
+            RollStock();
+            ShowShopPanel();
+            Rebuild();
+        }
+
+        private void EnsureWired()
+        {
+            if (_wired)
+            {
+                return;
+            }
+
+            _wired = true;
 
             if (_leaveButton != null)
             {
@@ -90,31 +141,6 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
-        protected override void OnOpen(object userData)
-        {
-            base.OnOpen(userData);
-
-            _run = GameRunContext.Current;
-            _notifiedClosed = false;
-            if (_run == null)
-            {
-                Close();
-                return;
-            }
-
-            RollStock();
-            ShowShopPanel();
-            Rebuild();
-        }
-
-        protected override void OnClose(bool isShutdown, object userData)
-        {
-            ClearSpawned();
-            _pendingEditorRebuild = null;
-            NotifyClosedOnce();
-            base.OnClose(isShutdown, userData);
-        }
-
         private void RollStock()
         {
             _stock.Clear();
@@ -128,8 +154,8 @@ namespace GourmetProject.Game.UI.Meta
             IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Shop, _shopKey);
             IRandomStream lootRng = GameApp.Random.DomainStream(SeedDomains.Loot, $"shop_{_shopKey}");
             _stock.AddRange(ShopService.RollStock(GameApp.Config.Tables, _run, rng, lootRng));
+            // 掷库存只写内存 pending（同一天重开商店复用同一份）；不存档，退出商店结算时才统一存。
             _run.SetPendingShopStock(_shopKey, _stock);
-            RunPersistence.Save(_run);
         }
 
         private void Rebuild()
@@ -147,6 +173,8 @@ namespace GourmetProject.Game.UI.Meta
             {
                 BuildRecipeEditor();
             }
+
+            _onChanged?.Invoke();
         }
 
         private void BuildBuySection(ShopEntryKind kind, RectTransform container, Text emptyText, string emptyMessage)
@@ -215,6 +243,7 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             _recipeEditPanel.SetActive(true);
+            _onEditorToggled?.Invoke(true);
             BuildRecipeEditor();
         }
 
@@ -226,6 +255,8 @@ namespace GourmetProject.Game.UI.Meta
 
         private void ShowShopPanel()
         {
+            bool wasEditing = _recipeEditPanel != null && _recipeEditPanel.activeSelf;
+
             if (_shopPanel != null)
             {
                 _shopPanel.SetActive(true);
@@ -234,6 +265,11 @@ namespace GourmetProject.Game.UI.Meta
             if (_recipeEditPanel != null)
             {
                 _recipeEditPanel.SetActive(false);
+            }
+
+            if (wasEditing)
+            {
+                _onEditorToggled?.Invoke(false);
             }
         }
 
@@ -286,7 +322,6 @@ namespace GourmetProject.Game.UI.Meta
 
             if (ShopService.MoveDish(_run, dish.BookIndex, dish.DishIndex, targetBookIndex))
             {
-                RunPersistence.Save(_run);
                 QueueEditorRebuild();
             }
         }
@@ -300,7 +335,6 @@ namespace GourmetProject.Game.UI.Meta
 
             if (ShopService.DeleteDishAt(_run, dish.BookIndex, dish.DishIndex))
             {
-                RunPersistence.Save(_run);
                 QueueEditorRebuild();
             }
         }
@@ -326,30 +360,33 @@ namespace GourmetProject.Game.UI.Meta
         {
             if (ShopService.PurchaseRecipeBook(_run))
             {
-                RunPersistence.Save(_run);
                 Rebuild();
             }
         }
 
         private void OnBuy(ShopEntry entry)
         {
-            if (ShopService.Purchase(_run, entry))
+            if (!ShopService.Purchase(_run, entry))
             {
-                _stock.Remove(entry);
-                _run.SetPendingShopStock(_shopKey, _stock);
-                RunPersistence.Save(_run);
-                Rebuild();
+                return;
+            }
+
+            _stock.Remove(entry);
+            _run.SetPendingShopStock(_shopKey, _stock);
+            Rebuild();
+
+            // 碎片包：购买后进入棋盘编辑页手动拼贴（金币已扣，待开包状态已置）。
+            if (entry.Kind == ShopEntryKind.Fragment && _run.HasPendingFragmentPack && _onOpenBoardEdit != null)
+            {
+                _onOpenBoardEdit.Invoke();
             }
         }
 
         private void OnLeaveClicked()
         {
-            if (_run != null)
-            {
-                RunPersistence.Save(_run);
-            }
-
-            Close();
+            // 商店内买卖/删菜只改内存，不即时存档；离开商店 = 结算，由编排层（WeekLoopController）
+            // 在 OnShopClosed 续接里 Commit（推进步数）并统一存最终态。这里只负责继续编排。
+            _onLeave?.Invoke();
         }
 
         private static string DishName(cfg.Tables tables, string dishId)
@@ -417,22 +454,6 @@ namespace GourmetProject.Game.UI.Meta
             {
                 label.text = value ?? string.Empty;
             }
-        }
-
-        private void Close()
-        {
-            GameApp.UI.CloseUIForm(UIForm);
-        }
-
-        private void NotifyClosedOnce()
-        {
-            if (_notifiedClosed)
-            {
-                return;
-            }
-
-            _notifiedClosed = true;
-            BattleForm.Active?.OnShopClosed();
         }
     }
 }

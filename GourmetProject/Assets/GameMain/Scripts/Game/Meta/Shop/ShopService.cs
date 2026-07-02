@@ -6,12 +6,14 @@ using GourmetProject.Game.Run;
 
 namespace GourmetProject.Game.Meta
 {
-    /// <summary>商店一件商品的归一化描述（被动道具 / 主动道具 / 菜品 / 胃部碎片）。</summary>
+    /// <summary>商店一件商品的归一化描述（被动道具 / 主动道具 / 菜品 / 胃部碎片包）。</summary>
     public enum ShopEntryKind
     {
         PassiveItem,
         ActiveItem,
         Dish,
+
+        /// <summary>胃部碎片包：购买后开出三种碎片形状，进入棋盘编辑页手动拼贴一块。</summary>
         Fragment,
     }
 
@@ -45,10 +47,15 @@ namespace GourmetProject.Game.Meta
         public const int DeleteDishCost = 15;
         public const int EmptyRecipeBookPrice = 20;
 
+        /// <summary>碎片包售价（固定）。</summary>
+        public const int FragmentPackPrice = 60;
+
+        /// <summary>碎片包开出的候选碎片数量（三选一）。</summary>
+        public const int FragmentPackSize = 3;
+
         private const int PassiveCount = 2;
         private const int ActiveCount = 1;
         private const int DishCount = 2;
-        private const int FragmentCount = 1;
 
         /// <summary>
         /// 按隐藏分刷新一批商品。道具（被动/主动）走 <paramref name="lootRng"/>，
@@ -88,10 +95,15 @@ namespace GourmetProject.Game.Meta
                 stock.Add(new ShopEntry(ShopEntryKind.Dish, variant.Id, name, "加入菜谱池的菜品", price));
             }
 
-            foreach (cfg.StomachFragment fragment in RollFragments(tables, run, fragmentHidden, rng, FragmentCount))
+            // 碎片包：仅当存在「可拼入当前胃」的候选碎片时才上架（避免买了无处可放）。
+            if (BuildFragmentCandidates(tables, run, fragmentHidden).Count > 0)
             {
-                int price = fragment.Price > 0 ? fragment.Price : 40;
-                stock.Add(new ShopEntry(ShopEntryKind.Fragment, fragment.Id, "胃部碎片", "扩展胃部棋盘", price));
+                stock.Add(new ShopEntry(
+                    ShopEntryKind.Fragment,
+                    "fragment_pack",
+                    "碎片包",
+                    "开出三种碎片，选一块拼入棋盘",
+                    FragmentPackPrice));
             }
 
             return stock;
@@ -117,8 +129,18 @@ namespace GourmetProject.Game.Meta
                     applied = run.AddBonusDish(entry.Id);
                     break;
                 case ShopEntryKind.Fragment:
-                    applied = run.AddStomachFragment(entry.Id);
+                {
+                    // 碎片包：开出三种候选碎片置为待拼贴状态；实际拼入棋盘在棋盘编辑页完成。
+                    List<string> pack = RollFragmentPack(run, FragmentPackSize);
+                    if (pack.Count == 0)
+                    {
+                        return false;
+                    }
+
+                    run.SetPendingFragmentPack(pack);
+                    applied = true;
                     break;
+                }
                 default:
                     applied = false;
                     break;
@@ -203,7 +225,35 @@ namespace GourmetProject.Game.Meta
             return WeightedTake(candidates, v => RewardPoolService.HiddenScoreWeight(v.BaseWeight, HiddenMean(v.HiddenRange), hidden, 5), count, rng);
         }
 
-        private static List<cfg.StomachFragment> RollFragments(cfg.Tables tables, GameRun run, int hidden, IRandomStream rng, int count)
+        /// <summary>开一份碎片包：按当前隐藏分加权 roll 出 <paramref name="count"/> 个可拼入当前胃的候选碎片 id。</summary>
+        public static List<string> RollFragmentPack(GameRun run, int count)
+        {
+            var ids = new List<string>();
+            if (run == null || count <= 0)
+            {
+                return ids;
+            }
+
+            int hidden = HiddenScoreService.FragmentHiddenScore(run, run.LastActionContext);
+            List<cfg.StomachFragment> candidates = BuildFragmentCandidates(run.Tables, run, hidden);
+            if (candidates.Count == 0)
+            {
+                return ids;
+            }
+
+            IRandomStream rng = GameApp.Random.DomainStream(
+                SeedDomains.Shop, $"pack_{run.WeekIndex}_{run.CurrentDay}_{run.FragmentPlacements.Count}");
+            foreach (cfg.StomachFragment fragment in WeightedTake(
+                candidates, f => RewardPoolService.HiddenScoreWeight(f.BaseWeight, HiddenMean(f.HiddenRange), hidden, 5), count, rng))
+            {
+                ids.Add(fragment.Id);
+            }
+
+            return ids;
+        }
+
+        /// <summary>筛选可拼入当前胃、且隐藏分覆盖的碎片候选（不消耗随机流）。</summary>
+        private static List<cfg.StomachFragment> BuildFragmentCandidates(cfg.Tables tables, GameRun run, int hidden)
         {
             var candidates = new List<cfg.StomachFragment>();
             foreach (cfg.StomachFragment fragment in tables.TbStomachFragment.DataList)
@@ -225,7 +275,7 @@ namespace GourmetProject.Game.Meta
                 }
             }
 
-            return WeightedTake(candidates, f => RewardPoolService.HiddenScoreWeight(f.BaseWeight, HiddenMean(f.HiddenRange), hidden, 5), count, rng);
+            return candidates;
         }
 
         private static float HiddenMean(cfg.HiddenRange range)

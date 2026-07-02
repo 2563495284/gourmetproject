@@ -537,6 +537,7 @@ MonoBehaviour:
   _cardsContainer: {fileID: 1086382968746783130}
   _cardPrefab: {fileID: 7715130948239374739, guid: ed95be9110bfd461e8decb80978d5929, type: 3}
   _skipButton: {fileID: 5738054906141532378}
+  _shopPanel: {fileID: 9064086834078507581}
   _passiveItemsContainer: {fileID: 0}
   _itemSlotPrefab: {fileID: 3732292357256354819, guid: af369f5a2ad1244aea490e8171a88eb4, type: 3}
   _activeItemSlots:
@@ -3542,6 +3543,7 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 9064086834078507582}
   - {fileID: 3360030364442441627}
   - {fileID: 1950719379592311}
   - {fileID: 2236648785048287675}
@@ -5058,4 +5060,121 @@ MonoBehaviour:
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 4852092192568821543, guid: af369f5a2ad1244aea490e8171a88eb4, type: 3}
   m_PrefabInstance: {fileID: 3684944669099050385}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &8082461872448561707
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 7821990121811298790}
+    m_Modifications:
+    - target: {fileID: 1000000000000000020, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
+      propertyPath: m_Name
+      value: ShopPanel
+      objectReference: {fileID: 0}
+    - target: {fileID: 1000000000000000020, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1000000000000000021, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
+      propertyPath: m_Pivot.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 1000000000000000021, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
+      propertyPath: m_Pivot.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 1000000000000000021, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1000000000000000021, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1000000000000000021, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1000000000000000021, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1000000000000000021, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1000000000000000021, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1000000000000000021, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1000000000000000021, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1000000000000000021, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1000000000000000021, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1000000000000000021, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1000000000000000021, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1000000000000000021, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1000000000000000021, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1000000000000000021, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1000000000000000021, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1000000000000000021, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1000000000000000021, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
+--- !u!114 &9064086834078507581 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1000000000000000022, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
+  m_PrefabInstance: {fileID: 8082461872448561707}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eec2779cd6854b8d94b7d68e8c105256, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.ShopForm
+--- !u!224 &9064086834078507582 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 1000000000000000021, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
+  m_PrefabInstance: {fileID: 8082461872448561707}
   m_PrefabAsset: {fileID: 0}

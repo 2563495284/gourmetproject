@@ -21,7 +21,15 @@ namespace GourmetProject.Game.Run
         public List<RunItemSaveData> Items = new List<RunItemSaveData>();
         public List<string> BonusDishIds = new List<string>();
         public List<RunRecipeBookSaveData> RecipeBooks = new List<RunRecipeBookSaveData>();
+
+        /// <summary>奖励获得、自动附着的胃部碎片 id（无手动位置）。</summary>
         public List<string> StomachFragmentIds = new List<string>();
+
+        /// <summary>玩家在棋盘编辑页手动拼贴的碎片放置（id + 旋转 + 原点），用于可复现地重建胃形。</summary>
+        public List<StomachFragmentPlacementSaveData> FragmentPlacements = new List<StomachFragmentPlacementSaveData>();
+
+        /// <summary>已购买但尚未拼贴的碎片包内容（rolled 出的候选碎片 id）；拼贴或跳过后清空。</summary>
+        public List<string> PendingFragmentPackIds = new List<string>();
 
         /// <summary>整局累计已结算的菜品 BaseId 次数（技能「大局相同检测」）。</summary>
         public Dictionary<string, int> RunSettledCounts = new Dictionary<string, int>();
@@ -108,6 +116,15 @@ namespace GourmetProject.Game.Run
     public sealed class RunRecipeBookSaveData
     {
         public List<string> DishIds = new List<string>();
+    }
+
+    [Serializable]
+    public sealed class StomachFragmentPlacementSaveData
+    {
+        public string FragmentId;
+        public int Rotation;
+        public int OriginX;
+        public int OriginY;
     }
 
     [Serializable]

@@ -24,10 +24,10 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public GridPos Position => _position;
 
-        /// <summary>配置一个由 prefab 实例化出来的格子：结构在 prefab 里摆好，这里只喂数据（位置/尺寸/sprite/回调）。</summary>
+        /// <summary>配置一个由 prefab 实例化出来的格子：结构在 prefab 里摆好，这里只喂数据（局部位置/尺寸/sprite/回调）。</summary>
         public void Configure(
             GridPos position,
-            Vector3 worldPosition,
+            Vector3 localPosition,
             float size,
             Sprite sprite,
             Action<GridPos> clicked)
@@ -35,7 +35,7 @@ namespace GourmetProject.Game.Presentation.Battle
             EnsureRefs();
 
             gameObject.name = $"Cell_{position.X}_{position.Y}";
-            transform.position = worldPosition;
+            transform.localPosition = localPosition;
 
             // 按 sprite 实际包围盒归一化缩放，使任意导入 PPU 的格图都恰好等于 1 格世界尺寸，
             // 相邻格子边到边对齐、无缝铺满。
@@ -60,6 +60,15 @@ namespace GourmetProject.Game.Presentation.Battle
             if (_renderer != null)
             {
                 _renderer.color = color;
+            }
+        }
+
+        /// <summary>调整渲染排序序号（编辑页放置预览幽灵需盖在棋盘格之上）。</summary>
+        public void SetSortingOrder(int order)
+        {
+            if (_renderer != null)
+            {
+                _renderer.sortingOrder = order;
             }
         }
 
