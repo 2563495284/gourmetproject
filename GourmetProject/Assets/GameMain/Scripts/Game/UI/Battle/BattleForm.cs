@@ -154,7 +154,7 @@ namespace GourmetProject.Game.UI.Battle
             _loop?.PromptNextAction();
         }
 
-        /// <summary>WeekMapForm 选择行动后回调（null = 无行动可选时的「休息」）。</summary>
+        /// <summary> 选择行动后回调（null = 无行动可选时的「休息」）。</summary>
         public void OnActionPicked(ActionChoice choice)
         {
             _loop?.OnActionPicked(choice);
