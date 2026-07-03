@@ -70,8 +70,8 @@ namespace GourmetProject.Game.UI.Battle
         [SerializeField] private RunItemSlotView _itemSlotPrefab;
         [SerializeField] private RunItemSlotView[] _activeItemSlots;
 
-        [Header("Recipe Drawer")]
-        [SerializeField] private RecipeDrawer _recipeDrawer;
+        [Header("Recipe View")]
+        [SerializeField] private RecipeView _recipeView;
 
         private readonly List<RunItemSlotView> _passiveSlots = new();
         private readonly List<WeekEventCardView> _cards = new();
@@ -231,11 +231,10 @@ namespace GourmetProject.Game.UI.Battle
             RefreshPersistent();
             _actionAxisBar?.Build(_run);
 
-            if (_recipeDrawer != null)
+            if (_recipeView != null)
             {
-                _recipeDrawer.gameObject.SetActive(true);
-                _recipeDrawer.ConfigureCollapsible(false);
-                BuildRecipeDrawer();
+                _recipeView.SetState(RecipeView.RecipeState.Collapsed);
+                BuildRecipeBooks(showAdd: false, onAdd: null);
             }
 
             if (_actionSelectionPanel != null)
@@ -275,16 +274,17 @@ namespace GourmetProject.Game.UI.Battle
             RefreshPersistent();
             _actionAxisBar?.Build(_run);
 
-            // 商店态由商店面板自带的菜谱条承载底部，隐藏常驻壳的菜谱抽屉避免重复。
-            if (_recipeDrawer != null)
+            // 商店态：底部扇形菜谱条完全展开，并在末尾追加「购买空菜谱」卡。
+            if (_recipeView != null)
             {
-                _recipeDrawer.gameObject.SetActive(false);
+                _recipeView.SetState(RecipeView.RecipeState.Shown);
+                BuildShopRecipeBooks();
             }
 
             if (_shopPanel != null)
             {
                 _shopPanel.gameObject.SetActive(true);
-                _shopPanel.Open(OnShopLeave, RefreshPersistent, OnShopEditorToggled, OpenBoardEdit);
+                _shopPanel.Open(OnShopLeave, RefreshShopPersistent, OnShopEditorToggled, OpenBoardEdit);
             }
         }
 
@@ -310,10 +310,7 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             SetActionAxisVisible(false);
-            if (_recipeDrawer != null)
-            {
-                _recipeDrawer.gameObject.SetActive(false);
-            }
+            _recipeView?.SetState(RecipeView.RecipeState.Hidden);
 
             world.BeginBoardEdit(_run, _run.PendingFragmentPack, OnBoardEditDone);
         }
@@ -328,6 +325,20 @@ namespace GourmetProject.Game.UI.Battle
         private void OnShopEditorToggled(bool editing)
         {
             SetActionAxisVisible(!editing);
+
+            // 进入全屏编辑菜谱态时隐藏底部扇形菜谱条，退出时恢复展开并重建。
+            if (_recipeView != null)
+            {
+                if (editing)
+                {
+                    _recipeView.SetState(RecipeView.RecipeState.Hidden);
+                }
+                else
+                {
+                    _recipeView.SetState(RecipeView.RecipeState.Shown);
+                    BuildShopRecipeBooks();
+                }
+            }
         }
 
         private void HideShopPanel()
@@ -372,36 +383,35 @@ namespace GourmetProject.Game.UI.Battle
             _actionAxisBar?.Build(_run);
             RefreshPersistent();
 
-            if (_recipeDrawer != null)
+            if (_recipeView != null)
             {
-                _recipeDrawer.gameObject.SetActive(true);
-                _recipeDrawer.ConfigureLockedOpen();
+                _recipeView.SetState(RecipeView.RecipeState.Shown);
                 BuildBattleRecipe();
             }
         }
 
-        /// <summary>战斗态菜谱抽屉：每本菜谱一条，点击从该菜谱上菜（触发世界空间上菜动画）。</summary>
+        /// <summary>战斗态扇形菜谱条：每本菜谱一张卡，点击从该菜谱上菜（触发世界空间上菜动画）。</summary>
         private void BuildBattleRecipe()
         {
-            if (_recipeDrawer == null || _session == null)
+            if (_recipeView == null || _session == null)
             {
                 return;
             }
 
-            var entries = new List<RecipeDrawer.EntryData>();
+            var books = new List<RecipeView.BookEntry>();
             for (int i = 0; i < _session.Slots.Count; i++)
             {
                 RecipeSlot slot = _session.Slots[i];
                 int slotIndex = i;
                 bool interactable = !_session.IsSettled && !slot.IsEmpty;
-                entries.Add(new RecipeDrawer.EntryData(
+                books.Add(new RecipeView.BookEntry(
                     $"菜谱{i + 1}",
                     $"剩 {slot.Count}",
                     interactable,
                     () => ServeFromRecipe(slotIndex)));
             }
 
-            _recipeDrawer.SetEntries(entries);
+            _recipeView.SetBooks(books);
         }
 
         private void ServeFromRecipe(int slotIndex)
@@ -603,37 +613,61 @@ namespace GourmetProject.Game.UI.Battle
             _passiveSlots.Clear();
         }
 
-        /// <summary>菜谱抽屉展示态（阶段一）：列出本局奖励菜谱池（BonusDishIds），完整菜谱在战斗中查看。</summary>
-        private void BuildRecipeDrawer()
+        /// <summary>底部扇形菜谱条：按持有的菜谱本铺卡，显示 已放/容量（如 10/12）。showAdd 时末尾追加购买空菜谱卡。</summary>
+        private void BuildRecipeBooks(bool showAdd, Action onAdd)
         {
-            if (_recipeDrawer == null || _run == null)
+            if (_recipeView == null || _run == null)
             {
                 return;
             }
 
-            cfg.Tables tables = GameApp.Config.Tables;
-            var entries = new List<RecipeDrawer.EntryData>();
-            foreach (string dishId in _run.BonusDishIds)
+            var books = new List<RecipeView.BookEntry>();
+            for (int i = 0; i < _run.RecipeBookCount; i++)
             {
-                entries.Add(new RecipeDrawer.EntryData(DishDisplayName(tables, dishId), string.Empty, false, null));
+                int count = _run.GetRecipeBookDishes(i).Count;
+                books.Add(new RecipeView.BookEntry(
+                    $"菜谱{i + 1}",
+                    $"{count}/{GameRun.RecipeBookCapacity}",
+                    false,
+                    null));
             }
 
-            _recipeDrawer.SetEntries(entries);
+            string addCost = showAdd ? $"+ {ShopService.EmptyRecipeBookPrice}" : null;
+            _recipeView.SetBooks(books, showAdd, onAdd, addCost);
         }
 
-        private static string DishDisplayName(cfg.Tables tables, string dishId)
+        /// <summary>商店态菜谱条：展示持有菜谱本 + 末尾「购买空菜谱」卡（买得起才可点）。</summary>
+        private void BuildShopRecipeBooks()
         {
-            cfg.DishVariant variant = tables.TbDishVariant.GetOrDefault(dishId);
-            if (variant != null)
+            if (_run == null)
             {
-                cfg.DishBase baseDish = tables.TbDishBase.GetOrDefault(variant.BaseId);
-                if (baseDish != null)
-                {
-                    return baseDish.Name;
-                }
+                return;
             }
 
-            return dishId;
+            bool showAdd = _run.CanAddRecipeBook;
+            bool canBuy = showAdd && _run.Gold >= ShopService.EmptyRecipeBookPrice;
+            BuildRecipeBooks(showAdd, canBuy ? BuyRecipeBook : (Action)null);
+        }
+
+        /// <summary>点击扇形末尾的「购买空菜谱」卡：扣金币加一本菜谱，随后刷新商店与底部菜谱条。</summary>
+        private void BuyRecipeBook()
+        {
+            if (_run == null)
+            {
+                return;
+            }
+
+            if (ShopService.PurchaseRecipeBook(_run))
+            {
+                _shopPanel?.RefreshShop();
+            }
+        }
+
+        /// <summary>商店内数据变化回调：刷新常驻壳信息 + 底部扇形菜谱条。</summary>
+        private void RefreshShopPersistent()
+        {
+            RefreshPersistent();
+            BuildShopRecipeBooks();
         }
 
         // —— 行动选择卡片（原 WeekMapForm 逻辑并入）——
@@ -718,7 +752,6 @@ namespace GourmetProject.Game.UI.Battle
             rect.pivot = new Vector2(0.5f, 0.5f);
             rect.anchoredPosition = new Vector2(centerX, 0f);
             rect.sizeDelta = new Vector2(width, height);
-            rect.localScale = Vector3.one;
 
             ActionChoice captured = choice;
             card.Bind(choice, () => OnActionSelectionPicked(captured));
@@ -731,7 +764,7 @@ namespace GourmetProject.Game.UI.Battle
             {
                 if (card != null)
                 {
-                    Destroy(card.gameObject);
+                    card.PlayHideThenDestroy();
                 }
             }
 
@@ -762,6 +795,7 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             HideShopPanel();
+            _recipeView?.SetState(RecipeView.RecipeState.Hidden);
 
             if (_hudFrame != null)
             {

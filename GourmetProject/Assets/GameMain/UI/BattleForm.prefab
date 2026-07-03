@@ -543,7 +543,7 @@ MonoBehaviour:
   _activeItemSlots:
   - {fileID: 2133649112925901176}
   - {fileID: 65383253425904018}
-  _recipeDrawer: {fileID: 6055605628978056758}
+  _recipeView: {fileID: 8511396772749434717}
 --- !u!1 &1035805109380642731
 GameObject:
   m_ObjectHideFlags: 0
@@ -654,8 +654,8 @@ RectTransform:
   - {fileID: 4295523495327442211}
   m_Father: {fileID: 1950719379592311}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.08, y: 0.25}
-  m_AnchorMax: {x: 0.92, y: 0.36}
+  m_AnchorMin: {x: 0.089646526, y: 0.4274074}
+  m_AnchorMax: {x: 0.9103535, y: 0.5374074}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -962,8 +962,8 @@ RectTransform:
   - {fileID: 2039654335429578294}
   m_Father: {fileID: 1950719379592311}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.1, y: 0.06}
-  m_AnchorMax: {x: 0.9, y: 0.16}
+  m_AnchorMin: {x: 0.089646526, y: 0.060185187}
+  m_AnchorMax: {x: 0.9103535, y: 0.16018519}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -1407,8 +1407,8 @@ RectTransform:
   - {fileID: 5450529660218130291}
   m_Father: {fileID: 1950719379592311}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.08, y: 0.53}
-  m_AnchorMax: {x: 0.92, y: 0.64}
+  m_AnchorMin: {x: 0.089646526, y: 0.70796293}
+  m_AnchorMax: {x: 0.9103535, y: 0.817963}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -1560,10 +1560,10 @@ RectTransform:
   - {fileID: 6274947452245675420}
   m_Father: {fileID: 1950719379592311}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.1, y: 0.18}
-  m_AnchorMax: {x: 0.9, y: 0.28}
+  m_AnchorMin: {x: 0.1, y: 0.17962962}
+  m_AnchorMax: {x: 0.8999999, y: 0.27962962}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: -0.000015258789}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1859012092798650890
 CanvasRenderer:
@@ -1954,8 +1954,8 @@ RectTransform:
   - {fileID: 6334340415246251236}
   m_Father: {fileID: 1950719379592311}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.08, y: 0.66999996}
-  m_AnchorMax: {x: 0.92, y: 0.78}
+  m_AnchorMin: {x: 0.089646526, y: 0.8477778}
+  m_AnchorMax: {x: 0.9103535, y: 0.9577778}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -2705,6 +2705,74 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!1 &5329811464155118536
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1263176503588179932}
+  - component: {fileID: 1378362662849777502}
+  - component: {fileID: 8511396772749434717}
+  m_Layer: 0
+  m_Name: RecipeView
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1263176503588179932
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5329811464155118536}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7821990121811298790}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.18, y: 0.025}
+  m_AnchorMax: {x: 0.82, y: 0.225}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &1378362662849777502
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5329811464155118536}
+  m_CullTransparentMesh: 1
+--- !u!114 &8511396772749434717
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5329811464155118536}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 41ef74dbb8f0841cea62bbd709fcbb4c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Hud.RecipeView
+  _recipePrefab: {fileID: 3983555695959146410, guid: e15ce1b185bde447eb66902d74648421, type: 3}
+  _recipeAddPrefab: {fileID: 2973243729664783813, guid: 43473782ac387493cadcf48e22634272, type: 3}
+  _arcRadius: 760
+  _anglePerCard: 11
+  _tiltFactor: 1
+  _baseY: -10
+  _peekOffset: 150
+  _hiddenOffset: 340
+  _moveDuration: 0.28
+  _revealStagger: 0.05
+  _triggerHeightRatio: 1
 --- !u!1 &5382046800624271872
 GameObject:
   m_ObjectHideFlags: 0
@@ -3549,6 +3617,7 @@ RectTransform:
   - {fileID: 2236648785048287675}
   - {fileID: 2425104924662137040}
   - {fileID: 8563243567901267801}
+  - {fileID: 1263176503588179932}
   m_Father: {fileID: 1000000000000000011}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -3574,7 +3643,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &8563243567901267801
 RectTransform:
   m_ObjectHideFlags: 0
@@ -4685,8 +4754,8 @@ RectTransform:
   - {fileID: 4332019485190512867}
   m_Father: {fileID: 1950719379592311}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.08, y: 0.39}
-  m_AnchorMax: {x: 0.92, y: 0.5}
+  m_AnchorMin: {x: 0.089646526, y: 0.56814814}
+  m_AnchorMax: {x: 0.9103535, y: 0.67814815}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}

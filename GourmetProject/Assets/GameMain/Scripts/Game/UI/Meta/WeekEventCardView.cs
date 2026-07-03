@@ -1,10 +1,12 @@
 using System;
+using System.Collections;
 using System.Globalization;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Flow;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using GourmetProject.Game.UI;
 using GourmetProject.Game.UI.Battle;
@@ -19,10 +21,11 @@ namespace GourmetProject.Game.UI.Meta
     /// 周地图「n 选一」事件卡视图。固定结构在 WeekEventCardView.prefab，
     /// 文案与点击回调通过 <see cref="Bind"/> 数据驱动填充。
     /// </summary>
-    public sealed class WeekEventCardView : MonoBehaviour
+    public sealed class WeekEventCardView : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
         private const string NodeEventFooter = "节点事件";
         private const string DefaultBossTitle = "周末盛宴\n恶魔";
+        private const float GlowPadding = 48f;
 
         private static readonly Color PanelColor = new Color(1f, 0.94f, 0.78f, 0.9f);
         private static readonly Color FooterActionColor = new Color(1f, 0.94f, 0.78f, 0.92f);
@@ -39,6 +42,37 @@ namespace GourmetProject.Game.UI.Meta
         [SerializeField] private Image _rewardIconImage;
         [SerializeField] private Text _rewardBadgeText;
         [SerializeField] private Button _pickButton;
+
+        [Header("Effects - References")]
+        [SerializeField] private Image _glowBorder;
+        [SerializeField] private RectTransform _particleContainer;
+
+        [Header("Effects - Timing")]
+        [SerializeField] private float _showDuration = 0.22f;
+        [SerializeField] private float _hideDuration = 0.18f;
+        [SerializeField] private float _selectHold = 0.08f;
+
+        [Header("Effects - Glow")]
+        [SerializeField] private Color _hoverColor = new Color(1f, 0.85f, 0.4f, 0.9f);
+        [SerializeField] private Color _selectedColor = new Color(0.4f, 1f, 0.72f, 1f);
+        [SerializeField] private float _glowFadeSpeed = 14f;
+
+        [Header("Effects - Particles")]
+        [SerializeField] private int _particleCount = 12;
+        [SerializeField] private float _particleLifetime = 0.6f;
+        [SerializeField] private float _particleDistance = 60f;
+        [SerializeField] private Color _particleColor = new Color(1f, 0.92f, 0.62f, 0.5f);
+        [SerializeField] private Vector2 _particleSize = new Vector2(14f, 14f);
+
+        private static bool _picking;
+        private Action _onPick;
+        private bool _hover;
+        private bool _selectedGlow;
+        private bool _isHidden;
+        private Sprite _particleSprite;
+        private Coroutine _scaleAnim;
+        private Material _glowMat;
+        private static readonly int QuadSizeId = Shader.PropertyToID("_QuadSize");
 
         public void Bind(cfg.GameEvent ev, Action onPick)
         {
@@ -146,10 +180,11 @@ namespace GourmetProject.Game.UI.Meta
             SetBacking(_titleBackingImage, true, PanelColor);
             SetDescription(desc);
 
+            _onPick = onPick;
             if (_pickButton != null)
             {
                 _pickButton.onClick.RemoveAllListeners();
-                _pickButton.onClick.AddListener(() => onPick?.Invoke());
+                _pickButton.onClick.AddListener(OnPickClicked);
             }
         }
 
@@ -310,6 +345,329 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             return Resources.Load<Sprite>($"Sprites/UI/{spriteName}");
+        }
+
+        // —— 表现：出现/隐藏动画、hover 发亮、选中变色 + 四周粒子 ——
+
+        private void OnEnable()
+        {
+            _picking = false;
+            _hover = false;
+            _selectedGlow = false;
+            _isHidden = false;
+            EnsureRefs();
+            ResetGlow();
+            transform.localScale = new Vector3(1f, 0f, 1f);
+            UpdateGlowQuadSize();
+            StartCoroutine(ShowRoutine());
+        }
+
+        private void OnDisable()
+        {
+            if (_glowMat != null)
+            {
+                Destroy(_glowMat);
+                _glowMat = null;
+            }
+        }
+
+        private void Update()
+        {
+            if (_glowBorder == null)
+            {
+                return;
+            }
+
+            UpdateGlowQuadSize();
+
+            Color target = _selectedGlow ? _selectedColor : _hoverColor;
+            if (!_selectedGlow && !_hover)
+            {
+                target.a = 0f;
+            }
+
+            float k = 1f - Mathf.Exp(-_glowFadeSpeed * Time.unscaledDeltaTime);
+            _glowBorder.color = Color.Lerp(_glowBorder.color, target, k);
+        }
+
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            if (_picking)
+            {
+                return;
+            }
+
+            _hover = true;
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            _hover = false;
+        }
+
+        /// <summary>反向隐藏后销毁（供持有方清场时调用，选中卡自身已先隐藏）。</summary>
+        public void PlayHideThenDestroy()
+        {
+            if (!isActiveAndEnabled || _isHidden)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            StartCoroutine(HideThenDestroyRoutine());
+        }
+
+        private void OnPickClicked()
+        {
+            if (_picking)
+            {
+                return;
+            }
+
+            _picking = true;
+            _selectedGlow = true;
+            _hover = false;
+            EmitParticles();
+            StartCoroutine(PickRoutine());
+        }
+
+        private IEnumerator PickRoutine()
+        {
+            yield return WaitUnscaled(_selectHold);
+            yield return HideRoutine();
+            Action cb = _onPick;
+            _onPick = null;
+            cb?.Invoke();
+        }
+
+        private IEnumerator HideThenDestroyRoutine()
+        {
+            yield return HideRoutine();
+            Destroy(gameObject);
+        }
+
+        private IEnumerator ShowRoutine()
+        {
+            float t = 0f;
+            while (t < _showDuration)
+            {
+                t += Time.unscaledDeltaTime;
+                float p = Mathf.Clamp01(t / _showDuration);
+                float y = EaseOutBack(p);
+                transform.localScale = new Vector3(1f, y, 1f);
+                yield return null;
+            }
+
+            transform.localScale = Vector3.one;
+        }
+
+        private IEnumerator HideRoutine()
+        {
+            float startY = transform.localScale.y;
+            float t = 0f;
+            while (t < _hideDuration)
+            {
+                t += Time.unscaledDeltaTime;
+                float p = Mathf.Clamp01(t / _hideDuration);
+                float y = Mathf.Lerp(startY, 0f, EaseInQuad(p));
+                transform.localScale = new Vector3(1f, y, 1f);
+                yield return null;
+            }
+
+            transform.localScale = new Vector3(1f, 0f, 1f);
+            _isHidden = true;
+        }
+
+        private void EmitParticles()
+        {
+            EnsureRefs();
+            if (_particleContainer == null)
+            {
+                return;
+            }
+
+            Sprite dot = ParticleSprite();
+            var selfRect = (RectTransform)transform;
+            Vector2 half = selfRect.rect.size * 0.5f;
+            for (int i = 0; i < _particleCount; i++)
+            {
+                float ang = (i / (float)_particleCount) * Mathf.PI * 2f + UnityEngine.Random.Range(-0.2f, 0.2f);
+                Vector2 dir = new Vector2(Mathf.Cos(ang), Mathf.Sin(ang));
+                Vector2 start = new Vector2(dir.x * half.x, dir.y * half.y);
+                SpawnParticle(dot, start, dir);
+            }
+        }
+
+        private void SpawnParticle(Sprite dot, Vector2 start, Vector2 dir)
+        {
+            var go = new GameObject("Particle", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            var rt = (RectTransform)go.transform;
+            rt.SetParent(_particleContainer, false);
+            rt.anchorMin = new Vector2(0.5f, 0.5f);
+            rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.sizeDelta = _particleSize;
+            rt.anchoredPosition = start;
+            rt.localScale = Vector3.one;
+
+            var img = go.GetComponent<Image>();
+            img.sprite = dot;
+            img.raycastTarget = false;
+            img.color = _particleColor;
+
+            StartCoroutine(ParticleRoutine(rt, img, start, dir));
+        }
+
+        private IEnumerator ParticleRoutine(RectTransform rt, Image img, Vector2 start, Vector2 dir)
+        {
+            Vector2 end = start + dir * _particleDistance;
+            float baseScale = UnityEngine.Random.Range(0.6f, 1.25f);
+            float t = 0f;
+            while (t < _particleLifetime && rt != null)
+            {
+                t += Time.unscaledDeltaTime;
+                float p = Mathf.Clamp01(t / _particleLifetime);
+                rt.anchoredPosition = Vector2.Lerp(start, end, 1f - (1f - p) * (1f - p));
+                float s = baseScale * (1f - 0.5f * p);
+                rt.localScale = new Vector3(s, s, 1f);
+                if (img != null)
+                {
+                    Color c = _particleColor;
+                    c.a = _particleColor.a * (1f - p);
+                    img.color = c;
+                }
+
+                yield return null;
+            }
+
+            if (rt != null)
+            {
+                Destroy(rt.gameObject);
+            }
+        }
+
+        private Sprite ParticleSprite()
+        {
+            if (_particleSprite == null)
+            {
+                _particleSprite = Resources.Load<Sprite>("Sprites/UI/white");
+            }
+
+            return _particleSprite;
+        }
+
+        private void ResetGlow()
+        {
+            if (_glowBorder == null)
+            {
+                return;
+            }
+
+            Color c = _hoverColor;
+            c.a = 0f;
+            _glowBorder.color = c;
+        }
+
+        private void EnsureRefs()
+        {
+            if (_glowBorder == null)
+            {
+                var go = new GameObject("GlowBorder", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                var rt = (RectTransform)go.transform;
+                rt.SetParent(transform, false);
+                StretchFull(rt);
+                // 向外扩出 padding，让光晕能画到卡牌矩形之外；放到最底层，只在 Art 外圈显形。
+                rt.offsetMin = new Vector2(-GlowPadding, -GlowPadding);
+                rt.offsetMax = new Vector2(GlowPadding, GlowPadding);
+                rt.SetAsFirstSibling();
+                var img = go.GetComponent<Image>();
+                img.material = Resources.Load<Material>("Materials/UIOuterGlow");
+                img.raycastTarget = false;
+                Color c = _hoverColor;
+                c.a = 0f;
+                img.color = c;
+                _glowBorder = img;
+            }
+
+            if (_particleContainer == null)
+            {
+                var go = new GameObject("Particles", typeof(RectTransform));
+                var rt = (RectTransform)go.transform;
+                rt.SetParent(transform, false);
+                StretchFull(rt);
+                rt.SetAsLastSibling();
+                _particleContainer = rt;
+            }
+
+            EnsureGlowMaterial();
+        }
+
+        // 外发光 shader 需要知道本实例 quad 的真实像素尺寸；实际游戏里卡牌会被布局改尺寸，
+        // 因此不能沿用材质里写死的 _QuadSize，改用每实例材质并逐帧回填真实 rect 尺寸。
+        private void EnsureGlowMaterial()
+        {
+            if (_glowBorder == null || _glowMat != null)
+            {
+                return;
+            }
+
+            Material baseMat = _glowBorder.material;
+            if (baseMat == null || baseMat.shader == null || baseMat.shader.name != "GourmetProject/UIOuterGlow")
+            {
+                baseMat = Resources.Load<Material>("Materials/UIOuterGlow");
+            }
+
+            if (baseMat == null)
+            {
+                return;
+            }
+
+            _glowMat = new Material(baseMat);
+            _glowBorder.material = _glowMat;
+        }
+
+        private void UpdateGlowQuadSize()
+        {
+            if (_glowMat == null || _glowBorder == null)
+            {
+                return;
+            }
+
+            Rect r = _glowBorder.rectTransform.rect;
+            _glowMat.SetVector(QuadSizeId, new Vector4(r.width, r.height, 0f, 0f));
+        }
+
+        private static void StretchFull(RectTransform rt)
+        {
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            rt.localScale = Vector3.one;
+        }
+
+        private static IEnumerator WaitUnscaled(float seconds)
+        {
+            float t = 0f;
+            while (t < seconds)
+            {
+                t += Time.unscaledDeltaTime;
+                yield return null;
+            }
+        }
+
+        private static float EaseOutBack(float p)
+        {
+            const float c1 = 1.70158f;
+            const float c3 = c1 + 1f;
+            float x = p - 1f;
+            return 1f + c3 * x * x * x + c1 * x * x;
+        }
+
+        private static float EaseInQuad(float p)
+        {
+            return p * p;
         }
 
     }

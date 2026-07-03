@@ -207,27 +207,28 @@ namespace GourmetProject.Game.UI.Meta
 
         private void BuildRecipeStrip()
         {
-            if (_recipeStripContainer != null && _recipeBookPrefab != null)
+            // 菜谱本展示与「购买空菜谱」已统一迁移到 BattleForm 底部的扇形 RecipeView。
+            // 商店面板不再自铺菜谱条，仅保留菜谱上限文本与「编辑菜谱」入口。
+            if (_recipeStripContainer != null)
             {
-                for (int i = 0; i < _run.RecipeBookCount; i++)
-                {
-                    IReadOnlyList<string> dishes = _run.GetRecipeBookDishes(i);
-                    ShopRecipeBookView book = Instantiate(_recipeBookPrefab, _recipeStripContainer);
-                    book.gameObject.name = $"RecipeBook_{i + 1}";
-                    book.Bind($"菜谱{i + 1}", $"{dishes.Count}/{GameRun.RecipeBookCapacity}", false, null);
-                    _spawned.Add(book.gameObject);
-                }
+                _recipeStripContainer.gameObject.SetActive(false);
             }
 
-            bool canBuy = _run.CanAddRecipeBook && _run.Gold >= ShopService.EmptyRecipeBookPrice;
             if (_buyRecipeBookButton != null)
             {
-                _buyRecipeBookButton.gameObject.SetActive(_run.CanAddRecipeBook);
-                _buyRecipeBookButton.interactable = canBuy;
-                SetButtonText(_buyRecipeBookButton, $"+ {ShopService.EmptyRecipeBookPrice}");
+                _buyRecipeBookButton.gameObject.SetActive(false);
             }
 
             SetText(_recipeLimitText, $"{_run.RecipeBookCount}/{GameRun.MaxRecipeBookCount}");
+        }
+
+        /// <summary>供 BattleForm 在底部扇形「购买空菜谱」后回调：重建商店购买区与上限文本（并经 onChanged 刷新常驻壳与底部菜谱条）。</summary>
+        public void RefreshShop()
+        {
+            if (_run != null)
+            {
+                Rebuild();
+            }
         }
 
         private void OpenRecipeEditor()
@@ -439,20 +440,6 @@ namespace GourmetProject.Game.UI.Meta
             if (text != null)
             {
                 text.text = value ?? string.Empty;
-            }
-        }
-
-        private static void SetButtonText(Button button, string value)
-        {
-            if (button == null)
-            {
-                return;
-            }
-
-            Text label = button.GetComponentInChildren<Text>();
-            if (label != null)
-            {
-                label.text = value ?? string.Empty;
             }
         }
     }

@@ -60,11 +60,21 @@ namespace GourmetProject.Game.UI.Menu
 
         private void OnStartClicked()
         {
-            // 有存档则「继续游戏」：登记继续请求，由 ProcedureMenu 轮询切入玩法流程并读档。
+            // 有存档则「继续游戏」：过场盖住后再登记继续请求，由 ProcedureMenu 轮询切入玩法流程并读档。
             if (GameApp.Save.Has(UIForms.GameSaveSlot))
             {
+                var data = new CartoonSceneTransitionData
+                {
+                    TransitionType = CartoonTransitionType.FoodWipe,
+                    Message = "开饭啦！",
+                    CoverDuration = 0.42f,
+                    HoldDuration = 0.2f,
+                    RevealDuration = 0.34f,
+                    OnCovered = () => GameplayEntryRequest.RequestContinue(),
+                };
+
                 GameApp.UI.CloseUIForm(UIForm);
-                GameplayEntryRequest.RequestContinue();
+                GameApp.UI.OpenUIForm(UIForms.CartoonSceneTransition, UIForms.GroupDialog, data);
                 return;
             }
 

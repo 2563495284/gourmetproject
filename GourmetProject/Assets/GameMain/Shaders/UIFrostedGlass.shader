@@ -90,6 +90,7 @@ Shader "GourmetProject/UIFrostedGlass"
             float4 _ClipRect;
 
             sampler2D _FrostedGlassTex;
+            float4 _FrostedGlassTex_TexelSize;
             fixed4 _TintColor;
             float _TintStrength;
             float _GlassAlpha;
@@ -119,9 +120,24 @@ Shader "GourmetProject/UIFrostedGlass"
                 return 1.0 - smoothstep(1.0 - _Softness, 1.0, dist);
             }
 
+            float2 GetFrostedGlassUV(float4 screenPos)
+            {
+                float2 uv = screenPos.xy / screenPos.w;
+
+                #if UNITY_UV_STARTS_AT_TOP
+                // RenderTexture screen captures can be stored upside-down relative to UI geometry.
+                if (_FrostedGlassTex_TexelSize.y < 0.0)
+                {
+                    uv.y = 1.0 - uv.y;
+                }
+                #endif
+
+                return uv;
+            }
+
             fixed4 frag(v2f IN) : SV_Target
             {
-                float2 screenUV = IN.screenPos.xy / IN.screenPos.w;
+                float2 screenUV = GetFrostedGlassUV(IN.screenPos);
                 fixed4 blurred = tex2D(_FrostedGlassTex, screenUV);
 
                 fixed3 rgb = lerp(blurred.rgb, _TintColor.rgb, saturate(_TintStrength * _TintColor.a));
