@@ -1,91 +1,77 @@
-Shader "GourmetProject/UIWorldBlur"
+Shader "GourmetProject/FrostedGlassBlur"
 {
-    // Dual-Kawase 模糊，供 WorldBlurCapture 通过 Graphics.Blit 逐 pass 调用。
-    // Pass 0 = 降采样，Pass 1 = 升采样。使用标准 _MainTex，不依赖 SRP Blit。
+    // 可分离高斯模糊（照抄参考项目 SeparableBlur.shader 的 7-tap 权重），改写为 URP fullscreen blit。
+    // 由 FrostedGlassBlurFeature 通过 RenderGraph AddBlitPass 逐级调用：Pass 0 水平，Pass 1 垂直。
     Properties
     {
-        [PerRendererData] _MainTex ("Texture", 2D) = "black" {}
-        _BlurRadius ("Blur Radius", Float) = 1.0
+        _BlurSpread ("Blur Spread (texels)", Float) = 2.0
     }
 
     SubShader
     {
-        Tags { "RenderType" = "Opaque" }
+        Tags
+        {
+            "RenderType" = "Opaque"
+            "RenderPipeline" = "UniversalPipeline"
+        }
+
         ZWrite Off
-        ZTest Always
         Cull Off
+        ZTest Always
 
-        CGINCLUDE
-        #include "UnityCG.cginc"
+        HLSLINCLUDE
+        #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+        #include "Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl"
 
-        sampler2D _MainTex;
-        float4 _MainTex_TexelSize;
-        float _BlurRadius;
+        float _BlurSpread;
 
-        struct appdata
+        half4 SeparableBlur(float2 uv, float2 dir)
         {
-            float4 vertex : POSITION;
-            float2 uv : TEXCOORD0;
-        };
-
-        struct v2f
-        {
-            float4 pos : SV_POSITION;
-            float2 uv : TEXCOORD0;
-        };
-
-        v2f vert(appdata v)
-        {
-            v2f o;
-            o.pos = UnityObjectToClipPos(v.vertex);
-            o.uv = v.uv;
-            return o;
+            float4 o = dir.xyxy * float4(1, 1, -1, -1);
+            half4 color = half4(0, 0, 0, 0);
+            color += 0.40 * SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv, _BlitMipLevel);
+            color += 0.15 * SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv + o.xy, _BlitMipLevel);
+            color += 0.15 * SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv + o.zw, _BlitMipLevel);
+            color += 0.10 * SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv + o.xy * 2.0, _BlitMipLevel);
+            color += 0.10 * SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv + o.zw * 2.0, _BlitMipLevel);
+            color += 0.05 * SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv + o.xy * 3.0, _BlitMipLevel);
+            color += 0.05 * SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv + o.zw * 3.0, _BlitMipLevel);
+            return color;
         }
-        ENDCG
+        ENDHLSL
 
-        // Pass 0: Dual-Kawase 降采样
         Pass
         {
-            Name "Downsample"
-            CGPROGRAM
-            #pragma vertex vert
-            #pragma fragment frag
+            Name "FrostedGlassBlurHorizontal"
 
-            half4 frag(v2f i) : SV_Target
+            HLSLPROGRAM
+            #pragma vertex Vert
+            #pragma fragment Frag
+
+            half4 Frag(Varyings input) : SV_Target0
             {
-                float2 hp = _MainTex_TexelSize.xy * 0.5 * _BlurRadius;
-                half4 sum = tex2D(_MainTex, i.uv) * 4.0;
-                sum += tex2D(_MainTex, i.uv - hp);
-                sum += tex2D(_MainTex, i.uv + hp);
-                sum += tex2D(_MainTex, i.uv + float2(hp.x, -hp.y));
-                sum += tex2D(_MainTex, i.uv - float2(hp.x, -hp.y));
-                return sum * 0.125;
+                UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+                float2 dir = float2(_BlitTexture_TexelSize.x * _BlurSpread, 0.0);
+                return SeparableBlur(input.texcoord.xy, dir);
             }
-            ENDCG
+            ENDHLSL
         }
 
-        // Pass 1: Dual-Kawase 升采样
         Pass
         {
-            Name "Upsample"
-            CGPROGRAM
-            #pragma vertex vert
-            #pragma fragment frag
+            Name "FrostedGlassBlurVertical"
 
-            half4 frag(v2f i) : SV_Target
+            HLSLPROGRAM
+            #pragma vertex Vert
+            #pragma fragment Frag
+
+            half4 Frag(Varyings input) : SV_Target0
             {
-                float2 hp = _MainTex_TexelSize.xy * 0.5 * _BlurRadius;
-                half4 sum = tex2D(_MainTex, i.uv + float2(-hp.x * 2.0, 0.0));
-                sum += tex2D(_MainTex, i.uv + float2(-hp.x, hp.y)) * 2.0;
-                sum += tex2D(_MainTex, i.uv + float2(0.0, hp.y * 2.0));
-                sum += tex2D(_MainTex, i.uv + float2(hp.x, hp.y)) * 2.0;
-                sum += tex2D(_MainTex, i.uv + float2(hp.x * 2.0, 0.0));
-                sum += tex2D(_MainTex, i.uv + float2(hp.x, -hp.y)) * 2.0;
-                sum += tex2D(_MainTex, i.uv + float2(0.0, -hp.y * 2.0));
-                sum += tex2D(_MainTex, i.uv + float2(-hp.x, -hp.y)) * 2.0;
-                return sum * (1.0 / 12.0);
+                UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+                float2 dir = float2(0.0, _BlitTexture_TexelSize.y * _BlurSpread);
+                return SeparableBlur(input.texcoord.xy, dir);
             }
-            ENDCG
+            ENDHLSL
         }
     }
 

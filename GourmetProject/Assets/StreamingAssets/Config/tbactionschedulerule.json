@@ -31,5 +31,16 @@
     "maxCount": 2,
     "weight": 100,
     "preconditions": ""
+  },
+  {
+    "id": "rule_debug_first_shop_event",
+    "priority": 1000,
+    "groupIds": "grp_debug_shop_event",
+    "minRunStep": 1,
+    "maxRunStep": 1,
+    "minCount": 1,
+    "maxCount": 1,
+    "weight": 100,
+    "preconditions": ""
   }
 ]

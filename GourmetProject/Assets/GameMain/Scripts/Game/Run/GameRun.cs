@@ -67,6 +67,8 @@ namespace GourmetProject.Game.Run
             cfg.Character character = _tables.TbCharacter.GetOrDefault(characterId);
             if (character != null)
             {
+                Gold = character.InitialGold;
+
                 foreach (string itemId in character.StartItems)
                 {
                     AcquireItem(itemId, 0);

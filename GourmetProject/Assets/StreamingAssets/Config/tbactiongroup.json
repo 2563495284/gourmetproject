@@ -34,5 +34,14 @@
     "weekFilter": "",
     "weight": 30,
     "preconditions": ""
+  },
+  {
+    "id": "grp_debug_shop_event",
+    "name": "测试商店事件组",
+    "desc": "测试用：首个行动固定为事件，并由事件进入商店。",
+    "groupType": "debug_event",
+    "weekFilter": "normal",
+    "weight": 0,
+    "preconditions": ""
   }
 ]

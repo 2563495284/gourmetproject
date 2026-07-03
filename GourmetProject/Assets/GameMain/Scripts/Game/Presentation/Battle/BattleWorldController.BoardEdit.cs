@@ -86,7 +86,6 @@ namespace GourmetProject.Game.Presentation.Battle
             _serving = false;
             _session = null;
             ClearPlacedPieces();
-            SetGourmetHudVisible(false, animated: false);
             ComputeViewport();
 
             _editCellSprite = Resources.Load<Sprite>("Sprites/UI/board_cell");

@@ -38,6 +38,7 @@ TABLES = {
         ("initialFragmentId", "string", "s"), ("maxStomachWidth", "int", "s"),
         ("maxStomachHeight", "int", "s"), ("timelinePool", "string", "s"),
         ("bossPool", "string", "s"),
+        ("initialGold", "int", "s"),
         ("startItems", "list,string", "l1"),
     ],
     "item": [

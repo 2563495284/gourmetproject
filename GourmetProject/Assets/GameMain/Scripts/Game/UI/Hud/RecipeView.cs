@@ -1,6 +1,6 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -71,7 +71,7 @@ namespace GourmetProject.Game.UI.Hud
             public GameObject Go;
             public RectTransform Rect;
             public CanvasGroup Group;
-            public Coroutine Tween;
+            public Tween Tween;
         }
 
         private readonly List<CardSlot> _bookSlots = new();
@@ -100,6 +100,24 @@ namespace GourmetProject.Game.UI.Hud
         private void Awake()
         {
             _initialized = true;
+        }
+
+        private void OnDestroy()
+        {
+            KillTween(_addSlot);
+            foreach (CardSlot slot in _bookSlots)
+            {
+                KillTween(slot);
+            }
+        }
+
+        private static void KillTween(CardSlot slot)
+        {
+            if (slot != null && slot.Tween != null)
+            {
+                slot.Tween.Kill();
+                slot.Tween = null;
+            }
         }
 
         private void Update()
@@ -243,23 +261,17 @@ namespace GourmetProject.Game.UI.Hud
                 return;
             }
 
-            if (slot.Tween != null)
-            {
-                StopCoroutine(slot.Tween);
-                slot.Tween = null;
-            }
+            KillTween(slot);
 
-            StartCoroutine(RetireRoutine(slot));
-        }
-
-        private IEnumerator RetireRoutine(CardSlot slot)
-        {
             Vector2 to = new(slot.Rect.anchoredPosition.x, _baseY - _hiddenOffset);
-            yield return TweenRoutine(slot, to, slot.Rect.localEulerAngles.z, 0.5f, 0f, 0f, _moveDuration);
-            if (slot.Go != null)
+            GameObject go = slot.Go;
+            slot.Tween = BuildTween(slot, to, slot.Rect.localEulerAngles.z, 0.5f, 0f, 0f, _moveDuration, onDone: () =>
             {
-                Destroy(slot.Go);
-            }
+                if (go != null)
+                {
+                    Destroy(go);
+                }
+            });
         }
 
         private void RefreshPoses(bool animated, bool staggered)
@@ -299,17 +311,14 @@ namespace GourmetProject.Game.UI.Hud
                     continue;
                 }
 
-                if (slot.Tween != null)
-                {
-                    StopCoroutine(slot.Tween);
-                }
+                KillTween(slot);
 
                 if (active)
                 {
                     slot.Go.SetActive(true);
                 }
 
-                slot.Tween = StartCoroutine(TweenRoutine(slot, pos, rot, 1f, alpha, delay, _moveDuration, deactivateAtEnd: !active));
+                slot.Tween = BuildTween(slot, pos, rot, 1f, alpha, delay, _moveDuration, deactivateAtEnd: !active);
             }
         }
 
@@ -336,59 +345,66 @@ namespace GourmetProject.Game.UI.Hud
             return new Vector2(x, y);
         }
 
-        private IEnumerator TweenRoutine(CardSlot slot, Vector2 toPos, float toRot, float toScale, float toAlpha, float delay, float duration, bool deactivateAtEnd = false)
+        // 用 DOTween 的 DOVirtual.Float(0→1, 线性) 驱动一个进度量，内部沿用原缓动曲线（EaseOutBack 位姿 + SmoothStep 透明），
+        // 行为与原协程一致，只是把驱动引擎换成 DOTween（unscaled，可被统一 Kill 防叠加）。
+        private Tween BuildTween(CardSlot slot, Vector2 toPos, float toRot, float toScale, float toAlpha, float delay, float duration, bool deactivateAtEnd = false, Action onDone = null)
         {
-            if (delay > 0f)
-            {
-                float d = 0f;
-                while (d < delay)
-                {
-                    d += Time.unscaledDeltaTime;
-                    yield return null;
-                }
-            }
-
             RectTransform rt = slot.Rect;
+            CanvasGroup group = slot.Group;
             Vector2 fromPos = rt.anchoredPosition;
             float fromRot = rt.localEulerAngles.z;
             float fromScale = rt.localScale.x;
-            float fromAlpha = slot.Group != null ? slot.Group.alpha : 1f;
-
+            float fromAlpha = group != null ? group.alpha : 1f;
             float dur = Mathf.Max(0.01f, duration);
-            float t = 0f;
-            while (t < dur)
+
+            Tween tween = DOVirtual.Float(0f, 1f, dur, k =>
             {
-                t += Time.unscaledDeltaTime;
-                float k = Mathf.Clamp01(t / dur);
+                if (rt == null)
+                {
+                    return;
+                }
+
                 float easePos = EaseOutBack(k);
                 float easeFade = Mathf.SmoothStep(0f, 1f, k);
-
                 rt.anchoredPosition = Vector2.LerpUnclamped(fromPos, toPos, easePos);
                 rt.localRotation = Quaternion.Euler(0f, 0f, Mathf.LerpAngle(fromRot, toRot, easePos));
                 float s = Mathf.LerpUnclamped(fromScale, toScale, easePos);
                 rt.localScale = new Vector3(s, s, 1f);
-                if (slot.Group != null)
+                if (group != null)
                 {
-                    slot.Group.alpha = Mathf.Lerp(fromAlpha, toAlpha, easeFade);
+                    group.alpha = Mathf.Lerp(fromAlpha, toAlpha, easeFade);
+                }
+            }).SetEase(Ease.Linear).SetUpdate(true);
+
+            if (delay > 0f)
+            {
+                tween.SetDelay(delay);
+            }
+
+            tween.OnComplete(() =>
+            {
+                if (rt != null)
+                {
+                    rt.anchoredPosition = toPos;
+                    rt.localRotation = Quaternion.Euler(0f, 0f, toRot);
+                    rt.localScale = new Vector3(toScale, toScale, 1f);
                 }
 
-                yield return null;
-            }
+                if (group != null)
+                {
+                    group.alpha = toAlpha;
+                }
 
-            rt.anchoredPosition = toPos;
-            rt.localRotation = Quaternion.Euler(0f, 0f, toRot);
-            rt.localScale = new Vector3(toScale, toScale, 1f);
-            if (slot.Group != null)
-            {
-                slot.Group.alpha = toAlpha;
-            }
+                if (deactivateAtEnd && slot.Go != null)
+                {
+                    slot.Go.SetActive(false);
+                }
 
-            if (deactivateAtEnd && slot.Go != null)
-            {
-                slot.Go.SetActive(false);
-            }
+                slot.Tween = null;
+                onDone?.Invoke();
+            });
 
-            slot.Tween = null;
+            return tween;
         }
 
         private bool IsPointerInsideTrigger()

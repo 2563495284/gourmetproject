@@ -27,6 +27,7 @@ public sealed partial class Character : Luban.BeanBase
         { if(!_buf["maxStomachHeight"].IsNumber) { throw new SerializationException(); }  MaxStomachHeight = _buf["maxStomachHeight"]; }
         { if(!_buf["timelinePool"].IsString) { throw new SerializationException(); }  TimelinePool = _buf["timelinePool"]; }
         { if(!_buf["bossPool"].IsString) { throw new SerializationException(); }  BossPool = _buf["bossPool"]; }
+        { if(!_buf["initialGold"].IsNumber) { throw new SerializationException(); }  InitialGold = _buf["initialGold"]; }
         { var __json0 = _buf["startItems"]; if(!__json0.IsArray) { throw new SerializationException(); } StartItems = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  StartItems.Add(__v0); }   }
     }
 
@@ -76,6 +77,10 @@ public sealed partial class Character : Luban.BeanBase
     /// </summary>
     public readonly string BossPool;
     /// <summary>
+    /// 初始金币
+    /// </summary>
+    public readonly int InitialGold;
+    /// <summary>
     /// 初始携带道具ID列表
     /// </summary>
     public readonly System.Collections.Generic.List<string> StartItems;
@@ -100,6 +105,7 @@ public sealed partial class Character : Luban.BeanBase
         + "maxStomachHeight:" + MaxStomachHeight + ","
         + "timelinePool:" + TimelinePool + ","
         + "bossPool:" + BossPool + ","
+        + "initialGold:" + InitialGold + ","
         + "startItems:" + Luban.StringUtil.CollectionToString(StartItems) + ","
         + "}";
     }

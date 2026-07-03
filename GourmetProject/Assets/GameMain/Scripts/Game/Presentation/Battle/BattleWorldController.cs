@@ -43,13 +43,8 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private SettlementScoreFireView _scoreFire;
         [SerializeField] private TextMesh _messageText;
         [SerializeField] private TextMesh _itemsText;
-        [SerializeField] private WorldButtonView _overviewButton;
-        [SerializeField] private WorldButtonView _eatButton;
-        [SerializeField] private WorldButtonView[] _recipeButtons;
         [SerializeField] private SettlementSequencer _sequencer;
         [SerializeField] private BattleDoodleController _doodle;
-        [SerializeField] private WorldButtonView _clearDoodleButton;
-        [SerializeField] private WorldButtonView _toggleDoodleButton;
 
         // —— 运行时实例化用的 prefab ——
         [Header("Prefabs")]
@@ -84,8 +79,6 @@ namespace GourmetProject.Game.Presentation.Battle
         private bool _serving;
 
         private Action<string> _messageSink;
-        private Action _eatClicked;
-        private Action _overviewClicked;
         private Action<string> _activeItemClicked;
         private Action<DishInstance> _dishClicked;
         private Action _stateChanged;
@@ -115,8 +108,6 @@ namespace GourmetProject.Game.Presentation.Battle
             BattleSession session,
             Action<string> messageSink,
             Action stateChanged,
-            Action eatClicked,
-            Action overviewClicked,
             Action<string> activeItemClicked,
             Action<DishInstance> dishClicked)
         {
@@ -124,8 +115,6 @@ namespace GourmetProject.Game.Presentation.Battle
             _session = session;
             _messageSink = messageSink;
             _stateChanged = stateChanged;
-            _eatClicked = eatClicked;
-            _overviewClicked = overviewClicked;
             _activeItemClicked = activeItemClicked;
             _dishClicked = dishClicked;
             if (_camera == null)
@@ -140,39 +129,17 @@ namespace GourmetProject.Game.Presentation.Battle
             BuildBoard(session.Board);
             EnsureSequencer();
             EnsureScoreFire();
-            ConfigureFixedButtons();
             // 道具（被动/主动）与菜谱面板已迁到常驻屏幕空间 HUD（BattleForm），世界空间不再渲染这些面板；
-            // 世界空间只保留棋盘、菜品、上菜/结算演出与固定按钮。
+            // 世界空间只保留棋盘、菜品、上菜/结算演出与涂鸦表现。
             HideWorldPanels();
             RebuildPlacedPieces();
-            ConfigureDoodleHud();
+            ResetDoodle();
             RefreshAll();
-
-            // 进入美食态：专属世界按钮先瞬隐再渐显，做出「进入美食状态才出现」的淡入。
-            // 渐隐渐显口子在 WorldButtonView.SetVisible(animated)；退出侧见 SetGourmetHudVisible。
-            SetGourmetHudVisible(false, animated: false);
-            SetGourmetHudVisible(true, animated: true);
         }
 
         public void HideWorld()
         {
-            // 退出美食态：先显式收起美食专属按钮（口子在 SetGourmetHudVisible / WorldButtonView.SetVisible），
-            // 再整体停用世界根。这样按钮的显隐语义只由「是否美食态」决定，不再隐式挂靠根节点的 active。
-            SetGourmetHudVisible(false, animated: false);
             gameObject.SetActive(false);
-        }
-
-        /// <summary>
-        /// 集中显隐「美食（战斗）态」专属世界按钮：总览 / 吃 / 涂鸦清空 / 涂鸦显隐。
-        /// 渐隐渐显口子由 <see cref="WorldButtonView.SetVisible"/> 提供，这里只决定谁属于美食态并统一驱动。
-        /// 菜谱按钮已由屏幕空间 RecipeDrawer 取代、恒常隐藏，故不纳入这里的显隐。
-        /// </summary>
-        public void SetGourmetHudVisible(bool visible, bool animated)
-        {
-            _overviewButton?.SetVisible(visible, animated);
-            _eatButton?.SetVisible(visible, animated);
-            _clearDoodleButton?.SetVisible(visible, animated);
-            _toggleDoodleButton?.SetVisible(visible, animated);
         }
 
         public void RefreshAll()
@@ -503,35 +470,6 @@ namespace GourmetProject.Game.Presentation.Battle
             _boardView.Build(board, _cellSize, Gap, OnCellClicked, _boardCellPrefab);
         }
 
-        private void ConfigureFixedButtons()
-        {
-            _overviewButton?.Configure(
-                new Vector2(1.15f, 0.52f),
-                "总览",
-                new Color(0.38f, 0.31f, 0.26f, 1f),
-                () => _overviewClicked?.Invoke());
-
-            _eatButton?.Configure(
-                new Vector2(1.55f, 0.72f),
-                "吃!",
-                new Color(0.95f, 0.35f, 0.12f, 1f),
-                () => _eatClicked?.Invoke());
-
-            if (_recipeButtons == null)
-            {
-                return;
-            }
-
-            // 世界菜谱按钮已由菜单书替代，隐藏场景里原有按钮以免重复展示。
-            foreach (WorldButtonView button in _recipeButtons)
-            {
-                if (button != null)
-                {
-                    button.gameObject.SetActive(false);
-                }
-            }
-        }
-
         private void BuildRecipeBooks()
         {
             foreach (MenuBookWorldView book in _recipeBooks)
@@ -691,7 +629,6 @@ namespace GourmetProject.Game.Presentation.Battle
             string weekLabel = _run.IsEndless ? $"无尽 {_run.WeekIndex - _run.TotalWeeks}" : $"第 {_run.WeekIndex}/{_run.TotalWeeks} 周";
             string limit = _session.MaxServes >= 0 ? $" · 上菜 {_session.ServesUsed}/{_session.MaxServes}" : string.Empty;
             _scoreText.text = $"{weekLabel}  {score}/{_session.RequiredScore}{limit}";
-            _eatButton?.SetInteractable(!_session.IsSettled);
         }
 
         private void RefreshItems()
@@ -889,49 +826,35 @@ namespace GourmetProject.Game.Presentation.Battle
             SetMessage($"{item.Name}{level}：{item.Desc}");
         }
 
-        /// <summary>
-        /// 配置右下角涂鸦 HUD（清空 / 显隐）：两个按钮在 Battle.unity 里预置好、通过 SerializeField 注入，
-        /// 这里只喂外观/回调（位置来自场景），并在每次进入战斗时清空笔迹、复位为可见。
-        /// </summary>
-        private void ConfigureDoodleHud()
+        public string DoodleToggleLabel => _doodle != null && _doodle.IsVisible ? "隐藏涂鸦" : "显示涂鸦";
+
+        /// <summary>每次进入战斗时清空笔迹，并把涂鸦层复位为可见。</summary>
+        public void ResetDoodle()
         {
             if (_doodle == null)
             {
                 return;
             }
 
-            var buttonSize = new Vector2(1.4f, 0.5f);
-
-            _clearDoodleButton?.Configure(
-                buttonSize,
-                "清空涂鸦",
-                new Color(0.62f, 0.4f, 0.32f, 1f),
-                () => _doodle.Clear());
-
-            _toggleDoodleButton?.Configure(
-                buttonSize,
-                "隐藏涂鸦",
-                new Color(0.4f, 0.55f, 0.42f, 1f),
-                ToggleDoodleVisible);
-
             _doodle.Clear();
             _doodle.SetVisible(true);
-            _toggleDoodleButton?.SetLabel("隐藏涂鸦");
         }
 
-        private void ToggleDoodleVisible()
+        public void ClearDoodle()
+        {
+            _doodle?.Clear();
+        }
+
+        public bool ToggleDoodleVisible()
         {
             if (_doodle == null)
             {
-                return;
+                return false;
             }
 
             bool next = !_doodle.IsVisible;
             _doodle.SetVisible(next);
-            if (_toggleDoodleButton != null)
-            {
-                _toggleDoodleButton.SetLabel(next ? "隐藏涂鸦" : "显示涂鸦");
-            }
+            return next;
         }
 
         private void OnCellClicked(GridPos pos)
@@ -1045,15 +968,6 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void SetButtonsInteractable(bool interactable)
         {
-            _eatButton?.SetInteractable(interactable);
-            if (_recipeButtons != null)
-            {
-                foreach (WorldButtonView button in _recipeButtons)
-                {
-                    button?.SetInteractable(interactable);
-                }
-            }
-
             foreach (WorldItemSlotView slot in _activeItemSlots)
             {
                 slot?.SetInteractable(interactable);

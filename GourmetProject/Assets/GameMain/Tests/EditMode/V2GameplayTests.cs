@@ -15,6 +15,15 @@ namespace GourmetProject.Tests
     public class V2GameplayTests
     {
         [Test]
+        public void GameRun_UsesCharacterInitialGold()
+        {
+            GameRun run = NewRun(week: 1, characterId: "glutton_dog");
+
+            Assert.AreEqual(9999, run.Tables.TbCharacter.Get("glutton_dog").InitialGold);
+            Assert.AreEqual(9999, run.Gold);
+        }
+
+        [Test]
         public void ActionScheduleChoices_UseGeneratedGroupSequence()
         {
             GameRun run = NewRun(week: 1);
@@ -31,7 +40,9 @@ namespace GourmetProject.Tests
             Assert.LessOrEqual(tooManyChoices.Count, ActionRandomService.MaxChoiceCount);
             Assert.AreEqual(7f, run.TimelineLengthDays, 1e-4f);
             Assert.AreEqual(1, run.ActionGroupSequence.Count);
-            Assert.IsFalse(string.IsNullOrEmpty(run.ActionGroupSequence[0]));
+            Assert.AreEqual("grp_debug_shop_event", run.ActionGroupSequence[0]);
+            Assert.AreEqual(1, choices.Count);
+            Assert.AreEqual("act_debug_shop_event", choices[0].Action.Id);
 
             var ids = new HashSet<string>();
             foreach (ActionChoice choice in choices)
@@ -54,6 +65,7 @@ namespace GourmetProject.Tests
                 run.AdvanceActionStep();
             }
 
+            Assert.AreEqual("grp_debug_shop_event", run.ActionGroupSequence[0], "The debug shop event rule should fill the first run action.");
             Assert.AreEqual("grp_event_food", run.ActionGroupSequence[1], "The opening event rule should fill the second run action.");
             Assert.AreEqual("grp_reward", run.ActionGroupSequence[2], "The early reward rule should fill the third run action.");
             Assert.AreEqual("grp_reward", run.ActionGroupSequence[9], "The mid reward rule should fill the tenth run action.");
@@ -209,6 +221,7 @@ namespace GourmetProject.Tests
                 ["tbevent"] =
                     "[" +
                     "{\"id\":\"ev_battle\",\"name\":\"挑战\",\"desc\":\"进入挑战\",\"timeCost\":1,\"effectType\":\"FoodBattle\",\"effectValue\":123,\"category\":\"test\",\"weight\":1,\"repeatable\":true,\"preconditions\":\"\"}," +
+                    "{\"id\":\"ev_shop\",\"name\":\"商店\",\"desc\":\"进入商店\",\"timeCost\":1,\"effectType\":\"Shop\",\"effectValue\":0,\"category\":\"test\",\"weight\":1,\"repeatable\":true,\"preconditions\":\"\"}," +
                     "{\"id\":\"ev_gameover\",\"name\":\"坏结局\",\"desc\":\"\",\"timeCost\":1,\"effectType\":\"GameOver\",\"effectValue\":0,\"category\":\"test\",\"weight\":1,\"repeatable\":true,\"preconditions\":\"\"}" +
                     "]",
             });
@@ -216,10 +229,12 @@ namespace GourmetProject.Tests
             var rng = new MaxWeightRandomStream();
 
             EventResolveResult battle = EventService.ResolveImmediate(run, tables.TbEvent.Get("ev_battle"), rng);
+            EventResolveResult shop = EventService.ResolveImmediate(run, tables.TbEvent.Get("ev_shop"), rng);
             EventResolveResult gameOver = EventService.ResolveImmediate(run, tables.TbEvent.Get("ev_gameover"), rng);
 
             Assert.AreEqual(EventFollowUpKind.Battle, battle.FollowUpKind);
             Assert.AreEqual(123, battle.RequiredScore);
+            Assert.AreEqual(EventFollowUpKind.Shop, shop.FollowUpKind);
             Assert.AreEqual(EventFollowUpKind.GameOver, gameOver.FollowUpKind);
         }
 

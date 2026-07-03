@@ -27,6 +27,9 @@ namespace GourmetProject.Game.Orchestration
 
         void ShowNotice(string title, string message, Action onContinue);
 
+        /// <summary>事件「n 选一」：在常驻壳中部就地铺出事件选项卡（与行动选择共用一套中部卡片 UI）。</summary>
+        void ShowEventChoices(string title, string desc, IReadOnlyList<string> options, Action<int> onPick);
+
         void ShowRunResult(bool win, int total);
     }
 
@@ -351,30 +354,48 @@ namespace GourmetProject.Game.Orchestration
             if (options.Count == 0)
             {
                 EventResolveResult result = EventService.ResolveImmediate(_run, ev, rng);
-                RunPersistence.Save(_run);
+                if (ShouldSaveEventResultImmediately(result))
+                {
+                    RunPersistence.Save(_run);
+                }
+
                 ContinueEventResult(ev.Name, ev.Id, result, onDone);
                 return;
             }
 
-            cfg.EventOption a = options[0];
-            cfg.EventOption b = options.Count > 1 ? options[1] : null;
-            var data = new ConfirmDialogData
+            // 事件选项与「行动 n 选一」共用同一套中部卡片 UI（不再走独立 ConfirmDialog 弹层）。
+            var optionTexts = new List<string>(options.Count);
+            foreach (cfg.EventOption option in options)
             {
-                Title = ev.Name,
-                Message = ev.Desc,
-                ConfirmText = a.Text,
-                OnConfirm = () => ApplyEventOption(ev, a, rng, onDone),
-                CancelText = b != null ? b.Text : string.Empty,
-                OnCancel = b != null ? (Action)(() => ApplyEventOption(ev, b, rng, onDone)) : null,
-            };
-            GameApp.UI.OpenUIForm(UIForms.ConfirmDialog, UIForms.GroupDialog, data);
+                optionTexts.Add(option.Text);
+            }
+
+            _view.ShowEventChoices(ev.Name, ev.Desc, optionTexts, index =>
+            {
+                if (index < 0 || index >= options.Count)
+                {
+                    onDone?.Invoke();
+                    return;
+                }
+
+                ApplyEventOption(ev, options[index], rng, onDone);
+            });
         }
 
         private void ApplyEventOption(cfg.GameEvent ev, cfg.EventOption option, IRandomStream rng, Action onDone)
         {
             EventResolveResult result = EventService.ResolveOption(_run, ev, option, rng);
-            RunPersistence.Save(_run);
+            if (ShouldSaveEventResultImmediately(result))
+            {
+                RunPersistence.Save(_run);
+            }
+
             ContinueEventResult(ev.Name, ev.Id, result, onDone);
+        }
+
+        private static bool ShouldSaveEventResultImmediately(EventResolveResult result)
+        {
+            return result == null || result.FollowUpKind != EventFollowUpKind.Shop;
         }
 
         private void ContinueEventResult(string title, string eventId, EventResolveResult result, Action onDone)
@@ -402,6 +423,10 @@ namespace GourmetProject.Game.Orchestration
                     _view.ShowNotice(title, result.Feedback, start);
                     break;
                 }
+
+                case EventFollowUpKind.Shop:
+                    OpenShopThen(onDone);
+                    break;
 
                 case EventFollowUpKind.GameOver:
                     _view.ShowNotice(title, result.Feedback, () =>

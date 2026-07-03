@@ -1,15 +1,22 @@
 Shader "GourmetProject/UIFrostedGlass"
 {
+    // 严格照抄参考工程 Effects/FrostedGlass 的算法：用 _FrostTex 的明暗在 4 级模糊之间做
+    // smoothstep 混合，输出模糊背景。仅额外包了 UI 必需的 Stencil / ClipRect / 顶点色，
+    // 以便作为 UGUI 元素使用。模糊贴图由 FrostedGlassBlurFeature 抓取相机画面产出。
     Properties
     {
         [PerRendererData] _MainTex ("Sprite Texture", 2D) = "white" {}
         _Color ("Tint", Color) = (1,1,1,1)
 
-        // 由 UIFrostedGlass 组件每帧绑定为场景模糊贴图（Overlay Canvas 拿不到 SRP 全局贴图，需声明为材质属性才能可靠绑定）。
-        _FrostedGlassTex ("Blur Texture (auto)", 2D) = "black" {}
-        _TintColor ("Glass Tint", Color) = (1,1,1,1)
-        _TintStrength ("Tint Strength", Range(0,1)) = 0.35
-        _GlassAlpha ("Glass Alpha", Range(0,1)) = 0.9
+        _GrabBlurTexture_0 ("Blur Level 0 (auto)", 2D) = "black" {}
+        _GrabBlurTexture_1 ("Blur Level 1 (auto)", 2D) = "black" {}
+        _GrabBlurTexture_2 ("Blur Level 2 (auto)", 2D) = "black" {}
+        _GrabBlurTexture_3 ("Blur Level 3 (auto)", 2D) = "black" {}
+
+        _FrostTex ("Frost Texture", 2D) = "white" {}
+        _FrostIntensity ("Frost Intensity", Range(0, 1)) = 0.5
+
+        _GlassAlpha ("Glass Alpha", Range(0,1)) = 1
         _Roundness ("Corner Roundness", Range(0,0.5)) = 0
         _Softness ("Corner Softness", Range(0.0001,0.5)) = 0.02
 
@@ -78,8 +85,9 @@ Shader "GourmetProject/UIFrostedGlass"
                 float4 vertex        : SV_POSITION;
                 fixed4 color         : COLOR;
                 float2 texcoord      : TEXCOORD0;
-                float4 worldPosition : TEXCOORD1;
-                float4 screenPos     : TEXCOORD2;
+                float2 frostcoord    : TEXCOORD1;
+                float4 worldPosition : TEXCOORD2;
+                float4 screenPos     : TEXCOORD3;
                 UNITY_VERTEX_OUTPUT_STEREO
             };
 
@@ -89,10 +97,16 @@ Shader "GourmetProject/UIFrostedGlass"
             fixed4 _TextureSampleAdd;
             float4 _ClipRect;
 
-            sampler2D _FrostedGlassTex;
-            float4 _FrostedGlassTex_TexelSize;
-            fixed4 _TintColor;
-            float _TintStrength;
+            sampler2D _GrabBlurTexture_0;
+            sampler2D _GrabBlurTexture_1;
+            sampler2D _GrabBlurTexture_2;
+            sampler2D _GrabBlurTexture_3;
+            float4 _GrabBlurTexture_0_TexelSize;
+
+            sampler2D _FrostTex;
+            float4 _FrostTex_ST;
+            float _FrostIntensity;
+
             float _GlassAlpha;
             float _Roundness;
             float _Softness;
@@ -104,7 +118,8 @@ Shader "GourmetProject/UIFrostedGlass"
                 UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(OUT);
                 OUT.worldPosition = v.vertex;
                 OUT.vertex = UnityObjectToClipPos(v.vertex);
-                OUT.texcoord = TRANSFORM_TEX(v.texcoord, _MainTex);
+                OUT.texcoord = v.texcoord;
+                OUT.frostcoord = TRANSFORM_TEX(v.texcoord, _FrostTex);
                 OUT.screenPos = ComputeScreenPos(OUT.vertex);
                 OUT.color = v.color * _Color;
                 return OUT;
@@ -112,7 +127,6 @@ Shader "GourmetProject/UIFrostedGlass"
 
             float RoundedRectMask(float2 uv)
             {
-                // 0 at center, 1 at edges on each axis
                 float2 p = abs(uv - 0.5) * 2.0;
                 float inner = saturate(1.0 - _Roundness * 2.0);
                 float2 corner = max(p - inner, 0.0) / max(_Roundness * 2.0, 1e-5);
@@ -120,31 +134,45 @@ Shader "GourmetProject/UIFrostedGlass"
                 return 1.0 - smoothstep(1.0 - _Softness, 1.0, dist);
             }
 
-            float2 GetFrostedGlassUV(float4 screenPos)
+            float4 GetGrabScreenPos(float4 screenPos)
             {
-                float2 uv = screenPos.xy / screenPos.w;
-
+                // 抓取的 RenderTexture 在部分图形 API 下相对 UI 几何上下颠倒，按 texel 符号翻正。
                 #if UNITY_UV_STARTS_AT_TOP
-                // RenderTexture screen captures can be stored upside-down relative to UI geometry.
-                if (_FrostedGlassTex_TexelSize.y < 0.0)
+                if (_GrabBlurTexture_0_TexelSize.y < 0.0)
                 {
-                    uv.y = 1.0 - uv.y;
+                    screenPos.y = screenPos.w - screenPos.y;
                 }
                 #endif
-
-                return uv;
+                return screenPos;
             }
 
             fixed4 frag(v2f IN) : SV_Target
             {
-                float2 screenUV = GetFrostedGlassUV(IN.screenPos);
-                fixed4 blurred = tex2D(_FrostedGlassTex, screenUV);
+                // === 与参考 Effects/FrostedGlass 完全一致的核心逻辑 ===
+                float surfSmooth = 1.0 - tex2D(_FrostTex, IN.frostcoord).r * _FrostIntensity;
+                surfSmooth = saturate(surfSmooth);
 
-                fixed3 rgb = lerp(blurred.rgb, _TintColor.rgb, saturate(_TintStrength * _TintColor.a));
-                rgb *= IN.color.rgb;
+                float4 grabPos = GetGrabScreenPos(IN.screenPos);
+                half4 ref00 = tex2Dproj(_GrabBlurTexture_0, grabPos);
+                half4 ref01 = tex2Dproj(_GrabBlurTexture_1, grabPos);
+                half4 ref02 = tex2Dproj(_GrabBlurTexture_2, grabPos);
+                half4 ref03 = tex2Dproj(_GrabBlurTexture_3, grabPos);
 
-                // 半透明磨砂：整体不透明度由 _GlassAlpha 主控，让底下清晰世界略微透出，
-                // 不再受 _MainTex（背景 Image 无 sprite 时为白）强制拉成不透明。
+                float step00 = smoothstep(0.75, 1.00, surfSmooth);
+                float step01 = smoothstep(0.5, 0.75, surfSmooth);
+                float step02 = smoothstep(0.05, 0.5, surfSmooth);
+                float step03 = smoothstep(0.00, 0.05, surfSmooth);
+
+                half4 refraction = lerp(
+                    ref03,
+                    lerp(lerp(lerp(ref03, ref02, step02), ref01, step01), ref00, step00),
+                    step03);
+                // === 核心逻辑结束 ===
+
+                // 抓取的是 HDR 相机画面，UI 目标缓冲为 LDR，压回 0-1。
+                fixed3 rgb = saturate(refraction.rgb);
+
+                // UI 包装：顶点色 alpha × 玻璃不透明度（默认 1 = 参考的不透明玻璃）+ 圆角 + 裁剪。
                 fixed4 color = fixed4(rgb, IN.color.a * _GlassAlpha);
                 color.a *= RoundedRectMask(IN.texcoord);
 

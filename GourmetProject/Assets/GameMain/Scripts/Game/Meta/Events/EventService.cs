@@ -9,6 +9,7 @@ namespace GourmetProject.Game.Meta
     {
         None,
         Battle,
+        Shop,
         GameOver,
         Victory,
     }
@@ -41,6 +42,11 @@ namespace GourmetProject.Game.Meta
         public static EventResolveResult Battle(string feedback, int requiredScore, string modifier)
         {
             return new EventResolveResult(feedback, EventFollowUpKind.Battle, requiredScore, modifier);
+        }
+
+        public static EventResolveResult Shop(string feedback)
+        {
+            return new EventResolveResult(feedback, EventFollowUpKind.Shop, 0, string.Empty);
         }
 
         public static EventResolveResult GameOver(string feedback)
@@ -161,6 +167,13 @@ namespace GourmetProject.Game.Meta
                 {
                     string feedback = string.IsNullOrEmpty(effectParam) ? fallback : effectParam;
                     return EventResolveResult.GameOver(feedback);
+                }
+
+                case "Shop":
+                case "OpenShop":
+                {
+                    string feedback = string.IsNullOrEmpty(effectParam) ? fallback : effectParam;
+                    return EventResolveResult.Shop(feedback);
                 }
 
                 case "Victory":

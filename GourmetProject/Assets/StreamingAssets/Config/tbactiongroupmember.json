@@ -134,5 +134,13 @@
     "weight": 70,
     "minCostDays": 1,
     "maxCostDays": 1
+  },
+  {
+    "id": "agm_debug_shop_event",
+    "groupId": "grp_debug_shop_event",
+    "actionId": "act_debug_shop_event",
+    "weight": 100,
+    "minCostDays": 1,
+    "maxCostDays": 1
   }
 ]

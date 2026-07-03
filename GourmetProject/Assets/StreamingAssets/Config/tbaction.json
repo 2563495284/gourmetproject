@@ -378,5 +378,24 @@
     "rewardPackageId": "",
     "goldCurveId": "",
     "hiddenScoreBonus": 0
+  },
+  {
+    "id": "act_debug_shop_event",
+    "name": "神秘商贩",
+    "desc": "测试用事件：触发后进入商店。",
+    "actionType": 0,
+    "costDays": 1,
+    "weight": 100,
+    "repeatable": true,
+    "preconditions": "",
+    "payloadType": "",
+    "payloadValue": 0,
+    "payloadParam": "",
+    "linkId": "ev_debug_shop",
+    "foodDifficulty": "Normal",
+    "rewardKind": 0,
+    "rewardPackageId": "",
+    "goldCurveId": "",
+    "hiddenScoreBonus": 0
   }
 ]

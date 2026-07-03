@@ -70,5 +70,17 @@
     "weight": 50,
     "repeatable": true,
     "preconditions": ""
+  },
+  {
+    "id": "ev_debug_shop",
+    "name": "神秘商贩",
+    "desc": "你听说附近有一间临时食材店。",
+    "timeCost": 1,
+    "effectType": "Shop",
+    "effectValue": 0,
+    "category": "debug",
+    "weight": 0,
+    "repeatable": true,
+    "preconditions": "minWeek:999"
   }
 ]

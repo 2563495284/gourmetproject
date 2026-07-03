@@ -1,6 +1,6 @@
 using System;
-using System.Collections;
 using System.Globalization;
+using DG.Tweening;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Flow;
 using GourmetProject.Game.Meta;
@@ -26,6 +26,8 @@ namespace GourmetProject.Game.UI.Meta
         private const string NodeEventFooter = "节点事件";
         private const string DefaultBossTitle = "周末盛宴\n恶魔";
         private const float GlowPadding = 48f;
+        private const float DefaultHideDuration = 0.2f;
+        private const float DefaultPickEffectHold = 0.2f;
 
         private static readonly Color PanelColor = new Color(1f, 0.94f, 0.78f, 0.9f);
         private static readonly Color FooterActionColor = new Color(1f, 0.94f, 0.78f, 0.92f);
@@ -49,12 +51,12 @@ namespace GourmetProject.Game.UI.Meta
 
         [Header("Effects - Timing")]
         [SerializeField] private float _showDuration = 0.22f;
-        [SerializeField] private float _hideDuration = 0.18f;
-        [SerializeField] private float _selectHold = 0.08f;
+        [SerializeField] private float _hideDuration = DefaultHideDuration;
+        [SerializeField] private float _selectHold = DefaultPickEffectHold;
 
         [Header("Effects - Glow")]
-        [SerializeField] private Color _hoverColor = new Color(1f, 0.85f, 0.4f, 0.9f);
-        [SerializeField] private Color _selectedColor = new Color(0.4f, 1f, 0.72f, 1f);
+        [SerializeField] private Color _hoverColor = Color.blue;
+        [SerializeField] private Color _selectedColor = Color.green;
         [SerializeField] private float _glowFadeSpeed = 14f;
 
         [Header("Effects - Particles")]
@@ -70,13 +72,24 @@ namespace GourmetProject.Game.UI.Meta
         private bool _selectedGlow;
         private bool _isHidden;
         private Sprite _particleSprite;
-        private Coroutine _scaleAnim;
+        private Tween _scaleTween;
         private Material _glowMat;
         private static readonly int QuadSizeId = Shader.PropertyToID("_QuadSize");
+
+        public float PickEffectHold => Mathf.Max(DefaultPickEffectHold, _selectHold);
 
         public void Bind(cfg.GameEvent ev, Action onPick)
         {
             BindNodeCard(ev?.Name ?? "事件", ev?.Desc ?? string.Empty, "card_action_event", onPick);
+        }
+
+        /// <summary>事件「n 选一」单个选项卡：卡名 = 选项文案，页脚标注为节点事件，无耗时行。</summary>
+        public void BindEventOption(string optionText, Action onPick)
+        {
+            ApplyCommon(string.IsNullOrWhiteSpace(optionText) ? "选项" : optionText, string.Empty, onPick);
+            SetFooter(NodeEventFooter, true, FooterNodeColor);
+            SetArt(Resources.Load<Sprite>("Sprites/UI/card_action_event"));
+            SetRewardBadge(false);
         }
 
         public void Bind(cfg.TimelineNode node, Action onPick)
@@ -359,15 +372,25 @@ namespace GourmetProject.Game.UI.Meta
             ResetGlow();
             transform.localScale = new Vector3(1f, 0f, 1f);
             UpdateGlowQuadSize();
-            StartCoroutine(ShowRoutine());
         }
 
         private void OnDisable()
         {
+            KillScaleTween();
+
             if (_glowMat != null)
             {
                 Destroy(_glowMat);
                 _glowMat = null;
+            }
+        }
+
+        private void KillScaleTween()
+        {
+            if (_scaleTween != null)
+            {
+                _scaleTween.Kill();
+                _scaleTween = null;
             }
         }
 
@@ -405,16 +428,86 @@ namespace GourmetProject.Game.UI.Meta
             _hover = false;
         }
 
-        /// <summary>反向隐藏后销毁（供持有方清场时调用，选中卡自身已先隐藏）。</summary>
-        public void PlayHideThenDestroy()
+        // 入场：Y 方向 0→1 弹出，由持有方在转场完成后显式触发。
+        public Tween PlayShow()
+        {
+            KillScaleTween();
+            _isHidden = false;
+            transform.localScale = new Vector3(1f, 0f, 1f);
+            SetPickInteractable(false);
+            _scaleTween = transform.DOScaleY(1f, Mathf.Max(0.01f, _showDuration))
+                .SetEase(Ease.OutBack)
+                .SetUpdate(true)
+                .OnComplete(() =>
+                {
+                    transform.localScale = Vector3.one;
+                    SetPickInteractable(true);
+                    _scaleTween = null;
+                });
+            return _scaleTween;
+        }
+
+        // 隐藏：Y 方向收拢到 0，完成后回调。
+        private Tween PlayHide(Action onComplete, float delay = 0f)
+        {
+            if (_isHidden)
+            {
+                onComplete?.Invoke();
+                return null;
+            }
+
+            KillScaleTween();
+            SetPickInteractable(false);
+            Sequence seq = DOTween.Sequence().SetUpdate(true);
+            if (delay > 0f)
+            {
+                seq.AppendInterval(delay);
+            }
+
+            float hideDuration = Mathf.Max(DefaultHideDuration, _hideDuration);
+            seq.AppendCallback(() =>
+            {
+                _selectedGlow = false;
+                _hover = false;
+            });
+            seq.Append(transform.DOScaleY(0f, hideDuration).SetEase(Ease.InQuad));
+            if (_glowBorder != null)
+            {
+                float startAlpha = _glowBorder.color.a;
+                seq.Join(DOVirtual.Float(startAlpha, 0f, hideDuration, alpha =>
+                {
+                    if (_glowBorder == null)
+                    {
+                        return;
+                    }
+
+                    Color c = _glowBorder.color;
+                    c.a = alpha;
+                    _glowBorder.color = c;
+                }).SetEase(Ease.InQuad));
+            }
+
+            _scaleTween = seq
+                .OnComplete(() =>
+                {
+                    transform.localScale = new Vector3(1f, 0f, 1f);
+                    _isHidden = true;
+                    _scaleTween = null;
+                    onComplete?.Invoke();
+                });
+            return _scaleTween;
+        }
+
+        /// <summary>反向隐藏后销毁；delay 由持有方统一传入，保证同组卡牌同一时间开始隐藏。</summary>
+        public Tween PlayHideThenDestroy(float delay = 0f)
         {
             if (!isActiveAndEnabled || _isHidden)
             {
                 Destroy(gameObject);
-                return;
+                return null;
             }
 
-            StartCoroutine(HideThenDestroyRoutine());
+            return PlayHide(() => Destroy(gameObject), delay);
         }
 
         private void OnPickClicked()
@@ -428,54 +521,10 @@ namespace GourmetProject.Game.UI.Meta
             _selectedGlow = true;
             _hover = false;
             EmitParticles();
-            StartCoroutine(PickRoutine());
-        }
 
-        private IEnumerator PickRoutine()
-        {
-            yield return WaitUnscaled(_selectHold);
-            yield return HideRoutine();
             Action cb = _onPick;
             _onPick = null;
             cb?.Invoke();
-        }
-
-        private IEnumerator HideThenDestroyRoutine()
-        {
-            yield return HideRoutine();
-            Destroy(gameObject);
-        }
-
-        private IEnumerator ShowRoutine()
-        {
-            float t = 0f;
-            while (t < _showDuration)
-            {
-                t += Time.unscaledDeltaTime;
-                float p = Mathf.Clamp01(t / _showDuration);
-                float y = EaseOutBack(p);
-                transform.localScale = new Vector3(1f, y, 1f);
-                yield return null;
-            }
-
-            transform.localScale = Vector3.one;
-        }
-
-        private IEnumerator HideRoutine()
-        {
-            float startY = transform.localScale.y;
-            float t = 0f;
-            while (t < _hideDuration)
-            {
-                t += Time.unscaledDeltaTime;
-                float p = Mathf.Clamp01(t / _hideDuration);
-                float y = Mathf.Lerp(startY, 0f, EaseInQuad(p));
-                transform.localScale = new Vector3(1f, y, 1f);
-                yield return null;
-            }
-
-            transform.localScale = new Vector3(1f, 0f, 1f);
-            _isHidden = true;
         }
 
         private void EmitParticles()
@@ -515,35 +564,41 @@ namespace GourmetProject.Game.UI.Meta
             img.raycastTarget = false;
             img.color = _particleColor;
 
-            StartCoroutine(ParticleRoutine(rt, img, start, dir));
+            PlayParticleTween(rt, img, start, dir);
         }
 
-        private IEnumerator ParticleRoutine(RectTransform rt, Image img, Vector2 start, Vector2 dir)
+        private void PlayParticleTween(RectTransform rt, Image img, Vector2 start, Vector2 dir)
         {
             Vector2 end = start + dir * _particleDistance;
             float baseScale = UnityEngine.Random.Range(0.6f, 1.25f);
-            float t = 0f;
-            while (t < _particleLifetime && rt != null)
-            {
-                t += Time.unscaledDeltaTime;
-                float p = Mathf.Clamp01(t / _particleLifetime);
-                rt.anchoredPosition = Vector2.Lerp(start, end, 1f - (1f - p) * (1f - p));
-                float s = baseScale * (1f - 0.5f * p);
-                rt.localScale = new Vector3(s, s, 1f);
-                if (img != null)
+            float lifetime = Mathf.Max(0.01f, _particleLifetime);
+            DOVirtual.Float(0f, 1f, lifetime, p =>
                 {
-                    Color c = _particleColor;
-                    c.a = _particleColor.a * (1f - p);
-                    img.color = c;
-                }
+                    if (rt == null)
+                    {
+                        return;
+                    }
 
-                yield return null;
-            }
-
-            if (rt != null)
-            {
-                Destroy(rt.gameObject);
-            }
+                    rt.anchoredPosition = Vector2.Lerp(start, end, 1f - (1f - p) * (1f - p));
+                    float s = baseScale * (1f - 0.5f * p);
+                    rt.localScale = new Vector3(s, s, 1f);
+                    if (img != null)
+                    {
+                        Color c = _particleColor;
+                        c.a = _particleColor.a * (1f - p);
+                        img.color = c;
+                    }
+                })
+                .SetEase(Ease.Linear)
+                .SetUpdate(true)
+                .SetTarget(rt)
+                .OnComplete(() =>
+                {
+                    if (rt != null)
+                    {
+                        Destroy(rt.gameObject);
+                    }
+                });
         }
 
         private Sprite ParticleSprite()
@@ -602,6 +657,14 @@ namespace GourmetProject.Game.UI.Meta
             EnsureGlowMaterial();
         }
 
+        private void SetPickInteractable(bool interactable)
+        {
+            if (_pickButton != null)
+            {
+                _pickButton.interactable = interactable;
+            }
+        }
+
         // 外发光 shader 需要知道本实例 quad 的真实像素尺寸；实际游戏里卡牌会被布局改尺寸，
         // 因此不能沿用材质里写死的 _QuadSize，改用每实例材质并逐帧回填真实 rect 尺寸。
         private void EnsureGlowMaterial()
@@ -645,29 +708,6 @@ namespace GourmetProject.Game.UI.Meta
             rt.offsetMin = Vector2.zero;
             rt.offsetMax = Vector2.zero;
             rt.localScale = Vector3.one;
-        }
-
-        private static IEnumerator WaitUnscaled(float seconds)
-        {
-            float t = 0f;
-            while (t < seconds)
-            {
-                t += Time.unscaledDeltaTime;
-                yield return null;
-            }
-        }
-
-        private static float EaseOutBack(float p)
-        {
-            const float c1 = 1.70158f;
-            const float c3 = c1 + 1f;
-            float x = p - 1f;
-            return 1f + c3 * x * x * x + c1 * x * x;
-        }
-
-        private static float EaseInQuad(float p)
-        {
-            return p * p;
         }
 
     }

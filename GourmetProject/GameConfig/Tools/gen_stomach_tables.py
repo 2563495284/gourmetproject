@@ -75,13 +75,13 @@ def rewrite_characters():
     ws.title = "character"
     ws.append(["##var", "id", "name", "desc", "portrait", "initialRecipeId",
                "initialFragmentId", "maxStomachWidth", "maxStomachHeight",
-               "timelinePool", "bossPool", "startItems"])
+               "timelinePool", "bossPool", "initialGold", "startItems"])
     ws.append(["##comment", "配置ID", "角色名称", "角色描述", "角色立绘资源路径", "初始菜谱ID",
                "初始胃碎片ID", "胃最大宽度", "胃最大高度",
                "可用行动轴池，空=全部，逗号分隔 timeline.id",
-               "可用Boss池，空=全部，逗号分隔 boss.id", "初始携带道具ID列表"])
+               "可用Boss池，空=全部，逗号分隔 boss.id", "初始金币", "初始携带道具ID列表"])
     ws.append(["##type", "string", "string", "string", "string", "string",
-               "string", "int", "int", "string", "string", "list,string"])
+               "string", "int", "int", "string", "string", "int", "list,string"])
     for r in data:
         def value(name, default=""):
             i = index.get(name)
@@ -101,6 +101,7 @@ def rewrite_characters():
             value("maxStomachHeight", 4),
             value("timelinePool"),
             value("bossPool"),
+            value("initialGold", 9999),
             value("startItems"),
         ])
     wb.save(src)

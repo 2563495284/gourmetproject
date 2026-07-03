@@ -1,0 +1,12 @@
+---
+description: Unity UI 动画统一使用 DOTween，并等待组级动画完成后推进状态
+globs: Assets/GameMain/Scripts/Game/UI/**/*.cs
+alwaysApply: false
+---
+
+# UI DOTween Animation
+
+- UI 表现动画默认使用 DOTween，不新增 `StartCoroutine` / `IEnumerator` 驱动逐帧动画。
+- 入场动画不要放在 `OnEnable` 自动播放；由持有方在面板淡入、场景转场或遮罩动画完成后显式触发。
+- 多个 UI 元素一起隐藏时，由父级用 `Sequence.Join` 等待全部隐藏 Tween 完成，再切换界面、推进流程或切场景状态。
+- 选中特效只在被选中的元素上播放；未选中的同组元素仍要参与统一隐藏动画。

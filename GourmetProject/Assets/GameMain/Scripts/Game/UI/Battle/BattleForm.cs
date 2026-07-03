@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DG.Tweening;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Flow;
@@ -28,9 +29,9 @@ namespace GourmetProject.Game.UI.Battle
 {
     /// <summary>
     /// 局外周循环编排枢纽 + 局内战斗结果壳。
-    /// 周循环模型（行动轴）：每周随机一条行动轴 → 反复「n 选一行动（最多 3 个）」推进天数 → 经过节点按序触发（利息/商店/Boss/事件）
-    /// → 行动轴走完进入下一周；美食行动与 Boss 节点会启动局内战斗（复用 BattleWorldController / BattleSession）。
-    /// 失败：常规美食/Boss 挑战不达标或事件直接失败。胜利：通关最终周 Boss。
+    /// 常驻壳（左列信息 / 右列道具 / 顶部行动轴 / 底部扇形菜谱）进入玩法后全程常驻，只有中部内容区在五态间切换：
+    /// 行动选择(含事件 n 选一) / 商店 / 编辑菜谱 / 美食战斗 / 棋盘编辑。切换只对中部内容区做 DOTween 渐隐渐显
+    /// （<see cref="UITransition.FadeSwap"/>），常驻壳不参与动画；美食 / 棋盘态在同一 Battle 场景内透出世界空间表现。
     /// </summary>
     public sealed class BattleForm : UGuiForm, IWeekLoopView
     {
@@ -38,12 +39,28 @@ namespace GourmetProject.Game.UI.Battle
         private const int PassiveSlotCapacity = 10;
         private const int PassiveSlotColumns = 2;
 
+        /// <summary>常驻壳中部内容区的五种状态。</summary>
+        public enum GameplayView
+        {
+            None,
+            ActionSelect,
+            Shop,
+            RecipeEdit,
+            Food,
+            BoardEdit,
+        }
+
         /// <summary>当前打开的战斗界面，供各弹窗回调推进周循环。</summary>
         public static BattleForm Active { get; private set; }
 
         [Header("HUD Frame")]
         [SerializeField] private GameObject _hudFrame;
         [SerializeField] private GameObject _backdrop;
+
+        [Header("Center (切换动画区)")]
+        [Tooltip("中部内容区根的 CanvasGroup：五态切换时对它做渐隐渐显；常驻壳不在其下。")]
+        [SerializeField] private CanvasGroup _center;
+        [SerializeField] private Text _centerTitleText;
 
         [Header("Left Column")]
         [SerializeField] private Text _weekText;
@@ -65,6 +82,9 @@ namespace GourmetProject.Game.UI.Battle
         [Header("Shop (center)")]
         [SerializeField] private ShopForm _shopPanel;
 
+        [Header("Recipe Edit (center)")]
+        [SerializeField] private RecipeEditPanel _recipeEditPanel;
+
         [Header("Right Column - Items")]
         [SerializeField] private RectTransform _passiveItemsContainer;
         [SerializeField] private RunItemSlotView _itemSlotPrefab;
@@ -73,9 +93,20 @@ namespace GourmetProject.Game.UI.Battle
         [Header("Recipe View")]
         [SerializeField] private RecipeView _recipeView;
 
+        [Header("Food Actions")]
+        [SerializeField] private GameObject _foodActions;
+        [SerializeField] private Button _overviewButton;
+        [SerializeField] private Button _eatButton;
+        [SerializeField] private Button _doodleClearButton;
+        [SerializeField] private Button _doodleToggleButton;
+        [SerializeField] private Text _doodleToggleText;
+
         private readonly List<RunItemSlotView> _passiveSlots = new();
         private readonly List<WeekEventCardView> _cards = new();
         private bool _inBattle;
+        private GameplayView _current = GameplayView.None;
+        private Tween _pendingCardShowTween;
+        private Tween _cardsHideTween;
 
         private GameRun _run;
         private BattleSession _session;
@@ -104,6 +135,26 @@ namespace GourmetProject.Game.UI.Battle
             if (_skipButton != null)
             {
                 _skipButton.onClick.AddListener(() => OnActionSelectionPicked(null));
+            }
+
+            if (_overviewButton != null)
+            {
+                _overviewButton.onClick.AddListener(OnOverviewClicked);
+            }
+
+            if (_eatButton != null)
+            {
+                _eatButton.onClick.AddListener(OnEatClicked);
+            }
+
+            if (_doodleClearButton != null)
+            {
+                _doodleClearButton.onClick.AddListener(OnDoodleClearClicked);
+            }
+
+            if (_doodleToggleButton != null)
+            {
+                _doodleToggleButton.onClick.AddListener(OnDoodleToggleClicked);
             }
 
             HideHud();
@@ -136,6 +187,8 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             _loop = null;
+            KillPendingCardShow();
+            KillCardsHideTween();
             _world?.HideWorld();
             base.OnClose(isShutdown, userData);
         }
@@ -192,109 +245,179 @@ namespace GourmetProject.Game.UI.Battle
             }
         }
 
-        /// <summary>周循环请求「n 选一行动」：在常驻 HUD 中部就地展示行动选择（不再打开独立弹层）。</summary>
+        /// <summary>周循环请求「n 选一行动」：在常驻壳中部就地展示行动选择。</summary>
         public void OpenWeekMap()
         {
             ShowActionSelection();
         }
 
-        /// <summary>周循环请求商店：在常驻壳中部就地展示商店四区（不再打开独立弹层）。</summary>
+        /// <summary>周循环请求商店：在常驻壳中部就地展示商店四区。</summary>
         public void OpenShop()
         {
-            ShowShop();
+            SwitchTo(GameplayView.Shop);
         }
 
-        // —— 常驻 HUD 框 + 行动选择（中部内容区）——
+        // —— 中部五态切换中枢 ——
 
-        /// <summary>展示行动选择：显示常驻框、刷新左右栏与行动轴，铺出当前行动组的 n 选一卡片。</summary>
-        private void ShowActionSelection()
+        /// <summary>
+        /// 切到某一中部态：只对中部内容区 <see cref="_center"/> 做 DOTween 渐隐渐显，常驻壳（左/右/行动轴/菜谱框）不动。
+        /// 内容交换（隐藏旧面板 + 启用新面板 + 重建）集中在淡出完成后的 <see cref="ApplyView"/> 里执行。
+        /// </summary>
+        private void SwitchTo(GameplayView next, Action buildCenter = null, Action onShown = null)
         {
             if (_run == null)
             {
                 return;
             }
 
-            _inBattle = false;
-
-            if (_hudFrame != null)
-            {
-                _hudFrame.SetActive(true);
-            }
-
-            if (_backdrop != null)
-            {
-                _backdrop.SetActive(true);
-            }
-
-            HideShopPanel();
-            SetActionAxisVisible(true);
-            RefreshPersistent();
-            _actionAxisBar?.Build(_run);
-
-            if (_recipeView != null)
-            {
-                _recipeView.SetState(RecipeView.RecipeState.Collapsed);
-                BuildRecipeBooks(showAdd: false, onAdd: null);
-            }
-
-            if (_actionSelectionPanel != null)
-            {
-                _actionSelectionPanel.SetActive(true);
-            }
-
-            BuildActionCards();
+            KillPendingCardShow();
+            _current = next;
+            _inBattle = next == GameplayView.Food;
+            UITransition.FadeSwap(_center, () => ApplyView(next, buildCenter), onDone: onShown);
         }
 
-        /// <summary>商店态：常驻壳（左列 / 行动轴 / 右列）保持，中部换成商店四区，底部由商店自带菜谱条承载。</summary>
-        private void ShowShop()
+        /// <summary>在淡出完成后落地某一态：切换中部面板显隐 + 配置常驻壳元素（行动轴/菜谱框/白底/世界）+ 重建内容。</summary>
+        private void ApplyView(GameplayView view, Action buildCenter)
         {
             if (_run == null)
             {
                 return;
             }
 
-            _inBattle = false;
-
             if (_hudFrame != null)
             {
                 _hudFrame.SetActive(true);
             }
 
-            if (_backdrop != null)
-            {
-                _backdrop.SetActive(true);
-            }
+            bool actionSel = view == GameplayView.ActionSelect;
+            bool shop = view == GameplayView.Shop;
+            bool recipeEdit = view == GameplayView.RecipeEdit;
+            bool worldView = view == GameplayView.Food || view == GameplayView.BoardEdit;
 
             if (_actionSelectionPanel != null)
             {
-                _actionSelectionPanel.SetActive(false);
-            }
-
-            SetActionAxisVisible(true);
-            RefreshPersistent();
-            _actionAxisBar?.Build(_run);
-
-            // 商店态：底部扇形菜谱条完全展开，并在末尾追加「购买空菜谱」卡。
-            if (_recipeView != null)
-            {
-                _recipeView.SetState(RecipeView.RecipeState.Shown);
-                BuildShopRecipeBooks();
+                _actionSelectionPanel.SetActive(actionSel);
             }
 
             if (_shopPanel != null)
             {
-                _shopPanel.gameObject.SetActive(true);
-                _shopPanel.Open(OnShopLeave, RefreshShopPersistent, OnShopEditorToggled, OpenBoardEdit);
+                _shopPanel.gameObject.SetActive(shop);
+            }
+
+            if (_recipeEditPanel != null)
+            {
+                _recipeEditPanel.gameObject.SetActive(recipeEdit);
+            }
+
+            // 行动轴：仅行动选择 / 商店常驻显示；编辑菜谱 / 美食 / 棋盘态隐藏。
+            SetActionAxisVisible(actionSel || shop);
+            SetFoodActionsVisible(view == GameplayView.Food);
+
+            // 白底：世界态（美食 / 棋盘）关闭，让 Battle 场景世界空间透出；其余态开启。
+            if (_backdrop != null)
+            {
+                _backdrop.SetActive(!worldView);
+            }
+
+            if (_recipeView != null)
+            {
+                RecipeView.RecipeState recipeState = view switch
+                {
+                    GameplayView.ActionSelect => RecipeView.RecipeState.Collapsed,
+                    GameplayView.Shop => RecipeView.RecipeState.Collapsed,
+                    GameplayView.Food => RecipeView.RecipeState.Shown,
+                    _ => RecipeView.RecipeState.Hidden,
+                };
+                _recipeView.SetState(recipeState);
+            }
+
+            RefreshPersistent();
+
+            switch (view)
+            {
+                case GameplayView.ActionSelect:
+                    _actionAxisBar?.Build(_run);
+                    BuildRecipeBooks(showAdd: false, onAdd: null);
+                    buildCenter?.Invoke();
+                    break;
+                case GameplayView.Shop:
+                    _actionAxisBar?.Build(_run);
+                    BuildShopRecipeBooks();
+                    if (_shopPanel != null)
+                    {
+                        _shopPanel.Open(OnShopLeave, RefreshShopPersistent, OpenRecipeEdit, OpenBoardEdit);
+                    }
+
+                    break;
+                case GameplayView.RecipeEdit:
+                    if (_recipeEditPanel != null)
+                    {
+                        _recipeEditPanel.Open(_run, OpenShopFromEdit, RefreshShopPersistent);
+                    }
+
+                    break;
+                case GameplayView.Food:
+                    BuildBattleRecipe();
+                    break;
+                case GameplayView.BoardEdit:
+                    buildCenter?.Invoke();
+                    break;
             }
         }
 
+        // —— 行动选择态（含事件 n 选一，共用中部卡片）——
+
+        private void ShowActionSelection()
+        {
+            SwitchTo(GameplayView.ActionSelect, () =>
+            {
+                SetCenterTitle("选择行动");
+                BuildActionCards();
+            }, PlayShowCardsWhenReady);
+        }
+
+        /// <summary>事件「n 选一」：与行动选择共用中部卡片 UI，事件名/描述作为中部标题，每个选项一张卡。</summary>
+        public void ShowEventChoices(string title, string desc, IReadOnlyList<string> options, Action<int> onPick)
+        {
+            string prompt = string.IsNullOrWhiteSpace(desc) ? title : $"{title}\n{desc}";
+            SwitchTo(GameplayView.ActionSelect, () =>
+            {
+                SetCenterTitle(prompt);
+                BuildEventCards(options, onPick);
+            }, PlayShowCardsWhenReady);
+        }
+
+        private void SetCenterTitle(string text)
+        {
+            if (_centerTitleText != null)
+            {
+                _centerTitleText.text = text ?? string.Empty;
+            }
+        }
+
+        // —— 商店 / 编辑菜谱 / 棋盘编辑 入口 ——
+
         private void OnShopLeave()
         {
-            HideShopPanel();
+            if (_shopPanel != null)
+            {
+                _shopPanel.gameObject.SetActive(false);
+            }
+
             OnShopClosed();
         }
 
-        /// <summary>购买碎片包后进入棋盘编辑页（世界空间）：隐藏商店/白底/行动轴，露出棋盘手动拼贴。</summary>
+        private void OpenRecipeEdit()
+        {
+            SwitchTo(GameplayView.RecipeEdit);
+        }
+
+        private void OpenShopFromEdit()
+        {
+            SwitchTo(GameplayView.Shop);
+        }
+
+        /// <summary>购买碎片包后进入棋盘编辑态（世界空间）：隐藏商店/行动轴，露出棋盘手动拼贴。</summary>
         private void OpenBoardEdit()
         {
             BattleWorldController world = _world ?? BattleWorldController.Instance;
@@ -303,50 +426,13 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            HideShopPanel();
-            if (_backdrop != null)
-            {
-                _backdrop.SetActive(false);
-            }
-
-            SetActionAxisVisible(false);
-            _recipeView?.SetState(RecipeView.RecipeState.Hidden);
-
-            world.BeginBoardEdit(_run, _run.PendingFragmentPack, OnBoardEditDone);
+            SwitchTo(GameplayView.BoardEdit, () => world.BeginBoardEdit(_run, _run.PendingFragmentPack, OnBoardEditDone));
         }
 
         private void OnBoardEditDone()
         {
             (_world ?? BattleWorldController.Instance)?.HideWorld();
-            ShowShop();
-        }
-
-        /// <summary>进入(true)/退出(false)全屏编辑菜谱态：编辑态隐藏行动轴（左右壳仍常驻）。</summary>
-        private void OnShopEditorToggled(bool editing)
-        {
-            SetActionAxisVisible(!editing);
-
-            // 进入全屏编辑菜谱态时隐藏底部扇形菜谱条，退出时恢复展开并重建。
-            if (_recipeView != null)
-            {
-                if (editing)
-                {
-                    _recipeView.SetState(RecipeView.RecipeState.Hidden);
-                }
-                else
-                {
-                    _recipeView.SetState(RecipeView.RecipeState.Shown);
-                    BuildShopRecipeBooks();
-                }
-            }
-        }
-
-        private void HideShopPanel()
-        {
-            if (_shopPanel != null)
-            {
-                _shopPanel.gameObject.SetActive(false);
-            }
+            SwitchTo(GameplayView.Shop);
         }
 
         private void SetActionAxisVisible(bool visible)
@@ -357,36 +443,11 @@ namespace GourmetProject.Game.UI.Battle
             }
         }
 
-        /// <summary>进入战斗：常驻框覆盖在世界空间棋盘之上，隐藏行动选择与白底，菜谱抽屉锁定展开并接上菜。</summary>
-        private void ShowBattleHud()
+        private void SetFoodActionsVisible(bool visible)
         {
-            _inBattle = true;
-
-            if (_hudFrame != null)
+            if (_foodActions != null)
             {
-                _hudFrame.SetActive(true);
-            }
-
-            // 关闭全屏白底，让世界空间棋盘透出；隐藏行动选择卡片与行动轴。
-            if (_backdrop != null)
-            {
-                _backdrop.SetActive(false);
-            }
-
-            if (_actionSelectionPanel != null)
-            {
-                _actionSelectionPanel.SetActive(false);
-            }
-
-            HideShopPanel();
-            SetActionAxisVisible(true);
-            _actionAxisBar?.Build(_run);
-            RefreshPersistent();
-
-            if (_recipeView != null)
-            {
-                _recipeView.SetState(RecipeView.RecipeState.Shown);
-                BuildBattleRecipe();
+                _foodActions.SetActive(visible);
             }
         }
 
@@ -459,6 +520,39 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             RefreshItems();
+            RefreshFoodActions();
+        }
+
+        private void RefreshFoodActions()
+        {
+            bool food = _current == GameplayView.Food;
+            BattleWorldController world = _world ?? BattleWorldController.Instance;
+
+            if (_overviewButton != null)
+            {
+                _overviewButton.interactable = food;
+            }
+
+            if (_eatButton != null)
+            {
+                _eatButton.interactable = food && _session != null && !_session.IsSettled;
+            }
+
+            bool doodleReady = food && world != null;
+            if (_doodleClearButton != null)
+            {
+                _doodleClearButton.interactable = doodleReady;
+            }
+
+            if (_doodleToggleButton != null)
+            {
+                _doodleToggleButton.interactable = doodleReady;
+            }
+
+            if (_doodleToggleText != null)
+            {
+                _doodleToggleText.text = world != null ? world.DoodleToggleLabel : "隐藏涂鸦";
+            }
         }
 
         /// <summary>右栏道具：被动网格（2 列）+ 固定 2 个主动道具槽，聚合同 id 主动实例。</summary>
@@ -636,7 +730,7 @@ namespace GourmetProject.Game.UI.Battle
             _recipeView.SetBooks(books, showAdd, onAdd, addCost);
         }
 
-        /// <summary>商店态菜谱条：展示持有菜谱本 + 末尾「购买空菜谱」卡（买得起才可点）。</summary>
+        /// <summary>商店态菜谱条：展示持有菜谱本；未满上限时末尾追加唯一的「购买空菜谱」卡（买得起才可点）。</summary>
         private void BuildShopRecipeBooks()
         {
             if (_run == null)
@@ -644,7 +738,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            bool showAdd = _run.CanAddRecipeBook;
+            bool showAdd = _run.RecipeBookCount < GameRun.MaxRecipeBookCount;
             bool canBuy = showAdd && _run.Gold >= ShopService.EmptyRecipeBookPrice;
             BuildRecipeBooks(showAdd, canBuy ? BuyRecipeBook : (Action)null);
         }
@@ -700,7 +794,42 @@ namespace GourmetProject.Game.UI.Battle
             for (int i = 0; i < n; i++)
             {
                 float minX = gap + i * (cardW + gap);
-                SpawnCard(choices[i], minX, minX + cardW);
+                ActionChoice captured = choices[i];
+                SpawnCard(minX, minX + cardW, card => card.Bind(captured, () => OnActionSelectionPicked(captured)));
+            }
+        }
+
+        /// <summary>事件 n 选一卡片：每个选项一张卡，点击回调选项序号。</summary>
+        private void BuildEventCards(IReadOnlyList<string> options, Action<int> onPick)
+        {
+            ClearCards();
+            if (_cardsContainer == null || _cardPrefab == null)
+            {
+                onPick?.Invoke(0);
+                return;
+            }
+
+            int n = options?.Count ?? 0;
+            _cardsContainer.gameObject.SetActive(n > 0);
+            if (_skipButton != null)
+            {
+                _skipButton.gameObject.SetActive(false);
+            }
+
+            if (n == 0)
+            {
+                onPick?.Invoke(0);
+                return;
+            }
+
+            float gap = 0.03f;
+            float cardW = (1f - gap * (n + 1)) / n;
+            for (int i = 0; i < n; i++)
+            {
+                float minX = gap + i * (cardW + gap);
+                int index = i;
+                string text = options[i];
+                SpawnCard(minX, minX + cardW, card => card.BindEventOption(text, () => OnEventOptionPicked(index, onPick)));
             }
         }
 
@@ -724,7 +853,8 @@ namespace GourmetProject.Game.UI.Battle
             return choices;
         }
 
-        private void SpawnCard(ActionChoice choice, float minX, float maxX)
+        /// <summary>在中部按归一化 [minX,maxX] 铺一张卡并执行绑定回调。</summary>
+        private void SpawnCard(float minX, float maxX, Action<WeekEventCardView> bind)
         {
             WeekEventCardView card = Instantiate(_cardPrefab, _cardsContainer);
             var rect = (RectTransform)card.transform;
@@ -753,13 +883,13 @@ namespace GourmetProject.Game.UI.Battle
             rect.anchoredPosition = new Vector2(centerX, 0f);
             rect.sizeDelta = new Vector2(width, height);
 
-            ActionChoice captured = choice;
-            card.Bind(choice, () => OnActionSelectionPicked(captured));
+            bind?.Invoke(card);
             _cards.Add(card);
         }
 
         private void ClearCards()
         {
+            KillPendingCardShow();
             foreach (WeekEventCardView card in _cards)
             {
                 if (card != null)
@@ -775,27 +905,161 @@ namespace GourmetProject.Game.UI.Battle
         private void OnActionSelectionPicked(ActionChoice choice)
         {
             _run?.ClearPendingActionChoices();
-            ClearCards();
-            if (_actionSelectionPanel != null)
+            HideCardsThenDestroy(() =>
             {
-                _actionSelectionPanel.SetActive(false);
-            }
+                if (_actionSelectionPanel != null)
+                {
+                    _actionSelectionPanel.SetActive(false);
+                }
 
-            _loop?.OnActionPicked(choice);
+                _loop?.OnActionPicked(choice);
+            });
         }
 
-        /// <summary>隐藏常驻框与行动选择（用于结算/返回菜单前的清场）。</summary>
+        /// <summary>玩家在中部选择了一个事件选项。</summary>
+        private void OnEventOptionPicked(int index, Action<int> onPick)
+        {
+            HideCardsThenDestroy(() =>
+            {
+                if (_actionSelectionPanel != null)
+                {
+                    _actionSelectionPanel.SetActive(false);
+                }
+
+                onPick?.Invoke(index);
+            });
+        }
+
+        private void PlayShowCardsWhenReady()
+        {
+            KillPendingCardShow();
+            if (_current != GameplayView.ActionSelect || _cards.Count == 0)
+            {
+                return;
+            }
+
+            if (GameApp.UI.HasUIForm(UIForms.CartoonSceneTransition))
+            {
+                _pendingCardShowTween = DOVirtual.DelayedCall(0.03f, PlayShowCardsWhenReady, true)
+                    .SetUpdate(true);
+                return;
+            }
+
+            foreach (WeekEventCardView card in _cards)
+            {
+                if (card != null && card.isActiveAndEnabled)
+                {
+                    card.PlayShow();
+                }
+            }
+        }
+
+        private void HideCardsThenDestroy(Action onHidden)
+        {
+            KillPendingCardShow();
+            if (_cardsHideTween != null && _cardsHideTween.IsActive())
+            {
+                return;
+            }
+
+            var cards = new List<WeekEventCardView>(_cards);
+            _cards.Clear();
+            float hideDelay = PickEffectHold(cards);
+
+            Sequence seq = DOTween.Sequence().SetUpdate(true);
+            bool hasTween = false;
+            foreach (WeekEventCardView card in cards)
+            {
+                if (card == null)
+                {
+                    continue;
+                }
+
+                Tween tween = card.PlayHideThenDestroy(hideDelay);
+                if (tween == null)
+                {
+                    continue;
+                }
+
+                seq.Join(tween);
+                hasTween = true;
+            }
+
+            if (!hasTween)
+            {
+                seq.Kill();
+                onHidden?.Invoke();
+                return;
+            }
+
+            _cardsHideTween = seq.OnComplete(() =>
+            {
+                _cardsHideTween = null;
+                onHidden?.Invoke();
+            });
+        }
+
+        private static float PickEffectHold(IReadOnlyList<WeekEventCardView> cards)
+        {
+            float hold = 0f;
+            if (cards == null)
+            {
+                return hold;
+            }
+
+            for (int i = 0; i < cards.Count; i++)
+            {
+                WeekEventCardView card = cards[i];
+                if (card != null)
+                {
+                    hold = Mathf.Max(hold, card.PickEffectHold);
+                }
+            }
+
+            return hold;
+        }
+
+        private void KillPendingCardShow()
+        {
+            if (_pendingCardShowTween != null)
+            {
+                _pendingCardShowTween.Kill();
+                _pendingCardShowTween = null;
+            }
+        }
+
+        private void KillCardsHideTween()
+        {
+            if (_cardsHideTween != null)
+            {
+                _cardsHideTween.Kill();
+                _cardsHideTween = null;
+            }
+        }
+
+        /// <summary>隐藏常驻壳与中部内容（用于开局前 / 结算返回菜单前的清场）。</summary>
         private void HideHud()
         {
             _inBattle = false;
+            _current = GameplayView.None;
 
             if (_actionSelectionPanel != null)
             {
                 _actionSelectionPanel.SetActive(false);
             }
 
-            HideShopPanel();
+            if (_shopPanel != null)
+            {
+                _shopPanel.gameObject.SetActive(false);
+            }
+
+            if (_recipeEditPanel != null)
+            {
+                _recipeEditPanel.gameObject.SetActive(false);
+            }
+
             _recipeView?.SetState(RecipeView.RecipeState.Hidden);
+            SetFoodActionsVisible(false);
 
             if (_hudFrame != null)
             {
@@ -852,8 +1116,8 @@ namespace GourmetProject.Game.UI.Battle
         {
             HideResultPanel();
             _session = _run.BuildBattleSession(requiredScore, modifier, key);
-            // 常驻框在战斗中持续显示并接管分数/道具/菜谱面板（棋盘/菜品仍在世界空间场景）。
-            ShowBattleHud();
+            // 常驻壳在战斗中持续显示并接管分数/道具/菜谱面板（棋盘/菜品仍在世界空间场景）。
+            SwitchTo(GameplayView.Food);
 
             _world = BattleWorldController.Instance;
             if (_world == null)
@@ -867,8 +1131,6 @@ namespace GourmetProject.Game.UI.Battle
                 _session,
                 SetMessage,
                 RefreshAll,
-                OnEatClicked,
-                OnOverviewClicked,
                 OnActiveItemClicked,
                 OnDishClicked);
             RefreshAll();
@@ -888,6 +1150,7 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             ScoreResult result = _session.Settle();
+            RefreshFoodActions();
 
             if (_world != null)
             {
@@ -932,6 +1195,18 @@ namespace GourmetProject.Game.UI.Battle
         private void OnOverviewClicked()
         {
             GameplayFlowSignal.RequestReturnToMenu();
+        }
+
+        private void OnDoodleClearClicked()
+        {
+            (_world ?? BattleWorldController.Instance)?.ClearDoodle();
+            RefreshFoodActions();
+        }
+
+        private void OnDoodleToggleClicked()
+        {
+            (_world ?? BattleWorldController.Instance)?.ToggleDoodleVisible();
+            RefreshFoodActions();
         }
 
         private void OnDishClicked(DishInstance inst)
