@@ -240,7 +240,9 @@ namespace GourmetProject.Game.UI.Battle
 
         public void HideBattleWorld()
         {
-            _world?.HideWorld();
+            BattleWorldController world = _world ?? BattleWorldController.Instance;
+            world?.HideWorld();
+            world?.ClearBattleBoard();
         }
 
         public void HideResultPanel()
@@ -265,6 +267,16 @@ namespace GourmetProject.Game.UI.Battle
         public void OpenShop()
         {
             SwitchTo(GameplayView.Shop);
+        }
+
+        /// <summary>行动轴节点卡片：先展示节点卡，玩家点击后再执行节点效果。</summary>
+        public void ShowTimelineNodeCard(cfg.TimelineNode node, Action onPick)
+        {
+            SwitchTo(GameplayView.ActionSelect, () =>
+            {
+                SetCenterTitle("行动轴事件");
+                BuildTimelineNodeCard(node, onPick);
+            }, PlayShowCardsWhenReady);
         }
 
         // —— 中部五态切换中枢 ——
@@ -336,6 +348,7 @@ namespace GourmetProject.Game.UI.Battle
                     GameplayView.ActionSelect => RecipeView.RecipeState.Collapsed,
                     GameplayView.Shop => RecipeView.RecipeState.Shown,
                     GameplayView.Food => RecipeView.RecipeState.Shown,
+                    GameplayView.BoardEdit => RecipeView.RecipeState.Collapsed,
                     _ => RecipeView.RecipeState.Hidden,
                 };
                 _recipeView.SetState(recipeState);
@@ -983,6 +996,25 @@ namespace GourmetProject.Game.UI.Battle
             }
         }
 
+        /// <summary>行动轴节点单卡：用于商店等节点，点击卡片后才执行节点效果。</summary>
+        private void BuildTimelineNodeCard(cfg.TimelineNode node, Action onPick)
+        {
+            ClearCards();
+            if (_cardsContainer == null || _cardPrefab == null)
+            {
+                onPick?.Invoke();
+                return;
+            }
+
+            _cardsContainer.gameObject.SetActive(true);
+            if (_skipButton != null)
+            {
+                _skipButton.gameObject.SetActive(false);
+            }
+
+            SpawnCard(0.03f, 0.97f, card => card.Bind(node, () => OnTimelineNodePicked(onPick)));
+        }
+
         private static List<ActionChoice> RollChoices(GameRun run)
         {
             if (run == null)
@@ -1077,6 +1109,20 @@ namespace GourmetProject.Game.UI.Battle
                 }
 
                 onPick?.Invoke(index);
+            });
+        }
+
+        /// <summary>玩家点击行动轴节点卡片。</summary>
+        private void OnTimelineNodePicked(Action onPick)
+        {
+            HideCardsThenDestroy(() =>
+            {
+                if (_actionSelectionPanel != null)
+                {
+                    _actionSelectionPanel.SetActive(false);
+                }
+
+                onPick?.Invoke();
             });
         }
 

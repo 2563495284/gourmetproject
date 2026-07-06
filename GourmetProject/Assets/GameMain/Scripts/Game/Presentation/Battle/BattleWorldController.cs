@@ -173,6 +173,18 @@ namespace GourmetProject.Game.Presentation.Battle
             gameObject.SetActive(false);
         }
 
+        /// <summary>战斗结束后清理本场运行时棋盘表现，避免已摆菜品残留到后续非战斗状态。</summary>
+        public void ClearBattleBoard()
+        {
+            StopAllCoroutines();
+            _settling = false;
+            _serving = false;
+            _session = null;
+            ClearPlacedPieces();
+            _scoreFire?.Hide();
+            _doodle?.Clear();
+        }
+
         private void SetFoodWorldElementsVisible(bool visible)
         {
             if (_scoreText != null)
@@ -327,7 +339,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     Destroy(hand.gameObject);
                 }
 
-                _serving = false;
+                FinishServing();
                 yield break;
             }
 
@@ -364,7 +376,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             if (piece == null)
             {
-                _serving = false;
+                FinishServing();
                 yield break;
             }
 
@@ -395,7 +407,13 @@ namespace GourmetProject.Game.Presentation.Battle
                 piece.SetFlying(false);
             }
 
+            FinishServing();
+        }
+
+        private void FinishServing()
+        {
             _serving = false;
+            _stateChanged?.Invoke();
         }
 
         /// <summary>把掌心锚点与当前缩放下的食品视觉中心对齐。</summary>

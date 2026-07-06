@@ -98,6 +98,30 @@ namespace GourmetProject.Tests
         }
 
         [Test]
+        public void ActionExecutor_DefersTimelineProgressUntilCommit()
+        {
+            GameRun run = NewRun(week: 1);
+            run.BeginTimeline("tl_normal", 7);
+            cfg.GameAction action = run.Tables.TbAction.Get("act_debug_shop_event");
+            float costDays = TimelineMath.Quantize(action.CostDays);
+            var context = new ActionExecutionContext(action, run.ActionStepIndex, run.RunActionStepIndex, "grp_debug_shop_event", costDays);
+
+            ActionExecutor.Execute(run, context, new MaxWeightRandomStream());
+
+            Assert.AreSame(context, run.LastActionContext);
+            Assert.AreEqual(0f, run.CurrentDay, 1e-4f, "进入行动时行动轴进度不应提前增长。");
+            Assert.AreEqual(0, run.ActionStepIndex);
+            Assert.AreEqual(0, run.RunActionStepIndex);
+
+            float prevDay = ActionExecutor.Commit(run, context);
+
+            Assert.AreEqual(0f, prevDay, 1e-4f);
+            Assert.AreEqual(costDays, run.CurrentDay, 1e-4f, "行动结算提交后才推进天数。");
+            Assert.AreEqual(1, run.ActionStepIndex);
+            Assert.AreEqual(1, run.RunActionStepIndex);
+        }
+
+        [Test]
         public void HiddenScore_UsesRunStepSegments()
         {
             GameRun early = NewRun(week: 1);

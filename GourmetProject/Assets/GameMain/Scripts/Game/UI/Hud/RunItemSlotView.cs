@@ -12,8 +12,6 @@ namespace GourmetProject.Game.UI.Hud
     {
         [SerializeField] private Image _background;
         [SerializeField] private Image _icon;
-        [SerializeField] private Text _nameText;
-        [SerializeField] private Text _badgeText;
         [SerializeField] private Button _button;
 
         /// <summary>绑定一个有内容的道具槽。</summary>
@@ -28,17 +26,6 @@ namespace GourmetProject.Game.UI.Hud
             {
                 _icon.enabled = icon != null;
                 _icon.sprite = icon;
-            }
-
-            if (_nameText != null)
-            {
-                _nameText.text = name ?? string.Empty;
-            }
-
-            if (_badgeText != null)
-            {
-                _badgeText.text = badge ?? string.Empty;
-                _badgeText.gameObject.SetActive(!string.IsNullOrEmpty(badge));
             }
 
             if (_button != null)

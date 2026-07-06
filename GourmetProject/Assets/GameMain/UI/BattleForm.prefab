@@ -4766,7 +4766,7 @@ MonoBehaviour:
     m_Right: 0
     m_Top: 0
     m_Bottom: 0
-  m_ChildAlignment: 1
+  m_ChildAlignment: 4
   m_Spacing: 0
   m_ChildForceExpandWidth: 1
   m_ChildForceExpandHeight: 1
@@ -5578,25 +5578,9 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1224986736561319269}
     m_Modifications:
-    - target: {fileID: 596868175017461152, guid: af369f5a2ad1244aea490e8171a88eb4, type: 3}
-      propertyPath: m_Color.b
-      value: 0.84
-      objectReference: {fileID: 0}
-    - target: {fileID: 596868175017461152, guid: af369f5a2ad1244aea490e8171a88eb4, type: 3}
-      propertyPath: m_Color.g
-      value: 0.9
-      objectReference: {fileID: 0}
-    - target: {fileID: 596868175017461152, guid: af369f5a2ad1244aea490e8171a88eb4, type: 3}
-      propertyPath: m_Color.r
-      value: 0.92
-      objectReference: {fileID: 0}
     - target: {fileID: 1823352157112555038, guid: af369f5a2ad1244aea490e8171a88eb4, type: 3}
       propertyPath: m_Name
       value: ActiveSlot_1
-      objectReference: {fileID: 0}
-    - target: {fileID: 1851291126686701513, guid: af369f5a2ad1244aea490e8171a88eb4, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4852092192568821543, guid: af369f5a2ad1244aea490e8171a88eb4, type: 3}
       propertyPath: m_Pivot.x
@@ -5676,14 +5660,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4852092192568821543, guid: af369f5a2ad1244aea490e8171a88eb4, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5370825927962061046, guid: af369f5a2ad1244aea490e8171a88eb4, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7348265289094305951, guid: af369f5a2ad1244aea490e8171a88eb4, type: 3}
-      propertyPath: m_Interactable
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
@@ -5715,25 +5691,9 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1224986736561319269}
     m_Modifications:
-    - target: {fileID: 596868175017461152, guid: af369f5a2ad1244aea490e8171a88eb4, type: 3}
-      propertyPath: m_Color.b
-      value: 0.84
-      objectReference: {fileID: 0}
-    - target: {fileID: 596868175017461152, guid: af369f5a2ad1244aea490e8171a88eb4, type: 3}
-      propertyPath: m_Color.g
-      value: 0.9
-      objectReference: {fileID: 0}
-    - target: {fileID: 596868175017461152, guid: af369f5a2ad1244aea490e8171a88eb4, type: 3}
-      propertyPath: m_Color.r
-      value: 0.92
-      objectReference: {fileID: 0}
     - target: {fileID: 1823352157112555038, guid: af369f5a2ad1244aea490e8171a88eb4, type: 3}
       propertyPath: m_Name
       value: ActiveSlot_2
-      objectReference: {fileID: 0}
-    - target: {fileID: 1851291126686701513, guid: af369f5a2ad1244aea490e8171a88eb4, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4852092192568821543, guid: af369f5a2ad1244aea490e8171a88eb4, type: 3}
       propertyPath: m_Pivot.x
@@ -5813,14 +5773,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4852092192568821543, guid: af369f5a2ad1244aea490e8171a88eb4, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5370825927962061046, guid: af369f5a2ad1244aea490e8171a88eb4, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7348265289094305951, guid: af369f5a2ad1244aea490e8171a88eb4, type: 3}
-      propertyPath: m_Interactable
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []

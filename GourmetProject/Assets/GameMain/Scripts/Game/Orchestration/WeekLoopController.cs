@@ -23,6 +23,9 @@ namespace GourmetProject.Game.Orchestration
 
         void OpenShop();
 
+        /// <summary>行动轴节点卡片：先展示节点卡，玩家点击后再执行节点效果。</summary>
+        void ShowTimelineNodeCard(cfg.TimelineNode node, Action onPick);
+
         void StartBattle(int requiredScore, string modifier, string key, ActionExecutionContext actionContext);
 
         void ShowNotice(string title, string message, Action onContinue);
@@ -99,10 +102,10 @@ namespace GourmetProject.Game.Orchestration
                 return;
             }
 
-            float prevDay = _run.CurrentDay;
             ActionExecutionContext context = choice.ToExecutionContext();
             if (!context.IsValid)
             {
+                float prevDay = _run.CurrentDay;
                 _run.AdvanceActionStep();
                 RunPersistence.Save(_run);
                 ResolveNodes(prevDay, PromptNextAction);
@@ -112,44 +115,43 @@ namespace GourmetProject.Game.Orchestration
             IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Effect, $"exec_r{context.RunStepIndex}_w{_run.WeekIndex}_s{context.StepIndex}_{context.ActionGroupId}_{context.Action.Id}");
             ActionOutcome outcome = ActionExecutor.Execute(_run, context, rng);
 
-            // 进入行动时不推进步数、不存档；只有玩家明确结算（商店退出、事件选完、战斗结算、
-            // 通知点继续）时才 Commit（推进步数 + 标记已用）并存档。中途放弃/退出游戏则该行动不消耗。
+            // 进入行动时不推进天数/步数、不存档；只有玩家明确结算（商店退出、事件选完、战斗结算、
+            // 通知点继续）时才 Commit（推进天数/步数 + 标记已用）并存档。中途放弃/退出游戏则该行动不消耗。
+            bool committed = false;
+            float committedPrevDay = _run.CurrentDay;
+
             void Commit()
             {
-                ActionExecutor.Commit(_run, context);
+                if (committed)
+                {
+                    return;
+                }
+
+                committed = true;
+                committedPrevDay = ActionExecutor.Commit(_run, context);
                 RunPersistence.Save(_run);
+            }
+
+            void CommitAndResolveNodes()
+            {
+                Commit();
+                ResolveNodes(committedPrevDay, PromptNextAction);
             }
 
             switch (outcome.Kind)
             {
                 case ActionOutcomeKind.Immediate:
-                    _view.ShowNotice(context.Action.Name, outcome.Feedback, () =>
-                    {
-                        Commit();
-                        ResolveNodes(prevDay, PromptNextAction);
-                    });
+                    _view.ShowNotice(context.Action.Name, outcome.Feedback, CommitAndResolveNodes);
                     break;
                 case ActionOutcomeKind.Shop:
-                    OpenShopThen(() =>
-                    {
-                        Commit();
-                        ResolveNodes(prevDay, PromptNextAction);
-                    });
+                    OpenShopThen(CommitAndResolveNodes);
                     break;
                 case ActionOutcomeKind.Event:
-                    ResolveEventById(outcome.EventId, () =>
-                    {
-                        Commit();
-                        ResolveNodes(prevDay, PromptNextAction);
-                    });
+                    ResolveEventById(outcome.EventId, CommitAndResolveNodes);
                     break;
                 case ActionOutcomeKind.Battle:
                     StartBattle(outcome.RequiredScore, outcome.Modifier, outcome.BattleKey, false, null,
-                        () =>
-                        {
-                            Commit();
-                            ResolveNodes(prevDay, PromptNextAction);
-                        },
+                        CommitAndResolveNodes,
                         context);
                     break;
             }
@@ -244,7 +246,7 @@ namespace GourmetProject.Game.Orchestration
                     HandleInterestNode(node);
                     break;
                 case cfg.TimelineNodeType.Shop:
-                    OpenShopThen(ProcessNextNode);
+                    _view.ShowTimelineNodeCard(node, () => OpenShopThen(ProcessNextNode));
                     break;
                 case cfg.TimelineNodeType.Event:
                     HandleEventNode(node);
