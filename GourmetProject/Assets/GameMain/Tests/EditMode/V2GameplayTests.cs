@@ -290,6 +290,43 @@ namespace GourmetProject.Tests
         }
 
         [Test]
+        public void ShopService_PurchasesDishIntoSelectedRecipeBook()
+        {
+            GameRun run = NewRun(week: 1);
+            run.Gold = 100;
+            var dish = new ShopEntry(ShopEntryKind.Dish, "rice", "米饭", "加入菜谱池的菜品", 30);
+
+            Assert.IsTrue(ShopService.PurchaseDishToBook(run, dish, bookIndex: 1));
+
+            Assert.AreEqual(70, run.Gold);
+            Assert.AreEqual(0, run.GetRecipeBookDishes(0).Count);
+            Assert.AreEqual("rice", run.GetRecipeBookDishes(1)[0]);
+            Assert.IsTrue(run.BonusDishIds.Contains("rice"));
+        }
+
+        [Test]
+        public void ShopService_PurchaseDishToBookRejectsInsufficientGoldAndFullBook()
+        {
+            GameRun run = NewRun(week: 1);
+            var dish = new ShopEntry(ShopEntryKind.Dish, "rice", "米饭", "加入菜谱池的菜品", 30);
+
+            run.Gold = 29;
+            Assert.IsFalse(ShopService.PurchaseDishToBook(run, dish, bookIndex: 0));
+            Assert.AreEqual(29, run.Gold);
+            Assert.AreEqual(0, run.GetRecipeBookDishes(0).Count);
+
+            run.Gold = 100;
+            for (int i = 0; i < GameRun.RecipeBookCapacity; i++)
+            {
+                Assert.IsTrue(run.AddBonusDishToBook("rice", 0));
+            }
+
+            Assert.IsFalse(ShopService.PurchaseDishToBook(run, dish, bookIndex: 0));
+            Assert.AreEqual(100, run.Gold);
+            Assert.AreEqual(GameRun.RecipeBookCapacity, run.GetRecipeBookDishes(0).Count);
+        }
+
+        [Test]
         public void RunSaveData_RestoresRecipeBooks()
         {
             GameRun run = NewRun(week: 1);

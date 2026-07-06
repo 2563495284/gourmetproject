@@ -110,7 +110,7 @@ namespace GourmetProject.Game.Adapter
                 v.HiddenRange.Min,
                 v.HiddenRange.Max,
                 v.BaseWeight,
-                new List<string>(v.Skills),
+                new List<string>(b.Skills),
                 v.FlavorId,
                 b.Icon,
                 b.AllowRotate,
@@ -159,14 +159,10 @@ namespace GourmetProject.Game.Adapter
 
         private static SkillDef ToSkillDef(cfg.Skill s, List<SkillRuleDef> rules)
         {
-            var effectType = (TagEffectType)(int)s.EffectType;
             return new SkillDef(
                 s.Id,
                 s.Name,
-                TagDescFormatter.Format(s.Desc, s.EffectValue, signed: !effectType.IsMultiplier()),
-                effectType,
-                s.EffectValue,
-                s.EffectParam,
+                s.Desc,
                 s.TermId,
                 rules);
         }

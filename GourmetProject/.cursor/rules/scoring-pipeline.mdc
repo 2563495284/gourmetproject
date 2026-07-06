@@ -18,7 +18,7 @@ alwaysApply: false
 
 ## 技能规则（前提×行为）
 
-- 带 `TbSkillRule` 的技能由 `SkillRuleEffectSource` 处理（简易 `TagEffectType` 技能仍走 `TagScoreEffectSource`，二者互斥：`SkillDef.HasRules` 为真时跳过简易模式）。
+- 菜品技能统一由 `SkillRuleEffectSource` 处理；`TagScoreEffectSource` 只处理风味与格子标签的简易 `TagEffectType`。
 - 前提求值走 `SkillConditionEvaluator`（纯逻辑、无随机），产出 `count`；行为在 `SkillRuleEffect` 里按 `count` 派发。语义规格见 `docs/design/技能.md`。
 - 上菜时（OnServe）规则由 `ServeRuleResolver` 在 `BattleSession.Serve` 后处理，只做会改运行时状态的行为（层数/技能传递）与金币积累。
 

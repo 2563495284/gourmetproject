@@ -36,7 +36,7 @@ namespace GourmetProject.Gameplay.Scoring
                             ScoreSource.DishSkill(skill, dish),
                             new SkillRuleEffect(rule, dish),
                             dish,
-                            skill,
+                            null,
                             null,
                             rule.Order,
                             boardOrder));

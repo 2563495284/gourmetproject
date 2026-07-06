@@ -987,6 +987,24 @@ namespace GourmetProject.Game.Run
             return true;
         }
 
+        public bool AddBonusDishToBook(string dishId, int bookIndex)
+        {
+            if (Database.GetDish(dishId) == null || !IsRecipeBookIndexValid(bookIndex))
+            {
+                return false;
+            }
+
+            List<string> book = _recipeBooks[bookIndex];
+            if (book.Count >= RecipeBookCapacity)
+            {
+                return false;
+            }
+
+            book.Add(dishId);
+            RebuildBonusDishCache();
+            return true;
+        }
+
         /// <summary>从菜谱奖励池移除一道菜（商店删菜）。</summary>
         public bool RemoveBonusDish(string dishId)
         {

@@ -1,12 +1,8 @@
 using System;
+using DG.Tweening;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using GourmetProject.Game.UI;
-using GourmetProject.Game.UI.Battle;
-using GourmetProject.Game.UI.Common;
-using GourmetProject.Game.UI.Menu;
-using GourmetProject.Game.UI.Meta;
-using GourmetProject.Game.UI.Widgets;
 
 namespace GourmetProject.Game.UI.Meta
 {
@@ -16,20 +12,48 @@ namespace GourmetProject.Game.UI.Meta
     /// </summary>
     public sealed class ShopBuyCardView : MonoBehaviour
     {
-        [SerializeField] private Text _nameText;
-        [SerializeField] private Text _descText;
         [SerializeField] private Button _buyButton;
+
+        [SerializeField] private Image _itemIcon;
+
+        private RectTransform _rect;
+        private RectTransform _iconRect;
+        private Canvas _canvas;
+        private bool _affordable;
+        private bool _usesTargeting;
+        private Func<ShopBuyCardView, bool> _onBuy;
+        private Action<ShopBuyCardView> _onTargetPointerDown;
+        private Action<ShopBuyCardView, Vector2> _onTargetPointerUp;
+        private Tween _failureTween;
 
         public void Bind(cfg.Item item, int price, bool affordable, Action onBuy)
         {
-            Bind(item.Name, item.Desc, price, affordable, onBuy);
+            Sprite icon = item == null || string.IsNullOrEmpty(item.Icon) ? null : Resources.Load<Sprite>(item.Icon);
+            Bind(item?.Name, item?.Desc, price, affordable, icon, _ =>
+            {
+                onBuy?.Invoke();
+                return true;
+            });
         }
 
         /// <summary>通用商品绑定（道具 / 菜品 / 胃部碎片）。</summary>
-        public void Bind(string name, string desc, int price, bool affordable, Action onBuy)
+        public void Bind(
+            string name,
+            string desc,
+            int price,
+            bool affordable,
+            Sprite icon,
+            Func<ShopBuyCardView, bool> onBuy,
+            Action<ShopBuyCardView> onTargetPointerDown = null,
+            Action<ShopBuyCardView, Vector2> onTargetPointerUp = null)
         {
-            _nameText.text = name;
-            _descText.text = desc;
+            _affordable = affordable;
+            _usesTargeting = onTargetPointerDown != null || onTargetPointerUp != null;
+            _onBuy = onBuy;
+            _onTargetPointerDown = onTargetPointerDown;
+            _onTargetPointerUp = onTargetPointerUp;
+            EnsurePointerProxy();
+            SetIcon(icon);
 
             Text label = _buyButton.GetComponentInChildren<Text>();
             if (label != null)
@@ -37,9 +61,180 @@ namespace GourmetProject.Game.UI.Meta
                 label.text = $"购买 {price}";
             }
 
-            _buyButton.interactable = affordable;
+            _buyButton.interactable = true;
             _buyButton.onClick.RemoveAllListeners();
-            _buyButton.onClick.AddListener(() => onBuy?.Invoke());
+            if (!_usesTargeting)
+            {
+                _buyButton.onClick.AddListener(HandleImmediateBuyClicked);
+            }
+        }
+
+        public Vector2 IconScreenCenter()
+        {
+            RectTransform target = _iconRect != null ? _iconRect : (RectTransform)transform;
+            Camera cam = ResolveEventCamera();
+            return RectTransformUtility.WorldToScreenPoint(cam, target.TransformPoint(target.rect.center));
+        }
+
+        public bool ContainsScreenPoint(Vector2 screenPoint)
+        {
+            Camera cam = ResolveEventCamera();
+            return RectTransformUtility.RectangleContainsScreenPoint(Rect, screenPoint, cam);
+        }
+
+        public void PlayPurchaseFailed()
+        {
+            if (_iconRect == null && _itemIcon != null)
+            {
+                _iconRect = _itemIcon.rectTransform;
+            }
+
+            if (_iconRect == null)
+            {
+                return;
+            }
+
+            _failureTween?.Kill();
+            Vector2 origin = _iconRect.anchoredPosition;
+            _failureTween = DOVirtual.Float(0f, 1f, 0.25f, t =>
+            {
+                if (_iconRect == null)
+                {
+                    return;
+                }
+
+                float offset = Mathf.Sin(t * Mathf.PI * 12f) * 9f * (1f - t);
+                _iconRect.anchoredPosition = origin + new Vector2(offset, 0f);
+            })
+                .SetEase(Ease.Linear)
+                .SetUpdate(true)
+                .OnComplete(() =>
+                {
+                    if (_iconRect != null)
+                    {
+                        _iconRect.anchoredPosition = origin;
+                    }
+                });
+        }
+
+        private RectTransform Rect
+        {
+            get
+            {
+                if (_rect == null)
+                {
+                    _rect = (RectTransform)transform;
+                }
+
+                return _rect;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            _failureTween?.Kill();
+        }
+
+        private void HandleImmediateBuyClicked()
+        {
+            if (!_affordable)
+            {
+                PlayPurchaseFailed();
+                return;
+            }
+
+            if (_onBuy != null && !_onBuy.Invoke(this))
+            {
+                PlayPurchaseFailed();
+            }
+        }
+
+        private void HandlePointerDown(PointerEventData eventData)
+        {
+            if (!_usesTargeting)
+            {
+                return;
+            }
+
+            if (!_affordable)
+            {
+                PlayPurchaseFailed();
+                return;
+            }
+
+            _onTargetPointerDown?.Invoke(this);
+        }
+
+        private void HandlePointerUp(PointerEventData eventData)
+        {
+            if (!_usesTargeting || !_affordable)
+            {
+                return;
+            }
+
+            _onTargetPointerUp?.Invoke(this, eventData.position);
+        }
+
+        private void SetIcon(Sprite icon)
+        {
+            if (_itemIcon == null)
+            {
+                return;
+            }
+
+            _iconRect = _itemIcon.rectTransform;
+            _itemIcon.preserveAspect = true;
+            _itemIcon.enabled = icon != null;
+            _itemIcon.sprite = icon;
+            _itemIcon.color = Color.white;
+        }
+
+        private Camera ResolveEventCamera()
+        {
+            if (_canvas == null)
+            {
+                _canvas = GetComponentInParent<Canvas>();
+            }
+
+            return _canvas != null && _canvas.renderMode != RenderMode.ScreenSpaceOverlay
+                ? _canvas.worldCamera
+                : null;
+        }
+
+        private void EnsurePointerProxy()
+        {
+            if (_buyButton == null)
+            {
+                return;
+            }
+
+            PointerProxy proxy = _buyButton.GetComponent<PointerProxy>();
+            if (proxy == null)
+            {
+                proxy = _buyButton.gameObject.AddComponent<PointerProxy>();
+            }
+
+            proxy.Bind(this);
+        }
+
+        private sealed class PointerProxy : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
+        {
+            private ShopBuyCardView _owner;
+
+            public void Bind(ShopBuyCardView owner)
+            {
+                _owner = owner;
+            }
+
+            public void OnPointerDown(PointerEventData eventData)
+            {
+                _owner?.HandlePointerDown(eventData);
+            }
+
+            public void OnPointerUp(PointerEventData eventData)
+            {
+                _owner?.HandlePointerUp(eventData);
+            }
         }
     }
 }

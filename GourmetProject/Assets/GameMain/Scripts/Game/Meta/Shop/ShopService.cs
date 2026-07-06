@@ -155,6 +155,22 @@ namespace GourmetProject.Game.Meta
             return true;
         }
 
+        public static bool PurchaseDishToBook(GameRun run, ShopEntry entry, int bookIndex)
+        {
+            if (run == null || entry == null || entry.Kind != ShopEntryKind.Dish || run.Gold < entry.Price)
+            {
+                return false;
+            }
+
+            if (!run.AddBonusDishToBook(entry.Id, bookIndex))
+            {
+                return false;
+            }
+
+            run.Gold -= entry.Price;
+            return true;
+        }
+
         /// <summary>出售一份道具实例（被动整条移除；主动移除一份），返还金币。</summary>
         public static bool SellItem(GameRun run, string itemId)
         {

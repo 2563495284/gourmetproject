@@ -324,7 +324,7 @@ namespace GourmetProject.Game.UI.Battle
                 RecipeView.RecipeState recipeState = view switch
                 {
                     GameplayView.ActionSelect => RecipeView.RecipeState.Collapsed,
-                    GameplayView.Shop => RecipeView.RecipeState.Collapsed,
+                    GameplayView.Shop => RecipeView.RecipeState.Shown,
                     GameplayView.Food => RecipeView.RecipeState.Shown,
                     _ => RecipeView.RecipeState.Hidden,
                 };
@@ -345,7 +345,7 @@ namespace GourmetProject.Game.UI.Battle
                     BuildShopRecipeBooks();
                     if (_shopPanel != null)
                     {
-                        _shopPanel.Open(OnShopLeave, RefreshShopPersistent, OpenRecipeEdit, OpenBoardEdit);
+                        _shopPanel.Open(OnShopLeave, RefreshShopPersistent, OpenRecipeEdit, OpenBoardEdit, _recipeView);
                     }
 
                     break;
@@ -723,7 +723,8 @@ namespace GourmetProject.Game.UI.Battle
                     $"菜谱{i + 1}",
                     $"{count}/{GameRun.RecipeBookCapacity}",
                     false,
-                    null));
+                    null,
+                    count < GameRun.RecipeBookCapacity));
             }
 
             string addCost = showAdd ? $"+ {ShopService.EmptyRecipeBookPrice}" : null;

@@ -72,6 +72,10 @@ namespace cfg
         /// 本菜当前层数
         /// </summary>
         LayerCount = 13,
+        /// <summary>
+        /// 本菜占用格数
+        /// </summary>
+        OccupiedCell = 14,
     }
 
 } 

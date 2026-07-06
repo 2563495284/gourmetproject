@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 菜品技能规则：一行=一条规则(前提&#215;行为)，同skillId多行按order执行。
+/// 菜品技能规则：一行=一条规则(前提&#215;行为)，同skillId多行按order执行。所有菜品技能效果统一走本表。
 /// </summary>
 public partial class TbSkillRule
 {

@@ -1,5 +1,105 @@
 [
   {
+    "id": "rr_t_fresh",
+    "skillId": "t_fresh",
+    "order": 0,
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condCompare": 0,
+    "condThreshold": 0,
+    "condParam": "",
+    "actionType": 1,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      5
+    ],
+    "actionParam": []
+  },
+  {
+    "id": "rr_t_sweet",
+    "skillId": "t_sweet",
+    "order": 0,
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condCompare": 0,
+    "condThreshold": 0,
+    "condParam": "",
+    "actionType": 2,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      1.5
+    ],
+    "actionParam": []
+  },
+  {
+    "id": "rr_t_spicy",
+    "skillId": "t_spicy",
+    "order": 0,
+    "trigger": 0,
+    "condType": 4,
+    "condScope": 1,
+    "condUnit": 0,
+    "condMode": 0,
+    "condCompare": 0,
+    "condThreshold": 0,
+    "condParam": "",
+    "actionType": 1,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      3
+    ],
+    "actionParam": []
+  },
+  {
+    "id": "rr_t_lonely",
+    "skillId": "t_lonely",
+    "order": 0,
+    "trigger": 0,
+    "condType": 2,
+    "condScope": 4,
+    "condUnit": 0,
+    "condMode": 0,
+    "condCompare": 0,
+    "condThreshold": 0,
+    "condParam": "",
+    "actionType": 1,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      2
+    ],
+    "actionParam": []
+  },
+  {
+    "id": "rr_t_hearty",
+    "skillId": "t_hearty",
+    "order": 0,
+    "trigger": 0,
+    "condType": 14,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condCompare": 0,
+    "condThreshold": 0,
+    "condParam": "",
+    "actionType": 1,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      2
+    ],
+    "actionParam": []
+  },
+  {
     "id": "rr_neighbor",
     "skillId": "sk_neighbor",
     "order": 0,

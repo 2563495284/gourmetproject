@@ -9,8 +9,7 @@
       "min": 1,
       "max": 10
     },
-    "rotation": 0,
-    "skills": []
+    "rotation": 0
   },
   {
     "id": "egg",
@@ -22,10 +21,7 @@
       "min": 5,
       "max": 20
     },
-    "rotation": 0,
-    "skills": [
-      "t_fresh"
-    ]
+    "rotation": 0
   },
   {
     "id": "soup",
@@ -37,10 +33,7 @@
       "min": 8,
       "max": 24
     },
-    "rotation": 0,
-    "skills": [
-      "sk_neighbor"
-    ]
+    "rotation": 0
   },
   {
     "id": "fish",
@@ -52,10 +45,7 @@
       "min": 20,
       "max": 40
     },
-    "rotation": 0,
-    "skills": [
-      "t_fresh"
-    ]
+    "rotation": 0
   },
   {
     "id": "noodle",
@@ -67,10 +57,7 @@
       "min": 15,
       "max": 35
     },
-    "rotation": 0,
-    "skills": [
-      "t_hearty"
-    ]
+    "rotation": 0
   },
   {
     "id": "dumpling",
@@ -82,10 +69,7 @@
       "min": 12,
       "max": 32
     },
-    "rotation": 0,
-    "skills": [
-      "t_hearty"
-    ]
+    "rotation": 0
   },
   {
     "id": "chili",
@@ -97,10 +81,7 @@
       "min": 3,
       "max": 18
     },
-    "rotation": 0,
-    "skills": [
-      "sk_same"
-    ]
+    "rotation": 0
   },
   {
     "id": "orange",
@@ -112,10 +93,7 @@
       "min": 10,
       "max": 30
     },
-    "rotation": 0,
-    "skills": [
-      "t_sweet"
-    ]
+    "rotation": 0
   },
   {
     "id": "cake",
@@ -127,10 +105,7 @@
       "min": 30,
       "max": 50
     },
-    "rotation": 0,
-    "skills": [
-      "cake_layer_add"
-    ]
+    "rotation": 0
   },
   {
     "id": "feast",
@@ -142,7 +117,6 @@
       "min": 40,
       "max": 70
     },
-    "rotation": 0,
-    "skills": []
+    "rotation": 0
   }
 ]

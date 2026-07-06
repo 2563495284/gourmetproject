@@ -20,9 +20,6 @@ public sealed partial class Skill : Luban.BeanBase
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
         { if(!_buf["name"].IsString) { throw new SerializationException(); }  Name = _buf["name"]; }
         { if(!_buf["desc"].IsString) { throw new SerializationException(); }  Desc = _buf["desc"]; }
-        { if(!_buf["effectType"].IsNumber) { throw new SerializationException(); }  EffectType = (TagEffectType)_buf["effectType"].AsInt; }
-        { var __json0 = _buf["effectValue"]; if(!__json0.IsArray) { throw new SerializationException(); } EffectValue = new System.Collections.Generic.List<float>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { float __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  EffectValue.Add(__v0); }   }
-        { var __json0 = _buf["effectParam"]; if(!__json0.IsArray) { throw new SerializationException(); } EffectParam = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  EffectParam.Add(__v0); }   }
         { if(!_buf["termId"].IsString) { throw new SerializationException(); }  TermId = _buf["termId"]; }
     }
 
@@ -44,18 +41,6 @@ public sealed partial class Skill : Luban.BeanBase
     /// </summary>
     public readonly string Desc;
     /// <summary>
-    /// 效果类型
-    /// </summary>
-    public readonly TagEffectType EffectType;
-    /// <summary>
-    /// 效果数值
-    /// </summary>
-    public readonly System.Collections.Generic.List<float> EffectValue;
-    /// <summary>
-    /// 效果参数
-    /// </summary>
-    public readonly System.Collections.Generic.List<string> EffectParam;
-    /// <summary>
     /// 关联术语ID
     /// </summary>
     public readonly string TermId;
@@ -73,9 +58,6 @@ public sealed partial class Skill : Luban.BeanBase
         + "id:" + Id + ","
         + "name:" + Name + ","
         + "desc:" + Desc + ","
-        + "effectType:" + EffectType + ","
-        + "effectValue:" + Luban.StringUtil.CollectionToString(EffectValue) + ","
-        + "effectParam:" + Luban.StringUtil.CollectionToString(EffectParam) + ","
         + "termId:" + TermId + ","
         + "}";
     }

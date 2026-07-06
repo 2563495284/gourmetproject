@@ -79,6 +79,9 @@ namespace GourmetProject.Gameplay.Scoring
                 case SkillConditionType.LayerCount:
                     return self.Layers;
 
+                case SkillConditionType.OccupiedCell:
+                    return self.OccupiedCells.Count;
+
                 default:
                     return 0;
             }

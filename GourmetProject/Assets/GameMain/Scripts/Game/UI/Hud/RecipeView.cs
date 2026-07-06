@@ -23,18 +23,20 @@ namespace GourmetProject.Game.UI.Hud
         /// <summary>一本菜谱本的数据（标题、容量文本、是否可点、点击回调）。</summary>
         public readonly struct BookEntry
         {
-            public BookEntry(string title, string capacity, bool interactable, Action onClick)
+            public BookEntry(string title, string capacity, bool interactable, Action onClick, bool canReceiveDish = true)
             {
                 Title = title;
                 Capacity = capacity;
                 Interactable = interactable;
                 OnClick = onClick;
+                CanReceiveDish = canReceiveDish;
             }
 
             public string Title { get; }
             public string Capacity { get; }
             public bool Interactable { get; }
             public Action OnClick { get; }
+            public bool CanReceiveDish { get; }
         }
 
         [Header("Prefabs")]
@@ -72,6 +74,8 @@ namespace GourmetProject.Game.UI.Hud
             public RectTransform Rect;
             public CanvasGroup Group;
             public Tween Tween;
+            public int BookIndex;
+            public bool CanReceiveDish;
         }
 
         private readonly List<CardSlot> _bookSlots = new();
@@ -170,8 +174,11 @@ namespace GourmetProject.Game.UI.Hud
                 BookEntry entry = books[i];
                 CardSlot slot = _bookSlots[i];
                 slot.Go.name = $"RecipeBook_{i + 1}";
+                slot.BookIndex = i;
+                slot.CanReceiveDish = entry.CanReceiveDish;
                 var view = slot.Go.GetComponent<RecipeCardView>();
                 view?.Bind(entry.Capacity, entry.Interactable, entry.OnClick);
+                view?.SetTargetHighlight(false, false);
             }
 
             // 购买空菜谱卡（仅商店态）。
@@ -209,6 +216,66 @@ namespace GourmetProject.Game.UI.Hud
             for (int i = 0; i < _ordered.Count; i++)
             {
                 _ordered[i].Rect.SetSiblingIndex(i);
+            }
+        }
+
+        public bool TryGetRecipeBookAtScreenPoint(Vector2 screenPoint, out int bookIndex)
+        {
+            Camera cam = ResolveEventCamera();
+            for (int i = _bookSlots.Count - 1; i >= 0; i--)
+            {
+                CardSlot slot = _bookSlots[i];
+                if (slot == null || slot.Go == null || !slot.Go.activeInHierarchy || !slot.CanReceiveDish)
+                {
+                    continue;
+                }
+
+                RecipeCardView view = slot.Go.GetComponent<RecipeCardView>();
+                if (view != null && view.ContainsScreenPoint(screenPoint, cam))
+                {
+                    bookIndex = slot.BookIndex;
+                    return true;
+                }
+            }
+
+            bookIndex = -1;
+            return false;
+        }
+
+        public bool TryGetRecipeBookCenterScreenPoint(int bookIndex, out Vector2 screenPoint)
+        {
+            Camera cam = ResolveEventCamera();
+            foreach (CardSlot slot in _bookSlots)
+            {
+                if (slot == null || slot.BookIndex != bookIndex || slot.Go == null || !slot.Go.activeInHierarchy)
+                {
+                    continue;
+                }
+
+                RecipeCardView view = slot.Go.GetComponent<RecipeCardView>();
+                if (view != null)
+                {
+                    screenPoint = view.CenterScreenPoint(cam);
+                    return true;
+                }
+            }
+
+            screenPoint = Vector2.zero;
+            return false;
+        }
+
+        public void SetDishTargetingHighlights(bool visible, int hoveredBookIndex)
+        {
+            foreach (CardSlot slot in _bookSlots)
+            {
+                RecipeCardView view = slot?.Go == null ? null : slot.Go.GetComponent<RecipeCardView>();
+                if (view == null)
+                {
+                    continue;
+                }
+
+                bool show = visible && slot.CanReceiveDish;
+                view.SetTargetHighlight(show, show && slot.BookIndex == hoveredBookIndex);
             }
         }
 

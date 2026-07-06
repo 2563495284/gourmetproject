@@ -5,6 +5,7 @@
     "deliciousness": 5,
     "icon": "Sprites/Dishes/rice",
     "allowRotate": false,
+    "skills": [],
     "shapeRows": [
       "X"
     ]
@@ -15,6 +16,9 @@
     "deliciousness": 8,
     "icon": "Sprites/Dishes/egg",
     "allowRotate": false,
+    "skills": [
+      "t_fresh"
+    ],
     "shapeRows": [
       "XX"
     ]
@@ -25,6 +29,9 @@
     "deliciousness": 9,
     "icon": "Sprites/Dishes/soup",
     "allowRotate": false,
+    "skills": [
+      "sk_neighbor"
+    ],
     "shapeRows": [
       "XX"
     ]
@@ -35,6 +42,9 @@
     "deliciousness": 15,
     "icon": "Sprites/Dishes/fish",
     "allowRotate": false,
+    "skills": [
+      "t_fresh"
+    ],
     "shapeRows": [
       "XXX"
     ]
@@ -45,6 +55,9 @@
     "deliciousness": 12,
     "icon": "Sprites/Dishes/noodle",
     "allowRotate": false,
+    "skills": [
+      "t_hearty"
+    ],
     "shapeRows": [
       "X.",
       "XX"
@@ -56,6 +69,9 @@
     "deliciousness": 11,
     "icon": "Sprites/Dishes/dumpling",
     "allowRotate": false,
+    "skills": [
+      "t_hearty"
+    ],
     "shapeRows": [
       "XX",
       ".X"
@@ -67,6 +83,9 @@
     "deliciousness": 4,
     "icon": "Sprites/Dishes/chili",
     "allowRotate": false,
+    "skills": [
+      "sk_same"
+    ],
     "shapeRows": [
       "X"
     ]
@@ -77,6 +96,9 @@
     "deliciousness": 10,
     "icon": "Sprites/Dishes/orange",
     "allowRotate": false,
+    "skills": [
+      "t_sweet"
+    ],
     "shapeRows": [
       "XX",
       "XX"
@@ -88,6 +110,9 @@
     "deliciousness": 20,
     "icon": "Sprites/Dishes/cake",
     "allowRotate": false,
+    "skills": [
+      "cake_layer_add"
+    ],
     "shapeRows": [
       "XXX",
       ".X."
@@ -99,6 +124,7 @@
     "deliciousness": 25,
     "icon": "Sprites/Dishes/feast",
     "allowRotate": false,
+    "skills": [],
     "shapeRows": [
       "XXXX"
     ]

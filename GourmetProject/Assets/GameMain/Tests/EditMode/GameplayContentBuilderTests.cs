@@ -34,8 +34,9 @@ namespace GourmetProject.Tests
 
             SkillDef skill = db.GetSkill("tag_inherent");
             Assert.NotNull(skill);
-            Assert.AreEqual(GpTagEffectType.AddMult, skill.EffectType);
-            Assert.AreEqual(1.5f, skill.EffectValue);
+            Assert.IsTrue(skill.HasRules);
+            Assert.AreEqual(SkillActionType.AddMult, skill.Rules[0].ActionType);
+            Assert.AreEqual(1.5f, skill.Rules[0].ActionValue);
 
             FlavorDef flavor = db.GetFlavor("tag_a");
             Assert.NotNull(flavor);
@@ -104,6 +105,7 @@ namespace GourmetProject.Tests
     ""deliciousness"": 7,
     ""icon"": ""Icons/Sushi"",
     ""allowRotate"": true,
+    ""skills"": [""tag_inherent""],
     ""shapeRows"": [""XX"", "".X""]
   }
 ]";
@@ -116,8 +118,7 @@ namespace GourmetProject.Tests
     ""baseWeight"": 2.5,
     ""price"": 12,
     ""hiddenRange"": { ""min"": 3, ""max"": 9 },
-    ""rotation"": 0,
-    ""skills"": [""tag_inherent""]
+    ""rotation"": 0
   },
   {
     ""id"": ""dish_sushi_cold"",
@@ -126,8 +127,7 @@ namespace GourmetProject.Tests
     ""baseWeight"": 1.5,
     ""price"": 9,
     ""hiddenRange"": { ""min"": 2, ""max"": 6 },
-    ""rotation"": 2,
-    ""skills"": []
+    ""rotation"": 2
   }
 ]";
                 case "tbskill":
@@ -135,11 +135,29 @@ namespace GourmetProject.Tests
   {
     ""id"": ""tag_inherent"",
     ""name"": ""固有"",
-    ""desc"": ""贡献 ×{0}"",
-    ""effectType"": 2,
-    ""effectValue"": [1.5],
-    ""effectParam"": [],
+    ""desc"": ""贡献 ×1.5"",
     ""termId"": """"
+  }
+]";
+                case "tbskillrule":
+                    return @"[
+  {
+    ""id"": ""rr_tag_inherent"",
+    ""skillId"": ""tag_inherent"",
+    ""order"": 0,
+    ""trigger"": 0,
+    ""condType"": 0,
+    ""condScope"": 0,
+    ""condUnit"": 0,
+    ""condMode"": 0,
+    ""condCompare"": 0,
+    ""condThreshold"": 0,
+    ""condParam"": """",
+    ""actionType"": 2,
+    ""actionScope"": 0,
+    ""actionCount"": 0,
+    ""actionValue"": [1.5],
+    ""actionParam"": []
   }
 ]";
                 case "tbflavor":

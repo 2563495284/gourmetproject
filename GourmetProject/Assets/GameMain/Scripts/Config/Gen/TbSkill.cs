@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 菜品技能：数量无上限。effectType/effectValue 定义结算效果；termId 非空时详情额外展示名词。
+/// 菜品技能元信息：id/name/desc/termId。具体效果统一由 TbSkillRule 配置。
 /// </summary>
 public partial class TbSkill
 {

@@ -15,11 +15,11 @@ namespace cfg
 public partial class Tables
 {
     /// <summary>
-    /// 菜品本体：不随标签变化的物理属性（id/name/deliciousness/icon/allowRotate/shapeRows）。
+    /// 菜品本体：物理属性（id/name/deliciousness/icon/allowRotate/shapeRows）与固有技能（skills→TbSkill）。
     /// </summary>
     public TbDishBase TbDishBase {get; }
     /// <summary>
-    /// 菜品变体：随机菜品库条目。引用本体+技能(skills→TbSkill)+风味(flavorId→TbFlavor,单槽)+隐藏分/权重/价格。同 baseId 不同组合视为不同菜品。flavorId 空串=无风味。
+    /// 菜品变体：随机菜品库条目。引用本体+风味(flavorId→TbFlavor,单槽)+隐藏分/权重/价格。flavorId 空串=无风味。
     /// </summary>
     public TbDishVariant TbDishVariant {get; }
     /// <summary>
@@ -123,11 +123,11 @@ public partial class Tables
     /// </summary>
     public TbUnlockCondition TbUnlockCondition {get; }
     /// <summary>
-    /// 菜品技能：数量无上限。effectType/effectValue 定义结算效果；termId 非空时详情额外展示名词。
+    /// 菜品技能元信息：id/name/desc/termId。具体效果统一由 TbSkillRule 配置。
     /// </summary>
     public TbSkill TbSkill {get; }
     /// <summary>
-    /// 菜品风味：单槽，后者替换前者。effectType/effectValue 定义结算效果。
+    /// 菜品风味：单槽，后者替换前者。effectType/effectValue 定义简易结算效果。
     /// </summary>
     public TbFlavor TbFlavor {get; }
     /// <summary>
@@ -135,7 +135,7 @@ public partial class Tables
     /// </summary>
     public TbCellTag TbCellTag {get; }
     /// <summary>
-    /// 菜品技能规则：一行=一条规则(前提&#215;行为)，同skillId多行按order执行。
+    /// 菜品技能规则：一行=一条规则(前提&#215;行为)，同skillId多行按order执行。所有菜品技能效果统一走本表。
     /// </summary>
     public TbSkillRule TbSkillRule {get; }
 

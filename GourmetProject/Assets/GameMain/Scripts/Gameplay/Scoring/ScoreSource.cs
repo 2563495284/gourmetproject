@@ -57,12 +57,12 @@ namespace GourmetProject.Gameplay.Scoring
                 dish?.Def?.Id);
         }
 
-        public static ScoreSource DishSkill(IEffectDef tag, DishInstance dish)
+        public static ScoreSource DishSkill(SkillDef skill, DishInstance dish)
         {
             return new ScoreSource(
                 ScoreSourceType.DishSkill,
-                tag?.Id,
-                tag?.Name,
+                skill?.Id,
+                skill?.Name,
                 dish != null ? dish.Id : 0,
                 dish?.Def?.Id);
         }

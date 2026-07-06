@@ -5,7 +5,7 @@ using GourmetProject.Gameplay.Model;
 
 namespace GourmetProject.Gameplay.Scoring
 {
-    /// <summary>把当前棋盘上的菜品技能、风味与格子标签转换为结算效果。</summary>
+    /// <summary>把当前棋盘上的风味与格子标签转换为简易结算效果。</summary>
     public sealed class TagScoreEffectSource : IScoreEffectSource
     {
         private readonly TagEffectRegistry _registry;
@@ -19,39 +19,8 @@ namespace GourmetProject.Gameplay.Scoring
         {
             foreach (DishInstance dish in snapshot.DishesInDefaultOrder)
             {
-                CollectSkills(snapshot, collector, dish);
                 CollectFlavor(snapshot, collector, dish);
                 CollectCellTags(snapshot, collector, dish);
-            }
-        }
-
-        private void CollectSkills(ScoreSnapshot snapshot, ScoreEffectCollector collector, DishInstance dish)
-        {
-            int boardOrder = BoardOrder(snapshot, dish.Placement.Origin);
-            foreach (string skillId in dish.SkillIds)
-            {
-                // 规则技能（前提×行为）由 SkillRuleEffectSource 处理，这里只处理简易单效果技能。
-                SkillDef skillDef = snapshot.Db.GetSkill(skillId);
-                if (skillDef != null && skillDef.HasRules)
-                {
-                    continue;
-                }
-
-                IEffectDef skill = ResolveSkill(snapshot, skillId, out IScoreEffect effect);
-                if (skill == null)
-                {
-                    continue;
-                }
-
-                collector.Add(new ScoreEffectEntry(
-                    ScorePhase.DishSkills,
-                    ScoreSource.DishSkill(skill, dish),
-                    effect,
-                    dish,
-                    skill,
-                    null,
-                    0,
-                    boardOrder));
             }
         }
 
@@ -108,11 +77,6 @@ namespace GourmetProject.Gameplay.Scoring
                         boardOrder));
                 }
             }
-        }
-
-        private IEffectDef ResolveSkill(ScoreSnapshot snapshot, string id, out IScoreEffect effect)
-        {
-            return Resolve(snapshot.Db.GetSkill(id), out effect);
         }
 
         private IEffectDef ResolveFlavor(ScoreSnapshot snapshot, string id, out IScoreEffect effect)

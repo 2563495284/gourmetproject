@@ -57,6 +57,20 @@ namespace GourmetProject.Game.UI.Widgets
             }
         }
 
+        private static void AppendEffect(SkillDef def, List<string> lines, List<string> termIds)
+        {
+            if (def == null)
+            {
+                return;
+            }
+
+            lines.Add($"【{def.Name}】{def.Desc}");
+            if (def.HasTerm && !termIds.Contains(def.TermId))
+            {
+                termIds.Add(def.TermId);
+            }
+        }
+
         /// <summary>生成专有名词解释块（每行「※ 名称：描述」）。无名词时返回空串。</summary>
         public static string TermBlock(IReadOnlyList<string> termIds)
         {

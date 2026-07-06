@@ -1,8 +1,6 @@
 namespace GourmetProject.Gameplay.Model
 {
-    /// <summary>
-    /// 效果类型。与 Luban 的 cfg.TagEffectType 一一对应，技能/风味/格子标签共用。
-    /// </summary>
+    /// <summary>简易效果类型。与 Luban 的 cfg.TagEffectType 一一对应，风味/格子标签共用。</summary>
     public enum TagEffectType
     {
         None = 0,
@@ -40,6 +38,7 @@ namespace GourmetProject.Gameplay.Model
         ShapeMatch = 11,
         RecipeCount = 12,
         LayerCount = 13,
+        OccupiedCell = 14,
     }
 
     /// <summary>技能作用域（前提「在哪数」/ 行为「作用到谁」）。与 cfg.SkillScope 一一对应。</summary>

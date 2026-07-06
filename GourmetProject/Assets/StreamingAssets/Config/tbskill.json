@@ -2,200 +2,127 @@
   {
     "id": "t_fresh",
     "name": "新鲜",
-    "desc": "结算时美味度 {0}。",
-    "effectType": 1,
-    "effectValue": [
-      5
-    ],
-    "effectParam": [],
+    "desc": "结算时美味度 +5。",
     "termId": "term_deliciousness"
   },
   {
     "id": "t_sweet",
     "name": "香甜",
-    "desc": "结算时本菜品贡献的分数 ×{0}。",
-    "effectType": 2,
-    "effectValue": [
-      1.5
-    ],
-    "effectParam": [],
+    "desc": "结算时本菜品贡献的分数 ×1.5。",
     "termId": ""
   },
   {
     "id": "t_spicy",
     "name": "麻辣",
-    "desc": "每有一个相邻菜品，美味度 {0}。",
-    "effectType": 3,
-    "effectValue": [
-      3
-    ],
-    "effectParam": [],
+    "desc": "每有一个相邻菜品，美味度 +3。",
     "termId": "term_adjacent"
   },
   {
     "id": "t_lonely",
     "name": "孤食",
-    "desc": "棋盘上每有一个空位，美味度 {0}。",
-    "effectType": 4,
-    "effectValue": [
-      2
-    ],
-    "effectParam": [],
+    "desc": "棋盘上每有一个空位，美味度 +2。",
     "termId": "term_empty"
   },
   {
     "id": "t_hearty",
     "name": "扎实",
-    "desc": "本菜品每占用一格，美味度 {0}。",
-    "effectType": 5,
-    "effectValue": [
-      2
-    ],
-    "effectParam": [],
+    "desc": "本菜品每占用一格，美味度 +2。",
     "termId": ""
   },
   {
     "id": "sk_neighbor",
     "name": "邻里飘香",
     "desc": "每有一个相邻菜品，美味度 +3。",
-    "effectType": 0,
-    "effectValue": [],
-    "effectParam": [],
     "termId": ""
   },
   {
     "id": "sk_empty",
     "name": "空盘寂寞",
     "desc": "棋盘上每有一个空位，美味度 +2。",
-    "effectType": 0,
-    "effectValue": [],
-    "effectParam": [],
     "termId": ""
   },
   {
     "id": "sk_row_full",
     "name": "满行盛宴",
     "desc": "本行被填满时，本菜品分数 ×2。",
-    "effectType": 0,
-    "effectValue": [],
-    "effectParam": [],
     "termId": ""
   },
   {
     "id": "sk_edge",
     "name": "边缘料理",
     "desc": "本菜品处于棋盘边缘时，美味度 +5。",
-    "effectType": 0,
-    "effectValue": [],
-    "effectParam": [],
     "termId": ""
   },
   {
     "id": "sk_bigdish",
     "name": "大菜相伴",
     "desc": "全场每有一个≥2格的菜，美味度 +2。",
-    "effectType": 0,
-    "effectValue": [],
-    "effectParam": [],
     "termId": ""
   },
   {
     "id": "sk_same",
     "name": "同类共鸣",
     "desc": "全场每有一个同种菜，分数 ×1.5。",
-    "effectType": 0,
-    "effectValue": [],
-    "effectParam": [],
     "termId": ""
   },
   {
     "id": "sk_shape",
     "name": "小巧玲珑",
     "desc": "全场每有一个 1x1 菜，美味度 +1。",
-    "effectType": 0,
-    "effectValue": [],
-    "effectParam": [],
     "termId": ""
   },
   {
     "id": "sk_step",
     "name": "丰盛阶梯",
     "desc": "全场菜品达到 3 个时，美味度 +50。",
-    "effectType": 0,
-    "effectValue": [],
-    "effectParam": [],
     "termId": ""
   },
   {
     "id": "sk_transfer",
     "name": "分你一口",
     "desc": "把本菜 30% 加法分传递给相邻菜。",
-    "effectType": 0,
-    "effectValue": [],
-    "effectParam": [],
     "termId": ""
   },
   {
     "id": "sk_extra",
     "name": "回味无穷",
     "desc": "每有一个相邻菜，本菜额外结算 1 次。",
-    "effectType": 0,
-    "effectValue": [],
-    "effectParam": [],
     "termId": ""
   },
   {
     "id": "sk_gold",
     "name": "财源广进",
     "desc": "全场每有一个菜，获得 1 金币。",
-    "effectType": 0,
-    "effectValue": [],
-    "effectParam": [],
     "termId": ""
   },
   {
     "id": "cake_layer_add",
     "name": "蛋糕叠层",
     "desc": "上菜时层数 +1。",
-    "effectType": 0,
-    "effectValue": [],
-    "effectParam": [],
     "termId": ""
   },
   {
     "id": "cake_layer_score",
     "name": "蛋糕层高",
     "desc": "本菜每有一层，美味度 +3。",
-    "effectType": 0,
-    "effectValue": [],
-    "effectParam": [],
     "termId": ""
   },
   {
     "id": "sk_run_same",
     "name": "念念不忘",
     "desc": "本局每结算过一次本种菜，美味度 +3。",
-    "effectType": 0,
-    "effectValue": [],
-    "effectParam": [],
     "termId": ""
   },
   {
     "id": "sk_recipe",
     "name": "菜谱丰盈",
     "desc": "菜谱内菜品达到 8 个时，分数 ×2。",
-    "effectType": 0,
-    "effectValue": [],
-    "effectParam": [],
     "termId": ""
   },
   {
     "id": "sk_share_skill",
     "name": "秘方相传",
     "desc": "上菜时把自身技能传给相邻菜。",
-    "effectType": 0,
-    "effectValue": [],
-    "effectParam": [],
     "termId": ""
   }
 ]
