@@ -17,6 +17,9 @@ namespace GourmetProject.Game.UI.Meta
     /// </summary>
     public sealed class RecipeEditPanel : MonoBehaviour
     {
+        private const float DesiredBookGap = 24f;
+        private const float MinBookScale = 0.1f;
+
         [Header("Books")]
         [SerializeField] private RectTransform _editBooksContainer;
         [SerializeField] private RecipeEditBookView _editBookPrefab;
@@ -94,6 +97,8 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
+            ConfigureBooksLayoutGroup();
+
             if (_trashZone != null)
             {
                 _trashZone.Bind(OnDishDroppedToTrash);
@@ -101,6 +106,7 @@ namespace GourmetProject.Game.UI.Meta
 
             SetText(_trashPriceText, $"-{ShopService.DeleteDishCost}");
 
+            var books = new List<RecipeEditBookView>(_run.RecipeBookCount);
             for (int i = 0; i < _run.RecipeBookCount; i++)
             {
                 IReadOnlyList<string> dishes = _run.GetRecipeBookDishes(i);
@@ -108,6 +114,7 @@ namespace GourmetProject.Game.UI.Meta
                 book.gameObject.name = $"RecipeEditBook_{i + 1}";
                 book.Bind(i, $"菜谱{i + 1}", $"{dishes.Count}/{GameRun.RecipeBookCapacity}", OnDishDroppedToBook);
                 _spawned.Add(book.gameObject);
+                books.Add(book);
 
                 RectTransform dishContainer = book.DishContainer;
                 if (dishContainer == null)
@@ -125,7 +132,69 @@ namespace GourmetProject.Game.UI.Meta
                 }
             }
 
+            FitBooksToContainer(books);
             _onChanged?.Invoke();
+        }
+
+        private void ConfigureBooksLayoutGroup()
+        {
+            HorizontalLayoutGroup layout = _editBooksContainer.GetComponent<HorizontalLayoutGroup>();
+            if (layout == null)
+            {
+                return;
+            }
+
+            layout.enabled = false;
+        }
+
+        private void FitBooksToContainer(IReadOnlyList<RecipeEditBookView> books)
+        {
+            if (books == null || books.Count == 0)
+            {
+                return;
+            }
+
+            RectTransform firstBookRect = (RectTransform)books[0].transform;
+            Vector2 bookSize = firstBookRect.sizeDelta;
+            if (bookSize.x <= 0f || bookSize.y <= 0f)
+            {
+                bookSize = firstBookRect.rect.size;
+            }
+
+            if (bookSize.x <= 0f || bookSize.y <= 0f)
+            {
+                return;
+            }
+
+            float availableWidth = _editBooksContainer.rect.width;
+            float availableHeight = _editBooksContainer.rect.height;
+            if (availableWidth <= 0f || availableHeight <= 0f)
+            {
+                return;
+            }
+
+            float totalDesiredGap = DesiredBookGap * (books.Count + 1);
+            float widthScale = (availableWidth - totalDesiredGap) / (bookSize.x * books.Count);
+            float heightScale = availableHeight / bookSize.y;
+            float scale = Mathf.Clamp(Mathf.Min(widthScale, heightScale, 1f), MinBookScale, 1f);
+            float scaledBookWidth = bookSize.x * scale;
+            float gap = books.Count == 1
+                ? (availableWidth - scaledBookWidth) * 0.5f
+                : (availableWidth - scaledBookWidth * books.Count) / (books.Count + 1);
+            gap = Mathf.Max(0f, gap);
+            float x = -availableWidth * 0.5f + gap + scaledBookWidth * 0.5f;
+
+            foreach (RecipeEditBookView book in books)
+            {
+                RectTransform rect = (RectTransform)book.transform;
+                rect.anchorMin = new Vector2(0.5f, 0.5f);
+                rect.anchorMax = new Vector2(0.5f, 0.5f);
+                rect.pivot = new Vector2(0.5f, 0.5f);
+                rect.sizeDelta = bookSize;
+                rect.localScale = new Vector3(scale, scale, 1f);
+                rect.anchoredPosition = new Vector2(x, 0f);
+                x += scaledBookWidth + gap;
+            }
         }
 
         private void OnDishDroppedToBook(RecipeEditDishView dish, int targetBookIndex)

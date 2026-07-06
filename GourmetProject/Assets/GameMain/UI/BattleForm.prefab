@@ -540,7 +540,7 @@ MonoBehaviour:
   _cardPrefab: {fileID: 7715130948239374739, guid: ed95be9110bfd461e8decb80978d5929, type: 3}
   _skipButton: {fileID: 5738054906141532378}
   _shopPanel: {fileID: 9064086834078507581}
-  _recipeEditPanel: {fileID: 2837025639640485691}
+  _recipeEditPanel: {fileID: 640277735806117130}
   _passiveItemsContainer: {fileID: 0}
   _itemSlotPrefab: {fileID: 3732292357256354819, guid: af369f5a2ad1244aea490e8171a88eb4, type: 3}
   _activeItemSlots:
@@ -4806,6 +4806,7 @@ RectTransform:
   m_Children:
   - {fileID: 9064086834078507582}
   - {fileID: 2425104924662137040}
+  - {fileID: 4326582166000000528}
   m_Father: {fileID: 7821990121811298790}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -5827,6 +5828,119 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 4852092192568821543, guid: af369f5a2ad1244aea490e8171a88eb4, type: 3}
   m_PrefabInstance: {fileID: 3684944669099050385}
   m_PrefabAsset: {fileID: 0}
+--- !u!1001 &6771504526016451995
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 8055366757439057992}
+    m_Modifications:
+    - target: {fileID: 340822506070461114, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+      propertyPath: m_Name
+      value: RecipeEditPanel
+      objectReference: {fileID: 0}
+    - target: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+      propertyPath: m_Pivot.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+      propertyPath: m_Pivot.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0.86
+      objectReference: {fileID: 0}
+    - target: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0.9
+      objectReference: {fileID: 0}
+    - target: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0.14
+      objectReference: {fileID: 0}
+    - target: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0.03
+      objectReference: {fileID: 0}
+    - target: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+--- !u!114 &640277735806117130 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6132651757827371153, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+  m_PrefabInstance: {fileID: 6771504526016451995}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3657596b08fef4c39a6270897c5722c6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Meta.RecipeEditPanel
+--- !u!224 &4326582166000000528 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+  m_PrefabInstance: {fileID: 6771504526016451995}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &8082461872448561707
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5928,17 +6042,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
---- !u!114 &2837025639640485691 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 6302101075044150544, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
-  m_PrefabInstance: {fileID: 8082461872448561707}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3657596b08fef4c39a6270897c5722c6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Meta.RecipeEditPanel
 --- !u!114 &9064086834078507581 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 1000000000000000022, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}

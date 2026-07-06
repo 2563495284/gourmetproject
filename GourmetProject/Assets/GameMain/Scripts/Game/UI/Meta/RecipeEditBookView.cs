@@ -39,7 +39,7 @@ namespace GourmetProject.Game.UI.Meta
         {
             RecipeEditDishView dish = eventData.pointerDrag == null
                 ? null
-                : eventData.pointerDrag.GetComponent<RecipeEditDishView>();
+                : eventData.pointerDrag.GetComponentInParent<RecipeEditDishView>();
             if (dish != null)
             {
                 _onDishDropped?.Invoke(dish, _bookIndex);

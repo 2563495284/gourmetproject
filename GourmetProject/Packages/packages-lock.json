@@ -17,7 +17,7 @@
       "hash": "061314200e2f03307c4d90b448e1de7b85431905"
     },
     "com.coffee.ui-effect": {
-      "version": "5.10.9",
+      "version": "5.11.3",
       "depth": 0,
       "source": "registry",
       "dependencies": {

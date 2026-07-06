@@ -17,6 +17,7 @@ namespace GourmetProject.Game.UI.Meta
         private RectTransform _rect;
         private Transform _originalParent;
         private Vector2 _originalAnchoredPosition;
+        private Canvas _dragCanvas;
 
         public int BookIndex { get; private set; }
         public int DishIndex { get; private set; }
@@ -48,13 +49,27 @@ namespace GourmetProject.Game.UI.Meta
         {
             _originalParent = transform.parent;
             _originalAnchoredPosition = _rect.anchoredPosition;
-            transform.SetParent(transform.root, true);
+            _dragCanvas = GetComponentInParent<Canvas>();
+            transform.SetParent(_dragCanvas != null ? _dragCanvas.transform : transform.root, true);
+            transform.SetAsLastSibling();
             _canvasGroup.blocksRaycasts = false;
             _canvasGroup.alpha = 0.82f;
         }
 
         public void OnDrag(PointerEventData eventData)
         {
+            RectTransform parentRect = _rect.parent as RectTransform;
+            if (parentRect != null
+                && RectTransformUtility.ScreenPointToWorldPointInRectangle(
+                    parentRect,
+                    eventData.position,
+                    eventData.pressEventCamera,
+                    out Vector3 worldPoint))
+            {
+                _rect.position = worldPoint;
+                return;
+            }
+
             _rect.position = eventData.position;
         }
 
