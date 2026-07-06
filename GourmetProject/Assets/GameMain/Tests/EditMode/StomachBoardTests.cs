@@ -211,6 +211,96 @@ namespace GourmetProject.Tests
         }
 
         [Test]
+        public void StomachBuilder_CenteredOrigin_AllowsExpansionAroundInitialBoard()
+        {
+            var initial = new StomachFragmentDef("gut", new[] { "XX", "XX" }, 0, 0, 0f, 0, System.Array.Empty<CellTag>());
+            var single = new StomachFragmentDef("ext", new[] { "X" }, 0, 0, 0f, 0, System.Array.Empty<CellTag>());
+
+            GridPos origin = StomachBuilder.CenteredOrigin(initial, 4, 4);
+            Board board = StomachBuilder.BuildFromExpanded(initial, null, null, null, 4, 4, origin);
+
+            Assert.AreEqual(new GridPos(1, 1), origin);
+            Assert.IsFalse(board.Exists(new GridPos(0, 0)));
+            Assert.IsTrue(board.Exists(new GridPos(1, 1)));
+            Assert.IsTrue(board.Exists(new GridPos(2, 2)));
+            Assert.IsTrue(StomachBuilder.CanPlaceFragmentAt(board, single, 0, new GridPos(0, 1)), "left expansion should be legal");
+            Assert.IsTrue(StomachBuilder.CanPlaceFragmentAt(board, single, 0, new GridPos(1, 0)), "top expansion should be legal");
+            Assert.IsFalse(StomachBuilder.CanPlaceFragmentAt(board, single, 0, new GridPos(-1, 1)), "out-of-bounds expansion should be rejected");
+        }
+
+        [Test]
+        public void StomachBuilder_LocalBounds_AllowsExpansionUntilMergedBboxExceedsMaxWidth()
+        {
+            var existing = new HashSet<GridPos>
+            {
+                new GridPos(10, 10),
+                new GridPos(11, 10),
+                new GridPos(12, 10),
+                new GridPos(13, 10),
+                new GridPos(14, 10),
+                new GridPos(15, 10),
+            };
+            var twoWide = new StomachFragmentDef("ext", new[] { "XX" }, 0, 0, 0f, 0, System.Array.Empty<CellTag>());
+            var threeWide = new StomachFragmentDef("ext_big", new[] { "XXX" }, 0, 0, 0f, 0, System.Array.Empty<CellTag>());
+
+            Assert.AreEqual(
+                StomachBuilder.FragmentPlacementStatus.Valid,
+                StomachBuilder.GetFragmentPlacementStatusWithinMaxBounds(existing, twoWide, new GridPos(16, 10), 8, 4),
+                "current width 6 + right expansion 2 should still fit max width 8");
+            Assert.AreEqual(
+                StomachBuilder.FragmentPlacementStatus.Valid,
+                StomachBuilder.GetFragmentPlacementStatusWithinMaxBounds(existing, twoWide, new GridPos(8, 10), 8, 4),
+                "same expansion to the left should also fit max width 8");
+            Assert.AreEqual(
+                StomachBuilder.FragmentPlacementStatus.OutOfBounds,
+                StomachBuilder.GetFragmentPlacementStatusWithinMaxBounds(existing, threeWide, new GridPos(16, 10), 8, 4),
+                "merged width 9 should exceed max width 8");
+        }
+
+        [Test]
+        public void StomachBuilder_LocalBounds_DistinguishesInvalidReasons()
+        {
+            var existing = new HashSet<GridPos>
+            {
+                new GridPos(10, 10),
+                new GridPos(11, 10),
+                new GridPos(12, 10),
+                new GridPos(13, 10),
+                new GridPos(14, 10),
+                new GridPos(15, 10),
+            };
+            var single = new StomachFragmentDef("ext", new[] { "X" }, 0, 0, 0f, 0, System.Array.Empty<CellTag>());
+            var threeWide = new StomachFragmentDef("ext_big", new[] { "XXX" }, 0, 0, 0f, 0, System.Array.Empty<CellTag>());
+
+            Assert.AreEqual(StomachBuilder.FragmentPlacementStatus.Overlap, StomachBuilder.GetFragmentPlacementStatusWithinMaxBounds(existing, single, new GridPos(10, 10), 8, 4));
+            Assert.AreEqual(StomachBuilder.FragmentPlacementStatus.Detached, StomachBuilder.GetFragmentPlacementStatusWithinMaxBounds(existing, single, new GridPos(18, 10), 8, 4));
+            Assert.AreEqual(StomachBuilder.FragmentPlacementStatus.OutOfBounds, StomachBuilder.GetFragmentPlacementStatusWithinMaxBounds(existing, threeWide, new GridPos(16, 10), 8, 4));
+        }
+
+        [Test]
+        public void StomachBuilder_LocalBounds_IgnoresSavedFragmentRotation()
+        {
+            var initial = new StomachFragmentDef("gut", new[] { "X" }, 0, 0, 0f, 0, System.Array.Empty<CellTag>());
+            var ext = new StomachFragmentDef("ext", new[] { "XX" }, 0, 0, 0f, 0, System.Array.Empty<CellTag>());
+            var placements = new[] { new StomachFragmentPlacement("ext", 1, new GridPos(3, 2)) };
+
+            Board board = StomachBuilder.BuildFromExpandedLocalBounds(
+                initial,
+                null,
+                placements,
+                id => id == "ext" ? ext : null,
+                4,
+                4,
+                8,
+                8,
+                new GridPos(2, 2));
+
+            Assert.IsTrue(board.Exists(new GridPos(3, 2)));
+            Assert.IsTrue(board.Exists(new GridPos(4, 2)), "rotation should be ignored, keeping the horizontal shape");
+            Assert.IsFalse(board.Exists(new GridPos(3, 3)), "rotated vertical footprint should not be applied");
+        }
+
+        [Test]
         public void StomachBuilder_ClampsFragmentToMaxBounds()
         {
             // 4x4 满碎片塞进 3x3 包围盒：超出部分裁掉，剩 9 格。

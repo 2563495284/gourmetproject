@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Model;
@@ -9,15 +10,21 @@ using GourmetProject.Game.Run;
 namespace GourmetProject.Game.Presentation.Battle
 {
     /// <summary>
-    /// 棋盘编辑页（世界空间）：复用棋盘渲染，在最大网格（虚格占位）上把从碎片包开出的候选形状手动拼贴到胃上。
-    /// 选中候选后可用鼠标滚轮旋转，悬停高亮可放/不可放，左键落位，右键放弃（折算金币）。
+    /// 棋盘编辑页（世界空间）：复用棋盘渲染，把从碎片包开出的候选形状手动拖拽拼贴到胃上。
+    /// 按住底部候选开始拖拽，固定朝向，松开时合法则落位；右键放弃（折算金币）。
     /// </summary>
     public sealed partial class BattleWorldController
     {
         private const int EditGhostSortingOrder = 200;
         private const int EditTraySortingOrder = 150;
+        private const int EditDragSortingOrder = 260;
+        private const float EditDragGrabDuration = 0.12f;
+        private const float EditDragReturnDuration = 0.16f;
+        private const float EditGhostOutlineWidth = 0.075f;
+        private const float EditBoundsWarningWidth = 0.055f;
         private static readonly Color GhostValidColor = new Color(0.35f, 0.9f, 0.4f, 0.85f);
         private static readonly Color GhostInvalidColor = new Color(0.95f, 0.35f, 0.3f, 0.7f);
+        private static readonly Color BoundsWarningColor = new Color(1f, 0.05f, 0.02f, 0.42f);
         private static readonly Color TraySelectedColor = new Color(1f, 0.95f, 0.6f, 1f);
         private static readonly Color TrayNormalColor = new Color(0.85f, 0.85f, 0.85f, 0.9f);
 
@@ -28,13 +35,25 @@ namespace GourmetProject.Game.Presentation.Battle
         private readonly List<StomachFragmentDef> _editCandidates = new List<StomachFragmentDef>();
         private int _editSelected = -1;
         private int _editRotation;
+        private bool _editDragging;
+        private bool _editDragAnimating;
+        private bool _editDragReturning;
 
         private Transform _editRoot;
         private readonly List<BoardCellView> _editGhostCells = new List<BoardCellView>();
         private readonly List<BoardCellView> _editTrayCells = new List<BoardCellView>();
+        private readonly List<BoardCellView> _editDragCells = new List<BoardCellView>();
         private readonly List<TrayCluster> _editTrayClusters = new List<TrayCluster>();
         private Sprite _editCellSprite;
         private float _editTraySize;
+        private Transform _editDragRoot;
+        private readonly List<LineRenderer> _editBoundsWarningLines = new List<LineRenderer>();
+        private Material _editBoundsWarningMaterial;
+        private Vector3 _editDragReturnCenter;
+        private float _editDragReturnScale = 1f;
+        private int _editMaxWidth;
+        private int _editMaxHeight;
+        private Coroutine _editDragRoutine;
 
         public bool IsEditingBoard => _editing;
 
@@ -43,6 +62,22 @@ namespace GourmetProject.Game.Presentation.Battle
             public int CandidateIndex;
             public Vector3 Center;
             public Vector2 HalfExtents;
+        }
+
+        private struct BoundsWarningInfo
+        {
+            public bool OverLeft;
+            public bool OverRight;
+            public bool OverTop;
+            public bool OverBottom;
+            public int LeftLimitX;
+            public int RightLimitX;
+            public int TopLimitY;
+            public int BottomLimitY;
+            public int MinX;
+            public int MinY;
+            public int MaxX;
+            public int MaxY;
         }
 
         /// <summary>
@@ -61,6 +96,10 @@ namespace GourmetProject.Game.Presentation.Battle
             _editOnDone = onDone;
             _editSelected = -1;
             _editRotation = 0;
+            _editDragging = false;
+            _editDragAnimating = false;
+            _editDragReturning = false;
+            ConfigureEditMaxBounds(run);
 
             _editCandidates.Clear();
             if (candidateIds != null)
@@ -94,12 +133,6 @@ namespace GourmetProject.Game.Presentation.Battle
             EnsureEditRoot();
             BuildCandidateTray();
 
-            // 默认选中第一个候选，方便直接拖放。
-            if (_editCandidates.Count > 0)
-            {
-                SelectCandidate(0);
-            }
-
             _editing = true;
         }
 
@@ -109,9 +142,14 @@ namespace GourmetProject.Game.Presentation.Battle
             _editing = false;
             _editSelected = -1;
             _editRotation = 0;
+            _editDragging = false;
+            _editDragAnimating = false;
+            _editDragReturning = false;
             _editCandidates.Clear();
             ClearGhost();
+            ClearDragVisual();
             ClearTray();
+            HideBoundsWarning();
             _boardView?.ShowVoidAsPlaceholders(false);
             _editRun = null;
             _editBoard = null;
@@ -133,44 +171,55 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            // 滚轮旋转选中候选。
-            float scroll = WorldInput.ScrollDelta;
-            if (_editSelected >= 0 && Mathf.Abs(scroll) > 0.01f)
-            {
-                _editRotation = ((_editRotation + (scroll > 0f ? 1 : 3)) % 4 + 4) % 4;
-                BuildCandidateTray();
-            }
-
             Vector3 mouseWorld = WorldInput.MouseWorld(_camera);
 
-            // 左键：优先命中底部候选托盘选择；否则若已选中且悬停位置合法则落位。
-            if (WorldInput.PrimaryPressedThisFrame)
+            if (_editDragReturning)
             {
-                if (TryPickTray(mouseWorld, out int picked))
-                {
-                    SelectCandidate(picked);
-                    return;
-                }
-
-                if (_editSelected >= 0 && TryGetHoverPlacement(mouseWorld, out GridPos origin, out bool valid) && valid)
-                {
-                    PlaceAt(origin);
-                    return;
-                }
+                ClearGhost();
+                return;
             }
 
-            // 右键：放弃碎片包（折算金币兜底）。
             if (WorldInput.SecondaryPressedThisFrame)
             {
                 SkipPack();
                 return;
             }
 
-            // 悬停预览。
-            UpdateHoverGhost(mouseWorld);
+            if (!_editDragging)
+            {
+                if (WorldInput.PrimaryPressedThisFrame && TryPickTray(mouseWorld, out int picked))
+                {
+                    BeginCandidateDrag(picked, mouseWorld);
+                    UpdateDragFeedback(mouseWorld);
+                    return;
+                }
+
+                ClearGhost();
+                HideBoundsWarning();
+                return;
+            }
+
+            if (!_editDragAnimating && _editDragRoot != null)
+            {
+                UpdateDragFeedback(mouseWorld);
+            }
+
+            if (WorldInput.PrimaryReleasedThisFrame || !WorldInput.PrimaryHeld)
+            {
+                if (_editSelected >= 0 && TryGetHoverPlacement(mouseWorld, out GridPos origin, out bool valid) && valid)
+                {
+                    PlaceAt(origin);
+                    return;
+                }
+
+                ReturnCandidateDrag();
+                return;
+            }
+
+            UpdateDragFeedback(mouseWorld);
         }
 
-        private void SelectCandidate(int index)
+        private void BeginCandidateDrag(int index, Vector3 mouseWorld)
         {
             if (index < 0 || index >= _editCandidates.Count)
             {
@@ -179,59 +228,163 @@ namespace GourmetProject.Game.Presentation.Battle
 
             _editSelected = index;
             _editRotation = 0;
+            _editDragging = true;
+            _editDragReturning = false;
+            _editDragReturnCenter = TrayCenterForCandidate(index, mouseWorld);
+            _editDragReturnScale = Mathf.Clamp(_editTraySize / Mathf.Max(0.0001f, _cellSize), 0.01f, 1f);
             BuildCandidateTray();
+            BuildDragVisual(_editCandidates[index], _editDragReturnCenter, _editDragReturnScale);
+            Vector3 target = TryGetDragPlacement(mouseWorld, out _, out _, out _, out Vector3 snappedCenter)
+                ? snappedCenter
+                : mouseWorld;
+            StartDragRoutine(AnimateDragVisual(target, Vector3.one, EditDragGrabDuration, keepFollowing: true));
             ClearGhost();
         }
 
-        private void UpdateHoverGhost(Vector3 mouseWorld)
+        private void ReturnCandidateDrag()
         {
-            if (_editSelected < 0)
+            _editDragging = false;
+            _editDragReturning = true;
+            BuildCandidateTray();
+            ClearGhost();
+            HideBoundsWarning();
+
+            if (_editDragRoot == null)
+            {
+                FinishReturnDrag();
+                return;
+            }
+
+            StartDragRoutine(AnimateDragVisual(_editDragReturnCenter, Vector3.one * _editDragReturnScale, EditDragReturnDuration, keepFollowing: false, FinishReturnDrag));
+        }
+
+        private void UpdateDragFeedback(Vector3 mouseWorld)
+        {
+            if (!_editDragging || _editSelected < 0)
             {
                 ClearGhost();
                 return;
             }
 
-            if (!TryGetHoverPlacement(mouseWorld, out GridPos origin, out bool valid))
+            if (!TryGetDragPlacement(mouseWorld, out GridPos origin, out bool valid, out _, out Vector3 snappedCenter))
             {
                 ClearGhost();
+                HideBoundsWarning();
                 return;
             }
 
-            StomachFragmentDef def = _editCandidates[_editSelected].Rotated(_editRotation);
-            List<GridPos> cells = StomachBuilder.FilledCells(def);
             Color color = valid ? GhostValidColor : GhostInvalidColor;
-
-            EnsureGhostCount(cells.Count);
-            for (int i = 0; i < _editGhostCells.Count; i++)
+            if (_editDragRoot != null && !_editDragAnimating)
             {
-                BoardCellView ghost = _editGhostCells[i];
-                if (i < cells.Count)
-                {
-                    GridPos abs = cells[i].Offset(origin.X, origin.Y);
-                    ghost.gameObject.SetActive(true);
-                    ghost.transform.localPosition = _boardView.Mapper.CellCenterLocal(abs);
-                    ghost.SetColor(color);
-                    ghost.SetSortingOrder(EditGhostSortingOrder);
-                }
-                else
-                {
-                    ghost.gameObject.SetActive(false);
-                }
+                _editDragRoot.position = snappedCenter;
             }
+
+            SetDragOutline(color);
+            StomachFragmentDef def = _editCandidates[_editSelected];
+            if (TryGetBoundsWarning(origin, def, out BoundsWarningInfo warning))
+            {
+                ShowBoundsWarning(warning);
+            }
+            else
+            {
+                HideBoundsWarning();
+            }
+
+            ClearGhost();
         }
 
         private bool TryGetHoverPlacement(Vector3 mouseWorld, out GridPos origin, out bool valid)
         {
-            origin = _boardView.Mapper.NearestCell(mouseWorld);
+            origin = default;
             valid = false;
-            if (_editSelected < 0)
+            if (_editSelected < 0 || _editSelected >= _editCandidates.Count)
             {
                 return false;
             }
 
-            StomachFragmentDef def = _editCandidates[_editSelected].Rotated(_editRotation);
-            valid = StomachBuilder.CanPlaceFragmentAt(_editBoard, def, 0, origin);
+            StomachFragmentDef def = _editCandidates[_editSelected];
+            origin = NearestOriginForFragmentCenter(mouseWorld, def);
+            StomachBuilder.FragmentPlacementStatus status = StomachBuilder.GetFragmentPlacementStatusWithinMaxBounds(
+                StomachBuilder.ToExistingSet(_editBoard),
+                def,
+                origin,
+                _editMaxWidth,
+                _editMaxHeight);
+            valid = status == StomachBuilder.FragmentPlacementStatus.Valid;
             return true;
+        }
+
+        private bool TryGetDragPlacement(
+            Vector3 mouseWorld,
+            out GridPos origin,
+            out bool valid,
+            out StomachBuilder.FragmentPlacementStatus status,
+            out Vector3 centerWorld)
+        {
+            centerWorld = mouseWorld;
+            status = StomachBuilder.FragmentPlacementStatus.Detached;
+            if (!TryGetHoverPlacement(mouseWorld, out origin, out valid))
+            {
+                return false;
+            }
+
+            StomachFragmentDef def = _editCandidates[_editSelected];
+            status = StomachBuilder.GetFragmentPlacementStatusWithinMaxBounds(
+                StomachBuilder.ToExistingSet(_editBoard),
+                def,
+                origin,
+                _editMaxWidth,
+                _editMaxHeight);
+            valid = status == StomachBuilder.FragmentPlacementStatus.Valid;
+            centerWorld = FragmentCenterWorld(origin, def);
+            return true;
+        }
+
+        private GridPos NearestOriginForFragmentCenter(Vector3 mouseWorld, StomachFragmentDef def)
+        {
+            BoardCoordinateMapper mapper = _boardView.Mapper;
+            if (mapper == null)
+            {
+                return default;
+            }
+
+            Vector3 localMouse = mapper.Root != null ? mapper.Root.InverseTransformPoint(mouseWorld) : mouseWorld;
+            Vector3 originCenterLocal = localMouse - FragmentCenterOffsetLocal(def);
+            Vector3 originCenterWorld = mapper.Root != null ? mapper.Root.TransformPoint(originCenterLocal) : originCenterLocal;
+            return mapper.NearestCell(originCenterWorld);
+        }
+
+        private Vector3 FragmentCenterOffsetLocal(StomachFragmentDef def)
+        {
+            List<GridPos> cells = StomachBuilder.FilledCells(def);
+            if (cells.Count == 0 || _boardView.Mapper == null)
+            {
+                return Vector3.zero;
+            }
+
+            float sumX = 0f;
+            float sumY = 0f;
+            foreach (GridPos cell in cells)
+            {
+                sumX += cell.X;
+                sumY += cell.Y;
+            }
+
+            float inv = 1f / cells.Count;
+            float pitch = _boardView.Mapper.Pitch;
+            return new Vector3(sumX * inv * pitch, -sumY * inv * pitch, 0f);
+        }
+
+        private Vector3 FragmentCenterWorld(GridPos origin, StomachFragmentDef def)
+        {
+            BoardCoordinateMapper mapper = _boardView.Mapper;
+            if (mapper == null)
+            {
+                return Vector3.zero;
+            }
+
+            Vector3 local = mapper.CellCenterLocal(origin) + FragmentCenterOffsetLocal(def);
+            return mapper.Root != null ? mapper.Root.TransformPoint(local) : local;
         }
 
         private void PlaceAt(GridPos origin)
@@ -242,8 +395,10 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             string fragmentId = _editCandidates[_editSelected].Id;
-            _editRun.AddFragmentPlacement(fragmentId, _editRotation, origin);
+            _editRun.AddFragmentPlacement(fragmentId, 0, origin);
             _editRun.ClearPendingFragmentPack();
+            _editDragging = false;
+            HideBoundsWarning();
 
             Action done = _editOnDone;
             EndBoardEdit();
@@ -274,13 +429,30 @@ namespace GourmetProject.Game.Presentation.Battle
             float availW = Mathf.Max(1f, boardRight - boardLeft);
             float availH = Mathf.Max(1f, boardTop - boardBottom);
 
-            // 编辑页按「完整最大网格」定尺寸与居中：所有可扩展的虚格都要能看到。
-            _cellSize = Mathf.Clamp(Mathf.Min(availW / board.Width, availH / board.Height), MinCellSize, MaxCellSize);
+            // 编辑页按当前实际胃形居中；最大包围盒只参与逻辑限制，不作为背景网格铺出来。
+            if (!board.TryGetExistingBounds(out int minX, out int minY, out int maxX, out int maxY))
+            {
+                minX = minY = 0;
+                maxX = board.Width - 1;
+                maxY = board.Height - 1;
+            }
+
+            int boxW = Mathf.Max(1, maxX - minX + 1);
+            int boxH = Mathf.Max(1, maxY - minY + 1);
+            _cellSize = Mathf.Clamp(Mathf.Min(availW / boxW, availH / boxH), MinCellSize, MaxCellSize);
 
             var areaCenter = new Vector3((boardLeft + boardRight) * 0.5f, (boardTop + boardBottom) * 0.5f, 0f);
+            float pitch = _cellSize + Gap;
+            float fullWorldWidth = board.Width * _cellSize + Mathf.Max(0, board.Width - 1) * Gap;
+            float fullWorldHeight = board.Height * _cellSize + Mathf.Max(0, board.Height - 1) * Gap;
+            float boxCenterIndexX = (minX + maxX) * 0.5f;
+            float boxCenterIndexY = (minY + maxY) * 0.5f;
             _boardView.transform.rotation = Quaternion.identity;
             _boardView.transform.localScale = Vector3.one;
-            _boardView.transform.position = areaCenter;
+            _boardView.transform.position = new Vector3(
+                areaCenter.x + fullWorldWidth * 0.5f - boxCenterIndexX * pitch - _cellSize * 0.5f,
+                areaCenter.y - fullWorldHeight * 0.5f + boxCenterIndexY * pitch + _cellSize * 0.5f,
+                0f);
 
             if (_piecesRoot != null && _piecesRoot.parent != _boardView.transform)
             {
@@ -291,7 +463,8 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _boardView.Build(board, _cellSize, Gap, null, _boardCellPrefab);
-            _boardView.ShowVoidAsPlaceholders(true);
+            _editGhostCells.Clear();
+            _boardView.ShowVoidAsPlaceholders(false);
 
             _editTraySize = Mathf.Clamp(_cellSize * 0.62f, 0.28f, 0.6f);
         }
@@ -307,6 +480,214 @@ namespace GourmetProject.Game.Presentation.Battle
 
             _editRoot.localPosition = Vector3.zero;
             _editRoot.localScale = Vector3.one;
+        }
+
+        private void ConfigureEditMaxBounds(GameRun run)
+        {
+            cfg.Character character = run.Tables.TbCharacter.GetOrDefault(run.CharacterId);
+            _editMaxWidth = character != null && character.MaxStomachWidth > 0 ? character.MaxStomachWidth : GameRun.BoardWidth;
+            _editMaxHeight = character != null && character.MaxStomachHeight > 0 ? character.MaxStomachHeight : GameRun.BoardHeight;
+        }
+
+        private void ShowBoundsWarning(BoundsWarningInfo warning)
+        {
+            if (_boardView == null || _boardView.Mapper == null)
+            {
+                HideBoundsWarning();
+                return;
+            }
+
+            if (!warning.OverLeft && !warning.OverRight && !warning.OverTop && !warning.OverBottom)
+            {
+                HideBoundsWarning();
+                return;
+            }
+
+            BoardCoordinateMapper mapper = _boardView.Mapper;
+            float half = _cellSize * 0.5f;
+            Vector3 spanMin = mapper.CellCenterLocal(new GridPos(warning.MinX, warning.MinY));
+            Vector3 spanMax = mapper.CellCenterLocal(new GridPos(warning.MaxX, warning.MaxY));
+            float spanLeft = spanMin.x - half;
+            float spanTop = spanMin.y + half;
+            float spanRight = spanMax.x + half;
+            float spanBottom = spanMax.y - half;
+
+            int lineIndex = 0;
+            if (warning.OverLeft)
+            {
+                float x = mapper.CellCenterLocal(new GridPos(warning.LeftLimitX, warning.MinY)).x - half;
+                SetBoundsWarningSegment(lineIndex++, mapper, new Vector3(x, spanTop, 0f), new Vector3(x, spanBottom, 0f));
+            }
+
+            if (warning.OverRight)
+            {
+                float x = mapper.CellCenterLocal(new GridPos(warning.RightLimitX, warning.MinY)).x + half;
+                SetBoundsWarningSegment(lineIndex++, mapper, new Vector3(x, spanTop, 0f), new Vector3(x, spanBottom, 0f));
+            }
+
+            if (warning.OverTop)
+            {
+                float y = mapper.CellCenterLocal(new GridPos(warning.MinX, warning.TopLimitY)).y + half;
+                SetBoundsWarningSegment(lineIndex++, mapper, new Vector3(spanLeft, y, 0f), new Vector3(spanRight, y, 0f));
+            }
+
+            if (warning.OverBottom)
+            {
+                float y = mapper.CellCenterLocal(new GridPos(warning.MinX, warning.BottomLimitY)).y - half;
+                SetBoundsWarningSegment(lineIndex++, mapper, new Vector3(spanLeft, y, 0f), new Vector3(spanRight, y, 0f));
+            }
+
+            for (int i = lineIndex; i < _editBoundsWarningLines.Count; i++)
+            {
+                _editBoundsWarningLines[i].gameObject.SetActive(false);
+            }
+        }
+
+        private void HideBoundsWarning()
+        {
+            foreach (LineRenderer line in _editBoundsWarningLines)
+            {
+                if (line != null)
+                {
+                    line.gameObject.SetActive(false);
+                }
+            }
+        }
+
+        private void SetBoundsWarningSegment(int index, BoardCoordinateMapper mapper, Vector3 localStart, Vector3 localEnd)
+        {
+            LineRenderer line = EnsureBoundsWarningLine(index);
+            if (line == null)
+            {
+                return;
+            }
+
+            line.gameObject.SetActive(true);
+            line.positionCount = 2;
+            line.SetPosition(0, ToWarningWorld(mapper, localStart));
+            line.SetPosition(1, ToWarningWorld(mapper, localEnd));
+        }
+
+        private Vector3 ToWarningWorld(BoardCoordinateMapper mapper, Vector3 local)
+        {
+            return mapper.Root != null ? mapper.Root.TransformPoint(local) : local;
+        }
+
+        private LineRenderer EnsureBoundsWarningLine(int index)
+        {
+            if (index < 0)
+            {
+                return null;
+            }
+
+            EnsureEditRoot();
+            while (_editBoundsWarningLines.Count <= index)
+            {
+                var go = new GameObject($"BoundsWarning{_editBoundsWarningLines.Count}");
+                go.transform.SetParent(_editRoot, false);
+                LineRenderer line = go.AddComponent<LineRenderer>();
+                line.useWorldSpace = true;
+                line.loop = false;
+                line.startWidth = EditBoundsWarningWidth;
+                line.endWidth = EditBoundsWarningWidth;
+                line.startColor = BoundsWarningColor;
+                line.endColor = BoundsWarningColor;
+                line.sharedMaterial = BoundsWarningMaterial();
+                BattleSorting.Apply(line, BattleSorting.Fx, BattleSorting.OrderFloatingText);
+                go.SetActive(false);
+                _editBoundsWarningLines.Add(line);
+            }
+
+            return _editBoundsWarningLines[index];
+        }
+
+        private bool TryGetBoundsWarning(GridPos origin, StomachFragmentDef def, out BoundsWarningInfo warning)
+        {
+            warning = default;
+            if (def == null || _editBoard == null || !_editBoard.TryGetExistingBounds(out int minX, out int minY, out int maxX, out int maxY))
+            {
+                return false;
+            }
+
+            int candidateMinX = int.MaxValue;
+            int candidateMinY = int.MaxValue;
+            int candidateMaxX = int.MinValue;
+            int candidateMaxY = int.MinValue;
+            bool touchesExisting = false;
+            foreach (GridPos local in StomachBuilder.FilledCells(def))
+            {
+                GridPos pos = local.Offset(origin.X, origin.Y);
+                if (_editBoard.Exists(pos))
+                {
+                    return false;
+                }
+
+                touchesExisting |=
+                    _editBoard.Exists(pos.Offset(1, 0)) ||
+                    _editBoard.Exists(pos.Offset(-1, 0)) ||
+                    _editBoard.Exists(pos.Offset(0, 1)) ||
+                    _editBoard.Exists(pos.Offset(0, -1));
+
+                if (pos.X < candidateMinX) candidateMinX = pos.X;
+                if (pos.Y < candidateMinY) candidateMinY = pos.Y;
+                if (pos.X > candidateMaxX) candidateMaxX = pos.X;
+                if (pos.Y > candidateMaxY) candidateMaxY = pos.Y;
+            }
+
+            if (!touchesExisting || candidateMaxX < candidateMinX || candidateMaxY < candidateMinY)
+            {
+                return false;
+            }
+
+            int mergedMinX = Mathf.Min(minX, candidateMinX);
+            int mergedMinY = Mathf.Min(minY, candidateMinY);
+            int mergedMaxX = Mathf.Max(maxX, candidateMaxX);
+            int mergedMaxY = Mathf.Max(maxY, candidateMaxY);
+            bool exceedsWidth = mergedMaxX - mergedMinX + 1 > _editMaxWidth;
+            bool exceedsHeight = mergedMaxY - mergedMinY + 1 > _editMaxHeight;
+            if (!exceedsWidth && !exceedsHeight)
+            {
+                return false;
+            }
+
+            warning.MinX = mergedMinX;
+            warning.MinY = mergedMinY;
+            warning.MaxX = mergedMaxX;
+            warning.MaxY = mergedMaxY;
+            warning.LeftLimitX = maxX - _editMaxWidth + 1;
+            warning.RightLimitX = minX + _editMaxWidth - 1;
+            warning.TopLimitY = maxY - _editMaxHeight + 1;
+            warning.BottomLimitY = minY + _editMaxHeight - 1;
+            if (exceedsWidth)
+            {
+                warning.OverLeft = candidateMinX < minX;
+                warning.OverRight = candidateMaxX > maxX;
+            }
+
+            if (exceedsHeight)
+            {
+                warning.OverTop = candidateMinY < minY;
+                warning.OverBottom = candidateMaxY > maxY;
+            }
+
+            return warning.OverLeft || warning.OverRight || warning.OverTop || warning.OverBottom;
+        }
+
+        private Material BoundsWarningMaterial()
+        {
+            if (_editBoundsWarningMaterial == null)
+            {
+                Shader shader = Shader.Find("Sprites/Default") ?? Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default");
+                if (shader != null)
+                {
+                    _editBoundsWarningMaterial = new Material(shader)
+                    {
+                        name = "RuntimeBoardEditBoundsWarning",
+                    };
+                }
+            }
+
+            return _editBoundsWarningMaterial;
         }
 
         private void BuildCandidateTray()
@@ -326,8 +707,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             for (int i = 0; i < n; i++)
             {
-                int rot = i == _editSelected ? _editRotation : 0;
-                StomachFragmentDef shown = rot == 0 ? _editCandidates[i] : _editCandidates[i].Rotated(rot);
+                StomachFragmentDef shown = _editCandidates[i];
                 List<GridPos> cells = StomachBuilder.FilledCells(shown);
                 if (cells.Count == 0)
                 {
@@ -347,6 +727,11 @@ namespace GourmetProject.Game.Presentation.Battle
                 float clusterCenterX = startX + i * spacing;
                 float leftX = clusterCenterX - (w - 1) * 0.5f * _editTraySize;
                 float topY = trayY + (h - 1) * 0.5f * _editTraySize;
+
+                if ((_editDragging || _editDragReturning) && i == _editSelected)
+                {
+                    continue;
+                }
 
                 Color color = i == _editSelected ? TraySelectedColor : TrayNormalColor;
                 foreach (GridPos c in cells)
@@ -368,6 +753,153 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
+        private Vector3 TrayCenterForCandidate(int candidateIndex, Vector3 fallback)
+        {
+            foreach (TrayCluster cluster in _editTrayClusters)
+            {
+                if (cluster.CandidateIndex == candidateIndex)
+                {
+                    return cluster.Center;
+                }
+            }
+
+            return fallback;
+        }
+
+        private void RebuildDragVisualAt(Vector3 mouseWorld)
+        {
+            if (!_editDragging || _editSelected < 0 || _editSelected >= _editCandidates.Count)
+            {
+                return;
+            }
+
+            Vector3 center = _editDragRoot != null ? _editDragRoot.position : mouseWorld;
+            Vector3 scale = _editDragRoot != null ? _editDragRoot.localScale : Vector3.one;
+            BuildDragVisual(_editCandidates[_editSelected], center, scale);
+        }
+
+        private void BuildDragVisual(StomachFragmentDef def, Vector3 center, float scale)
+        {
+            BuildDragVisual(def, center, Vector3.one * Mathf.Max(0.0001f, scale));
+        }
+
+        private void BuildDragVisual(StomachFragmentDef def, Vector3 center, Vector3 scale)
+        {
+            ClearDragVisual();
+            EnsureEditRoot();
+
+            var go = new GameObject("BoardEditDrag");
+            go.transform.SetParent(_editRoot, false);
+            _editDragRoot = go.transform;
+            _editDragRoot.position = center;
+            _editDragRoot.localRotation = Quaternion.identity;
+            _editDragRoot.localScale = scale;
+
+            List<GridPos> cells = StomachBuilder.FilledCells(def);
+            if (cells.Count == 0)
+            {
+                return;
+            }
+
+            float sumX = 0f;
+            float sumY = 0f;
+            foreach (GridPos cell in cells)
+            {
+                sumX += cell.X;
+                sumY += cell.Y;
+            }
+
+            float inv = 1f / cells.Count;
+            float avgX = sumX * inv;
+            float avgY = sumY * inv;
+            float pitch = _cellSize + Gap;
+            foreach (GridPos cellPos in cells)
+            {
+                BoardCellView cell = InstantiateDragCell();
+                var local = new Vector3((cellPos.X - avgX) * pitch, -(cellPos.Y - avgY) * pitch, 0f);
+                cell.Configure(cellPos, local, _cellSize, _editCellSprite, null);
+                cell.SetColor(Color.white);
+                cell.SetSortingOrder(EditDragSortingOrder);
+                _editDragCells.Add(cell);
+            }
+        }
+
+        private void SetDragOutline(Color color)
+        {
+            foreach (BoardCellView cell in _editDragCells)
+            {
+                if (cell != null)
+                {
+                    cell.SetOutline(color, EditGhostOutlineWidth, fillAlpha: 1f);
+                    cell.SetSortingOrder(EditDragSortingOrder);
+                }
+            }
+        }
+
+        private void StartDragRoutine(IEnumerator routine)
+        {
+            if (_editDragRoutine != null)
+            {
+                StopCoroutine(_editDragRoutine);
+                _editDragRoutine = null;
+            }
+
+            _editDragRoutine = StartCoroutine(routine);
+        }
+
+        private IEnumerator AnimateDragVisual(
+            Vector3 targetPosition,
+            Vector3 targetScale,
+            float duration,
+            bool keepFollowing,
+            Action onComplete = null)
+        {
+            if (_editDragRoot == null)
+            {
+                onComplete?.Invoke();
+                yield break;
+            }
+
+            _editDragAnimating = true;
+            Vector3 startPosition = _editDragRoot.position;
+            Vector3 startScale = _editDragRoot.localScale;
+            float safeDuration = Mathf.Max(0.0001f, duration);
+            float elapsed = 0f;
+            while (elapsed < safeDuration && _editDragRoot != null)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / safeDuration);
+                float eased = 1f - Mathf.Pow(1f - t, 3f);
+                _editDragRoot.position = Vector3.Lerp(startPosition, targetPosition, eased);
+                _editDragRoot.localScale = Vector3.Lerp(startScale, targetScale, eased);
+                yield return null;
+            }
+
+            if (_editDragRoot != null)
+            {
+                _editDragRoot.position = targetPosition;
+                _editDragRoot.localScale = targetScale;
+            }
+
+            _editDragAnimating = false;
+            _editDragRoutine = null;
+            if (!keepFollowing)
+            {
+                onComplete?.Invoke();
+            }
+        }
+
+        private void FinishReturnDrag()
+        {
+            ClearDragVisual(stopRoutine: false);
+            _editSelected = -1;
+            _editRotation = 0;
+            _editDragging = false;
+            _editDragReturning = false;
+            _editDragAnimating = false;
+            BuildCandidateTray();
+        }
+
         private bool TryPickTray(Vector3 worldPos, out int candidateIndex)
         {
             candidateIndex = -1;
@@ -384,6 +916,18 @@ namespace GourmetProject.Game.Presentation.Battle
             return false;
         }
 
+        private BoardCellView InstantiateDragCell()
+        {
+            if (_boardCellPrefab != null)
+            {
+                return Instantiate(_boardCellPrefab, _editDragRoot);
+            }
+
+            var go = new GameObject("DragCell");
+            go.transform.SetParent(_editDragRoot, false);
+            return go.AddComponent<BoardCellView>();
+        }
+
         private BoardCellView InstantiateTrayCell()
         {
             if (_boardCellPrefab != null)
@@ -398,6 +942,14 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void EnsureGhostCount(int count)
         {
+            for (int i = _editGhostCells.Count - 1; i >= 0; i--)
+            {
+                if (_editGhostCells[i] == null)
+                {
+                    _editGhostCells.RemoveAt(i);
+                }
+            }
+
             while (_editGhostCells.Count < count)
             {
                 BoardCellView ghost;
@@ -441,6 +993,31 @@ namespace GourmetProject.Game.Presentation.Battle
 
             _editTrayCells.Clear();
             _editTrayClusters.Clear();
+        }
+
+        private void ClearDragVisual(bool stopRoutine = true)
+        {
+            if (stopRoutine && _editDragRoutine != null)
+            {
+                StopCoroutine(_editDragRoutine);
+                _editDragRoutine = null;
+                _editDragAnimating = false;
+            }
+
+            foreach (BoardCellView cell in _editDragCells)
+            {
+                if (cell != null)
+                {
+                    Destroy(cell.gameObject);
+                }
+            }
+
+            _editDragCells.Clear();
+            if (_editDragRoot != null)
+            {
+                Destroy(_editDragRoot.gameObject);
+                _editDragRoot = null;
+            }
         }
     }
 }

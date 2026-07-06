@@ -10,6 +10,39 @@ namespace GourmetProject.Gameplay.Board
     /// </summary>
     public static class StomachBuilder
     {
+        public enum FragmentPlacementStatus
+        {
+            Valid,
+            OutOfBounds,
+            Overlap,
+            Detached,
+        }
+
+        public readonly struct PlacementBounds
+        {
+            public PlacementBounds(int minX, int minY, int maxX, int maxY)
+            {
+                MinX = minX;
+                MinY = minY;
+                MaxX = maxX;
+                MaxY = maxY;
+            }
+
+            public int MinX { get; }
+
+            public int MinY { get; }
+
+            public int MaxX { get; }
+
+            public int MaxY { get; }
+
+            public int Width => MaxX - MinX + 1;
+
+            public int Height => MaxY - MinY + 1;
+
+            public bool Contains(GridPos pos) => pos.X >= MinX && pos.X <= MaxX && pos.Y >= MinY && pos.Y <= MaxY;
+        }
+
         /// <summary>
         /// 用初始碎片在 maxWidth×maxHeight 包围盒内构建棋盘，碎片左上角对齐到 <paramref name="origin"/>（默认 0,0）。
         /// 超出包围盒的格会被忽略。
@@ -60,6 +93,44 @@ namespace GourmetProject.Gameplay.Board
             }
 
             return new Board(maxWidth, maxHeight, existing, cellTags);
+        }
+
+        /// <summary>计算把碎片实际占格包围盒居中放进最大包围盒时的左上原点。</summary>
+        public static GridPos CenteredOrigin(StomachFragmentDef fragment, int maxWidth, int maxHeight)
+        {
+            if (fragment == null)
+            {
+                throw new ArgumentNullException(nameof(fragment));
+            }
+
+            if (maxWidth <= 0 || maxHeight <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(maxWidth), "Stomach max size must be positive.");
+            }
+
+            List<GridPos> cells = FilledCells(fragment);
+            if (cells.Count == 0)
+            {
+                return default;
+            }
+
+            int minX = int.MaxValue;
+            int minY = int.MaxValue;
+            int maxX = int.MinValue;
+            int maxY = int.MinValue;
+            foreach (GridPos cell in cells)
+            {
+                if (cell.X < minX) minX = cell.X;
+                if (cell.Y < minY) minY = cell.Y;
+                if (cell.X > maxX) maxX = cell.X;
+                if (cell.Y > maxY) maxY = cell.Y;
+            }
+
+            int boxW = maxX - minX + 1;
+            int boxH = maxY - minY + 1;
+            int x = Math.Max(0, (maxWidth - boxW) / 2) - minX;
+            int y = Math.Max(0, (maxHeight - boxH) / 2) - minY;
+            return new GridPos(x, y);
         }
 
         public static Board BuildExpanded(
@@ -116,7 +187,8 @@ namespace GourmetProject.Gameplay.Board
             IEnumerable<StomachFragmentPlacement> placements,
             Func<string, StomachFragmentDef> lookup,
             int maxWidth,
-            int maxHeight)
+            int maxHeight,
+            GridPos initialOrigin = default)
         {
             if (initial == null)
             {
@@ -130,7 +202,7 @@ namespace GourmetProject.Gameplay.Board
 
             var existing = new HashSet<GridPos>();
             var cellTags = new Dictionary<GridPos, IReadOnlyList<string>>();
-            AddFragmentCells(initial, new GridPos(0, 0), maxWidth, maxHeight, existing, cellTags, clipToBounds: true);
+            AddFragmentCells(initial, initialOrigin, maxWidth, maxHeight, existing, cellTags, clipToBounds: true);
 
             if (autoFragments != null)
             {
@@ -168,6 +240,69 @@ namespace GourmetProject.Gameplay.Board
             return new Board(maxWidth, maxHeight, existing, cellTags);
         }
 
+        /// <summary>
+        /// 运行期局部坐标造盘：最大胃尺寸只约束当前胃形的局部包围框，Board 画布可更大以容纳负向扩展。
+        /// 玩家拼贴碎片固定不旋转；旧存档里的 rotation 字段会被忽略。
+        /// </summary>
+        public static Board BuildFromExpandedLocalBounds(
+            StomachFragmentDef initial,
+            IEnumerable<StomachFragmentDef> autoFragments,
+            IEnumerable<StomachFragmentPlacement> placements,
+            Func<string, StomachFragmentDef> lookup,
+            int maxWidth,
+            int maxHeight,
+            int canvasWidth,
+            int canvasHeight,
+            GridPos initialOrigin)
+        {
+            if (initial == null)
+            {
+                throw new ArgumentNullException(nameof(initial));
+            }
+            if (maxWidth <= 0 || maxHeight <= 0 || canvasWidth <= 0 || canvasHeight <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(maxWidth), "Stomach and canvas sizes must be positive.");
+            }
+
+            var existing = new HashSet<GridPos>();
+            var cellTags = new Dictionary<GridPos, IReadOnlyList<string>>();
+            AddFragmentCells(initial, initialOrigin, canvasWidth, canvasHeight, existing, cellTags, clipToBounds: true);
+
+            if (autoFragments != null)
+            {
+                foreach (StomachFragmentDef fragment in autoFragments)
+                {
+                    if (fragment == null || !TryFindAttachmentLocal(existing, fragment, maxWidth, maxHeight, out GridPos origin))
+                    {
+                        continue;
+                    }
+
+                    AddFragmentCells(fragment, origin, canvasWidth, canvasHeight, existing, cellTags, clipToBounds: false);
+                }
+            }
+
+            if (placements != null && lookup != null)
+            {
+                foreach (StomachFragmentPlacement placement in placements)
+                {
+                    StomachFragmentDef def = lookup(placement.FragmentId);
+                    if (def == null)
+                    {
+                        continue;
+                    }
+
+                    if (GetFragmentPlacementStatusWithinMaxBounds(existing, def, placement.Origin, maxWidth, maxHeight) != FragmentPlacementStatus.Valid)
+                    {
+                        continue;
+                    }
+
+                    AddFragmentCells(def, placement.Origin, canvasWidth, canvasHeight, existing, cellTags, clipToBounds: false);
+                }
+            }
+
+            return new Board(canvasWidth, canvasHeight, existing, cellTags);
+        }
+
         /// <summary>判断某碎片按 <paramref name="rotation"/> 旋转后能否放在以 <paramref name="origin"/> 为左上的位置（在界内、不重叠、且贴边相邻已有胃）。</summary>
         public static bool CanPlaceFragmentAt(
             HashSet<GridPos> existing,
@@ -184,7 +319,58 @@ namespace GourmetProject.Gameplay.Board
 
             StomachFragmentDef rotated = rotation == 0 ? fragment : fragment.Rotated(rotation);
             List<GridPos> cells = FilledCells(rotated);
-            return CanPlaceAt(existing, cells, origin, maxWidth, maxHeight);
+            return CanPlaceAt(existing, cells, origin, new PlacementBounds(0, 0, maxWidth - 1, maxHeight - 1));
+        }
+
+        public static FragmentPlacementStatus GetFragmentPlacementStatus(
+            HashSet<GridPos> existing,
+            StomachFragmentDef fragment,
+            GridPos origin,
+            PlacementBounds bounds)
+        {
+            if (existing == null || fragment == null)
+            {
+                return FragmentPlacementStatus.OutOfBounds;
+            }
+
+            return GetPlacementStatus(existing, FilledCells(fragment), origin, bounds);
+        }
+
+        public static FragmentPlacementStatus GetFragmentPlacementStatusWithinMaxBounds(
+            HashSet<GridPos> existing,
+            StomachFragmentDef fragment,
+            GridPos origin,
+            int maxWidth,
+            int maxHeight)
+        {
+            if (existing == null || fragment == null || maxWidth <= 0 || maxHeight <= 0)
+            {
+                return FragmentPlacementStatus.OutOfBounds;
+            }
+
+            return GetPlacementStatusWithinMaxBounds(existing, FilledCells(fragment), origin, maxWidth, maxHeight);
+        }
+
+        public static PlacementBounds CenteredBounds(Board board, int maxWidth, int maxHeight)
+        {
+            return CenteredBounds(ToExistingSet(board), maxWidth, maxHeight);
+        }
+
+        public static PlacementBounds CenteredBounds(HashSet<GridPos> existing, int maxWidth, int maxHeight)
+        {
+            if (maxWidth <= 0 || maxHeight <= 0 || existing == null || existing.Count == 0)
+            {
+                return new PlacementBounds(0, 0, Math.Max(0, maxWidth - 1), Math.Max(0, maxHeight - 1));
+            }
+
+            ExistingBounds(existing, out int minX, out int minY, out int maxX, out int maxY);
+            int width = maxX - minX + 1;
+            int height = maxY - minY + 1;
+            int slackX = Math.Max(0, maxWidth - width);
+            int slackY = Math.Max(0, maxHeight - height);
+            int boundMinX = minX - slackX / 2;
+            int boundMinY = minY - slackY / 2;
+            return new PlacementBounds(boundMinX, boundMinY, boundMinX + maxWidth - 1, boundMinY + maxHeight - 1);
         }
 
         /// <summary>该碎片是否在当前棋盘上存在任意合法放置（枚举朝向 × 原点）。allowRotate=true 时考虑 4 个朝向。</summary>
@@ -280,6 +466,17 @@ namespace GourmetProject.Gameplay.Board
             return TryFindAttachment(existing, candidate, maxWidth, maxHeight, out _);
         }
 
+        public static bool CanAttachAnywhereLocalBounds(Board board, StomachFragmentDef fragment, int maxWidth, int maxHeight)
+        {
+            if (board == null || fragment == null)
+            {
+                return false;
+            }
+
+            HashSet<GridPos> existing = ToExistingSet(board);
+            return TryFindAttachmentLocal(existing, fragment, maxWidth, maxHeight, out _);
+        }
+
         private static void AddFragmentCells(
             StomachFragmentDef fragment,
             GridPos origin,
@@ -363,6 +560,36 @@ namespace GourmetProject.Gameplay.Board
             return false;
         }
 
+        private static bool TryFindAttachmentLocal(
+            HashSet<GridPos> existing,
+            StomachFragmentDef fragment,
+            int maxWidth,
+            int maxHeight,
+            out GridPos origin)
+        {
+            origin = default;
+            if (existing == null || existing.Count == 0 || fragment == null)
+            {
+                return false;
+            }
+
+            ExistingBounds(existing, out int minX, out int minY, out int maxX, out int maxY);
+            for (int y = minY - maxHeight; y <= maxY + maxHeight; y++)
+            {
+                for (int x = minX - maxWidth; x <= maxX + maxWidth; x++)
+                {
+                    var candidateOrigin = new GridPos(x, y);
+                    if (GetFragmentPlacementStatusWithinMaxBounds(existing, fragment, candidateOrigin, maxWidth, maxHeight) == FragmentPlacementStatus.Valid)
+                    {
+                        origin = candidateOrigin;
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
         private static bool CanPlaceAt(
             HashSet<GridPos> existing,
             IReadOnlyList<GridPos> cells,
@@ -370,13 +597,36 @@ namespace GourmetProject.Gameplay.Board
             int maxWidth,
             int maxHeight)
         {
+            return CanPlaceAt(existing, cells, origin, new PlacementBounds(0, 0, maxWidth - 1, maxHeight - 1));
+        }
+
+        private static bool CanPlaceAt(
+            HashSet<GridPos> existing,
+            IReadOnlyList<GridPos> cells,
+            GridPos origin,
+            PlacementBounds bounds)
+        {
+            return GetPlacementStatus(existing, cells, origin, bounds) == FragmentPlacementStatus.Valid;
+        }
+
+        private static FragmentPlacementStatus GetPlacementStatus(
+            HashSet<GridPos> existing,
+            IReadOnlyList<GridPos> cells,
+            GridPos origin,
+            PlacementBounds bounds)
+        {
             bool touchesExisting = false;
             foreach (GridPos local in cells)
             {
                 GridPos pos = local.Offset(origin.X, origin.Y);
-                if (pos.X < 0 || pos.Y < 0 || pos.X >= maxWidth || pos.Y >= maxHeight || existing.Contains(pos))
+                if (!bounds.Contains(pos))
                 {
-                    return false;
+                    return FragmentPlacementStatus.OutOfBounds;
+                }
+
+                if (existing.Contains(pos))
+                {
+                    return FragmentPlacementStatus.Overlap;
                 }
 
                 if (TouchesExisting(existing, pos))
@@ -385,7 +635,63 @@ namespace GourmetProject.Gameplay.Board
                 }
             }
 
-            return touchesExisting;
+            return touchesExisting ? FragmentPlacementStatus.Valid : FragmentPlacementStatus.Detached;
+        }
+
+        private static FragmentPlacementStatus GetPlacementStatusWithinMaxBounds(
+            HashSet<GridPos> existing,
+            IReadOnlyList<GridPos> cells,
+            GridPos origin,
+            int maxWidth,
+            int maxHeight)
+        {
+            if (existing == null || existing.Count == 0 || cells == null || cells.Count == 0)
+            {
+                return FragmentPlacementStatus.Detached;
+            }
+
+            ExistingBounds(existing, out int minX, out int minY, out int maxX, out int maxY);
+            bool touchesExisting = false;
+            foreach (GridPos local in cells)
+            {
+                GridPos pos = local.Offset(origin.X, origin.Y);
+                if (existing.Contains(pos))
+                {
+                    return FragmentPlacementStatus.Overlap;
+                }
+
+                if (TouchesExisting(existing, pos))
+                {
+                    touchesExisting = true;
+                }
+
+                if (pos.X < minX) minX = pos.X;
+                if (pos.Y < minY) minY = pos.Y;
+                if (pos.X > maxX) maxX = pos.X;
+                if (pos.Y > maxY) maxY = pos.Y;
+            }
+
+            if (!touchesExisting)
+            {
+                return FragmentPlacementStatus.Detached;
+            }
+
+            return maxX - minX + 1 <= maxWidth && maxY - minY + 1 <= maxHeight
+                ? FragmentPlacementStatus.Valid
+                : FragmentPlacementStatus.OutOfBounds;
+        }
+
+        private static void ExistingBounds(HashSet<GridPos> existing, out int minX, out int minY, out int maxX, out int maxY)
+        {
+            minX = minY = int.MaxValue;
+            maxX = maxY = int.MinValue;
+            foreach (GridPos pos in existing)
+            {
+                if (pos.X < minX) minX = pos.X;
+                if (pos.Y < minY) minY = pos.Y;
+                if (pos.X > maxX) maxX = pos.X;
+                if (pos.Y > maxY) maxY = pos.Y;
+            }
         }
 
         private static bool TouchesExisting(HashSet<GridPos> existing, GridPos pos)

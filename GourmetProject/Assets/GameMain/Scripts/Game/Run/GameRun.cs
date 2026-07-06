@@ -1055,9 +1055,12 @@ namespace GourmetProject.Game.Run
                 return false;
             }
 
-            // 基于当前实际胃形（初始 + 奖励自动附着 + 手动拼贴）判断，允许旋转碎片以匹配棋盘编辑规则。
+            // 基于当前实际胃形判断；棋盘碎片奖励固定朝向，不允许旋转。
             GpBoard board = BattleSessionFactory.BuildBoardPreview(this);
-            return StomachBuilder.CanAttachAnywhere(board, fragment, allowRotate: true);
+            cfg.Character character = Tables.TbCharacter.GetOrDefault(CharacterId);
+            int maxW = character != null && character.MaxStomachWidth > 0 ? character.MaxStomachWidth : BoardWidth;
+            int maxH = character != null && character.MaxStomachHeight > 0 ? character.MaxStomachHeight : BoardHeight;
+            return StomachBuilder.CanAttachAnywhereLocalBounds(board, fragment, maxW, maxH);
         }
 
         /// <summary>移除一份道具（被动整条移除；主动移除其中一份实例）。供商店出售、事件移除等使用。</summary>

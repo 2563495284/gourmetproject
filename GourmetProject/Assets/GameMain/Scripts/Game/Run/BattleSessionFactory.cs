@@ -90,14 +90,21 @@ namespace GourmetProject.Game.Run
                 return new GpBoard(maxW, maxH);
             }
 
-            // 统一造盘：初始胃 + 奖励自动附着碎片 + 玩家手动拼贴放置。
-            return StomachBuilder.BuildFromExpanded(
+            // 统一造盘：用更大的隐藏画布承载局部坐标，maxW/maxH 只限制最终胃形局部包围框。
+            int canvasW = maxW * 3;
+            int canvasH = maxH * 3;
+            GridPos localOrigin = StomachBuilder.CenteredOrigin(fragment, maxW, maxH);
+            var initialOrigin = new GridPos(localOrigin.X + maxW, localOrigin.Y + maxH);
+            return StomachBuilder.BuildFromExpandedLocalBounds(
                 fragment,
                 GetAcquiredFragments(run),
                 run.FragmentPlacements,
                 run.Database.GetFragment,
                 maxW,
-                maxH);
+                maxH,
+                canvasW,
+                canvasH,
+                initialOrigin);
         }
 
         private static List<StomachFragmentDef> GetAcquiredFragments(GameRun run)

@@ -11,6 +11,7 @@ namespace GourmetProject.Game.Presentation.Battle
     internal static class SpriteRenderStyle
     {
         private static Material _spriteUnlitMaterial;
+        private static Material _spriteOutlineMaterial;
 
         public static Material SpriteUnlitMaterial
         {
@@ -32,11 +33,39 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
+        public static Material SpriteOutlineMaterial
+        {
+            get
+            {
+                if (_spriteOutlineMaterial == null)
+                {
+                    Shader shader = Resources.Load<Shader>("Shaders/SpriteOutline") ?? Shader.Find("GourmetProject/SpriteOutline");
+                    if (shader != null)
+                    {
+                        _spriteOutlineMaterial = new Material(shader)
+                        {
+                            name = "RuntimeSpriteOutline",
+                        };
+                    }
+                }
+
+                return _spriteOutlineMaterial;
+            }
+        }
+
         public static void ApplyUnlitMaterial(SpriteRenderer renderer)
         {
             if (renderer != null && SpriteUnlitMaterial != null)
             {
                 renderer.sharedMaterial = SpriteUnlitMaterial;
+            }
+        }
+
+        public static void ApplyOutlineMaterial(SpriteRenderer renderer)
+        {
+            if (renderer != null && SpriteOutlineMaterial != null)
+            {
+                renderer.sharedMaterial = SpriteOutlineMaterial;
             }
         }
     }

@@ -13,6 +13,10 @@ namespace GourmetProject.Game.Presentation.Battle
     [RequireComponent(typeof(SpriteRenderer), typeof(BoxCollider2D))]
     public sealed class BoardCellView : MonoBehaviour
     {
+        private static readonly int OutlineColorId = Shader.PropertyToID("_OutlineColor");
+        private static readonly int OutlineWidthId = Shader.PropertyToID("_OutlineWidth");
+        private static readonly int FillAlphaId = Shader.PropertyToID("_FillAlpha");
+
         [Tooltip("格子渲染体（prefab 根节点上的 SpriteRenderer）。")]
         [SerializeField] private SpriteRenderer _renderer;
 
@@ -21,6 +25,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private GridPos _position;
         private Action<GridPos> _clicked;
+        private MaterialPropertyBlock _propertyBlock;
 
         public GridPos Position => _position;
 
@@ -48,6 +53,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _clicked = clicked;
 
             _renderer.sprite = sprite;
+            _renderer.SetPropertyBlock(null);
             BattleSorting.Apply(_renderer, BattleSorting.Board);
             SpriteRenderStyle.ApplyUnlitMaterial(_renderer);
 
@@ -61,6 +67,26 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 _renderer.color = color;
             }
+        }
+
+        /// <summary>编辑页反馈用：用 shader 画红/绿轮廓，fillAlpha 控制是否保留格子底色。</summary>
+        public void SetOutline(Color color, float width, float fillAlpha = 0f)
+        {
+            EnsureRefs();
+            if (SpriteRenderStyle.SpriteOutlineMaterial == null)
+            {
+                _renderer.color = color;
+                return;
+            }
+
+            _renderer.color = Color.white;
+            SpriteRenderStyle.ApplyOutlineMaterial(_renderer);
+            _propertyBlock ??= new MaterialPropertyBlock();
+            _renderer.GetPropertyBlock(_propertyBlock);
+            _propertyBlock.SetColor(OutlineColorId, color);
+            _propertyBlock.SetFloat(OutlineWidthId, Mathf.Clamp(width, 0f, 0.2f));
+            _propertyBlock.SetFloat(FillAlphaId, Mathf.Clamp01(fillAlpha));
+            _renderer.SetPropertyBlock(_propertyBlock);
         }
 
         /// <summary>调整渲染排序序号（编辑页放置预览幽灵需盖在棋盘格之上）。</summary>

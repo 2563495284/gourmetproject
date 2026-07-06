@@ -22,6 +22,9 @@ namespace GourmetProject.Game.Presentation.Battle
         public static bool PrimaryReleasedThisFrame
             => Mouse.current != null && Mouse.current.leftButton.wasReleasedThisFrame && !PointerOverUi;
 
+        public static bool PrimaryHeld
+            => Mouse.current != null && Mouse.current.leftButton.isPressed;
+
         public static bool SecondaryPressedThisFrame
             => Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame && !PointerOverUi;
 
