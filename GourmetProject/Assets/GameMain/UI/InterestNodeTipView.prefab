@@ -325,8 +325,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Tooltips.InterestNodeTipView
   _canvasGroup: {fileID: 4554601665057350274}
-  _iconImage: {fileID: 4690024511825643854}
-  _iconLabel: {fileID: 6623406631203260787}
   _titleText: {fileID: 7159313396553281550}
   _descText: {fileID: 7117842673771470432}
   _footerRoot: {fileID: 6409163373072297444}
@@ -363,10 +361,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 5077718001839131274}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.04, y: 0.76}
-  m_AnchorMax: {x: 0.96, y: 0.99}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0.5, y: 0.875}
+  m_AnchorMax: {x: 0.5, y: 0.875}
+  m_AnchoredPosition: {x: 0, y: 0.0000076293945}
+  m_SizeDelta: {x: 437.92004, y: 69.184006}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7354192394980200222
 CanvasRenderer:
@@ -442,10 +440,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 3509032029489856162}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: -4, y: -4}
+  m_SizeDelta: {x: 424.40002, y: 62.176025}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3381321650552564018
 CanvasRenderer:
@@ -521,10 +519,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 8091947861298714763}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: -4, y: -4}
+  m_SizeDelta: {x: 92, y: 92}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1936161832282582073
 CanvasRenderer:

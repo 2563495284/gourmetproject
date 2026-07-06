@@ -402,10 +402,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 880352904999368282}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.05, y: 0.78}
-  m_AnchorMax: {x: 0.5, y: 0.86}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0.275, y: 0.82}
+  m_AnchorMax: {x: 0.275, y: 0.82}
+  m_AnchoredPosition: {x: 0, y: 0.000015258789}
+  m_SizeDelta: {x: 483.83997, y: 58.752014}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5901765578360711203
 CanvasRenderer:
@@ -635,10 +635,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 3339627809710790530}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.039423, y: 0.17554297}
-  m_AnchorMax: {x: 0.96246177, y: 0.8423934}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0.50094235, y: 0.50896823}
+  m_AnchorMax: {x: 0.50094235, y: 0.50896823}
+  m_AnchoredPosition: {x: 0.000014781952, y: -0.00000071525574}
+  m_SizeDelta: {x: 516.0745, y: 78.357574}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8553578308072488453
 CanvasRenderer:
@@ -714,10 +714,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 880352904999368282}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.05, y: 0.86}
-  m_AnchorMax: {x: 0.95, y: 0.98}
+  m_AnchorMin: {x: 0.5, y: 0.92}
+  m_AnchorMax: {x: 0.5, y: 0.92}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_SizeDelta: {x: 967.67993, y: 88.12799}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2588693350593817507
 CanvasRenderer:
@@ -905,10 +905,10 @@ RectTransform:
   - {fileID: 4832510969099991741}
   m_Father: {fileID: 880352904999368282}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.4, y: 0.03}
-  m_AnchorMax: {x: 0.6, y: 0.11}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0.5, y: 0.06999999}
+  m_AnchorMax: {x: 0.5, y: 0.06999999}
+  m_AnchoredPosition: {x: 0.000015258789, y: 0}
+  m_SizeDelta: {x: 215.04001, y: 58.752014}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &6406010474306787265
 CanvasRenderer:
