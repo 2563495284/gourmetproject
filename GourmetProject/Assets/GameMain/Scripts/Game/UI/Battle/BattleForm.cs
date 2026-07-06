@@ -38,6 +38,8 @@ namespace GourmetProject.Game.UI.Battle
         private const string Tag = "Battle";
         private const int PassiveSlotCapacity = 10;
         private const int PassiveSlotColumns = 2;
+        private const string ViewStomachLabel = "查看胃";
+        private const string StomachBackLabel = "返回";
 
         /// <summary>常驻壳中部内容区的五种状态。</summary>
         public enum GameplayView
@@ -48,6 +50,7 @@ namespace GourmetProject.Game.UI.Battle
             RecipeEdit,
             Food,
             BoardEdit,
+            StomachView,
         }
 
         /// <summary>当前打开的战斗界面，供各弹窗回调推进周循环。</summary>
@@ -68,6 +71,7 @@ namespace GourmetProject.Game.UI.Battle
         [SerializeField] private Text _scoreReqText;
         [SerializeField] private Text _foodAdjustText;
         [SerializeField] private Button _viewStomachButton;
+        private Text _viewStomachButtonText;
         [SerializeField] private Button _settingsButton;
 
         [Header("Action Axis")]
@@ -105,6 +109,11 @@ namespace GourmetProject.Game.UI.Battle
         private readonly List<WeekEventCardView> _cards = new();
         private bool _inBattle;
         private GameplayView _current = GameplayView.None;
+        private GameplayView _stomachReturnView = GameplayView.None;
+        private bool _hasStomachActionReturnSnapshot;
+        private string _stomachActionReturnTitle;
+        private bool _stomachActionReturnCardsActive;
+        private bool _stomachActionReturnSkipActive;
         private Tween _pendingCardShowTween;
         private Tween _cardsHideTween;
 
@@ -129,6 +138,7 @@ namespace GourmetProject.Game.UI.Battle
 
             if (_viewStomachButton != null)
             {
+                _viewStomachButtonText = _viewStomachButton.GetComponentInChildren<Text>(true);
                 _viewStomachButton.onClick.AddListener(OnViewStomachClicked);
             }
 
@@ -292,7 +302,7 @@ namespace GourmetProject.Game.UI.Battle
             bool actionSel = view == GameplayView.ActionSelect;
             bool shop = view == GameplayView.Shop;
             bool recipeEdit = view == GameplayView.RecipeEdit;
-            bool worldView = view == GameplayView.Food || view == GameplayView.BoardEdit;
+            bool worldView = view == GameplayView.Food || view == GameplayView.BoardEdit || view == GameplayView.StomachView;
 
             if (_actionSelectionPanel != null)
             {
@@ -357,9 +367,17 @@ namespace GourmetProject.Game.UI.Battle
 
                     break;
                 case GameplayView.Food:
+                    buildCenter?.Invoke();
                     BuildBattleRecipe();
                     break;
                 case GameplayView.BoardEdit:
+                    SetCenterTitle(string.Empty);
+                    _recipeView?.RemoveAddCard();
+                    buildCenter?.Invoke();
+                    break;
+                case GameplayView.StomachView:
+                    SetCenterTitle(string.Empty);
+                    _recipeView?.RemoveAddCard();
                     buildCenter?.Invoke();
                     break;
             }
@@ -429,6 +447,128 @@ namespace GourmetProject.Game.UI.Battle
             SwitchTo(GameplayView.BoardEdit, () => world.BeginBoardEdit(_run, _run.PendingFragmentPack, OnBoardEditDone));
         }
 
+        private void OpenStomachView()
+        {
+            BattleWorldController world = _world ?? BattleWorldController.Instance;
+            if (world == null || _run == null || !world.CanEnterStomachView)
+            {
+                return;
+            }
+
+            _world = world;
+            _stomachReturnView = _current;
+            CaptureStomachActionReturnSnapshot();
+            SwitchTo(GameplayView.StomachView, () => world.BeginStomachView(_run));
+        }
+
+        private void OnStomachViewBack()
+        {
+            GameplayView target = _stomachReturnView;
+            if (target == GameplayView.None || target == GameplayView.StomachView)
+            {
+                target = GameplayView.ActionSelect;
+            }
+
+            _stomachReturnView = GameplayView.None;
+            BattleWorldController world = _world ?? BattleWorldController.Instance;
+            world?.EndStomachView();
+
+            switch (target)
+            {
+                case GameplayView.Food:
+                    SwitchTo(GameplayView.Food, RestoreBattleWorld);
+                    break;
+                case GameplayView.ActionSelect:
+                    world?.HideWorld();
+                    SwitchTo(GameplayView.ActionSelect, RestoreActionSelectionAfterStomach, PlayShowCardsWhenReady);
+                    break;
+                case GameplayView.BoardEdit:
+                    if (_run != null && _run.HasPendingFragmentPack)
+                    {
+                        OpenBoardEdit();
+                    }
+                    else
+                    {
+                        world?.HideWorld();
+                        SwitchTo(GameplayView.Shop);
+                    }
+
+                    break;
+                default:
+                    world?.HideWorld();
+                    SwitchTo(target);
+                    break;
+            }
+        }
+
+        private void CaptureStomachActionReturnSnapshot()
+        {
+            _hasStomachActionReturnSnapshot = _current == GameplayView.ActionSelect;
+            if (!_hasStomachActionReturnSnapshot)
+            {
+                _stomachActionReturnTitle = null;
+                _stomachActionReturnCardsActive = false;
+                _stomachActionReturnSkipActive = false;
+                return;
+            }
+
+            _stomachActionReturnTitle = _centerTitleText != null ? _centerTitleText.text : string.Empty;
+            _stomachActionReturnCardsActive = _cardsContainer != null && _cardsContainer.gameObject.activeSelf;
+            _stomachActionReturnSkipActive = _skipButton != null && _skipButton.gameObject.activeSelf;
+        }
+
+        private void RestoreActionSelectionAfterStomach()
+        {
+            if (!_hasStomachActionReturnSnapshot)
+            {
+                SetCenterTitle("选择行动");
+                BuildActionCards();
+                return;
+            }
+
+            SetCenterTitle(string.IsNullOrWhiteSpace(_stomachActionReturnTitle)
+                ? "选择行动"
+                : _stomachActionReturnTitle);
+
+            if (_cardsContainer != null)
+            {
+                _cardsContainer.gameObject.SetActive(_stomachActionReturnCardsActive);
+            }
+
+            if (_skipButton != null)
+            {
+                _skipButton.gameObject.SetActive(_stomachActionReturnSkipActive);
+            }
+
+            _hasStomachActionReturnSnapshot = false;
+            _stomachActionReturnTitle = null;
+        }
+
+        private void RestoreBattleWorld()
+        {
+            if (_run == null || _session == null)
+            {
+                return;
+            }
+
+            _world = _world ?? BattleWorldController.Instance;
+            if (_world == null)
+            {
+                Log.Error("BattleForm: battle scene controller not found while restoring stomach view.", Tag);
+                return;
+            }
+
+            _world.Initialize(
+                _run,
+                _session,
+                SetMessage,
+                RefreshAll,
+                OnActiveItemClicked,
+                OnDishClicked,
+                resetDoodle: false);
+            RefreshAll();
+        }
+
         private void OnBoardEditDone()
         {
             (_world ?? BattleWorldController.Instance)?.HideWorld();
@@ -492,6 +632,15 @@ namespace GourmetProject.Game.UI.Battle
             if (_run == null)
             {
                 return;
+            }
+
+            BattleWorldController world = _world ?? BattleWorldController.Instance;
+            if (_viewStomachButton != null)
+            {
+                bool stomachView = _current == GameplayView.StomachView;
+                _viewStomachButton.interactable = stomachView
+                    || (world != null && _current != GameplayView.None && world.CanEnterStomachView);
+                SetViewStomachButtonLabel(stomachView ? StomachBackLabel : ViewStomachLabel);
             }
 
             if (_weekText != null)
@@ -1043,6 +1192,9 @@ namespace GourmetProject.Game.UI.Battle
         {
             _inBattle = false;
             _current = GameplayView.None;
+            _stomachReturnView = GameplayView.None;
+            _hasStomachActionReturnSnapshot = false;
+            _stomachActionReturnTitle = null;
 
             if (_actionSelectionPanel != null)
             {
@@ -1061,6 +1213,7 @@ namespace GourmetProject.Game.UI.Battle
 
             _recipeView?.SetState(RecipeView.RecipeState.Hidden);
             SetFoodActionsVisible(false);
+            SetViewStomachButtonLabel(ViewStomachLabel);
 
             if (_hudFrame != null)
             {
@@ -1075,33 +1228,26 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnViewStomachClicked()
         {
-            ShowNotice("查看胃", BuildStomachPreviewText(), null);
+            if (_current == GameplayView.StomachView)
+            {
+                OnStomachViewBack();
+                return;
+            }
+
+            OpenStomachView();
         }
 
-        private string BuildStomachPreviewText()
+        private void SetViewStomachButtonLabel(string text)
         {
-            if (_run == null)
+            if (_viewStomachButtonText == null && _viewStomachButton != null)
             {
-                return "当前没有运行数据。";
+                _viewStomachButtonText = _viewStomachButton.GetComponentInChildren<Text>(true);
             }
 
-            Board board = _run.BuildStomachPreviewBoard(_run.WeekModifier);
-            var text = new System.Text.StringBuilder();
-            text.AppendLine($"胃容量：{board.CellCapacity} 格");
-            text.AppendLine($"胃部碎片：{_run.StomachFragmentCount}");
-            text.AppendLine();
-
-            for (int y = 0; y < board.Height; y++)
+            if (_viewStomachButtonText != null)
             {
-                for (int x = 0; x < board.Width; x++)
-                {
-                    text.Append(board.Exists(new GridPos(x, y)) ? "■" : "□");
-                }
-
-                text.AppendLine();
+                _viewStomachButtonText.text = text;
             }
-
-            return text.ToString();
         }
 
         public void ShowRunResult(bool win, int total)

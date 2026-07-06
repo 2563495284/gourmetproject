@@ -203,6 +203,20 @@ namespace GourmetProject.Game.UI.Hud
             RefreshPoses(animated: _initialized, staggered: false);
         }
 
+        /// <summary>临时移除商店态的购买空菜谱卡；下次 <see cref="SetBooks"/> 传入 showAdd=true 时会重新创建。</summary>
+        public void RemoveAddCard()
+        {
+            if (_addSlot == null)
+            {
+                return;
+            }
+
+            RetireSlot(_addSlot);
+            _addSlot = null;
+            RebuildOrdered();
+            RefreshPoses(animated: _initialized, staggered: false);
+        }
+
         private void RebuildOrdered()
         {
             _ordered.Clear();

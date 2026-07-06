@@ -73,10 +73,19 @@ namespace GourmetProject.Game.Presentation.Battle
         private readonly List<DishPieceView> _placedPieces = new List<DishPieceView>();
         private readonly Dictionary<int, DishPieceView> _dishViewsById = new Dictionary<int, DishPieceView>();
 
+        private enum WorldMode
+        {
+            Hidden,
+            Food,
+            BoardEdit,
+            StomachView,
+        }
+
         private GameRun _run;
         private BattleSession _session;
         private bool _settling;
         private bool _serving;
+        private WorldMode _worldMode = WorldMode.Hidden;
 
         private Action<string> _messageSink;
         private Action<string> _activeItemClicked;
@@ -85,6 +94,10 @@ namespace GourmetProject.Game.Presentation.Battle
 
         /// <summary>当前已加载战斗场景里的控制器实例（由战斗 UI/流程取用）。</summary>
         public static BattleWorldController Instance { get; private set; }
+
+        public bool CanEnterStomachView
+            => _worldMode != WorldMode.StomachView
+                && (_worldMode != WorldMode.Food || (!_settling && !_serving));
 
         private void Awake()
         {
@@ -109,7 +122,8 @@ namespace GourmetProject.Game.Presentation.Battle
             Action<string> messageSink,
             Action stateChanged,
             Action<string> activeItemClicked,
-            Action<DishInstance> dishClicked)
+            Action<DishInstance> dishClicked,
+            bool resetDoodle = true)
         {
             _run = run;
             _session = session;
@@ -124,6 +138,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             gameObject.SetActive(true);
             StopAllCoroutines();
+            _worldMode = WorldMode.Food;
             _settling = false;
             ComputeViewport();
             BuildBoard(session.Board);
@@ -132,14 +147,49 @@ namespace GourmetProject.Game.Presentation.Battle
             // 道具（被动/主动）与菜谱面板已迁到常驻屏幕空间 HUD（BattleForm），世界空间不再渲染这些面板；
             // 世界空间只保留棋盘、菜品、上菜/结算演出与涂鸦表现。
             HideWorldPanels();
+            SetFoodWorldElementsVisible(true);
             RebuildPlacedPieces();
-            ResetDoodle();
+            if (resetDoodle)
+            {
+                ResetDoodle();
+            }
+            else
+            {
+                _doodle?.SetVisible(true);
+            }
             RefreshAll();
         }
 
         public void HideWorld()
         {
+            if (_editing)
+            {
+                EndBoardEdit();
+            }
+
+            EndStomachView();
+            SetFoodWorldElementsVisible(false);
+            _worldMode = WorldMode.Hidden;
             gameObject.SetActive(false);
+        }
+
+        private void SetFoodWorldElementsVisible(bool visible)
+        {
+            if (_scoreText != null)
+            {
+                _scoreText.gameObject.SetActive(visible);
+            }
+
+            if (_messageText != null)
+            {
+                _messageText.gameObject.SetActive(visible);
+            }
+
+            if (!visible)
+            {
+                _scoreFire?.Hide();
+                _doodle?.SetVisible(false);
+            }
         }
 
         public void RefreshAll()

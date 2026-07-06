@@ -55,7 +55,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private int _editMaxHeight;
         private Coroutine _editDragRoutine;
 
-        public bool IsEditingBoard => _editing;
+        public bool IsEditingBoard => _worldMode == WorldMode.BoardEdit && _editing;
 
         private struct TrayCluster
         {
@@ -92,6 +92,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
+            EndStomachView();
             _editRun = run;
             _editOnDone = onDone;
             _editSelected = -1;
@@ -121,9 +122,11 @@ namespace GourmetProject.Game.Presentation.Battle
 
             gameObject.SetActive(true);
             StopAllCoroutines();
+            _worldMode = WorldMode.BoardEdit;
             _settling = false;
             _serving = false;
             _session = null;
+            SetFoodWorldElementsVisible(false);
             ClearPlacedPieces();
             ComputeViewport();
 
@@ -136,10 +139,65 @@ namespace GourmetProject.Game.Presentation.Battle
             _editing = true;
         }
 
+        /// <summary>进入只读胃视图：复用编辑页棋盘布局，但不显示候选碎片托盘，也不启用拖拽输入。</summary>
+        public void BeginStomachView(GameRun run)
+        {
+            if (run == null)
+            {
+                return;
+            }
+
+            if (!CanEnterStomachView)
+            {
+                return;
+            }
+
+            if (_editing)
+            {
+                EndBoardEdit();
+            }
+
+            _run = run;
+            _session = null;
+            gameObject.SetActive(true);
+            StopAllCoroutines();
+            _worldMode = WorldMode.StomachView;
+            _settling = false;
+            _serving = false;
+            SetFoodWorldElementsVisible(false);
+            HideWorldPanels();
+            ClearPlacedPieces();
+            ClearTray();
+            ClearGhost();
+            ClearDragVisual();
+            HideBoundsWarning();
+            ComputeViewport();
+
+            _editCellSprite = Resources.Load<Sprite>("Sprites/UI/board_cell");
+            _editBoard = run.BuildStomachPreviewBoard(run.WeekModifier);
+            LayoutEditorBoard(_editBoard);
+        }
+
+        public void EndStomachView()
+        {
+            if (_worldMode == WorldMode.StomachView)
+            {
+                _worldMode = WorldMode.Hidden;
+            }
+
+            _boardView?.ShowVoidAsPlaceholders(false);
+            _editBoard = null;
+        }
+
         /// <summary>退出棋盘编辑页：清理动态内容，恢复棋盘常规显示。外层负责隐藏世界与返回。</summary>
         public void EndBoardEdit()
         {
             _editing = false;
+            if (_worldMode == WorldMode.BoardEdit)
+            {
+                _worldMode = WorldMode.Hidden;
+            }
+
             _editSelected = -1;
             _editRotation = 0;
             _editDragging = false;
@@ -158,7 +216,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void Update()
         {
-            if (_editing)
+            if (_worldMode == WorldMode.BoardEdit && _editing)
             {
                 UpdateBoardEdit();
             }
