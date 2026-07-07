@@ -276,12 +276,12 @@ namespace GourmetProject.Game.UI.Meta
                 return false;
             }
 
-            FinishPurchasedEntry(entry);
             if (entry.Kind == ShopEntryKind.PassiveItem || entry.Kind == ShopEntryKind.ActiveItem)
             {
                 _onItemPurchased?.Invoke(entry, card);
             }
 
+            FinishPurchasedEntry(entry);
             return true;
         }
 

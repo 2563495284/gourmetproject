@@ -74,6 +74,26 @@ namespace GourmetProject.Game.UI.Battle.View
             return slot;
         }
 
+        public bool TryGetItemFlyTarget(
+            GameRun run,
+            string itemId,
+            cfg.ItemKind kind,
+            RectTransform layer,
+            out Vector2 center,
+            out Vector2 size)
+        {
+            center = Vector2.zero;
+            size = Vector2.zero;
+            if (run == null || string.IsNullOrEmpty(itemId) || layer == null)
+            {
+                return false;
+            }
+
+            return kind == cfg.ItemKind.Passive
+                ? TryGetPassiveFlyTarget(run, itemId, layer, out center, out size)
+                : TryGetActiveFlyTarget(run, itemId, layer, out center, out size);
+        }
+
         private void RefreshPassive(
             GameRun run,
             cfg.Tables tables,
@@ -296,6 +316,152 @@ namespace GourmetProject.Game.UI.Battle.View
             _passiveItemsContent.anchoredPosition = new Vector2(_passiveItemsContent.anchoredPosition.x, nextTop);
             _passiveItemsScrollRect.verticalNormalizedPosition = scrollableHeight > 0f ? 1f - nextTop / scrollableHeight : 1f;
             Canvas.ForceUpdateCanvases();
+        }
+
+        private bool TryGetPassiveFlyTarget(GameRun run, string itemId, RectTransform layer, out Vector2 center, out Vector2 size)
+        {
+            center = Vector2.zero;
+            size = Vector2.zero;
+
+            RectTransform content = EnsurePassiveItemsContent();
+            if (content == null)
+            {
+                return false;
+            }
+
+            int index = -1;
+            int passiveCount = 0;
+            cfg.Tables tables = GameApp.Config.Tables;
+            foreach (RunItemState state in run.Items)
+            {
+                cfg.Item item = tables.TbItem.GetOrDefault(state.ItemId);
+                if (item == null || item.Kind != cfg.ItemKind.Passive)
+                {
+                    continue;
+                }
+
+                if (state.ItemId == itemId)
+                {
+                    index = passiveCount;
+                }
+
+                passiveCount++;
+            }
+
+            if (index < 0)
+            {
+                return false;
+            }
+
+            Vector2 slotSize = CalculatePassiveSlotSize();
+            int rows = Mathf.Max(1, Mathf.CeilToInt(passiveCount / (float)PassiveSlotColumns));
+            float contentHeight = CalculatePassiveContentHeight(rows, slotSize.y);
+            ConfigurePassiveContent(content, contentHeight);
+            ConfigurePassiveScroll(content, contentHeight);
+            RevealProjectedPassiveSlot(index, slotSize, contentHeight);
+
+            var probeObject = new GameObject("PassiveItemFlyTargetProbe", typeof(RectTransform));
+            var probe = probeObject.GetComponent<RectTransform>();
+            probe.SetParent(content, false);
+            LayoutPassiveSlot(probe, index, slotSize);
+            Canvas.ForceUpdateCanvases();
+
+            bool ok = TryGetRectInLayer(probe, layer, out center, out size);
+            Destroy(probeObject);
+            return ok;
+        }
+
+        private void RevealProjectedPassiveSlot(int index, Vector2 slotSize, float contentHeight)
+        {
+            if (_passiveItemsContent == null || _passiveItemsScrollRect == null)
+            {
+                return;
+            }
+
+            float viewportHeight = GetPassiveViewportHeight();
+            float scrollableHeight = Mathf.Max(0f, contentHeight - viewportHeight);
+            if (scrollableHeight <= PassiveScrollEpsilon)
+            {
+                _passiveItemsContent.anchoredPosition = Vector2.zero;
+                return;
+            }
+
+            int row = index / PassiveSlotColumns;
+            float slotTop = PassiveSlotPadding + row * (slotSize.y + PassiveSlotSpacing);
+            float slotBottom = slotTop + slotSize.y;
+            float nextTop = Mathf.Clamp(slotBottom - viewportHeight + PassiveSlotPadding, 0f, scrollableHeight);
+
+            _passiveItemsScrollRect.StopMovement();
+            _passiveItemsContent.anchoredPosition = new Vector2(_passiveItemsContent.anchoredPosition.x, nextTop);
+            _passiveItemsScrollRect.verticalNormalizedPosition = scrollableHeight > 0f ? 1f - nextTop / scrollableHeight : 1f;
+        }
+
+        private bool TryGetActiveFlyTarget(GameRun run, string itemId, RectTransform layer, out Vector2 center, out Vector2 size)
+        {
+            center = Vector2.zero;
+            size = Vector2.zero;
+            if (_activeItemSlots == null)
+            {
+                return false;
+            }
+
+            int index = -1;
+            var seen = new HashSet<string>();
+            cfg.Tables tables = GameApp.Config.Tables;
+            foreach (RunItemState state in run.Items)
+            {
+                cfg.Item item = tables.TbItem.GetOrDefault(state.ItemId);
+                if (item == null || item.Kind != cfg.ItemKind.Active || !seen.Add(state.ItemId))
+                {
+                    continue;
+                }
+
+                int nextIndex = seen.Count - 1;
+                if (state.ItemId == itemId)
+                {
+                    index = nextIndex;
+                    break;
+                }
+            }
+
+            if (index < 0 || index >= _activeItemSlots.Length || _activeItemSlots[index] == null)
+            {
+                return false;
+            }
+
+            RectTransform target = _activeItemSlots[index].transform as RectTransform;
+            return TryGetRectInLayer(target, layer, out center, out size);
+        }
+
+        private static bool TryGetRectInLayer(RectTransform rect, RectTransform layer, out Vector2 center, out Vector2 size)
+        {
+            center = Vector2.zero;
+            size = Vector2.zero;
+            if (rect == null || layer == null)
+            {
+                return false;
+            }
+
+            Vector3[] corners = new Vector3[4];
+            rect.GetWorldCorners(corners);
+            Vector3 first = layer.InverseTransformPoint(corners[0]);
+            float minX = first.x;
+            float maxX = first.x;
+            float minY = first.y;
+            float maxY = first.y;
+
+            for (int i = 1; i < corners.Length; i++)
+            {
+                Vector3 local = layer.InverseTransformPoint(corners[i]);
+                minX = Mathf.Min(minX, local.x);
+                maxX = Mathf.Max(maxX, local.x);
+                minY = Mathf.Min(minY, local.y);
+                maxY = Mathf.Max(maxY, local.y);
+            }
+
+            size = new Vector2(Mathf.Max(1f, maxX - minX), Mathf.Max(1f, maxY - minY));
+            center = new Vector2((minX + maxX) * 0.5f, (minY + maxY) * 0.5f);
+            return true;
         }
 
         private static void LayoutPassiveSlot(RectTransform rect, int index, Vector2 slotSize)

@@ -101,6 +101,7 @@ namespace GourmetProject.Game.UI.Battle
         private TimelineAxisBinder _axisBinder;
         private StomachViewCoordinator _stomachCoordinator;
         private GameplayViewStateMachine _viewStates;
+        private int _shopItemFlyInFlight;
 
         public GameRun Run => _run;
         public BattleSession Session => _session;
@@ -582,7 +583,7 @@ namespace GourmetProject.Game.UI.Battle
         }
 
         /// <summary>刷新常驻信息：左栏周/金币（分数、食物调整为局内占位）、右栏道具。</summary>
-        private void RefreshPersistent()
+        private void RefreshPersistent(bool refreshItems = true)
         {
             if (_run == null)
             {
@@ -592,7 +593,11 @@ namespace GourmetProject.Game.UI.Battle
             BattleWorldController world = _world ?? BattleWorldController.Instance;
             _infoColumn?.Refresh(_run, _session, _current, world);
 
-            RefreshItems();
+            if (refreshItems)
+            {
+                RefreshItems();
+            }
+
             RefreshFoodActions();
         }
 
@@ -646,7 +651,7 @@ namespace GourmetProject.Game.UI.Battle
         /// <summary>商店内数据变化回调：刷新常驻壳信息 + 底部扇形菜谱条。</summary>
         private void RefreshShopPersistent()
         {
-            RefreshPersistent();
+            RefreshPersistent(_shopItemFlyInFlight <= 0);
             _recipePresenter?.BuildShop(_run, BuyRecipeBook);
         }
 
@@ -663,30 +668,36 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            RunItemSlotView targetSlot = _itemsColumn.GetItemSlot(entry.Id, item.Kind);
-            RectTransform sourceRect = sourceCard.PurchaseFlySource;
-            RectTransform targetRect = targetSlot != null ? targetSlot.transform as RectTransform : null;
-            if (sourceRect == null || targetRect == null)
-            {
-                return;
-            }
-
-            Sprite sprite = sourceCard.PurchaseFlySprite ?? RunItemSlotView.LoadIcon(item) ?? LoadShopItemFallbackIcon(item.Kind);
-            PlayItemFlyTween(sourceRect, targetRect, sprite, RunItemSlotView.QualityColor(item.Quality));
-        }
-
-        private void PlayItemFlyTween(RectTransform sourceRect, RectTransform targetRect, Sprite sprite, Color fallbackColor)
-        {
             Canvas canvas = GetComponentInParent<Canvas>();
             RectTransform layer = canvas != null ? canvas.transform as RectTransform : transform.root as RectTransform;
-            if (layer == null)
+            RectTransform sourceRect = sourceCard.PurchaseFlySource;
+            if (layer == null || sourceRect == null)
             {
                 return;
             }
 
             Canvas.ForceUpdateCanvases();
             if (!TryGetRectInLayer(sourceRect, layer, out RectSnapshot start) ||
-                !TryGetRectInLayer(targetRect, layer, out RectSnapshot end))
+                !_itemsColumn.TryGetItemFlyTarget(_run, entry.Id, item.Kind, layer, out Vector2 targetCenter, out Vector2 targetSize))
+            {
+                return;
+            }
+
+            _shopItemFlyInFlight++;
+            Sprite sprite = sourceCard.PurchaseFlySprite ?? RunItemSlotView.LoadIcon(item) ?? LoadShopItemFallbackIcon(item.Kind);
+            PlayItemFlyTween(
+                start,
+                new RectSnapshot(targetCenter, targetSize),
+                sprite,
+                RunItemSlotView.QualityColor(item.Quality),
+                OnShopItemFlyComplete);
+        }
+
+        private void PlayItemFlyTween(RectSnapshot start, RectSnapshot end, Sprite sprite, Color fallbackColor, Action onComplete)
+        {
+            Canvas canvas = GetComponentInParent<Canvas>();
+            RectTransform layer = canvas != null ? canvas.transform as RectTransform : transform.root as RectTransform;
+            if (layer == null)
             {
                 return;
             }
@@ -711,6 +722,23 @@ namespace GourmetProject.Game.UI.Battle
             image.color = sprite != null ? Color.white : fallbackColor;
             group.blocksRaycasts = false;
 
+            bool finished = false;
+            Action finish = () =>
+            {
+                if (finished)
+                {
+                    return;
+                }
+
+                finished = true;
+                if (go != null)
+                {
+                    Destroy(go);
+                }
+
+                onComplete?.Invoke();
+            };
+
             Sequence sequence = DOTween.Sequence().SetUpdate(true).SetLink(go);
             sequence.Append(DOVirtual.Float(0f, 1f, ShopItemFlyDuration, t =>
             {
@@ -729,13 +757,17 @@ namespace GourmetProject.Game.UI.Battle
                     group.alpha = alpha;
                 }
             }).SetEase(Ease.InQuad));
-            sequence.OnComplete(() =>
+            sequence.OnComplete(() => finish());
+            sequence.OnKill(() => finish());
+        }
+
+        private void OnShopItemFlyComplete()
+        {
+            _shopItemFlyInFlight = Mathf.Max(0, _shopItemFlyInFlight - 1);
+            if (_shopItemFlyInFlight == 0)
             {
-                if (go != null)
-                {
-                    Destroy(go);
-                }
-            });
+                RefreshItems();
+            }
         }
 
         private static bool TryGetRectInLayer(RectTransform rect, RectTransform layer, out RectSnapshot snapshot)
