@@ -444,8 +444,8 @@ MonoBehaviour:
   _glowBorder: {fileID: 364757584657302794}
   _particleContainer: {fileID: 3661587992157915428}
   _showDuration: 0.22
-  _hideDuration: 0.18
-  _selectHold: 0.08
+  _hideDuration: 0.2
+  _selectHold: 0.5
   _hoverColor: {r: 0.0047169924, g: 0.7368692, b: 1, a: 0.9}
   _selectedColor: {r: 0.4, g: 1, b: 0.72, a: 1}
   _glowFadeSpeed: 14

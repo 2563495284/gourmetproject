@@ -39,6 +39,7 @@ namespace GourmetProject.Game.UI.Battle
     public sealed class BattleForm : UGuiForm, IWeekLoopView, IBattleViewHost, IStomachViewHost
     {
         private const string Tag = "Battle";
+        private const float ShopItemFlyDuration = 0.42f;
 
         /// <summary>当前打开的战斗界面，供各弹窗回调推进周循环。</summary>
         public static BattleForm Active { get; private set; }
@@ -346,7 +347,7 @@ namespace GourmetProject.Game.UI.Battle
         {
             if (_shopPanel != null)
             {
-                _shopPanel.Open(OnShopLeave, RefreshShopPersistent, OpenRecipeEdit, OpenBoardEdit, _recipeView);
+                _shopPanel.Open(OnShopLeave, RefreshShopPersistent, OpenRecipeEdit, OpenBoardEdit, _recipeView, PlayShopItemPurchaseFly);
             }
         }
 
@@ -647,6 +648,143 @@ namespace GourmetProject.Game.UI.Battle
         {
             RefreshPersistent();
             _recipePresenter?.BuildShop(_run, BuyRecipeBook);
+        }
+
+        private void PlayShopItemPurchaseFly(ShopEntry entry, ShopBuyCardView sourceCard)
+        {
+            if (entry == null || sourceCard == null || _itemsColumn == null)
+            {
+                return;
+            }
+
+            cfg.Item item = GameApp.Config.Tables.TbItem.GetOrDefault(entry.Id);
+            if (item == null || (item.Kind != cfg.ItemKind.Passive && item.Kind != cfg.ItemKind.Active))
+            {
+                return;
+            }
+
+            RunItemSlotView targetSlot = _itemsColumn.GetItemSlot(entry.Id, item.Kind);
+            RectTransform sourceRect = sourceCard.PurchaseFlySource;
+            RectTransform targetRect = targetSlot != null ? targetSlot.transform as RectTransform : null;
+            if (sourceRect == null || targetRect == null)
+            {
+                return;
+            }
+
+            Sprite sprite = sourceCard.PurchaseFlySprite ?? RunItemSlotView.LoadIcon(item) ?? LoadShopItemFallbackIcon(item.Kind);
+            PlayItemFlyTween(sourceRect, targetRect, sprite, RunItemSlotView.QualityColor(item.Quality));
+        }
+
+        private void PlayItemFlyTween(RectTransform sourceRect, RectTransform targetRect, Sprite sprite, Color fallbackColor)
+        {
+            Canvas canvas = GetComponentInParent<Canvas>();
+            RectTransform layer = canvas != null ? canvas.transform as RectTransform : transform.root as RectTransform;
+            if (layer == null)
+            {
+                return;
+            }
+
+            Canvas.ForceUpdateCanvases();
+            if (!TryGetRectInLayer(sourceRect, layer, out RectSnapshot start) ||
+                !TryGetRectInLayer(targetRect, layer, out RectSnapshot end))
+            {
+                return;
+            }
+
+            var go = new GameObject("ShopItemFlyFx", typeof(RectTransform), typeof(CanvasGroup), typeof(Image));
+            var rect = go.GetComponent<RectTransform>();
+            var group = go.GetComponent<CanvasGroup>();
+            var image = go.GetComponent<Image>();
+
+            rect.SetParent(layer, false);
+            rect.SetAsLastSibling();
+            rect.anchorMin = new Vector2(0.5f, 0.5f);
+            rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = start.Center;
+            rect.sizeDelta = start.Size;
+            rect.localScale = Vector3.one;
+
+            image.sprite = sprite;
+            image.preserveAspect = true;
+            image.raycastTarget = false;
+            image.color = sprite != null ? Color.white : fallbackColor;
+            group.blocksRaycasts = false;
+
+            Sequence sequence = DOTween.Sequence().SetUpdate(true).SetLink(go);
+            sequence.Append(DOVirtual.Float(0f, 1f, ShopItemFlyDuration, t =>
+            {
+                if (rect == null)
+                {
+                    return;
+                }
+
+                rect.anchoredPosition = Vector2.LerpUnclamped(start.Center, end.Center, t);
+                rect.sizeDelta = Vector2.LerpUnclamped(start.Size, end.Size, t);
+            }).SetEase(Ease.InOutCubic));
+            sequence.Insert(ShopItemFlyDuration * 0.8f, DOVirtual.Float(1f, 0f, ShopItemFlyDuration * 0.2f, alpha =>
+            {
+                if (group != null)
+                {
+                    group.alpha = alpha;
+                }
+            }).SetEase(Ease.InQuad));
+            sequence.OnComplete(() =>
+            {
+                if (go != null)
+                {
+                    Destroy(go);
+                }
+            });
+        }
+
+        private static bool TryGetRectInLayer(RectTransform rect, RectTransform layer, out RectSnapshot snapshot)
+        {
+            snapshot = default;
+            if (rect == null || layer == null)
+            {
+                return false;
+            }
+
+            Vector3[] corners = new Vector3[4];
+            rect.GetWorldCorners(corners);
+            Vector3 first = layer.InverseTransformPoint(corners[0]);
+            float minX = first.x;
+            float maxX = first.x;
+            float minY = first.y;
+            float maxY = first.y;
+
+            for (int i = 1; i < corners.Length; i++)
+            {
+                Vector3 local = layer.InverseTransformPoint(corners[i]);
+                minX = Mathf.Min(minX, local.x);
+                maxX = Mathf.Max(maxX, local.x);
+                minY = Mathf.Min(minY, local.y);
+                maxY = Mathf.Max(maxY, local.y);
+            }
+
+            Vector2 size = new Vector2(Mathf.Max(1f, maxX - minX), Mathf.Max(1f, maxY - minY));
+            snapshot = new RectSnapshot(new Vector2((minX + maxX) * 0.5f, (minY + maxY) * 0.5f), size);
+            return true;
+        }
+
+        private static Sprite LoadShopItemFallbackIcon(cfg.ItemKind kind)
+        {
+            return Resources.Load<Sprite>(kind == cfg.ItemKind.Active
+                ? "Sprites/UI/ui_icon_shop_active"
+                : "Sprites/UI/ui_icon_shop_passive");
+        }
+
+        private readonly struct RectSnapshot
+        {
+            public RectSnapshot(Vector2 center, Vector2 size)
+            {
+                Center = center;
+                Size = size;
+            }
+
+            public Vector2 Center { get; }
+            public Vector2 Size { get; }
         }
 
         // —— 行动选择卡片（原 WeekMapForm 逻辑并入）——

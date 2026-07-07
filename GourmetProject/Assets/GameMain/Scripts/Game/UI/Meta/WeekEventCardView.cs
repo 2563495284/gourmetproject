@@ -27,7 +27,7 @@ namespace GourmetProject.Game.UI.Meta
         private const string DefaultBossTitle = "周末盛宴\n恶魔";
         private const float GlowPadding = 48f;
         private const float DefaultHideDuration = 0.2f;
-        private const float DefaultPickEffectHold = 0.2f;
+        private const float DefaultPickEffectHold = 0.5f;
 
         private static readonly Color PanelColor = new Color(1f, 0.94f, 0.78f, 0.9f);
         private static readonly Color FooterActionColor = new Color(1f, 0.94f, 0.78f, 0.92f);
@@ -73,10 +73,12 @@ namespace GourmetProject.Game.UI.Meta
         private bool _isHidden;
         private Sprite _particleSprite;
         private Tween _scaleTween;
+        private Tween _pickDelayTween;
         private Material _glowMat;
         private static readonly int QuadSizeId = Shader.PropertyToID("_QuadSize");
 
-        public float PickEffectHold => Mathf.Max(DefaultPickEffectHold, _selectHold);
+        // 选中特效停留已在 OnPickClicked 内于回调前播放完毕，退场不再额外等待。
+        public float PickEffectHold => 0f;
 
         public void Bind(cfg.GameEvent ev, Action onPick)
         {
@@ -377,6 +379,7 @@ namespace GourmetProject.Game.UI.Meta
         private void OnDisable()
         {
             KillScaleTween();
+            KillPickDelayTween();
 
             if (_glowMat != null)
             {
@@ -391,6 +394,15 @@ namespace GourmetProject.Game.UI.Meta
             {
                 _scaleTween.Kill();
                 _scaleTween = null;
+            }
+        }
+
+        private void KillPickDelayTween()
+        {
+            if (_pickDelayTween != null)
+            {
+                _pickDelayTween.Kill();
+                _pickDelayTween = null;
             }
         }
 
@@ -520,11 +532,19 @@ namespace GourmetProject.Game.UI.Meta
             _picking = true;
             _selectedGlow = true;
             _hover = false;
+            SetPickInteractable(false);
             EmitParticles();
 
             Action cb = _onPick;
             _onPick = null;
-            cb?.Invoke();
+
+            KillPickDelayTween();
+            float delay = Mathf.Max(0.01f, _selectHold);
+            _pickDelayTween = DOVirtual.DelayedCall(delay, () =>
+            {
+                _pickDelayTween = null;
+                cb?.Invoke();
+            }).SetUpdate(true);
         }
 
         private void EmitParticles()

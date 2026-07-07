@@ -100,6 +100,10 @@ namespace GourmetProject.Game.UI.Meta
             return RectTransformUtility.WorldToScreenPoint(cam, target.TransformPoint(target.rect.center));
         }
 
+        public RectTransform PurchaseFlySource => _iconRect != null ? _iconRect : Rect;
+
+        public Sprite PurchaseFlySprite => _itemIcon != null && _itemIcon.enabled ? _itemIcon.sprite : null;
+
         public bool ContainsScreenPoint(Vector2 screenPoint)
         {
             Camera cam = ResolveEventCamera();

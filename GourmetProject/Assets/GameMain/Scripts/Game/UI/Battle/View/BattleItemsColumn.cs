@@ -6,23 +6,31 @@ using GourmetProject.Game.UI.Tooltips;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Runtime;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace GourmetProject.Game.UI.Battle.View
 {
     /// <summary>
-    /// 常驻壳右栏道具组件：被动道具网格（2 列，最多 10 个）+ 固定 2 个主动道具槽（同 id 聚合、角标 xN）。
+    /// 常驻壳右栏道具组件：被动道具滚动网格（2 列）+ 固定 2 个主动道具槽（同 id 聚合、角标 xN）。
     /// 战斗中满足触发时机的主动道具可点击使用，否则点击看信息；hover 显示道具 Tip。
     /// </summary>
     public sealed class BattleItemsColumn : MonoBehaviour
     {
-        private const int PassiveSlotCapacity = 10;
         private const int PassiveSlotColumns = 2;
+        private const int PassiveVisibleRows = 5;
+        private const float PassiveSlotPadding = 2f;
+        private const float PassiveSlotSpacing = 4f;
+        private const float PassiveScrollEpsilon = 0.5f;
 
         [SerializeField] private RectTransform _passiveItemsContainer;
+        [SerializeField] private RectTransform _passiveItemsContent;
+        [SerializeField] private ScrollRect _passiveItemsScrollRect;
         [SerializeField] private RunItemSlotView _itemSlotPrefab;
         [SerializeField] private RunItemSlotView[] _activeItemSlots;
 
         private readonly List<RunItemSlotView> _passiveSlots = new List<RunItemSlotView>();
+        private readonly Dictionary<string, RunItemSlotView> _passiveSlotByItemId = new Dictionary<string, RunItemSlotView>();
+        private readonly Dictionary<string, RunItemSlotView> _activeSlotByItemId = new Dictionary<string, RunItemSlotView>();
 
         /// <summary>刷新右栏道具：被动网格 + 主动槽。onActiveItemClicked 用于战斗中使用主动道具，onShowItemInfo 用于查看信息。</summary>
         public void Refresh(
@@ -34,6 +42,7 @@ namespace GourmetProject.Game.UI.Battle.View
             Action<cfg.Item, RunItemState> onShowItemInfo)
         {
             ClearPassiveSlots();
+            _activeSlotByItemId.Clear();
             if (run == null)
             {
                 return;
@@ -44,13 +53,35 @@ namespace GourmetProject.Game.UI.Battle.View
             RefreshActive(run, session, inBattle, tables, tipView, onActiveItemClicked, onShowItemInfo);
         }
 
+        public RunItemSlotView GetItemSlot(string itemId, cfg.ItemKind kind, bool revealPassive = true)
+        {
+            if (string.IsNullOrEmpty(itemId))
+            {
+                return null;
+            }
+
+            Dictionary<string, RunItemSlotView> map = kind == cfg.ItemKind.Passive ? _passiveSlotByItemId : _activeSlotByItemId;
+            if (!map.TryGetValue(itemId, out RunItemSlotView slot) || slot == null)
+            {
+                return null;
+            }
+
+            if (revealPassive && kind == cfg.ItemKind.Passive)
+            {
+                RevealPassiveSlot(slot);
+            }
+
+            return slot;
+        }
+
         private void RefreshPassive(
             GameRun run,
             cfg.Tables tables,
             ItemTipView tipView,
             Action<cfg.Item, RunItemState> onShowItemInfo)
         {
-            if (_passiveItemsContainer == null || _itemSlotPrefab == null)
+            RectTransform content = EnsurePassiveItemsContent();
+            if (content == null || _itemSlotPrefab == null)
             {
                 return;
             }
@@ -65,24 +96,20 @@ namespace GourmetProject.Game.UI.Battle.View
                 }
             }
 
-            int shown = Mathf.Min(PassiveSlotCapacity, passive.Count);
-            int rows = Mathf.Max(1, Mathf.CeilToInt(PassiveSlotCapacity / (float)PassiveSlotColumns));
-            float cellW = 1f / PassiveSlotColumns;
-            float cellH = 1f / rows;
-            for (int i = 0; i < shown; i++)
+            Vector2 slotSize = CalculatePassiveSlotSize();
+            int rows = Mathf.Max(1, Mathf.CeilToInt(passive.Count / (float)PassiveSlotColumns));
+            float contentHeight = CalculatePassiveContentHeight(rows, slotSize.y);
+            ConfigurePassiveContent(content, contentHeight);
+            ConfigurePassiveScroll(content, contentHeight);
+
+            for (int i = 0; i < passive.Count; i++)
             {
                 RunItemState state = passive[i];
                 cfg.Item item = tables.TbItem.GetOrDefault(state.ItemId);
-                RunItemSlotView slot = Instantiate(_itemSlotPrefab, _passiveItemsContainer);
+                RunItemSlotView slot = Instantiate(_itemSlotPrefab, content);
                 slot.gameObject.name = $"PassiveSlot_{i}";
-                int col = i % PassiveSlotColumns;
-                int row = i / PassiveSlotColumns;
                 var rect = (RectTransform)slot.transform;
-                rect.anchorMin = new Vector2(col * cellW, 1f - (row + 1) * cellH);
-                rect.anchorMax = new Vector2((col + 1) * cellW, 1f - row * cellH);
-                rect.offsetMin = new Vector2(2f, 2f);
-                rect.offsetMax = new Vector2(-2f, -2f);
-                rect.localScale = Vector3.one;
+                LayoutPassiveSlot(rect, i, slotSize);
 
                 string badge = state.Level > 1 ? $"Lv{state.Level}" : string.Empty;
                 cfg.Item captured = item;
@@ -96,7 +123,193 @@ namespace GourmetProject.Game.UI.Battle.View
                     () => onShowItemInfo?.Invoke(captured, capturedState));
                 slot.SetTip(tipView, captured);
                 _passiveSlots.Add(slot);
+                _passiveSlotByItemId[state.ItemId] = slot;
             }
+        }
+
+        private RectTransform EnsurePassiveItemsContent()
+        {
+            if (_passiveItemsContainer == null)
+            {
+                return null;
+            }
+
+            RemoveGridGuide();
+            EnsurePassiveScrollComponents();
+
+            if (_passiveItemsContent == null || _passiveItemsContent.parent != _passiveItemsContainer)
+            {
+                Transform content = _passiveItemsContainer.Find("Content");
+                if (content == null)
+                {
+                    var contentObject = new GameObject("Content", typeof(RectTransform));
+                    contentObject.transform.SetParent(_passiveItemsContainer, false);
+                    _passiveItemsContent = contentObject.GetComponent<RectTransform>();
+                }
+                else
+                {
+                    _passiveItemsContent = content as RectTransform;
+                }
+            }
+
+            _passiveItemsContent.gameObject.SetActive(true);
+            if (_passiveItemsScrollRect != null)
+            {
+                _passiveItemsScrollRect.content = _passiveItemsContent;
+                _passiveItemsScrollRect.viewport = _passiveItemsContainer;
+            }
+
+            return _passiveItemsContent;
+        }
+
+        private void RemoveGridGuide()
+        {
+            Transform guide = _passiveItemsContainer.Find("GridGuide");
+            if (guide == null)
+            {
+                return;
+            }
+
+            Destroy(guide.gameObject);
+        }
+
+        private void EnsurePassiveScrollComponents()
+        {
+            if (_passiveItemsScrollRect == null)
+            {
+                _passiveItemsScrollRect = _passiveItemsContainer.GetComponent<ScrollRect>();
+                if (_passiveItemsScrollRect == null)
+                {
+                    _passiveItemsScrollRect = _passiveItemsContainer.gameObject.AddComponent<ScrollRect>();
+                }
+            }
+
+            Image raycastTarget = _passiveItemsContainer.GetComponent<Image>();
+            if (raycastTarget == null)
+            {
+                raycastTarget = _passiveItemsContainer.gameObject.AddComponent<Image>();
+                raycastTarget.color = Color.clear;
+            }
+
+            raycastTarget.raycastTarget = true;
+
+            if (_passiveItemsContainer.GetComponent<RectMask2D>() == null)
+            {
+                _passiveItemsContainer.gameObject.AddComponent<RectMask2D>();
+            }
+
+            _passiveItemsScrollRect.horizontal = false;
+            _passiveItemsScrollRect.movementType = ScrollRect.MovementType.Clamped;
+            _passiveItemsScrollRect.scrollSensitivity = 24f;
+        }
+
+        private Vector2 CalculatePassiveSlotSize()
+        {
+            Rect viewportRect = _passiveItemsContainer.rect;
+            float viewportWidth = viewportRect.width > 0f ? viewportRect.width : 180f;
+            float viewportHeight = viewportRect.height > 0f ? viewportRect.height : 480f;
+            float width = Mathf.Max(1f, viewportWidth - PassiveSlotPadding * 2f - PassiveSlotSpacing * (PassiveSlotColumns - 1));
+            float height = Mathf.Max(1f, viewportHeight - PassiveSlotPadding * 2f - PassiveSlotSpacing * (PassiveVisibleRows - 1));
+            return new Vector2(width / PassiveSlotColumns, height / PassiveVisibleRows);
+        }
+
+        private float CalculatePassiveContentHeight(int rows, float slotHeight)
+        {
+            float viewportHeight = GetPassiveViewportHeight();
+            float requiredHeight = PassiveSlotPadding * 2f + rows * slotHeight + Mathf.Max(0, rows - 1) * PassiveSlotSpacing;
+            return Mathf.Max(viewportHeight, requiredHeight);
+        }
+
+        private float GetPassiveViewportHeight()
+        {
+            float height = _passiveItemsContainer.rect.height;
+            return height > 0f ? height : 480f;
+        }
+
+        private void ConfigurePassiveContent(RectTransform content, float contentHeight)
+        {
+            content.anchorMin = new Vector2(0f, 1f);
+            content.anchorMax = new Vector2(1f, 1f);
+            content.pivot = new Vector2(0.5f, 1f);
+            content.anchoredPosition = Vector2.zero;
+            content.sizeDelta = new Vector2(0f, contentHeight);
+            content.localScale = Vector3.one;
+        }
+
+        private void ConfigurePassiveScroll(RectTransform content, float contentHeight)
+        {
+            if (_passiveItemsScrollRect == null)
+            {
+                return;
+            }
+
+            bool canScroll = contentHeight > GetPassiveViewportHeight() + PassiveScrollEpsilon;
+            _passiveItemsScrollRect.vertical = canScroll;
+            if (canScroll)
+            {
+                _passiveItemsScrollRect.verticalNormalizedPosition = 1f;
+            }
+            else
+            {
+                _passiveItemsScrollRect.StopMovement();
+                content.anchoredPosition = Vector2.zero;
+            }
+        }
+
+        private void RevealPassiveSlot(RunItemSlotView slot)
+        {
+            if (slot == null || _passiveItemsContent == null || _passiveItemsScrollRect == null)
+            {
+                return;
+            }
+
+            RectTransform slotRect = slot.transform as RectTransform;
+            if (slotRect == null)
+            {
+                return;
+            }
+
+            float viewportHeight = GetPassiveViewportHeight();
+            float scrollableHeight = Mathf.Max(0f, _passiveItemsContent.rect.height - viewportHeight);
+            if (scrollableHeight <= PassiveScrollEpsilon)
+            {
+                _passiveItemsContent.anchoredPosition = Vector2.zero;
+                return;
+            }
+
+            float currentTop = _passiveItemsContent.anchoredPosition.y;
+            float slotTop = -slotRect.anchoredPosition.y;
+            float slotBottom = slotTop + slotRect.rect.height;
+            float nextTop = currentTop;
+
+            if (slotTop < currentTop + PassiveSlotPadding)
+            {
+                nextTop = slotTop - PassiveSlotPadding;
+            }
+            else if (slotBottom > currentTop + viewportHeight - PassiveSlotPadding)
+            {
+                nextTop = slotBottom - viewportHeight + PassiveSlotPadding;
+            }
+
+            nextTop = Mathf.Clamp(nextTop, 0f, scrollableHeight);
+            _passiveItemsScrollRect.StopMovement();
+            _passiveItemsContent.anchoredPosition = new Vector2(_passiveItemsContent.anchoredPosition.x, nextTop);
+            _passiveItemsScrollRect.verticalNormalizedPosition = scrollableHeight > 0f ? 1f - nextTop / scrollableHeight : 1f;
+            Canvas.ForceUpdateCanvases();
+        }
+
+        private static void LayoutPassiveSlot(RectTransform rect, int index, Vector2 slotSize)
+        {
+            int col = index % PassiveSlotColumns;
+            int row = index / PassiveSlotColumns;
+            rect.anchorMin = new Vector2(0f, 1f);
+            rect.anchorMax = new Vector2(0f, 1f);
+            rect.pivot = new Vector2(0f, 1f);
+            rect.sizeDelta = slotSize;
+            rect.anchoredPosition = new Vector2(
+                PassiveSlotPadding + col * (slotSize.x + PassiveSlotSpacing),
+                -PassiveSlotPadding - row * (slotSize.y + PassiveSlotSpacing));
+            rect.localScale = Vector3.one;
         }
 
         private void RefreshActive(
@@ -168,6 +381,7 @@ namespace GourmetProject.Game.UI.Battle.View
                         true,
                         onClick);
                     slot.SetTip(tipView, captured);
+                    _activeSlotByItemId[state.ItemId] = slot;
                 }
                 else
                 {
@@ -188,6 +402,7 @@ namespace GourmetProject.Game.UI.Battle.View
             }
 
             _passiveSlots.Clear();
+            _passiveSlotByItemId.Clear();
         }
     }
 }

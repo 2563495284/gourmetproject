@@ -72,14 +72,22 @@ namespace GourmetProject.Game.UI.Battle.View
 
             if (_scoreReqText != null)
             {
-                _scoreReqText.text = session != null && !session.IsSettled
-                    ? $"{session.PreviewScore().Total}/{session.RequiredScore}"
-                    : $"-/{run.RequiredScore}";
+                if (session != null)
+                {
+                    int score = session.IsSettled && session.LastResult != null
+                        ? session.LastResult.Total
+                        : session.PreviewScore().Total;
+                    _scoreReqText.text = $"<size=28>分数要求</size>\n\n{score}\n/\n{session.RequiredScore}";
+                }
+                else
+                {
+                    _scoreReqText.text = "<size=28>分数要求</size>\n\n-\n/\n-";
+                }
             }
 
             if (_foodAdjustText != null)
             {
-                _foodAdjustText.text = "-";
+                _foodAdjustText.text = "<size=28>食物调整</size>\n\n-";
             }
         }
 

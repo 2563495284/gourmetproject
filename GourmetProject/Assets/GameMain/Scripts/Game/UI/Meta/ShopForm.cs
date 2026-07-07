@@ -67,6 +67,7 @@ namespace GourmetProject.Game.UI.Meta
         private Action _onChanged;
         private Action _onOpenRecipeEdit;
         private Action _onOpenBoardEdit;
+        private Action<ShopEntry, ShopBuyCardView> _onItemPurchased;
 
         private void Awake()
         {
@@ -122,13 +123,15 @@ namespace GourmetProject.Game.UI.Meta
             Action onChanged,
             Action onOpenRecipeEdit = null,
             Action onOpenBoardEdit = null,
-            RecipeView recipeView = null)
+            RecipeView recipeView = null,
+            Action<ShopEntry, ShopBuyCardView> onItemPurchased = null)
         {
             EnsureWired();
             _onLeave = onLeave;
             _onChanged = onChanged;
             _onOpenRecipeEdit = onOpenRecipeEdit;
             _onOpenBoardEdit = onOpenBoardEdit;
+            _onItemPurchased = onItemPurchased;
             _recipeView = recipeView;
 
             _run = GameRunContext.Current;
@@ -274,6 +277,11 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             FinishPurchasedEntry(entry);
+            if (entry.Kind == ShopEntryKind.PassiveItem || entry.Kind == ShopEntryKind.ActiveItem)
+            {
+                _onItemPurchased?.Invoke(entry, card);
+            }
+
             return true;
         }
 
