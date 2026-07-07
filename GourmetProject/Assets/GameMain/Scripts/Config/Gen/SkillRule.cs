@@ -45,7 +45,7 @@ public sealed partial class SkillRule : Luban.BeanBase
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 所属技能ID-&gt;TbSkill.id
+    /// 所属技能ID
     /// </summary>
     public readonly string SkillId;
     /// <summary>
@@ -57,7 +57,7 @@ public sealed partial class SkillRule : Luban.BeanBase
     /// </summary>
     public readonly SkillTrigger Trigger;
     /// <summary>
-    /// 前提类型(None=无前提)
+    /// 前提类型
     /// </summary>
     public readonly SkillConditionType CondType;
     /// <summary>
@@ -65,7 +65,7 @@ public sealed partial class SkillRule : Luban.BeanBase
     /// </summary>
     public readonly SkillScope CondScope;
     /// <summary>
-    /// 计数单位(个/种)
+    /// 计数单位
     /// </summary>
     public readonly CountUnit CondUnit;
     /// <summary>
@@ -81,7 +81,7 @@ public sealed partial class SkillRule : Luban.BeanBase
     /// </summary>
     public readonly int CondThreshold;
     /// <summary>
-    /// 前提附加参数(如1x1/settled/self)
+    /// 前提附加参数
     /// </summary>
     public readonly string CondParam;
     /// <summary>
@@ -89,7 +89,7 @@ public sealed partial class SkillRule : Luban.BeanBase
     /// </summary>
     public readonly SkillActionType ActionType;
     /// <summary>
-    /// 行为作用域(目标)
+    /// 行为作用域
     /// </summary>
     public readonly SkillScope ActionScope;
     /// <summary>
@@ -101,7 +101,7 @@ public sealed partial class SkillRule : Luban.BeanBase
     /// </summary>
     public readonly System.Collections.Generic.List<float> ActionValue;
     /// <summary>
-    /// 行为参数(如mult/keep_transfer)
+    /// 行为参数
     /// </summary>
     public readonly System.Collections.Generic.List<string> ActionParam;
    

@@ -39,6 +39,8 @@ namespace GourmetProject.Gameplay.Model
         RecipeCount = 12,
         LayerCount = 13,
         OccupiedCell = 14,
+        CategoryCount = 15,
+        SkillTypeCount = 16,
     }
 
     /// <summary>技能作用域（前提「在哪数」/ 行为「作用到谁」）。与 cfg.SkillScope 一一对应。</summary>
@@ -54,6 +56,7 @@ namespace GourmetProject.Gameplay.Model
         Before = 7,
         After = 8,
         Recipe = 9,
+        Category = 10,
     }
 
     /// <summary>比较符。与 cfg.CompareOp 一一对应。</summary>
@@ -94,6 +97,12 @@ namespace GourmetProject.Gameplay.Model
         AddLayer = 6,
         ConsumeLayer = 7,
         GrantGold = 8,
+        AddMultFlat = 9,
+        PermanentAddFlat = 10,
+        PermanentAddMult = 11,
+        AddCountAs = 12,
+        CopySkill = 13,
+        TempCopyDish = 14,
     }
 
     /// <summary>技能触发时机。与 cfg.SkillTrigger 一一对应。</summary>

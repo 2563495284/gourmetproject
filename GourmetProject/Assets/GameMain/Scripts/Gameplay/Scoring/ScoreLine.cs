@@ -13,6 +13,7 @@ namespace GourmetProject.Gameplay.Scoring
         Gold = 5,
         Layer = 6,
         ExtraSettlement = 7,
+        DishMultiplierAdd = 8,
     }
 
     /// <summary>一次具体分数变化的可解释记录。</summary>

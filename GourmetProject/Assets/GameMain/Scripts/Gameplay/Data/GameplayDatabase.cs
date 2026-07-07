@@ -16,6 +16,7 @@ namespace GourmetProject.Gameplay.Data
         private readonly Dictionary<string, CellTagDef> _cellTags;
         private readonly Dictionary<string, RecipeDef> _recipes;
         private readonly Dictionary<string, StomachFragmentDef> _fragments;
+        private readonly List<CakeLayerBuffDef> _cakeLayerBuffs;
 
         public GameplayDatabase(
             IEnumerable<DishDef> dishes,
@@ -23,7 +24,8 @@ namespace GourmetProject.Gameplay.Data
             IEnumerable<FlavorDef> flavors,
             IEnumerable<CellTagDef> cellTags,
             IEnumerable<RecipeDef> recipes,
-            IEnumerable<StomachFragmentDef> fragments = null)
+            IEnumerable<StomachFragmentDef> fragments = null,
+            IEnumerable<CakeLayerBuffDef> cakeLayerBuffs = null)
         {
             _dishes = ToMap(dishes, d => d.Id, nameof(dishes));
             _skills = ToMap(skills, s => s.Id, nameof(skills));
@@ -31,9 +33,19 @@ namespace GourmetProject.Gameplay.Data
             _cellTags = ToMap(cellTags, c => c.Id, nameof(cellTags));
             _recipes = ToMap(recipes, r => r.Id, nameof(recipes));
             _fragments = ToMap(fragments ?? System.Array.Empty<StomachFragmentDef>(), f => f.Id, nameof(fragments));
+
+            _cakeLayerBuffs = new List<CakeLayerBuffDef>(cakeLayerBuffs ?? System.Array.Empty<CakeLayerBuffDef>());
+            _cakeLayerBuffs.Sort((a, b) =>
+            {
+                int cmp = a.Threshold.CompareTo(b.Threshold);
+                return cmp != 0 ? cmp : a.Order.CompareTo(b.Order);
+            });
         }
 
         public IReadOnlyCollection<DishDef> AllDishes => _dishes.Values;
+
+        /// <summary>欢乐蛋糕层数分段 buff（按阈值/顺序升序）。空表示未配置。</summary>
+        public IReadOnlyList<CakeLayerBuffDef> CakeLayerBuffs => _cakeLayerBuffs;
 
         public IReadOnlyCollection<SkillDef> AllSkills => _skills.Values;
 

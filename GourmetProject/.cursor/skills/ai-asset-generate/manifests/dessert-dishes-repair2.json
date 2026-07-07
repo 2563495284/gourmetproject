@@ -1,0 +1,116 @@
+{
+  "provider": "gemini",
+  "model": "gemini-3.1-flash-image-preview",
+  "stylePrefix": "90s American cable TV cartoon style, thick clean black ink outlines, flat cel animation colors, hand-drawn 2D animation look, warm appetizing dessert palette, polished Unity game dish sprite quality, funny, weird, charming, pure food only, no face, no eyes, no mouth, no limbs, no mascot treatment, no text, no logo, no watermark. The food must be fully opaque and complete. No transparent holes inside the food. Avoid magenta, hot pink, purple, and neon green inside the food because those colors may be removed by chroma key. No auxiliary lines, no guide marks, no grid lines, no crop marks.",
+  "typeDefaults": {
+    "dish": {
+      "outputDir": "Assets/GameMain/Resources/Sprites/Dishes",
+      "postprocess": "magenta-alpha",
+      "background": "opaque",
+      "quality": "high"
+    }
+  },
+  "typePromptPrefixes": {
+    "dish": "Dish sprite rule: one clean finished food sprite on a perfectly flat solid #FF00FF chroma key background. The background must be one uniform color with no shadows, gradients, texture, reflections, floor plane, or lighting variation. Do not use #FF00FF anywhere in the food. No cast shadow, no contact shadow, no table, no utensils, no plates unless the named dessert naturally requires a bowl, cup, cone, stick, or cake stand."
+  },
+  "assets": [
+    {
+      "name": "sundae_big",
+      "type": "dish",
+      "requestSize": "1024x1536",
+      "targetSize": "1024x1536",
+      "prompt": "two-by-three giant sundae, one complete tall glass dessert cup fully visible from top to bottom, stacked vanilla, chocolate, and caramel ice cream scoops, whipped cream, chocolate syrup, red cherry, waffle wafer, centered vertical silhouette, no missing bottom, no cropped top, no transparent holes"
+    },
+    {
+      "name": "sugarbean",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "single compact pile of glossy sugar beans, all beans fully opaque, colors only red, orange, yellow, sky blue, white, and chocolate brown, no green beans, no pink beans, no purple beans, no transparent beans, centered with generous padding"
+    },
+    {
+      "name": "mousse",
+      "type": "dish",
+      "requestSize": "512x1536",
+      "targetSize": "512x1024",
+      "prompt": "vertical two-cell mousse cake, one complete tall layered rectangular mousse cake block, continuous chocolate and vanilla layers, glossy caramel top, small cream dollop on top, not two separate slices, no gap between parts, no transparent interior"
+    },
+    {
+      "name": "mooncake",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "1024x1024",
+      "prompt": "two-by-two mooncake, one whole round golden mooncake with embossed star and scalloped edge, completely filled solid pastry surface, no center hole, no cutaway, no transparent middle, centered"
+    },
+    {
+      "name": "marshmallow",
+      "type": "dish",
+      "requestSize": "1536x1536",
+      "targetSize": "1536x1536",
+      "prompt": "three-by-three marshmallow mound, one connected pile of fluffy white marshmallows fused into a single rounded heap, toasted golden spots, soft cream and pale blue shadows, no separate mini piles, no pink or purple pieces, no transparent gaps inside the mound"
+    },
+    {
+      "name": "macaron",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "single complete macaron sandwich cookie, pale yellow shells with cream filling, fully opaque top shell and bottom shell, no pink, no purple, no magenta, no transparent top, centered with generous padding"
+    },
+    {
+      "name": "lollipop",
+      "type": "dish",
+      "requestSize": "1536x768",
+      "targetSize": "1024x512",
+      "prompt": "wide two-cell lollipop, one complete round spiral candy head on the left with a stick extending to the right, opaque red, yellow, orange, and white spiral only, no pink, no purple, no green, no transparent missing candy segments"
+    },
+    {
+      "name": "gummy",
+      "type": "dish",
+      "requestSize": "1536x768",
+      "targetSize": "1024x512",
+      "prompt": "wide two-cell gummy candy strip, one continuous opaque worm-like gummy ribbon, chunky bends, colors red, orange, yellow, blue, and white only, no green, no pink, no purple, no transparent missing sections, clean connected horizontal silhouette"
+    },
+    {
+      "name": "big_lollipop",
+      "type": "dish",
+      "requestSize": "1536x2560",
+      "targetSize": "1536x2560",
+      "prompt": "huge lollipop occupying a tall three-by-five footprint, one complete giant round spiral candy head at the top with a centered stick below, opaque red, orange, yellow, and white spiral only, no pink, no purple, no green, no transparent missing candy segments"
+    },
+    {
+      "name": "candycane",
+      "type": "dish",
+      "requestSize": "1024x1536",
+      "targetSize": "1024x1536",
+      "prompt": "large complete cartoon candy cane dessert sprite, hand-drawn thick black outline, glossy red and white stripes, rounded hook at the top curves across the full top row, straight vertical stem continues down the left side nearly to the bottom, full unbroken candy body, slightly chunky organic candy shape, no missing hook tip, no cropped bottom, no vector-perfect tube look"
+    },
+    {
+      "name": "chiffon",
+      "type": "dish",
+      "requestSize": "1536x1024",
+      "targetSize": "1536x1024",
+      "prompt": "three-by-two chiffon cake, one whole uncut ring chiffon cake with a small slice still attached, continuous golden sponge surface, cream glaze and fruit on top, not split into two separate chunks, no large gap, no transparent missing part"
+    },
+    {
+      "name": "croissant",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "1024x1024",
+      "prompt": "two-by-two L-shaped croissant pastry sprite, one complete buttery segmented croissant bent like a boomerang L shape: the top arm runs across the upper row, the left arm curves downward into the lower-left area, and the lower-right area stays empty background. Both pastry tips remain intact inside the top row and lower-left area. Do not draw any pastry in the lower-right area. No cropped right tip, no missing end, no transparent cuts"
+    },
+    {
+      "name": "donut",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "1024x1024",
+      "prompt": "two-by-two donut, one complete opaque golden donut ring with white vanilla icing and colorful sprinkles, the central donut hole is real open background but the icing and donut body must have no transparent missing patches, no pink, no purple, no magenta"
+    },
+    {
+      "name": "double_cake",
+      "type": "dish",
+      "requestSize": "2560x2048",
+      "targetSize": "2560x2048",
+      "prompt": "large five-by-four double layer celebration cake, one complete uncut tiered cake viewed from the front, centered with generous transparent padding on all sides. The cake has a wide lower tier and a smaller centered upper tier, but both tiers must be fully visible with rounded uncut sides. Continuous cream frosting, red cherries, golden sponge sides, full cake visible and unbroken, no part touching the canvas edge, no missing left side, no missing right side, no cropped tier, no transparent internal gaps"
+    }
+  ]
+}

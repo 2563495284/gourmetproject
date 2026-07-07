@@ -68,6 +68,13 @@ namespace GourmetProject.Game.Presentation.Battle
             ApplyVisual();
         }
 
+        /// <summary>世界点是否落在按钮碰撞盒内（供外部命中判优，避免与其它世界点击冲突）。</summary>
+        public bool ContainsWorldPoint(Vector2 world)
+        {
+            EnsureRefs();
+            return _collider != null && _collider.OverlapPoint(world);
+        }
+
         public void SetLabel(string label)
         {
             if (_label != null)

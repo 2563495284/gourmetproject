@@ -24,7 +24,9 @@ namespace GourmetProject.Gameplay.Model
             bool allowRotate,
             string baseId = null,
             int price = 0,
-            int rotationIndex = 0)
+            int rotationIndex = 0,
+            string category = null,
+            int countAs = 1)
         {
             Id = id ?? throw new ArgumentNullException(nameof(id));
             Name = name;
@@ -40,6 +42,8 @@ namespace GourmetProject.Gameplay.Model
             BaseId = baseId ?? id;
             Price = price;
             RotationIndex = ((rotationIndex % 4) + 4) % 4;
+            Category = category ?? string.Empty;
+            CountAs = countAs < 1 ? 1 : countAs;
         }
 
         public string Id { get; }
@@ -88,6 +92,16 @@ namespace GourmetProject.Gameplay.Model
         /// 自动上菜只以该朝向摆放；为 true 时该值不生效（枚举全部朝向），两者预期互斥。
         /// </summary>
         public int RotationIndex { get; }
+
+        /// <summary>菜品分类（如 cake）；空串=无分类。供分类检测/定向。</summary>
+        public string Category { get; }
+
+        /// <summary>是否属于某分类。</summary>
+        public bool IsCategory(string category)
+            => !string.IsNullOrEmpty(category) && string.Equals(Category, category, StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>「视为食物数」基础值（默认 1）；技能计数时按此累加。</summary>
+        public int CountAs { get; }
 
         /// <summary>要求隐藏分是否落在本菜品隐藏分范围内。</summary>
         public bool CoversHiddenScore(int requiredHidden)

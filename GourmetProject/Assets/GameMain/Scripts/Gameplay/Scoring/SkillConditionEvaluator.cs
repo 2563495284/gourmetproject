@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using GourmetProject.Gameplay.Board;
+using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
 using GpBoard = GourmetProject.Gameplay.Board.Board;
 
@@ -11,17 +12,30 @@ namespace GourmetProject.Gameplay.Scoring
     /// </summary>
     public static class SkillConditionEvaluator
     {
-        public static int Evaluate(SkillRuleDef rule, ScoreContext ctx, DishInstance self)
-            => Evaluate(rule, ctx.Board, ctx.Snapshot.History, self);
+        /// <summary>默认「视为食物数」提供器：仅取实例静态定义 + 已持久化的运行时加成（无 live 上下文，避免递归）。</summary>
+        private static readonly System.Func<DishInstance, int> DefaultCountAs = d => d.EffectiveCountAs;
 
-        public static int Evaluate(SkillRuleDef rule, GpBoard board, IScoreHistory history, DishInstance self)
+        public static int Evaluate(SkillRuleDef rule, ScoreContext ctx, DishInstance self)
+            => Evaluate(rule, ctx.Board, ctx.Snapshot.History, self, ctx.CurrentHappyCakeLayers, ctx.GetEffectiveCountAs, ctx.Db);
+
+        public static int Evaluate(SkillRuleDef rule, GpBoard board, IScoreHistory history, DishInstance self, int happyCakeLayers = 0)
+            => Evaluate(rule, board, history, self, happyCakeLayers, DefaultCountAs, null);
+
+        private static int Evaluate(SkillRuleDef rule, GpBoard board, IScoreHistory history, DishInstance self, int happyCakeLayers, System.Func<DishInstance, int> countAsOf, GameplayDatabase db)
         {
             if (rule.CondType == SkillConditionType.None)
             {
                 return 1;
             }
 
-            int raw = RawValue(rule, board, history ?? EmptyScoreHistory.Instance, self);
+            int raw = RawValue(rule, board, history ?? EmptyScoreHistory.Instance, self, happyCakeLayers, countAsOf ?? DefaultCountAs, db);
+
+            // 阶梯：condParam="tiers:t1|t2|t3"，返回满足的最高档序号（1-based），行为侧据此取对应 actionValue。
+            if (TryParseTiers(rule.CondParam, out int[] tiers))
+            {
+                return HighestTier(raw, tiers);
+            }
+
             switch (rule.CondMode)
             {
                 case CountMode.Per:
@@ -34,7 +48,7 @@ namespace GourmetProject.Gameplay.Scoring
             }
         }
 
-        private static int RawValue(SkillRuleDef rule, GpBoard board, IScoreHistory history, DishInstance self)
+        private static int RawValue(SkillRuleDef rule, GpBoard board, IScoreHistory history, DishInstance self, int happyCakeLayers, System.Func<DishInstance, int> countAsOf, GameplayDatabase db)
         {
             switch (rule.CondType)
             {
@@ -48,16 +62,16 @@ namespace GourmetProject.Gameplay.Scoring
                     return IsOnEdge(board, self) ? 1 : 0;
 
                 case SkillConditionType.DishCount:
-                    return CountByUnit(ScopeDishes(board, self, rule.CondScope, IncludeSelf(rule)), rule.CondUnit);
+                    return CountByUnit(ScopeDishes(board, self, rule.CondScope, IncludeSelf(rule)), rule.CondUnit, countAsOf);
 
                 case SkillConditionType.DishSize:
-                    return CountDishSize(ScopeDishes(board, self, rule.CondScope, IncludeSelf(rule)), rule);
+                    return CountDishSize(ScopeDishes(board, self, rule.CondScope, IncludeSelf(rule)), rule, countAsOf);
 
                 case SkillConditionType.ServeOrder:
-                    return CountByUnit(ServeOrderDishes(board, self, rule.CondScope), rule.CondUnit);
+                    return CountByUnit(ServeOrderDishes(board, self, rule.CondScope), rule.CondUnit, countAsOf);
 
                 case SkillConditionType.SameDish:
-                    return CountSameBase(ScopeDishes(board, self, rule.CondScope, IncludeSelf(rule)), self, rule.CondUnit);
+                    return CountSameBase(ScopeDishes(board, self, rule.CondScope, IncludeSelf(rule)), self, rule.CondUnit, countAsOf);
 
                 case SkillConditionType.SameKindInRun:
                     return history.RunSettledCount(self.Def.BaseId);
@@ -65,19 +79,25 @@ namespace GourmetProject.Gameplay.Scoring
                 case SkillConditionType.SameKindInMeal:
                     return rule.CondParam.IndexOf("settled", System.StringComparison.OrdinalIgnoreCase) >= 0
                         ? history.MealSettledCount(self.Def.BaseId)
-                        : CountSameBase(ScopeDishes(board, self, SkillScope.All, includeSelf: true), self, rule.CondUnit);
+                        : CountSameBase(ScopeDishes(board, self, SkillScope.All, includeSelf: true), self, rule.CondUnit, countAsOf);
 
                 case SkillConditionType.TagCount:
                     return self.SkillIds.Count + (self.HasFlavor ? 1 : 0);
 
                 case SkillConditionType.ShapeMatch:
-                    return CountShapeMatch(ScopeDishes(board, self, rule.CondScope, IncludeSelf(rule)), rule.CondParam, rule.CondUnit);
+                    return CountShapeMatch(ScopeDishes(board, self, rule.CondScope, IncludeSelf(rule)), rule.CondParam, rule.CondUnit, countAsOf);
 
                 case SkillConditionType.RecipeCount:
                     return RecipeRaw(history, rule);
 
+                case SkillConditionType.CategoryCount:
+                    return CountByUnit(CategoryDishes(board, CategoryOf(rule.CondParam)), rule.CondUnit, countAsOf);
+
+                case SkillConditionType.SkillTypeCount:
+                    return CountSkillType(board, db, rule.CondParam, rule.CondUnit, countAsOf);
+
                 case SkillConditionType.LayerCount:
-                    return self.Layers;
+                    return CapLayers(happyCakeLayers, rule.CondParam);
 
                 case SkillConditionType.OccupiedCell:
                     return self.OccupiedCells.Count;
@@ -89,6 +109,189 @@ namespace GourmetProject.Gameplay.Scoring
 
         private static bool IncludeSelf(SkillRuleDef rule)
             => rule.CondParam.IndexOf("self", System.StringComparison.OrdinalIgnoreCase) >= 0;
+
+        /// <summary>层数封顶：condParam 含 cap:N 时返回 min(layers, N)（闪电泡芙「最多消耗3层」）。</summary>
+        private static int CapLayers(int layers, string condParam)
+        {
+            if (!string.IsNullOrEmpty(condParam))
+            {
+                int idx = condParam.IndexOf("cap:", System.StringComparison.OrdinalIgnoreCase);
+                if (idx >= 0 && int.TryParse(condParam.Substring(idx + 4).Split(';', ',', '|')[0], out int cap) && layers > cap)
+                {
+                    return cap;
+                }
+            }
+
+            return layers;
+        }
+
+        // ---------- 阶梯 tiers ----------
+
+        /// <summary>解析 condParam 中的 tiers:t1|t2|t3 阈值升序数组。无则返回 false。</summary>
+        private static bool TryParseTiers(string condParam, out int[] tiers)
+        {
+            tiers = null;
+            if (string.IsNullOrEmpty(condParam))
+            {
+                return false;
+            }
+
+            int idx = condParam.IndexOf("tiers:", System.StringComparison.OrdinalIgnoreCase);
+            if (idx < 0)
+            {
+                return false;
+            }
+
+            string body = condParam.Substring(idx + "tiers:".Length).Split(';')[0];
+            string[] parts = body.Split('|', ',');
+            var list = new List<int>();
+            foreach (string p in parts)
+            {
+                if (int.TryParse(p.Trim(), out int v))
+                {
+                    list.Add(v);
+                }
+            }
+
+            if (list.Count == 0)
+            {
+                return false;
+            }
+
+            tiers = list.ToArray();
+            return true;
+        }
+
+        /// <summary>返回 raw 满足的最高档序号（1-based）；均不满足返回 0。</summary>
+        private static int HighestTier(int raw, int[] tiers)
+        {
+            int result = 0;
+            for (int i = 0; i < tiers.Length; i++)
+            {
+                if (raw >= tiers[i])
+                {
+                    result = i + 1;
+                }
+            }
+
+            return result;
+        }
+
+        // ---------- 带某行为类的食物数 ----------
+
+        private static int CountSkillType(GpBoard board, GameplayDatabase db, string condParam, CountUnit unit, System.Func<DishInstance, int> countAsOf)
+        {
+            if (db == null || string.IsNullOrEmpty(condParam))
+            {
+                return 0;
+            }
+
+            string token = CategoryOf(condParam); // 复用「取非 tiers 段」：此处即行为类型名。
+            if (!System.Enum.TryParse(token, ignoreCase: true, out SkillActionType actionType))
+            {
+                return 0;
+            }
+
+            var matched = new List<DishInstance>();
+            foreach (DishInstance d in board.Dishes)
+            {
+                if (HasSkillOfType(db, d, actionType))
+                {
+                    matched.Add(d);
+                }
+            }
+
+            return CountByUnit(matched, unit, countAsOf);
+        }
+
+        private static bool HasSkillOfType(GameplayDatabase db, DishInstance dish, SkillActionType actionType)
+        {
+            foreach (string skillId in dish.SkillIds)
+            {
+                SkillDef def = db.GetSkill(skillId);
+                if (def == null || !def.HasRules)
+                {
+                    continue;
+                }
+
+                for (int i = 0; i < def.Rules.Count; i++)
+                {
+                    if (def.Rules[i].ActionType == actionType)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        // ---------- 分类（category）集合与参数 ----------
+
+        /// <summary>从 condParam 取「分类/类型名」段（去除 tiers:… 部分），如 "cake;tiers:3|5|8" → "cake"。</summary>
+        public static string CategoryOf(string condParam)
+        {
+            if (string.IsNullOrEmpty(condParam))
+            {
+                return string.Empty;
+            }
+
+            foreach (string seg in condParam.Split(';'))
+            {
+                string s = seg.Trim();
+                if (s.Length > 0 && !s.StartsWith("tiers:", System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return s;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        /// <summary>棋盘上属于指定分类（如 cake）的全部菜（含自身若匹配）。</summary>
+        public static List<DishInstance> CategoryDishes(GpBoard board, string category)
+        {
+            var result = new List<DishInstance>();
+            if (string.IsNullOrEmpty(category))
+            {
+                return result;
+            }
+
+            foreach (DishInstance d in board.Dishes)
+            {
+                if (d.Def.IsCategory(category))
+                {
+                    result.Add(d);
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>从 actionParams 解析分类定向的分类名，编码为 cat:xxx。未指定返回空串。</summary>
+        public static string ParseCategoryParam(IEnumerable<string> actionParams)
+        {
+            if (actionParams == null)
+            {
+                return string.Empty;
+            }
+
+            foreach (string p in actionParams)
+            {
+                if (p == null)
+                {
+                    continue;
+                }
+
+                int idx = p.IndexOf("cat:", System.StringComparison.OrdinalIgnoreCase);
+                if (idx >= 0)
+                {
+                    return p.Substring(idx + 4).Split(';', ',', '|')[0].Trim();
+                }
+            }
+
+            return string.Empty;
+        }
 
         // ---------- 作用域内的菜集合 ----------
 
@@ -176,11 +379,13 @@ namespace GourmetProject.Gameplay.Scoring
 
         // ---------- 计数工具 ----------
 
-        private static int CountByUnit(List<DishInstance> dishes, CountUnit unit)
+        private static int CountByUnit(List<DishInstance> dishes, CountUnit unit, System.Func<DishInstance, int> countAsOf)
         {
             if (unit != CountUnit.Kinds)
             {
-                return dishes.Count;
+                int sum = 0;
+                foreach (DishInstance d in dishes) sum += countAsOf(d);
+                return sum;
             }
 
             var kinds = new HashSet<string>();
@@ -188,12 +393,12 @@ namespace GourmetProject.Gameplay.Scoring
             return kinds.Count;
         }
 
-        private static int CountSameBase(List<DishInstance> dishes, DishInstance self, CountUnit unit)
+        private static int CountSameBase(List<DishInstance> dishes, DishInstance self, CountUnit unit, System.Func<DishInstance, int> countAsOf)
         {
             int count = 0;
             foreach (DishInstance d in dishes)
             {
-                if (d.Id != self.Id && d.Def.BaseId == self.Def.BaseId) count++;
+                if (d.Id != self.Id && d.Def.BaseId == self.Def.BaseId) count += countAsOf(d);
             }
 
             if (unit == CountUnit.Kinds)
@@ -204,18 +409,18 @@ namespace GourmetProject.Gameplay.Scoring
             return count;
         }
 
-        private static int CountDishSize(List<DishInstance> dishes, SkillRuleDef rule)
+        private static int CountDishSize(List<DishInstance> dishes, SkillRuleDef rule, System.Func<DishInstance, int> countAsOf)
         {
             int count = 0;
             foreach (DishInstance d in dishes)
             {
-                if (rule.CondCompare.Evaluate(d.OccupiedCells.Count, rule.CondThreshold)) count++;
+                if (rule.CondCompare.Evaluate(d.OccupiedCells.Count, rule.CondThreshold)) count += countAsOf(d);
             }
 
             return count;
         }
 
-        private static int CountShapeMatch(List<DishInstance> dishes, string param, CountUnit unit)
+        private static int CountShapeMatch(List<DishInstance> dishes, string param, CountUnit unit, System.Func<DishInstance, int> countAsOf)
         {
             int w = 1, h = 1;
             if (!string.IsNullOrEmpty(param))
@@ -239,7 +444,7 @@ namespace GourmetProject.Gameplay.Scoring
                 }
             }
 
-            return CountByUnit(matched, unit);
+            return CountByUnit(matched, unit, countAsOf);
         }
 
         private static int RecipeRaw(IScoreHistory history, SkillRuleDef rule)

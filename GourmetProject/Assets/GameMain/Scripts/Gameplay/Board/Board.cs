@@ -283,6 +283,28 @@ namespace GourmetProject.Gameplay.Board
             }
         }
 
+        /// <summary>
+        /// 移除一个已放置实例：把它占据的格子还原为空，并从菜品列表中剔除。
+        /// 用于「食物调整」态的删除 / 移动（移动 = 先移除再 <see cref="Place"/> 到新位置）。
+        /// </summary>
+        public void RemoveDish(DishInstance dish)
+        {
+            if (dish == null)
+            {
+                return;
+            }
+
+            foreach (GridPos cell in dish.OccupiedCells)
+            {
+                if (InBounds(cell) && _cells[Index(cell)] == dish.Id)
+                {
+                    _cells[Index(cell)] = Empty;
+                }
+            }
+
+            _dishes.RemoveAll(d => d.Id == dish.Id);
+        }
+
         /// <summary>返回占用该格的实例（空格返回 null）。</summary>
         public DishInstance DishAt(GridPos p)
         {

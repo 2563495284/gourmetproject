@@ -57,12 +57,18 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private WorldItemSlotView _itemSlotPrefab;
         [SerializeField] private MenuBookWorldView _menuBookPrefab;
         [SerializeField] private ServeHandView _serveHandPrefab;
+        [Tooltip("食物调整态的世界按钮（X/勾/撤销）prefab，复用 Prefabs/Battle/WorldButton。")]
+        [SerializeField] private WorldButtonView _worldButtonPrefab;
 
         [Header("上菜动画")]
         [SerializeField] private float _serveCarryScale = 1.22f;
         [SerializeField] private float _serveDescendDuration = 0.34f;
         [SerializeField] private float _serveWithdrawDuration = 0.18f;
         [SerializeField] private float _serveDropDuration = 0.24f;
+
+        // 棋盘锁定在该屏幕矩形内 fit 并居中（由 BattleForm 传入的 HUD 空区 BoardArea）；为空则回落视口边距布局。
+        private const float BoardAreaMinCellSize = 0.12f;
+        private RectTransform _boardArea;
 
         // 按棋盘尺寸自适应的单格世界尺寸与棋盘中心，BuildBoard 中计算。
         private float _cellSize = MaxCellSize;
@@ -74,6 +80,9 @@ namespace GourmetProject.Game.Presentation.Battle
 
         // 棋盘编辑 / 只读胃视图的表现与交互拆到协作组件；本类只做 Food 态与世界互斥态调度（外壳）。
         private BoardEditController _boardEdit;
+
+        // 食物调整（局内删除/移动菜品）交互拆到协作组件，仅 Food 态启用。
+        private FoodAdjustController _foodAdjust;
 
         private readonly DishSpriteProvider _spriteProvider = new DishSpriteProvider();
         private readonly List<WorldItemSlotView> _passiveItemSlots = new List<WorldItemSlotView>();
@@ -145,6 +154,84 @@ namespace GourmetProject.Game.Presentation.Battle
 
         /// <summary>是否正处于可拖拽的棋盘编辑态。</summary>
         public bool IsEditingBoard => _boardEdit != null && _boardEdit.IsEditing;
+
+        private void EnsureFoodAdjust()
+        {
+            if (_foodAdjust == null)
+            {
+                _foodAdjust = GetComponent<FoodAdjustController>();
+                if (_foodAdjust == null)
+                {
+                    _foodAdjust = gameObject.AddComponent<FoodAdjustController>();
+                }
+            }
+
+            _foodAdjust.Configure(this);
+        }
+
+        /// <summary>是否正处于食物调整态。</summary>
+        public bool IsFoodAdjusting => _foodAdjust != null && _foodAdjust.IsActive;
+
+        /// <summary>进入食物调整态（仅 Food 态、未结算时可用）。<paramref name="onExited"/> 供确认提交后自动退出时回通知壳更新 UI。</summary>
+        public void BeginFoodAdjust(Action onExited)
+        {
+            if (_worldMode != WorldMode.Food || _session == null || _session.IsSettled)
+            {
+                return;
+            }
+
+            EnsureFoodAdjust();
+            _foodAdjust.Begin(onExited);
+            SetPlacedPiecesClickEnabled(false);
+        }
+
+        /// <summary>退出食物调整态（用户点「返回」或提交后调用）。会取消未提交的移动并复位表现。</summary>
+        public void EndFoodAdjust()
+        {
+            if (_foodAdjust == null || !_foodAdjust.IsActive)
+            {
+                return;
+            }
+
+            _foodAdjust.End();
+            RebuildPlacedPieces();
+            SetPlacedPiecesClickEnabled(true);
+        }
+
+        private void SetPlacedPiecesClickEnabled(bool enabled)
+        {
+            foreach (DishPieceView piece in _placedPieces)
+            {
+                piece?.SetClickEnabled(enabled);
+            }
+        }
+
+        // —— 供 FoodAdjustController 读取的内部引用 ——
+        internal GpBoard AdjustBoard => _session?.Board;
+        internal BoardView AdjustBoardView => _boardView;
+        internal Transform AdjustPiecesRoot => _piecesRoot;
+        internal Camera AdjustCamera => _camera;
+        internal float AdjustCellSize => _cellSize;
+        internal DishPieceView AdjustDishPiecePrefab => _dishPiecePrefab;
+        internal WorldButtonView AdjustWorldButtonPrefab => _worldButtonPrefab;
+        internal DishSpriteProvider AdjustSpriteProvider => _spriteProvider;
+        internal GameRun AdjustRun => _run;
+
+        internal DishPieceView GetPieceView(int id)
+        {
+            return _dishViewsById.TryGetValue(id, out DishPieceView view) ? view : null;
+        }
+
+        /// <summary>食物调整删除/撤销后重建棋盘菜品表现，并保持调整态下的点击屏蔽。</summary>
+        internal void RebuildAfterAdjust()
+        {
+            RebuildPlacedPieces();
+            RefreshAll();
+            if (IsFoodAdjusting)
+            {
+                SetPlacedPiecesClickEnabled(false);
+            }
+        }
 
         /// <summary>
         /// 进入棋盘编辑页：外壳先收起 Food 态表现并切到编辑互斥态，再把编辑页构建交给协作组件。
@@ -249,6 +336,12 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             EnsureServeAnimator();
+            EnsureFoodAdjust();
+            if (_foodAdjust != null && _foodAdjust.IsActive)
+            {
+                _foodAdjust.End();
+            }
+
             gameObject.SetActive(true);
             StopAllCoroutines();
             _worldMode = WorldMode.Food;
@@ -275,6 +368,11 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public void HideWorld()
         {
+            if (_foodAdjust != null && _foodAdjust.IsActive)
+            {
+                _foodAdjust.End();
+            }
+
             if (_boardEdit != null && _boardEdit.IsEditing)
             {
                 _boardEdit.EndBoardEdit();
@@ -464,11 +562,22 @@ namespace GourmetProject.Game.Presentation.Battle
             return go.transform;
         }
 
+        /// <summary>
+        /// 由 BattleForm 传入 HUD 里的空区矩形，棋盘将始终 fit 并居中锁定在该屏幕区域内（超大胃继续缩放显示）。
+        /// 传 null 回落到按视口边距布局。
+        /// </summary>
+        public void SetBoardArea(RectTransform area)
+        {
+            _boardArea = area;
+        }
+
         private void BuildBoard(GpBoard board)
         {
             // 中央可用区：菜谱/道具面板已迁到常驻 HUD（左右栏 + 底部菜谱抽屉），棋盘居中在中部内容区，
             // 由 BoardLayout 统一按胃包围盒铺满可用区并居中（与编辑/胃视图态共用同一套定位算法）。
-            BoardPlacement placement = BoardLayout.Compute(_halfW, _halfH, board, FoodBoardBottomMargin);
+            BoardPlacement placement = TryComputeBoardAreaRect(out float left, out float right, out float bottom, out float top)
+                ? BoardLayout.ComputeInRect(left, right, bottom, top, board, BoardAreaMinCellSize)
+                : BoardLayout.Compute(_halfW, _halfH, board, FoodBoardBottomMargin);
             _cellSize = placement.CellSize;
             _boardCenter = placement.Position;
 
@@ -488,6 +597,40 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _boardView.Build(board, _cellSize, Gap, OnCellClicked, _boardCellPrefab);
+        }
+
+        /// <summary>把 HUD 里的 BoardArea 矩形四角投影到 BattleCamera 世界平面(z=0)，得到棋盘可用区的世界矩形边界。</summary>
+        private bool TryComputeBoardAreaRect(out float left, out float right, out float bottom, out float top)
+        {
+            left = right = bottom = top = 0f;
+            if (_boardArea == null || _camera == null)
+            {
+                return false;
+            }
+
+            Canvas canvas = _boardArea.GetComponentInParent<Canvas>();
+            Camera uiCam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
+
+            var corners = new Vector3[4];
+            _boardArea.GetWorldCorners(corners);
+
+            float minX = float.MaxValue, maxX = float.MinValue, minY = float.MaxValue, maxY = float.MinValue;
+            float depth = -_camera.transform.position.z;
+            for (int i = 0; i < 4; i++)
+            {
+                Vector2 screen = RectTransformUtility.WorldToScreenPoint(uiCam, corners[i]);
+                Vector3 world = _camera.ScreenToWorldPoint(new Vector3(screen.x, screen.y, depth));
+                minX = Mathf.Min(minX, world.x);
+                maxX = Mathf.Max(maxX, world.x);
+                minY = Mathf.Min(minY, world.y);
+                maxY = Mathf.Max(maxY, world.y);
+            }
+
+            left = minX;
+            right = maxX;
+            bottom = minY;
+            top = maxY;
+            return maxX > minX && maxY > minY;
         }
 
         private void BuildRecipeBooks()
@@ -879,7 +1022,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void OnCellClicked(GridPos pos)
         {
-            if (_session == null)
+            if (_session == null || IsFoodAdjusting)
             {
                 return;
             }

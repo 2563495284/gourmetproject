@@ -31,6 +31,8 @@ namespace GourmetProject.Tests
             Assert.IsTrue(dish.AllowRotate);
             CollectionAssert.AreEqual(new[] { "tag_inherent" }, dish.SkillIds);
             Assert.AreEqual("tag_a", dish.FlavorId);
+            Assert.AreEqual("sushi", dish.Category);
+            Assert.AreEqual(2, dish.CountAs);
 
             SkillDef skill = db.GetSkill("tag_inherent");
             Assert.NotNull(skill);
@@ -105,7 +107,9 @@ namespace GourmetProject.Tests
     ""deliciousness"": 7,
     ""icon"": ""Icons/Sushi"",
     ""allowRotate"": true,
-    ""skills"": [""tag_inherent""],
+    ""skills"": ""tag_inherent"",
+    ""category"": ""sushi"",
+    ""countAs"": 2,
     ""shapeRows"": [""XX"", "".X""]
   }
 ]";

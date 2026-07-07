@@ -1,0 +1,102 @@
+{
+  "provider": "gemini",
+  "model": "gemini-3.1-flash-image-preview",
+  "stylePrefix": "90s American cable TV cartoon style, thick clean black ink outlines, flat cel animation colors, hand-drawn 2D animation look, warm appetizing dessert palette, polished Unity game dish sprite quality, funny, weird, charming, pure food only, no face, no eyes, no mouth, no limbs, no mascot treatment, no text, no logo, no watermark. Absolutely no auxiliary lines, no construction lines, no crop marks, no guide marks, no grid lines, no cell borders, no ruler ticks, no gray hairlines, no white repair patches.",
+  "typeDefaults": {
+    "dish": {
+      "outputDir": "Assets/GameMain/Resources/Sprites/Dishes",
+      "postprocess": "magenta-alpha",
+      "background": "opaque",
+      "quality": "high"
+    }
+  },
+  "typePromptPrefixes": {
+    "dish": "Dish sprite rule: one clean finished food sprite on a perfectly flat solid #FF00FF chroma key background. The food silhouette must be complete and fully opaque. The background must be one uniform color with no shadows, gradients, texture, reflections, floor plane, or lighting variation. Do not use #FF00FF anywhere in the food. No cast shadow, no contact shadow, no table, no utensils, no plates unless the named dessert naturally requires a bowl, cup, dish, cone, or stick."
+  },
+  "assets": [
+    {
+      "name": "toffee",
+      "type": "dish",
+      "requestSize": "512x1536",
+      "targetSize": "512x1024",
+      "prompt": "vertical two-cell toffee candy tower, one complete sticky caramel candy form with two chunky caramel blocks connected by glossy caramel stretch, centered, clean silhouette, no horizontal guide lines, no vertical guide lines, no background marks"
+    },
+    {
+      "name": "tanghulu",
+      "type": "dish",
+      "requestSize": "512x1536",
+      "targetSize": "512x1536",
+      "prompt": "vertical three-cell tanghulu skewer, glossy red candied hawthorn balls stacked on a thin wooden stick, centered as one complete clean food sprite, no guide lines, no crop lines, no background marks"
+    },
+    {
+      "name": "souffle",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "1024x1024",
+      "prompt": "two-by-two souffle pancake stack, one whole fluffy round pancake stack with butter and syrup, continuous complete dessert surface, no seams, no slice cuts, no quadrant divisions, no vertical or horizontal guide lines"
+    },
+    {
+      "name": "pengtang",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "1024x1024",
+      "prompt": "two-by-two dalgona honeycomb candy, one large amber sugar disk with a simple stamped star impression, cracked crispy texture, centered complete object, no guide lines, no crop marks, no extra duplicate coins"
+    },
+    {
+      "name": "mango_sago",
+      "type": "dish",
+      "requestSize": "1536x1024",
+      "targetSize": "1536x1024",
+      "prompt": "three-by-two mango pomelo sago dessert, one wide clean bowl of golden mango cream with mango cubes, pomelo bits, and tapioca pearls, fully opaque bright cel colors, no white transparent gaps, no guide lines, no crop marks"
+    },
+    {
+      "name": "eclair",
+      "type": "dish",
+      "requestSize": "512x1536",
+      "targetSize": "512x1536",
+      "prompt": "vertical three-cell eclair pastry, one long complete pastry rotated upright, chocolate glaze, cream seam, golden choux pastry sides, centered clean silhouette, no white missing edge, no auxiliary lines, no guide marks"
+    },
+    {
+      "name": "double_cake",
+      "type": "dish",
+      "requestSize": "2560x2048",
+      "targetSize": "2560x2048",
+      "prompt": "large five-by-four double layer celebration cake, one whole uncut tiered cake with a wide bottom tier and narrower centered upper tier, continuous frosting and cherries, no slice seams, no vertical cut line, no guide lines, no crop marks, no white transparent repair patches"
+    },
+    {
+      "name": "swiss_roll",
+      "type": "dish",
+      "requestSize": "1024x1536",
+      "targetSize": "1024x1536",
+      "prompt": "two-by-three swiss roll cake dessert, several soft sponge cake roll slices stacked as a connected cake pile, each slice shows cream spiral and berry jam, clearly cake and not candy, no guide lines, no crop marks, no tiny letters or marks"
+    },
+    {
+      "name": "croissant",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "1024x1024",
+      "prompt": "two-by-two croissant sprite, one complete buttery crescent croissant with clean chunky cartoon outline, centered slightly toward the upper-left L footprint, no vertical guide line, no horizontal guide line, no crop marks, no white gaps"
+    },
+    {
+      "name": "cone",
+      "type": "dish",
+      "requestSize": "768x1536",
+      "targetSize": "512x1024",
+      "prompt": "vertical two-cell ice cream cone, one complete waffle cone with stacked colorful ice cream scoops, centered clean silhouette, fully opaque food, no guide lines, no crop marks, no white transparent cuts"
+    },
+    {
+      "name": "candycane",
+      "type": "dish",
+      "requestSize": "1024x1536",
+      "targetSize": "1024x1536",
+      "prompt": "large L-shaped red and white striped candy cane filling a tall two-by-three footprint, rounded hook at the top curves from a left vertical stem across toward the right, straight vertical stem continues down the left side almost to the bottom, one complete clean candy cane, bold readable silhouette, no guide lines, no crop marks, no background ticks"
+    },
+    {
+      "name": "cream_cake",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "1024x1024",
+      "prompt": "two-by-two cream cake, one whole square layered cream cake with continuous frosting top, strawberries and cream peaks arranged on one complete dessert, not four separate slices, not divided into quadrants, no seam lines, no vertical cut, no horizontal cut, no guide lines"
+    }
+  ]
+}

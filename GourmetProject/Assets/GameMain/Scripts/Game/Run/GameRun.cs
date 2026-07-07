@@ -24,6 +24,7 @@ namespace GourmetProject.Game.Run
         public const int DefaultRecipeBookCount = 2;
         public const int MaxRecipeBookCount = 4;
         public const int RecipeBookCapacity = 12;
+        public const int DefaultFoodAdjustCount = 999;
 
         private readonly cfg.Tables _tables;
 
@@ -91,6 +92,21 @@ namespace GourmetProject.Game.Run
         public int WeekIndex { get; set; }
 
         public int Gold { get; set; }
+
+        /// <summary>「食物调整」剩余次数（局内删除/移动菜品消耗，暂定初始 999，随存档保存）。</summary>
+        public int FoodAdjustCount { get; set; } = DefaultFoodAdjustCount;
+
+        /// <summary>尝试消耗一次食物调整：仅在 &gt;0 时 -1 并返回 true。</summary>
+        public bool TrySpendFoodAdjust()
+        {
+            if (FoodAdjustCount <= 0)
+            {
+                return false;
+            }
+
+            FoodAdjustCount--;
+            return true;
+        }
 
         public IReadOnlyList<RunItemState> Items => _items;
 
@@ -530,6 +546,7 @@ namespace GourmetProject.Game.Run
                 SeedText = SeedText,
                 WeekIndex = WeekIndex,
                 Gold = Gold,
+                FoodAdjustCount = FoodAdjustCount,
                 Items = items,
                 BonusDishIds = new List<string>(_bonusDishIds),
                 RecipeBooks = ToRecipeBookSaveData(),
@@ -568,6 +585,7 @@ namespace GourmetProject.Game.Run
         {
             var run = new GameRun(tables, database, data.CharacterId, data.SeedText, data.WeekIndex);
             run.Gold = data.Gold;
+            run.FoodAdjustCount = data.FoodAdjustCount;
             run._items.Clear();
 
             if (data.Items != null && data.Items.Count > 0)

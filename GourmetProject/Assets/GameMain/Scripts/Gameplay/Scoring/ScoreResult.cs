@@ -32,8 +32,6 @@ namespace GourmetProject.Gameplay.Scoring
     /// <summary>一次结算的完整结果。</summary>
     public sealed class ScoreResult
     {
-        private static readonly IReadOnlyDictionary<int, int> EmptyLayerDeltas = new Dictionary<int, int>();
-
         public ScoreResult(
             IReadOnlyList<DishScore> dishScores,
             float rawSum,
@@ -42,8 +40,10 @@ namespace GourmetProject.Gameplay.Scoring
             IReadOnlyList<ScoreLine> scoreLines = null,
             IReadOnlyList<ScoreEvent> scoreEvents = null,
             float goldDelta = 0f,
-            IReadOnlyDictionary<int, int> layerDeltas = null,
-            IReadOnlyList<SkillTransferSideEffect> skillTransfers = null)
+            int happyCakeLayerDelta = 0,
+            IReadOnlyList<SkillTransferSideEffect> skillTransfers = null,
+            IReadOnlyDictionary<int, float> permanentFlatDeltas = null,
+            IReadOnlyDictionary<int, float> permanentMultDeltas = null)
         {
             DishScores = dishScores;
             RawSum = rawSum;
@@ -52,9 +52,13 @@ namespace GourmetProject.Gameplay.Scoring
             ScoreLines = scoreLines ?? System.Array.Empty<ScoreLine>();
             ScoreEvents = scoreEvents ?? System.Array.Empty<ScoreEvent>();
             GoldDelta = goldDelta;
-            LayerDeltas = layerDeltas ?? EmptyLayerDeltas;
+            HappyCakeLayerDelta = happyCakeLayerDelta;
             SkillTransfers = skillTransfers ?? System.Array.Empty<SkillTransferSideEffect>();
+            PermanentFlatDeltas = permanentFlatDeltas ?? EmptyFloatDeltas;
+            PermanentMultDeltas = permanentMultDeltas ?? EmptyFloatDeltas;
         }
+
+        private static readonly IReadOnlyDictionary<int, float> EmptyFloatDeltas = new Dictionary<int, float>();
 
         /// <summary>逐菜结算明细（按结算顺序）。</summary>
         public IReadOnlyList<DishScore> DishScores { get; }
@@ -77,11 +81,17 @@ namespace GourmetProject.Gameplay.Scoring
         /// <summary>金币增量（经济运营行为产生；正式结算后由 Game 层写回 GameRun.Gold）。</summary>
         public float GoldDelta { get; }
 
-        /// <summary>层数改动（实例 Id → 结算后应有的层数与当前层数之差）。正式结算后应用。</summary>
-        public IReadOnlyDictionary<int, int> LayerDeltas { get; }
+        /// <summary>全局「欢乐蛋糕层数」增量。正式结算后由 Game 层写回品鉴状态。</summary>
+        public int HappyCakeLayerDelta { get; }
 
         /// <summary>技能传递副作用。正式结算后应用到目标实例运行时技能集。</summary>
         public IReadOnlyList<SkillTransferSideEffect> SkillTransfers { get; }
+
+        /// <summary>永久加法分增量（实例 Id → 累加值）。正式结算后写回实例。</summary>
+        public IReadOnlyDictionary<int, float> PermanentFlatDeltas { get; }
+
+        /// <summary>永久乘区增量（实例 Id → 累乘倍数）。正式结算后写回实例。</summary>
+        public IReadOnlyDictionary<int, float> PermanentMultDeltas { get; }
 
         /// <summary>最终得分（四舍五入到整数，0.5 向上取整）。</summary>
         public int Total => (int)System.Math.Round((RawSum + FinalFlat) * FinalMultiplier, System.MidpointRounding.AwayFromZero);

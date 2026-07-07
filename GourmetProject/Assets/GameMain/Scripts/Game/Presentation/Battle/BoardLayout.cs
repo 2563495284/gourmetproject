@@ -56,6 +56,21 @@ namespace GourmetProject.Game.Presentation.Battle
             float boardRight = halfW - SideMargin;
             float boardTop = halfH - TopMargin;
             float boardBottom = -halfH + bottomMargin;
+            return ComputeInRect(boardLeft, boardRight, boardBottom, boardTop, board, MinCellSize);
+        }
+
+        /// <summary>
+        /// 在给定「世界矩形可用区」内把胃包围盒铺满并居中（用于把棋盘锁定在屏幕固定区域）。
+        /// <paramref name="minCellSize"/> 传更小或 0 可让超大胃继续缩放以完整显示。
+        /// </summary>
+        public static BoardPlacement ComputeInRect(
+            float boardLeft,
+            float boardRight,
+            float boardBottom,
+            float boardTop,
+            GpBoard board,
+            float minCellSize)
+        {
             float availW = Mathf.Max(1f, boardRight - boardLeft);
             float availH = Mathf.Max(1f, boardTop - boardBottom);
 
@@ -68,7 +83,8 @@ namespace GourmetProject.Game.Presentation.Battle
 
             int boxW = Mathf.Max(1, maxX - minX + 1);
             int boxH = Mathf.Max(1, maxY - minY + 1);
-            float cellSize = Mathf.Clamp(Mathf.Min(availW / boxW, availH / boxH), MinCellSize, MaxCellSize);
+            float lowerBound = Mathf.Min(minCellSize, MaxCellSize);
+            float cellSize = Mathf.Clamp(Mathf.Min(availW / boxW, availH / boxH), lowerBound, MaxCellSize);
 
             // mapper 仍按完整 Width×Height 排布；这里反推 Position，使胃包围盒的几何中心落在可用区中心。
             var areaCenter = new Vector3((boardLeft + boardRight) * 0.5f, (boardTop + boardBottom) * 0.5f, 0f);

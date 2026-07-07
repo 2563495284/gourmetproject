@@ -24,6 +24,11 @@ namespace GourmetProject.Gameplay.Scoring
                         continue;
                     }
 
+                    string sourceLabel = dish.GetSkillSource(skillId);
+                    ScoreSource source = string.IsNullOrEmpty(sourceLabel)
+                        ? ScoreSource.DishSkill(skill, dish)
+                        : ScoreSource.TransferredDishSkill(skill, dish, sourceLabel);
+
                     foreach (SkillRuleDef rule in skill.Rules)
                     {
                         if (rule.Trigger != SkillTrigger.OnSettle)
@@ -33,7 +38,7 @@ namespace GourmetProject.Gameplay.Scoring
 
                         collector.Add(new ScoreEffectEntry(
                             ScorePhase.DishSkills,
-                            ScoreSource.DishSkill(skill, dish),
+                            source,
                             new SkillRuleEffect(rule, dish),
                             dish,
                             null,
@@ -71,7 +76,18 @@ namespace GourmetProject.Gameplay.Scoring
 
         private void Dispatch(ScoreContext ctx, int count)
         {
-            float value = _rule.ActionValue;
+            // 阶梯规则：count 为满足档序号（1-based），取对应 actionValue 并按「触发一次」应用。
+            float value;
+            if (IsTiered())
+            {
+                value = TierValue(count);
+                count = 1;
+            }
+            else
+            {
+                value = _rule.ActionValue;
+            }
+
             switch (_rule.ActionType)
             {
                 case SkillActionType.AddFlat:
@@ -84,6 +100,10 @@ namespace GourmetProject.Gameplay.Scoring
                     foreach (DishInstance t in Targets(ctx)) ctx.MultiplyTo(t, factor);
                     break;
                 }
+
+                case SkillActionType.AddMultFlat:
+                    foreach (DishInstance t in Targets(ctx)) ctx.AddMultFlatTo(t, value * count);
+                    break;
 
                 case SkillActionType.TransferScore:
                     foreach (DishInstance t in Targets(ctx)) ctx.TransferScore(_self, t, value);
@@ -98,14 +118,14 @@ namespace GourmetProject.Gameplay.Scoring
 
                 case SkillActionType.AddLayer:
                 {
-                    bool mult = _rule.HasActionParam("mult");
-                    foreach (DishInstance t in Targets(ctx))
-                        ctx.ChangeLayers(t, mult ? (float)Math.Pow(value, count) : value * count, mult);
+                    // 全局欢乐蛋糕层数：无论作用域，统一改一次全局计数器。
+                    bool mult = IsMultLayer(_rule);
+                    ctx.AddHappyCakeLayers(mult ? value : value * count, mult, ParseFloor(_rule));
                     break;
                 }
 
                 case SkillActionType.ConsumeLayer:
-                    foreach (DishInstance t in Targets(ctx)) ctx.ChangeLayers(t, -(value * count), mult: false);
+                    ctx.AddHappyCakeLayers(-(value * count), mult: false);
                     break;
 
                 case SkillActionType.TransferSkills:
@@ -115,7 +135,7 @@ namespace GourmetProject.Gameplay.Scoring
                     {
                         foreach (DishInstance t in Targets(ctx))
                         {
-                            if (t.Id != _self.Id) ctx.RecordSkillTransfer(t, skills);
+                            if (t.Id != _self.Id) ctx.RecordSkillTransfer(t, skills, _self.Def.Name);
                         }
                     }
                     break;
@@ -125,10 +145,102 @@ namespace GourmetProject.Gameplay.Scoring
                     ctx.GrantGold(value * count);
                     break;
 
+                case SkillActionType.PermanentAddFlat:
+                    foreach (DishInstance t in Targets(ctx)) ctx.AddPermanentFlatTo(t, value * count);
+                    break;
+
+                case SkillActionType.PermanentAddMult:
+                    foreach (DishInstance t in Targets(ctx)) ctx.AddPermanentMultTo(t, value);
+                    break;
+
+                case SkillActionType.AddCountAs:
+                    // 「视为食物数」由 ScoreContext 结算前 live 预计算（ComputeLiveCountAs）当次生效，
+                    // 此处不再作为延迟副作用累加，避免与 live 值重复计入。
+                    break;
+
                 case SkillActionType.None:
                 default:
                     break;
             }
+        }
+
+        private bool IsTiered() => IsTiered(_rule);
+
+        private float TierValue(int tier) => TierValue(_rule, tier);
+
+        /// <summary>规则是否为阶梯：condParam 含 tiers:…（阈值）且 actionParam 含 tiervals:…（各档值）。</summary>
+        internal static bool IsTiered(SkillRuleDef rule)
+            => rule.CondParam.IndexOf("tiers:", StringComparison.OrdinalIgnoreCase) >= 0;
+
+        /// <summary>取满足档（1-based）对应的行为数值（来自 actionParam 的 tiervals:a|b|c）；越界钳到边界。</summary>
+        internal static float TierValue(SkillRuleDef rule, int tier)
+        {
+            float[] values = ParseTierValues(rule.ActionParams);
+            if (values == null || values.Length == 0)
+            {
+                return rule.ActionValue;
+            }
+
+            int i = tier - 1;
+            if (i < 0) i = 0;
+            if (i >= values.Length) i = values.Length - 1;
+            return values[i];
+        }
+
+        private static float[] ParseTierValues(IReadOnlyList<string> actionParams)
+        {
+            foreach (string p in actionParams)
+            {
+                if (p == null) continue;
+                int idx = p.IndexOf("tiervals:", StringComparison.OrdinalIgnoreCase);
+                if (idx < 0) continue;
+
+                string body = p.Substring(idx + "tiervals:".Length).Split(';')[0];
+                string[] parts = body.Split('|', ',');
+                var list = new List<float>();
+                foreach (string s in parts)
+                {
+                    if (float.TryParse(s.Trim(), out float v)) list.Add(v);
+                }
+
+                return list.ToArray();
+            }
+
+            return null;
+        }
+
+        /// <summary>层数是否按乘法：任一 actionParam 以 mult 开头（含 multfloor:N）。</summary>
+        private static bool IsMultLayer(SkillRuleDef rule)
+        {
+            foreach (string p in rule.ActionParams)
+            {
+                if (p != null && p.StartsWith("mult", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>解析层数乘法的「至少净增」下限，编码在 actionParam 的 floor:N（可与 mult 合写为 multfloor:N）。</summary>
+        internal static int ParseFloor(SkillRuleDef rule)
+        {
+            foreach (string p in rule.ActionParams)
+            {
+                if (p == null)
+                {
+                    continue;
+                }
+
+                int idx = p.IndexOf("floor:", StringComparison.OrdinalIgnoreCase);
+                if (idx >= 0 && int.TryParse(p.Substring(idx + "floor:".Length), out int n))
+                {
+                    return n;
+                }
+            }
+
+            return 0;
         }
 
         private IReadOnlyList<string> SkillsToTransfer(ScoreContext ctx)
@@ -174,7 +286,23 @@ namespace GourmetProject.Gameplay.Scoring
                 return new[] { _self };
             }
 
-            List<DishInstance> dishes = SkillConditionEvaluator.ScopeDishes(ctx.Board, _self, _rule.ActionScope, includeSelf: false);
+            if (_rule.ActionScope == SkillScope.Category)
+            {
+                // 分类定向（如「所有蛋糕」）：取棋盘上匹配 cat:xxx 的全部菜（含自身若匹配）。
+                return SkillConditionEvaluator.CategoryDishes(ctx.Board, SkillConditionEvaluator.ParseCategoryParam(_rule.ActionParams));
+            }
+
+            bool includeSelfInScope = !string.IsNullOrEmpty(ParseSkillTypeParam(_rule.ActionParams));
+            List<DishInstance> dishes = SkillConditionEvaluator.ScopeDishes(ctx.Board, _self, _rule.ActionScope, includeSelf: includeSelfInScope);
+
+            // skilltype:X 过滤：只作用于「带某行为类技能」的食物（巧克力「此类食物」= 带甜蜜传递的食物）。
+            string skillTypeToken = ParseSkillTypeParam(_rule.ActionParams);
+            if (!string.IsNullOrEmpty(skillTypeToken)
+                && Enum.TryParse(skillTypeToken, ignoreCase: true, out SkillActionType filterType))
+            {
+                dishes = dishes.Where(d => HasSkillOfType(ctx.Db, d, filterType)).ToList();
+            }
+
             if (_rule.ActionCount > 0 && dishes.Count > _rule.ActionCount)
             {
                 // 无随机流时以棋盘顺序取前 N，保证确定性可复现。
@@ -187,6 +315,37 @@ namespace GourmetProject.Gameplay.Scoring
             }
 
             return dishes;
+        }
+
+        private static string ParseSkillTypeParam(IReadOnlyList<string> actionParams)
+        {
+            foreach (string p in actionParams)
+            {
+                if (p == null) continue;
+                int idx = p.IndexOf("skilltype:", StringComparison.OrdinalIgnoreCase);
+                if (idx >= 0)
+                {
+                    return p.Substring(idx + "skilltype:".Length).Split(';', ',', '|')[0].Trim();
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private static bool HasSkillOfType(GameplayDatabase db, DishInstance dish, SkillActionType actionType)
+        {
+            if (db == null) return false;
+            foreach (string skillId in dish.SkillIds)
+            {
+                SkillDef def = db.GetSkill(skillId);
+                if (def == null || !def.HasRules) continue;
+                for (int i = 0; i < def.Rules.Count; i++)
+                {
+                    if (def.Rules[i].ActionType == actionType) return true;
+                }
+            }
+
+            return false;
         }
     }
 }

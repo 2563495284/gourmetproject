@@ -56,6 +56,10 @@ namespace cfg
         /// 菜谱
         /// </summary>
         Recipe = 9,
+        /// <summary>
+        /// 指定分类(condParam/actionParam)的菜
+        /// </summary>
+        Category = 10,
     }
 
 } 

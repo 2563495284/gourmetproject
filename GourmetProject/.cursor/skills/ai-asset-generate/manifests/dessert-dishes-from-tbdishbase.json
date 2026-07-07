@@ -1,0 +1,394 @@
+{
+  "provider": "gemini",
+  "model": "gemini-3.1-flash-image-preview",
+  "stylePrefix": "90s American cable TV cartoon style, surreal funny food shapes, thick clean black ink outlines, flat cel animation colors, hand-drawn 2D animation look, warm appetizing dessert palette, polished Unity game dish sprite quality, funny, weird, charming, pure food only, no face, no eyes, no mouth, no limbs, no mascot treatment, no text, no logo, no watermark",
+  "typeDefaults": {
+    "dish": {
+      "outputDir": "Assets/GameMain/Resources/Sprites/Dishes",
+      "postprocess": "magenta-alpha",
+      "background": "opaque",
+      "quality": "high"
+    }
+  },
+  "typePromptPrefixes": {
+    "dish": "Dish sprite rule: board food sprite on a perfectly flat solid #FF00FF chroma key background. The background must be one uniform color with no shadows, gradients, texture, reflections, floor plane, or lighting variation. Do not use #FF00FF anywhere in the food. No cast shadow, no contact shadow, no plate unless the dish requires a cup or glass vessel, no table, no utensils, no grid lines, no cell borders, no checkerboard."
+  },
+  "assets": [
+    {
+      "name": "cookie",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "shapeRows": ["X"],
+      "prompt": "single round butter cookie, chunky uneven hand-baked shape, chocolate chips and crisp golden rim, centered with generous padding"
+    },
+    {
+      "name": "macaron",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "shapeRows": ["X"],
+      "prompt": "single pastel macaron sandwich cookie, visible cream filling, slightly absurd puffy silhouette, centered with generous padding"
+    },
+    {
+      "name": "pudding",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "shapeRows": ["X"],
+      "prompt": "single glossy caramel pudding flan wobbling shape, caramel top, soft yellow custard body, centered with generous padding"
+    },
+    {
+      "name": "puff",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "shapeRows": ["X"],
+      "prompt": "single cream puff pastry, cracked golden shell with cream peeking out, round readable silhouette, centered with generous padding"
+    },
+    {
+      "name": "eggtart",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "shapeRows": ["X"],
+      "prompt": "single egg tart, flaky pastry cup and glossy yellow custard center with toasted spots, centered with generous padding"
+    },
+    {
+      "name": "mochi",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "shapeRows": ["X"],
+      "prompt": "single soft mochi ball dusted with powder, squishy lumpy silhouette, pale pink and white dessert colors, centered with generous padding"
+    },
+    {
+      "name": "daifuku",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "shapeRows": ["X"],
+      "prompt": "single daifuku mochi cut open to show strawberry and red bean filling, soft white outer skin, centered with generous padding"
+    },
+    {
+      "name": "choco_candy",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "shapeRows": ["X"],
+      "prompt": "single wrapped chocolate candy, twisted wrapper ends, chocolate brown center with bright candy foil accents, centered with generous padding"
+    },
+    {
+      "name": "jelly",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "shapeRows": ["X"],
+      "prompt": "single translucent fruit jelly dome, bright red and orange gelatin with tiny fruit pieces, bold cel-shaded highlights, centered with generous padding"
+    },
+    {
+      "name": "cream_cell",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "shapeRows": ["X"],
+      "prompt": "single square cream cake tile, whipped cream top with a small cherry and cake crumb sides, centered with generous padding"
+    },
+    {
+      "name": "sugarbean",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "shapeRows": ["X"],
+      "prompt": "small cluster of colorful sugar beans, glossy oval candies piled together, bold simple readable candy shapes, centered with generous padding"
+    },
+    {
+      "name": "gold_choco",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "shapeRows": ["X"],
+      "prompt": "single gold-wrapped chocolate, crinkled golden foil with a small exposed chocolate corner, centered with generous padding"
+    },
+    {
+      "name": "milk_slice",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "shapeRows": ["X"],
+      "prompt": "single rectangular milk candy slice, creamy white tablet with soft beveled edges and subtle vanilla dots, centered with generous padding"
+    },
+    {
+      "name": "sundae",
+      "type": "dish",
+      "requestSize": "1536x768",
+      "targetSize": "1024x512",
+      "shapeRows": ["XX"],
+      "prompt": "wide two-cell ice cream sundae, opaque bright cel-colored food, glass dessert boat spread horizontally, solid scoops of vanilla, strawberry, and chocolate ice cream, whipped cream, chocolate sauce, cherries, colorful sprinkles, fills both cells as one connected dish. Keep the dessert fully opaque and high contrast. No dark background, no black background, no transparency inside the food."
+    },
+    {
+      "name": "cone",
+      "type": "dish",
+      "requestSize": "768x1536",
+      "targetSize": "512x1024",
+      "shapeRows": ["X", "X"],
+      "prompt": "vertical two-cell ice cream cone, stacked scoops above waffle cone, tall connected silhouette filling both cells"
+    },
+    {
+      "name": "lollipop",
+      "type": "dish",
+      "requestSize": "1536x768",
+      "targetSize": "1024x512",
+      "shapeRows": ["XX"],
+      "prompt": "wide two-cell lollipop, huge spiral candy head on one side with stick extending across the second cell, connected horizontal silhouette"
+    },
+    {
+      "name": "gummy",
+      "type": "dish",
+      "requestSize": "1536x768",
+      "targetSize": "1024x512",
+      "shapeRows": ["XX"],
+      "prompt": "wide two-cell gummy candy strip, translucent colorful worm-like gummy with chunky bends, connected horizontal shape"
+    },
+    {
+      "name": "cupcake",
+      "type": "dish",
+      "requestSize": "1536x768",
+      "targetSize": "1024x512",
+      "shapeRows": ["XX"],
+      "prompt": "two-cell cupcake pair fused as one dessert sprite, ridged paper cups, towering frosting swirls and sprinkles, fills a wide footprint"
+    },
+    {
+      "name": "mousse",
+      "type": "dish",
+      "requestSize": "512x1536",
+      "targetSize": "512x1024",
+      "shapeRows": ["X", "X"],
+      "prompt": "vertical two-cell mousse cake slice, tall layered chocolate and berry mousse slab, glossy top and cream layers, connected tall silhouette"
+    },
+    {
+      "name": "toffee",
+      "type": "dish",
+      "requestSize": "512x1536",
+      "targetSize": "512x1024",
+      "shapeRows": ["X", "X"],
+      "prompt": "vertical two-cell toffee candy stack, two sticky caramel blocks connected with stretching caramel strands, tall readable silhouette"
+    },
+    {
+      "name": "nougat",
+      "type": "dish",
+      "requestSize": "512x1536",
+      "targetSize": "512x1024",
+      "shapeRows": ["X", "X"],
+      "prompt": "vertical two-cell nougat bar, pale candy with embedded nuts and fruit bits, stacked tall rectangular dessert silhouette"
+    },
+    {
+      "name": "eggroll",
+      "type": "dish",
+      "requestSize": "1536x512",
+      "targetSize": "1536x512",
+      "shapeRows": ["XXX"],
+      "prompt": "three-cell egg roll wafer sticks, long golden crispy rolled wafers arranged horizontally as one connected strip"
+    },
+    {
+      "name": "choco_bar",
+      "type": "dish",
+      "requestSize": "1536x512",
+      "targetSize": "1536x512",
+      "shapeRows": ["XXX"],
+      "prompt": "three-cell chocolate bar, long segmented chocolate stick with chunky raised squares and a bitten corner, fills horizontal footprint"
+    },
+    {
+      "name": "eclair",
+      "type": "dish",
+      "requestSize": "512x1536",
+      "targetSize": "512x1536",
+      "shapeRows": ["X", "X", "X"],
+      "prompt": "vertical three-cell eclair, long pastry rotated upright, chocolate glaze and cream seam, fills tall footprint as one connected pastry"
+    },
+    {
+      "name": "tanghulu",
+      "type": "dish",
+      "requestSize": "512x1536",
+      "targetSize": "512x1536",
+      "shapeRows": ["X", "X", "X"],
+      "prompt": "vertical three-cell tanghulu skewer, glossy red candied hawthorn balls stacked on a stick, connected tall silhouette"
+    },
+    {
+      "name": "souffle",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "1024x1024",
+      "shapeRows": ["XX", "XX"],
+      "prompt": "two-by-two souffle pancake stack, fluffy golden pancakes with butter and syrup, large round dessert filling the square footprint"
+    },
+    {
+      "name": "taosu",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "1024x1024",
+      "shapeRows": ["XX", "XX"],
+      "prompt": "two-by-two Chinese walnut cookie, large cracked golden peach-shaped pastry with sesame and walnut bits, fills square footprint"
+    },
+    {
+      "name": "mooncake",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "1024x1024",
+      "shapeRows": ["XX", "XX"],
+      "prompt": "two-by-two mooncake, large round embossed pastry with scalloped edge and cutaway filling detail, fills square footprint"
+    },
+    {
+      "name": "waffle",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "1024x1024",
+      "shapeRows": ["XX", "XX"],
+      "prompt": "two-by-two waffle, square grid waffle with butter pat, syrup streaks, chunky cartoon outline, fills square footprint"
+    },
+    {
+      "name": "dorayaki",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "1024x1024",
+      "shapeRows": ["XX", "XX"],
+      "prompt": "two-by-two dorayaki stack, round pancake sandwiches with red bean filling peeking out, fills square footprint"
+    },
+    {
+      "name": "cream_cake",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "1024x1024",
+      "shapeRows": ["XX", "XX"],
+      "prompt": "two-by-two cream cake, square frosted cake with whipped cream peaks, strawberries, layered sponge sides, fills square footprint"
+    },
+    {
+      "name": "donut",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "1024x1024",
+      "shapeRows": ["XX", "XX"],
+      "prompt": "two-by-two donut, oversized pink frosted donut with sprinkles and bold central hole, fills square footprint"
+    },
+    {
+      "name": "pengtang",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "1024x1024",
+      "shapeRows": ["XX", "XX"],
+      "prompt": "two-by-two dalgona honeycomb candy, large amber sugar disk with stamped simple star impression, cracked crispy texture"
+    },
+    {
+      "name": "parfait",
+      "type": "dish",
+      "requestSize": "1536x1024",
+      "targetSize": "1536x1024",
+      "shapeRows": ["XXX", "XXX"],
+      "prompt": "three-by-two parfait, wide glass dessert cup with layered cream, fruit, wafers, and cherry, fills large rectangular footprint"
+    },
+    {
+      "name": "sundae_big",
+      "type": "dish",
+      "requestSize": "1024x1536",
+      "targetSize": "1024x1536",
+      "shapeRows": ["XX", "XX", "XX"],
+      "prompt": "two-by-three giant sundae, tall glass packed with ice cream scoops, whipped cream, syrup, sprinkles, cherry, fills tall footprint"
+    },
+    {
+      "name": "swiss_roll",
+      "type": "dish",
+      "requestSize": "1024x1536",
+      "targetSize": "1024x1536",
+      "shapeRows": ["XX", "XX", "XX"],
+      "prompt": "two-by-three swiss roll cake dessert, soft sponge cake roll slices with visible cream spiral and berry jam, stacked like real cake slices in a tall connected pile. Make it clearly cake, not candy, not a lollipop, not coins. No guide marks, no grid marks, no letters, no tiny X marks."
+    },
+    {
+      "name": "mango_sago",
+      "type": "dish",
+      "requestSize": "1536x1024",
+      "targetSize": "1536x1024",
+      "shapeRows": ["XXX", "XXX"],
+      "prompt": "three-by-two mango pomelo sago dessert, wide bowl of golden mango cream with mango cubes, pomelo bits, tapioca pearls, fills rectangular footprint"
+    },
+    {
+      "name": "chiffon",
+      "type": "dish",
+      "requestSize": "1536x1024",
+      "targetSize": "1536x1024",
+      "shapeRows": ["XXX", "XXX"],
+      "prompt": "three-by-two chiffon cake, airy ring cake with fluffy cut slice, cream and fruit accents, fills wide rectangular footprint"
+    },
+    {
+      "name": "apple_pie",
+      "type": "dish",
+      "requestSize": "1024x1536",
+      "targetSize": "1024x1536",
+      "shapeRows": ["XX", "XX", "XX"],
+      "prompt": "two-by-three apple pie, tall oval lattice pie with glossy apple filling bubbling through crust, fills tall footprint"
+    },
+    {
+      "name": "fruit_cake",
+      "type": "dish",
+      "requestSize": "1024x1536",
+      "targetSize": "1024x1536",
+      "shapeRows": ["XX", "XX", "XX"],
+      "prompt": "two-by-three fruit cake, tall layered cream cake loaded with strawberries, kiwi, blueberries, orange slices, fills tall footprint"
+    },
+    {
+      "name": "chocolate",
+      "type": "dish",
+      "requestSize": "1536x1024",
+      "targetSize": "1536x1024",
+      "shapeRows": ["XXX", "XXX"],
+      "prompt": "three-by-two chocolate slab, oversized segmented chocolate block with glossy highlights, a few broken pieces, fills wide rectangular footprint"
+    },
+    {
+      "name": "croissant",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "1024x1024",
+      "shapeRows": ["XX", "X."],
+      "prompt": "L-shaped two-by-two croissant, buttery crescent bends through top row and lower-left cell only. The lower-right cell must stay entirely #FF00FF empty background."
+    },
+    {
+      "name": "palmier",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "1024x1024",
+      "shapeRows": [".X", "XX"],
+      "prompt": "L-shaped two-by-two palmier butterfly pastry, crisp sugar pastry occupies top-right and full bottom row only. The top-left cell must stay entirely #FF00FF empty background."
+    },
+    {
+      "name": "candycane",
+      "type": "dish",
+      "requestSize": "1024x1536",
+      "targetSize": "1024x1536",
+      "shapeRows": ["XX", "X.", "X."],
+      "prompt": "hook-shaped candy cane across a two-by-three footprint, red and white striped cane fills top row and left column only. Right cells in lower two rows must stay entirely #FF00FF empty background."
+    },
+    {
+      "name": "big_lollipop",
+      "type": "dish",
+      "requestSize": "1536x2560",
+      "targetSize": "1536x2560",
+      "shapeRows": ["XXX", "XXX", "XXX", ".X.", ".X."],
+      "prompt": "huge lollipop occupying a three-by-five footprint, giant spiral candy head fills the top three rows, centered stick fills only the middle cells of bottom two rows. Empty lower-left and lower-right cells must stay entirely #FF00FF background."
+    },
+    {
+      "name": "marshmallow",
+      "type": "dish",
+      "requestSize": "1536x1536",
+      "targetSize": "1536x1536",
+      "shapeRows": ["XXX", "XXX", "XXX"],
+      "prompt": "three-by-three marshmallow pile, fluffy white and pastel marshmallows stacked in a rounded mound with toasted spots, fills square footprint"
+    },
+    {
+      "name": "double_cake",
+      "type": "dish",
+      "requestSize": "2560x2048",
+      "targetSize": "2560x2048",
+      "shapeRows": [".XXX.", ".XXX.", "XXXXX", "XXXXX"],
+      "prompt": "large five-by-four double layer celebration cake, wide bottom cake tier fills bottom two rows, narrower upper tier fills the center three cells of top two rows. The four top outer corner cells must stay entirely #FF00FF empty background. Frosting, cherries, candles without flames, thick cartoon outline."
+    }
+  ]
+}

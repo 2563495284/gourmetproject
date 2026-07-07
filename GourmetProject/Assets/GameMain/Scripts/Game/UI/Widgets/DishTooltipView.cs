@@ -44,17 +44,20 @@ namespace GourmetProject.Game.UI.Widgets
 
         private readonly List<GameObject> _spawned = new();
 
+        private IReadOnlyDictionary<string, string> _skillSources;
+
         /// <summary>绑定单风味便捷重载。</summary>
-        public void Bind(DishDef def, IReadOnlyList<string> skillIds, string flavorId, GameplayDatabase db)
+        public void Bind(DishDef def, IReadOnlyList<string> skillIds, string flavorId, GameplayDatabase db, IReadOnlyDictionary<string, string> skillSources = null)
         {
-            Bind(def, skillIds, flavorId == null ? null : new[] { flavorId }, db);
+            Bind(def, skillIds, flavorId == null ? null : new[] { flavorId }, db, skillSources);
         }
 
         /// <summary>
         /// 绑定并刷新 Tips 内容。<paramref name="flavorIds"/> 支持多风味
         /// （默认单槽，道具解除上限后可多个）——每个风味 = 顶部一个占位标签 + 下方一张详情卡。
+        /// <paramref name="skillSources"/> 为技能来源标签（skillId → 「源名&lt;甜蜜传递&gt;」），有则替代技能名做卡标题。
         /// </summary>
-        public void Bind(DishDef def, IReadOnlyList<string> skillIds, IReadOnlyList<string> flavorIds, GameplayDatabase db)
+        public void Bind(DishDef def, IReadOnlyList<string> skillIds, IReadOnlyList<string> flavorIds, GameplayDatabase db, IReadOnlyDictionary<string, string> skillSources = null)
         {
             ClearSpawned();
             ResetDynamicContainers();
@@ -63,6 +66,8 @@ namespace GourmetProject.Game.UI.Widgets
             {
                 return;
             }
+
+            _skillSources = skillSources;
 
             if (_nameText != null)
             {
@@ -148,8 +153,14 @@ namespace GourmetProject.Game.UI.Widgets
                         continue;
                     }
 
+                    string title = skill.Name;
+                    if (_skillSources != null && _skillSources.TryGetValue(skillId, out string sourceLabel) && !string.IsNullOrEmpty(sourceLabel))
+                    {
+                        title = sourceLabel;
+                    }
+
                     DishInfoCard card = Instantiate(_skillCardPrefab, _skillContent);
-                    card.Set(skill.Name, skill.Desc);
+                    card.Set(title, skill.Desc);
                     _spawned.Add(card.gameObject);
 
                     if (card.transform is RectTransform cardRect)

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
@@ -12,15 +13,50 @@ namespace GourmetProject.Gameplay.Scoring
     /// </summary>
     public static class ServeRuleResolver
     {
-        /// <summary>对刚上桌的实例执行其 OnServe 规则，返回本次上菜产生的金币增量。</summary>
-        public static float ResolveOnServe(GpBoard board, GameplayDatabase db, IScoreHistory history, DishInstance served)
+        /// <summary>上菜结算产物：金币/层数增量、技能复制请求、以及临时复制请求（均需 RNG 落地）。</summary>
+        public readonly struct ServeResolveResult
+        {
+            public ServeResolveResult(
+                float gold, int happyCakeLayerDelta,
+                IReadOnlyList<CopySkillRequest> copySkillRequests,
+                IReadOnlyList<int> tempCopySourceIds,
+                IReadOnlyList<SkillTransferRequest> transferRequests)
+            {
+                Gold = gold;
+                HappyCakeLayerDelta = happyCakeLayerDelta;
+                CopySkillRequests = copySkillRequests ?? System.Array.Empty<CopySkillRequest>();
+                TempCopySourceIds = tempCopySourceIds ?? System.Array.Empty<int>();
+                TransferRequests = transferRequests ?? System.Array.Empty<SkillTransferRequest>();
+            }
+
+            public float Gold { get; }
+
+            public int HappyCakeLayerDelta { get; }
+
+            /// <summary>技能复制请求：由 BattleSession 用注入的随机流从候选池挑选并加到目标实例。</summary>
+            public IReadOnlyList<CopySkillRequest> CopySkillRequests { get; }
+
+            /// <summary>临时复制请求：需被克隆到空格的源实例 Id（BattleSession 用随机流找空格落地）。</summary>
+            public IReadOnlyList<int> TempCopySourceIds { get; }
+
+            /// <summary>甜蜜传递请求：由 BattleSession 用随机流在候选目标中均权取 N 个并追加技能（带来源标签）。</summary>
+            public IReadOnlyList<SkillTransferRequest> TransferRequests { get; }
+        }
+
+        /// <summary>对刚上桌的实例执行其 OnServe 规则，返回本次上菜产生的金币/全局层数增量与技能复制请求。</summary>
+        public static ServeResolveResult ResolveOnServe(
+            GpBoard board, GameplayDatabase db, IScoreHistory history, DishInstance served, int currentHappyCakeLayers)
         {
             if (served == null)
             {
-                return 0f;
+                return new ServeResolveResult(0f, 0, null, null, null);
             }
 
             float gold = 0f;
+            int layerDelta = 0;
+            List<CopySkillRequest> copyRequests = null;
+            List<int> tempCopyIds = null;
+            List<SkillTransferRequest> transferRequests = null;
             foreach (string skillId in served.SkillIds)
             {
                 SkillDef skill = db.GetSkill(skillId);
@@ -36,65 +72,174 @@ namespace GourmetProject.Gameplay.Scoring
                         continue;
                     }
 
-                    int count = SkillConditionEvaluator.Evaluate(rule, board, history, served);
+                    int running = System.Math.Max(0, currentHappyCakeLayers + layerDelta);
+                    int count = SkillConditionEvaluator.Evaluate(rule, board, history, served, running);
                     if (count <= 0)
                     {
                         continue;
                     }
 
-                    gold += ApplyServeAction(board, db, rule, served, count);
+                    ApplyServeAction(board, db, rule, served, count, running, ref gold, ref layerDelta, ref copyRequests, ref tempCopyIds, ref transferRequests);
                 }
             }
 
-            return gold;
+            return new ServeResolveResult(gold, layerDelta, copyRequests, tempCopyIds, transferRequests);
         }
 
-        private static float ApplyServeAction(GpBoard board, GameplayDatabase db, SkillRuleDef rule, DishInstance self, int count)
+        private static void ApplyServeAction(
+            GpBoard board, GameplayDatabase db, SkillRuleDef rule, DishInstance self, int count,
+            int runningLayers, ref float gold, ref int layerDelta, ref List<CopySkillRequest> copyRequests,
+            ref List<int> tempCopyIds, ref List<SkillTransferRequest> transferRequests)
         {
-            float value = rule.ActionValue;
+            // 阶梯规则：count 为满足档序号，取对应档值并按触发一次应用。
+            float value;
+            if (SkillRuleEffect.IsTiered(rule))
+            {
+                value = SkillRuleEffect.TierValue(rule, count);
+                count = 1;
+            }
+            else
+            {
+                value = rule.ActionValue;
+            }
+
             switch (rule.ActionType)
             {
                 case SkillActionType.AddLayer:
                 {
-                    bool mult = rule.HasActionParam("mult");
-                    foreach (DishInstance t in Targets(board, self, rule))
+                    bool mult = IsMultLayer(rule);
+                    int before = runningLayers;
+                    int after;
+                    if (mult)
                     {
-                        if (mult)
+                        after = (int)System.Math.Round(before * value, System.MidpointRounding.AwayFromZero);
+                        int floor = SkillRuleEffect.ParseFloor(rule);
+                        if (floor > 0 && after < before + floor)
                         {
-                            t.SetLayers((int)System.Math.Round(t.Layers * System.Math.Pow(value, count), System.MidpointRounding.AwayFromZero));
-                        }
-                        else
-                        {
-                            t.AddLayers((int)(value * count));
+                            after = before + floor;
                         }
                     }
+                    else
+                    {
+                        after = before + (int)(value * count);
+                    }
 
-                    return 0f;
+                    if (after < 0) after = 0;
+                    layerDelta += after - before;
+                    break;
                 }
 
                 case SkillActionType.ConsumeLayer:
-                    foreach (DishInstance t in Targets(board, self, rule)) t.AddLayers(-(int)(value * count));
-                    return 0f;
+                {
+                    int before = runningLayers;
+                    int after = System.Math.Max(0, before - (int)(value * count));
+                    layerDelta += after - before;
+                    break;
+                }
 
                 case SkillActionType.TransferSkills:
                 {
+                    // 甜蜜传递：收集候选（作用域内有食物的其它菜）与待传技能，落地随机取 N 由 BattleSession 用 RNG 执行。
                     List<string> skills = SkillsToTransfer(db, self, rule);
-                    foreach (DishInstance t in Targets(board, self, rule))
+                    if (skills.Count > 0)
                     {
-                        if (t.Id == self.Id) continue;
-                        foreach (string s in skills) t.AddSkill(s);
+                        var candidateIds = new List<int>();
+                        foreach (DishInstance t in ScopeDishesForTransfer(board, self, rule))
+                        {
+                            if (t.Id != self.Id) candidateIds.Add(t.Id);
+                        }
+
+                        if (candidateIds.Count > 0)
+                        {
+                            transferRequests ??= new List<SkillTransferRequest>();
+                            transferRequests.Add(new SkillTransferRequest(self.Id, self.Def.Name, candidateIds, skills, rule.ActionCount));
+                        }
                     }
 
-                    return 0f;
+                    break;
                 }
 
                 case SkillActionType.GrantGold:
-                    return value * count;
+                    gold += value * count;
+                    break;
+
+                case SkillActionType.TempCopyDish:
+                {
+                    // 临时复制本菜品至空格：克隆源实例，避免临时克隆再触发临时复制。
+                    if (!self.IsTemporary)
+                    {
+                        tempCopyIds ??= new List<int>();
+                        tempCopyIds.Add(self.Id);
+                    }
+
+                    break;
+                }
+
+                case SkillActionType.CopySkill:
+                {
+                    List<string> candidates = BuildCopyCandidates(board, db, rule, self);
+                    if (candidates.Count > 0)
+                    {
+                        int n = System.Math.Max(1, (int)System.Math.Round(value, System.MidpointRounding.AwayFromZero));
+                        copyRequests ??= new List<CopySkillRequest>();
+                        copyRequests.Add(new CopySkillRequest(self.Id, candidates, n));
+                    }
+
+                    break;
+                }
 
                 default:
                     // 分数类行为在上菜阶段无意义（无累加器），忽略。
-                    return 0f;
+                    break;
             }
+        }
+
+        /// <summary>
+        /// 技能复制的候选池：actionParam 含 cat:xxx 时取该分类全部菜品定义的技能（如「蛋糕技能」）；
+        /// 否则取作用域内其它实例的运行时技能。剔除自身已有技能与复制类技能（避免复制「复制」造成循环）。
+        /// </summary>
+        private static List<string> BuildCopyCandidates(GpBoard board, GameplayDatabase db, SkillRuleDef rule, DishInstance self)
+        {
+            var candidates = new List<string>();
+            void Add(string s)
+            {
+                if (!string.IsNullOrEmpty(s) && !candidates.Contains(s)) candidates.Add(s);
+            }
+
+            string category = SkillConditionEvaluator.ParseCategoryParam(rule.ActionParams);
+            if (!string.IsNullOrEmpty(category))
+            {
+                foreach (DishDef def in db.AllDishes)
+                {
+                    if (def.IsCategory(category))
+                    {
+                        foreach (string s in def.SkillIds) Add(s);
+                    }
+                }
+            }
+            else
+            {
+                foreach (DishInstance t in Targets(board, self, rule))
+                {
+                    if (t.Id == self.Id) continue;
+                    foreach (string s in t.SkillIds) Add(s);
+                }
+            }
+
+            candidates.RemoveAll(s => self.SkillIds.Contains(s) || IsCopySkill(db, s));
+            return candidates;
+        }
+
+        private static bool IsCopySkill(GameplayDatabase db, string skillId)
+        {
+            SkillDef def = db.GetSkill(skillId);
+            if (def == null || !def.HasRules) return false;
+            for (int i = 0; i < def.Rules.Count; i++)
+            {
+                if (def.Rules[i].ActionType == SkillActionType.CopySkill) return true;
+            }
+
+            return false;
         }
 
         private static List<string> SkillsToTransfer(GameplayDatabase db, DishInstance self, SkillRuleDef rule)
@@ -110,6 +255,19 @@ namespace GourmetProject.Gameplay.Scoring
             return result;
         }
 
+        private static bool IsMultLayer(SkillRuleDef rule)
+        {
+            foreach (string p in rule.ActionParams)
+            {
+                if (p != null && p.StartsWith("mult", System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static bool IsTransferSkill(GameplayDatabase db, string skillId)
         {
             SkillDef def = db.GetSkill(skillId);
@@ -122,6 +280,22 @@ namespace GourmetProject.Gameplay.Scoring
             return false;
         }
 
+        /// <summary>甜蜜传递的候选目标：作用域内「有食物」的其它菜（不做 ActionCount 截断，随机取 N 交由 BattleSession）。</summary>
+        private static IReadOnlyList<DishInstance> ScopeDishesForTransfer(GpBoard board, DishInstance self, SkillRuleDef rule)
+        {
+            if (rule.ActionScope == SkillScope.Self)
+            {
+                return System.Array.Empty<DishInstance>();
+            }
+
+            if (rule.ActionScope == SkillScope.Category)
+            {
+                return SkillConditionEvaluator.CategoryDishes(board, SkillConditionEvaluator.ParseCategoryParam(rule.ActionParams));
+            }
+
+            return SkillConditionEvaluator.ScopeDishes(board, self, rule.ActionScope, includeSelf: false);
+        }
+
         private static IReadOnlyList<DishInstance> Targets(GpBoard board, DishInstance self, SkillRuleDef rule)
         {
             if (rule.ActionScope == SkillScope.Self)
@@ -129,7 +303,67 @@ namespace GourmetProject.Gameplay.Scoring
                 return new[] { self };
             }
 
-            return SkillConditionEvaluator.ScopeDishes(board, self, rule.ActionScope, includeSelf: false);
+            if (rule.ActionScope == SkillScope.Category)
+            {
+                return SkillConditionEvaluator.CategoryDishes(board, SkillConditionEvaluator.ParseCategoryParam(rule.ActionParams));
+            }
+
+            List<DishInstance> dishes = SkillConditionEvaluator.ScopeDishes(board, self, rule.ActionScope, includeSelf: false);
+            if (rule.ActionCount > 0 && dishes.Count > rule.ActionCount)
+            {
+                // 与 SkillRuleEffect 一致：无随机流时以棋盘顺序取前 N，保证确定性可复现。
+                dishes = dishes
+                    .OrderBy(d => d.Placement.Origin.Y)
+                    .ThenBy(d => d.Placement.Origin.X)
+                    .ThenBy(d => d.Id)
+                    .Take(rule.ActionCount)
+                    .ToList();
+            }
+
+            return dishes;
         }
+    }
+
+    /// <summary>技能复制请求：把 Candidates 中随机 Count 个技能加到目标实例。RNG 落地由 BattleSession 执行。</summary>
+    public sealed class CopySkillRequest
+    {
+        public CopySkillRequest(int targetInstanceId, IReadOnlyList<string> candidates, int count)
+        {
+            TargetInstanceId = targetInstanceId;
+            Candidates = candidates ?? System.Array.Empty<string>();
+            Count = count;
+        }
+
+        public int TargetInstanceId { get; }
+
+        public IReadOnlyList<string> Candidates { get; }
+
+        public int Count { get; }
+    }
+
+    /// <summary>
+    /// 甜蜜传递请求：把 SkillIds 追加给候选目标中随机 Count 个（0=全部）实例，并标注来源。RNG 落地由 BattleSession 执行。
+    /// </summary>
+    public sealed class SkillTransferRequest
+    {
+        public SkillTransferRequest(int sourceInstanceId, string sourceName, IReadOnlyList<int> candidateTargetIds, IReadOnlyList<string> skillIds, int count)
+        {
+            SourceInstanceId = sourceInstanceId;
+            SourceName = sourceName ?? string.Empty;
+            CandidateTargetIds = candidateTargetIds ?? System.Array.Empty<int>();
+            SkillIds = skillIds ?? System.Array.Empty<string>();
+            Count = count;
+        }
+
+        public int SourceInstanceId { get; }
+
+        public string SourceName { get; }
+
+        public IReadOnlyList<int> CandidateTargetIds { get; }
+
+        public IReadOnlyList<string> SkillIds { get; }
+
+        /// <summary>随机取的目标数（0=全部候选）。</summary>
+        public int Count { get; }
     }
 }

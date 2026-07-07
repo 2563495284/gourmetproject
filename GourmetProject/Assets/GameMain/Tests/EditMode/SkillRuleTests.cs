@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
@@ -64,6 +65,58 @@ namespace GourmetProject.Tests
             // 2 个相邻 → x2^2=4 → 10*4=40
             DishScore score = result.DishScores.First(s => s.DishInstanceId == 1);
             Assert.AreEqual(40f, score.Contribution, 0.001f);
+        }
+
+        // ---------- 倍率加法 AddMultFlat（倍率 +X，线性叠加，区别于乘法幂叠） ----------
+
+        [Test]
+        public void RuleAddMultFlat_NoCondition_AddsToMultiplier()
+        {
+            GameplayDatabase db = Db(GameplayTestFactory.RuleSkill("s",
+                GameplayTestFactory.Rule(SkillActionType.AddMultFlat, 3f)));
+            var board = new GpBoard(4, 4);
+            DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
+            Place(board, 1, dish, 0, 0, "s");
+
+            ScoreResult result = new ScoreCalculator().Calculate(board, db);
+
+            // 倍率 1+3=4 → 10*4=40
+            Assert.AreEqual(40f, result.RawSum, 0.001f);
+        }
+
+        [Test]
+        public void RuleAddMultFlat_WithPerCount_AddsLinearlyNotPower()
+        {
+            GameplayDatabase db = Db(GameplayTestFactory.RuleSkill("s",
+                GameplayTestFactory.Rule(
+                    SkillActionType.AddMultFlat, 1f,
+                    condType: SkillConditionType.DishCount, condScope: SkillScope.Adjacent, condMode: CountMode.Per)));
+            var board = new GpBoard(4, 4);
+            DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
+            DishInstance self = Place(board, 1, dish, 1, 1, "s");
+            Place(board, 2, dish, 0, 1);
+            Place(board, 3, dish, 2, 1);
+
+            ScoreResult result = new ScoreCalculator().Calculate(board, db);
+
+            // 2 相邻 → 倍率 1 + 1*2 = 3 → 10*3=30（线性叠加，而非 1*2^2）
+            Assert.AreEqual(30f, result.DishScores.First(s => s.DishInstanceId == 1).Contribution, 0.001f);
+        }
+
+        [Test]
+        public void AddMultFlat_ToAdjacent_AddsToNeighborMultiplier()
+        {
+            GameplayDatabase db = Db(GameplayTestFactory.RuleSkill("s",
+                GameplayTestFactory.Rule(SkillActionType.AddMultFlat, 4f, actionScope: SkillScope.Adjacent)));
+            var board = new GpBoard(4, 4);
+            DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
+            Place(board, 1, dish, 1, 1, "s");
+            Place(board, 2, dish, 0, 1);
+
+            ScoreResult result = new ScoreCalculator().Calculate(board, db);
+
+            Assert.AreEqual(10f, result.DishScores.First(s => s.DishInstanceId == 1).Contribution, 0.001f); // 自身倍率 1
+            Assert.AreEqual(50f, result.DishScores.First(s => s.DishInstanceId == 2).Contribution, 0.001f); // 邻居倍率 1+4=5
         }
 
         // ---------- 前提：空格 / 数量 / 大小 / 形状 / 相同 ----------
@@ -265,7 +318,7 @@ namespace GourmetProject.Tests
         }
 
         [Test]
-        public void LayerCount_ReadsInstanceLayers()
+        public void LayerCount_ReadsGlobalHappyCakeLayers()
         {
             GameplayDatabase db = Db(GameplayTestFactory.RuleSkill("s",
                 GameplayTestFactory.Rule(
@@ -273,27 +326,58 @@ namespace GourmetProject.Tests
                     condType: SkillConditionType.LayerCount, condScope: SkillScope.Self, condMode: CountMode.Per)));
             var board = new GpBoard(4, 4);
             DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
-            DishInstance self = Place(board, 1, dish, 0, 0, "s");
-            self.AddLayers(3);
+            Place(board, 1, dish, 0, 0, "s");
 
-            ScoreResult result = new ScoreCalculator().Calculate(board, db);
+            // 全局层数 3 注入 → count=3 → 10 + 2*3 = 16
+            ScoreResult result = new ScoreCalculator().Calculate(board, db, initialHappyCakeLayers: 3);
 
             Assert.AreEqual(16f, result.DishScores.First(s => s.DishInstanceId == 1).Contribution, 0.001f);
         }
 
         [Test]
-        public void AddLayer_ProducesLayerDelta()
+        public void LayerCount_CapLimitsRawValue()
+        {
+            GameplayDatabase db = Db(GameplayTestFactory.RuleSkill("s",
+                GameplayTestFactory.Rule(
+                    SkillActionType.AddFlat, 2f,
+                    condType: SkillConditionType.LayerCount, condScope: SkillScope.Self, condMode: CountMode.Per,
+                    condParam: "cap:3")));
+            var board = new GpBoard(4, 4);
+            DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
+            Place(board, 1, dish, 0, 0, "s");
+
+            // 全局层数 5，但 cap:3 → count=3 → 10 + 2*3 = 16
+            ScoreResult result = new ScoreCalculator().Calculate(board, db, initialHappyCakeLayers: 5);
+
+            Assert.AreEqual(16f, result.DishScores.First(s => s.DishInstanceId == 1).Contribution, 0.001f);
+        }
+
+        [Test]
+        public void AddLayer_ProducesGlobalLayerDelta()
         {
             GameplayDatabase db = Db(GameplayTestFactory.RuleSkill("s",
                 GameplayTestFactory.Rule(SkillActionType.AddLayer, 2f)));
             var board = new GpBoard(4, 4);
             DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
-            DishInstance self = Place(board, 1, dish, 0, 0, "s");
+            Place(board, 1, dish, 0, 0, "s");
 
             ScoreResult result = new ScoreCalculator().Calculate(board, db);
 
-            Assert.IsTrue(result.LayerDeltas.TryGetValue(1, out int delta));
-            Assert.AreEqual(2, delta);
+            Assert.AreEqual(2, result.HappyCakeLayerDelta);
+        }
+
+        [Test]
+        public void ConsumeLayer_ReducesGlobalLayers()
+        {
+            GameplayDatabase db = Db(GameplayTestFactory.RuleSkill("s",
+                GameplayTestFactory.Rule(SkillActionType.ConsumeLayer, 3f)));
+            var board = new GpBoard(4, 4);
+            DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
+            Place(board, 1, dish, 0, 0, "s");
+
+            ScoreResult result = new ScoreCalculator().Calculate(board, db, initialHappyCakeLayers: 5);
+
+            Assert.AreEqual(-3, result.HappyCakeLayerDelta); // 5 → 2
         }
 
         // ---------- 历史 / 菜谱 ----------
@@ -337,6 +421,392 @@ namespace GourmetProject.Tests
             ScoreResult result = new ScoreCalculator().Calculate(board, db, history: history);
 
             Assert.AreEqual(15f, result.DishScores.First(s => s.DishInstanceId == 1).Contribution, 0.001f);
+        }
+
+        // ---------- P3：视为 N 个食物 ----------
+
+        [Test]
+        public void CountAs_StaticDefValue_CountsAsMultipleForNeighbor()
+        {
+            // 邻居技能：相邻每有 1 个食物 +10 分；相邻是一道「视为 3」的菜 → 记 3 个。
+            GameplayDatabase db = Db(GameplayTestFactory.RuleSkill("s",
+                GameplayTestFactory.Rule(
+                    SkillActionType.AddFlat, 10f,
+                    condType: SkillConditionType.DishCount, condScope: SkillScope.Adjacent, condMode: CountMode.Per)));
+            var board = new GpBoard(4, 4);
+            DishDef counter = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 0, allowRotate: false);
+            DishDef triple = GameplayTestFactory.Dish("t", new[] { "X" }, deliciousness: 0, allowRotate: false, countAs: 3);
+            Place(board, 1, counter, 1, 1, "s");
+            Place(board, 2, triple, 0, 1);
+
+            ScoreResult result = new ScoreCalculator().Calculate(board, db);
+
+            // 1 个相邻实例但视为 3 → 10*3 = 30
+            Assert.AreEqual(30f, result.DishScores.First(s => s.DishInstanceId == 1).Contribution, 0.001f);
+        }
+
+        [Test]
+        public void CountAs_ConditionalSelf_AddsCountAsWhenGateOpen()
+        {
+            // 自身：同行填满 → 视为 +9（基础 1 → 10）；邻居 counter：相邻每有 1 个食物 +1 分。
+            var selfSkill = GameplayTestFactory.RuleSkill("cas",
+                GameplayTestFactory.Rule(
+                    SkillActionType.AddCountAs, 9f,
+                    condType: SkillConditionType.PositionFilled, condScope: SkillScope.Row, condMode: CountMode.Gate,
+                    actionScope: SkillScope.Self));
+            var counterSkill = GameplayTestFactory.RuleSkill("cnt",
+                GameplayTestFactory.Rule(
+                    SkillActionType.AddFlat, 1f,
+                    condType: SkillConditionType.DishCount, condScope: SkillScope.Adjacent, condMode: CountMode.Per));
+            GameplayDatabase db = Db(selfSkill, counterSkill);
+            var board = new GpBoard(2, 1); // 一行 2 格，摆满即填满
+            DishDef counter = GameplayTestFactory.Dish("c", new[] { "X" }, deliciousness: 0, allowRotate: false);
+            DishDef waffle = GameplayTestFactory.Dish("w", new[] { "X" }, deliciousness: 0, allowRotate: false);
+            Place(board, 1, counter, 0, 0, "cnt");
+            Place(board, 2, waffle, 1, 0, "cas");
+
+            ScoreResult result = new ScoreCalculator().Calculate(board, db);
+
+            // waffle 同行填满 → 视为 10；counter 相邻 1 个实例视为 10 → +10
+            Assert.AreEqual(10f, result.DishScores.First(s => s.DishInstanceId == 1).Contribution, 0.001f);
+        }
+
+        [Test]
+        public void CountAs_ColumnGrant_BoostsSameColumnCount()
+        {
+            // dorayaki：同列食物额外视为 +2；counter：同列每有 1 个食物 +1 分。
+            var dora = GameplayTestFactory.RuleSkill("dora",
+                GameplayTestFactory.Rule(SkillActionType.AddCountAs, 2f, actionScope: SkillScope.Column));
+            var counterSkill = GameplayTestFactory.RuleSkill("cnt",
+                GameplayTestFactory.Rule(
+                    SkillActionType.AddFlat, 1f,
+                    condType: SkillConditionType.DishCount, condScope: SkillScope.Column, condMode: CountMode.Per));
+            GameplayDatabase db = Db(dora, counterSkill);
+            var board = new GpBoard(1, 3); // 一列 3 格
+            DishDef counter = GameplayTestFactory.Dish("c", new[] { "X" }, deliciousness: 0, allowRotate: false);
+            DishDef doraDish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 0, allowRotate: false);
+            Place(board, 1, counter, 0, 0, "cnt");
+            Place(board, 2, doraDish, 0, 1, "dora");
+            Place(board, 3, counter, 0, 2, "cnt");
+
+            ScoreResult result = new ScoreCalculator().Calculate(board, db);
+
+            // counter#1 同列其它 2 道：dora(视为1+2=3) + counter#3(视为1) = 4 → +4
+            Assert.AreEqual(4f, result.DishScores.First(s => s.DishInstanceId == 1).Contribution, 0.001f);
+        }
+
+        // ---------- P3：永久分（跨结算累积） ----------
+
+        [Test]
+        public void PermanentAddFlat_AppliesThisSettleAndPersistsAcrossSettles()
+        {
+            GameplayDatabase db = Db(GameplayTestFactory.RuleSkill("s",
+                GameplayTestFactory.Rule(SkillActionType.PermanentAddFlat, 5f)));
+            var board = new GpBoard(4, 4);
+            var rng = new GourmetProject.Core.Rng.RandomService();
+            rng.Init("perm-flat");
+            var slots = new List<RecipeSlot> { new RecipeSlot("slot", new string[0]) };
+            var session = new BattleSession(board, db, rng.Stream("b"), slots, requiredScore: 0);
+            DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
+            board.Place(GameplayTestFactory.InstanceWithTags(1, dish, 0, 0, new[] { "s" }));
+
+            ScoreResult first = session.Settle();
+            ScoreResult second = session.Settle();
+
+            // 第一次：基础 10 + 永久 5（本次即生效） = 15
+            Assert.AreEqual(15f, first.RawSum, 0.001f);
+            // 第二次：基础 10 + 已持久 5 + 本次再 +5 = 20
+            Assert.AreEqual(20f, second.RawSum, 0.001f);
+        }
+
+        [Test]
+        public void PermanentAddMult_MultipliesThisSettleAndPersists()
+        {
+            GameplayDatabase db = Db(GameplayTestFactory.RuleSkill("s",
+                GameplayTestFactory.Rule(SkillActionType.PermanentAddMult, 2f)));
+            var board = new GpBoard(4, 4);
+            var rng = new GourmetProject.Core.Rng.RandomService();
+            rng.Init("perm-mult");
+            var slots = new List<RecipeSlot> { new RecipeSlot("slot", new string[0]) };
+            var session = new BattleSession(board, db, rng.Stream("b"), slots, requiredScore: 0);
+            DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
+            board.Place(GameplayTestFactory.InstanceWithTags(1, dish, 0, 0, new[] { "s" }));
+
+            ScoreResult first = session.Settle();
+            ScoreResult second = session.Settle();
+
+            // 第一次：10 × 2 = 20
+            Assert.AreEqual(20f, first.RawSum, 0.001f);
+            // 第二次：乘区初值已持久 ×2，本次再 ×2 → 10 × 4 = 40
+            Assert.AreEqual(40f, second.RawSum, 0.001f);
+        }
+
+        // ---------- P4：蛋糕分类（CategoryCount 前提 + Category 定向） ----------
+
+        [Test]
+        public void CategoryCount_CountsCakesOnly()
+        {
+            GameplayDatabase db = Db(GameplayTestFactory.RuleSkill("s",
+                GameplayTestFactory.Rule(
+                    SkillActionType.AddFlat, 3f,
+                    condType: SkillConditionType.CategoryCount, condMode: CountMode.Per, condParam: "cake")));
+            var board = new GpBoard(4, 4);
+            DishDef cake = GameplayTestFactory.Dish("ck", new[] { "X" }, deliciousness: 0, allowRotate: false, category: "cake");
+            DishDef plain = GameplayTestFactory.Dish("pl", new[] { "X" }, deliciousness: 10, allowRotate: false);
+            Place(board, 1, plain, 0, 0, "s");
+            Place(board, 2, cake, 1, 0);
+            Place(board, 3, cake, 2, 0);
+            Place(board, 4, plain, 3, 0);
+
+            ScoreResult result = new ScoreCalculator().Calculate(board, db);
+
+            // 场上 2 个 cake → 10 + 3*2 = 16
+            Assert.AreEqual(16f, result.DishScores.First(s => s.DishInstanceId == 1).Contribution, 0.001f);
+        }
+
+        [Test]
+        public void AddMultFlat_CategoryScope_AddsToAllCakes()
+        {
+            // 戚风式：将倍率 +5 加到所有蛋糕（含自身若为蛋糕），非蛋糕不受影响。
+            GameplayDatabase db = Db(GameplayTestFactory.RuleSkill("s",
+                GameplayTestFactory.Rule(
+                    SkillActionType.AddMultFlat, 5f,
+                    actionScope: SkillScope.Category, actionParam: "cat:cake")));
+            var board = new GpBoard(4, 4);
+            DishDef chiffon = GameplayTestFactory.Dish("cf", new[] { "X" }, deliciousness: 10, allowRotate: false, category: "cake");
+            DishDef cake = GameplayTestFactory.Dish("ck", new[] { "X" }, deliciousness: 10, allowRotate: false, category: "cake");
+            DishDef plain = GameplayTestFactory.Dish("pl", new[] { "X" }, deliciousness: 10, allowRotate: false);
+            Place(board, 1, chiffon, 0, 0, "s");
+            Place(board, 2, cake, 1, 0);
+            Place(board, 3, plain, 2, 0);
+
+            ScoreResult result = new ScoreCalculator().Calculate(board, db);
+
+            Assert.AreEqual(60f, result.DishScores.First(s => s.DishInstanceId == 1).Contribution, 0.001f); // 蛋糕自身 10*(1+5)
+            Assert.AreEqual(60f, result.DishScores.First(s => s.DishInstanceId == 2).Contribution, 0.001f); // 另一蛋糕
+            Assert.AreEqual(10f, result.DishScores.First(s => s.DishInstanceId == 3).Contribution, 0.001f); // 非蛋糕不变
+        }
+
+        // ---------- P4：技能复制（CopySkill 候选池，OnServe） ----------
+
+        [Test]
+        public void CopySkill_FromAdjacent_GathersNeighborSkillsAsCandidates()
+        {
+            var copySkill = GameplayTestFactory.RuleSkill("copy",
+                GameplayTestFactory.Rule(SkillActionType.CopySkill, 1f, actionScope: SkillScope.Adjacent, trigger: SkillTrigger.OnServe));
+            var scoreSkill = GameplayTestFactory.RuleSkill("score",
+                GameplayTestFactory.Rule(SkillActionType.AddFlat, 5f));
+            GameplayDatabase db = Db(copySkill, scoreSkill);
+            var board = new GpBoard(2, 1);
+            DishDef neighbor = GameplayTestFactory.Dish("n", new[] { "X" }, deliciousness: 0, allowRotate: false);
+            DishDef cupcake = GameplayTestFactory.Dish("c", new[] { "X" }, deliciousness: 0, allowRotate: false);
+            Place(board, 1, neighbor, 0, 0, "score");
+            DishInstance served = Place(board, 2, cupcake, 1, 0, "copy");
+
+            ServeRuleResolver.ServeResolveResult res =
+                ServeRuleResolver.ResolveOnServe(board, db, null, served, 0);
+
+            Assert.AreEqual(1, res.CopySkillRequests.Count);
+            Assert.AreEqual(2, res.CopySkillRequests[0].TargetInstanceId);
+            Assert.AreEqual(1, res.CopySkillRequests[0].Count);
+            CollectionAssert.Contains(res.CopySkillRequests[0].Candidates, "score");
+        }
+
+        [Test]
+        public void CopySkill_FromCakePool_GathersCakeCategorySkills()
+        {
+            // 双层蛋糕式：候选池来自数据库中所有 cake 分类菜品的技能。
+            var doubleCakeSkill = GameplayTestFactory.RuleSkill("double",
+                GameplayTestFactory.Rule(SkillActionType.CopySkill, 3f, actionScope: SkillScope.Self, actionParam: "cat:cake", trigger: SkillTrigger.OnServe));
+            var cakeSkillA = GameplayTestFactory.RuleSkill("cakeA", GameplayTestFactory.Rule(SkillActionType.AddFlat, 1f));
+            var cakeSkillB = GameplayTestFactory.RuleSkill("cakeB", GameplayTestFactory.Rule(SkillActionType.AddMult, 2f));
+            DishDef cakeDefA = GameplayTestFactory.Dish("cakeDefA", new[] { "X" }, category: "cake", skills: new[] { "cakeA" });
+            DishDef cakeDefB = GameplayTestFactory.Dish("cakeDefB", new[] { "X" }, category: "cake", skills: new[] { "cakeB" });
+            DishDef doubleDef = GameplayTestFactory.Dish("d", new[] { "X" }, category: "cake", skills: new[] { "double" });
+            var db = new GameplayDatabase(
+                new List<DishDef> { cakeDefA, cakeDefB, doubleDef },
+                new List<SkillDef> { doubleCakeSkill, cakeSkillA, cakeSkillB },
+                new List<FlavorDef>(), new List<CellTagDef>(), new List<RecipeDef>());
+            var board = new GpBoard(2, 1);
+            DishInstance served = Place(board, 1, doubleDef, 0, 0, "double");
+
+            ServeRuleResolver.ServeResolveResult res =
+                ServeRuleResolver.ResolveOnServe(board, db, null, served, 0);
+
+            Assert.AreEqual(1, res.CopySkillRequests.Count);
+            Assert.AreEqual(3, res.CopySkillRequests[0].Count);
+            // 候选含另两种蛋糕技能，且不含自身 double（自身技能被剔除）。
+            CollectionAssert.Contains(res.CopySkillRequests[0].Candidates, "cakeA");
+            CollectionAssert.Contains(res.CopySkillRequests[0].Candidates, "cakeB");
+            CollectionAssert.DoesNotContain(res.CopySkillRequests[0].Candidates, "double");
+        }
+
+        // ---------- P5：阶梯倍率 ----------
+
+        [Test]
+        public void Tiers_PicksHighestSatisfiedTierValue()
+        {
+            // tiers:2|4 阈值，tiervals:2|3 各档值；场上 4 个其它食物 → 达第 2 档 → 倍率 ×3。
+            GameplayDatabase db = Db(GameplayTestFactory.RuleSkill("s",
+                GameplayTestFactory.Rule(
+                    SkillActionType.AddMult, 0f,
+                    condType: SkillConditionType.DishCount, condScope: SkillScope.All, condMode: CountMode.Reach,
+                    condParam: "tiers:2|4", actionParam: "tiervals:2|3")));
+            var board = new GpBoard(5, 1);
+            DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
+            Place(board, 1, dish, 0, 0, "s");
+            Place(board, 2, dish, 1, 0);
+            Place(board, 3, dish, 2, 0);
+            Place(board, 4, dish, 3, 0);
+            Place(board, 5, dish, 4, 0);
+
+            ScoreResult result = new ScoreCalculator().Calculate(board, db);
+
+            Assert.AreEqual(30f, result.DishScores.First(s => s.DishInstanceId == 1).Contribution, 0.001f);
+        }
+
+        [Test]
+        public void Tiers_BelowLowestThresholdNoEffect()
+        {
+            GameplayDatabase db = Db(GameplayTestFactory.RuleSkill("s",
+                GameplayTestFactory.Rule(
+                    SkillActionType.AddMult, 0f,
+                    condType: SkillConditionType.DishCount, condScope: SkillScope.All, condMode: CountMode.Reach,
+                    condParam: "tiers:5|15|25", actionParam: "tiervals:1.5|2.5|5")));
+            var board = new GpBoard(5, 1);
+            DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
+            Place(board, 1, dish, 0, 0, "s");
+            Place(board, 2, dish, 1, 0); // 仅 1 个其它 < 5 → 无效果
+
+            ScoreResult result = new ScoreCalculator().Calculate(board, db);
+
+            Assert.AreEqual(10f, result.DishScores.First(s => s.DishInstanceId == 1).Contribution, 0.001f);
+        }
+
+        // ---------- P5：带某行为类食物数（SkillTypeCount）+ 此类食物定向 ----------
+
+        [Test]
+        public void SkillTypeCount_CountsDishesWithTransferAndBoostsThem()
+        {
+            var transfer = GameplayTestFactory.RuleSkill("tf",
+                GameplayTestFactory.Rule(SkillActionType.TransferSkills, 0f, actionScope: SkillScope.Row, trigger: SkillTrigger.OnServe));
+            var choco = GameplayTestFactory.RuleSkill("choco",
+                GameplayTestFactory.Rule(
+                    SkillActionType.AddMult, 0f,
+                    condType: SkillConditionType.SkillTypeCount, condUnit: CountUnit.Kinds, condMode: CountMode.Reach,
+                    condParam: "TransferSkills;tiers:2", actionScope: SkillScope.All,
+                    actionParam: "tiervals:2;skilltype:TransferSkills"));
+            GameplayDatabase db = Db(transfer, choco);
+            var board = new GpBoard(4, 1);
+            DishDef a = GameplayTestFactory.Dish("a", new[] { "X" }, deliciousness: 10, allowRotate: false);
+            DishDef b = GameplayTestFactory.Dish("b", new[] { "X" }, deliciousness: 10, allowRotate: false);
+            DishDef c = GameplayTestFactory.Dish("c", new[] { "X" }, deliciousness: 10, allowRotate: false);
+            Place(board, 1, a, 0, 0, "tf");   // 带甜蜜传递
+            Place(board, 2, b, 1, 0, "tf");   // 带甜蜜传递（不同 base）
+            Place(board, 3, c, 2, 0, "choco"); // 巧克力，无传递
+
+            ScoreResult result = new ScoreCalculator().Calculate(board, db);
+
+            // 2 种带传递食物 ≥2 档 → 此类食物（a、b）×2；巧克力 c 不受影响。
+            Assert.AreEqual(20f, result.DishScores.First(s => s.DishInstanceId == 1).Contribution, 0.001f);
+            Assert.AreEqual(20f, result.DishScores.First(s => s.DishInstanceId == 2).Contribution, 0.001f);
+            Assert.AreEqual(10f, result.DishScores.First(s => s.DishInstanceId == 3).Contribution, 0.001f);
+        }
+
+        // ---------- P5：临时复制 ----------
+
+        [Test]
+        public void TempCopyDish_ClonesSelfIntoEmptyCell()
+        {
+            var coneCopy = GameplayTestFactory.RuleSkill("cone_copy",
+                GameplayTestFactory.Rule(SkillActionType.TempCopyDish, 1f, actionScope: SkillScope.Self, trigger: SkillTrigger.OnServe));
+            DishDef cone = GameplayTestFactory.Dish("cone", new[] { "X" }, deliciousness: 20, allowRotate: false, skills: new[] { "cone_copy" });
+            var db = new GameplayDatabase(
+                new List<DishDef> { cone },
+                new List<SkillDef> { coneCopy },
+                new List<FlavorDef>(), new List<CellTagDef>(), new List<RecipeDef>());
+            var rng = new GourmetProject.Core.Rng.RandomService();
+            rng.Init("tempcopy");
+            var slots = new List<RecipeSlot> { new RecipeSlot("slot", new[] { "cone" }) };
+            var session = new BattleSession(new GpBoard(2, 1), db, rng.Stream("b"), slots, requiredScore: 0);
+
+            session.Serve(0);
+
+            // 上菜 1 个甜筒，临时复制克隆 1 个 → 棋盘 2 个，其一为临时。
+            Assert.AreEqual(2, session.Board.Dishes.Count);
+            Assert.AreEqual(1, session.Board.Dishes.Count(d => d.IsTemporary));
+
+            session.ClearTemporaryDishes();
+            Assert.AreEqual(1, session.Board.Dishes.Count);
+            Assert.IsFalse(session.Board.Dishes.Any(d => d.IsTemporary));
+        }
+
+        // ---------- 甜蜜传递：RNG 均权随机 + 技能来源溯源 ----------
+
+        [Test]
+        public void Transfer_ResolveOnServe_CollectsRequestWithCandidatesAndSkills()
+        {
+            // 马卡龙：计分技能 sk_sweet + 甜蜜传递 sk_tf（同行，取 1）。OnServe 只收集请求、不直接落地。
+            var sweet = GameplayTestFactory.RuleSkill("sk_sweet", GameplayTestFactory.Rule(SkillActionType.AddFlat, 8f));
+            var transfer = GameplayTestFactory.RuleSkill("sk_tf",
+                GameplayTestFactory.Rule(SkillActionType.TransferSkills, 0f, actionScope: SkillScope.Row, actionCount: 1, trigger: SkillTrigger.OnServe));
+            GameplayDatabase db = Db(sweet, transfer);
+            var board = new GpBoard(3, 1);
+            DishDef macaron = GameplayTestFactory.Dish("macaron", new[] { "X" }, deliciousness: 8, allowRotate: false);
+            DishDef plain = GameplayTestFactory.Dish("plain", new[] { "X" }, deliciousness: 10, allowRotate: false);
+            Place(board, 1, plain, 0, 0);
+            Place(board, 2, plain, 2, 0);
+            DishInstance served = Place(board, 3, macaron, 1, 0, "sk_sweet", "sk_tf");
+
+            ServeRuleResolver.ServeResolveResult res =
+                ServeRuleResolver.ResolveOnServe(board, db, null, served, 0);
+
+            Assert.AreEqual(1, res.TransferRequests.Count);
+            SkillTransferRequest req = res.TransferRequests[0];
+            Assert.AreEqual(3, req.SourceInstanceId);
+            Assert.AreEqual("macaron", req.SourceName);
+            Assert.AreEqual(1, req.Count);
+            CollectionAssert.Contains(req.SkillIds, "sk_sweet");        // 传的是计分技能
+            CollectionAssert.DoesNotContain(req.SkillIds, "sk_tf");     // 传递技能本身不传
+            CollectionAssert.AreEquivalent(new[] { 1, 2 }, req.CandidateTargetIds); // 同行两个候选，不含自身
+        }
+
+        [Test]
+        public void Transfer_Serve_LandsSkillWithSourceLabelAndScores()
+        {
+            // 端到端：2x1 棋盘先上一个空技能目标，再上带甜蜜传递的马卡龙；同行必落地到目标。
+            var sweet = GameplayTestFactory.RuleSkill("sk_sweet", GameplayTestFactory.Rule(SkillActionType.AddFlat, 8f));
+            var transfer = GameplayTestFactory.RuleSkill("sk_tf",
+                GameplayTestFactory.Rule(SkillActionType.TransferSkills, 0f, actionScope: SkillScope.Row, actionCount: 1, trigger: SkillTrigger.OnServe));
+            DishDef target = GameplayTestFactory.Dish("target", new[] { "X" }, deliciousness: 10, allowRotate: false);
+            DishDef macaron = GameplayTestFactory.Dish("macaron", new[] { "X" }, deliciousness: 8, allowRotate: false, skills: new[] { "sk_sweet", "sk_tf" });
+            var db = new GameplayDatabase(
+                new List<DishDef> { target, macaron },
+                new List<SkillDef> { sweet, transfer },
+                new List<FlavorDef>(), new List<CellTagDef>(), new List<RecipeDef>());
+            var rng = new GourmetProject.Core.Rng.RandomService();
+            rng.Init("transfer");
+            var slots = new List<RecipeSlot>
+            {
+                new RecipeSlot("s0", new[] { "target" }),
+                new RecipeSlot("s1", new[] { "macaron" }),
+            };
+            var session = new BattleSession(new GpBoard(2, 1), db, rng.Stream("b"), slots, requiredScore: 0);
+
+            session.Serve(0); // 目标先落地
+            session.Serve(1); // 马卡龙落地并把 sk_sweet 传给目标
+
+            DishInstance targetInst = session.Board.Dishes.First(d => d.Def.Id == "target");
+            Assert.Contains("sk_sweet", targetInst.SkillIds.ToList());
+            Assert.AreEqual("macaron<甜蜜传递>", targetInst.GetSkillSource("sk_sweet"));
+
+            // 结算：目标获得并结算 sk_sweet（+8）→ 10+8=18；来源明细以来源标签命名。
+            ScoreResult result = session.Settle();
+            DishScore targetScore = result.DishScores.First(s => s.DishInstanceId == targetInst.Id);
+            Assert.AreEqual(18f, targetScore.Contribution, 0.001f);
+            Assert.IsTrue(
+                result.ScoreLines.Any(l => l.DishInstanceId == targetInst.Id && l.Source != null && l.Source.Name == "macaron<甜蜜传递>"),
+                "结算明细应含来源标签「macaron<甜蜜传递>」");
         }
 
         // ---------- 多条规则组合 ----------

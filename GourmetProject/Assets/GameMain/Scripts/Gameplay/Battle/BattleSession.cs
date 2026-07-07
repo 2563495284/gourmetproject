@@ -70,6 +70,9 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>本局已上菜次数。</summary>
         public int ServesUsed { get; private set; }
 
+        /// <summary>本次品鉴共享的全局「欢乐蛋糕层数」，随上菜/结算累加，跨品鉴重置。</summary>
+        public int HappyCakeLayers { get; private set; }
+
         /// <summary>是否已结算（吃过）。</summary>
         public bool IsSettled { get; private set; }
 
@@ -135,8 +138,14 @@ namespace GourmetProject.Gameplay.Battle
             slot.RemoveAt(chosen.SlotEntryIndex);
             ServesUsed++;
 
-            // 上菜时（OnServe）规则：直接改运行时状态（层数/技能）并积累金币。
-            PendingGold += ServeRuleResolver.ResolveOnServe(Board, _db, BuildHistory(), instance);
+            // 上菜时（OnServe）规则：直接改运行时状态（技能）并积累金币/全局层数。
+            ServeRuleResolver.ServeResolveResult serveResult =
+                ServeRuleResolver.ResolveOnServe(Board, _db, BuildHistory(), instance, HappyCakeLayers);
+            PendingGold += serveResult.Gold;
+            HappyCakeLayers = Math.Max(0, HappyCakeLayers + serveResult.HappyCakeLayerDelta);
+            ApplyTransferRequests(serveResult.TransferRequests);
+            ApplyCopySkillRequests(serveResult.CopySkillRequests);
+            ApplyTempCopyRequests(serveResult.TempCopySourceIds);
 
             return new ServeResult(ServeOutcome.Placed, instance);
         }
@@ -144,13 +153,13 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>计算当前棋盘的预览分数（不标记结算，不产生副作用），供 UI 实时展示。</summary>
         public ScoreResult PreviewScore()
         {
-            return _calculator.Calculate(Board, _db, FinalFlat, FinalMultiplier, history: BuildHistory());
+            return _calculator.Calculate(Board, _db, FinalFlat, FinalMultiplier, history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers);
         }
 
         /// <summary>「吃」：结算、应用副作用（金币/层数/技能传递/历史）并记录结果。</summary>
         public ScoreResult Settle()
         {
-            ScoreResult result = _calculator.Calculate(Board, _db, FinalFlat, FinalMultiplier, history: BuildHistory());
+            ScoreResult result = _calculator.Calculate(Board, _db, FinalFlat, FinalMultiplier, history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers);
             ApplySideEffects(result);
             LastResult = result;
             IsSettled = true;
@@ -186,15 +195,8 @@ namespace GourmetProject.Gameplay.Battle
             // 金币入账（结算侧效果）。
             PendingGold += result.GoldDelta;
 
-            // 层数改动：LayerDeltas 存的是「结算后应有层数 - 当前层数」，直接加上即可。
-            if (result.LayerDeltas.Count > 0)
-            {
-                foreach (KeyValuePair<int, int> kv in result.LayerDeltas)
-                {
-                    DishInstance inst = FindInstance(kv.Key);
-                    inst?.AddLayers(kv.Value);
-                }
-            }
+            // 全局欢乐蛋糕层数：写回品鉴级计数器。
+            HappyCakeLayers = Math.Max(0, HappyCakeLayers + result.HappyCakeLayerDelta);
 
             // 技能传递。
             foreach (SkillTransferSideEffect transfer in result.SkillTransfers)
@@ -205,10 +207,22 @@ namespace GourmetProject.Gameplay.Battle
                     continue;
                 }
 
+                string label = string.IsNullOrEmpty(transfer.SourceName) ? null : $"{transfer.SourceName}<甜蜜传递>";
                 foreach (string skillId in transfer.SkillIds)
                 {
-                    inst.AddSkill(skillId);
+                    inst.AddSkill(skillId, label);
                 }
+            }
+
+            // 永久分 / 永久乘区 / 视为食物数：写回实例（品鉴内跨结算持久）。
+            foreach (KeyValuePair<int, float> kv in result.PermanentFlatDeltas)
+            {
+                FindInstance(kv.Key)?.AddPermanentFlat(kv.Value);
+            }
+
+            foreach (KeyValuePair<int, float> kv in result.PermanentMultDeltas)
+            {
+                FindInstance(kv.Key)?.MultiplyPermanentMult(kv.Value);
             }
 
             // 历史累计：本次结算把盘面每道菜的 BaseId 计入大局/小局。
@@ -229,6 +243,119 @@ namespace GourmetProject.Gameplay.Battle
             }
 
             LastSettledIncrements = increments;
+        }
+
+        /// <summary>甜蜜传递落地：对每个请求，用随机流在候选目标中均权取 Count 个（0=全部），把技能追加给它们并标注来源。</summary>
+        private void ApplyTransferRequests(IReadOnlyList<SkillTransferRequest> requests)
+        {
+            if (requests == null || requests.Count == 0)
+            {
+                return;
+            }
+
+            foreach (SkillTransferRequest request in requests)
+            {
+                if (request.CandidateTargetIds.Count == 0 || request.SkillIds.Count == 0)
+                {
+                    continue;
+                }
+
+                var targets = new List<int>(request.CandidateTargetIds);
+                if (request.Count > 0 && targets.Count > request.Count)
+                {
+                    _rng.Shuffle(targets);
+                    targets = targets.GetRange(0, request.Count);
+                }
+
+                string sourceLabel = $"{request.SourceName}<甜蜜传递>";
+                foreach (int targetId in targets)
+                {
+                    DishInstance target = FindInstance(targetId);
+                    if (target == null || target.Id == request.SourceInstanceId)
+                    {
+                        continue;
+                    }
+
+                    foreach (string skillId in request.SkillIds)
+                    {
+                        target.AddSkill(skillId, sourceLabel);
+                    }
+                }
+            }
+        }
+
+        /// <summary>技能复制落地：对每个请求，用随机流从候选池挑选 Count 个不同技能加到目标实例。</summary>
+        private void ApplyCopySkillRequests(IReadOnlyList<CopySkillRequest> requests)
+        {
+            if (requests == null || requests.Count == 0)
+            {
+                return;
+            }
+
+            foreach (CopySkillRequest request in requests)
+            {
+                DishInstance target = FindInstance(request.TargetInstanceId);
+                if (target == null || request.Candidates.Count == 0)
+                {
+                    continue;
+                }
+
+                var pool = new List<string>(request.Candidates);
+                _rng.Shuffle(pool);
+                int take = Math.Min(request.Count, pool.Count);
+                for (int i = 0; i < take; i++)
+                {
+                    target.AddSkill(pool[i]);
+                }
+            }
+        }
+
+        /// <summary>临时复制落地：对每个源实例，在空格中克隆一份带同样技能/风味的临时实例并摆放。</summary>
+        private void ApplyTempCopyRequests(IReadOnlyList<int> sourceIds)
+        {
+            if (sourceIds == null || sourceIds.Count == 0)
+            {
+                return;
+            }
+
+            foreach (int sourceId in sourceIds)
+            {
+                DishInstance source = FindInstance(sourceId);
+                if (source == null)
+                {
+                    continue;
+                }
+
+                List<Placement> placements = Board.FindValidPlacements(source.Def);
+                if (placements.Count == 0)
+                {
+                    continue;
+                }
+
+                Placement placement = placements[_rng.Range(0, placements.Count)];
+                var clone = new DishInstance(_nextInstanceId++, source.Def, placement, source.SkillIds, source.FlavorId);
+                clone.CopySkillSourcesFrom(source);
+                clone.MarkTemporary();
+                Board.Place(clone);
+            }
+        }
+
+        /// <summary>清理本次品鉴产生的临时克隆实例（品鉴结束时调用）。</summary>
+        public void ClearTemporaryDishes()
+        {
+            var temporaries = new List<DishInstance>();
+            foreach (DishInstance dish in Board.Dishes)
+            {
+                if (dish.IsTemporary)
+                {
+                    temporaries.Add(dish);
+                }
+            }
+
+            foreach (DishInstance dish in temporaries)
+            {
+                Board.RemoveDish(dish);
+            }
         }
 
         private DishInstance FindInstance(int id)

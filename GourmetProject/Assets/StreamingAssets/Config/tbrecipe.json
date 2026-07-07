@@ -1,100 +1,136 @@
 [
   {
     "id": "recipe_glutton",
-    "fixedDishes": "rice|rice",
+    "fixedDishes": "cookie",
     "requiredInitScore": 40,
     "pool": [
       {
-        "dishId": "rice",
+        "dishId": "cookie",
         "weight": 150,
         "maxCount": 0,
-        "initScore": 5
+        "initScore": 10
       },
       {
-        "dishId": "egg",
+        "dishId": "macaron",
         "weight": 120,
         "maxCount": 0,
         "initScore": 8
       },
       {
-        "dishId": "soup",
+        "dishId": "daifuku",
+        "weight": 110,
+        "maxCount": 0,
+        "initScore": 6
+      },
+      {
+        "dishId": "eggtart",
+        "weight": 110,
+        "maxCount": 0,
+        "initScore": 6
+      },
+      {
+        "dishId": "jelly",
         "weight": 100,
         "maxCount": 0,
-        "initScore": 9
+        "initScore": 4
       },
       {
-        "dishId": "noodle",
-        "weight": 90,
-        "maxCount": 0,
-        "initScore": 12
+        "dishId": "sundae",
+        "weight": 60,
+        "maxCount": 2,
+        "initScore": 20
       },
       {
-        "dishId": "feast",
-        "weight": 40,
+        "dishId": "parfait",
+        "weight": 30,
         "maxCount": 1,
-        "initScore": 25
+        "initScore": 50
       }
     ]
   },
   {
     "id": "recipe_wok",
-    "fixedDishes": "egg",
+    "fixedDishes": "mochi",
     "requiredInitScore": 45,
     "pool": [
       {
-        "dishId": "egg",
-        "weight": 120,
+        "dishId": "mochi",
+        "weight": 130,
+        "maxCount": 0,
+        "initScore": 10
+      },
+      {
+        "dishId": "gummy",
+        "weight": 110,
         "maxCount": 0,
         "initScore": 8
       },
       {
-        "dishId": "fish",
+        "dishId": "lollipop",
         "weight": 100,
         "maxCount": 0,
-        "initScore": 15
+        "initScore": 10
       },
       {
-        "dishId": "dumpling",
-        "weight": 90,
+        "dishId": "mousse",
+        "weight": 80,
         "maxCount": 0,
-        "initScore": 11
+        "initScore": 16
       },
       {
-        "dishId": "cake",
+        "dishId": "eggroll",
         "weight": 60,
         "maxCount": 2,
-        "initScore": 20
+        "initScore": 30
+      },
+      {
+        "dishId": "cream_cake",
+        "weight": 40,
+        "maxCount": 1,
+        "initScore": 50
       }
     ]
   },
   {
     "id": "recipe_chili",
-    "fixedDishes": "chili",
+    "fixedDishes": "pudding",
     "requiredInitScore": 38,
     "pool": [
       {
-        "dishId": "chili",
+        "dishId": "pudding",
         "weight": 130,
         "maxCount": 0,
-        "initScore": 4
+        "initScore": 30
       },
       {
-        "dishId": "rice",
+        "dishId": "choco_candy",
         "weight": 120,
         "maxCount": 0,
-        "initScore": 5
+        "initScore": 10
       },
       {
-        "dishId": "soup",
+        "dishId": "gold_choco",
+        "weight": 100,
+        "maxCount": 0,
+        "initScore": 6
+      },
+      {
+        "dishId": "tanghulu",
         "weight": 90,
         "maxCount": 0,
-        "initScore": 9
+        "initScore": 20
       },
       {
-        "dishId": "orange",
-        "weight": 80,
-        "maxCount": 0,
-        "initScore": 10
+        "dishId": "choco_bar",
+        "weight": 60,
+        "maxCount": 1,
+        "initScore": 40
+      },
+      {
+        "dishId": "marshmallow",
+        "weight": 30,
+        "maxCount": 1,
+        "initScore": 80
       }
     ]
   }

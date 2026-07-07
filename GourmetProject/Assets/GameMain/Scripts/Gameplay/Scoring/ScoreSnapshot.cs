@@ -16,12 +16,14 @@ namespace GourmetProject.Gameplay.Scoring
             float finalFlat = 0f,
             float finalMultiplier = 1f,
             IEnumerable<IScoreEffectSource> effectSources = null,
-            IScoreHistory history = null)
+            IScoreHistory history = null,
+            int initialHappyCakeLayers = 0)
         {
             Board = board ?? throw new ArgumentNullException(nameof(board));
             Db = db ?? throw new ArgumentNullException(nameof(db));
             InitialFinalFlat = finalFlat;
             InitialFinalMultiplier = finalMultiplier;
+            InitialHappyCakeLayers = initialHappyCakeLayers < 0 ? 0 : initialHappyCakeLayers;
             History = history ?? EmptyScoreHistory.Instance;
             EffectSources = (effectSources ?? Array.Empty<IScoreEffectSource>()).ToArray();
             DishesInDefaultOrder = Board.Dishes
@@ -40,6 +42,9 @@ namespace GourmetProject.Gameplay.Scoring
         public float InitialFinalFlat { get; }
 
         public float InitialFinalMultiplier { get; }
+
+        /// <summary>本次品鉴（meal）开始结算时的全局「欢乐蛋糕层数」。</summary>
+        public int InitialHappyCakeLayers { get; }
 
         public IScoreHistory History { get; }
 

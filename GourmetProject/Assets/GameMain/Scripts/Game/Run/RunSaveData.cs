@@ -18,6 +18,9 @@ namespace GourmetProject.Game.Run
         public RandomSnapshot RandomSnapshot;
         public int WeekIndex;
         public int Gold;
+
+        /// <summary>「食物调整」剩余次数。默认 999，兼容旧档缺省。</summary>
+        public int FoodAdjustCount = 999;
         public List<RunItemSaveData> Items = new List<RunItemSaveData>();
         public List<string> BonusDishIds = new List<string>();
         public List<RunRecipeBookSaveData> RecipeBooks = new List<RunRecipeBookSaveData>();

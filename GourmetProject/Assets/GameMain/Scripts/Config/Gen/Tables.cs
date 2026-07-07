@@ -138,6 +138,10 @@ public partial class Tables
     /// 菜品技能规则：一行=一条规则(前提&#215;行为)，同skillId多行按order执行。所有菜品技能效果统一走本表。
     /// </summary>
     public TbSkillRule TbSkillRule {get; }
+    /// <summary>
+    /// 欢乐蛋糕层数分段buff：结算时读全局层数，layers&gt;=threshold 的档累计应用到 category 分类所有食物。effectType 复用 SkillActionType。
+    /// </summary>
+    public TbCakeLayerBuff TbCakeLayerBuff {get; }
 
     public Tables(System.Func<string, JSONNode> loader)
     {
@@ -172,6 +176,7 @@ public partial class Tables
         TbFlavor = new TbFlavor(loader("tbflavor"));
         TbCellTag = new TbCellTag(loader("tbcelltag"));
         TbSkillRule = new TbSkillRule(loader("tbskillrule"));
+        TbCakeLayerBuff = new TbCakeLayerBuff(loader("tbcakelayerbuff"));
         ResolveRef();
     }
     
@@ -208,6 +213,7 @@ public partial class Tables
         TbFlavor.ResolveRef(this);
         TbCellTag.ResolveRef(this);
         TbSkillRule.ResolveRef(this);
+        TbCakeLayerBuff.ResolveRef(this);
     }
 }
 

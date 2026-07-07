@@ -28,10 +28,11 @@ namespace GourmetProject.Gameplay.Scoring
             float finalFlat = 0f,
             float finalMultiplier = 1f,
             IEnumerable<IScoreEffectSource> extraSources = null,
-            IScoreHistory history = null)
+            IScoreHistory history = null,
+            int initialHappyCakeLayers = 0)
         {
             IScoreEffectSource[] sources = MergeSources(extraSources);
-            return Calculate(new ScoreSnapshot(board, db, finalFlat, finalMultiplier, sources, history));
+            return Calculate(new ScoreSnapshot(board, db, finalFlat, finalMultiplier, sources, history, initialHappyCakeLayers));
         }
 
         public ScoreResult Calculate(ScoreSnapshot snapshot)
@@ -73,6 +74,7 @@ namespace GourmetProject.Gameplay.Scoring
             var collector = new ScoreEffectCollector();
             new TagScoreEffectSource(_registry).CollectEffects(snapshot, collector);
             new SkillRuleEffectSource().CollectEffects(snapshot, collector);
+            new CakeLayerBuffSource().CollectEffects(snapshot, collector);
 
             foreach (IScoreEffectSource source in snapshot.EffectSources)
             {

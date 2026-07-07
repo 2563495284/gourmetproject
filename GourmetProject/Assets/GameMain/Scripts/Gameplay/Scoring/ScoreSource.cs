@@ -67,6 +67,20 @@ namespace GourmetProject.Gameplay.Scoring
                 dish?.Def?.Id);
         }
 
+        /// <summary>
+        /// 由甜蜜传递/技能复制获得的技能来源：Id 仍为技能 id，但 Name 用来源标签（如「马卡龙&lt;甜蜜传递&gt;」），
+        /// 使结算明细显示该技能来自别的菜。类型仍归为 DishSkill 保持排序一致。
+        /// </summary>
+        public static ScoreSource TransferredDishSkill(SkillDef skill, DishInstance dish, string sourceLabel)
+        {
+            return new ScoreSource(
+                ScoreSourceType.DishSkill,
+                skill?.Id,
+                string.IsNullOrEmpty(sourceLabel) ? skill?.Name : sourceLabel,
+                dish != null ? dish.Id : 0,
+                dish?.Def?.Id);
+        }
+
         public static ScoreSource DishFlavor(IEffectDef tag, DishInstance dish)
         {
             return new ScoreSource(

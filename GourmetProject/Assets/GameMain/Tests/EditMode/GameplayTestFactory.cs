@@ -17,7 +17,9 @@ namespace GourmetProject.Tests
             bool allowRotate = true,
             IReadOnlyList<string> skills = null,
             string flavor = null,
-            int rotationIndex = 0)
+            int rotationIndex = 0,
+            string category = null,
+            int countAs = 1)
         {
             return new DishDef(
                 id,
@@ -31,7 +33,9 @@ namespace GourmetProject.Tests
                 flavor ?? string.Empty,
                 string.Empty,
                 allowRotate,
-                rotationIndex: rotationIndex);
+                rotationIndex: rotationIndex,
+                category: category,
+                countAs: countAs);
         }
 
         public static SkillDef Skill(string id, TagEffectType effectType, float effectValue, string termId = "")

@@ -76,6 +76,14 @@ namespace cfg
         /// 本菜占用格数
         /// </summary>
         OccupiedCell = 14,
+        /// <summary>
+        /// 作用域内指定分类(condParam)的菜数
+        /// </summary>
+        CategoryCount = 15,
+        /// <summary>
+        /// 作用域内带某行为类技能(condParam)的菜数
+        /// </summary>
+        SkillTypeCount = 16,
     }
 
 } 

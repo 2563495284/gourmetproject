@@ -22,7 +22,9 @@ public sealed partial class DishBase : Luban.BeanBase
         { if(!_buf["deliciousness"].IsNumber) { throw new SerializationException(); }  Deliciousness = _buf["deliciousness"]; }
         { if(!_buf["icon"].IsString) { throw new SerializationException(); }  Icon = _buf["icon"]; }
         { if(!_buf["allowRotate"].IsBoolean) { throw new SerializationException(); }  AllowRotate = _buf["allowRotate"]; }
-        { var __json0 = _buf["skills"]; if(!__json0.IsArray) { throw new SerializationException(); } Skills = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  Skills.Add(__v0); }   }
+        { if(!_buf["skills"].IsString) { throw new SerializationException(); }  Skills = _buf["skills"]; }
+        { if(!_buf["category"].IsString) { throw new SerializationException(); }  Category = _buf["category"]; }
+        { if(!_buf["countAs"].IsNumber) { throw new SerializationException(); }  CountAs = _buf["countAs"]; }
         { var __json0 = _buf["shapeRows"]; if(!__json0.IsArray) { throw new SerializationException(); } ShapeRows = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  ShapeRows.Add(__v0); }   }
     }
 
@@ -52,9 +54,17 @@ public sealed partial class DishBase : Luban.BeanBase
     /// </summary>
     public readonly bool AllowRotate;
     /// <summary>
-    /// 技能标签ID列表
+    /// 技能ID列表(| 分隔)
     /// </summary>
-    public readonly System.Collections.Generic.List<string> Skills;
+    public readonly string Skills;
+    /// <summary>
+    /// 菜品分类(如cake;空=无)
+    /// </summary>
+    public readonly string Category;
+    /// <summary>
+    /// 视为食物数(默认1)
+    /// </summary>
+    public readonly int CountAs;
     /// <summary>
     /// 菜品形状行列表
     /// </summary>
@@ -75,7 +85,9 @@ public sealed partial class DishBase : Luban.BeanBase
         + "deliciousness:" + Deliciousness + ","
         + "icon:" + Icon + ","
         + "allowRotate:" + AllowRotate + ","
-        + "skills:" + Luban.StringUtil.CollectionToString(Skills) + ","
+        + "skills:" + Skills + ","
+        + "category:" + Category + ","
+        + "countAs:" + CountAs + ","
         + "shapeRows:" + Luban.StringUtil.CollectionToString(ShapeRows) + ","
         + "}";
     }

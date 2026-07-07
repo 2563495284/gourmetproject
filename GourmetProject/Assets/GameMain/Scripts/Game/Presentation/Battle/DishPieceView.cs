@@ -73,6 +73,8 @@ namespace GourmetProject.Game.Presentation.Battle
         private Vector3 _shadowBaseScale;
         private Vector3 _visualBaseLocalPos;
         private Action<DishInstance> _clicked;
+        private bool _clickEnabled = true;
+        private SpriteRenderer _placementGlow;
 
         public DishInstance Instance { get; private set; }
 
@@ -90,6 +92,54 @@ namespace GourmetProject.Game.Presentation.Battle
             RotationIndex = instance.Placement.RotationIndex;
             CurrentShape = instance.Placement.Orientation;
             RebuildCells(CurrentShape);
+        }
+
+        /// <summary>是否响应普通点击（打开详情）。食物调整态下关闭，改由 FoodAdjustController 自行命中处理。</summary>
+        public void SetClickEnabled(bool enabled)
+        {
+            _clickEnabled = enabled;
+        }
+
+        /// <summary>
+        /// 放置可否的外轮廓发光：食物调整移动态给「光标菜品」显示——绿=可放，红=不可放；关闭则隐藏。
+        /// 用一层复制本体 sprite、略放大并染色的描边层实现。
+        /// </summary>
+        public void SetPlacementGlow(bool show, bool valid)
+        {
+            EnsureRefs();
+            if (!show)
+            {
+                if (_placementGlow != null)
+                {
+                    _placementGlow.gameObject.SetActive(false);
+                }
+
+                return;
+            }
+
+            if (_spriteRenderer == null)
+            {
+                return;
+            }
+
+            if (_placementGlow == null)
+            {
+                var go = new GameObject("PlacementGlow");
+                go.transform.SetParent(_spriteRenderer.transform, false);
+                _placementGlow = go.AddComponent<SpriteRenderer>();
+                SpriteRenderStyle.ApplyUnlitMaterial(_placementGlow);
+            }
+
+            _placementGlow.gameObject.SetActive(true);
+            _placementGlow.sprite = _spriteRenderer.sprite;
+            _placementGlow.transform.localPosition = Vector3.zero;
+            _placementGlow.transform.localRotation = Quaternion.identity;
+            _placementGlow.transform.localScale = Vector3.one * 1.16f;
+            _placementGlow.sortingLayerName = _spriteRenderer.sortingLayerName;
+            _placementGlow.sortingOrder = _spriteRenderer.sortingOrder - 1;
+            _placementGlow.color = valid
+                ? new Color(0.30f, 1f, 0.42f, 0.9f)
+                : new Color(1f, 0.32f, 0.30f, 0.9f);
         }
 
         public void SetGhost(bool ghost)
@@ -480,7 +530,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void Update()
         {
-            if (Instance == null || !WorldInput.PrimaryPressedThisFrame || _collider == null)
+            if (!_clickEnabled || Instance == null || !WorldInput.PrimaryPressedThisFrame || _collider == null)
             {
                 return;
             }

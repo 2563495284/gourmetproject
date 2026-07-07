@@ -282,11 +282,11 @@ namespace GourmetProject.Tests
             Assert.IsFalse(run.HasItem(active.Id));
             Assert.AreEqual(afterPurchaseGold + ShopService.ItemSellPrice, run.Gold);
 
-            Assert.IsTrue(run.AddBonusDish("rice"));
+            Assert.IsTrue(run.AddBonusDish("cookie"));
             int beforeDeleteGold = run.Gold;
 
-            Assert.IsTrue(ShopService.DeleteDish(run, "rice"));
-            Assert.IsFalse(run.BonusDishIds.Contains("rice"));
+            Assert.IsTrue(ShopService.DeleteDish(run, "cookie"));
+            Assert.IsFalse(run.BonusDishIds.Contains("cookie"));
             Assert.AreEqual(beforeDeleteGold - ShopService.DeleteDishCost, run.Gold);
         }
 
@@ -301,11 +301,11 @@ namespace GourmetProject.Tests
             Assert.AreEqual(3, run.RecipeBookCount);
             Assert.AreEqual(100 - ShopService.EmptyRecipeBookPrice, run.Gold);
 
-            Assert.IsTrue(run.AddBonusDish("rice"));
+            Assert.IsTrue(run.AddBonusDish("cookie"));
             Assert.AreEqual(1, run.GetRecipeBookDishes(0).Count);
             Assert.IsTrue(ShopService.MoveDish(run, fromBookIndex: 0, dishIndex: 0, toBookIndex: 2));
             Assert.AreEqual(0, run.GetRecipeBookDishes(0).Count);
-            Assert.AreEqual("rice", run.GetRecipeBookDishes(2)[0]);
+            Assert.AreEqual("cookie", run.GetRecipeBookDishes(2)[0]);
 
             int beforeDeleteGold = run.Gold;
             Assert.IsTrue(ShopService.DeleteDishAt(run, bookIndex: 2, dishIndex: 0));
@@ -318,21 +318,21 @@ namespace GourmetProject.Tests
         {
             GameRun run = NewRun(week: 1);
             run.Gold = 100;
-            var dish = new ShopEntry(ShopEntryKind.Dish, "rice", "米饭", "加入菜谱池的菜品", 30);
+            var dish = new ShopEntry(ShopEntryKind.Dish, "cookie", "曲奇", "加入菜谱池的菜品", 30);
 
             Assert.IsTrue(ShopService.PurchaseDishToBook(run, dish, bookIndex: 1));
 
             Assert.AreEqual(70, run.Gold);
             Assert.AreEqual(0, run.GetRecipeBookDishes(0).Count);
-            Assert.AreEqual("rice", run.GetRecipeBookDishes(1)[0]);
-            Assert.IsTrue(run.BonusDishIds.Contains("rice"));
+            Assert.AreEqual("cookie", run.GetRecipeBookDishes(1)[0]);
+            Assert.IsTrue(run.BonusDishIds.Contains("cookie"));
         }
 
         [Test]
         public void ShopService_PurchaseDishToBookRejectsInsufficientGoldAndFullBook()
         {
             GameRun run = NewRun(week: 1);
-            var dish = new ShopEntry(ShopEntryKind.Dish, "rice", "米饭", "加入菜谱池的菜品", 30);
+            var dish = new ShopEntry(ShopEntryKind.Dish, "cookie", "曲奇", "加入菜谱池的菜品", 30);
 
             run.Gold = 29;
             Assert.IsFalse(ShopService.PurchaseDishToBook(run, dish, bookIndex: 0));
@@ -342,7 +342,7 @@ namespace GourmetProject.Tests
             run.Gold = 100;
             for (int i = 0; i < GameRun.RecipeBookCapacity; i++)
             {
-                Assert.IsTrue(run.AddBonusDishToBook("rice", 0));
+                Assert.IsTrue(run.AddBonusDishToBook("cookie", 0));
             }
 
             Assert.IsFalse(ShopService.PurchaseDishToBook(run, dish, bookIndex: 0));
@@ -354,7 +354,7 @@ namespace GourmetProject.Tests
         public void RunSaveData_RestoresRecipeBooks()
         {
             GameRun run = NewRun(week: 1);
-            Assert.IsTrue(run.AddBonusDish("rice"));
+            Assert.IsTrue(run.AddBonusDish("cookie"));
             Assert.IsTrue(run.AddRecipeBook());
             Assert.IsTrue(run.MoveBonusDish(0, 0, 2));
 
@@ -362,8 +362,8 @@ namespace GourmetProject.Tests
 
             Assert.AreEqual(3, restored.RecipeBookCount);
             Assert.AreEqual(0, restored.GetRecipeBookDishes(0).Count);
-            Assert.AreEqual("rice", restored.GetRecipeBookDishes(2)[0]);
-            Assert.IsTrue(restored.BonusDishIds.Contains("rice"));
+            Assert.AreEqual("cookie", restored.GetRecipeBookDishes(2)[0]);
+            Assert.IsTrue(restored.BonusDishIds.Contains("cookie"));
         }
 
         [Test]
@@ -373,7 +373,7 @@ namespace GourmetProject.Tests
             run.Gold = 123;
             run.MarkBossCompleted("boss_glutton");
             run.MarkEventUsed("ev_recruit");
-            Assert.IsTrue(run.AddBonusDish("rice"));
+            Assert.IsTrue(run.AddBonusDish("cookie"));
 
             var update = new MetaProgressUpdate
             {
@@ -458,7 +458,7 @@ namespace GourmetProject.Tests
             string key = GameRun.BuildRewardKey(run.WeekIndex, run.CurrentDay, null);
             var offer = new RewardOffer(
                 25,
-                new[] { new RewardChoice(cfg.RewardKind.DishChoice, "rice", "米饭", "加入菜谱池") },
+                new[] { new RewardChoice(cfg.RewardKind.DishChoice, "cookie", "曲奇", "加入菜谱池") },
                 new[] { RewardChoice.Gold(8, "额外金币") });
             offer.MarkBaseGoldClaimed();
             offer.MarkMainChoiceClaimed(0);
@@ -472,7 +472,7 @@ namespace GourmetProject.Tests
             Assert.AreEqual(25, restoredOffer.BaseGold);
             Assert.IsTrue(restoredOffer.BaseGoldClaimed);
             Assert.AreEqual(0, restoredOffer.MainChoiceIndex);
-            Assert.AreEqual("rice", restoredOffer.MainChoices[0].Id);
+            Assert.AreEqual("cookie", restoredOffer.MainChoices[0].Id);
             Assert.AreEqual(8, restoredOffer.ExtraChoices[0].GoldAmount);
         }
 
@@ -483,7 +483,7 @@ namespace GourmetProject.Tests
             string key = GameRun.BuildRewardKey(run.WeekIndex, run.CurrentDay, null);
             var offer = new RewardOffer(
                 25,
-                new[] { new RewardChoice(cfg.RewardKind.DishChoice, "rice", "米饭", "加入菜谱池") },
+                new[] { new RewardChoice(cfg.RewardKind.DishChoice, "cookie", "曲奇", "加入菜谱池") },
                 null);
             offer.MarkBaseGoldClaimed();
             offer.MarkMainChoiceSkipped();
@@ -533,22 +533,22 @@ namespace GourmetProject.Tests
         public void RewardGranterApplyDishChoiceToBook_UsesSelectedRecipeBook()
         {
             GameRun run = NewRun(week: 1);
-            RewardChoice dishChoice = new RewardChoice(cfg.RewardKind.DishChoice, "rice", "米饭", "加入菜谱池");
+            RewardChoice dishChoice = new RewardChoice(cfg.RewardKind.DishChoice, "cookie", "曲奇", "加入菜谱池");
 
             Assert.IsTrue(RewardGranter.ApplyDishChoiceToBook(run, dishChoice, 1));
 
             Assert.AreEqual(0, run.GetRecipeBookDishes(0).Count);
-            Assert.AreEqual("rice", run.GetRecipeBookDishes(1)[0]);
+            Assert.AreEqual("cookie", run.GetRecipeBookDishes(1)[0]);
         }
 
         [Test]
         public void RewardGranterApplyDishChoiceToBook_RejectsFullRecipeBook()
         {
             GameRun run = NewRun(week: 1);
-            RewardChoice dishChoice = new RewardChoice(cfg.RewardKind.DishChoice, "rice", "米饭", "加入菜谱池");
+            RewardChoice dishChoice = new RewardChoice(cfg.RewardKind.DishChoice, "cookie", "曲奇", "加入菜谱池");
             for (int i = 0; i < GameRun.RecipeBookCapacity; i++)
             {
-                Assert.IsTrue(run.AddBonusDishToBook("rice", 0));
+                Assert.IsTrue(run.AddBonusDishToBook("cookie", 0));
             }
 
             Assert.IsFalse(RewardGranter.ApplyDishChoiceToBook(run, dishChoice, 0));
@@ -622,7 +622,7 @@ namespace GourmetProject.Tests
             string key = GameRun.BuildShopKey(run.WeekIndex, run.CurrentDay);
             run.SetPendingShopStock(key, new List<ShopEntry>
             {
-                new ShopEntry(ShopEntryKind.Dish, "rice", "米饭", "测试菜品", 10),
+                new ShopEntry(ShopEntryKind.Dish, "cookie", "曲奇", "测试菜品", 10),
             });
 
             // 推进行动步只清行动候选，不应影响商店库存：离开商店后同一步内再进仍沿用同一份库存。

@@ -22,7 +22,7 @@ namespace GourmetProject.Game.UI.Widgets
         /// 生成技能/风味展示行（格式「【名称】描述」，技能在前、风味在后），并输出去重后的关联专有名词 id。
         /// 技能走 <see cref="GameplayDatabase.GetSkill"/>、风味走 <see cref="GameplayDatabase.GetFlavor"/>。
         /// </summary>
-        public static List<string> TagLines(IReadOnlyList<string> skillIds, string flavorId, GameplayDatabase db, out List<string> termIds)
+        public static List<string> TagLines(IReadOnlyList<string> skillIds, string flavorId, GameplayDatabase db, out List<string> termIds, IReadOnlyDictionary<string, string> skillSources = null)
         {
             var lines = new List<string>();
             termIds = new List<string>();
@@ -35,7 +35,9 @@ namespace GourmetProject.Game.UI.Widgets
             {
                 foreach (string skillId in skillIds)
                 {
-                    AppendEffect(db.GetSkill(skillId), lines, termIds);
+                    string sourceLabel = null;
+                    skillSources?.TryGetValue(skillId, out sourceLabel);
+                    AppendEffect(db.GetSkill(skillId), lines, termIds, sourceLabel);
                 }
             }
 
@@ -57,14 +59,15 @@ namespace GourmetProject.Game.UI.Widgets
             }
         }
 
-        private static void AppendEffect(SkillDef def, List<string> lines, List<string> termIds)
+        private static void AppendEffect(SkillDef def, List<string> lines, List<string> termIds, string sourceLabel = null)
         {
             if (def == null)
             {
                 return;
             }
 
-            lines.Add($"【{def.Name}】{def.Desc}");
+            string title = string.IsNullOrEmpty(sourceLabel) ? def.Name : sourceLabel;
+            lines.Add($"【{title}】{def.Desc}");
             if (def.HasTerm && !termIds.Contains(def.TermId))
             {
                 termIds.Add(def.TermId);

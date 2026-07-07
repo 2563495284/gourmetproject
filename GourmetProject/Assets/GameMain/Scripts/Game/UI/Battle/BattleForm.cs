@@ -53,6 +53,10 @@ namespace GourmetProject.Game.UI.Battle
         [SerializeField] private CanvasGroup _center;
         [SerializeField] private Text _centerTitleText;
 
+        [Header("Board Area (棋盘锁定区)")]
+        [Tooltip("HUD 里的空区矩形：世界棋盘将 fit 并居中锁定在该屏幕区域内；同时作为食物调整遮黑的挖洞区。")]
+        [SerializeField] private RectTransform _boardArea;
+
         [Header("Left Column")]
         [SerializeField] private BattleInfoColumn _infoColumn;
 
@@ -102,6 +106,7 @@ namespace GourmetProject.Game.UI.Battle
         private StomachViewCoordinator _stomachCoordinator;
         private GameplayViewStateMachine _viewStates;
         private int _shopItemFlyInFlight;
+        private View.FoodAdjustOverlay _foodAdjustOverlay;
 
         public GameRun Run => _run;
         public BattleSession Session => _session;
@@ -111,7 +116,7 @@ namespace GourmetProject.Game.UI.Battle
         {
             base.OnInit(userData);
 
-            _infoColumn?.Bind(OnSettingsClicked, OnViewStomachClicked);
+            _infoColumn?.Bind(OnSettingsClicked, OnViewStomachClicked, OnFoodAdjustClicked);
             _foodBar?.Bind(OnOverviewClicked, OnEatClicked, OnDoodleClearClicked, OnDoodleToggleClicked);
 
             if (_boardEditSkipButton != null)
@@ -278,6 +283,18 @@ namespace GourmetProject.Game.UI.Battle
             if (_run == null)
             {
                 return;
+            }
+
+            // 离开美食态时确保退出食物调整（含遮罩），避免残留到其它态。
+            if (view != GameplayView.Food && _foodAdjustOverlay != null)
+            {
+                BattleWorldController world = _world ?? BattleWorldController.Instance;
+                if (world != null && world.IsFoodAdjusting)
+                {
+                    world.EndFoodAdjust();
+                }
+
+                ExitFoodAdjustUI();
             }
 
             if (_hudFrame != null)
@@ -522,6 +539,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
+            _world.SetBoardArea(_boardArea);
             _world.Initialize(
                 _run,
                 _session,
@@ -980,6 +998,54 @@ namespace GourmetProject.Game.UI.Battle
             _stomachCoordinator.Open();
         }
 
+        // —— 食物调整态 ——
+
+        private void OnFoodAdjustClicked()
+        {
+            BattleWorldController world = _world ?? BattleWorldController.Instance;
+            if (world == null)
+            {
+                return;
+            }
+
+            if (world.IsFoodAdjusting)
+            {
+                world.EndFoodAdjust();
+                ExitFoodAdjustUI();
+                return;
+            }
+
+            if (_current != GameplayView.Food || _session == null || _session.IsSettled)
+            {
+                return;
+            }
+
+            EnterFoodAdjustUI();
+            world.BeginFoodAdjust(ExitFoodAdjustUI);
+        }
+
+        private void EnterFoodAdjustUI()
+        {
+            EnsureFoodAdjustOverlay();
+            _foodAdjustOverlay?.Show(_boardArea);
+            _infoColumn?.SetFoodAdjustActive(true, _run != null ? _run.FoodAdjustCount : 0);
+        }
+
+        private void ExitFoodAdjustUI()
+        {
+            _foodAdjustOverlay?.Hide();
+            _infoColumn?.SetFoodAdjustActive(false, _run != null ? _run.FoodAdjustCount : 0);
+            RefreshPersistent();
+        }
+
+        private void EnsureFoodAdjustOverlay()
+        {
+            if (_foodAdjustOverlay == null)
+            {
+                _foodAdjustOverlay = View.FoodAdjustOverlay.Create((RectTransform)transform);
+            }
+        }
+
         public void ShowRunResult(bool win, int total)
         {
             _world?.HideWorld();
@@ -1010,6 +1076,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
+            _world.SetBoardArea(_boardArea);
             _world.Initialize(
                 _run,
                 _session,
@@ -1100,7 +1167,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            var data = new DishDetailData(inst.Def, _run.Database, inst.SkillIds, inst.FlavorId);
+            var data = new DishDetailData(inst.Def, _run.Database, inst.SkillIds, inst.FlavorId, inst.SkillSources);
             GameApp.UI.OpenUIForm(UIForms.DishDetail, UIForms.GroupDialog, data);
         }
 

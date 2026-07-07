@@ -211,6 +211,61 @@ namespace GourmetProject.Tests
         }
 
         [Test]
+        public void Serve_AccumulatesGlobalHappyCakeLayers()
+        {
+            var rng = new RandomService();
+            rng.Init("serve-layer");
+            SkillDef addLayer = GameplayTestFactory.RuleSkill("layer_on_serve",
+                GameplayTestFactory.Rule(SkillActionType.AddLayer, 5f, trigger: SkillTrigger.OnServe));
+            DishDef cake = GameplayTestFactory.Dish("cake_layer", new[] { "X" }, deliciousness: 5, allowRotate: false, skills: new[] { "layer_on_serve" });
+            var db = new GameplayDatabase(
+                new[] { cake },
+                new[] { addLayer },
+                new List<FlavorDef>(),
+                new List<CellTagDef>(),
+                new List<RecipeDef>());
+            var slots = new[] { new RecipeSlot("slot0", new[] { "cake_layer", "cake_layer" }) };
+            var session = new BattleSession(new GpBoard(4, 4), db, rng.Stream("battle"), slots, requiredScore: 1);
+
+            session.Serve(0);
+            Assert.AreEqual(5, session.HappyCakeLayers);
+            session.Serve(0);
+            Assert.AreEqual(10, session.HappyCakeLayers, "全局层数在多次上菜间共享累加");
+        }
+
+        [Test]
+        public void Settle_ConsumesGlobalLayersFromServe()
+        {
+            var rng = new RandomService();
+            rng.Init("settle-layer");
+            // 上菜 +6 层；结算时最多消耗 3 层。
+            SkillDef addLayer = GameplayTestFactory.RuleSkill("layer_add",
+                GameplayTestFactory.Rule(SkillActionType.AddLayer, 6f, trigger: SkillTrigger.OnServe));
+            SkillDef consume = GameplayTestFactory.RuleSkill("layer_consume",
+                GameplayTestFactory.Rule(
+                    SkillActionType.ConsumeLayer, 1f,
+                    condType: SkillConditionType.LayerCount, condScope: SkillScope.Self, condMode: CountMode.Per,
+                    condParam: "cap:3"));
+            DishDef adder = GameplayTestFactory.Dish("adder", new[] { "X" }, deliciousness: 5, allowRotate: false, skills: new[] { "layer_add" });
+            DishDef eater = GameplayTestFactory.Dish("eater", new[] { "X" }, deliciousness: 5, allowRotate: false, skills: new[] { "layer_consume" });
+            var db = new GameplayDatabase(
+                new[] { adder, eater },
+                new[] { addLayer, consume },
+                new List<FlavorDef>(),
+                new List<CellTagDef>(),
+                new List<RecipeDef>());
+            var slots = new[] { new RecipeSlot("slot0", new[] { "adder", "eater" }) };
+            var session = new BattleSession(new GpBoard(4, 4), db, rng.Stream("battle"), slots, requiredScore: 1);
+
+            session.Serve(0);
+            session.Serve(0);
+            Assert.AreEqual(6, session.HappyCakeLayers);
+
+            session.Settle();
+            Assert.AreEqual(3, session.HappyCakeLayers, "cap:3 → 结算消耗 3 层，剩 3");
+        }
+
+        [Test]
         public void ClearBoard_RemovesAllDishes()
         {
             var rng = new RandomService();

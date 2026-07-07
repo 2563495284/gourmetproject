@@ -60,7 +60,20 @@ namespace GourmetProject.Game.Adapter
 
             var fragments = BuildFragments(tables);
 
-            return new GameplayDatabase(dishes, skills, flavors, cellTags, recipes, fragments);
+            var cakeLayerBuffs = new List<CakeLayerBuffDef>(tables.TbCakeLayerBuff.DataList.Count);
+            foreach (cfg.CakeLayerBuff c in tables.TbCakeLayerBuff.DataList)
+            {
+                cakeLayerBuffs.Add(new CakeLayerBuffDef(
+                    c.Id,
+                    c.Order,
+                    c.Threshold,
+                    c.Category,
+                    (SkillActionType)(int)c.EffectType,
+                    c.ValuePerLayer,
+                    c.Desc));
+            }
+
+            return new GameplayDatabase(dishes, skills, flavors, cellTags, recipes, fragments, cakeLayerBuffs);
         }
 
         private static List<StomachFragmentDef> BuildFragments(cfg.Tables tables)
@@ -110,13 +123,15 @@ namespace GourmetProject.Game.Adapter
                 v.HiddenRange.Min,
                 v.HiddenRange.Max,
                 v.BaseWeight,
-                new List<string>(b.Skills),
+                SplitPipeList(b.Skills),
                 v.FlavorId,
                 b.Icon,
                 b.AllowRotate,
                 b.Id,
                 v.Price,
-                (int)v.Rotation);
+                (int)v.Rotation,
+                b.Category,
+                b.CountAs);
         }
 
         private static Dictionary<string, List<SkillRuleDef>> BuildSkillRules(cfg.Tables tables)

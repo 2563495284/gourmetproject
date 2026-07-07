@@ -457,6 +457,7 @@ MonoBehaviour:
   _itemSlotPrefab: {fileID: 0}
   _menuBookPrefab: {fileID: 3528741960012345673, guid: 5f3a9c2e1b7d44869a9c0e8f12d3b6a4, type: 3}
   _serveHandPrefab: {fileID: 6071260432894370099, guid: 959711ce1de1f489f86e491f9e943669, type: 3}
+  _worldButtonPrefab: {fileID: 7008792684074489567, guid: f6a4e9f4890bc4629b5d7a85ab280e8e, type: 3}
   _serveCarryScale: 1.22
   _serveDescendDuration: 0.34
   _serveWithdrawDuration: 0.18
@@ -857,7 +858,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0.2}
-  m_LocalScale: {x: 1.5189874, y: 1.5189874, z: 1}
+  m_LocalScale: {x: 1.2500001, y: 1.2500001, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}

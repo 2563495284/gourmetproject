@@ -52,6 +52,30 @@ namespace cfg
         /// 获得X*count金币
         /// </summary>
         GrantGold = 8,
+        /// <summary>
+        /// 目标乘区+X*count(加法叠加到倍率)
+        /// </summary>
+        AddMultFlat = 9,
+        /// <summary>
+        /// 目标永久加法+X(跨结算持久)
+        /// </summary>
+        PermanentAddFlat = 10,
+        /// <summary>
+        /// 目标永久乘区*X(跨结算持久)
+        /// </summary>
+        PermanentAddMult = 11,
+        /// <summary>
+        /// 目标&quot;视为食物数&quot;+X*count
+        /// </summary>
+        AddCountAs = 12,
+        /// <summary>
+        /// 从来源作用域随机复制actionCount个技能给目标
+        /// </summary>
+        CopySkill = 13,
+        /// <summary>
+        /// 临时复制目标菜到空格(本次品鉴)
+        /// </summary>
+        TempCopyDish = 14,
     }
 
 } 

@@ -16,17 +16,22 @@ namespace GourmetProject.Game.UI.Battle.View
         private const string ViewStomachLabel = "查看胃";
         private const string StomachBackLabel = "返回";
 
+        private const string FoodAdjustBackLabel = "返回";
+
         [SerializeField] private Text _weekText;
         [SerializeField] private Text _goldText;
         [SerializeField] private Text _scoreReqText;
         [SerializeField] private Text _foodAdjustText;
+        [SerializeField] private Button _foodAdjustButton;
         [SerializeField] private Button _viewStomachButton;
         [SerializeField] private Button _settingsButton;
 
         private Text _viewStomachButtonText;
+        private bool _foodAdjustActive;
+        private Canvas _foodAdjustRaiseCanvas;
 
         /// <summary>接线按钮回调（由壳在 OnInit 调用一次）。</summary>
-        public void Bind(Action onSettings, Action onViewStomach)
+        public void Bind(Action onSettings, Action onViewStomach, Action onFoodAdjust)
         {
             if (_settingsButton != null)
             {
@@ -39,6 +44,53 @@ namespace GourmetProject.Game.UI.Battle.View
                 _viewStomachButtonText = _viewStomachButton.GetComponentInChildren<Text>(true);
                 _viewStomachButton.onClick.RemoveAllListeners();
                 _viewStomachButton.onClick.AddListener(() => onViewStomach?.Invoke());
+            }
+
+            if (_foodAdjustButton != null)
+            {
+                _foodAdjustButton.onClick.RemoveAllListeners();
+                _foodAdjustButton.onClick.AddListener(() => onFoodAdjust?.Invoke());
+            }
+        }
+
+        /// <summary>切换食物调整态：文案在「食物调整/次数」与「返回」间切换，激活时把按钮浮到遮罩之上。</summary>
+        public void SetFoodAdjustActive(bool active, int count)
+        {
+            _foodAdjustActive = active;
+            SetFoodAdjustRaised(active);
+            if (_foodAdjustText != null)
+            {
+                _foodAdjustText.text = active
+                    ? FoodAdjustBackLabel
+                    : $"<size=28>食物调整</size>\n\n{count}";
+            }
+        }
+
+        private void SetFoodAdjustRaised(bool raised)
+        {
+            if (_foodAdjustButton == null)
+            {
+                return;
+            }
+
+            if (_foodAdjustRaiseCanvas == null)
+            {
+                _foodAdjustRaiseCanvas = _foodAdjustButton.GetComponent<Canvas>();
+                if (_foodAdjustRaiseCanvas == null)
+                {
+                    _foodAdjustRaiseCanvas = _foodAdjustButton.gameObject.AddComponent<Canvas>();
+                }
+
+                if (_foodAdjustButton.GetComponent<GraphicRaycaster>() == null)
+                {
+                    _foodAdjustButton.gameObject.AddComponent<GraphicRaycaster>();
+                }
+            }
+
+            _foodAdjustRaiseCanvas.overrideSorting = raised;
+            if (raised)
+            {
+                _foodAdjustRaiseCanvas.sortingOrder = 600;
             }
         }
 
@@ -85,9 +137,18 @@ namespace GourmetProject.Game.UI.Battle.View
                 }
             }
 
+            bool foodView = current == GameplayView.Food && session != null && !session.IsSettled;
+
             if (_foodAdjustText != null)
             {
-                _foodAdjustText.text = "<size=28>食物调整</size>\n\n-";
+                _foodAdjustText.text = _foodAdjustActive
+                    ? FoodAdjustBackLabel
+                    : $"<size=28>食物调整</size>\n\n{run.FoodAdjustCount}";
+            }
+
+            if (_foodAdjustButton != null)
+            {
+                _foodAdjustButton.interactable = foodView || _foodAdjustActive;
             }
         }
 

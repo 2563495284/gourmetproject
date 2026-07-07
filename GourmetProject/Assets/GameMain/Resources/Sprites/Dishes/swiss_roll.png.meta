@@ -1,0 +1,1313 @@
+fileFormatVersion: 2
+guid: 63728031f0e51449fa29ca6e073a2d14
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -5675855182272084320
+    second: swiss_roll_0
+  - first:
+      213: 198086288266956612
+    second: swiss_roll_1
+  - first:
+      213: -4356748242989264004
+    second: swiss_roll_2
+  - first:
+      213: 8165474706542156489
+    second: swiss_roll_3
+  - first:
+      213: -7525684717239912438
+    second: swiss_roll_4
+  - first:
+      213: -1137662345757931277
+    second: swiss_roll_5
+  - first:
+      213: 5393988818118240158
+    second: swiss_roll_6
+  - first:
+      213: -4560724314289633190
+    second: swiss_roll_7
+  - first:
+      213: 4468010677859644015
+    second: swiss_roll_8
+  - first:
+      213: -4735019698737571964
+    second: swiss_roll_9
+  - first:
+      213: 478075559199200650
+    second: swiss_roll_10
+  - first:
+      213: 1659888934500861437
+    second: swiss_roll_11
+  - first:
+      213: -5362734663796804809
+    second: swiss_roll_12
+  - first:
+      213: 2849806629825285138
+    second: swiss_roll_13
+  - first:
+      213: -7522610963687046595
+    second: swiss_roll_14
+  - first:
+      213: -6295657327794207863
+    second: swiss_roll_15
+  - first:
+      213: 2367103439003637335
+    second: swiss_roll_16
+  - first:
+      213: -5694333117815002831
+    second: swiss_roll_17
+  - first:
+      213: -2689682062720939340
+    second: swiss_roll_18
+  - first:
+      213: 996202740929275988
+    second: swiss_roll_19
+  - first:
+      213: 3900993949040005797
+    second: swiss_roll_20
+  - first:
+      213: 5470197882724951766
+    second: swiss_roll_21
+  - first:
+      213: -2040396573700510494
+    second: swiss_roll_22
+  - first:
+      213: -6184124893075248752
+    second: swiss_roll_23
+  - first:
+      213: 2598466886739528065
+    second: swiss_roll_24
+  - first:
+      213: -551642553927212764
+    second: swiss_roll_25
+  - first:
+      213: 3520785287978321464
+    second: swiss_roll_26
+  - first:
+      213: -2416104636620929338
+    second: swiss_roll_27
+  - first:
+      213: 2710139079886965329
+    second: swiss_roll_28
+  - first:
+      213: 3123162936053881437
+    second: swiss_roll_29
+  - first:
+      213: -8787444473363033969
+    second: swiss_roll_30
+  - first:
+      213: 6240766896146522411
+    second: swiss_roll_31
+  - first:
+      213: -6524783927247812287
+    second: swiss_roll_32
+  - first:
+      213: 577083605139756700
+    second: swiss_roll_33
+  - first:
+      213: 2697254832554919133
+    second: swiss_roll_34
+  - first:
+      213: 8387201283320243231
+    second: swiss_roll_35
+  - first:
+      213: -2022225230871763015
+    second: swiss_roll_36
+  - first:
+      213: 7253734191592844908
+    second: swiss_roll_37
+  - first:
+      213: 7450874893196723478
+    second: swiss_roll_38
+  - first:
+      213: 803906020283044578
+    second: swiss_roll_39
+  - first:
+      213: 2197893447084494872
+    second: swiss_roll_40
+  - first:
+      213: 2612179796227846863
+    second: swiss_roll_41
+  - first:
+      213: -990937600076295801
+    second: swiss_roll_42
+  - first:
+      213: 7972924424897918070
+    second: swiss_roll_43
+  - first:
+      213: -3200849383409173045
+    second: swiss_roll_44
+  - first:
+      213: 8012622878972673287
+    second: swiss_roll_45
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: swiss_roll_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 85
+        height: 1536
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0a6cc10a8cf4b31b0800000000000000
+      internalID: -5675855182272084320
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_1
+      rect:
+        serializedVersion: 2
+        x: 186
+        y: 0
+        width: 838
+        height: 1536
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 44f070ffd6ebfb200800000000000000
+      internalID: 198086288266956612
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_2
+      rect:
+        serializedVersion: 2
+        x: 829
+        y: 1141
+        width: 23
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c7351d85e88b983c0800000000000000
+      internalID: -4356748242989264004
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_3
+      rect:
+        serializedVersion: 2
+        x: 852
+        y: 1141
+        width: 23
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9cad1e9abf7915170800000000000000
+      internalID: 8165474706542156489
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_4
+      rect:
+        serializedVersion: 2
+        x: 886
+        y: 1137
+        width: 18
+        height: 33
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a0834595f956f8790800000000000000
+      internalID: -7525684717239912438
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_5
+      rect:
+        serializedVersion: 2
+        x: 916
+        y: 1141
+        width: 23
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3f8c2c6cf163630f0800000000000000
+      internalID: -1137662345757931277
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_6
+      rect:
+        serializedVersion: 2
+        x: 938
+        y: 1141
+        width: 23
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e97ed52604c4bda40800000000000000
+      internalID: 5393988818118240158
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_7
+      rect:
+        serializedVersion: 2
+        x: 63
+        y: 883
+        width: 22
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a588740666d05b0c0800000000000000
+      internalID: -4560724314289633190
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_8
+      rect:
+        serializedVersion: 2
+        x: 84
+        y: 883
+        width: 24
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f62f97af900910e30800000000000000
+      internalID: 4468010677859644015
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_9
+      rect:
+        serializedVersion: 2
+        x: 119
+        y: 880
+        width: 17
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4871544dba4d94eb0800000000000000
+      internalID: -4735019698737571964
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_10
+      rect:
+        serializedVersion: 2
+        x: 148
+        y: 883
+        width: 23
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a855dd9203772a600800000000000000
+      internalID: 478075559199200650
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_11
+      rect:
+        serializedVersion: 2
+        x: 171
+        y: 883
+        width: 22
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: df58683013c190710800000000000000
+      internalID: 1659888934500861437
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_12
+      rect:
+        serializedVersion: 2
+        x: 829
+        y: 883
+        width: 23
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 733b7bb7c3db395b0800000000000000
+      internalID: -5362734663796804809
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_13
+      rect:
+        serializedVersion: 2
+        x: 851
+        y: 883
+        width: 24
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 21c0a49e70c8c8720800000000000000
+      internalID: 2849806629825285138
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_14
+      rect:
+        serializedVersion: 2
+        x: 887
+        y: 880
+        width: 17
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d3289fd5f215a9790800000000000000
+      internalID: -7522610963687046595
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_15
+      rect:
+        serializedVersion: 2
+        x: 916
+        y: 883
+        width: 23
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 983cd35240551a8a0800000000000000
+      internalID: -6295657327794207863
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_16
+      rect:
+        serializedVersion: 2
+        x: 938
+        y: 883
+        width: 22
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 756da6c4904a9d020800000000000000
+      internalID: 2367103439003637335
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_17
+      rect:
+        serializedVersion: 2
+        x: 63
+        y: 626
+        width: 22
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 139e4eff23aa9f0b0800000000000000
+      internalID: -5694333117815002831
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_18
+      rect:
+        serializedVersion: 2
+        x: 85
+        y: 624
+        width: 22
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4ba47cc1a645caad0800000000000000
+      internalID: -2689682062720939340
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_19
+      rect:
+        serializedVersion: 2
+        x: 119
+        y: 622
+        width: 17
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4582c516d1933dd00800000000000000
+      internalID: 996202740929275988
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_20
+      rect:
+        serializedVersion: 2
+        x: 148
+        y: 626
+        width: 23
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5a25a7b045d132630800000000000000
+      internalID: 3900993949040005797
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_21
+      rect:
+        serializedVersion: 2
+        x: 171
+        y: 624
+        width: 22
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6d62ae2fdfb0aeb40800000000000000
+      internalID: 5470197882724951766
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_22
+      rect:
+        serializedVersion: 2
+        x: 829
+        y: 624
+        width: 23
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2ec28af602e0fa3e0800000000000000
+      internalID: -2040396573700510494
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_23
+      rect:
+        serializedVersion: 2
+        x: 851
+        y: 624
+        width: 24
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0996995bc239d2aa0800000000000000
+      internalID: -6184124893075248752
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_24
+      rect:
+        serializedVersion: 2
+        x: 887
+        y: 622
+        width: 16
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 18989b0cddb9f0420800000000000000
+      internalID: 2598466886739528065
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_25
+      rect:
+        serializedVersion: 2
+        x: 916
+        y: 626
+        width: 23
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 421ed2a150c2858f0800000000000000
+      internalID: -551642553927212764
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_26
+      rect:
+        serializedVersion: 2
+        x: 938
+        y: 626
+        width: 22
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8368e54c0975cd030800000000000000
+      internalID: 3520785287978321464
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_27
+      rect:
+        serializedVersion: 2
+        x: 63
+        y: 368
+        width: 22
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6c6090252a5487ed0800000000000000
+      internalID: -2416104636620929338
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_28
+      rect:
+        serializedVersion: 2
+        x: 84
+        y: 368
+        width: 24
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 15a019c52295c9520800000000000000
+      internalID: 2710139079886965329
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_29
+      rect:
+        serializedVersion: 2
+        x: 119
+        y: 366
+        width: 17
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d5a5823a424b75b20800000000000000
+      internalID: 3123162936053881437
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_30
+      rect:
+        serializedVersion: 2
+        x: 148
+        y: 368
+        width: 23
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f801ab13fc9bc0680800000000000000
+      internalID: -8787444473363033969
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_31
+      rect:
+        serializedVersion: 2
+        x: 171
+        y: 368
+        width: 22
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b21a4d25d68ab9650800000000000000
+      internalID: 6240766896146522411
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_32
+      rect:
+        serializedVersion: 2
+        x: 829
+        y: 368
+        width: 23
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1494734869f4375a0800000000000000
+      internalID: -6524783927247812287
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_33
+      rect:
+        serializedVersion: 2
+        x: 852
+        y: 368
+        width: 23
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c969e0a3b76320800800000000000000
+      internalID: 577083605139756700
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_34
+      rect:
+        serializedVersion: 2
+        x: 887
+        y: 366
+        width: 15
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dd44423caf29e6520800000000000000
+      internalID: 2697254832554919133
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_35
+      rect:
+        serializedVersion: 2
+        x: 915
+        y: 368
+        width: 24
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f14e0004123556470800000000000000
+      internalID: 8387201283320243231
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_36
+      rect:
+        serializedVersion: 2
+        x: 938
+        y: 368
+        width: 23
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9b76e02eddc9fe3e0800000000000000
+      internalID: -2022225230871763015
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_37
+      rect:
+        serializedVersion: 2
+        x: 85
+        y: 112
+        width: 23
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c6e2ff8b0d07aa460800000000000000
+      internalID: 7253734191592844908
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_38
+      rect:
+        serializedVersion: 2
+        x: 119
+        y: 108
+        width: 17
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6150eda2d33d66760800000000000000
+      internalID: 7450874893196723478
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_39
+      rect:
+        serializedVersion: 2
+        x: 148
+        y: 112
+        width: 24
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2e2d4c3244c082b00800000000000000
+      internalID: 803906020283044578
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_40
+      rect:
+        serializedVersion: 2
+        x: 171
+        y: 110
+        width: 22
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 81051a7f17c708e10800000000000000
+      internalID: 2197893447084494872
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_41
+      rect:
+        serializedVersion: 2
+        x: 829
+        y: 112
+        width: 23
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fc2fc9b4fa3504420800000000000000
+      internalID: 2612179796227846863
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_42
+      rect:
+        serializedVersion: 2
+        x: 851
+        y: 112
+        width: 24
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 781dfd0c08b7f32f0800000000000000
+      internalID: -990937600076295801
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_43
+      rect:
+        serializedVersion: 2
+        x: 886
+        y: 108
+        width: 16
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6747317a58485ae60800000000000000
+      internalID: 7972924424897918070
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_44
+      rect:
+        serializedVersion: 2
+        x: 915
+        y: 112
+        width: 24
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bcd3e52d17c4493d0800000000000000
+      internalID: -3200849383409173045
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: swiss_roll_45
+      rect:
+        serializedVersion: 2
+        x: 938
+        y: 110
+        width: 23
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 70d75544e0e823f60800000000000000
+      internalID: 8012622878972673287
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      swiss_roll_0: -5675855182272084320
+      swiss_roll_1: 198086288266956612
+      swiss_roll_10: 478075559199200650
+      swiss_roll_11: 1659888934500861437
+      swiss_roll_12: -5362734663796804809
+      swiss_roll_13: 2849806629825285138
+      swiss_roll_14: -7522610963687046595
+      swiss_roll_15: -6295657327794207863
+      swiss_roll_16: 2367103439003637335
+      swiss_roll_17: -5694333117815002831
+      swiss_roll_18: -2689682062720939340
+      swiss_roll_19: 996202740929275988
+      swiss_roll_2: -4356748242989264004
+      swiss_roll_20: 3900993949040005797
+      swiss_roll_21: 5470197882724951766
+      swiss_roll_22: -2040396573700510494
+      swiss_roll_23: -6184124893075248752
+      swiss_roll_24: 2598466886739528065
+      swiss_roll_25: -551642553927212764
+      swiss_roll_26: 3520785287978321464
+      swiss_roll_27: -2416104636620929338
+      swiss_roll_28: 2710139079886965329
+      swiss_roll_29: 3123162936053881437
+      swiss_roll_3: 8165474706542156489
+      swiss_roll_30: -8787444473363033969
+      swiss_roll_31: 6240766896146522411
+      swiss_roll_32: -6524783927247812287
+      swiss_roll_33: 577083605139756700
+      swiss_roll_34: 2697254832554919133
+      swiss_roll_35: 8387201283320243231
+      swiss_roll_36: -2022225230871763015
+      swiss_roll_37: 7253734191592844908
+      swiss_roll_38: 7450874893196723478
+      swiss_roll_39: 803906020283044578
+      swiss_roll_4: -7525684717239912438
+      swiss_roll_40: 2197893447084494872
+      swiss_roll_41: 2612179796227846863
+      swiss_roll_42: -990937600076295801
+      swiss_roll_43: 7972924424897918070
+      swiss_roll_44: -3200849383409173045
+      swiss_roll_45: 8012622878972673287
+      swiss_roll_5: -1137662345757931277
+      swiss_roll_6: 5393988818118240158
+      swiss_roll_7: -4560724314289633190
+      swiss_roll_8: 4468010677859644015
+      swiss_roll_9: -4735019698737571964
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

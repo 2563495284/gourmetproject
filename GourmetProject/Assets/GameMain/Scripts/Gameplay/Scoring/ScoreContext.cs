@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
@@ -32,8 +33,11 @@ namespace GourmetProject.Gameplay.Scoring
         private readonly List<ScoreLine> _lines = new List<ScoreLine>();
         private readonly List<ScoreEvent> _events = new List<ScoreEvent>();
         private readonly Queue<PendingScoreCommand> _commands = new Queue<PendingScoreCommand>();
-        private readonly Dictionary<int, int> _layerDeltas = new Dictionary<int, int>();
+        private int _happyCakeLayerDelta;
         private readonly List<SkillTransferSideEffect> _skillTransfers = new List<SkillTransferSideEffect>();
+        private readonly Dictionary<int, float> _permanentFlatDeltas = new Dictionary<int, float>();
+        private readonly Dictionary<int, float> _permanentMultDeltas = new Dictionary<int, float>();
+        private readonly Dictionary<int, int> _liveCountAs = new Dictionary<int, int>();
         private DishAccumulator _current;
         private bool _initialFinalModifiersRecorded;
         private bool _finalized;
@@ -47,12 +51,101 @@ namespace GourmetProject.Gameplay.Scoring
             Db = snapshot.Db;
             FinalFlat = snapshot.InitialFinalFlat;
             FinalMultiplier = snapshot.InitialFinalMultiplier;
+            InitialHappyCakeLayers = snapshot.InitialHappyCakeLayers;
 
             // 预建全部菜的累加器，保证「A 改 B 的分」无论 B 是否已开始都有效。
             foreach (DishInstance dish in snapshot.DishesInDefaultOrder)
             {
                 EnsureAccumulator(dish);
             }
+
+            // 预计算本次结算的「视为食物数」live 值（含条件/定向 AddCountAs），供计数前提读取。
+            ComputeLiveCountAs(snapshot);
+        }
+
+        /// <summary>
+        /// 本次结算每道菜的「视为食物数」实际值（下限 1）：静态定义 + 已持久化运行时加成 + 本次结算即时生效的 AddCountAs 规则。
+        /// AddCountAs 走 live（每次结算按当前局面重算），不做跨结算持久，故条件类「视为N」在当次结算即生效。
+        /// </summary>
+        public int GetEffectiveCountAs(DishInstance dish)
+        {
+            if (dish == null)
+            {
+                return 1;
+            }
+
+            return _liveCountAs.TryGetValue(dish.Id, out int v) ? v : Math.Max(1, dish.EffectiveCountAs);
+        }
+
+        private void ComputeLiveCountAs(ScoreSnapshot snapshot)
+        {
+            var extra = new Dictionary<int, int>();
+            IScoreHistory history = snapshot.History;
+            foreach (DishInstance src in snapshot.DishesInDefaultOrder)
+            {
+                foreach (string skillId in src.SkillIds)
+                {
+                    SkillDef skill = Db?.GetSkill(skillId);
+                    if (skill == null || !skill.HasRules)
+                    {
+                        continue;
+                    }
+
+                    foreach (SkillRuleDef rule in skill.Rules)
+                    {
+                        if (rule.Trigger != SkillTrigger.OnSettle || rule.ActionType != SkillActionType.AddCountAs)
+                        {
+                            continue;
+                        }
+
+                        // 用默认（非 live）计数评估条件，避免 countAs 递归依赖 countAs。
+                        int count = SkillConditionEvaluator.Evaluate(rule, Board, history, src, InitialHappyCakeLayers);
+                        if (count <= 0)
+                        {
+                            continue;
+                        }
+
+                        int value = (int)Math.Round(rule.ActionValue * count, MidpointRounding.AwayFromZero);
+                        if (value == 0)
+                        {
+                            continue;
+                        }
+
+                        foreach (DishInstance t in CountAsTargets(rule, src))
+                        {
+                            extra.TryGetValue(t.Id, out int cur);
+                            extra[t.Id] = cur + value;
+                        }
+                    }
+                }
+            }
+
+            foreach (DishInstance d in snapshot.DishesInDefaultOrder)
+            {
+                extra.TryGetValue(d.Id, out int e);
+                _liveCountAs[d.Id] = Math.Max(1, d.Def.CountAs + d.RuntimeCountAsBonus + e);
+            }
+        }
+
+        private List<DishInstance> CountAsTargets(SkillRuleDef rule, DishInstance self)
+        {
+            if (rule.ActionScope == SkillScope.Self)
+            {
+                return new List<DishInstance> { self };
+            }
+
+            List<DishInstance> dishes = SkillConditionEvaluator.ScopeDishes(Board, self, rule.ActionScope, includeSelf: false);
+            if (rule.ActionCount > 0 && dishes.Count > rule.ActionCount)
+            {
+                dishes = dishes
+                    .OrderBy(d => d.Placement.Origin.Y)
+                    .ThenBy(d => d.Placement.Origin.X)
+                    .ThenBy(d => d.Id)
+                    .Take(rule.ActionCount)
+                    .ToList();
+            }
+
+            return dishes;
         }
 
         public ScoreSnapshot Snapshot { get; }
@@ -91,9 +184,22 @@ namespace GourmetProject.Gameplay.Scoring
 
         public IReadOnlyList<ScoreEvent> Events => _events;
 
-        public IReadOnlyDictionary<int, int> LayerDeltas => _layerDeltas;
+        /// <summary>本次品鉴开始时的全局欢乐蛋糕层数。</summary>
+        public int InitialHappyCakeLayers { get; }
+
+        /// <summary>本次结算产生的全局欢乐蛋糕层数增量（正式结算后由 Game 层写回品鉴状态）。</summary>
+        public int HappyCakeLayerDelta => _happyCakeLayerDelta;
+
+        /// <summary>结算过程中「当前」的全局欢乐蛋糕层数（初始 + 已产生增量）。</summary>
+        public int CurrentHappyCakeLayers => Math.Max(0, InitialHappyCakeLayers + _happyCakeLayerDelta);
 
         public IReadOnlyList<SkillTransferSideEffect> SkillTransfers => _skillTransfers;
+
+        /// <summary>本次结算登记的永久加法分增量（实例 Id → 累加值）。正式结算后写回实例。</summary>
+        public IReadOnlyDictionary<int, float> PermanentFlatDeltas => _permanentFlatDeltas;
+
+        /// <summary>本次结算登记的永久乘区增量（实例 Id → 累乘倍数）。正式结算后写回实例。</summary>
+        public IReadOnlyDictionary<int, float> PermanentMultDeltas => _permanentMultDeltas;
 
         public void EmitEvent(ScoreEventType type, string message)
         {
@@ -203,6 +309,17 @@ namespace GourmetProject.Gameplay.Scoring
             SubmitCommand(new MultiplyDishCommand(target.Id, value));
         }
 
+        /// <summary>目标菜「倍率区」加法（倍率+X），区别于乘法的 MultiplyTo。</summary>
+        public void AddMultFlatTo(DishInstance target, float value)
+        {
+            if (target == null)
+            {
+                return;
+            }
+
+            SubmitCommand(new AddDishMultFlatCommand(target.Id, value));
+        }
+
         /// <summary>把来源菜「加法区分数（含基础）」的 fraction 比例转移给目标菜（作用于加法层）。</summary>
         public void TransferScore(DishInstance from, DishInstance to, float fraction)
         {
@@ -240,26 +357,52 @@ namespace GourmetProject.Gameplay.Scoring
             SubmitCommand(new MultiplyFinalCommand(value));
         }
 
-        /// <summary>层数改动（副作用，正式结算后应用到实例）。mult=true 时按乘法。</summary>
-        public void ChangeLayers(DishInstance target, float value, bool mult)
+        /// <summary>全局「欢乐蛋糕层数」改动（副作用，正式结算后写回品鉴状态）。
+        /// mult=true 时按乘法（可选 floor 表示至少净增 floor 层）。目标菜无关，全局共享一个计数器。</summary>
+        public void AddHappyCakeLayers(float value, bool mult, int floor = 0)
         {
-            if (target == null)
+            SubmitCommand(new ChangeHappyCakeLayerCommand(value, mult, floor));
+        }
+
+        /// <summary>
+        /// 目标菜「永久加法分」+value：本次结算即计入加法区，并登记持久增量（正式结算后写回实例，之后每次结算叠加进基础分）。
+        /// </summary>
+        public void AddPermanentFlatTo(DishInstance target, float value)
+        {
+            if (target == null || Math.Abs(value) < 0.0001f)
             {
                 return;
             }
 
-            SubmitCommand(new ChangeLayerCommand(target.Id, value, mult));
+            _permanentFlatDeltas.TryGetValue(target.Id, out float cur);
+            _permanentFlatDeltas[target.Id] = cur + value;
+            SubmitCommand(new AddDishFlatCommand(target.Id, value));
+        }
+
+        /// <summary>
+        /// 目标菜「永久乘区」×value：本次结算即计入乘区，并登记持久倍数（正式结算后写回实例，之后每次结算叠乘进乘区初值）。
+        /// </summary>
+        public void AddPermanentMultTo(DishInstance target, float value)
+        {
+            if (target == null || value <= 0f)
+            {
+                return;
+            }
+
+            _permanentMultDeltas.TryGetValue(target.Id, out float cur);
+            _permanentMultDeltas[target.Id] = (cur <= 0f ? 1f : cur) * value;
+            SubmitCommand(new MultiplyDishCommand(target.Id, value));
         }
 
         /// <summary>登记技能传递（副作用，正式结算后应用到实例的运行时技能集）。</summary>
-        public void RecordSkillTransfer(DishInstance target, IReadOnlyList<string> skillIds)
+        public void RecordSkillTransfer(DishInstance target, IReadOnlyList<string> skillIds, string sourceName = null)
         {
             if (target == null || skillIds == null || skillIds.Count == 0)
             {
                 return;
             }
 
-            _skillTransfers.Add(new SkillTransferSideEffect(target.Id, skillIds));
+            _skillTransfers.Add(new SkillTransferSideEffect(target.Id, skillIds, sourceName));
             EmitEvent(ScoreEventType.CommandExecuted, $"技能传递给 {target.Def.Name}（{skillIds.Count} 个）");
         }
 
@@ -346,7 +489,7 @@ namespace GourmetProject.Gameplay.Scoring
 
         public ScoreResult ToResult()
         {
-            return new ScoreResult(_dishScores, RawSum, FinalFlat, FinalMultiplier, _lines, _events, GoldDelta, _layerDeltas, _skillTransfers);
+            return new ScoreResult(_dishScores, RawSum, FinalFlat, FinalMultiplier, _lines, _events, GoldDelta, _happyCakeLayerDelta, _skillTransfers, _permanentFlatDeltas, _permanentMultDeltas);
         }
 
         // ------- 命令实际改分（internal，供命令调用） -------
@@ -373,6 +516,18 @@ namespace GourmetProject.Gameplay.Scoring
             float before = a.Mult;
             a.Mult *= value;
             AddLine(a, ScoreLineKind.DishMultiplier, value, before, a.Mult, $"乘区 x{value}");
+        }
+
+        internal void ApplyDishMultFlatCommand(int dishId, float value)
+        {
+            if (!_accums.TryGetValue(dishId, out DishAccumulator a))
+            {
+                return;
+            }
+
+            float before = a.Mult;
+            a.Mult += value;
+            AddLine(a, ScoreLineKind.DishMultiplierAdd, value, before, a.Mult, $"倍率 +{value}");
         }
 
         internal void ApplyTransferScoreCommand(int fromId, int toId, float fraction)
@@ -410,23 +565,30 @@ namespace GourmetProject.Gameplay.Scoring
             AddLine(_current, ScoreLineKind.Gold, value, before, GoldDelta, $"获得金币 +{value}");
         }
 
-        internal void ApplyChangeLayerCommand(int dishId, float value, bool mult)
+        internal void ApplyHappyCakeLayerCommand(float value, bool mult, int floor)
         {
-            if (!_accums.TryGetValue(dishId, out DishAccumulator a))
+            int before = CurrentHappyCakeLayers;
+            int after;
+            if (mult)
             {
-                return;
+                after = (int)Math.Round(before * value, MidpointRounding.AwayFromZero);
+                if (floor > 0 && after < before + floor)
+                {
+                    after = before + floor;
+                }
+            }
+            else
+            {
+                after = before + (int)value;
             }
 
-            _layerDeltas.TryGetValue(dishId, out int current);
-            int baseLayers = a.Dish.Layers + current;
-            int after = mult ? (int)Math.Round(baseLayers * value, MidpointRounding.AwayFromZero) : baseLayers + (int)value;
             if (after < 0)
             {
                 after = 0;
             }
 
-            _layerDeltas[dishId] = after - a.Dish.Layers;
-            AddLine(a, ScoreLineKind.Layer, after - baseLayers, baseLayers, after, mult ? $"层数 x{value}" : $"层数 {(value >= 0 ? "+" : string.Empty)}{value}");
+            _happyCakeLayerDelta += after - before;
+            AddLine(_current, ScoreLineKind.Layer, after - before, before, after, mult ? $"欢乐蛋糕层数 x{value}" : $"欢乐蛋糕层数 {(value >= 0 ? "+" : string.Empty)}{value}");
         }
 
         internal void ApplyFinalFlatCommand(float value)
@@ -447,7 +609,13 @@ namespace GourmetProject.Gameplay.Scoring
         {
             if (!_accums.TryGetValue(dish.Id, out DishAccumulator a))
             {
-                a = new DishAccumulator { Dish = dish, Base = dish.Def.Deliciousness };
+                // 永久加分计入基础分、永久乘区计入乘区初值（本实例此前累积的永久量立即生效）。
+                a = new DishAccumulator
+                {
+                    Dish = dish,
+                    Base = dish.Def.Deliciousness + dish.PermanentFlatBonus,
+                    Mult = dish.PermanentMultBonus,
+                };
                 _accums[dish.Id] = a;
                 _order.Add(dish.Id);
             }
@@ -538,18 +706,22 @@ namespace GourmetProject.Gameplay.Scoring
         }
     }
 
-    /// <summary>技能传递副作用：把 SkillIds 追加给某目标实例。</summary>
+    /// <summary>技能传递副作用：把 SkillIds 追加给某目标实例（可带来源名，用于「源名&lt;甜蜜传递&gt;」展示）。</summary>
     public sealed class SkillTransferSideEffect
     {
-        public SkillTransferSideEffect(int targetInstanceId, IReadOnlyList<string> skillIds)
+        public SkillTransferSideEffect(int targetInstanceId, IReadOnlyList<string> skillIds, string sourceName = null)
         {
             TargetInstanceId = targetInstanceId;
             SkillIds = skillIds ?? Array.Empty<string>();
+            SourceName = sourceName ?? string.Empty;
         }
 
         public int TargetInstanceId { get; }
 
         public IReadOnlyList<string> SkillIds { get; }
+
+        /// <summary>来源菜名（非空时应用为「源名&lt;甜蜜传递&gt;」来源标签）。</summary>
+        public string SourceName { get; }
     }
 
     /// <summary>
@@ -594,6 +766,23 @@ namespace GourmetProject.Gameplay.Scoring
         public string Name => "MultiplyDish";
 
         public void Execute(ScoreContext context) => context.ApplyDishMultiplierCommand(_dishId, _value);
+    }
+
+    /// <summary>指定菜品倍率区加法（倍率+X）。</summary>
+    public sealed class AddDishMultFlatCommand : IScoreCommand
+    {
+        private readonly int _dishId;
+        private readonly float _value;
+
+        public AddDishMultFlatCommand(int dishId, float value)
+        {
+            _dishId = dishId;
+            _value = value;
+        }
+
+        public string Name => "AddDishMultFlat";
+
+        public void Execute(ScoreContext context) => context.ApplyDishMultFlatCommand(_dishId, _value);
     }
 
     /// <summary>分数按比例从来源菜转移到目标菜（加法层）。</summary>
@@ -647,23 +836,23 @@ namespace GourmetProject.Gameplay.Scoring
         public void Execute(ScoreContext context) => context.ApplyGrantGoldCommand(_value);
     }
 
-    /// <summary>层数改动（副作用）。</summary>
-    public sealed class ChangeLayerCommand : IScoreCommand
+    /// <summary>全局欢乐蛋糕层数改动（副作用）。</summary>
+    public sealed class ChangeHappyCakeLayerCommand : IScoreCommand
     {
-        private readonly int _dishId;
         private readonly float _value;
         private readonly bool _mult;
+        private readonly int _floor;
 
-        public ChangeLayerCommand(int dishId, float value, bool mult)
+        public ChangeHappyCakeLayerCommand(float value, bool mult, int floor)
         {
-            _dishId = dishId;
             _value = value;
             _mult = mult;
+            _floor = floor;
         }
 
-        public string Name => "ChangeLayer";
+        public string Name => "ChangeHappyCakeLayer";
 
-        public void Execute(ScoreContext context) => context.ApplyChangeLayerCommand(_dishId, _value, _mult);
+        public void Execute(ScoreContext context) => context.ApplyHappyCakeLayerCommand(_value, _mult, _floor);
     }
 
     /// <summary>最终总分加法区增加固定值。</summary>
