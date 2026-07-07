@@ -243,16 +243,16 @@ namespace GourmetProject.Game.Orchestration
             switch (node.NodeType)
             {
                 case cfg.TimelineNodeType.Interest:
-                    HandleInterestNode(node);
+                    _view.ShowTimelineNodeCard(node, () => HandleInterestNode(node));
                     break;
                 case cfg.TimelineNodeType.Shop:
                     _view.ShowTimelineNodeCard(node, () => OpenShopThen(ProcessNextNode));
                     break;
                 case cfg.TimelineNodeType.Event:
-                    HandleEventNode(node);
+                    _view.ShowTimelineNodeCard(node, () => HandleEventNode(node));
                     break;
                 case cfg.TimelineNodeType.Boss:
-                    HandleBossNode(node);
+                    _view.ShowTimelineNodeCard(node, () => HandleBossNode(node));
                     break;
                 default:
                     ProcessNextNode();

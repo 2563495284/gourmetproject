@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using GourmetProject.Game.Meta;
@@ -37,7 +38,7 @@ namespace GourmetProject.Game.UI.Hud
         private Font _cachedFont;
 
         /// <summary>按当前 run 的行动轴状态重建进度条填充、整天刻度、节点图标与当前位置箭头。</summary>
-        public void Build(GameRun run)
+        public void Build(GameRun run, Action<cfg.TimelineNode, GameObject> onNodeCreated = null)
         {
             Clear();
             if (run == null || _container == null)
@@ -49,15 +50,15 @@ namespace GourmetProject.Game.UI.Hud
             int wholeDays = Mathf.Max(1, Mathf.RoundToInt(length));
             float ratio = Mathf.Clamp01(run.CurrentDay / length);
 
-            var nodeByDay = new Dictionary<int, cfg.TimelineNodeType>();
+            var nodeByDay = new Dictionary<int, cfg.TimelineNode>();
             foreach (cfg.TimelineNode node in TimelineService.GetNodes(run))
             {
-                nodeByDay[node.Day] = node.NodeType;
+                nodeByDay[node.Day] = node;
             }
 
             BuildFill(ratio);
             BuildTicksAndLabels(wholeDays, length);
-            BuildNodeIcons(nodeByDay, length);
+            BuildNodeIcons(nodeByDay, length, onNodeCreated);
             PositionMarker(ratio);
             RefreshRemainingDays(run, length);
         }
@@ -118,11 +119,17 @@ namespace GourmetProject.Game.UI.Hud
         }
 
         /// <summary>特殊节点图标：按 day/长度 比例摆在进度条上方。</summary>
-        private void BuildNodeIcons(Dictionary<int, cfg.TimelineNodeType> nodeByDay, float length)
+        private void BuildNodeIcons(Dictionary<int, cfg.TimelineNode> nodeByDay, float length, Action<cfg.TimelineNode, GameObject> onNodeCreated)
         {
-            foreach (KeyValuePair<int, cfg.TimelineNodeType> kv in nodeByDay)
+            foreach (KeyValuePair<int, cfg.TimelineNode> kv in nodeByDay)
             {
-                Sprite sprite = NodeSprite(kv.Value);
+                cfg.TimelineNode node = kv.Value;
+                if (node == null)
+                {
+                    continue;
+                }
+
+                Sprite sprite = NodeSprite(node.NodeType);
                 float x = Mathf.Clamp01(kv.Key / length);
                 var go = NewChild($"Node_{kv.Key}");
                 var rect = (RectTransform)go.transform;
@@ -138,21 +145,23 @@ namespace GourmetProject.Game.UI.Hud
                     var image = go.AddComponent<Image>();
                     image.sprite = sprite;
                     image.preserveAspect = true;
-                    image.raycastTarget = false;
+                    image.raycastTarget = true;
                 }
                 else
                 {
                     var text = go.AddComponent<Text>();
-                    text.text = NodeLabel(kv.Value);
+                    text.text = NodeLabel(node.NodeType);
                     text.font = ResolveFont();
                     text.color = _dayTextColor;
                     text.alignment = TextAnchor.LowerCenter;
                     text.resizeTextForBestFit = true;
                     text.resizeTextMinSize = 8;
                     text.resizeTextMaxSize = 18;
-                    text.raycastTarget = false;
+                    text.raycastTarget = true;
                     rect.sizeDelta = new Vector2(_nodeIconHeight * 2f, _nodeIconHeight);
                 }
+
+                onNodeCreated?.Invoke(node, go);
             }
         }
 

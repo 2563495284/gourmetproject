@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using GourmetProject.Game.Flow;
+using GourmetProject.Game.Run;
 using GourmetProject.Game.Settings;
 using GourmetProject.Runtime;
 using GourmetProject.Runtime.UI;
@@ -26,9 +28,13 @@ namespace GourmetProject.Game.UI.Menu
         private Transform _content;
         private Button _applyButton;
         private Button _backButton;
+        private GameObject _gameplayActions;
+        private Button _returnMenuButton;
+        private Button _abandonRunButton;
 
         private readonly List<SettingDescriptor> _descriptors = new List<SettingDescriptor>();
         private readonly List<GameObject> _rows = new List<GameObject>();
+        private bool _inGameplay;
 
         protected override void OnInit(object userData)
         {
@@ -37,14 +43,25 @@ namespace GourmetProject.Game.UI.Menu
             _content = CachedTransform.Find("Content");
             _applyButton = CachedTransform.Find("ApplyButton").GetComponent<Button>();
             _backButton = CachedTransform.Find("BackButton").GetComponent<Button>();
+            _gameplayActions = CachedTransform.Find("GameplayActions")?.gameObject;
+            _returnMenuButton = FindOptionalButton("ReturnMenuButton");
+            _abandonRunButton = FindOptionalButton("AbandonRunButton");
 
             _applyButton.onClick.AddListener(OnApplyClicked);
             _backButton.onClick.AddListener(OnBackClicked);
+            _returnMenuButton?.onClick.AddListener(OnReturnMenuClicked);
+            _abandonRunButton?.onClick.AddListener(OnAbandonRunClicked);
         }
 
         protected override void OnOpen(object userData)
         {
             base.OnOpen(userData);
+
+            _inGameplay = userData is SettingsFormData { InGameplay: true };
+            if (_gameplayActions != null)
+            {
+                _gameplayActions.SetActive(_inGameplay);
+            }
 
             BuildRows();
         }
@@ -173,5 +190,75 @@ namespace GourmetProject.Game.UI.Menu
         {
             GameApp.UI.CloseUIForm(UIForm);
         }
+
+        private void OnReturnMenuClicked()
+        {
+            var data = new ConfirmDialogData
+            {
+                Title = "返回主菜单",
+                Message = "当前进度将保存，可以从主菜单继续游戏。",
+                ConfirmText = "返回",
+                CancelText = "取消",
+                OnConfirm = ReturnToMenuWithSave,
+            };
+            GameApp.UI.OpenUIForm(UIForms.ConfirmDialog, UIForms.GroupDialog, data);
+        }
+
+        private void OnAbandonRunClicked()
+        {
+            var data = new ConfirmDialogData
+            {
+                Title = "放弃游戏",
+                Message = "确定放弃当前游戏吗？这会按失败结算并删除当前运行存档。",
+                ConfirmText = "放弃",
+                CancelText = "取消",
+                OnConfirm = OpenDefeatFromSettings,
+            };
+            GameApp.UI.OpenUIForm(UIForms.ConfirmDialog, UIForms.GroupDialog, data);
+        }
+
+        private void ReturnToMenuWithSave()
+        {
+            GameRun run = GameRunContext.Current;
+            if (run != null)
+            {
+                RunPersistence.Save(run);
+            }
+
+            GameApp.UI.CloseUIForm(UIForm);
+            GameplayFlowSignal.RequestReturnToMenu();
+        }
+
+        private void OpenDefeatFromSettings()
+        {
+            int total = BattleForm.Active?.LastBattleTotal ?? 0;
+            GameApp.UI.CloseUIForm(UIForm);
+            GameApp.UI.OpenUIForm(UIForms.Defeat, UIForms.GroupDialog, new GourmetProject.Game.UI.Meta.DefeatFormData(total));
+        }
+
+        private Button FindOptionalButton(string childName)
+        {
+            Transform[] children = CachedTransform.GetComponentsInChildren<Transform>(true);
+            for (int i = 0; i < children.Length; i++)
+            {
+                Transform child = children[i];
+                if (child.name == childName && child.TryGetComponent(out Button button))
+                {
+                    return button;
+                }
+            }
+
+            return null;
+        }
+    }
+
+    public sealed class SettingsFormData
+    {
+        public SettingsFormData(bool inGameplay)
+        {
+            InGameplay = inGameplay;
+        }
+
+        public bool InGameplay { get; }
     }
 }

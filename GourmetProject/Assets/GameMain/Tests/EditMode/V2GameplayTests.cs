@@ -460,6 +460,8 @@ namespace GourmetProject.Tests
                 25,
                 new[] { new RewardChoice(cfg.RewardKind.DishChoice, "rice", "米饭", "加入菜谱池") },
                 new[] { RewardChoice.Gold(8, "额外金币") });
+            offer.MarkBaseGoldClaimed();
+            offer.MarkMainChoiceClaimed(0);
 
             run.SetPendingRewardOffer(key, offer);
 
@@ -468,8 +470,106 @@ namespace GourmetProject.Tests
 
             Assert.NotNull(restoredOffer);
             Assert.AreEqual(25, restoredOffer.BaseGold);
+            Assert.IsTrue(restoredOffer.BaseGoldClaimed);
+            Assert.AreEqual(0, restoredOffer.MainChoiceIndex);
             Assert.AreEqual("rice", restoredOffer.MainChoices[0].Id);
             Assert.AreEqual(8, restoredOffer.ExtraChoices[0].GoldAmount);
+        }
+
+        [Test]
+        public void RunSaveData_RestoresSkippedRewardOfferWithoutResolving()
+        {
+            GameRun run = NewRun(week: 1);
+            string key = GameRun.BuildRewardKey(run.WeekIndex, run.CurrentDay, null);
+            var offer = new RewardOffer(
+                25,
+                new[] { new RewardChoice(cfg.RewardKind.DishChoice, "rice", "米饭", "加入菜谱池") },
+                null);
+            offer.MarkBaseGoldClaimed();
+            offer.MarkMainChoiceSkipped();
+
+            run.SetPendingRewardOffer(key, offer);
+
+            GameRun restored = GameRun.FromSaveData(run.Tables, run.Database, run.ToSaveData());
+            RewardOffer restoredOffer = restored.GetPendingRewardOffer(key);
+
+            Assert.NotNull(restoredOffer);
+            Assert.IsTrue(restoredOffer.MainChoiceSkipped);
+            Assert.IsFalse(restoredOffer.MainChoiceResolved);
+            Assert.IsFalse(restoredOffer.IsFullyClaimed);
+            Assert.AreEqual(-1, restoredOffer.MainChoiceIndex);
+        }
+
+        [Test]
+        public void RewardGranterApply_AddsBaseGoldAndSelectedGoldChoice()
+        {
+            GameRun run = NewRun(week: 1);
+            int beforeGold = run.Gold;
+            RewardChoice goldChoice = RewardChoice.Gold(8, "额外金币");
+            var offer = new RewardOffer(25, new[] { goldChoice }, null);
+
+            string resultText = RewardGranter.Apply(run, offer, goldChoice, null);
+
+            Assert.AreEqual(beforeGold + 33, run.Gold);
+            StringAssert.Contains("金币 +25", resultText);
+            StringAssert.Contains("额外金币 +8", resultText);
+        }
+
+        [Test]
+        public void RewardGranterApplyBaseGold_IsIdempotentPerOffer()
+        {
+            GameRun run = NewRun(week: 1);
+            int beforeGold = run.Gold;
+            var offer = new RewardOffer(25, null, null);
+
+            RewardGranter.ApplyBaseGold(run, offer);
+            RewardGranter.ApplyBaseGold(run, offer);
+
+            Assert.AreEqual(beforeGold + 25, run.Gold);
+            Assert.IsTrue(offer.BaseGoldClaimed);
+        }
+
+        [Test]
+        public void RewardGranterApplyDishChoiceToBook_UsesSelectedRecipeBook()
+        {
+            GameRun run = NewRun(week: 1);
+            RewardChoice dishChoice = new RewardChoice(cfg.RewardKind.DishChoice, "rice", "米饭", "加入菜谱池");
+
+            Assert.IsTrue(RewardGranter.ApplyDishChoiceToBook(run, dishChoice, 1));
+
+            Assert.AreEqual(0, run.GetRecipeBookDishes(0).Count);
+            Assert.AreEqual("rice", run.GetRecipeBookDishes(1)[0]);
+        }
+
+        [Test]
+        public void RewardGranterApplyDishChoiceToBook_RejectsFullRecipeBook()
+        {
+            GameRun run = NewRun(week: 1);
+            RewardChoice dishChoice = new RewardChoice(cfg.RewardKind.DishChoice, "rice", "米饭", "加入菜谱池");
+            for (int i = 0; i < GameRun.RecipeBookCapacity; i++)
+            {
+                Assert.IsTrue(run.AddBonusDishToBook("rice", 0));
+            }
+
+            Assert.IsFalse(RewardGranter.ApplyDishChoiceToBook(run, dishChoice, 0));
+
+            Assert.AreEqual(GameRun.RecipeBookCapacity, run.GetRecipeBookDishes(0).Count);
+        }
+
+        [Test]
+        public void RewardGranterApplyFragmentPack_SetsPendingFragmentPack()
+        {
+            GameRun run = NewRun(week: 1);
+            List<RewardChoice> choices = run.Database.AllFragments
+                .Take(3)
+                .Select(f => new RewardChoice(cfg.RewardKind.FragmentChoice, f.Id, f.Id, string.Empty))
+                .ToList();
+
+            string resultText = RewardGranter.ApplyFragmentPack(run, choices);
+
+            Assert.IsTrue(run.HasPendingFragmentPack);
+            Assert.AreEqual(choices.Count, run.PendingFragmentPack.Count);
+            StringAssert.Contains("胃部碎片包", resultText);
         }
 
         [Test]

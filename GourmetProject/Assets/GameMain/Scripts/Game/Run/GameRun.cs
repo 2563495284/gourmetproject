@@ -707,6 +707,11 @@ namespace GourmetProject.Game.Run
             return new RewardOfferSaveData
             {
                 BaseGold = offer.BaseGold,
+                BaseGoldClaimed = offer.BaseGoldClaimed,
+                MainChoiceIndex = offer.MainChoiceIndex,
+                ExtraChoiceIndex = offer.ExtraChoiceIndex,
+                MainChoiceSkipped = offer.MainChoiceSkipped,
+                ExtraChoiceSkipped = offer.ExtraChoiceSkipped,
                 MainChoices = ToSaveData(offer.MainChoices),
                 ExtraChoices = ToSaveData(offer.ExtraChoices),
             };
@@ -745,7 +750,15 @@ namespace GourmetProject.Game.Run
         {
             return data == null
                 ? null
-                : new RewardOffer(data.BaseGold, FromSaveData(data.MainChoices), FromSaveData(data.ExtraChoices));
+                : new RewardOffer(
+                    data.BaseGold,
+                    FromSaveData(data.MainChoices),
+                    FromSaveData(data.ExtraChoices),
+                    data.BaseGoldClaimed,
+                    data.MainChoiceIndex,
+                    data.ExtraChoiceIndex,
+                    data.MainChoiceSkipped,
+                    data.ExtraChoiceSkipped);
         }
 
         private static List<RewardChoice> FromSaveData(List<RewardChoiceSaveData> choices)

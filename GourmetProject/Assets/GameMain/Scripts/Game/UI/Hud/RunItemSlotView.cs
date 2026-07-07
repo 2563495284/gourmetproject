@@ -1,4 +1,5 @@
 using System;
+using GourmetProject.Game.UI.Tooltips;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -13,10 +14,18 @@ namespace GourmetProject.Game.UI.Hud
         [SerializeField] private Image _background;
         [SerializeField] private Image _icon;
         [SerializeField] private Button _button;
+        [SerializeField] private TipHoverTrigger _tipTrigger;
+
+        private void Awake()
+        {
+            EnsureRefs();
+        }
 
         /// <summary>绑定一个有内容的道具槽。</summary>
         public void Bind(Sprite icon, string name, string badge, Color qualityColor, bool interactable, Action onClick)
         {
+            EnsureRefs();
+
             if (_background != null)
             {
                 _background.color = qualityColor;
@@ -43,9 +52,63 @@ namespace GourmetProject.Game.UI.Hud
         public void SetEmpty()
         {
             Bind(null, string.Empty, string.Empty, EmptySlotColor, false, null);
+            ClearTip();
+        }
+
+        /// <summary>把该槽绑定到共享的道具 Tips 实例。</summary>
+        public void SetTip(ItemTipView tip, cfg.Item item)
+        {
+            EnsureRefs();
+            if (_tipTrigger == null || tip == null || item == null)
+            {
+                ClearTip();
+                return;
+            }
+
+            // Tips 避让要按整个槽位根宽度计算，而不是某个子 Image；
+            // 否则显示在左侧时会从槽位中心向外排布，遮住半个道具。
+            _tipTrigger.SetTarget(transform as RectTransform);
+            _tipTrigger.SetTip(tip, () => tip.Bind(item));
+        }
+
+        /// <summary>清掉悬浮 Tips 绑定，供空槽 / 销毁前使用。</summary>
+        public void ClearTip()
+        {
+            if (_tipTrigger != null)
+            {
+                _tipTrigger.ClearTip();
+            }
         }
 
         private static Color EmptySlotColor => new Color(0.92f, 0.90f, 0.84f, 1f);
+
+        private void EnsureRefs()
+        {
+            if (_background == null)
+            {
+                _background = GetComponentInChildren<Image>(true);
+            }
+
+            if (_button == null)
+            {
+                _button = GetComponent<Button>();
+            }
+
+            if (_icon == null)
+            {
+                Transform icon = transform.Find("Image/Icon");
+                _icon = icon != null ? icon.GetComponent<Image>() : null;
+            }
+
+            if (_tipTrigger == null)
+            {
+                _tipTrigger = GetComponent<TipHoverTrigger>();
+                if (_tipTrigger == null)
+                {
+                    _tipTrigger = gameObject.AddComponent<TipHoverTrigger>();
+                }
+            }
+        }
 
         /// <summary>道具品质对应的槽底色（与战斗世界空间槽保持一致）。</summary>
         public static Color QualityColor(cfg.ItemQuality quality)

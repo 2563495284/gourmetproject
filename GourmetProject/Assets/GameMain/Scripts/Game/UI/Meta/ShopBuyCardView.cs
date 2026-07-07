@@ -1,5 +1,7 @@
 using System;
 using DG.Tweening;
+using GourmetProject.Game.UI.Widgets;
+using GourmetProject.Gameplay.Model;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -15,6 +17,7 @@ namespace GourmetProject.Game.UI.Meta
         [SerializeField] private Button _buyButton;
 
         [SerializeField] private Image _itemIcon;
+        [SerializeField] private DishShapePreview _dishShapePreview;
 
         private RectTransform _rect;
         private RectTransform _iconRect;
@@ -25,6 +28,8 @@ namespace GourmetProject.Game.UI.Meta
         private Action<ShopBuyCardView> _onTargetPointerDown;
         private Action<ShopBuyCardView, Vector2> _onTargetPointerUp;
         private Tween _failureTween;
+        private Selectable.Transition _defaultButtonTransition;
+        private bool _hasDefaultButtonTransition;
 
         public void Bind(cfg.Item item, int price, bool affordable, Action onBuy)
         {
@@ -47,12 +52,14 @@ namespace GourmetProject.Game.UI.Meta
             Action<ShopBuyCardView> onTargetPointerDown = null,
             Action<ShopBuyCardView, Vector2> onTargetPointerUp = null)
         {
+            EnsureDefaultButtonTransition();
             _affordable = affordable;
             _usesTargeting = onTargetPointerDown != null || onTargetPointerUp != null;
             _onBuy = onBuy;
             _onTargetPointerDown = onTargetPointerDown;
             _onTargetPointerUp = onTargetPointerUp;
             EnsurePointerProxy();
+            _dishShapePreview?.Hide();
             SetIcon(icon);
 
             Text label = _buyButton.GetComponentInChildren<Text>();
@@ -67,6 +74,23 @@ namespace GourmetProject.Game.UI.Meta
             {
                 _buyButton.onClick.AddListener(HandleImmediateBuyClicked);
             }
+        }
+
+        /// <summary>菜品商品绑定：沿用购买卡交互，同时在图标区域显示占格网格。</summary>
+        public void BindDish(
+            string name,
+            string desc,
+            int price,
+            bool affordable,
+            Sprite icon,
+            DishDef dish,
+            Func<ShopBuyCardView, bool> onBuy,
+            Action<ShopBuyCardView> onTargetPointerDown = null,
+            Action<ShopBuyCardView, Vector2> onTargetPointerUp = null)
+        {
+            Bind(name, desc, price, affordable, icon, onBuy, onTargetPointerDown, onTargetPointerUp);
+            _dishShapePreview?.Bind(dish, icon);
+            UseIconAsHitTargetOnly();
         }
 
         public Vector2 IconScreenCenter()
@@ -187,6 +211,46 @@ namespace GourmetProject.Game.UI.Meta
             _itemIcon.enabled = icon != null;
             _itemIcon.sprite = icon;
             _itemIcon.color = Color.white;
+            _itemIcon.raycastTarget = true;
+            RestoreButtonTransition();
+        }
+
+        private void UseIconAsHitTargetOnly()
+        {
+            if (_itemIcon == null)
+            {
+                return;
+            }
+
+            _iconRect = _itemIcon.rectTransform;
+            _itemIcon.enabled = true;
+            _itemIcon.sprite = null;
+            _itemIcon.color = new Color(1f, 1f, 1f, 0f);
+            _itemIcon.raycastTarget = true;
+
+            if (_buyButton != null)
+            {
+                _buyButton.transition = Selectable.Transition.None;
+            }
+        }
+
+        private void EnsureDefaultButtonTransition()
+        {
+            if (_hasDefaultButtonTransition || _buyButton == null)
+            {
+                return;
+            }
+
+            _defaultButtonTransition = _buyButton.transition;
+            _hasDefaultButtonTransition = true;
+        }
+
+        private void RestoreButtonTransition()
+        {
+            if (_buyButton != null && _hasDefaultButtonTransition)
+            {
+                _buyButton.transition = _defaultButtonTransition;
+            }
         }
 
         private Camera ResolveEventCamera()

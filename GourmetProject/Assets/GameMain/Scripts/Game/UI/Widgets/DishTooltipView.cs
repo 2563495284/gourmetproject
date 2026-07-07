@@ -57,6 +57,7 @@ namespace GourmetProject.Game.UI.Widgets
         public void Bind(DishDef def, IReadOnlyList<string> skillIds, IReadOnlyList<string> flavorIds, GameplayDatabase db)
         {
             ClearSpawned();
+            ResetDynamicContainers();
 
             if (def == null)
             {
@@ -90,6 +91,9 @@ namespace GourmetProject.Game.UI.Widgets
 
         public void Hide()
         {
+            ClearSpawned();
+            ResetDynamicContainers();
+
             if (_canvasGroup != null)
             {
                 _canvasGroup.alpha = 0f;
@@ -131,7 +135,9 @@ namespace GourmetProject.Game.UI.Widgets
 
         private void BuildSkills(IReadOnlyList<string> skillIds, GameplayDatabase db)
         {
-            int shown = 0;
+            EnsureSkillScrollLayout();
+
+            var skillCards = new List<RectTransform>();
             if (skillIds != null && db != null && _skillCardPrefab != null && _skillContent != null)
             {
                 foreach (string skillId in skillIds)
@@ -145,19 +151,97 @@ namespace GourmetProject.Game.UI.Widgets
                     DishInfoCard card = Instantiate(_skillCardPrefab, _skillContent);
                     card.Set(skill.Name, skill.Desc);
                     _spawned.Add(card.gameObject);
-                    shown++;
+
+                    if (card.transform is RectTransform cardRect)
+                    {
+                        skillCards.Add(cardRect);
+                    }
                 }
+            }
+
+            int shown = skillCards.Count;
+            if (_skillScroll != null)
+            {
+                _skillScroll.gameObject.SetActive(shown > 0);
             }
 
             bool needsScroll = shown > VisibleSkillCount;
             if (_skillScrollbar != null)
             {
-                _skillScrollbar.gameObject.SetActive(needsScroll);
+                _skillScrollbar.gameObject.SetActive(shown > 0 && needsScroll);
             }
+
+            if (shown <= 0)
+            {
+                return;
+            }
+
+            ResizeSkillScroll(skillCards, Mathf.Min(shown, VisibleSkillCount));
 
             if (_skillScroll != null)
             {
+                _skillScroll.vertical = needsScroll;
                 _skillScroll.verticalNormalizedPosition = 1f;
+            }
+        }
+
+        private void ResizeSkillScroll(IReadOnlyList<RectTransform> skillCards, int visibleCount)
+        {
+            if (_skillScroll == null || skillCards == null || visibleCount <= 0)
+            {
+                return;
+            }
+
+            Canvas.ForceUpdateCanvases();
+            if (_skillContent != null)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(_skillContent);
+            }
+
+            float height = 0f;
+            float contentHeight = _skillContent != null
+                ? Mathf.Max(_skillContent.rect.height, LayoutUtility.GetPreferredHeight(_skillContent))
+                : 0f;
+            VerticalLayoutGroup layout = _skillContent != null ? _skillContent.GetComponent<VerticalLayoutGroup>() : null;
+            float padding = 0f;
+            float spacing = 0f;
+            if (layout != null)
+            {
+                padding = layout.padding.top + layout.padding.bottom;
+                spacing = layout.spacing;
+            }
+
+            float estimatedCardHeight = 0f;
+            if (contentHeight > padding && skillCards.Count > 0)
+            {
+                estimatedCardHeight = (contentHeight - padding - Mathf.Max(0, skillCards.Count - 1) * spacing) / skillCards.Count;
+            }
+
+            for (int i = 0; i < visibleCount && i < skillCards.Count; i++)
+            {
+                RectTransform card = skillCards[i];
+                if (card == null)
+                {
+                    continue;
+                }
+
+                LayoutRebuilder.ForceRebuildLayoutImmediate(card);
+                float cardHeight = Mathf.Max(card.rect.height, LayoutUtility.GetPreferredHeight(card), estimatedCardHeight);
+                height += cardHeight;
+            }
+
+            height += padding;
+            height += Mathf.Max(0, visibleCount - 1) * spacing;
+
+            if (height <= padding && contentHeight > 0f)
+            {
+                height = contentHeight;
+            }
+
+            RectTransform scrollRect = _skillScroll.transform as RectTransform;
+            if (scrollRect != null)
+            {
+                scrollRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height);
             }
         }
 
@@ -167,11 +251,64 @@ namespace GourmetProject.Game.UI.Widgets
             {
                 if (go != null)
                 {
+                    go.SetActive(false);
                     Destroy(go);
                 }
             }
 
             _spawned.Clear();
+        }
+
+        private void ResetDynamicContainers()
+        {
+            if (_skillScroll != null)
+            {
+                _skillScroll.gameObject.SetActive(false);
+                _skillScroll.verticalNormalizedPosition = 1f;
+            }
+
+            if (_skillScrollbar != null)
+            {
+                _skillScrollbar.gameObject.SetActive(false);
+            }
+        }
+
+        private void EnsureSkillScrollLayout()
+        {
+            if (_skillScroll == null)
+            {
+                return;
+            }
+
+            if (_skillScroll.transform is RectTransform scrollRect)
+            {
+                float top = scrollRect.anchorMax.y;
+                scrollRect.anchorMin = new Vector2(scrollRect.anchorMin.x, top);
+                scrollRect.anchorMax = new Vector2(scrollRect.anchorMax.x, top);
+                scrollRect.anchoredPosition = new Vector2(scrollRect.anchoredPosition.x, 0f);
+                scrollRect.pivot = new Vector2(0.5f, 1f);
+            }
+
+            RectTransform viewport = _skillScroll.viewport;
+            if (viewport != null)
+            {
+                viewport.anchorMin = Vector2.zero;
+                viewport.anchorMax = Vector2.one;
+                viewport.offsetMin = Vector2.zero;
+                viewport.offsetMax = Vector2.zero;
+                viewport.pivot = new Vector2(0f, 1f);
+            }
+
+            RectTransform content = _skillContent != null ? _skillContent : _skillScroll.content;
+            if (content != null)
+            {
+                content.anchorMin = new Vector2(0f, 1f);
+                content.anchorMax = new Vector2(1f, 1f);
+                content.anchoredPosition = Vector2.zero;
+                content.pivot = new Vector2(0.5f, 1f);
+                content.offsetMin = new Vector2(0f, content.offsetMin.y);
+                content.offsetMax = new Vector2(0f, content.offsetMax.y);
+            }
         }
     }
 }

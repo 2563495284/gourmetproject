@@ -4,6 +4,8 @@ using GourmetProject.Core.Rng;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Hud;
+using GourmetProject.Game.UI.Tooltips;
+using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Runtime;
 using UnityEngine;
@@ -39,6 +41,10 @@ namespace GourmetProject.Game.UI.Meta
         [SerializeField] private ShopBuyCardView _buyCardPrefab;
         [SerializeField] private TargetArrowView _targetArrowPrefab;
 
+        [Header("Hover Tips")]
+        [SerializeField] private DishTooltipView _dishTooltipPrefab;
+        [SerializeField] private ItemTipView _itemTipPrefab;
+
         [Header("Recipe Entry")]
         [SerializeField] private Button _editRecipeButton;
         [SerializeField] private Text _recipeLimitText;
@@ -52,6 +58,8 @@ namespace GourmetProject.Game.UI.Meta
         private TargetArrowView _activeArrow;
         private ShopEntry _targetingEntry;
         private ShopBuyCardView _targetingCard;
+        private DishTooltipView _dishTooltipView;
+        private ItemTipView _itemTipView;
         private bool _waitingForRecipeClick;
         private int _targetingFrame;
 
@@ -182,6 +190,7 @@ namespace GourmetProject.Game.UI.Meta
         {
             CancelDishTargeting();
             ClearSpawned();
+            EnsureTipViews();
 
             SetText(_goldText, $"金币 {_run.Gold}");
             BuildBuySection(ShopEntryKind.Dish, _foodContainer, _foodEmptyText, "暂无食物");
@@ -216,12 +225,14 @@ namespace GourmetProject.Game.UI.Meta
                 Sprite icon = LoadEntryIcon(entry);
                 if (entry.Kind == ShopEntryKind.Dish)
                 {
-                    card.Bind(
+                    DishDef dish = _run.Database.GetDish(entry.Id);
+                    card.BindDish(
                         entry.Name,
                         entry.Desc,
                         entry.Price,
                         affordable,
                         icon,
+                        dish,
                         null,
                         view => BeginDishTargeting(view, captured),
                         (view, screenPoint) => EndDishTargeting(view, captured, screenPoint));
@@ -237,6 +248,7 @@ namespace GourmetProject.Game.UI.Meta
                         view => BuyImmediate(captured, view));
                 }
 
+                BindBuyCardTip(card, captured);
                 _spawned.Add(card.gameObject);
                 count++;
             }
@@ -357,6 +369,153 @@ namespace GourmetProject.Game.UI.Meta
             return arrow;
         }
 
+        private void EnsureTipViews()
+        {
+            if (_dishTooltipView == null)
+            {
+                _dishTooltipView = CreateTipView(_dishTooltipPrefab, "DishTooltipView_Runtime")
+                    ?? FindExistingTip<DishTooltipView>("DishTooltipView_Runtime");
+            }
+
+            if (_itemTipView == null)
+            {
+                _itemTipView = CreateTipView(_itemTipPrefab, "ItemTipView_Runtime")
+                    ?? FindExistingTip<ItemTipView>("ItemTipView_Runtime");
+            }
+
+            MoveTipToTopLayer(_dishTooltipView);
+            MoveTipToTopLayer(_itemTipView);
+        }
+
+        private void BindBuyCardTip(ShopBuyCardView card, ShopEntry entry)
+        {
+            if (card == null || entry == null)
+            {
+                return;
+            }
+
+            TipHoverTrigger trigger = card.GetComponent<TipHoverTrigger>();
+            if (trigger == null)
+            {
+                trigger = card.gameObject.AddComponent<TipHoverTrigger>();
+            }
+
+            trigger.SetTarget(card.transform as RectTransform);
+
+            if (entry.Kind == ShopEntryKind.Dish)
+            {
+                BindDishTip(trigger, entry);
+                return;
+            }
+
+            if (entry.Kind == ShopEntryKind.PassiveItem || entry.Kind == ShopEntryKind.ActiveItem)
+            {
+                BindItemTip(trigger, entry);
+                return;
+            }
+
+            trigger.ClearTip();
+        }
+
+        private void BindDishTip(TipHoverTrigger trigger, ShopEntry entry)
+        {
+            DishDef dish = _run?.Database.GetDish(entry.Id);
+            if (trigger == null || _dishTooltipView == null || dish == null || _run?.Database == null)
+            {
+                trigger?.ClearTip();
+                return;
+            }
+
+            trigger.SetTip(
+                _dishTooltipView,
+                _dishTooltipView.Show,
+                _dishTooltipView.Hide,
+                () => _dishTooltipView.Bind(dish, dish.SkillIds, dish.FlavorId, _run.Database));
+        }
+
+        private void BindItemTip(TipHoverTrigger trigger, ShopEntry entry)
+        {
+            cfg.Item item = GameApp.Config.Tables.TbItem.GetOrDefault(entry.Id);
+            if (trigger == null || _itemTipView == null || item == null)
+            {
+                trigger?.ClearTip();
+                return;
+            }
+
+            trigger.SetTip(_itemTipView, () => _itemTipView.Bind(item));
+        }
+
+        private T FindExistingTip<T>(string preferredName) where T : MonoBehaviour
+        {
+            Transform root = transform.root != null ? transform.root : transform;
+            T[] tips = root.GetComponentsInChildren<T>(true);
+            if (tips == null || tips.Length == 0)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < tips.Length; i++)
+            {
+                if (tips[i] != null && tips[i].gameObject.name == preferredName)
+                {
+                    return tips[i];
+                }
+            }
+
+            return tips[0];
+        }
+
+        private T CreateTipView<T>(T prefab, string viewName) where T : MonoBehaviour
+        {
+            if (prefab == null)
+            {
+                return null;
+            }
+
+            T view = Instantiate(prefab, TipLayerParent(), false);
+            view.gameObject.name = viewName;
+            HideTipView(view);
+            return view;
+        }
+
+        private Transform TipLayerParent()
+        {
+            Canvas canvas = GetComponentInParent<Canvas>();
+            return canvas != null ? canvas.transform : transform;
+        }
+
+        private void MoveTipToTopLayer(MonoBehaviour view)
+        {
+            if (view == null)
+            {
+                return;
+            }
+
+            Transform parent = TipLayerParent();
+            if (view.transform.parent != parent)
+            {
+                view.transform.SetParent(parent, false);
+            }
+
+            view.transform.SetAsLastSibling();
+        }
+
+        private static void HideTipView(MonoBehaviour view)
+        {
+            switch (view)
+            {
+                case ActionTipView actionTip:
+                    actionTip.Hide();
+                    break;
+                case DishTooltipView dishTip:
+                    dishTip.Hide();
+                    break;
+                default:
+                    view.gameObject.SetActive(false);
+                    break;
+            }
+        }
+
         private bool TryGetRecipeBookAt(Vector2 screenPoint, out int bookIndex)
         {
             if (_recipeView != null && _recipeView.TryGetRecipeBookAtScreenPoint(screenPoint, out bookIndex))
@@ -461,6 +620,16 @@ namespace GourmetProject.Game.UI.Meta
 
         private void ClearSpawned()
         {
+            if (_dishTooltipView != null)
+            {
+                _dishTooltipView.Hide();
+            }
+
+            if (_itemTipView != null)
+            {
+                _itemTipView.Hide();
+            }
+
             foreach (GameObject go in _spawned)
             {
                 if (go != null)

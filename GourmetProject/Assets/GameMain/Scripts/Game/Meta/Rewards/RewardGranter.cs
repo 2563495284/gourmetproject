@@ -41,10 +41,9 @@ namespace GourmetProject.Game.Meta
                 return string.Empty;
             }
 
-            run.Gold += offer.BaseGold;
             var lines = new System.Collections.Generic.List<string>
             {
-                $"金币 +{offer.BaseGold}"
+                ApplyBaseGold(run, offer)
             };
 
             string mainText = ApplyChoice(run, mainChoice);
@@ -59,8 +58,82 @@ namespace GourmetProject.Game.Meta
                 lines.Add(extraText);
             }
 
-            RunPersistence.Save(run);
             return "过关奖励：" + string.Join("；", lines);
+        }
+
+        public static string ApplyBaseGold(GameRun run, RewardOffer offer)
+        {
+            if (run == null || offer == null || offer.BaseGoldClaimed)
+            {
+                return string.Empty;
+            }
+
+            run.Gold += offer.BaseGold;
+            offer.MarkBaseGoldClaimed();
+            return $"金币 +{offer.BaseGold}";
+        }
+
+        public static string ApplyChoice(GameRun run, RewardChoice choice)
+        {
+            if (choice == null)
+            {
+                return string.Empty;
+            }
+
+            if (choice.Kind == cfg.RewardKind.Gold || choice.IsFallbackGold)
+            {
+                run.Gold += choice.GoldAmount;
+                return $"{choice.Name} +{choice.GoldAmount}";
+            }
+
+            switch (choice.Kind)
+            {
+                case cfg.RewardKind.DishChoice:
+                    return run.AddBonusDish(choice.Id) ? $"菜品加入菜谱池：{choice.Name}" : $"菜品折算失败：{choice.Name}";
+                case cfg.RewardKind.PassiveItemChoice:
+                case cfg.RewardKind.ActiveItemGrant:
+                    return run.AcquireItem(choice.Id, choice.GoldAmount > 0 ? choice.GoldAmount : 40).ToRewardText(string.Empty);
+                case cfg.RewardKind.FragmentChoice:
+                    return ApplyFragmentPack(run, new[] { choice });
+                default:
+                    return string.Empty;
+            }
+        }
+
+        public static bool ApplyDishChoiceToBook(GameRun run, RewardChoice choice, int bookIndex)
+        {
+            if (run == null || choice == null || choice.Kind != cfg.RewardKind.DishChoice)
+            {
+                return false;
+            }
+
+            return run.AddBonusDishToBook(choice.Id, bookIndex);
+        }
+
+        public static string ApplyFragmentPack(GameRun run, System.Collections.Generic.IReadOnlyList<RewardChoice> choices)
+        {
+            if (run == null || choices == null || choices.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            var ids = new System.Collections.Generic.List<string>(choices.Count);
+            for (int i = 0; i < choices.Count; i++)
+            {
+                RewardChoice choice = choices[i];
+                if (choice != null && choice.Kind == cfg.RewardKind.FragmentChoice && !string.IsNullOrEmpty(choice.Id))
+                {
+                    ids.Add(choice.Id);
+                }
+            }
+
+            if (ids.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            run.SetPendingFragmentPack(ids);
+            return ids.Count > 1 ? $"获得胃部碎片包：{ids.Count} 选 1" : "获得胃部碎片包";
         }
 
         private static cfg.Week ResolveWeek(GameRun run, cfg.Week week)
@@ -126,38 +199,5 @@ namespace GourmetProject.Game.Meta
             return RewardPoolService.RollChoices(context, chosen);
         }
 
-        private static string ApplyChoice(GameRun run, RewardChoice choice)
-        {
-            if (choice == null)
-            {
-                return string.Empty;
-            }
-
-            if (choice.Kind == cfg.RewardKind.Gold || choice.IsFallbackGold)
-            {
-                run.Gold += choice.GoldAmount;
-                return $"{choice.Name} +{choice.GoldAmount}";
-            }
-
-            switch (choice.Kind)
-            {
-                case cfg.RewardKind.DishChoice:
-                    return run.AddBonusDish(choice.Id) ? $"菜品加入菜谱池：{choice.Name}" : $"菜品折算失败：{choice.Name}";
-                case cfg.RewardKind.PassiveItemChoice:
-                case cfg.RewardKind.ActiveItemGrant:
-                    return run.AcquireItem(choice.Id, choice.GoldAmount > 0 ? choice.GoldAmount : 40).ToRewardText(string.Empty);
-                case cfg.RewardKind.FragmentChoice:
-                    if (run.AddStomachFragment(choice.Id))
-                    {
-                        return $"获得胃部碎片：{choice.Name}";
-                    }
-
-                    int convertedGold = choice.GoldAmount > 0 ? choice.GoldAmount : HiddenScoreService.FragmentFallbackGold(run, run.LastActionContext);
-                    run.Gold += convertedGold;
-                    return $"胃部碎片已折算：金币 +{convertedGold}";
-                default:
-                    return string.Empty;
-            }
-        }
     }
 }

@@ -151,6 +151,11 @@ namespace GourmetProject.Game.Run
     public sealed class RewardOfferSaveData
     {
         public int BaseGold;
+        public bool BaseGoldClaimed;
+        public int MainChoiceIndex = -1;
+        public int ExtraChoiceIndex = -1;
+        public bool MainChoiceSkipped;
+        public bool ExtraChoiceSkipped;
         public List<RewardChoiceSaveData> MainChoices = new List<RewardChoiceSaveData>();
         public List<RewardChoiceSaveData> ExtraChoices = new List<RewardChoiceSaveData>();
     }

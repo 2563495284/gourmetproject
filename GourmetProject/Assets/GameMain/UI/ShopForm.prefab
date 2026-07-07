@@ -262,6 +262,8 @@ MonoBehaviour:
   _activeEmptyText: {fileID: 3569231992165082829}
   _buyCardPrefab: {fileID: 6826539389142825901, guid: fed5df0cda4874f709c3eee295ab6a33, type: 3}
   _targetArrowPrefab: {fileID: 6438548458035383761, guid: caa9c853a25e6402c8a49f9cd3dfc8f3, type: 3}
+  _dishTooltipPrefab: {fileID: 8537782908997583470, guid: b03e1da96babc43e28e80f63910d5e04, type: 3}
+  _itemTipPrefab: {fileID: 8646951620094238264, guid: 49d929799dca94ac9bec5bb3a1fbffec, type: 3}
   _editRecipeButton: {fileID: 1084479458987173440}
   _recipeLimitText: {fileID: 0}
 --- !u!1 &1006846443479302409

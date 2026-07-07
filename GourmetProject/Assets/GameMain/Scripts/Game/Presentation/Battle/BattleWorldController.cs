@@ -18,11 +18,15 @@ namespace GourmetProject.Game.Presentation.Battle
     /// 现以场景内组件存在：背景/棋盘根/各锚点/分数文本/固定按钮均在 Battle.unity 摆好并通过 SerializeField 注入，
     /// 运行时只生成数据驱动内容（棋盘格随胃尺寸、菜品、道具槽、结算特效）。
     /// </summary>
-    public sealed partial class BattleWorldController : MonoBehaviour
+    public sealed class BattleWorldController : MonoBehaviour
     {
-        public const float Gap = 0f;
-        private const float MaxCellSize = 1.2f;
-        private const float MinCellSize = 0.42f;
+        public const float Gap = BoardLayout.Gap;
+        private const float MaxCellSize = BoardLayout.MaxCellSize;
+        private const float MinCellSize = BoardLayout.MinCellSize;
+
+        // 棋盘居中定位的底部边距：Food 态给底部菜谱抽屉让 2.7，编辑态还要给候选托盘条让到 3.6。
+        private const float FoodBoardBottomMargin = 2.7f;
+        private const float EditBoardBottomMargin = 3.6f;
         private const int PassiveSlotCapacity = 10;
         private const int PassiveSlotColumns = 2;
         private const int ActiveSlotCapacity = 2;
@@ -66,6 +70,11 @@ namespace GourmetProject.Game.Presentation.Battle
         private float _halfW = FallbackHalfW;
         private float _halfH = FallbackHalfH;
 
+        private ServeAnimator _serveAnimator;
+
+        // 棋盘编辑 / 只读胃视图的表现与交互拆到协作组件；本类只做 Food 态与世界互斥态调度（外壳）。
+        private BoardEditController _boardEdit;
+
         private readonly DishSpriteProvider _spriteProvider = new DishSpriteProvider();
         private readonly List<WorldItemSlotView> _passiveItemSlots = new List<WorldItemSlotView>();
         private readonly List<WorldItemSlotView> _activeItemSlots = new List<WorldItemSlotView>();
@@ -103,9 +112,112 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             Instance = this;
 
+            EnsureBoardEdit();
+
             // 默认非美食态：世界棋盘与其专属按钮（总览/吃/涂鸦）默认隐藏，只有 StartBattle→Initialize 才显示。
             // 场景里 BattleSceneRoot 默认 active，若不在此处收起，行动选择等非美食态一进场景就会露出这堆美食专属按钮。
             HideWorld();
+        }
+
+        /// <summary>确保棋盘编辑协作组件存在并注入共享场景引用（运行时挂到同一战斗场景根上）。</summary>
+        private void EnsureBoardEdit()
+        {
+            if (_boardEdit == null)
+            {
+                _boardEdit = GetComponent<BoardEditController>();
+                if (_boardEdit == null)
+                {
+                    _boardEdit = gameObject.AddComponent<BoardEditController>();
+                }
+            }
+
+            _boardEdit.Configure(this, _boardView, _boardCellPrefab, _piecesRoot, _camera);
+        }
+
+        /// <summary>供 <see cref="BoardEditController"/> 在编辑/胃视图结束时通知外壳复位世界互斥态。</summary>
+        internal void ClearBoardMode()
+        {
+            if (_worldMode == WorldMode.BoardEdit || _worldMode == WorldMode.StomachView)
+            {
+                _worldMode = WorldMode.Hidden;
+            }
+        }
+
+        /// <summary>是否正处于可拖拽的棋盘编辑态。</summary>
+        public bool IsEditingBoard => _boardEdit != null && _boardEdit.IsEditing;
+
+        /// <summary>
+        /// 进入棋盘编辑页：外壳先收起 Food 态表现并切到编辑互斥态，再把编辑页构建交给协作组件。
+        /// </summary>
+        public void BeginBoardEdit(GameRun run, IReadOnlyList<string> candidateIds, Action<bool> onDone)
+        {
+            if (run == null)
+            {
+                onDone?.Invoke(false);
+                return;
+            }
+
+            EnsureBoardEdit();
+            EndStomachView();
+
+            gameObject.SetActive(true);
+            StopAllCoroutines();
+            _worldMode = WorldMode.BoardEdit;
+            _settling = false;
+            _serving = false;
+            _session = null;
+            SetFoodWorldElementsVisible(false);
+            ClearPlacedPieces();
+
+            _boardEdit.BeginBoardEdit(run, candidateIds, onDone);
+        }
+
+        /// <summary>进入只读胃视图：外壳收起 Food 态并切到胃视图互斥态，交由协作组件复用棋盘布局渲染。</summary>
+        public void BeginStomachView(GameRun run)
+        {
+            if (run == null || !CanEnterStomachView)
+            {
+                return;
+            }
+
+            EnsureBoardEdit();
+            if (_boardEdit.IsEditing)
+            {
+                _boardEdit.EndBoardEdit();
+            }
+
+            _run = run;
+            _session = null;
+            gameObject.SetActive(true);
+            StopAllCoroutines();
+            _worldMode = WorldMode.StomachView;
+            _settling = false;
+            _serving = false;
+            SetFoodWorldElementsVisible(false);
+            HideWorldPanels();
+            ClearPlacedPieces();
+
+            _boardEdit.BeginStomachView(run);
+        }
+
+        public void EndStomachView()
+        {
+            if (_worldMode == WorldMode.StomachView)
+            {
+                _worldMode = WorldMode.Hidden;
+            }
+
+            _boardEdit?.EndStomachView();
+        }
+
+        public void SkipBoardEditPack()
+        {
+            if (_worldMode != WorldMode.BoardEdit || _boardEdit == null || !_boardEdit.IsEditing)
+            {
+                return;
+            }
+
+            _boardEdit.SkipBoardEditPack();
         }
 
         private void OnDestroy()
@@ -136,6 +248,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 _camera = Camera.main;
             }
 
+            EnsureServeAnimator();
             gameObject.SetActive(true);
             StopAllCoroutines();
             _worldMode = WorldMode.Food;
@@ -162,9 +275,9 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public void HideWorld()
         {
-            if (_editing)
+            if (_boardEdit != null && _boardEdit.IsEditing)
             {
-                EndBoardEdit();
+                _boardEdit.EndBoardEdit();
             }
 
             EndStomachView();
@@ -275,165 +388,32 @@ namespace GourmetProject.Game.Presentation.Battle
 
             DishPieceView placed = CreatePlacedPiece(result.Dish);
             Vector3 target = _boardView.Mapper.CellCenter(result.Dish.Placement.Origin);
-            StartCoroutine(AnimateServe(placed, target));
+            _serving = true;
+            EnsureServeAnimator();
+            StartCoroutine(_serveAnimator.Animate(placed, target, _camera, _cellSize, _halfH, FinishServing));
             _boardView.Sync();
             SetMessage($"上菜：{result.Dish.Def.Name}");
             _stateChanged?.Invoke();
         }
 
-        /// <summary>
-        /// 商人手上菜：手托着放大的菜品从屏幕上方降到目标格上方，
-        /// 随后手先抽离，菜品再从大变小落到格子并落定。手与菜全程带假阴影。
-        /// </summary>
-        private IEnumerator AnimateServe(DishPieceView piece, Vector3 target)
+        private void EnsureServeAnimator()
         {
-            _serving = true;
-
-            // 手世界高度：约 4 格高，受半屏高约束，保证起点能完全藏到屏幕上方外。
-            float handHeight = Mathf.Clamp(_cellSize * 4.2f, 2.4f, _halfH * 1.5f);
-
-            ServeHandView hand = null;
-            if (_serveHandPrefab != null)
-            {
-                hand = Instantiate(_serveHandPrefab, transform);
-                hand.gameObject.name = "ServeHand";
-                hand.Build(_camera, handHeight);
-            }
-
-            // 到位点：掌心锚点与食品视觉中心对齐，同时保证菜品根节点锚点已经落在目标格锚点上。
-            // 这样脱手时不会从目标正上方开始落，而是在对齐位置上只做缩放/高度反馈。
-            float carryScale = Mathf.Max(0.0001f, _serveCarryScale);
-            Vector3 carryCenterOffset = piece.VisualCenterOffsetForScale(carryScale);
-            Vector3 arrivalPalm = target + carryCenterOffset;
-            Vector3 topPalm = new Vector3(arrivalPalm.x, _halfH + handHeight, 0f);
-
-            // 根节点全程钉在目标格（阴影留在地面），只用本体局部抬升表现飞行高度；
-            // 本体切到 PiecesFlying 压在已摆放食品之上，阴影留在 Pieces 地面层不盖菜。
-            piece.transform.position = target;
-            piece.SetFlying(true);
-            piece.SetVisualScaleMultiplier(carryScale);
-            PlacePieceAtPalm(piece, hand, topPalm, carryScale);
-
-            // —— 阶段1：手托着放大的菜垂直下降到目标锚点已对齐的位置 ——
-            float descend = Mathf.Max(0.0001f, _serveDescendDuration);
-            float t = 0f;
-            while (t < descend && piece != null)
-            {
-                t += Time.deltaTime;
-                float k = Mathf.Clamp01(t / descend);
-                float eased = 1f - Mathf.Pow(1f - k, 3f); // 缓出
-                Vector3 palm = Vector3.Lerp(topPalm, arrivalPalm, eased);
-                if (hand != null)
+            _serveAnimator ??= new ServeAnimator(
+                transform,
+                _serveHandPrefab,
+                new ServeAnimator.Config
                 {
-                    hand.SetHeight(1f - eased * 0.8f); // 高空 1 → 贴近 0.2
-                }
-
-                PlacePieceAtPalm(piece, hand, palm, carryScale);
-                yield return null;
-            }
-
-            if (piece == null)
-            {
-                if (hand != null)
-                {
-                    Destroy(hand.gameObject);
-                }
-
-                FinishServing();
-                yield break;
-            }
-
-            PlacePieceAtPalm(piece, hand, arrivalPalm, carryScale);
-            piece.SetVisualScaleMultiplier(carryScale);
-
-            // 到位高度：本体视觉中心对齐到位掌心时的离地抬升量，供脱手悬停 / 落下阶段复用。
-            float arrivalLift = arrivalPalm.y - (piece.transform.position.y + piece.VisualCenterOffsetForScale(carryScale).y);
-
-            // —— 阶段2：手先抽离屏幕，菜品悬停在到位高度（脱手不再跟手）——
-            float withdraw = Mathf.Max(0.0001f, _serveWithdrawDuration);
-            t = 0f;
-            while (t < withdraw && piece != null)
-            {
-                t += Time.deltaTime;
-                float k = Mathf.Clamp01(t / withdraw);
-
-                if (hand != null)
-                {
-                    float he = k * k;
-                    hand.SetPalmWorld(Vector3.Lerp(arrivalPalm, topPalm, he));
-                    hand.SetHeight(0.2f + 0.8f * he);
-                }
-
-                piece.SetLiftHeight(arrivalLift);
-                piece.SetVisualScaleMultiplier(carryScale);
-                yield return null;
-            }
-
-            if (hand != null)
-            {
-                Destroy(hand.gameObject);
-            }
-
-            if (piece == null)
-            {
-                FinishServing();
-                yield break;
-            }
-
-            // —— 阶段3：菜品从大变小落到格子 ——
-            float drop = Mathf.Max(0.0001f, _serveDropDuration);
-            t = 0f;
-            while (t < drop && piece != null)
-            {
-                t += Time.deltaTime;
-                float k = Mathf.Clamp01(t / drop);
-
-                // 根节点早已钉在目标格；落下阶段只把本体从到位高度收回贴桌、并缩回原尺寸，阴影随高度收紧变实。
-                float shrink = k * k * (3f - 2f * k);
-                float visualScale = Mathf.Lerp(carryScale, 1f, shrink);
-                piece.SetVisualScaleMultiplier(visualScale);
-                piece.SetLiftHeight(Mathf.Lerp(arrivalLift, 0f, shrink));
-
-                yield return null;
-            }
-
-            if (piece != null)
-            {
-                piece.transform.position = target;
-                piece.SetLiftHeight(0f);
-                piece.SetVisualScaleMultiplier(1f);
-                yield return piece.PlayServeLandImpactFeedback();
-                // 落定后切回 Pieces 层，回到与其它棋盘食品一致的渲染顺序。
-                piece.SetFlying(false);
-            }
-
-            FinishServing();
+                    CarryScale = _serveCarryScale,
+                    DescendDuration = _serveDescendDuration,
+                    WithdrawDuration = _serveWithdrawDuration,
+                    DropDuration = _serveDropDuration,
+                });
         }
 
         private void FinishServing()
         {
             _serving = false;
             _stateChanged?.Invoke();
-        }
-
-        /// <summary>把掌心锚点与当前缩放下的食品视觉中心对齐。</summary>
-        /// <remarks>根节点全程钉在目标格、水平不动；这里只把本体沿世界 Y 抬升到掌心高度，阴影留在地面脚印中心。</remarks>
-        private void PlacePieceAtPalm(DishPieceView piece, ServeHandView hand, Vector3 palm, float visualScale)
-        {
-            if (piece == null)
-            {
-                return;
-            }
-
-            Vector3 anchor = palm;
-            if (hand != null)
-            {
-                hand.SetPalmWorld(palm);
-                anchor = hand.PalmWorldPosition;
-            }
-
-            float groundCenterY = piece.transform.position.y + piece.VisualCenterOffsetForScale(visualScale).y;
-            piece.SetLiftHeight(anchor.y - groundCenterY);
         }
 
         private void ComputeViewport()
@@ -486,39 +466,11 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void BuildBoard(GpBoard board)
         {
-            // 中央可用区：菜谱/道具面板已迁到常驻 HUD（左右栏 + 底部菜谱抽屉），这里为 HUD 让出四周边距，
-            // 棋盘居中在中部内容区，避免被左右栏与底部菜谱抽屉遮挡。
-            float boardLeft = -_halfW + 2.6f;
-            float boardRight = _halfW - 2.6f;
-            float boardTop = _halfH - 1.7f;
-            float boardBottom = -_halfH + 2.7f;
-            float availW = Mathf.Max(1f, boardRight - boardLeft);
-            float availH = Mathf.Max(1f, boardTop - boardBottom);
-
-            // 只按「实际存在的格子」(胃) 求包围盒：8×8 只是最大容量，真正可见的胃可能更小且偏置。
-            // 用胃的包围盒来定格子尺寸与居中，保证不论胃多大、落在 8×8 哪个角，都铺满可用区且居中。
-            if (!board.TryGetExistingBounds(out int minX, out int minY, out int maxX, out int maxY))
-            {
-                minX = minY = 0;
-                maxX = board.Width - 1;
-                maxY = board.Height - 1;
-            }
-
-            int boxW = Mathf.Max(1, maxX - minX + 1);
-            int boxH = Mathf.Max(1, maxY - minY + 1);
-            _cellSize = Mathf.Clamp(Mathf.Min(availW / boxW, availH / boxH), MinCellSize, MaxCellSize);
-
-            // mapper 仍按完整 Width×Height 排布；这里反推 Center，使胃包围盒的几何中心落在可用区中心。
-            Vector3 areaCenter = new Vector3((boardLeft + boardRight) * 0.5f, (boardTop + boardBottom) * 0.5f, 0f);
-            float pitch = _cellSize + Gap;
-            float fullWorldWidth = board.Width * _cellSize + Mathf.Max(0, board.Width - 1) * Gap;
-            float fullWorldHeight = board.Height * _cellSize + Mathf.Max(0, board.Height - 1) * Gap;
-            float boxCenterIndexX = (minX + maxX) * 0.5f;
-            float boxCenterIndexY = (minY + maxY) * 0.5f;
-            _boardCenter = new Vector3(
-                areaCenter.x + fullWorldWidth * 0.5f - boxCenterIndexX * pitch - _cellSize * 0.5f,
-                areaCenter.y - fullWorldHeight * 0.5f + boxCenterIndexY * pitch + _cellSize * 0.5f,
-                0f);
+            // 中央可用区：菜谱/道具面板已迁到常驻 HUD（左右栏 + 底部菜谱抽屉），棋盘居中在中部内容区，
+            // 由 BoardLayout 统一按胃包围盒铺满可用区并居中（与编辑/胃视图态共用同一套定位算法）。
+            BoardPlacement placement = BoardLayout.Compute(_halfW, _halfH, board, FoodBoardBottomMargin);
+            _cellSize = placement.CellSize;
+            _boardCenter = placement.Position;
 
             // 局部空间：棋盘以 BoardView.transform 为局部帧（BoardRoot），世界摆放/居中由其 transform 决定。
             // 保持 scale 恒等、rotation 恒等，避免子级格子/菜品被二次缩放或旋转。

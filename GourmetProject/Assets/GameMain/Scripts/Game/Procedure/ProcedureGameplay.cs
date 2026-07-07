@@ -213,7 +213,9 @@ namespace GourmetProject.Game.Procedure
             CloseIfOpen(UIForms.Battle);
             CloseIfOpen(UIForms.Reward);
             CloseIfOpen(UIForms.Result);
+            CloseIfOpen(UIForms.Defeat);
             CloseIfOpen(UIForms.DishDetail);
+            CloseIfOpen(UIForms.Settings);
             CloseIfOpen(UIForms.ConfirmDialog);
         }
 
