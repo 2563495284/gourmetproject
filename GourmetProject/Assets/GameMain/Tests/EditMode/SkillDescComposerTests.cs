@@ -111,6 +111,28 @@ namespace GourmetProject.Gameplay.Tests
         }
 
         [Test]
+        public void Scope_WithSelfSuffix()
+        {
+            string cond = SkillDescComposer.ComposeComponent(
+                "{cscope}每有 1 个食物，分数 {0}。",
+                Rule(condType: SkillConditionType.DishCount, condScope: SkillScope.RoundAndSelf, actionValues: new[] { 2f }),
+                signed: true);
+            Assert.AreEqual("周围及自身每有 1 个食物，分数 +2。", cond);
+
+            string target = SkillDescComposer.ComposeComponent(
+                "{ascope}食物分数 {0}。",
+                Rule(actionScope: SkillScope.ColumnAndSelf, actionCount: 0, actionValues: new[] { 3f }),
+                signed: true);
+            Assert.AreEqual("同列及自身所有食物分数 +3。", target);
+
+            string row = SkillDescComposer.ComposeComponent(
+                "{cscope}食物达标。",
+                Rule(condType: SkillConditionType.DishCount, condScope: SkillScope.RowAndSelf),
+                signed: false);
+            Assert.AreEqual("同行及自身食物达标。", row);
+        }
+
+        [Test]
         public void ActionScope_AllScopeWithCount()
         {
             string r = SkillDescComposer.ComposeComponent(

@@ -11,7 +11,7 @@ namespace GourmetProject.Gameplay.Model
     ///
     /// 支持的占位符：
     ///   {0}{1}..  actionValue[i]（signed=true 补正负号，倍率类 signed=false 原样，配合模板里的 ×）
-    ///   {cscope}  前提作用域词（自身/相邻/周围/同行/同列/全场）
+    ///   {cscope}  前提作用域词（自身/相邻/周围/同行/同列/本行/本列/全场）
     ///   {ascope}  行为目标短语（不含「食物」）：自身/相邻所有/相邻 2 个/所有/2 个
     ///   {unit}    计数单位：个 / 种；{thr} 阈值；{count} 目标数
     ///   {countas} 本体「视为N个食物」总数（=actionValue+1，因 base countAs 恒为 1，actionValue 存增量 N-1）
@@ -106,6 +106,9 @@ namespace GourmetProject.Gameplay.Model
                 case SkillScope.Round: return "周围";
                 case SkillScope.Row: return "同行";
                 case SkillScope.Column: return "同列";
+                case SkillScope.RoundAndSelf: return "周围及自身";
+                case SkillScope.RowAndSelf: return "本行";
+                case SkillScope.ColumnAndSelf: return "本列";
                 case SkillScope.All: return "全场";
                 default: return string.Empty;
             }
@@ -127,10 +130,13 @@ namespace GourmetProject.Gameplay.Model
             {
                 switch (scope)
                 {
-                    case SkillScope.Adjacent: return "相邻所有";
-                    case SkillScope.Round: return "周围所有";
-                    case SkillScope.Row: return "同行所有";
-                    case SkillScope.Column: return "同列所有";
+                    case SkillScope.Adjacent: return "相邻";
+                    case SkillScope.Round: return "周围";
+                    case SkillScope.Row: return "同行";
+                    case SkillScope.Column: return "同列";
+                    case SkillScope.RoundAndSelf: return "周围及自身";
+                    case SkillScope.RowAndSelf: return "本行";
+                    case SkillScope.ColumnAndSelf: return "本列";
                     case SkillScope.All: return "所有";
                     default: return ScopeWord(scope);
                 }
@@ -142,6 +148,9 @@ namespace GourmetProject.Gameplay.Model
                 case SkillScope.Round: return $"周围 {count} 个";
                 case SkillScope.Row: return $"同行 {count} 个";
                 case SkillScope.Column: return $"同列 {count} 个";
+                case SkillScope.RoundAndSelf: return $"周围及自身 {count} 个";
+                case SkillScope.RowAndSelf: return $"本行 {count} 个";
+                case SkillScope.ColumnAndSelf: return $"本列 {count} 个";
                 case SkillScope.All: return $"{count} 个";
                 default: return ScopeWord(scope);
             }

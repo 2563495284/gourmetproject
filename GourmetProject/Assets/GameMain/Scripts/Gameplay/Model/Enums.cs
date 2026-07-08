@@ -59,6 +59,9 @@ namespace GourmetProject.Gameplay.Model
         Recipe = 9,
         Category = 10,
         Round = 11,
+        RoundAndSelf = 12,
+        RowAndSelf = 13,
+        ColumnAndSelf = 14,
     }
 
     /// <summary>比较符。与 cfg.CompareOp 一一对应。</summary>

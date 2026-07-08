@@ -316,16 +316,19 @@ namespace GourmetProject.Gameplay.Scoring
                     return result;
 
                 case SkillScope.Round:
+                case SkillScope.RoundAndSelf:
                     CollectDishesFromCells(board, ScopeCells(board, self, scope), result);
-                    if (includeSelf) result.Add(self);
+                    if (includeSelf && scope == SkillScope.Round) result.Add(self);
                     return result;
 
                 case SkillScope.Row:
-                    CollectRowOrColumn(board, self, result, row: true, includeSelf);
+                case SkillScope.RowAndSelf:
+                    CollectRowOrColumn(board, self, result, row: true, includeSelf || scope == SkillScope.RowAndSelf);
                     return result;
 
                 case SkillScope.Column:
-                    CollectRowOrColumn(board, self, result, row: false, includeSelf);
+                case SkillScope.ColumnAndSelf:
+                    CollectRowOrColumn(board, self, result, row: false, includeSelf || scope == SkillScope.ColumnAndSelf);
                     return result;
 
                 case SkillScope.Before:
@@ -523,7 +526,7 @@ namespace GourmetProject.Gameplay.Scoring
             return any;
         }
 
-        /// <summary>作用域涉及的「存在格」集合（本行/本列/相邻/周围）。</summary>
+        /// <summary>作用域涉及的「存在格」集合（同行/同列/相邻/周围）。</summary>
         private static IEnumerable<GridPos> ScopeCells(GpBoard board, DishInstance self, SkillScope scope)
         {
             var cells = new List<GridPos>();
@@ -538,6 +541,7 @@ namespace GourmetProject.Gameplay.Scoring
             switch (scope)
             {
                 case SkillScope.Row:
+                case SkillScope.RowAndSelf:
                 {
                     var ys = new HashSet<int>();
                     foreach (GridPos c in self.OccupiedCells) ys.Add(c.Y);
@@ -547,6 +551,7 @@ namespace GourmetProject.Gameplay.Scoring
                 }
 
                 case SkillScope.Column:
+                case SkillScope.ColumnAndSelf:
                 {
                     var xs = new HashSet<int>();
                     foreach (GridPos c in self.OccupiedCells) xs.Add(c.X);
@@ -556,9 +561,17 @@ namespace GourmetProject.Gameplay.Scoring
                 }
 
                 case SkillScope.Round:
+                case SkillScope.RoundAndSelf:
                 {
                     var selfCells = new HashSet<int>();
-                    foreach (GridPos c in self.OccupiedCells) selfCells.Add(c.Y * board.Width + c.X);
+                    foreach (GridPos c in self.OccupiedCells)
+                    {
+                        selfCells.Add(c.Y * board.Width + c.X);
+                        if (scope == SkillScope.RoundAndSelf)
+                        {
+                            AddCell(c);
+                        }
+                    }
                     foreach (GridPos c in self.OccupiedCells)
                     {
                         for (int dx = -1; dx <= 1; dx++)

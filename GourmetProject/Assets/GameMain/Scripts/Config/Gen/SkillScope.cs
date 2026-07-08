@@ -25,11 +25,11 @@ namespace cfg
         /// </summary>
         Adjacent = 1,
         /// <summary>
-        /// 本行
+        /// 同行
         /// </summary>
         Row = 2,
         /// <summary>
-        /// 本列
+        /// 同列
         /// </summary>
         Column = 3,
         /// <summary>
@@ -64,6 +64,18 @@ namespace cfg
         /// 周围菜(共边相邻+对角相邻)
         /// </summary>
         Round = 11,
+        /// <summary>
+        /// 周围及自身(周围菜+本菜自身)
+        /// </summary>
+        RoundAndSelf = 12,
+        /// <summary>
+        /// 本行(同行+自身)
+        /// </summary>
+        RowAndSelf = 13,
+        /// <summary>
+        /// 本列（同列+自身）
+        /// </summary>
+        ColumnAndSelf = 14,
     }
 
 } 
