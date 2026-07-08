@@ -76,6 +76,14 @@ namespace cfg
         /// 本列（同列+自身）
         /// </summary>
         ColumnAndSelf = 14,
+        /// <summary>
+        /// 其他菜（全部菜-本菜自身）
+        /// </summary>
+        Other = 15,
+        /// <summary>
+        /// 全局欢乐蛋糕层数效果
+        /// </summary>
+        CakeBuff = 16,
     }
 
 } 

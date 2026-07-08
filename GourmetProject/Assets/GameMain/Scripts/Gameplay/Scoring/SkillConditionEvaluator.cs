@@ -62,16 +62,16 @@ namespace GourmetProject.Gameplay.Scoring
                     return IsOnEdge(board, self) ? 1 : 0;
 
                 case SkillConditionType.DishCount:
-                    return CountByUnit(ScopeDishes(board, self, rule.CondScope, IncludeSelf(rule)), rule.CondUnit, countAsOf);
+                    return CountByUnit(ScopeDishes(board, self, rule.CondScope), rule.CondUnit, countAsOf);
 
                 case SkillConditionType.DishSize:
-                    return CountDishSize(ScopeDishes(board, self, rule.CondScope, IncludeSelf(rule)), rule, countAsOf);
+                    return CountDishSize(ScopeDishes(board, self, rule.CondScope), rule, countAsOf);
 
                 case SkillConditionType.ServeOrder:
                     return CountByUnit(ServeOrderDishes(board, self, rule.CondScope), rule.CondUnit, countAsOf);
 
                 case SkillConditionType.SameDish:
-                    return CountSameBase(ScopeDishes(board, self, rule.CondScope, IncludeSelf(rule)), self, rule.CondUnit, countAsOf);
+                    return CountSameBase(ScopeDishes(board, self, rule.CondScope), self, rule.CondUnit, countAsOf);
 
                 case SkillConditionType.SameKindInRun:
                     return history.RunSettledCount(self.Def.BaseId);
@@ -79,7 +79,7 @@ namespace GourmetProject.Gameplay.Scoring
                 case SkillConditionType.SameKindInMeal:
                     return rule.CondParam.IndexOf("settled", System.StringComparison.OrdinalIgnoreCase) >= 0
                         ? history.MealSettledCount(self.Def.BaseId)
-                        : CountSameBase(ScopeDishes(board, self, SkillScope.All, includeSelf: true), self, rule.CondUnit, countAsOf);
+                        : CountSameBase(ScopeDishes(board, self, SkillScope.All), self, rule.CondUnit, countAsOf);
 
                 case SkillConditionType.TagCount:
                     return self.SkillIds.Count + (self.HasFlavor ? 1 : 0);
@@ -88,7 +88,7 @@ namespace GourmetProject.Gameplay.Scoring
                     return CountSkills(self);
 
                 case SkillConditionType.ShapeMatch:
-                    return CountShapeMatch(ScopeDishes(board, self, rule.CondScope, IncludeSelf(rule)), rule.CondParam, rule.CondUnit, countAsOf);
+                    return CountShapeMatch(ScopeDishes(board, self, rule.CondScope), rule.CondParam, rule.CondUnit, countAsOf);
 
                 case SkillConditionType.RecipeCount:
                     return RecipeRaw(history, rule);
@@ -109,9 +109,6 @@ namespace GourmetProject.Gameplay.Scoring
                     return 0;
             }
         }
-
-        private static bool IncludeSelf(SkillRuleDef rule)
-            => rule.CondParam.IndexOf("self", System.StringComparison.OrdinalIgnoreCase) >= 0;
 
         private static int CountSkills(DishInstance dish)
             => dish.SkillIds.Count + dish.TransferredSkills.Count;
@@ -301,7 +298,7 @@ namespace GourmetProject.Gameplay.Scoring
 
         // ---------- 作用域内的菜集合 ----------
 
-        public static List<DishInstance> ScopeDishes(GpBoard board, DishInstance self, SkillScope scope, bool includeSelf)
+        public static List<DishInstance> ScopeDishes(GpBoard board, DishInstance self, SkillScope scope)
         {
             var result = new List<DishInstance>();
             switch (scope)
@@ -312,23 +309,21 @@ namespace GourmetProject.Gameplay.Scoring
 
                 case SkillScope.Adjacent:
                     result.AddRange(board.GetAdjacentDishes(self));
-                    if (includeSelf) result.Add(self);
                     return result;
 
                 case SkillScope.Round:
                 case SkillScope.RoundAndSelf:
                     CollectDishesFromCells(board, ScopeCells(board, self, scope), result);
-                    if (includeSelf && scope == SkillScope.Round) result.Add(self);
                     return result;
 
                 case SkillScope.Row:
                 case SkillScope.RowAndSelf:
-                    CollectRowOrColumn(board, self, result, row: true, includeSelf || scope == SkillScope.RowAndSelf);
+                    CollectRowOrColumn(board, self, result, row: true, scope == SkillScope.RowAndSelf);
                     return result;
 
                 case SkillScope.Column:
                 case SkillScope.ColumnAndSelf:
-                    CollectRowOrColumn(board, self, result, row: false, includeSelf || scope == SkillScope.ColumnAndSelf);
+                    CollectRowOrColumn(board, self, result, row: false, scope == SkillScope.ColumnAndSelf);
                     return result;
 
                 case SkillScope.Before:
@@ -339,15 +334,46 @@ namespace GourmetProject.Gameplay.Scoring
                     foreach (DishInstance d in board.Dishes) if (d.Id > self.Id) result.Add(d);
                     return result;
 
+                case SkillScope.Other:
+                    foreach (DishInstance d in board.Dishes)
+                    {
+                        if (d.Id != self.Id)
+                        {
+                            result.Add(d);
+                        }
+                    }
+                    return result;
+
+                case SkillScope.CakeBuff:
+                    return result;
+
                 case SkillScope.All:
                 default:
                     foreach (DishInstance d in board.Dishes)
                     {
-                        if (d.Id == self.Id && !includeSelf) continue;
                         result.Add(d);
                     }
                     return result;
             }
+        }
+
+        public static List<DishInstance> ScopeDishes(GpBoard board, DishInstance self, SkillScope scope, bool includeSelf)
+        {
+            List<DishInstance> result = ScopeDishes(board, self, scope);
+            bool hasSelf = result.Exists(d => d.Id == self.Id);
+            if (includeSelf)
+            {
+                if (!hasSelf)
+                {
+                    result.Add(self);
+                }
+            }
+            else if (hasSelf)
+            {
+                result.RemoveAll(d => d.Id == self.Id);
+            }
+
+            return result;
         }
 
         private static void CollectDishesFromCells(GpBoard board, IEnumerable<GridPos> cells, List<DishInstance> result)

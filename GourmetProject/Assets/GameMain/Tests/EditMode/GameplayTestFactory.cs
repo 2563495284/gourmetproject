@@ -115,8 +115,7 @@ namespace GourmetProject.Tests
                             SkillActionType.AddMult,
                             1f + effectValue,
                             SkillConditionType.DishCount,
-                            SkillScope.All,
-                            condParam: "self"),
+                            SkillScope.All),
                     };
                 case TagEffectType.None:
                 default:

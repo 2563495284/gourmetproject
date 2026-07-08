@@ -106,6 +106,24 @@ namespace GourmetProject.Tests
         }
 
         [Test]
+        public void RuleAddFlat_WithOtherCondition_CountsAllExceptSelf()
+        {
+            GameplayDatabase db = Db(GameplayTestFactory.RuleSkill("s",
+                GameplayTestFactory.Rule(
+                    SkillActionType.AddFlat, 2f,
+                    condType: SkillConditionType.DishCount, condScope: SkillScope.Other, condMode: CountMode.Per)));
+            var board = new GpBoard(4, 4);
+            DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
+            Place(board, 1, dish, 0, 0, "s");
+            Place(board, 2, dish, 1, 0);
+            Place(board, 3, dish, 2, 0);
+
+            ScoreResult result = new ScoreCalculator().Calculate(board, db);
+
+            Assert.AreEqual(14f, result.DishScores.First(s => s.DishInstanceId == 1).Contribution, 0.001f);
+        }
+
+        [Test]
         public void RuleAddFlat_WithAdjacentCondition_IgnoresDiagonalDishes()
         {
             GameplayDatabase db = Db(GameplayTestFactory.RuleSkill("s",
@@ -227,7 +245,7 @@ namespace GourmetProject.Tests
 
             ScoreResult result = new ScoreCalculator().Calculate(board, db);
 
-            Assert.AreEqual(12f, result.DishScores.First(s => s.DishInstanceId == 1).Contribution, 0.001f); // 2 个其它 1x1
+            Assert.AreEqual(13f, result.DishScores.First(s => s.DishInstanceId == 1).Contribution, 0.001f); // 全场 3 个 1x1（含自身）
         }
 
         [Test]
@@ -267,7 +285,7 @@ namespace GourmetProject.Tests
 
             ScoreResult result = new ScoreCalculator().Calculate(board, db);
 
-            // 其它菜 2 个 >= 2 → 闸门开 → +100
+            // 全场 3 个菜 >= 2 → 闸门开 → +100
             Assert.AreEqual(110f, result.DishScores.First(s => s.DishInstanceId == 1).Contribution, 0.001f);
         }
 
@@ -399,6 +417,26 @@ namespace GourmetProject.Tests
         }
 
         [Test]
+        public void AddFlat_ToCakeBuff_DoesNotTargetDishes()
+        {
+            GameplayDatabase db = Db(GameplayTestFactory.RuleSkill("s",
+                GameplayTestFactory.Rule(SkillActionType.AddFlat, 3f, actionScope: SkillScope.CakeBuff)));
+            var board = new GpBoard(4, 4);
+            DishDef source = GameplayTestFactory.Dish("src", new[] { "X" }, deliciousness: 10, allowRotate: false);
+            DishDef cake = GameplayTestFactory.Dish("cake", new[] { "X" }, deliciousness: 10, allowRotate: false, category: "cake");
+            DishDef other = GameplayTestFactory.Dish("other", new[] { "X" }, deliciousness: 10, allowRotate: false, category: "drink");
+            Place(board, 1, source, 0, 0, "s");
+            Place(board, 2, cake, 1, 0);
+            Place(board, 3, other, 2, 0);
+
+            ScoreResult result = new ScoreCalculator().Calculate(board, db);
+
+            Assert.AreEqual(10f, result.DishScores.First(s => s.DishInstanceId == 1).Contribution, 0.001f);
+            Assert.AreEqual(10f, result.DishScores.First(s => s.DishInstanceId == 2).Contribution, 0.001f);
+            Assert.AreEqual(10f, result.DishScores.First(s => s.DishInstanceId == 3).Contribution, 0.001f);
+        }
+
+        [Test]
         public void TransferScore_MovesFlatBetweenDishes()
         {
             GameplayDatabase db = Db(GameplayTestFactory.RuleSkill("s",
@@ -445,7 +483,7 @@ namespace GourmetProject.Tests
 
             ScoreResult result = new ScoreCalculator().Calculate(board, db);
 
-            Assert.AreEqual(5f, result.GoldDelta, 0.001f); // 其它菜 1 个 → 5*1
+            Assert.AreEqual(10f, result.GoldDelta, 0.001f); // 全场 2 个菜（含自身）→ 5*2
         }
 
         [Test]
@@ -777,7 +815,7 @@ namespace GourmetProject.Tests
         [Test]
         public void Tiers_PicksHighestSatisfiedTierValue()
         {
-            // tiers:2|4 阈值，tiervals:2|3 各档值；场上 4 个其它食物 → 达第 2 档 → 倍率 ×3。
+            // tiers:2|4 阈值，tiervals:2|3 各档值；全场 5 个食物 → 达第 2 档 → 倍率 ×3。
             GameplayDatabase db = Db(GameplayTestFactory.RuleSkill("s",
                 GameplayTestFactory.Rule(
                     SkillActionType.AddMult, 0f,
@@ -807,7 +845,7 @@ namespace GourmetProject.Tests
             var board = new GpBoard(5, 1);
             DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
             Place(board, 1, dish, 0, 0, "s");
-            Place(board, 2, dish, 1, 0); // 仅 1 个其它 < 5 → 无效果
+            Place(board, 2, dish, 1, 0); // 全场 2 个食物 < 5 → 无效果
 
             ScoreResult result = new ScoreCalculator().Calculate(board, db);
 

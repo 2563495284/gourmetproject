@@ -62,6 +62,8 @@ namespace GourmetProject.Gameplay.Model
         RoundAndSelf = 12,
         RowAndSelf = 13,
         ColumnAndSelf = 14,
+        Other = 15,
+        CakeBuff = 16,
     }
 
     /// <summary>比较符。与 cfg.CompareOp 一一对应。</summary>

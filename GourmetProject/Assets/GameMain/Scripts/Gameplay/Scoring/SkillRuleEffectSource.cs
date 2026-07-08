@@ -305,8 +305,7 @@ namespace GourmetProject.Gameplay.Scoring
                 return SkillConditionEvaluator.CategoryDishes(ctx.Board, SkillConditionEvaluator.ParseCategoryParam(_rule.ActionParams));
             }
 
-            bool includeSelfInScope = !string.IsNullOrEmpty(ParseSkillTypeParam(_rule.ActionParams));
-            List<DishInstance> dishes = SkillConditionEvaluator.ScopeDishes(ctx.Board, _self, _rule.ActionScope, includeSelf: includeSelfInScope);
+            List<DishInstance> dishes = SkillConditionEvaluator.ScopeDishes(ctx.Board, _self, _rule.ActionScope);
 
             // skilltype:X 过滤：只作用于「带某行为类技能」的食物（巧克力「此类食物」= 带甜蜜传递的食物）。
             string skillTypeToken = ParseSkillTypeParam(_rule.ActionParams);

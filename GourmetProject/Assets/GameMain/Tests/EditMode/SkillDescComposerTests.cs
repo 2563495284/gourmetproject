@@ -123,13 +123,13 @@ namespace GourmetProject.Gameplay.Tests
                 "{ascope}食物分数 {0}。",
                 Rule(actionScope: SkillScope.ColumnAndSelf, actionCount: 0, actionValues: new[] { 3f }),
                 signed: true);
-            Assert.AreEqual("同列及自身所有食物分数 +3。", target);
+            Assert.AreEqual("本列所有食物分数 +3。", target);
 
             string row = SkillDescComposer.ComposeComponent(
                 "{cscope}食物达标。",
                 Rule(condType: SkillConditionType.DishCount, condScope: SkillScope.RowAndSelf),
                 signed: false);
-            Assert.AreEqual("同行及自身食物达标。", row);
+            Assert.AreEqual("本行食物达标。", row);
         }
 
         [Test]
@@ -140,6 +140,22 @@ namespace GourmetProject.Gameplay.Tests
                 Rule(actionType: SkillActionType.TransferSkills, actionScope: SkillScope.All, actionCount: 2),
                 signed: false);
             Assert.AreEqual("给2 个食物。", r);
+        }
+
+        [Test]
+        public void OtherAndCakeBuffScopes_HaveReadableText()
+        {
+            string other = SkillDescComposer.ComposeComponent(
+                "{cscope}每有 1 个食物，分数 {0}。",
+                Rule(condType: SkillConditionType.DishCount, condScope: SkillScope.Other, actionValues: new[] { 2f }),
+                signed: true);
+            Assert.AreEqual("其他每有 1 个食物，分数 +2。", other);
+
+            string cakeBuff = SkillDescComposer.ComposeComponent(
+                "{ascope} {0} 层。",
+                Rule(actionType: SkillActionType.AddLayer, actionScope: SkillScope.CakeBuff, actionValues: new[] { 3f }),
+                signed: true);
+            Assert.AreEqual("欢乐蛋糕 +3 层。", cakeBuff);
         }
 
         [Test]

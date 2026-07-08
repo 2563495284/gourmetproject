@@ -135,7 +135,7 @@ namespace GourmetProject.Gameplay.Scoring
                 return new List<DishInstance> { self };
             }
 
-            List<DishInstance> dishes = SkillConditionEvaluator.ScopeDishes(Board, self, rule.ActionScope, includeSelf: false);
+            List<DishInstance> dishes = SkillConditionEvaluator.ScopeDishes(Board, self, rule.ActionScope);
             if (rule.ActionCount > 0 && dishes.Count > rule.ActionCount)
             {
                 dishes = dishes
