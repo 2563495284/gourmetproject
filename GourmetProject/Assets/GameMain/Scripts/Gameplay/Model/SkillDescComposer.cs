@@ -23,14 +23,14 @@ namespace GourmetProject.Gameplay.Model
     public static class SkillDescComposer
     {
         /// <summary>技能内各子技能描述之间的分隔符。</summary>
-        public const string Separator = "；";
+        public const string Separator = "。";
 
         private const string PlainFormat = "0.######";
         private const string SignedFormat = "+0.######;-0.######;0";
 
         private static readonly Regex Token = new Regex(@"\{([A-Za-z]+|\d+)\}", RegexOptions.Compiled);
 
-        /// <summary>把若干子技能描述按顺序用「；」拼接（空片段跳过）。</summary>
+        /// <summary>把若干子技能描述按顺序用「。」拼接（空片段跳过）。</summary>
         public static string ComposeSkill(IReadOnlyList<string> componentDescs)
         {
             if (componentDescs == null || componentDescs.Count == 0)
