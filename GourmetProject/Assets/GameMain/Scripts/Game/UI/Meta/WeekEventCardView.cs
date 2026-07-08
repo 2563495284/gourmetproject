@@ -96,6 +96,11 @@ namespace GourmetProject.Game.UI.Meta
 
         public void Bind(cfg.TimelineNode node, Action onPick)
         {
+            Bind(node, null, onPick);
+        }
+
+        public void Bind(cfg.TimelineNode node, int? interestMaxGain, Action onPick)
+        {
             if (node == null)
             {
                 BindNodeCard("事件", string.Empty, "card_action_event", onPick);
@@ -110,7 +115,7 @@ namespace GourmetProject.Game.UI.Meta
                 case cfg.TimelineNodeType.Interest:
                     int threshold = Mathf.Max(0, Mathf.RoundToInt(node.PayloadValue));
                     int goldPer = int.TryParse(node.PayloadParam, out int parsedGoldPer) ? parsedGoldPer : 1;
-                    BindInterestNode(threshold, goldPer, null, onPick);
+                    BindInterestNode(threshold, goldPer, interestMaxGain, onPick);
                     break;
                 case cfg.TimelineNodeType.Boss:
                     BindNodeCard(DefaultBossTitle, string.Empty, "card_node_boss", onPick);

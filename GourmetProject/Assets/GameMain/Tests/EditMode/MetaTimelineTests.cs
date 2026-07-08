@@ -116,6 +116,14 @@ namespace GourmetProject.Tests
             Assert.AreEqual(0, TimelineMath.Interest(100, 0, 1), "阈值非法返回 0");
         }
 
+        [Test]
+        public void Interest_CapsByMaxGain()
+        {
+            Assert.AreEqual(5, TimelineMath.Interest(9999, 10, 1, 5));
+            Assert.AreEqual(10, TimelineMath.Interest(9999, 10, 1, 10));
+            Assert.AreEqual(0, TimelineMath.Interest(9999, 10, 1, 0), "上限为 0 时不发放利息");
+        }
+
         // —— 周筛选 ——
 
         [Test]

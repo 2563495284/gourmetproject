@@ -40,15 +40,16 @@ namespace GourmetProject.Game.Meta
         /// <summary>是否走完行动轴（含浮点容差）。</summary>
         public static bool IsFinished(float currentDay, float lengthDays) => currentDay >= lengthDays - Epsilon;
 
-        /// <summary>利息：每满 threshold 金币发放 goldPer 金币。</summary>
-        public static int Interest(int gold, int threshold, int goldPer)
+        /// <summary>利息：每满 threshold 金币发放 goldPer 金币，并按 maxGain 封顶。</summary>
+        public static int Interest(int gold, int threshold, int goldPer, int maxGain = int.MaxValue)
         {
             if (threshold <= 0)
             {
                 return 0;
             }
 
-            return (gold / threshold) * Math.Max(0, goldPer);
+            int rawGain = (gold / threshold) * Math.Max(0, goldPer);
+            return Math.Min(rawGain, Math.Max(0, maxGain));
         }
 
         /// <summary>收集天数从 prevDay 推进到 newDay 经过的、未触发过的节点（按 day 升序）。节点落在整天，比较含浮点容差。</summary>

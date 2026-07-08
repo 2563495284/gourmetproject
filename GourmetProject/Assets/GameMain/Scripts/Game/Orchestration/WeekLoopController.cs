@@ -24,7 +24,7 @@ namespace GourmetProject.Game.Orchestration
         void OpenShop();
 
         /// <summary>行动轴节点卡片：先展示节点卡，玩家点击后再执行节点效果。</summary>
-        void ShowTimelineNodeCard(cfg.TimelineNode node, Action onPick);
+        void ShowTimelineNodeCard(cfg.TimelineNode node, int? interestMaxGain, Action onPick);
 
         void StartBattle(int requiredScore, string modifier, string key, ActionExecutionContext actionContext);
 
@@ -255,16 +255,16 @@ namespace GourmetProject.Game.Orchestration
             switch (node.NodeType)
             {
                 case cfg.TimelineNodeType.Interest:
-                    _view.ShowTimelineNodeCard(node, () => HandleInterestNode(node));
+                    _view.ShowTimelineNodeCard(node, InterestMaxGain(), () => HandleInterestNode(node));
                     break;
                 case cfg.TimelineNodeType.Shop:
-                    _view.ShowTimelineNodeCard(node, () => OpenShopThen(ProcessNextNode));
+                    _view.ShowTimelineNodeCard(node, null, () => OpenShopThen(ProcessNextNode));
                     break;
                 case cfg.TimelineNodeType.Event:
-                    _view.ShowTimelineNodeCard(node, () => HandleEventNode(node));
+                    _view.ShowTimelineNodeCard(node, null, () => HandleEventNode(node));
                     break;
                 case cfg.TimelineNodeType.Boss:
-                    _view.ShowTimelineNodeCard(node, () => HandleBossNode(node));
+                    _view.ShowTimelineNodeCard(node, null, () => HandleBossNode(node));
                     break;
                 default:
                     ProcessNextNode();
@@ -276,14 +276,30 @@ namespace GourmetProject.Game.Orchestration
         {
             int threshold = (int)node.PayloadValue;
             int goldPer = int.TryParse(node.PayloadParam, out int gp) ? gp : 1;
-            int gold = TimelineMath.Interest(_run.Gold, threshold, goldPer);
+            int maxGain = InterestMaxGain();
+            int gold = TimelineMath.Interest(_run.Gold, threshold, goldPer, maxGain);
             _run.Gold += gold;
             RunPersistence.Save(_run);
 
-            string msg = gold > 0
-                ? $"利息结算：金币 +{gold}（每满 {threshold} 金币得 {goldPer}），当前 {_run.Gold}。"
-                : $"金币不足 {threshold}，本次没有利息。";
+            string msg;
+            if (gold > 0)
+            {
+                msg = $"利息结算：金币 +{gold}（每满 {threshold} 金币得 {goldPer}，最高 {maxGain}），当前 {_run.Gold}。";
+            }
+            else if (maxGain <= 0)
+            {
+                msg = "当前利息上限为 0，本次没有利息。";
+            }
+            else
+            {
+                msg = $"金币不足 {threshold}，本次没有利息。";
+            }
             _view.ShowNotice("收取利息", msg, ProcessNextNode);
+        }
+
+        private int InterestMaxGain()
+        {
+            return _run != null ? _run.InterestCap : 0;
         }
 
         private void HandleEventNode(cfg.TimelineNode node)

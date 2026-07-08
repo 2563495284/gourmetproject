@@ -100,8 +100,10 @@ namespace GourmetProject.Game.UI.Battle.View
 
             int threshold = Mathf.Max(0, Mathf.RoundToInt(node.PayloadValue));
             int goldPer = int.TryParse(node.PayloadParam, out int parsedGoldPer) ? parsedGoldPer : 1;
+            int maxGain = run?.InterestCap ?? 0;
+            int currentGain = TimelineMath.Interest(run?.Gold ?? 0, threshold, goldPer, maxGain);
             string desc = threshold > 0
-                ? $"每有{threshold}枚金币，获得{goldPer}枚。当前可获得{TimelineMath.Interest(run?.Gold ?? 0, threshold, goldPer)}枚"
+                ? $"每有{threshold}枚金币，获得{goldPer}枚，最高可获得{maxGain}枚。当前可获得{currentGain}枚"
                 : "当前节点没有有效金币阈值。";
             tip.Bind(desc, node.Day);
         }

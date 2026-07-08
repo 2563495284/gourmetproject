@@ -265,8 +265,12 @@ namespace GourmetProject.Game.Meta
         /// <summary>是否每周额外结算一次利息（ExtraInterest）。</summary>
         public bool HasExtraInterest() => HasPassive(ItemEffectTypes.ExtraInterest);
 
-        /// <summary>利息上限扩展值（InterestCapBonus 之和）。</summary>
-        public int InterestCapBonus() => (int)SumValue(ItemEffectTypes.InterestCapBonus);
+        /// <summary>道具指定的利息上限目标值（InterestCapBonus 取最大）。</summary>
+        public int InterestCapOverride()
+        {
+            TryGetMaxValue(ItemEffectTypes.InterestCapBonus, out float v);
+            return (int)v;
+        }
 
         // ================= 奖励 / 多选一族 hook =================
 

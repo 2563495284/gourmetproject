@@ -246,12 +246,12 @@ namespace GourmetProject.Game.UI.Battle
         }
 
         /// <summary>行动轴节点卡片：先展示节点卡，玩家点击后再执行节点效果。</summary>
-        public void ShowTimelineNodeCard(cfg.TimelineNode node, Action onPick)
+        public void ShowTimelineNodeCard(cfg.TimelineNode node, int? interestMaxGain, Action onPick)
         {
             SwitchTo(GameplayView.ActionSelect, () =>
             {
                 SetCenterTitle("行动轴事件");
-                BuildTimelineNodeCard(node, onPick);
+                BuildTimelineNodeCard(node, interestMaxGain, onPick);
             }, PlayShowCardsWhenReady);
         }
 
@@ -857,7 +857,7 @@ namespace GourmetProject.Game.UI.Battle
         }
 
         /// <summary>行动轴节点单卡：用于商店等节点，点击卡片后才执行节点效果。</summary>
-        private void BuildTimelineNodeCard(cfg.TimelineNode node, Action onPick)
+        private void BuildTimelineNodeCard(cfg.TimelineNode node, int? interestMaxGain, Action onPick)
         {
             if (_deck == null)
             {
@@ -865,7 +865,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            _deck.ShowTimelineNode(node, () => OnTimelineNodePicked(onPick), () => onPick?.Invoke());
+            _deck.ShowTimelineNode(node, interestMaxGain, () => OnTimelineNodePicked(onPick), () => onPick?.Invoke());
         }
 
         private static List<ActionChoice> RollChoices(GameRun run)

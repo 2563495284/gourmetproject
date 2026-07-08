@@ -93,6 +93,18 @@ namespace GourmetProject.Game.Run
 
         public int Gold { get; set; }
 
+        /// <summary>当前运行的利息节点单次最高收益，角色基础值可被道具提高。</summary>
+        public int InterestCap
+        {
+            get
+            {
+                cfg.Character character = _tables.TbCharacter.GetOrDefault(CharacterId);
+                int baseCap = character != null ? System.Math.Max(0, character.InitialInterestCap) : 0;
+                int itemCap = System.Math.Max(0, new ItemRuntime(this).InterestCapOverride());
+                return System.Math.Max(baseCap, itemCap);
+            }
+        }
+
         /// <summary>「食物调整」剩余次数（局内删除/移动菜品消耗，暂定初始 999，随存档保存）。</summary>
         public int FoodAdjustCount { get; set; } = DefaultFoodAdjustCount;
 
