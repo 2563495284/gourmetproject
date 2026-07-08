@@ -8,19 +8,42 @@ namespace GourmetProject.Game
     {
         private const string DishIconRoot = "Sprites/Dishes";
         private const string ItemIconRoot = "Sprites/Items";
+        private const string ItemIdPrefix = "item_";
 
         public static Sprite LoadDish(DishDef dish)
         {
-            return dish == null || string.IsNullOrEmpty(dish.Name)
-                ? null
-                : Resources.Load<Sprite>($"{DishIconRoot}/{dish.Name}");
+            if (dish == null)
+            {
+                return null;
+            }
+
+            return LoadSprite($"{DishIconRoot}/{dish.BaseId}")
+                ?? LoadSprite($"{DishIconRoot}/{dish.Id}");
         }
 
         public static Sprite LoadItem(cfg.Item item)
         {
-            return item == null || string.IsNullOrEmpty(item.Name)
-                ? null
-                : Resources.Load<Sprite>($"{ItemIconRoot}/{item.Name}");
+            if (item == null || string.IsNullOrEmpty(item.Id))
+            {
+                return null;
+            }
+
+            string resourceName = item.Id.StartsWith(ItemIdPrefix, System.StringComparison.Ordinal)
+                ? item.Id.Substring(ItemIdPrefix.Length)
+                : item.Id;
+            return LoadSprite($"{ItemIconRoot}/{resourceName}");
+        }
+
+        private static Sprite LoadSprite(string path)
+        {
+            Sprite sprite = Resources.Load<Sprite>(path);
+            if (sprite != null)
+            {
+                return sprite;
+            }
+
+            Sprite[] sprites = Resources.LoadAll<Sprite>(path);
+            return sprites != null && sprites.Length > 0 ? sprites[0] : null;
         }
     }
 }
