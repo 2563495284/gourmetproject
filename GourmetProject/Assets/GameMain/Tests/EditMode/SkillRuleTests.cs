@@ -769,6 +769,29 @@ namespace GourmetProject.Tests
             Assert.AreEqual(10f, result.DishScores.First(s => s.DishInstanceId == 3).Contribution, 0.001f);
         }
 
+        [Test]
+        public void SkillCount_IncludesTransferredSkills()
+        {
+            var counter = GameplayTestFactory.RuleSkill("counter",
+                GameplayTestFactory.Rule(
+                    SkillActionType.AddFlat,
+                    5f,
+                    condType: SkillConditionType.SkillCount,
+                    condMode: CountMode.Per));
+            SkillRuleDef transferredRule = GameplayTestFactory.Rule(SkillActionType.AddFlat, 0f, skillId: "foreign");
+            var foreign = GameplayTestFactory.RuleSkill("foreign", transferredRule);
+            GameplayDatabase db = Db(counter, foreign);
+            var board = new GpBoard(1, 1);
+            DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
+            DishInstance inst = Place(board, 1, dish, 0, 0, "counter");
+            inst.AddTransferredSkill(new SkillEffect(transferredRule, string.Empty), "source<甜蜜传递>");
+
+            ScoreResult result = new ScoreCalculator().Calculate(board, db);
+
+            // 1 个自身技能 + 1 个甜蜜传递外来子技能 → SkillCount=2，分数 10 + 5*2。
+            Assert.AreEqual(20f, result.DishScores.First(s => s.DishInstanceId == 1).Contribution, 0.001f);
+        }
+
         // ---------- P5：临时复制 ----------
 
         [Test]

@@ -84,6 +84,10 @@ namespace cfg
         /// 作用域内带某行为类技能(condParam)的菜数
         /// </summary>
         SkillTypeCount = 16,
+        /// <summary>
+        /// 本菜技能数(包括甜蜜传递过来的技能)
+        /// </summary>
+        SkillCount = 17,
     }
 
 } 

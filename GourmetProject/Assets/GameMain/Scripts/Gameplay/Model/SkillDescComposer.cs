@@ -11,12 +11,11 @@ namespace GourmetProject.Gameplay.Model
     ///
     /// 支持的占位符：
     ///   {0}{1}..  actionValue[i]（signed=true 补正负号，倍率类 signed=false 原样，配合模板里的 ×）
-    ///   {cscope}  前提作用域词（自身/周围/同行/同列/全场）
-    ///   {ascope}  行为作用域词（同上，用于「复制周围食物的技能」这类句式）
-    ///   {atargets} 行为作用域「X食物」前缀：Self→空串，其余→周围食物/同行食物/…（用于「XX食物倍率+Y」）
+    ///   {cscope}  前提作用域词（自身/相邻/周围/同行/同列/全场）
+    ///   {ascope}  行为目标短语（不含「食物」）：自身/相邻所有/相邻 2 个/所有/2 个
     ///   {unit}    计数单位：个 / 种；{thr} 阈值；{count} 目标数
     ///   {countas} 本体「视为N个食物」总数（=actionValue+1，因 base countAs 恒为 1，actionValue 存增量 N-1）
-    ///   {targets} 甜蜜传递目标短语（作用域+目标数，0=所有）
+    ///   {atargets}/{targets} 旧模板兼容别名：等价于 {ascope}食物
     ///   {tiers}   condParam 里 tiers: 解析为 3/5/8；{tiervals} actionParam 里 tiervals: 解析为 1.5/2.5/5
     ///   {floor}   actionParam 里 multfloor:/floor: 的值；{cat} 分类名（cake→蛋糕）
     /// 未识别或索引越界的占位符原样保留，便于策划自查。
@@ -83,14 +82,12 @@ namespace GourmetProject.Gameplay.Model
                 switch (key)
                 {
                     case "cscope": return ScopeWord(rule.CondScope);
-                    case "ascope": return ScopeWord(rule.ActionScope);
-                    case "atargets": return ScopeDishesPrefix(rule.ActionScope);
+                    case "ascope": return ActionScopePhrase(rule.ActionScope, rule.ActionCount);
                     case "unit": return rule.CondUnit == CountUnit.Kinds ? "种" : "个";
                     // 本体「视为N个食物」：actionValue 存的是相对 base(=1) 的增量 N-1，显示总数 N。
                     case "countas": return ((int)System.Math.Round(rule.ActionValue, System.MidpointRounding.AwayFromZero) + 1).ToString(CultureInfo.InvariantCulture);
                     case "thr": return rule.CondThreshold.ToString(CultureInfo.InvariantCulture);
                     case "count": return rule.ActionCount.ToString(CultureInfo.InvariantCulture);
-                    case "targets": return TransferTarget(rule.ActionScope, rule.ActionCount);
                     case "tiers": return JoinBar(ExtractAfter(rule.CondParam, "tiers:"));
                     case "tiervals": return JoinBar(ExtractAfter(FindEntry(rule.ActionParams, "tiervals:"), "tiervals:"));
                     case "floor": return ExtractNumber(rule.ActionParams, "multfloor:", "floor:");
@@ -114,42 +111,40 @@ namespace GourmetProject.Gameplay.Model
             }
         }
 
-        /// <summary>行为作用域「X食物」前缀；Self 返回空串（「倍率 +3」而非「自身食物倍率 +3」）。</summary>
-        private static string ScopeDishesPrefix(SkillScope scope)
+        private static string ActionScopePhrase(SkillScope scope, int count)
         {
-            switch (scope)
-            {
-                case SkillScope.Adjacent: return "相邻食物";
-                case SkillScope.Round: return "周围食物";
-                case SkillScope.Row: return "同行食物";
-                case SkillScope.Column: return "同列食物";
-                case SkillScope.All: return "所有食物";
-                case SkillScope.Self:
-                default: return string.Empty;
-            }
+            return ActionScopeText(scope, count);
         }
 
-        /// <summary>甜蜜传递目标短语：作用域词 + 目标数（0=所有）。</summary>
-        private static string TransferTarget(SkillScope scope, int count)
+        private static string ActionScopeText(SkillScope scope, int count)
         {
-            string prefix;
-            switch (scope)
+            if (scope == SkillScope.Self)
             {
-                case SkillScope.Adjacent: prefix = "相邻"; break;
-                case SkillScope.Round: prefix = "周围"; break;
-                case SkillScope.Row: prefix = "同行"; break;
-                case SkillScope.Column: prefix = "同列"; break;
-                case SkillScope.All:
-                default: prefix = string.Empty; break;
+                return "自身";
             }
 
             if (count <= 0)
             {
-                return prefix + "所有食物";
+                switch (scope)
+                {
+                    case SkillScope.Adjacent: return "相邻所有";
+                    case SkillScope.Round: return "周围所有";
+                    case SkillScope.Row: return "同行所有";
+                    case SkillScope.Column: return "同列所有";
+                    case SkillScope.All: return "所有";
+                    default: return ScopeWord(scope);
+                }
             }
 
-            // prefix 为空（全场）时保留数字前的空格，与「给 1 个食物」的行文风格一致。
-            return $"{prefix} {count} 个食物";
+            switch (scope)
+            {
+                case SkillScope.Adjacent: return $"相邻 {count} 个";
+                case SkillScope.Round: return $"周围 {count} 个";
+                case SkillScope.Row: return $"同行 {count} 个";
+                case SkillScope.Column: return $"同列 {count} 个";
+                case SkillScope.All: return $"{count} 个";
+                default: return ScopeWord(scope);
+            }
         }
 
         private static string CatWord(SkillRuleDef rule)

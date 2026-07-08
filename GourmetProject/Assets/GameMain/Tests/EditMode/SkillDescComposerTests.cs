@@ -36,7 +36,7 @@ namespace GourmetProject.Gameplay.Tests
                 "{cscope}每有 1 {unit}食物，分数 {0}。",
                 Rule(condType: SkillConditionType.DishCount, condScope: SkillScope.Adjacent, condUnit: CountUnit.Kinds, actionValues: new[] { 8f }),
                 signed: true);
-            Assert.AreEqual("周围每有 1 种食物，分数 +8。", r);
+            Assert.AreEqual("相邻每有 1 种食物，分数 +8。", r);
         }
 
         [Test]
@@ -46,37 +46,37 @@ namespace GourmetProject.Gameplay.Tests
                 "{cscope}每有 1 个空格，分数 {0}。",
                 Rule(condType: SkillConditionType.EmptyCell, condScope: SkillScope.Adjacent, actionValues: new[] { -2f }),
                 signed: true);
-            Assert.AreEqual("周围每有 1 个空格，分数 -2。", r);
+            Assert.AreEqual("相邻每有 1 个空格，分数 -2。", r);
         }
 
         [Test]
         public void MultiplierValue_NotSigned()
         {
             string r = SkillDescComposer.ComposeComponent(
-                "{atargets}倍率 ×{0}。",
+                "{ascope}食物倍率 ×{0}。",
                 Rule(actionType: SkillActionType.AddMult, actionScope: SkillScope.Column, actionValues: new[] { 2f }),
                 signed: false);
-            Assert.AreEqual("同列食物倍率 ×2。", r);
+            Assert.AreEqual("同列所有食物倍率 ×2。", r);
         }
 
         [Test]
-        public void SelfActionScope_HasNoDishPrefix()
+        public void SelfActionScope_UsesSelf()
         {
             string r = SkillDescComposer.ComposeComponent(
-                "{atargets}倍率 ×{0}。",
+                "{ascope}食物倍率 ×{0}。",
                 Rule(actionType: SkillActionType.AddMult, actionScope: SkillScope.Self, actionValues: new[] { 3f }),
                 signed: false);
-            Assert.AreEqual("倍率 ×3。", r);
+            Assert.AreEqual("自身食物倍率 ×3。", r);
         }
 
         [Test]
-        public void CountAs_ColumnPassive()
+        public void ActionScope_IncludesActionCount()
         {
             string r = SkillDescComposer.ComposeComponent(
-                "{atargets}额外视为 {0} 个食物。",
-                Rule(actionType: SkillActionType.AddCountAs, actionScope: SkillScope.Column, actionValues: new[] { 2f }),
+                "{ascope}食物额外视为 {0} 个食物。",
+                Rule(actionType: SkillActionType.AddCountAs, actionScope: SkillScope.Column, actionCount: 2, actionValues: new[] { 2f }),
                 signed: false);
-            Assert.AreEqual("同列食物额外视为 2 个食物。", r);
+            Assert.AreEqual("同列 2 个食物额外视为 2 个食物。", r);
         }
 
         [Test]
@@ -91,40 +91,56 @@ namespace GourmetProject.Gameplay.Tests
         }
 
         [Test]
-        public void TransferTarget_WithCount()
+        public void ActionScope_WithCount()
         {
             string r = SkillDescComposer.ComposeComponent(
-                "上菜时，将本菜技能甜蜜传递给{targets}。",
+                "上菜时，将本菜技能甜蜜传递给{ascope}食物。",
                 Rule(actionType: SkillActionType.TransferSkills, actionScope: SkillScope.Row, actionCount: 1),
                 signed: false);
             Assert.AreEqual("上菜时，将本菜技能甜蜜传递给同行 1 个食物。", r);
         }
 
         [Test]
-        public void TransferTarget_AllWhenZeroCount()
+        public void ActionScope_AllWhenZeroCount()
         {
             string r = SkillDescComposer.ComposeComponent(
-                "上菜时，将本菜技能甜蜜传递给{targets}。",
+                "上菜时，将本菜技能甜蜜传递给{ascope}食物。",
                 Rule(actionType: SkillActionType.TransferSkills, actionScope: SkillScope.Row, actionCount: 0),
                 signed: false);
             Assert.AreEqual("上菜时，将本菜技能甜蜜传递给同行所有食物。", r);
         }
 
         [Test]
-        public void TransferTarget_AnyScopeNoPrefix()
+        public void ActionScope_AllScopeWithCount()
         {
             string r = SkillDescComposer.ComposeComponent(
-                "给{targets}。",
+                "给{ascope}食物。",
                 Rule(actionType: SkillActionType.TransferSkills, actionScope: SkillScope.All, actionCount: 2),
                 signed: false);
-            Assert.AreEqual("给 2 个食物。", r);
+            Assert.AreEqual("给2 个食物。", r);
+        }
+
+        [Test]
+        public void LegacyTargetTokens_UseUnifiedActionScope()
+        {
+            string transfer = SkillDescComposer.ComposeComponent(
+                "给{targets}。",
+                Rule(actionType: SkillActionType.TransferSkills, actionScope: SkillScope.Row, actionCount: 1),
+                signed: false);
+            Assert.AreEqual("给同行 1 个食物。", transfer);
+
+            string targetPrefix = SkillDescComposer.ComposeComponent(
+                "{atargets}倍率 ×{0}。",
+                Rule(actionType: SkillActionType.AddMult, actionScope: SkillScope.Column, actionCount: 2, actionValues: new[] { 2f }),
+                signed: false);
+            Assert.AreEqual("同列 2 个食物倍率 ×2。", targetPrefix);
         }
 
         [Test]
         public void Tiers_Multiply()
         {
             string r = SkillDescComposer.ComposeComponent(
-                "{cscope}食物达 {tiers} 个时，{atargets}倍率 ×{tiervals}。",
+                "{cscope}食物达 {tiers} 个时，{ascope}食物倍率 ×{tiervals}。",
                 Rule(
                     actionType: SkillActionType.AddMult,
                     condType: SkillConditionType.DishCount,
@@ -134,7 +150,7 @@ namespace GourmetProject.Gameplay.Tests
                     condParam: "tiers:5|15|25",
                     actionParams: new[] { "tiervals:1.5|2.5|5" }),
                 signed: false);
-            Assert.AreEqual("同行食物达 5/15/25 个时，同行食物倍率 ×1.5/2.5/5。", r);
+            Assert.AreEqual("同行食物达 5/15/25 个时，同行所有食物倍率 ×1.5/2.5/5。", r);
         }
 
         [Test]

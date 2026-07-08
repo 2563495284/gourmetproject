@@ -84,6 +84,9 @@ namespace GourmetProject.Gameplay.Scoring
                 case SkillConditionType.TagCount:
                     return self.SkillIds.Count + (self.HasFlavor ? 1 : 0);
 
+                case SkillConditionType.SkillCount:
+                    return CountSkills(self);
+
                 case SkillConditionType.ShapeMatch:
                     return CountShapeMatch(ScopeDishes(board, self, rule.CondScope, IncludeSelf(rule)), rule.CondParam, rule.CondUnit, countAsOf);
 
@@ -109,6 +112,9 @@ namespace GourmetProject.Gameplay.Scoring
 
         private static bool IncludeSelf(SkillRuleDef rule)
             => rule.CondParam.IndexOf("self", System.StringComparison.OrdinalIgnoreCase) >= 0;
+
+        private static int CountSkills(DishInstance dish)
+            => dish.SkillIds.Count + dish.TransferredSkills.Count;
 
         /// <summary>层数封顶：condParam 含 cap:N 时返回 min(layers, N)（闪电泡芙「最多消耗3层」）。</summary>
         private static int CapLayers(int layers, string condParam)

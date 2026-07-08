@@ -41,6 +41,7 @@ namespace GourmetProject.Gameplay.Model
         OccupiedCell = 14,
         CategoryCount = 15,
         SkillTypeCount = 16,
+        SkillCount = 17,
     }
 
     /// <summary>技能作用域（前提「在哪数」/ 行为「作用到谁」）。与 cfg.SkillScope 一一对应。</summary>
