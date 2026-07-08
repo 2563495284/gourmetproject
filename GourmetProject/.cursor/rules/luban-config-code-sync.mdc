@@ -1,0 +1,16 @@
+---
+description: Luban 表配置变更必须同步相关运行时代码
+globs: GameConfig/**,Assets/GameMain/Scripts/Config/Gen/**,Assets/GameMain/Scripts/Gameplay/**,Assets/GameMain/Tests/EditMode/**
+alwaysApply: false
+---
+
+# Luban 配置与代码同步
+
+修改 `GameConfig/` 下的表配置、枚举、字段结构或生成脚本时，不能只改配置源。
+
+- 枚举源表新增/改名/改值后，运行 `bash GameConfig/gen.sh`，确认 `Assets/GameMain/Scripts/Config/Gen/` 已重新生成。
+- 如果生成枚举被运行时代码镜像（如 `cfg.SkillScope` 对应 `Gameplay.Model.SkillScope`），同步更新运行时枚举，保持数值一一对应。
+- 如果新增枚举值会改变玩法语义，补对应求值/执行逻辑、描述生成逻辑和 EditMode 测试。
+- 不手改 `Assets/GameMain/Scripts/Config/Gen/` 作为源；需要改生成物时，先改 `GameConfig/Datas/*.xlsx` 或生成脚本再生成。
+
+示例：给 `SkillScope` 增加 `Round` 时，需要同步配置源枚举、生成代码、运行时 `SkillScope`、`SkillConditionEvaluator`、`SkillDescComposer` 和相关测试。
