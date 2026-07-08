@@ -1,0 +1,650 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>道具/技能描述预览</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #121318;
+      --panel: #1b1d25;
+      --panel-2: #222632;
+      --text: #f2efe8;
+      --muted: #aaa59b;
+      --line: #343948;
+      --accent: #f3b35b;
+      --accent-2: #78d4ff;
+      --danger: #ff8278;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top left, #2a2430 0, var(--bg) 38rem);
+      color: var(--text);
+      font: 15px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      width: min(1120px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 32px 0 48px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      letter-spacing: 0.02em;
+    }
+
+    .lead {
+      margin: 0 0 24px;
+      color: var(--muted);
+    }
+
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 18px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: color-mix(in srgb, var(--panel) 92%, transparent);
+      backdrop-filter: blur(12px);
+    }
+
+    input,
+    select,
+    button {
+      min-height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel-2);
+      color: var(--text);
+      font: inherit;
+    }
+
+    input {
+      width: 100%;
+      padding: 0 14px;
+    }
+
+    select,
+    button {
+      padding: 0 12px;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button[aria-pressed="true"] {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .status {
+      margin: 0 0 14px;
+      color: var(--muted);
+    }
+
+    .status.error {
+      color: var(--danger);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 148px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: linear-gradient(180deg, var(--panel) 0%, #171922 100%);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+    }
+
+    .card h2 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.25;
+    }
+
+    .desc {
+      margin: 0;
+      color: #fff7e8;
+      white-space: pre-wrap;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: auto;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .pill {
+      padding: 2px 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .pill.accent {
+      border-color: color-mix(in srgb, var(--accent-2) 55%, var(--line));
+      color: var(--accent-2);
+    }
+
+    .empty {
+      padding: 32px;
+      border: 1px dashed var(--line);
+      border-radius: 18px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    @media (max-width: 720px) {
+      .toolbar {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>道具/技能描述预览</h1>
+    <p class="lead">读取 <code>Assets/StreamingAssets/Config</code>，把描述模板里的参数占位符回填后展示。</p>
+
+    <section class="toolbar" aria-label="筛选工具">
+      <input id="search" type="search" placeholder="搜索名称、描述或 id" autocomplete="off">
+      <select id="mode">
+        <option value="dish">菜品技能拼接（TbSkill）</option>
+        <option value="item">道具描述（TbItem）</option>
+      </select>
+      <button id="toggleParams" type="button" aria-pressed="false">显示参数</button>
+    </section>
+
+    <p id="status" class="status">正在加载配置...</p>
+    <section id="list" class="grid" aria-live="polite"></section>
+  </main>
+
+  <script>
+    const CONFIG_BASE = "../../Assets/StreamingAssets/Config/";
+
+    const state = {
+      mode: "dish",
+      query: "",
+      showParams: false,
+      data: null,
+    };
+
+    const SkillScope = {
+      0: "Self",
+      1: "Adjacent",
+      2: "Row",
+      3: "Column",
+      4: "All",
+      5: "Empty",
+      6: "Edge",
+      7: "Before",
+      8: "After",
+      9: "Recipe",
+      10: "Category",
+      11: "Round",
+      12: "RoundAndSelf",
+      13: "RowAndSelf",
+      14: "ColumnAndSelf",
+      15: "Other",
+      16: "CakeBuff",
+    };
+
+    const searchInput = document.getElementById("search");
+    const modeSelect = document.getElementById("mode");
+    const toggleParams = document.getElementById("toggleParams");
+    const statusEl = document.getElementById("status");
+    const listEl = document.getElementById("list");
+
+    searchInput.addEventListener("input", () => {
+      state.query = searchInput.value.trim().toLowerCase();
+      render();
+    });
+
+    modeSelect.addEventListener("change", () => {
+      state.mode = modeSelect.value;
+      render();
+    });
+
+    toggleParams.addEventListener("click", () => {
+      state.showParams = !state.showParams;
+      toggleParams.setAttribute("aria-pressed", String(state.showParams));
+      toggleParams.textContent = state.showParams ? "隐藏参数" : "显示参数";
+      render();
+    });
+
+    boot();
+
+    async function boot() {
+      try {
+        const [items, dishes, skills, subSkills, terms] = await Promise.all([
+          loadJson("tbitem"),
+          loadJson("tbdishbase"),
+          loadJson("tbskill"),
+          loadJson("tbsubskill"),
+          loadJson("tbterm"),
+        ]);
+
+        state.data = {
+          items,
+          dishes,
+          skillsById: indexById(skills),
+          subSkillsById: indexById(subSkills),
+          termsById: indexById(terms),
+        };
+
+        render();
+      } catch (error) {
+        statusEl.className = "status error";
+        statusEl.textContent = `配置加载失败：${error.message}。请通过本地 HTTP 服务打开本页，例如在项目根目录运行 python3 -m http.server。`;
+      }
+    }
+
+    async function loadJson(name) {
+      const response = await fetch(`${CONFIG_BASE}${name}.json`, { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`${name}.json HTTP ${response.status}`);
+      }
+
+      return response.json();
+    }
+
+    function indexById(rows) {
+      return Object.fromEntries((rows || []).map(row => [row.id, row]));
+    }
+
+    function render() {
+      if (!state.data) {
+        return;
+      }
+
+      const rows = state.mode === "item" ? buildItemRows() : buildDishRows();
+      const filtered = filterRows(rows);
+
+      statusEl.className = "status";
+      statusEl.textContent = `共 ${rows.length} 条，当前显示 ${filtered.length} 条。`;
+      listEl.innerHTML = filtered.length > 0
+        ? filtered.map(renderCard).join("")
+        : `<div class="empty">没有匹配结果。</div>`;
+    }
+
+    function buildDishRows() {
+      const { dishes, skillsById, subSkillsById, termsById } = state.data;
+
+      return dishes.map(dish => {
+        const skillIds = splitPipe(dish.skills);
+        const skillDescs = skillIds.map(skillId => {
+          const skill = skillsById[skillId];
+          if (!skill) {
+            return {
+              id: skillId,
+              term: "",
+              desc: `缺少技能配置：${skillId}`,
+              subSkillIds: [],
+            };
+          }
+
+          const subSkillIds = splitPipe(skill.subSkills);
+          const parts = subSkillIds.map((subSkillId, order) => {
+            const subSkill = subSkillsById[subSkillId];
+            if (!subSkill) {
+              return `缺少子技能配置：${subSkillId}`;
+            }
+
+            const rule = {
+              order,
+              condScope: subSkill.condScope,
+              condUnit: subSkill.condUnit,
+              condParam: subSkill.condParam || "",
+              actionScope: subSkill.actionScope,
+              actionCount: subSkill.actionCount || 0,
+              actionValues: Array.isArray(subSkill.actionValue) ? subSkill.actionValue : [],
+              actionParams: Array.isArray(subSkill.actionParam) ? subSkill.actionParam : [],
+            };
+
+            return composeSkillComponent(subSkill.descTemplate || "", rule, Boolean(subSkill.signed));
+          }).filter(Boolean);
+
+          const term = skill.termId && termsById[skill.termId] ? termsById[skill.termId].name : "";
+          return {
+            id: skillId,
+            term,
+            desc: parts.join("；"),
+            subSkillIds,
+          };
+        });
+
+        return {
+          id: dish.id,
+          name: dish.name || dish.id,
+          desc: skillDescs.map(skill => skill.desc).filter(Boolean).join("\n"),
+          meta: [
+            `dish:${dish.id}`,
+            ...skillDescs.map(skill => `skill:${skill.id}`),
+            ...skillDescs.filter(skill => skill.term).map(skill => `术语:${skill.term}`),
+            ...(state.showParams ? skillDescs.flatMap(skill => skill.subSkillIds.map(id => `sub:${id}`)) : []),
+          ],
+        };
+      });
+    }
+
+    function buildItemRows() {
+      return state.data.items.map(item => ({
+        id: item.id,
+        name: item.name || item.id,
+        desc: composeItemDesc(item),
+        meta: [
+          `item:${item.id}`,
+          ...(state.showParams ? [
+            `effect:${item.effectType || ""}`,
+            `value:${formatPlain(item.effectValue || 0)}`,
+            item.effectParam ? `param:${item.effectParam}` : "",
+          ].filter(Boolean) : []),
+        ],
+      }));
+    }
+
+    function composeItemDesc(item) {
+      const values = [item.effectValue, ...splitParamValues(item.effectParam)];
+      return String(item.desc || "").replace(/\{(\d+|effectValue|effectParam|param)\}/g, (match, key) => {
+        if (key === "effectValue") {
+          return formatPlain(item.effectValue || 0);
+        }
+
+        if (key === "effectParam" || key === "param") {
+          return item.effectParam || "";
+        }
+
+        const index = Number(key);
+        return index >= 0 && index < values.length ? formatPlain(values[index]) : match;
+      });
+    }
+
+    function composeSkillComponent(template, rule, signed) {
+      const numberFormat = value => signed ? formatSigned(value) : formatPlain(value);
+
+      return String(template || "").replace(/\{([A-Za-z]+|\d+)\}/g, (match, key) => {
+        if (/^\d+$/.test(key)) {
+          const index = Number(key);
+          return index >= 0 && index < rule.actionValues.length
+            ? numberFormat(rule.actionValues[index])
+            : match;
+        }
+
+        switch (key) {
+          case "cscope":
+            return scopeWord(rule.condScope);
+          case "ascope":
+            return actionScopeText(rule.actionScope, rule.actionCount, rule);
+          case "unit":
+            return Number(rule.condUnit) === 1 ? "种" : "个";
+          case "countas":
+            return String(Math.round((Number(rule.actionValues[0]) || 0) + 1));
+          case "thr":
+            return String(thresholdOrDefault(rule.condParam));
+          case "count":
+            return String(rule.actionCount || 0);
+          case "tiers":
+            return joinBar(extractAfter(rule.condParam, "tiers:"));
+          case "tiervals":
+            return joinBar(extractAfter(findEntry(rule.actionParams, "tiervals:"), "tiervals:"));
+          case "floor":
+            return extractNumber(rule.actionParams, ["multfloor:", "floor:"]);
+          case "cat":
+            return catWord(rule);
+          case "targets":
+          case "atargets":
+            return `${actionScopeText(rule.actionScope, rule.actionCount, rule)}食物`;
+          default:
+            return match;
+        }
+      });
+    }
+
+    function filterRows(rows) {
+      if (!state.query) {
+        return rows;
+      }
+
+      return rows.filter(row => {
+        const haystack = [
+          row.id,
+          row.name,
+          row.desc,
+          ...(row.meta || []),
+        ].join(" ").toLowerCase();
+        return haystack.includes(state.query);
+      });
+    }
+
+    function renderCard(row) {
+      const meta = (row.meta || []).map((text, index) => (
+        `<span class="pill ${index === 0 ? "accent" : ""}">${escapeHtml(text)}</span>`
+      )).join("");
+
+      return `
+        <article class="card">
+          <h2>${escapeHtml(row.name)}</h2>
+          <p class="desc">${escapeHtml(row.desc || "（无描述）")}</p>
+          <div class="meta">${meta}</div>
+        </article>
+      `;
+    }
+
+    function splitPipe(value) {
+      return String(value || "")
+        .split("|")
+        .map(part => part.trim())
+        .filter(Boolean);
+    }
+
+    function splitParamValues(value) {
+      return String(value || "")
+        .split(/[|,;]/)
+        .map(part => part.trim())
+        .filter(Boolean);
+    }
+
+    function formatPlain(value) {
+      const number = Number(value);
+      if (Number.isFinite(number)) {
+        return Number.isInteger(number) ? String(number) : trimFloat(number);
+      }
+
+      return String(value ?? "");
+    }
+
+    function formatSigned(value) {
+      const number = Number(value);
+      if (!Number.isFinite(number)) {
+        return String(value ?? "");
+      }
+
+      if (Math.abs(number) < 0.000001) {
+        return "0";
+      }
+
+      return `${number > 0 ? "+" : ""}${trimFloat(number)}`;
+    }
+
+    function trimFloat(number) {
+      return number.toFixed(6).replace(/\.?0+$/, "");
+    }
+
+    function scopeWord(scopeValue) {
+      switch (SkillScope[Number(scopeValue)]) {
+        case "Self": return "自身";
+        case "Adjacent": return "相邻";
+        case "Round": return "周围";
+        case "Row": return "同行";
+        case "Column": return "同列";
+        case "RoundAndSelf": return "周围及自身";
+        case "RowAndSelf": return "本行";
+        case "ColumnAndSelf": return "本列";
+        case "All": return "全场";
+        case "Other": return "其他";
+        case "CakeBuff": return "欢乐蛋糕";
+        case "Category": return "指定分类";
+        default: return "";
+      }
+    }
+
+    function actionScopeText(scopeValue, count, rule) {
+      const scope = SkillScope[Number(scopeValue)];
+      const normalizedCount = Number(count) || 0;
+
+      if (scope === "Self") {
+        return "自身";
+      }
+
+      if (normalizedCount <= 0) {
+        switch (scope) {
+          case "Adjacent": return "相邻";
+          case "Round": return "周围";
+          case "Row": return "同行";
+          case "Column": return "同列";
+          case "RoundAndSelf": return "周围及自身";
+          case "RowAndSelf": return "本行";
+          case "ColumnAndSelf": return "本列";
+          case "All": return "所有";
+          case "Other": return "其他";
+          case "CakeBuff": return "欢乐蛋糕";
+          case "Category": return catWord(rule) ? `所有${catWord(rule)}` : "指定分类";
+          default: return scopeWord(scopeValue);
+        }
+      }
+
+      switch (scope) {
+        case "Adjacent": return `相邻 ${normalizedCount} 个`;
+        case "Round": return `周围 ${normalizedCount} 个`;
+        case "Row": return `同行 ${normalizedCount} 个`;
+        case "Column": return `同列 ${normalizedCount} 个`;
+        case "RoundAndSelf": return `周围及自身 ${normalizedCount} 个`;
+        case "RowAndSelf": return `本行 ${normalizedCount} 个`;
+        case "ColumnAndSelf": return `本列 ${normalizedCount} 个`;
+        case "All": return `${normalizedCount} 个`;
+        case "Other": return `其他 ${normalizedCount} 个`;
+        case "Category": return catWord(rule) ? `${catWord(rule)} ${normalizedCount} 个` : `指定分类 ${normalizedCount} 个`;
+        default: return scopeWord(scopeValue);
+      }
+    }
+
+    function thresholdOrDefault(condParam) {
+      for (const rawSegment of String(condParam || "").split(";")) {
+        const segment = rawSegment.trim();
+        if (!segment) {
+          continue;
+        }
+
+        const symbol = segment.match(/^(>=|<=|==|>|<|=)\s*(-?\d+)/);
+        if (symbol) {
+          return Number(symbol[2]);
+        }
+
+        const pair = segment.match(/^([A-Za-z]+)\s*[:=]\s*(-?\d+)/);
+        if (!pair) {
+          const plain = Number(segment);
+          if (Number.isInteger(plain)) {
+            return plain;
+          }
+          continue;
+        }
+
+        if (["gte", "ge", "min", "lte", "le", "max", "eq", "gt", "lt", "thr", "threshold"].includes(pair[1].toLowerCase())) {
+          return Number(pair[2]);
+        }
+      }
+
+      return 0;
+    }
+
+    function catWord(rule) {
+      let cat = extractAfter(findEntry(rule.actionParams, "cat:"), "cat:");
+      if (!cat) {
+        cat = extractAfter(rule.condParam, "cat:");
+      }
+
+      switch (cat) {
+        case "cake": return "蛋糕";
+        case "": return "";
+        default: return cat;
+      }
+    }
+
+    function findEntry(parameters, token) {
+      return (parameters || []).find(value => String(value || "").toLowerCase().includes(token.toLowerCase())) || "";
+    }
+
+    function extractAfter(source, token) {
+      if (!source || !token) {
+        return "";
+      }
+
+      const lowerSource = String(source).toLowerCase();
+      const lowerToken = token.toLowerCase();
+      const index = lowerSource.indexOf(lowerToken);
+      if (index < 0) {
+        return "";
+      }
+
+      const body = String(source).slice(index + token.length);
+      const end = body.indexOf(";");
+      return (end >= 0 ? body.slice(0, end) : body).trim();
+    }
+
+    function extractNumber(parameters, tokens) {
+      for (const token of tokens) {
+        const value = extractAfter(findEntry(parameters, token), token);
+        if (value) {
+          return value;
+        }
+      }
+
+      return "";
+    }
+
+    function joinBar(raw) {
+      return String(raw || "")
+        .split(/[|,]/)
+        .map(part => part.trim())
+        .filter(Boolean)
+        .join("/");
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+  </script>
+</body>
+</html>
