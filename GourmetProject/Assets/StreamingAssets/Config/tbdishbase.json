@@ -18,7 +18,7 @@
     "deliciousness": 8,
     "icon": "Sprites/Dishes/macaron",
     "allowRotate": false,
-    "skills": "sk_macaron|sk_tf_row_1",
+    "skills": "sk_macaron",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -135,7 +135,7 @@
     "deliciousness": 10,
     "icon": "Sprites/Dishes/sugarbean",
     "allowRotate": false,
-    "skills": "sk_sugarbean|sk_tf_any_1",
+    "skills": "sk_sugarbean",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -176,7 +176,7 @@
     "allowRotate": false,
     "skills": "sk_sundae",
     "category": "",
-    "countAs": 2,
+    "countAs": 1,
     "shapeRows": [
       "XX"
     ]
@@ -187,7 +187,7 @@
     "deliciousness": 20,
     "icon": "Sprites/Dishes/cone",
     "allowRotate": false,
-    "skills": "sk_cone_layer|sk_cone_copy",
+    "skills": "sk_cone",
     "category": "cake",
     "countAs": 1,
     "shapeRows": [
@@ -201,7 +201,7 @@
     "deliciousness": 10,
     "icon": "Sprites/Dishes/lollipop",
     "allowRotate": false,
-    "skills": "sk_lollipop|sk_tf_col_2",
+    "skills": "sk_lollipop",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -214,7 +214,7 @@
     "deliciousness": 8,
     "icon": "Sprites/Dishes/gummy",
     "allowRotate": false,
-    "skills": "sk_gummy|sk_tf_adj_2",
+    "skills": "sk_gummy",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -227,7 +227,7 @@
     "deliciousness": 14,
     "icon": "Sprites/Dishes/cupcake",
     "allowRotate": false,
-    "skills": "sk_cupcake_copy|sk_cupcake_layer",
+    "skills": "sk_cupcake",
     "category": "cake",
     "countAs": 1,
     "shapeRows": [
@@ -254,7 +254,7 @@
     "deliciousness": 15,
     "icon": "Sprites/Dishes/toffee",
     "allowRotate": false,
-    "skills": "sk_toffee|sk_tf_any_2",
+    "skills": "sk_toffee",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -268,7 +268,7 @@
     "deliciousness": 20,
     "icon": "Sprites/Dishes/nougat",
     "allowRotate": false,
-    "skills": "sk_nougat|sk_tf_adj_2",
+    "skills": "sk_nougat",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -284,7 +284,7 @@
     "allowRotate": false,
     "skills": "sk_eggroll",
     "category": "",
-    "countAs": 4,
+    "countAs": 1,
     "shapeRows": [
       "XXX"
     ]
@@ -295,7 +295,7 @@
     "deliciousness": 40,
     "icon": "Sprites/Dishes/choco_bar",
     "allowRotate": false,
-    "skills": "sk_choco_bar|sk_tf_any_3",
+    "skills": "sk_choco_bar",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -323,7 +323,7 @@
     "deliciousness": 20,
     "icon": "Sprites/Dishes/tanghulu",
     "allowRotate": false,
-    "skills": "sk_tanghulu|sk_tf_row_3",
+    "skills": "sk_tanghulu",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -366,9 +366,9 @@
     "deliciousness": 25,
     "icon": "Sprites/Dishes/mooncake",
     "allowRotate": false,
-    "skills": "sk_mooncake_copy",
+    "skills": "sk_mooncake",
     "category": "",
-    "countAs": 5,
+    "countAs": 1,
     "shapeRows": [
       "XX",
       "XX"
@@ -380,7 +380,7 @@
     "deliciousness": 20,
     "icon": "Sprites/Dishes/waffle",
     "allowRotate": false,
-    "skills": "sk_waffle_mult|sk_waffle_countas",
+    "skills": "sk_waffle",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -394,7 +394,7 @@
     "deliciousness": 20,
     "icon": "Sprites/Dishes/dorayaki",
     "allowRotate": false,
-    "skills": "sk_dorayaki_countas|sk_dorayaki_mult",
+    "skills": "sk_dorayaki",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -408,7 +408,7 @@
     "deliciousness": 50,
     "icon": "Sprites/Dishes/cream_cake",
     "allowRotate": false,
-    "skills": "sk_cream_cake_perm|sk_cream_cake_spread",
+    "skills": "sk_cream_cake",
     "category": "cake",
     "countAs": 1,
     "shapeRows": [
@@ -422,7 +422,7 @@
     "deliciousness": 40,
     "icon": "Sprites/Dishes/donut",
     "allowRotate": false,
-    "skills": "sk_donut_layer|sk_donut_mult",
+    "skills": "sk_donut",
     "category": "cake",
     "countAs": 1,
     "shapeRows": [
@@ -436,7 +436,7 @@
     "deliciousness": 30,
     "icon": "Sprites/Dishes/pengtang",
     "allowRotate": false,
-    "skills": "sk_pengtang|sk_tf_col_all",
+    "skills": "sk_pengtang",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -452,7 +452,7 @@
     "allowRotate": false,
     "skills": "sk_parfait",
     "category": "",
-    "countAs": 10,
+    "countAs": 1,
     "shapeRows": [
       "XXX",
       "XXX"
@@ -466,7 +466,7 @@
     "allowRotate": false,
     "skills": "sk_sundae_big",
     "category": "",
-    "countAs": 5,
+    "countAs": 1,
     "shapeRows": [
       "XX",
       "XX",
@@ -479,7 +479,7 @@
     "deliciousness": 30,
     "icon": "Sprites/Dishes/swiss_roll",
     "allowRotate": false,
-    "skills": "sk_swiss_layer|sk_swiss_mult",
+    "skills": "sk_swiss_roll",
     "category": "cake",
     "countAs": 1,
     "shapeRows": [
@@ -494,9 +494,9 @@
     "deliciousness": 20,
     "icon": "Sprites/Dishes/mango_sago",
     "allowRotate": false,
-    "skills": "sk_mango_copy",
+    "skills": "sk_mango_sago",
     "category": "",
-    "countAs": 8,
+    "countAs": 1,
     "shapeRows": [
       "XXX",
       "XXX"
@@ -508,7 +508,7 @@
     "deliciousness": 30,
     "icon": "Sprites/Dishes/chiffon",
     "allowRotate": false,
-    "skills": "sk_chiffon_mult|sk_chiffon_spread",
+    "skills": "sk_chiffon",
     "category": "cake",
     "countAs": 1,
     "shapeRows": [
@@ -537,7 +537,7 @@
     "deliciousness": 40,
     "icon": "Sprites/Dishes/fruit_cake",
     "allowRotate": false,
-    "skills": "sk_fruit_mult|sk_fruit_layer",
+    "skills": "sk_fruit_cake",
     "category": "cake",
     "countAs": 1,
     "shapeRows": [
@@ -582,7 +582,7 @@
     "allowRotate": false,
     "skills": "sk_palmier",
     "category": "",
-    "countAs": 4,
+    "countAs": 1,
     "shapeRows": [
       ".X",
       "XX"
@@ -594,7 +594,7 @@
     "deliciousness": 40,
     "icon": "Sprites/Dishes/candycane",
     "allowRotate": false,
-    "skills": "sk_candycane|sk_tf_adj_all",
+    "skills": "sk_candycane",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -626,7 +626,7 @@
     "deliciousness": 80,
     "icon": "Sprites/Dishes/marshmallow",
     "allowRotate": false,
-    "skills": "sk_marshmallow|sk_tf_row_all",
+    "skills": "sk_marshmallow",
     "category": "",
     "countAs": 1,
     "shapeRows": [

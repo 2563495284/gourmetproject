@@ -64,11 +64,12 @@ namespace GourmetProject.Tests
             int actionCount = 0,
             string actionParam = "",
             SkillTrigger trigger = SkillTrigger.OnSettle,
-            int order = 0)
+            int order = 0,
+            string skillId = "")
         {
             return new SkillRuleDef(
                 id: $"r_{actionType}_{order}",
-                skillId: string.Empty,
+                skillId: skillId,
                 order: order,
                 trigger: trigger,
                 condType: condType,

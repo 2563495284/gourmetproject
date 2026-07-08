@@ -744,19 +744,20 @@ namespace GourmetProject.Tests
         // ---------- 甜蜜传递：RNG 均权随机 + 技能来源溯源 ----------
 
         [Test]
-        public void Transfer_ResolveOnServe_CollectsRequestWithCandidatesAndSkills()
+        public void Transfer_ResolveOnServe_CollectsRequestWithCandidatesAndSiblingEffects()
         {
-            // 马卡龙：计分技能 sk_sweet + 甜蜜传递 sk_tf（同行，取 1）。OnServe 只收集请求、不直接落地。
-            var sweet = GameplayTestFactory.RuleSkill("sk_sweet", GameplayTestFactory.Rule(SkillActionType.AddFlat, 8f));
-            var transfer = GameplayTestFactory.RuleSkill("sk_tf",
-                GameplayTestFactory.Rule(SkillActionType.TransferSkills, 0f, actionScope: SkillScope.Row, actionCount: 1, trigger: SkillTrigger.OnServe));
-            GameplayDatabase db = Db(sweet, transfer);
+            // 一菜一 skill：马卡龙 sk_macaron 含计分子技能(AddFlat 8) + 甜蜜传递子技能(同行取1)。
+            // OnServe 只收集请求、不直接落地；传递载荷是「同 skill 内其他子技能」（计分），不含传递本身。
+            var macaronSkill = GameplayTestFactory.RuleSkill("sk_macaron",
+                GameplayTestFactory.Rule(SkillActionType.AddFlat, 8f, order: 0),
+                GameplayTestFactory.Rule(SkillActionType.TransferSkills, 0f, actionScope: SkillScope.Row, actionCount: 1, trigger: SkillTrigger.OnServe, order: 1, skillId: "sk_macaron"));
+            GameplayDatabase db = Db(macaronSkill);
             var board = new GpBoard(3, 1);
             DishDef macaron = GameplayTestFactory.Dish("macaron", new[] { "X" }, deliciousness: 8, allowRotate: false);
             DishDef plain = GameplayTestFactory.Dish("plain", new[] { "X" }, deliciousness: 10, allowRotate: false);
             Place(board, 1, plain, 0, 0);
             Place(board, 2, plain, 2, 0);
-            DishInstance served = Place(board, 3, macaron, 1, 0, "sk_sweet", "sk_tf");
+            DishInstance served = Place(board, 3, macaron, 1, 0, "sk_macaron");
 
             ServeRuleResolver.ServeResolveResult res =
                 ServeRuleResolver.ResolveOnServe(board, db, null, served, 0);
@@ -766,23 +767,23 @@ namespace GourmetProject.Tests
             Assert.AreEqual(3, req.SourceInstanceId);
             Assert.AreEqual("macaron", req.SourceName);
             Assert.AreEqual(1, req.Count);
-            CollectionAssert.Contains(req.SkillIds, "sk_sweet");        // 传的是计分技能
-            CollectionAssert.DoesNotContain(req.SkillIds, "sk_tf");     // 传递技能本身不传
-            CollectionAssert.AreEquivalent(new[] { 1, 2 }, req.CandidateTargetIds); // 同行两个候选，不含自身
+            // 载荷只含「同 skill 内其他子技能」= 计分子技能一条（传递本身被排除，故为 1）。
+            Assert.AreEqual(1, req.Effects.Count);
+            CollectionAssert.AreEquivalent(new[] { 1, 2 }, req.CandidateTargetIds);   // 同行两个候选，不含自身
         }
 
         [Test]
-        public void Transfer_Serve_LandsSkillWithSourceLabelAndScores()
+        public void Transfer_Serve_LandsSiblingEffectWithSourceLabelAndScores()
         {
             // 端到端：2x1 棋盘先上一个空技能目标，再上带甜蜜传递的马卡龙；同行必落地到目标。
-            var sweet = GameplayTestFactory.RuleSkill("sk_sweet", GameplayTestFactory.Rule(SkillActionType.AddFlat, 8f));
-            var transfer = GameplayTestFactory.RuleSkill("sk_tf",
-                GameplayTestFactory.Rule(SkillActionType.TransferSkills, 0f, actionScope: SkillScope.Row, actionCount: 1, trigger: SkillTrigger.OnServe));
+            var macaronSkill = GameplayTestFactory.RuleSkill("sk_macaron",
+                GameplayTestFactory.Rule(SkillActionType.AddFlat, 8f, order: 0),
+                GameplayTestFactory.Rule(SkillActionType.TransferSkills, 0f, actionScope: SkillScope.Row, actionCount: 1, trigger: SkillTrigger.OnServe, order: 1, skillId: "sk_macaron"));
             DishDef target = GameplayTestFactory.Dish("target", new[] { "X" }, deliciousness: 10, allowRotate: false);
-            DishDef macaron = GameplayTestFactory.Dish("macaron", new[] { "X" }, deliciousness: 8, allowRotate: false, skills: new[] { "sk_sweet", "sk_tf" });
+            DishDef macaron = GameplayTestFactory.Dish("macaron", new[] { "X" }, deliciousness: 8, allowRotate: false, skills: new[] { "sk_macaron" });
             var db = new GameplayDatabase(
                 new List<DishDef> { target, macaron },
-                new List<SkillDef> { sweet, transfer },
+                new List<SkillDef> { macaronSkill },
                 new List<FlavorDef>(), new List<CellTagDef>(), new List<RecipeDef>());
             var rng = new GourmetProject.Core.Rng.RandomService();
             rng.Init("transfer");
@@ -794,13 +795,14 @@ namespace GourmetProject.Tests
             var session = new BattleSession(new GpBoard(2, 1), db, rng.Stream("b"), slots, requiredScore: 0);
 
             session.Serve(0); // 目标先落地
-            session.Serve(1); // 马卡龙落地并把 sk_sweet 传给目标
+            session.Serve(1); // 马卡龙落地并把计分子技能传给目标
 
             DishInstance targetInst = session.Board.Dishes.First(d => d.Def.Id == "target");
-            Assert.Contains("sk_sweet", targetInst.SkillIds.ToList());
-            Assert.AreEqual("macaron<甜蜜传递>", targetInst.GetSkillSource("sk_sweet"));
+            Assert.AreEqual(1, targetInst.TransferredSkills.Count);
+            Assert.AreEqual(SkillActionType.AddFlat, targetInst.TransferredSkills[0].Rule.ActionType);
+            Assert.AreEqual("macaron<甜蜜传递>", targetInst.TransferredSkills[0].SourceLabel);
 
-            // 结算：目标获得并结算 sk_sweet（+8）→ 10+8=18；来源明细以来源标签命名。
+            // 结算：目标获得并结算外来计分子技能（+8）→ 10+8=18；来源明细以来源标签命名。
             ScoreResult result = session.Settle();
             DishScore targetScore = result.DishScores.First(s => s.DishInstanceId == targetInst.Id);
             Assert.AreEqual(18f, targetScore.Contribution, 0.001f);

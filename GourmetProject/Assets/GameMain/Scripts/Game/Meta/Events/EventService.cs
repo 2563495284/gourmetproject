@@ -130,6 +130,7 @@ namespace GourmetProject.Game.Meta
                 run.MarkEventUsed(ev.Id);
             }
 
+            GrantEventCompleteGold(run, result);
             return result;
         }
 
@@ -147,7 +148,24 @@ namespace GourmetProject.Game.Meta
                 run.MarkEventUsed(ev.Id);
             }
 
+            GrantEventCompleteGold(run, result);
             return result;
+        }
+
+        /// <summary>事件即时结算完成时发放道具「事件红包」金币（战斗/结局类事件不在此发放）。</summary>
+        private static void GrantEventCompleteGold(GameRun run, EventResolveResult result)
+        {
+            if (run == null || result == null)
+            {
+                return;
+            }
+
+            if (result.FollowUpKind != EventFollowUpKind.None && result.FollowUpKind != EventFollowUpKind.Shop)
+            {
+                return;
+            }
+
+            run.Gold += new ItemRuntime(run).EventCompleteGold();
         }
 
         private static EventResolveResult ResolveEffect(GameRun run, string effectType, float effectValue, string effectParam, string fallback, IRandomStream rng)

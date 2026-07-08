@@ -64,6 +64,7 @@ namespace GourmetProject.Game.Meta
         public static List<ShopEntry> RollStock(cfg.Tables tables, GameRun run, IRandomStream rng, IRandomStream lootRng)
         {
             var stock = new List<ShopEntry>();
+            var itemRuntime = new ItemRuntime(run);
             int dishHidden = HiddenScoreService.DishHiddenScore(run, run.LastActionContext);
             int passiveHidden = HiddenScoreService.PassiveItemHiddenScore(run, run.LastActionContext);
             int fragmentHidden = HiddenScoreService.FragmentHiddenScore(run, run.LastActionContext);
@@ -73,7 +74,7 @@ namespace GourmetProject.Game.Meta
                 cfg.Item item = tables.TbItem.GetOrDefault(itemId);
                 if (item != null)
                 {
-                    stock.Add(new ShopEntry(ShopEntryKind.PassiveItem, item.Id, item.Name, item.Desc, PassiveItemPrice));
+                    stock.Add(new ShopEntry(ShopEntryKind.PassiveItem, item.Id, item.Name, item.Desc, itemRuntime.ModifyShopPrice(ShopEntryKind.PassiveItem, PassiveItemPrice)));
                 }
             }
 
@@ -83,7 +84,7 @@ namespace GourmetProject.Game.Meta
                 cfg.Item item = tables.TbItem.GetOrDefault(itemId);
                 if (item != null)
                 {
-                    stock.Add(new ShopEntry(ShopEntryKind.ActiveItem, item.Id, item.Name, item.Desc, ActiveItemPrice));
+                    stock.Add(new ShopEntry(ShopEntryKind.ActiveItem, item.Id, item.Name, item.Desc, itemRuntime.ModifyShopPrice(ShopEntryKind.ActiveItem, ActiveItemPrice)));
                 }
             }
 
@@ -92,7 +93,7 @@ namespace GourmetProject.Game.Meta
                 cfg.DishBase baseDish = tables.TbDishBase.GetOrDefault(variant.BaseId);
                 string name = baseDish != null ? baseDish.Name : variant.Id;
                 int price = variant.Price > 0 ? variant.Price : 30;
-                stock.Add(new ShopEntry(ShopEntryKind.Dish, variant.Id, name, "加入菜谱池的菜品", price));
+                stock.Add(new ShopEntry(ShopEntryKind.Dish, variant.Id, name, "加入菜谱池的菜品", itemRuntime.ModifyShopPrice(ShopEntryKind.Dish, price)));
             }
 
             // 碎片包：仅当存在「可拼入当前胃」的候选碎片时才上架（避免买了无处可放）。
@@ -103,7 +104,7 @@ namespace GourmetProject.Game.Meta
                     "fragment_pack",
                     "碎片包",
                     "开出三种碎片，选一块拼入棋盘",
-                    FragmentPackPrice));
+                    itemRuntime.ModifyShopPrice(ShopEntryKind.Fragment, FragmentPackPrice)));
             }
 
             return stock;
@@ -183,42 +184,61 @@ namespace GourmetProject.Game.Meta
             return true;
         }
 
-        /// <summary>删除菜谱池中的一道菜，花费金币。</summary>
+        /// <summary>当前删牌花费（含道具折扣/固定价/涨价修正）。</summary>
+        public static int DeleteCost(GameRun run)
+        {
+            return run == null ? DeleteDishCost : new ItemRuntime(run).ModifyDeletePrice(DeleteDishCost);
+        }
+
+        /// <summary>删除菜谱池中的一道菜，花费金币。持有「囤积癖」时禁止删除。</summary>
         public static bool DeleteDish(GameRun run, string dishId)
         {
-            if (run == null || run.Gold < DeleteDishCost || !run.RemoveBonusDish(dishId))
+            if (run == null || new ItemRuntime(run).BlockRemoveDish())
             {
                 return false;
             }
 
-            run.Gold -= DeleteDishCost;
+            int cost = DeleteCost(run);
+            if (run.Gold < cost || !run.RemoveBonusDish(dishId))
+            {
+                return false;
+            }
+
+            run.Gold -= cost;
             return true;
         }
 
         public static bool DeleteDishAt(GameRun run, int bookIndex, int dishIndex)
         {
-            if (run == null || run.Gold < DeleteDishCost || !run.RemoveBonusDishAt(bookIndex, dishIndex))
+            if (run == null || new ItemRuntime(run).BlockRemoveDish())
             {
                 return false;
             }
 
-            run.Gold -= DeleteDishCost;
+            int cost = DeleteCost(run);
+            if (run.Gold < cost || !run.RemoveBonusDishAt(bookIndex, dishIndex))
+            {
+                return false;
+            }
+
+            run.Gold -= cost;
             return true;
         }
 
         public static bool PurchaseRecipeBook(GameRun run)
         {
-            if (run == null || run.Gold < EmptyRecipeBookPrice || !run.CanAddRecipeBook)
+            if (run == null || !run.CanAddRecipeBook)
             {
                 return false;
             }
 
-            if (!run.AddRecipeBook())
+            int price = new ItemRuntime(run).ModifyRecipeBookPrice(EmptyRecipeBookPrice);
+            if (run.Gold < price || !run.AddRecipeBook())
             {
                 return false;
             }
 
-            run.Gold -= EmptyRecipeBookPrice;
+            run.Gold -= price;
             return true;
         }
 

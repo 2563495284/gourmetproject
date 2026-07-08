@@ -32,12 +32,11 @@ namespace GourmetProject.Game.Adapter
                 dishes.Add(ToDishDef(v, b));
             }
 
-            Dictionary<string, List<SkillRuleDef>> rulesBySkill = BuildSkillRules(tables);
+            Dictionary<string, cfg.SubSkill> subSkillIndex = BuildSubSkillIndex(tables);
             var skills = new List<SkillDef>(tables.TbSkill.DataList.Count);
             foreach (cfg.Skill s in tables.TbSkill.DataList)
             {
-                rulesBySkill.TryGetValue(s.Id, out List<SkillRuleDef> rules);
-                skills.Add(ToSkillDef(s, rules));
+                skills.Add(ToSkillDef(s, subSkillIndex, tables));
             }
 
             var flavors = new List<FlavorDef>(tables.TbFlavor.DataList.Count);
@@ -134,52 +133,75 @@ namespace GourmetProject.Game.Adapter
                 b.CountAs);
         }
 
-        private static Dictionary<string, List<SkillRuleDef>> BuildSkillRules(cfg.Tables tables)
+        /// <summary>把 TbSubSkill（合并后=具体子技能）建成 id→行 的索引，供技能正向引用。</summary>
+        private static Dictionary<string, cfg.SubSkill> BuildSubSkillIndex(cfg.Tables tables)
         {
-            var bySkill = new Dictionary<string, List<SkillRuleDef>>();
-            foreach (cfg.SkillRule r in tables.TbSkillRule.DataList)
+            var index = new Dictionary<string, cfg.SubSkill>(tables.TbSubSkill.DataList.Count);
+            foreach (cfg.SubSkill ss in tables.TbSubSkill.DataList)
             {
-                if (!bySkill.TryGetValue(r.SkillId, out List<SkillRuleDef> list))
-                {
-                    list = new List<SkillRuleDef>();
-                    bySkill[r.SkillId] = list;
-                }
-
-                list.Add(new SkillRuleDef(
-                    r.Id,
-                    r.SkillId,
-                    r.Order,
-                    (SkillTrigger)(int)r.Trigger,
-                    (SkillConditionType)(int)r.CondType,
-                    (SkillScope)(int)r.CondScope,
-                    (CountUnit)(int)r.CondUnit,
-                    (CountMode)(int)r.CondMode,
-                    (CompareOp)(int)r.CondCompare,
-                    r.CondThreshold,
-                    r.CondParam,
-                    (SkillActionType)(int)r.ActionType,
-                    (SkillScope)(int)r.ActionScope,
-                    r.ActionCount,
-                    r.ActionValue,
-                    r.ActionParam));
+                index[ss.Id] = ss;
             }
 
-            foreach (List<SkillRuleDef> list in bySkill.Values)
-            {
-                list.Sort((a, b) => a.Order.CompareTo(b.Order));
-            }
-
-            return bySkill;
+            return index;
         }
 
-        private static SkillDef ToSkillDef(cfg.Skill s, List<SkillRuleDef> rules)
+        /// <summary>
+        /// 把「技能(TbSkill) 正向引用的有序子技能列表」合成为运行时 SkillRuleDef（order=列表下标），
+        /// 描述取 descOverride，否则由各子技能占位符模板按序回填拼接。
+        /// 标题 Name 取术语名（termId 非空时），否则空串。
+        /// </summary>
+        private static SkillDef ToSkillDef(
+            cfg.Skill s, Dictionary<string, cfg.SubSkill> subSkillIndex, cfg.Tables tables)
         {
-            return new SkillDef(
-                s.Id,
-                s.Name,
-                s.Desc,
-                s.TermId,
-                rules);
+            List<string> subIds = SplitPipeList(s.SubSkills);
+            var rules = new List<SkillRuleDef>(subIds.Count);
+            var parts = new List<string>(subIds.Count);
+            for (int order = 0; order < subIds.Count; order++)
+            {
+                string subId = subIds[order];
+                if (!subSkillIndex.TryGetValue(subId, out cfg.SubSkill ss))
+                {
+                    throw new System.InvalidOperationException(
+                        $"技能 '{s.Id}' 引用了不存在的子技能 '{subId}'。");
+                }
+
+                var rule = new SkillRuleDef(
+                    $"{s.Id}#{order}",
+                    s.Id,
+                    order,
+                    (SkillTrigger)(int)ss.Trigger,
+                    (SkillConditionType)(int)ss.CondType,
+                    (SkillScope)(int)ss.CondScope,
+                    (CountUnit)(int)ss.CondUnit,
+                    (CountMode)(int)ss.CondMode,
+                    (CompareOp)(int)ss.CondCompare,
+                    ss.CondThreshold,
+                    ss.CondParam,
+                    (SkillActionType)(int)ss.ActionType,
+                    (SkillScope)(int)ss.ActionScope,
+                    ss.ActionCount,
+                    ss.ActionValue,
+                    ss.ActionParam);
+
+                rules.Add(rule);
+                parts.Add(SkillDescComposer.ComposeComponent(ss.DescTemplate, rule, ss.Signed));
+            }
+
+            string desc = !string.IsNullOrEmpty(s.DescOverride)
+                ? s.DescOverride
+                : SkillDescComposer.ComposeSkill(parts);
+
+            string name = string.Empty;
+            if (!string.IsNullOrEmpty(s.TermId))
+            {
+                cfg.Term term = tables.TbTerm.GetOrDefault(s.TermId);
+                if (term != null)
+                {
+                    name = term.Name;
+                }
+            }
+
+            return new SkillDef(s.Id, name, desc, s.TermId, rules, parts);
         }
 
         private static FlavorDef ToFlavorDef(cfg.Flavor f)

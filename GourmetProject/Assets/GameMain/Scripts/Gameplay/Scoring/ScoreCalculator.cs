@@ -29,10 +29,12 @@ namespace GourmetProject.Gameplay.Scoring
             float finalMultiplier = 1f,
             IEnumerable<IScoreEffectSource> extraSources = null,
             IScoreHistory history = null,
-            int initialHappyCakeLayers = 0)
+            int initialHappyCakeLayers = 0,
+            int extraCountAsPerDish = 0,
+            int cakeLayerThresholdReduction = 0)
         {
             IScoreEffectSource[] sources = MergeSources(extraSources);
-            return Calculate(new ScoreSnapshot(board, db, finalFlat, finalMultiplier, sources, history, initialHappyCakeLayers));
+            return Calculate(new ScoreSnapshot(board, db, finalFlat, finalMultiplier, sources, history, initialHappyCakeLayers, extraCountAsPerDish, cakeLayerThresholdReduction));
         }
 
         public ScoreResult Calculate(ScoreSnapshot snapshot)

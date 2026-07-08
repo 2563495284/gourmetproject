@@ -120,10 +120,11 @@ namespace GourmetProject.Gameplay.Scoring
                 }
             }
 
+            int itemBonus = Math.Max(0, snapshot.ExtraCountAsPerDish);
             foreach (DishInstance d in snapshot.DishesInDefaultOrder)
             {
                 extra.TryGetValue(d.Id, out int e);
-                _liveCountAs[d.Id] = Math.Max(1, d.Def.CountAs + d.RuntimeCountAsBonus + e);
+                _liveCountAs[d.Id] = Math.Max(1, d.Def.CountAs + d.RuntimeCountAsBonus + e + itemBonus);
             }
         }
 
@@ -395,15 +396,15 @@ namespace GourmetProject.Gameplay.Scoring
         }
 
         /// <summary>登记技能传递（副作用，正式结算后应用到实例的运行时技能集）。</summary>
-        public void RecordSkillTransfer(DishInstance target, IReadOnlyList<string> skillIds, string sourceName = null)
+        public void RecordSkillTransfer(DishInstance target, IReadOnlyList<SkillEffect> effects, string sourceName = null)
         {
-            if (target == null || skillIds == null || skillIds.Count == 0)
+            if (target == null || effects == null || effects.Count == 0)
             {
                 return;
             }
 
-            _skillTransfers.Add(new SkillTransferSideEffect(target.Id, skillIds, sourceName));
-            EmitEvent(ScoreEventType.CommandExecuted, $"技能传递给 {target.Def.Name}（{skillIds.Count} 个）");
+            _skillTransfers.Add(new SkillTransferSideEffect(target.Id, effects, sourceName));
+            EmitEvent(ScoreEventType.CommandExecuted, $"技能传递给 {target.Def.Name}（{effects.Count} 个）");
         }
 
         public void SubmitCommand(IScoreCommand command)
@@ -706,19 +707,19 @@ namespace GourmetProject.Gameplay.Scoring
         }
     }
 
-    /// <summary>技能传递副作用：把 SkillIds 追加给某目标实例（可带来源名，用于「源名&lt;甜蜜传递&gt;」展示）。</summary>
+    /// <summary>技能传递副作用：把外来子技能(Effects) 追加给某目标实例（可带来源名，用于「源名&lt;甜蜜传递&gt;」展示）。</summary>
     public sealed class SkillTransferSideEffect
     {
-        public SkillTransferSideEffect(int targetInstanceId, IReadOnlyList<string> skillIds, string sourceName = null)
+        public SkillTransferSideEffect(int targetInstanceId, IReadOnlyList<SkillEffect> effects, string sourceName = null)
         {
             TargetInstanceId = targetInstanceId;
-            SkillIds = skillIds ?? Array.Empty<string>();
+            Effects = effects ?? Array.Empty<SkillEffect>();
             SourceName = sourceName ?? string.Empty;
         }
 
         public int TargetInstanceId { get; }
 
-        public IReadOnlyList<string> SkillIds { get; }
+        public IReadOnlyList<SkillEffect> Effects { get; }
 
         /// <summary>来源菜名（非空时应用为「源名&lt;甜蜜传递&gt;」来源标签）。</summary>
         public string SourceName { get; }

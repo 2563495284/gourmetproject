@@ -64,6 +64,21 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>局级乘区修正（由道具/Buff 注入，影响最终结算）。</summary>
         public float FinalMultiplier { get; set; } = 1f;
 
+        /// <summary>每道菜额外「视为食物数」（由被动道具注入，影响计数类前提）。</summary>
+        public int ExtraCountAsPerDish { get; set; }
+
+        /// <summary>蛋糕层数 buff 阈值下调（由被动道具「蛋糕捷径」注入）。</summary>
+        public int CakeLayerThresholdReduction { get; set; }
+
+        /// <summary>蛋糕层数每次净增时的额外加成（由被动道具「蛋糕膨胀」注入）。</summary>
+        public int CakeLayerAccelBonus { get; set; }
+
+        /// <summary>设置本次品鉴的初始蛋糕层数（道具「蛋糕打底」/跨局保留）。下限 0。</summary>
+        public void SeedHappyCakeLayers(int layers)
+        {
+            HappyCakeLayers = layers < 0 ? 0 : layers;
+        }
+
         /// <summary>本局允许的最大上菜次数（-1 表示不限；Boss 周「限量供应」会设上限）。</summary>
         public int MaxServes { get; set; } = -1;
 
@@ -142,7 +157,7 @@ namespace GourmetProject.Gameplay.Battle
             ServeRuleResolver.ServeResolveResult serveResult =
                 ServeRuleResolver.ResolveOnServe(Board, _db, BuildHistory(), instance, HappyCakeLayers);
             PendingGold += serveResult.Gold;
-            HappyCakeLayers = Math.Max(0, HappyCakeLayers + serveResult.HappyCakeLayerDelta);
+            HappyCakeLayers = Math.Max(0, HappyCakeLayers + serveResult.HappyCakeLayerDelta + AccelFor(serveResult.HappyCakeLayerDelta));
             ApplyTransferRequests(serveResult.TransferRequests);
             ApplyCopySkillRequests(serveResult.CopySkillRequests);
             ApplyTempCopyRequests(serveResult.TempCopySourceIds);
@@ -153,13 +168,13 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>计算当前棋盘的预览分数（不标记结算，不产生副作用），供 UI 实时展示。</summary>
         public ScoreResult PreviewScore()
         {
-            return _calculator.Calculate(Board, _db, FinalFlat, FinalMultiplier, history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers);
+            return _calculator.Calculate(Board, _db, FinalFlat, FinalMultiplier, history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction);
         }
 
         /// <summary>「吃」：结算、应用副作用（金币/层数/技能传递/历史）并记录结果。</summary>
         public ScoreResult Settle()
         {
-            ScoreResult result = _calculator.Calculate(Board, _db, FinalFlat, FinalMultiplier, history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers);
+            ScoreResult result = _calculator.Calculate(Board, _db, FinalFlat, FinalMultiplier, history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction);
             ApplySideEffects(result);
             LastResult = result;
             IsSettled = true;
@@ -195,8 +210,8 @@ namespace GourmetProject.Gameplay.Battle
             // 金币入账（结算侧效果）。
             PendingGold += result.GoldDelta;
 
-            // 全局欢乐蛋糕层数：写回品鉴级计数器。
-            HappyCakeLayers = Math.Max(0, HappyCakeLayers + result.HappyCakeLayerDelta);
+            // 全局欢乐蛋糕层数：写回品鉴级计数器（层数净增时叠加道具加速）。
+            HappyCakeLayers = Math.Max(0, HappyCakeLayers + result.HappyCakeLayerDelta + AccelFor(result.HappyCakeLayerDelta));
 
             // 技能传递。
             foreach (SkillTransferSideEffect transfer in result.SkillTransfers)
@@ -208,9 +223,9 @@ namespace GourmetProject.Gameplay.Battle
                 }
 
                 string label = string.IsNullOrEmpty(transfer.SourceName) ? null : $"{transfer.SourceName}<甜蜜传递>";
-                foreach (string skillId in transfer.SkillIds)
+                foreach (SkillEffect effect in transfer.Effects)
                 {
-                    inst.AddSkill(skillId, label);
+                    inst.AddTransferredSkill(effect, label);
                 }
             }
 
@@ -255,7 +270,7 @@ namespace GourmetProject.Gameplay.Battle
 
             foreach (SkillTransferRequest request in requests)
             {
-                if (request.CandidateTargetIds.Count == 0 || request.SkillIds.Count == 0)
+                if (request.CandidateTargetIds.Count == 0 || request.Effects.Count == 0)
                 {
                     continue;
                 }
@@ -276,9 +291,9 @@ namespace GourmetProject.Gameplay.Battle
                         continue;
                     }
 
-                    foreach (string skillId in request.SkillIds)
+                    foreach (SkillEffect effect in request.Effects)
                     {
-                        target.AddSkill(skillId, sourceLabel);
+                        target.AddTransferredSkill(effect, sourceLabel);
                     }
                 }
             }
@@ -335,6 +350,7 @@ namespace GourmetProject.Gameplay.Battle
                 Placement placement = placements[_rng.Range(0, placements.Count)];
                 var clone = new DishInstance(_nextInstanceId++, source.Def, placement, source.SkillIds, source.FlavorId);
                 clone.CopySkillSourcesFrom(source);
+                clone.CopyTransferredSkillsFrom(source);
                 clone.MarkTemporary();
                 Board.Place(clone);
             }
@@ -356,6 +372,12 @@ namespace GourmetProject.Gameplay.Battle
             {
                 Board.RemoveDish(dish);
             }
+        }
+
+        /// <summary>层数净增（delta&gt;0）时返回额外加速层数，否则 0（道具「蛋糕膨胀」）。</summary>
+        private int AccelFor(int delta)
+        {
+            return delta > 0 ? CakeLayerAccelBonus : 0;
         }
 
         private DishInstance FindInstance(int id)

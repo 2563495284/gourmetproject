@@ -1,10 +1,12 @@
 using System.Collections.Generic;
 using GourmetProject.Core.Rng;
+using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Meta;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Library;
 using GourmetProject.Gameplay.Model;
+using GourmetProject.Gameplay.Scoring;
 using GourmetProject.Runtime;
 using GpBoard = GourmetProject.Gameplay.Board.Board;
 using Log = GourmetProject.Core.Diagnostics.Log;
@@ -51,7 +53,21 @@ namespace GourmetProject.Game.Run
             GpBoard board = BuildBoard(run, character, modifier);
 
             var battleStream = GameApp.Random.DomainStream(SeedDomains.Combat, key);
-            var session = new BattleSession(board, run.Database, battleStream, slots, requiredScore, runSettledCounts: run.RunSettledCounts);
+
+            // 结算类被动道具（逐菜/条件/顺序）作为效果来源注入结算器；局级加/乘仍走 FinalFlat/Multiplier 快路径。
+            var calculator = new ScoreCalculator(effectSources: ItemScoreEffectAdapter.BuildScoreSources(run));
+            var session = new BattleSession(board, run.Database, battleStream, slots, requiredScore, calculator, runSettledCounts: run.RunSettledCounts);
+            session.ExtraCountAsPerDish = ItemScoreEffectAdapter.ExtraCountAsPerDish(run);
+
+            // 蛋糕层数族道具：初始层数 / 阈值下调 / 叠层加速。
+            var itemRuntime = new ItemRuntime(run);
+            session.CakeLayerThresholdReduction = itemRuntime.CakeThresholdReduction();
+            session.CakeLayerAccelBonus = itemRuntime.CakeAccelBonus();
+            int initLayers = itemRuntime.CakeInitialLayers();
+            if (initLayers > 0)
+            {
+                session.SeedHappyCakeLayers(initLayers);
+            }
 
             if (modifier == "limit_serve")
             {

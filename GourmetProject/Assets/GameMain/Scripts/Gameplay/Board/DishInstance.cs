@@ -14,6 +14,7 @@ namespace GourmetProject.Gameplay.Board
         private readonly List<GridPos> _occupiedCells;
         private readonly List<string> _skillIds;
         private readonly Dictionary<string, string> _skillSources = new Dictionary<string, string>();
+        private readonly List<TransferredSkill> _transferredSkills = new List<TransferredSkill>();
 
         public DishInstance(int id, DishDef def, Placement placement, IReadOnlyList<string> skillIds, string flavorId)
         {
@@ -125,6 +126,31 @@ namespace GourmetProject.Gameplay.Board
         /// <summary>技能来源标签映射（skillId → 来源标签）。</summary>
         public IReadOnlyDictionary<string, string> SkillSources => _skillSources;
 
+        /// <summary>
+        /// 由甜蜜传递获得的「外来子技能」：源 skill 内除传递外的子技能(rule)+其描述+来源标签。
+        /// 随本实例生命周期存在（本次美食内临时，结算时随目标一并施加、tips 可见；美食结束实例销毁即清除）。
+        /// </summary>
+        public IReadOnlyList<TransferredSkill> TransferredSkills => _transferredSkills;
+
+        /// <summary>追加一条外来子技能（甜蜜传递落地）。按 rule 引用去重，重复来源不叠加。</summary>
+        public void AddTransferredSkill(SkillEffect effect, string sourceLabel)
+        {
+            if (effect?.Rule == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < _transferredSkills.Count; i++)
+            {
+                if (ReferenceEquals(_transferredSkills[i].Effect.Rule, effect.Rule))
+                {
+                    return;
+                }
+            }
+
+            _transferredSkills.Add(new TransferredSkill(effect, sourceLabel));
+        }
+
         /// <summary>从另一实例复制技能来源标签（临时克隆时保留来源展示）。</summary>
         public void CopySkillSourcesFrom(DishInstance other)
         {
@@ -155,5 +181,39 @@ namespace GourmetProject.Gameplay.Board
         public IReadOnlyList<GridPos> OccupiedCells => _occupiedCells;
 
         public bool Occupies(GridPos cell) => _occupiedCells.Contains(cell);
+
+        /// <summary>把另一实例的外来子技能整体复制过来（临时克隆时保留传递效果与来源展示）。</summary>
+        public void CopyTransferredSkillsFrom(DishInstance other)
+        {
+            if (other == null)
+            {
+                return;
+            }
+
+            foreach (TransferredSkill t in other._transferredSkills)
+            {
+                AddTransferredSkill(t.Effect, t.SourceLabel);
+            }
+        }
+    }
+
+    /// <summary>目标实例上的一条外来子技能：效果(rule+描述) + 来源标签（如「巧克力棒&lt;甜蜜传递&gt;」）。</summary>
+    public sealed class TransferredSkill
+    {
+        public TransferredSkill(GourmetProject.Gameplay.Model.SkillEffect effect, string sourceLabel)
+        {
+            Effect = effect;
+            SourceLabel = sourceLabel ?? string.Empty;
+        }
+
+        public GourmetProject.Gameplay.Model.SkillEffect Effect { get; }
+
+        public string SourceLabel { get; }
+
+        /// <summary>该外来子技能的展示描述（等于 <see cref="Effect"/> 的描述片段），供 UI/tips 直接使用。</summary>
+        public string Desc => Effect != null ? Effect.Desc : string.Empty;
+
+        /// <summary>该外来子技能的规则本体（等于 <see cref="Effect"/> 的规则），供结算/测试直接使用。</summary>
+        public GourmetProject.Gameplay.Model.SkillRuleDef Rule => Effect != null ? Effect.Rule : null;
     }
 }

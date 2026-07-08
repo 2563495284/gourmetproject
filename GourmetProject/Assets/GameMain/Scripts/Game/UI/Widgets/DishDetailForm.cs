@@ -162,7 +162,7 @@ namespace GourmetProject.Game.UI.Widgets
             int shown = 0;
 
             List<string> lines = DishInfoText.TagLines(
-                data.SkillIds, data.FlavorId, db, out List<string> terms, data.SkillSources);
+                data.SkillIds, data.FlavorId, db, out List<string> terms, data.SkillSources, data.TransferredSkills);
 
             foreach (string line in lines)
             {

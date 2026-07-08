@@ -17,7 +17,13 @@ namespace GourmetProject.Game.UI.Widgets
         {
             if (_titleText != null)
             {
+                // 空标题（如无术语名的技能）隐藏标题行，只显示描述。
+                bool hasTitle = !string.IsNullOrEmpty(title);
                 _titleText.text = title;
+                if (_titleText.gameObject.activeSelf != hasTitle)
+                {
+                    _titleText.gameObject.SetActive(hasTitle);
+                }
             }
 
             if (_descText != null)

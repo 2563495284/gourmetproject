@@ -68,9 +68,11 @@ namespace GourmetProject.Game.Meta
                 return string.Empty;
             }
 
-            run.Gold += offer.BaseGold;
+            // 美食奖励金币按道具修正（利润提成 / 克扣工钱）。
+            int gold = new ItemRuntime(run).ModifyMealRewardGold(offer.BaseGold);
+            run.Gold += gold;
             offer.MarkBaseGoldClaimed();
-            return $"金币 +{offer.BaseGold}";
+            return $"金币 +{gold}";
         }
 
         public static string ApplyChoice(GameRun run, RewardChoice choice)

@@ -39,6 +39,9 @@ namespace GourmetProject.Tests
             Assert.IsTrue(skill.HasRules);
             Assert.AreEqual(SkillActionType.AddMult, skill.Rules[0].ActionType);
             Assert.AreEqual(1.5f, skill.Rules[0].ActionValue);
+            Assert.AreEqual("贡献 ×1.5", skill.Desc);
+            // 标题取术语名（termId 非空时），本例 termId 为空 → 空标题。
+            Assert.AreEqual(string.Empty, skill.Name);
 
             FlavorDef flavor = db.GetFlavor("tag_a");
             Assert.NotNull(flavor);
@@ -138,17 +141,15 @@ namespace GourmetProject.Tests
                     return @"[
   {
     ""id"": ""tag_inherent"",
-    ""name"": ""固有"",
-    ""desc"": ""贡献 ×1.5"",
-    ""termId"": """"
+    ""termId"": """",
+    ""descOverride"": """",
+    ""subSkills"": ""ss_test_mult""
   }
 ]";
-                case "tbskillrule":
+                case "tbsubskill":
                     return @"[
   {
-    ""id"": ""rr_tag_inherent"",
-    ""skillId"": ""tag_inherent"",
-    ""order"": 0,
+    ""id"": ""ss_test_mult"",
     ""trigger"": 0,
     ""condType"": 0,
     ""condScope"": 0,
@@ -161,7 +162,10 @@ namespace GourmetProject.Tests
     ""actionScope"": 0,
     ""actionCount"": 0,
     ""actionValue"": [1.5],
-    ""actionParam"": []
+    ""actionParam"": [],
+    ""isPassive"": false,
+    ""signed"": false,
+    ""descTemplate"": ""贡献 ×{0}""
   }
 ]";
                 case "tbflavor":

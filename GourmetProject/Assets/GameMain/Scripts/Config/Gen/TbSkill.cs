@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 菜品技能元信息：id/name/desc/termId。具体效果统一由 TbSkillRule 配置。
+/// 菜品技能元信息：id/termId/descOverride/subSkills(有序引用 sub_skill)。描述由所含子技能占位符模板按顺序自动拼接；descOverride 非空时覆盖。表标题按 termId 术语名(无则空)。
 /// </summary>
 public partial class TbSkill
 {

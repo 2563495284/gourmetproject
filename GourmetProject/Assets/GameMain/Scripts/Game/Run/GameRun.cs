@@ -108,6 +108,25 @@ namespace GourmetProject.Game.Run
             return true;
         }
 
+        /// <summary>
+        /// 尝试消耗一件「不死」道具（名刀·加护）：持有时移除一件并返回 true，
+        /// 供结算失败判定改为「不失败」。无则返回 false。
+        /// </summary>
+        public bool TryConsumeUndying()
+        {
+            foreach (RunItemState state in _items)
+            {
+                cfg.Item item = _tables.TbItem.GetOrDefault(state.ItemId);
+                if (item != null && item.Kind == cfg.ItemKind.Passive && item.EffectType == ItemEffectTypes.Undying)
+                {
+                    RemoveItem(item.Id);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public IReadOnlyList<RunItemState> Items => _items;
 
         public IReadOnlyList<string> BonusDishIds => _bonusDishIds;
@@ -896,7 +915,10 @@ namespace GourmetProject.Game.Run
             }
 
             int baseReq = RequiredScore;
-            return System.Math.Max(1, (int)System.Math.Round(baseReq * multiplier, System.MidpointRounding.AwayFromZero));
+            int scaled = System.Math.Max(1, (int)System.Math.Round(baseReq * multiplier, System.MidpointRounding.AwayFromZero));
+            // 超级美食倍率 > 1 视为 Super 档，否则普通档；道具目标分修正随档位施加。
+            var tier = multiplier > 1f ? MealTier.Super : MealTier.Normal;
+            return new ItemRuntime(this).ModifyRequiredScore(scaled, tier);
         }
 
         /// <summary>Boss 目标分：用指定分数曲线（空则用当前周曲线），强制应用 Boss 倍率。</summary>
@@ -906,7 +928,8 @@ namespace GourmetProject.Game.Run
                 ? _tables.TbScoreProfile.GetOrDefault(scoreProfileId)
                 : CurrentScoreProfile(CurrentWeek ?? LastConfiguredWeek);
             int endlessExtra = IsEndless ? System.Math.Max(1, WeekIndex - TotalWeeks) : 0;
-            return ComputeRequiredScore(profile, true, endlessExtra);
+            int bossReq = ComputeRequiredScore(profile, true, endlessExtra);
+            return new ItemRuntime(this).ModifyRequiredScore(bossReq, MealTier.Feast);
         }
 
         /// <summary>当前周是否为 Boss 周（用于表现层展示）。</summary>

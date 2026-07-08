@@ -18,9 +18,9 @@ public sealed partial class Skill : Luban.BeanBase
     public Skill(JSONNode _buf) 
     {
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
-        { if(!_buf["name"].IsString) { throw new SerializationException(); }  Name = _buf["name"]; }
-        { if(!_buf["desc"].IsString) { throw new SerializationException(); }  Desc = _buf["desc"]; }
         { if(!_buf["termId"].IsString) { throw new SerializationException(); }  TermId = _buf["termId"]; }
+        { if(!_buf["descOverride"].IsString) { throw new SerializationException(); }  DescOverride = _buf["descOverride"]; }
+        { if(!_buf["subSkills"].IsString) { throw new SerializationException(); }  SubSkills = _buf["subSkills"]; }
     }
 
     public static Skill DeserializeSkill(JSONNode _buf)
@@ -29,21 +29,21 @@ public sealed partial class Skill : Luban.BeanBase
     }
 
     /// <summary>
-    /// 标签ID
+    /// 技能ID
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 标签名称
-    /// </summary>
-    public readonly string Name;
-    /// <summary>
-    /// 标签描述
-    /// </summary>
-    public readonly string Desc;
-    /// <summary>
-    /// 关联术语ID
+    /// 关联术语ID(可空)
     /// </summary>
     public readonly string TermId;
+    /// <summary>
+    /// 描述覆盖(空=由子技能自动拼接)
+    /// </summary>
+    public readonly string DescOverride;
+    /// <summary>
+    /// 有序引用的子技能ID列表(| 分隔)
+    /// </summary>
+    public readonly string SubSkills;
    
     public const int __ID__ = 79944241;
     public override int GetTypeId() => __ID__;
@@ -56,9 +56,9 @@ public sealed partial class Skill : Luban.BeanBase
     {
         return "{ "
         + "id:" + Id + ","
-        + "name:" + Name + ","
-        + "desc:" + Desc + ","
         + "termId:" + TermId + ","
+        + "descOverride:" + DescOverride + ","
+        + "subSkills:" + SubSkills + ","
         + "}";
     }
 }

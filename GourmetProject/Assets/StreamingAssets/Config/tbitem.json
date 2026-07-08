@@ -113,5 +113,2144 @@
       "min": 0,
       "max": 0
     }
+  },
+  {
+    "id": "item_grant_two_passive",
+    "name": "随机被动包",
+    "desc": "获得两个随机被动道具。",
+    "kind": 1,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 5,
+    "holdLimit": 9,
+    "effectType": "GrantRandomPassive",
+    "effectValue": 2,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 1,
+      "nextLevelWeightMultiplier": 1,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  {
+    "id": "item_choose_one_passive",
+    "name": "被动三选一",
+    "desc": "从多个被动道具中选择一个获得。",
+    "kind": 1,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 5,
+    "holdLimit": 9,
+    "effectType": "ChooseOnePassive",
+    "effectValue": 3,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 1,
+      "nextLevelWeightMultiplier": 1,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  {
+    "id": "item_grant_two_active",
+    "name": "随机主动包",
+    "desc": "获得两个随机主动道具。",
+    "kind": 1,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 5,
+    "holdLimit": 9,
+    "effectType": "GrantRandomActive",
+    "effectValue": 2,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 1,
+      "nextLevelWeightMultiplier": 1,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  {
+    "id": "item_choose_one_active",
+    "name": "主动三选一",
+    "desc": "从多个主动道具中选择一个获得。",
+    "kind": 1,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 5,
+    "holdLimit": 9,
+    "effectType": "ChooseOneActive",
+    "effectValue": 3,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 1,
+      "nextLevelWeightMultiplier": 1,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  {
+    "id": "item_choose_one_food",
+    "name": "食物三选一",
+    "desc": "从多个食物中选择一个获得。",
+    "kind": 1,
+    "quality": 0,
+    "specialTags": "",
+    "triggerTiming": 5,
+    "holdLimit": 9,
+    "effectType": "ChooseOneFood",
+    "effectValue": 3,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 1,
+      "nextLevelWeightMultiplier": 1,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  {
+    "id": "item_choose_one_fragment",
+    "name": "碎片三选一",
+    "desc": "从多个胃部碎片中选择一个获得。",
+    "kind": 1,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 5,
+    "holdLimit": 9,
+    "effectType": "ChooseOneFragment",
+    "effectValue": 3,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 1,
+      "nextLevelWeightMultiplier": 1,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  {
+    "id": "item_grant_recipe",
+    "name": "菜谱券",
+    "desc": "获得一个菜谱。",
+    "kind": 1,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 5,
+    "holdLimit": 9,
+    "effectType": "GrantRecipe",
+    "effectValue": 1,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 1,
+      "nextLevelWeightMultiplier": 1,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  {
+    "id": "item_family_pack",
+    "name": "全家福",
+    "desc": "获得一个随机被动道具、随机食物、50金币。",
+    "kind": 1,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 5,
+    "holdLimit": 9,
+    "effectType": "FamilyPack",
+    "effectValue": 50,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 1,
+      "nextLevelWeightMultiplier": 1,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  {
+    "id": "item_randomize_items",
+    "name": "混沌重置",
+    "desc": "所有道具替换为随机道具。",
+    "kind": 1,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 5,
+    "holdLimit": 9,
+    "effectType": "RandomizeItems",
+    "effectValue": 0,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 1,
+      "nextLevelWeightMultiplier": 1,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  {
+    "id": "item_gold_random",
+    "name": "随机金币",
+    "desc": "获得 1~100 个金币。",
+    "kind": 1,
+    "quality": 0,
+    "specialTags": "",
+    "triggerTiming": 5,
+    "holdLimit": 9,
+    "effectType": "GoldNow",
+    "effectValue": 0,
+    "effectParam": "range:1,100",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 1,
+      "nextLevelWeightMultiplier": 1,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  {
+    "id": "item_gold_meal_bonus",
+    "name": "美食分红",
+    "desc": "接下来10局美食，额外获得15金币。",
+    "kind": 0,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "GoldMealBonus",
+    "effectValue": 15,
+    "effectParam": "meals:10",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 5,
+      "max": 45
+    }
+  },
+  {
+    "id": "item_gold_boss",
+    "name": "Boss赏金",
+    "desc": "完成本次 Boss 后，额外获得100金币。",
+    "kind": 0,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "GoldOnBossComplete",
+    "effectValue": 100,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 5,
+      "max": 45
+    }
+  },
+  {
+    "id": "item_gold_percent",
+    "name": "利润提成",
+    "desc": "美食结束获得的金币，额外获得20%。",
+    "kind": 0,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "GoldMealPercent",
+    "effectValue": 0.2,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 20,
+      "max": 65
+    }
+  },
+  {
+    "id": "item_discount_food",
+    "name": "食材优惠券",
+    "desc": "购买食物打折20%。",
+    "kind": 0,
+    "quality": 0,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "ShopDiscountFood",
+    "effectValue": 0.2,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 1,
+      "max": 30
+    }
+  },
+  {
+    "id": "item_discount_fragment",
+    "name": "碎片优惠券",
+    "desc": "购买碎片打折20%。",
+    "kind": 0,
+    "quality": 0,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "ShopDiscountFragment",
+    "effectValue": 0.2,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 1,
+      "max": 30
+    }
+  },
+  {
+    "id": "item_discount_active",
+    "name": "主动道具券",
+    "desc": "购买主动道具打折20%。",
+    "kind": 0,
+    "quality": 0,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "ShopDiscountActive",
+    "effectValue": 0.2,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 1,
+      "max": 30
+    }
+  },
+  {
+    "id": "item_discount_passive",
+    "name": "被动道具券",
+    "desc": "购买被动道具打折20%。",
+    "kind": 0,
+    "quality": 0,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "ShopDiscountPassive",
+    "effectValue": 0.2,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 1,
+      "max": 30
+    }
+  },
+  {
+    "id": "item_discount_remove",
+    "name": "删牌优惠",
+    "desc": "删牌价格打折20%。",
+    "kind": 0,
+    "quality": 0,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "ShopDiscountRemove",
+    "effectValue": 0.2,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 1,
+      "max": 30
+    }
+  },
+  {
+    "id": "item_remove_fixed_30",
+    "name": "固定删牌价",
+    "desc": "删牌价格固定为30金币。",
+    "kind": 0,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "RemovePriceFixed",
+    "effectValue": 30,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 5,
+      "max": 45
+    }
+  },
+  {
+    "id": "item_discount_recipe",
+    "name": "菜谱优惠",
+    "desc": "购买菜谱打折20%。",
+    "kind": 0,
+    "quality": 0,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "ShopDiscountRecipe",
+    "effectValue": 0.2,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 1,
+      "max": 30
+    }
+  },
+  {
+    "id": "item_famous_knife",
+    "name": "名刀·加护",
+    "desc": "分数未达标时不失败，但会失去此道具。",
+    "kind": 0,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "Undying",
+    "effectValue": 0,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 20,
+      "max": 65
+    }
+  },
+  {
+    "id": "item_score_to_one",
+    "name": "免检通行证",
+    "desc": "接下来3局非盛宴，分数要求为1。",
+    "kind": 1,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 5,
+    "holdLimit": 9,
+    "effectType": "RequiredScoreToOne",
+    "effectValue": 0,
+    "effectParam": "meals:3",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 1,
+      "nextLevelWeightMultiplier": 1,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  {
+    "id": "item_req_normal_down",
+    "name": "家常减负",
+    "desc": "普通美食要求分数-10%。",
+    "kind": 0,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "RequiredScoreNormalPct",
+    "effectValue": -0.1,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 5,
+      "max": 45
+    }
+  },
+  {
+    "id": "item_req_super_down",
+    "name": "超级减负",
+    "desc": "超级美食要求分数-10%。",
+    "kind": 0,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "RequiredScoreSuperPct",
+    "effectValue": -0.1,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 5,
+      "max": 45
+    }
+  },
+  {
+    "id": "item_req_feast_down",
+    "name": "盛宴减负",
+    "desc": "盛宴美食要求分数-10%。",
+    "kind": 0,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "RequiredScoreFeastPct",
+    "effectValue": -0.1,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 5,
+      "max": 45
+    }
+  },
+  {
+    "id": "item_count_le_mult",
+    "name": "精致料理",
+    "desc": "结算时食物数量<=10，所有美食倍率×1.1。",
+    "kind": 0,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "CountThresholdFinalMult",
+    "effectValue": 1.1,
+    "effectParam": "lte:10",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 5,
+      "max": 45
+    }
+  },
+  {
+    "id": "item_count_ge_mult",
+    "name": "丰盛大餐",
+    "desc": "结算时食物数量>=10，所有美食倍率×1.1。",
+    "kind": 0,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "CountThresholdFinalMult",
+    "effectValue": 1.1,
+    "effectParam": "gte:10",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 5,
+      "max": 45
+    }
+  },
+  {
+    "id": "item_per_dish_mult",
+    "name": "流水席",
+    "desc": "结算时每结算1个食物，所有食物倍率+0.1。",
+    "kind": 0,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "PerDishSettledMultFlat",
+    "effectValue": 0.1,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 20,
+      "max": 65
+    }
+  },
+  {
+    "id": "item_perma_flat_all",
+    "name": "增鲜剂",
+    "desc": "所有食物基础分数永久+10。",
+    "kind": 0,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "PermanentAddFlatAll",
+    "effectValue": 10,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 20,
+      "max": 65
+    }
+  },
+  {
+    "id": "item_perma_mult_all",
+    "name": "浓缩精华",
+    "desc": "所有食物基础倍率永久+0.2。",
+    "kind": 0,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "PermanentAddMultAll",
+    "effectValue": 0.2,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 20,
+      "max": 65
+    }
+  },
+  {
+    "id": "item_stargaze_every5",
+    "name": "观星仪",
+    "desc": "每5次上菜后，下一次上菜可预见食物。",
+    "kind": 0,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "StarGazeEveryN",
+    "effectValue": 0,
+    "effectParam": "every:5",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 5,
+      "max": 45
+    }
+  },
+  {
+    "id": "item_stargaze_first3",
+    "name": "开局观星",
+    "desc": "每局前三次上菜可预见食物。",
+    "kind": 0,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "StarGazeFirstN",
+    "effectValue": 0,
+    "effectParam": "first:3",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 5,
+      "max": 45
+    }
+  },
+  {
+    "id": "item_free_move_first",
+    "name": "免费调整",
+    "desc": "每局第一次上菜后，可不消耗修正次数移动。",
+    "kind": 0,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "FreeMoveFirst",
+    "effectValue": 0,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 5,
+      "max": 45
+    }
+  },
+  {
+    "id": "item_adjust_plus1",
+    "name": "熟练的手",
+    "desc": "调整次数+1。",
+    "kind": 0,
+    "quality": 0,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "AdjustCountBonus",
+    "effectValue": 1,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 1,
+      "max": 30
+    }
+  },
+  {
+    "id": "item_adjust_to_mult",
+    "name": "节俭加成",
+    "desc": "每1个未使用的调整次数，使倍率+0.2。",
+    "kind": 0,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "AdjustToMult",
+    "effectValue": 0.2,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 20,
+      "max": 65
+    }
+  },
+  {
+    "id": "item_food_convert",
+    "name": "点石成金",
+    "desc": "随机将5个食物变为至少同品质的食物。",
+    "kind": 1,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 3,
+    "holdLimit": 9,
+    "effectType": "FoodConvert",
+    "effectValue": 5,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 1,
+      "nextLevelWeightMultiplier": 1,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  {
+    "id": "item_adjust_to_gold",
+    "name": "变卖技巧",
+    "desc": "每个未使用的调整次数，获得1金币。",
+    "kind": 0,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "GoldPerUnusedAdjust",
+    "effectValue": 1,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 5,
+      "max": 45
+    }
+  },
+  {
+    "id": "item_gold_on_shop",
+    "name": "商会返利",
+    "desc": "进入商店时，获得10金币。",
+    "kind": 0,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "GoldOnShopEnter",
+    "effectValue": 10,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 5,
+      "max": 45
+    }
+  },
+  {
+    "id": "item_extra_interest",
+    "name": "复利账户",
+    "desc": "每周结束额外执行一次利息。",
+    "kind": 0,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "ExtraInterest",
+    "effectValue": 1,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 20,
+      "max": 65
+    }
+  },
+  {
+    "id": "item_min_gold",
+    "name": "保底基金",
+    "desc": "回合结束金币<10时，补足到10金币。",
+    "kind": 0,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "MinGoldGuarantee",
+    "effectValue": 10,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 5,
+      "max": 45
+    }
+  },
+  {
+    "id": "item_interest_cap",
+    "name": "高息账户",
+    "desc": "利息上限扩展到10金币。",
+    "kind": 0,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "InterestCapBonus",
+    "effectValue": 10,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 20,
+      "max": 65
+    }
+  },
+  {
+    "id": "item_loan",
+    "name": "高利贷",
+    "desc": "临时获得300金币，下一周失去600金币。",
+    "kind": 1,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 5,
+    "holdLimit": 9,
+    "effectType": "Loan",
+    "effectValue": 300,
+    "effectParam": "repay:600",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 1,
+      "nextLevelWeightMultiplier": 1,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  {
+    "id": "item_timeline_random",
+    "name": "命运骰子",
+    "desc": "随机化事件轴的节点时间。",
+    "kind": 1,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 5,
+    "holdLimit": 9,
+    "effectType": "TimelineRandomize",
+    "effectValue": 0,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 1,
+      "nextLevelWeightMultiplier": 1,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  {
+    "id": "item_extra_day",
+    "name": "加班一天",
+    "desc": "延后所有 Boss 一天。",
+    "kind": 1,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 5,
+    "holdLimit": 9,
+    "effectType": "TimelineExtraDay",
+    "effectValue": 1,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 1,
+      "nextLevelWeightMultiplier": 1,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  {
+    "id": "item_week_minus",
+    "name": "时光倒流",
+    "desc": "周数-1。",
+    "kind": 1,
+    "quality": 3,
+    "specialTags": "",
+    "triggerTiming": 5,
+    "holdLimit": 9,
+    "effectType": "TimelineWeekMinus",
+    "effectValue": 1,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 1,
+      "nextLevelWeightMultiplier": 1,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  {
+    "id": "item_add_reward_node",
+    "name": "额外奖励",
+    "desc": "增加一个奖励节点到时间轴上。",
+    "kind": 1,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 5,
+    "holdLimit": 9,
+    "effectType": "TimelineAddRewardNode",
+    "effectValue": 1,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 1,
+      "nextLevelWeightMultiplier": 1,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  {
+    "id": "item_add_interest_node",
+    "name": "额外利息节点",
+    "desc": "增加一个利息节点到时间轴上。",
+    "kind": 1,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 5,
+    "holdLimit": 9,
+    "effectType": "TimelineAddInterestNode",
+    "effectValue": 1,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 1,
+      "nextLevelWeightMultiplier": 1,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  {
+    "id": "item_every3_next_mult",
+    "name": "节奏大师",
+    "desc": "每上3个食物后，下一个食物倍率+2。",
+    "kind": 0,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "EveryNthServeMult",
+    "effectValue": 2,
+    "effectParam": "every:3",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 20,
+      "max": 65
+    }
+  },
+  {
+    "id": "item_first_x2",
+    "name": "开门红",
+    "desc": "第一个上的食物，倍率×2。",
+    "kind": 0,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "NthServeMult",
+    "effectValue": 2,
+    "effectParam": "index:1",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 5,
+      "max": 45
+    }
+  },
+  {
+    "id": "item_last_x2",
+    "name": "压轴好戏",
+    "desc": "最后一个上的食物，倍率×2。",
+    "kind": 0,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "NthServeMult",
+    "effectValue": 2,
+    "effectParam": "index:-1",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 5,
+      "max": 45
+    }
+  },
+  {
+    "id": "item_extra_active_slots",
+    "name": "工具箱",
+    "desc": "增加2个额外主动道具栏。",
+    "kind": 0,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "ExtraActiveSlot",
+    "effectValue": 2,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 20,
+      "max": 65
+    }
+  },
+  {
+    "id": "item_gold_on_active",
+    "name": "以用换钱",
+    "desc": "使用主动道具时，获得20金币。",
+    "kind": 0,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "GoldOnActiveUse",
+    "effectValue": 20,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 5,
+      "max": 45
+    }
+  },
+  {
+    "id": "item_block_active",
+    "name": "极简主义",
+    "desc": "无法获得主动道具，立即获得1000金币。",
+    "kind": 0,
+    "quality": 3,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "BlockActive",
+    "effectValue": 1000,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 40,
+      "max": 85
+    }
+  },
+  {
+    "id": "item_flavor_enhance",
+    "name": "风味喷雾",
+    "desc": "强化两个随机风味到无风味食物上。",
+    "kind": 1,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 3,
+    "holdLimit": 9,
+    "effectType": "FlavorEnhance",
+    "effectValue": 2,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 1,
+      "nextLevelWeightMultiplier": 1,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  {
+    "id": "item_flavor_remove_gold",
+    "name": "风味回收",
+    "desc": "移除一个食物的风味，获得200金币。",
+    "kind": 1,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 3,
+    "holdLimit": 9,
+    "effectType": "FlavorRemoveForGold",
+    "effectValue": 200,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 1,
+      "nextLevelWeightMultiplier": 1,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  {
+    "id": "item_flavor_remove_copyskill",
+    "name": "风味转化",
+    "desc": "移除一个食物的风味，其技能复制。",
+    "kind": 1,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 3,
+    "holdLimit": 9,
+    "effectType": "FlavorRemoveCopySkill",
+    "effectValue": 0,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 1,
+      "nextLevelWeightMultiplier": 1,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  {
+    "id": "item_flavor_remove_double",
+    "name": "风味浓缩",
+    "desc": "移除一个食物的风味，其分数翻倍。",
+    "kind": 1,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 3,
+    "holdLimit": 9,
+    "effectType": "FlavorRemoveDoubleScore",
+    "effectValue": 2,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 1,
+      "nextLevelWeightMultiplier": 1,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  {
+    "id": "item_flavor_double_slot",
+    "name": "双重风味",
+    "desc": "允许一个食物拥有两个风味。",
+    "kind": 0,
+    "quality": 3,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "FlavorDoubleSlot",
+    "effectValue": 1,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 40,
+      "max": 85
+    }
+  },
+  {
+    "id": "item_flavor_contagion",
+    "name": "风味传染",
+    "desc": "将一个食物的风味强化到无风味食物上。",
+    "kind": 1,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 3,
+    "holdLimit": 9,
+    "effectType": "FlavorContagion",
+    "effectValue": 1,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 1,
+      "nextLevelWeightMultiplier": 1,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  {
+    "id": "item_celltag_enhance",
+    "name": "标签强化",
+    "desc": "强化两个随机标签到胃部格子上。",
+    "kind": 1,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 3,
+    "holdLimit": 9,
+    "effectType": "CellTagEnhance",
+    "effectValue": 2,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 1,
+      "nextLevelWeightMultiplier": 1,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  {
+    "id": "item_celltag_contagion",
+    "name": "标签传染",
+    "desc": "将一个格子的标签强化到其他格子上。",
+    "kind": 1,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 3,
+    "holdLimit": 9,
+    "effectType": "CellTagContagion",
+    "effectValue": 1,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 1,
+      "nextLevelWeightMultiplier": 1,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  {
+    "id": "item_lucky_guarantee",
+    "name": "好运连连",
+    "desc": "每4个事件的最后一个是奖励事件。",
+    "kind": 0,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "LuckyEventGuarantee",
+    "effectValue": 4,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 20,
+      "max": 65
+    }
+  },
+  {
+    "id": "item_lucky_chance",
+    "name": "幸运符",
+    "desc": "事件中遇到奖励的概率提高。",
+    "kind": 0,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "LuckyEventChance",
+    "effectValue": 0.2,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 5,
+      "max": 45
+    }
+  },
+  {
+    "id": "item_more_events",
+    "name": "热闹街区",
+    "desc": "遇到事件的概率提高。",
+    "kind": 0,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "MoreEvents",
+    "effectValue": 0.2,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 5,
+      "max": 45
+    }
+  },
+  {
+    "id": "item_gold_on_event",
+    "name": "事件红包",
+    "desc": "完成一个事件，获得10金币。",
+    "kind": 0,
+    "quality": 0,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "GoldOnEventComplete",
+    "effectValue": 10,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 1,
+      "max": 30
+    }
+  },
+  {
+    "id": "item_reroll_action",
+    "name": "重掷行动",
+    "desc": "获得2次重新随机行动的机会。",
+    "kind": 1,
+    "quality": 0,
+    "specialTags": "",
+    "triggerTiming": 5,
+    "holdLimit": 9,
+    "effectType": "RerollAction",
+    "effectValue": 2,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 1,
+      "nextLevelWeightMultiplier": 1,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  {
+    "id": "item_shop_restock",
+    "name": "自动补货",
+    "desc": "商店会自动补货。",
+    "kind": 0,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "ShopRestock",
+    "effectValue": 0,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 20,
+      "max": 65
+    }
+  },
+  {
+    "id": "item_choice_count_plus1",
+    "name": "琳琅满目",
+    "desc": "多选一食物时，可选数量+1。",
+    "kind": 0,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "ChoiceCountBonus",
+    "effectValue": 1,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 5,
+      "max": 45
+    }
+  },
+  {
+    "id": "item_choice_times_plus1",
+    "name": "细嚼慢咽",
+    "desc": "多选一食物时，可选次数+1，可选数量-1。",
+    "kind": 0,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "ChoiceTimesBonus",
+    "effectValue": 1,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 20,
+      "max": 65
+    }
+  },
+  {
+    "id": "item_extra_food_choice",
+    "name": "加餐",
+    "desc": "每3次普通美食，额外获得一个多选一美食。",
+    "kind": 0,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "ExtraFoodChoice",
+    "effectValue": 0,
+    "effectParam": "every:3",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 20,
+      "max": 65
+    }
+  },
+  {
+    "id": "item_extra_item_choice",
+    "name": "加料",
+    "desc": "每3次超级美食，额外获得一个多选一物品。",
+    "kind": 0,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "ExtraItemChoice",
+    "effectValue": 0,
+    "effectParam": "every:3",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 20,
+      "max": 65
+    }
+  },
+  {
+    "id": "item_copy_food",
+    "name": "复制美食",
+    "desc": "随机复制一个美食。",
+    "kind": 1,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 5,
+    "holdLimit": 9,
+    "effectType": "CopyFood",
+    "effectValue": 1,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 1,
+      "nextLevelWeightMultiplier": 1,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  {
+    "id": "item_discard_negative",
+    "name": "断舍离",
+    "desc": "丢弃两个负面道具。",
+    "kind": 1,
+    "quality": 0,
+    "specialTags": "",
+    "triggerTiming": 5,
+    "holdLimit": 9,
+    "effectType": "DiscardNegative",
+    "effectValue": 2,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 1,
+      "nextLevelWeightMultiplier": 1,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  {
+    "id": "item_discard_negative_gold",
+    "name": "变废为宝",
+    "desc": "丢弃所有负面道具，每丢弃一个获得100金币。",
+    "kind": 1,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 5,
+    "holdLimit": 9,
+    "effectType": "DiscardNegativeForGold",
+    "effectValue": 100,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 1,
+      "nextLevelWeightMultiplier": 1,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  {
+    "id": "item_gold_meal_penalty",
+    "name": "克扣工钱",
+    "desc": "美食获得的金币减少25%。",
+    "kind": 0,
+    "quality": 0,
+    "specialTags": "Negative",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "GoldMealPercent",
+    "effectValue": -0.25,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 1,
+      "max": 30
+    }
+  },
+  {
+    "id": "item_shop_price_up",
+    "name": "涨价",
+    "desc": "商店的价格变高25%。",
+    "kind": 0,
+    "quality": 0,
+    "specialTags": "Negative",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "ShopPriceUp",
+    "effectValue": 0.25,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 1,
+      "max": 30
+    }
+  },
+  {
+    "id": "item_no_remove",
+    "name": "囤积癖",
+    "desc": "无法再删除食物。",
+    "kind": 0,
+    "quality": 0,
+    "specialTags": "Negative",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "NoRemoveDish",
+    "effectValue": 0,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 1,
+      "max": 30
+    }
+  },
+  {
+    "id": "item_skip_node",
+    "name": "停业整顿",
+    "desc": "跳过下一个商店或利息节点。",
+    "kind": 0,
+    "quality": 0,
+    "specialTags": "Negative",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "TimelineSkipNode",
+    "effectValue": 1,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 1,
+      "max": 30
+    }
+  },
+  {
+    "id": "item_choice_minus1",
+    "name": "选择困难",
+    "desc": "多选一食物时，可选数量-1。",
+    "kind": 0,
+    "quality": 0,
+    "specialTags": "Negative",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "ChoiceCountPenalty",
+    "effectValue": -1,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 1,
+      "max": 30
+    }
+  },
+  {
+    "id": "item_req_normal_up",
+    "name": "家常加码",
+    "desc": "普通美食要求分数+10%。",
+    "kind": 0,
+    "quality": 0,
+    "specialTags": "Negative",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "RequiredScoreNormalPct",
+    "effectValue": 0.1,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 1,
+      "max": 30
+    }
+  },
+  {
+    "id": "item_req_super_up",
+    "name": "超级加码",
+    "desc": "超级美食要求分数+10%。",
+    "kind": 0,
+    "quality": 0,
+    "specialTags": "Negative",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "RequiredScoreSuperPct",
+    "effectValue": 0.1,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 1,
+      "max": 30
+    }
+  },
+  {
+    "id": "item_req_feast_up",
+    "name": "盛宴加码",
+    "desc": "盛宴美食要求分数+10%。",
+    "kind": 0,
+    "quality": 0,
+    "specialTags": "Negative",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "RequiredScoreFeastPct",
+    "effectValue": 0.1,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 1,
+      "max": 30
+    }
+  },
+  {
+    "id": "item_gold_week_clear",
+    "name": "月光族",
+    "desc": "本周结束时，金币清空。",
+    "kind": 0,
+    "quality": 0,
+    "specialTags": "Negative",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "GoldWeekClear",
+    "effectValue": 0,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 1,
+      "max": 30
+    }
+  },
+  {
+    "id": "item_count_as_all",
+    "name": "小份主义",
+    "desc": "所有食物额外被视为1个食物。",
+    "kind": 0,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "CountAsBonusAll",
+    "effectValue": 1,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 20,
+      "max": 65
+    }
+  },
+  {
+    "id": "item_transfer_target_mult",
+    "name": "传递受益",
+    "desc": "传递时，被传递方倍率×1.1。",
+    "kind": 0,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "TransferTargetMult",
+    "effectValue": 1.1,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 20,
+      "max": 65
+    }
+  },
+  {
+    "id": "item_transfer_source_mult",
+    "name": "传递奉献",
+    "desc": "传递时，传递方倍率×1.1。",
+    "kind": 0,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "TransferSourceMult",
+    "effectValue": 1.1,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 20,
+      "max": 65
+    }
+  },
+  {
+    "id": "item_skill_count_mult",
+    "name": "技法大师",
+    "desc": "结算时每一个技能，所有食物倍率+0.1。",
+    "kind": 0,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "PerSkillMultFlat",
+    "effectValue": 0.1,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 20,
+      "max": 65
+    }
+  },
+  {
+    "id": "item_gold_on_transfer",
+    "name": "传递分红",
+    "desc": "传递10次后，获得10金币。",
+    "kind": 0,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "GoldOnTransferCount",
+    "effectValue": 10,
+    "effectParam": "count:10",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 5,
+      "max": 45
+    }
+  },
+  {
+    "id": "item_cake_retain",
+    "name": "蛋糕保鲜",
+    "desc": "每次保留10%的蛋糕层数至下一次美食。",
+    "kind": 0,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "CakeLayerRetain",
+    "effectValue": 0.1,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 20,
+      "max": 65
+    }
+  },
+  {
+    "id": "item_cake_init_bonus",
+    "name": "蛋糕打底",
+    "desc": "蛋糕层数初始额外获得10层。",
+    "kind": 0,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "CakeLayerInitBonus",
+    "effectValue": 10,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 5,
+      "max": 45
+    }
+  },
+  {
+    "id": "item_cake_accel",
+    "name": "蛋糕膨胀",
+    "desc": "蛋糕层数增加时，额外加1层。",
+    "kind": 0,
+    "quality": 2,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "CakeLayerAccel",
+    "effectValue": 1,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 20,
+      "max": 65
+    }
+  },
+  {
+    "id": "item_cake_to_gold",
+    "name": "蛋糕变现",
+    "desc": "蛋糕层数大于100层时，获得10金币。",
+    "kind": 0,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "GoldOnCakeLayers",
+    "effectValue": 10,
+    "effectParam": "threshold:100",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 5,
+      "max": 45
+    }
+  },
+  {
+    "id": "item_cake_req_minus",
+    "name": "蛋糕捷径",
+    "desc": "蛋糕效果需求的层数-10。",
+    "kind": 0,
+    "quality": 1,
+    "specialTags": "",
+    "triggerTiming": 0,
+    "holdLimit": 1,
+    "effectType": "CakeLayerReqMinus",
+    "effectValue": 10,
+    "effectParam": "",
+    "icon": "",
+    "levelWeightParams": {
+      "maxLevel": 3,
+      "nextLevelWeightMultiplier": 0.65,
+      "baseWeight": 1
+    },
+    "hiddenRange": {
+      "min": 5,
+      "max": 45
+    }
   }
 ]

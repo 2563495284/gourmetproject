@@ -1,398 +1,284 @@
 [
   {
-    "id": "sk_tf_row_1",
-    "name": "甜蜜传递·同行1",
-    "desc": "上菜时，将本菜技能甜蜜传递给同行 1 个食物。",
-    "termId": "term_sweet_transfer"
-  },
-  {
-    "id": "sk_tf_row_3",
-    "name": "甜蜜传递·同行3",
-    "desc": "上菜时，将本菜技能甜蜜传递给同行 3 个食物。",
-    "termId": "term_sweet_transfer"
-  },
-  {
-    "id": "sk_tf_row_all",
-    "name": "甜蜜传递·同行",
-    "desc": "上菜时，将本菜技能甜蜜传递给同行所有食物。",
-    "termId": "term_sweet_transfer"
-  },
-  {
-    "id": "sk_tf_col_2",
-    "name": "甜蜜传递·同列2",
-    "desc": "上菜时，将本菜技能甜蜜传递给同列 2 个食物。",
-    "termId": "term_sweet_transfer"
-  },
-  {
-    "id": "sk_tf_col_all",
-    "name": "甜蜜传递·同列",
-    "desc": "上菜时，将本菜技能甜蜜传递给同列所有食物。",
-    "termId": "term_sweet_transfer"
-  },
-  {
-    "id": "sk_tf_adj_2",
-    "name": "甜蜜传递·周围2",
-    "desc": "上菜时，将本菜技能甜蜜传递给周围 2 个食物。",
-    "termId": "term_sweet_transfer"
-  },
-  {
-    "id": "sk_tf_adj_all",
-    "name": "甜蜜传递·周围",
-    "desc": "上菜时，将本菜技能甜蜜传递给周围所有食物。",
-    "termId": "term_sweet_transfer"
-  },
-  {
-    "id": "sk_tf_any_1",
-    "name": "甜蜜传递·1",
-    "desc": "上菜时，将本菜技能甜蜜传递给 1 个食物。",
-    "termId": "term_sweet_transfer"
-  },
-  {
-    "id": "sk_tf_any_2",
-    "name": "甜蜜传递·2",
-    "desc": "上菜时，将本菜技能甜蜜传递给 2 个食物。",
-    "termId": "term_sweet_transfer"
-  },
-  {
-    "id": "sk_tf_any_3",
-    "name": "甜蜜传递·3",
-    "desc": "上菜时，将本菜技能甜蜜传递给 3 个食物。",
-    "termId": "term_sweet_transfer"
-  },
-  {
     "id": "sk_cookie",
-    "name": "酥脆边角",
-    "desc": "处在棋盘边缘时，倍率 +3。",
-    "termId": ""
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_edge_multflat_v3"
   },
   {
     "id": "sk_macaron",
-    "name": "缤纷马卡龙",
-    "desc": "周围每有一种食物，分数 +8。",
-    "termId": ""
+    "termId": "term_sweet_transfer",
+    "descOverride": "",
+    "subSkills": "ss_flat_per_dish_adj_v8|ss_transfer_row_n1"
   },
   {
     "id": "sk_pudding",
-    "name": "颤颤布丁",
-    "desc": "周围每有 1 个空格，分数 -2。",
-    "termId": ""
-  },
-  {
-    "id": "sk_eggtart",
-    "name": "回味蛋挞",
-    "desc": "本局每结算过 1 次本种，分数 +6。",
-    "termId": ""
-  },
-  {
-    "id": "sk_mochi",
-    "name": "弹韧麻薯",
-    "desc": "同列每有 1 个食物，倍率 +1。",
-    "termId": ""
-  },
-  {
-    "id": "sk_daifuku",
-    "name": "满盈大福",
-    "desc": "同行每有 1 个食物，分数 +10。",
-    "termId": ""
-  },
-  {
-    "id": "sk_jelly",
-    "name": "晶莹果冻",
-    "desc": "全场每有 1 种食物，周围食物倍率 +0.2。",
-    "termId": ""
-  },
-  {
-    "id": "sk_gold_choco",
-    "name": "财运金砖",
-    "desc": "若周围被填满，获得 30 金币。",
-    "termId": ""
-  },
-  {
-    "id": "sk_sundae",
-    "name": "双层圣代",
-    "desc": "视为 2 个食物；同行每有 1 个食物，倍率 +2。",
-    "termId": ""
-  },
-  {
-    "id": "sk_lollipop",
-    "name": "小巧棒棒糖",
-    "desc": "周围有占 1 格的食物时，倍率 ×1.5。",
-    "termId": ""
-  },
-  {
-    "id": "sk_gummy",
-    "name": "弹弹软糖",
-    "desc": "周围每有 1 个食物，倍率 ×1.2。",
-    "termId": ""
-  },
-  {
-    "id": "sk_mousse",
-    "name": "绵密慕斯",
-    "desc": "倍率 ×1.5；技能额外结算 1 次。",
-    "termId": ""
-  },
-  {
-    "id": "sk_nougat",
-    "name": "绵软牛轧",
-    "desc": "技能额外结算 1 次。",
-    "termId": ""
-  },
-  {
-    "id": "sk_eggroll",
-    "name": "酥脆蛋卷",
-    "desc": "视为 4 个食物；每有 1 个食物，倍率 +0.2。",
-    "termId": ""
-  },
-  {
-    "id": "sk_choco_bar",
-    "name": "浓醇巧克力棒",
-    "desc": "周围食物倍率 +5。",
-    "termId": ""
-  },
-  {
-    "id": "sk_tanghulu",
-    "name": "串串糖葫芦",
-    "desc": "同列食物倍率 +3。",
-    "termId": ""
-  },
-  {
-    "id": "sk_pengtang",
-    "name": "蓬松椪糖",
-    "desc": "本菜每有 1 个技能，倍率 +5。",
-    "termId": ""
-  },
-  {
-    "id": "sk_parfait",
-    "name": "华丽芭菲",
-    "desc": "视为 10 个食物；周围每有 1 个食物，倍率 ×1.2。",
-    "termId": ""
-  },
-  {
-    "id": "sk_sundae_big",
-    "name": "巨型圣代",
-    "desc": "视为 5 个食物；同列食物倍率 ×2。",
-    "termId": ""
-  },
-  {
-    "id": "sk_apple_pie",
-    "name": "暖心苹果派",
-    "desc": "同行每有 1 个食物，周围食物倍率 +0.3。",
-    "termId": ""
-  },
-  {
-    "id": "sk_palmier",
-    "name": "千层蝴蝶酥",
-    "desc": "视为 4 个食物；周围食物倍率 ×1.5。",
-    "termId": ""
-  },
-  {
-    "id": "sk_candycane",
-    "name": "薄荷拐杖糖",
-    "desc": "同列食物倍率 ×1.4。",
-    "termId": ""
-  },
-  {
-    "id": "sk_marshmallow",
-    "name": "蓬蓬棉花糖",
-    "desc": "本菜每有 1 个技能，倍率 ×1.5。",
-    "termId": ""
-  },
-  {
-    "id": "sk_sugarbean",
-    "name": "缤纷糖豆",
-    "desc": "技能额外结算 1 次。",
-    "termId": ""
-  },
-  {
-    "id": "sk_waffle_mult",
-    "name": "格纹华夫",
-    "desc": "倍率 ×3。",
-    "termId": ""
-  },
-  {
-    "id": "sk_dorayaki_mult",
-    "name": "满月铜锣烧",
-    "desc": "倍率 +4。",
-    "termId": ""
-  },
-  {
-    "id": "sk_donut_mult",
-    "name": "甜圈光环",
-    "desc": "倍率 +5。",
-    "termId": ""
-  },
-  {
-    "id": "sk_swiss_mult",
-    "name": "卷卷瑞士",
-    "desc": "所有食物倍率 +0.5。",
-    "termId": ""
-  },
-  {
-    "id": "sk_chiffon_mult",
-    "name": "轻盈戚风",
-    "desc": "倍率 +5。",
-    "termId": ""
-  },
-  {
-    "id": "sk_fruit_mult",
-    "name": "缤纷水果",
-    "desc": "倍率 ×2。",
-    "termId": ""
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_flat_per_empty_adj_vm2"
   },
   {
     "id": "sk_puff",
-    "name": "绵柔泡芙",
-    "desc": "周围每有 1 个食物，欢乐蛋糕 +2 层。",
-    "termId": ""
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_layer_per_dish_adj_v2"
   },
   {
-    "id": "sk_cream_cell",
-    "name": "奶油小格",
-    "desc": "欢乐蛋糕 +5 层。",
-    "termId": ""
+    "id": "sk_eggtart",
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_flat_per_run_v6"
   },
   {
-    "id": "sk_milk_slice",
-    "name": "清凉奶片",
-    "desc": "若同行被填满，欢乐蛋糕 +10 层。",
-    "termId": ""
+    "id": "sk_mochi",
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_multflat_per_dish_col_v1"
   },
   {
-    "id": "sk_cone_layer",
-    "name": "蛋筒叠层",
-    "desc": "欢乐蛋糕 +10 层。",
-    "termId": ""
-  },
-  {
-    "id": "sk_cone_copy",
-    "name": "蛋筒复制",
-    "desc": "临时复制本菜品至空格中。",
-    "termId": ""
-  },
-  {
-    "id": "sk_cupcake_copy",
-    "name": "模仿纸杯",
-    "desc": "获得周围食物的 1 个技能。",
-    "termId": ""
-  },
-  {
-    "id": "sk_cupcake_layer",
-    "name": "纸杯叠层",
-    "desc": "自身每有 1 个技能，欢乐蛋糕 +6 层。",
-    "termId": ""
-  },
-  {
-    "id": "sk_eclair",
-    "name": "闪电充能",
-    "desc": "最多消耗 3 层欢乐蛋糕，每层额外结算 1 次。",
-    "termId": ""
-  },
-  {
-    "id": "sk_souffle",
-    "name": "蓬松舒芙蕾",
-    "desc": "欢乐蛋糕 ×1.5 层，至少 +5 层。",
-    "termId": ""
-  },
-  {
-    "id": "sk_croissant",
-    "name": "酥层牛角",
-    "desc": "周围每有 1 种食物，欢乐蛋糕 +2 层。",
-    "termId": ""
+    "id": "sk_daifuku",
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_flat_per_dish_row_v10"
   },
   {
     "id": "sk_choco_candy",
-    "name": "永恒巧克力糖",
-    "desc": "本食物每有 1 个技能，分数永久 +5。",
-    "termId": ""
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_permflat_per_tag_v5"
+  },
+  {
+    "id": "sk_jelly",
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_multflat_per_dish_all_adj_v0p2"
+  },
+  {
+    "id": "sk_cream_cell",
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_layer_add_v5"
+  },
+  {
+    "id": "sk_sugarbean",
+    "termId": "term_sweet_transfer",
+    "descOverride": "",
+    "subSkills": "ss_extra_settle_v1|ss_transfer_all_n1"
+  },
+  {
+    "id": "sk_gold_choco",
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_grant_gold_filled_adj_v30"
+  },
+  {
+    "id": "sk_milk_slice",
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_layer_filled_row_v10"
+  },
+  {
+    "id": "sk_sundae",
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_multflat_per_dish_row_v2|ss_count_as_base_v1"
+  },
+  {
+    "id": "sk_cone",
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_layer_add_v10|ss_temp_copy_v1"
+  },
+  {
+    "id": "sk_lollipop",
+    "termId": "term_sweet_transfer",
+    "descOverride": "",
+    "subSkills": "ss_shape_mult_adj_v1p5|ss_transfer_col_n2"
+  },
+  {
+    "id": "sk_gummy",
+    "termId": "term_sweet_transfer",
+    "descOverride": "",
+    "subSkills": "ss_mult_per_dish_adj_v1p2|ss_transfer_adj_n2"
+  },
+  {
+    "id": "sk_cupcake",
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_copy_skill_adj_v1|ss_layer_per_tag_v6"
+  },
+  {
+    "id": "sk_mousse",
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_mult_v1p5|ss_extra_settle_v1"
   },
   {
     "id": "sk_toffee",
-    "name": "醇厚太妃",
-    "desc": "分数永久 ×1.2。",
-    "termId": ""
+    "termId": "term_sweet_transfer",
+    "descOverride": "",
+    "subSkills": "ss_perm_flat_v10|ss_transfer_all_n2"
   },
   {
-    "id": "sk_mooncake_copy",
-    "name": "团圆月饼",
-    "desc": "视为 5 个食物；复制周围食物的 1 个技能。",
-    "termId": ""
+    "id": "sk_nougat",
+    "termId": "term_sweet_transfer",
+    "descOverride": "",
+    "subSkills": "ss_extra_settle_v1|ss_transfer_adj_n2"
   },
   {
-    "id": "sk_cream_cake_perm",
-    "name": "奶油永恒",
-    "desc": "分数永久 +10。",
-    "termId": ""
+    "id": "sk_eggroll",
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_multflat_per_dish_all_v0p2|ss_count_as_base_v3"
   },
   {
-    "id": "sk_cream_cake_spread",
-    "name": "奶油浇灌",
-    "desc": "将分数加到所有蛋糕上（每个蛋糕 +10 分）。",
-    "termId": ""
+    "id": "sk_choco_bar",
+    "termId": "term_sweet_transfer",
+    "descOverride": "",
+    "subSkills": "ss_multflat_adj_v5|ss_transfer_all_n3"
   },
   {
-    "id": "sk_donut_layer",
-    "name": "甜圈叠层",
-    "desc": "欢乐蛋糕 +15 层。",
-    "termId": ""
+    "id": "sk_eclair",
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_consume_layer_v10|ss_multflat_v5"
   },
   {
-    "id": "sk_swiss_layer",
-    "name": "瑞士叠层",
-    "desc": "欢乐蛋糕 +20 层。",
-    "termId": ""
+    "id": "sk_tanghulu",
+    "termId": "term_sweet_transfer",
+    "descOverride": "",
+    "subSkills": "ss_multflat_col_v3|ss_transfer_row_n3"
   },
   {
-    "id": "sk_waffle_countas",
-    "name": "填满华夫",
-    "desc": "同行被填满时，视为 10 个食物。",
-    "termId": ""
-  },
-  {
-    "id": "sk_dorayaki_countas",
-    "name": "铜锣叠影",
-    "desc": "同列食物额外被视为 2 个食物。",
-    "termId": ""
-  },
-  {
-    "id": "sk_mango_copy",
-    "name": "层次杨枝甘露",
-    "desc": "视为 8 个食物；复制周围的两个技能。",
-    "termId": ""
-  },
-  {
-    "id": "sk_chiffon_spread",
-    "name": "戚风浇灌",
-    "desc": "将倍率 +5 加到所有蛋糕上。",
-    "termId": ""
-  },
-  {
-    "id": "sk_fruit_layer",
-    "name": "水果叠层",
-    "desc": "蛋糕数量达 3/5/8 时，欢乐蛋糕 +10/20/40 层。",
-    "termId": ""
+    "id": "sk_souffle",
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_layer_mult_v1p5"
   },
   {
     "id": "sk_taosu",
-    "name": "阶梯桃酥",
-    "desc": "同行食物达 5/15/25 个时，同行食物倍率 ×1.5/2.5/5。",
-    "termId": ""
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_mult_tier_dishcount_row_row"
+  },
+  {
+    "id": "sk_mooncake",
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_copy_skill_adj_v1|ss_count_as_base_v4"
+  },
+  {
+    "id": "sk_waffle",
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_mult_v3|ss_count_as_filled_row_v9"
+  },
+  {
+    "id": "sk_dorayaki",
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_count_as_col_v2|ss_multflat_v4"
+  },
+  {
+    "id": "sk_cream_cake",
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_perm_flat_v10|ss_flat_category_cat_v10"
+  },
+  {
+    "id": "sk_donut",
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_layer_add_v15|ss_multflat_v5"
+  },
+  {
+    "id": "sk_pengtang",
+    "termId": "term_sweet_transfer",
+    "descOverride": "",
+    "subSkills": "ss_multflat_per_tag_v5|ss_transfer_col"
+  },
+  {
+    "id": "sk_parfait",
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_mult_per_dish_adj_v1p2|ss_count_as_base_v9"
+  },
+  {
+    "id": "sk_sundae_big",
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_mult_col_v2|ss_count_as_base_v4"
+  },
+  {
+    "id": "sk_swiss_roll",
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_layer_add_v20|ss_multflat_all_v0p5"
+  },
+  {
+    "id": "sk_mango_sago",
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_copy_skill_adj_v2|ss_count_as_base_v7"
+  },
+  {
+    "id": "sk_chiffon",
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_multflat_v5|ss_multflat_category_cat_v5"
+  },
+  {
+    "id": "sk_apple_pie",
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_multflat_per_dish_row_adj_v0p3"
+  },
+  {
+    "id": "sk_fruit_cake",
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_mult_v2|ss_layer_tier_all"
   },
   {
     "id": "sk_chocolate",
-    "name": "甜蜜巧克力",
-    "desc": "带甜蜜传递的食物达 3/5/8 种时，此类食物倍率 ×1.5/2.5/5。",
-    "termId": ""
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_mult_tier_skilltype_all_all"
+  },
+  {
+    "id": "sk_croissant",
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_layer_per_dish_adj_v2_2"
+  },
+  {
+    "id": "sk_palmier",
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_mult_adj_v1p5|ss_count_as_base_v3"
+  },
+  {
+    "id": "sk_candycane",
+    "termId": "term_sweet_transfer",
+    "descOverride": "",
+    "subSkills": "ss_mult_col_v1p4|ss_transfer_adj"
   },
   {
     "id": "sk_big_lollipop",
-    "name": "巨型棒棒糖",
-    "desc": "同行同列带甜蜜传递的食物，各执行一次它们的甜蜜传递。",
-    "termId": "term_sweet_transfer"
+    "termId": "term_sweet_transfer",
+    "descOverride": "同行同列带甜蜜传递的食物，各执行一次它们的甜蜜传递。",
+    "subSkills": ""
+  },
+  {
+    "id": "sk_marshmallow",
+    "termId": "term_sweet_transfer",
+    "descOverride": "",
+    "subSkills": "ss_mult_per_tag_v1p5|ss_transfer_row"
   },
   {
     "id": "sk_double_cake",
-    "name": "华丽双层蛋糕",
-    "desc": "获得 3 种不同的蛋糕技能。",
-    "termId": ""
+    "termId": "",
+    "descOverride": "",
+    "subSkills": "ss_copy_cat_skill_v3"
   }
 ]

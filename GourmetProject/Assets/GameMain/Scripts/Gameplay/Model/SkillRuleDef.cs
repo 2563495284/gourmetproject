@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace GourmetProject.Gameplay.Model
 {
     /// <summary>
-    /// 一条技能规则（前提 × 行为）。纯数据，由 Game 层从 Luban TbSkillRule 适配生成。
+    /// 一条技能规则（前提 × 行为）。纯数据，由 Game 层从 Luban TbSubSkill(具体子技能全字段) 合成，order=技能引用列表下标。
     /// 语义见 docs/design/技能.md。
     /// </summary>
     public sealed class SkillRuleDef

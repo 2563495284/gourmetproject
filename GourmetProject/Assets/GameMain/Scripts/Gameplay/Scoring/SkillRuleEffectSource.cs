@@ -47,6 +47,27 @@ namespace GourmetProject.Gameplay.Scoring
                             boardOrder));
                     }
                 }
+
+                // 甜蜜传递获得的外来子技能：与目标自身技能一并结算（作用域相对目标计算，tips 显示来源标签）。
+                foreach (TransferredSkill transferred in dish.TransferredSkills)
+                {
+                    SkillRuleDef rule = transferred.Effect.Rule;
+                    if (rule == null || rule.Trigger != SkillTrigger.OnSettle)
+                    {
+                        continue;
+                    }
+
+                    SkillDef parent = snapshot.Db.GetSkill(rule.SkillId);
+                    collector.Add(new ScoreEffectEntry(
+                        ScorePhase.DishSkills,
+                        ScoreSource.TransferredDishSkill(parent, dish, transferred.SourceLabel),
+                        new SkillRuleEffect(rule, dish),
+                        dish,
+                        null,
+                        null,
+                        rule.Order,
+                        boardOrder));
+                }
             }
         }
     }
@@ -130,12 +151,12 @@ namespace GourmetProject.Gameplay.Scoring
 
                 case SkillActionType.TransferSkills:
                 {
-                    IReadOnlyList<string> skills = SkillsToTransfer(ctx);
-                    if (skills.Count > 0)
+                    IReadOnlyList<SkillEffect> effects = EffectsToTransfer(ctx.Db, _rule);
+                    if (effects.Count > 0)
                     {
                         foreach (DishInstance t in Targets(ctx))
                         {
-                            if (t.Id != _self.Id) ctx.RecordSkillTransfer(t, skills, _self.Def.Name);
+                            if (t.Id != _self.Id) ctx.RecordSkillTransfer(t, effects, _self.Def.Name);
                         }
                     }
                     break;
@@ -243,40 +264,32 @@ namespace GourmetProject.Gameplay.Scoring
             return 0;
         }
 
-        private IReadOnlyList<string> SkillsToTransfer(ScoreContext ctx)
+        /// <summary>
+        /// 甜蜜传递载荷：取传递子技能「所在 skill」内除传递外的所有子技能(rule)，配上各自描述片段。
+        /// 目标获得后随其结算一并施加，作用域相对目标计算。
+        /// </summary>
+        internal static IReadOnlyList<SkillEffect> EffectsToTransfer(GameplayDatabase db, SkillRuleDef transferRule)
         {
-            bool keepTransfer = _rule.HasActionParam("keep_transfer");
-            var result = new List<string>();
-            foreach (string skillId in _self.SkillIds)
+            var result = new List<SkillEffect>();
+            SkillDef parent = db.GetSkill(transferRule.SkillId);
+            if (parent == null || !parent.HasRules)
             {
-                if (!keepTransfer && IsTransferSkill(ctx.Db, skillId))
+                return result;
+            }
+
+            for (int i = 0; i < parent.Rules.Count; i++)
+            {
+                SkillRuleDef rule = parent.Rules[i];
+                if (rule.ActionType == SkillActionType.TransferSkills)
                 {
                     continue;
                 }
 
-                result.Add(skillId);
+                string desc = i < parent.RuleDescs.Count ? parent.RuleDescs[i] : string.Empty;
+                result.Add(new SkillEffect(rule, desc));
             }
 
             return result;
-        }
-
-        private static bool IsTransferSkill(GameplayDatabase db, string skillId)
-        {
-            SkillDef def = db.GetSkill(skillId);
-            if (def == null || !def.HasRules)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < def.Rules.Count; i++)
-            {
-                if (def.Rules[i].ActionType == SkillActionType.TransferSkills)
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         private IReadOnlyList<DishInstance> Targets(ScoreContext ctx)

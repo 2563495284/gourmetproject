@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Text;
+using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Runtime;
@@ -22,7 +23,7 @@ namespace GourmetProject.Game.UI.Widgets
         /// 生成技能/风味展示行（格式「【名称】描述」，技能在前、风味在后），并输出去重后的关联专有名词 id。
         /// 技能走 <see cref="GameplayDatabase.GetSkill"/>、风味走 <see cref="GameplayDatabase.GetFlavor"/>。
         /// </summary>
-        public static List<string> TagLines(IReadOnlyList<string> skillIds, string flavorId, GameplayDatabase db, out List<string> termIds, IReadOnlyDictionary<string, string> skillSources = null)
+        public static List<string> TagLines(IReadOnlyList<string> skillIds, string flavorId, GameplayDatabase db, out List<string> termIds, IReadOnlyDictionary<string, string> skillSources = null, IReadOnlyList<TransferredSkill> transferredSkills = null)
         {
             var lines = new List<string>();
             termIds = new List<string>();
@@ -38,6 +39,21 @@ namespace GourmetProject.Game.UI.Widgets
                     string sourceLabel = null;
                     skillSources?.TryGetValue(skillId, out sourceLabel);
                     AppendEffect(db.GetSkill(skillId), lines, termIds, sourceLabel);
+                }
+            }
+
+            // 甜蜜传递获得的外来子技能：每条按「【源名<甜蜜传递>】子技能描述」单独成行。
+            if (transferredSkills != null)
+            {
+                foreach (TransferredSkill t in transferredSkills)
+                {
+                    string desc = t?.Desc;
+                    if (string.IsNullOrEmpty(desc))
+                    {
+                        continue;
+                    }
+
+                    lines.Add(string.IsNullOrEmpty(t.SourceLabel) ? desc : $"【{t.SourceLabel}】{desc}");
                 }
             }
 
@@ -67,7 +83,7 @@ namespace GourmetProject.Game.UI.Widgets
             }
 
             string title = string.IsNullOrEmpty(sourceLabel) ? def.Name : sourceLabel;
-            lines.Add($"【{title}】{def.Desc}");
+            lines.Add(string.IsNullOrEmpty(title) ? def.Desc : $"【{title}】{def.Desc}");
             if (def.HasTerm && !termIds.Contains(def.TermId))
             {
                 termIds.Add(def.TermId);

@@ -13,13 +13,11 @@ using Luban.SimpleJSON;
 
 namespace cfg
 {
-public sealed partial class SkillRule : Luban.BeanBase
+public sealed partial class SubSkill : Luban.BeanBase
 {
-    public SkillRule(JSONNode _buf) 
+    public SubSkill(JSONNode _buf) 
     {
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
-        { if(!_buf["skillId"].IsString) { throw new SerializationException(); }  SkillId = _buf["skillId"]; }
-        { if(!_buf["order"].IsNumber) { throw new SerializationException(); }  Order = _buf["order"]; }
         { if(!_buf["trigger"].IsNumber) { throw new SerializationException(); }  Trigger = (SkillTrigger)_buf["trigger"].AsInt; }
         { if(!_buf["condType"].IsNumber) { throw new SerializationException(); }  CondType = (SkillConditionType)_buf["condType"].AsInt; }
         { if(!_buf["condScope"].IsNumber) { throw new SerializationException(); }  CondScope = (SkillScope)_buf["condScope"].AsInt; }
@@ -33,25 +31,20 @@ public sealed partial class SkillRule : Luban.BeanBase
         { if(!_buf["actionCount"].IsNumber) { throw new SerializationException(); }  ActionCount = _buf["actionCount"]; }
         { var __json0 = _buf["actionValue"]; if(!__json0.IsArray) { throw new SerializationException(); } ActionValue = new System.Collections.Generic.List<float>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { float __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  ActionValue.Add(__v0); }   }
         { var __json0 = _buf["actionParam"]; if(!__json0.IsArray) { throw new SerializationException(); } ActionParam = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  ActionParam.Add(__v0); }   }
+        { if(!_buf["isPassive"].IsBoolean) { throw new SerializationException(); }  IsPassive = _buf["isPassive"]; }
+        { if(!_buf["signed"].IsBoolean) { throw new SerializationException(); }  Signed = _buf["signed"]; }
+        { if(!_buf["descTemplate"].IsString) { throw new SerializationException(); }  DescTemplate = _buf["descTemplate"]; }
     }
 
-    public static SkillRule DeserializeSkillRule(JSONNode _buf)
+    public static SubSkill DeserializeSubSkill(JSONNode _buf)
     {
-        return new SkillRule(_buf);
+        return new SubSkill(_buf);
     }
 
     /// <summary>
-    /// 规则ID(主键)
+    /// 子技能ID(主键)
     /// </summary>
     public readonly string Id;
-    /// <summary>
-    /// 所属技能ID
-    /// </summary>
-    public readonly string SkillId;
-    /// <summary>
-    /// 同技能内执行顺序
-    /// </summary>
-    public readonly int Order;
     /// <summary>
     /// 触发时机
     /// </summary>
@@ -104,8 +97,20 @@ public sealed partial class SkillRule : Luban.BeanBase
     /// 行为参数
     /// </summary>
     public readonly System.Collections.Generic.List<string> ActionParam;
+    /// <summary>
+    /// 是否被动
+    /// </summary>
+    public readonly bool IsPassive;
+    /// <summary>
+    /// 描述数值是否补正负号
+    /// </summary>
+    public readonly bool Signed;
+    /// <summary>
+    /// 占位符描述模板
+    /// </summary>
+    public readonly string DescTemplate;
    
-    public const int __ID__ = -299866931;
+    public const int __ID__ = -2026280943;
     public override int GetTypeId() => __ID__;
 
     public  void ResolveRef(Tables tables)
@@ -116,8 +121,6 @@ public sealed partial class SkillRule : Luban.BeanBase
     {
         return "{ "
         + "id:" + Id + ","
-        + "skillId:" + SkillId + ","
-        + "order:" + Order + ","
         + "trigger:" + Trigger + ","
         + "condType:" + CondType + ","
         + "condScope:" + CondScope + ","
@@ -131,6 +134,9 @@ public sealed partial class SkillRule : Luban.BeanBase
         + "actionCount:" + ActionCount + ","
         + "actionValue:" + Luban.StringUtil.CollectionToString(ActionValue) + ","
         + "actionParam:" + Luban.StringUtil.CollectionToString(ActionParam) + ","
+        + "isPassive:" + IsPassive + ","
+        + "signed:" + Signed + ","
+        + "descTemplate:" + DescTemplate + ","
         + "}";
     }
 }

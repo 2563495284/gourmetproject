@@ -187,6 +187,18 @@ namespace GourmetProject.Game.Orchestration
                 CurrentBattleActionContext = null;
                 cb.Invoke(result);
             }
+            else if (_run.TryConsumeUndying())
+            {
+                // 名刀·加护：常规挑战未达标时不失败，消耗该道具后照常继续编排（不发奖）。
+                _view.ShowNotice("名刀·加护", "分数未达标，但名刀·加护替你挡下了失败（道具已消耗）。", () =>
+                {
+                    Action cb = _afterBattleWin;
+                    _afterBattleWin = null;
+                    _afterBattleLose = null;
+                    CurrentBattleActionContext = null;
+                    cb?.Invoke();
+                });
+            }
             else
             {
                 // 常规美食/Boss 挑战不达标即失败；事件战斗可通过 onLose 覆盖为惩罚后继续。

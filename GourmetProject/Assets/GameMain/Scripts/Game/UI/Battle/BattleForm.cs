@@ -1167,7 +1167,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            var data = new DishDetailData(inst.Def, _run.Database, inst.SkillIds, inst.FlavorId, inst.SkillSources);
+            var data = new DishDetailData(inst.Def, _run.Database, inst.SkillIds, inst.FlavorId, inst.SkillSources, inst.TransferredSkills);
             GameApp.UI.OpenUIForm(UIForms.DishDetail, UIForms.GroupDialog, data);
         }
 

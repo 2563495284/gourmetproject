@@ -139,9 +139,10 @@ namespace GourmetProject.Gameplay.Scoring
 
                 case SkillActionType.TransferSkills:
                 {
-                    // 甜蜜传递：收集候选（作用域内有食物的其它菜）与待传技能，落地随机取 N 由 BattleSession 用 RNG 执行。
-                    List<string> skills = SkillsToTransfer(db, self, rule);
-                    if (skills.Count > 0)
+                    // 甜蜜传递：把「本子技能所在 skill 内的其它子技能」打包为外来子技能载荷，
+                    // 收集候选（作用域内有食物的其它菜），落地随机取 N 由 BattleSession 用 RNG 执行。
+                    IReadOnlyList<SkillEffect> effects = SkillRuleEffect.EffectsToTransfer(db, rule);
+                    if (effects.Count > 0)
                     {
                         var candidateIds = new List<int>();
                         foreach (DishInstance t in ScopeDishesForTransfer(board, self, rule))
@@ -152,7 +153,7 @@ namespace GourmetProject.Gameplay.Scoring
                         if (candidateIds.Count > 0)
                         {
                             transferRequests ??= new List<SkillTransferRequest>();
-                            transferRequests.Add(new SkillTransferRequest(self.Id, self.Def.Name, candidateIds, skills, rule.ActionCount));
+                            transferRequests.Add(new SkillTransferRequest(self.Id, self.Def.Name, candidateIds, effects, rule.ActionCount));
                         }
                     }
 
@@ -242,19 +243,6 @@ namespace GourmetProject.Gameplay.Scoring
             return false;
         }
 
-        private static List<string> SkillsToTransfer(GameplayDatabase db, DishInstance self, SkillRuleDef rule)
-        {
-            bool keepTransfer = rule.HasActionParam("keep_transfer");
-            var result = new List<string>();
-            foreach (string skillId in self.SkillIds)
-            {
-                if (!keepTransfer && IsTransferSkill(db, skillId)) continue;
-                result.Add(skillId);
-            }
-
-            return result;
-        }
-
         private static bool IsMultLayer(SkillRuleDef rule)
         {
             foreach (string p in rule.ActionParams)
@@ -263,18 +251,6 @@ namespace GourmetProject.Gameplay.Scoring
                 {
                     return true;
                 }
-            }
-
-            return false;
-        }
-
-        private static bool IsTransferSkill(GameplayDatabase db, string skillId)
-        {
-            SkillDef def = db.GetSkill(skillId);
-            if (def == null || !def.HasRules) return false;
-            for (int i = 0; i < def.Rules.Count; i++)
-            {
-                if (def.Rules[i].ActionType == SkillActionType.TransferSkills) return true;
             }
 
             return false;
@@ -342,16 +318,16 @@ namespace GourmetProject.Gameplay.Scoring
     }
 
     /// <summary>
-    /// 甜蜜传递请求：把 SkillIds 追加给候选目标中随机 Count 个（0=全部）实例，并标注来源。RNG 落地由 BattleSession 执行。
+    /// 甜蜜传递请求：把外来子技能(Effects) 追加给候选目标中随机 Count 个（0=全部）实例，并标注来源。RNG 落地由 BattleSession 执行。
     /// </summary>
     public sealed class SkillTransferRequest
     {
-        public SkillTransferRequest(int sourceInstanceId, string sourceName, IReadOnlyList<int> candidateTargetIds, IReadOnlyList<string> skillIds, int count)
+        public SkillTransferRequest(int sourceInstanceId, string sourceName, IReadOnlyList<int> candidateTargetIds, IReadOnlyList<SkillEffect> effects, int count)
         {
             SourceInstanceId = sourceInstanceId;
             SourceName = sourceName ?? string.Empty;
             CandidateTargetIds = candidateTargetIds ?? System.Array.Empty<int>();
-            SkillIds = skillIds ?? System.Array.Empty<string>();
+            Effects = effects ?? System.Array.Empty<SkillEffect>();
             Count = count;
         }
 
@@ -361,7 +337,7 @@ namespace GourmetProject.Gameplay.Scoring
 
         public IReadOnlyList<int> CandidateTargetIds { get; }
 
-        public IReadOnlyList<string> SkillIds { get; }
+        public IReadOnlyList<SkillEffect> Effects { get; }
 
         /// <summary>随机取的目标数（0=全部候选）。</summary>
         public int Count { get; }

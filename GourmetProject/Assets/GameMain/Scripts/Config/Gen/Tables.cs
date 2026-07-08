@@ -123,7 +123,7 @@ public partial class Tables
     /// </summary>
     public TbUnlockCondition TbUnlockCondition {get; }
     /// <summary>
-    /// 菜品技能元信息：id/name/desc/termId。具体效果统一由 TbSkillRule 配置。
+    /// 菜品技能元信息：id/termId/descOverride/subSkills(有序引用 sub_skill)。描述由所含子技能占位符模板按顺序自动拼接；descOverride 非空时覆盖。表标题按 termId 术语名(无则空)。
     /// </summary>
     public TbSkill TbSkill {get; }
     /// <summary>
@@ -135,13 +135,13 @@ public partial class Tables
     /// </summary>
     public TbCellTag TbCellTag {get; }
     /// <summary>
-    /// 菜品技能规则：一行=一条规则(前提&#215;行为)，同skillId多行按order执行。所有菜品技能效果统一走本表。
-    /// </summary>
-    public TbSkillRule TbSkillRule {get; }
-    /// <summary>
     /// 欢乐蛋糕层数分段buff：结算时读全局层数，layers&gt;=threshold 的档累计应用到 category 分类所有食物。effectType 复用 SkillActionType。
     /// </summary>
     public TbCakeLayerBuff TbCakeLayerBuff {get; }
+    /// <summary>
+    /// 子技能(合并后=具体子技能)：一行=一条完整效果(全部 SkillRuleDef 字段 + isPassive/signed/descTemplate)。参数不同即不同子技能，内容相同可被多个技能复用。
+    /// </summary>
+    public TbSubSkill TbSubSkill {get; }
 
     public Tables(System.Func<string, JSONNode> loader)
     {
@@ -175,8 +175,8 @@ public partial class Tables
         TbSkill = new TbSkill(loader("tbskill"));
         TbFlavor = new TbFlavor(loader("tbflavor"));
         TbCellTag = new TbCellTag(loader("tbcelltag"));
-        TbSkillRule = new TbSkillRule(loader("tbskillrule"));
         TbCakeLayerBuff = new TbCakeLayerBuff(loader("tbcakelayerbuff"));
+        TbSubSkill = new TbSubSkill(loader("tbsubskill"));
         ResolveRef();
     }
     
@@ -212,8 +212,8 @@ public partial class Tables
         TbSkill.ResolveRef(this);
         TbFlavor.ResolveRef(this);
         TbCellTag.ResolveRef(this);
-        TbSkillRule.ResolveRef(this);
         TbCakeLayerBuff.ResolveRef(this);
+        TbSubSkill.ResolveRef(this);
     }
 }
 

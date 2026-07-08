@@ -107,10 +107,32 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
+            CompleteRewards(closeForm: true);
+        }
+
+        /// <summary>结算并推进：清空 pending offer、存档、（可选）关界面并回到行动轴，等效于点「继续」。</summary>
+        private void CompleteRewards(bool closeForm)
+        {
             _run.ClearPendingRewardOffer();
             RunPersistence.Save(_run);
-            Close();
+            if (closeForm)
+            {
+                Close();
+            }
+
             BattleForm.Active?.OnRewardConfirmed();
+        }
+
+        /// <summary>领取动作后：若这是最后一个奖励（offer 已全部领取且无待拼碎片），直接等效于点「继续」。</summary>
+        private bool TryAutoComplete(bool closeForm)
+        {
+            if (_offer == null || _run == null || !_offer.IsFullyClaimed || _run.HasPendingFragmentPack)
+            {
+                return false;
+            }
+
+            CompleteRewards(closeForm);
+            return true;
         }
 
         private void OnReturnMenu()
@@ -133,6 +155,13 @@ namespace GourmetProject.Game.UI.Meta
             RewardGranter.ApplyBaseGold(_run, _offer);
             _run.SetPendingRewardOffer(_rewardKey, _offer);
             RunPersistence.Save(_run);
+
+            // 只剩金币这一个奖励，领完直接等效于点「继续」。
+            if (TryAutoComplete(closeForm: true))
+            {
+                return;
+            }
+
             RefreshOffer();
         }
 
@@ -176,6 +205,14 @@ namespace GourmetProject.Game.UI.Meta
                     }
 
                     RunPersistence.Save(_run);
+
+                    // 拼完碎片（placed）且这是最后一个奖励：不再弹回 RewardForm，直接等效于点「继续」。
+                    // 若在棋盘编辑里选择跳过（!placed），碎片奖励仍保留，照常弹回 RewardForm。
+                    if (TryAutoComplete(closeForm: false))
+                    {
+                        return;
+                    }
+
                     GameApp.UI.OpenUIForm(UIForms.Reward, UIForms.GroupDialog);
                 });
                 return;
@@ -185,6 +222,12 @@ namespace GourmetProject.Game.UI.Meta
             MarkChoiceClaimed(extra, index);
             _run.SetPendingRewardOffer(_rewardKey, _offer);
             RunPersistence.Save(_run);
+
+            if (TryAutoComplete(closeForm: true))
+            {
+                return;
+            }
+
             RefreshOffer();
         }
 
@@ -238,6 +281,13 @@ namespace GourmetProject.Game.UI.Meta
         {
             _run.SetPendingRewardOffer(_rewardKey, _offer);
             RunPersistence.Save(_run);
+
+            // 菜品是最后一个奖励且已放入菜谱：直接等效于点「继续」，不再弹回 RewardForm。
+            if (TryAutoComplete(closeForm: false))
+            {
+                return;
+            }
+
             ReopenReward();
         }
 
