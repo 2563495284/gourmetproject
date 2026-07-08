@@ -28,7 +28,6 @@ public sealed partial class Item : Luban.BeanBase
         { if(!_buf["effectType"].IsString) { throw new SerializationException(); }  EffectType = _buf["effectType"]; }
         { if(!_buf["effectValue"].IsNumber) { throw new SerializationException(); }  EffectValue = _buf["effectValue"]; }
         { if(!_buf["effectParam"].IsString) { throw new SerializationException(); }  EffectParam = _buf["effectParam"]; }
-        { if(!_buf["icon"].IsString) { throw new SerializationException(); }  Icon = _buf["icon"]; }
         { if(!_buf["baseWeight"].IsNumber) { throw new SerializationException(); }  BaseWeight = _buf["baseWeight"]; }
         { if(!_buf["hiddenRange"].IsObject) { throw new SerializationException(); }  HiddenRange = global::cfg.HiddenRange.DeserializeHiddenRange(_buf["hiddenRange"]);  }
     }
@@ -83,10 +82,6 @@ public sealed partial class Item : Luban.BeanBase
     /// </summary>
     public readonly string EffectParam;
     /// <summary>
-    /// 图标资源路径
-    /// </summary>
-    public readonly string Icon;
-    /// <summary>
     /// 随机基础权重
     /// </summary>
     public readonly float BaseWeight;
@@ -117,7 +112,6 @@ public sealed partial class Item : Luban.BeanBase
         + "effectType:" + EffectType + ","
         + "effectValue:" + EffectValue + ","
         + "effectParam:" + EffectParam + ","
-        + "icon:" + Icon + ","
         + "baseWeight:" + BaseWeight + ","
         + "hiddenRange:" + HiddenRange + ","
         + "}";

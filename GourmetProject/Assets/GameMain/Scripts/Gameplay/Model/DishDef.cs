@@ -20,7 +20,6 @@ namespace GourmetProject.Gameplay.Model
             float baseWeight,
             IReadOnlyList<string> skillIds,
             string flavorId,
-            string icon,
             bool allowRotate,
             string baseId = null,
             int price = 0,
@@ -37,7 +36,6 @@ namespace GourmetProject.Gameplay.Model
             BaseWeight = baseWeight;
             SkillIds = skillIds ?? Array.Empty<string>();
             FlavorId = flavorId ?? string.Empty;
-            Icon = icon ?? string.Empty;
             AllowRotate = allowRotate;
             BaseId = baseId ?? id;
             Price = price;
@@ -82,8 +80,6 @@ namespace GourmetProject.Gameplay.Model
 
         /// <summary>是否带有风味。</summary>
         public bool HasFlavor => !string.IsNullOrEmpty(FlavorId);
-
-        public string Icon { get; }
 
         public bool AllowRotate { get; }
 

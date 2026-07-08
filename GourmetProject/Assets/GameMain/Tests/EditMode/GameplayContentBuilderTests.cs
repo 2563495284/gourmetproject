@@ -27,7 +27,6 @@ namespace GourmetProject.Tests
             Assert.AreEqual(9, dish.HiddenMax);
             Assert.AreEqual(2.5f, dish.BaseWeight);
             Assert.AreEqual(12, dish.Price);
-            Assert.AreEqual("Icons/Sushi", dish.Icon);
             Assert.IsTrue(dish.AllowRotate);
             CollectionAssert.AreEqual(new[] { "tag_inherent" }, dish.SkillIds);
             Assert.AreEqual("tag_a", dish.FlavorId);
@@ -108,7 +107,6 @@ namespace GourmetProject.Tests
     ""id"": ""base_sushi"",
     ""name"": ""寿司"",
     ""deliciousness"": 7,
-    ""icon"": ""Icons/Sushi"",
     ""allowRotate"": true,
     ""skills"": ""tag_inherent"",
     ""category"": ""sushi"",

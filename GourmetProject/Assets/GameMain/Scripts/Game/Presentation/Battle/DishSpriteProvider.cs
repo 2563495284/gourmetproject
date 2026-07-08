@@ -1,3 +1,4 @@
+using GourmetProject.Game;
 using GourmetProject.Gameplay.Model;
 using UnityEngine;
 using GourmetProject.Game.Meta;
@@ -5,35 +6,17 @@ using GourmetProject.Game.Run;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
-    /// <summary>按 DishDef.Icon 约定加载菜品 sprite，并提供兜底方块。</summary>
+    /// <summary>按菜品名称约定加载菜品 sprite，并提供兜底方块。</summary>
     public sealed class DishSpriteProvider
     {
         private Sprite _fallback;
 
         public Sprite Get(DishDef dish)
         {
-            if (dish != null && !string.IsNullOrEmpty(dish.Icon))
+            Sprite sprite = ContentIconLoader.LoadDish(dish);
+            if (sprite != null)
             {
-                Sprite sprite = Resources.Load<Sprite>(dish.Icon);
-                if (sprite != null)
-                {
-                    return sprite;
-                }
-            }
-
-            if (dish != null)
-            {
-                Sprite sprite = Resources.Load<Sprite>($"Sprites/Items/{dish.BaseId}");
-                if (sprite != null)
-                {
-                    return sprite;
-                }
-
-                sprite = Resources.Load<Sprite>($"Sprites/Items/{dish.Id}");
-                if (sprite != null)
-                {
-                    return sprite;
-                }
+                return sprite;
             }
 
             return Fallback;

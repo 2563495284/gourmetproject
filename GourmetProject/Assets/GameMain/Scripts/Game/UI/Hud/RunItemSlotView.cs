@@ -1,4 +1,5 @@
 using System;
+using GourmetProject.Game;
 using GourmetProject.Game.UI.Tooltips;
 using UnityEngine;
 using UnityEngine.UI;
@@ -131,12 +132,7 @@ namespace GourmetProject.Game.UI.Hud
         /// <summary>取道具图标（Resources 路径，缺失返回 null）。</summary>
         public static Sprite LoadIcon(cfg.Item item)
         {
-            if (item == null || string.IsNullOrEmpty(item.Icon))
-            {
-                return null;
-            }
-
-            return Resources.Load<Sprite>(item.Icon);
+            return ContentIconLoader.LoadItem(item);
         }
 
         /// <summary>取道具名前两字作为槽内短名（图标缺失时的兜底展示）。</summary>

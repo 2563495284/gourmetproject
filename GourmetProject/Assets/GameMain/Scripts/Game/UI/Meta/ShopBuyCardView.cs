@@ -1,5 +1,6 @@
 using System;
 using DG.Tweening;
+using GourmetProject.Game;
 using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Gameplay.Model;
 using UnityEngine;
@@ -33,7 +34,7 @@ namespace GourmetProject.Game.UI.Meta
 
         public void Bind(cfg.Item item, int price, bool affordable, Action onBuy)
         {
-            Sprite icon = item == null || string.IsNullOrEmpty(item.Icon) ? null : Resources.Load<Sprite>(item.Icon);
+            Sprite icon = ContentIconLoader.LoadItem(item);
             Bind(item?.Name, item?.Desc, price, affordable, icon, _ =>
             {
                 onBuy?.Invoke();

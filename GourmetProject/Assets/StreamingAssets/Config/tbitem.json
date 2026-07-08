@@ -1,100 +1,5 @@
 [
   {
-    "id": "item_big_plate",
-    "name": "大餐盘",
-    "desc": "被动：每局结算最终分数额外 +50。",
-    "kind": 0,
-    "quality": 0,
-    "specialTags": "ScoreBuild",
-    "triggerTiming": 0,
-    "holdLimit": 1,
-    "effectType": "FinalAddFlat",
-    "effectValue": 50,
-    "effectParam": "",
-    "icon": "Sprites/Items/big_plate",
-    "baseWeight": 1,
-    "hiddenRange": {
-      "min": 1,
-      "max": 30
-    }
-  },
-  {
-    "id": "item_chef_knife",
-    "name": "主厨刀",
-    "desc": "被动：每局结算最终分数 ×1.2。",
-    "kind": 0,
-    "quality": 1,
-    "specialTags": "ScoreBuild",
-    "triggerTiming": 0,
-    "holdLimit": 1,
-    "effectType": "FinalAddMult",
-    "effectValue": 1.2,
-    "effectParam": "",
-    "icon": "Sprites/Items/chef_knife",
-    "baseWeight": 1,
-    "hiddenRange": {
-      "min": 10,
-      "max": 45
-    }
-  },
-  {
-    "id": "item_pepper_jar",
-    "name": "胡椒罐",
-    "desc": "被动：每道带「麻辣」的菜额外 +10 美味度。",
-    "kind": 0,
-    "quality": 1,
-    "specialTags": "SpicyBuild",
-    "triggerTiming": 0,
-    "holdLimit": 1,
-    "effectType": "TagBonus",
-    "effectValue": 10,
-    "effectParam": "tag_spicy",
-    "icon": "Sprites/Items/pepper_jar",
-    "baseWeight": 1,
-    "hiddenRange": {
-      "min": 5,
-      "max": 35
-    }
-  },
-  {
-    "id": "item_reroll",
-    "name": "重摆铃",
-    "desc": "主动：清空棋盘上的菜品，可重新上菜。",
-    "kind": 1,
-    "quality": 0,
-    "specialTags": "BattleActive",
-    "triggerTiming": 3,
-    "holdLimit": 9,
-    "effectType": "ClearBoard",
-    "effectValue": 0,
-    "effectParam": "",
-    "icon": "Sprites/Items/reroll_bell",
-    "baseWeight": 1,
-    "hiddenRange": {
-      "min": 0,
-      "max": 0
-    }
-  },
-  {
-    "id": "item_extra_serve",
-    "name": "加菜券",
-    "desc": "主动：立即额外上一道菜。",
-    "kind": 1,
-    "quality": 0,
-    "specialTags": "BattleActive",
-    "triggerTiming": 3,
-    "holdLimit": 9,
-    "effectType": "ExtraServe",
-    "effectValue": 1,
-    "effectParam": "",
-    "icon": "Sprites/Items/extra_serve",
-    "baseWeight": 1,
-    "hiddenRange": {
-      "min": 0,
-      "max": 0
-    }
-  },
-  {
     "id": "item_grant_two_passive",
     "name": "随机被动包",
     "desc": "获得两个随机被动道具。",
@@ -106,7 +11,6 @@
     "effectType": "GrantRandomPassive",
     "effectValue": 2,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
@@ -125,7 +29,6 @@
     "effectType": "ChooseOnePassive",
     "effectValue": 3,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
@@ -144,7 +47,6 @@
     "effectType": "GrantRandomActive",
     "effectValue": 2,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
@@ -163,7 +65,6 @@
     "effectType": "ChooseOneActive",
     "effectValue": 3,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
@@ -182,7 +83,6 @@
     "effectType": "ChooseOneFood",
     "effectValue": 3,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
@@ -201,7 +101,6 @@
     "effectType": "ChooseOneFragment",
     "effectValue": 3,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
@@ -220,7 +119,6 @@
     "effectType": "GrantRecipe",
     "effectValue": 1,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
@@ -239,7 +137,6 @@
     "effectType": "FamilyPack",
     "effectValue": 50,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
@@ -258,7 +155,6 @@
     "effectType": "RandomizeItems",
     "effectValue": 0,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
@@ -277,7 +173,6 @@
     "effectType": "GoldNow",
     "effectValue": 0,
     "effectParam": "range:1,100",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
@@ -296,7 +191,6 @@
     "effectType": "GoldMealBonus",
     "effectValue": 15,
     "effectParam": "meals:10",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
@@ -315,7 +209,6 @@
     "effectType": "GoldOnBossComplete",
     "effectValue": 100,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
@@ -334,7 +227,6 @@
     "effectType": "GoldMealPercent",
     "effectValue": 0.2,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
@@ -353,7 +245,6 @@
     "effectType": "ShopDiscountFood",
     "effectValue": 0.2,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
@@ -372,7 +263,6 @@
     "effectType": "ShopDiscountFragment",
     "effectValue": 0.2,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
@@ -391,7 +281,6 @@
     "effectType": "ShopDiscountActive",
     "effectValue": 0.2,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
@@ -410,7 +299,6 @@
     "effectType": "ShopDiscountPassive",
     "effectValue": 0.2,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
@@ -429,7 +317,6 @@
     "effectType": "ShopDiscountRemove",
     "effectValue": 0.2,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
@@ -448,7 +335,6 @@
     "effectType": "RemovePriceFixed",
     "effectValue": 30,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
@@ -467,7 +353,6 @@
     "effectType": "ShopDiscountRecipe",
     "effectValue": 0.2,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
@@ -486,7 +371,6 @@
     "effectType": "Undying",
     "effectValue": 0,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
@@ -505,7 +389,6 @@
     "effectType": "RequiredScoreToOne",
     "effectValue": 0,
     "effectParam": "meals:3",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
@@ -524,7 +407,6 @@
     "effectType": "RequiredScoreNormalPct",
     "effectValue": -0.1,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
@@ -543,7 +425,6 @@
     "effectType": "RequiredScoreSuperPct",
     "effectValue": -0.1,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
@@ -562,7 +443,6 @@
     "effectType": "RequiredScoreFeastPct",
     "effectValue": -0.1,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
@@ -581,7 +461,6 @@
     "effectType": "CountThresholdFinalMult",
     "effectValue": 1.1,
     "effectParam": "lte:10",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
@@ -600,7 +479,6 @@
     "effectType": "CountThresholdFinalMult",
     "effectValue": 1.1,
     "effectParam": "gte:10",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
@@ -619,7 +497,6 @@
     "effectType": "PerDishSettledMultFlat",
     "effectValue": 0.1,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
@@ -638,7 +515,6 @@
     "effectType": "PermanentAddFlatAll",
     "effectValue": 10,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
@@ -657,7 +533,6 @@
     "effectType": "PermanentAddMultAll",
     "effectValue": 0.2,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
@@ -676,7 +551,6 @@
     "effectType": "StarGazeEveryN",
     "effectValue": 0,
     "effectParam": "every:5",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
@@ -695,7 +569,6 @@
     "effectType": "StarGazeFirstN",
     "effectValue": 0,
     "effectParam": "first:3",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
@@ -714,7 +587,6 @@
     "effectType": "FreeMoveFirst",
     "effectValue": 0,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
@@ -733,7 +605,6 @@
     "effectType": "AdjustCountBonus",
     "effectValue": 1,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
@@ -752,7 +623,6 @@
     "effectType": "AdjustToMult",
     "effectValue": 0.2,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
@@ -771,7 +641,6 @@
     "effectType": "FoodConvert",
     "effectValue": 5,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
@@ -790,7 +659,6 @@
     "effectType": "GoldPerUnusedAdjust",
     "effectValue": 1,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
@@ -809,7 +677,6 @@
     "effectType": "GoldOnShopEnter",
     "effectValue": 10,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
@@ -828,7 +695,6 @@
     "effectType": "ExtraInterest",
     "effectValue": 1,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
@@ -847,7 +713,6 @@
     "effectType": "MinGoldGuarantee",
     "effectValue": 10,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
@@ -866,7 +731,6 @@
     "effectType": "InterestCapBonus",
     "effectValue": 10,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
@@ -885,7 +749,6 @@
     "effectType": "Loan",
     "effectValue": 300,
     "effectParam": "repay:600",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
@@ -904,7 +767,6 @@
     "effectType": "TimelineRandomize",
     "effectValue": 0,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
@@ -923,7 +785,6 @@
     "effectType": "TimelineExtraDay",
     "effectValue": 1,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
@@ -942,7 +803,6 @@
     "effectType": "TimelineWeekMinus",
     "effectValue": 1,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
@@ -961,7 +821,6 @@
     "effectType": "TimelineAddRewardNode",
     "effectValue": 1,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
@@ -980,7 +839,6 @@
     "effectType": "TimelineAddInterestNode",
     "effectValue": 1,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
@@ -999,7 +857,6 @@
     "effectType": "EveryNthServeMult",
     "effectValue": 2,
     "effectParam": "every:3",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
@@ -1018,7 +875,6 @@
     "effectType": "NthServeMult",
     "effectValue": 2,
     "effectParam": "index:1",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
@@ -1037,7 +893,6 @@
     "effectType": "NthServeMult",
     "effectValue": 2,
     "effectParam": "index:-1",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
@@ -1056,7 +911,6 @@
     "effectType": "ExtraActiveSlot",
     "effectValue": 2,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
@@ -1075,7 +929,6 @@
     "effectType": "GoldOnActiveUse",
     "effectValue": 20,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
@@ -1094,7 +947,6 @@
     "effectType": "BlockActive",
     "effectValue": 1000,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 40,
@@ -1113,7 +965,6 @@
     "effectType": "FlavorEnhance",
     "effectValue": 2,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
@@ -1132,7 +983,6 @@
     "effectType": "FlavorRemoveForGold",
     "effectValue": 200,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
@@ -1151,7 +1001,6 @@
     "effectType": "FlavorRemoveCopySkill",
     "effectValue": 0,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
@@ -1170,7 +1019,6 @@
     "effectType": "FlavorRemoveDoubleScore",
     "effectValue": 2,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
@@ -1189,7 +1037,6 @@
     "effectType": "FlavorDoubleSlot",
     "effectValue": 1,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 40,
@@ -1208,7 +1055,6 @@
     "effectType": "FlavorContagion",
     "effectValue": 1,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
@@ -1227,7 +1073,6 @@
     "effectType": "CellTagEnhance",
     "effectValue": 2,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
@@ -1246,7 +1091,6 @@
     "effectType": "CellTagContagion",
     "effectValue": 1,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
@@ -1265,7 +1109,6 @@
     "effectType": "LuckyEventGuarantee",
     "effectValue": 4,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
@@ -1284,7 +1127,6 @@
     "effectType": "LuckyEventChance",
     "effectValue": 0.2,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
@@ -1303,7 +1145,6 @@
     "effectType": "MoreEvents",
     "effectValue": 0.2,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
@@ -1322,7 +1163,6 @@
     "effectType": "GoldOnEventComplete",
     "effectValue": 10,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
@@ -1341,7 +1181,6 @@
     "effectType": "RerollAction",
     "effectValue": 2,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
@@ -1360,7 +1199,6 @@
     "effectType": "ShopRestock",
     "effectValue": 0,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
@@ -1379,7 +1217,6 @@
     "effectType": "ChoiceCountBonus",
     "effectValue": 1,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
@@ -1398,7 +1235,6 @@
     "effectType": "ChoiceTimesBonus",
     "effectValue": 1,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
@@ -1417,7 +1253,6 @@
     "effectType": "ExtraFoodChoice",
     "effectValue": 0,
     "effectParam": "every:3",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
@@ -1436,7 +1271,6 @@
     "effectType": "ExtraItemChoice",
     "effectValue": 0,
     "effectParam": "every:3",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
@@ -1455,7 +1289,6 @@
     "effectType": "CopyFood",
     "effectValue": 1,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
@@ -1474,7 +1307,6 @@
     "effectType": "DiscardNegative",
     "effectValue": 2,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
@@ -1493,7 +1325,6 @@
     "effectType": "DiscardNegativeForGold",
     "effectValue": 100,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
@@ -1512,7 +1343,6 @@
     "effectType": "GoldMealPercent",
     "effectValue": -0.25,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
@@ -1531,7 +1361,6 @@
     "effectType": "ShopPriceUp",
     "effectValue": 0.25,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
@@ -1550,7 +1379,6 @@
     "effectType": "NoRemoveDish",
     "effectValue": 0,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
@@ -1569,7 +1397,6 @@
     "effectType": "TimelineSkipNode",
     "effectValue": 1,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
@@ -1588,7 +1415,6 @@
     "effectType": "ChoiceCountPenalty",
     "effectValue": -1,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
@@ -1607,7 +1433,6 @@
     "effectType": "RequiredScoreNormalPct",
     "effectValue": 0.1,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
@@ -1626,7 +1451,6 @@
     "effectType": "RequiredScoreSuperPct",
     "effectValue": 0.1,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
@@ -1645,7 +1469,6 @@
     "effectType": "RequiredScoreFeastPct",
     "effectValue": 0.1,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
@@ -1664,7 +1487,6 @@
     "effectType": "GoldWeekClear",
     "effectValue": 0,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
@@ -1683,7 +1505,6 @@
     "effectType": "CountAsBonusAll",
     "effectValue": 1,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
@@ -1702,7 +1523,6 @@
     "effectType": "TransferTargetMult",
     "effectValue": 1.1,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
@@ -1721,7 +1541,6 @@
     "effectType": "TransferSourceMult",
     "effectValue": 1.1,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
@@ -1740,7 +1559,6 @@
     "effectType": "PerSkillMultFlat",
     "effectValue": 0.1,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
@@ -1759,7 +1577,6 @@
     "effectType": "GoldOnTransferCount",
     "effectValue": 10,
     "effectParam": "count:10",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
@@ -1778,7 +1595,6 @@
     "effectType": "CakeLayerRetain",
     "effectValue": 0.1,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
@@ -1797,7 +1613,6 @@
     "effectType": "CakeLayerInitBonus",
     "effectValue": 10,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
@@ -1816,7 +1631,6 @@
     "effectType": "CakeLayerAccel",
     "effectValue": 1,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
@@ -1835,7 +1649,6 @@
     "effectType": "GoldOnCakeLayers",
     "effectValue": 10,
     "effectParam": "threshold:100",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
@@ -1854,7 +1667,6 @@
     "effectType": "CakeLayerReqMinus",
     "effectValue": 10,
     "effectParam": "",
-    "icon": "",
     "baseWeight": 1,
     "hiddenRange": {
       "min": 5,

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using GourmetProject.Core.Rng;
+using GourmetProject.Game;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Flow;
 using GourmetProject.Game.Meta;
@@ -586,23 +587,10 @@ namespace GourmetProject.Game.UI.Meta
         private Sprite LoadDishIcon(string dishId)
         {
             DishDef dish = _run?.Database.GetDish(dishId);
-            if (dish != null)
+            Sprite icon = ContentIconLoader.LoadDish(dish);
+            if (icon != null)
             {
-                if (!string.IsNullOrEmpty(dish.Icon))
-                {
-                    Sprite icon = Resources.Load<Sprite>(dish.Icon);
-                    if (icon != null)
-                    {
-                        return icon;
-                    }
-                }
-
-                Sprite fallback = Resources.Load<Sprite>($"Sprites/Items/{dish.BaseId}")
-                    ?? Resources.Load<Sprite>($"Sprites/Items/{dish.Id}");
-                if (fallback != null)
-                {
-                    return fallback;
-                }
+                return icon;
             }
 
             return Resources.Load<Sprite>("Sprites/UI/ui_icon_shop_food")

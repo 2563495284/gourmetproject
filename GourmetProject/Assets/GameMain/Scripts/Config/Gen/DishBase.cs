@@ -20,7 +20,6 @@ public sealed partial class DishBase : Luban.BeanBase
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
         { if(!_buf["name"].IsString) { throw new SerializationException(); }  Name = _buf["name"]; }
         { if(!_buf["deliciousness"].IsNumber) { throw new SerializationException(); }  Deliciousness = _buf["deliciousness"]; }
-        { if(!_buf["icon"].IsString) { throw new SerializationException(); }  Icon = _buf["icon"]; }
         { if(!_buf["allowRotate"].IsBoolean) { throw new SerializationException(); }  AllowRotate = _buf["allowRotate"]; }
         { if(!_buf["skills"].IsString) { throw new SerializationException(); }  Skills = _buf["skills"]; }
         { if(!_buf["category"].IsString) { throw new SerializationException(); }  Category = _buf["category"]; }
@@ -45,10 +44,6 @@ public sealed partial class DishBase : Luban.BeanBase
     /// 基础美味度
     /// </summary>
     public readonly int Deliciousness;
-    /// <summary>
-    /// 图标资源路径
-    /// </summary>
-    public readonly string Icon;
     /// <summary>
     /// 是否允许旋转摆放
     /// </summary>
@@ -83,7 +78,6 @@ public sealed partial class DishBase : Luban.BeanBase
         + "id:" + Id + ","
         + "name:" + Name + ","
         + "deliciousness:" + Deliciousness + ","
-        + "icon:" + Icon + ","
         + "allowRotate:" + AllowRotate + ","
         + "skills:" + Skills + ","
         + "category:" + Category + ","

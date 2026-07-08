@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using GourmetProject.Game;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Model;
@@ -942,12 +943,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private static Sprite LoadItemIcon(cfg.Item item)
         {
-            if (item == null || string.IsNullOrEmpty(item.Icon))
-            {
-                return null;
-            }
-
-            return Resources.Load<Sprite>(item.Icon);
+            return ContentIconLoader.LoadItem(item);
         }
 
         private static string ShortName(string name)

@@ -31,7 +31,6 @@ namespace GourmetProject.Tests
                 baseWeight,
                 skills ?? new List<string>(),
                 flavor ?? string.Empty,
-                string.Empty,
                 allowRotate,
                 rotationIndex: rotationIndex,
                 category: category,

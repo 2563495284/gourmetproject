@@ -1,3 +1,4 @@
+using GourmetProject.Game;
 using UnityEngine;
 
 namespace GourmetProject.Game.UI.Tooltips
@@ -11,7 +12,7 @@ namespace GourmetProject.Game.UI.Tooltips
     {
         private const string DefaultEmoji = "\U0001F9EA";
 
-        /// <summary>用配置道具绑定：标题取道具名，描述取效果说明，图标按 Icon 资源路径加载。</summary>
+        /// <summary>用配置道具绑定：标题取道具名，描述取效果说明，图标按名称约定加载。</summary>
         public void Bind(cfg.Item item)
         {
             if (item == null)
@@ -20,7 +21,7 @@ namespace GourmetProject.Game.UI.Tooltips
                 return;
             }
 
-            Sprite icon = string.IsNullOrEmpty(item.Icon) ? null : Resources.Load<Sprite>(item.Icon);
+            Sprite icon = ContentIconLoader.LoadItem(item);
             Bind(item.Name, item.Desc, icon);
         }
 

@@ -124,7 +124,6 @@ namespace GourmetProject.Game.Adapter
                 v.BaseWeight,
                 SplitPipeList(b.Skills),
                 v.FlavorId,
-                b.Icon,
                 b.AllowRotate,
                 b.Id,
                 v.Price,
