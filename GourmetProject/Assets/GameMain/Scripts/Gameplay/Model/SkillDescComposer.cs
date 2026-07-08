@@ -105,7 +105,8 @@ namespace GourmetProject.Gameplay.Model
             switch (scope)
             {
                 case SkillScope.Self: return "自身";
-                case SkillScope.Adjacent: return "周围";
+                case SkillScope.Adjacent: return "相邻";
+                case SkillScope.Round: return "周围";
                 case SkillScope.Row: return "同行";
                 case SkillScope.Column: return "同列";
                 case SkillScope.All: return "全场";
@@ -118,7 +119,8 @@ namespace GourmetProject.Gameplay.Model
         {
             switch (scope)
             {
-                case SkillScope.Adjacent: return "周围食物";
+                case SkillScope.Adjacent: return "相邻食物";
+                case SkillScope.Round: return "周围食物";
                 case SkillScope.Row: return "同行食物";
                 case SkillScope.Column: return "同列食物";
                 case SkillScope.All: return "所有食物";
@@ -133,7 +135,8 @@ namespace GourmetProject.Gameplay.Model
             string prefix;
             switch (scope)
             {
-                case SkillScope.Adjacent: prefix = "周围"; break;
+                case SkillScope.Adjacent: prefix = "相邻"; break;
+                case SkillScope.Round: prefix = "周围"; break;
                 case SkillScope.Row: prefix = "同行"; break;
                 case SkillScope.Column: prefix = "同列"; break;
                 case SkillScope.All:

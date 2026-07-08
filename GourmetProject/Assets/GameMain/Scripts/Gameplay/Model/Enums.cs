@@ -57,6 +57,7 @@ namespace GourmetProject.Gameplay.Model
         After = 8,
         Recipe = 9,
         Category = 10,
+        Round = 11,
     }
 
     /// <summary>比较符。与 cfg.CompareOp 一一对应。</summary>

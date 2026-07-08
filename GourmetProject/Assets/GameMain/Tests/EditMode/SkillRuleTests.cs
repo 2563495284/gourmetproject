@@ -67,6 +67,42 @@ namespace GourmetProject.Tests
             Assert.AreEqual(40f, score.Contribution, 0.001f);
         }
 
+        [Test]
+        public void RuleAddFlat_WithRoundCondition_CountsDiagonalDishes()
+        {
+            GameplayDatabase db = Db(GameplayTestFactory.RuleSkill("s",
+                GameplayTestFactory.Rule(
+                    SkillActionType.AddFlat, 2f,
+                    condType: SkillConditionType.DishCount, condScope: SkillScope.Round, condMode: CountMode.Per)));
+            var board = new GpBoard(4, 4);
+            DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
+            Place(board, 1, dish, 1, 1, "s");
+            Place(board, 2, dish, 0, 1); // 共边相邻
+            Place(board, 3, dish, 0, 0); // 对角相邻
+            Place(board, 4, dish, 3, 3); // 范围外
+
+            ScoreResult result = new ScoreCalculator().Calculate(board, db);
+
+            Assert.AreEqual(14f, result.DishScores.First(s => s.DishInstanceId == 1).Contribution, 0.001f);
+        }
+
+        [Test]
+        public void RuleAddFlat_WithAdjacentCondition_IgnoresDiagonalDishes()
+        {
+            GameplayDatabase db = Db(GameplayTestFactory.RuleSkill("s",
+                GameplayTestFactory.Rule(
+                    SkillActionType.AddFlat, 2f,
+                    condType: SkillConditionType.DishCount, condScope: SkillScope.Adjacent, condMode: CountMode.Per)));
+            var board = new GpBoard(4, 4);
+            DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
+            Place(board, 1, dish, 1, 1, "s");
+            Place(board, 2, dish, 0, 0); // 仅对角，不算 Adjacent
+
+            ScoreResult result = new ScoreCalculator().Calculate(board, db);
+
+            Assert.AreEqual(10f, result.DishScores.First(s => s.DishInstanceId == 1).Contribution, 0.001f);
+        }
+
         // ---------- 倍率加法 AddMultFlat（倍率 +X，线性叠加，区别于乘法幂叠） ----------
 
         [Test]
@@ -265,6 +301,26 @@ namespace GourmetProject.Tests
 
             Assert.AreEqual(10f, result.DishScores.First(s => s.DishInstanceId == 1).Contribution, 0.001f);
             Assert.AreEqual(13f, result.DishScores.First(s => s.DishInstanceId == 2).Contribution, 0.001f);
+        }
+
+        [Test]
+        public void AddFlat_ToRound_AffectsSideAndDiagonalTargets()
+        {
+            GameplayDatabase db = Db(GameplayTestFactory.RuleSkill("s",
+                GameplayTestFactory.Rule(SkillActionType.AddFlat, 3f, actionScope: SkillScope.Round)));
+            var board = new GpBoard(4, 4);
+            DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
+            Place(board, 1, dish, 1, 1, "s");
+            Place(board, 2, dish, 0, 1); // 共边相邻
+            Place(board, 3, dish, 0, 0); // 对角相邻
+            Place(board, 4, dish, 3, 3); // 范围外
+
+            ScoreResult result = new ScoreCalculator().Calculate(board, db);
+
+            Assert.AreEqual(10f, result.DishScores.First(s => s.DishInstanceId == 1).Contribution, 0.001f);
+            Assert.AreEqual(13f, result.DishScores.First(s => s.DishInstanceId == 2).Contribution, 0.001f);
+            Assert.AreEqual(13f, result.DishScores.First(s => s.DishInstanceId == 3).Contribution, 0.001f);
+            Assert.AreEqual(10f, result.DishScores.First(s => s.DishInstanceId == 4).Contribution, 0.001f);
         }
 
         [Test]

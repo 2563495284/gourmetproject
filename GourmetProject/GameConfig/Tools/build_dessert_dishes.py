@@ -77,9 +77,9 @@ DISHES = [
 #
 # 描述占位符（运行时由 SkillDescComposer 回填组合层参数）：
 #   {0}{1}..  actionValue[i]（signed=True 补正负号，signed=False 原样）
-#   {cscope}  前提作用域词（自身/周围/同行/同列/全场）
-#   {ascope}  行为作用域词（周围/同行/同列…）
-#   {atargets} 行为作用域「X食物」前缀（Self→空，Adjacent→周围食物…）
+#   {cscope}  前提作用域词（自身/相邻/周围/同行/同列/全场）
+#   {ascope}  行为作用域词（相邻/周围/同行/同列…）
+#   {atargets} 行为作用域「X食物」前缀（Self→空，Adjacent→相邻食物…）
 #   {unit}    计数单位（个/种）  {thr} 阈值  {count} 目标数
 #   {targets} 甜蜜传递目标短语（作用域+目标数，0=所有）
 #   {tiers}   condParam tiers 解析为 3/5/8   {tiervals} actionParam tiervals 解析为 1.5/2.5/5
@@ -268,7 +268,7 @@ def get_or_create_sheet(wb, name):
 # 返回:
 #   concrete: 有序 dict, subId -> 全字段 dict（按首次出现顺序）
 #   skill_subs: dict, skillId -> [subId,...]（有序，即原组件顺序）
-_SCOPE_SLUG = {"Self": "self", "Adjacent": "adj", "Row": "row",
+_SCOPE_SLUG = {"Self": "self", "Adjacent": "adj", "Round": "round", "Row": "row",
                "Column": "col", "All": "all", "Category": "cat"}
 
 

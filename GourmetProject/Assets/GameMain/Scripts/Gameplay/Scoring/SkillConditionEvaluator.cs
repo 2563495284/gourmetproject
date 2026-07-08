@@ -309,6 +309,11 @@ namespace GourmetProject.Gameplay.Scoring
                     if (includeSelf) result.Add(self);
                     return result;
 
+                case SkillScope.Round:
+                    CollectDishesFromCells(board, ScopeCells(board, self, scope), result);
+                    if (includeSelf) result.Add(self);
+                    return result;
+
                 case SkillScope.Row:
                     CollectRowOrColumn(board, self, result, row: true, includeSelf);
                     return result;
@@ -333,6 +338,19 @@ namespace GourmetProject.Gameplay.Scoring
                         result.Add(d);
                     }
                     return result;
+            }
+        }
+
+        private static void CollectDishesFromCells(GpBoard board, IEnumerable<GridPos> cells, List<DishInstance> result)
+        {
+            var seen = new HashSet<int>();
+            foreach (GridPos cell in cells)
+            {
+                DishInstance dish = board.DishAt(cell);
+                if (dish != null && seen.Add(dish.Id))
+                {
+                    result.Add(dish);
+                }
             }
         }
 
@@ -499,7 +517,7 @@ namespace GourmetProject.Gameplay.Scoring
             return any;
         }
 
-        /// <summary>作用域涉及的「存在格」集合（本行/本列/相邻）。</summary>
+        /// <summary>作用域涉及的「存在格」集合（本行/本列/相邻/周围）。</summary>
         private static IEnumerable<GridPos> ScopeCells(GpBoard board, DishInstance self, SkillScope scope)
         {
             var cells = new List<GridPos>();
@@ -528,6 +546,28 @@ namespace GourmetProject.Gameplay.Scoring
                     foreach (GridPos c in self.OccupiedCells) xs.Add(c.X);
                     foreach (int x in xs)
                         for (int y = 0; y < board.Height; y++) AddCell(new GridPos(x, y));
+                    break;
+                }
+
+                case SkillScope.Round:
+                {
+                    var selfCells = new HashSet<int>();
+                    foreach (GridPos c in self.OccupiedCells) selfCells.Add(c.Y * board.Width + c.X);
+                    foreach (GridPos c in self.OccupiedCells)
+                    {
+                        for (int dx = -1; dx <= 1; dx++)
+                        {
+                            for (int dy = -1; dy <= 1; dy++)
+                            {
+                                if (dx == 0 && dy == 0)
+                                {
+                                    continue;
+                                }
+
+                                TryNeighbor(board, selfCells, cells, seen, c.Offset(dx, dy));
+                            }
+                        }
+                    }
                     break;
                 }
 

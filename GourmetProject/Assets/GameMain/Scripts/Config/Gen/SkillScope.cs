@@ -60,6 +60,10 @@ namespace cfg
         /// 指定分类(condParam/actionParam)的菜
         /// </summary>
         Category = 10,
+        /// <summary>
+        /// 周围菜(共边相邻+对角相邻)
+        /// </summary>
+        Round = 11,
     }
 
 } 
