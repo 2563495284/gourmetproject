@@ -6,8 +6,6 @@
     "condScope": 0,
     "condUnit": 0,
     "condMode": 2,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 9,
     "actionScope": 0,
@@ -18,17 +16,15 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "处在棋盘边缘时，倍率 {0}。"
+    "descTemplate": "处在棋盘边缘时，{ascope}倍率 {0}。"
   },
   {
     "id": "ss_flat_per_dish_adj_v8",
     "trigger": 0,
     "condType": 4,
-    "condScope": 1,
+    "condScope": 11,
     "condUnit": 1,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 1,
     "actionScope": 0,
@@ -39,17 +35,15 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物，分数 {0}。"
+    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}分数 {0}。"
   },
   {
     "id": "ss_transfer_row_n1",
-    "trigger": 1,
+    "trigger": 0,
     "condType": 0,
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 5,
     "actionScope": 2,
@@ -60,17 +54,15 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "上菜时，将本菜的其他子技能甜蜜传递给{targets}（结算时对目标生效一次）。"
+    "descTemplate": "甜蜜传递至{ascope}食物"
   },
   {
     "id": "ss_flat_per_empty_adj_vm2",
     "trigger": 0,
     "condType": 2,
-    "condScope": 1,
+    "condScope": 11,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 1,
     "actionScope": 0,
@@ -81,20 +73,18 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 个空格，分数 {0}。"
+    "descTemplate": "{cscope}每有 1 个空格，{ascope}分数 {0}。"
   },
   {
     "id": "ss_layer_per_dish_adj_v2",
-    "trigger": 1,
+    "trigger": 0,
     "condType": 4,
-    "condScope": 1,
+    "condScope": 11,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 6,
-    "actionScope": 0,
+    "actionScope": 16,
     "actionCount": 0,
     "actionValue": [
       2
@@ -111,10 +101,8 @@
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
-    "actionType": 1,
+    "actionType": 10,
     "actionScope": 0,
     "actionCount": 0,
     "actionValue": [
@@ -123,17 +111,15 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "本局每结算过 1 次本种，分数 {0}。"
+    "descTemplate": "结算时，{ascope}分数永久 {0}。"
   },
   {
     "id": "ss_multflat_per_dish_col_v1",
     "trigger": 0,
     "condType": 4,
-    "condScope": 3,
+    "condScope": 14,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 9,
     "actionScope": 0,
@@ -144,17 +130,15 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物，{atargets}倍率 {0}。"
+    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}倍率 {0}。"
   },
   {
     "id": "ss_flat_per_dish_row_v10",
     "trigger": 0,
     "condType": 4,
-    "condScope": 2,
+    "condScope": 13,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 1,
     "actionScope": 0,
@@ -165,7 +149,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物，分数 {0}。"
+    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}分数 {0}。"
   },
   {
     "id": "ss_permflat_per_tag_v5",
@@ -174,8 +158,6 @@
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 10,
     "actionScope": 0,
@@ -186,20 +168,18 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "本食物每有 1 个技能，分数永久 {0}。"
+    "descTemplate": "结算每有1个技能，{ascope}分数永久 {0}。"
   },
   {
     "id": "ss_multflat_per_dish_all_adj_v0p2",
     "trigger": 0,
     "condType": 4,
-    "condScope": 4,
+    "condScope": 13,
     "condUnit": 1,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 9,
-    "actionScope": 1,
+    "actionScope": 12,
     "actionCount": 0,
     "actionValue": [
       0.2
@@ -207,20 +187,18 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物，{atargets}倍率 {0}。"
+    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}倍率 {0}。"
   },
   {
     "id": "ss_layer_add_v5",
-    "trigger": 1,
+    "trigger": 0,
     "condType": 0,
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 6,
-    "actionScope": 0,
+    "actionScope": 16,
     "actionCount": 0,
     "actionValue": [
       5
@@ -237,8 +215,6 @@
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 4,
     "actionScope": 0,
@@ -253,16 +229,14 @@
   },
   {
     "id": "ss_transfer_all_n1",
-    "trigger": 1,
+    "trigger": 0,
     "condType": 0,
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 5,
-    "actionScope": 4,
+    "actionScope": 15,
     "actionCount": 1,
     "actionValue": [
       0
@@ -270,17 +244,15 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "上菜时，将本菜的其他子技能甜蜜传递给{targets}（结算时对目标生效一次）。"
+    "descTemplate": "甜蜜传递至{ascope}食物"
   },
   {
     "id": "ss_grant_gold_filled_adj_v30",
     "trigger": 0,
     "condType": 1,
-    "condScope": 1,
+    "condScope": 11,
     "condUnit": 0,
     "condMode": 2,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 8,
     "actionScope": 0,
@@ -295,16 +267,14 @@
   },
   {
     "id": "ss_layer_filled_row_v10",
-    "trigger": 1,
+    "trigger": 0,
     "condType": 1,
-    "condScope": 2,
+    "condScope": 13,
     "condUnit": 0,
     "condMode": 2,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 6,
-    "actionScope": 0,
+    "actionScope": 16,
     "actionCount": 0,
     "actionValue": [
       10
@@ -318,11 +288,9 @@
     "id": "ss_multflat_per_dish_row_v2",
     "trigger": 0,
     "condType": 4,
-    "condScope": 2,
+    "condScope": 13,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 9,
     "actionScope": 0,
@@ -333,7 +301,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物，{atargets}倍率 {0}。"
+    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}倍率 {0}。"
   },
   {
     "id": "ss_count_as_base_v1",
@@ -342,8 +310,6 @@
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 12,
     "actionScope": 0,
@@ -354,20 +320,18 @@
     "actionParam": [],
     "isPassive": true,
     "signed": false,
-    "descTemplate": "视为 {countas} 个食物。"
+    "descTemplate": "{ascope}视为 {countas} 个食物。"
   },
   {
     "id": "ss_layer_add_v10",
-    "trigger": 1,
+    "trigger": 0,
     "condType": 0,
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 6,
-    "actionScope": 0,
+    "actionScope": 16,
     "actionCount": 0,
     "actionValue": [
       10
@@ -384,8 +348,6 @@
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 14,
     "actionScope": 0,
@@ -396,17 +358,15 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "临时复制本菜品至空格中。"
+    "descTemplate": "复制本菜品至空格中。"
   },
   {
     "id": "ss_shape_mult_adj_v1p5",
     "trigger": 0,
     "condType": 11,
-    "condScope": 1,
+    "condScope": 11,
     "condUnit": 0,
     "condMode": 2,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "1x1",
     "actionType": 2,
     "actionScope": 0,
@@ -417,17 +377,15 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "{cscope}有占 1 格的食物时，倍率 ×{0}。"
+    "descTemplate": "{cscope}有占 1 格的食物时，{ascope}倍率 ×{0}。"
   },
   {
     "id": "ss_transfer_col_n2",
-    "trigger": 1,
+    "trigger": 0,
     "condType": 0,
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 5,
     "actionScope": 3,
@@ -438,17 +396,15 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "上菜时，将本菜的其他子技能甜蜜传递给{targets}（结算时对目标生效一次）。"
+    "descTemplate": "甜蜜传递至{ascope}食物"
   },
   {
     "id": "ss_mult_per_dish_adj_v1p2",
     "trigger": 0,
     "condType": 4,
-    "condScope": 1,
+    "condScope": 11,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 2,
     "actionScope": 0,
@@ -459,20 +415,18 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "{cscope}每有 1 {unit}食物，{atargets}倍率 ×{0}。"
+    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}倍率 ×{0}。"
   },
   {
     "id": "ss_transfer_adj_n2",
-    "trigger": 1,
+    "trigger": 0,
     "condType": 0,
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 5,
-    "actionScope": 1,
+    "actionScope": 11,
     "actionCount": 2,
     "actionValue": [
       0
@@ -480,20 +434,18 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "上菜时，将本菜的其他子技能甜蜜传递给{targets}（结算时对目标生效一次）。"
+    "descTemplate": "甜蜜传递至{ascope}食物"
   },
   {
     "id": "ss_copy_skill_adj_v1",
-    "trigger": 1,
+    "trigger": 0,
     "condType": 0,
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 13,
-    "actionScope": 1,
+    "actionScope": 11,
     "actionCount": 0,
     "actionValue": [
       1
@@ -505,16 +457,14 @@
   },
   {
     "id": "ss_layer_per_tag_v6",
-    "trigger": 1,
+    "trigger": 0,
     "condType": 10,
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 6,
-    "actionScope": 0,
+    "actionScope": 16,
     "actionCount": 0,
     "actionValue": [
       6
@@ -522,7 +472,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "自身每有 1 个技能，欢乐蛋糕 {0} 层。"
+    "descTemplate": "每有 1 个技能，欢乐蛋糕 {0} 层。"
   },
   {
     "id": "ss_mult_v1p5",
@@ -531,8 +481,6 @@
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 2,
     "actionScope": 0,
@@ -543,7 +491,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "{atargets}倍率 ×{0}。"
+    "descTemplate": "{ascope}倍率 ×{0}。"
   },
   {
     "id": "ss_perm_flat_v10",
@@ -552,8 +500,6 @@
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 10,
     "actionScope": 0,
@@ -564,20 +510,18 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{atargets}分数永久 {0}。"
+    "descTemplate": "{ascope}分数永久 {0}。"
   },
   {
     "id": "ss_transfer_all_n2",
-    "trigger": 1,
+    "trigger": 0,
     "condType": 0,
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 5,
-    "actionScope": 4,
+    "actionScope": 15,
     "actionCount": 2,
     "actionValue": [
       0
@@ -585,7 +529,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "上菜时，将本菜的其他子技能甜蜜传递给{targets}（结算时对目标生效一次）。"
+    "descTemplate": "甜蜜传递至{ascope}食物"
   },
   {
     "id": "ss_multflat_per_dish_all_v0p2",
@@ -594,9 +538,7 @@
     "condScope": 4,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
-    "condParam": "self",
+    "condParam": "",
     "actionType": 9,
     "actionScope": 0,
     "actionCount": 0,
@@ -606,7 +548,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物，{atargets}倍率 {0}。"
+    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}倍率 {0}。"
   },
   {
     "id": "ss_count_as_base_v3",
@@ -615,8 +557,6 @@
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 12,
     "actionScope": 0,
@@ -627,7 +567,7 @@
     "actionParam": [],
     "isPassive": true,
     "signed": false,
-    "descTemplate": "视为 {countas} 个食物。"
+    "descTemplate": "{ascope}视为 {countas} 个食物。"
   },
   {
     "id": "ss_multflat_adj_v5",
@@ -636,11 +576,9 @@
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 9,
-    "actionScope": 1,
+    "actionScope": 12,
     "actionCount": 0,
     "actionValue": [
       5
@@ -648,20 +586,18 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{atargets}倍率 {0}。"
+    "descTemplate": "{ascope}倍率 {0}。"
   },
   {
     "id": "ss_transfer_all_n3",
-    "trigger": 1,
+    "trigger": 0,
     "condType": 0,
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 5,
-    "actionScope": 4,
+    "actionScope": 15,
     "actionCount": 3,
     "actionValue": [
       0
@@ -669,7 +605,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "上菜时，将本菜的其他子技能甜蜜传递给{targets}（结算时对目标生效一次）。"
+    "descTemplate": "甜蜜传递至{ascope}食物"
   },
   {
     "id": "ss_consume_layer_v10",
@@ -678,11 +614,9 @@
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 7,
-    "actionScope": 0,
+    "actionScope": 16,
     "actionCount": 0,
     "actionValue": [
       10
@@ -699,8 +633,6 @@
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 9,
     "actionScope": 0,
@@ -711,7 +643,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{atargets}倍率 {0}。"
+    "descTemplate": "{ascope}倍率 {0}。"
   },
   {
     "id": "ss_multflat_col_v3",
@@ -720,11 +652,9 @@
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 9,
-    "actionScope": 3,
+    "actionScope": 14,
     "actionCount": 0,
     "actionValue": [
       3
@@ -732,17 +662,15 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{atargets}倍率 {0}。"
+    "descTemplate": "{ascope}倍率 {0}。"
   },
   {
     "id": "ss_transfer_row_n3",
-    "trigger": 1,
+    "trigger": 0,
     "condType": 0,
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 5,
     "actionScope": 2,
@@ -753,20 +681,18 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "上菜时，将本菜的其他子技能甜蜜传递给{targets}（结算时对目标生效一次）。"
+    "descTemplate": "甜蜜传递至{ascope}食物"
   },
   {
     "id": "ss_layer_mult_v1p5",
-    "trigger": 1,
+    "trigger": 0,
     "condType": 0,
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 6,
-    "actionScope": 0,
+    "actionScope": 16,
     "actionCount": 0,
     "actionValue": [
       1.5
@@ -782,14 +708,12 @@
     "id": "ss_mult_tier_dishcount_row_row",
     "trigger": 0,
     "condType": 4,
-    "condScope": 2,
+    "condScope": 13,
     "condUnit": 0,
     "condMode": 1,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "tiers:5|15|25",
     "actionType": 2,
-    "actionScope": 2,
+    "actionScope": 13,
     "actionCount": 0,
     "actionValue": [
       0
@@ -799,7 +723,7 @@
     ],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "{cscope}食物达 {tiers} 个时，{atargets}倍率 ×{tiervals}。"
+    "descTemplate": "{cscope}食物达 {tiers} 个时，{ascope}倍率 ×{tiervals}。"
   },
   {
     "id": "ss_count_as_base_v4",
@@ -808,8 +732,6 @@
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 12,
     "actionScope": 0,
@@ -820,7 +742,7 @@
     "actionParam": [],
     "isPassive": true,
     "signed": false,
-    "descTemplate": "视为 {countas} 个食物。"
+    "descTemplate": "{ascope}视为 {countas} 个食物。"
   },
   {
     "id": "ss_mult_v3",
@@ -829,8 +751,6 @@
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 2,
     "actionScope": 0,
@@ -841,17 +761,15 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "{atargets}倍率 ×{0}。"
+    "descTemplate": "{ascope}倍率 ×{0}。"
   },
   {
     "id": "ss_count_as_filled_row_v9",
     "trigger": 0,
     "condType": 1,
-    "condScope": 2,
+    "condScope": 13,
     "condUnit": 0,
     "condMode": 2,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 12,
     "actionScope": 0,
@@ -862,7 +780,7 @@
     "actionParam": [],
     "isPassive": true,
     "signed": false,
-    "descTemplate": "若{cscope}被填满，额外视为 {0} 个食物。"
+    "descTemplate": "若{cscope}被填满，{ascope}额外视为 {0} 个食物。"
   },
   {
     "id": "ss_count_as_col_v2",
@@ -871,11 +789,9 @@
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 12,
-    "actionScope": 3,
+    "actionScope": 14,
     "actionCount": 0,
     "actionValue": [
       2
@@ -883,7 +799,7 @@
     "actionParam": [],
     "isPassive": true,
     "signed": false,
-    "descTemplate": "{atargets}额外视为 {0} 个食物。"
+    "descTemplate": "{ascope}额外视为 {0} 个食物。"
   },
   {
     "id": "ss_multflat_v4",
@@ -892,8 +808,6 @@
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 9,
     "actionScope": 0,
@@ -904,7 +818,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{atargets}倍率 {0}。"
+    "descTemplate": "{ascope}倍率 {0}。"
   },
   {
     "id": "ss_flat_category_cat_v10",
@@ -913,8 +827,6 @@
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 1,
     "actionScope": 10,
@@ -931,16 +843,14 @@
   },
   {
     "id": "ss_layer_add_v15",
-    "trigger": 1,
+    "trigger": 0,
     "condType": 0,
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 6,
-    "actionScope": 0,
+    "actionScope": 16,
     "actionCount": 0,
     "actionValue": [
       15
@@ -957,8 +867,6 @@
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 9,
     "actionScope": 0,
@@ -969,17 +877,15 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "本菜每有 1 个技能，{atargets}倍率 {0}。"
+    "descTemplate": "{cscope}每有 1 个技能，{ascope}倍率 {0}。"
   },
   {
     "id": "ss_transfer_col",
-    "trigger": 1,
+    "trigger": 0,
     "condType": 0,
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 5,
     "actionScope": 3,
@@ -990,7 +896,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "上菜时，将本菜的其他子技能甜蜜传递给{targets}（结算时对目标生效一次）。"
+    "descTemplate": "甜蜜传递至{ascope}食物"
   },
   {
     "id": "ss_count_as_base_v9",
@@ -999,8 +905,6 @@
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 12,
     "actionScope": 0,
@@ -1011,7 +915,7 @@
     "actionParam": [],
     "isPassive": true,
     "signed": false,
-    "descTemplate": "视为 {countas} 个食物。"
+    "descTemplate": "{ascope}视为 {countas} 个食物。"
   },
   {
     "id": "ss_mult_col_v2",
@@ -1020,11 +924,9 @@
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 2,
-    "actionScope": 3,
+    "actionScope": 14,
     "actionCount": 0,
     "actionValue": [
       2
@@ -1032,20 +934,18 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "{atargets}倍率 ×{0}。"
+    "descTemplate": "{ascope}倍率 ×{0}。"
   },
   {
     "id": "ss_layer_add_v20",
-    "trigger": 1,
+    "trigger": 0,
     "condType": 0,
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 6,
-    "actionScope": 0,
+    "actionScope": 16,
     "actionCount": 0,
     "actionValue": [
       20
@@ -1062,8 +962,6 @@
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 9,
     "actionScope": 4,
@@ -1074,20 +972,18 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{atargets}倍率 {0}。"
+    "descTemplate": "{ascope}倍率 {0}。"
   },
   {
     "id": "ss_copy_skill_adj_v2",
-    "trigger": 1,
+    "trigger": 0,
     "condType": 0,
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 13,
-    "actionScope": 1,
+    "actionScope": 11,
     "actionCount": 0,
     "actionValue": [
       2
@@ -1104,8 +1000,6 @@
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 12,
     "actionScope": 0,
@@ -1116,7 +1010,7 @@
     "actionParam": [],
     "isPassive": true,
     "signed": false,
-    "descTemplate": "视为 {countas} 个食物。"
+    "descTemplate": "{ascope}视为 {countas} 个食物。"
   },
   {
     "id": "ss_multflat_category_cat_v5",
@@ -1125,8 +1019,6 @@
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 9,
     "actionScope": 10,
@@ -1145,14 +1037,12 @@
     "id": "ss_multflat_per_dish_row_adj_v0p3",
     "trigger": 0,
     "condType": 4,
-    "condScope": 2,
+    "condScope": 13,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 9,
-    "actionScope": 1,
+    "actionScope": 12,
     "actionCount": 0,
     "actionValue": [
       0.3
@@ -1160,7 +1050,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物，{atargets}倍率 {0}。"
+    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}倍率 {0}。"
   },
   {
     "id": "ss_mult_v2",
@@ -1169,8 +1059,6 @@
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 2,
     "actionScope": 0,
@@ -1181,20 +1069,18 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "{atargets}倍率 ×{0}。"
+    "descTemplate": "{ascope}倍率 ×{0}。"
   },
   {
     "id": "ss_layer_tier_all",
-    "trigger": 1,
+    "trigger": 0,
     "condType": 15,
     "condScope": 4,
     "condUnit": 0,
     "condMode": 1,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "cake;tiers:3|5|8",
     "actionType": 6,
-    "actionScope": 0,
+    "actionScope": 16,
     "actionCount": 0,
     "actionValue": [
       0
@@ -1213,8 +1099,6 @@
     "condScope": 4,
     "condUnit": 1,
     "condMode": 1,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "TransferSkills;tiers:3|5|8",
     "actionType": 2,
     "actionScope": 4,
@@ -1231,16 +1115,14 @@
   },
   {
     "id": "ss_layer_per_dish_adj_v2_2",
-    "trigger": 1,
+    "trigger": 0,
     "condType": 4,
-    "condScope": 1,
+    "condScope": 11,
     "condUnit": 1,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 6,
-    "actionScope": 0,
+    "actionScope": 16,
     "actionCount": 0,
     "actionValue": [
       2
@@ -1257,11 +1139,9 @@
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 2,
-    "actionScope": 1,
+    "actionScope": 12,
     "actionCount": 0,
     "actionValue": [
       1.5
@@ -1269,7 +1149,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "{atargets}倍率 ×{0}。"
+    "descTemplate": "{ascope}倍率 ×{0}。"
   },
   {
     "id": "ss_mult_col_v1p4",
@@ -1278,11 +1158,9 @@
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 2,
-    "actionScope": 3,
+    "actionScope": 14,
     "actionCount": 0,
     "actionValue": [
       1.4
@@ -1290,20 +1168,18 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "{atargets}倍率 ×{0}。"
+    "descTemplate": "{ascope}倍率 ×{0}。"
   },
   {
     "id": "ss_transfer_adj",
-    "trigger": 1,
+    "trigger": 0,
     "condType": 0,
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 5,
-    "actionScope": 1,
+    "actionScope": 11,
     "actionCount": 0,
     "actionValue": [
       0
@@ -1311,17 +1187,15 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "上菜时，将本菜的其他子技能甜蜜传递给{targets}（结算时对目标生效一次）。"
+    "descTemplate": "甜蜜传递至{ascope}食物"
   },
   {
     "id": "ss_trigger_transfer_all",
-    "trigger": 1,
+    "trigger": 0,
     "condType": 0,
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 15,
     "actionScope": 4,
@@ -1334,7 +1208,7 @@
     ],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "上菜时，同行同列带甜蜜传递的食物，各执行一次它们的甜蜜传递。"
+    "descTemplate": "同行同列带甜蜜传递的食物，各执行一次它们的甜蜜传递。"
   },
   {
     "id": "ss_mult_per_tag_v1p5",
@@ -1343,8 +1217,6 @@
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 2,
     "actionScope": 0,
@@ -1355,17 +1227,15 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "本菜每有 1 个技能，{atargets}倍率 ×{0}。"
+    "descTemplate": "{cscope}每有 1 个技能，{ascope}倍率 ×{0}。"
   },
   {
     "id": "ss_transfer_row",
-    "trigger": 1,
+    "trigger": 0,
     "condType": 0,
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 5,
     "actionScope": 2,
@@ -1376,17 +1246,15 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "上菜时，将本菜的其他子技能甜蜜传递给{targets}（结算时对目标生效一次）。"
+    "descTemplate": "甜蜜传递至{ascope}食物"
   },
   {
     "id": "ss_copy_cat_skill_v3",
-    "trigger": 1,
+    "trigger": 0,
     "condType": 0,
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
-    "condCompare": 0,
-    "condThreshold": 0,
     "condParam": "",
     "actionType": 13,
     "actionScope": 0,
@@ -1399,6 +1267,6 @@
     ],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "获得 {0} 种不同的{cat}技能。"
+    "descTemplate": "{ascope}获得 {0} 种不同的{cat}技能。"
   }
 ]

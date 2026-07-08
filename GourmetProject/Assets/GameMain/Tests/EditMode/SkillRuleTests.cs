@@ -217,7 +217,7 @@ namespace GourmetProject.Tests
                 GameplayTestFactory.Rule(
                     SkillActionType.AddFlat, 1f,
                     condType: SkillConditionType.DishSize, condScope: SkillScope.All, condMode: CountMode.Per,
-                    condCompare: CompareOp.Gte, condThreshold: 2)));
+                    condParam: "gte:2")));
             var board = new GpBoard(4, 4);
             DishDef small = GameplayTestFactory.Dish("s1", new[] { "X" }, deliciousness: 10, allowRotate: false);
             DishDef big = GameplayTestFactory.Dish("b1", new[] { "XX" }, deliciousness: 10, allowRotate: false);
@@ -276,7 +276,7 @@ namespace GourmetProject.Tests
                 GameplayTestFactory.Rule(
                     SkillActionType.AddFlat, 100f,
                     condType: SkillConditionType.DishCount, condScope: SkillScope.All, condMode: CountMode.Reach,
-                    condCompare: CompareOp.Gte, condThreshold: 2)));
+                    condParam: "gte:2")));
             var board = new GpBoard(4, 4);
             DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
             DishInstance self = Place(board, 1, dish, 0, 0, "s");
@@ -578,7 +578,7 @@ namespace GourmetProject.Tests
                 GameplayTestFactory.Rule(
                     SkillActionType.AddFlat, 5f,
                     condType: SkillConditionType.RecipeCount, condScope: SkillScope.Recipe, condMode: CountMode.Gate,
-                    condCompare: CompareOp.Gte, condThreshold: 3)));
+                    condParam: "gte:3")));
             var board = new GpBoard(4, 4);
             DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
             Place(board, 1, dish, 0, 0, "s");

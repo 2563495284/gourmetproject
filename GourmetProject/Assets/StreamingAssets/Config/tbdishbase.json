@@ -113,7 +113,7 @@
     "deliciousness": 10,
     "allowRotate": false,
     "skills": "sk_cream_cell",
-    "category": "cake",
+    "category": "",
     "countAs": 1,
     "shapeRows": [
       "X"
@@ -149,7 +149,7 @@
     "deliciousness": 8,
     "allowRotate": false,
     "skills": "sk_milk_slice",
-    "category": "cake",
+    "category": "",
     "countAs": 1,
     "shapeRows": [
       "X"
@@ -173,7 +173,7 @@
     "deliciousness": 20,
     "allowRotate": false,
     "skills": "sk_cone",
-    "category": "cake",
+    "category": "",
     "countAs": 1,
     "shapeRows": [
       "X",
@@ -285,7 +285,7 @@
     "deliciousness": 30,
     "allowRotate": false,
     "skills": "sk_eclair",
-    "category": "cake",
+    "category": "",
     "countAs": 1,
     "shapeRows": [
       "X",
@@ -313,7 +313,7 @@
     "deliciousness": 30,
     "allowRotate": false,
     "skills": "sk_souffle",
-    "category": "cake",
+    "category": "",
     "countAs": 1,
     "shapeRows": [
       "XX",
@@ -391,7 +391,7 @@
     "deliciousness": 40,
     "allowRotate": false,
     "skills": "sk_donut",
-    "category": "cake",
+    "category": "",
     "countAs": 1,
     "shapeRows": [
       "XX",
@@ -444,7 +444,7 @@
     "deliciousness": 30,
     "allowRotate": false,
     "skills": "sk_swiss_roll",
-    "category": "cake",
+    "category": "",
     "countAs": 1,
     "shapeRows": [
       "XX",
@@ -525,7 +525,7 @@
     "deliciousness": 20,
     "allowRotate": false,
     "skills": "sk_croissant",
-    "category": "cake",
+    "category": "",
     "countAs": 1,
     "shapeRows": [
       "XX",

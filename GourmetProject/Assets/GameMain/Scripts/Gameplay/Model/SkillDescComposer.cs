@@ -86,7 +86,7 @@ namespace GourmetProject.Gameplay.Model
                     case "unit": return rule.CondUnit == CountUnit.Kinds ? "种" : "个";
                     // 本体「视为N个食物」：actionValue 存的是相对 base(=1) 的增量 N-1，显示总数 N。
                     case "countas": return ((int)System.Math.Round(rule.ActionValue, System.MidpointRounding.AwayFromZero) + 1).ToString(CultureInfo.InvariantCulture);
-                    case "thr": return rule.CondThreshold.ToString(CultureInfo.InvariantCulture);
+                    case "thr": return SkillConditionParamParser.ThresholdOrDefault(rule.CondParam).ToString(CultureInfo.InvariantCulture);
                     case "count": return rule.ActionCount.ToString(CultureInfo.InvariantCulture);
                     case "tiers": return JoinBar(ExtractAfter(rule.CondParam, "tiers:"));
                     case "tiervals": return JoinBar(ExtractAfter(FindEntry(rule.ActionParams, "tiervals:"), "tiervals:"));

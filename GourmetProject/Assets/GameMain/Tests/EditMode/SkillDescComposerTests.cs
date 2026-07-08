@@ -13,8 +13,6 @@ namespace GourmetProject.Gameplay.Tests
             SkillScope actionScope = SkillScope.Self,
             CountUnit condUnit = CountUnit.Instances,
             CountMode condMode = CountMode.Per,
-            CompareOp condCompare = CompareOp.None,
-            int condThreshold = 0,
             string condParam = "",
             int actionCount = 0,
             float[] actionValues = null,
@@ -22,8 +20,7 @@ namespace GourmetProject.Gameplay.Tests
         {
             return new SkillRuleDef(
                 "r", "s", 0, SkillTrigger.OnSettle,
-                condType, condScope, condUnit, condMode, condCompare,
-                condThreshold, condParam,
+                condType, condScope, condUnit, condMode, condParam,
                 actionType, actionScope, actionCount,
                 actionValues ?? new[] { 0f },
                 actionParams ?? System.Array.Empty<string>());

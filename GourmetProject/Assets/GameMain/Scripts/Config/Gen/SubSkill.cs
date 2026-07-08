@@ -23,8 +23,6 @@ public sealed partial class SubSkill : Luban.BeanBase
         { if(!_buf["condScope"].IsNumber) { throw new SerializationException(); }  CondScope = (SkillScope)_buf["condScope"].AsInt; }
         { if(!_buf["condUnit"].IsNumber) { throw new SerializationException(); }  CondUnit = (CountUnit)_buf["condUnit"].AsInt; }
         { if(!_buf["condMode"].IsNumber) { throw new SerializationException(); }  CondMode = (CountMode)_buf["condMode"].AsInt; }
-        { if(!_buf["condCompare"].IsNumber) { throw new SerializationException(); }  CondCompare = (CompareOp)_buf["condCompare"].AsInt; }
-        { if(!_buf["condThreshold"].IsNumber) { throw new SerializationException(); }  CondThreshold = _buf["condThreshold"]; }
         { if(!_buf["condParam"].IsString) { throw new SerializationException(); }  CondParam = _buf["condParam"]; }
         { if(!_buf["actionType"].IsNumber) { throw new SerializationException(); }  ActionType = (SkillActionType)_buf["actionType"].AsInt; }
         { if(!_buf["actionScope"].IsNumber) { throw new SerializationException(); }  ActionScope = (SkillScope)_buf["actionScope"].AsInt; }
@@ -66,14 +64,6 @@ public sealed partial class SubSkill : Luban.BeanBase
     /// </summary>
     public readonly CountMode CondMode;
     /// <summary>
-    /// 比较符
-    /// </summary>
-    public readonly CompareOp CondCompare;
-    /// <summary>
-    /// 阈值
-    /// </summary>
-    public readonly int CondThreshold;
-    /// <summary>
     /// 前提附加参数
     /// </summary>
     public readonly string CondParam;
@@ -102,7 +92,7 @@ public sealed partial class SubSkill : Luban.BeanBase
     /// </summary>
     public readonly bool IsPassive;
     /// <summary>
-    /// 描述数值是否补正负号
+    /// 数值正负号
     /// </summary>
     public readonly bool Signed;
     /// <summary>
@@ -126,8 +116,6 @@ public sealed partial class SubSkill : Luban.BeanBase
         + "condScope:" + CondScope + ","
         + "condUnit:" + CondUnit + ","
         + "condMode:" + CondMode + ","
-        + "condCompare:" + CondCompare + ","
-        + "condThreshold:" + CondThreshold + ","
         + "condParam:" + CondParam + ","
         + "actionType:" + ActionType + ","
         + "actionScope:" + ActionScope + ","

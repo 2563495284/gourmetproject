@@ -41,7 +41,7 @@ namespace GourmetProject.Gameplay.Scoring
                 case CountMode.Per:
                     return raw < 0 ? 0 : raw;
                 case CountMode.Reach:
-                    return rule.CondCompare.Evaluate(raw, rule.CondThreshold) ? 1 : 0;
+                    return SkillConditionParamParser.EvaluateComparison(rule.CondParam, raw, raw > 0) ? 1 : 0;
                 case CountMode.Gate:
                 default:
                     return raw > 0 ? 1 : 0;
@@ -467,7 +467,10 @@ namespace GourmetProject.Gameplay.Scoring
             int count = 0;
             foreach (DishInstance d in dishes)
             {
-                if (rule.CondCompare.Evaluate(d.OccupiedCells.Count, rule.CondThreshold)) count += countAsOf(d);
+                if (SkillConditionParamParser.EvaluateComparison(rule.CondParam, d.OccupiedCells.Count, defaultValue: true))
+                {
+                    count += countAsOf(d);
+                }
             }
 
             return count;
@@ -514,7 +517,7 @@ namespace GourmetProject.Gameplay.Scoring
                 value = recipe.Count;
             }
 
-            return rule.CondCompare.Evaluate(value, rule.CondThreshold) ? 1 : 0;
+            return SkillConditionParamParser.EvaluateComparison(rule.CondParam, value, value > 0) ? 1 : 0;
         }
 
         // ---------- 空格 / 填满 / 边缘 ----------

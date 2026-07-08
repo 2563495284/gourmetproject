@@ -173,8 +173,6 @@ namespace GourmetProject.Game.Adapter
                     (SkillScope)(int)ss.CondScope,
                     (CountUnit)(int)ss.CondUnit,
                     (CountMode)(int)ss.CondMode,
-                    (CompareOp)(int)ss.CondCompare,
-                    ss.CondThreshold,
                     ss.CondParam,
                     (SkillActionType)(int)ss.ActionType,
                     (SkillScope)(int)ss.ActionScope,

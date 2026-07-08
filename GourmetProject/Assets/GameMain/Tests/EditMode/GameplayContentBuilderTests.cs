@@ -153,8 +153,6 @@ namespace GourmetProject.Tests
     ""condScope"": 0,
     ""condUnit"": 0,
     ""condMode"": 0,
-    ""condCompare"": 0,
-    ""condThreshold"": 0,
     ""condParam"": """",
     ""actionType"": 2,
     ""actionScope"": 0,
