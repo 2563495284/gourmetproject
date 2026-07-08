@@ -101,7 +101,7 @@ namespace GourmetProject.Gameplay.Model
         {
             switch (scope)
             {
-                case SkillScope.Self: return "自身";
+                case SkillScope.Self: return "";
                 case SkillScope.Adjacent: return "相邻";
                 case SkillScope.Round: return "周围";
                 case SkillScope.Row: return "同行";
@@ -124,7 +124,7 @@ namespace GourmetProject.Gameplay.Model
         {
             if (scope == SkillScope.Self)
             {
-                return "自身";
+                return "";
             }
 
             if (count <= 0)
