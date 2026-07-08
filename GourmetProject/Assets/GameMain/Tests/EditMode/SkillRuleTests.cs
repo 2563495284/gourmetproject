@@ -811,6 +811,55 @@ namespace GourmetProject.Tests
                 "结算明细应含来源标签「macaron<甜蜜传递>」");
         }
 
+        [Test]
+        public void BigLollipop_ResolveOnServe_TriggersRowColumnSweetTransfers()
+        {
+            // 大棒棒糖：同行同列带甜蜜传递的食物，各执行一次它们自己的甜蜜传递。
+            // 这里 source 与大棒棒糖同列；source 的甜蜜传递规则是传给同行所有目标。
+            var sourceSkill = GameplayTestFactory.RuleSkill("sk_source",
+                GameplayTestFactory.Rule(SkillActionType.AddFlat, 8f, order: 0, skillId: "sk_source"),
+                GameplayTestFactory.Rule(
+                    SkillActionType.TransferSkills,
+                    0f,
+                    actionScope: SkillScope.Row,
+                    actionCount: 0,
+                    trigger: SkillTrigger.OnServe,
+                    order: 1,
+                    skillId: "sk_source"));
+            var bigSkill = GameplayTestFactory.RuleSkill("sk_big_lollipop",
+                GameplayTestFactory.Rule(
+                    SkillActionType.TriggerSweetTransfer,
+                    0f,
+                    actionScope: SkillScope.All,
+                    actionParam: "axis:rowcol;skilltype:TransferSkills",
+                    trigger: SkillTrigger.OnServe,
+                    skillId: "sk_big_lollipop"));
+            var plainSkill = GameplayTestFactory.RuleSkill("sk_plain",
+                GameplayTestFactory.Rule(SkillActionType.AddFlat, 2f, skillId: "sk_plain"));
+            GameplayDatabase db = Db(sourceSkill, bigSkill, plainSkill);
+            var board = new GpBoard(3, 3);
+            DishDef source = GameplayTestFactory.Dish("source", new[] { "X" }, deliciousness: 8, allowRotate: false);
+            DishDef target = GameplayTestFactory.Dish("target", new[] { "X" }, deliciousness: 10, allowRotate: false);
+            DishDef plain = GameplayTestFactory.Dish("plain", new[] { "X" }, deliciousness: 10, allowRotate: false);
+            DishDef big = GameplayTestFactory.Dish("big", new[] { "X" }, deliciousness: 100, allowRotate: false);
+            Place(board, 1, source, 1, 0, "sk_source"); // 与大棒棒糖同列，带甜蜜传递
+            Place(board, 2, target, 2, 0);              // source 自身甜蜜传递的同行目标
+            Place(board, 3, plain, 0, 1, "sk_plain");   // 与大棒棒糖同行，但不带甜蜜传递，应被忽略
+            DishInstance served = Place(board, 4, big, 1, 1, "sk_big_lollipop");
+
+            ServeRuleResolver.ServeResolveResult res =
+                ServeRuleResolver.ResolveOnServe(board, db, null, served, 0);
+
+            Assert.AreEqual(1, res.TransferRequests.Count);
+            SkillTransferRequest req = res.TransferRequests[0];
+            Assert.AreEqual(1, req.SourceInstanceId);
+            Assert.AreEqual("source", req.SourceName);
+            Assert.AreEqual(0, req.Count); // source 的原甜蜜传递规则：同行全部目标
+            Assert.AreEqual(1, req.Effects.Count);
+            Assert.AreEqual(SkillActionType.AddFlat, req.Effects[0].Rule.ActionType);
+            CollectionAssert.AreEquivalent(new[] { 2 }, req.CandidateTargetIds);
+        }
+
         // ---------- 多条规则组合 ----------
 
         [Test]

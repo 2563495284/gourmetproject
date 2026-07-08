@@ -2,283 +2,236 @@
   {
     "id": "sk_cookie",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_edge_multflat_v3"
   },
   {
     "id": "sk_macaron",
     "termId": "term_sweet_transfer",
-    "descOverride": "",
     "subSkills": "ss_flat_per_dish_adj_v8|ss_transfer_row_n1"
   },
   {
     "id": "sk_pudding",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_flat_per_empty_adj_vm2"
   },
   {
     "id": "sk_puff",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_layer_per_dish_adj_v2"
   },
   {
     "id": "sk_eggtart",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_flat_per_run_v6"
   },
   {
     "id": "sk_mochi",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_multflat_per_dish_col_v1"
   },
   {
     "id": "sk_daifuku",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_flat_per_dish_row_v10"
   },
   {
     "id": "sk_choco_candy",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_permflat_per_tag_v5"
   },
   {
     "id": "sk_jelly",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_multflat_per_dish_all_adj_v0p2"
   },
   {
     "id": "sk_cream_cell",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_layer_add_v5"
   },
   {
     "id": "sk_sugarbean",
     "termId": "term_sweet_transfer",
-    "descOverride": "",
     "subSkills": "ss_extra_settle_v1|ss_transfer_all_n1"
   },
   {
     "id": "sk_gold_choco",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_grant_gold_filled_adj_v30"
   },
   {
     "id": "sk_milk_slice",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_layer_filled_row_v10"
   },
   {
     "id": "sk_sundae",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_multflat_per_dish_row_v2|ss_count_as_base_v1"
   },
   {
     "id": "sk_cone",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_layer_add_v10|ss_temp_copy_v1"
   },
   {
     "id": "sk_lollipop",
     "termId": "term_sweet_transfer",
-    "descOverride": "",
     "subSkills": "ss_shape_mult_adj_v1p5|ss_transfer_col_n2"
   },
   {
     "id": "sk_gummy",
     "termId": "term_sweet_transfer",
-    "descOverride": "",
     "subSkills": "ss_mult_per_dish_adj_v1p2|ss_transfer_adj_n2"
   },
   {
     "id": "sk_cupcake",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_copy_skill_adj_v1|ss_layer_per_tag_v6"
   },
   {
     "id": "sk_mousse",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_mult_v1p5|ss_extra_settle_v1"
   },
   {
     "id": "sk_toffee",
     "termId": "term_sweet_transfer",
-    "descOverride": "",
     "subSkills": "ss_perm_flat_v10|ss_transfer_all_n2"
   },
   {
     "id": "sk_nougat",
     "termId": "term_sweet_transfer",
-    "descOverride": "",
     "subSkills": "ss_extra_settle_v1|ss_transfer_adj_n2"
   },
   {
     "id": "sk_eggroll",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_multflat_per_dish_all_v0p2|ss_count_as_base_v3"
   },
   {
     "id": "sk_choco_bar",
     "termId": "term_sweet_transfer",
-    "descOverride": "",
     "subSkills": "ss_multflat_adj_v5|ss_transfer_all_n3"
   },
   {
     "id": "sk_eclair",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_consume_layer_v10|ss_multflat_v5"
   },
   {
     "id": "sk_tanghulu",
     "termId": "term_sweet_transfer",
-    "descOverride": "",
     "subSkills": "ss_multflat_col_v3|ss_transfer_row_n3"
   },
   {
     "id": "sk_souffle",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_layer_mult_v1p5"
   },
   {
     "id": "sk_taosu",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_mult_tier_dishcount_row_row"
   },
   {
     "id": "sk_mooncake",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_copy_skill_adj_v1|ss_count_as_base_v4"
   },
   {
     "id": "sk_waffle",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_mult_v3|ss_count_as_filled_row_v9"
   },
   {
     "id": "sk_dorayaki",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_count_as_col_v2|ss_multflat_v4"
   },
   {
     "id": "sk_cream_cake",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_perm_flat_v10|ss_flat_category_cat_v10"
   },
   {
     "id": "sk_donut",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_layer_add_v15|ss_multflat_v5"
   },
   {
     "id": "sk_pengtang",
     "termId": "term_sweet_transfer",
-    "descOverride": "",
     "subSkills": "ss_multflat_per_tag_v5|ss_transfer_col"
   },
   {
     "id": "sk_parfait",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_mult_per_dish_adj_v1p2|ss_count_as_base_v9"
   },
   {
     "id": "sk_sundae_big",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_mult_col_v2|ss_count_as_base_v4"
   },
   {
     "id": "sk_swiss_roll",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_layer_add_v20|ss_multflat_all_v0p5"
   },
   {
     "id": "sk_mango_sago",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_copy_skill_adj_v2|ss_count_as_base_v7"
   },
   {
     "id": "sk_chiffon",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_multflat_v5|ss_multflat_category_cat_v5"
   },
   {
     "id": "sk_apple_pie",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_multflat_per_dish_row_adj_v0p3"
   },
   {
     "id": "sk_fruit_cake",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_mult_v2|ss_layer_tier_all"
   },
   {
     "id": "sk_chocolate",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_mult_tier_skilltype_all_all"
   },
   {
     "id": "sk_croissant",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_layer_per_dish_adj_v2_2"
   },
   {
     "id": "sk_palmier",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_mult_adj_v1p5|ss_count_as_base_v3"
   },
   {
     "id": "sk_candycane",
     "termId": "term_sweet_transfer",
-    "descOverride": "",
     "subSkills": "ss_mult_col_v1p4|ss_transfer_adj"
   },
   {
     "id": "sk_big_lollipop",
     "termId": "term_sweet_transfer",
-    "descOverride": "同行同列带甜蜜传递的食物，各执行一次它们的甜蜜传递。",
-    "subSkills": ""
+    "subSkills": "ss_trigger_transfer_all"
   },
   {
     "id": "sk_marshmallow",
     "termId": "term_sweet_transfer",
-    "descOverride": "",
     "subSkills": "ss_mult_per_tag_v1p5|ss_transfer_row"
   },
   {
     "id": "sk_double_cake",
     "termId": "",
-    "descOverride": "",
     "subSkills": "ss_copy_cat_skill_v3"
   }
 ]

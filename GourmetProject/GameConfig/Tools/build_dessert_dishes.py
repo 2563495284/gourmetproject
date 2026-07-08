@@ -120,6 +120,7 @@ SUB_SKILLS = {
     "ss_mult_tier_dishcount": ("阶梯乘倍率",     "OnSettle", "DishCount",     "Reach", "AddMult",          False, False, "{cscope}食物达 {tiers} 个时，{atargets}倍率 ×{tiervals}。"),
     "ss_mult_tier_skilltype": ("阶梯类型乘倍率", "OnSettle", "SkillTypeCount","Reach", "AddMult",          False, False, "带甜蜜传递的食物达 {tiers} 种时，此类食物倍率 ×{tiervals}。"),
     "ss_transfer":            ("甜蜜传递",       "OnServe",  "None",          "Per",   "TransferSkills",   False, False, "上菜时，将本菜的其他子技能甜蜜传递给{targets}（结算时对目标生效一次）。"),
+    "ss_trigger_transfer":    ("触发甜蜜传递",   "OnServe",  "None",          "Per",   "TriggerSweetTransfer", False, False, "上菜时，同行同列带甜蜜传递的食物，各执行一次它们的甜蜜传递。"),
     "ss_consume_layer":       ("消耗蛋糕层",     "OnSettle", "None",          "Per",   "ConsumeLayer",     False, False, "消耗 {0} 层欢乐蛋糕。"),
 }
 
@@ -217,7 +218,7 @@ SKILLS = {
     "sk_fruit_layer":   ("水果叠层",     "", "", [c("ss_layer_tier", cscope="All", cunit="Instances", cparam="cake;tiers:3|5|8", ascope="Self", aval=0, aparam="tiervals:10|20|40")]),
     "sk_taosu":         ("阶梯桃酥",     "", "", [c("ss_mult_tier_dishcount", cscope="Row", cunit="Instances", cparam="tiers:5|15|25", ascope="Row", aval=0, aparam="tiervals:1.5|2.5|5")]),
     "sk_chocolate":     ("甜蜜巧克力",   "", "", [c("ss_mult_tier_skilltype", cscope="All", cunit="Kinds", cparam="TransferSkills;tiers:3|5|8", ascope="All", aval=0, aparam="tiervals:1.5|2.5|5;skilltype:TransferSkills")]),
-    "sk_big_lollipop":  ("巨型棒棒糖",   TERM_TRANSFER, "同行同列带甜蜜传递的食物，各执行一次它们的甜蜜传递。", []),
+    "sk_big_lollipop":  ("巨型棒棒糖",   TERM_TRANSFER, "", [c("ss_trigger_transfer", ascope="All", aparam="axis:rowcol;skilltype:TransferSkills")]),
     "sk_double_cake":   ("华丽双层蛋糕", "", "", [c("ss_copy_cat_skill", cscope="Self", ascope="Self", aval=3, aparam="cat:cake")]),
 }
 

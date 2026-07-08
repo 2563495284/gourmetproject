@@ -1314,6 +1314,29 @@
     "descTemplate": "上菜时，将本菜的其他子技能甜蜜传递给{targets}（结算时对目标生效一次）。"
   },
   {
+    "id": "ss_trigger_transfer_all",
+    "trigger": 1,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condCompare": 0,
+    "condThreshold": 0,
+    "condParam": "",
+    "actionType": 15,
+    "actionScope": 4,
+    "actionCount": 0,
+    "actionValue": [
+      0
+    ],
+    "actionParam": [
+      "axis:rowcol;skilltype:TransferSkills"
+    ],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "上菜时，同行同列带甜蜜传递的食物，各执行一次它们的甜蜜传递。"
+  },
+  {
     "id": "ss_mult_per_tag_v1p5",
     "trigger": 0,
     "condType": 10,

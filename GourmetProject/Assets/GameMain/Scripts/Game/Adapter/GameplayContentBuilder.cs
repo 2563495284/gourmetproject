@@ -187,9 +187,7 @@ namespace GourmetProject.Game.Adapter
                 parts.Add(SkillDescComposer.ComposeComponent(ss.DescTemplate, rule, ss.Signed));
             }
 
-            string desc = !string.IsNullOrEmpty(s.DescOverride)
-                ? s.DescOverride
-                : SkillDescComposer.ComposeSkill(parts);
+            string desc = SkillDescComposer.ComposeSkill(parts);
 
             string name = string.Empty;
             if (!string.IsNullOrEmpty(s.TermId))

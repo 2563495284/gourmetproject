@@ -19,7 +19,6 @@ public sealed partial class Skill : Luban.BeanBase
     {
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
         { if(!_buf["termId"].IsString) { throw new SerializationException(); }  TermId = _buf["termId"]; }
-        { if(!_buf["descOverride"].IsString) { throw new SerializationException(); }  DescOverride = _buf["descOverride"]; }
         { if(!_buf["subSkills"].IsString) { throw new SerializationException(); }  SubSkills = _buf["subSkills"]; }
     }
 
@@ -37,10 +36,6 @@ public sealed partial class Skill : Luban.BeanBase
     /// </summary>
     public readonly string TermId;
     /// <summary>
-    /// 描述覆盖(空=由子技能自动拼接)
-    /// </summary>
-    public readonly string DescOverride;
-    /// <summary>
     /// 有序引用的子技能ID列表(| 分隔)
     /// </summary>
     public readonly string SubSkills;
@@ -57,7 +52,6 @@ public sealed partial class Skill : Luban.BeanBase
         return "{ "
         + "id:" + Id + ","
         + "termId:" + TermId + ","
-        + "descOverride:" + DescOverride + ","
         + "subSkills:" + SubSkills + ","
         + "}";
     }

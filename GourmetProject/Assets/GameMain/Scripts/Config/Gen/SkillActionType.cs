@@ -76,6 +76,10 @@ namespace cfg
         /// 临时复制目标菜到空格(本次品鉴)
         /// </summary>
         TempCopyDish = 14,
+        /// <summary>
+        /// 触发作用域内食物各执行一次自身甜蜜传递
+        /// </summary>
+        TriggerSweetTransfer = 15,
     }
 
 } 

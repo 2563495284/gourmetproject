@@ -79,7 +79,7 @@ namespace GourmetProject.Gameplay.Scoring
                         continue;
                     }
 
-                    ApplyServeAction(board, db, rule, served, count, running, ref gold, ref layerDelta, ref copyRequests, ref tempCopyIds, ref transferRequests);
+                    ApplyServeAction(board, db, history, rule, served, count, running, ref gold, ref layerDelta, ref copyRequests, ref tempCopyIds, ref transferRequests);
                 }
             }
 
@@ -87,7 +87,7 @@ namespace GourmetProject.Gameplay.Scoring
         }
 
         private static void ApplyServeAction(
-            GpBoard board, GameplayDatabase db, SkillRuleDef rule, DishInstance self, int count,
+            GpBoard board, GameplayDatabase db, IScoreHistory history, SkillRuleDef rule, DishInstance self, int count,
             int runningLayers, ref float gold, ref int layerDelta, ref List<CopySkillRequest> copyRequests,
             ref List<int> tempCopyIds, ref List<SkillTransferRequest> transferRequests)
         {
@@ -160,6 +160,16 @@ namespace GourmetProject.Gameplay.Scoring
                     break;
                 }
 
+                case SkillActionType.TriggerSweetTransfer:
+                {
+                    foreach (DishInstance source in TriggerTransferSources(board, db, self, rule))
+                    {
+                        AppendTransferRequestsFromSource(board, db, history, source, runningLayers, ref transferRequests);
+                    }
+
+                    break;
+                }
+
                 case SkillActionType.GrantGold:
                     gold += value * count;
                     break;
@@ -193,6 +203,106 @@ namespace GourmetProject.Gameplay.Scoring
                     // 分数类行为在上菜阶段无意义（无累加器），忽略。
                     break;
             }
+        }
+
+        private static void AppendTransferRequestsFromSource(
+            GpBoard board,
+            GameplayDatabase db,
+            IScoreHistory history,
+            DishInstance source,
+            int runningLayers,
+            ref List<SkillTransferRequest> transferRequests)
+        {
+            foreach (string skillId in source.SkillIds)
+            {
+                SkillDef skill = db.GetSkill(skillId);
+                if (skill == null || !skill.HasRules)
+                {
+                    continue;
+                }
+
+                foreach (SkillRuleDef transferRule in skill.Rules)
+                {
+                    if (transferRule.Trigger != SkillTrigger.OnServe
+                        || transferRule.ActionType != SkillActionType.TransferSkills)
+                    {
+                        continue;
+                    }
+
+                    int count = SkillConditionEvaluator.Evaluate(transferRule, board, history, source, runningLayers);
+                    if (count <= 0)
+                    {
+                        continue;
+                    }
+
+                    IReadOnlyList<SkillEffect> effects = SkillRuleEffect.EffectsToTransfer(db, transferRule);
+                    if (effects.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    var candidateIds = new List<int>();
+                    foreach (DishInstance target in ScopeDishesForTransfer(board, source, transferRule))
+                    {
+                        if (target.Id != source.Id)
+                        {
+                            candidateIds.Add(target.Id);
+                        }
+                    }
+
+                    if (candidateIds.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    transferRequests ??= new List<SkillTransferRequest>();
+                    transferRequests.Add(new SkillTransferRequest(source.Id, source.Def.Name, candidateIds, effects, transferRule.ActionCount));
+                }
+            }
+        }
+
+        private static IReadOnlyList<DishInstance> TriggerTransferSources(
+            GpBoard board,
+            GameplayDatabase db,
+            DishInstance self,
+            SkillRuleDef rule)
+        {
+            var result = new List<DishInstance>();
+            var seen = new HashSet<int>();
+            void Add(DishInstance dish)
+            {
+                if (dish == null || dish.Id == self.Id || !seen.Add(dish.Id))
+                {
+                    return;
+                }
+
+                if (HasSkillOfType(db, dish, SkillActionType.TransferSkills))
+                {
+                    result.Add(dish);
+                }
+            }
+
+            if (HasActionParam(rule, "axis:rowcol"))
+            {
+                foreach (DishInstance dish in SkillConditionEvaluator.ScopeDishes(board, self, SkillScope.Row, includeSelf: false))
+                {
+                    Add(dish);
+                }
+
+                foreach (DishInstance dish in SkillConditionEvaluator.ScopeDishes(board, self, SkillScope.Column, includeSelf: false))
+                {
+                    Add(dish);
+                }
+
+                return result;
+            }
+
+            foreach (DishInstance dish in SkillConditionEvaluator.ScopeDishes(board, self, rule.ActionScope, includeSelf: false))
+            {
+                Add(dish);
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -238,6 +348,46 @@ namespace GourmetProject.Gameplay.Scoring
             for (int i = 0; i < def.Rules.Count; i++)
             {
                 if (def.Rules[i].ActionType == SkillActionType.CopySkill) return true;
+            }
+
+            return false;
+        }
+
+        private static bool HasSkillOfType(GameplayDatabase db, DishInstance dish, SkillActionType actionType)
+        {
+            if (db == null || dish == null)
+            {
+                return false;
+            }
+
+            foreach (string skillId in dish.SkillIds)
+            {
+                SkillDef def = db.GetSkill(skillId);
+                if (def == null || !def.HasRules)
+                {
+                    continue;
+                }
+
+                for (int i = 0; i < def.Rules.Count; i++)
+                {
+                    if (def.Rules[i].ActionType == actionType)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static bool HasActionParam(SkillRuleDef rule, string token)
+        {
+            foreach (string param in rule.ActionParams)
+            {
+                if (param != null && param.IndexOf(token, System.StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return true;
+                }
             }
 
             return false;
