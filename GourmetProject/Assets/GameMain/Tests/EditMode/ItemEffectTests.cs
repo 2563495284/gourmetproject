@@ -64,22 +64,10 @@ namespace GourmetProject.Tests
             board.Place(GameplayTestFactory.Instance(1, spicy, 0, 0));
             board.Place(GameplayTestFactory.Instance(2, plain, 1, 0));
 
-            ScoreResult r = Calc(board, new ItemScoreSpec(ItemScoreEffectType.TagBonus, 10f, "spicy", 1, "item_pepper_jar", "胡椒罐"));
+            ScoreResult r = Calc(board, new ItemScoreSpec(ItemScoreEffectType.TagBonus, 10f, "spicy", "item_pepper_jar", "胡椒罐"));
 
             Assert.AreEqual(20f, Score(r, 1), 0.001f); // 10 + 10
             Assert.AreEqual(10f, Score(r, 2), 0.001f);
-        }
-
-        [Test]
-        public void TagBonus_ScalesWithLevel()
-        {
-            var board = new GpBoard(2, 1);
-            DishDef spicy = GameplayTestFactory.Dish("spicy", new[] { "X" }, deliciousness: 10, allowRotate: false, category: "spicy");
-            board.Place(GameplayTestFactory.Instance(1, spicy, 0, 0));
-
-            ScoreResult r = Calc(board, new ItemScoreSpec(ItemScoreEffectType.TagBonus, 10f, "spicy", 3, "item_pepper_jar", "胡椒罐"));
-
-            Assert.AreEqual(40f, Score(r, 1), 0.001f); // 10 + 10*3
         }
 
         [Test]
@@ -91,7 +79,7 @@ namespace GourmetProject.Tests
             board.Place(GameplayTestFactory.Instance(2, d, 1, 0));
 
             // 数量 2 <= 10 → 最终总分 ×1.5。总分 = (10+10)*1.5 = 30。
-            ScoreResult r = Calc(board, new ItemScoreSpec(ItemScoreEffectType.CountThresholdFinalMult, 1.5f, "lte:10", 1, "i", "i"));
+            ScoreResult r = Calc(board, new ItemScoreSpec(ItemScoreEffectType.CountThresholdFinalMult, 1.5f, "lte:10", "i", "i"));
             Assert.AreEqual(30f, r.Total, 0.001f);
         }
 
@@ -103,7 +91,7 @@ namespace GourmetProject.Tests
             board.Place(GameplayTestFactory.Instance(1, d, 0, 0));
 
             // 数量 1，不满足 gte:10 → 无乘区。总分 = 10。
-            ScoreResult r = Calc(board, new ItemScoreSpec(ItemScoreEffectType.CountThresholdFinalMult, 1.5f, "gte:10", 1, "i", "i"));
+            ScoreResult r = Calc(board, new ItemScoreSpec(ItemScoreEffectType.CountThresholdFinalMult, 1.5f, "gte:10", "i", "i"));
             Assert.AreEqual(10f, r.Total, 0.001f);
         }
 
@@ -117,12 +105,12 @@ namespace GourmetProject.Tests
             board.Place(GameplayTestFactory.Instance(3, d, 2, 0));
 
             // 第一个（Id=1）×2 → 20。
-            ScoreResult first = Calc(board, new ItemScoreSpec(ItemScoreEffectType.NthServeMult, 2f, "index:1", 1, "i", "i"));
+            ScoreResult first = Calc(board, new ItemScoreSpec(ItemScoreEffectType.NthServeMult, 2f, "index:1", "i", "i"));
             Assert.AreEqual(20f, Score(first, 1), 0.001f);
             Assert.AreEqual(10f, Score(first, 3), 0.001f);
 
             // 最后一个（Id=3）×2 → 20。
-            ScoreResult last = Calc(board, new ItemScoreSpec(ItemScoreEffectType.NthServeMult, 2f, "index:-1", 1, "i", "i"));
+            ScoreResult last = Calc(board, new ItemScoreSpec(ItemScoreEffectType.NthServeMult, 2f, "index:-1", "i", "i"));
             Assert.AreEqual(10f, Score(last, 1), 0.001f);
             Assert.AreEqual(20f, Score(last, 3), 0.001f);
         }
@@ -135,7 +123,7 @@ namespace GourmetProject.Tests
             board.Place(GameplayTestFactory.Instance(1, d, 0, 0));
             board.Place(GameplayTestFactory.Instance(2, d, 1, 0));
 
-            ScoreResult r = Calc(board, new ItemScoreSpec(ItemScoreEffectType.PermanentAddFlatAll, 10f, "", 1, "i", "i"));
+            ScoreResult r = Calc(board, new ItemScoreSpec(ItemScoreEffectType.PermanentAddFlatAll, 10f, "", "i", "i"));
             Assert.AreEqual(20f, Score(r, 1), 0.001f);
             Assert.AreEqual(20f, Score(r, 2), 0.001f);
             // 永久加成登记为持久增量，供 BattleSession 写回实例。
@@ -150,7 +138,7 @@ namespace GourmetProject.Tests
             board.Place(GameplayTestFactory.Instance(1, d, 0, 0));
 
             // 永久乘区 ×(1+0.2) → 10*1.2=12。
-            ScoreResult r = Calc(board, new ItemScoreSpec(ItemScoreEffectType.PermanentAddMultAll, 0.2f, "", 1, "i", "i"));
+            ScoreResult r = Calc(board, new ItemScoreSpec(ItemScoreEffectType.PermanentAddMultAll, 0.2f, "", "i", "i"));
             Assert.AreEqual(12f, Score(r, 1), 0.001f);
         }
 
@@ -164,7 +152,7 @@ namespace GourmetProject.Tests
             board.Place(GameplayTestFactory.Instance(2, oneSkill, 1, 0));
 
             // 总技能数 3，value 0.1 → 每道菜倍率 +0.3 → 10*1.3=13。
-            ScoreResult r = Calc(board, new ItemScoreSpec(ItemScoreEffectType.PerSkillMultFlat, 0.1f, "", 1, "i", "i"));
+            ScoreResult r = Calc(board, new ItemScoreSpec(ItemScoreEffectType.PerSkillMultFlat, 0.1f, "", "i", "i"));
             Assert.AreEqual(13f, Score(r, 1), 0.001f);
             Assert.AreEqual(13f, Score(r, 2), 0.001f);
         }
@@ -180,7 +168,7 @@ namespace GourmetProject.Tests
             }
 
             // every:3 → 上菜序号 4、7 的菜倍率 +2（其余不变）。
-            ScoreResult r = Calc(board, new ItemScoreSpec(ItemScoreEffectType.EveryNthServeMult, 2f, "every:3", 1, "i", "i"));
+            ScoreResult r = Calc(board, new ItemScoreSpec(ItemScoreEffectType.EveryNthServeMult, 2f, "every:3", "i", "i"));
             Assert.AreEqual(30f, Score(r, 4), 0.001f); // 10*(1+2)
             Assert.AreEqual(30f, Score(r, 7), 0.001f);
             Assert.AreEqual(10f, Score(r, 1), 0.001f);

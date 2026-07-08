@@ -16,10 +16,10 @@ namespace GourmetProject.Game.Meta
             switch (item.EffectType)
             {
                 case "FinalAddFlat":
-                    session.FinalFlat += item.EffectValue * state.Level;
+                    session.FinalFlat += item.EffectValue;
                     break;
                 case "FinalAddMult":
-                    session.FinalMultiplier *= 1f + (item.EffectValue - 1f) * state.Level;
+                    session.FinalMultiplier *= item.EffectValue;
                     break;
             }
         }

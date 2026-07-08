@@ -29,7 +29,7 @@ public sealed partial class Item : Luban.BeanBase
         { if(!_buf["effectValue"].IsNumber) { throw new SerializationException(); }  EffectValue = _buf["effectValue"]; }
         { if(!_buf["effectParam"].IsString) { throw new SerializationException(); }  EffectParam = _buf["effectParam"]; }
         { if(!_buf["icon"].IsString) { throw new SerializationException(); }  Icon = _buf["icon"]; }
-        { if(!_buf["levelWeightParams"].IsObject) { throw new SerializationException(); }  LevelWeightParams = global::cfg.LevelWeightParams.DeserializeLevelWeightParams(_buf["levelWeightParams"]);  }
+        { if(!_buf["baseWeight"].IsNumber) { throw new SerializationException(); }  BaseWeight = _buf["baseWeight"]; }
         { if(!_buf["hiddenRange"].IsObject) { throw new SerializationException(); }  HiddenRange = global::cfg.HiddenRange.DeserializeHiddenRange(_buf["hiddenRange"]);  }
     }
 
@@ -87,9 +87,9 @@ public sealed partial class Item : Luban.BeanBase
     /// </summary>
     public readonly string Icon;
     /// <summary>
-    /// 等级权重参数(单元格: maxLevel,nextLevelWeightMultiplier,baseWeight)
+    /// 随机基础权重
     /// </summary>
-    public readonly LevelWeightParams LevelWeightParams;
+    public readonly float BaseWeight;
     /// <summary>
     /// 出现隐藏分区间(单元格: min,max)
     /// </summary>
@@ -100,7 +100,6 @@ public sealed partial class Item : Luban.BeanBase
 
     public  void ResolveRef(Tables tables)
     {
-        LevelWeightParams?.ResolveRef(tables);
         HiddenRange?.ResolveRef(tables);
     }
 
@@ -119,7 +118,7 @@ public sealed partial class Item : Luban.BeanBase
         + "effectValue:" + EffectValue + ","
         + "effectParam:" + EffectParam + ","
         + "icon:" + Icon + ","
-        + "levelWeightParams:" + LevelWeightParams + ","
+        + "baseWeight:" + BaseWeight + ","
         + "hiddenRange:" + HiddenRange + ","
         + "}";
     }

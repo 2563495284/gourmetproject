@@ -10,13 +10,13 @@ namespace GourmetProject.Gameplay.Model
     {
         None = 0,
 
-        /// <summary>最终总分加法 +value×level（大餐盘）。</summary>
+        /// <summary>最终总分加法 +value（大餐盘）。</summary>
         FinalAddFlat = 1,
 
-        /// <summary>最终总分乘区 ×(1+(value-1)×level)（主厨刀）。</summary>
+        /// <summary>最终总分乘区 ×value（主厨刀）。</summary>
         FinalAddMult = 2,
 
-        /// <summary>每道匹配 <c>param</c> 的菜额外 +value×level 美味度（胡椒罐：带某标签/风味/分类）。</summary>
+        /// <summary>每道匹配 <c>param</c> 的菜额外 +value 美味度（胡椒罐：带某标签/风味/分类）。</summary>
         TagBonus = 3,
 
         /// <summary>所有食物基础分永久 +value（写回实例，跨结算累积）。</summary>

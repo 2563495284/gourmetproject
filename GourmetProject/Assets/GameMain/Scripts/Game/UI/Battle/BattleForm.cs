@@ -638,8 +638,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            string level = item.Kind == cfg.ItemKind.Passive && state != null && state.Level > 1 ? $" Lv.{state.Level}" : string.Empty;
-            ShowNotice($"{item.Name}{level}", item.Desc, null);
+            ShowNotice(item.Name, item.Desc, null);
         }
 
         private void RebuildActionAxis()

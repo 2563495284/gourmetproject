@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Run;
@@ -6,7 +5,7 @@ using GourmetProject.Game.Run;
 namespace GourmetProject.Game.Meta
 {
     /// <summary>
-    /// 道具随机池与默认规则。当前 cfg.Item 还没有品质/标记/上限字段，因此这里集中提供保守默认值。
+    /// 道具随机池与默认规则。被动道具不可重复进入随机池；主动道具按持有上限控制。
     /// </summary>
     public static class ItemPoolService
     {
@@ -71,7 +70,7 @@ namespace GourmetProject.Game.Meta
                 var weights = new List<float>(candidates.Count);
                 foreach (cfg.Item item in candidates)
                 {
-                    weights.Add(GetWeight(run, item, hidden, distanceFloor));
+                    weights.Add(GetWeight(item, hidden, distanceFloor));
                 }
 
                 int index = rng.WeightedPickIndex(weights);
@@ -94,8 +93,7 @@ namespace GourmetProject.Game.Meta
 
             if (item.Kind == cfg.ItemKind.Passive)
             {
-                RunItemState state = run.GetItemState(item.Id);
-                return state == null || state.Level < GetPassiveMaxLevel(item);
+                return !run.HasItem(item.Id);
             }
 
             // 主动道具只看「持有上限」（当前持有几份实例）：达到上限则不再随机出，用掉一份腾出名额后又能被抽到。
@@ -105,30 +103,14 @@ namespace GourmetProject.Game.Meta
             return holdLimit <= 0 || count < holdLimit;
         }
 
-        public static int GetPassiveMaxLevel(cfg.Item item)
-        {
-            if (item == null || item.Kind != cfg.ItemKind.Passive)
-            {
-                return 1;
-            }
-
-            return Math.Max(1, item.LevelWeightParams.MaxLevel);
-        }
-
         public static int GetActiveHoldLimit(cfg.Item item)
         {
             return item != null && item.Kind == cfg.ItemKind.Active ? item.HoldLimit : 1;
         }
 
-        public static float GetScaledEffectValue(cfg.Item item, RunItemState state)
+        public static float GetEffectValue(cfg.Item item)
         {
-            if (item == null)
-            {
-                return 0f;
-            }
-
-            int level = Math.Max(1, state?.Level ?? 1);
-            return item.Kind == cfg.ItemKind.Passive ? item.EffectValue * level : item.EffectValue;
+            return item != null ? item.EffectValue : 0f;
         }
 
         private static List<cfg.Item> BuildCandidates(
@@ -158,19 +140,10 @@ namespace GourmetProject.Game.Meta
             return candidates;
         }
 
-        private static float GetWeight(GameRun run, cfg.Item item, int hidden, int distanceFloor)
+        private static float GetWeight(cfg.Item item, int hidden, int distanceFloor)
         {
-            float baseWeight = item.LevelWeightParams.BaseWeight > 0f ? item.LevelWeightParams.BaseWeight : 1f;
-            baseWeight = RewardPoolService.HiddenScoreWeight(baseWeight, HiddenMean(item), hidden, distanceFloor);
-
-            RunItemState state = run.GetItemState(item.Id);
-            if (item.Kind == cfg.ItemKind.Passive && state != null)
-            {
-                float multiplier = item.LevelWeightParams.NextLevelWeightMultiplier > 0f ? item.LevelWeightParams.NextLevelWeightMultiplier : 1f;
-                return baseWeight * multiplier;
-            }
-
-            return baseWeight;
+            float baseWeight = item.BaseWeight > 0f ? item.BaseWeight : 1f;
+            return RewardPoolService.HiddenScoreWeight(baseWeight, HiddenMean(item), hidden, distanceFloor);
         }
 
         private static bool CoversHidden(cfg.Item item, int hidden)

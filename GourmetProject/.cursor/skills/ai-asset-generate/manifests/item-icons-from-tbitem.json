@@ -1,0 +1,669 @@
+{
+  "provider": "gemini",
+  "model": "gemini-3.1-flash-image-preview",
+  "stylePrefix": "90s American cable TV cartoon style, thick clean black ink outlines, flat cel animation colors, hand-drawn 2D animation look, polished Unity game item icon quality, playful restaurant roguelike prop icon, centered composition, single readable object or compact prop bundle, no characters, no face, no eyes, no mouth, no limbs, no mascot treatment, no readable text, no letters, no numbers, no logo, no watermark, no UI frame, no card border, no circular badge background, avoid hot pink, avoid magenta, avoid purple objects",
+  "typeDefaults": {
+    "item": {
+      "outputDir": "Assets/GameMain/Resources/Sprites/Items",
+      "postprocess": "magenta-alpha",
+      "background": "opaque",
+      "quality": "high"
+    }
+  },
+  "typePromptPrefixes": {
+    "item": "Item icon rule: isolated game item sprite on a perfectly flat solid #FF00FF chroma key background. The background must be one uniform color with no shadows, gradients, texture, reflections, floor plane, or lighting variation. Do not use #FF00FF, hot pink, magenta, or purple anywhere in the item. Keep the entire object fully inside the canvas with generous transparent-safe padding. No cast shadow, no contact shadow, no table, no grid lines, no checkerboard."
+  },
+  "assets": [
+    {
+      "name": "grant_two_passive",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a sealed surprise pack containing two passive restaurant trinkets, small gear badge and ribbon peeking out, compact readable prop bundle"
+    },
+    {
+      "name": "choose_one_passive",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "three collectible item cards fanned out, a gear charm on the center card, one card highlighted by a small golden sparkle, no letters or numbers"
+    },
+    {
+      "name": "grant_two_active",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a bright action-item gift box popping open with two small tool charms and lightning bolt shapes, compact prop bundle"
+    },
+    {
+      "name": "choose_one_active",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "three action cards fanned out with a lightning bolt icon on the front card, one card pulled forward, no letters or numbers"
+    },
+    {
+      "name": "choose_one_food",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "three small covered serving dishes on a tray, the center cloche slightly lifted with steam, choice reward icon, no letters or numbers"
+    },
+    {
+      "name": "choose_one_fragment",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "three chunky glossy food-shard tokens arranged like puzzle fragments, amber and teal glassy pieces, no letters or numbers"
+    },
+    {
+      "name": "grant_recipe",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a rolled recipe scroll tied with a ribbon and a tiny chef-hat seal, coupon-like prop, no readable writing"
+    },
+    {
+      "name": "family_pack",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a cheerful restaurant bundle basket with coins, a small food cloche, and a wrapped item box packed together"
+    },
+    {
+      "name": "randomize_items",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a chaotic spinning item box with circular arrows, mixed tiny props tumbling inside, bright teal and gold accents"
+    },
+    {
+      "name": "gold_random",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a mystery coin pouch spilling mixed gold coins and a small dice, no question marks, no letters or numbers"
+    },
+    {
+      "name": "gold_meal_bonus",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a covered meal tray with gold coins rising from it like a reward, warm celebratory sparkles"
+    },
+    {
+      "name": "gold_boss",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a heavy bounty coin medallion with a chef hat crown and trophy ribbon, powerful boss reward feeling, no letters or numbers"
+    },
+    {
+      "name": "gold_percent",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a stacked pile of coins with a small upward pie-chart wedge charm, profit-share icon, no percent sign, no numbers"
+    },
+    {
+      "name": "discount_food",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a torn discount coupon with a carrot and fork symbol, golden price tag corner, no letters or numbers"
+    },
+    {
+      "name": "discount_fragment",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a torn discount coupon with a shiny fragment token symbol, clipped ticket edge, no letters or numbers"
+    },
+    {
+      "name": "discount_active",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a torn discount coupon with a lightning bolt tool symbol, bright action-item colors, no letters or numbers"
+    },
+    {
+      "name": "discount_passive",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a torn discount coupon with a gear charm symbol, calm passive-item colors, no letters or numbers"
+    },
+    {
+      "name": "discount_remove",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a torn discount coupon showing a card being tossed into a tiny trash bin, no letters or numbers"
+    },
+    {
+      "name": "remove_fixed_30",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a sturdy locked price tag beside a coin stack and deletion-card icon, fixed-price feeling, no letters or numbers"
+    },
+    {
+      "name": "discount_recipe",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a torn discount coupon with a recipe scroll and chef-hat seal, no letters or numbers"
+    },
+    {
+      "name": "famous_knife",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "an ornate legendary chef knife with a golden guard and bright cel-shaded gleam, centered diagonal prop"
+    },
+    {
+      "name": "score_to_one",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a golden inspection pass with a big checkmark seal and tiny plate icon, official pass prop, no letters or numbers"
+    },
+    {
+      "name": "req_normal_down",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a plain home-style plate under a friendly downward arrow charm, requirement reduced icon, no letters or numbers"
+    },
+    {
+      "name": "req_super_down",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a shiny star-rated serving plate under a friendly downward arrow charm, super meal requirement reduced, no letters or numbers"
+    },
+    {
+      "name": "req_feast_down",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a banquet platter with tiny flags under a friendly downward arrow charm, feast requirement reduced, no letters or numbers"
+    },
+    {
+      "name": "count_le_mult",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a tiny elegant plated meal with a measuring spoon and sparkle multiplier aura, refined small-portion cooking icon, no letters or numbers"
+    },
+    {
+      "name": "count_ge_mult",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "an overflowing banquet platter piled with many simple foods and sparkle multiplier aura, abundant meal icon, no letters or numbers"
+    },
+    {
+      "name": "per_dish_mult",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a short conveyor line of small plates with stars hopping from plate to plate,流水席 feeling, no letters or numbers"
+    },
+    {
+      "name": "perma_flat_all",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a chunky flavor enhancer shaker bottle spraying golden seasoning over tiny food icons, no letters or numbers"
+    },
+    {
+      "name": "perma_mult_all",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a glowing concentrated essence vial with thick golden liquid and tiny food sparkles, no letters or numbers"
+    },
+    {
+      "name": "stargaze_every5",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a brass tabletop telescope pointed at cartoon stars above a small menu card, no letters or numbers"
+    },
+    {
+      "name": "stargaze_first3",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a tiny opening-curtain telescope scene with three star tokens as shapes only, early stargaze icon, no letters or numbers"
+    },
+    {
+      "name": "free_move_first",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a white-gloved chef hand sliding a square food tile along a curved arrow, free adjustment icon, no letters or numbers"
+    },
+    {
+      "name": "adjust_plus1",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a skilled chef hand holding tweezers and a spatula over a small plate, precise adjustment icon, no letters or numbers"
+    },
+    {
+      "name": "adjust_to_mult",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a thrift-themed abacus and unused move token turning into a glowing multiplier star, no letters or numbers"
+    },
+    {
+      "name": "food_convert",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a small alchemy pot transforming a food morsel into a gold coin with sparkles, no letters or numbers"
+    },
+    {
+      "name": "adjust_to_gold",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a cash register with a chef spatula lever and coins popping out, unused adjustment to gold icon, no letters or numbers"
+    },
+    {
+      "name": "gold_on_shop",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a cute shop awning with a cashback coin bouncing out of the doorway, no letters or numbers"
+    },
+    {
+      "name": "extra_interest",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a coin jar and ledger with coins growing upward in a tidy stack, compound savings icon, no letters or numbers"
+    },
+    {
+      "name": "min_gold",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a safety cushion net catching falling gold coins above a small wallet, guarantee fund icon, no letters or numbers"
+    },
+    {
+      "name": "interest_cap",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a tall coin jar with an oversized lifted lid and coins stacked beyond the top, high interest cap icon, no letters or numbers"
+    },
+    {
+      "name": "loan",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "an ominous loan contract scroll with a heavy coin sack and red wax seal, high-interest feeling, no readable writing"
+    },
+    {
+      "name": "timeline_random",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a calendar path twisted around a pair of dice and circular arrows, fate timeline reroll icon, no letters or numbers"
+    },
+    {
+      "name": "extra_day",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a calendar page with a sun and moon token side by side, extra workday icon, no letters or numbers"
+    },
+    {
+      "name": "week_minus",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a chunky clock wrapped around a calendar page with a backward arrow, time reversal icon, no letters or numbers"
+    },
+    {
+      "name": "add_reward_node",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a small route-map node with a gift box sitting on it and dotted path pieces, extra reward node icon, no letters or numbers"
+    },
+    {
+      "name": "add_interest_node",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a small route-map node with a coin bank sitting on it and dotted path pieces, extra interest node icon, no letters or numbers"
+    },
+    {
+      "name": "every3_next_mult",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a chef metronome ticking beside three small plate tokens and a glowing rhythm star, no letters or numbers"
+    },
+    {
+      "name": "first_x2",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a restaurant door opening onto a spotlighted first plate with two sparkle silhouettes, opening bonus icon, no letters or numbers"
+    },
+    {
+      "name": "last_x2",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a theater finale curtain framing a final covered dish and two sparkle silhouettes, closing act bonus icon, no letters or numbers"
+    },
+    {
+      "name": "extra_active_slots",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a chunky toolbox opened wide with empty item slots, utensils and action charms inside, no letters or numbers"
+    },
+    {
+      "name": "gold_on_active",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "an action button charm pressed by a utensil, coins popping out from underneath, no letters or numbers"
+    },
+    {
+      "name": "block_active",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a minimalist locked toolbox with a bold padlock and muted action charms behind it, no letters or numbers"
+    },
+    {
+      "name": "flavor_enhance",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a playful flavor spray bottle misting golden seasoning droplets, strong readable prop, no letters or numbers"
+    },
+    {
+      "name": "flavor_remove_gold",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a flavor-tag charm being recycled into gold coins through a small funnel, no letters or numbers"
+    },
+    {
+      "name": "flavor_remove_copyskill",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a flavor-tag charm sliding into a copy stamp machine with two duplicate sparkle cards, no letters or numbers"
+    },
+    {
+      "name": "flavor_remove_double",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "two flavor droplets squeezing together into one large glowing score star, concentration icon, no letters or numbers"
+    },
+    {
+      "name": "flavor_double_slot",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a two-slot spice rack holding two bright seasoning bottles, double flavor slot icon, no letters or numbers"
+    },
+    {
+      "name": "flavor_contagion",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "seasoning droplets jumping from one tiny plate to another along dotted arcs, contagious flavor icon, no letters or numbers"
+    },
+    {
+      "name": "celltag_enhance",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a chunky label tag with a food-cell border and golden enhancement sparkles, no letters or numbers"
+    },
+    {
+      "name": "celltag_contagion",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "several chunky label tags linked by dotted arcs across square food-cell tokens, no letters or numbers"
+    },
+    {
+      "name": "lucky_guarantee",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a guaranteed-luck charm made of a golden clover-like seal, ribbon, and chef-hat bead, no letters or numbers"
+    },
+    {
+      "name": "lucky_chance",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a small lucky charm pouch with a clover-like token and star sparkles spilling out, no letters or numbers"
+    },
+    {
+      "name": "more_events",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a lively street-corner event marker with a tiny market awning, confetti, and path sign shape, no letters or numbers"
+    },
+    {
+      "name": "gold_on_event",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a red envelope bursting with gold coins and confetti, event reward icon, no letters or numbers"
+    },
+    {
+      "name": "reroll_action",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a chunky action die surrounded by circular reroll arrows and tiny tool symbols, no letters or numbers"
+    },
+    {
+      "name": "shop_restock",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a shop shelf being restocked with boxes and jars, small handcart beside it, no letters or numbers"
+    },
+    {
+      "name": "choice_count_plus1",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a display counter showing many small choice cards fanned out with one extra slot glowing, no letters or numbers"
+    },
+    {
+      "name": "choice_times_plus1",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a chewing-clock timer beside a choice card stack, extra selection attempt icon, no letters or numbers"
+    },
+    {
+      "name": "extra_food_choice",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "an extra food choice card with a covered dish popping forward from a small card stack, no letters or numbers"
+    },
+    {
+      "name": "extra_item_choice",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "an extra item choice card with a spice bottle and tool charm popping forward from a small card stack, no letters or numbers"
+    },
+    {
+      "name": "copy_food",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "two identical covered dishes side by side with a copy-stamp sparkle between them, no letters or numbers"
+    },
+    {
+      "name": "discard_negative",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a broom sweeping away dark cracked negative tags into a dustpan, clean simple prop, no letters or numbers"
+    },
+    {
+      "name": "discard_negative_gold",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a trash-to-treasure bin converting dark cracked tags into gold coins, no letters or numbers"
+    },
+    {
+      "name": "gold_meal_penalty",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a pinched wage envelope with a sad small coin slipping away, penalty icon, no letters or numbers"
+    },
+    {
+      "name": "shop_price_up",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a shop price tag with a bold upward arrow and coins stacked high, no letters or numbers"
+    },
+    {
+      "name": "no_remove",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a stubborn padlocked food card bolted to the table, cannot remove dish icon, no letters or numbers"
+    },
+    {
+      "name": "skip_node",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a closed shop awning over a route-map node with a skip arrow hopping past it, no letters or numbers"
+    },
+    {
+      "name": "choice_minus1",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a narrowed choice tray with one card slot crossed out by a simple slash symbol, no letters or numbers"
+    },
+    {
+      "name": "req_normal_up",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a plain home-style plate under a chunky upward arrow charm, requirement increased icon, no letters or numbers"
+    },
+    {
+      "name": "req_super_up",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a shiny star-rated serving plate under a chunky upward arrow charm, super meal requirement increased, no letters or numbers"
+    },
+    {
+      "name": "req_feast_up",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a banquet platter with tiny flags under a chunky upward arrow charm, feast requirement increased, no letters or numbers"
+    },
+    {
+      "name": "gold_week_clear",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "an empty wallet on a calendar page with coins fading into puffs, weekly gold cleared icon, no letters or numbers"
+    },
+    {
+      "name": "count_as_all",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a tiny portion cup casting several food-token shadows around it, small portion counts as more icon, no letters or numbers"
+    },
+    {
+      "name": "transfer_target_mult",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a serving arrow delivering a glowing sparkle from one plate into a target plate, target benefits icon, no letters or numbers"
+    },
+    {
+      "name": "transfer_source_mult",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a source plate sending out a glowing sparkle along a serving arrow, source contribution bonus icon, no letters or numbers"
+    },
+    {
+      "name": "skill_count_mult",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a master technique scroll with crossed utensils, seasoning strokes, and bright skill stars, no readable writing"
+    },
+    {
+      "name": "gold_on_transfer",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a serving transfer arrow between two plates dropping gold coins underneath, no letters or numbers"
+    },
+    {
+      "name": "cake_retain",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a cake slice protected under a glass cloche with freshness sparkles, no letters or numbers"
+    },
+    {
+      "name": "cake_init_bonus",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a sturdy cake base layer being laid like a foundation brick, frosting and cherry accents, no letters or numbers"
+    },
+    {
+      "name": "cake_accel",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a cake rapidly stacking upward with motion streaks and extra frosting layers, no letters or numbers"
+    },
+    {
+      "name": "cake_to_gold",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a cake slice transforming into gold coins through a sparkle swirl, no letters or numbers"
+    },
+    {
+      "name": "cake_req_minus",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a cake layer stack with a shortcut ladder and downward requirement arrow charm, no letters or numbers"
+    }
+  ]
+}

@@ -12,11 +12,7 @@
     "effectValue": 50,
     "effectParam": "",
     "icon": "Sprites/Items/big_plate",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
       "max": 30
@@ -35,11 +31,7 @@
     "effectValue": 1.2,
     "effectParam": "",
     "icon": "Sprites/Items/chef_knife",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 10,
       "max": 45
@@ -58,11 +50,7 @@
     "effectValue": 10,
     "effectParam": "tag_spicy",
     "icon": "Sprites/Items/pepper_jar",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
       "max": 35
@@ -81,11 +69,7 @@
     "effectValue": 0,
     "effectParam": "",
     "icon": "Sprites/Items/reroll_bell",
-    "levelWeightParams": {
-      "maxLevel": 1,
-      "nextLevelWeightMultiplier": 1,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
       "max": 0
@@ -104,11 +88,7 @@
     "effectValue": 1,
     "effectParam": "",
     "icon": "Sprites/Items/extra_serve",
-    "levelWeightParams": {
-      "maxLevel": 1,
-      "nextLevelWeightMultiplier": 1,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
       "max": 0
@@ -127,11 +107,7 @@
     "effectValue": 2,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 1,
-      "nextLevelWeightMultiplier": 1,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
       "max": 0
@@ -150,11 +126,7 @@
     "effectValue": 3,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 1,
-      "nextLevelWeightMultiplier": 1,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
       "max": 0
@@ -173,11 +145,7 @@
     "effectValue": 2,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 1,
-      "nextLevelWeightMultiplier": 1,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
       "max": 0
@@ -196,11 +164,7 @@
     "effectValue": 3,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 1,
-      "nextLevelWeightMultiplier": 1,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
       "max": 0
@@ -219,11 +183,7 @@
     "effectValue": 3,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 1,
-      "nextLevelWeightMultiplier": 1,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
       "max": 0
@@ -242,11 +202,7 @@
     "effectValue": 3,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 1,
-      "nextLevelWeightMultiplier": 1,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
       "max": 0
@@ -265,11 +221,7 @@
     "effectValue": 1,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 1,
-      "nextLevelWeightMultiplier": 1,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
       "max": 0
@@ -288,11 +240,7 @@
     "effectValue": 50,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 1,
-      "nextLevelWeightMultiplier": 1,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
       "max": 0
@@ -311,11 +259,7 @@
     "effectValue": 0,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 1,
-      "nextLevelWeightMultiplier": 1,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
       "max": 0
@@ -334,11 +278,7 @@
     "effectValue": 0,
     "effectParam": "range:1,100",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 1,
-      "nextLevelWeightMultiplier": 1,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
       "max": 0
@@ -357,11 +297,7 @@
     "effectValue": 15,
     "effectParam": "meals:10",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
       "max": 45
@@ -380,11 +316,7 @@
     "effectValue": 100,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
       "max": 45
@@ -403,11 +335,7 @@
     "effectValue": 0.2,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
       "max": 65
@@ -426,11 +354,7 @@
     "effectValue": 0.2,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
       "max": 30
@@ -449,11 +373,7 @@
     "effectValue": 0.2,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
       "max": 30
@@ -472,11 +392,7 @@
     "effectValue": 0.2,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
       "max": 30
@@ -495,11 +411,7 @@
     "effectValue": 0.2,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
       "max": 30
@@ -518,11 +430,7 @@
     "effectValue": 0.2,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
       "max": 30
@@ -541,11 +449,7 @@
     "effectValue": 30,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
       "max": 45
@@ -564,11 +468,7 @@
     "effectValue": 0.2,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
       "max": 30
@@ -587,11 +487,7 @@
     "effectValue": 0,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
       "max": 65
@@ -610,11 +506,7 @@
     "effectValue": 0,
     "effectParam": "meals:3",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 1,
-      "nextLevelWeightMultiplier": 1,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
       "max": 0
@@ -633,11 +525,7 @@
     "effectValue": -0.1,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
       "max": 45
@@ -656,11 +544,7 @@
     "effectValue": -0.1,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
       "max": 45
@@ -679,11 +563,7 @@
     "effectValue": -0.1,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
       "max": 45
@@ -702,11 +582,7 @@
     "effectValue": 1.1,
     "effectParam": "lte:10",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
       "max": 45
@@ -725,11 +601,7 @@
     "effectValue": 1.1,
     "effectParam": "gte:10",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
       "max": 45
@@ -748,11 +620,7 @@
     "effectValue": 0.1,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
       "max": 65
@@ -771,11 +639,7 @@
     "effectValue": 10,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
       "max": 65
@@ -794,11 +658,7 @@
     "effectValue": 0.2,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
       "max": 65
@@ -817,11 +677,7 @@
     "effectValue": 0,
     "effectParam": "every:5",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
       "max": 45
@@ -840,11 +696,7 @@
     "effectValue": 0,
     "effectParam": "first:3",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
       "max": 45
@@ -863,11 +715,7 @@
     "effectValue": 0,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
       "max": 45
@@ -886,11 +734,7 @@
     "effectValue": 1,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
       "max": 30
@@ -909,11 +753,7 @@
     "effectValue": 0.2,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
       "max": 65
@@ -932,11 +772,7 @@
     "effectValue": 5,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 1,
-      "nextLevelWeightMultiplier": 1,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
       "max": 0
@@ -955,11 +791,7 @@
     "effectValue": 1,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
       "max": 45
@@ -978,11 +810,7 @@
     "effectValue": 10,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
       "max": 45
@@ -1001,11 +829,7 @@
     "effectValue": 1,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
       "max": 65
@@ -1024,11 +848,7 @@
     "effectValue": 10,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
       "max": 45
@@ -1047,11 +867,7 @@
     "effectValue": 10,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
       "max": 65
@@ -1070,11 +886,7 @@
     "effectValue": 300,
     "effectParam": "repay:600",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 1,
-      "nextLevelWeightMultiplier": 1,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
       "max": 0
@@ -1093,11 +905,7 @@
     "effectValue": 0,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 1,
-      "nextLevelWeightMultiplier": 1,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
       "max": 0
@@ -1116,11 +924,7 @@
     "effectValue": 1,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 1,
-      "nextLevelWeightMultiplier": 1,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
       "max": 0
@@ -1139,11 +943,7 @@
     "effectValue": 1,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 1,
-      "nextLevelWeightMultiplier": 1,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
       "max": 0
@@ -1162,11 +962,7 @@
     "effectValue": 1,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 1,
-      "nextLevelWeightMultiplier": 1,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
       "max": 0
@@ -1185,11 +981,7 @@
     "effectValue": 1,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 1,
-      "nextLevelWeightMultiplier": 1,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
       "max": 0
@@ -1208,11 +1000,7 @@
     "effectValue": 2,
     "effectParam": "every:3",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
       "max": 65
@@ -1231,11 +1019,7 @@
     "effectValue": 2,
     "effectParam": "index:1",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
       "max": 45
@@ -1254,11 +1038,7 @@
     "effectValue": 2,
     "effectParam": "index:-1",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
       "max": 45
@@ -1277,11 +1057,7 @@
     "effectValue": 2,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
       "max": 65
@@ -1300,11 +1076,7 @@
     "effectValue": 20,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
       "max": 45
@@ -1323,11 +1095,7 @@
     "effectValue": 1000,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 40,
       "max": 85
@@ -1346,11 +1114,7 @@
     "effectValue": 2,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 1,
-      "nextLevelWeightMultiplier": 1,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
       "max": 0
@@ -1369,11 +1133,7 @@
     "effectValue": 200,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 1,
-      "nextLevelWeightMultiplier": 1,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
       "max": 0
@@ -1392,11 +1152,7 @@
     "effectValue": 0,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 1,
-      "nextLevelWeightMultiplier": 1,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
       "max": 0
@@ -1415,11 +1171,7 @@
     "effectValue": 2,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 1,
-      "nextLevelWeightMultiplier": 1,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
       "max": 0
@@ -1438,11 +1190,7 @@
     "effectValue": 1,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 40,
       "max": 85
@@ -1461,11 +1209,7 @@
     "effectValue": 1,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 1,
-      "nextLevelWeightMultiplier": 1,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
       "max": 0
@@ -1484,11 +1228,7 @@
     "effectValue": 2,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 1,
-      "nextLevelWeightMultiplier": 1,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
       "max": 0
@@ -1507,11 +1247,7 @@
     "effectValue": 1,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 1,
-      "nextLevelWeightMultiplier": 1,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
       "max": 0
@@ -1530,11 +1266,7 @@
     "effectValue": 4,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
       "max": 65
@@ -1553,11 +1285,7 @@
     "effectValue": 0.2,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
       "max": 45
@@ -1576,11 +1304,7 @@
     "effectValue": 0.2,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
       "max": 45
@@ -1599,11 +1323,7 @@
     "effectValue": 10,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
       "max": 30
@@ -1622,11 +1342,7 @@
     "effectValue": 2,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 1,
-      "nextLevelWeightMultiplier": 1,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
       "max": 0
@@ -1645,11 +1361,7 @@
     "effectValue": 0,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
       "max": 65
@@ -1668,11 +1380,7 @@
     "effectValue": 1,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
       "max": 45
@@ -1691,11 +1399,7 @@
     "effectValue": 1,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
       "max": 65
@@ -1714,11 +1418,7 @@
     "effectValue": 0,
     "effectParam": "every:3",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
       "max": 65
@@ -1737,11 +1437,7 @@
     "effectValue": 0,
     "effectParam": "every:3",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
       "max": 65
@@ -1760,11 +1456,7 @@
     "effectValue": 1,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 1,
-      "nextLevelWeightMultiplier": 1,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
       "max": 0
@@ -1783,11 +1475,7 @@
     "effectValue": 2,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 1,
-      "nextLevelWeightMultiplier": 1,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
       "max": 0
@@ -1806,11 +1494,7 @@
     "effectValue": 100,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 1,
-      "nextLevelWeightMultiplier": 1,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 0,
       "max": 0
@@ -1829,11 +1513,7 @@
     "effectValue": -0.25,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
       "max": 30
@@ -1852,11 +1532,7 @@
     "effectValue": 0.25,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
       "max": 30
@@ -1875,11 +1551,7 @@
     "effectValue": 0,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
       "max": 30
@@ -1898,11 +1570,7 @@
     "effectValue": 1,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
       "max": 30
@@ -1921,11 +1589,7 @@
     "effectValue": -1,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
       "max": 30
@@ -1944,11 +1608,7 @@
     "effectValue": 0.1,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
       "max": 30
@@ -1967,11 +1627,7 @@
     "effectValue": 0.1,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
       "max": 30
@@ -1990,11 +1646,7 @@
     "effectValue": 0.1,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
       "max": 30
@@ -2013,11 +1665,7 @@
     "effectValue": 0,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 1,
       "max": 30
@@ -2036,11 +1684,7 @@
     "effectValue": 1,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
       "max": 65
@@ -2059,11 +1703,7 @@
     "effectValue": 1.1,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
       "max": 65
@@ -2082,11 +1722,7 @@
     "effectValue": 1.1,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
       "max": 65
@@ -2105,11 +1741,7 @@
     "effectValue": 0.1,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
       "max": 65
@@ -2128,11 +1760,7 @@
     "effectValue": 10,
     "effectParam": "count:10",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
       "max": 45
@@ -2151,11 +1779,7 @@
     "effectValue": 0.1,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
       "max": 65
@@ -2174,11 +1798,7 @@
     "effectValue": 10,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
       "max": 45
@@ -2197,11 +1817,7 @@
     "effectValue": 1,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 20,
       "max": 65
@@ -2220,11 +1836,7 @@
     "effectValue": 10,
     "effectParam": "threshold:100",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
       "max": 45
@@ -2243,11 +1855,7 @@
     "effectValue": 10,
     "effectParam": "",
     "icon": "",
-    "levelWeightParams": {
-      "maxLevel": 3,
-      "nextLevelWeightMultiplier": 0.65,
-      "baseWeight": 1
-    },
+    "baseWeight": 1,
     "hiddenRange": {
       "min": 5,
       "max": 45

@@ -34,7 +34,7 @@ TYPE_DIRS = {
 }
 
 TYPE_SIZES = {
-    "item": "1024x1024",
+    "item": "512x512",
     "dish": "512x512",
     "character": "1024x1024",
     "background": "1536x1024",

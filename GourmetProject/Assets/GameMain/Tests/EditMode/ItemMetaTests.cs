@@ -28,6 +28,23 @@ namespace GourmetProject.Tests
         }
 
         [Test]
+        public void PassiveItem_CannotUpgradeOrReenterPool()
+        {
+            GameRun run = NewRun();
+            cfg.Item item = run.Tables.TbItem.Get("item_discount_food");
+
+            ItemAcquireResult first = run.AcquireItem(item.Id, 50);
+            Assert.AreEqual(ItemAcquireOutcome.Added, first.Outcome);
+            Assert.AreEqual(1, run.GetItemCount(item.Id));
+            Assert.IsFalse(ItemPoolService.CanEnterPool(run, item));
+
+            ItemAcquireResult second = run.AcquireItem(item.Id, 50);
+            Assert.AreEqual(ItemAcquireOutcome.ConvertedToGold, second.Outcome);
+            Assert.AreEqual(1, run.GetItemCount(item.Id));
+            Assert.AreEqual(50, second.Gold);
+        }
+
+        [Test]
         public void ShopDiscount_FoodPrice_ReducedBy20Percent()
         {
             GameRun run = NewRun();

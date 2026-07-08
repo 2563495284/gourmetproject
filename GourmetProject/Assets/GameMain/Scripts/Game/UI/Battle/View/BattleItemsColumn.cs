@@ -131,13 +131,12 @@ namespace GourmetProject.Game.UI.Battle.View
                 var rect = (RectTransform)slot.transform;
                 LayoutPassiveSlot(rect, i, slotSize);
 
-                string badge = state.Level > 1 ? $"Lv{state.Level}" : string.Empty;
                 cfg.Item captured = item;
                 RunItemState capturedState = state;
                 slot.Bind(
                     RunItemSlotView.LoadIcon(item),
                     RunItemSlotView.ShortName(item.Name),
-                    badge,
+                    string.Empty,
                     RunItemSlotView.QualityColor(item.Quality),
                     true,
                     () => onShowItemInfo?.Invoke(captured, capturedState));

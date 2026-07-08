@@ -11,12 +11,11 @@ namespace GourmetProject.Gameplay.Scoring
     /// </summary>
     public readonly struct ItemScoreSpec
     {
-        public ItemScoreSpec(ItemScoreEffectType type, float value, string param, int level, string itemId, string itemName)
+        public ItemScoreSpec(ItemScoreEffectType type, float value, string param, string itemId, string itemName)
         {
             Type = type;
             Value = value;
             Param = param ?? string.Empty;
-            Level = level < 1 ? 1 : level;
             ItemId = itemId ?? string.Empty;
             ItemName = itemName ?? itemId ?? string.Empty;
         }
@@ -26,8 +25,6 @@ namespace GourmetProject.Gameplay.Scoring
         public float Value { get; }
 
         public string Param { get; }
-
-        public int Level { get; }
 
         public string ItemId { get; }
 
@@ -89,7 +86,6 @@ namespace GourmetProject.Gameplay.Scoring
             }
 
             float value = _spec.Value;
-            int level = _spec.Level;
 
             switch (_spec.Type)
             {
@@ -98,7 +94,7 @@ namespace GourmetProject.Gameplay.Scoring
                     {
                         if (ItemDishMatcher.Matches(d, _spec.Param))
                         {
-                            ctx.AddFlatTo(d, value * level);
+                            ctx.AddFlatTo(d, value);
                         }
                     }
 

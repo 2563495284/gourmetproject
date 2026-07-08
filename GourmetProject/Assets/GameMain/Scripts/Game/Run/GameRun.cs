@@ -28,7 +28,7 @@ namespace GourmetProject.Game.Run
 
         private readonly cfg.Tables _tables;
 
-        // 被动道具同一 id 唯一一条（带 Level）；主动道具同一 id 可有多条，每条为一份独立实例。
+        // 被动道具同一 id 唯一一条且不升级；主动道具同一 id 可有多条，每条为一份独立实例。
         private readonly List<RunItemState> _items = new List<RunItemState>();
         private readonly List<string> _bonusDishIds = new List<string>();
         private readonly List<List<string>> _recipeBooks = new List<List<string>>();
@@ -640,6 +640,11 @@ namespace GourmetProject.Game.Run
 
                     for (int k = 0; k < instances; k++)
                     {
+                        if (def != null && def.Kind == cfg.ItemKind.Passive && run.GetItemState(item.ItemId) != null)
+                        {
+                            continue;
+                        }
+
                         run._items.Add(new RunItemState(item.ItemId, item.Level));
                     }
                 }
@@ -1003,23 +1008,16 @@ namespace GourmetProject.Game.Run
 
             if (item.Kind == cfg.ItemKind.Passive)
             {
-                int maxLevel = ItemPoolService.GetPassiveMaxLevel(item);
                 RunItemState state = GetItemState(itemId);
                 if (state == null)
                 {
                     state = new RunItemState(itemId, 1);
                     _items.Add(state);
-                    return new ItemAcquireResult(ItemAcquireOutcome.Added, itemId, item.Name, state.Level, 1, 0);
-                }
-
-                if (state.Level < maxLevel)
-                {
-                    state.IncreaseLevel(maxLevel);
-                    return new ItemAcquireResult(ItemAcquireOutcome.Upgraded, itemId, item.Name, state.Level, 1, 0);
+                    return new ItemAcquireResult(ItemAcquireOutcome.Added, itemId, item.Name, 1, 1, 0);
                 }
 
                 Gold += fallbackGold;
-                return new ItemAcquireResult(ItemAcquireOutcome.ConvertedToGold, itemId, item.Name, state.Level, 1, fallbackGold);
+                return new ItemAcquireResult(ItemAcquireOutcome.ConvertedToGold, itemId, item.Name, 1, 1, fallbackGold);
             }
 
             // 主动道具：每获得一次新增一份独立实例；达到持有上限则折算金币。

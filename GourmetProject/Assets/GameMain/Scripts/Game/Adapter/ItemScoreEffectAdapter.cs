@@ -36,7 +36,7 @@ namespace GourmetProject.Game.Adapter
                     continue;
                 }
 
-                specs.Add(new ItemScoreSpec(type, item.EffectValue, item.EffectParam, state.Level, item.Id, item.Name));
+                specs.Add(new ItemScoreSpec(type, item.EffectValue, item.EffectParam, item.Id, item.Name));
             }
 
             return specs;
@@ -73,7 +73,7 @@ namespace GourmetProject.Game.Adapter
 
                 if (item.EffectType == ItemEffectTypes.CountAsBonusAll)
                 {
-                    total += (int)item.EffectValue * state.Level;
+                    total += (int)item.EffectValue;
                 }
             }
 

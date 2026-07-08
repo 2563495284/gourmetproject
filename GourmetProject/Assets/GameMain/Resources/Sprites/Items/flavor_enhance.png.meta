@@ -1,0 +1,689 @@
+fileFormatVersion: 2
+guid: 53dccb88ff6a840ff9d2186c3e5db02d
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 3403165899618723463
+    second: flavor_enhance_0
+  - first:
+      213: 7328713159739402756
+    second: flavor_enhance_1
+  - first:
+      213: -5362829202630937016
+    second: flavor_enhance_2
+  - first:
+      213: -2628043922406489348
+    second: flavor_enhance_3
+  - first:
+      213: 4423436867388721341
+    second: flavor_enhance_4
+  - first:
+      213: -4343146130581008832
+    second: flavor_enhance_5
+  - first:
+      213: -7176595590175725148
+    second: flavor_enhance_6
+  - first:
+      213: 7783331384087525941
+    second: flavor_enhance_7
+  - first:
+      213: 5033960620444269057
+    second: flavor_enhance_8
+  - first:
+      213: -6561018048982439500
+    second: flavor_enhance_9
+  - first:
+      213: -8175634806029297857
+    second: flavor_enhance_10
+  - first:
+      213: -3113903520236487400
+    second: flavor_enhance_11
+  - first:
+      213: 4604786916230494260
+    second: flavor_enhance_12
+  - first:
+      213: 6114766615428626122
+    second: flavor_enhance_13
+  - first:
+      213: 2526329580628236961
+    second: flavor_enhance_14
+  - first:
+      213: -8136130823820366998
+    second: flavor_enhance_15
+  - first:
+      213: -3156863105441694559
+    second: flavor_enhance_16
+  - first:
+      213: 6793189666480007508
+    second: flavor_enhance_17
+  - first:
+      213: -1986214980271115580
+    second: flavor_enhance_18
+  - first:
+      213: 3710597688606958886
+    second: flavor_enhance_19
+  - first:
+      213: 5125618788642938317
+    second: flavor_enhance_20
+  - first:
+      213: -1400216059529015485
+    second: flavor_enhance_21
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 1
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: flavor_enhance_0
+      rect:
+        serializedVersion: 2
+        x: 320
+        y: 425
+        width: 21
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7862f7eda597a3f20800000000000000
+      internalID: 3403165899618723463
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flavor_enhance_1
+      rect:
+        serializedVersion: 2
+        x: 350
+        y: 439
+        width: 15
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 40a6ff22ac1d4b560800000000000000
+      internalID: 7328713159739402756
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flavor_enhance_2
+      rect:
+        serializedVersion: 2
+        x: 262
+        y: 393
+        width: 32
+        height: 36
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8467712f0476395b0800000000000000
+      internalID: -5362829202630937016
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flavor_enhance_3
+      rect:
+        serializedVersion: 2
+        x: 300
+        y: 418
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cf246def9ff478bd0800000000000000
+      internalID: -2628043922406489348
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flavor_enhance_4
+      rect:
+        serializedVersion: 2
+        x: 310
+        y: 394
+        width: 21
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: db8421ff464336d30800000000000000
+      internalID: 4423436867388721341
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flavor_enhance_5
+      rect:
+        serializedVersion: 2
+        x: 328
+        y: 416
+        width: 11
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 04e4b1fea9b0ab3c0800000000000000
+      internalID: -4343146130581008832
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flavor_enhance_6
+      rect:
+        serializedVersion: 2
+        x: 335
+        y: 404
+        width: 37
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4a9e0fe755c976c90800000000000000
+      internalID: -7176595590175725148
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flavor_enhance_7
+      rect:
+        serializedVersion: 2
+        x: 371
+        y: 411
+        width: 23
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 53abfade7a2f30c60800000000000000
+      internalID: 7783331384087525941
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flavor_enhance_8
+      rect:
+        serializedVersion: 2
+        x: 278
+        y: 370
+        width: 31
+        height: 38
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 10ab2e263883cd540800000000000000
+      internalID: 5033960620444269057
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flavor_enhance_9
+      rect:
+        serializedVersion: 2
+        x: 322
+        y: 384
+        width: 18
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4b9a971a8d492f4a0800000000000000
+      internalID: -6561018048982439500
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flavor_enhance_10
+      rect:
+        serializedVersion: 2
+        x: 339
+        y: 375
+        width: 48
+        height: 31
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f37dd45d57f4a8e80800000000000000
+      internalID: -8175634806029297857
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flavor_enhance_11
+      rect:
+        serializedVersion: 2
+        x: 345
+        y: 397
+        width: 13
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 81d377b1f3139c4d0800000000000000
+      internalID: -3113903520236487400
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flavor_enhance_12
+      rect:
+        serializedVersion: 2
+        x: 132
+        y: 61
+        width: 209
+        height: 317
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 438f8489d4d77ef30800000000000000
+      internalID: 4604786916230494260
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flavor_enhance_13
+      rect:
+        serializedVersion: 2
+        x: 302
+        y: 376
+        width: 16
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ac67a0dd6d30cd450800000000000000
+      internalID: 6114766615428626122
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flavor_enhance_14
+      rect:
+        serializedVersion: 2
+        x: 314
+        y: 366
+        width: 19
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1aa58e65e535f0320800000000000000
+      internalID: 2526329580628236961
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flavor_enhance_15
+      rect:
+        serializedVersion: 2
+        x: 387
+        y: 378
+        width: 18
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a6ba4107f18a61f80800000000000000
+      internalID: -8136130823820366998
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flavor_enhance_16
+      rect:
+        serializedVersion: 2
+        x: 331
+        y: 355
+        width: 32
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1ac7c9b3bb19034d0800000000000000
+      internalID: -3156863105441694559
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flavor_enhance_17
+      rect:
+        serializedVersion: 2
+        x: 363
+        y: 353
+        width: 15
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 45925628202464e50800000000000000
+      internalID: 6793189666480007508
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flavor_enhance_18
+      rect:
+        serializedVersion: 2
+        x: 377
+        y: 357
+        width: 24
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4c27165bffb8f64e0800000000000000
+      internalID: -1986214980271115580
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flavor_enhance_19
+      rect:
+        serializedVersion: 2
+        x: 332
+        y: 329
+        width: 18
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 625adcd20f0be7330800000000000000
+      internalID: 3710597688606958886
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flavor_enhance_20
+      rect:
+        serializedVersion: 2
+        x: 348
+        y: 331
+        width: 34
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dcd512fa12bd12740800000000000000
+      internalID: 5125618788642938317
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: flavor_enhance_21
+      rect:
+        serializedVersion: 2
+        x: 388
+        y: 336
+        width: 20
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 34fc9fa99ee619ce0800000000000000
+      internalID: -1400216059529015485
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      flavor_enhance_0: 3403165899618723463
+      flavor_enhance_1: 7328713159739402756
+      flavor_enhance_10: -8175634806029297857
+      flavor_enhance_11: -3113903520236487400
+      flavor_enhance_12: 4604786916230494260
+      flavor_enhance_13: 6114766615428626122
+      flavor_enhance_14: 2526329580628236961
+      flavor_enhance_15: -8136130823820366998
+      flavor_enhance_16: -3156863105441694559
+      flavor_enhance_17: 6793189666480007508
+      flavor_enhance_18: -1986214980271115580
+      flavor_enhance_19: 3710597688606958886
+      flavor_enhance_2: -5362829202630937016
+      flavor_enhance_20: 5125618788642938317
+      flavor_enhance_21: -1400216059529015485
+      flavor_enhance_3: -2628043922406489348
+      flavor_enhance_4: 4423436867388721341
+      flavor_enhance_5: -4343146130581008832
+      flavor_enhance_6: -7176595590175725148
+      flavor_enhance_7: 7783331384087525941
+      flavor_enhance_8: 5033960620444269057
+      flavor_enhance_9: -6561018048982439500
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

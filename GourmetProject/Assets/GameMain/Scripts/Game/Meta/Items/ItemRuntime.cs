@@ -24,7 +24,7 @@ namespace GourmetProject.Game.Meta
             _run = run;
         }
 
-        /// <summary>遍历持有的被动道具（同 id 仅一条，含等级）。</summary>
+        /// <summary>遍历持有的被动道具（同 id 仅一条，不升级）。</summary>
         public IEnumerable<(cfg.Item item, RunItemState state)> PassiveItems()
         {
             if (_run == null)
@@ -56,7 +56,7 @@ namespace GourmetProject.Game.Meta
             return false;
         }
 
-        /// <summary>某 effectType 的被动道具 EffectValue×Level 之和（无则 0）。</summary>
+        /// <summary>某 effectType 的被动道具 EffectValue 之和（无则 0）。</summary>
         public float SumValue(string effectType)
         {
             float sum = 0f;
@@ -64,7 +64,7 @@ namespace GourmetProject.Game.Meta
             {
                 if (item.EffectType == effectType)
                 {
-                    sum += item.EffectValue * state.Level;
+                    sum += item.EffectValue;
                 }
             }
 

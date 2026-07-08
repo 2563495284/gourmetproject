@@ -835,12 +835,11 @@ namespace GourmetProject.Game.Presentation.Battle
 
                 RunItemState state = passiveStates[i];
                 cfg.Item item = GameApp.Config.Tables.TbItem.GetOrDefault(state.ItemId);
-                string badge = state.Level > 1 ? $"Lv{state.Level}" : string.Empty;
                 slot.Bind(
                     new Vector2(slotSize, slotSize),
                     LoadItemIcon(item),
                     ShortName(item.Name),
-                    badge,
+                    string.Empty,
                     QualityColor(item.Quality),
                     true,
                     () => ShowItemMessage(item, state));
@@ -985,8 +984,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            string level = item.Kind == cfg.ItemKind.Passive && state.Level > 1 ? $" Lv.{state.Level}" : string.Empty;
-            SetMessage($"{item.Name}{level}：{item.Desc}");
+            SetMessage($"{item.Name}：{item.Desc}");
         }
 
         public string DoodleToggleLabel => _doodle != null && _doodle.IsVisible ? "隐藏涂鸦" : "显示涂鸦";

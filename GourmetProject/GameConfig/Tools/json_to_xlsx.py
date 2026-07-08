@@ -44,7 +44,6 @@ TABLES = {
     "item": [
         ("id", "string", "s"), ("name", "string", "s"), ("desc", "string", "s"),
         ("kind", "ItemKind", "s"), ("quality", "ItemQuality", "s"), ("specialTags", "string", "s"),
-        ("maxLevel", "int", "s"), ("nextLevelWeightMultiplier", "float", "s"),
         ("unlockCondition", "string", "s"), ("triggerTiming", "ItemTriggerTiming", "s"),
         ("acquireLimit", "int", "s"), ("holdLimit", "int", "s"),
         ("baseWeight", "float", "s"), ("hiddenMin", "int", "s"), ("hiddenMax", "int", "s"),

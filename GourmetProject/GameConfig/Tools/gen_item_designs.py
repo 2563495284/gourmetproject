@@ -174,9 +174,9 @@ def main():
     for (rid, name, desc, kind, quality, tags, timing, hold, etype, eval_, eparam) in ROWS:
         assert rid not in seen and rid not in KEEP_IDS, f"duplicate id {rid}"
         seen.add(rid)
-        lwp = "3,0.65,1" if kind == "Passive" else "1,1,1"
+        base_weight = 1
         hidden = HIDDEN_BY_QUALITY.get(quality, "1,30") if kind == "Passive" else "0,0"
-        vals = [None, rid, name, desc, kind, quality, tags, timing, hold, etype, eval_, eparam, "", lwp, hidden]
+        vals = [None, rid, name, desc, kind, quality, tags, timing, hold, etype, eval_, eparam, "", base_weight, hidden]
         for c, v in enumerate(vals, start=1):
             ws.cell(row=row, column=c, value=v)
         row += 1

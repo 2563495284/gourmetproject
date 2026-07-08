@@ -1,0 +1,481 @@
+fileFormatVersion: 2
+guid: 8a0ae6117f49344cca37f0ed7abf7bf9
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -3985241640766650929
+    second: gold_on_event_0
+  - first:
+      213: 7142221517277957833
+    second: gold_on_event_1
+  - first:
+      213: -9156289835842856842
+    second: gold_on_event_2
+  - first:
+      213: 3360920302458988985
+    second: gold_on_event_3
+  - first:
+      213: -5576866999001821534
+    second: gold_on_event_4
+  - first:
+      213: -593362260898834866
+    second: gold_on_event_5
+  - first:
+      213: 8165938833864855362
+    second: gold_on_event_6
+  - first:
+      213: 2041402876651612024
+    second: gold_on_event_7
+  - first:
+      213: -8156573381940144979
+    second: gold_on_event_8
+  - first:
+      213: -1961004516474495235
+    second: gold_on_event_9
+  - first:
+      213: 4281766540667204336
+    second: gold_on_event_10
+  - first:
+      213: 3532419076423127428
+    second: gold_on_event_11
+  - first:
+      213: -2128611721881255098
+    second: gold_on_event_12
+  - first:
+      213: 1999856359743410819
+    second: gold_on_event_13
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 1
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: gold_on_event_0
+      rect:
+        serializedVersion: 2
+        x: 131
+        y: 394
+        width: 24
+        height: 34
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fc5420aa7d391b8c0800000000000000
+      internalID: -3985241640766650929
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: gold_on_event_1
+      rect:
+        serializedVersion: 2
+        x: 197
+        y: 414
+        width: 24
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9ce018cf0a44e1360800000000000000
+      internalID: 7142221517277957833
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: gold_on_event_2
+      rect:
+        serializedVersion: 2
+        x: 258
+        y: 428
+        width: 24
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 678111a08e25ee080800000000000000
+      internalID: -9156289835842856842
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: gold_on_event_3
+      rect:
+        serializedVersion: 2
+        x: 310
+        y: 416
+        width: 29
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9b9677a453364ae20800000000000000
+      internalID: 3360920302458988985
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: gold_on_event_4
+      rect:
+        serializedVersion: 2
+        x: 350
+        y: 410
+        width: 23
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2aec5ec030dfa92b0800000000000000
+      internalID: -5576866999001821534
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: gold_on_event_5
+      rect:
+        serializedVersion: 2
+        x: 96
+        y: 64
+        width: 315
+        height: 342
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e469000ea24f3c7f0800000000000000
+      internalID: -593362260898834866
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: gold_on_event_6
+      rect:
+        serializedVersion: 2
+        x: 163
+        y: 397
+        width: 30
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 24f051aba1e335170800000000000000
+      internalID: 8165938833864855362
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: gold_on_event_7
+      rect:
+        serializedVersion: 2
+        x: 222
+        y: 391
+        width: 26
+        height: 34
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 877a74ab915845c10800000000000000
+      internalID: 2041402876651612024
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: gold_on_event_8
+      rect:
+        serializedVersion: 2
+        x: 243
+        y: 364
+        width: 60
+        height: 55
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: da41d0979b70ece80800000000000000
+      internalID: -8156573381940144979
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: gold_on_event_9
+      rect:
+        serializedVersion: 2
+        x: 78
+        y: 355
+        width: 25
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dfed99838cc19c4e0800000000000000
+      internalID: -1961004516474495235
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: gold_on_event_10
+      rect:
+        serializedVersion: 2
+        x: 402
+        y: 351
+        width: 25
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0f23f93abf3eb6b30800000000000000
+      internalID: 4281766540667204336
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: gold_on_event_11
+      rect:
+        serializedVersion: 2
+        x: 88
+        y: 307
+        width: 23
+        height: 25
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 48193083f6ca50130800000000000000
+      internalID: 3532419076423127428
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: gold_on_event_12
+      rect:
+        serializedVersion: 2
+        x: 388
+        y: 305
+        width: 25
+        height: 25
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6430984bae6a572e0800000000000000
+      internalID: -2128611721881255098
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: gold_on_event_13
+      rect:
+        serializedVersion: 2
+        x: 75
+        y: 279
+        width: 31
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 382df4473cae0cb10800000000000000
+      internalID: 1999856359743410819
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      gold_on_event_0: -3985241640766650929
+      gold_on_event_1: 7142221517277957833
+      gold_on_event_10: 4281766540667204336
+      gold_on_event_11: 3532419076423127428
+      gold_on_event_12: -2128611721881255098
+      gold_on_event_13: 1999856359743410819
+      gold_on_event_2: -9156289835842856842
+      gold_on_event_3: 3360920302458988985
+      gold_on_event_4: -5576866999001821534
+      gold_on_event_5: -593362260898834866
+      gold_on_event_6: 8165938833864855362
+      gold_on_event_7: 2041402876651612024
+      gold_on_event_8: -8156573381940144979
+      gold_on_event_9: -1961004516474495235
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

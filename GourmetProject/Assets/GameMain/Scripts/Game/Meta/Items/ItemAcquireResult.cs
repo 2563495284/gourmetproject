@@ -5,7 +5,6 @@ namespace GourmetProject.Game.Meta
     {
         None = 0,
         Added = 1,
-        Upgraded = 2,
         Stacked = 3,
         ConvertedToGold = 4,
     }
@@ -43,8 +42,6 @@ namespace GourmetProject.Game.Meta
             {
                 case ItemAcquireOutcome.Added:
                     return $"{prefix}道具「{ItemName}」";
-                case ItemAcquireOutcome.Upgraded:
-                    return $"{prefix}道具「{ItemName}」升级至 Lv.{Level}";
                 case ItemAcquireOutcome.Stacked:
                     return $"{prefix}主动道具「{ItemName}」+1（持有 {Count}）";
                 case ItemAcquireOutcome.ConvertedToGold:

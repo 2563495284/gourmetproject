@@ -1,12 +1,9 @@
 using System;
-using GourmetProject.Game.Adapter;
-using GourmetProject.Game.Meta;
-
 namespace GourmetProject.Game.Run
 {
     /// <summary>
     /// 单次运行中的「一份」道具持有条目。静态定义仍来自 cfg.Item，这里只保存会随运行变化的数据。
-    /// 道具生命周期只有「存在 / 不存在」：被动道具同一 id 唯一一条（用 Level 表示升级）；
+    /// 道具生命周期只有「存在 / 不存在」：被动道具同一 id 唯一一条且不升级；
     /// 主动道具同一 id 可以有多条，每条代表一份独立实例，使用后整条移除（不存在数量消耗的中间态）。
     /// </summary>
     [Serializable]
@@ -15,17 +12,13 @@ namespace GourmetProject.Game.Run
         public RunItemState(string itemId, int level)
         {
             ItemId = itemId;
-            Level = Math.Max(1, level);
+            Level = 1;
         }
 
         public string ItemId { get; }
 
-        public int Level { get; private set; }
-
-        public void IncreaseLevel(int maxLevel)
-        {
-            Level = Math.Min(Math.Max(1, maxLevel), Level + 1);
-        }
+        /// <summary>旧存档兼容字段。被动道具已无等级设计，新状态恒为 1。</summary>
+        public int Level { get; }
 
         public RunItemSaveData ToSaveData()
         {

@@ -140,7 +140,7 @@ namespace GourmetProject.Game.Meta
                 var weights = new List<float>(candidates.Count);
                 foreach (cfg.Item item in candidates)
                 {
-                    weights.Add(GetItemWeight(context.Run, item, qualityWeights, hidden, pool.DistanceFloor));
+                    weights.Add(GetItemWeight(item, qualityWeights, hidden, pool.DistanceFloor));
                 }
 
                 int index = PickWeightedOrUniform(context, weights, candidates.Count);
@@ -300,19 +300,13 @@ namespace GourmetProject.Game.Meta
             return total > 0f ? context.Rng.WeightedPickIndex(weights) : context.Rng.Range(0, count);
         }
 
-        private static float GetItemWeight(GameRun run, cfg.Item item, Dictionary<cfg.ItemQuality, float> qualityWeights, int hidden, int distanceFloor)
+        private static float GetItemWeight(cfg.Item item, Dictionary<cfg.ItemQuality, float> qualityWeights, int hidden, int distanceFloor)
         {
-            float weight = item.LevelWeightParams.BaseWeight > 0f ? item.LevelWeightParams.BaseWeight : 1f;
+            float weight = item.BaseWeight > 0f ? item.BaseWeight : 1f;
             weight = HiddenScoreWeight(weight, HiddenMean(item), hidden, distanceFloor);
             if (qualityWeights.Count > 0)
             {
                 weight *= qualityWeights.TryGetValue(item.Quality, out float qualityWeight) ? Math.Max(0f, qualityWeight) : 0f;
-            }
-
-            RunItemState state = run.GetItemState(item.Id);
-            if (item.Kind == cfg.ItemKind.Passive && state != null)
-            {
-                weight *= item.LevelWeightParams.NextLevelWeightMultiplier > 0f ? item.LevelWeightParams.NextLevelWeightMultiplier : 1f;
             }
 
             return weight;

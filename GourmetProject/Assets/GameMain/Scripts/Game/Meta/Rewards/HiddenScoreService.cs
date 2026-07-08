@@ -253,7 +253,7 @@ namespace GourmetProject.Game.Meta
                 if (string.Equals(item.EffectType, "HiddenScoreBonus", StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(item.EffectType, "RewardHiddenBonus", StringComparison.OrdinalIgnoreCase))
                 {
-                    total += ItemPoolService.GetScaledEffectValue(item, state);
+                    total += ItemPoolService.GetEffectValue(item);
                 }
             }
 
