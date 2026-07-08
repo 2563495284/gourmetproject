@@ -27,10 +27,10 @@ namespace GourmetProject.Game.UI.Hud
         {
             EnsureRefs();
 
-            if (_background != null)
-            {
-                _background.color = qualityColor;
-            }
+            // if (_background != null)
+            // {
+            //     _background.color = qualityColor;
+            // }
 
             if (_icon != null)
             {
