@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DG.Tweening;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game;
 using GourmetProject.Game.Adapter;
@@ -36,6 +37,13 @@ namespace GourmetProject.Game.UI.Meta
         [SerializeField] private Button _menuButton;
         [SerializeField] private RectTransform _rewardListContent;
         [SerializeField] private RewardChoiceRowView _rewardRowTemplate;
+        [Header("Reward Scrollbar")]
+        [SerializeField] private ScrollRect _rewardScrollRect;
+        [SerializeField] private Scrollbar _rewardScrollbar;
+        [Min(0f)]
+        [SerializeField] private float _rewardScrollbarIdleSeconds = 0.8f;
+        [Min(0f)]
+        [SerializeField] private float _rewardScrollbarFadeSeconds = 0.2f;
 
         private GameRun _run;
         private RewardOffer _offer;
@@ -43,6 +51,10 @@ namespace GourmetProject.Game.UI.Meta
         private string _rewardKey;
         private int _lastTotal;
         private int _lastTarget;
+        private CanvasGroup _rewardScrollbarGroup;
+        private float _lastRewardScrollTime;
+        private bool _rewardScrollListenerAttached;
+        private bool _rewardScrollbarVisible;
 
         protected override void OnInit(object userData)
         {
@@ -50,11 +62,14 @@ namespace GourmetProject.Game.UI.Meta
             _continueButton.onClick.AddListener(OnContinue);
             _endlessButton.onClick.AddListener(OnContinue);
             _menuButton.onClick.AddListener(OnReturnMenu);
+            ConfigureRewardScrollbar();
         }
 
         protected override void OnOpen(object userData)
         {
             base.OnOpen(userData);
+            ConfigureRewardScrollbar();
+            HideRewardScrollbar(immediate: true);
 
             _run = GameRunContext.Current;
             if (_run == null)
@@ -82,6 +97,31 @@ namespace GourmetProject.Game.UI.Meta
             _lastTarget = target;
 
             RefreshOffer();
+        }
+
+        protected override void OnClose(bool isShutdown, object userData)
+        {
+            if (_rewardScrollbarGroup != null)
+            {
+                DOTween.Kill(_rewardScrollbarGroup);
+                HideRewardScrollbar(immediate: true);
+            }
+
+            base.OnClose(isShutdown, userData);
+        }
+
+        private void Update()
+        {
+            if (!_rewardScrollbarVisible || _rewardScrollbarGroup == null)
+            {
+                return;
+            }
+
+            float idleSeconds = Mathf.Max(0f, _rewardScrollbarIdleSeconds);
+            if (Time.unscaledTime - _lastRewardScrollTime >= idleSeconds)
+            {
+                HideRewardScrollbar(immediate: false);
+            }
         }
 
         private void RefreshOffer()
@@ -331,6 +371,83 @@ namespace GourmetProject.Game.UI.Meta
 
             AddChoiceRows("主奖励", _offer.MainChoices, extra: false);
             AddChoiceRows("额外奖励", _offer.ExtraChoices, extra: true);
+            HideRewardScrollbar(immediate: true);
+        }
+
+        private void ConfigureRewardScrollbar()
+        {
+            if (_rewardScrollRect == null && _rewardListContent != null)
+            {
+                _rewardScrollRect = _rewardListContent.GetComponentInParent<ScrollRect>(true);
+            }
+
+            if (_rewardScrollRect == null)
+            {
+                return;
+            }
+
+            if (_rewardScrollbar == null)
+            {
+                _rewardScrollbar = _rewardScrollRect.verticalScrollbar;
+            }
+
+            _rewardScrollRect.vertical = true;
+            _rewardScrollRect.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.Permanent;
+
+            if (!_rewardScrollListenerAttached)
+            {
+                _rewardScrollRect.onValueChanged.AddListener(OnRewardScrollChanged);
+                _rewardScrollListenerAttached = true;
+            }
+
+            if (_rewardScrollbar == null)
+            {
+                return;
+            }
+
+            _rewardScrollbar.gameObject.SetActive(true);
+            _rewardScrollbarGroup = _rewardScrollbar.GetComponent<CanvasGroup>();
+            if (_rewardScrollbarGroup == null)
+            {
+                _rewardScrollbarGroup = _rewardScrollbar.gameObject.AddComponent<CanvasGroup>();
+            }
+        }
+
+        private void OnRewardScrollChanged(Vector2 _)
+        {
+            ShowRewardScrollbar();
+        }
+
+        private void ShowRewardScrollbar()
+        {
+            ConfigureRewardScrollbar();
+            if (_rewardScrollbarGroup == null)
+            {
+                return;
+            }
+
+            _lastRewardScrollTime = Time.unscaledTime;
+            bool wasVisible = _rewardScrollbarVisible;
+            _rewardScrollbarVisible = true;
+            _rewardScrollbarGroup.interactable = true;
+            _rewardScrollbarGroup.blocksRaycasts = true;
+            if (!wasVisible)
+            {
+                UITransition.Fade(_rewardScrollbarGroup, 1f, Mathf.Max(0f, _rewardScrollbarFadeSeconds));
+            }
+        }
+
+        private void HideRewardScrollbar(bool immediate)
+        {
+            if (_rewardScrollbarGroup == null)
+            {
+                return;
+            }
+
+            _rewardScrollbarVisible = false;
+            _rewardScrollbarGroup.interactable = false;
+            _rewardScrollbarGroup.blocksRaycasts = false;
+            UITransition.Fade(_rewardScrollbarGroup, 0f, immediate ? 0f : Mathf.Max(0f, _rewardScrollbarFadeSeconds));
         }
 
         private void AddFixedGoldRow()
