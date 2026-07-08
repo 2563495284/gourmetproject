@@ -96,16 +96,7 @@ namespace GourmetProject.Game.Meta
                 return !run.HasItem(item.Id);
             }
 
-            // 主动道具只看「持有上限」（当前持有几份实例）：达到上限则不再随机出，用掉一份腾出名额后又能被抽到。
-            // 不再用「累计获得上限」，因为那会把已用掉的也算进去、与「只有存不存在」的模型冲突。
-            int count = run.GetItemCount(item.Id);
-            int holdLimit = GetActiveHoldLimit(item);
-            return holdLimit <= 0 || count < holdLimit;
-        }
-
-        public static int GetActiveHoldLimit(cfg.Item item)
-        {
-            return item != null && item.Kind == cfg.ItemKind.Active ? item.HoldLimit : 1;
+            return true;
         }
 
         public static float GetEffectValue(cfg.Item item)

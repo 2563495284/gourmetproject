@@ -58,7 +58,7 @@ namespace GourmetProject.Game.Meta
                 lines.Add(extraText);
             }
 
-            return "过关奖励：" + string.Join("；", lines);
+            return "过关奖励：" + string.Join("。", lines);
         }
 
         public static string ApplyBaseGold(GameRun run, RewardOffer offer)

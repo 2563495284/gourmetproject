@@ -24,7 +24,6 @@ public sealed partial class Item : Luban.BeanBase
         { if(!_buf["quality"].IsNumber) { throw new SerializationException(); }  Quality = (ItemQuality)_buf["quality"].AsInt; }
         { if(!_buf["specialTags"].IsString) { throw new SerializationException(); }  SpecialTags = _buf["specialTags"]; }
         { if(!_buf["triggerTiming"].IsNumber) { throw new SerializationException(); }  TriggerTiming = (ItemTriggerTiming)_buf["triggerTiming"].AsInt; }
-        { if(!_buf["holdLimit"].IsNumber) { throw new SerializationException(); }  HoldLimit = _buf["holdLimit"]; }
         { if(!_buf["effectType"].IsString) { throw new SerializationException(); }  EffectType = _buf["effectType"]; }
         { if(!_buf["effectValue"].IsNumber) { throw new SerializationException(); }  EffectValue = _buf["effectValue"]; }
         { if(!_buf["effectParam"].IsString) { throw new SerializationException(); }  EffectParam = _buf["effectParam"]; }
@@ -66,10 +65,6 @@ public sealed partial class Item : Luban.BeanBase
     /// </summary>
     public readonly ItemTriggerTiming TriggerTiming;
     /// <summary>
-    /// 持有数量限制
-    /// </summary>
-    public readonly int HoldLimit;
-    /// <summary>
     /// 效果类型
     /// </summary>
     public readonly string EffectType;
@@ -108,7 +103,6 @@ public sealed partial class Item : Luban.BeanBase
         + "quality:" + Quality + ","
         + "specialTags:" + SpecialTags + ","
         + "triggerTiming:" + TriggerTiming + ","
-        + "holdLimit:" + HoldLimit + ","
         + "effectType:" + EffectType + ","
         + "effectValue:" + EffectValue + ","
         + "effectParam:" + EffectParam + ","

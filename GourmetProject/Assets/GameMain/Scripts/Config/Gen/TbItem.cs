@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 道具：被动常驻/主动可触发。specialTags 用 | 分隔，空串=无。holdLimit&lt;=0 表示主动道具无持有上限。
+/// 道具：被动常驻/主动可触发。specialTags 用 | 分隔，空串=无。
 /// </summary>
 public partial class TbItem
 {
