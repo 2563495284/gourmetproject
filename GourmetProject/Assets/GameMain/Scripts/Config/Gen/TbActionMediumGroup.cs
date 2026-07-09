@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 中组：含多个小组(见 medium_member)，被大组按 weight 选中。
+/// 中组：内嵌 smallGroupEntries(list,ActionSmallGroupEntry) 按权重选一个小组；中组自身 weight 供大组挑选。
 /// </summary>
 public partial class TbActionMediumGroup
 {

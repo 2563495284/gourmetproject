@@ -139,29 +139,17 @@ public partial class Tables
     /// </summary>
     public TbEventOption TbEventOption {get; }
     /// <summary>
-    /// 小组：固定成员（成员见 small_member），即本次 n 选一。
+    /// 小组：内嵌 actionIds(list,string)，固定成员即本次 n 选一候选。
     /// </summary>
     public TbActionSmallGroup TbActionSmallGroup {get; }
     /// <summary>
-    /// 小组成员：小组内固定行动。
-    /// </summary>
-    public TbActionSmallMember TbActionSmallMember {get; }
-    /// <summary>
-    /// 中组：含多个小组(见 medium_member)，被大组按 weight 选中。
+    /// 中组：内嵌 smallGroupEntries(list,ActionSmallGroupEntry) 按权重选一个小组；中组自身 weight 供大组挑选。
     /// </summary>
     public TbActionMediumGroup TbActionMediumGroup {get; }
     /// <summary>
-    /// 中组成员：中组内按 weight 选一个小组。
-    /// </summary>
-    public TbActionMediumMember TbActionMediumMember {get; }
-    /// <summary>
-    /// 行动大组：按保底权重、日程规则与前置条件参与随机，不做周筛选。
+    /// 行动大组：内嵌 mediumGroupIds(list,string)，按保底权重与日程规则参与随机。
     /// </summary>
     public TbActionLargeGroup TbActionLargeGroup {get; }
-    /// <summary>
-    /// 大组成员：大组内按 中组.weight 选一个中组。
-    /// </summary>
-    public TbActionLargeMember TbActionLargeMember {get; }
     /// <summary>
     /// 全局基础配置：整局初始金币、利息与食物调整等基础数值。
     /// </summary>
@@ -201,11 +189,8 @@ public partial class Tables
         TbEvent = new TbEvent(loader("tbevent"));
         TbEventOption = new TbEventOption(loader("tbeventoption"));
         TbActionSmallGroup = new TbActionSmallGroup(loader("tbactionsmallgroup"));
-        TbActionSmallMember = new TbActionSmallMember(loader("tbactionsmallmember"));
         TbActionMediumGroup = new TbActionMediumGroup(loader("tbactionmediumgroup"));
-        TbActionMediumMember = new TbActionMediumMember(loader("tbactionmediummember"));
         TbActionLargeGroup = new TbActionLargeGroup(loader("tbactionlargegroup"));
-        TbActionLargeMember = new TbActionLargeMember(loader("tbactionlargemember"));
         TbGameBase = new TbGameBase(loader("tbgamebase"));
         ResolveRef();
     }
@@ -244,11 +229,8 @@ public partial class Tables
         TbEvent.ResolveRef(this);
         TbEventOption.ResolveRef(this);
         TbActionSmallGroup.ResolveRef(this);
-        TbActionSmallMember.ResolveRef(this);
         TbActionMediumGroup.ResolveRef(this);
-        TbActionMediumMember.ResolveRef(this);
         TbActionLargeGroup.ResolveRef(this);
-        TbActionLargeMember.ResolveRef(this);
         TbGameBase.ResolveRef(this);
     }
 }

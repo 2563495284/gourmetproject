@@ -13,34 +13,32 @@ using Luban.SimpleJSON;
 
 namespace cfg
 {
-public sealed partial class ActionSmallMember : Luban.BeanBase
+/// <summary>
+/// 行动中组的小组候选条目：单元格写 smallGroupId,weight
+/// </summary>
+public sealed partial class ActionSmallGroupEntry : Luban.BeanBase
 {
-    public ActionSmallMember(JSONNode _buf) 
+    public ActionSmallGroupEntry(JSONNode _buf) 
     {
-        { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
         { if(!_buf["smallGroupId"].IsString) { throw new SerializationException(); }  SmallGroupId = _buf["smallGroupId"]; }
-        { if(!_buf["actionId"].IsString) { throw new SerializationException(); }  ActionId = _buf["actionId"]; }
+        { if(!_buf["weight"].IsNumber) { throw new SerializationException(); }  Weight = _buf["weight"]; }
     }
 
-    public static ActionSmallMember DeserializeActionSmallMember(JSONNode _buf)
+    public static ActionSmallGroupEntry DeserializeActionSmallGroupEntry(JSONNode _buf)
     {
-        return new ActionSmallMember(_buf);
+        return new ActionSmallGroupEntry(_buf);
     }
 
     /// <summary>
-    /// 成员ID
-    /// </summary>
-    public readonly string Id;
-    /// <summary>
-    /// 所属小组ID→small_group.id
+    /// 小组ID→small_group.id
     /// </summary>
     public readonly string SmallGroupId;
     /// <summary>
-    /// 行动ID→action.id
+    /// 中组内选该小组的权重
     /// </summary>
-    public readonly string ActionId;
+    public readonly float Weight;
    
-    public const int __ID__ = -273451445;
+    public const int __ID__ = -62782364;
     public override int GetTypeId() => __ID__;
 
     public  void ResolveRef(Tables tables)
@@ -50,9 +48,8 @@ public sealed partial class ActionSmallMember : Luban.BeanBase
     public override string ToString()
     {
         return "{ "
-        + "id:" + Id + ","
         + "smallGroupId:" + SmallGroupId + ","
-        + "actionId:" + ActionId + ","
+        + "weight:" + Weight + ","
         + "}";
     }
 }

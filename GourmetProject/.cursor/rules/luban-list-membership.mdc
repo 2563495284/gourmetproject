@@ -1,0 +1,26 @@
+---
+description: Luban 层级配置表用列表字段表达从属关系
+globs: GameConfig/**
+alwaysApply: false
+---
+
+# Luban 层级列表关系
+
+设计或重构 Luban 配置表时，父级分组与子级集合的关系优先写在父级表的列表字段中，不要为纯从属关系额外创建 `*_member` 表。
+
+- `large_group` 应包含一个列表字段，用来记录该大组下有哪些 `medium_group`。
+- `medium_group` 应包含一个列表字段，用来记录该中组下有哪些成员。
+- `small_group` 应包含一个列表字段，用来记录该小组下有哪些 `action`。
+- 只有当关系本身有额外字段、独立生命周期、跨多个父级复用，或需要单独查询/排序/解锁规则时，才考虑独立关系表。
+- 已存在的 `large_member`、`medium_member`、`small_member` 这类纯关系表在重构时应合并回对应 group 表。
+
+```text
+BAD: large_group + large_member(group_id, medium_group_id)
+GOOD: large_group.medium_groups = [medium_group_id, ...]
+
+BAD: medium_group + medium_member(group_id, member_id)
+GOOD: medium_group.members = [member_id, ...]
+
+BAD: small_group + small_member(group_id, action_id)
+GOOD: small_group.action_ids = [action_id, ...]
+```

@@ -19,9 +19,9 @@ public sealed partial class ActionLargeGroup : Luban.BeanBase
     {
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
         { if(!_buf["name"].IsString) { throw new SerializationException(); }  Name = _buf["name"]; }
-        { if(!_buf["preconditions"].IsString) { throw new SerializationException(); }  Preconditions = _buf["preconditions"]; }
         { if(!_buf["ruleIds"].IsString) { throw new SerializationException(); }  RuleIds = _buf["ruleIds"]; }
         { var __json0 = _buf["fallbackWeights"]; if(!__json0.IsArray) { throw new SerializationException(); } FallbackWeights = new System.Collections.Generic.List<float>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { float __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  FallbackWeights.Add(__v0); }   }
+        { var __json0 = _buf["mediumGroupIds"]; if(!__json0.IsArray) { throw new SerializationException(); } MediumGroupIds = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  MediumGroupIds.Add(__v0); }   }
     }
 
     public static ActionLargeGroup DeserializeActionLargeGroup(JSONNode _buf)
@@ -38,10 +38,6 @@ public sealed partial class ActionLargeGroup : Luban.BeanBase
     /// </summary>
     public readonly string Name;
     /// <summary>
-    /// 大组前置条件
-    /// </summary>
-    public readonly string Preconditions;
-    /// <summary>
     /// 参与的日程规则ID(逗号分隔),空=仅保底
     /// </summary>
     public readonly string RuleIds;
@@ -49,6 +45,10 @@ public sealed partial class ActionLargeGroup : Luban.BeanBase
     /// 保底加权随机权重列表(按当前周-1取,越界取最后一个)
     /// </summary>
     public readonly System.Collections.Generic.List<float> FallbackWeights;
+    /// <summary>
+    /// 包含的中组ID列表→medium_group.id
+    /// </summary>
+    public readonly System.Collections.Generic.List<string> MediumGroupIds;
    
     public const int __ID__ = 1904667386;
     public override int GetTypeId() => __ID__;
@@ -62,9 +62,9 @@ public sealed partial class ActionLargeGroup : Luban.BeanBase
         return "{ "
         + "id:" + Id + ","
         + "name:" + Name + ","
-        + "preconditions:" + Preconditions + ","
         + "ruleIds:" + RuleIds + ","
         + "fallbackWeights:" + Luban.StringUtil.CollectionToString(FallbackWeights) + ","
+        + "mediumGroupIds:" + Luban.StringUtil.CollectionToString(MediumGroupIds) + ","
         + "}";
     }
 }

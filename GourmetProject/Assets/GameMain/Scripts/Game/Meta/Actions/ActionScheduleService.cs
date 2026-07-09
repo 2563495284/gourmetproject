@@ -10,7 +10,7 @@ namespace GourmetProject.Game.Meta
     /// 整局行动组序列（大组）与本次 n 选一（大组→中组→小组）生成。
     /// - 大组间：日程规则 <see cref="cfg.ActionScheduleRule"/> 强制窗口 + 大组 fallbackWeights[周-1] 保底加权。
     /// - 大组→中组：按 <see cref="cfg.ActionMediumGroup.Weight"/> 选 1 个中组。
-    /// - 中组→小组：按 <see cref="cfg.ActionMediumMember.Weight"/> 选 1 个小组。
+    /// - 中组→小组：按 <see cref="cfg.ActionSmallGroupEntry.Weight"/> 选 1 个小组。
     /// - 小组：固定成员，经可用性过滤后即本次 n 选一。
     /// </summary>
     public static class ActionScheduleService
@@ -39,19 +39,14 @@ namespace GourmetProject.Game.Meta
             }
 
             int limit = Math.Min(count, ActionRandomService.MaxChoiceCount);
-            foreach (cfg.ActionSmallMember member in tables.TbActionSmallMember.DataList)
+            foreach (string actionId in small.ActionIds)
             {
                 if (result.Count >= limit)
                 {
                     break;
                 }
 
-                if (member.SmallGroupId != small.Id)
-                {
-                    continue;
-                }
-
-                cfg.GameAction action = tables.TbAction.GetOrDefault(member.ActionId);
+                cfg.GameAction action = tables.TbAction.GetOrDefault(actionId);
                 if (!ActionRandomService.IsAvailable(run, action))
                 {
                     continue;
@@ -67,14 +62,9 @@ namespace GourmetProject.Game.Meta
         private static cfg.ActionMediumGroup PickMedium(cfg.Tables tables, cfg.ActionLargeGroup large, IRandomStream rng)
         {
             var mediums = new List<cfg.ActionMediumGroup>();
-            foreach (cfg.ActionLargeMember member in tables.TbActionLargeMember.DataList)
+            foreach (string mediumGroupId in large.MediumGroupIds)
             {
-                if (member.LargeGroupId != large.Id)
-                {
-                    continue;
-                }
-
-                cfg.ActionMediumGroup medium = tables.TbActionMediumGroup.GetOrDefault(member.MediumGroupId);
+                cfg.ActionMediumGroup medium = tables.TbActionMediumGroup.GetOrDefault(mediumGroupId);
                 if (medium != null)
                 {
                     mediums.Add(medium);
@@ -99,18 +89,13 @@ namespace GourmetProject.Game.Meta
         {
             var smalls = new List<cfg.ActionSmallGroup>();
             var weights = new List<float>();
-            foreach (cfg.ActionMediumMember member in tables.TbActionMediumMember.DataList)
+            foreach (cfg.ActionSmallGroupEntry entry in medium.SmallGroupEntries)
             {
-                if (member.MediumGroupId != medium.Id)
-                {
-                    continue;
-                }
-
-                cfg.ActionSmallGroup small = tables.TbActionSmallGroup.GetOrDefault(member.SmallGroupId);
+                cfg.ActionSmallGroup small = tables.TbActionSmallGroup.GetOrDefault(entry.SmallGroupId);
                 if (small != null)
                 {
                     smalls.Add(small);
-                    weights.Add(member.Weight > 0f ? member.Weight : 1f);
+                    weights.Add(entry.Weight > 0f ? entry.Weight : 1f);
                 }
             }
 
@@ -266,11 +251,6 @@ namespace GourmetProject.Game.Meta
             if (FallbackWeight(group, run.WeekIndex) <= 0f && !ContainsAnyRule(group))
             {
                 // 纯保底权重为 0 且不参与任何规则的大组，永不进入序列。
-                return false;
-            }
-
-            if (!PreconditionEvaluator.IsSatisfied(run, group.Preconditions))
-            {
                 return false;
             }
 

@@ -1,30 +1,62 @@
 [
   {
     "id": "sg_food_a",
-    "name": "美食A"
+    "name": "美食A",
+    "actionIds": [
+      "act_food_gold",
+      "act_food_dish",
+      "act_food_passive"
+    ]
   },
   {
     "id": "sg_food_b",
-    "name": "美食B"
+    "name": "美食B",
+    "actionIds": [
+      "act_food_fragment",
+      "act_food_active",
+      "act_food_dish"
+    ]
   },
   {
     "id": "sg_food_hard_a",
-    "name": "硬菜A"
+    "name": "硬菜A",
+    "actionIds": [
+      "act_food_hard_gold",
+      "act_food_hard_dish",
+      "act_food_hard_passive"
+    ]
   },
   {
     "id": "sg_food_hard_b",
-    "name": "硬菜B"
+    "name": "硬菜B",
+    "actionIds": [
+      "act_food_hard_fragment",
+      "act_food_hard_active",
+      "act_food_hard_dish"
+    ]
   },
   {
     "id": "sg_event",
-    "name": "事件"
+    "name": "事件",
+    "actionIds": [
+      "act_event",
+      "act_food_gold",
+      "act_food_dish"
+    ]
   },
   {
     "id": "sg_reward",
-    "name": "奖励"
+    "name": "奖励",
+    "actionIds": [
+      "act_reward",
+      "act_shop"
+    ]
   },
   {
     "id": "sg_debug",
-    "name": "调试商店"
+    "name": "调试商店",
+    "actionIds": [
+      "act_shop"
+    ]
   }
 ]

@@ -20,6 +20,7 @@ public sealed partial class ActionMediumGroup : Luban.BeanBase
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
         { if(!_buf["name"].IsString) { throw new SerializationException(); }  Name = _buf["name"]; }
         { if(!_buf["weight"].IsNumber) { throw new SerializationException(); }  Weight = _buf["weight"]; }
+        { var __json0 = _buf["smallGroupEntries"]; if(!__json0.IsArray) { throw new SerializationException(); } SmallGroupEntries = new System.Collections.Generic.List<ActionSmallGroupEntry>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { ActionSmallGroupEntry __v0;  { if(!__e0.IsObject) { throw new SerializationException(); }  __v0 = global::cfg.ActionSmallGroupEntry.DeserializeActionSmallGroupEntry(__e0);  }  SmallGroupEntries.Add(__v0); }   }
     }
 
     public static ActionMediumGroup DeserializeActionMediumGroup(JSONNode _buf)
@@ -39,12 +40,17 @@ public sealed partial class ActionMediumGroup : Luban.BeanBase
     /// 被大组选中的权重
     /// </summary>
     public readonly float Weight;
+    /// <summary>
+    /// 包含的小组及权重，格式 smallGroupId,weight
+    /// </summary>
+    public readonly System.Collections.Generic.List<ActionSmallGroupEntry> SmallGroupEntries;
    
     public const int __ID__ = 1715758036;
     public override int GetTypeId() => __ID__;
 
     public  void ResolveRef(Tables tables)
     {
+        foreach (var _e in SmallGroupEntries) { _e?.ResolveRef(tables); }
     }
 
     public override string ToString()
@@ -53,6 +59,7 @@ public sealed partial class ActionMediumGroup : Luban.BeanBase
         + "id:" + Id + ","
         + "name:" + Name + ","
         + "weight:" + Weight + ","
+        + "smallGroupEntries:" + Luban.StringUtil.CollectionToString(SmallGroupEntries) + ","
         + "}";
     }
 }
