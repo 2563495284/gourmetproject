@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 大组：含多个中组(见 large_member)；ruleIds 参与日程规则，fallbackWeights 保底随机。
+/// 行动大组：按保底权重、日程规则与前置条件参与随机，不做周筛选。
 /// </summary>
 public partial class TbActionLargeGroup
 {

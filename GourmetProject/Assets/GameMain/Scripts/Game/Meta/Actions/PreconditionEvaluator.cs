@@ -6,7 +6,6 @@ namespace GourmetProject.Game.Meta
     {
         int Gold { get; }
         int WeekIndex { get; }
-        bool IsBossWeek { get; }
         bool HasItem(string itemId);
     }
 
@@ -17,7 +16,6 @@ namespace GourmetProject.Game.Meta
     ///   maxGold:N   当前金币 &lt;= N
     ///   minWeek:N   当前周 &gt;= N
     ///   hasItem:id  持有指定道具
-    ///   bossWeek    当前为 Boss 周
     /// 空串或未知子条件视为满足（宽松默认，避免误杀配置）。
     /// </summary>
     public static class PreconditionEvaluator
@@ -43,11 +41,6 @@ namespace GourmetProject.Game.Meta
 
         private static bool EvaluateClause(IPreconditionContext ctx, string clause)
         {
-            if (clause == "bossWeek")
-            {
-                return ctx.IsBossWeek;
-            }
-
             int colon = clause.IndexOf(':');
             if (colon < 0)
             {

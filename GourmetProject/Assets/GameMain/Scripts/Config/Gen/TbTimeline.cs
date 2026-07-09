@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 行动轴库：按当前 Week 的 isBoss 与 weekFilter（空=任意/normal/boss/逗号周号）筛选后按 weight 随机；baseLengthDays 为轴基础长度。
+/// 行动轴库：定义行动轴模板与基础长度；具体每周候选池和权重由 Week.timelineIds/timelineWeights 决定。
 /// </summary>
 public partial class TbTimeline
 {

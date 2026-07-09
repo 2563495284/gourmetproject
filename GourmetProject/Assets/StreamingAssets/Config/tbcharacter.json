@@ -8,7 +8,7 @@
     "initialFragmentId": "gut_4x4",
     "maxStomachWidth": 8,
     "maxStomachHeight": 8,
-    "timelinePool": "tl_normal,tl_boss",
+    "timelinePool": "tl_normal",
     "startItems": [
       "item_big_plate"
     ]
@@ -22,7 +22,7 @@
     "initialFragmentId": "gut_4x4",
     "maxStomachWidth": 8,
     "maxStomachHeight": 8,
-    "timelinePool": "tl_busy,tl_boss",
+    "timelinePool": "tl_busy",
     "startItems": [
       "item_chef_knife"
     ]

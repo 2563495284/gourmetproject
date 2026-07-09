@@ -269,11 +269,6 @@ namespace GourmetProject.Game.Meta
                 return false;
             }
 
-            if (!TimelineService.MatchesWeek(group.WeekFilter, run.WeekIndex, run.IsBossWeek))
-            {
-                return false;
-            }
-
             if (!PreconditionEvaluator.IsSatisfied(run, group.Preconditions))
             {
                 return false;

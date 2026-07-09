@@ -2,7 +2,6 @@
   {
     "id": "lg_food_normal",
     "name": "普通美食大组",
-    "weekFilter": "normal",
     "preconditions": "",
     "ruleIds": "",
     "fallbackWeights": [
@@ -12,7 +11,6 @@
   {
     "id": "lg_food_hard",
     "name": "困难美食大组",
-    "weekFilter": "",
     "preconditions": "",
     "ruleIds": "",
     "fallbackWeights": [
@@ -22,7 +20,6 @@
   {
     "id": "lg_event",
     "name": "事件大组",
-    "weekFilter": "normal",
     "preconditions": "",
     "ruleIds": "rule_event_opening",
     "fallbackWeights": [
@@ -32,7 +29,6 @@
   {
     "id": "lg_reward",
     "name": "奖励大组",
-    "weekFilter": "",
     "preconditions": "",
     "ruleIds": "rule_reward_early,rule_reward_mid",
     "fallbackWeights": [
@@ -42,7 +38,6 @@
   {
     "id": "lg_debug",
     "name": "调试大组",
-    "weekFilter": "normal",
     "preconditions": "",
     "ruleIds": "rule_debug_first",
     "fallbackWeights": [

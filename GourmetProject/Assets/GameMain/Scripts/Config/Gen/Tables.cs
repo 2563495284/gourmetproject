@@ -63,7 +63,7 @@ public partial class Tables
     /// </summary>
     public TbRewardPool TbRewardPool {get; }
     /// <summary>
-    /// 周/关卡配置：定义每周的目标分曲线、默认奖励包、奖励隐藏分与 Boss 周标记；与行动轴表同在 timeline.xlsx，进入新周时先读 Week 再按 isBoss 筛选 Timeline。
+    /// 周/关卡配置：定义每周的目标分曲线、默认奖励包、奖励隐藏分、候选行动轴列表与行动轴权重。
     /// </summary>
     public TbWeek TbWeek {get; }
     /// <summary>
@@ -71,7 +71,7 @@ public partial class Tables
     /// </summary>
     public TbAction TbAction {get; }
     /// <summary>
-    /// 行动轴库：按当前 Week 的 isBoss 与 weekFilter（空=任意/normal/boss/逗号周号）筛选后按 weight 随机；baseLengthDays 为轴基础长度。
+    /// 行动轴库：定义行动轴模板与基础长度；具体每周候选池和权重由 Week.timelineIds/timelineWeights 决定。
     /// </summary>
     public TbTimeline TbTimeline {get; }
     /// <summary>
@@ -123,7 +123,7 @@ public partial class Tables
     /// </summary>
     public TbSubSkill TbSubSkill {get; }
     /// <summary>
-    /// 美食/战斗明细（含 Boss）：Food 行动 foodId 关联；Boss=isBoss，按角色池/周/解锁随机。
+    /// 美食/战斗明细（含 Boss）：Food 行动 foodId 关联；Boss=isBoss，按角色池/解锁条件随机。
     /// </summary>
     public TbFood TbFood {get; }
     /// <summary>
@@ -155,7 +155,7 @@ public partial class Tables
     /// </summary>
     public TbActionMediumMember TbActionMediumMember {get; }
     /// <summary>
-    /// 大组：含多个中组(见 large_member)；ruleIds 参与日程规则，fallbackWeights 保底随机。
+    /// 行动大组：按保底权重、日程规则与前置条件参与随机，不做周筛选。
     /// </summary>
     public TbActionLargeGroup TbActionLargeGroup {get; }
     /// <summary>

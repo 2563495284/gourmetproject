@@ -12,6 +12,12 @@
     "actionId": "act_shop"
   },
   {
+    "id": "nd_normal_d7_boss",
+    "timelineId": "tl_normal",
+    "day": 7,
+    "actionId": "act_boss"
+  },
+  {
     "id": "nd_busy_d2",
     "timelineId": "tl_busy",
     "day": 2,
@@ -30,20 +36,8 @@
     "actionId": "act_shop"
   },
   {
-    "id": "nd_boss_d2",
-    "timelineId": "tl_boss",
-    "day": 2,
-    "actionId": "act_interest"
-  },
-  {
-    "id": "nd_boss_d4",
-    "timelineId": "tl_boss",
-    "day": 4,
-    "actionId": "act_shop"
-  },
-  {
-    "id": "nd_boss_d7",
-    "timelineId": "tl_boss",
+    "id": "nd_busy_d7_boss",
+    "timelineId": "tl_busy",
     "day": 7,
     "actionId": "act_boss"
   }

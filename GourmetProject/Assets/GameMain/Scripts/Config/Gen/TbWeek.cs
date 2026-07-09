@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 周/关卡配置：定义每周的目标分曲线、默认奖励包、奖励隐藏分与 Boss 周标记；与行动轴表同在 timeline.xlsx，进入新周时先读 Week 再按 isBoss 筛选 Timeline。
+/// 周/关卡配置：定义每周的目标分曲线、默认奖励包、奖励隐藏分、候选行动轴列表与行动轴权重。
 /// </summary>
 public partial class TbWeek
 {

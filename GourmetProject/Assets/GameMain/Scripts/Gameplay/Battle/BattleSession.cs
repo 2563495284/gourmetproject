@@ -80,7 +80,7 @@ namespace GourmetProject.Gameplay.Battle
             HappyCakeLayers = layers < 0 ? 0 : layers;
         }
 
-        /// <summary>本局允许的最大上菜次数（-1 表示不限；Boss 周「限量供应」会设上限）。</summary>
+        /// <summary>本局允许的最大上菜次数（-1 表示不限；Boss 机制「限量供应」会设上限）。</summary>
         public int MaxServes { get; set; } = -1;
 
         public int GoldCostPerServe { get; set; }

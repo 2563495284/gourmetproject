@@ -22,7 +22,6 @@ public sealed partial class GameAction : Luban.BeanBase
         { if(!_buf["desc"].IsString) { throw new SerializationException(); }  Desc = _buf["desc"]; }
         { if(!_buf["behavior"].IsNumber) { throw new SerializationException(); }  Behavior = (ActionBehavior)_buf["behavior"].AsInt; }
         { if(!_buf["foodId"].IsString) { throw new SerializationException(); }  FoodId = _buf["foodId"]; }
-        { if(!_buf["bossPoolId"].IsString) { throw new SerializationException(); }  BossPoolId = _buf["bossPoolId"]; }
         { if(!_buf["minCostDays"].IsNumber) { throw new SerializationException(); }  MinCostDays = _buf["minCostDays"]; }
         { if(!_buf["maxCostDays"].IsNumber) { throw new SerializationException(); }  MaxCostDays = _buf["maxCostDays"]; }
     }
@@ -53,10 +52,6 @@ public sealed partial class GameAction : Luban.BeanBase
     /// </summary>
     public readonly string FoodId;
     /// <summary>
-    /// Food:Boss 池筛选;非空=从 isBoss 美食按角色池抽;&#39;*&#39;=任意
-    /// </summary>
-    public readonly string BossPoolId;
-    /// <summary>
     /// 本次最小耗时(0.1天)
     /// </summary>
     public readonly float MinCostDays;
@@ -80,7 +75,6 @@ public sealed partial class GameAction : Luban.BeanBase
         + "desc:" + Desc + ","
         + "behavior:" + Behavior + ","
         + "foodId:" + FoodId + ","
-        + "bossPoolId:" + BossPoolId + ","
         + "minCostDays:" + MinCostDays + ","
         + "maxCostDays:" + MaxCostDays + ","
         + "}";

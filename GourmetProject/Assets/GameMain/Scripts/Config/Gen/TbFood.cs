@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 美食/战斗明细（含 Boss）：Food 行动 foodId 关联；Boss=isBoss，按角色池/周/解锁随机。
+/// 美食/战斗明细（含 Boss）：Food 行动 foodId 关联；Boss=isBoss，按角色池/解锁条件随机。
 /// </summary>
 public partial class TbFood
 {

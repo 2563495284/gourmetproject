@@ -18,8 +18,6 @@ public sealed partial class Timeline : Luban.BeanBase
     public Timeline(JSONNode _buf) 
     {
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
-        { if(!_buf["weekFilter"].IsString) { throw new SerializationException(); }  WeekFilter = _buf["weekFilter"]; }
-        { if(!_buf["weight"].IsNumber) { throw new SerializationException(); }  Weight = _buf["weight"]; }
         { if(!_buf["baseLengthDays"].IsNumber) { throw new SerializationException(); }  BaseLengthDays = _buf["baseLengthDays"]; }
     }
 
@@ -32,14 +30,6 @@ public sealed partial class Timeline : Luban.BeanBase
     /// 行动轴模板 id；运行态只保存该 id，读档时按它重建节点。
     /// </summary>
     public readonly string Id;
-    /// <summary>
-    /// 周筛选：空=任意，normal=非 Boss 周，boss=Boss 周，也可填逗号分隔周号。
-    /// </summary>
-    public readonly string WeekFilter;
-    /// <summary>
-    /// 同一周筛选命中的行动轴之间按该权重随机。
-    /// </summary>
-    public readonly float Weight;
     /// <summary>
     /// 行动轴基础长度；当前主循环按7天时间轴推进，行动只移动天数游标。
     /// </summary>
@@ -56,8 +46,6 @@ public sealed partial class Timeline : Luban.BeanBase
     {
         return "{ "
         + "id:" + Id + ","
-        + "weekFilter:" + WeekFilter + ","
-        + "weight:" + Weight + ","
         + "baseLengthDays:" + BaseLengthDays + ","
         + "}";
     }

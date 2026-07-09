@@ -1,12 +1,17 @@
 using System.Collections.Generic;
+using System.IO;
+using GourmetProject.Core.Rng;
+using GourmetProject.Game.Adapter;
 using NUnit.Framework;
 using GourmetProject.Game.Meta;
+using GourmetProject.Game.Run;
+using Luban.SimpleJSON;
 
 namespace GourmetProject.Tests
 {
     /// <summary>
-    /// 局外行动轴核心逻辑单测：天数推进/走完判定、区间节点检测、利息计算、周筛选、前置条件求值。
-    /// 这些是局外循环「同种子可复现 + 规则正确」的基石，全部走纯逻辑（无引擎/配置依赖）。
+    /// 局外行动轴核心逻辑单测：天数推进/走完判定、区间节点检测、利息计算、行动轴池、前置条件求值。
+    /// 这些是局外循环「同种子可复现 + 规则正确」的基石。
     /// </summary>
     public class MetaTimelineTests
     {
@@ -124,29 +129,42 @@ namespace GourmetProject.Tests
             Assert.AreEqual(0, TimelineMath.Interest(9999, 10, 1, 0), "上限为 0 时不发放利息");
         }
 
-        // —— 周筛选 ——
+        // —— 行动轴池 ——
 
         [Test]
-        public void MatchesWeek_EmptyMatchesAny()
+        public void RollWeekTimeline_UsesWeekTimelinePoolWeights()
         {
-            Assert.IsTrue(TimelineService.MatchesWeek("", 3, false));
-            Assert.IsTrue(TimelineService.MatchesWeek(null, 4, true));
+            GameRun run = NewRun(week: 1, characterId: "chili_rat");
+
+            string timelineId = TimelineService.RollWeekTimeline(run, new PickLastRandomStream());
+
+            Assert.AreEqual("tl_busy", timelineId);
+            Assert.AreEqual("tl_busy", run.CurrentTimelineId);
+            Assert.AreEqual(7f, run.TimelineLengthDays);
         }
 
         [Test]
-        public void MatchesWeek_NormalAndBossKeywords()
+        public void RollWeekTimeline_AppliesCharacterTimelinePoolAsExtraFilter()
         {
-            Assert.IsTrue(TimelineService.MatchesWeek("normal", 3, false));
-            Assert.IsFalse(TimelineService.MatchesWeek("normal", 4, true));
-            Assert.IsTrue(TimelineService.MatchesWeek("boss", 4, true));
-            Assert.IsFalse(TimelineService.MatchesWeek("boss", 3, false));
+            GameRun run = NewRun(week: 1, characterId: "glutton_dog");
+
+            string timelineId = TimelineService.RollWeekTimeline(run, new PickLastRandomStream());
+
+            Assert.AreEqual("tl_normal", timelineId);
         }
 
         [Test]
-        public void MatchesWeek_ExplicitWeekList()
+        public void RollWeekTimeline_UsesOnlyPairedTimelineIdsAndWeights()
         {
-            Assert.IsTrue(TimelineService.MatchesWeek("2,4,6", 4, false));
-            Assert.IsFalse(TimelineService.MatchesWeek("2,4,6", 3, false));
+            cfg.Tables tables = LoadTables(new Dictionary<string, string>
+            {
+                ["tbweek"] = "[{\"id\":1,\"scoreProfileId\":\"score_w1\",\"rewardPackageId\":\"reward_w1\",\"rewardHiddenScore\":8,\"modifier\":\"\",\"timelineIds\":[\"tl_normal\",\"tl_busy\"],\"timelineWeights\":[100]}]",
+            });
+            GameRun run = NewRun(week: 1, characterId: "chili_rat", tables);
+
+            string timelineId = TimelineService.RollWeekTimeline(run, new PickLastRandomStream());
+
+            Assert.AreEqual("tl_normal", timelineId);
         }
 
         // —— 前置条件（行动/事件过滤）——
@@ -173,30 +191,67 @@ namespace GourmetProject.Tests
         [Test]
         public void Precondition_MultipleClausesNeedAll()
         {
-            var ctx = new FakeContext { Gold = 80, WeekIndex = 2, IsBossWeek = false };
+            var ctx = new FakeContext { Gold = 80, WeekIndex = 2 };
             ctx.Items.Add("item_x");
 
             Assert.IsTrue(PreconditionEvaluator.IsSatisfied(ctx, "minGold:50|hasItem:item_x"));
             Assert.IsFalse(PreconditionEvaluator.IsSatisfied(ctx, "minGold:50|hasItem:item_y"));
         }
 
-        [Test]
-        public void Precondition_BossWeekKeyword()
-        {
-            var boss = new FakeContext { IsBossWeek = true };
-            var normal = new FakeContext { IsBossWeek = false };
-            Assert.IsTrue(PreconditionEvaluator.IsSatisfied(boss, "bossWeek"));
-            Assert.IsFalse(PreconditionEvaluator.IsSatisfied(normal, "bossWeek"));
-        }
-
         private sealed class FakeContext : IPreconditionContext
         {
             public int Gold { get; set; }
             public int WeekIndex { get; set; }
-            public bool IsBossWeek { get; set; }
             public HashSet<string> Items { get; } = new HashSet<string>();
 
             public bool HasItem(string itemId) => Items.Contains(itemId);
+        }
+
+        private static GameRun NewRun(int week, string characterId, cfg.Tables tables = null)
+        {
+            tables ??= LoadTables();
+            var database = GameplayContentBuilder.BuildDatabase(tables);
+            return new GameRun(tables, database, characterId, "timeline-test", week);
+        }
+
+        private static cfg.Tables LoadTables(IReadOnlyDictionary<string, string> overrides = null)
+        {
+            string root = Path.Combine(Directory.GetCurrentDirectory(), "Assets", "StreamingAssets", "Config");
+            return new cfg.Tables(name =>
+            {
+                if (overrides != null && overrides.TryGetValue(name, out string json))
+                {
+                    return JSON.Parse(json);
+                }
+
+                string path = Path.Combine(root, name + ".json");
+                return JSON.Parse(File.ReadAllText(path));
+            });
+        }
+
+        private sealed class PickLastRandomStream : IRandomStream
+        {
+            public RngState State { get; set; }
+
+            public uint NextUInt() => throw new System.NotSupportedException();
+
+            public ulong NextULong() => throw new System.NotSupportedException();
+
+            public int Range(int minInclusive, int maxExclusive) => minInclusive;
+
+            public float Range(float minInclusive, float maxExclusive) => minInclusive;
+
+            public float NextFloat() => throw new System.NotSupportedException();
+
+            public double NextDouble() => throw new System.NotSupportedException();
+
+            public bool NextBool(double probability = 0.5) => throw new System.NotSupportedException();
+
+            public void Shuffle<T>(IList<T> list) => throw new System.NotSupportedException();
+
+            public T Pick<T>(IReadOnlyList<T> list) => list[0];
+
+            public int WeightedPickIndex(IReadOnlyList<float> weights) => weights.Count - 1;
         }
     }
 }

@@ -7,7 +7,7 @@ using GourmetProject.Game.Run;
 namespace GourmetProject.Game.Meta
 {
     /// <summary>
-    /// 行动轴服务：按周筛选并随机一条行动轴，推进天数游标，检测推进区间内经过的节点。
+    /// 行动轴服务：按当前 Week 配置随机一条行动轴，推进天数游标，检测推进区间内经过的节点。
     /// 节点配置来自 <c>TbTimelineNode</c>（按 timelineId 关联），运行态记录在 <see cref="GameRun"/>。
     /// </summary>
     public static class TimelineService
@@ -18,30 +18,53 @@ namespace GourmetProject.Game.Meta
         /// <summary>为当前周随机一条行动轴并初始化天数游标。返回选中的行动轴 id。</summary>
         public static string RollWeekTimeline(GameRun run, IRandomStream rng)
         {
+            if (run == null || rng == null)
+            {
+                return string.Empty;
+            }
+
             cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
-            bool isBoss = run.IsBossWeek;
             cfg.Character character = tables.TbCharacter.GetOrDefault(run.CharacterId);
+            cfg.Week week = run.CurrentWeek ?? tables.TbWeek.GetOrDefault(run.TotalWeeks);
+            IReadOnlyList<string> timelineIds = week?.TimelineIds;
+            IReadOnlyList<float> timelineWeights = week?.TimelineWeights;
 
             var candidates = new List<cfg.Timeline>();
-            foreach (cfg.Timeline tl in tables.TbTimeline.DataList)
+            var weights = new List<float>();
+            int idCount = timelineIds?.Count ?? 0;
+            int weightCount = timelineWeights?.Count ?? 0;
+            int pairCount = System.Math.Min(idCount, weightCount);
+
+            if (idCount != weightCount)
             {
-                if (MatchesWeek(tl.WeekFilter, run.WeekIndex, isBoss) && MatchesPool(character?.TimelinePool, tl.Id))
+                Log.Warning($"第 {run.WeekIndex} 周行动轴配置长度不一致（ids={idCount}, weights={weightCount}），只使用两边都有值的部分。", Tag);
+            }
+
+            for (int i = 0; i < pairCount; i++)
+            {
+                string timelineId = timelineIds[i]?.Trim();
+                float weight = timelineWeights[i];
+                if (string.IsNullOrEmpty(timelineId) || weight <= 0f || !MatchesPool(character?.TimelinePool, timelineId))
                 {
-                    candidates.Add(tl);
+                    continue;
                 }
+
+                cfg.Timeline tl = tables.TbTimeline.GetOrDefault(timelineId);
+                if (tl == null)
+                {
+                    Log.Warning($"第 {run.WeekIndex} 周配置了不存在的行动轴：{timelineId}。", Tag);
+                    continue;
+                }
+
+                candidates.Add(tl);
+                weights.Add(weight);
             }
 
             if (candidates.Count == 0)
             {
-                Log.Warning($"第 {run.WeekIndex} 周无匹配行动轴（character={run.CharacterId}, isBoss={isBoss}），回退为 {DefaultLengthDays} 天空轴。", Tag);
+                Log.Warning($"第 {run.WeekIndex} 周无匹配行动轴（character={run.CharacterId}），回退为 {DefaultLengthDays} 天空轴。", Tag);
                 run.BeginTimeline(string.Empty, DefaultLengthDays);
                 return string.Empty;
-            }
-
-            var weights = new List<float>(candidates.Count);
-            foreach (cfg.Timeline tl in candidates)
-            {
-                weights.Add(tl.Weight > 0f ? tl.Weight : 1f);
             }
 
             cfg.Timeline chosen = candidates[rng.WeightedPickIndex(weights)];
@@ -112,34 +135,6 @@ namespace GourmetProject.Game.Meta
             float prev = run.CurrentDay;
             run.CurrentDay = TimelineMath.Advance(run.CurrentDay, days, run.TimelineLengthDays);
             return prev;
-        }
-
-        /// <summary>weekFilter 匹配：空=任意；normal=非 Boss 周；boss=Boss 周；否则按逗号分隔的周号匹配。</summary>
-        public static bool MatchesWeek(string weekFilter, int weekIndex, bool isBoss)
-        {
-            if (string.IsNullOrEmpty(weekFilter))
-            {
-                return true;
-            }
-
-            switch (weekFilter)
-            {
-                case "normal":
-                    return !isBoss;
-                case "boss":
-                    return isBoss;
-            }
-
-            string[] parts = weekFilter.Split(',');
-            foreach (string part in parts)
-            {
-                if (int.TryParse(part.Trim(), out int w) && w == weekIndex)
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         /// <summary>逗号分隔池匹配：空池=任意通过；否则需包含 value。</summary>

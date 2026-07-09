@@ -19,7 +19,6 @@ public sealed partial class ActionLargeGroup : Luban.BeanBase
     {
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
         { if(!_buf["name"].IsString) { throw new SerializationException(); }  Name = _buf["name"]; }
-        { if(!_buf["weekFilter"].IsString) { throw new SerializationException(); }  WeekFilter = _buf["weekFilter"]; }
         { if(!_buf["preconditions"].IsString) { throw new SerializationException(); }  Preconditions = _buf["preconditions"]; }
         { if(!_buf["ruleIds"].IsString) { throw new SerializationException(); }  RuleIds = _buf["ruleIds"]; }
         { var __json0 = _buf["fallbackWeights"]; if(!__json0.IsArray) { throw new SerializationException(); } FallbackWeights = new System.Collections.Generic.List<float>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { float __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  FallbackWeights.Add(__v0); }   }
@@ -38,10 +37,6 @@ public sealed partial class ActionLargeGroup : Luban.BeanBase
     /// 大组名
     /// </summary>
     public readonly string Name;
-    /// <summary>
-    /// 周筛选:空=任意/normal/boss/逗号周号
-    /// </summary>
-    public readonly string WeekFilter;
     /// <summary>
     /// 大组前置条件
     /// </summary>
@@ -67,7 +62,6 @@ public sealed partial class ActionLargeGroup : Luban.BeanBase
         return "{ "
         + "id:" + Id + ","
         + "name:" + Name + ","
-        + "weekFilter:" + WeekFilter + ","
         + "preconditions:" + Preconditions + ","
         + "ruleIds:" + RuleIds + ","
         + "fallbackWeights:" + Luban.StringUtil.CollectionToString(FallbackWeights) + ","

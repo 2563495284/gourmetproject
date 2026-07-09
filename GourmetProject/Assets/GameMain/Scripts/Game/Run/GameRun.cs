@@ -676,7 +676,7 @@ namespace GourmetProject.Game.Run
 
         private int ComputeRequiredScore(cfg.Week week, int endlessExtra)
         {
-            return ComputeRequiredScore(CurrentScoreProfile(week), week != null && week.IsBoss, endlessExtra);
+            return ComputeRequiredScore(CurrentScoreProfile(week), false, endlessExtra);
         }
 
         private int ComputeRequiredScore(cfg.ScoreProfile profile, bool boss, int endlessExtra)
@@ -1128,9 +1128,6 @@ namespace GourmetProject.Game.Run
             int bossReq = ComputeRequiredScore(profile, true, endlessExtra);
             return new ItemRuntime(this).ModifyRequiredScore(bossReq, MealTier.Feast);
         }
-
-        /// <summary>当前周是否为 Boss 周（用于表现层展示）。</summary>
-        public bool IsBossWeek => CurrentWeek?.IsBoss ?? false;
 
         /// <summary>当前周的修正标识（small_board / limit_serve …），无则空串。</summary>
         public string WeekModifier => CurrentWeek?.Modifier ?? string.Empty;

@@ -1,20 +1,10 @@
 [
   {
     "id": "tl_normal",
-    "weekFilter": "normal",
-    "weight": 100,
     "baseLengthDays": 7
   },
   {
     "id": "tl_busy",
-    "weekFilter": "normal",
-    "weight": 60,
-    "baseLengthDays": 7
-  },
-  {
-    "id": "tl_boss",
-    "weekFilter": "boss",
-    "weight": 100,
     "baseLengthDays": 7
   }
 ]

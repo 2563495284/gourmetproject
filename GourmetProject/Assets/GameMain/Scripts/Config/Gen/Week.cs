@@ -21,8 +21,9 @@ public sealed partial class Week : Luban.BeanBase
         { if(!_buf["scoreProfileId"].IsString) { throw new SerializationException(); }  ScoreProfileId = _buf["scoreProfileId"]; }
         { if(!_buf["rewardPackageId"].IsString) { throw new SerializationException(); }  RewardPackageId = _buf["rewardPackageId"]; }
         { if(!_buf["rewardHiddenScore"].IsNumber) { throw new SerializationException(); }  RewardHiddenScore = _buf["rewardHiddenScore"]; }
-        { if(!_buf["isBoss"].IsBoolean) { throw new SerializationException(); }  IsBoss = _buf["isBoss"]; }
         { if(!_buf["modifier"].IsString) { throw new SerializationException(); }  Modifier = _buf["modifier"]; }
+        { var __json0 = _buf["timelineIds"]; if(!__json0.IsArray) { throw new SerializationException(); } TimelineIds = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  TimelineIds.Add(__v0); }   }
+        { var __json0 = _buf["timelineWeights"]; if(!__json0.IsArray) { throw new SerializationException(); } TimelineWeights = new System.Collections.Generic.List<float>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { float __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  TimelineWeights.Add(__v0); }   }
     }
 
     public static Week DeserializeWeek(JSONNode _buf)
@@ -47,13 +48,17 @@ public sealed partial class Week : Luban.BeanBase
     /// </summary>
     public readonly int RewardHiddenScore;
     /// <summary>
-    /// 是否 Boss 周；会匹配 weekFilter=boss 的行动轴和行动组。
-    /// </summary>
-    public readonly bool IsBoss;
-    /// <summary>
     /// 周级修饰符标识；当前主要用于表现/后续扩展，具体战斗仍可由行动或 Boss 单独传入 modifier。
     /// </summary>
     public readonly string Modifier;
+    /// <summary>
+    /// 本周候选行动轴 id 列表；与 timelineWeights 按索引一一对应。
+    /// </summary>
+    public readonly System.Collections.Generic.List<string> TimelineIds;
+    /// <summary>
+    /// 本周候选行动轴权重列表；与 timelineIds 按索引一一对应。
+    /// </summary>
+    public readonly System.Collections.Generic.List<float> TimelineWeights;
    
     public const int __ID__ = 2692116;
     public override int GetTypeId() => __ID__;
@@ -69,8 +74,9 @@ public sealed partial class Week : Luban.BeanBase
         + "scoreProfileId:" + ScoreProfileId + ","
         + "rewardPackageId:" + RewardPackageId + ","
         + "rewardHiddenScore:" + RewardHiddenScore + ","
-        + "isBoss:" + IsBoss + ","
         + "modifier:" + Modifier + ","
+        + "timelineIds:" + Luban.StringUtil.CollectionToString(TimelineIds) + ","
+        + "timelineWeights:" + Luban.StringUtil.CollectionToString(TimelineWeights) + ","
         + "}";
     }
 }
