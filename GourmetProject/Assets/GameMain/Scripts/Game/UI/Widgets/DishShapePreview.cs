@@ -38,8 +38,8 @@ namespace GourmetProject.Game.UI.Widgets
 
             DishShape shape = def.Shape.RotatedBy(def.RotationIndex);
             int dim = Mathf.Max(shape.Width, shape.Height);
-            int offX = (dim - shape.Width) / 2;
-            int offY = (dim - shape.Height) / 2;
+            float offX = (dim - shape.Width) * 0.5f;
+            float offY = (dim - shape.Height) * 0.5f;
 
             BuildBoardGrid(shape, dim, offX, offY);
             BuildDishImage(def, spriteOverride, shape, dim, offX, offY);
@@ -56,21 +56,21 @@ namespace GourmetProject.Game.UI.Widgets
             }
         }
 
-        private void BuildBoardGrid(DishShape shape, int dim, int offX, int offY)
+        private void BuildBoardGrid(DishShape shape, int dim, float offX, float offY)
         {
             if (_cellPrefab == null || _contentRoot == null)
             {
                 return;
             }
 
-            for (int y = 0; y < dim; y++)
+            for (int y = 0; y < shape.Height; y++)
             {
-                for (int x = 0; x < dim; x++)
+                for (int x = 0; x < shape.Width; x++)
                 {
-                    float minX = (float)x / dim;
-                    float maxX = (float)(x + 1) / dim;
-                    float minY = 1f - (float)(y + 1) / dim;
-                    float maxY = 1f - (float)y / dim;
+                    float minX = (offX + x) / dim;
+                    float maxX = (offX + x + 1f) / dim;
+                    float minY = 1f - (offY + y + 1f) / dim;
+                    float maxY = 1f - (offY + y) / dim;
 
                     DishShapeCell cell = Instantiate(_cellPrefab, _contentRoot);
                     var rect = (RectTransform)cell.transform;
@@ -80,13 +80,13 @@ namespace GourmetProject.Game.UI.Widgets
                     rect.offsetMax = new Vector2(-_cellPadding, -_cellPadding);
                     rect.localScale = Vector3.one;
                     cell.SetSprite(CellSprite);
-                    cell.SetColor(IsFilled(shape, x - offX, y - offY) ? _filledCellColor : _emptyCellColor);
+                    cell.SetColor(IsFilled(shape, x, y) ? _filledCellColor : _emptyCellColor);
                     _spawnedCells.Add(cell.gameObject);
                 }
             }
         }
 
-        private void BuildDishImage(DishDef def, Sprite spriteOverride, DishShape shape, int dim, int offX, int offY)
+        private void BuildDishImage(DishDef def, Sprite spriteOverride, DishShape shape, int dim, float offX, float offY)
         {
             if (_dishImage == null)
             {
@@ -100,8 +100,8 @@ namespace GourmetProject.Game.UI.Widgets
             _dishImage.preserveAspect = false;
 
             RectTransform rect = _dishImage.rectTransform;
-            rect.anchorMin = new Vector2((float)offX / dim, 1f - (float)(offY + shape.Height) / dim);
-            rect.anchorMax = new Vector2((float)(offX + shape.Width) / dim, 1f - (float)offY / dim);
+            rect.anchorMin = new Vector2(offX / dim, 1f - (offY + shape.Height) / dim);
+            rect.anchorMax = new Vector2((offX + shape.Width) / dim, 1f - offY / dim);
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
             rect.localScale = Vector3.one;
