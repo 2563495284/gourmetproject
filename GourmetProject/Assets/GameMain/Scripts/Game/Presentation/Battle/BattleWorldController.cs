@@ -563,19 +563,6 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        private void EnsureItemRoots()
-        {
-            if (_passiveItemsRoot == null)
-            {
-                _passiveItemsRoot = EnsureChildRoot("PassiveItemsRoot");
-            }
-
-            if (_activeItemsRoot == null)
-            {
-                _activeItemsRoot = EnsureChildRoot("ActiveItemsRoot");
-            }
-        }
-
         private Transform EnsureChildRoot(string childName)
         {
             Transform child = transform.Find(childName);
@@ -587,6 +574,17 @@ namespace GourmetProject.Game.Presentation.Battle
             var go = new GameObject(childName);
             go.transform.SetParent(transform, false);
             return go.transform;
+        }
+
+        private Transform EnsurePiecesRoot()
+        {
+            if (_piecesRoot != null)
+            {
+                return _piecesRoot;
+            }
+
+            _piecesRoot = EnsureChildRoot("PiecesRoot");
+            return _piecesRoot;
         }
 
         /// <summary>
@@ -614,16 +612,17 @@ namespace GourmetProject.Game.Presentation.Battle
             _boardView.transform.localScale = Vector3.one;
             _boardView.transform.position = _boardCenter;
 
-            // 菜品根挂到 BoardRoot 下，使已放置菜品与棋盘共享同一局部帧（棋盘整体移动/缩放时随动）。
-            if (_piecesRoot != null && _piecesRoot.parent != _boardView.transform)
-            {
-                _piecesRoot.SetParent(_boardView.transform, worldPositionStays: false);
-                _piecesRoot.localPosition = Vector3.zero;
-                _piecesRoot.localRotation = Quaternion.identity;
-                _piecesRoot.localScale = Vector3.one;
-            }
-
             _boardView.Build(board, _cellSize, Gap, OnCellClicked, _boardCellPrefab);
+
+            // BoardView.Build 会清空 BoardRoot 的动态格子子物体；PiecesRoot 必须在此之后再挂入。
+            Transform piecesRoot = EnsurePiecesRoot();
+            if (piecesRoot != null && piecesRoot.parent != _boardView.transform)
+            {
+                piecesRoot.SetParent(_boardView.transform, worldPositionStays: false);
+                piecesRoot.localPosition = Vector3.zero;
+                piecesRoot.localRotation = Quaternion.identity;
+                piecesRoot.localScale = Vector3.one;
+            }
         }
 
         /// <summary>把 HUD 里的 BoardArea 矩形四角投影到 BattleCamera 世界平面(z=0)，得到棋盘可用区的世界矩形边界。</summary>
@@ -658,73 +657,6 @@ namespace GourmetProject.Game.Presentation.Battle
             bottom = minY;
             top = maxY;
             return maxX > minX && maxY > minY;
-        }
-
-        private void BuildRecipeBooks()
-        {
-            foreach (MenuBookWorldView book in _recipeBooks)
-            {
-                if (book != null)
-                {
-                    Destroy(book.gameObject);
-                }
-            }
-
-            _recipeBooks.Clear();
-            if (_session == null)
-            {
-                return;
-            }
-
-            int count = _session.Slots.Count;
-            if (count <= 0)
-            {
-                return;
-            }
-
-            // 左侧后厨区：以屏幕左缘为基准向右铺开各菜谱书，竖直均分。
-            // sizeMul 放大书体（>1 会向右压到棋盘区，属空间取舍）。场景物体书按世界尺寸直接摆放（高=宽*aspect）。
-            const float margin = 0.2f;
-            const float gap = 0.3f;
-            const float aspect = 0.66f;
-            const float sizeMul = 2.0f;
-            float areaLeft = -_halfW + margin;
-            float baseW = Mathf.Max(0.5f, 3.0f - margin * 2f);
-            float worldW = baseW * sizeMul;
-
-            float bookH = worldW * aspect;
-            float availH = 2f * _halfH - 2f * margin;
-            float needH = count * bookH + (count - 1) * gap;
-            if (needH > availH && needH > 0f)
-            {
-                float k = availH / needH;
-                worldW *= k;
-                bookH *= k;
-                needH = availH;
-            }
-
-            if (_menuBookPrefab == null)
-            {
-                Debug.LogWarning("[BattleWorldController] 未配置 _menuBookPrefab，菜谱书无法生成。");
-                return;
-            }
-
-            float centerX = areaLeft + worldW * 0.5f;
-            float blockTop = needH * 0.5f;
-            for (int i = 0; i < count; i++)
-            {
-                MenuBookWorldView book = Instantiate(_menuBookPrefab, transform);
-                book.gameObject.name = $"MenuBook_{i}";
-                book.Build(i, _camera, OnBellServe, worldW, bookH);
-                float y = blockTop - bookH * 0.5f - i * (bookH + gap);
-                book.transform.position = new Vector3(centerX, y, 0f);
-                _recipeBooks.Add(book);
-            }
-        }
-
-        private void OnBellServe(int slotIndex)
-        {
-            TryServeDish(slotIndex);
         }
 
         private void RebuildPlacedPieces()
@@ -778,131 +710,6 @@ namespace GourmetProject.Game.Presentation.Battle
             return piece;
         }
 
-        private void RefreshRecipes()
-        {
-            if (_session == null || _run == null)
-            {
-                return;
-            }
-
-            for (int i = 0; i < _recipeBooks.Count; i++)
-            {
-                MenuBookWorldView book = _recipeBooks[i];
-                if (book == null)
-                {
-                    continue;
-                }
-
-                if (i >= _session.Slots.Count)
-                {
-                    book.SetData(System.Array.Empty<string>(), _run.Database);
-                    book.SetTitle($"菜谱{i + 1}");
-                    book.SetInteractable(false);
-                    continue;
-                }
-
-                RecipeSlot slot = _session.Slots[i];
-                book.SetData(slot.Remaining, _run.Database);
-                book.SetTitle($"菜谱{i + 1} · 剩 {slot.Count}");
-                book.SetInteractable(!_session.IsSettled && !slot.IsEmpty);
-            }
-        }
-
-        private void RefreshItems()
-        {
-            ClearItemSlots(_passiveItemSlots);
-            if (_run == null || _passiveItemsRoot == null)
-            {
-                return;
-            }
-
-            var passiveStates = new List<RunItemState>();
-            foreach (RunItemState state in _run.Items)
-            {
-                cfg.Item item = GameApp.Config.Tables.TbItem.GetOrDefault(state.ItemId);
-                if (item != null && item.Kind == cfg.ItemKind.Passive)
-                {
-                    passiveStates.Add(state);
-                }
-            }
-
-            const float slotSize = 0.56f;
-            const float gapX = 0.16f;
-            const float gapY = 0.14f;
-            float rightX = _halfW - 0.55f;
-            float topY = _halfH - 0.78f;
-            int shown = Mathf.Min(PassiveSlotCapacity, passiveStates.Count);
-            for (int i = 0; i < shown; i++)
-            {
-                WorldItemSlotView slot = InstantiateItemSlot(_passiveItemsRoot);
-                slot.gameObject.name = $"PassiveItemSlot_{i}";
-                int col = i % PassiveSlotColumns;
-                int row = i / PassiveSlotColumns;
-                float x = rightX - col * (slotSize + gapX);
-                float y = topY - row * (slotSize + gapY);
-                slot.transform.position = new Vector3(x, y, 0f);
-
-                RunItemState state = passiveStates[i];
-                cfg.Item item = GameApp.Config.Tables.TbItem.GetOrDefault(state.ItemId);
-                slot.Bind(
-                    new Vector2(slotSize, slotSize),
-                    LoadItemIcon(item),
-                    ShortName(item.Name),
-                    string.Empty,
-                    QualityColor(item.Quality),
-                    true,
-                    () => ShowItemMessage(item, state));
-                _passiveItemSlots.Add(slot);
-            }
-        }
-
-        private void RefreshActiveItems()
-        {
-            ClearItemSlots(_activeItemSlots);
-            if (_run == null || _activeItemsRoot == null)
-            {
-                return;
-            }
-
-            // 全局消耗槽：每份主动道具实例各占一个槽（不再按 id 聚合），容量 = 基础槽 + ExtraActiveSlot。
-            var activeStates = new List<RunItemState>(_run.ActiveItemStates);
-
-            const float slotSize = 0.58f;
-            const float gap = 0.34f;
-            float startX = _halfW - 2.25f;
-            float y = -_halfH + 0.55f;
-            int capacity = Mathf.Max(activeStates.Count, _run.ActiveSlotCapacity);
-
-            for (int i = 0; i < capacity; i++)
-            {
-                WorldItemSlotView slot = InstantiateItemSlot(_activeItemsRoot);
-                slot.gameObject.name = $"ActiveItemSlot_{i}";
-                slot.transform.position = new Vector3(startX + i * (slotSize + gap), y, 0f);
-
-                if (i < activeStates.Count)
-                {
-                    RunItemState state = activeStates[i];
-                    cfg.Item item = GameApp.Config.Tables.TbItem.GetOrDefault(state.ItemId);
-                    string captured = state.ItemId;
-                    bool usableNow = _session != null && !_session.IsSettled && item.TriggerTiming == cfg.ItemTriggerTiming.BeforeEat;
-                    slot.Bind(
-                        new Vector2(slotSize, slotSize),
-                        LoadItemIcon(item),
-                        ShortName(item.Name),
-                        string.Empty,
-                        QualityColor(item.Quality),
-                        usableNow,
-                        () => _activeItemClicked?.Invoke(captured));
-                }
-                else
-                {
-                    slot.Bind(new Vector2(slotSize, slotSize), null, string.Empty, string.Empty, Color.white, false, null);
-                }
-
-                _activeItemSlots.Add(slot);
-            }
-        }
-
         private void ClearItemSlots(List<WorldItemSlotView> slots)
         {
             foreach (WorldItemSlotView slot in slots)
@@ -914,60 +721,6 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             slots.Clear();
-        }
-
-        private WorldItemSlotView InstantiateItemSlot(Transform root)
-        {
-            if (_itemSlotPrefab != null)
-            {
-                return Instantiate(_itemSlotPrefab, root);
-            }
-
-            var go = new GameObject("WorldItemSlot", typeof(BoxCollider2D));
-            go.transform.SetParent(root, false);
-            return go.AddComponent<WorldItemSlotView>();
-        }
-
-        private static Sprite LoadItemIcon(cfg.Item item)
-        {
-            return ContentIconLoader.LoadItem(item);
-        }
-
-        private static string ShortName(string name)
-        {
-            if (string.IsNullOrEmpty(name))
-            {
-                return string.Empty;
-            }
-
-            return name.Length <= 2 ? name : name.Substring(0, 2);
-        }
-
-        private static Color QualityColor(cfg.ItemQuality quality)
-        {
-            switch (quality)
-            {
-                case cfg.ItemQuality.Uncommon:
-                    return new Color(0.50f, 0.86f, 0.46f, 1f);
-                case cfg.ItemQuality.Rare:
-                    return new Color(0.35f, 0.62f, 1f, 1f);
-                case cfg.ItemQuality.Epic:
-                    return new Color(0.74f, 0.42f, 1f, 1f);
-                case cfg.ItemQuality.Legendary:
-                    return new Color(1f, 0.72f, 0.22f, 1f);
-                default:
-                    return new Color(0.92f, 0.86f, 0.74f, 1f);
-            }
-        }
-
-        private void ShowItemMessage(cfg.Item item, RunItemState state)
-        {
-            if (item == null || state == null)
-            {
-                return;
-            }
-
-            SetMessage($"{item.Name}：{item.Desc}");
         }
 
         public string DoodleToggleLabel => _doodle != null && _doodle.IsVisible ? "隐藏涂鸦" : "显示涂鸦";

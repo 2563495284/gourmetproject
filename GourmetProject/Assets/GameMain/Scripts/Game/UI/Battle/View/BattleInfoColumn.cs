@@ -129,7 +129,7 @@ namespace GourmetProject.Game.UI.Battle.View
 
             if (_goldText != null)
             {
-                _goldText.text = run.Gold.ToString();
+                _goldText.text =$"金币：{run.Gold}";
             }
 
             if (_scoreReqText != null)
