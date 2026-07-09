@@ -537,6 +537,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private void FinishServing()
         {
             _serving = false;
+            RebuildPlacedPieces();
             _stateChanged?.Invoke();
         }
 

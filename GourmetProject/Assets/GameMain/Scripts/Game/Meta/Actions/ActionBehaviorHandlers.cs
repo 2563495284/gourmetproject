@@ -63,18 +63,24 @@ namespace GourmetProject.Game.Meta
                     return ActionOutcome.Immediate(string.Empty);
                 }
 
+                IRandomStream debuffRng = GameApp.Random.DomainStream(SeedDomains.Boss, $"{bossKey}_debuff");
+                cfg.BossDebuff debuff = BossService.RollBossDebuff(run, debuffRng);
                 int bossRequired = run.ComputeBossRequiredScore(boss.ScoreProfileId);
                 string battleKey = $"boss_w{run.WeekIndex}_{boss.Id}";
-                return ActionOutcome.Battle(bossRequired, boss.Modifier, battleKey, isBoss: true, bossId: boss.Id);
+                return ActionOutcome.Battle(
+                    bossRequired,
+                    debuff?.Modifier ?? string.Empty,
+                    battleKey,
+                    isBoss: true,
+                    bossId: boss.Id,
+                    bossDebuffId: debuff?.Id);
             }
 
-            cfg.Food food = FoodService.Resolve(run.Tables, action);
             int required = HiddenScoreService.TargetScore(run, context);
-            string modifier = food?.Modifier ?? string.Empty;
             string key = string.IsNullOrEmpty(context.SourceKey)
                 ? $"food_w{run.WeekIndex}_s{context.StepIndex}_d{run.CurrentDay.ToString("0.0", CultureInfo.InvariantCulture)}_{action.Id}"
                 : $"food_{context.SourceKey}_{action.Id}";
-            return ActionOutcome.Battle(required, modifier, key);
+            return ActionOutcome.Battle(required, string.Empty, key);
         }
     }
 

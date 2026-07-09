@@ -50,6 +50,7 @@ namespace GourmetProject.Game.Run
         private readonly List<string> _usedActionIds = new List<string>();
         private readonly List<string> _completedBossIds = new List<string>();
         private readonly List<string> _rolledBossIds = new List<string>();
+        private readonly List<string> _rolledBossDebuffIds = new List<string>();
         private readonly List<string> _actionGroupSequence = new List<string>();
         private readonly List<RunActionChoiceSaveData> _pendingActionChoices = new List<RunActionChoiceSaveData>();
         private readonly List<ShopEntrySaveData> _pendingShopStock = new List<ShopEntrySaveData>();
@@ -121,6 +122,7 @@ namespace GourmetProject.Game.Run
         }
 
         private bool _foodAdjustActionActive;
+        private bool _foodAdjustSuppressBase;
         private int _foodAdjustActionBonus;
         private int _foodAdjustSpent;
 
@@ -137,11 +139,12 @@ namespace GourmetProject.Game.Run
         public int FoodAdjustCount => System.Math.Max(0, FoodAdjustLimit - _foodAdjustSpent);
 
         private int FoodAdjustLimit =>
-            System.Math.Max(0, FoodAdjustBaseCount + (_foodAdjustActionActive ? _foodAdjustActionBonus : 0));
+            System.Math.Max(0, (_foodAdjustSuppressBase ? 0 : FoodAdjustBaseCount) + (_foodAdjustActionActive ? _foodAdjustActionBonus : 0));
 
-        public void BeginFoodActionAdjustments()
+        public void BeginFoodActionAdjustments(bool suppressBase = false)
         {
             _foodAdjustActionActive = true;
+            _foodAdjustSuppressBase = suppressBase;
             _foodAdjustActionBonus = 0;
             _foodAdjustSpent = 0;
         }
@@ -149,6 +152,7 @@ namespace GourmetProject.Game.Run
         public void EndFoodActionAdjustments()
         {
             _foodAdjustActionActive = false;
+            _foodAdjustSuppressBase = false;
             _foodAdjustActionBonus = 0;
             _foodAdjustSpent = 0;
         }
@@ -314,6 +318,8 @@ namespace GourmetProject.Game.Run
 
         public IReadOnlyList<string> RolledBossIds => _rolledBossIds;
 
+        public IReadOnlyList<string> RolledBossDebuffIds => _rolledBossDebuffIds;
+
         /// <summary>本周已执行的行动次数，用于 UI、随机流和隐藏分进度。</summary>
         public int ActionStepIndex { get; private set; }
 
@@ -384,6 +390,8 @@ namespace GourmetProject.Game.Run
 
         public bool IsBossRolled(string bossId) => !string.IsNullOrEmpty(bossId) && _rolledBossIds.Contains(bossId);
 
+        public bool IsBossDebuffRolled(string debuffId) => !string.IsNullOrEmpty(debuffId) && _rolledBossDebuffIds.Contains(debuffId);
+
         public void MarkBossCompleted(string bossId)
         {
             if (!string.IsNullOrEmpty(bossId) && !_completedBossIds.Contains(bossId))
@@ -405,6 +413,19 @@ namespace GourmetProject.Game.Run
         public void ResetBossRollHistory()
         {
             _rolledBossIds.Clear();
+        }
+
+        public void MarkBossDebuffRolled(string debuffId)
+        {
+            if (!string.IsNullOrEmpty(debuffId) && !_rolledBossDebuffIds.Contains(debuffId))
+            {
+                _rolledBossDebuffIds.Add(debuffId);
+            }
+        }
+
+        public void ResetBossDebuffRollHistory()
+        {
+            _rolledBossDebuffIds.Clear();
         }
 
         /// <summary>开始一条新的本周行动轴：重置天数游标、节点结算记录与本周行动使用记录。</summary>
@@ -737,6 +758,7 @@ namespace GourmetProject.Game.Run
                 UsedActionIds = new List<string>(_usedActionIds),
                 CompletedBossIds = new List<string>(_completedBossIds),
                 RolledBossIds = new List<string>(_rolledBossIds),
+                RolledBossDebuffIds = new List<string>(_rolledBossDebuffIds),
                 PendingActionChoiceKey = _pendingActionChoiceKey,
                 PendingActionChoices = new List<RunActionChoiceSaveData>(_pendingActionChoices),
                 PendingShopKey = _pendingShopKey,
@@ -884,6 +906,11 @@ namespace GourmetProject.Game.Run
             if (data.RolledBossIds != null)
             {
                 run._rolledBossIds.AddRange(data.RolledBossIds);
+            }
+
+            if (data.RolledBossDebuffIds != null)
+            {
+                run._rolledBossDebuffIds.AddRange(data.RolledBossDebuffIds);
             }
 
             run._pendingActionChoiceKey = data.PendingActionChoiceKey ?? string.Empty;

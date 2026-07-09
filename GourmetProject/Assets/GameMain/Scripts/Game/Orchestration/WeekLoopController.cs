@@ -301,6 +301,8 @@ namespace GourmetProject.Game.Orchestration
             cfg.Food boss = tables.TbFood.GetOrDefault(outcome.BossId);
             string title = boss != null ? $"Boss：{boss.Name}" : "Boss";
             _view.ShowNotice(title, $"目标分 {outcome.RequiredScore}，准备应战！", () =>
+            {
+                _run.MarkBossDebuffRolled(outcome.BossDebuffId);
                 StartBattle(outcome.RequiredScore, outcome.Modifier, outcome.BattleKey, true, outcome.BossId, () =>
                 {
                     _run.MarkBossCompleted(outcome.BossId);
@@ -314,12 +316,13 @@ namespace GourmetProject.Game.Orchestration
                     {
                         EndWeek();
                     }
-                }, null));
+                }, null);
+            });
         }
 
         private bool IsFinalBossVictory(cfg.Food boss)
         {
-            return boss != null && !_run.IsEndless && _run.WeekIndex >= _run.TotalWeeks && boss.Week == _run.TotalWeeks;
+            return boss != null && !_run.IsEndless && _run.WeekIndex >= _run.TotalWeeks;
         }
 
         /// <summary>解析事件行动：按行动 behavior(Event/Reward/Negative) 从对应分类事件池随机一个具体事件，再统一结算。</summary>

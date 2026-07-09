@@ -102,6 +102,9 @@ namespace GourmetProject.Game.Run
         /// <summary>Boss 不放回随机的已抽取记录；抽光后会重置，不影响 CompletedBossIds。</summary>
         public List<string> RolledBossIds = new List<string>();
 
+        /// <summary>Boss Debuff 不放回随机的已抽取记录；抽光后会重置。</summary>
+        public List<string> RolledBossDebuffIds = new List<string>();
+
         /// <summary>当前行动选择快照 key；同一步 UI 重开时沿用已有候选。</summary>
         public string PendingActionChoiceKey;
 

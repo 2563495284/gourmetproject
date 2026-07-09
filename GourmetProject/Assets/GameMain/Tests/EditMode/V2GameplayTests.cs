@@ -2,12 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using GourmetProject.Core.Rng;
 using GourmetProject.Gameplay.Data;
 using Luban.SimpleJSON;
 using NUnit.Framework;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Meta;
+using GourmetProject.Game.Orchestration;
 using GourmetProject.Game.Run;
 
 namespace GourmetProject.Tests
@@ -608,6 +610,93 @@ namespace GourmetProject.Tests
             Assert.AreEqual(3, run.RolledBossIds.Count);
             Assert.AreEqual("boss_glutton", BossService.RollBoss(run, rng)?.Id);
             Assert.AreEqual(0, run.RolledBossIds.Count);
+        }
+
+        [Test]
+        public void FoodBehavior_NormalFoodProducesNoDebuffModifier()
+        {
+            GameRun run = NewRun(week: 1);
+            cfg.GameAction action = run.Tables.TbAction.Get("act_food_dish");
+
+            ActionOutcome outcome = new FoodBehaviorHandler().Execute(
+                run,
+                new ActionExecutionContext(action),
+                new MaxWeightRandomStream());
+
+            Assert.AreEqual(ActionOutcomeKind.Battle, outcome.Kind);
+            Assert.IsFalse(outcome.IsBoss);
+            Assert.AreEqual(string.Empty, outcome.Modifier);
+            Assert.AreEqual(string.Empty, outcome.BossDebuffId);
+        }
+
+        [Test]
+        public void BossDebuffRoll_UsesHistoryAndResetsWhenExhausted()
+        {
+            var rng = new MaxWeightRandomStream();
+            GameRun run = NewRun(week: 1, characterId: "glutton_dog");
+
+            cfg.BossDebuff first = BossService.RollBossDebuff(run, rng);
+            string firstId = run.Tables.TbBossDebuff.DataList[0].Id;
+            Assert.AreEqual(firstId, first?.Id);
+            run.MarkBossDebuffRolled(first.Id);
+
+            cfg.BossDebuff second = BossService.RollBossDebuff(run, rng);
+            Assert.AreEqual(run.Tables.TbBossDebuff.DataList[1].Id, second?.Id);
+            run.MarkBossDebuffRolled(second.Id);
+
+            for (int i = 2; i < run.Tables.TbBossDebuff.DataList.Count; i++)
+            {
+                run.MarkBossDebuffRolled(run.Tables.TbBossDebuff.DataList[i].Id);
+            }
+
+            Assert.AreEqual(run.Tables.TbBossDebuff.DataList.Count, run.RolledBossDebuffIds.Count);
+            Assert.AreEqual(firstId, BossService.RollBossDebuff(run, rng)?.Id);
+            Assert.AreEqual(0, run.RolledBossDebuffIds.Count);
+        }
+
+        [Test]
+        public void BossDebuffRoll_PreviewDoesNotResetHistory()
+        {
+            var rng = new MaxWeightRandomStream();
+            GameRun run = NewRun(week: 1, characterId: "glutton_dog");
+            foreach (cfg.BossDebuff debuff in run.Tables.TbBossDebuff.DataList)
+            {
+                run.MarkBossDebuffRolled(debuff.Id);
+            }
+
+            cfg.BossDebuff preview = BossService.RollBossDebuff(run, rng, mutateHistoryOnExhaustion: false);
+
+            Assert.AreEqual(run.Tables.TbBossDebuff.DataList[0].Id, preview?.Id);
+            Assert.AreEqual(run.Tables.TbBossDebuff.DataList.Count, run.RolledBossDebuffIds.Count);
+        }
+
+        [Test]
+        public void RunSaveData_RestoresBossDebuffRollHistory()
+        {
+            GameRun run = NewRun(week: 1);
+            run.MarkBossDebuffRolled("debuff_indulgent");
+
+            GameRun restored = GameRun.FromSaveData(run.Tables, run.Database, run.ToSaveData());
+
+            Assert.IsTrue(restored.IsBossDebuffRolled("debuff_indulgent"));
+        }
+
+        [Test]
+        public void WeekLoop_FinalBossVictory_UsesLastWeekInsteadOfFoodWeek()
+        {
+            GameRun finalWeek = NewRun(week: 8, characterId: "glutton_dog");
+            GameRun earlyWeek = NewRun(week: 1, characterId: "glutton_dog");
+            cfg.Food boss = finalWeek.Tables.TbFood.Get("boss_glutton");
+            MethodInfo method = typeof(WeekLoopController).GetMethod(
+                "IsFinalBossVictory",
+                BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(method);
+
+            bool finalResult = (bool)method.Invoke(new WeekLoopController(finalWeek, null), new object[] { boss });
+            bool earlyResult = (bool)method.Invoke(new WeekLoopController(earlyWeek, null), new object[] { boss });
+
+            Assert.IsTrue(finalResult);
+            Assert.IsFalse(earlyResult);
         }
 
         [Test]

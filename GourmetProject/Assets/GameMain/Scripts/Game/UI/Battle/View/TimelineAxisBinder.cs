@@ -124,7 +124,8 @@ namespace GourmetProject.Game.UI.Battle.View
             }
 
             int required = run != null ? run.ComputeBossRequiredScore(boss.ScoreProfileId) : 0;
-            tip.Bind(boss, BossMechanicDescription(boss.Modifier), required);
+            cfg.BossDebuff debuff = PreviewBossDebuff(run, node, action);
+            tip.Bind(boss, BossMechanicDescription(debuff), required);
         }
 
         private static cfg.Food PreviewBoss(GameRun run, cfg.TimelineNode node, cfg.GameAction action)
@@ -138,7 +139,7 @@ namespace GourmetProject.Game.UI.Battle.View
             RngState state = rng.State;
             try
             {
-                return BossService.RollBoss(run, rng);
+                return BossService.RollBoss(run, rng, mutateHistoryOnExhaustion: false);
             }
             finally
             {
@@ -146,8 +147,33 @@ namespace GourmetProject.Game.UI.Battle.View
             }
         }
 
-        private static string BossMechanicDescription(string modifier)
+        private static cfg.BossDebuff PreviewBossDebuff(GameRun run, cfg.TimelineNode node, cfg.GameAction action)
         {
+            if (run == null || node == null || action == null)
+            {
+                return null;
+            }
+
+            IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Boss, $"w{run.WeekIndex}_{node.Id}_debuff");
+            RngState state = rng.State;
+            try
+            {
+                return BossService.RollBossDebuff(run, rng, mutateHistoryOnExhaustion: false);
+            }
+            finally
+            {
+                rng.State = state;
+            }
+        }
+
+        private static string BossMechanicDescription(cfg.BossDebuff debuff)
+        {
+            string modifier = debuff?.Modifier;
+            if (debuff != null && !string.IsNullOrEmpty(debuff.Desc))
+            {
+                return $"特殊机制：{debuff.Name}。{debuff.Desc}";
+            }
+
             switch (modifier)
             {
                 case "small_board":

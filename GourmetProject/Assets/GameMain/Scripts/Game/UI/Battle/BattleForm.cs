@@ -1082,7 +1082,7 @@ namespace GourmetProject.Game.UI.Battle
             _infoColumn?.SetBattleScoreOverride(null);
             _infoColumn?.ScoreFire?.Hide();
             SetMessage(string.Empty);
-            _run.BeginFoodActionAdjustments();
+            _run.BeginFoodActionAdjustments(BossDebuffModifiers.IsPrefabFood(modifier));
             _session = _run.BuildBattleSession(requiredScore, modifier, key);
             // 常驻壳在战斗中持续显示并接管分数/道具/菜谱面板（棋盘/菜品仍在世界空间场景）。
             SwitchTo(GameplayView.Food);

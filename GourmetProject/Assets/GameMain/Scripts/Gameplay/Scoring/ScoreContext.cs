@@ -83,6 +83,11 @@ namespace GourmetProject.Gameplay.Scoring
             IScoreHistory history = snapshot.History;
             foreach (DishInstance src in snapshot.DishesInDefaultOrder)
             {
+                if (src.SkillsDisabled)
+                {
+                    continue;
+                }
+
                 foreach (string skillId in src.SkillIds)
                 {
                     SkillDef skill = Db?.GetSkill(skillId);
@@ -614,8 +619,8 @@ namespace GourmetProject.Gameplay.Scoring
                 a = new DishAccumulator
                 {
                     Dish = dish,
-                    Base = dish.Def.Deliciousness + dish.PermanentFlatBonus,
-                    Mult = dish.PermanentMultBonus,
+                    Base = (dish.Def.Deliciousness + dish.PermanentFlatBonus) * dish.TemporaryBaseMultiplier,
+                    Mult = dish.PermanentMultBonus * dish.ServeMultiplier,
                 };
                 _accums[dish.Id] = a;
                 _order.Add(dish.Id);

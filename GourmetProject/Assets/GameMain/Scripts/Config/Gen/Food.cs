@@ -27,9 +27,7 @@ public sealed partial class Food : Luban.BeanBase
         { if(!_buf["rewardKind"].IsNumber) { throw new SerializationException(); }  RewardKind = (RewardKind)_buf["rewardKind"].AsInt; }
         { if(!_buf["rewardPackageId"].IsString) { throw new SerializationException(); }  RewardPackageId = _buf["rewardPackageId"]; }
         { if(!_buf["hiddenScoreBonus"].IsNumber) { throw new SerializationException(); }  HiddenScoreBonus = _buf["hiddenScoreBonus"]; }
-        { if(!_buf["modifier"].IsString) { throw new SerializationException(); }  Modifier = _buf["modifier"]; }
         { if(!_buf["unlockCondition"].IsString) { throw new SerializationException(); }  UnlockCondition = _buf["unlockCondition"]; }
-        { if(!_buf["week"].IsNumber) { throw new SerializationException(); }  Week = _buf["week"]; }
         { if(!_buf["weight"].IsNumber) { throw new SerializationException(); }  Weight = _buf["weight"]; }
         { if(!_buf["repeatable"].IsBoolean) { throw new SerializationException(); }  Repeatable = _buf["repeatable"]; }
         { if(!_buf["preconditions"].IsString) { throw new SerializationException(); }  Preconditions = _buf["preconditions"]; }
@@ -81,17 +79,9 @@ public sealed partial class Food : Luban.BeanBase
     /// </summary>
     public readonly int HiddenScoreBonus;
     /// <summary>
-    /// 特殊机制(debuff,普通食物也可用)
-    /// </summary>
-    public readonly string Modifier;
-    /// <summary>
     /// Boss:解锁条件(空=默认)
     /// </summary>
     public readonly string UnlockCondition;
-    /// <summary>
-    /// Boss:限定周(0=任意 Boss 周)
-    /// </summary>
-    public readonly int Week;
     /// <summary>
     /// Boss 池随机权重
     /// </summary>
@@ -125,9 +115,7 @@ public sealed partial class Food : Luban.BeanBase
         + "rewardKind:" + RewardKind + ","
         + "rewardPackageId:" + RewardPackageId + ","
         + "hiddenScoreBonus:" + HiddenScoreBonus + ","
-        + "modifier:" + Modifier + ","
         + "unlockCondition:" + UnlockCondition + ","
-        + "week:" + Week + ","
         + "weight:" + Weight + ","
         + "repeatable:" + Repeatable + ","
         + "preconditions:" + Preconditions + ","

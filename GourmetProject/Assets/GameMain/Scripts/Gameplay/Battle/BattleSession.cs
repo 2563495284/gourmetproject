@@ -24,6 +24,7 @@ namespace GourmetProject.Gameplay.Battle
         private readonly Dictionary<string, int> _mealSettled = new Dictionary<string, int>();
         private readonly Dictionary<string, int> _runSettled = new Dictionary<string, int>();
         private int _nextInstanceId = 1;
+        private int _appetizerRemoved;
 
         public BattleSession(
             GpBoard board,
@@ -82,6 +83,24 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>本局允许的最大上菜次数（-1 表示不限；Boss 周「限量供应」会设上限）。</summary>
         public int MaxServes { get; set; } = -1;
 
+        public int GoldCostPerServe { get; set; }
+
+        public bool AutoServeSecondDish { get; set; }
+
+        public bool RemoveFirstServedDishes { get; set; }
+
+        public int FirstServedDishesToRemove { get; set; }
+
+        public bool AlternateServeMultiplier { get; set; }
+
+        public bool RandomServeMultiplier { get; set; }
+
+        public bool ReverseSettlementOrder { get; set; }
+
+        public int MinimumServesForScore { get; set; }
+
+        public bool HalveBaseScore { get; set; }
+
         /// <summary>本局已上菜次数。</summary>
         public int ServesUsed { get; private set; }
 
@@ -106,6 +125,11 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>从指定菜谱槽随机上一道能放下的菜，并随机朝向/位置摆上棋盘。</summary>
         public ServeResult Serve(int slotIndex)
         {
+            return ServeInternal(slotIndex, allowAutoServe: true);
+        }
+
+        private ServeResult ServeInternal(int slotIndex, bool allowAutoServe)
+        {
             if (slotIndex < 0 || slotIndex >= _slots.Count)
             {
                 throw new ArgumentOutOfRangeException(nameof(slotIndex));
@@ -124,9 +148,9 @@ namespace GourmetProject.Gameplay.Battle
 
             var candidates = new List<ServeCandidate>();
             var weights = new List<float>();
-            for (int i = 0; i < slot.Remaining.Count; i++)
+            for (int i = 0; i < slot.Entries.Count; i++)
             {
-                DishDef dish = _db.GetDish(slot.Remaining[i]);
+                DishDef dish = _db.GetDish(slot.Entries[i].DishId);
                 if (dish == null)
                 {
                     continue;
@@ -146,21 +170,42 @@ namespace GourmetProject.Gameplay.Battle
             }
 
             ServeCandidate chosen = candidates[_rng.WeightedPickIndex(weights)];
+            RecipeSlotEntry entry = slot.RemoveEntryAt(chosen.SlotEntryIndex);
             List<string> skills = TagComposer.ComposeSkills(chosen.Dish.SkillIds);
             string flavor = TagComposer.ComposeFlavor(new[] { chosen.Dish.FlavorId });
             var instance = new DishInstance(_nextInstanceId++, chosen.Dish, chosen.Placement, skills, flavor);
+            ApplyEntryFlags(instance, entry);
+            ApplyServeModifiers(instance);
             Board.Place(instance);
-            slot.RemoveAt(chosen.SlotEntryIndex);
             ServesUsed++;
 
             // 上菜时（OnServe）规则：直接改运行时状态（技能）并积累金币/全局层数。
-            ServeRuleResolver.ServeResolveResult serveResult =
-                ServeRuleResolver.ResolveOnServe(Board, _db, BuildHistory(), instance, HappyCakeLayers);
-            PendingGold += serveResult.Gold;
-            HappyCakeLayers = Math.Max(0, HappyCakeLayers + serveResult.HappyCakeLayerDelta + AccelFor(serveResult.HappyCakeLayerDelta));
-            ApplyTransferRequests(serveResult.TransferRequests);
-            ApplyCopySkillRequests(serveResult.CopySkillRequests);
-            ApplyTempCopyRequests(serveResult.TempCopySourceIds);
+            if (!instance.SkillsDisabled)
+            {
+                ServeRuleResolver.ServeResolveResult serveResult =
+                    ServeRuleResolver.ResolveOnServe(Board, _db, BuildHistory(), instance, HappyCakeLayers);
+                PendingGold += serveResult.Gold;
+                HappyCakeLayers = Math.Max(0, HappyCakeLayers + serveResult.HappyCakeLayerDelta + AccelFor(serveResult.HappyCakeLayerDelta));
+                ApplyTransferRequests(serveResult.TransferRequests);
+                ApplyCopySkillRequests(serveResult.CopySkillRequests);
+                ApplyTempCopyRequests(serveResult.TempCopySourceIds);
+            }
+
+            if (GoldCostPerServe > 0)
+            {
+                PendingGold -= GoldCostPerServe;
+            }
+
+            if (RemoveFirstServedDishes && _appetizerRemoved < FirstServedDishesToRemove)
+            {
+                _appetizerRemoved++;
+                Board.RemoveDish(instance);
+            }
+
+            if (allowAutoServe && AutoServeSecondDish)
+            {
+                ServeInternal(slotIndex, allowAutoServe: false);
+            }
 
             return new ServeResult(ServeOutcome.Placed, instance);
         }
@@ -168,17 +213,70 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>计算当前棋盘的预览分数（不标记结算，不产生副作用），供 UI 实时展示。</summary>
         public ScoreResult PreviewScore()
         {
-            return _calculator.Calculate(Board, _db, FinalFlat, FinalMultiplier, history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction);
+            if (MinimumServesForScore > 0 && ServesUsed < MinimumServesForScore)
+            {
+                return ZeroScoreResult();
+            }
+
+            return _calculator.Calculate(Board, _db, FinalFlat, FinalMultiplier, history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder);
         }
 
         /// <summary>「吃」：结算、应用副作用（金币/层数/技能传递/历史）并记录结果。</summary>
         public ScoreResult Settle()
         {
-            ScoreResult result = _calculator.Calculate(Board, _db, FinalFlat, FinalMultiplier, history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction);
+            ScoreResult result = MinimumServesForScore > 0 && ServesUsed < MinimumServesForScore
+                ? ZeroScoreResult()
+                : _calculator.Calculate(Board, _db, FinalFlat, FinalMultiplier, history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder);
             ApplySideEffects(result);
             LastResult = result;
             IsSettled = true;
             return LastResult;
+        }
+
+        private static ScoreResult ZeroScoreResult()
+        {
+            return new ScoreResult(Array.Empty<DishScore>(), 0f, 0f, 1f);
+        }
+
+        private void ApplyEntryFlags(DishInstance instance, RecipeSlotEntry entry)
+        {
+            if (entry == null)
+            {
+                return;
+            }
+
+            if (entry.DisableSkills)
+            {
+                instance.DisableSkills();
+            }
+
+            if (entry.ExcludeFromScore)
+            {
+                instance.ExcludeFromScore();
+            }
+        }
+
+        private void ApplyServeModifiers(DishInstance instance)
+        {
+            if (instance == null)
+            {
+                return;
+            }
+
+            if (HalveBaseScore)
+            {
+                instance.MultiplyTemporaryBase(0.5f);
+            }
+
+            if (AlternateServeMultiplier)
+            {
+                instance.MultiplyServeMultiplier(ServesUsed % 2 == 0 ? 0.5f : 1.5f);
+            }
+            else if (RandomServeMultiplier)
+            {
+                int step = _rng.Range(5, 16);
+                instance.MultiplyServeMultiplier(step / 10f);
+            }
         }
 
         /// <summary>把历史/菜谱打包为只读快照注入结算（读取本次结算之前的状态）。</summary>
@@ -244,6 +342,11 @@ namespace GourmetProject.Gameplay.Battle
             var increments = new Dictionary<string, int>();
             foreach (DishInstance dish in Board.Dishes)
             {
+                if (dish.ExcludedFromScore)
+                {
+                    continue;
+                }
+
                 string baseId = dish.Def.BaseId;
                 increments.TryGetValue(baseId, out int inc);
                 increments[baseId] = inc + 1;

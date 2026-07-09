@@ -3,6 +3,7 @@ using GourmetProject.Core.Rng;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
+using GourmetProject.Gameplay.Scoring;
 using NUnit.Framework;
 using GpBoard = GourmetProject.Gameplay.Board.Board;
 
@@ -277,6 +278,98 @@ namespace GourmetProject.Tests
             session.ClearBoard();
 
             Assert.AreEqual(0, session.Board.DishCount);
+        }
+
+        [Test]
+        public void RecipeEntryFlags_DisableSkillsAndExcludeScore()
+        {
+            var rng = new RandomService();
+            rng.Init("entry-flags");
+            SkillDef flat = GameplayTestFactory.RuleSkill("flat",
+                GameplayTestFactory.Rule(SkillActionType.AddFlat, 5f));
+            DishDef dish = GameplayTestFactory.Dish("dish", new[] { "X" }, deliciousness: 5, allowRotate: false, skills: new[] { "flat" });
+            var db = new GameplayDatabase(new[] { dish }, new[] { flat }, new List<FlavorDef>(), new List<CellTagDef>(), new List<RecipeDef>());
+            var slot = new RecipeSlot("slot0", new[] { "dish", "dish" });
+            slot.Entries[0].MarkSkillsDisabled();
+            slot.Entries[1].MarkExcludedFromScore();
+            var session = new BattleSession(new GpBoard(2, 1), db, rng.Stream("battle"), new[] { slot }, requiredScore: 1);
+
+            session.Serve(0);
+            session.Serve(0);
+            ScoreResult result = session.Settle();
+
+            Assert.AreEqual(1, result.DishScores.Count);
+            Assert.AreEqual(5, result.Total, "第一道技能失效，仅保留基础分；第二道不参与计分。");
+            Assert.IsTrue(session.LastSettledIncrements.TryGetValue("dish", out int count) && count == 1);
+        }
+
+        [Test]
+        public void ServeModifiers_ApplyTastingComboAppetizerAndGoldCost()
+        {
+            var rng = new RandomService();
+            rng.Init("serve-debuffs");
+            GameplayDatabase db = BuildDb();
+            var slot = new RecipeSlot("slot0", new[] { "rice", "rice", "rice" });
+            var session = new BattleSession(new GpBoard(3, 1), db, rng.Stream("battle"), new[] { slot }, requiredScore: 1)
+            {
+                AlternateServeMultiplier = true,
+                AutoServeSecondDish = true,
+                RemoveFirstServedDishes = true,
+                FirstServedDishesToRemove = 1,
+                GoldCostPerServe = 5,
+            };
+
+            ServeResult result = session.Serve(0);
+
+            Assert.IsTrue(result.Success);
+            Assert.AreEqual(2, session.ServesUsed, "套餐应额外上一道菜。");
+            Assert.AreEqual(1, session.Board.DishCount, "开胃菜移除第一道，套餐额外菜保留。");
+            Assert.AreEqual(-10f, session.PendingGold, 0.001f);
+            ScoreResult score = session.Settle();
+            Assert.AreEqual(8, score.Total, "第二道菜倍率为 1.5，5 分四舍五入为 8。");
+        }
+
+        [Test]
+        public void BoardDisabledCells_PreventPlacement()
+        {
+            var board = new GpBoard(1, 1);
+            board.SetDisabled(new GridPos(0, 0), true);
+            DishDef dish = GameplayTestFactory.Dish("dish", new[] { "X" }, allowRotate: false);
+
+            Assert.IsFalse(board.CanFit(dish));
+            Assert.AreEqual(0, board.EmptyCellCount);
+        }
+
+        [Test]
+        public void ScoreCalculator_CanReverseSettlementOrder()
+        {
+            DishDef top = GameplayTestFactory.Dish("top", new[] { "X" }, deliciousness: 1, allowRotate: false);
+            DishDef bottom = GameplayTestFactory.Dish("bottom", new[] { "X" }, deliciousness: 1, allowRotate: false);
+            var db = new GameplayDatabase(new[] { top, bottom }, new List<SkillDef>(), new List<FlavorDef>(), new List<CellTagDef>(), new List<RecipeDef>());
+            var board = new GpBoard(1, 2);
+            board.Place(GameplayTestFactory.Instance(1, top, 0, 0));
+            board.Place(GameplayTestFactory.Instance(2, bottom, 0, 1));
+
+            ScoreResult normal = new ScoreCalculator().Calculate(board, db);
+            ScoreResult reverse = new ScoreCalculator().Calculate(board, db, reverseDishOrder: true);
+
+            Assert.AreEqual("top", normal.DishScores[0].DishId);
+            Assert.AreEqual("bottom", reverse.DishScores[0].DishId);
+        }
+
+        [Test]
+        public void Buffet_MinimumServesForScoreZerosResult()
+        {
+            var rng = new RandomService();
+            rng.Init("buffet");
+            BattleSession session = BuildSession(rng, requiredScore: 1);
+            session.MinimumServesForScore = 10;
+            session.Serve(0);
+
+            ScoreResult result = session.Settle();
+
+            Assert.AreEqual(0, result.Total);
+            Assert.IsFalse(session.IsWin);
         }
     }
 }

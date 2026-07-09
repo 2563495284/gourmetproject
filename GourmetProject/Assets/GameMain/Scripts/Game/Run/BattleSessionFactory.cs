@@ -21,10 +21,12 @@ namespace GourmetProject.Game.Run
         public static BattleSession Build(GameRun run, int requiredScore, string modifier, string key)
         {
             modifier ??= string.Empty;
+            requiredScore = ApplyRequiredScoreModifier(requiredScore, modifier);
 
             cfg.Character character = run.Tables.TbCharacter.GetOrDefault(run.CharacterId);
             string recipeId = character?.InitialRecipeId;
             RecipeDef recipe = run.Database.GetRecipe(recipeId);
+            var debuffStream = GameApp.Random.DomainStream(SeedDomains.Combat, $"{key}_debuff_setup");
 
             int recipeBookCount = System.Math.Max(GameRun.DefaultRecipeBookCount, run.RecipeBookCount);
             var slots = new List<RecipeSlot>(recipeBookCount);
@@ -44,6 +46,8 @@ namespace GourmetProject.Game.Run
 
                     slots.Add(new RecipeSlot($"菜谱{i + 1}", deck));
                 }
+
+                ApplyRecipeModifiers(slots, run, modifier, debuffStream);
             }
             else
             {
@@ -51,6 +55,7 @@ namespace GourmetProject.Game.Run
             }
 
             GpBoard board = BuildBoard(run, character, modifier);
+            ApplyBoardModifiers(board, TotalRecipeEntries(slots), modifier, debuffStream);
 
             var battleStream = GameApp.Random.DomainStream(SeedDomains.Combat, key);
 
@@ -69,10 +74,7 @@ namespace GourmetProject.Game.Run
                 session.SeedHappyCakeLayers(initLayers);
             }
 
-            if (modifier == "limit_serve")
-            {
-                session.MaxServes = 5;
-            }
+            ApplySessionModifiers(session, modifier);
 
             ApplyPassiveItems(run, session);
             return session;
@@ -93,17 +95,24 @@ namespace GourmetProject.Game.Run
             int maxW = character != null && character.MaxStomachWidth > 0 ? character.MaxStomachWidth : GameRun.BoardWidth;
             int maxH = character != null && character.MaxStomachHeight > 0 ? character.MaxStomachHeight : GameRun.BoardHeight;
 
-            if (modifier == "small_board")
+            if (BossDebuffModifiers.IsSmallBoard(modifier))
             {
                 maxW = System.Math.Min(maxW, 3);
                 maxH = System.Math.Min(maxH, 3);
+            }
+            else if (modifier == BossDebuffModifiers.Indulgent)
+            {
+                maxW += 1;
+                maxH += 1;
             }
 
             StomachFragmentDef fragment = run.Database.GetFragment(character?.InitialFragmentId);
             if (fragment == null)
             {
                 Log.Warning($"Character '{run.CharacterId}' 无有效初始胃碎片 '{character?.InitialFragmentId}'，回退为满 {maxW}x{maxH} 棋盘。", "GameRun");
-                return new GpBoard(maxW, maxH);
+                GpBoard fallback = new GpBoard(maxW, maxH);
+                ApplyShapeModifier(fallback, modifier);
+                return fallback;
             }
 
             // 统一造盘：用更大的隐藏画布承载局部坐标，maxW/maxH 只限制最终胃形局部包围框。
@@ -111,7 +120,7 @@ namespace GourmetProject.Game.Run
             int canvasH = maxH * 3;
             GridPos localOrigin = StomachBuilder.CenteredOrigin(fragment, maxW, maxH);
             var initialOrigin = new GridPos(localOrigin.X + maxW, localOrigin.Y + maxH);
-            return StomachBuilder.BuildFromExpandedLocalBounds(
+            GpBoard board = StomachBuilder.BuildFromExpandedLocalBounds(
                 fragment,
                 GetAcquiredFragments(run),
                 run.FragmentPlacements,
@@ -121,6 +130,294 @@ namespace GourmetProject.Game.Run
                 canvasW,
                 canvasH,
                 initialOrigin);
+            ApplyShapeModifier(board, modifier);
+            return board;
+        }
+
+        private static int ApplyRequiredScoreModifier(int requiredScore, string modifier)
+        {
+            float multiplier = 1f;
+            switch (modifier)
+            {
+                case BossDebuffModifiers.Indulgent:
+                    multiplier = 1.5f;
+                    break;
+                case BossDebuffModifiers.KidsMeal:
+                    multiplier = 0.8f;
+                    break;
+                case BossDebuffModifiers.Gluttony:
+                    multiplier = 1.1f;
+                    break;
+            }
+
+            return (int)System.Math.Round(requiredScore * multiplier, System.MidpointRounding.AwayFromZero);
+        }
+
+        private static void ApplyRecipeModifiers(List<RecipeSlot> slots, GameRun run, string modifier, IRandomStream rng)
+        {
+            if (modifier == BossDebuffModifiers.Gluttony)
+            {
+                foreach (RecipeSlot slot in slots)
+                {
+                    var copies = new List<RecipeSlotEntry>();
+                    foreach (RecipeSlotEntry entry in slot.Entries)
+                    {
+                        copies.Add(entry.Clone());
+                    }
+
+                    foreach (RecipeSlotEntry copy in copies)
+                    {
+                        slot.AddEntry(copy);
+                    }
+                }
+            }
+            else if (modifier == BossDebuffModifiers.Omakase)
+            {
+                var all = new List<RecipeSlotEntry>();
+                foreach (RecipeSlot slot in slots)
+                {
+                    foreach (RecipeSlotEntry entry in slot.Entries)
+                    {
+                        all.Add(entry.Clone());
+                    }
+                }
+
+                rng.Shuffle(all);
+                foreach (RecipeSlot slot in slots)
+                {
+                    slot.ReplaceEntries(System.Array.Empty<RecipeSlotEntry>());
+                }
+
+                for (int i = 0; i < all.Count; i++)
+                {
+                    slots[i % slots.Count].AddEntry(all[i]);
+                }
+            }
+            else if (modifier == BossDebuffModifiers.LightMeal)
+            {
+                MarkRandomRecipeEntries(slots, System.Math.Max(1, TotalRecipeEntries(slots) / 8 + 1), rng, disableSkills: true);
+            }
+            else if (modifier == BossDebuffModifiers.VeganMeal)
+            {
+                MarkRandomRecipeEntries(slots, TotalRecipeEntries(slots) / 8, rng, excludeFromScore: true);
+            }
+        }
+
+        private static void MarkRandomRecipeEntries(
+            List<RecipeSlot> slots,
+            int count,
+            IRandomStream rng,
+            bool disableSkills = false,
+            bool excludeFromScore = false)
+        {
+            if (count <= 0)
+            {
+                return;
+            }
+
+            var entries = new List<RecipeSlotEntry>();
+            foreach (RecipeSlot slot in slots)
+            {
+                entries.AddRange(slot.Entries);
+            }
+
+            rng.Shuffle(entries);
+            int take = System.Math.Min(count, entries.Count);
+            for (int i = 0; i < take; i++)
+            {
+                if (disableSkills)
+                {
+                    entries[i].MarkSkillsDisabled();
+                }
+
+                if (excludeFromScore)
+                {
+                    entries[i].MarkExcludedFromScore();
+                }
+            }
+        }
+
+        private static int TotalRecipeEntries(List<RecipeSlot> slots)
+        {
+            int total = 0;
+            foreach (RecipeSlot slot in slots)
+            {
+                total += slot.Count;
+            }
+
+            return total;
+        }
+
+        private static void ApplyShapeModifier(GpBoard board, string modifier)
+        {
+            if (board == null)
+            {
+                return;
+            }
+
+            if (modifier == BossDebuffModifiers.Indulgent)
+            {
+                AddBottomAndRightCells(board);
+            }
+            else if (modifier == BossDebuffModifiers.KidsMeal)
+            {
+                RemoveBottomAndRightCells(board);
+            }
+        }
+
+        private static void AddBottomAndRightCells(GpBoard board)
+        {
+            List<GridPos> cells = board.ExistingCells();
+            var toAdd = new List<GridPos>();
+            for (int x = 0; x < board.Width; x++)
+            {
+                int maxY = -1;
+                foreach (GridPos cell in cells)
+                {
+                    if (cell.X == x && cell.Y > maxY)
+                    {
+                        maxY = cell.Y;
+                    }
+                }
+
+                if (maxY >= 0)
+                {
+                    toAdd.Add(new GridPos(x, maxY + 1));
+                }
+            }
+
+            for (int y = 0; y < board.Height; y++)
+            {
+                int maxX = -1;
+                foreach (GridPos cell in cells)
+                {
+                    if (cell.Y == y && cell.X > maxX)
+                    {
+                        maxX = cell.X;
+                    }
+                }
+
+                if (maxX >= 0)
+                {
+                    toAdd.Add(new GridPos(maxX + 1, y));
+                }
+            }
+
+            foreach (GridPos cell in toAdd)
+            {
+                board.SetExists(cell, true);
+            }
+        }
+
+        private static void RemoveBottomAndRightCells(GpBoard board)
+        {
+            List<GridPos> cells = board.ExistingCells();
+            var toRemove = new HashSet<GridPos>();
+            for (int x = 0; x < board.Width; x++)
+            {
+                int maxY = -1;
+                foreach (GridPos cell in cells)
+                {
+                    if (cell.X == x && cell.Y > maxY)
+                    {
+                        maxY = cell.Y;
+                    }
+                }
+
+                if (maxY >= 0)
+                {
+                    toRemove.Add(new GridPos(x, maxY));
+                }
+            }
+
+            for (int y = 0; y < board.Height; y++)
+            {
+                int maxX = -1;
+                foreach (GridPos cell in cells)
+                {
+                    if (cell.Y == y && cell.X > maxX)
+                    {
+                        maxX = cell.X;
+                    }
+                }
+
+                if (maxX >= 0)
+                {
+                    toRemove.Add(new GridPos(maxX, y));
+                }
+            }
+
+            foreach (GridPos cell in toRemove)
+            {
+                board.SetExists(cell, false);
+            }
+        }
+
+        private static void ApplyBoardModifiers(GpBoard board, int foodCount, string modifier, IRandomStream rng)
+        {
+            if (board == null || modifier != BossDebuffModifiers.Vegetarian)
+            {
+                return;
+            }
+
+            int disableCount = foodCount / 12 + 1;
+            List<GridPos> cells = board.ExistingCells();
+            rng.Shuffle(cells);
+            int disabled = 0;
+            foreach (GridPos cell in cells)
+            {
+                if (!board.IsEmpty(cell))
+                {
+                    continue;
+                }
+
+                board.SetDisabled(cell, true);
+                disabled++;
+                if (disabled >= disableCount)
+                {
+                    break;
+                }
+            }
+        }
+
+        private static void ApplySessionModifiers(BattleSession session, string modifier)
+        {
+            if (session == null)
+            {
+                return;
+            }
+
+            switch (modifier)
+            {
+                case BossDebuffModifiers.LegacyLimitServe:
+                    session.MaxServes = 5;
+                    break;
+                case BossDebuffModifiers.DineAndDash:
+                    session.GoldCostPerServe = 5;
+                    break;
+                case BossDebuffModifiers.FineDining:
+                    session.HalveBaseScore = true;
+                    break;
+                case BossDebuffModifiers.DarkCuisine:
+                    session.RandomServeMultiplier = true;
+                    break;
+                case BossDebuffModifiers.ComboMeal:
+                    session.AutoServeSecondDish = true;
+                    break;
+                case BossDebuffModifiers.LateNight:
+                    session.ReverseSettlementOrder = true;
+                    break;
+                case BossDebuffModifiers.Appetizer:
+                    session.RemoveFirstServedDishes = true;
+                    session.FirstServedDishesToRemove = 3;
+                    break;
+                case BossDebuffModifiers.Tasting:
+                    session.AlternateServeMultiplier = true;
+                    break;
+                case BossDebuffModifiers.Buffet:
+                    session.MinimumServesForScore = 10;
+                    break;
+            }
         }
 
         private static List<StomachFragmentDef> GetAcquiredFragments(GameRun run)

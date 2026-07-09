@@ -31,10 +31,11 @@ namespace GourmetProject.Gameplay.Scoring
             IScoreHistory history = null,
             int initialHappyCakeLayers = 0,
             int extraCountAsPerDish = 0,
-            int cakeLayerThresholdReduction = 0)
+            int cakeLayerThresholdReduction = 0,
+            bool reverseDishOrder = false)
         {
             IScoreEffectSource[] sources = MergeSources(extraSources);
-            return Calculate(new ScoreSnapshot(board, db, finalFlat, finalMultiplier, sources, history, initialHappyCakeLayers, extraCountAsPerDish, cakeLayerThresholdReduction));
+            return Calculate(new ScoreSnapshot(board, db, finalFlat, finalMultiplier, sources, history, initialHappyCakeLayers, extraCountAsPerDish, cakeLayerThresholdReduction, reverseDishOrder));
         }
 
         public ScoreResult Calculate(ScoreSnapshot snapshot)

@@ -17,6 +17,7 @@ namespace GourmetProject.Gameplay.Board
 
         private readonly int[] _cells;       // 占用该格的实例 Id，Empty 表示空。
         private readonly bool[] _exists;      // 该格是否属于胃。
+        private readonly bool[] _disabled;    // 临时禁用格：存在但不可上菜。
         private readonly List<string>[] _cellTags; // 该格携带的强化标签（可为 null）。
         private readonly List<DishInstance> _dishes = new List<DishInstance>();
         private int _existingCount;
@@ -46,6 +47,7 @@ namespace GourmetProject.Gameplay.Board
             Height = height;
             _cells = new int[width * height];
             _exists = new bool[width * height];
+            _disabled = new bool[width * height];
             _cellTags = new List<string>[width * height];
 
             for (int i = 0; i < _cells.Length; i++)
@@ -122,6 +124,73 @@ namespace GourmetProject.Gameplay.Board
         /// <summary>该格是否属于胃（在界内且被标记为存在）。</summary>
         public bool Exists(GridPos p) => InBounds(p) && _exists[Index(p)];
 
+        public bool IsDisabled(GridPos p) => Exists(p) && _disabled[Index(p)];
+
+        public void SetExists(GridPos p, bool exists)
+        {
+            if (!InBounds(p))
+            {
+                return;
+            }
+
+            int idx = Index(p);
+            if (!exists && _cells[idx] != Empty)
+            {
+                throw new InvalidOperationException($"Cannot remove occupied cell {p}.");
+            }
+
+            if (_exists[idx] == exists)
+            {
+                return;
+            }
+
+            _exists[idx] = exists;
+            _disabled[idx] = false;
+            if (exists)
+            {
+                _existingCount++;
+            }
+            else
+            {
+                _existingCount--;
+                _cellTags[idx] = null;
+            }
+        }
+
+        public void SetDisabled(GridPos p, bool disabled)
+        {
+            if (!Exists(p))
+            {
+                return;
+            }
+
+            int idx = Index(p);
+            if (disabled && _cells[idx] != Empty)
+            {
+                throw new InvalidOperationException($"Cannot disable occupied cell {p}.");
+            }
+
+            _disabled[idx] = disabled;
+        }
+
+        public List<GridPos> ExistingCells()
+        {
+            var cells = new List<GridPos>();
+            for (int y = 0; y < Height; y++)
+            {
+                for (int x = 0; x < Width; x++)
+                {
+                    var p = new GridPos(x, y);
+                    if (Exists(p))
+                    {
+                        cells.Add(p);
+                    }
+                }
+            }
+
+            return cells;
+        }
+
         /// <summary>
         /// 求所有「存在格」的最小包围盒（闭区间），用于把不规则/偏置的胃整体居中显示。
         /// 没有任何存在格时返回 false。
@@ -150,7 +219,7 @@ namespace GourmetProject.Gameplay.Board
         }
 
         /// <summary>该格是否存在且未被占用。</summary>
-        public bool IsEmpty(GridPos p) => Exists(p) && _cells[Index(p)] == Empty;
+        public bool IsEmpty(GridPos p) => Exists(p) && !_disabled[Index(p)] && _cells[Index(p)] == Empty;
 
         /// <summary>该存在格携带的强化标签（无则空列表）。</summary>
         public IReadOnlyList<string> TagsAt(GridPos p)
@@ -182,7 +251,22 @@ namespace GourmetProject.Gameplay.Board
         }
 
         /// <summary>存在且空的格数。</summary>
-        public int EmptyCellCount => _existingCount - OccupiedCellCount;
+        public int EmptyCellCount
+        {
+            get
+            {
+                int count = 0;
+                for (int i = 0; i < _cells.Length; i++)
+                {
+                    if (_exists[i] && !_disabled[i] && _cells[i] == Empty)
+                    {
+                        count++;
+                    }
+                }
+
+                return count;
+            }
+        }
 
         /// <summary>判断某朝向形状能否放在以 origin 为左上的位置（全部格存在且为空）。</summary>
         public bool CanPlace(DishShape orientation, GridPos origin)
@@ -195,7 +279,7 @@ namespace GourmetProject.Gameplay.Board
             foreach (GridPos cell in orientation.Cells)
             {
                 GridPos abs = cell.Offset(origin.X, origin.Y);
-                if (!Exists(abs) || _cells[Index(abs)] != Empty)
+                if (!Exists(abs) || _disabled[Index(abs)] || _cells[Index(abs)] != Empty)
                 {
                     return false;
                 }

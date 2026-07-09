@@ -68,6 +68,18 @@ namespace GourmetProject.Gameplay.Board
         /// <summary>运行时永久乘区（PermanentAddMult 累乘，计入乘区初值），初始 1。</summary>
         public float PermanentMultBonus { get; private set; } = 1f;
 
+        /// <summary>本场临时基础分倍率（Boss Debuff 等），只影响当前战斗内结算。</summary>
+        public float TemporaryBaseMultiplier { get; private set; } = 1f;
+
+        /// <summary>上菜时确定的临时乘区倍率（Boss Debuff 等），只影响当前战斗内结算。</summary>
+        public float ServeMultiplier { get; private set; } = 1f;
+
+        /// <summary>本实例技能是否失效（清淡餐）。</summary>
+        public bool SkillsDisabled { get; private set; }
+
+        /// <summary>本实例是否不参与分数汇总与结算历史（斋饭/自助餐等）。</summary>
+        public bool ExcludedFromScore { get; private set; }
+
         /// <summary>累加「视为食物数」加成。</summary>
         public void AddCountAsBonus(int delta)
         {
@@ -87,6 +99,32 @@ namespace GourmetProject.Gameplay.Board
             {
                 PermanentMultBonus *= value;
             }
+        }
+
+        public void MultiplyTemporaryBase(float value)
+        {
+            if (value > 0f)
+            {
+                TemporaryBaseMultiplier *= value;
+            }
+        }
+
+        public void MultiplyServeMultiplier(float value)
+        {
+            if (value > 0f)
+            {
+                ServeMultiplier *= value;
+            }
+        }
+
+        public void DisableSkills()
+        {
+            SkillsDisabled = true;
+        }
+
+        public void ExcludeFromScore()
+        {
+            ExcludedFromScore = true;
         }
 
         /// <summary>追加运行时技能（技能传递）。已存在则不重复。</summary>
@@ -163,6 +201,19 @@ namespace GourmetProject.Gameplay.Board
             {
                 _skillSources[kv.Key] = kv.Value;
             }
+
+            if (other.SkillsDisabled)
+            {
+                DisableSkills();
+            }
+
+            if (other.ExcludedFromScore)
+            {
+                ExcludeFromScore();
+            }
+
+            MultiplyTemporaryBase(other.TemporaryBaseMultiplier);
+            MultiplyServeMultiplier(other.ServeMultiplier);
         }
 
         /// <summary>是否为「临时复制」产生的克隆实例（品鉴结束时清理，且自身不再触发临时复制）。</summary>

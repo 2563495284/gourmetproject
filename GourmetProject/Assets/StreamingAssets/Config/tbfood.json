@@ -10,9 +10,7 @@
     "rewardKind": 0,
     "rewardPackageId": "reward_food_gold",
     "hiddenScoreBonus": 0,
-    "modifier": "",
     "unlockCondition": "",
-    "week": 0,
     "weight": 1,
     "repeatable": true,
     "preconditions": ""
@@ -28,9 +26,7 @@
     "rewardKind": 4,
     "rewardPackageId": "reward_food_fragment",
     "hiddenScoreBonus": 2,
-    "modifier": "",
     "unlockCondition": "",
-    "week": 0,
     "weight": 1,
     "repeatable": true,
     "preconditions": ""
@@ -46,9 +42,7 @@
     "rewardKind": 2,
     "rewardPackageId": "reward_food_passive",
     "hiddenScoreBonus": 2,
-    "modifier": "",
     "unlockCondition": "",
-    "week": 0,
     "weight": 1,
     "repeatable": true,
     "preconditions": ""
@@ -64,9 +58,7 @@
     "rewardKind": 3,
     "rewardPackageId": "reward_food_active",
     "hiddenScoreBonus": 1,
-    "modifier": "",
     "unlockCondition": "",
-    "week": 0,
     "weight": 1,
     "repeatable": true,
     "preconditions": ""
@@ -82,9 +74,7 @@
     "rewardKind": 1,
     "rewardPackageId": "reward_food_dish",
     "hiddenScoreBonus": 1,
-    "modifier": "",
     "unlockCondition": "",
-    "week": 0,
     "weight": 1,
     "repeatable": true,
     "preconditions": ""
@@ -100,9 +90,7 @@
     "rewardKind": 0,
     "rewardPackageId": "reward_food_hard_gold",
     "hiddenScoreBonus": 7,
-    "modifier": "",
     "unlockCondition": "",
-    "week": 0,
     "weight": 1,
     "repeatable": true,
     "preconditions": ""
@@ -118,9 +106,7 @@
     "rewardKind": 4,
     "rewardPackageId": "reward_food_hard_fragment",
     "hiddenScoreBonus": 8,
-    "modifier": "",
     "unlockCondition": "",
-    "week": 0,
     "weight": 1,
     "repeatable": true,
     "preconditions": ""
@@ -136,9 +122,7 @@
     "rewardKind": 2,
     "rewardPackageId": "reward_food_hard_passive",
     "hiddenScoreBonus": 9,
-    "modifier": "",
     "unlockCondition": "",
-    "week": 0,
     "weight": 1,
     "repeatable": true,
     "preconditions": ""
@@ -154,9 +138,7 @@
     "rewardKind": 3,
     "rewardPackageId": "reward_food_hard_active",
     "hiddenScoreBonus": 7,
-    "modifier": "",
     "unlockCondition": "",
-    "week": 0,
     "weight": 1,
     "repeatable": true,
     "preconditions": ""
@@ -172,9 +154,7 @@
     "rewardKind": 1,
     "rewardPackageId": "reward_food_hard_dish",
     "hiddenScoreBonus": 8,
-    "modifier": "",
     "unlockCondition": "",
-    "week": 0,
     "weight": 1,
     "repeatable": true,
     "preconditions": ""
@@ -190,9 +170,7 @@
     "rewardKind": 0,
     "rewardPackageId": "",
     "hiddenScoreBonus": 0,
-    "modifier": "limit_serve",
     "unlockCondition": "",
-    "week": 0,
     "weight": 100,
     "repeatable": true,
     "preconditions": ""
@@ -208,9 +186,7 @@
     "rewardKind": 0,
     "rewardPackageId": "",
     "hiddenScoreBonus": 0,
-    "modifier": "small_board",
     "unlockCondition": "",
-    "week": 0,
     "weight": 80,
     "repeatable": true,
     "preconditions": ""
@@ -226,9 +202,7 @@
     "rewardKind": 0,
     "rewardPackageId": "",
     "hiddenScoreBonus": 0,
-    "modifier": "small_board",
     "unlockCondition": "",
-    "week": 8,
     "weight": 100,
     "repeatable": true,
     "preconditions": ""

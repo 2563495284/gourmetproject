@@ -8,13 +8,13 @@ namespace GourmetProject.Game.Meta
 {
     /// <summary>
     /// 美食明细解析 + Boss 随机。Boss 已并入 <see cref="cfg.Food"/>（isBoss=true 的美食行）。
-    /// Boss 随机按解锁条件筛选，从 Boss 候选中不放回按权重随机；候选抽光后重置抽取历史。
+    /// Boss 与 Boss Debuff 都按解锁条件筛选后不放回按权重随机；候选抽光后重置抽取历史。
     /// </summary>
     public static class BossService
     {
         private const string Tag = "Boss";
 
-        public static cfg.Food RollBoss(GameRun run, IRandomStream rng)
+        public static cfg.Food RollBoss(GameRun run, IRandomStream rng, bool mutateHistoryOnExhaustion = true)
         {
             cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
             var available = new List<cfg.Food>();
@@ -35,7 +35,11 @@ namespace GourmetProject.Game.Meta
             List<cfg.Food> candidates = BuildUnrolledCandidates(run, available);
             if (candidates.Count == 0)
             {
-                run.ResetBossRollHistory();
+                if (mutateHistoryOnExhaustion)
+                {
+                    run.ResetBossRollHistory();
+                }
+
                 candidates = new List<cfg.Food>(available);
             }
 
@@ -43,6 +47,44 @@ namespace GourmetProject.Game.Meta
             foreach (cfg.Food boss in candidates)
             {
                 weights.Add(boss.Weight > 0f ? boss.Weight : 1f);
+            }
+
+            return candidates[rng.WeightedPickIndex(weights)];
+        }
+
+        public static cfg.BossDebuff RollBossDebuff(GameRun run, IRandomStream rng, bool mutateHistoryOnExhaustion = true)
+        {
+            cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
+            var available = new List<cfg.BossDebuff>();
+            foreach (cfg.BossDebuff debuff in tables.TbBossDebuff.DataList)
+            {
+                if (IsEligible(run, debuff))
+                {
+                    available.Add(debuff);
+                }
+            }
+
+            if (available.Count == 0)
+            {
+                Log.Warning($"第 {run?.WeekIndex ?? 0} 周无可用 Boss Debuff。", Tag);
+                return null;
+            }
+
+            List<cfg.BossDebuff> candidates = BuildUnrolledDebuffCandidates(run, available);
+            if (candidates.Count == 0)
+            {
+                if (mutateHistoryOnExhaustion)
+                {
+                    run.ResetBossDebuffRollHistory();
+                }
+
+                candidates = new List<cfg.BossDebuff>(available);
+            }
+
+            var weights = new List<float>(candidates.Count);
+            foreach (cfg.BossDebuff debuff in candidates)
+            {
+                weights.Add(debuff.Weight > 0f ? debuff.Weight : 1f);
             }
 
             return candidates[rng.WeightedPickIndex(weights)];
@@ -58,6 +100,16 @@ namespace GourmetProject.Game.Meta
             return PreconditionEvaluator.IsSatisfied(run, boss.UnlockCondition);
         }
 
+        private static bool IsEligible(GameRun run, cfg.BossDebuff debuff)
+        {
+            if (debuff == null)
+            {
+                return false;
+            }
+
+            return PreconditionEvaluator.IsSatisfied(run, debuff.UnlockCondition);
+        }
+
         private static List<cfg.Food> BuildUnrolledCandidates(GameRun run, IReadOnlyList<cfg.Food> available)
         {
             var candidates = new List<cfg.Food>(available.Count);
@@ -66,6 +118,20 @@ namespace GourmetProject.Game.Meta
                 if (!run.IsBossRolled(boss.Id))
                 {
                     candidates.Add(boss);
+                }
+            }
+
+            return candidates;
+        }
+
+        private static List<cfg.BossDebuff> BuildUnrolledDebuffCandidates(GameRun run, IReadOnlyList<cfg.BossDebuff> available)
+        {
+            var candidates = new List<cfg.BossDebuff>(available.Count);
+            foreach (cfg.BossDebuff debuff in available)
+            {
+                if (!run.IsBossDebuffRolled(debuff.Id))
+                {
+                    candidates.Add(debuff);
                 }
             }
 

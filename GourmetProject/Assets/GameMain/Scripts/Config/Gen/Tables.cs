@@ -127,6 +127,10 @@ public partial class Tables
     /// </summary>
     public TbFood TbFood {get; }
     /// <summary>
+    /// Boss 盛宴 Debuff：Boss 美食战斗独立抽取，不放回随机；抽空后重置历史。
+    /// </summary>
+    public TbBossDebuff TbBossDebuff {get; }
+    /// <summary>
     /// 事件明细：eventType 分类(Event/Reward/Negative)，公共 preconditions/weight/repeatable。
     /// </summary>
     public TbEvent TbEvent {get; }
@@ -193,6 +197,7 @@ public partial class Tables
         TbCakeLayerBuff = new TbCakeLayerBuff(loader("tbcakelayerbuff"));
         TbSubSkill = new TbSubSkill(loader("tbsubskill"));
         TbFood = new TbFood(loader("tbfood"));
+        TbBossDebuff = new TbBossDebuff(loader("tbbossdebuff"));
         TbEvent = new TbEvent(loader("tbevent"));
         TbEventOption = new TbEventOption(loader("tbeventoption"));
         TbActionSmallGroup = new TbActionSmallGroup(loader("tbactionsmallgroup"));
@@ -235,6 +240,7 @@ public partial class Tables
         TbCakeLayerBuff.ResolveRef(this);
         TbSubSkill.ResolveRef(this);
         TbFood.ResolveRef(this);
+        TbBossDebuff.ResolveRef(this);
         TbEvent.ResolveRef(this);
         TbEventOption.ResolveRef(this);
         TbActionSmallGroup.ResolveRef(this);

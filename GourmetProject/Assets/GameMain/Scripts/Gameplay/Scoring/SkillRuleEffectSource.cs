@@ -15,6 +15,11 @@ namespace GourmetProject.Gameplay.Scoring
         {
             foreach (DishInstance dish in snapshot.DishesInDefaultOrder)
             {
+                if (dish.SkillsDisabled)
+                {
+                    continue;
+                }
+
                 int boardOrder = dish.Placement.Origin.Y * snapshot.Board.Width + dish.Placement.Origin.X;
                 foreach (string skillId in dish.SkillIds)
                 {

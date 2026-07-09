@@ -19,7 +19,8 @@ namespace GourmetProject.Gameplay.Scoring
             IScoreHistory history = null,
             int initialHappyCakeLayers = 0,
             int extraCountAsPerDish = 0,
-            int cakeLayerThresholdReduction = 0)
+            int cakeLayerThresholdReduction = 0,
+            bool reverseDishOrder = false)
         {
             Board = board ?? throw new ArgumentNullException(nameof(board));
             Db = db ?? throw new ArgumentNullException(nameof(db));
@@ -30,11 +31,21 @@ namespace GourmetProject.Gameplay.Scoring
             CakeLayerThresholdReduction = cakeLayerThresholdReduction < 0 ? 0 : cakeLayerThresholdReduction;
             History = history ?? EmptyScoreHistory.Instance;
             EffectSources = (effectSources ?? Array.Empty<IScoreEffectSource>()).ToArray();
-            DishesInDefaultOrder = Board.Dishes
+            IEnumerable<DishInstance> ordered = Board.Dishes
+                .Where(d => !d.ExcludedFromScore)
                 .OrderBy(d => d.Placement.Origin.Y)
                 .ThenBy(d => d.Placement.Origin.X)
-                .ThenBy(d => d.Id)
-                .ToArray();
+                .ThenBy(d => d.Id);
+            if (reverseDishOrder)
+            {
+                ordered = Board.Dishes
+                    .Where(d => !d.ExcludedFromScore)
+                    .OrderByDescending(d => d.Placement.Origin.Y)
+                    .ThenByDescending(d => d.Placement.Origin.X)
+                    .ThenBy(d => d.Id);
+            }
+
+            DishesInDefaultOrder = ordered.ToArray();
         }
 
         public GpBoard Board { get; }

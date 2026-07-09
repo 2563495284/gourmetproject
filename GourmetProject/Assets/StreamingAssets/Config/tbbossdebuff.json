@@ -1,0 +1,130 @@
+[
+  {
+    "id": "debuff_indulgent",
+    "name": "放纵餐",
+    "desc": "获得一行与一列临时格子，美味度要求 x1.5。",
+    "modifier": "feast_indulgent",
+    "weight": 1,
+    "unlockCondition": ""
+  },
+  {
+    "id": "debuff_kids_meal",
+    "name": "儿童餐",
+    "desc": "失去一行与一列临时格子，美味度要求 x0.8。",
+    "modifier": "feast_kids_meal",
+    "weight": 1,
+    "unlockCondition": ""
+  },
+  {
+    "id": "debuff_gluttony",
+    "name": "贪食餐",
+    "desc": "食谱中的食物翻倍，美味度要求 x1.1。",
+    "modifier": "feast_gluttony",
+    "weight": 1,
+    "unlockCondition": ""
+  },
+  {
+    "id": "debuff_prefab_food",
+    "name": "预制菜",
+    "desc": "本场调整食物基础次数为 0。",
+    "modifier": "feast_prefab_food",
+    "weight": 1,
+    "unlockCondition": ""
+  },
+  {
+    "id": "debuff_omakase",
+    "name": "Omakase",
+    "desc": "打乱各个食谱中的食物。",
+    "modifier": "feast_omakase",
+    "weight": 1,
+    "unlockCondition": ""
+  },
+  {
+    "id": "debuff_light_meal",
+    "name": "清淡餐",
+    "desc": "随机部分食物技能失效。",
+    "modifier": "feast_light_meal",
+    "weight": 1,
+    "unlockCondition": ""
+  },
+  {
+    "id": "debuff_vegan_meal",
+    "name": "斋饭",
+    "desc": "随机部分食物不参与分数汇总。",
+    "modifier": "feast_vegan_meal",
+    "weight": 1,
+    "unlockCondition": ""
+  },
+  {
+    "id": "debuff_dine_and_dash",
+    "name": "霸王餐",
+    "desc": "每次上菜扣 5 金币，最低为 0。",
+    "modifier": "feast_dine_and_dash",
+    "weight": 1,
+    "unlockCondition": ""
+  },
+  {
+    "id": "debuff_fine_dining",
+    "name": "高级料理",
+    "desc": "所有食物基础分减半。",
+    "modifier": "feast_fine_dining",
+    "weight": 1,
+    "unlockCondition": ""
+  },
+  {
+    "id": "debuff_vegetarian",
+    "name": "素食",
+    "desc": "随机部分格子被禁用，无法上菜。",
+    "modifier": "feast_vegetarian",
+    "weight": 1,
+    "unlockCondition": ""
+  },
+  {
+    "id": "debuff_dark_cuisine",
+    "name": "黑暗料理",
+    "desc": "上菜时倍率在 0.5 到 1.5 间随机。",
+    "modifier": "feast_dark_cuisine",
+    "weight": 1,
+    "unlockCondition": ""
+  },
+  {
+    "id": "debuff_combo_meal",
+    "name": "套餐",
+    "desc": "点击上菜会从本菜谱额外上一道菜。",
+    "modifier": "feast_combo_meal",
+    "weight": 1,
+    "unlockCondition": ""
+  },
+  {
+    "id": "debuff_late_night",
+    "name": "夜宵",
+    "desc": "结算顺序颠倒。",
+    "modifier": "feast_late_night",
+    "weight": 1,
+    "unlockCondition": ""
+  },
+  {
+    "id": "debuff_appetizer",
+    "name": "开胃菜",
+    "desc": "前 3 个上的菜会消失。",
+    "modifier": "feast_appetizer",
+    "weight": 1,
+    "unlockCondition": ""
+  },
+  {
+    "id": "debuff_tasting",
+    "name": "试吃",
+    "desc": "上菜倍率按 0.5 和 1.5 交替。",
+    "modifier": "feast_tasting",
+    "weight": 1,
+    "unlockCondition": ""
+  },
+  {
+    "id": "debuff_buffet",
+    "name": "自助餐",
+    "desc": "必须上至少 10 个菜，否则没有分数。",
+    "modifier": "feast_buffet",
+    "weight": 1,
+    "unlockCondition": ""
+  }
+]

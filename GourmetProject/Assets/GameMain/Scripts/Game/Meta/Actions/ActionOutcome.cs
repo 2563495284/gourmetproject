@@ -45,13 +45,16 @@ namespace GourmetProject.Game.Meta
         /// <summary>Boss id（Battle 且 IsBoss 时有效）。</summary>
         public string BossId { get; private set; } = string.Empty;
 
+        /// <summary>Boss Debuff id（Battle 且 IsBoss 时有效）。</summary>
+        public string BossDebuffId { get; private set; } = string.Empty;
+
         /// <summary>事件行动 id（Event）：指向 behavior=Event 的原子行动；为空或指向 Roll 行动时由编排层随机。</summary>
         public string EventId { get; private set; } = string.Empty;
 
         public static ActionOutcome Immediate(string feedback) =>
             new ActionOutcome(ActionOutcomeKind.Immediate) { Feedback = feedback ?? string.Empty };
 
-        public static ActionOutcome Battle(int requiredScore, string modifier, string battleKey, bool isBoss = false, string bossId = null) =>
+        public static ActionOutcome Battle(int requiredScore, string modifier, string battleKey, bool isBoss = false, string bossId = null, string bossDebuffId = null) =>
             new ActionOutcome(ActionOutcomeKind.Battle)
             {
                 RequiredScore = requiredScore,
@@ -59,6 +62,7 @@ namespace GourmetProject.Game.Meta
                 BattleKey = battleKey ?? string.Empty,
                 IsBoss = isBoss,
                 BossId = bossId ?? string.Empty,
+                BossDebuffId = bossDebuffId ?? string.Empty,
             };
 
         public static ActionOutcome Event(string eventId) =>
