@@ -45,6 +45,12 @@ namespace GourmetProject.Core.Rng
         /// <summary>局内战斗上菜 / AI 决策。</summary>
         public const string Combat = "combat";
 
+        /// <summary>
+        /// 主动道具使用副作用（生成/复制/随机类效果落地）专用域。
+        /// 按存档里的「主动道具使用序号」派生实例流，保证同种子同输入下第 K 次使用可复现。
+        /// </summary>
+        public const string Item = "item";
+
         /// <summary>表现层随机（特效、抖动、飘字等），不参与玩法复现，不入存档。</summary>
         public const string Cosmetic = "cosmetic";
     }

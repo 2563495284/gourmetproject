@@ -21,6 +21,10 @@ namespace GourmetProject.Game.Run
 
         /// <summary>「食物调整」剩余次数。默认 999，兼容旧档缺省。</summary>
         public int FoodAdjustCount = 999;
+
+        /// <summary>主动道具累计使用次数（单调递增）。随机类主动效果按此序号派生随机流以保证可复现。</summary>
+        public int ActiveUseIndex;
+
         public List<RunItemSaveData> Items = new List<RunItemSaveData>();
         public List<string> BonusDishIds = new List<string>();
         public List<RunRecipeBookSaveData> RecipeBooks = new List<RunRecipeBookSaveData>();

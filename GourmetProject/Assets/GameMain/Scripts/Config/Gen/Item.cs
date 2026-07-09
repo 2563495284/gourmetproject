@@ -29,6 +29,8 @@ public sealed partial class Item : Luban.BeanBase
         { if(!_buf["effectParam"].IsString) { throw new SerializationException(); }  EffectParam = _buf["effectParam"]; }
         { if(!_buf["baseWeight"].IsNumber) { throw new SerializationException(); }  BaseWeight = _buf["baseWeight"]; }
         { if(!_buf["hiddenRange"].IsObject) { throw new SerializationException(); }  HiddenRange = global::cfg.HiddenRange.DeserializeHiddenRange(_buf["hiddenRange"]);  }
+        { if(!_buf["targetKind"].IsNumber) { throw new SerializationException(); }  TargetKind = (ItemTargetKind)_buf["targetKind"].AsInt; }
+        { if(!_buf["targetCount"].IsNumber) { throw new SerializationException(); }  TargetCount = _buf["targetCount"]; }
     }
 
     public static Item DeserializeItem(JSONNode _buf)
@@ -84,6 +86,14 @@ public sealed partial class Item : Luban.BeanBase
     /// 出现隐藏分区间(单元格: min,max)
     /// </summary>
     public readonly HiddenRange HiddenRange;
+    /// <summary>
+    /// 主动道具目标类型(作用对象;决定可用情境)
+    /// </summary>
+    public readonly ItemTargetKind TargetKind;
+    /// <summary>
+    /// 选目标数量(1/N;0=无目标或全部)
+    /// </summary>
+    public readonly int TargetCount;
    
     public const int __ID__ = 2289459;
     public override int GetTypeId() => __ID__;
@@ -108,6 +118,8 @@ public sealed partial class Item : Luban.BeanBase
         + "effectParam:" + EffectParam + ","
         + "baseWeight:" + BaseWeight + ","
         + "hiddenRange:" + HiddenRange + ","
+        + "targetKind:" + TargetKind + ","
+        + "targetCount:" + TargetCount + ","
         + "}";
     }
 }

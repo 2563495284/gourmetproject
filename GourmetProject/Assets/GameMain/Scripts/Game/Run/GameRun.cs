@@ -26,6 +26,9 @@ namespace GourmetProject.Game.Run
         public const int RecipeBookCapacity = 12;
         public const int DefaultFoodAdjustCount = 999;
 
+        /// <summary>主动道具基础消耗槽数（可被 ExtraActiveSlot 被动道具增加）。</summary>
+        public const int BaseActiveSlots = 2;
+
         private readonly cfg.Tables _tables;
 
         // 被动道具同一 id 唯一一条且不升级；主动道具同一 id 可有多条，每条为一份独立实例。
@@ -55,6 +58,7 @@ namespace GourmetProject.Game.Run
         private string _pendingShopKey = string.Empty;
         private string _pendingRewardKey = string.Empty;
         private RewardOfferSaveData _pendingRewardOffer;
+        private int _activeUseIndex;
 
         public GameRun(cfg.Tables tables, GameplayDatabase database, string characterId, string seedText, int weekIndex = 1)
         {
@@ -140,6 +144,59 @@ namespace GourmetProject.Game.Run
         }
 
         public IReadOnlyList<RunItemState> Items => _items;
+
+        /// <summary>被动道具持有条目（同 id 唯一，不占消耗槽）。</summary>
+        public IEnumerable<RunItemState> PassiveItemStates => ItemStatesOfKind(cfg.ItemKind.Passive);
+
+        /// <summary>主动道具持有实例（每份占一个消耗槽）。</summary>
+        public IEnumerable<RunItemState> ActiveItemStates => ItemStatesOfKind(cfg.ItemKind.Active);
+
+        private IEnumerable<RunItemState> ItemStatesOfKind(cfg.ItemKind kind)
+        {
+            foreach (RunItemState state in _items)
+            {
+                cfg.Item item = _tables.TbItem.GetOrDefault(state.ItemId);
+                if (item != null && item.Kind == kind)
+                {
+                    yield return state;
+                }
+            }
+        }
+
+        /// <summary>当前占用的主动道具槽数（= 主动实例份数）。</summary>
+        public int ActiveItemCount
+        {
+            get
+            {
+                int n = 0;
+                foreach (RunItemState state in _items)
+                {
+                    cfg.Item item = _tables.TbItem.GetOrDefault(state.ItemId);
+                    if (item != null && item.Kind == cfg.ItemKind.Active)
+                    {
+                        n++;
+                    }
+                }
+
+                return n;
+            }
+        }
+
+        /// <summary>主动道具消耗槽总容量 = 基础槽 + ExtraActiveSlot 被动加成（下限 0）。</summary>
+        public int ActiveSlotCapacity =>
+            System.Math.Max(0, BaseActiveSlots + new ItemRuntime(this).ExtraActiveSlots());
+
+        /// <summary>主动道具是否还有空槽。</summary>
+        public bool HasFreeActiveSlot => ActiveItemCount < ActiveSlotCapacity;
+
+        /// <summary>主动道具累计使用序号；随机类主动效果按它派生随机流。</summary>
+        public int ActiveUseIndex => _activeUseIndex;
+
+        /// <summary>取下一个主动道具随机流 key 并推进使用序号（保证生成/复制类效果同种子可复现）。</summary>
+        public string NextActiveUseKey()
+        {
+            return $"active_{_activeUseIndex++}";
+        }
 
         public IReadOnlyList<string> BonusDishIds => _bonusDishIds;
 
@@ -578,6 +635,7 @@ namespace GourmetProject.Game.Run
                 WeekIndex = WeekIndex,
                 Gold = Gold,
                 FoodAdjustCount = FoodAdjustCount,
+                ActiveUseIndex = _activeUseIndex,
                 Items = items,
                 BonusDishIds = new List<string>(_bonusDishIds),
                 RecipeBooks = ToRecipeBookSaveData(),
@@ -617,6 +675,7 @@ namespace GourmetProject.Game.Run
             var run = new GameRun(tables, database, data.CharacterId, data.SeedText, data.WeekIndex);
             run.Gold = data.Gold;
             run.FoodAdjustCount = data.FoodAdjustCount;
+            run._activeUseIndex = data.ActiveUseIndex;
             run._items.Clear();
 
             if (data.Items != null && data.Items.Count > 0)
@@ -1020,8 +1079,8 @@ namespace GourmetProject.Game.Run
                 return new ItemAcquireResult(ItemAcquireOutcome.ConvertedToGold, itemId, item.Name, 1, 1, fallbackGold);
             }
 
-            // 主动道具：每获得一次新增一份独立实例；达到持有上限则折算金币。
-            if (!ItemPoolService.CanEnterPool(this, item))
+            // 主动道具：每份占一个全局消耗槽；槽满则折算金币（不再有 per-item 囤积上限）。
+            if (!HasFreeActiveSlot || !ItemPoolService.CanEnterPool(this, item))
             {
                 Gold += fallbackGold;
                 return new ItemAcquireResult(ItemAcquireOutcome.ConvertedToGold, itemId, item.Name, 1, GetItemCount(itemId), fallbackGold);

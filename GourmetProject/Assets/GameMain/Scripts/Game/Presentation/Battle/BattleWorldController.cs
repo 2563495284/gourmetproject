@@ -30,8 +30,6 @@ namespace GourmetProject.Game.Presentation.Battle
         private const float EditBoardBottomMargin = 3.6f;
         private const int PassiveSlotCapacity = 10;
         private const int PassiveSlotColumns = 2;
-        private const int ActiveSlotCapacity = 2;
-
         // 回退视口半宽/半高（16:9 参考：orthographicSize 5.4）。
         private const float FallbackHalfW = 9.6f;
         private const float FallbackHalfH = 5.4f;
@@ -856,53 +854,32 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            // 主动道具多实例制：同一 id 可能有多条，这里按 id 聚合成一个槽，份数用角标 xN 展示。
-            var activeStates = new List<RunItemState>();
-            var activeCounts = new Dictionary<string, int>();
-            foreach (RunItemState state in _run.Items)
-            {
-                cfg.Item item = GameApp.Config.Tables.TbItem.GetOrDefault(state.ItemId);
-                if (item == null || item.Kind != cfg.ItemKind.Active)
-                {
-                    continue;
-                }
-
-                if (activeCounts.TryGetValue(state.ItemId, out int held))
-                {
-                    activeCounts[state.ItemId] = held + 1;
-                }
-                else
-                {
-                    activeCounts[state.ItemId] = 1;
-                    activeStates.Add(state);
-                }
-            }
+            // 全局消耗槽：每份主动道具实例各占一个槽（不再按 id 聚合），容量 = 基础槽 + ExtraActiveSlot。
+            var activeStates = new List<RunItemState>(_run.ActiveItemStates);
 
             const float slotSize = 0.58f;
             const float gap = 0.34f;
             float startX = _halfW - 2.25f;
             float y = -_halfH + 0.55f;
-            int shown = Mathf.Min(ActiveSlotCapacity, activeStates.Count);
+            int capacity = Mathf.Max(activeStates.Count, _run.ActiveSlotCapacity);
 
-            for (int i = 0; i < ActiveSlotCapacity; i++)
+            for (int i = 0; i < capacity; i++)
             {
                 WorldItemSlotView slot = InstantiateItemSlot(_activeItemsRoot);
                 slot.gameObject.name = $"ActiveItemSlot_{i}";
                 slot.transform.position = new Vector3(startX + i * (slotSize + gap), y, 0f);
 
-                if (i < shown)
+                if (i < activeStates.Count)
                 {
                     RunItemState state = activeStates[i];
                     cfg.Item item = GameApp.Config.Tables.TbItem.GetOrDefault(state.ItemId);
                     string captured = state.ItemId;
                     bool usableNow = _session != null && !_session.IsSettled && item.TriggerTiming == cfg.ItemTriggerTiming.BeforeEat;
-                    int held = activeCounts[state.ItemId];
-                    string badge = held > 1 ? $"x{held}" : string.Empty;
                     slot.Bind(
                         new Vector2(slotSize, slotSize),
                         LoadItemIcon(item),
                         ShortName(item.Name),
-                        badge,
+                        string.Empty,
                         QualityColor(item.Quality),
                         usableNow,
                         () => _activeItemClicked?.Invoke(captured));

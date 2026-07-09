@@ -1197,7 +1197,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            ActiveItemUseResult result = ActiveItemEffectRegistry.TryUse(_session, item);
+            ActiveItemUseResult result = ActiveItemEffectRegistry.TryUse(_session, _run, item);
             _world?.ShowMessage(result.Message);
             if (!result.Success)
             {

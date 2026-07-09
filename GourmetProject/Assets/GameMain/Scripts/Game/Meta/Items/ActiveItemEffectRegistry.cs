@@ -1,5 +1,7 @@
-using GourmetProject.Gameplay.Battle;
+using System;
+using System.Collections.Generic;
 using GourmetProject.Game.Run;
+using GourmetProject.Gameplay.Battle;
 
 namespace GourmetProject.Game.Meta
 {
@@ -19,46 +21,54 @@ namespace GourmetProject.Game.Meta
         public string Message { get; }
     }
 
-    /// <summary>主动道具效果派发入口。表现层只负责点击与刷新，不直接承载效果逻辑。</summary>
+    /// <summary>
+    /// 主动道具效果派发入口。效果语义集中在此、与情境解耦：
+    /// 各 <see cref="IActiveUseContext"/>（战斗 / 局外）只提供能力钩子，表现层只负责点击/选目标与刷新。
+    /// </summary>
     public static class ActiveItemEffectRegistry
     {
-        public static ActiveItemUseResult TryUse(BattleSession session, cfg.Item item)
+        /// <summary>情境无关的主动道具效果落地。</summary>
+        public static ActiveItemUseResult Apply(IActiveUseContext ctx, cfg.Item item, IReadOnlyList<ActiveTarget> targets)
         {
-            if (session == null || item == null || session.IsSettled)
+            if (ctx == null || item == null)
             {
                 return new ActiveItemUseResult(false, false, "现在不能使用主动道具。");
             }
 
             switch (item.EffectType)
             {
-                case "ClearBoard":
-                    if (session.Board.DishCount <= 0)
+                case ItemEffectTypes.ClearBoard:
+                    return ctx.ClearBoard()
+                        ? new ActiveItemUseResult(true, true, $"{item.Name}：已清空棋盘。")
+                        : new ActiveItemUseResult(false, false, $"{item.Name}：现在无法清空棋盘。");
+
+                case ItemEffectTypes.ExtraServe:
+                    return ctx.ExtraServe()
+                        ? new ActiveItemUseResult(true, true, $"{item.Name}：额外上了一道菜。")
+                        : new ActiveItemUseResult(false, false, $"{item.Name}：没有能放下的菜了。");
+
+                case ItemEffectTypes.GoldNow:
+                    if (ctx.Run != null)
                     {
-                        return new ActiveItemUseResult(false, false, "重摆铃：棋盘已经是空的。");
+                        ctx.Run.Gold += (int)item.EffectValue;
                     }
 
-                    session.ClearBoard();
-                    return new ActiveItemUseResult(true, true, "重摆铃：已清空棋盘。");
-
-                case "ExtraServe":
-                    return TryExtraServe(session, item);
+                    return new ActiveItemUseResult(true, false, $"{item.Name}：获得 {(int)item.EffectValue} 金币。");
 
                 default:
                     return new ActiveItemUseResult(true, false, $"使用了 {item.Name}。");
             }
         }
 
-        private static ActiveItemUseResult TryExtraServe(BattleSession session, cfg.Item item)
+        /// <summary>战斗情境便捷入口（构造 <see cref="BattleUseContext"/> 后走统一 <see cref="Apply"/>）。</summary>
+        public static ActiveItemUseResult TryUse(BattleSession session, GameRun run, cfg.Item item)
         {
-            for (int i = 0; i < session.Slots.Count; i++)
+            if (session == null || item == null || session.IsSettled)
             {
-                if (session.Serve(i).Success)
-                {
-                    return new ActiveItemUseResult(true, true, $"{item.Name}：额外上了一道菜。");
-                }
+                return new ActiveItemUseResult(false, false, "现在不能使用主动道具。");
             }
 
-            return new ActiveItemUseResult(false, false, $"{item.Name}：没有能放下的菜了。");
+            return Apply(new BattleUseContext(session, run), item, Array.Empty<ActiveTarget>());
         }
     }
 }
