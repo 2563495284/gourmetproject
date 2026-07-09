@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 事件选项：同 eventId 多行=该事件可选项。resultType/resultValue/resultParam 由 EventService 分发结算。
+/// 事件选项：同 eventId 多行=选项分支；单选项=自动结算。effectType 用 EffectType。
 /// </summary>
 public partial class TbEventOption
 {

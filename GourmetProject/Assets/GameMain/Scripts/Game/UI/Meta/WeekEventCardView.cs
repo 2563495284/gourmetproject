@@ -5,6 +5,7 @@ using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Flow;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
+using GourmetProject.Runtime;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -80,11 +81,6 @@ namespace GourmetProject.Game.UI.Meta
         // 选中特效停留已在 OnPickClicked 内于回调前播放完毕，退场不再额外等待。
         public float PickEffectHold => 0f;
 
-        public void Bind(cfg.GameEvent ev, Action onPick)
-        {
-            BindNodeCard(ev?.Name ?? "事件", ev?.Desc ?? string.Empty, "card_action_event", onPick);
-        }
-
         /// <summary>事件「n 选一」单个选项卡：卡名 = 选项文案，页脚标注为节点事件，无耗时行。</summary>
         public void BindEventOption(string optionText, Action onPick)
         {
@@ -96,35 +92,42 @@ namespace GourmetProject.Game.UI.Meta
 
         public void Bind(cfg.TimelineNode node, Action onPick)
         {
-            Bind(node, null, onPick);
+            Bind(node, null, null, null, onPick);
         }
 
         public void Bind(cfg.TimelineNode node, int? interestMaxGain, Action onPick)
         {
-            if (node == null)
+            Bind(node, null, null, interestMaxGain, onPick);
+        }
+
+        public void Bind(cfg.TimelineNode node, int? interestThreshold, int? interestGoldPer, int? interestMaxGain, Action onPick)
+        {
+            cfg.GameAction action = node == null ? null : GameApp.Config.Tables.TbAction.GetOrDefault(node.ActionId);
+            if (action == null)
             {
                 BindNodeCard("事件", string.Empty, "card_action_event", onPick);
                 return;
             }
 
-            switch (node.NodeType)
+            switch (ActionDisplay.KindOf(action))
             {
-                case cfg.TimelineNodeType.Shop:
+                case ActionDisplayKind.Shop:
                     BindNodeCard("商店", string.Empty, "card_node_shop", onPick);
                     break;
-                case cfg.TimelineNodeType.Interest:
-                    int threshold = Mathf.Max(0, Mathf.RoundToInt(node.PayloadValue));
-                    int goldPer = int.TryParse(node.PayloadParam, out int parsedGoldPer) ? parsedGoldPer : 1;
+                case ActionDisplayKind.Interest:
+                    int threshold = Mathf.Max(0, interestThreshold ?? GameApp.Config.Tables.TbGameBase.InterestThreshold);
+                    int configuredGoldPer = interestGoldPer ?? GameApp.Config.Tables.TbGameBase.InterestGoldPer;
+                    int goldPer = configuredGoldPer > 0 ? configuredGoldPer : 1;
                     BindInterestNode(threshold, goldPer, interestMaxGain, onPick);
                     break;
-                case cfg.TimelineNodeType.Boss:
+                case ActionDisplayKind.Boss:
                     BindNodeCard(DefaultBossTitle, string.Empty, "card_node_boss", onPick);
                     break;
-                case cfg.TimelineNodeType.Event:
-                    BindNodeCard("事件", string.Empty, "card_action_event", onPick);
+                case ActionDisplayKind.Event:
+                    BindNodeCard(string.IsNullOrEmpty(action.Name) ? "事件" : action.Name, string.Empty, "card_action_event", onPick);
                     break;
                 default:
-                    BindNodeCard("事件", string.Empty, "card_action_event", onPick);
+                    BindNodeCard(string.IsNullOrEmpty(action.Name) ? "事件" : action.Name, string.Empty, "card_action_event", onPick);
                     break;
             }
         }
@@ -137,7 +140,7 @@ namespace GourmetProject.Game.UI.Meta
             BindNodeCard("收取利息", desc, "card_node_interest", onPick);
         }
 
-        public void BindBossNode(cfg.Boss boss, string mechanicDesc, long requiredScore, Action onPick)
+        public void BindBossNode(cfg.Food boss, string mechanicDesc, long requiredScore, Action onPick)
         {
             string bossName = string.IsNullOrWhiteSpace(boss?.Name) ? "恶魔" : boss.Name;
             string desc = mechanicDesc ?? string.Empty;
@@ -169,9 +172,9 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            Bind(action.Name, string.Empty, action.CostDays, onPick);
+            Bind(CardName(action), string.Empty, action.MinCostDays, onPick);
             SetArt(CardSpriteFor(action));
-            SetRewardBadge(action.ActionType == cfg.ActionType.Food, action.RewardKind);
+            SetRewardBadge(action.Behavior == cfg.ActionBehavior.Food, FoodRewardKind(action));
         }
 
         /// <summary>行动组候选绑定，使用本次选择快照中的耗时。</summary>
@@ -183,9 +186,23 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            Bind(choice.Action.Name, string.Empty, choice.CostDays, onPick);
+            Bind(CardName(choice.Action), string.Empty, choice.CostDays, onPick);
             SetArt(CardSpriteFor(choice.Action));
-            SetRewardBadge(choice.Action.ActionType == cfg.ActionType.Food, choice.Action.RewardKind);
+            SetRewardBadge(choice.Action.Behavior == cfg.ActionBehavior.Food, FoodRewardKind(choice.Action));
+        }
+
+        private static cfg.Food ResolveFood(cfg.GameAction action) => FoodService.Resolve(GameApp.Config.Tables, action);
+
+        /// <summary>卡面标题：Food 用美食明细名，其余用行动名。</summary>
+        private static string CardName(cfg.GameAction action)
+        {
+            cfg.Food food = ResolveFood(action);
+            return food != null ? food.Name : action.Name;
+        }
+
+        private static cfg.RewardKind FoodRewardKind(cfg.GameAction action)
+        {
+            return ResolveFood(action)?.RewardKind ?? default;
         }
 
         public void Bind(string name, string desc, float costDays, Action onPick)
@@ -299,24 +316,34 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             string spriteName;
-            switch (action.ActionType)
+            switch (action.Behavior)
             {
-                case cfg.ActionType.Food:
-                    spriteName = action.FoodDifficulty == "Hard"
-                        ? "card_action_food_hard"
-                        : FoodRewardSpriteName(action.RewardKind);
+                case cfg.ActionBehavior.Food:
+                    if (FoodService.IsBossSlot(action))
+                    {
+                        spriteName = "card_node_boss";
+                    }
+                    else
+                    {
+                        cfg.Food food = ResolveFood(action);
+                        spriteName = FoodRewardSpriteName(food?.RewardKind ?? cfg.RewardKind.Gold);
+                    }
+
                     break;
-                case cfg.ActionType.Event:
+                case cfg.ActionBehavior.Event:
                     spriteName = "card_action_event";
                     break;
-                case cfg.ActionType.Reward:
+                case cfg.ActionBehavior.Reward:
                     spriteName = "card_action_reward";
                     break;
-                case cfg.ActionType.Negative:
+                case cfg.ActionBehavior.Negative:
                     spriteName = "card_action_negative";
                     break;
-                case cfg.ActionType.Shop:
+                case cfg.ActionBehavior.Shop:
                     spriteName = "card_action_shop";
+                    break;
+                case cfg.ActionBehavior.Interest:
+                    spriteName = "card_node_interest";
                     break;
                 default:
                     spriteName = "card_action_event";

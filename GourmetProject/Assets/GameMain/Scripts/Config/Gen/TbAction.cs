@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 行动（三选一）：由行动组成员筛选后进入候选。actionType 决定执行分支；costDays 为默认耗时。
+/// 行动（薄壳分派）：只留 behavior 与关联/少量参数；具体内容在 TbFood/TbEvent。
 /// </summary>
 public partial class TbAction
 {

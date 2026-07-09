@@ -12,9 +12,6 @@
     "perWeek": 7,
     "perDay": 1,
     "perStep": 2,
-    "normalBonus": 0,
-    "hardBonus": 8,
-    "bossBonus": 16,
     "itemBonusMultiplier": 1,
     "roundTo": 1,
     "minValue": 0
@@ -32,9 +29,6 @@
     "perWeek": 9,
     "perDay": 1.2,
     "perStep": 2.5,
-    "normalBonus": 0,
-    "hardBonus": 10,
-    "bossBonus": 20,
     "itemBonusMultiplier": 1,
     "roundTo": 1,
     "minValue": 0
@@ -52,9 +46,6 @@
     "perWeek": 10,
     "perDay": 2,
     "perStep": 4,
-    "normalBonus": 0,
-    "hardBonus": 30,
-    "bossBonus": 80,
     "itemBonusMultiplier": 0,
     "roundTo": 5,
     "minValue": 30
@@ -72,9 +63,6 @@
     "perWeek": 14,
     "perDay": 3,
     "perStep": 5,
-    "normalBonus": 0,
-    "hardBonus": 40,
-    "bossBonus": 100,
     "itemBonusMultiplier": 0,
     "roundTo": 5,
     "minValue": 40
@@ -92,9 +80,6 @@
     "perWeek": 0,
     "perDay": 0,
     "perStep": 0,
-    "normalBonus": 0,
-    "hardBonus": 4,
-    "bossBonus": 8,
     "itemBonusMultiplier": 0,
     "roundTo": 1,
     "minValue": 0
@@ -112,9 +97,6 @@
     "perWeek": 0,
     "perDay": 0,
     "perStep": 0,
-    "normalBonus": 0,
-    "hardBonus": 5,
-    "bossBonus": 10,
     "itemBonusMultiplier": 0,
     "roundTo": 1,
     "minValue": 0
@@ -132,9 +114,6 @@
     "perWeek": 0,
     "perDay": 0,
     "perStep": 0,
-    "normalBonus": 0,
-    "hardBonus": 2,
-    "bossBonus": 4,
     "itemBonusMultiplier": 0,
     "roundTo": 1,
     "minValue": 0
@@ -152,9 +131,6 @@
     "perWeek": 0,
     "perDay": 0,
     "perStep": 0,
-    "normalBonus": 0,
-    "hardBonus": 6,
-    "bossBonus": 12,
     "itemBonusMultiplier": 0,
     "roundTo": 1,
     "minValue": 0

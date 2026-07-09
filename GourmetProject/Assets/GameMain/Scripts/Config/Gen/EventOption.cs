@@ -20,9 +20,9 @@ public sealed partial class EventOption : Luban.BeanBase
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
         { if(!_buf["eventId"].IsString) { throw new SerializationException(); }  EventId = _buf["eventId"]; }
         { if(!_buf["text"].IsString) { throw new SerializationException(); }  Text = _buf["text"]; }
-        { if(!_buf["resultType"].IsString) { throw new SerializationException(); }  ResultType = _buf["resultType"]; }
-        { if(!_buf["resultValue"].IsNumber) { throw new SerializationException(); }  ResultValue = _buf["resultValue"]; }
-        { if(!_buf["resultParam"].IsString) { throw new SerializationException(); }  ResultParam = _buf["resultParam"]; }
+        { if(!_buf["effectType"].IsNumber) { throw new SerializationException(); }  EffectType = (EffectType)_buf["effectType"].AsInt; }
+        { if(!_buf["effectValue"].IsNumber) { throw new SerializationException(); }  EffectValue = _buf["effectValue"]; }
+        { if(!_buf["effectParam"].IsString) { throw new SerializationException(); }  EffectParam = _buf["effectParam"]; }
     }
 
     public static EventOption DeserializeEventOption(JSONNode _buf)
@@ -31,29 +31,29 @@ public sealed partial class EventOption : Luban.BeanBase
     }
 
     /// <summary>
-    /// 事件选项ID。
+    /// 选项ID
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 所属事件ID。
+    /// 所属事件ID→event.id
     /// </summary>
     public readonly string EventId;
     /// <summary>
-    /// 选项显示文本。
+    /// 选项文本(单选项=自动结算,无需玩家点选)
     /// </summary>
     public readonly string Text;
     /// <summary>
-    /// 选项结果类型。
+    /// 结果效果类型
     /// </summary>
-    public readonly string ResultType;
+    public readonly EffectType EffectType;
     /// <summary>
-    /// 选项结果数值。
+    /// 结果数值
     /// </summary>
-    public readonly float ResultValue;
+    public readonly float EffectValue;
     /// <summary>
-    /// 选项结果参数。
+    /// 结果参数
     /// </summary>
-    public readonly string ResultParam;
+    public readonly string EffectParam;
    
     public const int __ID__ = 1656861583;
     public override int GetTypeId() => __ID__;
@@ -68,9 +68,9 @@ public sealed partial class EventOption : Luban.BeanBase
         + "id:" + Id + ","
         + "eventId:" + EventId + ","
         + "text:" + Text + ","
-        + "resultType:" + ResultType + ","
-        + "resultValue:" + ResultValue + ","
-        + "resultParam:" + ResultParam + ","
+        + "effectType:" + EffectType + ","
+        + "effectValue:" + EffectValue + ","
+        + "effectParam:" + EffectParam + ","
         + "}";
     }
 }

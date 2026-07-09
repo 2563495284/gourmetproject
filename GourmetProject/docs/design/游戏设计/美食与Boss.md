@@ -28,11 +28,10 @@ Boss 是特殊节点驱动的美食挑战。
 
 Boss 随机规则：
 
-1. 根据角色 `bossPool` 过滤。
-2. 根据节点 `payloadParam` 过滤，可指定 Boss 池。
-3. 根据 Boss 自身 `characterPool`、`week`、`unlockCondition` 过滤。
-4. 按 Boss 权重随机。
-5. Boss 可覆盖目标分曲线和特殊机制。
+1. 根据 Boss 自身 `unlockCondition` 过滤。
+2. 从未抽取 Boss 候选中按权重随机。
+3. 当前候选取光后，重置 Boss 抽取历史并重新从全部可用 Boss 中随机。
+4. Boss 可覆盖目标分曲线和特殊机制。
 
 Boss 配置建议字段：
 
@@ -42,6 +41,6 @@ Boss 配置建议字段：
 | role_pool | 可出现角色池 |
 | unlock_conditions | 解锁条件 |
 | weight | 随机权重 |
-| week | 出现周数或阶段 |
+| week | 阶段标记（不参与 Boss 随机筛选） |
 | food_config | Boss 对应的美食挑战配置 |
 | special_mechanics | Boss 特殊机制 |

@@ -138,23 +138,7 @@ namespace GourmetProject.Game.Orchestration
                 ResolveNodes(committedPrevDay, PromptNextAction);
             }
 
-            switch (outcome.Kind)
-            {
-                case ActionOutcomeKind.Immediate:
-                    _view.ShowNotice(context.Action.Name, outcome.Feedback, CommitAndResolveNodes);
-                    break;
-                case ActionOutcomeKind.Shop:
-                    OpenShopThen(CommitAndResolveNodes);
-                    break;
-                case ActionOutcomeKind.Event:
-                    ResolveEventById(outcome.EventId, CommitAndResolveNodes);
-                    break;
-                case ActionOutcomeKind.Battle:
-                    StartBattle(outcome.RequiredScore, outcome.Modifier, outcome.BattleKey, false, null,
-                        CommitAndResolveNodes,
-                        context);
-                    break;
-            }
+            DispatchOutcome(outcome, context, CommitAndResolveNodes);
         }
 
         /// <summary>ShopForm 关闭时回调，继续编排。</summary>
@@ -252,49 +236,25 @@ namespace GourmetProject.Game.Orchestration
             cfg.TimelineNode node = _pendingNodes.Dequeue();
             _run.MarkNodeTriggered(node.Id);
 
-            switch (node.NodeType)
+            cfg.GameAction action = TimelineService.NodeAction(_run, node);
+            if (action == null)
             {
-                case cfg.TimelineNodeType.Interest:
-                    _view.ShowTimelineNodeCard(node, InterestMaxGain(), () => HandleInterestNode(node));
-                    break;
-                case cfg.TimelineNodeType.Shop:
-                    _view.ShowTimelineNodeCard(node, null, () => OpenShopThen(ProcessNextNode));
-                    break;
-                case cfg.TimelineNodeType.Event:
-                    _view.ShowTimelineNodeCard(node, null, () => HandleEventNode(node));
-                    break;
-                case cfg.TimelineNodeType.Boss:
-                    _view.ShowTimelineNodeCard(node, null, () => HandleBossNode(node));
-                    break;
-                default:
-                    ProcessNextNode();
-                    break;
+                ProcessNextNode();
+                return;
             }
+
+            // 节点即「放置来源的原子行动」：先展示放置行动卡，玩家点击后走与随机行动完全相同的执行路径。
+            _view.ShowTimelineNodeCard(node, InterestMaxGain(), () => ExecutePlacedAction(node, action));
         }
 
-        private void HandleInterestNode(cfg.TimelineNode node)
+        /// <summary>放置行动执行：与随机行动共用 <see cref="ActionExecutor"/> 与 <see cref="DispatchOutcome"/>，节点不消耗天数/步数。</summary>
+        private void ExecutePlacedAction(cfg.TimelineNode node, cfg.GameAction action)
         {
-            int threshold = (int)node.PayloadValue;
-            int goldPer = int.TryParse(node.PayloadParam, out int gp) ? gp : 1;
-            int maxGain = InterestMaxGain();
-            int gold = TimelineMath.Interest(_run.Gold, threshold, goldPer, maxGain);
-            _run.Gold += gold;
+            var context = new ActionExecutionContext(action) { SourceKey = node.Id };
+            IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Effect, $"node_w{_run.WeekIndex}_{node.Id}_{action.Id}");
+            ActionOutcome outcome = ActionExecutor.Execute(_run, context, rng);
             RunPersistence.Save(_run);
-
-            string msg;
-            if (gold > 0)
-            {
-                msg = $"利息结算：金币 +{gold}（每满 {threshold} 金币得 {goldPer}，最高 {maxGain}），当前 {_run.Gold}。";
-            }
-            else if (maxGain <= 0)
-            {
-                msg = "当前利息上限为 0，本次没有利息。";
-            }
-            else
-            {
-                msg = $"金币不足 {threshold}，本次没有利息。";
-            }
-            _view.ShowNotice("收取利息", msg, ProcessNextNode);
+            DispatchOutcome(outcome, context, ProcessNextNode);
         }
 
         private int InterestMaxGain()
@@ -302,72 +262,77 @@ namespace GourmetProject.Game.Orchestration
             return _run != null ? _run.InterestCap : 0;
         }
 
-        private void HandleEventNode(cfg.TimelineNode node)
+        /// <summary>行动执行结果的统一续接：随机行动与放置节点共用；Boss 战胜利走推进/通关而非发奖。</summary>
+        private void DispatchOutcome(ActionOutcome outcome, ActionExecutionContext context, Action onContinue)
         {
-            cfg.GameEvent ev;
-            if (!string.IsNullOrEmpty(node.PayloadParam))
+            string title = context?.Action?.Name ?? string.Empty;
+            switch (outcome.Kind)
             {
-                ev = GameApp.Config.Tables.TbEvent.GetOrDefault(node.PayloadParam);
-            }
-            else
-            {
-                IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Event, $"node_w{_run.WeekIndex}_d{node.Day}");
-                ev = EventService.RollEvent(_run, rng);
-            }
+                case ActionOutcomeKind.Immediate:
+                    RunPersistence.Save(_run);
+                    _view.ShowNotice(title, outcome.Feedback, onContinue);
+                    break;
+                case ActionOutcomeKind.Shop:
+                    OpenShopThen(onContinue);
+                    break;
+                case ActionOutcomeKind.Event:
+                    ResolveEventAction(context, onContinue);
+                    break;
+                case ActionOutcomeKind.Battle:
+                    if (outcome.IsBoss)
+                    {
+                        StartBossBattle(outcome);
+                    }
+                    else
+                    {
+                        StartBattle(outcome.RequiredScore, outcome.Modifier, outcome.BattleKey, false, null, onContinue, context);
+                    }
 
-            ResolveEvent(ev, ProcessNextNode);
+                    break;
+                default:
+                    onContinue?.Invoke();
+                    break;
+            }
         }
 
-        private void HandleBossNode(cfg.TimelineNode node)
+        private void StartBossBattle(ActionOutcome outcome)
         {
-            // key 含节点唯一 id：同一周若存在多个 Boss 节点，各自独立抽取，避免共用同一条 boss 流按调用顺序续掷。
-            IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Boss, $"w{_run.WeekIndex}_{node.Id}");
-            cfg.Boss boss = BossService.RollBoss(_run, rng, node.PayloadParam);
-            if (boss == null)
-            {
-                ProcessNextNode();
-                return;
-            }
-
-            int required = _run.ComputeBossRequiredScore(boss.ScoreProfileId);
-            string key = $"boss_w{_run.WeekIndex}_{boss.Id}";
-            _view.ShowNotice($"Boss：{boss.Name}", $"目标分 {required}，准备应战！", () =>
-                StartBattle(required, boss.Modifier, key, true, boss.Id, () =>
+            cfg.Tables tables = _run.Tables ?? GameApp.Config.Tables;
+            cfg.Food boss = tables.TbFood.GetOrDefault(outcome.BossId);
+            string title = boss != null ? $"Boss：{boss.Name}" : "Boss";
+            _view.ShowNotice(title, $"目标分 {outcome.RequiredScore}，准备应战！", () =>
+                StartBattle(outcome.RequiredScore, outcome.Modifier, outcome.BattleKey, true, outcome.BossId, () =>
                 {
-                    _run.MarkBossCompleted(boss.Id);
+                    _run.MarkBossCompleted(outcome.BossId);
                     RunPersistence.Save(_run);
+                    ClearPendingNodes();
                     if (IsFinalBossVictory(boss))
                     {
-                        ClearPendingNodes();
                         OnVictory();
                     }
                     else
                     {
-                        ClearPendingNodes();
                         EndWeek();
                     }
                 }, null));
         }
 
-        private bool IsFinalBossVictory(cfg.Boss boss)
+        private bool IsFinalBossVictory(cfg.Food boss)
         {
             return boss != null && !_run.IsEndless && _run.WeekIndex >= _run.TotalWeeks && boss.Week == _run.TotalWeeks;
         }
 
-        private void ResolveEventById(string eventId, Action onDone)
+        /// <summary>解析事件行动：按行动 behavior(Event/Reward/Negative) 从对应分类事件池随机一个具体事件，再统一结算。</summary>
+        private void ResolveEventAction(ActionExecutionContext context, Action onDone)
         {
-            cfg.Tables tables = _run.Tables ?? GameApp.Config.Tables;
-            cfg.GameEvent ev;
-            if (string.IsNullOrEmpty(eventId))
-            {
-                IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Event, $"action_w{_run.WeekIndex}_d{DayKey(_run.CurrentDay)}_s{_run.ActionStepIndex}");
-                ev = EventService.RollEvent(_run, rng);
-            }
-            else
-            {
-                ev = tables.TbEvent.GetOrDefault(eventId);
-            }
+            cfg.GameAction action = context?.Action;
+            cfg.ActionBehavior eventType = action?.Behavior ?? cfg.ActionBehavior.Event;
+            string seedKey = context != null && !string.IsNullOrEmpty(context.SourceKey)
+                ? $"node_{context.SourceKey}"
+                : $"action_w{_run.WeekIndex}_d{DayKey(_run.CurrentDay)}_s{_run.ActionStepIndex}";
 
+            IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Event, seedKey);
+            cfg.GameEvent ev = EventService.RollEvent(_run, rng, eventType);
             ResolveEvent(ev, onDone);
         }
 
@@ -380,7 +345,7 @@ namespace GourmetProject.Game.Orchestration
             }
 
             IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Event, $"resolve_w{_run.WeekIndex}_d{DayKey(_run.CurrentDay)}_{ev.Id}");
-            List<cfg.EventOption> options = EventService.GetOptions(ev.Id);
+            List<cfg.EventOption> options = EventService.GetOptions(_run, ev.Id);
             if (options.Count == 0)
             {
                 EventResolveResult result = EventService.ResolveImmediate(_run, ev, rng);
@@ -393,7 +358,14 @@ namespace GourmetProject.Game.Orchestration
                 return;
             }
 
-            // 事件选项与「行动 n 选一」共用同一套中部卡片 UI（不再走独立 ConfirmDialog 弹层）。
+            // 单选项事件=自动结算（奖励/负面/即时事件），无需玩家点选。
+            if (options.Count == 1)
+            {
+                ApplyEventOption(ev, options[0], rng, onDone);
+                return;
+            }
+
+            // 多选项事件与「行动 n 选一」共用同一套中部卡片 UI（不再走独立 ConfirmDialog 弹层）。
             var optionTexts = new List<string>(options.Count);
             foreach (cfg.EventOption option in options)
             {

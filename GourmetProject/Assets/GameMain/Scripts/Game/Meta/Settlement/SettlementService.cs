@@ -71,7 +71,7 @@ namespace GourmetProject.Game.Meta
             cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
             foreach (string bossId in bossIds)
             {
-                cfg.Boss boss = tables?.TbBoss.GetOrDefault(bossId);
+                cfg.Food boss = tables?.TbFood.GetOrDefault(bossId);
                 names.Add(boss != null ? boss.Name : bossId);
             }
 

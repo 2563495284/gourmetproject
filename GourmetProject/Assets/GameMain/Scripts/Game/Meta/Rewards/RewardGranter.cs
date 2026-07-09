@@ -156,7 +156,7 @@ namespace GourmetProject.Game.Meta
         private static cfg.RewardPackage ResolvePackage(GameRun run, cfg.Week week, ActionExecutionContext actionContext)
         {
             cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
-            string packageId = actionContext?.Action?.RewardPackageId;
+            string packageId = FoodService.Resolve(tables, actionContext?.Action)?.RewardPackageId;
             if (!string.IsNullOrEmpty(packageId))
             {
                 cfg.RewardPackage actionPackage = tables.TbRewardPackage.GetOrDefault(packageId);

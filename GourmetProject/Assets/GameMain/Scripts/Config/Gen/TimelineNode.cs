@@ -20,9 +20,7 @@ public sealed partial class TimelineNode : Luban.BeanBase
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
         { if(!_buf["timelineId"].IsString) { throw new SerializationException(); }  TimelineId = _buf["timelineId"]; }
         { if(!_buf["day"].IsNumber) { throw new SerializationException(); }  Day = _buf["day"]; }
-        { if(!_buf["nodeType"].IsNumber) { throw new SerializationException(); }  NodeType = (TimelineNodeType)_buf["nodeType"].AsInt; }
-        { if(!_buf["payloadValue"].IsNumber) { throw new SerializationException(); }  PayloadValue = _buf["payloadValue"]; }
-        { if(!_buf["payloadParam"].IsString) { throw new SerializationException(); }  PayloadParam = _buf["payloadParam"]; }
+        { if(!_buf["actionId"].IsString) { throw new SerializationException(); }  ActionId = _buf["actionId"]; }
     }
 
     public static TimelineNode DeserializeTimelineNode(JSONNode _buf)
@@ -43,17 +41,9 @@ public sealed partial class TimelineNode : Luban.BeanBase
     /// </summary>
     public readonly int Day;
     /// <summary>
-    /// 节点类型：Boss / Interest / Shop / Event。
+    /// 引用的原子行动 id（对应 action.id）；节点=放置在该天的原子行动。
     /// </summary>
-    public readonly TimelineNodeType NodeType;
-    /// <summary>
-    /// 节点数值参数；Interest 表示金币阈值 N，其它节点暂未使用。
-    /// </summary>
-    public readonly float PayloadValue;
-    /// <summary>
-    /// 节点字符串参数；Interest 表示每阈值金币数，Boss 表示 Boss id 池筛选，Event 表示指定事件 id。
-    /// </summary>
-    public readonly string PayloadParam;
+    public readonly string ActionId;
    
     public const int __ID__ = 1630749187;
     public override int GetTypeId() => __ID__;
@@ -68,9 +58,7 @@ public sealed partial class TimelineNode : Luban.BeanBase
         + "id:" + Id + ","
         + "timelineId:" + TimelineId + ","
         + "day:" + Day + ","
-        + "nodeType:" + NodeType + ","
-        + "payloadValue:" + PayloadValue + ","
-        + "payloadParam:" + PayloadParam + ","
+        + "actionId:" + ActionId + ","
         + "}";
     }
 }

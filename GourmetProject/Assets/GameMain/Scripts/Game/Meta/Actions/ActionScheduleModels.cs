@@ -6,19 +6,16 @@ namespace GourmetProject.Game.Meta
     /// <summary>行动选择快照：UI 展示和执行必须使用同一份耗时/序号数据。</summary>
     public sealed class ActionChoice
     {
-        public ActionChoice(cfg.GameAction action, cfg.ActionGroup group, int weekStepIndex, int runStepIndex, float costDays)
+        public ActionChoice(cfg.GameAction action, string actionGroupId, int weekStepIndex, int runStepIndex, float costDays)
         {
             Action = action;
-            Group = group;
-            ActionGroupId = group?.Id ?? string.Empty;
+            ActionGroupId = actionGroupId ?? string.Empty;
             WeekStepIndex = Math.Max(0, weekStepIndex);
             RunStepIndex = Math.Max(0, runStepIndex);
             CostDays = TimelineMath.Quantize(Math.Max(0f, costDays));
         }
 
         public cfg.GameAction Action { get; }
-
-        public cfg.ActionGroup Group { get; }
 
         public string ActionGroupId { get; }
 
@@ -45,7 +42,7 @@ namespace GourmetProject.Game.Meta
         }
 
         public ActionExecutionContext(cfg.GameAction action, int stepIndex)
-            : this(action, stepIndex, stepIndex, string.Empty, action?.CostDays ?? 0f)
+            : this(action, stepIndex, stepIndex, string.Empty, action?.MinCostDays ?? 0f)
         {
         }
 
@@ -69,5 +66,11 @@ namespace GourmetProject.Game.Meta
         public float CostDays { get; }
 
         public bool IsValid => Action != null;
+
+        /// <summary>
+        /// 来源标识：用于生成确定性的随机流 key（如 Boss 抽取、战斗流）。
+        /// 放置来源（行动轴节点）设为节点 id；随机来源可留空，由执行侧按步数/天数拼 key。
+        /// </summary>
+        public string SourceKey { get; set; } = string.Empty;
     }
 }

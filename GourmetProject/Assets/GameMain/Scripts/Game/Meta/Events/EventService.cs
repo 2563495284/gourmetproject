@@ -61,14 +61,16 @@ namespace GourmetProject.Game.Meta
     }
 
     /// <summary>
-    /// 事件服务：提供事件选项查询、随机事件抽取与结算。
-    /// 无选项事件直接按 effectType 结算；有选项事件由编排层弹窗后调用 <see cref="ResolveOption"/>。
-    /// 不可重复事件命中后写入 UsedEventIds。
+    /// 事件明细结算：事件正文/权重/前置/可重复都在 <see cref="cfg.GameEvent"/>（TbEvent），
+    /// 选项分支在 <see cref="cfg.EventOption"/>（TbEventOption，按 eventId 关联）。
+    /// Event/Reward/Negative 三种行动各自从对应 <see cref="cfg.ActionBehavior"/> 分类的事件池里随机一个具体事件。
+    /// 单选项事件=自动结算（无需玩家点选，用于奖励/负面/即时事件）；多选项=玩家 n 选一分支。
+    /// 不可重复事件命中后写入 UsedEventIds（整局级）。
     /// </summary>
     public static class EventService
     {
         /// <summary>取某事件的全部选项（按配置顺序）。</summary>
-        public static List<cfg.EventOption> GetOptions(string eventId)
+        public static List<cfg.EventOption> GetOptions(GameRun run, string eventId)
         {
             var options = new List<cfg.EventOption>();
             if (string.IsNullOrEmpty(eventId))
@@ -76,7 +78,8 @@ namespace GourmetProject.Game.Meta
                 return options;
             }
 
-            foreach (cfg.EventOption opt in GameApp.Config.Tables.TbEventOption.DataList)
+            cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
+            foreach (cfg.EventOption opt in tables.TbEventOption.DataList)
             {
                 if (opt.EventId == eventId)
                 {
@@ -87,15 +90,20 @@ namespace GourmetProject.Game.Meta
             return options;
         }
 
-        public static bool HasOptions(string eventId) => GetOptions(eventId).Count > 0;
+        public static bool HasOptions(GameRun run, string eventId) => GetOptions(run, eventId).Count > 0;
 
-        /// <summary>从满足条件（可重复或未用过、前置满足）的事件中随机一个，用于事件节点。</summary>
-        public static cfg.GameEvent RollEvent(GameRun run, IRandomStream rng)
+        /// <summary>从指定分类池（eventType=Event/Reward/Negative）中按权重/前置/可重复随机一个事件。</summary>
+        public static cfg.GameEvent RollEvent(GameRun run, IRandomStream rng, cfg.ActionBehavior eventType)
         {
             cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
             var candidates = new List<cfg.GameEvent>();
             foreach (cfg.GameEvent ev in tables.TbEvent.DataList)
             {
+                if (ev.EventType != eventType || ev.Weight <= 0f)
+                {
+                    continue;
+                }
+
                 if ((ev.Repeatable || !run.IsEventUsed(ev.Id)) && PreconditionEvaluator.IsSatisfied(run, ev.Preconditions))
                 {
                     candidates.Add(ev);
@@ -116,7 +124,7 @@ namespace GourmetProject.Game.Meta
             return candidates[rng.WeightedPickIndex(weights)];
         }
 
-        /// <summary>无选项事件：直接按 effectType 结算，或返回后续动作（事件战斗/直接结局），并记录使用。</summary>
+        /// <summary>无选项事件的兜底结算（正常事件至少配 1 个选项，走 <see cref="ResolveOption"/>）。</summary>
         public static EventResolveResult ResolveImmediate(GameRun run, cfg.GameEvent ev, IRandomStream rng)
         {
             if (ev == null)
@@ -124,17 +132,21 @@ namespace GourmetProject.Game.Meta
                 return EventResolveResult.Immediate(string.Empty);
             }
 
-            EventResolveResult result = ResolveEffect(run, ev.EffectType, ev.EffectValue, string.Empty, ev.Desc, rng);
+            List<cfg.EventOption> options = GetOptions(run, ev.Id);
+            if (options.Count > 0)
+            {
+                return ResolveOption(run, ev, options[0], rng);
+            }
+
             if (!ev.Repeatable)
             {
                 run.MarkEventUsed(ev.Id);
             }
 
-            GrantEventCompleteGold(run, result);
-            return result;
+            return EventResolveResult.Immediate(ev.Desc);
         }
 
-        /// <summary>有选项事件：按所选选项结算，或返回后续动作（事件战斗/直接结局），并记录使用。</summary>
+        /// <summary>按所选选项结算，或返回后续动作（事件战斗/商店/结局），并记录使用。</summary>
         public static EventResolveResult ResolveOption(GameRun run, cfg.GameEvent ev, cfg.EventOption option, IRandomStream rng)
         {
             if (ev == null || option == null)
@@ -142,7 +154,7 @@ namespace GourmetProject.Game.Meta
                 return EventResolveResult.Immediate(string.Empty);
             }
 
-            EventResolveResult result = ResolveEffect(run, option.ResultType, option.ResultValue, option.ResultParam, option.Text, rng);
+            EventResolveResult result = ResolveEffect(run, option.EffectType, option.EffectValue, option.EffectParam, option.Text, rng);
             if (!ev.Repeatable)
             {
                 run.MarkEventUsed(ev.Id);
@@ -168,34 +180,30 @@ namespace GourmetProject.Game.Meta
             run.Gold += new ItemRuntime(run).EventCompleteGold();
         }
 
-        private static EventResolveResult ResolveEffect(GameRun run, string effectType, float effectValue, string effectParam, string fallback, IRandomStream rng)
+        private static EventResolveResult ResolveEffect(GameRun run, cfg.EffectType effectType, float effectValue, string effectParam, string fallback, IRandomStream rng)
         {
             switch (effectType)
             {
-                case "Battle":
-                case "FoodBattle":
+                case cfg.EffectType.FoodBattle:
                 {
                     int required = effectValue > 0f ? RoundToInt(effectValue) : EventBattleRequiredScore(run);
                     string feedback = string.IsNullOrEmpty(fallback) ? $"触发美食挑战，目标分 {required}。" : fallback;
                     return EventResolveResult.Battle(feedback, required, effectParam);
                 }
 
-                case "GameOver":
-                case "LoseRun":
+                case cfg.EffectType.GameOver:
                 {
                     string feedback = string.IsNullOrEmpty(effectParam) ? fallback : effectParam;
                     return EventResolveResult.GameOver(feedback);
                 }
 
-                case "Shop":
-                case "OpenShop":
+                case cfg.EffectType.Shop:
                 {
                     string feedback = string.IsNullOrEmpty(effectParam) ? fallback : effectParam;
                     return EventResolveResult.Shop(feedback);
                 }
 
-                case "Victory":
-                case "WinRun":
+                case cfg.EffectType.Victory:
                 {
                     string feedback = string.IsNullOrEmpty(effectParam) ? fallback : effectParam;
                     return EventResolveResult.Victory(feedback);

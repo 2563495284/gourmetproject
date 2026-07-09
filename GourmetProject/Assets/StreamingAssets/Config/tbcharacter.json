@@ -9,9 +9,6 @@
     "maxStomachWidth": 8,
     "maxStomachHeight": 8,
     "timelinePool": "tl_normal,tl_boss",
-    "bossPool": "boss_glutton,boss_final",
-    "initialGold": 9999,
-    "initialInterestCap": 5,
     "startItems": [
       "item_big_plate"
     ]
@@ -26,9 +23,6 @@
     "maxStomachWidth": 8,
     "maxStomachHeight": 8,
     "timelinePool": "tl_busy,tl_boss",
-    "bossPool": "boss_iron,boss_final",
-    "initialGold": 9999,
-    "initialInterestCap": 5,
     "startItems": [
       "item_chef_knife"
     ]
@@ -43,9 +37,6 @@
     "maxStomachWidth": 8,
     "maxStomachHeight": 8,
     "timelinePool": "",
-    "bossPool": "",
-    "initialGold": 9999,
-    "initialInterestCap": 5,
     "startItems": [
       "item_pepper_jar"
     ]

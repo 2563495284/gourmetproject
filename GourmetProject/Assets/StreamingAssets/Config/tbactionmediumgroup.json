@@ -1,0 +1,27 @@
+[
+  {
+    "id": "mg_food_normal",
+    "name": "普通美食中组",
+    "weight": 100
+  },
+  {
+    "id": "mg_food_hard",
+    "name": "困难美食中组",
+    "weight": 55
+  },
+  {
+    "id": "mg_event",
+    "name": "事件中组",
+    "weight": 45
+  },
+  {
+    "id": "mg_reward",
+    "name": "奖励中组",
+    "weight": 30
+  },
+  {
+    "id": "mg_debug",
+    "name": "调试中组",
+    "weight": 0
+  }
+]

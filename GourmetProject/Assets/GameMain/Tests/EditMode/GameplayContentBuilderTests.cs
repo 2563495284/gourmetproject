@@ -219,6 +219,16 @@ namespace GourmetProject.Tests
     ""tagId"": ""tag_a""
   }
 ]";
+                case "tbgamebase":
+                    return @"[
+  {
+    ""initialGold"": 9999,
+    ""initialInterestCap"": 5,
+    ""initialFoodAdjustCount"": 3,
+    ""interestThreshold"": 5,
+    ""interestGoldPer"": 1
+  }
+]";
                 default:
                     return "[]";
             }

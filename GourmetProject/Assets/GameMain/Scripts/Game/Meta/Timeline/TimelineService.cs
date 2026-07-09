@@ -51,6 +51,18 @@ namespace GourmetProject.Game.Meta
             return chosen.Id;
         }
 
+        /// <summary>节点引用的原子行动（放置来源）。节点只是「在某天放置某个 action」的引用。</summary>
+        public static cfg.GameAction NodeAction(GameRun run, cfg.TimelineNode node)
+        {
+            if (node == null || string.IsNullOrEmpty(node.ActionId))
+            {
+                return null;
+            }
+
+            cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
+            return tables.TbAction.GetOrDefault(node.ActionId);
+        }
+
         /// <summary>当前行动轴的全部节点（按 day 升序）。</summary>
         public static List<cfg.TimelineNode> GetNodes(GameRun run)
         {

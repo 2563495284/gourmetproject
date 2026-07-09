@@ -15,11 +15,11 @@ namespace GourmetProject.Tests
     public class V2GameplayTests
     {
         [Test]
-        public void GameRun_UsesCharacterInitialGold()
+        public void GameRun_UsesGameBaseInitialGold()
         {
             GameRun run = NewRun(week: 1, characterId: "glutton_dog");
 
-            Assert.AreEqual(9999, run.Tables.TbCharacter.Get("glutton_dog").InitialGold);
+            Assert.AreEqual(9999, run.Tables.TbGameBase.InitialGold);
             Assert.AreEqual(9999, run.Gold);
         }
 
@@ -40,9 +40,9 @@ namespace GourmetProject.Tests
             Assert.LessOrEqual(tooManyChoices.Count, ActionRandomService.MaxChoiceCount);
             Assert.AreEqual(7f, run.TimelineLengthDays, 1e-4f);
             Assert.AreEqual(1, run.ActionGroupSequence.Count);
-            Assert.AreEqual("grp_debug_shop_event", run.ActionGroupSequence[0]);
+            Assert.AreEqual("lg_debug", run.ActionGroupSequence[0]);
             Assert.AreEqual(1, choices.Count);
-            Assert.AreEqual("act_debug_shop_event", choices[0].Action.Id);
+            Assert.AreEqual("act_shop", choices[0].Action.Id);
 
             var ids = new HashSet<string>();
             foreach (ActionChoice choice in choices)
@@ -65,10 +65,10 @@ namespace GourmetProject.Tests
                 run.AdvanceActionStep();
             }
 
-            Assert.AreEqual("grp_debug_shop_event", run.ActionGroupSequence[0], "The debug shop event rule should fill the first run action.");
-            Assert.AreEqual("grp_event_food", run.ActionGroupSequence[1], "The opening event rule should fill the second run action.");
-            Assert.AreEqual("grp_reward", run.ActionGroupSequence[2], "The early reward rule should fill the third run action.");
-            Assert.AreEqual("grp_reward", run.ActionGroupSequence[9], "The mid reward rule should fill the tenth run action.");
+            Assert.AreEqual("lg_debug", run.ActionGroupSequence[0], "The debug rule should fill the first run action.");
+            Assert.AreEqual("lg_event", run.ActionGroupSequence[1], "The opening event rule should fill the second run action.");
+            Assert.AreEqual("lg_reward", run.ActionGroupSequence[2], "The early reward rule should fill the third run action.");
+            Assert.AreEqual("lg_reward", run.ActionGroupSequence[9], "The mid reward rule should fill the tenth run action.");
             for (int i = 1; i < run.ActionGroupSequence.Count; i++)
             {
                 Assert.AreNotEqual(run.ActionGroupSequence[i - 1], run.ActionGroupSequence[i], $"Repeated action group at index {i}.");
@@ -102,9 +102,9 @@ namespace GourmetProject.Tests
         {
             GameRun run = NewRun(week: 1);
             run.BeginTimeline("tl_normal", 7);
-            cfg.GameAction action = run.Tables.TbAction.Get("act_debug_shop_event");
-            float costDays = TimelineMath.Quantize(action.CostDays);
-            var context = new ActionExecutionContext(action, run.ActionStepIndex, run.RunActionStepIndex, "grp_debug_shop_event", costDays);
+            cfg.GameAction action = run.Tables.TbAction.Get("act_shop");
+            float costDays = TimelineMath.Quantize(action.MinCostDays);
+            var context = new ActionExecutionContext(action, run.ActionStepIndex, run.RunActionStepIndex, "lg_debug", costDays);
 
             ActionExecutor.Execute(run, context, new MaxWeightRandomStream());
 
@@ -169,8 +169,10 @@ namespace GourmetProject.Tests
             GameRun run = NewRun(week: 1);
             cfg.GameAction normal = run.Tables.TbAction.Get("act_food_dish");
             cfg.GameAction hard = run.Tables.TbAction.Get("act_food_hard_passive");
-            GoldRange normalRange = HiddenScoreService.GoldRewardRange(run, new ActionExecutionContext(normal), run.Tables.TbRewardPackage.Get(normal.RewardPackageId));
-            GoldRange hardRange = HiddenScoreService.GoldRewardRange(run, new ActionExecutionContext(hard), run.Tables.TbRewardPackage.Get(hard.RewardPackageId));
+            cfg.Food normalFood = FoodService.Resolve(run.Tables, normal);
+            cfg.Food hardFood = FoodService.Resolve(run.Tables, hard);
+            GoldRange normalRange = HiddenScoreService.GoldRewardRange(run, new ActionExecutionContext(normal), run.Tables.TbRewardPackage.Get(normalFood.RewardPackageId));
+            GoldRange hardRange = HiddenScoreService.GoldRewardRange(run, new ActionExecutionContext(hard), run.Tables.TbRewardPackage.Get(hardFood.RewardPackageId));
 
             Assert.Greater(hardRange.Min, normalRange.Min);
             Assert.Greater(hardRange.Max, hardRange.Min);
@@ -199,21 +201,14 @@ namespace GourmetProject.Tests
         }
 
         [Test]
-        public void BossService_UsesCharacterBossPoolAndNodePool()
+        public void BossService_UsesGlobalBossCandidates()
         {
-            var rng = new RandomService();
-            rng.Init(456UL);
+            GameRun dog = NewRun(week: 1, characterId: "glutton_dog");
+            GameRun cat = NewRun(week: dog.TotalWeeks, characterId: "wok_cat");
+            var rng = new MaxWeightRandomStream();
 
-            GameRun dog = NewRun(week: 4, characterId: "glutton_dog");
-            GameRun cat = NewRun(week: 4, characterId: "wok_cat");
-
-            Assert.AreEqual("boss_glutton", BossService.RollBoss(dog, rng.Stream("dog_boss"))?.Id);
-            Assert.AreEqual("boss_iron", BossService.RollBoss(cat, rng.Stream("cat_boss"))?.Id);
-            Assert.IsNull(BossService.RollBoss(cat, rng.Stream("cat_blocked_boss"), "boss_glutton"));
-
-            GameRun finalWeek = NewRun(week: dog.TotalWeeks, characterId: "glutton_dog");
-            Assert.AreEqual("boss_final", BossService.RollBoss(finalWeek, rng.Stream("final_boss"))?.Id);
-            Assert.IsNull(BossService.RollBoss(finalWeek, rng.Stream("blocked_normal_boss"), "boss_glutton"));
+            Assert.AreEqual("boss_glutton", BossService.RollBoss(dog, rng)?.Id);
+            Assert.AreEqual("boss_glutton", BossService.RollBoss(cat, rng)?.Id);
         }
 
         [Test]
@@ -223,18 +218,19 @@ namespace GourmetProject.Tests
             {
                 ["tbevent"] =
                     "[" +
-                    "{\"id\":\"ev_low\",\"name\":\"低权重\",\"desc\":\"\",\"timeCost\":1,\"effectType\":\"GainGold\",\"effectValue\":1,\"category\":\"test\",\"weight\":1,\"repeatable\":true,\"preconditions\":\"\"}," +
-                    "{\"id\":\"ev_high\",\"name\":\"高权重\",\"desc\":\"\",\"timeCost\":1,\"effectType\":\"GainGold\",\"effectValue\":1,\"category\":\"test\",\"weight\":100,\"repeatable\":false,\"preconditions\":\"\"}" +
+                    EventJson("ev_low", cfg.ActionBehavior.Event, weight: 1, repeatable: true) + "," +
+                    EventJson("ev_high", cfg.ActionBehavior.Event, weight: 100, repeatable: false) +
                     "]",
+                ["tbeventoption"] = "[]",
             });
             GameRun run = NewRun(week: 1, tables: tables);
             var rng = new MaxWeightRandomStream();
 
-            Assert.AreEqual("ev_high", EventService.RollEvent(run, rng)?.Id);
+            Assert.AreEqual("ev_high", EventService.RollEvent(run, rng, cfg.ActionBehavior.Event)?.Id);
 
             run.MarkEventUsed("ev_high");
 
-            Assert.AreEqual("ev_low", EventService.RollEvent(run, rng)?.Id);
+            Assert.AreEqual("ev_low", EventService.RollEvent(run, rng, cfg.ActionBehavior.Event)?.Id);
         }
 
         [Test]
@@ -244,9 +240,15 @@ namespace GourmetProject.Tests
             {
                 ["tbevent"] =
                     "[" +
-                    "{\"id\":\"ev_battle\",\"name\":\"挑战\",\"desc\":\"进入挑战\",\"timeCost\":1,\"effectType\":\"FoodBattle\",\"effectValue\":123,\"category\":\"test\",\"weight\":1,\"repeatable\":true,\"preconditions\":\"\"}," +
-                    "{\"id\":\"ev_shop\",\"name\":\"商店\",\"desc\":\"进入商店\",\"timeCost\":1,\"effectType\":\"Shop\",\"effectValue\":0,\"category\":\"test\",\"weight\":1,\"repeatable\":true,\"preconditions\":\"\"}," +
-                    "{\"id\":\"ev_gameover\",\"name\":\"坏结局\",\"desc\":\"\",\"timeCost\":1,\"effectType\":\"GameOver\",\"effectValue\":0,\"category\":\"test\",\"weight\":1,\"repeatable\":true,\"preconditions\":\"\"}" +
+                    EventJson("ev_battle", cfg.ActionBehavior.Event, weight: 1, repeatable: true) + "," +
+                    EventJson("ev_shop", cfg.ActionBehavior.Event, weight: 1, repeatable: true) + "," +
+                    EventJson("ev_gameover", cfg.ActionBehavior.Event, weight: 1, repeatable: true) +
+                    "]",
+                ["tbeventoption"] =
+                    "[" +
+                    OptionJson("o_battle", "ev_battle", cfg.EffectType.FoodBattle, 123, "进入挑战") + "," +
+                    OptionJson("o_shop", "ev_shop", cfg.EffectType.Shop, 0, "进入商店") + "," +
+                    OptionJson("o_gameover", "ev_gameover", cfg.EffectType.GameOver, 0, "坏结局") +
                     "]",
             });
             GameRun run = NewRun(week: 1, tables: tables);
@@ -364,6 +366,24 @@ namespace GourmetProject.Tests
             Assert.AreEqual(0, restored.GetRecipeBookDishes(0).Count);
             Assert.AreEqual("cookie", restored.GetRecipeBookDishes(2)[0]);
             Assert.IsTrue(restored.BonusDishIds.Contains("cookie"));
+        }
+
+        [Test]
+        public void RunSaveData_RestoresGameBaseRuntimeValues()
+        {
+            GameRun run = NewRun(week: 1);
+            RunSaveData data = run.ToSaveData();
+            data.InterestThreshold = 9;
+            data.InterestGoldPer = 2;
+            data.InterestCap = 7;
+            data.FoodAdjustCount = 6;
+
+            GameRun restored = GameRun.FromSaveData(run.Tables, run.Database, data);
+
+            Assert.AreEqual(9, restored.InterestThreshold);
+            Assert.AreEqual(2, restored.InterestGoldPer);
+            Assert.AreEqual(7, restored.InterestCap);
+            Assert.AreEqual(6, restored.FoodAdjustBaseCount);
         }
 
         [Test]
@@ -573,15 +593,21 @@ namespace GourmetProject.Tests
         }
 
         [Test]
-        public void BossService_SkipsCompletedGenericBosses()
+        public void BossService_UsesRolledBossHistoryAndResetsWhenExhausted()
         {
             var rng = new MaxWeightRandomStream();
-            GameRun run = NewRun(week: 8, characterId: "glutton_dog");
+            GameRun run = NewRun(week: 1, characterId: "glutton_dog");
 
             run.MarkBossCompleted("boss_glutton");
+            Assert.AreEqual("boss_final", BossService.RollBoss(run, rng)?.Id);
 
-            Assert.IsNull(BossService.RollBoss(run, rng, "boss_glutton"));
-            Assert.AreEqual("boss_final", BossService.RollBoss(run, rng, "boss_final")?.Id);
+            run.MarkBossCompleted("boss_final");
+            Assert.AreEqual("boss_iron", BossService.RollBoss(run, rng)?.Id);
+
+            run.MarkBossCompleted("boss_iron");
+            Assert.AreEqual(3, run.RolledBossIds.Count);
+            Assert.AreEqual("boss_glutton", BossService.RollBoss(run, rng)?.Id);
+            Assert.AreEqual(0, run.RolledBossIds.Count);
         }
 
         [Test]
@@ -660,6 +686,26 @@ namespace GourmetProject.Tests
             tables ??= LoadTables();
             GameplayDatabase database = GameplayContentBuilder.BuildDatabase(tables);
             return new GameRun(tables, database, characterId, "v2-test", week);
+        }
+
+        /// <summary>构造一行 TbEvent JSON（tbevent 覆盖用），字段与生成的 GameEvent 对齐。</summary>
+        private static string EventJson(string id, cfg.ActionBehavior eventType, float weight, bool repeatable)
+        {
+            string repeatableLiteral = repeatable ? "true" : "false";
+            return "{" +
+                $"\"id\":\"{id}\",\"name\":\"{id}\",\"desc\":\"\"," +
+                $"\"eventType\":{(int)eventType}," +
+                $"\"preconditions\":\"\",\"weight\":{weight.ToString(System.Globalization.CultureInfo.InvariantCulture)},\"repeatable\":{repeatableLiteral}" +
+                "}";
+        }
+
+        /// <summary>构造一行 TbEventOption JSON（tbeventoption 覆盖用），字段与生成的 EventOption 对齐。</summary>
+        private static string OptionJson(string id, string eventId, cfg.EffectType effectType, float effectValue, string text = "")
+        {
+            return "{" +
+                $"\"id\":\"{id}\",\"eventId\":\"{eventId}\",\"text\":\"{text}\"," +
+                $"\"effectType\":{(int)effectType},\"effectValue\":{effectValue.ToString(System.Globalization.CultureInfo.InvariantCulture)},\"effectParam\":\"\"" +
+                "}";
         }
 
         private static cfg.Tables LoadTables(IReadOnlyDictionary<string, string> overrides = null)

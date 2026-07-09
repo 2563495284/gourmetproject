@@ -20,20 +20,11 @@ public sealed partial class GameAction : Luban.BeanBase
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
         { if(!_buf["name"].IsString) { throw new SerializationException(); }  Name = _buf["name"]; }
         { if(!_buf["desc"].IsString) { throw new SerializationException(); }  Desc = _buf["desc"]; }
-        { if(!_buf["actionType"].IsNumber) { throw new SerializationException(); }  ActionType = (ActionType)_buf["actionType"].AsInt; }
-        { if(!_buf["costDays"].IsNumber) { throw new SerializationException(); }  CostDays = _buf["costDays"]; }
-        { if(!_buf["weight"].IsNumber) { throw new SerializationException(); }  Weight = _buf["weight"]; }
-        { if(!_buf["repeatable"].IsBoolean) { throw new SerializationException(); }  Repeatable = _buf["repeatable"]; }
-        { if(!_buf["preconditions"].IsString) { throw new SerializationException(); }  Preconditions = _buf["preconditions"]; }
-        { if(!_buf["payloadType"].IsString) { throw new SerializationException(); }  PayloadType = _buf["payloadType"]; }
-        { if(!_buf["payloadValue"].IsNumber) { throw new SerializationException(); }  PayloadValue = _buf["payloadValue"]; }
-        { if(!_buf["payloadParam"].IsString) { throw new SerializationException(); }  PayloadParam = _buf["payloadParam"]; }
-        { if(!_buf["linkId"].IsString) { throw new SerializationException(); }  LinkId = _buf["linkId"]; }
-        { if(!_buf["foodDifficulty"].IsString) { throw new SerializationException(); }  FoodDifficulty = _buf["foodDifficulty"]; }
-        { if(!_buf["rewardKind"].IsNumber) { throw new SerializationException(); }  RewardKind = (RewardKind)_buf["rewardKind"].AsInt; }
-        { if(!_buf["rewardPackageId"].IsString) { throw new SerializationException(); }  RewardPackageId = _buf["rewardPackageId"]; }
-        { if(!_buf["goldCurveId"].IsString) { throw new SerializationException(); }  GoldCurveId = _buf["goldCurveId"]; }
-        { if(!_buf["hiddenScoreBonus"].IsNumber) { throw new SerializationException(); }  HiddenScoreBonus = _buf["hiddenScoreBonus"]; }
+        { if(!_buf["behavior"].IsNumber) { throw new SerializationException(); }  Behavior = (ActionBehavior)_buf["behavior"].AsInt; }
+        { if(!_buf["foodId"].IsString) { throw new SerializationException(); }  FoodId = _buf["foodId"]; }
+        { if(!_buf["bossPoolId"].IsString) { throw new SerializationException(); }  BossPoolId = _buf["bossPoolId"]; }
+        { if(!_buf["minCostDays"].IsNumber) { throw new SerializationException(); }  MinCostDays = _buf["minCostDays"]; }
+        { if(!_buf["maxCostDays"].IsNumber) { throw new SerializationException(); }  MaxCostDays = _buf["maxCostDays"]; }
     }
 
     public static GameAction DeserializeGameAction(JSONNode _buf)
@@ -46,69 +37,33 @@ public sealed partial class GameAction : Luban.BeanBase
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 行动名称
+    /// 卡面标题(食物/事件由明细表覆盖)
     /// </summary>
     public readonly string Name;
     /// <summary>
-    /// 行动描述
+    /// 卡面描述
     /// </summary>
     public readonly string Desc;
     /// <summary>
-    /// 行动类型
+    /// 行动行为(分派 handler)
     /// </summary>
-    public readonly ActionType ActionType;
+    public readonly ActionBehavior Behavior;
     /// <summary>
-    /// 默认消耗天数(0.1天粒度)
+    /// Food:关联具体美食 TbFood.id(1:1)
     /// </summary>
-    public readonly float CostDays;
+    public readonly string FoodId;
     /// <summary>
-    /// 随机权重
+    /// Food:Boss 池筛选;非空=从 isBoss 美食按角色池抽;&#39;*&#39;=任意
     /// </summary>
-    public readonly float Weight;
+    public readonly string BossPoolId;
     /// <summary>
-    /// 是否可重复
+    /// 本次最小耗时(0.1天)
     /// </summary>
-    public readonly bool Repeatable;
+    public readonly float MinCostDays;
     /// <summary>
-    /// 前置条件
+    /// 本次最大耗时(0.1天)
     /// </summary>
-    public readonly string Preconditions;
-    /// <summary>
-    /// 载荷类型
-    /// </summary>
-    public readonly string PayloadType;
-    /// <summary>
-    /// 载荷数值
-    /// </summary>
-    public readonly float PayloadValue;
-    /// <summary>
-    /// 载荷参数
-    /// </summary>
-    public readonly string PayloadParam;
-    /// <summary>
-    /// 关联配置ID
-    /// </summary>
-    public readonly string LinkId;
-    /// <summary>
-    /// 美食难度(Normal/Hard/Boss)
-    /// </summary>
-    public readonly string FoodDifficulty;
-    /// <summary>
-    /// 美食奖励外观类型
-    /// </summary>
-    public readonly RewardKind RewardKind;
-    /// <summary>
-    /// 美食奖励包ID
-    /// </summary>
-    public readonly string RewardPackageId;
-    /// <summary>
-    /// 金币曲线ID
-    /// </summary>
-    public readonly string GoldCurveId;
-    /// <summary>
-    /// 行动隐藏分加成
-    /// </summary>
-    public readonly int HiddenScoreBonus;
+    public readonly float MaxCostDays;
    
     public const int __ID__ = 2090226920;
     public override int GetTypeId() => __ID__;
@@ -123,20 +78,11 @@ public sealed partial class GameAction : Luban.BeanBase
         + "id:" + Id + ","
         + "name:" + Name + ","
         + "desc:" + Desc + ","
-        + "actionType:" + ActionType + ","
-        + "costDays:" + CostDays + ","
-        + "weight:" + Weight + ","
-        + "repeatable:" + Repeatable + ","
-        + "preconditions:" + Preconditions + ","
-        + "payloadType:" + PayloadType + ","
-        + "payloadValue:" + PayloadValue + ","
-        + "payloadParam:" + PayloadParam + ","
-        + "linkId:" + LinkId + ","
-        + "foodDifficulty:" + FoodDifficulty + ","
-        + "rewardKind:" + RewardKind + ","
-        + "rewardPackageId:" + RewardPackageId + ","
-        + "goldCurveId:" + GoldCurveId + ","
-        + "hiddenScoreBonus:" + HiddenScoreBonus + ","
+        + "behavior:" + Behavior + ","
+        + "foodId:" + FoodId + ","
+        + "bossPoolId:" + BossPoolId + ","
+        + "minCostDays:" + MinCostDays + ","
+        + "maxCostDays:" + MaxCostDays + ","
         + "}";
     }
 }

@@ -29,9 +29,6 @@ public sealed partial class HiddenScoreCurve : Luban.BeanBase
         { if(!_buf["perWeek"].IsNumber) { throw new SerializationException(); }  PerWeek = _buf["perWeek"]; }
         { if(!_buf["perDay"].IsNumber) { throw new SerializationException(); }  PerDay = _buf["perDay"]; }
         { if(!_buf["perStep"].IsNumber) { throw new SerializationException(); }  PerStep = _buf["perStep"]; }
-        { if(!_buf["normalBonus"].IsNumber) { throw new SerializationException(); }  NormalBonus = _buf["normalBonus"]; }
-        { if(!_buf["hardBonus"].IsNumber) { throw new SerializationException(); }  HardBonus = _buf["hardBonus"]; }
-        { if(!_buf["bossBonus"].IsNumber) { throw new SerializationException(); }  BossBonus = _buf["bossBonus"]; }
         { if(!_buf["itemBonusMultiplier"].IsNumber) { throw new SerializationException(); }  ItemBonusMultiplier = _buf["itemBonusMultiplier"]; }
         { if(!_buf["roundTo"].IsNumber) { throw new SerializationException(); }  RoundTo = _buf["roundTo"]; }
         { if(!_buf["minValue"].IsNumber) { throw new SerializationException(); }  MinValue = _buf["minValue"]; }
@@ -91,18 +88,6 @@ public sealed partial class HiddenScoreCurve : Luban.BeanBase
     /// </summary>
     public readonly float PerStep;
     /// <summary>
-    /// 普通美食难度加成。
-    /// </summary>
-    public readonly int NormalBonus;
-    /// <summary>
-    /// 困难美食难度加成。
-    /// </summary>
-    public readonly int HardBonus;
-    /// <summary>
-    /// Boss难度加成。
-    /// </summary>
-    public readonly int BossBonus;
-    /// <summary>
     /// 道具隐藏分派生倍率。
     /// </summary>
     public readonly float ItemBonusMultiplier;
@@ -137,9 +122,6 @@ public sealed partial class HiddenScoreCurve : Luban.BeanBase
         + "perWeek:" + PerWeek + ","
         + "perDay:" + PerDay + ","
         + "perStep:" + PerStep + ","
-        + "normalBonus:" + NormalBonus + ","
-        + "hardBonus:" + HardBonus + ","
-        + "bossBonus:" + BossBonus + ","
         + "itemBonusMultiplier:" + ItemBonusMultiplier + ","
         + "roundTo:" + RoundTo + ","
         + "minValue:" + MinValue + ","

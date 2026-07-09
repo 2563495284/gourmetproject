@@ -1,0 +1,30 @@
+[
+  {
+    "id": "sg_food_a",
+    "name": "美食A"
+  },
+  {
+    "id": "sg_food_b",
+    "name": "美食B"
+  },
+  {
+    "id": "sg_food_hard_a",
+    "name": "硬菜A"
+  },
+  {
+    "id": "sg_food_hard_b",
+    "name": "硬菜B"
+  },
+  {
+    "id": "sg_event",
+    "name": "事件"
+  },
+  {
+    "id": "sg_reward",
+    "name": "奖励"
+  },
+  {
+    "id": "sg_debug",
+    "name": "调试商店"
+  }
+]

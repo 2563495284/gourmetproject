@@ -19,8 +19,17 @@ namespace GourmetProject.Game.Run
         public int WeekIndex;
         public int Gold;
 
-        /// <summary>「食物调整」剩余次数。默认 999，兼容旧档缺省。</summary>
-        public int FoodAdjustCount = 999;
+        /// <summary>本局利息节点金币阈值。</summary>
+        public int InterestThreshold = -1;
+
+        /// <summary>本局利息每档金币收益。</summary>
+        public int InterestGoldPer = -1;
+
+        /// <summary>本局利息节点单次最高收益基础值。</summary>
+        public int InterestCap = -1;
+
+        /// <summary>「食物调整」行动外基础次数快照；被动道具加成由持有道具在运行时叠加。</summary>
+        public int FoodAdjustCount = -1;
 
         /// <summary>主动道具累计使用次数（单调递增）。随机类主动效果按此序号派生随机流以保证可复现。</summary>
         public int ActiveUseIndex;
@@ -89,6 +98,9 @@ namespace GourmetProject.Game.Run
 
         /// <summary>已通关 Boss id（整局，含最终胜利判定）。</summary>
         public List<string> CompletedBossIds = new List<string>();
+
+        /// <summary>Boss 不放回随机的已抽取记录；抽光后会重置，不影响 CompletedBossIds。</summary>
+        public List<string> RolledBossIds = new List<string>();
 
         /// <summary>当前行动选择快照 key；同一步 UI 重开时沿用已有候选。</summary>
         public string PendingActionChoiceKey;

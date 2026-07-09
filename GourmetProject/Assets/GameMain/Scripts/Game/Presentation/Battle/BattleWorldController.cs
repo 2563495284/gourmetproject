@@ -224,6 +224,7 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             RebuildPlacedPieces();
             RefreshAll();
+            _stateChanged?.Invoke();
             if (IsFoodAdjusting)
             {
                 SetPlacedPiecesClickEnabled(false);

@@ -50,9 +50,10 @@ namespace GourmetProject.Game.UI.Battle.View
                 trigger = nodeObject.AddComponent<TipHoverTrigger>();
             }
 
-            switch (node.NodeType)
+            cfg.GameAction action = TimelineService.NodeAction(run, node);
+            switch (ActionDisplay.KindOf(action))
             {
-                case cfg.TimelineNodeType.Shop:
+                case ActionDisplayKind.Shop:
                 {
                     ShopNodeTipView tip = _shopTip?.Invoke();
                     if (tip != null)
@@ -63,23 +64,23 @@ namespace GourmetProject.Game.UI.Battle.View
                     break;
                 }
 
-                case cfg.TimelineNodeType.Interest:
+                case ActionDisplayKind.Interest:
                 {
                     InterestNodeTipView tip = _interestTip?.Invoke();
                     if (tip != null)
                     {
-                        trigger.SetTip(tip, () => BindInterestNodeTip(run, tip, node));
+                        trigger.SetTip(tip, () => BindInterestNodeTip(run, tip, node, action));
                     }
 
                     break;
                 }
 
-                case cfg.TimelineNodeType.Boss:
+                case ActionDisplayKind.Boss:
                 {
                     BossFeastTipView tip = _bossTip?.Invoke();
                     if (tip != null)
                     {
-                        trigger.SetTip(tip, () => BindBossNodeTip(run, tip, node));
+                        trigger.SetTip(tip, () => BindBossNodeTip(run, tip, node, action));
                     }
 
                     break;
@@ -91,15 +92,15 @@ namespace GourmetProject.Game.UI.Battle.View
             }
         }
 
-        private static void BindInterestNodeTip(GameRun run, InterestNodeTipView tip, cfg.TimelineNode node)
+        private static void BindInterestNodeTip(GameRun run, InterestNodeTipView tip, cfg.TimelineNode node, cfg.GameAction action)
         {
-            if (tip == null || node == null)
+            if (tip == null || node == null || action == null)
             {
                 return;
             }
 
-            int threshold = Mathf.Max(0, Mathf.RoundToInt(node.PayloadValue));
-            int goldPer = int.TryParse(node.PayloadParam, out int parsedGoldPer) ? parsedGoldPer : 1;
+            int threshold = Mathf.Max(0, run?.InterestThreshold ?? 0);
+            int goldPer = run != null && run.InterestGoldPer > 0 ? run.InterestGoldPer : 1;
             int maxGain = run?.InterestCap ?? 0;
             int currentGain = TimelineMath.Interest(run?.Gold ?? 0, threshold, goldPer, maxGain);
             string desc = threshold > 0
@@ -108,14 +109,14 @@ namespace GourmetProject.Game.UI.Battle.View
             tip.Bind(desc, node.Day);
         }
 
-        private static void BindBossNodeTip(GameRun run, BossFeastTipView tip, cfg.TimelineNode node)
+        private static void BindBossNodeTip(GameRun run, BossFeastTipView tip, cfg.TimelineNode node, cfg.GameAction action)
         {
             if (tip == null || node == null)
             {
                 return;
             }
 
-            cfg.Boss boss = PreviewBoss(run, node);
+            cfg.Food boss = PreviewBoss(run, node, action);
             if (boss == null)
             {
                 tip.Bind("恶魔", "即将迎来周末盛宴。", run?.RequiredScore ?? 0);
@@ -126,9 +127,9 @@ namespace GourmetProject.Game.UI.Battle.View
             tip.Bind(boss, BossMechanicDescription(boss.Modifier), required);
         }
 
-        private static cfg.Boss PreviewBoss(GameRun run, cfg.TimelineNode node)
+        private static cfg.Food PreviewBoss(GameRun run, cfg.TimelineNode node, cfg.GameAction action)
         {
-            if (run == null || node == null)
+            if (run == null || node == null || action == null)
             {
                 return null;
             }
@@ -137,7 +138,7 @@ namespace GourmetProject.Game.UI.Battle.View
             RngState state = rng.State;
             try
             {
-                return BossService.RollBoss(run, rng, node.PayloadParam);
+                return BossService.RollBoss(run, rng);
             }
             finally
             {

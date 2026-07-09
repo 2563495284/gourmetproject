@@ -58,7 +58,7 @@ namespace GourmetProject.Game.UI.Hud
 
             BuildFill(ratio);
             BuildTicksAndLabels(wholeDays, length);
-            BuildNodeIcons(nodeByDay, length, onNodeCreated);
+            BuildNodeIcons(run, nodeByDay, length, onNodeCreated);
             PositionMarker(ratio);
             RefreshRemainingDays(run, length);
         }
@@ -119,7 +119,7 @@ namespace GourmetProject.Game.UI.Hud
         }
 
         /// <summary>特殊节点图标：按 day/长度 比例摆在进度条上方。</summary>
-        private void BuildNodeIcons(Dictionary<int, cfg.TimelineNode> nodeByDay, float length, Action<cfg.TimelineNode, GameObject> onNodeCreated)
+        private void BuildNodeIcons(GameRun run, Dictionary<int, cfg.TimelineNode> nodeByDay, float length, Action<cfg.TimelineNode, GameObject> onNodeCreated)
         {
             foreach (KeyValuePair<int, cfg.TimelineNode> kv in nodeByDay)
             {
@@ -129,7 +129,8 @@ namespace GourmetProject.Game.UI.Hud
                     continue;
                 }
 
-                Sprite sprite = NodeSprite(node.NodeType);
+                ActionDisplayKind kind = ActionDisplay.KindOf(TimelineService.NodeAction(run, node));
+                Sprite sprite = NodeSprite(kind);
                 float x = Mathf.Clamp01(kv.Key / length);
                 var go = NewChild($"Node_{kv.Key}");
                 var rect = (RectTransform)go.transform;
@@ -150,7 +151,7 @@ namespace GourmetProject.Game.UI.Hud
                 else
                 {
                     var text = go.AddComponent<Text>();
-                    text.text = NodeLabel(node.NodeType);
+                    text.text = NodeLabel(kind);
                     text.font = ResolveFont();
                     text.color = _dayTextColor;
                     text.alignment = TextAnchor.LowerCenter;
@@ -244,29 +245,29 @@ namespace GourmetProject.Game.UI.Hud
             _spawned.Clear();
         }
 
-        private static string NodeLabel(cfg.TimelineNodeType type)
+        private static string NodeLabel(ActionDisplayKind kind)
         {
-            switch (type)
+            switch (kind)
             {
-                case cfg.TimelineNodeType.Boss: return "BOSS";
-                case cfg.TimelineNodeType.Interest: return "利息";
-                case cfg.TimelineNodeType.Shop: return "商店";
-                case cfg.TimelineNodeType.Event: return "事件";
+                case ActionDisplayKind.Boss: return "BOSS";
+                case ActionDisplayKind.Interest: return "利息";
+                case ActionDisplayKind.Shop: return "商店";
+                case ActionDisplayKind.Event: return "事件";
                 default: return string.Empty;
             }
         }
 
-        private Sprite NodeSprite(cfg.TimelineNodeType type)
+        private Sprite NodeSprite(ActionDisplayKind kind)
         {
-            switch (type)
+            switch (kind)
             {
-                case cfg.TimelineNodeType.Boss:
+                case ActionDisplayKind.Boss:
                     return _bossNodeSprite != null ? _bossNodeSprite : Resources.Load<Sprite>("Sprites/UI/icon_axis_boss");
-                case cfg.TimelineNodeType.Interest:
+                case ActionDisplayKind.Interest:
                     return _interestNodeSprite != null ? _interestNodeSprite : Resources.Load<Sprite>("Sprites/UI/icon_axis_interest");
-                case cfg.TimelineNodeType.Shop:
+                case ActionDisplayKind.Shop:
                     return _shopNodeSprite != null ? _shopNodeSprite : Resources.Load<Sprite>("Sprites/UI/icon_axis_shop");
-                case cfg.TimelineNodeType.Event:
+                case ActionDisplayKind.Event:
                     return _eventNodeSprite != null ? _eventNodeSprite : Resources.Load<Sprite>("Sprites/UI/icon_axis_event");
                 default:
                     return null;

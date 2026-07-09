@@ -13,7 +13,7 @@ namespace GourmetProject.Game.UI.Tooltips
         private const string DefaultEmoji = "\U0001F608";
 
         /// <summary>直接用配置 Boss 绑定：标题取 Boss 名，描述取机制文案，底行取目标分。</summary>
-        public void Bind(cfg.Boss boss, string mechanicDesc, long requiredScore, Sprite icon = null)
+        public void Bind(cfg.Food boss, string mechanicDesc, long requiredScore, Sprite icon = null)
         {
             string bossName = boss != null ? boss.Name : string.Empty;
             Bind(bossName, mechanicDesc, requiredScore, icon);

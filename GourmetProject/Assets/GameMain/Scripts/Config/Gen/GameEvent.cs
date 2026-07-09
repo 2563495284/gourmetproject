@@ -20,13 +20,10 @@ public sealed partial class GameEvent : Luban.BeanBase
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
         { if(!_buf["name"].IsString) { throw new SerializationException(); }  Name = _buf["name"]; }
         { if(!_buf["desc"].IsString) { throw new SerializationException(); }  Desc = _buf["desc"]; }
-        { if(!_buf["timeCost"].IsNumber) { throw new SerializationException(); }  TimeCost = _buf["timeCost"]; }
-        { if(!_buf["effectType"].IsString) { throw new SerializationException(); }  EffectType = _buf["effectType"]; }
-        { if(!_buf["effectValue"].IsNumber) { throw new SerializationException(); }  EffectValue = _buf["effectValue"]; }
-        { if(!_buf["category"].IsString) { throw new SerializationException(); }  Category = _buf["category"]; }
+        { if(!_buf["eventType"].IsNumber) { throw new SerializationException(); }  EventType = (ActionBehavior)_buf["eventType"].AsInt; }
+        { if(!_buf["preconditions"].IsString) { throw new SerializationException(); }  Preconditions = _buf["preconditions"]; }
         { if(!_buf["weight"].IsNumber) { throw new SerializationException(); }  Weight = _buf["weight"]; }
         { if(!_buf["repeatable"].IsBoolean) { throw new SerializationException(); }  Repeatable = _buf["repeatable"]; }
-        { if(!_buf["preconditions"].IsString) { throw new SerializationException(); }  Preconditions = _buf["preconditions"]; }
     }
 
     public static GameEvent DeserializeGameEvent(JSONNode _buf)
@@ -35,45 +32,33 @@ public sealed partial class GameEvent : Luban.BeanBase
     }
 
     /// <summary>
-    /// 事件ID。
+    /// 事件ID
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 事件名称。
+    /// 事件名称
     /// </summary>
     public readonly string Name;
     /// <summary>
-    /// 事件描述。
+    /// 事件描述
     /// </summary>
     public readonly string Desc;
     /// <summary>
-    /// 事件默认耗时；事件行动仍以行动costDays推进。
+    /// 事件分类(Event/Reward/Negative,决定被哪种行动 roll)
     /// </summary>
-    public readonly int TimeCost;
+    public readonly ActionBehavior EventType;
     /// <summary>
-    /// 无选项事件的直接效果类型。
+    /// 出现前置条件
     /// </summary>
-    public readonly string EffectType;
+    public readonly string Preconditions;
     /// <summary>
-    /// 无选项事件的直接效果数值。
-    /// </summary>
-    public readonly float EffectValue;
-    /// <summary>
-    /// 事件分类，用于后续事件池扩展。
-    /// </summary>
-    public readonly string Category;
-    /// <summary>
-    /// 事件节点随机权重；&lt;=0时运行时按1处理。
+    /// 随机权重
     /// </summary>
     public readonly float Weight;
     /// <summary>
-    /// 是否可重复触发；false命中后写入UsedEventIds。
+    /// 是否可重复(false 命中后本局不再出)
     /// </summary>
     public readonly bool Repeatable;
-    /// <summary>
-    /// 前置条件表达式，空=无条件。
-    /// </summary>
-    public readonly string Preconditions;
    
     public const int __ID__ = -1313800792;
     public override int GetTypeId() => __ID__;
@@ -88,13 +73,10 @@ public sealed partial class GameEvent : Luban.BeanBase
         + "id:" + Id + ","
         + "name:" + Name + ","
         + "desc:" + Desc + ","
-        + "timeCost:" + TimeCost + ","
-        + "effectType:" + EffectType + ","
-        + "effectValue:" + EffectValue + ","
-        + "category:" + Category + ","
+        + "eventType:" + EventType + ","
+        + "preconditions:" + Preconditions + ","
         + "weight:" + Weight + ","
         + "repeatable:" + Repeatable + ","
-        + "preconditions:" + Preconditions + ","
         + "}";
     }
 }

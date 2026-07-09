@@ -115,6 +115,11 @@ namespace GourmetProject.Game.UI.Battle.View
         /// <summary>行动轴节点单卡：点击后回调 onPick；无法构建时走 onEmpty 兜底。</summary>
         public void ShowTimelineNode(cfg.TimelineNode node, int? interestMaxGain, Action onPick, Action onEmpty)
         {
+            ShowTimelineNode(node, null, null, interestMaxGain, onPick, onEmpty);
+        }
+
+        public void ShowTimelineNode(cfg.TimelineNode node, int? interestThreshold, int? interestGoldPer, int? interestMaxGain, Action onPick, Action onEmpty)
+        {
             Clear();
             if (_cardsContainer == null || _cardPrefab == null)
             {
@@ -128,7 +133,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 _skipButton.gameObject.SetActive(false);
             }
 
-            SpawnCard(0.03f, 0.97f, card => card.Bind(node, interestMaxGain, () => onPick?.Invoke()));
+            SpawnCard(0.03f, 0.97f, card => card.Bind(node, interestThreshold, interestGoldPer, interestMaxGain, () => onPick?.Invoke()));
         }
 
         /// <summary>退场：卡片播放隐藏动画后销毁，全部完成再触发 onHidden。</summary>

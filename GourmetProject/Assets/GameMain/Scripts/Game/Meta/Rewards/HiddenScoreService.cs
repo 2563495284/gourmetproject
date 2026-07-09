@@ -34,11 +34,11 @@ namespace GourmetProject.Game.Meta
 
         public static int TargetScore(GameRun run, ActionExecutionContext context = null)
         {
-            cfg.GameAction action = context?.Action;
+            cfg.Food food = ResolveFood(run?.Tables, context?.Action);
             int derived = Evaluate(TargetPurpose, run, context, BaseHiddenScore(run, context));
-            if (action != null && action.PayloadValue > 0f)
+            if (food != null && food.TargetScoreMul > 0f)
             {
-                derived = (int)Math.Round(derived * action.PayloadValue, MidpointRounding.AwayFromZero);
+                derived = (int)Math.Round(derived * food.TargetScoreMul, MidpointRounding.AwayFromZero);
             }
 
             return Math.Max(1, derived);
@@ -66,8 +66,8 @@ namespace GourmetProject.Game.Meta
 
         public static GoldRange GoldRewardRange(GameRun run, ActionExecutionContext context = null, cfg.RewardPackage package = null)
         {
-            cfg.GameAction action = context?.Action;
-            cfg.GoldRewardCurve curve = ResolveGoldCurve(run?.Tables, action);
+            cfg.Food food = ResolveFood(run?.Tables, context?.Action);
+            cfg.GoldRewardCurve curve = ResolveGoldCurve(run?.Tables, food);
             if (run == null || curve == null)
             {
                 int min = package != null ? package.GoldMin : 20;
@@ -75,10 +75,8 @@ namespace GourmetProject.Game.Meta
                 return new GoldRange(min, max);
             }
 
-            int difficultyMin = DifficultyGoldMinBonus(action?.FoodDifficulty, curve);
-            int difficultyMax = DifficultyGoldMaxBonus(action?.FoodDifficulty, curve);
-            double minValue = curve.MinBase + run.WeekIndex * curve.MinPerWeek + run.CurrentDay * curve.MinPerDay + difficultyMin;
-            double maxValue = curve.MaxBase + run.WeekIndex * curve.MaxPerWeek + run.CurrentDay * curve.MaxPerDay + difficultyMax;
+            double minValue = curve.MinBase + run.WeekIndex * curve.MinPerWeek + run.CurrentDay * curve.MinPerDay;
+            double maxValue = curve.MaxBase + run.WeekIndex * curve.MaxPerWeek + run.CurrentDay * curve.MaxPerDay;
             return new GoldRange(
                 Math.Max(0, (int)Math.Round(minValue, MidpointRounding.AwayFromZero)),
                 Math.Max(0, (int)Math.Round(maxValue, MidpointRounding.AwayFromZero)));
@@ -110,8 +108,7 @@ namespace GourmetProject.Game.Meta
             value += run.WeekIndex * curve.PerWeek;
             value += run.CurrentDay * curve.PerDay;
             value += run.ActionStepIndex * curve.PerStep;
-            value += DifficultyBonus(context?.Action?.FoodDifficulty, curve);
-            value += (context?.Action?.HiddenScoreBonus ?? 0);
+            value += (ResolveFood(run?.Tables, context?.Action)?.HiddenScoreBonus ?? 0);
             value += ItemHiddenBonus(run) * curve.ItemBonusMultiplier;
 
             int rounded = (int)Math.Round(value, MidpointRounding.AwayFromZero);
@@ -184,54 +181,21 @@ namespace GourmetProject.Game.Meta
             return Math.Max(1, run?.RunActionStepIndex ?? 0);
         }
 
-        private static cfg.GoldRewardCurve ResolveGoldCurve(cfg.Tables tables, cfg.GameAction action)
+        private static cfg.Food ResolveFood(cfg.Tables tables, cfg.GameAction action)
         {
-            string curveId = action?.GoldCurveId;
+            return FoodService.Resolve(tables, action);
+        }
+
+        private static cfg.GoldRewardCurve ResolveGoldCurve(cfg.Tables tables, cfg.Food food)
+        {
+            string curveId = food?.GoldCurveId;
             if (string.IsNullOrEmpty(curveId))
             {
-                curveId = string.Equals(action?.FoodDifficulty, "Hard", StringComparison.OrdinalIgnoreCase)
-                    ? "gold_hard"
-                    : "gold_normal";
+                curveId = "gold_normal";
             }
 
             tables ??= GameApp.Config.Tables;
             return (tables ?? GameApp.Config.Tables).TbGoldRewardCurve.GetOrDefault(curveId);
-        }
-
-        private static int DifficultyBonus(string difficulty, cfg.HiddenScoreCurve curve)
-        {
-            if (string.Equals(difficulty, "Boss", StringComparison.OrdinalIgnoreCase))
-            {
-                return curve.BossBonus;
-            }
-
-            return string.Equals(difficulty, "Hard", StringComparison.OrdinalIgnoreCase)
-                ? curve.HardBonus
-                : curve.NormalBonus;
-        }
-
-        private static int DifficultyGoldMinBonus(string difficulty, cfg.GoldRewardCurve curve)
-        {
-            if (string.Equals(difficulty, "Boss", StringComparison.OrdinalIgnoreCase))
-            {
-                return curve.BossMinBonus;
-            }
-
-            return string.Equals(difficulty, "Hard", StringComparison.OrdinalIgnoreCase)
-                ? curve.HardMinBonus
-                : curve.NormalMinBonus;
-        }
-
-        private static int DifficultyGoldMaxBonus(string difficulty, cfg.GoldRewardCurve curve)
-        {
-            if (string.Equals(difficulty, "Boss", StringComparison.OrdinalIgnoreCase))
-            {
-                return curve.BossMaxBonus;
-            }
-
-            return string.Equals(difficulty, "Hard", StringComparison.OrdinalIgnoreCase)
-                ? curve.HardMaxBonus
-                : curve.NormalMaxBonus;
         }
 
         private static float ItemHiddenBonus(GameRun run)

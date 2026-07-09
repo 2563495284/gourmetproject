@@ -67,15 +67,7 @@ public partial class Tables
     /// </summary>
     public TbWeek TbWeek {get; }
     /// <summary>
-    /// 事件：行动/节点触发的局外事件。weight 用于事件节点随机；repeatable=false 命中后写入 UsedEventIds。
-    /// </summary>
-    public TbEvent TbEvent {get; }
-    /// <summary>
-    /// 事件选项：同 eventId 多行=该事件可选项。resultType/resultValue/resultParam 由 EventService 分发结算。
-    /// </summary>
-    public TbEventOption TbEventOption {get; }
-    /// <summary>
-    /// 行动（三选一）：由行动组成员筛选后进入候选。actionType 决定执行分支；costDays 为默认耗时。
+    /// 行动（薄壳分派）：只留 behavior 与关联/少量参数；具体内容在 TbFood/TbEvent。
     /// </summary>
     public TbAction TbAction {get; }
     /// <summary>
@@ -86,10 +78,6 @@ public partial class Tables
     /// 行动轴节点：同 timelineId 多行组成一条轴；行动推进时触发 prevDay &lt; day &lt;= newDay 且未触发过的节点，并按 day 升序结算。
     /// </summary>
     public TbTimelineNode TbTimelineNode {get; }
-    /// <summary>
-    /// Boss：Boss节点按权重随机。characterPool 空=任意角色；week=0 任意周；unlockCondition 空=默认解锁；scoreProfileId 空=用当前周曲线；modifier 为特殊机制(limit_serve/small_board…)。
-    /// </summary>
-    public TbBoss TbBoss {get; }
     /// <summary>
     /// GlobalConst：跑通 Luban 接入用的占位表（与玩法无关）。
     /// </summary>
@@ -102,14 +90,6 @@ public partial class Tables
     /// 金币奖励曲线：按进度和行动难度计算上下限。
     /// </summary>
     public TbGoldRewardCurve TbGoldRewardCurve {get; }
-    /// <summary>
-    /// 行动组：控制整局行动组合序列的奖励外观、难度和节奏。
-    /// </summary>
-    public TbActionGroup TbActionGroup {get; }
-    /// <summary>
-    /// 行动组成员：指定组内候选行动、组内权重和本次耗时范围。
-    /// </summary>
-    public TbActionGroupMember TbActionGroupMember {get; }
     /// <summary>
     /// 整局行动日程规则：按整局行动序号窗口和优先级填充行动组序列。
     /// </summary>
@@ -142,6 +122,46 @@ public partial class Tables
     /// 子技能(合并后=具体子技能)：一行=一条完整效果(全部 SkillRuleDef 字段 + isPassive/signed/descTemplate)。参数不同即不同子技能，内容相同可被多个技能复用。
     /// </summary>
     public TbSubSkill TbSubSkill {get; }
+    /// <summary>
+    /// 美食/战斗明细（含 Boss）：Food 行动 foodId 关联；Boss=isBoss，按角色池/周/解锁随机。
+    /// </summary>
+    public TbFood TbFood {get; }
+    /// <summary>
+    /// 事件明细：eventType 分类(Event/Reward/Negative)，公共 preconditions/weight/repeatable。
+    /// </summary>
+    public TbEvent TbEvent {get; }
+    /// <summary>
+    /// 事件选项：同 eventId 多行=选项分支；单选项=自动结算。effectType 用 EffectType。
+    /// </summary>
+    public TbEventOption TbEventOption {get; }
+    /// <summary>
+    /// 小组：固定成员（成员见 small_member），即本次 n 选一。
+    /// </summary>
+    public TbActionSmallGroup TbActionSmallGroup {get; }
+    /// <summary>
+    /// 小组成员：小组内固定行动。
+    /// </summary>
+    public TbActionSmallMember TbActionSmallMember {get; }
+    /// <summary>
+    /// 中组：含多个小组(见 medium_member)，被大组按 weight 选中。
+    /// </summary>
+    public TbActionMediumGroup TbActionMediumGroup {get; }
+    /// <summary>
+    /// 中组成员：中组内按 weight 选一个小组。
+    /// </summary>
+    public TbActionMediumMember TbActionMediumMember {get; }
+    /// <summary>
+    /// 大组：含多个中组(见 large_member)；ruleIds 参与日程规则，fallbackWeights 保底随机。
+    /// </summary>
+    public TbActionLargeGroup TbActionLargeGroup {get; }
+    /// <summary>
+    /// 大组成员：大组内按 中组.weight 选一个中组。
+    /// </summary>
+    public TbActionLargeMember TbActionLargeMember {get; }
+    /// <summary>
+    /// 全局基础配置：整局初始金币、利息与食物调整等基础数值。
+    /// </summary>
+    public TbGameBase TbGameBase {get; }
 
     public Tables(System.Func<string, JSONNode> loader)
     {
@@ -158,17 +178,12 @@ public partial class Tables
         TbRewardSlot = new TbRewardSlot(loader("tbrewardslot"));
         TbRewardPool = new TbRewardPool(loader("tbrewardpool"));
         TbWeek = new TbWeek(loader("tbweek"));
-        TbEvent = new TbEvent(loader("tbevent"));
-        TbEventOption = new TbEventOption(loader("tbeventoption"));
         TbAction = new TbAction(loader("tbaction"));
         TbTimeline = new TbTimeline(loader("tbtimeline"));
         TbTimelineNode = new TbTimelineNode(loader("tbtimelinenode"));
-        TbBoss = new TbBoss(loader("tbboss"));
         TbGlobalConst = new TbGlobalConst(loader("tbglobalconst"));
         TbHiddenScoreCurve = new TbHiddenScoreCurve(loader("tbhiddenscorecurve"));
         TbGoldRewardCurve = new TbGoldRewardCurve(loader("tbgoldrewardcurve"));
-        TbActionGroup = new TbActionGroup(loader("tbactiongroup"));
-        TbActionGroupMember = new TbActionGroupMember(loader("tbactiongroupmember"));
         TbActionScheduleRule = new TbActionScheduleRule(loader("tbactionschedulerule"));
         TbUnlockRule = new TbUnlockRule(loader("tbunlockrule"));
         TbUnlockCondition = new TbUnlockCondition(loader("tbunlockcondition"));
@@ -177,6 +192,16 @@ public partial class Tables
         TbCellTag = new TbCellTag(loader("tbcelltag"));
         TbCakeLayerBuff = new TbCakeLayerBuff(loader("tbcakelayerbuff"));
         TbSubSkill = new TbSubSkill(loader("tbsubskill"));
+        TbFood = new TbFood(loader("tbfood"));
+        TbEvent = new TbEvent(loader("tbevent"));
+        TbEventOption = new TbEventOption(loader("tbeventoption"));
+        TbActionSmallGroup = new TbActionSmallGroup(loader("tbactionsmallgroup"));
+        TbActionSmallMember = new TbActionSmallMember(loader("tbactionsmallmember"));
+        TbActionMediumGroup = new TbActionMediumGroup(loader("tbactionmediumgroup"));
+        TbActionMediumMember = new TbActionMediumMember(loader("tbactionmediummember"));
+        TbActionLargeGroup = new TbActionLargeGroup(loader("tbactionlargegroup"));
+        TbActionLargeMember = new TbActionLargeMember(loader("tbactionlargemember"));
+        TbGameBase = new TbGameBase(loader("tbgamebase"));
         ResolveRef();
     }
     
@@ -195,17 +220,12 @@ public partial class Tables
         TbRewardSlot.ResolveRef(this);
         TbRewardPool.ResolveRef(this);
         TbWeek.ResolveRef(this);
-        TbEvent.ResolveRef(this);
-        TbEventOption.ResolveRef(this);
         TbAction.ResolveRef(this);
         TbTimeline.ResolveRef(this);
         TbTimelineNode.ResolveRef(this);
-        TbBoss.ResolveRef(this);
         TbGlobalConst.ResolveRef(this);
         TbHiddenScoreCurve.ResolveRef(this);
         TbGoldRewardCurve.ResolveRef(this);
-        TbActionGroup.ResolveRef(this);
-        TbActionGroupMember.ResolveRef(this);
         TbActionScheduleRule.ResolveRef(this);
         TbUnlockRule.ResolveRef(this);
         TbUnlockCondition.ResolveRef(this);
@@ -214,6 +234,16 @@ public partial class Tables
         TbCellTag.ResolveRef(this);
         TbCakeLayerBuff.ResolveRef(this);
         TbSubSkill.ResolveRef(this);
+        TbFood.ResolveRef(this);
+        TbEvent.ResolveRef(this);
+        TbEventOption.ResolveRef(this);
+        TbActionSmallGroup.ResolveRef(this);
+        TbActionSmallMember.ResolveRef(this);
+        TbActionMediumGroup.ResolveRef(this);
+        TbActionMediumMember.ResolveRef(this);
+        TbActionLargeGroup.ResolveRef(this);
+        TbActionLargeMember.ResolveRef(this);
+        TbGameBase.ResolveRef(this);
     }
 }
 

@@ -19,12 +19,10 @@ public sealed partial class ActionScheduleRule : Luban.BeanBase
     {
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
         { if(!_buf["priority"].IsNumber) { throw new SerializationException(); }  Priority = _buf["priority"]; }
-        { if(!_buf["groupIds"].IsString) { throw new SerializationException(); }  GroupIds = _buf["groupIds"]; }
         { if(!_buf["minRunStep"].IsNumber) { throw new SerializationException(); }  MinRunStep = _buf["minRunStep"]; }
         { if(!_buf["maxRunStep"].IsNumber) { throw new SerializationException(); }  MaxRunStep = _buf["maxRunStep"]; }
         { if(!_buf["minCount"].IsNumber) { throw new SerializationException(); }  MinCount = _buf["minCount"]; }
         { if(!_buf["maxCount"].IsNumber) { throw new SerializationException(); }  MaxCount = _buf["maxCount"]; }
-        { if(!_buf["weight"].IsNumber) { throw new SerializationException(); }  Weight = _buf["weight"]; }
         { if(!_buf["preconditions"].IsString) { throw new SerializationException(); }  Preconditions = _buf["preconditions"]; }
     }
 
@@ -34,39 +32,31 @@ public sealed partial class ActionScheduleRule : Luban.BeanBase
     }
 
     /// <summary>
-    /// 日程规则ID。
+    /// 规则ID(大组用 ruleIds 引用它)
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 优先级，数值越大越先填充。
+    /// 优先级,越大越先填充
     /// </summary>
     public readonly int Priority;
     /// <summary>
-    /// 候选行动组ID，多个用 | 或逗号分隔。
-    /// </summary>
-    public readonly string GroupIds;
-    /// <summary>
-    /// 整局行动序号窗口起点，1-based。
+    /// 整局行动序号窗口起点,1-based
     /// </summary>
     public readonly int MinRunStep;
     /// <summary>
-    /// 整局行动序号窗口终点，含。
+    /// 窗口终点,含
     /// </summary>
     public readonly int MaxRunStep;
     /// <summary>
-    /// 该窗口内至少出现次数。
+    /// 窗口内至少出现次数
     /// </summary>
     public readonly int MinCount;
     /// <summary>
-    /// 该窗口内最多出现次数。
+    /// 窗口内最多出现次数
     /// </summary>
     public readonly int MaxCount;
     /// <summary>
-    /// 同优先规则之间的权重。
-    /// </summary>
-    public readonly float Weight;
-    /// <summary>
-    /// 规则前置条件。
+    /// 规则前置条件
     /// </summary>
     public readonly string Preconditions;
    
@@ -82,12 +72,10 @@ public sealed partial class ActionScheduleRule : Luban.BeanBase
         return "{ "
         + "id:" + Id + ","
         + "priority:" + Priority + ","
-        + "groupIds:" + GroupIds + ","
         + "minRunStep:" + MinRunStep + ","
         + "maxRunStep:" + MaxRunStep + ","
         + "minCount:" + MinCount + ","
         + "maxCount:" + MaxCount + ","
-        + "weight:" + Weight + ","
         + "preconditions:" + Preconditions + ","
         + "}";
     }

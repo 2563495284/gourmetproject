@@ -1,86 +1,101 @@
 [
   {
     "id": "ev_market",
-    "name": "集市采购",
-    "desc": "花一点时间逛集市，获得金币。",
-    "timeCost": 1,
-    "effectType": "GainGold",
-    "effectValue": 30,
-    "category": "reward",
-    "weight": 80,
-    "repeatable": true,
-    "preconditions": ""
+    "name": "逛集市",
+    "desc": "花点时间逛集市采购。",
+    "eventType": 0,
+    "preconditions": "",
+    "weight": 60,
+    "repeatable": true
   },
   {
     "id": "ev_tasting",
-    "name": "试菜会",
-    "desc": "举办试菜会，向菜谱加入一道新菜。",
-    "timeCost": 1,
-    "effectType": "AddDish",
-    "effectValue": 1,
-    "category": "food",
-    "weight": 60,
-    "repeatable": true,
-    "preconditions": ""
+    "name": "办试菜会",
+    "desc": "举办试菜会，给菜谱加一道菜。",
+    "eventType": 0,
+    "preconditions": "",
+    "weight": 50,
+    "repeatable": true
   },
   {
     "id": "ev_rest",
     "name": "歇业一天",
     "desc": "短暂休息，降低下一关要求分。",
-    "timeCost": 1,
-    "effectType": "LowerReq",
-    "effectValue": 0.1,
-    "category": "reward",
-    "weight": 45,
-    "repeatable": true,
-    "preconditions": ""
+    "eventType": 0,
+    "preconditions": "",
+    "weight": 40,
+    "repeatable": true
   },
   {
     "id": "ev_recruit",
     "name": "招募帮厨",
     "desc": "招募帮厨，获得一件被动道具。",
-    "timeCost": 2,
-    "effectType": "GainItem",
-    "effectValue": 1,
-    "category": "reward",
+    "eventType": 0,
+    "preconditions": "",
     "weight": 35,
-    "repeatable": false,
-    "preconditions": ""
+    "repeatable": false
+  },
+  {
+    "id": "ev_study",
+    "name": "钻研食谱",
+    "desc": "钻研食谱，提升一道菜。",
+    "eventType": 0,
+    "preconditions": "",
+    "weight": 30,
+    "repeatable": true
   },
   {
     "id": "ev_gamble",
     "name": "豪赌一桌",
-    "desc": "高风险高回报：可能大赚也可能亏本。",
-    "timeCost": 1,
-    "effectType": "Gamble",
-    "effectValue": 50,
-    "category": "negative",
+    "desc": "高风险高回报，可能大赚也可能亏本。",
+    "eventType": 0,
+    "preconditions": "",
     "weight": 30,
-    "repeatable": true,
-    "preconditions": ""
+    "repeatable": true
   },
   {
-    "id": "ev_upgrade",
-    "name": "钻研食谱",
-    "desc": "钻研食谱，提升一道菜的美味度。",
-    "timeCost": 2,
-    "effectType": "UpgradeDish",
-    "effectValue": 5,
-    "category": "food",
-    "weight": 50,
-    "repeatable": true,
-    "preconditions": ""
-  },
-  {
-    "id": "ev_debug_shop",
+    "id": "ev_shop",
     "name": "神秘商贩",
-    "desc": "你听说附近有一间临时食材店。",
-    "timeCost": 1,
-    "effectType": "Shop",
-    "effectValue": 0,
-    "category": "debug",
+    "desc": "遇到神秘商贩，进入商店。",
+    "eventType": 0,
+    "preconditions": "",
     "weight": 0,
-    "repeatable": true,
-    "preconditions": "minWeek:999"
+    "repeatable": true
+  },
+  {
+    "id": "ev_tip",
+    "name": "收小费",
+    "desc": "客人很满意，留下一笔小费。",
+    "eventType": 2,
+    "preconditions": "",
+    "weight": 25,
+    "repeatable": true
+  },
+  {
+    "id": "ev_gift",
+    "name": "免费赠礼",
+    "desc": "获得一件被动道具。",
+    "eventType": 2,
+    "preconditions": "",
+    "weight": 20,
+    "repeatable": true
+  },
+  {
+    "id": "ev_tax",
+    "name": "临时摊派",
+    "desc": "被临时摊派了一笔费用。",
+    "eventType": 3,
+    "preconditions": "",
+    "weight": 30,
+    "repeatable": true
+  },
+  {
+    "id": "ev_spoil",
+    "name": "食材变质",
+    "desc": "部分食材变质，损失金币。",
+    "eventType": 3,
+    "preconditions": "",
+    "weight": 20,
+    "repeatable": true
   }
 ]

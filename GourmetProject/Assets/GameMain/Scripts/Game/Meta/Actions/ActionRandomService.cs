@@ -1,66 +1,90 @@
-using System.Collections.Generic;
-using GourmetProject.Core.Rng;
 using GourmetProject.Runtime;
 using GourmetProject.Game.Run;
 
 namespace GourmetProject.Game.Meta
 {
     /// <summary>
-    /// 行动随机：从满足前置条件、未被「不可重复」排除的行动中，按权重做不放回随机，产出 n 选一（最多 3 个）。
+    /// 行动可用性：小组成员是否能进入本次 n 选一。薄壳行动的前置/可重复看其关联明细表
+    /// （Food 看 <see cref="cfg.Food"/>，Event/Reward/Negative 看对应事件池是否非空），Shop/Interest 恒可用。
     /// </summary>
     public static class ActionRandomService
     {
         public const int MaxChoiceCount = 3;
 
-        public static List<cfg.GameAction> GenerateChoices(GameRun run, IRandomStream rng, int count = MaxChoiceCount)
+        public static bool IsAvailable(GameRun run, cfg.GameAction action)
         {
-            var result = new List<cfg.GameAction>();
-            if (run == null || rng == null || count <= 0)
+            if (run == null || action == null)
             {
-                return result;
+                return false;
             }
 
-            cfg.Tables tables = run.Tables ?? GameApp.Config.Tables;
-            var candidates = new List<cfg.GameAction>();
-            foreach (cfg.GameAction action in tables.TbAction.DataList)
+            switch (action.Behavior)
             {
-                if (IsAvailable(run, action))
+                case cfg.ActionBehavior.Food:
                 {
-                    candidates.Add(action);
+                    if (FoodService.IsBossSlot(action))
+                    {
+                        return true;
+                    }
+
+                    cfg.Food food = FoodService.Resolve(run.Tables, action);
+                    if (food == null)
+                    {
+                        return false;
+                    }
+
+                    if (!food.Repeatable && run.IsActionUsed(action.Id))
+                    {
+                        return false;
+                    }
+
+                    return PreconditionEvaluator.IsSatisfied(run, food.Preconditions);
                 }
+
+                case cfg.ActionBehavior.Event:
+                case cfg.ActionBehavior.Reward:
+                case cfg.ActionBehavior.Negative:
+                    return HasEligibleEvent(run, action.Behavior);
+
+                default:
+                    return true;
             }
-
-            int choiceCount = count > MaxChoiceCount ? MaxChoiceCount : count;
-            for (int i = 0; i < choiceCount && candidates.Count > 0; i++)
-            {
-                var weights = new List<float>(candidates.Count);
-                foreach (cfg.GameAction action in candidates)
-                {
-                    weights.Add(action.Weight > 0f ? action.Weight : 1f);
-                }
-
-                int index = rng.WeightedPickIndex(weights);
-                result.Add(candidates[index]);
-                candidates.RemoveAt(index);
-            }
-
-            return result;
         }
 
-        /// <summary>行动是否可进入随机池：可重复或本周未用过，且满足前置条件。</summary>
-        public static bool IsAvailable(GameRun run, cfg.GameAction action)
+        /// <summary>行动结算「不可重复」判定：Food 看 TbFood.repeatable；其余交由事件层/不去重。</summary>
+        public static bool IsRepeatable(GameRun run, cfg.GameAction action)
         {
             if (action == null)
             {
-                return false;
+                return true;
             }
 
-            if (!action.Repeatable && run.IsActionUsed(action.Id))
+            if (action.Behavior == cfg.ActionBehavior.Food && !FoodService.IsBossSlot(action))
             {
-                return false;
+                cfg.Food food = FoodService.Resolve(run?.Tables, action);
+                return food == null || food.Repeatable;
             }
 
-            return PreconditionEvaluator.IsSatisfied(run, action.Preconditions);
+            return true;
+        }
+
+        private static bool HasEligibleEvent(GameRun run, cfg.ActionBehavior eventType)
+        {
+            cfg.Tables tables = run.Tables ?? GameApp.Config.Tables;
+            foreach (cfg.GameEvent ev in tables.TbEvent.DataList)
+            {
+                if (ev.EventType != eventType || ev.Weight <= 0f)
+                {
+                    continue;
+                }
+
+                if ((ev.Repeatable || !run.IsEventUsed(ev.Id)) && PreconditionEvaluator.IsSatisfied(run, ev.Preconditions))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

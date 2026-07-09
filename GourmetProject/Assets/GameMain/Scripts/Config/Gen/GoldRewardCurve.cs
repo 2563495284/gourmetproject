@@ -24,12 +24,6 @@ public sealed partial class GoldRewardCurve : Luban.BeanBase
         { if(!_buf["maxPerWeek"].IsNumber) { throw new SerializationException(); }  MaxPerWeek = _buf["maxPerWeek"]; }
         { if(!_buf["minPerDay"].IsNumber) { throw new SerializationException(); }  MinPerDay = _buf["minPerDay"]; }
         { if(!_buf["maxPerDay"].IsNumber) { throw new SerializationException(); }  MaxPerDay = _buf["maxPerDay"]; }
-        { if(!_buf["normalMinBonus"].IsNumber) { throw new SerializationException(); }  NormalMinBonus = _buf["normalMinBonus"]; }
-        { if(!_buf["normalMaxBonus"].IsNumber) { throw new SerializationException(); }  NormalMaxBonus = _buf["normalMaxBonus"]; }
-        { if(!_buf["hardMinBonus"].IsNumber) { throw new SerializationException(); }  HardMinBonus = _buf["hardMinBonus"]; }
-        { if(!_buf["hardMaxBonus"].IsNumber) { throw new SerializationException(); }  HardMaxBonus = _buf["hardMaxBonus"]; }
-        { if(!_buf["bossMinBonus"].IsNumber) { throw new SerializationException(); }  BossMinBonus = _buf["bossMinBonus"]; }
-        { if(!_buf["bossMaxBonus"].IsNumber) { throw new SerializationException(); }  BossMaxBonus = _buf["bossMaxBonus"]; }
     }
 
     public static GoldRewardCurve DeserializeGoldRewardCurve(JSONNode _buf)
@@ -65,30 +59,6 @@ public sealed partial class GoldRewardCurve : Luban.BeanBase
     /// 金币上限每行动轴天数递增值。
     /// </summary>
     public readonly float MaxPerDay;
-    /// <summary>
-    /// 普通难度金币下限加成。
-    /// </summary>
-    public readonly int NormalMinBonus;
-    /// <summary>
-    /// 普通难度金币上限加成。
-    /// </summary>
-    public readonly int NormalMaxBonus;
-    /// <summary>
-    /// 困难难度金币下限加成。
-    /// </summary>
-    public readonly int HardMinBonus;
-    /// <summary>
-    /// 困难难度金币上限加成。
-    /// </summary>
-    public readonly int HardMaxBonus;
-    /// <summary>
-    /// Boss难度金币下限加成。
-    /// </summary>
-    public readonly int BossMinBonus;
-    /// <summary>
-    /// Boss难度金币上限加成。
-    /// </summary>
-    public readonly int BossMaxBonus;
    
     public const int __ID__ = 320784992;
     public override int GetTypeId() => __ID__;
@@ -107,12 +77,6 @@ public sealed partial class GoldRewardCurve : Luban.BeanBase
         + "maxPerWeek:" + MaxPerWeek + ","
         + "minPerDay:" + MinPerDay + ","
         + "maxPerDay:" + MaxPerDay + ","
-        + "normalMinBonus:" + NormalMinBonus + ","
-        + "normalMaxBonus:" + NormalMaxBonus + ","
-        + "hardMinBonus:" + HardMinBonus + ","
-        + "hardMaxBonus:" + HardMaxBonus + ","
-        + "bossMinBonus:" + BossMinBonus + ","
-        + "bossMaxBonus:" + BossMaxBonus + ","
         + "}";
     }
 }

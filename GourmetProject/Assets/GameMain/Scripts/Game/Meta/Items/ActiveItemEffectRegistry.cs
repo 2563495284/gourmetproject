@@ -55,6 +55,17 @@ namespace GourmetProject.Game.Meta
 
                     return new ActiveItemUseResult(true, false, $"{item.Name}：获得 {(int)item.EffectValue} 金币。");
 
+                case ItemEffectTypes.AdjustCountBonus:
+                {
+                    int amount = (int)item.EffectValue;
+                    if (ctx.Run != null && ctx.Run.AddFoodAdjustCount(amount))
+                    {
+                        return new ActiveItemUseResult(true, false, $"{item.Name}：食物调整次数 +{amount}。");
+                    }
+
+                    return new ActiveItemUseResult(false, false, $"{item.Name}：现在无法增加食物调整次数。");
+                }
+
                 default:
                     return new ActiveItemUseResult(true, false, $"使用了 {item.Name}。");
             }

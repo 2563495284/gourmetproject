@@ -24,8 +24,6 @@ namespace GourmetProject.Game.Run
         public const int DefaultRecipeBookCount = 2;
         public const int MaxRecipeBookCount = 4;
         public const int RecipeBookCapacity = 12;
-        public const int DefaultFoodAdjustCount = 999;
-
         /// <summary>主动道具基础消耗槽数（可被 ExtraActiveSlot 被动道具增加）。</summary>
         public const int BaseActiveSlots = 2;
 
@@ -51,6 +49,7 @@ namespace GourmetProject.Game.Run
         private readonly List<string> _usedEventIds = new List<string>();
         private readonly List<string> _usedActionIds = new List<string>();
         private readonly List<string> _completedBossIds = new List<string>();
+        private readonly List<string> _rolledBossIds = new List<string>();
         private readonly List<string> _actionGroupSequence = new List<string>();
         private readonly List<RunActionChoiceSaveData> _pendingActionChoices = new List<RunActionChoiceSaveData>();
         private readonly List<ShopEntrySaveData> _pendingShopStock = new List<ShopEntrySaveData>();
@@ -59,6 +58,10 @@ namespace GourmetProject.Game.Run
         private string _pendingRewardKey = string.Empty;
         private RewardOfferSaveData _pendingRewardOffer;
         private int _activeUseIndex;
+        private int _interestThreshold;
+        private int _interestGoldPer;
+        private int _interestCap;
+        private int _foodAdjustBaseCount;
 
         public GameRun(cfg.Tables tables, GameplayDatabase database, string characterId, string seedText, int weekIndex = 1)
         {
@@ -69,11 +72,16 @@ namespace GourmetProject.Game.Run
             SeedText = seedText;
             WeekIndex = weekIndex;
 
+            cfg.TbGameBase gameBase = _tables.TbGameBase;
+            Gold = System.Math.Max(0, gameBase.InitialGold);
+            _interestThreshold = System.Math.Max(0, gameBase.InterestThreshold);
+            _interestGoldPer = gameBase.InterestGoldPer > 0 ? gameBase.InterestGoldPer : 1;
+            _interestCap = System.Math.Max(0, gameBase.InitialInterestCap);
+            _foodAdjustBaseCount = System.Math.Max(0, gameBase.InitialFoodAdjustCount);
+
             cfg.Character character = _tables.TbCharacter.GetOrDefault(characterId);
             if (character != null)
             {
-                Gold = character.InitialGold;
-
                 foreach (string itemId in character.StartItems)
                 {
                     AcquireItem(itemId, 0);
@@ -97,20 +105,65 @@ namespace GourmetProject.Game.Run
 
         public int Gold { get; set; }
 
-        /// <summary>当前运行的利息节点单次最高收益，角色基础值可被道具提高。</summary>
+        public int InterestThreshold => _interestThreshold;
+
+        public int InterestGoldPer => _interestGoldPer;
+
+        /// <summary>当前运行的利息节点单次最高收益，本局基础值可被道具提高。</summary>
         public int InterestCap
         {
             get
             {
-                cfg.Character character = _tables.TbCharacter.GetOrDefault(CharacterId);
-                int baseCap = character != null ? System.Math.Max(0, character.InitialInterestCap) : 0;
+                int baseCap = System.Math.Max(0, _interestCap);
                 int itemCap = System.Math.Max(0, new ItemRuntime(this).InterestCapOverride());
                 return System.Math.Max(baseCap, itemCap);
             }
         }
 
-        /// <summary>「食物调整」剩余次数（局内删除/移动菜品消耗，暂定初始 999，随存档保存）。</summary>
-        public int FoodAdjustCount { get; set; } = DefaultFoodAdjustCount;
+        private bool _foodAdjustActionActive;
+        private int _foodAdjustActionBonus;
+        private int _foodAdjustSpent;
+
+        /// <summary>「食物调整」本次美食行动额度：本局基础值 + 被动道具加成。</summary>
+        public int FoodAdjustBaseCount
+        {
+            get
+            {
+                return System.Math.Max(0, _foodAdjustBaseCount + new ItemRuntime(this).AdjustCountBonus());
+            }
+        }
+
+        /// <summary>「食物调整」剩余次数。只在当前美食行动内消耗，行动结束后恢复为基础额度。</summary>
+        public int FoodAdjustCount => System.Math.Max(0, FoodAdjustLimit - _foodAdjustSpent);
+
+        private int FoodAdjustLimit =>
+            System.Math.Max(0, FoodAdjustBaseCount + (_foodAdjustActionActive ? _foodAdjustActionBonus : 0));
+
+        public void BeginFoodActionAdjustments()
+        {
+            _foodAdjustActionActive = true;
+            _foodAdjustActionBonus = 0;
+            _foodAdjustSpent = 0;
+        }
+
+        public void EndFoodActionAdjustments()
+        {
+            _foodAdjustActionActive = false;
+            _foodAdjustActionBonus = 0;
+            _foodAdjustSpent = 0;
+        }
+
+        /// <summary>增加当前美食行动的临时调整次数，供主动道具等一次性效果使用。</summary>
+        public bool AddFoodAdjustCount(int amount)
+        {
+            if (!_foodAdjustActionActive || amount <= 0)
+            {
+                return false;
+            }
+
+            _foodAdjustActionBonus += amount;
+            return true;
+        }
 
         /// <summary>尝试消耗一次食物调整：仅在 &gt;0 时 -1 并返回 true。</summary>
         public bool TrySpendFoodAdjust()
@@ -120,7 +173,7 @@ namespace GourmetProject.Game.Run
                 return false;
             }
 
-            FoodAdjustCount--;
+            _foodAdjustSpent++;
             return true;
         }
 
@@ -259,6 +312,8 @@ namespace GourmetProject.Game.Run
 
         public IReadOnlyList<string> CompletedBossIds => _completedBossIds;
 
+        public IReadOnlyList<string> RolledBossIds => _rolledBossIds;
+
         /// <summary>本周已执行的行动次数，用于 UI、随机流和隐藏分进度。</summary>
         public int ActionStepIndex { get; private set; }
 
@@ -327,12 +382,29 @@ namespace GourmetProject.Game.Run
 
         public bool IsBossCompleted(string bossId) => !string.IsNullOrEmpty(bossId) && _completedBossIds.Contains(bossId);
 
+        public bool IsBossRolled(string bossId) => !string.IsNullOrEmpty(bossId) && _rolledBossIds.Contains(bossId);
+
         public void MarkBossCompleted(string bossId)
         {
             if (!string.IsNullOrEmpty(bossId) && !_completedBossIds.Contains(bossId))
             {
                 _completedBossIds.Add(bossId);
             }
+
+            MarkBossRolled(bossId);
+        }
+
+        public void MarkBossRolled(string bossId)
+        {
+            if (!string.IsNullOrEmpty(bossId) && !_rolledBossIds.Contains(bossId))
+            {
+                _rolledBossIds.Add(bossId);
+            }
+        }
+
+        public void ResetBossRollHistory()
+        {
+            _rolledBossIds.Clear();
         }
 
         /// <summary>开始一条新的本周行动轴：重置天数游标、节点结算记录与本周行动使用记录。</summary>
@@ -407,8 +479,7 @@ namespace GourmetProject.Game.Run
                     continue;
                 }
 
-                cfg.ActionGroup group = _tables.TbActionGroup.GetOrDefault(data.ActionGroupId);
-                result.Add(new ActionChoice(action, group, data.WeekStepIndex, data.RunStepIndex, data.CostDays));
+                result.Add(new ActionChoice(action, data.ActionGroupId, data.WeekStepIndex, data.RunStepIndex, data.CostDays));
             }
 
             return result;
@@ -637,7 +708,10 @@ namespace GourmetProject.Game.Run
                 SeedText = SeedText,
                 WeekIndex = WeekIndex,
                 Gold = Gold,
-                FoodAdjustCount = FoodAdjustCount,
+                InterestThreshold = _interestThreshold,
+                InterestGoldPer = _interestGoldPer,
+                InterestCap = _interestCap,
+                FoodAdjustCount = _foodAdjustBaseCount,
                 ActiveUseIndex = _activeUseIndex,
                 Items = items,
                 BonusDishIds = new List<string>(_bonusDishIds),
@@ -662,6 +736,7 @@ namespace GourmetProject.Game.Run
                 UsedEventIds = new List<string>(_usedEventIds),
                 UsedActionIds = new List<string>(_usedActionIds),
                 CompletedBossIds = new List<string>(_completedBossIds),
+                RolledBossIds = new List<string>(_rolledBossIds),
                 PendingActionChoiceKey = _pendingActionChoiceKey,
                 PendingActionChoices = new List<RunActionChoiceSaveData>(_pendingActionChoices),
                 PendingShopKey = _pendingShopKey,
@@ -677,7 +752,18 @@ namespace GourmetProject.Game.Run
         {
             var run = new GameRun(tables, database, data.CharacterId, data.SeedText, data.WeekIndex);
             run.Gold = data.Gold;
-            run.FoodAdjustCount = data.FoodAdjustCount;
+            run._interestThreshold = data.InterestThreshold >= 0
+                ? data.InterestThreshold
+                : System.Math.Max(0, tables.TbGameBase.InterestThreshold);
+            run._interestGoldPer = data.InterestGoldPer > 0
+                ? data.InterestGoldPer
+                : (tables.TbGameBase.InterestGoldPer > 0 ? tables.TbGameBase.InterestGoldPer : 1);
+            run._interestCap = data.InterestCap >= 0
+                ? data.InterestCap
+                : System.Math.Max(0, tables.TbGameBase.InitialInterestCap);
+            run._foodAdjustBaseCount = data.FoodAdjustCount >= 0
+                ? data.FoodAdjustCount
+                : System.Math.Max(0, tables.TbGameBase.InitialFoodAdjustCount);
             run._activeUseIndex = data.ActiveUseIndex;
             run._items.Clear();
 
@@ -765,7 +851,7 @@ namespace GourmetProject.Game.Run
                 cfg.GameAction lastAction = tables.TbAction.GetOrDefault(data.LastActionId);
                 if (lastAction != null)
                 {
-                    float costDays = data.LastActionCostDays > 0f ? data.LastActionCostDays : lastAction.CostDays;
+                    float costDays = data.LastActionCostDays > 0f ? data.LastActionCostDays : lastAction.MinCostDays;
                     run.SetLastActionContext(new ActionExecutionContext(
                         lastAction,
                         data.LastActionStepIndex,
@@ -793,6 +879,11 @@ namespace GourmetProject.Game.Run
             if (data.CompletedBossIds != null)
             {
                 run._completedBossIds.AddRange(data.CompletedBossIds);
+            }
+
+            if (data.RolledBossIds != null)
+            {
+                run._rolledBossIds.AddRange(data.RolledBossIds);
             }
 
             run._pendingActionChoiceKey = data.PendingActionChoiceKey ?? string.Empty;

@@ -210,6 +210,7 @@ namespace GourmetProject.Game.UI.Battle
 
         public void HideBattleWorld()
         {
+            _run?.EndFoodActionAdjustments();
             BattleWorldController world = _world ?? BattleWorldController.Instance;
             world?.HideWorld();
             world?.ClearBattleBoard();
@@ -868,7 +869,15 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            _deck.ShowTimelineNode(node, interestMaxGain, () => OnTimelineNodePicked(onPick), () => onPick?.Invoke());
+            int? interestThreshold = _run != null ? _run.InterestThreshold : null;
+            int? interestGoldPer = _run != null ? _run.InterestGoldPer : null;
+            _deck.ShowTimelineNode(
+                node,
+                interestThreshold,
+                interestGoldPer,
+                interestMaxGain,
+                () => OnTimelineNodePicked(onPick),
+                () => onPick?.Invoke());
         }
 
         private static List<ActionChoice> RollChoices(GameRun run)
@@ -1073,6 +1082,7 @@ namespace GourmetProject.Game.UI.Battle
             _infoColumn?.SetBattleScoreOverride(null);
             _infoColumn?.ScoreFire?.Hide();
             SetMessage(string.Empty);
+            _run.BeginFoodActionAdjustments();
             _session = _run.BuildBattleSession(requiredScore, modifier, key);
             // 常驻壳在战斗中持续显示并接管分数/道具/菜谱面板（棋盘/菜品仍在世界空间场景）。
             SwitchTo(GameplayView.Food);
@@ -1135,6 +1145,7 @@ namespace GourmetProject.Game.UI.Battle
                 }
 
                 _run.AddSettledCounts(_session.LastSettledIncrements);
+                _run.EndFoodActionAdjustments();
             }
 
             _infoColumn?.SetBattleScoreOverride(null);
