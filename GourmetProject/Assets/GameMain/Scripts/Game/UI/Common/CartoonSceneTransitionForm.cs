@@ -1,4 +1,6 @@
-using System.Collections;
+using System;
+using System.Threading;
+using DG.Tweening;
 using GameFramework.Event;
 using GourmetProject.Runtime;
 using GourmetProject.Runtime.UI;
@@ -74,7 +76,7 @@ namespace GourmetProject.Game.UI.Common
         [SerializeField] private Image[] _foodCurtainImages;
 
         private CartoonSceneTransitionData _data;
-        private Coroutine _animation;
+        private CancellationTokenSource _animationCts;
         private bool _isWaitingForScene;
         private bool _subscribedSceneEvents;
 
@@ -90,21 +92,14 @@ namespace GourmetProject.Game.UI.Common
             SubscribeSceneEvents();
             SetProgress(0f);
 
-            if (_animation != null)
-            {
-                StopCoroutine(_animation);
-            }
+            CancelTransitionAnimation();
 
-            _animation = StartCoroutine(PlayTransition());
+            PlayTransitionAsync();
         }
 
         protected override void OnClose(bool isShutdown, object userData)
         {
-            if (_animation != null)
-            {
-                StopCoroutine(_animation);
-                _animation = null;
-            }
+            CancelTransitionAnimation();
 
             UnsubscribeSceneEvents();
             _isWaitingForScene = false;
@@ -178,43 +173,87 @@ namespace GourmetProject.Game.UI.Common
             return type == CartoonTransitionType.PlateWipe || type == CartoonTransitionType.FoodWipe;
         }
 
-        private IEnumerator PlayTransition()
+        private async void PlayTransitionAsync()
         {
-            yield return Animate(0f, 1f, Mathf.Max(0.01f, _data.CoverDuration), true);
-            _data.OnCovered?.Invoke();
-
-            if (!string.IsNullOrEmpty(_data.SceneAssetName))
+            _animationCts = CancellationTokenSource.CreateLinkedTokenSource(destroyCancellationToken);
+            CancellationToken token = _animationCts.Token;
+            try
             {
-                _isWaitingForScene = true;
-                GameApp.Scenes.Load(_data.SceneAssetName);
-                yield return new WaitUntil(() => !_isWaitingForScene);
-            }
+                await AnimateAsync(0f, 1f, Mathf.Max(0.01f, _data.CoverDuration), true, token);
+                _data.OnCovered?.Invoke();
 
-            if (_data.HoldDuration > 0f)
+                if (!string.IsNullOrEmpty(_data.SceneAssetName))
+                {
+                    _isWaitingForScene = true;
+                    GameApp.Scenes.Load(_data.SceneAssetName);
+                    while (_isWaitingForScene)
+                    {
+                        await Awaitable.NextFrameAsync(token);
+                    }
+                }
+
+                if (_data.HoldDuration > 0f)
+                {
+                    Tween holdTween = DOVirtual.DelayedCall(_data.HoldDuration, () => { }, ignoreTimeScale: true)
+                        .SetLink(gameObject);
+                    await AwaitTweenAsync(holdTween, token);
+                }
+
+                await AnimateAsync(1f, 0f, Mathf.Max(0.01f, _data.RevealDuration), false, token);
+
+                var onFinished = _data.OnFinished;
+                GameApp.UI.CloseUIForm(UIForm);
+                onFinished?.Invoke();
+            }
+            catch (OperationCanceledException)
             {
-                yield return new WaitForSecondsRealtime(_data.HoldDuration);
             }
-
-            yield return Animate(1f, 0f, Mathf.Max(0.01f, _data.RevealDuration), false);
-
-            var onFinished = _data.OnFinished;
-            GameApp.UI.CloseUIForm(UIForm);
-            onFinished?.Invoke();
+            catch (Exception ex)
+            {
+                Log.Error("[CartoonSceneTransitionForm] Transition failed: {0}", ex);
+            }
         }
 
-        private IEnumerator Animate(float from, float to, float duration, bool covering)
+        private Awaitable AnimateAsync(float from, float to, float duration, bool covering, CancellationToken cancellationToken)
         {
-            float elapsed = 0f;
-            while (elapsed < duration)
+            Tween tween = DOVirtual.Float(0f, 1f, duration, t =>
+                {
+                    float eased = covering ? EaseOutBack(t) : EaseInCubic(t);
+                    SetProgress(Mathf.Lerp(from, to, eased));
+                })
+                .SetEase(Ease.Linear)
+                .SetUpdate(true)
+                .SetLink(gameObject);
+            return AwaitTweenAsync(tween, cancellationToken);
+        }
+
+        private async Awaitable AwaitTweenAsync(Tween tween, CancellationToken cancellationToken)
+        {
+            try
             {
-                elapsed += Time.unscaledDeltaTime;
-                float t = Mathf.Clamp01(elapsed / duration);
-                float eased = covering ? EaseOutBack(t) : EaseInCubic(t);
-                SetProgress(Mathf.Lerp(from, to, eased));
-                yield return null;
+                while (tween != null && tween.active && !tween.IsComplete())
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    await Awaitable.NextFrameAsync(cancellationToken);
+                }
+            }
+            catch
+            {
+                tween?.Kill();
+                throw;
+            }
+        }
+
+        private void CancelTransitionAnimation()
+        {
+            if (_animationCts == null)
+            {
+                return;
             }
 
-            SetProgress(to);
+            _animationCts.Cancel();
+            _animationCts.Dispose();
+            _animationCts = null;
         }
 
         private void SubscribeSceneEvents()

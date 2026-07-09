@@ -1,6 +1,7 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
+using DG.Tweening;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Scoring;
@@ -42,7 +43,7 @@ namespace GourmetProject.Game.Presentation.Battle
             FinalScore = 3,
         }
 
-        public IEnumerator Play(
+        public async Awaitable PlayAsync(
             BattleSession session,
             ScoreResult result,
             IReadOnlyDictionary<int, DishPieceView> dishViews,
@@ -50,12 +51,11 @@ namespace GourmetProject.Game.Presentation.Battle
             Transform fxRoot,
             SettlementScoreFireView scoreFire,
             Action<int> renderScore,
-            Action onComplete)
+            CancellationToken cancellationToken)
         {
             if (result == null)
             {
-                onComplete?.Invoke();
-                yield break;
+                return;
             }
 
             float runningTotal = 0f;
@@ -77,7 +77,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     DishInstance instance = view.Instance;
                     Vector3 center = DishCenter(instance, mapper);
 
-                    yield return PlayTagCues(result, dishScore.DishInstanceId, view, center, fxRoot, mapper, playback);
+                    await PlayTagCuesAsync(result, dishScore.DishInstanceId, view, center, fxRoot, mapper, playback, cancellationToken);
 
                     AdvanceSettlementSpeed(playback, SettlementCueKind.DishContribution);
                     if (fxRoot != null)
@@ -87,9 +87,9 @@ namespace GourmetProject.Game.Presentation.Battle
 
                     float from = runningTotal;
                     runningTotal += dishScore.Contribution;
-                    yield return TweenScore(from, runningTotal, ScoreTweenStep, renderScore);
+                    await TweenScoreAsync(from, runningTotal, ScoreTweenStep, renderScore, cancellationToken);
 
-                    yield return new WaitForSeconds(PerDishInterval);
+                    await Awaitable.WaitForSecondsAsync(PerDishInterval, cancellationToken);
                 }
 
                 // 局级修正（被动道具等）单独演出一次。
@@ -116,11 +116,11 @@ namespace GourmetProject.Game.Presentation.Battle
                     }
 
                     FloatingTextView.Spawn(_floatingTextPrefab, fxRoot, mapper.Center + new Vector3(0f, 0.6f, 0f), $"局加成 {summary}", FinalColor, 0.18f, 0.7f, 1.1f);
-                    yield return new WaitForSeconds(0.4f);
+                    await Awaitable.WaitForSecondsAsync(0.4f, cancellationToken);
                 }
 
                 AdvanceSettlementSpeed(playback, SettlementCueKind.FinalScore);
-                yield return TweenScore(runningTotal, result.Total, 0.45f, renderScore);
+                await TweenScoreAsync(runningTotal, result.Total, 0.45f, renderScore, cancellationToken);
                 renderScore?.Invoke(result.Total);
             }
             finally
@@ -128,8 +128,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 RestoreSettlementSpeed();
                 scoreFire?.Hide();
             }
-
-            onComplete?.Invoke();
         }
 
         private void OnDisable()
@@ -142,14 +140,15 @@ namespace GourmetProject.Game.Presentation.Battle
             RestoreSettlementSpeed();
         }
 
-        private IEnumerator PlayTagCues(
+        private async Awaitable PlayTagCuesAsync(
             ScoreResult result,
             int dishInstanceId,
             DishPieceView view,
             Vector3 center,
             Transform fxRoot,
             BoardCoordinateMapper mapper,
-            SettlementPlaybackState playback)
+            SettlementPlaybackState playback,
+            CancellationToken cancellationToken)
         {
             foreach (ScoreLine line in result.ScoreLines)
             {
@@ -158,17 +157,18 @@ namespace GourmetProject.Game.Presentation.Battle
                     continue;
                 }
 
-                yield return PlayTagCue(line, view, center, fxRoot, mapper, playback);
+                await PlayTagCueAsync(line, view, center, fxRoot, mapper, playback, cancellationToken);
             }
         }
 
-        private IEnumerator PlayTagCue(
+        private async Awaitable PlayTagCueAsync(
             ScoreLine line,
             DishPieceView view,
             Vector3 center,
             Transform fxRoot,
             BoardCoordinateMapper mapper,
-            SettlementPlaybackState playback)
+            SettlementPlaybackState playback,
+            CancellationToken cancellationToken)
         {
             AdvanceSettlementSpeed(playback, SettlementCueKind.Tag);
 
@@ -176,7 +176,7 @@ namespace GourmetProject.Game.Presentation.Battle
             switch (line.Source.Id)
             {
                 default:
-                    yield return view.PlayDeliciousnessGainFeedback();
+                    await view.PlayDeliciousnessGainFeedbackAsync(cancellationToken);
                     break;
             }
         }
@@ -276,21 +276,19 @@ namespace GourmetProject.Game.Presentation.Battle
             return Mathf.Max(1, count);
         }
 
-        private static IEnumerator TweenScore(float from, float to, float duration, Action<int> renderScore)
+        private static async Awaitable TweenScoreAsync(float from, float to, float duration, Action<int> renderScore, CancellationToken cancellationToken)
         {
             if (renderScore == null)
             {
-                yield break;
+                return;
             }
 
-            float elapsed = 0f;
-            while (elapsed < duration)
-            {
-                elapsed += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsed / duration);
-                renderScore((int)Math.Round(Mathf.Lerp(from, to, t), MidpointRounding.AwayFromZero));
-                yield return null;
-            }
+            Tween tween = DOVirtual.Float(0f, 1f, Mathf.Max(0.0001f, duration), t =>
+                {
+                    renderScore((int)Math.Round(Mathf.Lerp(from, to, Mathf.Clamp01(t)), MidpointRounding.AwayFromZero));
+                })
+                .SetEase(Ease.Linear);
+            await PresentationTween.AwaitCompletionAsync(tween, cancellationToken);
 
             renderScore((int)Math.Round(to, MidpointRounding.AwayFromZero));
         }

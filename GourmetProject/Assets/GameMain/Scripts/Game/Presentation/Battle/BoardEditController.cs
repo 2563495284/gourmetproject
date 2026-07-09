@@ -1,6 +1,7 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
+using DG.Tweening;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Model;
 using UnityEngine;
@@ -74,7 +75,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private float _editDragReturnScale = 1f;
         private int _editMaxWidth;
         private int _editMaxHeight;
-        private Coroutine _editDragRoutine;
+        private CancellationTokenSource _editDragCts;
 
         /// <summary>是否正处于可拖拽的棋盘编辑态（只读胃视图不算）。</summary>
         public bool IsEditing => _editing;
@@ -142,7 +143,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             ResolveCamera();
-            StopAllCoroutines();
+            CancelDragAnimation();
             ComputeViewport();
 
             _editCellSprite = Resources.Load<Sprite>("Sprites/UI/board_cell");
@@ -163,7 +164,7 @@ namespace GourmetProject.Game.Presentation.Battle
             ClearDragVisual();
             HideBoundsWarning();
             ResolveCamera();
-            StopAllCoroutines();
+            CancelDragAnimation();
             ComputeViewport();
 
             _editCellSprite = Resources.Load<Sprite>("Sprites/UI/board_cell");
@@ -303,7 +304,7 @@ namespace GourmetProject.Game.Presentation.Battle
             Vector3 target = TryGetDragPlacement(mouseWorld, out _, out _, out _, out Vector3 snappedCenter)
                 ? snappedCenter
                 : mouseWorld;
-            StartDragRoutine(AnimateDragVisual(target, Vector3.one, EditDragGrabDuration, keepFollowing: true));
+            StartDragAnimation(target, Vector3.one, EditDragGrabDuration, keepFollowing: true);
             ClearGhost();
         }
 
@@ -321,7 +322,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            StartDragRoutine(AnimateDragVisual(_editDragReturnCenter, Vector3.one * _editDragReturnScale, EditDragReturnDuration, keepFollowing: false, FinishReturnDrag));
+            StartDragAnimation(_editDragReturnCenter, Vector3.one * _editDragReturnScale, EditDragReturnDuration, keepFollowing: false, FinishReturnDrag);
         }
 
         private void UpdateDragFeedback(Vector3 mouseWorld)
@@ -871,43 +872,50 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        private void StartDragRoutine(IEnumerator routine)
-        {
-            if (_editDragRoutine != null)
-            {
-                StopCoroutine(_editDragRoutine);
-                _editDragRoutine = null;
-            }
-
-            _editDragRoutine = StartCoroutine(routine);
-        }
-
-        private IEnumerator AnimateDragVisual(
+        private async void StartDragAnimation(
             Vector3 targetPosition,
             Vector3 targetScale,
             float duration,
             bool keepFollowing,
             Action onComplete = null)
         {
+            CancelDragAnimation();
             if (_editDragRoot == null)
             {
                 onComplete?.Invoke();
-                yield break;
+                return;
             }
 
             _editDragAnimating = true;
             Vector3 startPosition = _editDragRoot.position;
             Vector3 startScale = _editDragRoot.localScale;
             float safeDuration = Mathf.Max(0.0001f, duration);
-            float elapsed = 0f;
-            while (elapsed < safeDuration && _editDragRoot != null)
+            CancellationToken token = CreateDragToken();
+            Tween tween = DOVirtual.Float(0f, 1f, safeDuration, t =>
+                {
+                    if (_editDragRoot == null)
+                    {
+                        return;
+                    }
+
+                    float eased = 1f - Mathf.Pow(1f - Mathf.Clamp01(t), 3f);
+                    _editDragRoot.position = Vector3.Lerp(startPosition, targetPosition, eased);
+                    _editDragRoot.localScale = Vector3.Lerp(startScale, targetScale, eased);
+                })
+                .SetEase(Ease.Linear)
+                .SetLink(_editDragRoot.gameObject);
+
+            try
             {
-                elapsed += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsed / safeDuration);
-                float eased = 1f - Mathf.Pow(1f - t, 3f);
-                _editDragRoot.position = Vector3.Lerp(startPosition, targetPosition, eased);
-                _editDragRoot.localScale = Vector3.Lerp(startScale, targetScale, eased);
-                yield return null;
+                await PresentationTween.AwaitCompletionAsync(tween, token);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex, this);
             }
 
             if (_editDragRoot != null)
@@ -917,7 +925,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _editDragAnimating = false;
-            _editDragRoutine = null;
+            DisposeDragToken();
             if (!keepFollowing)
             {
                 onComplete?.Invoke();
@@ -1032,11 +1040,9 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void ClearDragVisual(bool stopRoutine = true)
         {
-            if (stopRoutine && _editDragRoutine != null)
+            if (stopRoutine)
             {
-                StopCoroutine(_editDragRoutine);
-                _editDragRoutine = null;
-                _editDragAnimating = false;
+                CancelDragAnimation();
             }
 
             foreach (BoardCellView cell in _editDragCells)
@@ -1053,6 +1059,31 @@ namespace GourmetProject.Game.Presentation.Battle
                 Destroy(_editDragRoot.gameObject);
                 _editDragRoot = null;
             }
+        }
+
+        private CancellationToken CreateDragToken()
+        {
+            _editDragCts = CancellationTokenSource.CreateLinkedTokenSource(destroyCancellationToken);
+            return _editDragCts.Token;
+        }
+
+        private void CancelDragAnimation()
+        {
+            if (_editDragCts == null)
+            {
+                return;
+            }
+
+            _editDragCts.Cancel();
+            _editDragCts.Dispose();
+            _editDragCts = null;
+            _editDragAnimating = false;
+        }
+
+        private void DisposeDragToken()
+        {
+            _editDragCts?.Dispose();
+            _editDragCts = null;
         }
     }
 }

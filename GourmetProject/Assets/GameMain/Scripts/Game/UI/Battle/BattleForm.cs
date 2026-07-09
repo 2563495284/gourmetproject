@@ -91,6 +91,9 @@ namespace GourmetProject.Game.UI.Battle
         [Header("Food Actions")]
         [SerializeField] private BattleFoodActionBar _foodBar;
 
+        [Header("Battle Message")]
+        [SerializeField] private Text _messageText;
+
         private bool _inBattle;
         private GameplayView _current = GameplayView.None;
         private Action<bool> _afterRewardBoardEdit;
@@ -544,6 +547,7 @@ namespace GourmetProject.Game.UI.Battle
                 _run,
                 _session,
                 SetMessage,
+                SetSettlementScore,
                 RefreshAll,
                 OnActiveItemClicked,
                 OnDishClicked,
@@ -968,7 +972,9 @@ namespace GourmetProject.Game.UI.Battle
 
             _recipeView?.SetState(RecipeView.RecipeState.Hidden);
             SetFoodActionsVisible(false);
+            _infoColumn?.ScoreFire?.Hide();
             _infoColumn?.ResetStomachLabel();
+            SetMessage(string.Empty);
 
             if (_hudFrame != null)
             {
@@ -1064,6 +1070,9 @@ namespace GourmetProject.Game.UI.Battle
         public void StartBattle(int requiredScore, string modifier, string key, ActionExecutionContext actionContext)
         {
             HideResultPanel();
+            _infoColumn?.SetBattleScoreOverride(null);
+            _infoColumn?.ScoreFire?.Hide();
+            SetMessage(string.Empty);
             _session = _run.BuildBattleSession(requiredScore, modifier, key);
             // 常驻壳在战斗中持续显示并接管分数/道具/菜谱面板（棋盘/菜品仍在世界空间场景）。
             SwitchTo(GameplayView.Food);
@@ -1080,6 +1089,7 @@ namespace GourmetProject.Game.UI.Battle
                 _run,
                 _session,
                 SetMessage,
+                SetSettlementScore,
                 RefreshAll,
                 OnActiveItemClicked,
                 OnDishClicked);
@@ -1100,11 +1110,12 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             ScoreResult result = _session.Settle();
+            SetSettlementScore(0);
             RefreshFoodActions();
 
             if (_world != null)
             {
-                _world.PlaySettlement(result, () => OnSettlementComplete(result));
+                _world.PlaySettlement(result, _infoColumn != null ? _infoColumn.ScoreFire : null, () => OnSettlementComplete(result));
             }
             else
             {
@@ -1126,6 +1137,7 @@ namespace GourmetProject.Game.UI.Battle
                 _run.AddSettledCounts(_session.LastSettledIncrements);
             }
 
+            _infoColumn?.SetBattleScoreOverride(null);
             RefreshAll();
             _loop?.OnBattleSettled(result, _session != null && _session.IsWin);
         }
@@ -1218,7 +1230,20 @@ namespace GourmetProject.Game.UI.Battle
 
         private void SetMessage(string message)
         {
-            // 提示展示由战斗世界负责，此回调保留以满足接口契约。
+            if (_messageText == null)
+            {
+                return;
+            }
+
+            string text = message ?? string.Empty;
+            _messageText.text = text;
+            _messageText.gameObject.SetActive(!string.IsNullOrEmpty(text));
+        }
+
+        private void SetSettlementScore(int score)
+        {
+            _infoColumn?.SetBattleScoreOverride(score);
+            RefreshPersistent(refreshItems: false);
         }
 
         // —— 通知弹窗 ——

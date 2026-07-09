@@ -25,10 +25,14 @@ namespace GourmetProject.Game.UI.Battle.View
         [SerializeField] private Button _foodAdjustButton;
         [SerializeField] private Button _viewStomachButton;
         [SerializeField] private Button _settingsButton;
+        [SerializeField] private SettlementScoreFireView _scoreFire;
 
         private Text _viewStomachButtonText;
         private bool _foodAdjustActive;
+        private int? _battleScoreOverride;
         private Canvas _foodAdjustRaiseCanvas;
+
+        public SettlementScoreFireView ScoreFire => _scoreFire;
 
         /// <summary>接线按钮回调（由壳在 OnInit 调用一次）。</summary>
         public void Bind(Action onSettings, Action onViewStomach, Action onFoodAdjust)
@@ -64,6 +68,12 @@ namespace GourmetProject.Game.UI.Battle.View
                     ? FoodAdjustBackLabel
                     : $"<size=28>食物调整</size>\n\n{count}";
             }
+        }
+
+        /// <summary>结算动画逐步写入当前显示分；为空时按 session 的稳定状态刷新。</summary>
+        public void SetBattleScoreOverride(int? score)
+        {
+            _battleScoreOverride = score;
         }
 
         private void SetFoodAdjustRaised(bool raised)
@@ -126,9 +136,8 @@ namespace GourmetProject.Game.UI.Battle.View
             {
                 if (session != null)
                 {
-                    int score = session.IsSettled && session.LastResult != null
-                        ? session.LastResult.Total
-                        : session.PreviewScore().Total;
+                    int score = _battleScoreOverride
+                        ?? (session.IsSettled && session.LastResult != null ? session.LastResult.Total : 0);
                     _scoreReqText.text = $"<size=28>分数要求</size>\n\n{score}\n/\n{session.RequiredScore}";
                 }
                 else

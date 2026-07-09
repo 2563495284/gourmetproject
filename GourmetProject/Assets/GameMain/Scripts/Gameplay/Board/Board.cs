@@ -346,10 +346,13 @@ namespace GourmetProject.Gameplay.Board
 
         private static IEnumerable<GridPos> Neighbors(GridPos p)
         {
-            yield return p.Offset(1, 0);
-            yield return p.Offset(-1, 0);
-            yield return p.Offset(0, 1);
-            yield return p.Offset(0, -1);
+            return new[]
+            {
+                p.Offset(1, 0),
+                p.Offset(-1, 0),
+                p.Offset(0, 1),
+                p.Offset(0, -1),
+            };
         }
 
         private DishInstance FindById(int id)

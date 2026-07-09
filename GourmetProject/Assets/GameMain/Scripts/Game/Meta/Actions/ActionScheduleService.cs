@@ -275,9 +275,10 @@ namespace GourmetProject.Game.Meta
 
         private static IEnumerable<string> ParseIds(string ids)
         {
+            var result = new List<string>();
             if (string.IsNullOrEmpty(ids))
             {
-                yield break;
+                return result;
             }
 
             string[] parts = ids.Split(new[] { '|', ',' }, StringSplitOptions.RemoveEmptyEntries);
@@ -286,9 +287,11 @@ namespace GourmetProject.Game.Meta
                 string id = part.Trim();
                 if (id.Length > 0)
                 {
-                    yield return id;
+                    result.Add(id);
                 }
             }
+
+            return result;
         }
     }
 }

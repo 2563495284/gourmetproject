@@ -27,9 +27,10 @@ namespace GourmetProject.Game.Meta
         /// <summary>遍历持有的被动道具（同 id 仅一条，不升级）。</summary>
         public IEnumerable<(cfg.Item item, RunItemState state)> PassiveItems()
         {
+            var result = new List<(cfg.Item item, RunItemState state)>();
             if (_run == null)
             {
-                yield break;
+                return result;
             }
 
             foreach (RunItemState state in _run.Items)
@@ -37,9 +38,11 @@ namespace GourmetProject.Game.Meta
                 cfg.Item item = _run.Tables.TbItem.GetOrDefault(state.ItemId);
                 if (item != null && item.Kind == cfg.ItemKind.Passive)
                 {
-                    yield return (item, state);
+                    result.Add((item, state));
                 }
             }
+
+            return result;
         }
 
         /// <summary>是否持有指定 effectType 的被动道具。</summary>

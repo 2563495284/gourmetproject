@@ -1,6 +1,6 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Gameplay.Model;
@@ -32,7 +32,7 @@ namespace GourmetProject.Game.UI.Meta
 
         private readonly List<GameObject> _spawned = new();
         private GameRun _run;
-        private Coroutine _pendingRebuild;
+        private CancellationTokenSource _pendingRebuildCts;
         private Action _onExit;
         private Action _onChanged;
         private bool _wired;
@@ -45,11 +45,7 @@ namespace GourmetProject.Game.UI.Meta
         private void OnDisable()
         {
             ClearSpawned();
-            if (_pendingRebuild != null)
-            {
-                StopCoroutine(_pendingRebuild);
-                _pendingRebuild = null;
-            }
+            CancelPendingRebuild();
         }
 
         /// <summary>由 BattleForm 进入编辑菜谱态时调用：绑定运行数据与回调并铺出编辑区。</summary>
@@ -225,19 +221,43 @@ namespace GourmetProject.Game.UI.Meta
 
         private void QueueRebuild()
         {
-            if (_pendingRebuild != null)
-            {
-                StopCoroutine(_pendingRebuild);
-            }
+            CancelPendingRebuild();
 
-            _pendingRebuild = StartCoroutine(RebuildNextFrame());
+            RebuildNextFrameAsync();
         }
 
-        private IEnumerator RebuildNextFrame()
+        private async void RebuildNextFrameAsync()
         {
-            yield return null;
-            _pendingRebuild = null;
+            _pendingRebuildCts = CancellationTokenSource.CreateLinkedTokenSource(destroyCancellationToken);
+            CancellationToken token = _pendingRebuildCts.Token;
+            try
+            {
+                await Awaitable.NextFrameAsync(token);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+
+            CancelPendingRebuild();
+            if (!isActiveAndEnabled)
+            {
+                return;
+            }
+
             Rebuild();
+        }
+
+        private void CancelPendingRebuild()
+        {
+            if (_pendingRebuildCts == null)
+            {
+                return;
+            }
+
+            _pendingRebuildCts.Cancel();
+            _pendingRebuildCts.Dispose();
+            _pendingRebuildCts = null;
         }
 
         private static string DishName(cfg.Tables tables, string dishId)

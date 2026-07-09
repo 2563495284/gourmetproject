@@ -1,6 +1,6 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using GourmetProject.Game;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
@@ -42,10 +42,6 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private Transform _fxRoot;
         [SerializeField] private Transform _passiveItemsRoot;
         [SerializeField] private Transform _activeItemsRoot;
-        [SerializeField] private TextMesh _scoreText;
-        [SerializeField] private SettlementScoreFireView _scoreFire;
-        [SerializeField] private TextMesh _messageText;
-        [SerializeField] private TextMesh _itemsText;
         [SerializeField] private SettlementSequencer _sequencer;
         [SerializeField] private BattleDoodleController _doodle;
 
@@ -105,9 +101,11 @@ namespace GourmetProject.Game.Presentation.Battle
         private WorldMode _worldMode = WorldMode.Hidden;
 
         private Action<string> _messageSink;
+        private Action<int> _settlementScoreSink;
         private Action<string> _activeItemClicked;
         private Action<DishInstance> _dishClicked;
         private Action _stateChanged;
+        private CancellationTokenSource _presentationCts;
 
         /// <summary>当前已加载战斗场景里的控制器实例（由战斗 UI/流程取用）。</summary>
         public static BattleWorldController Instance { get; private set; }
@@ -247,7 +245,7 @@ namespace GourmetProject.Game.Presentation.Battle
             EndStomachView();
 
             gameObject.SetActive(true);
-            StopAllCoroutines();
+            CancelPresentationTasks();
             _worldMode = WorldMode.BoardEdit;
             _settling = false;
             _serving = false;
@@ -275,7 +273,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _run = run;
             _session = null;
             gameObject.SetActive(true);
-            StopAllCoroutines();
+            CancelPresentationTasks();
             _worldMode = WorldMode.StomachView;
             _settling = false;
             _serving = false;
@@ -312,12 +310,15 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 Instance = null;
             }
+
+            CancelPresentationTasks();
         }
 
         public void Initialize(
             GameRun run,
             BattleSession session,
             Action<string> messageSink,
+            Action<int> settlementScoreSink,
             Action stateChanged,
             Action<string> activeItemClicked,
             Action<DishInstance> dishClicked,
@@ -326,6 +327,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _run = run;
             _session = session;
             _messageSink = messageSink;
+            _settlementScoreSink = settlementScoreSink;
             _stateChanged = stateChanged;
             _activeItemClicked = activeItemClicked;
             _dishClicked = dishClicked;
@@ -342,13 +344,12 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             gameObject.SetActive(true);
-            StopAllCoroutines();
+            CancelPresentationTasks();
             _worldMode = WorldMode.Food;
             _settling = false;
             ComputeViewport();
             BuildBoard(session.Board);
             EnsureSequencer();
-            EnsureScoreFire();
             // 道具（被动/主动）与菜谱面板已迁到常驻屏幕空间 HUD（BattleForm），世界空间不再渲染这些面板；
             // 世界空间只保留棋盘、菜品、上菜/结算演出与涂鸦表现。
             HideWorldPanels();
@@ -367,6 +368,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public void HideWorld()
         {
+            CancelPresentationTasks();
             if (_foodAdjust != null && _foodAdjust.IsActive)
             {
                 _foodAdjust.End();
@@ -378,6 +380,8 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             EndStomachView();
+            _settling = false;
+            _serving = false;
             SetFoodWorldElementsVisible(false);
             _worldMode = WorldMode.Hidden;
             gameObject.SetActive(false);
@@ -386,32 +390,42 @@ namespace GourmetProject.Game.Presentation.Battle
         /// <summary>战斗结束后清理本场运行时棋盘表现，避免已摆菜品残留到后续非战斗状态。</summary>
         public void ClearBattleBoard()
         {
-            StopAllCoroutines();
+            CancelPresentationTasks();
             _settling = false;
             _serving = false;
             _session = null;
             ClearPlacedPieces();
-            _scoreFire?.Hide();
             _doodle?.Clear();
         }
 
         private void SetFoodWorldElementsVisible(bool visible)
         {
-            if (_scoreText != null)
-            {
-                _scoreText.gameObject.SetActive(visible);
-            }
-
-            if (_messageText != null)
-            {
-                _messageText.gameObject.SetActive(visible);
-            }
-
             if (!visible)
             {
-                _scoreFire?.Hide();
                 _doodle?.SetVisible(false);
             }
+        }
+
+        private CancellationToken GetPresentationToken()
+        {
+            if (_presentationCts == null || _presentationCts.IsCancellationRequested)
+            {
+                _presentationCts = CancellationTokenSource.CreateLinkedTokenSource(destroyCancellationToken);
+            }
+
+            return _presentationCts.Token;
+        }
+
+        private void CancelPresentationTasks()
+        {
+            if (_presentationCts == null)
+            {
+                return;
+            }
+
+            _presentationCts.Cancel();
+            _presentationCts.Dispose();
+            _presentationCts = null;
         }
 
         public void RefreshAll()
@@ -422,7 +436,6 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _boardView.Sync();
-            RefreshScore();
         }
 
         /// <summary>隐藏迁到 HUD 的世界空间面板：被动/主动道具槽、道具标题、菜谱书。</summary>
@@ -440,11 +453,6 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _recipeBooks.Clear();
-
-            if (_itemsText != null)
-            {
-                _itemsText.gameObject.SetActive(false);
-            }
 
             if (_passiveItemsRoot != null)
             {
@@ -468,7 +476,7 @@ namespace GourmetProject.Game.Presentation.Battle
             RefreshAll();
         }
 
-        public void TryServeDish(int slotIndex)
+        public async void TryServeDish(int slotIndex)
         {
             if (_session == null || _session.IsSettled || _settling || _serving)
             {
@@ -487,10 +495,28 @@ namespace GourmetProject.Game.Presentation.Battle
             Vector3 target = _boardView.Mapper.CellCenter(result.Dish.Placement.Origin);
             _serving = true;
             EnsureServeAnimator();
-            StartCoroutine(_serveAnimator.Animate(placed, target, _camera, _cellSize, _halfH, FinishServing));
             _boardView.Sync();
             SetMessage($"上菜：{result.Dish.Def.Name}");
             _stateChanged?.Invoke();
+
+            CancellationToken token = GetPresentationToken();
+            try
+            {
+                await _serveAnimator.AnimateAsync(placed, target, _camera, _cellSize, _halfH, token);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex, this);
+            }
+
+            if (!token.IsCancellationRequested && _serving)
+            {
+                FinishServing();
+            }
         }
 
         private void EnsureServeAnimator()
@@ -780,30 +806,12 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        private void RefreshScore()
-        {
-            if (_scoreText == null || _run == null || _session == null)
-            {
-                return;
-            }
-
-            int score = _session.IsSettled ? _session.LastResult.Total : _session.PreviewScore().Total;
-            string weekLabel = _run.IsEndless ? $"无尽 {_run.WeekIndex - _run.TotalWeeks}" : $"第 {_run.WeekIndex}/{_run.TotalWeeks} 周";
-            string limit = _session.MaxServes >= 0 ? $" · 上菜 {_session.ServesUsed}/{_session.MaxServes}" : string.Empty;
-            _scoreText.text = $"{weekLabel}  {score}/{_session.RequiredScore}{limit}";
-        }
-
         private void RefreshItems()
         {
             ClearItemSlots(_passiveItemSlots);
             if (_run == null || _passiveItemsRoot == null)
             {
                 return;
-            }
-
-            if (_itemsText != null)
-            {
-                _itemsText.text = "被动道具";
             }
 
             var passiveStates = new List<RunItemState>();
@@ -1007,11 +1015,6 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void SetMessage(string message)
         {
-            if (_messageText != null)
-            {
-                _messageText.text = message;
-            }
-
             _messageSink?.Invoke(message);
         }
 
@@ -1036,7 +1039,7 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>播放背包乱斗式逐菜结算演出，完成后回调上层决定过关/失败 UI。</summary>
-        public void PlaySettlement(ScoreResult result, Action onComplete)
+        public async void PlaySettlement(ScoreResult result, SettlementScoreFireView scoreFire, Action onComplete)
         {
             if (_sequencer == null || _session == null || result == null)
             {
@@ -1046,58 +1049,39 @@ namespace GourmetProject.Game.Presentation.Battle
 
             _settling = true;
             SetButtonsInteractable(false);
-            StartCoroutine(SettlementRoutine(result, onComplete));
-        }
-
-        private IEnumerator SettlementRoutine(ScoreResult result, Action onComplete)
-        {
-            yield return _sequencer.Play(
-                _session,
-                result,
-                _dishViewsById,
-                _boardView.Mapper,
-                _fxRoot,
-                _scoreFire,
-                RenderSettlementScore,
-                null);
-
-            _settling = false;
-            RefreshAll();
-            onComplete?.Invoke();
-        }
-
-        private void EnsureScoreFire()
-        {
-            if (_scoreFire == null && _scoreText != null)
+            CancellationToken token = GetPresentationToken();
+            try
             {
-                _scoreFire = _scoreText.GetComponentInChildren<SettlementScoreFireView>(true);
+                await _sequencer.PlayAsync(
+                    _session,
+                    result,
+                    _dishViewsById,
+                    _boardView.Mapper,
+                    _fxRoot,
+                    scoreFire,
+                    RenderSettlementScore,
+                    token);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex, this);
             }
 
-            if (_scoreFire == null)
+            if (!token.IsCancellationRequested)
             {
-                Transform parent = _scoreText != null ? _scoreText.transform : _fxRoot;
-                if (parent != null)
-                {
-                    var go = new GameObject("SettlementScoreFire");
-                    go.transform.SetParent(parent, false);
-                    go.transform.localPosition = _scoreText != null ? new Vector3(1.15f, -0.04f, -0.02f) : Vector3.zero;
-                    _scoreFire = go.AddComponent<SettlementScoreFireView>();
-                }
+                _settling = false;
+                RefreshAll();
+                onComplete?.Invoke();
             }
-
-            _scoreFire?.Hide();
         }
 
         private void RenderSettlementScore(int score)
         {
-            if (_scoreText == null || _run == null || _session == null)
-            {
-                return;
-            }
-
-            string weekLabel = _run.IsEndless ? $"无尽 {_run.WeekIndex - _run.TotalWeeks}" : $"第 {_run.WeekIndex}/{_run.TotalWeeks} 周";
-            string limit = _session.MaxServes >= 0 ? $" · 上菜 {_session.ServesUsed}/{_session.MaxServes}" : string.Empty;
-            _scoreText.text = $"{weekLabel}  {score}/{_session.RequiredScore}{limit}";
+            _settlementScoreSink?.Invoke(score);
         }
 
         private void SetButtonsInteractable(bool interactable)

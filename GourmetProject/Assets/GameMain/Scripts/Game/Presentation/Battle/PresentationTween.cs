@@ -1,30 +1,25 @@
-using System.Collections;
+using System.Threading;
+using DG.Tweening;
 using UnityEngine;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
-    /// <summary>战斗表现层共享的轻量补间协程，避免在多个组件里重复实现。</summary>
+    /// <summary>战斗表现层共享的 DOTween + Awaitable 补间工具，避免在多个组件里重复实现。</summary>
     internal static class PresentationTween
     {
-        public static IEnumerator MoveTo(Transform target, Vector3 end, float duration)
+        public static async Awaitable MoveToAsync(Transform target, Vector3 end, float duration, CancellationToken cancellationToken)
         {
             if (target == null)
             {
-                yield break;
+                return;
             }
 
-            Vector3 start = target.position;
-            float elapsed = 0f;
-            while (elapsed < duration && target != null)
-            {
-                elapsed += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsed / duration);
-                float eased = 1f - Mathf.Pow(1f - t, 3f);
-                target.position = Vector3.Lerp(start, end, eased);
-                yield return null;
-            }
+            Tween tween = target.DOMove(end, Mathf.Max(0.0001f, duration))
+                .SetEase(Ease.OutCubic)
+                .SetLink(target.gameObject);
+            await AwaitCompletionAsync(tween, cancellationToken);
 
             if (target != null)
             {
@@ -33,38 +28,26 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>缩放 punch：先放大到 peak 倍再回弹到原始尺寸。</summary>
-        public static IEnumerator PunchScale(Transform target, float peak, float duration)
+        public static Awaitable PunchScaleAsync(Transform target, float peak, float duration, CancellationToken cancellationToken)
         {
-            yield return PunchLocalScale(target, peak, duration);
+            return PunchLocalScaleAsync(target, peak, duration, cancellationToken);
         }
 
         /// <summary>局部缩放 punch：先放大到 peak 倍再回弹到原始尺寸。</summary>
-        public static IEnumerator PunchLocalScale(Transform target, float peak, float duration)
+        public static async Awaitable PunchLocalScaleAsync(Transform target, float peak, float duration, CancellationToken cancellationToken)
         {
             if (target == null)
             {
-                yield break;
+                return;
             }
 
             Vector3 baseScale = target.localScale;
             Vector3 peakScale = baseScale * Mathf.Max(0.0001f, peak);
-            float half = Mathf.Max(0.0001f, duration * 0.5f);
-
-            float elapsed = 0f;
-            while (elapsed < half && target != null)
-            {
-                elapsed += Time.deltaTime;
-                target.localScale = Vector3.Lerp(baseScale, peakScale, elapsed / half);
-                yield return null;
-            }
-
-            elapsed = 0f;
-            while (elapsed < half && target != null)
-            {
-                elapsed += Time.deltaTime;
-                target.localScale = Vector3.Lerp(peakScale, baseScale, elapsed / half);
-                yield return null;
-            }
+            Sequence sequence = DOTween.Sequence()
+                .SetLink(target.gameObject)
+                .Append(target.DOScale(peakScale, Mathf.Max(0.0001f, duration * 0.5f)).SetEase(Ease.Linear))
+                .Append(target.DOScale(baseScale, Mathf.Max(0.0001f, duration * 0.5f)).SetEase(Ease.Linear));
+            await AwaitCompletionAsync(sequence, cancellationToken);
 
             if (target != null)
             {
@@ -73,27 +56,30 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>局部左右晃动：围绕当前 localRotation 做衰减式 Z 轴摇摆，结束后恢复。</summary>
-        public static IEnumerator WobbleLocalRotation(Transform target, float degrees, float cycles, float duration)
+        public static async Awaitable WobbleLocalRotationAsync(Transform target, float degrees, float cycles, float duration, CancellationToken cancellationToken)
         {
             if (target == null)
             {
-                yield break;
+                return;
             }
 
             Quaternion baseRotation = target.localRotation;
             float safeDuration = Mathf.Max(0.0001f, duration);
             float safeCycles = Mathf.Max(0f, cycles);
+            Tween tween = DOVirtual.Float(0f, 1f, safeDuration, t =>
+                {
+                    if (target == null)
+                    {
+                        return;
+                    }
 
-            float elapsed = 0f;
-            while (elapsed < safeDuration && target != null)
-            {
-                elapsed += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsed / safeDuration);
-                float decay = 1f - t;
-                float angle = Mathf.Sin(t * safeCycles * Mathf.PI * 2f) * degrees * decay;
-                target.localRotation = baseRotation * Quaternion.Euler(0f, 0f, angle);
-                yield return null;
-            }
+                    float decay = 1f - t;
+                    float angle = Mathf.Sin(t * safeCycles * Mathf.PI * 2f) * degrees * decay;
+                    target.localRotation = baseRotation * Quaternion.Euler(0f, 0f, angle);
+                })
+                .SetEase(Ease.Linear)
+                .SetLink(target.gameObject);
+            await AwaitCompletionAsync(tween, cancellationToken);
 
             if (target != null)
             {
@@ -102,17 +88,18 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>局部缩放 punch 与左右晃动同步执行，适合食物落定这类一次性反馈。</summary>
-        public static IEnumerator PunchScaleAndWobble(
+        public static async Awaitable PunchScaleAndWobbleAsync(
             Transform target,
             float peak,
             float punchDuration,
             float wobbleDegrees,
             float wobbleCycles,
-            float wobbleDuration)
+            float wobbleDuration,
+            CancellationToken cancellationToken)
         {
             if (target == null)
             {
-                yield break;
+                return;
             }
 
             Vector3 baseScale = target.localScale;
@@ -123,22 +110,25 @@ namespace GourmetProject.Game.Presentation.Battle
             float safePeak = Mathf.Max(0.0001f, peak);
             float safeCycles = Mathf.Max(0f, wobbleCycles);
 
-            float elapsed = 0f;
-            while (elapsed < totalDuration && target != null)
-            {
-                elapsed += Time.deltaTime;
+            Tween tween = DOVirtual.Float(0f, totalDuration, totalDuration, elapsed =>
+                {
+                    if (target == null)
+                    {
+                        return;
+                    }
 
-                float punchT = Mathf.Clamp01(elapsed / safePunchDuration);
-                float scaleMul = PunchScaleMultiplier(punchT, safePeak);
-                target.localScale = baseScale * scaleMul;
+                    float punchT = Mathf.Clamp01(elapsed / safePunchDuration);
+                    float scaleMul = PunchScaleMultiplier(punchT, safePeak);
+                    target.localScale = baseScale * scaleMul;
 
-                float wobbleT = Mathf.Clamp01(elapsed / safeWobbleDuration);
-                float decay = 1f - wobbleT;
-                float angle = Mathf.Sin(wobbleT * safeCycles * Mathf.PI * 2f) * wobbleDegrees * decay;
-                target.localRotation = baseRotation * Quaternion.Euler(0f, 0f, angle);
-
-                yield return null;
-            }
+                    float wobbleT = Mathf.Clamp01(elapsed / safeWobbleDuration);
+                    float decay = 1f - wobbleT;
+                    float angle = Mathf.Sin(wobbleT * safeCycles * Mathf.PI * 2f) * wobbleDegrees * decay;
+                    target.localRotation = baseRotation * Quaternion.Euler(0f, 0f, angle);
+                })
+                .SetEase(Ease.Linear)
+                .SetLink(target.gameObject);
+            await AwaitCompletionAsync(tween, cancellationToken);
 
             if (target != null)
             {
@@ -156,6 +146,23 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             return Mathf.Lerp(peak, 1f, (clamped - 0.5f) / 0.5f);
+        }
+
+        public static async Awaitable AwaitCompletionAsync(Tween tween, CancellationToken cancellationToken)
+        {
+            try
+            {
+                while (tween != null && tween.active && !tween.IsComplete())
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    await Awaitable.NextFrameAsync(cancellationToken);
+                }
+            }
+            catch
+            {
+                tween?.Kill();
+                throw;
+            }
         }
     }
 }

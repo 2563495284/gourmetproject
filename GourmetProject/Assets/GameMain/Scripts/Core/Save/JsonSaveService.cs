@@ -143,16 +143,19 @@ namespace GourmetProject.Core.Save
 
         public IEnumerable<string> ListSlots()
         {
+            var result = new List<string>();
             if (!Directory.Exists(_baseDirectory))
             {
-                yield break;
+                return result;
             }
 
             string pattern = "*." + _options.FileExtension;
             foreach (string file in Directory.GetFiles(_baseDirectory, pattern))
             {
-                yield return Path.GetFileNameWithoutExtension(file);
+                result.Add(Path.GetFileNameWithoutExtension(file));
             }
+
+            return result;
         }
 
         private JToken ApplyMigrations(string slot, JToken dataToken, int fromVersion)

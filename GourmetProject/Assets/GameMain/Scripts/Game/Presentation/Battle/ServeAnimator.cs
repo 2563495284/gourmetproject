@@ -1,5 +1,5 @@
-using System;
-using System.Collections;
+using System.Threading;
+using DG.Tweening;
 using UnityEngine;
 
 namespace GourmetProject.Game.Presentation.Battle
@@ -7,7 +7,7 @@ namespace GourmetProject.Game.Presentation.Battle
     /// <summary>
     /// 上菜动画：商人手托着放大的菜品从屏幕上方降到目标格上方，随后手先抽离，
     /// 菜品再从大变小落到格子并落定。手与菜全程带假阴影。
-    /// 纯表现协程，由 <see cref="BattleWorldController"/> 驱动（StartCoroutine），不持有会话/结算状态。
+    /// 纯表现异步动画，由 <see cref="BattleWorldController"/> 驱动（Awaitable），不持有会话/结算状态。
     /// </summary>
     public sealed class ServeAnimator
     {
@@ -30,8 +30,8 @@ namespace GourmetProject.Game.Presentation.Battle
             _config = config;
         }
 
-        /// <summary>播放上菜动画，完成（含中途菜品被销毁）后回调 <paramref name="onFinished"/>。</summary>
-        public IEnumerator Animate(DishPieceView piece, Vector3 target, Camera camera, float cellSize, float halfH, Action onFinished)
+        /// <summary>播放上菜动画，完成（含中途菜品被销毁）后返回。</summary>
+        public async Awaitable AnimateAsync(DishPieceView piece, Vector3 target, Camera camera, float cellSize, float halfH, CancellationToken cancellationToken)
         {
             // 手世界高度：约 4 格高，受半屏高约束，保证起点能完全藏到屏幕上方外。
             float handHeight = Mathf.Clamp(cellSize * 4.2f, 2.4f, halfH * 1.5f);
@@ -58,100 +58,112 @@ namespace GourmetProject.Game.Presentation.Battle
             piece.SetVisualScaleMultiplier(carryScale);
             PlacePieceAtPalm(piece, hand, topPalm, carryScale);
 
-            // —— 阶段1：手托着放大的菜垂直下降到目标锚点已对齐的位置 ——
-            float descend = Mathf.Max(0.0001f, _config.DescendDuration);
-            float t = 0f;
-            while (t < descend && piece != null)
+            try
             {
-                t += Time.deltaTime;
-                float k = Mathf.Clamp01(t / descend);
-                float eased = 1f - Mathf.Pow(1f - k, 3f); // 缓出
-                Vector3 palm = Vector3.Lerp(topPalm, arrivalPalm, eased);
-                if (hand != null)
+                // —— 阶段1：手托着放大的菜垂直下降到目标锚点已对齐的位置 ——
+                float descend = Mathf.Max(0.0001f, _config.DescendDuration);
+                Tween descendTween = DOVirtual.Float(0f, 1f, descend, k =>
+                    {
+                        if (piece == null)
+                        {
+                            return;
+                        }
+
+                        float eased = 1f - Mathf.Pow(1f - Mathf.Clamp01(k), 3f); // 缓出
+                        Vector3 palm = Vector3.Lerp(topPalm, arrivalPalm, eased);
+                        if (hand != null)
+                        {
+                            hand.SetHeight(1f - eased * 0.8f); // 高空 1 → 贴近 0.2
+                        }
+
+                        PlacePieceAtPalm(piece, hand, palm, carryScale);
+                    })
+                    .SetEase(Ease.Linear)
+                    .SetLink(piece.gameObject);
+                await PresentationTween.AwaitCompletionAsync(descendTween, cancellationToken);
+
+                if (piece == null)
                 {
-                    hand.SetHeight(1f - eased * 0.8f); // 高空 1 → 贴近 0.2
+                    return;
                 }
 
-                PlacePieceAtPalm(piece, hand, palm, carryScale);
-                yield return null;
-            }
+                PlacePieceAtPalm(piece, hand, arrivalPalm, carryScale);
+                piece.SetVisualScaleMultiplier(carryScale);
 
-            if (piece == null)
+                // 到位高度：本体视觉中心对齐到位掌心时的离地抬升量，供脱手悬停 / 落下阶段复用。
+                float arrivalLift = arrivalPalm.y - (piece.transform.position.y + piece.VisualCenterOffsetForScale(carryScale).y);
+
+                // —— 阶段2：手先抽离屏幕，菜品悬停在到位高度（脱手不再跟手）——
+                float withdraw = Mathf.Max(0.0001f, _config.WithdrawDuration);
+                Tween withdrawTween = DOVirtual.Float(0f, 1f, withdraw, k =>
+                    {
+                        if (piece == null)
+                        {
+                            return;
+                        }
+
+                        float he = Mathf.Clamp01(k) * Mathf.Clamp01(k);
+                        if (hand != null)
+                        {
+                            hand.SetPalmWorld(Vector3.Lerp(arrivalPalm, topPalm, he));
+                            hand.SetHeight(0.2f + 0.8f * he);
+                        }
+
+                        piece.SetLiftHeight(arrivalLift);
+                        piece.SetVisualScaleMultiplier(carryScale);
+                    })
+                    .SetEase(Ease.Linear)
+                    .SetLink(piece.gameObject);
+                await PresentationTween.AwaitCompletionAsync(withdrawTween, cancellationToken);
+
+                if (hand != null)
+                {
+                    UnityEngine.Object.Destroy(hand.gameObject);
+                    hand = null;
+                }
+
+                if (piece == null)
+                {
+                    return;
+                }
+
+                // —— 阶段3：菜品从大变小落到格子 ——
+                float drop = Mathf.Max(0.0001f, _config.DropDuration);
+                Tween dropTween = DOVirtual.Float(0f, 1f, drop, k =>
+                    {
+                        if (piece == null)
+                        {
+                            return;
+                        }
+
+                        // 根节点早已钉在目标格；落下阶段只把本体从到位高度收回贴桌、并缩回原尺寸，阴影随高度收紧变实。
+                        float clamped = Mathf.Clamp01(k);
+                        float shrink = clamped * clamped * (3f - 2f * clamped);
+                        float visualScale = Mathf.Lerp(carryScale, 1f, shrink);
+                        piece.SetVisualScaleMultiplier(visualScale);
+                        piece.SetLiftHeight(Mathf.Lerp(arrivalLift, 0f, shrink));
+                    })
+                    .SetEase(Ease.Linear)
+                    .SetLink(piece.gameObject);
+                await PresentationTween.AwaitCompletionAsync(dropTween, cancellationToken);
+
+                if (piece != null)
+                {
+                    piece.transform.position = target;
+                    piece.SetLiftHeight(0f);
+                    piece.SetVisualScaleMultiplier(1f);
+                    await piece.PlayServeLandImpactFeedbackAsync(cancellationToken);
+                    // 落定后切回 Pieces 层，回到与其它棋盘食品一致的渲染顺序。
+                    piece.SetFlying(false);
+                }
+            }
+            finally
             {
                 if (hand != null)
                 {
                     UnityEngine.Object.Destroy(hand.gameObject);
                 }
-
-                onFinished?.Invoke();
-                yield break;
             }
-
-            PlacePieceAtPalm(piece, hand, arrivalPalm, carryScale);
-            piece.SetVisualScaleMultiplier(carryScale);
-
-            // 到位高度：本体视觉中心对齐到位掌心时的离地抬升量，供脱手悬停 / 落下阶段复用。
-            float arrivalLift = arrivalPalm.y - (piece.transform.position.y + piece.VisualCenterOffsetForScale(carryScale).y);
-
-            // —— 阶段2：手先抽离屏幕，菜品悬停在到位高度（脱手不再跟手）——
-            float withdraw = Mathf.Max(0.0001f, _config.WithdrawDuration);
-            t = 0f;
-            while (t < withdraw && piece != null)
-            {
-                t += Time.deltaTime;
-                float k = Mathf.Clamp01(t / withdraw);
-
-                if (hand != null)
-                {
-                    float he = k * k;
-                    hand.SetPalmWorld(Vector3.Lerp(arrivalPalm, topPalm, he));
-                    hand.SetHeight(0.2f + 0.8f * he);
-                }
-
-                piece.SetLiftHeight(arrivalLift);
-                piece.SetVisualScaleMultiplier(carryScale);
-                yield return null;
-            }
-
-            if (hand != null)
-            {
-                UnityEngine.Object.Destroy(hand.gameObject);
-            }
-
-            if (piece == null)
-            {
-                onFinished?.Invoke();
-                yield break;
-            }
-
-            // —— 阶段3：菜品从大变小落到格子 ——
-            float drop = Mathf.Max(0.0001f, _config.DropDuration);
-            t = 0f;
-            while (t < drop && piece != null)
-            {
-                t += Time.deltaTime;
-                float k = Mathf.Clamp01(t / drop);
-
-                // 根节点早已钉在目标格；落下阶段只把本体从到位高度收回贴桌、并缩回原尺寸，阴影随高度收紧变实。
-                float shrink = k * k * (3f - 2f * k);
-                float visualScale = Mathf.Lerp(carryScale, 1f, shrink);
-                piece.SetVisualScaleMultiplier(visualScale);
-                piece.SetLiftHeight(Mathf.Lerp(arrivalLift, 0f, shrink));
-
-                yield return null;
-            }
-
-            if (piece != null)
-            {
-                piece.transform.position = target;
-                piece.SetLiftHeight(0f);
-                piece.SetVisualScaleMultiplier(1f);
-                yield return piece.PlayServeLandImpactFeedback();
-                // 落定后切回 Pieces 层，回到与其它棋盘食品一致的渲染顺序。
-                piece.SetFlying(false);
-            }
-
-            onFinished?.Invoke();
         }
 
         /// <summary>把掌心锚点与当前缩放下的食品视觉中心对齐。</summary>

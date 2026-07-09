@@ -1,5 +1,5 @@
 using System;
-using System.Collections;
+using DG.Tweening;
 using UnityEngine;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
@@ -35,7 +35,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         // 可见度系数 [0,1]：1=完全显示，0=完全隐藏。与 interactable 的颜色相乘，供渐隐渐显。
         private float _visibility = 1f;
-        private Coroutine _fadeRoutine;
+        private Tween _fadeTween;
 
         /// <summary>设置外观与点击回调。可重复调用以更新尺寸/颜色/文案/回调。</summary>
         public void Configure(Vector2 size, string label, Color color, Action clicked)
@@ -98,11 +98,7 @@ namespace GourmetProject.Game.Presentation.Battle
             EnsureRefs();
             float target = visible ? 1f : 0f;
 
-            if (_fadeRoutine != null)
-            {
-                StopCoroutine(_fadeRoutine);
-                _fadeRoutine = null;
-            }
+            KillFadeTween();
 
             if (!animated || _fadeDuration <= 0f || !gameObject.activeInHierarchy)
             {
@@ -111,7 +107,15 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            _fadeRoutine = StartCoroutine(FadeTo(target));
+            float start = _visibility;
+            _fadeTween = DOVirtual.Float(start, target, _fadeDuration, value =>
+                {
+                    _visibility = Mathf.Clamp01(value);
+                    ApplyVisual();
+                })
+                .SetEase(Ease.Linear)
+                .SetLink(gameObject)
+                .OnComplete(() => _fadeTween = null);
         }
 
         /// <summary>直接设置可见度系数 [0,1]（瞬时，无过渡），供外部逐帧驱动自定义过渡。</summary>
@@ -121,21 +125,20 @@ namespace GourmetProject.Game.Presentation.Battle
             ApplyVisual();
         }
 
-        private IEnumerator FadeTo(float target)
+        private void OnDisable()
         {
-            float start = _visibility;
-            float t = 0f;
-            while (t < _fadeDuration)
+            KillFadeTween();
+        }
+
+        private void KillFadeTween()
+        {
+            if (_fadeTween == null)
             {
-                t += Time.deltaTime;
-                _visibility = Mathf.Lerp(start, target, Mathf.Clamp01(t / _fadeDuration));
-                ApplyVisual();
-                yield return null;
+                return;
             }
 
-            _visibility = target;
-            ApplyVisual();
-            _fadeRoutine = null;
+            _fadeTween.Kill();
+            _fadeTween = null;
         }
 
         /// <summary>把 interactable 基色与可见度系数一并应用到底色块与文案上（alpha 相乘）。</summary>

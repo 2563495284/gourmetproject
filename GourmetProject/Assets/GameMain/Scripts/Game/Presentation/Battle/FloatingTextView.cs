@@ -1,4 +1,4 @@
-using System.Collections;
+using DG.Tweening;
 using UnityEngine;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
@@ -55,7 +55,7 @@ namespace GourmetProject.Game.Presentation.Battle
             tm.color = color;
             tm.characterSize = cs;
 
-            StartCoroutine(Animate(tm, transform.position, r, d));
+            Animate(tm, transform.position, r, d);
         }
 
         /// <summary>兜底解析/补齐 prefab 预拼的 TextMesh 并归一化锚点/排序。</summary>
@@ -75,25 +75,30 @@ namespace GourmetProject.Game.Presentation.Battle
             return tm;
         }
 
-        private IEnumerator Animate(TextMesh tm, Vector3 start, float rise, float duration)
+        private void Animate(TextMesh tm, Vector3 start, float rise, float duration)
         {
             Color baseColor = tm.color;
-            float elapsed = 0f;
-            while (elapsed < duration && tm != null)
-            {
-                elapsed += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsed / duration);
-                transform.position = start + new Vector3(0f, rise * t, 0f);
-                Color c = baseColor;
-                c.a = 1f - t;
-                tm.color = c;
-                yield return null;
-            }
+            DOVirtual.Float(0f, 1f, Mathf.Max(0.0001f, duration), t =>
+                {
+                    if (tm == null)
+                    {
+                        return;
+                    }
 
-            if (this != null)
-            {
-                Destroy(gameObject);
-            }
+                    transform.position = start + new Vector3(0f, rise * t, 0f);
+                    Color c = baseColor;
+                    c.a = 1f - t;
+                    tm.color = c;
+                })
+                .SetEase(Ease.Linear)
+                .SetLink(gameObject)
+                .OnComplete(() =>
+                {
+                    if (this != null)
+                    {
+                        Destroy(gameObject);
+                    }
+                });
         }
     }
 }

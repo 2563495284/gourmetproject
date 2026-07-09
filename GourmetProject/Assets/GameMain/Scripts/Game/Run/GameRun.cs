@@ -153,14 +153,17 @@ namespace GourmetProject.Game.Run
 
         private IEnumerable<RunItemState> ItemStatesOfKind(cfg.ItemKind kind)
         {
+            var result = new List<RunItemState>();
             foreach (RunItemState state in _items)
             {
                 cfg.Item item = _tables.TbItem.GetOrDefault(state.ItemId);
                 if (item != null && item.Kind == kind)
                 {
-                    yield return state;
+                    result.Add(state);
                 }
             }
+
+            return result;
         }
 
         /// <summary>当前占用的主动道具槽数（= 主动实例份数）。</summary>

@@ -1,5 +1,5 @@
 using System;
-using System.Collections;
+using System.Threading;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Model;
@@ -232,37 +232,40 @@ namespace GourmetProject.Game.Presentation.Battle
             return offset;
         }
 
-        public IEnumerator PlayLandFeedback()
+        public Awaitable PlayLandFeedbackAsync(CancellationToken cancellationToken)
         {
             EnsureRefs();
-            yield return PresentationTween.PunchScaleAndWobble(
+            return PresentationTween.PunchScaleAndWobbleAsync(
                 VisualAnimationTarget(),
                 _landPunchScale,
                 _landPunchDuration,
                 _landWobbleDegrees,
                 _landWobbleCycles,
-                _landWobbleDuration);
+                _landWobbleDuration,
+                cancellationToken);
         }
 
-        public IEnumerator PlayServeLandImpactFeedback()
+        public Awaitable PlayServeLandImpactFeedbackAsync(CancellationToken cancellationToken)
         {
             EnsureRefs();
-            yield return PresentationTween.PunchLocalScale(
+            return PresentationTween.PunchLocalScaleAsync(
                 VisualAnimationTarget(),
                 _serveLandImpactScale,
-                _serveLandImpactDuration);
+                _serveLandImpactDuration,
+                cancellationToken);
         }
 
-        public IEnumerator PlayDeliciousnessGainFeedback()
+        public Awaitable PlayDeliciousnessGainFeedbackAsync(CancellationToken cancellationToken)
         {
             EnsureRefs();
-            yield return PresentationTween.PunchScaleAndWobble(
+            return PresentationTween.PunchScaleAndWobbleAsync(
                 VisualAnimationTarget(),
                 _deliciousnessGainPunchScale,
                 _deliciousnessGainPunchDuration,
                 _deliciousnessGainWobbleDegrees,
                 _deliciousnessGainWobbleCycles,
-                _deliciousnessGainWobbleDuration);
+                _deliciousnessGainWobbleDuration,
+                cancellationToken);
         }
 
         private void RebuildCells(DishShape shape)
