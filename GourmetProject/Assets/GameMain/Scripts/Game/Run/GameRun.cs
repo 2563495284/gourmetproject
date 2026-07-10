@@ -1275,7 +1275,7 @@ namespace GourmetProject.Game.Run
                 {
                     state = new RunItemState(itemId, 1);
                     _items.Add(state);
-                    if (fireOnAcquire && item.TriggerTiming == cfg.ItemTriggerTiming.OnAcquire)
+                    if (fireOnAcquire && ItemEffectTypes.IsOnAcquireEffect(item.EffectType))
                     {
                         PassiveOnAcquireEffects.Apply(this, item);
                     }

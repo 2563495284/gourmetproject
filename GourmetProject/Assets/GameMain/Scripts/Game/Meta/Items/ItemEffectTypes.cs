@@ -1,9 +1,11 @@
+using System.Collections.Generic;
+
 namespace GourmetProject.Game.Meta
 {
     /// <summary>
     /// 道具 <c>effectType</c> 字符串常量集中处（对应 item.xlsx 的 effectType 列）。
     /// 新增道具效果时在这里登记常量，再在对应派发器/宿主系统里接入，避免字符串散落。
-    /// 分组注释标明该效果由哪个子系统消费。
+    /// 分组注释标明该效果由哪个子系统消费；触发时机由代码按 effectType 推导，不在配置表单独声明。
     /// </summary>
     public static class ItemEffectTypes
     {
@@ -127,5 +129,45 @@ namespace GourmetProject.Game.Meta
         // —— 专有：传递族（走 BattleSession 传递 hook）——
         public const string TransferTargetMult = "TransferTargetMult";
         public const string TransferSourceMult = "TransferSourceMult";
+
+        /// <summary>获得瞬间结算一次的效果（走 <see cref="PassiveOnAcquireEffects"/>）。</summary>
+        private static readonly HashSet<string> OnAcquireEffects = new HashSet<string>
+        {
+            GoldNow,
+            Loan,
+            DiscardNegative,
+            DiscardNegativeForGold,
+            GrantRandomPassive,
+            FamilyPack,
+            GoldMealBonus,
+            RequiredScoreToOne,
+            ChooseOnePassive,
+            ChooseOneActive,
+            ChooseOneFood,
+            ChooseOneFragment,
+            GrantRandomActive,
+            RandomizeItems,
+            GrantRecipe,
+            CopyFood,
+            RerollAction,
+            FoodConvert,
+            FlavorEnhance,
+            FlavorRemoveForGold,
+            FlavorRemoveCopySkill,
+            FlavorRemoveDoubleScore,
+            FlavorContagion,
+            CellTagEnhance,
+            CellTagContagion,
+            TimelineRandomize,
+            TimelineExtraDay,
+            TimelineWeekMinus,
+            TimelineAddRewardNode,
+            TimelineAddInterestNode,
+        };
+
+        public static bool IsOnAcquireEffect(string effectType)
+        {
+            return !string.IsNullOrEmpty(effectType) && OnAcquireEffects.Contains(effectType);
+        }
     }
 }

@@ -43,7 +43,7 @@ namespace GourmetProject.Game.Meta
             }
         }
 
-        /// <summary>某道具是否可在指定情境使用（结合触发时机之外的「目标可用性」判断）。</summary>
+        /// <summary>某道具是否可在指定情境使用（由 kind + targetKind 推导）。</summary>
         public static bool CanUse(cfg.Item item, ActiveUseContextKind ctx)
         {
             return item != null

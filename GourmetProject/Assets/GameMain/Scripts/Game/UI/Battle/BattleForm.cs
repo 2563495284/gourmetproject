@@ -1213,7 +1213,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            if (item.TriggerTiming != cfg.ItemTriggerTiming.BeforeEat)
+            if (!ItemActiveUsage.CanUse(item, ActiveUseContextKind.Battle))
             {
                 _world?.ShowMessage($"{item.Name}：现在不是使用时机。");
                 RefreshAll();

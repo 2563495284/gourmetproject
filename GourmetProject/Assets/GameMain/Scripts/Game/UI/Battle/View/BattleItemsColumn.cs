@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Hud;
 using GourmetProject.Game.UI.Tooltips;
@@ -12,7 +13,7 @@ namespace GourmetProject.Game.UI.Battle.View
 {
     /// <summary>
     /// 常驻壳右栏道具组件：被动道具滚动网格（2 列）+ 固定 2 个主动道具槽（同 id 聚合、角标 xN）。
-    /// 战斗中满足触发时机的主动道具可点击使用，否则点击看信息；hover 显示道具 Tip。
+    /// 战斗中满足 targetKind 可用性的主动道具可点击使用，否则点击看信息；hover 显示道具 Tip。
     /// </summary>
     public sealed class BattleItemsColumn : MonoBehaviour
     {
@@ -530,9 +531,9 @@ namespace GourmetProject.Game.UI.Battle.View
                     cfg.Item captured = item;
                     RunItemState capturedState = state;
 
-                    // 战斗中：满足触发时机的主动道具可点击使用；否则（含非战斗态）点击看信息。
+                    // 战斗中：满足 targetKind 可用性的主动道具可点击使用；否则（含非战斗态）点击看信息。
                     bool usableNow = inBattle && session != null && !session.IsSettled
-                        && item.TriggerTiming == cfg.ItemTriggerTiming.BeforeEat;
+                        && ItemActiveUsage.CanUse(item, ActiveUseContextKind.Battle);
                     string capturedId = state.ItemId;
                     Action onClick = usableNow
                         ? (Action)(() => onActiveItemClicked?.Invoke(capturedId))

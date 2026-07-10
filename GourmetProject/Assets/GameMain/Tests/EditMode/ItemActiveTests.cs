@@ -36,7 +36,7 @@ namespace GourmetProject.Tests
             string v = value.ToString(CultureInfo.InvariantCulture);
             string json =
                 "{\"id\":\"" + id + "\",\"name\":\"" + id + "\",\"desc\":\"\",\"kind\":1,\"quality\":0," +
-                "\"specialTags\":\"\",\"triggerTiming\":3,\"effectType\":\"" + effectType + "\"," +
+                "\"specialTags\":\"\",\"effectType\":\"" + effectType + "\"," +
                 "\"effectValue\":" + v + ",\"effectParam\":\"\",\"baseWeight\":1," +
                 "\"hiddenRange\":{\"min\":0,\"max\":0},\"targetKind\":0,\"targetCount\":0}";
             return new cfg.Item(JSON.Parse(json));

@@ -23,7 +23,6 @@ public sealed partial class Item : Luban.BeanBase
         { if(!_buf["kind"].IsNumber) { throw new SerializationException(); }  Kind = (ItemKind)_buf["kind"].AsInt; }
         { if(!_buf["quality"].IsNumber) { throw new SerializationException(); }  Quality = (ItemQuality)_buf["quality"].AsInt; }
         { if(!_buf["specialTags"].IsString) { throw new SerializationException(); }  SpecialTags = _buf["specialTags"]; }
-        { if(!_buf["triggerTiming"].IsNumber) { throw new SerializationException(); }  TriggerTiming = (ItemTriggerTiming)_buf["triggerTiming"].AsInt; }
         { if(!_buf["effectType"].IsString) { throw new SerializationException(); }  EffectType = _buf["effectType"]; }
         { if(!_buf["effectValue"].IsNumber) { throw new SerializationException(); }  EffectValue = _buf["effectValue"]; }
         { if(!_buf["effectParam"].IsString) { throw new SerializationException(); }  EffectParam = _buf["effectParam"]; }
@@ -62,10 +61,6 @@ public sealed partial class Item : Luban.BeanBase
     /// 特殊标签标记
     /// </summary>
     public readonly string SpecialTags;
-    /// <summary>
-    /// 触发时机
-    /// </summary>
-    public readonly ItemTriggerTiming TriggerTiming;
     /// <summary>
     /// 效果类型
     /// </summary>
@@ -112,7 +107,6 @@ public sealed partial class Item : Luban.BeanBase
         + "kind:" + Kind + ","
         + "quality:" + Quality + ","
         + "specialTags:" + SpecialTags + ","
-        + "triggerTiming:" + TriggerTiming + ","
         + "effectType:" + EffectType + ","
         + "effectValue:" + EffectValue + ","
         + "effectParam:" + EffectParam + ","

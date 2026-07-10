@@ -14,7 +14,7 @@ alwaysApply: false
 - `__tables__.xlsx`（`type:"table"`）：**表登记**。一行=一张表，列含 `full_name / value_type / read_schema_from_file(=True) / input / index / comment …`。注释写 `comment` 列。
 - 枚举定义拆为多个 xlsx（`luban.conf` 中多条 `type:"enum"`），每文件单 sheet、只放一类枚举：
   - `__enums_tag.xlsx` — TagCategory、TagEffectType
-  - `__enums_item.xlsx` — ItemKind、ItemQuality、ItemTriggerTiming
+  - `__enums_item.xlsx` — ItemKind、ItemQuality、ItemTargetKind
   - `__enums_reward.xlsx` — RewardKind、RewardPoolKind
   - `__enums_action.xlsx` — ActionType、TimelineNodeType
   被 C# `switch` 的枚举改名/改值会改动生成代码，谨慎。**勿**把枚举拆成同文件多 sheet，也勿用 openpyxl `append` 从零拼表（会破坏空单元格 `inlineStr`，导致 alias 列解析失败）。
