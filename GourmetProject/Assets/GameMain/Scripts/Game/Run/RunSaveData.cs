@@ -99,17 +99,11 @@ namespace GourmetProject.Game.Run
         /// <summary>本周已结算的节点 id。</summary>
         public List<string> TriggeredNodeIds = new List<string>();
 
-        /// <summary>不可重复事件命中记录（整局）。</summary>
+        /// <summary>已触发事件 id（整局，供结算统计与跨局进度）。</summary>
         public List<string> UsedEventIds = new List<string>();
-
-        /// <summary>不可重复行动命中记录（本周内）。</summary>
-        public List<string> UsedActionIds = new List<string>();
 
         /// <summary>已通关 Boss id（整局，含最终胜利判定）。</summary>
         public List<string> CompletedBossIds = new List<string>();
-
-        /// <summary>Boss 不放回随机的已抽取记录；抽光后会重置，不影响 CompletedBossIds。</summary>
-        public List<string> RolledBossIds = new List<string>();
 
         /// <summary>Boss Debuff 不放回随机的已抽取记录；抽光后会重置。</summary>
         public List<string> RolledBossDebuffIds = new List<string>();

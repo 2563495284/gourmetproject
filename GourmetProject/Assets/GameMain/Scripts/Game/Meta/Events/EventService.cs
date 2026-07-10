@@ -65,7 +65,7 @@ namespace GourmetProject.Game.Meta
     /// 选项分支在 <see cref="cfg.EventOption"/>（TbEventOption，按 eventId 关联）。
     /// Event/Reward/Negative 三种行动各自从对应 <see cref="cfg.ActionBehavior"/> 分类的事件池里随机一个具体事件。
     /// 单选项事件=自动结算（无需玩家点选，用于奖励/负面/即时事件）；多选项=玩家 n 选一分支。
-    /// 不可重复事件命中后写入 UsedEventIds（整局级）。
+    /// 事件结算后写入 UsedEventIds（整局级，供结算统计与跨局进度）。
     /// </summary>
     public static class EventService
     {
@@ -92,7 +92,7 @@ namespace GourmetProject.Game.Meta
 
         public static bool HasOptions(GameRun run, string eventId) => GetOptions(run, eventId).Count > 0;
 
-        /// <summary>从指定分类池（eventType=Event/Reward/Negative）中按权重/前置/可重复随机一个事件。</summary>
+        /// <summary>从指定分类池（eventType=Event/Reward/Negative）中按权重/前置随机一个事件。</summary>
         public static cfg.GameEvent RollEvent(GameRun run, IRandomStream rng, cfg.ActionBehavior eventType)
         {
             cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
@@ -104,7 +104,7 @@ namespace GourmetProject.Game.Meta
                     continue;
                 }
 
-                if ((ev.Repeatable || !run.IsEventUsed(ev.Id)) && PreconditionEvaluator.IsSatisfied(run, ev.Preconditions))
+                if (PreconditionEvaluator.IsSatisfied(run, ev.Preconditions))
                 {
                     candidates.Add(ev);
                 }
@@ -138,11 +138,7 @@ namespace GourmetProject.Game.Meta
                 return ResolveOption(run, ev, options[0], rng);
             }
 
-            if (!ev.Repeatable)
-            {
-                run.MarkEventUsed(ev.Id);
-            }
-
+            run.MarkEventUsed(ev.Id);
             return EventResolveResult.Immediate(ev.Desc);
         }
 
@@ -155,11 +151,7 @@ namespace GourmetProject.Game.Meta
             }
 
             EventResolveResult result = ResolveEffect(run, option.EffectType, option.EffectValue, option.EffectParam, option.Text, rng);
-            if (!ev.Repeatable)
-            {
-                run.MarkEventUsed(ev.Id);
-            }
-
+            run.MarkEventUsed(ev.Id);
             GrantEventCompleteGold(run, result);
             return result;
         }

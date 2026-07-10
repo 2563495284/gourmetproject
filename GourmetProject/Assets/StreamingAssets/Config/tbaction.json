@@ -90,15 +90,6 @@
     "maxCostDays": 3
   },
   {
-    "id": "act_boss",
-    "name": "周末盛宴",
-    "desc": "带有特殊机制的盛宴挑战。",
-    "behavior": 1,
-    "foodId": "",
-    "minCostDays": 0,
-    "maxCostDays": 0
-  },
-  {
     "id": "act_event",
     "name": "未知事件",
     "desc": "一个待揭晓的事件。",
@@ -131,8 +122,8 @@
     "desc": "去食材店转转，买卖道具。",
     "behavior": 4,
     "foodId": "",
-    "minCostDays": 1,
-    "maxCostDays": 1
+    "minCostDays": 0,
+    "maxCostDays": 0
   },
   {
     "id": "act_interest",
@@ -144,11 +135,11 @@
     "maxCostDays": 0
   },
   {
-    "id": "act_interest8",
-    "name": "收取利息",
-    "desc": "到点自动结算利息。",
-    "behavior": 5,
-    "foodId": "",
+    "id": "act_boss",
+    "name": "周末盛宴",
+    "desc": "带有特殊机制的盛宴挑战。",
+    "behavior": 1,
+    "foodId": "food_boss",
     "minCostDays": 0,
     "maxCostDays": 0
   }

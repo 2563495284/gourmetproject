@@ -4,8 +4,8 @@ using GourmetProject.Game.Run;
 namespace GourmetProject.Game.Meta
 {
     /// <summary>
-    /// 行动可用性：小组成员是否能进入本次 n 选一。薄壳行动的前置/可重复看其关联明细表
-    /// （Food 看 <see cref="cfg.Food"/>，Event/Reward/Negative 看对应事件池是否非空），Shop/Interest 恒可用。
+    /// 行动可用性：小组成员是否能进入本次 n 选一。Food 看是否解析到 <see cref="cfg.Food"/> 明细；
+    /// Event/Reward/Negative 看对应事件池是否非空；Shop/Interest 恒可用。
     /// </summary>
     public static class ActionRandomService
     {
@@ -27,18 +27,7 @@ namespace GourmetProject.Game.Meta
                         return true;
                     }
 
-                    cfg.Food food = FoodService.Resolve(run.Tables, action);
-                    if (food == null)
-                    {
-                        return false;
-                    }
-
-                    if (!food.Repeatable && run.IsActionUsed(action.Id))
-                    {
-                        return false;
-                    }
-
-                    return PreconditionEvaluator.IsSatisfied(run, food.Preconditions);
+                    return FoodService.Resolve(run.Tables, action) != null;
                 }
 
                 case cfg.ActionBehavior.Event:
@@ -51,23 +40,6 @@ namespace GourmetProject.Game.Meta
             }
         }
 
-        /// <summary>行动结算「不可重复」判定：Food 看 TbFood.repeatable；其余交由事件层/不去重。</summary>
-        public static bool IsRepeatable(GameRun run, cfg.GameAction action)
-        {
-            if (action == null)
-            {
-                return true;
-            }
-
-            if (action.Behavior == cfg.ActionBehavior.Food && !FoodService.IsBossSlot(action))
-            {
-                cfg.Food food = FoodService.Resolve(run?.Tables, action);
-                return food == null || food.Repeatable;
-            }
-
-            return true;
-        }
-
         private static bool HasEligibleEvent(GameRun run, cfg.ActionBehavior eventType)
         {
             cfg.Tables tables = run.Tables ?? GameApp.Config.Tables;
@@ -78,7 +50,7 @@ namespace GourmetProject.Game.Meta
                     continue;
                 }
 
-                if ((ev.Repeatable || !run.IsEventUsed(ev.Id)) && PreconditionEvaluator.IsSatisfied(run, ev.Preconditions))
+                if (PreconditionEvaluator.IsSatisfied(run, ev.Preconditions))
                 {
                     return true;
                 }

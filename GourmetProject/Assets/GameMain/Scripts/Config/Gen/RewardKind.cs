@@ -16,11 +16,12 @@ namespace cfg
     /// </summary>
     public enum RewardKind
     {
-        Gold = 0,
-        DishChoice = 1,
-        PassiveItemChoice = 2,
-        ActiveItemGrant = 3,
-        FragmentChoice = 4,
+        None = 0,
+        Gold = 1,
+        DishChoice = 2,
+        PassiveItemChoice = 3,
+        ActiveItemGrant = 4,
+        FragmentChoice = 5,
     }
 
 } 

@@ -130,21 +130,9 @@ namespace GourmetProject.Game.UI.Battle.View
 
         private static cfg.Food PreviewBoss(GameRun run, cfg.TimelineNode node, cfg.GameAction action)
         {
-            if (run == null || node == null || action == null)
-            {
-                return null;
-            }
-
-            IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Boss, $"w{run.WeekIndex}_{node.Id}");
-            RngState state = rng.State;
-            try
-            {
-                return BossService.RollBoss(run, rng, mutateHistoryOnExhaustion: false);
-            }
-            finally
-            {
-                rng.State = state;
-            }
+            return run != null && node != null && action != null
+                ? BossService.ResolveBossFood(run)
+                : null;
         }
 
         private static cfg.BossDebuff PreviewBossDebuff(GameRun run, cfg.TimelineNode node, cfg.GameAction action)

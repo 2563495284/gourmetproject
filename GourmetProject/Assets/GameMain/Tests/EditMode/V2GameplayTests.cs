@@ -203,25 +203,24 @@ namespace GourmetProject.Tests
         }
 
         [Test]
-        public void BossService_UsesGlobalBossCandidates()
+        public void BossService_ResolvesSingleBossFood()
         {
             GameRun dog = NewRun(week: 1, characterId: "glutton_dog");
             GameRun cat = NewRun(week: dog.TotalWeeks, characterId: "wok_cat");
-            var rng = new MaxWeightRandomStream();
 
-            Assert.AreEqual("boss_glutton", BossService.RollBoss(dog, rng)?.Id);
-            Assert.AreEqual("boss_glutton", BossService.RollBoss(cat, rng)?.Id);
+            Assert.AreEqual("food_boss", BossService.ResolveBossFood(dog)?.Id);
+            Assert.AreEqual("food_boss", BossService.ResolveBossFood(cat)?.Id);
         }
 
         [Test]
-        public void EventService_UsesWeightAndFiltersUsedNonRepeatable()
+        public void EventService_UsesWeightWhenRolling()
         {
             cfg.Tables tables = LoadTables(new Dictionary<string, string>
             {
                 ["tbevent"] =
                     "[" +
-                    EventJson("ev_low", cfg.ActionBehavior.Event, weight: 1, repeatable: true) + "," +
-                    EventJson("ev_high", cfg.ActionBehavior.Event, weight: 100, repeatable: false) +
+                    EventJson("ev_low", cfg.ActionBehavior.Event, weight: 1) + "," +
+                    EventJson("ev_high", cfg.ActionBehavior.Event, weight: 100) +
                     "]",
                 ["tbeventoption"] = "[]",
             });
@@ -229,10 +228,6 @@ namespace GourmetProject.Tests
             var rng = new MaxWeightRandomStream();
 
             Assert.AreEqual("ev_high", EventService.RollEvent(run, rng, cfg.ActionBehavior.Event)?.Id);
-
-            run.MarkEventUsed("ev_high");
-
-            Assert.AreEqual("ev_low", EventService.RollEvent(run, rng, cfg.ActionBehavior.Event)?.Id);
         }
 
         [Test]
@@ -242,9 +237,9 @@ namespace GourmetProject.Tests
             {
                 ["tbevent"] =
                     "[" +
-                    EventJson("ev_battle", cfg.ActionBehavior.Event, weight: 1, repeatable: true) + "," +
-                    EventJson("ev_shop", cfg.ActionBehavior.Event, weight: 1, repeatable: true) + "," +
-                    EventJson("ev_gameover", cfg.ActionBehavior.Event, weight: 1, repeatable: true) +
+                    EventJson("ev_battle", cfg.ActionBehavior.Event, weight: 1) + "," +
+                    EventJson("ev_shop", cfg.ActionBehavior.Event, weight: 1) + "," +
+                    EventJson("ev_gameover", cfg.ActionBehavior.Event, weight: 1) +
                     "]",
                 ["tbeventoption"] =
                     "[" +
@@ -597,24 +592,6 @@ namespace GourmetProject.Tests
         }
 
         [Test]
-        public void BossService_UsesRolledBossHistoryAndResetsWhenExhausted()
-        {
-            var rng = new MaxWeightRandomStream();
-            GameRun run = NewRun(week: 1, characterId: "glutton_dog");
-
-            run.MarkBossCompleted("boss_glutton");
-            Assert.AreEqual("boss_final", BossService.RollBoss(run, rng)?.Id);
-
-            run.MarkBossCompleted("boss_final");
-            Assert.AreEqual("boss_iron", BossService.RollBoss(run, rng)?.Id);
-
-            run.MarkBossCompleted("boss_iron");
-            Assert.AreEqual(3, run.RolledBossIds.Count);
-            Assert.AreEqual("boss_glutton", BossService.RollBoss(run, rng)?.Id);
-            Assert.AreEqual(0, run.RolledBossIds.Count);
-        }
-
-        [Test]
         public void FoodBehavior_NormalFoodProducesNoDebuffModifier()
         {
             GameRun run = NewRun(week: 1);
@@ -688,7 +665,7 @@ namespace GourmetProject.Tests
         {
             GameRun finalWeek = NewRun(week: 8, characterId: "glutton_dog");
             GameRun earlyWeek = NewRun(week: 1, characterId: "glutton_dog");
-            cfg.Food boss = finalWeek.Tables.TbFood.Get("boss_glutton");
+            cfg.Food boss = finalWeek.Tables.TbFood.Get("food_boss");
             MethodInfo method = typeof(WeekLoopController).GetMethod(
                 "IsFinalBossVictory",
                 BindingFlags.NonPublic | BindingFlags.Instance);
@@ -752,24 +729,23 @@ namespace GourmetProject.Tests
         }
 
         [Test]
-        public void BossRoll_PerNodeKeyIsOrderIndependent()
+        public void BossDebuffRoll_PerNodeKeyIsOrderIndependent()
         {
             GameRun runForward = NewRun(week: 4, characterId: "glutton_dog");
             GameRun runReverse = NewRun(week: 4, characterId: "glutton_dog");
 
             var forward = new RandomService();
             forward.Init("boss-order");
-            string alphaFirst = BossService.RollBoss(runForward, forward.DomainStream(SeedDomains.Boss, "w4_alpha"))?.Id;
-            string betaSecond = BossService.RollBoss(runForward, forward.DomainStream(SeedDomains.Boss, "w4_beta"))?.Id;
+            string alphaFirst = BossService.RollBossDebuff(runForward, forward.DomainStream(SeedDomains.Boss, "w4_alpha_debuff"))?.Id;
+            string betaSecond = BossService.RollBossDebuff(runForward, forward.DomainStream(SeedDomains.Boss, "w4_beta_debuff"))?.Id;
 
             var reverse = new RandomService();
             reverse.Init("boss-order");
-            string betaFirst = BossService.RollBoss(runReverse, reverse.DomainStream(SeedDomains.Boss, "w4_beta"))?.Id;
-            string alphaSecond = BossService.RollBoss(runReverse, reverse.DomainStream(SeedDomains.Boss, "w4_alpha"))?.Id;
+            string betaFirst = BossService.RollBossDebuff(runReverse, reverse.DomainStream(SeedDomains.Boss, "w4_beta_debuff"))?.Id;
+            string alphaSecond = BossService.RollBossDebuff(runReverse, reverse.DomainStream(SeedDomains.Boss, "w4_alpha_debuff"))?.Id;
 
-            // 每个节点的 boss 只由自己的 key 决定，与同周其它 Boss 节点的抽取顺序无关。
-            Assert.AreEqual(alphaFirst, alphaSecond, "Boss for node 'alpha' must not depend on whether node 'beta' rolled first.");
-            Assert.AreEqual(betaFirst, betaSecond, "Boss for node 'beta' must not depend on whether node 'alpha' rolled first.");
+            Assert.AreEqual(alphaFirst, alphaSecond, "Debuff for node 'alpha' must not depend on whether node 'beta' rolled first.");
+            Assert.AreEqual(betaFirst, betaSecond, "Debuff for node 'beta' must not depend on whether node 'alpha' rolled first.");
         }
 
         private static GameRun NewRun(int week, string characterId = "glutton_dog", cfg.Tables tables = null)
@@ -780,13 +756,12 @@ namespace GourmetProject.Tests
         }
 
         /// <summary>构造一行 TbEvent JSON（tbevent 覆盖用），字段与生成的 GameEvent 对齐。</summary>
-        private static string EventJson(string id, cfg.ActionBehavior eventType, float weight, bool repeatable)
+        private static string EventJson(string id, cfg.ActionBehavior eventType, float weight)
         {
-            string repeatableLiteral = repeatable ? "true" : "false";
             return "{" +
                 $"\"id\":\"{id}\",\"name\":\"{id}\",\"desc\":\"\"," +
                 $"\"eventType\":{(int)eventType}," +
-                $"\"preconditions\":\"\",\"weight\":{weight.ToString(System.Globalization.CultureInfo.InvariantCulture)},\"repeatable\":{repeatableLiteral}" +
+                $"\"preconditions\":\"\",\"weight\":{weight.ToString(System.Globalization.CultureInfo.InvariantCulture)},\"repeatable\":true" +
                 "}";
         }
 

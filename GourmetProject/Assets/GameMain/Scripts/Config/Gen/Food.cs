@@ -27,10 +27,6 @@ public sealed partial class Food : Luban.BeanBase
         { if(!_buf["rewardKind"].IsNumber) { throw new SerializationException(); }  RewardKind = (RewardKind)_buf["rewardKind"].AsInt; }
         { if(!_buf["rewardPackageId"].IsString) { throw new SerializationException(); }  RewardPackageId = _buf["rewardPackageId"]; }
         { if(!_buf["hiddenScoreBonus"].IsNumber) { throw new SerializationException(); }  HiddenScoreBonus = _buf["hiddenScoreBonus"]; }
-        { if(!_buf["unlockCondition"].IsString) { throw new SerializationException(); }  UnlockCondition = _buf["unlockCondition"]; }
-        { if(!_buf["weight"].IsNumber) { throw new SerializationException(); }  Weight = _buf["weight"]; }
-        { if(!_buf["repeatable"].IsBoolean) { throw new SerializationException(); }  Repeatable = _buf["repeatable"]; }
-        { if(!_buf["preconditions"].IsString) { throw new SerializationException(); }  Preconditions = _buf["preconditions"]; }
     }
 
     public static Food DeserializeFood(JSONNode _buf)
@@ -78,22 +74,6 @@ public sealed partial class Food : Luban.BeanBase
     /// 隐藏分加成
     /// </summary>
     public readonly int HiddenScoreBonus;
-    /// <summary>
-    /// Boss:解锁条件(空=默认)
-    /// </summary>
-    public readonly string UnlockCondition;
-    /// <summary>
-    /// Boss 池随机权重
-    /// </summary>
-    public readonly float Weight;
-    /// <summary>
-    /// 是否可重复
-    /// </summary>
-    public readonly bool Repeatable;
-    /// <summary>
-    /// 出现前置条件
-    /// </summary>
-    public readonly string Preconditions;
    
     public const int __ID__ = 2195582;
     public override int GetTypeId() => __ID__;
@@ -115,10 +95,6 @@ public sealed partial class Food : Luban.BeanBase
         + "rewardKind:" + RewardKind + ","
         + "rewardPackageId:" + RewardPackageId + ","
         + "hiddenScoreBonus:" + HiddenScoreBonus + ","
-        + "unlockCondition:" + UnlockCondition + ","
-        + "weight:" + Weight + ","
-        + "repeatable:" + Repeatable + ","
-        + "preconditions:" + Preconditions + ","
         + "}";
     }
 }

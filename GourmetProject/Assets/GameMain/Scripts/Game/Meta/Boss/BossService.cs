@@ -7,49 +7,27 @@ using GourmetProject.Game.Run;
 namespace GourmetProject.Game.Meta
 {
     /// <summary>
-    /// 美食明细解析 + Boss 随机。Boss 已并入 <see cref="cfg.Food"/>（isBoss=true 的美食行）。
-    /// Boss 与 Boss Debuff 都按解锁条件筛选后不放回按权重随机；候选抽光后重置抽取历史。
+    /// 美食明细解析 + Boss 解析。Boss 固定为 <see cref="cfg.Food"/> 中唯一 isBoss=true 的行；
+    /// 局内变化由 <see cref="RollBossDebuff"/> 不放回随机承担。
     /// </summary>
     public static class BossService
     {
         private const string Tag = "Boss";
 
-        public static cfg.Food RollBoss(GameRun run, IRandomStream rng, bool mutateHistoryOnExhaustion = true)
+        /// <summary>返回 TbFood 中唯一的 Boss 行；未配置时返回 null。</summary>
+        public static cfg.Food ResolveBossFood(GameRun run)
         {
             cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
-            var available = new List<cfg.Food>();
-            foreach (cfg.Food boss in tables.TbFood.DataList)
+            foreach (cfg.Food food in tables.TbFood.DataList)
             {
-                if (boss.IsBoss && IsEligible(run, boss))
+                if (food.IsBoss)
                 {
-                    available.Add(boss);
+                    return food;
                 }
             }
 
-            if (available.Count == 0)
-            {
-                Log.Warning($"第 {run.WeekIndex} 周无可用 Boss。", Tag);
-                return null;
-            }
-
-            List<cfg.Food> candidates = BuildUnrolledCandidates(run, available);
-            if (candidates.Count == 0)
-            {
-                if (mutateHistoryOnExhaustion)
-                {
-                    run.ResetBossRollHistory();
-                }
-
-                candidates = new List<cfg.Food>(available);
-            }
-
-            var weights = new List<float>(candidates.Count);
-            foreach (cfg.Food boss in candidates)
-            {
-                weights.Add(boss.Weight > 0f ? boss.Weight : 1f);
-            }
-
-            return candidates[rng.WeightedPickIndex(weights)];
+            Log.Warning($"第 {run?.WeekIndex ?? 0} 周未配置 Boss 美食（isBoss=true）。", Tag);
+            return null;
         }
 
         public static cfg.BossDebuff RollBossDebuff(GameRun run, IRandomStream rng, bool mutateHistoryOnExhaustion = true)
@@ -90,16 +68,6 @@ namespace GourmetProject.Game.Meta
             return candidates[rng.WeightedPickIndex(weights)];
         }
 
-        private static bool IsEligible(GameRun run, cfg.Food boss)
-        {
-            if (boss == null)
-            {
-                return false;
-            }
-
-            return PreconditionEvaluator.IsSatisfied(run, boss.UnlockCondition);
-        }
-
         private static bool IsEligible(GameRun run, cfg.BossDebuff debuff)
         {
             if (debuff == null)
@@ -108,20 +76,6 @@ namespace GourmetProject.Game.Meta
             }
 
             return PreconditionEvaluator.IsSatisfied(run, debuff.UnlockCondition);
-        }
-
-        private static List<cfg.Food> BuildUnrolledCandidates(GameRun run, IReadOnlyList<cfg.Food> available)
-        {
-            var candidates = new List<cfg.Food>(available.Count);
-            foreach (cfg.Food boss in available)
-            {
-                if (!run.IsBossRolled(boss.Id))
-                {
-                    candidates.Add(boss);
-                }
-            }
-
-            return candidates;
         }
 
         private static List<cfg.BossDebuff> BuildUnrolledDebuffCandidates(GameRun run, IReadOnlyList<cfg.BossDebuff> available)
@@ -154,7 +108,7 @@ namespace GourmetProject.Game.Meta
             return tables.TbFood.GetOrDefault(action.FoodId);
         }
 
-        /// <summary>该 Food 行动是否为 Boss 槽（Food 行为且未绑定具体 foodId=执行时随机 Boss）。</summary>
+        /// <summary>该 Food 行动是否为 Boss 槽（Food 行为且未绑定具体 foodId=执行时取唯一 Boss 美食）。</summary>
         public static bool IsBossSlot(cfg.GameAction action)
         {
             return action != null && action.Behavior == cfg.ActionBehavior.Food && string.IsNullOrEmpty(action.FoodId);

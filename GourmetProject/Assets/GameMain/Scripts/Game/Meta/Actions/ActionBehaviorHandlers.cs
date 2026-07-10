@@ -43,7 +43,7 @@ namespace GourmetProject.Game.Meta
         }
     }
 
-    /// <summary>美食行为：普通/困难读 TbFood 隐藏分目标；Boss 槽先抽 Boss 美食，产出 Boss 战。</summary>
+    /// <summary>美食行为：普通/困难读 TbFood 隐藏分目标；Boss 槽取唯一 Boss 美食并随机 Debuff，产出 Boss 战。</summary>
     public sealed class FoodBehaviorHandler : IActionBehaviorHandler
     {
         public cfg.ActionBehavior Behavior => cfg.ActionBehavior.Food;
@@ -56,8 +56,7 @@ namespace GourmetProject.Game.Meta
                 string bossKey = string.IsNullOrEmpty(context.SourceKey)
                     ? $"w{run.WeekIndex}_{action.Id}_s{context.StepIndex}"
                     : $"w{run.WeekIndex}_{context.SourceKey}";
-                IRandomStream bossRng = GameApp.Random.DomainStream(SeedDomains.Boss, bossKey);
-                cfg.Food boss = BossService.RollBoss(run, bossRng);
+                cfg.Food boss = BossService.ResolveBossFood(run);
                 if (boss == null)
                 {
                     return ActionOutcome.Immediate(string.Empty);
@@ -66,7 +65,7 @@ namespace GourmetProject.Game.Meta
                 IRandomStream debuffRng = GameApp.Random.DomainStream(SeedDomains.Boss, $"{bossKey}_debuff");
                 cfg.BossDebuff debuff = BossService.RollBossDebuff(run, debuffRng);
                 int bossRequired = run.ComputeBossRequiredScore(boss.ScoreProfileId);
-                string battleKey = $"boss_w{run.WeekIndex}_{boss.Id}";
+                string battleKey = $"boss_{bossKey}_{debuff?.Id ?? "none"}";
                 return ActionOutcome.Battle(
                     bossRequired,
                     debuff?.Modifier ?? string.Empty,

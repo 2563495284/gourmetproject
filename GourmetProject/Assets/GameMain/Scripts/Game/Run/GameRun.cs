@@ -47,9 +47,7 @@ namespace GourmetProject.Game.Run
         // —— 行动轴状态 ——
         private readonly List<string> _triggeredNodeIds = new List<string>();
         private readonly List<string> _usedEventIds = new List<string>();
-        private readonly List<string> _usedActionIds = new List<string>();
         private readonly List<string> _completedBossIds = new List<string>();
-        private readonly List<string> _rolledBossIds = new List<string>();
         private readonly List<string> _rolledBossDebuffIds = new List<string>();
         private readonly List<string> _actionGroupSequence = new List<string>();
         private readonly List<RunActionChoiceSaveData> _pendingActionChoices = new List<RunActionChoiceSaveData>();
@@ -381,11 +379,7 @@ namespace GourmetProject.Game.Run
 
         public IReadOnlyList<string> UsedEventIds => _usedEventIds;
 
-        public IReadOnlyList<string> UsedActionIds => _usedActionIds;
-
         public IReadOnlyList<string> CompletedBossIds => _completedBossIds;
-
-        public IReadOnlyList<string> RolledBossIds => _rolledBossIds;
 
         public IReadOnlyList<string> RolledBossDebuffIds => _rolledBossDebuffIds;
 
@@ -435,8 +429,6 @@ namespace GourmetProject.Game.Run
             }
         }
 
-        public bool IsEventUsed(string eventId) => !string.IsNullOrEmpty(eventId) && _usedEventIds.Contains(eventId);
-
         public void MarkEventUsed(string eventId)
         {
             if (!string.IsNullOrEmpty(eventId) && !_usedEventIds.Contains(eventId))
@@ -445,19 +437,7 @@ namespace GourmetProject.Game.Run
             }
         }
 
-        public bool IsActionUsed(string actionId) => !string.IsNullOrEmpty(actionId) && _usedActionIds.Contains(actionId);
-
-        public void MarkActionUsed(string actionId)
-        {
-            if (!string.IsNullOrEmpty(actionId) && !_usedActionIds.Contains(actionId))
-            {
-                _usedActionIds.Add(actionId);
-            }
-        }
-
         public bool IsBossCompleted(string bossId) => !string.IsNullOrEmpty(bossId) && _completedBossIds.Contains(bossId);
-
-        public bool IsBossRolled(string bossId) => !string.IsNullOrEmpty(bossId) && _rolledBossIds.Contains(bossId);
 
         public bool IsBossDebuffRolled(string debuffId) => !string.IsNullOrEmpty(debuffId) && _rolledBossDebuffIds.Contains(debuffId);
 
@@ -467,21 +447,6 @@ namespace GourmetProject.Game.Run
             {
                 _completedBossIds.Add(bossId);
             }
-
-            MarkBossRolled(bossId);
-        }
-
-        public void MarkBossRolled(string bossId)
-        {
-            if (!string.IsNullOrEmpty(bossId) && !_rolledBossIds.Contains(bossId))
-            {
-                _rolledBossIds.Add(bossId);
-            }
-        }
-
-        public void ResetBossRollHistory()
-        {
-            _rolledBossIds.Clear();
         }
 
         public void MarkBossDebuffRolled(string debuffId)
@@ -505,7 +470,6 @@ namespace GourmetProject.Game.Run
             CurrentDay = 0f;
             ActionStepIndex = 0;
             _triggeredNodeIds.Clear();
-            _usedActionIds.Clear();
             LastActionContext = null;
             ClearPendingActionChoices();
             ClearPendingShopStock();
@@ -827,9 +791,7 @@ namespace GourmetProject.Game.Run
                 ActionGroupSequence = new List<string>(_actionGroupSequence),
                 TriggeredNodeIds = new List<string>(_triggeredNodeIds),
                 UsedEventIds = new List<string>(_usedEventIds),
-                UsedActionIds = new List<string>(_usedActionIds),
                 CompletedBossIds = new List<string>(_completedBossIds),
-                RolledBossIds = new List<string>(_rolledBossIds),
                 RolledBossDebuffIds = new List<string>(_rolledBossDebuffIds),
                 PendingActionChoiceKey = _pendingActionChoiceKey,
                 PendingActionChoices = new List<RunActionChoiceSaveData>(_pendingActionChoices),
@@ -968,19 +930,9 @@ namespace GourmetProject.Game.Run
                 run._usedEventIds.AddRange(data.UsedEventIds);
             }
 
-            if (data.UsedActionIds != null)
-            {
-                run._usedActionIds.AddRange(data.UsedActionIds);
-            }
-
             if (data.CompletedBossIds != null)
             {
                 run._completedBossIds.AddRange(data.CompletedBossIds);
-            }
-
-            if (data.RolledBossIds != null)
-            {
-                run._rolledBossIds.AddRange(data.RolledBossIds);
             }
 
             if (data.RolledBossDebuffIds != null)
