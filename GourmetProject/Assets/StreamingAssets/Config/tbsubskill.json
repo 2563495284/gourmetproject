@@ -16,7 +16,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "处在棋盘边缘时，{ascope}倍率 {0}。"
+    "descTemplate": "处在棋盘边缘时，{ascope}倍率 {0}"
   },
   {
     "id": "ss_flat_per_dish_adj_v8",
@@ -35,7 +35,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}分数 {0}。"
+    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}分数 {0}"
   },
   {
     "id": "ss_transfer_row_n1",
@@ -73,7 +73,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 个空格，{ascope}分数 {0}。"
+    "descTemplate": "{cscope}每有 1 个空格，{ascope}分数 {0}"
   },
   {
     "id": "ss_layer_per_dish_adj_v2",
@@ -92,7 +92,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物，欢乐蛋糕 {0} 层。"
+    "descTemplate": "{cscope}每有 1 {unit}食物，欢乐蛋糕 {0} 层"
   },
   {
     "id": "ss_flat_per_run_v6",
@@ -111,7 +111,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "结算时，{ascope}分数永久 {0}。"
+    "descTemplate": "结算时，{ascope}分数永久 {0}"
   },
   {
     "id": "ss_multflat_per_dish_col_v1",
@@ -130,7 +130,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}倍率 {0}。"
+    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}倍率 {0}"
   },
   {
     "id": "ss_flat_per_dish_row_v10",
@@ -149,7 +149,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}分数 {0}。"
+    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}分数 {0}"
   },
   {
     "id": "ss_permflat_per_tag_v5",
@@ -168,7 +168,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "结算每有1个技能，{ascope}分数永久 {0}。"
+    "descTemplate": "每有1个技能，{ascope}分数永久 {0}"
   },
   {
     "id": "ss_multflat_per_dish_all_adj_v0p2",
@@ -187,7 +187,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}倍率 {0}。"
+    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}倍率 {0}"
   },
   {
     "id": "ss_layer_add_v5",
@@ -206,7 +206,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "欢乐蛋糕 {0} 层。"
+    "descTemplate": "欢乐蛋糕 {0} 层"
   },
   {
     "id": "ss_extra_settle_v1",
@@ -225,7 +225,7 @@
     "actionParam": [],
     "isPassive": true,
     "signed": false,
-    "descTemplate": "技能额外结算 {0} 次。"
+    "descTemplate": "技能额外结算 {0} 次"
   },
   {
     "id": "ss_transfer_all_n1",
@@ -263,7 +263,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "若{cscope}被填满，获得 {0} 金币。"
+    "descTemplate": "若{cscope}被填满，获得 {0} 金币"
   },
   {
     "id": "ss_layer_filled_row_v10",
@@ -282,7 +282,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "若{cscope}被填满，欢乐蛋糕 {0} 层。"
+    "descTemplate": "若{cscope}被填满，欢乐蛋糕 {0} 层"
   },
   {
     "id": "ss_multflat_per_dish_row_v2",
@@ -301,7 +301,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}倍率 {0}。"
+    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}倍率 {0}"
   },
   {
     "id": "ss_count_as_base_v1",
@@ -320,7 +320,7 @@
     "actionParam": [],
     "isPassive": true,
     "signed": false,
-    "descTemplate": "{ascope}视为 {countas} 个食物。"
+    "descTemplate": "{ascope}视为 {countas} 个食物"
   },
   {
     "id": "ss_layer_add_v10",
@@ -339,7 +339,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "欢乐蛋糕 {0} 层。"
+    "descTemplate": "欢乐蛋糕 {0} 层"
   },
   {
     "id": "ss_temp_copy_v1",
@@ -358,7 +358,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "复制本菜品至空格中。"
+    "descTemplate": "复制至空格中，并立即结算此食物"
   },
   {
     "id": "ss_shape_mult_adj_v1p5",
@@ -377,7 +377,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "{cscope}有占 1 格的食物时，{ascope}倍率 ×{0}。"
+    "descTemplate": "{cscope}有占 1 格的食物时，{ascope}倍率 ×{0}"
   },
   {
     "id": "ss_transfer_col_n2",
@@ -415,7 +415,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}倍率 ×{0}。"
+    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}倍率 ×{0}"
   },
   {
     "id": "ss_transfer_adj_n2",
@@ -453,7 +453,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "复制{ascope}食物的 {0} 个技能。"
+    "descTemplate": "复制{ascope}食物的 {0} 个技能"
   },
   {
     "id": "ss_layer_per_tag_v6",
@@ -472,7 +472,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "每有 1 个技能，欢乐蛋糕 {0} 层。"
+    "descTemplate": "每有 1 个技能，欢乐蛋糕 {0} 层"
   },
   {
     "id": "ss_mult_v1p5",
@@ -491,7 +491,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "{ascope}倍率 ×{0}。"
+    "descTemplate": "{ascope}倍率 ×{0}"
   },
   {
     "id": "ss_perm_flat_v10",
@@ -510,7 +510,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{ascope}分数永久 {0}。"
+    "descTemplate": "{ascope}分数永久 {0}"
   },
   {
     "id": "ss_transfer_all_n2",
@@ -548,7 +548,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}倍率 {0}。"
+    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}倍率 {0}"
   },
   {
     "id": "ss_count_as_base_v3",
@@ -567,7 +567,7 @@
     "actionParam": [],
     "isPassive": true,
     "signed": false,
-    "descTemplate": "{ascope}视为 {countas} 个食物。"
+    "descTemplate": "{ascope}视为 {countas} 个食物"
   },
   {
     "id": "ss_multflat_adj_v5",
@@ -586,7 +586,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{ascope}倍率 {0}。"
+    "descTemplate": "{ascope}倍率 {0}"
   },
   {
     "id": "ss_transfer_all_n3",
@@ -624,7 +624,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "消耗 {0} 层欢乐蛋糕。"
+    "descTemplate": "消耗 {0} 层欢乐蛋糕"
   },
   {
     "id": "ss_multflat_v5",
@@ -643,7 +643,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{ascope}倍率 {0}。"
+    "descTemplate": "{ascope}倍率 {0}"
   },
   {
     "id": "ss_multflat_col_v3",
@@ -662,7 +662,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{ascope}倍率 {0}。"
+    "descTemplate": "{ascope}倍率 {0}"
   },
   {
     "id": "ss_transfer_row_n3",
@@ -702,7 +702,7 @@
     ],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "欢乐蛋糕 ×{0} 层，至少 +{floor} 层。"
+    "descTemplate": "欢乐蛋糕 ×{0} 层，至少 +{floor} 层"
   },
   {
     "id": "ss_mult_tier_dishcount_row_row",
@@ -723,7 +723,7 @@
     ],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "{cscope}食物达 {tiers} 个时，{ascope}倍率 ×{tiervals}。"
+    "descTemplate": "{cscope}食物达 {tiers} 个时，{ascope}倍率 ×{tiervals}"
   },
   {
     "id": "ss_count_as_base_v4",
@@ -742,7 +742,7 @@
     "actionParam": [],
     "isPassive": true,
     "signed": false,
-    "descTemplate": "{ascope}视为 {countas} 个食物。"
+    "descTemplate": "{ascope}视为 {countas} 个食物"
   },
   {
     "id": "ss_mult_v3",
@@ -761,7 +761,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "{ascope}倍率 ×{0}。"
+    "descTemplate": "{ascope}倍率 ×{0}"
   },
   {
     "id": "ss_count_as_filled_row_v9",
@@ -780,7 +780,7 @@
     "actionParam": [],
     "isPassive": true,
     "signed": false,
-    "descTemplate": "若{cscope}被填满，{ascope}额外视为 {0} 个食物。"
+    "descTemplate": "若{cscope}被填满，{ascope}额外视为 {0} 个食物"
   },
   {
     "id": "ss_count_as_col_v2",
@@ -799,7 +799,7 @@
     "actionParam": [],
     "isPassive": true,
     "signed": false,
-    "descTemplate": "{ascope}额外视为 {0} 个食物。"
+    "descTemplate": "{ascope}额外视为 {0} 个食物"
   },
   {
     "id": "ss_multflat_v4",
@@ -818,7 +818,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{ascope}倍率 {0}。"
+    "descTemplate": "{ascope}倍率 {0}"
   },
   {
     "id": "ss_flat_category_cat_v10",
@@ -839,7 +839,7 @@
     ],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "将分数加到所有{cat}上（每个{cat} {0} 分）。"
+    "descTemplate": "将分数加到所有{cat}上（每个{cat} {0} 分）"
   },
   {
     "id": "ss_layer_add_v15",
@@ -858,7 +858,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "欢乐蛋糕 {0} 层。"
+    "descTemplate": "欢乐蛋糕 {0} 层"
   },
   {
     "id": "ss_multflat_per_tag_v5",
@@ -877,7 +877,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 个技能，{ascope}倍率 {0}。"
+    "descTemplate": "{cscope}每有 1 个技能，{ascope}倍率 {0}"
   },
   {
     "id": "ss_transfer_col",
@@ -915,7 +915,7 @@
     "actionParam": [],
     "isPassive": true,
     "signed": false,
-    "descTemplate": "{ascope}视为 {countas} 个食物。"
+    "descTemplate": "{ascope}视为 {countas} 个食物"
   },
   {
     "id": "ss_mult_col_v2",
@@ -934,7 +934,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "{ascope}倍率 ×{0}。"
+    "descTemplate": "{ascope}倍率 ×{0}"
   },
   {
     "id": "ss_layer_add_v20",
@@ -953,7 +953,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "欢乐蛋糕 {0} 层。"
+    "descTemplate": "欢乐蛋糕 {0} 层"
   },
   {
     "id": "ss_multflat_all_v0p5",
@@ -972,7 +972,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{ascope}倍率 {0}。"
+    "descTemplate": "{ascope}倍率 {0}"
   },
   {
     "id": "ss_copy_skill_adj_v2",
@@ -991,7 +991,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "复制{ascope}食物的 {0} 个技能。"
+    "descTemplate": "复制{ascope}食物的 {0} 个技能"
   },
   {
     "id": "ss_count_as_base_v7",
@@ -1010,7 +1010,7 @@
     "actionParam": [],
     "isPassive": true,
     "signed": false,
-    "descTemplate": "{ascope}视为 {countas} 个食物。"
+    "descTemplate": "{ascope}视为 {countas} 个食物"
   },
   {
     "id": "ss_multflat_category_cat_v5",
@@ -1031,7 +1031,7 @@
     ],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "将倍率 {0} 加到所有{cat}上。"
+    "descTemplate": "将倍率 {0} 加到所有{cat}上"
   },
   {
     "id": "ss_multflat_per_dish_row_adj_v0p3",
@@ -1050,7 +1050,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}倍率 {0}。"
+    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}倍率 {0}"
   },
   {
     "id": "ss_mult_v2",
@@ -1069,7 +1069,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "{ascope}倍率 ×{0}。"
+    "descTemplate": "{ascope}倍率 ×{0}"
   },
   {
     "id": "ss_layer_tier_all",
@@ -1090,7 +1090,7 @@
     ],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "蛋糕数量达 {tiers} 时，欢乐蛋糕 +{tiervals} 层。"
+    "descTemplate": "蛋糕数量达 {tiers} 时，欢乐蛋糕 +{tiervals} 层"
   },
   {
     "id": "ss_mult_tier_skilltype_all_all",
@@ -1111,7 +1111,7 @@
     ],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "带甜蜜传递的食物达 {tiers} 种时，此类食物倍率 ×{tiervals}。"
+    "descTemplate": "带甜蜜传递的食物达 {tiers} 种时，此类食物倍率 ×{tiervals}"
   },
   {
     "id": "ss_layer_per_dish_adj_v2_2",
@@ -1130,7 +1130,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物，欢乐蛋糕 {0} 层。"
+    "descTemplate": "{cscope}每有 1 {unit}食物，欢乐蛋糕 {0} 层"
   },
   {
     "id": "ss_mult_adj_v1p5",
@@ -1149,7 +1149,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "{ascope}倍率 ×{0}。"
+    "descTemplate": "{ascope}倍率 ×{0}"
   },
   {
     "id": "ss_mult_col_v1p4",
@@ -1168,7 +1168,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "{ascope}倍率 ×{0}。"
+    "descTemplate": "{ascope}倍率 ×{0}"
   },
   {
     "id": "ss_transfer_adj",
@@ -1208,7 +1208,7 @@
     ],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "同行同列带甜蜜传递的食物，各执行一次它们的甜蜜传递。"
+    "descTemplate": "同行同列带甜蜜传递的食物，各执行一次它们的甜蜜传递"
   },
   {
     "id": "ss_mult_per_tag_v1p5",
@@ -1227,7 +1227,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "{cscope}每有 1 个技能，{ascope}倍率 ×{0}。"
+    "descTemplate": "{cscope}每有 1 个技能，{ascope}倍率 ×{0}"
   },
   {
     "id": "ss_transfer_row",
@@ -1267,6 +1267,6 @@
     ],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "{ascope}获得 {0} 种不同的{cat}技能。"
+    "descTemplate": "{ascope}获得 {0} 种不同的{cat}技能"
   }
 ]
