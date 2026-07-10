@@ -127,10 +127,21 @@ namespace GourmetProject.Game.Meta
             int gold = TimelineMath.Interest(run.Gold, threshold, goldPer, maxGain);
             run.Gold += gold;
 
-            string msg;
-            if (gold > 0)
+            // 复利账户（ExtraInterest）：本次利息节点额外再结算一次利息。
+            int extraGold = 0;
+            if (new ItemRuntime(run).HasExtraInterest())
             {
-                msg = $"利息结算：金币 +{gold}（每满 {threshold} 金币得 {goldPer}，最高 {maxGain}），当前 {run.Gold}。";
+                extraGold = TimelineMath.Interest(run.Gold, threshold, goldPer, maxGain);
+                run.Gold += extraGold;
+            }
+
+            string msg;
+            if (gold > 0 || extraGold > 0)
+            {
+                int total = gold + extraGold;
+                msg = extraGold > 0
+                    ? $"利息结算：金币 +{total}（含复利账户额外 +{extraGold}），当前 {run.Gold}。"
+                    : $"利息结算：金币 +{total}（每满 {threshold} 金币得 {goldPer}，最高 {maxGain}），当前 {run.Gold}。";
             }
             else if (maxGain <= 0)
             {

@@ -137,15 +137,15 @@ namespace GourmetProject.Tests
         }
 
         [Test]
-        public void ActiveItemRolls_WithReplacement()
+        public void ActiveItemPool_IsEmpty_AfterAllPassiveRework()
         {
+            // 设计已转全被动：配置表不再有主动道具，主动池抽取恒为空。
             GameRun run = NewRun(week: 1);
             var rng = new MaxWeightRandomStream();
 
             List<string> activeItems = ItemPoolService.Roll(run.Tables, run, cfg.ItemKind.Active, rng, 2, hidden: 0, distanceFloor: 5);
 
-            Assert.AreEqual(2, activeItems.Count);
-            Assert.AreEqual(activeItems[0], activeItems[1], "Active item rolls should be with replacement.");
+            Assert.AreEqual(0, activeItems.Count, "无主动道具，主动池应为空。");
         }
 
         [Test]
@@ -270,20 +270,22 @@ namespace GourmetProject.Tests
         public void ShopService_RollsActiveItemsAndSupportsShopManagement()
         {
             GameRun run = NewRun(week: 1);
-            run.Gold = 100;
+            run.Gold = 200;
             var rng = new MaxWeightRandomStream();
 
             List<ShopEntry> stock = ShopService.RollStock(run.Tables, run, rng, new MaxWeightRandomStream());
 
-            ShopEntry active = stock.Find(entry => entry.Kind == ShopEntryKind.ActiveItem);
-            Assert.NotNull(active, "Shop stock should include active items from the action-design shop pool.");
+            // 设计已转全被动：商店不再有主动道具，改用被动道具验证购买/出售流程。
+            Assert.IsNull(stock.Find(entry => entry.Kind == ShopEntryKind.ActiveItem), "全被动后商店不应出现主动道具。");
+            ShopEntry passive = stock.Find(entry => entry.Kind == ShopEntryKind.PassiveItem);
+            Assert.NotNull(passive, "Shop stock should include passive items.");
 
-            Assert.IsTrue(ShopService.Purchase(run, active));
-            Assert.IsTrue(run.HasItem(active.Id));
+            Assert.IsTrue(ShopService.Purchase(run, passive));
+            Assert.IsTrue(run.HasItem(passive.Id));
             int afterPurchaseGold = run.Gold;
 
-            Assert.IsTrue(ShopService.SellItem(run, active.Id));
-            Assert.IsFalse(run.HasItem(active.Id));
+            Assert.IsTrue(ShopService.SellItem(run, passive.Id));
+            Assert.IsFalse(run.HasItem(passive.Id));
             Assert.AreEqual(afterPurchaseGold + ShopService.ItemSellPrice, run.Gold);
 
             Assert.IsTrue(run.AddBonusDish("cookie"));

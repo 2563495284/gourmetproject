@@ -64,6 +64,11 @@ namespace GourmetProject.Game.Run
         private int _interestCap;
         private int _foodAdjustBaseCount;
 
+        // —— 被动道具计数状态（随存档保存）——
+        private int _loanDebt;            // 高利贷待扣债务，下一周结算时扣除
+        private int _mealBonusRemaining;  // 「美食分红」剩余生效局数（GoldMealBonus）
+        private int _scoreToOneRemaining; // 「分数变1」剩余生效局数（RequiredScoreToOne，非盛宴）
+
         public GameRun(cfg.Tables tables, GameplayDatabase database, string characterId, string seedText, int weekIndex = 1)
         {
             _tables = tables;
@@ -85,7 +90,7 @@ namespace GourmetProject.Game.Run
             {
                 foreach (string itemId in character.StartItems)
                 {
-                    AcquireItem(itemId, 0);
+                    AcquireItem(itemId, 0, fireOnAcquire: false);
                 }
             }
 
@@ -256,6 +261,70 @@ namespace GourmetProject.Game.Run
         public string NextActiveUseKey()
         {
             return $"active_{_activeUseIndex++}";
+        }
+
+        // —— 被动道具计数状态 API ——
+
+        /// <summary>高利贷待扣债务（下一周结算时扣除）。</summary>
+        public int LoanDebt => _loanDebt;
+
+        /// <summary>登记一笔高利贷债务（获得「高利贷」时调用）。</summary>
+        public void RegisterLoanDebt(int amount)
+        {
+            if (amount > 0)
+            {
+                _loanDebt += amount;
+            }
+        }
+
+        /// <summary>取出并清空当前高利贷债务（周末结算时调用）。</summary>
+        public int ConsumeLoanDebt()
+        {
+            int debt = _loanDebt;
+            _loanDebt = 0;
+            return debt;
+        }
+
+        /// <summary>「美食分红」剩余生效局数（GoldMealBonus）。</summary>
+        public int MealBonusRemaining => _mealBonusRemaining;
+
+        /// <summary>增加「美食分红」生效局数（获得道具时初始化）。</summary>
+        public void AddMealBonusMeals(int meals)
+        {
+            if (meals > 0)
+            {
+                _mealBonusRemaining += meals;
+            }
+        }
+
+        /// <summary>消耗一局「美食分红」额度。</summary>
+        public void ConsumeMealBonusMeal()
+        {
+            if (_mealBonusRemaining > 0)
+            {
+                _mealBonusRemaining--;
+            }
+        }
+
+        /// <summary>「分数变1」剩余生效局数（非盛宴，RequiredScoreToOne）。</summary>
+        public int ScoreToOneRemaining => _scoreToOneRemaining;
+
+        /// <summary>增加「分数变1」生效局数（获得道具时初始化）。</summary>
+        public void AddScoreToOneMeals(int meals)
+        {
+            if (meals > 0)
+            {
+                _scoreToOneRemaining += meals;
+            }
+        }
+
+        /// <summary>消耗一局「分数变1」额度。</summary>
+        public void ConsumeScoreToOneMeal()
+        {
+            if (_scoreToOneRemaining > 0)
+            {
+                _scoreToOneRemaining--;
+            }
         }
 
         public IReadOnlyList<string> BonusDishIds => _bonusDishIds;
@@ -734,6 +803,9 @@ namespace GourmetProject.Game.Run
                 InterestCap = _interestCap,
                 FoodAdjustCount = _foodAdjustBaseCount,
                 ActiveUseIndex = _activeUseIndex,
+                LoanDebt = _loanDebt,
+                MealBonusRemaining = _mealBonusRemaining,
+                ScoreToOneRemaining = _scoreToOneRemaining,
                 Items = items,
                 BonusDishIds = new List<string>(_bonusDishIds),
                 RecipeBooks = ToRecipeBookSaveData(),
@@ -787,6 +859,9 @@ namespace GourmetProject.Game.Run
                 ? data.FoodAdjustCount
                 : System.Math.Max(0, tables.TbGameBase.InitialFoodAdjustCount);
             run._activeUseIndex = data.ActiveUseIndex;
+            run._loanDebt = System.Math.Max(0, data.LoanDebt);
+            run._mealBonusRemaining = System.Math.Max(0, data.MealBonusRemaining);
+            run._scoreToOneRemaining = System.Math.Max(0, data.ScoreToOneRemaining);
             run._items.Clear();
 
             if (data.Items != null && data.Items.Count > 0)
@@ -823,7 +898,7 @@ namespace GourmetProject.Game.Run
             {
                 foreach (string itemId in data.ItemIds)
                 {
-                    run.AcquireItem(itemId, 0);
+                    run.AcquireItem(itemId, 0, fireOnAcquire: false);
                 }
             }
 
@@ -1106,6 +1181,12 @@ namespace GourmetProject.Game.Run
         /// <summary>美食行动目标分：当前周目标分 × 倍率（倍率 &lt;= 0 视为 1）。</summary>
         public int ComputeFoodRequiredScore(float multiplier)
         {
+            // 「分数变1」（RequiredScoreToOne）：非盛宴美食剩余生效局数内，要求分固定为 1（计数消耗在每局奖励结算时）。
+            if (_scoreToOneRemaining > 0)
+            {
+                return 1;
+            }
+
             if (multiplier <= 0f)
             {
                 multiplier = 1f;
@@ -1175,7 +1256,11 @@ namespace GourmetProject.Game.Run
             return count;
         }
 
-        public ItemAcquireResult AcquireItem(string itemId, int fallbackGold)
+        /// <summary>
+        /// 获得一件道具。<paramref name="fireOnAcquire"/> 为 true 时，被动道具首次加入成功后会立即结算
+        /// 其「获得时(OnAcquire)」一次性效果；存档恢复 / 角色初始道具应传 false，避免重复触发。
+        /// </summary>
+        public ItemAcquireResult AcquireItem(string itemId, int fallbackGold, bool fireOnAcquire = true)
         {
             cfg.Item item = _tables.TbItem.GetOrDefault(itemId);
             if (item == null)
@@ -1190,6 +1275,11 @@ namespace GourmetProject.Game.Run
                 {
                     state = new RunItemState(itemId, 1);
                     _items.Add(state);
+                    if (fireOnAcquire && item.TriggerTiming == cfg.ItemTriggerTiming.OnAcquire)
+                    {
+                        PassiveOnAcquireEffects.Apply(this, item);
+                    }
+
                     return new ItemAcquireResult(ItemAcquireOutcome.Added, itemId, item.Name, 1, 1, 0);
                 }
 

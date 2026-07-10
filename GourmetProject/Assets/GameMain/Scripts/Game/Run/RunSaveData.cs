@@ -34,6 +34,15 @@ namespace GourmetProject.Game.Run
         /// <summary>主动道具累计使用次数（单调递增）。随机类主动效果按此序号派生随机流以保证可复现。</summary>
         public int ActiveUseIndex;
 
+        /// <summary>高利贷待扣债务（下一周结算时扣除）。</summary>
+        public int LoanDebt;
+
+        /// <summary>「美食分红」剩余生效局数（GoldMealBonus）。</summary>
+        public int MealBonusRemaining;
+
+        /// <summary>「分数变1」剩余生效局数（RequiredScoreToOne，非盛宴）。</summary>
+        public int ScoreToOneRemaining;
+
         public List<RunItemSaveData> Items = new List<RunItemSaveData>();
         public List<string> BonusDishIds = new List<string>();
         public List<RunRecipeBookSaveData> RecipeBooks = new List<RunRecipeBookSaveData>();

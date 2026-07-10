@@ -212,6 +212,12 @@ namespace GourmetProject.Game.Meta
         /// <summary>完成一个事件应额外获得的金币（GoldOnEventComplete 之和）。</summary>
         public int EventCompleteGold() => (int)SumValue(ItemEffectTypes.GoldOnEventComplete);
 
+        /// <summary>完成本次 Boss 应额外获得的金币（GoldOnBossComplete 之和）。</summary>
+        public int BossCompleteGold() => (int)SumValue(ItemEffectTypes.GoldOnBossComplete);
+
+        /// <summary>「美食分红」每局额外金币（GoldMealBonus 之和；剩余局数由 GameRun 计数控制）。</summary>
+        public int MealBonusGoldPerMeal() => (int)SumValue(ItemEffectTypes.GoldMealBonus);
+
         /// <summary>进入商店应额外获得的金币（GoldOnShopEnter 之和）。</summary>
         public int ShopEnterGold() => (int)SumValue(ItemEffectTypes.GoldOnShopEnter);
 

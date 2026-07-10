@@ -72,30 +72,22 @@ namespace GourmetProject.Tests
         [Test]
         public void ItemAndRewardPools_FilterLockedItemsUntilProgressUnlocks()
         {
+            // 设计已转全被动：改用被动道具验证「未解锁→过滤出池，解锁后→可进池」。
+            // item_reroll_action 为被动且 hiddenRange 覆盖全部，便于按 kind 全量抽取做包含性断言。
+            const string gatedItem = "item_reroll_action";
             cfg.Tables tables = LoadTablesWithUnlocks(
-                RuleJson(("unlock_item_reroll", "item_reroll", 10)),
-                ConditionJson(("cond_week", "unlock_item_reroll", "default", cfg.UnlockConditionType.MinWeek, 1, string.Empty, cfg.UnlockTargetType.Item, string.Empty)));
+                RuleJson(("unlock_gated", gatedItem, 10)),
+                ConditionJson(("cond_week", "unlock_gated", "default", cfg.UnlockConditionType.MinWeek, 1, string.Empty, cfg.UnlockTargetType.Item, string.Empty)));
             GameRun run = NewRun(tables, week: 1);
-            cfg.RewardSlot activeSlot = tables.TbRewardSlot.Get("slot_main_active");
 
             var lockedProgress = new MetaProgressSaveData();
-            List<string> lockedRoll = ItemPoolService.Roll(tables, run, cfg.ItemKind.Active, new MaxWeightRandomStream(), 2, hidden: 0, distanceFloor: 5, progress: lockedProgress);
-            Assert.IsFalse(lockedRoll.Contains("item_reroll"));
-
-            List<RewardChoice> lockedChoices = RewardPoolService.RollChoices(
-                new RewardContext(tables, run, run.CurrentWeek, run.CurrentRewardPackage, new MaxWeightRandomStream(), progress: lockedProgress),
-                activeSlot);
-            Assert.IsFalse(lockedChoices.Exists(choice => choice.Id == "item_reroll"));
+            List<string> lockedRoll = ItemPoolService.Roll(tables, run, cfg.ItemKind.Passive, new MaxWeightRandomStream(), 100, hidden: 0, distanceFloor: 5, progress: lockedProgress);
+            Assert.IsFalse(lockedRoll.Contains(gatedItem), "未解锁的道具不应进入道具池");
 
             var unlockedProgress = new MetaProgressSaveData();
-            unlockedProgress.AddUnlockedTarget(cfg.UnlockTargetType.Item, "item_reroll");
-            List<string> unlockedRoll = ItemPoolService.Roll(tables, run, cfg.ItemKind.Active, new MaxWeightRandomStream(), 1, hidden: 0, distanceFloor: 5, progress: unlockedProgress);
-            Assert.AreEqual("item_reroll", unlockedRoll[0]);
-
-            List<RewardChoice> unlockedChoices = RewardPoolService.RollChoices(
-                new RewardContext(tables, run, run.CurrentWeek, run.CurrentRewardPackage, new MaxWeightRandomStream(), progress: unlockedProgress),
-                activeSlot);
-            Assert.AreEqual("item_reroll", unlockedChoices[0].Id);
+            unlockedProgress.AddUnlockedTarget(cfg.UnlockTargetType.Item, gatedItem);
+            List<string> unlockedRoll = ItemPoolService.Roll(tables, run, cfg.ItemKind.Passive, new MaxWeightRandomStream(), 100, hidden: 0, distanceFloor: 5, progress: unlockedProgress);
+            Assert.IsTrue(unlockedRoll.Contains(gatedItem), "解锁后道具应可进入道具池");
         }
 
         [Test]

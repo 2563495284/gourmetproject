@@ -203,10 +203,42 @@ namespace GourmetProject.Game.Orchestration
         /// <summary>行动轴走完：推进到下一周（最终周胜利由 Boss 节点判定）。</summary>
         private void EndWeek()
         {
+            ApplyEndOfWeekItemSettlement();
             _run.WeekIndex++;
             _run.RequiredScoreOverride = -1;
             RunPersistence.Save(_run);
             BeginWeek();
+        }
+
+        /// <summary>
+        /// 周末被动道具结算：先扣高利贷债务，再按「月光族」清空金币，最后按「保底基金」补足下限。
+        /// 三者顺序固定，避免相互覆盖歧义。
+        /// </summary>
+        private void ApplyEndOfWeekItemSettlement()
+        {
+            if (_run == null)
+            {
+                return;
+            }
+
+            var itemRuntime = new ItemRuntime(_run);
+
+            int debt = _run.ConsumeLoanDebt();
+            if (debt > 0)
+            {
+                _run.Gold = System.Math.Max(0, _run.Gold - debt);
+            }
+
+            if (itemRuntime.ClearsGoldOnWeekEnd())
+            {
+                _run.Gold = 0;
+            }
+
+            int minGold = itemRuntime.MinGoldGuarantee();
+            if (minGold > 0 && _run.Gold < minGold)
+            {
+                _run.Gold = minGold;
+            }
         }
 
         /// <summary>把天数游标格式化为跨语言环境稳定的随机 key 片段（一位小数）。</summary>
@@ -306,6 +338,13 @@ namespace GourmetProject.Game.Orchestration
                 StartBattle(outcome.RequiredScore, outcome.Modifier, outcome.BattleKey, true, outcome.BossId, () =>
                 {
                     _run.MarkBossCompleted(outcome.BossId);
+                    // Boss 赏金（GoldOnBossComplete）：通关本次 Boss 后额外获得金币。
+                    int bossGold = new ItemRuntime(_run).BossCompleteGold();
+                    if (bossGold > 0)
+                    {
+                        _run.Gold += bossGold;
+                    }
+
                     RunPersistence.Save(_run);
                     ClearPendingNodes();
                     if (IsFinalBossVictory(boss))
@@ -471,6 +510,13 @@ namespace GourmetProject.Game.Orchestration
 
         private void OpenShopThen(Action onClose)
         {
+            // 商会返利（GoldOnShopEnter）：进入商店时额外获得金币（每次进入结算一次）。
+            int shopGold = new ItemRuntime(_run).ShopEnterGold();
+            if (shopGold > 0)
+            {
+                _run.Gold += shopGold;
+            }
+
             _afterShop = onClose;
             _view.OpenShop();
         }

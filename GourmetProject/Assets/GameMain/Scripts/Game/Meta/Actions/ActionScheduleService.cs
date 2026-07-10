@@ -23,6 +23,9 @@ namespace GourmetProject.Game.Meta
                 return result;
             }
 
+            // TODO(passive-item): 事件概率族被动（LuckyEventChance/MoreEvents/LuckyEventGuarantee）需在此处大组/中组权重里注入，
+            //   属复杂随机权重交互；数值判定 ItemRuntime.LuckyEventChanceBonus()/MoreEventsBonus()/LuckyEventGuaranteeEvery() 已就绪。
+
             cfg.Tables tables = run.Tables ?? GameApp.Config.Tables;
             string largeId = EnsureCurrentGroup(run, rng);
             cfg.ActionLargeGroup large = string.IsNullOrEmpty(largeId) ? null : tables.TbActionLargeGroup.GetOrDefault(largeId);

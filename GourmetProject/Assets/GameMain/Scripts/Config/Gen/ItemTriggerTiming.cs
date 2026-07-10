@@ -22,6 +22,10 @@ namespace cfg
         BeforeEat = 3,
         AfterSettlement = 4,
         RewardScreen = 5,
+        /// <summary>
+        /// 获得时结算一次
+        /// </summary>
+        OnAcquire = 6,
     }
 
 } 

@@ -74,6 +74,13 @@ namespace GourmetProject.Game.Run
                 session.SeedHappyCakeLayers(initLayers);
             }
 
+            // TODO(passive-item): 以下被动效果耦合战斗循环 / 结算管线，待战斗侧 hook 就绪后接入：
+            //   - AdjustToMult（节俭加成）：结算时按「未使用调整次数」加 FinalMultiplier（需战斗结束时的剩余次数）。
+            //   - CakeLayerRetain（蛋糕保鲜）：品鉴结束按比例保留 HappyCakeLayers 至下一局（需 run 级残留层数字段）。
+            //   - GoldOnCakeLayers（蛋糕变现）：结算时蛋糕层数超阈值给金币。
+            //   - TransferTargetMult / TransferSourceMult（传递受益/奉献）：需 BattleSession 传递管线暴露倍率 hook。
+            //   对应数值已集中在 ItemRuntime.AdjustToMultPerUnused/CakeRetainFraction/... 待调用。
+
             ApplySessionModifiers(session, modifier);
 
             ApplyPassiveItems(run, session);

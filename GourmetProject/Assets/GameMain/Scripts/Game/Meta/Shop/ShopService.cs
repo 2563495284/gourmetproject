@@ -107,6 +107,9 @@ namespace GourmetProject.Game.Meta
                     itemRuntime.ModifyShopPrice(ShopEntryKind.Fragment, FragmentPackPrice)));
             }
 
+            // TODO(passive-item): AutoRestock（自动补货）需商店购买循环支持「卖出后回填槽位」，属 UI/流程交互，
+            //   数值判定 ItemRuntime.AutoRestock() 已就绪，待 ShopForm 购买流程接入。
+
             return stock;
         }
 

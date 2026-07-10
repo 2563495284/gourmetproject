@@ -12,13 +12,12 @@ using NUnit.Framework;
 namespace GourmetProject.Tests
 {
     /// <summary>
-    /// 主动道具子系统测试：全局消耗槽（基础 2 + ExtraActiveSlot）、槽满折金币、
-    /// 主动使用序号可复现、targetKind→情境推导、以及情境无关的 Apply 派发。
+    /// 主动道具子系统测试：主动使用序号可复现、targetKind→情境推导、情境无关的 Apply 派发。
+    /// 注：设计已转为「全被动」，配置表不再有主动道具，故槽位/折金币等依赖配置主动项的用例已移除，
+    /// 仅保留与配置无关的机制测试 + 一条「配置全为被动」的守卫用例。
     /// </summary>
     public class ItemActiveTests
     {
-        private const string ActiveItemId = "item_family_pack";
-
         private static cfg.Tables LoadTables()
         {
             string root = Path.Combine(Directory.GetCurrentDirectory(), "Assets", "StreamingAssets", "Config");
@@ -44,35 +43,20 @@ namespace GourmetProject.Tests
         }
 
         [Test]
-        public void ActiveSlots_FullConvertsToGold()
+        public void AllConfiguredItems_ArePassive()
         {
-            GameRun run = NewRun();
-            Assert.AreEqual(GameRun.BaseActiveSlots, run.ActiveSlotCapacity);
-
-            Assert.AreEqual(ItemAcquireOutcome.Stacked, run.AcquireItem(ActiveItemId, 50).Outcome);
-            Assert.AreEqual(ItemAcquireOutcome.Stacked, run.AcquireItem(ActiveItemId, 50).Outcome);
-            Assert.AreEqual(2, run.ActiveItemCount);
-
-            int goldBefore = run.Gold;
-            ItemAcquireResult full = run.AcquireItem(ActiveItemId, 50);
-            Assert.AreEqual(ItemAcquireOutcome.ConvertedToGold, full.Outcome);
-            Assert.AreEqual(2, run.ActiveItemCount, "槽满后不再新增实例");
-            Assert.AreEqual(goldBefore + 50, run.Gold, "槽满折算兜底金币");
-        }
-
-        [Test]
-        public void ExtraActiveSlot_IncreasesCapacity()
-        {
-            GameRun run = NewRun();
-            run.AcquireItem("item_extra_active_slots", 0); // 被动 +2 槽
-            Assert.AreEqual(GameRun.BaseActiveSlots + 2, run.ActiveSlotCapacity);
-
-            for (int i = 0; i < GameRun.BaseActiveSlots + 2; i++)
+            cfg.Tables tables = LoadTables();
+            int activeCandidates = 0;
+            foreach (cfg.Item item in tables.TbItem.DataList)
             {
-                Assert.AreEqual(ItemAcquireOutcome.Stacked, run.AcquireItem(ActiveItemId, 0).Outcome);
+                Assert.AreEqual(cfg.ItemKind.Passive, item.Kind, $"道具 {item.Id} 应为被动（设计已转全被动）。");
+                if (item.Kind == cfg.ItemKind.Active)
+                {
+                    activeCandidates++;
+                }
             }
 
-            Assert.AreEqual(ItemAcquireOutcome.ConvertedToGold, run.AcquireItem(ActiveItemId, 10).Outcome);
+            Assert.AreEqual(0, activeCandidates, "配置表不应再有主动道具。");
         }
 
         [Test]
@@ -110,11 +94,10 @@ namespace GourmetProject.Tests
         }
 
         [Test]
-        public void HoldingViews_SplitByKind()
+        public void HoldingViews_PassiveOnly()
         {
             GameRun run = NewRun();
             run.AcquireItem("item_discount_food", 0); // 被动
-            run.AcquireItem(ActiveItemId, 0);         // 主动
 
             int passives = 0;
             foreach (RunItemState _ in run.PassiveItemStates)
@@ -129,7 +112,7 @@ namespace GourmetProject.Tests
             }
 
             Assert.AreEqual(1, passives);
-            Assert.AreEqual(1, actives);
+            Assert.AreEqual(0, actives, "配置全为被动，主动持有恒为 0。");
         }
 
         [Test]
