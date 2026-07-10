@@ -2,6 +2,7 @@
   {
     "id": "sg_food_a",
     "name": "美食A",
+    "weight": 100,
     "actionIds": [
       "act_food_gold",
       "act_food_dish",
@@ -11,6 +12,7 @@
   {
     "id": "sg_food_b",
     "name": "美食B",
+    "weight": 80,
     "actionIds": [
       "act_food_fragment",
       "act_food_active",
@@ -20,6 +22,7 @@
   {
     "id": "sg_food_hard_a",
     "name": "硬菜A",
+    "weight": 100,
     "actionIds": [
       "act_food_hard_gold",
       "act_food_hard_dish",
@@ -29,6 +32,7 @@
   {
     "id": "sg_food_hard_b",
     "name": "硬菜B",
+    "weight": 80,
     "actionIds": [
       "act_food_hard_fragment",
       "act_food_hard_active",
@@ -38,6 +42,7 @@
   {
     "id": "sg_event",
     "name": "事件",
+    "weight": 100,
     "actionIds": [
       "act_event",
       "act_food_gold",
@@ -47,6 +52,7 @@
   {
     "id": "sg_reward",
     "name": "奖励",
+    "weight": 100,
     "actionIds": [
       "act_reward",
       "act_shop"
@@ -55,6 +61,7 @@
   {
     "id": "sg_debug",
     "name": "调试商店",
+    "weight": 100,
     "actionIds": [
       "act_shop"
     ]

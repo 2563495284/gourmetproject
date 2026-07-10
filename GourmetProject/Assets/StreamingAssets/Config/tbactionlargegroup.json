@@ -6,8 +6,9 @@
     "fallbackWeights": [
       100
     ],
-    "mediumGroupIds": [
-      "mg_food_normal"
+    "smallGroupIds": [
+      "sg_food_a",
+      "sg_food_b"
     ]
   },
   {
@@ -17,8 +18,9 @@
     "fallbackWeights": [
       55
     ],
-    "mediumGroupIds": [
-      "mg_food_hard"
+    "smallGroupIds": [
+      "sg_food_hard_a",
+      "sg_food_hard_b"
     ]
   },
   {
@@ -28,8 +30,8 @@
     "fallbackWeights": [
       45
     ],
-    "mediumGroupIds": [
-      "mg_event"
+    "smallGroupIds": [
+      "sg_event"
     ]
   },
   {
@@ -39,8 +41,8 @@
     "fallbackWeights": [
       30
     ],
-    "mediumGroupIds": [
-      "mg_reward"
+    "smallGroupIds": [
+      "sg_reward"
     ]
   },
   {
@@ -50,8 +52,8 @@
     "fallbackWeights": [
       0
     ],
-    "mediumGroupIds": [
-      "mg_debug"
+    "smallGroupIds": [
+      "sg_debug"
     ]
   }
 ]

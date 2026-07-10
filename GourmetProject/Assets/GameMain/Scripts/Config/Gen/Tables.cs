@@ -139,15 +139,11 @@ public partial class Tables
     /// </summary>
     public TbEventOption TbEventOption {get; }
     /// <summary>
-    /// 小组：内嵌 actionIds(list,string)，固定成员即本次 n 选一候选。
+    /// 小组：内嵌 actionIds(list,string)，固定成员即本次 n 选一候选；weight 供大组挑选。
     /// </summary>
     public TbActionSmallGroup TbActionSmallGroup {get; }
     /// <summary>
-    /// 中组：内嵌 smallGroupEntries(list,ActionSmallGroupEntry) 按权重选一个小组；中组自身 weight 供大组挑选。
-    /// </summary>
-    public TbActionMediumGroup TbActionMediumGroup {get; }
-    /// <summary>
-    /// 行动大组：内嵌 mediumGroupIds(list,string)，按保底权重与日程规则参与随机。
+    /// 行动大组：内嵌 smallGroupIds(list,string)，按保底权重与日程规则参与随机。
     /// </summary>
     public TbActionLargeGroup TbActionLargeGroup {get; }
     /// <summary>
@@ -189,7 +185,6 @@ public partial class Tables
         TbEvent = new TbEvent(loader("tbevent"));
         TbEventOption = new TbEventOption(loader("tbeventoption"));
         TbActionSmallGroup = new TbActionSmallGroup(loader("tbactionsmallgroup"));
-        TbActionMediumGroup = new TbActionMediumGroup(loader("tbactionmediumgroup"));
         TbActionLargeGroup = new TbActionLargeGroup(loader("tbactionlargegroup"));
         TbGameBase = new TbGameBase(loader("tbgamebase"));
         ResolveRef();
@@ -229,7 +224,6 @@ public partial class Tables
         TbEvent.ResolveRef(this);
         TbEventOption.ResolveRef(this);
         TbActionSmallGroup.ResolveRef(this);
-        TbActionMediumGroup.ResolveRef(this);
         TbActionLargeGroup.ResolveRef(this);
         TbGameBase.ResolveRef(this);
     }

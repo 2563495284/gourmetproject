@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 小组：内嵌 actionIds(list,string)，固定成员即本次 n 选一候选。
+/// 小组：内嵌 actionIds(list,string)，固定成员即本次 n 选一候选；weight 供大组挑选。
 /// </summary>
 public partial class TbActionSmallGroup
 {

@@ -21,7 +21,7 @@ public sealed partial class ActionLargeGroup : Luban.BeanBase
         { if(!_buf["name"].IsString) { throw new SerializationException(); }  Name = _buf["name"]; }
         { if(!_buf["ruleIds"].IsString) { throw new SerializationException(); }  RuleIds = _buf["ruleIds"]; }
         { var __json0 = _buf["fallbackWeights"]; if(!__json0.IsArray) { throw new SerializationException(); } FallbackWeights = new System.Collections.Generic.List<float>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { float __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  FallbackWeights.Add(__v0); }   }
-        { var __json0 = _buf["mediumGroupIds"]; if(!__json0.IsArray) { throw new SerializationException(); } MediumGroupIds = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  MediumGroupIds.Add(__v0); }   }
+        { var __json0 = _buf["smallGroupIds"]; if(!__json0.IsArray) { throw new SerializationException(); } SmallGroupIds = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  SmallGroupIds.Add(__v0); }   }
     }
 
     public static ActionLargeGroup DeserializeActionLargeGroup(JSONNode _buf)
@@ -46,9 +46,9 @@ public sealed partial class ActionLargeGroup : Luban.BeanBase
     /// </summary>
     public readonly System.Collections.Generic.List<float> FallbackWeights;
     /// <summary>
-    /// 包含的中组ID列表→medium_group.id
+    /// 包含的小组ID列表→small_group.id
     /// </summary>
-    public readonly System.Collections.Generic.List<string> MediumGroupIds;
+    public readonly System.Collections.Generic.List<string> SmallGroupIds;
    
     public const int __ID__ = 1904667386;
     public override int GetTypeId() => __ID__;
@@ -64,7 +64,7 @@ public sealed partial class ActionLargeGroup : Luban.BeanBase
         + "name:" + Name + ","
         + "ruleIds:" + RuleIds + ","
         + "fallbackWeights:" + Luban.StringUtil.CollectionToString(FallbackWeights) + ","
-        + "mediumGroupIds:" + Luban.StringUtil.CollectionToString(MediumGroupIds) + ","
+        + "smallGroupIds:" + Luban.StringUtil.CollectionToString(SmallGroupIds) + ","
         + "}";
     }
 }

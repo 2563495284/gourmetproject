@@ -7,10 +7,9 @@ using GourmetProject.Runtime;
 namespace GourmetProject.Game.Meta
 {
     /// <summary>
-    /// 整局行动组序列（大组）与本次 n 选一（大组→中组→小组）生成。
+    /// 整局行动组序列（大组）与本次 n 选一（大组→小组）生成。
     /// - 大组间：日程规则 <see cref="cfg.ActionScheduleRule"/> 强制窗口 + 大组 fallbackWeights[周-1] 保底加权。
-    /// - 大组→中组：按 <see cref="cfg.ActionMediumGroup.Weight"/> 选 1 个中组。
-    /// - 中组→小组：按 <see cref="cfg.ActionSmallGroupEntry.Weight"/> 选 1 个小组。
+    /// - 大组→小组：按 <see cref="cfg.ActionSmallGroup.Weight"/> 选 1 个小组。
     /// - 小组：固定成员，经可用性过滤后即本次 n 选一。
     /// </summary>
     public static class ActionScheduleService
@@ -23,7 +22,7 @@ namespace GourmetProject.Game.Meta
                 return result;
             }
 
-            // TODO(passive-item): 事件概率族被动（LuckyEventChance/MoreEvents/LuckyEventGuarantee）需在此处大组/中组权重里注入，
+            // TODO(passive-item): 事件概率族被动（LuckyEventChance/MoreEvents/LuckyEventGuarantee）需在此处大组/小组权重里注入，
             //   属复杂随机权重交互；数值判定 ItemRuntime.LuckyEventChanceBonus()/MoreEventsBonus()/LuckyEventGuaranteeEvery() 已就绪。
 
             cfg.Tables tables = run.Tables ?? GameApp.Config.Tables;
@@ -34,8 +33,7 @@ namespace GourmetProject.Game.Meta
                 return result;
             }
 
-            cfg.ActionMediumGroup medium = PickMedium(tables, large, rng);
-            cfg.ActionSmallGroup small = medium == null ? null : PickSmall(tables, medium, rng);
+            cfg.ActionSmallGroup small = PickSmall(tables, large, rng);
             if (small == null)
             {
                 return result;
@@ -62,43 +60,17 @@ namespace GourmetProject.Game.Meta
             return result;
         }
 
-        private static cfg.ActionMediumGroup PickMedium(cfg.Tables tables, cfg.ActionLargeGroup large, IRandomStream rng)
-        {
-            var mediums = new List<cfg.ActionMediumGroup>();
-            foreach (string mediumGroupId in large.MediumGroupIds)
-            {
-                cfg.ActionMediumGroup medium = tables.TbActionMediumGroup.GetOrDefault(mediumGroupId);
-                if (medium != null)
-                {
-                    mediums.Add(medium);
-                }
-            }
-
-            if (mediums.Count == 0)
-            {
-                return null;
-            }
-
-            var weights = new List<float>(mediums.Count);
-            foreach (cfg.ActionMediumGroup medium in mediums)
-            {
-                weights.Add(medium.Weight > 0f ? medium.Weight : 1f);
-            }
-
-            return mediums[rng.WeightedPickIndex(weights)];
-        }
-
-        private static cfg.ActionSmallGroup PickSmall(cfg.Tables tables, cfg.ActionMediumGroup medium, IRandomStream rng)
+        private static cfg.ActionSmallGroup PickSmall(cfg.Tables tables, cfg.ActionLargeGroup large, IRandomStream rng)
         {
             var smalls = new List<cfg.ActionSmallGroup>();
             var weights = new List<float>();
-            foreach (cfg.ActionSmallGroupEntry entry in medium.SmallGroupEntries)
+            foreach (string smallGroupId in large.SmallGroupIds)
             {
-                cfg.ActionSmallGroup small = tables.TbActionSmallGroup.GetOrDefault(entry.SmallGroupId);
+                cfg.ActionSmallGroup small = tables.TbActionSmallGroup.GetOrDefault(smallGroupId);
                 if (small != null)
                 {
                     smalls.Add(small);
-                    weights.Add(entry.Weight > 0f ? entry.Weight : 1f);
+                    weights.Add(small.Weight > 0f ? small.Weight : 1f);
                 }
             }
 
