@@ -1,8 +1,8 @@
 [
   {
     "id": "glutton_dog",
-    "name": "大胃汪",
-    "desc": "暴食流。胃口越大，桌上的菜越不够看。",
+    "name": "甜品小熊",
+    "desc": "爱吃甜品的小熊",
     "portrait": "Sprites/Characters/char_glutton_dog",
     "initialRecipeId": "recipe_glutton",
     "initialFragmentId": "gut_4x4",
