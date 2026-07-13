@@ -40,7 +40,7 @@ namespace GourmetProject.Game.UI.Battle.View
             bool inBattle,
             ItemTipView tipView,
             Action<string> onActiveItemClicked,
-            Action<cfg.Item, RunItemState> onShowItemInfo)
+            Action<ItemDefinition, RunItemState> onShowItemInfo)
         {
             ClearPassiveSlots();
             _activeSlotByItemId.Clear();
@@ -99,7 +99,7 @@ namespace GourmetProject.Game.UI.Battle.View
             GameRun run,
             cfg.Tables tables,
             ItemTipView tipView,
-            Action<cfg.Item, RunItemState> onShowItemInfo)
+            Action<ItemDefinition, RunItemState> onShowItemInfo)
         {
             RectTransform content = EnsurePassiveItemsContent();
             if (content == null || _itemSlotPrefab == null)
@@ -110,8 +110,8 @@ namespace GourmetProject.Game.UI.Battle.View
             var passive = new List<RunItemState>();
             foreach (RunItemState state in run.Items)
             {
-                cfg.Item item = tables.TbItem.GetOrDefault(state.ItemId);
-                if (item != null && item.Kind == cfg.ItemKind.Passive)
+                ItemDefinition item = ItemDefinition.Get(tables, state.ItemId, cfg.ItemKind.Passive);
+                if (item != null)
                 {
                     passive.Add(state);
                 }
@@ -126,13 +126,13 @@ namespace GourmetProject.Game.UI.Battle.View
             for (int i = 0; i < passive.Count; i++)
             {
                 RunItemState state = passive[i];
-                cfg.Item item = tables.TbItem.GetOrDefault(state.ItemId);
+                ItemDefinition item = ItemDefinition.Get(tables, state.ItemId, cfg.ItemKind.Passive);
                 RunItemSlotView slot = Instantiate(_itemSlotPrefab, content);
                 slot.gameObject.name = $"PassiveSlot_{i}";
                 var rect = (RectTransform)slot.transform;
                 LayoutPassiveSlot(rect, i, slotSize);
 
-                cfg.Item captured = item;
+                ItemDefinition captured = item;
                 RunItemState capturedState = state;
                 slot.Bind(
                     RunItemSlotView.LoadIcon(item),
@@ -334,8 +334,8 @@ namespace GourmetProject.Game.UI.Battle.View
             cfg.Tables tables = GameApp.Config.Tables;
             foreach (RunItemState state in run.Items)
             {
-                cfg.Item item = tables.TbItem.GetOrDefault(state.ItemId);
-                if (item == null || item.Kind != cfg.ItemKind.Passive)
+                ItemDefinition item = ItemDefinition.Get(tables, state.ItemId, cfg.ItemKind.Passive);
+                if (item == null)
                 {
                     continue;
                 }
@@ -410,8 +410,8 @@ namespace GourmetProject.Game.UI.Battle.View
             cfg.Tables tables = GameApp.Config.Tables;
             foreach (RunItemState state in run.Items)
             {
-                cfg.Item item = tables.TbItem.GetOrDefault(state.ItemId);
-                if (item == null || item.Kind != cfg.ItemKind.Active || !seen.Add(state.ItemId))
+                ItemDefinition item = ItemDefinition.Get(tables, state.ItemId, cfg.ItemKind.Active);
+                if (item == null || !seen.Add(state.ItemId))
                 {
                     continue;
                 }
@@ -485,7 +485,7 @@ namespace GourmetProject.Game.UI.Battle.View
             cfg.Tables tables,
             ItemTipView tipView,
             Action<string> onActiveItemClicked,
-            Action<cfg.Item, RunItemState> onShowItemInfo)
+            Action<ItemDefinition, RunItemState> onShowItemInfo)
         {
             if (_activeItemSlots == null)
             {
@@ -497,8 +497,8 @@ namespace GourmetProject.Game.UI.Battle.View
             var activeCounts = new Dictionary<string, int>();
             foreach (RunItemState state in run.Items)
             {
-                cfg.Item item = tables.TbItem.GetOrDefault(state.ItemId);
-                if (item == null || item.Kind != cfg.ItemKind.Active)
+                ItemDefinition item = ItemDefinition.Get(tables, state.ItemId, cfg.ItemKind.Active);
+                if (item == null)
                 {
                     continue;
                 }
@@ -525,10 +525,10 @@ namespace GourmetProject.Game.UI.Battle.View
                 if (i < activeStates.Count)
                 {
                     RunItemState state = activeStates[i];
-                    cfg.Item item = tables.TbItem.GetOrDefault(state.ItemId);
+                    ItemDefinition item = ItemDefinition.Get(tables, state.ItemId, cfg.ItemKind.Active);
                     int held = activeCounts[state.ItemId];
                     string badge = held > 1 ? $"x{held}" : string.Empty;
-                    cfg.Item captured = item;
+                    ItemDefinition captured = item;
                     RunItemState capturedState = state;
 
                     // 战斗中：满足 targetKind 可用性的主动道具可点击使用；否则（含非战斗态）点击看信息。

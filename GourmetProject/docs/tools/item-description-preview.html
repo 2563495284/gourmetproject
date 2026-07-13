@@ -177,7 +177,7 @@
       <input id="search" type="search" placeholder="搜索名称、描述或 id" autocomplete="off">
       <select id="mode">
         <option value="dish">菜品技能拼接（TbSkill）</option>
-        <option value="item">道具描述（TbItem）</option>
+        <option value="item">道具描述（TbPassiveItem / TbActiveItem）</option>
       </select>
       <button id="toggleParams" type="button" aria-pressed="false">显示参数</button>
     </section>
@@ -243,8 +243,9 @@
 
     async function boot() {
       try {
-        const [items, dishes, skills, subSkills, terms] = await Promise.all([
-          loadJson("tbitem"),
+        const [passiveItems, activeItems, dishes, skills, subSkills, terms] = await Promise.all([
+          loadJson("tbpassiveitem"),
+          loadJson("tbactiveitem"),
           loadJson("tbdishbase"),
           loadJson("tbskill"),
           loadJson("tbsubskill"),
@@ -252,7 +253,10 @@
         ]);
 
         state.data = {
-          items,
+          items: [
+            ...passiveItems.map(item => ({ ...item, itemKind: "Passive" })),
+            ...activeItems.map(item => ({ ...item, itemKind: "Active" })),
+          ],
           dishes,
           skillsById: indexById(skills),
           subSkillsById: indexById(subSkills),
@@ -361,6 +365,7 @@
         desc: composeItemDesc(item),
         meta: [
           `item:${item.id}`,
+          `kind:${item.itemKind || ""}`,
           ...(state.showParams ? [
             `effect:${item.effectType || ""}`,
             `value:${formatPlain(item.effectValue || 0)}`,

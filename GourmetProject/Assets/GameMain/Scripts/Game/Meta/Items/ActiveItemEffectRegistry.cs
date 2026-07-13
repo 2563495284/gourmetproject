@@ -28,7 +28,7 @@ namespace GourmetProject.Game.Meta
     public static class ActiveItemEffectRegistry
     {
         /// <summary>情境无关的主动道具效果落地。</summary>
-        public static ActiveItemUseResult Apply(IActiveUseContext ctx, cfg.Item item, IReadOnlyList<ActiveTarget> targets)
+        public static ActiveItemUseResult Apply(IActiveUseContext ctx, ItemDefinition item, IReadOnlyList<ActiveTarget> targets)
         {
             if (ctx == null || item == null)
             {
@@ -72,7 +72,7 @@ namespace GourmetProject.Game.Meta
         }
 
         /// <summary>战斗情境便捷入口（构造 <see cref="BattleUseContext"/> 后走统一 <see cref="Apply"/>）。</summary>
-        public static ActiveItemUseResult TryUse(BattleSession session, GameRun run, cfg.Item item)
+        public static ActiveItemUseResult TryUse(BattleSession session, GameRun run, ItemDefinition item)
         {
             if (session == null || item == null || session.IsSettled)
             {

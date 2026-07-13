@@ -50,6 +50,11 @@ namespace GourmetProject.Game.Run
         private readonly List<string> _completedBossIds = new List<string>();
         private readonly List<string> _rolledBossDebuffIds = new List<string>();
         private readonly List<string> _actionGroupSequence = new List<string>();
+
+        // —— 本周大组计划（周开始时一次性预排，供 EnsureCurrentGroup 消费；随存档保存）——
+        private readonly List<string> _actionWeekPlan = new List<string>();
+        private int _actionWeekPlanWeek;          // 0 = 未构建；否则为计划所属周
+        private int _actionWeekPlanStartRunStep;   // 本周计划对应的整局行动步起点
         private readonly List<RunActionChoiceSaveData> _pendingActionChoices = new List<RunActionChoiceSaveData>();
         private readonly List<ShopEntrySaveData> _pendingShopStock = new List<ShopEntrySaveData>();
         private string _pendingActionChoiceKey = string.Empty;
@@ -192,8 +197,8 @@ namespace GourmetProject.Game.Run
         {
             foreach (RunItemState state in _items)
             {
-                cfg.Item item = _tables.TbItem.GetOrDefault(state.ItemId);
-                if (item != null && item.Kind == cfg.ItemKind.Passive && item.EffectType == ItemEffectTypes.Undying)
+                ItemDefinition item = ItemDefinition.Get(_tables, state.ItemId, cfg.ItemKind.Passive);
+                if (item != null && item.EffectType == ItemEffectTypes.Undying)
                 {
                     RemoveItem(item.Id);
                     return true;
@@ -216,8 +221,8 @@ namespace GourmetProject.Game.Run
             var result = new List<RunItemState>();
             foreach (RunItemState state in _items)
             {
-                cfg.Item item = _tables.TbItem.GetOrDefault(state.ItemId);
-                if (item != null && item.Kind == kind)
+                ItemDefinition item = ItemDefinition.Get(_tables, state.ItemId, kind);
+                if (item != null)
                 {
                     result.Add(state);
                 }
@@ -234,8 +239,8 @@ namespace GourmetProject.Game.Run
                 int n = 0;
                 foreach (RunItemState state in _items)
                 {
-                    cfg.Item item = _tables.TbItem.GetOrDefault(state.ItemId);
-                    if (item != null && item.Kind == cfg.ItemKind.Active)
+                    ItemDefinition item = ItemDefinition.Get(_tables, state.ItemId, cfg.ItemKind.Active);
+                    if (item != null)
                     {
                         n++;
                     }
@@ -391,6 +396,30 @@ namespace GourmetProject.Game.Run
 
         public IReadOnlyList<string> ActionGroupSequence => _actionGroupSequence;
 
+        /// <summary>本周大组计划（周内第 i 步对应 [i]；空=无计划，全部按权重遅延生成）。</summary>
+        public IReadOnlyList<string> ActionWeekPlan => _actionWeekPlan;
+
+        /// <summary>本周计划所属周（0=未构建）。</summary>
+        public int ActionWeekPlanWeek => _actionWeekPlanWeek;
+
+        /// <summary>本周计划对应的整局行动步起点（weekLocalIndex = RunActionStepIndex - 该值）。</summary>
+        public int ActionWeekPlanStartRunStep => _actionWeekPlanStartRunStep;
+
+        /// <summary>设置（或读档恢复）本周大组计划。</summary>
+        public void SetActionWeekPlan(int week, int startRunStep, IEnumerable<string> plan)
+        {
+            _actionWeekPlanWeek = week;
+            _actionWeekPlanStartRunStep = startRunStep;
+            _actionWeekPlan.Clear();
+            if (plan != null)
+            {
+                foreach (string groupId in plan)
+                {
+                    _actionWeekPlan.Add(groupId ?? string.Empty);
+                }
+            }
+        }
+
         public ActionExecutionContext LastActionContext { get; private set; }
 
         /// <summary>把天数游标格式化为跨语言环境稳定的 key 片段（一位小数，如 d1.5）。</summary>
@@ -436,6 +465,8 @@ namespace GourmetProject.Game.Run
                 _usedEventIds.Add(eventId);
             }
         }
+
+        public bool HasUsedEvent(string eventId) => !string.IsNullOrEmpty(eventId) && _usedEventIds.Contains(eventId);
 
         public bool IsBossCompleted(string bossId) => !string.IsNullOrEmpty(bossId) && _completedBossIds.Contains(bossId);
 
@@ -789,6 +820,9 @@ namespace GourmetProject.Game.Run
                 LastActionGroupId = LastActionContext?.ActionGroupId ?? string.Empty,
                 LastActionCostDays = LastActionContext?.CostDays ?? 0,
                 ActionGroupSequence = new List<string>(_actionGroupSequence),
+                ActionWeekPlan = new List<string>(_actionWeekPlan),
+                ActionWeekPlanWeek = _actionWeekPlanWeek,
+                ActionWeekPlanStartRunStep = _actionWeekPlanStartRunStep,
                 TriggeredNodeIds = new List<string>(_triggeredNodeIds),
                 UsedEventIds = new List<string>(_usedEventIds),
                 CompletedBossIds = new List<string>(_completedBossIds),
@@ -835,7 +869,7 @@ namespace GourmetProject.Game.Run
                         continue;
                     }
 
-                    cfg.Item def = tables.TbItem.GetOrDefault(item.ItemId);
+                    ItemDefinition def = ItemDefinition.Get(tables, item.ItemId);
 
                     // 旧档迁移：主动道具曾用单条 + Count 表示堆叠，这里展开为多份实例；
                     // Count<=0 的旧「僵尸条目」直接丢弃（用完即不存在）。被动道具恒为一条。
@@ -905,6 +939,7 @@ namespace GourmetProject.Game.Run
             run.RestoreRunActionStepIndex(data.RunActionStepIndex);
             run.RequiredScoreOverride = data.RequiredScoreOverride;
             run.RestoreActionGroupSequence(data.ActionGroupSequence);
+            run.SetActionWeekPlan(data.ActionWeekPlanWeek, data.ActionWeekPlanStartRunStep, data.ActionWeekPlan);
             if (!string.IsNullOrEmpty(data.LastActionId))
             {
                 cfg.GameAction lastAction = tables.TbAction.GetOrDefault(data.LastActionId);
@@ -1214,7 +1249,7 @@ namespace GourmetProject.Game.Run
         /// </summary>
         public ItemAcquireResult AcquireItem(string itemId, int fallbackGold, bool fireOnAcquire = true)
         {
-            cfg.Item item = _tables.TbItem.GetOrDefault(itemId);
+            ItemDefinition item = ItemDefinition.Get(_tables, itemId);
             if (item == null)
             {
                 return default;
@@ -1501,8 +1536,8 @@ namespace GourmetProject.Game.Run
         /// <summary>使用一份主动道具：使用后该实例直接移除（不存在数量消耗的中间态）。</summary>
         public bool UseActiveItem(string itemId)
         {
-            cfg.Item item = _tables.TbItem.GetOrDefault(itemId);
-            if (item == null || item.Kind != cfg.ItemKind.Active)
+            ItemDefinition item = ItemDefinition.Get(_tables, itemId, cfg.ItemKind.Active);
+            if (item == null)
             {
                 return false;
             }

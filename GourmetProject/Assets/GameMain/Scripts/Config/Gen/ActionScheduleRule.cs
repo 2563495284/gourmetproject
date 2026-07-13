@@ -24,6 +24,7 @@ public sealed partial class ActionScheduleRule : Luban.BeanBase
         { if(!_buf["minCount"].IsNumber) { throw new SerializationException(); }  MinCount = _buf["minCount"]; }
         { if(!_buf["maxCount"].IsNumber) { throw new SerializationException(); }  MaxCount = _buf["maxCount"]; }
         { if(!_buf["preconditions"].IsString) { throw new SerializationException(); }  Preconditions = _buf["preconditions"]; }
+        { var __json0 = _buf["activeWeeks"]; if(!__json0.IsArray) { throw new SerializationException(); } ActiveWeeks = new System.Collections.Generic.List<int>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { int __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  ActiveWeeks.Add(__v0); }   }
     }
 
     public static ActionScheduleRule DeserializeActionScheduleRule(JSONNode _buf)
@@ -59,6 +60,10 @@ public sealed partial class ActionScheduleRule : Luban.BeanBase
     /// 规则前置条件
     /// </summary>
     public readonly string Preconditions;
+    /// <summary>
+    /// 生效周列表；空=全部周
+    /// </summary>
+    public readonly System.Collections.Generic.List<int> ActiveWeeks;
    
     public const int __ID__ = -430348375;
     public override int GetTypeId() => __ID__;
@@ -77,6 +82,7 @@ public sealed partial class ActionScheduleRule : Luban.BeanBase
         + "minCount:" + MinCount + ","
         + "maxCount:" + MaxCount + ","
         + "preconditions:" + Preconditions + ","
+        + "activeWeeks:" + Luban.StringUtil.CollectionToString(ActiveWeeks) + ","
         + "}";
     }
 }

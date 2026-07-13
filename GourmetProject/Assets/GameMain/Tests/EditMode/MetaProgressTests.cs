@@ -73,7 +73,7 @@ namespace GourmetProject.Tests
         public void ItemAndRewardPools_FilterLockedItemsUntilProgressUnlocks()
         {
             // 设计已转全被动：改用被动道具验证「未解锁→过滤出池，解锁后→可进池」。
-            // item_reroll_action 为被动且 hiddenRange 覆盖全部，便于按 kind 全量抽取做包含性断言。
+            // item_reroll_action 为被动且 hiddenRange 覆盖全部，便于从被动池全量抽取做包含性断言。
             const string gatedItem = "item_reroll_action";
             cfg.Tables tables = LoadTablesWithUnlocks(
                 RuleJson(("unlock_gated", gatedItem, 10)),

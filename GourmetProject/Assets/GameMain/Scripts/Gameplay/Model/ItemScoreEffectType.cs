@@ -2,7 +2,7 @@ namespace GourmetProject.Gameplay.Model
 {
     /// <summary>
     /// 道具「结算类」效果类型（纯玩法层，不依赖 cfg/Game）。
-    /// 由 Game 层把 cfg.Item.EffectType 字符串映射到本枚举后，交给
+    /// 由 Game 层把被动道具 EffectType 字符串映射到本枚举后，交给
     /// <see cref="Scoring.ItemScoreEffectSource"/> 在结算管线中执行。
     /// 仅覆盖影响「一局结算」的被动道具；金币/商店/时间轴等局外效果不走这里。
     /// </summary>

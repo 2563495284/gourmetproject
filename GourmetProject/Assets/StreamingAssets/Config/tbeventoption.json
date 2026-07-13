@@ -2,105 +2,237 @@
   {
     "id": "opt_market_cheap",
     "eventId": "ev_market",
+    "parentId": "",
     "text": "省着点逛（+20 金币）",
-    "effectType": 1,
-    "effectValue": 20,
-    "effectParam": ""
+    "resultText": "",
+    "condition": "",
+    "effectTypes": [
+      1
+    ],
+    "effectValues": [
+      20
+    ],
+    "effectParams": []
   },
   {
     "id": "opt_market_spree",
     "eventId": "ev_market",
+    "parentId": "",
     "text": "大手笔扫货（+55 金币）",
-    "effectType": 1,
-    "effectValue": 55,
-    "effectParam": ""
+    "resultText": "",
+    "condition": "",
+    "effectTypes": [
+      1
+    ],
+    "effectValues": [
+      55
+    ],
+    "effectParams": []
   },
   {
     "id": "opt_tasting",
     "eventId": "ev_tasting",
+    "parentId": "",
     "text": "给菜谱加一道菜",
-    "effectType": 5,
-    "effectValue": 1,
-    "effectParam": ""
+    "resultText": "",
+    "condition": "",
+    "effectTypes": [
+      5
+    ],
+    "effectValues": [
+      1
+    ],
+    "effectParams": []
   },
   {
     "id": "opt_rest",
     "eventId": "ev_rest",
+    "parentId": "",
     "text": "歇业，降低下一关目标分",
-    "effectType": 2,
-    "effectValue": 0.1,
-    "effectParam": ""
+    "resultText": "",
+    "condition": "",
+    "effectTypes": [
+      2
+    ],
+    "effectValues": [
+      0.1
+    ],
+    "effectParams": []
   },
   {
     "id": "opt_recruit",
     "eventId": "ev_recruit",
+    "parentId": "",
     "text": "招募帮厨（+被动道具）",
-    "effectType": 3,
-    "effectValue": 1,
-    "effectParam": "Passive"
+    "resultText": "",
+    "condition": "",
+    "effectTypes": [
+      3
+    ],
+    "effectValues": [
+      1
+    ],
+    "effectParams": [
+      "Passive"
+    ]
   },
   {
     "id": "opt_study",
     "eventId": "ev_study",
+    "parentId": "",
     "text": "钻研，提升一道菜",
-    "effectType": 6,
-    "effectValue": 5,
-    "effectParam": ""
+    "resultText": "",
+    "condition": "",
+    "effectTypes": [
+      6
+    ],
+    "effectValues": [
+      5
+    ],
+    "effectParams": []
   },
   {
     "id": "opt_gamble_small",
     "eventId": "ev_gamble",
-    "text": "小赌怡情",
-    "effectType": 4,
-    "effectValue": 30,
-    "effectParam": ""
+    "parentId": "",
+    "text": "稳妥点，小赌一把",
+    "resultText": "",
+    "condition": "",
+    "effectTypes": [
+      4
+    ],
+    "effectValues": [
+      30
+    ],
+    "effectParams": []
   },
   {
     "id": "opt_gamble_big",
     "eventId": "ev_gamble",
-    "text": "豪赌一把",
-    "effectType": 4,
-    "effectValue": 90,
-    "effectParam": ""
+    "parentId": "",
+    "text": "上大注，豪赌一场",
+    "resultText": "",
+    "condition": "",
+    "effectTypes": [
+      4
+    ],
+    "effectValues": [
+      90
+    ],
+    "effectParams": []
+  },
+  {
+    "id": "opt_gamble_think",
+    "eventId": "ev_gamble",
+    "parentId": "",
+    "text": "先观察一会儿…",
+    "resultText": "邻座的老赌客压低声音，朝你使了个眼色。",
+    "condition": "",
+    "effectTypes": [],
+    "effectValues": [],
+    "effectParams": []
+  },
+  {
+    "id": "opt_gamble_follow",
+    "eventId": "ev_gamble",
+    "parentId": "opt_gamble_think",
+    "text": "听老赌客的，押他说的号",
+    "resultText": "",
+    "condition": "",
+    "effectTypes": [
+      4
+    ],
+    "effectValues": [
+      60
+    ],
+    "effectParams": []
+  },
+  {
+    "id": "opt_gamble_leave",
+    "eventId": "ev_gamble",
+    "parentId": "opt_gamble_think",
+    "text": "不信这套，转身离开",
+    "resultText": "你摆摆手离开了赌桌，什么也没发生。",
+    "condition": "",
+    "effectTypes": [],
+    "effectValues": [],
+    "effectParams": []
   },
   {
     "id": "opt_shop",
     "eventId": "ev_shop",
+    "parentId": "",
     "text": "进入商店",
-    "effectType": 8,
-    "effectValue": 0,
-    "effectParam": ""
+    "resultText": "",
+    "condition": "",
+    "effectTypes": [
+      8
+    ],
+    "effectValues": [
+      0
+    ],
+    "effectParams": []
   },
   {
     "id": "opt_tip",
     "eventId": "ev_tip",
+    "parentId": "",
     "text": "收下小费（+25 金币）",
-    "effectType": 1,
-    "effectValue": 25,
-    "effectParam": ""
+    "resultText": "",
+    "condition": "",
+    "effectTypes": [
+      1
+    ],
+    "effectValues": [
+      25
+    ],
+    "effectParams": []
   },
   {
     "id": "opt_gift",
     "eventId": "ev_gift",
+    "parentId": "",
     "text": "收下赠礼（+被动道具）",
-    "effectType": 3,
-    "effectValue": 1,
-    "effectParam": "Passive"
+    "resultText": "",
+    "condition": "",
+    "effectTypes": [
+      3
+    ],
+    "effectValues": [
+      1
+    ],
+    "effectParams": [
+      "Passive"
+    ]
   },
   {
     "id": "opt_tax",
     "eventId": "ev_tax",
+    "parentId": "",
     "text": "接受摊派（-20 金币）",
-    "effectType": 1,
-    "effectValue": -20,
-    "effectParam": ""
+    "resultText": "",
+    "condition": "",
+    "effectTypes": [
+      1
+    ],
+    "effectValues": [
+      -20
+    ],
+    "effectParams": []
   },
   {
     "id": "opt_spoil",
     "eventId": "ev_spoil",
+    "parentId": "",
     "text": "认栽（-15 金币）",
-    "effectType": 1,
-    "effectValue": -15,
-    "effectParam": ""
+    "resultText": "",
+    "condition": "",
+    "effectTypes": [
+      1
+    ],
+    "effectValues": [
+      -15
+    ],
+    "effectParams": []
   }
 ]

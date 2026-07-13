@@ -125,7 +125,7 @@ namespace GourmetProject.Game.Meta
         {
             Dictionary<cfg.ItemQuality, float> qualityWeights = ParseQualityWeights(pool.QualityWeights);
             bool activeItem = kind == cfg.ItemKind.Active;
-            List<cfg.Item> candidates = BuildItemCandidates(context, pool, kind, hidden, qualityWeights, strictHidden: !activeItem, strictTags: true, strictQuality: true);
+            List<ItemDefinition> candidates = BuildItemCandidates(context, pool, kind, hidden, qualityWeights, strictHidden: !activeItem, strictTags: true, strictQuality: true);
             if (candidates.Count == 0 && pool.AllowFallback)
             {
                 candidates = BuildItemCandidates(context, pool, kind, hidden, qualityWeights, strictHidden: false, strictTags: true, strictQuality: true);
@@ -144,19 +144,19 @@ namespace GourmetProject.Game.Meta
             for (int i = 0; i < count && candidates.Count > 0; i++)
             {
                 var weights = new List<float>(candidates.Count);
-                foreach (cfg.Item item in candidates)
+                foreach (ItemDefinition item in candidates)
                 {
                     weights.Add(GetItemWeight(item, qualityWeights, hidden, pool.DistanceFloor));
                 }
 
                 int index = PickWeightedOrUniform(context, weights, candidates.Count);
-                cfg.Item chosen = candidates[index];
+                ItemDefinition chosen = candidates[index];
                 if (!activeItem)
                 {
                     candidates.RemoveAt(index);
                 }
 
-                string desc = chosen.Kind == cfg.ItemKind.Passive ? $"被动道具 · {chosen.Quality}" : "主动道具";
+                string desc = chosen.IsPassive ? $"被动道具 · {chosen.Quality}" : "主动道具";
                 result.Add(new RewardChoice(
                     kind == cfg.ItemKind.Passive ? cfg.RewardKind.PassiveItemChoice : cfg.RewardKind.ActiveItemGrant,
                     chosen.Id,
@@ -192,7 +192,7 @@ namespace GourmetProject.Game.Meta
             }
         }
 
-        private static List<cfg.Item> BuildItemCandidates(
+        private static List<ItemDefinition> BuildItemCandidates(
             RewardContext context,
             cfg.RewardPool pool,
             cfg.ItemKind kind,
@@ -202,12 +202,11 @@ namespace GourmetProject.Game.Meta
             bool strictTags,
             bool strictQuality)
         {
-            var candidates = new List<cfg.Item>();
+            var candidates = new List<ItemDefinition>();
             MetaProgressSaveData progress = context.Progress ?? MetaProgressPersistence.Load();
-            foreach (cfg.Item item in context.Tables.TbItem.DataList)
+            foreach (ItemDefinition item in ItemDefinition.All(context.Tables, kind))
             {
-                if (item.Kind != kind ||
-                    !ItemPoolService.CanEnterPool(context.Run, item) ||
+                if (!ItemPoolService.CanEnterPool(context.Run, item) ||
                     !MetaProgressService.IsItemUnlockedForPool(context.Tables, item, progress))
                 {
                     continue;
@@ -306,10 +305,13 @@ namespace GourmetProject.Game.Meta
             return total > 0f ? context.Rng.WeightedPickIndex(weights) : context.Rng.Range(0, count);
         }
 
-        private static float GetItemWeight(cfg.Item item, Dictionary<cfg.ItemQuality, float> qualityWeights, int hidden, int distanceFloor)
+        private static float GetItemWeight(ItemDefinition item, Dictionary<cfg.ItemQuality, float> qualityWeights, int hidden, int distanceFloor)
         {
             float weight = item.BaseWeight > 0f ? item.BaseWeight : 1f;
-            weight = HiddenScoreWeight(weight, HiddenMean(item), hidden, distanceFloor);
+            if (item.IsPassive)
+            {
+                weight = HiddenScoreWeight(weight, HiddenMean(item), hidden, distanceFloor);
+            }
             if (qualityWeights.Count > 0)
             {
                 weight *= qualityWeights.TryGetValue(item.Quality, out float qualityWeight) ? Math.Max(0f, qualityWeight) : 0f;
@@ -335,9 +337,9 @@ namespace GourmetProject.Game.Meta
             }
         }
 
-        private static bool ItemCoversHidden(cfg.Item item, int hidden)
+        private static bool ItemCoversHidden(ItemDefinition item, int hidden)
         {
-            if (item.HiddenRange.Min == 0 && item.HiddenRange.Max == 0)
+            if (item.HiddenRange == null || (item.HiddenRange.Min == 0 && item.HiddenRange.Max == 0))
             {
                 return true;
             }
@@ -345,9 +347,9 @@ namespace GourmetProject.Game.Meta
             return hidden >= item.HiddenRange.Min && hidden <= item.HiddenRange.Max;
         }
 
-        private static float HiddenMean(cfg.Item item)
+        private static float HiddenMean(ItemDefinition item)
         {
-            if (item.HiddenRange.Min == 0 && item.HiddenRange.Max == 0)
+            if (item.HiddenRange == null || (item.HiddenRange.Min == 0 && item.HiddenRange.Max == 0))
             {
                 return 0f;
             }

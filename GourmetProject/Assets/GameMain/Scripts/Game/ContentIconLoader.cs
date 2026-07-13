@@ -1,3 +1,4 @@
+using GourmetProject.Game.Meta;
 using GourmetProject.Gameplay.Model;
 using UnityEngine;
 
@@ -21,7 +22,7 @@ namespace GourmetProject.Game
                 ?? LoadSprite($"{DishIconRoot}/{dish.Id}");
         }
 
-        public static Sprite LoadItem(cfg.Item item)
+        public static Sprite LoadItem(ItemDefinition item)
         {
             if (item == null || string.IsNullOrEmpty(item.Id))
             {

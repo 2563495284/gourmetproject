@@ -19,10 +19,13 @@ public sealed partial class EventOption : Luban.BeanBase
     {
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
         { if(!_buf["eventId"].IsString) { throw new SerializationException(); }  EventId = _buf["eventId"]; }
+        { if(!_buf["parentId"].IsString) { throw new SerializationException(); }  ParentId = _buf["parentId"]; }
         { if(!_buf["text"].IsString) { throw new SerializationException(); }  Text = _buf["text"]; }
-        { if(!_buf["effectType"].IsNumber) { throw new SerializationException(); }  EffectType = (EffectType)_buf["effectType"].AsInt; }
-        { if(!_buf["effectValue"].IsNumber) { throw new SerializationException(); }  EffectValue = _buf["effectValue"]; }
-        { if(!_buf["effectParam"].IsString) { throw new SerializationException(); }  EffectParam = _buf["effectParam"]; }
+        { if(!_buf["resultText"].IsString) { throw new SerializationException(); }  ResultText = _buf["resultText"]; }
+        { if(!_buf["condition"].IsString) { throw new SerializationException(); }  Condition = _buf["condition"]; }
+        { var __json0 = _buf["effectTypes"]; if(!__json0.IsArray) { throw new SerializationException(); } EffectTypes = new System.Collections.Generic.List<EffectType>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { EffectType __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = (EffectType)__e0.AsInt; }  EffectTypes.Add(__v0); }   }
+        { var __json0 = _buf["effectValues"]; if(!__json0.IsArray) { throw new SerializationException(); } EffectValues = new System.Collections.Generic.List<float>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { float __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  EffectValues.Add(__v0); }   }
+        { var __json0 = _buf["effectParams"]; if(!__json0.IsArray) { throw new SerializationException(); } EffectParams = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  EffectParams.Add(__v0); }   }
     }
 
     public static EventOption DeserializeEventOption(JSONNode _buf)
@@ -39,21 +42,33 @@ public sealed partial class EventOption : Luban.BeanBase
     /// </summary>
     public readonly string EventId;
     /// <summary>
-    /// 选项文本(单选项=自动结算,无需玩家点选)
+    /// 父选项ID→event_option.id(空=根页选项)
+    /// </summary>
+    public readonly string ParentId;
+    /// <summary>
+    /// 选项文本(按钮)
     /// </summary>
     public readonly string Text;
     /// <summary>
-    /// 结果效果类型
+    /// 选中后的结果/子页正文(有子选项时作子页正文;空则回退效果反馈)
     /// </summary>
-    public readonly EffectType EffectType;
+    public readonly string ResultText;
     /// <summary>
-    /// 结果数值
+    /// 选项前置条件(空=恒可见,复用行动前置语法)
     /// </summary>
-    public readonly float EffectValue;
+    public readonly string Condition;
     /// <summary>
-    /// 结果参数
+    /// 效果类型列表(多效果多行,续行前导列留空)
     /// </summary>
-    public readonly string EffectParam;
+    public readonly System.Collections.Generic.List<EffectType> EffectTypes;
+    /// <summary>
+    /// 效果数值列表(与类型逐行对齐)
+    /// </summary>
+    public readonly System.Collections.Generic.List<float> EffectValues;
+    /// <summary>
+    /// 效果参数列表(与类型逐行对齐,可空)
+    /// </summary>
+    public readonly System.Collections.Generic.List<string> EffectParams;
    
     public const int __ID__ = 1656861583;
     public override int GetTypeId() => __ID__;
@@ -67,10 +82,13 @@ public sealed partial class EventOption : Luban.BeanBase
         return "{ "
         + "id:" + Id + ","
         + "eventId:" + EventId + ","
+        + "parentId:" + ParentId + ","
         + "text:" + Text + ","
-        + "effectType:" + EffectType + ","
-        + "effectValue:" + EffectValue + ","
-        + "effectParam:" + EffectParam + ","
+        + "resultText:" + ResultText + ","
+        + "condition:" + Condition + ","
+        + "effectTypes:" + Luban.StringUtil.CollectionToString(EffectTypes) + ","
+        + "effectValues:" + Luban.StringUtil.CollectionToString(EffectValues) + ","
+        + "effectParams:" + Luban.StringUtil.CollectionToString(EffectParams) + ","
         + "}";
     }
 }

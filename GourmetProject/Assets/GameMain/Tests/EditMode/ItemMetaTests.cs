@@ -31,7 +31,7 @@ namespace GourmetProject.Tests
         public void PassiveItem_CannotUpgradeOrReenterPool()
         {
             GameRun run = NewRun();
-            cfg.Item item = run.Tables.TbItem.Get("item_discount_food");
+            ItemDefinition item = ItemDefinition.Get(run.Tables, "item_discount_food", cfg.ItemKind.Passive);
 
             ItemAcquireResult first = run.AcquireItem(item.Id, 50);
             Assert.AreEqual(ItemAcquireOutcome.Added, first.Outcome);
@@ -295,7 +295,7 @@ namespace GourmetProject.Tests
             int count = 0;
             foreach (RunItemState state in run.Items)
             {
-                cfg.Item def = run.Tables.TbItem.GetOrDefault(state.ItemId);
+                ItemDefinition def = ItemDefinition.Get(run.Tables, state.ItemId, cfg.ItemKind.Passive);
                 if (def != null && !string.IsNullOrEmpty(def.SpecialTags) && def.SpecialTags.Contains("Negative"))
                 {
                     count++;

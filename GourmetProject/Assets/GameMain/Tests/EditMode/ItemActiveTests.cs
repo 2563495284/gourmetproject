@@ -13,8 +13,8 @@ namespace GourmetProject.Tests
 {
     /// <summary>
     /// 主动道具子系统测试：主动使用序号可复现、targetKind→情境推导、情境无关的 Apply 派发。
-    /// 注：设计已转为「全被动」，配置表不再有主动道具，故槽位/折金币等依赖配置主动项的用例已移除，
-    /// 仅保留与配置无关的机制测试 + 一条「配置全为被动」的守卫用例。
+    /// 注：当前主动道具表为空，故槽位/折金币等依赖配置主动项的用例已移除，
+    /// 仅保留与配置无关的机制测试 + 一条「主动配置为空」的守卫用例。
     /// </summary>
     public class ItemActiveTests
     {
@@ -31,32 +31,23 @@ namespace GourmetProject.Tests
             return new GameRun(tables, database, "glutton_dog", "item-active-test", 1);
         }
 
-        private static cfg.Item MakeItem(string id, string effectType, float value = 0f)
+        private static ItemDefinition MakeActiveItem(string id, string effectType, float value = 0f)
         {
             string v = value.ToString(CultureInfo.InvariantCulture);
             string json =
-                "{\"id\":\"" + id + "\",\"name\":\"" + id + "\",\"desc\":\"\",\"kind\":1,\"quality\":0," +
+                "{\"id\":\"" + id + "\",\"name\":\"" + id + "\",\"desc\":\"\",\"quality\":0," +
                 "\"specialTags\":\"\",\"effectType\":\"" + effectType + "\"," +
                 "\"effectValue\":" + v + ",\"effectParam\":\"\",\"baseWeight\":1," +
-                "\"hiddenRange\":{\"min\":0,\"max\":0},\"targetKind\":0,\"targetCount\":0}";
-            return new cfg.Item(JSON.Parse(json));
+                "\"targetKind\":0,\"targetCount\":0}";
+            return ItemDefinition.From(new cfg.ActiveItem(JSON.Parse(json)));
         }
 
         [Test]
-        public void AllConfiguredItems_ArePassive()
+        public void ConfiguredActiveItems_AreEmpty()
         {
             cfg.Tables tables = LoadTables();
-            int activeCandidates = 0;
-            foreach (cfg.Item item in tables.TbItem.DataList)
-            {
-                Assert.AreEqual(cfg.ItemKind.Passive, item.Kind, $"道具 {item.Id} 应为被动（设计已转全被动）。");
-                if (item.Kind == cfg.ItemKind.Active)
-                {
-                    activeCandidates++;
-                }
-            }
-
-            Assert.AreEqual(0, activeCandidates, "配置表不应再有主动道具。");
+            Assert.AreEqual(93, tables.TbPassiveItem.DataList.Count);
+            Assert.AreEqual(0, tables.TbActiveItem.DataList.Count, "当前主动道具表应为空。");
         }
 
         [Test]
@@ -122,21 +113,21 @@ namespace GourmetProject.Tests
             ActiveTarget[] none = Array.Empty<ActiveTarget>();
 
             var ctx = new FakeContext(run);
-            ActiveItemUseResult clear = ActiveItemEffectRegistry.Apply(ctx, MakeItem("t_clear", "ClearBoard"), none);
+            ActiveItemUseResult clear = ActiveItemEffectRegistry.Apply(ctx, MakeActiveItem("t_clear", "ClearBoard"), none);
             Assert.IsTrue(clear.Success);
             Assert.IsTrue(clear.BoardChanged);
             Assert.AreEqual(1, ctx.ClearCalls);
 
             var ctxNoClear = new FakeContext(run, canClear: false);
-            ActiveItemUseResult failClear = ActiveItemEffectRegistry.Apply(ctxNoClear, MakeItem("t_clear", "ClearBoard"), none);
+            ActiveItemUseResult failClear = ActiveItemEffectRegistry.Apply(ctxNoClear, MakeActiveItem("t_clear", "ClearBoard"), none);
             Assert.IsFalse(failClear.Success);
 
             int goldBefore = run.Gold;
-            ActiveItemUseResult gold = ActiveItemEffectRegistry.Apply(new FakeContext(run), MakeItem("t_gold", "GoldNow", 50f), none);
+            ActiveItemUseResult gold = ActiveItemEffectRegistry.Apply(new FakeContext(run), MakeActiveItem("t_gold", "GoldNow", 50f), none);
             Assert.IsTrue(gold.Success);
             Assert.AreEqual(goldBefore + 50, run.Gold);
 
-            ActiveItemUseResult noop = ActiveItemEffectRegistry.Apply(new FakeContext(run), MakeItem("t_unknown", "SomeFutureOp"), none);
+            ActiveItemUseResult noop = ActiveItemEffectRegistry.Apply(new FakeContext(run), MakeActiveItem("t_unknown", "SomeFutureOp"), none);
             Assert.IsTrue(noop.Success);
             Assert.IsFalse(noop.BoardChanged);
         }

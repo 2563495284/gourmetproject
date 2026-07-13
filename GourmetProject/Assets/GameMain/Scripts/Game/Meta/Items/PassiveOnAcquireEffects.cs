@@ -15,7 +15,7 @@ namespace GourmetProject.Game.Meta
         private const string Tag = "Item";
         private const string NegativeTag = "Negative";
 
-        public static void Apply(GameRun run, cfg.Item item)
+        public static void Apply(GameRun run, ItemDefinition item)
         {
             if (run == null || item == null)
             {
@@ -93,7 +93,7 @@ namespace GourmetProject.Game.Meta
         }
 
         /// <summary>随机金币：effectParam="range:min,max"，闭区间随机；无随机流时取区间中值兜底。</summary>
-        private static void ApplyGoldNow(GameRun run, cfg.Item item, IRandomStream rng)
+        private static void ApplyGoldNow(GameRun run, ItemDefinition item, IRandomStream rng)
         {
             int min = 1;
             int max = 1;
@@ -108,7 +108,7 @@ namespace GourmetProject.Game.Meta
         }
 
         /// <summary>高利贷：立即获得 effectValue 金币；effectParam="repay:N" 登记下一周应扣的债务。</summary>
-        private static void ApplyLoan(GameRun run, cfg.Item item)
+        private static void ApplyLoan(GameRun run, ItemDefinition item)
         {
             run.Gold += System.Math.Max(0, (int)item.EffectValue);
             int repay = 0;
@@ -127,7 +127,7 @@ namespace GourmetProject.Game.Meta
             var negatives = new List<string>();
             foreach (RunItemState state in run.Items)
             {
-                cfg.Item def = run.Tables.TbItem.GetOrDefault(state.ItemId);
+                ItemDefinition def = ItemDefinition.Get(run.Tables, state.ItemId, cfg.ItemKind.Passive);
                 if (def != null && HasNegativeTag(def))
                 {
                     negatives.Add(state.ItemId);
@@ -175,14 +175,14 @@ namespace GourmetProject.Game.Meta
         }
 
         /// <summary>全家福：获得 effectValue 金币 + 一个随机被动道具（随机食物部分留 TODO）。</summary>
-        private static void ApplyFamilyPack(GameRun run, cfg.Item item, IRandomStream rng)
+        private static void ApplyFamilyPack(GameRun run, ItemDefinition item, IRandomStream rng)
         {
             run.Gold += System.Math.Max(0, (int)item.EffectValue);
             GrantRandomPassives(run, 1, rng);
             // TODO(passive-item): 额外发放一个随机食物（需食物发放服务就绪）。
         }
 
-        private static bool HasNegativeTag(cfg.Item item)
+        private static bool HasNegativeTag(ItemDefinition item)
         {
             if (string.IsNullOrEmpty(item.SpecialTags))
             {

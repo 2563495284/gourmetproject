@@ -51,30 +51,91 @@ namespace GourmetProject.Tests
             {
                 Assert.IsTrue(ids.Add(choice.Action.Id), $"Duplicate action '{choice.Action.Id}' in scheduled choices.");
                 Assert.AreEqual(run.ActionGroupSequence[0], choice.ActionGroupId);
-                Assert.Greater(choice.CostDays, 0f);
+                // act_shop 配置为 0 耗时（min/max=0），耗时按 min/max_cost_days 随机后可为 0。
+                Assert.GreaterOrEqual(choice.CostDays, 0f);
             }
         }
 
         [Test]
-        public void ActionScheduleRules_ForceRewardWindowsAndAvoidImmediateRepeat()
+        public void ActionScheduleRules_ScatterGuaranteesWithinWindowsAndAvoidImmediateRepeat()
         {
             GameRun run = NewRun(week: 1);
             var rng = new MaxWeightRandomStream();
 
+            // 单周内推进 12 步，逐步落地本周计划（窗口散布 + 权重充填）。
             for (int i = 0; i < 12; i++)
             {
                 ActionScheduleService.EnsureCurrentGroup(run, rng);
                 run.AdvanceActionStep();
             }
 
-            Assert.AreEqual("lg_debug", run.ActionGroupSequence[0], "The debug rule should fill the first run action.");
-            Assert.AreEqual("lg_event", run.ActionGroupSequence[1], "The opening event rule should fill the second run action.");
-            Assert.AreEqual("lg_reward", run.ActionGroupSequence[2], "The early reward rule should fill the third run action.");
-            Assert.AreEqual("lg_reward", run.ActionGroupSequence[9], "The mid reward rule should fill the tenth run action.");
+            // 保底散布：MaxWeight 下窗口内取最小空位。窗口按「周内行动步序号」计。
+            // rule_debug_first 窗口[1,1] → 第 1 步；rule_event_opening 窗口[2,8] → 最小空位第 2 步；
+            // rule_reward_early 窗口[3,6] → 第 3 步；rule_reward_mid 窗口[10,12] → 第 10 步。
+            Assert.AreEqual("lg_debug", run.ActionGroupSequence[0], "debug 规则应在周内第 1 步保底。");
+            Assert.AreEqual("lg_event", run.ActionGroupSequence[1], "开场事件规则应在其窗口内保底一次。");
+            Assert.AreEqual("lg_reward", run.ActionGroupSequence[2], "前段奖励规则应在其窗口内保底一次。");
+            Assert.AreEqual("lg_reward", run.ActionGroupSequence[9], "中段奖励规则应在其窗口内保底一次。");
+
+            // 每条规则在其窗口内恰好出现 minCount(=1) 次（保底，不越 maxCount）。
+            Assert.AreEqual(1, CountInWindow(run, "lg_event", 2, 8), "事件大组应在窗口内恰好 1 次。");
+            Assert.AreEqual(1, CountInWindow(run, "lg_reward", 3, 6), "前段奖励应在窗口内恰好 1 次。");
+            Assert.AreEqual(1, CountInWindow(run, "lg_reward", 10, 12), "中段奖励应在窗口内恰好 1 次。");
+
             for (int i = 1; i < run.ActionGroupSequence.Count; i++)
             {
                 Assert.AreNotEqual(run.ActionGroupSequence[i - 1], run.ActionGroupSequence[i], $"Repeated action group at index {i}.");
             }
+        }
+
+        private static int CountInWindow(GameRun run, string groupId, int minStep, int maxStep)
+        {
+            int count = 0;
+            for (int step = minStep; step <= maxStep && step <= run.ActionGroupSequence.Count; step++)
+            {
+                if (run.ActionGroupSequence[step - 1] == groupId)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        [Test]
+        public void ActionScheduleRules_ResetForcedCountEachWeek()
+        {
+            GameRun run = NewRun(week: 1);
+            var rng = new MaxWeightRandomStream();
+
+            // 第 1 周：推进若干步，debug 规则在周内第 1 步保底触发。
+            for (int i = 0; i < 3; i++)
+            {
+                ActionScheduleService.EnsureCurrentGroup(run, rng);
+                run.AdvanceActionStep();
+            }
+
+            Assert.AreEqual("lg_debug", run.ActionGroupSequence[0], "第 1 周应在周内第 1 步保底 debug。");
+
+            // 进入第 2 周：计数按周清空，本周计划重建。
+            run.WeekIndex = 2;
+            int week2Start = run.RunActionStepIndex;
+            ActionScheduleService.EnsureCurrentGroup(run, rng);
+
+            Assert.AreEqual("lg_debug", run.ActionGroupSequence[week2Start], "第 2 周应再次保底 debug（计数按周重置）。");
+            Assert.AreEqual(2, run.ActionWeekPlanWeek, "跨周后应为新周重建计划。");
+            Assert.AreEqual(week2Start, run.ActionWeekPlanStartRunStep, "本周计划起点应对齐新周首个整局行动步。");
+        }
+
+        [Test]
+        public void ActionScheduleRules_RespectActiveWeeks()
+        {
+            GameRun run = NewRun(week: 9);
+            var rng = new MaxWeightRandomStream();
+
+            ActionScheduleService.EnsureCurrentGroup(run, rng);
+
+            Assert.AreNotEqual("lg_debug", run.ActionGroupSequence[0], "Rules with activeWeeks 1-8 should not force the first endless-week action.");
         }
 
         [Test]
@@ -243,22 +304,80 @@ namespace GourmetProject.Tests
                     "]",
                 ["tbeventoption"] =
                     "[" +
-                    OptionJson("o_battle", "ev_battle", cfg.EffectType.FoodBattle, 123, "进入挑战") + "," +
-                    OptionJson("o_shop", "ev_shop", cfg.EffectType.Shop, 0, "进入商店") + "," +
-                    OptionJson("o_gameover", "ev_gameover", cfg.EffectType.GameOver, 0, "坏结局") +
+                    OptionJson("o_battle", "ev_battle", "", cfg.EffectType.FoodBattle, 123, "进入挑战") + "," +
+                    OptionJson("o_shop", "ev_shop", "", cfg.EffectType.Shop, 0, "进入商店") + "," +
+                    OptionJson("o_gameover", "ev_gameover", "", cfg.EffectType.GameOver, 0, "坏结局") +
                     "]",
             });
             GameRun run = NewRun(week: 1, tables: tables);
             var rng = new MaxWeightRandomStream();
 
-            EventResolveResult battle = EventService.ResolveImmediate(run, tables.TbEvent.Get("ev_battle"), rng);
-            EventResolveResult shop = EventService.ResolveImmediate(run, tables.TbEvent.Get("ev_shop"), rng);
-            EventResolveResult gameOver = EventService.ResolveImmediate(run, tables.TbEvent.Get("ev_gameover"), rng);
+            EventResolveResult battle = EventService.ResolveOption(run, tables.TbEventOption.Get("o_battle"), rng);
+            EventResolveResult shop = EventService.ResolveOption(run, tables.TbEventOption.Get("o_shop"), rng);
+            EventResolveResult gameOver = EventService.ResolveOption(run, tables.TbEventOption.Get("o_gameover"), rng);
 
             Assert.AreEqual(EventFollowUpKind.Battle, battle.FollowUpKind);
             Assert.AreEqual(123, battle.RequiredScore);
             Assert.AreEqual(EventFollowUpKind.Shop, shop.FollowUpKind);
             Assert.AreEqual(EventFollowUpKind.GameOver, gameOver.FollowUpKind);
+        }
+
+        [Test]
+        public void EventService_SkipsNonRepeatableUsedEvents()
+        {
+            cfg.Tables tables = LoadTables(new Dictionary<string, string>
+            {
+                ["tbevent"] = "[" + EventJson("ev_once", cfg.ActionBehavior.Event, weight: 100, repeatable: false) + "]",
+                ["tbeventoption"] = "[]",
+            });
+            GameRun run = NewRun(week: 1, tables: tables);
+            var rng = new MaxWeightRandomStream();
+
+            Assert.AreEqual("ev_once", EventService.RollEvent(run, rng, cfg.ActionBehavior.Event)?.Id);
+            run.MarkEventUsed("ev_once");
+            Assert.IsNull(EventService.RollEvent(run, rng, cfg.ActionBehavior.Event), "不可重复事件命中后不应再进池。");
+        }
+
+        [Test]
+        public void EventService_NavigatesOptionTreeAndAppliesLeafEffect()
+        {
+            cfg.Tables tables = LoadTables(new Dictionary<string, string>
+            {
+                ["tbevent"] = "[" + EventJson("ev_tree", cfg.ActionBehavior.Event, weight: 1) + "]",
+                ["tbeventoption"] =
+                    "[" +
+                    // 根选项：无效果，resultText 作为子页正文。
+                    NavOptionJson("o_root_go", "ev_tree", "", "深入", "深层页") + "," +
+                    // 子选项：挂在 o_root_go 下，施加金币效果并终止。
+                    OptionJson("o_deep_gold", "ev_tree", "o_root_go", cfg.EffectType.GainGold, 40, "拿钱") +
+                    "]",
+            });
+            GameRun run = NewRun(week: 1, tables: tables);
+            run.Gold = 0;
+            var rng = new MaxWeightRandomStream();
+            cfg.GameEvent ev = tables.TbEvent.Get("ev_tree");
+
+            // 根页只有一个导航选项（parentId 空），承载子页正文，无效果。
+            List<cfg.EventOption> rootOpts = EventService.GetRootOptions(run, ev.Id);
+            Assert.AreEqual(1, rootOpts.Count);
+            cfg.EventOption nav = rootOpts[0];
+            Assert.AreEqual("深层页", nav.ResultText);
+            EventResolveResult navResult = EventService.ResolveOption(run, nav, rng);
+            Assert.AreEqual(EventFollowUpKind.None, navResult.FollowUpKind);
+            Assert.AreEqual(0, run.Gold, "导航选项不应施加效果。");
+
+            // 子页选项（parentId = 根选项）施加金币效果并终止（无子选项）。
+            List<cfg.EventOption> deepOpts = EventService.GetChildOptions(run, nav.Id);
+            Assert.AreEqual(1, deepOpts.Count);
+            Assert.AreEqual(0, EventService.GetChildOptions(run, deepOpts[0].Id).Count, "叶选项不应再有子选项。");
+            EventResolveResult leaf = EventService.ResolveOption(run, deepOpts[0], rng);
+            Assert.AreEqual(EventFollowUpKind.None, leaf.FollowUpKind);
+            Assert.AreEqual(40, run.Gold);
+
+            // 终止时才写入 UsedEventIds。
+            Assert.IsFalse(run.HasUsedEvent("ev_tree"));
+            EventService.OnEventFinished(run, ev, leaf);
+            Assert.IsTrue(run.HasUsedEvent("ev_tree"));
         }
 
         [Test]
@@ -663,7 +782,8 @@ namespace GourmetProject.Tests
         [Test]
         public void WeekLoop_FinalBossVictory_UsesLastWeekInsteadOfFoodWeek()
         {
-            GameRun finalWeek = NewRun(week: 8, characterId: "glutton_dog");
+            GameRun finalWeek = NewRun(week: 1, characterId: "glutton_dog");
+            finalWeek = NewRun(week: finalWeek.TotalWeeks, characterId: "glutton_dog");
             GameRun earlyWeek = NewRun(week: 1, characterId: "glutton_dog");
             cfg.Food boss = finalWeek.Tables.TbFood.Get("food_boss");
             MethodInfo method = typeof(WeekLoopController).GetMethod(
@@ -755,22 +875,37 @@ namespace GourmetProject.Tests
             return new GameRun(tables, database, characterId, "v2-test", week);
         }
 
-        /// <summary>构造一行 TbEvent JSON（tbevent 覆盖用），字段与生成的 GameEvent 对齐。</summary>
-        private static string EventJson(string id, cfg.ActionBehavior eventType, float weight)
+        /// <summary>构造一行 TbEvent JSON（tbevent 覆盖用），字段与生成的 GameEvent 对齐。desc=根页正文。</summary>
+        private static string EventJson(string id, cfg.ActionBehavior eventType, float weight, bool repeatable = true)
         {
             return "{" +
                 $"\"id\":\"{id}\",\"name\":\"{id}\",\"desc\":\"\"," +
                 $"\"eventType\":{(int)eventType}," +
-                $"\"preconditions\":\"\",\"weight\":{weight.ToString(System.Globalization.CultureInfo.InvariantCulture)},\"repeatable\":true" +
+                $"\"preconditions\":\"\",\"weight\":{weight.ToString(System.Globalization.CultureInfo.InvariantCulture)}," +
+                $"\"repeatable\":{(repeatable ? "true" : "false")}" +
                 "}";
         }
 
-        /// <summary>构造一行 TbEventOption JSON（tbeventoption 覆盖用），字段与生成的 EventOption 对齐。</summary>
-        private static string OptionJson(string id, string eventId, cfg.EffectType effectType, float effectValue, string text = "")
+        /// <summary>构造一行带单个效果的 TbEventOption JSON（parentId 挂树，并列 list 效果列，effectParams 缺省为空）。</summary>
+        private static string OptionJson(string id, string eventId, string parentId, cfg.EffectType effectType, float effectValue, string text = "", string resultText = "", string effectParam = "")
+        {
+            string paras = string.IsNullOrEmpty(effectParam) ? "[]" : $"[\"{effectParam}\"]";
+            return "{" +
+                $"\"id\":\"{id}\",\"eventId\":\"{eventId}\",\"parentId\":\"{parentId}\"," +
+                $"\"text\":\"{text}\",\"resultText\":\"{resultText}\",\"condition\":\"\"," +
+                $"\"effectTypes\":[{(int)effectType}]," +
+                $"\"effectValues\":[{effectValue.ToString(System.Globalization.CultureInfo.InvariantCulture)}]," +
+                $"\"effectParams\":{paras}" +
+                "}";
+        }
+
+        /// <summary>构造一行无效果、仅承载子页正文的 TbEventOption JSON（树导航边）。</summary>
+        private static string NavOptionJson(string id, string eventId, string parentId, string text = "", string resultText = "")
         {
             return "{" +
-                $"\"id\":\"{id}\",\"eventId\":\"{eventId}\",\"text\":\"{text}\"," +
-                $"\"effectType\":{(int)effectType},\"effectValue\":{effectValue.ToString(System.Globalization.CultureInfo.InvariantCulture)},\"effectParam\":\"\"" +
+                $"\"id\":\"{id}\",\"eventId\":\"{eventId}\",\"parentId\":\"{parentId}\"," +
+                $"\"text\":\"{text}\",\"resultText\":\"{resultText}\",\"condition\":\"\"," +
+                $"\"effectTypes\":[],\"effectValues\":[],\"effectParams\":[]" +
                 "}";
         }
 

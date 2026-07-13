@@ -636,7 +636,7 @@ namespace GourmetProject.Game.UI.Battle
             _itemsColumn?.Refresh(_run, _session, _inBattle, _tips != null ? _tips.Item : null, OnActiveItemClicked, ShowItemInfo);
         }
 
-        private void ShowItemInfo(cfg.Item item, RunItemState state)
+        private void ShowItemInfo(ItemDefinition item, RunItemState state)
         {
             if (item == null)
             {
@@ -684,8 +684,9 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            cfg.Item item = GameApp.Config.Tables.TbItem.GetOrDefault(entry.Id);
-            if (item == null || (item.Kind != cfg.ItemKind.Passive && item.Kind != cfg.ItemKind.Active))
+            cfg.ItemKind kind = entry.Kind == ShopEntryKind.ActiveItem ? cfg.ItemKind.Active : cfg.ItemKind.Passive;
+            ItemDefinition item = ItemDefinition.Get(GameApp.Config.Tables, entry.Id, kind);
+            if (item == null)
             {
                 return;
             }
@@ -1213,8 +1214,8 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            cfg.Item item = GameApp.Config.Tables.TbItem.GetOrDefault(itemId);
-            if (item == null || item.Kind != cfg.ItemKind.Active)
+            ItemDefinition item = ItemDefinition.Get(GameApp.Config.Tables, itemId, cfg.ItemKind.Active);
+            if (item == null)
             {
                 return;
             }

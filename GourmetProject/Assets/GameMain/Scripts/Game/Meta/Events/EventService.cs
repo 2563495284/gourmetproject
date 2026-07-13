@@ -61,16 +61,18 @@ namespace GourmetProject.Game.Meta
     }
 
     /// <summary>
-    /// 事件明细结算：事件正文/权重/前置/可重复都在 <see cref="cfg.GameEvent"/>（TbEvent），
-    /// 选项分支在 <see cref="cfg.EventOption"/>（TbEventOption，按 eventId 关联）。
-    /// Event/Reward/Negative 三种行动各自从对应 <see cref="cfg.ActionBehavior"/> 分类的事件池里随机一个具体事件。
-    /// 单选项事件=自动结算（无需玩家点选，用于奖励/负面/即时事件）；多选项=玩家 n 选一分支。
-    /// 事件结算后写入 UsedEventIds（整局级，供结算统计与跨局进度）。
+    /// 事件结算：像《杀戮尖塔2》一样，事件是一张「页面树」，但只用两张表表达。
+    /// - <see cref="cfg.GameEvent"/>（TbEvent）是事件池条目：正文(desc=根页文本)/权重/前置/可重复。
+    /// - <see cref="cfg.EventOption"/>（TbEventOption）既是选项(边)也承载分支页：
+    ///   按 <see cref="cfg.EventOption.ParentId"/> 挂树（空=根页选项）；选中后施加效果，
+    ///   若存在以其为父的子选项则进入子页（子页正文=<see cref="cfg.EventOption.ResultText"/>），否则结算后结束。
+    ///   跟进类效果（FoodBattle/Shop/GameOver/Victory）为终止分支。
+    /// 页面导航全程内存态，仅在事件结束（onDone→Commit）时存档；结束时写入 UsedEventIds。
     /// </summary>
     public static class EventService
     {
-        /// <summary>取某事件的全部选项（按配置顺序）。</summary>
-        public static List<cfg.EventOption> GetOptions(GameRun run, string eventId)
+        /// <summary>取事件根页选项（parentId 为空，按配置顺序）。</summary>
+        public static List<cfg.EventOption> GetRootOptions(GameRun run, string eventId)
         {
             var options = new List<cfg.EventOption>();
             if (string.IsNullOrEmpty(eventId))
@@ -81,7 +83,7 @@ namespace GourmetProject.Game.Meta
             cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
             foreach (cfg.EventOption opt in tables.TbEventOption.DataList)
             {
-                if (opt.EventId == eventId)
+                if (opt.EventId == eventId && string.IsNullOrEmpty(opt.ParentId))
                 {
                     options.Add(opt);
                 }
@@ -90,9 +92,28 @@ namespace GourmetProject.Game.Meta
             return options;
         }
 
-        public static bool HasOptions(GameRun run, string eventId) => GetOptions(run, eventId).Count > 0;
+        /// <summary>取某选项的子页选项（parentId 指向该选项，按配置顺序）。</summary>
+        public static List<cfg.EventOption> GetChildOptions(GameRun run, string parentOptionId)
+        {
+            var options = new List<cfg.EventOption>();
+            if (string.IsNullOrEmpty(parentOptionId))
+            {
+                return options;
+            }
 
-        /// <summary>从指定分类池（eventType=Event/Reward/Negative）中按权重/前置随机一个事件。</summary>
+            cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
+            foreach (cfg.EventOption opt in tables.TbEventOption.DataList)
+            {
+                if (opt.ParentId == parentOptionId)
+                {
+                    options.Add(opt);
+                }
+            }
+
+            return options;
+        }
+
+        /// <summary>从指定分类池（eventType=Event/Reward/Negative）中按权重/前置/可重复随机一个事件。</summary>
         public static cfg.GameEvent RollEvent(GameRun run, IRandomStream rng, cfg.ActionBehavior eventType)
         {
             cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
@@ -100,6 +121,12 @@ namespace GourmetProject.Game.Meta
             foreach (cfg.GameEvent ev in tables.TbEvent.DataList)
             {
                 if (ev.EventType != eventType || ev.Weight <= 0f)
+                {
+                    continue;
+                }
+
+                // repeatable=false 且本局已命中过 → 不再进池。
+                if (!ev.Repeatable && run != null && run.HasUsedEvent(ev.Id))
                 {
                     continue;
                 }
@@ -124,36 +151,55 @@ namespace GourmetProject.Game.Meta
             return candidates[rng.WeightedPickIndex(weights)];
         }
 
-        /// <summary>无选项事件的兜底结算（正常事件至少配 1 个选项，走 <see cref="ResolveOption"/>）。</summary>
-        public static EventResolveResult ResolveImmediate(GameRun run, cfg.GameEvent ev, IRandomStream rng)
+        /// <summary>
+        /// 结算某个选项：按序施加它的所有效果（多效果并列 list），返回结果。
+        /// 跟进类效果（FoodBattle/Shop/GameOver/Victory）至多一个，作为终止分支返回。
+        /// 不在此写 UsedEventIds / 发放事件金币——那些放到事件「终止」时（<see cref="OnEventFinished"/>）。
+        /// </summary>
+        public static EventResolveResult ResolveOption(GameRun run, cfg.EventOption option, IRandomStream rng)
         {
-            if (ev == null)
+            if (option == null)
             {
                 return EventResolveResult.Immediate(string.Empty);
             }
 
-            List<cfg.EventOption> options = GetOptions(run, ev.Id);
-            if (options.Count > 0)
+            EventResolveResult followUp = null;
+            var feedbacks = new List<string>();
+            int count = option.EffectTypes.Count;
+            for (int i = 0; i < count; i++)
             {
-                return ResolveOption(run, ev, options[0], rng);
+                cfg.EffectType type = option.EffectTypes[i];
+                float value = i < option.EffectValues.Count ? option.EffectValues[i] : 0f;
+                string param = i < option.EffectParams.Count ? option.EffectParams[i] : string.Empty;
+                EventResolveResult r = ResolveEffect(run, type, value, param, option.Text, rng);
+                if (r.FollowUpKind != EventFollowUpKind.None)
+                {
+                    followUp = r;
+                }
+                else if (!string.IsNullOrEmpty(r.Feedback))
+                {
+                    feedbacks.Add(r.Feedback);
+                }
             }
 
-            run.MarkEventUsed(ev.Id);
-            return EventResolveResult.Immediate(ev.Desc);
+            if (followUp != null)
+            {
+                return followUp;
+            }
+
+            return EventResolveResult.Immediate(feedbacks.Count > 0 ? string.Join("\n", feedbacks) : string.Empty);
         }
 
-        /// <summary>按所选选项结算，或返回后续动作（事件战斗/商店/结局），并记录使用。</summary>
-        public static EventResolveResult ResolveOption(GameRun run, cfg.GameEvent ev, cfg.EventOption option, IRandomStream rng)
+        /// <summary>事件到达终止（选项无子页、终止展示页、或跟进类效果）时调用：记录使用并发放事件金币。</summary>
+        public static void OnEventFinished(GameRun run, cfg.GameEvent ev, EventResolveResult result)
         {
-            if (ev == null || option == null)
+            if (run == null || ev == null)
             {
-                return EventResolveResult.Immediate(string.Empty);
+                return;
             }
 
-            EventResolveResult result = ResolveEffect(run, option.EffectType, option.EffectValue, option.EffectParam, option.Text, rng);
             run.MarkEventUsed(ev.Id);
             GrantEventCompleteGold(run, result);
-            return result;
         }
 
         /// <summary>事件即时结算完成时发放道具「事件红包」金币（战斗/结局类事件不在此发放）。</summary>
