@@ -233,6 +233,26 @@ namespace GourmetProject.Gameplay.Board
             return tags ?? NoMaterials;
         }
 
+        /// <summary>给存在格追加一个材质（与已有材质叠加）。格不存在或空 id 返回 false。「铺台小票」拼桌用。</summary>
+        public bool AddMaterialAt(GridPos p, string materialId)
+        {
+            if (!Exists(p) || string.IsNullOrEmpty(materialId))
+            {
+                return false;
+            }
+
+            int idx = Index(p);
+            List<string> tags = _materials[idx];
+            if (tags == null)
+            {
+                tags = new List<string>();
+                _materials[idx] = tags;
+            }
+
+            tags.Add(materialId);
+            return true;
+        }
+
         public int OccupiedCellCount
         {
             get

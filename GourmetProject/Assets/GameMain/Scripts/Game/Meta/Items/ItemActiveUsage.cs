@@ -43,12 +43,36 @@ namespace GourmetProject.Game.Meta
             }
         }
 
-        /// <summary>某道具是否可在指定情境使用（由 kind + targetKind 推导）。</summary>
+        /// <summary>某道具是否可在指定情境使用（由 kind + targetKind + effectType 推导）。</summary>
         public static bool CanUse(ItemDefinition item, ActiveUseContextKind ctx)
         {
-            return item != null
-                && item.Kind == cfg.ItemKind.Active
-                && IsUsableIn(item.TargetKind, ctx);
+            if (item == null || item.Kind != cfg.ItemKind.Active)
+            {
+                return false;
+            }
+
+            // 排程小票（重掷/重置Boss/执行下一节点/加奖励节点）操作局外核心循环，仅地图情境可用。
+            if (IsScheduleEffect(item.EffectType))
+            {
+                return ctx == ActiveUseContextKind.Map;
+            }
+
+            return IsUsableIn(item.TargetKind, ctx);
+        }
+
+        /// <summary>排程小票效果（操作行动轴/Boss，局外/地图专用）。</summary>
+        public static bool IsScheduleEffect(string effectType)
+        {
+            switch (effectType)
+            {
+                case ItemEffectTypes.RerollAction:
+                case ItemEffectTypes.ResetBossDebuff:
+                case ItemEffectTypes.TimelineExecuteNext:
+                case ItemEffectTypes.TimelineAddRewardNode:
+                    return true;
+                default:
+                    return false;
+            }
         }
     }
 }

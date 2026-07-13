@@ -17,7 +17,8 @@ namespace GourmetProject.Game.Meta
             Desc = passive.Desc;
             Quality = passive.Quality;
             SpecialTags = passive.SpecialTags;
-            EffectType = passive.EffectType;
+            // 被动道具已按 itemId → PassiveItemModel 绑定，不再依赖 effectType；此处不读配置列（便于后续从表中移除）。
+            EffectType = string.Empty;
             EffectValue = passive.EffectValue;
             EffectParam = passive.EffectParam;
             BaseWeight = passive.BaseWeight;

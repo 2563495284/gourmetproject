@@ -3,9 +3,9 @@ using System.Collections.Generic;
 namespace GourmetProject.Game.Meta
 {
     /// <summary>
-    /// 道具 <c>effectType</c> 字符串常量集中处（对应 item.xlsx 的 effectType 列）。
-    /// 新增道具效果时在这里登记常量，再在对应派发器/宿主系统里接入，避免字符串散落。
-    /// 分组注释标明该效果由哪个子系统消费；触发时机由代码按 effectType 推导，不在配置表单独声明。
+    /// 道具 <c>effectType</c> 字符串常量集中处。
+    /// 被动道具已改为「itemId → PassiveItemModel」按 id 绑定，不再按 effectType 分发；
+    /// 这里的常量当前主要供主动道具（<see cref="ActiveItemEffectRegistry"/>）与词表参考。
     /// </summary>
     public static class ItemEffectTypes
     {
@@ -23,8 +23,21 @@ namespace GourmetProject.Game.Meta
         public const string CountAsBonusAll = "CountAsBonusAll";
 
         // —— 主动道具（走 ActiveItemEffectRegistry）——
+        // 无目标（None/Global）战斗/资源操作：
         public const string ClearBoard = "ClearBoard";
         public const string ExtraServe = "ExtraServe";
+        // 需选目标（DiningTableDish 等）的目标操作族，对标杀戮尖塔2 药水的 OnUse(target)：
+        public const string AddScore = "AddScore";           // 给目标菜永久加分
+        public const string AddCountAs = "AddCountAs";        // 给目标菜加「视为食物数」
+        public const string AddFlavor = "AddFlavor";          // 给目标菜（菜谱）永久附加风味（effectParam=风味id，调味小票）
+        public const string AddMaterial = "AddMaterial";      // 给目标格永久附加材质（effectParam=材质id，铺台小票）
+        public const string EnhanceFlavor = "EnhanceFlavor";  // 强化目标菜风味
+        public const string ConvertCategory = "ConvertCategory"; // 转换目标菜分类
+        public const string ConvertFlavor = "ConvertFlavor";  // 转换目标菜风味
+        public const string DuplicateDish = "DuplicateDish";  // 复制目标菜
+        public const string GenerateDish = "GenerateDish";    // 生成一道菜（需随机流）
+        public const string DestroyDish = "DestroyDish";      // 移除目标菜
+        public const string RemoveFlavor = "RemoveFlavor";    // 移除目标菜风味
 
         // —— 金币/利息族（走 ItemRuntime gold hook；ProcedureMain/RewardGranter 消费）——
         public const string GoldNow = "GoldNow";
@@ -83,9 +96,11 @@ namespace GourmetProject.Game.Meta
         public const string TimelineRandomize = "TimelineRandomize";
         public const string TimelineExtraDay = "TimelineExtraDay";
         public const string TimelineWeekMinus = "TimelineWeekMinus";
-        public const string TimelineAddRewardNode = "TimelineAddRewardNode";
+        public const string TimelineAddRewardNode = "TimelineAddRewardNode"; // 主动：奖励单，运行时加一个奖励节点
         public const string TimelineAddInterestNode = "TimelineAddInterestNode";
         public const string TimelineSkipNode = "TimelineSkipNode";
+        public const string TimelineExecuteNext = "TimelineExecuteNext"; // 主动：加急单，立即执行行动轴下一个节点
+        public const string ResetBossDebuff = "ResetBossDebuff";           // 主动：盛宴调整单，重置本周 Boss（清 Boss debuff 抽取历史）
 
         // —— 奖励/获得/选择族 ——
         public const string GrantRandomPassive = "GrantRandomPassive";
@@ -130,44 +145,39 @@ namespace GourmetProject.Game.Meta
         public const string TransferTargetMult = "TransferTargetMult";
         public const string TransferSourceMult = "TransferSourceMult";
 
-        /// <summary>获得瞬间结算一次的效果（走 <see cref="PassiveOnAcquireEffects"/>）。</summary>
-        private static readonly HashSet<string> OnAcquireEffects = new HashSet<string>
+        /// <summary>
+        /// 主动道具合法 <c>effectType</c> 词表（配在 <c>TbActiveItem</c> 的值域）。
+        /// 用于填表/运行时守卫：不在此集合内的值视为非法主动效果。
+        /// 新增主动效果时：在此登记 + 在 <see cref="ActiveItemEffectRegistry"/> 落地。
+        /// </summary>
+        private static readonly HashSet<string> ActiveEffectTypes = new HashSet<string>
         {
+            ClearBoard,
+            ExtraServe,
             GoldNow,
-            Loan,
-            DiscardNegative,
-            DiscardNegativeForGold,
-            GrantRandomPassive,
-            FamilyPack,
-            GoldMealBonus,
-            RequiredScoreToOne,
-            ChooseOnePassive,
-            ChooseOneActive,
-            ChooseOneFood,
-            ChooseOneFragment,
-            GrantRandomActive,
-            RandomizeItems,
-            GrantRecipe,
-            CopyFood,
+            AdjustCountBonus,
+            AddScore,
+            AddCountAs,
+            AddFlavor,
+            AddMaterial,
+            EnhanceFlavor,
+            ConvertCategory,
+            ConvertFlavor,
+            DuplicateDish,
+            GenerateDish,
+            DestroyDish,
+            RemoveFlavor,
+            // —— 排程小票（Global，局外/地图专用，由情境限制）——
             RerollAction,
-            FoodConvert,
-            FlavorEnhance,
-            FlavorRemoveForGold,
-            FlavorRemoveCopySkill,
-            FlavorRemoveDoubleScore,
-            FlavorContagion,
-            CellTagEnhance,
-            CellTagContagion,
-            TimelineRandomize,
-            TimelineExtraDay,
-            TimelineWeekMinus,
+            ResetBossDebuff,
+            TimelineExecuteNext,
             TimelineAddRewardNode,
-            TimelineAddInterestNode,
         };
 
-        public static bool IsOnAcquireEffect(string effectType)
+        /// <summary>该 effectType 是否为合法的主动道具效果（按主动词表校验）。</summary>
+        public static bool IsValidActiveEffectType(string effectType)
         {
-            return !string.IsNullOrEmpty(effectType) && OnAcquireEffects.Contains(effectType);
+            return !string.IsNullOrEmpty(effectType) && ActiveEffectTypes.Contains(effectType);
         }
     }
 }

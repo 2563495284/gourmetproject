@@ -53,6 +53,9 @@ namespace GourmetProject.Game.Run
         /// <summary>玩家在餐桌编辑页手动拼贴的碎片放置（id + 旋转 + 原点），用于可复现地重建胃形。</summary>
         public List<TableFragmentPlacementSaveData> FragmentPlacements = new List<TableFragmentPlacementSaveData>();
 
+        /// <summary>玩家用「铺台小票」永久附加的格子材质覆盖（坐标 + 材质 id）；旧档缺省 → 空。</summary>
+        public List<CellMaterialSaveData> CellMaterialOverrides = new List<CellMaterialSaveData>();
+
         /// <summary>已购买但尚未拼贴的碎片包内容（rolled 出的候选碎片 id）；拼贴或跳过后清空。</summary>
         public List<string> PendingFragmentPackIds = new List<string>();
 
@@ -108,6 +111,9 @@ namespace GourmetProject.Game.Run
         /// <summary>本周已结算的节点 id。</summary>
         public List<string> TriggeredNodeIds = new List<string>();
 
+        /// <summary>本周由主动道具（奖励单等）动态追加的行动轴节点；换周清空。</summary>
+        public List<RuntimeTimelineNodeSaveData> RuntimeTimelineNodes = new List<RuntimeTimelineNodeSaveData>();
+
         /// <summary>已触发事件 id（整局，供结算统计与跨局进度）。</summary>
         public List<string> UsedEventIds = new List<string>();
 
@@ -153,6 +159,15 @@ namespace GourmetProject.Game.Run
     public sealed class RunRecipeBookSaveData
     {
         public List<string> DishIds = new List<string>();
+
+        /// <summary>与 DishIds 同 index 对齐的玩家永久附加风味（调味小票）；旧档缺省 → 视为无。</summary>
+        public List<RunRecipeDishFlavorSaveData> DishExtraFlavors = new List<RunRecipeDishFlavorSaveData>();
+    }
+
+    [Serializable]
+    public sealed class RunRecipeDishFlavorSaveData
+    {
+        public List<string> FlavorIds = new List<string>();
     }
 
     [Serializable]
@@ -162,6 +177,23 @@ namespace GourmetProject.Game.Run
         public int Rotation;
         public int OriginX;
         public int OriginY;
+    }
+
+    [Serializable]
+    public sealed class CellMaterialSaveData
+    {
+        public int X;
+        public int Y;
+        public string MaterialId;
+    }
+
+    [Serializable]
+    public sealed class RuntimeTimelineNodeSaveData
+    {
+        public string Id;
+        public string TimelineId;
+        public int Day;
+        public string ActionId;
     }
 
     [Serializable]

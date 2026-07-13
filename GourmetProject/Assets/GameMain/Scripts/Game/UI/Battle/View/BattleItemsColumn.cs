@@ -532,6 +532,8 @@ namespace GourmetProject.Game.UI.Battle.View
                     RunItemState capturedState = state;
 
                     // 战斗中：满足 targetKind 可用性的主动道具可点击使用；否则（含非战斗态）点击看信息。
+                    // TODO(active-item-ui): 非战斗（地图）态也应放行可用主动道具——用 ItemActiveUsage.CanUse(item, Map)
+                    //   判定可用性、点击路由到 BattleForm.OnMapActiveItemClicked（排程/调味/铺台在局外使用）。
                     bool usableNow = inBattle && session != null && !session.IsSettled
                         && ItemActiveUsage.CanUse(item, ActiveUseContextKind.Battle);
                     string capturedId = state.ItemId;

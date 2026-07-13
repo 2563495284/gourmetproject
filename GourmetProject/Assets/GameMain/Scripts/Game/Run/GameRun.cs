@@ -32,11 +32,14 @@ namespace GourmetProject.Game.Run
         // 被动道具同一 id 唯一一条且不升级；主动道具同一 id 可有多条，每条为一份独立实例。
         private readonly List<RunItemState> _items = new List<RunItemState>();
         private readonly List<string> _bonusDishIds = new List<string>();
-        private readonly List<List<string>> _recipeBooks = new List<List<string>>();
+        private readonly List<List<RecipeBookSlot>> _recipeBooks = new List<List<RecipeBookSlot>>();
         private readonly List<string> _stomachFragmentIds = new List<string>();
 
         // 玩家在餐桌编辑页手动拼贴的碎片放置（id + 旋转 + 原点）；作为可复现重建胃形的权威数据。
         private readonly List<TableFragmentPlacement> _fragmentPlacements = new List<TableFragmentPlacement>();
+
+        // 玩家用「铺台小票」永久附加的格子材质（坐标 → 材质 id）；拼桌时叠加进餐桌材质表。
+        private readonly List<CellMaterialOverride> _cellMaterialOverrides = new List<CellMaterialOverride>();
 
         // 已购买待拼贴的碎片包内容（rolled 出的候选碎片 id）；拼贴或跳过后清空。
         private readonly List<string> _pendingFragmentPack = new List<string>();
@@ -46,6 +49,9 @@ namespace GourmetProject.Game.Run
 
         // —— 行动轴状态 ——
         private readonly List<string> _triggeredNodeIds = new List<string>();
+
+        // 「奖励单」等主动道具在本周行动轴上动态追加的节点；随 BeginTimeline（换周）清空。
+        private readonly List<RuntimeTimelineNode> _runtimeTimelineNodes = new List<RuntimeTimelineNode>();
         private readonly List<string> _usedEventIds = new List<string>();
         private readonly List<string> _completedBossIds = new List<string>();
         private readonly List<string> _rolledBossDebuffIds = new List<string>();
@@ -356,11 +362,38 @@ namespace GourmetProject.Game.Run
 
         public IReadOnlyList<string> BonusDishIds => _bonusDishIds;
 
-        public IReadOnlyList<IReadOnlyList<string>> RecipeBooks => _recipeBooks;
+        public IReadOnlyList<IReadOnlyList<string>> RecipeBooks
+        {
+            get
+            {
+                var result = new List<IReadOnlyList<string>>(_recipeBooks.Count);
+                foreach (List<RecipeBookSlot> book in _recipeBooks)
+                {
+                    result.Add(ProjectDishIds(book));
+                }
+
+                return result;
+            }
+        }
 
         public int RecipeBookCount => _recipeBooks.Count;
 
         public IReadOnlyList<string> TableFragmentIds => _stomachFragmentIds;
+
+        /// <summary>玩家用「铺台小票」永久附加的格子材质覆盖（拼桌时叠加）。</summary>
+        public IReadOnlyList<CellMaterialOverride> CellMaterialOverrides => _cellMaterialOverrides;
+
+        /// <summary>「铺台小票」落地：给某个餐桌格永久附加一个材质。空 id 返回 false。</summary>
+        public bool AddCellMaterial(GridPos pos, string materialId)
+        {
+            if (string.IsNullOrEmpty(materialId))
+            {
+                return false;
+            }
+
+            _cellMaterialOverrides.Add(new CellMaterialOverride(pos, materialId));
+            return true;
+        }
 
         /// <summary>玩家手动拼贴的碎片放置列表（餐桌编辑页产出，随存档保存）。</summary>
         public IReadOnlyList<TableFragmentPlacement> FragmentPlacements => _fragmentPlacements;
@@ -405,6 +438,26 @@ namespace GourmetProject.Game.Run
         public float CurrentDay { get; set; }
 
         public IReadOnlyList<string> TriggeredNodeIds => _triggeredNodeIds;
+
+        /// <summary>本周由主动道具动态追加的行动轴节点（「奖励单」等）。</summary>
+        public IReadOnlyList<RuntimeTimelineNode> RuntimeTimelineNodes => _runtimeTimelineNodes;
+
+        /// <summary>
+        /// 「奖励单」落地：在当前行动轴上追加一个运行时节点（day + actionId）。
+        /// 返回新节点 id（未开始行动轴时返回空串）。节点会被 TimelineService 合并进 GetNodes。
+        /// </summary>
+        public string AddRuntimeTimelineNode(int day, string actionId)
+        {
+            if (string.IsNullOrEmpty(CurrentTimelineId) || string.IsNullOrEmpty(actionId))
+            {
+                return string.Empty;
+            }
+
+            // 周内唯一：换周会清空 _runtimeTimelineNodes，故 count 单调；dyn_ 前缀避免与配置节点 id 冲突。
+            string id = $"dyn_w{WeekIndex}_{_runtimeTimelineNodes.Count}";
+            _runtimeTimelineNodes.Add(new RuntimeTimelineNode(id, CurrentTimelineId, day, actionId));
+            return id;
+        }
 
         public IReadOnlyList<string> UsedEventIds => _usedEventIds;
 
@@ -525,6 +578,7 @@ namespace GourmetProject.Game.Run
             CurrentDay = 0f;
             ActionStepIndex = 0;
             _triggeredNodeIds.Clear();
+            _runtimeTimelineNodes.Clear();
             LastActionContext = null;
             ClearPendingActionChoices();
             ClearPendingShopStock();
@@ -830,6 +884,7 @@ namespace GourmetProject.Game.Run
                 RecipeBooks = ToRecipeBookSaveData(),
                 TableFragmentIds = new List<string>(_stomachFragmentIds),
                 FragmentPlacements = ToFragmentPlacementSaveData(),
+                CellMaterialOverrides = ToCellMaterialSaveData(),
                 PendingFragmentPackIds = new List<string>(_pendingFragmentPack),
                 RunSettledCounts = new Dictionary<string, int>(_runSettledCounts),
                 CurrentTimelineId = CurrentTimelineId,
@@ -848,6 +903,7 @@ namespace GourmetProject.Game.Run
                 ActionWeekPlanWeek = _actionWeekPlanWeek,
                 ActionWeekPlanStartRunStep = _actionWeekPlanStartRunStep,
                 TriggeredNodeIds = new List<string>(_triggeredNodeIds),
+                RuntimeTimelineNodes = ToRuntimeTimelineNodeSaveData(),
                 UsedEventIds = new List<string>(_usedEventIds),
                 CompletedBossIds = new List<string>(_completedBossIds),
                 RolledBossDebuffIds = new List<string>(_rolledBossDebuffIds),
@@ -951,6 +1007,19 @@ namespace GourmetProject.Game.Run
                 }
             }
 
+            if (data.CellMaterialOverrides != null)
+            {
+                foreach (CellMaterialSaveData m in data.CellMaterialOverrides)
+                {
+                    if (m == null || string.IsNullOrEmpty(m.MaterialId))
+                    {
+                        continue;
+                    }
+
+                    run._cellMaterialOverrides.Add(new CellMaterialOverride(new GridPos(m.X, m.Y), m.MaterialId));
+                }
+            }
+
             if (data.PendingFragmentPackIds != null)
             {
                 run._pendingFragmentPack.AddRange(data.PendingFragmentPackIds);
@@ -990,6 +1059,19 @@ namespace GourmetProject.Game.Run
             if (data.TriggeredNodeIds != null)
             {
                 run._triggeredNodeIds.AddRange(data.TriggeredNodeIds);
+            }
+
+            if (data.RuntimeTimelineNodes != null)
+            {
+                foreach (RuntimeTimelineNodeSaveData n in data.RuntimeTimelineNodes)
+                {
+                    if (n == null || string.IsNullOrEmpty(n.Id) || string.IsNullOrEmpty(n.ActionId))
+                    {
+                        continue;
+                    }
+
+                    run._runtimeTimelineNodes.Add(new RuntimeTimelineNode(n.Id, n.TimelineId, n.Day, n.ActionId));
+                }
             }
 
             if (data.UsedEventIds != null)
@@ -1136,7 +1218,42 @@ namespace GourmetProject.Game.Run
 
         public IReadOnlyList<string> GetRecipeBookDishes(int bookIndex)
         {
-            return IsRecipeBookIndexValid(bookIndex) ? _recipeBooks[bookIndex] : System.Array.Empty<string>();
+            return IsRecipeBookIndexValid(bookIndex) ? ProjectDishIds(_recipeBooks[bookIndex]) : System.Array.Empty<string>();
+        }
+
+        /// <summary>取某本菜谱的条目（dishId + 玩家附加风味），供战斗装配读取。</summary>
+        public IReadOnlyList<RecipeBookSlot> GetRecipeBookEntries(int bookIndex)
+        {
+            return IsRecipeBookIndexValid(bookIndex) ? _recipeBooks[bookIndex] : System.Array.Empty<RecipeBookSlot>();
+        }
+
+        /// <summary>「调味小票」落地：给菜谱某本某格的菜永久附加一个风味。越界或空 id 返回 false。</summary>
+        public bool AddRecipeFlavor(int bookIndex, int dishIndex, string flavorId)
+        {
+            if (!IsRecipeBookIndexValid(bookIndex) || string.IsNullOrEmpty(flavorId))
+            {
+                return false;
+            }
+
+            List<RecipeBookSlot> book = _recipeBooks[bookIndex];
+            if (dishIndex < 0 || dishIndex >= book.Count)
+            {
+                return false;
+            }
+
+            book[dishIndex].AddFlavor(flavorId);
+            return true;
+        }
+
+        private static IReadOnlyList<string> ProjectDishIds(List<RecipeBookSlot> book)
+        {
+            var ids = new List<string>(book.Count);
+            foreach (RecipeBookSlot slot in book)
+            {
+                ids.Add(slot.DishId);
+            }
+
+            return ids;
         }
 
         public bool CanAddRecipeBook => _recipeBooks.Count < MaxRecipeBookCount;
@@ -1148,7 +1265,7 @@ namespace GourmetProject.Game.Run
                 return false;
             }
 
-            _recipeBooks.Add(new List<string>());
+            _recipeBooks.Add(new List<RecipeBookSlot>());
             RebuildBonusDishCache();
             return true;
         }
@@ -1160,8 +1277,8 @@ namespace GourmetProject.Game.Run
                 return false;
             }
 
-            List<string> from = _recipeBooks[fromBookIndex];
-            List<string> to = _recipeBooks[toBookIndex];
+            List<RecipeBookSlot> from = _recipeBooks[fromBookIndex];
+            List<RecipeBookSlot> to = _recipeBooks[toBookIndex];
             if (dishIndex < 0 || dishIndex >= from.Count || to.Count >= RecipeBookCapacity)
             {
                 return false;
@@ -1172,9 +1289,10 @@ namespace GourmetProject.Game.Run
                 return true;
             }
 
-            string dishId = from[dishIndex];
+            // 整个条目搬走，玩家附加风味随之一起走。
+            RecipeBookSlot slot = from[dishIndex];
             from.RemoveAt(dishIndex);
-            to.Add(dishId);
+            to.Add(slot);
             RebuildBonusDishCache();
             return true;
         }
@@ -1186,7 +1304,7 @@ namespace GourmetProject.Game.Run
                 return false;
             }
 
-            List<string> book = _recipeBooks[bookIndex];
+            List<RecipeBookSlot> book = _recipeBooks[bookIndex];
             if (dishIndex < 0 || dishIndex >= book.Count)
             {
                 return false;
@@ -1327,13 +1445,13 @@ namespace GourmetProject.Game.Run
             }
 
             EnsureRecipeBookCount(DefaultRecipeBookCount);
-            List<string> target = FirstRecipeBookWithSpace();
+            List<RecipeBookSlot> target = FirstRecipeBookWithSpace();
             if (target == null)
             {
                 return false;
             }
 
-            target.Add(dishId);
+            target.Add(new RecipeBookSlot(dishId));
             RebuildBonusDishCache();
             return true;
         }
@@ -1345,13 +1463,13 @@ namespace GourmetProject.Game.Run
                 return false;
             }
 
-            List<string> book = _recipeBooks[bookIndex];
+            List<RecipeBookSlot> book = _recipeBooks[bookIndex];
             if (book.Count >= RecipeBookCapacity)
             {
                 return false;
             }
 
-            book.Add(dishId);
+            book.Add(new RecipeBookSlot(dishId));
             RebuildBonusDishCache();
             return true;
         }
@@ -1359,10 +1477,12 @@ namespace GourmetProject.Game.Run
         /// <summary>从菜谱奖励池移除一道菜（商店删菜）。</summary>
         public bool RemoveBonusDish(string dishId)
         {
-            foreach (List<string> book in _recipeBooks)
+            foreach (List<RecipeBookSlot> book in _recipeBooks)
             {
-                if (book.Remove(dishId))
+                int idx = book.FindIndex(s => s.DishId == dishId);
+                if (idx >= 0)
                 {
+                    book.RemoveAt(idx);
                     RebuildBonusDishCache();
                     return true;
                 }
@@ -1467,13 +1587,13 @@ namespace GourmetProject.Game.Run
         {
             while (_recipeBooks.Count < count)
             {
-                _recipeBooks.Add(new List<string>());
+                _recipeBooks.Add(new List<RecipeBookSlot>());
             }
         }
 
-        private List<string> FirstRecipeBookWithSpace()
+        private List<RecipeBookSlot> FirstRecipeBookWithSpace()
         {
-            foreach (List<string> book in _recipeBooks)
+            foreach (List<RecipeBookSlot> book in _recipeBooks)
             {
                 if (book.Count < RecipeBookCapacity)
                 {
@@ -1487,11 +1607,11 @@ namespace GourmetProject.Game.Run
         private void RebuildBonusDishCache()
         {
             _bonusDishIds.Clear();
-            foreach (List<string> book in _recipeBooks)
+            foreach (List<RecipeBookSlot> book in _recipeBooks)
             {
-                foreach (string dishId in book)
+                foreach (RecipeBookSlot slot in book)
                 {
-                    _bonusDishIds.Add(dishId);
+                    _bonusDishIds.Add(slot.DishId);
                 }
             }
         }
@@ -1499,12 +1619,23 @@ namespace GourmetProject.Game.Run
         private List<RunRecipeBookSaveData> ToRecipeBookSaveData()
         {
             var books = new List<RunRecipeBookSaveData>(_recipeBooks.Count);
-            foreach (List<string> book in _recipeBooks)
+            foreach (List<RecipeBookSlot> book in _recipeBooks)
             {
-                books.Add(new RunRecipeBookSaveData
+                var save = new RunRecipeBookSaveData
                 {
-                    DishIds = new List<string>(book),
-                });
+                    DishIds = new List<string>(book.Count),
+                    DishExtraFlavors = new List<RunRecipeDishFlavorSaveData>(book.Count),
+                };
+                foreach (RecipeBookSlot slot in book)
+                {
+                    save.DishIds.Add(slot.DishId);
+                    save.DishExtraFlavors.Add(new RunRecipeDishFlavorSaveData
+                    {
+                        FlavorIds = new List<string>(slot.ExtraFlavorIds),
+                    });
+                }
+
+                books.Add(save);
             }
 
             return books;
@@ -1527,6 +1658,39 @@ namespace GourmetProject.Game.Run
             return list;
         }
 
+        private List<CellMaterialSaveData> ToCellMaterialSaveData()
+        {
+            var list = new List<CellMaterialSaveData>(_cellMaterialOverrides.Count);
+            foreach (CellMaterialOverride m in _cellMaterialOverrides)
+            {
+                list.Add(new CellMaterialSaveData
+                {
+                    X = m.Pos.X,
+                    Y = m.Pos.Y,
+                    MaterialId = m.MaterialId,
+                });
+            }
+
+            return list;
+        }
+
+        private List<RuntimeTimelineNodeSaveData> ToRuntimeTimelineNodeSaveData()
+        {
+            var list = new List<RuntimeTimelineNodeSaveData>(_runtimeTimelineNodes.Count);
+            foreach (RuntimeTimelineNode n in _runtimeTimelineNodes)
+            {
+                list.Add(new RuntimeTimelineNodeSaveData
+                {
+                    Id = n.Id,
+                    TimelineId = n.TimelineId,
+                    Day = n.Day,
+                    ActionId = n.ActionId,
+                });
+            }
+
+            return list;
+        }
+
         private void RestoreRecipeBooks(RunSaveData data)
         {
             _recipeBooks.Clear();
@@ -1535,16 +1699,30 @@ namespace GourmetProject.Game.Run
                 int count = System.Math.Min(data.RecipeBooks.Count, MaxRecipeBookCount);
                 for (int i = 0; i < count; i++)
                 {
-                    var book = new List<string>();
-                    List<string> dishIds = data.RecipeBooks[i]?.DishIds;
+                    var book = new List<RecipeBookSlot>();
+                    RunRecipeBookSaveData bookData = data.RecipeBooks[i];
+                    List<string> dishIds = bookData?.DishIds;
+                    List<RunRecipeDishFlavorSaveData> extraFlavors = bookData?.DishExtraFlavors;
                     if (dishIds != null)
                     {
                         for (int k = 0; k < dishIds.Count && book.Count < RecipeBookCapacity; k++)
                         {
-                            if (Database.GetDish(dishIds[k]) != null)
+                            if (Database.GetDish(dishIds[k]) == null)
                             {
-                                book.Add(dishIds[k]);
+                                continue;
                             }
+
+                            var slot = new RecipeBookSlot(dishIds[k]);
+                            // 旧档无 DishExtraFlavors 字段 → 跳过；新档按同 index 还原永久风味。
+                            if (extraFlavors != null && k < extraFlavors.Count && extraFlavors[k]?.FlavorIds != null)
+                            {
+                                foreach (string flavorId in extraFlavors[k].FlavorIds)
+                                {
+                                    slot.AddFlavor(flavorId);
+                                }
+                            }
+
+                            book.Add(slot);
                         }
                     }
 

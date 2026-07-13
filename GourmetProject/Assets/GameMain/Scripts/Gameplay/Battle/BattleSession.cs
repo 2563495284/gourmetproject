@@ -160,7 +160,7 @@ namespace GourmetProject.Gameplay.Battle
                 }
 
                 // 麻：菜谱里带「麻」风味的菜在上菜前即按逆时针 n×90° 旋转，用旋转后的形状随机放置；放不下则回退不旋转。
-                int numbSteps = NumbStepsFor(TagComposer.ComposeFlavors(new[] { dish.FlavorId }));
+                int numbSteps = NumbStepsFor(ComposeServeFlavors(dish, slot.Entries[i]));
                 List<Placement> placements = numbSteps > 0
                     ? DiningTable.FindValidPlacementsRotatedCcw(dish, numbSteps)
                     : DiningTable.FindValidPlacements(dish);
@@ -184,7 +184,7 @@ namespace GourmetProject.Gameplay.Battle
             ServeCandidate chosen = candidates[_rng.WeightedPickIndex(weights)];
             RecipeSlotEntry entry = slot.RemoveEntryAt(chosen.SlotEntryIndex);
             List<string> skills = TagComposer.ComposeSkills(chosen.Dish.SkillIds);
-            List<string> flavors = TagComposer.ComposeFlavors(new[] { chosen.Dish.FlavorId });
+            List<string> flavors = ComposeServeFlavors(chosen.Dish, entry);
             var instance = new DishInstance(_nextInstanceId++, chosen.Dish, chosen.Placement, skills, flavors);
             instance.SetSourceSlotIndex(slotIndex);
             ApplyEntryFlags(instance, entry);
@@ -252,6 +252,22 @@ namespace GourmetProject.Gameplay.Battle
         }
 
         /// <summary>统计一组风味里「麻」(Rotate) 的逆时针旋转步数（各麻风味 effectValue 之和）。</summary>
+        /// <summary>
+        /// 合成上菜风味：菜谱变体自带风味 + 玩家用「调味小票」永久附加的额外风味。
+        /// 有额外风味时解除单槽上限以支持叠加（如甜×n）；无额外风味时沿用单槽语义（后者覆盖）。
+        /// </summary>
+        private List<string> ComposeServeFlavors(DishDef dish, RecipeSlotEntry entry)
+        {
+            if (entry == null || entry.ExtraFlavorIds.Count == 0)
+            {
+                return TagComposer.ComposeFlavors(new[] { dish.FlavorId });
+            }
+
+            var ids = new List<string>(1 + entry.ExtraFlavorIds.Count) { dish.FlavorId };
+            ids.AddRange(entry.ExtraFlavorIds);
+            return TagComposer.ComposeFlavors(ids, removeFlavorCap: true);
+        }
+
         private int NumbStepsFor(IReadOnlyList<string> flavorIds)
         {
             if (flavorIds == null)
@@ -566,6 +582,124 @@ namespace GourmetProject.Gameplay.Battle
             }
 
             DiningTable.Clear();
+        }
+
+        /// <summary>按 Id 查找餐桌上的菜；不存在返回 null。</summary>
+        public DishInstance FindDishById(int dishId)
+        {
+            foreach (DishInstance dish in DiningTable.Dishes)
+            {
+                if (dish.Id == dishId)
+                {
+                    return dish;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>主动道具：给指定餐桌菜永久加分（对标杀戮尖塔2 火焰药水打目标）。成功返回 true。</summary>
+        public bool AddPermanentScoreToDish(int dishId, float amount)
+        {
+            if (IsSettled)
+            {
+                return false;
+            }
+
+            DishInstance dish = FindDishById(dishId);
+            if (dish == null)
+            {
+                return false;
+            }
+
+            dish.AddPermanentFlat(amount);
+            return true;
+        }
+
+        /// <summary>主动道具：给指定餐桌菜永久乘区加成。成功返回 true。</summary>
+        public bool MultiplyScoreOnDish(int dishId, float multiplier)
+        {
+            if (IsSettled)
+            {
+                return false;
+            }
+
+            DishInstance dish = FindDishById(dishId);
+            if (dish == null)
+            {
+                return false;
+            }
+
+            dish.MultiplyPermanentMult(multiplier);
+            return true;
+        }
+
+        /// <summary>主动道具：给指定餐桌菜加「视为食物数」。成功返回 true。</summary>
+        public bool AddCountAsToDish(int dishId, int amount)
+        {
+            if (IsSettled)
+            {
+                return false;
+            }
+
+            DishInstance dish = FindDishById(dishId);
+            if (dish == null)
+            {
+                return false;
+            }
+
+            dish.AddCountAsBonus(amount);
+            return true;
+        }
+
+        /// <summary>主动道具：移除指定餐桌菜（对标破坏族）。成功返回 true。</summary>
+        public bool DestroyDishById(int dishId)
+        {
+            if (IsSettled)
+            {
+                return false;
+            }
+
+            DishInstance dish = FindDishById(dishId);
+            if (dish == null)
+            {
+                return false;
+            }
+
+            DiningTable.RemoveDish(dish);
+            return true;
+        }
+
+        /// <summary>
+        /// 主动道具：复制指定餐桌菜到空位（对标增殖族）。摆放位置由战斗随机流选取，
+        /// 与临时复制（<see cref="ApplyTempCopyRequests"/>）一致但产出为常驻实例。空位不足返回 false。
+        /// </summary>
+        public bool DuplicateDishById(int dishId)
+        {
+            if (IsSettled)
+            {
+                return false;
+            }
+
+            DishInstance source = FindDishById(dishId);
+            if (source == null)
+            {
+                return false;
+            }
+
+            List<Placement> placements = DiningTable.FindValidPlacements(source.Def);
+            if (placements.Count == 0)
+            {
+                return false;
+            }
+
+            Placement placement = placements[_rng.Range(0, placements.Count)];
+            var clone = new DishInstance(_nextInstanceId++, source.Def, placement, source.SkillIds, source.FlavorIds);
+            clone.SetSourceSlotIndex(source.SourceSlotIndex);
+            clone.CopySkillSourcesFrom(source);
+            clone.CopyTransferredSkillsFrom(source);
+            DiningTable.Place(clone);
+            return true;
         }
 
         /// <summary>当前所有菜谱槽是否都无法再上菜（用于提示玩家结算）。</summary>

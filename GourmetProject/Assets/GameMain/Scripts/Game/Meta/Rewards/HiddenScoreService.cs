@@ -200,28 +200,8 @@ namespace GourmetProject.Game.Meta
 
         private static float ItemHiddenBonus(GameRun run)
         {
-            if (run == null)
-            {
-                return 0f;
-            }
-
-            float total = 0f;
-            foreach (RunItemState state in run.Items)
-            {
-                ItemDefinition item = ItemDefinition.Get(run.Tables, state.ItemId, cfg.ItemKind.Passive);
-                if (item == null)
-                {
-                    continue;
-                }
-
-                if (string.Equals(item.EffectType, "HiddenScoreBonus", StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(item.EffectType, "RewardHiddenBonus", StringComparison.OrdinalIgnoreCase))
-                {
-                    total += ItemPoolService.GetEffectValue(item);
-                }
-            }
-
-            return total;
+            // 隐藏分加成改由被动道具模型钩子提供（不再按 effectType 字符串判定）。
+            return run != null ? new ItemRuntime(run).HiddenScoreBonus() : 0f;
         }
     }
 }

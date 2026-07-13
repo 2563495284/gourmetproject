@@ -166,6 +166,11 @@ namespace GourmetProject.Game.Meta.Passives
         {
         }
 
+        // ================= 隐藏分族 =================
+
+        /// <summary>奖励隐藏分加成（累加）。取代旧的 effectType=="HiddenScoreBonus"/"RewardHiddenBonus" 判定。</summary>
+        public virtual float HiddenScoreBonus() => 0f;
+
         // ================= 蛋糕层数族 =================
 
         public virtual int CakeInitialLayers() => 0;

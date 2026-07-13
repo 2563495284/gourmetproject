@@ -86,7 +86,7 @@ namespace GourmetProject.Game.Meta
             return tables.TbAction.GetOrDefault(node.ActionId);
         }
 
-        /// <summary>当前行动轴的全部节点（按 day 升序）。</summary>
+        /// <summary>当前行动轴的全部节点（静态配置 + 主动道具动态追加，按 day 升序）。</summary>
         public static List<cfg.TimelineNode> GetNodes(GameRun run)
         {
             var nodes = new List<cfg.TimelineNode>();
@@ -104,8 +104,48 @@ namespace GourmetProject.Game.Meta
                 }
             }
 
+            // 合并运行时节点（奖励单等）：构造与配置同型的 cfg.TimelineNode，走同一触发/执行链。
+            foreach (RuntimeTimelineNode rt in run.RuntimeTimelineNodes)
+            {
+                if (rt.TimelineId == run.CurrentTimelineId)
+                {
+                    nodes.Add(BuildRuntimeNode(rt));
+                }
+            }
+
             nodes.Sort((a, b) => a.Day.CompareTo(b.Day));
             return nodes;
+        }
+
+        /// <summary>取当前行动轴上尚未结算、day 最小的下一个节点（含运行时节点）；无则返回 null。「加急单」用。</summary>
+        public static cfg.TimelineNode GetNextUntriggeredNode(GameRun run)
+        {
+            if (run == null)
+            {
+                return null;
+            }
+
+            foreach (cfg.TimelineNode node in GetNodes(run))
+            {
+                if (!run.IsNodeTriggered(node.Id))
+                {
+                    return node;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// 由运行时节点数据构造 cfg.TimelineNode。Luban bean 仅有 JSON 构造，这里拼 JSON 串走
+        /// 与配置加载相同的 <c>JSON.Parse</c> 反序列化路径（id/actionId 均为受控字符串，无需转义）。
+        /// </summary>
+        private static cfg.TimelineNode BuildRuntimeNode(RuntimeTimelineNode rt)
+        {
+            string json = "{\"id\":\"" + rt.Id + "\",\"timelineId\":\"" + rt.TimelineId
+                + "\",\"day\":" + rt.Day.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                + ",\"actionId\":\"" + rt.ActionId + "\"}";
+            return new cfg.TimelineNode(Luban.SimpleJSON.JSON.Parse(json));
         }
 
         /// <summary>收集天数从 prevDay 推进到 newDay 经过的、尚未结算的节点（按 day 升序）。节点落在整天，比较含浮点容差。</summary>

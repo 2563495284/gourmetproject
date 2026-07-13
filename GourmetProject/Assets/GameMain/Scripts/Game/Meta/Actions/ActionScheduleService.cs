@@ -62,6 +62,70 @@ namespace GourmetProject.Game.Meta
             return result;
         }
 
+        /// <summary>
+        /// 「行动调整单」重掷：保留上一批里的 Boss 行动（Boss 不可重掷），其余用新 rng 重新生成填满。
+        /// 当前小组池不含 Boss 行动，Boss 过滤为防御性逻辑（未来若加 Boss 小组仍正确）。
+        /// </summary>
+        public static List<ActionChoice> RerollChoices(GameRun run, IRandomStream rng, IReadOnlyList<ActionChoice> previous)
+        {
+            var result = new List<ActionChoice>();
+            if (run == null || rng == null)
+            {
+                return result;
+            }
+
+            cfg.Tables tables = run.Tables ?? GameApp.Config.Tables;
+
+            if (previous != null)
+            {
+                foreach (ActionChoice choice in previous)
+                {
+                    if (choice != null && choice.IsValid && IsBossAction(tables, choice.Action))
+                    {
+                        result.Add(choice);
+                    }
+                }
+            }
+
+            if (result.Count >= ActionRandomService.MaxChoiceCount)
+            {
+                return result;
+            }
+
+            foreach (ActionChoice choice in GenerateChoices(run, rng, ActionRandomService.MaxChoiceCount))
+            {
+                if (result.Count >= ActionRandomService.MaxChoiceCount)
+                {
+                    break;
+                }
+
+                if (choice == null || !choice.IsValid || IsBossAction(tables, choice.Action))
+                {
+                    continue;
+                }
+
+                result.Add(choice);
+            }
+
+            return result;
+        }
+
+        private static bool IsBossAction(cfg.Tables tables, cfg.GameAction action)
+        {
+            if (action == null)
+            {
+                return false;
+            }
+
+            if (FoodService.IsBossSlot(action))
+            {
+                return true;
+            }
+
+            cfg.Food food = FoodService.Resolve(tables, action);
+            return food != null && food.IsBoss;
+        }
+
         private static cfg.ActionSmallGroup PickSmall(cfg.Tables tables, cfg.ActionLargeGroup large, IRandomStream rng)
         {
             var smalls = new List<cfg.ActionSmallGroup>();

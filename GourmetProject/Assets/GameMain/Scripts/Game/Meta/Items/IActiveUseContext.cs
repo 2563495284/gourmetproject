@@ -52,5 +52,42 @@ namespace GourmetProject.Game.Meta
 
         /// <summary>能力：额外上一道菜（仅战斗支持）。不支持或无法执行返回 false。</summary>
         bool ExtraServe();
+
+        /// <summary>能力：给目标菜永久加分（对标杀戮尖塔2 药水打目标）。不支持或目标无效返回 false。</summary>
+        bool AddPermanentScore(ActiveTarget target, float amount);
+
+        /// <summary>能力：复制目标菜。<paramref name="randomKey"/> 供需随机流的情境派生确定性随机。</summary>
+        bool DuplicateDish(ActiveTarget target, string randomKey);
+
+        /// <summary>能力：移除目标菜。不支持或目标无效返回 false。</summary>
+        bool DestroyDish(ActiveTarget target);
+
+        /// <summary>能力：给目标菜乘区加成（永久乘区）。不支持或目标无效返回 false。</summary>
+        bool MultiplyScore(ActiveTarget target, float multiplier);
+
+        /// <summary>能力：给目标菜加「视为食物数」。不支持或目标无效返回 false。</summary>
+        bool AddCountAs(ActiveTarget target, int amount);
+
+        // —— 调味小票 / 铺台小票：永久改 Run（任意情境含战斗都可用）——
+
+        /// <summary>能力：给菜谱目标菜永久附加风味（<paramref name="target"/>.X=书序，Y=菜序）。</summary>
+        bool AddFlavorToDish(ActiveTarget target, string flavorId);
+
+        /// <summary>能力：给餐桌格永久附加材质（<paramref name="target"/>.X/Y=格坐标）。</summary>
+        bool AddMaterialToCell(ActiveTarget target, string materialId);
+
+        // —— 排程小票：操作行动轴/Boss，仅地图情境支持，战斗返回 false ——
+
+        /// <summary>能力：重掷当前行动选项（保 Boss）。不支持或非选择态返回 false。</summary>
+        bool RerollCurrentAction();
+
+        /// <summary>能力：重置本周 Boss 类型（清 Boss debuff 抽取历史）。不支持返回 false。</summary>
+        bool ResetWeekBoss();
+
+        /// <summary>能力：立即执行行动轴上尚未结算的下一个节点。无可执行节点返回 false。</summary>
+        bool ExecuteNextTimelineNode();
+
+        /// <summary>能力：在当前行动轴上追加一个奖励节点（<paramref name="actionId"/>=奖励行动 id）。不支持返回 false。</summary>
+        bool AddRewardNodeToTimeline(string actionId);
     }
 }

@@ -36,15 +36,22 @@ namespace GourmetProject.Game.Run
                 for (int i = 0; i < recipeBookCount; i++)
                 {
                     List<string> deck = RecipeRoller.Roll(recipe, run.Database, recipeStream);
-                    foreach (string dishId in run.GetRecipeBookDishes(i))
+                    var entries = new List<RecipeSlotEntry>(deck.Count);
+                    foreach (string dishId in deck)
                     {
-                        if (run.Database.GetDish(dishId) != null)
+                        entries.Add(new RecipeSlotEntry(dishId));
+                    }
+
+                    // 玩家菜谱条目：带上「调味小票」永久附加的额外风味。
+                    foreach (RecipeBookSlot bookSlot in run.GetRecipeBookEntries(i))
+                    {
+                        if (run.Database.GetDish(bookSlot.DishId) != null)
                         {
-                            deck.Add(dishId);
+                            entries.Add(new RecipeSlotEntry(bookSlot.DishId, bookSlot.ExtraFlavorIds));
                         }
                     }
 
-                    slots.Add(new RecipeSlot($"菜谱{i + 1}", deck));
+                    slots.Add(new RecipeSlot($"菜谱{i + 1}", entries));
                 }
 
                 ApplyRecipeModifiers(slots, run, modifier, debuffStream);
@@ -119,6 +126,7 @@ namespace GourmetProject.Game.Run
                 Log.Warning($"Character '{run.CharacterId}' 无有效初始餐桌碎片 '{character?.InitialFragmentId}'，回退为满 {maxW}x{maxH} 餐桌。", "GameRun");
                 GpTable fallback = new GpTable(maxW, maxH);
                 ApplyShapeModifier(fallback, modifier);
+                ApplyCellMaterialOverrides(fallback, run);
                 return fallback;
             }
 
@@ -138,7 +146,22 @@ namespace GourmetProject.Game.Run
                 canvasH,
                 initialOrigin);
             ApplyShapeModifier(board, modifier);
+            ApplyCellMaterialOverrides(board, run);
             return board;
+        }
+
+        /// <summary>把玩家用「铺台小票」永久附加的格子材质叠加进餐桌（拼桌后统一 merge，战斗与预览一致）。</summary>
+        private static void ApplyCellMaterialOverrides(GpTable board, GameRun run)
+        {
+            if (board == null || run == null)
+            {
+                return;
+            }
+
+            foreach (CellMaterialOverride m in run.CellMaterialOverrides)
+            {
+                board.AddMaterialAt(m.Pos, m.MaterialId);
+            }
         }
 
         private static int ApplyRequiredScoreModifier(int requiredScore, string modifier)

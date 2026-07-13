@@ -183,16 +183,7 @@ namespace GourmetProject.Tests
             Assert.AreEqual(3, rt.StarGazeFirst());
         }
 
-        // —— OnAcquire（获得时结算一次，由 effectType 推导）及计数类被动 ——
-
-        [Test]
-        public void IsOnAcquireEffect_RecognizesKnownTypes()
-        {
-            Assert.IsTrue(ItemEffectTypes.IsOnAcquireEffect(ItemEffectTypes.GoldNow));
-            Assert.IsTrue(ItemEffectTypes.IsOnAcquireEffect(ItemEffectTypes.Loan));
-            Assert.IsFalse(ItemEffectTypes.IsOnAcquireEffect(ItemEffectTypes.FinalAddFlat));
-            Assert.IsFalse(ItemEffectTypes.IsOnAcquireEffect(ItemEffectTypes.ShopDiscountFood));
-        }
+        // —— OnAcquire（获得时结算一次，由道具模型 OnAcquired 驱动）及计数类被动 ——
 
         [Test]
         public void OnAcquire_GoldNow_GrantsGoldInRange()

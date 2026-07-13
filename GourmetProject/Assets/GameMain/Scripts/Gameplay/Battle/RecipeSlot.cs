@@ -25,6 +25,21 @@ namespace GourmetProject.Gameplay.Battle
             }
         }
 
+        public RecipeSlot(string id, IEnumerable<RecipeSlotEntry> entries)
+        {
+            Id = id;
+            _entries = new List<RecipeSlotEntry>();
+            if (entries == null)
+            {
+                return;
+            }
+
+            foreach (RecipeSlotEntry entry in entries)
+            {
+                AddEntry(entry);
+            }
+        }
+
         public string Id { get; }
 
         public IReadOnlyList<string> Remaining => _entries.Select(e => e.DishId).ToList();
@@ -74,9 +89,17 @@ namespace GourmetProject.Gameplay.Battle
     /// <summary>菜谱槽内的一条具体食物记录，可被 Boss Debuff 标记后随上菜传给实例。</summary>
     public sealed class RecipeSlotEntry
     {
+        private readonly List<string> _extraFlavorIds;
+
         public RecipeSlotEntry(string dishId)
+            : this(dishId, null)
+        {
+        }
+
+        public RecipeSlotEntry(string dishId, IEnumerable<string> extraFlavorIds)
         {
             DishId = dishId ?? string.Empty;
+            _extraFlavorIds = extraFlavorIds != null ? new List<string>(extraFlavorIds) : new List<string>();
         }
 
         public string DishId { get; }
@@ -84,6 +107,9 @@ namespace GourmetProject.Gameplay.Battle
         public bool DisableSkills { get; private set; }
 
         public bool ExcludeFromScore { get; private set; }
+
+        /// <summary>玩家用调味小票为该菜谱条目永久附加的额外风味（上菜时与变体自带风味合并）。</summary>
+        public IReadOnlyList<string> ExtraFlavorIds => _extraFlavorIds;
 
         public void MarkSkillsDisabled()
         {
@@ -97,7 +123,7 @@ namespace GourmetProject.Gameplay.Battle
 
         public RecipeSlotEntry Clone()
         {
-            var clone = new RecipeSlotEntry(DishId);
+            var clone = new RecipeSlotEntry(DishId, _extraFlavorIds);
             if (DisableSkills)
             {
                 clone.MarkSkillsDisabled();

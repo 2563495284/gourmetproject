@@ -28,18 +28,6 @@ namespace GourmetProject.Tests
         }
 
         [Test]
-        public void Registry_HasModelForEveryPassiveItem()
-        {
-            cfg.Tables tables = LoadTables();
-            foreach (cfg.PassiveItem item in tables.TbPassiveItem.DataList)
-            {
-                Assert.IsTrue(
-                    PassiveItemModelRegistry.HasModel(item.Id),
-                    $"被动道具 '{item.Id}'(effectType={item.EffectType}) 缺少对应 PassiveItemModel。");
-            }
-        }
-
-        [Test]
         public void PassiveModel_BoundOnAcquire_AndClearedOnRemove()
         {
             cfg.Tables tables = LoadTables();

@@ -215,6 +215,11 @@ namespace GourmetProject.Game.Meta
         /// <summary>每 N 个事件保底一个奖励事件的周期（取最大；无则 0）。</summary>
         public int LuckyEventGuaranteeEvery() => MaxInt(m => m.LuckyEventGuaranteeEvery());
 
+        // ================= 隐藏分族 =================
+
+        /// <summary>奖励隐藏分加成（各模型累加）。</summary>
+        public float HiddenScoreBonus() => SumFloat(m => m.HiddenScoreBonus());
+
         // ================= 蛋糕层数族 =================
 
         public int CakeInitialLayers() => SumInt(m => m.CakeInitialLayers());

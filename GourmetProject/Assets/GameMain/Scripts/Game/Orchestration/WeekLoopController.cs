@@ -279,6 +279,31 @@ namespace GourmetProject.Game.Orchestration
             _view.ShowTimelineNodeCard(node, InterestMaxGain(), () => ExecutePlacedAction(node, action));
         }
 
+        /// <summary>
+        /// 「加急单」：立即执行行动轴上尚未结算、day 最小的下一个节点（含运行时节点），不推进天数。
+        /// 复用节点卡展示 + <see cref="ExecutePlacedAction"/> 执行链。无可执行节点返回 false。
+        /// </summary>
+        public bool ForceExecuteNextTimelineNode()
+        {
+            cfg.TimelineNode node = TimelineService.GetNextUntriggeredNode(_run);
+            if (node == null)
+            {
+                return false;
+            }
+
+            cfg.GameAction action = TimelineService.NodeAction(_run, node);
+            _run.MarkNodeTriggered(node.Id);
+            if (action == null)
+            {
+                RunPersistence.Save(_run);
+                return true;
+            }
+
+            // 单节点即时执行：不设 _pendingNodes 队列，ExecutePlacedAction 完成后 ProcessNextNode 空跑收尾。
+            _view.ShowTimelineNodeCard(node, InterestMaxGain(), () => ExecutePlacedAction(node, action));
+            return true;
+        }
+
         /// <summary>放置行动执行：与随机行动共用 <see cref="ActionExecutor"/> 与 <see cref="DispatchOutcome"/>，节点不消耗天数/步数。</summary>
         private void ExecutePlacedAction(cfg.TimelineNode node, cfg.GameAction action)
         {

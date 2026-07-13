@@ -22,7 +22,6 @@ public sealed partial class PassiveItem : Luban.BeanBase
         { if(!_buf["desc"].IsString) { throw new SerializationException(); }  Desc = _buf["desc"]; }
         { if(!_buf["quality"].IsNumber) { throw new SerializationException(); }  Quality = (ItemQuality)_buf["quality"].AsInt; }
         { if(!_buf["specialTags"].IsString) { throw new SerializationException(); }  SpecialTags = _buf["specialTags"]; }
-        { if(!_buf["effectType"].IsString) { throw new SerializationException(); }  EffectType = _buf["effectType"]; }
         { if(!_buf["effectValue"].IsNumber) { throw new SerializationException(); }  EffectValue = _buf["effectValue"]; }
         { if(!_buf["effectParam"].IsString) { throw new SerializationException(); }  EffectParam = _buf["effectParam"]; }
         { if(!_buf["baseWeight"].IsNumber) { throw new SerializationException(); }  BaseWeight = _buf["baseWeight"]; }
@@ -54,10 +53,6 @@ public sealed partial class PassiveItem : Luban.BeanBase
     /// 特殊标签标记
     /// </summary>
     public readonly string SpecialTags;
-    /// <summary>
-    /// 效果类型
-    /// </summary>
-    public readonly string EffectType;
     /// <summary>
     /// 效果数值
     /// </summary>
@@ -91,7 +86,6 @@ public sealed partial class PassiveItem : Luban.BeanBase
         + "desc:" + Desc + ","
         + "quality:" + Quality + ","
         + "specialTags:" + SpecialTags + ","
-        + "effectType:" + EffectType + ","
         + "effectValue:" + EffectValue + ","
         + "effectParam:" + EffectParam + ","
         + "baseWeight:" + BaseWeight + ","

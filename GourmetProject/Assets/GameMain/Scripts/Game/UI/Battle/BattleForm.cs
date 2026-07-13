@@ -1234,6 +1234,9 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
+            // TODO(active-item-ui): 需选目标的道具（AddFlavor 选菜谱菜 / AddMaterial 选餐桌格）应先进入
+            //   「选目标状态机」高亮候选（ctx.EnumerateTargets）、玩家确认后再把 ActiveTarget 传入 Apply。
+            //   当前 TryUse 传空目标，目标类道具会返回「请先选择目标」，待选目标 UI 落地后接入。
             ActiveItemUseResult result = ActiveItemEffectRegistry.TryUse(_session, _run, item);
             _world?.ShowMessage(result.Message);
             if (!result.Success)
@@ -1250,6 +1253,36 @@ namespace GourmetProject.Game.UI.Battle
 
             // 战斗过程中用道具只改内存，不即时存档；战斗结算（胜利领奖确认）时由编排层 Commit 统一入档。
             // 中途退出游戏则未存档，重进会重做该战斗，道具不消耗。
+            RefreshAll();
+        }
+
+        // TODO(active-item-ui): 局外（地图）点击主动道具入口。当前逻辑层已就绪（MapUseContext + Registry），
+        //   缺的是表现层接线：非战斗态道具栏的点击应路由到此；需选目标的道具走选目标状态机；
+        //   排程类（重掷/重置/执行下一节点/加奖励节点）用完后重绘行动轴（BuildActionCards/RollChoices）与时间轴（TimelineAxisBinder.Rebuild）。
+        private void OnMapActiveItemClicked(string itemId, IReadOnlyList<ActiveTarget> targets)
+        {
+            if (_run == null)
+            {
+                return;
+            }
+
+            ItemDefinition item = ItemDefinition.Get(GameApp.Config.Tables, itemId, cfg.ItemKind.Active);
+            if (item == null || !_run.HasItem(itemId) || !ItemActiveUsage.CanUse(item, ActiveUseContextKind.Map))
+            {
+                _world?.ShowMessage($"{item?.Name}：现在不是使用时机。");
+                return;
+            }
+
+            var ctx = new MapUseContext(_run, _loop);
+            ActiveItemUseResult result = ActiveItemEffectRegistry.Apply(ctx, item, targets ?? System.Array.Empty<ActiveTarget>());
+            _world?.ShowMessage(result.Message);
+            if (result.Success)
+            {
+                _run.UseActiveItem(itemId);
+                RunPersistence.Save(_run);
+                // TODO(active-item-ui): 依 effectType 重绘行动轴 / 时间轴 / 道具栏。
+            }
+
             RefreshAll();
         }
 
