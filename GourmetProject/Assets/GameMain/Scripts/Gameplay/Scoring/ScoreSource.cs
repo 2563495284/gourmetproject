@@ -9,8 +9,8 @@ namespace GourmetProject.Gameplay.Scoring
         Dish = 0,
         DishSkill = 1,
         DishFlavor = 2,
-        CellTag = 3,
-        BoardTag = 4,
+        Material = 3,
+        TableTag = 4,
         Relic = 5,
         WeekModifier = 6,
         FinalModifier = 7,
@@ -91,10 +91,10 @@ namespace GourmetProject.Gameplay.Scoring
                 dish?.Def?.Id);
         }
 
-        public static ScoreSource CellTag(IEffectDef tag, DishInstance dish, GridPos cell)
+        public static ScoreSource Material(IEffectDef tag, DishInstance dish, GridPos cell)
         {
             return new ScoreSource(
-                ScoreSourceType.CellTag,
+                ScoreSourceType.Material,
                 tag?.Id,
                 tag?.Name,
                 dish != null ? dish.Id : 0,
@@ -102,9 +102,9 @@ namespace GourmetProject.Gameplay.Scoring
                 cell);
         }
 
-        public static ScoreSource BoardTag(string id, string name)
+        public static ScoreSource TableTag(string id, string name)
         {
-            return new ScoreSource(ScoreSourceType.BoardTag, id, name);
+            return new ScoreSource(ScoreSourceType.TableTag, id, name);
         }
 
         public static ScoreSource Relic(string id, string name)

@@ -31,7 +31,7 @@ namespace GourmetProject.Gameplay.Model
         /// <summary>结算时每道菜倍率 +value×(食物总数)（每结算 1 个食物 +value 倍）。</summary>
         PerDishSettledMultFlat = 7,
 
-        /// <summary>结算时每道菜倍率 +value×(棋盘技能总数)（每一个技能 +value 倍）。</summary>
+        /// <summary>结算时每道菜倍率 +value×(餐桌技能总数)（每一个技能 +value 倍）。</summary>
         PerSkillMultFlat = 8,
 
         /// <summary>上菜顺序第 N 个（1-based）的菜倍率 ×value；param: "index:N"，N=-1 表示最后一个。</summary>

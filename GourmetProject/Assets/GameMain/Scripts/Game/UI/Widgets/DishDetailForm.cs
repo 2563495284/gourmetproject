@@ -19,7 +19,7 @@ namespace GourmetProject.Game.UI.Widgets
     /// 菜品详情界面（对应原型图 image2）：左侧菜品形状格子，顶部美味度，
     /// 中部标签（名称+描述），右侧专有名词解释框。
     /// 固定壳（遮罩/面板/名称/美味度/关闭/各容器/名词框）在 DishDetailForm.prefab，
-    /// 菜品图、棋盘网格与标签行按 userData 数据驱动实例化。
+    /// 菜品图、餐桌网格与标签行按 userData 数据驱动实例化。
     /// </summary>
     public sealed class DishDetailForm : UGuiForm
     {
@@ -162,7 +162,7 @@ namespace GourmetProject.Game.UI.Widgets
             int shown = 0;
 
             List<string> lines = DishInfoText.TagLines(
-                data.SkillIds, data.FlavorId, db, out List<string> terms, data.SkillSources, data.TransferredSkills);
+                data.SkillIds, data.FlavorIds, db, out List<string> terms, data.SkillSources, data.TransferredSkills);
 
             foreach (string line in lines)
             {

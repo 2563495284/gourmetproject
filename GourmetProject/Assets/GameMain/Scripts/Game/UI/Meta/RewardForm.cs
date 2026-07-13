@@ -237,7 +237,7 @@ namespace GourmetProject.Game.UI.Meta
                 RunPersistence.Save(_run);
 
                 Close();
-                BattleForm.Active?.OpenRewardBoardEdit(placed =>
+                BattleForm.Active?.OpenRewardTableEdit(placed =>
                 {
                     if (placed && !IsChoiceResolved(extra))
                     {
@@ -248,7 +248,7 @@ namespace GourmetProject.Game.UI.Meta
                     RunPersistence.Save(_run);
 
                     // 拼完碎片（placed）且这是最后一个奖励：不再弹回 RewardForm，直接等效于点「继续」。
-                    // 若在棋盘编辑里选择跳过（!placed），碎片奖励仍保留，照常弹回 RewardForm。
+                    // 若在餐桌编辑里选择跳过（!placed），碎片奖励仍保留，照常弹回 RewardForm。
                     if (TryAutoComplete(closeForm: false))
                     {
                         return;
@@ -636,7 +636,7 @@ namespace GourmetProject.Game.UI.Meta
                 case cfg.RewardKind.DishChoice:
                     return "加入菜谱池，后续美食挑战中可能抽到。";
                 case cfg.RewardKind.FragmentChoice:
-                    return "获得胃部碎片包，进入棋盘编辑后选择并拼贴一块。";
+                    return "获得餐桌碎片包，进入餐桌编辑后选择并拼贴一块。";
                 case cfg.RewardKind.PassiveItemChoice:
                     return "获得后持续生效，重复获得时会升级或折算。";
                 case cfg.RewardKind.ActiveItemGrant:
@@ -660,10 +660,10 @@ namespace GourmetProject.Game.UI.Meta
         {
             if (choices == null || choices.Count == 0)
             {
-                return "点击后进入棋盘编辑。";
+                return "点击后进入餐桌编辑。";
             }
 
-            return $"点击后进入棋盘编辑，从 {choices.Count} 个胃部碎片中选择 1 个拼贴。";
+            return $"点击后进入餐桌编辑，从 {choices.Count} 个餐桌碎片中选择 1 个拼贴。";
         }
 
         private Sprite LoadChoiceIcon(RewardChoice choice)

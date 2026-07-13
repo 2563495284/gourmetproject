@@ -39,8 +39,8 @@ namespace GourmetProject.Game.Meta
             {
                 case ItemEffectTypes.ClearBoard:
                     return ctx.ClearBoard()
-                        ? new ActiveItemUseResult(true, true, $"{item.Name}：已清空棋盘。")
-                        : new ActiveItemUseResult(false, false, $"{item.Name}：现在无法清空棋盘。");
+                        ? new ActiveItemUseResult(true, true, $"{item.Name}：已清空餐桌。")
+                        : new ActiveItemUseResult(false, false, $"{item.Name}：现在无法清空餐桌。");
 
                 case ItemEffectTypes.ExtraServe:
                     return ctx.ExtraServe()

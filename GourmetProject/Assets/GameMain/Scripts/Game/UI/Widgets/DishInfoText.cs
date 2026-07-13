@@ -23,7 +23,7 @@ namespace GourmetProject.Game.UI.Widgets
         /// 生成技能/风味展示行（格式「【名称】描述」，技能在前、风味在后），并输出去重后的关联专有名词 id。
         /// 技能走 <see cref="GameplayDatabase.GetSkill"/>、风味走 <see cref="GameplayDatabase.GetFlavor"/>。
         /// </summary>
-        public static List<string> TagLines(IReadOnlyList<string> skillIds, string flavorId, GameplayDatabase db, out List<string> termIds, IReadOnlyDictionary<string, string> skillSources = null, IReadOnlyList<TransferredSkill> transferredSkills = null)
+        public static List<string> TagLines(IReadOnlyList<string> skillIds, IReadOnlyList<string> flavorIds, GameplayDatabase db, out List<string> termIds, IReadOnlyDictionary<string, string> skillSources = null, IReadOnlyList<TransferredSkill> transferredSkills = null)
         {
             var lines = new List<string>();
             termIds = new List<string>();
@@ -57,7 +57,14 @@ namespace GourmetProject.Game.UI.Widgets
                 }
             }
 
-            AppendEffect(db.GetFlavor(flavorId), lines, termIds);
+            if (flavorIds != null)
+            {
+                foreach (string flavorId in flavorIds)
+                {
+                    AppendEffect(db.GetFlavor(flavorId), lines, termIds);
+                }
+            }
+
             return lines;
         }
 
@@ -123,7 +130,10 @@ namespace GourmetProject.Game.UI.Widgets
             sb.AppendLine(def.Name);
             sb.AppendLine($"美味度 {def.Deliciousness}　形状 {def.Shape.Width}x{def.Shape.Height}");
 
-            List<string> tagLines = TagLines(skillIds, flavorId, db, out List<string> termIds);
+            IReadOnlyList<string> flavorIds = string.IsNullOrEmpty(flavorId)
+                ? System.Array.Empty<string>()
+                : new[] { flavorId };
+            List<string> tagLines = TagLines(skillIds, flavorIds, db, out List<string> termIds);
             foreach (string line in tagLines)
             {
                 sb.AppendLine(line);

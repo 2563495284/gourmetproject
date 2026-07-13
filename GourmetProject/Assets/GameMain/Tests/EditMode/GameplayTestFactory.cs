@@ -124,9 +124,10 @@ namespace GourmetProject.Tests
             return new FlavorDef(id, id, id, effectType, new[] { effectValue }, System.Array.Empty<string>(), termId);
         }
 
-        public static CellTagDef CellTag(string id, TagEffectType effectType, float effectValue, string termId = "")
+        public static MaterialDef CellMaterial(string id, MaterialEffectType effectType, float effectValue, string effectParam = null, string termId = "")
         {
-            return new CellTagDef(id, id, id, effectType, new[] { effectValue }, System.Array.Empty<string>(), termId);
+            string[] parms = string.IsNullOrEmpty(effectParam) ? System.Array.Empty<string>() : new[] { effectParam };
+            return new MaterialDef(id, id, id, effectType, new[] { effectValue }, parms, termId);
         }
 
         /// <summary>造带指定技能（与可选风味）的棋盘菜品实例。第 5 参数即技能 id 列表。</summary>
@@ -134,14 +135,16 @@ namespace GourmetProject.Tests
         {
             DishShape orientation = def.Shape.RotatedBy(rotationIndex);
             var placement = new Placement(orientation, rotationIndex, new GridPos(originX, originY));
-            return new DishInstance(id, def, placement, skillIds, flavorId ?? string.Empty);
+            string[] flavors = string.IsNullOrEmpty(flavorId) ? System.Array.Empty<string>() : new[] { flavorId };
+            return new DishInstance(id, def, placement, skillIds, flavors);
         }
 
         public static DishInstance Instance(int id, DishDef def, int originX, int originY, int rotationIndex = 0)
         {
             DishShape orientation = def.Shape.RotatedBy(rotationIndex);
             var placement = new Placement(orientation, rotationIndex, new GridPos(originX, originY));
-            return new DishInstance(id, def, placement, def.SkillIds, def.FlavorId);
+            string[] flavors = string.IsNullOrEmpty(def.FlavorId) ? System.Array.Empty<string>() : new[] { def.FlavorId };
+            return new DishInstance(id, def, placement, def.SkillIds, flavors);
         }
     }
 }

@@ -4,8 +4,8 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI.Battle.View
 {
     /// <summary>
-    /// 食物调整态的全屏遮黑 + 棋盘高亮：用 4 条黑色半透明条围绕 BoardArea 拼出「中间挖洞」的遮罩
-    /// （世界棋盘在 UI 之后，未遮住的洞即高亮透出），洞四周再加一圈亮色描边框做高亮。
+    /// 食物调整态的全屏遮黑 + 餐桌高亮：用 4 条黑色半透明条围绕 BoardArea 拼出「中间挖洞」的遮罩
+    /// （世界餐桌在 UI 之后，未遮住的洞即高亮透出），洞四周再加一圈亮色描边框做高亮。
     /// 自身挂 overrideSorting 的 Canvas，压在常驻 HUD 之上；食物调整按钮用更高 sortingOrder 浮于本遮罩之上。
     /// </summary>
     public sealed class FoodAdjustOverlay : MonoBehaviour

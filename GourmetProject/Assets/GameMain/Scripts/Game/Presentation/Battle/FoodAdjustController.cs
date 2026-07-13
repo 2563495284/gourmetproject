@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Model;
 using UnityEngine;
-using GpBoard = GourmetProject.Gameplay.Board.Board;
+using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
@@ -69,13 +69,13 @@ namespace GourmetProject.Game.Presentation.Battle
             _hoverDish = null;
         }
 
-        private GpBoard Board => _world != null ? _world.AdjustBoard : null;
-        private BoardCoordinateMapper Mapper => _world != null && _world.AdjustBoardView != null ? _world.AdjustBoardView.Mapper : null;
+        private GpTable DiningTable => _world != null ? _world.AdjustTable : null;
+        private DiningTableCoordinateMapper Mapper => _world != null && _world.AdjustTableView != null ? _world.AdjustTableView.Mapper : null;
         private Camera Cam => _world != null ? _world.AdjustCamera : null;
 
         private void Update()
         {
-            if (!_active || _world == null || Board == null || Mapper == null || Cam == null)
+            if (!_active || _world == null || DiningTable == null || Mapper == null || Cam == null)
             {
                 return;
             }
@@ -103,9 +103,9 @@ namespace GourmetProject.Game.Presentation.Battle
             if (!WorldInput.PointerOverUi)
             {
                 GridPos cell = Mapper.NearestCell(world);
-                if (Board.InBounds(cell))
+                if (DiningTable.InBounds(cell))
                 {
-                    dish = Board.DishAt(cell);
+                    dish = DiningTable.DishAt(cell);
                 }
             }
 
@@ -167,7 +167,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            Board.RemoveDish(dish);
+            DiningTable.RemoveDish(dish);
             HideDeleteButton();
             _hoverDish = null;
             _world.RebuildAfterAdjust();
@@ -180,7 +180,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _movingDish = dish;
             _originalPlacement = dish.Placement;
 
-            Board.RemoveDish(dish);
+            DiningTable.RemoveDish(dish);
             HideDeleteButton();
             _hoverDish = null;
 
@@ -201,7 +201,7 @@ namespace GourmetProject.Game.Presentation.Battle
             DishShape shape = _movingDish.Placement.Orientation;
             Vector3 world = WorldInput.MouseWorld(Cam);
             GridPos origin = SnapOrigin(world, shape);
-            bool canPlace = Board.CanPlace(shape, origin);
+            bool canPlace = DiningTable.CanPlace(shape, origin);
 
             if (_cursorView != null)
             {
@@ -226,7 +226,7 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             var placement = new Placement(shape, _movingDish.Placement.RotationIndex, origin);
             _movingDish.Relocate(placement);
-            Board.Place(_movingDish);
+            DiningTable.Place(_movingDish);
 
             if (_cursorView != null)
             {
@@ -291,7 +291,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _world.RebuildAfterAdjust();
         }
 
-        /// <summary>把正在移动/暂放的菜品还原到原始摆放（棋盘状态复位）。</summary>
+        /// <summary>把正在移动/暂放的菜品还原到原始摆放（餐桌状态复位）。</summary>
         private void RestoreMovingDishToOriginal()
         {
             if (_movingDish == null)
@@ -299,9 +299,9 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            Board.RemoveDish(_movingDish);
+            DiningTable.RemoveDish(_movingDish);
             _movingDish.Relocate(_originalPlacement);
-            Board.Place(_movingDish);
+            DiningTable.Place(_movingDish);
         }
 
         private void CleanupTransient()

@@ -45,10 +45,10 @@ namespace GourmetProject.Game.Adapter
                 flavors.Add(ToFlavorDef(f));
             }
 
-            var cellTags = new List<CellTagDef>(tables.TbCellTag.DataList.Count);
-            foreach (cfg.CellTag c in tables.TbCellTag.DataList)
+            var materials = new List<MaterialDef>(tables.TbMaterial.DataList.Count);
+            foreach (cfg.Material c in tables.TbMaterial.DataList)
             {
-                cellTags.Add(ToCellTagDef(c));
+                materials.Add(ToMaterialDef(c));
             }
 
             var recipes = new List<RecipeDef>(tables.TbRecipe.DataList.Count);
@@ -72,36 +72,36 @@ namespace GourmetProject.Game.Adapter
                     c.Desc));
             }
 
-            return new GameplayDatabase(dishes, skills, flavors, cellTags, recipes, fragments, cakeLayerBuffs);
+            return new GameplayDatabase(dishes, skills, flavors, materials, recipes, fragments, cakeLayerBuffs);
         }
 
-        private static List<StomachFragmentDef> BuildFragments(cfg.Tables tables)
+        private static List<TableFragmentDef> BuildFragments(cfg.Tables tables)
         {
-            // 先按 fragmentId 归集格标签（分开配置的 TbFragmentCellTag）。
-            var cellTagsByFragment = new Dictionary<string, List<CellTag>>();
-            foreach (cfg.FragmentCellTag ct in tables.TbFragmentCellTag.DataList)
+            // 先按 fragmentId 归集格标签（分开配置的 TbFragmentMaterial）。
+            var materialsByFragment = new Dictionary<string, List<CellMaterial>>();
+            foreach (cfg.FragmentMaterial ct in tables.TbFragmentMaterial.DataList)
             {
-                if (!cellTagsByFragment.TryGetValue(ct.FragmentId, out List<CellTag> list))
+                if (!materialsByFragment.TryGetValue(ct.FragmentId, out List<CellMaterial> list))
                 {
-                    list = new List<CellTag>();
-                    cellTagsByFragment[ct.FragmentId] = list;
+                    list = new List<CellMaterial>();
+                    materialsByFragment[ct.FragmentId] = list;
                 }
 
-                list.Add(new CellTag(new GridPos(ct.X, ct.Y), ct.TagId));
+                list.Add(new CellMaterial(new GridPos(ct.X, ct.Y), ct.MaterialId));
             }
 
-            var fragments = new List<StomachFragmentDef>(tables.TbStomachFragment.DataList.Count);
-            foreach (cfg.StomachFragment f in tables.TbStomachFragment.DataList)
+            var fragments = new List<TableFragmentDef>(tables.TbTableFragment.DataList.Count);
+            foreach (cfg.TableFragment f in tables.TbTableFragment.DataList)
             {
-                cellTagsByFragment.TryGetValue(f.Id, out List<CellTag> cellTags);
-                fragments.Add(new StomachFragmentDef(
+                materialsByFragment.TryGetValue(f.Id, out List<CellMaterial> materials);
+                fragments.Add(new TableFragmentDef(
                     f.Id,
                     new List<string>(f.ShapeRows),
                     f.HiddenRange.Min,
                     f.HiddenRange.Max,
                     f.BaseWeight,
                     f.Price,
-                    cellTags ?? new List<CellTag>()));
+                    materials ?? new List<CellMaterial>()));
             }
 
             return fragments;
@@ -212,10 +212,10 @@ namespace GourmetProject.Game.Adapter
                 f.TermId);
         }
 
-        private static CellTagDef ToCellTagDef(cfg.CellTag c)
+        private static MaterialDef ToMaterialDef(cfg.Material c)
         {
-            var effectType = (TagEffectType)(int)c.EffectType;
-            return new CellTagDef(
+            var effectType = (MaterialEffectType)(int)c.EffectType;
+            return new MaterialDef(
                 c.Id,
                 c.Name,
                 TagDescFormatter.Format(c.Desc, c.EffectValue, signed: !effectType.IsMultiplier()),

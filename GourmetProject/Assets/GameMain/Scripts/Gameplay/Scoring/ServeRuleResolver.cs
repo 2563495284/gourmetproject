@@ -3,7 +3,7 @@ using System.Linq;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
-using GpBoard = GourmetProject.Gameplay.Board.Board;
+using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 
 namespace GourmetProject.Gameplay.Scoring
 {
@@ -45,7 +45,7 @@ namespace GourmetProject.Gameplay.Scoring
 
         /// <summary>对刚上桌的实例执行其 OnServe 规则，返回本次上菜产生的金币/全局层数增量与技能复制请求。</summary>
         public static ServeResolveResult ResolveOnServe(
-            GpBoard board, GameplayDatabase db, IScoreHistory history, DishInstance served, int currentHappyCakeLayers)
+            GpTable board, GameplayDatabase db, IScoreHistory history, DishInstance served, int currentHappyCakeLayers)
         {
             if (served == null)
             {
@@ -87,7 +87,7 @@ namespace GourmetProject.Gameplay.Scoring
         }
 
         private static void ApplyServeAction(
-            GpBoard board, GameplayDatabase db, IScoreHistory history, SkillRuleDef rule, DishInstance self, int count,
+            GpTable board, GameplayDatabase db, IScoreHistory history, SkillRuleDef rule, DishInstance self, int count,
             int runningLayers, ref float gold, ref int layerDelta, ref List<CopySkillRequest> copyRequests,
             ref List<int> tempCopyIds, ref List<SkillTransferRequest> transferRequests)
         {
@@ -206,7 +206,7 @@ namespace GourmetProject.Gameplay.Scoring
         }
 
         private static void AppendTransferRequestsFromSource(
-            GpBoard board,
+            GpTable board,
             GameplayDatabase db,
             IScoreHistory history,
             DishInstance source,
@@ -262,7 +262,7 @@ namespace GourmetProject.Gameplay.Scoring
         }
 
         private static IReadOnlyList<DishInstance> TriggerTransferSources(
-            GpBoard board,
+            GpTable board,
             GameplayDatabase db,
             DishInstance self,
             SkillRuleDef rule)
@@ -309,7 +309,7 @@ namespace GourmetProject.Gameplay.Scoring
         /// 技能复制的候选池：actionParam 含 cat:xxx 时取该分类全部菜品定义的技能（如「蛋糕技能」）；
         /// 否则取作用域内其它实例的运行时技能。剔除自身已有技能与复制类技能（避免复制「复制」造成循环）。
         /// </summary>
-        private static List<string> BuildCopyCandidates(GpBoard board, GameplayDatabase db, SkillRuleDef rule, DishInstance self)
+        private static List<string> BuildCopyCandidates(GpTable board, GameplayDatabase db, SkillRuleDef rule, DishInstance self)
         {
             var candidates = new List<string>();
             void Add(string s)
@@ -407,7 +407,7 @@ namespace GourmetProject.Gameplay.Scoring
         }
 
         /// <summary>甜蜜传递的候选目标：作用域内「有食物」的其它菜（不做 ActionCount 截断，随机取 N 交由 BattleSession）。</summary>
-        private static IReadOnlyList<DishInstance> ScopeDishesForTransfer(GpBoard board, DishInstance self, SkillRuleDef rule)
+        private static IReadOnlyList<DishInstance> ScopeDishesForTransfer(GpTable board, DishInstance self, SkillRuleDef rule)
         {
             if (rule.ActionScope == SkillScope.Self)
             {
@@ -422,7 +422,7 @@ namespace GourmetProject.Gameplay.Scoring
             return SkillConditionEvaluator.ScopeDishes(board, self, rule.ActionScope, includeSelf: false);
         }
 
-        private static IReadOnlyList<DishInstance> Targets(GpBoard board, DishInstance self, SkillRuleDef rule)
+        private static IReadOnlyList<DishInstance> Targets(GpTable board, DishInstance self, SkillRuleDef rule)
         {
             if (rule.ActionScope == SkillScope.Self)
             {
@@ -437,7 +437,7 @@ namespace GourmetProject.Gameplay.Scoring
             List<DishInstance> dishes = SkillConditionEvaluator.ScopeDishes(board, self, rule.ActionScope, includeSelf: false);
             if (rule.ActionCount > 0 && dishes.Count > rule.ActionCount)
             {
-                // 与 SkillRuleEffect 一致：无随机流时以棋盘顺序取前 N，保证确定性可复现。
+                // 与 SkillRuleEffect 一致：无随机流时以餐桌顺序取前 N，保证确定性可复现。
                 dishes = dishes
                     .OrderBy(d => d.Placement.Origin.Y)
                     .ThenBy(d => d.Placement.Origin.X)

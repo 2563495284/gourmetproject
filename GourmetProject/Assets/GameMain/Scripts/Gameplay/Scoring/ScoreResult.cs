@@ -43,7 +43,8 @@ namespace GourmetProject.Gameplay.Scoring
             int happyCakeLayerDelta = 0,
             IReadOnlyList<SkillTransferSideEffect> skillTransfers = null,
             IReadOnlyDictionary<int, float> permanentFlatDeltas = null,
-            IReadOnlyDictionary<int, float> permanentMultDeltas = null)
+            IReadOnlyDictionary<int, float> permanentMultDeltas = null,
+            int silverItemRollRequests = 0)
         {
             DishScores = dishScores;
             RawSum = rawSum;
@@ -56,6 +57,7 @@ namespace GourmetProject.Gameplay.Scoring
             SkillTransfers = skillTransfers ?? System.Array.Empty<SkillTransferSideEffect>();
             PermanentFlatDeltas = permanentFlatDeltas ?? EmptyFloatDeltas;
             PermanentMultDeltas = permanentMultDeltas ?? EmptyFloatDeltas;
+            SilverItemRollRequests = silverItemRollRequests;
         }
 
         private static readonly IReadOnlyDictionary<int, float> EmptyFloatDeltas = new Dictionary<int, float>();
@@ -92,6 +94,9 @@ namespace GourmetProject.Gameplay.Scoring
 
         /// <summary>永久乘区增量（实例 Id → 累乘倍数）。正式结算后写回实例。</summary>
         public IReadOnlyDictionary<int, float> PermanentMultDeltas { get; }
+
+        /// <summary>银材质登记的「1/3 获得主动道具」掷骰请求次数。正式结算后由 Game 层掷骰发放（预览不掷）。</summary>
+        public int SilverItemRollRequests { get; }
 
         /// <summary>最终得分（四舍五入到整数，0.5 向上取整）。</summary>
         public int Total => (int)System.Math.Round((RawSum + FinalFlat) * FinalMultiplier, System.MidpointRounding.AwayFromZero);

@@ -8,12 +8,12 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI.Battle.View
 {
     /// <summary>
-    /// 常驻壳左栏信息组件：周/金币/分数要求/食物调整文本，以及「查看胃」「设置」按钮。
-    /// 数据刷新与「查看胃」按钮文案/可点态集中在此，点击通过 <see cref="Bind"/> 回调壳。
+    /// 常驻壳左栏信息组件：周/金币/分数要求/食物调整文本，以及「查看餐桌」「设置」按钮。
+    /// 数据刷新与「查看餐桌」按钮文案/可点态集中在此，点击通过 <see cref="Bind"/> 回调壳。
     /// </summary>
     public sealed class BattleInfoColumn : MonoBehaviour
     {
-        private const string ViewStomachLabel = "查看胃";
+        private const string ViewTableLabel = "查看餐桌";
         private const string StomachBackLabel = "返回";
 
         private const string FoodAdjustBackLabel = "返回";
@@ -23,11 +23,11 @@ namespace GourmetProject.Game.UI.Battle.View
         [SerializeField] private Text _scoreReqText;
         [SerializeField] private Text _foodAdjustText;
         [SerializeField] private Button _foodAdjustButton;
-        [SerializeField] private Button _viewStomachButton;
+        [SerializeField] private Button _viewTableButton;
         [SerializeField] private Button _settingsButton;
         [SerializeField] private SettlementScoreFireView _scoreFire;
 
-        private Text _viewStomachButtonText;
+        private Text _viewTableButtonText;
         private bool _foodAdjustActive;
         private int? _battleScoreOverride;
         private Canvas _foodAdjustRaiseCanvas;
@@ -35,7 +35,7 @@ namespace GourmetProject.Game.UI.Battle.View
         public SettlementScoreFireView ScoreFire => _scoreFire;
 
         /// <summary>接线按钮回调（由壳在 OnInit 调用一次）。</summary>
-        public void Bind(Action onSettings, Action onViewStomach, Action onFoodAdjust)
+        public void Bind(Action onSettings, Action onViewTable, Action onFoodAdjust)
         {
             if (_settingsButton != null)
             {
@@ -43,11 +43,11 @@ namespace GourmetProject.Game.UI.Battle.View
                 _settingsButton.onClick.AddListener(() => onSettings?.Invoke());
             }
 
-            if (_viewStomachButton != null)
+            if (_viewTableButton != null)
             {
-                _viewStomachButtonText = _viewStomachButton.GetComponentInChildren<Text>(true);
-                _viewStomachButton.onClick.RemoveAllListeners();
-                _viewStomachButton.onClick.AddListener(() => onViewStomach?.Invoke());
+                _viewTableButtonText = _viewTableButton.GetComponentInChildren<Text>(true);
+                _viewTableButton.onClick.RemoveAllListeners();
+                _viewTableButton.onClick.AddListener(() => onViewTable?.Invoke());
             }
 
             if (_foodAdjustButton != null)
@@ -112,12 +112,12 @@ namespace GourmetProject.Game.UI.Battle.View
                 return;
             }
 
-            if (_viewStomachButton != null)
+            if (_viewTableButton != null)
             {
-                bool stomachView = current == GameplayView.StomachView;
-                _viewStomachButton.interactable = stomachView
-                    || (world != null && current != GameplayView.None && world.CanEnterStomachView);
-                SetStomachLabel(stomachView ? StomachBackLabel : ViewStomachLabel);
+                bool stomachView = current == GameplayView.TableView;
+                _viewTableButton.interactable = stomachView
+                    || (world != null && current != GameplayView.None && world.CanEnterTableView);
+                SetTableLabel(stomachView ? StomachBackLabel : ViewTableLabel);
             }
 
             if (_weekText != null)
@@ -161,21 +161,21 @@ namespace GourmetProject.Game.UI.Battle.View
             }
         }
 
-        public void ResetStomachLabel()
+        public void ResetTableLabel()
         {
-            SetStomachLabel(ViewStomachLabel);
+            SetTableLabel(ViewTableLabel);
         }
 
-        private void SetStomachLabel(string text)
+        private void SetTableLabel(string text)
         {
-            if (_viewStomachButtonText == null && _viewStomachButton != null)
+            if (_viewTableButtonText == null && _viewTableButton != null)
             {
-                _viewStomachButtonText = _viewStomachButton.GetComponentInChildren<Text>(true);
+                _viewTableButtonText = _viewTableButton.GetComponentInChildren<Text>(true);
             }
 
-            if (_viewStomachButtonText != null)
+            if (_viewTableButtonText != null)
             {
-                _viewStomachButtonText.text = text;
+                _viewTableButtonText.text = text;
             }
         }
     }

@@ -7,15 +7,15 @@ namespace GourmetProject.Game.Presentation.Battle
     /// <summary>
     /// 战斗世界的渲染分层：用命名 Sorting Layer 划分大层级（与 ProjectSettings/TagManager 中的定义一致），
     /// 每层内再用很小的 order 做细分，避免散落的 sortingOrder magic number。
-    /// 层级从后到前：Background → Board → Pieces → WorldUI → Fx → PiecesFlying。
+    /// 层级从后到前：Background → DiningTable → Pieces → WorldUI → Fx → PiecesFlying。
     /// </summary>
     internal static class BattleSorting
     {
         /// <summary>桌布等背景。</summary>
         public const string Background = "Background";
 
-        /// <summary>棋盘格子。</summary>
-        public const string Board = "Board";
+        /// <summary>餐桌格子。</summary>
+        public const string DiningTable = "DiningTable";
 
         /// <summary>已摆放的菜品（阴影 + 本体）。</summary>
         public const string Pieces = "Pieces";

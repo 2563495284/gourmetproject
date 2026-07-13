@@ -34,7 +34,7 @@ namespace GourmetProject.Config
 
             Log.Info(
                 $"dishBases={Tables.TbDishBase.DataList.Count}, dishVariants={Tables.TbDishVariant.DataList.Count}, " +
-                $"skills={Tables.TbSkill.DataList.Count}, flavors={Tables.TbFlavor.DataList.Count}, cellTags={Tables.TbCellTag.DataList.Count}, " +
+                $"skills={Tables.TbSkill.DataList.Count}, flavors={Tables.TbFlavor.DataList.Count}, materials={Tables.TbMaterial.DataList.Count}, " +
                 $"characters={Tables.TbCharacter.DataList.Count}, recipes={Tables.TbRecipe.DataList.Count}, " +
                 $"weeks={Tables.TbWeek.DataList.Count}",
                 Tag);

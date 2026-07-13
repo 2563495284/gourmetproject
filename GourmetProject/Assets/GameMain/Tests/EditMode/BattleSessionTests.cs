@@ -5,7 +5,7 @@ using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
 using NUnit.Framework;
-using GpBoard = GourmetProject.Gameplay.Board.Board;
+using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 
 namespace GourmetProject.Tests
 {
@@ -23,7 +23,7 @@ namespace GourmetProject.Tests
                 dishes,
                 new List<SkillDef>(),
                 new List<FlavorDef>(),
-                new List<CellTagDef>(),
+                new List<MaterialDef>(),
                 new List<RecipeDef>());
         }
 
@@ -34,7 +34,7 @@ namespace GourmetProject.Tests
             {
                 new RecipeSlot("slot0", new[] { "rice", "egg", "rice", "egg", "rice" }),
             };
-            return new BattleSession(new GpBoard(4, 4), db, rng.Stream("battle"), slots, requiredScore);
+            return new BattleSession(new GpTable(4, 4), db, rng.Stream("battle"), slots, requiredScore);
         }
 
         [Test]
@@ -49,7 +49,7 @@ namespace GourmetProject.Tests
 
             Assert.IsTrue(result.Success);
             Assert.IsNotNull(result.Dish);
-            Assert.AreEqual(1, session.Board.DishCount);
+            Assert.AreEqual(1, session.DiningTable.DishCount);
             Assert.AreEqual(before - 1, session.Slots[0].Count);
         }
 
@@ -63,12 +63,12 @@ namespace GourmetProject.Tests
                 new[] { bar },
                 new List<SkillDef>(),
                 new List<FlavorDef>(),
-                new List<CellTagDef>(),
+                new List<MaterialDef>(),
                 new List<RecipeDef>());
             var slots = new[] { new RecipeSlot("slot0", new[] { "bar" }) };
 
             // 变体禁旋：上菜只以固定朝向(2x1)摆放，不会旋转成 1x2。
-            var session = new BattleSession(new GpBoard(2, 2), db, rng.Stream("battle"), slots, requiredScore: 1);
+            var session = new BattleSession(new GpTable(2, 2), db, rng.Stream("battle"), slots, requiredScore: 1);
             ServeResult result = session.Serve(0);
 
             Assert.AreEqual(ServeOutcome.Placed, result.Outcome);
@@ -86,12 +86,12 @@ namespace GourmetProject.Tests
                 new[] { bar },
                 new List<SkillDef>(),
                 new List<FlavorDef>(),
-                new List<CellTagDef>(),
+                new List<MaterialDef>(),
                 new List<RecipeDef>());
             var slots = new[] { new RecipeSlot("slot0", new[] { "bar" }) };
 
             // 2x1 的菜在 1x2 棋盘上因禁旋无法摆放。
-            var session = new BattleSession(new GpBoard(1, 2), db, rng.Stream("battle"), slots, requiredScore: 1);
+            var session = new BattleSession(new GpTable(1, 2), db, rng.Stream("battle"), slots, requiredScore: 1);
             ServeResult result = session.Serve(0);
 
             Assert.AreEqual(ServeOutcome.NoFittingDish, result.Outcome);
@@ -128,7 +128,7 @@ namespace GourmetProject.Tests
             rng.Init(1UL);
             GameplayDatabase db = BuildDb();
             var slots = new List<RecipeSlot> { new RecipeSlot("empty", new string[0]) };
-            var session = new BattleSession(new GpBoard(4, 4), db, rng.Stream("b"), slots, 1);
+            var session = new BattleSession(new GpTable(4, 4), db, rng.Stream("b"), slots, 1);
 
             Assert.AreEqual(ServeOutcome.SlotEmpty, session.Serve(0).Outcome);
         }
@@ -161,7 +161,7 @@ namespace GourmetProject.Tests
 
             // 第三次上菜应被限量供应挡下。
             Assert.AreEqual(ServeOutcome.LimitReached, session.Serve(0).Outcome);
-            Assert.AreEqual(2, session.Board.DishCount);
+            Assert.AreEqual(2, session.DiningTable.DishCount);
             Assert.IsFalse(session.CanServeAny());
         }
 
@@ -177,10 +177,10 @@ namespace GourmetProject.Tests
                 new[] { coin },
                 new[] { serveGold },
                 new List<FlavorDef>(),
-                new List<CellTagDef>(),
+                new List<MaterialDef>(),
                 new List<RecipeDef>());
             var slots = new[] { new RecipeSlot("slot0", new[] { "coin" }) };
-            var session = new BattleSession(new GpBoard(4, 4), db, rng.Stream("battle"), slots, requiredScore: 1);
+            var session = new BattleSession(new GpTable(4, 4), db, rng.Stream("battle"), slots, requiredScore: 1);
 
             session.Serve(0);
 
@@ -199,10 +199,10 @@ namespace GourmetProject.Tests
                 new[] { coin },
                 new[] { gold },
                 new List<FlavorDef>(),
-                new List<CellTagDef>(),
+                new List<MaterialDef>(),
                 new List<RecipeDef>());
             var slots = new[] { new RecipeSlot("slot0", new[] { "coin" }) };
-            var session = new BattleSession(new GpBoard(4, 4), db, rng.Stream("battle"), slots, requiredScore: 1);
+            var session = new BattleSession(new GpTable(4, 4), db, rng.Stream("battle"), slots, requiredScore: 1);
 
             session.Serve(0);
             session.Settle();
@@ -223,10 +223,10 @@ namespace GourmetProject.Tests
                 new[] { cake },
                 new[] { addLayer },
                 new List<FlavorDef>(),
-                new List<CellTagDef>(),
+                new List<MaterialDef>(),
                 new List<RecipeDef>());
             var slots = new[] { new RecipeSlot("slot0", new[] { "cake_layer", "cake_layer" }) };
-            var session = new BattleSession(new GpBoard(4, 4), db, rng.Stream("battle"), slots, requiredScore: 1);
+            var session = new BattleSession(new GpTable(4, 4), db, rng.Stream("battle"), slots, requiredScore: 1);
 
             session.Serve(0);
             Assert.AreEqual(5, session.HappyCakeLayers);
@@ -253,10 +253,10 @@ namespace GourmetProject.Tests
                 new[] { adder, eater },
                 new[] { addLayer, consume },
                 new List<FlavorDef>(),
-                new List<CellTagDef>(),
+                new List<MaterialDef>(),
                 new List<RecipeDef>());
             var slots = new[] { new RecipeSlot("slot0", new[] { "adder", "eater" }) };
-            var session = new BattleSession(new GpBoard(4, 4), db, rng.Stream("battle"), slots, requiredScore: 1);
+            var session = new BattleSession(new GpTable(4, 4), db, rng.Stream("battle"), slots, requiredScore: 1);
 
             session.Serve(0);
             session.Serve(0);
@@ -277,7 +277,7 @@ namespace GourmetProject.Tests
 
             session.ClearBoard();
 
-            Assert.AreEqual(0, session.Board.DishCount);
+            Assert.AreEqual(0, session.DiningTable.DishCount);
         }
 
         [Test]
@@ -288,11 +288,11 @@ namespace GourmetProject.Tests
             SkillDef flat = GameplayTestFactory.RuleSkill("flat",
                 GameplayTestFactory.Rule(SkillActionType.AddFlat, 5f));
             DishDef dish = GameplayTestFactory.Dish("dish", new[] { "X" }, deliciousness: 5, allowRotate: false, skills: new[] { "flat" });
-            var db = new GameplayDatabase(new[] { dish }, new[] { flat }, new List<FlavorDef>(), new List<CellTagDef>(), new List<RecipeDef>());
+            var db = new GameplayDatabase(new[] { dish }, new[] { flat }, new List<FlavorDef>(), new List<MaterialDef>(), new List<RecipeDef>());
             var slot = new RecipeSlot("slot0", new[] { "dish", "dish" });
             slot.Entries[0].MarkSkillsDisabled();
             slot.Entries[1].MarkExcludedFromScore();
-            var session = new BattleSession(new GpBoard(2, 1), db, rng.Stream("battle"), new[] { slot }, requiredScore: 1);
+            var session = new BattleSession(new GpTable(2, 1), db, rng.Stream("battle"), new[] { slot }, requiredScore: 1);
 
             session.Serve(0);
             session.Serve(0);
@@ -310,7 +310,7 @@ namespace GourmetProject.Tests
             rng.Init("serve-debuffs");
             GameplayDatabase db = BuildDb();
             var slot = new RecipeSlot("slot0", new[] { "rice", "rice", "rice" });
-            var session = new BattleSession(new GpBoard(3, 1), db, rng.Stream("battle"), new[] { slot }, requiredScore: 1)
+            var session = new BattleSession(new GpTable(3, 1), db, rng.Stream("battle"), new[] { slot }, requiredScore: 1)
             {
                 AlternateServeMultiplier = true,
                 AutoServeSecondDish = true,
@@ -323,7 +323,7 @@ namespace GourmetProject.Tests
 
             Assert.IsTrue(result.Success);
             Assert.AreEqual(2, session.ServesUsed, "套餐应额外上一道菜。");
-            Assert.AreEqual(1, session.Board.DishCount, "开胃菜移除第一道，套餐额外菜保留。");
+            Assert.AreEqual(1, session.DiningTable.DishCount, "开胃菜移除第一道，套餐额外菜保留。");
             Assert.AreEqual(-10f, session.PendingGold, 0.001f);
             ScoreResult score = session.Settle();
             Assert.AreEqual(8, score.Total, "第二道菜倍率为 1.5，5 分四舍五入为 8。");
@@ -332,7 +332,7 @@ namespace GourmetProject.Tests
         [Test]
         public void BoardDisabledCells_PreventPlacement()
         {
-            var board = new GpBoard(1, 1);
+            var board = new GpTable(1, 1);
             board.SetDisabled(new GridPos(0, 0), true);
             DishDef dish = GameplayTestFactory.Dish("dish", new[] { "X" }, allowRotate: false);
 
@@ -345,8 +345,8 @@ namespace GourmetProject.Tests
         {
             DishDef top = GameplayTestFactory.Dish("top", new[] { "X" }, deliciousness: 1, allowRotate: false);
             DishDef bottom = GameplayTestFactory.Dish("bottom", new[] { "X" }, deliciousness: 1, allowRotate: false);
-            var db = new GameplayDatabase(new[] { top, bottom }, new List<SkillDef>(), new List<FlavorDef>(), new List<CellTagDef>(), new List<RecipeDef>());
-            var board = new GpBoard(1, 2);
+            var db = new GameplayDatabase(new[] { top, bottom }, new List<SkillDef>(), new List<FlavorDef>(), new List<MaterialDef>(), new List<RecipeDef>());
+            var board = new GpTable(1, 2);
             board.Place(GameplayTestFactory.Instance(1, top, 0, 0));
             board.Place(GameplayTestFactory.Instance(2, bottom, 0, 1));
 

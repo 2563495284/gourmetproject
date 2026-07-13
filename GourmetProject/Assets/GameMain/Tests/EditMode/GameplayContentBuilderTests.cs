@@ -49,9 +49,9 @@ namespace GourmetProject.Tests
             Assert.AreEqual("dish", flavor.EffectParam);
             Assert.AreEqual("term_hot", flavor.TermId);
 
-            CellTagDef cellTag = db.GetCellTag("tag_a");
+            MaterialDef cellTag = db.GetMaterial("tag_a");
             Assert.NotNull(cellTag);
-            Assert.AreEqual(GpTagEffectType.AddMult, cellTag.EffectType);
+            Assert.AreEqual(MaterialEffectType.AddMult, cellTag.MaterialEffect);
             Assert.AreEqual(2f, cellTag.EffectValue);
 
             RecipeDef recipe = db.GetRecipe("recipe_test");
@@ -64,16 +64,16 @@ namespace GourmetProject.Tests
             Assert.AreEqual(2, recipe.Pool[0].MaxCount);
             Assert.AreEqual(6, recipe.Pool[0].InitScore);
 
-            StomachFragmentDef fragment = db.GetFragment("frag_start");
+            TableFragmentDef fragment = db.GetFragment("frag_start");
             Assert.NotNull(fragment);
             Assert.AreEqual(1, fragment.HiddenMin);
             Assert.AreEqual(4, fragment.HiddenMax);
             Assert.AreEqual(1.5f, fragment.BaseWeight);
             Assert.AreEqual(8, fragment.Price);
             CollectionAssert.AreEqual(new[] { "XX", "X." }, fragment.ShapeRows);
-            Assert.AreEqual(1, fragment.CellTags.Count);
-            Assert.AreEqual(new GridPos(0, 1), fragment.CellTags[0].Pos);
-            Assert.AreEqual("tag_a", fragment.CellTags[0].TagId);
+            Assert.AreEqual(1, fragment.CellMaterials.Count);
+            Assert.AreEqual(new GridPos(0, 1), fragment.CellMaterials[0].Pos);
+            Assert.AreEqual("tag_a", fragment.CellMaterials[0].MaterialId);
         }
 
         [Test]
@@ -176,13 +176,13 @@ namespace GourmetProject.Tests
     ""termId"": ""term_hot""
   }
 ]";
-                case "tbcelltag":
+                case "tbmaterial":
                     return @"[
   {
     ""id"": ""tag_a"",
     ""name"": ""黄金格"",
     ""desc"": ""贡献 ×{0}"",
-    ""effectType"": 2,
+    ""effectType"": 4,
     ""effectValue"": [2],
     ""effectParam"": [],
     ""termId"": """"
@@ -199,7 +199,7 @@ namespace GourmetProject.Tests
     ]
   }
 ]";
-                case "tbstomachfragment":
+                case "tbtablefragment":
                     return @"[
   {
     ""id"": ""frag_start"",
@@ -209,14 +209,14 @@ namespace GourmetProject.Tests
     ""shapeRows"": [""XX"", ""X.""]
   }
 ]";
-                case "tbfragmentcelltag":
+                case "tbfragmentmaterial":
                     return @"[
   {
     ""id"": ""frag_start_0_1"",
     ""fragmentId"": ""frag_start"",
     ""x"": 0,
     ""y"": 1,
-    ""tagId"": ""tag_a""
+    ""materialId"": ""tag_a""
   }
 ]";
                 case "tbgamebase":

@@ -51,7 +51,7 @@ namespace GourmetProject.Game.UI.Battle.States
         }
     }
 
-    /// <summary>美食战斗态：世界空间棋盘透出，菜谱抽屉切成上菜条。</summary>
+    /// <summary>美食战斗态：世界空间餐桌透出，菜谱抽屉切成上菜条。</summary>
     internal sealed class FoodState : IGameplayViewState
     {
         public GameplayView Kind => GameplayView.Food;
@@ -63,10 +63,10 @@ namespace GourmetProject.Game.UI.Battle.States
         }
     }
 
-    /// <summary>棋盘编辑态：世界空间碎片拖拽，中部无标题，菜谱抽屉移除购买卡。</summary>
-    internal sealed class BoardEditState : IGameplayViewState
+    /// <summary>餐桌编辑态：世界空间碎片拖拽，中部无标题，菜谱抽屉移除购买卡。</summary>
+    internal sealed class TableEditState : IGameplayViewState
     {
-        public GameplayView Kind => GameplayView.BoardEdit;
+        public GameplayView Kind => GameplayView.TableEdit;
 
         public void Enter(IBattleViewHost host, Action buildCenter)
         {
@@ -76,10 +76,10 @@ namespace GourmetProject.Game.UI.Battle.States
         }
     }
 
-    /// <summary>查看胃态：只读棋盘视图，中部无标题，菜谱抽屉移除购买卡。</summary>
-    internal sealed class StomachViewState : IGameplayViewState
+    /// <summary>查看餐桌态：只读餐桌视图，中部无标题，菜谱抽屉移除购买卡。</summary>
+    internal sealed class TableViewState : IGameplayViewState
     {
-        public GameplayView Kind => GameplayView.StomachView;
+        public GameplayView Kind => GameplayView.TableView;
 
         public void Enter(IBattleViewHost host, Action buildCenter)
         {

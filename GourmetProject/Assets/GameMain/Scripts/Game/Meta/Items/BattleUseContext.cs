@@ -22,13 +22,13 @@ namespace GourmetProject.Game.Meta
 
         public IReadOnlyList<ActiveTarget> EnumerateTargets(cfg.ItemTargetKind targetKind)
         {
-            // 目标选择 UI 落地时在此枚举棋盘/菜谱目标；当前尚无需选目标的主动道具，返回空。
+            // 目标选择 UI 落地时在此枚举餐桌/菜谱目标；当前尚无需选目标的主动道具，返回空。
             return Array.Empty<ActiveTarget>();
         }
 
         public bool ClearBoard()
         {
-            if (_session == null || _session.IsSettled || _session.Board.DishCount <= 0)
+            if (_session == null || _session.IsSettled || _session.DiningTable.DishCount <= 0)
             {
                 return false;
             }

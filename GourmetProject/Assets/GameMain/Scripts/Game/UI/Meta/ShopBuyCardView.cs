@@ -42,7 +42,7 @@ namespace GourmetProject.Game.UI.Meta
             });
         }
 
-        /// <summary>通用商品绑定（道具 / 菜品 / 胃部碎片）。</summary>
+        /// <summary>通用商品绑定（道具 / 菜品 / 餐桌碎片）。</summary>
         public void Bind(
             string name,
             string desc,

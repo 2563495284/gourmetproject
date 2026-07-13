@@ -5,7 +5,7 @@ using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
 using NUnit.Framework;
-using GpBoard = GourmetProject.Gameplay.Board.Board;
+using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 
 namespace GourmetProject.Tests
 {
@@ -18,17 +18,17 @@ namespace GourmetProject.Tests
                 new List<DishDef>(),
                 skills,
                 new List<FlavorDef>(),
-                new List<CellTagDef>(),
+                new List<MaterialDef>(),
                 new List<RecipeDef>());
         }
 
-        private static GameplayDatabase Db(SkillDef[] skills, FlavorDef[] flavors, CellTagDef[] cellTags)
+        private static GameplayDatabase Db(SkillDef[] skills, FlavorDef[] flavors, MaterialDef[] materials)
         {
             return new GameplayDatabase(
                 new List<DishDef>(),
                 skills,
                 flavors,
-                cellTags,
+                materials,
                 new List<RecipeDef>());
         }
 
@@ -67,12 +67,12 @@ namespace GourmetProject.Tests
             {
                 collector.Add(new ScoreEffectEntry(
                     ScorePhase.BeforeDish,
-                    ScoreSource.BoardTag("late", "后执行"),
+                    ScoreSource.TableTag("late", "后执行"),
                     new AddCurrentDishFlatEffect(1f),
                     priority: 10));
                 collector.Add(new ScoreEffectEntry(
                     ScorePhase.BeforeDish,
-                    ScoreSource.BoardTag("early", "先执行"),
+                    ScoreSource.TableTag("early", "先执行"),
                     new AddCurrentDishFlatEffect(2f),
                     priority: -10));
             }
@@ -121,7 +121,7 @@ namespace GourmetProject.Tests
         public void AddFlat_IncreasesContribution()
         {
             GameplayDatabase db = Db(GameplayTestFactory.Skill("fresh", TagEffectType.AddFlat, 5f));
-            var board = new GpBoard(4, 4);
+            var board = new GpTable(4, 4);
             DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
             board.Place(GameplayTestFactory.InstanceWithTags(1, dish, 0, 0, new[] { "fresh" }));
 
@@ -135,7 +135,7 @@ namespace GourmetProject.Tests
         public void AddMult_MultipliesContribution()
         {
             GameplayDatabase db = Db(GameplayTestFactory.Skill("sweet", TagEffectType.AddMult, 1.5f));
-            var board = new GpBoard(4, 4);
+            var board = new GpTable(4, 4);
             DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
             board.Place(GameplayTestFactory.InstanceWithTags(1, dish, 0, 0, new[] { "sweet" }));
 
@@ -150,7 +150,7 @@ namespace GourmetProject.Tests
             GameplayDatabase db = Db(
                 GameplayTestFactory.Skill("fresh", TagEffectType.AddFlat, 5f),
                 GameplayTestFactory.Skill("sweet", TagEffectType.AddMult, 1.5f));
-            var board = new GpBoard(4, 4);
+            var board = new GpTable(4, 4);
             DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
             board.Place(GameplayTestFactory.InstanceWithTags(1, dish, 0, 0, new[] { "fresh", "sweet" }));
 
@@ -165,7 +165,7 @@ namespace GourmetProject.Tests
         public void PerAdjacentDish_ScalesWithNeighborCount()
         {
             GameplayDatabase db = Db(GameplayTestFactory.Skill("spicy", TagEffectType.PerAdjacentDish, 3f));
-            var board = new GpBoard(4, 4);
+            var board = new GpTable(4, 4);
             DishDef single = GameplayTestFactory.Dish("s", new[] { "X" }, deliciousness: 4, allowRotate: false);
 
             DishInstance spicy = GameplayTestFactory.InstanceWithTags(1, single, 1, 1, new[] { "spicy" });
@@ -184,7 +184,7 @@ namespace GourmetProject.Tests
         public void PerEmptyCell_ScalesWithBoardEmptyCells()
         {
             GameplayDatabase db = Db(GameplayTestFactory.Skill("lonely", TagEffectType.PerEmptyCell, 2f));
-            var board = new GpBoard(4, 4); // 16 cells
+            var board = new GpTable(4, 4); // 16 cells
             DishDef single = GameplayTestFactory.Dish("s", new[] { "X" }, deliciousness: 9, allowRotate: false);
             board.Place(GameplayTestFactory.InstanceWithTags(1, single, 0, 0, new[] { "lonely" }));
 
@@ -198,7 +198,7 @@ namespace GourmetProject.Tests
         public void FinalModifiers_ApplyAfterSum()
         {
             GameplayDatabase db = Db();
-            var board = new GpBoard(4, 4);
+            var board = new GpTable(4, 4);
             DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
             board.Place(GameplayTestFactory.InstanceWithTags(1, dish, 0, 0, new string[0]));
 
@@ -214,12 +214,12 @@ namespace GourmetProject.Tests
             GameplayDatabase db = Db(
                 new[] { GameplayTestFactory.Skill("fresh", TagEffectType.AddFlat, 5f) },
                 new[] { GameplayTestFactory.Flavor("sweet", TagEffectType.AddMult, 1.5f) },
-                new[] { GameplayTestFactory.CellTag("gold", TagEffectType.AddMult, 2f) });
-            var cellTags = new Dictionary<GridPos, IReadOnlyList<string>>
+                new[] { GameplayTestFactory.CellMaterial("gold", MaterialEffectType.AddMult, 2f) });
+            var materials = new Dictionary<GridPos, IReadOnlyList<string>>
             {
                 [new GridPos(0, 0)] = new List<string> { "gold" },
             };
-            var board = new GpBoard(2, 2, null, cellTags);
+            var board = new GpTable(2, 2, null, materials);
             DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
             board.Place(GameplayTestFactory.InstanceWithTags(1, dish, 0, 0, new[] { "fresh" }, flavorId: "sweet"));
 
@@ -233,8 +233,8 @@ namespace GourmetProject.Tests
             Assert.AreEqual(ScorePhase.DishSkills, effectLines[0].Phase);
             Assert.AreEqual(ScoreSourceType.DishFlavor, effectLines[1].Source.Type);
             Assert.AreEqual(ScorePhase.DishFlavor, effectLines[1].Phase);
-            Assert.AreEqual(ScoreSourceType.CellTag, effectLines[2].Source.Type);
-            Assert.AreEqual(ScorePhase.CellTags, effectLines[2].Phase);
+            Assert.AreEqual(ScoreSourceType.Material, effectLines[2].Source.Type);
+            Assert.AreEqual(ScorePhase.Materials, effectLines[2].Phase);
             // ((10 + 5(技能)) * 1.5(风味)) * 2(格子) = 45
             Assert.AreEqual(45, result.Total);
         }
@@ -243,7 +243,7 @@ namespace GourmetProject.Tests
         public void ExtraRelicSource_CanModifyFinalScore()
         {
             GameplayDatabase db = Db();
-            var board = new GpBoard(4, 4);
+            var board = new GpTable(4, 4);
             DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
             board.Place(GameplayTestFactory.Instance(1, dish, 0, 0));
 
@@ -258,7 +258,7 @@ namespace GourmetProject.Tests
         public void GlobalDishEffect_AppliesToEveryDishInDishPhase()
         {
             GameplayDatabase db = Db();
-            var board = new GpBoard(4, 4);
+            var board = new GpTable(4, 4);
             DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
             board.Place(GameplayTestFactory.Instance(1, dish, 0, 0));
             board.Place(GameplayTestFactory.Instance(2, dish, 1, 0));
@@ -274,7 +274,7 @@ namespace GourmetProject.Tests
         public void Priority_ControlsOrderWithinSamePhase()
         {
             GameplayDatabase db = Db();
-            var board = new GpBoard(4, 4);
+            var board = new GpTable(4, 4);
             DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
             board.Place(GameplayTestFactory.Instance(1, dish, 0, 0));
 
@@ -293,7 +293,7 @@ namespace GourmetProject.Tests
         public void CommandQueue_CanResolveChainedEffect()
         {
             GameplayDatabase db = Db();
-            var board = new GpBoard(4, 4);
+            var board = new GpTable(4, 4);
             DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
             board.Place(GameplayTestFactory.Instance(1, dish, 0, 0));
 

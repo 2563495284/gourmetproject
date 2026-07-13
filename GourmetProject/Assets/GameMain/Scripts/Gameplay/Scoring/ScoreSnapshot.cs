@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
-using GpBoard = GourmetProject.Gameplay.Board.Board;
+using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 
 namespace GourmetProject.Gameplay.Scoring
 {
@@ -11,7 +11,7 @@ namespace GourmetProject.Gameplay.Scoring
     public sealed class ScoreSnapshot
     {
         public ScoreSnapshot(
-            GpBoard board,
+            GpTable board,
             GameplayDatabase db,
             float finalFlat = 0f,
             float finalMultiplier = 1f,
@@ -22,7 +22,7 @@ namespace GourmetProject.Gameplay.Scoring
             int cakeLayerThresholdReduction = 0,
             bool reverseDishOrder = false)
         {
-            Board = board ?? throw new ArgumentNullException(nameof(board));
+            DiningTable = board ?? throw new ArgumentNullException(nameof(board));
             Db = db ?? throw new ArgumentNullException(nameof(db));
             InitialFinalFlat = finalFlat;
             InitialFinalMultiplier = finalMultiplier;
@@ -31,24 +31,49 @@ namespace GourmetProject.Gameplay.Scoring
             CakeLayerThresholdReduction = cakeLayerThresholdReduction < 0 ? 0 : cakeLayerThresholdReduction;
             History = history ?? EmptyScoreHistory.Instance;
             EffectSources = (effectSources ?? Array.Empty<IScoreEffectSource>()).ToArray();
-            IEnumerable<DishInstance> ordered = Board.Dishes
-                .Where(d => !d.ExcludedFromScore)
-                .OrderBy(d => d.Placement.Origin.Y)
-                .ThenBy(d => d.Placement.Origin.X)
-                .ThenBy(d => d.Id);
-            if (reverseDishOrder)
-            {
-                ordered = Board.Dishes
-                    .Where(d => !d.ExcludedFromScore)
-                    .OrderByDescending(d => d.Placement.Origin.Y)
+
+            // 结算优先级层级（甜=+1、苦=-1，多风味累加）：层级高者先结算；同层再按棋盘从上到下、从左到右。
+            IEnumerable<DishInstance> alive = DiningTable.Dishes.Where(d => !d.ExcludedFromScore);
+            IEnumerable<DishInstance> ordered = reverseDishOrder
+                ? alive
+                    .OrderByDescending(d => SettlementLayerOf(d, Db))
+                    .ThenByDescending(d => d.Placement.Origin.Y)
                     .ThenByDescending(d => d.Placement.Origin.X)
+                    .ThenBy(d => d.Id)
+                : alive
+                    .OrderByDescending(d => SettlementLayerOf(d, Db))
+                    .ThenBy(d => d.Placement.Origin.Y)
+                    .ThenBy(d => d.Placement.Origin.X)
                     .ThenBy(d => d.Id);
-            }
 
             DishesInDefaultOrder = ordered.ToArray();
         }
 
-        public GpBoard Board { get; }
+        /// <summary>
+        /// 该菜的结算优先级层级：累加其所有 <see cref="Model.TagEffectType.SettlementLayer"/> 风味的效果值
+        /// （甜 +1、苦 -1）。默认 0。层级越大越先结算。
+        /// </summary>
+        public static int SettlementLayerOf(DishInstance dish, GameplayDatabase db)
+        {
+            if (dish == null || db == null)
+            {
+                return 0;
+            }
+
+            int layer = 0;
+            foreach (string flavorId in dish.FlavorIds)
+            {
+                Model.FlavorDef flavor = db.GetFlavor(flavorId);
+                if (flavor != null && flavor.EffectType == Model.TagEffectType.SettlementLayer)
+                {
+                    layer += (int)flavor.EffectValue;
+                }
+            }
+
+            return layer;
+        }
+
+        public GpTable DiningTable { get; }
 
         public GameplayDatabase Db { get; }
 

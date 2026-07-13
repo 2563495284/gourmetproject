@@ -8,7 +8,7 @@ using GourmetProject.Gameplay.Library;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
 using GourmetProject.Runtime;
-using GpBoard = GourmetProject.Gameplay.Board.Board;
+using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 using Log = GourmetProject.Core.Diagnostics.Log;
 
 namespace GourmetProject.Game.Run
@@ -54,8 +54,8 @@ namespace GourmetProject.Game.Run
                 Log.Warning($"Character '{run.CharacterId}' has no valid recipe '{recipeId}'.", "GameRun");
             }
 
-            GpBoard board = BuildBoard(run, character, modifier);
-            ApplyBoardModifiers(board, TotalRecipeEntries(slots), modifier, debuffStream);
+            GpTable board = BuildTable(run, character, modifier);
+            ApplyTableModifiers(board, TotalRecipeEntries(slots), modifier, debuffStream);
 
             var battleStream = GameApp.Random.DomainStream(SeedDomains.Combat, key);
 
@@ -87,20 +87,20 @@ namespace GourmetProject.Game.Run
             return session;
         }
 
-        public static GpBoard BuildBoardPreview(GameRun run, string modifier = "")
+        public static GpTable BuildTablePreview(GameRun run, string modifier = "")
         {
             cfg.Character character = run?.Tables.TbCharacter.GetOrDefault(run.CharacterId);
-            return BuildBoard(run, character, modifier ?? string.Empty);
+            return BuildTable(run, character, modifier ?? string.Empty);
         }
 
         /// <summary>
-        /// 由角色配置构建本局胃部棋盘：初始胃形状取自碎片库，最大包围盒取角色 max 尺寸。
+        /// 由角色配置构建本局餐桌：初始胃形状取自碎片库，最大包围盒取角色 max 尺寸。
         /// Boss「small_board」修正收缩最大包围盒（初始碎片超出部分自动裁掉）。
         /// </summary>
-        private static GpBoard BuildBoard(GameRun run, cfg.Character character, string modifier)
+        private static GpTable BuildTable(GameRun run, cfg.Character character, string modifier)
         {
-            int maxW = character != null && character.MaxStomachWidth > 0 ? character.MaxStomachWidth : GameRun.BoardWidth;
-            int maxH = character != null && character.MaxStomachHeight > 0 ? character.MaxStomachHeight : GameRun.BoardHeight;
+            int maxW = character != null && character.MaxDiningTableWidth > 0 ? character.MaxDiningTableWidth : GameRun.BoardWidth;
+            int maxH = character != null && character.MaxDiningTableHeight > 0 ? character.MaxDiningTableHeight : GameRun.BoardHeight;
 
             if (BossDebuffModifiers.IsSmallBoard(modifier))
             {
@@ -113,11 +113,11 @@ namespace GourmetProject.Game.Run
                 maxH += 1;
             }
 
-            StomachFragmentDef fragment = run.Database.GetFragment(character?.InitialFragmentId);
+            TableFragmentDef fragment = run.Database.GetFragment(character?.InitialFragmentId);
             if (fragment == null)
             {
-                Log.Warning($"Character '{run.CharacterId}' 无有效初始胃碎片 '{character?.InitialFragmentId}'，回退为满 {maxW}x{maxH} 棋盘。", "GameRun");
-                GpBoard fallback = new GpBoard(maxW, maxH);
+                Log.Warning($"Character '{run.CharacterId}' 无有效初始餐桌碎片 '{character?.InitialFragmentId}'，回退为满 {maxW}x{maxH} 餐桌。", "GameRun");
+                GpTable fallback = new GpTable(maxW, maxH);
                 ApplyShapeModifier(fallback, modifier);
                 return fallback;
             }
@@ -125,9 +125,9 @@ namespace GourmetProject.Game.Run
             // 统一造盘：用更大的隐藏画布承载局部坐标，maxW/maxH 只限制最终胃形局部包围框。
             int canvasW = maxW * 3;
             int canvasH = maxH * 3;
-            GridPos localOrigin = StomachBuilder.CenteredOrigin(fragment, maxW, maxH);
+            GridPos localOrigin = TableFragmentBuilder.CenteredOrigin(fragment, maxW, maxH);
             var initialOrigin = new GridPos(localOrigin.X + maxW, localOrigin.Y + maxH);
-            GpBoard board = StomachBuilder.BuildFromExpandedLocalBounds(
+            GpTable board = TableFragmentBuilder.BuildFromExpandedLocalBounds(
                 fragment,
                 GetAcquiredFragments(run),
                 run.FragmentPlacements,
@@ -255,7 +255,7 @@ namespace GourmetProject.Game.Run
             return total;
         }
 
-        private static void ApplyShapeModifier(GpBoard board, string modifier)
+        private static void ApplyShapeModifier(GpTable board, string modifier)
         {
             if (board == null)
             {
@@ -272,7 +272,7 @@ namespace GourmetProject.Game.Run
             }
         }
 
-        private static void AddBottomAndRightCells(GpBoard board)
+        private static void AddBottomAndRightCells(GpTable board)
         {
             List<GridPos> cells = board.ExistingCells();
             var toAdd = new List<GridPos>();
@@ -316,7 +316,7 @@ namespace GourmetProject.Game.Run
             }
         }
 
-        private static void RemoveBottomAndRightCells(GpBoard board)
+        private static void RemoveBottomAndRightCells(GpTable board)
         {
             List<GridPos> cells = board.ExistingCells();
             var toRemove = new HashSet<GridPos>();
@@ -360,7 +360,7 @@ namespace GourmetProject.Game.Run
             }
         }
 
-        private static void ApplyBoardModifiers(GpBoard board, int foodCount, string modifier, IRandomStream rng)
+        private static void ApplyTableModifiers(GpTable board, int foodCount, string modifier, IRandomStream rng)
         {
             if (board == null || modifier != BossDebuffModifiers.Vegetarian)
             {
@@ -427,12 +427,12 @@ namespace GourmetProject.Game.Run
             }
         }
 
-        private static List<StomachFragmentDef> GetAcquiredFragments(GameRun run)
+        private static List<TableFragmentDef> GetAcquiredFragments(GameRun run)
         {
-            var fragments = new List<StomachFragmentDef>(run.StomachFragmentIds.Count);
-            foreach (string fragmentId in run.StomachFragmentIds)
+            var fragments = new List<TableFragmentDef>(run.TableFragmentIds.Count);
+            foreach (string fragmentId in run.TableFragmentIds)
             {
-                StomachFragmentDef fragment = run.Database.GetFragment(fragmentId);
+                TableFragmentDef fragment = run.Database.GetFragment(fragmentId);
                 if (fragment != null)
                 {
                     fragments.Add(fragment);

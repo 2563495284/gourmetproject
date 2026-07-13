@@ -24,14 +24,14 @@ namespace GourmetProject.Game.Meta
         {
             switch (kind)
             {
-                case cfg.ItemTargetKind.BoardDish:
-                    // 棋盘菜是本局临时目标，只在战斗内存在。
+                case cfg.ItemTargetKind.DiningTableDish:
+                    // 餐桌菜是本局临时目标，只在战斗内存在。
                     return ctx == ActiveUseContextKind.Battle;
                 case cfg.ItemTargetKind.RecipeDish:
                     // 永久改菜谱：任意情境（含战斗）都可用。
                     return true;
-                case cfg.ItemTargetKind.StomachCell:
-                case cfg.ItemTargetKind.CellTag:
+                case cfg.ItemTargetKind.DiningTableCell:
+                case cfg.ItemTargetKind.Material:
                 case cfg.ItemTargetKind.FlavorSlot:
                     // 需要「可编辑内容」的情境：奖励界面只做领取，不开放。
                     return ctx != ActiveUseContextKind.Reward;

@@ -16,14 +16,14 @@ namespace GourmetProject.Game.Presentation.Battle
     /// </summary>
     public sealed class DishPieceView : MonoBehaviour
     {
-        [Header("接触阴影：贴桌态（偏移按单格尺寸取比例，适配不同棋盘缩放）")]
+        [Header("接触阴影：贴桌态（偏移按单格尺寸取比例，适配不同餐桌缩放）")]
         [SerializeField] private float _shadowBaseAlpha = 0.5f;
         [SerializeField] private float _shadowGroundScale = 1.22f;
         [SerializeField] private float _shadowGroundDrop = 0.16f;
         [SerializeField] private float _shadowGroundSide = 0.06f;
 
         [Header("接触阴影：举高态（按本体离地高度连续：越高越大、越淡、越虚）")]
-        [Tooltip("阴影达到最大扩散/虚化的参考高度（按单格尺寸倍数，适配不同棋盘缩放）。")]
+        [Tooltip("阴影达到最大扩散/虚化的参考高度（按单格尺寸倍数，适配不同餐桌缩放）。")]
         [SerializeField] private float _shadowLiftRefCells = 1.5f;
         [Tooltip("锐利核心层在最高处的放大倍数。")]
         [SerializeField] private float _coreGrow = 1.15f;
@@ -160,7 +160,7 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>
-        /// 飞入棋盘时只把<b>本体</b>切到 PiecesFlying 层，压在已摆放食品之上；
+        /// 飞入餐桌时只把<b>本体</b>切到 PiecesFlying 层，压在已摆放食品之上；
         /// 接触阴影（核心+光晕）始终留在 Pieces 地面层、排在所有菜本体之下，
         /// 这样下落途中阴影铺在桌面、被沿途菜品遮挡，不会盖出脏暗斑。落定后本体切回 Pieces 层。
         /// </summary>

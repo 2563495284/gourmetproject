@@ -4,7 +4,7 @@ using System.Linq;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
-using GpBoard = GourmetProject.Gameplay.Board.Board;
+using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 
 namespace GourmetProject.Gameplay.Scoring
 {
@@ -20,7 +20,7 @@ namespace GourmetProject.Gameplay.Scoring
                     continue;
                 }
 
-                int boardOrder = dish.Placement.Origin.Y * snapshot.Board.Width + dish.Placement.Origin.X;
+                int boardOrder = dish.Placement.Origin.Y * snapshot.DiningTable.Width + dish.Placement.Origin.X;
                 foreach (string skillId in dish.SkillIds)
                 {
                     SkillDef skill = snapshot.Db.GetSkill(skillId);
@@ -306,11 +306,11 @@ namespace GourmetProject.Gameplay.Scoring
 
             if (_rule.ActionScope == SkillScope.Category)
             {
-                // 分类定向（如「所有蛋糕」）：取棋盘上匹配 cat:xxx 的全部菜（含自身若匹配）。
-                return SkillConditionEvaluator.CategoryDishes(ctx.Board, SkillConditionEvaluator.ParseCategoryParam(_rule.ActionParams));
+                // 分类定向（如「所有蛋糕」）：取餐桌上匹配 cat:xxx 的全部菜（含自身若匹配）。
+                return SkillConditionEvaluator.CategoryDishes(ctx.DiningTable, SkillConditionEvaluator.ParseCategoryParam(_rule.ActionParams));
             }
 
-            List<DishInstance> dishes = SkillConditionEvaluator.ScopeDishes(ctx.Board, _self, _rule.ActionScope);
+            List<DishInstance> dishes = SkillConditionEvaluator.ScopeDishes(ctx.DiningTable, _self, _rule.ActionScope);
 
             // skilltype:X 过滤：只作用于「带某行为类技能」的食物（巧克力「此类食物」= 带甜蜜传递的食物）。
             string skillTypeToken = ParseSkillTypeParam(_rule.ActionParams);
@@ -322,7 +322,7 @@ namespace GourmetProject.Gameplay.Scoring
 
             if (_rule.ActionCount > 0 && dishes.Count > _rule.ActionCount)
             {
-                // 无随机流时以棋盘顺序取前 N，保证确定性可复现。
+                // 无随机流时以餐桌顺序取前 N，保证确定性可复现。
                 dishes = dishes
                     .OrderBy(d => d.Placement.Origin.Y)
                     .ThenBy(d => d.Placement.Origin.X)

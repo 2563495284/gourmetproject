@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
-using GpBoard = GourmetProject.Gameplay.Board.Board;
+using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 
 namespace GourmetProject.Gameplay.Scoring
 {
@@ -16,12 +16,12 @@ namespace GourmetProject.Gameplay.Scoring
         private static readonly System.Func<DishInstance, int> DefaultCountAs = d => d.EffectiveCountAs;
 
         public static int Evaluate(SkillRuleDef rule, ScoreContext ctx, DishInstance self)
-            => Evaluate(rule, ctx.Board, ctx.Snapshot.History, self, ctx.CurrentHappyCakeLayers, ctx.GetEffectiveCountAs, ctx.Db);
+            => Evaluate(rule, ctx.DiningTable, ctx.Snapshot.History, self, ctx.CurrentHappyCakeLayers, ctx.GetEffectiveCountAs, ctx.Db);
 
-        public static int Evaluate(SkillRuleDef rule, GpBoard board, IScoreHistory history, DishInstance self, int happyCakeLayers = 0)
+        public static int Evaluate(SkillRuleDef rule, GpTable board, IScoreHistory history, DishInstance self, int happyCakeLayers = 0)
             => Evaluate(rule, board, history, self, happyCakeLayers, DefaultCountAs, null);
 
-        private static int Evaluate(SkillRuleDef rule, GpBoard board, IScoreHistory history, DishInstance self, int happyCakeLayers, System.Func<DishInstance, int> countAsOf, GameplayDatabase db)
+        private static int Evaluate(SkillRuleDef rule, GpTable board, IScoreHistory history, DishInstance self, int happyCakeLayers, System.Func<DishInstance, int> countAsOf, GameplayDatabase db)
         {
             if (rule.CondType == SkillConditionType.None)
             {
@@ -48,7 +48,7 @@ namespace GourmetProject.Gameplay.Scoring
             }
         }
 
-        private static int RawValue(SkillRuleDef rule, GpBoard board, IScoreHistory history, DishInstance self, int happyCakeLayers, System.Func<DishInstance, int> countAsOf, GameplayDatabase db)
+        private static int RawValue(SkillRuleDef rule, GpTable board, IScoreHistory history, DishInstance self, int happyCakeLayers, System.Func<DishInstance, int> countAsOf, GameplayDatabase db)
         {
             switch (rule.CondType)
             {
@@ -182,7 +182,7 @@ namespace GourmetProject.Gameplay.Scoring
 
         // ---------- 带某行为类的食物数 ----------
 
-        private static int CountSkillType(GpBoard board, GameplayDatabase db, string condParam, CountUnit unit, System.Func<DishInstance, int> countAsOf)
+        private static int CountSkillType(GpTable board, GameplayDatabase db, string condParam, CountUnit unit, System.Func<DishInstance, int> countAsOf)
         {
             if (db == null || string.IsNullOrEmpty(condParam))
             {
@@ -251,8 +251,8 @@ namespace GourmetProject.Gameplay.Scoring
             return string.Empty;
         }
 
-        /// <summary>棋盘上属于指定分类（如 cake）的全部菜（含自身若匹配）。</summary>
-        public static List<DishInstance> CategoryDishes(GpBoard board, string category)
+        /// <summary>餐桌上属于指定分类（如 cake）的全部菜（含自身若匹配）。</summary>
+        public static List<DishInstance> CategoryDishes(GpTable board, string category)
         {
             var result = new List<DishInstance>();
             if (string.IsNullOrEmpty(category))
@@ -298,7 +298,7 @@ namespace GourmetProject.Gameplay.Scoring
 
         // ---------- 作用域内的菜集合 ----------
 
-        public static List<DishInstance> ScopeDishes(GpBoard board, DishInstance self, SkillScope scope)
+        public static List<DishInstance> ScopeDishes(GpTable board, DishInstance self, SkillScope scope)
         {
             var result = new List<DishInstance>();
             switch (scope)
@@ -357,7 +357,7 @@ namespace GourmetProject.Gameplay.Scoring
             }
         }
 
-        public static List<DishInstance> ScopeDishes(GpBoard board, DishInstance self, SkillScope scope, bool includeSelf)
+        public static List<DishInstance> ScopeDishes(GpTable board, DishInstance self, SkillScope scope, bool includeSelf)
         {
             List<DishInstance> result = ScopeDishes(board, self, scope);
             bool hasSelf = result.Exists(d => d.Id == self.Id);
@@ -376,7 +376,7 @@ namespace GourmetProject.Gameplay.Scoring
             return result;
         }
 
-        private static void CollectDishesFromCells(GpBoard board, IEnumerable<GridPos> cells, List<DishInstance> result)
+        private static void CollectDishesFromCells(GpTable board, IEnumerable<GridPos> cells, List<DishInstance> result)
         {
             var seen = new HashSet<int>();
             foreach (GridPos cell in cells)
@@ -389,7 +389,7 @@ namespace GourmetProject.Gameplay.Scoring
             }
         }
 
-        private static void CollectRowOrColumn(GpBoard board, DishInstance self, List<DishInstance> result, bool row, bool includeSelf)
+        private static void CollectRowOrColumn(GpTable board, DishInstance self, List<DishInstance> result, bool row, bool includeSelf)
         {
             var lines = new HashSet<int>();
             foreach (GridPos c in self.OccupiedCells)
@@ -417,7 +417,7 @@ namespace GourmetProject.Gameplay.Scoring
             }
         }
 
-        private static List<DishInstance> ServeOrderDishes(GpBoard board, DishInstance self, SkillScope scope)
+        private static List<DishInstance> ServeOrderDishes(GpTable board, DishInstance self, SkillScope scope)
         {
             var result = new List<DishInstance>();
             foreach (DishInstance d in board.Dishes)
@@ -522,7 +522,7 @@ namespace GourmetProject.Gameplay.Scoring
 
         // ---------- 空格 / 填满 / 边缘 ----------
 
-        private static int CountEmptyCells(GpBoard board, DishInstance self, SkillScope scope)
+        private static int CountEmptyCells(GpTable board, DishInstance self, SkillScope scope)
         {
             if (scope == SkillScope.All || scope == SkillScope.Empty)
             {
@@ -538,7 +538,7 @@ namespace GourmetProject.Gameplay.Scoring
             return count;
         }
 
-        private static bool IsScopeFilled(GpBoard board, DishInstance self, SkillScope scope)
+        private static bool IsScopeFilled(GpTable board, DishInstance self, SkillScope scope)
         {
             if (scope == SkillScope.All)
             {
@@ -556,7 +556,7 @@ namespace GourmetProject.Gameplay.Scoring
         }
 
         /// <summary>作用域涉及的「存在格」集合（同行/同列/相邻/周围）。</summary>
-        private static IEnumerable<GridPos> ScopeCells(GpBoard board, DishInstance self, SkillScope scope)
+        private static IEnumerable<GridPos> ScopeCells(GpTable board, DishInstance self, SkillScope scope)
         {
             var cells = new List<GridPos>();
             var seen = new HashSet<int>();
@@ -637,7 +637,7 @@ namespace GourmetProject.Gameplay.Scoring
             return cells;
         }
 
-        private static void TryNeighbor(GpBoard board, HashSet<int> selfCells, List<GridPos> cells, HashSet<int> seen, GridPos p)
+        private static void TryNeighbor(GpTable board, HashSet<int> selfCells, List<GridPos> cells, HashSet<int> seen, GridPos p)
         {
             if (!board.Exists(p)) return;
             int key = p.Y * board.Width + p.X;
@@ -645,7 +645,7 @@ namespace GourmetProject.Gameplay.Scoring
             if (seen.Add(key)) cells.Add(p);
         }
 
-        private static bool IsOnEdge(GpBoard board, DishInstance self)
+        private static bool IsOnEdge(GpTable board, DishInstance self)
         {
             if (!board.TryGetExistingBounds(out int minX, out int minY, out int maxX, out int maxY))
             {

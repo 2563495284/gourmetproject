@@ -13,26 +13,26 @@ namespace GourmetProject.Gameplay.Data
         private readonly Dictionary<string, DishDef> _dishes;
         private readonly Dictionary<string, SkillDef> _skills;
         private readonly Dictionary<string, FlavorDef> _flavors;
-        private readonly Dictionary<string, CellTagDef> _cellTags;
+        private readonly Dictionary<string, MaterialDef> _materials;
         private readonly Dictionary<string, RecipeDef> _recipes;
-        private readonly Dictionary<string, StomachFragmentDef> _fragments;
+        private readonly Dictionary<string, TableFragmentDef> _fragments;
         private readonly List<CakeLayerBuffDef> _cakeLayerBuffs;
 
         public GameplayDatabase(
             IEnumerable<DishDef> dishes,
             IEnumerable<SkillDef> skills,
             IEnumerable<FlavorDef> flavors,
-            IEnumerable<CellTagDef> cellTags,
+            IEnumerable<MaterialDef> materials,
             IEnumerable<RecipeDef> recipes,
-            IEnumerable<StomachFragmentDef> fragments = null,
+            IEnumerable<TableFragmentDef> fragments = null,
             IEnumerable<CakeLayerBuffDef> cakeLayerBuffs = null)
         {
             _dishes = ToMap(dishes, d => d.Id, nameof(dishes));
             _skills = ToMap(skills, s => s.Id, nameof(skills));
             _flavors = ToMap(flavors, f => f.Id, nameof(flavors));
-            _cellTags = ToMap(cellTags, c => c.Id, nameof(cellTags));
+            _materials = ToMap(materials, c => c.Id, nameof(materials));
             _recipes = ToMap(recipes, r => r.Id, nameof(recipes));
-            _fragments = ToMap(fragments ?? System.Array.Empty<StomachFragmentDef>(), f => f.Id, nameof(fragments));
+            _fragments = ToMap(fragments ?? System.Array.Empty<TableFragmentDef>(), f => f.Id, nameof(fragments));
 
             _cakeLayerBuffs = new List<CakeLayerBuffDef>(cakeLayerBuffs ?? System.Array.Empty<CakeLayerBuffDef>());
             _cakeLayerBuffs.Sort((a, b) =>
@@ -51,9 +51,9 @@ namespace GourmetProject.Gameplay.Data
 
         public IReadOnlyCollection<FlavorDef> AllFlavors => _flavors.Values;
 
-        public IReadOnlyCollection<CellTagDef> AllCellTags => _cellTags.Values;
+        public IReadOnlyCollection<MaterialDef> AllMaterials => _materials.Values;
 
-        public IReadOnlyCollection<StomachFragmentDef> AllFragments => _fragments.Values;
+        public IReadOnlyCollection<TableFragmentDef> AllFragments => _fragments.Values;
 
         public DishDef GetDish(string id) => _dishes.TryGetValue(id, out DishDef d) ? d : null;
 
@@ -61,11 +61,11 @@ namespace GourmetProject.Gameplay.Data
 
         public FlavorDef GetFlavor(string id) => id != null && _flavors.TryGetValue(id, out FlavorDef f) ? f : null;
 
-        public CellTagDef GetCellTag(string id) => id != null && _cellTags.TryGetValue(id, out CellTagDef c) ? c : null;
+        public MaterialDef GetMaterial(string id) => id != null && _materials.TryGetValue(id, out MaterialDef c) ? c : null;
 
         public RecipeDef GetRecipe(string id) => _recipes.TryGetValue(id, out RecipeDef r) ? r : null;
 
-        public StomachFragmentDef GetFragment(string id) => id != null && _fragments.TryGetValue(id, out StomachFragmentDef f) ? f : null;
+        public TableFragmentDef GetFragment(string id) => id != null && _fragments.TryGetValue(id, out TableFragmentDef f) ? f : null;
 
         public bool TryGetDish(string id, out DishDef dish) => _dishes.TryGetValue(id, out dish);
 

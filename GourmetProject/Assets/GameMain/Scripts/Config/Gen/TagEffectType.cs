@@ -23,6 +23,14 @@ namespace cfg
         PerEmptyCell = 4,
         PerOccupiedCell = 5,
         PerDishOnBoard = 6,
+        /// <summary>
+        /// 结算时获得金币(锈)
+        /// </summary>
+        GrantGold = 7,
+        /// <summary>
+        /// 结算优先级层级增量(甜+1/苦-1)，不产生分数效果
+        /// </summary>
+        SettlementLayer = 8,
     }
 
 } 

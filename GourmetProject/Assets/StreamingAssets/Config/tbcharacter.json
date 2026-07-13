@@ -6,8 +6,8 @@
     "portrait": "Sprites/Characters/char_glutton_dog",
     "initialRecipeId": "recipe_glutton",
     "initialFragmentId": "gut_4x4",
-    "maxStomachWidth": 8,
-    "maxStomachHeight": 8,
+    "maxDiningTableWidth": 8,
+    "maxDiningTableHeight": 8,
     "timelinePool": "tl_normal",
     "startItems": [
       "item_big_plate"
@@ -20,8 +20,8 @@
     "portrait": "Sprites/Characters/char_wok_cat",
     "initialRecipeId": "recipe_wok",
     "initialFragmentId": "gut_4x4",
-    "maxStomachWidth": 8,
-    "maxStomachHeight": 8,
+    "maxDiningTableWidth": 8,
+    "maxDiningTableHeight": 8,
     "timelinePool": "tl_busy",
     "startItems": [
       "item_chef_knife"
@@ -34,8 +34,8 @@
     "portrait": "Sprites/Characters/char_chili_rat",
     "initialRecipeId": "recipe_chili",
     "initialFragmentId": "gut_4x4",
-    "maxStomachWidth": 8,
-    "maxStomachHeight": 8,
+    "maxDiningTableWidth": 8,
+    "maxDiningTableHeight": 8,
     "timelinePool": "",
     "startItems": [
       "item_pepper_jar"

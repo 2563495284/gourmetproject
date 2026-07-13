@@ -6,7 +6,7 @@ using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Library;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Runtime;
-using GpBoard = GourmetProject.Gameplay.Board.Board;
+using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 using Log = GourmetProject.Core.Diagnostics.Log;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Meta;
@@ -35,8 +35,8 @@ namespace GourmetProject.Game.Run
         private readonly List<List<string>> _recipeBooks = new List<List<string>>();
         private readonly List<string> _stomachFragmentIds = new List<string>();
 
-        // 玩家在棋盘编辑页手动拼贴的碎片放置（id + 旋转 + 原点）；作为可复现重建胃形的权威数据。
-        private readonly List<StomachFragmentPlacement> _fragmentPlacements = new List<StomachFragmentPlacement>();
+        // 玩家在餐桌编辑页手动拼贴的碎片放置（id + 旋转 + 原点）；作为可复现重建胃形的权威数据。
+        private readonly List<TableFragmentPlacement> _fragmentPlacements = new List<TableFragmentPlacement>();
 
         // 已购买待拼贴的碎片包内容（rolled 出的候选碎片 id）；拼贴或跳过后清空。
         private readonly List<string> _pendingFragmentPack = new List<string>();
@@ -331,17 +331,17 @@ namespace GourmetProject.Game.Run
 
         public int RecipeBookCount => _recipeBooks.Count;
 
-        public IReadOnlyList<string> StomachFragmentIds => _stomachFragmentIds;
+        public IReadOnlyList<string> TableFragmentIds => _stomachFragmentIds;
 
-        /// <summary>玩家手动拼贴的碎片放置列表（棋盘编辑页产出，随存档保存）。</summary>
-        public IReadOnlyList<StomachFragmentPlacement> FragmentPlacements => _fragmentPlacements;
+        /// <summary>玩家手动拼贴的碎片放置列表（餐桌编辑页产出，随存档保存）。</summary>
+        public IReadOnlyList<TableFragmentPlacement> FragmentPlacements => _fragmentPlacements;
 
         /// <summary>已购买待拼贴的碎片包候选碎片 id（三选一）；为空表示没有待处理的碎片包。</summary>
         public IReadOnlyList<string> PendingFragmentPack => _pendingFragmentPack;
 
         public bool HasPendingFragmentPack => _pendingFragmentPack.Count > 0;
 
-        /// <summary>胃部碎片总数（奖励自动附着 + 手动拼贴），供统计/预览展示。</summary>
+        /// <summary>餐桌碎片总数（奖励自动附着 + 手动拼贴），供统计/预览展示。</summary>
         public int StomachFragmentCount => _stomachFragmentIds.Count + _fragmentPlacements.Count;
 
         /// <summary>整局累计已结算的菜品 BaseId 次数（大局历史）。</summary>
@@ -773,7 +773,7 @@ namespace GourmetProject.Game.Run
                 Items = items,
                 BonusDishIds = new List<string>(_bonusDishIds),
                 RecipeBooks = ToRecipeBookSaveData(),
-                StomachFragmentIds = new List<string>(_stomachFragmentIds),
+                TableFragmentIds = new List<string>(_stomachFragmentIds),
                 FragmentPlacements = ToFragmentPlacementSaveData(),
                 PendingFragmentPackIds = new List<string>(_pendingFragmentPack),
                 RunSettledCounts = new Dictionary<string, int>(_runSettledCounts),
@@ -866,21 +866,21 @@ namespace GourmetProject.Game.Run
 
             run.RestoreRecipeBooks(data);
 
-            if (data.StomachFragmentIds != null)
+            if (data.TableFragmentIds != null)
             {
-                run._stomachFragmentIds.AddRange(data.StomachFragmentIds);
+                run._stomachFragmentIds.AddRange(data.TableFragmentIds);
             }
 
             if (data.FragmentPlacements != null)
             {
-                foreach (StomachFragmentPlacementSaveData p in data.FragmentPlacements)
+                foreach (TableFragmentPlacementSaveData p in data.FragmentPlacements)
                 {
                     if (p == null || string.IsNullOrEmpty(p.FragmentId))
                     {
                         continue;
                     }
 
-                    run._fragmentPlacements.Add(new StomachFragmentPlacement(
+                    run._fragmentPlacements.Add(new TableFragmentPlacement(
                         p.FragmentId, p.Rotation, new GridPos(p.OriginX, p.OriginY)));
                 }
             }
@@ -1062,9 +1062,9 @@ namespace GourmetProject.Game.Run
             return BattleSessionFactory.Build(this, requiredScore, modifier, key);
         }
 
-        public GpBoard BuildStomachPreviewBoard(string modifier = "")
+        public GpTable BuildTablePreviewFromFragments(string modifier = "")
         {
-            return BattleSessionFactory.BuildBoardPreview(this, modifier);
+            return BattleSessionFactory.BuildTablePreview(this, modifier);
         }
 
         public IReadOnlyList<string> GetRecipeBookDishes(int bookIndex)
@@ -1303,9 +1303,9 @@ namespace GourmetProject.Game.Run
             return false;
         }
 
-        public bool AddStomachFragment(string fragmentId)
+        public bool AddTableFragment(string fragmentId)
         {
-            StomachFragmentDef fragment = Database.GetFragment(fragmentId);
+            TableFragmentDef fragment = Database.GetFragment(fragmentId);
             if (fragment == null || _stomachFragmentIds.Contains(fragmentId))
             {
                 return false;
@@ -1315,7 +1315,7 @@ namespace GourmetProject.Game.Run
             return true;
         }
 
-        /// <summary>记录一次玩家手动拼贴的碎片放置（棋盘编辑页调用；合法性由调用方在放置前校验）。</summary>
+        /// <summary>记录一次玩家手动拼贴的碎片放置（餐桌编辑页调用；合法性由调用方在放置前校验）。</summary>
         public bool AddFragmentPlacement(string fragmentId, int rotation, GridPos origin)
         {
             if (Database.GetFragment(fragmentId) == null)
@@ -1323,7 +1323,7 @@ namespace GourmetProject.Game.Run
                 return false;
             }
 
-            _fragmentPlacements.Add(new StomachFragmentPlacement(fragmentId, rotation, origin));
+            _fragmentPlacements.Add(new TableFragmentPlacement(fragmentId, rotation, origin));
             return true;
         }
 
@@ -1349,19 +1349,19 @@ namespace GourmetProject.Game.Run
             _pendingFragmentPack.Clear();
         }
 
-        public bool CanAttachStomachFragment(StomachFragmentDef fragment)
+        public bool CanAttachTableFragment(TableFragmentDef fragment)
         {
             if (fragment == null)
             {
                 return false;
             }
 
-            // 基于当前实际胃形判断；棋盘碎片奖励固定朝向，不允许旋转。
-            GpBoard board = BattleSessionFactory.BuildBoardPreview(this);
+            // 基于当前实际胃形判断；餐桌碎片奖励固定朝向，不允许旋转。
+            GpTable board = BattleSessionFactory.BuildTablePreview(this);
             cfg.Character character = Tables.TbCharacter.GetOrDefault(CharacterId);
-            int maxW = character != null && character.MaxStomachWidth > 0 ? character.MaxStomachWidth : BoardWidth;
-            int maxH = character != null && character.MaxStomachHeight > 0 ? character.MaxStomachHeight : BoardHeight;
-            return StomachBuilder.CanAttachAnywhereLocalBounds(board, fragment, maxW, maxH);
+            int maxW = character != null && character.MaxDiningTableWidth > 0 ? character.MaxDiningTableWidth : BoardWidth;
+            int maxH = character != null && character.MaxDiningTableHeight > 0 ? character.MaxDiningTableHeight : BoardHeight;
+            return TableFragmentBuilder.CanAttachAnywhereLocalBounds(board, fragment, maxW, maxH);
         }
 
         /// <summary>移除一份道具（被动整条移除；主动移除其中一份实例）。供商店出售、事件移除等使用。</summary>
@@ -1441,12 +1441,12 @@ namespace GourmetProject.Game.Run
             return books;
         }
 
-        private List<StomachFragmentPlacementSaveData> ToFragmentPlacementSaveData()
+        private List<TableFragmentPlacementSaveData> ToFragmentPlacementSaveData()
         {
-            var list = new List<StomachFragmentPlacementSaveData>(_fragmentPlacements.Count);
-            foreach (StomachFragmentPlacement p in _fragmentPlacements)
+            var list = new List<TableFragmentPlacementSaveData>(_fragmentPlacements.Count);
+            foreach (TableFragmentPlacement p in _fragmentPlacements)
             {
-                list.Add(new StomachFragmentPlacementSaveData
+                list.Add(new TableFragmentPlacementSaveData
                 {
                     FragmentId = p.FragmentId,
                     Rotation = p.Rotation,

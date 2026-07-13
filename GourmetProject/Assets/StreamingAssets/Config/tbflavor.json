@@ -2,7 +2,7 @@
   {
     "id": "t_feast",
     "name": "盛宴",
-    "desc": "棋盘上每有一道菜，本菜品分数 ×1.1。",
+    "desc": "餐桌上每有一道菜，本菜品分数 ×1.1。",
     "effectType": 6,
     "effectValue": [
       0.1
@@ -17,6 +17,39 @@
     "effectType": 2,
     "effectValue": [
       2
+    ],
+    "effectParam": [],
+    "termId": ""
+  },
+  {
+    "id": "t_sweet",
+    "name": "甜",
+    "desc": "结算优先级 +1 层，越先结算。",
+    "effectType": 8,
+    "effectValue": [
+      1
+    ],
+    "effectParam": [],
+    "termId": ""
+  },
+  {
+    "id": "t_bitter",
+    "name": "苦",
+    "desc": "结算优先级 -1 层，越后结算。",
+    "effectType": 8,
+    "effectValue": [
+      -1
+    ],
+    "effectParam": [],
+    "termId": ""
+  },
+  {
+    "id": "t_rust",
+    "name": "锈",
+    "desc": "结算时获得 5 金币。",
+    "effectType": 7,
+    "effectValue": [
+      5
     ],
     "effectParam": [],
     "termId": ""

@@ -8,26 +8,26 @@ using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
 using GourmetProject.Runtime;
 using UnityEngine;
-using GpBoard = GourmetProject.Gameplay.Board.Board;
+using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
     /// <summary>
-    /// 战斗内场景表现根控制器：棋盘、后厨、手牌区与拖拽放置。
-    /// 现以场景内组件存在：背景/棋盘根/各锚点/分数文本/固定按钮均在 Battle.unity 摆好并通过 SerializeField 注入，
-    /// 运行时只生成数据驱动内容（棋盘格随胃尺寸、菜品、道具槽、结算特效）。
+    /// 战斗内场景表现根控制器：餐桌、后厨、手牌区与拖拽放置。
+    /// 现以场景内组件存在：背景/餐桌根/各锚点/分数文本/固定按钮均在 Battle.unity 摆好并通过 SerializeField 注入，
+    /// 运行时只生成数据驱动内容（餐桌格随胃尺寸、菜品、道具槽、结算特效）。
     /// </summary>
     public sealed class BattleWorldController : MonoBehaviour
     {
-        public const float Gap = BoardLayout.Gap;
-        private const float MaxCellSize = BoardLayout.MaxCellSize;
-        private const float MinCellSize = BoardLayout.MinCellSize;
+        public const float Gap = DiningTableLayout.Gap;
+        private const float MaxCellSize = DiningTableLayout.MaxCellSize;
+        private const float MinCellSize = DiningTableLayout.MinCellSize;
 
-        // 棋盘居中定位的底部边距：Food 态给底部菜谱抽屉让 2.7，编辑态还要给候选托盘条让到 3.6。
-        private const float FoodBoardBottomMargin = 2.7f;
-        private const float EditBoardBottomMargin = 3.6f;
+        // 餐桌居中定位的底部边距：Food 态给底部菜谱抽屉让 2.7，编辑态还要给候选托盘条让到 3.6。
+        private const float FoodTableBottomMargin = 2.7f;
+        private const float EditTableBottomMargin = 3.6f;
         private const int PassiveSlotCapacity = 10;
         private const int PassiveSlotColumns = 2;
         // 回退视口半宽/半高（16:9 参考：orthographicSize 5.4）。
@@ -37,7 +37,7 @@ namespace GourmetProject.Game.Presentation.Battle
         // —— 场景内摆好的静态引用 ——
         [Header("Scene Refs")]
         [SerializeField] private Camera _camera;
-        [SerializeField] private BoardView _boardView;
+        [SerializeField] private DiningTableView _boardView;
         [SerializeField] private Transform _piecesRoot;
         [SerializeField] private Transform _fxRoot;
         [SerializeField] private Transform _passiveItemsRoot;
@@ -47,7 +47,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         // —— 运行时实例化用的 prefab ——
         [Header("Prefabs")]
-        [SerializeField] private BoardCellView _boardCellPrefab;
+        [SerializeField] private DiningTableCellView _boardCellPrefab;
         [SerializeField] private DishPieceView _dishPiecePrefab;
         [SerializeField] private WorldItemSlotView _itemSlotPrefab;
         [SerializeField] private MenuBookWorldView _menuBookPrefab;
@@ -61,11 +61,11 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private float _serveWithdrawDuration = 0.18f;
         [SerializeField] private float _serveDropDuration = 0.24f;
 
-        // 棋盘锁定在该屏幕矩形内 fit 并居中（由 BattleForm 传入的 HUD 空区 BoardArea）；为空则回落视口边距布局。
+        // 餐桌锁定在该屏幕矩形内 fit 并居中（由 BattleForm 传入的 HUD 空区 BoardArea）；为空则回落视口边距布局。
         private const float BoardAreaMinCellSize = 0.12f;
         private RectTransform _boardArea;
 
-        // 按棋盘尺寸自适应的单格世界尺寸与棋盘中心，BuildBoard 中计算。
+        // 按餐桌尺寸自适应的单格世界尺寸与餐桌中心，BuildTable 中计算。
         private float _cellSize = MaxCellSize;
         private Vector3 _boardCenter = new Vector3(0f, 0.15f, 0f);
         private float _halfW = FallbackHalfW;
@@ -73,8 +73,8 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private ServeAnimator _serveAnimator;
 
-        // 棋盘编辑 / 只读胃视图的表现与交互拆到协作组件；本类只做 Food 态与世界互斥态调度（外壳）。
-        private BoardEditController _boardEdit;
+        // 餐桌编辑 / 只读餐桌视图的表现与交互拆到协作组件；本类只做 Food 态与世界互斥态调度（外壳）。
+        private DiningTableEditController _boardEdit;
 
         // 食物调整（局内删除/移动菜品）交互拆到协作组件，仅 Food 态启用。
         private FoodAdjustController _foodAdjust;
@@ -90,8 +90,8 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             Hidden,
             Food,
-            BoardEdit,
-            StomachView,
+            TableEdit,
+            TableView,
         }
 
         private GameRun _run;
@@ -110,47 +110,47 @@ namespace GourmetProject.Game.Presentation.Battle
         /// <summary>当前已加载战斗场景里的控制器实例（由战斗 UI/流程取用）。</summary>
         public static BattleWorldController Instance { get; private set; }
 
-        public bool CanEnterStomachView
-            => _worldMode != WorldMode.StomachView
+        public bool CanEnterTableView
+            => _worldMode != WorldMode.TableView
                 && (_worldMode != WorldMode.Food || (!_settling && !_serving));
 
         private void Awake()
         {
             Instance = this;
 
-            EnsureBoardEdit();
+            EnsureTableEdit();
 
-            // 默认非美食态：世界棋盘与其专属按钮（总览/吃/涂鸦）默认隐藏，只有 StartBattle→Initialize 才显示。
+            // 默认非美食态：世界餐桌与其专属按钮（总览/吃/涂鸦）默认隐藏，只有 StartBattle→Initialize 才显示。
             // 场景里 BattleSceneRoot 默认 active，若不在此处收起，行动选择等非美食态一进场景就会露出这堆美食专属按钮。
             HideWorld();
         }
 
-        /// <summary>确保棋盘编辑协作组件存在并注入共享场景引用（运行时挂到同一战斗场景根上）。</summary>
-        private void EnsureBoardEdit()
+        /// <summary>确保餐桌编辑协作组件存在并注入共享场景引用（运行时挂到同一战斗场景根上）。</summary>
+        private void EnsureTableEdit()
         {
             if (_boardEdit == null)
             {
-                _boardEdit = GetComponent<BoardEditController>();
+                _boardEdit = GetComponent<DiningTableEditController>();
                 if (_boardEdit == null)
                 {
-                    _boardEdit = gameObject.AddComponent<BoardEditController>();
+                    _boardEdit = gameObject.AddComponent<DiningTableEditController>();
                 }
             }
 
             _boardEdit.Configure(this, _boardView, _boardCellPrefab, _piecesRoot, _camera);
         }
 
-        /// <summary>供 <see cref="BoardEditController"/> 在编辑/胃视图结束时通知外壳复位世界互斥态。</summary>
-        internal void ClearBoardMode()
+        /// <summary>供 <see cref="DiningTableEditController"/> 在编辑/餐桌视图结束时通知外壳复位世界互斥态。</summary>
+        internal void ClearTableMode()
         {
-            if (_worldMode == WorldMode.BoardEdit || _worldMode == WorldMode.StomachView)
+            if (_worldMode == WorldMode.TableEdit || _worldMode == WorldMode.TableView)
             {
                 _worldMode = WorldMode.Hidden;
             }
         }
 
-        /// <summary>是否正处于可拖拽的棋盘编辑态。</summary>
-        public bool IsEditingBoard => _boardEdit != null && _boardEdit.IsEditing;
+        /// <summary>是否正处于可拖拽的餐桌编辑态。</summary>
+        public bool IsEditingTable => _boardEdit != null && _boardEdit.IsEditing;
 
         private void EnsureFoodAdjust()
         {
@@ -204,8 +204,8 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         // —— 供 FoodAdjustController 读取的内部引用 ——
-        internal GpBoard AdjustBoard => _session?.Board;
-        internal BoardView AdjustBoardView => _boardView;
+        internal GpTable AdjustTable => _session?.DiningTable;
+        internal DiningTableView AdjustTableView => _boardView;
         internal Transform AdjustPiecesRoot => _piecesRoot;
         internal Camera AdjustCamera => _camera;
         internal float AdjustCellSize => _cellSize;
@@ -219,7 +219,7 @@ namespace GourmetProject.Game.Presentation.Battle
             return _dishViewsById.TryGetValue(id, out DishPieceView view) ? view : null;
         }
 
-        /// <summary>食物调整删除/撤销后重建棋盘菜品表现，并保持调整态下的点击屏蔽。</summary>
+        /// <summary>食物调整删除/撤销后重建餐桌菜品表现，并保持调整态下的点击屏蔽。</summary>
         internal void RebuildAfterAdjust()
         {
             RebuildPlacedPieces();
@@ -232,9 +232,9 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>
-        /// 进入棋盘编辑页：外壳先收起 Food 态表现并切到编辑互斥态，再把编辑页构建交给协作组件。
+        /// 进入餐桌编辑页：外壳先收起 Food 态表现并切到编辑互斥态，再把编辑页构建交给协作组件。
         /// </summary>
-        public void BeginBoardEdit(GameRun run, IReadOnlyList<string> candidateIds, Action<bool> onDone)
+        public void BeginTableEdit(GameRun run, IReadOnlyList<string> candidateIds, Action<bool> onDone)
         {
             if (run == null)
             {
@@ -242,67 +242,67 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            EnsureBoardEdit();
-            EndStomachView();
+            EnsureTableEdit();
+            EndTableView();
 
             gameObject.SetActive(true);
             CancelPresentationTasks();
-            _worldMode = WorldMode.BoardEdit;
+            _worldMode = WorldMode.TableEdit;
             _settling = false;
             _serving = false;
             _session = null;
             SetFoodWorldElementsVisible(false);
             ClearPlacedPieces();
 
-            _boardEdit.BeginBoardEdit(run, candidateIds, onDone);
+            _boardEdit.BeginTableEdit(run, candidateIds, onDone);
         }
 
-        /// <summary>进入只读胃视图：外壳收起 Food 态并切到胃视图互斥态，交由协作组件复用棋盘布局渲染。</summary>
-        public void BeginStomachView(GameRun run)
+        /// <summary>进入只读餐桌视图：外壳收起 Food 态并切到餐桌视图互斥态，交由协作组件复用餐桌布局渲染。</summary>
+        public void BeginTableView(GameRun run)
         {
-            if (run == null || !CanEnterStomachView)
+            if (run == null || !CanEnterTableView)
             {
                 return;
             }
 
-            EnsureBoardEdit();
+            EnsureTableEdit();
             if (_boardEdit.IsEditing)
             {
-                _boardEdit.EndBoardEdit();
+                _boardEdit.EndTableEdit();
             }
 
             _run = run;
             _session = null;
             gameObject.SetActive(true);
             CancelPresentationTasks();
-            _worldMode = WorldMode.StomachView;
+            _worldMode = WorldMode.TableView;
             _settling = false;
             _serving = false;
             SetFoodWorldElementsVisible(false);
             HideWorldPanels();
             ClearPlacedPieces();
 
-            _boardEdit.BeginStomachView(run);
+            _boardEdit.BeginTableView(run);
         }
 
-        public void EndStomachView()
+        public void EndTableView()
         {
-            if (_worldMode == WorldMode.StomachView)
+            if (_worldMode == WorldMode.TableView)
             {
                 _worldMode = WorldMode.Hidden;
             }
 
-            _boardEdit?.EndStomachView();
+            _boardEdit?.EndTableView();
         }
 
-        public void SkipBoardEditPack()
+        public void SkipTableEditPack()
         {
-            if (_worldMode != WorldMode.BoardEdit || _boardEdit == null || !_boardEdit.IsEditing)
+            if (_worldMode != WorldMode.TableEdit || _boardEdit == null || !_boardEdit.IsEditing)
             {
                 return;
             }
 
-            _boardEdit.SkipBoardEditPack();
+            _boardEdit.SkipTableEditPack();
         }
 
         private void OnDestroy()
@@ -349,10 +349,10 @@ namespace GourmetProject.Game.Presentation.Battle
             _worldMode = WorldMode.Food;
             _settling = false;
             ComputeViewport();
-            BuildBoard(session.Board);
+            BuildTable(session.DiningTable);
             EnsureSequencer();
             // 道具（被动/主动）与菜谱面板已迁到常驻屏幕空间 HUD（BattleForm），世界空间不再渲染这些面板；
-            // 世界空间只保留棋盘、菜品、上菜/结算演出与涂鸦表现。
+            // 世界空间只保留餐桌、菜品、上菜/结算演出与涂鸦表现。
             HideWorldPanels();
             SetFoodWorldElementsVisible(true);
             RebuildPlacedPieces();
@@ -377,10 +377,10 @@ namespace GourmetProject.Game.Presentation.Battle
 
             if (_boardEdit != null && _boardEdit.IsEditing)
             {
-                _boardEdit.EndBoardEdit();
+                _boardEdit.EndTableEdit();
             }
 
-            EndStomachView();
+            EndTableView();
             _settling = false;
             _serving = false;
             SetFoodWorldElementsVisible(false);
@@ -388,8 +388,8 @@ namespace GourmetProject.Game.Presentation.Battle
             gameObject.SetActive(false);
         }
 
-        /// <summary>战斗结束后清理本场运行时棋盘表现，避免已摆菜品残留到后续非战斗状态。</summary>
-        public void ClearBattleBoard()
+        /// <summary>战斗结束后清理本场运行时餐桌表现，避免已摆菜品残留到后续非战斗状态。</summary>
+        public void ClearBattleTable()
         {
             CancelPresentationTasks();
             _settling = false;
@@ -466,7 +466,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        public void SyncBoardFromSession()
+        public void SyncTableFromSession()
         {
             if (_session == null)
             {
@@ -588,25 +588,25 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>
-        /// 由 BattleForm 传入 HUD 里的空区矩形，棋盘将始终 fit 并居中锁定在该屏幕区域内（超大胃继续缩放显示）。
+        /// 由 BattleForm 传入 HUD 里的空区矩形，餐桌将始终 fit 并居中锁定在该屏幕区域内（超大餐桌继续缩放显示）。
         /// 传 null 回落到按视口边距布局。
         /// </summary>
-        public void SetBoardArea(RectTransform area)
+        public void SetTableArea(RectTransform area)
         {
             _boardArea = area;
         }
 
-        private void BuildBoard(GpBoard board)
+        private void BuildTable(GpTable board)
         {
-            // 中央可用区：菜谱/道具面板已迁到常驻 HUD（左右栏 + 底部菜谱抽屉），棋盘居中在中部内容区，
-            // 由 BoardLayout 统一按胃包围盒铺满可用区并居中（与编辑/胃视图态共用同一套定位算法）。
-            BoardPlacement placement = TryComputeBoardAreaRect(out float left, out float right, out float bottom, out float top)
-                ? BoardLayout.ComputeInRect(left, right, bottom, top, board, BoardAreaMinCellSize)
-                : BoardLayout.Compute(_halfW, _halfH, board, FoodBoardBottomMargin);
+            // 中央可用区：菜谱/道具面板已迁到常驻 HUD（左右栏 + 底部菜谱抽屉），餐桌居中在中部内容区，
+            // 由 DiningTableLayout 统一按胃包围盒铺满可用区并居中（与编辑/餐桌视图态共用同一套定位算法）。
+            BoardPlacement placement = TryComputeTableAreaRect(out float left, out float right, out float bottom, out float top)
+                ? DiningTableLayout.ComputeInRect(left, right, bottom, top, board, BoardAreaMinCellSize)
+                : DiningTableLayout.Compute(_halfW, _halfH, board, FoodTableBottomMargin);
             _cellSize = placement.CellSize;
             _boardCenter = placement.Position;
 
-            // 局部空间：棋盘以 BoardView.transform 为局部帧（BoardRoot），世界摆放/居中由其 transform 决定。
+            // 局部空间：餐桌以 DiningTableView.transform 为局部帧（BoardRoot），世界摆放/居中由其 transform 决定。
             // 保持 scale 恒等、rotation 恒等，避免子级格子/菜品被二次缩放或旋转。
             _boardView.transform.rotation = Quaternion.identity;
             _boardView.transform.localScale = Vector3.one;
@@ -614,7 +614,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             _boardView.Build(board, _cellSize, Gap, OnCellClicked, _boardCellPrefab);
 
-            // BoardView.Build 会清空 BoardRoot 的动态格子子物体；PiecesRoot 必须在此之后再挂入。
+            // DiningTableView.Build 会清空 BoardRoot 的动态格子子物体；PiecesRoot 必须在此之后再挂入。
             Transform piecesRoot = EnsurePiecesRoot();
             if (piecesRoot != null && piecesRoot.parent != _boardView.transform)
             {
@@ -625,8 +625,8 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        /// <summary>把 HUD 里的 BoardArea 矩形四角投影到 BattleCamera 世界平面(z=0)，得到棋盘可用区的世界矩形边界。</summary>
-        private bool TryComputeBoardAreaRect(out float left, out float right, out float bottom, out float top)
+        /// <summary>把 HUD 里的 BoardArea 矩形四角投影到 BattleCamera 世界平面(z=0)，得到餐桌可用区的世界矩形边界。</summary>
+        private bool TryComputeTableAreaRect(out float left, out float right, out float bottom, out float top)
         {
             left = right = bottom = top = 0f;
             if (_boardArea == null || _camera == null)
@@ -667,7 +667,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            foreach (DishInstance dish in _session.Board.Dishes)
+            foreach (DishInstance dish in _session.DiningTable.Dishes)
             {
                 CreatePlacedPiece(dish);
             }
@@ -702,7 +702,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             piece.gameObject.name = $"Dish_{dish.Id}_{dish.Def.Id}";
-            // 菜品挂在 BoardRoot 下，用局部坐标贴格（与棋盘共享局部帧）。
+            // 菜品挂在 BoardRoot 下，用局部坐标贴格（与餐桌共享局部帧）。
             piece.transform.localPosition = _boardView.Mapper.CellCenterLocal(dish.Placement.Origin);
             piece.BuildPlaced(dish, _spriteProvider.Get(dish.Def), _cellSize, _cellSize + Gap, _dishClicked);
             _placedPieces.Add(piece);
@@ -761,7 +761,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            DishInstance dish = _session.Board.DishAt(pos);
+            DishInstance dish = _session.DiningTable.DishAt(pos);
             if (dish != null)
             {
                 _dishClicked?.Invoke(dish);

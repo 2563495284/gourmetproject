@@ -9,7 +9,7 @@ namespace GourmetProject.Game.UI.Battle
         RecipeEdit,
         RewardDishPack,
         Food,
-        BoardEdit,
-        StomachView,
+        TableEdit,
+        TableView,
     }
 }

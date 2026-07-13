@@ -33,11 +33,11 @@ public partial class Tables
     /// <summary>
     /// 胃部碎片库：也用作初始胃形状来源。碎片不旋转(1x2 与 2x1 视为两个碎片)。&#39;X&#39;=存在格。
     /// </summary>
-    public TbStomachFragment TbStomachFragment {get; }
+    public TbTableFragment TbTableFragment {get; }
     /// <summary>
     /// 碎片格强化标签：一行=碎片某格(x,y)挂一个格子标签 id（引用 TbCellTag）。
     /// </summary>
-    public TbFragmentCellTag TbFragmentCellTag {get; }
+    public TbFragmentMaterial TbFragmentMaterial {get; }
     /// <summary>
     /// 菜谱：固定菜品(fixedDishes 用 | 分隔)+加权放回随机池(pool: list,RecipeEntry)，随机到累计初始分&gt;=requiredInitScore 为止。
     /// </summary>
@@ -113,7 +113,7 @@ public partial class Tables
     /// <summary>
     /// 棋盘格子标签：挂在胃碎片格上（TbFragmentCellTag 引用）。effectType/effectValue 定义结算效果。
     /// </summary>
-    public TbCellTag TbCellTag {get; }
+    public TbMaterial TbMaterial {get; }
     /// <summary>
     /// 欢乐蛋糕层数分段buff：结算时读全局层数，layers&gt;=threshold 的档累计应用到 category 分类所有食物。effectType 复用 SkillActionType。
     /// </summary>
@@ -157,8 +157,8 @@ public partial class Tables
         TbDishVariant = new TbDishVariant(loader("tbdishvariant"));
         TbTerm = new TbTerm(loader("tbterm"));
         TbCharacter = new TbCharacter(loader("tbcharacter"));
-        TbStomachFragment = new TbStomachFragment(loader("tbstomachfragment"));
-        TbFragmentCellTag = new TbFragmentCellTag(loader("tbfragmentcelltag"));
+        TbTableFragment = new TbTableFragment(loader("tbtablefragment"));
+        TbFragmentMaterial = new TbFragmentMaterial(loader("tbfragmentmaterial"));
         TbRecipe = new TbRecipe(loader("tbrecipe"));
         TbItem = new TbItem(loader("tbitem"));
         TbScoreProfile = new TbScoreProfile(loader("tbscoreprofile"));
@@ -177,7 +177,7 @@ public partial class Tables
         TbUnlockCondition = new TbUnlockCondition(loader("tbunlockcondition"));
         TbSkill = new TbSkill(loader("tbskill"));
         TbFlavor = new TbFlavor(loader("tbflavor"));
-        TbCellTag = new TbCellTag(loader("tbcelltag"));
+        TbMaterial = new TbMaterial(loader("tbmaterial"));
         TbCakeLayerBuff = new TbCakeLayerBuff(loader("tbcakelayerbuff"));
         TbSubSkill = new TbSubSkill(loader("tbsubskill"));
         TbFood = new TbFood(loader("tbfood"));
@@ -196,8 +196,8 @@ public partial class Tables
         TbDishVariant.ResolveRef(this);
         TbTerm.ResolveRef(this);
         TbCharacter.ResolveRef(this);
-        TbStomachFragment.ResolveRef(this);
-        TbFragmentCellTag.ResolveRef(this);
+        TbTableFragment.ResolveRef(this);
+        TbFragmentMaterial.ResolveRef(this);
         TbRecipe.ResolveRef(this);
         TbItem.ResolveRef(this);
         TbScoreProfile.ResolveRef(this);
@@ -216,7 +216,7 @@ public partial class Tables
         TbUnlockCondition.ResolveRef(this);
         TbSkill.ResolveRef(this);
         TbFlavor.ResolveRef(this);
-        TbCellTag.ResolveRef(this);
+        TbMaterial.ResolveRef(this);
         TbCakeLayerBuff.ResolveRef(this);
         TbSubSkill.ResolveRef(this);
         TbFood.ResolveRef(this);

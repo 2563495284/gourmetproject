@@ -4,7 +4,7 @@ using System.Linq;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
-using GpBoard = GourmetProject.Gameplay.Board.Board;
+using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 
 namespace GourmetProject.Gameplay.Scoring
 {
@@ -34,6 +34,7 @@ namespace GourmetProject.Gameplay.Scoring
         private readonly List<ScoreEvent> _events = new List<ScoreEvent>();
         private readonly Queue<PendingScoreCommand> _commands = new Queue<PendingScoreCommand>();
         private int _happyCakeLayerDelta;
+        private int _silverItemRolls;
         private readonly List<SkillTransferSideEffect> _skillTransfers = new List<SkillTransferSideEffect>();
         private readonly Dictionary<int, float> _permanentFlatDeltas = new Dictionary<int, float>();
         private readonly Dictionary<int, float> _permanentMultDeltas = new Dictionary<int, float>();
@@ -47,7 +48,7 @@ namespace GourmetProject.Gameplay.Scoring
         public ScoreContext(ScoreSnapshot snapshot)
         {
             Snapshot = snapshot ?? throw new ArgumentNullException(nameof(snapshot));
-            Board = snapshot.Board;
+            DiningTable = snapshot.DiningTable;
             Db = snapshot.Db;
             FinalFlat = snapshot.InitialFinalFlat;
             FinalMultiplier = snapshot.InitialFinalMultiplier;
@@ -104,7 +105,7 @@ namespace GourmetProject.Gameplay.Scoring
                         }
 
                         // 用默认（非 live）计数评估条件，避免 countAs 递归依赖 countAs。
-                        int count = SkillConditionEvaluator.Evaluate(rule, Board, history, src, InitialHappyCakeLayers);
+                        int count = SkillConditionEvaluator.Evaluate(rule, DiningTable, history, src, InitialHappyCakeLayers);
                         if (count <= 0)
                         {
                             continue;
@@ -140,7 +141,7 @@ namespace GourmetProject.Gameplay.Scoring
                 return new List<DishInstance> { self };
             }
 
-            List<DishInstance> dishes = SkillConditionEvaluator.ScopeDishes(Board, self, rule.ActionScope);
+            List<DishInstance> dishes = SkillConditionEvaluator.ScopeDishes(DiningTable, self, rule.ActionScope);
             if (rule.ActionCount > 0 && dishes.Count > rule.ActionCount)
             {
                 dishes = dishes
@@ -156,7 +157,7 @@ namespace GourmetProject.Gameplay.Scoring
 
         public ScoreSnapshot Snapshot { get; }
 
-        public GpBoard Board { get; }
+        public GpTable DiningTable { get; }
 
         public GameplayDatabase Db { get; }
 
@@ -198,6 +199,9 @@ namespace GourmetProject.Gameplay.Scoring
 
         /// <summary>结算过程中「当前」的全局欢乐蛋糕层数（初始 + 已产生增量）。</summary>
         public int CurrentHappyCakeLayers => Math.Max(0, InitialHappyCakeLayers + _happyCakeLayerDelta);
+
+        /// <summary>本次结算登记的「银材质」1/3 获得道具掷骰请求次数（正式结算后由 Game 层掷骰发放）。</summary>
+        public int SilverItemRollRequests => _silverItemRolls;
 
         public IReadOnlyList<SkillTransferSideEffect> SkillTransfers => _skillTransfers;
 
@@ -353,6 +357,15 @@ namespace GourmetProject.Gameplay.Scoring
             SubmitCommand(new GrantGoldCommand(value));
         }
 
+        /// <summary>
+        /// 登记一次「1/3 概率获得主动道具」的掷骰请求（银材质）。结算层只累计请求数、不掷骰，
+        /// 保证 PreviewScore 纯净；正式 Settle 后由 Game 层用注入的随机流掷骰并发放道具。
+        /// </summary>
+        public void RequestSilverItemRoll()
+        {
+            SubmitCommand(new RequestSilverItemRollCommand());
+        }
+
         public void AddFinalFlat(float value)
         {
             SubmitCommand(new AddFinalFlatCommand(value));
@@ -495,7 +508,7 @@ namespace GourmetProject.Gameplay.Scoring
 
         public ScoreResult ToResult()
         {
-            return new ScoreResult(_dishScores, RawSum, FinalFlat, FinalMultiplier, _lines, _events, GoldDelta, _happyCakeLayerDelta, _skillTransfers, _permanentFlatDeltas, _permanentMultDeltas);
+            return new ScoreResult(_dishScores, RawSum, FinalFlat, FinalMultiplier, _lines, _events, GoldDelta, _happyCakeLayerDelta, _skillTransfers, _permanentFlatDeltas, _permanentMultDeltas, _silverItemRolls);
         }
 
         // ------- 命令实际改分（internal，供命令调用） -------
@@ -569,6 +582,13 @@ namespace GourmetProject.Gameplay.Scoring
             float before = GoldDelta;
             GoldDelta += value;
             AddLine(_current, ScoreLineKind.Gold, value, before, GoldDelta, $"获得金币 +{value}");
+        }
+
+        internal void ApplyRequestSilverItemRollCommand()
+        {
+            int before = _silverItemRolls;
+            _silverItemRolls++;
+            AddLine(_current, ScoreLineKind.SilverItemRoll, 1, before, _silverItemRolls, "登记 1/3 获得主动道具");
         }
 
         internal void ApplyHappyCakeLayerCommand(float value, bool mult, int floor)
@@ -840,6 +860,14 @@ namespace GourmetProject.Gameplay.Scoring
         public string Name => "GrantGold";
 
         public void Execute(ScoreContext context) => context.ApplyGrantGoldCommand(_value);
+    }
+
+    /// <summary>登记一次银材质 1/3 获得道具掷骰请求（副作用，不掷骰）。</summary>
+    public sealed class RequestSilverItemRollCommand : IScoreCommand
+    {
+        public string Name => "RequestSilverItemRoll";
+
+        public void Execute(ScoreContext context) => context.ApplyRequestSilverItemRollCommand();
     }
 
     /// <summary>全局欢乐蛋糕层数改动（副作用）。</summary>

@@ -21,7 +21,7 @@ namespace GourmetProject.Gameplay.Scoring
 
             collector.Add(new ScoreEffectEntry(
                 ScorePhase.AfterAllDishes,
-                ScoreSource.BoardTag("cake_layer_buff", "欢乐蛋糕层数"),
+                ScoreSource.TableTag("cake_layer_buff", "欢乐蛋糕层数"),
                 new CakeLayerBuffEffect(buffs),
                 dish: null));
         }
@@ -57,7 +57,7 @@ namespace GourmetProject.Gameplay.Scoring
                 }
 
                 float value = buff.ValuePerLayer * layers;
-                List<DishInstance> targets = SkillConditionEvaluator.CategoryDishes(ctx.Board, buff.Category);
+                List<DishInstance> targets = SkillConditionEvaluator.CategoryDishes(ctx.DiningTable, buff.Category);
                 foreach (DishInstance target in targets)
                 {
                     switch (buff.EffectType)

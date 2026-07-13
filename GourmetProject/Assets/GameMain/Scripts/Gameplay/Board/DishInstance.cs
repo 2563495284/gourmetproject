@@ -6,30 +6,41 @@ using GourmetProject.Gameplay.Model;
 namespace GourmetProject.Gameplay.Board
 {
     /// <summary>
-    /// 棋盘上的一个菜品实例：引用菜品定义，记录其朝向、占格、技能集合与风味。
+    /// 餐桌上的一个菜品实例：引用菜品定义，记录其朝向、占格、技能集合与风味。
     /// 技能与风味在创建时由「初始技能列表 + 单槽风味」确定，运行时可被道具追加/替换。
     /// </summary>
     public sealed class DishInstance
     {
         private readonly List<GridPos> _occupiedCells;
         private readonly List<string> _skillIds;
+        private readonly List<string> _flavorIds;
         private readonly Dictionary<string, string> _skillSources = new Dictionary<string, string>();
         private readonly List<TransferredSkill> _transferredSkills = new List<TransferredSkill>();
 
-        public DishInstance(int id, DishDef def, Placement placement, IReadOnlyList<string> skillIds, string flavorId)
+        public DishInstance(int id, DishDef def, Placement placement, IReadOnlyList<string> skillIds, IReadOnlyList<string> flavorIds)
         {
             Id = id;
             Def = def ?? throw new ArgumentNullException(nameof(def));
             Placement = placement;
             _skillIds = skillIds != null ? new List<string>(skillIds) : new List<string>();
-            FlavorId = flavorId ?? string.Empty;
+            _flavorIds = new List<string>();
+            if (flavorIds != null)
+            {
+                foreach (string f in flavorIds)
+                {
+                    if (!string.IsNullOrEmpty(f))
+                    {
+                        _flavorIds.Add(f);
+                    }
+                }
+            }
 
             _occupiedCells = placement.Orientation.Cells
                 .Select(c => c.Offset(placement.Origin.X, placement.Origin.Y))
                 .ToList();
         }
 
-        /// <summary>棋盘内唯一序号，用于稳定排序与表现层映射。</summary>
+        /// <summary>餐桌内唯一序号，用于稳定排序与表现层映射。</summary>
         public int Id { get; }
 
         public DishDef Def { get; }
@@ -38,7 +49,7 @@ namespace GourmetProject.Gameplay.Board
 
         /// <summary>
         /// 迁移到新的摆放（朝向 + 原点）并重算绝对占格，保留 Id/层数/技能/风味。
-        /// 供「食物调整」态移动菜品：调用方需先 <see cref="Board.RemoveDish"/>，再 Relocate，最后 <see cref="Board.Place"/>。
+        /// 供「食物调整」态移动菜品：调用方需先 <see cref="DiningTable.RemoveDish"/>，再 Relocate，最后 <see cref="DiningTable.Place"/>。
         /// </summary>
         public void Relocate(Placement placement)
         {
@@ -53,8 +64,17 @@ namespace GourmetProject.Gameplay.Board
         /// <summary>该实例的运行时技能 id 列表（数量无上限，可被技能传递追加）。</summary>
         public IReadOnlyList<string> SkillIds => _skillIds;
 
-        /// <summary>该实例的最终风味 id（单槽，可空）。</summary>
-        public string FlavorId { get; }
+        /// <summary>该实例的最终风味 id 列表（多槽，可叠加；同类风味按出现次数累计效果，如甜×n）。</summary>
+        public IReadOnlyList<string> FlavorIds => _flavorIds;
+
+        /// <summary>追加一个风味（道具/效果赋予）。允许重复以支持叠加计数。空串忽略。</summary>
+        public void AddFlavor(string flavorId)
+        {
+            if (!string.IsNullOrEmpty(flavorId))
+            {
+                _flavorIds.Add(flavorId);
+            }
+        }
 
         /// <summary>运行时「视为食物数」加成（AddCountAs 副作用累加，跨结算持久）。</summary>
         public int RuntimeCountAsBonus { get; private set; }
@@ -226,7 +246,7 @@ namespace GourmetProject.Gameplay.Board
         }
 
         /// <summary>是否带有风味。</summary>
-        public bool HasFlavor => !string.IsNullOrEmpty(FlavorId);
+        public bool HasFlavor => _flavorIds.Count > 0;
 
         /// <summary>绝对占格列表。</summary>
         public IReadOnlyList<GridPos> OccupiedCells => _occupiedCells;

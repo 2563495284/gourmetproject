@@ -21,21 +21,21 @@ namespace cfg
         /// </summary>
         None = 0,
         /// <summary>
-        /// 棋盘上的菜(本局临时,仅战斗)
+        /// 餐桌上的菜(本局临时,仅战斗)
         /// </summary>
-        BoardDish = 1,
+        DiningTableDish = 1,
         /// <summary>
         /// 菜谱里的菜(永久,任意情境含战斗)
         /// </summary>
         RecipeDish = 2,
         /// <summary>
-        /// 胃碎片格
+        /// 餐桌格
         /// </summary>
-        StomachCell = 3,
+        DiningTableCell = 3,
         /// <summary>
-        /// 格子标签
+        /// 材质
         /// </summary>
-        CellTag = 4,
+        Material = 4,
         /// <summary>
         /// 某道菜的风味槽
         /// </summary>

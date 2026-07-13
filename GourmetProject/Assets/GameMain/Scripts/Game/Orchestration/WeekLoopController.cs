@@ -151,7 +151,7 @@ namespace GourmetProject.Game.Orchestration
 
         public void OnBattleSettled(ScoreResult result, bool isWin)
         {
-            // 结算演出已放完 → 立即退出美食态，隐藏世界棋盘与其专属按钮（总览/吃/涂鸦）。
+            // 结算演出已放完 → 立即退出美食态，隐藏世界餐桌与其专属按钮（总览/吃/涂鸦）。
             // 否则战斗后到下一次 PromptNextAction 之间的发奖 / 事件 / 利息 / 通知等弹层背后，
             // 美食态按钮会一直残留（事件选择时按钮仍显示的根因就在这里）。
             _view.HideBattleWorld();

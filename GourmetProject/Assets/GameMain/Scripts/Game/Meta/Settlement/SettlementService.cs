@@ -40,7 +40,7 @@ namespace GourmetProject.Game.Meta
             body.AppendLine($"金币：{statistics.Gold}");
             body.AppendLine($"持有道具：{statistics.OwnedItemCount} 件");
             body.AppendLine($"菜谱附加菜品：{statistics.BonusDishCount} 道");
-            body.AppendLine($"胃部碎片：{statistics.StomachFragmentCount} 块");
+            body.AppendLine($"餐桌碎片：{statistics.StomachFragmentCount} 块");
             body.AppendLine($"触发事件：{statistics.TriggeredEventCount} 种");
 
             string unlocks = FormatUnlocks(progressUpdate?.NewUnlocks);

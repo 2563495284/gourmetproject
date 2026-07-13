@@ -23,7 +23,7 @@ namespace GourmetProject.Tests
                 dishes,
                 new List<SkillDef>(),
                 new List<FlavorDef>(),
-                new List<CellTagDef>(),
+                new List<MaterialDef>(),
                 new List<RecipeDef>());
         }
 
@@ -68,7 +68,7 @@ namespace GourmetProject.Tests
                 dishes,
                 new List<SkillDef>(),
                 new List<FlavorDef>(),
-                new List<CellTagDef>(),
+                new List<MaterialDef>(),
                 new List<RecipeDef>());
             var recipe = new RecipeDef(
                 "r",

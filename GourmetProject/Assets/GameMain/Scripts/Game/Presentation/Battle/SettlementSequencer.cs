@@ -47,7 +47,7 @@ namespace GourmetProject.Game.Presentation.Battle
             BattleSession session,
             ScoreResult result,
             IReadOnlyDictionary<int, DishPieceView> dishViews,
-            BoardCoordinateMapper mapper,
+            DiningTableCoordinateMapper mapper,
             Transform fxRoot,
             SettlementScoreFireView scoreFire,
             Action<int> renderScore,
@@ -146,7 +146,7 @@ namespace GourmetProject.Game.Presentation.Battle
             DishPieceView view,
             Vector3 center,
             Transform fxRoot,
-            BoardCoordinateMapper mapper,
+            DiningTableCoordinateMapper mapper,
             SettlementPlaybackState playback,
             CancellationToken cancellationToken)
         {
@@ -166,7 +166,7 @@ namespace GourmetProject.Game.Presentation.Battle
             DishPieceView view,
             Vector3 center,
             Transform fxRoot,
-            BoardCoordinateMapper mapper,
+            DiningTableCoordinateMapper mapper,
             SettlementPlaybackState playback,
             CancellationToken cancellationToken)
         {
@@ -190,7 +190,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             return line.Source.Type == ScoreSourceType.DishSkill
                 || line.Source.Type == ScoreSourceType.DishFlavor
-                || line.Source.Type == ScoreSourceType.CellTag;
+                || line.Source.Type == ScoreSourceType.Material;
         }
 
         private void BeginSettlementSpeed()
@@ -304,7 +304,7 @@ namespace GourmetProject.Game.Presentation.Battle
             return text;
         }
 
-        private static Vector3 DishCenter(DishInstance dish, BoardCoordinateMapper mapper)
+        private static Vector3 DishCenter(DishInstance dish, DiningTableCoordinateMapper mapper)
         {
             if (dish == null || dish.OccupiedCells.Count == 0)
             {

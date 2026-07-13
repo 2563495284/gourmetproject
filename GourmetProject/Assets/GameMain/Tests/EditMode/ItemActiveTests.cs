@@ -80,11 +80,11 @@ namespace GourmetProject.Tests
         {
             Assert.IsFalse(ItemActiveUsage.RequiresTarget(cfg.ItemTargetKind.None));
             Assert.IsFalse(ItemActiveUsage.RequiresTarget(cfg.ItemTargetKind.Global));
-            Assert.IsTrue(ItemActiveUsage.RequiresTarget(cfg.ItemTargetKind.BoardDish));
+            Assert.IsTrue(ItemActiveUsage.RequiresTarget(cfg.ItemTargetKind.DiningTableDish));
 
             // 棋盘菜只在战斗；菜谱菜任意情境。
-            Assert.IsTrue(ItemActiveUsage.IsUsableIn(cfg.ItemTargetKind.BoardDish, ActiveUseContextKind.Battle));
-            Assert.IsFalse(ItemActiveUsage.IsUsableIn(cfg.ItemTargetKind.BoardDish, ActiveUseContextKind.Shop));
+            Assert.IsTrue(ItemActiveUsage.IsUsableIn(cfg.ItemTargetKind.DiningTableDish, ActiveUseContextKind.Battle));
+            Assert.IsFalse(ItemActiveUsage.IsUsableIn(cfg.ItemTargetKind.DiningTableDish, ActiveUseContextKind.Shop));
             Assert.IsTrue(ItemActiveUsage.IsUsableIn(cfg.ItemTargetKind.RecipeDish, ActiveUseContextKind.Battle));
             Assert.IsTrue(ItemActiveUsage.IsUsableIn(cfg.ItemTargetKind.RecipeDish, ActiveUseContextKind.Map));
 

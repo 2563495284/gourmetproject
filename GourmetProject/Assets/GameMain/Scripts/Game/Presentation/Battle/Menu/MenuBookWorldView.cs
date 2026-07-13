@@ -16,7 +16,7 @@ namespace GourmetProject.Game.Presentation.Battle
 {
     /// <summary>
     /// 纯场景物体（SpriteRenderer + TextMesh + BoxCollider2D）实现的菜单书，替代原 World Space uGUI 版。
-    /// 与棋盘/菜品同走 BattleSorting / WorldInput 体系，保证在 URP 2D 正交相机下稳定可见、可交互。
+    /// 与餐桌/菜品同走 BattleSorting / WorldInput 体系，保证在 URP 2D 正交相机下稳定可见、可交互。
     ///
     /// 结构按 presentation-prefab 规则预拼在 prefab 里（书皮图/标题/铃铛/翻页钮/页码/tooltip/条目容器），
     /// 由 <see cref="Build"/> 引用并按参考尺寸整体缩放到运行时分配的世界尺寸；只有「随数据变数量」的菜谱条目

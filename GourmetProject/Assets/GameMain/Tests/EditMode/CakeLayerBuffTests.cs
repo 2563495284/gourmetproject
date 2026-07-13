@@ -5,7 +5,7 @@ using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
 using NUnit.Framework;
-using GpBoard = GourmetProject.Gameplay.Board.Board;
+using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 
 namespace GourmetProject.Tests
 {
@@ -26,14 +26,14 @@ namespace GourmetProject.Tests
                 new List<DishDef>(),
                 new List<SkillDef>(),
                 new List<FlavorDef>(),
-                new List<CellTagDef>(),
+                new List<MaterialDef>(),
                 new List<RecipeDef>(),
                 cakeLayerBuffs: buffs);
         }
 
-        private static (GpBoard board, DishInstance cake, DishInstance plain) BuildBoard()
+        private static (GpTable board, DishInstance cake, DishInstance plain) BuildTable()
         {
-            var board = new GpBoard(4, 1);
+            var board = new GpTable(4, 1);
             DishDef cakeDef = GameplayTestFactory.Dish("cake", new[] { "X" }, deliciousness: 10, allowRotate: false, category: "cake");
             DishDef plainDef = GameplayTestFactory.Dish("plain", new[] { "X" }, deliciousness: 10, allowRotate: false);
             var cake = GameplayTestFactory.InstanceWithTags(1, cakeDef, 0, 0, System.Array.Empty<string>());
@@ -46,7 +46,7 @@ namespace GourmetProject.Tests
         [Test]
         public void ZeroLayers_NoEffect()
         {
-            (GpBoard board, _, _) = BuildBoard();
+            (GpTable board, _, _) = BuildTable();
             ScoreResult result = new ScoreCalculator().Calculate(board, DbWithBuffs(DefaultBuffs), initialHappyCakeLayers: 0);
 
             Assert.AreEqual(10f, result.DishScores.First(s => s.DishInstanceId == 1).Contribution, 0.001f);
@@ -56,7 +56,7 @@ namespace GourmetProject.Tests
         [Test]
         public void FlatTierOnly_AddsBaseToCakesOnly()
         {
-            (GpBoard board, _, _) = BuildBoard();
+            (GpTable board, _, _) = BuildTable();
             // 层数 10：仅第一档生效 → cake 基础分 +5×10=50 → 10+50=60；非蛋糕不受影响。
             ScoreResult result = new ScoreCalculator().Calculate(board, DbWithBuffs(DefaultBuffs), initialHappyCakeLayers: 10);
 
@@ -67,7 +67,7 @@ namespace GourmetProject.Tests
         [Test]
         public void MidTier_FlatAndMultFlatStack()
         {
-            (GpBoard board, _, _) = BuildBoard();
+            (GpTable board, _, _) = BuildTable();
             // 层数 60：flat(+5×60=300) 且 multflat(+0.1×60=+6 倍率) → (10+300)×(1+6)=2170。
             ScoreResult result = new ScoreCalculator().Calculate(board, DbWithBuffs(DefaultBuffs), initialHappyCakeLayers: 60);
 
@@ -78,7 +78,7 @@ namespace GourmetProject.Tests
         [Test]
         public void TopTier_AllThreeStack()
         {
-            (GpBoard board, _, _) = BuildBoard();
+            (GpTable board, _, _) = BuildTable();
             // 层数 100：flat(+500) → 510；multflat(+10) → 倍率 11；mult(×0.02×100=×2) → 倍率 22 → 510×22=11220。
             ScoreResult result = new ScoreCalculator().Calculate(board, DbWithBuffs(DefaultBuffs), initialHappyCakeLayers: 100);
 
@@ -89,7 +89,7 @@ namespace GourmetProject.Tests
         [Test]
         public void NoBuffTable_NoEffect()
         {
-            (GpBoard board, _, _) = BuildBoard();
+            (GpTable board, _, _) = BuildTable();
             // 未配置 buff 表（空）→ 即使有层数也无任何加成。
             ScoreResult result = new ScoreCalculator().Calculate(board, DbWithBuffs(), initialHappyCakeLayers: 100);
 
@@ -100,7 +100,7 @@ namespace GourmetProject.Tests
         [Test]
         public void BuffLine_AttributedToCakeLayerSource()
         {
-            (GpBoard board, _, _) = BuildBoard();
+            (GpTable board, _, _) = BuildTable();
             ScoreResult result = new ScoreCalculator().Calculate(board, DbWithBuffs(DefaultBuffs), initialHappyCakeLayers: 10);
 
             Assert.IsTrue(

@@ -17,14 +17,16 @@ namespace GourmetProject.Game.UI.Widgets
             DishDef def,
             GameplayDatabase db,
             System.Collections.Generic.IReadOnlyList<string> skillIds,
-            string flavorId,
+            System.Collections.Generic.IReadOnlyList<string> flavorIds,
             System.Collections.Generic.IReadOnlyDictionary<string, string> skillSources = null,
             System.Collections.Generic.IReadOnlyList<TransferredSkill> transferredSkills = null)
         {
             Def = def;
             Database = db;
             SkillIds = skillIds ?? def.SkillIds;
-            FlavorId = flavorId ?? def.FlavorId;
+            FlavorIds = flavorIds ?? (string.IsNullOrEmpty(def.FlavorId)
+                ? System.Array.Empty<string>()
+                : new[] { def.FlavorId });
             SkillSources = skillSources;
             TransferredSkills = transferredSkills;
         }
@@ -35,7 +37,7 @@ namespace GourmetProject.Game.UI.Widgets
 
         public System.Collections.Generic.IReadOnlyList<string> SkillIds { get; }
 
-        public string FlavorId { get; }
+        public System.Collections.Generic.IReadOnlyList<string> FlavorIds { get; }
 
         /// <summary>该实例技能的来源标签（skillId → 「源名&lt;甜蜜传递&gt;」等）；无来源信息时为 null。</summary>
         public System.Collections.Generic.IReadOnlyDictionary<string, string> SkillSources { get; }

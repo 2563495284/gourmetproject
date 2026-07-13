@@ -1,6 +1,6 @@
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
-using GpBoard = GourmetProject.Gameplay.Board.Board;
+using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 
 namespace GourmetProject.Gameplay.Scoring
 {
@@ -9,7 +9,7 @@ namespace GourmetProject.Gameplay.Scoring
     /// </summary>
     public sealed class EffectContext : ScoreContext
     {
-        public EffectContext(GpBoard board, GameplayDatabase db, DishInstance dish)
+        public EffectContext(GpTable board, GameplayDatabase db, DishInstance dish)
             : base(new ScoreSnapshot(board, db))
         {
             BeginDish(dish);

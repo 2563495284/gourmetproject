@@ -5,7 +5,7 @@ using GourmetProject.Gameplay.Model;
 
 namespace GourmetProject.Gameplay.Scoring
 {
-    /// <summary>把当前棋盘上的风味与格子标签转换为简易结算效果。</summary>
+    /// <summary>把当前餐桌上的风味与格子标签转换为简易结算效果。</summary>
     public sealed class TagScoreEffectSource : IScoreEffectSource
     {
         private readonly TagEffectRegistry _registry;
@@ -20,7 +20,7 @@ namespace GourmetProject.Gameplay.Scoring
             foreach (DishInstance dish in snapshot.DishesInDefaultOrder)
             {
                 CollectFlavor(snapshot, collector, dish);
-                CollectCellTags(snapshot, collector, dish);
+                CollectMaterials(snapshot, collector, dish);
             }
         }
 
@@ -31,62 +31,89 @@ namespace GourmetProject.Gameplay.Scoring
                 return;
             }
 
-            IEffectDef flavor = ResolveFlavor(snapshot, dish.FlavorId, out IScoreEffect effect);
-            if (flavor == null)
-            {
-                return;
-            }
-
             int boardOrder = BoardOrder(snapshot, dish.Placement.Origin);
-            collector.Add(new ScoreEffectEntry(
-                ScorePhase.DishFlavor,
-                ScoreSource.DishFlavor(flavor, dish),
-                effect,
-                dish,
-                flavor,
-                null,
-                0,
-                boardOrder));
+            foreach (string flavorId in dish.FlavorIds)
+            {
+                IEffectDef flavor = ResolveFlavor(snapshot, flavorId, out IScoreEffect effect);
+                if (flavor == null)
+                {
+                    continue;
+                }
+
+                collector.Add(new ScoreEffectEntry(
+                    ScorePhase.DishFlavor,
+                    ScoreSource.DishFlavor(flavor, dish),
+                    effect,
+                    dish,
+                    flavor,
+                    null,
+                    0,
+                    boardOrder));
+            }
         }
 
-        private void CollectCellTags(ScoreSnapshot snapshot, ScoreEffectCollector collector, DishInstance dish)
+        private sealed class MaterialAggregate
         {
-            IEnumerable<GridPos> cells = dish.OccupiedCells
-                .OrderBy(c => c.Y)
-                .ThenBy(c => c.X);
+            public int Count;
+            public int BoardOrder;
+            public GridPos Cell;
+        }
 
-            foreach (GridPos cell in cells)
+        private void CollectMaterials(ScoreSnapshot snapshot, ScoreEffectCollector collector, DishInstance dish)
+        {
+            // 按「食物×材质」聚合该菜占据的格：材质 id -> 占格数 + 最靠上左的格（决定该材质的结算次序与明细定位）。
+            var byMaterial = new Dictionary<string, MaterialAggregate>();
+            foreach (GridPos cell in dish.OccupiedCells)
             {
                 int boardOrder = BoardOrder(snapshot, cell);
-                foreach (string tagId in snapshot.Board.TagsAt(cell))
+                foreach (string materialId in snapshot.DiningTable.MaterialsAt(cell))
                 {
-                    IEffectDef cellTag = ResolveCell(snapshot, tagId, out IScoreEffect effect);
-                    if (cellTag == null)
+                    if (string.IsNullOrEmpty(materialId))
                     {
                         continue;
                     }
 
-                    collector.Add(new ScoreEffectEntry(
-                        ScorePhase.CellTags,
-                        ScoreSource.CellTag(cellTag, dish, cell),
-                        effect,
-                        dish,
-                        cellTag,
-                        cell,
-                        0,
-                        boardOrder));
+                    if (!byMaterial.TryGetValue(materialId, out MaterialAggregate agg))
+                    {
+                        byMaterial[materialId] = new MaterialAggregate { Count = 1, BoardOrder = boardOrder, Cell = cell };
+                    }
+                    else
+                    {
+                        agg.Count++;
+                        if (boardOrder < agg.BoardOrder)
+                        {
+                            agg.BoardOrder = boardOrder;
+                            agg.Cell = cell;
+                        }
+                    }
                 }
+            }
+
+            // 不同材质按从上到下、从左到右（最靠上左格）依次结算。
+            foreach (KeyValuePair<string, MaterialAggregate> kv in byMaterial.OrderBy(e => e.Value.BoardOrder))
+            {
+                MaterialDef material = snapshot.Db.GetMaterial(kv.Key);
+                if (material == null)
+                {
+                    continue;
+                }
+
+                MaterialAggregate agg = kv.Value;
+                collector.Add(new ScoreEffectEntry(
+                    ScorePhase.Materials,
+                    ScoreSource.Material(material, dish, agg.Cell),
+                    new MaterialEffect(material, agg.Count),
+                    dish,
+                    material,
+                    agg.Cell,
+                    0,
+                    agg.BoardOrder));
             }
         }
 
         private IEffectDef ResolveFlavor(ScoreSnapshot snapshot, string id, out IScoreEffect effect)
         {
             return Resolve(snapshot.Db.GetFlavor(id), out effect);
-        }
-
-        private IEffectDef ResolveCell(ScoreSnapshot snapshot, string id, out IScoreEffect effect)
-        {
-            return Resolve(snapshot.Db.GetCellTag(id), out effect);
         }
 
         private IEffectDef Resolve(IEffectDef def, out IScoreEffect effect)
@@ -103,7 +130,7 @@ namespace GourmetProject.Gameplay.Scoring
 
         private static int BoardOrder(ScoreSnapshot snapshot, GridPos cell)
         {
-            return cell.Y * snapshot.Board.Width + cell.X;
+            return cell.Y * snapshot.DiningTable.Width + cell.X;
         }
     }
 }

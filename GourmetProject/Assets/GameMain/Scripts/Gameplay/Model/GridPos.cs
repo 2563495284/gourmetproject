@@ -3,7 +3,7 @@ using System;
 namespace GourmetProject.Gameplay.Model
 {
     /// <summary>
-    /// 棋盘格坐标（列 X、行 Y，原点在左上，Y 向下递增）。纯 C# 结构，避免依赖 UnityEngine.Vector2Int。
+    /// 餐桌格坐标（列 X、行 Y，原点在左上，Y 向下递增）。纯 C# 结构，避免依赖 UnityEngine.Vector2Int。
     /// </summary>
     [Serializable]
     public readonly struct GridPos : IEquatable<GridPos>

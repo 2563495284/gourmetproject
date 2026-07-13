@@ -23,8 +23,8 @@ public sealed partial class Character : Luban.BeanBase
         { if(!_buf["portrait"].IsString) { throw new SerializationException(); }  Portrait = _buf["portrait"]; }
         { if(!_buf["initialRecipeId"].IsString) { throw new SerializationException(); }  InitialRecipeId = _buf["initialRecipeId"]; }
         { if(!_buf["initialFragmentId"].IsString) { throw new SerializationException(); }  InitialFragmentId = _buf["initialFragmentId"]; }
-        { if(!_buf["maxStomachWidth"].IsNumber) { throw new SerializationException(); }  MaxStomachWidth = _buf["maxStomachWidth"]; }
-        { if(!_buf["maxStomachHeight"].IsNumber) { throw new SerializationException(); }  MaxStomachHeight = _buf["maxStomachHeight"]; }
+        { if(!_buf["maxDiningTableWidth"].IsNumber) { throw new SerializationException(); }  MaxDiningTableWidth = _buf["maxDiningTableWidth"]; }
+        { if(!_buf["maxDiningTableHeight"].IsNumber) { throw new SerializationException(); }  MaxDiningTableHeight = _buf["maxDiningTableHeight"]; }
         { if(!_buf["timelinePool"].IsString) { throw new SerializationException(); }  TimelinePool = _buf["timelinePool"]; }
         { var __json0 = _buf["startItems"]; if(!__json0.IsArray) { throw new SerializationException(); } StartItems = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  StartItems.Add(__v0); }   }
     }
@@ -61,11 +61,11 @@ public sealed partial class Character : Luban.BeanBase
     /// <summary>
     /// 胃最大宽度
     /// </summary>
-    public readonly int MaxStomachWidth;
+    public readonly int MaxDiningTableWidth;
     /// <summary>
     /// 胃最大高度
     /// </summary>
-    public readonly int MaxStomachHeight;
+    public readonly int MaxDiningTableHeight;
     /// <summary>
     /// 可用行动轴池，空=全部，逗号分隔 timeline.id
     /// </summary>
@@ -91,8 +91,8 @@ public sealed partial class Character : Luban.BeanBase
         + "portrait:" + Portrait + ","
         + "initialRecipeId:" + InitialRecipeId + ","
         + "initialFragmentId:" + InitialFragmentId + ","
-        + "maxStomachWidth:" + MaxStomachWidth + ","
-        + "maxStomachHeight:" + MaxStomachHeight + ","
+        + "maxDiningTableWidth:" + MaxDiningTableWidth + ","
+        + "maxDiningTableHeight:" + MaxDiningTableHeight + ","
         + "timelinePool:" + TimelinePool + ","
         + "startItems:" + Luban.StringUtil.CollectionToString(StartItems) + ","
         + "}";

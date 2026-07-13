@@ -6,14 +6,14 @@ using GourmetProject.Game.Run;
 
 namespace GourmetProject.Game.Meta
 {
-    /// <summary>商店一件商品的归一化描述（被动道具 / 主动道具 / 菜品 / 胃部碎片包）。</summary>
+    /// <summary>商店一件商品的归一化描述（被动道具 / 主动道具 / 菜品 / 餐桌碎片包）。</summary>
     public enum ShopEntryKind
     {
         PassiveItem,
         ActiveItem,
         Dish,
 
-        /// <summary>胃部碎片包：购买后开出三种碎片形状，进入棋盘编辑页手动拼贴一块。</summary>
+        /// <summary>餐桌碎片包：购买后开出三种碎片形状，进入餐桌编辑页手动拼贴一块。</summary>
         Fragment,
     }
 
@@ -36,7 +36,7 @@ namespace GourmetProject.Game.Meta
     }
 
     /// <summary>
-    /// 商店服务：根据当前进度「隐藏分」刷新商品（道具 + 菜品 + 胃部碎片），并处理购买、出售、删菜。
+    /// 商店服务：根据当前进度「隐藏分」刷新商品（道具 + 菜品 + 餐桌碎片），并处理购买、出售、删菜。
     /// 隐藏分来自 <see cref="GameRun.RewardHiddenScore"/>，与奖励系统共用同一尺度。
     /// </summary>
     public static class ShopService
@@ -96,14 +96,14 @@ namespace GourmetProject.Game.Meta
                 stock.Add(new ShopEntry(ShopEntryKind.Dish, variant.Id, name, "加入菜谱池的菜品", itemRuntime.ModifyShopPrice(ShopEntryKind.Dish, price)));
             }
 
-            // 碎片包：仅当存在「可拼入当前胃」的候选碎片时才上架（避免买了无处可放）。
+            // 碎片包：仅当存在「可拼入当前餐桌」的候选碎片时才上架（避免买了无处可放）。
             if (BuildFragmentCandidates(tables, run, fragmentHidden).Count > 0)
             {
                 stock.Add(new ShopEntry(
                     ShopEntryKind.Fragment,
                     "fragment_pack",
                     "碎片包",
-                    "开出三种碎片，选一块拼入棋盘",
+                    "开出三种碎片，选一块拼入餐桌",
                     itemRuntime.ModifyShopPrice(ShopEntryKind.Fragment, FragmentPackPrice)));
             }
 
@@ -134,7 +134,7 @@ namespace GourmetProject.Game.Meta
                     break;
                 case ShopEntryKind.Fragment:
                 {
-                    // 碎片包：开出三种候选碎片置为待拼贴状态；实际拼入棋盘在棋盘编辑页完成。
+                    // 碎片包：开出三种候选碎片置为待拼贴状态；实际拼入餐桌在餐桌编辑页完成。
                     List<string> pack = RollFragmentPack(run, FragmentPackSize);
                     if (pack.Count == 0)
                     {
@@ -264,7 +264,7 @@ namespace GourmetProject.Game.Meta
             return WeightedTake(candidates, v => RewardPoolService.HiddenScoreWeight(v.BaseWeight, HiddenMean(v.HiddenRange), hidden, 5), count, rng);
         }
 
-        /// <summary>开一份碎片包：按当前隐藏分加权 roll 出 <paramref name="count"/> 个可拼入当前胃的候选碎片 id。</summary>
+        /// <summary>开一份碎片包：按当前隐藏分加权 roll 出 <paramref name="count"/> 个可拼入当前餐桌的候选碎片 id。</summary>
         public static List<string> RollFragmentPack(GameRun run, int count)
         {
             var ids = new List<string>();
@@ -274,7 +274,7 @@ namespace GourmetProject.Game.Meta
             }
 
             int hidden = HiddenScoreService.FragmentHiddenScore(run, run.LastActionContext);
-            List<cfg.StomachFragment> candidates = BuildFragmentCandidates(run.Tables, run, hidden);
+            List<cfg.TableFragment> candidates = BuildFragmentCandidates(run.Tables, run, hidden);
             if (candidates.Count == 0)
             {
                 return ids;
@@ -282,7 +282,7 @@ namespace GourmetProject.Game.Meta
 
             IRandomStream rng = GameApp.Random.DomainStream(
                 SeedDomains.Shop, $"pack_{run.WeekIndex}_{run.CurrentDay}_{run.FragmentPlacements.Count}");
-            foreach (cfg.StomachFragment fragment in WeightedTake(
+            foreach (cfg.TableFragment fragment in WeightedTake(
                 candidates, f => RewardPoolService.HiddenScoreWeight(f.BaseWeight, HiddenMean(f.HiddenRange), hidden, 5), count, rng))
             {
                 ids.Add(fragment.Id);
@@ -291,11 +291,11 @@ namespace GourmetProject.Game.Meta
             return ids;
         }
 
-        /// <summary>筛选可拼入当前胃、且隐藏分覆盖的碎片候选（不消耗随机流）。</summary>
-        private static List<cfg.StomachFragment> BuildFragmentCandidates(cfg.Tables tables, GameRun run, int hidden)
+        /// <summary>筛选可拼入当前餐桌、且隐藏分覆盖的碎片候选（不消耗随机流）。</summary>
+        private static List<cfg.TableFragment> BuildFragmentCandidates(cfg.Tables tables, GameRun run, int hidden)
         {
-            var candidates = new List<cfg.StomachFragment>();
-            foreach (cfg.StomachFragment fragment in tables.TbStomachFragment.DataList)
+            var candidates = new List<cfg.TableFragment>();
+            foreach (cfg.TableFragment fragment in tables.TbTableFragment.DataList)
             {
                 if (fragment.HiddenRange.Min == 0 && fragment.HiddenRange.Max == 0)
                 {
@@ -307,8 +307,8 @@ namespace GourmetProject.Game.Meta
                     continue;
                 }
 
-                StomachFragmentDef def = run.Database.GetFragment(fragment.Id);
-                if (def != null && run.CanAttachStomachFragment(def))
+                TableFragmentDef def = run.Database.GetFragment(fragment.Id);
+                if (def != null && run.CanAttachTableFragment(def))
                 {
                     candidates.Add(fragment);
                 }

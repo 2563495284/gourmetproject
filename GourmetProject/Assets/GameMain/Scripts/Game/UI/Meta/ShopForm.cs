@@ -67,7 +67,7 @@ namespace GourmetProject.Game.UI.Meta
         private Action _onLeave;
         private Action _onChanged;
         private Action _onOpenRecipeEdit;
-        private Action _onOpenBoardEdit;
+        private Action _onOpenTableEdit;
         private Action<ShopEntry, ShopBuyCardView> _onItemPurchased;
 
         private void Awake()
@@ -118,12 +118,12 @@ namespace GourmetProject.Game.UI.Meta
         /// <param name="onLeave">点「离开商店」时回调（BattleForm 继续周循环编排）。</param>
         /// <param name="onChanged">商店内数据变化（买卖）后回调，用于刷新常驻壳金币/道具与底部菜谱条。</param>
         /// <param name="onOpenRecipeEdit">点「编辑菜谱」时回调：BattleForm 切到编辑菜谱态（独立状态）。</param>
-        /// <param name="onOpenBoardEdit">购买碎片包后回调：BattleForm 切到棋盘编辑页手动拼贴。</param>
+        /// <param name="onOpenTableEdit">购买碎片包后回调：BattleForm 切到餐桌编辑页手动拼贴。</param>
         public void Open(
             Action onLeave,
             Action onChanged,
             Action onOpenRecipeEdit = null,
-            Action onOpenBoardEdit = null,
+            Action onOpenTableEdit = null,
             RecipeView recipeView = null,
             Action<ShopEntry, ShopBuyCardView> onItemPurchased = null)
         {
@@ -131,7 +131,7 @@ namespace GourmetProject.Game.UI.Meta
             _onLeave = onLeave;
             _onChanged = onChanged;
             _onOpenRecipeEdit = onOpenRecipeEdit;
-            _onOpenBoardEdit = onOpenBoardEdit;
+            _onOpenTableEdit = onOpenTableEdit;
             _onItemPurchased = onItemPurchased;
             _recipeView = recipeView;
 
@@ -292,10 +292,10 @@ namespace GourmetProject.Game.UI.Meta
             _run.SetPendingShopStock(_shopKey, _stock);
             Rebuild();
 
-            // 碎片包：购买后进入棋盘编辑页手动拼贴（金币已扣，待开包状态已置）。
-            if (entry.Kind == ShopEntryKind.Fragment && _run.HasPendingFragmentPack && _onOpenBoardEdit != null)
+            // 碎片包：购买后进入餐桌编辑页手动拼贴（金币已扣，待开包状态已置）。
+            if (entry.Kind == ShopEntryKind.Fragment && _run.HasPendingFragmentPack && _onOpenTableEdit != null)
             {
-                _onOpenBoardEdit.Invoke();
+                _onOpenTableEdit.Invoke();
             }
         }
 

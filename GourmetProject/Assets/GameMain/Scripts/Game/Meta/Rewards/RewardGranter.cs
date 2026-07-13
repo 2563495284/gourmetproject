@@ -148,7 +148,7 @@ namespace GourmetProject.Game.Meta
             }
 
             run.SetPendingFragmentPack(ids);
-            return ids.Count > 1 ? $"获得胃部碎片包：{ids.Count} 选 1" : "获得胃部碎片包";
+            return ids.Count > 1 ? $"获得餐桌碎片包：{ids.Count} 选 1" : "获得餐桌碎片包";
         }
 
         private static cfg.Week ResolveWeek(GameRun run, cfg.Week week)

@@ -14,7 +14,7 @@ namespace GourmetProject.Game.Meta
 
     /// <summary>
     /// 主动道具选中的一个目标（跨情境抽象）。<see cref="Id"/> 视 targetKind 为菜/碎片/风味等 id，
-    /// <see cref="X"/>/<see cref="Y"/> 为棋盘或胃格坐标（无坐标时为 -1）。
+    /// <see cref="X"/>/<see cref="Y"/> 为餐桌或餐桌格坐标（无坐标时为 -1）。
     /// </summary>
     public readonly struct ActiveTarget
     {
@@ -47,7 +47,7 @@ namespace GourmetProject.Game.Meta
         /// <summary>列出当前情境下该目标类型的候选目标（供选目标 UI）；无目标类型返回空。</summary>
         IReadOnlyList<ActiveTarget> EnumerateTargets(cfg.ItemTargetKind targetKind);
 
-        /// <summary>能力：清空棋盘（仅战斗支持）。不支持或无法执行返回 false。</summary>
+        /// <summary>能力：清空餐桌（仅战斗支持）。不支持或无法执行返回 false。</summary>
         bool ClearBoard();
 
         /// <summary>能力：额外上一道菜（仅战斗支持）。不支持或无法执行返回 false。</summary>

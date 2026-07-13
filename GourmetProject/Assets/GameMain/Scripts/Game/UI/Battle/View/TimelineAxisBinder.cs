@@ -165,7 +165,7 @@ namespace GourmetProject.Game.UI.Battle.View
             switch (modifier)
             {
                 case "small_board":
-                    return "特殊机制：胃部棋盘空间缩小，需要更谨慎地规划摆放。";
+                    return "特殊机制：餐桌空间缩小，需要更谨慎地规划摆放。";
                 case "limit_serve":
                     return "特殊机制：本场最多上菜 5 次。";
                 case "":

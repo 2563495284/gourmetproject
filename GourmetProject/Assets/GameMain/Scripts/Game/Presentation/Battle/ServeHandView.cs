@@ -84,7 +84,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _hand.transform.localScale = new Vector3(_handScale, _handScale, 1f);
 
             SpriteRenderStyle.ApplyUnlitMaterial(_hand);
-            // 飞行覆盖层：压在棋盘所有静态层之上；order 低于菜品本体(OrderBody=10)，让掌心托的菜显示在手之上。
+            // 飞行覆盖层：压在餐桌所有静态层之上；order 低于菜品本体(OrderBody=10)，让掌心托的菜显示在手之上。
             BattleSorting.Apply(_hand, BattleSorting.PiecesFlying, 5);
         }
 
@@ -195,7 +195,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             _shadow.color = new Color(0f, 0f, 0f, ShadowBaseAlpha);
             SpriteRenderStyle.ApplyUnlitMaterial(_shadow);
-            // 阴影在手之下、棋盘食品之上：同 PiecesFlying 层但 order 更低。
+            // 阴影在手之下、餐桌食品之上：同 PiecesFlying 层但 order 更低。
             BattleSorting.Apply(_shadow, BattleSorting.PiecesFlying, 0);
         }
 

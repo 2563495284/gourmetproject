@@ -69,7 +69,7 @@ namespace GourmetProject.Gameplay.Model
         public int Price { get; }
 
         /// <summary>
-        /// 菜品初始技能 id 列表（数量无上限）。创建棋盘实例时整份带入，运行时可被道具追加/修改。
+        /// 菜品初始技能 id 列表（数量无上限）。创建餐桌实例时整份带入，运行时可被道具追加/修改。
         /// </summary>
         public IReadOnlyList<string> SkillIds { get; }
 

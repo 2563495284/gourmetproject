@@ -6,12 +6,12 @@ using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
 using GourmetProject.Gameplay.Tags;
-using GpBoard = GourmetProject.Gameplay.Board.Board;
+using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 
 namespace GourmetProject.Gameplay.Battle
 {
     /// <summary>
-    /// 一局局内战斗的完整逻辑（纯 C#，可单测）：持有棋盘与菜谱槽，处理「上菜」随机摆放与「吃」结算。
+    /// 一局局内战斗的完整逻辑（纯 C#，可单测）：持有餐桌与菜谱槽，处理「上菜」随机摆放与「吃」结算。
     /// 所有随机经由注入的确定性流，保证同种子可复现。表现层（BattleForm）只读取状态并转发操作。
     /// </summary>
     public sealed class BattleSession
@@ -27,7 +27,7 @@ namespace GourmetProject.Gameplay.Battle
         private int _appetizerRemoved;
 
         public BattleSession(
-            GpBoard board,
+            GpTable board,
             GameplayDatabase db,
             IRandomStream rng,
             IEnumerable<RecipeSlot> slots,
@@ -35,7 +35,7 @@ namespace GourmetProject.Gameplay.Battle
             ScoreCalculator calculator = null,
             IReadOnlyDictionary<string, int> runSettledCounts = null)
         {
-            Board = board ?? throw new ArgumentNullException(nameof(board));
+            DiningTable = board ?? throw new ArgumentNullException(nameof(board));
             _db = db ?? throw new ArgumentNullException(nameof(db));
             _rng = rng ?? throw new ArgumentNullException(nameof(rng));
             _slots = new List<RecipeSlot>(slots ?? Array.Empty<RecipeSlot>());
@@ -53,7 +53,7 @@ namespace GourmetProject.Gameplay.Battle
             CaptureRecipeSnapshot();
         }
 
-        public GpBoard Board { get; }
+        public GpTable DiningTable { get; }
 
         public IReadOnlyList<RecipeSlot> Slots => _slots;
 
@@ -116,13 +116,16 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>本局待入账的金币增量（上菜 OnServe + 结算经济运营累积；由 Game 层写回 GameRun.Gold）。</summary>
         public float PendingGold { get; private set; }
 
+        /// <summary>本局待发放的主动道具数量（银材质结算掷骰命中累积；由 Game 层在结算后发放）。</summary>
+        public int PendingActiveItemGrants { get; private set; }
+
         /// <summary>本次结算各 BaseId 的结算增量（供 Game 层累加进 GameRun 大局历史）。</summary>
         public IReadOnlyDictionary<string, int> LastSettledIncrements { get; private set; } = new Dictionary<string, int>();
 
         /// <summary>本次品鉴菜谱内容（BaseId 列表，供菜谱检测）。</summary>
         public IReadOnlyList<string> RecipeBaseIds => _recipeBaseIds;
 
-        /// <summary>从指定菜谱槽随机上一道能放下的菜，并随机朝向/位置摆上棋盘。</summary>
+        /// <summary>从指定菜谱槽随机上一道能放下的菜，并随机朝向/位置摆上餐桌。</summary>
         public ServeResult Serve(int slotIndex)
         {
             return ServeInternal(slotIndex, allowAutoServe: true);
@@ -156,7 +159,7 @@ namespace GourmetProject.Gameplay.Battle
                     continue;
                 }
 
-                List<Placement> placements = Board.FindValidPlacements(dish);
+                List<Placement> placements = DiningTable.FindValidPlacements(dish);
                 foreach (Placement placement in placements)
                 {
                     candidates.Add(new ServeCandidate(i, dish, placement));
@@ -172,18 +175,18 @@ namespace GourmetProject.Gameplay.Battle
             ServeCandidate chosen = candidates[_rng.WeightedPickIndex(weights)];
             RecipeSlotEntry entry = slot.RemoveEntryAt(chosen.SlotEntryIndex);
             List<string> skills = TagComposer.ComposeSkills(chosen.Dish.SkillIds);
-            string flavor = TagComposer.ComposeFlavor(new[] { chosen.Dish.FlavorId });
-            var instance = new DishInstance(_nextInstanceId++, chosen.Dish, chosen.Placement, skills, flavor);
+            List<string> flavors = TagComposer.ComposeFlavors(new[] { chosen.Dish.FlavorId });
+            var instance = new DishInstance(_nextInstanceId++, chosen.Dish, chosen.Placement, skills, flavors);
             ApplyEntryFlags(instance, entry);
             ApplyServeModifiers(instance);
-            Board.Place(instance);
+            DiningTable.Place(instance);
             ServesUsed++;
 
             // 上菜时（OnServe）规则：直接改运行时状态（技能）并积累金币/全局层数。
             if (!instance.SkillsDisabled)
             {
                 ServeRuleResolver.ServeResolveResult serveResult =
-                    ServeRuleResolver.ResolveOnServe(Board, _db, BuildHistory(), instance, HappyCakeLayers);
+                    ServeRuleResolver.ResolveOnServe(DiningTable, _db, BuildHistory(), instance, HappyCakeLayers);
                 PendingGold += serveResult.Gold;
                 HappyCakeLayers = Math.Max(0, HappyCakeLayers + serveResult.HappyCakeLayerDelta + AccelFor(serveResult.HappyCakeLayerDelta));
                 ApplyTransferRequests(serveResult.TransferRequests);
@@ -199,7 +202,7 @@ namespace GourmetProject.Gameplay.Battle
             if (RemoveFirstServedDishes && _appetizerRemoved < FirstServedDishesToRemove)
             {
                 _appetizerRemoved++;
-                Board.RemoveDish(instance);
+                DiningTable.RemoveDish(instance);
             }
 
             if (allowAutoServe && AutoServeSecondDish)
@@ -210,7 +213,7 @@ namespace GourmetProject.Gameplay.Battle
             return new ServeResult(ServeOutcome.Placed, instance);
         }
 
-        /// <summary>计算当前棋盘的预览分数（不标记结算，不产生副作用），供 UI 实时展示。</summary>
+        /// <summary>计算当前餐桌的预览分数（不标记结算，不产生副作用），供 UI 实时展示。</summary>
         public ScoreResult PreviewScore()
         {
             if (MinimumServesForScore > 0 && ServesUsed < MinimumServesForScore)
@@ -218,7 +221,7 @@ namespace GourmetProject.Gameplay.Battle
                 return ZeroScoreResult();
             }
 
-            return _calculator.Calculate(Board, _db, FinalFlat, FinalMultiplier, history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder);
+            return _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder);
         }
 
         /// <summary>「吃」：结算、应用副作用（金币/层数/技能传递/历史）并记录结果。</summary>
@@ -226,7 +229,7 @@ namespace GourmetProject.Gameplay.Battle
         {
             ScoreResult result = MinimumServesForScore > 0 && ServesUsed < MinimumServesForScore
                 ? ZeroScoreResult()
-                : _calculator.Calculate(Board, _db, FinalFlat, FinalMultiplier, history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder);
+                : _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder);
             ApplySideEffects(result);
             LastResult = result;
             IsSettled = true;
@@ -308,6 +311,15 @@ namespace GourmetProject.Gameplay.Battle
             // 金币入账（结算侧效果）。
             PendingGold += result.GoldDelta;
 
+            // 银材质：对每个「1/3 获得道具」请求掷骰（仅正式结算掷，预览不掷，保证可复现纯净）。
+            for (int i = 0; i < result.SilverItemRollRequests; i++)
+            {
+                if (_rng.NextBool(1.0 / 3.0))
+                {
+                    PendingActiveItemGrants++;
+                }
+            }
+
             // 全局欢乐蛋糕层数：写回品鉴级计数器（层数净增时叠加道具加速）。
             HappyCakeLayers = Math.Max(0, HappyCakeLayers + result.HappyCakeLayerDelta + AccelFor(result.HappyCakeLayerDelta));
 
@@ -340,7 +352,7 @@ namespace GourmetProject.Gameplay.Battle
 
             // 历史累计：本次结算把盘面每道菜的 BaseId 计入大局/小局。
             var increments = new Dictionary<string, int>();
-            foreach (DishInstance dish in Board.Dishes)
+            foreach (DishInstance dish in DiningTable.Dishes)
             {
                 if (dish.ExcludedFromScore)
                 {
@@ -444,18 +456,18 @@ namespace GourmetProject.Gameplay.Battle
                     continue;
                 }
 
-                List<Placement> placements = Board.FindValidPlacements(source.Def);
+                List<Placement> placements = DiningTable.FindValidPlacements(source.Def);
                 if (placements.Count == 0)
                 {
                     continue;
                 }
 
                 Placement placement = placements[_rng.Range(0, placements.Count)];
-                var clone = new DishInstance(_nextInstanceId++, source.Def, placement, source.SkillIds, source.FlavorId);
+                var clone = new DishInstance(_nextInstanceId++, source.Def, placement, source.SkillIds, source.FlavorIds);
                 clone.CopySkillSourcesFrom(source);
                 clone.CopyTransferredSkillsFrom(source);
                 clone.MarkTemporary();
-                Board.Place(clone);
+                DiningTable.Place(clone);
             }
         }
 
@@ -463,7 +475,7 @@ namespace GourmetProject.Gameplay.Battle
         public void ClearTemporaryDishes()
         {
             var temporaries = new List<DishInstance>();
-            foreach (DishInstance dish in Board.Dishes)
+            foreach (DishInstance dish in DiningTable.Dishes)
             {
                 if (dish.IsTemporary)
                 {
@@ -473,7 +485,7 @@ namespace GourmetProject.Gameplay.Battle
 
             foreach (DishInstance dish in temporaries)
             {
-                Board.RemoveDish(dish);
+                DiningTable.RemoveDish(dish);
             }
         }
 
@@ -485,7 +497,7 @@ namespace GourmetProject.Gameplay.Battle
 
         private DishInstance FindInstance(int id)
         {
-            foreach (DishInstance dish in Board.Dishes)
+            foreach (DishInstance dish in DiningTable.Dishes)
             {
                 if (dish.Id == id)
                 {
@@ -498,7 +510,7 @@ namespace GourmetProject.Gameplay.Battle
 
         public bool IsWin => IsSettled && LastResult != null && LastResult.Total >= RequiredScore;
 
-        /// <summary>清空棋盘（主动道具「重摆铃」）。已结算后不允许。</summary>
+        /// <summary>清空餐桌（主动道具「重摆铃」）。已结算后不允许。</summary>
         public void ClearBoard()
         {
             if (IsSettled)
@@ -506,7 +518,7 @@ namespace GourmetProject.Gameplay.Battle
                 return;
             }
 
-            Board.Clear();
+            DiningTable.Clear();
         }
 
         /// <summary>当前所有菜谱槽是否都无法再上菜（用于提示玩家结算）。</summary>
@@ -527,7 +539,7 @@ namespace GourmetProject.Gameplay.Battle
                 foreach (string dishId in slot.Remaining)
                 {
                     DishDef def = _db.GetDish(dishId);
-                    if (def != null && Board.CanFit(def))
+                    if (def != null && DiningTable.CanFit(def))
                     {
                         return true;
                     }

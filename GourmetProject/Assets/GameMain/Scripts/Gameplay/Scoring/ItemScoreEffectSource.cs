@@ -67,7 +67,7 @@ namespace GourmetProject.Gameplay.Scoring
         }
     }
 
-    /// <summary>单条被动道具结算效果：在全局阶段一次性遍历棋盘按类型施加。</summary>
+    /// <summary>单条被动道具结算效果：在全局阶段一次性遍历餐桌按类型施加。</summary>
     public sealed class ItemScoreEffect : IScoreEffect
     {
         private readonly ItemScoreSpec _spec;
@@ -79,7 +79,7 @@ namespace GourmetProject.Gameplay.Scoring
 
         public void Apply(ScoreContext ctx)
         {
-            List<DishInstance> dishes = ctx.Board.Dishes.ToList();
+            List<DishInstance> dishes = ctx.DiningTable.Dishes.ToList();
             if (dishes.Count == 0 && _spec.Type != ItemScoreEffectType.CountThresholdFinalMult)
             {
                 return;
@@ -247,7 +247,7 @@ namespace GourmetProject.Gameplay.Scoring
         }
     }
 
-    /// <summary>道具标签匹配：把 effectParam 解析为对棋盘菜品的判定（分类/风味/技能）。</summary>
+    /// <summary>道具标签匹配：把 effectParam 解析为对餐桌菜品的判定（分类/风味/技能）。</summary>
     public static class ItemDishMatcher
     {
         /// <summary>
@@ -278,14 +278,14 @@ namespace GourmetProject.Gameplay.Scoring
                     case "category":
                         return dish.Def.IsCategory(body);
                     case "flavor":
-                        return string.Equals(dish.FlavorId, body, StringComparison.OrdinalIgnoreCase);
+                        return HasFlavor(dish, body);
                     case "skill":
                         return HasSkill(dish, body);
                 }
             }
 
             return dish.Def.IsCategory(param)
-                || string.Equals(dish.FlavorId, param, StringComparison.OrdinalIgnoreCase)
+                || HasFlavor(dish, param)
                 || HasSkill(dish, param);
         }
 
@@ -294,6 +294,19 @@ namespace GourmetProject.Gameplay.Scoring
             foreach (string id in dish.SkillIds)
             {
                 if (string.Equals(id, skillId, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool HasFlavor(DishInstance dish, string flavorId)
+        {
+            foreach (string id in dish.FlavorIds)
+            {
+                if (string.Equals(id, flavorId, StringComparison.OrdinalIgnoreCase))
                 {
                     return true;
                 }

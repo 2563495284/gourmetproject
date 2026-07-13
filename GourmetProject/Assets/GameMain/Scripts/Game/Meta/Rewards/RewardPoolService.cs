@@ -172,7 +172,7 @@ namespace GourmetProject.Game.Meta
             int count,
             List<RewardChoice> result)
         {
-            List<StomachFragmentDef> candidates = BuildFragmentCandidates(context, hidden, strictHidden: true);
+            List<TableFragmentDef> candidates = BuildFragmentCandidates(context, hidden, strictHidden: true);
             if (candidates.Count == 0 && pool.AllowFallback)
             {
                 candidates = BuildFragmentCandidates(context, hidden, strictHidden: false);
@@ -181,13 +181,13 @@ namespace GourmetProject.Game.Meta
             for (int i = 0; i < count && candidates.Count > 0; i++)
             {
                 int index = PickHiddenWeighted(context, candidates, hidden, pool.DistanceFloor);
-                StomachFragmentDef fragment = candidates[index];
+                TableFragmentDef fragment = candidates[index];
                 candidates.RemoveAt(index);
                 result.Add(new RewardChoice(
                     cfg.RewardKind.FragmentChoice,
                     fragment.Id,
                     fragment.Id,
-                    $"扩展胃部，价格参考 {fragment.Price}",
+                    $"扩展餐桌，价格参考 {fragment.Price}",
                     HiddenScoreService.FragmentFallbackGold(context.Run, context.ActionContext)));
             }
         }
@@ -234,10 +234,10 @@ namespace GourmetProject.Game.Meta
             return candidates;
         }
 
-        private static List<StomachFragmentDef> BuildFragmentCandidates(RewardContext context, int hidden, bool strictHidden)
+        private static List<TableFragmentDef> BuildFragmentCandidates(RewardContext context, int hidden, bool strictHidden)
         {
-            var candidates = new List<StomachFragmentDef>();
-            foreach (StomachFragmentDef fragment in context.Run.Database.AllFragments)
+            var candidates = new List<TableFragmentDef>();
+            foreach (TableFragmentDef fragment in context.Run.Database.AllFragments)
             {
                 if (fragment.BaseWeight <= 0f || HasFragment(context.Run, fragment.Id))
                 {
@@ -249,7 +249,7 @@ namespace GourmetProject.Game.Meta
                     continue;
                 }
 
-                if (!context.Run.CanAttachStomachFragment(fragment))
+                if (!context.Run.CanAttachTableFragment(fragment))
                 {
                     continue;
                 }
@@ -262,9 +262,9 @@ namespace GourmetProject.Game.Meta
 
         private static bool HasFragment(GameRun run, string fragmentId)
         {
-            for (int i = 0; i < run.StomachFragmentIds.Count; i++)
+            for (int i = 0; i < run.TableFragmentIds.Count; i++)
             {
-                if (run.StomachFragmentIds[i] == fragmentId)
+                if (run.TableFragmentIds[i] == fragmentId)
                 {
                     return true;
                 }
@@ -284,10 +284,10 @@ namespace GourmetProject.Game.Meta
             return PickWeightedOrUniform(context, weights, candidates.Count);
         }
 
-        private static int PickHiddenWeighted(RewardContext context, IReadOnlyList<StomachFragmentDef> candidates, int hidden, int distanceFloor)
+        private static int PickHiddenWeighted(RewardContext context, IReadOnlyList<TableFragmentDef> candidates, int hidden, int distanceFloor)
         {
             var weights = new List<float>(candidates.Count);
-            foreach (StomachFragmentDef fragment in candidates)
+            foreach (TableFragmentDef fragment in candidates)
             {
                 weights.Add(HiddenScoreWeight(fragment.BaseWeight, fragment.HiddenMean, hidden, distanceFloor));
             }

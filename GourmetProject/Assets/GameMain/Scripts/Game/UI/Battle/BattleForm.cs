@@ -33,10 +33,10 @@ namespace GourmetProject.Game.UI.Battle
     /// <summary>
     /// 局外周循环编排枢纽 + 局内战斗结果壳。
     /// 常驻壳（左列信息 / 右列道具 / 顶部行动轴 / 底部扇形菜谱）进入玩法后全程常驻，只有中部内容区在五态间切换：
-    /// 行动选择(含事件 n 选一) / 商店 / 编辑菜谱 / 美食战斗 / 棋盘编辑。切换只对中部内容区做 DOTween 渐隐渐显
-    /// （<see cref="UITransition.FadeSwap"/>），常驻壳不参与动画；美食 / 棋盘态在同一 Battle 场景内透出世界空间表现。
+    /// 行动选择(含事件 n 选一) / 商店 / 编辑菜谱 / 美食战斗 / 餐桌编辑。切换只对中部内容区做 DOTween 渐隐渐显
+    /// （<see cref="UITransition.FadeSwap"/>），常驻壳不参与动画；美食 / 餐桌态在同一 Battle 场景内透出世界空间表现。
     /// </summary>
-    public sealed class BattleForm : UGuiForm, IWeekLoopView, IBattleViewHost, IStomachViewHost
+    public sealed class BattleForm : UGuiForm, IWeekLoopView, IBattleViewHost, ITableViewHost
     {
         private const string Tag = "Battle";
         private const float ShopItemFlyDuration = 0.42f;
@@ -53,8 +53,8 @@ namespace GourmetProject.Game.UI.Battle
         [SerializeField] private CanvasGroup _center;
         [SerializeField] private Text _centerTitleText;
 
-        [Header("Board Area (棋盘锁定区)")]
-        [Tooltip("HUD 里的空区矩形：世界棋盘将 fit 并居中锁定在该屏幕区域内；同时作为食物调整遮黑的挖洞区。")]
+        [Header("DiningTable Area (餐桌锁定区)")]
+        [Tooltip("HUD 里的空区矩形：世界餐桌将 fit 并居中锁定在该屏幕区域内；同时作为食物调整遮黑的挖洞区。")]
         [SerializeField] private RectTransform _boardArea;
 
         [Header("Left Column")]
@@ -79,7 +79,7 @@ namespace GourmetProject.Game.UI.Battle
         [Header("Reward Dish Pack (center)")]
         [SerializeField] private RewardDishPackPanel _rewardDishPackPanel;
 
-        [Header("Board Edit")]
+        [Header("DiningTable Edit")]
         [SerializeField] private Button _boardEditSkipButton;
 
         [Header("Right Column - Items")]
@@ -96,7 +96,7 @@ namespace GourmetProject.Game.UI.Battle
 
         private bool _inBattle;
         private GameplayView _current = GameplayView.None;
-        private Action<bool> _afterRewardBoardEdit;
+        private Action<bool> _afterRewardTableEdit;
 
         private GameRun _run;
         private BattleSession _session;
@@ -106,7 +106,7 @@ namespace GourmetProject.Game.UI.Battle
 
         private RecipeBooksPresenter _recipePresenter;
         private TimelineAxisBinder _axisBinder;
-        private StomachViewCoordinator _stomachCoordinator;
+        private TableViewCoordinator _stomachCoordinator;
         private GameplayViewStateMachine _viewStates;
         private int _shopItemFlyInFlight;
         private View.FoodAdjustOverlay _foodAdjustOverlay;
@@ -119,12 +119,12 @@ namespace GourmetProject.Game.UI.Battle
         {
             base.OnInit(userData);
 
-            _infoColumn?.Bind(OnSettingsClicked, OnViewStomachClicked, OnFoodAdjustClicked);
+            _infoColumn?.Bind(OnSettingsClicked, OnViewTableClicked, OnFoodAdjustClicked);
             _foodBar?.Bind(OnOverviewClicked, OnEatClicked, OnDoodleClearClicked, OnDoodleToggleClicked);
 
             if (_boardEditSkipButton != null)
             {
-                _boardEditSkipButton.onClick.AddListener(OnBoardEditSkipClicked);
+                _boardEditSkipButton.onClick.AddListener(OnTableEditSkipClicked);
             }
 
             _recipePresenter = new RecipeBooksPresenter(_recipeView);
@@ -133,7 +133,7 @@ namespace GourmetProject.Game.UI.Battle
                 () => _tips != null ? _tips.Shop : null,
                 () => _tips != null ? _tips.Interest : null,
                 () => _tips != null ? _tips.Boss : null);
-            _stomachCoordinator = new StomachViewCoordinator(this);
+            _stomachCoordinator = new TableViewCoordinator(this);
             _viewStates = new GameplayViewStateMachine(this);
 
             HideHud();
@@ -213,7 +213,7 @@ namespace GourmetProject.Game.UI.Battle
             _run?.EndFoodActionAdjustments();
             BattleWorldController world = _world ?? BattleWorldController.Instance;
             world?.HideWorld();
-            world?.ClearBattleBoard();
+            world?.ClearBattleTable();
         }
 
         public void HideResultPanel()
@@ -310,7 +310,7 @@ namespace GourmetProject.Game.UI.Battle
             bool shop = view == GameplayView.Shop;
             bool recipeEdit = view == GameplayView.RecipeEdit;
             bool rewardDishPack = view == GameplayView.RewardDishPack;
-            bool worldView = view == GameplayView.Food || view == GameplayView.BoardEdit || view == GameplayView.StomachView;
+            bool worldView = view == GameplayView.Food || view == GameplayView.TableEdit || view == GameplayView.TableView;
 
             if (_actionSelectionPanel != null)
             {
@@ -334,14 +334,14 @@ namespace GourmetProject.Game.UI.Battle
 
             if (_boardEditSkipButton != null)
             {
-                _boardEditSkipButton.gameObject.SetActive(view == GameplayView.BoardEdit);
+                _boardEditSkipButton.gameObject.SetActive(view == GameplayView.TableEdit);
             }
 
-            // 行动轴：仅行动选择 / 商店常驻显示；编辑菜谱 / 美食 / 棋盘态隐藏。
+            // 行动轴：仅行动选择 / 商店常驻显示；编辑菜谱 / 美食 / 餐桌态隐藏。
             SetActionAxisVisible(actionSel || shop);
             SetFoodActionsVisible(view == GameplayView.Food);
 
-            // 白底：世界态（美食 / 棋盘）关闭，让 Battle 场景世界空间透出；其余态开启。
+            // 白底：世界态（美食 / 餐桌）关闭，让 Battle 场景世界空间透出；其余态开启。
             if (_backdrop != null)
             {
                 _backdrop.SetActive(!worldView);
@@ -355,7 +355,7 @@ namespace GourmetProject.Game.UI.Battle
                     GameplayView.Shop => RecipeView.RecipeState.Shown,
                     GameplayView.RewardDishPack => RecipeView.RecipeState.Shown,
                     GameplayView.Food => RecipeView.RecipeState.Shown,
-                    GameplayView.BoardEdit => RecipeView.RecipeState.Collapsed,
+                    GameplayView.TableEdit => RecipeView.RecipeState.Collapsed,
                     _ => RecipeView.RecipeState.Hidden,
                 };
                 _recipeView.SetState(recipeState);
@@ -364,12 +364,12 @@ namespace GourmetProject.Game.UI.Battle
             RefreshPersistent();
         }
 
-        /// <summary>商店态：打开商店四区面板并接线各回调（离开/刷新/编辑菜谱/棋盘编辑）。</summary>
+        /// <summary>商店态：打开商店四区面板并接线各回调（离开/刷新/编辑菜谱/餐桌编辑）。</summary>
         private void OpenShopPanel()
         {
             if (_shopPanel != null)
             {
-                _shopPanel.Open(OnShopLeave, RefreshShopPersistent, OpenRecipeEdit, OpenBoardEdit, _recipeView, PlayShopItemPurchaseFly);
+                _shopPanel.Open(OnShopLeave, RefreshShopPersistent, OpenRecipeEdit, OpenTableEdit, _recipeView, PlayShopItemPurchaseFly);
             }
         }
 
@@ -394,17 +394,17 @@ namespace GourmetProject.Game.UI.Battle
         void IBattleViewHost.BuildBattleRecipe() => BuildBattleRecipe();
         void IBattleViewHost.BuyRecipeBook() => BuyRecipeBook();
 
-        // —— IStomachViewHost（供查看胃编排回调壳）——
+        // —— ITableViewHost（供查看餐桌编排回调壳）——
 
-        GameplayView IStomachViewHost.CurrentView => _current;
-        GameRun IStomachViewHost.Run => _run;
-        BattleWorldController IStomachViewHost.World => _world ?? BattleWorldController.Instance;
-        void IStomachViewHost.SwitchTo(GameplayView view, Action buildCenter, Action onShown) => SwitchTo(view, buildCenter, onShown);
-        void IStomachViewHost.RestoreBattleWorld() => RestoreBattleWorld();
-        void IStomachViewHost.PlayShowCardsWhenReady() => PlayShowCardsWhenReady();
-        void IStomachViewHost.OpenBoardEdit() => OpenBoardEdit();
-        ActionSelectSnapshot IStomachViewHost.CaptureActionSelectSnapshot() => CaptureActionSelectSnapshot();
-        void IStomachViewHost.RestoreActionSelection(ActionSelectSnapshot snapshot) => RestoreActionSelection(snapshot);
+        GameplayView ITableViewHost.CurrentView => _current;
+        GameRun ITableViewHost.Run => _run;
+        BattleWorldController ITableViewHost.World => _world ?? BattleWorldController.Instance;
+        void ITableViewHost.SwitchTo(GameplayView view, Action buildCenter, Action onShown) => SwitchTo(view, buildCenter, onShown);
+        void ITableViewHost.RestoreBattleWorld() => RestoreBattleWorld();
+        void ITableViewHost.PlayShowCardsWhenReady() => PlayShowCardsWhenReady();
+        void ITableViewHost.OpenTableEdit() => OpenTableEdit();
+        ActionSelectSnapshot ITableViewHost.CaptureActionSelectSnapshot() => CaptureActionSelectSnapshot();
+        void ITableViewHost.RestoreActionSelection(ActionSelectSnapshot snapshot) => RestoreActionSelection(snapshot);
 
         // —— 行动选择态（含事件 n 选一，共用中部卡片）——
 
@@ -436,7 +436,7 @@ namespace GourmetProject.Game.UI.Battle
             }
         }
 
-        // —— 商店 / 编辑菜谱 / 棋盘编辑 入口 ——
+        // —— 商店 / 编辑菜谱 / 餐桌编辑 入口 ——
 
         private void OnShopLeave()
         {
@@ -458,8 +458,8 @@ namespace GourmetProject.Game.UI.Battle
             SwitchTo(GameplayView.Shop);
         }
 
-        /// <summary>购买碎片包后进入棋盘编辑态（世界空间）：隐藏商店/行动轴，露出棋盘手动拼贴。</summary>
-        private void OpenBoardEdit()
+        /// <summary>购买碎片包后进入餐桌编辑态（世界空间）：隐藏商店/行动轴，露出餐桌手动拼贴。</summary>
+        private void OpenTableEdit()
         {
             BattleWorldController world = _world ?? BattleWorldController.Instance;
             if (world == null || _run == null || !_run.HasPendingFragmentPack)
@@ -467,10 +467,10 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            SwitchTo(GameplayView.BoardEdit, () => world.BeginBoardEdit(_run, _run.PendingFragmentPack, OnBoardEditDone));
+            SwitchTo(GameplayView.TableEdit, () => world.BeginTableEdit(_run, _run.PendingFragmentPack, OnTableEditDone));
         }
 
-        public void OpenRewardBoardEdit(Action<bool> onDone)
+        public void OpenRewardTableEdit(Action<bool> onDone)
         {
             BattleWorldController world = _world ?? BattleWorldController.Instance;
             if (world == null || _run == null || !_run.HasPendingFragmentPack)
@@ -479,8 +479,8 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            _afterRewardBoardEdit = onDone;
-            SwitchTo(GameplayView.BoardEdit, () => world.BeginBoardEdit(_run, _run.PendingFragmentPack, OnRewardBoardEditDone));
+            _afterRewardTableEdit = onDone;
+            SwitchTo(GameplayView.TableEdit, () => world.BeginTableEdit(_run, _run.PendingFragmentPack, OnRewardTableEditDone));
         }
 
         public bool OpenRewardDishPack(
@@ -543,7 +543,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            _world.SetBoardArea(_boardArea);
+            _world.SetTableArea(_boardArea);
             _world.Initialize(
                 _run,
                 _session,
@@ -556,23 +556,23 @@ namespace GourmetProject.Game.UI.Battle
             RefreshAll();
         }
 
-        private void OnBoardEditDone(bool placed)
+        private void OnTableEditDone(bool placed)
         {
             (_world ?? BattleWorldController.Instance)?.HideWorld();
             SwitchTo(GameplayView.Shop);
         }
 
-        private void OnRewardBoardEditDone(bool placed)
+        private void OnRewardTableEditDone(bool placed)
         {
             (_world ?? BattleWorldController.Instance)?.HideWorld();
-            Action<bool> cb = _afterRewardBoardEdit;
-            _afterRewardBoardEdit = null;
+            Action<bool> cb = _afterRewardTableEdit;
+            _afterRewardTableEdit = null;
             SwitchTo(GameplayView.None, onShown: () => cb?.Invoke(placed));
         }
 
-        private void OnBoardEditSkipClicked()
+        private void OnTableEditSkipClicked()
         {
-            (_world ?? BattleWorldController.Instance)?.SkipBoardEditPack();
+            (_world ?? BattleWorldController.Instance)?.SkipTableEditPack();
         }
 
         private void SetActionAxisVisible(bool visible)
@@ -982,7 +982,7 @@ namespace GourmetProject.Game.UI.Battle
             _recipeView?.SetState(RecipeView.RecipeState.Hidden);
             SetFoodActionsVisible(false);
             _infoColumn?.ScoreFire?.Hide();
-            _infoColumn?.ResetStomachLabel();
+            _infoColumn?.ResetTableLabel();
             SetMessage(string.Empty);
 
             if (_hudFrame != null)
@@ -996,14 +996,14 @@ namespace GourmetProject.Game.UI.Battle
             GameApp.UI.OpenUIForm(UIForms.Settings, UIForms.GroupDialog, new SettingsFormData(inGameplay: true));
         }
 
-        private void OnViewStomachClicked()
+        private void OnViewTableClicked()
         {
             if (_stomachCoordinator == null)
             {
                 return;
             }
 
-            if (_current == GameplayView.StomachView)
+            if (_current == GameplayView.TableView)
             {
                 _stomachCoordinator.Back();
                 return;
@@ -1084,7 +1084,7 @@ namespace GourmetProject.Game.UI.Battle
             SetMessage(string.Empty);
             _run.BeginFoodActionAdjustments(BossDebuffModifiers.IsPrefabFood(modifier));
             _session = _run.BuildBattleSession(requiredScore, modifier, key);
-            // 常驻壳在战斗中持续显示并接管分数/道具/菜谱面板（棋盘/菜品仍在世界空间场景）。
+            // 常驻壳在战斗中持续显示并接管分数/道具/菜谱面板（餐桌/菜品仍在世界空间场景）。
             SwitchTo(GameplayView.Food);
 
             _world = BattleWorldController.Instance;
@@ -1094,7 +1094,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            _world.SetBoardArea(_boardArea);
+            _world.SetTableArea(_boardArea);
             _world.Initialize(
                 _run,
                 _session,
@@ -1113,9 +1113,9 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            if (_session.Board.DishCount == 0)
+            if (_session.DiningTable.DishCount == 0)
             {
-                SetMessage("棋盘还是空的，先上几道菜吧。");
+                SetMessage("餐桌还是空的，先上几道菜吧。");
                 return;
             }
 
@@ -1142,6 +1142,19 @@ namespace GourmetProject.Game.UI.Battle
                 if (gold != 0)
                 {
                     _run.Gold = System.Math.Max(0, _run.Gold + gold);
+                }
+
+                // 银材质命中：发放主动道具（掷骰已在 BattleSession 正式结算时完成，这里只落地选取具体道具）。
+                int silverItems = _session.PendingActiveItemGrants;
+                if (silverItems > 0)
+                {
+                    string itemKey = $"silver_{_run.WeekIndex}_{_run.RunActionStepIndex}_{_session.ServesUsed}";
+                    IRandomStream itemRng = GameApp.Random.DomainStream(SeedDomains.Item, itemKey);
+                    for (int i = 0; i < silverItems; i++)
+                    {
+                        GourmetProject.Game.Meta.ItemPoolService.GrantRandom(
+                            GameApp.Config.Tables, _run, cfg.ItemKind.Active, itemRng, 20);
+                    }
                 }
 
                 _run.AddSettledCounts(_session.LastSettledIncrements);
@@ -1189,7 +1202,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            var data = new DishDetailData(inst.Def, _run.Database, inst.SkillIds, inst.FlavorId, inst.SkillSources, inst.TransferredSkills);
+            var data = new DishDetailData(inst.Def, _run.Database, inst.SkillIds, inst.FlavorIds, inst.SkillSources, inst.TransferredSkills);
             GameApp.UI.OpenUIForm(UIForms.DishDetail, UIForms.GroupDialog, data);
         }
 
@@ -1231,7 +1244,7 @@ namespace GourmetProject.Game.UI.Battle
             _run.UseActiveItem(itemId);
             if (result.BoardChanged)
             {
-                _world?.SyncBoardFromSession();
+                _world?.SyncTableFromSession();
             }
 
             // 战斗过程中用道具只改内存，不即时存档；战斗结算（胜利领奖确认）时由编排层 Commit 统一入档。

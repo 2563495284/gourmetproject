@@ -5,7 +5,7 @@ using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
 using NUnit.Framework;
-using GpBoard = GourmetProject.Gameplay.Board.Board;
+using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 
 namespace GourmetProject.Tests
 {
@@ -21,11 +21,11 @@ namespace GourmetProject.Tests
                 new List<DishDef>(),
                 new List<SkillDef>(),
                 new List<FlavorDef>(),
-                new List<CellTagDef>(),
+                new List<MaterialDef>(),
                 new List<RecipeDef>());
         }
 
-        private static ScoreResult Calc(GpBoard board, params ItemScoreSpec[] specs)
+        private static ScoreResult Calc(GpTable board, params ItemScoreSpec[] specs)
         {
             var source = new ItemScoreEffectSource(specs);
             return new ScoreCalculator(effectSources: new IScoreEffectSource[] { source }).Calculate(board, EmptyDb());
@@ -35,9 +35,9 @@ namespace GourmetProject.Tests
         public void CakeThresholdReduction_LowersEffectiveThreshold()
         {
             var db = new GameplayDatabase(
-                new List<DishDef>(), new List<SkillDef>(), new List<FlavorDef>(), new List<CellTagDef>(), new List<RecipeDef>(),
+                new List<DishDef>(), new List<SkillDef>(), new List<FlavorDef>(), new List<MaterialDef>(), new List<RecipeDef>(),
                 cakeLayerBuffs: new[] { new CakeLayerBuffDef("clb", 0, 50, "cake", SkillActionType.AddFlat, 1f, "") });
-            var board = new GpBoard(1, 1);
+            var board = new GpTable(1, 1);
             DishDef cake = GameplayTestFactory.Dish("cake", new[] { "X" }, deliciousness: 10, allowRotate: false, category: "cake");
             board.Place(GameplayTestFactory.Instance(1, cake, 0, 0));
 
@@ -58,7 +58,7 @@ namespace GourmetProject.Tests
         [Test]
         public void TagBonus_OnlyMatchingCategoryDishesGetFlat()
         {
-            var board = new GpBoard(4, 1);
+            var board = new GpTable(4, 1);
             DishDef spicy = GameplayTestFactory.Dish("spicy", new[] { "X" }, deliciousness: 10, allowRotate: false, category: "spicy");
             DishDef plain = GameplayTestFactory.Dish("plain", new[] { "X" }, deliciousness: 10, allowRotate: false);
             board.Place(GameplayTestFactory.Instance(1, spicy, 0, 0));
@@ -73,7 +73,7 @@ namespace GourmetProject.Tests
         [Test]
         public void CountThresholdFinalMult_AppliesWhenWithinThreshold()
         {
-            var board = new GpBoard(4, 1);
+            var board = new GpTable(4, 1);
             DishDef d = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
             board.Place(GameplayTestFactory.Instance(1, d, 0, 0));
             board.Place(GameplayTestFactory.Instance(2, d, 1, 0));
@@ -86,7 +86,7 @@ namespace GourmetProject.Tests
         [Test]
         public void CountThresholdFinalMult_SkipsWhenOutsideThreshold()
         {
-            var board = new GpBoard(4, 1);
+            var board = new GpTable(4, 1);
             DishDef d = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
             board.Place(GameplayTestFactory.Instance(1, d, 0, 0));
 
@@ -98,7 +98,7 @@ namespace GourmetProject.Tests
         [Test]
         public void NthServeMult_FirstAndLast()
         {
-            var board = new GpBoard(4, 1);
+            var board = new GpTable(4, 1);
             DishDef d = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
             board.Place(GameplayTestFactory.Instance(1, d, 0, 0));
             board.Place(GameplayTestFactory.Instance(2, d, 1, 0));
@@ -118,7 +118,7 @@ namespace GourmetProject.Tests
         [Test]
         public void PermanentAddFlatAll_AddsToEveryDish()
         {
-            var board = new GpBoard(2, 1);
+            var board = new GpTable(2, 1);
             DishDef d = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
             board.Place(GameplayTestFactory.Instance(1, d, 0, 0));
             board.Place(GameplayTestFactory.Instance(2, d, 1, 0));
@@ -133,7 +133,7 @@ namespace GourmetProject.Tests
         [Test]
         public void PermanentAddMultAll_MultipliesEveryDish()
         {
-            var board = new GpBoard(2, 1);
+            var board = new GpTable(2, 1);
             DishDef d = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
             board.Place(GameplayTestFactory.Instance(1, d, 0, 0));
 
@@ -145,7 +145,7 @@ namespace GourmetProject.Tests
         [Test]
         public void PerSkillMultFlat_AddsMultPerBoardSkill()
         {
-            var board = new GpBoard(2, 1);
+            var board = new GpTable(2, 1);
             DishDef withSkills = GameplayTestFactory.Dish("d1", new[] { "X" }, deliciousness: 10, allowRotate: false, skills: new[] { "s1", "s2" });
             DishDef oneSkill = GameplayTestFactory.Dish("d2", new[] { "X" }, deliciousness: 10, allowRotate: false, skills: new[] { "s3" });
             board.Place(GameplayTestFactory.Instance(1, withSkills, 0, 0));
@@ -160,7 +160,7 @@ namespace GourmetProject.Tests
         [Test]
         public void EveryNthServeMult_EveryThreeThenNext()
         {
-            var board = new GpBoard(8, 1);
+            var board = new GpTable(8, 1);
             DishDef d = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
             for (int i = 0; i < 7; i++)
             {

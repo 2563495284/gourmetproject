@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
-using GpBoard = GourmetProject.Gameplay.Board.Board;
+using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 
 namespace GourmetProject.Gameplay.Scoring
 {
@@ -23,7 +23,7 @@ namespace GourmetProject.Gameplay.Scoring
         }
 
         public ScoreResult Calculate(
-            GpBoard board,
+            GpTable board,
             GameplayDatabase db,
             float finalFlat = 0f,
             float finalMultiplier = 1f,
@@ -59,7 +59,7 @@ namespace GourmetProject.Gameplay.Scoring
                 RunDishPhase(ctx, entries, ScorePhase.DishBase, dish);
                 RunDishPhase(ctx, entries, ScorePhase.DishSkills, dish);
                 RunDishPhase(ctx, entries, ScorePhase.DishFlavor, dish);
-                RunDishPhase(ctx, entries, ScorePhase.CellTags, dish);
+                RunDishPhase(ctx, entries, ScorePhase.Materials, dish);
                 RunDishPhase(ctx, entries, ScorePhase.AfterDish, dish);
                 ctx.CompleteDish();
             }

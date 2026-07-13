@@ -153,7 +153,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     piece.SetLiftHeight(0f);
                     piece.SetVisualScaleMultiplier(1f);
                     await piece.PlayServeLandImpactFeedbackAsync(cancellationToken);
-                    // 落定后切回 Pieces 层，回到与其它棋盘食品一致的渲染顺序。
+                    // 落定后切回 Pieces 层，回到与其它餐桌食品一致的渲染顺序。
                     piece.SetFlying(false);
                 }
             }
