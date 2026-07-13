@@ -39,8 +39,8 @@ namespace GourmetProject.Gameplay.Model
         /// <summary>材质效果类型（真正决定结算行为）。</summary>
         public MaterialEffectType MaterialEffect { get; }
 
-        /// <summary>IEffectDef 契约：材质不走共享 TagEffect 注册表，恒为 None。</summary>
-        public TagEffectType EffectType => TagEffectType.None;
+        /// <summary>IEffectDef 契约：材质不走风味效果注册表，恒为 None。</summary>
+        public FlavorEffectType EffectType => FlavorEffectType.None;
 
         public IReadOnlyList<float> EffectValues { get; }
 

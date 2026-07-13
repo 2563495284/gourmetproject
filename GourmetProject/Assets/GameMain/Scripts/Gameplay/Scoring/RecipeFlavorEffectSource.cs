@@ -40,9 +40,9 @@ namespace GourmetProject.Gameplay.Scoring
             }
         }
 
-        private static bool IsRecipeFlavor(TagEffectType type)
+        private static bool IsRecipeFlavor(FlavorEffectType type)
         {
-            return type == TagEffectType.SourRecipeMult || type == TagEffectType.SaltyRecipeGold;
+            return type == FlavorEffectType.SourRecipeMult || type == FlavorEffectType.SaltyRecipeGold;
         }
     }
 
@@ -76,10 +76,10 @@ namespace GourmetProject.Gameplay.Scoring
             {
                 switch (_flavor.EffectType)
                 {
-                    case TagEffectType.SourRecipeMult:
+                    case FlavorEffectType.SourRecipeMult:
                         ctx.MultiplyTo(dish, _flavor.EffectValue);
                         break;
-                    case TagEffectType.SaltyRecipeGold:
+                    case FlavorEffectType.SaltyRecipeGold:
                         ctx.GrantGold(_flavor.EffectValue);
                         break;
                 }

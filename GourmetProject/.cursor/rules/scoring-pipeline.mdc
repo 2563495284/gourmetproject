@@ -11,14 +11,14 @@ alwaysApply: false
 ## 核心边界
 
 - `ScoreCalculator` 只负责编排：收集 `ScoreEffectEntry`，按 `ScorePhase`、棋盘顺序、来源类型、priority、sequence 稳定执行。
-- `IScoreEffectSource` 负责把食品、食品标签、棋盘格标签、棋盘标签、遗物、周规则等来源转换成效果条目。
+- `IScoreEffectSource` 负责把菜品技能、风味、餐桌材质、遗物、周规则等来源转换成效果条目。
 - `IScoreEffect` 不应直接绕过上下文改结果；通过 `ScoreContext.SubmitCommand()` 或兼容方法 `AddFlat()`、`MultiplyBy()`、`AddFinalFlat()`、`MultiplyFinalBy()` 提交命令。
 - `IScoreCommand` 是实际改分层；需要连锁触发时提交 `ResolveScoreEffectCommand`，不要在外部做全局事件广播。
 - `ScoreLine` 记录分数变化来源；`ScoreEvent` 记录结算生命周期。新增效果时优先保证这两者能解释结果。
 
 ## 技能规则（前提×行为）
 
-- 菜品技能统一由 `SkillRuleEffectSource` 处理；`TagScoreEffectSource` 只处理风味与格子标签的简易 `TagEffectType`。
+- 菜品技能统一由 `SkillRuleEffectSource` 处理；`FlavorMaterialEffectSource` 处理风味与餐桌材质，其中风味按 `FlavorEffectType` 派发，材质按 `MaterialEffectType` 聚合结算。
 - 前提求值走 `SkillConditionEvaluator`（纯逻辑、无随机），产出 `count`；行为在 `SkillRuleEffect` 里按 `count` 派发。语义规格见 `docs/design/技能.md`。
 - 上菜时（OnServe）规则由 `ServeRuleResolver` 在 `BattleSession.Serve` 后处理，只做会改运行时状态的行为（层数/技能传递）与金币积累。
 
@@ -30,8 +30,8 @@ alwaysApply: false
 
 ## 设计约束
 
-- 默认顺序遵循设计文档：食品标签先于格子标签，棋盘行优先从上到下、从左到右。
-- 命令入队时必须保留当前 `ScoreSource` / `ScorePhase` / `Cell` / `Tag`，避免连锁效果的明细归属错误。
+- 默认顺序遵循设计文档：菜品技能先于风味，风味先于材质；棋盘行优先从上到下、从左到右。
+- 命令入队时必须保留当前 `ScoreSource` / `ScorePhase` / `Cell` / `EffectDef`，避免连锁效果的明细归属错误。
 - 保持玩法层纯 C#，不要在 `Gameplay/Scoring` 中引用 `UnityEngine` 或 GameFramework；金币等外部副作用只经 `ScoreResult` 桥接。
 - 新增前提/行为必须补 EditMode 测试，至少覆盖 count 计算、行为效果、组合或 `ScoreLines` 来源。
 

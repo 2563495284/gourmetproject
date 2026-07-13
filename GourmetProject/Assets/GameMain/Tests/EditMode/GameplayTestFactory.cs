@@ -37,7 +37,7 @@ namespace GourmetProject.Tests
                 countAs: countAs);
         }
 
-        public static SkillDef Skill(string id, TagEffectType effectType, float effectValue, string termId = "")
+        public static SkillDef Skill(string id, FlavorEffectType effectType, float effectValue, string termId = "")
         {
             return new SkillDef(id, id, id, termId, RuleFromEffect(effectType, effectValue));
         }
@@ -81,30 +81,30 @@ namespace GourmetProject.Tests
                 actionParams: string.IsNullOrEmpty(actionParam) ? System.Array.Empty<string>() : new[] { actionParam });
         }
 
-        private static SkillRuleDef[] RuleFromEffect(TagEffectType effectType, float effectValue)
+        private static SkillRuleDef[] RuleFromEffect(FlavorEffectType effectType, float effectValue)
         {
             switch (effectType)
             {
-                case TagEffectType.AddFlat:
+                case FlavorEffectType.AddFlat:
                     return new[] { Rule(SkillActionType.AddFlat, effectValue) };
-                case TagEffectType.AddMult:
+                case FlavorEffectType.AddMult:
                     return new[] { Rule(SkillActionType.AddMult, effectValue) };
-                case TagEffectType.PerAdjacentDish:
+                case FlavorEffectType.PerAdjacentDish:
                     return new[]
                     {
                         Rule(SkillActionType.AddFlat, effectValue, SkillConditionType.DishCount, SkillScope.Adjacent),
                     };
-                case TagEffectType.PerEmptyCell:
+                case FlavorEffectType.PerEmptyCell:
                     return new[]
                     {
                         Rule(SkillActionType.AddFlat, effectValue, SkillConditionType.EmptyCell, SkillScope.All),
                     };
-                case TagEffectType.PerOccupiedCell:
+                case FlavorEffectType.PerOccupiedCell:
                     return new[]
                     {
                         Rule(SkillActionType.AddFlat, effectValue, SkillConditionType.OccupiedCell),
                     };
-                case TagEffectType.PerDishOnBoard:
+                case FlavorEffectType.PerDishOnBoard:
                     return new[]
                     {
                         Rule(
@@ -113,13 +113,13 @@ namespace GourmetProject.Tests
                             SkillConditionType.DishCount,
                             SkillScope.All),
                     };
-                case TagEffectType.None:
+                case FlavorEffectType.None:
                 default:
                     return System.Array.Empty<SkillRuleDef>();
             }
         }
 
-        public static FlavorDef Flavor(string id, TagEffectType effectType, float effectValue, string termId = "")
+        public static FlavorDef Flavor(string id, FlavorEffectType effectType, float effectValue, string termId = "")
         {
             return new FlavorDef(id, id, id, effectType, new[] { effectValue }, System.Array.Empty<string>(), termId);
         }

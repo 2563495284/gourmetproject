@@ -201,11 +201,11 @@ namespace GourmetProject.Game.Adapter
 
         private static FlavorDef ToFlavorDef(cfg.Flavor f)
         {
-            var effectType = (TagEffectType)(int)f.EffectType;
+            var effectType = (FlavorEffectType)(int)f.EffectType;
             return new FlavorDef(
                 f.Id,
                 f.Name,
-                TagDescFormatter.Format(f.Desc, f.EffectValue, signed: !effectType.IsMultiplier()),
+                EffectDescFormatter.Format(f.Desc, f.EffectValue, signed: !effectType.IsMultiplier()),
                 effectType,
                 f.EffectValue,
                 f.EffectParam,
@@ -218,7 +218,7 @@ namespace GourmetProject.Game.Adapter
             return new MaterialDef(
                 c.Id,
                 c.Name,
-                TagDescFormatter.Format(c.Desc, c.EffectValue, signed: !effectType.IsMultiplier()),
+                EffectDescFormatter.Format(c.Desc, c.EffectValue, signed: !effectType.IsMultiplier()),
                 effectType,
                 c.EffectValue,
                 c.EffectParam,

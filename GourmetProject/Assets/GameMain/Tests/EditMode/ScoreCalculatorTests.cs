@@ -120,7 +120,7 @@ namespace GourmetProject.Tests
         [Test]
         public void AddFlat_IncreasesContribution()
         {
-            GameplayDatabase db = Db(GameplayTestFactory.Skill("fresh", TagEffectType.AddFlat, 5f));
+            GameplayDatabase db = Db(GameplayTestFactory.Skill("fresh", FlavorEffectType.AddFlat, 5f));
             var board = new GpTable(4, 4);
             DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
             board.Place(GameplayTestFactory.InstanceWithTags(1, dish, 0, 0, new[] { "fresh" }));
@@ -134,7 +134,7 @@ namespace GourmetProject.Tests
         [Test]
         public void AddMult_MultipliesContribution()
         {
-            GameplayDatabase db = Db(GameplayTestFactory.Skill("sweet", TagEffectType.AddMult, 1.5f));
+            GameplayDatabase db = Db(GameplayTestFactory.Skill("sweet", FlavorEffectType.AddMult, 1.5f));
             var board = new GpTable(4, 4);
             DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
             board.Place(GameplayTestFactory.InstanceWithTags(1, dish, 0, 0, new[] { "sweet" }));
@@ -148,8 +148,8 @@ namespace GourmetProject.Tests
         public void FlatThenMult_AppliesFlatBeforeMultiplier()
         {
             GameplayDatabase db = Db(
-                GameplayTestFactory.Skill("fresh", TagEffectType.AddFlat, 5f),
-                GameplayTestFactory.Skill("sweet", TagEffectType.AddMult, 1.5f));
+                GameplayTestFactory.Skill("fresh", FlavorEffectType.AddFlat, 5f),
+                GameplayTestFactory.Skill("sweet", FlavorEffectType.AddMult, 1.5f));
             var board = new GpTable(4, 4);
             DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
             board.Place(GameplayTestFactory.InstanceWithTags(1, dish, 0, 0, new[] { "fresh", "sweet" }));
@@ -164,7 +164,7 @@ namespace GourmetProject.Tests
         [Test]
         public void PerAdjacentDish_ScalesWithNeighborCount()
         {
-            GameplayDatabase db = Db(GameplayTestFactory.Skill("spicy", TagEffectType.PerAdjacentDish, 3f));
+            GameplayDatabase db = Db(GameplayTestFactory.Skill("spicy", FlavorEffectType.PerAdjacentDish, 3f));
             var board = new GpTable(4, 4);
             DishDef single = GameplayTestFactory.Dish("s", new[] { "X" }, deliciousness: 4, allowRotate: false);
 
@@ -183,7 +183,7 @@ namespace GourmetProject.Tests
         [Test]
         public void PerEmptyCell_ScalesWithBoardEmptyCells()
         {
-            GameplayDatabase db = Db(GameplayTestFactory.Skill("lonely", TagEffectType.PerEmptyCell, 2f));
+            GameplayDatabase db = Db(GameplayTestFactory.Skill("lonely", FlavorEffectType.PerEmptyCell, 2f));
             var board = new GpTable(4, 4); // 16 cells
             DishDef single = GameplayTestFactory.Dish("s", new[] { "X" }, deliciousness: 9, allowRotate: false);
             board.Place(GameplayTestFactory.InstanceWithTags(1, single, 0, 0, new[] { "lonely" }));
@@ -212,8 +212,8 @@ namespace GourmetProject.Tests
         public void ScoreLines_RecordSkillThenFlavorThenCellTag()
         {
             GameplayDatabase db = Db(
-                new[] { GameplayTestFactory.Skill("fresh", TagEffectType.AddFlat, 5f) },
-                new[] { GameplayTestFactory.Flavor("sweet", TagEffectType.AddMult, 1.5f) },
+                new[] { GameplayTestFactory.Skill("fresh", FlavorEffectType.AddFlat, 5f) },
+                new[] { GameplayTestFactory.Flavor("sweet", FlavorEffectType.AddMult, 1.5f) },
                 new[] { GameplayTestFactory.CellMaterial("gold", MaterialEffectType.AddMult, 2f) });
             var materials = new Dictionary<GridPos, IReadOnlyList<string>>
             {

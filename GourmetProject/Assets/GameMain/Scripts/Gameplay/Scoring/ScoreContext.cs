@@ -169,8 +169,8 @@ namespace GourmetProject.Gameplay.Scoring
 
         public ScorePhase Phase { get; private set; }
 
-        /// <summary>当前正在结算的技能/风味/格子标签效果；非效果来源时为空。</summary>
-        public IEffectDef Tag { get; set; }
+        /// <summary>当前正在结算的风味或材质定义；非配置定义来源时为空。</summary>
+        public IEffectDef EffectDef { get; set; }
 
         public float FlatBonus => _current?.Flat ?? 0f;
 
@@ -225,7 +225,7 @@ namespace GourmetProject.Gameplay.Scoring
             CurrentCell = null;
             Source = ScoreSource.Dish(dish);
             Phase = ScorePhase.BeforeDish;
-            Tag = null;
+            EffectDef = null;
             EmitEvent(ScoreEventType.DishStarted, $"开始结算 {dish.Def.Name}");
         }
 
@@ -261,11 +261,11 @@ namespace GourmetProject.Gameplay.Scoring
             ScorePhase previousPhase = Phase;
             ScoreSource previousSource = Source;
             GridPos? previousCell = CurrentCell;
-            IEffectDef previousTag = Tag;
+            IEffectDef previousEffectDef = EffectDef;
             Phase = entry.Phase;
             Source = entry.Source;
             CurrentCell = entry.Cell;
-            Tag = entry.Tag;
+            EffectDef = entry.EffectDef;
             string effectName = Source.Name;
             EmitEvent(ScoreEventType.EffectStarted, $"开始效果 {effectName}");
             try
@@ -279,7 +279,7 @@ namespace GourmetProject.Gameplay.Scoring
                 Phase = previousPhase;
                 Source = previousSource;
                 CurrentCell = previousCell;
-                Tag = previousTag;
+                EffectDef = previousEffectDef;
             }
         }
 
@@ -432,7 +432,7 @@ namespace GourmetProject.Gameplay.Scoring
                 return;
             }
 
-            _commands.Enqueue(new PendingScoreCommand(command, Phase, Source, CurrentCell, Tag));
+            _commands.Enqueue(new PendingScoreCommand(command, Phase, Source, CurrentCell, EffectDef));
             ResolveCommandQueue();
         }
 
@@ -670,11 +670,11 @@ namespace GourmetProject.Gameplay.Scoring
                     ScorePhase previousPhase = Phase;
                     ScoreSource previousSource = Source;
                     GridPos? previousCell = CurrentCell;
-                    IEffectDef previousTag = Tag;
+                    IEffectDef previousEffectDef = EffectDef;
                     Phase = pending.Phase;
                     Source = pending.Source;
                     CurrentCell = pending.Cell;
-                    Tag = pending.Tag;
+                    EffectDef = pending.EffectDef;
                     try
                     {
                         EmitEvent(ScoreEventType.CommandExecuted, $"执行命令 {pending.Command.Name}");
@@ -685,7 +685,7 @@ namespace GourmetProject.Gameplay.Scoring
                         Phase = previousPhase;
                         Source = previousSource;
                         CurrentCell = previousCell;
-                        Tag = previousTag;
+                        EffectDef = previousEffectDef;
                     }
                 }
             }
@@ -711,13 +711,13 @@ namespace GourmetProject.Gameplay.Scoring
                 ScorePhase phase,
                 ScoreSource source,
                 GridPos? cell,
-                IEffectDef tag)
+                IEffectDef effectDef)
             {
                 Command = command;
                 Phase = phase;
                 Source = source;
                 Cell = cell;
-                Tag = tag;
+                EffectDef = effectDef;
             }
 
             public IScoreCommand Command { get; }
@@ -728,7 +728,7 @@ namespace GourmetProject.Gameplay.Scoring
 
             public GridPos? Cell { get; }
 
-            public IEffectDef Tag { get; }
+            public IEffectDef EffectDef { get; }
         }
     }
 

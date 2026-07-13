@@ -97,7 +97,7 @@ namespace GourmetProject.Tests
         public void CellTag_CombinesWithDishOwnTag()
         {
             GameplayDatabase db = Db(
-                skills: new[] { GameplayTestFactory.Skill("fresh", TagEffectType.AddFlat, 5f) },
+                skills: new[] { GameplayTestFactory.Skill("fresh", FlavorEffectType.AddFlat, 5f) },
                 materials: new[] { GameplayTestFactory.CellMaterial("gold", MaterialEffectType.AddMult, 2f) });
             var board = new GpTable(2, 2, null, CellMaterials((0, 0, "gold")));
             DishDef dish = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);

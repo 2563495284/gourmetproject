@@ -37,7 +37,7 @@ namespace GourmetProject.Tests
             DishDef sourDish = GameplayTestFactory.Dish("sour_dish", new[] { "X" }, deliciousness: 10, allowRotate: false, flavor: "fl_sour");
             GameplayDatabase db = Db(
                 new[] { served, sourDish },
-                new[] { GameplayTestFactory.Flavor("fl_sour", TagEffectType.SourRecipeMult, 1.5f) });
+                new[] { GameplayTestFactory.Flavor("fl_sour", FlavorEffectType.SourRecipeMult, 1.5f) });
 
             var board = new GpTable(4, 4);
             PlaceServed(board, 1, served, 0, 0, slotIndex: 0);
@@ -57,7 +57,7 @@ namespace GourmetProject.Tests
             DishDef sourDish = GameplayTestFactory.Dish("sour_dish", new[] { "X" }, deliciousness: 10, allowRotate: false, flavor: "fl_sour");
             GameplayDatabase db = Db(
                 new[] { served, sourDish },
-                new[] { GameplayTestFactory.Flavor("fl_sour", TagEffectType.SourRecipeMult, 1.5f) });
+                new[] { GameplayTestFactory.Flavor("fl_sour", FlavorEffectType.SourRecipeMult, 1.5f) });
 
             var board = new GpTable(4, 4);
             PlaceServed(board, 1, served, 0, 0, slotIndex: 1); // 不同槽
@@ -76,7 +76,7 @@ namespace GourmetProject.Tests
             DishDef saltyDish = GameplayTestFactory.Dish("salty_dish", new[] { "X" }, deliciousness: 10, allowRotate: false, flavor: "fl_salty");
             GameplayDatabase db = Db(
                 new[] { served, saltyDish },
-                new[] { GameplayTestFactory.Flavor("fl_salty", TagEffectType.SaltyRecipeGold, 2f) });
+                new[] { GameplayTestFactory.Flavor("fl_salty", FlavorEffectType.SaltyRecipeGold, 2f) });
 
             var board = new GpTable(4, 4);
             PlaceServed(board, 1, served, 0, 0, slotIndex: 0);

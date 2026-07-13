@@ -5,13 +5,13 @@ using System.Text.RegularExpressions;
 namespace GourmetProject.Gameplay.Model
 {
     /// <summary>
-    /// 标签描述占位符回填：把 desc 模板里的 {0} {1} ... 按顺序替换为 effectValue 数值，
+    /// 效果描述占位符回填：把 desc 模板里的 {0} {1} ... 按顺序替换为 effectValue 数值，
     /// 避免数值在 desc 文本与 effectValue 两处重复维护。纯逻辑、无 Unity 依赖，便于单测。
     /// 数值统一去尾零（3→"3"、1.5→"1.5"）。
     /// signed=true 时正数补"+"号（加减类效果用，策划模板无需手写正负号）；
     /// signed=false 时原样（倍率类用，如 ×1.5）。负数永远自带"-"。
     /// </summary>
-    public static class TagDescFormatter
+    public static class EffectDescFormatter
     {
         private const string PlainFormat = "0.######";
         private const string SignedFormat = "+0.######;-0.######;0";

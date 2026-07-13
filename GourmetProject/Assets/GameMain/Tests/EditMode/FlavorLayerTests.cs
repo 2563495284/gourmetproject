@@ -21,7 +21,7 @@ namespace GourmetProject.Tests
                 new List<RecipeDef>());
         }
 
-        private static FlavorDef Flavor(string id, TagEffectType type, float value)
+        private static FlavorDef Flavor(string id, FlavorEffectType type, float value)
         {
             return new FlavorDef(id, id, id, type, new[] { value }, System.Array.Empty<string>(), string.Empty);
         }
@@ -37,7 +37,7 @@ namespace GourmetProject.Tests
         [Test]
         public void Sweet_RaisesLayer_SettlesBeforeLowerLayerDish()
         {
-            GameplayDatabase db = Db(Flavor("sweet", TagEffectType.SettlementLayer, 1f));
+            GameplayDatabase db = Db(Flavor("sweet", FlavorEffectType.SettlementLayer, 1f));
             var board = new GpTable(4, 4);
             DishDef d = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
 
@@ -54,7 +54,7 @@ namespace GourmetProject.Tests
         [Test]
         public void Bitter_LowersLayer_SettlesLast()
         {
-            GameplayDatabase db = Db(Flavor("bitter", TagEffectType.SettlementLayer, -1f));
+            GameplayDatabase db = Db(Flavor("bitter", FlavorEffectType.SettlementLayer, -1f));
             var board = new GpTable(4, 4);
             DishDef d = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
 
@@ -71,7 +71,7 @@ namespace GourmetProject.Tests
         [Test]
         public void Sweet_Stacks_HigherLayerSettlesFirst()
         {
-            GameplayDatabase db = Db(Flavor("sweet", TagEffectType.SettlementLayer, 1f));
+            GameplayDatabase db = Db(Flavor("sweet", FlavorEffectType.SettlementLayer, 1f));
             var board = new GpTable(4, 4);
             DishDef d = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
 
@@ -88,8 +88,8 @@ namespace GourmetProject.Tests
         public void SweetAndBitter_Cancel_FallBackToBoardOrder()
         {
             GameplayDatabase db = Db(
-                Flavor("sweet", TagEffectType.SettlementLayer, 1f),
-                Flavor("bitter", TagEffectType.SettlementLayer, -1f));
+                Flavor("sweet", FlavorEffectType.SettlementLayer, 1f),
+                Flavor("bitter", FlavorEffectType.SettlementLayer, -1f));
             var board = new GpTable(4, 4);
             DishDef d = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
 
@@ -105,7 +105,7 @@ namespace GourmetProject.Tests
         [Test]
         public void Rust_GrantsGoldOnSettle()
         {
-            GameplayDatabase db = Db(Flavor("rust", TagEffectType.GrantGold, 5f));
+            GameplayDatabase db = Db(Flavor("rust", FlavorEffectType.GrantGold, 5f));
             var board = new GpTable(4, 4);
             DishDef d = GameplayTestFactory.Dish("d", new[] { "X" }, deliciousness: 10, allowRotate: false);
             PlaceWithFlavors(board, 1, d, 0, 0, "rust");

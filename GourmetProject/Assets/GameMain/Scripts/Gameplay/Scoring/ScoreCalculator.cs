@@ -8,17 +8,17 @@ using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 namespace GourmetProject.Gameplay.Scoring
 {
     /// <summary>
-    /// 「吃」的结算器：把菜品技能、风味、格子标签以及额外来源收集为阶段化效果队列，
+    /// 「吃」的结算器：把菜品技能、风味、材质以及额外来源收集为阶段化效果队列，
     /// 再按确定性顺序执行并输出可解释明细。
     /// </summary>
     public sealed class ScoreCalculator
     {
-        private readonly TagEffectRegistry _registry;
+        private readonly FlavorEffectRegistry _registry;
         private readonly IScoreEffectSource[] _effectSources;
 
-        public ScoreCalculator(TagEffectRegistry registry = null, IEnumerable<IScoreEffectSource> effectSources = null)
+        public ScoreCalculator(FlavorEffectRegistry registry = null, IEnumerable<IScoreEffectSource> effectSources = null)
         {
-            _registry = registry ?? TagEffectRegistry.CreateDefault();
+            _registry = registry ?? FlavorEffectRegistry.CreateDefault();
             _effectSources = (effectSources ?? Array.Empty<IScoreEffectSource>()).ToArray();
         }
 
@@ -76,7 +76,7 @@ namespace GourmetProject.Gameplay.Scoring
         private List<ScoreEffectEntry> CollectEntries(ScoreSnapshot snapshot)
         {
             var collector = new ScoreEffectCollector();
-            new TagScoreEffectSource(_registry).CollectEffects(snapshot, collector);
+            new FlavorMaterialEffectSource(_registry).CollectEffects(snapshot, collector);
             new SkillRuleEffectSource().CollectEffects(snapshot, collector);
             new CakeLayerBuffSource().CollectEffects(snapshot, collector);
             new RecipeFlavorEffectSource().CollectEffects(snapshot, collector);

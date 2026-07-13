@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 棋盘格子标签：挂在胃碎片格上（TbFragmentCellTag 引用）。effectType/effectValue 定义结算效果。
+/// 餐桌材质：挂在餐桌碎片格上（TbFragmentMaterial 引用）。effectType/effectValue 定义结算效果。
 /// </summary>
 public partial class TbMaterial
 {

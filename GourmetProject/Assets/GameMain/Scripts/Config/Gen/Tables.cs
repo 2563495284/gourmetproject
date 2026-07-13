@@ -35,7 +35,7 @@ public partial class Tables
     /// </summary>
     public TbTableFragment TbTableFragment {get; }
     /// <summary>
-    /// 碎片格强化标签：一行=碎片某格(x,y)挂一个格子标签 id（引用 TbCellTag）。
+    /// 碎片格材质：一行=碎片某格(x,y)挂一个材质 id（引用 TbMaterial）。
     /// </summary>
     public TbFragmentMaterial TbFragmentMaterial {get; }
     /// <summary>
@@ -111,7 +111,7 @@ public partial class Tables
     /// </summary>
     public TbFlavor TbFlavor {get; }
     /// <summary>
-    /// 棋盘格子标签：挂在胃碎片格上（TbFragmentCellTag 引用）。effectType/effectValue 定义结算效果。
+    /// 餐桌材质：挂在餐桌碎片格上（TbFragmentMaterial 引用）。effectType/effectValue 定义结算效果。
     /// </summary>
     public TbMaterial TbMaterial {get; }
     /// <summary>

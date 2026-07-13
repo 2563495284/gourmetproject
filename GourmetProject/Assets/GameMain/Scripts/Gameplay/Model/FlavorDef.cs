@@ -14,7 +14,7 @@ namespace GourmetProject.Gameplay.Model
             string id,
             string name,
             string desc,
-            TagEffectType effectType,
+            FlavorEffectType effectType,
             IReadOnlyList<float> effectValues,
             IReadOnlyList<string> effectParams,
             string termId)
@@ -34,7 +34,7 @@ namespace GourmetProject.Gameplay.Model
 
         public string Desc { get; }
 
-        public TagEffectType EffectType { get; }
+        public FlavorEffectType EffectType { get; }
 
         public IReadOnlyList<float> EffectValues { get; }
 

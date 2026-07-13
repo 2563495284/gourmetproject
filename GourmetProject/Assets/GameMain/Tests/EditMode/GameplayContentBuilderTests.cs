@@ -4,7 +4,7 @@ using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
 using Luban.SimpleJSON;
 using NUnit.Framework;
-using GpTagEffectType = GourmetProject.Gameplay.Model.TagEffectType;
+using GpFlavorEffectType = GourmetProject.Gameplay.Model.FlavorEffectType;
 
 namespace GourmetProject.Tests
 {
@@ -44,7 +44,7 @@ namespace GourmetProject.Tests
 
             FlavorDef flavor = db.GetFlavor("tag_a");
             Assert.NotNull(flavor);
-            Assert.AreEqual(GpTagEffectType.AddFlat, flavor.EffectType);
+            Assert.AreEqual(GpFlavorEffectType.AddFlat, flavor.EffectType);
             Assert.AreEqual(5f, flavor.EffectValue);
             Assert.AreEqual("dish", flavor.EffectParam);
             Assert.AreEqual("term_hot", flavor.TermId);

@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 碎片格强化标签：一行=碎片某格(x,y)挂一个格子标签 id（引用 TbCellTag）。
+/// 碎片格材质：一行=碎片某格(x,y)挂一个材质 id（引用 TbMaterial）。
 /// </summary>
 public partial class TbFragmentMaterial
 {

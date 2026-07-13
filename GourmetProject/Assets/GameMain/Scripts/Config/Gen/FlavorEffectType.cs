@@ -12,9 +12,9 @@
 namespace cfg
 { 
     /// <summary>
-    /// 标签效果类型
+    /// 风味效果类型
     /// </summary>
-    public enum TagEffectType
+    public enum FlavorEffectType
     {
         None = 0,
         AddFlat = 1,

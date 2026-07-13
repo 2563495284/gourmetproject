@@ -12,7 +12,7 @@ namespace GourmetProject.Gameplay.Scoring
             ScoreSource source,
             IScoreEffect effect,
             DishInstance dish = null,
-            IEffectDef tag = null,
+            IEffectDef effectDef = null,
             GridPos? cell = null,
             int priority = 0,
             int boardOrder = 0)
@@ -21,7 +21,7 @@ namespace GourmetProject.Gameplay.Scoring
             Source = source ?? throw new ArgumentNullException(nameof(source));
             Effect = effect ?? throw new ArgumentNullException(nameof(effect));
             Dish = dish;
-            Tag = tag;
+            EffectDef = effectDef;
             Cell = cell;
             Priority = priority;
             BoardOrder = boardOrder;
@@ -36,7 +36,7 @@ namespace GourmetProject.Gameplay.Scoring
         /// <summary>指定菜品时只在该菜品结算；为空且处于逐菜阶段时，会对每道菜执行一次。</summary>
         public DishInstance Dish { get; }
 
-        public IEffectDef Tag { get; }
+        public IEffectDef EffectDef { get; }
 
         public GridPos? Cell { get; }
 

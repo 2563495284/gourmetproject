@@ -13,7 +13,7 @@ alwaysApply: false
 三个定义文件在 `GameConfig/Datas/`，由 `luban.conf` 的 `schemaFiles` 以对应 `type` 挂载：
 - `__tables__.xlsx`（`type:"table"`）：**表登记**。一行=一张表，列含 `full_name / value_type / read_schema_from_file(=True) / input / index / comment …`。注释写 `comment` 列。
 - 枚举定义拆为多个 xlsx（`luban.conf` 中多条 `type:"enum"`），每文件单 sheet、只放一类枚举：
-  - `__enums_tag.xlsx` — TagCategory、TagEffectType
+  - `__enums_gameplay.xlsx` — FlavorEffectType、SkillConditionType、SkillScope、MaterialEffectType 等玩法枚举
   - `__enums_item.xlsx` — ItemKind、ItemQuality、ItemTargetKind
   - `__enums_reward.xlsx` — RewardKind、RewardPoolKind
   - `__enums_action.xlsx` — ActionType、TimelineNodeType

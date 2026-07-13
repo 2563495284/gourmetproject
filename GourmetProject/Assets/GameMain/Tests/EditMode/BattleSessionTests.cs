@@ -86,7 +86,7 @@ namespace GourmetProject.Tests
             var db = new GameplayDatabase(
                 new[] { bar },
                 new List<SkillDef>(),
-                new[] { GameplayTestFactory.Flavor("fl_numb", TagEffectType.Rotate, 1f) },
+                new[] { GameplayTestFactory.Flavor("fl_numb", FlavorEffectType.Rotate, 1f) },
                 new List<MaterialDef>(),
                 new List<RecipeDef>());
             var slots = new[] { new RecipeSlot("slot0", new[] { "bar" }) };

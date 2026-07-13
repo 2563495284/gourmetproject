@@ -3,8 +3,8 @@ using System.Collections.Generic;
 namespace GourmetProject.Gameplay.Model
 {
     /// <summary>
-    /// 携带简易结算效果的定义的共享契约（风味 / 餐桌格子标签）。
-    /// 两者各有独立配置表与运行时类型，但效果字段与效果引擎一致，通过本接口统一被结算管线消费。
+    /// 携带结算展示数据的共享契约（风味 / 餐桌材质）。
+    /// 风味通过 FlavorEffectType 派发，材质通过 MaterialEffectType 派发；两者复用效果数值、参数与明细展示字段。
     /// </summary>
     public interface IEffectDef
     {
@@ -14,7 +14,7 @@ namespace GourmetProject.Gameplay.Model
 
         string Desc { get; }
 
-        TagEffectType EffectType { get; }
+        FlavorEffectType EffectType { get; }
 
         /// <summary>效果数值列表；不同效果类型可按约定使用多个数值。</summary>
         IReadOnlyList<float> EffectValues { get; }

@@ -81,22 +81,22 @@ namespace GourmetProject.Gameplay.Scoring
                 dish?.Def?.Id);
         }
 
-        public static ScoreSource DishFlavor(IEffectDef tag, DishInstance dish)
+        public static ScoreSource DishFlavor(IEffectDef effectDef, DishInstance dish)
         {
             return new ScoreSource(
                 ScoreSourceType.DishFlavor,
-                tag?.Id,
-                tag?.Name,
+                effectDef?.Id,
+                effectDef?.Name,
                 dish != null ? dish.Id : 0,
                 dish?.Def?.Id);
         }
 
-        public static ScoreSource Material(IEffectDef tag, DishInstance dish, GridPos cell)
+        public static ScoreSource Material(IEffectDef effectDef, DishInstance dish, GridPos cell)
         {
             return new ScoreSource(
                 ScoreSourceType.Material,
-                tag?.Id,
-                tag?.Name,
+                effectDef?.Id,
+                effectDef?.Name,
                 dish != null ? dish.Id : 0,
                 dish?.Def?.Id,
                 cell);

@@ -263,7 +263,7 @@ namespace GourmetProject.Gameplay.Battle
             foreach (string flavorId in flavorIds)
             {
                 Gameplay.Model.FlavorDef flavor = _db.GetFlavor(flavorId);
-                if (flavor != null && flavor.EffectType == Gameplay.Model.TagEffectType.Rotate)
+                if (flavor != null && flavor.EffectType == Gameplay.Model.FlavorEffectType.Rotate)
                 {
                     steps += (int)flavor.EffectValue;
                 }

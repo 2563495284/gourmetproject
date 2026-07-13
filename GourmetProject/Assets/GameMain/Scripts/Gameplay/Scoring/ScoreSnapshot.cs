@@ -52,7 +52,7 @@ namespace GourmetProject.Gameplay.Scoring
         }
 
         /// <summary>
-        /// 该菜的结算优先级层级：累加其所有 <see cref="Model.TagEffectType.SettlementLayer"/> 风味的效果值
+        /// 该菜的结算优先级层级：累加其所有 <see cref="Model.FlavorEffectType.SettlementLayer"/> 风味的效果值
         /// （甜 +1、苦 -1）。默认 0。层级越大越先结算。
         /// </summary>
         public static int SettlementLayerOf(DishInstance dish, GameplayDatabase db)
@@ -66,7 +66,7 @@ namespace GourmetProject.Gameplay.Scoring
             foreach (string flavorId in dish.FlavorIds)
             {
                 Model.FlavorDef flavor = db.GetFlavor(flavorId);
-                if (flavor != null && flavor.EffectType == Model.TagEffectType.SettlementLayer)
+                if (flavor != null && flavor.EffectType == Model.FlavorEffectType.SettlementLayer)
                 {
                     layer += (int)flavor.EffectValue;
                 }

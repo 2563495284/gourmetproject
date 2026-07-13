@@ -5,14 +5,14 @@ using GourmetProject.Gameplay.Model;
 
 namespace GourmetProject.Gameplay.Scoring
 {
-    /// <summary>把当前餐桌上的风味与格子标签转换为简易结算效果。</summary>
-    public sealed class TagScoreEffectSource : IScoreEffectSource
+    /// <summary>把当前餐桌上的风味与材质转换为结算效果。</summary>
+    public sealed class FlavorMaterialEffectSource : IScoreEffectSource
     {
-        private readonly TagEffectRegistry _registry;
+        private readonly FlavorEffectRegistry _registry;
 
-        public TagScoreEffectSource(TagEffectRegistry registry)
+        public FlavorMaterialEffectSource(FlavorEffectRegistry registry)
         {
-            _registry = registry ?? TagEffectRegistry.CreateDefault();
+            _registry = registry ?? FlavorEffectRegistry.CreateDefault();
         }
 
         public void CollectEffects(ScoreSnapshot snapshot, ScoreEffectCollector collector)

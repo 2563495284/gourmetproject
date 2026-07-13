@@ -1,7 +1,7 @@
 namespace GourmetProject.Gameplay.Model
 {
-    /// <summary>简易效果类型。与 Luban 的 cfg.TagEffectType 一一对应，风味/格子标签共用。</summary>
-    public enum TagEffectType
+    /// <summary>风味效果类型。与 Luban 的 cfg.FlavorEffectType 一一对应；餐桌材质使用 MaterialEffectType。</summary>
+    public enum FlavorEffectType
     {
         None = 0,
         AddFlat = 1,
@@ -165,15 +165,15 @@ namespace GourmetProject.Gameplay.Model
         OnServe = 1,
     }
 
-    public static class TagEffectTypeExtensions
+    public static class FlavorEffectTypeExtensions
     {
         /// <summary>
         /// 倍率类效果：数值是乘数，描述里用 ×，回填时不补正负号（如 ×1.5）。
         /// 其余（加减类）回填时正数补"+"、负数自带"-"，策划模板无需手写符号。
         /// </summary>
-        public static bool IsMultiplier(this TagEffectType type)
+        public static bool IsMultiplier(this FlavorEffectType type)
         {
-            return type == TagEffectType.AddMult || type == TagEffectType.PerDishOnBoard;
+            return type == FlavorEffectType.AddMult || type == FlavorEffectType.PerDishOnBoard;
         }
     }
 
