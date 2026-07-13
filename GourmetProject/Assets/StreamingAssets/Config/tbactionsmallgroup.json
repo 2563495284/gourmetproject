@@ -4,7 +4,7 @@
     "name": "普通1",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_fragment,act_food_passive"
+      "act_food_gold|act_food_fragment|act_food_passive"
     ]
   },
   {
@@ -12,7 +12,7 @@
     "name": "普通2",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_fragment,act_food_active"
+      "act_food_gold|act_food_fragment|act_food_active"
     ]
   },
   {
@@ -20,7 +20,7 @@
     "name": "普通3",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_fragment,act_food_dish"
+      "act_food_gold|act_food_fragment|act_food_dish"
     ]
   },
   {
@@ -28,7 +28,7 @@
     "name": "普通4",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_passive,act_food_active"
+      "act_food_gold|act_food_passive|act_food_active"
     ]
   },
   {
@@ -36,7 +36,7 @@
     "name": "普通5",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_passive,act_food_dish"
+      "act_food_gold|act_food_passive|act_food_dish"
     ]
   },
   {
@@ -44,7 +44,7 @@
     "name": "普通6",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_active,act_food_dish"
+      "act_food_gold|act_food_active|act_food_dish"
     ]
   },
   {
@@ -52,7 +52,7 @@
     "name": "普通7",
     "weight": 100,
     "actionIds": [
-      "act_food_fragment,act_food_passive,act_food_active"
+      "act_food_fragment|act_food_passive|act_food_active"
     ]
   },
   {
@@ -60,7 +60,7 @@
     "name": "普通8",
     "weight": 100,
     "actionIds": [
-      "act_food_fragment,act_food_passive,act_food_dish"
+      "act_food_fragment|act_food_passive|act_food_dish"
     ]
   },
   {
@@ -68,7 +68,7 @@
     "name": "普通9",
     "weight": 100,
     "actionIds": [
-      "act_food_fragment,act_food_active,act_food_dish"
+      "act_food_fragment|act_food_active|act_food_dish"
     ]
   },
   {
@@ -76,7 +76,7 @@
     "name": "普通10",
     "weight": 100,
     "actionIds": [
-      "act_food_passive,act_food_active,act_food_dish"
+      "act_food_passive|act_food_active|act_food_dish"
     ]
   },
   {
@@ -84,7 +84,7 @@
     "name": "普通11",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_fragment"
+      "act_food_gold|act_food_fragment"
     ]
   },
   {
@@ -92,7 +92,7 @@
     "name": "普通12",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_passive"
+      "act_food_gold|act_food_passive"
     ]
   },
   {
@@ -100,7 +100,7 @@
     "name": "普通13",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_active"
+      "act_food_gold|act_food_active"
     ]
   },
   {
@@ -108,7 +108,7 @@
     "name": "普通14",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_dish"
+      "act_food_gold|act_food_dish"
     ]
   },
   {
@@ -116,7 +116,7 @@
     "name": "普通15",
     "weight": 100,
     "actionIds": [
-      "act_food_fragment,act_food_passive"
+      "act_food_fragment|act_food_passive"
     ]
   },
   {
@@ -124,7 +124,7 @@
     "name": "普通16",
     "weight": 100,
     "actionIds": [
-      "act_food_fragment,act_food_active"
+      "act_food_fragment|act_food_active"
     ]
   },
   {
@@ -132,7 +132,7 @@
     "name": "普通17",
     "weight": 100,
     "actionIds": [
-      "act_food_fragment,act_food_dish"
+      "act_food_fragment|act_food_dish"
     ]
   },
   {
@@ -140,7 +140,7 @@
     "name": "普通18",
     "weight": 100,
     "actionIds": [
-      "act_food_passive,act_food_active"
+      "act_food_passive|act_food_active"
     ]
   },
   {
@@ -148,7 +148,7 @@
     "name": "普通19",
     "weight": 100,
     "actionIds": [
-      "act_food_passive,act_food_dish"
+      "act_food_passive|act_food_dish"
     ]
   },
   {
@@ -156,7 +156,7 @@
     "name": "普通20",
     "weight": 100,
     "actionIds": [
-      "act_food_active,act_food_dish"
+      "act_food_active|act_food_dish"
     ]
   },
   {
@@ -164,7 +164,7 @@
     "name": "普通困难1",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_fragment,act_food_passive"
+      "act_food_hard_gold|act_food_fragment|act_food_passive"
     ]
   },
   {
@@ -172,7 +172,7 @@
     "name": "普通困难2",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_fragment,act_food_active"
+      "act_food_hard_gold|act_food_fragment|act_food_active"
     ]
   },
   {
@@ -180,7 +180,7 @@
     "name": "普通困难3",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_fragment,act_food_dish"
+      "act_food_hard_gold|act_food_fragment|act_food_dish"
     ]
   },
   {
@@ -188,7 +188,7 @@
     "name": "普通困难4",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_passive,act_food_active"
+      "act_food_hard_gold|act_food_passive|act_food_active"
     ]
   },
   {
@@ -196,7 +196,7 @@
     "name": "普通困难5",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_passive,act_food_dish"
+      "act_food_hard_gold|act_food_passive|act_food_dish"
     ]
   },
   {
@@ -204,7 +204,7 @@
     "name": "普通困难6",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_active,act_food_dish"
+      "act_food_hard_gold|act_food_active|act_food_dish"
     ]
   },
   {
@@ -212,7 +212,7 @@
     "name": "普通困难7",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_fragment,act_food_passive,act_food_active"
+      "act_food_hard_fragment|act_food_passive|act_food_active"
     ]
   },
   {
@@ -220,7 +220,7 @@
     "name": "普通困难8",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_fragment,act_food_passive,act_food_dish"
+      "act_food_hard_fragment|act_food_passive|act_food_dish"
     ]
   },
   {
@@ -228,7 +228,7 @@
     "name": "普通困难9",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_fragment,act_food_active,act_food_dish"
+      "act_food_hard_fragment|act_food_active|act_food_dish"
     ]
   },
   {
@@ -236,7 +236,7 @@
     "name": "普通困难10",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_passive,act_food_active,act_food_dish"
+      "act_food_hard_passive|act_food_active|act_food_dish"
     ]
   },
   {
@@ -244,7 +244,7 @@
     "name": "普通困难11",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_fragment"
+      "act_food_hard_gold|act_food_fragment"
     ]
   },
   {
@@ -252,7 +252,7 @@
     "name": "普通困难12",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_passive"
+      "act_food_hard_gold|act_food_passive"
     ]
   },
   {
@@ -260,7 +260,7 @@
     "name": "普通困难13",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_active"
+      "act_food_hard_gold|act_food_active"
     ]
   },
   {
@@ -268,7 +268,7 @@
     "name": "普通困难14",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_dish"
+      "act_food_hard_gold|act_food_dish"
     ]
   },
   {
@@ -276,7 +276,7 @@
     "name": "普通困难15",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_fragment,act_food_passive"
+      "act_food_hard_fragment|act_food_passive"
     ]
   },
   {
@@ -284,7 +284,7 @@
     "name": "普通困难16",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_fragment,act_food_active"
+      "act_food_hard_fragment|act_food_active"
     ]
   },
   {
@@ -292,7 +292,7 @@
     "name": "普通困难17",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_fragment,act_food_dish"
+      "act_food_hard_fragment|act_food_dish"
     ]
   },
   {
@@ -300,7 +300,7 @@
     "name": "普通困难18",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_passive,act_food_active"
+      "act_food_hard_passive|act_food_active"
     ]
   },
   {
@@ -308,7 +308,7 @@
     "name": "普通困难19",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_passive,act_food_dish"
+      "act_food_hard_passive|act_food_dish"
     ]
   },
   {
@@ -316,7 +316,7 @@
     "name": "普通困难20",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_active,act_food_dish"
+      "act_food_hard_active|act_food_dish"
     ]
   },
   {
@@ -324,7 +324,7 @@
     "name": "普通困难21",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_hard_fragment,act_food_passive"
+      "act_food_gold|act_food_hard_fragment|act_food_passive"
     ]
   },
   {
@@ -332,7 +332,7 @@
     "name": "普通困难22",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_hard_fragment,act_food_active"
+      "act_food_gold|act_food_hard_fragment|act_food_active"
     ]
   },
   {
@@ -340,7 +340,7 @@
     "name": "普通困难23",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_hard_fragment,act_food_dish"
+      "act_food_gold|act_food_hard_fragment|act_food_dish"
     ]
   },
   {
@@ -348,7 +348,7 @@
     "name": "普通困难24",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_hard_passive,act_food_active"
+      "act_food_gold|act_food_hard_passive|act_food_active"
     ]
   },
   {
@@ -356,7 +356,7 @@
     "name": "普通困难25",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_hard_passive,act_food_dish"
+      "act_food_gold|act_food_hard_passive|act_food_dish"
     ]
   },
   {
@@ -364,7 +364,7 @@
     "name": "普通困难26",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_hard_active,act_food_dish"
+      "act_food_gold|act_food_hard_active|act_food_dish"
     ]
   },
   {
@@ -372,7 +372,7 @@
     "name": "普通困难27",
     "weight": 100,
     "actionIds": [
-      "act_food_fragment,act_food_hard_passive,act_food_active"
+      "act_food_fragment|act_food_hard_passive|act_food_active"
     ]
   },
   {
@@ -380,7 +380,7 @@
     "name": "普通困难28",
     "weight": 100,
     "actionIds": [
-      "act_food_fragment,act_food_hard_passive,act_food_dish"
+      "act_food_fragment|act_food_hard_passive|act_food_dish"
     ]
   },
   {
@@ -388,7 +388,7 @@
     "name": "普通困难29",
     "weight": 100,
     "actionIds": [
-      "act_food_fragment,act_food_hard_active,act_food_dish"
+      "act_food_fragment|act_food_hard_active|act_food_dish"
     ]
   },
   {
@@ -396,7 +396,7 @@
     "name": "普通困难30",
     "weight": 100,
     "actionIds": [
-      "act_food_passive,act_food_hard_active,act_food_dish"
+      "act_food_passive|act_food_hard_active|act_food_dish"
     ]
   },
   {
@@ -404,7 +404,7 @@
     "name": "普通困难31",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_hard_fragment"
+      "act_food_gold|act_food_hard_fragment"
     ]
   },
   {
@@ -412,7 +412,7 @@
     "name": "普通困难32",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_hard_passive"
+      "act_food_gold|act_food_hard_passive"
     ]
   },
   {
@@ -420,7 +420,7 @@
     "name": "普通困难33",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_hard_active"
+      "act_food_gold|act_food_hard_active"
     ]
   },
   {
@@ -428,7 +428,7 @@
     "name": "普通困难34",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_hard_dish"
+      "act_food_gold|act_food_hard_dish"
     ]
   },
   {
@@ -436,7 +436,7 @@
     "name": "普通困难35",
     "weight": 100,
     "actionIds": [
-      "act_food_fragment,act_food_hard_passive"
+      "act_food_fragment|act_food_hard_passive"
     ]
   },
   {
@@ -444,7 +444,7 @@
     "name": "普通困难36",
     "weight": 100,
     "actionIds": [
-      "act_food_fragment,act_food_hard_active"
+      "act_food_fragment|act_food_hard_active"
     ]
   },
   {
@@ -452,7 +452,7 @@
     "name": "普通困难37",
     "weight": 100,
     "actionIds": [
-      "act_food_fragment,act_food_hard_dish"
+      "act_food_fragment|act_food_hard_dish"
     ]
   },
   {
@@ -460,7 +460,7 @@
     "name": "普通困难38",
     "weight": 100,
     "actionIds": [
-      "act_food_passive,act_food_hard_active"
+      "act_food_passive|act_food_hard_active"
     ]
   },
   {
@@ -468,7 +468,7 @@
     "name": "普通困难39",
     "weight": 100,
     "actionIds": [
-      "act_food_passive,act_food_hard_dish"
+      "act_food_passive|act_food_hard_dish"
     ]
   },
   {
@@ -476,7 +476,7 @@
     "name": "普通困难40",
     "weight": 100,
     "actionIds": [
-      "act_food_active,act_food_hard_dish"
+      "act_food_active|act_food_hard_dish"
     ]
   },
   {
@@ -484,7 +484,7 @@
     "name": "普通困难41",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_fragment,act_food_hard_passive"
+      "act_food_gold|act_food_fragment|act_food_hard_passive"
     ]
   },
   {
@@ -492,7 +492,7 @@
     "name": "普通困难42",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_fragment,act_food_hard_active"
+      "act_food_gold|act_food_fragment|act_food_hard_active"
     ]
   },
   {
@@ -500,7 +500,7 @@
     "name": "普通困难43",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_fragment,act_food_hard_dish"
+      "act_food_gold|act_food_fragment|act_food_hard_dish"
     ]
   },
   {
@@ -508,7 +508,7 @@
     "name": "普通困难44",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_passive,act_food_hard_active"
+      "act_food_gold|act_food_passive|act_food_hard_active"
     ]
   },
   {
@@ -516,7 +516,7 @@
     "name": "普通困难45",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_passive,act_food_hard_dish"
+      "act_food_gold|act_food_passive|act_food_hard_dish"
     ]
   },
   {
@@ -524,7 +524,7 @@
     "name": "普通困难46",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_active,act_food_hard_dish"
+      "act_food_gold|act_food_active|act_food_hard_dish"
     ]
   },
   {
@@ -532,7 +532,7 @@
     "name": "普通困难47",
     "weight": 100,
     "actionIds": [
-      "act_food_fragment,act_food_passive,act_food_hard_active"
+      "act_food_fragment|act_food_passive|act_food_hard_active"
     ]
   },
   {
@@ -540,7 +540,7 @@
     "name": "普通困难48",
     "weight": 100,
     "actionIds": [
-      "act_food_fragment,act_food_passive,act_food_hard_dish"
+      "act_food_fragment|act_food_passive|act_food_hard_dish"
     ]
   },
   {
@@ -548,7 +548,7 @@
     "name": "普通困难49",
     "weight": 100,
     "actionIds": [
-      "act_food_fragment,act_food_active,act_food_hard_dish"
+      "act_food_fragment|act_food_active|act_food_hard_dish"
     ]
   },
   {
@@ -556,7 +556,7 @@
     "name": "普通困难50",
     "weight": 100,
     "actionIds": [
-      "act_food_passive,act_food_active,act_food_hard_dish"
+      "act_food_passive|act_food_active|act_food_hard_dish"
     ]
   },
   {
@@ -564,7 +564,7 @@
     "name": "普通困难51",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_hard_fragment,act_food_passive"
+      "act_food_hard_gold|act_food_hard_fragment|act_food_passive"
     ]
   },
   {
@@ -572,7 +572,7 @@
     "name": "普通困难52",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_hard_fragment,act_food_active"
+      "act_food_hard_gold|act_food_hard_fragment|act_food_active"
     ]
   },
   {
@@ -580,7 +580,7 @@
     "name": "普通困难53",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_hard_fragment,act_food_dish"
+      "act_food_hard_gold|act_food_hard_fragment|act_food_dish"
     ]
   },
   {
@@ -588,7 +588,7 @@
     "name": "普通困难54",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_hard_passive,act_food_active"
+      "act_food_hard_gold|act_food_hard_passive|act_food_active"
     ]
   },
   {
@@ -596,7 +596,7 @@
     "name": "普通困难55",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_hard_passive,act_food_dish"
+      "act_food_hard_gold|act_food_hard_passive|act_food_dish"
     ]
   },
   {
@@ -604,7 +604,7 @@
     "name": "普通困难56",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_hard_active,act_food_dish"
+      "act_food_hard_gold|act_food_hard_active|act_food_dish"
     ]
   },
   {
@@ -612,7 +612,7 @@
     "name": "普通困难57",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_fragment,act_food_hard_passive,act_food_active"
+      "act_food_hard_fragment|act_food_hard_passive|act_food_active"
     ]
   },
   {
@@ -620,7 +620,7 @@
     "name": "普通困难58",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_fragment,act_food_hard_passive,act_food_dish"
+      "act_food_hard_fragment|act_food_hard_passive|act_food_dish"
     ]
   },
   {
@@ -628,7 +628,7 @@
     "name": "普通困难59",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_fragment,act_food_hard_active,act_food_dish"
+      "act_food_hard_fragment|act_food_hard_active|act_food_dish"
     ]
   },
   {
@@ -636,7 +636,7 @@
     "name": "普通困难60",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_passive,act_food_hard_active,act_food_dish"
+      "act_food_hard_passive|act_food_hard_active|act_food_dish"
     ]
   },
   {
@@ -644,7 +644,7 @@
     "name": "普通困难61",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_hard_fragment,act_food_hard_passive"
+      "act_food_gold|act_food_hard_fragment|act_food_hard_passive"
     ]
   },
   {
@@ -652,7 +652,7 @@
     "name": "普通困难62",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_hard_fragment,act_food_hard_active"
+      "act_food_gold|act_food_hard_fragment|act_food_hard_active"
     ]
   },
   {
@@ -660,7 +660,7 @@
     "name": "普通困难63",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_hard_fragment,act_food_hard_dish"
+      "act_food_gold|act_food_hard_fragment|act_food_hard_dish"
     ]
   },
   {
@@ -668,7 +668,7 @@
     "name": "普通困难64",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_hard_passive,act_food_hard_active"
+      "act_food_gold|act_food_hard_passive|act_food_hard_active"
     ]
   },
   {
@@ -676,7 +676,7 @@
     "name": "普通困难65",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_hard_passive,act_food_hard_dish"
+      "act_food_gold|act_food_hard_passive|act_food_hard_dish"
     ]
   },
   {
@@ -684,7 +684,7 @@
     "name": "普通困难66",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_hard_active,act_food_hard_dish"
+      "act_food_gold|act_food_hard_active|act_food_hard_dish"
     ]
   },
   {
@@ -692,7 +692,7 @@
     "name": "普通困难67",
     "weight": 100,
     "actionIds": [
-      "act_food_fragment,act_food_hard_passive,act_food_hard_active"
+      "act_food_fragment|act_food_hard_passive|act_food_hard_active"
     ]
   },
   {
@@ -700,7 +700,7 @@
     "name": "普通困难68",
     "weight": 100,
     "actionIds": [
-      "act_food_fragment,act_food_hard_passive,act_food_hard_dish"
+      "act_food_fragment|act_food_hard_passive|act_food_hard_dish"
     ]
   },
   {
@@ -708,7 +708,7 @@
     "name": "普通困难69",
     "weight": 100,
     "actionIds": [
-      "act_food_fragment,act_food_hard_active,act_food_hard_dish"
+      "act_food_fragment|act_food_hard_active|act_food_hard_dish"
     ]
   },
   {
@@ -716,7 +716,7 @@
     "name": "普通困难70",
     "weight": 100,
     "actionIds": [
-      "act_food_passive,act_food_hard_active,act_food_hard_dish"
+      "act_food_passive|act_food_hard_active|act_food_hard_dish"
     ]
   },
   {
@@ -724,7 +724,7 @@
     "name": "普通困难71",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_fragment,act_food_hard_passive"
+      "act_food_hard_gold|act_food_fragment|act_food_hard_passive"
     ]
   },
   {
@@ -732,7 +732,7 @@
     "name": "普通困难72",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_fragment,act_food_hard_active"
+      "act_food_hard_gold|act_food_fragment|act_food_hard_active"
     ]
   },
   {
@@ -740,7 +740,7 @@
     "name": "普通困难73",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_fragment,act_food_hard_dish"
+      "act_food_hard_gold|act_food_fragment|act_food_hard_dish"
     ]
   },
   {
@@ -748,7 +748,7 @@
     "name": "普通困难74",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_passive,act_food_hard_active"
+      "act_food_hard_gold|act_food_passive|act_food_hard_active"
     ]
   },
   {
@@ -756,7 +756,7 @@
     "name": "普通困难75",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_passive,act_food_hard_dish"
+      "act_food_hard_gold|act_food_passive|act_food_hard_dish"
     ]
   },
   {
@@ -764,7 +764,7 @@
     "name": "普通困难76",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_active,act_food_hard_dish"
+      "act_food_hard_gold|act_food_active|act_food_hard_dish"
     ]
   },
   {
@@ -772,7 +772,7 @@
     "name": "普通困难77",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_fragment,act_food_passive,act_food_hard_active"
+      "act_food_hard_fragment|act_food_passive|act_food_hard_active"
     ]
   },
   {
@@ -780,7 +780,7 @@
     "name": "普通困难78",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_fragment,act_food_passive,act_food_hard_dish"
+      "act_food_hard_fragment|act_food_passive|act_food_hard_dish"
     ]
   },
   {
@@ -788,7 +788,7 @@
     "name": "普通困难79",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_fragment,act_food_active,act_food_hard_dish"
+      "act_food_hard_fragment|act_food_active|act_food_hard_dish"
     ]
   },
   {
@@ -796,7 +796,7 @@
     "name": "普通困难80",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_passive,act_food_active,act_food_hard_dish"
+      "act_food_hard_passive|act_food_active|act_food_hard_dish"
     ]
   },
   {
@@ -804,7 +804,7 @@
     "name": "困难1",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_hard_fragment,act_food_hard_passive"
+      "act_food_hard_gold|act_food_hard_fragment|act_food_hard_passive"
     ]
   },
   {
@@ -812,7 +812,7 @@
     "name": "困难2",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_hard_fragment,act_food_hard_active"
+      "act_food_hard_gold|act_food_hard_fragment|act_food_hard_active"
     ]
   },
   {
@@ -820,7 +820,7 @@
     "name": "困难3",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_hard_fragment,act_food_hard_dish"
+      "act_food_hard_gold|act_food_hard_fragment|act_food_hard_dish"
     ]
   },
   {
@@ -828,7 +828,7 @@
     "name": "困难4",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_hard_passive,act_food_hard_active"
+      "act_food_hard_gold|act_food_hard_passive|act_food_hard_active"
     ]
   },
   {
@@ -836,7 +836,7 @@
     "name": "困难5",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_hard_passive,act_food_hard_dish"
+      "act_food_hard_gold|act_food_hard_passive|act_food_hard_dish"
     ]
   },
   {
@@ -844,7 +844,7 @@
     "name": "困难6",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_hard_active,act_food_hard_dish"
+      "act_food_hard_gold|act_food_hard_active|act_food_hard_dish"
     ]
   },
   {
@@ -852,7 +852,7 @@
     "name": "困难7",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_fragment,act_food_hard_passive,act_food_hard_active"
+      "act_food_hard_fragment|act_food_hard_passive|act_food_hard_active"
     ]
   },
   {
@@ -860,7 +860,7 @@
     "name": "困难8",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_fragment,act_food_hard_passive,act_food_hard_dish"
+      "act_food_hard_fragment|act_food_hard_passive|act_food_hard_dish"
     ]
   },
   {
@@ -868,7 +868,7 @@
     "name": "困难9",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_fragment,act_food_hard_active,act_food_hard_dish"
+      "act_food_hard_fragment|act_food_hard_active|act_food_hard_dish"
     ]
   },
   {
@@ -876,7 +876,7 @@
     "name": "困难10",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_passive,act_food_hard_active,act_food_hard_dish"
+      "act_food_hard_passive|act_food_hard_active|act_food_hard_dish"
     ]
   },
   {
@@ -884,7 +884,7 @@
     "name": "困难11",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_hard_fragment"
+      "act_food_hard_gold|act_food_hard_fragment"
     ]
   },
   {
@@ -892,7 +892,7 @@
     "name": "困难12",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_hard_passive"
+      "act_food_hard_gold|act_food_hard_passive"
     ]
   },
   {
@@ -900,7 +900,7 @@
     "name": "困难13",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_hard_active"
+      "act_food_hard_gold|act_food_hard_active"
     ]
   },
   {
@@ -908,7 +908,7 @@
     "name": "困难14",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_hard_dish"
+      "act_food_hard_gold|act_food_hard_dish"
     ]
   },
   {
@@ -916,7 +916,7 @@
     "name": "困难15",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_fragment,act_food_hard_passive"
+      "act_food_hard_fragment|act_food_hard_passive"
     ]
   },
   {
@@ -924,7 +924,7 @@
     "name": "困难16",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_fragment,act_food_hard_active"
+      "act_food_hard_fragment|act_food_hard_active"
     ]
   },
   {
@@ -932,7 +932,7 @@
     "name": "困难17",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_fragment,act_food_hard_dish"
+      "act_food_hard_fragment|act_food_hard_dish"
     ]
   },
   {
@@ -940,7 +940,7 @@
     "name": "困难18",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_passive,act_food_hard_active"
+      "act_food_hard_passive|act_food_hard_active"
     ]
   },
   {
@@ -948,7 +948,7 @@
     "name": "困难19",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_passive,act_food_hard_dish"
+      "act_food_hard_passive|act_food_hard_dish"
     ]
   },
   {
@@ -956,7 +956,7 @@
     "name": "困难20",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_active,act_food_hard_dish"
+      "act_food_hard_active|act_food_hard_dish"
     ]
   },
   {
@@ -980,7 +980,7 @@
     "name": "普通事件1",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_fragment,act_event"
+      "act_food_gold|act_food_fragment|act_event"
     ]
   },
   {
@@ -988,7 +988,7 @@
     "name": "普通事件2",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_passive,act_event"
+      "act_food_gold|act_food_passive|act_event"
     ]
   },
   {
@@ -996,7 +996,7 @@
     "name": "普通事件3",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_active,act_event"
+      "act_food_gold|act_food_active|act_event"
     ]
   },
   {
@@ -1004,7 +1004,7 @@
     "name": "普通事件4",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_food_dish,act_event"
+      "act_food_gold|act_food_dish|act_event"
     ]
   },
   {
@@ -1012,7 +1012,7 @@
     "name": "普通事件5",
     "weight": 100,
     "actionIds": [
-      "act_food_fragment,act_food_passive,act_event"
+      "act_food_fragment|act_food_passive|act_event"
     ]
   },
   {
@@ -1020,7 +1020,7 @@
     "name": "普通事件6",
     "weight": 100,
     "actionIds": [
-      "act_food_fragment,act_food_active,act_event"
+      "act_food_fragment|act_food_active|act_event"
     ]
   },
   {
@@ -1028,7 +1028,7 @@
     "name": "普通事件7",
     "weight": 100,
     "actionIds": [
-      "act_food_fragment,act_food_dish,act_event"
+      "act_food_fragment|act_food_dish|act_event"
     ]
   },
   {
@@ -1036,7 +1036,7 @@
     "name": "普通事件8",
     "weight": 100,
     "actionIds": [
-      "act_food_passive,act_food_active,act_event"
+      "act_food_passive|act_food_active|act_event"
     ]
   },
   {
@@ -1044,7 +1044,7 @@
     "name": "普通事件9",
     "weight": 100,
     "actionIds": [
-      "act_food_passive,act_food_dish,act_event"
+      "act_food_passive|act_food_dish|act_event"
     ]
   },
   {
@@ -1052,7 +1052,7 @@
     "name": "普通事件10",
     "weight": 100,
     "actionIds": [
-      "act_food_active,act_food_dish,act_event"
+      "act_food_active|act_food_dish|act_event"
     ]
   },
   {
@@ -1060,7 +1060,7 @@
     "name": "普通事件11",
     "weight": 100,
     "actionIds": [
-      "act_food_gold,act_event"
+      "act_food_gold|act_event"
     ]
   },
   {
@@ -1068,7 +1068,7 @@
     "name": "普通事件12",
     "weight": 100,
     "actionIds": [
-      "act_food_fragment,act_event"
+      "act_food_fragment|act_event"
     ]
   },
   {
@@ -1076,7 +1076,7 @@
     "name": "普通事件13",
     "weight": 100,
     "actionIds": [
-      "act_food_passive,act_event"
+      "act_food_passive|act_event"
     ]
   },
   {
@@ -1084,7 +1084,7 @@
     "name": "普通事件14",
     "weight": 100,
     "actionIds": [
-      "act_food_active,act_event"
+      "act_food_active|act_event"
     ]
   },
   {
@@ -1092,7 +1092,7 @@
     "name": "普通事件15",
     "weight": 100,
     "actionIds": [
-      "act_food_dish,act_event"
+      "act_food_dish|act_event"
     ]
   },
   {
@@ -1100,7 +1100,7 @@
     "name": "普通困难事件1",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_fragment,act_event"
+      "act_food_hard_gold|act_food_fragment|act_event"
     ]
   },
   {
@@ -1108,7 +1108,7 @@
     "name": "普通困难事件2",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_passive,act_event"
+      "act_food_hard_gold|act_food_passive|act_event"
     ]
   },
   {
@@ -1116,7 +1116,7 @@
     "name": "普通困难事件3",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_active,act_event"
+      "act_food_hard_gold|act_food_active|act_event"
     ]
   },
   {
@@ -1124,7 +1124,7 @@
     "name": "普通困难事件4",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_dish,act_event"
+      "act_food_hard_gold|act_food_dish|act_event"
     ]
   },
   {
@@ -1132,7 +1132,7 @@
     "name": "普通困难事件5",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_fragment,act_food_passive,act_event"
+      "act_food_hard_fragment|act_food_passive|act_event"
     ]
   },
   {
@@ -1140,7 +1140,7 @@
     "name": "普通困难事件6",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_fragment,act_food_active,act_event"
+      "act_food_hard_fragment|act_food_active|act_event"
     ]
   },
   {
@@ -1148,7 +1148,7 @@
     "name": "普通困难事件7",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_fragment,act_food_dish,act_event"
+      "act_food_hard_fragment|act_food_dish|act_event"
     ]
   },
   {
@@ -1156,7 +1156,7 @@
     "name": "普通困难事件8",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_passive,act_food_active,act_event"
+      "act_food_hard_passive|act_food_active|act_event"
     ]
   },
   {
@@ -1164,7 +1164,7 @@
     "name": "普通困难事件9",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_passive,act_food_dish,act_event"
+      "act_food_hard_passive|act_food_dish|act_event"
     ]
   },
   {
@@ -1172,7 +1172,7 @@
     "name": "普通困难事件10",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_active,act_food_dish,act_event"
+      "act_food_hard_active|act_food_dish|act_event"
     ]
   },
   {
@@ -1180,7 +1180,7 @@
     "name": "困难事件1",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_hard_fragment,act_event"
+      "act_food_hard_gold|act_food_hard_fragment|act_event"
     ]
   },
   {
@@ -1188,7 +1188,7 @@
     "name": "困难事件2",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_hard_passive,act_event"
+      "act_food_hard_gold|act_food_hard_passive|act_event"
     ]
   },
   {
@@ -1196,7 +1196,7 @@
     "name": "困难事件3",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_hard_active,act_event"
+      "act_food_hard_gold|act_food_hard_active|act_event"
     ]
   },
   {
@@ -1204,7 +1204,7 @@
     "name": "困难事件4",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_food_hard_dish,act_event"
+      "act_food_hard_gold|act_food_hard_dish|act_event"
     ]
   },
   {
@@ -1212,7 +1212,7 @@
     "name": "困难事件5",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_fragment,act_food_hard_passive,act_event"
+      "act_food_hard_fragment|act_food_hard_passive|act_event"
     ]
   },
   {
@@ -1220,7 +1220,7 @@
     "name": "困难事件6",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_fragment,act_food_hard_active,act_event"
+      "act_food_hard_fragment|act_food_hard_active|act_event"
     ]
   },
   {
@@ -1228,7 +1228,7 @@
     "name": "困难事件7",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_fragment,act_food_hard_dish,act_event"
+      "act_food_hard_fragment|act_food_hard_dish|act_event"
     ]
   },
   {
@@ -1236,7 +1236,7 @@
     "name": "困难事件8",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_passive,act_food_hard_active,act_event"
+      "act_food_hard_passive|act_food_hard_active|act_event"
     ]
   },
   {
@@ -1244,7 +1244,7 @@
     "name": "困难事件9",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_passive,act_food_hard_dish,act_event"
+      "act_food_hard_passive|act_food_hard_dish|act_event"
     ]
   },
   {
@@ -1252,7 +1252,7 @@
     "name": "困难事件10",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_active,act_food_hard_dish,act_event"
+      "act_food_hard_active|act_food_hard_dish|act_event"
     ]
   },
   {
@@ -1260,7 +1260,7 @@
     "name": "困难事件11",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_gold,act_event"
+      "act_food_hard_gold|act_event"
     ]
   },
   {
@@ -1268,7 +1268,7 @@
     "name": "困难事件12",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_fragment,act_event"
+      "act_food_hard_fragment|act_event"
     ]
   },
   {
@@ -1276,7 +1276,7 @@
     "name": "困难事件13",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_passive,act_event"
+      "act_food_hard_passive|act_event"
     ]
   },
   {
@@ -1284,7 +1284,7 @@
     "name": "困难事件14",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_active,act_event"
+      "act_food_hard_active|act_event"
     ]
   },
   {
@@ -1292,7 +1292,7 @@
     "name": "困难事件15",
     "weight": 100,
     "actionIds": [
-      "act_food_hard_dish,act_event"
+      "act_food_hard_dish|act_event"
     ]
   },
   {
