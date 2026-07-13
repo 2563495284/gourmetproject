@@ -1,26 +1,29 @@
 [
   {
-    "id": "lg_food_normal",
+    "id": "lg_normal",
     "name": "普通美食大组",
     "ruleIds": "",
-    "fallbackWeights": [
-      100
-    ],
+    "fallbackWeights": [],
     "smallGroupIds": [
-      "sg_food_a",
-      "sg_food_b"
+      "sg_normal_1,sg_normal_2,sg_normal_3,sg_normal_4,sg_normal_5,sg_normal_6,sg_normal_7,sg_normal_8,sg_normal_9,sg_normal_10,sg_normal_11,sg_normal_12,sg_normal_13,sg_normal_14,sg_normal_15,sg_normal_16,sg_normal_17,sg_normal_18,sg_normal_19,sg_normal_20"
     ]
   },
   {
-    "id": "lg_food_hard",
+    "id": "lg_normalHard",
+    "name": "普通困难美食大组",
+    "ruleIds": "",
+    "fallbackWeights": [],
+    "smallGroupIds": [
+      "sg_normalHard_1,sg_normalHard_2,sg_normalHard_3,sg_normalHard_4,sg_normalHard_5,sg_normalHard_6,sg_normalHard_7,sg_normalHard_8,sg_normalHard_9,sg_normalHard_10,sg_normalHard_11,sg_normalHard_12,sg_normalHard_13,sg_normalHard_14,sg_normalHard_15,sg_normalHard_16,sg_normalHard_17,sg_normalHard_18,sg_normalHard_19,sg_normalHard_20,sg_normalHard_21,sg_normalHard_22,sg_normalHard_23,sg_normalHard_24,sg_normalHard_25,sg_normalHard_26,sg_normalHard_27,sg_normalHard_28,sg_normalHard_29,sg_normalHard_30,sg_normalHard_31,sg_normalHard_32,sg_normalHard_33,sg_normalHard_34,sg_normalHard_35,sg_normalHard_36,sg_normalHard_37,sg_normalHard_38,sg_normalHard_39,sg_normalHard_40,sg_normalHard_41,sg_normalHard_42,sg_normalHard_43,sg_normalHard_44,sg_normalHard_45,sg_normalHard_46,sg_normalHard_47,sg_normalHard_48,sg_normalHard_49,sg_normalHard_50,sg_normalHard_51,sg_normalHard_52,sg_normalHard_53,sg_normalHard_54,sg_normalHard_55,sg_normalHard_56,sg_normalHard_57,sg_normalHard_58,sg_normalHard_59,sg_normalHard_60,sg_normalHard_61,sg_normalHard_62,sg_normalHard_63,sg_normalHard_64,sg_normalHard_65,sg_normalHard_66,sg_normalHard_67,sg_normalHard_68,sg_normalHard_69,sg_normalHard_70,sg_normalHard_71,sg_normalHard_72,sg_normalHard_73,sg_normalHard_74,sg_normalHard_75,sg_normalHard_76,sg_normalHard_77,sg_normalHard_78,sg_normalHard_79,sg_normalHard_80"
+    ]
+  },
+  {
+    "id": "lg_hard",
     "name": "困难美食大组",
     "ruleIds": "",
-    "fallbackWeights": [
-      55
-    ],
+    "fallbackWeights": [],
     "smallGroupIds": [
-      "sg_food_hard_a",
-      "sg_food_hard_b"
+      "sg_hard_1,sg_hard_2,sg_hard_3,sg_hard_4,sg_hard_5,sg_hard_6,sg_hard_7,sg_hard_8,sg_hard_9,sg_hard_10,sg_hard_11,sg_hard_12,sg_hard_13,sg_hard_14,sg_hard_15,sg_hard_16,sg_hard_17,sg_hard_18,sg_hard_19,sg_hard_20"
     ]
   },
   {
@@ -28,10 +31,10 @@
     "name": "事件大组",
     "ruleIds": "rule_event_opening",
     "fallbackWeights": [
-      45
+      30
     ],
     "smallGroupIds": [
-      "sg_event"
+      "sg_event_1"
     ]
   },
   {
@@ -39,21 +42,46 @@
     "name": "奖励大组",
     "ruleIds": "rule_reward_early,rule_reward_mid",
     "fallbackWeights": [
-      30
+      10
     ],
     "smallGroupIds": [
-      "sg_reward"
+      "sg_reward_1"
+    ]
+  },
+  {
+    "id": "lg_normalEvent",
+    "name": "普通事件大组",
+    "ruleIds": "",
+    "fallbackWeights": [],
+    "smallGroupIds": [
+      "sg_normalEvent_1,sg_normalEvent_2,sg_normalEvent_3,sg_normalEvent_4,sg_normalEvent_5,sg_normalEvent_6,sg_normalEvent_7,sg_normalEvent_8,sg_normalEvent_9,sg_normalEvent_10,sg_normalEvent_11,sg_normalEvent_12,sg_normalEvent_13,sg_normalEvent_14,sg_normalEvent_15"
+    ]
+  },
+  {
+    "id": "lg_normalHardEvent",
+    "name": "普通困难混合大组",
+    "ruleIds": "",
+    "fallbackWeights": [],
+    "smallGroupIds": [
+      "sg_normalHardEvent_1,sg_normalHardEvent_2,sg_normalHardEvent_3,sg_normalHardEvent_4,sg_normalHardEvent_5,sg_normalHardEvent_6,sg_normalHardEvent_7,sg_normalHardEvent_8,sg_normalHardEvent_9,sg_normalHardEvent_10"
+    ]
+  },
+  {
+    "id": "lg_hardEvent",
+    "name": "困难事件大组",
+    "ruleIds": "",
+    "fallbackWeights": [],
+    "smallGroupIds": [
+      "sg_hardEvent_1,sg_hardEvent_2,sg_hardEvent_3,sg_hardEvent_4,sg_hardEvent_5,sg_hardEvent_6,sg_hardEvent_7,sg_hardEvent_8,sg_hardEvent_9,sg_hardEvent_10,sg_hardEvent_11,sg_hardEvent_12,sg_hardEvent_13,sg_hardEvent_14,sg_hardEvent_15"
     ]
   },
   {
     "id": "lg_debug",
     "name": "调试大组",
     "ruleIds": "rule_debug_first",
-    "fallbackWeights": [
-      0
-    ],
+    "fallbackWeights": [],
     "smallGroupIds": [
-      "sg_debug"
+      "mg_debug"
     ]
   }
 ]

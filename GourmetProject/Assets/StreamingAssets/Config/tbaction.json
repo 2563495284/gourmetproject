@@ -1,124 +1,115 @@
 [
   {
     "id": "act_food_gold",
-    "name": "街边小吃",
+    "name": "美食",
     "desc": "普通美食：主要奖励金币。",
     "behavior": 1,
     "foodId": "food_gold",
-    "minCostDays": 1,
-    "maxCostDays": 1
+    "minCostDays": 0.5,
+    "maxCostDays": 1.2
   },
   {
     "id": "act_food_fragment",
-    "name": "胃口扩张",
+    "name": "美食",
     "desc": "普通美食：主要奖励胃部碎片。",
     "behavior": 1,
     "foodId": "food_fragment",
-    "minCostDays": 1,
-    "maxCostDays": 2
+    "minCostDays": 0.5,
+    "maxCostDays": 1.2
   },
   {
     "id": "act_food_passive",
-    "name": "招牌菜试炼",
+    "name": "美食",
     "desc": "普通美食：主要奖励被动道具。",
     "behavior": 1,
     "foodId": "food_passive",
-    "minCostDays": 1,
-    "maxCostDays": 2
+    "minCostDays": 0.5,
+    "maxCostDays": 1.2
   },
   {
     "id": "act_food_active",
-    "name": "秘制小物",
+    "name": "美食",
     "desc": "普通美食：主要奖励主动道具。",
     "behavior": 1,
     "foodId": "food_active",
-    "minCostDays": 1,
-    "maxCostDays": 2
+    "minCostDays": 0.5,
+    "maxCostDays": 1.2
   },
   {
     "id": "act_food_dish",
-    "name": "新菜试做",
+    "name": "美食",
     "desc": "普通美食：主要奖励菜品。",
     "behavior": 1,
     "foodId": "food_dish",
-    "minCostDays": 1,
-    "maxCostDays": 2
+    "minCostDays": 0.5,
+    "maxCostDays": 1.2
   },
   {
     "id": "act_food_hard_gold",
-    "name": "重口硬菜",
+    "name": "超级美食",
     "desc": "困难美食：主要奖励金币。",
     "behavior": 1,
     "foodId": "food_hard_gold",
-    "minCostDays": 2,
-    "maxCostDays": 3
+    "minCostDays": 0.7,
+    "maxCostDays": 1.5
   },
   {
     "id": "act_food_hard_fragment",
-    "name": "硬菜扩胃",
+    "name": "超级美食",
     "desc": "困难美食：主要奖励胃部碎片。",
     "behavior": 1,
     "foodId": "food_hard_fragment",
-    "minCostDays": 2,
-    "maxCostDays": 3
+    "minCostDays": 0.7,
+    "maxCostDays": 1.5
   },
   {
     "id": "act_food_hard_passive",
-    "name": "名厨考验",
+    "name": "超级美食",
     "desc": "困难美食：主要奖励被动道具。",
     "behavior": 1,
     "foodId": "food_hard_passive",
-    "minCostDays": 2,
-    "maxCostDays": 3
+    "minCostDays": 0.7,
+    "maxCostDays": 1.5
   },
   {
     "id": "act_food_hard_active",
-    "name": "险中取巧",
+    "name": "超级美食",
     "desc": "困难美食：主要奖励主动道具。",
     "behavior": 1,
     "foodId": "food_hard_active",
-    "minCostDays": 2,
-    "maxCostDays": 3
+    "minCostDays": 0.7,
+    "maxCostDays": 1.5
   },
   {
     "id": "act_food_hard_dish",
-    "name": "稀有菜谱",
+    "name": "超级美食",
     "desc": "困难美食：主要奖励菜品。",
     "behavior": 1,
     "foodId": "food_hard_dish",
-    "minCostDays": 2,
-    "maxCostDays": 3
+    "minCostDays": 0.7,
+    "maxCostDays": 1.5
   },
   {
     "id": "act_event",
-    "name": "未知事件",
+    "name": "事件",
     "desc": "一个待揭晓的事件。",
     "behavior": 0,
     "foodId": "",
-    "minCostDays": 1,
-    "maxCostDays": 1
+    "minCostDays": 0.5,
+    "maxCostDays": 1.5
   },
   {
     "id": "act_reward",
-    "name": "额外收益",
+    "name": "奖励",
     "desc": "一份即时奖励。",
     "behavior": 2,
     "foodId": "",
     "minCostDays": 1,
-    "maxCostDays": 1
-  },
-  {
-    "id": "act_negative",
-    "name": "突发状况",
-    "desc": "一个有风险的抉择。",
-    "behavior": 3,
-    "foodId": "",
-    "minCostDays": 1,
-    "maxCostDays": 1
+    "maxCostDays": 1.8
   },
   {
     "id": "act_shop",
-    "name": "逛逛商店",
+    "name": "商店",
     "desc": "去食材店转转，买卖道具。",
     "behavior": 4,
     "foodId": "",
@@ -127,7 +118,7 @@
   },
   {
     "id": "act_interest",
-    "name": "收取利息",
+    "name": "利息",
     "desc": "到点自动结算利息。",
     "behavior": 5,
     "foodId": "",
@@ -136,7 +127,7 @@
   },
   {
     "id": "act_boss",
-    "name": "周末盛宴",
+    "name": "盛宴",
     "desc": "带有特殊机制的盛宴挑战。",
     "behavior": 1,
     "foodId": "food_boss",

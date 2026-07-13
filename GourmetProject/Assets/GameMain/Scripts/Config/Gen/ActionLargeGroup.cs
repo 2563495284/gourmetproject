@@ -42,7 +42,7 @@ public sealed partial class ActionLargeGroup : Luban.BeanBase
     /// </summary>
     public readonly string RuleIds;
     /// <summary>
-    /// 保底加权随机权重列表(按当前周-1取,越界取最后一个)
+    /// 随机权重列表(按周配)
     /// </summary>
     public readonly System.Collections.Generic.List<float> FallbackWeights;
     /// <summary>
