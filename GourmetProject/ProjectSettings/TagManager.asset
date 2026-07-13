@@ -2,7 +2,7 @@
 %TAG !u! tag:unity3d.com,2011:
 --- !u!78 &1
 TagManager:
-  serializedVersion: 2
+  serializedVersion: 3
   tags: []
   layers:
   - Default
@@ -44,7 +44,7 @@ TagManager:
   - name: Background
     uniqueID: 1633673475
     locked: 0
-  - name: Board
+  - name: DiningTable
     uniqueID: 1633673476
     locked: 0
   - name: Pieces
@@ -62,3 +62,5 @@ TagManager:
   - name: Doodle
     uniqueID: 1633673481
     locked: 0
+  m_RenderingLayers:
+  - Default
