@@ -1,30 +1,8 @@
 [
   {
-    "id": "t_feast",
-    "name": "盛宴",
-    "desc": "餐桌上每有一道菜，本菜品分数 ×1.1。",
-    "effectType": 6,
-    "effectValue": [
-      0.1
-    ],
-    "effectParam": [],
-    "termId": ""
-  },
-  {
-    "id": "t_golden",
-    "name": "黄金",
-    "desc": "本菜品贡献的分数 ×{0}。",
-    "effectType": 2,
-    "effectValue": [
-      2
-    ],
-    "effectParam": [],
-    "termId": ""
-  },
-  {
     "id": "t_sweet",
     "name": "甜",
-    "desc": "结算优先级 +1 层，越先结算。",
+    "desc": "优先结算",
     "effectType": 8,
     "effectValue": [
       1
@@ -35,7 +13,7 @@
   {
     "id": "t_bitter",
     "name": "苦",
-    "desc": "结算优先级 -1 层，越后结算。",
+    "desc": "后置结算",
     "effectType": 8,
     "effectValue": [
       -1
@@ -45,8 +23,8 @@
   },
   {
     "id": "t_rust",
-    "name": "锈",
-    "desc": "结算时获得 5 金币。",
+    "name": "鲜",
+    "desc": "结算时，+5金币",
     "effectType": 7,
     "effectValue": [
       5
@@ -57,7 +35,7 @@
   {
     "id": "t_numb",
     "name": "麻",
-    "desc": "上菜时逆时针旋转 90 度（可叠加）。",
+    "desc": "食物旋转90度",
     "effectType": 9,
     "effectValue": [
       1
@@ -68,7 +46,7 @@
   {
     "id": "t_sour",
     "name": "酸",
-    "desc": "整体结算末尾，若未上菜，则场上同菜谱食物倍率 ×1.5。",
+    "desc": "结算时若未上菜，场上同菜谱食物倍率 ×1.5",
     "effectType": 10,
     "effectValue": [
       1.5
@@ -79,7 +57,7 @@
   {
     "id": "t_salty",
     "name": "咸",
-    "desc": "整体结算末尾，若未上菜，则场上每个同菜谱食物 +2 金币。",
+    "desc": "结算时若未上菜，场上每有一个同菜谱食物， +2 金币。",
     "effectType": 11,
     "effectValue": [
       2
