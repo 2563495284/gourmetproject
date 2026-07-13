@@ -12,6 +12,7 @@ namespace GourmetProject.Game.Presentation.Battle
     {
         private static Material _spriteUnlitMaterial;
         private static Material _spriteOutlineMaterial;
+        private static Material _spriteStainMaterial;
 
         public static Material SpriteUnlitMaterial
         {
@@ -53,6 +54,26 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
+        public static Material SpriteStainMaterial
+        {
+            get
+            {
+                if (_spriteStainMaterial == null)
+                {
+                    Shader shader = Resources.Load<Shader>("Shaders/FlavorStain") ?? Shader.Find("GourmetProject/FlavorStain");
+                    if (shader != null)
+                    {
+                        _spriteStainMaterial = new Material(shader)
+                        {
+                            name = "RuntimeFlavorStain",
+                        };
+                    }
+                }
+
+                return _spriteStainMaterial;
+            }
+        }
+
         public static void ApplyUnlitMaterial(SpriteRenderer renderer)
         {
             if (renderer != null && SpriteUnlitMaterial != null)
@@ -66,6 +87,14 @@ namespace GourmetProject.Game.Presentation.Battle
             if (renderer != null && SpriteOutlineMaterial != null)
             {
                 renderer.sharedMaterial = SpriteOutlineMaterial;
+            }
+        }
+
+        public static void ApplyStainMaterial(SpriteRenderer renderer)
+        {
+            if (renderer != null && SpriteStainMaterial != null)
+            {
+                renderer.sharedMaterial = SpriteStainMaterial;
             }
         }
     }

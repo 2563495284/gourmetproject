@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
@@ -58,6 +59,16 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private float _serveLandImpactScale = 1.02f;
         [SerializeField] private float _serveLandImpactDuration = 0.14f;
 
+        [Header("风味脏印（程序化噪声，仅作用于本体）")]
+        [Tooltip("噪声频率：越大斑点越碎密。")]
+        [SerializeField] private float _stainScale = 8f;
+        [Tooltip("斑点阈值：越大脏印越稀疏、越散开。")]
+        [SerializeField, Range(0f, 1f)] private float _stainThreshold = 0.62f;
+        [Tooltip("斑点边缘软度。")]
+        [SerializeField, Range(0.001f, 0.5f)] private float _stainSoftness = 0.12f;
+        [Tooltip("脏印处对底色的压暗强度（越大越脏，不发亮）。")]
+        [SerializeField, Range(0f, 1f)] private float _stainDarken = 0.12f;
+
         [Header("结算标签反馈：美味度增加（仅作用于本体视觉枢轴）")]
         [SerializeField] private float _deliciousnessGainPunchScale = 1.18f;
         [SerializeField] private float _deliciousnessGainPunchDuration = 0.18f;
@@ -75,6 +86,24 @@ namespace GourmetProject.Game.Presentation.Battle
         private Action<DishInstance> _clicked;
         private bool _clickEnabled = true;
         private SpriteRenderer _placementGlow;
+
+        private const int MaxStains = 4;
+        private static readonly int StainCountId = Shader.PropertyToID("_StainCount");
+        private static readonly int StainScaleId = Shader.PropertyToID("_StainScale");
+        private static readonly int StainThresholdId = Shader.PropertyToID("_StainThreshold");
+        private static readonly int StainSoftnessId = Shader.PropertyToID("_StainSoftness");
+        private static readonly int StainDarkenId = Shader.PropertyToID("_StainDarken");
+        private static readonly int SeedId = Shader.PropertyToID("_Seed");
+        private static readonly int[] StainColorIds =
+        {
+            Shader.PropertyToID("_StainColor0"),
+            Shader.PropertyToID("_StainColor1"),
+            Shader.PropertyToID("_StainColor2"),
+            Shader.PropertyToID("_StainColor3"),
+        };
+
+        private MaterialPropertyBlock _stainBlock;
+        private readonly List<Color> _stainColorScratch = new(MaxStains);
 
         public DishInstance Instance { get; private set; }
 
@@ -359,6 +388,58 @@ namespace GourmetProject.Game.Presentation.Battle
             t.localScale = new Vector3(scaleX, scaleY, 1f);
             // DishShape.Rotate90 为顺时针；Unity +Z 为逆时针，故顺时针旋转取负角。
             t.localRotation = Quaternion.Euler(0f, 0f, -90f * rot);
+
+            ApplyFlavorStain();
+        }
+
+        /// <summary>
+        /// 按实例风味给本体叠加脏印：去重取前若干种风味色，走 FlavorStain 材质 + MaterialPropertyBlock 逐菜喂色；
+        /// 无可映射风味（或 shader 缺失）时回落到普通 Unlit 平涂，与无风味菜表现一致。
+        /// </summary>
+        private void ApplyFlavorStain()
+        {
+            if (_spriteRenderer == null)
+            {
+                return;
+            }
+
+            _stainColorScratch.Clear();
+            IReadOnlyList<string> flavorIds = Instance?.FlavorIds;
+            if (flavorIds != null)
+            {
+                for (int i = 0; i < flavorIds.Count && _stainColorScratch.Count < MaxStains; i++)
+                {
+                    if (FlavorStainPalette.TryResolve(flavorIds[i], out Color color)
+                        && !_stainColorScratch.Contains(color))
+                    {
+                        _stainColorScratch.Add(color);
+                    }
+                }
+            }
+
+            if (_stainColorScratch.Count == 0 || SpriteRenderStyle.SpriteStainMaterial == null)
+            {
+                _spriteRenderer.SetPropertyBlock(null);
+                SpriteRenderStyle.ApplyUnlitMaterial(_spriteRenderer);
+                return;
+            }
+
+            SpriteRenderStyle.ApplyStainMaterial(_spriteRenderer);
+            _stainBlock ??= new MaterialPropertyBlock();
+            _spriteRenderer.GetPropertyBlock(_stainBlock);
+            _stainBlock.SetFloat(StainCountId, _stainColorScratch.Count);
+            _stainBlock.SetFloat(StainScaleId, _stainScale);
+            _stainBlock.SetFloat(StainThresholdId, _stainThreshold);
+            _stainBlock.SetFloat(StainSoftnessId, _stainSoftness);
+            _stainBlock.SetFloat(StainDarkenId, _stainDarken);
+            _stainBlock.SetFloat(SeedId, Instance != null ? Instance.Id : 0f);
+            for (int i = 0; i < MaxStains; i++)
+            {
+                Color c = i < _stainColorScratch.Count ? _stainColorScratch[i] : Color.clear;
+                _stainBlock.SetColor(StainColorIds[i], c);
+            }
+
+            _spriteRenderer.SetPropertyBlock(_stainBlock);
         }
 
         private Vector3 FootprintCenterLocal(DishShape shape)
