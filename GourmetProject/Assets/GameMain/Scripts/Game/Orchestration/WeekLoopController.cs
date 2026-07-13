@@ -364,17 +364,22 @@ namespace GourmetProject.Game.Orchestration
             return boss != null && !_run.IsEndless && _run.WeekIndex >= _run.TotalWeeks;
         }
 
-        /// <summary>解析事件行动：按行动 behavior(Event/Reward/Negative) 从对应分类事件池随机一个具体事件，再统一结算。</summary>
+        /// <summary>
+        /// 解析事件行动：act_event(Event) 从「全类型合并池」抽取（含 LuckyEventChance/MoreEvents 权重修正与
+        /// LuckyEventGuarantee 保底），其余 behavior(Reward/Negative) 仍从各自分类事件池随机，再统一结算。
+        /// </summary>
         private void ResolveEventAction(ActionExecutionContext context, Action onDone)
         {
             cfg.GameAction action = context?.Action;
-            cfg.ActionBehavior eventType = action?.Behavior ?? cfg.ActionBehavior.Event;
+            cfg.ActionBehavior behavior = action?.Behavior ?? cfg.ActionBehavior.Event;
             string seedKey = context != null && !string.IsNullOrEmpty(context.SourceKey)
                 ? $"node_{context.SourceKey}"
                 : $"action_w{_run.WeekIndex}_d{DayKey(_run.CurrentDay)}_s{_run.ActionStepIndex}";
 
             IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Event, seedKey);
-            cfg.GameEvent ev = EventService.RollEvent(_run, rng, eventType);
+            cfg.GameEvent ev = behavior == cfg.ActionBehavior.Event
+                ? EventService.RollActionEventWithGuarantee(_run, rng)
+                : EventService.RollEvent(_run, rng, behavior);
             ResolveEvent(ev, onDone);
         }
 

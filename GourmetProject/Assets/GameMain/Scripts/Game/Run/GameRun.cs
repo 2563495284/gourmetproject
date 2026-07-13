@@ -197,10 +197,9 @@ namespace GourmetProject.Game.Run
         {
             foreach (RunItemState state in _items)
             {
-                ItemDefinition item = ItemDefinition.Get(_tables, state.ItemId, cfg.ItemKind.Passive);
-                if (item != null && item.EffectType == ItemEffectTypes.Undying)
+                if (state.Model != null && state.Model.IsUndying())
                 {
-                    RemoveItem(item.Id);
+                    RemoveItem(state.ItemId);
                     return true;
                 }
             }
@@ -208,7 +207,32 @@ namespace GourmetProject.Game.Run
             return false;
         }
 
+        /// <summary>为一份被动道具构建并绑定行为模型（挂到 state.Model 并返回）。</summary>
+        private GourmetProject.Game.Meta.Passives.PassiveItemModel BindPassiveModel(RunItemState state, ItemDefinition item)
+        {
+            GourmetProject.Game.Meta.Passives.PassiveItemModel model =
+                GourmetProject.Game.Meta.Passives.PassiveItemModelRegistry.Create(item.Id);
+            model.Bind(this, item, state);
+            state.Model = model;
+            return model;
+        }
+
         public IReadOnlyList<RunItemState> Items => _items;
+
+        /// <summary>当前在场（持有）的被动道具模型集合，供 <see cref="GourmetProject.Game.Meta.ItemRuntime"/> 折叠钩子。</summary>
+        public IEnumerable<GourmetProject.Game.Meta.Passives.PassiveItemModel> PassiveModels
+        {
+            get
+            {
+                foreach (RunItemState state in _items)
+                {
+                    if (state.Model != null)
+                    {
+                        yield return state.Model;
+                    }
+                }
+            }
+        }
 
         /// <summary>被动道具持有条目（同 id 唯一，不占消耗槽）。</summary>
         public IEnumerable<RunItemState> PassiveItemStates => ItemStatesOfKind(cfg.ItemKind.Passive);
@@ -886,7 +910,15 @@ namespace GourmetProject.Game.Run
                             continue;
                         }
 
-                        run._items.Add(new RunItemState(item.ItemId, item.Level));
+                        var state = new RunItemState(item.ItemId, item.Level);
+                        run._items.Add(state);
+
+                        // 被动道具读档：重建行为模型并恢复 per-instance 状态（不重复触发 OnAcquired）。
+                        if (def != null && def.Kind == cfg.ItemKind.Passive)
+                        {
+                            GourmetProject.Game.Meta.Passives.PassiveItemModel model = run.BindPassiveModel(state, def);
+                            model.RestoreState(item.StateJson ?? string.Empty);
+                        }
                     }
                 }
             }
@@ -1262,9 +1294,10 @@ namespace GourmetProject.Game.Run
                 {
                     state = new RunItemState(itemId, 1);
                     _items.Add(state);
-                    if (fireOnAcquire && ItemEffectTypes.IsOnAcquireEffect(item.EffectType))
+                    GourmetProject.Game.Meta.Passives.PassiveItemModel model = BindPassiveModel(state, item);
+                    if (fireOnAcquire)
                     {
-                        PassiveOnAcquireEffects.Apply(this, item);
+                        model.OnAcquired();
                     }
 
                     return new ItemAcquireResult(ItemAcquireOutcome.Added, itemId, item.Name, 1, 1, 0);
@@ -1416,6 +1449,7 @@ namespace GourmetProject.Game.Run
             {
                 if (_items[i].ItemId == itemId)
                 {
+                    _items[i].Model?.OnRemoved();
                     _items.RemoveAt(i);
                     return true;
                 }

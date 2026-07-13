@@ -442,18 +442,12 @@ namespace GourmetProject.Game.Run
             return fragments;
         }
 
-        /// <summary>把被动道具效果汇总成局级修正注入战斗会话。</summary>
+        /// <summary>把被动道具局级修正注入战斗会话（各模型 ApplyToBattle）。</summary>
         private static void ApplyPassiveItems(GameRun run, BattleSession session)
         {
-            foreach (RunItemState state in run.Items)
+            foreach (GourmetProject.Game.Meta.Passives.PassiveItemModel model in run.PassiveModels)
             {
-                ItemDefinition item = ItemDefinition.Get(run.Tables, state.ItemId, cfg.ItemKind.Passive);
-                if (item == null)
-                {
-                    continue;
-                }
-
-                PassiveItemEffectRegistry.ApplyToBattle(session, item, state);
+                model.ApplyToBattle(session);
             }
         }
     }

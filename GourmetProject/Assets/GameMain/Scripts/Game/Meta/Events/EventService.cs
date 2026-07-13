@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using GourmetProject.Core.Rng;
 using GourmetProject.Runtime;
+using GourmetProject.Game.Meta.Passives;
 using GourmetProject.Game.Run;
 
 namespace GourmetProject.Game.Meta
@@ -149,6 +150,112 @@ namespace GourmetProject.Game.Meta
             }
 
             return candidates[rng.WeightedPickIndex(weights)];
+        }
+
+        /// <summary>
+        /// act_event 的「全类型合并池」抽取：候选纳入 Event/Reward/Negative 全部类型，
+        /// 并按被动道具修正权重——Reward 项 ×(1+LuckyEventChance)、Event 项 ×(1+MoreEvents)，Negative 不变。
+        /// 复用 <see cref="RollEvent"/> 的 weight&gt;0 / repeatable / 前置过滤。
+        /// </summary>
+        public static cfg.GameEvent RollActionEvent(GameRun run, IRandomStream rng)
+        {
+            cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
+            var itemRuntime = new ItemRuntime(run);
+            float rewardMul = 1f + itemRuntime.LuckyEventChanceBonus();
+            float eventMul = 1f + itemRuntime.MoreEventsBonus();
+
+            var candidates = new List<cfg.GameEvent>();
+            var weights = new List<float>();
+            foreach (cfg.GameEvent ev in tables.TbEvent.DataList)
+            {
+                if (ev.Weight <= 0f)
+                {
+                    continue;
+                }
+
+                // repeatable=false 且本局已命中过 → 不再进池。
+                if (!ev.Repeatable && run != null && run.HasUsedEvent(ev.Id))
+                {
+                    continue;
+                }
+
+                if (!PreconditionEvaluator.IsSatisfied(run, ev.Preconditions))
+                {
+                    continue;
+                }
+
+                float w = ev.Weight;
+                if (ev.EventType == cfg.ActionBehavior.Reward)
+                {
+                    w *= rewardMul;
+                }
+                else if (ev.EventType == cfg.ActionBehavior.Event)
+                {
+                    w *= eventMul;
+                }
+
+                candidates.Add(ev);
+                // 修正后权重下限保护：负修正等极端配置也保证仍是正权重可被选中。
+                weights.Add(w > 0f ? w : 0.0001f);
+            }
+
+            if (candidates.Count == 0)
+            {
+                return null;
+            }
+
+            return candidates[rng.WeightedPickIndex(weights)];
+        }
+
+        /// <summary>
+        /// act_event 的完整抽取入口（唯一 choke point）：
+        /// - 未持有 LuckyEventGuarantee 道具时，仅走 <see cref="RollActionEvent"/> 合并池抽取，不触碰保底计数。
+        /// - 持有时：累计到 x-1 个 Event 型结果后本次强制从 Reward 池抽（命中则清零计数）；否则走合并池抽取，
+        ///   结果为 Event 型才累加计数。计数状态存于该道具模型（只在持有时存在）。
+        /// </summary>
+        public static cfg.GameEvent RollActionEventWithGuarantee(GameRun run, IRandomStream rng)
+        {
+            PassiveItemModel guarantee = FindGuaranteeModel(run);
+            if (guarantee != null)
+            {
+                int every = guarantee.LuckyEventGuaranteeEvery();
+                if (every > 0 && guarantee.EventGuaranteeStreak >= every - 1)
+                {
+                    cfg.GameEvent forced = RollEvent(run, rng, cfg.ActionBehavior.Reward);
+                    if (forced != null)
+                    {
+                        guarantee.ResetEventGuaranteeStreak();
+                        return forced;
+                    }
+                    // Reward 池为空：回退合并池抽取，且不清零计数（保底名额留到下次）。
+                }
+            }
+
+            cfg.GameEvent ev = RollActionEvent(run, rng);
+            if (ev != null && guarantee != null && ev.EventType == cfg.ActionBehavior.Event)
+            {
+                guarantee.IncrementEventGuaranteeStreak();
+            }
+
+            return ev;
+        }
+
+        private static PassiveItemModel FindGuaranteeModel(GameRun run)
+        {
+            if (run == null)
+            {
+                return null;
+            }
+
+            foreach (PassiveItemModel m in run.PassiveModels)
+            {
+                if (m.LuckyEventGuaranteeEvery() > 0)
+                {
+                    return m;
+                }
+            }
+
+            return null;
         }
 
         /// <summary>

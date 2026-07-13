@@ -30,7 +30,10 @@ namespace GourmetProject.Game.Meta
                     return FoodService.Resolve(run.Tables, action) != null;
                 }
 
+                // act_event 从「全类型合并池」抽取，故只要任意类型事件可用即可展示。
                 case cfg.ActionBehavior.Event:
+                    return HasEligibleEvent(run, null);
+
                 case cfg.ActionBehavior.Reward:
                 case cfg.ActionBehavior.Negative:
                     return HasEligibleEvent(run, action.Behavior);
@@ -40,12 +43,13 @@ namespace GourmetProject.Game.Meta
             }
         }
 
-        private static bool HasEligibleEvent(GameRun run, cfg.ActionBehavior eventType)
+        /// <summary><paramref name="eventType"/> 为 null 时不按分类过滤（任意类型可用即可）。</summary>
+        private static bool HasEligibleEvent(GameRun run, cfg.ActionBehavior? eventType)
         {
             cfg.Tables tables = run.Tables ?? GameApp.Config.Tables;
             foreach (cfg.GameEvent ev in tables.TbEvent.DataList)
             {
-                if (ev.EventType != eventType || ev.Weight <= 0f)
+                if (ev.Weight <= 0f || (eventType.HasValue && ev.EventType != eventType.Value))
                 {
                     continue;
                 }

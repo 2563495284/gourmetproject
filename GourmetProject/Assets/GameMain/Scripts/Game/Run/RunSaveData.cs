@@ -144,6 +144,9 @@ namespace GourmetProject.Game.Run
 
         /// <summary>旧存档兼容字段：曾经的主动道具持有数量。新档每份实例单独一条，恒为 1。</summary>
         public int Count = 1;
+
+        /// <summary>被动道具模型的 per-instance 状态（如 LuckyEventGuarantee 计数）；旧档缺省空串。</summary>
+        public string StateJson = string.Empty;
     }
 
     [Serializable]

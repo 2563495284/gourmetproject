@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using GourmetProject.Game.Meta;
+using GourmetProject.Game.Meta.Passives;
 using GourmetProject.Game.Run;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
@@ -8,8 +9,8 @@ namespace GourmetProject.Game.Adapter
 {
     /// <summary>
     /// 把当前 Run 持有的「结算类」被动道具适配为玩法层的 <see cref="IScoreEffectSource"/>。
-    /// 局级加/乘（FinalAddFlat/Mult）仍走 BattleSession 快路径，不在此产出；
-    /// 本适配器只处理逐菜/条件/顺序类被动效果（TagBonus、永久加成、数量检测、上菜顺序等）。
+    /// 局级加/乘（FinalAddFlat/Mult）走 BattleSession 快路径（模型 ApplyToBattle），不在此产出；
+    /// 本适配器遍历持有道具模型的 <see cref="PassiveItemModel.BuildScoreSpecs"/> 收集逐菜/条件/顺序类规格。
     /// </summary>
     public static class ItemScoreEffectAdapter
     {
@@ -22,21 +23,15 @@ namespace GourmetProject.Game.Adapter
                 return specs;
             }
 
-            foreach (RunItemState state in run.Items)
+            foreach (PassiveItemModel model in run.PassiveModels)
             {
-                ItemDefinition item = ItemDefinition.Get(run.Tables, state.ItemId, cfg.ItemKind.Passive);
-                if (item == null)
+                foreach (ItemScoreSpec spec in model.BuildScoreSpecs())
                 {
-                    continue;
+                    if (spec.Type != ItemScoreEffectType.None)
+                    {
+                        specs.Add(spec);
+                    }
                 }
-
-                ItemScoreEffectType type = MapEffectType(item.EffectType);
-                if (type == ItemScoreEffectType.None)
-                {
-                    continue;
-                }
-
-                specs.Add(new ItemScoreSpec(type, item.EffectValue, item.EffectParam, item.Id, item.Name));
             }
 
             return specs;
@@ -54,7 +49,7 @@ namespace GourmetProject.Game.Adapter
             return new IScoreEffectSource[] { new ItemScoreEffectSource(specs) };
         }
 
-        /// <summary>本次结算每道菜的「视为食物数」额外加成（道具 CountAsBonusAll 汇总；下限影响计数前提）。</summary>
+        /// <summary>本次结算每道菜的「视为食物数」额外加成（道具 CountAsBonusAll 汇总）。</summary>
         public static int ExtraCountAsPerDish(GameRun run)
         {
             if (run == null)
@@ -63,46 +58,12 @@ namespace GourmetProject.Game.Adapter
             }
 
             int total = 0;
-            foreach (RunItemState state in run.Items)
+            foreach (PassiveItemModel model in run.PassiveModels)
             {
-                ItemDefinition item = ItemDefinition.Get(run.Tables, state.ItemId, cfg.ItemKind.Passive);
-                if (item == null)
-                {
-                    continue;
-                }
-
-                if (item.EffectType == ItemEffectTypes.CountAsBonusAll)
-                {
-                    total += (int)item.EffectValue;
-                }
+                total += model.ExtraCountAsPerDish();
             }
 
             return total;
-        }
-
-        private static ItemScoreEffectType MapEffectType(string effectType)
-        {
-            switch (effectType)
-            {
-                case ItemEffectTypes.TagBonus:
-                    return ItemScoreEffectType.TagBonus;
-                case ItemEffectTypes.PermanentAddFlatAll:
-                    return ItemScoreEffectType.PermanentAddFlatAll;
-                case ItemEffectTypes.PermanentAddMultAll:
-                    return ItemScoreEffectType.PermanentAddMultAll;
-                case ItemEffectTypes.CountThresholdFinalMult:
-                    return ItemScoreEffectType.CountThresholdFinalMult;
-                case ItemEffectTypes.PerDishSettledMultFlat:
-                    return ItemScoreEffectType.PerDishSettledMultFlat;
-                case ItemEffectTypes.PerSkillMultFlat:
-                    return ItemScoreEffectType.PerSkillMultFlat;
-                case ItemEffectTypes.NthServeMult:
-                    return ItemScoreEffectType.NthServeMult;
-                case ItemEffectTypes.EveryNthServeMult:
-                    return ItemScoreEffectType.EveryNthServeMult;
-                default:
-                    return ItemScoreEffectType.None;
-            }
         }
     }
 }
