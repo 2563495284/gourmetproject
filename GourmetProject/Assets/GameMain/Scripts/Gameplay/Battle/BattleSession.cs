@@ -159,7 +159,16 @@ namespace GourmetProject.Gameplay.Battle
                     continue;
                 }
 
-                List<Placement> placements = DiningTable.FindValidPlacements(dish);
+                // 麻：菜谱里带「麻」风味的菜在上菜前即按逆时针 n×90° 旋转，用旋转后的形状随机放置；放不下则回退不旋转。
+                int numbSteps = NumbStepsFor(TagComposer.ComposeFlavors(new[] { dish.FlavorId }));
+                List<Placement> placements = numbSteps > 0
+                    ? DiningTable.FindValidPlacementsRotatedCcw(dish, numbSteps)
+                    : DiningTable.FindValidPlacements(dish);
+                if (placements.Count == 0 && numbSteps > 0)
+                {
+                    placements = DiningTable.FindValidPlacements(dish);
+                }
+
                 foreach (Placement placement in placements)
                 {
                     candidates.Add(new ServeCandidate(i, dish, placement));
@@ -177,6 +186,7 @@ namespace GourmetProject.Gameplay.Battle
             List<string> skills = TagComposer.ComposeSkills(chosen.Dish.SkillIds);
             List<string> flavors = TagComposer.ComposeFlavors(new[] { chosen.Dish.FlavorId });
             var instance = new DishInstance(_nextInstanceId++, chosen.Dish, chosen.Placement, skills, flavors);
+            instance.SetSourceSlotIndex(slotIndex);
             ApplyEntryFlags(instance, entry);
             ApplyServeModifiers(instance);
             DiningTable.Place(instance);
@@ -221,7 +231,7 @@ namespace GourmetProject.Gameplay.Battle
                 return ZeroScoreResult();
             }
 
-            return _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder);
+            return _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes());
         }
 
         /// <summary>「吃」：结算、应用副作用（金币/层数/技能传递/历史）并记录结果。</summary>
@@ -229,7 +239,7 @@ namespace GourmetProject.Gameplay.Battle
         {
             ScoreResult result = MinimumServesForScore > 0 && ServesUsed < MinimumServesForScore
                 ? ZeroScoreResult()
-                : _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder);
+                : _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes());
             ApplySideEffects(result);
             LastResult = result;
             IsSettled = true;
@@ -239,6 +249,27 @@ namespace GourmetProject.Gameplay.Battle
         private static ScoreResult ZeroScoreResult()
         {
             return new ScoreResult(Array.Empty<DishScore>(), 0f, 0f, 1f);
+        }
+
+        /// <summary>统计一组风味里「麻」(Rotate) 的逆时针旋转步数（各麻风味 effectValue 之和）。</summary>
+        private int NumbStepsFor(IReadOnlyList<string> flavorIds)
+        {
+            if (flavorIds == null)
+            {
+                return 0;
+            }
+
+            int steps = 0;
+            foreach (string flavorId in flavorIds)
+            {
+                Gameplay.Model.FlavorDef flavor = _db.GetFlavor(flavorId);
+                if (flavor != null && flavor.EffectType == Gameplay.Model.TagEffectType.Rotate)
+                {
+                    steps += (int)flavor.EffectValue;
+                }
+            }
+
+            return steps;
         }
 
         private void ApplyEntryFlags(DishInstance instance, RecipeSlotEntry entry)
@@ -289,6 +320,21 @@ namespace GourmetProject.Gameplay.Battle
                 new Dictionary<string, int>(_runSettled),
                 new Dictionary<string, int>(_mealSettled),
                 _recipeBaseIds);
+        }
+
+        /// <summary>收集当前仍未上菜的菜谱条目（槽索引 + dishId），供酸/咸在整体结算末尾遍历。</summary>
+        private List<UnservedRecipeDish> BuildUnservedRecipeDishes()
+        {
+            var result = new List<UnservedRecipeDish>();
+            for (int slotIndex = 0; slotIndex < _slots.Count; slotIndex++)
+            {
+                foreach (RecipeSlotEntry entry in _slots[slotIndex].Entries)
+                {
+                    result.Add(new UnservedRecipeDish(slotIndex, entry.DishId));
+                }
+            }
+
+            return result;
         }
 
         private void CaptureRecipeSnapshot()
@@ -464,6 +510,7 @@ namespace GourmetProject.Gameplay.Battle
 
                 Placement placement = placements[_rng.Range(0, placements.Count)];
                 var clone = new DishInstance(_nextInstanceId++, source.Def, placement, source.SkillIds, source.FlavorIds);
+                clone.SetSourceSlotIndex(source.SourceSlotIndex);
                 clone.CopySkillSourcesFrom(source);
                 clone.CopyTransferredSkillsFrom(source);
                 clone.MarkTemporary();

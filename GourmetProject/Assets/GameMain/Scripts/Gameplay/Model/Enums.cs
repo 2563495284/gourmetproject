@@ -16,6 +16,15 @@ namespace GourmetProject.Gameplay.Model
 
         /// <summary>贡献 EffectValue 到该菜结算优先级层级（甜=+1、苦=-1）。不产生分数效果，由结算前排序读取。</summary>
         SettlementLayer = 8,
+
+        /// <summary>麻：使食物逆时针旋转 EffectValue×90 度（默认 1）。不产生分数效果，由上菜时读取并旋转形状。</summary>
+        Rotate = 9,
+
+        /// <summary>酸：整体结算末尾，未上菜时使场上同菜谱食物倍率 ×EffectValue（1.5）。由未上菜结算源读取。</summary>
+        SourRecipeMult = 10,
+
+        /// <summary>咸：整体结算末尾，未上菜时使场上每个同菜谱食物获得 EffectValue 金币（2）。由未上菜结算源读取。</summary>
+        SaltyRecipeGold = 11,
     }
 
     /// <summary>

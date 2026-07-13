@@ -32,10 +32,11 @@ namespace GourmetProject.Gameplay.Scoring
             int initialHappyCakeLayers = 0,
             int extraCountAsPerDish = 0,
             int cakeLayerThresholdReduction = 0,
-            bool reverseDishOrder = false)
+            bool reverseDishOrder = false,
+            IReadOnlyList<UnservedRecipeDish> unservedRecipeDishes = null)
         {
             IScoreEffectSource[] sources = MergeSources(extraSources);
-            return Calculate(new ScoreSnapshot(board, db, finalFlat, finalMultiplier, sources, history, initialHappyCakeLayers, extraCountAsPerDish, cakeLayerThresholdReduction, reverseDishOrder));
+            return Calculate(new ScoreSnapshot(board, db, finalFlat, finalMultiplier, sources, history, initialHappyCakeLayers, extraCountAsPerDish, cakeLayerThresholdReduction, reverseDishOrder, unservedRecipeDishes));
         }
 
         public ScoreResult Calculate(ScoreSnapshot snapshot)
@@ -78,6 +79,7 @@ namespace GourmetProject.Gameplay.Scoring
             new TagScoreEffectSource(_registry).CollectEffects(snapshot, collector);
             new SkillRuleEffectSource().CollectEffects(snapshot, collector);
             new CakeLayerBuffSource().CollectEffects(snapshot, collector);
+            new RecipeFlavorEffectSource().CollectEffects(snapshot, collector);
 
             foreach (IScoreEffectSource source in snapshot.EffectSources)
             {

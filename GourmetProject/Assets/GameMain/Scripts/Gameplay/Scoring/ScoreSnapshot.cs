@@ -20,10 +20,12 @@ namespace GourmetProject.Gameplay.Scoring
             int initialHappyCakeLayers = 0,
             int extraCountAsPerDish = 0,
             int cakeLayerThresholdReduction = 0,
-            bool reverseDishOrder = false)
+            bool reverseDishOrder = false,
+            IReadOnlyList<UnservedRecipeDish> unservedRecipeDishes = null)
         {
             DiningTable = board ?? throw new ArgumentNullException(nameof(board));
             Db = db ?? throw new ArgumentNullException(nameof(db));
+            UnservedRecipeDishes = unservedRecipeDishes ?? Array.Empty<UnservedRecipeDish>();
             InitialFinalFlat = finalFlat;
             InitialFinalMultiplier = finalMultiplier;
             InitialHappyCakeLayers = initialHappyCakeLayers < 0 ? 0 : initialHappyCakeLayers;
@@ -95,5 +97,22 @@ namespace GourmetProject.Gameplay.Scoring
         public IScoreHistory History { get; }
 
         public IReadOnlyList<IScoreEffectSource> EffectSources { get; }
+
+        /// <summary>本次结算时仍未上菜的菜谱条目（槽索引 + dishId），供酸/咸在整体结算末尾遍历。</summary>
+        public IReadOnlyList<UnservedRecipeDish> UnservedRecipeDishes { get; }
+    }
+
+    /// <summary>一条未上菜的菜谱条目：来自哪个菜谱槽（0 基）+ 菜品变体 id。</summary>
+    public readonly struct UnservedRecipeDish
+    {
+        public UnservedRecipeDish(int slotIndex, string dishId)
+        {
+            SlotIndex = slotIndex;
+            DishId = dishId;
+        }
+
+        public int SlotIndex { get; }
+
+        public string DishId { get; }
     }
 }

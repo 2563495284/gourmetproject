@@ -317,6 +317,24 @@ namespace GourmetProject.Gameplay.Board
             return placements;
         }
 
+        /// <summary>
+        /// 「麻」专用：把菜品基础形状**逆时针**旋转 <paramref name="ccwSteps"/> 个 90°，
+        /// 强制以该唯一朝向枚举全部合法原点（覆盖 AllowRotate 的自由旋转）。返回空列表表示旋转后放不下。
+        /// </summary>
+        public List<Placement> FindValidPlacementsRotatedCcw(DishDef def, int ccwSteps)
+        {
+            if (def == null)
+            {
+                throw new ArgumentNullException(nameof(def));
+            }
+
+            int cw = ((4 - (ccwSteps % 4)) % 4);
+            int rotationIndex = ((def.RotationIndex + cw) % 4 + 4) % 4;
+            var placements = new List<Placement>();
+            AddPlacementsForOrientation(def.Shape.RotatedBy(rotationIndex), rotationIndex, placements);
+            return placements;
+        }
+
         private void AddPlacementsForOrientation(DishShape shape, int rotationIndex, List<Placement> placements)
         {
             for (int y = 0; y <= Height - shape.Height; y++)

@@ -53,5 +53,38 @@
     ],
     "effectParam": [],
     "termId": ""
+  },
+  {
+    "id": "t_numb",
+    "name": "麻",
+    "desc": "上菜时逆时针旋转 90 度（可叠加）。",
+    "effectType": 9,
+    "effectValue": [
+      1
+    ],
+    "effectParam": [],
+    "termId": ""
+  },
+  {
+    "id": "t_sour",
+    "name": "酸",
+    "desc": "整体结算末尾，若未上菜，则场上同菜谱食物倍率 ×1.5。",
+    "effectType": 10,
+    "effectValue": [
+      1.5
+    ],
+    "effectParam": [],
+    "termId": ""
+  },
+  {
+    "id": "t_salty",
+    "name": "咸",
+    "desc": "整体结算末尾，若未上菜，则场上每个同菜谱食物 +2 金币。",
+    "effectType": 11,
+    "effectValue": [
+      2
+    ],
+    "effectParam": [],
+    "termId": ""
   }
 ]

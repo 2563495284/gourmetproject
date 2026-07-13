@@ -77,6 +77,30 @@ namespace GourmetProject.Tests
         }
 
         [Test]
+        public void Serve_NumbFlavor_RotatesDishCounterClockwiseOnServe()
+        {
+            var rng = new RandomService();
+            rng.Init("serve-numb");
+            // 2x1 禁旋菜，但带「麻」风味 → 上菜时逆时针 90° 变成 1x2 竖放。
+            DishDef bar = GameplayTestFactory.Dish("bar", new[] { "XX" }, allowRotate: false, flavor: "fl_numb");
+            var db = new GameplayDatabase(
+                new[] { bar },
+                new List<SkillDef>(),
+                new[] { GameplayTestFactory.Flavor("fl_numb", TagEffectType.Rotate, 1f) },
+                new List<MaterialDef>(),
+                new List<RecipeDef>());
+            var slots = new[] { new RecipeSlot("slot0", new[] { "bar" }) };
+            var session = new BattleSession(new GpTable(2, 2), db, rng.Stream("battle"), slots, requiredScore: 1);
+
+            ServeResult result = session.Serve(0);
+
+            Assert.AreEqual(ServeOutcome.Placed, result.Outcome);
+            Assert.AreEqual(1, result.Dish.Placement.Orientation.Width, "麻应把 2x1 逆时针旋成 1x2");
+            Assert.AreEqual(2, result.Dish.Placement.Orientation.Height);
+            Assert.AreEqual(3, result.Dish.Placement.RotationIndex, "逆时针 1 次 = 顺时针 3 次");
+        }
+
+        [Test]
         public void Serve_NoFittingDish_WhenFixedOrientationCannotFit()
         {
             var rng = new RandomService();

@@ -25,6 +25,23 @@ namespace GourmetProject.Tests
         }
 
         [Test]
+        public void FindValidPlacementsRotatedCcw_ForcesRotatedOrientation()
+        {
+            var board = new GpTable(3, 3);
+            DishDef bar = GameplayTestFactory.Dish("bar", new[] { "XX" }, allowRotate: false); // 2x1 横条
+
+            System.Collections.Generic.List<Placement> placements = board.FindValidPlacementsRotatedCcw(bar, 1);
+
+            Assert.IsNotEmpty(placements);
+            foreach (Placement p in placements)
+            {
+                Assert.AreEqual(1, p.Orientation.Width, "逆时针 90° 后应为 1x2 竖条");
+                Assert.AreEqual(2, p.Orientation.Height);
+                Assert.AreEqual(3, p.RotationIndex);
+            }
+        }
+
+        [Test]
         public void CanPlace_RejectsOverlapAndOutOfBounds()
         {
             var board = new GpTable(4, 4);

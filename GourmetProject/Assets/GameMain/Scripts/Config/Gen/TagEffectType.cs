@@ -31,6 +31,18 @@ namespace cfg
         /// 结算优先级层级增量(甜+1/苦-1)，不产生分数效果
         /// </summary>
         SettlementLayer = 8,
+        /// <summary>
+        /// 麻：逆时针旋转 value&#215;90 度，不产生分数效果
+        /// </summary>
+        Rotate = 9,
+        /// <summary>
+        /// 酸：未上菜时场上同菜谱食物倍率&#215;value
+        /// </summary>
+        SourRecipeMult = 10,
+        /// <summary>
+        /// 咸：未上菜时场上每个同菜谱食物+value金币
+        /// </summary>
+        SaltyRecipeGold = 11,
     }
 
 } 
