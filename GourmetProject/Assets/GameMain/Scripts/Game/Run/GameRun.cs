@@ -197,8 +197,8 @@ namespace GourmetProject.Game.Run
         {
             foreach (RunItemState state in _items)
             {
-                cfg.Item item = _tables.TbItem.GetOrDefault(state.ItemId);
-                if (item != null && item.Kind == cfg.ItemKind.Passive && item.EffectType == ItemEffectTypes.Undying)
+                ItemDefinition item = ItemDefinition.Get(_tables, state.ItemId, cfg.ItemKind.Passive);
+                if (item != null && item.EffectType == ItemEffectTypes.Undying)
                 {
                     RemoveItem(item.Id);
                     return true;
@@ -221,8 +221,8 @@ namespace GourmetProject.Game.Run
             var result = new List<RunItemState>();
             foreach (RunItemState state in _items)
             {
-                cfg.Item item = _tables.TbItem.GetOrDefault(state.ItemId);
-                if (item != null && item.Kind == kind)
+                ItemDefinition item = ItemDefinition.Get(_tables, state.ItemId, kind);
+                if (item != null)
                 {
                     result.Add(state);
                 }
@@ -239,8 +239,8 @@ namespace GourmetProject.Game.Run
                 int n = 0;
                 foreach (RunItemState state in _items)
                 {
-                    cfg.Item item = _tables.TbItem.GetOrDefault(state.ItemId);
-                    if (item != null && item.Kind == cfg.ItemKind.Active)
+                    ItemDefinition item = ItemDefinition.Get(_tables, state.ItemId, cfg.ItemKind.Active);
+                    if (item != null)
                     {
                         n++;
                     }
@@ -869,7 +869,7 @@ namespace GourmetProject.Game.Run
                         continue;
                     }
 
-                    cfg.Item def = tables.TbItem.GetOrDefault(item.ItemId);
+                    ItemDefinition def = ItemDefinition.Get(tables, item.ItemId);
 
                     // 旧档迁移：主动道具曾用单条 + Count 表示堆叠，这里展开为多份实例；
                     // Count<=0 的旧「僵尸条目」直接丢弃（用完即不存在）。被动道具恒为一条。
@@ -1249,7 +1249,7 @@ namespace GourmetProject.Game.Run
         /// </summary>
         public ItemAcquireResult AcquireItem(string itemId, int fallbackGold, bool fireOnAcquire = true)
         {
-            cfg.Item item = _tables.TbItem.GetOrDefault(itemId);
+            ItemDefinition item = ItemDefinition.Get(_tables, itemId);
             if (item == null)
             {
                 return default;
@@ -1536,8 +1536,8 @@ namespace GourmetProject.Game.Run
         /// <summary>使用一份主动道具：使用后该实例直接移除（不存在数量消耗的中间态）。</summary>
         public bool UseActiveItem(string itemId)
         {
-            cfg.Item item = _tables.TbItem.GetOrDefault(itemId);
-            if (item == null || item.Kind != cfg.ItemKind.Active)
+            ItemDefinition item = ItemDefinition.Get(_tables, itemId, cfg.ItemKind.Active);
+            if (item == null)
             {
                 return false;
             }

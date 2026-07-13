@@ -685,7 +685,8 @@ namespace GourmetProject.Game.UI.Meta
                 case cfg.RewardKind.PassiveItemChoice:
                 case cfg.RewardKind.ActiveItemGrant:
                 {
-                    cfg.Item item = _run?.Tables?.TbItem.GetOrDefault(choice.Id) ?? GameApp.Config.Tables.TbItem.GetOrDefault(choice.Id);
+                    cfg.ItemKind kind = choice.Kind == cfg.RewardKind.ActiveItemGrant ? cfg.ItemKind.Active : cfg.ItemKind.Passive;
+                    ItemDefinition item = ItemDefinition.Get(_run?.Tables ?? GameApp.Config.Tables, choice.Id, kind);
                     Sprite icon = RunItemSlotView.LoadIcon(item);
                     if (icon != null)
                     {

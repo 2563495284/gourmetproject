@@ -24,8 +24,8 @@ namespace GourmetProject.Game.Adapter
 
             foreach (RunItemState state in run.Items)
             {
-                cfg.Item item = run.Tables.TbItem.GetOrDefault(state.ItemId);
-                if (item == null || item.Kind != cfg.ItemKind.Passive)
+                ItemDefinition item = ItemDefinition.Get(run.Tables, state.ItemId, cfg.ItemKind.Passive);
+                if (item == null)
                 {
                     continue;
                 }
@@ -65,8 +65,8 @@ namespace GourmetProject.Game.Adapter
             int total = 0;
             foreach (RunItemState state in run.Items)
             {
-                cfg.Item item = run.Tables.TbItem.GetOrDefault(state.ItemId);
-                if (item == null || item.Kind != cfg.ItemKind.Passive)
+                ItemDefinition item = ItemDefinition.Get(run.Tables, state.ItemId, cfg.ItemKind.Passive);
+                if (item == null)
                 {
                     continue;
                 }

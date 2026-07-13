@@ -25,9 +25,9 @@ namespace GourmetProject.Game.Meta
         }
 
         /// <summary>遍历持有的被动道具（同 id 仅一条，不升级）。</summary>
-        public IEnumerable<(cfg.Item item, RunItemState state)> PassiveItems()
+        public IEnumerable<(ItemDefinition item, RunItemState state)> PassiveItems()
         {
-            var result = new List<(cfg.Item item, RunItemState state)>();
+            var result = new List<(ItemDefinition item, RunItemState state)>();
             if (_run == null)
             {
                 return result;
@@ -35,8 +35,8 @@ namespace GourmetProject.Game.Meta
 
             foreach (RunItemState state in _run.Items)
             {
-                cfg.Item item = _run.Tables.TbItem.GetOrDefault(state.ItemId);
-                if (item != null && item.Kind == cfg.ItemKind.Passive)
+                ItemDefinition item = ItemDefinition.Get(_run.Tables, state.ItemId, cfg.ItemKind.Passive);
+                if (item != null)
                 {
                     result.Add((item, state));
                 }
@@ -48,7 +48,7 @@ namespace GourmetProject.Game.Meta
         /// <summary>是否持有指定 effectType 的被动道具。</summary>
         public bool HasPassive(string effectType)
         {
-            foreach ((cfg.Item item, RunItemState _) in PassiveItems())
+            foreach ((ItemDefinition item, RunItemState _) in PassiveItems())
             {
                 if (item.EffectType == effectType)
                 {
@@ -63,7 +63,7 @@ namespace GourmetProject.Game.Meta
         public float SumValue(string effectType)
         {
             float sum = 0f;
-            foreach ((cfg.Item item, RunItemState state) in PassiveItems())
+            foreach ((ItemDefinition item, RunItemState state) in PassiveItems())
             {
                 if (item.EffectType == effectType)
                 {
@@ -79,7 +79,7 @@ namespace GourmetProject.Game.Meta
         {
             bool found = false;
             value = 0f;
-            foreach ((cfg.Item item, RunItemState _) in PassiveItems())
+            foreach ((ItemDefinition item, RunItemState _) in PassiveItems())
             {
                 if (item.EffectType != effectType)
                 {
@@ -99,7 +99,7 @@ namespace GourmetProject.Game.Meta
         /// <summary>某 effectType 的被动道具 EffectParam（首个命中；无则空串）。</summary>
         public string FirstParam(string effectType)
         {
-            foreach ((cfg.Item item, RunItemState _) in PassiveItems())
+            foreach ((ItemDefinition item, RunItemState _) in PassiveItems())
             {
                 if (item.EffectType == effectType)
                 {
@@ -155,7 +155,7 @@ namespace GourmetProject.Game.Meta
             float price = basePrice;
 
             // 折扣：累乘所有匹配折扣（value 为折扣比例，如 0.2 表示 -20%）。
-            foreach ((cfg.Item item, RunItemState _) in PassiveItems())
+            foreach ((ItemDefinition item, RunItemState _) in PassiveItems())
             {
                 if (!string.IsNullOrEmpty(discountType) && item.EffectType == discountType)
                 {
@@ -168,7 +168,7 @@ namespace GourmetProject.Game.Meta
             }
 
             // 涨价（负面）：累乘。
-            foreach ((cfg.Item item, RunItemState _) in PassiveItems())
+            foreach ((ItemDefinition item, RunItemState _) in PassiveItems())
             {
                 if (item.EffectType == ItemEffectTypes.ShopPriceUp && item.EffectValue > 0f)
                 {
@@ -355,7 +355,7 @@ namespace GourmetProject.Game.Meta
         {
             bool found = false;
             value = 0;
-            foreach ((cfg.Item item, RunItemState _) in PassiveItems())
+            foreach ((ItemDefinition item, RunItemState _) in PassiveItems())
             {
                 if (item.EffectType != effectType)
                 {

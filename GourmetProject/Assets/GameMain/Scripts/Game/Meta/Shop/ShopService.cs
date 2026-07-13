@@ -71,7 +71,7 @@ namespace GourmetProject.Game.Meta
 
             foreach (string itemId in ItemPoolService.Roll(tables, run, cfg.ItemKind.Passive, lootRng, PassiveCount, passiveHidden, distanceFloor: 5))
             {
-                cfg.Item item = tables.TbItem.GetOrDefault(itemId);
+                ItemDefinition item = ItemDefinition.Get(tables, itemId, cfg.ItemKind.Passive);
                 if (item != null)
                 {
                     stock.Add(new ShopEntry(ShopEntryKind.PassiveItem, item.Id, item.Name, item.Desc, itemRuntime.ModifyShopPrice(ShopEntryKind.PassiveItem, PassiveItemPrice)));
@@ -81,7 +81,7 @@ namespace GourmetProject.Game.Meta
             int activeHidden = HiddenScoreService.ActiveItemHiddenScore(run, run.LastActionContext);
             foreach (string itemId in ItemPoolService.Roll(tables, run, cfg.ItemKind.Active, lootRng, ActiveCount, activeHidden, distanceFloor: 5))
             {
-                cfg.Item item = tables.TbItem.GetOrDefault(itemId);
+                ItemDefinition item = ItemDefinition.Get(tables, itemId, cfg.ItemKind.Active);
                 if (item != null)
                 {
                     stock.Add(new ShopEntry(ShopEntryKind.ActiveItem, item.Id, item.Name, item.Desc, itemRuntime.ModifyShopPrice(ShopEntryKind.ActiveItem, ActiveItemPrice)));

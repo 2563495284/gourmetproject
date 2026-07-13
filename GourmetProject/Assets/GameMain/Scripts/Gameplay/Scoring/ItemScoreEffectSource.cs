@@ -7,7 +7,7 @@ using GourmetProject.Gameplay.Model;
 namespace GourmetProject.Gameplay.Scoring
 {
     /// <summary>
-    /// 一条被动道具的结算规格（纯基元数据，不依赖 cfg/Game）：由 Game 层从 cfg.Item 映射而来。
+    /// 一条被动道具的结算规格（纯基元数据，不依赖 cfg/Game）：由 Game 层从道具配置映射而来。
     /// </summary>
     public readonly struct ItemScoreSpec
     {

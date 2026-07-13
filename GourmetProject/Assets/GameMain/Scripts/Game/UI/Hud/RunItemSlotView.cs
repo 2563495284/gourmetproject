@@ -1,5 +1,6 @@
 using System;
 using GourmetProject.Game;
+using GourmetProject.Game.Meta;
 using GourmetProject.Game.UI.Tooltips;
 using UnityEngine;
 using UnityEngine.UI;
@@ -57,7 +58,7 @@ namespace GourmetProject.Game.UI.Hud
         }
 
         /// <summary>把该槽绑定到共享的道具 Tips 实例。</summary>
-        public void SetTip(ItemTipView tip, cfg.Item item)
+        public void SetTip(ItemTipView tip, ItemDefinition item)
         {
             EnsureRefs();
             if (_tipTrigger == null || tip == null || item == null)
@@ -130,7 +131,7 @@ namespace GourmetProject.Game.UI.Hud
         }
 
         /// <summary>取道具图标（Resources 路径，缺失返回 null）。</summary>
-        public static Sprite LoadIcon(cfg.Item item)
+        public static Sprite LoadIcon(ItemDefinition item)
         {
             return ContentIconLoader.LoadItem(item);
         }

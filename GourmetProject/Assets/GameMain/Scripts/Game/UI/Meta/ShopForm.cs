@@ -444,7 +444,8 @@ namespace GourmetProject.Game.UI.Meta
 
         private void BindItemTip(TipHoverTrigger trigger, ShopEntry entry)
         {
-            cfg.Item item = GameApp.Config.Tables.TbItem.GetOrDefault(entry.Id);
+            cfg.ItemKind kind = entry.Kind == ShopEntryKind.ActiveItem ? cfg.ItemKind.Active : cfg.ItemKind.Passive;
+            ItemDefinition item = ItemDefinition.Get(GameApp.Config.Tables, entry.Id, kind);
             if (trigger == null || _itemTipView == null || item == null)
             {
                 trigger?.ClearTip();
@@ -574,7 +575,8 @@ namespace GourmetProject.Game.UI.Meta
                 case ShopEntryKind.PassiveItem:
                 case ShopEntryKind.ActiveItem:
                 {
-                    cfg.Item item = GameApp.Config.Tables.TbItem.GetOrDefault(entry.Id);
+                    cfg.ItemKind kind = entry.Kind == ShopEntryKind.ActiveItem ? cfg.ItemKind.Active : cfg.ItemKind.Passive;
+                    ItemDefinition item = ItemDefinition.Get(GameApp.Config.Tables, entry.Id, kind);
                     Sprite sprite = RunItemSlotView.LoadIcon(item);
                     if (sprite != null)
                     {

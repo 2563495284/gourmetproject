@@ -447,8 +447,8 @@ namespace GourmetProject.Game.Run
         {
             foreach (RunItemState state in run.Items)
             {
-                cfg.Item item = run.Tables.TbItem.GetOrDefault(state.ItemId);
-                if (item == null || item.Kind != cfg.ItemKind.Passive)
+                ItemDefinition item = ItemDefinition.Get(run.Tables, state.ItemId, cfg.ItemKind.Passive);
+                if (item == null)
                 {
                     continue;
                 }

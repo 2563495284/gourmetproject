@@ -59,7 +59,7 @@ namespace GourmetProject.Game.Meta
 
             bool activeItem = kind == cfg.ItemKind.Active;
             progress ??= MetaProgressPersistence.Load();
-            List<cfg.Item> candidates = BuildCandidates(tables, run, kind, hidden, strictHidden: !activeItem, progress);
+            List<ItemDefinition> candidates = BuildCandidates(tables, run, kind, hidden, strictHidden: !activeItem, progress);
             if (candidates.Count == 0 && !activeItem)
             {
                 candidates = BuildCandidates(tables, run, kind, hidden, strictHidden: false, progress);
@@ -68,7 +68,7 @@ namespace GourmetProject.Game.Meta
             for (int i = 0; i < count && candidates.Count > 0; i++)
             {
                 var weights = new List<float>(candidates.Count);
-                foreach (cfg.Item item in candidates)
+                foreach (ItemDefinition item in candidates)
                 {
                     weights.Add(GetWeight(item, hidden, distanceFloor));
                 }
@@ -84,7 +84,7 @@ namespace GourmetProject.Game.Meta
             return result;
         }
 
-        public static bool CanEnterPool(GameRun run, cfg.Item item)
+        public static bool CanEnterPool(GameRun run, ItemDefinition item)
         {
             if (run == null || item == null)
             {
@@ -99,12 +99,12 @@ namespace GourmetProject.Game.Meta
             return true;
         }
 
-        public static float GetEffectValue(cfg.Item item)
+        public static float GetEffectValue(ItemDefinition item)
         {
             return item != null ? item.EffectValue : 0f;
         }
 
-        private static List<cfg.Item> BuildCandidates(
+        private static List<ItemDefinition> BuildCandidates(
             cfg.Tables tables,
             GameRun run,
             cfg.ItemKind kind,
@@ -112,10 +112,10 @@ namespace GourmetProject.Game.Meta
             bool strictHidden,
             MetaProgressSaveData progress)
         {
-            var candidates = new List<cfg.Item>();
-            foreach (cfg.Item item in tables.TbItem.DataList)
+            var candidates = new List<ItemDefinition>();
+            foreach (ItemDefinition item in ItemDefinition.All(tables, kind))
             {
-                if (item.Kind != kind || !CanEnterPool(run, item) || !MetaProgressService.IsItemUnlockedForPool(tables, item, progress))
+                if (!CanEnterPool(run, item) || !MetaProgressService.IsItemUnlockedForPool(tables, item, progress))
                 {
                     continue;
                 }
@@ -131,15 +131,15 @@ namespace GourmetProject.Game.Meta
             return candidates;
         }
 
-        private static float GetWeight(cfg.Item item, int hidden, int distanceFloor)
+        private static float GetWeight(ItemDefinition item, int hidden, int distanceFloor)
         {
             float baseWeight = item.BaseWeight > 0f ? item.BaseWeight : 1f;
             return RewardPoolService.HiddenScoreWeight(baseWeight, HiddenMean(item), hidden, distanceFloor);
         }
 
-        private static bool CoversHidden(cfg.Item item, int hidden)
+        private static bool CoversHidden(ItemDefinition item, int hidden)
         {
-            if (item.HiddenRange.Min == 0 && item.HiddenRange.Max == 0)
+            if (item.HiddenRange == null || (item.HiddenRange.Min == 0 && item.HiddenRange.Max == 0))
             {
                 return true;
             }
@@ -147,9 +147,9 @@ namespace GourmetProject.Game.Meta
             return hidden >= item.HiddenRange.Min && hidden <= item.HiddenRange.Max;
         }
 
-        private static float HiddenMean(cfg.Item item)
+        private static float HiddenMean(ItemDefinition item)
         {
-            if (item.HiddenRange.Min == 0 && item.HiddenRange.Max == 0)
+            if (item.HiddenRange == null || (item.HiddenRange.Min == 0 && item.HiddenRange.Max == 0))
             {
                 return 0f;
             }

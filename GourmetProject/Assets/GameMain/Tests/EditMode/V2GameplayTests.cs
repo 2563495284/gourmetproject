@@ -782,7 +782,8 @@ namespace GourmetProject.Tests
         [Test]
         public void WeekLoop_FinalBossVictory_UsesLastWeekInsteadOfFoodWeek()
         {
-            GameRun finalWeek = NewRun(week: 8, characterId: "glutton_dog");
+            GameRun finalWeek = NewRun(week: 1, characterId: "glutton_dog");
+            finalWeek = NewRun(week: finalWeek.TotalWeeks, characterId: "glutton_dog");
             GameRun earlyWeek = NewRun(week: 1, characterId: "glutton_dog");
             cfg.Food boss = finalWeek.Tables.TbFood.Get("food_boss");
             MethodInfo method = typeof(WeekLoopController).GetMethod(

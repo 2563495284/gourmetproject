@@ -43,9 +43,13 @@ public partial class Tables
     /// </summary>
     public TbRecipe TbRecipe {get; }
     /// <summary>
-    /// 道具：被动常驻/主动可触发。specialTags 用 | 分隔，空串=无。
+    /// 被动道具：永久常驻/获得时生效，道具池按隐藏分筛选。specialTags 用 | 分隔，空串=无。
     /// </summary>
-    public TbItem TbItem {get; }
+    public TbPassiveItem TbPassiveItem {get; }
+    /// <summary>
+    /// 主动道具：一次性占全局消耗槽，玩家手动使用；不配置隐藏分区间。specialTags 用 | 分隔，空串=无。
+    /// </summary>
+    public TbActiveItem TbActiveItem {get; }
     /// <summary>
     /// 目标分曲线：与 week 同在 timeline.xlsx；Week.scoreProfileId/Boss.scoreProfileId 引用它生成普通与 Boss 目标分。
     /// </summary>
@@ -160,7 +164,8 @@ public partial class Tables
         TbTableFragment = new TbTableFragment(loader("tbtablefragment"));
         TbFragmentMaterial = new TbFragmentMaterial(loader("tbfragmentmaterial"));
         TbRecipe = new TbRecipe(loader("tbrecipe"));
-        TbItem = new TbItem(loader("tbitem"));
+        TbPassiveItem = new TbPassiveItem(loader("tbpassiveitem"));
+        TbActiveItem = new TbActiveItem(loader("tbactiveitem"));
         TbScoreProfile = new TbScoreProfile(loader("tbscoreprofile"));
         TbRewardPackage = new TbRewardPackage(loader("tbrewardpackage"));
         TbRewardSlot = new TbRewardSlot(loader("tbrewardslot"));
@@ -199,7 +204,8 @@ public partial class Tables
         TbTableFragment.ResolveRef(this);
         TbFragmentMaterial.ResolveRef(this);
         TbRecipe.ResolveRef(this);
-        TbItem.ResolveRef(this);
+        TbPassiveItem.ResolveRef(this);
+        TbActiveItem.ResolveRef(this);
         TbScoreProfile.ResolveRef(this);
         TbRewardPackage.ResolveRef(this);
         TbRewardSlot.ResolveRef(this);

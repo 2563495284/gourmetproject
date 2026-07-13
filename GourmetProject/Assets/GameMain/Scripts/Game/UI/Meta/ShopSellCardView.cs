@@ -1,4 +1,5 @@
 using System;
+using GourmetProject.Game.Meta;
 using UnityEngine;
 using UnityEngine.UI;
 using GourmetProject.Game.UI;
@@ -19,7 +20,7 @@ namespace GourmetProject.Game.UI.Meta
         [SerializeField] private Text _nameText;
         [SerializeField] private Button _sellButton;
 
-        public void Bind(cfg.Item item, int price, Action onSell)
+        public void Bind(ItemDefinition item, int price, Action onSell)
         {
             Bind(item.Name, $"卖 +{price}", onSell);
         }

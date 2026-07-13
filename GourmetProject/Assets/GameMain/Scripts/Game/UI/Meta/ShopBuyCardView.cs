@@ -1,6 +1,7 @@
 using System;
 using DG.Tweening;
 using GourmetProject.Game;
+using GourmetProject.Game.Meta;
 using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Gameplay.Model;
 using UnityEngine;
@@ -32,7 +33,7 @@ namespace GourmetProject.Game.UI.Meta
         private Selectable.Transition _defaultButtonTransition;
         private bool _hasDefaultButtonTransition;
 
-        public void Bind(cfg.Item item, int price, bool affordable, Action onBuy)
+        public void Bind(ItemDefinition item, int price, bool affordable, Action onBuy)
         {
             Sprite icon = ContentIconLoader.LoadItem(item);
             Bind(item?.Name, item?.Desc, price, affordable, icon, _ =>

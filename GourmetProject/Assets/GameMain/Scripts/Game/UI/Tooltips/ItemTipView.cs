@@ -1,4 +1,5 @@
 using GourmetProject.Game;
+using GourmetProject.Game.Meta;
 using UnityEngine;
 
 namespace GourmetProject.Game.UI.Tooltips
@@ -13,7 +14,7 @@ namespace GourmetProject.Game.UI.Tooltips
         private const string DefaultEmoji = "\U0001F9EA";
 
         /// <summary>用配置道具绑定：标题取道具名，描述取效果说明，图标按名称约定加载。</summary>
-        public void Bind(cfg.Item item)
+        public void Bind(ItemDefinition item)
         {
             if (item == null)
             {

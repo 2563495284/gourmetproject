@@ -67,12 +67,12 @@ namespace GourmetProject.Game.Meta
             return update;
         }
 
-        public static bool IsItemUnlockedForPool(cfg.Item item, MetaProgressSaveData progress)
+        public static bool IsItemUnlockedForPool(ItemDefinition item, MetaProgressSaveData progress)
         {
             return IsItemUnlockedForPool(GameApp.Config.Tables, item, progress);
         }
 
-        public static bool IsItemUnlockedForPool(cfg.Tables tables, cfg.Item item, MetaProgressSaveData progress)
+        public static bool IsItemUnlockedForPool(cfg.Tables tables, ItemDefinition item, MetaProgressSaveData progress)
         {
             return IsTargetAvailable(tables, cfg.UnlockTargetType.Item, item?.Id, progress);
         }
@@ -219,7 +219,7 @@ namespace GourmetProject.Game.Meta
                 return rule.Title;
             }
 
-            cfg.Item item = rule.TargetType == cfg.UnlockTargetType.Item ? tables.TbItem.GetOrDefault(rule.TargetId) : null;
+            ItemDefinition item = rule.TargetType == cfg.UnlockTargetType.Item ? ItemDefinition.Get(tables, rule.TargetId) : null;
             return item != null ? item.Name : rule.TargetId;
         }
 
@@ -230,7 +230,7 @@ namespace GourmetProject.Game.Meta
                 return rule.Desc;
             }
 
-            cfg.Item item = rule.TargetType == cfg.UnlockTargetType.Item ? tables.TbItem.GetOrDefault(rule.TargetId) : null;
+            ItemDefinition item = rule.TargetType == cfg.UnlockTargetType.Item ? ItemDefinition.Get(tables, rule.TargetId) : null;
             return item != null ? item.Desc : string.Empty;
         }
 
@@ -238,7 +238,7 @@ namespace GourmetProject.Game.Meta
         {
             if (rule.TargetType == cfg.UnlockTargetType.Item)
             {
-                cfg.Item item = tables.TbItem.GetOrDefault(rule.TargetId);
+                ItemDefinition item = ItemDefinition.Get(tables, rule.TargetId);
                 if (item != null)
                 {
                     return item.Kind == cfg.ItemKind.Passive ? "被动道具" : "主动道具";

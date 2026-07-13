@@ -13,28 +13,26 @@ using Luban.SimpleJSON;
 
 namespace cfg
 {
-public sealed partial class Item : Luban.BeanBase
+public sealed partial class ActiveItem : Luban.BeanBase
 {
-    public Item(JSONNode _buf) 
+    public ActiveItem(JSONNode _buf) 
     {
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
         { if(!_buf["name"].IsString) { throw new SerializationException(); }  Name = _buf["name"]; }
         { if(!_buf["desc"].IsString) { throw new SerializationException(); }  Desc = _buf["desc"]; }
-        { if(!_buf["kind"].IsNumber) { throw new SerializationException(); }  Kind = (ItemKind)_buf["kind"].AsInt; }
         { if(!_buf["quality"].IsNumber) { throw new SerializationException(); }  Quality = (ItemQuality)_buf["quality"].AsInt; }
         { if(!_buf["specialTags"].IsString) { throw new SerializationException(); }  SpecialTags = _buf["specialTags"]; }
         { if(!_buf["effectType"].IsString) { throw new SerializationException(); }  EffectType = _buf["effectType"]; }
         { if(!_buf["effectValue"].IsNumber) { throw new SerializationException(); }  EffectValue = _buf["effectValue"]; }
         { if(!_buf["effectParam"].IsString) { throw new SerializationException(); }  EffectParam = _buf["effectParam"]; }
         { if(!_buf["baseWeight"].IsNumber) { throw new SerializationException(); }  BaseWeight = _buf["baseWeight"]; }
-        { if(!_buf["hiddenRange"].IsObject) { throw new SerializationException(); }  HiddenRange = global::cfg.HiddenRange.DeserializeHiddenRange(_buf["hiddenRange"]);  }
         { if(!_buf["targetKind"].IsNumber) { throw new SerializationException(); }  TargetKind = (ItemTargetKind)_buf["targetKind"].AsInt; }
         { if(!_buf["targetCount"].IsNumber) { throw new SerializationException(); }  TargetCount = _buf["targetCount"]; }
     }
 
-    public static Item DeserializeItem(JSONNode _buf)
+    public static ActiveItem DeserializeActiveItem(JSONNode _buf)
     {
-        return new Item(_buf);
+        return new ActiveItem(_buf);
     }
 
     /// <summary>
@@ -49,10 +47,6 @@ public sealed partial class Item : Luban.BeanBase
     /// 道具描述
     /// </summary>
     public readonly string Desc;
-    /// <summary>
-    /// 道具类型
-    /// </summary>
-    public readonly ItemKind Kind;
     /// <summary>
     /// 道具品质
     /// </summary>
@@ -78,10 +72,6 @@ public sealed partial class Item : Luban.BeanBase
     /// </summary>
     public readonly float BaseWeight;
     /// <summary>
-    /// 出现隐藏分区间(单元格: min,max)
-    /// </summary>
-    public readonly HiddenRange HiddenRange;
-    /// <summary>
     /// 主动道具目标类型(作用对象;决定可用情境)
     /// </summary>
     public readonly ItemTargetKind TargetKind;
@@ -90,12 +80,11 @@ public sealed partial class Item : Luban.BeanBase
     /// </summary>
     public readonly int TargetCount;
    
-    public const int __ID__ = 2289459;
+    public const int __ID__ = -257861799;
     public override int GetTypeId() => __ID__;
 
     public  void ResolveRef(Tables tables)
     {
-        HiddenRange?.ResolveRef(tables);
     }
 
     public override string ToString()
@@ -104,14 +93,12 @@ public sealed partial class Item : Luban.BeanBase
         + "id:" + Id + ","
         + "name:" + Name + ","
         + "desc:" + Desc + ","
-        + "kind:" + Kind + ","
         + "quality:" + Quality + ","
         + "specialTags:" + SpecialTags + ","
         + "effectType:" + EffectType + ","
         + "effectValue:" + EffectValue + ","
         + "effectParam:" + EffectParam + ","
         + "baseWeight:" + BaseWeight + ","
-        + "hiddenRange:" + HiddenRange + ","
         + "targetKind:" + TargetKind + ","
         + "targetCount:" + TargetCount + ","
         + "}";
