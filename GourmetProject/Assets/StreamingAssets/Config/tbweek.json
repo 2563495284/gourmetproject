@@ -56,66 +56,7 @@
     ],
     "timelineWeights": [
       100,
-      60
-    ]
-  },
-  {
-    "id": 5,
-    "scoreProfileId": "score_w5",
-    "rewardPackageId": "reward_w5",
-    "rewardHiddenScore": 36,
-    "modifier": "",
-    "timelineIds": [
-      "tl_normal",
-      "tl_busy"
-    ],
-    "timelineWeights": [
-      100,
-      60
-    ]
-  },
-  {
-    "id": 6,
-    "scoreProfileId": "score_w6",
-    "rewardPackageId": "reward_w6",
-    "rewardHiddenScore": 44,
-    "modifier": "",
-    "timelineIds": [
-      "tl_normal",
-      "tl_busy"
-    ],
-    "timelineWeights": [
-      100,
-      60
-    ]
-  },
-  {
-    "id": 7,
-    "scoreProfileId": "score_w7",
-    "rewardPackageId": "reward_w7",
-    "rewardHiddenScore": 52,
-    "modifier": "",
-    "timelineIds": [
-      "tl_normal",
-      "tl_busy"
-    ],
-    "timelineWeights": [
-      100,
-      60
-    ]
-  },
-  {
-    "id": 8,
-    "scoreProfileId": "score_w8",
-    "rewardPackageId": "reward_w8_boss",
-    "rewardHiddenScore": 60,
-    "modifier": "small_board",
-    "timelineIds": [
-      "tl_normal",
-      "tl_busy"
-    ],
-    "timelineWeights": [
-      100,
+      60,
       60
     ]
   }

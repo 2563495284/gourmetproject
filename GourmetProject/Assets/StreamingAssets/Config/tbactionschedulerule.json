@@ -23,7 +23,7 @@
     "minRunStep": 2,
     "maxRunStep": 8,
     "minCount": 1,
-    "maxCount": 2,
+    "maxCount": 1,
     "preconditions": ""
   },
   {

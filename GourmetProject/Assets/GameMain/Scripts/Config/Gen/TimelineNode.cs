@@ -29,19 +29,19 @@ public sealed partial class TimelineNode : Luban.BeanBase
     }
 
     /// <summary>
-    /// 节点 id；同一节点每周只触发一次，触发记录按 id 保存。
+    /// 节点 id
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 所属行动轴模板 id，对应 timeline.id。
+    /// 所属行动轴模板 id
     /// </summary>
     public readonly string TimelineId;
     /// <summary>
-    /// 整天位置；行动从 prevDay 推进到 newDay 时触发 prevDay &lt; day &lt;= newDay 的节点。
+    /// 整天位置
     /// </summary>
     public readonly int Day;
     /// <summary>
-    /// 引用的原子行动 id（对应 action.id）；节点=放置在该天的原子行动。
+    /// 引用的原子行动 id（对应 action.id）
     /// </summary>
     public readonly string ActionId;
    

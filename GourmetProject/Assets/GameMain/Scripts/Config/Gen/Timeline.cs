@@ -27,11 +27,11 @@ public sealed partial class Timeline : Luban.BeanBase
     }
 
     /// <summary>
-    /// 行动轴模板 id；运行态只保存该 id，读档时按它重建节点。
+    /// 行动轴模板 id
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 行动轴基础长度；当前主循环按7天时间轴推进，行动只移动天数游标。
+    /// 行动轴基础长度
     /// </summary>
     public readonly int BaseLengthDays;
    
