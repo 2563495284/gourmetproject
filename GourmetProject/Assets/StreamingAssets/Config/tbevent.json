@@ -47,7 +47,7 @@
   {
     "id": "ev_gamble",
     "name": "豪赌一桌",
-    "desc": "高风险高回报，可能大赚也可能亏本。",
+    "desc": "赌桌就在眼前，热气腾腾。要不要试试手气？",
     "eventType": 0,
     "preconditions": "",
     "weight": 30,

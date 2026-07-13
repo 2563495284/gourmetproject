@@ -386,60 +386,98 @@ namespace GourmetProject.Game.Orchestration
                 return;
             }
 
+            // 事件是一张「页面树」：从根页(正文=event.desc)进入，选项按 parentId 逐页展开直到终止。
+            // 一个事件复用同一条随机流（Gamble 等随机效果按序派生），全程内存态，仅结束时(onDone→Commit)存档。
             IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Event, $"resolve_w{_run.WeekIndex}_d{DayKey(_run.CurrentDay)}_{ev.Id}");
-            List<cfg.EventOption> options = EventService.GetOptions(_run, ev.Id);
+            EnterEventPage(ev, ev.Desc, EventService.GetRootOptions(_run, ev.Id), rng, true, onDone);
+        }
+
+        /// <summary>进入事件某页：0 选项=终止展示页；根页单选项且无子页=自动结算；否则铺开选项 n 选一。</summary>
+        private void EnterEventPage(cfg.GameEvent ev, string pageText, List<cfg.EventOption> pageOptions, IRandomStream rng, bool isRoot, Action onDone)
+        {
+            var options = new List<cfg.EventOption>();
+            foreach (cfg.EventOption opt in pageOptions)
+            {
+                // 逐选项前置条件（空=恒可见）复用行动前置语法。
+                if (PreconditionEvaluator.IsSatisfied(_run, opt.Condition))
+                {
+                    options.Add(opt);
+                }
+            }
+
             if (options.Count == 0)
             {
-                EventResolveResult result = EventService.ResolveImmediate(_run, ev, rng);
-                if (ShouldSaveEventResultImmediately(result))
-                {
-                    RunPersistence.Save(_run);
-                }
-
-                ContinueEventResult(ev.Name, ev.Id, result, onDone);
+                // 终止展示页（如「离开」结果页）：无选项，正文即结果。
+                EventResolveResult res = EventResolveResult.Immediate(pageText);
+                EventService.OnEventFinished(_run, ev, res);
+                _view.ShowNotice(ev.Name, pageText, onDone);
                 return;
             }
 
-            // 单选项事件=自动结算（奖励/负面/即时事件），无需玩家点选。
-            if (options.Count == 1)
+            // 根页单选项且无子页 → 自动结算（奖励/负面/即时事件，保持旧行为，无需玩家点选）。
+            if (isRoot && options.Count == 1 && EventService.GetChildOptions(_run, options[0].Id).Count == 0)
             {
-                ApplyEventOption(ev, options[0], rng, onDone);
+                ChooseEventOption(ev, options[0], pageText, rng, onDone);
                 return;
             }
 
-            // 多选项事件与「行动 n 选一」共用同一套中部卡片 UI（不再走独立 ConfirmDialog 弹层）。
+            // 多选项与「行动 n 选一」共用同一套中部卡片 UI（正文用当前页文本）。
             var optionTexts = new List<string>(options.Count);
             foreach (cfg.EventOption option in options)
             {
                 optionTexts.Add(option.Text);
             }
 
-            _view.ShowEventChoices(ev.Name, ev.Desc, optionTexts, index =>
+            List<cfg.EventOption> shown = options;
+            _view.ShowEventChoices(ev.Name, pageText, optionTexts, index =>
             {
-                if (index < 0 || index >= options.Count)
+                if (index < 0 || index >= shown.Count)
                 {
                     onDone?.Invoke();
                     return;
                 }
 
-                ApplyEventOption(ev, options[index], rng, onDone);
+                ChooseEventOption(ev, shown[index], pageText, rng, onDone);
             });
         }
 
-        private void ApplyEventOption(cfg.GameEvent ev, cfg.EventOption option, IRandomStream rng, Action onDone)
+        /// <summary>结算所选选项：施加效果→跟进类(战斗/商店/结局)终止 / 有子选项则进入子页 / 否则即时终止。</summary>
+        private void ChooseEventOption(cfg.GameEvent ev, cfg.EventOption option, string pageText, IRandomStream rng, Action onDone)
         {
-            EventResolveResult result = EventService.ResolveOption(_run, ev, option, rng);
-            if (ShouldSaveEventResultImmediately(result))
+            EventResolveResult result = EventService.ResolveOption(_run, option, rng);
+
+            if (result.FollowUpKind != EventFollowUpKind.None)
             {
-                RunPersistence.Save(_run);
+                EventService.OnEventFinished(_run, ev, result);
+                ContinueEventResult(ev.Name, ev.Id, result, onDone);
+                return;
             }
 
-            ContinueEventResult(ev.Name, ev.Id, result, onDone);
+            // 子页正文=效果反馈 + 选项 resultText（都空则回退当前页正文）。
+            string body = ComposeEventText(result.Feedback, option.ResultText);
+            List<cfg.EventOption> children = EventService.GetChildOptions(_run, option.Id);
+            if (children.Count > 0)
+            {
+                EnterEventPage(ev, body, children, rng, false, onDone);
+                return;
+            }
+
+            // 无子选项 → 即时终止。
+            EventService.OnEventFinished(_run, ev, result);
+            _view.ShowNotice(ev.Name, string.IsNullOrEmpty(body) ? pageText : body, onDone);
         }
 
-        private static bool ShouldSaveEventResultImmediately(EventResolveResult result)
+        /// <summary>拼接页文本：效果反馈在前、选项 resultText 在后；任一为空则取另一个。</summary>
+        private static string ComposeEventText(string feedback, string resultText)
         {
-            return result == null || result.FollowUpKind != EventFollowUpKind.Shop;
+            bool hasFeedback = !string.IsNullOrEmpty(feedback);
+            bool hasResult = !string.IsNullOrEmpty(resultText);
+            if (hasFeedback && hasResult)
+            {
+                return feedback + "\n" + resultText;
+            }
+
+            return hasResult ? resultText : (feedback ?? string.Empty);
         }
 
         private void ContinueEventResult(string title, string eventId, EventResolveResult result, Action onDone)

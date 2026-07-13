@@ -1,0 +1,1228 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>行动轴 GM 随机预览</title>
+  <style>
+    :root {
+      --bg: #15110f;
+      --panel: #211a16;
+      --panel-2: #2b221d;
+      --line: #4a372c;
+      --text: #f7ead9;
+      --muted: #cbb8a3;
+      --accent: #ffb84d;
+      --accent-2: #6ad4a1;
+      --danger: #ff756b;
+      --chip: #3a2b23;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top left, #332116 0, var(--bg) 42rem);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.5;
+    }
+
+    header {
+      padding: 28px 32px 18px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(21, 17, 15, 0.86);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(12px);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 26px;
+      letter-spacing: 0.04em;
+    }
+
+    .hint {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    main {
+      padding: 24px 32px 40px;
+      max-width: 1440px;
+      margin: 0 auto;
+    }
+
+    .toolbar,
+    .status,
+    .sample,
+    .week {
+      border: 1px solid var(--line);
+      background: rgba(33, 26, 22, 0.92);
+      border-radius: 16px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+    }
+
+    .toolbar {
+      padding: 18px;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(120px, 1fr));
+      gap: 14px;
+      align-items: end;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    input,
+    select,
+    button {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--panel-2);
+      color: var(--text);
+      padding: 10px 12px;
+      font: inherit;
+    }
+
+    input[type="file"] {
+      padding: 8px;
+      min-width: 240px;
+    }
+
+    button {
+      cursor: pointer;
+      background: linear-gradient(180deg, #ffc46b, #e58c26);
+      border-color: #f0a23a;
+      color: #24150c;
+      font-weight: 700;
+    }
+
+    button.secondary {
+      background: var(--panel-2);
+      color: var(--text);
+      border-color: var(--line);
+      font-weight: 600;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .wide {
+      grid-column: span 2;
+    }
+
+    .status {
+      margin: 16px 0;
+      padding: 12px 16px;
+      color: var(--muted);
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .ok {
+      color: var(--accent-2);
+    }
+
+    .warn {
+      color: var(--accent);
+    }
+
+    .error {
+      color: var(--danger);
+    }
+
+    .chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      padding: 4px 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--chip);
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .sample {
+      margin: 18px 0;
+      padding: 18px;
+    }
+
+    .sample > h2 {
+      margin: 0 0 14px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 20px;
+    }
+
+    .week {
+      margin: 14px 0;
+      padding: 14px;
+      background: rgba(43, 34, 29, 0.9);
+    }
+
+    .week h3 {
+      margin: 0 0 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 17px;
+    }
+
+    .axis {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(86px, 1fr));
+      gap: 8px;
+      margin: 10px 0 14px;
+    }
+
+    .day {
+      min-height: 70px;
+      border: 1px dashed var(--line);
+      border-radius: 12px;
+      padding: 8px;
+      background: rgba(21, 17, 15, 0.38);
+    }
+
+    .day strong {
+      display: block;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    .node {
+      color: var(--text);
+      font-size: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 12px;
+      font-size: 13px;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid rgba(74, 55, 44, 0.72);
+      padding: 9px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--muted);
+      background: rgba(21, 17, 15, 0.42);
+      font-weight: 600;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .choice {
+      display: inline-block;
+      margin: 0 6px 6px 0;
+      padding: 4px 7px;
+      border-radius: 8px;
+      background: #34271f;
+      border: 1px solid #4d392d;
+    }
+
+    .choice.selected {
+      background: rgba(106, 212, 161, 0.16);
+      border-color: rgba(106, 212, 161, 0.68);
+      color: #d9ffe8;
+    }
+
+    details {
+      margin-top: 10px;
+      color: var(--muted);
+    }
+
+    summary {
+      cursor: pointer;
+      color: var(--accent);
+    }
+
+    pre {
+      white-space: pre-wrap;
+      background: rgba(21, 17, 15, 0.6);
+      border: 1px solid var(--line);
+      padding: 10px;
+      border-radius: 10px;
+      overflow: auto;
+      max-height: 240px;
+    }
+
+    @media (max-width: 980px) {
+      header,
+      main {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+
+      .toolbar {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .wide {
+        grid-column: span 2;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>行动轴 GM 随机预览</h1>
+    <p class="hint">输入周数 n 和随机次数 m，按当前配置生成每次随机的周行动轴、轴节点、行动组、小组、n 选一行动与随机推进结果。</p>
+  </header>
+
+  <main>
+    <section class="toolbar">
+      <label>
+        周数 n
+        <input id="weekCount" type="number" min="1" max="52" value="4">
+      </label>
+      <label>
+        随机次数 m
+        <input id="sampleCount" type="number" min="1" max="200" value="3">
+      </label>
+      <label>
+        随机种子
+        <input id="seed" value="gm-preview">
+      </label>
+      <label>
+        角色
+        <select id="character"></select>
+      </label>
+      <label>
+        推进策略
+        <select id="pickMode">
+          <option value="random">随机选择一个候选</option>
+          <option value="first">总是选择第一个候选</option>
+          <option value="shortest">选择耗时最短</option>
+          <option value="longest">选择耗时最长</option>
+        </select>
+      </label>
+      <label>
+        单周行动上限
+        <input id="maxActionsPerWeek" type="number" min="1" max="200" value="40">
+      </label>
+      <button id="runBtn">生成</button>
+      <button id="loadBtn" class="secondary">重新读取配置</button>
+      <label class="wide">
+        配置目录/文件（fetch 失败时使用，选择 Assets/StreamingAssets/Config）
+        <input id="fileInput" type="file" multiple webkitdirectory>
+      </label>
+    </section>
+
+    <section id="status" class="status">正在尝试读取 <code>../Assets/StreamingAssets/Config/*.json</code> ...</section>
+    <section id="output"></section>
+  </main>
+
+  <script>
+    "use strict";
+
+    const CONFIG_DIR = "../../Assets/StreamingAssets/Config/";
+    const REQUIRED_FILES = [
+      "tbweek",
+      "tbtimeline",
+      "tbtimelinenode",
+      "tbaction",
+      "tbactionlargegroup",
+      "tbactionsmallgroup",
+      "tbactionschedulerule",
+      "tbcharacter",
+      "tbevent",
+      "tbfood"
+    ];
+
+    const ACTION_BEHAVIOR = {
+      Event: 0,
+      Food: 1,
+      Reward: 2,
+      Negative: 3,
+      Shop: 4,
+      Interest: 5
+    };
+
+    let tables = null;
+    let diagnostics = [];
+
+    const statusEl = document.getElementById("status");
+    const outputEl = document.getElementById("output");
+    const characterEl = document.getElementById("character");
+    const runBtn = document.getElementById("runBtn");
+    const loadBtn = document.getElementById("loadBtn");
+    const fileInput = document.getElementById("fileInput");
+
+    function setStatus(message, kind = "") {
+      statusEl.className = `status ${kind}`;
+      statusEl.innerHTML = message;
+    }
+
+    function esc(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function byId(list) {
+      const map = new Map();
+      for (const row of list || []) {
+        map.set(String(row.id), row);
+      }
+      return map;
+    }
+
+    function xmur3(str) {
+      let h = 1779033703 ^ str.length;
+      for (let i = 0; i < str.length; i++) {
+        h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+        h = (h << 13) | (h >>> 19);
+      }
+      return function seed() {
+        h = Math.imul(h ^ (h >>> 16), 2246822507);
+        h = Math.imul(h ^ (h >>> 13), 3266489909);
+        return (h ^= h >>> 16) >>> 0;
+      };
+    }
+
+    function mulberry32(seed) {
+      return function next() {
+        let t = seed += 0x6D2B79F5;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    class Rng {
+      constructor(seedText) {
+        this.seedText = String(seedText ?? "");
+        this.next = mulberry32(xmur3(this.seedText)());
+      }
+
+      fork(domain, key) {
+        return new Rng(`${this.seedText}:${domain}:${key}`);
+      }
+
+      range(minInclusive, maxExclusive) {
+        if (maxExclusive <= minInclusive) {
+          return minInclusive;
+        }
+
+        return Math.floor(this.next() * (maxExclusive - minInclusive)) + minInclusive;
+      }
+
+      weightedPickIndex(weights) {
+        let total = 0;
+        for (const weight of weights) {
+          if (Number.isFinite(weight) && weight > 0) {
+            total += weight;
+          }
+        }
+
+        if (total <= 0) {
+          return weights.length > 0 ? 0 : -1;
+        }
+
+        let roll = this.next() * total;
+        for (let i = 0; i < weights.length; i++) {
+          const weight = Number.isFinite(weights[i]) && weights[i] > 0 ? weights[i] : 0;
+          if (roll < weight) {
+            return i;
+          }
+          roll -= weight;
+        }
+
+        return weights.length - 1;
+      }
+    }
+
+    function quantizeDay(value) {
+      return Math.round(value * 10) / 10;
+    }
+
+    function dayKey(value) {
+      return quantizeDay(value).toFixed(1);
+    }
+
+    function actionChoiceKey(run) {
+      return `r${run.runActionStepIndex}_w${run.weekIndex}_d${dayKey(run.currentDay)}_s${run.actionStepIndex}`;
+    }
+
+    function parseIds(ids) {
+      if (!ids) {
+        return [];
+      }
+      return String(ids)
+        .split(/[|,]/)
+        .map(x => x.trim())
+        .filter(Boolean);
+    }
+
+    function containsId(ids, value) {
+      return parseIds(ids).includes(value);
+    }
+
+    function containsAnyRule(group) {
+      return parseIds(group?.ruleIds).length > 0;
+    }
+
+    function preconditionSatisfied(text) {
+      if (!text || !String(text).trim()) {
+        return true;
+      }
+
+      diagnostics.push(`暂按满足处理未知前置条件：${text}`);
+      return true;
+    }
+
+    function activeThisWeek(rule, weekIndex) {
+      const activeWeeks = Array.isArray(rule.activeWeeks) ? rule.activeWeeks : [];
+      if (activeWeeks.length === 0) {
+        return true;
+      }
+      return activeWeeks.includes(Math.max(1, weekIndex));
+    }
+
+    function fallbackWeight(group, weekIndex) {
+      const weights = Array.isArray(group?.fallbackWeights) ? group.fallbackWeights : [];
+      if (weights.length === 0) {
+        return 1;
+      }
+
+      const idx = Math.min(Math.max(0, weekIndex - 1), weights.length - 1);
+      const weight = Number(weights[idx]) || 0;
+      return weight > 0 ? weight : 0;
+    }
+
+    function isGroupSelectable(run, group) {
+      if (!group) {
+        return false;
+      }
+      if (fallbackWeight(group, run.weekIndex) <= 0 && !containsAnyRule(group)) {
+        return false;
+      }
+      return true;
+    }
+
+    function removeAvoid(groups, avoidId) {
+      if (groups.length <= 1 || !avoidId) {
+        return groups;
+      }
+      return groups.filter(group => group.id !== avoidId);
+    }
+
+    function pickWeightedByFallback(run, groups, rng) {
+      if (groups.length === 0) {
+        return "";
+      }
+
+      const weights = groups.map(group => {
+        const weight = fallbackWeight(group, run.weekIndex);
+        return weight > 0 ? weight : 0.0001;
+      });
+      return groups[rng.weightedPickIndex(weights)]?.id || "";
+    }
+
+    function pickRuleGroup(run, rule, rng) {
+      const groups = tables.actionLargeGroups.filter(group =>
+        containsId(group.ruleIds, rule.id) && isGroupSelectable(run, group)
+      );
+      return pickWeightedByFallback(run, groups, rng);
+    }
+
+    function wouldExceedMaxCountAt(run, candidate, slots, weekStep, rules) {
+      for (const rule of rules) {
+        if ((rule.maxCount || 0) <= 0 || !containsId(candidate.ruleIds, rule.id)) {
+          continue;
+        }
+
+        const lo = Math.max(1, rule.minRunStep || 0);
+        const hi = Math.min(rule.maxRunStep || 0, slots.length);
+        if (weekStep < lo || weekStep > hi) {
+          continue;
+        }
+
+        let count = 0;
+        for (let s = lo; s <= hi; s++) {
+          const id = slots[s - 1];
+          if (!id) {
+            continue;
+          }
+
+          const group = tables.largeById.get(id);
+          if (group && containsId(group.ruleIds, rule.id)) {
+            count++;
+          }
+        }
+
+        if (count >= rule.maxCount) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    function pickWeightedFill(run, rng, weekStep, prevGroup, nextGroup, rules, slots) {
+      let groups = tables.actionLargeGroups.filter(group =>
+        isGroupSelectable(run, group) && !wouldExceedMaxCountAt(run, group, slots, weekStep, rules)
+      );
+
+      if (groups.length === 0) {
+        groups = tables.actionLargeGroups.filter(group => isGroupSelectable(run, group));
+      }
+
+      groups = removeAvoid(groups, prevGroup);
+      groups = removeAvoid(groups, nextGroup);
+      return pickWeightedByFallback(run, groups, rng);
+    }
+
+    function buildWeekPlan(run, rng, planStartRunStep) {
+      const rules = tables.actionScheduleRules
+        .filter(rule => (rule.maxRunStep || 0) > 0 && preconditionSatisfied(rule.preconditions) && activeThisWeek(rule, run.weekIndex))
+        .sort((a, b) => (b.priority - a.priority) || String(a.id).localeCompare(String(b.id)));
+
+      const horizon = rules.reduce((max, rule) => Math.max(max, rule.maxRunStep || 0), 0);
+      if (horizon <= 0) {
+        return [];
+      }
+
+      const slots = Array(horizon).fill("");
+
+      for (const rule of rules) {
+        const lo = Math.max(1, rule.minRunStep || 0);
+        const hi = Math.min(rule.maxRunStep || 0, horizon);
+        if (lo > hi) {
+          continue;
+        }
+
+        const maxCount = (rule.maxCount || 0) > 0 ? rule.maxCount : Number.MAX_SAFE_INTEGER;
+        const need = Math.min(Math.max(0, rule.minCount || 0), maxCount);
+        if (need <= 0) {
+          continue;
+        }
+
+        const free = [];
+        for (let s = lo; s <= hi; s++) {
+          if (!slots[s - 1]) {
+            free.push(s);
+          }
+        }
+
+        let placed = 0;
+        while (placed < need && free.length > 0) {
+          const pickIndex = free.length === 1 ? 0 : rng.range(0, free.length);
+          const slot = free[pickIndex];
+          free.splice(pickIndex, 1);
+
+          const groupId = pickRuleGroup(run, rule, rng);
+          if (!groupId) {
+            diagnostics.push(`规则 ${rule.id} 没有可用大组，已放弃剩余保底。`);
+            break;
+          }
+
+          slots[slot - 1] = groupId;
+          placed++;
+        }
+      }
+
+      let prevGroup = planStartRunStep > 0 && planStartRunStep - 1 < run.actionGroupSequence.length
+        ? run.actionGroupSequence[planStartRunStep - 1]
+        : "";
+
+      for (let i = 0; i < horizon; i++) {
+        if (slots[i]) {
+          prevGroup = slots[i];
+          continue;
+        }
+
+        const nextGroup = i + 1 < horizon ? slots[i + 1] : "";
+        const groupId = pickWeightedFill(run, rng, i + 1, prevGroup, nextGroup, rules, slots);
+        slots[i] = groupId;
+        prevGroup = groupId;
+      }
+
+      return slots;
+    }
+
+    function ensureWeekPlan(run, rng, nextRunStep) {
+      if (run.actionWeekPlanWeek === run.weekIndex) {
+        return;
+      }
+      run.actionWeekPlan = buildWeekPlan(run, rng, nextRunStep);
+      run.actionWeekPlanWeek = run.weekIndex;
+      run.actionWeekPlanStartRunStep = nextRunStep;
+    }
+
+    function pickBeyondWindow(run, rng) {
+      const prevGroup = run.actionGroupSequence.length > 0
+        ? run.actionGroupSequence[run.actionGroupSequence.length - 1]
+        : "";
+      let groups = tables.actionLargeGroups.filter(group => isGroupSelectable(run, group));
+      groups = removeAvoid(groups, prevGroup);
+      return pickWeightedByFallback(run, groups, rng);
+    }
+
+    function ensureCurrentGroup(run, rng) {
+      while (run.actionGroupSequence.length <= run.runActionStepIndex) {
+        const nextRunStep = run.actionGroupSequence.length;
+        ensureWeekPlan(run, rng, nextRunStep);
+
+        const weekLocalIndex = nextRunStep - run.actionWeekPlanStartRunStep;
+        let groupId = "";
+        if (weekLocalIndex >= 0 && weekLocalIndex < run.actionWeekPlan.length) {
+          groupId = run.actionWeekPlan[weekLocalIndex] || "";
+        }
+
+        if (!groupId) {
+          groupId = pickBeyondWindow(run, rng);
+        }
+
+        run.actionGroupSequence.push(groupId);
+      }
+
+      return run.actionGroupSequence[run.runActionStepIndex] || "";
+    }
+
+    function pickSmall(large, rng) {
+      const smalls = [];
+      const weights = [];
+      for (const smallGroupId of large.smallGroupIds || []) {
+        const small = tables.smallById.get(smallGroupId);
+        if (small) {
+          smalls.push(small);
+          weights.push((small.weight || 0) > 0 ? small.weight : 1);
+        } else {
+          diagnostics.push(`大组 ${large.id} 引用了不存在的小组：${smallGroupId}`);
+        }
+      }
+
+      if (smalls.length === 0) {
+        return null;
+      }
+
+      return smalls[rng.weightedPickIndex(weights)] || null;
+    }
+
+    function hasEligibleEvent(behavior) {
+      return tables.events.some(event =>
+        event.eventType === behavior &&
+        (event.weight || 0) > 0 &&
+        preconditionSatisfied(event.preconditions)
+      );
+    }
+
+    function isActionAvailable(action) {
+      if (!action) {
+        return false;
+      }
+
+      switch (action.behavior) {
+        case ACTION_BEHAVIOR.Food:
+          return action.foodId === "food_boss" || !action.foodId || tables.foodById.has(action.foodId);
+        case ACTION_BEHAVIOR.Event:
+        case ACTION_BEHAVIOR.Reward:
+        case ACTION_BEHAVIOR.Negative:
+          return hasEligibleEvent(action.behavior);
+        default:
+          return true;
+      }
+    }
+
+    function rollCostDays(action, rng) {
+      let min = Number(action?.minCostDays || 0);
+      let max = Number(action?.maxCostDays || 0) > 0 ? Number(action.maxCostDays) : min;
+      if (max < min) {
+        [min, max] = [max, min];
+      }
+
+      const minTenths = Math.round(min * 10);
+      const maxTenths = Math.round(max * 10);
+      const tenths = minTenths === maxTenths ? minTenths : rng.range(minTenths, maxTenths + 1);
+      return quantizeDay(tenths / 10);
+    }
+
+    function generateChoices(run, rng, count = 3) {
+      const largeId = ensureCurrentGroup(run, rng);
+      const large = largeId ? tables.largeById.get(largeId) : null;
+      if (!large) {
+        return { largeId, large: null, small: null, choices: [] };
+      }
+
+      const small = pickSmall(large, rng);
+      if (!small) {
+        return { largeId, large, small: null, choices: [] };
+      }
+
+      const choices = [];
+      const limit = Math.min(count, 3);
+      for (const actionId of small.actionIds || []) {
+        if (choices.length >= limit) {
+          break;
+        }
+
+        const action = tables.actionById.get(actionId);
+        if (!isActionAvailable(action)) {
+          continue;
+        }
+
+        choices.push({
+          action,
+          costDays: rollCostDays(action, rng),
+          actionGroupId: large.id,
+          weekStepIndex: run.actionStepIndex,
+          runStepIndex: run.runActionStepIndex
+        });
+      }
+
+      return { largeId, large, small, choices };
+    }
+
+    function matchesPool(pool, timelineId) {
+      if (!pool) {
+        return true;
+      }
+      return String(pool).split(",").map(x => x.trim()).includes(timelineId);
+    }
+
+    function rollWeekTimeline(run, rng, character) {
+      const week = tables.weekById.get(run.weekIndex) || tables.weekById.get(tables.weeks.length);
+      const ids = week?.timelineIds || [];
+      const weights = week?.timelineWeights || [];
+      const pairCount = Math.min(ids.length, weights.length);
+      if (ids.length !== weights.length) {
+        diagnostics.push(`第 ${run.weekIndex} 周 timelineIds/timelineWeights 长度不一致，只使用前 ${pairCount} 对。`);
+      }
+
+      const candidates = [];
+      const candidateWeights = [];
+      for (let i = 0; i < pairCount; i++) {
+        const timelineId = String(ids[i] || "").trim();
+        const weight = Number(weights[i] || 0);
+        if (!timelineId || weight <= 0 || !matchesPool(character?.timelinePool || "", timelineId)) {
+          continue;
+        }
+
+        const timeline = tables.timelineById.get(timelineId);
+        if (!timeline) {
+          diagnostics.push(`第 ${run.weekIndex} 周配置了不存在的行动轴：${timelineId}`);
+          continue;
+        }
+
+        candidates.push(timeline);
+        candidateWeights.push(weight);
+      }
+
+      if (candidates.length === 0) {
+        run.currentTimelineId = "";
+        run.timelineLengthDays = 7;
+        run.currentDay = 0;
+        run.actionStepIndex = 0;
+        diagnostics.push(`第 ${run.weekIndex} 周无匹配行动轴，回退 7 天空轴。`);
+        return null;
+      }
+
+      const chosen = candidates[rng.weightedPickIndex(candidateWeights)];
+      run.currentTimelineId = chosen.id;
+      run.timelineLengthDays = chosen.baseLengthDays > 0 ? chosen.baseLengthDays : 7;
+      run.currentDay = 0;
+      run.actionStepIndex = 0;
+      return chosen;
+    }
+
+    function timelineNodes(timelineId) {
+      return tables.timelineNodes
+        .filter(node => node.timelineId === timelineId)
+        .slice()
+        .sort((a, b) => a.day - b.day);
+    }
+
+    function collectPassedNodes(run, prevDay, newDay) {
+      return timelineNodes(run.currentTimelineId).filter(node =>
+        node.day > prevDay + 0.0001 &&
+        node.day <= newDay + 0.0001 &&
+        !run.triggeredNodeIds.has(node.id)
+      );
+    }
+
+    function pickChoice(choices, mode, rng) {
+      if (choices.length === 0) {
+        return null;
+      }
+
+      if (mode === "first") {
+        return choices[0];
+      }
+
+      if (mode === "shortest") {
+        return choices.reduce((best, cur) => cur.costDays < best.costDays ? cur : best, choices[0]);
+      }
+
+      if (mode === "longest") {
+        return choices.reduce((best, cur) => cur.costDays > best.costDays ? cur : best, choices[0]);
+      }
+
+      return choices[rng.range(0, choices.length)];
+    }
+
+    function simulateSample(sampleIndex, options) {
+      const rootRng = new Rng(`${options.seed}:sample${sampleIndex}`);
+      const character = tables.characterById.get(options.characterId) || tables.characters[0] || null;
+      const run = {
+        weekIndex: 1,
+        currentTimelineId: "",
+        timelineLengthDays: 0,
+        currentDay: 0,
+        actionStepIndex: 0,
+        runActionStepIndex: 0,
+        actionGroupSequence: [],
+        actionWeekPlan: [],
+        actionWeekPlanWeek: 0,
+        actionWeekPlanStartRunStep: 0,
+        triggeredNodeIds: new Set()
+      };
+
+      const weeks = [];
+      for (let weekIndex = 1; weekIndex <= options.weekCount; weekIndex++) {
+        run.weekIndex = weekIndex;
+        run.triggeredNodeIds.clear();
+        const mapRng = rootRng.fork("map", `w${weekIndex}`);
+        const timeline = rollWeekTimeline(run, mapRng, character);
+        const nodes = timelineNodes(run.currentTimelineId);
+        const actions = [];
+
+        let guard = 0;
+        while (run.currentDay < run.timelineLengthDays - 0.0001 && guard < options.maxActionsPerWeek) {
+          guard++;
+          const prevDay = run.currentDay;
+          const key = actionChoiceKey(run);
+          const actionRng = rootRng.fork("action", key);
+          const generated = generateChoices(run, actionRng);
+          const pickRng = rootRng.fork("gm-pick", `${sampleIndex}:${key}`);
+          const selected = pickChoice(generated.choices, options.pickMode, pickRng);
+
+          let newDay = prevDay;
+          let passedNodes = [];
+          if (selected) {
+            newDay = Math.min(run.timelineLengthDays, quantizeDay(prevDay + selected.costDays));
+            passedNodes = collectPassedNodes(run, prevDay, newDay);
+            for (const node of passedNodes) {
+              run.triggeredNodeIds.add(node.id);
+            }
+          } else {
+            newDay = Math.min(run.timelineLengthDays, quantizeDay(prevDay + 1));
+            passedNodes = collectPassedNodes(run, prevDay, newDay);
+            for (const node of passedNodes) {
+              run.triggeredNodeIds.add(node.id);
+            }
+          }
+
+          actions.push({
+            key,
+            step: run.actionStepIndex,
+            runStep: run.runActionStepIndex,
+            fromDay: prevDay,
+            toDay: newDay,
+            group: generated.large,
+            small: generated.small,
+            choices: generated.choices,
+            selected,
+            passedNodes
+          });
+
+          run.currentDay = newDay;
+          run.actionStepIndex++;
+          run.runActionStepIndex++;
+        }
+
+        if (guard >= options.maxActionsPerWeek) {
+          diagnostics.push(`样本 ${sampleIndex} 第 ${weekIndex} 周达到单周行动上限，已停止该周模拟。`);
+        }
+
+        weeks.push({
+          weekIndex,
+          timeline,
+          lengthDays: run.timelineLengthDays,
+          nodes,
+          actions,
+          plan: run.actionWeekPlan.slice(),
+          finalDay: run.currentDay
+        });
+      }
+
+      return { sampleIndex, character, weeks };
+    }
+
+    function actionLabel(action) {
+      if (!action) {
+        return "无行动";
+      }
+      const food = action.foodId ? ` / ${action.foodId}` : "";
+      return `${action.name || action.id} (${action.id}${food})`;
+    }
+
+    function renderAxis(week) {
+      const nodesByDay = new Map();
+      for (const node of week.nodes) {
+        if (!nodesByDay.has(node.day)) {
+          nodesByDay.set(node.day, []);
+        }
+        nodesByDay.get(node.day).push(node);
+      }
+
+      const days = [];
+      for (let day = 1; day <= Math.ceil(week.lengthDays); day++) {
+        const nodes = nodesByDay.get(day) || [];
+        days.push(`
+          <div class="day">
+            <strong>D${day}</strong>
+            ${nodes.length > 0
+              ? nodes.map(node => {
+                const action = tables.actionById.get(node.actionId);
+                return `<div class="node">${esc(action?.name || node.actionId)}<br><span class="chip">${esc(node.id)}</span></div>`;
+              }).join("")
+              : `<span class="chip">空</span>`}
+          </div>
+        `);
+      }
+      return `<div class="axis">${days.join("")}</div>`;
+    }
+
+    function renderChoices(row) {
+      if (row.choices.length === 0) {
+        return `<span class="error">无候选，按休息 +1 天推进</span>`;
+      }
+
+      return row.choices.map(choice => {
+        const selected = choice === row.selected ? " selected" : "";
+        return `<span class="choice${selected}">${esc(actionLabel(choice.action))} / ${choice.costDays.toFixed(1)}天</span>`;
+      }).join("");
+    }
+
+    function renderWeek(week) {
+      const rows = week.actions.map(row => {
+        const nodeText = row.passedNodes.length > 0
+          ? row.passedNodes.map(node => {
+            const action = tables.actionById.get(node.actionId);
+            return `${node.day}天:${action?.name || node.actionId}(${node.id})`;
+          }).join("<br>")
+          : `<span class="chip">无</span>`;
+
+        return `
+          <tr>
+            <td>#${row.step + 1}<br><span class="chip">run ${row.runStep}</span></td>
+            <td>${row.fromDay.toFixed(1)} → ${row.toDay.toFixed(1)}</td>
+            <td>${esc(row.group?.name || row.group?.id || "无")}<br><span class="chip">${esc(row.group?.id || "-")}</span></td>
+            <td>${esc(row.small?.name || row.small?.id || "无")}<br><span class="chip">${esc(row.small?.id || "-")}</span></td>
+            <td>${renderChoices(row)}</td>
+            <td>${nodeText}</td>
+          </tr>
+        `;
+      }).join("");
+
+      const timelineName = week.timeline ? week.timeline.id : "空轴";
+      const nodeChips = week.nodes.map(node => {
+        const action = tables.actionById.get(node.actionId);
+        return `<span class="chip">D${node.day} ${esc(action?.name || node.actionId)} / ${esc(node.id)}</span>`;
+      }).join("");
+
+      return `
+        <section class="week">
+          <h3>
+            <span>第 ${week.weekIndex} 周：${esc(timelineName)} / ${week.lengthDays} 天</span>
+            <span class="chip">${week.actions.length} 次行动，结束于 ${week.finalDay.toFixed(1)} 天</span>
+          </h3>
+          <div class="chips">${nodeChips || `<span class="chip">无节点</span>`}</div>
+          ${renderAxis(week)}
+          <table>
+            <thead>
+              <tr>
+                <th>步数</th>
+                <th>天数推进</th>
+                <th>大组</th>
+                <th>小组</th>
+                <th>行动候选（高亮=GM 推进所选）</th>
+                <th>经过轴节点</th>
+              </tr>
+            </thead>
+            <tbody>${rows || `<tr><td colspan="6">本周没有生成行动。</td></tr>`}</tbody>
+          </table>
+          <details>
+            <summary>本周大组计划</summary>
+            <pre>${esc(week.plan.map((id, idx) => `${idx + 1}. ${id} ${tables.largeById.get(id)?.name || ""}`).join("\n") || "空")}</pre>
+          </details>
+        </section>
+      `;
+    }
+
+    function renderSample(sample) {
+      const totalActions = sample.weeks.reduce((sum, week) => sum + week.actions.length, 0);
+      return `
+        <section class="sample">
+          <h2>
+            <span>随机 #${sample.sampleIndex}</span>
+            <span class="chip">${esc(sample.character?.name || sample.character?.id || "无角色")} / ${totalActions} 次行动</span>
+          </h2>
+          ${sample.weeks.map(renderWeek).join("")}
+        </section>
+      `;
+    }
+
+    function collectOptions() {
+      return {
+        weekCount: Math.max(1, Number(document.getElementById("weekCount").value) || 1),
+        sampleCount: Math.max(1, Number(document.getElementById("sampleCount").value) || 1),
+        seed: document.getElementById("seed").value || "gm-preview",
+        characterId: characterEl.value,
+        pickMode: document.getElementById("pickMode").value,
+        maxActionsPerWeek: Math.max(1, Number(document.getElementById("maxActionsPerWeek").value) || 40)
+      };
+    }
+
+    function runSimulation() {
+      if (!tables) {
+        setStatus("配置尚未加载。请点击“重新读取配置”，或选择 Assets/StreamingAssets/Config 目录。", "error");
+        return;
+      }
+
+      diagnostics = [];
+      const options = collectOptions();
+      const samples = [];
+      for (let i = 1; i <= options.sampleCount; i++) {
+        samples.push(simulateSample(i, options));
+      }
+
+      outputEl.innerHTML = samples.map(renderSample).join("");
+      const diagText = Array.from(new Set(diagnostics)).slice(0, 60);
+      const diagHtml = diagText.length > 0
+        ? `<details open><summary>诊断信息 ${diagText.length} 条</summary><pre>${esc(diagText.join("\n"))}</pre></details>`
+        : "";
+      setStatus(`
+        <span class="ok">已生成 ${options.sampleCount} 次随机，覆盖 ${options.weekCount} 周。</span>
+        <span class="chip">种子：${esc(options.seed)}</span>
+        <span class="chip">策略：${esc(document.getElementById("pickMode").selectedOptions[0].textContent)}</span>
+        ${diagHtml}
+      `, diagText.length > 0 ? "warn" : "ok");
+    }
+
+    function normalizeTables(raw) {
+      const normalized = {
+        weeks: raw.tbweek || [],
+        timelines: raw.tbtimeline || [],
+        timelineNodes: raw.tbtimelinenode || [],
+        actions: raw.tbaction || [],
+        actionLargeGroups: raw.tbactionlargegroup || [],
+        actionSmallGroups: raw.tbactionsmallgroup || [],
+        actionScheduleRules: raw.tbactionschedulerule || [],
+        characters: raw.tbcharacter || [],
+        events: raw.tbevent || [],
+        foods: raw.tbfood || []
+      };
+
+      normalized.weekById = new Map(normalized.weeks.map(row => [Number(row.id), row]));
+      normalized.timelineById = byId(normalized.timelines);
+      normalized.actionById = byId(normalized.actions);
+      normalized.largeById = byId(normalized.actionLargeGroups);
+      normalized.smallById = byId(normalized.actionSmallGroups);
+      normalized.characterById = byId(normalized.characters);
+      normalized.foodById = byId(normalized.foods);
+      return normalized;
+    }
+
+    function updateCharacterOptions() {
+      characterEl.innerHTML = "";
+      for (const character of tables.characters) {
+        const option = document.createElement("option");
+        option.value = character.id;
+        option.textContent = `${character.name || character.id} (${character.id})`;
+        characterEl.appendChild(option);
+      }
+    }
+
+    async function loadViaFetch() {
+      const raw = {};
+      for (const name of REQUIRED_FILES) {
+        const response = await fetch(`${CONFIG_DIR}${name}.json`, { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error(`${name}.json HTTP ${response.status}`);
+        }
+        raw[name] = await response.json();
+      }
+
+      tables = normalizeTables(raw);
+      updateCharacterOptions();
+      setStatus(`<span class="ok">配置加载成功。</span><span class="chip">来源：${esc(CONFIG_DIR)}</span>`, "ok");
+      runSimulation();
+    }
+
+    async function loadViaFiles(files) {
+      const raw = {};
+      const fileList = Array.from(files || []);
+      for (const name of REQUIRED_FILES) {
+        const file = fileList.find(item => item.name.toLowerCase() === `${name}.json`);
+        if (!file) {
+          throw new Error(`缺少 ${name}.json`);
+        }
+        raw[name] = JSON.parse(await file.text());
+      }
+
+      tables = normalizeTables(raw);
+      updateCharacterOptions();
+      setStatus(`<span class="ok">配置加载成功。</span><span class="chip">来源：手动选择文件</span>`, "ok");
+      runSimulation();
+    }
+
+    runBtn.addEventListener("click", runSimulation);
+    loadBtn.addEventListener("click", () => {
+      setStatus(`正在尝试读取 <code>${CONFIG_DIR}*.json</code> ...`);
+      loadViaFetch().catch(error => {
+        setStatus(`
+          <span class="error">自动读取失败：${esc(error.message)}</span>
+          <span>如果你是双击打开 HTML，浏览器可能禁止 file:// fetch。请改用本地 HTTP 服务打开，或在上方选择 Assets/StreamingAssets/Config 目录。</span>
+        `, "error");
+      });
+    });
+    fileInput.addEventListener("change", () => {
+      loadViaFiles(fileInput.files).catch(error => {
+        setStatus(`<span class="error">手动加载失败：${esc(error.message)}</span>`, "error");
+      });
+    });
+
+    loadViaFetch().catch(error => {
+      setStatus(`
+        <span class="error">自动读取失败：${esc(error.message)}</span>
+        <span>可以在上方选择 <code>Assets/StreamingAssets/Config</code> 目录加载配置。</span>
+      `, "error");
+    });
+  </script>
+</body>
+</html>

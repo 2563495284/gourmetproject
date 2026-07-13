@@ -8,7 +8,9 @@ namespace GourmetProject.Game.Meta
 {
     /// <summary>
     /// 整局行动组序列（大组）与本次 n 选一（大组→小组）生成。
-    /// - 大组间：日程规则 <see cref="cfg.ActionScheduleRule"/> 强制窗口 + 大组 fallbackWeights[周-1] 保底加权。
+    /// - 大组间：日程规则 <see cref="cfg.ActionScheduleRule"/> 只做「每周保底」——每周开始时把各规则的 minCount
+    ///   随机散布进其窗口（窗口按「周内行动步序号」定义），其余空位按大组 fallbackWeights[周-1] 权重随机充填。
+    /// - 规则的窗口/计数按周独立，count 每周清空；activeWeeks 决定该规则在哪些周生效。
     /// - 大组→小组：按 <see cref="cfg.ActionSmallGroup.Weight"/> 选 1 个小组。
     /// - 小组：固定成员，经可用性过滤后即本次 n 选一。
     /// </summary>
@@ -82,6 +84,10 @@ namespace GourmetProject.Game.Meta
             return smalls[rng.WeightedPickIndex(weights)];
         }
 
+        /// <summary>
+        /// 保证当前整局行动步（<see cref="GameRun.RunActionStepIndex"/>）对应的大组已生成并返回。
+        /// 每周首次访问时构建「本周计划」（窗口散布 + 权重充填）；窗口之外按权重遅延生成。
+        /// </summary>
         public static string EnsureCurrentGroup(GameRun run, IRandomStream rng)
         {
             if (run == null || rng == null)
@@ -91,105 +97,244 @@ namespace GourmetProject.Game.Meta
 
             while (run.ActionGroupSequence.Count <= run.RunActionStepIndex)
             {
-                int runStep = run.ActionGroupSequence.Count + 1;
-                run.AppendActionGroup(PickGroupForStep(run, runStep, rng));
+                int nextRunStep = run.ActionGroupSequence.Count;
+                EnsureWeekPlan(run, rng, nextRunStep);
+
+                string groupId = null;
+                int weekLocalIndex = nextRunStep - run.ActionWeekPlanStartRunStep;
+                IReadOnlyList<string> plan = run.ActionWeekPlan;
+                if (weekLocalIndex >= 0 && weekLocalIndex < plan.Count && !string.IsNullOrEmpty(plan[weekLocalIndex]))
+                {
+                    groupId = plan[weekLocalIndex];
+                }
+
+                if (string.IsNullOrEmpty(groupId))
+                {
+                    // 窗口之外（本周步数超过计划长度）：仅按权重随机，与上一格避免重复。
+                    groupId = PickBeyondWindow(run, rng);
+                }
+
+                run.AppendActionGroup(groupId);
             }
 
             return run.ActionGroupSequence[run.RunActionStepIndex];
         }
 
-        private static string PickGroupForStep(GameRun run, int runStep, IRandomStream rng)
+        /// <summary>本周计划缺失或已过期（周切换）时重建。以 <see cref="GameRun.WeekIndex"/> 作为构建标记。</summary>
+        private static void EnsureWeekPlan(GameRun run, IRandomStream rng, int nextRunStep)
+        {
+            if (run.ActionWeekPlanWeek == run.WeekIndex)
+            {
+                return;
+            }
+
+            List<string> plan = BuildWeekPlan(run, rng, nextRunStep);
+            run.SetActionWeekPlan(run.WeekIndex, nextRunStep, plan);
+        }
+
+        /// <summary>
+        /// 构建本周大组计划：先把每条生效规则的 minCount 散布进其窗口的随机空位（保底），
+        /// 再把剩余空位按 fallbackWeights[周-1] 权重充填（尊重每规则 maxCount、避免与相邻大组重复）。
+        /// </summary>
+        private static List<string> BuildWeekPlan(GameRun run, IRandomStream rng, int planStartRunStep)
         {
             cfg.Tables tables = run.Tables ?? GameApp.Config.Tables;
-            var rules = new List<cfg.ActionScheduleRule>(tables.TbActionScheduleRule.DataList);
+
+            var rules = new List<cfg.ActionScheduleRule>();
+            foreach (cfg.ActionScheduleRule rule in tables.TbActionScheduleRule.DataList)
+            {
+                // 约定：maxRunStep 必须为有限上限(>0)；无有限窗口的规则无法参与本周散布，直接忽略。
+                if (rule.MaxRunStep > 0 && IsRuleActiveThisWeek(run, rule))
+                {
+                    rules.Add(rule);
+                }
+            }
+
             rules.Sort((a, b) =>
             {
                 int priority = b.Priority.CompareTo(a.Priority);
                 return priority != 0 ? priority : string.Compare(a.Id, b.Id, StringComparison.Ordinal);
             });
 
+            int horizon = 0;
             foreach (cfg.ActionScheduleRule rule in rules)
             {
-                if (!IsRuleActive(run, rule, runStep))
+                if (rule.MaxRunStep > horizon)
+                {
+                    horizon = rule.MaxRunStep;
+                }
+            }
+
+            var plan = new List<string>();
+            if (horizon <= 0)
+            {
+                return plan;
+            }
+
+            var slots = new string[horizon];
+
+            // 1) 保底散布：优先级降序依次为每条规则挑选窗口内的随机空位并落大组。
+            foreach (cfg.ActionScheduleRule rule in rules)
+            {
+                int lo = Math.Max(1, rule.MinRunStep);
+                int hi = Math.Min(rule.MaxRunStep, horizon);
+                if (lo > hi)
                 {
                     continue;
                 }
 
-                int count = CountRuleGroupsInWindow(run, rule);
-                if (count < Math.Max(0, rule.MinCount))
+                int maxCount = rule.MaxCount > 0 ? rule.MaxCount : int.MaxValue;
+                int need = Math.Min(Math.Max(0, rule.MinCount), maxCount);
+                if (need <= 0)
                 {
-                    string picked = PickFromRule(run, rule, runStep, rng);
-                    if (!string.IsNullOrEmpty(picked))
+                    continue;
+                }
+
+                var free = new List<int>();
+                for (int s = lo; s <= hi; s++)
+                {
+                    if (string.IsNullOrEmpty(slots[s - 1]))
                     {
-                        return picked;
+                        free.Add(s);
+                    }
+                }
+
+                int placed = 0;
+                while (placed < need && free.Count > 0)
+                {
+                    int pickIndex = free.Count == 1 ? 0 : rng.Range(0, free.Count);
+                    int slot = free[pickIndex];
+                    free.RemoveAt(pickIndex);
+
+                    string groupId = PickRuleGroup(run, rule, rng);
+                    if (string.IsNullOrEmpty(groupId))
+                    {
+                        // 该规则没有可用大组，放弃剩余保底名额。
+                        break;
+                    }
+
+                    slots[slot - 1] = groupId;
+                    placed++;
+                }
+            }
+
+            // 2) 权重充填：剩余空位按顺序取权重随机，避免与前/后已定大组重复，且不越过任何规则 maxCount。
+            string prevGroup = planStartRunStep > 0 && planStartRunStep - 1 < run.ActionGroupSequence.Count
+                ? run.ActionGroupSequence[planStartRunStep - 1]
+                : string.Empty;
+
+            for (int i = 0; i < horizon; i++)
+            {
+                if (!string.IsNullOrEmpty(slots[i]))
+                {
+                    prevGroup = slots[i];
+                    continue;
+                }
+
+                string nextGroup = i + 1 < horizon ? slots[i + 1] : string.Empty;
+                string groupId = PickWeightedFill(run, rng, i + 1, prevGroup, nextGroup, rules, slots);
+                slots[i] = groupId;
+                prevGroup = groupId;
+            }
+
+            plan.AddRange(slots);
+            return plan;
+        }
+
+        private static bool IsRuleActiveThisWeek(GameRun run, cfg.ActionScheduleRule rule)
+        {
+            if (run == null || rule == null || !PreconditionEvaluator.IsSatisfied(run, rule.Preconditions))
+            {
+                return false;
+            }
+
+            return IsRuleWeekActive(rule, run.WeekIndex);
+        }
+
+        /// <summary>从「声明了该规则」的可选大组里按保底权重挑一个（供散布落位）。</summary>
+        private static string PickRuleGroup(GameRun run, cfg.ActionScheduleRule rule, IRandomStream rng)
+        {
+            var groups = new List<cfg.ActionLargeGroup>();
+            foreach (cfg.ActionLargeGroup group in run.Tables.TbActionLargeGroup.DataList)
+            {
+                if (ContainsId(group.RuleIds, rule.Id) && IsGroupSelectable(run, group))
+                {
+                    groups.Add(group);
+                }
+            }
+
+            return PickWeightedByFallback(run, groups, rng);
+        }
+
+        /// <summary>权重充填单个空位：排除超 maxCount 的大组，并避免与前/后相邻大组重复；候选枯竭时逐步放宽。</summary>
+        private static string PickWeightedFill(GameRun run, IRandomStream rng, int weekStep, string prevGroup, string nextGroup, List<cfg.ActionScheduleRule> rules, string[] slots)
+        {
+            var groups = new List<cfg.ActionLargeGroup>();
+            foreach (cfg.ActionLargeGroup group in run.Tables.TbActionLargeGroup.DataList)
+            {
+                if (IsGroupSelectable(run, group) && !WouldExceedMaxCountAt(run, group, slots, weekStep, rules))
+                {
+                    groups.Add(group);
+                }
+            }
+
+            if (groups.Count == 0)
+            {
+                // maxCount 把候选清空了：退回「仅 selectable」，宁可略过 maxCount 也要产出一个大组。
+                foreach (cfg.ActionLargeGroup group in run.Tables.TbActionLargeGroup.DataList)
+                {
+                    if (IsGroupSelectable(run, group))
+                    {
+                        groups.Add(group);
                     }
                 }
             }
 
-            return PickWeightedGroup(run, runStep, rng);
+            RemoveAvoid(groups, prevGroup);
+            RemoveAvoid(groups, nextGroup);
+
+            return PickWeightedByFallback(run, groups, rng);
         }
 
-        private static string PickFromRule(GameRun run, cfg.ActionScheduleRule rule, int runStep, IRandomStream rng)
+        /// <summary>窗口之外的遅延生成：仅按权重随机，与上一格避免重复。</summary>
+        private static string PickBeyondWindow(GameRun run, IRandomStream rng)
         {
+            string prevGroup = run.ActionGroupSequence.Count > 0
+                ? run.ActionGroupSequence[run.ActionGroupSequence.Count - 1]
+                : string.Empty;
+
             var groups = new List<cfg.ActionLargeGroup>();
             foreach (cfg.ActionLargeGroup group in run.Tables.TbActionLargeGroup.DataList)
             {
-                if (ContainsId(group.RuleIds, rule.Id) && IsGroupAvailable(run, group, runStep))
+                if (IsGroupSelectable(run, group))
                 {
                     groups.Add(group);
                 }
             }
 
-            return PickWeighted(run, groups, rng, avoidRepeat: true);
+            RemoveAvoid(groups, prevGroup);
+            return PickWeightedByFallback(run, groups, rng);
         }
 
-        private static string PickWeightedGroup(GameRun run, int runStep, IRandomStream rng)
+        private static void RemoveAvoid(List<cfg.ActionLargeGroup> groups, string avoidId)
         {
-            var groups = new List<cfg.ActionLargeGroup>();
-            foreach (cfg.ActionLargeGroup group in run.Tables.TbActionLargeGroup.DataList)
+            if (groups.Count > 1 && !string.IsNullOrEmpty(avoidId))
             {
-                if (IsGroupAvailable(run, group, runStep))
-                {
-                    groups.Add(group);
-                }
+                groups.RemoveAll(group => group.Id == avoidId);
             }
-
-            string picked = PickWeighted(run, groups, rng, avoidRepeat: true);
-            if (!string.IsNullOrEmpty(picked))
-            {
-                return picked;
-            }
-
-            groups.Clear();
-            foreach (cfg.ActionLargeGroup group in run.Tables.TbActionLargeGroup.DataList)
-            {
-                if (IsGroupAvailable(run, group, runStep, ignoreRuleMax: true))
-                {
-                    groups.Add(group);
-                }
-            }
-
-            return PickWeighted(run, groups, rng, avoidRepeat: false);
         }
 
-        private static string PickWeighted(GameRun run, List<cfg.ActionLargeGroup> groups, IRandomStream rng, bool avoidRepeat)
+        private static string PickWeightedByFallback(GameRun run, List<cfg.ActionLargeGroup> groups, IRandomStream rng)
         {
             if (groups.Count == 0)
             {
                 return string.Empty;
             }
 
-            string lastGroup = run.ActionGroupSequence.Count > 0 ? run.ActionGroupSequence[run.ActionGroupSequence.Count - 1] : string.Empty;
-            if (avoidRepeat && groups.Count > 1)
-            {
-                groups.RemoveAll(group => group.Id == lastGroup);
-            }
-
             var weights = new List<float>(groups.Count);
             foreach (cfg.ActionLargeGroup group in groups)
             {
-                // 保底权重 0 的组通常已被 IsGroupAvailable 排除；能走到这里的 0 权重组是被规则强制选出的，
-                // 下限设一个极小正值保证仍可被选中（也避免总权重为 0）。
+                // 保底权重 0 但参与规则的大组，给一个极小正值保证仍可被选中（也避免总权重为 0）。
                 float w = FallbackWeight(group, run.WeekIndex);
                 weights.Add(w > 0f ? w : 0.0001f);
             }
@@ -216,7 +361,8 @@ namespace GourmetProject.Game.Meta
             return w > 0f ? w : 0f;
         }
 
-        private static bool IsGroupAvailable(GameRun run, cfg.ActionLargeGroup group, int runStep, bool ignoreRuleMax = false)
+        /// <summary>大组是否可能出现：纯保底权重为 0 且不参与任何规则的大组永不进入序列。</summary>
+        private static bool IsGroupSelectable(GameRun run, cfg.ActionLargeGroup group)
         {
             if (run == null || group == null)
             {
@@ -225,11 +371,10 @@ namespace GourmetProject.Game.Meta
 
             if (FallbackWeight(group, run.WeekIndex) <= 0f && !ContainsAnyRule(group))
             {
-                // 纯保底权重为 0 且不参与任何规则的大组，永不进入序列。
                 return false;
             }
 
-            return ignoreRuleMax || !WouldExceedRuleMax(run, group, runStep);
+            return true;
         }
 
         private static bool ContainsAnyRule(cfg.ActionLargeGroup group)
@@ -242,16 +387,40 @@ namespace GourmetProject.Game.Meta
             return false;
         }
 
-        private static bool WouldExceedRuleMax(GameRun run, cfg.ActionLargeGroup group, int runStep)
+        /// <summary>候选大组落在 weekStep 位置时，是否会让某条覆盖该位置的规则在其窗口内超过 maxCount。</summary>
+        private static bool WouldExceedMaxCountAt(GameRun run, cfg.ActionLargeGroup candidate, string[] slots, int weekStep, List<cfg.ActionScheduleRule> rules)
         {
-            foreach (cfg.ActionScheduleRule rule in run.Tables.TbActionScheduleRule.DataList)
+            foreach (cfg.ActionScheduleRule rule in rules)
             {
-                if (!IsRuleActive(run, rule, runStep) || !ContainsId(group.RuleIds, rule.Id) || rule.MaxCount <= 0)
+                if (rule.MaxCount <= 0 || !ContainsId(candidate.RuleIds, rule.Id))
                 {
                     continue;
                 }
 
-                if (CountRuleGroupsInWindow(run, rule) >= rule.MaxCount)
+                int lo = Math.Max(1, rule.MinRunStep);
+                int hi = Math.Min(rule.MaxRunStep, slots.Length);
+                if (weekStep < lo || weekStep > hi)
+                {
+                    continue;
+                }
+
+                int count = 0;
+                for (int s = lo; s <= hi; s++)
+                {
+                    string id = slots[s - 1];
+                    if (string.IsNullOrEmpty(id))
+                    {
+                        continue;
+                    }
+
+                    cfg.ActionLargeGroup group = run.Tables.TbActionLargeGroup.GetOrDefault(id);
+                    if (group != null && ContainsId(group.RuleIds, rule.Id))
+                    {
+                        count++;
+                    }
+                }
+
+                if (count >= rule.MaxCount)
                 {
                     return true;
                 }
@@ -260,39 +429,24 @@ namespace GourmetProject.Game.Meta
             return false;
         }
 
-        private static int CountRuleGroupsInWindow(GameRun run, cfg.ActionScheduleRule rule)
+        private static bool IsRuleWeekActive(cfg.ActionScheduleRule rule, int weekIndex)
         {
-            int count = 0;
-            int min = Math.Max(1, rule.MinRunStep);
-            int max = rule.MaxRunStep > 0 ? rule.MaxRunStep : int.MaxValue;
-            for (int i = 0; i < run.ActionGroupSequence.Count; i++)
+            IReadOnlyList<int> activeWeeks = rule.ActiveWeeks;
+            if (activeWeeks == null || activeWeeks.Count == 0)
             {
-                int step = i + 1;
-                if (step < min || step > max)
-                {
-                    continue;
-                }
+                return true;
+            }
 
-                cfg.ActionLargeGroup group = run.Tables.TbActionLargeGroup.GetOrDefault(run.ActionGroupSequence[i]);
-                if (group != null && ContainsId(group.RuleIds, rule.Id))
+            int currentWeek = Math.Max(1, weekIndex);
+            foreach (int activeWeek in activeWeeks)
+            {
+                if (activeWeek == currentWeek)
                 {
-                    count++;
+                    return true;
                 }
             }
 
-            return count;
-        }
-
-        private static bool IsRuleActive(GameRun run, cfg.ActionScheduleRule rule, int runStep)
-        {
-            if (rule == null || !PreconditionEvaluator.IsSatisfied(run, rule.Preconditions))
-            {
-                return false;
-            }
-
-            int min = Math.Max(1, rule.MinRunStep);
-            int max = rule.MaxRunStep > 0 ? rule.MaxRunStep : int.MaxValue;
-            return runStep >= min && runStep <= max;
+            return false;
         }
 
         private static float RollCostDays(cfg.GameAction action, IRandomStream rng)

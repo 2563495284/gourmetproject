@@ -40,7 +40,7 @@ public sealed partial class GameEvent : Luban.BeanBase
     /// </summary>
     public readonly string Name;
     /// <summary>
-    /// 事件描述
+    /// 事件描述(初始/根页正文)
     /// </summary>
     public readonly string Desc;
     /// <summary>
