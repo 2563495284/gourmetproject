@@ -38,6 +38,14 @@ namespace GourmetProject.Game.Presentation.Battle
         private static readonly Color TraySelectedColor = new Color(1f, 0.95f, 0.6f, 1f);
         private static readonly Color TrayNormalColor = new Color(0.85f, 0.85f, 0.85f, 0.9f);
 
+        private enum TableInteractionState
+        {
+            None,
+            FragmentPlacement,
+            ReadOnlyView,
+            CellTargeting,
+        }
+
         // —— 由外壳注入的共享场景引用 ——
         private BattleWorldController _owner;
         private DiningTableView _boardView;
@@ -50,7 +58,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private float _halfW = DiningTableLayout.FallbackHalfW;
         private float _halfH = DiningTableLayout.FallbackHalfH;
 
-        private bool _editing;
+        private TableInteractionState _state = TableInteractionState.None;
         private GameRun _editRun;
         private GpTable _editTable;
         private Action<bool> _editOnDone;
@@ -82,7 +90,9 @@ namespace GourmetProject.Game.Presentation.Battle
         private CancellationTokenSource _editDragCts;
 
         /// <summary>是否正处于可拖拽的餐桌编辑态（只读餐桌视图不算）。</summary>
-        public bool IsEditing => _editing;
+        public bool IsEditing => _state == TableInteractionState.FragmentPlacement;
+
+        public GpTable CurrentTable => _editTable;
 
         private struct TrayCluster
         {
@@ -156,7 +166,7 @@ namespace GourmetProject.Game.Presentation.Battle
             EnsureEditRoot();
             BuildCandidateTray();
 
-            _editing = true;
+            _state = TableInteractionState.FragmentPlacement;
         }
 
         /// <summary>进入只读餐桌视图：复用编辑页餐桌布局，但不显示候选碎片托盘，也不启用拖拽输入。</summary>
@@ -174,19 +184,63 @@ namespace GourmetProject.Game.Presentation.Battle
             _editCellSprite = Resources.Load<Sprite>("Sprites/UI/board_cell");
             _editTable = run.BuildTablePreviewFromFragments(run.WeekModifier);
             LayoutEditorTable(_editTable, useBoardArea: true);
+            _state = TableInteractionState.ReadOnlyView;
+        }
+
+        /// <summary>进入主动道具选格态：复用餐桌查看布局，但允许外层用世界箭头选择格子。</summary>
+        public void BeginCellTargeting(GameRun run)
+        {
+            _editRun = run;
+            ClearTray();
+            ClearGhost();
+            ClearDragVisual();
+            HideBoundsWarning();
+            ResolveCamera();
+            CancelDragAnimation();
+            ComputeViewport();
+
+            _editCellSprite = Resources.Load<Sprite>("Sprites/UI/board_cell");
+            _editTable = run.BuildTablePreviewFromFragments(run.WeekModifier);
+            LayoutEditorTable(_editTable, useBoardArea: true);
+            _state = TableInteractionState.CellTargeting;
         }
 
         public void EndTableView()
         {
+            if (_state != TableInteractionState.ReadOnlyView && _state != TableInteractionState.CellTargeting)
+            {
+                return;
+            }
+
             _boardView?.ShowVoidAsPlaceholders(false);
             _editTable = null;
+            _editRun = null;
+            _state = TableInteractionState.None;
             _owner?.ClearTableMode();
+        }
+
+        public bool ApplyCellMaterialVisual(GridPos pos, string materialId, Action onComplete)
+        {
+            if (_editTable == null || string.IsNullOrEmpty(materialId) || !_editTable.AddMaterialAt(pos, materialId))
+            {
+                return false;
+            }
+
+            _boardView?.Sync();
+            if (_boardView != null && _boardView.TryGetCellView(pos, out DiningTableCellView cell) && cell != null)
+            {
+                cell.PlayMaterialTransform(onComplete);
+                return true;
+            }
+
+            onComplete?.Invoke();
+            return true;
         }
 
         /// <summary>退出餐桌编辑页：清理动态内容，恢复餐桌常规显示。外层负责隐藏世界与返回。</summary>
         public void EndTableEdit()
         {
-            _editing = false;
+            _state = TableInteractionState.None;
             _editSelected = -1;
             _editRotation = 0;
             _editDragging = false;
@@ -206,7 +260,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public void SkipTableEditPack()
         {
-            if (!_editing)
+            if (!IsEditing)
             {
                 return;
             }
@@ -216,7 +270,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void Update()
         {
-            if (_editing)
+            if (IsEditing)
             {
                 UpdateTableEdit();
             }

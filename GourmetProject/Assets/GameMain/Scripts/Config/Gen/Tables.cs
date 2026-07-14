@@ -83,10 +83,6 @@ public partial class Tables
     /// </summary>
     public TbTimelineNode TbTimelineNode {get; }
     /// <summary>
-    /// GlobalConst：跑通 Luban 接入用的占位表（与玩法无关）。
-    /// </summary>
-    public TbGlobalConst TbGlobalConst {get; }
-    /// <summary>
     /// 隐藏分曲线：基础隐藏分与派生隐藏分。
     /// </summary>
     public TbHiddenScoreCurve TbHiddenScoreCurve {get; }
@@ -174,7 +170,6 @@ public partial class Tables
         TbAction = new TbAction(loader("tbaction"));
         TbTimeline = new TbTimeline(loader("tbtimeline"));
         TbTimelineNode = new TbTimelineNode(loader("tbtimelinenode"));
-        TbGlobalConst = new TbGlobalConst(loader("tbglobalconst"));
         TbHiddenScoreCurve = new TbHiddenScoreCurve(loader("tbhiddenscorecurve"));
         TbGoldRewardCurve = new TbGoldRewardCurve(loader("tbgoldrewardcurve"));
         TbActionScheduleRule = new TbActionScheduleRule(loader("tbactionschedulerule"));
@@ -214,7 +209,6 @@ public partial class Tables
         TbAction.ResolveRef(this);
         TbTimeline.ResolveRef(this);
         TbTimelineNode.ResolveRef(this);
-        TbGlobalConst.ResolveRef(this);
         TbHiddenScoreCurve.ResolveRef(this);
         TbGoldRewardCurve.ResolveRef(this);
         TbActionScheduleRule.ResolveRef(this);

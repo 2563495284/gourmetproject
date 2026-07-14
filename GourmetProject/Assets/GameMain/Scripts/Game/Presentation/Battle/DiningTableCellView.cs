@@ -1,4 +1,5 @@
 using System;
+using DG.Tweening;
 using GourmetProject.Gameplay.Model;
 using UnityEngine;
 using GourmetProject.Game.Meta;
@@ -16,6 +17,9 @@ namespace GourmetProject.Game.Presentation.Battle
         private static readonly int OutlineColorId = Shader.PropertyToID("_OutlineColor");
         private static readonly int OutlineWidthId = Shader.PropertyToID("_OutlineWidth");
         private static readonly int FillAlphaId = Shader.PropertyToID("_FillAlpha");
+        private static readonly int BrightnessId = Shader.PropertyToID("_Brightness");
+        private static readonly int BoingId = Shader.PropertyToID("_Boing");
+        private static readonly int EdgeClampPointId = Shader.PropertyToID("_EdgeClampPoint");
 
         [Tooltip("格子渲染体（prefab 根节点上的 SpriteRenderer）。")]
         [SerializeField] private SpriteRenderer _renderer;
@@ -30,6 +34,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private MaterialPropertyBlock _propertyBlock;
         private float _configuredSize;
         private bool _hovered;
+        private Sequence _transformSequence;
 
         public GridPos Position => _position;
 
@@ -95,6 +100,42 @@ namespace GourmetProject.Game.Presentation.Battle
             _configuredSize = size;
         }
 
+        public void PlayMaterialTransform(Action onComplete)
+        {
+            EnsureRefs();
+            KillTransformSequence(resetMaterial: false);
+            if (_renderer == null)
+            {
+                onComplete?.Invoke();
+                return;
+            }
+
+            if (SpriteRenderStyle.SpriteTransformMaterial == null)
+            {
+                _transformSequence = DOTween.Sequence()
+                    .Append(transform.DOPunchScale(Vector3.one * 0.08f, 0.24f, vibrato: 6, elasticity: 0.6f))
+                    .OnComplete(() =>
+                    {
+                        _transformSequence = null;
+                        onComplete?.Invoke();
+                    });
+                return;
+            }
+
+            SpriteRenderStyle.ApplyTransformMaterial(_renderer);
+            ApplyTransformEffect(0f);
+            _transformSequence = DOTween.Sequence()
+                .Append(DOTween.To(() => 0f, ApplyTransformEffect, 1f, 0.14f).SetEase(Ease.OutQuad))
+                .Append(DOTween.To(() => 1f, ApplyTransformEffect, 0f, 0.2f).SetEase(Ease.InOutQuad))
+                .OnComplete(() =>
+                {
+                    _transformSequence = null;
+                    _renderer.SetPropertyBlock(null);
+                    SpriteRenderStyle.ApplyUnlitMaterial(_renderer);
+                    onComplete?.Invoke();
+                });
+        }
+
         public void SetHoverCallbacks(Action<DiningTableCellView> entered, Action<DiningTableCellView> exited)
         {
             _hoverEntered = entered;
@@ -142,6 +183,37 @@ namespace GourmetProject.Game.Presentation.Battle
             if (_renderer != null)
             {
                 _renderer.sortingOrder = order;
+            }
+        }
+
+        private void ApplyTransformEffect(float amount)
+        {
+            if (_renderer == null)
+            {
+                return;
+            }
+
+            float t = Mathf.Clamp01(amount);
+            _propertyBlock ??= new MaterialPropertyBlock();
+            _renderer.GetPropertyBlock(_propertyBlock);
+            _propertyBlock.SetFloat(BrightnessId, 0.42f * t);
+            _propertyBlock.SetVector(BoingId, new Vector4(0.2f * t, -0.14f * t, 0f, 0f));
+            _propertyBlock.SetVector(EdgeClampPointId, new Vector4(0.24f, 0.24f, 0f, 0f));
+            _renderer.SetPropertyBlock(_propertyBlock);
+        }
+
+        private void KillTransformSequence(bool resetMaterial)
+        {
+            if (_transformSequence != null)
+            {
+                _transformSequence.Kill();
+                _transformSequence = null;
+            }
+
+            if (resetMaterial && _renderer != null)
+            {
+                _renderer.SetPropertyBlock(null);
+                SpriteRenderStyle.ApplyUnlitMaterial(_renderer);
             }
         }
 
@@ -221,6 +293,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void OnDisable()
         {
+            KillTransformSequence(resetMaterial: true);
             SetHovered(false);
         }
     }

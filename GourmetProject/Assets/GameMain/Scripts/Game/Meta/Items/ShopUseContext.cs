@@ -1,19 +1,25 @@
 using System;
 using System.Collections.Generic;
+using GourmetProject.Core.Rng;
+using GourmetProject.Game.Orchestration;
 using GourmetProject.Game.Run;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Model;
+using GourmetProject.Runtime;
 
 namespace GourmetProject.Game.Meta
 {
     /// <summary>
-    /// 商店/编辑界面的主动道具使用上下文。只落地永久 Run 变更；不操作战斗餐桌与行动轴。
+    /// 商店/编辑界面的主动道具使用上下文。永久编辑落到 Run；排程小票操作局外核心循环。
     /// </summary>
     public sealed class ShopUseContext : IActiveUseContext
     {
-        public ShopUseContext(GameRun run)
+        private readonly WeekLoopController _weekLoop;
+
+        public ShopUseContext(GameRun run, WeekLoopController weekLoop = null)
         {
             Run = run;
+            _weekLoop = weekLoop;
         }
 
         public ActiveUseContextKind ContextKind => ActiveUseContextKind.Shop;
@@ -81,10 +87,31 @@ namespace GourmetProject.Game.Meta
 
         public bool RerollCurrentAction() => false;
 
-        public bool ResetWeekBoss() => false;
+        public bool ResetWeekBoss()
+        {
+            if (Run == null)
+            {
+                return false;
+            }
 
-        public bool ExecuteNextTimelineNode() => false;
+            Run.ResetBossDebuffRollHistory();
+            return true;
+        }
 
-        public bool AddRewardNodeToTimeline(string actionId) => false;
+        public bool ExecuteNextTimelineNode()
+        {
+            return _weekLoop != null && _weekLoop.ForceExecuteNextTimelineNode();
+        }
+
+        public bool AddRewardNodeToTimeline(string actionId)
+        {
+            if (Run == null || string.IsNullOrEmpty(actionId))
+            {
+                return false;
+            }
+
+            IRandomStream rng = GameApp.Random?.DomainStream(SeedDomains.Item, $"timeline_add_{actionId}_{Run.NextActiveUseKey()}");
+            return !string.IsNullOrEmpty(Run.AddRuntimeTimelineNode(actionId, rng));
+        }
     }
 }

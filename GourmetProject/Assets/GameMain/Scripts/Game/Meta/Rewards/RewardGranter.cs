@@ -23,12 +23,15 @@ namespace GourmetProject.Game.Meta
             if (package == null)
             {
                 Log.Warning("Missing reward package. Falling back to gold-only reward.", Tag);
-                return new RewardOffer(30, null, null);
+                return new RewardOffer(
+                    30,
+                    (System.Collections.Generic.IReadOnlyList<RewardChoice>)null,
+                    (System.Collections.Generic.IReadOnlyList<RewardChoice>)null);
             }
 
             GoldRange goldRange = HiddenScoreService.GoldRewardRange(run, actionContext);
             int baseGold = rng.Range(goldRange.Min, goldRange.Max + 1);
-            var context = new RewardContext(GameApp.Config.Tables, run, effectiveWeek, package, rng, baseGold, actionContext);
+            var context = new RewardContext(run.Tables, run, effectiveWeek, package, rng, baseGold, actionContext);
             System.Collections.Generic.List<RewardChoiceGroup> fixedGroups = RollFixedGroups(context, package);
             System.Collections.Generic.List<RewardChoice> specificChoices = RollSlotGroup(context, package.SpecificSlotGroupId, out int specificPickCount);
             return new RewardOffer(

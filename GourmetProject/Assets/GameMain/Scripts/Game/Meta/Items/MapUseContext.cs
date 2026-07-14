@@ -138,7 +138,7 @@ namespace GourmetProject.Game.Meta
                 return false;
             }
 
-            IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Item, $"timeline_add_{actionId}_{Run.NextActiveUseKey()}");
+            IRandomStream rng = GameApp.Random?.DomainStream(SeedDomains.Item, $"timeline_add_{actionId}_{Run.NextActiveUseKey()}");
             return !string.IsNullOrEmpty(Run.AddRuntimeTimelineNode(actionId, rng));
         }
     }

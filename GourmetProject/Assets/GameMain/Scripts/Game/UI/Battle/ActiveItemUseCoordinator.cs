@@ -37,6 +37,7 @@ namespace GourmetProject.Game.UI.Battle
         private Vector2 _pendingStartScreen;
         private int _targetFrame;
         private bool _recipePanelTargeting;
+        private bool _tableCellTargeting;
 
         public ActiveItemUseCoordinator(BattleForm host)
         {
@@ -68,6 +69,12 @@ namespace GourmetProject.Game.UI.Battle
                     CancelTargeting();
                 }
 
+                return;
+            }
+
+            if (_recipePanelTargeting)
+            {
+                UpdateRecipePanelTargeting();
                 return;
             }
 
@@ -155,6 +162,12 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
+            if (ShouldUseTableCellTargeting(item))
+            {
+                BeginTableCellTargeting(ctx, item, slot);
+                return;
+            }
+
             BeginTargeting(ctx, item, slot, targets);
         }
 
@@ -173,9 +186,8 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            bool persist = ResolveContextKind() != ActiveUseContextKind.Battle;
             _host.ShowActiveItemMessage($"{item.Name}：已丢弃。");
-            _host.RefreshAfterActiveItem(boardChanged: false, persist);
+            _host.RefreshAfterActiveItem(boardChanged: false, persist: false);
         }
 
         private void BeginTargeting(IActiveUseContext ctx, ItemDefinition item, RunItemSlotView slot, IReadOnlyList<ActiveTarget> targets)
@@ -206,7 +218,42 @@ namespace GourmetProject.Game.UI.Battle
             _pendingStartScreen = slot != null ? slot.IconScreenCenter() : Vector2.zero;
             _selectedTargets.Clear();
             _recipePanelTargeting = true;
-            _host.OpenActiveItemRecipeTarget(item, () => CancelTargeting(), CompleteRecipePanelTargeting);
+            _targetFrame = Time.frameCount;
+            _host.OpenActiveItemRecipeTarget(
+                item,
+                () => CancelTargeting(),
+                CompleteRecipePanelTargeting,
+                () =>
+                {
+                    if (_pendingItem == item && _recipePanelTargeting)
+                    {
+                        CreateUiArrow();
+                        _host.ShowActiveItemMessage($"{item.Name}：选择菜品，右键或 Esc 取消。");
+                    }
+                });
+        }
+
+        private void BeginTableCellTargeting(IActiveUseContext ctx, ItemDefinition item, RunItemSlotView slot)
+        {
+            _recipePanelTargeting = false;
+            _tableCellTargeting = true;
+            _pendingContext = ctx;
+            _pendingItem = item;
+            _pendingSlot = slot;
+            _pendingStartScreen = slot != null ? slot.IconScreenCenter() : Vector2.zero;
+            _selectedTargets.Clear();
+            _targetFrame = Time.frameCount;
+
+            _host.OpenActiveItemTableCellTarget(() =>
+            {
+                if (_pendingItem == item && _tableCellTargeting)
+                {
+                    BeginWorldTargeting();
+                    return;
+                }
+
+                _host.CloseActiveItemTableCellTarget();
+            });
         }
 
         private void CompleteRecipePanelTargeting(ActiveTarget target)
@@ -221,6 +268,29 @@ namespace GourmetProject.Game.UI.Battle
             ItemDefinition item = _pendingItem;
             CleanupTargeting();
             ApplyAndConsume(ctx, item, new[] { target });
+        }
+
+        private void UpdateRecipePanelTargeting()
+        {
+            if (Mouse.current == null || _pendingItem == null)
+            {
+                return;
+            }
+
+            Vector2 pointer = Mouse.current.position.ReadValue();
+            bool hasTarget = _host.TryPointerActiveItemRecipeTarget(pointer, out ActiveTarget target);
+            if (Time.frameCount <= _targetFrame || !Mouse.current.leftButton.wasPressedThisFrame)
+            {
+                return;
+            }
+
+            if (hasTarget)
+            {
+                _host.ConfirmActiveItemRecipeTarget(target);
+                return;
+            }
+
+            _host.CancelActiveItemRecipeTarget();
         }
 
         private void BeginWorldTargeting()
@@ -262,8 +332,18 @@ namespace GourmetProject.Game.UI.Battle
             ActiveTarget? hoverTarget = hasHover ? hovered : null;
             world.SetActiveItemTargetHighlights(_pendingItem.TargetKind, _selectedTargets, hoverTarget);
 
-            if (Time.frameCount <= _targetFrame || !WorldInput.PrimaryPressedThisFrame || !hasHover)
+            if (Time.frameCount <= _targetFrame || !WorldInput.PrimaryPressedThisFrame)
             {
+                return;
+            }
+
+            if (!hasHover)
+            {
+                if (_tableCellTargeting)
+                {
+                    CancelTargeting();
+                }
+
                 return;
             }
 
@@ -336,6 +416,12 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
+            if (_tableCellTargeting)
+            {
+                CompleteTableCellTargeting();
+                return;
+            }
+
             IActiveUseContext ctx = _pendingContext;
             ItemDefinition item = _pendingItem;
             ActiveTarget[] targets = _selectedTargets.ToArray();
@@ -343,10 +429,51 @@ namespace GourmetProject.Game.UI.Battle
             ApplyAndConsume(ctx, item, targets);
         }
 
+        private void CompleteTableCellTargeting()
+        {
+            IActiveUseContext ctx = _pendingContext;
+            ItemDefinition item = _pendingItem;
+            ActiveTarget[] targets = _selectedTargets.ToArray();
+            ActiveItemUseResult result = ActiveItemEffectRegistry.Apply(ctx, item, targets);
+            _host.ShowActiveItemMessage(result.Message);
+            if (!result.Success)
+            {
+                CleanupTargeting();
+                _host.CloseActiveItemTableCellTarget();
+                _host.RefreshAfterActiveItem(boardChanged: false, persist: false);
+                return;
+            }
+
+            _host.ActiveRun?.UseActiveItem(item.Id);
+            CleanupTargeting();
+
+            ActiveTarget target = targets.Length > 0 ? targets[0] : default;
+            bool animationStarted = _host.ActiveWorld != null
+                && target.TargetKind == cfg.ItemTargetKind.DiningTableCell
+                && _host.ActiveWorld.PlayActiveItemCellMaterialApplied(new GridPos(target.X, target.Y), item.EffectParam, FinishTableCellTargeting);
+
+            if (!animationStarted)
+            {
+                FinishTableCellTargeting();
+            }
+
+            void FinishTableCellTargeting()
+            {
+                _host.CloseActiveItemTableCellTarget();
+                _host.RefreshAfterActiveItem(result.BoardChanged, persist: false);
+            }
+        }
+
         private void CancelTargeting(bool showMessage = true)
         {
             string itemName = _pendingItem != null ? _pendingItem.Name : null;
+            bool closeTableCellTarget = _tableCellTargeting;
             CleanupTargeting();
+            if (closeTableCellTarget)
+            {
+                _host.CloseActiveItemTableCellTarget();
+            }
+
             if (showMessage && !string.IsNullOrEmpty(itemName))
             {
                 _host.ShowActiveItemMessage($"{itemName}：已取消。");
@@ -359,6 +486,7 @@ namespace GourmetProject.Game.UI.Battle
             _pendingContext = null;
             _pendingSlot = null;
             _recipePanelTargeting = false;
+            _tableCellTargeting = false;
             _selectedTargets.Clear();
             _worldArrow?.Destroy();
             _worldArrow = null;
@@ -392,7 +520,7 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             _host.ActiveRun?.UseActiveItem(item.Id);
-            _host.RefreshAfterActiveItem(result.BoardChanged, ctx.ContextKind != ActiveUseContextKind.Battle);
+            _host.RefreshAfterActiveItem(result.BoardChanged, persist: false);
         }
 
         private bool CanUse(ItemDefinition item, ActiveUseContextKind contextKind, out string reason)
@@ -445,7 +573,7 @@ namespace GourmetProject.Game.UI.Battle
             {
                 ActiveUseContextKind.Battle => new BattleUseContext(_host.ActiveSession, _host.ActiveRun),
                 ActiveUseContextKind.Map => new MapUseContext(_host.ActiveRun, _host.ActiveLoop),
-                ActiveUseContextKind.Shop => new ShopUseContext(_host.ActiveRun),
+                ActiveUseContextKind.Shop => new ShopUseContext(_host.ActiveRun, _host.ActiveLoop),
                 _ => null,
             };
         }
@@ -569,6 +697,13 @@ namespace GourmetProject.Game.UI.Battle
             return item != null
                 && item.TargetKind == cfg.ItemTargetKind.RecipeDish
                 && item.EffectType == ItemEffectTypes.AddFlavor;
+        }
+
+        private static bool ShouldUseTableCellTargeting(ItemDefinition item)
+        {
+            return item != null
+                && item.TargetKind == cfg.ItemTargetKind.DiningTableCell
+                && item.EffectType == ItemEffectTypes.AddMaterial;
         }
 
         private static bool ContainsTarget(IReadOnlyList<ActiveTarget> targets, ActiveTarget candidate)

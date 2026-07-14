@@ -13,10 +13,10 @@ namespace GourmetProject.Game.UI.Tooltips
         public const int VisibleMaterialCount = 3;
 
         [SerializeField] private CanvasGroup _canvasGroup;
-        [SerializeField] private Text _titleText;
         [SerializeField] private ScrollRect _scrollRect;
         [SerializeField] private RectTransform _content;
         [SerializeField] private Scrollbar _scrollbar;
+        [SerializeField] private FoodMaterialTipItemView _itemPrefab;
 
         public void Bind(IReadOnlyList<FoodMaterialTipsEntry> materials)
         {
@@ -34,7 +34,8 @@ namespace GourmetProject.Game.UI.Tooltips
 
             for (int i = 0; i < count; i++)
             {
-                BuildMaterialBlock(uniqueMaterials[i], i);
+                FoodMaterialTipItemView item = CreateItem(i);
+                item.Bind(uniqueMaterials[i]);
             }
 
             bool needsScroll = count > VisibleMaterialCount;
@@ -79,7 +80,7 @@ namespace GourmetProject.Game.UI.Tooltips
         private void EnsureStructure()
         {
             RectTransform root = FoodTipUiUtility.EnsureRect(gameObject);
-            root.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, 300f);
+            root.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, 280f);
             FoodTipUiUtility.EnsurePanelImage(gameObject, new Color(1f, 1f, 1f, 0.96f));
 
             _canvasGroup ??= gameObject.GetComponent<CanvasGroup>() ?? gameObject.AddComponent<CanvasGroup>();
@@ -90,8 +91,8 @@ namespace GourmetProject.Game.UI.Tooltips
                 rootLayout = gameObject.AddComponent<VerticalLayoutGroup>();
             }
 
-            rootLayout.padding = new RectOffset(14, 14, 12, 14);
-            rootLayout.spacing = 10f;
+            rootLayout.padding = new RectOffset(10, 10, 8, 10);
+            rootLayout.spacing = 6f;
             rootLayout.childControlWidth = true;
             rootLayout.childControlHeight = true;
             rootLayout.childForceExpandWidth = true;
@@ -106,8 +107,18 @@ namespace GourmetProject.Game.UI.Tooltips
             fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
             fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-            _titleText = FoodTipUiUtility.EnsureTextChild(root, _titleText, "Title", 26, FontStyle.Bold, TextAnchor.MiddleCenter);
-            _titleText.text = "材质";
+            Transform oldTitle = root.Find("Title");
+            if (oldTitle != null)
+            {
+                if (Application.isPlaying)
+                {
+                    Destroy(oldTitle.gameObject);
+                }
+                else
+                {
+                    DestroyImmediate(oldTitle.gameObject);
+                }
+            }
 
             if (_scrollRect == null)
             {
@@ -165,7 +176,7 @@ namespace GourmetProject.Game.UI.Tooltips
                     contentLayout = _content.gameObject.AddComponent<VerticalLayoutGroup>();
                 }
 
-                contentLayout.spacing = 14f;
+                contentLayout.spacing = 10f;
                 contentLayout.childControlWidth = true;
                 contentLayout.childControlHeight = true;
                 contentLayout.childForceExpandWidth = true;
@@ -290,35 +301,22 @@ namespace GourmetProject.Game.UI.Tooltips
             return result;
         }
 
-        private void BuildMaterialBlock(FoodMaterialTipsEntry material, int index)
+        private FoodMaterialTipItemView CreateItem(int index)
         {
-            RectTransform block = FoodTipUiUtility.CreateChild(_content, $"Material_{index}");
+            FoodMaterialTipItemView item;
+            if (_itemPrefab != null)
+            {
+                item = Instantiate(_itemPrefab, _content, false);
+                item.name = $"Material_{index}";
+            }
+            else
+            {
+                RectTransform block = FoodTipUiUtility.CreateChild(_content, $"Material_{index}");
+                item = block.gameObject.AddComponent<FoodMaterialTipItemView>();
+            }
 
-            var layout = block.gameObject.AddComponent<VerticalLayoutGroup>();
-            layout.padding = new RectOffset(6, 6, 0, 0);
-            layout.spacing = 4f;
-            layout.childControlWidth = true;
-            layout.childControlHeight = true;
-            layout.childForceExpandWidth = true;
-            layout.childForceExpandHeight = false;
-
-            var fitter = block.gameObject.AddComponent<ContentSizeFitter>();
-            fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
-            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-            Text nameText = FoodTipUiUtility.EnsureTextChild(block, null, "Name", 22, FontStyle.Bold, TextAnchor.MiddleCenter);
-            nameText.text = material.Name ?? string.Empty;
-
-            Text descText = FoodTipUiUtility.EnsureTextChild(block, null, "Desc", 18, FontStyle.Normal, TextAnchor.UpperCenter);
-            descText.text = material.Desc ?? string.Empty;
-            descText.horizontalOverflow = HorizontalWrapMode.Wrap;
-            descText.verticalOverflow = VerticalWrapMode.Overflow;
-
-            LayoutElement blockLayout = block.gameObject.AddComponent<LayoutElement>();
-            blockLayout.minHeight = 72f;
-            blockLayout.preferredHeight = -1f;
-
-            LayoutRebuilder.ForceRebuildLayoutImmediate(block);
+            LayoutRebuilder.ForceRebuildLayoutImmediate(item.transform as RectTransform);
+            return item;
         }
 
         private void ApplyScrollbarSpacing(bool needsScroll)

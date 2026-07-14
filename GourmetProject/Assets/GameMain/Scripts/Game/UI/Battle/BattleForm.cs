@@ -612,10 +612,12 @@ namespace GourmetProject.Game.UI.Battle
         internal void OpenActiveItemRecipeTarget(
             ItemDefinition item,
             Action onCancel,
-            Action<ActiveTarget> onTargetConfirmed)
+            Action<ActiveTarget> onTargetConfirmed,
+            Action onOpened = null)
         {
             if (item == null)
             {
+                onOpened?.Invoke();
                 return;
             }
 
@@ -623,7 +625,16 @@ namespace GourmetProject.Game.UI.Battle
             _activeItemRecipeReturnView = _current;
             _activeItemRecipeTargetCancel = onCancel;
             _activeItemRecipeTargetConfirmed = onTargetConfirmed;
-            SwitchTo(GameplayView.RecipeEdit);
+            SwitchTo(GameplayView.RecipeEdit, onShown: onOpened);
+        }
+
+        internal bool TryPointerActiveItemRecipeTarget(Vector2 screenPoint, out ActiveTarget target)
+        {
+            target = default;
+            return _current == GameplayView.RecipeEdit
+                && _activeItemRecipeTargetItem != null
+                && _recipeWorkspacePanel != null
+                && _recipeWorkspacePanel.TryPointerRecipeDishTarget(screenPoint, out target);
         }
 
         internal void CancelActiveItemRecipeTarget()
@@ -640,7 +651,7 @@ namespace GourmetProject.Game.UI.Battle
             RestoreActiveItemRecipeReturnView(returnView);
         }
 
-        private void ConfirmActiveItemRecipeTarget(ActiveTarget target)
+        internal void ConfirmActiveItemRecipeTarget(ActiveTarget target)
         {
             if (_activeItemRecipeTargetItem == null)
             {
@@ -676,6 +687,25 @@ namespace GourmetProject.Game.UI.Battle
                 default:
                     SwitchTo(GameplayView.Shop);
                     break;
+            }
+        }
+
+        internal void OpenActiveItemTableCellTarget(Action onOpened)
+        {
+            if (_stomachCoordinator == null)
+            {
+                onOpened?.Invoke();
+                return;
+            }
+
+            _stomachCoordinator.OpenForCellTargeting(onOpened);
+        }
+
+        internal void CloseActiveItemTableCellTarget()
+        {
+            if (_stomachCoordinator != null && _current == GameplayView.TableView)
+            {
+                _stomachCoordinator.Back();
             }
         }
 

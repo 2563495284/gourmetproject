@@ -85,6 +85,42 @@ namespace GourmetProject.Game.UI.Battle.View
             });
         }
 
+        public void OpenForCellTargeting(Action onOpened)
+        {
+            BattleWorldController world = _host.World;
+            if (world == null || _host.Run == null)
+            {
+                onOpened?.Invoke();
+                return;
+            }
+
+            if (IsActive)
+            {
+                world.BeginTableCellTargeting(_host.Run);
+                _host.BindWorldHoverCallbacks();
+                onOpened?.Invoke();
+                return;
+            }
+
+            if (!world.CanEnterTableView)
+            {
+                onOpened?.Invoke();
+                return;
+            }
+
+            _returnView = _host.CurrentView;
+            _snapshot = _returnView == GameplayView.ActionSelect
+                ? _host.CaptureActionSelectSnapshot()
+                : ActionSelectSnapshot.None;
+            _host.BindWorldHoverCallbacks();
+            _host.SwitchTo(GameplayView.TableView, () =>
+            {
+                _host.BindWorldHoverCallbacks();
+                world.BeginTableCellTargeting(_host.Run);
+                _host.BindWorldHoverCallbacks();
+            }, onOpened);
+        }
+
         public void Back()
         {
             GameplayView target = _returnView;

@@ -88,6 +88,7 @@ namespace GourmetProject.Game.Presentation.Battle
             Food,
             TableEdit,
             TableView,
+            TableCellTargeting,
         }
 
         private GameRun _run;
@@ -112,6 +113,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public bool CanEnterTableView
             => _worldMode != WorldMode.TableView
+                && _worldMode != WorldMode.TableCellTargeting
                 && (_worldMode != WorldMode.Food || (!_settling && !_serving));
 
         private void Awake()
@@ -143,7 +145,9 @@ namespace GourmetProject.Game.Presentation.Battle
         /// <summary>供 <see cref="DiningTableEditController"/> 在编辑/餐桌视图结束时通知外壳复位世界互斥态。</summary>
         internal void ClearTableMode()
         {
-            if (_worldMode == WorldMode.TableEdit || _worldMode == WorldMode.TableView)
+            if (_worldMode == WorldMode.TableEdit
+                || _worldMode == WorldMode.TableView
+                || _worldMode == WorldMode.TableCellTargeting)
             {
                 _worldMode = WorldMode.Hidden;
             }
@@ -244,13 +248,15 @@ namespace GourmetProject.Game.Presentation.Battle
         internal bool TryPointerCellTarget(out ActiveTarget target)
         {
             target = default;
-            if (_session?.DiningTable == null || _boardView?.Mapper == null || _camera == null || WorldInput.PointerOverUi)
+            GpTable table = ActiveCellTargetTable();
+            if (table == null || _boardView?.Mapper == null || _camera == null || WorldInput.PointerOverUi)
             {
                 return false;
             }
 
-            GridPos cell = _boardView.Mapper.NearestCell(WorldInput.MouseWorld(_camera));
-            if (!_session.DiningTable.Exists(cell))
+            Vector3 mouseWorld = WorldInput.MouseWorld(_camera);
+            GridPos cell = _boardView.Mapper.NearestCell(mouseWorld);
+            if (!table.Exists(cell) || !PointerInsideCell(cell, mouseWorld))
             {
                 return false;
             }
@@ -300,9 +306,10 @@ namespace GourmetProject.Game.Presentation.Battle
             if (kind == cfg.ItemTargetKind.DiningTableCell)
             {
                 _boardView?.ClearTargetHighlights();
-                if (_session?.DiningTable != null)
+                GpTable table = ActiveCellTargetTable();
+                if (table != null)
                 {
-                    foreach (GridPos cell in _session.DiningTable.ExistingCells())
+                    foreach (GridPos cell in table.ExistingCells())
                     {
                         var candidate = new ActiveTarget(string.Empty, cell.X, cell.Y, cfg.ItemTargetKind.DiningTableCell);
                         _boardView?.SetTargetHighlight(cell, ContainsTarget(selected, candidate), TargetEquals(hovered, candidate));
@@ -327,6 +334,25 @@ namespace GourmetProject.Game.Presentation.Battle
                     piece.SetPlacementGlow(active, true);
                 }
             }
+        }
+
+        private GpTable ActiveCellTargetTable()
+        {
+            return _session?.DiningTable ?? _boardEdit?.CurrentTable;
+        }
+
+        private bool PointerInsideCell(GridPos cell, Vector3 mouseWorld)
+        {
+            if (_boardView == null || !_boardView.TryGetCellView(cell, out DiningTableCellView view) || view == null)
+            {
+                return true;
+            }
+
+            Bounds bounds = view.WorldBounds;
+            return mouseWorld.x >= bounds.min.x
+                && mouseWorld.x <= bounds.max.x
+                && mouseWorld.y >= bounds.min.y
+                && mouseWorld.y <= bounds.max.y;
         }
 
         internal void ClearActiveItemTargetHighlights()
@@ -433,14 +459,67 @@ namespace GourmetProject.Game.Presentation.Battle
             _boardView?.SetCellHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
         }
 
+        /// <summary>进入主动道具餐桌选格态：布局同只读餐桌视图，但外层会用世界箭头接管点击确认/取消。</summary>
+        public void BeginTableCellTargeting(GameRun run)
+        {
+            if (run == null)
+            {
+                return;
+            }
+
+            EnsureTableEdit();
+            if (_boardEdit.IsEditing)
+            {
+                _boardEdit.EndTableEdit();
+            }
+
+            _run = run;
+            _session = null;
+            gameObject.SetActive(true);
+            CancelPresentationTasks();
+            _worldMode = WorldMode.TableCellTargeting;
+            _settling = false;
+            _serving = false;
+            SetFoodWorldElementsVisible(false);
+            HideWorldPanels();
+            ClearPlacedPieces();
+
+            _boardEdit.BeginCellTargeting(run);
+            _boardView?.SetCellHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
+        }
+
         public void EndTableView()
         {
-            if (_worldMode == WorldMode.TableView)
+            if (_worldMode == WorldMode.TableView || _worldMode == WorldMode.TableCellTargeting)
             {
                 _worldMode = WorldMode.Hidden;
             }
 
             _boardEdit?.EndTableView();
+        }
+
+        public bool PlayActiveItemCellMaterialApplied(GridPos pos, string materialId, Action onComplete)
+        {
+            if (_worldMode == WorldMode.TableView || _worldMode == WorldMode.TableCellTargeting)
+            {
+                return _boardEdit != null && _boardEdit.ApplyCellMaterialVisual(pos, materialId, onComplete);
+            }
+
+            GpTable table = ActiveCellTargetTable();
+            if (table == null || !table.AddMaterialAt(pos, materialId))
+            {
+                return false;
+            }
+
+            _boardView?.Sync();
+            if (_boardView != null && _boardView.TryGetCellView(pos, out DiningTableCellView cell) && cell != null)
+            {
+                cell.PlayMaterialTransform(onComplete);
+                return true;
+            }
+
+            onComplete?.Invoke();
+            return true;
         }
 
         public void SkipTableEditPack()
