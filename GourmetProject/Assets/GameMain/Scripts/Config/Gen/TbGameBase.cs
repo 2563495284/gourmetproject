@@ -51,6 +51,18 @@ public partial class TbGameBase
     /// Interest:每档获得金币
     /// </summary>
      public int InterestGoldPer => _data.InterestGoldPer;
+    /// <summary>
+    /// 商店食物出售栏位数量
+    /// </summary>
+     public int ShopFoodSaleSlotCount => _data.ShopFoodSaleSlotCount;
+    /// <summary>
+    /// 商店被动道具出售栏位数量
+    /// </summary>
+     public int ShopPassiveItemSaleSlotCount => _data.ShopPassiveItemSaleSlotCount;
+    /// <summary>
+    /// 商店主动道具出售栏位数量
+    /// </summary>
+     public int ShopActiveItemSaleSlotCount => _data.ShopActiveItemSaleSlotCount;
     
     public void ResolveRef(Tables tables)
     {

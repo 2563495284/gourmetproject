@@ -22,6 +22,9 @@ public sealed partial class GameBase : Luban.BeanBase
         { if(!_buf["initialFoodAdjustCount"].IsNumber) { throw new SerializationException(); }  InitialFoodAdjustCount = _buf["initialFoodAdjustCount"]; }
         { if(!_buf["interestThreshold"].IsNumber) { throw new SerializationException(); }  InterestThreshold = _buf["interestThreshold"]; }
         { if(!_buf["interestGoldPer"].IsNumber) { throw new SerializationException(); }  InterestGoldPer = _buf["interestGoldPer"]; }
+        { if(!_buf["shopFoodSaleSlotCount"].IsNumber) { throw new SerializationException(); }  ShopFoodSaleSlotCount = _buf["shopFoodSaleSlotCount"]; }
+        { if(!_buf["shopPassiveItemSaleSlotCount"].IsNumber) { throw new SerializationException(); }  ShopPassiveItemSaleSlotCount = _buf["shopPassiveItemSaleSlotCount"]; }
+        { if(!_buf["shopActiveItemSaleSlotCount"].IsNumber) { throw new SerializationException(); }  ShopActiveItemSaleSlotCount = _buf["shopActiveItemSaleSlotCount"]; }
     }
 
     public static GameBase DeserializeGameBase(JSONNode _buf)
@@ -49,6 +52,18 @@ public sealed partial class GameBase : Luban.BeanBase
     /// Interest:每档获得金币
     /// </summary>
     public readonly int InterestGoldPer;
+    /// <summary>
+    /// 商店食物出售栏位数量
+    /// </summary>
+    public readonly int ShopFoodSaleSlotCount;
+    /// <summary>
+    /// 商店被动道具出售栏位数量
+    /// </summary>
+    public readonly int ShopPassiveItemSaleSlotCount;
+    /// <summary>
+    /// 商店主动道具出售栏位数量
+    /// </summary>
+    public readonly int ShopActiveItemSaleSlotCount;
    
     public const int __ID__ = -1705057789;
     public override int GetTypeId() => __ID__;
@@ -65,6 +80,9 @@ public sealed partial class GameBase : Luban.BeanBase
         + "initialFoodAdjustCount:" + InitialFoodAdjustCount + ","
         + "interestThreshold:" + InterestThreshold + ","
         + "interestGoldPer:" + InterestGoldPer + ","
+        + "shopFoodSaleSlotCount:" + ShopFoodSaleSlotCount + ","
+        + "shopPassiveItemSaleSlotCount:" + ShopPassiveItemSaleSlotCount + ","
+        + "shopActiveItemSaleSlotCount:" + ShopActiveItemSaleSlotCount + ","
         + "}";
     }
 }
