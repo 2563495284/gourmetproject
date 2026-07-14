@@ -18,14 +18,14 @@ namespace GourmetProject.Game.UI.Battle.View
         private RectTransform _rect;
         private RectTransform _boardArea;
 
-        private Image _dimTop;
-        private Image _dimBottom;
-        private Image _dimLeft;
-        private Image _dimRight;
-        private Image _frameTop;
-        private Image _frameBottom;
-        private Image _frameLeft;
-        private Image _frameRight;
+        [SerializeField] private Image _dimTop;
+        [SerializeField] private Image _dimBottom;
+        [SerializeField] private Image _dimLeft;
+        [SerializeField] private Image _dimRight;
+        [SerializeField] private Image _frameTop;
+        [SerializeField] private Image _frameBottom;
+        [SerializeField] private Image _frameLeft;
+        [SerializeField] private Image _frameRight;
         
         private void Awake()
         {

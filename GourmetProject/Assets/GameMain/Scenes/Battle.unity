@@ -150,6 +150,37 @@ Transform:
   m_Children: []
   m_Father: {fileID: 420685136}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &230226104
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 230226105}
+  m_Layer: 0
+  m_Name: Strokes
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &230226105
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 230226104}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 232143574}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &232143572
 GameObject:
   m_ObjectHideFlags: 0
@@ -180,6 +211,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Gameplay.Presentation.BattleDoodleController
   _camera: {fileID: 788870930}
+  _strokesRoot: {fileID: 230226105}
+  _strokePrefab: {fileID: 2300493847144611895, guid: e178ac4e1599e43e0a0973fe42c08539, type: 3}
 --- !u!4 &232143574
 Transform:
   m_ObjectHideFlags: 0
@@ -192,7 +225,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 230226105}
   m_Father: {fileID: 420685136}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &420685133
@@ -206,6 +240,7 @@ GameObject:
   - component: {fileID: 420685136}
   - component: {fileID: 420685135}
   - component: {fileID: 420685134}
+  - component: {fileID: 420685137}
   m_Layer: 0
   m_Name: BattleSceneRoot
   m_TagString: Untagged
@@ -252,9 +287,8 @@ MonoBehaviour:
   _doodle: {fileID: 232143573}
   _boardCellPrefab: {fileID: 6341408356780686608, guid: 51f2e9c520382400dbab9879cf9e2308, type: 3}
   _dishPiecePrefab: {fileID: 8981609610198139403, guid: 6cfc41d91a00c45199a5910983b1608b, type: 3}
-  _itemSlotPrefab: {fileID: 0}
-  _menuBookPrefab: {fileID: 3528741960012345673, guid: 5f3a9c2e1b7d44869a9c0e8f12d3b6a4, type: 3}
   _serveHandPrefab: {fileID: 6071260432894370099, guid: 959711ce1de1f489f86e491f9e943669, type: 3}
+  _worldTargetArrowPrefab: {fileID: 2640625609003083573, guid: a87a49c2746414ebdb9afded82d52abf, type: 3}
   _worldButtonPrefab: {fileID: 7008792684074489567, guid: f6a4e9f4890bc4629b5d7a85ab280e8e, type: 3}
   _serveCarryScale: 1.22
   _serveDescendDuration: 0.34
@@ -278,8 +312,24 @@ Transform:
   - {fileID: 6451825}
   - {fileID: 1785965446}
   - {fileID: 232143574}
+  - {fileID: 1940384804}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &420685137
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 420685133}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c259970fec142412f97c275ec4806018, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Presentation.Battle.DiningTableEditController
+  _editRoot: {fileID: 1940384804}
+  _editDragRootPrefab: {fileID: 8396664245392105574, guid: 93e7164cc69bb44b3b6c496906ac84a4, type: 3}
+  _editBoundsWarningLinePrefab: {fileID: 1894718084639076821, guid: 4155fca9de68f4b57b35d37188ee9a3b, type: 3}
 --- !u!1 &788870929
 GameObject:
   m_ObjectHideFlags: 0
@@ -638,6 +688,37 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1785965445}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 420685136}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1940384803
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1940384804}
+  m_Layer: 0
+  m_Name: BoardEditRoot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1940384804
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1940384803}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}

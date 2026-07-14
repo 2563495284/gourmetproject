@@ -49,8 +49,6 @@ namespace GourmetProject.Game.Presentation.Battle
         [Header("Prefabs")]
         [SerializeField] private DiningTableCellView _boardCellPrefab;
         [SerializeField] private DishPieceView _dishPiecePrefab;
-        [SerializeField] private WorldItemSlotView _itemSlotPrefab;
-        [SerializeField] private MenuBookWorldView _menuBookPrefab;
         [SerializeField] private ServeHandView _serveHandPrefab;
         [SerializeField] private WorldTargetArrow _worldTargetArrowPrefab;
         [Tooltip("食物调整态的世界按钮（X/勾/撤销）prefab，复用 Prefabs/Battle/WorldButton。")]
@@ -81,9 +79,6 @@ namespace GourmetProject.Game.Presentation.Battle
         private FoodAdjustController _foodAdjust;
 
         private readonly DishSpriteProvider _spriteProvider = new DishSpriteProvider();
-        private readonly List<WorldItemSlotView> _passiveItemSlots = new List<WorldItemSlotView>();
-        private readonly List<WorldItemSlotView> _activeItemSlots = new List<WorldItemSlotView>();
-        private readonly List<MenuBookWorldView> _recipeBooks = new List<MenuBookWorldView>();
         private readonly List<DishPieceView> _placedPieces = new List<DishPieceView>();
         private readonly Dictionary<int, DishPieceView> _dishViewsById = new Dictionary<int, DishPieceView>();
 
@@ -590,19 +585,6 @@ namespace GourmetProject.Game.Presentation.Battle
         /// <summary>隐藏迁到 HUD 的世界空间面板：被动/主动道具槽、道具标题、菜谱书。</summary>
         private void HideWorldPanels()
         {
-            ClearItemSlots(_passiveItemSlots);
-            ClearItemSlots(_activeItemSlots);
-
-            foreach (MenuBookWorldView book in _recipeBooks)
-            {
-                if (book != null)
-                {
-                    Destroy(book.gameObject);
-                }
-            }
-
-            _recipeBooks.Clear();
-
             if (_passiveItemsRoot != null)
             {
                 _passiveItemsRoot.gameObject.SetActive(false);
@@ -873,20 +855,6 @@ namespace GourmetProject.Game.Presentation.Battle
             _dishViewsById[dish.Id] = piece;
             return piece;
         }
-
-        private void ClearItemSlots(List<WorldItemSlotView> slots)
-        {
-            foreach (WorldItemSlotView slot in slots)
-            {
-                if (slot != null)
-                {
-                    Destroy(slot.gameObject);
-                }
-            }
-
-            slots.Clear();
-        }
-
         public string DoodleToggleLabel => _doodle != null && _doodle.IsVisible ? "隐藏涂鸦" : "显示涂鸦";
 
         /// <summary>每次进入战斗时清空笔迹，并把涂鸦层复位为可见。</summary>
@@ -967,7 +935,6 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _settling = true;
-            SetButtonsInteractable(false);
             CancellationToken token = GetPresentationToken();
             try
             {
@@ -1001,19 +968,6 @@ namespace GourmetProject.Game.Presentation.Battle
         private void RenderSettlementScore(int score)
         {
             _settlementScoreSink?.Invoke(score);
-        }
-
-        private void SetButtonsInteractable(bool interactable)
-        {
-            foreach (WorldItemSlotView slot in _activeItemSlots)
-            {
-                slot?.SetInteractable(interactable);
-            }
-
-            foreach (MenuBookWorldView book in _recipeBooks)
-            {
-                book?.SetInteractable(interactable);
-            }
         }
     }
 }
