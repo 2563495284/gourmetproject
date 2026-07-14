@@ -86,7 +86,10 @@ namespace GourmetProject.Game.Presentation.Battle
         private Vector3 _shadowBaseScale;
         private Vector3 _visualBaseLocalPos;
         private Action<DishInstance> _clicked;
+        private Action<DishPieceView> _hoverEntered;
+        private Action<DishPieceView> _hoverExited;
         private bool _clickEnabled = true;
+        private bool _hovered;
         private const int MaxStains = 4;
         private static readonly int StainCountId = Shader.PropertyToID("_StainCount");
         private static readonly int StainScaleId = Shader.PropertyToID("_StainScale");
@@ -127,6 +130,35 @@ namespace GourmetProject.Game.Presentation.Battle
         public void SetClickEnabled(bool enabled)
         {
             _clickEnabled = enabled;
+            if (!enabled)
+            {
+                SetHovered(false);
+            }
+        }
+
+        public void SetHoverCallbacks(Action<DishPieceView> entered, Action<DishPieceView> exited)
+        {
+            _hoverEntered = entered;
+            _hoverExited = exited;
+        }
+
+        public Bounds WorldBounds
+        {
+            get
+            {
+                EnsureRefs();
+                if (_spriteRenderer != null && _spriteRenderer.sprite != null)
+                {
+                    return _spriteRenderer.bounds;
+                }
+
+                if (_collider != null)
+                {
+                    return _collider.bounds;
+                }
+
+                return new Bounds(transform.position, Vector3.one);
+            }
         }
 
         /// <summary>
@@ -609,6 +641,8 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void Update()
         {
+            UpdateHover();
+
             if (!_clickEnabled || Instance == null || !WorldInput.PrimaryPressedThisFrame || _collider == null)
             {
                 return;
@@ -625,6 +659,47 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 _clicked?.Invoke(Instance);
             }
+        }
+
+        private void UpdateHover()
+        {
+            if (!_clickEnabled || Instance == null || _collider == null || WorldInput.PointerOverUi)
+            {
+                SetHovered(false);
+                return;
+            }
+
+            Camera cam = Camera.main;
+            if (cam == null)
+            {
+                SetHovered(false);
+                return;
+            }
+
+            SetHovered(_collider.OverlapPoint(WorldInput.MouseWorld(cam)));
+        }
+
+        private void SetHovered(bool hovered)
+        {
+            if (_hovered == hovered)
+            {
+                return;
+            }
+
+            _hovered = hovered;
+            if (_hovered)
+            {
+                _hoverEntered?.Invoke(this);
+            }
+            else
+            {
+                _hoverExited?.Invoke(this);
+            }
+        }
+
+        private void OnDisable()
+        {
+            SetHovered(false);
         }
     }
 }

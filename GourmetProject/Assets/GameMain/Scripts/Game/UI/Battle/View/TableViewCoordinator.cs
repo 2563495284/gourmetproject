@@ -36,6 +36,8 @@ namespace GourmetProject.Game.UI.Battle.View
 
         void RestoreBattleWorld();
 
+        void BindWorldHoverCallbacks();
+
         void PlayShowCardsWhenReady();
 
         void OpenTableEdit();
@@ -74,7 +76,13 @@ namespace GourmetProject.Game.UI.Battle.View
             _snapshot = _returnView == GameplayView.ActionSelect
                 ? _host.CaptureActionSelectSnapshot()
                 : ActionSelectSnapshot.None;
-            _host.SwitchTo(GameplayView.TableView, () => world.BeginTableView(_host.Run));
+            _host.BindWorldHoverCallbacks();
+            _host.SwitchTo(GameplayView.TableView, () =>
+            {
+                _host.BindWorldHoverCallbacks();
+                world.BeginTableView(_host.Run);
+                _host.BindWorldHoverCallbacks();
+            });
         }
 
         public void Back()

@@ -16,11 +16,13 @@ namespace GourmetProject.Game.UI.Battle.View
         [SerializeField] private ShopNodeTipView _shopNodeTipPrefab;
         [SerializeField] private InterestNodeTipView _interestNodeTipPrefab;
         [SerializeField] private BossFeastTipView _bossFeastTipPrefab;
+        [SerializeField] private FoodTipsView _foodTipsPrefab;
 
         private ItemTipView _itemTip;
         private ShopNodeTipView _shopTip;
         private InterestNodeTipView _interestTip;
         private BossFeastTipView _bossTip;
+        private FoodTipsView _foodTip;
 
         public ItemTipView Item
         {
@@ -74,6 +76,19 @@ namespace GourmetProject.Game.UI.Battle.View
             }
         }
 
+        public FoodTipsView Food
+        {
+            get
+            {
+                if (_foodTip == null)
+                {
+                    _foodTip = CreateFood(_foodTipsPrefab, "FoodTipsView_Runtime");
+                }
+
+                return _foodTip;
+            }
+        }
+
         /// <summary>提前实例化全部 Tip（进场时预热，避免首次 hover 卡顿）。</summary>
         public void EnsureAll()
         {
@@ -81,6 +96,7 @@ namespace GourmetProject.Game.UI.Battle.View
             _ = Shop;
             _ = Interest;
             _ = Boss;
+            _ = Food;
         }
 
         public void HideAll()
@@ -89,6 +105,7 @@ namespace GourmetProject.Game.UI.Battle.View
             _shopTip?.Hide();
             _interestTip?.Hide();
             _bossTip?.Hide();
+            _foodTip?.Hide();
         }
 
         private T Create<T>(T prefab, string viewName) where T : ActionTipView
@@ -100,6 +117,20 @@ namespace GourmetProject.Game.UI.Battle.View
             }
 
             T view = Instantiate(prefab, transform, false);
+            view.gameObject.name = viewName;
+            view.Hide();
+            return view;
+        }
+
+        private FoodTipsView CreateFood(FoodTipsView prefab, string viewName)
+        {
+            if (prefab == null)
+            {
+                Log.Warning($"{viewName} prefab is not assigned on BattleTipRegistry.", Tag);
+                return null;
+            }
+
+            FoodTipsView view = Instantiate(prefab, transform, false);
             view.gameObject.name = viewName;
             view.Hide();
             return view;

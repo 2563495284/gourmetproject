@@ -5462,7 +5462,7 @@ MonoBehaviour:
   _actionSelectionPanel: {fileID: 364573485979498198}
   _deck: {fileID: 8087920037263753580}
   _shopPanel: {fileID: 9064086834078507581}
-  _recipeEditPanel: {fileID: 640277735806117130}
+  _recipeWorkspacePanel: {fileID: 640277735806117130}
   _rewardDishPackPanel: {fileID: 5993152883319482668}
   _rewardItemChoicePanelPrefab: {fileID: 882731687564183615, guid: f0fb2abd580ed47dfabf97ab7bcd9e1a, type: 3}
   _randomizedItemsPanel: {fileID: 3697955443635163090}
@@ -5494,6 +5494,7 @@ MonoBehaviour:
   _shopNodeTipPrefab: {fileID: 9107685920200034611, guid: b9e5ff8450fd84f10ac61bbee4e63192, type: 3}
   _interestNodeTipPrefab: {fileID: 5195185591709000967, guid: 1f269ad11b2474164a8179f7f3a1907f, type: 3}
   _bossFeastTipPrefab: {fileID: 5411248217418625617, guid: a6ef1fab185b941a38b5ba73e96623e3, type: 3}
+  _foodTipsPrefab: {fileID: 7013095112852541377, guid: ea2c95d613a824d08884a70e0025c9df, type: 3}
 --- !u!1 &1119462044560964570
 GameObject:
   m_ObjectHideFlags: 0

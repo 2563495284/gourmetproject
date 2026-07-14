@@ -25,9 +25,32 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private GridPos _position;
         private Action<GridPos> _clicked;
+        private Action<DiningTableCellView> _hoverEntered;
+        private Action<DiningTableCellView> _hoverExited;
         private MaterialPropertyBlock _propertyBlock;
+        private float _configuredSize;
+        private bool _hovered;
 
         public GridPos Position => _position;
+
+        public Bounds WorldBounds
+        {
+            get
+            {
+                EnsureRefs();
+                if (_renderer != null && _renderer.sprite != null)
+                {
+                    return _renderer.bounds;
+                }
+
+                if (_collider != null)
+                {
+                    return _collider.bounds;
+                }
+
+                return new Bounds(transform.position, Vector3.one);
+            }
+        }
 
         /// <summary>配置一个由 prefab 实例化出来的格子：结构在 prefab 里摆好，这里只喂数据（局部位置/尺寸/sprite/回调）。</summary>
         public void Configure(
@@ -42,15 +65,25 @@ namespace GourmetProject.Game.Presentation.Battle
             gameObject.name = $"Cell_{position.X}_{position.Y}";
             transform.localPosition = localPosition;
 
-            // 按 sprite 实际包围盒归一化缩放，使任意导入 PPU 的格图都恰好等于 1 格世界尺寸，
-            // 相邻格子边到边对齐、无缝铺满。
+            _position = position;
+            _clicked = clicked;
+
+            SetSprite(sprite, size);
+        }
+
+        public void SetSprite(Sprite sprite, float size)
+        {
+            EnsureRefs();
+            if (_renderer.sprite == sprite && Mathf.Approximately(_configuredSize, size))
+            {
+                return;
+            }
+
+            // 按 sprite 实际包围盒归一化缩放，使任意导入 PPU 的格图都恰好等于 1 格世界尺寸。
             Vector2 bounds = sprite != null ? (Vector2)sprite.bounds.size : Vector2.one;
             float scaleX = bounds.x > 0f ? size / bounds.x : size;
             float scaleY = bounds.y > 0f ? size / bounds.y : size;
             transform.localScale = new Vector3(scaleX, scaleY, 1f);
-
-            _position = position;
-            _clicked = clicked;
 
             _renderer.sprite = sprite;
             _renderer.SetPropertyBlock(null);
@@ -59,6 +92,13 @@ namespace GourmetProject.Game.Presentation.Battle
 
             // 碰撞体取 sprite 局部包围盒，配合上面的缩放后世界尺寸正好等于 size。
             _collider.size = bounds.x > 0f && bounds.y > 0f ? bounds : Vector2.one;
+            _configuredSize = size;
+        }
+
+        public void SetHoverCallbacks(Action<DiningTableCellView> entered, Action<DiningTableCellView> exited)
+        {
+            _hoverEntered = entered;
+            _hoverExited = exited;
         }
 
         public void SetColor(Color color)
@@ -135,6 +175,53 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _clicked?.Invoke(_position);
+        }
+
+        private void Update()
+        {
+            UpdateHover();
+        }
+
+        private void UpdateHover()
+        {
+            EnsureRefs();
+            if (_collider == null || WorldInput.PointerOverUi)
+            {
+                SetHovered(false);
+                return;
+            }
+
+            Camera cam = Camera.main;
+            if (cam == null)
+            {
+                SetHovered(false);
+                return;
+            }
+
+            SetHovered(_collider.OverlapPoint(WorldInput.MouseWorld(cam)));
+        }
+
+        private void SetHovered(bool hovered)
+        {
+            if (_hovered == hovered)
+            {
+                return;
+            }
+
+            _hovered = hovered;
+            if (_hovered)
+            {
+                _hoverEntered?.Invoke(this);
+            }
+            else
+            {
+                _hoverExited?.Invoke(this);
+            }
+        }
+
+        private void OnDisable()
+        {
+            SetHovered(false);
         }
     }
 }

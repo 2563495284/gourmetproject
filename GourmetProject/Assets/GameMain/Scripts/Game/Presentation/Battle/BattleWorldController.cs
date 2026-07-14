@@ -100,6 +100,10 @@ namespace GourmetProject.Game.Presentation.Battle
         private Action<int> _settlementScoreSink;
         private Action<string> _activeItemClicked;
         private Action<DishInstance> _dishClicked;
+        private Action<DishPieceView> _dishHoverEntered;
+        private Action<DishPieceView> _dishHoverExited;
+        private Action<DiningTableCellView> _cellHoverEntered;
+        private Action<DiningTableCellView> _cellHoverExited;
         private Action _stateChanged;
         private CancellationTokenSource _presentationCts;
 
@@ -426,6 +430,7 @@ namespace GourmetProject.Game.Presentation.Battle
             ClearPlacedPieces();
 
             _boardEdit.BeginTableView(run);
+            _boardView?.SetCellHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
         }
 
         public void EndTableView()
@@ -508,6 +513,26 @@ namespace GourmetProject.Game.Presentation.Battle
                 _doodle?.SetVisible(true);
             }
             RefreshAll();
+        }
+
+        public void SetDishHoverCallbacks(Action<DishPieceView> entered, Action<DishPieceView> exited)
+        {
+            _dishHoverEntered = entered;
+            _dishHoverExited = exited;
+            foreach (DishPieceView piece in _placedPieces)
+            {
+                if (piece != null)
+                {
+                    piece.SetHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
+                }
+            }
+        }
+
+        public void SetCellHoverCallbacks(Action<DiningTableCellView> entered, Action<DiningTableCellView> exited)
+        {
+            _cellHoverEntered = entered;
+            _cellHoverExited = exited;
+            _boardView?.SetCellHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
         }
 
         public void HideWorld()
@@ -760,6 +785,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _boardView.transform.position = _boardCenter;
 
             _boardView.Build(board, _cellSize, Gap, OnCellClicked, _boardCellPrefab);
+            _boardView.SetCellHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
 
             // DiningTableView.Build 只重建格子；PiecesRoot 仍挂回 BoardRoot，共用餐桌局部坐标系。
             Transform piecesRoot = EnsurePiecesRoot();
@@ -851,10 +877,32 @@ namespace GourmetProject.Game.Presentation.Battle
             // 菜品挂在 BoardRoot 下，用局部坐标贴格（与餐桌共享局部帧）。
             piece.transform.localPosition = _boardView.Mapper.CellCenterLocal(dish.Placement.Origin);
             piece.BuildPlaced(dish, _spriteProvider.Get(dish.Def), _cellSize, _cellSize + Gap, _dishClicked);
+            piece.SetHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
             _placedPieces.Add(piece);
             _dishViewsById[dish.Id] = piece;
             return piece;
         }
+
+        private void OnDishHoverEntered(DishPieceView piece)
+        {
+            _dishHoverEntered?.Invoke(piece);
+        }
+
+        private void OnDishHoverExited(DishPieceView piece)
+        {
+            _dishHoverExited?.Invoke(piece);
+        }
+
+        private void OnCellHoverEntered(DiningTableCellView cell)
+        {
+            _cellHoverEntered?.Invoke(cell);
+        }
+
+        private void OnCellHoverExited(DiningTableCellView cell)
+        {
+            _cellHoverExited?.Invoke(cell);
+        }
+
         public string DoodleToggleLabel => _doodle != null && _doodle.IsVisible ? "隐藏涂鸦" : "显示涂鸦";
 
         /// <summary>每次进入战斗时清空笔迹，并把涂鸦层复位为可见。</summary>

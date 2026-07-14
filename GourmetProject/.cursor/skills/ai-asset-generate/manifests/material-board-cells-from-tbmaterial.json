@@ -1,0 +1,74 @@
+{
+  "provider": "gemini",
+  "model": "gemini-3.1-flash-image-preview",
+  "stylePrefix": "90s American cable TV cartoon style, thick clean black ink outlines, flat cel animation colors, hand-drawn 2D animation look, polished Unity game board tile sprite quality, playful restaurant tabletop tile, readable material surface, no characters, no face, no eyes, no mouth, no limbs, no readable text, no letters, no numbers, no logo, no watermark, no UI icon symbol, no decorative badge",
+  "typeDefaults": {
+    "ui": {
+      "outputDir": "Assets/GameMain/Resources/Sprites/UI",
+      "postprocess": "magenta-alpha",
+      "background": "opaque",
+      "quality": "high"
+    }
+  },
+  "typePromptPrefixes": {
+    "ui": "Board cell tile rule: one square restaurant table cell tile on a perfectly flat solid #FF00FF chroma key background. The background must be one uniform color with no shadows, gradients, texture, reflections, floor plane, or lighting variation. Do not use #FF00FF, hot pink, magenta, or purple anywhere in the tile. The tile itself should fill most of the canvas with about 5 to 8 percent transparent-safe padding, rounded square corners, thick black outline, no cast shadow, no contact shadow, no grid lines, no checkerboard."
+  },
+  "assets": [
+    {
+      "name": "board_cell",
+      "type": "ui",
+      "requestSize": "1024x1024",
+      "targetSize": "940x940",
+      "prompt": "plain no-material restaurant table cell, warm off-white enamel tabletop surface with subtle cel shaded bevel, simple rounded square tile, quiet neutral default board cell"
+    },
+    {
+      "name": "board_cell_m_cherry",
+      "type": "ui",
+      "requestSize": "1024x1024",
+      "targetSize": "940x940",
+      "prompt": "cherry wood restaurant table cell, warm reddish wood tabletop surface, bold simple wood grain lines, rounded square tile, clearly cherry wood material"
+    },
+    {
+      "name": "board_cell_m_walnut",
+      "type": "ui",
+      "requestSize": "1024x1024",
+      "targetSize": "940x940",
+      "prompt": "walnut wood restaurant table cell, dark chocolate brown tabletop surface, bold wavy wood grain lines, rounded square tile, clearly walnut wood material"
+    },
+    {
+      "name": "board_cell_m_marble",
+      "type": "ui",
+      "requestSize": "1024x1024",
+      "targetSize": "940x940",
+      "prompt": "white marble restaurant table cell, pale stone tabletop surface with gray vein streaks, rounded square tile, clearly marble material"
+    },
+    {
+      "name": "board_cell_m_obsidian",
+      "type": "ui",
+      "requestSize": "1024x1024",
+      "targetSize": "940x940",
+      "prompt": "black obsidian restaurant table cell, glossy dark stone tabletop surface with sharp blue highlights, rounded square tile, clearly obsidian material"
+    },
+    {
+      "name": "board_cell_m_emerald",
+      "type": "ui",
+      "requestSize": "1024x1024",
+      "targetSize": "940x940",
+      "prompt": "emerald restaurant table cell, green faceted gemstone tabletop surface with cel shaded facets, rounded square tile, clearly emerald material"
+    },
+    {
+      "name": "board_cell_m_gold",
+      "type": "ui",
+      "requestSize": "1024x1024",
+      "targetSize": "940x940",
+      "prompt": "gold restaurant table cell, shiny golden metal tabletop surface with chunky cel shaded highlights, rounded square tile, clearly gold material"
+    },
+    {
+      "name": "board_cell_m_silver",
+      "type": "ui",
+      "requestSize": "1024x1024",
+      "targetSize": "940x940",
+      "prompt": "silver restaurant table cell, bright cool silver metal tabletop surface with blue-gray cel shaded highlights, rounded square tile, clearly silver material"
+    }
+  ]
+}

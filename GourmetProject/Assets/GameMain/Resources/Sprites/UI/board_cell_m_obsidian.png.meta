@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: b05dfafd829a54727ac0ca8ab6d39a9c
+guid: 241a01fbeaa254133aa68e3a381a78f2
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -7066341310707138584
-    second: board_cell_0
+      213: -4957967425687988175
+    second: board_cell_m_obsidian_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,7 +100,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: board_cell_0
+      name: board_cell_m_obsidian_0
       rect:
         serializedVersion: 2
         x: 0
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 8eff1a954005fed90800000000000000
-      internalID: -7066341310707138584
+      spriteID: 138d8ef05e2c13bb0800000000000000
+      internalID: -4957967425687988175
       vertices: []
       indices: 
       edges: []
@@ -125,7 +125,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: a2bf300a404a4ae4a800657a906b3298
+    spriteID: 3438f93b85d0478c8ae721c068300823
     internalID: 0
     vertices: []
     indices: 
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      board_cell_0: -7066341310707138584
+      board_cell_m_obsidian_0: -4957967425687988175
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
