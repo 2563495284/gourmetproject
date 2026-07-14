@@ -761,7 +761,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             _boardView.Build(board, _cellSize, Gap, OnCellClicked, _boardCellPrefab);
 
-            // DiningTableView.Build 会清空 BoardRoot 的动态格子子物体；PiecesRoot 必须在此之后再挂入。
+            // DiningTableView.Build 只重建格子；PiecesRoot 仍挂回 BoardRoot，共用餐桌局部坐标系。
             Transform piecesRoot = EnsurePiecesRoot();
             if (piecesRoot != null && piecesRoot.parent != _boardView.transform)
             {

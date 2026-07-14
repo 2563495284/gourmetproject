@@ -880,6 +880,7 @@ namespace GourmetProject.Tests
                 Assert.AreEqual(rolled[i].Kind, restoredStock[i].Kind);
                 Assert.AreEqual(rolled[i].Id, restoredStock[i].Id);
                 Assert.AreEqual(rolled[i].Name, restoredStock[i].Name);
+                Assert.AreEqual(rolled[i].BasePrice, restoredStock[i].BasePrice);
                 Assert.AreEqual(rolled[i].Price, restoredStock[i].Price);
             }
         }

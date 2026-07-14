@@ -24,7 +24,7 @@ namespace GourmetProject.Game.UI.Battle.States
 
         void OpenShopPanel();
 
-        void OpenRecipeEditPanel();
+        void OpenRecipeWorkspacePanel();
 
         void BuildBattleRecipe();
 

@@ -28,6 +28,7 @@ using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Game.UI.Battle.States;
 using GourmetProject.Game.UI.Battle.View;
 using GourmetProject.Game.Meta.Passives;
+using UnityEngine.Serialization;
 
 namespace GourmetProject.Game.UI.Battle
 {
@@ -74,8 +75,9 @@ namespace GourmetProject.Game.UI.Battle
         [Header("Shop (center)")]
         [SerializeField] private ShopForm _shopPanel;
 
-        [Header("Recipe Edit (center)")]
-        [SerializeField] private RecipeEditPanel _recipeEditPanel;
+        [Header("Recipe Workspace (center)")]
+        [FormerlySerializedAs("_recipeEditPanel")]
+        [SerializeField] private RecipeWorkspacePanel _recipeWorkspacePanel;
 
         [Header("Reward Dish Pack (center)")]
         [SerializeField] private RewardDishPackPanel _rewardDishPackPanel;
@@ -121,6 +123,10 @@ namespace GourmetProject.Game.UI.Battle
         private GameplayViewStateMachine _viewStates;
         private ActiveItemUseCoordinator _activeItemUse;
         private int _shopItemFlyInFlight;
+        private ItemDefinition _activeItemRecipeTargetItem;
+        private GameplayView _activeItemRecipeReturnView = GameplayView.None;
+        private Action _activeItemRecipeTargetCancel;
+        private Action<ActiveTarget> _activeItemRecipeTargetConfirmed;
         private View.FoodAdjustOverlay _foodAdjustOverlay;
         [SerializeField] private GameObject _passiveOverlayRoot;
         [SerializeField] private Text _passiveOverlayText;
@@ -424,9 +430,9 @@ namespace GourmetProject.Game.UI.Battle
                 _shopPanel.gameObject.SetActive(shop);
             }
 
-            if (_recipeEditPanel != null)
+            if (_recipeWorkspacePanel != null)
             {
-                _recipeEditPanel.gameObject.SetActive(recipeEdit);
+                _recipeWorkspacePanel.gameObject.SetActive(recipeEdit);
             }
 
             if (_rewardDishPackPanel != null)
@@ -487,12 +493,24 @@ namespace GourmetProject.Game.UI.Battle
             }
         }
 
-        /// <summary>编辑菜谱态：打开菜谱编辑面板。</summary>
-        private void OpenRecipeEditPanel()
+        /// <summary>菜谱工作区：打开编辑菜谱或主动道具选菜流程。</summary>
+        private void OpenRecipeWorkspacePanel()
         {
-            if (_recipeEditPanel != null)
+            if (_recipeWorkspacePanel != null)
             {
-                _recipeEditPanel.Open(_run, OpenShopFromEdit, RefreshShopPersistent);
+                if (_activeItemRecipeTargetItem != null)
+                {
+                    SetCenterTitle(_activeItemRecipeTargetItem.Desc);
+                    _recipeWorkspacePanel.OpenForActiveRecipeDish(
+                        _run,
+                        _activeItemRecipeTargetItem,
+                        CancelActiveItemRecipeTarget,
+                        ConfirmActiveItemRecipeTarget,
+                        RefreshShopPersistent);
+                    return;
+                }
+
+                _recipeWorkspacePanel.Open(_run, OpenShopFromEdit, RefreshShopPersistent);
             }
         }
 
@@ -504,7 +522,7 @@ namespace GourmetProject.Game.UI.Battle
         void IBattleViewHost.SetCenterTitle(string text) => SetCenterTitle(text);
         void IBattleViewHost.RebuildActionAxis() => RebuildActionAxis();
         void IBattleViewHost.OpenShopPanel() => OpenShopPanel();
-        void IBattleViewHost.OpenRecipeEditPanel() => OpenRecipeEditPanel();
+        void IBattleViewHost.OpenRecipeWorkspacePanel() => OpenRecipeWorkspacePanel();
         void IBattleViewHost.BuildBattleRecipe() => BuildBattleRecipe();
         void IBattleViewHost.BuyRecipeBook() => BuyRecipeBook();
 
@@ -564,12 +582,83 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OpenRecipeEdit()
         {
+            ClearActiveItemRecipeTargetRequest();
             SwitchTo(GameplayView.RecipeEdit);
         }
 
         private void OpenShopFromEdit()
         {
             SwitchTo(GameplayView.Shop);
+        }
+
+        internal void OpenActiveItemRecipeTarget(
+            ItemDefinition item,
+            Action onCancel,
+            Action<ActiveTarget> onTargetConfirmed)
+        {
+            if (item == null)
+            {
+                return;
+            }
+
+            _activeItemRecipeTargetItem = item;
+            _activeItemRecipeReturnView = _current;
+            _activeItemRecipeTargetCancel = onCancel;
+            _activeItemRecipeTargetConfirmed = onTargetConfirmed;
+            SwitchTo(GameplayView.RecipeEdit);
+        }
+
+        internal void CancelActiveItemRecipeTarget()
+        {
+            if (_activeItemRecipeTargetItem == null)
+            {
+                return;
+            }
+
+            GameplayView returnView = _activeItemRecipeReturnView;
+            Action onCancel = _activeItemRecipeTargetCancel;
+            ClearActiveItemRecipeTargetRequest();
+            onCancel?.Invoke();
+            RestoreActiveItemRecipeReturnView(returnView);
+        }
+
+        private void ConfirmActiveItemRecipeTarget(ActiveTarget target)
+        {
+            if (_activeItemRecipeTargetItem == null)
+            {
+                return;
+            }
+
+            GameplayView returnView = _activeItemRecipeReturnView;
+            Action<ActiveTarget> onConfirmed = _activeItemRecipeTargetConfirmed;
+            ClearActiveItemRecipeTargetRequest();
+            onConfirmed?.Invoke(target);
+            RestoreActiveItemRecipeReturnView(returnView);
+        }
+
+        private void ClearActiveItemRecipeTargetRequest()
+        {
+            _activeItemRecipeTargetItem = null;
+            _activeItemRecipeReturnView = GameplayView.None;
+            _activeItemRecipeTargetCancel = null;
+            _activeItemRecipeTargetConfirmed = null;
+        }
+
+        private void RestoreActiveItemRecipeReturnView(GameplayView returnView)
+        {
+            switch (returnView)
+            {
+                case GameplayView.ActionSelect:
+                case GameplayView.Shop:
+                case GameplayView.Food:
+                case GameplayView.TableEdit:
+                case GameplayView.TableView:
+                    SwitchTo(returnView);
+                    break;
+                default:
+                    SwitchTo(GameplayView.Shop);
+                    break;
+            }
         }
 
         /// <summary>购买碎片包后进入餐桌编辑态（世界空间）：隐藏商店/行动轴，露出餐桌手动拼贴。</summary>
@@ -986,7 +1075,7 @@ namespace GourmetProject.Game.UI.Battle
             _foodBar?.Refresh(_current == GameplayView.Food, _session, world);
         }
 
-        /// <summary>右栏道具：被动网格（2 列）+ 固定 2 个主动道具槽，聚合同 id 主动实例。</summary>
+        /// <summary>右栏道具：被动网格（2 列）+ 固定主动道具槽，每份主动实例占一格。</summary>
         private void RefreshItems()
         {
             _itemsColumn?.Refresh(_run, _session, _inBattle, _tips != null ? _tips.Item : null, OnActiveItemClicked, ShowItemInfo);
@@ -1357,9 +1446,9 @@ namespace GourmetProject.Game.UI.Battle
                 _shopPanel.gameObject.SetActive(false);
             }
 
-            if (_recipeEditPanel != null)
+            if (_recipeWorkspacePanel != null)
             {
-                _recipeEditPanel.gameObject.SetActive(false);
+                _recipeWorkspacePanel.gameObject.SetActive(false);
             }
 
             if (_rewardDishPackPanel != null)
@@ -1761,6 +1850,7 @@ namespace GourmetProject.Game.UI.Battle
             {
                 BuildActionCards();
                 PlayShowCardsWhenReady();
+                RefreshPersistent();
             }
             else if (_current == GameplayView.Shop)
             {
@@ -1768,8 +1858,12 @@ namespace GourmetProject.Game.UI.Battle
             }
             else if (_current == GameplayView.RecipeEdit)
             {
-                _recipeEditPanel?.Refresh();
+                _recipeWorkspacePanel?.Refresh();
                 RefreshShopPersistent();
+            }
+            else if (!_inBattle)
+            {
+                RefreshPersistent();
             }
 
             RefreshAll();

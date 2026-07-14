@@ -19,20 +19,27 @@ namespace GourmetProject.Game.Meta
 
     public sealed class ShopEntry
     {
-        public ShopEntry(ShopEntryKind kind, string id, string name, string desc, int price)
+        public ShopEntry(ShopEntryKind kind, string id, string name, string desc, int basePrice, int price = -1)
         {
             Kind = kind;
             Id = id;
             Name = name;
             Desc = desc;
-            Price = price;
+            BasePrice = System.Math.Max(1, basePrice);
+            Price = price > 0 ? price : BasePrice;
         }
 
         public ShopEntryKind Kind { get; }
         public string Id { get; }
         public string Name { get; }
         public string Desc { get; }
-        public int Price { get; }
+        public int BasePrice { get; }
+        public int Price { get; private set; }
+
+        public void SetPrice(int price)
+        {
+            Price = System.Math.Max(1, price);
+        }
     }
 
     /// <summary>
@@ -61,7 +68,6 @@ namespace GourmetProject.Game.Meta
         {
             tables ??= GameApp.Config.Tables;
             var stock = new List<ShopEntry>();
-            var itemRuntime = new ItemRuntime(run);
             int dishHidden = HiddenScoreService.DishHiddenScore(run, run.LastActionContext);
             int passiveHidden = HiddenScoreService.PassiveItemHiddenScore(run, run.LastActionContext);
             int fragmentHidden = HiddenScoreService.FragmentHiddenScore(run, run.LastActionContext);
@@ -74,7 +80,7 @@ namespace GourmetProject.Game.Meta
                 ItemDefinition item = ItemDefinition.Get(tables, itemId, cfg.ItemKind.Passive);
                 if (item != null)
                 {
-                    stock.Add(new ShopEntry(ShopEntryKind.PassiveItem, item.Id, item.Name, item.Desc, itemRuntime.ModifyShopPrice(ShopEntryKind.PassiveItem, PassiveItemPrice)));
+                    stock.Add(CreateEntry(run, ShopEntryKind.PassiveItem, item.Id, item.Name, item.Desc, PassiveItemPrice));
                 }
             }
 
@@ -84,7 +90,7 @@ namespace GourmetProject.Game.Meta
                 ItemDefinition item = ItemDefinition.Get(tables, itemId, cfg.ItemKind.Active);
                 if (item != null)
                 {
-                    stock.Add(new ShopEntry(ShopEntryKind.ActiveItem, item.Id, item.Name, item.Desc, itemRuntime.ModifyShopPrice(ShopEntryKind.ActiveItem, ActiveItemPrice)));
+                    stock.Add(CreateEntry(run, ShopEntryKind.ActiveItem, item.Id, item.Name, item.Desc, ActiveItemPrice));
                 }
             }
 
@@ -93,24 +99,60 @@ namespace GourmetProject.Game.Meta
                 cfg.DishBase baseDish = tables.TbDishBase.GetOrDefault(variant.BaseId);
                 string name = baseDish != null ? baseDish.Name : variant.Id;
                 int price = variant.Price > 0 ? variant.Price : 30;
-                stock.Add(new ShopEntry(ShopEntryKind.Dish, variant.Id, name, "加入菜谱池的菜品", itemRuntime.ModifyShopPrice(ShopEntryKind.Dish, price)));
+                stock.Add(CreateEntry(run, ShopEntryKind.Dish, variant.Id, name, "加入菜谱池的菜品", price));
             }
 
             // 碎片包：仅当存在「可拼入当前餐桌」的候选碎片时才上架（避免买了无处可放）。
             if (BuildFragmentCandidates(tables, run, fragmentHidden).Count > 0)
             {
-                stock.Add(new ShopEntry(
+                stock.Add(CreateEntry(
+                    run,
                     ShopEntryKind.Fragment,
                     "fragment_pack",
                     "碎片包",
                     "开出三种碎片，选一块拼入餐桌",
-                    itemRuntime.ModifyShopPrice(ShopEntryKind.Fragment, FragmentPackPrice)));
+                    FragmentPackPrice));
             }
 
             // TODO(passive-item): AutoRestock（自动补货）需商店购买循环支持「卖出后回填槽位」，属 UI/流程交互，
             //   数值判定 ItemRuntime.AutoRestock() 已就绪，待 ShopForm 购买流程接入。
 
             return stock;
+        }
+
+        public static void RefreshStockPrices(GameRun run, IReadOnlyList<ShopEntry> stock)
+        {
+            if (stock == null)
+            {
+                return;
+            }
+
+            foreach (ShopEntry entry in stock)
+            {
+                RefreshPrice(run, entry);
+            }
+        }
+
+        public static int CurrentPrice(GameRun run, ShopEntry entry)
+        {
+            if (entry == null)
+            {
+                return 0;
+            }
+
+            return run == null ? entry.BasePrice : new ItemRuntime(run).ModifyShopPrice(entry.Kind, entry.BasePrice);
+        }
+
+        private static ShopEntry CreateEntry(GameRun run, ShopEntryKind kind, string id, string name, string desc, int basePrice)
+        {
+            var entry = new ShopEntry(kind, id, name, desc, basePrice);
+            RefreshPrice(run, entry);
+            return entry;
+        }
+
+        private static void RefreshPrice(GameRun run, ShopEntry entry)
+        {
+            entry?.SetPrice(CurrentPrice(run, entry));
         }
 
         private static int ConfiguredSlotCount(int value)
@@ -121,7 +163,14 @@ namespace GourmetProject.Game.Meta
         /// <summary>购买一件商品：扣金并结算到运行状态。返回是否成功。</summary>
         public static bool Purchase(GameRun run, ShopEntry entry)
         {
-            if (run == null || entry == null || run.Gold < entry.Price)
+            if (run == null || entry == null)
+            {
+                return false;
+            }
+
+            int price = CurrentPrice(run, entry);
+            entry.SetPrice(price);
+            if (run.Gold < price)
             {
                 return false;
             }
@@ -160,13 +209,20 @@ namespace GourmetProject.Game.Meta
                 return false;
             }
 
-            run.Gold -= entry.Price;
+            run.Gold -= price;
             return true;
         }
 
         public static bool PurchaseDishToBook(GameRun run, ShopEntry entry, int bookIndex)
         {
-            if (run == null || entry == null || entry.Kind != ShopEntryKind.Dish || run.Gold < entry.Price)
+            if (run == null || entry == null || entry.Kind != ShopEntryKind.Dish)
+            {
+                return false;
+            }
+
+            int price = CurrentPrice(run, entry);
+            entry.SetPrice(price);
+            if (run.Gold < price)
             {
                 return false;
             }
@@ -176,7 +232,7 @@ namespace GourmetProject.Game.Meta
                 return false;
             }
 
-            run.Gold -= entry.Price;
+            run.Gold -= price;
             return true;
         }
 
@@ -196,6 +252,11 @@ namespace GourmetProject.Game.Meta
         public static int DeleteCost(GameRun run)
         {
             return run == null ? DeleteDishCost : new ItemRuntime(run).ModifyDeletePrice(DeleteDishCost);
+        }
+
+        public static int RecipeBookCost(GameRun run)
+        {
+            return run == null ? EmptyRecipeBookPrice : new ItemRuntime(run).ModifyRecipeBookPrice(EmptyRecipeBookPrice);
         }
 
         /// <summary>删除菜谱池中的一道菜，花费金币。持有「囤积癖」时禁止删除。</summary>
@@ -240,7 +301,7 @@ namespace GourmetProject.Game.Meta
                 return false;
             }
 
-            int price = new ItemRuntime(run).ModifyRecipeBookPrice(EmptyRecipeBookPrice);
+            int price = RecipeBookCost(run);
             if (run.Gold < price || !run.AddRecipeBook())
             {
                 return false;

@@ -920,7 +920,7 @@ namespace GourmetProject.Game.Run
 
             foreach (ShopEntrySaveData entry in _pendingShopStock)
             {
-                result.Add(new ShopEntry(entry.Kind, entry.Id, entry.Name, entry.Desc, entry.Price));
+                result.Add(new ShopEntry(entry.Kind, entry.Id, entry.Name, entry.Desc, entry.BasePrice, entry.Price));
             }
 
             return result;
@@ -953,6 +953,7 @@ namespace GourmetProject.Game.Run
                     Id = entry.Id,
                     Name = entry.Name,
                     Desc = entry.Desc,
+                    BasePrice = entry.BasePrice,
                     Price = entry.Price,
                 });
             }
