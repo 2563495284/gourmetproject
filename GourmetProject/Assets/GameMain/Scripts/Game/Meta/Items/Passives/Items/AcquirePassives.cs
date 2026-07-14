@@ -62,64 +62,91 @@ namespace GourmetProject.Game.Meta.Passives
 
     [Preserve]
     [PassiveItemModel("item_choose_one_passive")]
-    public sealed class ChooseOnePassiveModel : TodoOnAcquireModel
+    public sealed class ChooseOnePassiveModel : PassiveItemModel
     {
-        protected override string EffectName => "ChooseOnePassive";
+        public override void OnAcquired()
+        {
+            PassiveOnAcquireEffects.OpenItemChoice(Run, Definition, cfg.ItemKind.Passive, System.Math.Max(1, (int)Value));
+        }
     }
 
     [Preserve]
     [PassiveItemModel("item_grant_two_active")]
-    public sealed class GrantRandomActiveModel : TodoOnAcquireModel
+    public sealed class GrantRandomActiveModel : PassiveItemModel
     {
-        protected override string EffectName => "GrantRandomActive";
+        public override void OnAcquired()
+        {
+            PassiveOnAcquireEffects.GrantRandomActivesViaRewardForm(Run, Definition, System.Math.Max(1, (int)Value));
+        }
     }
 
     [Preserve]
     [PassiveItemModel("item_choose_one_active")]
-    public sealed class ChooseOneActiveModel : TodoOnAcquireModel
+    public sealed class ChooseOneActiveModel : PassiveItemModel
     {
-        protected override string EffectName => "ChooseOneActive";
+        public override void OnAcquired()
+        {
+            PassiveOnAcquireEffects.OpenItemChoice(Run, Definition, cfg.ItemKind.Active, System.Math.Max(1, (int)Value));
+        }
     }
 
     [Preserve]
     [PassiveItemModel("item_choose_one_food")]
-    public sealed class ChooseOneFoodModel : TodoOnAcquireModel
+    public sealed class ChooseOneFoodModel : PassiveItemModel
     {
-        protected override string EffectName => "ChooseOneFood";
+        public override void OnAcquired()
+        {
+            PassiveOnAcquireEffects.OpenDishChoice(Run, Definition, System.Math.Max(1, (int)Value));
+        }
     }
 
     [Preserve]
     [PassiveItemModel("item_choose_one_fragment")]
-    public sealed class ChooseOneFragmentModel : TodoOnAcquireModel
+    public sealed class ChooseOneFragmentModel : PassiveItemModel
     {
-        protected override string EffectName => "ChooseOneFragment";
+        public override void OnAcquired()
+        {
+            PassiveOnAcquireEffects.OpenFragmentChoice(Run, Definition, System.Math.Max(1, (int)Value));
+        }
     }
 
     [Preserve]
     [PassiveItemModel("item_grant_recipe")]
-    public sealed class GrantRecipeModel : TodoOnAcquireModel
+    public sealed class GrantRecipeModel : PassiveItemModel
     {
-        protected override string EffectName => "GrantRecipe";
+        public override void OnAcquired()
+        {
+            PassiveOnAcquireEffects.GrantRecipeBook(Run, Definition);
+        }
     }
 
     [Preserve]
     [PassiveItemModel("item_randomize_items")]
-    public sealed class RandomizeItemsModel : TodoOnAcquireModel
+    public sealed class RandomizeItemsModel : PassiveItemModel
     {
-        protected override string EffectName => "RandomizeItems";
+        public override void OnAcquired()
+        {
+            PassiveOnAcquireEffects.RandomizeItems(Run, Definition);
+        }
     }
 
     [Preserve]
     [PassiveItemModel("item_reroll_action")]
-    public sealed class RerollActionModel : TodoOnAcquireModel
+    public sealed class RerollActionModel : PassiveItemModel
     {
-        protected override string EffectName => "RerollAction";
+        public override void OnAcquired()
+        {
+            PassiveOnAcquireEffects.AddActionRerolls(Run, System.Math.Max(1, (int)Value));
+        }
     }
 
     [Preserve]
     [PassiveItemModel("item_copy_food")]
-    public sealed class CopyFoodModel : TodoOnAcquireModel
+    public sealed class CopyFoodModel : PassiveItemModel
     {
-        protected override string EffectName => "CopyFood";
+        public override void OnAcquired()
+        {
+            PassiveOnAcquireEffects.OpenDishChoice(Run, Definition, System.Math.Max(1, (int)Value));
+        }
     }
 }

@@ -88,6 +88,8 @@ namespace GourmetProject.Game.UI.Hud
         private bool _hovering;
         private bool _initialized;
 
+        public RecipeState State => _state;
+
         private RectTransform Rect
         {
             get

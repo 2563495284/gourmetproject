@@ -73,6 +73,7 @@ namespace GourmetProject.Game.Run
         private int _interestGoldPer;
         private int _interestCap;
         private int _foodAdjustBaseCount;
+        private int _actionRerollCount;
 
         // —— 被动道具计数状态（随存档保存）——
         private int _loanDebt;            // 高利贷待扣债务，下一周结算时扣除
@@ -94,6 +95,7 @@ namespace GourmetProject.Game.Run
             _interestGoldPer = gameBase.InterestGoldPer > 0 ? gameBase.InterestGoldPer : 1;
             _interestCap = System.Math.Max(0, gameBase.InitialInterestCap);
             _foodAdjustBaseCount = System.Math.Max(0, gameBase.InitialFoodAdjustCount);
+            _actionRerollCount = System.Math.Max(0, gameBase.InitialActionRerollCount);
 
             cfg.Character character = _tables.TbCharacter.GetOrDefault(characterId);
             if (character != null)
@@ -295,6 +297,27 @@ namespace GourmetProject.Game.Run
         public string NextActiveUseKey()
         {
             return $"active_{_activeUseIndex++}";
+        }
+
+        public int ActionRerollCount => System.Math.Max(0, _actionRerollCount);
+
+        public void AddActionRerollCount(int amount)
+        {
+            if (amount > 0)
+            {
+                _actionRerollCount += amount;
+            }
+        }
+
+        public bool TrySpendActionReroll()
+        {
+            if (_actionRerollCount <= 0)
+            {
+                return false;
+            }
+
+            _actionRerollCount--;
+            return true;
         }
 
         // —— 被动道具计数状态 API ——
@@ -962,6 +985,7 @@ namespace GourmetProject.Game.Run
                 InterestCap = _interestCap,
                 FoodAdjustCount = _foodAdjustBaseCount,
                 ActiveUseIndex = _activeUseIndex,
+                ActionRerollCount = _actionRerollCount,
                 LoanDebt = _loanDebt,
                 MealBonusRemaining = _mealBonusRemaining,
                 ScoreToOneRemaining = _scoreToOneRemaining,
@@ -1021,6 +1045,9 @@ namespace GourmetProject.Game.Run
                 ? data.FoodAdjustCount
                 : System.Math.Max(0, tables.TbGameBase.InitialFoodAdjustCount);
             run._activeUseIndex = data.ActiveUseIndex;
+            run._actionRerollCount = data.ActionRerollCount >= 0
+                ? data.ActionRerollCount
+                : System.Math.Max(0, tables.TbGameBase.InitialActionRerollCount);
             run._loanDebt = System.Math.Max(0, data.LoanDebt);
             run._mealBonusRemaining = System.Math.Max(0, data.MealBonusRemaining);
             run._scoreToOneRemaining = System.Math.Max(0, data.ScoreToOneRemaining);
@@ -1666,6 +1693,32 @@ namespace GourmetProject.Game.Run
         public bool RemoveItem(string itemId)
         {
             return RemoveOneInstance(itemId);
+        }
+
+        public List<ItemAcquireResult> ReplaceItems(IEnumerable<string> itemIds)
+        {
+            foreach (RunItemState state in _items)
+            {
+                state.Model?.OnRemoved();
+            }
+
+            _items.Clear();
+
+            var results = new List<ItemAcquireResult>();
+            if (itemIds == null)
+            {
+                return results;
+            }
+
+            foreach (string itemId in itemIds)
+            {
+                if (!string.IsNullOrEmpty(itemId))
+                {
+                    results.Add(AcquireItem(itemId, fallbackGold: 0, fireOnAcquire: false));
+                }
+            }
+
+            return results;
         }
 
         private bool RemoveOneInstance(string itemId)

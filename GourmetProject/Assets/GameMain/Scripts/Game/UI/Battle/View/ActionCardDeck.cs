@@ -18,6 +18,7 @@ namespace GourmetProject.Game.UI.Battle.View
         [SerializeField] private RectTransform _cardsContainer;
         [SerializeField] private WeekEventCardView _cardPrefab;
         [SerializeField] private Button _skipButton;
+        [SerializeField] private Button _rerollButton;
 
         private readonly List<WeekEventCardView> _cards = new List<WeekEventCardView>();
         private Tween _pendingCardShowTween;
@@ -47,6 +48,12 @@ namespace GourmetProject.Game.UI.Battle.View
         /// <summary>行动 n 选一：无行动可选时改显跳过按钮。卡片与跳过都回调 onPick（跳过传 null）。</summary>
         public void ShowActionChoices(IReadOnlyList<ActionChoice> choices, Action<ActionChoice> onPick)
         {
+            ShowActionChoices(choices, onPick, null, 0);
+        }
+
+        public void ShowActionChoices(IReadOnlyList<ActionChoice> choices, Action<ActionChoice> onPick, Action onReroll, int rerollCount)
+        {
+            EnsureRefs();
             Clear();
             if (_cardsContainer == null || _cardPrefab == null)
             {
@@ -60,6 +67,18 @@ namespace GourmetProject.Game.UI.Battle.View
                 _skipButton.gameObject.SetActive(!hasActions);
                 _skipButton.onClick.RemoveAllListeners();
                 _skipButton.onClick.AddListener(() => onPick?.Invoke(null));
+            }
+
+            if (_rerollButton != null)
+            {
+                bool canReroll = hasActions && onReroll != null && rerollCount > 0;
+                _rerollButton.gameObject.SetActive(canReroll);
+                _rerollButton.onClick.RemoveAllListeners();
+                if (canReroll)
+                {
+                    SetButtonText(_rerollButton, $"刷新({rerollCount})");
+                    _rerollButton.onClick.AddListener(() => onReroll());
+                }
             }
 
             if (!hasActions)
@@ -81,6 +100,7 @@ namespace GourmetProject.Game.UI.Battle.View
         /// <summary>事件 n 选一：每个选项一张卡，点击回调选项序号；无法构建时走 onEmpty 兜底。</summary>
         public void ShowEventOptions(IReadOnlyList<string> options, Action<int> onPick, Action onEmpty)
         {
+            EnsureRefs();
             Clear();
             if (_cardsContainer == null || _cardPrefab == null)
             {
@@ -93,6 +113,10 @@ namespace GourmetProject.Game.UI.Battle.View
             if (_skipButton != null)
             {
                 _skipButton.gameObject.SetActive(false);
+            }
+            if (_rerollButton != null)
+            {
+                _rerollButton.gameObject.SetActive(false);
             }
 
             if (n == 0)
@@ -120,6 +144,7 @@ namespace GourmetProject.Game.UI.Battle.View
 
         public void ShowTimelineNode(cfg.TimelineNode node, int? interestThreshold, int? interestGoldPer, int? interestMaxGain, Action onPick, Action onEmpty)
         {
+            EnsureRefs();
             Clear();
             if (_cardsContainer == null || _cardPrefab == null)
             {
@@ -131,6 +156,10 @@ namespace GourmetProject.Game.UI.Battle.View
             if (_skipButton != null)
             {
                 _skipButton.gameObject.SetActive(false);
+            }
+            if (_rerollButton != null)
+            {
+                _rerollButton.gameObject.SetActive(false);
             }
 
             SpawnCard(0.03f, 0.97f, card => card.Bind(node, interestThreshold, interestGoldPer, interestMaxGain, () => onPick?.Invoke()));
@@ -191,6 +220,7 @@ namespace GourmetProject.Game.UI.Battle.View
 
         public void Clear()
         {
+            EnsureRefs();
             KillPendingShow();
             foreach (WeekEventCardView card in _cards)
             {
@@ -201,6 +231,29 @@ namespace GourmetProject.Game.UI.Battle.View
             }
 
             _cards.Clear();
+        }
+
+        private void EnsureRefs()
+        {
+            if (_rerollButton == null)
+            {
+                Transform found = transform.Find("ReRollButton") ?? transform.Find("RerollButton") ?? transform.Find("Buttons/ReRollButton");
+                _rerollButton = found != null ? found.GetComponent<Button>() : null;
+            }
+        }
+
+        private static void SetButtonText(Button button, string text)
+        {
+            if (button == null)
+            {
+                return;
+            }
+
+            Text label = button.GetComponentInChildren<Text>(true);
+            if (label != null)
+            {
+                label.text = text ?? string.Empty;
+            }
         }
 
         public void KillPendingShow()

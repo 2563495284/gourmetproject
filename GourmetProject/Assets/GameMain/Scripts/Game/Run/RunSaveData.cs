@@ -34,6 +34,9 @@ namespace GourmetProject.Game.Run
         /// <summary>主动道具累计使用次数（单调递增）。随机类主动效果按此序号派生随机流以保证可复现。</summary>
         public int ActiveUseIndex;
 
+        /// <summary>行动选择页剩余刷新次数。</summary>
+        public int ActionRerollCount = -1;
+
         /// <summary>高利贷待扣债务（下一周结算时扣除）。</summary>
         public int LoanDebt;
 

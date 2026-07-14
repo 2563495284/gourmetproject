@@ -78,6 +78,8 @@ namespace GourmetProject.Game.UI.Battle
 
         [Header("Reward Dish Pack (center)")]
         [SerializeField] private RewardDishPackPanel _rewardDishPackPanel;
+        private RewardItemChoicePanel _rewardItemChoicePanel;
+        [SerializeField] private RandomizedItemsPanel _randomizedItemsPanel;
 
         [Header("DiningTable Edit")]
         [SerializeField] private Button _boardEditSkipButton;
@@ -310,6 +312,8 @@ namespace GourmetProject.Game.UI.Battle
             bool shop = view == GameplayView.Shop;
             bool recipeEdit = view == GameplayView.RecipeEdit;
             bool rewardDishPack = view == GameplayView.RewardDishPack;
+            bool rewardItemChoice = view == GameplayView.RewardItemChoice;
+            bool randomizedItems = view == GameplayView.RandomizedItems;
             bool worldView = view == GameplayView.Food || view == GameplayView.TableEdit || view == GameplayView.TableView;
 
             if (_actionSelectionPanel != null)
@@ -330,6 +334,16 @@ namespace GourmetProject.Game.UI.Battle
             if (_rewardDishPackPanel != null)
             {
                 _rewardDishPackPanel.gameObject.SetActive(rewardDishPack);
+            }
+
+            if (_rewardItemChoicePanel != null)
+            {
+                _rewardItemChoicePanel.gameObject.SetActive(rewardItemChoice);
+            }
+
+            if (_randomizedItemsPanel != null)
+            {
+                _randomizedItemsPanel.gameObject.SetActive(randomizedItems);
             }
 
             if (_boardEditSkipButton != null)
@@ -354,6 +368,8 @@ namespace GourmetProject.Game.UI.Battle
                     GameplayView.ActionSelect => RecipeView.RecipeState.Collapsed,
                     GameplayView.Shop => RecipeView.RecipeState.Shown,
                     GameplayView.RewardDishPack => RecipeView.RecipeState.Hidden,
+                    GameplayView.RewardItemChoice => RecipeView.RecipeState.Hidden,
+                    GameplayView.RandomizedItems => RecipeView.RecipeState.Hidden,
                     GameplayView.Food => RecipeView.RecipeState.Shown,
                     GameplayView.TableEdit => RecipeView.RecipeState.Collapsed,
                     _ => RecipeView.RecipeState.Hidden,
@@ -472,15 +488,20 @@ namespace GourmetProject.Game.UI.Battle
 
         public void OpenRewardTableEdit(Action<bool> onDone)
         {
+            OpenRewardTableEdit(_run != null ? _run.PendingFragmentPack : null, onDone);
+        }
+
+        public void OpenRewardTableEdit(IReadOnlyList<string> candidateIds, Action<bool> onDone)
+        {
             BattleWorldController world = _world ?? BattleWorldController.Instance;
-            if (world == null || _run == null || !_run.HasPendingFragmentPack)
+            if (world == null || _run == null || candidateIds == null || candidateIds.Count == 0)
             {
                 onDone?.Invoke(false);
                 return;
             }
 
             _afterRewardTableEdit = onDone;
-            SwitchTo(GameplayView.TableEdit, () => world.BeginTableEdit(_run, _run.PendingFragmentPack, OnRewardTableEditDone));
+            SwitchTo(GameplayView.TableEdit, () => world.BeginTableEdit(_run, candidateIds, OnRewardTableEditDone));
         }
 
         public bool OpenRewardDishPack(
@@ -499,6 +520,146 @@ namespace GourmetProject.Game.UI.Battle
                 SetCenterTitle("菜品包");
                 _rewardDishPackPanel.Open(_run, choices, _recipeView, onChoiceDropped, onSkip);
             });
+            return true;
+        }
+
+        public bool OpenAcquireDishPack(string title, IReadOnlyList<RewardChoice> choices)
+        {
+            if (_run == null || _rewardDishPackPanel == null || choices == null || choices.Count == 0)
+            {
+                return false;
+            }
+
+            GameplayView previous = _current;
+            SwitchTo(GameplayView.RewardDishPack, () =>
+            {
+                SetCenterTitle(string.IsNullOrWhiteSpace(title) ? "菜品包" : title);
+                _rewardDishPackPanel.Open(
+                    _run,
+                    choices,
+                    _recipeView,
+                    (choiceIndex, bookIndex) =>
+                    {
+                        if (choiceIndex < 0 || choiceIndex >= choices.Count)
+                        {
+                            return false;
+                        }
+
+                        if (!RewardGranter.ApplyDishChoiceToBook(_run, choices[choiceIndex], bookIndex))
+                        {
+                            return false;
+                        }
+
+                        RunPersistence.Save(_run);
+                        RestoreAfterAcquireView(previous);
+                        return true;
+                    },
+                    () => RestoreAfterAcquireView(previous));
+            });
+            return true;
+        }
+
+        public bool OpenRewardItemChoices(string title, IReadOnlyList<RewardChoice> choices, cfg.ItemKind kind)
+        {
+            if (_run == null || choices == null || choices.Count == 0)
+            {
+                return false;
+            }
+
+            EnsureRewardItemChoicePanel();
+            if (_rewardItemChoicePanel == null)
+            {
+                return false;
+            }
+
+            GameplayView previous = _current;
+            SwitchTo(GameplayView.RewardItemChoice, () =>
+            {
+                SetCenterTitle(string.Empty);
+                _rewardItemChoicePanel.Open(
+                    string.IsNullOrWhiteSpace(title) ? "选择一个道具" : title,
+                    choices,
+                    kind,
+                    index =>
+                    {
+                        if (index >= 0 && index < choices.Count)
+                        {
+                            RewardGranter.ApplyChoice(_run, choices[index]);
+                            RunPersistence.Save(_run);
+                        }
+
+                        _rewardItemChoicePanel.Close();
+                        RestoreAfterAcquireView(previous);
+                    },
+                    () =>
+                    {
+                        _rewardItemChoicePanel.Close();
+                        RestoreAfterAcquireView(previous);
+                    });
+            });
+            return true;
+        }
+
+        public bool OpenRandomizedItemsPanel(string title, IReadOnlyList<RandomizedItemResult> results)
+        {
+            if (_run == null || results == null)
+            {
+                return false;
+            }
+
+            EnsureRandomizedItemsPanel();
+            if (_randomizedItemsPanel == null)
+            {
+                return false;
+            }
+
+            GameplayView previous = _current;
+            SwitchTo(GameplayView.RandomizedItems, () =>
+            {
+                SetCenterTitle(string.Empty);
+                _randomizedItemsPanel.Open(
+                    string.IsNullOrWhiteSpace(title) ? "随机后的道具" : title,
+                    results,
+                    () =>
+                    {
+                        PlayRandomizedItemFlys(results);
+                        _randomizedItemsPanel.Close();
+                        RestoreAfterAcquireView(previous);
+                    });
+            });
+            return true;
+        }
+
+        public bool TryGrantRecipeBookFromPassive(string sourceName)
+        {
+            if (_run == null)
+            {
+                return false;
+            }
+
+            if (_recipeView == null || _recipeView.State != RecipeView.RecipeState.Shown)
+            {
+                ShowNotice(sourceName, "当前菜谱栏没有展开，菜谱券使用失败。", null);
+                return false;
+            }
+
+            if (!_run.AddRecipeBook())
+            {
+                ShowNotice(sourceName, "菜谱已经满了，无法再获得新菜谱。", null);
+                return false;
+            }
+
+            RunPersistence.Save(_run);
+            RefreshPersistent();
+            if (_current == GameplayView.Food)
+            {
+                BuildBattleRecipe();
+            }
+            else
+            {
+                _recipePresenter?.BuildShop(_run, BuyRecipeBook);
+            }
+
             return true;
         }
 
@@ -527,6 +688,96 @@ namespace GourmetProject.Game.UI.Battle
             SetCenterTitle(string.IsNullOrWhiteSpace(snapshot.Title) ? "选择行动" : snapshot.Title);
             _deck?.SetCardsActive(snapshot.CardsActive);
             _deck?.SetSkipActive(snapshot.SkipActive);
+        }
+
+        private void EnsureRewardItemChoicePanel()
+        {
+            if (_rewardItemChoicePanel != null || _center == null)
+            {
+                return;
+            }
+
+            _rewardItemChoicePanel = RewardItemChoicePanel.Create((RectTransform)_center.transform);
+        }
+
+        private void EnsureRandomizedItemsPanel()
+        {
+            if (_randomizedItemsPanel != null)
+            {
+                return;
+            }
+
+            Log.Error("BattleForm: randomized items panel is not configured.", Tag);
+        }
+
+        private void RestoreAfterAcquireView(GameplayView previous)
+        {
+            RefreshPersistent();
+            switch (previous)
+            {
+                case GameplayView.ActionSelect:
+                    ShowActionSelection();
+                    break;
+                case GameplayView.Shop:
+                    SwitchTo(GameplayView.Shop);
+                    break;
+                case GameplayView.RecipeEdit:
+                    SwitchTo(GameplayView.RecipeEdit);
+                    break;
+                case GameplayView.Food:
+                    SwitchTo(GameplayView.Food);
+                    break;
+                default:
+                    SwitchTo(GameplayView.Shop);
+                    break;
+            }
+        }
+
+        private void PlayRandomizedItemFlys(IReadOnlyList<RandomizedItemResult> results)
+        {
+            if (results == null || _randomizedItemsPanel == null || _itemsColumn == null)
+            {
+                RefreshItems();
+                return;
+            }
+
+            Canvas canvas = GetComponentInParent<Canvas>();
+            RectTransform layer = canvas != null ? canvas.transform as RectTransform : transform.root as RectTransform;
+            if (layer == null)
+            {
+                RefreshItems();
+                return;
+            }
+
+            Canvas.ForceUpdateCanvases();
+            for (int i = 0; i < results.Count; i++)
+            {
+                RandomizedItemResult result = results[i];
+                ItemDefinition item = result?.Item;
+                if (item == null || !result.Acquired)
+                {
+                    continue;
+                }
+
+                if (!_randomizedItemsPanel.TryGetCardRect(i, layer, out Vector2 startCenter, out Vector2 startSize))
+                {
+                    continue;
+                }
+
+                if (!_itemsColumn.TryGetItemFlyTarget(_run, item.Id, item.Kind, layer, out Vector2 targetCenter, out Vector2 targetSize))
+                {
+                    continue;
+                }
+
+                PlayItemFlyTween(
+                    new RectSnapshot(startCenter, startSize),
+                    new RectSnapshot(targetCenter, targetSize),
+                    RunItemSlotView.LoadIcon(item) ?? LoadShopItemFallbackIcon(item.Kind),
+                    RunItemSlotView.QualityColor(item.Quality),
+                    null);
+            }
+
+            RefreshItems();
         }
 
         private void RestoreBattleWorld()
@@ -846,7 +1097,7 @@ namespace GourmetProject.Game.UI.Battle
 
         private void BuildActionCards()
         {
-            _deck?.ShowActionChoices(RollChoices(_run), OnActionSelectionPicked);
+            _deck?.ShowActionChoices(RollChoices(_run), OnActionSelectionPicked, OnActionRerollClicked, _run != null ? _run.ActionRerollCount : 0);
         }
 
         /// <summary>事件 n 选一卡片：每个选项一张卡，点击回调选项序号。</summary>
@@ -899,6 +1150,28 @@ namespace GourmetProject.Game.UI.Battle
             run.SetPendingActionChoices(key, choices);
             RunPersistence.Save(run);
             return choices;
+        }
+
+        private void OnActionRerollClicked()
+        {
+            if (_run == null || !_run.TrySpendActionReroll())
+            {
+                BuildActionCards();
+                PlayShowCardsWhenReady();
+                return;
+            }
+
+            string key = GameRun.BuildActionChoiceKey(_run.RunActionStepIndex, _run.WeekIndex, _run.CurrentDay, _run.ActionStepIndex);
+            IReadOnlyList<ActionChoice> previous = _run.HasPendingActionChoices(key)
+                ? _run.GetPendingActionChoices(key)
+                : RollChoices(_run);
+            IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Action, key + "_player_reroll_" + _run.NextActiveUseKey());
+            List<ActionChoice> rerolled = ActionScheduleService.RerollChoices(_run, rng, previous);
+            _run.SetPendingActionChoices(key, rerolled);
+            RunPersistence.Save(_run);
+            RebuildActionAxis();
+            BuildActionCards();
+            PlayShowCardsWhenReady();
         }
 
         /// <summary>玩家在中部选择了一个行动（null = 无行动可选时的「休息」）。</summary>
@@ -974,6 +1247,9 @@ namespace GourmetProject.Game.UI.Battle
             {
                 _rewardDishPackPanel.gameObject.SetActive(false);
             }
+
+            _rewardItemChoicePanel?.Close();
+            _randomizedItemsPanel?.Close();
 
             if (_boardEditSkipButton != null)
             {

@@ -8,6 +8,8 @@ namespace GourmetProject.Game.UI.Battle
         Shop,
         RecipeEdit,
         RewardDishPack,
+        RewardItemChoice,
+        RandomizedItems,
         Food,
         TableEdit,
         TableView,

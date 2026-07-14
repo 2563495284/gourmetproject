@@ -51,6 +51,28 @@ namespace GourmetProject.Game.UI.Battle.States
         }
     }
 
+    /// <summary>道具获得 n 选一态：中部由道具选择面板构建，底部菜谱隐藏。</summary>
+    internal sealed class RewardItemChoiceState : IGameplayViewState
+    {
+        public GameplayView Kind => GameplayView.RewardItemChoice;
+
+        public void Enter(IBattleViewHost host, Action buildCenter)
+        {
+            buildCenter?.Invoke();
+        }
+    }
+
+    /// <summary>随机化道具结果态：中部展示结果列表，等待玩家继续后播放飞入。</summary>
+    internal sealed class RandomizedItemsState : IGameplayViewState
+    {
+        public GameplayView Kind => GameplayView.RandomizedItems;
+
+        public void Enter(IBattleViewHost host, Action buildCenter)
+        {
+            buildCenter?.Invoke();
+        }
+    }
+
     /// <summary>美食战斗态：世界空间餐桌透出，菜谱抽屉切成上菜条。</summary>
     internal sealed class FoodState : IGameplayViewState
     {

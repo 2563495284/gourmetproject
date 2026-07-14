@@ -44,6 +44,10 @@ public partial class TbGameBase
     /// </summary>
      public int InitialFoodAdjustCount => _data.InitialFoodAdjustCount;
     /// <summary>
+    /// 初始行动刷新次数
+    /// </summary>
+     public int InitialActionRerollCount => _data.InitialActionRerollCount;
+    /// <summary>
     /// Interest:每满该金币阈值
     /// </summary>
      public int InterestThreshold => _data.InterestThreshold;

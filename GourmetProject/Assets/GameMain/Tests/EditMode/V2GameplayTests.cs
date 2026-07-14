@@ -495,6 +495,7 @@ namespace GourmetProject.Tests
             data.InterestGoldPer = 2;
             data.InterestCap = 7;
             data.FoodAdjustCount = 6;
+            data.ActionRerollCount = 4;
 
             GameRun restored = GameRun.FromSaveData(run.Tables, run.Database, data);
 
@@ -502,6 +503,9 @@ namespace GourmetProject.Tests
             Assert.AreEqual(2, restored.InterestGoldPer);
             Assert.AreEqual(7, restored.InterestCap);
             Assert.AreEqual(6, restored.FoodAdjustBaseCount);
+            Assert.AreEqual(4, restored.ActionRerollCount);
+            Assert.IsTrue(restored.TrySpendActionReroll());
+            Assert.AreEqual(3, restored.ActionRerollCount);
         }
 
         [Test]

@@ -299,7 +299,7 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            if (_run.HasPendingGenericRewards)
+            if (_run.HasPendingGenericRewards && !GameApp.UI.HasUIForm(UIForms.Reward))
             {
                 GameApp.UI.OpenUIForm(UIForms.Reward, UIForms.GroupDialog, RewardFormOpenArgs.GenericQueue());
             }

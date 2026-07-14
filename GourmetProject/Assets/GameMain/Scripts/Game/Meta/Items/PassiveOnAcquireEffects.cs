@@ -1,6 +1,9 @@
 using System.Collections.Generic;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Run;
+using GourmetProject.Game.UI;
+using GourmetProject.Game.UI.Battle;
+using GourmetProject.Game.UI.Meta;
 using GourmetProject.Runtime;
 using Log = GourmetProject.Core.Diagnostics.Log;
 
@@ -136,6 +139,208 @@ namespace GourmetProject.Game.Meta
             Log.Info($"已生成通用领奖包：{item.Name}。", Tag);
         }
 
+        public static void OpenItemChoice(GameRun run, ItemDefinition sourceItem, cfg.ItemKind kind, int count)
+        {
+            if (run == null || sourceItem == null)
+            {
+                return;
+            }
+
+            List<RewardChoice> choices = RollItemChoices(run, kind, count, sourceItem.Id);
+            if (choices.Count == 0)
+            {
+                Log.Info($"{sourceItem.Name} 没有可选道具，已跳过。", Tag);
+                return;
+            }
+
+            BattleForm battle = BattleForm.Active;
+            if (battle != null && battle.OpenRewardItemChoices(sourceItem.Name, choices, kind))
+            {
+                return;
+            }
+
+            string key = BuildAcquireKey(run, sourceItem.Id);
+            run.EnqueueGenericRewardOffer(key, sourceItem.Name, new RewardOffer(0, choices, null, baseGoldClaimed: true));
+            OpenGenericRewardForm();
+        }
+
+        public static void GrantRandomActivesViaRewardForm(GameRun run, ItemDefinition sourceItem, int count)
+        {
+            if (run == null || sourceItem == null || count <= 0)
+            {
+                return;
+            }
+
+            IRandomStream rng = Rng(sourceItem.Id);
+            if (rng == null)
+            {
+                Log.Info("GrantRandomActive 缺少随机流，已跳过。", Tag);
+                return;
+            }
+
+            for (int i = 0; i < count; i++)
+            {
+                List<RewardChoice> choices = RollItemChoices(run, cfg.ItemKind.Active, 1, $"{sourceItem.Id}_{i}");
+                if (choices.Count == 0)
+                {
+                    continue;
+                }
+
+                string key = $"{BuildAcquireKey(run, sourceItem.Id)}_active_{i}";
+                run.EnqueueGenericRewardOffer(key, $"{sourceItem.Name} {i + 1}/{count}", new RewardOffer(0, choices, null, baseGoldClaimed: true));
+            }
+
+            if (run.HasPendingGenericRewards)
+            {
+                OpenGenericRewardForm();
+            }
+        }
+
+        public static void OpenDishChoice(GameRun run, ItemDefinition sourceItem, int count)
+        {
+            if (run == null || sourceItem == null)
+            {
+                return;
+            }
+
+            List<RewardChoice> choices = RollDishChoices(run, count, sourceItem.Id);
+            if (choices.Count == 0)
+            {
+                Log.Info($"{sourceItem.Name} 没有可选菜品，已跳过。", Tag);
+                return;
+            }
+
+            BattleForm battle = BattleForm.Active;
+            if (battle != null && battle.OpenAcquireDishPack(sourceItem.Name, choices))
+            {
+                return;
+            }
+
+            string key = BuildAcquireKey(run, sourceItem.Id);
+            run.EnqueueGenericRewardOffer(key, sourceItem.Name, new RewardOffer(0, choices, null, baseGoldClaimed: true));
+            OpenGenericRewardForm();
+        }
+
+        public static void OpenFragmentChoice(GameRun run, ItemDefinition sourceItem, int count)
+        {
+            if (run == null || sourceItem == null)
+            {
+                return;
+            }
+
+            List<string> fragmentIds = RollFragmentIds(run, count, sourceItem.Id);
+            if (fragmentIds.Count == 0)
+            {
+                Log.Info($"{sourceItem.Name} 没有可用餐桌碎片，已跳过。", Tag);
+                return;
+            }
+
+            run.SetPendingFragmentPack(fragmentIds);
+            BattleForm battle = BattleForm.Active;
+            if (battle != null)
+            {
+                battle.OpenRewardTableEdit(fragmentIds, placed =>
+                {
+                    RunPersistence.Save(run);
+                    if (!placed)
+                    {
+                        battle.OpenShop();
+                    }
+                });
+            }
+        }
+
+        public static void GrantRecipeBook(GameRun run, ItemDefinition sourceItem)
+        {
+            if (run == null || sourceItem == null)
+            {
+                return;
+            }
+
+            BattleForm battle = BattleForm.Active;
+            if (battle != null)
+            {
+                battle.TryGrantRecipeBookFromPassive(sourceItem.Name);
+                return;
+            }
+
+            if (run.AddRecipeBook())
+            {
+                RunPersistence.Save(run);
+            }
+            else
+            {
+                Log.Info($"{sourceItem.Name} 使用失败：菜谱已满。", Tag);
+            }
+        }
+
+        public static void RandomizeItems(GameRun run, ItemDefinition sourceItem)
+        {
+            if (run == null || sourceItem == null)
+            {
+                return;
+            }
+
+            IRandomStream rng = Rng(sourceItem.Id);
+            if (rng == null)
+            {
+                Log.Info("RandomizeItems 缺少随机流，已跳过。", Tag);
+                return;
+            }
+
+            int passiveCount = 0;
+            int activeCount = 0;
+            foreach (RunItemState state in run.Items)
+            {
+                ItemDefinition item = ItemDefinition.Get(run.Tables, state.ItemId);
+                if (item == null)
+                {
+                    continue;
+                }
+
+                if (item.Kind == cfg.ItemKind.Active)
+                {
+                    activeCount++;
+                }
+                else
+                {
+                    passiveCount++;
+                }
+            }
+
+            var newIds = new List<string>();
+            newIds.AddRange(ItemPoolService.Roll(run.Tables, run, cfg.ItemKind.Passive, rng, passiveCount));
+            newIds.AddRange(ItemPoolService.Roll(run.Tables, run, cfg.ItemKind.Active, rng, activeCount));
+
+            List<ItemAcquireResult> acquireResults = run.ReplaceItems(newIds);
+            var results = new List<RandomizedItemResult>(acquireResults.Count);
+            for (int i = 0; i < acquireResults.Count; i++)
+            {
+                ItemAcquireResult result = acquireResults[i];
+                ItemDefinition item = ItemDefinition.Get(run.Tables, result.ItemId);
+                results.Add(new RandomizedItemResult(item, result));
+            }
+
+            RunPersistence.Save(run);
+
+            BattleForm battle = BattleForm.Active;
+            if (battle != null)
+            {
+                battle.OpenRandomizedItemsPanel(sourceItem.Name, results);
+            }
+        }
+
+        public static void AddActionRerolls(GameRun run, int count)
+        {
+            if (run == null || count <= 0)
+            {
+                return;
+            }
+
+            run.AddActionRerollCount(count);
+            RunPersistence.Save(run);
+        }
+
         private static bool HasNegativeTag(ItemDefinition item)
         {
             if (string.IsNullOrEmpty(item.SpecialTags))
@@ -152,6 +357,143 @@ namespace GourmetProject.Game.Meta
             }
 
             return false;
+        }
+
+        private static List<RewardChoice> RollItemChoices(GameRun run, cfg.ItemKind kind, int count, string key)
+        {
+            var choices = new List<RewardChoice>();
+            IRandomStream rng = Rng(key);
+            if (run == null || rng == null || count <= 0)
+            {
+                return choices;
+            }
+
+            List<string> ids = ItemPoolService.Roll(run.Tables, run, kind, rng, count);
+            foreach (string id in ids)
+            {
+                ItemDefinition item = ItemDefinition.Get(run.Tables, id, kind);
+                if (item == null)
+                {
+                    continue;
+                }
+
+                choices.Add(new RewardChoice(
+                    kind == cfg.ItemKind.Passive ? cfg.RewardKind.PassiveItemChoice : cfg.RewardKind.ActiveItemGrant,
+                    item.Id,
+                    item.Name,
+                    item.IsPassive ? $"被动道具 · {item.Quality}" : "主动道具"));
+            }
+
+            return choices;
+        }
+
+        private static List<RewardChoice> RollDishChoices(GameRun run, int count, string key)
+        {
+            var choices = new List<RewardChoice>();
+            IRandomStream rng = Rng(key);
+            if (run == null || rng == null || count <= 0)
+            {
+                return choices;
+            }
+
+            int hidden = HiddenScoreService.DishHiddenScore(run, run.LastActionContext);
+            var candidates = new List<GourmetProject.Gameplay.Model.DishDef>();
+            foreach (GourmetProject.Gameplay.Model.DishDef dish in run.Library.Dishes)
+            {
+                if (dish.CoversHiddenScore(hidden))
+                {
+                    candidates.Add(dish);
+                }
+            }
+
+            if (candidates.Count == 0)
+            {
+                candidates.AddRange(run.Library.Dishes);
+            }
+
+            for (int i = 0; i < count && candidates.Count > 0; i++)
+            {
+                var weights = new List<float>(candidates.Count);
+                foreach (GourmetProject.Gameplay.Model.DishDef dish in candidates)
+                {
+                    weights.Add(RewardPoolService.HiddenScoreWeight(dish.BaseWeight, dish.HiddenMean, hidden, 5));
+                }
+
+                int index = rng.WeightedPickIndex(weights);
+                GourmetProject.Gameplay.Model.DishDef chosen = candidates[index];
+                candidates.RemoveAt(index);
+                choices.Add(new RewardChoice(
+                    cfg.RewardKind.DishChoice,
+                    chosen.Id,
+                    chosen.Name,
+                    $"加入菜谱，美味度 {chosen.Deliciousness}"));
+            }
+
+            return choices;
+        }
+
+        private static List<string> RollFragmentIds(GameRun run, int count, string key)
+        {
+            var ids = new List<string>();
+            IRandomStream rng = Rng(key);
+            if (run == null || rng == null || count <= 0)
+            {
+                return ids;
+            }
+
+            int hidden = HiddenScoreService.FragmentHiddenScore(run, run.LastActionContext);
+            var candidates = new List<GourmetProject.Gameplay.Model.TableFragmentDef>();
+            foreach (GourmetProject.Gameplay.Model.TableFragmentDef fragment in run.Database.AllFragments)
+            {
+                if (fragment.BaseWeight <= 0f || hidden < fragment.HiddenMin || hidden > fragment.HiddenMax || !run.CanAttachTableFragment(fragment))
+                {
+                    continue;
+                }
+
+                candidates.Add(fragment);
+            }
+
+            if (candidates.Count == 0)
+            {
+                foreach (GourmetProject.Gameplay.Model.TableFragmentDef fragment in run.Database.AllFragments)
+                {
+                    if (fragment.BaseWeight > 0f && run.CanAttachTableFragment(fragment))
+                    {
+                        candidates.Add(fragment);
+                    }
+                }
+            }
+
+            for (int i = 0; i < count && candidates.Count > 0; i++)
+            {
+                var weights = new List<float>(candidates.Count);
+                foreach (GourmetProject.Gameplay.Model.TableFragmentDef fragment in candidates)
+                {
+                    weights.Add(RewardPoolService.HiddenScoreWeight(fragment.BaseWeight, fragment.HiddenMean, hidden, 5));
+                }
+
+                int index = rng.WeightedPickIndex(weights);
+                ids.Add(candidates[index].Id);
+                candidates.RemoveAt(index);
+            }
+
+            return ids;
+        }
+
+        private static string BuildAcquireKey(GameRun run, string itemId)
+        {
+            string day = run.CurrentDay.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
+            return $"onacq_{itemId}_w{run.WeekIndex}_d{day}_s{run.RunActionStepIndex}_{run.NextActiveUseKey()}";
+        }
+
+        private static void OpenGenericRewardForm()
+        {
+            if (GameApp.UI.HasUIForm(UIForms.Reward))
+            {
+                return;
+            }
+
+            GameApp.UI.OpenUIForm(UIForms.Reward, UIForms.GroupDialog, RewardFormOpenArgs.GenericQueue());
         }
 
         /// <summary>解析 "range:min,max"（或 "min,max"）到 min/max。</summary>

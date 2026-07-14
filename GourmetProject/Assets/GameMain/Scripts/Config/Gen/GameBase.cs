@@ -20,6 +20,7 @@ public sealed partial class GameBase : Luban.BeanBase
         { if(!_buf["initialGold"].IsNumber) { throw new SerializationException(); }  InitialGold = _buf["initialGold"]; }
         { if(!_buf["initialInterestCap"].IsNumber) { throw new SerializationException(); }  InitialInterestCap = _buf["initialInterestCap"]; }
         { if(!_buf["initialFoodAdjustCount"].IsNumber) { throw new SerializationException(); }  InitialFoodAdjustCount = _buf["initialFoodAdjustCount"]; }
+        { if(!_buf["initialActionRerollCount"].IsNumber) { throw new SerializationException(); }  InitialActionRerollCount = _buf["initialActionRerollCount"]; }
         { if(!_buf["interestThreshold"].IsNumber) { throw new SerializationException(); }  InterestThreshold = _buf["interestThreshold"]; }
         { if(!_buf["interestGoldPer"].IsNumber) { throw new SerializationException(); }  InterestGoldPer = _buf["interestGoldPer"]; }
     }
@@ -42,6 +43,10 @@ public sealed partial class GameBase : Luban.BeanBase
     /// </summary>
     public readonly int InitialFoodAdjustCount;
     /// <summary>
+    /// 初始行动刷新次数
+    /// </summary>
+    public readonly int InitialActionRerollCount;
+    /// <summary>
     /// Interest:每满该金币阈值
     /// </summary>
     public readonly int InterestThreshold;
@@ -63,6 +68,7 @@ public sealed partial class GameBase : Luban.BeanBase
         + "initialGold:" + InitialGold + ","
         + "initialInterestCap:" + InitialInterestCap + ","
         + "initialFoodAdjustCount:" + InitialFoodAdjustCount + ","
+        + "initialActionRerollCount:" + InitialActionRerollCount + ","
         + "interestThreshold:" + InterestThreshold + ","
         + "interestGoldPer:" + InterestGoldPer + ","
         + "}";
