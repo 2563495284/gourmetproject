@@ -596,12 +596,24 @@ namespace GourmetProject.Game.Presentation.Battle
             _boardArea = area;
         }
 
+        internal bool TryComputeTableAreaPlacement(GpTable board, out BoardPlacement placement)
+        {
+            if (board != null && TryComputeTableAreaRect(out float left, out float right, out float bottom, out float top))
+            {
+                placement = DiningTableLayout.ComputeInRect(left, right, bottom, top, board, BoardAreaMinCellSize);
+                return true;
+            }
+
+            placement = default;
+            return false;
+        }
+
         private void BuildTable(GpTable board)
         {
             // 中央可用区：菜谱/道具面板已迁到常驻 HUD（左右栏 + 底部菜谱抽屉），餐桌居中在中部内容区，
             // 由 DiningTableLayout 统一按胃包围盒铺满可用区并居中（与编辑/餐桌视图态共用同一套定位算法）。
-            BoardPlacement placement = TryComputeTableAreaRect(out float left, out float right, out float bottom, out float top)
-                ? DiningTableLayout.ComputeInRect(left, right, bottom, top, board, BoardAreaMinCellSize)
+            BoardPlacement placement = TryComputeTableAreaPlacement(board, out BoardPlacement boardAreaPlacement)
+                ? boardAreaPlacement
                 : DiningTableLayout.Compute(_halfW, _halfH, board, FoodTableBottomMargin);
             _cellSize = placement.CellSize;
             _boardCenter = placement.Position;

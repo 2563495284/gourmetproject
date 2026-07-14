@@ -112,18 +112,7 @@ namespace GourmetProject.Game.Meta
 
         private static bool IsBossAction(cfg.Tables tables, cfg.GameAction action)
         {
-            if (action == null)
-            {
-                return false;
-            }
-
-            if (FoodService.IsBossSlot(action))
-            {
-                return true;
-            }
-
-            cfg.Food food = FoodService.Resolve(tables, action);
-            return food != null && food.IsBoss;
+            return FoodService.IsBossAction(tables, action);
         }
 
         private static cfg.ActionSmallGroup PickSmall(cfg.Tables tables, cfg.ActionLargeGroup large, IRandomStream rng)

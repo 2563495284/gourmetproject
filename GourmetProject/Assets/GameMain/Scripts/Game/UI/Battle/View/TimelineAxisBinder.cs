@@ -51,7 +51,7 @@ namespace GourmetProject.Game.UI.Battle.View
             }
 
             cfg.GameAction action = TimelineService.NodeAction(run, node);
-            switch (ActionDisplay.KindOf(action))
+            switch (ActionDisplay.KindOf(run?.Tables, action))
             {
                 case ActionDisplayKind.Shop:
                 {

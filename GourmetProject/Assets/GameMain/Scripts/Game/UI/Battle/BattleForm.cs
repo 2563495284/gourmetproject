@@ -1280,6 +1280,9 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
+            _world = _world ?? BattleWorldController.Instance;
+            _world?.SetTableArea(_boardArea);
+
             if (_current == GameplayView.TableView)
             {
                 _stomachCoordinator.Back();

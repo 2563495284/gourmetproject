@@ -53,23 +53,23 @@ namespace GourmetProject.Game.Meta
         /// <summary>碎片包开出的候选碎片数量（三选一）。</summary>
         public const int FragmentPackSize = 3;
 
-        private const int PassiveCount = 2;
-        private const int ActiveCount = 1;
-        private const int DishCount = 2;
-
         /// <summary>
         /// 按隐藏分刷新一批商品。道具（被动/主动）走 <paramref name="lootRng"/>，
         /// 菜品/碎片走 <paramref name="rng"/>，两者隔离：调整道具数量不会污染菜品/碎片序列。
         /// </summary>
         public static List<ShopEntry> RollStock(cfg.Tables tables, GameRun run, IRandomStream rng, IRandomStream lootRng)
         {
+            tables ??= GameApp.Config.Tables;
             var stock = new List<ShopEntry>();
             var itemRuntime = new ItemRuntime(run);
             int dishHidden = HiddenScoreService.DishHiddenScore(run, run.LastActionContext);
             int passiveHidden = HiddenScoreService.PassiveItemHiddenScore(run, run.LastActionContext);
             int fragmentHidden = HiddenScoreService.FragmentHiddenScore(run, run.LastActionContext);
+            int passiveCount = ConfiguredSlotCount(tables.TbGameBase.ShopPassiveItemSaleSlotCount);
+            int activeCount = ConfiguredSlotCount(tables.TbGameBase.ShopActiveItemSaleSlotCount);
+            int dishCount = ConfiguredSlotCount(tables.TbGameBase.ShopFoodSaleSlotCount);
 
-            foreach (string itemId in ItemPoolService.Roll(tables, run, cfg.ItemKind.Passive, lootRng, PassiveCount, passiveHidden, distanceFloor: 5))
+            foreach (string itemId in ItemPoolService.Roll(tables, run, cfg.ItemKind.Passive, lootRng, passiveCount, passiveHidden, distanceFloor: 5))
             {
                 ItemDefinition item = ItemDefinition.Get(tables, itemId, cfg.ItemKind.Passive);
                 if (item != null)
@@ -79,7 +79,7 @@ namespace GourmetProject.Game.Meta
             }
 
             int activeHidden = HiddenScoreService.ActiveItemHiddenScore(run, run.LastActionContext);
-            foreach (string itemId in ItemPoolService.Roll(tables, run, cfg.ItemKind.Active, lootRng, ActiveCount, activeHidden, distanceFloor: 5))
+            foreach (string itemId in ItemPoolService.Roll(tables, run, cfg.ItemKind.Active, lootRng, activeCount, activeHidden, distanceFloor: 5))
             {
                 ItemDefinition item = ItemDefinition.Get(tables, itemId, cfg.ItemKind.Active);
                 if (item != null)
@@ -88,7 +88,7 @@ namespace GourmetProject.Game.Meta
                 }
             }
 
-            foreach (cfg.DishVariant variant in RollDishVariants(tables, run, dishHidden, rng, DishCount))
+            foreach (cfg.DishVariant variant in RollDishVariants(tables, run, dishHidden, rng, dishCount))
             {
                 cfg.DishBase baseDish = tables.TbDishBase.GetOrDefault(variant.BaseId);
                 string name = baseDish != null ? baseDish.Name : variant.Id;
@@ -111,6 +111,11 @@ namespace GourmetProject.Game.Meta
             //   数值判定 ItemRuntime.AutoRestock() 已就绪，待 ShopForm 购买流程接入。
 
             return stock;
+        }
+
+        private static int ConfiguredSlotCount(int value)
+        {
+            return System.Math.Max(0, value);
         }
 
         /// <summary>购买一件商品：扣金并结算到运行状态。返回是否成功。</summary>

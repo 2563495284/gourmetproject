@@ -208,7 +208,14 @@ namespace GourmetProject.Game.UI.Meta
         public void Bind(string name, string desc, float costDays, Action onPick)
         {
             ApplyCommon(name, desc, onPick);
-            SetFooter($"用时：{costDays.ToString("0.#", CultureInfo.InvariantCulture)}天", true, FooterActionColor);
+            if (costDays > 0f)
+            {
+                SetFooter($"用时：{costDays.ToString("0.#", CultureInfo.InvariantCulture)}天", true, FooterActionColor);
+            }
+            else
+            {
+                SetFooter(string.Empty, false, FooterActionColor);
+            }
         }
 
         private void ApplyCommon(string title, string desc, Action onPick)
@@ -319,7 +326,7 @@ namespace GourmetProject.Game.UI.Meta
             switch (action.Behavior)
             {
                 case cfg.ActionBehavior.Food:
-                    if (FoodService.IsBossSlot(action))
+                    if (FoodService.IsBossAction(null, action))
                     {
                         spriteName = "card_node_boss";
                     }

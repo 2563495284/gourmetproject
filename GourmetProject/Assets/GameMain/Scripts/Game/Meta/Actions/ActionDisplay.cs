@@ -19,6 +19,11 @@ namespace GourmetProject.Game.Meta
     {
         public static ActionDisplayKind KindOf(cfg.GameAction action)
         {
+            return KindOf(null, action);
+        }
+
+        public static ActionDisplayKind KindOf(cfg.Tables tables, cfg.GameAction action)
+        {
             if (action == null)
             {
                 return ActionDisplayKind.Event;
@@ -27,7 +32,7 @@ namespace GourmetProject.Game.Meta
             switch (action.Behavior)
             {
                 case cfg.ActionBehavior.Food:
-                    return FoodService.IsBossSlot(action)
+                    return FoodService.IsBossAction(tables, action)
                         ? ActionDisplayKind.Boss
                         : ActionDisplayKind.Food;
                 case cfg.ActionBehavior.Reward:

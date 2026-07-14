@@ -104,8 +104,45 @@ namespace GourmetProject.Game.Meta
                 return null;
             }
 
-            tables ??= GameApp.Config.Tables;
+            tables ??= GameApp.Config?.Tables;
+            if (tables == null)
+            {
+                return null;
+            }
+
             return tables.TbFood.GetOrDefault(action.FoodId);
+        }
+
+        public static cfg.Food ResolveBoss(GameRun run, cfg.GameAction action)
+        {
+            if (action == null || action.Behavior != cfg.ActionBehavior.Food)
+            {
+                return null;
+            }
+
+            if (string.IsNullOrEmpty(action.FoodId))
+            {
+                return BossService.ResolveBossFood(run);
+            }
+
+            cfg.Food food = Resolve(run?.Tables, action);
+            return food != null && food.IsBoss ? food : null;
+        }
+
+        public static bool IsBossAction(cfg.Tables tables, cfg.GameAction action)
+        {
+            if (action == null || action.Behavior != cfg.ActionBehavior.Food)
+            {
+                return false;
+            }
+
+            if (string.IsNullOrEmpty(action.FoodId))
+            {
+                return true;
+            }
+
+            cfg.Food food = Resolve(tables, action);
+            return food != null && food.IsBoss;
         }
 
         /// <summary>该 Food 行动是否为 Boss 槽（Food 行为且未绑定具体 foodId=执行时取唯一 Boss 美食）。</summary>

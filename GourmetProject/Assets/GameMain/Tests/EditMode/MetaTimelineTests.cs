@@ -167,6 +167,17 @@ namespace GourmetProject.Tests
             Assert.AreEqual("tl_normal", timelineId);
         }
 
+        [Test]
+        public void BossAction_WithExplicitBossFood_DisplaysAsBoss()
+        {
+            GameRun run = NewRun(week: 1, characterId: "glutton_dog");
+            cfg.GameAction action = run.Tables.TbAction.Get("act_boss");
+
+            Assert.IsTrue(FoodService.IsBossAction(run.Tables, action));
+            Assert.AreEqual(ActionDisplayKind.Boss, ActionDisplay.KindOf(run.Tables, action));
+            Assert.AreEqual("food_boss", FoodService.ResolveBoss(run, action)?.Id);
+        }
+
         // —— 前置条件（行动/事件过滤）——
 
         [Test]

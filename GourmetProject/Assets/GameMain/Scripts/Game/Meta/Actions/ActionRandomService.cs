@@ -22,7 +22,7 @@ namespace GourmetProject.Game.Meta
             {
                 case cfg.ActionBehavior.Food:
                 {
-                    if (FoodService.IsBossSlot(action))
+                    if (FoodService.IsBossAction(run.Tables, action))
                     {
                         return true;
                     }

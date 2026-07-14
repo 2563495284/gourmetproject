@@ -169,7 +169,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             _editCellSprite = Resources.Load<Sprite>("Sprites/UI/board_cell");
             _editTable = run.BuildTablePreviewFromFragments(run.WeekModifier);
-            LayoutEditorTable(_editTable);
+            LayoutEditorTable(_editTable, useBoardArea: true);
         }
 
         public void EndTableView()
@@ -480,11 +480,13 @@ namespace GourmetProject.Game.Presentation.Battle
             done?.Invoke(false);
         }
 
-        private void LayoutEditorTable(GpTable board)
+        private void LayoutEditorTable(GpTable board, bool useBoardArea = false)
         {
             // 编辑页按当前实际胃形居中；最大包围盒只参与逻辑限制，不作为背景网格铺出来。
-            // 底部边距比 Food 态更大，给候选碎片托盘条让位；其余定位与 Food 态共用 DiningTableLayout。
-            BoardPlacement placement = DiningTableLayout.Compute(_halfW, _halfH, board, EditTableBottomMargin);
+            // 只读查看态复用 Food 态的 HUD 空区，编辑态仍保留底部托盘让位。
+            BoardPlacement placement = useBoardArea && _owner != null && _owner.TryComputeTableAreaPlacement(board, out BoardPlacement boardAreaPlacement)
+                ? boardAreaPlacement
+                : DiningTableLayout.Compute(_halfW, _halfH, board, EditTableBottomMargin);
             _cellSize = placement.CellSize;
             _boardView.transform.rotation = Quaternion.identity;
             _boardView.transform.localScale = Vector3.one;

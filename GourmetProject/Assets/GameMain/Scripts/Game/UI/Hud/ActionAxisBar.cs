@@ -129,7 +129,7 @@ namespace GourmetProject.Game.UI.Hud
                     continue;
                 }
 
-                ActionDisplayKind kind = ActionDisplay.KindOf(TimelineService.NodeAction(run, node));
+                ActionDisplayKind kind = ActionDisplay.KindOf(run.Tables, TimelineService.NodeAction(run, node));
                 Sprite sprite = NodeSprite(kind);
                 float x = Mathf.Clamp01(kv.Key / length);
                 var go = NewChild($"Node_{kv.Key}");

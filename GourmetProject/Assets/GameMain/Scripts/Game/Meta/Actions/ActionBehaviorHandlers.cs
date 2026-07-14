@@ -51,12 +51,13 @@ namespace GourmetProject.Game.Meta
         public ActionOutcome Execute(GameRun run, ActionExecutionContext context, IRandomStream rng)
         {
             cfg.GameAction action = context.Action;
-            if (FoodService.IsBossSlot(action))
+            bool bossAction = FoodService.IsBossAction(run?.Tables, action);
+            cfg.Food boss = FoodService.ResolveBoss(run, action);
+            if (bossAction)
             {
                 string bossKey = string.IsNullOrEmpty(context.SourceKey)
                     ? $"w{run.WeekIndex}_{action.Id}_s{context.StepIndex}"
                     : $"w{run.WeekIndex}_{context.SourceKey}";
-                cfg.Food boss = BossService.ResolveBossFood(run);
                 if (boss == null)
                 {
                     return ActionOutcome.Immediate(string.Empty);

@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using System.IO;
+using GourmetProject.Core.Rng;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
@@ -53,6 +55,25 @@ namespace GourmetProject.Tests
             Assert.AreEqual(80, rt.ModifyShopPrice(ShopEntryKind.Dish, 100));
             // 未匹配类别不受影响。
             Assert.AreEqual(100, rt.ModifyShopPrice(ShopEntryKind.PassiveItem, 100));
+        }
+
+        [Test]
+        public void ShopStock_UsesGameBaseSlotCounts_AndSingleFragmentPack()
+        {
+            GameRun run = NewRun();
+            var random = new RandomService();
+            random.Init(123UL);
+
+            List<ShopEntry> stock = ShopService.RollStock(
+                run.Tables,
+                run,
+                random.Stream("shop-stock"),
+                random.Stream("shop-loot"));
+
+            Assert.AreEqual(run.Tables.TbGameBase.ShopFoodSaleSlotCount, CountKind(stock, ShopEntryKind.Dish));
+            Assert.AreEqual(run.Tables.TbGameBase.ShopPassiveItemSaleSlotCount, CountKind(stock, ShopEntryKind.PassiveItem));
+            Assert.AreEqual(run.Tables.TbGameBase.ShopActiveItemSaleSlotCount, CountKind(stock, ShopEntryKind.ActiveItem));
+            Assert.LessOrEqual(CountKind(stock, ShopEntryKind.Fragment), 1);
         }
 
         [Test]
@@ -288,6 +309,25 @@ namespace GourmetProject.Tests
             {
                 ItemDefinition def = ItemDefinition.Get(run.Tables, state.ItemId, cfg.ItemKind.Passive);
                 if (def != null && !string.IsNullOrEmpty(def.SpecialTags) && def.SpecialTags.Contains("Negative"))
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private static int CountKind(IReadOnlyList<ShopEntry> stock, ShopEntryKind kind)
+        {
+            int count = 0;
+            if (stock == null)
+            {
+                return count;
+            }
+
+            for (int i = 0; i < stock.Count; i++)
+            {
+                if (stock[i]?.Kind == kind)
                 {
                     count++;
                 }
