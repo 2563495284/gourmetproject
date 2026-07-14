@@ -16,13 +16,20 @@ namespace GourmetProject.Game.UI.Meta
 
         private int _bookIndex;
         private Action<RecipeEditDishView, int> _onDishDropped;
+        private Action<RewardDishChoiceCardView, int> _onChoiceDropped;
 
         public RectTransform DishContainer => _dishContainer;
 
-        public void Bind(int bookIndex, string title, string capacity, Action<RecipeEditDishView, int> onDishDropped)
+        public void Bind(
+            int bookIndex,
+            string title,
+            string capacity,
+            Action<RecipeEditDishView, int> onDishDropped,
+            Action<RewardDishChoiceCardView, int> onChoiceDropped = null)
         {
             _bookIndex = bookIndex;
             _onDishDropped = onDishDropped;
+            _onChoiceDropped = onChoiceDropped;
 
             if (_titleText != null)
             {
@@ -43,6 +50,15 @@ namespace GourmetProject.Game.UI.Meta
             if (dish != null)
             {
                 _onDishDropped?.Invoke(dish, _bookIndex);
+                return;
+            }
+
+            RewardDishChoiceCardView choice = eventData.pointerDrag == null
+                ? null
+                : eventData.pointerDrag.GetComponentInParent<RewardDishChoiceCardView>();
+            if (choice != null)
+            {
+                _onChoiceDropped?.Invoke(choice, _bookIndex);
             }
         }
     }

@@ -115,7 +115,7 @@ namespace GourmetProject.Game.Meta
             }
         }
 
-        /// <summary>全家福：获得 effectValue 金币 + 一个随机被动道具（随机食物部分留 TODO）。</summary>
+        /// <summary>全家福：生成 effectValue 金币 + 一个随机被动道具 + 一个随机食物的通用领奖包。</summary>
         public static void ApplyFamilyPack(GameRun run, ItemDefinition item)
         {
             if (run == null || item == null)
@@ -123,9 +123,17 @@ namespace GourmetProject.Game.Meta
                 return;
             }
 
-            run.Gold += System.Math.Max(0, (int)item.EffectValue);
-            GrantRandomPassives(run, 1, item.Id);
-            // TODO(passive-item): 额外发放一个随机食物（需食物发放服务就绪）。
+            IRandomStream rng = Rng(item.Id);
+            RewardOffer offer = RewardGranter.GenerateFamilyPackOffer(run, item, rng);
+            if (offer == null)
+            {
+                return;
+            }
+
+            string day = run.CurrentDay.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
+            string key = $"onacq_{item.Id}_w{run.WeekIndex}_d{day}_s{run.RunActionStepIndex}";
+            run.EnqueueGenericRewardOffer(key, item.Name, offer);
+            Log.Info($"已生成通用领奖包：{item.Name}。", Tag);
         }
 
         private static bool HasNegativeTag(ItemDefinition item)

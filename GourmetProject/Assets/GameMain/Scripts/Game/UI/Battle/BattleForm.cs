@@ -353,7 +353,7 @@ namespace GourmetProject.Game.UI.Battle
                 {
                     GameplayView.ActionSelect => RecipeView.RecipeState.Collapsed,
                     GameplayView.Shop => RecipeView.RecipeState.Shown,
-                    GameplayView.RewardDishPack => RecipeView.RecipeState.Shown,
+                    GameplayView.RewardDishPack => RecipeView.RecipeState.Hidden,
                     GameplayView.Food => RecipeView.RecipeState.Shown,
                     GameplayView.TableEdit => RecipeView.RecipeState.Collapsed,
                     _ => RecipeView.RecipeState.Hidden,

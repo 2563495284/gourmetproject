@@ -2,6 +2,7 @@ using GourmetProject.Core.Rng;
 using GourmetProject.Runtime;
 using Log = GourmetProject.Core.Diagnostics.Log;
 using GourmetProject.Game.Run;
+using GourmetProject.Gameplay.Model;
 
 namespace GourmetProject.Game.Meta
 {
@@ -32,6 +33,20 @@ namespace GourmetProject.Game.Meta
                 baseGold,
                 RollSlotGroup(context, package.MainSlotGroupId),
                 rng.NextBool(package.ExtraChance) ? RollSlotGroup(context, package.ExtraSlotGroupId) : null);
+        }
+
+        public static RewardOffer GenerateFamilyPackOffer(GameRun run, ItemDefinition sourceItem, IRandomStream rng)
+        {
+            if (run == null || sourceItem == null)
+            {
+                return null;
+            }
+
+            int gold = System.Math.Max(0, (int)sourceItem.EffectValue);
+            return new RewardOffer(
+                gold,
+                RollSinglePassiveChoice(run, rng),
+                RollSingleDishChoice(run, rng));
         }
 
         public static string Apply(GameRun run, RewardOffer offer, RewardChoice mainChoice, RewardChoice extraChoice)
@@ -180,6 +195,80 @@ namespace GourmetProject.Game.Meta
             }
 
             return week == null ? null : tables.TbRewardPackage.GetOrDefault(week.RewardPackageId);
+        }
+
+        private static System.Collections.Generic.List<RewardChoice> RollSinglePassiveChoice(GameRun run, IRandomStream rng)
+        {
+            var result = new System.Collections.Generic.List<RewardChoice>();
+            if (run == null || rng == null)
+            {
+                return result;
+            }
+
+            System.Collections.Generic.List<string> ids = ItemPoolService.Roll(run.Tables, run, cfg.ItemKind.Passive, rng, 1);
+            if (ids.Count == 0)
+            {
+                result.Add(RewardChoice.Gold(40, "被动道具折算金币", isFallback: true));
+                return result;
+            }
+
+            ItemDefinition item = ItemDefinition.Get(run.Tables, ids[0], cfg.ItemKind.Passive);
+            if (item == null)
+            {
+                result.Add(RewardChoice.Gold(40, "被动道具折算金币", isFallback: true));
+                return result;
+            }
+
+            result.Add(new RewardChoice(
+                cfg.RewardKind.PassiveItemChoice,
+                item.Id,
+                item.Name,
+                $"被动道具 · {item.Quality}"));
+            return result;
+        }
+
+        private static System.Collections.Generic.List<RewardChoice> RollSingleDishChoice(GameRun run, IRandomStream rng)
+        {
+            var result = new System.Collections.Generic.List<RewardChoice>();
+            if (run == null || rng == null)
+            {
+                return result;
+            }
+
+            int hidden = HiddenScoreService.DishHiddenScore(run, run.LastActionContext);
+            var candidates = new System.Collections.Generic.List<DishDef>();
+            foreach (DishDef dish in run.Library.Dishes)
+            {
+                if (dish.CoversHiddenScore(hidden))
+                {
+                    candidates.Add(dish);
+                }
+            }
+
+            if (candidates.Count == 0)
+            {
+                candidates.AddRange(run.Library.Dishes);
+            }
+
+            if (candidates.Count == 0)
+            {
+                result.Add(RewardChoice.Gold(30, "食物折算金币", isFallback: true));
+                return result;
+            }
+
+            var weights = new System.Collections.Generic.List<float>(candidates.Count);
+            foreach (DishDef dish in candidates)
+            {
+                weights.Add(RewardPoolService.HiddenScoreWeight(dish.BaseWeight, dish.HiddenMean, hidden, 5));
+            }
+
+            DishDef chosen = candidates[rng.WeightedPickIndex(weights)];
+            result.Add(new RewardChoice(
+                cfg.RewardKind.DishChoice,
+                chosen.Id,
+                chosen.Name,
+                $"加入菜谱池，美味度 {chosen.Deliciousness}"));
+            return result;
         }
 
         private static System.Collections.Generic.List<RewardChoice> RollSlotGroup(RewardContext context, string groupId)

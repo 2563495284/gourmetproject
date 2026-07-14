@@ -63,6 +63,7 @@ namespace GourmetProject.Game.Run
         private int _actionWeekPlanStartRunStep;   // 本周计划对应的整局行动步起点
         private readonly List<RunActionChoiceSaveData> _pendingActionChoices = new List<RunActionChoiceSaveData>();
         private readonly List<ShopEntrySaveData> _pendingShopStock = new List<ShopEntrySaveData>();
+        private readonly List<GenericRewardSaveData> _pendingGenericRewards = new List<GenericRewardSaveData>();
         private string _pendingActionChoiceKey = string.Empty;
         private string _pendingShopKey = string.Empty;
         private string _pendingRewardKey = string.Empty;
@@ -762,6 +763,91 @@ namespace GourmetProject.Game.Run
             _pendingRewardOffer = null;
         }
 
+        public bool HasPendingGenericRewards => _pendingGenericRewards.Count > 0;
+
+        public void EnqueueGenericRewardOffer(string key, string title, RewardOffer offer)
+        {
+            if (offer == null)
+            {
+                return;
+            }
+
+            string safeKey = string.IsNullOrEmpty(key) ? $"generic_{_pendingGenericRewards.Count}" : key;
+            for (int i = 0; i < _pendingGenericRewards.Count; i++)
+            {
+                if (string.Equals(_pendingGenericRewards[i]?.Key, safeKey, System.StringComparison.Ordinal))
+                {
+                    _pendingGenericRewards[i] = new GenericRewardSaveData
+                    {
+                        Key = safeKey,
+                        Title = title ?? string.Empty,
+                        Offer = ToSaveData(offer),
+                    };
+                    return;
+                }
+            }
+
+            _pendingGenericRewards.Add(new GenericRewardSaveData
+            {
+                Key = safeKey,
+                Title = title ?? string.Empty,
+                Offer = ToSaveData(offer),
+            });
+        }
+
+        public bool TryPeekPendingGenericReward(out string key, out string title, out RewardOffer offer)
+        {
+            while (_pendingGenericRewards.Count > 0 && _pendingGenericRewards[0]?.Offer == null)
+            {
+                _pendingGenericRewards.RemoveAt(0);
+            }
+
+            if (_pendingGenericRewards.Count == 0)
+            {
+                key = string.Empty;
+                title = string.Empty;
+                offer = null;
+                return false;
+            }
+
+            GenericRewardSaveData pending = _pendingGenericRewards[0];
+            key = pending.Key ?? string.Empty;
+            title = pending.Title ?? string.Empty;
+            offer = FromSaveData(pending.Offer);
+            return offer != null;
+        }
+
+        public void SetPendingGenericRewardOffer(string key, RewardOffer offer)
+        {
+            if (offer == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < _pendingGenericRewards.Count; i++)
+            {
+                GenericRewardSaveData pending = _pendingGenericRewards[i];
+                if (pending != null && string.Equals(pending.Key, key, System.StringComparison.Ordinal))
+                {
+                    pending.Offer = ToSaveData(offer);
+                    return;
+                }
+            }
+        }
+
+        public void ClearPendingGenericRewardOffer(string key)
+        {
+            for (int i = 0; i < _pendingGenericRewards.Count; i++)
+            {
+                GenericRewardSaveData pending = _pendingGenericRewards[i];
+                if (pending != null && string.Equals(pending.Key, key, System.StringComparison.Ordinal))
+                {
+                    _pendingGenericRewards.RemoveAt(i);
+                    return;
+                }
+            }
+        }
+
         public cfg.Week CurrentWeek => _tables.TbWeek.GetOrDefault(WeekIndex);
 
         public cfg.RewardPackage CurrentRewardPackage
@@ -913,7 +999,7 @@ namespace GourmetProject.Game.Run
                 PendingShopStock = new List<ShopEntrySaveData>(_pendingShopStock),
                 PendingRewardKey = _pendingRewardKey,
                 PendingRewardOffer = _pendingRewardOffer,
-                ItemIds = legacyItemIds,
+                PendingGenericRewards = CloneGenericRewardSaveData(_pendingGenericRewards),
             };
         }
 
@@ -978,13 +1064,7 @@ namespace GourmetProject.Game.Run
                     }
                 }
             }
-            else if (data.ItemIds != null)
-            {
-                foreach (string itemId in data.ItemIds)
-                {
-                    run.AcquireItem(itemId, 0, fireOnAcquire: false);
-                }
-            }
+
 
             run.RestoreRecipeBooks(data);
 
@@ -1103,6 +1183,10 @@ namespace GourmetProject.Game.Run
 
             run._pendingRewardKey = data.PendingRewardKey ?? string.Empty;
             run._pendingRewardOffer = data.PendingRewardOffer;
+            if (data.PendingGenericRewards != null)
+            {
+                run._pendingGenericRewards.AddRange(CloneGenericRewardSaveData(data.PendingGenericRewards));
+            }
 
             return run;
         }
@@ -1193,6 +1277,32 @@ namespace GourmetProject.Game.Run
                     choice.Description,
                     choice.GoldAmount,
                     choice.IsFallbackGold));
+            }
+
+            return result;
+        }
+
+        private static List<GenericRewardSaveData> CloneGenericRewardSaveData(IReadOnlyList<GenericRewardSaveData> rewards)
+        {
+            var result = new List<GenericRewardSaveData>();
+            if (rewards == null)
+            {
+                return result;
+            }
+
+            foreach (GenericRewardSaveData reward in rewards)
+            {
+                if (reward?.Offer == null)
+                {
+                    continue;
+                }
+
+                result.Add(new GenericRewardSaveData
+                {
+                    Key = reward.Key ?? string.Empty,
+                    Title = reward.Title ?? string.Empty,
+                    Offer = ToSaveData(FromSaveData(reward.Offer)),
+                });
             }
 
             return result;

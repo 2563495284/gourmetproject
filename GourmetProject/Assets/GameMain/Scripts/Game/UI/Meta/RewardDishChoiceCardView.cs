@@ -21,7 +21,11 @@ namespace GourmetProject.Game.UI.Meta
         private RectTransform _rect;
         private RectTransform _iconRect;
         private Canvas _canvas;
+        private Transform _originalParent;
+        private Vector2 _originalAnchoredPosition;
+        private Canvas _dragCanvas;
         private int _choiceIndex = -1;
+        private bool _resolved;
         private Action<RewardDishChoiceCardView, int> _onPointerDown;
         private Action<RewardDishChoiceCardView, int, Vector2> _onPointerUp;
         private Tween _failureTween;
@@ -39,6 +43,8 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
+        public int ChoiceIndex => _choiceIndex;
+
         public void Bind(
             RewardChoice choice,
             Sprite icon,
@@ -48,6 +54,7 @@ namespace GourmetProject.Game.UI.Meta
         {
             EnsureRefs();
             _choiceIndex = choiceIndex;
+            _resolved = false;
             _onPointerDown = onPointerDown;
             _onPointerUp = onPointerUp;
 
@@ -74,6 +81,7 @@ namespace GourmetProject.Game.UI.Meta
         public void SetResolved(bool resolved)
         {
             EnsureRefs();
+            _resolved = resolved;
             if (_button != null)
             {
                 _button.interactable = !resolved;
@@ -138,12 +146,73 @@ namespace GourmetProject.Game.UI.Meta
 
         private void HandlePointerDown(PointerEventData eventData)
         {
+            if (_resolved)
+            {
+                return;
+            }
+
             _onPointerDown?.Invoke(this, _choiceIndex);
         }
 
         private void HandlePointerUp(PointerEventData eventData)
         {
+            if (_resolved)
+            {
+                return;
+            }
+
             _onPointerUp?.Invoke(this, _choiceIndex, eventData.position);
+        }
+
+        private void HandleBeginDrag(PointerEventData eventData)
+        {
+            if (_resolved)
+            {
+                return;
+            }
+
+            EnsureRefs();
+            _originalParent = transform.parent;
+            _originalAnchoredPosition = Rect.anchoredPosition;
+            _dragCanvas = GetComponentInParent<Canvas>();
+            transform.SetParent(_dragCanvas != null ? _dragCanvas.transform : transform.root, true);
+            transform.SetAsLastSibling();
+            _canvasGroup.blocksRaycasts = false;
+            _canvasGroup.alpha = 0.82f;
+        }
+
+        private void HandleDrag(PointerEventData eventData)
+        {
+            if (_resolved)
+            {
+                return;
+            }
+
+            RectTransform parentRect = Rect.parent as RectTransform;
+            if (parentRect != null
+                && RectTransformUtility.ScreenPointToWorldPointInRectangle(
+                    parentRect,
+                    eventData.position,
+                    eventData.pressEventCamera,
+                    out Vector3 worldPoint))
+            {
+                Rect.position = worldPoint;
+                return;
+            }
+
+            Rect.position = eventData.position;
+        }
+
+        private void HandleEndDrag(PointerEventData eventData)
+        {
+            EnsureRefs();
+            _canvasGroup.blocksRaycasts = !_resolved;
+            _canvasGroup.alpha = _resolved ? 0.45f : 1f;
+            if (_originalParent != null)
+            {
+                transform.SetParent(_originalParent, true);
+                Rect.anchoredPosition = _originalAnchoredPosition;
+            }
         }
 
         private void EnsureRefs()
@@ -221,7 +290,7 @@ namespace GourmetProject.Game.UI.Meta
             proxy.Bind(this);
         }
 
-        private sealed class PointerProxy : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
+        private sealed class PointerProxy : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
         {
             private RewardDishChoiceCardView _owner;
 
@@ -238,6 +307,21 @@ namespace GourmetProject.Game.UI.Meta
             public void OnPointerUp(PointerEventData eventData)
             {
                 _owner?.HandlePointerUp(eventData);
+            }
+
+            public void OnBeginDrag(PointerEventData eventData)
+            {
+                _owner?.HandleBeginDrag(eventData);
+            }
+
+            public void OnDrag(PointerEventData eventData)
+            {
+                _owner?.HandleDrag(eventData);
+            }
+
+            public void OnEndDrag(PointerEventData eventData)
+            {
+                _owner?.HandleEndDrag(eventData);
             }
         }
     }

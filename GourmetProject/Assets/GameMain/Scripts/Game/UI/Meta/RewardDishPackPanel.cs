@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using GourmetProject.Game;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
@@ -13,28 +14,29 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>
-    /// 战斗胜利后的菜品三选一领奖页。上方候选菜品通过箭头拖到下方 RecipeView 的某本菜谱。
+    /// 菜品奖励选择页。上方铺出当前菜谱，支持已有菜跨菜谱移动；下方候选菜可拖入目标菜谱完成领取。
     /// </summary>
     public sealed class RewardDishPackPanel : MonoBehaviour
     {
+        private const float DesiredBookGap = 24f;
+        private const float MinBookScale = 0.1f;
+
         [SerializeField] private GameObject _panelRoot;
         [SerializeField] private Text _promptText;
+        [SerializeField] private RectTransform _editBooksContainer;
+        [SerializeField] private RecipeEditBookView _editBookPrefab;
+        [SerializeField] private RecipeEditDishView _editDishPrefab;
         [SerializeField] private RectTransform _choiceContainer;
         [SerializeField] private RewardDishChoiceCardView _cardTemplate;
         [SerializeField] private Button _skipButton;
-        [SerializeField] private TargetArrowView _targetArrowPrefab;
 
         private readonly List<RewardDishChoiceCardView> _spawnedCards = new();
+        private readonly List<GameObject> _spawnedBooks = new();
         private readonly List<RewardChoice> _choices = new();
         private GameRun _run;
-        private RecipeView _recipeView;
         private Func<int, int, bool> _onChoiceDropped;
         private Action _onSkip;
-        private TargetArrowView _activeArrow;
-        private RewardDishChoiceCardView _targetingCard;
-        private int _targetingChoiceIndex = -1;
-        private bool _waitingForRecipeClick;
-        private int _targetingFrame;
+        private CancellationTokenSource _pendingRebuildCts;
         private bool _wired;
 
         private void Awake()
@@ -44,41 +46,9 @@ namespace GourmetProject.Game.UI.Meta
 
         private void OnDisable()
         {
-            CancelDishTargeting(restoreRecipeState: false);
+            CancelPendingRebuild();
+            ClearBooks();
             ClearCards();
-        }
-
-        private void Update()
-        {
-            if (_activeArrow == null || Mouse.current == null)
-            {
-                return;
-            }
-
-            Vector2 pointer = Mouse.current.position.ReadValue();
-            int hovered = TryGetRecipeBookAt(pointer, out int bookIndex) ? bookIndex : -1;
-            _recipeView?.SetDishTargetingHighlights(true, hovered);
-
-            if (Mouse.current.rightButton.wasPressedThisFrame
-                || (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame))
-            {
-                CancelDishTargeting();
-                return;
-            }
-
-            if (!_waitingForRecipeClick || Time.frameCount <= _targetingFrame || !Mouse.current.leftButton.wasPressedThisFrame)
-            {
-                return;
-            }
-
-            if (hovered >= 0)
-            {
-                CompleteDishTargeting(hovered);
-            }
-            else
-            {
-                CancelDishTargeting();
-            }
         }
 
         public void Open(
@@ -89,11 +59,11 @@ namespace GourmetProject.Game.UI.Meta
             Action onSkip)
         {
             EnsureWired();
-            CancelDishTargeting(restoreRecipeState: false);
+            CancelPendingRebuild();
+            ClearBooks();
             ClearCards();
 
             _run = run;
-            _recipeView = recipeView;
             _onChoiceDropped = onChoiceDropped;
             _onSkip = onSkip;
             _choices.Clear();
@@ -117,12 +87,11 @@ namespace GourmetProject.Game.UI.Meta
 
             if (_promptText != null)
             {
-                _promptText.text = "拖拽一个菜品到下方菜谱中，或点击跳过。";
+                _promptText.text = "拖拽下方一个菜品到上方菜谱中，或移动已有菜品调整菜谱。";
             }
 
+            RebuildBooks();
             BuildCards();
-            _recipeView?.SetState(RecipeView.RecipeState.Shown);
-            _recipeView?.SetDishTargetingHighlights(false, -1);
         }
 
         private void EnsureWired()
@@ -155,7 +124,7 @@ namespace GourmetProject.Game.UI.Meta
                 RewardDishChoiceCardView card = Instantiate(_cardTemplate, _choiceContainer);
                 card.gameObject.name = $"RewardDishChoice_{index + 1}";
                 card.gameObject.SetActive(true);
-                card.Bind(choice, LoadDishIcon(choice.Id), index, BeginDishTargeting, EndDishTargeting);
+                card.Bind(choice, LoadDishIcon(choice.Id), index, null, null);
                 _spawnedCards.Add(card);
             }
         }
@@ -173,126 +142,208 @@ namespace GourmetProject.Game.UI.Meta
             _spawnedCards.Clear();
         }
 
-        private void BeginDishTargeting(RewardDishChoiceCardView card, int choiceIndex)
+        private void RebuildBooks()
         {
-            if (_run == null || card == null || choiceIndex < 0 || choiceIndex >= _choices.Count)
+            ClearBooks();
+            if (_run == null || _editBooksContainer == null || _editBookPrefab == null || _editDishPrefab == null)
             {
                 return;
             }
 
-            CancelDishTargeting();
-            _targetingChoiceIndex = choiceIndex;
-            _targetingCard = card;
-            _waitingForRecipeClick = false;
-            _targetingFrame = Time.frameCount;
+            HorizontalLayoutGroup layout = _editBooksContainer.GetComponent<HorizontalLayoutGroup>();
+            if (layout != null)
+            {
+                layout.enabled = false;
+            }
 
-            _recipeView?.SetState(RecipeView.RecipeState.Shown);
-            _activeArrow = CreateTargetArrow(card.IconScreenCenter());
-            UpdateTargetingHighlight(Mouse.current != null ? Mouse.current.position.ReadValue() : card.IconScreenCenter());
+            var books = new List<RecipeEditBookView>(_run.RecipeBookCount);
+            for (int i = 0; i < _run.RecipeBookCount; i++)
+            {
+                IReadOnlyList<string> dishes = _run.GetRecipeBookDishes(i);
+                RecipeEditBookView book = Instantiate(_editBookPrefab, _editBooksContainer);
+                book.gameObject.name = $"RewardRecipeBook_{i + 1}";
+                book.Bind(
+                    i,
+                    $"菜谱{i + 1}",
+                    $"{dishes.Count}/{GameRun.RecipeBookCapacity}",
+                    OnDishDroppedToBook,
+                    OnChoiceDroppedToBook);
+                _spawnedBooks.Add(book.gameObject);
+                books.Add(book);
+
+                RectTransform dishContainer = book.DishContainer;
+                if (dishContainer == null)
+                {
+                    continue;
+                }
+
+                for (int k = 0; k < dishes.Count; k++)
+                {
+                    string dishId = dishes[k];
+                    RecipeEditDishView dish = Instantiate(_editDishPrefab, dishContainer);
+                    dish.gameObject.name = $"RewardRecipeDish_{i + 1}_{k + 1}";
+                    dish.Bind(DishName(GameApp.Config.Tables, dishId), DishShapeText(dishId), i, k);
+                    _spawnedBooks.Add(dish.gameObject);
+                }
+            }
+
+            FitBooksToContainer(books);
         }
 
-        private void EndDishTargeting(RewardDishChoiceCardView card, int choiceIndex, Vector2 screenPoint)
+        private void ClearBooks()
         {
-            if (_activeArrow == null || _targetingCard != card || _targetingChoiceIndex != choiceIndex)
+            for (int i = 0; i < _spawnedBooks.Count; i++)
             {
-                return;
+                if (_spawnedBooks[i] != null)
+                {
+                    Destroy(_spawnedBooks[i]);
+                }
             }
 
-            if (TryGetRecipeBookAt(screenPoint, out int bookIndex))
-            {
-                CompleteDishTargeting(bookIndex);
-                return;
-            }
-
-            if (card.ContainsScreenPoint(screenPoint))
-            {
-                _waitingForRecipeClick = true;
-                _targetingFrame = Time.frameCount;
-                return;
-            }
-
-            CancelDishTargeting();
+            _spawnedBooks.Clear();
         }
 
-        private void CompleteDishTargeting(int bookIndex)
+        private void OnDishDroppedToBook(RecipeEditDishView dish, int targetBookIndex)
         {
-            int choiceIndex = _targetingChoiceIndex;
-            RewardDishChoiceCardView card = _targetingCard;
-            if (choiceIndex < 0 || choiceIndex >= _choices.Count || _onChoiceDropped == null)
+            if (dish == null)
             {
-                CancelDishTargeting();
                 return;
             }
 
-            if (!_onChoiceDropped.Invoke(choiceIndex, bookIndex))
+            if (ShopService.MoveDish(_run, dish.BookIndex, dish.DishIndex, targetBookIndex))
             {
-                card?.PlayTargetFailed();
-                CancelDishTargeting();
+                QueueRebuildBooks();
+            }
+        }
+
+        private void OnChoiceDroppedToBook(RewardDishChoiceCardView card, int targetBookIndex)
+        {
+            if (card == null || card.ChoiceIndex < 0 || card.ChoiceIndex >= _choices.Count || _onChoiceDropped == null)
+            {
                 return;
             }
 
-            card?.SetResolved(true);
-            CancelDishTargeting(restoreRecipeState: false);
+            if (!_onChoiceDropped.Invoke(card.ChoiceIndex, targetBookIndex))
+            {
+                card.PlayTargetFailed();
+                return;
+            }
+
+            card.SetResolved(true);
         }
 
         private void OnSkipClicked()
         {
-            CancelDishTargeting();
             _onSkip?.Invoke();
         }
 
-        private TargetArrowView CreateTargetArrow(Vector2 startScreenPoint)
+        private void QueueRebuildBooks()
         {
-            Canvas canvas = _recipeView != null ? _recipeView.GetComponentInParent<Canvas>() : GetComponentInParent<Canvas>();
-            Transform parent = canvas != null ? canvas.transform : transform;
-            TargetArrowView arrow = _targetArrowPrefab != null
-                ? Instantiate(_targetArrowPrefab, parent)
-                : new GameObject("TargetArrowView", typeof(RectTransform), typeof(TargetArrowView)).GetComponent<TargetArrowView>();
-            if (arrow.transform.parent == null)
-            {
-                arrow.transform.SetParent(parent, false);
-            }
-
-            arrow.transform.SetAsLastSibling();
-            arrow.SetupArrow(startScreenPoint);
-            return arrow;
+            CancelPendingRebuild();
+            RebuildBooksNextFrameAsync();
         }
 
-        private bool TryGetRecipeBookAt(Vector2 screenPoint, out int bookIndex)
+        private async void RebuildBooksNextFrameAsync()
         {
-            if (_recipeView != null && _recipeView.TryGetRecipeBookAtScreenPoint(screenPoint, out bookIndex))
+            _pendingRebuildCts = CancellationTokenSource.CreateLinkedTokenSource(destroyCancellationToken);
+            CancellationToken token = _pendingRebuildCts.Token;
+            try
             {
-                return true;
+                await Awaitable.NextFrameAsync(token);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
             }
 
-            bookIndex = -1;
-            return false;
+            CancelPendingRebuild();
+            if (isActiveAndEnabled)
+            {
+                RebuildBooks();
+            }
         }
 
-        private void UpdateTargetingHighlight(Vector2 screenPoint)
+        private void CancelPendingRebuild()
         {
-            int hovered = TryGetRecipeBookAt(screenPoint, out int bookIndex) ? bookIndex : -1;
-            _recipeView?.SetDishTargetingHighlights(true, hovered);
+            if (_pendingRebuildCts == null)
+            {
+                return;
+            }
+
+            _pendingRebuildCts.Cancel();
+            _pendingRebuildCts.Dispose();
+            _pendingRebuildCts = null;
         }
 
-        private void CancelDishTargeting(bool restoreRecipeState = true)
+        private void FitBooksToContainer(IReadOnlyList<RecipeEditBookView> books)
         {
-            if (_activeArrow != null)
+            if (books == null || books.Count == 0)
             {
-                Destroy(_activeArrow.gameObject);
-                _activeArrow = null;
+                return;
             }
 
-            _recipeView?.SetDishTargetingHighlights(false, -1);
-            if (restoreRecipeState)
+            RectTransform firstBookRect = (RectTransform)books[0].transform;
+            Vector2 bookSize = firstBookRect.sizeDelta;
+            if (bookSize.x <= 0f || bookSize.y <= 0f)
             {
-                _recipeView?.SetState(RecipeView.RecipeState.Shown);
+                bookSize = firstBookRect.rect.size;
             }
 
-            _targetingCard = null;
-            _targetingChoiceIndex = -1;
-            _waitingForRecipeClick = false;
-            _targetingFrame = -1;
+            if (bookSize.x <= 0f || bookSize.y <= 0f)
+            {
+                return;
+            }
+
+            float availableWidth = _editBooksContainer.rect.width;
+            float availableHeight = _editBooksContainer.rect.height;
+            if (availableWidth <= 0f || availableHeight <= 0f)
+            {
+                return;
+            }
+
+            float totalDesiredGap = DesiredBookGap * (books.Count + 1);
+            float widthScale = (availableWidth - totalDesiredGap) / (bookSize.x * books.Count);
+            float heightScale = availableHeight / bookSize.y;
+            float scale = Mathf.Clamp(Mathf.Min(widthScale, heightScale, 1f), MinBookScale, 1f);
+            float scaledBookWidth = bookSize.x * scale;
+            float gap = books.Count == 1
+                ? (availableWidth - scaledBookWidth) * 0.5f
+                : (availableWidth - scaledBookWidth * books.Count) / (books.Count + 1);
+            gap = Mathf.Max(0f, gap);
+            float x = -availableWidth * 0.5f + gap + scaledBookWidth * 0.5f;
+
+            foreach (RecipeEditBookView book in books)
+            {
+                RectTransform rect = (RectTransform)book.transform;
+                rect.anchorMin = new Vector2(0.5f, 0.5f);
+                rect.anchorMax = new Vector2(0.5f, 0.5f);
+                rect.pivot = new Vector2(0.5f, 0.5f);
+                rect.sizeDelta = bookSize;
+                rect.localScale = new Vector3(scale, scale, 1f);
+                rect.anchoredPosition = new Vector2(x, 0f);
+                x += scaledBookWidth + gap;
+            }
+        }
+
+        private static string DishName(cfg.Tables tables, string dishId)
+        {
+            cfg.DishVariant variant = tables.TbDishVariant.GetOrDefault(dishId);
+            if (variant != null)
+            {
+                cfg.DishBase baseDish = tables.TbDishBase.GetOrDefault(variant.BaseId);
+                if (baseDish != null)
+                {
+                    return baseDish.Name;
+                }
+            }
+
+            return dishId;
+        }
+
+        private string DishShapeText(string dishId)
+        {
+            DishDef dish = _run?.Database.GetDish(dishId);
+            return dish?.Shape == null ? string.Empty : $"{dish.Shape.Width}x{dish.Shape.Height}";
         }
 
         private Sprite LoadDishIcon(string dishId)

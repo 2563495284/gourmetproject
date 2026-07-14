@@ -138,8 +138,8 @@ namespace GourmetProject.Game.Run
 
         public RewardOfferSaveData PendingRewardOffer;
 
-        /// <summary>旧存档兼容字段：曾经只保存道具 id，读档时会迁移为 Items。</summary>
-        public List<string> ItemIds = new List<string>();
+        /// <summary>通用待领奖队列（被动获得时、商店、事件等非过关奖励来源）。</summary>
+        public List<GenericRewardSaveData> PendingGenericRewards = new List<GenericRewardSaveData>();
     }
 
     [Serializable]
@@ -227,6 +227,14 @@ namespace GourmetProject.Game.Run
         public bool ExtraChoiceSkipped;
         public List<RewardChoiceSaveData> MainChoices = new List<RewardChoiceSaveData>();
         public List<RewardChoiceSaveData> ExtraChoices = new List<RewardChoiceSaveData>();
+    }
+
+    [Serializable]
+    public sealed class GenericRewardSaveData
+    {
+        public string Key;
+        public string Title;
+        public RewardOfferSaveData Offer;
     }
 
     [Serializable]

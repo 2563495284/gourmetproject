@@ -23,6 +23,24 @@ using GourmetProject.Game.UI.Widgets;
 
 namespace GourmetProject.Game.UI.Meta
 {
+    public sealed class RewardFormOpenArgs
+    {
+        private RewardFormOpenArgs(bool useGenericQueue, bool confirmBattleRewardAfterDone)
+        {
+            UseGenericQueue = useGenericQueue;
+            ConfirmBattleRewardAfterDone = confirmBattleRewardAfterDone;
+        }
+
+        public bool UseGenericQueue { get; }
+
+        public bool ConfirmBattleRewardAfterDone { get; }
+
+        public static RewardFormOpenArgs GenericQueue(bool confirmBattleRewardAfterDone = false)
+        {
+            return new RewardFormOpenArgs(true, confirmBattleRewardAfterDone);
+        }
+    }
+
     /// <summary>
     /// 过关领奖界面：展示本周得分与发放的奖励，点「继续」推进到下一周（或通关返回菜单）。
     /// 结构全固定、落在 RewardForm.prefab，脚本只赋文本并按是否最终周切换按钮组。
@@ -31,10 +49,7 @@ namespace GourmetProject.Game.UI.Meta
     public sealed class RewardForm : UGuiForm
     {
         [SerializeField] private Text _titleText;
-        [SerializeField] private Text _scoreText;
         [SerializeField] private Button _continueButton;
-        [SerializeField] private Button _endlessButton;
-        [SerializeField] private Button _menuButton;
         [SerializeField] private RectTransform _rewardListContent;
         [SerializeField] private RewardChoiceRowView _rewardRowTemplate;
         [Header("Reward Scrollbar")]
@@ -49,19 +64,21 @@ namespace GourmetProject.Game.UI.Meta
         private RewardOffer _offer;
         private readonly List<RewardChoiceRowView> _spawnedRows = new List<RewardChoiceRowView>();
         private string _rewardKey;
+        private string _genericRewardKey;
+        private string _genericRewardTitle;
         private int _lastTotal;
         private int _lastTarget;
         private CanvasGroup _rewardScrollbarGroup;
         private float _lastRewardScrollTime;
         private bool _rewardScrollListenerAttached;
         private bool _rewardScrollbarVisible;
+        private bool _genericMode;
+        private bool _confirmBattleRewardAfterGeneric;
 
         protected override void OnInit(object userData)
         {
             base.OnInit(userData);
             _continueButton.onClick.AddListener(OnContinue);
-            _endlessButton.onClick.AddListener(OnContinue);
-            _menuButton.onClick.AddListener(OnReturnMenu);
             ConfigureRewardScrollbar();
         }
 
@@ -75,6 +92,27 @@ namespace GourmetProject.Game.UI.Meta
             if (_run == null)
             {
                 Close();
+                return;
+            }
+
+            RewardFormOpenArgs args = userData as RewardFormOpenArgs;
+            _genericMode = args != null && args.UseGenericQueue;
+            _confirmBattleRewardAfterGeneric = args != null && args.ConfirmBattleRewardAfterDone;
+            _genericRewardKey = string.Empty;
+            _genericRewardTitle = string.Empty;
+            _rewardKey = string.Empty;
+
+            if (_genericMode)
+            {
+                if (!LoadNextGenericReward())
+                {
+                    Close();
+                    return;
+                }
+
+                _lastTotal = 0;
+                _lastTarget = 0;
+                RefreshOffer();
                 return;
             }
 
@@ -126,18 +164,32 @@ namespace GourmetProject.Game.UI.Meta
 
         private void RefreshOffer()
         {
-            _titleText.text = "美食成功";
-            _scoreText.text = $"得分 {_lastTotal} / 目标 {_lastTarget}";
-
+            _titleText.text = _genericMode && !string.IsNullOrEmpty(_genericRewardTitle)
+                ? _genericRewardTitle
+                : "奖励";
             // 行动轴模型下发奖不再推进周；底部只保留「继续行动」出口。
             _continueButton.gameObject.SetActive(true);
-            _endlessButton.gameObject.SetActive(false);
-            _menuButton.gameObject.SetActive(false);
 
-            SetButtonLabel(_continueButton, "继续行动");
+            SetButtonLabel(_continueButton, _genericMode ? "完成" : "继续行动");
             _continueButton.interactable = _offer == null || (_offer.IsFullyClaimed && !_run.HasPendingFragmentPack);
 
             RebuildRewardRows();
+        }
+
+        private bool LoadNextGenericReward()
+        {
+            if (_run == null || !_run.TryPeekPendingGenericReward(out string key, out string title, out RewardOffer offer))
+            {
+                _offer = null;
+                _genericRewardKey = string.Empty;
+                _genericRewardTitle = string.Empty;
+                return false;
+            }
+
+            _offer = offer;
+            _genericRewardKey = key;
+            _genericRewardTitle = string.IsNullOrWhiteSpace(title) ? "奖励" : title;
+            return true;
         }
 
         private void OnContinue()
@@ -154,7 +206,52 @@ namespace GourmetProject.Game.UI.Meta
         /// <summary>结算并推进：清空 pending offer、存档、（可选）关界面并回到行动轴，等效于点「继续」。</summary>
         private void CompleteRewards(bool closeForm)
         {
+            if (_genericMode)
+            {
+                _run.ClearPendingGenericRewardOffer(_genericRewardKey);
+                RunPersistence.Save(_run);
+                if (LoadNextGenericReward())
+                {
+                    RefreshOffer();
+                    return;
+                }
+
+                if (closeForm)
+                {
+                    Close();
+                }
+
+                if (_confirmBattleRewardAfterGeneric)
+                {
+                    BattleForm.Active?.OnRewardConfirmed();
+                }
+                else if (!closeForm)
+                {
+                    BattleForm.Active?.OpenShop();
+                }
+
+                return;
+            }
+
             _run.ClearPendingRewardOffer();
+            if (_run.HasPendingGenericRewards)
+            {
+                RunPersistence.Save(_run);
+                _genericMode = true;
+                _confirmBattleRewardAfterGeneric = true;
+                if (LoadNextGenericReward())
+                {
+                    if (!closeForm)
+                    {
+                        ReopenReward();
+                        return;
+                    }
+
+                    RefreshOffer();
+                    return;
+                }
+            }
+
             RunPersistence.Save(_run);
             if (closeForm)
             {
@@ -176,11 +273,6 @@ namespace GourmetProject.Game.UI.Meta
             return true;
         }
 
-        private void OnReturnMenu()
-        {
-            OnContinue();
-        }
-
         private void Close()
         {
             GameApp.UI.CloseUIForm(UIForm);
@@ -193,8 +285,17 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            RewardGranter.ApplyBaseGold(_run, _offer);
-            _run.SetPendingRewardOffer(_rewardKey, _offer);
+            if (_genericMode)
+            {
+                _run.Gold += _offer.BaseGold;
+                _offer.MarkBaseGoldClaimed();
+            }
+            else
+            {
+                RewardGranter.ApplyBaseGold(_run, _offer);
+            }
+
+            SaveCurrentOffer();
             RunPersistence.Save(_run);
 
             // 只剩金币这一个奖励，领完直接等效于点「继续」。
@@ -233,7 +334,7 @@ namespace GourmetProject.Game.UI.Meta
             if (choice.Kind == cfg.RewardKind.FragmentChoice)
             {
                 RewardGranter.ApplyFragmentPack(_run, groupChoices);
-                _run.SetPendingRewardOffer(_rewardKey, _offer);
+                SaveCurrentOffer();
                 RunPersistence.Save(_run);
 
                 Close();
@@ -242,7 +343,7 @@ namespace GourmetProject.Game.UI.Meta
                     if (placed && !IsChoiceResolved(extra))
                     {
                         MarkChoiceClaimed(extra, index);
-                        _run.SetPendingRewardOffer(_rewardKey, _offer);
+                        SaveCurrentOffer();
                     }
 
                     RunPersistence.Save(_run);
@@ -254,14 +355,14 @@ namespace GourmetProject.Game.UI.Meta
                         return;
                     }
 
-                    GameApp.UI.OpenUIForm(UIForms.Reward, UIForms.GroupDialog);
+                    ReopenReward();
                 });
                 return;
             }
 
             RewardGranter.ApplyChoice(_run, choice);
             MarkChoiceClaimed(extra, index);
-            _run.SetPendingRewardOffer(_rewardKey, _offer);
+            SaveCurrentOffer();
             RunPersistence.Save(_run);
 
             if (TryAutoComplete(closeForm: true))
@@ -320,7 +421,7 @@ namespace GourmetProject.Game.UI.Meta
 
         private void SaveOfferAndReopenReward()
         {
-            _run.SetPendingRewardOffer(_rewardKey, _offer);
+            SaveCurrentOffer();
             RunPersistence.Save(_run);
 
             // 菜品是最后一个奖励且已放入菜谱：直接等效于点「继续」，不再弹回 RewardForm。
@@ -334,7 +435,27 @@ namespace GourmetProject.Game.UI.Meta
 
         private void ReopenReward()
         {
+            if (_genericMode)
+            {
+                GameApp.UI.OpenUIForm(
+                    UIForms.Reward,
+                    UIForms.GroupDialog,
+                    RewardFormOpenArgs.GenericQueue(_confirmBattleRewardAfterGeneric));
+                return;
+            }
+
             GameApp.UI.OpenUIForm(UIForms.Reward, UIForms.GroupDialog);
+        }
+
+        private void SaveCurrentOffer()
+        {
+            if (_genericMode)
+            {
+                _run.SetPendingGenericRewardOffer(_genericRewardKey, _offer);
+                return;
+            }
+
+            _run.SetPendingRewardOffer(_rewardKey, _offer);
         }
 
         private void MarkChoiceClaimed(bool extra, int index)
@@ -369,8 +490,8 @@ namespace GourmetProject.Game.UI.Meta
             _rewardRowTemplate.gameObject.SetActive(false);
             AddFixedGoldRow();
 
-            AddChoiceRows("主奖励", _offer.MainChoices, extra: false);
-            AddChoiceRows("额外奖励", _offer.ExtraChoices, extra: true);
+            AddChoiceRows(_genericMode ? "被动道具" : "主奖励", _offer.MainChoices, extra: false);
+            AddChoiceRows(_genericMode ? "随机食物" : "额外奖励", _offer.ExtraChoices, extra: true);
             HideRewardScrollbar(immediate: true);
         }
 

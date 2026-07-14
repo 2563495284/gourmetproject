@@ -296,6 +296,12 @@ namespace GourmetProject.Game.UI.Meta
             if (entry.Kind == ShopEntryKind.Fragment && _run.HasPendingFragmentPack && _onOpenTableEdit != null)
             {
                 _onOpenTableEdit.Invoke();
+                return;
+            }
+
+            if (_run.HasPendingGenericRewards)
+            {
+                GameApp.UI.OpenUIForm(UIForms.Reward, UIForms.GroupDialog, RewardFormOpenArgs.GenericQueue());
             }
         }
 

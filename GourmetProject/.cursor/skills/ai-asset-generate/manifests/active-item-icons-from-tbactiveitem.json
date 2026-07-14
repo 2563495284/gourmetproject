@@ -1,0 +1,137 @@
+{
+  "provider": "gemini",
+  "model": "gemini-3.1-flash-image-preview",
+  "stylePrefix": "90s American cable TV cartoon style, thick clean black ink outlines, flat cel animation colors, hand-drawn 2D animation look, polished Unity game item icon quality, playful restaurant roguelike active item prop icon, centered composition, single readable object or compact prop bundle, no characters, no face, no eyes, no mouth, no limbs, no mascot treatment, no readable text, no letters, no numbers, no logo, no watermark, no UI frame, no circular badge background, avoid hot pink, avoid magenta, avoid purple objects",
+  "typeDefaults": {
+    "item": {
+      "outputDir": "Assets/GameMain/Resources/Sprites/Items",
+      "postprocess": "magenta-alpha",
+      "background": "opaque",
+      "quality": "high"
+    }
+  },
+  "typePromptPrefixes": {
+    "item": "Item icon rule: isolated active item sprite on a perfectly flat solid #FF00FF chroma key background. The background must be one uniform color with no shadows, gradients, texture, reflections, floor plane, or lighting variation. Do not use #FF00FF, hot pink, magenta, or purple anywhere in the item. Keep the entire object fully inside the canvas with generous transparent-safe padding. No cast shadow, no contact shadow, no table, no grid lines, no checkerboard."
+  },
+  "assets": [
+    {
+      "name": "active_season_sweet",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a small restaurant order slip clipped to a cute sugar cube and honey dipper, sweet flavor add-order icon, warm cream and golden colors, no readable writing"
+    },
+    {
+      "name": "active_season_bitter",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a small restaurant order slip clipped to dark cocoa nibs and a tiny coffee bean charm, bitter flavor add-order icon, tan paper and deep brown colors, no readable writing"
+    },
+    {
+      "name": "active_season_umami",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a small restaurant order slip clipped to a mushroom slice and glowing golden broth droplet, savory umami flavor add-order icon, no readable writing"
+    },
+    {
+      "name": "active_season_numb",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a small restaurant order slip clipped to sichuan peppercorn pods with tiny yellow electric tingles, numbing spice flavor add-order icon, no readable writing"
+    },
+    {
+      "name": "active_season_sour",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a small restaurant order slip clipped to a lemon wedge and vinegar droplet, sour flavor add-order icon, bright yellow and teal accents, no readable writing"
+    },
+    {
+      "name": "active_season_salty",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a small restaurant order slip clipped to chunky sea salt crystals and a tiny shaker cap, salty flavor add-order icon, pale blue and white accents, no readable writing"
+    },
+    {
+      "name": "active_lay_cherry",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a procurement order slip pinned to a warm red cherry wood tabletop sample tile with simple wood grain, restaurant table material order icon, no readable writing"
+    },
+    {
+      "name": "active_lay_walnut",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a procurement order slip pinned to a dark walnut wood tabletop sample tile with bold wavy grain, restaurant table material order icon, no readable writing"
+    },
+    {
+      "name": "active_lay_marble",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a procurement order slip pinned to a white marble tabletop sample tile with gray vein streaks, restaurant table material order icon, no readable writing"
+    },
+    {
+      "name": "active_lay_obsidian",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a procurement order slip pinned to a glossy black obsidian tabletop sample tile with sharp blue highlights, restaurant table material order icon, no readable writing"
+    },
+    {
+      "name": "active_lay_emerald",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a procurement order slip pinned to a green emerald tabletop sample tile with faceted cel-shaded facets, restaurant table material order icon, no readable writing"
+    },
+    {
+      "name": "active_lay_gold",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a compact shiny gold tabletop material sample tile like a chunky golden slab, one small blank order slip corner pinned on top with no forms and no writing, centered smaller with wide padding, no gray backing board, no extra background shapes, restaurant table material order icon"
+    },
+    {
+      "name": "active_lay_silver",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a procurement order slip pinned to a bright silver tabletop sample tile with cool metal highlights, restaurant table material order icon, no readable writing"
+    },
+    {
+      "name": "active_sched_reroll",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "an action adjustment order slip with circular reroll arrows around a tiny calendar node and action die, schedule reroll active item icon, no readable writing"
+    },
+    {
+      "name": "active_sched_feast",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a feast adjustment order slip beside a covered banquet cloche and a reset swirl over a crown-shaped boss marker, no readable writing"
+    },
+    {
+      "name": "active_sched_rush",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "an urgent order slip with speed lines, a forward arrow, and a tiny route-map node being executed next, rush schedule active item icon, no readable writing"
+    },
+    {
+      "name": "active_sched_reward",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a reward order slip with a gift box placed onto a dotted route-map node, schedule reward node active item icon, no readable writing"
+    }
+  ]
+}
