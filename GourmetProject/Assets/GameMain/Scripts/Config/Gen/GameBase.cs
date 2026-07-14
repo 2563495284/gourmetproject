@@ -26,6 +26,7 @@ public sealed partial class GameBase : Luban.BeanBase
         { if(!_buf["shopFoodSaleSlotCount"].IsNumber) { throw new SerializationException(); }  ShopFoodSaleSlotCount = _buf["shopFoodSaleSlotCount"]; }
         { if(!_buf["shopPassiveItemSaleSlotCount"].IsNumber) { throw new SerializationException(); }  ShopPassiveItemSaleSlotCount = _buf["shopPassiveItemSaleSlotCount"]; }
         { if(!_buf["shopActiveItemSaleSlotCount"].IsNumber) { throw new SerializationException(); }  ShopActiveItemSaleSlotCount = _buf["shopActiveItemSaleSlotCount"]; }
+        { if(!_buf["foodFlavorLimit"].IsNumber) { throw new SerializationException(); }  FoodFlavorLimit = _buf["foodFlavorLimit"]; }
     }
 
     public static GameBase DeserializeGameBase(JSONNode _buf)
@@ -69,6 +70,10 @@ public sealed partial class GameBase : Luban.BeanBase
     /// 商店主动道具出售栏位数量
     /// </summary>
     public readonly int ShopActiveItemSaleSlotCount;
+    /// <summary>
+    /// 食物风味上限
+    /// </summary>
+    public readonly int FoodFlavorLimit;
    
     public const int __ID__ = -1705057789;
     public override int GetTypeId() => __ID__;
@@ -89,6 +94,7 @@ public sealed partial class GameBase : Luban.BeanBase
         + "shopFoodSaleSlotCount:" + ShopFoodSaleSlotCount + ","
         + "shopPassiveItemSaleSlotCount:" + ShopPassiveItemSaleSlotCount + ","
         + "shopActiveItemSaleSlotCount:" + ShopActiveItemSaleSlotCount + ","
+        + "foodFlavorLimit:" + FoodFlavorLimit + ","
         + "}";
     }
 }

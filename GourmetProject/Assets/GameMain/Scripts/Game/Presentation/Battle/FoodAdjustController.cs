@@ -141,6 +141,11 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             float size = ButtonSize;
             _deleteButton ??= CreateButton("FoodAdjustDelete");
+            if (_deleteButton == null)
+            {
+                return;
+            }
+
             _deleteButton.gameObject.SetActive(true);
             _deleteButton.Configure(new Vector2(size, size), "×", new Color(0.9f, 0.24f, 0.22f, 1f), () => DeleteDish(dish));
             PositionAtCellCorner(_deleteButton, TopRightCell(dish.OccupiedCells), size, Vector3.zero);
@@ -192,7 +197,19 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _cursorView = CreateLoosePiece(dish);
-            _arrow = WorldTargetArrow.Create(_world.AdjustPiecesRoot, Mapper.CellSize);
+            if (_cursorView == null)
+            {
+                _state = State.Idle;
+                return;
+            }
+
+            _arrow = WorldTargetArrow.Create(_world.ActiveTargetArrowPrefab, _world.AdjustPiecesRoot, Mapper.CellSize);
+            if (_arrow == null)
+            {
+                _state = State.Idle;
+                return;
+            }
+
             _state = State.Moving;
         }
 
@@ -248,11 +265,21 @@ namespace GourmetProject.Game.Presentation.Battle
             GridPos topRight = TopRightCell(_movingDish.OccupiedCells);
 
             _confirmButton ??= CreateButton("FoodAdjustConfirm");
+            if (_confirmButton == null)
+            {
+                return;
+            }
+
             _confirmButton.gameObject.SetActive(true);
             _confirmButton.Configure(new Vector2(size, size), "✓", new Color(0.28f, 0.8f, 0.36f, 1f), ConfirmMove);
             PositionAtCellCorner(_confirmButton, topRight, size, Vector3.zero);
 
             _undoButton ??= CreateButton("FoodAdjustUndo");
+            if (_undoButton == null)
+            {
+                return;
+            }
+
             _undoButton.gameObject.SetActive(true);
             _undoButton.Configure(new Vector2(size, size), "↩", new Color(0.55f, 0.55f, 0.6f, 1f), UndoMove);
             PositionAtCellCorner(_undoButton, topRight, size, new Vector3(0f, -size * 1.15f, 0f));
@@ -414,9 +441,8 @@ namespace GourmetProject.Game.Presentation.Battle
             }
             else
             {
-                var go = new GameObject(name, typeof(SpriteRenderer), typeof(BoxCollider2D));
-                go.transform.SetParent(_world.AdjustPiecesRoot, false);
-                button = go.AddComponent<WorldButtonView>();
+                Debug.LogError($"{nameof(FoodAdjustController)} 缺少 WorldButton prefab。");
+                return null;
             }
 
             button.gameObject.name = name;
@@ -432,9 +458,8 @@ namespace GourmetProject.Game.Presentation.Battle
             }
             else
             {
-                var go = new GameObject("FoodAdjustCursorDish");
-                go.transform.SetParent(_world.AdjustPiecesRoot, false);
-                piece = go.AddComponent<DishPieceView>();
+                Debug.LogError($"{nameof(FoodAdjustController)} 缺少 DishPiece prefab。");
+                return null;
             }
 
             piece.gameObject.name = "FoodAdjustCursorDish";

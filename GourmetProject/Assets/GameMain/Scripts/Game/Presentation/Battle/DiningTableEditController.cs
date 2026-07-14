@@ -61,7 +61,11 @@ namespace GourmetProject.Game.Presentation.Battle
         private bool _editDragAnimating;
         private bool _editDragReturning;
 
-        private Transform _editRoot;
+        [Header("编辑态固定结构")]
+        [SerializeField] private Transform _editRoot;
+        [SerializeField] private Transform _editDragRootPrefab;
+        [SerializeField] private LineRenderer _editBoundsWarningLinePrefab;
+
         private readonly List<DiningTableCellView> _editGhostCells = new List<DiningTableCellView>();
         private readonly List<DiningTableCellView> _editTrayCells = new List<DiningTableCellView>();
         private readonly List<DiningTableCellView> _editDragCells = new List<DiningTableCellView>();
@@ -511,9 +515,14 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             if (_editRoot == null)
             {
-                var go = new GameObject("BoardEditRoot");
-                go.transform.SetParent(transform, false);
-                _editRoot = go.transform;
+                Transform root = transform.Find("BoardEditRoot");
+                _editRoot = root;
+            }
+
+            if (_editRoot == null)
+            {
+                Debug.LogError($"{nameof(DiningTableEditController)} 缺少 BoardEditRoot 预置节点。", this);
+                return;
             }
 
             _editRoot.localPosition = Vector3.zero;
@@ -621,9 +630,14 @@ namespace GourmetProject.Game.Presentation.Battle
             EnsureEditRoot();
             while (_editBoundsWarningLines.Count <= index)
             {
-                var go = new GameObject($"BoundsWarning{_editBoundsWarningLines.Count}");
-                go.transform.SetParent(_editRoot, false);
-                LineRenderer line = go.AddComponent<LineRenderer>();
+                if (_editRoot == null || _editBoundsWarningLinePrefab == null)
+                {
+                    Debug.LogError($"{nameof(DiningTableEditController)} 缺少 BoundsWarningLine prefab。", this);
+                    return null;
+                }
+
+                LineRenderer line = Instantiate(_editBoundsWarningLinePrefab, _editRoot);
+                line.gameObject.name = $"BoundsWarning{_editBoundsWarningLines.Count}";
                 line.useWorldSpace = true;
                 line.loop = false;
                 line.startWidth = EditBoundsWarningWidth;
@@ -632,7 +646,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 line.endColor = BoundsWarningColor;
                 line.sharedMaterial = BoundsWarningMaterial();
                 BattleSorting.Apply(line, BattleSorting.Fx, BattleSorting.OrderFloatingText);
-                go.SetActive(false);
+                line.gameObject.SetActive(false);
                 _editBoundsWarningLines.Add(line);
             }
 
@@ -775,6 +789,11 @@ namespace GourmetProject.Game.Presentation.Battle
                 foreach (GridPos c in cells)
                 {
                     DiningTableCellView cell = InstantiateTrayCell();
+                    if (cell == null)
+                    {
+                        continue;
+                    }
+
                     var world = new Vector3(leftX + c.X * _editTraySize, topY - c.Y * _editTraySize, 0f);
                     cell.Configure(c, world, _editTraySize, _editCellSprite, null);
                     cell.SetColor(color);
@@ -825,10 +844,14 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             ClearDragVisual();
             EnsureEditRoot();
+            if (_editRoot == null || _editDragRootPrefab == null)
+            {
+                Debug.LogError($"{nameof(DiningTableEditController)} 缺少 BoardEditDrag prefab。", this);
+                return;
+            }
 
-            var go = new GameObject("BoardEditDrag");
-            go.transform.SetParent(_editRoot, false);
-            _editDragRoot = go.transform;
+            _editDragRoot = Instantiate(_editDragRootPrefab, _editRoot);
+            _editDragRoot.gameObject.name = "BoardEditDrag";
             _editDragRoot.position = center;
             _editDragRoot.localRotation = Quaternion.identity;
             _editDragRoot.localScale = scale;
@@ -854,6 +877,11 @@ namespace GourmetProject.Game.Presentation.Battle
             foreach (GridPos cellPos in cells)
             {
                 DiningTableCellView cell = InstantiateDragCell();
+                if (cell == null)
+                {
+                    continue;
+                }
+
                 var local = new Vector3((cellPos.X - avgX) * pitch, -(cellPos.Y - avgY) * pitch, 0f);
                 cell.Configure(cellPos, local, _cellSize, _editCellSprite, null);
                 cell.SetColor(Color.white);
@@ -968,9 +996,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 return Instantiate(_boardCellPrefab, _editDragRoot);
             }
 
-            var go = new GameObject("DragCell");
-            go.transform.SetParent(_editDragRoot, false);
-            return go.AddComponent<DiningTableCellView>();
+            Debug.LogError($"{nameof(DiningTableEditController)} 缺少 DiningTableCell prefab。", this);
+            return null;
         }
 
         private DiningTableCellView InstantiateTrayCell()
@@ -980,9 +1007,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 return Instantiate(_boardCellPrefab, _editRoot);
             }
 
-            var go = new GameObject("TrayCell");
-            go.transform.SetParent(_editRoot, false);
-            return go.AddComponent<DiningTableCellView>();
+            Debug.LogError($"{nameof(DiningTableEditController)} 缺少 DiningTableCell prefab。", this);
+            return null;
         }
 
         private void EnsureGhostCount(int count)
@@ -1004,9 +1030,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 }
                 else
                 {
-                    var go = new GameObject("GhostCell");
-                    go.transform.SetParent(_boardView.transform, false);
-                    ghost = go.AddComponent<DiningTableCellView>();
+                    Debug.LogError($"{nameof(DiningTableEditController)} 缺少 DiningTableCell prefab。", this);
+                    return;
                 }
 
                 ghost.Configure(new GridPos(0, 0), Vector3.zero, _cellSize, _editCellSprite, null);

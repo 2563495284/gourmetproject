@@ -21,10 +21,13 @@ namespace GourmetProject.Game.Presentation.Battle
 
         [Tooltip("用于屏幕→世界坐标换算的战斗相机；为空时回退 Camera.main。")]
         [SerializeField] private Camera _camera;
+        [Tooltip("预置的笔迹根节点。")]
+        [SerializeField] private Transform _strokesRoot;
+        [Tooltip("单笔笔迹 LineRenderer prefab/template。")]
+        [SerializeField] private LineRenderer _strokePrefab;
 
         private static Material _sharedMaterial;
 
-        private Transform _strokesRoot;
         private LineRenderer _currentStroke;
         private readonly List<Vector3> _points = new List<Vector3>();
         private bool _visible = true;
@@ -93,12 +96,15 @@ namespace GourmetProject.Game.Presentation.Battle
         private void BeginStroke(Vector3 worldPoint)
         {
             EnsureStrokesRoot();
+            if (_strokesRoot == null || _strokePrefab == null)
+            {
+                return;
+            }
+
             worldPoint.z = 0f;
 
-            var go = new GameObject("Stroke");
-            go.transform.SetParent(_strokesRoot, false);
-
-            var line = go.AddComponent<LineRenderer>();
+            LineRenderer line = Instantiate(_strokePrefab, _strokesRoot);
+            line.gameObject.name = "Stroke";
             line.useWorldSpace = true;
             line.alignment = LineAlignment.View;
             line.textureMode = LineTextureMode.Stretch;
@@ -160,9 +166,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            var go = new GameObject("Strokes");
-            go.transform.SetParent(transform, false);
-            _strokesRoot = go.transform;
+            Debug.LogError($"{nameof(BattleDoodleController)} 缺少 Strokes 预置根节点。", this);
         }
 
         private static Material GetSharedMaterial()

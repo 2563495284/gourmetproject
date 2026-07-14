@@ -38,6 +38,10 @@ namespace GourmetProject.Game.Meta
                     // 局外没有战斗餐桌，用预览餐桌（与实战同构）枚举格子。
                     DiningTable preview = Run != null ? BattleSessionFactory.BuildTablePreview(Run) : null;
                     return BattleUseContext.EnumerateTableCells(preview);
+                case cfg.ItemTargetKind.Material:
+                    return BattleUseContext.EnumerateMaterials(Run);
+                case cfg.ItemTargetKind.FlavorSlot:
+                    return BattleUseContext.EnumerateFlavorSlots(Run);
                 default:
                     return Array.Empty<ActiveTarget>();
             }
@@ -66,10 +70,27 @@ namespace GourmetProject.Game.Meta
             return Run != null && Run.AddRecipeFlavor(target.X, target.Y, flavorId);
         }
 
+        public bool RemoveFlavorFromDish(ActiveTarget target, string flavorId)
+        {
+            return Run != null && Run.RemoveRecipeFlavor(target.X, target.Y, flavorId);
+        }
+
+        public bool ConvertFlavorOnDish(ActiveTarget target, string toFlavorId)
+        {
+            return Run != null && Run.ReplaceRecipeFlavor(target.X, target.Y, toFlavorId);
+        }
+
+        public bool ConvertDishCategory(ActiveTarget target, string category)
+        {
+            return false;
+        }
+
         public bool AddMaterialToCell(ActiveTarget target, string materialId)
         {
             return Run != null && Run.AddCellMaterial(new GridPos(target.X, target.Y), materialId);
         }
+
+        public bool GenerateDish(ActiveTarget target, string dishId, string randomKey) => false;
 
         // —— 排程：操作行动轴/Boss ——
 
@@ -117,15 +138,8 @@ namespace GourmetProject.Game.Meta
                 return false;
             }
 
-            // 放在当前天数游标之后最近的整天，随天数推进被 CollectPassedNodes 触发。
-            int day = (int)Math.Ceiling(Run.CurrentDay + 0.001f);
-            int maxDay = (int)Math.Floor(Run.TimelineLengthDays);
-            if (day > maxDay)
-            {
-                return false;
-            }
-
-            return !string.IsNullOrEmpty(Run.AddRuntimeTimelineNode(day, actionId));
+            IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Item, $"timeline_add_{actionId}_{Run.NextActiveUseKey()}");
+            return !string.IsNullOrEmpty(Run.AddRuntimeTimelineNode(actionId, rng));
         }
     }
 }

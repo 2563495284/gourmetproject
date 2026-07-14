@@ -26,51 +26,47 @@ namespace GourmetProject.Game.UI.Battle.View
         private Image _frameBottom;
         private Image _frameLeft;
         private Image _frameRight;
-
-        public static FoodAdjustOverlay Create(RectTransform parent)
+        
+        private void Awake()
         {
-            var go = new GameObject("FoodAdjustOverlay", typeof(RectTransform));
-            var rect = (RectTransform)go.transform;
-            rect.SetParent(parent, false);
-            Stretch(rect);
+            _rect = (RectTransform)transform;
+            Stretch(_rect);
+            ConfigureStrip(_dimTop, DimColor, true);
+            ConfigureStrip(_dimBottom, DimColor, true);
+            ConfigureStrip(_dimLeft, DimColor, true);
+            ConfigureStrip(_dimRight, DimColor, true);
+            ConfigureStrip(_frameTop, FrameColor, false);
+            ConfigureStrip(_frameBottom, FrameColor, false);
+            ConfigureStrip(_frameLeft, FrameColor, false);
+            ConfigureStrip(_frameRight, FrameColor, false);
 
-            var canvas = go.AddComponent<Canvas>();
-            canvas.overrideSorting = true;
-            canvas.sortingOrder = OverlaySortingOrder;
-            go.AddComponent<GraphicRaycaster>();
+            Canvas canvas = GetComponent<Canvas>();
+            if (canvas != null)
+            {
+                canvas.overrideSorting = true;
+                canvas.sortingOrder = OverlaySortingOrder;
+            }
 
-            var overlay = go.AddComponent<FoodAdjustOverlay>();
-            overlay._rect = rect;
-            overlay.BuildParts();
-            overlay.Hide();
-            return overlay;
+            if (_dimTop == null || _dimBottom == null || _dimLeft == null || _dimRight == null
+                || _frameTop == null || _frameBottom == null || _frameLeft == null || _frameRight == null)
+            {
+                Debug.LogError($"{nameof(FoodAdjustOverlay)} prefab 缺少 4 条 Dim 和 4 条 Frame 图片。", this);
+            }
         }
 
-        private void BuildParts()
+        private static void ConfigureStrip(Image image, Color color, bool blockRaycast)
         {
-            _dimTop = CreateStrip("DimTop", DimColor, true);
-            _dimBottom = CreateStrip("DimBottom", DimColor, true);
-            _dimLeft = CreateStrip("DimLeft", DimColor, true);
-            _dimRight = CreateStrip("DimRight", DimColor, true);
-            _frameTop = CreateStrip("FrameTop", FrameColor, false);
-            _frameBottom = CreateStrip("FrameBottom", FrameColor, false);
-            _frameLeft = CreateStrip("FrameLeft", FrameColor, false);
-            _frameRight = CreateStrip("FrameRight", FrameColor, false);
-        }
+            if (image == null)
+            {
+                return;
+            }
 
-        private Image CreateStrip(string stripName, Color color, bool blockRaycast)
-        {
-            var go = new GameObject(stripName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            var rect = (RectTransform)go.transform;
-            rect.SetParent(_rect, false);
+            image.color = color;
+            image.raycastTarget = blockRaycast;
+            var rect = (RectTransform)image.transform;
             rect.anchorMin = new Vector2(0.5f, 0.5f);
             rect.anchorMax = new Vector2(0.5f, 0.5f);
             rect.pivot = new Vector2(0.5f, 0.5f);
-
-            var image = go.GetComponent<Image>();
-            image.color = color;
-            image.raycastTarget = blockRaycast;
-            return image;
         }
 
         public void Show(RectTransform boardArea)

@@ -35,6 +35,7 @@ namespace GourmetProject.Game.UI.Widgets
         [SerializeField] private Button _closeButton;
         [SerializeField] private DishShapeCell _cellPrefab;
         [SerializeField] private DishTagLine _tagLinePrefab;
+        [SerializeField] private Image _dishImagePrefab;
 
         private readonly List<GameObject> _spawned = new();
         private readonly DishSpriteProvider _spriteProvider = new();
@@ -94,10 +95,15 @@ namespace GourmetProject.Game.UI.Widgets
 
         private void BuildFoodImage(DishDef def, int dim, int offX, int offY)
         {
-            var go = new GameObject("DishImage", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            go.transform.SetParent(_shapeContainer, false);
+            if (_dishImagePrefab == null)
+            {
+                Debug.LogError($"{nameof(DishDetailForm)} prefab 缺少 DishImage template。", this);
+                return;
+            }
 
-            Image image = go.GetComponent<Image>();
+            Image image = Instantiate(_dishImagePrefab, _shapeContainer);
+            image.gameObject.name = "DishImage";
+            image.gameObject.SetActive(true);
             image.sprite = _spriteProvider.Get(def);
             image.color = Color.white;
             image.raycastTarget = false;
@@ -105,7 +111,7 @@ namespace GourmetProject.Game.UI.Widgets
 
             int w = def.Shape.Width;
             int h = def.Shape.Height;
-            var rect = (RectTransform)go.transform;
+            var rect = (RectTransform)image.transform;
             rect.anchorMin = new Vector2((float)offX / dim, 1f - (float)(offY + h) / dim);
             rect.anchorMax = new Vector2((float)(offX + w) / dim, 1f - (float)offY / dim);
             rect.offsetMin = Vector2.zero;
@@ -113,7 +119,7 @@ namespace GourmetProject.Game.UI.Widgets
             rect.localScale = Vector3.one;
             rect.SetAsLastSibling();
 
-            _spawned.Add(go);
+            _spawned.Add(image.gameObject);
         }
 
         private void BuildBoardGrid(int dim)

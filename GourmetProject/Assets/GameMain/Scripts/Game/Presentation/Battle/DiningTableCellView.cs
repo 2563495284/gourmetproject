@@ -89,6 +89,13 @@ namespace GourmetProject.Game.Presentation.Battle
             _renderer.SetPropertyBlock(_propertyBlock);
         }
 
+        public void ClearOutline()
+        {
+            EnsureRefs();
+            _renderer.SetPropertyBlock(null);
+            SpriteRenderStyle.ApplyUnlitMaterial(_renderer);
+        }
+
         /// <summary>调整渲染排序序号（编辑页放置预览幽灵需盖在餐桌格之上）。</summary>
         public void SetSortingOrder(int order)
         {

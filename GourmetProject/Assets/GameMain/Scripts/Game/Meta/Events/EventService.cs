@@ -143,10 +143,23 @@ namespace GourmetProject.Game.Meta
                 return null;
             }
 
+            var itemRuntime = new ItemRuntime(run);
+            float rewardMul = 1f + itemRuntime.LuckyEventChanceBonus();
+            float eventMul = 1f + itemRuntime.MoreEventsBonus();
             var weights = new List<float>(candidates.Count);
             foreach (cfg.GameEvent ev in candidates)
             {
-                weights.Add(ev.Weight > 0f ? ev.Weight : 1f);
+                float weight = ev.Weight > 0f ? ev.Weight : 1f;
+                if (ev.EventType == cfg.ActionBehavior.Reward)
+                {
+                    weight *= System.Math.Max(0f, rewardMul);
+                }
+                else if (ev.EventType == cfg.ActionBehavior.Event)
+                {
+                    weight *= System.Math.Max(0f, eventMul);
+                }
+
+                weights.Add(weight);
             }
 
             return candidates[rng.WeightedPickIndex(weights)];
@@ -204,7 +217,17 @@ namespace GourmetProject.Game.Meta
                 return null;
             }
 
-            return candidates[rng.WeightedPickIndex(weights)];
+            cfg.GameEvent picked = candidates[rng.WeightedPickIndex(weights)];
+            if (picked != null && picked.EventType == cfg.ActionBehavior.Reward && System.Math.Abs(rewardMul - 1f) > 0.0001f)
+            {
+                itemRuntime.FlashTriggered(m => System.Math.Abs(m.LuckyEventChanceBonus()) > 0.0001f);
+            }
+            else if (picked != null && picked.EventType == cfg.ActionBehavior.Event && System.Math.Abs(eventMul - 1f) > 0.0001f)
+            {
+                itemRuntime.FlashTriggered(m => System.Math.Abs(m.MoreEventsBonus()) > 0.0001f);
+            }
+
+            return picked;
         }
 
         /// <summary>
@@ -225,6 +248,7 @@ namespace GourmetProject.Game.Meta
                     if (forced != null)
                     {
                         guarantee.ResetEventGuaranteeStreak();
+                        guarantee.Flash();
                         return forced;
                     }
                     // Reward 池为空：回退合并池抽取，且不清零计数（保底名额留到下次）。
@@ -322,7 +346,13 @@ namespace GourmetProject.Game.Meta
                 return;
             }
 
-            run.Gold += new ItemRuntime(run).EventCompleteGold();
+            var itemRuntime = new ItemRuntime(run);
+            int gold = itemRuntime.EventCompleteGold();
+            if (gold != 0)
+            {
+                itemRuntime.FlashTriggered(m => m.EventCompleteGold() != 0);
+                run.Gold += gold;
+            }
         }
 
         private static EventResolveResult ResolveEffect(GameRun run, cfg.EffectType effectType, float effectValue, string effectParam, string fallback, IRandomStream rng)

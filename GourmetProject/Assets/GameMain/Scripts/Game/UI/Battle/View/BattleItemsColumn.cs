@@ -33,13 +33,13 @@ namespace GourmetProject.Game.UI.Battle.View
         private readonly Dictionary<string, RunItemSlotView> _passiveSlotByItemId = new Dictionary<string, RunItemSlotView>();
         private readonly Dictionary<string, RunItemSlotView> _activeSlotByItemId = new Dictionary<string, RunItemSlotView>();
 
-        /// <summary>刷新右栏道具：被动网格 + 主动槽。onActiveItemClicked 用于战斗中使用主动道具，onShowItemInfo 用于查看信息。</summary>
+        /// <summary>刷新右栏道具：被动网格 + 主动槽。onActiveItemClicked 用于打开主动道具操作气泡。</summary>
         public void Refresh(
             GameRun run,
             BattleSession session,
             bool inBattle,
             ItemTipView tipView,
-            Action<string> onActiveItemClicked,
+            Action<string, RunItemSlotView> onActiveItemClicked,
             Action<ItemDefinition, RunItemState> onShowItemInfo)
         {
             ClearPassiveSlots();
@@ -140,11 +140,19 @@ namespace GourmetProject.Game.UI.Battle.View
                     string.Empty,
                     RunItemSlotView.QualityColor(item.Quality),
                     true,
-                    () => onShowItemInfo?.Invoke(captured, capturedState));
+                    () => onShowItemInfo?.Invoke(captured, capturedState),
+                    state,
+                    usePassiveShader: true);
                 slot.SetTip(tipView, captured);
                 _passiveSlots.Add(slot);
                 _passiveSlotByItemId[state.ItemId] = slot;
             }
+        }
+
+        public void PulsePassiveItem(string itemId, bool reveal = true)
+        {
+            RunItemSlotView slot = GetItemSlot(itemId, cfg.ItemKind.Passive, reveal);
+            slot?.PlayPassivePulse();
         }
 
         private RectTransform EnsurePassiveItemsContent()
@@ -162,9 +170,8 @@ namespace GourmetProject.Game.UI.Battle.View
                 Transform content = _passiveItemsContainer.Find("Content");
                 if (content == null)
                 {
-                    var contentObject = new GameObject("Content", typeof(RectTransform));
-                    contentObject.transform.SetParent(_passiveItemsContainer, false);
-                    _passiveItemsContent = contentObject.GetComponent<RectTransform>();
+                    Debug.LogError($"{nameof(BattleItemsColumn)} prefab 缺少被动道具 Content 容器。", this);
+                    return null;
                 }
                 else
                 {
@@ -360,15 +367,10 @@ namespace GourmetProject.Game.UI.Battle.View
             ConfigurePassiveScroll(content, contentHeight);
             RevealProjectedPassiveSlot(index, slotSize, contentHeight);
 
-            var probeObject = new GameObject("PassiveItemFlyTargetProbe", typeof(RectTransform));
-            var probe = probeObject.GetComponent<RectTransform>();
-            probe.SetParent(content, false);
-            LayoutPassiveSlot(probe, index, slotSize);
             Canvas.ForceUpdateCanvases();
 
-            bool ok = TryGetRectInLayer(probe, layer, out center, out size);
-            Destroy(probeObject);
-            return ok;
+            Vector2 anchoredPosition = PassiveSlotAnchoredPosition(index, slotSize);
+            return TryGetProjectedRectInLayer(content, anchoredPosition, slotSize, layer, out center, out size);
         }
 
         private void RevealProjectedPassiveSlot(int index, Vector2 slotSize, float contentHeight)
@@ -464,18 +466,61 @@ namespace GourmetProject.Game.UI.Battle.View
             return true;
         }
 
+        private static bool TryGetProjectedRectInLayer(RectTransform content, Vector2 anchoredPosition, Vector2 slotSize, RectTransform layer, out Vector2 center, out Vector2 size)
+        {
+            center = Vector2.zero;
+            size = Vector2.zero;
+            if (content == null || layer == null)
+            {
+                return false;
+            }
+
+            Rect contentRect = content.rect;
+            Vector3 pivotLocal = new Vector3(contentRect.xMin + anchoredPosition.x, anchoredPosition.y, 0f);
+            Vector3[] corners =
+            {
+                content.TransformPoint(pivotLocal + new Vector3(0f, -slotSize.y, 0f)),
+                content.TransformPoint(pivotLocal),
+                content.TransformPoint(pivotLocal + new Vector3(slotSize.x, 0f, 0f)),
+                content.TransformPoint(pivotLocal + new Vector3(slotSize.x, -slotSize.y, 0f)),
+            };
+
+            Vector3 first = layer.InverseTransformPoint(corners[0]);
+            float minX = first.x;
+            float maxX = first.x;
+            float minY = first.y;
+            float maxY = first.y;
+            for (int i = 1; i < corners.Length; i++)
+            {
+                Vector3 local = layer.InverseTransformPoint(corners[i]);
+                minX = Mathf.Min(minX, local.x);
+                maxX = Mathf.Max(maxX, local.x);
+                minY = Mathf.Min(minY, local.y);
+                maxY = Mathf.Max(maxY, local.y);
+            }
+
+            size = new Vector2(Mathf.Max(1f, maxX - minX), Mathf.Max(1f, maxY - minY));
+            center = new Vector2((minX + maxX) * 0.5f, (minY + maxY) * 0.5f);
+            return true;
+        }
+
         private static void LayoutPassiveSlot(RectTransform rect, int index, Vector2 slotSize)
         {
-            int col = index % PassiveSlotColumns;
-            int row = index / PassiveSlotColumns;
             rect.anchorMin = new Vector2(0f, 1f);
             rect.anchorMax = new Vector2(0f, 1f);
             rect.pivot = new Vector2(0f, 1f);
             rect.sizeDelta = slotSize;
-            rect.anchoredPosition = new Vector2(
+            rect.anchoredPosition = PassiveSlotAnchoredPosition(index, slotSize);
+            rect.localScale = Vector3.one;
+        }
+
+        private static Vector2 PassiveSlotAnchoredPosition(int index, Vector2 slotSize)
+        {
+            int col = index % PassiveSlotColumns;
+            int row = index / PassiveSlotColumns;
+            return new Vector2(
                 PassiveSlotPadding + col * (slotSize.x + PassiveSlotSpacing),
                 -PassiveSlotPadding - row * (slotSize.y + PassiveSlotSpacing));
-            rect.localScale = Vector3.one;
         }
 
         private void RefreshActive(
@@ -484,7 +529,7 @@ namespace GourmetProject.Game.UI.Battle.View
             bool inBattle,
             cfg.Tables tables,
             ItemTipView tipView,
-            Action<string> onActiveItemClicked,
+            Action<string, RunItemSlotView> onActiveItemClicked,
             Action<ItemDefinition, RunItemState> onShowItemInfo)
         {
             if (_activeItemSlots == null)
@@ -531,15 +576,9 @@ namespace GourmetProject.Game.UI.Battle.View
                     ItemDefinition captured = item;
                     RunItemState capturedState = state;
 
-                    // 战斗中：满足 targetKind 可用性的主动道具可点击使用；否则（含非战斗态）点击看信息。
-                    // TODO(active-item-ui): 非战斗（地图）态也应放行可用主动道具——用 ItemActiveUsage.CanUse(item, Map)
-                    //   判定可用性、点击路由到 BattleForm.OnMapActiveItemClicked（排程/调味/铺台在局外使用）。
-                    bool usableNow = inBattle && session != null && !session.IsSettled
-                        && ItemActiveUsage.CanUse(item, ActiveUseContextKind.Battle);
                     string capturedId = state.ItemId;
-                    Action onClick = usableNow
-                        ? (Action)(() => onActiveItemClicked?.Invoke(capturedId))
-                        : () => onShowItemInfo?.Invoke(captured, capturedState);
+                    RunItemSlotView capturedSlot = slot;
+                    Action onClick = () => onActiveItemClicked?.Invoke(capturedId, capturedSlot);
 
                     slot.Bind(
                         RunItemSlotView.LoadIcon(item),

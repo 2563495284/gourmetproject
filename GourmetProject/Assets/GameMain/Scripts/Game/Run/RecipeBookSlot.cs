@@ -9,6 +9,8 @@ namespace GourmetProject.Game.Run
     public sealed class RecipeBookSlot
     {
         private readonly List<string> _extraFlavorIds = new List<string>();
+        private readonly List<string> _extraSkillIds = new List<string>();
+        private float _scoreMultiplier = 1f;
 
         public RecipeBookSlot(string dishId)
         {
@@ -20,20 +22,91 @@ namespace GourmetProject.Game.Run
         /// <summary>玩家永久附加的额外风味 id（可叠加，与菜谱变体自带风味叠加）。</summary>
         public IReadOnlyList<string> ExtraFlavorIds => _extraFlavorIds;
 
+        public IReadOnlyList<string> ExtraSkillIds => _extraSkillIds;
+
+        public float ScoreMultiplier => _scoreMultiplier;
+
         public bool HasExtraFlavors => _extraFlavorIds.Count > 0;
 
-        public void AddFlavor(string flavorId)
+        public void AddFlavor(string flavorId, int flavorLimit = int.MaxValue)
         {
-            if (!string.IsNullOrEmpty(flavorId))
+            if (string.IsNullOrEmpty(flavorId))
+            {
+                return;
+            }
+
+            flavorLimit = System.Math.Max(1, flavorLimit);
+            if (_extraFlavorIds.Count < flavorLimit)
             {
                 _extraFlavorIds.Add(flavorId);
+                return;
             }
+
+            _extraFlavorIds[_extraFlavorIds.Count - 1] = flavorId;
+        }
+
+        public bool RemoveFlavor(string flavorId)
+        {
+            if (_extraFlavorIds.Count == 0)
+            {
+                return false;
+            }
+
+            if (string.IsNullOrEmpty(flavorId))
+            {
+                _extraFlavorIds.RemoveAt(_extraFlavorIds.Count - 1);
+                return true;
+            }
+
+            return _extraFlavorIds.Remove(flavorId);
+        }
+
+        public bool ReplaceFlavor(string toFlavorId)
+        {
+            if (string.IsNullOrEmpty(toFlavorId))
+            {
+                return false;
+            }
+
+            if (_extraFlavorIds.Count == 0)
+            {
+                _extraFlavorIds.Add(toFlavorId);
+            }
+            else
+            {
+                _extraFlavorIds[_extraFlavorIds.Count - 1] = toFlavorId;
+            }
+
+            return true;
+        }
+
+        public void AddExtraSkill(string skillId)
+        {
+            if (!string.IsNullOrEmpty(skillId) && !_extraSkillIds.Contains(skillId))
+            {
+                _extraSkillIds.Add(skillId);
+            }
+        }
+
+        public void MultiplyScore(float multiplier)
+        {
+            if (multiplier > 0f)
+            {
+                _scoreMultiplier *= multiplier;
+            }
+        }
+
+        public void RestoreScoreMultiplier(float multiplier)
+        {
+            _scoreMultiplier = multiplier > 0f ? multiplier : 1f;
         }
 
         public RecipeBookSlot Clone()
         {
             var copy = new RecipeBookSlot(DishId);
             copy._extraFlavorIds.AddRange(_extraFlavorIds);
+            copy._extraSkillIds.AddRange(_extraSkillIds);
+            copy._scoreMultiplier = _scoreMultiplier;
             return copy;
         }
     }

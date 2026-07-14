@@ -69,6 +69,8 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private Transform _leftPage;
         [Tooltip("右页条目容器：运行时菜谱条目挂到这里。")]
         [SerializeField] private Transform _rightPage;
+        [Tooltip("菜谱条目 prefab：TextMesh + BoxCollider2D。")]
+        [SerializeField] private MenuBookEntryView _entryPrefab;
 
         [Header("按钮图标（铃铛 + 翻页：纯图标 SpriteRenderer + 碰撞盒）")]
         [SerializeField] private SpriteRenderer _bellIcon;
@@ -152,22 +154,17 @@ namespace GourmetProject.Game.Presentation.Battle
             float targetW = Mathf.Max(0.5f, worldWidth);
             float targetH = Mathf.Max(0.5f, worldHeight);
 
-            if (HasAuthoredStructure())
+            if (!HasAuthoredStructure())
             {
-                // 结构按参考尺寸预拼好：在参考空间内布局，再对根做整体缩放贴合运行时分配的世界尺寸。
-                _w = RefW;
-                _h = RefH;
-                transform.localScale = new Vector3(targetW / RefW, targetH / RefH, 1f);
-                BindAuthored();
+                Debug.LogError($"{nameof(MenuBookWorldView)} prefab 缺少固定结构或 Entry prefab。", this);
+                return;
             }
-            else
-            {
-                // 兜底：prefab 未拼结构时退回运行时构建（见 presentation-prefab 规则，不应是常态）。
-                _w = targetW;
-                _h = targetH;
-                transform.localScale = Vector3.one;
-                BuildVisual();
-            }
+
+            // 结构按参考尺寸预拼好：在参考空间内布局，再对根做整体缩放贴合运行时分配的世界尺寸。
+            _w = RefW;
+            _h = RefH;
+            transform.localScale = new Vector3(targetW / RefW, targetH / RefH, 1f);
+            BindAuthored();
 
             _built = true;
             SetInteractable(true);
@@ -179,8 +176,13 @@ namespace GourmetProject.Game.Presentation.Battle
             return _bookBg != null
                 && _titleText != null
                 && _pageText != null
+                && _leftPage != null
+                && _rightPage != null
+                && _entryPrefab != null
                 && _bellIcon != null && _bellCol != null
-                && _tooltipRoot != null;
+                && _tooltipRoot != null
+                && _tooltipBg != null
+                && _tooltipText != null;
         }
 
         /// <summary>绑定 prefab 预拼好的结构：归一化材质/排序、构建按钮包装、算内容区几何。</summary>
@@ -240,56 +242,6 @@ namespace GourmetProject.Game.Presentation.Battle
             _leftEntryX = leftLeft + entryPad;
             _rightEntryX = rightLeft + entryPad;
             _entryInnerW = leftW - entryPad * 2f;
-        }
-
-        private void BuildVisual()
-        {
-            float titleH = _h * 0.14f;
-            float footerH = _h * 0.16f;
-            float pad = _w * 0.03f;
-
-            // 书体背景。
-            _bookBg = AddPanel(transform, "BookBg", _w, _h, _bookColor, Vector3.zero, 0);
-
-            // 条目容器（命名容器，运行时条目挂这里）。
-            _leftPage = AddContainer("LeftPage");
-            _rightPage = AddContainer("RightPage");
-
-            ComputeMetrics();
-
-            // 标题栏：标题居左，铃铛居右（书内，不出界）。
-            float titleY = _h * 0.5f - titleH * 0.5f;
-            _titleText = AddText(transform, "Title", "菜谱", titleH * 0.5f, _titleColor,
-                TextAnchor.MiddleLeft, TextAlignment.Left, new Vector3(-_w * 0.5f + pad, titleY, -0.02f), 4);
-
-            float bellSize = titleH * 0.9f;
-            _bell = AddIconButtonFallback("Bell", "铃", _bellColor, bellSize, bellSize,
-                new Vector3(_w * 0.5f - pad - bellSize * 0.5f, titleY, -0.02f), OnBellClicked, out _bellIcon, out _bellCol);
-
-            // 页脚：首/上 + 页码 + 下/末。
-            float footerY = -_h * 0.5f + footerH * 0.5f;
-            float bsz = footerH * 0.78f;
-            _first = AddIconButtonFallback("First", "|<", _navColor, bsz, bsz, new Vector3(-_w * 0.40f, footerY, -0.02f), GoFirst, out _firstIcon, out _firstCol);
-            _prev = AddIconButtonFallback("Prev", "<", _navColor, bsz, bsz, new Vector3(-_w * 0.21f, footerY, -0.02f), GoPrev, out _prevIcon, out _prevCol);
-            _pageText = AddText(transform, "PageText", "1/1", footerH * 0.42f, _pageTextColor,
-                TextAnchor.MiddleCenter, TextAlignment.Center, new Vector3(0f, footerY, -0.02f), 4);
-            _next = AddIconButtonFallback("Next", ">", _navColor, bsz, bsz, new Vector3(_w * 0.21f, footerY, -0.02f), GoNext, out _nextIcon, out _nextCol);
-            _last = AddIconButtonFallback("Last", ">|", _navColor, bsz, bsz, new Vector3(_w * 0.40f, footerY, -0.02f), GoLast, out _lastIcon, out _lastCol);
-
-            _buttons.Clear();
-            _buttons.Add(_bell);
-            _buttons.Add(_first);
-            _buttons.Add(_prev);
-            _buttons.Add(_next);
-            _buttons.Add(_last);
-
-            // hover 详情面板（默认隐藏）。
-            _tooltipRoot = new GameObject("Tooltip");
-            _tooltipRoot.transform.SetParent(transform, false);
-            _tooltipBg = AddPanel(_tooltipRoot.transform, "Bg", 1f, 1f, _tooltipBgColor, Vector3.zero, 30);
-            _tooltipText = AddText(_tooltipRoot.transform, "Text", string.Empty, 0.12f, _tooltipTextColor,
-                TextAnchor.UpperLeft, TextAlignment.Left, new Vector3(0f, 0f, -0.01f), 31);
-            _tooltipRoot.SetActive(false);
         }
 
         /// <summary>设置本书展示的菜谱槽内容（dishIds 可重复，内部去重聚合为「菜名 xN」）。</summary>
@@ -380,29 +332,19 @@ namespace GourmetProject.Game.Presentation.Battle
                 Item item = _items[idx];
                 float y = _contentTop - _rowH * (i + 0.5f);
 
-                var go = new GameObject($"Entry_{idx}");
-                go.transform.SetParent(parent, false);
-                go.transform.localPosition = new Vector3(entryX, y, -0.01f);
-
-                var tm = go.AddComponent<TextMesh>();
-                tm.text = $"{item.Def.Name} x{item.Count}";
-                tm.fontSize = FontSize;
-                tm.characterSize = (_rowH * 0.5f) / TextUnit;
-                tm.color = _entryColor;
-                tm.anchor = TextAnchor.MiddleLeft;
-                tm.alignment = TextAlignment.Left;
-                BattleSorting.Apply(go.GetComponent<MeshRenderer>(), BattleSorting.WorldUi, 5);
-
-                // 碰撞盒从行左缘向右覆盖整行（TextMesh 锚点在左，故 offset 右移半宽）。
-                var col = go.AddComponent<BoxCollider2D>();
-                col.size = new Vector2(_entryInnerW, _rowH * 0.9f);
-                col.offset = new Vector2(_entryInnerW * 0.5f, 0f);
+                MenuBookEntryView entry = Instantiate(_entryPrefab, parent);
+                entry.gameObject.name = $"Entry_{idx}";
+                entry.transform.localPosition = new Vector3(entryX, y, -0.01f);
+                entry.transform.localRotation = Quaternion.identity;
+                entry.transform.localScale = Vector3.one;
+                entry.gameObject.SetActive(true);
+                entry.Bind($"{item.Def.Name} x{item.Count}", _entryColor, (_rowH * 0.5f) / TextUnit, _entryInnerW, _rowH * 0.9f);
 
                 _entries.Add(new Entry
                 {
-                    Go = go,
-                    Col = col,
-                    Text = tm,
+                    Go = entry.gameObject,
+                    Col = entry.Collider,
+                    Text = entry.Text,
                     Tooltip = DishInfoText.Tooltip(item.Def, item.Def.SkillIds, item.Def.FlavorId, _db),
                 });
             }
@@ -610,76 +552,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 NormalTint = _iconNormalTint,
                 HoverTint = _iconHoverTint,
                 DisabledTint = _iconDisabledTint,
-                OnClick = onClick,
-            };
-            button.CaptureBaseScale();
-            button.SetEnabled(true);
-            return button;
-        }
-
-        private Transform AddContainer(string name)
-        {
-            var go = new GameObject(name);
-            go.transform.SetParent(transform, false);
-            go.transform.localPosition = Vector3.zero;
-            return go.transform;
-        }
-
-        private SpriteRenderer AddPanel(Transform parent, string name, float w, float h, Color color, Vector3 localPos, int order)
-        {
-            var go = new GameObject(name);
-            go.transform.SetParent(parent, false);
-            go.transform.localPosition = localPos;
-            go.transform.localScale = new Vector3(w, h, 1f);
-            var sr = go.AddComponent<SpriteRenderer>();
-            sr.sprite = WhiteSprite;
-            sr.color = color;
-            SpriteRenderStyle.ApplyUnlitMaterial(sr);
-            BattleSorting.Apply(sr, BattleSorting.WorldUi, order);
-            return sr;
-        }
-
-        private TextMesh AddText(Transform parent, string name, string text, float charHeight, Color color,
-            TextAnchor anchor, TextAlignment alignment, Vector3 localPos, int order)
-        {
-            var go = new GameObject(name);
-            go.transform.SetParent(parent, false);
-            go.transform.localPosition = localPos;
-            var tm = go.AddComponent<TextMesh>();
-            tm.text = text;
-            tm.fontSize = FontSize;
-            tm.characterSize = charHeight / TextUnit;
-            tm.color = color;
-            tm.anchor = anchor;
-            tm.alignment = alignment;
-            BattleSorting.Apply(go.GetComponent<MeshRenderer>(), BattleSorting.WorldUi, order);
-            return tm;
-        }
-
-        /// <summary>
-        /// 兜底按钮：prefab 没拼图标时用纯色块 + 字符当图标，保证不崩、可点击。非常态。
-        /// </summary>
-        private Button AddIconButtonFallback(string name, string glyph, Color color, float w, float h, Vector3 localPos, Action onClick,
-            out SpriteRenderer icon, out BoxCollider2D col)
-        {
-            var go = new GameObject(name);
-            go.transform.SetParent(transform, false);
-            go.transform.localPosition = localPos;
-
-            icon = AddPanel(go.transform, "Icon", w, h, color, Vector3.zero, 6);
-            AddText(go.transform, "Label", glyph, h * 0.5f, Color.white,
-                TextAnchor.MiddleCenter, TextAlignment.Center, new Vector3(0f, 0f, -0.01f), 7);
-
-            col = go.AddComponent<BoxCollider2D>();
-            col.size = new Vector2(w, h);
-
-            var button = new Button
-            {
-                Icon = icon,
-                Col = col,
-                NormalTint = color,
-                HoverTint = Color.Lerp(color, Color.white, 0.35f),
-                DisabledTint = new Color(color.r * 0.5f, color.g * 0.5f, color.b * 0.5f, 0.6f),
                 OnClick = onClick,
             };
             button.CaptureBaseScale();

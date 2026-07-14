@@ -1,10 +1,32 @@
 [
   {
     "id": "tl_normal",
-    "baseLengthDays": 7
+    "baseLengthDays": 7,
+    "nodeDays": [
+      3,
+      5,
+      7
+    ],
+    "nodeActionIds": [
+      "act_interest",
+      "act_shop",
+      "act_boss"
+    ]
   },
   {
     "id": "tl_busy",
-    "baseLengthDays": 7
+    "baseLengthDays": 7,
+    "nodeDays": [
+      2,
+      4,
+      6,
+      7
+    ],
+    "nodeActionIds": [
+      "act_event",
+      "act_interest",
+      "act_shop",
+      "act_boss"
+    ]
   }
 ]

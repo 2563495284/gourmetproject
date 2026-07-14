@@ -34,7 +34,11 @@ namespace GourmetProject.Game.Run
                 {
                     if (run.Database.GetDish(bookSlot.DishId) != null)
                     {
-                        entries.Add(new RecipeSlotEntry(bookSlot.DishId, bookSlot.ExtraFlavorIds));
+                        entries.Add(new RecipeSlotEntry(
+                            bookSlot.DishId,
+                            bookSlot.ExtraFlavorIds,
+                            bookSlot.ExtraSkillIds,
+                            bookSlot.ScoreMultiplier));
                     }
                 }
 

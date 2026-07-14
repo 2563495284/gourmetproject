@@ -46,6 +46,8 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private SpriteRenderer _shadowHaloRenderer;
         [Tooltip("点击命中碰撞盒（prefab 根节点上的 BoxCollider2D）。")]
         [SerializeField] private BoxCollider2D _collider;
+        [Tooltip("放置合法性发光层（子物体 PlacementGlow 上的 SpriteRenderer）。")]
+        [SerializeField] private SpriteRenderer _placementGlow;
 
         [Header("落定反馈（仅作用于本体视觉枢轴，不影响格子锚点/碰撞盒）")]
         [SerializeField] private bool _useOccupiedCentroidPivot = true;
@@ -85,8 +87,6 @@ namespace GourmetProject.Game.Presentation.Battle
         private Vector3 _visualBaseLocalPos;
         private Action<DishInstance> _clicked;
         private bool _clickEnabled = true;
-        private SpriteRenderer _placementGlow;
-
         private const int MaxStains = 4;
         private static readonly int StainCountId = Shader.PropertyToID("_StainCount");
         private static readonly int StainScaleId = Shader.PropertyToID("_StainScale");
@@ -153,10 +153,8 @@ namespace GourmetProject.Game.Presentation.Battle
 
             if (_placementGlow == null)
             {
-                var go = new GameObject("PlacementGlow");
-                go.transform.SetParent(_spriteRenderer.transform, false);
-                _placementGlow = go.AddComponent<SpriteRenderer>();
-                SpriteRenderStyle.ApplyUnlitMaterial(_placementGlow);
+                Debug.LogError($"{nameof(DishPieceView)} prefab 缺少 PlacementGlow。", this);
+                return;
             }
 
             _placementGlow.gameObject.SetActive(true);
@@ -300,6 +298,10 @@ namespace GourmetProject.Game.Presentation.Battle
         private void RebuildCells(DishShape shape)
         {
             EnsureRefs();
+            if (_collider == null || _spriteRenderer == null || _shadowRenderer == null || _visualPivot == null)
+            {
+                return;
+            }
 
             ConfigureContactShadow(shape);
             ConfigureFootprintSprite(shape);
@@ -528,30 +530,25 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        /// <summary>兜底解析/补齐 prefab 预拼的渲染体与碰撞盒，容忍未在 prefab 里手动赋值的情况。</summary>
+        /// <summary>解析 prefab 预拼的渲染体与碰撞盒；缺失时只报错，不运行时补齐。</summary>
         private void EnsureRefs()
         {
             if (_collider == null)
             {
                 _collider = GetComponent<BoxCollider2D>();
-                if (_collider == null)
-                {
-                    _collider = gameObject.AddComponent<BoxCollider2D>();
-                }
             }
 
             _visualPivot = ResolveChildTransform(_visualPivot, "VisualPivot");
-            if (_visualPivot == null)
-            {
-                var pivot = new GameObject("VisualPivot");
-                pivot.transform.SetParent(transform, false);
-                _visualPivot = pivot.transform;
-            }
-
             _shadowRenderer = ResolveChildRenderer(_shadowRenderer, "Shadow");
             _shadowHaloRenderer = ResolveChildRenderer(_shadowHaloRenderer, "ShadowHalo");
             _spriteRenderer = ResolveChildRenderer(_spriteRenderer, "Sprite");
+            _placementGlow = ResolveChildRenderer(_placementGlow, "PlacementGlow");
             EnsureSpriteUnderVisualPivot();
+
+            if (_collider == null || _visualPivot == null || _shadowRenderer == null || _spriteRenderer == null || _placementGlow == null)
+            {
+                Debug.LogError($"{nameof(DishPieceView)} prefab 缺少固定结构：BoxCollider2D/VisualPivot/Sprite/Shadow/PlacementGlow。", this);
+            }
         }
 
         private SpriteRenderer ResolveChildRenderer(SpriteRenderer current, string childName)
@@ -564,13 +561,11 @@ namespace GourmetProject.Game.Presentation.Battle
             Transform t = ResolveChildTransform(null, childName);
             if (t == null)
             {
-                var go = new GameObject(childName);
-                go.transform.SetParent(transform, false);
-                t = go.transform;
+                return null;
             }
 
             SpriteRenderer renderer = t.GetComponent<SpriteRenderer>();
-            return renderer != null ? renderer : t.gameObject.AddComponent<SpriteRenderer>();
+            return renderer;
         }
 
         private Transform ResolveChildTransform(Transform current, string childName)

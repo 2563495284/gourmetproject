@@ -128,9 +128,11 @@ namespace GourmetProject.Game.Meta
             run.Gold += gold;
 
             // 复利账户（ExtraInterest）：本次利息节点额外再结算一次利息。
+            var itemRuntime = new ItemRuntime(run);
             int extraGold = 0;
-            if (new ItemRuntime(run).HasExtraInterest())
+            if (itemRuntime.HasExtraInterest())
             {
+                itemRuntime.FlashTriggered(m => m.HasExtraInterest());
                 extraGold = TimelineMath.Interest(run.Gold, threshold, goldPer, maxGain);
                 run.Gold += extraGold;
             }

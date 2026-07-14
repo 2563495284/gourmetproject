@@ -71,6 +71,10 @@ namespace GourmetProject.Game.Meta
                     return ApplyToTargets(targets, t => ctx.AddPermanentScore(t, item.EffectValue),
                         item, "已强化选中的菜。", "现在无法强化选中的菜。");
 
+                case ItemEffectTypes.AddCountAs:
+                    return ApplyToTargets(targets, t => ctx.AddCountAs(t, (int)item.EffectValue),
+                        item, "已增加选中菜的计数。", "现在无法增加选中菜的计数。");
+
                 case ItemEffectTypes.DestroyDish:
                     return ApplyToTargets(targets, ctx.DestroyDish,
                         item, "已移除选中的菜。", "现在无法移除选中的菜。");
@@ -85,10 +89,30 @@ namespace GourmetProject.Game.Meta
                     return ApplyToTargets(targets, t => ctx.AddFlavorToDish(t, item.EffectParam),
                         item, "已为选中的菜附加风味。", "现在无法为选中的菜附加风味。");
 
+                case ItemEffectTypes.EnhanceFlavor:
+                    return ApplyToTargets(targets, t => ctx.AddFlavorToDish(t, item.EffectParam),
+                        item, "已强化选中的风味。", "现在无法强化选中的风味。");
+
+                case ItemEffectTypes.ConvertFlavor:
+                    return ApplyToTargets(targets, t => ctx.ConvertFlavorOnDish(t, item.EffectParam),
+                        item, "已转换选中的风味。", "现在无法转换选中的风味。");
+
+                case ItemEffectTypes.RemoveFlavor:
+                    return ApplyToTargets(targets, t => ctx.RemoveFlavorFromDish(t, item.EffectParam),
+                        item, "已移除选中的风味。", "现在无法移除选中的风味。");
+
+                case ItemEffectTypes.ConvertCategory:
+                    return ApplyToTargets(targets, t => ctx.ConvertDishCategory(t, item.EffectParam),
+                        item, "已转换选中的分类。", "当前菜品分类暂不支持运行时转换。");
+
                 // —— 铺台小票：给餐桌格永久附加材质（effectParam=材质 id）——
                 case ItemEffectTypes.AddMaterial:
                     return ApplyToTargets(targets, t => ctx.AddMaterialToCell(t, item.EffectParam),
                         item, "已为选中的格子附加材质。", "现在无法为选中的格子附加材质。");
+
+                case ItemEffectTypes.GenerateDish:
+                    return ApplyToTargets(targets, t => ctx.GenerateDish(t, item.EffectParam, ctx.Run?.NextActiveUseKey()),
+                        item, "已生成新的菜。", "现在无法生成新的菜。");
 
                 // —— 排程小票：Global 无目标，直接调情境钩子（仅地图支持，战斗返回 false）——
                 case ItemEffectTypes.RerollAction:

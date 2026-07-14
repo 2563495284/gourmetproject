@@ -27,6 +27,7 @@ using GourmetProject.Game.UI.Tooltips;
 using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Game.UI.Battle.States;
 using GourmetProject.Game.UI.Battle.View;
+using GourmetProject.Game.Meta.Passives;
 
 namespace GourmetProject.Game.UI.Battle
 {
@@ -78,6 +79,7 @@ namespace GourmetProject.Game.UI.Battle
 
         [Header("Reward Dish Pack (center)")]
         [SerializeField] private RewardDishPackPanel _rewardDishPackPanel;
+        [SerializeField] private RewardItemChoicePanel _rewardItemChoicePanelPrefab;
         private RewardItemChoicePanel _rewardItemChoicePanel;
         [SerializeField] private RandomizedItemsPanel _randomizedItemsPanel;
 
@@ -87,11 +89,18 @@ namespace GourmetProject.Game.UI.Battle
         [Header("Right Column - Items")]
         [SerializeField] private BattleItemsColumn _itemsColumn;
 
+        [Header("Active Items")]
+        [SerializeField] private ActiveItemActionPopup _activeItemPopupPrefab;
+        [SerializeField] private TargetArrowView _activeItemTargetArrowPrefab;
+        [SerializeField] private ActiveItemTargetOverlayView _activeItemTargetOverlayPrefab;
+        [SerializeField] private GameObject _shopItemFlyFxPrefab;
+
         [Header("Recipe View")]
         [SerializeField] private RecipeView _recipeView;
 
         [Header("Food Actions")]
         [SerializeField] private BattleFoodActionBar _foodBar;
+        [SerializeField] private View.FoodAdjustOverlay _foodAdjustOverlayPrefab;
 
         [Header("Battle Message")]
         [SerializeField] private Text _messageText;
@@ -110,12 +119,33 @@ namespace GourmetProject.Game.UI.Battle
         private TimelineAxisBinder _axisBinder;
         private TableViewCoordinator _stomachCoordinator;
         private GameplayViewStateMachine _viewStates;
+        private ActiveItemUseCoordinator _activeItemUse;
         private int _shopItemFlyInFlight;
         private View.FoodAdjustOverlay _foodAdjustOverlay;
+        [SerializeField] private GameObject _passiveOverlayRoot;
+        [SerializeField] private Text _passiveOverlayText;
+        private Sequence _passiveOverlaySeq;
 
         public GameRun Run => _run;
         public BattleSession Session => _session;
         public ActionExecutionContext CurrentBattleActionContext => _loop?.CurrentBattleActionContext;
+        internal GameRun ActiveRun => _run;
+        internal BattleSession ActiveSession => _session;
+        internal WeekLoopController ActiveLoop => _loop;
+        internal GameplayView CurrentView => _current;
+        internal bool InBattle => _inBattle;
+        internal BattleWorldController ActiveWorld => _world ?? BattleWorldController.Instance;
+        internal ActiveItemActionPopup ActiveItemPopupPrefab => _activeItemPopupPrefab;
+        internal TargetArrowView ActiveItemTargetArrowPrefab => _activeItemTargetArrowPrefab;
+        internal ActiveItemTargetOverlayView ActiveItemTargetOverlayPrefab => _activeItemTargetOverlayPrefab;
+        internal Transform ActiveItemLayer
+        {
+            get
+            {
+                Canvas canvas = GetComponentInParent<Canvas>();
+                return canvas != null ? canvas.transform : transform;
+            }
+        }
 
         protected override void OnInit(object userData)
         {
@@ -137,6 +167,7 @@ namespace GourmetProject.Game.UI.Battle
                 () => _tips != null ? _tips.Boss : null);
             _stomachCoordinator = new TableViewCoordinator(this);
             _viewStates = new GameplayViewStateMachine(this);
+            _activeItemUse = new ActiveItemUseCoordinator(this);
 
             HideHud();
         }
@@ -169,10 +200,16 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             _loop = null;
+            _activeItemUse?.Dispose();
             _deck?.KillAllTweens();
             HideAllTips();
             _world?.HideWorld();
             base.OnClose(isShutdown, userData);
+        }
+
+        private void Update()
+        {
+            _activeItemUse?.Update();
         }
 
         // —— 周循环编排（代理到 WeekLoopController）——
@@ -259,6 +296,67 @@ namespace GourmetProject.Game.UI.Battle
                 SetCenterTitle("行动轴事件");
                 BuildTimelineNodeCard(node, interestMaxGain, onPick);
             }, PlayShowCardsWhenReady);
+        }
+
+        public void ShowTimelineNodeSkipped(cfg.TimelineNode node, Action onDone)
+        {
+            string actionName = ActionName(node?.ActionId);
+            ShowPassiveOverlay("停业整顿", $"跳过节点：{actionName}", 0.9f, onDone);
+        }
+
+        public void ShowPassiveRecipeMutation(RecipeMutationResult result)
+        {
+            if (result == null || !result.HasChanges)
+            {
+                return;
+            }
+
+            ShowPassiveOverlay(result.Title, BuildRecipeMutationText(result), 1.4f, () => RefreshPersistent());
+        }
+
+        public void ShowPassiveCellMutation(CellMutationResult result)
+        {
+            if (result == null || !result.HasChanges)
+            {
+                return;
+            }
+
+            _world = _world ?? BattleWorldController.Instance;
+            _world?.SetTableArea(_boardArea);
+            bool opened = false;
+            if (_stomachCoordinator != null && _current != GameplayView.TableView)
+            {
+                _stomachCoordinator.Open();
+                opened = true;
+            }
+
+            ShowPassiveOverlay(result.Title, BuildCellMutationText(result), 1.2f, () =>
+            {
+                if (opened && _stomachCoordinator != null && _current == GameplayView.TableView)
+                {
+                    _stomachCoordinator.Back();
+                }
+
+                RefreshPersistent();
+            });
+        }
+
+        public void ShowPassiveTimelineMutation(TimelineMutationResult result)
+        {
+            if (result == null || !result.Changed)
+            {
+                return;
+            }
+
+            bool restoreVisible = _current == GameplayView.ActionSelect || _current == GameplayView.Shop;
+            SetActionAxisVisible(true);
+            RebuildActionAxis();
+            ShowPassiveOverlay(result.Title, BuildTimelineMutationText(result), 1.2f, () =>
+            {
+                SetActionAxisVisible(restoreVisible);
+                RebuildActionAxis();
+                RefreshPersistent();
+            });
         }
 
         // —— 中部态切换中枢（淡入淡出调度 + 派发给状态机）——
@@ -697,7 +795,14 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            _rewardItemChoicePanel = RewardItemChoicePanel.Create((RectTransform)_center.transform);
+            if (_rewardItemChoicePanelPrefab == null)
+            {
+                Debug.LogError($"{nameof(BattleForm)} 缺少奖励道具选择面板 prefab。", this);
+                return;
+            }
+
+            _rewardItemChoicePanel = Instantiate(_rewardItemChoicePanelPrefab, (RectTransform)_center.transform);
+            _rewardItemChoicePanel.gameObject.SetActive(false);
         }
 
         private void EnsureRandomizedItemsPanel()
@@ -801,7 +906,7 @@ namespace GourmetProject.Game.UI.Battle
                 SetMessage,
                 SetSettlementScore,
                 RefreshAll,
-                OnActiveItemClicked,
+                null,
                 OnDishClicked,
                 resetDoodle: false);
             RefreshAll();
@@ -976,12 +1081,26 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            var go = new GameObject("ShopItemFlyFx", typeof(RectTransform), typeof(CanvasGroup), typeof(Image));
+            if (_shopItemFlyFxPrefab == null)
+            {
+                Debug.LogError($"{nameof(BattleForm)} 缺少商店道具飞行动画 prefab。", this);
+                onComplete?.Invoke();
+                return;
+            }
+
+            GameObject go = Instantiate(_shopItemFlyFxPrefab, layer);
+            go.name = "ShopItemFlyFx";
             var rect = go.GetComponent<RectTransform>();
             var group = go.GetComponent<CanvasGroup>();
             var image = go.GetComponent<Image>();
+            if (rect == null || group == null || image == null)
+            {
+                Debug.LogError("ShopItemFlyFx prefab 必须包含 RectTransform、CanvasGroup、Image。", go);
+                Destroy(go);
+                onComplete?.Invoke();
+                return;
+            }
 
-            rect.SetParent(layer, false);
             rect.SetAsLastSibling();
             rect.anchorMin = new Vector2(0.5f, 0.5f);
             rect.anchorMax = new Vector2(0.5f, 0.5f);
@@ -1273,6 +1392,116 @@ namespace GourmetProject.Game.UI.Battle
             GameApp.UI.OpenUIForm(UIForms.Settings, UIForms.GroupDialog, new SettingsFormData(inGameplay: true));
         }
 
+        private string BuildRecipeMutationText(RecipeMutationResult result)
+        {
+            var lines = new List<string>();
+            foreach (RecipeMutationEntry entry in result.Entries)
+            {
+                string before = DescribeDishSnapshot(entry.Before);
+                string after = DescribeDishSnapshot(entry.After);
+                lines.Add($"菜谱{entry.BookIndex + 1}-{entry.DishIndex + 1}: {before}  ->  {after}");
+            }
+
+            return string.Join("\n", lines);
+        }
+
+        private string BuildCellMutationText(CellMutationResult result)
+        {
+            var lines = new List<string>();
+            foreach (CellMutationEntry entry in result.Entries)
+            {
+                string materialName = MaterialName(entry.MaterialId);
+                lines.Add($"格子 ({entry.Pos.X},{entry.Pos.Y}) 获得标签：{materialName}");
+            }
+
+            return string.Join("\n", lines);
+        }
+
+        private string BuildTimelineMutationText(TimelineMutationResult result)
+        {
+            return $"行动轴已变化：{result.Before.Count} 个节点 -> {result.After.Count} 个节点";
+        }
+
+        private string DescribeDishSnapshot(RecipeDishSnapshot snapshot)
+        {
+            if (snapshot == null || string.IsNullOrEmpty(snapshot.DishId))
+            {
+                return "空";
+            }
+
+            DishDef dish = _run?.Database.GetDish(snapshot.DishId);
+            string name = dish != null ? dish.Name : snapshot.DishId;
+            string flavors = snapshot.FlavorIds != null && snapshot.FlavorIds.Count > 0
+                ? string.Join("+", FlavorNames(snapshot.FlavorIds))
+                : "无风味";
+            string skills = snapshot.SkillIds != null && snapshot.SkillIds.Count > 0
+                ? $"技能{snapshot.SkillIds.Count}"
+                : "无技能";
+            string mult = snapshot.ScoreMultiplier > 0f && Mathf.Abs(snapshot.ScoreMultiplier - 1f) > 0.0001f
+                ? $" x{snapshot.ScoreMultiplier:0.##}"
+                : string.Empty;
+            return $"{name} [{flavors}, {skills}{mult}]";
+        }
+
+        private List<string> FlavorNames(IReadOnlyList<string> flavorIds)
+        {
+            var names = new List<string>();
+            foreach (string flavorId in flavorIds)
+            {
+                GourmetProject.Gameplay.Model.FlavorDef flavor = _run?.Database.GetFlavor(flavorId);
+                names.Add(flavor != null ? flavor.Name : flavorId);
+            }
+
+            return names;
+        }
+
+        private string MaterialName(string materialId)
+        {
+            GourmetProject.Gameplay.Model.MaterialDef material = _run?.Database.GetMaterial(materialId);
+            return material != null ? material.Name : materialId;
+        }
+
+        private string ActionName(string actionId)
+        {
+            cfg.GameAction action = _run?.Tables.TbAction.GetOrDefault(actionId);
+            return action != null ? action.Name : actionId;
+        }
+
+        private void ShowPassiveOverlay(string title, string body, float duration, Action onDone = null)
+        {
+            EnsurePassiveOverlay();
+            if (_passiveOverlayRoot == null || _passiveOverlayText == null)
+            {
+                onDone?.Invoke();
+                return;
+            }
+
+            _passiveOverlaySeq?.Kill();
+            _passiveOverlayText.text = string.IsNullOrEmpty(body) ? title : $"{title}\n{body}";
+            var group = _passiveOverlayRoot.GetComponent<CanvasGroup>();
+            group.alpha = 0f;
+            _passiveOverlayRoot.SetActive(true);
+            _passiveOverlaySeq = DOTween.Sequence()
+                .Append(DOTween.To(() => group.alpha, value => group.alpha = value, 1f, 0.18f))
+                .AppendInterval(Mathf.Max(0.1f, duration))
+                .Append(DOTween.To(() => group.alpha, value => group.alpha = value, 0f, 0.18f))
+                .OnComplete(() =>
+                {
+                    _passiveOverlayRoot.SetActive(false);
+                    onDone?.Invoke();
+                });
+        }
+
+        private void EnsurePassiveOverlay()
+        {
+            if (_passiveOverlayRoot != null)
+            {
+                return;
+            }
+
+            Debug.LogError($"{nameof(BattleForm)} 缺少 PassiveMutationOverlay 预置引用。", this);
+        }
+
         private void OnViewTableClicked()
         {
             if (_stomachCoordinator == null)
@@ -1336,7 +1565,14 @@ namespace GourmetProject.Game.UI.Battle
         {
             if (_foodAdjustOverlay == null)
             {
-                _foodAdjustOverlay = View.FoodAdjustOverlay.Create((RectTransform)transform);
+                if (_foodAdjustOverlayPrefab == null)
+                {
+                    Debug.LogError($"{nameof(BattleForm)} 缺少食物调整遮罩 prefab。", this);
+                    return;
+                }
+
+                _foodAdjustOverlay = Instantiate(_foodAdjustOverlayPrefab, (RectTransform)transform);
+                _foodAdjustOverlay.Hide();
             }
         }
 
@@ -1381,7 +1617,7 @@ namespace GourmetProject.Game.UI.Battle
                 SetMessage,
                 SetSettlementScore,
                 RefreshAll,
-                OnActiveItemClicked,
+                null,
                 OnDishClicked);
             RefreshAll();
         }
@@ -1486,80 +1722,54 @@ namespace GourmetProject.Game.UI.Battle
             GameApp.UI.OpenUIForm(UIForms.DishDetail, UIForms.GroupDialog, data);
         }
 
-        private void OnActiveItemClicked(string itemId)
+        private void OnActiveItemClicked(string itemId, RunItemSlotView slot)
         {
-            if (_session == null || _session.IsSettled)
-            {
-                return;
-            }
-
-            ItemDefinition item = ItemDefinition.Get(GameApp.Config.Tables, itemId, cfg.ItemKind.Active);
-            if (item == null)
-            {
-                return;
-            }
-
-            if (!_run.HasItem(itemId))
-            {
-                _world?.ShowMessage($"{item.Name}：没有可用道具。");
-                RefreshAll();
-                return;
-            }
-
-            if (!ItemActiveUsage.CanUse(item, ActiveUseContextKind.Battle))
-            {
-                _world?.ShowMessage($"{item.Name}：现在不是使用时机。");
-                RefreshAll();
-                return;
-            }
-
-            // TODO(active-item-ui): 需选目标的道具（AddFlavor 选菜谱菜 / AddMaterial 选餐桌格）应先进入
-            //   「选目标状态机」高亮候选（ctx.EnumerateTargets）、玩家确认后再把 ActiveTarget 传入 Apply。
-            //   当前 TryUse 传空目标，目标类道具会返回「请先选择目标」，待选目标 UI 落地后接入。
-            ActiveItemUseResult result = ActiveItemEffectRegistry.TryUse(_session, _run, item);
-            _world?.ShowMessage(result.Message);
-            if (!result.Success)
-            {
-                RefreshAll();
-                return;
-            }
-
-            _run.UseActiveItem(itemId);
-            if (result.BoardChanged)
-            {
-                _world?.SyncTableFromSession();
-            }
-
-            // 战斗过程中用道具只改内存，不即时存档；战斗结算（胜利领奖确认）时由编排层 Commit 统一入档。
-            // 中途退出游戏则未存档，重进会重做该战斗，道具不消耗。
-            RefreshAll();
+            _activeItemUse?.OpenActionPopup(itemId, slot);
         }
 
-        // TODO(active-item-ui): 局外（地图）点击主动道具入口。当前逻辑层已就绪（MapUseContext + Registry），
-        //   缺的是表现层接线：非战斗态道具栏的点击应路由到此；需选目标的道具走选目标状态机；
-        //   排程类（重掷/重置/执行下一节点/加奖励节点）用完后重绘行动轴（BuildActionCards/RollChoices）与时间轴（TimelineAxisBinder.Rebuild）。
-        private void OnMapActiveItemClicked(string itemId, IReadOnlyList<ActiveTarget> targets)
+        internal void ShowActiveItemMessage(string message)
         {
-            if (_run == null)
+            if (string.IsNullOrEmpty(message))
             {
                 return;
             }
 
-            ItemDefinition item = ItemDefinition.Get(GameApp.Config.Tables, itemId, cfg.ItemKind.Active);
-            if (item == null || !_run.HasItem(itemId) || !ItemActiveUsage.CanUse(item, ActiveUseContextKind.Map))
+            BattleWorldController world = _world ?? BattleWorldController.Instance;
+            if (world != null)
             {
-                _world?.ShowMessage($"{item?.Name}：现在不是使用时机。");
+                world.ShowMessage(message);
                 return;
             }
 
-            var ctx = new MapUseContext(_run, _loop);
-            ActiveItemUseResult result = ActiveItemEffectRegistry.Apply(ctx, item, targets ?? System.Array.Empty<ActiveTarget>());
-            _world?.ShowMessage(result.Message);
-            if (result.Success)
+            SetMessage(message);
+        }
+
+        internal void RefreshAfterActiveItem(bool boardChanged, bool persist)
+        {
+            if (boardChanged)
             {
-                _run.UseActiveItem(itemId);
+                (_world ?? BattleWorldController.Instance)?.SyncTableFromSession();
+            }
+
+            if (persist && _run != null)
+            {
                 RunPersistence.Save(_run);
-                // TODO(active-item-ui): 依 effectType 重绘行动轴 / 时间轴 / 道具栏。
+            }
+
+            RebuildActionAxis();
+            if (_current == GameplayView.ActionSelect)
+            {
+                BuildActionCards();
+                PlayShowCardsWhenReady();
+            }
+            else if (_current == GameplayView.Shop)
+            {
+                RefreshShopPersistent();
+            }
+            else if (_current == GameplayView.RecipeEdit)
+            {
+                _recipeEditPanel?.Refresh();
+                RefreshShopPersistent();
             }
 
             RefreshAll();

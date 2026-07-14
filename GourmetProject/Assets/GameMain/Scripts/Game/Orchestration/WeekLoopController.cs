@@ -26,6 +26,8 @@ namespace GourmetProject.Game.Orchestration
         /// <summary>行动轴节点卡片：先展示节点卡，玩家点击后再执行节点效果。</summary>
         void ShowTimelineNodeCard(cfg.TimelineNode node, int? interestMaxGain, Action onPick);
 
+        void ShowTimelineNodeSkipped(cfg.TimelineNode node, Action onDone);
+
         void StartBattle(int requiredScore, string modifier, string key, ActionExecutionContext actionContext);
 
         void ShowNotice(string title, string message, Action onContinue);
@@ -204,7 +206,7 @@ namespace GourmetProject.Game.Orchestration
         private void EndWeek()
         {
             ApplyEndOfWeekItemSettlement();
-            _run.WeekIndex++;
+            _run.IncrementWeek();
             _run.RequiredScoreOverride = -1;
             RunPersistence.Save(_run);
             BeginWeek();
@@ -275,8 +277,22 @@ namespace GourmetProject.Game.Orchestration
                 return;
             }
 
+            if (_run.HasItem("item_skip_node") && IsSkippableBySkipNode(action))
+            {
+                _run.RemoveItem("item_skip_node");
+                RunPersistence.Save(_run);
+                _view.ShowTimelineNodeSkipped(node, ProcessNextNode);
+                return;
+            }
+
             // 节点即「放置来源的原子行动」：先展示放置行动卡，玩家点击后走与随机行动完全相同的执行路径。
             _view.ShowTimelineNodeCard(node, InterestMaxGain(), () => ExecutePlacedAction(node, action));
+        }
+
+        private static bool IsSkippableBySkipNode(cfg.GameAction action)
+        {
+            return action != null
+                && (action.Behavior == cfg.ActionBehavior.Shop || action.Behavior == cfg.ActionBehavior.Interest);
         }
 
         /// <summary>
@@ -296,6 +312,14 @@ namespace GourmetProject.Game.Orchestration
             if (action == null)
             {
                 RunPersistence.Save(_run);
+                return true;
+            }
+
+            if (_run.HasItem("item_skip_node") && IsSkippableBySkipNode(action))
+            {
+                _run.RemoveItem("item_skip_node");
+                RunPersistence.Save(_run);
+                _view.ShowTimelineNodeSkipped(node, ProcessNextNode);
                 return true;
             }
 
@@ -364,9 +388,11 @@ namespace GourmetProject.Game.Orchestration
                 {
                     _run.MarkBossCompleted(outcome.BossId);
                     // Boss 赏金（GoldOnBossComplete）：通关本次 Boss 后额外获得金币。
-                    int bossGold = new ItemRuntime(_run).BossCompleteGold();
+                    var itemRuntime = new ItemRuntime(_run);
+                    int bossGold = itemRuntime.BossCompleteGold();
                     if (bossGold > 0)
                     {
+                        itemRuntime.FlashTriggered(m => m.BossCompleteGold() > 0);
                         _run.Gold += bossGold;
                     }
 
@@ -579,9 +605,11 @@ namespace GourmetProject.Game.Orchestration
         private void OpenShopThen(Action onClose)
         {
             // 商会返利（GoldOnShopEnter）：进入商店时额外获得金币（每次进入结算一次）。
-            int shopGold = new ItemRuntime(_run).ShopEnterGold();
+            var itemRuntime = new ItemRuntime(_run);
+            int shopGold = itemRuntime.ShopEnterGold();
             if (shopGold > 0)
             {
+                itemRuntime.FlashTriggered(m => m.ShopEnterGold() > 0);
                 _run.Gold += shopGold;
             }
 

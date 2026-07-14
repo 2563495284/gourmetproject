@@ -13,16 +13,17 @@ namespace GourmetProject.Game.Meta
     }
 
     /// <summary>
-    /// 主动道具选中的一个目标（跨情境抽象）。<see cref="Id"/> 视 targetKind 为菜/碎片/风味等 id，
-    /// <see cref="X"/>/<see cref="Y"/> 为餐桌或餐桌格坐标（无坐标时为 -1）。
+    /// 主动道具选中的一个目标（跨情境抽象）。<see cref="TargetKind"/> 标记目标语义；
+    /// <see cref="Id"/> 视 targetKind 为菜/材质/风味等 id，<see cref="X"/>/<see cref="Y"/> 为餐桌或菜谱坐标。
     /// </summary>
     public readonly struct ActiveTarget
     {
-        public ActiveTarget(string id, int x = -1, int y = -1)
+        public ActiveTarget(string id, int x = -1, int y = -1, cfg.ItemTargetKind targetKind = cfg.ItemTargetKind.None)
         {
             Id = id;
             X = x;
             Y = y;
+            TargetKind = targetKind;
         }
 
         public string Id { get; }
@@ -30,6 +31,8 @@ namespace GourmetProject.Game.Meta
         public int X { get; }
 
         public int Y { get; }
+
+        public cfg.ItemTargetKind TargetKind { get; }
     }
 
     /// <summary>
@@ -70,11 +73,23 @@ namespace GourmetProject.Game.Meta
 
         // —— 调味小票 / 铺台小票：永久改 Run（任意情境含战斗都可用）——
 
-        /// <summary>能力：给菜谱目标菜永久附加风味（<paramref name="target"/>.X=书序，Y=菜序）。</summary>
+        /// <summary>能力：给目标菜附加风味。菜谱目标永久写 Run；餐桌菜目标写本局实例。</summary>
         bool AddFlavorToDish(ActiveTarget target, string flavorId);
+
+        /// <summary>能力：移除目标菜的一个风味。<paramref name="flavorId"/> 为空时移除最后一个风味。</summary>
+        bool RemoveFlavorFromDish(ActiveTarget target, string flavorId);
+
+        /// <summary>能力：把目标菜的一个风味替换为 <paramref name="toFlavorId"/>。</summary>
+        bool ConvertFlavorOnDish(ActiveTarget target, string toFlavorId);
+
+        /// <summary>能力：转换目标菜分类。当前数据模型不一定支持，不能执行时返回 false。</summary>
+        bool ConvertDishCategory(ActiveTarget target, string category);
 
         /// <summary>能力：给餐桌格永久附加材质（<paramref name="target"/>.X/Y=格坐标）。</summary>
         bool AddMaterialToCell(ActiveTarget target, string materialId);
+
+        /// <summary>能力：生成一道菜。格目标用 X/Y 指定原点；无格目标由情境选择位置。</summary>
+        bool GenerateDish(ActiveTarget target, string dishId, string randomKey);
 
         // —— 排程小票：操作行动轴/Boss，仅地图情境支持，战斗返回 false ——
 

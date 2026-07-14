@@ -53,6 +53,11 @@ namespace GourmetProject.Game.Presentation.Battle
                 {
                     var pos = new GridPos(x, y);
                     DiningTableCellView cell = InstantiateCell();
+                    if (cell == null)
+                    {
+                        continue;
+                    }
+
                     cell.Configure(pos, Mapper.CellCenterLocal(pos), cellSize, _cellSprite, _clicked);
                     _cells[pos] = cell;
                 }
@@ -69,10 +74,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 return cell;
             }
 
-            // 兜底：无 prefab 时退回脚本根（保持可运行，不应是常态）。
-            var go = new GameObject("Cell");
-            go.transform.SetParent(transform, false);
-            return go.AddComponent<DiningTableCellView>();
+            Debug.LogError($"{nameof(DiningTableView)} 缺少 DiningTableCell prefab。", this);
+            return null;
         }
 
         /// <summary>餐桌编辑页开关：把胃外虚格显示为浅色占位（最大网格提示）。需再次 Sync 生效。</summary>
@@ -107,6 +110,36 @@ namespace GourmetProject.Game.Presentation.Battle
                     view.SetColor(EmptyColor);
                 }
             }
+        }
+
+        public bool TryGetCellView(GridPos pos, out DiningTableCellView view)
+        {
+            return _cells.TryGetValue(pos, out view) && view != null;
+        }
+
+        public void ClearTargetHighlights()
+        {
+            foreach (DiningTableCellView view in _cells.Values)
+            {
+                view?.ClearOutline();
+            }
+
+            Sync();
+        }
+
+        public void SetTargetHighlight(GridPos pos, bool selected, bool hovered)
+        {
+            if (!TryGetCellView(pos, out DiningTableCellView view))
+            {
+                return;
+            }
+
+            Color color = selected
+                ? new Color(0.25f, 1f, 0.35f, 0.95f)
+                : hovered
+                    ? new Color(1f, 0.92f, 0.25f, 0.85f)
+                    : new Color(0.25f, 1f, 0.35f, 0.42f);
+            view.SetOutline(color, hovered || selected ? 0.08f : 0.045f, 0.12f);
         }
 
         private void Clear()

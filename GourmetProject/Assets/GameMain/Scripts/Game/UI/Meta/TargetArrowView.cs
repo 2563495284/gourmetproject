@@ -131,28 +131,13 @@ namespace GourmetProject.Game.UI.Meta
 
             if (_line == null)
             {
-                _line = CreateImageChild("Line", Resources.Load<Sprite>("Sprites/UI/white"), new Vector2(80f, _lineWidth));
+                Debug.LogError($"{nameof(TargetArrowView)} prefab 缺少 Line 子节点。", this);
             }
 
             if (_head == null)
             {
-                _head = CreateImageChild("Head", Resources.Load<Sprite>("Sprites/UI/ArrowHead"), new Vector2(42f, 42f));
+                Debug.LogError($"{nameof(TargetArrowView)} prefab 缺少 Head 子节点。", this);
             }
-        }
-
-        private RectTransform CreateImageChild(string childName, Sprite sprite, Vector2 size)
-        {
-            var go = new GameObject(childName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            go.transform.SetParent(transform, false);
-            var rect = (RectTransform)go.transform;
-            rect.sizeDelta = size;
-
-            Image image = go.GetComponent<Image>();
-            image.sprite = sprite;
-            image.color = Color.white;
-            image.raycastTarget = false;
-            image.preserveAspect = childName == "Head";
-            return rect;
         }
     }
 }

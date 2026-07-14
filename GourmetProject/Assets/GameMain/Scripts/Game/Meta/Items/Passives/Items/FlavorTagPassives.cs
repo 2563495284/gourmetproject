@@ -1,62 +1,110 @@
 using UnityEngine.Scripting;
+using GourmetProject.Core.Rng;
+using GourmetProject.Game.Meta;
+using GourmetProject.Game.Run;
+using GourmetProject.Runtime;
 
 namespace GourmetProject.Game.Meta.Passives
 {
-    // 风味 / 标签族：均为复杂交互，尚未实装。获得时类走占位日志，非获得时类为无副作用占位。
+    // 风味 / 标签族：领取时自动随机结算，并把前后变化交给 BattleForm 展示。
+
+    public abstract class FlavorTagOnAcquireModel : PassiveItemModel
+    {
+        protected IRandomStream Rng()
+        {
+            string key = $"onacq_{ItemId}_w{Run.WeekIndex}_d{Run.CurrentDay:0.0}_s{Run.RunActionStepIndex}";
+            return GameApp.Random?.DomainStream(SeedDomains.Item, key);
+        }
+
+        protected void FinishRecipe(RecipeMutationResult result)
+        {
+            MarkIconUsed();
+            RunPersistence.Save(Run);
+            PassiveMutationPresenter.ShowRecipe(Run, result);
+        }
+
+        protected void FinishCells(CellMutationResult result)
+        {
+            MarkIconUsed();
+            RunPersistence.Save(Run);
+            PassiveMutationPresenter.ShowCells(Run, result);
+        }
+    }
 
     [Preserve]
     [PassiveItemModel("item_flavor_enhance")]
-    public sealed class FlavorEnhanceModel : TodoOnAcquireModel
+    public sealed class FlavorEnhanceModel : FlavorTagOnAcquireModel
     {
-        protected override string EffectName => "FlavorEnhance";
+        public override void OnAcquired()
+        {
+            FinishRecipe(PassiveRecipeMutationService.AddRandomFlavors(Run, Def.Name, System.Math.Max(1, (int)Value), Rng()));
+        }
     }
 
     [Preserve]
     [PassiveItemModel("item_flavor_remove_gold")]
-    public sealed class FlavorRemoveForGoldModel : TodoOnAcquireModel
+    public sealed class FlavorRemoveForGoldModel : FlavorTagOnAcquireModel
     {
-        protected override string EffectName => "FlavorRemoveForGold";
+        public override void OnAcquired()
+        {
+            FinishRecipe(PassiveRecipeMutationService.RemoveFlavorForGold(Run, Def.Name, System.Math.Max(0, (int)Value), Rng()));
+        }
     }
 
     [Preserve]
     [PassiveItemModel("item_flavor_remove_copyskill")]
-    public sealed class FlavorRemoveCopySkillModel : TodoOnAcquireModel
+    public sealed class FlavorRemoveCopySkillModel : FlavorTagOnAcquireModel
     {
-        protected override string EffectName => "FlavorRemoveCopySkill";
+        public override void OnAcquired()
+        {
+            FinishRecipe(PassiveRecipeMutationService.RemoveFlavorCopySkill(Run, Def.Name, Rng()));
+        }
     }
 
     [Preserve]
     [PassiveItemModel("item_flavor_remove_double")]
-    public sealed class FlavorRemoveDoubleScoreModel : TodoOnAcquireModel
+    public sealed class FlavorRemoveDoubleScoreModel : FlavorTagOnAcquireModel
     {
-        protected override string EffectName => "FlavorRemoveDoubleScore";
+        public override void OnAcquired()
+        {
+            FinishRecipe(PassiveRecipeMutationService.RemoveFlavorDoubleScore(Run, Def.Name, Value > 0f ? Value : 2f, Rng()));
+        }
     }
 
     [Preserve]
     [PassiveItemModel("item_flavor_contagion")]
-    public sealed class FlavorContagionModel : TodoOnAcquireModel
+    public sealed class FlavorContagionModel : FlavorTagOnAcquireModel
     {
-        protected override string EffectName => "FlavorContagion";
+        public override void OnAcquired()
+        {
+            FinishRecipe(PassiveRecipeMutationService.ContagionFlavor(Run, Def.Name, Rng()));
+        }
     }
 
     [Preserve]
     [PassiveItemModel("item_celltag_enhance")]
-    public sealed class CellTagEnhanceModel : TodoOnAcquireModel
+    public sealed class CellTagEnhanceModel : FlavorTagOnAcquireModel
     {
-        protected override string EffectName => "CellTagEnhance";
+        public override void OnAcquired()
+        {
+            FinishCells(PassiveRecipeMutationService.AddRandomMaterials(Run, Def.Name, System.Math.Max(1, (int)Value), Rng()));
+        }
     }
 
     [Preserve]
     [PassiveItemModel("item_celltag_contagion")]
-    public sealed class CellTagContagionModel : TodoOnAcquireModel
+    public sealed class CellTagContagionModel : FlavorTagOnAcquireModel
     {
-        protected override string EffectName => "CellTagContagion";
+        public override void OnAcquired()
+        {
+            FinishCells(PassiveRecipeMutationService.ContagionMaterial(Run, Def.Name, Rng()));
+        }
     }
 
-    /// <summary>TODO(passive-item): 风味双槽，缺子系统；占位无副作用。</summary>
     [Preserve]
     [PassiveItemModel("item_flavor_double_slot")]
     public sealed class FlavorDoubleSlotModel : PassiveItemModel
     {
+        public override int FoodFlavorLimitBonus() => System.Math.Max(1, (int)Value);
     }
 }
