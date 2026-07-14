@@ -266,6 +266,24 @@ namespace GourmetProject.Tests
         }
 
         [Test]
+        public void GoldRewardSlot_UsesBaseGoldMultiplier()
+        {
+            GameRun run = NewRun(week: 1);
+            cfg.RewardSlot slot = run.Tables.TbRewardSlot.Get("slot_main_gold");
+            cfg.RewardPackage package = run.Tables.TbRewardPackage.Get("reward_food_gold");
+            var rng = new GoldMultiplierRandomStream(2.4f);
+            var context = new RewardContext(run.Tables, run, run.CurrentWeek, package, rng, baseGold: 25);
+
+            List<RewardChoice> choices = RewardPoolService.RollChoices(context, slot);
+
+            Assert.AreEqual(1.6f, slot.GoldMultiplierMin);
+            Assert.AreEqual(2.4f, slot.GoldMultiplierMax);
+            Assert.AreEqual(1, choices.Count);
+            Assert.AreEqual(cfg.RewardKind.Gold, choices[0].Kind);
+            Assert.AreEqual(60, choices[0].GoldAmount);
+        }
+
+        [Test]
         public void HiddenScoreWeight_PrefersCloserHiddenMean()
         {
             float close = RewardPoolService.HiddenScoreWeight(10f, hiddenMean: 20f, requiredHidden: 20, distanceFloor: 5);
@@ -1000,6 +1018,38 @@ namespace GourmetProject.Tests
 
                 return bestIndex;
             }
+        }
+
+        private sealed class GoldMultiplierRandomStream : IRandomStream
+        {
+            private readonly float _multiplier;
+
+            public GoldMultiplierRandomStream(float multiplier)
+            {
+                _multiplier = multiplier;
+            }
+
+            public RngState State { get; set; }
+
+            public uint NextUInt() => throw new NotSupportedException();
+
+            public ulong NextULong() => throw new NotSupportedException();
+
+            public int Range(int minInclusive, int maxExclusive) => minInclusive;
+
+            public float Range(float minInclusive, float maxExclusive) => _multiplier;
+
+            public float NextFloat() => throw new NotSupportedException();
+
+            public double NextDouble() => throw new NotSupportedException();
+
+            public bool NextBool(double probability = 0.5) => false;
+
+            public void Shuffle<T>(IList<T> list) => throw new NotSupportedException();
+
+            public T Pick<T>(IReadOnlyList<T> list) => throw new NotSupportedException();
+
+            public int WeightedPickIndex(IReadOnlyList<float> weights) => 0;
         }
     }
 }

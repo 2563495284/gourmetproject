@@ -23,7 +23,6 @@ public sealed partial class RewardPackage : Luban.BeanBase
         { if(!_buf["mainSlotGroupId"].IsString) { throw new SerializationException(); }  MainSlotGroupId = _buf["mainSlotGroupId"]; }
         { if(!_buf["extraSlotGroupId"].IsString) { throw new SerializationException(); }  ExtraSlotGroupId = _buf["extraSlotGroupId"]; }
         { if(!_buf["extraChance"].IsNumber) { throw new SerializationException(); }  ExtraChance = _buf["extraChance"]; }
-        { if(!_buf["fallbackGold"].IsNumber) { throw new SerializationException(); }  FallbackGold = _buf["fallbackGold"]; }
     }
 
     public static RewardPackage DeserializeRewardPackage(JSONNode _buf)
@@ -55,10 +54,6 @@ public sealed partial class RewardPackage : Luban.BeanBase
     /// 额外奖励出现概率，0..1。
     /// </summary>
     public readonly float ExtraChance;
-    /// <summary>
-    /// 奖励候选无法生成或溢出时的兜底金币。
-    /// </summary>
-    public readonly int FallbackGold;
    
     public const int __ID__ = 46008823;
     public override int GetTypeId() => __ID__;
@@ -76,7 +71,6 @@ public sealed partial class RewardPackage : Luban.BeanBase
         + "mainSlotGroupId:" + MainSlotGroupId + ","
         + "extraSlotGroupId:" + ExtraSlotGroupId + ","
         + "extraChance:" + ExtraChance + ","
-        + "fallbackGold:" + FallbackGold + ","
         + "}";
     }
 }

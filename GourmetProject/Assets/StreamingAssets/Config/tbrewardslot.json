@@ -7,7 +7,8 @@
     "weight": 1,
     "poolId": "pool_dish",
     "hiddenOffset": 0,
-    "fallbackGold": 40
+    "goldMultiplierMin": 0,
+    "goldMultiplierMax": 0
   },
   {
     "id": "slot_main_passive",
@@ -17,7 +18,8 @@
     "weight": 1,
     "poolId": "pool_passive",
     "hiddenOffset": 0,
-    "fallbackGold": 60
+    "goldMultiplierMin": 0,
+    "goldMultiplierMax": 0
   },
   {
     "id": "slot_main_fragment",
@@ -27,7 +29,8 @@
     "weight": 1,
     "poolId": "pool_fragment",
     "hiddenOffset": 0,
-    "fallbackGold": 70
+    "goldMultiplierMin": 0,
+    "goldMultiplierMax": 0
   },
   {
     "id": "slot_main_dish_late",
@@ -37,7 +40,8 @@
     "weight": 55,
     "poolId": "pool_dish",
     "hiddenOffset": 0,
-    "fallbackGold": 60
+    "goldMultiplierMin": 0,
+    "goldMultiplierMax": 0
   },
   {
     "id": "slot_main_passive_late",
@@ -47,7 +51,8 @@
     "weight": 45,
     "poolId": "pool_passive",
     "hiddenOffset": 0,
-    "fallbackGold": 70
+    "goldMultiplierMin": 0,
+    "goldMultiplierMax": 0
   },
   {
     "id": "slot_boss_passive",
@@ -57,7 +62,8 @@
     "weight": 60,
     "poolId": "pool_passive_boss",
     "hiddenOffset": 5,
-    "fallbackGold": 90
+    "goldMultiplierMin": 0,
+    "goldMultiplierMax": 0
   },
   {
     "id": "slot_boss_active",
@@ -67,7 +73,8 @@
     "weight": 40,
     "poolId": "pool_active",
     "hiddenOffset": 0,
-    "fallbackGold": 50
+    "goldMultiplierMin": 0,
+    "goldMultiplierMax": 0
   },
   {
     "id": "slot_extra_active",
@@ -77,7 +84,8 @@
     "weight": 45,
     "poolId": "pool_active",
     "hiddenOffset": 0,
-    "fallbackGold": 25
+    "goldMultiplierMin": 0,
+    "goldMultiplierMax": 0
   },
   {
     "id": "slot_extra_gold",
@@ -87,7 +95,8 @@
     "weight": 55,
     "poolId": "",
     "hiddenOffset": 0,
-    "fallbackGold": 30
+    "goldMultiplierMin": 1.6,
+    "goldMultiplierMax": 2.4
   },
   {
     "id": "slot_main_gold",
@@ -97,7 +106,8 @@
     "weight": 1,
     "poolId": "",
     "hiddenOffset": 0,
-    "fallbackGold": 35
+    "goldMultiplierMin": 1.6,
+    "goldMultiplierMax": 2.4
   },
   {
     "id": "slot_main_active",
@@ -107,6 +117,7 @@
     "weight": 1,
     "poolId": "pool_active",
     "hiddenOffset": 0,
-    "fallbackGold": 45
+    "goldMultiplierMin": 0,
+    "goldMultiplierMax": 0
   }
 ]

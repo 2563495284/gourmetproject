@@ -28,7 +28,7 @@ namespace GourmetProject.Game.Meta
 
             GoldRange goldRange = HiddenScoreService.GoldRewardRange(run, actionContext, package);
             int baseGold = rng.Range(goldRange.Min, goldRange.Max + 1);
-            var context = new RewardContext(GameApp.Config.Tables, run, effectiveWeek, package, rng, actionContext);
+            var context = new RewardContext(GameApp.Config.Tables, run, effectiveWeek, package, rng, baseGold, actionContext);
             return new RewardOffer(
                 baseGold,
                 RollSlotGroup(context, package.MainSlotGroupId),
