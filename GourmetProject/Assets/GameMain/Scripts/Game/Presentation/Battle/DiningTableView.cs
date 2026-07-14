@@ -200,11 +200,11 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             Color color = selected
-                ? new Color(0.25f, 1f, 0.35f, 0.95f)
+                ? new Color(0.25f, 1f, 0.35f)
                 : hovered
-                    ? new Color(1f, 0.92f, 0.25f, 0.85f)
-                    : new Color(0.25f, 1f, 0.35f, 0.42f);
-            view.SetOutline(color, hovered || selected ? 0.08f : 0.045f, 0.12f);
+                    ? new Color(1f, 0.92f, 0.25f)
+                    : new Color(0.25f, 1f, 0.35f);
+            view.SetOutline(color, hovered || selected ? 0.08f : 0.045f);
         }
 
         private void Clear()

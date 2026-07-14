@@ -90,22 +90,28 @@ namespace GourmetProject.Game.Presentation.Battle
             float scaleY = bounds.y > 0f ? size / bounds.y : size;
             transform.localScale = new Vector3(scaleX, scaleY, 1f);
 
+            bool preserveTransformMaterial = IsTransformMaterialActive();
             _renderer.sprite = sprite;
-            _renderer.SetPropertyBlock(null);
+            if (!preserveTransformMaterial)
+            {
+                _renderer.SetPropertyBlock(null);
+                SpriteRenderStyle.ApplyUnlitMaterial(_renderer);
+            }
+
             BattleSorting.Apply(_renderer, BattleSorting.DiningTable);
-            SpriteRenderStyle.ApplyUnlitMaterial(_renderer);
 
             // 碰撞体取 sprite 局部包围盒，配合上面的缩放后世界尺寸正好等于 size。
             _collider.size = bounds.x > 0f && bounds.y > 0f ? bounds : Vector2.one;
             _configuredSize = size;
         }
 
-        public void PlayMaterialTransform(Action onComplete)
+        public void PlayMaterialTransform(Action onSpriteSwitch, Action onComplete)
         {
             EnsureRefs();
             KillTransformSequence(resetMaterial: false);
             if (_renderer == null)
             {
+                onSpriteSwitch?.Invoke();
                 onComplete?.Invoke();
                 return;
             }
@@ -114,6 +120,7 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 _transformSequence = DOTween.Sequence()
                     .Append(transform.DOPunchScale(Vector3.one * 0.08f, 0.24f, vibrato: 6, elasticity: 0.6f))
+                    .InsertCallback(0.12f, () => onSpriteSwitch?.Invoke())
                     .OnComplete(() =>
                     {
                         _transformSequence = null;
@@ -126,6 +133,7 @@ namespace GourmetProject.Game.Presentation.Battle
             ApplyTransformEffect(0f);
             _transformSequence = DOTween.Sequence()
                 .Append(DOTween.To(() => 0f, ApplyTransformEffect, 1f, 0.14f).SetEase(Ease.OutQuad))
+                .AppendCallback(() => onSpriteSwitch?.Invoke())
                 .Append(DOTween.To(() => 1f, ApplyTransformEffect, 0f, 0.2f).SetEase(Ease.InOutQuad))
                 .OnComplete(() =>
                 {
@@ -151,7 +159,7 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>编辑页反馈用：用 shader 画红/绿轮廓，fillAlpha 控制是否保留格子底色。</summary>
-        public void SetOutline(Color color, float width, float fillAlpha = 0f)
+        public void SetOutline(Color color, float width, float fillAlpha = 1f)
         {
             EnsureRefs();
             if (SpriteRenderStyle.SpriteOutlineMaterial == null)
@@ -196,10 +204,18 @@ namespace GourmetProject.Game.Presentation.Battle
             float t = Mathf.Clamp01(amount);
             _propertyBlock ??= new MaterialPropertyBlock();
             _renderer.GetPropertyBlock(_propertyBlock);
-            _propertyBlock.SetFloat(BrightnessId, 0.42f * t);
+            _propertyBlock.SetFloat(BrightnessId, t);
             _propertyBlock.SetVector(BoingId, new Vector4(0.2f * t, -0.14f * t, 0f, 0f));
             _propertyBlock.SetVector(EdgeClampPointId, new Vector4(0.24f, 0.24f, 0f, 0f));
             _renderer.SetPropertyBlock(_propertyBlock);
+        }
+
+        private bool IsTransformMaterialActive()
+        {
+            return _transformSequence != null
+                && SpriteRenderStyle.SpriteTransformMaterial != null
+                && _renderer != null
+                && _renderer.sharedMaterial == SpriteRenderStyle.SpriteTransformMaterial;
         }
 
         private void KillTransformSequence(bool resetMaterial)

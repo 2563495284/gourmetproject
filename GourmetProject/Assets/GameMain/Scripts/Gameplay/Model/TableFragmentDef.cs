@@ -16,6 +16,7 @@ namespace GourmetProject.Gameplay.Model
             int hiddenMax,
             float baseWeight,
             int price,
+            IReadOnlyList<string> materialIds,
             IReadOnlyList<CellMaterial> materials)
         {
             Id = id ?? throw new ArgumentNullException(nameof(id));
@@ -24,6 +25,7 @@ namespace GourmetProject.Gameplay.Model
             HiddenMax = hiddenMax;
             BaseWeight = baseWeight;
             Price = price;
+            MaterialIds = materialIds ?? Array.Empty<string>();
             CellMaterials = materials ?? Array.Empty<CellMaterial>();
         }
 
@@ -43,8 +45,16 @@ namespace GourmetProject.Gameplay.Model
 
         public int Price { get; }
 
+        /// <summary>该碎片开包时可随机落位的材质 id 列表。</summary>
+        public IReadOnlyList<string> MaterialIds { get; }
+
         /// <summary>强化格标签：每个元素 = 该碎片某格 (x,y) 挂的一个标签 id。</summary>
         public IReadOnlyList<CellMaterial> CellMaterials { get; }
+
+        public TableFragmentDef WithCellMaterials(IReadOnlyList<CellMaterial> materials)
+        {
+            return new TableFragmentDef(Id, ShapeRows, HiddenMin, HiddenMax, BaseWeight, Price, MaterialIds, materials);
+        }
 
         /// <summary>
         /// 顺时针旋转 <paramref name="times"/> 个 90°（按 4 取模），返回新的碎片定义。
@@ -118,7 +128,7 @@ namespace GourmetProject.Gameplay.Model
                 newTags.Add(new CellMaterial(new GridPos(nx, ny), ct.MaterialId));
             }
 
-            return new TableFragmentDef(Id, newRows, HiddenMin, HiddenMax, BaseWeight, Price, newTags);
+            return new TableFragmentDef(Id, newRows, HiddenMin, HiddenMax, BaseWeight, Price, MaterialIds, newTags);
         }
 
         private static bool IsFilled(char c) => c == 'X' || c == 'x' || c == '1' || c == '#';

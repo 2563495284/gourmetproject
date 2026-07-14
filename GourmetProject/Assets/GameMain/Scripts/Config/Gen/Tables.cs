@@ -31,13 +31,9 @@ public partial class Tables
     /// </summary>
     public TbCharacter TbCharacter {get; }
     /// <summary>
-    /// 胃部碎片库：也用作初始胃形状来源。碎片不旋转(1x2 与 2x1 视为两个碎片)。&#39;X&#39;=存在格。
+    /// 餐桌碎片库：也用作初始餐桌形状来源。materialIds 为该碎片可随机落位的材质列表；碎片不旋转(1x2 与 2x1 视为两个碎片)。&#39;X&#39;=存在格。
     /// </summary>
     public TbTableFragment TbTableFragment {get; }
-    /// <summary>
-    /// 碎片格材质：一行=碎片某格(x,y)挂一个材质 id（引用 TbMaterial）。
-    /// </summary>
-    public TbFragmentMaterial TbFragmentMaterial {get; }
     /// <summary>
     /// 菜谱：固定菜品(fixedDishes 用 | 分隔)+加权放回随机池(pool: list,RecipeEntry)，随机到累计初始分&gt;=requiredInitScore 为止。
     /// </summary>
@@ -111,7 +107,7 @@ public partial class Tables
     /// </summary>
     public TbFlavor TbFlavor {get; }
     /// <summary>
-    /// 餐桌材质：挂在餐桌碎片格上（TbFragmentMaterial 引用）。effectType/effectValue 定义结算效果。
+    /// 餐桌材质：挂在餐桌碎片格上（TableFragment.materialIds 引用）。effectType/effectValue 定义结算效果。
     /// </summary>
     public TbMaterial TbMaterial {get; }
     /// <summary>
@@ -158,7 +154,6 @@ public partial class Tables
         TbTerm = new TbTerm(loader("tbterm"));
         TbCharacter = new TbCharacter(loader("tbcharacter"));
         TbTableFragment = new TbTableFragment(loader("tbtablefragment"));
-        TbFragmentMaterial = new TbFragmentMaterial(loader("tbfragmentmaterial"));
         TbRecipe = new TbRecipe(loader("tbrecipe"));
         TbPassiveItem = new TbPassiveItem(loader("tbpassiveitem"));
         TbActiveItem = new TbActiveItem(loader("tbactiveitem"));
@@ -197,7 +192,6 @@ public partial class Tables
         TbTerm.ResolveRef(this);
         TbCharacter.ResolveRef(this);
         TbTableFragment.ResolveRef(this);
-        TbFragmentMaterial.ResolveRef(this);
         TbRecipe.ResolveRef(this);
         TbPassiveItem.ResolveRef(this);
         TbActiveItem.ResolveRef(this);

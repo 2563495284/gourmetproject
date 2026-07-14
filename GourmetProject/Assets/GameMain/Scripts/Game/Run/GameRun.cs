@@ -44,6 +44,10 @@ namespace GourmetProject.Game.Run
         // 已购买待拼贴的碎片包内容（rolled 出的候选碎片 id）；拼贴或跳过后清空。
         private readonly List<string> _pendingFragmentPack = new List<string>();
 
+        // 餐桌碎片开包时随机出的局部材质落点。候选阶段即确定，之后随已拼贴碎片保存。
+        private readonly Dictionary<string, List<CellMaterial>> _fragmentMaterialRolls =
+            new Dictionary<string, List<CellMaterial>>(System.StringComparer.Ordinal);
+
         // 整局累计已结算的菜品 BaseId 次数（供技能「大局相同检测」，随存档保存）。
         private readonly Dictionary<string, int> _runSettledCounts = new Dictionary<string, int>();
 
@@ -457,6 +461,19 @@ namespace GourmetProject.Game.Run
 
         /// <summary>已购买待拼贴的碎片包候选碎片 id（三选一）；为空表示没有待处理的碎片包。</summary>
         public IReadOnlyList<string> PendingFragmentPack => _pendingFragmentPack;
+
+        public TableFragmentDef GetTableFragmentDef(string fragmentId)
+        {
+            TableFragmentDef def = Database.GetFragment(fragmentId);
+            if (def == null)
+            {
+                return null;
+            }
+
+            return _fragmentMaterialRolls.TryGetValue(fragmentId, out List<CellMaterial> materials)
+                ? def.WithCellMaterials(materials)
+                : def;
+        }
 
         /// <summary>餐桌碎片总数（奖励自动附着 + 手动拼贴），供统计/预览展示。</summary>
         public int StomachFragmentCount => _stomachFragmentIds.Count + _fragmentPlacements.Count;
@@ -1195,6 +1212,7 @@ namespace GourmetProject.Game.Run
                 RecipeBooks = ToRecipeBookSaveData(),
                 TableFragmentIds = new List<string>(_stomachFragmentIds),
                 FragmentPlacements = ToFragmentPlacementSaveData(),
+                FragmentMaterialRolls = ToFragmentMaterialRollSaveData(),
                 CellMaterialOverrides = ToCellMaterialSaveData(),
                 PendingFragmentPackIds = new List<string>(_pendingFragmentPack),
                 RunSettledCounts = new Dictionary<string, int>(_runSettledCounts),
@@ -1314,6 +1332,8 @@ namespace GourmetProject.Game.Run
                         p.FragmentId, p.Rotation, new GridPos(p.OriginX, p.OriginY)));
                 }
             }
+
+            RestoreFragmentMaterialRolls(run, data.FragmentMaterialRolls);
 
             if (data.CellMaterialOverrides != null)
             {
@@ -1989,6 +2009,7 @@ namespace GourmetProject.Game.Run
             }
 
             _stomachFragmentIds.Add(fragmentId);
+            EnsureFragmentMaterialRoll(fragmentId, null);
             return true;
         }
 
@@ -2001,12 +2022,14 @@ namespace GourmetProject.Game.Run
             }
 
             _fragmentPlacements.Add(new TableFragmentPlacement(fragmentId, rotation, origin));
+            EnsureFragmentMaterialRoll(fragmentId, null);
             return true;
         }
 
         /// <summary>置入一份已购买待拼贴的碎片包（三选一候选 id）。</summary>
-        public void SetPendingFragmentPack(IEnumerable<string> fragmentIds)
+        public void SetPendingFragmentPack(IEnumerable<string> fragmentIds, IRandomStream materialRng = null)
         {
+            ClearPendingFragmentMaterialRolls();
             _pendingFragmentPack.Clear();
             if (fragmentIds != null)
             {
@@ -2015,6 +2038,7 @@ namespace GourmetProject.Game.Run
                     if (!string.IsNullOrEmpty(id))
                     {
                         _pendingFragmentPack.Add(id);
+                        EnsureFragmentMaterialRoll(id, materialRng);
                     }
                 }
             }
@@ -2023,7 +2047,88 @@ namespace GourmetProject.Game.Run
         /// <summary>清空待拼贴的碎片包（拼贴完成或跳过后调用）。</summary>
         public void ClearPendingFragmentPack()
         {
+            ClearPendingFragmentMaterialRolls();
             _pendingFragmentPack.Clear();
+        }
+
+        private void EnsureFragmentMaterialRoll(string fragmentId, IRandomStream rng)
+        {
+            if (string.IsNullOrEmpty(fragmentId) || _fragmentMaterialRolls.ContainsKey(fragmentId))
+            {
+                return;
+            }
+
+            TableFragmentDef def = Database.GetFragment(fragmentId);
+            if (def == null)
+            {
+                return;
+            }
+
+            _fragmentMaterialRolls[fragmentId] = RollFragmentMaterials(def, rng ?? FragmentMaterialRollStream());
+        }
+
+        private IRandomStream FragmentMaterialRollStream()
+        {
+            return GameApp.Random != null && GameApp.Random.IsInitialized
+                ? GameApp.Random.DomainStream(SeedDomains.Reward, "fragment_material_rolls")
+                : null;
+        }
+
+        private static List<CellMaterial> RollFragmentMaterials(TableFragmentDef def, IRandomStream rng)
+        {
+            var materials = new List<CellMaterial>();
+            if (def == null || def.MaterialIds == null || def.MaterialIds.Count == 0)
+            {
+                return materials;
+            }
+
+            List<GridPos> cells = TableFragmentBuilder.FilledCells(def);
+            if (cells.Count == 0)
+            {
+                return materials;
+            }
+
+            rng?.Shuffle(cells);
+            int count = System.Math.Min(def.MaterialIds.Count, cells.Count);
+            for (int i = 0; i < count; i++)
+            {
+                string materialId = def.MaterialIds[i];
+                if (!string.IsNullOrEmpty(materialId))
+                {
+                    materials.Add(new CellMaterial(cells[i], materialId));
+                }
+            }
+
+            return materials;
+        }
+
+        private void ClearPendingFragmentMaterialRolls()
+        {
+            foreach (string fragmentId in _pendingFragmentPack)
+            {
+                if (!IsFragmentKeptInRun(fragmentId))
+                {
+                    _fragmentMaterialRolls.Remove(fragmentId);
+                }
+            }
+        }
+
+        private bool IsFragmentKeptInRun(string fragmentId)
+        {
+            if (string.IsNullOrEmpty(fragmentId) || _stomachFragmentIds.Contains(fragmentId))
+            {
+                return true;
+            }
+
+            for (int i = 0; i < _fragmentPlacements.Count; i++)
+            {
+                if (_fragmentPlacements[i].FragmentId == fragmentId)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public bool CanAttachTableFragment(TableFragmentDef fragment)
@@ -2218,6 +2323,67 @@ namespace GourmetProject.Game.Run
             }
 
             return list;
+        }
+
+        private List<TableFragmentMaterialRollSaveData> ToFragmentMaterialRollSaveData()
+        {
+            var list = new List<TableFragmentMaterialRollSaveData>(_fragmentMaterialRolls.Count);
+            foreach (KeyValuePair<string, List<CellMaterial>> pair in _fragmentMaterialRolls)
+            {
+                var save = new TableFragmentMaterialRollSaveData
+                {
+                    FragmentId = pair.Key,
+                    Materials = new List<CellMaterialSaveData>(),
+                };
+
+                foreach (CellMaterial material in pair.Value)
+                {
+                    save.Materials.Add(new CellMaterialSaveData
+                    {
+                        X = material.Pos.X,
+                        Y = material.Pos.Y,
+                        MaterialId = material.MaterialId,
+                    });
+                }
+
+                list.Add(save);
+            }
+
+            return list;
+        }
+
+        private static void RestoreFragmentMaterialRolls(
+            GameRun run,
+            List<TableFragmentMaterialRollSaveData> savedRolls)
+        {
+            if (run == null || savedRolls == null)
+            {
+                return;
+            }
+
+            foreach (TableFragmentMaterialRollSaveData saved in savedRolls)
+            {
+                if (saved == null || string.IsNullOrEmpty(saved.FragmentId))
+                {
+                    continue;
+                }
+
+                var materials = new List<CellMaterial>();
+                if (saved.Materials != null)
+                {
+                    foreach (CellMaterialSaveData material in saved.Materials)
+                    {
+                        if (material == null || string.IsNullOrEmpty(material.MaterialId))
+                        {
+                            continue;
+                        }
+
+                        materials.Add(new CellMaterial(new GridPos(material.X, material.Y), material.MaterialId));
+                    }
+                }
+
+                run._fragmentMaterialRolls[saved.FragmentId] = materials;
+            }
         }
 
         private List<CellMaterialSaveData> ToCellMaterialSaveData()

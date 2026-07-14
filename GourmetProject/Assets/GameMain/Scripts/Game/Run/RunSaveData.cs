@@ -56,6 +56,9 @@ namespace GourmetProject.Game.Run
         /// <summary>玩家在餐桌编辑页手动拼贴的碎片放置（id + 旋转 + 原点），用于可复现地重建胃形。</summary>
         public List<TableFragmentPlacementSaveData> FragmentPlacements = new List<TableFragmentPlacementSaveData>();
 
+        /// <summary>餐桌碎片开包时已随机好的局部材质落点；随候选/已拼贴碎片保存。</summary>
+        public List<TableFragmentMaterialRollSaveData> FragmentMaterialRolls = new List<TableFragmentMaterialRollSaveData>();
+
         /// <summary>玩家用「铺台小票」永久附加的格子材质覆盖（坐标 + 材质 id）；旧档缺省 → 空。</summary>
         public List<CellMaterialSaveData> CellMaterialOverrides = new List<CellMaterialSaveData>();
 
@@ -192,6 +195,13 @@ namespace GourmetProject.Game.Run
         public int X;
         public int Y;
         public string MaterialId;
+    }
+
+    [Serializable]
+    public sealed class TableFragmentMaterialRollSaveData
+    {
+        public string FragmentId;
+        public List<CellMaterialSaveData> Materials = new List<CellMaterialSaveData>();
     }
 
     [Serializable]

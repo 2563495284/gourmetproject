@@ -51,7 +51,7 @@ namespace GourmetProject.Game.Meta
                 return false;
             }
 
-            // 排程小票操作局外核心循环；重掷只属于行动选择页，其余可在地图/商店使用。
+            // 排程小票操作局外核心循环；重掷只属于行动选择页，其余可在行动选择/商店使用。
             if (IsScheduleEffect(item.EffectType))
             {
                 return IsScheduleUsableIn(item.EffectType, ctx);
@@ -80,11 +80,11 @@ namespace GourmetProject.Game.Meta
             switch (effectType)
             {
                 case ItemEffectTypes.RerollAction:
-                    return ctx == ActiveUseContextKind.Map;
+                    return ctx == ActiveUseContextKind.ActionSelect;
                 case ItemEffectTypes.ResetBossDebuff:
                 case ItemEffectTypes.TimelineExecuteNext:
                 case ItemEffectTypes.TimelineAddRewardNode:
-                    return ctx == ActiveUseContextKind.Map || ctx == ActiveUseContextKind.Shop;
+                    return ctx == ActiveUseContextKind.ActionSelect || ctx == ActiveUseContextKind.Shop;
                 default:
                     return false;
             }

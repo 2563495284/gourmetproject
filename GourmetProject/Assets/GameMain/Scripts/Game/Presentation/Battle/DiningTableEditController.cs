@@ -27,7 +27,11 @@ namespace GourmetProject.Game.Presentation.Battle
         private const float EditDragGrabDuration = 0.12f;
         private const float EditDragReturnDuration = 0.16f;
         private const float EditGhostOutlineWidth = 0.075f;
+        private const float EditGhostFillAlpha = 0.08f;
         private const float EditBoundsWarningWidth = 0.055f;
+        private const float EditTrayCellJitter = 0.045f;
+        private const float EditTrayCellRotation = 4f;
+        private const float EditTrayCellScaleJitter = 0.035f;
 
         // 编辑页餐桌定位的底部边距：比 Food 态更大，给候选碎片托盘条让位。
         private const float EditTableBottomMargin = 3.6f;
@@ -35,8 +39,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private static readonly Color GhostValidColor = new Color(0.35f, 0.9f, 0.4f, 0.85f);
         private static readonly Color GhostInvalidColor = new Color(0.95f, 0.35f, 0.3f, 0.7f);
         private static readonly Color BoundsWarningColor = new Color(1f, 0.05f, 0.02f, 0.42f);
-        private static readonly Color TraySelectedColor = new Color(1f, 0.95f, 0.6f, 1f);
-        private static readonly Color TrayNormalColor = new Color(0.85f, 0.85f, 0.85f, 0.9f);
+        private static readonly Color EditFragmentFillColor = Color.white;
 
         private enum TableInteractionState
         {
@@ -64,7 +67,6 @@ namespace GourmetProject.Game.Presentation.Battle
         private Action<bool> _editOnDone;
         private readonly List<TableFragmentDef> _editCandidates = new List<TableFragmentDef>();
         private int _editSelected = -1;
-        private int _editRotation;
         private bool _editDragging;
         private bool _editDragAnimating;
         private bool _editDragReturning;
@@ -78,6 +80,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private readonly List<DiningTableCellView> _editTrayCells = new List<DiningTableCellView>();
         private readonly List<DiningTableCellView> _editDragCells = new List<DiningTableCellView>();
         private readonly List<TrayCluster> _editTrayClusters = new List<TrayCluster>();
+        private readonly Dictionary<string, Sprite> _editMaterialCellSprites = new Dictionary<string, Sprite>();
         private Sprite _editCellSprite;
         private float _editTraySize;
         private Transform _editDragRoot;
@@ -137,7 +140,6 @@ namespace GourmetProject.Game.Presentation.Battle
             _editRun = run;
             _editOnDone = onDone;
             _editSelected = -1;
-            _editRotation = 0;
             _editDragging = false;
             _editDragAnimating = false;
             _editDragReturning = false;
@@ -148,7 +150,7 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 foreach (string id in candidateIds)
                 {
-                    TableFragmentDef def = run.Database.GetFragment(id);
+                    TableFragmentDef def = run.GetTableFragmentDef(id);
                     if (def != null)
                     {
                         _editCandidates.Add(def);
@@ -226,13 +228,13 @@ namespace GourmetProject.Game.Presentation.Battle
                 return false;
             }
 
-            _boardView?.Sync();
             if (_boardView != null && _boardView.TryGetCellView(pos, out DiningTableCellView cell) && cell != null)
             {
-                cell.PlayMaterialTransform(onComplete);
+                cell.PlayMaterialTransform(() => _boardView?.Sync(), onComplete);
                 return true;
             }
 
+            _boardView?.Sync();
             onComplete?.Invoke();
             return true;
         }
@@ -242,7 +244,6 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             _state = TableInteractionState.None;
             _editSelected = -1;
-            _editRotation = 0;
             _editDragging = false;
             _editDragAnimating = false;
             _editDragReturning = false;
@@ -352,7 +353,6 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _editSelected = index;
-            _editRotation = 0;
             _editDragging = true;
             _editDragReturning = false;
             _editDragReturnCenter = TrayCenterForCandidate(index, mouseWorld);
@@ -406,6 +406,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             SetDragOutline(color);
             TableFragmentDef def = _editCandidates[_editSelected];
+            ShowGhost(origin, def, color);
             if (TryGetBoundsWarning(origin, def, out BoundsWarningInfo warning))
             {
                 ShowBoundsWarning(warning);
@@ -414,8 +415,6 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 HideBoundsWarning();
             }
-
-            ClearGhost();
         }
 
         private bool TryGetHoverPlacement(Vector3 mouseWorld, out GridPos origin, out bool valid)
@@ -839,7 +838,6 @@ namespace GourmetProject.Game.Presentation.Battle
                     continue;
                 }
 
-                Color color = i == _editSelected ? TraySelectedColor : TrayNormalColor;
                 foreach (GridPos c in cells)
                 {
                     DiningTableCellView cell = InstantiateTrayCell();
@@ -849,8 +847,11 @@ namespace GourmetProject.Game.Presentation.Battle
                     }
 
                     var world = new Vector3(leftX + c.X * _editTraySize, topY - c.Y * _editTraySize, 0f);
-                    cell.Configure(c, world, _editTraySize, _editCellSprite, null);
-                    cell.SetColor(color);
+                    ApplyTrayCellOffset(i, c, ref world, out Quaternion rotation, out float scale);
+                    cell.Configure(c, world, _editTraySize, FragmentCellSprite(shown, c), null);
+                    cell.transform.localRotation = rotation;
+                    cell.transform.localScale *= scale;
+                    cell.SetColor(EditFragmentFillColor);
                     cell.SetSortingOrder(EditTraySortingOrder);
                     _editTrayCells.Add(cell);
                 }
@@ -937,11 +938,61 @@ namespace GourmetProject.Game.Presentation.Battle
                 }
 
                 var local = new Vector3((cellPos.X - avgX) * pitch, -(cellPos.Y - avgY) * pitch, 0f);
-                cell.Configure(cellPos, local, _cellSize, _editCellSprite, null);
-                cell.SetColor(Color.white);
+                cell.Configure(cellPos, local, _cellSize, FragmentCellSprite(def, cellPos), null);
+                cell.SetColor(EditFragmentFillColor);
                 cell.SetSortingOrder(EditDragSortingOrder);
                 _editDragCells.Add(cell);
             }
+        }
+
+        private Sprite FragmentCellSprite(TableFragmentDef def, GridPos localPos)
+        {
+            string materialId = FragmentCellMaterialId(def, localPos);
+            if (string.IsNullOrEmpty(materialId))
+            {
+                return _editCellSprite;
+            }
+
+            if (_editMaterialCellSprites.TryGetValue(materialId, out Sprite cached))
+            {
+                return cached != null ? cached : _editCellSprite;
+            }
+
+            Sprite sprite = LoadCellSprite($"board_cell_{materialId}");
+            _editMaterialCellSprites[materialId] = sprite;
+            return sprite != null ? sprite : _editCellSprite;
+        }
+
+        private static string FragmentCellMaterialId(TableFragmentDef def, GridPos localPos)
+        {
+            if (def == null || def.CellMaterials == null)
+            {
+                return null;
+            }
+
+            for (int i = def.CellMaterials.Count - 1; i >= 0; i--)
+            {
+                CellMaterial material = def.CellMaterials[i];
+                if (material.Pos.Equals(localPos))
+                {
+                    return material.MaterialId;
+                }
+            }
+
+            return null;
+        }
+
+        private static Sprite LoadCellSprite(string name)
+        {
+            string path = $"Sprites/UI/{name}";
+            Sprite sprite = Resources.Load<Sprite>(path);
+            if (sprite != null)
+            {
+                return sprite;
+            }
+
+            Sprite[] sprites = Resources.LoadAll<Sprite>(path);
+            return sprites != null && sprites.Length > 0 ? sprites[0] : null;
         }
 
         private void SetDragOutline(Color color)
@@ -953,6 +1004,33 @@ namespace GourmetProject.Game.Presentation.Battle
                     cell.SetOutline(color, EditGhostOutlineWidth, fillAlpha: 1f);
                     cell.SetSortingOrder(EditDragSortingOrder);
                 }
+            }
+        }
+
+        private static void ApplyTrayCellOffset(int candidateIndex, GridPos cell, ref Vector3 position, out Quaternion rotation, out float scale)
+        {
+            int hash = candidateIndex * 73856093 ^ cell.X * 19349663 ^ cell.Y * 83492791;
+            float jitterX = HashToSignedUnit(hash) * EditTrayCellJitter;
+            float jitterY = HashToSignedUnit(hash >> 3) * EditTrayCellJitter;
+            float angle = HashToSignedUnit(hash >> 6) * EditTrayCellRotation;
+            float scaleOffset = HashToSignedUnit(hash >> 9) * EditTrayCellScaleJitter;
+
+            position += new Vector3(jitterX, jitterY, 0f);
+            rotation = Quaternion.Euler(0f, 0f, angle);
+            scale = 1f + scaleOffset;
+        }
+
+        private static float HashToSignedUnit(int hash)
+        {
+            unchecked
+            {
+                uint mixed = (uint)hash;
+                mixed ^= mixed >> 16;
+                mixed *= 0x7feb352d;
+                mixed ^= mixed >> 15;
+                mixed *= 0x846ca68b;
+                mixed ^= mixed >> 16;
+                return (mixed / (float)uint.MaxValue) * 2f - 1f;
             }
         }
 
@@ -1020,7 +1098,6 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             ClearDragVisual(stopRoutine: false);
             _editSelected = -1;
-            _editRotation = 0;
             _editDragging = false;
             _editDragReturning = false;
             _editDragAnimating = false;
@@ -1091,6 +1168,40 @@ namespace GourmetProject.Game.Presentation.Battle
                 ghost.Configure(new GridPos(0, 0), Vector3.zero, _cellSize, _editCellSprite, null);
                 ghost.gameObject.SetActive(false);
                 _editGhostCells.Add(ghost);
+            }
+        }
+
+        private void ShowGhost(GridPos origin, TableFragmentDef def, Color color)
+        {
+            if (def == null || _boardView == null || _boardView.Mapper == null)
+            {
+                ClearGhost();
+                return;
+            }
+
+            List<GridPos> cells = TableFragmentBuilder.FilledCells(def);
+            EnsureGhostCount(cells.Count);
+            DiningTableCoordinateMapper mapper = _boardView.Mapper;
+            for (int i = 0; i < _editGhostCells.Count; i++)
+            {
+                DiningTableCellView ghost = _editGhostCells[i];
+                if (ghost == null)
+                {
+                    continue;
+                }
+
+                if (i >= cells.Count)
+                {
+                    ghost.gameObject.SetActive(false);
+                    continue;
+                }
+
+                GridPos pos = cells[i].Offset(origin.X, origin.Y);
+                ghost.gameObject.SetActive(true);
+                ghost.transform.localRotation = Quaternion.identity;
+                ghost.Configure(pos, mapper.CellCenterLocal(pos), _cellSize, FragmentCellSprite(def, cells[i]), null);
+                ghost.SetOutline(color, EditGhostOutlineWidth, EditGhostFillAlpha);
+                ghost.SetSortingOrder(EditGhostSortingOrder);
             }
         }
 

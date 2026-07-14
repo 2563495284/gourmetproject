@@ -40,7 +40,7 @@ namespace GourmetProject.Game.UI.Battle.View
 
         void PlayShowCardsWhenReady();
 
-        void OpenTableEdit();
+        void OpenTableEdit(Action onShown = null);
 
         ActionSelectSnapshot CaptureActionSelectSnapshot();
 
@@ -53,9 +53,12 @@ namespace GourmetProject.Game.UI.Battle.View
     /// </summary>
     internal sealed class TableViewCoordinator
     {
+        private const float TableViewFadeDuration = 0.16f;
+
         private readonly ITableViewHost _host;
         private GameplayView _returnView = GameplayView.None;
         private ActionSelectSnapshot _snapshot;
+        private bool _transitioning;
 
         public TableViewCoordinator(ITableViewHost host)
         {
@@ -66,12 +69,18 @@ namespace GourmetProject.Game.UI.Battle.View
 
         public void Open()
         {
+            if (_transitioning)
+            {
+                return;
+            }
+
             BattleWorldController world = _host.World;
             if (world == null || _host.Run == null || !world.CanEnterTableView)
             {
                 return;
             }
 
+            _transitioning = true;
             _returnView = _host.CurrentView;
             _snapshot = _returnView == GameplayView.ActionSelect
                 ? _host.CaptureActionSelectSnapshot()
@@ -82,11 +91,18 @@ namespace GourmetProject.Game.UI.Battle.View
                 _host.BindWorldHoverCallbacks();
                 world.BeginTableView(_host.Run);
                 _host.BindWorldHoverCallbacks();
-            });
+                world.FadeTableViewIn(TableViewFadeDuration);
+            }, CompleteTransition);
         }
 
         public void OpenForCellTargeting(Action onOpened)
         {
+            if (_transitioning)
+            {
+                onOpened?.Invoke();
+                return;
+            }
+
             BattleWorldController world = _host.World;
             if (world == null || _host.Run == null)
             {
@@ -112,31 +128,54 @@ namespace GourmetProject.Game.UI.Battle.View
             _snapshot = _returnView == GameplayView.ActionSelect
                 ? _host.CaptureActionSelectSnapshot()
                 : ActionSelectSnapshot.None;
+            _transitioning = true;
             _host.BindWorldHoverCallbacks();
             _host.SwitchTo(GameplayView.TableView, () =>
             {
                 _host.BindWorldHoverCallbacks();
                 world.BeginTableCellTargeting(_host.Run);
                 _host.BindWorldHoverCallbacks();
-            }, onOpened);
+                world.FadeTableViewIn(TableViewFadeDuration);
+            }, () =>
+            {
+                CompleteTransition();
+                onOpened?.Invoke();
+            });
         }
 
         public void Back()
         {
+            if (_transitioning)
+            {
+                return;
+            }
+
             GameplayView target = _returnView;
             if (target == GameplayView.None || target == GameplayView.TableView)
             {
                 target = GameplayView.ActionSelect;
             }
 
-            _returnView = GameplayView.None;
             BattleWorldController world = _host.World;
+            _transitioning = true;
+            if (world == null)
+            {
+                CompleteBack(target, null);
+                return;
+            }
+
+            world.FadeTableViewOut(TableViewFadeDuration, () => CompleteBack(target, world));
+        }
+
+        private void CompleteBack(GameplayView target, BattleWorldController world)
+        {
+            _returnView = GameplayView.None;
             world?.EndTableView();
 
             switch (target)
             {
                 case GameplayView.Food:
-                    _host.SwitchTo(GameplayView.Food, _host.RestoreBattleWorld);
+                    _host.SwitchTo(GameplayView.Food, _host.RestoreBattleWorld, CompleteTransition);
                     break;
                 case GameplayView.ActionSelect:
                     world?.HideWorld();
@@ -145,25 +184,34 @@ namespace GourmetProject.Game.UI.Battle.View
                     _host.SwitchTo(
                         GameplayView.ActionSelect,
                         () => _host.RestoreActionSelection(snap),
-                        _host.PlayShowCardsWhenReady);
+                        () =>
+                        {
+                            _host.PlayShowCardsWhenReady();
+                            CompleteTransition();
+                        });
                     break;
                 case GameplayView.TableEdit:
                     if (_host.Run != null && _host.Run.PendingFragmentPack.Count > 0)
                     {
-                        _host.OpenTableEdit();
+                        _host.OpenTableEdit(CompleteTransition);
                     }
                     else
                     {
                         world?.HideWorld();
-                        _host.SwitchTo(GameplayView.Shop);
+                        _host.SwitchTo(GameplayView.Shop, onShown: CompleteTransition);
                     }
 
                     break;
                 default:
                     world?.HideWorld();
-                    _host.SwitchTo(target);
+                    _host.SwitchTo(target, onShown: CompleteTransition);
                     break;
             }
+        }
+
+        private void CompleteTransition()
+        {
+            _transitioning = false;
         }
     }
 }

@@ -8,7 +8,7 @@ namespace GourmetProject.Game.Meta
     {
         Battle,
         Shop,
-        Map,
+        ActionSelect,
         Reward,
     }
 
@@ -36,7 +36,7 @@ namespace GourmetProject.Game.Meta
     }
 
     /// <summary>
-    /// 主动道具「使用上下文」。战斗与局外（商店/地图/奖励）各实现一个：
+    /// 主动道具「使用上下文」。战斗与局外（商店/行动选择/奖励）各实现一个：
     /// 负责回答「本情境有哪些目标」以及提供各操作所需的能力钩子。
     /// 效果语义集中在 <see cref="ActiveItemEffectRegistry"/>，情境只提供能力，避免每情境重写效果。
     /// </summary>
@@ -91,7 +91,7 @@ namespace GourmetProject.Game.Meta
         /// <summary>能力：生成一道菜。格目标用 X/Y 指定原点；无格目标由情境选择位置。</summary>
         bool GenerateDish(ActiveTarget target, string dishId, string randomKey);
 
-        // —— 排程小票：操作行动轴/Boss，仅地图情境支持，战斗返回 false ——
+        // —— 排程小票：操作行动轴/Boss，行动选择/商店按能力支持，战斗返回 false ——
 
         /// <summary>能力：重掷当前行动选项（保 Boss）。不支持或非选择态返回 false。</summary>
         bool RerollCurrentAction();

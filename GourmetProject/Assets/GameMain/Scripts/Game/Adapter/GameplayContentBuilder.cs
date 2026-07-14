@@ -77,31 +77,19 @@ namespace GourmetProject.Game.Adapter
 
         private static List<TableFragmentDef> BuildFragments(cfg.Tables tables)
         {
-            // 先按 fragmentId 归集格标签（分开配置的 TbFragmentMaterial）。
-            var materialsByFragment = new Dictionary<string, List<CellMaterial>>();
-            foreach (cfg.FragmentMaterial ct in tables.TbFragmentMaterial.DataList)
-            {
-                if (!materialsByFragment.TryGetValue(ct.FragmentId, out List<CellMaterial> list))
-                {
-                    list = new List<CellMaterial>();
-                    materialsByFragment[ct.FragmentId] = list;
-                }
-
-                list.Add(new CellMaterial(new GridPos(ct.X, ct.Y), ct.MaterialId));
-            }
-
             var fragments = new List<TableFragmentDef>(tables.TbTableFragment.DataList.Count);
             foreach (cfg.TableFragment f in tables.TbTableFragment.DataList)
             {
-                materialsByFragment.TryGetValue(f.Id, out List<CellMaterial> materials);
+                var shapeRows = new List<string>(f.ShapeRows);
                 fragments.Add(new TableFragmentDef(
                     f.Id,
-                    new List<string>(f.ShapeRows),
+                    shapeRows,
                     f.HiddenRange.Min,
                     f.HiddenRange.Max,
                     f.BaseWeight,
                     f.Price,
-                    materials ?? new List<CellMaterial>()));
+                    new List<string>(f.MaterialIds),
+                    new List<CellMaterial>()));
             }
 
             return fragments;

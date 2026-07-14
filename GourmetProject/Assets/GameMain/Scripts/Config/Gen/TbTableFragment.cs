@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 胃部碎片库：也用作初始胃形状来源。碎片不旋转(1x2 与 2x1 视为两个碎片)。&#39;X&#39;=存在格。
+/// 餐桌碎片库：也用作初始餐桌形状来源。materialIds 为该碎片可随机落位的材质列表；碎片不旋转(1x2 与 2x1 视为两个碎片)。&#39;X&#39;=存在格。
 /// </summary>
 public partial class TbTableFragment
 {

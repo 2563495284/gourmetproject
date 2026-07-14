@@ -12,7 +12,8 @@
       "XXXX",
       "XXXX",
       "XXXX"
-    ]
+    ],
+    "materialIds": []
   },
   {
     "id": "frag_1x2",
@@ -24,7 +25,8 @@
     },
     "shapeRows": [
       "XX"
-    ]
+    ],
+    "materialIds": []
   },
   {
     "id": "frag_2x1",
@@ -37,7 +39,8 @@
     "shapeRows": [
       "X",
       "X"
-    ]
+    ],
+    "materialIds": []
   },
   {
     "id": "frag_L",
@@ -50,6 +53,9 @@
     "shapeRows": [
       "XX",
       ".X"
+    ],
+    "materialIds": [
+      "m_cherry"
     ]
   },
   {
@@ -63,6 +69,9 @@
     "shapeRows": [
       "XX",
       "XX"
+    ],
+    "materialIds": [
+      "m_gold"
     ]
   }
 ]

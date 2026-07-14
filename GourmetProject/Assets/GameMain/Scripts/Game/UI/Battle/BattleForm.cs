@@ -120,7 +120,7 @@ namespace GourmetProject.Game.UI.Battle
 
         private RecipeBooksPresenter _recipePresenter;
         private TimelineAxisBinder _axisBinder;
-        private TableViewCoordinator _stomachCoordinator;
+        private TableViewCoordinator _tableCoordinator;
         private GameplayViewStateMachine _viewStates;
         private ActiveItemUseCoordinator _activeItemUse;
         private int _shopItemFlyInFlight;
@@ -174,7 +174,7 @@ namespace GourmetProject.Game.UI.Battle
                 () => _tips != null ? _tips.Shop : null,
                 () => _tips != null ? _tips.Interest : null,
                 () => _tips != null ? _tips.Boss : null);
-            _stomachCoordinator = new TableViewCoordinator(this);
+            _tableCoordinator = new TableViewCoordinator(this);
             _viewStates = new GameplayViewStateMachine(this);
             _activeItemUse = new ActiveItemUseCoordinator(this);
 
@@ -342,17 +342,17 @@ namespace GourmetProject.Game.UI.Battle
             _world = _world ?? BattleWorldController.Instance;
             _world?.SetTableArea(_boardArea);
             bool opened = false;
-            if (_stomachCoordinator != null && _current != GameplayView.TableView)
+            if (_tableCoordinator != null && _current != GameplayView.TableView)
             {
-                _stomachCoordinator.Open();
+                _tableCoordinator.Open();
                 opened = true;
             }
 
             ShowPassiveOverlay(result.Title, BuildCellMutationText(result), 1.2f, () =>
             {
-                if (opened && _stomachCoordinator != null && _current == GameplayView.TableView)
+                if (opened && _tableCoordinator != null && _current == GameplayView.TableView)
                 {
-                    _stomachCoordinator.Back();
+                    _tableCoordinator.Back();
                 }
 
                 RefreshPersistent();
@@ -506,7 +506,7 @@ namespace GourmetProject.Game.UI.Battle
         {
             if (_shopPanel != null)
             {
-                _shopPanel.Open(OnShopLeave, RefreshShopPersistent, OpenRecipeEdit, OpenTableEdit, _recipeView, PlayShopItemPurchaseFly);
+                _shopPanel.Open(OnShopLeave, RefreshShopPersistent, OpenRecipeEdit, () => OpenTableEdit(), _recipeView, PlayShopItemPurchaseFly);
             }
         }
 
@@ -552,7 +552,7 @@ namespace GourmetProject.Game.UI.Battle
         void ITableViewHost.RestoreBattleWorld() => RestoreBattleWorld();
         void ITableViewHost.BindWorldHoverCallbacks() => BindWorldHoverCallbacks();
         void ITableViewHost.PlayShowCardsWhenReady() => PlayShowCardsWhenReady();
-        void ITableViewHost.OpenTableEdit() => OpenTableEdit();
+        void ITableViewHost.OpenTableEdit(Action onShown) => OpenTableEdit(onShown);
         ActionSelectSnapshot ITableViewHost.CaptureActionSelectSnapshot() => CaptureActionSelectSnapshot();
         void ITableViewHost.RestoreActionSelection(ActionSelectSnapshot snapshot) => RestoreActionSelection(snapshot);
 
@@ -692,33 +692,37 @@ namespace GourmetProject.Game.UI.Battle
 
         internal void OpenActiveItemTableCellTarget(Action onOpened)
         {
-            if (_stomachCoordinator == null)
+            if (_tableCoordinator == null)
             {
                 onOpened?.Invoke();
                 return;
             }
 
-            _stomachCoordinator.OpenForCellTargeting(onOpened);
+            _tableCoordinator.OpenForCellTargeting(onOpened);
         }
 
         internal void CloseActiveItemTableCellTarget()
         {
-            if (_stomachCoordinator != null && _current == GameplayView.TableView)
+            if (_tableCoordinator != null && _current == GameplayView.TableView)
             {
-                _stomachCoordinator.Back();
+                _tableCoordinator.Back();
             }
         }
 
         /// <summary>购买碎片包后进入餐桌编辑态（世界空间）：隐藏商店/行动轴，露出餐桌手动拼贴。</summary>
-        private void OpenTableEdit()
+        private void OpenTableEdit(Action onShown = null)
         {
             BattleWorldController world = _world ?? BattleWorldController.Instance;
             if (world == null || _run == null || _run.PendingFragmentPack.Count == 0)
             {
+                onShown?.Invoke();
                 return;
             }
 
-            SwitchTo(GameplayView.TableEdit, () => world.BeginTableEdit(_run, _run.PendingFragmentPack, OnTableEditDone));
+            SwitchTo(
+                GameplayView.TableEdit,
+                () => world.BeginTableEdit(_run, _run.PendingFragmentPack, OnTableEditDone),
+                onShown);
         }
 
         public void OpenRewardTableEdit(Action<bool> onDone)
@@ -1661,7 +1665,7 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnViewTableClicked()
         {
-            if (_stomachCoordinator == null)
+            if (_tableCoordinator == null)
             {
                 return;
             }
@@ -1671,11 +1675,11 @@ namespace GourmetProject.Game.UI.Battle
 
             if (_current == GameplayView.TableView)
             {
-                _stomachCoordinator.Back();
+                _tableCoordinator.Back();
                 return;
             }
 
-            _stomachCoordinator.Open();
+            _tableCoordinator.Open();
         }
 
         // —— 食物调整态 ——

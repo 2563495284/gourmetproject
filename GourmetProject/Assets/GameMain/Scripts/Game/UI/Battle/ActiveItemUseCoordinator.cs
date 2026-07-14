@@ -572,7 +572,7 @@ namespace GourmetProject.Game.UI.Battle
             return kind switch
             {
                 ActiveUseContextKind.Battle => new BattleUseContext(_host.ActiveSession, _host.ActiveRun),
-                ActiveUseContextKind.Map => new MapUseContext(_host.ActiveRun, _host.ActiveLoop),
+                ActiveUseContextKind.ActionSelect => new ActionSelectUseContext(_host.ActiveRun, _host.ActiveLoop),
                 ActiveUseContextKind.Shop => new ShopUseContext(_host.ActiveRun, _host.ActiveLoop),
                 _ => null,
             };
@@ -591,7 +591,7 @@ namespace GourmetProject.Game.UI.Battle
                 GameplayView.RecipeEdit => ActiveUseContextKind.Shop,
                 GameplayView.TableEdit => ActiveUseContextKind.Shop,
                 GameplayView.TableView => ActiveUseContextKind.Shop,
-                GameplayView.ActionSelect => ActiveUseContextKind.Map,
+                GameplayView.ActionSelect => ActiveUseContextKind.ActionSelect,
                 _ => ActiveUseContextKind.Reward,
             };
         }

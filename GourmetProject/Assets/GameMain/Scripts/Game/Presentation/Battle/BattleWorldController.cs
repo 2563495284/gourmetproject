@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using DG.Tweening;
 using GourmetProject.Game;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
@@ -107,6 +108,9 @@ namespace GourmetProject.Game.Presentation.Battle
         private Action<DiningTableCellView> _cellHoverExited;
         private Action _stateChanged;
         private CancellationTokenSource _presentationCts;
+        private Tween _tableViewFadeTween;
+        private readonly Dictionary<SpriteRenderer, float> _tableViewRendererBaseAlphas = new Dictionary<SpriteRenderer, float>();
+        private float _tableViewTransitionAlpha = 1f;
 
         /// <summary>当前已加载战斗场景里的控制器实例（由战斗 UI/流程取用）。</summary>
         public static BattleWorldController Instance { get; private set; }
@@ -439,6 +443,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             EnsureTableEdit();
+            ResetTableViewFade();
             if (_boardEdit.IsEditing)
             {
                 _boardEdit.EndTableEdit();
@@ -468,6 +473,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             EnsureTableEdit();
+            ResetTableViewFade();
             if (_boardEdit.IsEditing)
             {
                 _boardEdit.EndTableEdit();
@@ -490,12 +496,30 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public void EndTableView()
         {
+            ResetTableViewFade();
             if (_worldMode == WorldMode.TableView || _worldMode == WorldMode.TableCellTargeting)
             {
                 _worldMode = WorldMode.Hidden;
             }
 
             _boardEdit?.EndTableView();
+        }
+
+        public void FadeTableViewIn(float duration, Action onComplete = null)
+        {
+            CancelTableViewFade();
+            _tableViewRendererBaseAlphas.Clear();
+            CaptureTableViewRenderers();
+            ApplyTableViewAlpha(0f);
+            FadeTableViewTo(1f, duration, onComplete, clearOnComplete: true);
+        }
+
+        public void FadeTableViewOut(float duration, Action onComplete = null)
+        {
+            CancelTableViewFade();
+            _tableViewRendererBaseAlphas.Clear();
+            CaptureTableViewRenderers();
+            FadeTableViewTo(0f, duration, onComplete, clearOnComplete: false);
         }
 
         public bool PlayActiveItemCellMaterialApplied(GridPos pos, string materialId, Action onComplete)
@@ -511,13 +535,13 @@ namespace GourmetProject.Game.Presentation.Battle
                 return false;
             }
 
-            _boardView?.Sync();
             if (_boardView != null && _boardView.TryGetCellView(pos, out DiningTableCellView cell) && cell != null)
             {
-                cell.PlayMaterialTransform(onComplete);
+                cell.PlayMaterialTransform(() => _boardView?.Sync(), onComplete);
                 return true;
             }
 
+            _boardView?.Sync();
             onComplete?.Invoke();
             return true;
         }
@@ -617,6 +641,7 @@ namespace GourmetProject.Game.Presentation.Battle
         public void HideWorld()
         {
             CancelPresentationTasks();
+            ResetTableViewFade();
             if (_foodAdjust != null && _foodAdjust.IsActive)
             {
                 _foodAdjust.End();
@@ -644,6 +669,97 @@ namespace GourmetProject.Game.Presentation.Battle
             _session = null;
             ClearPlacedPieces();
             _doodle?.Clear();
+        }
+
+        private void FadeTableViewTo(float targetAlpha, float duration, Action onComplete, bool clearOnComplete)
+        {
+            targetAlpha = Mathf.Clamp01(targetAlpha);
+            if (_tableViewRendererBaseAlphas.Count == 0 || duration <= 0f)
+            {
+                ApplyTableViewAlpha(targetAlpha);
+                if (clearOnComplete)
+                {
+                    _tableViewRendererBaseAlphas.Clear();
+                }
+
+                onComplete?.Invoke();
+                return;
+            }
+
+            _tableViewFadeTween = DOVirtual.Float(
+                    _tableViewTransitionAlpha,
+                    targetAlpha,
+                    duration,
+                    ApplyTableViewAlpha)
+                .SetEase(Ease.OutQuad)
+                .SetUpdate(true)
+                .OnComplete(() =>
+                {
+                    _tableViewFadeTween = null;
+                    ApplyTableViewAlpha(targetAlpha);
+                    if (clearOnComplete)
+                    {
+                        _tableViewRendererBaseAlphas.Clear();
+                    }
+
+                    onComplete?.Invoke();
+                });
+        }
+
+        private void CaptureTableViewRenderers()
+        {
+            if (_boardView == null)
+            {
+                return;
+            }
+
+            float divisor = _tableViewTransitionAlpha > 0.001f ? _tableViewTransitionAlpha : 1f;
+            SpriteRenderer[] renderers = _boardView.GetComponentsInChildren<SpriteRenderer>(true);
+            foreach (SpriteRenderer renderer in renderers)
+            {
+                if (renderer == null)
+                {
+                    continue;
+                }
+
+                _tableViewRendererBaseAlphas[renderer] = Mathf.Clamp01(renderer.color.a / divisor);
+            }
+        }
+
+        private void ApplyTableViewAlpha(float alpha)
+        {
+            _tableViewTransitionAlpha = Mathf.Clamp01(alpha);
+            foreach (KeyValuePair<SpriteRenderer, float> kv in _tableViewRendererBaseAlphas)
+            {
+                SpriteRenderer renderer = kv.Key;
+                if (renderer == null)
+                {
+                    continue;
+                }
+
+                Color color = renderer.color;
+                color.a = kv.Value * _tableViewTransitionAlpha;
+                renderer.color = color;
+            }
+        }
+
+        private void ResetTableViewFade()
+        {
+            CancelTableViewFade();
+            ApplyTableViewAlpha(1f);
+            _tableViewRendererBaseAlphas.Clear();
+            _tableViewTransitionAlpha = 1f;
+        }
+
+        private void CancelTableViewFade()
+        {
+            if (_tableViewFadeTween == null)
+            {
+                return;
+            }
+
+            _tableViewFadeTween.Kill();
+            _tableViewFadeTween = null;
         }
 
         private void SetFoodWorldElementsVisible(bool visible)
