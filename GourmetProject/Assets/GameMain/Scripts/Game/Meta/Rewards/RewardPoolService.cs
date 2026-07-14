@@ -12,8 +12,6 @@ namespace GourmetProject.Game.Meta
     public static class RewardPoolService
     {
         private const string Tag = "RewardPool";
-        private const float GoldRewardMultiplierMin = 1.6f;
-        private const float GoldRewardMultiplierMax = 2.4f;
 
         public static List<RewardChoice> RollChoices(RewardContext context, cfg.RewardSlot slot)
         {
@@ -33,7 +31,7 @@ namespace GourmetProject.Game.Meta
             int hidden = Math.Max(0, HiddenForSlot(context, slot) + slot.HiddenOffset);
             if (slot.Kind == cfg.RewardKind.Gold)
             {
-                result.Add(RewardChoice.Gold(GetGoldRewardAmount(context), "额外金币"));
+                result.Add(RewardChoice.Gold(GetGoldRewardAmount(context, slot), "额外金币"));
                 return result;
             }
 
@@ -41,7 +39,7 @@ namespace GourmetProject.Game.Meta
             if (pool == null)
             {
                 Log.Warning($"Reward slot '{slot.Id}' references missing pool '{slot.PoolId}'.", Tag);
-                result.Add(RewardChoice.Gold(GetGoldRewardAmount(context), "折算金币", isFallback: true));
+                result.Add(RewardChoice.Gold(GetGoldRewardAmount(context, slot), "折算金币", isFallback: true));
                 return result;
             }
 
@@ -64,7 +62,7 @@ namespace GourmetProject.Game.Meta
             if (result.Count == 0)
             {
                 Log.Warning($"Reward slot '{slot.Id}' produced no candidates. Converted to gold.", Tag);
-                result.Add(RewardChoice.Gold(GetGoldRewardAmount(context), "折算金币", isFallback: true));
+                result.Add(RewardChoice.Gold(GetGoldRewardAmount(context, slot), "折算金币", isFallback: true));
             }
 
             return result;
@@ -424,10 +422,12 @@ namespace GourmetProject.Game.Meta
             return result;
         }
 
-        private static int GetGoldRewardAmount(RewardContext context)
+        private static int GetGoldRewardAmount(RewardContext context, cfg.RewardSlot slot)
         {
             int baseGold = Math.Max(1, context.BaseGold);
-            float multiplier = context.Rng.Range(GoldRewardMultiplierMin, GoldRewardMultiplierMax);
+            float min = Math.Min(slot.GoldMultiplierMin, slot.GoldMultiplierMax);
+            float max = Math.Max(slot.GoldMultiplierMin, slot.GoldMultiplierMax);
+            float multiplier = context.Rng.Range(min, max);
             return Math.Max(1, (int)Math.Round(baseGold * multiplier, MidpointRounding.AwayFromZero));
         }
     }

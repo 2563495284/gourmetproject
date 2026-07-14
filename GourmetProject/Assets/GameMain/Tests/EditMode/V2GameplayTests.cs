@@ -276,6 +276,8 @@ namespace GourmetProject.Tests
 
             List<RewardChoice> choices = RewardPoolService.RollChoices(context, slot);
 
+            Assert.AreEqual(1.6f, slot.GoldMultiplierMin);
+            Assert.AreEqual(2.4f, slot.GoldMultiplierMax);
             Assert.AreEqual(1, choices.Count);
             Assert.AreEqual(cfg.RewardKind.Gold, choices[0].Kind);
             Assert.AreEqual(60, choices[0].GoldAmount);

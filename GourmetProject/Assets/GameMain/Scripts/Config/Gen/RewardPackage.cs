@@ -54,6 +54,7 @@ public sealed partial class RewardPackage : Luban.BeanBase
     /// 额外奖励出现概率，0..1。
     /// </summary>
     public readonly float ExtraChance;
+   
     public const int __ID__ = 46008823;
     public override int GetTypeId() => __ID__;
 
