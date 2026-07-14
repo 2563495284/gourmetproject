@@ -20,9 +20,12 @@ public sealed partial class GameBase : Luban.BeanBase
         { if(!_buf["initialGold"].IsNumber) { throw new SerializationException(); }  InitialGold = _buf["initialGold"]; }
         { if(!_buf["initialInterestCap"].IsNumber) { throw new SerializationException(); }  InitialInterestCap = _buf["initialInterestCap"]; }
         { if(!_buf["initialFoodAdjustCount"].IsNumber) { throw new SerializationException(); }  InitialFoodAdjustCount = _buf["initialFoodAdjustCount"]; }
-        { if(!_buf["initialActionRerollCount"].IsNumber) { throw new SerializationException(); }  InitialActionRerollCount = _buf["initialActionRerollCount"]; }
         { if(!_buf["interestThreshold"].IsNumber) { throw new SerializationException(); }  InterestThreshold = _buf["interestThreshold"]; }
         { if(!_buf["interestGoldPer"].IsNumber) { throw new SerializationException(); }  InterestGoldPer = _buf["interestGoldPer"]; }
+        { if(!_buf["initialActionRerollCount"].IsNumber) { throw new SerializationException(); }  InitialActionRerollCount = _buf["initialActionRerollCount"]; }
+        { if(!_buf["shopFoodSaleSlotCount"].IsNumber) { throw new SerializationException(); }  ShopFoodSaleSlotCount = _buf["shopFoodSaleSlotCount"]; }
+        { if(!_buf["shopPassiveItemSaleSlotCount"].IsNumber) { throw new SerializationException(); }  ShopPassiveItemSaleSlotCount = _buf["shopPassiveItemSaleSlotCount"]; }
+        { if(!_buf["shopActiveItemSaleSlotCount"].IsNumber) { throw new SerializationException(); }  ShopActiveItemSaleSlotCount = _buf["shopActiveItemSaleSlotCount"]; }
     }
 
     public static GameBase DeserializeGameBase(JSONNode _buf)
@@ -43,10 +46,6 @@ public sealed partial class GameBase : Luban.BeanBase
     /// </summary>
     public readonly int InitialFoodAdjustCount;
     /// <summary>
-    /// 初始行动刷新次数
-    /// </summary>
-    public readonly int InitialActionRerollCount;
-    /// <summary>
     /// Interest:每满该金币阈值
     /// </summary>
     public readonly int InterestThreshold;
@@ -54,6 +53,22 @@ public sealed partial class GameBase : Luban.BeanBase
     /// Interest:每档获得金币
     /// </summary>
     public readonly int InterestGoldPer;
+    /// <summary>
+    /// 初始行动刷新次数
+    /// </summary>
+    public readonly int InitialActionRerollCount;
+    /// <summary>
+    /// 商店食物出售栏位数量
+    /// </summary>
+    public readonly int ShopFoodSaleSlotCount;
+    /// <summary>
+    /// 商店被动道具出售栏位数量
+    /// </summary>
+    public readonly int ShopPassiveItemSaleSlotCount;
+    /// <summary>
+    /// 商店主动道具出售栏位数量
+    /// </summary>
+    public readonly int ShopActiveItemSaleSlotCount;
    
     public const int __ID__ = -1705057789;
     public override int GetTypeId() => __ID__;
@@ -68,9 +83,12 @@ public sealed partial class GameBase : Luban.BeanBase
         + "initialGold:" + InitialGold + ","
         + "initialInterestCap:" + InitialInterestCap + ","
         + "initialFoodAdjustCount:" + InitialFoodAdjustCount + ","
-        + "initialActionRerollCount:" + InitialActionRerollCount + ","
         + "interestThreshold:" + InterestThreshold + ","
         + "interestGoldPer:" + InterestGoldPer + ","
+        + "initialActionRerollCount:" + InitialActionRerollCount + ","
+        + "shopFoodSaleSlotCount:" + ShopFoodSaleSlotCount + ","
+        + "shopPassiveItemSaleSlotCount:" + ShopPassiveItemSaleSlotCount + ","
+        + "shopActiveItemSaleSlotCount:" + ShopActiveItemSaleSlotCount + ","
         + "}";
     }
 }
