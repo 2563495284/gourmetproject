@@ -458,8 +458,6 @@ namespace GourmetProject.Game.Run
         /// <summary>已购买待拼贴的碎片包候选碎片 id（三选一）；为空表示没有待处理的碎片包。</summary>
         public IReadOnlyList<string> PendingFragmentPack => _pendingFragmentPack;
 
-        public bool HasPendingFragmentPack => _pendingFragmentPack.Count > 0;
-
         /// <summary>餐桌碎片总数（奖励自动附着 + 手动拼贴），供统计/预览展示。</summary>
         public int StomachFragmentCount => _stomachFragmentIds.Count + _fragmentPlacements.Count;
 
@@ -922,7 +920,7 @@ namespace GourmetProject.Game.Run
 
             foreach (ShopEntrySaveData entry in _pendingShopStock)
             {
-                result.Add(new ShopEntry(entry.Kind, entry.Id, entry.Name, entry.Desc, entry.Price));
+                result.Add(new ShopEntry(entry.Kind, entry.Id, entry.Name, entry.Desc, entry.BasePrice, entry.Price));
             }
 
             return result;
@@ -955,6 +953,7 @@ namespace GourmetProject.Game.Run
                     Id = entry.Id,
                     Name = entry.Name,
                     Desc = entry.Desc,
+                    BasePrice = entry.BasePrice,
                     Price = entry.Price,
                 });
             }

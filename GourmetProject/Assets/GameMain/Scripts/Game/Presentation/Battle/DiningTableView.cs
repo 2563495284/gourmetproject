@@ -144,11 +144,15 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void Clear()
         {
-            _cells.Clear();
-            for (int i = transform.childCount - 1; i >= 0; i--)
+            foreach (DiningTableCellView cell in _cells.Values)
             {
-                Destroy(transform.GetChild(i).gameObject);
+                if (cell != null)
+                {
+                    Destroy(cell.gameObject);
+                }
             }
+
+            _cells.Clear();
         }
 
         private static Sprite CreatePixelSprite()

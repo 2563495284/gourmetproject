@@ -41,7 +41,7 @@ namespace GourmetProject.Game.UI.Battle.View
                     true));
             }
 
-            string addCost = showAdd ? $"+ {ShopService.EmptyRecipeBookPrice}" : null;
+            string addCost = showAdd ? $"+ {ShopService.RecipeBookCost(run)}" : null;
             _recipeView.SetBooks(books, showAdd, onAdd, addCost);
         }
 
@@ -54,7 +54,7 @@ namespace GourmetProject.Game.UI.Battle.View
             }
 
             bool showAdd = run.RecipeBookCount < GameRun.MaxRecipeBookCount;
-            bool canBuy = showAdd && run.Gold >= ShopService.EmptyRecipeBookPrice;
+            bool canBuy = showAdd && run.Gold >= ShopService.RecipeBookCost(run);
             BuildPersistent(run, showAdd, canBuy ? onBuy : null);
         }
 

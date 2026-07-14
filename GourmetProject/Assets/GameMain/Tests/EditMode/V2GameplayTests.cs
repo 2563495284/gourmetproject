@@ -777,7 +777,6 @@ namespace GourmetProject.Tests
 
             string resultText = RewardGranter.ApplyFragmentPack(run, choices);
 
-            Assert.IsTrue(run.HasPendingFragmentPack);
             Assert.AreEqual(choices.Count, run.PendingFragmentPack.Count);
             StringAssert.Contains("餐桌碎片包", resultText);
         }
@@ -896,6 +895,7 @@ namespace GourmetProject.Tests
                 Assert.AreEqual(rolled[i].Kind, restoredStock[i].Kind);
                 Assert.AreEqual(rolled[i].Id, restoredStock[i].Id);
                 Assert.AreEqual(rolled[i].Name, restoredStock[i].Name);
+                Assert.AreEqual(rolled[i].BasePrice, restoredStock[i].BasePrice);
                 Assert.AreEqual(rolled[i].Price, restoredStock[i].Price);
             }
         }

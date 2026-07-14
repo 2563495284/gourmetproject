@@ -36,6 +36,7 @@ namespace GourmetProject.Game.UI.Battle
         private RunItemSlotView _pendingSlot;
         private Vector2 _pendingStartScreen;
         private int _targetFrame;
+        private bool _recipePanelTargeting;
 
         public ActiveItemUseCoordinator(BattleForm host)
         {
@@ -58,7 +59,15 @@ namespace GourmetProject.Game.UI.Battle
             if ((Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
                 || (Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame))
             {
-                CancelTargeting();
+                if (_recipePanelTargeting)
+                {
+                    _host.CancelActiveItemRecipeTarget();
+                }
+                else
+                {
+                    CancelTargeting();
+                }
+
                 return;
             }
 
@@ -140,6 +149,12 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
+            if (ShouldUseRecipePanelTargeting(item))
+            {
+                BeginRecipePanelTargeting(ctx, item, slot);
+                return;
+            }
+
             BeginTargeting(ctx, item, slot, targets);
         }
 
@@ -165,6 +180,7 @@ namespace GourmetProject.Game.UI.Battle
 
         private void BeginTargeting(IActiveUseContext ctx, ItemDefinition item, RunItemSlotView slot, IReadOnlyList<ActiveTarget> targets)
         {
+            _recipePanelTargeting = false;
             _pendingContext = ctx;
             _pendingItem = item;
             _pendingSlot = slot;
@@ -180,6 +196,31 @@ namespace GourmetProject.Game.UI.Battle
             {
                 BeginUiTargeting(targets);
             }
+        }
+
+        private void BeginRecipePanelTargeting(IActiveUseContext ctx, ItemDefinition item, RunItemSlotView slot)
+        {
+            _pendingContext = ctx;
+            _pendingItem = item;
+            _pendingSlot = slot;
+            _pendingStartScreen = slot != null ? slot.IconScreenCenter() : Vector2.zero;
+            _selectedTargets.Clear();
+            _recipePanelTargeting = true;
+            _host.OpenActiveItemRecipeTarget(item, () => CancelTargeting(), CompleteRecipePanelTargeting);
+        }
+
+        private void CompleteRecipePanelTargeting(ActiveTarget target)
+        {
+            if (_pendingContext == null || _pendingItem == null)
+            {
+                CancelTargeting(showMessage: false);
+                return;
+            }
+
+            IActiveUseContext ctx = _pendingContext;
+            ItemDefinition item = _pendingItem;
+            CleanupTargeting();
+            ApplyAndConsume(ctx, item, new[] { target });
         }
 
         private void BeginWorldTargeting()
@@ -317,6 +358,7 @@ namespace GourmetProject.Game.UI.Battle
             _pendingItem = null;
             _pendingContext = null;
             _pendingSlot = null;
+            _recipePanelTargeting = false;
             _selectedTargets.Clear();
             _worldArrow?.Destroy();
             _worldArrow = null;
@@ -520,6 +562,13 @@ namespace GourmetProject.Game.UI.Battle
         private static bool IsWorldTargetKind(cfg.ItemTargetKind kind)
         {
             return kind == cfg.ItemTargetKind.DiningTableCell || kind == cfg.ItemTargetKind.DiningTableDish;
+        }
+
+        private static bool ShouldUseRecipePanelTargeting(ItemDefinition item)
+        {
+            return item != null
+                && item.TargetKind == cfg.ItemTargetKind.RecipeDish
+                && item.EffectType == ItemEffectTypes.AddFlavor;
         }
 
         private static bool ContainsTarget(IReadOnlyList<ActiveTarget> targets, ActiveTarget candidate)

@@ -12,7 +12,7 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI.Battle.View
 {
     /// <summary>
-    /// 常驻壳右栏道具组件：被动道具滚动网格（2 列）+ 固定 2 个主动道具槽（同 id 聚合、角标 xN）。
+    /// 常驻壳右栏道具组件：被动道具滚动网格（2 列）+ 固定主动道具槽（每份实例占一格）。
     /// 战斗中满足 targetKind 可用性的主动道具可点击使用，否则点击看信息；hover 显示道具 Tip。
     /// </summary>
     public sealed class BattleItemsColumn : MonoBehaviour
@@ -408,21 +408,20 @@ namespace GourmetProject.Game.UI.Battle.View
             }
 
             int index = -1;
-            var seen = new HashSet<string>();
             cfg.Tables tables = GameApp.Config.Tables;
+            int activeIndex = -1;
             foreach (RunItemState state in run.Items)
             {
                 ItemDefinition item = ItemDefinition.Get(tables, state.ItemId, cfg.ItemKind.Active);
-                if (item == null || !seen.Add(state.ItemId))
+                if (item == null)
                 {
                     continue;
                 }
 
-                int nextIndex = seen.Count - 1;
+                activeIndex++;
                 if (state.ItemId == itemId)
                 {
-                    index = nextIndex;
-                    break;
+                    index = activeIndex;
                 }
             }
 
@@ -537,9 +536,8 @@ namespace GourmetProject.Game.UI.Battle.View
                 return;
             }
 
-            // 主动道具多实例：按 id 聚合成一个槽，份数用角标 xN 展示。
+            // 主动道具每份实例都占用一个全局消耗槽，同 id 也不聚合。
             var activeStates = new List<RunItemState>();
-            var activeCounts = new Dictionary<string, int>();
             foreach (RunItemState state in run.Items)
             {
                 ItemDefinition item = ItemDefinition.Get(tables, state.ItemId, cfg.ItemKind.Active);
@@ -548,15 +546,7 @@ namespace GourmetProject.Game.UI.Battle.View
                     continue;
                 }
 
-                if (activeCounts.TryGetValue(state.ItemId, out int held))
-                {
-                    activeCounts[state.ItemId] = held + 1;
-                }
-                else
-                {
-                    activeCounts[state.ItemId] = 1;
-                    activeStates.Add(state);
-                }
+                activeStates.Add(state);
             }
 
             for (int i = 0; i < _activeItemSlots.Length; i++)
@@ -571,10 +561,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 {
                     RunItemState state = activeStates[i];
                     ItemDefinition item = ItemDefinition.Get(tables, state.ItemId, cfg.ItemKind.Active);
-                    int held = activeCounts[state.ItemId];
-                    string badge = held > 1 ? $"x{held}" : string.Empty;
                     ItemDefinition captured = item;
-                    RunItemState capturedState = state;
 
                     string capturedId = state.ItemId;
                     RunItemSlotView capturedSlot = slot;
@@ -583,7 +570,7 @@ namespace GourmetProject.Game.UI.Battle.View
                     slot.Bind(
                         RunItemSlotView.LoadIcon(item),
                         RunItemSlotView.ShortName(item.Name),
-                        badge,
+                        string.Empty,
                         RunItemSlotView.QualityColor(item.Quality),
                         true,
                         onClick);

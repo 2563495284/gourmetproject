@@ -58,6 +58,35 @@ namespace GourmetProject.Tests
         }
 
         [Test]
+        public void ShopStock_RepricesRemainingEntriesAfterBuyingDiscountItem()
+        {
+            GameRun run = NewRun();
+            run.Gold = 145;
+            var discount = new ShopEntry(ShopEntryKind.PassiveItem, "item_discount_food", "食材优惠券", "购买食物打折20%。", 45);
+            var dish = new ShopEntry(ShopEntryKind.Dish, "cookie", "曲奇", "测试菜品", 100);
+            var stock = new List<ShopEntry> { discount, dish };
+
+            Assert.IsTrue(ShopService.Purchase(run, discount));
+            stock.Remove(discount);
+            ShopService.RefreshStockPrices(run, stock);
+
+            Assert.AreEqual(100, dish.BasePrice);
+            Assert.AreEqual(80, dish.Price);
+            Assert.AreEqual(20, ShopService.RecipeBookCost(run));
+        }
+
+        [Test]
+        public void RecipeBookAndDeleteCosts_UseCurrentDiscounts()
+        {
+            GameRun run = NewRun();
+            run.AcquireItem("item_discount_recipe", 0);
+            run.AcquireItem("item_discount_remove", 0);
+
+            Assert.AreEqual(16, ShopService.RecipeBookCost(run));
+            Assert.AreEqual(12, ShopService.DeleteCost(run));
+        }
+
+        [Test]
         public void ShopStock_UsesGameBaseSlotCounts_AndSingleFragmentPack()
         {
             GameRun run = NewRun();

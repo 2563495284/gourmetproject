@@ -220,6 +220,7 @@ namespace GourmetProject.Game.Run
         public string Id;
         public string Name;
         public string Desc;
+        public int BasePrice;
         public int Price;
     }
 

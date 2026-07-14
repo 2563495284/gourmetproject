@@ -171,7 +171,6 @@ namespace GourmetProject.Game.UI.Meta
             _continueButton.gameObject.SetActive(true);
 
             SetButtonLabel(_continueButton, _genericMode ? "完成" : "继续行动");
-            _continueButton.interactable = _offer == null || (_offer.IsFullyClaimed && !_run.HasPendingFragmentPack);
 
             RebuildRewardRows();
         }
@@ -194,18 +193,14 @@ namespace GourmetProject.Game.UI.Meta
 
         private void OnContinue()
         {
-            if (_offer != null && (!_offer.IsFullyClaimed || _run.HasPendingFragmentPack))
-            {
-                RefreshOffer();
-                return;
-            }
-
             CompleteRewards(closeForm: true);
         }
 
-        /// <summary>结算并推进：清空 pending offer、存档、（可选）关界面并回到行动轴，等效于点「继续」。</summary>
+        /// <summary>结算并推进：清空 pending offer/碎片包、存档、（可选）关界面并回到行动轴，等效于点「继续」。</summary>
         private void CompleteRewards(bool closeForm)
         {
+            _run.ClearPendingFragmentPack();
+
             if (_genericMode)
             {
                 _run.ClearPendingGenericRewardOffer(_genericRewardKey);
@@ -261,10 +256,10 @@ namespace GourmetProject.Game.UI.Meta
             BattleForm.Active?.OnRewardConfirmed();
         }
 
-        /// <summary>领取动作后：若这是最后一个奖励（offer 已全部领取且无待拼碎片），直接等效于点「继续」。</summary>
+        /// <summary>领取动作后：若这是最后一个奖励（offer 已全部领取），直接等效于点「继续」。</summary>
         private bool TryAutoComplete(bool closeForm)
         {
-            if (_offer == null || _run == null || !_offer.IsFullyClaimed || _run.HasPendingFragmentPack)
+            if (_offer == null || _run == null || !_offer.IsFullyClaimed)
             {
                 return false;
             }
