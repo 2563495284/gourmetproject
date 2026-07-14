@@ -231,10 +231,31 @@ namespace GourmetProject.Game.Run
         public bool BaseGoldClaimed;
         public int MainChoiceIndex = -1;
         public int ExtraChoiceIndex = -1;
+        public int BonusChoiceIndex = -1;
         public bool MainChoiceSkipped;
         public bool ExtraChoiceSkipped;
+        public bool BonusChoiceSkipped;
+        public int MainRequiredChoiceCount = 1;
+        public int ExtraRequiredChoiceCount = 1;
+        public int BonusRequiredChoiceCount = 1;
+        public List<int> MainChoiceIndices = new List<int>();
+        public List<int> ExtraChoiceIndices = new List<int>();
+        public List<int> BonusChoiceIndices = new List<int>();
         public List<RewardChoiceSaveData> MainChoices = new List<RewardChoiceSaveData>();
         public List<RewardChoiceSaveData> ExtraChoices = new List<RewardChoiceSaveData>();
+        public List<RewardChoiceSaveData> BonusChoices = new List<RewardChoiceSaveData>();
+        public List<RewardChoiceGroupSaveData> FixedGroups = new List<RewardChoiceGroupSaveData>();
+        public RewardChoiceGroupSaveData SpecificGroup;
+    }
+
+    [Serializable]
+    public sealed class RewardChoiceGroupSaveData
+    {
+        public string Title;
+        public int RequiredChoiceCount = 1;
+        public bool Skipped;
+        public List<int> ClaimedIndices = new List<int>();
+        public List<RewardChoiceSaveData> Choices = new List<RewardChoiceSaveData>();
     }
 
     [Serializable]

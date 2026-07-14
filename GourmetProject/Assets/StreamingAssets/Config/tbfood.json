@@ -128,7 +128,7 @@
     "targetScoreMul": 1,
     "goldCurveId": "gold_boss",
     "rewardKind": 0,
-    "rewardPackageId": "",
+    "rewardPackageId": "reward_food_boss",
     "hiddenScoreBonus": 0
   }
 ]

@@ -1,123 +1,101 @@
 [
   {
-    "id": "slot_main_dish",
-    "groupId": "main_dish",
+    "id": "slot_base_dish",
+    "groupId": "base_dish",
     "kind": 2,
     "choiceCount": 3,
+    "requiredPickCount": 1,
     "weight": 1,
     "poolId": "pool_dish",
-    "hiddenOffset": 0,
-    "goldMultiplierMin": 0,
-    "goldMultiplierMax": 0
+    "normalHiddenOffset": 0,
+    "hardHiddenOffset": 0
   },
   {
-    "id": "slot_main_passive",
-    "groupId": "main_passive",
+    "id": "slot_specific_gold",
+    "groupId": "specific_gold",
+    "kind": 1,
+    "choiceCount": 1,
+    "requiredPickCount": 1,
+    "weight": 1,
+    "poolId": "",
+    "normalHiddenOffset": 0,
+    "hardHiddenOffset": 5
+  },
+  {
+    "id": "slot_specific_dish",
+    "groupId": "specific_dish",
+    "kind": 2,
+    "choiceCount": 3,
+    "requiredPickCount": 1,
+    "weight": 1,
+    "poolId": "pool_dish",
+    "normalHiddenOffset": 0,
+    "hardHiddenOffset": 5
+  },
+  {
+    "id": "slot_specific_passive",
+    "groupId": "specific_passive",
     "kind": 3,
     "choiceCount": 3,
+    "requiredPickCount": 1,
     "weight": 1,
     "poolId": "pool_passive",
-    "hiddenOffset": 0,
-    "goldMultiplierMin": 0,
-    "goldMultiplierMax": 0
+    "normalHiddenOffset": 0,
+    "hardHiddenOffset": 5
   },
   {
-    "id": "slot_main_fragment",
-    "groupId": "main_fragment",
+    "id": "slot_specific_active",
+    "groupId": "specific_active",
+    "kind": 4,
+    "choiceCount": 5,
+    "requiredPickCount": 2,
+    "weight": 1,
+    "poolId": "pool_active",
+    "normalHiddenOffset": 0,
+    "hardHiddenOffset": 5
+  },
+  {
+    "id": "slot_specific_fragment",
+    "groupId": "specific_fragment",
     "kind": 5,
     "choiceCount": 3,
+    "requiredPickCount": 1,
     "weight": 1,
     "poolId": "pool_fragment",
-    "hiddenOffset": 0,
-    "goldMultiplierMin": 0,
-    "goldMultiplierMax": 0
-  },
-  {
-    "id": "slot_main_dish_late",
-    "groupId": "main_dish_or_passive",
-    "kind": 2,
-    "choiceCount": 3,
-    "weight": 55,
-    "poolId": "pool_dish",
-    "hiddenOffset": 0,
-    "goldMultiplierMin": 0,
-    "goldMultiplierMax": 0
-  },
-  {
-    "id": "slot_main_passive_late",
-    "groupId": "main_dish_or_passive",
-    "kind": 3,
-    "choiceCount": 3,
-    "weight": 45,
-    "poolId": "pool_passive",
-    "hiddenOffset": 0,
-    "goldMultiplierMin": 0,
-    "goldMultiplierMax": 0
+    "normalHiddenOffset": 0,
+    "hardHiddenOffset": 5
   },
   {
     "id": "slot_boss_passive",
-    "groupId": "main_boss",
+    "groupId": "boss_passive",
     "kind": 3,
     "choiceCount": 3,
-    "weight": 60,
+    "requiredPickCount": 1,
+    "weight": 1,
     "poolId": "pool_passive_boss",
-    "hiddenOffset": 5,
-    "goldMultiplierMin": 0,
-    "goldMultiplierMax": 0
+    "normalHiddenOffset": 10,
+    "hardHiddenOffset": 0
   },
   {
-    "id": "slot_boss_active",
-    "groupId": "main_boss",
-    "kind": 4,
-    "choiceCount": 1,
-    "weight": 40,
-    "poolId": "pool_active",
-    "hiddenOffset": 0,
-    "goldMultiplierMin": 0,
-    "goldMultiplierMax": 0
+    "id": "slot_boss_fragment",
+    "groupId": "boss_fragment",
+    "kind": 5,
+    "choiceCount": 3,
+    "requiredPickCount": 1,
+    "weight": 1,
+    "poolId": "pool_fragment",
+    "normalHiddenOffset": 10,
+    "hardHiddenOffset": 0
   },
   {
-    "id": "slot_extra_active",
-    "groupId": "extra_mixed",
-    "kind": 4,
-    "choiceCount": 1,
-    "weight": 45,
-    "poolId": "pool_active",
-    "hiddenOffset": 0,
-    "goldMultiplierMin": 0,
-    "goldMultiplierMax": 0
-  },
-  {
-    "id": "slot_extra_gold",
-    "groupId": "extra_mixed",
+    "id": "slot_boss_gold",
+    "groupId": "boss_gold",
     "kind": 1,
     "choiceCount": 1,
-    "weight": 55,
-    "poolId": "",
-    "hiddenOffset": 0,
-    "goldMultiplierMin": 1.6,
-    "goldMultiplierMax": 2.4
-  },
-  {
-    "id": "slot_main_gold",
-    "groupId": "main_gold",
-    "kind": 1,
-    "choiceCount": 1,
+    "requiredPickCount": 1,
     "weight": 1,
     "poolId": "",
-    "hiddenOffset": 0,
-    "goldMultiplierMin": 1.6,
-    "goldMultiplierMax": 2.4
-  },
-  {
-    "id": "slot_main_active",
-    "groupId": "main_active",
-    "kind": 4,
-    "choiceCount": 1,
-    "weight": 1,
-    "poolId": "pool_active",
-    "hiddenOffset": 0,
-    "goldMultiplierMin": 0,
-    "goldMultiplierMax": 0
+    "normalHiddenOffset": 10,
+    "hardHiddenOffset": 0
   }
 ]

@@ -67,7 +67,7 @@ public sealed partial class Food : Luban.BeanBase
     /// </summary>
     public readonly RewardKind RewardKind;
     /// <summary>
-    /// 奖励包ID(空=用当前周奖励包)
+    /// 奖励包ID
     /// </summary>
     public readonly string RewardPackageId;
     /// <summary>

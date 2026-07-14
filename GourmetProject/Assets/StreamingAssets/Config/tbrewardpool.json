@@ -3,7 +3,6 @@
     "id": "pool_dish",
     "kind": 0,
     "specialTags": "",
-    "qualityWeights": "",
     "allowFallback": true,
     "distanceFloor": 5
   },
@@ -11,7 +10,6 @@
     "id": "pool_fragment",
     "kind": 3,
     "specialTags": "",
-    "qualityWeights": "",
     "allowFallback": true,
     "distanceFloor": 5
   },
@@ -19,7 +17,6 @@
     "id": "pool_passive",
     "kind": 1,
     "specialTags": "",
-    "qualityWeights": "Common:65|Uncommon:30|Rare:5",
     "allowFallback": true,
     "distanceFloor": 5
   },
@@ -27,7 +24,6 @@
     "id": "pool_passive_boss",
     "kind": 1,
     "specialTags": "BossReward|ScoreBuild",
-    "qualityWeights": "Common:35|Uncommon:40|Rare:20|Epic:5",
     "allowFallback": true,
     "distanceFloor": 5
   },
@@ -35,7 +31,6 @@
     "id": "pool_active",
     "kind": 2,
     "specialTags": "",
-    "qualityWeights": "Common:80|Uncommon:20",
     "allowFallback": true,
     "distanceFloor": 0
   }

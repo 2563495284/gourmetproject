@@ -256,31 +256,46 @@ namespace GourmetProject.Tests
             GameRun run = NewRun(week: 1);
             cfg.GameAction normal = run.Tables.TbAction.Get("act_food_dish");
             cfg.GameAction hard = run.Tables.TbAction.Get("act_food_hard_passive");
-            cfg.Food normalFood = FoodService.Resolve(run.Tables, normal);
-            cfg.Food hardFood = FoodService.Resolve(run.Tables, hard);
-            GoldRange normalRange = HiddenScoreService.GoldRewardRange(run, new ActionExecutionContext(normal), run.Tables.TbRewardPackage.Get(normalFood.RewardPackageId));
-            GoldRange hardRange = HiddenScoreService.GoldRewardRange(run, new ActionExecutionContext(hard), run.Tables.TbRewardPackage.Get(hardFood.RewardPackageId));
+            GoldRange normalRange = HiddenScoreService.GoldRewardRange(run, new ActionExecutionContext(normal));
+            GoldRange hardRange = HiddenScoreService.GoldRewardRange(run, new ActionExecutionContext(hard));
 
             Assert.Greater(hardRange.Min, normalRange.Min);
             Assert.Greater(hardRange.Max, hardRange.Min);
         }
 
         [Test]
-        public void GoldRewardSlot_UsesBaseGoldMultiplier()
+        public void GoldRewardSlot_UsesGoldHiddenScoreRange()
         {
             GameRun run = NewRun(week: 1);
-            cfg.RewardSlot slot = run.Tables.TbRewardSlot.Get("slot_main_gold");
+            cfg.RewardSlot slot = run.Tables.TbRewardSlot.Get("slot_specific_gold");
             cfg.RewardPackage package = run.Tables.TbRewardPackage.Get("reward_food_gold");
-            var rng = new GoldMultiplierRandomStream(2.4f);
+            var rng = new MaxWeightRandomStream();
             var context = new RewardContext(run.Tables, run, run.CurrentWeek, package, rng, baseGold: 25);
+            GoldRange range = HiddenScoreService.GoldRewardRange(run, null, slot.NormalHiddenOffset);
 
             List<RewardChoice> choices = RewardPoolService.RollChoices(context, slot);
 
-            Assert.AreEqual(1.6f, slot.GoldMultiplierMin);
-            Assert.AreEqual(2.4f, slot.GoldMultiplierMax);
             Assert.AreEqual(1, choices.Count);
             Assert.AreEqual(cfg.RewardKind.Gold, choices[0].Kind);
-            Assert.AreEqual(60, choices[0].GoldAmount);
+            Assert.AreEqual(range.Min, choices[0].GoldAmount);
+        }
+
+        [Test]
+        public void RewardOffer_FoodActiveIncludesBaseDishAndFivePickTwoSpecificReward()
+        {
+            GameRun run = NewRun(week: 1);
+            cfg.GameAction action = run.Tables.TbAction.Get("act_food_active");
+            var rng = new RandomService();
+            rng.Init(123UL);
+
+            RewardOffer offer = RewardGranter.GenerateOffer(run, run.CurrentWeek, rng.Stream("reward_active"), new ActionExecutionContext(action));
+
+            Assert.AreEqual(3, offer.MainChoices.Count);
+            Assert.AreEqual(cfg.RewardKind.DishChoice, offer.MainChoices[0].Kind);
+            Assert.AreEqual(1, offer.MainRequiredChoiceCount);
+            Assert.AreEqual(5, offer.ExtraChoices.Count);
+            Assert.AreEqual(cfg.RewardKind.ActiveItemGrant, offer.ExtraChoices[0].Kind);
+            Assert.AreEqual(2, offer.ExtraRequiredChoiceCount);
         }
 
         [Test]
@@ -1018,38 +1033,6 @@ namespace GourmetProject.Tests
 
                 return bestIndex;
             }
-        }
-
-        private sealed class GoldMultiplierRandomStream : IRandomStream
-        {
-            private readonly float _multiplier;
-
-            public GoldMultiplierRandomStream(float multiplier)
-            {
-                _multiplier = multiplier;
-            }
-
-            public RngState State { get; set; }
-
-            public uint NextUInt() => throw new NotSupportedException();
-
-            public ulong NextULong() => throw new NotSupportedException();
-
-            public int Range(int minInclusive, int maxExclusive) => minInclusive;
-
-            public float Range(float minInclusive, float maxExclusive) => _multiplier;
-
-            public float NextFloat() => throw new NotSupportedException();
-
-            public double NextDouble() => throw new NotSupportedException();
-
-            public bool NextBool(double probability = 0.5) => false;
-
-            public void Shuffle<T>(IList<T> list) => throw new NotSupportedException();
-
-            public T Pick<T>(IReadOnlyList<T> list) => throw new NotSupportedException();
-
-            public int WeightedPickIndex(IReadOnlyList<float> weights) => 0;
         }
     }
 }

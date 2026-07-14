@@ -6,7 +6,8 @@
     "minPerWeek": 4,
     "maxPerWeek": 6,
     "minPerDay": 0.5,
-    "maxPerDay": 1
+    "maxPerDay": 1,
+    "fluctuationPct": 0.2
   },
   {
     "id": "gold_hard",
@@ -15,7 +16,8 @@
     "minPerWeek": 5,
     "maxPerWeek": 8,
     "minPerDay": 0.5,
-    "maxPerDay": 1
+    "maxPerDay": 1,
+    "fluctuationPct": 0.2
   },
   {
     "id": "gold_boss",
@@ -24,7 +26,8 @@
     "minPerWeek": 8,
     "maxPerWeek": 12,
     "minPerDay": 1,
-    "maxPerDay": 2
+    "maxPerDay": 2,
+    "fluctuationPct": 0.2
   },
   {
     "id": "gold_fragment_convert",
@@ -33,6 +36,7 @@
     "minPerWeek": 5,
     "maxPerWeek": 7,
     "minPerDay": 0.5,
-    "maxPerDay": 1
+    "maxPerDay": 1,
+    "fluctuationPct": 0.2
   }
 ]

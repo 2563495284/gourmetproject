@@ -1,146 +1,81 @@
 [
   {
-    "id": "reward_w1",
-    "goldMin": 45,
-    "goldMax": 60,
-    "mainSlotGroupId": "main_dish",
-    "extraSlotGroupId": "extra_mixed",
-    "extraChance": 0.15
-  },
-  {
-    "id": "reward_w2",
-    "goldMin": 55,
-    "goldMax": 75,
-    "mainSlotGroupId": "main_passive",
-    "extraSlotGroupId": "extra_mixed",
-    "extraChance": 0.2
-  },
-  {
-    "id": "reward_w3",
-    "goldMin": 65,
-    "goldMax": 85,
-    "mainSlotGroupId": "main_dish",
-    "extraSlotGroupId": "extra_mixed",
-    "extraChance": 0.25
-  },
-  {
-    "id": "reward_w4_boss",
-    "goldMin": 90,
-    "goldMax": 125,
-    "mainSlotGroupId": "main_boss",
-    "extraSlotGroupId": "extra_mixed",
-    "extraChance": 0.5
-  },
-  {
-    "id": "reward_w5",
-    "goldMin": 85,
-    "goldMax": 115,
-    "mainSlotGroupId": "main_fragment",
-    "extraSlotGroupId": "extra_mixed",
-    "extraChance": 0.3
-  },
-  {
-    "id": "reward_w6",
-    "goldMin": 95,
-    "goldMax": 130,
-    "mainSlotGroupId": "main_passive",
-    "extraSlotGroupId": "extra_mixed",
-    "extraChance": 0.35
-  },
-  {
-    "id": "reward_w7",
-    "goldMin": 110,
-    "goldMax": 145,
-    "mainSlotGroupId": "main_dish_or_passive",
-    "extraSlotGroupId": "extra_mixed",
-    "extraChance": 0.4
-  },
-  {
-    "id": "reward_w8_boss",
-    "goldMin": 140,
-    "goldMax": 185,
-    "mainSlotGroupId": "main_boss",
-    "extraSlotGroupId": "extra_mixed",
-    "extraChance": 0.6
-  },
-  {
     "id": "reward_food_gold",
-    "goldMin": 22,
-    "goldMax": 36,
-    "mainSlotGroupId": "main_gold",
-    "extraSlotGroupId": "extra_mixed",
-    "extraChance": 0.1
+    "baseDishSlotGroupId": [
+      "base_dish"
+    ],
+    "specificSlotGroupId": "specific_gold"
   },
   {
     "id": "reward_food_dish",
-    "goldMin": 28,
-    "goldMax": 44,
-    "mainSlotGroupId": "main_dish",
-    "extraSlotGroupId": "extra_mixed",
-    "extraChance": 0.15
+    "baseDishSlotGroupId": [
+      "base_dish"
+    ],
+    "specificSlotGroupId": "specific_dish"
   },
   {
     "id": "reward_food_passive",
-    "goldMin": 30,
-    "goldMax": 48,
-    "mainSlotGroupId": "main_passive",
-    "extraSlotGroupId": "extra_mixed",
-    "extraChance": 0.18
+    "baseDishSlotGroupId": [
+      "base_dish"
+    ],
+    "specificSlotGroupId": "specific_passive"
   },
   {
     "id": "reward_food_active",
-    "goldMin": 24,
-    "goldMax": 40,
-    "mainSlotGroupId": "main_active",
-    "extraSlotGroupId": "extra_mixed",
-    "extraChance": 0.15
+    "baseDishSlotGroupId": [
+      "base_dish"
+    ],
+    "specificSlotGroupId": "specific_active"
   },
   {
     "id": "reward_food_fragment",
-    "goldMin": 32,
-    "goldMax": 52,
-    "mainSlotGroupId": "main_fragment",
-    "extraSlotGroupId": "extra_mixed",
-    "extraChance": 0.18
+    "baseDishSlotGroupId": [
+      "base_dish"
+    ],
+    "specificSlotGroupId": "specific_fragment"
   },
   {
     "id": "reward_food_hard_gold",
-    "goldMin": 40,
-    "goldMax": 66,
-    "mainSlotGroupId": "main_gold",
-    "extraSlotGroupId": "extra_mixed",
-    "extraChance": 0.25
+    "baseDishSlotGroupId": [
+      "base_dish"
+    ],
+    "specificSlotGroupId": "specific_gold"
   },
   {
     "id": "reward_food_hard_dish",
-    "goldMin": 46,
-    "goldMax": 72,
-    "mainSlotGroupId": "main_dish",
-    "extraSlotGroupId": "extra_mixed",
-    "extraChance": 0.28
+    "baseDishSlotGroupId": [
+      "base_dish"
+    ],
+    "specificSlotGroupId": "specific_dish"
   },
   {
     "id": "reward_food_hard_passive",
-    "goldMin": 50,
-    "goldMax": 78,
-    "mainSlotGroupId": "main_passive",
-    "extraSlotGroupId": "extra_mixed",
-    "extraChance": 0.3
+    "baseDishSlotGroupId": [
+      "base_dish"
+    ],
+    "specificSlotGroupId": "specific_passive"
   },
   {
     "id": "reward_food_hard_active",
-    "goldMin": 42,
-    "goldMax": 68,
-    "mainSlotGroupId": "main_active",
-    "extraSlotGroupId": "extra_mixed",
-    "extraChance": 0.25
+    "baseDishSlotGroupId": [
+      "base_dish"
+    ],
+    "specificSlotGroupId": "specific_active"
   },
   {
     "id": "reward_food_hard_fragment",
-    "goldMin": 52,
-    "goldMax": 82,
-    "mainSlotGroupId": "main_fragment",
-    "extraSlotGroupId": "extra_mixed",
-    "extraChance": 0.3
+    "baseDishSlotGroupId": [
+      "base_dish"
+    ],
+    "specificSlotGroupId": "specific_fragment"
+  },
+  {
+    "id": "reward_food_boss",
+    "baseDishSlotGroupId": [
+      "boss_dish",
+      "boss_passive",
+      "boss_fragment"
+    ],
+    "specificSlotGroupId": ""
   }
 ]
