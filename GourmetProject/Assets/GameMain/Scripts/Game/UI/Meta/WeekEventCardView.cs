@@ -49,6 +49,7 @@ namespace GourmetProject.Game.UI.Meta
         [Header("Effects - References")]
         [SerializeField] private Image _glowBorder;
         [SerializeField] private RectTransform _particleContainer;
+        [SerializeField] private Image _particleTemplate;
 
         [Header("Effects - Timing")]
         [SerializeField] private float _showDuration = 0.22f;
@@ -608,9 +609,16 @@ namespace GourmetProject.Game.UI.Meta
 
         private void SpawnParticle(Sprite dot, Vector2 start, Vector2 dir)
         {
-            var go = new GameObject("Particle", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            var rt = (RectTransform)go.transform;
-            rt.SetParent(_particleContainer, false);
+            if (_particleTemplate == null)
+            {
+                Debug.LogError($"{nameof(WeekEventCardView)} prefab 缺少 Particle template。", this);
+                return;
+            }
+
+            Image img = Instantiate(_particleTemplate, _particleContainer);
+            img.gameObject.name = "Particle";
+            img.gameObject.SetActive(true);
+            var rt = (RectTransform)img.transform;
             rt.anchorMin = new Vector2(0.5f, 0.5f);
             rt.anchorMax = new Vector2(0.5f, 0.5f);
             rt.pivot = new Vector2(0.5f, 0.5f);
@@ -618,7 +626,6 @@ namespace GourmetProject.Game.UI.Meta
             rt.anchoredPosition = start;
             rt.localScale = Vector3.one;
 
-            var img = go.GetComponent<Image>();
             img.sprite = dot;
             img.raycastTarget = false;
             img.color = _particleColor;
@@ -686,31 +693,17 @@ namespace GourmetProject.Game.UI.Meta
         {
             if (_glowBorder == null)
             {
-                var go = new GameObject("GlowBorder", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-                var rt = (RectTransform)go.transform;
-                rt.SetParent(transform, false);
-                StretchFull(rt);
-                // 向外扩出 padding，让光晕能画到卡牌矩形之外；放到最底层，只在 Art 外圈显形。
-                rt.offsetMin = new Vector2(-GlowPadding, -GlowPadding);
-                rt.offsetMax = new Vector2(GlowPadding, GlowPadding);
-                rt.SetAsFirstSibling();
-                var img = go.GetComponent<Image>();
-                img.material = Resources.Load<Material>("Materials/UIOuterGlow");
-                img.raycastTarget = false;
-                Color c = _hoverColor;
-                c.a = 0f;
-                img.color = c;
-                _glowBorder = img;
+                Debug.LogError($"{nameof(WeekEventCardView)} prefab 缺少 GlowBorder。", this);
             }
 
             if (_particleContainer == null)
             {
-                var go = new GameObject("Particles", typeof(RectTransform));
-                var rt = (RectTransform)go.transform;
-                rt.SetParent(transform, false);
-                StretchFull(rt);
-                rt.SetAsLastSibling();
-                _particleContainer = rt;
+                Debug.LogError($"{nameof(WeekEventCardView)} prefab 缺少 Particles 容器。", this);
+            }
+
+            if (_particleTemplate != null)
+            {
+                _particleTemplate.gameObject.SetActive(false);
             }
 
             EnsureGlowMaterial();

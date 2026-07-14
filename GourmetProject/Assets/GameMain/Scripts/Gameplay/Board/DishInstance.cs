@@ -85,6 +85,41 @@ namespace GourmetProject.Gameplay.Board
             }
         }
 
+        public bool RemoveFlavor(string flavorId)
+        {
+            if (_flavorIds.Count == 0)
+            {
+                return false;
+            }
+
+            if (string.IsNullOrEmpty(flavorId))
+            {
+                _flavorIds.RemoveAt(_flavorIds.Count - 1);
+                return true;
+            }
+
+            return _flavorIds.Remove(flavorId);
+        }
+
+        public bool ReplaceFlavor(string toFlavorId)
+        {
+            if (string.IsNullOrEmpty(toFlavorId))
+            {
+                return false;
+            }
+
+            if (_flavorIds.Count == 0)
+            {
+                _flavorIds.Add(toFlavorId);
+            }
+            else
+            {
+                _flavorIds[_flavorIds.Count - 1] = toFlavorId;
+            }
+
+            return true;
+        }
+
         /// <summary>运行时「视为食物数」加成（AddCountAs 副作用累加，跨结算持久）。</summary>
         public int RuntimeCountAsBonus { get; private set; }
 

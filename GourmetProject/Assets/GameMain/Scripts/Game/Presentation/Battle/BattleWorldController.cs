@@ -52,6 +52,7 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private WorldItemSlotView _itemSlotPrefab;
         [SerializeField] private MenuBookWorldView _menuBookPrefab;
         [SerializeField] private ServeHandView _serveHandPrefab;
+        [SerializeField] private WorldTargetArrow _worldTargetArrowPrefab;
         [Tooltip("食物调整态的世界按钮（X/勾/撤销）prefab，复用 Prefabs/Battle/WorldButton。")]
         [SerializeField] private WorldButtonView _worldButtonPrefab;
 
@@ -217,6 +218,153 @@ namespace GourmetProject.Game.Presentation.Battle
         internal DishPieceView GetPieceView(int id)
         {
             return _dishViewsById.TryGetValue(id, out DishPieceView view) ? view : null;
+        }
+
+        internal Transform ActiveTargetRoot => _piecesRoot != null ? _piecesRoot : transform;
+
+        internal Camera ActiveTargetCamera => _camera;
+
+        internal float ActiveTargetCellSize => _cellSize;
+
+        internal WorldTargetArrow ActiveTargetArrowPrefab => _worldTargetArrowPrefab;
+
+        internal Vector3 ScreenToWorld(Vector2 screenPoint)
+        {
+            Camera cam = _camera != null ? _camera : Camera.main;
+            if (cam == null)
+            {
+                return Vector3.zero;
+            }
+
+            var p = new Vector3(screenPoint.x, screenPoint.y, -cam.transform.position.z);
+            Vector3 world = cam.ScreenToWorldPoint(p);
+            world.z = 0f;
+            return world;
+        }
+
+        internal bool TryPointerCellTarget(out ActiveTarget target)
+        {
+            target = default;
+            if (_session?.DiningTable == null || _boardView?.Mapper == null || _camera == null || WorldInput.PointerOverUi)
+            {
+                return false;
+            }
+
+            GridPos cell = _boardView.Mapper.NearestCell(WorldInput.MouseWorld(_camera));
+            if (!_session.DiningTable.Exists(cell))
+            {
+                return false;
+            }
+
+            target = new ActiveTarget(string.Empty, cell.X, cell.Y, cfg.ItemTargetKind.DiningTableCell);
+            return true;
+        }
+
+        internal bool TryPointerDishTarget(out ActiveTarget target)
+        {
+            target = default;
+            if (_session?.DiningTable == null || _boardView?.Mapper == null || _camera == null || WorldInput.PointerOverUi)
+            {
+                return false;
+            }
+
+            GridPos cell = _boardView.Mapper.NearestCell(WorldInput.MouseWorld(_camera));
+            if (!_session.DiningTable.InBounds(cell))
+            {
+                return false;
+            }
+
+            DishInstance dish = _session.DiningTable.DishAt(cell);
+            if (dish == null)
+            {
+                return false;
+            }
+
+            GridPos origin = dish.Placement.Origin;
+            target = new ActiveTarget(dish.Id.ToString(), origin.X, origin.Y, cfg.ItemTargetKind.DiningTableDish);
+            return true;
+        }
+
+        internal void BeginActiveItemWorldTargeting()
+        {
+            SetPlacedPiecesClickEnabled(false);
+        }
+
+        internal void EndActiveItemWorldTargeting()
+        {
+            ClearActiveItemTargetHighlights();
+            SetPlacedPiecesClickEnabled(true);
+        }
+
+        internal void SetActiveItemTargetHighlights(cfg.ItemTargetKind kind, IReadOnlyList<ActiveTarget> selected, ActiveTarget? hovered)
+        {
+            if (kind == cfg.ItemTargetKind.DiningTableCell)
+            {
+                _boardView?.ClearTargetHighlights();
+                if (_session?.DiningTable != null)
+                {
+                    foreach (GridPos cell in _session.DiningTable.ExistingCells())
+                    {
+                        var candidate = new ActiveTarget(string.Empty, cell.X, cell.Y, cfg.ItemTargetKind.DiningTableCell);
+                        _boardView?.SetTargetHighlight(cell, ContainsTarget(selected, candidate), TargetEquals(hovered, candidate));
+                    }
+                }
+
+                return;
+            }
+
+            if (kind == cfg.ItemTargetKind.DiningTableDish)
+            {
+                foreach (DishPieceView piece in _placedPieces)
+                {
+                    if (piece?.Instance == null)
+                    {
+                        continue;
+                    }
+
+                    GridPos origin = piece.Instance.Placement.Origin;
+                    var candidate = new ActiveTarget(piece.Instance.Id.ToString(), origin.X, origin.Y, cfg.ItemTargetKind.DiningTableDish);
+                    bool active = ContainsTarget(selected, candidate) || TargetEquals(hovered, candidate);
+                    piece.SetPlacementGlow(active, true);
+                }
+            }
+        }
+
+        internal void ClearActiveItemTargetHighlights()
+        {
+            _boardView?.ClearTargetHighlights();
+            foreach (DishPieceView piece in _placedPieces)
+            {
+                piece?.SetPlacementGlow(false, false);
+            }
+        }
+
+        private static bool ContainsTarget(IReadOnlyList<ActiveTarget> targets, ActiveTarget candidate)
+        {
+            if (targets == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < targets.Count; i++)
+            {
+                if (TargetEquals(targets[i], candidate))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TargetEquals(ActiveTarget? a, ActiveTarget b)
+        {
+            return a.HasValue && TargetEquals(a.Value, b);
+        }
+
+        private static bool TargetEquals(ActiveTarget a, ActiveTarget b)
+        {
+            return a.TargetKind == b.TargetKind && a.Id == b.Id && a.X == b.X && a.Y == b.Y;
         }
 
         /// <summary>食物调整删除/撤销后重建餐桌菜品表现，并保持调整态下的点击屏蔽。</summary>
@@ -577,9 +725,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 return child;
             }
 
-            var go = new GameObject(childName);
-            go.transform.SetParent(transform, false);
-            return go.transform;
+            Debug.LogError($"{nameof(BattleWorldController)} 缺少预置子节点 {childName}。", this);
+            return null;
         }
 
         private Transform EnsurePiecesRoot()
@@ -714,9 +861,8 @@ namespace GourmetProject.Game.Presentation.Battle
             }
             else
             {
-                var go = new GameObject("Dish");
-                go.transform.SetParent(_piecesRoot, false);
-                piece = go.AddComponent<DishPieceView>();
+                Debug.LogError($"{nameof(BattleWorldController)} 缺少 DishPiece prefab。", this);
+                return null;
             }
 
             piece.gameObject.name = $"Dish_{dish.Id}_{dish.Def.Id}";

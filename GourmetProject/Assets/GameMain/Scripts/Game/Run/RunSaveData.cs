@@ -171,6 +171,10 @@ namespace GourmetProject.Game.Run
     public sealed class RunRecipeDishFlavorSaveData
     {
         public List<string> FlavorIds = new List<string>();
+
+        public List<string> ExtraSkillIds = new List<string>();
+
+        public float ScoreMultiplier = 1f;
     }
 
     [Serializable]

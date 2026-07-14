@@ -8,6 +8,7 @@
     "initialActionRerollCount": 0,
     "shopFoodSaleSlotCount": 3,
     "shopPassiveItemSaleSlotCount": 2,
-    "shopActiveItemSaleSlotCount": 2
+    "shopActiveItemSaleSlotCount": 2,
+    "foodFlavorLimit": 1
   }
 ]

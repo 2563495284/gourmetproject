@@ -6,7 +6,7 @@ namespace GourmetProject.Game.Presentation.Battle
 {
     /// <summary>
     /// 结算总分旁的火焰表现：随结算加速从小火苗涨成更快、更旺的火。
-    /// 固定结构优先在场景或 prefab 里预拼，缺粒子时运行时补齐兜底。
+    /// 固定结构在场景或 prefab 里预拼，缺粒子时报错。
     /// </summary>
     public sealed class SettlementScoreFireView : MonoBehaviour
     {
@@ -51,6 +51,11 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             CaptureBaseTransform();
             EnsureRefs();
+            if (_particles == null)
+            {
+                return;
+            }
+
             gameObject.SetActive(true);
             _visible = true;
             SetIntensity(0f, 1f);
@@ -74,6 +79,11 @@ namespace GourmetProject.Game.Presentation.Battle
         public void SetIntensity(float normalized, float speed)
         {
             EnsureRefs();
+            if (_particles == null)
+            {
+                return;
+            }
+
             _intensity = Mathf.Clamp01(normalized);
             _speed = Mathf.Max(0.0001f, speed);
 
@@ -118,9 +128,8 @@ namespace GourmetProject.Game.Presentation.Battle
 
             if (_particles == null)
             {
-                var go = new GameObject("FireParticles");
-                go.transform.SetParent(transform, false);
-                _particles = go.AddComponent<ParticleSystem>();
+                Debug.LogError($"{nameof(SettlementScoreFireView)} 缺少 FireParticles 粒子系统。", this);
+                return;
             }
 
             if (_configuredParticles != _particles)

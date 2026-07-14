@@ -1,6 +1,9 @@
 using System;
+using DG.Tweening;
 using GourmetProject.Game;
 using GourmetProject.Game.Meta;
+using GourmetProject.Game.Meta.Passives;
+using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Tooltips;
 using UnityEngine;
 using UnityEngine.UI;
@@ -13,20 +16,67 @@ namespace GourmetProject.Game.UI.Hud
     /// </summary>
     public sealed class RunItemSlotView : MonoBehaviour
     {
+        private static readonly int PulseId = Shader.PropertyToID("_Pulse");
+        private static readonly int IsUsedId = Shader.PropertyToID("_IsUsed");
+        private static readonly int IsWaxId = Shader.PropertyToID("_IsWax");
+        private const string PassiveIconShaderName = "GourmetProject/PassiveItemIcon";
+        private const float PassivePulseDuration = 0.55f;
+
         [SerializeField] private Image _background;
         [SerializeField] private Image _icon;
         [SerializeField] private Button _button;
         [SerializeField] private TipHoverTrigger _tipTrigger;
+
+        private Material _iconEffectMaterial;
+        private Tween _pulseTween;
+        private PassiveItemModel _boundPassiveModel;
 
         private void Awake()
         {
             EnsureRefs();
         }
 
+        public RectTransform RectTransform => transform as RectTransform;
+
+        public Vector2 IconScreenCenter()
+        {
+            RectTransform rect = _icon != null ? _icon.rectTransform : RectTransform;
+            if (rect == null)
+            {
+                return Vector2.zero;
+            }
+
+            Canvas canvas = GetComponentInParent<Canvas>();
+            Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
+            return RectTransformUtility.WorldToScreenPoint(cam, rect.TransformPoint(rect.rect.center));
+        }
+
+        public bool ContainsScreenPoint(Vector2 screenPoint)
+        {
+            RectTransform rect = RectTransform;
+            if (rect == null)
+            {
+                return false;
+            }
+
+            Canvas canvas = GetComponentInParent<Canvas>();
+            Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
+            return RectTransformUtility.RectangleContainsScreenPoint(rect, screenPoint, cam);
+        }
+
         /// <summary>绑定一个有内容的道具槽。</summary>
-        public void Bind(Sprite icon, string name, string badge, Color qualityColor, bool interactable, Action onClick)
+        public void Bind(
+            Sprite icon,
+            string name,
+            string badge,
+            Color qualityColor,
+            bool interactable,
+            Action onClick,
+            RunItemState state = null,
+            bool usePassiveShader = false)
         {
             EnsureRefs();
+            BindPassiveModel(usePassiveShader ? state?.Model : null);
 
             // if (_background != null)
             // {
@@ -37,6 +87,7 @@ namespace GourmetProject.Game.UI.Hud
             {
                 _icon.enabled = icon != null;
                 _icon.sprite = icon;
+                ConfigureIconMaterial(usePassiveShader && icon != null, state?.Model);
             }
 
             if (_button != null)
@@ -82,6 +133,51 @@ namespace GourmetProject.Game.UI.Hud
             }
         }
 
+        public void HideTip()
+        {
+            _tipTrigger?.OnPointerExit(null);
+        }
+
+        public void PlayPassivePulse()
+        {
+            EnsureRefs();
+            if (_icon == null || !_icon.enabled)
+            {
+                return;
+            }
+
+            Material material = EnsureIconEffectMaterial();
+            if (material == null)
+            {
+                return;
+            }
+
+            _icon.material = material;
+            RefreshPassiveIconState();
+            _pulseTween?.Kill(false);
+            material.SetFloat(PulseId, 1f);
+            _pulseTween = DOVirtual.DelayedCall(PassivePulseDuration, () =>
+            {
+                if (material != null)
+                {
+                    material.SetFloat(PulseId, 0f);
+                }
+            }, true).SetUpdate(true).SetTarget(this);
+        }
+
+        private void OnDestroy()
+        {
+            BindPassiveModel(null);
+            _pulseTween?.Kill(false);
+            _pulseTween = null;
+
+            if (_iconEffectMaterial != null)
+            {
+                Destroy(_iconEffectMaterial);
+                _iconEffectMaterial = null;
+            }
+        }
+
         private static Color EmptySlotColor => new Color(0.92f, 0.90f, 0.84f, 1f);
 
         private void EnsureRefs()
@@ -110,6 +206,101 @@ namespace GourmetProject.Game.UI.Hud
                     _tipTrigger = gameObject.AddComponent<TipHoverTrigger>();
                 }
             }
+        }
+
+        private void ConfigureIconMaterial(bool usePassiveShader, PassiveItemModel model)
+        {
+            if (_icon == null)
+            {
+                return;
+            }
+
+            if (!usePassiveShader)
+            {
+                _pulseTween?.Kill(false);
+                _icon.material = null;
+                if (_iconEffectMaterial != null)
+                {
+                    _iconEffectMaterial.SetFloat(PulseId, 0f);
+                }
+
+                return;
+            }
+
+            Material material = EnsureIconEffectMaterial();
+            if (material == null)
+            {
+                _icon.material = null;
+                return;
+            }
+
+            material.SetFloat(PulseId, 0f);
+            material.SetFloat(IsUsedId, model != null && model.IsIconUsed ? 1f : 0f);
+            material.SetFloat(IsWaxId, model != null && model.IsIconWax ? 1f : 0f);
+            _icon.material = material;
+        }
+
+        private Material EnsureIconEffectMaterial()
+        {
+            if (_iconEffectMaterial != null)
+            {
+                return _iconEffectMaterial;
+            }
+
+            Shader shader = Shader.Find(PassiveIconShaderName);
+            if (shader == null)
+            {
+                return null;
+            }
+
+            _iconEffectMaterial = new Material(shader)
+            {
+                name = $"{name}_PassiveItemIcon",
+                hideFlags = HideFlags.DontSave,
+            };
+            return _iconEffectMaterial;
+        }
+
+        private void BindPassiveModel(PassiveItemModel model)
+        {
+            if (_boundPassiveModel == model)
+            {
+                return;
+            }
+
+            if (_boundPassiveModel != null)
+            {
+                _boundPassiveModel.Flashed -= OnPassiveModelFlashed;
+                _boundPassiveModel.IconStateChanged -= OnPassiveIconStateChanged;
+            }
+
+            _boundPassiveModel = model;
+            if (_boundPassiveModel != null)
+            {
+                _boundPassiveModel.Flashed += OnPassiveModelFlashed;
+                _boundPassiveModel.IconStateChanged += OnPassiveIconStateChanged;
+            }
+        }
+
+        private void OnPassiveModelFlashed(PassiveItemModel model)
+        {
+            PlayPassivePulse();
+        }
+
+        private void OnPassiveIconStateChanged(PassiveItemModel model)
+        {
+            RefreshPassiveIconState();
+        }
+
+        private void RefreshPassiveIconState()
+        {
+            if (_iconEffectMaterial == null || _boundPassiveModel == null)
+            {
+                return;
+            }
+
+            _iconEffectMaterial.SetFloat(IsUsedId, _boundPassiveModel.IsIconUsed ? 1f : 0f);
+            _iconEffectMaterial.SetFloat(IsWaxId, 0f);
         }
 
         /// <summary>道具品质对应的槽底色（与战斗世界空间槽保持一致）。</summary>

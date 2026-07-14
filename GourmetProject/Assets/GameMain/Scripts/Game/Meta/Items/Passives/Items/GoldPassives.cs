@@ -92,6 +92,8 @@ namespace GourmetProject.Game.Meta.Passives
             Run?.AddMealBonusMeals(PassiveParam.ParseInt(Param, "meals", 0));
         }
 
+        public override bool IsIconUsed => Run != null && Run.MealBonusRemaining <= 0;
+
         public override int MealBonusGoldPerMeal() => (int)Value;
     }
 
@@ -103,6 +105,7 @@ namespace GourmetProject.Game.Meta.Passives
         public override void OnAcquired()
         {
             PassiveOnAcquireEffects.ApplyGoldNow(Run, Definition);
+            MarkIconUsed();
         }
     }
 
@@ -114,6 +117,7 @@ namespace GourmetProject.Game.Meta.Passives
         public override void OnAcquired()
         {
             PassiveOnAcquireEffects.ApplyLoan(Run, Definition);
+            MarkIconUsed();
         }
     }
 

@@ -21,6 +21,11 @@ namespace GourmetProject.Game.UI.Hud
         [SerializeField] private RectTransform _container;
         [SerializeField] private RectTransform _positionMarker;
         [SerializeField] private Text _remainingDaysText;
+        [SerializeField] private Image _fillTemplate;
+        [SerializeField] private Image _tickTemplate;
+        [SerializeField] private Text _dayLabelTemplate;
+        [SerializeField] private Image _nodeIconTemplate;
+        [SerializeField] private Text _nodeLabelTemplate;
 
         [Header("节点图标")]
         [SerializeField] private Sprite _shopNodeSprite;
@@ -66,16 +71,20 @@ namespace GourmetProject.Game.UI.Hud
         /// <summary>绿色进度填充：用锚点宽度表示 [0, ratio]，置于最底层。</summary>
         private void BuildFill(float ratio)
         {
-            var go = NewChild("AxisFill");
-            var rect = (RectTransform)go.transform;
+            Image image = SpawnTemplate(_fillTemplate, "AxisFill");
+            if (image == null)
+            {
+                return;
+            }
+
+            var rect = (RectTransform)image.transform;
             rect.anchorMin = new Vector2(0f, 0f);
             rect.anchorMax = new Vector2(ratio, 1f);
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
-            var image = go.AddComponent<Image>();
             image.color = _fillColor;
             image.raycastTarget = false;
-            go.transform.SetAsFirstSibling();
+            image.transform.SetAsFirstSibling();
         }
 
         /// <summary>整天刻度线（1..N-1 分隔）与每格天序号。</summary>
@@ -84,14 +93,18 @@ namespace GourmetProject.Game.UI.Hud
             for (int i = 1; i < wholeDays; i++)
             {
                 float x = Mathf.Clamp01(i / length);
-                var go = NewChild($"Tick_{i}");
-                var rect = (RectTransform)go.transform;
+                Image image = SpawnTemplate(_tickTemplate, $"Tick_{i}");
+                if (image == null)
+                {
+                    continue;
+                }
+
+                var rect = (RectTransform)image.transform;
                 rect.anchorMin = new Vector2(x, 0.12f);
                 rect.anchorMax = new Vector2(x, 0.88f);
                 rect.pivot = new Vector2(0.5f, 0.5f);
                 rect.sizeDelta = new Vector2(2f, 0f);
                 rect.anchoredPosition = Vector2.zero;
-                var image = go.AddComponent<Image>();
                 image.color = _tickColor;
                 image.raycastTarget = false;
             }
@@ -100,13 +113,17 @@ namespace GourmetProject.Game.UI.Hud
             {
                 float minX = Mathf.Clamp01((day - 1) / length);
                 float maxX = Mathf.Clamp01(day / length);
-                var go = NewChild($"Day_{day}");
-                var rect = (RectTransform)go.transform;
+                Text text = SpawnTemplate(_dayLabelTemplate, $"Day_{day}");
+                if (text == null)
+                {
+                    continue;
+                }
+
+                var rect = (RectTransform)text.transform;
                 rect.anchorMin = new Vector2(minX, 0f);
                 rect.anchorMax = new Vector2(maxX, 1f);
                 rect.offsetMin = Vector2.zero;
                 rect.offsetMax = Vector2.zero;
-                var text = go.AddComponent<Text>();
                 text.text = day.ToString();
                 text.font = ResolveFont();
                 text.color = _dayTextColor;
@@ -132,25 +149,34 @@ namespace GourmetProject.Game.UI.Hud
                 ActionDisplayKind kind = ActionDisplay.KindOf(run.Tables, TimelineService.NodeAction(run, node));
                 Sprite sprite = NodeSprite(kind);
                 float x = Mathf.Clamp01(kv.Key / length);
-                var go = NewChild($"Node_{kv.Key}");
-                var rect = (RectTransform)go.transform;
+                GameObject go;
+                RectTransform rect;
                 // 锚定到进度条顶边、图标底部贴着顶边向上突出。
-                rect.anchorMin = new Vector2(x, 1f);
-                rect.anchorMax = new Vector2(x, 1f);
-                rect.pivot = new Vector2(0.5f, 0f);
-                rect.sizeDelta = new Vector2(_nodeIconHeight, _nodeIconHeight);
-                rect.anchoredPosition = new Vector2(0f, 2f);
-
                 if (sprite != null)
                 {
-                    var image = go.AddComponent<Image>();
+                    Image image = SpawnTemplate(_nodeIconTemplate, $"Node_{kv.Key}");
+                    if (image == null)
+                    {
+                        continue;
+                    }
+
+                    go = image.gameObject;
+                    rect = (RectTransform)image.transform;
+                    rect.sizeDelta = new Vector2(_nodeIconHeight, _nodeIconHeight);
                     image.sprite = sprite;
                     image.preserveAspect = true;
                     image.raycastTarget = true;
                 }
                 else
                 {
-                    var text = go.AddComponent<Text>();
+                    Text text = SpawnTemplate(_nodeLabelTemplate, $"Node_{kv.Key}");
+                    if (text == null)
+                    {
+                        continue;
+                    }
+
+                    go = text.gameObject;
+                    rect = (RectTransform)text.transform;
                     text.text = NodeLabel(kind);
                     text.font = ResolveFont();
                     text.color = _dayTextColor;
@@ -162,6 +188,10 @@ namespace GourmetProject.Game.UI.Hud
                     rect.sizeDelta = new Vector2(_nodeIconHeight * 2f, _nodeIconHeight);
                 }
 
+                rect.anchorMin = new Vector2(x, 1f);
+                rect.anchorMax = new Vector2(x, 1f);
+                rect.pivot = new Vector2(0.5f, 0f);
+                rect.anchoredPosition = new Vector2(0f, 2f);
                 onNodeCreated?.Invoke(node, go);
             }
         }
@@ -199,18 +229,26 @@ namespace GourmetProject.Game.UI.Hud
             _remainingDaysText.text = $"{remaining.ToString("0.#", CultureInfo.InvariantCulture)}天";
         }
 
-        private GameObject NewChild(string childName)
+        private T SpawnTemplate<T>(T template, string childName) where T : Component
         {
-            var go = new GameObject(childName, typeof(RectTransform));
-            var rect = (RectTransform)go.transform;
+            if (template == null)
+            {
+                Debug.LogError($"{nameof(ActionAxisBar)} 缺少 {childName} 对应的 UI template。", this);
+                return null;
+            }
+
+            T instance = Instantiate(template, _container);
+            instance.gameObject.name = childName;
+            instance.gameObject.SetActive(true);
+            var rect = (RectTransform)instance.transform;
             rect.SetParent(_container, false);
             rect.localScale = Vector3.one;
             rect.anchorMin = Vector2.zero;
             rect.anchorMax = Vector2.one;
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
-            _spawned.Add(go);
-            return go;
+            _spawned.Add(instance.gameObject);
+            return instance;
         }
 
         private Font ResolveFont()

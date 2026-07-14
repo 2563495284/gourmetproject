@@ -1,8 +1,8 @@
 namespace GourmetProject.Game.Run
 {
     /// <summary>
-    /// 运行时动态追加到行动轴的节点（如「奖励单」加的奖励节点）。
-    /// 与配置 <c>cfg.TimelineNode</c> 语义一致，但由玩家道具在局内生成、随周清空。
+    /// 当前周行动轴节点快照。周开始时从配置复制，之后被被动/主动道具直接改写并随存档保存。
+    /// 与配置 <c>cfg.TimelineNode</c> 语义一致。
     /// </summary>
     public readonly struct RuntimeTimelineNode
     {
@@ -21,5 +21,15 @@ namespace GourmetProject.Game.Run
         public int Day { get; }
 
         public string ActionId { get; }
+
+        public RuntimeTimelineNode WithDay(int day)
+        {
+            return new RuntimeTimelineNode(Id, TimelineId, day, ActionId);
+        }
+
+        public RuntimeTimelineNode WithActionId(string actionId)
+        {
+            return new RuntimeTimelineNode(Id, TimelineId, Day, actionId);
+        }
     }
 }

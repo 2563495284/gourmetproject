@@ -7,8 +7,8 @@ namespace GourmetProject.Game.Presentation.Battle
 {
     /// <summary>
     /// 结算演出用的飘字：从某处缓缓上浮并淡出后自毁。
-    /// 渲染体（TextMesh）预拼在 prefab 上、默认参数走 SerializeField（见 presentation-prefab 规则），
-    /// 缺 prefab 时运行时补齐。<see cref="Spawn"/> 传 null 的可选参数表示沿用 prefab 里的默认值。
+    /// 渲染体（TextMesh）预拼在 prefab 上、默认参数走 SerializeField（见 presentation-prefab 规则）。
+    /// <see cref="Spawn"/> 传 null 的可选参数表示沿用 prefab 里的默认值。
     /// </summary>
     internal sealed class FloatingTextView : MonoBehaviour
     {
@@ -28,17 +28,13 @@ namespace GourmetProject.Game.Presentation.Battle
             float? rise = null,
             float? duration = null)
         {
-            FloatingTextView view;
-            if (prefab != null)
+            if (prefab == null)
             {
-                view = Instantiate(prefab, parent);
+                Debug.LogError($"{nameof(FloatingTextView)} 缺少 prefab。");
+                return;
             }
-            else
-            {
-                var go = new GameObject("FloatingText");
-                go.transform.SetParent(parent, false);
-                view = go.AddComponent<FloatingTextView>();
-            }
+
+            FloatingTextView view = Instantiate(prefab, parent);
 
             view.transform.position = worldPos;
             view.Play(text, color, characterSize, rise, duration);
@@ -51,6 +47,11 @@ namespace GourmetProject.Game.Presentation.Battle
             float d = duration ?? _duration;
 
             TextMesh tm = EnsureText();
+            if (tm == null)
+            {
+                return;
+            }
+
             tm.text = text;
             tm.color = color;
             tm.characterSize = cs;
@@ -58,13 +59,14 @@ namespace GourmetProject.Game.Presentation.Battle
             Animate(tm, transform.position, r, d);
         }
 
-        /// <summary>兜底解析/补齐 prefab 预拼的 TextMesh 并归一化锚点/排序。</summary>
+        /// <summary>解析 prefab 预拼的 TextMesh 并归一化锚点/排序。</summary>
         private TextMesh EnsureText()
         {
             TextMesh tm = GetComponent<TextMesh>();
             if (tm == null)
             {
-                tm = gameObject.AddComponent<TextMesh>();
+                Debug.LogError($"{nameof(FloatingTextView)} prefab 缺少 TextMesh。", this);
+                return null;
             }
 
             tm.anchor = TextAnchor.MiddleCenter;

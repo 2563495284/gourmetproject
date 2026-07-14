@@ -4,8 +4,7 @@ namespace GourmetProject.Game.Presentation.Battle
 {
     /// <summary>
     /// 世界空间目标箭头：起点固定在被移动的菜品原位，终点跟随鼠标 / 光标菜品。
-    /// 参考 <see cref="GourmetProject.Game.UI.Meta.TargetArrowView"/> 的「起点固定、终点跟随」思路，
-    /// 改为世界坐标：一条 LineRenderer 线身 + 一个箭头 sprite 头，运行时自建，无需 prefab（属动态连线）。
+    /// 固定结构（LineRenderer + 箭头 SpriteRenderer）预拼在 prefab 上，运行时只按格子尺寸调整线宽和箭头大小。
     /// </summary>
     public sealed class WorldTargetArrow : MonoBehaviour
     {
@@ -14,11 +13,16 @@ namespace GourmetProject.Game.Presentation.Battle
         private float _lineWidth = 0.12f;
         private float _headGap = 0.28f;
 
-        public static WorldTargetArrow Create(Transform parent, float cellSize)
+        public static WorldTargetArrow Create(WorldTargetArrow prefab, Transform parent, float cellSize)
         {
-            var go = new GameObject("FoodAdjustArrow");
-            go.transform.SetParent(parent, false);
-            var arrow = go.AddComponent<WorldTargetArrow>();
+            if (prefab == null)
+            {
+                Debug.LogError($"{nameof(WorldTargetArrow)} 缺少 prefab。");
+                return null;
+            }
+
+            WorldTargetArrow arrow = Instantiate(prefab, parent);
+            arrow.gameObject.name = "FoodAdjustArrow";
             arrow.Build(cellSize);
             return arrow;
         }
@@ -28,22 +32,42 @@ namespace GourmetProject.Game.Presentation.Battle
             _lineWidth = Mathf.Max(0.06f, cellSize * 0.16f);
             _headGap = Mathf.Max(0.12f, cellSize * 0.42f);
 
-            _line = gameObject.AddComponent<LineRenderer>();
+            if (_line == null)
+            {
+                _line = GetComponentInChildren<LineRenderer>(true);
+            }
+
+            if (_head == null)
+            {
+                _head = GetComponentInChildren<SpriteRenderer>(true);
+            }
+
+            if (_line == null || _head == null)
+            {
+                Debug.LogError($"{nameof(WorldTargetArrow)} prefab 缺少 LineRenderer 或箭头 SpriteRenderer。", this);
+                return;
+            }
+
             _line.useWorldSpace = true;
             _line.positionCount = 2;
             _line.numCapVertices = 4;
             _line.textureMode = LineTextureMode.Stretch;
             _line.widthMultiplier = _lineWidth;
-            _line.material = new Material(Shader.Find("Sprites/Default"));
+            if (_line.sharedMaterial == null)
+            {
+                _line.sharedMaterial = new Material(Shader.Find("Sprites/Default"));
+            }
+
             var lineColor = new Color(0.15f, 0.15f, 0.15f, 0.95f);
             _line.startColor = lineColor;
             _line.endColor = lineColor;
             BattleSorting.Apply(_line, BattleSorting.WorldUi, BattleSorting.OrderButtonBg + 2);
 
-            var headGo = new GameObject("Head");
-            headGo.transform.SetParent(transform, false);
-            _head = headGo.AddComponent<SpriteRenderer>();
-            _head.sprite = Resources.Load<Sprite>("Sprites/UI/ArrowHead");
+            if (_head.sprite == null)
+            {
+                _head.sprite = Resources.Load<Sprite>("Sprites/UI/ArrowHead");
+            }
+
             _head.color = new Color(0.15f, 0.15f, 0.15f, 0.98f);
             SpriteRenderStyle.ApplyUnlitMaterial(_head);
             BattleSorting.Apply(_head, BattleSorting.WorldUi, BattleSorting.OrderButtonBg + 3);

@@ -50,7 +50,7 @@ namespace GourmetProject.Game.Run
         // —— 行动轴状态 ——
         private readonly List<string> _triggeredNodeIds = new List<string>();
 
-        // 「奖励单」等主动道具在本周行动轴上动态追加的节点；随 BeginTimeline（换周）清空。
+        // 当前周行动轴节点快照：周开始时从配置复制，之后可被道具改写；随 BeginTimeline（换周）重建。
         private readonly List<RuntimeTimelineNode> _runtimeTimelineNodes = new List<RuntimeTimelineNode>();
         private readonly List<string> _usedEventIds = new List<string>();
         private readonly List<string> _completedBossIds = new List<string>();
@@ -74,6 +74,7 @@ namespace GourmetProject.Game.Run
         private int _interestCap;
         private int _foodAdjustBaseCount;
         private int _actionRerollCount;
+        private int _weekIndex = 1;
 
         // —— 被动道具计数状态（随存档保存）——
         private int _loanDebt;            // 高利贷待扣债务，下一周结算时扣除
@@ -127,9 +128,22 @@ namespace GourmetProject.Game.Run
 
         public string SeedText { get; }
 
-        public int WeekIndex { get; set; }
+        public int WeekIndex
+        {
+            get => _weekIndex;
+            set => _weekIndex = System.Math.Max(1, value);
+        }
 
         public int Gold { get; set; }
+
+        public int FoodFlavorLimit
+        {
+            get
+            {
+                int baseLimit = _tables?.TbGameBase != null ? _tables.TbGameBase.FoodFlavorLimit : 1;
+                return System.Math.Max(1, baseLimit + new ItemRuntime(this).FoodFlavorLimitBonus());
+            }
+        }
 
         public int InterestThreshold => _interestThreshold;
 
@@ -216,6 +230,7 @@ namespace GourmetProject.Game.Run
             {
                 if (state.Model != null && state.Model.IsUndying())
                 {
+                    state.Model.Flash();
                     RemoveItem(state.ItemId);
                     return true;
                 }
@@ -481,24 +496,175 @@ namespace GourmetProject.Game.Run
 
         public IReadOnlyList<string> TriggeredNodeIds => _triggeredNodeIds;
 
-        /// <summary>本周由主动道具动态追加的行动轴节点（「奖励单」等）。</summary>
+        /// <summary>当前周行动轴节点快照（配置节点 + 道具插入/改写后的节点）。</summary>
         public IReadOnlyList<RuntimeTimelineNode> RuntimeTimelineNodes => _runtimeTimelineNodes;
 
+        public void SetWeekIndex(int weekIndex)
+        {
+            WeekIndex = System.Math.Max(1, weekIndex);
+        }
+
+        public void IncrementWeek()
+        {
+            SetWeekIndex(WeekIndex + 1);
+        }
+
+        public bool DecreaseWeek(int amount)
+        {
+            int old = WeekIndex;
+            SetWeekIndex(WeekIndex - System.Math.Max(0, amount));
+            return WeekIndex != old;
+        }
+
         /// <summary>
-        /// 「奖励单」落地：在当前行动轴上追加一个运行时节点（day + actionId）。
-        /// 返回新节点 id（未开始行动轴时返回空串）。节点会被 TimelineService 合并进 GetNodes。
+        /// 「奖励单」落地：在当前天数之后、行动轴长度以内的空整数日追加一个节点。
+        /// 返回新节点 id（未开始行动轴或没有空位时返回空串）。
         /// </summary>
-        public string AddRuntimeTimelineNode(int day, string actionId)
+        public string AddRuntimeTimelineNode(string actionId, IRandomStream rng = null)
         {
             if (string.IsNullOrEmpty(CurrentTimelineId) || string.IsNullOrEmpty(actionId))
             {
                 return string.Empty;
             }
 
-            // 周内唯一：换周会清空 _runtimeTimelineNodes，故 count 单调；dyn_ 前缀避免与配置节点 id 冲突。
+            var days = new List<int>();
+            int start = System.Math.Max(1, (int)System.Math.Floor(CurrentDay) + 1);
+            int end = System.Math.Max(start, (int)System.Math.Floor(TimelineLengthDays));
+            for (int day = start; day <= end; day++)
+            {
+                if (!HasTimelineNodeAtDay(day))
+                {
+                    days.Add(day);
+                }
+            }
+
+            if (days.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            int index = rng != null ? rng.Range(0, days.Count) : 0;
+            if (index < 0)
+            {
+                index = 0;
+            }
+            else if (index >= days.Count)
+            {
+                index = days.Count - 1;
+            }
+
+            int chosenDay = days[index];
             string id = $"dyn_w{WeekIndex}_{_runtimeTimelineNodes.Count}";
-            _runtimeTimelineNodes.Add(new RuntimeTimelineNode(id, CurrentTimelineId, day, actionId));
+            _runtimeTimelineNodes.Add(new RuntimeTimelineNode(id, CurrentTimelineId, chosenDay, actionId));
+            SortRuntimeTimelineNodes();
             return id;
+        }
+
+        public bool RandomizeFutureTimelineActions(IRandomStream rng)
+        {
+            if (rng == null || _runtimeTimelineNodes.Count <= 1)
+            {
+                return false;
+            }
+
+            var indexes = new List<int>();
+            var actions = new List<string>();
+            for (int i = 0; i < _runtimeTimelineNodes.Count; i++)
+            {
+                RuntimeTimelineNode node = _runtimeTimelineNodes[i];
+                if (node.Day <= CurrentDay + GourmetProject.Game.Meta.TimelineMath.Epsilon
+                    || IsNodeTriggered(node.Id)
+                    || IsBossAction(node.ActionId))
+                {
+                    continue;
+                }
+
+                indexes.Add(i);
+                actions.Add(node.ActionId);
+            }
+
+            if (indexes.Count <= 1)
+            {
+                return false;
+            }
+
+            rng.Shuffle(actions);
+            bool changed = false;
+            for (int i = 0; i < indexes.Count; i++)
+            {
+                int nodeIndex = indexes[i];
+                if (_runtimeTimelineNodes[nodeIndex].ActionId != actions[i])
+                {
+                    changed = true;
+                }
+
+                _runtimeTimelineNodes[nodeIndex] = _runtimeTimelineNodes[nodeIndex].WithActionId(actions[i]);
+            }
+
+            return changed;
+        }
+
+        public bool DelayFutureBossNodes(int days)
+        {
+            days = System.Math.Max(0, days);
+            if (days == 0)
+            {
+                return false;
+            }
+
+            bool changed = false;
+            for (int i = 0; i < _runtimeTimelineNodes.Count; i++)
+            {
+                RuntimeTimelineNode node = _runtimeTimelineNodes[i];
+                if (node.Day <= CurrentDay + GourmetProject.Game.Meta.TimelineMath.Epsilon
+                    || IsNodeTriggered(node.Id)
+                    || !IsBossAction(node.ActionId))
+                {
+                    continue;
+                }
+
+                int newDay = node.Day + days;
+                _runtimeTimelineNodes[i] = node.WithDay(newDay);
+                TimelineLengthDays = System.Math.Max(TimelineLengthDays, newDay);
+                changed = true;
+            }
+
+            if (changed)
+            {
+                SortRuntimeTimelineNodes();
+            }
+
+            return changed;
+        }
+
+        private bool HasTimelineNodeAtDay(int day)
+        {
+            foreach (RuntimeTimelineNode node in _runtimeTimelineNodes)
+            {
+                if (node.Day == day)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void SortRuntimeTimelineNodes()
+        {
+            _runtimeTimelineNodes.Sort((a, b) =>
+            {
+                int cmp = a.Day.CompareTo(b.Day);
+                return cmp != 0 ? cmp : string.CompareOrdinal(a.Id, b.Id);
+            });
+        }
+
+        private bool IsBossAction(string actionId)
+        {
+            cfg.GameAction action = _tables?.TbAction.GetOrDefault(actionId);
+            return action != null
+                && action.Behavior == cfg.ActionBehavior.Food
+                && !string.IsNullOrEmpty(action.FoodId);
         }
 
         public IReadOnlyList<string> UsedEventIds => _usedEventIds;
@@ -615,12 +781,30 @@ namespace GourmetProject.Game.Run
         /// <summary>开始一条新的本周行动轴：重置天数游标、节点结算记录与本周行动使用记录。</summary>
         public void BeginTimeline(string timelineId, float lengthDays)
         {
+            BeginTimeline(timelineId, lengthDays, null);
+        }
+
+        public void BeginTimeline(string timelineId, float lengthDays, IEnumerable<RuntimeTimelineNode> nodes)
+        {
             CurrentTimelineId = timelineId ?? string.Empty;
             TimelineLengthDays = lengthDays;
             CurrentDay = 0f;
             ActionStepIndex = 0;
             _triggeredNodeIds.Clear();
             _runtimeTimelineNodes.Clear();
+            if (nodes != null)
+            {
+                foreach (RuntimeTimelineNode node in nodes)
+                {
+                    if (!string.IsNullOrEmpty(node.Id) && !string.IsNullOrEmpty(node.ActionId))
+                    {
+                        _runtimeTimelineNodes.Add(node);
+                    }
+                }
+
+                SortRuntimeTimelineNodes();
+            }
+
             LastActionContext = null;
             ClearPendingActionChoices();
             ClearPendingShopStock();
@@ -1197,6 +1381,8 @@ namespace GourmetProject.Game.Run
 
                     run._runtimeTimelineNodes.Add(new RuntimeTimelineNode(n.Id, n.TimelineId, n.Day, n.ActionId));
                 }
+
+                run.SortRuntimeTimelineNodes();
             }
 
             if (data.UsedEventIds != null)
@@ -1396,8 +1582,65 @@ namespace GourmetProject.Game.Run
                 return false;
             }
 
-            book[dishIndex].AddFlavor(flavorId);
+            book[dishIndex].AddFlavor(flavorId, FoodFlavorLimit);
             return true;
+        }
+
+        public bool RemoveRecipeFlavor(int bookIndex, int dishIndex, string flavorId)
+        {
+            if (!IsRecipeBookIndexValid(bookIndex))
+            {
+                return false;
+            }
+
+            List<RecipeBookSlot> book = _recipeBooks[bookIndex];
+            return dishIndex >= 0 && dishIndex < book.Count && book[dishIndex].RemoveFlavor(flavorId);
+        }
+
+        public bool ReplaceRecipeFlavor(int bookIndex, int dishIndex, string toFlavorId)
+        {
+            if (!IsRecipeBookIndexValid(bookIndex) || string.IsNullOrEmpty(toFlavorId))
+            {
+                return false;
+            }
+
+            List<RecipeBookSlot> book = _recipeBooks[bookIndex];
+            return dishIndex >= 0 && dishIndex < book.Count && book[dishIndex].ReplaceFlavor(toFlavorId);
+        }
+
+        public bool AddRecipeExtraSkill(int bookIndex, int dishIndex, string skillId)
+        {
+            RecipeBookSlot slot = GetRecipeBookSlot(bookIndex, dishIndex);
+            if (slot == null || string.IsNullOrEmpty(skillId))
+            {
+                return false;
+            }
+
+            slot.AddExtraSkill(skillId);
+            return true;
+        }
+
+        public bool MultiplyRecipeScore(int bookIndex, int dishIndex, float multiplier)
+        {
+            RecipeBookSlot slot = GetRecipeBookSlot(bookIndex, dishIndex);
+            if (slot == null || multiplier <= 0f)
+            {
+                return false;
+            }
+
+            slot.MultiplyScore(multiplier);
+            return true;
+        }
+
+        private RecipeBookSlot GetRecipeBookSlot(int bookIndex, int dishIndex)
+        {
+            if (!IsRecipeBookIndexValid(bookIndex))
+            {
+                return null;
+            }
+
+            List<RecipeBookSlot> book = _recipeBooks[bookIndex];
+            return dishIndex >= 0 && dishIndex < book.Count ? book[dishIndex] : null;
         }
 
         private static IReadOnlyList<string> ProjectDishIds(List<RecipeBookSlot> book)
@@ -1852,6 +2095,8 @@ namespace GourmetProject.Game.Run
                     save.DishExtraFlavors.Add(new RunRecipeDishFlavorSaveData
                     {
                         FlavorIds = new List<string>(slot.ExtraFlavorIds),
+                        ExtraSkillIds = new List<string>(slot.ExtraSkillIds),
+                        ScoreMultiplier = slot.ScoreMultiplier,
                     });
                 }
 
@@ -1937,6 +2182,20 @@ namespace GourmetProject.Game.Run
                             {
                                 slot.AddFlavor(flavorId);
                             }
+                        }
+
+                        if (extraFlavors != null && k < extraFlavors.Count)
+                        {
+                            RunRecipeDishFlavorSaveData extra = extraFlavors[k];
+                            if (extra?.ExtraSkillIds != null)
+                            {
+                                foreach (string skillId in extra.ExtraSkillIds)
+                                {
+                                    slot.AddExtraSkill(skillId);
+                                }
+                            }
+
+                            slot.RestoreScoreMultiplier(extra != null ? extra.ScoreMultiplier : 1f);
                         }
 
                         book.Add(slot);

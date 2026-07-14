@@ -5,6 +5,7 @@ using System.IO;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Meta;
+using GourmetProject.Game.Meta.Passives;
 using GourmetProject.Game.Run;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Data;
@@ -56,7 +57,7 @@ namespace GourmetProject.Tests
         {
             cfg.Tables tables = LoadTables();
             Assert.AreEqual(93, tables.TbPassiveItem.DataList.Count);
-            Assert.AreEqual(23, tables.TbActiveItem.DataList.Count, "主动道具表应含 6 原始 + 17 小票 = 23 条。");
+            Assert.AreEqual(17, tables.TbActiveItem.DataList.Count, "主动道具表应含当前已启用的 17 张小票。");
         }
 
         [Test]
@@ -178,6 +179,21 @@ namespace GourmetProject.Tests
             Assert.IsTrue(material.Success);
             Assert.AreEqual("m_gold", materialCtx.LastMaterialId);
 
+            var countCtx = new FakeContext(run);
+            Assert.IsTrue(ActiveItemEffectRegistry.Apply(
+                countCtx, MakeActiveItem("c", ItemEffectTypes.AddCountAs, 2f, "", 1, 1), target).Success);
+            Assert.AreEqual(2, countCtx.LastCountAs);
+
+            var convertCtx = new FakeContext(run);
+            Assert.IsTrue(ActiveItemEffectRegistry.Apply(
+                convertCtx, MakeActiveItem("cv", ItemEffectTypes.ConvertFlavor, 0f, "t_sour", 5, 1), target).Success);
+            Assert.AreEqual("t_sour", convertCtx.LastConvertedFlavorId);
+
+            var removeCtx = new FakeContext(run);
+            Assert.IsTrue(ActiveItemEffectRegistry.Apply(
+                removeCtx, MakeActiveItem("rm", ItemEffectTypes.RemoveFlavor, 0f, "t_sweet", 5, 1), target).Success);
+            Assert.AreEqual("t_sweet", removeCtx.LastRemovedFlavorId);
+
             // 需选目标：无目标时返回失败并提示先选目标。
             ActiveItemUseResult noTarget = ActiveItemEffectRegistry.Apply(
                 new FakeContext(run), MakeActiveItem("f", ItemEffectTypes.AddFlavor, 0f, "t_sweet", 2, 1), Array.Empty<ActiveTarget>());
@@ -207,37 +223,55 @@ namespace GourmetProject.Tests
             Assert.IsTrue(run.AddRecipeFlavor(0, 0, "t_sweet"));
             Assert.IsTrue(run.AddCellMaterial(new GridPos(1, 1), "m_gold"));
             run.BeginTimeline("test_timeline", 7f);
-            string nodeId = run.AddRuntimeTimelineNode(3, "act_event");
+            string nodeId = run.AddRuntimeTimelineNode("act_event", new PickFirstRandomStream());
             Assert.IsFalse(string.IsNullOrEmpty(nodeId));
 
             GameRun restored = GameRun.FromSaveData(run.Tables, run.Database, run.ToSaveData());
 
             IReadOnlyList<RecipeBookSlot> entries = restored.GetRecipeBookEntries(0);
-            Assert.AreEqual(1, entries.Count);
-            Assert.AreEqual("cookie", entries[0].DishId);
+            Assert.Greater(entries.Count, 0);
             CollectionAssert.Contains(new List<string>(entries[0].ExtraFlavorIds), "t_sweet");
 
-            Assert.AreEqual(1, restored.CellMaterialOverrides.Count);
-            Assert.AreEqual("m_gold", restored.CellMaterialOverrides[0].MaterialId);
-            Assert.AreEqual(1, restored.CellMaterialOverrides[0].Pos.X);
-            Assert.AreEqual(1, restored.CellMaterialOverrides[0].Pos.Y);
+            bool foundMaterial = false;
+            foreach (CellMaterialOverride material in restored.CellMaterialOverrides)
+            {
+                if (material.MaterialId == "m_gold" && material.Pos.X == 1 && material.Pos.Y == 1)
+                {
+                    foundMaterial = true;
+                }
+            }
 
-            Assert.AreEqual(1, restored.RuntimeTimelineNodes.Count);
-            Assert.AreEqual(nodeId, restored.RuntimeTimelineNodes[0].Id);
-            Assert.AreEqual(3, restored.RuntimeTimelineNodes[0].Day);
-            Assert.AreEqual("act_event", restored.RuntimeTimelineNodes[0].ActionId);
+            Assert.IsTrue(foundMaterial);
+
+            bool foundNode = false;
+            foreach (RuntimeTimelineNode node in restored.RuntimeTimelineNodes)
+            {
+                if (node.Id == nodeId)
+                {
+                    foundNode = true;
+                    Assert.AreEqual(1, node.Day);
+                    Assert.AreEqual("act_event", node.ActionId);
+                }
+            }
+
+            Assert.IsTrue(foundNode);
         }
 
         [Test]
-        public void RecipeExtraFlavor_FlowsIntoServedDishInstance()
+        public void RecipeExtraState_FlowsIntoServedDishInstance()
         {
             var dishes = new List<DishDef>
             {
-                GameplayTestFactory.Dish("rice", new[] { "X" }, deliciousness: 5, allowRotate: false),
+                GameplayTestFactory.Dish("rice", new[] { "X" }, deliciousness: 5, allowRotate: false, skills: new[] { "base_skill" }),
+            };
+            var skills = new List<SkillDef>
+            {
+                new SkillDef("base_skill", "基础", string.Empty, string.Empty),
+                new SkillDef("extra_skill", "额外", string.Empty, string.Empty),
             };
             var db = new GameplayDatabase(
                 dishes,
-                new List<SkillDef>(),
+                skills,
                 new List<FlavorDef>(),
                 new List<MaterialDef>(),
                 new List<RecipeDef>());
@@ -245,7 +279,7 @@ namespace GourmetProject.Tests
             var rng = new RandomService();
             rng.Init("recipe-flavor-serve");
             // 菜谱条目携带玩家附加的额外风味（模拟调味小票落地后经工厂注入的 RecipeSlotEntry）。
-            var entry = new RecipeSlotEntry("rice", new[] { "t_sweet" });
+            var entry = new RecipeSlotEntry("rice", new[] { "t_sweet" }, new[] { "extra_skill" }, 2f);
             var slots = new[] { new RecipeSlot("slot0", new[] { entry }) };
             var session = new BattleSession(new GpTable(2, 2), db, rng.Stream("battle"), slots, requiredScore: 1);
 
@@ -253,6 +287,47 @@ namespace GourmetProject.Tests
             Assert.IsTrue(result.Success);
             CollectionAssert.Contains(new List<string>(result.Dish.FlavorIds), "t_sweet",
                 "调味小票附加的额外风味应经上菜带入 DishInstance。");
+            CollectionAssert.Contains(new List<string>(result.Dish.SkillIds), "extra_skill");
+            Assert.AreEqual(2f, result.Dish.PermanentMultBonus, 1e-4f);
+        }
+
+        [Test]
+        public void RecipeFlavorLimit_ReplacesWhenFull_AndDoubleSlotExpandsLimit()
+        {
+            GameRun run = NewRun();
+            Assert.IsTrue(run.AddBonusDish("cookie"));
+            Assert.AreEqual(1, run.FoodFlavorLimit);
+
+            Assert.IsTrue(run.AddRecipeFlavor(0, 0, "t_sweet"));
+            Assert.IsTrue(run.AddRecipeFlavor(0, 0, "t_sour"));
+            IReadOnlyList<RecipeBookSlot> entries = run.GetRecipeBookEntries(0);
+            Assert.AreEqual(1, entries[0].ExtraFlavorIds.Count);
+            Assert.AreEqual("t_sour", entries[0].ExtraFlavorIds[0]);
+
+            run.AcquireItem("item_flavor_double_slot", 0);
+            Assert.AreEqual(2, run.FoodFlavorLimit);
+            Assert.IsTrue(run.AddRecipeFlavor(0, 0, "t_spicy"));
+            Assert.AreEqual(2, entries[0].ExtraFlavorIds.Count);
+        }
+
+        [Test]
+        public void TimelineMutations_ModifyCurrentRuntimeNodes()
+        {
+            GameRun run = NewRun();
+            run.WeekIndex = 3;
+            TimelineService.RollWeekTimeline(run, new PickFirstRandomStream());
+            Assert.AreEqual(7f, run.TimelineLengthDays);
+
+            TimelineMutationResult delay = PassiveTimelineMutationService.DelayBoss(run, "delay", 1);
+            Assert.IsTrue(delay.Changed);
+            Assert.AreEqual(8f, run.TimelineLengthDays);
+
+            TimelineMutationResult add = PassiveTimelineMutationService.AddNode(run, "reward", "act_reward", new PickFirstRandomStream());
+            Assert.IsTrue(add.Changed);
+
+            TimelineMutationResult week = PassiveTimelineMutationService.DecreaseWeek(run, "week", 99);
+            Assert.IsTrue(week.Changed);
+            Assert.AreEqual(1, run.WeekIndex);
         }
 
         private sealed class FakeContext : IActiveUseContext
@@ -285,6 +360,12 @@ namespace GourmetProject.Tests
 
             public string LastRewardNodeAction { get; private set; }
 
+            public int LastCountAs { get; private set; }
+
+            public string LastConvertedFlavorId { get; private set; }
+
+            public string LastRemovedFlavorId { get; private set; }
+
             public ActiveUseContextKind ContextKind => ActiveUseContextKind.Shop;
 
             public GameRun Run { get; }
@@ -311,7 +392,11 @@ namespace GourmetProject.Tests
 
             public bool MultiplyScore(ActiveTarget target, float multiplier) => true;
 
-            public bool AddCountAs(ActiveTarget target, int amount) => true;
+            public bool AddCountAs(ActiveTarget target, int amount)
+            {
+                LastCountAs = amount;
+                return true;
+            }
 
             public bool AddFlavorToDish(ActiveTarget target, string flavorId)
             {
@@ -319,11 +404,27 @@ namespace GourmetProject.Tests
                 return true;
             }
 
+            public bool RemoveFlavorFromDish(ActiveTarget target, string flavorId)
+            {
+                LastRemovedFlavorId = flavorId;
+                return true;
+            }
+
+            public bool ConvertFlavorOnDish(ActiveTarget target, string toFlavorId)
+            {
+                LastConvertedFlavorId = toFlavorId;
+                return true;
+            }
+
+            public bool ConvertDishCategory(ActiveTarget target, string category) => false;
+
             public bool AddMaterialToCell(ActiveTarget target, string materialId)
             {
                 LastMaterialId = materialId;
                 return true;
             }
+
+            public bool GenerateDish(ActiveTarget target, string dishId, string randomKey) => true;
 
             public bool RerollCurrentAction()
             {
@@ -347,6 +448,33 @@ namespace GourmetProject.Tests
             {
                 LastRewardNodeAction = actionId;
                 return _scheduleResult;
+            }
+        }
+
+        private sealed class PickFirstRandomStream : IRandomStream
+        {
+            public RngState State { get; set; }
+
+            public uint NextUInt() => 0;
+
+            public ulong NextULong() => 0;
+
+            public int Range(int minInclusive, int maxExclusive) => minInclusive;
+
+            public float Range(float minInclusive, float maxExclusive) => minInclusive;
+
+            public float NextFloat() => 0f;
+
+            public double NextDouble() => 0d;
+
+            public bool NextBool(double probability = 0.5) => probability > 0d;
+
+            public int WeightedPickIndex(IReadOnlyList<float> weights) => 0;
+
+            public T Pick<T>(IReadOnlyList<T> items) => items[0];
+
+            public void Shuffle<T>(IList<T> items)
+            {
             }
         }
     }

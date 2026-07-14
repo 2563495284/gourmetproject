@@ -56,7 +56,7 @@ namespace GourmetProject.Game.Procedure
                 GameApp.UI.AddUIGroup(UIForms.GroupDialog, 1);
             }
 
-            // GameFramework 的界面组容器是用 new GameObject() 创建的，只有普通 Transform，
+            // GameFramework 的界面组容器由框架运行时创建，只有普通 Transform，
             // 子界面用 stretch 锚点会塌缩到 Canvas 原点。这里把组容器升级为撑满 Canvas 的 RectTransform。
             StretchGroupHelper(UIForms.GroupDefault);
             StretchGroupHelper(UIForms.GroupDialog);

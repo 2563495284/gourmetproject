@@ -590,7 +590,7 @@
   {
     "id": "item_timeline_random",
     "name": "命运骰子",
-    "desc": "随机化事件轴的节点时间。",
+    "desc": "随机化时间轴的节点事件。",
     "quality": 1,
     "specialTags": "",
     "effectValue": 0,
@@ -744,7 +744,7 @@
   {
     "id": "item_flavor_enhance",
     "name": "风味喷雾",
-    "desc": "强化两个随机风味到无风味食物上。",
+    "desc": "给两个无风味的食物添加随机风味。",
     "quality": 1,
     "specialTags": "",
     "effectValue": 2,

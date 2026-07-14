@@ -5466,6 +5466,8 @@ MonoBehaviour:
   _randomizedItemsPanel: {fileID: 3697955443635163090}
   _boardEditSkipButton: {fileID: 1777557759855647256}
   _itemsColumn: {fileID: 2587872060005843571}
+  _activeItemPopupPrefab: {fileID: 8685028640932328523, guid: 26fcd4c0a8d154771bafb3eaf9e829ee, type: 3}
+  _activeItemTargetArrowPrefab: {fileID: 6438548458035383761, guid: caa9c853a25e6402c8a49f9cd3dfc8f3, type: 3}
   _recipeView: {fileID: 8511396772749434717}
   _foodBar: {fileID: 7134599815167685348}
   _messageText: {fileID: 6187663459512180646}

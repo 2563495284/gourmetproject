@@ -86,18 +86,34 @@ namespace GourmetProject.Game.Meta
             // 美食奖励金币按道具修正（利润提成 / 克扣工钱）。
             var itemRuntime = new ItemRuntime(run);
             int gold = itemRuntime.ModifyMealRewardGold(offer.BaseGold);
+            if (gold != offer.BaseGold)
+            {
+                itemRuntime.FlashTriggered(m => System.Math.Abs(m.MealRewardGoldPct()) > 0.0001f);
+            }
 
             // 美食分红（GoldMealBonus）：剩余生效局数内每局额外金币，并消耗一局额度。
             if (run.MealBonusRemaining > 0)
             {
-                gold += itemRuntime.MealBonusGoldPerMeal();
+                int bonusGold = itemRuntime.MealBonusGoldPerMeal();
+                if (bonusGold != 0)
+                {
+                    itemRuntime.FlashTriggered(m => m.MealBonusGoldPerMeal() != 0);
+                }
+
+                gold += bonusGold;
                 run.ConsumeMealBonusMeal();
+                itemRuntime.RefreshIconState(m => m.MealBonusGoldPerMeal() != 0);
             }
 
             run.Gold += gold;
 
             // 「分数变1」按局递减：普通/超级美食奖励结算视为一局（Boss/盛宴不走此路径）。
+            bool consumedScoreToOne = run.ScoreToOneRemaining > 0;
             run.ConsumeScoreToOneMeal();
+            if (consumedScoreToOne)
+            {
+                itemRuntime.RefreshIconState(m => m.ItemId == "item_score_to_one");
+            }
 
             offer.MarkBaseGoldClaimed();
             return $"金币 +{gold}";

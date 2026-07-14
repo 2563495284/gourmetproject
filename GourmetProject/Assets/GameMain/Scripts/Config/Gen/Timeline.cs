@@ -19,6 +19,8 @@ public sealed partial class Timeline : Luban.BeanBase
     {
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
         { if(!_buf["baseLengthDays"].IsNumber) { throw new SerializationException(); }  BaseLengthDays = _buf["baseLengthDays"]; }
+        { var __json0 = _buf["nodeDays"]; if(!__json0.IsArray) { throw new SerializationException(); } NodeDays = new System.Collections.Generic.List<int>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { int __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  NodeDays.Add(__v0); }   }
+        { var __json0 = _buf["nodeActionIds"]; if(!__json0.IsArray) { throw new SerializationException(); } NodeActionIds = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  NodeActionIds.Add(__v0); }   }
     }
 
     public static Timeline DeserializeTimeline(JSONNode _buf)
@@ -34,6 +36,14 @@ public sealed partial class Timeline : Luban.BeanBase
     /// 行动轴基础长度
     /// </summary>
     public readonly int BaseLengthDays;
+    /// <summary>
+    /// 行动轴节点日期列表；与 nodeActionIds 同序
+    /// </summary>
+    public readonly System.Collections.Generic.List<int> NodeDays;
+    /// <summary>
+    /// 行动轴节点 actionId 列表；与 nodeDays 同序
+    /// </summary>
+    public readonly System.Collections.Generic.List<string> NodeActionIds;
    
     public const int __ID__ = -2012006303;
     public override int GetTypeId() => __ID__;
@@ -47,6 +57,8 @@ public sealed partial class Timeline : Luban.BeanBase
         return "{ "
         + "id:" + Id + ","
         + "baseLengthDays:" + BaseLengthDays + ","
+        + "nodeDays:" + Luban.StringUtil.CollectionToString(NodeDays) + ","
+        + "nodeActionIds:" + Luban.StringUtil.CollectionToString(NodeActionIds) + ","
         + "}";
     }
 }

@@ -84,6 +84,38 @@ namespace GourmetProject.Game.Meta
         /// <summary>商店是否自动补货。</summary>
         public bool AutoRestock() => AnyFlag(m => m.AutoRestock());
 
+        public void FlashTriggered(System.Func<PassiveItemModel, bool> predicate)
+        {
+            if (predicate == null)
+            {
+                return;
+            }
+
+            foreach (PassiveItemModel m in Models)
+            {
+                if (predicate(m))
+                {
+                    m.Flash();
+                }
+            }
+        }
+
+        public void RefreshIconState(System.Func<PassiveItemModel, bool> predicate)
+        {
+            if (predicate == null)
+            {
+                return;
+            }
+
+            foreach (PassiveItemModel m in Models)
+            {
+                if (predicate(m))
+                {
+                    m.RefreshIconState();
+                }
+            }
+        }
+
         // ================= 目标分修正族 =================
 
         /// <summary>按美食档位对要求分做百分比修正（可正可负，多件累加）。下限 1。</summary>
@@ -144,6 +176,8 @@ namespace GourmetProject.Game.Meta
         public int ExtraActiveSlots() => SumInt(m => m.ExtraActiveSlots());
 
         public bool BlocksActiveItems() => AnyFlag(m => m.BlocksActiveItems());
+
+        public int FoodFlavorLimitBonus() => SumInt(m => m.FoodFlavorLimitBonus());
 
         public bool HasExtraInterest() => AnyFlag(m => m.HasExtraInterest());
 

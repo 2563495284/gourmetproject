@@ -90,16 +90,28 @@ namespace GourmetProject.Gameplay.Battle
     public sealed class RecipeSlotEntry
     {
         private readonly List<string> _extraFlavorIds;
+        private readonly List<string> _extraSkillIds;
 
         public RecipeSlotEntry(string dishId)
-            : this(dishId, null)
+            : this(dishId, null, null, 1f)
         {
         }
 
         public RecipeSlotEntry(string dishId, IEnumerable<string> extraFlavorIds)
+            : this(dishId, extraFlavorIds, null, 1f)
+        {
+        }
+
+        public RecipeSlotEntry(
+            string dishId,
+            IEnumerable<string> extraFlavorIds,
+            IEnumerable<string> extraSkillIds,
+            float scoreMultiplier)
         {
             DishId = dishId ?? string.Empty;
             _extraFlavorIds = extraFlavorIds != null ? new List<string>(extraFlavorIds) : new List<string>();
+            _extraSkillIds = extraSkillIds != null ? new List<string>(extraSkillIds) : new List<string>();
+            ScoreMultiplier = scoreMultiplier > 0f ? scoreMultiplier : 1f;
         }
 
         public string DishId { get; }
@@ -110,6 +122,10 @@ namespace GourmetProject.Gameplay.Battle
 
         /// <summary>玩家用调味小票为该菜谱条目永久附加的额外风味（上菜时与变体自带风味合并）。</summary>
         public IReadOnlyList<string> ExtraFlavorIds => _extraFlavorIds;
+
+        public IReadOnlyList<string> ExtraSkillIds => _extraSkillIds;
+
+        public float ScoreMultiplier { get; }
 
         public void MarkSkillsDisabled()
         {
@@ -123,7 +139,7 @@ namespace GourmetProject.Gameplay.Battle
 
         public RecipeSlotEntry Clone()
         {
-            var clone = new RecipeSlotEntry(DishId, _extraFlavorIds);
+            var clone = new RecipeSlotEntry(DishId, _extraFlavorIds, _extraSkillIds, ScoreMultiplier);
             if (DisableSkills)
             {
                 clone.MarkSkillsDisabled();

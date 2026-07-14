@@ -226,7 +226,12 @@ namespace GourmetProject.Tests
     ""initialInterestCap"": 5,
     ""initialFoodAdjustCount"": 3,
     ""interestThreshold"": 5,
-    ""interestGoldPer"": 1
+    ""interestGoldPer"": 1,
+    ""initialActionRerollCount"": 0,
+    ""shopFoodSaleSlotCount"": 3,
+    ""shopPassiveItemSaleSlotCount"": 2,
+    ""shopActiveItemSaleSlotCount"": 2,
+    ""foodFlavorLimit"": 1
   }
 ]";
                 default:

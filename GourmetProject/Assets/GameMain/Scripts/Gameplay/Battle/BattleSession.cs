@@ -183,7 +183,7 @@ namespace GourmetProject.Gameplay.Battle
 
             ServeCandidate chosen = candidates[_rng.WeightedPickIndex(weights)];
             RecipeSlotEntry entry = slot.RemoveEntryAt(chosen.SlotEntryIndex);
-            List<string> skills = TagComposer.ComposeSkills(chosen.Dish.SkillIds);
+            List<string> skills = ComposeServeSkills(chosen.Dish, entry);
             List<string> flavors = ComposeServeFlavors(chosen.Dish, entry);
             var instance = new DishInstance(_nextInstanceId++, chosen.Dish, chosen.Placement, skills, flavors);
             instance.SetSourceSlotIndex(slotIndex);
@@ -251,6 +251,19 @@ namespace GourmetProject.Gameplay.Battle
             return new ScoreResult(Array.Empty<DishScore>(), 0f, 0f, 1f);
         }
 
+        private List<string> ComposeServeSkills(DishDef dish, RecipeSlotEntry entry)
+        {
+            if (entry == null || entry.ExtraSkillIds.Count == 0)
+            {
+                return TagComposer.ComposeSkills(dish.SkillIds);
+            }
+
+            var ids = new List<string>(dish.SkillIds.Count + entry.ExtraSkillIds.Count);
+            ids.AddRange(dish.SkillIds);
+            ids.AddRange(entry.ExtraSkillIds);
+            return TagComposer.ComposeSkills(ids);
+        }
+
         /// <summary>统计一组风味里「麻」(Rotate) 的逆时针旋转步数（各麻风味 effectValue 之和）。</summary>
         /// <summary>
         /// 合成上菜风味：菜谱变体自带风味 + 玩家用「调味小票」永久附加的额外风味。
@@ -303,6 +316,11 @@ namespace GourmetProject.Gameplay.Battle
             if (entry.ExcludeFromScore)
             {
                 instance.ExcludeFromScore();
+            }
+
+            if (entry.ScoreMultiplier > 0f && Math.Abs(entry.ScoreMultiplier - 1f) > 0.0001f)
+            {
+                instance.MultiplyPermanentMult(entry.ScoreMultiplier);
             }
         }
 
@@ -652,6 +670,45 @@ namespace GourmetProject.Gameplay.Battle
             return true;
         }
 
+        public bool AddFlavorToDishById(int dishId, string flavorId)
+        {
+            if (IsSettled || string.IsNullOrEmpty(flavorId))
+            {
+                return false;
+            }
+
+            DishInstance dish = FindDishById(dishId);
+            if (dish == null)
+            {
+                return false;
+            }
+
+            dish.AddFlavor(flavorId);
+            return true;
+        }
+
+        public bool RemoveFlavorFromDishById(int dishId, string flavorId)
+        {
+            if (IsSettled)
+            {
+                return false;
+            }
+
+            DishInstance dish = FindDishById(dishId);
+            return dish != null && dish.RemoveFlavor(flavorId);
+        }
+
+        public bool ReplaceFlavorOnDishById(int dishId, string toFlavorId)
+        {
+            if (IsSettled || string.IsNullOrEmpty(toFlavorId))
+            {
+                return false;
+            }
+
+            DishInstance dish = FindDishById(dishId);
+            return dish != null && dish.ReplaceFlavor(toFlavorId);
+        }
+
         /// <summary>主动道具：移除指定餐桌菜（对标破坏族）。成功返回 true。</summary>
         public bool DestroyDishById(int dishId)
         {
@@ -700,6 +757,40 @@ namespace GourmetProject.Gameplay.Battle
             clone.CopyTransferredSkillsFrom(source);
             DiningTable.Place(clone);
             return true;
+        }
+
+        public bool GenerateDishAt(string dishId, GridPos origin)
+        {
+            if (IsSettled || string.IsNullOrEmpty(dishId))
+            {
+                return false;
+            }
+
+            DishDef def = _db.GetDish(dishId);
+            if (def == null)
+            {
+                return false;
+            }
+
+            IReadOnlyList<DishShape> orientations = def.Shape.GetOrientations(def.AllowRotate);
+            for (int i = 0; i < orientations.Count; i++)
+            {
+                DishShape shape = orientations[i];
+                var placement = new Placement(shape, i, origin);
+                if (!DiningTable.CanPlace(shape, origin))
+                {
+                    continue;
+                }
+
+                IReadOnlyList<string> flavors = string.IsNullOrEmpty(def.FlavorId)
+                    ? Array.Empty<string>()
+                    : new[] { def.FlavorId };
+                var instance = new DishInstance(_nextInstanceId++, def, placement, def.SkillIds, flavors);
+                DiningTable.Place(instance);
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>当前所有菜谱槽是否都无法再上菜（用于提示玩家结算）。</summary>

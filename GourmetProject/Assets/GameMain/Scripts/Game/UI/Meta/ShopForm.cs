@@ -371,14 +371,13 @@ namespace GourmetProject.Game.UI.Meta
         {
             Canvas canvas = _recipeView != null ? _recipeView.GetComponentInParent<Canvas>() : GetComponentInParent<Canvas>();
             Transform parent = canvas != null ? canvas.transform : transform;
-            TargetArrowView arrow = _targetArrowPrefab != null
-                ? Instantiate(_targetArrowPrefab, parent)
-                : new GameObject("TargetArrowView", typeof(RectTransform), typeof(TargetArrowView)).GetComponent<TargetArrowView>();
-            if (arrow.transform.parent == null)
+            if (_targetArrowPrefab == null)
             {
-                arrow.transform.SetParent(parent, false);
+                Debug.LogError($"{nameof(ShopForm)} 缺少 TargetArrowView prefab。", this);
+                return null;
             }
 
+            TargetArrowView arrow = Instantiate(_targetArrowPrefab, parent);
             arrow.transform.SetAsLastSibling();
             arrow.SetupArrow(startScreenPoint);
             return arrow;

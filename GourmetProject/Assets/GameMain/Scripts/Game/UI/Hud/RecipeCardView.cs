@@ -112,24 +112,7 @@ namespace GourmetProject.Game.UI.Hud
                 return;
             }
 
-            var go = new GameObject("TargetGlow", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            go.transform.SetParent(transform, false);
-            go.transform.SetAsFirstSibling();
-
-            var rt = (RectTransform)go.transform;
-            rt.anchorMin = Vector2.zero;
-            rt.anchorMax = Vector2.one;
-            rt.offsetMin = new Vector2(-GlowPadding, -GlowPadding);
-            rt.offsetMax = new Vector2(GlowPadding, GlowPadding);
-            rt.pivot = new Vector2(0.5f, 0.5f);
-
-            _glowBorder = go.GetComponent<Image>();
-            _glowBorder.raycastTarget = false;
-            _glowBorder.sprite = Resources.Load<Sprite>("Sprites/UI/white");
-            _glowBorder.material = Resources.Load<Material>("Materials/UIOuterGlow");
-            _glowBorder.color = Color.clear;
-            _glowBorder.gameObject.SetActive(false);
-            EnsureGlowMaterial();
+            Debug.LogError($"{nameof(RecipeCardView)} prefab 缺少 TargetGlow。", this);
         }
 
         private void EnsureGlowMaterial()

@@ -67,6 +67,10 @@ public partial class TbGameBase
     /// 商店主动道具出售栏位数量
     /// </summary>
      public int ShopActiveItemSaleSlotCount => _data.ShopActiveItemSaleSlotCount;
+    /// <summary>
+    /// 食物风味上限
+    /// </summary>
+     public int FoodFlavorLimit => _data.FoodFlavorLimit;
     
     public void ResolveRef(Tables tables)
     {

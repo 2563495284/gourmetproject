@@ -14,6 +14,12 @@ namespace GourmetProject.Game.Meta.Passives
     /// </summary>
     public abstract class PassiveItemModel
     {
+        public event System.Action<PassiveItemModel> Flashed;
+
+        public event System.Action<PassiveItemModel> IconStateChanged;
+
+        private bool _iconUsed;
+
         protected GameRun Run { get; private set; }
 
         protected ItemDefinition Definition { get; private set; }
@@ -29,6 +35,36 @@ namespace GourmetProject.Game.Meta.Passives
         public string ItemId => Definition?.Id ?? string.Empty;
 
         public ItemDefinition Def => Definition;
+
+        public virtual bool IsIconUsed => _iconUsed;
+
+        public bool IsIconWax => false;
+
+        public void Flash()
+        {
+            Flashed?.Invoke(this);
+        }
+
+        protected void MarkIconUsed()
+        {
+            SetIconUsed(true);
+        }
+
+        protected void SetIconUsed(bool used)
+        {
+            if (_iconUsed == used)
+            {
+                return;
+            }
+
+            _iconUsed = used;
+            IconStateChanged?.Invoke(this);
+        }
+
+        public void RefreshIconState()
+        {
+            IconStateChanged?.Invoke(this);
+        }
 
         public void Bind(GameRun run, ItemDefinition definition, RunItemState state)
         {
@@ -100,6 +136,8 @@ namespace GourmetProject.Game.Meta.Passives
         public virtual int ExtraActiveSlots() => 0;
 
         public virtual bool BlocksActiveItems() => false;
+
+        public virtual int FoodFlavorLimitBonus() => 0;
 
         public virtual bool HasExtraInterest() => false;
 
@@ -204,12 +242,68 @@ namespace GourmetProject.Game.Meta.Passives
 
         // ================= per-instance 状态序列化 =================
 
-        /// <summary>导出可序列化状态（默认无状态）。</summary>
-        public virtual string CaptureState() => string.Empty;
+        /// <summary>导出可序列化状态（默认只保存图标 used 状态）。</summary>
+        public virtual string CaptureState() => CaptureIconState();
 
-        /// <summary>从存档恢复状态（默认无状态）。</summary>
+        /// <summary>从存档恢复状态（默认只恢复图标 used 状态）。</summary>
         public virtual void RestoreState(string data)
         {
+            RestoreIconState(data);
+        }
+
+        protected string CaptureIconState() => IsIconUsed ? "used:1" : string.Empty;
+
+        protected void RestoreIconState(string data)
+        {
+            _iconUsed = ParseStateBool(data, "used", false);
+        }
+
+        protected static int ParseStateInt(string data, string key, int fallback)
+        {
+            if (string.IsNullOrEmpty(data))
+            {
+                return fallback;
+            }
+
+            foreach (string token in data.Split(';', ',', '|'))
+            {
+                int idx = token.IndexOf(':');
+                if (idx < 0)
+                {
+                    continue;
+                }
+
+                if (string.Equals(token.Substring(0, idx).Trim(), key, System.StringComparison.OrdinalIgnoreCase)
+                    && int.TryParse(token.Substring(idx + 1).Trim(), out int value))
+                {
+                    return value;
+                }
+            }
+
+            return int.TryParse(data, out int raw) ? raw : fallback;
+        }
+
+        protected static bool ParseStateBool(string data, string key, bool fallback)
+        {
+            int value = ParseStateInt(data, key, fallback ? 1 : 0);
+            return value != 0;
+        }
+
+        protected static string JoinState(params string[] entries)
+        {
+            var parts = new List<string>();
+            if (entries != null)
+            {
+                foreach (string entry in entries)
+                {
+                    if (!string.IsNullOrEmpty(entry))
+                    {
+                        parts.Add(entry);
+                    }
+                }
+            }
+
+            return string.Join(";", parts);
         }
     }
 }

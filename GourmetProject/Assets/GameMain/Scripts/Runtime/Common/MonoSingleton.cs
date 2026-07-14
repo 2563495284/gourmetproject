@@ -26,9 +26,7 @@ namespace GourmetProject.Runtime.Common
                     _instance = FindAnyObjectByType<T>();
                     if (_instance == null)
                     {
-                        var go = new GameObject(typeof(T).Name);
-                        _instance = go.AddComponent<T>();
-                        DontDestroyOnLoad(go);
+                        Debug.LogError($"{typeof(T).Name} 单例未在场景或 prefab 中预置。");
                     }
                 }
 

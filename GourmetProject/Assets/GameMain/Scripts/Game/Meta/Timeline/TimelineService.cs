@@ -68,8 +68,9 @@ namespace GourmetProject.Game.Meta
             }
 
             cfg.Timeline chosen = candidates[rng.WeightedPickIndex(weights)];
-            float length = chosen.BaseLengthDays > 0 ? chosen.BaseLengthDays : DefaultLengthDays;
-            run.BeginTimeline(chosen.Id, length);
+            List<RuntimeTimelineNode> nodes = BuildTimelineNodes(chosen);
+            float length = ResolveTimelineLength(run, chosen, nodes);
+            run.BeginTimeline(chosen.Id, length, nodes);
             Log.Info($"第 {run.WeekIndex} 周行动轴 = {chosen.Id}（{length} 天）。", Tag);
             return chosen.Id;
         }
@@ -95,16 +96,7 @@ namespace GourmetProject.Game.Meta
                 return nodes;
             }
 
-            cfg.Tables tables = run.Tables ?? GameApp.Config.Tables;
-            foreach (cfg.TimelineNode node in tables.TbTimelineNode.DataList)
-            {
-                if (node.TimelineId == run.CurrentTimelineId)
-                {
-                    nodes.Add(node);
-                }
-            }
-
-            // 合并运行时节点（奖励单等）：构造与配置同型的 cfg.TimelineNode，走同一触发/执行链。
+            // 当前周节点已在 BeginTimeline 时复制到 Run；道具后续直接改这份运行态快照。
             foreach (RuntimeTimelineNode rt in run.RuntimeTimelineNodes)
             {
                 if (rt.TimelineId == run.CurrentTimelineId)
@@ -115,6 +107,64 @@ namespace GourmetProject.Game.Meta
 
             nodes.Sort((a, b) => a.Day.CompareTo(b.Day));
             return nodes;
+        }
+
+        public static List<RuntimeTimelineNode> BuildTimelineNodes(cfg.Timeline timeline)
+        {
+            var nodes = new List<RuntimeTimelineNode>();
+            if (timeline == null)
+            {
+                return nodes;
+            }
+
+            int dayCount = timeline.NodeDays?.Count ?? 0;
+            int actionCount = timeline.NodeActionIds?.Count ?? 0;
+            int count = System.Math.Min(dayCount, actionCount);
+            for (int i = 0; i < count; i++)
+            {
+                int day = timeline.NodeDays[i];
+                string actionId = timeline.NodeActionIds[i];
+                if (day <= 0 || string.IsNullOrEmpty(actionId))
+                {
+                    continue;
+                }
+
+                string id = $"cfg_{timeline.Id}_d{day}_{i}";
+                nodes.Add(new RuntimeTimelineNode(id, timeline.Id, day, actionId));
+            }
+
+            nodes.Sort((a, b) =>
+            {
+                int cmp = a.Day.CompareTo(b.Day);
+                return cmp != 0 ? cmp : string.CompareOrdinal(a.Id, b.Id);
+            });
+            return nodes;
+        }
+
+        private static float ResolveTimelineLength(GameRun run, cfg.Timeline timeline, IReadOnlyList<RuntimeTimelineNode> nodes)
+        {
+            int bossDay = 0;
+            cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
+            if (nodes != null)
+            {
+                foreach (RuntimeTimelineNode node in nodes)
+                {
+                    cfg.GameAction action = tables.TbAction.GetOrDefault(node.ActionId);
+                    if (action != null
+                        && action.Behavior == cfg.ActionBehavior.Food
+                        && !string.IsNullOrEmpty(action.FoodId))
+                    {
+                        bossDay = System.Math.Max(bossDay, node.Day);
+                    }
+                }
+            }
+
+            if (bossDay > 0)
+            {
+                return bossDay;
+            }
+
+            return timeline != null && timeline.BaseLengthDays > 0 ? timeline.BaseLengthDays : DefaultLengthDays;
         }
 
         /// <summary>取当前行动轴上尚未结算、day 最小的下一个节点（含运行时节点）；无则返回 null。「加急单」用。</summary>

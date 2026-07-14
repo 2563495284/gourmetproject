@@ -30,8 +30,13 @@ namespace GourmetProject.Game.Meta
                     return EnumerateRecipeDishes(Run);
                 case cfg.ItemTargetKind.DiningTableCell:
                     return EnumerateTableCells(_session?.DiningTable);
+                case cfg.ItemTargetKind.DiningTableDish:
+                    return EnumerateTableDishes(_session?.DiningTable);
+                case cfg.ItemTargetKind.Material:
+                    return EnumerateMaterials(Run);
+                case cfg.ItemTargetKind.FlavorSlot:
+                    return EnumerateFlavorSlots(Run);
                 default:
-                    // 餐桌菜等其余目标类型的选目标 UI 落地时在此补充；当前返回空。
                     return Array.Empty<ActiveTarget>();
             }
         }
@@ -100,12 +105,51 @@ namespace GourmetProject.Game.Meta
 
         public bool AddFlavorToDish(ActiveTarget target, string flavorId)
         {
+            if (target.TargetKind == cfg.ItemTargetKind.DiningTableDish)
+            {
+                return _session != null && TryGetDishId(target, out int dishId)
+                    && _session.AddFlavorToDishById(dishId, flavorId);
+            }
+
             return Run != null && Run.AddRecipeFlavor(target.X, target.Y, flavorId);
+        }
+
+        public bool RemoveFlavorFromDish(ActiveTarget target, string flavorId)
+        {
+            if (target.TargetKind == cfg.ItemTargetKind.DiningTableDish)
+            {
+                return _session != null && TryGetDishId(target, out int dishId)
+                    && _session.RemoveFlavorFromDishById(dishId, flavorId);
+            }
+
+            return Run != null && Run.RemoveRecipeFlavor(target.X, target.Y, flavorId);
+        }
+
+        public bool ConvertFlavorOnDish(ActiveTarget target, string toFlavorId)
+        {
+            if (target.TargetKind == cfg.ItemTargetKind.DiningTableDish)
+            {
+                return _session != null && TryGetDishId(target, out int dishId)
+                    && _session.ReplaceFlavorOnDishById(dishId, toFlavorId);
+            }
+
+            return Run != null && Run.ReplaceRecipeFlavor(target.X, target.Y, toFlavorId);
+        }
+
+        public bool ConvertDishCategory(ActiveTarget target, string category)
+        {
+            // 当前 DishDef 分类是静态只读数据；分类转换需要引入运行时菜品覆盖后才能可靠落地。
+            return false;
         }
 
         public bool AddMaterialToCell(ActiveTarget target, string materialId)
         {
             return Run != null && Run.AddCellMaterial(new GridPos(target.X, target.Y), materialId);
+        }
+
+        public bool GenerateDish(ActiveTarget target, string dishId, string randomKey)
+        {
+            return _session != null && _session.GenerateDishAt(dishId, new GridPos(target.X, target.Y));
         }
 
         // —— 排程：战斗内不支持操作行动轴/Boss ——
@@ -138,7 +182,7 @@ namespace GourmetProject.Game.Meta
                 IReadOnlyList<string> dishes = run.GetRecipeBookDishes(book);
                 for (int dish = 0; dish < dishes.Count; dish++)
                 {
-                    targets.Add(new ActiveTarget(dishes[dish], book, dish));
+                    targets.Add(new ActiveTarget(dishes[dish], book, dish, cfg.ItemTargetKind.RecipeDish));
                 }
             }
 
@@ -156,7 +200,79 @@ namespace GourmetProject.Game.Meta
 
             foreach (GridPos cell in table.ExistingCells())
             {
-                targets.Add(new ActiveTarget(string.Empty, cell.X, cell.Y));
+                targets.Add(new ActiveTarget(string.Empty, cell.X, cell.Y, cfg.ItemTargetKind.DiningTableCell));
+            }
+
+            return targets;
+        }
+
+        internal static IReadOnlyList<ActiveTarget> EnumerateTableDishes(DiningTable table)
+        {
+            var targets = new List<ActiveTarget>();
+            if (table == null)
+            {
+                return targets;
+            }
+
+            foreach (var dish in table.Dishes)
+            {
+                GridPos origin = dish.Placement.Origin;
+                targets.Add(new ActiveTarget(dish.Id.ToString(), origin.X, origin.Y, cfg.ItemTargetKind.DiningTableDish));
+            }
+
+            return targets;
+        }
+
+        internal static IReadOnlyList<ActiveTarget> EnumerateMaterials(GameRun run)
+        {
+            var targets = new List<ActiveTarget>();
+            if (run?.Database?.AllMaterials == null)
+            {
+                return targets;
+            }
+
+            foreach (var material in run.Database.AllMaterials)
+            {
+                if (material != null)
+                {
+                    targets.Add(new ActiveTarget(material.Id, targetKind: cfg.ItemTargetKind.Material));
+                }
+            }
+
+            return targets;
+        }
+
+        internal static IReadOnlyList<ActiveTarget> EnumerateFlavorSlots(GameRun run)
+        {
+            var targets = new List<ActiveTarget>();
+            if (run == null)
+            {
+                return targets;
+            }
+
+            for (int book = 0; book < run.RecipeBookCount; book++)
+            {
+                IReadOnlyList<RecipeBookSlot> dishes = run.GetRecipeBookEntries(book);
+                for (int dish = 0; dish < dishes.Count; dish++)
+                {
+                    RecipeBookSlot slot = dishes[dish];
+                    if (slot == null)
+                    {
+                        continue;
+                    }
+
+                    IReadOnlyList<string> flavors = slot.ExtraFlavorIds;
+                    if (flavors.Count == 0)
+                    {
+                        targets.Add(new ActiveTarget(string.Empty, book, dish, cfg.ItemTargetKind.FlavorSlot));
+                        continue;
+                    }
+
+                    for (int i = 0; i < flavors.Count; i++)
+                    {
+                        targets.Add(new ActiveTarget(flavors[i], book, dish, cfg.ItemTargetKind.FlavorSlot));
+                    }
+                }
             }
 
             return targets;

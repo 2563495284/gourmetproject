@@ -7,7 +7,7 @@ namespace GourmetProject.Game.Presentation.Battle
 {
     /// <summary>
     /// 战斗世界层道具槽：用于原型图右侧被动道具栏与右下角主动道具栏。
-    /// 固定结构优先放 prefab；引用缺失时运行时补齐，便于先接入显示再逐步美术化。
+    /// 固定结构放在 prefab；引用缺失时报错，避免运行时拼结构。
     /// </summary>
     [RequireComponent(typeof(BoxCollider2D))]
     public sealed class WorldItemSlotView : MonoBehaviour
@@ -32,6 +32,10 @@ namespace GourmetProject.Game.Presentation.Battle
             Action clicked)
         {
             EnsureRefs();
+            if (_collider == null || _background == null || _icon == null)
+            {
+                return;
+            }
 
             transform.localScale = new Vector3(size.x, size.y, 1f);
             _clicked = clicked;
@@ -105,10 +109,6 @@ namespace GourmetProject.Game.Presentation.Battle
             if (_collider == null)
             {
                 _collider = GetComponent<BoxCollider2D>();
-                if (_collider == null)
-                {
-                    _collider = gameObject.AddComponent<BoxCollider2D>();
-                }
             }
 
             if (_background == null)
@@ -130,6 +130,11 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 _fallbackLabel = EnsureTextChild("FallbackLabel");
             }
+
+            if (_collider == null || _background == null || _icon == null || _badge == null || _fallbackLabel == null)
+            {
+                Debug.LogError($"{nameof(WorldItemSlotView)} prefab 缺少 BoxCollider2D/Background/Icon/Badge/FallbackLabel。", this);
+            }
         }
 
         private SpriteRenderer EnsureSpriteChild(string childName)
@@ -137,13 +142,11 @@ namespace GourmetProject.Game.Presentation.Battle
             Transform child = transform.Find(childName);
             if (child == null)
             {
-                var go = new GameObject(childName);
-                child = go.transform;
-                child.SetParent(transform, false);
+                return null;
             }
 
             SpriteRenderer renderer = child.GetComponent<SpriteRenderer>();
-            return renderer != null ? renderer : child.gameObject.AddComponent<SpriteRenderer>();
+            return renderer;
         }
 
         private TextMesh EnsureTextChild(string childName)
@@ -151,13 +154,11 @@ namespace GourmetProject.Game.Presentation.Battle
             Transform child = transform.Find(childName);
             if (child == null)
             {
-                var go = new GameObject(childName);
-                child = go.transform;
-                child.SetParent(transform, false);
+                return null;
             }
 
             TextMesh text = child.GetComponent<TextMesh>();
-            return text != null ? text : child.gameObject.AddComponent<TextMesh>();
+            return text;
         }
 
         private Sprite WhiteSprite
