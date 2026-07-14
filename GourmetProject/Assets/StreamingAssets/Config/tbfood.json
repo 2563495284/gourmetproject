@@ -1,7 +1,7 @@
 [
   {
     "id": "food_gold",
-    "name": "街边小吃",
+    "name": "美食",
     "desc": "普通美食：主要奖励金币。",
     "isBoss": false,
     "scoreProfileId": "",
@@ -13,7 +13,7 @@
   },
   {
     "id": "food_fragment",
-    "name": "胃口扩张",
+    "name": "美食",
     "desc": "普通美食：主要奖励胃部碎片。",
     "isBoss": false,
     "scoreProfileId": "",
@@ -25,7 +25,7 @@
   },
   {
     "id": "food_passive",
-    "name": "招牌菜试炼",
+    "name": "美食",
     "desc": "普通美食：主要奖励被动道具。",
     "isBoss": false,
     "scoreProfileId": "",
@@ -37,7 +37,7 @@
   },
   {
     "id": "food_active",
-    "name": "秘制小物",
+    "name": "美食",
     "desc": "普通美食：主要奖励主动道具。",
     "isBoss": false,
     "scoreProfileId": "",
@@ -49,7 +49,7 @@
   },
   {
     "id": "food_dish",
-    "name": "新菜试做",
+    "name": "美食",
     "desc": "普通美食：主要奖励菜品。",
     "isBoss": false,
     "scoreProfileId": "",
@@ -61,7 +61,7 @@
   },
   {
     "id": "food_hard_gold",
-    "name": "重口硬菜",
+    "name": "超级美食",
     "desc": "困难美食：主要奖励金币。",
     "isBoss": false,
     "scoreProfileId": "",
@@ -73,7 +73,7 @@
   },
   {
     "id": "food_hard_fragment",
-    "name": "硬菜扩胃",
+    "name": "超级美食",
     "desc": "困难美食：主要奖励胃部碎片。",
     "isBoss": false,
     "scoreProfileId": "",
@@ -85,7 +85,7 @@
   },
   {
     "id": "food_hard_passive",
-    "name": "名厨考验",
+    "name": "超级美食",
     "desc": "困难美食：主要奖励被动道具。",
     "isBoss": false,
     "scoreProfileId": "",
@@ -97,7 +97,7 @@
   },
   {
     "id": "food_hard_active",
-    "name": "险中取巧",
+    "name": "超级美食",
     "desc": "困难美食：主要奖励主动道具。",
     "isBoss": false,
     "scoreProfileId": "",
@@ -109,7 +109,7 @@
   },
   {
     "id": "food_hard_dish",
-    "name": "稀有菜谱",
+    "name": "超级美食",
     "desc": "困难美食：主要奖励菜品。",
     "isBoss": false,
     "scoreProfileId": "",
@@ -121,7 +121,7 @@
   },
   {
     "id": "food_boss",
-    "name": "大胃王挑战",
+    "name": "盛宴",
     "desc": "周末盛宴 Boss。",
     "isBoss": true,
     "scoreProfileId": "",
