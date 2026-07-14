@@ -24,7 +24,6 @@ public sealed partial class RewardSlot : Luban.BeanBase
         { if(!_buf["weight"].IsNumber) { throw new SerializationException(); }  Weight = _buf["weight"]; }
         { if(!_buf["poolId"].IsString) { throw new SerializationException(); }  PoolId = _buf["poolId"]; }
         { if(!_buf["hiddenOffset"].IsNumber) { throw new SerializationException(); }  HiddenOffset = _buf["hiddenOffset"]; }
-        { if(!_buf["fallbackGold"].IsNumber) { throw new SerializationException(); }  FallbackGold = _buf["fallbackGold"]; }
     }
 
     public static RewardSlot DeserializeRewardSlot(JSONNode _buf)
@@ -60,11 +59,6 @@ public sealed partial class RewardSlot : Luban.BeanBase
     /// 隐藏分偏移
     /// </summary>
     public readonly int HiddenOffset;
-    /// <summary>
-    /// 兜底金币数量
-    /// </summary>
-    public readonly int FallbackGold;
-   
     public const int __ID__ = -610313747;
     public override int GetTypeId() => __ID__;
 
@@ -82,7 +76,6 @@ public sealed partial class RewardSlot : Luban.BeanBase
         + "weight:" + Weight + ","
         + "poolId:" + PoolId + ","
         + "hiddenOffset:" + HiddenOffset + ","
-        + "fallbackGold:" + FallbackGold + ","
         + "}";
     }
 }

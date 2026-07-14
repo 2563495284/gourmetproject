@@ -6,8 +6,7 @@
     "choiceCount": 3,
     "weight": 1,
     "poolId": "pool_dish",
-    "hiddenOffset": 0,
-    "fallbackGold": 40
+    "hiddenOffset": 0
   },
   {
     "id": "slot_main_passive",
@@ -16,8 +15,7 @@
     "choiceCount": 3,
     "weight": 1,
     "poolId": "pool_passive",
-    "hiddenOffset": 0,
-    "fallbackGold": 60
+    "hiddenOffset": 0
   },
   {
     "id": "slot_main_fragment",
@@ -26,8 +24,7 @@
     "choiceCount": 3,
     "weight": 1,
     "poolId": "pool_fragment",
-    "hiddenOffset": 0,
-    "fallbackGold": 70
+    "hiddenOffset": 0
   },
   {
     "id": "slot_main_dish_late",
@@ -36,8 +33,7 @@
     "choiceCount": 3,
     "weight": 55,
     "poolId": "pool_dish",
-    "hiddenOffset": 0,
-    "fallbackGold": 60
+    "hiddenOffset": 0
   },
   {
     "id": "slot_main_passive_late",
@@ -46,8 +42,7 @@
     "choiceCount": 3,
     "weight": 45,
     "poolId": "pool_passive",
-    "hiddenOffset": 0,
-    "fallbackGold": 70
+    "hiddenOffset": 0
   },
   {
     "id": "slot_boss_passive",
@@ -56,8 +51,7 @@
     "choiceCount": 3,
     "weight": 60,
     "poolId": "pool_passive_boss",
-    "hiddenOffset": 5,
-    "fallbackGold": 90
+    "hiddenOffset": 5
   },
   {
     "id": "slot_boss_active",
@@ -66,8 +60,7 @@
     "choiceCount": 1,
     "weight": 40,
     "poolId": "pool_active",
-    "hiddenOffset": 0,
-    "fallbackGold": 50
+    "hiddenOffset": 0
   },
   {
     "id": "slot_extra_active",
@@ -76,8 +69,7 @@
     "choiceCount": 1,
     "weight": 45,
     "poolId": "pool_active",
-    "hiddenOffset": 0,
-    "fallbackGold": 25
+    "hiddenOffset": 0
   },
   {
     "id": "slot_extra_gold",
@@ -86,8 +78,7 @@
     "choiceCount": 1,
     "weight": 55,
     "poolId": "",
-    "hiddenOffset": 0,
-    "fallbackGold": 30
+    "hiddenOffset": 0
   },
   {
     "id": "slot_main_gold",
@@ -96,8 +87,7 @@
     "choiceCount": 1,
     "weight": 1,
     "poolId": "",
-    "hiddenOffset": 0,
-    "fallbackGold": 35
+    "hiddenOffset": 0
   },
   {
     "id": "slot_main_active",
@@ -106,7 +96,6 @@
     "choiceCount": 1,
     "weight": 1,
     "poolId": "pool_active",
-    "hiddenOffset": 0,
-    "fallbackGold": 45
+    "hiddenOffset": 0
   }
 ]

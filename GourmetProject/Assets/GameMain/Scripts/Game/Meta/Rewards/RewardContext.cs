@@ -14,6 +14,7 @@ namespace GourmetProject.Game.Meta
             cfg.Week week,
             cfg.RewardPackage package,
             IRandomStream rng,
+            int baseGold = 0,
             ActionExecutionContext actionContext = null,
             MetaProgressSaveData progress = null)
         {
@@ -22,6 +23,7 @@ namespace GourmetProject.Game.Meta
             Week = week;
             Package = package;
             Rng = rng;
+            BaseGold = baseGold;
             ActionContext = actionContext;
             Progress = progress;
         }
@@ -35,6 +37,8 @@ namespace GourmetProject.Game.Meta
         public cfg.RewardPackage Package { get; }
 
         public IRandomStream Rng { get; }
+
+        public int BaseGold { get; }
 
         public ActionExecutionContext ActionContext { get; }
 
