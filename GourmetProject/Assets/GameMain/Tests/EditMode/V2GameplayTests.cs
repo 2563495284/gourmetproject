@@ -762,7 +762,6 @@ namespace GourmetProject.Tests
 
             string resultText = RewardGranter.ApplyFragmentPack(run, choices);
 
-            Assert.IsTrue(run.HasPendingFragmentPack);
             Assert.AreEqual(choices.Count, run.PendingFragmentPack.Count);
             StringAssert.Contains("餐桌碎片包", resultText);
         }

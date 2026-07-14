@@ -104,7 +104,7 @@ namespace GourmetProject.Game.UI.Battle.View
                         _host.PlayShowCardsWhenReady);
                     break;
                 case GameplayView.TableEdit:
-                    if (_host.Run != null && _host.Run.HasPendingFragmentPack)
+                    if (_host.Run != null && _host.Run.PendingFragmentPack.Count > 0)
                     {
                         _host.OpenTableEdit();
                     }

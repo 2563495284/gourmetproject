@@ -576,7 +576,7 @@ namespace GourmetProject.Game.UI.Battle
         private void OpenTableEdit()
         {
             BattleWorldController world = _world ?? BattleWorldController.Instance;
-            if (world == null || _run == null || !_run.HasPendingFragmentPack)
+            if (world == null || _run == null || _run.PendingFragmentPack.Count == 0)
             {
                 return;
             }

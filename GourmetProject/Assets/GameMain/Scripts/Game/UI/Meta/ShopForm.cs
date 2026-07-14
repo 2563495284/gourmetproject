@@ -293,7 +293,7 @@ namespace GourmetProject.Game.UI.Meta
             Rebuild();
 
             // 碎片包：购买后进入餐桌编辑页手动拼贴（金币已扣，待开包状态已置）。
-            if (entry.Kind == ShopEntryKind.Fragment && _run.HasPendingFragmentPack && _onOpenTableEdit != null)
+            if (entry.Kind == ShopEntryKind.Fragment && _run.PendingFragmentPack.Count > 0 && _onOpenTableEdit != null)
             {
                 _onOpenTableEdit.Invoke();
                 return;
