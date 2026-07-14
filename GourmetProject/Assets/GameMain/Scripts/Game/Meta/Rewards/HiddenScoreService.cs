@@ -64,19 +64,25 @@ namespace GourmetProject.Game.Meta
             return Evaluate(FragmentPurpose, run, context, BaseHiddenScore(run, context));
         }
 
-        public static GoldRange GoldRewardRange(GameRun run, ActionExecutionContext context = null, cfg.RewardPackage package = null)
+        public static GoldRange GoldRewardRange(GameRun run, ActionExecutionContext context = null)
+        {
+            return GoldRewardRange(run, context, 0);
+        }
+
+        public static GoldRange GoldRewardRange(GameRun run, ActionExecutionContext context, int hiddenOffset)
         {
             cfg.Food food = ResolveFood(run?.Tables, context?.Action);
             cfg.GoldRewardCurve curve = ResolveGoldCurve(run?.Tables, food);
             if (run == null || curve == null)
             {
-                int min = package != null ? package.GoldMin : 20;
-                int max = package != null ? package.GoldMax : 35;
-                return new GoldRange(min, max);
+                return new GoldRange(20, 35);
             }
 
-            double minValue = curve.MinBase + run.WeekIndex * curve.MinPerWeek + run.CurrentDay * curve.MinPerDay;
-            double maxValue = curve.MaxBase + run.WeekIndex * curve.MaxPerWeek + run.CurrentDay * curve.MaxPerDay;
+            double minHidden = curve.MinBase + run.WeekIndex * curve.MinPerWeek + run.CurrentDay * curve.MinPerDay + hiddenOffset;
+            double maxHidden = curve.MaxBase + run.WeekIndex * curve.MaxPerWeek + run.CurrentDay * curve.MaxPerDay + hiddenOffset;
+            double fluctuation = Math.Max(0, curve.FluctuationPct);
+            double minValue = minHidden * (1d - fluctuation);
+            double maxValue = maxHidden * (1d + fluctuation);
             return new GoldRange(
                 Math.Max(0, (int)Math.Round(minValue, MidpointRounding.AwayFromZero)),
                 Math.Max(0, (int)Math.Round(maxValue, MidpointRounding.AwayFromZero)));

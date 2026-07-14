@@ -18,11 +18,8 @@ public sealed partial class RewardPackage : Luban.BeanBase
     public RewardPackage(JSONNode _buf) 
     {
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
-        { if(!_buf["goldMin"].IsNumber) { throw new SerializationException(); }  GoldMin = _buf["goldMin"]; }
-        { if(!_buf["goldMax"].IsNumber) { throw new SerializationException(); }  GoldMax = _buf["goldMax"]; }
-        { if(!_buf["mainSlotGroupId"].IsString) { throw new SerializationException(); }  MainSlotGroupId = _buf["mainSlotGroupId"]; }
-        { if(!_buf["extraSlotGroupId"].IsString) { throw new SerializationException(); }  ExtraSlotGroupId = _buf["extraSlotGroupId"]; }
-        { if(!_buf["extraChance"].IsNumber) { throw new SerializationException(); }  ExtraChance = _buf["extraChance"]; }
+        { var __json0 = _buf["baseDishSlotGroupId"]; if(!__json0.IsArray) { throw new SerializationException(); } BaseDishSlotGroupId = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  BaseDishSlotGroupId.Add(__v0); }   }
+        { if(!_buf["specificSlotGroupId"].IsString) { throw new SerializationException(); }  SpecificSlotGroupId = _buf["specificSlotGroupId"]; }
     }
 
     public static RewardPackage DeserializeRewardPackage(JSONNode _buf)
@@ -31,29 +28,17 @@ public sealed partial class RewardPackage : Luban.BeanBase
     }
 
     /// <summary>
-    /// 奖励包 id；Week.rewardPackageId 或 Action.rewardPackageId 引用它。
+    /// 奖励包 id
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 基础金币奖励下限；实际奖励会结合隐藏分/行动曲线派生。
+    /// 基础菜品奖励槽组 id。
     /// </summary>
-    public readonly int GoldMin;
+    public readonly System.Collections.Generic.List<string> BaseDishSlotGroupId;
     /// <summary>
-    /// 基础金币奖励上限；实际奖励会结合隐藏分/行动曲线派生。
+    /// 行动预览对应的特定奖励槽组 id。
     /// </summary>
-    public readonly int GoldMax;
-    /// <summary>
-    /// 主奖励槽组 id，对应 reward.xlsx/reward_slot.groupId。
-    /// </summary>
-    public readonly string MainSlotGroupId;
-    /// <summary>
-    /// 额外奖励槽组 id；extraChance 命中时额外抽取。
-    /// </summary>
-    public readonly string ExtraSlotGroupId;
-    /// <summary>
-    /// 额外奖励出现概率，0..1。
-    /// </summary>
-    public readonly float ExtraChance;
+    public readonly string SpecificSlotGroupId;
    
     public const int __ID__ = 46008823;
     public override int GetTypeId() => __ID__;
@@ -66,11 +51,8 @@ public sealed partial class RewardPackage : Luban.BeanBase
     {
         return "{ "
         + "id:" + Id + ","
-        + "goldMin:" + GoldMin + ","
-        + "goldMax:" + GoldMax + ","
-        + "mainSlotGroupId:" + MainSlotGroupId + ","
-        + "extraSlotGroupId:" + ExtraSlotGroupId + ","
-        + "extraChance:" + ExtraChance + ","
+        + "baseDishSlotGroupId:" + Luban.StringUtil.CollectionToString(BaseDishSlotGroupId) + ","
+        + "specificSlotGroupId:" + SpecificSlotGroupId + ","
         + "}";
     }
 }

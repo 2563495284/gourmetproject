@@ -1435,11 +1435,56 @@ namespace GourmetProject.Game.Run
                 BaseGoldClaimed = offer.BaseGoldClaimed,
                 MainChoiceIndex = offer.MainChoiceIndex,
                 ExtraChoiceIndex = offer.ExtraChoiceIndex,
+                BonusChoiceIndex = offer.BonusChoiceIndex,
                 MainChoiceSkipped = offer.MainChoiceSkipped,
                 ExtraChoiceSkipped = offer.ExtraChoiceSkipped,
+                BonusChoiceSkipped = offer.BonusChoiceSkipped,
+                MainRequiredChoiceCount = offer.MainRequiredChoiceCount,
+                ExtraRequiredChoiceCount = offer.ExtraRequiredChoiceCount,
+                BonusRequiredChoiceCount = offer.BonusRequiredChoiceCount,
+                MainChoiceIndices = new List<int>(offer.MainChoiceIndices),
+                ExtraChoiceIndices = new List<int>(offer.ExtraChoiceIndices),
+                BonusChoiceIndices = new List<int>(offer.BonusChoiceIndices),
                 MainChoices = ToSaveData(offer.MainChoices),
                 ExtraChoices = ToSaveData(offer.ExtraChoices),
+                BonusChoices = ToSaveData(offer.BonusChoices),
+                FixedGroups = ToSaveData(offer.FixedGroups),
+                SpecificGroup = ToSaveData(offer.SpecificGroup),
             };
+        }
+
+        private static List<RewardChoiceGroupSaveData> ToSaveData(IReadOnlyList<RewardChoiceGroup> groups)
+        {
+            var result = new List<RewardChoiceGroupSaveData>();
+            if (groups == null)
+            {
+                return result;
+            }
+
+            for (int i = 0; i < groups.Count; i++)
+            {
+                RewardChoiceGroup group = groups[i];
+                if (group != null)
+                {
+                    result.Add(ToSaveData(group));
+                }
+            }
+
+            return result;
+        }
+
+        private static RewardChoiceGroupSaveData ToSaveData(RewardChoiceGroup group)
+        {
+            return group == null
+                ? null
+                : new RewardChoiceGroupSaveData
+                {
+                    Title = group.Title,
+                    RequiredChoiceCount = group.RequiredChoiceCount,
+                    Skipped = group.Skipped,
+                    ClaimedIndices = new List<int>(group.ClaimedIndices),
+                    Choices = ToSaveData(group.Choices),
+                };
         }
 
         private static List<RewardChoiceSaveData> ToSaveData(IReadOnlyList<RewardChoice> choices)
@@ -1473,17 +1518,70 @@ namespace GourmetProject.Game.Run
 
         private static RewardOffer FromSaveData(RewardOfferSaveData data)
         {
-            return data == null
-                ? null
-                : new RewardOffer(
+            if (data == null)
+            {
+                return null;
+            }
+
+            if (data.FixedGroups != null && data.FixedGroups.Count > 0)
+            {
+                return new RewardOffer(
+                    data.BaseGold,
+                    FromGroupSaveData(data.FixedGroups),
+                    FromGroupSaveData(data.SpecificGroup),
+                    data.BaseGoldClaimed);
+            }
+
+            return new RewardOffer(
                     data.BaseGold,
                     FromSaveData(data.MainChoices),
                     FromSaveData(data.ExtraChoices),
+                    FromSaveData(data.BonusChoices),
                     data.BaseGoldClaimed,
                     data.MainChoiceIndex,
                     data.ExtraChoiceIndex,
                     data.MainChoiceSkipped,
-                    data.ExtraChoiceSkipped);
+                    data.ExtraChoiceSkipped,
+                    data.MainRequiredChoiceCount,
+                    data.ExtraRequiredChoiceCount,
+                    data.BonusChoiceIndex,
+                    data.BonusChoiceSkipped,
+                    data.BonusRequiredChoiceCount,
+                    data.MainChoiceIndices,
+                    data.ExtraChoiceIndices,
+                    data.BonusChoiceIndices);
+        }
+
+        private static List<RewardChoiceGroup> FromGroupSaveData(List<RewardChoiceGroupSaveData> groups)
+        {
+            var result = new List<RewardChoiceGroup>();
+            if (groups == null)
+            {
+                return result;
+            }
+
+            for (int i = 0; i < groups.Count; i++)
+            {
+                RewardChoiceGroup group = FromGroupSaveData(groups[i]);
+                if (group != null)
+                {
+                    result.Add(group);
+                }
+            }
+
+            return result;
+        }
+
+        private static RewardChoiceGroup FromGroupSaveData(RewardChoiceGroupSaveData group)
+        {
+            return group == null
+                ? new RewardChoiceGroup("特定奖励", null, 0)
+                : new RewardChoiceGroup(
+                    group.Title,
+                    FromSaveData(group.Choices),
+                    group.RequiredChoiceCount,
+                    group.ClaimedIndices,
+                    group.Skipped);
         }
 
         private static List<RewardChoice> FromSaveData(List<RewardChoiceSaveData> choices)

@@ -28,10 +28,10 @@ namespace GourmetProject.Game.Meta
                 count = Math.Max(1, count + new ItemRuntime(context.Run).ChoiceCountDelta());
             }
 
-            int hidden = Math.Max(0, HiddenForSlot(context, slot) + slot.HiddenOffset);
+            int hidden = Math.Max(0, HiddenForSlot(context, slot) + HiddenOffsetForSlot(context, slot));
             if (slot.Kind == cfg.RewardKind.Gold)
             {
-                result.Add(RewardChoice.Gold(GetGoldRewardAmount(context, slot), "额外金币"));
+                result.Add(RewardChoice.Gold(RollGoldRewardAmount(context, slot), "额外金币"));
                 return result;
             }
 
@@ -39,7 +39,7 @@ namespace GourmetProject.Game.Meta
             if (pool == null)
             {
                 Log.Warning($"Reward slot '{slot.Id}' references missing pool '{slot.PoolId}'.", Tag);
-                result.Add(RewardChoice.Gold(GetGoldRewardAmount(context, slot), "折算金币", isFallback: true));
+                result.Add(RewardChoice.Gold(RollGoldRewardAmount(context, slot), "折算金币", isFallback: true));
                 return result;
             }
 
@@ -62,7 +62,7 @@ namespace GourmetProject.Game.Meta
             if (result.Count == 0)
             {
                 Log.Warning($"Reward slot '{slot.Id}' produced no candidates. Converted to gold.", Tag);
-                result.Add(RewardChoice.Gold(GetGoldRewardAmount(context, slot), "折算金币", isFallback: true));
+                result.Add(RewardChoice.Gold(RollGoldRewardAmount(context, slot), "折算金币", isFallback: true));
             }
 
             return result;
@@ -123,22 +123,16 @@ namespace GourmetProject.Game.Meta
             int count,
             List<RewardChoice> result)
         {
-            Dictionary<cfg.ItemQuality, float> qualityWeights = ParseQualityWeights(pool.QualityWeights);
             bool activeItem = kind == cfg.ItemKind.Active;
-            List<ItemDefinition> candidates = BuildItemCandidates(context, pool, kind, hidden, qualityWeights, strictHidden: !activeItem, strictTags: true, strictQuality: true);
+            List<ItemDefinition> candidates = BuildItemCandidates(context, pool, kind, hidden, strictHidden: !activeItem, strictTags: true);
             if (candidates.Count == 0 && pool.AllowFallback)
             {
-                candidates = BuildItemCandidates(context, pool, kind, hidden, qualityWeights, strictHidden: false, strictTags: true, strictQuality: true);
+                candidates = BuildItemCandidates(context, pool, kind, hidden, strictHidden: false, strictTags: true);
             }
 
             if (candidates.Count == 0 && pool.AllowFallback)
             {
-                candidates = BuildItemCandidates(context, pool, kind, hidden, qualityWeights, strictHidden: false, strictTags: false, strictQuality: true);
-            }
-
-            if (candidates.Count == 0 && pool.AllowFallback)
-            {
-                candidates = BuildItemCandidates(context, pool, kind, hidden, qualityWeights, strictHidden: false, strictTags: false, strictQuality: false);
+                candidates = BuildItemCandidates(context, pool, kind, hidden, strictHidden: false, strictTags: false);
             }
 
             for (int i = 0; i < count && candidates.Count > 0; i++)
@@ -146,15 +140,12 @@ namespace GourmetProject.Game.Meta
                 var weights = new List<float>(candidates.Count);
                 foreach (ItemDefinition item in candidates)
                 {
-                    weights.Add(GetItemWeight(item, qualityWeights, hidden, pool.DistanceFloor));
+                    weights.Add(GetItemWeight(item, hidden, pool.DistanceFloor));
                 }
 
                 int index = PickWeightedOrUniform(context, weights, candidates.Count);
                 ItemDefinition chosen = candidates[index];
-                if (!activeItem)
-                {
-                    candidates.RemoveAt(index);
-                }
+                candidates.RemoveAt(index);
 
                 string desc = chosen.IsPassive ? $"被动道具 · {chosen.Quality}" : "主动道具";
                 result.Add(new RewardChoice(
@@ -197,10 +188,8 @@ namespace GourmetProject.Game.Meta
             cfg.RewardPool pool,
             cfg.ItemKind kind,
             int hidden,
-            Dictionary<cfg.ItemQuality, float> qualityWeights,
             bool strictHidden,
-            bool strictTags,
-            bool strictQuality)
+            bool strictTags)
         {
             var candidates = new List<ItemDefinition>();
             MetaProgressSaveData progress = context.Progress ?? MetaProgressPersistence.Load();
@@ -218,11 +207,6 @@ namespace GourmetProject.Game.Meta
                 }
 
                 if (strictTags && !MatchesAnyTag(item.SpecialTags, pool.SpecialTags))
-                {
-                    continue;
-                }
-
-                if (strictQuality && qualityWeights.Count > 0 && !qualityWeights.ContainsKey(item.Quality))
                 {
                     continue;
                 }
@@ -305,16 +289,12 @@ namespace GourmetProject.Game.Meta
             return total > 0f ? context.Rng.WeightedPickIndex(weights) : context.Rng.Range(0, count);
         }
 
-        private static float GetItemWeight(ItemDefinition item, Dictionary<cfg.ItemQuality, float> qualityWeights, int hidden, int distanceFloor)
+        private static float GetItemWeight(ItemDefinition item, int hidden, int distanceFloor)
         {
             float weight = item.BaseWeight > 0f ? item.BaseWeight : 1f;
             if (item.IsPassive)
             {
                 weight = HiddenScoreWeight(weight, HiddenMean(item), hidden, distanceFloor);
-            }
-            if (qualityWeights.Count > 0)
-            {
-                weight *= qualityWeights.TryGetValue(item.Quality, out float qualityWeight) ? Math.Max(0f, qualityWeight) : 0f;
             }
 
             return weight;
@@ -335,6 +315,13 @@ namespace GourmetProject.Game.Meta
                 default:
                     return context.RewardHiddenScore;
             }
+        }
+
+        private static int HiddenOffsetForSlot(RewardContext context, cfg.RewardSlot slot)
+        {
+            cfg.Food food = FoodService.Resolve(context.Tables, context.ActionContext?.Action);
+            bool hard = food != null && !food.IsBoss && string.Equals(food.GoldCurveId, "gold_hard", StringComparison.OrdinalIgnoreCase);
+            return hard ? slot.HardHiddenOffset : slot.NormalHiddenOffset;
         }
 
         private static bool ItemCoversHidden(ItemDefinition item, int hidden)
@@ -391,44 +378,10 @@ namespace GourmetProject.Game.Meta
             return false;
         }
 
-        private static Dictionary<cfg.ItemQuality, float> ParseQualityWeights(string spec)
+        private static int RollGoldRewardAmount(RewardContext context, cfg.RewardSlot slot)
         {
-            var result = new Dictionary<cfg.ItemQuality, float>();
-            if (string.IsNullOrEmpty(spec))
-            {
-                return result;
-            }
-
-            string[] entries = spec.Split('|');
-            for (int i = 0; i < entries.Length; i++)
-            {
-                string[] parts = entries[i].Split(':');
-                if (parts.Length != 2)
-                {
-                    continue;
-                }
-
-                if (!Enum.TryParse(parts[0].Trim(), out cfg.ItemQuality quality))
-                {
-                    continue;
-                }
-
-                if (float.TryParse(parts[1].Trim(), out float weight))
-                {
-                    result[quality] = weight;
-                }
-            }
-
-            return result;
-        }
-
-        private static int GetGoldRewardAmount(RewardContext context, cfg.RewardSlot slot)
-        {
-            int baseGold = Math.Max(1, context.BaseGold);
-            float min = Math.Min(slot.GoldMultiplierMin, slot.GoldMultiplierMax);
-            float max = Math.Max(slot.GoldMultiplierMin, slot.GoldMultiplierMax);
-            float multiplier = context.Rng.Range(min, max);
-            return Math.Max(1, (int)Math.Round(baseGold * multiplier, MidpointRounding.AwayFromZero));
+            GoldRange range = HiddenScoreService.GoldRewardRange(context.Run, context.ActionContext, HiddenOffsetForSlot(context, slot));
+            return context.Rng.Range(range.Min, range.Max + 1);
         }
     }
 }

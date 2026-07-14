@@ -21,11 +21,11 @@ public sealed partial class RewardSlot : Luban.BeanBase
         { if(!_buf["groupId"].IsString) { throw new SerializationException(); }  GroupId = _buf["groupId"]; }
         { if(!_buf["kind"].IsNumber) { throw new SerializationException(); }  Kind = (RewardKind)_buf["kind"].AsInt; }
         { if(!_buf["choiceCount"].IsNumber) { throw new SerializationException(); }  ChoiceCount = _buf["choiceCount"]; }
+        { if(!_buf["requiredPickCount"].IsNumber) { throw new SerializationException(); }  RequiredPickCount = _buf["requiredPickCount"]; }
         { if(!_buf["weight"].IsNumber) { throw new SerializationException(); }  Weight = _buf["weight"]; }
         { if(!_buf["poolId"].IsString) { throw new SerializationException(); }  PoolId = _buf["poolId"]; }
-        { if(!_buf["hiddenOffset"].IsNumber) { throw new SerializationException(); }  HiddenOffset = _buf["hiddenOffset"]; }
-        { if(!_buf["goldMultiplierMin"].IsNumber) { throw new SerializationException(); }  GoldMultiplierMin = _buf["goldMultiplierMin"]; }
-        { if(!_buf["goldMultiplierMax"].IsNumber) { throw new SerializationException(); }  GoldMultiplierMax = _buf["goldMultiplierMax"]; }
+        { if(!_buf["normalHiddenOffset"].IsNumber) { throw new SerializationException(); }  NormalHiddenOffset = _buf["normalHiddenOffset"]; }
+        { if(!_buf["hardHiddenOffset"].IsNumber) { throw new SerializationException(); }  HardHiddenOffset = _buf["hardHiddenOffset"]; }
     }
 
     public static RewardSlot DeserializeRewardSlot(JSONNode _buf)
@@ -50,6 +50,10 @@ public sealed partial class RewardSlot : Luban.BeanBase
     /// </summary>
     public readonly int ChoiceCount;
     /// <summary>
+    /// 需要领取的候选数量
+    /// </summary>
+    public readonly int RequiredPickCount;
+    /// <summary>
     /// 槽权重
     /// </summary>
     public readonly float Weight;
@@ -58,17 +62,13 @@ public sealed partial class RewardSlot : Luban.BeanBase
     /// </summary>
     public readonly string PoolId;
     /// <summary>
-    /// 隐藏分偏移
+    /// 普通美食临时隐藏分修正（boss也读这些）
     /// </summary>
-    public readonly int HiddenOffset;
+    public readonly int NormalHiddenOffset;
     /// <summary>
-    /// 金币下限(基于基础金币)
+    /// 困难美食临时隐藏分修正
     /// </summary>
-    public readonly float GoldMultiplierMin;
-    /// <summary>
-    /// 金币上限
-    /// </summary>
-    public readonly float GoldMultiplierMax;
+    public readonly int HardHiddenOffset;
    
     public const int __ID__ = -610313747;
     public override int GetTypeId() => __ID__;
@@ -84,11 +84,11 @@ public sealed partial class RewardSlot : Luban.BeanBase
         + "groupId:" + GroupId + ","
         + "kind:" + Kind + ","
         + "choiceCount:" + ChoiceCount + ","
+        + "requiredPickCount:" + RequiredPickCount + ","
         + "weight:" + Weight + ","
         + "poolId:" + PoolId + ","
-        + "hiddenOffset:" + HiddenOffset + ","
-        + "goldMultiplierMin:" + GoldMultiplierMin + ","
-        + "goldMultiplierMax:" + GoldMultiplierMax + ","
+        + "normalHiddenOffset:" + NormalHiddenOffset + ","
+        + "hardHiddenOffset:" + HardHiddenOffset + ","
         + "}";
     }
 }

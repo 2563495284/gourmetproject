@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 奖励池筛选：qualityWeights 写 Common:70|Uncommon:25|Rare:5；specialTags 用 | 分隔。
+/// 奖励池筛选：specialTags 用 | 分隔；道具不按品质权重筛选。
 /// </summary>
 public partial class TbRewardPool
 {

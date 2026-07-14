@@ -24,6 +24,7 @@ public sealed partial class GoldRewardCurve : Luban.BeanBase
         { if(!_buf["maxPerWeek"].IsNumber) { throw new SerializationException(); }  MaxPerWeek = _buf["maxPerWeek"]; }
         { if(!_buf["minPerDay"].IsNumber) { throw new SerializationException(); }  MinPerDay = _buf["minPerDay"]; }
         { if(!_buf["maxPerDay"].IsNumber) { throw new SerializationException(); }  MaxPerDay = _buf["maxPerDay"]; }
+        { if(!_buf["fluctuationPct"].IsNumber) { throw new SerializationException(); }  FluctuationPct = _buf["fluctuationPct"]; }
     }
 
     public static GoldRewardCurve DeserializeGoldRewardCurve(JSONNode _buf)
@@ -36,29 +37,33 @@ public sealed partial class GoldRewardCurve : Luban.BeanBase
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 金币下限基础值。
+    /// 金币奖励隐藏分下限基础值。
     /// </summary>
     public readonly int MinBase;
     /// <summary>
-    /// 金币上限基础值。
+    /// 金币奖励隐藏分上限基础值。
     /// </summary>
     public readonly int MaxBase;
     /// <summary>
-    /// 金币下限每周递增值。
+    /// 下限每周递增值。
     /// </summary>
     public readonly float MinPerWeek;
     /// <summary>
-    /// 金币上限每周递增值。
+    /// 上限每周递增值。
     /// </summary>
     public readonly float MaxPerWeek;
     /// <summary>
-    /// 金币下限每行动轴天数递增值。
+    /// 下限每行动轴天数递增值。
     /// </summary>
     public readonly float MinPerDay;
     /// <summary>
-    /// 金币上限每行动轴天数递增值。
+    /// 上限每行动轴天数递增值。
     /// </summary>
     public readonly float MaxPerDay;
+    /// <summary>
+    /// 上下浮动比例，例如 0.2 表示下限*0.8、上限*1.2。
+    /// </summary>
+    public readonly float FluctuationPct;
    
     public const int __ID__ = 320784992;
     public override int GetTypeId() => __ID__;
@@ -77,6 +82,7 @@ public sealed partial class GoldRewardCurve : Luban.BeanBase
         + "maxPerWeek:" + MaxPerWeek + ","
         + "minPerDay:" + MinPerDay + ","
         + "maxPerDay:" + MaxPerDay + ","
+        + "fluctuationPct:" + FluctuationPct + ","
         + "}";
     }
 }

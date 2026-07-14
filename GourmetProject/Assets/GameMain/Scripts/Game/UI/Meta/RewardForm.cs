@@ -307,14 +307,14 @@ namespace GourmetProject.Game.UI.Meta
             RefreshOffer();
         }
 
-        private void ClaimChoice(bool extra, int index, IReadOnlyList<RewardChoice> groupChoices)
+        private void ClaimChoice(int groupIndex, int index, IReadOnlyList<RewardChoice> groupChoices)
         {
             if (_offer == null || groupChoices == null || index < 0 || index >= groupChoices.Count)
             {
                 return;
             }
 
-            if (IsChoiceResolved(extra))
+            if (IsChoiceResolved(groupIndex))
             {
                 return;
             }
@@ -327,7 +327,7 @@ namespace GourmetProject.Game.UI.Meta
 
             if (choice.Kind == cfg.RewardKind.DishChoice)
             {
-                OpenDishPack(extra, groupChoices);
+                OpenDishPack(groupIndex, groupChoices);
                 return;
             }
 
@@ -340,9 +340,9 @@ namespace GourmetProject.Game.UI.Meta
                 Close();
                 BattleForm.Active?.OpenRewardTableEdit(placed =>
                 {
-                    if (placed && !IsChoiceResolved(extra))
+                    if (placed && !IsChoiceResolved(groupIndex))
                     {
-                        MarkChoiceClaimed(extra, index);
+                        MarkChoiceClaimed(groupIndex, index);
                         SaveCurrentOffer();
                     }
 
@@ -361,7 +361,7 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             RewardGranter.ApplyChoice(_run, choice);
-            MarkChoiceClaimed(extra, index);
+            MarkChoiceClaimed(groupIndex, index);
             SaveCurrentOffer();
             RunPersistence.Save(_run);
 
@@ -373,12 +373,17 @@ namespace GourmetProject.Game.UI.Meta
             RefreshOffer();
         }
 
-        private bool IsChoiceResolved(bool extra)
+        private bool IsChoiceResolved(int groupIndex)
         {
-            return extra ? _offer.ExtraChoiceResolved : _offer.MainChoiceResolved;
+            return GroupFor(groupIndex).IsResolved;
         }
 
-        private void OpenDishPack(bool extra, IReadOnlyList<RewardChoice> groupChoices)
+        private bool IsChoiceClaimed(int groupIndex, int index)
+        {
+            return GroupFor(groupIndex).IsClaimed(index);
+        }
+
+        private void OpenDishPack(int groupIndex, IReadOnlyList<RewardChoice> groupChoices)
         {
             BattleForm battle = BattleForm.Active;
             if (battle == null || groupChoices == null || groupChoices.Count == 0)
@@ -388,7 +393,7 @@ namespace GourmetProject.Game.UI.Meta
 
             bool opened = battle.OpenRewardDishPack(
                 groupChoices,
-                (choiceIndex, bookIndex) => ClaimDishChoiceToBook(extra, choiceIndex, bookIndex, groupChoices),
+                (choiceIndex, bookIndex) => ClaimDishChoiceToBook(groupIndex, choiceIndex, bookIndex, groupChoices),
                 ReopenReward);
             if (opened)
             {
@@ -397,12 +402,12 @@ namespace GourmetProject.Game.UI.Meta
         }
 
         private bool ClaimDishChoiceToBook(
-            bool extra,
+            int groupIndex,
             int choiceIndex,
             int bookIndex,
             IReadOnlyList<RewardChoice> groupChoices)
         {
-            if (_offer == null || _run == null || groupChoices == null || IsChoiceResolved(extra)
+            if (_offer == null || _run == null || groupChoices == null || IsChoiceResolved(groupIndex)
                 || choiceIndex < 0 || choiceIndex >= groupChoices.Count)
             {
                 return false;
@@ -414,7 +419,7 @@ namespace GourmetProject.Game.UI.Meta
                 return false;
             }
 
-            MarkChoiceClaimed(extra, choiceIndex);
+            MarkChoiceClaimed(groupIndex, choiceIndex);
             SaveOfferAndReopenReward();
             return true;
         }
@@ -458,16 +463,14 @@ namespace GourmetProject.Game.UI.Meta
             _run.SetPendingRewardOffer(_rewardKey, _offer);
         }
 
-        private void MarkChoiceClaimed(bool extra, int index)
+        private void MarkChoiceClaimed(int groupIndex, int index)
         {
-            if (extra)
-            {
-                _offer.MarkExtraChoiceClaimed(index);
-            }
-            else
-            {
-                _offer.MarkMainChoiceClaimed(index);
-            }
+            GroupFor(groupIndex).MarkClaimed(index);
+        }
+
+        private RewardChoiceGroup GroupFor(int groupIndex)
+        {
+            return groupIndex < 0 ? _offer.SpecificGroup : _offer.GetFixedGroup(groupIndex);
         }
 
         private void RebuildRewardRows()
@@ -490,8 +493,13 @@ namespace GourmetProject.Game.UI.Meta
             _rewardRowTemplate.gameObject.SetActive(false);
             AddFixedGoldRow();
 
-            AddChoiceRows(_genericMode ? "被动道具" : "主奖励", _offer.MainChoices, extra: false);
-            AddChoiceRows(_genericMode ? "随机食物" : "额外奖励", _offer.ExtraChoices, extra: true);
+            for (int i = 0; i < _offer.FixedGroups.Count; i++)
+            {
+                RewardChoiceGroup group = _offer.FixedGroups[i];
+                AddChoiceRows(string.IsNullOrEmpty(group.Title) ? "固定奖励" : group.Title, group.Choices, groupIndex: i);
+            }
+
+            AddChoiceRows(_genericMode ? "随机食物" : "特定奖励", _offer.SpecificGroup.Choices, groupIndex: -1);
             HideRewardScrollbar(immediate: true);
         }
 
@@ -597,28 +605,27 @@ namespace GourmetProject.Game.UI.Meta
         private void AddChoiceRows(
             string groupName,
             IReadOnlyList<RewardChoice> choices,
-            bool extra)
+            int groupIndex)
         {
             if (choices == null || choices.Count == 0)
             {
                 return;
             }
 
-            int claimedIndex = extra ? _offer.ExtraChoiceIndex : _offer.MainChoiceIndex;
-            if (claimedIndex >= 0)
+            if (IsChoiceResolved(groupIndex))
             {
                 return;
             }
 
             if (IsFragmentPack(choices))
             {
-                AddFragmentPackRow(groupName, choices, extra);
+                AddFragmentPackRow(groupName, choices, groupIndex);
                 return;
             }
 
             if (IsDishPack(choices))
             {
-                AddDishPackRow(groupName, choices, extra);
+                AddDishPackRow(groupName, choices, groupIndex);
                 return;
             }
 
@@ -626,6 +633,11 @@ namespace GourmetProject.Game.UI.Meta
             {
                 int index = i;
                 RewardChoice choice = choices[i];
+                if (IsChoiceClaimed(groupIndex, index))
+                {
+                    continue;
+                }
+
                 RewardChoiceRowView row = CreateRewardRow();
                 if (row == null)
                 {
@@ -639,14 +651,14 @@ namespace GourmetProject.Game.UI.Meta
                     false,
                     true,
                     false,
-                    () => ClaimChoice(extra, index, choices));
+                    () => ClaimChoice(groupIndex, index, choices));
             }
         }
 
         private void AddFragmentPackRow(
             string groupName,
             IReadOnlyList<RewardChoice> choices,
-            bool extra)
+            int groupIndex)
         {
             RewardChoiceRowView row = CreateRewardRow();
             if (row == null)
@@ -662,13 +674,13 @@ namespace GourmetProject.Game.UI.Meta
                 false,
                 true,
                 false,
-                () => ClaimChoice(extra, index, choices));
+                () => ClaimChoice(groupIndex, index, choices));
         }
 
         private void AddDishPackRow(
             string groupName,
             IReadOnlyList<RewardChoice> choices,
-            bool extra)
+            int groupIndex)
         {
             RewardChoiceRowView row = CreateRewardRow();
             if (row == null)
@@ -684,7 +696,7 @@ namespace GourmetProject.Game.UI.Meta
                 false,
                 true,
                 false,
-                () => ClaimChoice(extra, index, choices));
+                () => ClaimChoice(groupIndex, index, choices));
         }
 
         private RewardChoiceRowView CreateRewardRow()

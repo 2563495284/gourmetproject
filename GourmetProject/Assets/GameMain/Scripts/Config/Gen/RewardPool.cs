@@ -20,7 +20,6 @@ public sealed partial class RewardPool : Luban.BeanBase
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
         { if(!_buf["kind"].IsNumber) { throw new SerializationException(); }  Kind = (RewardPoolKind)_buf["kind"].AsInt; }
         { if(!_buf["specialTags"].IsString) { throw new SerializationException(); }  SpecialTags = _buf["specialTags"]; }
-        { if(!_buf["qualityWeights"].IsString) { throw new SerializationException(); }  QualityWeights = _buf["qualityWeights"]; }
         { if(!_buf["allowFallback"].IsBoolean) { throw new SerializationException(); }  AllowFallback = _buf["allowFallback"]; }
         { if(!_buf["distanceFloor"].IsNumber) { throw new SerializationException(); }  DistanceFloor = _buf["distanceFloor"]; }
     }
@@ -43,10 +42,6 @@ public sealed partial class RewardPool : Luban.BeanBase
     /// </summary>
     public readonly string SpecialTags;
     /// <summary>
-    /// 品质权重配置
-    /// </summary>
-    public readonly string QualityWeights;
-    /// <summary>
     /// 是否允许兜底
     /// </summary>
     public readonly bool AllowFallback;
@@ -68,7 +63,6 @@ public sealed partial class RewardPool : Luban.BeanBase
         + "id:" + Id + ","
         + "kind:" + Kind + ","
         + "specialTags:" + SpecialTags + ","
-        + "qualityWeights:" + QualityWeights + ","
         + "allowFallback:" + AllowFallback + ","
         + "distanceFloor:" + DistanceFloor + ","
         + "}";

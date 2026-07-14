@@ -26,13 +26,15 @@ namespace GourmetProject.Game.Meta
                 return new RewardOffer(30, null, null);
             }
 
-            GoldRange goldRange = HiddenScoreService.GoldRewardRange(run, actionContext, package);
+            GoldRange goldRange = HiddenScoreService.GoldRewardRange(run, actionContext);
             int baseGold = rng.Range(goldRange.Min, goldRange.Max + 1);
             var context = new RewardContext(GameApp.Config.Tables, run, effectiveWeek, package, rng, baseGold, actionContext);
+            System.Collections.Generic.List<RewardChoiceGroup> fixedGroups = RollFixedGroups(context, package);
+            System.Collections.Generic.List<RewardChoice> specificChoices = RollSlotGroup(context, package.SpecificSlotGroupId, out int specificPickCount);
             return new RewardOffer(
                 baseGold,
-                RollSlotGroup(context, package.MainSlotGroupId),
-                rng.NextBool(package.ExtraChance) ? RollSlotGroup(context, package.ExtraSlotGroupId) : null);
+                fixedGroups,
+                new RewardChoiceGroup("特定奖励", specificChoices, specificPickCount));
         }
 
         public static RewardOffer GenerateFamilyPackOffer(GameRun run, ItemDefinition sourceItem, IRandomStream rng)
@@ -50,6 +52,11 @@ namespace GourmetProject.Game.Meta
         }
 
         public static string Apply(GameRun run, RewardOffer offer, RewardChoice mainChoice, RewardChoice extraChoice)
+        {
+            return Apply(run, offer, mainChoice, extraChoice, null);
+        }
+
+        public static string Apply(GameRun run, RewardOffer offer, RewardChoice mainChoice, RewardChoice extraChoice, RewardChoice bonusChoice)
         {
             if (run == null || offer == null)
             {
@@ -71,6 +78,12 @@ namespace GourmetProject.Game.Meta
             if (!string.IsNullOrEmpty(extraText))
             {
                 lines.Add(extraText);
+            }
+
+            string bonusText = ApplyChoice(run, bonusChoice);
+            if (!string.IsNullOrEmpty(bonusText))
+            {
+                lines.Add(bonusText);
             }
 
             return "过关奖励：" + string.Join("。", lines);
@@ -287,8 +300,9 @@ namespace GourmetProject.Game.Meta
             return result;
         }
 
-        private static System.Collections.Generic.List<RewardChoice> RollSlotGroup(RewardContext context, string groupId)
+        private static System.Collections.Generic.List<RewardChoice> RollSlotGroup(RewardContext context, string groupId, out int requiredPickCount)
         {
+            requiredPickCount = 0;
             var slots = new System.Collections.Generic.List<cfg.RewardSlot>();
             if (string.IsNullOrEmpty(groupId))
             {
@@ -316,7 +330,78 @@ namespace GourmetProject.Game.Meta
             }
 
             cfg.RewardSlot chosen = slots[context.Rng.WeightedPickIndex(weights)];
-            return RewardPoolService.RollChoices(context, chosen);
+            System.Collections.Generic.List<RewardChoice> choices = RewardPoolService.RollChoices(context, chosen);
+            requiredPickCount = choices.Count > 0
+                ? System.Math.Min(choices.Count, System.Math.Max(1, chosen.RequiredPickCount))
+                : 0;
+            return choices;
+        }
+
+        private static System.Collections.Generic.List<RewardChoiceGroup> RollFixedGroups(RewardContext context, cfg.RewardPackage package)
+        {
+            var result = new System.Collections.Generic.List<RewardChoiceGroup>();
+            foreach (string groupId in FixedSlotGroupIds(package))
+            {
+                System.Collections.Generic.List<RewardChoice> choices = RollSlotGroup(context, groupId, out int requiredPickCount);
+                if (choices.Count > 0)
+                {
+                    result.Add(new RewardChoiceGroup(FixedGroupTitle(choices), choices, requiredPickCount));
+                }
+            }
+
+            return result;
+        }
+
+        private static System.Collections.Generic.IEnumerable<string> FixedSlotGroupIds(cfg.RewardPackage package)
+        {
+            if (package == null)
+            {
+                yield break;
+            }
+
+            object value = package.BaseDishSlotGroupId;
+            if (value is System.Collections.Generic.IEnumerable<string> ids)
+            {
+                foreach (string id in ids)
+                {
+                    if (!string.IsNullOrEmpty(id))
+                    {
+                        yield return id;
+                    }
+                }
+
+                yield break;
+            }
+
+            string single = value as string;
+            if (!string.IsNullOrEmpty(single))
+            {
+                yield return single;
+            }
+        }
+
+        private static string FixedGroupTitle(System.Collections.Generic.IReadOnlyList<RewardChoice> choices)
+        {
+            if (choices == null || choices.Count == 0)
+            {
+                return "固定奖励";
+            }
+
+            switch (choices[0].Kind)
+            {
+                case cfg.RewardKind.DishChoice:
+                    return "基础菜品";
+                case cfg.RewardKind.Gold:
+                    return "金币奖励";
+                case cfg.RewardKind.PassiveItemChoice:
+                    return "被动道具";
+                case cfg.RewardKind.ActiveItemGrant:
+                    return "主动道具";
+                case cfg.RewardKind.FragmentChoice:
+                    return "格子奖励";
+                default:
+                    return "固定奖励";
+            }
         }
 
     }

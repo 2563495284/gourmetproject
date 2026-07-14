@@ -63,7 +63,7 @@ public partial class Tables
     /// </summary>
     public TbRewardSlot TbRewardSlot {get; }
     /// <summary>
-    /// 奖励池筛选：qualityWeights 写 Common:70|Uncommon:25|Rare:5；specialTags 用 | 分隔。
+    /// 奖励池筛选：specialTags 用 | 分隔；道具不按品质权重筛选。
     /// </summary>
     public TbRewardPool TbRewardPool {get; }
     /// <summary>
