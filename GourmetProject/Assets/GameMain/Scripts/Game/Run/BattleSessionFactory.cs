@@ -4,7 +4,6 @@ using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Meta;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
-using GourmetProject.Gameplay.Library;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
 using GourmetProject.Runtime;
@@ -24,42 +23,25 @@ namespace GourmetProject.Game.Run
             requiredScore = ApplyRequiredScoreModifier(requiredScore, modifier);
 
             cfg.Character character = run.Tables.TbCharacter.GetOrDefault(run.CharacterId);
-            string recipeId = character?.InitialRecipeId;
-            RecipeDef recipe = run.Database.GetRecipe(recipeId);
             var debuffStream = GameApp.Random.DomainStream(SeedDomains.Combat, $"{key}_debuff_setup");
 
-            int recipeBookCount = System.Math.Max(GameRun.DefaultRecipeBookCount, run.RecipeBookCount);
+            int recipeBookCount = run.RecipeBookCount;
             var slots = new List<RecipeSlot>(recipeBookCount);
-            if (recipe != null)
+            for (int i = 0; i < recipeBookCount; i++)
             {
-                var recipeStream = GameApp.Random.DomainStream(SeedDomains.Recipe, key);
-                for (int i = 0; i < recipeBookCount; i++)
+                var entries = new List<RecipeSlotEntry>();
+                foreach (RecipeBookSlot bookSlot in run.GetRecipeBookEntries(i))
                 {
-                    List<string> deck = RecipeRoller.Roll(recipe, run.Database, recipeStream);
-                    var entries = new List<RecipeSlotEntry>(deck.Count);
-                    foreach (string dishId in deck)
+                    if (run.Database.GetDish(bookSlot.DishId) != null)
                     {
-                        entries.Add(new RecipeSlotEntry(dishId));
+                        entries.Add(new RecipeSlotEntry(bookSlot.DishId, bookSlot.ExtraFlavorIds));
                     }
-
-                    // 玩家菜谱条目：带上「调味小票」永久附加的额外风味。
-                    foreach (RecipeBookSlot bookSlot in run.GetRecipeBookEntries(i))
-                    {
-                        if (run.Database.GetDish(bookSlot.DishId) != null)
-                        {
-                            entries.Add(new RecipeSlotEntry(bookSlot.DishId, bookSlot.ExtraFlavorIds));
-                        }
-                    }
-
-                    slots.Add(new RecipeSlot($"菜谱{i + 1}", entries));
                 }
 
-                ApplyRecipeModifiers(slots, run, modifier, debuffStream);
+                slots.Add(new RecipeSlot($"菜谱{i + 1}", entries));
             }
-            else
-            {
-                Log.Warning($"Character '{run.CharacterId}' has no valid recipe '{recipeId}'.", "GameRun");
-            }
+
+            ApplyRecipeModifiers(slots, run, modifier, debuffStream);
 
             GpTable board = BuildTable(run, character, modifier);
             ApplyTableModifiers(board, TotalRecipeEntries(slots), modifier, debuffStream);

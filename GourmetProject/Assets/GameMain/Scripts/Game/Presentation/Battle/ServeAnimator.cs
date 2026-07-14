@@ -11,6 +11,8 @@ namespace GourmetProject.Game.Presentation.Battle
     /// </summary>
     public sealed class ServeAnimator
     {
+        private const float NormalSpeedMultiplier = 1f;
+
         public struct Config
         {
             public float CarryScale;
@@ -22,6 +24,9 @@ namespace GourmetProject.Game.Presentation.Battle
         private readonly Transform _parent;
         private readonly ServeHandView _handPrefab;
         private readonly Config _config;
+        private Tween _currentTween;
+        private float _currentSpeedMultiplier = NormalSpeedMultiplier;
+        private bool _isAnimating;
 
         public ServeAnimator(Transform parent, ServeHandView handPrefab, Config config)
         {
@@ -30,9 +35,26 @@ namespace GourmetProject.Game.Presentation.Battle
             _config = config;
         }
 
+        /// <summary>只加速当前正在播放的上菜动画；下一次动画会恢复默认速度。</summary>
+        public bool TrySpeedUpCurrentAnimation(float speedMultiplier = 2f)
+        {
+            if (!_isAnimating)
+            {
+                return false;
+            }
+
+            _currentSpeedMultiplier = Mathf.Max(_currentSpeedMultiplier, speedMultiplier);
+            ApplyCurrentSpeedMultiplier();
+            return true;
+        }
+
         /// <summary>播放上菜动画，完成（含中途菜品被销毁）后返回。</summary>
         public async Awaitable AnimateAsync(DishPieceView piece, Vector3 target, Camera camera, float cellSize, float halfH, CancellationToken cancellationToken)
         {
+            _isAnimating = true;
+            _currentSpeedMultiplier = NormalSpeedMultiplier;
+            _currentTween = null;
+
             // 手世界高度：约 4 格高，受半屏高约束，保证起点能完全藏到屏幕上方外。
             float handHeight = Mathf.Clamp(cellSize * 4.2f, 2.4f, halfH * 1.5f);
 
@@ -80,7 +102,9 @@ namespace GourmetProject.Game.Presentation.Battle
                     })
                     .SetEase(Ease.Linear)
                     .SetLink(piece.gameObject);
+                TrackTween(descendTween);
                 await PresentationTween.AwaitCompletionAsync(descendTween, cancellationToken);
+                ClearTrackedTween(descendTween);
 
                 if (piece == null)
                 {
@@ -114,7 +138,9 @@ namespace GourmetProject.Game.Presentation.Battle
                     })
                     .SetEase(Ease.Linear)
                     .SetLink(piece.gameObject);
+                TrackTween(withdrawTween);
                 await PresentationTween.AwaitCompletionAsync(withdrawTween, cancellationToken);
+                ClearTrackedTween(withdrawTween);
 
                 if (hand != null)
                 {
@@ -145,7 +171,9 @@ namespace GourmetProject.Game.Presentation.Battle
                     })
                     .SetEase(Ease.Linear)
                     .SetLink(piece.gameObject);
+                TrackTween(dropTween);
                 await PresentationTween.AwaitCompletionAsync(dropTween, cancellationToken);
+                ClearTrackedTween(dropTween);
 
                 if (piece != null)
                 {
@@ -159,10 +187,36 @@ namespace GourmetProject.Game.Presentation.Battle
             }
             finally
             {
+                _currentTween = null;
+                _currentSpeedMultiplier = NormalSpeedMultiplier;
+                _isAnimating = false;
+
                 if (hand != null)
                 {
                     UnityEngine.Object.Destroy(hand.gameObject);
                 }
+            }
+        }
+
+        private void TrackTween(Tween tween)
+        {
+            _currentTween = tween;
+            ApplyCurrentSpeedMultiplier();
+        }
+
+        private void ClearTrackedTween(Tween tween)
+        {
+            if (_currentTween == tween)
+            {
+                _currentTween = null;
+            }
+        }
+
+        private void ApplyCurrentSpeedMultiplier()
+        {
+            if (_currentTween != null && _currentTween.IsActive())
+            {
+                _currentTween.timeScale = Mathf.Max(0.0001f, _currentSpeedMultiplier);
             }
         }
 

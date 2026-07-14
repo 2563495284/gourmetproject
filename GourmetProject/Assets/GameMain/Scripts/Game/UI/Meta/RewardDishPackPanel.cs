@@ -165,7 +165,7 @@ namespace GourmetProject.Game.UI.Meta
                 book.Bind(
                     i,
                     $"菜谱{i + 1}",
-                    $"{dishes.Count}/{GameRun.RecipeBookCapacity}",
+                    $"{dishes.Count}",
                     OnDishDroppedToBook,
                     OnChoiceDroppedToBook);
                 _spawnedBooks.Add(book.gameObject);

@@ -479,8 +479,14 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public async void TryServeDish(int slotIndex)
         {
-            if (_session == null || _session.IsSettled || _settling || _serving)
+            if (_session == null || _session.IsSettled || _settling)
             {
+                return;
+            }
+
+            if (_serving)
+            {
+                _serveAnimator?.TrySpeedUpCurrentAnimation();
                 return;
             }
 

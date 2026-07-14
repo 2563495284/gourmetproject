@@ -53,7 +53,7 @@ namespace GourmetProject.Game.UI.Hud
             }
         }
 
-        private void OnDestroy()
+        public void OnDestroy()
         {
             if (_glowMaterial != null)
             {

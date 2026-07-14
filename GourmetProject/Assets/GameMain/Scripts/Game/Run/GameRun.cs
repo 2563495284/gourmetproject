@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Globalization;
+using GourmetProject.Core.Rng;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
@@ -21,7 +22,6 @@ namespace GourmetProject.Game.Run
     {
         public const int BoardWidth = 4;
         public const int BoardHeight = 4;
-        public const int DefaultRecipeBookCount = 2;
         public const int MaxRecipeBookCount = 4;
         public const int RecipeBookCapacity = 12;
         /// <summary>主动道具基础消耗槽数（可被 ExtraActiveSlot 被动道具增加）。</summary>
@@ -81,6 +81,11 @@ namespace GourmetProject.Game.Run
         private int _scoreToOneRemaining; // 「分数变1」剩余生效局数（RequiredScoreToOne，非盛宴）
 
         public GameRun(cfg.Tables tables, GameplayDatabase database, string characterId, string seedText, int weekIndex = 1)
+            : this(tables, database, characterId, seedText, weekIndex, initializeCharacterLoadout: true)
+        {
+        }
+
+        private GameRun(cfg.Tables tables, GameplayDatabase database, string characterId, string seedText, int weekIndex, bool initializeCharacterLoadout)
         {
             _tables = tables;
             Database = database;
@@ -97,16 +102,19 @@ namespace GourmetProject.Game.Run
             _foodAdjustBaseCount = System.Math.Max(0, gameBase.InitialFoodAdjustCount);
             _actionRerollCount = System.Math.Max(0, gameBase.InitialActionRerollCount);
 
-            cfg.Character character = _tables.TbCharacter.GetOrDefault(characterId);
-            if (character != null)
+            if (initializeCharacterLoadout)
             {
-                foreach (string itemId in character.StartItems)
+                cfg.Character character = _tables.TbCharacter.GetOrDefault(characterId);
+                if (character != null)
                 {
-                    AcquireItem(itemId, 0, fireOnAcquire: false);
+                    foreach (string itemId in character.StartItems)
+                    {
+                        AcquireItem(itemId, 0, fireOnAcquire: false);
+                    }
                 }
-            }
 
-            EnsureRecipeBookCount(DefaultRecipeBookCount);
+                InitializeRecipeBooksFromCharacter();
+            }
         }
 
         public GameplayDatabase Database { get; }
@@ -401,6 +409,16 @@ namespace GourmetProject.Game.Run
         }
 
         public int RecipeBookCount => _recipeBooks.Count;
+
+        private int InitialRecipeBookCount
+        {
+            get
+            {
+                cfg.Character character = _tables.TbCharacter.GetOrDefault(CharacterId);
+                int count = character?.InitialRecipeId?.Count ?? 0;
+                return System.Math.Min(count, MaxRecipeBookCount);
+            }
+        }
 
         public IReadOnlyList<string> TableFragmentIds => _stomachFragmentIds;
 
@@ -1030,7 +1048,7 @@ namespace GourmetProject.Game.Run
         /// <summary>从存档数据重建运行（不重复发放初始道具，整段持有列表以存档为准）。</summary>
         public static GameRun FromSaveData(cfg.Tables tables, GameplayDatabase database, RunSaveData data)
         {
-            var run = new GameRun(tables, database, data.CharacterId, data.SeedText, data.WeekIndex);
+            var run = new GameRun(tables, database, data.CharacterId, data.SeedText, data.WeekIndex, initializeCharacterLoadout: false);
             run.Gold = data.Gold;
             run._interestThreshold = data.InterestThreshold >= 0
                 ? data.InterestThreshold
@@ -1416,7 +1434,7 @@ namespace GourmetProject.Game.Run
 
             List<RecipeBookSlot> from = _recipeBooks[fromBookIndex];
             List<RecipeBookSlot> to = _recipeBooks[toBookIndex];
-            if (dishIndex < 0 || dishIndex >= from.Count || to.Count >= RecipeBookCapacity)
+            if (dishIndex < 0 || dishIndex >= from.Count)
             {
                 return false;
             }
@@ -1581,8 +1599,8 @@ namespace GourmetProject.Game.Run
                 return false;
             }
 
-            EnsureRecipeBookCount(DefaultRecipeBookCount);
-            List<RecipeBookSlot> target = FirstRecipeBookWithSpace();
+            EnsureRecipeBookCount(InitialRecipeBookCount);
+            List<RecipeBookSlot> target = FirstRecipeBook();
             if (target == null)
             {
                 return false;
@@ -1599,13 +1617,7 @@ namespace GourmetProject.Game.Run
             {
                 return false;
             }
-
             List<RecipeBookSlot> book = _recipeBooks[bookIndex];
-            if (book.Count >= RecipeBookCapacity)
-            {
-                return false;
-            }
-
             book.Add(new RecipeBookSlot(dishId));
             RebuildBonusDishCache();
             return true;
@@ -1746,6 +1758,59 @@ namespace GourmetProject.Game.Run
             return index >= 0 && index < _recipeBooks.Count;
         }
 
+        private void InitializeRecipeBooksFromCharacter()
+        {
+            _recipeBooks.Clear();
+
+            cfg.Character character = _tables.TbCharacter.GetOrDefault(CharacterId);
+            if (character?.InitialRecipeId == null)
+            {
+                RebuildBonusDishCache();
+                return;
+            }
+
+            int count = System.Math.Min(character.InitialRecipeId.Count, MaxRecipeBookCount);
+            IRandomStream recipeStream = InitialRecipeStream();
+            for (int i = 0; i < count; i++)
+            {
+                var book = new List<RecipeBookSlot>();
+                string recipeId = character.InitialRecipeId[i];
+                RecipeDef recipe = Database.GetRecipe(recipeId);
+                if (recipe != null)
+                {
+                    List<string> deck = RecipeRoller.Roll(recipe, Database, recipeStream);
+                    foreach (string dishId in deck)
+                    {
+                        if (Database.GetDish(dishId) != null)
+                        {
+                            book.Add(new RecipeBookSlot(dishId));
+                        }
+                    }
+                }
+                else
+                {
+                    Log.Warning($"Character '{CharacterId}' has no valid recipe '{recipeId}'.", "GameRun");
+                }
+
+                _recipeBooks.Add(book);
+            }
+
+            RebuildBonusDishCache();
+        }
+
+        private IRandomStream InitialRecipeStream()
+        {
+            const string keyPrefix = "initial_";
+            if (GameApp.Random != null && GameApp.Random.IsInitialized)
+            {
+                return GameApp.Random.DomainStream(SeedDomains.Recipe, keyPrefix + CharacterId);
+            }
+
+            var random = new RandomService();
+            random.Init(SeedText);
+            return random.DomainStream(SeedDomains.Recipe, keyPrefix + CharacterId);
+        }
+
         private void EnsureRecipeBookCount(int count)
         {
             while (_recipeBooks.Count < count)
@@ -1754,17 +1819,9 @@ namespace GourmetProject.Game.Run
             }
         }
 
-        private List<RecipeBookSlot> FirstRecipeBookWithSpace()
+        private List<RecipeBookSlot> FirstRecipeBook()
         {
-            foreach (List<RecipeBookSlot> book in _recipeBooks)
-            {
-                if (book.Count < RecipeBookCapacity)
-                {
-                    return book;
-                }
-            }
-
-            return null;
+            return _recipeBooks.Count > 0 ? _recipeBooks[0] : null;
         }
 
         private void RebuildBonusDishCache()
@@ -1857,54 +1914,38 @@ namespace GourmetProject.Game.Run
         private void RestoreRecipeBooks(RunSaveData data)
         {
             _recipeBooks.Clear();
-            if (data.RecipeBooks != null && data.RecipeBooks.Count > 0)
+            int count = System.Math.Min(data.RecipeBooks?.Count ?? 0, MaxRecipeBookCount);
+            for (int i = 0; i < count; i++)
             {
-                int count = System.Math.Min(data.RecipeBooks.Count, MaxRecipeBookCount);
-                for (int i = 0; i < count; i++)
+                var book = new List<RecipeBookSlot>();
+                RunRecipeBookSaveData bookData = data.RecipeBooks[i];
+                List<string> dishIds = bookData?.DishIds;
+                List<RunRecipeDishFlavorSaveData> extraFlavors = bookData?.DishExtraFlavors;
+                if (dishIds != null)
                 {
-                    var book = new List<RecipeBookSlot>();
-                    RunRecipeBookSaveData bookData = data.RecipeBooks[i];
-                    List<string> dishIds = bookData?.DishIds;
-                    List<RunRecipeDishFlavorSaveData> extraFlavors = bookData?.DishExtraFlavors;
-                    if (dishIds != null)
+                    for (int k = 0; k < dishIds.Count; k++)
                     {
-                        for (int k = 0; k < dishIds.Count && book.Count < RecipeBookCapacity; k++)
+                        if (Database.GetDish(dishIds[k]) == null)
                         {
-                            if (Database.GetDish(dishIds[k]) == null)
-                            {
-                                continue;
-                            }
-
-                            var slot = new RecipeBookSlot(dishIds[k]);
-                            // 旧档无 DishExtraFlavors 字段 → 跳过；新档按同 index 还原永久风味。
-                            if (extraFlavors != null && k < extraFlavors.Count && extraFlavors[k]?.FlavorIds != null)
-                            {
-                                foreach (string flavorId in extraFlavors[k].FlavorIds)
-                                {
-                                    slot.AddFlavor(flavorId);
-                                }
-                            }
-
-                            book.Add(slot);
+                            continue;
                         }
-                    }
 
-                    _recipeBooks.Add(book);
-                }
-            }
-            else
-            {
-                EnsureRecipeBookCount(DefaultRecipeBookCount);
-                if (data.BonusDishIds != null)
-                {
-                    foreach (string dishId in data.BonusDishIds)
-                    {
-                        AddBonusDish(dishId);
+                        var slot = new RecipeBookSlot(dishIds[k]);
+                        if (extraFlavors != null && k < extraFlavors.Count && extraFlavors[k]?.FlavorIds != null)
+                        {
+                            foreach (string flavorId in extraFlavors[k].FlavorIds)
+                            {
+                                slot.AddFlavor(flavorId);
+                            }
+                        }
+
+                        book.Add(slot);
                     }
                 }
+
+                _recipeBooks.Add(book);
             }
 
-            EnsureRecipeBookCount(DefaultRecipeBookCount);
             RebuildBonusDishCache();
         }
 

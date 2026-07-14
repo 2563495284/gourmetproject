@@ -21,7 +21,7 @@ public sealed partial class Character : Luban.BeanBase
         { if(!_buf["name"].IsString) { throw new SerializationException(); }  Name = _buf["name"]; }
         { if(!_buf["desc"].IsString) { throw new SerializationException(); }  Desc = _buf["desc"]; }
         { if(!_buf["portrait"].IsString) { throw new SerializationException(); }  Portrait = _buf["portrait"]; }
-        { if(!_buf["initialRecipeId"].IsString) { throw new SerializationException(); }  InitialRecipeId = _buf["initialRecipeId"]; }
+        { var __json0 = _buf["initialRecipeId"]; if(!__json0.IsArray) { throw new SerializationException(); } InitialRecipeId = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  InitialRecipeId.Add(__v0); }   }
         { if(!_buf["initialFragmentId"].IsString) { throw new SerializationException(); }  InitialFragmentId = _buf["initialFragmentId"]; }
         { if(!_buf["maxDiningTableWidth"].IsNumber) { throw new SerializationException(); }  MaxDiningTableWidth = _buf["maxDiningTableWidth"]; }
         { if(!_buf["maxDiningTableHeight"].IsNumber) { throw new SerializationException(); }  MaxDiningTableHeight = _buf["maxDiningTableHeight"]; }
@@ -53,7 +53,7 @@ public sealed partial class Character : Luban.BeanBase
     /// <summary>
     /// 初始菜谱ID
     /// </summary>
-    public readonly string InitialRecipeId;
+    public readonly System.Collections.Generic.List<string> InitialRecipeId;
     /// <summary>
     /// 初始胃碎片ID
     /// </summary>
@@ -89,7 +89,7 @@ public sealed partial class Character : Luban.BeanBase
         + "name:" + Name + ","
         + "desc:" + Desc + ","
         + "portrait:" + Portrait + ","
-        + "initialRecipeId:" + InitialRecipeId + ","
+        + "initialRecipeId:" + Luban.StringUtil.CollectionToString(InitialRecipeId) + ","
         + "initialFragmentId:" + InitialFragmentId + ","
         + "maxDiningTableWidth:" + MaxDiningTableWidth + ","
         + "maxDiningTableHeight:" + MaxDiningTableHeight + ","

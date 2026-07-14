@@ -4,7 +4,9 @@
     "name": "甜品小熊",
     "desc": "爱吃甜品的小熊",
     "portrait": "Sprites/Characters/char_glutton_dog",
-    "initialRecipeId": "recipe_glutton",
+    "initialRecipeId": [
+      "recipe_glutton"
+    ],
     "initialFragmentId": "gut_4x4",
     "maxDiningTableWidth": 8,
     "maxDiningTableHeight": 8,
@@ -18,7 +20,9 @@
     "name": "铁锅喵",
     "desc": "料理流。一手颠勺，一手挥刀，火候即是胜负。",
     "portrait": "Sprites/Characters/char_wok_cat",
-    "initialRecipeId": "recipe_wok",
+    "initialRecipeId": [
+      "recipe_wok"
+    ],
     "initialFragmentId": "gut_4x4",
     "maxDiningTableWidth": 8,
     "maxDiningTableHeight": 8,
@@ -32,7 +36,9 @@
     "name": "辣魔鼠",
     "desc": "火辣流。越吃越上头，辣到对手举旗投降。",
     "portrait": "Sprites/Characters/char_chili_rat",
-    "initialRecipeId": "recipe_chili",
+    "initialRecipeId": [
+      "recipe_chili"
+    ],
     "initialFragmentId": "gut_4x4",
     "maxDiningTableWidth": 8,
     "maxDiningTableHeight": 8,

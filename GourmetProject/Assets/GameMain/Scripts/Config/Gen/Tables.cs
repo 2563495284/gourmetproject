@@ -55,7 +55,7 @@ public partial class Tables
     /// </summary>
     public TbScoreProfile TbScoreProfile {get; }
     /// <summary>
-    /// 奖励包：与 week 同在 timeline.xlsx；Week.rewardPackageId/Action.rewardPackageId 引用它，槽组继续指向 reward.xlsx/reward_slot。
+    /// 奖励包：与奖励槽/奖励池同在 reward.xlsx；Week.rewardPackageId/Action.rewardPackageId 引用它，槽组指向 reward_slot。
     /// </summary>
     public TbRewardPackage TbRewardPackage {get; }
     /// <summary>

@@ -21,7 +21,7 @@ namespace GourmetProject.Game.UI.Battle.View
             _recipeView = recipeView;
         }
 
-        /// <summary>底部扇形菜谱条：按持有的菜谱本铺卡，显示 已放/容量（如 10/12）。showAdd 时末尾追加购买空菜谱卡。</summary>
+        /// <summary>底部扇形菜谱条：按持有的菜谱本铺卡，显示已放数量。showAdd 时末尾追加购买空菜谱卡。</summary>
         public void BuildPersistent(GameRun run, bool showAdd, Action onAdd)
         {
             if (_recipeView == null || run == null)
@@ -35,10 +35,10 @@ namespace GourmetProject.Game.UI.Battle.View
                 int count = run.GetRecipeBookDishes(i).Count;
                 books.Add(new RecipeView.BookEntry(
                     $"菜谱{i + 1}",
-                    $"{count}/{GameRun.RecipeBookCapacity}",
+                    $"{count}",
                     false,
                     null,
-                    count < GameRun.RecipeBookCapacity));
+                    true));
             }
 
             string addCost = showAdd ? $"+ {ShopService.EmptyRecipeBookPrice}" : null;

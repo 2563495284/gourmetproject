@@ -26,6 +26,31 @@ namespace GourmetProject.Tests
         }
 
         [Test]
+        public void GameRun_UsesCharacterInitialRecipeListCount()
+        {
+            cfg.Tables tables = LoadTables(new Dictionary<string, string>
+            {
+                ["tbcharacter"] =
+                    "[" +
+                    "{" +
+                    "\"id\":\"glutton_dog\",\"name\":\"甜品小熊\",\"desc\":\"爱吃甜品的小熊\"," +
+                    "\"portrait\":\"Sprites/Characters/char_glutton_dog\"," +
+                    "\"initialRecipeId\":[\"recipe_glutton\",\"recipe_wok\"]," +
+                    "\"initialFragmentId\":\"gut_4x4\",\"maxDiningTableWidth\":8,\"maxDiningTableHeight\":8," +
+                    "\"timelinePool\":\"tl_normal\",\"startItems\":[\"item_big_plate\"]" +
+                    "}" +
+                    "]",
+            });
+
+            GameRun run = NewRun(week: 1, characterId: "glutton_dog", tables: tables);
+
+            Assert.AreEqual(2, tables.TbCharacter.Get("glutton_dog").InitialRecipeId.Count);
+            Assert.AreEqual(2, run.RecipeBookCount);
+            Assert.Greater(run.GetRecipeBookDishes(0).Count, 0);
+            Assert.Greater(run.GetRecipeBookDishes(1).Count, 0);
+        }
+
+        [Test]
         public void ActionScheduleChoices_UseGeneratedGroupSequence()
         {
             GameRun run = NewRun(week: 1);
@@ -198,15 +223,14 @@ namespace GourmetProject.Tests
         }
 
         [Test]
-        public void ActiveItemPool_IsEmpty_AfterAllPassiveRework()
+        public void ActiveItemPool_RollsConfiguredActiveItems()
         {
-            // 设计已转全被动：配置表不再有主动道具，主动池抽取恒为空。
             GameRun run = NewRun(week: 1);
             var rng = new MaxWeightRandomStream();
 
             List<string> activeItems = ItemPoolService.Roll(run.Tables, run, cfg.ItemKind.Active, rng, 2, hidden: 0, distanceFloor: 5);
 
-            Assert.AreEqual(0, activeItems.Count, "无主动道具，主动池应为空。");
+            Assert.AreEqual(2, activeItems.Count, "主动道具池应按请求数量返回可用主动道具。");
         }
 
         [Test]
@@ -389,8 +413,7 @@ namespace GourmetProject.Tests
 
             List<ShopEntry> stock = ShopService.RollStock(run.Tables, run, rng, new MaxWeightRandomStream());
 
-            // 设计已转全被动：商店不再有主动道具，改用被动道具验证购买/出售流程。
-            Assert.IsNull(stock.Find(entry => entry.Kind == ShopEntryKind.ActiveItem), "全被动后商店不应出现主动道具。");
+            Assert.AreEqual(run.Tables.TbGameBase.ShopActiveItemSaleSlotCount, stock.FindAll(entry => entry.Kind == ShopEntryKind.ActiveItem).Count);
             ShopEntry passive = stock.Find(entry => entry.Kind == ShopEntryKind.PassiveItem);
             Assert.NotNull(passive, "Shop stock should include passive items.");
 
@@ -402,11 +425,13 @@ namespace GourmetProject.Tests
             Assert.IsFalse(run.HasItem(passive.Id));
             Assert.AreEqual(afterPurchaseGold + ShopService.ItemSellPrice, run.Gold);
 
+            int cookieCount = run.BonusDishIds.Count(id => id == "cookie");
             Assert.IsTrue(run.AddBonusDish("cookie"));
+            Assert.AreEqual(cookieCount + 1, run.BonusDishIds.Count(id => id == "cookie"));
             int beforeDeleteGold = run.Gold;
 
             Assert.IsTrue(ShopService.DeleteDish(run, "cookie"));
-            Assert.IsFalse(run.BonusDishIds.Contains("cookie"));
+            Assert.AreEqual(cookieCount, run.BonusDishIds.Count(id => id == "cookie"));
             Assert.AreEqual(beforeDeleteGold - ShopService.DeleteDishCost, run.Gold);
         }
 
@@ -416,20 +441,22 @@ namespace GourmetProject.Tests
             GameRun run = NewRun(week: 1);
             run.Gold = 100;
 
-            Assert.AreEqual(GameRun.DefaultRecipeBookCount, run.RecipeBookCount);
+            Assert.AreEqual(run.Tables.TbCharacter.Get(run.CharacterId).InitialRecipeId.Count, run.RecipeBookCount);
             Assert.IsTrue(ShopService.PurchaseRecipeBook(run));
-            Assert.AreEqual(3, run.RecipeBookCount);
+            Assert.AreEqual(2, run.RecipeBookCount);
             Assert.AreEqual(100 - ShopService.EmptyRecipeBookPrice, run.Gold);
 
+            int firstBookCount = run.GetRecipeBookDishes(0).Count;
             Assert.IsTrue(run.AddBonusDish("cookie"));
-            Assert.AreEqual(1, run.GetRecipeBookDishes(0).Count);
-            Assert.IsTrue(ShopService.MoveDish(run, fromBookIndex: 0, dishIndex: 0, toBookIndex: 2));
-            Assert.AreEqual(0, run.GetRecipeBookDishes(0).Count);
-            Assert.AreEqual("cookie", run.GetRecipeBookDishes(2)[0]);
+            Assert.AreEqual(firstBookCount + 1, run.GetRecipeBookDishes(0).Count);
+            string movedDish = run.GetRecipeBookDishes(0)[0];
+            Assert.IsTrue(ShopService.MoveDish(run, fromBookIndex: 0, dishIndex: 0, toBookIndex: 1));
+            Assert.AreEqual(firstBookCount, run.GetRecipeBookDishes(0).Count);
+            Assert.AreEqual(movedDish, run.GetRecipeBookDishes(1)[0]);
 
             int beforeDeleteGold = run.Gold;
-            Assert.IsTrue(ShopService.DeleteDishAt(run, bookIndex: 2, dishIndex: 0));
-            Assert.AreEqual(0, run.GetRecipeBookDishes(2).Count);
+            Assert.IsTrue(ShopService.DeleteDishAt(run, bookIndex: 1, dishIndex: 0));
+            Assert.AreEqual(0, run.GetRecipeBookDishes(1).Count);
             Assert.AreEqual(beforeDeleteGold - ShopService.DeleteDishCost, run.Gold);
         }
 
@@ -439,25 +466,28 @@ namespace GourmetProject.Tests
             GameRun run = NewRun(week: 1);
             run.Gold = 100;
             var dish = new ShopEntry(ShopEntryKind.Dish, "cookie", "曲奇", "加入菜谱池的菜品", 30);
+            int firstBookCount = run.GetRecipeBookDishes(0).Count;
+            Assert.IsTrue(run.AddRecipeBook());
 
             Assert.IsTrue(ShopService.PurchaseDishToBook(run, dish, bookIndex: 1));
 
             Assert.AreEqual(70, run.Gold);
-            Assert.AreEqual(0, run.GetRecipeBookDishes(0).Count);
+            Assert.AreEqual(firstBookCount, run.GetRecipeBookDishes(0).Count);
             Assert.AreEqual("cookie", run.GetRecipeBookDishes(1)[0]);
             Assert.IsTrue(run.BonusDishIds.Contains("cookie"));
         }
 
         [Test]
-        public void ShopService_PurchaseDishToBookRejectsInsufficientGoldAndFullBook()
+        public void ShopService_PurchaseDishToBookRejectsInsufficientGoldAndAllowsPastLegacyCapacity()
         {
             GameRun run = NewRun(week: 1);
             var dish = new ShopEntry(ShopEntryKind.Dish, "cookie", "曲奇", "加入菜谱池的菜品", 30);
 
             run.Gold = 29;
+            int firstBookCount = run.GetRecipeBookDishes(0).Count;
             Assert.IsFalse(ShopService.PurchaseDishToBook(run, dish, bookIndex: 0));
             Assert.AreEqual(29, run.Gold);
-            Assert.AreEqual(0, run.GetRecipeBookDishes(0).Count);
+            Assert.AreEqual(firstBookCount, run.GetRecipeBookDishes(0).Count);
 
             run.Gold = 100;
             for (int i = 0; i < GameRun.RecipeBookCapacity; i++)
@@ -465,9 +495,9 @@ namespace GourmetProject.Tests
                 Assert.IsTrue(run.AddBonusDishToBook("cookie", 0));
             }
 
-            Assert.IsFalse(ShopService.PurchaseDishToBook(run, dish, bookIndex: 0));
-            Assert.AreEqual(100, run.Gold);
-            Assert.AreEqual(GameRun.RecipeBookCapacity, run.GetRecipeBookDishes(0).Count);
+            Assert.IsTrue(ShopService.PurchaseDishToBook(run, dish, bookIndex: 0));
+            Assert.AreEqual(70, run.Gold);
+            Assert.AreEqual(firstBookCount + GameRun.RecipeBookCapacity + 1, run.GetRecipeBookDishes(0).Count);
         }
 
         [Test]
@@ -475,14 +505,16 @@ namespace GourmetProject.Tests
         {
             GameRun run = NewRun(week: 1);
             Assert.IsTrue(run.AddBonusDish("cookie"));
+            int firstBookCount = run.GetRecipeBookDishes(0).Count;
             Assert.IsTrue(run.AddRecipeBook());
-            Assert.IsTrue(run.MoveBonusDish(0, 0, 2));
+            string movedDish = run.GetRecipeBookDishes(0)[0];
+            Assert.IsTrue(run.MoveBonusDish(0, 0, 1));
 
             GameRun restored = GameRun.FromSaveData(run.Tables, run.Database, run.ToSaveData());
 
-            Assert.AreEqual(3, restored.RecipeBookCount);
-            Assert.AreEqual(0, restored.GetRecipeBookDishes(0).Count);
-            Assert.AreEqual("cookie", restored.GetRecipeBookDishes(2)[0]);
+            Assert.AreEqual(2, restored.RecipeBookCount);
+            Assert.AreEqual(firstBookCount - 1, restored.GetRecipeBookDishes(0).Count);
+            Assert.AreEqual(movedDish, restored.GetRecipeBookDishes(1)[0]);
             Assert.IsTrue(restored.BonusDishIds.Contains("cookie"));
         }
 
@@ -676,26 +708,29 @@ namespace GourmetProject.Tests
         {
             GameRun run = NewRun(week: 1);
             RewardChoice dishChoice = new RewardChoice(cfg.RewardKind.DishChoice, "cookie", "曲奇", "加入菜谱池");
+            int firstBookCount = run.GetRecipeBookDishes(0).Count;
+            Assert.IsTrue(run.AddRecipeBook());
 
             Assert.IsTrue(RewardGranter.ApplyDishChoiceToBook(run, dishChoice, 1));
 
-            Assert.AreEqual(0, run.GetRecipeBookDishes(0).Count);
+            Assert.AreEqual(firstBookCount, run.GetRecipeBookDishes(0).Count);
             Assert.AreEqual("cookie", run.GetRecipeBookDishes(1)[0]);
         }
 
         [Test]
-        public void RewardGranterApplyDishChoiceToBook_RejectsFullRecipeBook()
+        public void RewardGranterApplyDishChoiceToBook_AllowsPastLegacyCapacity()
         {
             GameRun run = NewRun(week: 1);
             RewardChoice dishChoice = new RewardChoice(cfg.RewardKind.DishChoice, "cookie", "曲奇", "加入菜谱池");
+            int firstBookCount = run.GetRecipeBookDishes(0).Count;
             for (int i = 0; i < GameRun.RecipeBookCapacity; i++)
             {
                 Assert.IsTrue(run.AddBonusDishToBook("cookie", 0));
             }
 
-            Assert.IsFalse(RewardGranter.ApplyDishChoiceToBook(run, dishChoice, 0));
+            Assert.IsTrue(RewardGranter.ApplyDishChoiceToBook(run, dishChoice, 0));
 
-            Assert.AreEqual(GameRun.RecipeBookCapacity, run.GetRecipeBookDishes(0).Count);
+            Assert.AreEqual(firstBookCount + GameRun.RecipeBookCapacity + 1, run.GetRecipeBookDishes(0).Count);
         }
 
         [Test]
