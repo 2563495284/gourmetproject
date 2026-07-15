@@ -49,7 +49,14 @@ namespace GourmetProject.Game.Presentation.Battle
         private float _savedTimeScale = 1f;
         private float _currentSettlementSpeed = 1f;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
+        [SerializeField, Tooltip("开发版结算调试：是否打印结算演出关键流程日志。")]
+        private bool _debugLogSettlementFlow = true;
+        [SerializeField, Tooltip("开发版结算调试：Space 暂停/继续时的当前状态。")]
         private bool _debugScorePaused;
+        private bool _debugScoreControlsActive;
+        private bool _debugScoreHasSavedTimeScale;
+        private float _debugScoreSavedTimeScale = 1f;
+        private GUIStyle _debugScoreOverlayStyle;
 #endif
 
         private enum SettlementCueKind
@@ -81,64 +88,143 @@ namespace GourmetProject.Game.Presentation.Battle
             SettlementCueCollection cues = BuildSettlementCues(result, dishViews);
             var playback = new SettlementPlaybackState(CountSettlementCues(cues, result, dishViews), scoreFire);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
+            using CancellationTokenSource debugScorePauseCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             _debugScorePaused = false;
+            _debugScoreControlsActive = true;
+            RestoreDebugScorePauseTimeScale();
+            _ = MonitorDebugScorePauseAsync(debugScorePauseCts.Token);
+            LogDebugSettlementFlow(
+                $"开始：dishScores={result.DishScores.Count}, scoreLines={result.ScoreLines.Count}, cues={playback.CueCount}, total={result.Total}");
 #endif
             BeginSettlementSpeed();
             scoreFire?.Show();
 
             try
             {
+                int dishIndex = 0;
                 foreach (DishScore dishScore in result.DishScores)
                 {
+                    dishIndex++;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    await WaitWhileDebugScorePausedAsync(cancellationToken);
+#endif
                     if (!dishViews.TryGetValue(dishScore.DishInstanceId, out DishPieceView view) || view == null)
                     {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                        LogDebugSettlementFlow(
+                            $"菜品 {dishIndex}/{result.DishScores.Count} 跳过：id={dishScore.DishInstanceId}, missingView=true, contribution={dishScore.Contribution:0.##}");
+#endif
                         runningTotal += dishScore.Contribution;
                         continue;
                     }
 
                     DishInstance instance = view.Instance;
                     Vector3 center = DishCenter(instance, mapper);
+                    IReadOnlyList<SettlementCue> sourceCues = cues.GetDishCues(dishScore.DishInstanceId);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    LogDebugSettlementFlow(
+                        $"菜品 {dishIndex}/{result.DishScores.Count} 开始：id={dishScore.DishInstanceId}, sourceCues={sourceCues.Count}, contribution={dishScore.Contribution:0.##}, multiplier={dishScore.Multiplier:0.##}, running={runningTotal:0.##}");
+#endif
 
-                    await PlaySourceCuesAsync(cues.GetDishCues(dishScore.DishInstanceId), view, center, fxRoot, playback, cancellationToken);
+                    await PlaySourceCuesAsync(sourceCues, view, center, fxRoot, playback, cancellationToken);
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    await WaitWhileDebugScorePausedAsync(cancellationToken);
+                    LogDebugSettlementFlow($"菜品 {dishIndex}/{result.DishScores.Count} 贡献飘字：{FormatGain(dishScore)}");
+#endif
                     AdvanceSettlementSpeed(playback, SettlementCueKind.DishContribution);
                     if (fxRoot != null)
                     {
                         FloatingTextView.Spawn(_floatingTextPrefab, fxRoot, center + new Vector3(0f, 0.35f, 0f), FormatGain(dishScore), GainColor);
                     }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    LogDebugSettlementFlow($"菜品 {dishIndex}/{result.DishScores.Count} 反馈开始。");
+#endif
                     await view.PlayDeliciousnessGainFeedbackAsync(cancellationToken);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    LogDebugSettlementFlow($"菜品 {dishIndex}/{result.DishScores.Count} 反馈结束。");
+#endif
 
                     float from = runningTotal;
                     runningTotal += dishScore.Contribution;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    LogDebugSettlementFlow($"菜品 {dishIndex}/{result.DishScores.Count} 滚分开始：{from:0.##} -> {runningTotal:0.##}");
+#endif
                     await TweenScoreAsync(from, runningTotal, ScoreTweenStep, renderScore, cancellationToken);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    LogDebugSettlementFlow($"菜品 {dishIndex}/{result.DishScores.Count} 滚分结束：running={runningTotal:0.##}");
+                    LogDebugSettlementFlow($"菜品 {dishIndex}/{result.DishScores.Count} 间隔等待：{PerDishInterval:0.##}s");
+#endif
 
                     await Awaitable.WaitForSecondsAsync(PerDishInterval, cancellationToken);
                 }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                LogDebugSettlementFlow($"最终 cue 开始：count={cues.FinalCues.Count}");
+#endif
                 await PlayFinalCuesAsync(cues.FinalCues, mapper.Center, fxRoot, playback, cancellationToken);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                LogDebugSettlementFlow("最终 cue 结束。");
+#endif
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                await WaitWhileDebugScorePausedAsync(cancellationToken);
+                LogDebugSettlementFlow($"最终滚分开始：{runningTotal:0.##} -> {result.Total}");
+#endif
                 AdvanceSettlementSpeed(playback, SettlementCueKind.FinalScore);
                 await TweenScoreAsync(runningTotal, result.Total, 0.45f, renderScore, cancellationToken);
                 renderScore?.Invoke(result.Total);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                LogDebugSettlementFlow($"完成：total={result.Total}");
+#endif
             }
             finally
             {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-                _debugScorePaused = false;
+                LogDebugSettlementFlow("清理：停止暂停监听并恢复结算状态。");
+                debugScorePauseCts.Cancel();
+                ClearDebugScorePauseState();
 #endif
                 RestoreSettlementSpeed();
                 scoreFire?.Hide();
             }
         }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private void OnGUI()
+        {
+            if (!_debugScoreControlsActive)
+            {
+                return;
+            }
+
+            Color previousColor = GUI.color;
+            GUI.color = _debugScorePaused
+                ? new Color(1f, 0.45f, 0.2f, 0.95f)
+                : new Color(0.65f, 1f, 0.65f, 0.85f);
+
+            string text = _debugScorePaused
+                ? "结算演出：暂停中（Space 继续）"
+                : "结算演出：运行中（Space 暂停）";
+            GUI.Label(new Rect(16f, 16f, 360f, 30f), text, GetDebugScoreOverlayStyle());
+            GUI.color = previousColor;
+        }
+#endif
+
         private void OnDisable()
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            ClearDebugScorePauseState();
+#endif
             RestoreSettlementSpeed();
         }
 
         private void OnDestroy()
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            ClearDebugScorePauseState();
+#endif
             RestoreSettlementSpeed();
         }
 
@@ -152,7 +238,13 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             for (int i = 0; i < cues.Count; i++)
             {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                await WaitWhileDebugScorePausedAsync(cancellationToken);
+#endif
                 SettlementCue cue = cues[i];
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                LogDebugSettlementFlow($"Source cue {i + 1}/{cues.Count}：kind={cue.Kind}, text={cue.Text}");
+#endif
                 AdvanceSettlementSpeed(playback, cue.Kind);
                 if (fxRoot != null)
                 {
@@ -181,7 +273,13 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             for (int i = 0; i < cues.Count; i++)
             {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                await WaitWhileDebugScorePausedAsync(cancellationToken);
+#endif
                 SettlementCue cue = cues[i];
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                LogDebugSettlementFlow($"Final cue {i + 1}/{cues.Count}：kind={cue.Kind}, text={cue.Text}");
+#endif
                 AdvanceSettlementSpeed(playback, cue.Kind);
                 if (fxRoot != null)
                 {
@@ -316,7 +414,6 @@ namespace GourmetProject.Game.Presentation.Battle
             while (elapsed < clampedDuration)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                ToggleDebugScorePauseIfRequested();
 
                 if (!_debugScorePaused)
                 {
@@ -331,12 +428,108 @@ namespace GourmetProject.Game.Presentation.Battle
             renderScore((int)Math.Round(to, MidpointRounding.AwayFromZero));
         }
 
+        private async Awaitable MonitorDebugScorePauseAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    ToggleDebugScorePauseIfRequested();
+                    await Awaitable.NextFrameAsync(cancellationToken);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // 结算结束或被打断时正常退出后台监听。
+            }
+        }
+
+        private async Awaitable WaitWhileDebugScorePausedAsync(CancellationToken cancellationToken)
+        {
+            while (_debugScorePaused)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                await Awaitable.NextFrameAsync(cancellationToken);
+            }
+        }
+
         private void ToggleDebugScorePauseIfRequested()
         {
             if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
             {
-                _debugScorePaused = !_debugScorePaused;
+                SetDebugScorePaused(!_debugScorePaused);
             }
+        }
+
+        private void SetDebugScorePaused(bool paused)
+        {
+            if (_debugScorePaused == paused)
+            {
+                return;
+            }
+
+            _debugScorePaused = paused;
+            if (_debugScorePaused)
+            {
+                if (!_debugScoreHasSavedTimeScale)
+                {
+                    _debugScoreSavedTimeScale = Time.timeScale;
+                    _debugScoreHasSavedTimeScale = true;
+                }
+
+                Time.timeScale = 0f;
+            }
+            else
+            {
+                RestoreDebugScorePauseTimeScale();
+            }
+
+            Debug.Log($"结算演出{(_debugScorePaused ? "暂停" : "继续")}（Space 切换）。", this);
+        }
+
+        private void LogDebugSettlementFlow(string message)
+        {
+            if (!_debugLogSettlementFlow)
+            {
+                return;
+            }
+
+            Debug.Log($"[SettlementSequencer] {message}", this);
+        }
+
+        private void ClearDebugScorePauseState()
+        {
+            _debugScorePaused = false;
+            _debugScoreControlsActive = false;
+            RestoreDebugScorePauseTimeScale();
+        }
+
+        private void RestoreDebugScorePauseTimeScale()
+        {
+            if (!_debugScoreHasSavedTimeScale)
+            {
+                return;
+            }
+
+            Time.timeScale = _debugScoreSavedTimeScale;
+            _debugScoreHasSavedTimeScale = false;
+        }
+
+        private GUIStyle GetDebugScoreOverlayStyle()
+        {
+            if (_debugScoreOverlayStyle != null)
+            {
+                return _debugScoreOverlayStyle;
+            }
+
+            _debugScoreOverlayStyle = new GUIStyle(GUI.skin.box)
+            {
+                alignment = TextAnchor.MiddleLeft,
+                fontSize = 18,
+                fontStyle = FontStyle.Bold,
+                padding = new RectOffset(10, 10, 4, 4)
+            };
+            return _debugScoreOverlayStyle;
         }
 #endif
 
