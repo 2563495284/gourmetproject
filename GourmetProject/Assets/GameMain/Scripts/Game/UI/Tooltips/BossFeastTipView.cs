@@ -9,20 +9,10 @@ namespace GourmetProject.Game.UI.Tooltips
     /// </summary>
     public sealed class BossFeastTipView : ActionTipView
     {
-        /// <summary>默认恶魔 emoji 兜底（缺 Boss 头像图时用）。</summary>
-        private const string DefaultEmoji = "\U0001F608";
-
-        /// <summary>直接用配置 Boss 绑定：标题取 Boss 名，描述取机制文案，底行取目标分。</summary>
-        public void Bind(cfg.Food boss, string mechanicDesc, long requiredScore, Sprite icon = null)
-        {
-            string bossName = boss != null ? boss.Name : string.Empty;
-            Bind(bossName, mechanicDesc, requiredScore, icon);
-        }
-
         /// <summary>字段级绑定，供无完整配置时使用。</summary>
-        public void Bind(string bossName, string mechanicDesc, long requiredScore, Sprite icon = null)
+        public void Bind(string debuffName, string debuffDesc, long requiredScore, Sprite icon = null)
         {
-            ApplyTexts($"盛宴主题：{bossName}", mechanicDesc);
+            ApplyTexts(debuffName, debuffDesc);
             ApplyFooter($"美味度要求：{requiredScore:N0}");
         }
     }

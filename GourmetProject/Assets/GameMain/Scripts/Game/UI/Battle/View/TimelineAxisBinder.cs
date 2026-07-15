@@ -119,7 +119,7 @@ namespace GourmetProject.Game.UI.Battle.View
             cfg.Food boss = PreviewBoss(run, node, action);
             if (boss == null)
             {
-                tip.Bind("恶魔", "即将迎来周末盛宴。", run?.RequiredScore ?? 0);
+                tip.Bind("Bug", "不应该出现此条信息，请联系开发者。", run?.RequiredScore ?? 0);
                 return;
             }
 
@@ -127,7 +127,7 @@ namespace GourmetProject.Game.UI.Battle.View
             int required = run != null
                 ? HiddenScoreService.TargetScore(run, new ActionExecutionContext(action), debuff?.TargetScoreHiddenOffset ?? 0)
                 : 0;
-            tip.Bind(boss, BossMechanicDescription(debuff), required);
+            tip.Bind(debuff.Name, debuff.Desc, required);
         }
 
         private static cfg.Food PreviewBoss(GameRun run, cfg.TimelineNode node, cfg.GameAction action)
@@ -153,28 +153,6 @@ namespace GourmetProject.Game.UI.Battle.View
             finally
             {
                 rng.State = state;
-            }
-        }
-
-        private static string BossMechanicDescription(cfg.BossDebuff debuff)
-        {
-            string modifier = debuff?.Modifier;
-            if (debuff != null && !string.IsNullOrEmpty(debuff.Desc))
-            {
-                return $"特殊机制：{debuff.Name}。{debuff.Desc}";
-            }
-
-            switch (modifier)
-            {
-                case "small_board":
-                    return "特殊机制：餐桌空间缩小，需要更谨慎地规划摆放。";
-                case "limit_serve":
-                    return "特殊机制：本场最多上菜 5 次。";
-                case "":
-                case null:
-                    return "击败 Boss，完成本周盛宴挑战。";
-                default:
-                    return $"特殊机制：{modifier}";
             }
         }
     }
