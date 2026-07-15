@@ -52,6 +52,12 @@ namespace GourmetProject.Game.UI.Tooltips
             _targetOverride = target;
         }
 
+        /// <summary>设置是否由本触发器负责定位 Tips；全屏 overlay 类 Tips 可自行定位子模块。</summary>
+        public void SetFollowPointer(bool followPointer)
+        {
+            _followPointer = followPointer;
+        }
+
         /// <summary>运行时注入 Tips，并提供显示前刷新内容的回调。</summary>
         public void SetTip(ActionTipView tip, Action beforeShow)
         {
@@ -64,7 +70,7 @@ namespace GourmetProject.Game.UI.Tooltips
             _beforeShow = beforeShow;
         }
 
-        /// <summary>运行时注入任意 MonoBehaviour Tips（例如 DishTooltipView），由持有方提供显隐方法。</summary>
+        /// <summary>运行时注入任意 MonoBehaviour Tips，由持有方提供显隐方法。</summary>
         public void SetTip(MonoBehaviour tip, Action showTip, Action hideTip, Action beforeShow = null)
         {
             _tip = tip as ActionTipView;

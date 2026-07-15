@@ -146,6 +146,37 @@ namespace GourmetProject.Game.UI.Tooltips
             PlaceRight(_transferredSubSkillsRoot, _summaryView.transform as RectTransform, canvasRect.rect);
         }
 
+        public void PlaceAroundRectTransform(RectTransform target, Canvas canvas)
+        {
+            if (target == null)
+            {
+                return;
+            }
+
+            canvas ??= GetComponentInParent<Canvas>();
+            RectTransform parent = transform as RectTransform;
+            if (parent == null)
+            {
+                return;
+            }
+
+            RectTransform canvasRect = parent.parent as RectTransform;
+            if (canvasRect == null)
+            {
+                return;
+            }
+
+            Rect targetRect = RectTransformToLocalRect(target, canvasRect);
+            Canvas.ForceUpdateCanvases();
+
+            PlaceLeft(_materialsView.transform as RectTransform, targetRect, canvasRect.rect);
+            PlaceAbove(_scoreView.transform as RectTransform, targetRect, canvasRect.rect);
+            PlaceRightTop(_summaryView.transform as RectTransform, targetRect, canvasRect.rect);
+            PlaceBelow(_flavorDetailsRoot, _summaryView.transform as RectTransform, canvasRect.rect);
+            PlaceAbove(_specialTagsRoot, _summaryView.transform as RectTransform, canvasRect.rect);
+            PlaceRight(_transferredSubSkillsRoot, _summaryView.transform as RectTransform, canvasRect.rect);
+        }
+
         private void Awake()
         {
             EnsureStructure();
@@ -305,6 +336,23 @@ namespace GourmetProject.Game.UI.Tooltips
             return has
                 ? Rect.MinMaxRect(localMin.x, localMin.y, localMax.x, localMax.y)
                 : new Rect(Vector2.zero, Vector2.one);
+        }
+
+        private Rect RectTransformToLocalRect(RectTransform target, RectTransform parent)
+        {
+            Vector3[] corners = new Vector3[4];
+            target.GetWorldCorners(corners);
+
+            Vector2 localMin = parent.InverseTransformPoint(corners[0]);
+            Vector2 localMax = localMin;
+            for (int i = 1; i < corners.Length; i++)
+            {
+                Vector2 local = parent.InverseTransformPoint(corners[i]);
+                localMin = Vector2.Min(localMin, local);
+                localMax = Vector2.Max(localMax, local);
+            }
+
+            return Rect.MinMaxRect(localMin.x, localMin.y, localMax.x, localMax.y);
         }
 
         private void PlaceLeft(RectTransform rect, Rect target, Rect bounds)

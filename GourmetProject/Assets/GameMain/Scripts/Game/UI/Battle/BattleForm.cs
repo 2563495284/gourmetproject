@@ -1194,7 +1194,7 @@ namespace GourmetProject.Game.UI.Battle
             _recipePresenter?.BuildShop(_run, BuyRecipeBook);
         }
 
-        private void PlayShopItemPurchaseFly(ShopEntry entry, ShopBuyCardView sourceCard)
+        private void PlayShopItemPurchaseFly(ShopEntry entry, ShopBuyItemViewBase sourceCard)
         {
             if (entry == null || sourceCard == null || _itemsColumn == null)
             {

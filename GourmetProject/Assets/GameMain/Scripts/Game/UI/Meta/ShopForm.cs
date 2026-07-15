@@ -6,7 +6,7 @@ using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Hud;
 using GourmetProject.Game.UI.Tooltips;
-using GourmetProject.Game.UI.Widgets;
+using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Runtime;
 using UnityEngine;
@@ -39,11 +39,14 @@ namespace GourmetProject.Game.UI.Meta
         [SerializeField] private Text _fragmentEmptyText;
         [SerializeField] private Text _passiveEmptyText;
         [SerializeField] private Text _activeEmptyText;
-        [SerializeField] private ShopBuyCardView _buyCardPrefab;
+        [SerializeField] private ShopFoodBuyItemView _foodCardPrefab;
+        [SerializeField] private ShopFragmentPackBuyItemView _fragmentCardPrefab;
+        [SerializeField] private ShopPassiveItemBuyItemView _passiveCardPrefab;
+        [SerializeField] private ShopActiveItemBuyItemView _activeCardPrefab;
         [SerializeField] private TargetArrowView _targetArrowPrefab;
 
         [Header("Hover Tips")]
-        [SerializeField] private DishTooltipView _dishTooltipPrefab;
+        [SerializeField] private FoodTipsView _foodTipsPrefab;
         [SerializeField] private ItemTipView _itemTipPrefab;
 
         [Header("Recipe Entry")]
@@ -58,8 +61,8 @@ namespace GourmetProject.Game.UI.Meta
         private bool _wired;
         private TargetArrowView _activeArrow;
         private ShopEntry _targetingEntry;
-        private ShopBuyCardView _targetingCard;
-        private DishTooltipView _dishTooltipView;
+        private ShopBuyItemViewBase _targetingCard;
+        private FoodTipsView _foodTipsView;
         private ItemTipView _itemTipView;
         private bool _waitingForRecipeClick;
         private int _targetingFrame;
@@ -68,7 +71,7 @@ namespace GourmetProject.Game.UI.Meta
         private Action _onChanged;
         private Action _onOpenRecipeEdit;
         private Action _onOpenTableEdit;
-        private Action<ShopEntry, ShopBuyCardView> _onItemPurchased;
+        private Action<ShopEntry, ShopBuyItemViewBase> _onItemPurchased;
 
         private void Awake()
         {
@@ -125,7 +128,7 @@ namespace GourmetProject.Game.UI.Meta
             Action onOpenRecipeEdit = null,
             Action onOpenTableEdit = null,
             RecipeView recipeView = null,
-            Action<ShopEntry, ShopBuyCardView> onItemPurchased = null)
+            Action<ShopEntry, ShopBuyItemViewBase> onItemPurchased = null)
         {
             EnsureWired();
             _onLeave = onLeave;
@@ -202,18 +205,23 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             SetText(_goldText, $"金币 {_run.Gold}");
-            BuildBuySection(ShopEntryKind.Dish, _foodContainer, _foodEmptyText, "暂无食物");
-            BuildBuySection(ShopEntryKind.Fragment, _fragmentContainer, _fragmentEmptyText, "暂无碎片包");
-            BuildBuySection(ShopEntryKind.PassiveItem, _passiveContainer, _passiveEmptyText, "暂无被动道具");
-            BuildBuySection(ShopEntryKind.ActiveItem, _activeContainer, _activeEmptyText, "暂无主动道具");
+            BuildBuySection(ShopEntryKind.Dish, _foodContainer, _foodEmptyText, "暂无食物", _foodCardPrefab);
+            BuildBuySection(ShopEntryKind.Fragment, _fragmentContainer, _fragmentEmptyText, "暂无碎片包", _fragmentCardPrefab);
+            BuildBuySection(ShopEntryKind.PassiveItem, _passiveContainer, _passiveEmptyText, "暂无被动道具", _passiveCardPrefab);
+            BuildBuySection(ShopEntryKind.ActiveItem, _activeContainer, _activeEmptyText, "暂无主动道具", _activeCardPrefab);
             SetText(_recipeLimitText, $"{_run.RecipeBookCount}/{GameRun.MaxRecipeBookCount}");
 
             _onChanged?.Invoke();
         }
 
-        private void BuildBuySection(ShopEntryKind kind, RectTransform container, Text emptyText, string emptyMessage)
+        private void BuildBuySection(
+            ShopEntryKind kind,
+            RectTransform container,
+            Text emptyText,
+            string emptyMessage,
+            ShopBuyItemViewBase prefab)
         {
-            if (container == null || _buyCardPrefab == null)
+            if (container == null || prefab == null)
             {
                 SetEmpty(emptyText, true, emptyMessage);
                 return;
@@ -227,35 +235,29 @@ namespace GourmetProject.Game.UI.Meta
                     continue;
                 }
 
-                ShopBuyCardView card = Instantiate(_buyCardPrefab, container);
+                ShopBuyItemViewBase card = Instantiate(prefab, container);
                 card.gameObject.name = $"ShopBuy_{kind}_{count}";
                 ShopEntry captured = entry;
                 bool affordable = _run.Gold >= entry.Price;
                 Sprite icon = LoadEntryIcon(entry);
+                DishDef dish = entry.Kind == ShopEntryKind.Dish ? _run.Database.GetDish(entry.Id) : null;
+                Action<ShopBuyItemViewBase, ShopEntry> onTargetDown = null;
+                Action<ShopBuyItemViewBase, ShopEntry, Vector2> onTargetUp = null;
                 if (entry.Kind == ShopEntryKind.Dish)
                 {
-                    DishDef dish = _run.Database.GetDish(entry.Id);
-                    card.BindDish(
-                        entry.Name,
-                        entry.Desc,
-                        entry.Price,
-                        affordable,
-                        icon,
-                        dish,
-                        null,
-                        view => BeginDishTargeting(view, captured),
-                        (view, screenPoint) => EndDishTargeting(view, captured, screenPoint));
+                    onTargetDown = BeginDishTargeting;
+                    onTargetUp = EndDishTargeting;
                 }
-                else
-                {
-                    card.Bind(
-                        entry.Name,
-                        entry.Desc,
-                        entry.Price,
-                        affordable,
-                        icon,
-                        view => BuyImmediate(captured, view));
-                }
+
+                card.Bind(new ShopBuyItemViewContext(
+                    _run,
+                    captured,
+                    affordable,
+                    icon,
+                    dish,
+                    BuyImmediate,
+                    onTargetDown,
+                    onTargetUp));
 
                 BindBuyCardTip(card, captured);
                 _spawned.Add(card.gameObject);
@@ -275,7 +277,7 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
-        private bool BuyImmediate(ShopEntry entry, ShopBuyCardView card)
+        private bool BuyImmediate(ShopEntry entry, ShopBuyItemViewBase card)
         {
             if (!ShopService.Purchase(_run, entry))
             {
@@ -310,7 +312,7 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
-        private void BeginDishTargeting(ShopBuyCardView card, ShopEntry entry)
+        private void BeginDishTargeting(ShopBuyItemViewBase card, ShopEntry entry)
         {
             if (_run == null || card == null || entry == null)
             {
@@ -334,7 +336,7 @@ namespace GourmetProject.Game.UI.Meta
             UpdateTargetingHighlight(Mouse.current != null ? Mouse.current.position.ReadValue() : card.IconScreenCenter());
         }
 
-        private void EndDishTargeting(ShopBuyCardView card, ShopEntry entry, Vector2 screenPoint)
+        private void EndDishTargeting(ShopBuyItemViewBase card, ShopEntry entry, Vector2 screenPoint)
         {
             if (_activeArrow == null || _targetingCard != card || _targetingEntry != entry)
             {
@@ -360,7 +362,7 @@ namespace GourmetProject.Game.UI.Meta
         private void CompleteDishTargeting(int bookIndex)
         {
             ShopEntry entry = _targetingEntry;
-            ShopBuyCardView card = _targetingCard;
+            ShopBuyItemViewBase card = _targetingCard;
             if (!ShopService.PurchaseDishToBook(_run, entry, bookIndex))
             {
                 card?.PlayPurchaseFailed();
@@ -390,10 +392,10 @@ namespace GourmetProject.Game.UI.Meta
 
         private void EnsureTipViews()
         {
-            if (_dishTooltipView == null)
+            if (_foodTipsView == null)
             {
-                _dishTooltipView = CreateTipView(_dishTooltipPrefab, "DishTooltipView_Runtime")
-                    ?? FindExistingTip<DishTooltipView>("DishTooltipView_Runtime");
+                _foodTipsView = CreateTipView(_foodTipsPrefab, "FoodTipsView_Runtime")
+                    ?? FindExistingTip<FoodTipsView>("FoodTipsView_Runtime");
             }
 
             if (_itemTipView == null)
@@ -402,11 +404,11 @@ namespace GourmetProject.Game.UI.Meta
                     ?? FindExistingTip<ItemTipView>("ItemTipView_Runtime");
             }
 
-            MoveTipToTopLayer(_dishTooltipView);
+            MoveTipToTopLayer(_foodTipsView);
             MoveTipToTopLayer(_itemTipView);
         }
 
-        private void BindBuyCardTip(ShopBuyCardView card, ShopEntry entry)
+        private void BindBuyCardTip(ShopBuyItemViewBase card, ShopEntry entry)
         {
             if (card == null || entry == null)
             {
@@ -420,10 +422,11 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             trigger.SetTarget(card.transform as RectTransform);
+            trigger.SetFollowPointer(true);
 
             if (entry.Kind == ShopEntryKind.Dish)
             {
-                BindDishTip(trigger, entry);
+                BindDishTip(trigger, entry, card.transform as RectTransform);
                 return;
             }
 
@@ -436,20 +439,132 @@ namespace GourmetProject.Game.UI.Meta
             trigger.ClearTip();
         }
 
-        private void BindDishTip(TipHoverTrigger trigger, ShopEntry entry)
+        private void BindDishTip(TipHoverTrigger trigger, ShopEntry entry, RectTransform target)
         {
             DishDef dish = _run?.Database.GetDish(entry.Id);
-            if (trigger == null || _dishTooltipView == null || dish == null || _run?.Database == null)
+            if (trigger == null || _foodTipsView == null || dish == null || _run?.Database == null)
             {
                 trigger?.ClearTip();
                 return;
             }
 
+            trigger.SetFollowPointer(false);
             trigger.SetTip(
-                _dishTooltipView,
-                _dishTooltipView.Show,
-                _dishTooltipView.Hide,
-                () => _dishTooltipView.Bind(dish, dish.SkillIds, dish.FlavorId, _run.Database));
+                _foodTipsView,
+                _foodTipsView.Show,
+                _foodTipsView.Hide,
+                () =>
+                {
+                    _foodTipsView.Bind(BuildShopFoodTipsData(dish, _run.Database));
+                    _foodTipsView.PlaceAroundRectTransform(target, GetComponentInParent<Canvas>());
+                });
+        }
+
+        private FoodTipsData BuildShopFoodTipsData(DishDef dish, GameplayDatabase db)
+        {
+            return new FoodTipsData(
+                new FoodSummaryTipsData(
+                    dish.Name,
+                    BuildShopFoodSkills(dish, db),
+                    BuildShopFlavorNames(dish, db)),
+                new FoodScoreTipsData(dish.Deliciousness, 1f),
+                Array.Empty<FoodMaterialTipsEntry>(),
+                BuildShopFlavorDetails(dish, db),
+                Array.Empty<FoodInfoEntry>(),
+                BuildShopSpecialTags(dish, db));
+        }
+
+        private IReadOnlyList<FoodInfoEntry> BuildShopFoodSkills(DishDef dish, GameplayDatabase db)
+        {
+            if (dish.SkillIds == null || db == null)
+            {
+                return Array.Empty<FoodInfoEntry>();
+            }
+
+            var entries = new List<FoodInfoEntry>();
+            foreach (string skillId in dish.SkillIds)
+            {
+                SkillDef skill = db.GetSkill(skillId);
+                if (skill == null)
+                {
+                    continue;
+                }
+
+                entries.Add(new FoodInfoEntry(skill.Name, skill.Desc));
+            }
+
+            return entries;
+        }
+
+        private IReadOnlyList<string> BuildShopFlavorNames(DishDef dish, GameplayDatabase db)
+        {
+            if (!dish.HasFlavor || db == null)
+            {
+                return Array.Empty<string>();
+            }
+
+            FlavorDef flavor = db.GetFlavor(dish.FlavorId);
+            return flavor != null && !string.IsNullOrEmpty(flavor.Name)
+                ? new[] { flavor.Name }
+                : Array.Empty<string>();
+        }
+
+        private IReadOnlyList<FoodInfoEntry> BuildShopFlavorDetails(DishDef dish, GameplayDatabase db)
+        {
+            if (!dish.HasFlavor || db == null)
+            {
+                return Array.Empty<FoodInfoEntry>();
+            }
+
+            FlavorDef flavor = db.GetFlavor(dish.FlavorId);
+            return flavor != null
+                ? new[] { new FoodInfoEntry(flavor.Name, flavor.Desc) }
+                : Array.Empty<FoodInfoEntry>();
+        }
+
+        private IReadOnlyList<string> BuildShopSpecialTags(DishDef dish, GameplayDatabase db)
+        {
+            if (dish.SkillIds == null || db == null)
+            {
+                return Array.Empty<string>();
+            }
+
+            var termIds = new List<string>();
+            foreach (string skillId in dish.SkillIds)
+            {
+                SkillDef skill = db.GetSkill(skillId);
+                AddUniqueRange(termIds, skill?.TermIds);
+            }
+
+            if (termIds.Count == 0)
+            {
+                return Array.Empty<string>();
+            }
+
+            var tags = new List<string>(termIds.Count);
+            foreach (string termId in termIds)
+            {
+                cfg.Term term = GameApp.Config?.Tables?.TbTerm?.GetOrDefault(termId);
+                tags.Add(term != null ? term.Name : termId);
+            }
+
+            return tags;
+        }
+
+        private static void AddUniqueRange(List<string> list, IReadOnlyList<string> values)
+        {
+            if (values == null)
+            {
+                return;
+            }
+
+            foreach (string value in values)
+            {
+                if (!string.IsNullOrEmpty(value) && !list.Contains(value))
+                {
+                    list.Add(value);
+                }
+            }
         }
 
         private void BindItemTip(TipHoverTrigger trigger, ShopEntry entry)
@@ -527,8 +642,8 @@ namespace GourmetProject.Game.UI.Meta
                 case ActionTipView actionTip:
                     actionTip.Hide();
                     break;
-                case DishTooltipView dishTip:
-                    dishTip.Hide();
+                case FoodTipsView foodTip:
+                    foodTip.Hide();
                     break;
                 default:
                     view.gameObject.SetActive(false);
@@ -628,9 +743,9 @@ namespace GourmetProject.Game.UI.Meta
 
         private void ClearSpawned()
         {
-            if (_dishTooltipView != null)
+            if (_foodTipsView != null)
             {
-                _dishTooltipView.Hide();
+                _foodTipsView.Hide();
             }
 
             if (_itemTipView != null)
