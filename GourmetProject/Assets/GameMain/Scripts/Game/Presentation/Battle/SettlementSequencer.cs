@@ -8,6 +8,9 @@ using GourmetProject.Gameplay.Scoring;
 using UnityEngine;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+using UnityEngine.InputSystem;
+#endif
 
 namespace GourmetProject.Game.Presentation.Battle
 {
@@ -34,6 +37,9 @@ namespace GourmetProject.Game.Presentation.Battle
         private bool _hasSavedTimeScale;
         private float _savedTimeScale = 1f;
         private float _currentSettlementSpeed = 1f;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private bool _debugScorePaused;
+#endif
 
         private enum SettlementCueKind
         {
@@ -61,6 +67,9 @@ namespace GourmetProject.Game.Presentation.Battle
             float runningTotal = 0f;
             renderScore?.Invoke(0);
             var playback = new SettlementPlaybackState(CountSettlementCues(result, dishViews), scoreFire);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            _debugScorePaused = false;
+#endif
             BeginSettlementSpeed();
             scoreFire?.Show();
 
@@ -125,6 +134,9 @@ namespace GourmetProject.Game.Presentation.Battle
             }
             finally
             {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                _debugScorePaused = false;
+#endif
                 RestoreSettlementSpeed();
                 scoreFire?.Hide();
             }
@@ -195,6 +207,9 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void BeginSettlementSpeed()
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            _currentSettlementSpeed = 1f;
+#else
             _currentSettlementSpeed = Mathf.Max(0.0001f, _startSpeed);
             if (!_useGlobalTimeScale || _hasSavedTimeScale)
             {
@@ -204,6 +219,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _savedTimeScale = Time.timeScale;
             _hasSavedTimeScale = true;
             Time.timeScale = _currentSettlementSpeed;
+#endif
         }
 
         private void RestoreSettlementSpeed()
@@ -230,6 +246,9 @@ namespace GourmetProject.Game.Presentation.Battle
                 : Mathf.Clamp01((float)playback.CueIndex / (playback.CueCount - 1));
             playback.CueIndex++;
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            _currentSettlementSpeed = 1f;
+#else
             float curve = Mathf.Pow(normalized, Mathf.Max(0.0001f, _speedCurveExponent));
             float start = Mathf.Max(0.0001f, _startSpeed);
             float max = Mathf.Max(start, _maxSpeed);
@@ -238,6 +257,7 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 Time.timeScale = _currentSettlementSpeed;
             }
+#endif
 
             playback.ScoreFire?.SetIntensity(normalized, _currentSettlementSpeed);
             NotifySettlementCue(kind, _currentSettlementSpeed, normalized);
@@ -276,13 +296,16 @@ namespace GourmetProject.Game.Presentation.Battle
             return Mathf.Max(1, count);
         }
 
-        private static async Awaitable TweenScoreAsync(float from, float to, float duration, Action<int> renderScore, CancellationToken cancellationToken)
+        private async Awaitable TweenScoreAsync(float from, float to, float duration, Action<int> renderScore, CancellationToken cancellationToken)
         {
             if (renderScore == null)
             {
                 return;
             }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            await TweenScoreWithDebugControlsAsync(from, to, duration, renderScore, cancellationToken);
+#else
             Tween tween = DOVirtual.Float(0f, 1f, Mathf.Max(0.0001f, duration), t =>
                 {
                     renderScore((int)Math.Round(Mathf.Lerp(from, to, Mathf.Clamp01(t)), MidpointRounding.AwayFromZero));
@@ -291,7 +314,41 @@ namespace GourmetProject.Game.Presentation.Battle
             await PresentationTween.AwaitCompletionAsync(tween, cancellationToken);
 
             renderScore((int)Math.Round(to, MidpointRounding.AwayFromZero));
+#endif
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private async Awaitable TweenScoreWithDebugControlsAsync(float from, float to, float duration, Action<int> renderScore, CancellationToken cancellationToken)
+        {
+            float clampedDuration = Mathf.Max(0.0001f, duration);
+            float elapsed = 0f;
+
+            while (elapsed < clampedDuration)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                ToggleDebugScorePauseIfRequested();
+
+                if (!_debugScorePaused)
+                {
+                    elapsed = Mathf.Min(clampedDuration, elapsed + Time.unscaledDeltaTime);
+                    float t = elapsed / clampedDuration;
+                    renderScore((int)Math.Round(Mathf.Lerp(from, to, t), MidpointRounding.AwayFromZero));
+                }
+
+                await Awaitable.NextFrameAsync(cancellationToken);
+            }
+
+            renderScore((int)Math.Round(to, MidpointRounding.AwayFromZero));
+        }
+
+        private void ToggleDebugScorePauseIfRequested()
+        {
+            if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
+            {
+                _debugScorePaused = !_debugScorePaused;
+            }
+        }
+#endif
 
         private static string FormatGain(DishScore dishScore)
         {
