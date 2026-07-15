@@ -19,19 +19,14 @@ public sealed partial class HiddenScoreCurve : Luban.BeanBase
     {
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
         { if(!_buf["purpose"].IsString) { throw new SerializationException(); }  Purpose = _buf["purpose"]; }
-        { if(!_buf["segmentPriority"].IsNumber) { throw new SerializationException(); }  SegmentPriority = _buf["segmentPriority"]; }
-        { if(!_buf["minWeek"].IsNumber) { throw new SerializationException(); }  MinWeek = _buf["minWeek"]; }
-        { if(!_buf["maxWeek"].IsNumber) { throw new SerializationException(); }  MaxWeek = _buf["maxWeek"]; }
-        { if(!_buf["minRunStep"].IsNumber) { throw new SerializationException(); }  MinRunStep = _buf["minRunStep"]; }
-        { if(!_buf["maxRunStep"].IsNumber) { throw new SerializationException(); }  MaxRunStep = _buf["maxRunStep"]; }
-        { if(!_buf["baseValue"].IsNumber) { throw new SerializationException(); }  BaseValue = _buf["baseValue"]; }
-        { if(!_buf["baseMultiplier"].IsNumber) { throw new SerializationException(); }  BaseMultiplier = _buf["baseMultiplier"]; }
-        { if(!_buf["perWeek"].IsNumber) { throw new SerializationException(); }  PerWeek = _buf["perWeek"]; }
-        { if(!_buf["perDay"].IsNumber) { throw new SerializationException(); }  PerDay = _buf["perDay"]; }
-        { if(!_buf["perStep"].IsNumber) { throw new SerializationException(); }  PerStep = _buf["perStep"]; }
-        { if(!_buf["itemBonusMultiplier"].IsNumber) { throw new SerializationException(); }  ItemBonusMultiplier = _buf["itemBonusMultiplier"]; }
+        { var __json0 = _buf["weekList"]; if(!__json0.IsArray) { throw new SerializationException(); } WeekList = new System.Collections.Generic.List<int>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { int __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  WeekList.Add(__v0); }   }
+        { if(!_buf["linearBase"].IsNumber) { throw new SerializationException(); }  LinearBase = _buf["linearBase"]; }
+        { if(!_buf["weekCoeff"].IsNumber) { throw new SerializationException(); }  WeekCoeff = _buf["weekCoeff"]; }
+        { if(!_buf["dayCoeff"].IsNumber) { throw new SerializationException(); }  DayCoeff = _buf["dayCoeff"]; }
+        { if(!_buf["expConstant"].IsNumber) { throw new SerializationException(); }  ExpConstant = _buf["expConstant"]; }
+        { if(!_buf["expWeekCoeff"].IsNumber) { throw new SerializationException(); }  ExpWeekCoeff = _buf["expWeekCoeff"]; }
+        { if(!_buf["expDayCoeff"].IsNumber) { throw new SerializationException(); }  ExpDayCoeff = _buf["expDayCoeff"]; }
         { if(!_buf["roundTo"].IsNumber) { throw new SerializationException(); }  RoundTo = _buf["roundTo"]; }
-        { if(!_buf["minValue"].IsNumber) { throw new SerializationException(); }  MinValue = _buf["minValue"]; }
     }
 
     public static HiddenScoreCurve DeserializeHiddenScoreCurve(JSONNode _buf)
@@ -44,61 +39,41 @@ public sealed partial class HiddenScoreCurve : Luban.BeanBase
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 曲线用途：Base/TargetScore/Dish/PassiveItem/ActiveItem/Fragment。
+    /// 曲线用途
     /// </summary>
     public readonly string Purpose;
     /// <summary>
-    /// 分段优先级，数值越大越优先。
+    /// 适用周数列表；空=不限。
     /// </summary>
-    public readonly int SegmentPriority;
+    public readonly System.Collections.Generic.List<int> WeekList;
     /// <summary>
-    /// 适用最小周数；&lt;=0 表示不限。
+    /// 线性公式常量项。
     /// </summary>
-    public readonly int MinWeek;
+    public readonly float LinearBase;
     /// <summary>
-    /// 适用最大周数；&lt;=0 表示不限。
+    /// 线性公式：周数系数。
     /// </summary>
-    public readonly int MaxWeek;
+    public readonly float WeekCoeff;
     /// <summary>
-    /// 适用最小整局行动序号；&lt;=0 表示不限。
+    /// 线性公式：当周过去天数系数。
     /// </summary>
-    public readonly int MinRunStep;
+    public readonly float DayCoeff;
     /// <summary>
-    /// 适用最大整局行动序号；&lt;=0 表示不限。
+    /// 目标分指数公式常量 k0。
     /// </summary>
-    public readonly int MaxRunStep;
+    public readonly float ExpConstant;
     /// <summary>
-    /// 基础值。
+    /// 目标分指数公式kWeek。
     /// </summary>
-    public readonly int BaseValue;
+    public readonly float ExpWeekCoeff;
     /// <summary>
-    /// 基础倍率。
+    /// 目标分指数公式 kDay。
     /// </summary>
-    public readonly float BaseMultiplier;
-    /// <summary>
-    /// 每周递增值。
-    /// </summary>
-    public readonly float PerWeek;
-    /// <summary>
-    /// 每推进一天递增值。
-    /// </summary>
-    public readonly float PerDay;
-    /// <summary>
-    /// 每执行一次行动递增值。
-    /// </summary>
-    public readonly float PerStep;
-    /// <summary>
-    /// 道具隐藏分派生倍率。
-    /// </summary>
-    public readonly float ItemBonusMultiplier;
+    public readonly float ExpDayCoeff;
     /// <summary>
     /// 向上取整粒度。
     /// </summary>
     public readonly int RoundTo;
-    /// <summary>
-    /// 最小值。
-    /// </summary>
-    public readonly int MinValue;
    
     public const int __ID__ = -1998500121;
     public override int GetTypeId() => __ID__;
@@ -112,19 +87,14 @@ public sealed partial class HiddenScoreCurve : Luban.BeanBase
         return "{ "
         + "id:" + Id + ","
         + "purpose:" + Purpose + ","
-        + "segmentPriority:" + SegmentPriority + ","
-        + "minWeek:" + MinWeek + ","
-        + "maxWeek:" + MaxWeek + ","
-        + "minRunStep:" + MinRunStep + ","
-        + "maxRunStep:" + MaxRunStep + ","
-        + "baseValue:" + BaseValue + ","
-        + "baseMultiplier:" + BaseMultiplier + ","
-        + "perWeek:" + PerWeek + ","
-        + "perDay:" + PerDay + ","
-        + "perStep:" + PerStep + ","
-        + "itemBonusMultiplier:" + ItemBonusMultiplier + ","
+        + "weekList:" + Luban.StringUtil.CollectionToString(WeekList) + ","
+        + "linearBase:" + LinearBase + ","
+        + "weekCoeff:" + WeekCoeff + ","
+        + "dayCoeff:" + DayCoeff + ","
+        + "expConstant:" + ExpConstant + ","
+        + "expWeekCoeff:" + ExpWeekCoeff + ","
+        + "expDayCoeff:" + ExpDayCoeff + ","
         + "roundTo:" + RoundTo + ","
-        + "minValue:" + MinValue + ","
         + "}";
     }
 }

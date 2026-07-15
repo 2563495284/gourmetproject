@@ -17,25 +17,19 @@ namespace GourmetProject.Game.Meta
         public int Max { get; }
     }
 
-    /// <summary>v2 隐藏分统一入口：基础隐藏分与目标分、奖励池隐藏分、金币上下限派生。</summary>
+    /// <summary>v2 隐藏分统一入口：目标分、奖励池隐藏分、金币上下限派生。</summary>
     public static class HiddenScoreService
     {
-        private const string BasePurpose = "Base";
         private const string TargetPurpose = "TargetScore";
         private const string DishPurpose = "Dish";
         private const string PassiveItemPurpose = "PassiveItem";
         private const string ActiveItemPurpose = "ActiveItem";
         private const string FragmentPurpose = "Fragment";
 
-        public static int BaseHiddenScore(GameRun run, ActionExecutionContext context = null)
-        {
-            return Evaluate(BasePurpose, run, context, 0);
-        }
-
         public static int TargetScore(GameRun run, ActionExecutionContext context = null)
         {
             cfg.Food food = ResolveFood(run?.Tables, context?.Action);
-            int derived = Evaluate(TargetPurpose, run, context, BaseHiddenScore(run, context));
+            int derived = EvaluateTargetScore(run);
             if (food != null && food.TargetScoreMul > 0f)
             {
                 derived = (int)Math.Round(derived * food.TargetScoreMul, MidpointRounding.AwayFromZero);
@@ -46,22 +40,22 @@ namespace GourmetProject.Game.Meta
 
         public static int DishHiddenScore(GameRun run, ActionExecutionContext context = null)
         {
-            return Evaluate(DishPurpose, run, context, BaseHiddenScore(run, context));
+            return EvaluateLinear(DishPurpose, run);
         }
 
         public static int PassiveItemHiddenScore(GameRun run, ActionExecutionContext context = null)
         {
-            return Evaluate(PassiveItemPurpose, run, context, BaseHiddenScore(run, context));
+            return EvaluateLinear(PassiveItemPurpose, run);
         }
 
         public static int ActiveItemHiddenScore(GameRun run, ActionExecutionContext context = null)
         {
-            return Evaluate(ActiveItemPurpose, run, context, BaseHiddenScore(run, context));
+            return EvaluateLinear(ActiveItemPurpose, run);
         }
 
         public static int FragmentHiddenScore(GameRun run, ActionExecutionContext context = null)
         {
-            return Evaluate(FragmentPurpose, run, context, BaseHiddenScore(run, context));
+            return EvaluateLinear(FragmentPurpose, run);
         }
 
         public static GoldRange GoldRewardRange(GameRun run, ActionExecutionContext context = null)
@@ -102,34 +96,53 @@ namespace GourmetProject.Game.Meta
             return Math.Max(1, (int)Math.Round(value, MidpointRounding.AwayFromZero));
         }
 
-        private static int Evaluate(string purpose, GameRun run, ActionExecutionContext context, int baseHidden)
+        private static int EvaluateLinear(string purpose, GameRun run)
         {
-            cfg.HiddenScoreCurve curve = ResolveCurve(run?.Tables, purpose, run, context);
+            cfg.HiddenScoreCurve curve = ResolveCurve(run?.Tables, purpose, run);
             if (curve == null || run == null)
             {
                 return 0;
             }
 
-            double value = curve.BaseValue + baseHidden * curve.BaseMultiplier;
-            value += run.WeekIndex * curve.PerWeek;
-            value += run.CurrentDay * curve.PerDay;
-            value += run.ActionStepIndex * curve.PerStep;
-            value += (ResolveFood(run?.Tables, context?.Action)?.HiddenScoreBonus ?? 0);
-            value += ItemHiddenBonus(run) * curve.ItemBonusMultiplier;
-
-            int rounded = (int)Math.Round(value, MidpointRounding.AwayFromZero);
-            int roundTo = curve.RoundTo > 0 ? curve.RoundTo : 1;
-            rounded = ((rounded + roundTo - 1) / roundTo) * roundTo;
-            return Math.Max(curve.MinValue, rounded);
+            double value = curve.LinearBase;
+            value += run.WeekIndex * curve.WeekCoeff;
+            value += run.CurrentDay * curve.DayCoeff;
+            return RoundCurveValue(curve, value);
         }
 
-        private static cfg.HiddenScoreCurve ResolveCurve(cfg.Tables tables, string purpose, GameRun run, ActionExecutionContext context)
+        private static int EvaluateTargetScore(GameRun run)
+        {
+            cfg.HiddenScoreCurve curve = ResolveCurve(run?.Tables, TargetPurpose, run);
+            if (curve == null || run == null)
+            {
+                return 0;
+            }
+
+            double exponent = curve.ExpConstant;
+            exponent += run.WeekIndex * curve.ExpWeekCoeff;
+            exponent += run.CurrentDay * curve.ExpDayCoeff;
+            return RoundCurveValue(curve, Math.Exp(exponent));
+        }
+
+        private static int RoundCurveValue(cfg.HiddenScoreCurve curve, double value)
+        {
+            if (double.IsNaN(value))
+            {
+                return 0;
+            }
+
+            double bounded = double.IsInfinity(value) ? int.MaxValue : Math.Min(value, int.MaxValue);
+            long rounded = (long)Math.Round(bounded, MidpointRounding.AwayFromZero);
+            long roundTo = curve.RoundTo > 0 ? curve.RoundTo : 1;
+            rounded = ((rounded + roundTo - 1) / roundTo) * roundTo;
+            return (int)Math.Min(rounded, int.MaxValue);
+        }
+
+        private static cfg.HiddenScoreCurve ResolveCurve(cfg.Tables tables, string purpose, GameRun run)
         {
             tables ??= GameApp.Config.Tables;
             cfg.HiddenScoreCurve fallback = null;
-            cfg.HiddenScoreCurve best = null;
             int week = run?.WeekIndex ?? 0;
-            int runStep = CurveRunStep(run, context);
             foreach (cfg.HiddenScoreCurve curve in tables.TbHiddenScoreCurve.DataList)
             {
                 if (!string.Equals(curve.Purpose, purpose, StringComparison.OrdinalIgnoreCase))
@@ -138,53 +151,25 @@ namespace GourmetProject.Game.Meta
                 }
 
                 fallback ??= curve;
-                if (!MatchesSegment(curve, week, runStep))
+                if (!MatchesSegment(curve, week))
                 {
                     continue;
                 }
 
-                if (best == null || curve.SegmentPriority > best.SegmentPriority)
-                {
-                    best = curve;
-                }
+                return curve;
             }
 
-            return best ?? fallback;
+            return fallback;
         }
 
-        private static bool MatchesSegment(cfg.HiddenScoreCurve curve, int week, int runStep)
+        private static bool MatchesSegment(cfg.HiddenScoreCurve curve, int week)
         {
-            if (curve.MinWeek > 0 && week < curve.MinWeek)
-            {
-                return false;
-            }
-
-            if (curve.MaxWeek > 0 && week > curve.MaxWeek)
-            {
-                return false;
-            }
-
-            if (curve.MinRunStep > 0 && runStep < curve.MinRunStep)
-            {
-                return false;
-            }
-
-            if (curve.MaxRunStep > 0 && runStep > curve.MaxRunStep)
+            if (curve.WeekList.Count > 0 && !curve.WeekList.Contains(week))
             {
                 return false;
             }
 
             return true;
-        }
-
-        private static int CurveRunStep(GameRun run, ActionExecutionContext context)
-        {
-            if (context != null)
-            {
-                return context.RunStepIndex + 1;
-            }
-
-            return Math.Max(1, run?.RunActionStepIndex ?? 0);
         }
 
         private static cfg.Food ResolveFood(cfg.Tables tables, cfg.GameAction action)
@@ -204,10 +189,5 @@ namespace GourmetProject.Game.Meta
             return (tables ?? GameApp.Config.Tables).TbGoldRewardCurve.GetOrDefault(curveId);
         }
 
-        private static float ItemHiddenBonus(GameRun run)
-        {
-            // 隐藏分加成改由被动道具模型钩子提供（不再按 effectType 字符串判定）。
-            return run != null ? new ItemRuntime(run).HiddenScoreBonus() : 0f;
-        }
     }
 }

@@ -210,14 +210,15 @@ namespace GourmetProject.Tests
         }
 
         [Test]
-        public void HiddenScore_UsesRunStepSegments()
+        public void HiddenScore_TargetScoreUsesCurrentDayCurve()
         {
             GameRun early = NewRun(week: 1);
-            GameRun late = NewRun(week: 5);
-            late.RestoreRunActionStepIndex(14);
+            GameRun late = NewRun(week: 1);
+            early.CurrentDay = 0;
+            late.CurrentDay = 2;
 
-            int earlyScore = HiddenScoreService.TargetScore(early, new ActionExecutionContext(early.Tables.TbAction.Get("act_food_dish"), 0, 0, "grp_food_normal", 1));
-            int lateScore = HiddenScoreService.TargetScore(late, new ActionExecutionContext(late.Tables.TbAction.Get("act_food_dish"), 0, 14, "grp_food_normal", 1));
+            int earlyScore = HiddenScoreService.TargetScore(early);
+            int lateScore = HiddenScoreService.TargetScore(late);
 
             Assert.Greater(lateScore, earlyScore);
         }
@@ -234,7 +235,7 @@ namespace GourmetProject.Tests
         }
 
         [Test]
-        public void HiddenScore_HardActionProducesHigherTargetAndRewardHidden()
+        public void HiddenScore_RewardHiddenIgnoresActionContext()
         {
             GameRun run = NewRun(week: 2);
             run.CurrentDay = 3;
@@ -246,7 +247,8 @@ namespace GourmetProject.Tests
             var normalContext = new ActionExecutionContext(normal);
             var hardContext = new ActionExecutionContext(hard);
 
-            Assert.Greater(HiddenScoreService.TargetScore(run, hardContext), HiddenScoreService.TargetScore(run, normalContext));
+            Assert.AreEqual(HiddenScoreService.DishHiddenScore(run, normalContext), HiddenScoreService.DishHiddenScore(run, hardContext));
+            Assert.AreEqual(HiddenScoreService.PassiveItemHiddenScore(run, normalContext), HiddenScoreService.PassiveItemHiddenScore(run, hardContext));
             Assert.Greater(HiddenScoreService.PassiveItemHiddenScore(run, hardContext), HiddenScoreService.DishHiddenScore(run, normalContext));
         }
 
