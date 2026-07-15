@@ -70,11 +70,14 @@ namespace GourmetProject.Game.UI.Menu
                     CoverDuration = 0.42f,
                     HoldDuration = 0.2f,
                     RevealDuration = 0.34f,
-                    OnCovered = () => GameplayEntryRequest.RequestContinue(),
+                    OnCovered = () =>
+                    {
+                        GameApp.UI.CloseUIForm(UIForm);
+                        GameplayEntryRequest.RequestContinue();
+                    },
                 };
 
-                GameApp.UI.CloseUIForm(UIForm);
-                GameApp.UI.OpenUIForm(UIForms.CartoonSceneTransition, UIForms.GroupDialog, data);
+                CartoonSceneTransitionForm.Show(data);
                 return;
             }
 

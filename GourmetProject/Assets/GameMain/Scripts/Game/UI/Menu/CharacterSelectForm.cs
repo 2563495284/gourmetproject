@@ -112,7 +112,7 @@ namespace GourmetProject.Game.UI.Menu
                 },
             };
 
-            GameApp.UI.OpenUIForm(UIForms.CartoonSceneTransition, UIForms.GroupDialog, data);
+            CartoonSceneTransitionForm.Show(data);
         }
 
         private void OnBackClicked()

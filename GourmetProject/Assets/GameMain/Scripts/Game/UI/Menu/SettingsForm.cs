@@ -225,8 +225,21 @@ namespace GourmetProject.Game.UI.Menu
                 RunPersistence.Save(run);
             }
 
-            GameApp.UI.CloseUIForm(UIForm);
-            GameplayFlowSignal.RequestReturnToMenu();
+            var data = new CartoonSceneTransitionData
+            {
+                TransitionType = CartoonTransitionType.FoodWipe,
+                Message = "收摊啦！",
+                CoverDuration = 0.42f,
+                HoldDuration = 0.2f,
+                RevealDuration = 0.34f,
+                OnCovered = () =>
+                {
+                    GameApp.UI.CloseUIForm(UIForm);
+                    GameplayFlowSignal.RequestReturnToMenu();
+                },
+            };
+
+            CartoonSceneTransitionForm.Show(data);
         }
 
         private void OpenDefeatFromSettings()
