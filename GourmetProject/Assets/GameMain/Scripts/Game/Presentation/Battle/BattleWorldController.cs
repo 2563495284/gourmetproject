@@ -1155,17 +1155,18 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private string ServeMessage(ServeOutcome outcome, int slotIndex)
         {
-            switch (outcome)
-            {
-                case ServeOutcome.SlotEmpty:
-                    return $"菜谱{slotIndex + 1} 已空。";
-                case ServeOutcome.NoFittingDish:
-                    return "这本菜谱里没有能放下的菜了。";
-                case ServeOutcome.LimitReached:
-                    return $"限量供应：本局最多上 {_session.MaxServes} 道菜。";
-                default:
-                    return "现在不能上菜。";
-            }
+            return "";
+            // switch (outcome)
+            // {
+            //     case ServeOutcome.SlotEmpty:
+            //         return $"菜谱{slotIndex + 1} 已空。";
+            //     case ServeOutcome.NoFittingDish:
+            //         return "这本菜谱里没有能放下的菜了。";
+            //     case ServeOutcome.LimitReached:
+            //         return $"限量供应：本局最多上 {_session.MaxServes} 道菜。";
+            //     default:
+            //         return "现在不能上菜。";
+            // }
         }
 
         /// <summary>播放背包乱斗式逐菜结算演出，完成后回调上层决定过关/失败 UI。</summary>
