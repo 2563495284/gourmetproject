@@ -23,6 +23,10 @@ namespace GourmetProject.Game.UI.Common
     /// </summary>
     public sealed class CartoonSceneTransitionForm : UGuiForm
     {
+        private const float PrewarmAlpha = 0.001f;
+        private const float PrewarmProgress = 0.12f;
+        private const int PrewarmFrameCount = 2;
+
         [Header("食物擦除 / 速度线 / 消息")]
         [SerializeField] private RectTransform _wipeMask;
         [SerializeField] private RectTransform _tableclothRect;
@@ -79,20 +83,47 @@ namespace GourmetProject.Game.UI.Common
         private CancellationTokenSource _animationCts;
         private bool _isWaitingForScene;
         private bool _subscribedSceneEvents;
+        private CanvasGroup _canvasGroup;
+
+        protected override void OnInit(object userData)
+        {
+            base.OnInit(userData);
+
+            _canvasGroup = gameObject.GetComponent<CanvasGroup>();
+            if (_canvasGroup == null)
+            {
+                _canvasGroup = gameObject.AddComponent<CanvasGroup>();
+            }
+        }
+
+        /// <summary>
+        /// 打开卡通转场。转场正在播放时忽略重复请求，避免同帧多次点击叠出多个遮罩实例。
+        /// </summary>
+        public static void Show(CartoonSceneTransitionData data)
+        {
+            if (GameApp.UI.HasUIForm(UIForms.CartoonSceneTransition) ||
+                GameApp.UI.IsLoadingUIForm(UIForms.CartoonSceneTransition))
+            {
+                return;
+            }
+
+            GameApp.UI.OpenUIForm(UIForms.CartoonSceneTransition, UIForms.GroupDialog, data);
+        }
 
         protected override void OnOpen(object userData)
         {
             base.OnOpen(userData);
 
+            CancelTransitionAnimation();
+
             _data = userData as CartoonSceneTransitionData ?? new CartoonSceneTransitionData();
             SetTransitionObjectsVisible(_data.TransitionType);
             MoveForegroundToFront(_data.TransitionType);
             _messageText.text = _data.Message;
+            _canvasGroup.alpha = 1f;
             _isWaitingForScene = false;
             SubscribeSceneEvents();
             SetProgress(0f);
-
-            CancelTransitionAnimation();
 
             PlayTransitionAsync();
         }
@@ -179,6 +210,9 @@ namespace GourmetProject.Game.UI.Common
             CancellationToken token = _animationCts.Token;
             try
             {
+                await PrewarmTransitionGraphicsAsync(token);
+                SetProgress(0f);
+
                 await AnimateAsync(0f, 1f, Mathf.Max(0.01f, _data.CoverDuration), true, token);
                 _data.OnCovered?.Invoke();
 
@@ -212,6 +246,13 @@ namespace GourmetProject.Game.UI.Common
             {
                 Log.Error("[CartoonSceneTransitionForm] Transition failed: {0}", ex);
             }
+            finally
+            {
+                if (_canvasGroup != null)
+                {
+                    _canvasGroup.alpha = 1f;
+                }
+            }
         }
 
         private Awaitable AnimateAsync(float from, float to, float duration, bool covering, CancellationToken cancellationToken)
@@ -241,6 +282,46 @@ namespace GourmetProject.Game.UI.Common
             {
                 tween?.Kill();
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// 首次实例化时 UI 贴图和 Canvas mesh 可能要到首个渲染帧后才真正稳定。
+        /// 先用极低透明度提交当前转场图形，避免资源首帧成本被算进 Cover 动画。
+        /// </summary>
+        private async Awaitable PrewarmTransitionGraphicsAsync(CancellationToken cancellationToken)
+        {
+            await WaitForLayoutReadyAsync(cancellationToken);
+
+            _canvasGroup.alpha = PrewarmAlpha;
+            SetProgress(PrewarmProgress);
+            Canvas.ForceUpdateCanvases();
+
+            for (int i = 0; i < PrewarmFrameCount; i++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                await Awaitable.NextFrameAsync(cancellationToken);
+                Canvas.ForceUpdateCanvases();
+            }
+
+            _canvasGroup.alpha = 1f;
+        }
+
+        private async Awaitable WaitForLayoutReadyAsync(CancellationToken cancellationToken)
+        {
+            var root = (RectTransform)CachedTransform;
+            for (int i = 0; i < 30; i++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                Canvas.ForceUpdateCanvases();
+
+                Rect rect = root.rect;
+                if (rect.width > 1f && rect.height > 1f)
+                {
+                    return;
+                }
+
+                await Awaitable.NextFrameAsync(cancellationToken);
             }
         }
 
