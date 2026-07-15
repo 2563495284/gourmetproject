@@ -639,8 +639,8 @@ namespace GourmetProject.Gameplay.Scoring
                 a = new DishAccumulator
                 {
                     Dish = dish,
-                    Base = (dish.Def.Deliciousness + dish.PermanentFlatBonus) * dish.TemporaryBaseMultiplier,
-                    Mult = dish.PermanentMultBonus * dish.ServeMultiplier,
+                    Base = dish.BaseScoreBeforeSettlement,
+                    Mult = dish.BaseMultiplierBeforeSettlement,
                 };
                 _accums[dish.Id] = a;
                 _order.Add(dish.Id);

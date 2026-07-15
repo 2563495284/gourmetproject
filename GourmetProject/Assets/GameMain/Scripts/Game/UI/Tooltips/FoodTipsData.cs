@@ -148,10 +148,18 @@ namespace GourmetProject.Game.UI.Tooltips
                 BuildSkills(dish, db),
                 BuildFlavorNames(dish, db));
 
-            float scoreValue = score != null
-                ? score.BaseValue + score.FlatBonus
-                : dish.Def != null ? dish.Def.Deliciousness : 0f;
-            float multiplier = score != null ? score.Multiplier : 1f;
+            float scoreValue;
+            float multiplier;
+            if (score != null)
+            {
+                scoreValue = score.BaseValue + score.FlatBonus;
+                multiplier = score.Multiplier;
+            }
+            else
+            {
+                scoreValue = dish.BaseScoreBeforeSettlement;
+                multiplier = dish.BaseMultiplierBeforeSettlement;
+            }
 
             return new FoodTipsData(
                 summary,

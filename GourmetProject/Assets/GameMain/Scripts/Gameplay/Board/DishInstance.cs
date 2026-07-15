@@ -138,6 +138,12 @@ namespace GourmetProject.Gameplay.Board
         /// <summary>上菜时确定的临时乘区倍率（Boss Debuff 等），只影响当前战斗内结算。</summary>
         public float ServeMultiplier { get; private set; } = 1f;
 
+        /// <summary>结算前「固化基础分」：基础美味度 + 永久加分，再乘本场基础分倍率（不含本次结算临时触发的加成）。</summary>
+        public float BaseScoreBeforeSettlement => (Def.Deliciousness + PermanentFlatBonus) * TemporaryBaseMultiplier;
+
+        /// <summary>结算前「固化乘区」：永久乘区 × 上菜临时乘区（不含本次结算临时触发的乘区）。</summary>
+        public float BaseMultiplierBeforeSettlement => PermanentMultBonus * ServeMultiplier;
+
         /// <summary>本实例技能是否失效（清淡餐）。</summary>
         public bool SkillsDisabled { get; private set; }
 

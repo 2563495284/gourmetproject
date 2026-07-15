@@ -1816,7 +1816,7 @@ namespace GourmetProject.Game.UI.Battle
 
             _hoveredDishPiece = piece;
             _hoveredCell = null;
-            ScoreResult preview = _session.IsSettled ? _session.LastResult : _session.PreviewScore();
+            ScoreResult preview = _session.IsSettled ? _session.LastResult : null;
             tips.Bind(piece.Instance, _session.DiningTable, _session.Database, preview);
             tips.Show();
             tips.transform.SetAsLastSibling();
