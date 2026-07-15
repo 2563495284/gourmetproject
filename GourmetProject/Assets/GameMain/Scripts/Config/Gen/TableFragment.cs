@@ -51,7 +51,7 @@ public sealed partial class TableFragment : Luban.BeanBase
     /// </summary>
     public readonly System.Collections.Generic.List<string> ShapeRows;
     /// <summary>
-    /// 该碎片形状可随机分布的材质ID列表（运行时按占格稳定随机落位）
+    /// 可随机分布的材质ID列表
     /// </summary>
     public readonly System.Collections.Generic.List<string> MaterialIds;
    

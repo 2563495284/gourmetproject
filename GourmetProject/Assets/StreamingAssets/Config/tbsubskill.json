@@ -16,7 +16,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "处在棋盘边缘时，{ascope}倍率 {0}",
+    "descTemplate": "处在棋盘边缘时\n{ascope}倍率 {0}",
     "termId": ""
   },
   {
@@ -36,7 +36,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}分数 {0}",
+    "descTemplate": "{cscope}每有 1 {unit}食物\n{ascope}分数 {0}",
     "termId": ""
   },
   {
@@ -76,7 +76,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 个空格，{ascope}分数 {0}",
+    "descTemplate": "{cscope}每有 1 个空格\n{ascope}分数 {0}",
     "termId": ""
   },
   {
@@ -96,7 +96,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物，欢乐蛋糕 {0} 层",
+    "descTemplate": "{cscope}每有 1 {unit}食物\n欢乐蛋糕 {0} 层",
     "termId": ""
   },
   {
@@ -116,7 +116,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "结算时，{ascope}分数永久 {0}",
+    "descTemplate": "结算时\n{ascope}分数永久 {0}",
     "termId": ""
   },
   {
@@ -136,7 +136,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}倍率 {0}",
+    "descTemplate": "{cscope}每有 1 {unit}食物\n{ascope}倍率 {0}",
     "termId": ""
   },
   {
@@ -156,7 +156,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}分数 {0}",
+    "descTemplate": "{cscope}每有 1 {unit}食物\n{ascope}分数 {0}",
     "termId": ""
   },
   {
@@ -176,7 +176,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "每有1个技能，{ascope}分数永久 {0}",
+    "descTemplate": "每有1个技能\n{ascope}分数永久 {0}",
     "termId": ""
   },
   {
@@ -196,7 +196,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}倍率 {0}",
+    "descTemplate": "{cscope}每有 1 {unit}食物\n{ascope}倍率 {0}",
     "termId": ""
   },
   {
@@ -276,7 +276,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "若{cscope}被填满，获得 {0} 金币",
+    "descTemplate": "若{cscope}被填满\n+{0} 金币",
     "termId": ""
   },
   {
@@ -296,7 +296,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "若{cscope}被填满，欢乐蛋糕 {0} 层",
+    "descTemplate": "若{cscope}被填满\n欢乐蛋糕 {0} 层",
     "termId": ""
   },
   {
@@ -316,7 +316,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}倍率 {0}",
+    "descTemplate": "{cscope}每有 1 {unit}食物\n{ascope}倍率 {0}",
     "termId": ""
   },
   {

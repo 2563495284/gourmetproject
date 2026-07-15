@@ -4,10 +4,10 @@
     "name": "甜",
     "desc": "优先结算",
     "effectType": 8,
+    "effectParam": [],
     "effectValue": [
       1
     ],
-    "effectParam": [],
     "termId": ""
   },
   {
@@ -15,10 +15,10 @@
     "name": "苦",
     "desc": "后置结算",
     "effectType": 8,
+    "effectParam": [],
     "effectValue": [
       -1
     ],
-    "effectParam": [],
     "termId": ""
   },
   {
@@ -26,10 +26,10 @@
     "name": "鲜",
     "desc": "结算时，+5金币",
     "effectType": 7,
+    "effectParam": [],
     "effectValue": [
       5
     ],
-    "effectParam": [],
     "termId": ""
   },
   {
@@ -37,10 +37,10 @@
     "name": "麻",
     "desc": "食物旋转90度",
     "effectType": 9,
+    "effectParam": [],
     "effectValue": [
       1
     ],
-    "effectParam": [],
     "termId": ""
   },
   {
@@ -48,10 +48,10 @@
     "name": "酸",
     "desc": "结算时若未上菜，场上同菜谱食物倍率 ×1.5",
     "effectType": 10,
+    "effectParam": [],
     "effectValue": [
       1.5
     ],
-    "effectParam": [],
     "termId": ""
   },
   {
@@ -59,10 +59,10 @@
     "name": "咸",
     "desc": "结算时若未上菜，场上每有一个同菜谱食物， +2 金币。",
     "effectType": 11,
+    "effectParam": [],
     "effectValue": [
       2
     ],
-    "effectParam": [],
     "termId": ""
   }
 ]
