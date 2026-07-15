@@ -7,11 +7,12 @@ namespace GourmetProject.Game.Meta
 {
     public readonly struct ActiveItemUseResult
     {
-        public ActiveItemUseResult(bool success, bool boardChanged, string message)
+        public ActiveItemUseResult(bool success, bool boardChanged, string message, bool actionChoicesChanged = false)
         {
             Success = success;
             BoardChanged = boardChanged;
             Message = message;
+            ActionChoicesChanged = actionChoicesChanged;
         }
 
         public bool Success { get; }
@@ -19,6 +20,8 @@ namespace GourmetProject.Game.Meta
         public bool BoardChanged { get; }
 
         public string Message { get; }
+
+        public bool ActionChoicesChanged { get; }
     }
 
     /// <summary>
@@ -117,7 +120,7 @@ namespace GourmetProject.Game.Meta
                 // —— 排程小票：Global 无目标，直接调情境钩子（仅地图支持，战斗返回 false）——
                 case ItemEffectTypes.RerollAction:
                     return ctx.RerollCurrentAction()
-                        ? new ActiveItemUseResult(true, false, $"{item.Name}：已重掷当前行动选项。")
+                        ? new ActiveItemUseResult(true, false, $"{item.Name}：已重掷当前行动选项。", actionChoicesChanged: true)
                         : new ActiveItemUseResult(false, false, $"{item.Name}：现在无法重掷行动。");
 
                 case ItemEffectTypes.ResetBossDebuff:

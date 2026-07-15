@@ -196,12 +196,14 @@ namespace GourmetProject.Game.UI.Tooltips
 
         private RectTransform EnsurePanelRoot(RectTransform current, string name, float width)
         {
+            bool created = false;
             if (current == null)
             {
                 current = transform.Find(name) as RectTransform;
                 if (current == null)
                 {
                     current = FoodTipUiUtility.CreateChild(transform as RectTransform, name);
+                    created = true;
                 }
             }
 
@@ -226,7 +228,11 @@ namespace GourmetProject.Game.UI.Tooltips
 
             fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
             fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-            current.gameObject.SetActive(false);
+            if (created)
+            {
+                current.gameObject.SetActive(false);
+            }
+
             return current;
         }
 

@@ -460,7 +460,7 @@ namespace GourmetProject.Game.UI.Battle
             void FinishTableCellTargeting()
             {
                 _host.CloseActiveItemTableCellTarget();
-                _host.RefreshAfterActiveItem(result.BoardChanged, persist: false);
+                _host.RefreshAfterActiveItem(result.BoardChanged, persist: false, result.ActionChoicesChanged);
             }
         }
 
@@ -520,7 +520,7 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             _host.ActiveRun?.UseActiveItem(item.Id);
-            _host.RefreshAfterActiveItem(result.BoardChanged, persist: false);
+            _host.RefreshAfterActiveItem(result.BoardChanged, persist: false, result.ActionChoicesChanged);
         }
 
         private bool CanUse(ItemDefinition item, ActiveUseContextKind contextKind, out string reason)

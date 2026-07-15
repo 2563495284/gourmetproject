@@ -1450,8 +1450,7 @@ namespace GourmetProject.Game.UI.Battle
             _run.SetPendingActionChoices(key, rerolled);
             RunPersistence.Save(_run);
             RebuildActionAxis();
-            BuildActionCards();
-            PlayShowCardsWhenReady();
+            RefreshActionCardsAnimated();
         }
 
         /// <summary>玩家在中部选择了一个行动（null = 无行动可选时的「休息」）。</summary>
@@ -1500,6 +1499,23 @@ namespace GourmetProject.Game.UI.Battle
         private void PlayShowCardsWhenReady()
         {
             _deck?.PlayShowWhenReady(() => _current == GameplayView.ActionSelect);
+        }
+
+        /// <summary>行动选项变更：先等旧卡 hide 播完，再构建并 show 新卡。</summary>
+        private void RefreshActionCardsAnimated()
+        {
+            if (_deck == null)
+            {
+                BuildActionCards();
+                PlayShowCardsWhenReady();
+                return;
+            }
+
+            _deck.HideThenDestroy(() =>
+            {
+                BuildActionCards();
+                PlayShowCardsWhenReady();
+            });
         }
 
         /// <summary>隐藏常驻壳与中部内容（用于开局前 / 结算返回菜单前的清场）。</summary>
@@ -2052,7 +2068,7 @@ namespace GourmetProject.Game.UI.Battle
             SetMessage(message);
         }
 
-        internal void RefreshAfterActiveItem(bool boardChanged, bool persist)
+        internal void RefreshAfterActiveItem(bool boardChanged, bool persist, bool actionChoicesChanged = false)
         {
             if (boardChanged)
             {
@@ -2067,8 +2083,16 @@ namespace GourmetProject.Game.UI.Battle
             RebuildActionAxis();
             if (_current == GameplayView.ActionSelect)
             {
-                BuildActionCards();
-                PlayShowCardsWhenReady();
+                if (actionChoicesChanged)
+                {
+                    RefreshActionCardsAnimated();
+                }
+                else
+                {
+                    BuildActionCards();
+                    PlayShowCardsWhenReady();
+                }
+
                 RefreshPersistent();
             }
             else if (_current == GameplayView.Shop)
