@@ -251,8 +251,11 @@ namespace GourmetProject.Game.Meta
 
         // ================= 隐藏分族 =================
 
-        /// <summary>奖励隐藏分加成（各模型累加）。</summary>
-        public float HiddenScoreBonus() => SumFloat(m => m.HiddenScoreBonus());
+        /// <summary>按用途聚合持有被动道具的隐藏分常驻修正。</summary>
+        public float HiddenScoreOffset(HiddenScorePurpose purpose) => SumFloat(m => m.HiddenScoreOffset(purpose));
+
+        /// <summary>旧通用奖励隐藏分入口；保留为食物奖励隐藏分修正的兼容别名。</summary>
+        public float HiddenScoreBonus() => HiddenScoreOffset(HiddenScorePurpose.Dish);
 
         // ================= 蛋糕层数族 =================
 

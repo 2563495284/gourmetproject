@@ -11,7 +11,13 @@
     "hiddenRange": {
       "min": 0,
       "max": 0
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_choose_one_passive",
@@ -25,7 +31,13 @@
     "hiddenRange": {
       "min": 0,
       "max": 0
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_grant_two_active",
@@ -39,7 +51,13 @@
     "hiddenRange": {
       "min": 0,
       "max": 0
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_choose_one_active",
@@ -53,7 +71,13 @@
     "hiddenRange": {
       "min": 0,
       "max": 0
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_choose_one_food",
@@ -67,7 +91,13 @@
     "hiddenRange": {
       "min": 0,
       "max": 0
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_choose_one_fragment",
@@ -81,7 +111,13 @@
     "hiddenRange": {
       "min": 0,
       "max": 0
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_grant_recipe",
@@ -95,7 +131,13 @@
     "hiddenRange": {
       "min": 0,
       "max": 0
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_family_pack",
@@ -109,7 +151,13 @@
     "hiddenRange": {
       "min": 0,
       "max": 0
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_randomize_items",
@@ -123,7 +171,13 @@
     "hiddenRange": {
       "min": 0,
       "max": 0
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_gold_random",
@@ -137,7 +191,13 @@
     "hiddenRange": {
       "min": 0,
       "max": 0
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_gold_meal_bonus",
@@ -151,7 +211,13 @@
     "hiddenRange": {
       "min": 5,
       "max": 45
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_gold_boss",
@@ -165,7 +231,13 @@
     "hiddenRange": {
       "min": 5,
       "max": 45
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_gold_percent",
@@ -179,7 +251,13 @@
     "hiddenRange": {
       "min": 20,
       "max": 65
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_discount_food",
@@ -193,7 +271,13 @@
     "hiddenRange": {
       "min": 1,
       "max": 30
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_discount_fragment",
@@ -207,7 +291,13 @@
     "hiddenRange": {
       "min": 1,
       "max": 30
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_discount_active",
@@ -221,7 +311,13 @@
     "hiddenRange": {
       "min": 1,
       "max": 30
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_discount_passive",
@@ -235,7 +331,13 @@
     "hiddenRange": {
       "min": 1,
       "max": 30
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_discount_remove",
@@ -249,7 +351,13 @@
     "hiddenRange": {
       "min": 1,
       "max": 30
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_remove_fixed_30",
@@ -263,7 +371,13 @@
     "hiddenRange": {
       "min": 5,
       "max": 45
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_discount_recipe",
@@ -277,7 +391,13 @@
     "hiddenRange": {
       "min": 1,
       "max": 30
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_famous_knife",
@@ -291,7 +411,13 @@
     "hiddenRange": {
       "min": 20,
       "max": 65
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_score_to_one",
@@ -305,7 +431,13 @@
     "hiddenRange": {
       "min": 0,
       "max": 0
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_req_normal_down",
@@ -319,7 +451,13 @@
     "hiddenRange": {
       "min": 5,
       "max": 45
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_req_super_down",
@@ -333,7 +471,13 @@
     "hiddenRange": {
       "min": 5,
       "max": 45
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_req_feast_down",
@@ -347,7 +491,13 @@
     "hiddenRange": {
       "min": 5,
       "max": 45
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_count_le_mult",
@@ -361,7 +511,13 @@
     "hiddenRange": {
       "min": 5,
       "max": 45
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_count_ge_mult",
@@ -375,7 +531,13 @@
     "hiddenRange": {
       "min": 5,
       "max": 45
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_per_dish_mult",
@@ -389,7 +551,13 @@
     "hiddenRange": {
       "min": 20,
       "max": 65
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_perma_flat_all",
@@ -403,7 +571,13 @@
     "hiddenRange": {
       "min": 20,
       "max": 65
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_perma_mult_all",
@@ -417,7 +591,13 @@
     "hiddenRange": {
       "min": 20,
       "max": 65
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_stargaze_every5",
@@ -431,7 +611,13 @@
     "hiddenRange": {
       "min": 5,
       "max": 45
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_stargaze_first3",
@@ -445,7 +631,13 @@
     "hiddenRange": {
       "min": 5,
       "max": 45
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_free_move_first",
@@ -459,7 +651,13 @@
     "hiddenRange": {
       "min": 5,
       "max": 45
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_adjust_plus1",
@@ -473,7 +671,13 @@
     "hiddenRange": {
       "min": 1,
       "max": 30
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_adjust_to_mult",
@@ -487,7 +691,13 @@
     "hiddenRange": {
       "min": 20,
       "max": 65
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_food_convert",
@@ -501,7 +711,13 @@
     "hiddenRange": {
       "min": 0,
       "max": 0
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_adjust_to_gold",
@@ -515,7 +731,13 @@
     "hiddenRange": {
       "min": 5,
       "max": 45
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_gold_on_shop",
@@ -529,7 +751,13 @@
     "hiddenRange": {
       "min": 5,
       "max": 45
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_extra_interest",
@@ -543,7 +771,13 @@
     "hiddenRange": {
       "min": 20,
       "max": 65
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_min_gold",
@@ -557,7 +791,13 @@
     "hiddenRange": {
       "min": 5,
       "max": 45
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_interest_cap",
@@ -571,7 +811,13 @@
     "hiddenRange": {
       "min": 20,
       "max": 65
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_loan",
@@ -585,7 +831,13 @@
     "hiddenRange": {
       "min": 0,
       "max": 0
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_timeline_random",
@@ -599,7 +851,13 @@
     "hiddenRange": {
       "min": 0,
       "max": 0
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_extra_day",
@@ -613,7 +871,13 @@
     "hiddenRange": {
       "min": 0,
       "max": 0
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_week_minus",
@@ -627,7 +891,13 @@
     "hiddenRange": {
       "min": 0,
       "max": 0
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_add_reward_node",
@@ -641,7 +911,13 @@
     "hiddenRange": {
       "min": 0,
       "max": 0
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_add_interest_node",
@@ -655,7 +931,13 @@
     "hiddenRange": {
       "min": 0,
       "max": 0
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_every3_next_mult",
@@ -669,7 +951,13 @@
     "hiddenRange": {
       "min": 20,
       "max": 65
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_first_x2",
@@ -683,7 +971,13 @@
     "hiddenRange": {
       "min": 5,
       "max": 45
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_last_x2",
@@ -697,7 +991,13 @@
     "hiddenRange": {
       "min": 5,
       "max": 45
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_extra_active_slots",
@@ -711,7 +1011,13 @@
     "hiddenRange": {
       "min": 20,
       "max": 65
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_gold_on_active",
@@ -725,7 +1031,13 @@
     "hiddenRange": {
       "min": 5,
       "max": 45
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_block_active",
@@ -739,7 +1051,13 @@
     "hiddenRange": {
       "min": 40,
       "max": 85
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_flavor_enhance",
@@ -753,7 +1071,13 @@
     "hiddenRange": {
       "min": 0,
       "max": 0
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_flavor_remove_gold",
@@ -767,7 +1091,13 @@
     "hiddenRange": {
       "min": 0,
       "max": 0
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_flavor_remove_copyskill",
@@ -781,7 +1111,13 @@
     "hiddenRange": {
       "min": 0,
       "max": 0
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_flavor_remove_double",
@@ -795,7 +1131,13 @@
     "hiddenRange": {
       "min": 0,
       "max": 0
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_flavor_double_slot",
@@ -809,7 +1151,13 @@
     "hiddenRange": {
       "min": 40,
       "max": 85
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_flavor_contagion",
@@ -823,7 +1171,13 @@
     "hiddenRange": {
       "min": 0,
       "max": 0
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_celltag_enhance",
@@ -837,7 +1191,13 @@
     "hiddenRange": {
       "min": 0,
       "max": 0
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_celltag_contagion",
@@ -851,7 +1211,13 @@
     "hiddenRange": {
       "min": 0,
       "max": 0
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_lucky_guarantee",
@@ -865,7 +1231,13 @@
     "hiddenRange": {
       "min": 20,
       "max": 65
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_lucky_chance",
@@ -879,7 +1251,13 @@
     "hiddenRange": {
       "min": 5,
       "max": 45
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_more_events",
@@ -893,7 +1271,13 @@
     "hiddenRange": {
       "min": 5,
       "max": 45
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_gold_on_event",
@@ -907,7 +1291,13 @@
     "hiddenRange": {
       "min": 1,
       "max": 30
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_reroll_action",
@@ -921,7 +1311,13 @@
     "hiddenRange": {
       "min": 0,
       "max": 0
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_shop_restock",
@@ -935,7 +1331,13 @@
     "hiddenRange": {
       "min": 20,
       "max": 65
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_choice_count_plus1",
@@ -949,7 +1351,13 @@
     "hiddenRange": {
       "min": 5,
       "max": 45
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_choice_times_plus1",
@@ -963,7 +1371,13 @@
     "hiddenRange": {
       "min": 20,
       "max": 65
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_extra_food_choice",
@@ -977,7 +1391,13 @@
     "hiddenRange": {
       "min": 20,
       "max": 65
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_extra_item_choice",
@@ -991,7 +1411,13 @@
     "hiddenRange": {
       "min": 20,
       "max": 65
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_copy_food",
@@ -1005,7 +1431,13 @@
     "hiddenRange": {
       "min": 0,
       "max": 0
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_discard_negative",
@@ -1019,7 +1451,13 @@
     "hiddenRange": {
       "min": 0,
       "max": 0
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_discard_negative_gold",
@@ -1033,7 +1471,13 @@
     "hiddenRange": {
       "min": 0,
       "max": 0
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_gold_meal_penalty",
@@ -1047,7 +1491,13 @@
     "hiddenRange": {
       "min": 1,
       "max": 30
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_shop_price_up",
@@ -1061,7 +1511,13 @@
     "hiddenRange": {
       "min": 1,
       "max": 30
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_no_remove",
@@ -1075,7 +1531,13 @@
     "hiddenRange": {
       "min": 1,
       "max": 30
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_skip_node",
@@ -1089,7 +1551,13 @@
     "hiddenRange": {
       "min": 1,
       "max": 30
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_choice_minus1",
@@ -1103,7 +1571,13 @@
     "hiddenRange": {
       "min": 1,
       "max": 30
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_req_normal_up",
@@ -1117,7 +1591,13 @@
     "hiddenRange": {
       "min": 1,
       "max": 30
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_req_super_up",
@@ -1131,7 +1611,13 @@
     "hiddenRange": {
       "min": 1,
       "max": 30
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_req_feast_up",
@@ -1145,7 +1631,13 @@
     "hiddenRange": {
       "min": 1,
       "max": 30
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_gold_week_clear",
@@ -1159,7 +1651,13 @@
     "hiddenRange": {
       "min": 1,
       "max": 30
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_count_as_all",
@@ -1173,7 +1671,13 @@
     "hiddenRange": {
       "min": 20,
       "max": 65
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_transfer_target_mult",
@@ -1187,7 +1691,13 @@
     "hiddenRange": {
       "min": 20,
       "max": 65
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_transfer_source_mult",
@@ -1201,7 +1711,13 @@
     "hiddenRange": {
       "min": 20,
       "max": 65
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_skill_count_mult",
@@ -1215,7 +1731,13 @@
     "hiddenRange": {
       "min": 20,
       "max": 65
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_gold_on_transfer",
@@ -1229,7 +1751,13 @@
     "hiddenRange": {
       "min": 5,
       "max": 45
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_cake_retain",
@@ -1243,7 +1771,13 @@
     "hiddenRange": {
       "min": 20,
       "max": 65
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_cake_init_bonus",
@@ -1257,7 +1791,13 @@
     "hiddenRange": {
       "min": 5,
       "max": 45
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_cake_accel",
@@ -1271,7 +1811,13 @@
     "hiddenRange": {
       "min": 20,
       "max": 65
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_cake_to_gold",
@@ -1285,7 +1831,13 @@
     "hiddenRange": {
       "min": 5,
       "max": 45
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   },
   {
     "id": "item_cake_req_minus",
@@ -1299,6 +1851,12 @@
     "hiddenRange": {
       "min": 5,
       "max": 45
-    }
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0
   }
 ]

@@ -23,6 +23,12 @@ namespace GourmetProject.Game.Meta
             EffectParam = passive.EffectParam;
             BaseWeight = passive.BaseWeight;
             HiddenRange = passive.HiddenRange;
+            TargetScoreHiddenOffset = passive.TargetScoreHiddenOffset;
+            DishHiddenOffset = passive.DishHiddenOffset;
+            PassiveItemHiddenOffset = passive.PassiveItemHiddenOffset;
+            ActiveItemHiddenOffset = passive.ActiveItemHiddenOffset;
+            FragmentHiddenOffset = passive.FragmentHiddenOffset;
+            GoldHiddenOffset = passive.GoldHiddenOffset;
             TargetKind = cfg.ItemTargetKind.None;
             TargetCount = 0;
         }
@@ -40,6 +46,12 @@ namespace GourmetProject.Game.Meta
             EffectValue = active.EffectValue;
             EffectParam = active.EffectParam;
             BaseWeight = active.BaseWeight;
+            TargetScoreHiddenOffset = 0;
+            DishHiddenOffset = 0;
+            PassiveItemHiddenOffset = 0;
+            ActiveItemHiddenOffset = 0;
+            FragmentHiddenOffset = 0;
+            GoldHiddenOffset = 0;
             TargetKind = active.TargetKind;
             TargetCount = active.TargetCount;
         }
@@ -70,6 +82,18 @@ namespace GourmetProject.Game.Meta
 
         public cfg.HiddenRange HiddenRange { get; }
 
+        public int TargetScoreHiddenOffset { get; }
+
+        public int DishHiddenOffset { get; }
+
+        public int PassiveItemHiddenOffset { get; }
+
+        public int ActiveItemHiddenOffset { get; }
+
+        public int FragmentHiddenOffset { get; }
+
+        public int GoldHiddenOffset { get; }
+
         public cfg.ItemTargetKind TargetKind { get; }
 
         public int TargetCount { get; }
@@ -77,6 +101,27 @@ namespace GourmetProject.Game.Meta
         public bool IsPassive => Kind == cfg.ItemKind.Passive;
 
         public bool IsActive => Kind == cfg.ItemKind.Active;
+
+        public int HiddenScoreOffset(HiddenScorePurpose purpose)
+        {
+            switch (purpose)
+            {
+                case HiddenScorePurpose.TargetScore:
+                    return TargetScoreHiddenOffset;
+                case HiddenScorePurpose.Dish:
+                    return DishHiddenOffset;
+                case HiddenScorePurpose.PassiveItem:
+                    return PassiveItemHiddenOffset;
+                case HiddenScorePurpose.ActiveItem:
+                    return ActiveItemHiddenOffset;
+                case HiddenScorePurpose.Fragment:
+                    return FragmentHiddenOffset;
+                case HiddenScorePurpose.Gold:
+                    return GoldHiddenOffset;
+                default:
+                    return 0;
+            }
+        }
 
         public static ItemDefinition From(cfg.PassiveItem passive)
         {

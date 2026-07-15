@@ -1,40 +1,10 @@
 [
   {
-    "id": "gold_normal",
+    "id": "gold_default",
     "minBase": 18,
     "maxBase": 30,
     "minPerWeek": 4,
     "maxPerWeek": 6,
-    "minPerDay": 0.5,
-    "maxPerDay": 1,
-    "fluctuationPct": 0.2
-  },
-  {
-    "id": "gold_hard",
-    "minBase": 26,
-    "maxBase": 44,
-    "minPerWeek": 5,
-    "maxPerWeek": 8,
-    "minPerDay": 0.5,
-    "maxPerDay": 1,
-    "fluctuationPct": 0.2
-  },
-  {
-    "id": "gold_boss",
-    "minBase": 60,
-    "maxBase": 95,
-    "minPerWeek": 8,
-    "maxPerWeek": 12,
-    "minPerDay": 1,
-    "maxPerDay": 2,
-    "fluctuationPct": 0.2
-  },
-  {
-    "id": "gold_fragment_convert",
-    "minBase": 22,
-    "maxBase": 42,
-    "minPerWeek": 5,
-    "maxPerWeek": 7,
     "minPerDay": 0.5,
     "maxPerDay": 1,
     "fluctuationPct": 0.2

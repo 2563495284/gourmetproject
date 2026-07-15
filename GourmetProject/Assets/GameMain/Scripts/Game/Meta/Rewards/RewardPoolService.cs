@@ -319,9 +319,7 @@ namespace GourmetProject.Game.Meta
 
         private static int HiddenOffsetForSlot(RewardContext context, cfg.RewardSlot slot)
         {
-            cfg.Food food = FoodService.Resolve(context.Tables, context.ActionContext?.Action);
-            bool hard = food != null && !food.IsBoss && string.Equals(food.GoldCurveId, "gold_hard", StringComparison.OrdinalIgnoreCase);
-            return hard ? slot.HardHiddenOffset : slot.NormalHiddenOffset;
+            return slot.NormalHiddenOffset;
         }
 
         private static bool ItemCoversHidden(ItemDefinition item, int hidden)

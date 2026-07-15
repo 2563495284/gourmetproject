@@ -1,6 +1,6 @@
 [
   {
-    "id": "hidden_target_score_1",
+    "id": "target_score_1",
     "purpose": "TargetScore",
     "weekList": [
       1
@@ -14,7 +14,7 @@
     "roundTo": 10
   },
   {
-    "id": "hidden_target_score_2",
+    "id": "target_score_2",
     "purpose": "TargetScore",
     "weekList": [
       2
@@ -28,7 +28,7 @@
     "roundTo": 100
   },
   {
-    "id": "hidden_target_score_3",
+    "id": "target_score_3",
     "purpose": "TargetScore",
     "weekList": [
       3
@@ -42,7 +42,7 @@
     "roundTo": 1000
   },
   {
-    "id": "hidden_target_score_4",
+    "id": "target_score_4",
     "purpose": "TargetScore",
     "weekList": [
       4
@@ -72,18 +72,6 @@
     "purpose": "PassiveItem",
     "weekList": [],
     "linearBase": 2,
-    "weekCoeff": 0,
-    "dayCoeff": 0,
-    "expConstant": 0,
-    "expWeekCoeff": 0,
-    "expDayCoeff": 0,
-    "roundTo": 1
-  },
-  {
-    "id": "hidden_active_item",
-    "purpose": "ActiveItem",
-    "weekList": [],
-    "linearBase": 0,
     "weekCoeff": 0,
     "dayCoeff": 0,
     "expConstant": 0,

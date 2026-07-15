@@ -26,6 +26,12 @@ public sealed partial class PassiveItem : Luban.BeanBase
         { if(!_buf["effectParam"].IsString) { throw new SerializationException(); }  EffectParam = _buf["effectParam"]; }
         { if(!_buf["baseWeight"].IsNumber) { throw new SerializationException(); }  BaseWeight = _buf["baseWeight"]; }
         { if(!_buf["hiddenRange"].IsObject) { throw new SerializationException(); }  HiddenRange = global::cfg.HiddenRange.DeserializeHiddenRange(_buf["hiddenRange"]);  }
+        { if(!_buf["targetScoreHiddenOffset"].IsNumber) { throw new SerializationException(); }  TargetScoreHiddenOffset = _buf["targetScoreHiddenOffset"]; }
+        { if(!_buf["dishHiddenOffset"].IsNumber) { throw new SerializationException(); }  DishHiddenOffset = _buf["dishHiddenOffset"]; }
+        { if(!_buf["passiveItemHiddenOffset"].IsNumber) { throw new SerializationException(); }  PassiveItemHiddenOffset = _buf["passiveItemHiddenOffset"]; }
+        { if(!_buf["activeItemHiddenOffset"].IsNumber) { throw new SerializationException(); }  ActiveItemHiddenOffset = _buf["activeItemHiddenOffset"]; }
+        { if(!_buf["fragmentHiddenOffset"].IsNumber) { throw new SerializationException(); }  FragmentHiddenOffset = _buf["fragmentHiddenOffset"]; }
+        { if(!_buf["goldHiddenOffset"].IsNumber) { throw new SerializationException(); }  GoldHiddenOffset = _buf["goldHiddenOffset"]; }
     }
 
     public static PassiveItem DeserializePassiveItem(JSONNode _buf)
@@ -69,6 +75,30 @@ public sealed partial class PassiveItem : Luban.BeanBase
     /// 出现隐藏分区间(单元格: min,max)
     /// </summary>
     public readonly HiddenRange HiddenRange;
+    /// <summary>
+    /// 目标分隐藏分常驻修正。
+    /// </summary>
+    public readonly int TargetScoreHiddenOffset;
+    /// <summary>
+    /// 食物奖励隐藏分常驻修正。
+    /// </summary>
+    public readonly int DishHiddenOffset;
+    /// <summary>
+    /// 被动道具奖励隐藏分常驻修正。
+    /// </summary>
+    public readonly int PassiveItemHiddenOffset;
+    /// <summary>
+    /// 主动道具奖励隐藏分常驻修正。
+    /// </summary>
+    public readonly int ActiveItemHiddenOffset;
+    /// <summary>
+    /// 餐桌格子奖励隐藏分常驻修正。
+    /// </summary>
+    public readonly int FragmentHiddenOffset;
+    /// <summary>
+    /// 金币奖励隐藏分常驻修正。
+    /// </summary>
+    public readonly int GoldHiddenOffset;
    
     public const int __ID__ = -575857990;
     public override int GetTypeId() => __ID__;
@@ -90,6 +120,12 @@ public sealed partial class PassiveItem : Luban.BeanBase
         + "effectParam:" + EffectParam + ","
         + "baseWeight:" + BaseWeight + ","
         + "hiddenRange:" + HiddenRange + ","
+        + "targetScoreHiddenOffset:" + TargetScoreHiddenOffset + ","
+        + "dishHiddenOffset:" + DishHiddenOffset + ","
+        + "passiveItemHiddenOffset:" + PassiveItemHiddenOffset + ","
+        + "activeItemHiddenOffset:" + ActiveItemHiddenOffset + ","
+        + "fragmentHiddenOffset:" + FragmentHiddenOffset + ","
+        + "goldHiddenOffset:" + GoldHiddenOffset + ","
         + "}";
     }
 }

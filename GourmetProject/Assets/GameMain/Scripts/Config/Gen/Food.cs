@@ -21,12 +21,14 @@ public sealed partial class Food : Luban.BeanBase
         { if(!_buf["name"].IsString) { throw new SerializationException(); }  Name = _buf["name"]; }
         { if(!_buf["desc"].IsString) { throw new SerializationException(); }  Desc = _buf["desc"]; }
         { if(!_buf["isBoss"].IsBoolean) { throw new SerializationException(); }  IsBoss = _buf["isBoss"]; }
-        { if(!_buf["scoreProfileId"].IsString) { throw new SerializationException(); }  ScoreProfileId = _buf["scoreProfileId"]; }
-        { if(!_buf["targetScoreMul"].IsNumber) { throw new SerializationException(); }  TargetScoreMul = _buf["targetScoreMul"]; }
-        { if(!_buf["goldCurveId"].IsString) { throw new SerializationException(); }  GoldCurveId = _buf["goldCurveId"]; }
         { if(!_buf["rewardKind"].IsNumber) { throw new SerializationException(); }  RewardKind = (RewardKind)_buf["rewardKind"].AsInt; }
         { if(!_buf["rewardPackageId"].IsString) { throw new SerializationException(); }  RewardPackageId = _buf["rewardPackageId"]; }
-        { if(!_buf["hiddenScoreBonus"].IsNumber) { throw new SerializationException(); }  HiddenScoreBonus = _buf["hiddenScoreBonus"]; }
+        { if(!_buf["targetScoreHiddenOffset"].IsNumber) { throw new SerializationException(); }  TargetScoreHiddenOffset = _buf["targetScoreHiddenOffset"]; }
+        { if(!_buf["dishHiddenOffset"].IsNumber) { throw new SerializationException(); }  DishHiddenOffset = _buf["dishHiddenOffset"]; }
+        { if(!_buf["passiveItemHiddenOffset"].IsNumber) { throw new SerializationException(); }  PassiveItemHiddenOffset = _buf["passiveItemHiddenOffset"]; }
+        { if(!_buf["activeItemHiddenOffset"].IsNumber) { throw new SerializationException(); }  ActiveItemHiddenOffset = _buf["activeItemHiddenOffset"]; }
+        { if(!_buf["fragmentHiddenOffset"].IsNumber) { throw new SerializationException(); }  FragmentHiddenOffset = _buf["fragmentHiddenOffset"]; }
+        { if(!_buf["goldHiddenOffset"].IsNumber) { throw new SerializationException(); }  GoldHiddenOffset = _buf["goldHiddenOffset"]; }
     }
 
     public static Food DeserializeFood(JSONNode _buf)
@@ -51,18 +53,6 @@ public sealed partial class Food : Luban.BeanBase
     /// </summary>
     public readonly bool IsBoss;
     /// <summary>
-    /// 目标分曲线(空=用当前周曲线)
-    /// </summary>
-    public readonly string ScoreProfileId;
-    /// <summary>
-    /// 普通/困难目标分倍率(Boss 用曲线 bossMul)
-    /// </summary>
-    public readonly float TargetScoreMul;
-    /// <summary>
-    /// 金币奖励曲线ID
-    /// </summary>
-    public readonly string GoldCurveId;
-    /// <summary>
     /// 奖励外观类型
     /// </summary>
     public readonly RewardKind RewardKind;
@@ -71,9 +61,29 @@ public sealed partial class Food : Luban.BeanBase
     /// </summary>
     public readonly string RewardPackageId;
     /// <summary>
-    /// 隐藏分加成
+    /// 目标分隐藏分临时修正。
     /// </summary>
-    public readonly int HiddenScoreBonus;
+    public readonly float TargetScoreHiddenOffset;
+    /// <summary>
+    /// 食物奖励隐藏分临时修正。
+    /// </summary>
+    public readonly int DishHiddenOffset;
+    /// <summary>
+    /// 被动道具奖励隐藏分临时修正。
+    /// </summary>
+    public readonly int PassiveItemHiddenOffset;
+    /// <summary>
+    /// 主动道具奖励隐藏分临时修正。
+    /// </summary>
+    public readonly int ActiveItemHiddenOffset;
+    /// <summary>
+    /// 餐桌格子奖励隐藏分临时修正。
+    /// </summary>
+    public readonly int FragmentHiddenOffset;
+    /// <summary>
+    /// 金币奖励隐藏分临时修正。
+    /// </summary>
+    public readonly int GoldHiddenOffset;
    
     public const int __ID__ = 2195582;
     public override int GetTypeId() => __ID__;
@@ -89,12 +99,14 @@ public sealed partial class Food : Luban.BeanBase
         + "name:" + Name + ","
         + "desc:" + Desc + ","
         + "isBoss:" + IsBoss + ","
-        + "scoreProfileId:" + ScoreProfileId + ","
-        + "targetScoreMul:" + TargetScoreMul + ","
-        + "goldCurveId:" + GoldCurveId + ","
         + "rewardKind:" + RewardKind + ","
         + "rewardPackageId:" + RewardPackageId + ","
-        + "hiddenScoreBonus:" + HiddenScoreBonus + ","
+        + "targetScoreHiddenOffset:" + TargetScoreHiddenOffset + ","
+        + "dishHiddenOffset:" + DishHiddenOffset + ","
+        + "passiveItemHiddenOffset:" + PassiveItemHiddenOffset + ","
+        + "activeItemHiddenOffset:" + ActiveItemHiddenOffset + ","
+        + "fragmentHiddenOffset:" + FragmentHiddenOffset + ","
+        + "goldHiddenOffset:" + GoldHiddenOffset + ","
         + "}";
     }
 }

@@ -206,8 +206,11 @@ namespace GourmetProject.Game.Meta.Passives
 
         // ================= 隐藏分族 =================
 
-        /// <summary>奖励隐藏分加成（累加）。取代旧的 effectType=="HiddenScoreBonus"/"RewardHiddenBonus" 判定。</summary>
-        public virtual float HiddenScoreBonus() => 0f;
+        /// <summary>按用途提供隐藏分常驻修正（分发器累加）。</summary>
+        public virtual float HiddenScoreOffset(HiddenScorePurpose purpose) => Def?.HiddenScoreOffset(purpose) ?? 0f;
+
+        /// <summary>旧通用奖励隐藏分入口；保留为食物奖励隐藏分修正的兼容别名。</summary>
+        public virtual float HiddenScoreBonus() => HiddenScoreOffset(HiddenScorePurpose.Dish);
 
         // ================= 蛋糕层数族 =================
 
