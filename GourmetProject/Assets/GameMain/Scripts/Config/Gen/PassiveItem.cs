@@ -32,6 +32,7 @@ public sealed partial class PassiveItem : Luban.BeanBase
         { if(!_buf["activeItemHiddenOffset"].IsNumber) { throw new SerializationException(); }  ActiveItemHiddenOffset = _buf["activeItemHiddenOffset"]; }
         { if(!_buf["fragmentHiddenOffset"].IsNumber) { throw new SerializationException(); }  FragmentHiddenOffset = _buf["fragmentHiddenOffset"]; }
         { if(!_buf["goldHiddenOffset"].IsNumber) { throw new SerializationException(); }  GoldHiddenOffset = _buf["goldHiddenOffset"]; }
+        { if(!_buf["termId"].IsString) { throw new SerializationException(); }  TermId = _buf["termId"]; }
     }
 
     public static PassiveItem DeserializePassiveItem(JSONNode _buf)
@@ -99,6 +100,10 @@ public sealed partial class PassiveItem : Luban.BeanBase
     /// 金币奖励隐藏分常驻修正。
     /// </summary>
     public readonly int GoldHiddenOffset;
+    /// <summary>
+    /// 关联术语ID(可空,| 分隔)
+    /// </summary>
+    public readonly string TermId;
    
     public const int __ID__ = -575857990;
     public override int GetTypeId() => __ID__;
@@ -126,6 +131,7 @@ public sealed partial class PassiveItem : Luban.BeanBase
         + "activeItemHiddenOffset:" + ActiveItemHiddenOffset + ","
         + "fragmentHiddenOffset:" + FragmentHiddenOffset + ","
         + "goldHiddenOffset:" + GoldHiddenOffset + ","
+        + "termId:" + TermId + ","
         + "}";
     }
 }

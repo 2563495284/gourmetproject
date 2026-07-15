@@ -17,6 +17,7 @@ namespace GourmetProject.Game.Meta
             Desc = passive.Desc;
             Quality = passive.Quality;
             SpecialTags = passive.SpecialTags;
+            TermIds = SplitTermIds(passive.TermId);
             // 被动道具已按 itemId → PassiveItemModel 绑定，不再依赖 effectType；此处不读配置列（便于后续从表中移除）。
             EffectType = string.Empty;
             EffectValue = passive.EffectValue;
@@ -42,6 +43,7 @@ namespace GourmetProject.Game.Meta
             Desc = active.Desc;
             Quality = active.Quality;
             SpecialTags = active.SpecialTags;
+            TermIds = SplitTermIds(active.TermId);
             EffectType = active.EffectType;
             EffectValue = active.EffectValue;
             EffectParam = active.EffectParam;
@@ -71,6 +73,9 @@ namespace GourmetProject.Game.Meta
         public cfg.ItemQuality Quality { get; }
 
         public string SpecialTags { get; }
+
+        /// <summary>道具关联的专有名词 id（已去重）；来源为配置 termId 列（| 分隔）。供 tips 展示名词解释。</summary>
+        public IReadOnlyList<string> TermIds { get; }
 
         public string EffectType { get; }
 
@@ -121,6 +126,26 @@ namespace GourmetProject.Game.Meta
                 default:
                     return 0f;
             }
+        }
+
+        private static IReadOnlyList<string> SplitTermIds(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return System.Array.Empty<string>();
+            }
+
+            var result = new List<string>();
+            foreach (string item in value.Split('|'))
+            {
+                string trimmed = item.Trim();
+                if (!string.IsNullOrEmpty(trimmed) && !result.Contains(trimmed))
+                {
+                    result.Add(trimmed);
+                }
+            }
+
+            return result.Count > 0 ? result : System.Array.Empty<string>();
         }
 
         public static ItemDefinition From(cfg.PassiveItem passive)

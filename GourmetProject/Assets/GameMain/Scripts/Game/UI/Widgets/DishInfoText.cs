@@ -42,7 +42,7 @@ namespace GourmetProject.Game.UI.Widgets
                 }
             }
 
-            // 甜蜜传递获得的外来子技能：每条按「【源名<甜蜜传递>】子技能描述」单独成行。
+            // 甜蜜传递获得的外来子技能：每条按「【源名<甜蜜传递>】子技能描述」单独成行；其自身术语也去重收集。
             if (transferredSkills != null)
             {
                 foreach (TransferredSkill t in transferredSkills)
@@ -54,6 +54,7 @@ namespace GourmetProject.Game.UI.Widgets
                     }
 
                     lines.Add(string.IsNullOrEmpty(t.SourceLabel) ? desc : $"【{t.SourceLabel}】{desc}");
+                    CollectTerms(t.Effect?.TermIds, termIds);
                 }
             }
 
@@ -89,11 +90,24 @@ namespace GourmetProject.Game.UI.Widgets
                 return;
             }
 
-            string title = string.IsNullOrEmpty(sourceLabel) ? def.Name : sourceLabel;
-            lines.Add(string.IsNullOrEmpty(title) ? def.Desc : $"【{title}】{def.Desc}");
-            if (def.HasTerm && !termIds.Contains(def.TermId))
+            // 技能不再有术语大标题：仅当有来源标签（甜蜜传递来源）时显示【来源】，否则只输出描述。
+            lines.Add(string.IsNullOrEmpty(sourceLabel) ? def.Desc : $"【{sourceLabel}】{def.Desc}");
+            CollectTerms(def.TermIds, termIds);
+        }
+
+        private static void CollectTerms(IReadOnlyList<string> source, List<string> termIds)
+        {
+            if (source == null)
             {
-                termIds.Add(def.TermId);
+                return;
+            }
+
+            foreach (string termId in source)
+            {
+                if (!string.IsNullOrEmpty(termId) && !termIds.Contains(termId))
+                {
+                    termIds.Add(termId);
+                }
             }
         }
 

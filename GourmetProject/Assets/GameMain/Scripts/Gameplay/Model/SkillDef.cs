@@ -10,19 +10,20 @@ namespace GourmetProject.Gameplay.Model
     {
         private static readonly IReadOnlyList<SkillRuleDef> EmptyRules = new SkillRuleDef[0];
         private static readonly IReadOnlyList<string> EmptyDescs = new string[0];
+        private static readonly IReadOnlyList<string> EmptyTerms = new string[0];
 
         public SkillDef(
             string id,
             string name,
             string desc,
-            string termId,
+            IReadOnlyList<string> termIds,
             IReadOnlyList<SkillRuleDef> rules = null,
             IReadOnlyList<string> ruleDescs = null)
         {
             Id = id;
             Name = name;
             Desc = desc;
-            TermId = termId ?? string.Empty;
+            TermIds = termIds ?? EmptyTerms;
             Rules = rules ?? EmptyRules;
             RuleDescs = ruleDescs ?? EmptyDescs;
         }
@@ -33,9 +34,10 @@ namespace GourmetProject.Gameplay.Model
 
         public string Desc { get; }
 
-        public string TermId { get; }
+        /// <summary>本技能下所有子技能关联的专有名词 id（已按首次出现顺序去重）。</summary>
+        public IReadOnlyList<string> TermIds { get; }
 
-        public bool HasTerm => !string.IsNullOrEmpty(TermId);
+        public bool HasTerm => TermIds.Count > 0;
 
         /// <summary>「前提×行为」组合规则（按 order 升序）。</summary>
         public IReadOnlyList<SkillRuleDef> Rules { get; }
@@ -63,5 +65,8 @@ namespace GourmetProject.Gameplay.Model
         public SkillRuleDef Rule { get; }
 
         public string Desc { get; }
+
+        /// <summary>该外来子技能自身关联的专有名词 id 列表（= <see cref="Rule"/> 的 TermIds），供传递展示。</summary>
+        public IReadOnlyList<string> TermIds => Rule != null ? Rule.TermIds : System.Array.Empty<string>();
     }
 }

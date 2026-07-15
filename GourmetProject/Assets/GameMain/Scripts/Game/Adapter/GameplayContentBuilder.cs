@@ -134,8 +134,9 @@ namespace GourmetProject.Game.Adapter
 
         /// <summary>
         /// 把「技能(TbSkill) 正向引用的有序子技能列表」合成为运行时 SkillRuleDef（order=列表下标），
-        /// 描述取 descOverride，否则由各子技能占位符模板按序回填拼接。
-        /// 标题 Name 取术语名（termId 非空时），否则空串。
+        /// 描述由各子技能占位符模板按序回填拼接。
+        /// 专有名词 termId 挂在各子技能上（可 | 分隔多值），此处按首次出现顺序聚合去重到 <see cref="SkillDef.TermIds"/>；
+        /// 技能不再有单独的术语标题，Name 置空。
         /// </summary>
         private static SkillDef ToSkillDef(
             cfg.Skill s, Dictionary<string, cfg.SubSkill> subSkillIndex, cfg.Tables tables)
@@ -143,6 +144,7 @@ namespace GourmetProject.Game.Adapter
             List<string> subIds = SplitPipeList(s.SubSkills);
             var rules = new List<SkillRuleDef>(subIds.Count);
             var parts = new List<string>(subIds.Count);
+            var termIds = new List<string>();
             for (int order = 0; order < subIds.Count; order++)
             {
                 string subId = subIds[order];
@@ -152,6 +154,7 @@ namespace GourmetProject.Game.Adapter
                         $"技能 '{s.Id}' 引用了不存在的子技能 '{subId}'。");
                 }
 
+                List<string> ruleTermIds = SplitPipeList(ss.TermId);
                 var rule = new SkillRuleDef(
                     $"{s.Id}#{order}",
                     s.Id,
@@ -166,25 +169,24 @@ namespace GourmetProject.Game.Adapter
                     (SkillScope)(int)ss.ActionScope,
                     ss.ActionCount,
                     ss.ActionValue,
-                    ss.ActionParam);
+                    ss.ActionParam,
+                    ruleTermIds);
 
                 rules.Add(rule);
                 parts.Add(SkillDescComposer.ComposeComponent(ss.DescTemplate, rule, ss.Signed));
+
+                foreach (string termId in ruleTermIds)
+                {
+                    if (!termIds.Contains(termId))
+                    {
+                        termIds.Add(termId);
+                    }
+                }
             }
 
             string desc = SkillDescComposer.ComposeSkill(parts);
 
-            string name = string.Empty;
-            if (!string.IsNullOrEmpty(s.TermId))
-            {
-                cfg.Term term = tables.TbTerm.GetOrDefault(s.TermId);
-                if (term != null)
-                {
-                    name = term.Name;
-                }
-            }
-
-            return new SkillDef(s.Id, name, desc, s.TermId, rules, parts);
+            return new SkillDef(s.Id, string.Empty, desc, termIds, rules, parts);
         }
 
         private static FlavorDef ToFlavorDef(cfg.Flavor f)
