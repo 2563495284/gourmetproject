@@ -21,8 +21,8 @@ public sealed partial class Material : Luban.BeanBase
         { if(!_buf["name"].IsString) { throw new SerializationException(); }  Name = _buf["name"]; }
         { if(!_buf["desc"].IsString) { throw new SerializationException(); }  Desc = _buf["desc"]; }
         { if(!_buf["effectType"].IsNumber) { throw new SerializationException(); }  EffectType = (MaterialEffectType)_buf["effectType"].AsInt; }
-        { var __json0 = _buf["effectValue"]; if(!__json0.IsArray) { throw new SerializationException(); } EffectValue = new System.Collections.Generic.List<float>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { float __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  EffectValue.Add(__v0); }   }
         { var __json0 = _buf["effectParam"]; if(!__json0.IsArray) { throw new SerializationException(); } EffectParam = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  EffectParam.Add(__v0); }   }
+        { var __json0 = _buf["effectValue"]; if(!__json0.IsArray) { throw new SerializationException(); } EffectValue = new System.Collections.Generic.List<float>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { float __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  EffectValue.Add(__v0); }   }
         { if(!_buf["termId"].IsString) { throw new SerializationException(); }  TermId = _buf["termId"]; }
     }
 
@@ -32,15 +32,15 @@ public sealed partial class Material : Luban.BeanBase
     }
 
     /// <summary>
-    /// 标签ID
+    /// 材质ID
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 标签名称
+    /// 材质名称
     /// </summary>
     public readonly string Name;
     /// <summary>
-    /// 标签描述
+    /// 材质描述
     /// </summary>
     public readonly string Desc;
     /// <summary>
@@ -48,13 +48,13 @@ public sealed partial class Material : Luban.BeanBase
     /// </summary>
     public readonly MaterialEffectType EffectType;
     /// <summary>
-    /// 效果数值
-    /// </summary>
-    public readonly System.Collections.Generic.List<float> EffectValue;
-    /// <summary>
     /// 效果参数
     /// </summary>
     public readonly System.Collections.Generic.List<string> EffectParam;
+    /// <summary>
+    /// 效果数值
+    /// </summary>
+    public readonly System.Collections.Generic.List<float> EffectValue;
     /// <summary>
     /// 关联术语ID
     /// </summary>
@@ -74,8 +74,8 @@ public sealed partial class Material : Luban.BeanBase
         + "name:" + Name + ","
         + "desc:" + Desc + ","
         + "effectType:" + EffectType + ","
-        + "effectValue:" + Luban.StringUtil.CollectionToString(EffectValue) + ","
         + "effectParam:" + Luban.StringUtil.CollectionToString(EffectParam) + ","
+        + "effectValue:" + Luban.StringUtil.CollectionToString(EffectValue) + ","
         + "termId:" + TermId + ","
         + "}";
     }

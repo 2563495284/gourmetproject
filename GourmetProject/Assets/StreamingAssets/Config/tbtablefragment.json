@@ -1,6 +1,6 @@
 [
   {
-    "id": "gut_4x4",
+    "id": "gut_3x4",
     "baseWeight": 0,
     "price": 0,
     "hiddenRange": {
@@ -10,8 +10,20 @@
     "shapeRows": [
       "XXXX",
       "XXXX",
-      "XXXX",
       "XXXX"
+    ],
+    "materialIds": []
+  },
+  {
+    "id": "frag_1x1",
+    "baseWeight": 100,
+    "price": 2,
+    "hiddenRange": {
+      "min": 1,
+      "max": 10
+    },
+    "shapeRows": [
+      "X"
     ],
     "materialIds": []
   },
@@ -43,7 +55,7 @@
     "materialIds": []
   },
   {
-    "id": "frag_L",
+    "id": "frag_L1",
     "baseWeight": 70,
     "price": 4,
     "hiddenRange": {
@@ -54,13 +66,53 @@
       "XX",
       ".X"
     ],
-    "materialIds": [
-      "m_cherry"
-    ]
+    "materialIds": []
+  },
+  {
+    "id": "frag_L2",
+    "baseWeight": 70,
+    "price": 4,
+    "hiddenRange": {
+      "min": 10,
+      "max": 25
+    },
+    "shapeRows": [
+      ".X",
+      "XX"
+    ],
+    "materialIds": []
+  },
+  {
+    "id": "frag_L3",
+    "baseWeight": 70,
+    "price": 4,
+    "hiddenRange": {
+      "min": 10,
+      "max": 25
+    },
+    "shapeRows": [
+      "X.",
+      "XX"
+    ],
+    "materialIds": []
+  },
+  {
+    "id": "frag_L4",
+    "baseWeight": 70,
+    "price": 4,
+    "hiddenRange": {
+      "min": 10,
+      "max": 25
+    },
+    "shapeRows": [
+      "XX",
+      "X."
+    ],
+    "materialIds": []
   },
   {
     "id": "frag_gold2x2",
-    "baseWeight": 40,
+    "baseWeight": 70,
     "price": 6,
     "hiddenRange": {
       "min": 25,
@@ -70,8 +122,66 @@
       "XX",
       "XX"
     ],
-    "materialIds": [
-      "m_gold"
-    ]
+    "materialIds": []
+  },
+  {
+    "id": "frag_L5",
+    "baseWeight": 70,
+    "price": 0,
+    "hiddenRange": {
+      "min": 25,
+      "max": 45
+    },
+    "shapeRows": [
+      "XX",
+      ".X",
+      ".X"
+    ],
+    "materialIds": []
+  },
+  {
+    "id": "frag_L6",
+    "baseWeight": 70,
+    "price": 0,
+    "hiddenRange": {
+      "min": 25,
+      "max": 45
+    },
+    "shapeRows": [
+      ".X",
+      ".X",
+      "XX"
+    ],
+    "materialIds": []
+  },
+  {
+    "id": "frag_L7",
+    "baseWeight": 70,
+    "price": 0,
+    "hiddenRange": {
+      "min": 25,
+      "max": 46
+    },
+    "shapeRows": [
+      "X.",
+      "X.",
+      "XX"
+    ],
+    "materialIds": []
+  },
+  {
+    "id": "frag_L8",
+    "baseWeight": 70,
+    "price": 0,
+    "hiddenRange": {
+      "min": 25,
+      "max": 47
+    },
+    "shapeRows": [
+      "XX",
+      "X.",
+      "X."
+    ],
+    "materialIds": []
   }
 ]

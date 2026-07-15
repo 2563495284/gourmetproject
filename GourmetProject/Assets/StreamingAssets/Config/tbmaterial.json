@@ -2,81 +2,81 @@
   {
     "id": "m_cherry",
     "name": "樱桃木",
-    "desc": "分数 +30（临时）。",
+    "desc": "分数+30",
     "effectType": 1,
+    "effectParam": [],
     "effectValue": [
       30
     ],
-    "effectParam": [],
     "termId": ""
   },
   {
     "id": "m_walnut",
     "name": "胡桃木",
-    "desc": "分数永久 +10。",
+    "desc": "分数永久+10",
     "effectType": 2,
+    "effectParam": [],
     "effectValue": [
       10
     ],
-    "effectParam": [],
     "termId": ""
   },
   {
     "id": "m_marble",
     "name": "大理石",
-    "desc": "倍率 +3（临时）。",
+    "desc": "倍率+3",
     "effectType": 3,
+    "effectParam": [],
     "effectValue": [
       3
     ],
-    "effectParam": [],
     "termId": ""
   },
   {
     "id": "m_obsidian",
     "name": "黑曜石",
-    "desc": "倍率 ×1.5。",
+    "desc": "倍率×1.5",
     "effectType": 4,
+    "effectParam": [],
     "effectValue": [
       1.5
     ],
-    "effectParam": [],
     "termId": ""
   },
   {
     "id": "m_emerald",
     "name": "翡翠",
-    "desc": "本食物每占 1 格翡翠，倍率 +0.3。",
+    "desc": "每占 1 格翡翠，倍率+0.3",
     "effectType": 5,
+    "effectParam": [],
     "effectValue": [
       0.3
     ],
-    "effectParam": [],
     "termId": ""
   },
   {
     "id": "m_gold",
     "name": "金",
-    "desc": "本食物占据 2 格金餐桌时，获得 10 金币。",
+    "desc": "占据 2 格金餐桌时，获得 10 金币。",
     "effectType": 6,
-    "effectValue": [
-      10
-    ],
     "effectParam": [
       "2"
+    ],
+    "effectValue": [
+      10
     ],
     "termId": ""
   },
   {
     "id": "m_silver",
     "name": "银",
-    "desc": "本食物占据 2 格银餐桌时，1/3 概率获得主动道具。",
+    "desc": "占据 2 格银餐桌时，1/3 概率获得主动道具。",
     "effectType": 7,
-    "effectValue": [
-      1
-    ],
     "effectParam": [
       "2"
+    ],
+    "effectValue": [
+      1
     ],
     "termId": ""
   }
