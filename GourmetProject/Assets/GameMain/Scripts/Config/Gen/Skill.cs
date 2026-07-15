@@ -18,7 +18,6 @@ public sealed partial class Skill : Luban.BeanBase
     public Skill(JSONNode _buf) 
     {
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
-        { if(!_buf["termId"].IsString) { throw new SerializationException(); }  TermId = _buf["termId"]; }
         { if(!_buf["subSkills"].IsString) { throw new SerializationException(); }  SubSkills = _buf["subSkills"]; }
     }
 
@@ -31,10 +30,6 @@ public sealed partial class Skill : Luban.BeanBase
     /// 技能ID
     /// </summary>
     public readonly string Id;
-    /// <summary>
-    /// 关联术语ID(可空)
-    /// </summary>
-    public readonly string TermId;
     /// <summary>
     /// 有序引用的子技能ID列表(| 分隔)
     /// </summary>
@@ -51,7 +46,6 @@ public sealed partial class Skill : Luban.BeanBase
     {
         return "{ "
         + "id:" + Id + ","
-        + "termId:" + TermId + ","
         + "subSkills:" + SubSkills + ","
         + "}";
     }

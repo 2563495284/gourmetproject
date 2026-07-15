@@ -32,6 +32,7 @@ public sealed partial class SubSkill : Luban.BeanBase
         { if(!_buf["isPassive"].IsBoolean) { throw new SerializationException(); }  IsPassive = _buf["isPassive"]; }
         { if(!_buf["signed"].IsBoolean) { throw new SerializationException(); }  Signed = _buf["signed"]; }
         { if(!_buf["descTemplate"].IsString) { throw new SerializationException(); }  DescTemplate = _buf["descTemplate"]; }
+        { if(!_buf["termId"].IsString) { throw new SerializationException(); }  TermId = _buf["termId"]; }
     }
 
     public static SubSkill DeserializeSubSkill(JSONNode _buf)
@@ -99,6 +100,10 @@ public sealed partial class SubSkill : Luban.BeanBase
     /// 占位符描述模板
     /// </summary>
     public readonly string DescTemplate;
+    /// <summary>
+    /// 关联术语ID(可空)
+    /// </summary>
+    public readonly string TermId;
    
     public const int __ID__ = -2026280943;
     public override int GetTypeId() => __ID__;
@@ -125,6 +130,7 @@ public sealed partial class SubSkill : Luban.BeanBase
         + "isPassive:" + IsPassive + ","
         + "signed:" + Signed + ","
         + "descTemplate:" + DescTemplate + ","
+        + "termId:" + TermId + ","
         + "}";
     }
 }

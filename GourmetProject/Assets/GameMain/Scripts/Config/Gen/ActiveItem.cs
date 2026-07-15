@@ -28,6 +28,7 @@ public sealed partial class ActiveItem : Luban.BeanBase
         { if(!_buf["baseWeight"].IsNumber) { throw new SerializationException(); }  BaseWeight = _buf["baseWeight"]; }
         { if(!_buf["targetKind"].IsNumber) { throw new SerializationException(); }  TargetKind = (ItemTargetKind)_buf["targetKind"].AsInt; }
         { if(!_buf["targetCount"].IsNumber) { throw new SerializationException(); }  TargetCount = _buf["targetCount"]; }
+        { if(!_buf["termId"].IsString) { throw new SerializationException(); }  TermId = _buf["termId"]; }
     }
 
     public static ActiveItem DeserializeActiveItem(JSONNode _buf)
@@ -79,6 +80,10 @@ public sealed partial class ActiveItem : Luban.BeanBase
     /// 选目标数量(1/N;0=无目标或全部)
     /// </summary>
     public readonly int TargetCount;
+    /// <summary>
+    /// 关联术语ID(可空,| 分隔)
+    /// </summary>
+    public readonly string TermId;
    
     public const int __ID__ = -257861799;
     public override int GetTypeId() => __ID__;
@@ -101,6 +106,7 @@ public sealed partial class ActiveItem : Luban.BeanBase
         + "baseWeight:" + BaseWeight + ","
         + "targetKind:" + TargetKind + ","
         + "targetCount:" + TargetCount + ","
+        + "termId:" + TermId + ","
         + "}";
     }
 }

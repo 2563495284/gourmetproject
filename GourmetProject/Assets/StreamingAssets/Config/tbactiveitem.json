@@ -10,7 +10,8 @@
     "effectParam": "t_sweet",
     "baseWeight": 1,
     "targetKind": 2,
-    "targetCount": 1
+    "targetCount": 1,
+    "termId": ""
   },
   {
     "id": "item_active_season_bitter",
@@ -23,7 +24,8 @@
     "effectParam": "t_bitter",
     "baseWeight": 1,
     "targetKind": 2,
-    "targetCount": 1
+    "targetCount": 1,
+    "termId": ""
   },
   {
     "id": "item_active_season_umami",
@@ -36,7 +38,8 @@
     "effectParam": "t_rust",
     "baseWeight": 1,
     "targetKind": 2,
-    "targetCount": 1
+    "targetCount": 1,
+    "termId": ""
   },
   {
     "id": "item_active_season_numb",
@@ -49,7 +52,8 @@
     "effectParam": "t_numb",
     "baseWeight": 1,
     "targetKind": 2,
-    "targetCount": 1
+    "targetCount": 1,
+    "termId": ""
   },
   {
     "id": "item_active_season_sour",
@@ -62,7 +66,8 @@
     "effectParam": "t_sour",
     "baseWeight": 1,
     "targetKind": 2,
-    "targetCount": 1
+    "targetCount": 1,
+    "termId": ""
   },
   {
     "id": "item_active_season_salty",
@@ -75,7 +80,8 @@
     "effectParam": "t_salty",
     "baseWeight": 1,
     "targetKind": 2,
-    "targetCount": 1
+    "targetCount": 1,
+    "termId": ""
   },
   {
     "id": "item_active_lay_cherry",
@@ -88,7 +94,8 @@
     "effectParam": "m_cherry",
     "baseWeight": 1,
     "targetKind": 3,
-    "targetCount": 1
+    "targetCount": 1,
+    "termId": ""
   },
   {
     "id": "item_active_lay_walnut",
@@ -101,7 +108,8 @@
     "effectParam": "m_walnut",
     "baseWeight": 1,
     "targetKind": 3,
-    "targetCount": 1
+    "targetCount": 1,
+    "termId": ""
   },
   {
     "id": "item_active_lay_marble",
@@ -114,7 +122,8 @@
     "effectParam": "m_marble",
     "baseWeight": 1,
     "targetKind": 3,
-    "targetCount": 1
+    "targetCount": 1,
+    "termId": ""
   },
   {
     "id": "item_active_lay_obsidian",
@@ -127,7 +136,8 @@
     "effectParam": "m_obsidian",
     "baseWeight": 1,
     "targetKind": 3,
-    "targetCount": 1
+    "targetCount": 1,
+    "termId": ""
   },
   {
     "id": "item_active_lay_emerald",
@@ -140,7 +150,8 @@
     "effectParam": "m_emerald",
     "baseWeight": 1,
     "targetKind": 3,
-    "targetCount": 1
+    "targetCount": 1,
+    "termId": ""
   },
   {
     "id": "item_active_lay_gold",
@@ -153,7 +164,8 @@
     "effectParam": "m_gold",
     "baseWeight": 1,
     "targetKind": 3,
-    "targetCount": 1
+    "targetCount": 1,
+    "termId": ""
   },
   {
     "id": "item_active_lay_silver",
@@ -166,7 +178,8 @@
     "effectParam": "m_silver",
     "baseWeight": 1,
     "targetKind": 3,
-    "targetCount": 1
+    "targetCount": 1,
+    "termId": ""
   },
   {
     "id": "item_active_sched_reroll",
@@ -179,7 +192,8 @@
     "effectParam": "",
     "baseWeight": 1,
     "targetKind": 6,
-    "targetCount": 0
+    "targetCount": 0,
+    "termId": ""
   },
   {
     "id": "item_active_sched_feast",
@@ -192,7 +206,8 @@
     "effectParam": "",
     "baseWeight": 1,
     "targetKind": 6,
-    "targetCount": 0
+    "targetCount": 0,
+    "termId": ""
   },
   {
     "id": "item_active_sched_rush",
@@ -205,7 +220,8 @@
     "effectParam": "",
     "baseWeight": 1,
     "targetKind": 6,
-    "targetCount": 0
+    "targetCount": 0,
+    "termId": ""
   },
   {
     "id": "item_active_sched_reward",
@@ -218,6 +234,7 @@
     "effectParam": "act_event",
     "baseWeight": 1,
     "targetKind": 6,
-    "targetCount": 0
+    "targetCount": 0,
+    "termId": ""
   }
 ]

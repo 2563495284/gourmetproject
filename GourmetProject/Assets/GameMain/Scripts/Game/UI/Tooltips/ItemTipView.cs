@@ -1,5 +1,6 @@
 using GourmetProject.Game;
 using GourmetProject.Game.Meta;
+using GourmetProject.Game.UI.Widgets;
 using UnityEngine;
 
 namespace GourmetProject.Game.UI.Tooltips
@@ -23,7 +24,16 @@ namespace GourmetProject.Game.UI.Tooltips
             }
 
             Sprite icon = ContentIconLoader.LoadItem(item);
-            Bind(item.Name, item.Desc, icon);
+            string desc = item.Desc;
+            string termBlock = DishInfoText.TermBlock(item.TermIds);
+            if (!string.IsNullOrEmpty(termBlock))
+            {
+                desc = string.IsNullOrEmpty(desc)
+                    ? termBlock.TrimEnd()
+                    : $"{desc}\n\n{termBlock.TrimEnd()}";
+            }
+
+            Bind(item.Name, desc, icon);
         }
 
         /// <summary>字段级绑定。</summary>

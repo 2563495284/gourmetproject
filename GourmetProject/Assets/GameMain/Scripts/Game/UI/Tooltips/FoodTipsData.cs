@@ -340,33 +340,49 @@ namespace GourmetProject.Game.UI.Tooltips
 
         private static IReadOnlyList<string> BuildSpecialTags(DishInstance dish, GameplayDatabase db)
         {
-            var tags = new List<string>();
+            // 收集去重后的 termId（技能各子技能 + 甜蜜传递外来子技能），再解析为术语名作为 badge 文案。
+            var termIds = new List<string>();
             if (db != null && dish.SkillIds != null)
             {
                 foreach (string skillId in dish.SkillIds)
                 {
                     SkillDef skill = db.GetSkill(skillId);
-                    if (skill != null && !string.IsNullOrEmpty(skill.TermId))
+                    if (skill != null)
                     {
-                        AddUnique(tags, skill.TermId);
+                        AddUniqueRange(termIds, skill.TermIds);
                     }
                 }
             }
 
-            if (db != null && dish.TransferredSkills != null)
+            if (dish.TransferredSkills != null)
             {
                 foreach (TransferredSkill transferred in dish.TransferredSkills)
                 {
-                    string skillId = transferred?.Rule?.SkillId;
-                    SkillDef skill = db.GetSkill(skillId);
-                    if (skill != null && !string.IsNullOrEmpty(skill.TermId))
-                    {
-                        AddUnique(tags, skill.TermId);
-                    }
+                    AddUniqueRange(termIds, transferred?.Effect?.TermIds);
                 }
             }
 
+            var tags = new List<string>(termIds.Count);
+            foreach (string termId in termIds)
+            {
+                cfg.Term term = GourmetProject.Runtime.GameApp.Config?.Tables?.TbTerm?.GetOrDefault(termId);
+                tags.Add(term != null ? term.Name : termId);
+            }
+
             return tags;
+        }
+
+        private static void AddUniqueRange(List<string> list, IReadOnlyList<string> values)
+        {
+            if (values == null)
+            {
+                return;
+            }
+
+            foreach (string value in values)
+            {
+                AddUnique(list, value);
+            }
         }
 
         private static void AddUnique(List<string> list, string value)
