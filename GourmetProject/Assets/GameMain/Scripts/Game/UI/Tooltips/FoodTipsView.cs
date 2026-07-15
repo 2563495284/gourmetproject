@@ -66,7 +66,7 @@ namespace GourmetProject.Game.UI.Tooltips
             _scoreView.Bind(data.Score);
             _summaryView.Bind(data.Summary);
             BuildInfoCards(_flavorDetailsRoot, data.FlavorDetails, "FlavorDetail");
-            BuildBadges(_specialTagsRoot, data.SpecialTags);
+            BuildInfoCards(_specialTagsRoot, data.SpecialTags, "SpecialTag");
             BuildInfoCards(_transferredSubSkillsRoot, data.TransferredSubSkills, "TransferredSubSkill");
         }
 
@@ -202,7 +202,7 @@ namespace GourmetProject.Game.UI.Tooltips
             _summaryView = EnsureModule(_summaryView, "3_Summary");
 
             _flavorDetailsRoot = EnsurePanelRoot(_flavorDetailsRoot, "4_FlavorDetails", 220f);
-            _specialTagsRoot = EnsurePanelRoot(_specialTagsRoot, "4_SpecialTags", 180f);
+            _specialTagsRoot = EnsurePanelRoot(_specialTagsRoot, "4_SpecialTags", 300f);
             _transferredSubSkillsRoot = EnsurePanelRoot(_transferredSubSkillsRoot, "4_TransferredSubSkills", 320f);
         }
 
@@ -280,24 +280,6 @@ namespace GourmetProject.Game.UI.Tooltips
                 card.Bind(entry.Title, entry.Desc);
             }
         }
-
-        private void BuildBadges(RectTransform root, IReadOnlyList<string> tags)
-        {
-            FoodTipUiUtility.ClearChildren(root);
-            int count = tags != null ? tags.Count : 0;
-            root.gameObject.SetActive(count > 0);
-            for (int i = 0; i < count; i++)
-            {
-                RectTransform badge = FoodTipUiUtility.CreateChild(root, $"Tag_{i}");
-                FoodTipUiUtility.EnsurePanelImage(badge.gameObject, new Color(1f, 1f, 1f, 0.96f));
-                Text text = FoodTipUiUtility.EnsureTextChild(badge, null, "Label", 20, FontStyle.Bold, TextAnchor.MiddleCenter);
-                text.text = tags[i] ?? string.Empty;
-                LayoutElement layout = badge.gameObject.GetComponent<LayoutElement>() ?? badge.gameObject.AddComponent<LayoutElement>();
-                layout.minHeight = 44f;
-                layout.preferredHeight = 44f;
-            }
-        }
-
         private Rect WorldBoundsToLocalRect(Bounds bounds, Camera worldCamera, RectTransform parent, Camera uiCamera)
         {
             Vector3 min = bounds.min;

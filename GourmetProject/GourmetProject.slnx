@@ -1,0 +1,11 @@
+﻿<Solution>
+  <Project Path="UnityGameFramework.Runtime.csproj" />
+  <Project Path="UnityGameFramework.Editor.csproj" />
+  <Project Path="GourmetProject.Gameplay.csproj" />
+  <Project Path="GourmetProject.Game.csproj" />
+  <Project Path="GourmetProject.Config.csproj" />
+  <Project Path="GourmetProject.Runtime.csproj" />
+  <Project Path="GourmetProject.Core.csproj" />
+  <Project Path="Assembly-CSharp-firstpass.csproj" />
+  <Project Path="Assembly-CSharp-Editor.csproj" />
+</Solution>

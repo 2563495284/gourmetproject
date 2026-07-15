@@ -19,14 +19,14 @@ namespace GourmetProject.Game.UI.Tooltips
             IReadOnlyList<FoodMaterialTipsEntry> materials,
             IReadOnlyList<FoodInfoEntry> flavorDetails,
             IReadOnlyList<FoodInfoEntry> transferredSubSkills,
-            IReadOnlyList<string> specialTags)
+            IReadOnlyList<FoodInfoEntry> specialTags)
         {
             Summary = summary ?? FoodSummaryTipsData.Empty;
             Score = score ?? FoodScoreTipsData.Empty;
             Materials = materials ?? Array.Empty<FoodMaterialTipsEntry>();
             FlavorDetails = flavorDetails ?? Array.Empty<FoodInfoEntry>();
             TransferredSubSkills = transferredSubSkills ?? Array.Empty<FoodInfoEntry>();
-            SpecialTags = specialTags ?? Array.Empty<string>();
+            SpecialTags = specialTags ?? Array.Empty<FoodInfoEntry>();
         }
 
         public FoodSummaryTipsData Summary { get; }
@@ -39,7 +39,7 @@ namespace GourmetProject.Game.UI.Tooltips
 
         public IReadOnlyList<FoodInfoEntry> TransferredSubSkills { get; }
 
-        public IReadOnlyList<string> SpecialTags { get; }
+        public IReadOnlyList<FoodInfoEntry> SpecialTags { get; }
     }
 
     public sealed class FoodSummaryTipsData
@@ -338,9 +338,9 @@ namespace GourmetProject.Game.UI.Tooltips
             return entries;
         }
 
-        private static IReadOnlyList<string> BuildSpecialTags(DishInstance dish, GameplayDatabase db)
+        private static IReadOnlyList<FoodInfoEntry> BuildSpecialTags(DishInstance dish, GameplayDatabase db)
         {
-            // 收集去重后的 termId（技能各子技能 + 甜蜜传递外来子技能），再解析为术语名作为 badge 文案。
+            // 收集去重后的 termId（技能各子技能 + 甜蜜传递外来子技能），再解析为术语说明卡。
             var termIds = new List<string>();
             if (db != null && dish.SkillIds != null)
             {
@@ -362,11 +362,13 @@ namespace GourmetProject.Game.UI.Tooltips
                 }
             }
 
-            var tags = new List<string>(termIds.Count);
+            var tags = new List<FoodInfoEntry>(termIds.Count);
             foreach (string termId in termIds)
             {
                 cfg.Term term = GourmetProject.Runtime.GameApp.Config?.Tables?.TbTerm?.GetOrDefault(termId);
-                tags.Add(term != null ? term.Name : termId);
+                tags.Add(term != null
+                    ? new FoodInfoEntry(term.Name, term.Desc)
+                    : new FoodInfoEntry(termId, string.Empty));
             }
 
             return tags;

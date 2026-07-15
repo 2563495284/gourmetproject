@@ -522,11 +522,11 @@ namespace GourmetProject.Game.UI.Meta
                 : Array.Empty<FoodInfoEntry>();
         }
 
-        private IReadOnlyList<string> BuildShopSpecialTags(DishDef dish, GameplayDatabase db)
+        private IReadOnlyList<FoodInfoEntry> BuildShopSpecialTags(DishDef dish, GameplayDatabase db)
         {
             if (dish.SkillIds == null || db == null)
             {
-                return Array.Empty<string>();
+                return Array.Empty<FoodInfoEntry>();
             }
 
             var termIds = new List<string>();
@@ -538,14 +538,16 @@ namespace GourmetProject.Game.UI.Meta
 
             if (termIds.Count == 0)
             {
-                return Array.Empty<string>();
+                return Array.Empty<FoodInfoEntry>();
             }
 
-            var tags = new List<string>(termIds.Count);
+            var tags = new List<FoodInfoEntry>(termIds.Count);
             foreach (string termId in termIds)
             {
                 cfg.Term term = GameApp.Config?.Tables?.TbTerm?.GetOrDefault(termId);
-                tags.Add(term != null ? term.Name : termId);
+                tags.Add(term != null
+                    ? new FoodInfoEntry(term.Name, term.Desc)
+                    : new FoodInfoEntry(termId, string.Empty));
             }
 
             return tags;
