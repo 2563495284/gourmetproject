@@ -358,7 +358,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 330, y: 0}
+  m_SizeDelta: {x: 240, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2792815401572990094
 MonoBehaviour:
@@ -376,6 +376,8 @@ MonoBehaviour:
   _nameText: {fileID: 1198941258724868202}
   _skillsContent: {fileID: 1558044257347851982}
   _flavorContent: {fileID: 1333711493669631036}
+  _skillCardPrefab: {fileID: 9109147810092552575, guid: 6708aca669b254bc18ec294dba0c59eb, type: 3}
+  _flavorTagPrefab: {fileID: 6704665882520571800, guid: b9fd67018a97f49ddbd7d19071543cb7, type: 3}
 --- !u!222 &4524982392253293848
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -976,8 +978,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 165, y: -54}
-  m_SizeDelta: {x: 306, y: 0}
+  m_AnchoredPosition: {x: 120, y: -54}
+  m_SizeDelta: {x: 216, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &8203825087894758212
 MonoBehaviour:
@@ -1135,7 +1137,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 220, y: 100}
+  m_SizeDelta: {x: 220, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &6045060327777203
 MonoBehaviour:
@@ -1328,6 +1330,7 @@ MonoBehaviour:
   _flavorDetailsRoot: {fileID: 4236524493109148306}
   _specialTagsRoot: {fileID: 946006038473803697}
   _transferredSubSkillsRoot: {fileID: 972473167349569555}
+  _infoCardPrefab: {fileID: 9109147810092552575, guid: 6708aca669b254bc18ec294dba0c59eb, type: 3}
   _targetGap: 18
   _screenPadding: 16
   _detailGap: 10
@@ -1663,7 +1666,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: 
+  m_Text: name
 --- !u!114 &4185931153456084957
 MonoBehaviour:
   m_ObjectHideFlags: 0

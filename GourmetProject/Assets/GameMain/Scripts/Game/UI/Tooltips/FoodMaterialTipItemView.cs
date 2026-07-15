@@ -11,7 +11,10 @@ namespace GourmetProject.Game.UI.Tooltips
 
         public void Bind(FoodMaterialTipsEntry material)
         {
-            EnsureStructure();
+            if (!ValidateReferences())
+            {
+                return;
+            }
 
             _nameText.text = material?.Name ?? string.Empty;
             _descText.text = material?.Desc ?? string.Empty;
@@ -19,53 +22,31 @@ namespace GourmetProject.Game.UI.Tooltips
 
         private void Awake()
         {
-            EnsureStructure();
+            ValidateReferences();
         }
 
         private void Reset()
         {
-            EnsureStructure();
+            ValidateReferences();
         }
 
-        private void EnsureStructure()
+        private bool ValidateReferences()
         {
-            RectTransform rect = FoodTipUiUtility.EnsureRect(gameObject);
+            bool valid = true;
+            valid &= ReportMissing(_nameText, nameof(_nameText));
+            valid &= ReportMissing(_descText, nameof(_descText));
+            return valid;
+        }
 
-            var layout = gameObject.GetComponent<VerticalLayoutGroup>();
-            if (layout == null)
+        private bool ReportMissing(Object reference, string fieldName)
+        {
+            if (reference != null)
             {
-                layout = gameObject.AddComponent<VerticalLayoutGroup>();
+                return true;
             }
 
-            layout.padding = new RectOffset(4, 4, 0, 0);
-            layout.spacing = 2f;
-            layout.childControlWidth = true;
-            layout.childControlHeight = true;
-            layout.childForceExpandWidth = true;
-            layout.childForceExpandHeight = false;
-
-            var fitter = gameObject.GetComponent<ContentSizeFitter>();
-            if (fitter == null)
-            {
-                fitter = gameObject.AddComponent<ContentSizeFitter>();
-            }
-
-            fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
-            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-            _nameText = FoodTipUiUtility.EnsureTextChild(rect, _nameText, "Name", 20, FontStyle.Bold, TextAnchor.MiddleCenter);
-            _descText = FoodTipUiUtility.EnsureTextChild(rect, _descText, "Desc", 17, FontStyle.Normal, TextAnchor.UpperCenter);
-            _descText.horizontalOverflow = HorizontalWrapMode.Wrap;
-            _descText.verticalOverflow = VerticalWrapMode.Overflow;
-
-            LayoutElement layoutElement = gameObject.GetComponent<LayoutElement>();
-            if (layoutElement == null)
-            {
-                layoutElement = gameObject.AddComponent<LayoutElement>();
-            }
-
-            layoutElement.minHeight = 58f;
-            layoutElement.preferredHeight = -1f;
+            Debug.LogError($"{nameof(FoodMaterialTipItemView)} on '{name}' is missing prefab reference '{fieldName}'.", this);
+            return false;
         }
     }
 }

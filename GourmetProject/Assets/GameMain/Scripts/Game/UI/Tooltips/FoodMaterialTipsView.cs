@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -20,7 +19,11 @@ namespace GourmetProject.Game.UI.Tooltips
 
         public void Bind(IReadOnlyList<FoodMaterialTipsEntry> materials)
         {
-            EnsureStructure();
+            if (!ValidateReferences())
+            {
+                return;
+            }
+
             FoodTipUiUtility.ClearChildren(_content);
 
             IReadOnlyList<FoodMaterialTipsEntry> uniqueMaterials = UniqueMaterials(materials);
@@ -35,7 +38,10 @@ namespace GourmetProject.Game.UI.Tooltips
             for (int i = 0; i < count; i++)
             {
                 FoodMaterialTipItemView item = CreateItem(i);
-                item.Bind(uniqueMaterials[i]);
+                if (item != null)
+                {
+                    item.Bind(uniqueMaterials[i]);
+                }
             }
 
             bool needsScroll = count > VisibleMaterialCount;
@@ -69,208 +75,28 @@ namespace GourmetProject.Game.UI.Tooltips
 
         private void Awake()
         {
-            EnsureStructure();
+            ValidateReferences();
         }
 
         private void Reset()
         {
-            EnsureStructure();
+            ValidateReferences();
         }
 
-        private void EnsureStructure()
+        private bool ValidateReferences()
         {
-            RectTransform root = FoodTipUiUtility.EnsureRect(gameObject);
-            root.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, 280f);
-            FoodTipUiUtility.EnsurePanelImage(gameObject, new Color(1f, 1f, 1f, 0.96f));
-
-            _canvasGroup ??= gameObject.GetComponent<CanvasGroup>() ?? gameObject.AddComponent<CanvasGroup>();
-
-            var rootLayout = gameObject.GetComponent<VerticalLayoutGroup>();
-            if (rootLayout == null)
+            bool valid = true;
+            valid &= ReportMissing(_scrollRect, nameof(_scrollRect));
+            valid &= ReportMissing(_content, nameof(_content));
+            valid &= ReportMissing(_scrollbar, nameof(_scrollbar));
+            valid &= ReportMissing(_itemPrefab, nameof(_itemPrefab));
+            if (_scrollRect != null)
             {
-                rootLayout = gameObject.AddComponent<VerticalLayoutGroup>();
+                valid &= ReportMissing(_scrollRect.viewport, $"{nameof(_scrollRect)}.viewport");
+                valid &= ReportMissing(_scrollRect.content, $"{nameof(_scrollRect)}.content");
             }
 
-            rootLayout.padding = new RectOffset(10, 10, 8, 10);
-            rootLayout.spacing = 6f;
-            rootLayout.childControlWidth = true;
-            rootLayout.childControlHeight = true;
-            rootLayout.childForceExpandWidth = true;
-            rootLayout.childForceExpandHeight = false;
-
-            var fitter = gameObject.GetComponent<ContentSizeFitter>();
-            if (fitter == null)
-            {
-                fitter = gameObject.AddComponent<ContentSizeFitter>();
-            }
-
-            fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
-            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-            Transform oldTitle = root.Find("Title");
-            if (oldTitle != null)
-            {
-                if (Application.isPlaying)
-                {
-                    Destroy(oldTitle.gameObject);
-                }
-                else
-                {
-                    DestroyImmediate(oldTitle.gameObject);
-                }
-            }
-
-            if (_scrollRect == null)
-            {
-                RectTransform scrollRoot = root.Find("Scroll") as RectTransform;
-                if (scrollRoot == null)
-                {
-                    scrollRoot = FoodTipUiUtility.CreateChild(root, "Scroll");
-                }
-
-                _scrollRect = scrollRoot.gameObject.GetComponent<ScrollRect>() ?? scrollRoot.gameObject.AddComponent<ScrollRect>();
-                Image scrollImage = scrollRoot.gameObject.GetComponent<Image>() ?? scrollRoot.gameObject.AddComponent<Image>();
-                scrollImage.color = Color.clear;
-                scrollImage.raycastTarget = false;
-
-                RectTransform viewport = scrollRoot.Find("Viewport") as RectTransform;
-                if (viewport == null)
-                {
-                    viewport = FoodTipUiUtility.CreateChild(scrollRoot, "Viewport");
-                }
-
-                viewport.anchorMin = Vector2.zero;
-                viewport.anchorMax = Vector2.one;
-                viewport.offsetMin = Vector2.zero;
-                viewport.offsetMax = Vector2.zero;
-                Mask mask = viewport.gameObject.GetComponent<Mask>() ?? viewport.gameObject.AddComponent<Mask>();
-                mask.showMaskGraphic = false;
-                Image viewportImage = viewport.gameObject.GetComponent<Image>() ?? viewport.gameObject.AddComponent<Image>();
-                viewportImage.color = Color.white;
-                viewportImage.raycastTarget = false;
-
-                _content = viewport.Find("Content") as RectTransform;
-                if (_content == null)
-                {
-                    _content = FoodTipUiUtility.CreateChild(viewport, "Content");
-                }
-
-                _scrollRect.viewport = viewport;
-                _scrollRect.content = _content;
-                _scrollRect.horizontal = false;
-                _scrollRect.movementType = ScrollRect.MovementType.Clamped;
-            }
-
-            if (_content != null)
-            {
-                _content.anchorMin = new Vector2(0f, 1f);
-                _content.anchorMax = new Vector2(1f, 1f);
-                _content.pivot = new Vector2(0.5f, 1f);
-                _content.anchoredPosition = Vector2.zero;
-                _content.offsetMin = new Vector2(0f, _content.offsetMin.y);
-                _content.offsetMax = new Vector2(0f, _content.offsetMax.y);
-
-                var contentLayout = _content.gameObject.GetComponent<VerticalLayoutGroup>();
-                if (contentLayout == null)
-                {
-                    contentLayout = _content.gameObject.AddComponent<VerticalLayoutGroup>();
-                }
-
-                contentLayout.spacing = 10f;
-                contentLayout.childControlWidth = true;
-                contentLayout.childControlHeight = true;
-                contentLayout.childForceExpandWidth = true;
-                contentLayout.childForceExpandHeight = false;
-
-                var contentFitter = _content.gameObject.GetComponent<ContentSizeFitter>();
-                if (contentFitter == null)
-                {
-                    contentFitter = _content.gameObject.AddComponent<ContentSizeFitter>();
-                }
-
-                contentFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
-                contentFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-            }
-
-            if (_scrollbar == null)
-            {
-                RectTransform bar = _scrollRect.transform.Find("Scrollbar") as RectTransform;
-                if (bar == null)
-                {
-                    bar = root.Find("Scrollbar") as RectTransform;
-                }
-
-                if (bar == null)
-                {
-                    bar = FoodTipUiUtility.CreateChild(_scrollRect.transform as RectTransform, "Scrollbar");
-                }
-
-                _scrollbar = bar.gameObject.GetComponent<Scrollbar>() ?? bar.gameObject.AddComponent<Scrollbar>();
-                _scrollbar.direction = Scrollbar.Direction.BottomToTop;
-                _scrollbar.gameObject.SetActive(false);
-            }
-
-            ConfigureScrollbar();
-            _scrollRect.verticalScrollbar = _scrollbar;
-            ApplyScrollbarSpacing(_scrollbar != null && _scrollbar.gameObject.activeSelf);
-        }
-
-        private void ConfigureScrollbar()
-        {
-            if (_scrollRect == null || _scrollbar == null)
-            {
-                return;
-            }
-
-            RectTransform bar = _scrollbar.transform as RectTransform;
-            RectTransform scrollRoot = _scrollRect.transform as RectTransform;
-            if (bar == null || scrollRoot == null)
-            {
-                return;
-            }
-
-            if (bar.parent != scrollRoot)
-            {
-                bar.SetParent(scrollRoot, false);
-            }
-
-            bar.anchorMin = new Vector2(1f, 0f);
-            bar.anchorMax = new Vector2(1f, 1f);
-            bar.pivot = new Vector2(1f, 0.5f);
-            bar.anchoredPosition = Vector2.zero;
-            bar.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, 18f);
-            bar.offsetMin = new Vector2(-18f, 0f);
-            bar.offsetMax = Vector2.zero;
-
-            Image barImage = bar.gameObject.GetComponent<Image>() ?? bar.gameObject.AddComponent<Image>();
-            barImage.color = new Color(0f, 0f, 0f, 0.12f);
-            barImage.raycastTarget = true;
-
-            RectTransform sliding = bar.Find("Sliding Area") as RectTransform;
-            if (sliding == null)
-            {
-                sliding = FoodTipUiUtility.CreateChild(bar, "Sliding Area");
-            }
-
-            sliding.anchorMin = Vector2.zero;
-            sliding.anchorMax = Vector2.one;
-            sliding.offsetMin = new Vector2(3f, 3f);
-            sliding.offsetMax = new Vector2(-3f, -3f);
-
-            RectTransform handle = sliding.Find("Handle") as RectTransform;
-            if (handle == null)
-            {
-                handle = FoodTipUiUtility.CreateChild(sliding, "Handle");
-            }
-
-            Image handleImage = handle.gameObject.GetComponent<Image>() ?? handle.gameObject.AddComponent<Image>();
-            handleImage.color = new Color(0.95f, 0.31f, 0.34f, 0.95f);
-            handleImage.raycastTarget = true;
-            _scrollbar.targetGraphic = handleImage;
-            _scrollbar.handleRect = handle;
-
-            RectTransform viewport = _scrollRect.viewport;
-            ApplyScrollbarSpacing(_scrollbar.gameObject.activeSelf);
+            return valid;
         }
 
         private IReadOnlyList<FoodMaterialTipsEntry> UniqueMaterials(IReadOnlyList<FoodMaterialTipsEntry> materials)
@@ -303,17 +129,14 @@ namespace GourmetProject.Game.UI.Tooltips
 
         private FoodMaterialTipItemView CreateItem(int index)
         {
-            FoodMaterialTipItemView item;
-            if (_itemPrefab != null)
+            if (_itemPrefab == null)
             {
-                item = Instantiate(_itemPrefab, _content, false);
-                item.name = $"Material_{index}";
+                ReportMissing(_itemPrefab, nameof(_itemPrefab));
+                return null;
             }
-            else
-            {
-                RectTransform block = FoodTipUiUtility.CreateChild(_content, $"Material_{index}");
-                item = block.gameObject.AddComponent<FoodMaterialTipItemView>();
-            }
+
+            FoodMaterialTipItemView item = Instantiate(_itemPrefab, _content, false);
+            item.name = $"Material_{index}";
 
             LayoutRebuilder.ForceRebuildLayoutImmediate(item.transform as RectTransform);
             return item;
@@ -359,9 +182,23 @@ namespace GourmetProject.Game.UI.Tooltips
             }
 
             scrollRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, Mathf.Max(80f, height));
-            LayoutElement scrollLayout = scrollRect.gameObject.GetComponent<LayoutElement>() ?? scrollRect.gameObject.AddComponent<LayoutElement>();
-            scrollLayout.minHeight = Mathf.Max(80f, height);
-            scrollLayout.preferredHeight = Mathf.Max(80f, height);
+            LayoutElement scrollLayout = scrollRect.gameObject.GetComponent<LayoutElement>();
+            if (scrollLayout != null)
+            {
+                scrollLayout.minHeight = Mathf.Max(80f, height);
+                scrollLayout.preferredHeight = Mathf.Max(80f, height);
+            }
+        }
+
+        private bool ReportMissing(Object reference, string fieldName)
+        {
+            if (reference != null)
+            {
+                return true;
+            }
+
+            Debug.LogError($"{nameof(FoodMaterialTipsView)} on '{name}' is missing prefab reference '{fieldName}'.", this);
+            return false;
         }
     }
 }

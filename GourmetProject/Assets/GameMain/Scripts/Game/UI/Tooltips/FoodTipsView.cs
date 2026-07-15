@@ -19,6 +19,7 @@ namespace GourmetProject.Game.UI.Tooltips
         [SerializeField] private RectTransform _flavorDetailsRoot;
         [SerializeField] private RectTransform _specialTagsRoot;
         [SerializeField] private RectTransform _transferredSubSkillsRoot;
+        [SerializeField] private FoodTipCardView _infoCardPrefab;
 
         [Header("Layout")]
         [SerializeField] private float _targetGap = 18f;
@@ -29,7 +30,7 @@ namespace GourmetProject.Game.UI.Tooltips
         {
             get
             {
-                EnsureStructure();
+                ValidateReferences();
                 return _materialsView;
             }
         }
@@ -38,7 +39,7 @@ namespace GourmetProject.Game.UI.Tooltips
         {
             get
             {
-                EnsureStructure();
+                ValidateReferences();
                 return _scoreView;
             }
         }
@@ -47,7 +48,7 @@ namespace GourmetProject.Game.UI.Tooltips
         {
             get
             {
-                EnsureStructure();
+                ValidateReferences();
                 return _summaryView;
             }
         }
@@ -59,7 +60,11 @@ namespace GourmetProject.Game.UI.Tooltips
 
         public void Bind(FoodTipsData data)
         {
-            EnsureStructure();
+            if (!ValidateReferences())
+            {
+                return;
+            }
+
             data ??= new FoodTipsData(null, null, null, null, null, null);
 
             _materialsView.Bind(data.Materials);
@@ -72,7 +77,11 @@ namespace GourmetProject.Game.UI.Tooltips
 
         public void BindMaterialsOnly(IReadOnlyList<FoodMaterialTipsEntry> materials)
         {
-            EnsureStructure();
+            if (!ValidateReferences())
+            {
+                return;
+            }
+
             _materialsView.Bind(materials);
             _scoreView.Hide();
             _summaryView.Hide();
@@ -86,7 +95,7 @@ namespace GourmetProject.Game.UI.Tooltips
 
         public void Show()
         {
-            EnsureStructure();
+            ValidateReferences();
             gameObject.SetActive(true);
             if (_canvasGroup != null)
             {
@@ -179,92 +188,27 @@ namespace GourmetProject.Game.UI.Tooltips
 
         private void Awake()
         {
-            EnsureStructure();
+            ValidateReferences();
             Hide();
         }
 
         private void Reset()
         {
-            EnsureStructure();
+            ValidateReferences();
         }
 
-        private void EnsureStructure()
+        private bool ValidateReferences()
         {
-            RectTransform root = FoodTipUiUtility.EnsureRect(gameObject);
-            root.anchorMin = Vector2.zero;
-            root.anchorMax = Vector2.one;
-            root.offsetMin = Vector2.zero;
-            root.offsetMax = Vector2.zero;
-            _canvasGroup ??= gameObject.GetComponent<CanvasGroup>() ?? gameObject.AddComponent<CanvasGroup>();
-
-            _materialsView = EnsureModule(_materialsView, "1_Materials");
-            _scoreView = EnsureModule(_scoreView, "2_Score");
-            _summaryView = EnsureModule(_summaryView, "3_Summary");
-
-            _flavorDetailsRoot = EnsurePanelRoot(_flavorDetailsRoot, "4_FlavorDetails", 220f);
-            _specialTagsRoot = EnsurePanelRoot(_specialTagsRoot, "4_SpecialTags", 300f);
-            _transferredSubSkillsRoot = EnsurePanelRoot(_transferredSubSkillsRoot, "4_TransferredSubSkills", 320f);
-        }
-
-        private T EnsureModule<T>(T current, string name) where T : Component
-        {
-            if (current != null)
-            {
-                return current;
-            }
-
-            RectTransform root = transform as RectTransform;
-            Transform found = transform.Find(name);
-            GameObject go = found != null ? found.gameObject : FoodTipUiUtility.CreateChild(root, name).gameObject;
-            T component = go.GetComponent<T>();
-            if (component == null)
-            {
-                component = go.AddComponent<T>();
-            }
-
-            return component;
-        }
-
-        private RectTransform EnsurePanelRoot(RectTransform current, string name, float width)
-        {
-            bool created = false;
-            if (current == null)
-            {
-                current = transform.Find(name) as RectTransform;
-                if (current == null)
-                {
-                    current = FoodTipUiUtility.CreateChild(transform as RectTransform, name);
-                    created = true;
-                }
-            }
-
-            current.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
-            var layout = current.gameObject.GetComponent<VerticalLayoutGroup>();
-            if (layout == null)
-            {
-                layout = current.gameObject.AddComponent<VerticalLayoutGroup>();
-            }
-
-            layout.spacing = 8f;
-            layout.childControlWidth = true;
-            layout.childControlHeight = true;
-            layout.childForceExpandWidth = true;
-            layout.childForceExpandHeight = false;
-
-            var fitter = current.gameObject.GetComponent<ContentSizeFitter>();
-            if (fitter == null)
-            {
-                fitter = current.gameObject.AddComponent<ContentSizeFitter>();
-            }
-
-            fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
-            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-            if (created)
-            {
-                current.gameObject.SetActive(false);
-            }
-
-            return current;
+            bool valid = true;
+            valid &= ReportMissing(_canvasGroup, nameof(_canvasGroup));
+            valid &= ReportMissing(_materialsView, nameof(_materialsView));
+            valid &= ReportMissing(_scoreView, nameof(_scoreView));
+            valid &= ReportMissing(_summaryView, nameof(_summaryView));
+            valid &= ReportMissing(_flavorDetailsRoot, nameof(_flavorDetailsRoot));
+            valid &= ReportMissing(_specialTagsRoot, nameof(_specialTagsRoot));
+            valid &= ReportMissing(_transferredSubSkillsRoot, nameof(_transferredSubSkillsRoot));
+            valid &= ReportMissing(_infoCardPrefab, nameof(_infoCardPrefab));
+            return valid;
         }
 
         private void BuildInfoCards(RectTransform root, IReadOnlyList<FoodInfoEntry> entries, string prefix)
@@ -275,10 +219,21 @@ namespace GourmetProject.Game.UI.Tooltips
             for (int i = 0; i < count; i++)
             {
                 FoodInfoEntry entry = entries[i];
-                RectTransform cardRect = FoodTipUiUtility.CreateChild(root, $"{prefix}_{i}");
-                var card = cardRect.gameObject.AddComponent<FoodTipCardView>();
+                FoodTipCardView card = Instantiate(_infoCardPrefab, root, false);
+                card.name = $"{prefix}_{i}";
                 card.Bind(entry.Title, entry.Desc);
             }
+        }
+
+        private bool ReportMissing(Object reference, string fieldName)
+        {
+            if (reference != null)
+            {
+                return true;
+            }
+
+            Debug.LogError($"{nameof(FoodTipsView)} on '{name}' is missing prefab reference '{fieldName}'.", this);
+            return false;
         }
         private Rect WorldBoundsToLocalRect(Bounds bounds, Camera worldCamera, RectTransform parent, Camera uiCamera)
         {
@@ -419,7 +374,6 @@ namespace GourmetProject.Game.UI.Tooltips
         {
             LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
             Vector2 size = rect.rect.size;
-            size.x = Mathf.Max(size.x, LayoutUtility.GetPreferredWidth(rect));
             size.y = Mathf.Max(size.y, LayoutUtility.GetPreferredHeight(rect));
             size.x = Mathf.Max(1f, size.x);
             size.y = Mathf.Max(1f, size.y);

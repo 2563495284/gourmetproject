@@ -11,7 +11,10 @@ namespace GourmetProject.Game.UI.Tooltips
 
         public void Bind(string title, string desc)
         {
-            EnsureStructure();
+            if (!ValidateReferences())
+            {
+                return;
+            }
 
             bool hasTitle = !string.IsNullOrEmpty(title);
             _titleText.gameObject.SetActive(hasTitle);
@@ -21,45 +24,31 @@ namespace GourmetProject.Game.UI.Tooltips
 
         private void Awake()
         {
-            EnsureStructure();
+            ValidateReferences();
         }
 
         private void Reset()
         {
-            EnsureStructure();
+            ValidateReferences();
         }
 
-        private void EnsureStructure()
+        private bool ValidateReferences()
         {
-            RectTransform rect = FoodTipUiUtility.EnsureRect(gameObject);
-            FoodTipUiUtility.EnsurePanelImage(gameObject, new Color(1f, 1f, 1f, 0.96f));
+            bool valid = true;
+            valid &= ReportMissing(_titleText, nameof(_titleText));
+            valid &= ReportMissing(_descText, nameof(_descText));
+            return valid;
+        }
 
-            var layout = gameObject.GetComponent<VerticalLayoutGroup>();
-            if (layout == null)
+        private bool ReportMissing(Object reference, string fieldName)
+        {
+            if (reference != null)
             {
-                layout = gameObject.AddComponent<VerticalLayoutGroup>();
+                return true;
             }
 
-            layout.padding = new RectOffset(10, 10, 8, 10);
-            layout.spacing = 5f;
-            layout.childControlWidth = true;
-            layout.childControlHeight = true;
-            layout.childForceExpandWidth = true;
-            layout.childForceExpandHeight = false;
-
-            var fitter = gameObject.GetComponent<ContentSizeFitter>();
-            if (fitter == null)
-            {
-                fitter = gameObject.AddComponent<ContentSizeFitter>();
-            }
-
-            fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
-            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-            _titleText = FoodTipUiUtility.EnsureTextChild(rect, _titleText, "Title", 22, FontStyle.Bold, TextAnchor.MiddleCenter);
-            _descText = FoodTipUiUtility.EnsureTextChild(rect, _descText, "Desc", 18, FontStyle.Normal, TextAnchor.UpperCenter);
-            _descText.horizontalOverflow = HorizontalWrapMode.Wrap;
-            _descText.verticalOverflow = VerticalWrapMode.Overflow;
+            Debug.LogError($"{nameof(FoodTipCardView)} on '{name}' is missing prefab reference '{fieldName}'.", this);
+            return false;
         }
     }
 }

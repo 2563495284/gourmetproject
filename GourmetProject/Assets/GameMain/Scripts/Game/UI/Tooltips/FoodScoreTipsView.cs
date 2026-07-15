@@ -15,7 +15,11 @@ namespace GourmetProject.Game.UI.Tooltips
 
         public void Bind(FoodScoreTipsData data)
         {
-            EnsureStructure();
+            if (!ValidateReferences())
+            {
+                return;
+            }
+
             data ??= FoodScoreTipsData.Empty;
             _scoreText.text = $"分数 {FoodTipUiUtility.FormatNumber(data.Score)}";
             _multiplierText.text = $"倍率 x{FoodTipUiUtility.FormatNumber(data.Multiplier)}";
@@ -46,47 +50,32 @@ namespace GourmetProject.Game.UI.Tooltips
 
         private void Awake()
         {
-            EnsureStructure();
+            ValidateReferences();
         }
 
         private void Reset()
         {
-            EnsureStructure();
+            ValidateReferences();
         }
 
-        private void EnsureStructure()
+        private bool ValidateReferences()
         {
-            RectTransform root = FoodTipUiUtility.EnsureRect(gameObject);
-            root.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, 150f);
-            FoodTipUiUtility.EnsurePanelImage(gameObject, new Color(1f, 0.86f, 0.58f, 0.98f));
-            _canvasGroup ??= gameObject.GetComponent<CanvasGroup>() ?? gameObject.AddComponent<CanvasGroup>();
+            bool valid = true;
+            valid &= ReportMissing(_scoreText, nameof(_scoreText));
+            valid &= ReportMissing(_multiplierText, nameof(_multiplierText));
+            valid &= ReportMissing(_deliciousnessText, nameof(_deliciousnessText));
+            return valid;
+        }
 
-            var layout = gameObject.GetComponent<VerticalLayoutGroup>();
-            if (layout == null)
+        private bool ReportMissing(Object reference, string fieldName)
+        {
+            if (reference != null)
             {
-                layout = gameObject.AddComponent<VerticalLayoutGroup>();
+                return true;
             }
 
-            layout.padding = new RectOffset(10, 10, 6, 8);
-            layout.spacing = 4f;
-            layout.childControlWidth = true;
-            layout.childControlHeight = true;
-            layout.childForceExpandWidth = true;
-            layout.childForceExpandHeight = false;
-
-            var fitter = gameObject.GetComponent<ContentSizeFitter>();
-            if (fitter == null)
-            {
-                fitter = gameObject.AddComponent<ContentSizeFitter>();
-            }
-
-            fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
-            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-            // 顶到底：分数、倍率、美味度，因此视觉从下往上读就是需求里的顺序。
-            _scoreText = FoodTipUiUtility.EnsureTextChild(root, _scoreText, "Score", 22, FontStyle.Bold, TextAnchor.MiddleCenter);
-            _multiplierText = FoodTipUiUtility.EnsureTextChild(root, _multiplierText, "Multiplier", 20, FontStyle.Normal, TextAnchor.MiddleCenter);
-            _deliciousnessText = FoodTipUiUtility.EnsureTextChild(root, _deliciousnessText, "Deliciousness", 22, FontStyle.Bold, TextAnchor.MiddleCenter);
+            Debug.LogError($"{nameof(FoodScoreTipsView)} on '{name}' is missing prefab reference '{fieldName}'.", this);
+            return false;
         }
     }
 }
