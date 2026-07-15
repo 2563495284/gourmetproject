@@ -97,7 +97,7 @@
     "isPassive": false,
     "signed": true,
     "descTemplate": "{cscope}每有 1 {unit}食物\n欢乐蛋糕 {0} 层",
-    "termId": ""
+    "termId": "clb"
   },
   {
     "id": "ss_flat_per_run_v6",
@@ -217,7 +217,7 @@
     "isPassive": false,
     "signed": true,
     "descTemplate": "欢乐蛋糕 {0} 层",
-    "termId": ""
+    "termId": "clb"
   },
   {
     "id": "ss_extra_settle_v1",
@@ -297,7 +297,7 @@
     "isPassive": false,
     "signed": true,
     "descTemplate": "若{cscope}被填满\n欢乐蛋糕 {0} 层",
-    "termId": ""
+    "termId": "clb"
   },
   {
     "id": "ss_multflat_per_dish_row_v2",
@@ -357,7 +357,7 @@
     "isPassive": false,
     "signed": true,
     "descTemplate": "欢乐蛋糕 {0} 层",
-    "termId": ""
+    "termId": "clb"
   },
   {
     "id": "ss_temp_copy_v1",
@@ -376,7 +376,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "复制至空格中，并立即结算此食物",
+    "descTemplate": "复制至空格中\n并立即结算此食物",
     "termId": ""
   },
   {
@@ -396,7 +396,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "{cscope}有占 1 格的食物时，{ascope}倍率 ×{0}",
+    "descTemplate": "{cscope}有占 1 格的食物时\n{ascope}倍率 ×{0}",
     "termId": ""
   },
   {
@@ -436,7 +436,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}倍率 ×{0}",
+    "descTemplate": "{cscope}每有 1 {unit}食物\n{ascope}倍率 ×{0}",
     "termId": ""
   },
   {
@@ -496,8 +496,8 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "每有 1 个技能，欢乐蛋糕 {0} 层",
-    "termId": ""
+    "descTemplate": "每有 1 个技能\n欢乐蛋糕 {0} 层",
+    "termId": "clb"
   },
   {
     "id": "ss_mult_v1p5",
@@ -576,7 +576,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}倍率 {0}",
+    "descTemplate": "{cscope}每有 1 {unit}食物\n{ascope}倍率 {0}",
     "termId": ""
   },
   {
@@ -657,7 +657,7 @@
     "isPassive": false,
     "signed": false,
     "descTemplate": "消耗 {0} 层欢乐蛋糕",
-    "termId": ""
+    "termId": "clb"
   },
   {
     "id": "ss_multflat_v5",
@@ -738,8 +738,8 @@
     ],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "欢乐蛋糕 ×{0} 层，至少 +{floor} 层",
-    "termId": ""
+    "descTemplate": "欢乐蛋糕 ×{0} 层\n至少 +{floor} 层",
+    "termId": "clb"
   },
   {
     "id": "ss_mult_tier_dishcount_row_row",
@@ -760,7 +760,7 @@
     ],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "{cscope}食物达 {tiers} 个时，{ascope}倍率 ×{tiervals}",
+    "descTemplate": "{cscope}食物达 {tiers} 个时\n{ascope}倍率 ×{tiervals}",
     "termId": ""
   },
   {
@@ -820,7 +820,7 @@
     "actionParam": [],
     "isPassive": true,
     "signed": false,
-    "descTemplate": "若{cscope}被填满，{ascope}额外视为 {0} 个食物",
+    "descTemplate": "若{cscope}被填满\n{ascope}额外视为 {0} 个食物",
     "termId": ""
   },
   {
@@ -882,7 +882,7 @@
     ],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "将分数加到所有{cat}上（每个{cat} {0} 分）",
+    "descTemplate": "将分数加到所有{cat}上\n（每个{cat} {0} 分）",
     "termId": ""
   },
   {
@@ -903,7 +903,7 @@
     "isPassive": false,
     "signed": true,
     "descTemplate": "欢乐蛋糕 {0} 层",
-    "termId": ""
+    "termId": "clb"
   },
   {
     "id": "ss_multflat_per_tag_v5",
@@ -922,7 +922,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 个技能，{ascope}倍率 {0}",
+    "descTemplate": "{cscope}每有 1 个技能\n{ascope}倍率 {0}",
     "termId": ""
   },
   {
@@ -1003,7 +1003,7 @@
     "isPassive": false,
     "signed": true,
     "descTemplate": "欢乐蛋糕 {0} 层",
-    "termId": ""
+    "termId": "clb"
   },
   {
     "id": "ss_multflat_all_v0p5",
@@ -1104,7 +1104,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物，{ascope}倍率 {0}",
+    "descTemplate": "{cscope}每有 1 {unit}食物\n{ascope}倍率 {0}",
     "termId": ""
   },
   {
@@ -1146,8 +1146,8 @@
     ],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "蛋糕数量达 {tiers} 时，欢乐蛋糕 +{tiervals} 层",
-    "termId": ""
+    "descTemplate": "蛋糕数量达 {tiers} 时\n欢乐蛋糕 +{tiervals} 层",
+    "termId": "clb"
   },
   {
     "id": "ss_mult_tier_skilltype_all_all",
@@ -1168,8 +1168,8 @@
     ],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "带甜蜜传递的食物达 {tiers} 种时，此类食物倍率 ×{tiervals}",
-    "termId": ""
+    "descTemplate": "带甜蜜传递的食物达 {tiers} 种时\n此类食物倍率 ×{tiervals}",
+    "termId": "term_sweet_transfer"
   },
   {
     "id": "ss_layer_per_dish_adj_v2_2",
@@ -1188,8 +1188,8 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物，欢乐蛋糕 {0} 层",
-    "termId": ""
+    "descTemplate": "{cscope}每有 1 {unit}食物\n欢乐蛋糕 {0} 层",
+    "termId": "clb"
   },
   {
     "id": "ss_mult_adj_v1p5",
@@ -1270,7 +1270,7 @@
     ],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "同行同列带甜蜜传递的食物，各执行一次它们的甜蜜传递",
+    "descTemplate": "同行同列带甜蜜传递的食物\n各执行一次它们的甜蜜传递",
     "termId": "term_sweet_transfer"
   },
   {
@@ -1290,7 +1290,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "{cscope}每有 1 个技能，{ascope}倍率 ×{0}",
+    "descTemplate": "{cscope}每有 1 个技能\n{ascope}倍率 ×{0}",
     "termId": ""
   },
   {

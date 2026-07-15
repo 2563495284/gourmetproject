@@ -2,7 +2,7 @@
   {
     "id": "item_active_season_sweet",
     "name": "加甜单",
-    "desc": "选择菜谱里的一道菜，为其永久附加「甜」风味。",
+    "desc": "选择1个食物\n添加「甜」风味",
     "quality": 1,
     "specialTags": "",
     "effectType": "AddFlavor",
@@ -11,12 +11,12 @@
     "baseWeight": 1,
     "targetKind": 2,
     "targetCount": 1,
-    "termId": ""
+    "termId": "t_sweet"
   },
   {
     "id": "item_active_season_bitter",
     "name": "加苦单",
-    "desc": "选择菜谱里的一道菜，为其永久附加「苦」风味。",
+    "desc": "选择1个食物\n添加「苦」风味",
     "quality": 1,
     "specialTags": "",
     "effectType": "AddFlavor",
@@ -25,12 +25,12 @@
     "baseWeight": 1,
     "targetKind": 2,
     "targetCount": 1,
-    "termId": ""
+    "termId": "t_bitter"
   },
   {
     "id": "item_active_season_umami",
     "name": "加鲜单",
-    "desc": "选择菜谱里的一道菜，为其永久附加「鲜」风味。",
+    "desc": "选择1个食物\n添加「鲜」风味",
     "quality": 1,
     "specialTags": "",
     "effectType": "AddFlavor",
@@ -39,12 +39,12 @@
     "baseWeight": 1,
     "targetKind": 2,
     "targetCount": 1,
-    "termId": ""
+    "termId": "t_rust"
   },
   {
     "id": "item_active_season_numb",
     "name": "加麻单",
-    "desc": "选择菜谱里的一道菜，为其永久附加「麻」风味。",
+    "desc": "选择1个食物\n添加「麻」风味",
     "quality": 1,
     "specialTags": "",
     "effectType": "AddFlavor",
@@ -53,12 +53,12 @@
     "baseWeight": 1,
     "targetKind": 2,
     "targetCount": 1,
-    "termId": ""
+    "termId": "t_numb"
   },
   {
     "id": "item_active_season_sour",
     "name": "加酸单",
-    "desc": "选择菜谱里的一道菜，为其永久附加「酸」风味。",
+    "desc": "选择1个食物\n添加「酸」风味",
     "quality": 1,
     "specialTags": "",
     "effectType": "AddFlavor",
@@ -67,12 +67,12 @@
     "baseWeight": 1,
     "targetKind": 2,
     "targetCount": 1,
-    "termId": ""
+    "termId": "t_sour"
   },
   {
     "id": "item_active_season_salty",
     "name": "加咸单",
-    "desc": "选择菜谱里的一道菜，为其永久附加「咸」风味。",
+    "desc": "选择1个食物\n添加「咸」风味",
     "quality": 1,
     "specialTags": "",
     "effectType": "AddFlavor",
@@ -81,12 +81,12 @@
     "baseWeight": 1,
     "targetKind": 2,
     "targetCount": 1,
-    "termId": ""
+    "termId": "t_salty"
   },
   {
     "id": "item_active_lay_cherry",
     "name": "樱桃木采购单",
-    "desc": "选择一个餐桌格，为其永久附加「樱桃木」材质。",
+    "desc": "选择1个餐桌格子\n强化「樱桃木」材质",
     "quality": 1,
     "specialTags": "",
     "effectType": "AddMaterial",
@@ -95,12 +95,12 @@
     "baseWeight": 1,
     "targetKind": 3,
     "targetCount": 1,
-    "termId": ""
+    "termId": "m_cherry"
   },
   {
     "id": "item_active_lay_walnut",
     "name": "胡桃木采购单",
-    "desc": "选择一个餐桌格，为其永久附加「胡桃木」材质。",
+    "desc": "选择1个餐桌格子\n强化「胡桃木」材质",
     "quality": 1,
     "specialTags": "",
     "effectType": "AddMaterial",
@@ -109,12 +109,12 @@
     "baseWeight": 1,
     "targetKind": 3,
     "targetCount": 1,
-    "termId": ""
+    "termId": "m_walnut"
   },
   {
     "id": "item_active_lay_marble",
     "name": "大理石采购单",
-    "desc": "选择一个餐桌格，为其永久附加「大理石」材质。",
+    "desc": "选择2个餐桌格子\n强化「大理石」材质",
     "quality": 1,
     "specialTags": "",
     "effectType": "AddMaterial",
@@ -123,12 +123,12 @@
     "baseWeight": 1,
     "targetKind": 3,
     "targetCount": 1,
-    "termId": ""
+    "termId": "m_marble"
   },
   {
     "id": "item_active_lay_obsidian",
     "name": "黑曜石采购单",
-    "desc": "选择一个餐桌格，为其永久附加「黑曜石」材质。",
+    "desc": "选择3个餐桌格子\n强化「黑曜石」材质",
     "quality": 1,
     "specialTags": "",
     "effectType": "AddMaterial",
@@ -137,12 +137,12 @@
     "baseWeight": 1,
     "targetKind": 3,
     "targetCount": 1,
-    "termId": ""
+    "termId": "m_obsidian"
   },
   {
     "id": "item_active_lay_emerald",
     "name": "翡翠采购单",
-    "desc": "选择一个餐桌格，为其永久附加「翡翠」材质。",
+    "desc": "选择4个餐桌格子\n强化「翡翠」材质",
     "quality": 1,
     "specialTags": "",
     "effectType": "AddMaterial",
@@ -151,12 +151,12 @@
     "baseWeight": 1,
     "targetKind": 3,
     "targetCount": 1,
-    "termId": ""
+    "termId": "m_emerald"
   },
   {
     "id": "item_active_lay_gold",
     "name": "金采购单",
-    "desc": "选择一个餐桌格，为其永久附加「金」材质。",
+    "desc": "选择5个餐桌格子\n强化「金」材质",
     "quality": 1,
     "specialTags": "",
     "effectType": "AddMaterial",
@@ -165,12 +165,12 @@
     "baseWeight": 1,
     "targetKind": 3,
     "targetCount": 1,
-    "termId": ""
+    "termId": "m_gold"
   },
   {
     "id": "item_active_lay_silver",
     "name": "银采购单",
-    "desc": "选择一个餐桌格，为其永久附加「银」材质。",
+    "desc": "选择6个餐桌格子\n强化「银」材质",
     "quality": 1,
     "specialTags": "",
     "effectType": "AddMaterial",
@@ -179,12 +179,12 @@
     "baseWeight": 1,
     "targetKind": 3,
     "targetCount": 1,
-    "termId": ""
+    "termId": "m_silver"
   },
   {
     "id": "item_active_sched_reroll",
     "name": "行动调整单",
-    "desc": "重掷一次当前行动选项（Boss 行动除外）。",
+    "desc": "重掷一次当前行动选项\nBoss 行动除外",
     "quality": 2,
     "specialTags": "",
     "effectType": "RerollAction",
@@ -198,7 +198,7 @@
   {
     "id": "item_active_sched_feast",
     "name": "盛宴调整单",
-    "desc": "重置本周 Boss 类型。",
+    "desc": "重置本周 Boss 类型",
     "quality": 2,
     "specialTags": "",
     "effectType": "ResetBossDebuff",
@@ -212,7 +212,7 @@
   {
     "id": "item_active_sched_rush",
     "name": "加急单",
-    "desc": "立即执行行动轴上的下一个节点事件。",
+    "desc": "立即执行下一个节点事件",
     "quality": 2,
     "specialTags": "",
     "effectType": "TimelineExecuteNext",
@@ -226,7 +226,7 @@
   {
     "id": "item_active_sched_reward",
     "name": "奖励单",
-    "desc": "在时间轴上添加一个奖励节点。",
+    "desc": "在时间轴上添加一个奖励节点",
     "quality": 2,
     "specialTags": "",
     "effectType": "TimelineAddRewardNode",

@@ -77,27 +77,27 @@ public sealed partial class PassiveItem : Luban.BeanBase
     /// </summary>
     public readonly HiddenRange HiddenRange;
     /// <summary>
-    /// 目标分隐藏分常驻修正。
+    /// 目标分隐藏分修正
     /// </summary>
     public readonly int TargetScoreHiddenOffset;
     /// <summary>
-    /// 食物奖励隐藏分常驻修正。
+    /// 食物隐藏分修正
     /// </summary>
     public readonly int DishHiddenOffset;
     /// <summary>
-    /// 被动道具奖励隐藏分常驻修正。
+    /// 被动道具隐藏分修正
     /// </summary>
     public readonly int PassiveItemHiddenOffset;
     /// <summary>
-    /// 主动道具奖励隐藏分常驻修正。
+    /// 主动道具隐藏分修正
     /// </summary>
     public readonly int ActiveItemHiddenOffset;
     /// <summary>
-    /// 餐桌格子奖励隐藏分常驻修正。
+    /// 餐桌格子隐藏分修正
     /// </summary>
     public readonly int FragmentHiddenOffset;
     /// <summary>
-    /// 金币奖励隐藏分常驻修正。
+    /// 金币隐藏分修正
     /// </summary>
     public readonly int GoldHiddenOffset;
     /// <summary>

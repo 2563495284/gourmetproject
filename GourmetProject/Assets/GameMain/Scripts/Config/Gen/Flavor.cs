@@ -32,15 +32,15 @@ public sealed partial class Flavor : Luban.BeanBase
     }
 
     /// <summary>
-    /// 标签ID
+    /// 风味ID
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 标签名称
+    /// 风味名称
     /// </summary>
     public readonly string Name;
     /// <summary>
-    /// 标签描述
+    /// 风味描述
     /// </summary>
     public readonly string Desc;
     /// <summary>
