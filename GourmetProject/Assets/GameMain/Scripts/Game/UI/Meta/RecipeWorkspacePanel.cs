@@ -170,7 +170,7 @@ namespace GourmetProject.Game.UI.Meta
                 IReadOnlyList<string> dishes = _run.GetRecipeBookDishes(i);
                 RecipeEditBookView book = Instantiate(_editBookPrefab, _editBooksContainer);
                 book.gameObject.name = $"RecipeEditBook_{i + 1}";
-                book.Bind(i, $"菜谱{i + 1}", $"{dishes.Count}", state.CanDropDishToBook ? OnDishDroppedToBook : null);
+                book.Bind(i, state.CanDropDishToBook ? OnDishDroppedToBook : null);
                 _spawned.Add(book.gameObject);
                 books.Add(book);
 

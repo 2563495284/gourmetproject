@@ -10,8 +10,6 @@ namespace GourmetProject.Game.UI.Meta
     /// </summary>
     public sealed class RecipeEditBookView : MonoBehaviour, IDropHandler
     {
-        [SerializeField] private Text _titleText;
-        [SerializeField] private Text _capacityText;
         [SerializeField] private RectTransform _dishContainer;
 
         private int _bookIndex;
@@ -22,24 +20,12 @@ namespace GourmetProject.Game.UI.Meta
 
         public void Bind(
             int bookIndex,
-            string title,
-            string capacity,
             Action<RecipeEditDishView, int> onDishDropped,
             Action<RewardDishChoiceCardView, int> onChoiceDropped = null)
         {
             _bookIndex = bookIndex;
             _onDishDropped = onDishDropped;
             _onChoiceDropped = onChoiceDropped;
-
-            if (_titleText != null)
-            {
-                _titleText.text = title ?? string.Empty;
-            }
-
-            if (_capacityText != null)
-            {
-                _capacityText.text = capacity ?? string.Empty;
-            }
         }
 
         public void OnDrop(PointerEventData eventData)

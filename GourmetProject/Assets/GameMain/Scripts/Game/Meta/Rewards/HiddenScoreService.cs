@@ -204,7 +204,7 @@ namespace GourmetProject.Game.Meta
             switch (purpose)
             {
                 case HiddenScorePurpose.TargetScore:
-                    return food.TargetScoreHiddenOffset;
+                    return (int)food.TargetScoreHiddenOffset;
                 case HiddenScorePurpose.Dish:
                     return food.DishHiddenOffset;
                 case HiddenScorePurpose.PassiveItem:

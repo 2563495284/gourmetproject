@@ -123,7 +123,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 return;
             }
 
-            int required = run != null ? run.ComputeBossRequiredScore(boss.ScoreProfileId) : 0;
+            int required = run != null ? run.ComputeBossRequiredScore(boss.Id) : 0;
             cfg.BossDebuff debuff = PreviewBossDebuff(run, node, action);
             tip.Bind(boss, BossMechanicDescription(debuff), required);
         }
