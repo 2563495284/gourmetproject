@@ -1,3 +1,6 @@
+using System.Globalization;
+using GourmetProject.Gameplay.Battle;
+using GourmetProject.Gameplay.Scoring;
 using UnityEngine.Scripting;
 using Log = GourmetProject.Core.Diagnostics.Log;
 
@@ -96,17 +99,48 @@ namespace GourmetProject.Game.Meta.Passives
         public override bool BlocksActiveItems() => true;
     }
 
-    // —— TODO(passive-item): 需战斗传递管线 hook；占位无副作用 ——
+    public abstract class SweetTransferCounterModel : PassiveItemModel
+    {
+        private int _transferCount;
+
+        public int TransferCount => _transferCount;
+
+        public override string InfoText => _transferCount.ToString(CultureInfo.InvariantCulture);
+
+        public override void ApplyToBattle(BattleSession session)
+        {
+            if (session != null)
+            {
+                session.SweetTransferTriggered += OnSweetTransferTriggered;
+            }
+        }
+
+        public override void OnSweetTransferTriggered(SkillTransferRequest request)
+        {
+            _transferCount++;
+            Flash();
+            RefreshInfoText();
+        }
+
+        public override string CaptureState()
+            => JoinState(CaptureIconState(), $"count:{_transferCount.ToString(CultureInfo.InvariantCulture)}");
+
+        public override void RestoreState(string data)
+        {
+            RestoreIconState(data);
+            _transferCount = System.Math.Max(0, ParseStateInt(data, "count", 0));
+        }
+    }
 
     [Preserve]
     [PassiveItemModel("item_transfer_target_mult")]
-    public sealed class TransferTargetMultModel : PassiveItemModel
+    public sealed class TransferTargetMultModel : SweetTransferCounterModel
     {
     }
 
     [Preserve]
     [PassiveItemModel("item_transfer_source_mult")]
-    public sealed class TransferSourceMultModel : PassiveItemModel
+    public sealed class TransferSourceMultModel : SweetTransferCounterModel
     {
     }
 

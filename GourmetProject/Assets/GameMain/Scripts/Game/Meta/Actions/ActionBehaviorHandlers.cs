@@ -51,6 +51,7 @@ namespace GourmetProject.Game.Meta
         public ActionOutcome Execute(GameRun run, ActionExecutionContext context, IRandomStream rng)
         {
             cfg.GameAction action = context.Action;
+            cfg.Food food = FoodService.Resolve(run?.Tables, action);
             bool bossAction = FoodService.IsBossAction(run?.Tables, action);
             cfg.Food boss = FoodService.ResolveBoss(run, action);
             if (bossAction)
@@ -65,7 +66,7 @@ namespace GourmetProject.Game.Meta
 
                 IRandomStream debuffRng = GameApp.Random.DomainStream(SeedDomains.Boss, $"{bossKey}_debuff");
                 cfg.BossDebuff debuff = BossService.RollBossDebuff(run, debuffRng);
-                int bossRequired = HiddenScoreService.TargetScore(run, context, debuff?.TargetScoreHiddenOffset ?? 0);
+                int bossRequired = RequiredScoreForFood(run, context, boss, debuff?.TargetScoreHiddenOffset ?? 0);
                 string battleKey = $"boss_{bossKey}_{debuff?.Id ?? "none"}";
                 return ActionOutcome.Battle(
                     bossRequired,
@@ -76,11 +77,28 @@ namespace GourmetProject.Game.Meta
                     bossDebuffId: debuff?.Id);
             }
 
-            int required = HiddenScoreService.TargetScore(run, context);
+            int required = RequiredScoreForFood(run, context, food, 0f);
             string key = string.IsNullOrEmpty(context.SourceKey)
                 ? $"food_w{run.WeekIndex}_s{context.StepIndex}_d{run.CurrentDay.ToString("0.0", CultureInfo.InvariantCulture)}_{action.Id}"
                 : $"food_{context.SourceKey}_{action.Id}";
             return ActionOutcome.Battle(required, string.Empty, key);
+        }
+
+        private static int RequiredScoreForFood(
+            GameRun run,
+            ActionExecutionContext context,
+            cfg.Food food,
+            float extraTargetScoreHiddenOffset)
+        {
+            if (run != null
+                && food != null
+                && food.ActionKind != cfg.FoodActionKind.Feast
+                && run.ScoreToOneRemaining > 0)
+            {
+                return 1;
+            }
+
+            return HiddenScoreService.TargetScore(run, context, extraTargetScoreHiddenOffset);
         }
     }
 

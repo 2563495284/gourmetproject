@@ -7,7 +7,7 @@ using GourmetProject.Game.Run;
 namespace GourmetProject.Game.Meta
 {
     /// <summary>
-    /// 美食明细解析 + Boss 解析。Boss 固定为 <see cref="cfg.Food"/> 中唯一 isBoss=true 的行；
+    /// 美食明细解析 + Boss 解析。Boss 固定为 <see cref="cfg.Food"/> 中唯一 actionKind=Feast 的行；
     /// 局内变化由 <see cref="RollBossDebuff"/> 不放回随机承担。
     /// </summary>
     public static class BossService
@@ -20,13 +20,13 @@ namespace GourmetProject.Game.Meta
             cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
             foreach (cfg.Food food in tables.TbFood.DataList)
             {
-                if (food.IsBoss)
+                if (FoodService.IsFeastFood(food))
                 {
                     return food;
                 }
             }
 
-            Log.Warning($"第 {run?.WeekIndex ?? 0} 周未配置 Boss 美食（isBoss=true）。", Tag);
+            Log.Warning($"第 {run?.WeekIndex ?? 0} 周未配置 Boss 美食（actionKind=Feast）。", Tag);
             return null;
         }
 
@@ -126,7 +126,7 @@ namespace GourmetProject.Game.Meta
             }
 
             cfg.Food food = Resolve(run?.Tables, action);
-            return food != null && food.IsBoss ? food : null;
+            return IsFeastFood(food) ? food : null;
         }
 
         public static bool IsBossAction(cfg.Tables tables, cfg.GameAction action)
@@ -142,13 +142,18 @@ namespace GourmetProject.Game.Meta
             }
 
             cfg.Food food = Resolve(tables, action);
-            return food != null && food.IsBoss;
+            return IsFeastFood(food);
         }
 
         /// <summary>该 Food 行动是否为 Boss 槽（Food 行为且未绑定具体 foodId=执行时取唯一 Boss 美食）。</summary>
         public static bool IsBossSlot(cfg.GameAction action)
         {
             return action != null && action.Behavior == cfg.ActionBehavior.Food && string.IsNullOrEmpty(action.FoodId);
+        }
+
+        public static bool IsFeastFood(cfg.Food food)
+        {
+            return food != null && food.ActionKind == cfg.FoodActionKind.Feast;
         }
     }
 }

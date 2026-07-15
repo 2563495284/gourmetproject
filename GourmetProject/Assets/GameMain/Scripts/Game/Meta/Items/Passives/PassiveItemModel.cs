@@ -18,6 +18,8 @@ namespace GourmetProject.Game.Meta.Passives
 
         public event System.Action<PassiveItemModel> IconStateChanged;
 
+        public event System.Action<PassiveItemModel> InfoTextChanged;
+
         private bool _iconUsed;
 
         protected GameRun Run { get; private set; }
@@ -39,6 +41,8 @@ namespace GourmetProject.Game.Meta.Passives
         public virtual bool IsIconUsed => _iconUsed;
 
         public bool IsIconWax => false;
+
+        public virtual string InfoText => string.Empty;
 
         public void Flash()
         {
@@ -64,6 +68,11 @@ namespace GourmetProject.Game.Meta.Passives
         public void RefreshIconState()
         {
             IconStateChanged?.Invoke(this);
+        }
+
+        public void RefreshInfoText()
+        {
+            InfoTextChanged?.Invoke(this);
         }
 
         public void Bind(GameRun run, ItemDefinition definition, RunItemState state)
@@ -107,7 +116,7 @@ namespace GourmetProject.Game.Meta.Passives
         // ================= 目标分族（百分比累加） =================
 
         /// <summary>对某档位要求分的百分比修正（可正可负；分发器累加）。</summary>
-        public virtual float RequiredScorePct(MealTier tier) => 0f;
+        public virtual float RequiredScorePct(cfg.FoodActionKind tier) => 0f;
 
         // ================= 金币 / 利息族 =================
 
@@ -231,6 +240,10 @@ namespace GourmetProject.Game.Meta.Passives
 
         /// <summary>把局级修正注入战斗会话（替代 PassiveItemEffectRegistry；Final 加/乘等）。</summary>
         public virtual void ApplyToBattle(BattleSession session)
+        {
+        }
+
+        public virtual void OnSweetTransferTriggered(SkillTransferRequest request)
         {
         }
 

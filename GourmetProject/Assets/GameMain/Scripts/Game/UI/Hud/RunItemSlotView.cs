@@ -21,15 +21,16 @@ namespace GourmetProject.Game.UI.Hud
         private static readonly int IsWaxId = Shader.PropertyToID("_IsWax");
         private const string PassiveIconShaderName = "GourmetProject/PassiveItemIcon";
         private const float PassivePulseDuration = 0.55f;
-
-        [SerializeField] private Image _background;
         [SerializeField] private Image _icon;
         [SerializeField] private Button _button;
         [SerializeField] private TipHoverTrigger _tipTrigger;
 
+        [SerializeField] private Text _info;
+
         private Material _iconEffectMaterial;
         private Tween _pulseTween;
         private PassiveItemModel _boundPassiveModel;
+        private string _fallbackInfoText = string.Empty;
 
         private void Awake()
         {
@@ -76,7 +77,9 @@ namespace GourmetProject.Game.UI.Hud
             bool usePassiveShader = false)
         {
             EnsureRefs();
+            _fallbackInfoText = badge ?? string.Empty;
             BindPassiveModel(usePassiveShader ? state?.Model : null);
+            RefreshInfoText();
 
             // if (_background != null)
             // {
@@ -182,10 +185,6 @@ namespace GourmetProject.Game.UI.Hud
 
         private void EnsureRefs()
         {
-            if (_background == null)
-            {
-                _background = GetComponentInChildren<Image>(true);
-            }
 
             if (_button == null)
             {
@@ -205,6 +204,17 @@ namespace GourmetProject.Game.UI.Hud
                 {
                     _tipTrigger = gameObject.AddComponent<TipHoverTrigger>();
                 }
+            }
+
+            if (_info == null)
+            {
+                Transform info = transform.Find("Image/Info");
+                if (info == null)
+                {
+                    info = transform.Find("Info");
+                }
+
+                _info = info != null ? info.GetComponent<Text>() : null;
             }
         }
 
@@ -272,6 +282,7 @@ namespace GourmetProject.Game.UI.Hud
             {
                 _boundPassiveModel.Flashed -= OnPassiveModelFlashed;
                 _boundPassiveModel.IconStateChanged -= OnPassiveIconStateChanged;
+                _boundPassiveModel.InfoTextChanged -= OnPassiveModelInfoTextChanged;
             }
 
             _boundPassiveModel = model;
@@ -279,6 +290,7 @@ namespace GourmetProject.Game.UI.Hud
             {
                 _boundPassiveModel.Flashed += OnPassiveModelFlashed;
                 _boundPassiveModel.IconStateChanged += OnPassiveIconStateChanged;
+                _boundPassiveModel.InfoTextChanged += OnPassiveModelInfoTextChanged;
             }
         }
 
@@ -290,6 +302,22 @@ namespace GourmetProject.Game.UI.Hud
         private void OnPassiveIconStateChanged(PassiveItemModel model)
         {
             RefreshPassiveIconState();
+        }
+
+        private void OnPassiveModelInfoTextChanged(PassiveItemModel model)
+        {
+            RefreshInfoText();
+        }
+
+        private void RefreshInfoText()
+        {
+            if (_info == null)
+            {
+                return;
+            }
+
+            string text = _boundPassiveModel != null ? _boundPassiveModel.InfoText : _fallbackInfoText;
+            _info.text = text ?? string.Empty;
         }
 
         private void RefreshPassiveIconState()

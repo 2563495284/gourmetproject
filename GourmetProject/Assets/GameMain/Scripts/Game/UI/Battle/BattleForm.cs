@@ -161,7 +161,7 @@ namespace GourmetProject.Game.UI.Battle
             base.OnInit(userData);
 
             _infoColumn?.Bind(OnSettingsClicked, OnViewTableClicked, OnFoodAdjustClicked);
-            _foodBar?.Bind(OnOverviewClicked, OnEatClicked, OnDoodleClearClicked, OnDoodleToggleClicked);
+            _foodBar?.Bind(OnEatClicked, OnDoodleClearClicked, OnDoodleToggleClicked);
 
             if (_boardEditSkipButton != null)
             {
@@ -2017,11 +2017,6 @@ namespace GourmetProject.Game.UI.Battle
         }
 
         // —— 局内交互（透传到战斗世界）——
-
-        private void OnOverviewClicked()
-        {
-            GameplayFlowSignal.RequestReturnToMenu();
-        }
 
         private void OnDoodleClearClicked()
         {

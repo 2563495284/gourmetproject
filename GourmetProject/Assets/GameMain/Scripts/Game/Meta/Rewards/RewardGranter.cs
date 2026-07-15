@@ -129,6 +129,7 @@ namespace GourmetProject.Game.Meta
             if (consumedScoreToOne)
             {
                 itemRuntime.RefreshIconState(m => m.ItemId == "item_score_to_one");
+                itemRuntime.RefreshInfoText(m => m.ItemId == "item_score_to_one");
             }
 
             offer.MarkBaseGoldClaimed();

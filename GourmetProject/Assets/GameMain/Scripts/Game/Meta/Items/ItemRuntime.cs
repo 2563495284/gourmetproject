@@ -4,14 +4,6 @@ using GourmetProject.Game.Run;
 
 namespace GourmetProject.Game.Meta
 {
-    /// <summary>美食档位，用于目标分道具修正区分普通/超级/盛宴。</summary>
-    public enum MealTier
-    {
-        Normal,
-        Super,
-        Feast,
-    }
-
     /// <summary>
     /// 道具「钩子分发器」门面（对标杀戮尖塔2 的 Hook）：只遍历当前 Run 在场（持有）的被动道具模型
     /// <see cref="PassiveItemModel"/>，按各钩子语义折叠（求和/取最大/累乘/任一）。未持有即无模型、无副作用。
@@ -116,10 +108,26 @@ namespace GourmetProject.Game.Meta
             }
         }
 
+        public void RefreshInfoText(System.Func<PassiveItemModel, bool> predicate)
+        {
+            if (predicate == null)
+            {
+                return;
+            }
+
+            foreach (PassiveItemModel m in Models)
+            {
+                if (predicate(m))
+                {
+                    m.RefreshInfoText();
+                }
+            }
+        }
+
         // ================= 目标分修正族 =================
 
         /// <summary>按美食档位对要求分做百分比修正（可正可负，多件累加）。下限 1。</summary>
-        public int ModifyRequiredScore(int baseReq, MealTier tier)
+        public int ModifyRequiredScore(int baseReq, cfg.FoodActionKind tier)
         {
             float pct = 0f;
             foreach (PassiveItemModel m in Models)

@@ -1,3 +1,4 @@
+using System.Globalization;
 using UnityEngine.Scripting;
 
 namespace GourmetProject.Game.Meta.Passives
@@ -7,7 +8,7 @@ namespace GourmetProject.Game.Meta.Passives
     [PassiveItemModel("item_req_normal_up")]
     public sealed class RequiredScoreNormalModel : RequiredScorePctModel
     {
-        public RequiredScoreNormalModel() : base(MealTier.Normal)
+        public RequiredScoreNormalModel() : base(cfg.FoodActionKind.Normal)
         {
         }
     }
@@ -17,7 +18,7 @@ namespace GourmetProject.Game.Meta.Passives
     [PassiveItemModel("item_req_super_up")]
     public sealed class RequiredScoreSuperModel : RequiredScorePctModel
     {
-        public RequiredScoreSuperModel() : base(MealTier.Super)
+        public RequiredScoreSuperModel() : base(cfg.FoodActionKind.Super)
         {
         }
     }
@@ -27,7 +28,7 @@ namespace GourmetProject.Game.Meta.Passives
     [PassiveItemModel("item_req_feast_up")]
     public sealed class RequiredScoreFeastModel : RequiredScorePctModel
     {
-        public RequiredScoreFeastModel() : base(MealTier.Feast)
+        public RequiredScoreFeastModel() : base(cfg.FoodActionKind.Feast)
         {
         }
     }
@@ -37,6 +38,10 @@ namespace GourmetProject.Game.Meta.Passives
     [PassiveItemModel("item_score_to_one")]
     public sealed class RequiredScoreToOneModel : PassiveItemModel
     {
+        public override string InfoText => Run != null && Run.ScoreToOneRemaining > 0
+            ? Run.ScoreToOneRemaining.ToString(CultureInfo.InvariantCulture)
+            : string.Empty;
+
         public override void OnAcquired()
         {
             Run?.AddScoreToOneMeals(PassiveParam.ParseInt(Param, "meals", 0));

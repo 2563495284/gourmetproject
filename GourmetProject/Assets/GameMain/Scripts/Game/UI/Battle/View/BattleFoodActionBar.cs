@@ -12,15 +12,13 @@ namespace GourmetProject.Game.UI.Battle.View
     /// </summary>
     public sealed class BattleFoodActionBar : MonoBehaviour
     {
-        [SerializeField] private Button _overviewButton;
         [SerializeField] private Button _eatButton;
         [SerializeField] private Button _doodleClearButton;
         [SerializeField] private Button _doodleToggleButton;
         [SerializeField] private Text _doodleToggleText;
 
-        public void Bind(Action onOverview, Action onEat, Action onDoodleClear, Action onDoodleToggle)
+        public void Bind(Action onEat, Action onDoodleClear, Action onDoodleToggle)
         {
-            Wire(_overviewButton, onOverview);
             Wire(_eatButton, onEat);
             Wire(_doodleClearButton, onDoodleClear);
             Wire(_doodleToggleButton, onDoodleToggle);
@@ -36,11 +34,6 @@ namespace GourmetProject.Game.UI.Battle.View
 
         public void Refresh(bool food, BattleSession session, BattleWorldController world)
         {
-            if (_overviewButton != null)
-            {
-                _overviewButton.interactable = food;
-            }
-
             if (_eatButton != null)
             {
                 _eatButton.interactable = food && session != null && !session.IsSettled;

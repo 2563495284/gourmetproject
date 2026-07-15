@@ -1,6 +1,8 @@
+using System;
+using System.Collections.Generic;
 using GourmetProject.Game;
 using GourmetProject.Game.Meta;
-using GourmetProject.Game.UI.Widgets;
+using GourmetProject.Runtime;
 using UnityEngine;
 
 namespace GourmetProject.Game.UI.Tooltips
@@ -12,7 +14,8 @@ namespace GourmetProject.Game.UI.Tooltips
     /// </summary>
     public sealed class ItemTipView : ActionTipView
     {
-        private const string DefaultEmoji = "\U0001F9EA";
+        [SerializeField] private RectTransform _specialTagsRoot;
+        [SerializeField] private FoodTipCardView _infoCardPrefab;
 
         /// <summary>用配置道具绑定：标题取道具名，描述取效果说明，图标按名称约定加载。</summary>
         public void Bind(ItemDefinition item)
@@ -24,23 +27,68 @@ namespace GourmetProject.Game.UI.Tooltips
             }
 
             Sprite icon = ContentIconLoader.LoadItem(item);
-            string desc = item.Desc;
-            string termBlock = DishInfoText.TermBlock(item.TermIds);
-            if (!string.IsNullOrEmpty(termBlock))
-            {
-                desc = string.IsNullOrEmpty(desc)
-                    ? termBlock.TrimEnd()
-                    : $"{desc}\n\n{termBlock.TrimEnd()}";
-            }
-
-            Bind(item.Name, desc, icon);
+            Bind(item.Name, item.Desc, icon, BuildSpecialTags(item.TermIds));
         }
 
         /// <summary>字段级绑定。</summary>
-        public void Bind(string itemName, string desc, Sprite icon = null)
+        public void Bind(
+            string itemName,
+            string desc,
+            Sprite icon = null,
+            IReadOnlyList<FoodInfoEntry> specialTags = null)
         {
             ApplyTexts(itemName, desc);
             ApplyFooter(null);
+            BuildInfoCards(_specialTagsRoot, specialTags, "SpecialTag");
+        }
+
+        private static IReadOnlyList<FoodInfoEntry> BuildSpecialTags(IReadOnlyList<string> termIds)
+        {
+            if (termIds == null || termIds.Count == 0)
+            {
+                return Array.Empty<FoodInfoEntry>();
+            }
+
+            var tags = new List<FoodInfoEntry>(termIds.Count);
+            foreach (string termId in termIds)
+            {
+                if (string.IsNullOrEmpty(termId))
+                {
+                    continue;
+                }
+
+                cfg.Term term = GameApp.Config?.Tables?.TbTerm?.GetOrDefault(termId);
+                tags.Add(term != null
+                    ? new FoodInfoEntry(term.Name, term.Desc)
+                    : new FoodInfoEntry(termId, string.Empty));
+            }
+
+            return tags.Count > 0 ? tags : Array.Empty<FoodInfoEntry>();
+        }
+
+        private void BuildInfoCards(RectTransform root, IReadOnlyList<FoodInfoEntry> entries, string prefix)
+        {
+            if (root == null)
+            {
+                return;
+            }
+
+            FoodTipUiUtility.ClearChildren(root);
+            int count = entries != null ? entries.Count : 0;
+            bool canBuild = count > 0 && _infoCardPrefab != null;
+            root.gameObject.SetActive(canBuild);
+            if (!canBuild)
+            {
+                return;
+            }
+
+            for (int i = 0; i < count; i++)
+            {
+                FoodInfoEntry entry = entries[i];
+                FoodTipCardView card = Instantiate(_infoCardPrefab, root, false);
+                card.name = $"{prefix}_{i}";
+                card.Bind(entry.Title, entry.Desc);
+            }
         }
     }
 }

@@ -119,7 +119,7 @@ public partial class Tables
     /// </summary>
     public TbSubSkill TbSubSkill {get; }
     /// <summary>
-    /// 美食/战斗明细（含 Boss）：Food 行动 foodId 关联；Boss=isBoss，按角色池/解锁条件随机。
+    /// 美食/战斗明细：Food 行动 foodId 关联；actionKind 区分普通/超级/盛宴 Boss。
     /// </summary>
     public TbFood TbFood {get; }
     /// <summary>

@@ -20,11 +20,22 @@ namespace GourmetProject.Game.Presentation.Battle
     /// </summary>
     public sealed class SettlementSequencer : MonoBehaviour
     {
-        private static readonly Color GainColor = Color.red;
-        private static readonly Color FinalColor = Color.red;
+        private static readonly Color GainColor = new(1f, 0.15f, 0.08f);
+        private static readonly Color FinalColor = new(1f, 0.24f, 0.12f);
+        private static readonly Color SkillColor = new(1f, 0.65f, 0.05f);
+        private static readonly Color FlavorColor = new(1f, 0.35f, 0.85f);
+        private static readonly Color MaterialColor = new(0.25f, 0.85f, 1f);
+        private static readonly Color MultiplierColor = new(1f, 0.95f, 0.2f);
+        private static readonly Color SideEffectColor = new(0.55f, 1f, 0.35f);
+        private static readonly Color DefaultCueColor = Color.white;
 
         private const float PerDishInterval = 0.32f;
         private const float ScoreTweenStep = 0.28f;
+        private const float SourceCueRise = 0.48f;
+        private const float SourceCueDuration = 0.62f;
+        private const float SourceCueCharacterSize = 0.12f;
+        private const float SourceCueStackOffset = 0.12f;
+        private const float FinalCueInterval = 0.22f;
 
         [Header("结算加速（小丑牌式：按 cue 进度越来越快）")]
         [SerializeField] private bool _useGlobalTimeScale = true;
@@ -43,10 +54,11 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private enum SettlementCueKind
         {
-            Tag = 0,
+            Source = 0,
             DishContribution = 1,
             FinalModifier = 2,
-            FinalScore = 3,
+            SideEffect = 3,
+            FinalScore = 4,
         }
 
         public async Awaitable PlayAsync(
@@ -66,7 +78,8 @@ namespace GourmetProject.Game.Presentation.Battle
 
             float runningTotal = 0f;
             renderScore?.Invoke(0);
-            var playback = new SettlementPlaybackState(CountSettlementCues(result, dishViews), scoreFire);
+            SettlementCueCollection cues = BuildSettlementCues(result, dishViews);
+            var playback = new SettlementPlaybackState(CountSettlementCues(cues, result, dishViews), scoreFire);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             _debugScorePaused = false;
 #endif
@@ -86,13 +99,15 @@ namespace GourmetProject.Game.Presentation.Battle
                     DishInstance instance = view.Instance;
                     Vector3 center = DishCenter(instance, mapper);
 
-                    await PlayTagCuesAsync(result, dishScore.DishInstanceId, view, center, fxRoot, mapper, playback, cancellationToken);
+                    await PlaySourceCuesAsync(cues.GetDishCues(dishScore.DishInstanceId), view, center, fxRoot, playback, cancellationToken);
 
                     AdvanceSettlementSpeed(playback, SettlementCueKind.DishContribution);
                     if (fxRoot != null)
                     {
                         FloatingTextView.Spawn(_floatingTextPrefab, fxRoot, center + new Vector3(0f, 0.35f, 0f), FormatGain(dishScore), GainColor);
                     }
+
+                    await view.PlayDeliciousnessGainFeedbackAsync(cancellationToken);
 
                     float from = runningTotal;
                     runningTotal += dishScore.Contribution;
@@ -101,32 +116,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     await Awaitable.WaitForSecondsAsync(PerDishInterval, cancellationToken);
                 }
 
-                // 局级修正（被动道具等）单独演出一次。
-                bool hasFinalFlat = Mathf.Abs(result.FinalFlat) > 0.001f;
-                bool hasFinalMult = Mathf.Abs(result.FinalMultiplier - 1f) > 0.001f;
-                if ((hasFinalFlat || hasFinalMult) && fxRoot != null)
-                {
-                    AdvanceSettlementSpeed(playback, SettlementCueKind.FinalModifier);
-
-                    string summary = string.Empty;
-                    if (hasFinalMult)
-                    {
-                        summary += $"×{result.FinalMultiplier:0.##}";
-                    }
-
-                    if (hasFinalFlat)
-                    {
-                        if (summary.Length > 0)
-                        {
-                            summary += "  ";
-                        }
-
-                        summary += $"{(result.FinalFlat >= 0 ? "+" : string.Empty)}{result.FinalFlat:0.#}";
-                    }
-
-                    FloatingTextView.Spawn(_floatingTextPrefab, fxRoot, mapper.Center + new Vector3(0f, 0.6f, 0f), $"局加成 {summary}", FinalColor, 0.18f, 0.7f, 1.1f);
-                    await Awaitable.WaitForSecondsAsync(0.4f, cancellationToken);
-                }
+                await PlayFinalCuesAsync(cues.FinalCues, mapper.Center, fxRoot, playback, cancellationToken);
 
                 AdvanceSettlementSpeed(playback, SettlementCueKind.FinalScore);
                 await TweenScoreAsync(runningTotal, result.Total, 0.45f, renderScore, cancellationToken);
@@ -152,57 +142,63 @@ namespace GourmetProject.Game.Presentation.Battle
             RestoreSettlementSpeed();
         }
 
-        private async Awaitable PlayTagCuesAsync(
-            ScoreResult result,
-            int dishInstanceId,
+        private async Awaitable PlaySourceCuesAsync(
+            IReadOnlyList<SettlementCue> cues,
             DishPieceView view,
             Vector3 center,
             Transform fxRoot,
-            DiningTableCoordinateMapper mapper,
             SettlementPlaybackState playback,
             CancellationToken cancellationToken)
         {
-            foreach (ScoreLine line in result.ScoreLines)
+            for (int i = 0; i < cues.Count; i++)
             {
-                if (line.DishInstanceId != dishInstanceId || !ShouldPlayTagCue(line))
+                SettlementCue cue = cues[i];
+                AdvanceSettlementSpeed(playback, cue.Kind);
+                if (fxRoot != null)
                 {
-                    continue;
+                    Vector3 offset = new(0f, 0.34f + SourceCueStackOffset * i, 0f);
+                    FloatingTextView.Spawn(
+                        _floatingTextPrefab,
+                        fxRoot,
+                        center + offset,
+                        cue.Text,
+                        cue.Color,
+                        SourceCueCharacterSize,
+                        SourceCueRise,
+                        SourceCueDuration);
                 }
 
-                await PlayTagCueAsync(line, view, center, fxRoot, mapper, playback, cancellationToken);
+                await view.PlayDeliciousnessGainFeedbackAsync(cancellationToken);
             }
         }
 
-        private async Awaitable PlayTagCueAsync(
-            ScoreLine line,
-            DishPieceView view,
+        private async Awaitable PlayFinalCuesAsync(
+            IReadOnlyList<SettlementCue> cues,
             Vector3 center,
             Transform fxRoot,
-            DiningTableCoordinateMapper mapper,
             SettlementPlaybackState playback,
             CancellationToken cancellationToken)
         {
-            AdvanceSettlementSpeed(playback, SettlementCueKind.Tag);
-
-            // 标签专属演出的扩展出口：后续按 line.Source.Id 分支即可保留结算层不变。
-            switch (line.Source.Id)
+            for (int i = 0; i < cues.Count; i++)
             {
-                default:
-                    await view.PlayDeliciousnessGainFeedbackAsync(cancellationToken);
-                    break;
-            }
-        }
+                SettlementCue cue = cues[i];
+                AdvanceSettlementSpeed(playback, cue.Kind);
+                if (fxRoot != null)
+                {
+                    Vector3 offset = new(0f, 0.52f + SourceCueStackOffset * i, 0f);
+                    FloatingTextView.Spawn(
+                        _floatingTextPrefab,
+                        fxRoot,
+                        center + offset,
+                        cue.Text,
+                        cue.Color,
+                        cue.CharacterSize,
+                        cue.Rise,
+                        cue.Duration);
+                }
 
-        private static bool ShouldPlayTagCue(ScoreLine line)
-        {
-            if (line == null || line.Source == null || line.Value <= 0f || line.Kind != ScoreLineKind.DishFlat)
-            {
-                return false;
+                await Awaitable.WaitForSecondsAsync(FinalCueInterval, cancellationToken);
             }
-
-            return line.Source.Type == ScoreSourceType.DishSkill
-                || line.Source.Type == ScoreSourceType.DishFlavor
-                || line.Source.Type == ScoreSourceType.Material;
         }
 
         private void BeginSettlementSpeed()
@@ -268,7 +264,10 @@ namespace GourmetProject.Game.Presentation.Battle
             // 预留音效入口：后续可在这里按 kind 播放结算音效，并用 speed 映射 pitch。
         }
 
-        private static int CountSettlementCues(ScoreResult result, IReadOnlyDictionary<int, DishPieceView> dishViews)
+        private static int CountSettlementCues(
+            SettlementCueCollection cues,
+            ScoreResult result,
+            IReadOnlyDictionary<int, DishPieceView> dishViews)
         {
             int count = 1; // 最终滚分。
             foreach (DishScore dishScore in result.DishScores)
@@ -279,19 +278,10 @@ namespace GourmetProject.Game.Presentation.Battle
                 }
 
                 count++; // 本菜贡献飘字 + 滚分。
-                foreach (ScoreLine line in result.ScoreLines)
-                {
-                    if (line.DishInstanceId == dishScore.DishInstanceId && ShouldPlayTagCue(line))
-                    {
-                        count++;
-                    }
-                }
+                count += cues.GetDishCues(dishScore.DishInstanceId).Count;
             }
 
-            if (Mathf.Abs(result.FinalFlat) > 0.001f || Mathf.Abs(result.FinalMultiplier - 1f) > 0.001f)
-            {
-                count++;
-            }
+            count += cues.FinalCues.Count;
 
             return Mathf.Max(1, count);
         }
@@ -361,6 +351,250 @@ namespace GourmetProject.Game.Presentation.Battle
             return text;
         }
 
+        private static SettlementCueCollection BuildSettlementCues(
+            ScoreResult result,
+            IReadOnlyDictionary<int, DishPieceView> dishViews)
+        {
+            var cues = new SettlementCueCollection();
+            bool hasGoldCue = false;
+            bool hasLayerCue = false;
+            bool hasSilverItemRollCue = false;
+            bool hasFinalModifierCue = false;
+
+            foreach (ScoreLine line in result.ScoreLines)
+            {
+                if (!TryBuildCue(line, out SettlementCue cue))
+                {
+                    continue;
+                }
+
+                hasGoldCue |= line.Kind == ScoreLineKind.Gold;
+                hasLayerCue |= line.Kind == ScoreLineKind.Layer;
+                hasSilverItemRollCue |= line.Kind == ScoreLineKind.SilverItemRoll;
+                hasFinalModifierCue |= line.Kind == ScoreLineKind.FinalFlat
+                    || line.Kind == ScoreLineKind.FinalMultiplier;
+
+                if (line.DishInstanceId != 0
+                    && dishViews.TryGetValue(line.DishInstanceId, out DishPieceView view)
+                    && view != null
+                    && cue.Kind != SettlementCueKind.FinalModifier)
+                {
+                    cues.AddDishCue(line.DishInstanceId, cue);
+                }
+                else
+                {
+                    cues.FinalCues.Add(cue);
+                }
+            }
+
+            if (!hasFinalModifierCue && HasFinalModifier(result))
+            {
+                cues.FinalCues.Add(BuildFinalSummaryCue(result));
+            }
+
+            if (!hasGoldCue && Mathf.Abs(result.GoldDelta) > 0.001f)
+            {
+                cues.FinalCues.Add(new SettlementCue(SettlementCueKind.SideEffect, $"金币 {FormatSigned(result.GoldDelta)}", SideEffectColor));
+            }
+
+            if (!hasLayerCue && result.HappyCakeLayerDelta != 0)
+            {
+                cues.FinalCues.Add(new SettlementCue(SettlementCueKind.SideEffect, $"蛋糕层 {FormatSigned(result.HappyCakeLayerDelta)}", SideEffectColor));
+            }
+
+            if (!hasSilverItemRollCue && result.SilverItemRollRequests > 0)
+            {
+                cues.FinalCues.Add(new SettlementCue(SettlementCueKind.SideEffect, $"银材质抽道具 ×{result.SilverItemRollRequests}", SideEffectColor));
+            }
+
+            if (result.PermanentFlatDeltas.Count > 0)
+            {
+                cues.FinalCues.Add(new SettlementCue(SettlementCueKind.SideEffect, $"永久美味 +{result.PermanentFlatDeltas.Count} 道菜", SideEffectColor));
+            }
+
+            if (result.PermanentMultDeltas.Count > 0)
+            {
+                cues.FinalCues.Add(new SettlementCue(SettlementCueKind.SideEffect, $"永久倍率 +{result.PermanentMultDeltas.Count} 道菜", SideEffectColor));
+            }
+
+            return cues;
+        }
+
+        private static bool TryBuildCue(ScoreLine line, out SettlementCue cue)
+        {
+            cue = null;
+            if (line == null || Mathf.Abs(line.Value) <= 0.001f)
+            {
+                return false;
+            }
+
+            string sourceName = SourceName(line);
+            switch (line.Kind)
+            {
+                case ScoreLineKind.DishFlat:
+                    if (!IsReadableDishSource(line.Source))
+                    {
+                        return false;
+                    }
+
+                    cue = new SettlementCue(
+                        SettlementCueKind.Source,
+                        $"{sourceName} {FormatSigned(line.Value)}",
+                        ColorForSource(line.Source));
+                    return true;
+
+                case ScoreLineKind.DishMultiplier:
+                    cue = new SettlementCue(
+                        SettlementCueKind.Source,
+                        $"{sourceName} {FormatMultiplier(line.Value)}",
+                        MultiplierColor);
+                    return true;
+
+                case ScoreLineKind.DishMultiplierAdd:
+                    cue = new SettlementCue(
+                        SettlementCueKind.Source,
+                        $"{sourceName} 倍率 {FormatSigned(line.Value)}",
+                        MultiplierColor);
+                    return true;
+
+                case ScoreLineKind.FinalFlat:
+                    cue = new SettlementCue(
+                        SettlementCueKind.FinalModifier,
+                        $"{sourceName} {FormatSigned(line.Value)}",
+                        FinalColor,
+                        0.18f,
+                        0.7f,
+                        1.1f);
+                    return true;
+
+                case ScoreLineKind.FinalMultiplier:
+                    cue = new SettlementCue(
+                        SettlementCueKind.FinalModifier,
+                        $"{sourceName} {FormatMultiplier(line.Value)}",
+                        FinalColor,
+                        0.18f,
+                        0.7f,
+                        1.1f);
+                    return true;
+
+                case ScoreLineKind.Gold:
+                    cue = new SettlementCue(SettlementCueKind.SideEffect, $"金币 {FormatSigned(line.Value)}", SideEffectColor);
+                    return true;
+
+                case ScoreLineKind.Layer:
+                    cue = new SettlementCue(SettlementCueKind.SideEffect, $"蛋糕层 {FormatSigned(line.Value)}", SideEffectColor);
+                    return true;
+
+                case ScoreLineKind.ExtraSettlement:
+                    cue = new SettlementCue(SettlementCueKind.SideEffect, $"额外结算 {FormatSigned(line.Value)}", SideEffectColor);
+                    return true;
+
+                case ScoreLineKind.SilverItemRoll:
+                    cue = new SettlementCue(SettlementCueKind.SideEffect, $"银材质抽道具 ×{Mathf.RoundToInt(line.Value)}", SideEffectColor);
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+
+        private static bool IsReadableDishSource(ScoreSource source)
+        {
+            if (source == null)
+            {
+                return false;
+            }
+
+            return source.Type == ScoreSourceType.DishSkill
+                || source.Type == ScoreSourceType.DishFlavor
+                || source.Type == ScoreSourceType.Material
+                || source.Type == ScoreSourceType.TableTag
+                || source.Type == ScoreSourceType.Relic
+                || source.Type == ScoreSourceType.WeekModifier;
+        }
+
+        private static string SourceName(ScoreLine line)
+        {
+            if (line?.Source == null)
+            {
+                return "结算";
+            }
+
+            if (!string.IsNullOrEmpty(line.Source.Name))
+            {
+                return line.Source.Name;
+            }
+
+            return string.IsNullOrEmpty(line.Source.Id) ? "结算" : line.Source.Id;
+        }
+
+        private static Color ColorForSource(ScoreSource source)
+        {
+            if (source == null)
+            {
+                return DefaultCueColor;
+            }
+
+            switch (source.Type)
+            {
+                case ScoreSourceType.DishSkill:
+                    return SkillColor;
+                case ScoreSourceType.DishFlavor:
+                    return FlavorColor;
+                case ScoreSourceType.Material:
+                    return MaterialColor;
+                case ScoreSourceType.TableTag:
+                case ScoreSourceType.Relic:
+                case ScoreSourceType.WeekModifier:
+                    return MultiplierColor;
+                default:
+                    return DefaultCueColor;
+            }
+        }
+
+        private static bool HasFinalModifier(ScoreResult result)
+        {
+            return Mathf.Abs(result.FinalFlat) > 0.001f
+                || Mathf.Abs(result.FinalMultiplier - 1f) > 0.001f;
+        }
+
+        private static SettlementCue BuildFinalSummaryCue(ScoreResult result)
+        {
+            string summary = string.Empty;
+            if (Mathf.Abs(result.FinalMultiplier - 1f) > 0.001f)
+            {
+                summary += FormatMultiplier(result.FinalMultiplier);
+            }
+
+            if (Mathf.Abs(result.FinalFlat) > 0.001f)
+            {
+                if (summary.Length > 0)
+                {
+                    summary += "  ";
+                }
+
+                summary += FormatSigned(result.FinalFlat);
+            }
+
+            return new SettlementCue(
+                SettlementCueKind.FinalModifier,
+                $"局加成 {summary}",
+                FinalColor,
+                0.18f,
+                0.7f,
+                1.1f);
+        }
+
+        private static string FormatSigned(float value)
+        {
+            return $"{(value >= 0f ? "+" : string.Empty)}{value:0.#}";
+        }
+
+        private static string FormatMultiplier(float value)
+        {
+            return $"×{value:0.##}";
+        }
+
         private static Vector3 DishCenter(DishInstance dish, DiningTableCoordinateMapper mapper)
         {
             if (dish == null || dish.OccupiedCells.Count == 0)
@@ -375,6 +609,62 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             return sum / dish.OccupiedCells.Count;
+        }
+
+        private sealed class SettlementCueCollection
+        {
+            private readonly Dictionary<int, List<SettlementCue>> _dishCues = new();
+
+            public List<SettlementCue> FinalCues { get; } = new();
+
+            public void AddDishCue(int dishInstanceId, SettlementCue cue)
+            {
+                if (!_dishCues.TryGetValue(dishInstanceId, out List<SettlementCue> cues))
+                {
+                    cues = new List<SettlementCue>();
+                    _dishCues.Add(dishInstanceId, cues);
+                }
+
+                cues.Add(cue);
+            }
+
+            public IReadOnlyList<SettlementCue> GetDishCues(int dishInstanceId)
+            {
+                return _dishCues.TryGetValue(dishInstanceId, out List<SettlementCue> cues)
+                    ? cues
+                    : Array.Empty<SettlementCue>();
+            }
+        }
+
+        private sealed class SettlementCue
+        {
+            public SettlementCue(
+                SettlementCueKind kind,
+                string text,
+                Color color,
+                float characterSize = SourceCueCharacterSize,
+                float rise = SourceCueRise,
+                float duration = SourceCueDuration)
+            {
+                Kind = kind;
+                Text = text;
+                Color = color;
+                CharacterSize = characterSize;
+                Rise = rise;
+                Duration = duration;
+            }
+
+            public SettlementCueKind Kind { get; }
+
+            public string Text { get; }
+
+            public Color Color { get; }
+
+            public float CharacterSize { get; }
+
+            public float Rise { get; }
+
+            public float Duration { get; }
         }
 
         private sealed class SettlementPlaybackState

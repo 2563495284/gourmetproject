@@ -127,6 +127,9 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>本次品鉴菜谱内容（BaseId 列表，供菜谱检测）。</summary>
         public IReadOnlyList<string> RecipeBaseIds => _recipeBaseIds;
 
+        /// <summary>一次甜蜜传递请求成功落到至少一个目标后触发。</summary>
+        public event Action<SkillTransferRequest> SweetTransferTriggered;
+
         /// <summary>从指定菜谱槽随机上一道能放下的菜，并随机朝向/位置摆上餐桌。</summary>
         public ServeResult Serve(int slotIndex)
         {
@@ -480,6 +483,7 @@ namespace GourmetProject.Gameplay.Battle
                 }
 
                 string sourceLabel = $"{request.SourceName}<甜蜜传递>";
+                bool transferred = false;
                 foreach (int targetId in targets)
                 {
                     DishInstance target = FindInstance(targetId);
@@ -492,6 +496,13 @@ namespace GourmetProject.Gameplay.Battle
                     {
                         target.AddTransferredSkill(effect, sourceLabel);
                     }
+
+                    transferred = true;
+                }
+
+                if (transferred)
+                {
+                    SweetTransferTriggered?.Invoke(request);
                 }
             }
         }

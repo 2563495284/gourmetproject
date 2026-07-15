@@ -183,11 +183,13 @@ namespace GourmetProject.Game.UI.Tooltips
 
             scrollRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, Mathf.Max(80f, height));
             LayoutElement scrollLayout = scrollRect.gameObject.GetComponent<LayoutElement>();
-            if (scrollLayout != null)
+            if (scrollLayout == null)
             {
-                scrollLayout.minHeight = Mathf.Max(80f, height);
-                scrollLayout.preferredHeight = Mathf.Max(80f, height);
+                scrollLayout = scrollRect.gameObject.AddComponent<LayoutElement>();
             }
+
+            scrollLayout.minHeight = Mathf.Max(80f, height);
+            scrollLayout.preferredHeight = Mathf.Max(80f, height);
         }
 
         private bool ReportMissing(Object reference, string fieldName)

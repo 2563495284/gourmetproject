@@ -20,7 +20,7 @@ public sealed partial class Food : Luban.BeanBase
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
         { if(!_buf["name"].IsString) { throw new SerializationException(); }  Name = _buf["name"]; }
         { if(!_buf["desc"].IsString) { throw new SerializationException(); }  Desc = _buf["desc"]; }
-        { if(!_buf["isBoss"].IsBoolean) { throw new SerializationException(); }  IsBoss = _buf["isBoss"]; }
+        { if(!_buf["actionKind"].IsNumber) { throw new SerializationException(); }  ActionKind = (FoodActionKind)_buf["actionKind"].AsInt; }
         { if(!_buf["rewardKind"].IsNumber) { throw new SerializationException(); }  RewardKind = (RewardKind)_buf["rewardKind"].AsInt; }
         { if(!_buf["rewardPackageId"].IsString) { throw new SerializationException(); }  RewardPackageId = _buf["rewardPackageId"]; }
         { if(!_buf["targetScoreHiddenOffset"].IsNumber) { throw new SerializationException(); }  TargetScoreHiddenOffset = _buf["targetScoreHiddenOffset"]; }
@@ -49,9 +49,9 @@ public sealed partial class Food : Luban.BeanBase
     /// </summary>
     public readonly string Desc;
     /// <summary>
-    /// 是否 Boss 战
+    /// 美食行动类型：普通/超级/盛宴(Boss)
     /// </summary>
-    public readonly bool IsBoss;
+    public readonly FoodActionKind ActionKind;
     /// <summary>
     /// 奖励外观类型
     /// </summary>
@@ -98,7 +98,7 @@ public sealed partial class Food : Luban.BeanBase
         + "id:" + Id + ","
         + "name:" + Name + ","
         + "desc:" + Desc + ","
-        + "isBoss:" + IsBoss + ","
+        + "actionKind:" + ActionKind + ","
         + "rewardKind:" + RewardKind + ","
         + "rewardPackageId:" + RewardPackageId + ","
         + "targetScoreHiddenOffset:" + TargetScoreHiddenOffset + ","

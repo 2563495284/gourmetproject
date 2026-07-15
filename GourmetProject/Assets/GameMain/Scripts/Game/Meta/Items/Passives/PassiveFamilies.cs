@@ -62,14 +62,14 @@ namespace GourmetProject.Game.Meta.Passives
     /// <summary>目标分档位百分比修正家族：对匹配 <see cref="_tier"/> 的档位累加 Value（可正可负）。</summary>
     public abstract class RequiredScorePctModel : PassiveItemModel
     {
-        private readonly MealTier _tier;
+        private readonly cfg.FoodActionKind _tier;
 
-        protected RequiredScorePctModel(MealTier tier)
+        protected RequiredScorePctModel(cfg.FoodActionKind tier)
         {
             _tier = tier;
         }
 
-        public override float RequiredScorePct(MealTier tier) => tier == _tier ? Value : 0f;
+        public override float RequiredScorePct(cfg.FoodActionKind tier) => tier == _tier ? Value : 0f;
     }
 
     /// <summary>结算规格家族：贡献一条 <see cref="ItemScoreSpec"/>（逐菜/条件/顺序类效果）。</summary>

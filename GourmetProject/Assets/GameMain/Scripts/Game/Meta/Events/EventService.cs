@@ -399,9 +399,20 @@ namespace GourmetProject.Game.Meta
                 return 0;
             }
 
-            return run.LastActionContext != null
-                ? HiddenScoreService.TargetScore(run, run.LastActionContext)
-                : run.RequiredScore;
+            if (run.LastActionContext != null)
+            {
+                cfg.Food food = FoodService.Resolve(run.Tables, run.LastActionContext.Action);
+                if (food != null
+                    && food.ActionKind != cfg.FoodActionKind.Feast
+                    && run.ScoreToOneRemaining > 0)
+                {
+                    return 1;
+                }
+
+                return HiddenScoreService.TargetScore(run, run.LastActionContext);
+            }
+
+            return run.RequiredScore;
         }
 
         private static int RoundToInt(float v) => (int)System.Math.Round(v, System.MidpointRounding.AwayFromZero);

@@ -1847,7 +1847,7 @@ namespace GourmetProject.Game.Run
             int baseReq = RequiredScore;
             int scaled = System.Math.Max(1, (int)System.Math.Round(baseReq * multiplier, System.MidpointRounding.AwayFromZero));
             // 超级美食倍率 > 1 视为 Super 档，否则普通档；道具目标分修正随档位施加。
-            var tier = multiplier > 1f ? MealTier.Super : MealTier.Normal;
+            cfg.FoodActionKind tier = multiplier > 1f ? cfg.FoodActionKind.Super : cfg.FoodActionKind.Normal;
             return new ItemRuntime(this).ModifyRequiredScore(scaled, tier);
         }
 
@@ -1859,7 +1859,7 @@ namespace GourmetProject.Game.Run
                 : CurrentScoreProfile(CurrentWeek ?? LastConfiguredWeek);
             int endlessExtra = IsEndless ? System.Math.Max(1, WeekIndex - TotalWeeks) : 0;
             int bossReq = ComputeRequiredScore(profile, true, endlessExtra);
-            return new ItemRuntime(this).ModifyRequiredScore(bossReq, MealTier.Feast);
+            return new ItemRuntime(this).ModifyRequiredScore(bossReq, cfg.FoodActionKind.Feast);
         }
 
         /// <summary>当前周的修正标识（small_board / limit_serve …），无则空串。</summary>
