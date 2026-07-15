@@ -101,7 +101,7 @@
   {
     "id": "debuff_combo_meal",
     "name": "套餐",
-    "desc": "上菜时，会从本菜谱额外上一道菜。",
+    "desc": "上菜时\n会从本菜谱额外上一道菜。",
     "modifier": "feast_combo_meal",
     "weight": 1,
     "unlockCondition": "",
@@ -128,7 +128,7 @@
   {
     "id": "debuff_tasting",
     "name": "试吃",
-    "desc": "上菜时，食物倍率按0.5和1.5交替",
+    "desc": "上菜时\n食物倍率按0.5和1.5交替",
     "modifier": "feast_tasting",
     "weight": 1,
     "unlockCondition": "",

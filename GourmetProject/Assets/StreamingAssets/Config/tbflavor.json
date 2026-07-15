@@ -24,7 +24,7 @@
   {
     "id": "t_rust",
     "name": "鲜",
-    "desc": "结算时，+5金币",
+    "desc": "结算时\n+5金币",
     "effectType": 7,
     "effectParam": [],
     "effectValue": [
@@ -46,7 +46,7 @@
   {
     "id": "t_sour",
     "name": "酸",
-    "desc": "结算时若未上菜，场上同菜谱食物倍率 ×1.5",
+    "desc": "结算时若未上菜\n场上同菜谱食物倍率 ×1.5",
     "effectType": 10,
     "effectParam": [],
     "effectValue": [
@@ -57,7 +57,7 @@
   {
     "id": "t_salty",
     "name": "咸",
-    "desc": "结算时若未上菜，场上每有一个同菜谱食物， +2 金币。",
+    "desc": "结算时若未上菜\n场上每有一个同菜谱食物\n +2 金币",
     "effectType": 11,
     "effectParam": [],
     "effectValue": [
