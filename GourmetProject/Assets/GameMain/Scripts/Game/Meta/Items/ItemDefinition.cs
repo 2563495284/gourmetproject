@@ -82,17 +82,17 @@ namespace GourmetProject.Game.Meta
 
         public cfg.HiddenRange HiddenRange { get; }
 
-        public int TargetScoreHiddenOffset { get; }
+        public float TargetScoreHiddenOffset { get; }
 
-        public int DishHiddenOffset { get; }
+        public float DishHiddenOffset { get; }
 
-        public int PassiveItemHiddenOffset { get; }
+        public float PassiveItemHiddenOffset { get; }
 
-        public int ActiveItemHiddenOffset { get; }
+        public float ActiveItemHiddenOffset { get; }
 
-        public int FragmentHiddenOffset { get; }
+        public float FragmentHiddenOffset { get; }
 
-        public int GoldHiddenOffset { get; }
+        public float GoldHiddenOffset { get; }
 
         public cfg.ItemTargetKind TargetKind { get; }
 
@@ -102,7 +102,7 @@ namespace GourmetProject.Game.Meta
 
         public bool IsActive => Kind == cfg.ItemKind.Active;
 
-        public int HiddenScoreOffset(HiddenScorePurpose purpose)
+        public float HiddenScoreOffset(HiddenScorePurpose purpose)
         {
             switch (purpose)
             {
@@ -119,7 +119,7 @@ namespace GourmetProject.Game.Meta
                 case HiddenScorePurpose.Gold:
                     return GoldHiddenOffset;
                 default:
-                    return 0;
+                    return 0f;
             }
         }
 

@@ -36,9 +36,10 @@ namespace GourmetProject.Game.Meta
         private const string ActiveItemPurpose = "ActiveItem";
         private const string FragmentPurpose = "Fragment";
 
-        public static int TargetScore(GameRun run, ActionExecutionContext context = null)
+        public static int TargetScore(GameRun run, ActionExecutionContext context = null, float extraTargetScoreHiddenOffset = 0f)
         {
-            int derived = EvaluateTargetScore(run, HiddenOffset(run, context, HiddenScorePurpose.TargetScore));
+            float offset = HiddenOffset(run, context, HiddenScorePurpose.TargetScore) + extraTargetScoreHiddenOffset;
+            int derived = EvaluateTargetScore(run, offset);
             return Math.Max(1, derived);
         }
 
@@ -64,10 +65,10 @@ namespace GourmetProject.Game.Meta
 
         public static GoldRange GoldRewardRange(GameRun run, ActionExecutionContext context = null)
         {
-            return GoldRewardRange(run, context, 0);
+            return GoldRewardRange(run, context, 0f);
         }
 
-        public static GoldRange GoldRewardRange(GameRun run, ActionExecutionContext context, int hiddenOffset)
+        public static GoldRange GoldRewardRange(GameRun run, ActionExecutionContext context, float hiddenOffset)
         {
             cfg.GoldRewardCurve curve = ResolveGoldCurve(run?.Tables);
             if (run == null || curve == null)
@@ -75,7 +76,7 @@ namespace GourmetProject.Game.Meta
                 return new GoldRange(20, 35);
             }
 
-            int totalOffset = hiddenOffset + HiddenOffset(run, context, HiddenScorePurpose.Gold);
+            float totalOffset = hiddenOffset + HiddenOffset(run, context, HiddenScorePurpose.Gold);
             double minHidden = curve.MinBase + run.WeekIndex * curve.MinPerWeek + run.CurrentDay * curve.MinPerDay + totalOffset;
             double maxHidden = curve.MaxBase + run.WeekIndex * curve.MaxPerWeek + run.CurrentDay * curve.MaxPerDay + totalOffset;
             double fluctuation = Math.Max(0, curve.FluctuationPct);
@@ -100,7 +101,7 @@ namespace GourmetProject.Game.Meta
             return Math.Max(1, (int)Math.Round(value, MidpointRounding.AwayFromZero));
         }
 
-        private static int EvaluateLinear(string purpose, GameRun run, int hiddenOffset)
+        private static int EvaluateLinear(string purpose, GameRun run, float hiddenOffset)
         {
             cfg.HiddenScoreCurve curve = ResolveCurve(run?.Tables, purpose, run);
             if (curve == null || run == null)
@@ -115,7 +116,7 @@ namespace GourmetProject.Game.Meta
             return RoundCurveValue(curve, value);
         }
 
-        private static int EvaluateTargetScore(GameRun run, int hiddenOffset)
+        private static int EvaluateTargetScore(GameRun run, float hiddenOffset)
         {
             cfg.HiddenScoreCurve curve = ResolveCurve(run?.Tables, TargetPurpose, run);
             if (curve == null || run == null)
@@ -183,41 +184,34 @@ namespace GourmetProject.Game.Meta
             return FoodService.Resolve(tables, action);
         }
 
-        private static int HiddenOffset(GameRun run, ActionExecutionContext context, HiddenScorePurpose purpose)
+        private static float HiddenOffset(GameRun run, ActionExecutionContext context, HiddenScorePurpose purpose)
         {
-            int offset = FoodHiddenOffset(ResolveFood(run?.Tables, context?.Action), purpose);
+            float offset = FoodHiddenOffset(ResolveFood(run?.Tables, context?.Action), purpose);
             if (run != null)
             {
-                offset += (int)Math.Round(new ItemRuntime(run).HiddenScoreOffset(purpose), MidpointRounding.AwayFromZero);
+                offset += new ItemRuntime(run).HiddenScoreOffset(purpose);
             }
 
             return offset;
         }
 
-        private static int FoodHiddenOffset(cfg.Food food, HiddenScorePurpose purpose)
+        private static float FoodHiddenOffset(cfg.Food food, HiddenScorePurpose purpose)
         {
             if (food == null)
             {
-                return 0;
+                return 0f;
             }
 
-            switch (purpose)
+            return purpose switch
             {
-                case HiddenScorePurpose.TargetScore:
-                    return (int)food.TargetScoreHiddenOffset;
-                case HiddenScorePurpose.Dish:
-                    return food.DishHiddenOffset;
-                case HiddenScorePurpose.PassiveItem:
-                    return food.PassiveItemHiddenOffset;
-                case HiddenScorePurpose.ActiveItem:
-                    return food.ActiveItemHiddenOffset;
-                case HiddenScorePurpose.Fragment:
-                    return food.FragmentHiddenOffset;
-                case HiddenScorePurpose.Gold:
-                    return food.GoldHiddenOffset;
-                default:
-                    return 0;
-            }
+                HiddenScorePurpose.TargetScore => food.TargetScoreHiddenOffset,
+                HiddenScorePurpose.Dish => food.DishHiddenOffset,
+                HiddenScorePurpose.PassiveItem => food.PassiveItemHiddenOffset,
+                HiddenScorePurpose.ActiveItem => food.ActiveItemHiddenOffset,
+                HiddenScorePurpose.Fragment => food.FragmentHiddenOffset,
+                HiddenScorePurpose.Gold => food.GoldHiddenOffset,
+                _ => 0f,
+            };
         }
 
         private static cfg.GoldRewardCurve ResolveGoldCurve(cfg.Tables tables)
