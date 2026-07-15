@@ -23,6 +23,7 @@ public sealed partial class BossDebuff : Luban.BeanBase
         { if(!_buf["modifier"].IsString) { throw new SerializationException(); }  Modifier = _buf["modifier"]; }
         { if(!_buf["weight"].IsNumber) { throw new SerializationException(); }  Weight = _buf["weight"]; }
         { if(!_buf["unlockCondition"].IsString) { throw new SerializationException(); }  UnlockCondition = _buf["unlockCondition"]; }
+        { if(!_buf["targetScoreHiddenOffset"].IsNumber) { throw new SerializationException(); }  TargetScoreHiddenOffset = _buf["targetScoreHiddenOffset"]; }
     }
 
     public static BossDebuff DeserializeBossDebuff(JSONNode _buf)
@@ -54,6 +55,10 @@ public sealed partial class BossDebuff : Luban.BeanBase
     /// 解锁条件(空=默认)
     /// </summary>
     public readonly string UnlockCondition;
+    /// <summary>
+    /// 目标分隐藏分修正；加到 TargetScore 指数输入。
+    /// </summary>
+    public readonly float TargetScoreHiddenOffset;
    
     public const int __ID__ = 737555009;
     public override int GetTypeId() => __ID__;
@@ -71,6 +76,7 @@ public sealed partial class BossDebuff : Luban.BeanBase
         + "modifier:" + Modifier + ","
         + "weight:" + Weight + ","
         + "unlockCondition:" + UnlockCondition + ","
+        + "targetScoreHiddenOffset:" + TargetScoreHiddenOffset + ","
         + "}";
     }
 }

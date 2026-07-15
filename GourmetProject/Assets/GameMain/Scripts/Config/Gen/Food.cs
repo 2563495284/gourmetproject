@@ -67,23 +67,23 @@ public sealed partial class Food : Luban.BeanBase
     /// <summary>
     /// 食物奖励隐藏分临时修正。
     /// </summary>
-    public readonly int DishHiddenOffset;
+    public readonly float DishHiddenOffset;
     /// <summary>
     /// 被动道具奖励隐藏分临时修正。
     /// </summary>
-    public readonly int PassiveItemHiddenOffset;
+    public readonly float PassiveItemHiddenOffset;
     /// <summary>
     /// 主动道具奖励隐藏分临时修正。
     /// </summary>
-    public readonly int ActiveItemHiddenOffset;
+    public readonly float ActiveItemHiddenOffset;
     /// <summary>
     /// 餐桌格子奖励隐藏分临时修正。
     /// </summary>
-    public readonly int FragmentHiddenOffset;
+    public readonly float FragmentHiddenOffset;
     /// <summary>
     /// 金币奖励隐藏分临时修正。
     /// </summary>
-    public readonly int GoldHiddenOffset;
+    public readonly float GoldHiddenOffset;
    
     public const int __ID__ = 2195582;
     public override int GetTypeId() => __ID__;

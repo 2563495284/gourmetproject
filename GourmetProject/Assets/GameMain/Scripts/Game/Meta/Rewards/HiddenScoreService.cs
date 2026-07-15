@@ -36,9 +36,9 @@ namespace GourmetProject.Game.Meta
         private const string ActiveItemPurpose = "ActiveItem";
         private const string FragmentPurpose = "Fragment";
 
-        public static int TargetScore(GameRun run, ActionExecutionContext context = null)
+        public static int TargetScore(GameRun run, ActionExecutionContext context = null, int extraTargetScoreHiddenOffset = 0)
         {
-            int derived = EvaluateTargetScore(run, HiddenOffset(run, context, HiddenScorePurpose.TargetScore));
+            int derived = EvaluateTargetScore(run, HiddenOffset(run, context, HiddenScorePurpose.TargetScore) + extraTargetScoreHiddenOffset);
             return Math.Max(1, derived);
         }
 
@@ -204,7 +204,7 @@ namespace GourmetProject.Game.Meta
             switch (purpose)
             {
                 case HiddenScorePurpose.TargetScore:
-                    return food.TargetScoreHiddenOffset;
+                    return (int)Math.Round(food.TargetScoreHiddenOffset, MidpointRounding.AwayFromZero);
                 case HiddenScorePurpose.Dish:
                     return food.DishHiddenOffset;
                 case HiddenScorePurpose.PassiveItem:
