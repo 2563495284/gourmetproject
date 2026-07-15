@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using DG.Tweening;
 using GourmetProject.Game;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
@@ -88,6 +89,7 @@ namespace GourmetProject.Game.Presentation.Battle
             Food,
             TableEdit,
             TableView,
+            TableCellTargeting,
         }
 
         private GameRun _run;
@@ -100,14 +102,22 @@ namespace GourmetProject.Game.Presentation.Battle
         private Action<int> _settlementScoreSink;
         private Action<string> _activeItemClicked;
         private Action<DishInstance> _dishClicked;
+        private Action<DishPieceView> _dishHoverEntered;
+        private Action<DishPieceView> _dishHoverExited;
+        private Action<DiningTableCellView> _cellHoverEntered;
+        private Action<DiningTableCellView> _cellHoverExited;
         private Action _stateChanged;
         private CancellationTokenSource _presentationCts;
+        private Tween _tableViewFadeTween;
+        private readonly Dictionary<SpriteRenderer, float> _tableViewRendererBaseAlphas = new Dictionary<SpriteRenderer, float>();
+        private float _tableViewTransitionAlpha = 1f;
 
         /// <summary>当前已加载战斗场景里的控制器实例（由战斗 UI/流程取用）。</summary>
         public static BattleWorldController Instance { get; private set; }
 
         public bool CanEnterTableView
             => _worldMode != WorldMode.TableView
+                && _worldMode != WorldMode.TableCellTargeting
                 && (_worldMode != WorldMode.Food || (!_settling && !_serving));
 
         private void Awake()
@@ -139,7 +149,9 @@ namespace GourmetProject.Game.Presentation.Battle
         /// <summary>供 <see cref="DiningTableEditController"/> 在编辑/餐桌视图结束时通知外壳复位世界互斥态。</summary>
         internal void ClearTableMode()
         {
-            if (_worldMode == WorldMode.TableEdit || _worldMode == WorldMode.TableView)
+            if (_worldMode == WorldMode.TableEdit
+                || _worldMode == WorldMode.TableView
+                || _worldMode == WorldMode.TableCellTargeting)
             {
                 _worldMode = WorldMode.Hidden;
             }
@@ -240,13 +252,15 @@ namespace GourmetProject.Game.Presentation.Battle
         internal bool TryPointerCellTarget(out ActiveTarget target)
         {
             target = default;
-            if (_session?.DiningTable == null || _boardView?.Mapper == null || _camera == null || WorldInput.PointerOverUi)
+            GpTable table = ActiveCellTargetTable();
+            if (table == null || _boardView?.Mapper == null || _camera == null || WorldInput.PointerOverUi)
             {
                 return false;
             }
 
-            GridPos cell = _boardView.Mapper.NearestCell(WorldInput.MouseWorld(_camera));
-            if (!_session.DiningTable.Exists(cell))
+            Vector3 mouseWorld = WorldInput.MouseWorld(_camera);
+            GridPos cell = _boardView.Mapper.NearestCell(mouseWorld);
+            if (!table.Exists(cell) || !PointerInsideCell(cell, mouseWorld))
             {
                 return false;
             }
@@ -296,9 +310,10 @@ namespace GourmetProject.Game.Presentation.Battle
             if (kind == cfg.ItemTargetKind.DiningTableCell)
             {
                 _boardView?.ClearTargetHighlights();
-                if (_session?.DiningTable != null)
+                GpTable table = ActiveCellTargetTable();
+                if (table != null)
                 {
-                    foreach (GridPos cell in _session.DiningTable.ExistingCells())
+                    foreach (GridPos cell in table.ExistingCells())
                     {
                         var candidate = new ActiveTarget(string.Empty, cell.X, cell.Y, cfg.ItemTargetKind.DiningTableCell);
                         _boardView?.SetTargetHighlight(cell, ContainsTarget(selected, candidate), TargetEquals(hovered, candidate));
@@ -323,6 +338,25 @@ namespace GourmetProject.Game.Presentation.Battle
                     piece.SetPlacementGlow(active, true);
                 }
             }
+        }
+
+        private GpTable ActiveCellTargetTable()
+        {
+            return _session?.DiningTable ?? _boardEdit?.CurrentTable;
+        }
+
+        private bool PointerInsideCell(GridPos cell, Vector3 mouseWorld)
+        {
+            if (_boardView == null || !_boardView.TryGetCellView(cell, out DiningTableCellView view) || view == null)
+            {
+                return true;
+            }
+
+            Bounds bounds = view.WorldBounds;
+            return mouseWorld.x >= bounds.min.x
+                && mouseWorld.x <= bounds.max.x
+                && mouseWorld.y >= bounds.min.y
+                && mouseWorld.y <= bounds.max.y;
         }
 
         internal void ClearActiveItemTargetHighlights()
@@ -409,6 +443,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             EnsureTableEdit();
+            ResetTableViewFade();
             if (_boardEdit.IsEditing)
             {
                 _boardEdit.EndTableEdit();
@@ -426,16 +461,89 @@ namespace GourmetProject.Game.Presentation.Battle
             ClearPlacedPieces();
 
             _boardEdit.BeginTableView(run);
+            _boardView?.SetCellHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
+        }
+
+        /// <summary>进入主动道具餐桌选格态：布局同只读餐桌视图，但外层会用世界箭头接管点击确认/取消。</summary>
+        public void BeginTableCellTargeting(GameRun run)
+        {
+            if (run == null)
+            {
+                return;
+            }
+
+            EnsureTableEdit();
+            ResetTableViewFade();
+            if (_boardEdit.IsEditing)
+            {
+                _boardEdit.EndTableEdit();
+            }
+
+            _run = run;
+            _session = null;
+            gameObject.SetActive(true);
+            CancelPresentationTasks();
+            _worldMode = WorldMode.TableCellTargeting;
+            _settling = false;
+            _serving = false;
+            SetFoodWorldElementsVisible(false);
+            HideWorldPanels();
+            ClearPlacedPieces();
+
+            _boardEdit.BeginCellTargeting(run);
+            _boardView?.SetCellHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
         }
 
         public void EndTableView()
         {
-            if (_worldMode == WorldMode.TableView)
+            ResetTableViewFade();
+            if (_worldMode == WorldMode.TableView || _worldMode == WorldMode.TableCellTargeting)
             {
                 _worldMode = WorldMode.Hidden;
             }
 
             _boardEdit?.EndTableView();
+        }
+
+        public void FadeTableViewIn(float duration, Action onComplete = null)
+        {
+            CancelTableViewFade();
+            _tableViewRendererBaseAlphas.Clear();
+            CaptureTableViewRenderers();
+            ApplyTableViewAlpha(0f);
+            FadeTableViewTo(1f, duration, onComplete, clearOnComplete: true);
+        }
+
+        public void FadeTableViewOut(float duration, Action onComplete = null)
+        {
+            CancelTableViewFade();
+            _tableViewRendererBaseAlphas.Clear();
+            CaptureTableViewRenderers();
+            FadeTableViewTo(0f, duration, onComplete, clearOnComplete: false);
+        }
+
+        public bool PlayActiveItemCellMaterialApplied(GridPos pos, string materialId, Action onComplete)
+        {
+            if (_worldMode == WorldMode.TableView || _worldMode == WorldMode.TableCellTargeting)
+            {
+                return _boardEdit != null && _boardEdit.ApplyCellMaterialVisual(pos, materialId, onComplete);
+            }
+
+            GpTable table = ActiveCellTargetTable();
+            if (table == null || !table.AddMaterialAt(pos, materialId))
+            {
+                return false;
+            }
+
+            if (_boardView != null && _boardView.TryGetCellView(pos, out DiningTableCellView cell) && cell != null)
+            {
+                cell.PlayMaterialTransform(() => _boardView?.Sync(), onComplete);
+                return true;
+            }
+
+            _boardView?.Sync();
+            onComplete?.Invoke();
+            return true;
         }
 
         public void SkipTableEditPack()
@@ -510,9 +618,30 @@ namespace GourmetProject.Game.Presentation.Battle
             RefreshAll();
         }
 
+        public void SetDishHoverCallbacks(Action<DishPieceView> entered, Action<DishPieceView> exited)
+        {
+            _dishHoverEntered = entered;
+            _dishHoverExited = exited;
+            foreach (DishPieceView piece in _placedPieces)
+            {
+                if (piece != null)
+                {
+                    piece.SetHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
+                }
+            }
+        }
+
+        public void SetCellHoverCallbacks(Action<DiningTableCellView> entered, Action<DiningTableCellView> exited)
+        {
+            _cellHoverEntered = entered;
+            _cellHoverExited = exited;
+            _boardView?.SetCellHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
+        }
+
         public void HideWorld()
         {
             CancelPresentationTasks();
+            ResetTableViewFade();
             if (_foodAdjust != null && _foodAdjust.IsActive)
             {
                 _foodAdjust.End();
@@ -540,6 +669,97 @@ namespace GourmetProject.Game.Presentation.Battle
             _session = null;
             ClearPlacedPieces();
             _doodle?.Clear();
+        }
+
+        private void FadeTableViewTo(float targetAlpha, float duration, Action onComplete, bool clearOnComplete)
+        {
+            targetAlpha = Mathf.Clamp01(targetAlpha);
+            if (_tableViewRendererBaseAlphas.Count == 0 || duration <= 0f)
+            {
+                ApplyTableViewAlpha(targetAlpha);
+                if (clearOnComplete)
+                {
+                    _tableViewRendererBaseAlphas.Clear();
+                }
+
+                onComplete?.Invoke();
+                return;
+            }
+
+            _tableViewFadeTween = DOVirtual.Float(
+                    _tableViewTransitionAlpha,
+                    targetAlpha,
+                    duration,
+                    ApplyTableViewAlpha)
+                .SetEase(Ease.OutQuad)
+                .SetUpdate(true)
+                .OnComplete(() =>
+                {
+                    _tableViewFadeTween = null;
+                    ApplyTableViewAlpha(targetAlpha);
+                    if (clearOnComplete)
+                    {
+                        _tableViewRendererBaseAlphas.Clear();
+                    }
+
+                    onComplete?.Invoke();
+                });
+        }
+
+        private void CaptureTableViewRenderers()
+        {
+            if (_boardView == null)
+            {
+                return;
+            }
+
+            float divisor = _tableViewTransitionAlpha > 0.001f ? _tableViewTransitionAlpha : 1f;
+            SpriteRenderer[] renderers = _boardView.GetComponentsInChildren<SpriteRenderer>(true);
+            foreach (SpriteRenderer renderer in renderers)
+            {
+                if (renderer == null)
+                {
+                    continue;
+                }
+
+                _tableViewRendererBaseAlphas[renderer] = Mathf.Clamp01(renderer.color.a / divisor);
+            }
+        }
+
+        private void ApplyTableViewAlpha(float alpha)
+        {
+            _tableViewTransitionAlpha = Mathf.Clamp01(alpha);
+            foreach (KeyValuePair<SpriteRenderer, float> kv in _tableViewRendererBaseAlphas)
+            {
+                SpriteRenderer renderer = kv.Key;
+                if (renderer == null)
+                {
+                    continue;
+                }
+
+                Color color = renderer.color;
+                color.a = kv.Value * _tableViewTransitionAlpha;
+                renderer.color = color;
+            }
+        }
+
+        private void ResetTableViewFade()
+        {
+            CancelTableViewFade();
+            ApplyTableViewAlpha(1f);
+            _tableViewRendererBaseAlphas.Clear();
+            _tableViewTransitionAlpha = 1f;
+        }
+
+        private void CancelTableViewFade()
+        {
+            if (_tableViewFadeTween == null)
+            {
+                return;
+            }
+
+            _tableViewFadeTween.Kill();
+            _tableViewFadeTween = null;
         }
 
         private void SetFoodWorldElementsVisible(bool visible)
@@ -760,6 +980,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _boardView.transform.position = _boardCenter;
 
             _boardView.Build(board, _cellSize, Gap, OnCellClicked, _boardCellPrefab);
+            _boardView.SetCellHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
 
             // DiningTableView.Build 只重建格子；PiecesRoot 仍挂回 BoardRoot，共用餐桌局部坐标系。
             Transform piecesRoot = EnsurePiecesRoot();
@@ -851,10 +1072,32 @@ namespace GourmetProject.Game.Presentation.Battle
             // 菜品挂在 BoardRoot 下，用局部坐标贴格（与餐桌共享局部帧）。
             piece.transform.localPosition = _boardView.Mapper.CellCenterLocal(dish.Placement.Origin);
             piece.BuildPlaced(dish, _spriteProvider.Get(dish.Def), _cellSize, _cellSize + Gap, _dishClicked);
+            piece.SetHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
             _placedPieces.Add(piece);
             _dishViewsById[dish.Id] = piece;
             return piece;
         }
+
+        private void OnDishHoverEntered(DishPieceView piece)
+        {
+            _dishHoverEntered?.Invoke(piece);
+        }
+
+        private void OnDishHoverExited(DishPieceView piece)
+        {
+            _dishHoverExited?.Invoke(piece);
+        }
+
+        private void OnCellHoverEntered(DiningTableCellView cell)
+        {
+            _cellHoverEntered?.Invoke(cell);
+        }
+
+        private void OnCellHoverExited(DiningTableCellView cell)
+        {
+            _cellHoverExited?.Invoke(cell);
+        }
+
         public string DoodleToggleLabel => _doodle != null && _doodle.IsVisible ? "隐藏涂鸦" : "显示涂鸦";
 
         /// <summary>每次进入战斗时清空笔迹，并把涂鸦层复位为可见。</summary>

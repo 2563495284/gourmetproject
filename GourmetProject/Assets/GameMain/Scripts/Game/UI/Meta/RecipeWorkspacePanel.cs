@@ -36,6 +36,7 @@ namespace GourmetProject.Game.UI.Meta
         [SerializeField] private Button _exitEditButton;
 
         private readonly List<GameObject> _spawned = new();
+        private readonly List<RecipeEditDishView> _spawnedDishes = new();
         private GameRun _run;
         private CancellationTokenSource _pendingRebuildCts;
         private Action _onExit;
@@ -91,6 +92,31 @@ namespace GourmetProject.Game.UI.Meta
             {
                 _stateMachine?.Refresh();
             }
+        }
+
+        public bool TryPointerRecipeDishTarget(Vector2 screenPoint, out ActiveTarget target)
+        {
+            target = default;
+            if (_run == null)
+            {
+                return false;
+            }
+
+            for (int i = _spawnedDishes.Count - 1; i >= 0; i--)
+            {
+                RecipeEditDishView dish = _spawnedDishes[i];
+                if (dish == null || !dish.ContainsScreenPoint(screenPoint))
+                {
+                    continue;
+                }
+
+                if (TryBuildRecipeTarget(dish, out target))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void EnsureWired()
@@ -167,6 +193,7 @@ namespace GourmetProject.Game.UI.Meta
                         state.EnableDishDrag,
                         state.CanClickDish ? OnRecipeDishClicked : null);
                     _spawned.Add(dish.gameObject);
+                    _spawnedDishes.Add(dish);
                 }
             }
 
@@ -264,6 +291,25 @@ namespace GourmetProject.Game.UI.Meta
         private void OnRecipeDishClicked(RecipeEditDishView dish)
         {
             _stateMachine?.Current?.OnDishClicked(this, dish);
+        }
+
+        private bool TryBuildRecipeTarget(RecipeEditDishView dish, out ActiveTarget target)
+        {
+            target = default;
+            if (_run == null || dish == null)
+            {
+                return false;
+            }
+
+            IReadOnlyList<RecipeBookSlot> entries = _run.GetRecipeBookEntries(dish.BookIndex);
+            if (dish.DishIndex < 0 || dish.DishIndex >= entries.Count)
+            {
+                return false;
+            }
+
+            RecipeBookSlot slot = entries[dish.DishIndex];
+            target = new ActiveTarget(slot.DishId, dish.BookIndex, dish.DishIndex, cfg.ItemTargetKind.RecipeDish);
+            return true;
         }
 
         private void ShowActiveItemCompare(ItemDefinition item, ActiveTarget target, Action onBack, Action onConfirm)
@@ -537,6 +583,7 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             _spawned.Clear();
+            _spawnedDishes.Clear();
         }
 
         private void ClearCompareOverlay()

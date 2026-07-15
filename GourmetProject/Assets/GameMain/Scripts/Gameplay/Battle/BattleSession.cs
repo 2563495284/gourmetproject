@@ -55,6 +55,8 @@ namespace GourmetProject.Gameplay.Battle
 
         public GpTable DiningTable { get; }
 
+        public GameplayDatabase Database => _db;
+
         public IReadOnlyList<RecipeSlot> Slots => _slots;
 
         public int RequiredScore { get; }

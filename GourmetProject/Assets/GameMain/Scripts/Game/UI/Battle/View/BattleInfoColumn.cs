@@ -66,7 +66,7 @@ namespace GourmetProject.Game.UI.Battle.View
             {
                 _foodAdjustText.text = active
                     ? FoodAdjustBackLabel
-                    : $"<size=28>食物调整</size>\n\n{count}";
+                    : $"<size=28>食物调整</size>\n{count}";
             }
         }
 
@@ -152,7 +152,7 @@ namespace GourmetProject.Game.UI.Battle.View
             {
                 _foodAdjustText.text = _foodAdjustActive
                     ? FoodAdjustBackLabel
-                    : $"<size=28>食物调整</size>\n\n{run.FoodAdjustCount}";
+                    : $"<size=28>食物调整</size>\n{run.FoodAdjustCount}";
             }
 
             if (_foodAdjustButton != null)

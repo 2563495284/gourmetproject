@@ -27,6 +27,19 @@ namespace GourmetProject.Game.UI.Meta
         public int BookIndex { get; private set; }
         public int DishIndex { get; private set; }
 
+        public bool ContainsScreenPoint(Vector2 screenPoint)
+        {
+            RectTransform rect = _rect != null ? _rect : transform as RectTransform;
+            if (rect == null)
+            {
+                return false;
+            }
+
+            Canvas canvas = GetComponentInParent<Canvas>();
+            Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
+            return RectTransformUtility.RectangleContainsScreenPoint(rect, screenPoint, cam);
+        }
+
         private void Awake()
         {
             _canvasGroup = GetComponent<CanvasGroup>();

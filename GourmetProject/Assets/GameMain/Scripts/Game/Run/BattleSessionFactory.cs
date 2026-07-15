@@ -125,7 +125,7 @@ namespace GourmetProject.Game.Run
                 fragment,
                 GetAcquiredFragments(run),
                 run.FragmentPlacements,
-                run.Database.GetFragment,
+                run.GetTableFragmentDef,
                 maxW,
                 maxH,
                 canvasW,
@@ -441,7 +441,7 @@ namespace GourmetProject.Game.Run
             var fragments = new List<TableFragmentDef>(run.TableFragmentIds.Count);
             foreach (string fragmentId in run.TableFragmentIds)
             {
-                TableFragmentDef fragment = run.Database.GetFragment(fragmentId);
+                TableFragmentDef fragment = run.GetTableFragmentDef(fragmentId);
                 if (fragment != null)
                 {
                     fragments.Add(fragment);

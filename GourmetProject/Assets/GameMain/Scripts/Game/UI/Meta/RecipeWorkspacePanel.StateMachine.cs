@@ -145,20 +145,12 @@ namespace GourmetProject.Game.UI.Meta
 
             public override void OnDishClicked(RecipeWorkspacePanel panel, RecipeEditDishView dish)
             {
-                if (panel._run == null || dish == null || _item == null)
+                if (_item == null || !panel.TryBuildRecipeTarget(dish, out ActiveTarget target))
                 {
                     return;
                 }
 
-                IReadOnlyList<RecipeBookSlot> entries = panel._run.GetRecipeBookEntries(dish.BookIndex);
-                if (dish.DishIndex < 0 || dish.DishIndex >= entries.Count)
-                {
-                    return;
-                }
-
-                RecipeBookSlot slot = entries[dish.DishIndex];
-                var target = new ActiveTarget(slot.DishId, dish.BookIndex, dish.DishIndex, cfg.ItemTargetKind.RecipeDish);
-                panel._stateMachine.Switch(new ActiveRecipeDishCompareState(this, _item, target, _onTargetConfirmed));
+                _onTargetConfirmed?.Invoke(target);
             }
         }
 
