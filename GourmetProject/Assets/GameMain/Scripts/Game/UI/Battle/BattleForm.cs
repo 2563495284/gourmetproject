@@ -2037,13 +2037,13 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnDishClicked(DishInstance inst)
         {
-            if (inst == null || _run == null)
-            {
-                return;
-            }
+            // if (inst == null || _run == null)
+            // {
+            //     return;
+            // }
 
-            var data = new DishDetailData(inst.Def, _run.Database, inst.SkillIds, inst.FlavorIds, inst.SkillSources, inst.TransferredSkills);
-            GameApp.UI.OpenUIForm(UIForms.DishDetail, UIForms.GroupDialog, data);
+            // var data = new DishDetailData(inst.Def, _run.Database, inst.SkillIds, inst.FlavorIds, inst.SkillSources, inst.TransferredSkills);
+            // GameApp.UI.OpenUIForm(UIForms.DishDetail, UIForms.GroupDialog, data);
         }
 
         private void OnActiveItemClicked(string itemId, RunItemSlotView slot)
