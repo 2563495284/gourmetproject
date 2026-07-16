@@ -36,7 +36,7 @@ namespace GourmetProject.Game.Meta
             MetaProgressSaveData progress = null)
         {
             int hidden = HiddenScoreService.PassiveItemHiddenScore(run, run?.LastActionContext);
-            return Roll(tables, run, kind, rng, count, hidden, distanceFloor: 5, progress);
+            return Roll(tables, run, kind, rng, count, hidden, distanceFloor: 5, requiredTag: cfg.ItemSpecialTag.None, progress);
         }
 
         public static List<string> Roll(
@@ -47,6 +47,7 @@ namespace GourmetProject.Game.Meta
             int count,
             int hidden,
             int distanceFloor,
+            cfg.ItemSpecialTag requiredTag = cfg.ItemSpecialTag.None,
             MetaProgressSaveData progress = null)
         {
             var result = new List<string>();
@@ -57,10 +58,10 @@ namespace GourmetProject.Game.Meta
 
             bool activeItem = kind == cfg.ItemKind.Active;
             progress ??= MetaProgressPersistence.Load();
-            List<ItemDefinition> candidates = BuildCandidates(tables, run, kind, hidden, strictHidden: !activeItem, progress);
+            List<ItemDefinition> candidates = BuildCandidates(tables, run, kind, hidden, strictHidden: !activeItem, requiredTag, progress);
             if (candidates.Count == 0 && !activeItem)
             {
-                candidates = BuildCandidates(tables, run, kind, hidden, strictHidden: false, progress);
+                candidates = BuildCandidates(tables, run, kind, hidden, strictHidden: false, requiredTag, progress);
             }
 
             for (int i = 0; i < count && candidates.Count > 0; i++)
@@ -108,12 +109,18 @@ namespace GourmetProject.Game.Meta
             cfg.ItemKind kind,
             int hidden,
             bool strictHidden,
+            cfg.ItemSpecialTag requiredTag,
             MetaProgressSaveData progress)
         {
             var candidates = new List<ItemDefinition>();
             foreach (ItemDefinition item in ItemDefinition.All(tables, kind))
             {
                 if (!CanEnterPool(run, item) || !MetaProgressService.IsItemUnlockedForPool(tables, item, progress))
+                {
+                    continue;
+                }
+
+                if (kind == cfg.ItemKind.Passive && !ItemTagFilter.MatchesFilter(item.SpecialTags, requiredTag))
                 {
                     continue;
                 }

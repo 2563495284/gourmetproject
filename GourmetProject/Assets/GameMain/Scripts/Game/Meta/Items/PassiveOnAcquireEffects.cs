@@ -17,8 +17,6 @@ namespace GourmetProject.Game.Meta
     public static class PassiveOnAcquireEffects
     {
         private const string Tag = "Item";
-        private const string NegativeTag = "Negative";
-
         private static IRandomStream Rng(string itemId)
         {
             // 需要随机的效果按 SeedDomains.Item 派生确定性流；未初始化随机系统（如 EditMode 单测）时为 null，逐效果兜底。
@@ -71,7 +69,7 @@ namespace GourmetProject.Game.Meta
             foreach (RunItemState state in run.Items)
             {
                 ItemDefinition def = ItemDefinition.Get(run.Tables, state.ItemId, cfg.ItemKind.Passive);
-                if (def != null && HasNegativeTag(def))
+                if (def != null && def.IsNegative)
                 {
                     negatives.Add(state.ItemId);
                 }
@@ -251,24 +249,6 @@ namespace GourmetProject.Game.Meta
 
             run.AddActionRerollCount(count);
             RunPersistence.Save(run);
-        }
-
-        private static bool HasNegativeTag(ItemDefinition item)
-        {
-            if (string.IsNullOrEmpty(item.SpecialTags))
-            {
-                return false;
-            }
-
-            foreach (string tag in item.SpecialTags.Split('|', ';', ','))
-            {
-                if (string.Equals(tag.Trim(), NegativeTag, System.StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         private static string BuildAcquireKey(GameRun run, string itemId)

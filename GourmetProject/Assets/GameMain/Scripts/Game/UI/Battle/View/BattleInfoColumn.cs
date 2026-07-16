@@ -134,10 +134,10 @@ namespace GourmetProject.Game.UI.Battle.View
 
             if (_scoreReqText != null)
             {
-                if (session != null)
+                bool showScore = session != null && (_battleScoreOverride.HasValue || !session.IsSettled);
+                if (showScore)
                 {
-                    int score = _battleScoreOverride
-                        ?? (session.IsSettled && session.LastResult != null ? session.LastResult.Total : 0);
+                    int score = _battleScoreOverride ?? 0;
                     _scoreReqText.text = $"<size=28>分数要求</size>\n\n{score}\n/\n{session.RequiredScore}";
                 }
                 else

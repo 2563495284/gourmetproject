@@ -628,21 +628,9 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            if (IsFragmentPack(choices))
+            if (ShouldShowChoicePackRow(choices, groupIndex))
             {
-                AddFragmentPackRow(groupName, choices, groupIndex);
-                return;
-            }
-
-            if (IsDishPack(choices))
-            {
-                AddDishPackRow(groupName, choices, groupIndex);
-                return;
-            }
-
-            if (IsItemChoicePack(choices, groupIndex) && _expandedChoicePackGroupIndex != groupIndex)
-            {
-                AddItemChoicePackRow(groupName, choices, groupIndex);
+                AddChoicePackRow(groupName, choices, groupIndex);
                 return;
             }
 
@@ -672,7 +660,7 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
-        private void AddItemChoicePackRow(
+        private void AddChoicePackRow(
             string groupName,
             IReadOnlyList<RewardChoice> choices,
             int groupIndex)
@@ -684,23 +672,35 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             RewardChoice firstChoice = FirstUnclaimedChoice(choices, groupIndex) ?? choices[0];
-            string itemName = ItemChoicePackName(choices);
+            string packName = ChoicePackName(choices);
             row.Bind(
-                $"{groupName}：{itemName}选择包",
-                BuildItemChoicePackDescription(choices, groupIndex, itemName),
+                $"{groupName}：{packName}选择包",
+                BuildChoicePackDescription(choices, groupIndex, packName),
                 LoadChoiceIcon(firstChoice),
                 false,
                 true,
                 false,
-                () => OpenItemChoicePack(groupIndex, choices));
+                () => OpenChoicePack(groupIndex, choices));
         }
 
-        private void OpenItemChoicePack(int groupIndex, IReadOnlyList<RewardChoice> choices)
+        private void OpenChoicePack(int groupIndex, IReadOnlyList<RewardChoice> choices)
         {
             RewardChoiceGroup group = GroupFor(groupIndex);
             if (group.RequiredChoiceCount >= group.Choices.Count)
             {
                 ClaimAllRemainingChoices(groupIndex, choices);
+                return;
+            }
+
+            if (IsDishPack(choices))
+            {
+                OpenDishPack(groupIndex, choices);
+                return;
+            }
+
+            if (IsFragmentPack(choices))
+            {
+                ClaimChoice(groupIndex, 0, choices);
                 return;
             }
 
@@ -742,50 +742,6 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             RefreshOffer();
-        }
-
-        private void AddFragmentPackRow(
-            string groupName,
-            IReadOnlyList<RewardChoice> choices,
-            int groupIndex)
-        {
-            RewardChoiceRowView row = CreateRewardRow();
-            if (row == null)
-            {
-                return;
-            }
-
-            int index = 0;
-            row.Bind(
-                $"{groupName}：碎片选择包",
-                BuildFragmentPackDescription(choices),
-                LoadChoiceIcon(choices[index]),
-                false,
-                true,
-                false,
-                () => ClaimChoice(groupIndex, index, choices));
-        }
-
-        private void AddDishPackRow(
-            string groupName,
-            IReadOnlyList<RewardChoice> choices,
-            int groupIndex)
-        {
-            RewardChoiceRowView row = CreateRewardRow();
-            if (row == null)
-            {
-                return;
-            }
-
-            int index = 0;
-            row.Bind(
-                $"{groupName}：菜品选择包",
-                $"点击后从 {choices.Count} 个菜品中选择 1 个放入菜谱。",
-                LoadChoiceIcon(choices[index]),
-                false,
-                true,
-                false,
-                () => ClaimChoice(groupIndex, index, choices));
         }
 
         private RewardChoiceRowView CreateRewardRow()
@@ -878,52 +834,42 @@ namespace GourmetProject.Game.UI.Meta
             return choices != null && choices.Count > 0 && choices[0]?.Kind == cfg.RewardKind.DishChoice;
         }
 
-        private bool IsItemChoicePack(IReadOnlyList<RewardChoice> choices, int groupIndex)
+        private bool ShouldShowChoicePackRow(IReadOnlyList<RewardChoice> choices, int groupIndex)
         {
-            if (choices == null || choices.Count == 0)
+            if (choices == null || choices.Count <= 1)
             {
                 return false;
             }
 
-            RewardChoiceGroup group = GroupFor(groupIndex);
-            if (group.RequiredChoiceCount <= 1)
+            if (IsDishPack(choices) || IsFragmentPack(choices))
             {
-                return false;
+                return true;
             }
 
-            if (choices[0] == null)
-            {
-                return false;
-            }
-
-            cfg.RewardKind kind = choices[0].Kind;
-            if (kind != cfg.RewardKind.ActiveItemGrant && kind != cfg.RewardKind.PassiveItemChoice)
-            {
-                return false;
-            }
-
-            for (int i = 1; i < choices.Count; i++)
-            {
-                if (choices[i]?.Kind != kind)
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return _expandedChoicePackGroupIndex != groupIndex;
         }
 
-        private string BuildItemChoicePackDescription(IReadOnlyList<RewardChoice> choices, int groupIndex, string itemName)
+        private string BuildChoicePackDescription(IReadOnlyList<RewardChoice> choices, int groupIndex, string packName)
         {
             RewardChoiceGroup group = GroupFor(groupIndex);
             int required = group.RequiredChoiceCount;
             int claimed = group.ClaimedIndices.Count;
             if (required >= choices.Count)
             {
-                return $"点击后获得这 {choices.Count} 个{itemName}。";
+                return $"点击后获得这 {choices.Count} 个{packName}。";
             }
 
-            return $"点击后从 {choices.Count} 个{itemName}中选择 {required} 个。（已选 {claimed}/{required}）";
+            if (IsDishPack(choices))
+            {
+                return $"点击后从 {choices.Count} 个菜品中选择 {required} 个放入菜谱。（已选 {claimed}/{required}）";
+            }
+
+            if (IsFragmentPack(choices))
+            {
+                return $"点击后从 {choices.Count} 个餐桌碎片中选择 {required} 个拼贴。（已选 {claimed}/{required}）";
+            }
+
+            return $"点击后从 {choices.Count} 个{packName}中选择 {required} 个。（已选 {claimed}/{required}）";
         }
 
         private RewardChoice FirstUnclaimedChoice(IReadOnlyList<RewardChoice> choices, int groupIndex)
@@ -944,37 +890,33 @@ namespace GourmetProject.Game.UI.Meta
             return null;
         }
 
-        private static string ItemChoicePackName(IReadOnlyList<RewardChoice> choices)
+        private static string ChoicePackName(IReadOnlyList<RewardChoice> choices)
         {
             if (choices == null || choices.Count == 0)
             {
-                return "道具";
+                return "奖励";
             }
 
             if (choices[0] == null)
             {
-                return "道具";
+                return "奖励";
             }
 
             switch (choices[0].Kind)
             {
+                case cfg.RewardKind.Gold:
+                    return "金币";
+                case cfg.RewardKind.DishChoice:
+                    return "菜品";
+                case cfg.RewardKind.FragmentChoice:
+                    return "碎片";
                 case cfg.RewardKind.ActiveItemGrant:
                     return "主动道具";
                 case cfg.RewardKind.PassiveItemChoice:
                     return "被动道具";
                 default:
-                    return "道具";
+                    return "奖励";
             }
-        }
-
-        private static string BuildFragmentPackDescription(IReadOnlyList<RewardChoice> choices)
-        {
-            if (choices == null || choices.Count == 0)
-            {
-                return "点击后进入餐桌编辑。";
-            }
-
-            return $"点击后进入餐桌编辑，从 {choices.Count} 个餐桌碎片中选择 1 个拼贴。";
         }
 
         private Sprite LoadChoiceIcon(RewardChoice choice)

@@ -162,21 +162,16 @@ namespace GourmetProject.Game.Meta
             }
 
             bool activeItem = kind == cfg.ItemKind.Active;
-            List<ItemDefinition> candidates = BuildItemCandidates(context, pool, kind, hidden, strictHidden: !activeItem, strictTags: true, strictQuality: true);
+            List<ItemDefinition> candidates = BuildItemCandidates(context, pool, kind, hidden, strictHidden: !activeItem, strictQuality: true);
             if (candidates.Count == 0 && pool.AllowFallback)
             {
-                candidates = BuildItemCandidates(context, pool, kind, hidden, strictHidden: false, strictTags: true, strictQuality: true);
-            }
-
-            if (candidates.Count == 0 && pool.AllowFallback)
-            {
-                candidates = BuildItemCandidates(context, pool, kind, hidden, strictHidden: false, strictTags: false, strictQuality: true);
+                candidates = BuildItemCandidates(context, pool, kind, hidden, strictHidden: false, strictQuality: true);
             }
 
             // 品质下限兜底：如传奇缺失时回退到较低品质，避免「奖励池为空」。
             if (candidates.Count == 0 && pool.AllowFallback && pool.MinQuality > 0)
             {
-                candidates = BuildItemCandidates(context, pool, kind, hidden, strictHidden: false, strictTags: false, strictQuality: false);
+                candidates = BuildItemCandidates(context, pool, kind, hidden, strictHidden: false, strictQuality: false);
             }
 
             for (int i = 0; i < count && candidates.Count > 0; i++)
@@ -259,7 +254,6 @@ namespace GourmetProject.Game.Meta
             cfg.ItemKind kind,
             int hidden,
             bool strictHidden,
-            bool strictTags,
             bool strictQuality)
         {
             var candidates = new List<ItemDefinition>();
@@ -277,7 +271,7 @@ namespace GourmetProject.Game.Meta
                     continue;
                 }
 
-                if (strictTags && !MatchesAnyTag(item.SpecialTags, pool.SpecialTags))
+                if (kind == cfg.ItemKind.Passive && item.IsNegative)
                 {
                     continue;
                 }
@@ -416,40 +410,6 @@ namespace GourmetProject.Game.Meta
             }
 
             return (item.HiddenRange.Min + item.HiddenRange.Max) * 0.5f;
-        }
-
-        private static bool MatchesAnyTag(string itemTags, string requiredTags)
-        {
-            if (string.IsNullOrEmpty(requiredTags))
-            {
-                return true;
-            }
-
-            if (string.IsNullOrEmpty(itemTags))
-            {
-                return false;
-            }
-
-            string[] required = requiredTags.Split('|');
-            for (int i = 0; i < required.Length; i++)
-            {
-                string tag = required[i].Trim();
-                if (tag.Length == 0)
-                {
-                    continue;
-                }
-
-                string[] actual = itemTags.Split('|');
-                for (int j = 0; j < actual.Length; j++)
-                {
-                    if (string.Equals(actual[j].Trim(), tag, StringComparison.Ordinal))
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
         }
 
         private static int RollGoldRewardAmount(RewardContext context, cfg.RewardSlot slot)

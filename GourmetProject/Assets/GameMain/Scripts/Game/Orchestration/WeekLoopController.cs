@@ -325,24 +325,10 @@ namespace GourmetProject.Game.Orchestration
                 return false;
             }
 
-            cfg.GameAction action = TimelineService.NodeAction(_run, node);
-            _run.MarkNodeTriggered(node.Id);
-            if (action == null)
-            {
-                RunPersistence.Save(_run);
-                return true;
-            }
-
-            if (_run.HasItem("item_skip_node") && IsSkippableBySkipNode(action))
-            {
-                _run.RemoveItem("item_skip_node");
-                RunPersistence.Save(_run);
-                _view.ShowTimelineNodeSkipped(node, ProcessNextNode);
-                return true;
-            }
-
-            // 单节点即时执行：不设 _pendingNodes 队列，ExecutePlacedAction 完成后 ProcessNextNode 空跑收尾。
-            _view.ShowTimelineNodeCard(node, InterestMaxGain(), () => ExecutePlacedAction(node, action));
+            _pendingNodes = new Queue<cfg.TimelineNode>();
+            _pendingNodes.Enqueue(node);
+            _afterNodes = PromptNextAction;
+            ProcessNextNode();
             return true;
         }
 

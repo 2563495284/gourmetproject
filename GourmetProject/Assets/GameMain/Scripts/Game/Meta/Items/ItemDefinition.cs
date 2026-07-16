@@ -70,7 +70,7 @@ namespace GourmetProject.Game.Meta
 
         public cfg.ItemQuality Quality { get; }
 
-        public string SpecialTags { get; }
+        public cfg.ItemSpecialTag SpecialTags { get; }
 
         /// <summary>道具关联的专有名词 id（已去重）；来源为配置 termId 列（| 分隔）。供 tips 展示名词解释。</summary>
         public IReadOnlyList<string> TermIds { get; }
@@ -102,6 +102,10 @@ namespace GourmetProject.Game.Meta
         public bool IsPassive => Kind == cfg.ItemKind.Passive;
 
         public bool IsActive => Kind == cfg.ItemKind.Active;
+
+        public bool IsNegative => ItemTagFilter.IsNegative(SpecialTags);
+
+        public bool HasSpecialTag(cfg.ItemSpecialTag tag) => ItemTagFilter.HasTag(SpecialTags, tag);
 
         public float HiddenScoreOffset(HiddenScorePurpose purpose)
         {
