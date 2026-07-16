@@ -390,18 +390,47 @@ namespace GourmetProject.Gameplay.Scoring
                 dishes = dishes.Where(d => HasSkillOfType(ctx.Db, d, filterType)).ToList();
             }
 
+            dishes = dishes
+                .OrderBy(BoardTop)
+                .ThenBy(BoardLeft)
+                .ThenBy(d => d.Id)
+                .ToList();
+
             if (_rule.ActionCount > 0 && dishes.Count > _rule.ActionCount)
             {
-                // 无随机流时以餐桌顺序取前 N，保证确定性可复现。
-                dishes = dishes
-                    .OrderBy(d => d.Placement.Origin.Y)
-                    .ThenBy(d => d.Placement.Origin.X)
-                    .ThenBy(d => d.Id)
-                    .Take(_rule.ActionCount)
-                    .ToList();
+                // 无随机流时以棋盘阅读顺序取前 N，保证确定性可复现。
+                dishes = dishes.Take(_rule.ActionCount).ToList();
             }
 
             return dishes;
+        }
+
+        private static int BoardTop(DishInstance dish)
+        {
+            int top = int.MaxValue;
+            foreach (GridPos cell in dish.OccupiedCells)
+            {
+                if (cell.Y < top)
+                {
+                    top = cell.Y;
+                }
+            }
+
+            return top == int.MaxValue ? dish.Placement.Origin.Y : top;
+        }
+
+        private static int BoardLeft(DishInstance dish)
+        {
+            int left = int.MaxValue;
+            foreach (GridPos cell in dish.OccupiedCells)
+            {
+                if (cell.X < left)
+                {
+                    left = cell.X;
+                }
+            }
+
+            return left == int.MaxValue ? dish.Placement.Origin.X : left;
         }
 
         private static string ParseSkillTypeParam(IReadOnlyList<string> actionParams)
