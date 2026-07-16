@@ -6,7 +6,7 @@
     "eventType": 0,
     "preconditions": "",
     "weight": 1,
-    "repeatable": false,
+    "repeatable": true,
     "bgSprite": ""
   },
   {
@@ -16,7 +16,7 @@
     "eventType": 2,
     "preconditions": "",
     "weight": 1,
-    "repeatable": false,
+    "repeatable": true,
     "bgSprite": ""
   },
   {
@@ -26,7 +26,7 @@
     "eventType": 2,
     "preconditions": "",
     "weight": 1,
-    "repeatable": false,
+    "repeatable": true,
     "bgSprite": ""
   },
   {
@@ -36,7 +36,7 @@
     "eventType": 0,
     "preconditions": "",
     "weight": 1,
-    "repeatable": false,
+    "repeatable": true,
     "bgSprite": ""
   },
   {
@@ -46,7 +46,7 @@
     "eventType": 0,
     "preconditions": "",
     "weight": 1,
-    "repeatable": false,
+    "repeatable": true,
     "bgSprite": ""
   },
   {
@@ -56,7 +56,7 @@
     "eventType": 0,
     "preconditions": "",
     "weight": 1,
-    "repeatable": false,
+    "repeatable": true,
     "bgSprite": ""
   },
   {
@@ -66,7 +66,7 @@
     "eventType": 0,
     "preconditions": "",
     "weight": 1,
-    "repeatable": false,
+    "repeatable": true,
     "bgSprite": ""
   },
   {
@@ -76,7 +76,7 @@
     "eventType": 0,
     "preconditions": "",
     "weight": 1,
-    "repeatable": true,
+    "repeatable": false,
     "bgSprite": ""
   },
   {
