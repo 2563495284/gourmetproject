@@ -43,7 +43,7 @@ public sealed partial class EventOption : Luban.BeanBase
     /// </summary>
     public readonly string EventId;
     /// <summary>
-    /// 父选项ID→event_option.id(空=根页选项)
+    /// 父选项ID→event_option.id
     /// </summary>
     public readonly string ParentId;
     /// <summary>
@@ -59,15 +59,15 @@ public sealed partial class EventOption : Luban.BeanBase
     /// </summary>
     public readonly string Condition;
     /// <summary>
-    /// 效果类型列表(多效果多行,续行前导列留空)
+    /// 效果类型列表
     /// </summary>
     public readonly System.Collections.Generic.List<EffectType> EffectTypes;
     /// <summary>
-    /// 效果数值列表(与类型逐行对齐)
+    /// 效果数值列表
     /// </summary>
     public readonly System.Collections.Generic.List<float> EffectValues;
     /// <summary>
-    /// 效果参数列表(与类型逐行对齐,可空)
+    /// 效果参数列表
     /// </summary>
     public readonly System.Collections.Generic.List<string> EffectParams;
     /// <summary>

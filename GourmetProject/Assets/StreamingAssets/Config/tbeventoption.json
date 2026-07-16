@@ -5,17 +5,14 @@
     "parentId": "",
     "text": "试吃样品",
     "resultText": "摊主把新调的风味塞进你的菜谱。",
-    "condition": "minGold:20",
+    "condition": "",
     "effectTypes": [
-      1,
       14
     ],
     "effectValues": [
-      -20,
       1
     ],
     "effectParams": [
-      "-",
       "-"
     ],
     "repeatSelf": false
@@ -26,17 +23,14 @@
     "parentId": "",
     "text": "帮摊主整理菜单",
     "resultText": "选择一道菜品后，摊主会帮你把它从菜谱中删去。",
-    "condition": "minGold:20|hasRecipeDish",
+    "condition": "hasRecipeDish",
     "effectTypes": [
-      1,
       28
     ],
     "effectValues": [
-      -20,
       1
     ],
     "effectParams": [
-      "-",
       "-"
     ],
     "repeatSelf": false
@@ -171,7 +165,7 @@
     "id": "opt_statue_gold",
     "eventId": "ev_kitchen_god_statue",
     "parentId": "",
-    "text": "供奉金币",
+    "text": "供奉30金币",
     "resultText": "神像前的贡盘轻轻一震。",
     "condition": "minGold:30",
     "effectTypes": [
@@ -244,7 +238,7 @@
       11
     ],
     "effectValues": [
-      5
+      3
     ],
     "effectParams": [
       "Dish"
@@ -262,7 +256,7 @@
       11
     ],
     "effectValues": [
-      5
+      3
     ],
     "effectParams": [
       "PassiveItem"
@@ -360,11 +354,11 @@
     ],
     "effectValues": [
       0,
-      -10
+      -5
     ],
     "effectParams": [
       "passive_choice_1",
-      "Reward"
+      "PassiveItem"
     ],
     "repeatSelf": false
   },
@@ -381,11 +375,11 @@
     ],
     "effectValues": [
       3,
-      -10
+      -5
     ],
     "effectParams": [
       "fragment_choice_3",
-      "Reward"
+      "Fragment"
     ],
     "repeatSelf": false
   },
@@ -499,7 +493,7 @@
     "eventId": "ev_wishing_casserole_ii",
     "parentId": "",
     "text": "献上一切金币",
-    "resultText": "所有金币沉入锅底，砂锅吐出一件传说级贡品。",
+    "resultText": "所有金币沉入锅底，砂锅吐出一件珍贵道具。",
     "condition": "minGold:1",
     "effectTypes": [
       24,
