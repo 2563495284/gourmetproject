@@ -40,8 +40,8 @@ namespace GourmetProject.Game.Meta
             Id = active.Id;
             Name = active.Name;
             Desc = active.Desc;
-            Quality = active.Quality;
-            SpecialTags = active.SpecialTags;
+            Quality = cfg.ItemQuality.Common;
+            SpecialTags = cfg.ItemSpecialTag.None;
             TermIds = SplitTermIds(active.TermId);
             EffectType = active.EffectType;
             EffectValue = active.EffectValue;
