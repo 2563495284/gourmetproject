@@ -20,8 +20,7 @@ public sealed partial class ActiveItem : Luban.BeanBase
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
         { if(!_buf["name"].IsString) { throw new SerializationException(); }  Name = _buf["name"]; }
         { if(!_buf["desc"].IsString) { throw new SerializationException(); }  Desc = _buf["desc"]; }
-        { if(!_buf["quality"].IsNumber) { throw new SerializationException(); }  Quality = (ItemQuality)_buf["quality"].AsInt; }
-        { if(!_buf["specialTags"].IsNumber) { throw new SerializationException(); }  SpecialTags = (ItemSpecialTag)_buf["specialTags"].AsInt; }
+        { if(!_buf["specialTags"].IsString) { throw new SerializationException(); }  SpecialTags = _buf["specialTags"]; }
         { if(!_buf["effectType"].IsString) { throw new SerializationException(); }  EffectType = _buf["effectType"]; }
         { if(!_buf["effectValue"].IsNumber) { throw new SerializationException(); }  EffectValue = _buf["effectValue"]; }
         { if(!_buf["effectParam"].IsString) { throw new SerializationException(); }  EffectParam = _buf["effectParam"]; }
@@ -49,13 +48,9 @@ public sealed partial class ActiveItem : Luban.BeanBase
     /// </summary>
     public readonly string Desc;
     /// <summary>
-    /// 道具品质
-    /// </summary>
-    public readonly ItemQuality Quality;
-    /// <summary>
     /// 特殊标签标记
     /// </summary>
-    public readonly ItemSpecialTag SpecialTags;
+    public readonly string SpecialTags;
     /// <summary>
     /// 效果类型
     /// </summary>
@@ -98,7 +93,6 @@ public sealed partial class ActiveItem : Luban.BeanBase
         + "id:" + Id + ","
         + "name:" + Name + ","
         + "desc:" + Desc + ","
-        + "quality:" + Quality + ","
         + "specialTags:" + SpecialTags + ","
         + "effectType:" + EffectType + ","
         + "effectValue:" + EffectValue + ","

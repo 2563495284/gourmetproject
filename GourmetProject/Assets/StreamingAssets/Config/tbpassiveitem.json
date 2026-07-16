@@ -4,17 +4,18 @@
     "name": "随机被动包",
     "desc": "随机获得2个被动道具",
     "quality": 1,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 2,
-    "effectParam": "passive_grant_2",
-    "baseWeight": 1,
+    "effectParam": "",
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 0,
-      "max": 0
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -23,18 +24,19 @@
     "id": "item_choose_one_passive",
     "name": "被动三选一",
     "desc": "从3个被动道具中选择1个获得",
-    "quality": 1,
-    "specialTags": 0,
+    "quality": 0,
+    "specialTags": "",
     "effectValue": 3,
-    "effectParam": "passive_choice_3",
-    "baseWeight": 1,
+    "effectParam": "",
+    "baseWeight": 300,
     "hiddenRange": {
-      "min": 0,
-      "max": 0
+      "min": 10,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -43,18 +45,19 @@
     "id": "item_grant_two_active",
     "name": "随机主动包",
     "desc": "随机获得2个主动道具",
-    "quality": 1,
-    "specialTags": 0,
+    "quality": 0,
+    "specialTags": "",
     "effectValue": 2,
-    "effectParam": "active_grant_2",
-    "baseWeight": 1,
+    "effectParam": "",
+    "baseWeight": 300,
     "hiddenRange": {
-      "min": 0,
-      "max": 0
+      "min": 10,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -63,18 +66,19 @@
     "id": "item_choose_one_active",
     "name": "主动三选一",
     "desc": "从3个主动道具中选择1个获得",
-    "quality": 1,
-    "specialTags": 0,
+    "quality": 0,
+    "specialTags": "",
     "effectValue": 3,
-    "effectParam": "active_choice_3",
-    "baseWeight": 1,
+    "effectParam": "",
+    "baseWeight": 300,
     "hiddenRange": {
-      "min": 0,
-      "max": 0
+      "min": 10,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -84,17 +88,18 @@
     "name": "食物三选一",
     "desc": "从3个食物中选择1个获得",
     "quality": 0,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 3,
-    "effectParam": "dish_choice_3",
-    "baseWeight": 1,
+    "effectParam": "",
+    "baseWeight": 300,
     "hiddenRange": {
-      "min": 0,
-      "max": 0
+      "min": 10,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -103,18 +108,19 @@
     "id": "item_choose_one_fragment",
     "name": "碎片三选一",
     "desc": "从3个餐桌格子中选择1个获得",
-    "quality": 1,
-    "specialTags": 0,
+    "quality": 0,
+    "specialTags": "",
     "effectValue": 3,
-    "effectParam": "fragment_choice_3",
-    "baseWeight": 1,
+    "effectParam": "",
+    "baseWeight": 300,
     "hiddenRange": {
-      "min": 0,
-      "max": 0
+      "min": 10,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -123,18 +129,19 @@
     "id": "item_grant_recipe",
     "name": "菜谱券",
     "desc": "获得1个菜谱",
-    "quality": 1,
-    "specialTags": 0,
+    "quality": 0,
+    "specialTags": "",
     "effectValue": 1,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 300,
     "hiddenRange": {
-      "min": 0,
-      "max": 0
+      "min": 10,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -144,17 +151,18 @@
     "name": "全家福",
     "desc": "获得1个被动道具、食物和50金币",
     "quality": 2,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 50,
-    "effectParam": "passive_choice_1|dish_grant_1",
-    "baseWeight": 1,
+    "effectParam": "",
+    "baseWeight": 30,
     "hiddenRange": {
-      "min": 0,
-      "max": 0
+      "min": 30,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -164,17 +172,18 @@
     "name": "混沌重置",
     "desc": "所有道具替换为随机道具",
     "quality": 2,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 0,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 30,
     "hiddenRange": {
-      "min": 0,
-      "max": 0
+      "min": 30,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -182,19 +191,20 @@
   {
     "id": "item_gold_random",
     "name": "随机金币",
-    "desc": "获得 1~100金币",
+    "desc": "获得 50~150金币",
     "quality": 0,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 0,
-    "effectParam": "range:1,100",
-    "baseWeight": 1,
+    "effectParam": "range:50,150",
+    "baseWeight": 300,
     "hiddenRange": {
-      "min": 0,
-      "max": 0
+      "min": 10,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -202,19 +212,20 @@
   {
     "id": "item_gold_meal_bonus",
     "name": "美食分红",
-    "desc": "接下来10局美食\n额外获得15金币",
-    "quality": 1,
-    "specialTags": 0,
-    "effectValue": 15,
+    "desc": "接下来10局美食\n额外获得20金币",
+    "quality": 0,
+    "specialTags": "",
+    "effectValue": 20,
     "effectParam": "meals:10",
-    "baseWeight": 1,
+    "baseWeight": 300,
     "hiddenRange": {
-      "min": 5,
-      "max": 45
+      "min": 10,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -223,18 +234,19 @@
     "id": "item_gold_boss",
     "name": "Boss赏金",
     "desc": "下次盛宴\n额外+100金币",
-    "quality": 1,
-    "specialTags": 0,
+    "quality": 0,
+    "specialTags": "",
     "effectValue": 100,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 300,
     "hiddenRange": {
-      "min": 5,
-      "max": 45
+      "min": 10,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -243,18 +255,19 @@
     "id": "item_gold_percent",
     "name": "利润提成",
     "desc": "美食结束获得的金币\n额外+20%",
-    "quality": 2,
-    "specialTags": 0,
+    "quality": 1,
+    "specialTags": "",
     "effectValue": 0.2,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
       "min": 20,
-      "max": 65
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -262,19 +275,20 @@
   {
     "id": "item_discount_food",
     "name": "食材优惠券",
-    "desc": "食物价格-20%",
-    "quality": 0,
-    "specialTags": 0,
+    "desc": "食物价格-15%",
+    "quality": 1,
+    "specialTags": "",
     "effectValue": 0.2,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 1,
-      "max": 30
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -282,19 +296,20 @@
   {
     "id": "item_discount_fragment",
     "name": "碎片优惠券",
-    "desc": "餐桌格子价格-20%",
+    "desc": "餐桌格子包价格-20%",
     "quality": 0,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 0.2,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 300,
     "hiddenRange": {
-      "min": 1,
-      "max": 30
+      "min": 10,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -302,19 +317,20 @@
   {
     "id": "item_discount_active",
     "name": "主动道具券",
-    "desc": "主动道具价格-20%",
-    "quality": 0,
-    "specialTags": 0,
+    "desc": "主动道具价格-15%",
+    "quality": 1,
+    "specialTags": "",
     "effectValue": 0.2,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 1,
-      "max": 30
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -322,19 +338,20 @@
   {
     "id": "item_discount_passive",
     "name": "被动道具券",
-    "desc": "被动道具价格-20%",
-    "quality": 0,
-    "specialTags": 0,
+    "desc": "被动道具价格-15%",
+    "quality": 1,
+    "specialTags": "",
     "effectValue": 0.2,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 1,
-      "max": 30
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -342,19 +359,20 @@
   {
     "id": "item_discount_remove",
     "name": "删牌优惠",
-    "desc": "删牌价格-20%",
+    "desc": "删牌价格-30%",
     "quality": 0,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 0.2,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 300,
     "hiddenRange": {
-      "min": 1,
-      "max": 30
+      "min": 10,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -363,18 +381,19 @@
     "id": "item_remove_fixed_30",
     "name": "固定删牌价",
     "desc": "删牌价格固定为30金币",
-    "quality": 1,
-    "specialTags": 0,
+    "quality": 2,
+    "specialTags": "",
     "effectValue": 30,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 30,
     "hiddenRange": {
-      "min": 5,
-      "max": 45
+      "min": 30,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -382,19 +401,20 @@
   {
     "id": "item_discount_recipe",
     "name": "菜谱优惠",
-    "desc": "购买菜谱-20%",
+    "desc": "购买菜谱价格-20%",
     "quality": 0,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 0.2,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 300,
     "hiddenRange": {
-      "min": 1,
-      "max": 30
+      "min": 10,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -404,17 +424,18 @@
     "name": "名刀",
     "desc": "分数未达标时不失败\n但会失去此道具",
     "quality": 2,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 0,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 30,
     "hiddenRange": {
-      "min": 20,
-      "max": 65
+      "min": 30,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -423,18 +444,19 @@
     "id": "item_score_to_one",
     "name": "免检通行证",
     "desc": "接下来3局非盛宴美食\n分数要求为1",
-    "quality": 2,
-    "specialTags": 0,
+    "quality": 0,
+    "specialTags": "",
     "effectValue": 0,
     "effectParam": "meals:3",
-    "baseWeight": 1,
+    "baseWeight": 300,
     "hiddenRange": {
-      "min": 0,
-      "max": 0
+      "min": 10,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -442,19 +464,20 @@
   {
     "id": "item_req_normal_down",
     "name": "家常减负",
-    "desc": "普通美食要求分数-10%",
-    "quality": 1,
-    "specialTags": 0,
+    "desc": "普通美食要求分数-15%",
+    "quality": 0,
+    "specialTags": "",
     "effectValue": -0.1,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 300,
     "hiddenRange": {
-      "min": 5,
-      "max": 45
+      "min": 10,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -462,19 +485,20 @@
   {
     "id": "item_req_super_down",
     "name": "超级减负",
-    "desc": "超级美食要求分数-10%",
+    "desc": "超级美食要求分数-15%",
     "quality": 1,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": -0.1,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 5,
-      "max": 45
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -483,18 +507,19 @@
     "id": "item_req_feast_down",
     "name": "盛宴减负",
     "desc": "盛宴美食要求分数-10%",
-    "quality": 1,
-    "specialTags": 0,
+    "quality": 2,
+    "specialTags": "",
     "effectValue": -0.1,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 30,
     "hiddenRange": {
-      "min": 5,
-      "max": 45
+      "min": 30,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -502,19 +527,20 @@
   {
     "id": "item_count_le_mult",
     "name": "精致料理",
-    "desc": "结算时食物数量<=10\n所有美食倍率×1.1",
+    "desc": "结算时食物数量<=10\n所有美食倍率×1.2",
     "quality": 1,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 1.1,
     "effectParam": "lte:10",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 5,
-      "max": 45
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -522,19 +548,20 @@
   {
     "id": "item_count_ge_mult",
     "name": "丰盛大餐",
-    "desc": "结算时食物数量>=10\n所有美食倍率×1.1",
-    "quality": 1,
-    "specialTags": 0,
+    "desc": "结算时食物数量>=10\n所有美食倍率×1.2",
+    "quality": 2,
+    "specialTags": "",
     "effectValue": 1.1,
     "effectParam": "gte:10",
-    "baseWeight": 1,
+    "baseWeight": 30,
     "hiddenRange": {
-      "min": 5,
-      "max": 45
+      "min": 30,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -542,19 +569,20 @@
   {
     "id": "item_per_dish_mult",
     "name": "流水席",
-    "desc": "结算时每结算1个食物\n所有食物倍率+0.1",
-    "quality": 2,
-    "specialTags": 0,
+    "desc": "结算时每结算1个食物\n所有食物倍率+0.2",
+    "quality": 1,
+    "specialTags": "",
     "effectValue": 0.1,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
       "min": 20,
-      "max": 65
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -562,39 +590,20 @@
   {
     "id": "item_perma_flat_all",
     "name": "增鲜剂",
-    "desc": "所有食物分数永久+10",
-    "quality": 2,
-    "specialTags": 0,
+    "desc": "所有食物分数永久+20",
+    "quality": 1,
+    "specialTags": "",
     "effectValue": 10,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
       "min": 20,
-      "max": 65
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
-    "fragmentHiddenOffset": 0,
-    "goldHiddenOffset": 0,
-    "termId": ""
-  },
-  {
-    "id": "item_perma_mult_all",
-    "name": "浓缩精华",
-    "desc": "所有食物倍率永久+0.2",
-    "quality": 2,
-    "specialTags": 0,
-    "effectValue": 0.2,
-    "effectParam": "",
-    "baseWeight": 1,
-    "hiddenRange": {
-      "min": 20,
-      "max": 65
-    },
-    "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -604,17 +613,18 @@
     "name": "观星仪",
     "desc": "每5次上菜后\n下次上菜可预见食物",
     "quality": 1,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 0,
     "effectParam": "every:5",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 5,
-      "max": 45
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -622,19 +632,20 @@
   {
     "id": "item_stargaze_first3",
     "name": "开局观星",
-    "desc": "每局前3次上菜可预见食物",
+    "desc": "每局前3次上菜\n可预见食物",
     "quality": 1,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 0,
     "effectParam": "first:3",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 5,
-      "max": 45
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -644,17 +655,18 @@
     "name": "免费调整",
     "desc": "每局第1次上菜后\n可不消耗修正次数移动",
     "quality": 1,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 0,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 5,
-      "max": 45
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -663,18 +675,19 @@
     "id": "item_adjust_plus1",
     "name": "熟练的手",
     "desc": "调整次数+1",
-    "quality": 0,
-    "specialTags": 0,
+    "quality": 1,
+    "specialTags": "",
     "effectValue": 1,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 1,
-      "max": 30
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -682,19 +695,20 @@
   {
     "id": "item_adjust_to_mult",
     "name": "节俭加成",
-    "desc": "每1个未使用的调整次数\n使所有食物倍率+0.2",
+    "desc": "每1个未使用的调整次数\n使所有食物倍率+0.1",
     "quality": 2,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 0.2,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 30,
     "hiddenRange": {
-      "min": 20,
-      "max": 65
+      "min": 30,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -704,17 +718,18 @@
     "name": "点石成金",
     "desc": "将5个随机食物\n变为至少同品质的食物",
     "quality": 2,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 5,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 30,
     "hiddenRange": {
-      "min": 0,
-      "max": 0
+      "min": 30,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -724,17 +739,18 @@
     "name": "变卖技巧",
     "desc": "每个未使用的调整次数\n获得5金币",
     "quality": 1,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 5,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 5,
-      "max": 45
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -744,17 +760,18 @@
     "name": "商会返利",
     "desc": "进入商店时\n获得10金币",
     "quality": 1,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 10,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 5,
-      "max": 45
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -762,39 +779,20 @@
   {
     "id": "item_extra_interest",
     "name": "复利账户",
-    "desc": "每周结束时\n额外执行一次利息结算",
-    "quality": 2,
-    "specialTags": 0,
+    "desc": "每周结束时\n额外执行1次利息结算",
+    "quality": 1,
+    "specialTags": "",
     "effectValue": 1,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
       "min": 20,
-      "max": 65
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
-    "fragmentHiddenOffset": 0,
-    "goldHiddenOffset": 0,
-    "termId": ""
-  },
-  {
-    "id": "item_min_gold",
-    "name": "保底基金",
-    "desc": "美食结束金币<10时\n补足到10金币",
-    "quality": 1,
-    "specialTags": 0,
-    "effectValue": 10,
-    "effectParam": "",
-    "baseWeight": 1,
-    "hiddenRange": {
-      "min": 5,
-      "max": 45
-    },
-    "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -802,19 +800,20 @@
   {
     "id": "item_interest_cap",
     "name": "高息账户",
-    "desc": "利息上限扩展到10金币",
+    "desc": "利息上限扩展到40金币",
     "quality": 2,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 10,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 30,
     "hiddenRange": {
-      "min": 20,
-      "max": 65
+      "min": 30,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -822,19 +821,20 @@
   {
     "id": "item_loan",
     "name": "高利贷",
-    "desc": "临时获得300金币\n下一周开始失去600金币",
-    "quality": 2,
-    "specialTags": 0,
+    "desc": "临时获得200金币\n下一周开始失去400金币",
+    "quality": 1,
+    "specialTags": "",
     "effectValue": 300,
     "effectParam": "repay:600",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 0,
-      "max": 0
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -844,17 +844,18 @@
     "name": "命运骰子",
     "desc": "打乱时间轴的节点事件",
     "quality": 1,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 0,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 0,
-      "max": 0
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -862,19 +863,20 @@
   {
     "id": "item_extra_day",
     "name": "加班一天",
-    "desc": "延后所有 Boss 一天",
-    "quality": 2,
-    "specialTags": 0,
+    "desc": "盛宴延后一天",
+    "quality": 1,
+    "specialTags": "",
     "effectValue": 1,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 0,
-      "max": 0
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -884,17 +886,18 @@
     "name": "时光倒流",
     "desc": "周数-1",
     "quality": 3,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 1,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 10,
     "hiddenRange": {
-      "min": 0,
-      "max": 0
+      "min": 40,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -902,19 +905,20 @@
   {
     "id": "item_add_reward_node",
     "name": "额外奖励",
-    "desc": "增加一个奖励节点到时间轴上",
+    "desc": "增加一个奖励节点到\n未来时间轴上",
     "quality": 1,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 1,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 0,
-      "max": 0
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -922,19 +926,20 @@
   {
     "id": "item_add_interest_node",
     "name": "额外利息节点",
-    "desc": "增加一个利息节点到时间轴上",
+    "desc": "增加一个利息节点\n到未来时间轴上",
     "quality": 1,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 1,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 0,
-      "max": 0
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -942,59 +947,62 @@
   {
     "id": "item_every3_next_mult",
     "name": "节奏大师",
-    "desc": "每上3个食物后\n下个食物倍率+2",
-    "quality": 2,
-    "specialTags": 0,
+    "desc": "每上3个食物后\n下个食物倍率+1",
+    "quality": 1,
+    "specialTags": "",
     "effectValue": 2,
     "effectParam": "every:3",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
       "min": 20,
-      "max": 65
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
   },
   {
-    "id": "item_first_x2",
+    "id": "item_first_+2",
     "name": "开门红",
-    "desc": "首个上的食物\n倍率×2",
-    "quality": 1,
-    "specialTags": 0,
+    "desc": "首个上的食物\n倍率+2",
+    "quality": 0,
+    "specialTags": "",
     "effectValue": 2,
     "effectParam": "index:1",
-    "baseWeight": 1,
+    "baseWeight": 300,
     "hiddenRange": {
-      "min": 5,
-      "max": 45
+      "min": 10,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
   },
   {
-    "id": "item_last_x2",
+    "id": "item_last_+2",
     "name": "压轴好戏",
-    "desc": "最后上的食物\n倍率×2",
-    "quality": 1,
-    "specialTags": 0,
+    "desc": "最后上的食物\n倍率+2",
+    "quality": 0,
+    "specialTags": "",
     "effectValue": 2,
     "effectParam": "index:-1",
-    "baseWeight": 1,
+    "baseWeight": 300,
     "hiddenRange": {
-      "min": 5,
-      "max": 45
+      "min": 10,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1003,18 +1011,19 @@
     "id": "item_extra_active_slots",
     "name": "工具箱",
     "desc": "增加2个主动道具栏",
-    "quality": 2,
-    "specialTags": 0,
+    "quality": 1,
+    "specialTags": "",
     "effectValue": 2,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
       "min": 20,
-      "max": 65
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1024,17 +1033,18 @@
     "name": "以用换钱",
     "desc": "使用主动道具时\n获得5金币",
     "quality": 1,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 5,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 5,
-      "max": 45
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1042,19 +1052,20 @@
   {
     "id": "item_block_active",
     "name": "极简主义",
-    "desc": "无法再获得主动道具\n立即获得1000金币",
-    "quality": 3,
-    "specialTags": 0,
-    "effectValue": 1000,
+    "desc": "无法再获得主动道具\n立即获得600金币",
+    "quality": 1,
+    "specialTags": "",
+    "effectValue": 600,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 40,
-      "max": 85
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1062,19 +1073,20 @@
   {
     "id": "item_flavor_enhance",
     "name": "风味喷雾",
-    "desc": "为两个食物添加随机风味",
+    "desc": "为2个食物添加随机风味",
     "quality": 1,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 2,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 0,
-      "max": 0
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1084,17 +1096,18 @@
     "name": "风味回收",
     "desc": "移除1个食物的风味\n获得200金币",
     "quality": 1,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 200,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 0,
-      "max": 0
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1103,18 +1116,19 @@
     "id": "item_flavor_remove_double",
     "name": "风味浓缩",
     "desc": "移除1个食物的风味\n其分数翻倍",
-    "quality": 2,
-    "specialTags": 0,
+    "quality": 1,
+    "specialTags": "",
     "effectValue": 2,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 0,
-      "max": 0
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1124,17 +1138,18 @@
     "name": "双重风味",
     "desc": "食物风味上限变为2",
     "quality": 3,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 1,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 10,
     "hiddenRange": {
       "min": 40,
-      "max": 85
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1143,18 +1158,19 @@
     "id": "item_flavor_contagion",
     "name": "风味传染",
     "desc": "使1个食物\n拥有菜谱中另1个食物的风味",
-    "quality": 2,
-    "specialTags": 0,
+    "quality": 1,
+    "specialTags": "",
     "effectValue": 1,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 0,
-      "max": 0
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1162,19 +1178,20 @@
   {
     "id": "item_celltag_enhance",
     "name": "标签强化",
-    "desc": "为2个餐桌格子强化随机材质",
+    "desc": "为2个餐桌格子\n强化随机材质",
     "quality": 1,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 2,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 0,
-      "max": 0
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1183,18 +1200,19 @@
     "id": "item_celltag_contagion",
     "name": "标签传染",
     "desc": "使1个格子\n拥有另1个格子的材质",
-    "quality": 2,
-    "specialTags": 0,
+    "quality": 1,
+    "specialTags": "",
     "effectValue": 1,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 0,
-      "max": 0
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1204,17 +1222,18 @@
     "name": "好运连连",
     "desc": "经历4个事件后\n下个事件一定为奖励",
     "quality": 2,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 4,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 30,
     "hiddenRange": {
-      "min": 20,
-      "max": 65
+      "min": 30,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1223,18 +1242,19 @@
     "id": "item_lucky_chance",
     "name": "幸运符",
     "desc": "更容易在事件中遇到奖励",
-    "quality": 1,
-    "specialTags": 0,
+    "quality": 2,
+    "specialTags": "",
     "effectValue": 0.2,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 30,
     "hiddenRange": {
-      "min": 5,
-      "max": 45
+      "min": 30,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1243,18 +1263,19 @@
     "id": "item_more_events",
     "name": "热闹街区",
     "desc": "更容易遇到事件",
-    "quality": 1,
-    "specialTags": 0,
+    "quality": 0,
+    "specialTags": "",
     "effectValue": 0.2,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 300,
     "hiddenRange": {
-      "min": 5,
-      "max": 45
+      "min": 10,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1264,17 +1285,18 @@
     "name": "事件红包",
     "desc": "经历1个事件\n获得10金币",
     "quality": 0,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 10,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 300,
     "hiddenRange": {
-      "min": 1,
-      "max": 30
+      "min": 10,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1284,17 +1306,18 @@
     "name": "自动补货",
     "desc": "商店会自动补货",
     "quality": 2,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 0,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 30,
     "hiddenRange": {
-      "min": 20,
-      "max": 65
+      "min": 30,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1304,17 +1327,18 @@
     "name": "琳琅满目",
     "desc": "选择食物时\n可选数量+1",
     "quality": 1,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 1,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 5,
-      "max": 45
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1324,17 +1348,18 @@
     "name": "细嚼慢咽",
     "desc": "选择食物时\n可选次数+1，可选数量-1",
     "quality": 2,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 1,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 30,
     "hiddenRange": {
-      "min": 20,
-      "max": 65
+      "min": 30,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1342,19 +1367,20 @@
   {
     "id": "item_extra_food_choice",
     "name": "加餐",
-    "desc": "每5次普通美食\n额外获得3选一美食",
-    "quality": 2,
-    "specialTags": 0,
+    "desc": "每6次普通美食\n额外获得3选一美食",
+    "quality": 1,
+    "specialTags": "",
     "effectValue": 0,
-    "effectParam": "every:5",
-    "baseWeight": 1,
+    "effectParam": "every:6",
+    "baseWeight": 100,
     "hiddenRange": {
       "min": 20,
-      "max": 65
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1362,19 +1388,20 @@
   {
     "id": "item_extra_item_choice",
     "name": "加料",
-    "desc": "每5次超级美食\n额外获得多选一道具",
-    "quality": 2,
-    "specialTags": 0,
+    "desc": "每4次超级美食\n额外获得多选一道具",
+    "quality": 1,
+    "specialTags": "",
     "effectValue": 0,
-    "effectParam": "every:5",
-    "baseWeight": 1,
+    "effectParam": "every:4",
+    "baseWeight": 100,
     "hiddenRange": {
       "min": 20,
-      "max": 65
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1382,19 +1409,20 @@
   {
     "id": "item_copy_food",
     "name": "复制美食",
-    "desc": "随机复制一个美食",
-    "quality": 2,
-    "specialTags": 0,
+    "desc": "随机复制一个食物",
+    "quality": 1,
+    "specialTags": "",
     "effectValue": 1,
-    "effectParam": "dish_grant_1",
-    "baseWeight": 1,
+    "effectParam": "",
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 0,
-      "max": 0
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1404,17 +1432,18 @@
     "name": "断舍离",
     "desc": "丢弃两个负面道具",
     "quality": 0,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 2,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 300,
     "hiddenRange": {
-      "min": 0,
-      "max": 0
+      "min": 10,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1424,17 +1453,18 @@
     "name": "变废为宝",
     "desc": "丢弃所有负面道具\n每丢弃一个获得100金币",
     "quality": 1,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 100,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 0,
-      "max": 0
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1442,19 +1472,20 @@
   {
     "id": "item_gold_meal_penalty",
     "name": "克扣工钱",
-    "desc": "美食获得的金币-25%",
+    "desc": "美食获得的金币-20%",
     "quality": 0,
-    "specialTags": 1,
-    "effectValue": -0.25,
+    "specialTags": "Negative",
+    "effectValue": -0.2,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 300,
     "hiddenRange": {
-      "min": 1,
-      "max": 30
+      "min": 10,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1462,19 +1493,20 @@
   {
     "id": "item_shop_price_up",
     "name": "涨价",
-    "desc": "商店的价格+25%",
+    "desc": "商店的价格+20%",
     "quality": 0,
-    "specialTags": 1,
-    "effectValue": 0.25,
+    "specialTags": "Negative",
+    "effectValue": 0.2,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 300,
     "hiddenRange": {
-      "min": 1,
-      "max": 30
+      "min": 10,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1484,17 +1516,18 @@
     "name": "囤积癖",
     "desc": "无法再删除食物",
     "quality": 0,
-    "specialTags": 1,
+    "specialTags": "Negative",
     "effectValue": 0,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 300,
     "hiddenRange": {
-      "min": 1,
-      "max": 30
+      "min": 10,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1504,17 +1537,18 @@
     "name": "停业整顿",
     "desc": "跳过下一个商店或利息节点",
     "quality": 0,
-    "specialTags": 1,
+    "specialTags": "Negative",
     "effectValue": 1,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 300,
     "hiddenRange": {
-      "min": 1,
-      "max": 30
+      "min": 10,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1524,17 +1558,18 @@
     "name": "选择困难",
     "desc": "多选一食物时\n可选数量-1",
     "quality": 0,
-    "specialTags": 1,
+    "specialTags": "Negative",
     "effectValue": -1,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 300,
     "hiddenRange": {
-      "min": 1,
-      "max": 30
+      "min": 10,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1542,19 +1577,20 @@
   {
     "id": "item_req_normal_up",
     "name": "家常加码",
-    "desc": "普通美食要求分数+10%",
+    "desc": "普通美食要求分数+20%",
     "quality": 0,
-    "specialTags": 1,
-    "effectValue": 0.1,
+    "specialTags": "Negative",
+    "effectValue": 0.2,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 300,
     "hiddenRange": {
-      "min": 1,
-      "max": 30
+      "min": 10,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1562,19 +1598,20 @@
   {
     "id": "item_req_super_up",
     "name": "超级加码",
-    "desc": "超级美食要求分数+10%",
+    "desc": "超级美食要求分数+15%",
     "quality": 0,
-    "specialTags": 1,
-    "effectValue": 0.1,
+    "specialTags": "Negative",
+    "effectValue": 0.15,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 300,
     "hiddenRange": {
-      "min": 1,
-      "max": 30
+      "min": 10,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1582,19 +1619,20 @@
   {
     "id": "item_req_feast_up",
     "name": "盛宴加码",
-    "desc": "盛宴美食要求分数+10%",
+    "desc": "盛宴美食要求分数+15%",
     "quality": 0,
-    "specialTags": 1,
-    "effectValue": 0.1,
+    "specialTags": "Negative",
+    "effectValue": 0.15,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 300,
     "hiddenRange": {
-      "min": 1,
-      "max": 30
+      "min": 10,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1604,17 +1642,18 @@
     "name": "月光族",
     "desc": "本周结束时金币清空",
     "quality": 0,
-    "specialTags": 1,
+    "specialTags": "Negative",
     "effectValue": 0,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 300,
     "hiddenRange": {
-      "min": 1,
-      "max": 30
+      "min": 10,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1622,19 +1661,20 @@
   {
     "id": "item_count_as_all",
     "name": "小份主义",
-    "desc": "所有食物额外被视为1个食物",
-    "quality": 2,
-    "specialTags": 0,
-    "effectValue": 1,
+    "desc": "所有食物额外被视为2个食物",
+    "quality": 3,
+    "specialTags": "",
+    "effectValue": 2,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 10,
     "hiddenRange": {
-      "min": 20,
-      "max": 65
+      "min": 40,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": ""
@@ -1642,19 +1682,20 @@
   {
     "id": "item_transfer_target_mult",
     "name": "传递受益",
-    "desc": "甜蜜传递时\n被传递方倍率×1.1",
-    "quality": 2,
-    "specialTags": 0,
-    "effectValue": 1.1,
+    "desc": "甜蜜传递时\n被传递方倍率×1.2",
+    "quality": 3,
+    "specialTags": "",
+    "effectValue": 1.2,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 10,
     "hiddenRange": {
-      "min": 20,
-      "max": 65
+      "min": 40,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "term_sweet_transfer"
@@ -1662,19 +1703,20 @@
   {
     "id": "item_transfer_source_mult",
     "name": "传递奉献",
-    "desc": "甜蜜传递时\n传递方倍率×1.1",
-    "quality": 2,
-    "specialTags": 0,
-    "effectValue": 1.1,
+    "desc": "甜蜜传递时\n传递方倍率×1.2",
+    "quality": 3,
+    "specialTags": "",
+    "effectValue": 1.2,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 10,
     "hiddenRange": {
-      "min": 20,
-      "max": 65
+      "min": 40,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "term_sweet_transfer"
@@ -1682,19 +1724,20 @@
   {
     "id": "item_skill_count_mult",
     "name": "技法大师",
-    "desc": "结算时每有1个技能\n倍率+0.1",
-    "quality": 2,
-    "specialTags": 0,
-    "effectValue": 0.1,
+    "desc": "结算时每有1个技能\n倍率+0.2",
+    "quality": 1,
+    "specialTags": "",
+    "effectValue": 0.2,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
       "min": 20,
-      "max": 65
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "term_sweet_transfer"
@@ -1704,17 +1747,18 @@
     "name": "传递分红",
     "desc": "甜蜜传递10次后\n+10金币",
     "quality": 1,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 10,
     "effectParam": "count:10",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 5,
-      "max": 45
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "term_sweet_transfer"
@@ -1722,19 +1766,20 @@
   {
     "id": "item_cake_retain",
     "name": "蛋糕保鲜",
-    "desc": "保留10%的蛋糕层数\n至下一次美食",
-    "quality": 2,
-    "specialTags": 0,
-    "effectValue": 0.1,
+    "desc": "保留20%的蛋糕层数\n至下一次美食",
+    "quality": 3,
+    "specialTags": "",
+    "effectValue": 0.2,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 10,
     "hiddenRange": {
-      "min": 20,
-      "max": 65
+      "min": 40,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "clb"
@@ -1742,19 +1787,20 @@
   {
     "id": "item_cake_init_bonus",
     "name": "蛋糕打底",
-    "desc": "蛋糕层数初始额外获得10层",
+    "desc": "蛋糕层数\n初始额外获得10层",
     "quality": 1,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 10,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 5,
-      "max": 45
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "clb"
@@ -1764,17 +1810,18 @@
     "name": "蛋糕膨胀",
     "desc": "蛋糕层数增加时\n额外加1层",
     "quality": 2,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 1,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 30,
     "hiddenRange": {
-      "min": 20,
-      "max": 65
+      "min": 30,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "clb"
@@ -1784,17 +1831,18 @@
     "name": "蛋糕变现",
     "desc": "蛋糕层数大于100层时\n获得10金币",
     "quality": 1,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 10,
     "effectParam": "threshold:100",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 5,
-      "max": 45
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "clb"
@@ -1804,17 +1852,18 @@
     "name": "蛋糕捷径",
     "desc": "蛋糕效果需求的层数-10",
     "quality": 1,
-    "specialTags": 0,
+    "specialTags": "",
     "effectValue": 10,
     "effectParam": "",
-    "baseWeight": 1,
+    "baseWeight": 100,
     "hiddenRange": {
-      "min": 5,
-      "max": 45
+      "min": 20,
+      "max": 80
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "clb"

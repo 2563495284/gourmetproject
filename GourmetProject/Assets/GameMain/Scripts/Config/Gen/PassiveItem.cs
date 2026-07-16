@@ -21,7 +21,7 @@ public sealed partial class PassiveItem : Luban.BeanBase
         { if(!_buf["name"].IsString) { throw new SerializationException(); }  Name = _buf["name"]; }
         { if(!_buf["desc"].IsString) { throw new SerializationException(); }  Desc = _buf["desc"]; }
         { if(!_buf["quality"].IsNumber) { throw new SerializationException(); }  Quality = (ItemQuality)_buf["quality"].AsInt; }
-        { if(!_buf["specialTags"].IsNumber) { throw new SerializationException(); }  SpecialTags = (ItemSpecialTag)_buf["specialTags"].AsInt; }
+        { if(!_buf["specialTags"].IsString) { throw new SerializationException(); }  SpecialTags = _buf["specialTags"]; }
         { if(!_buf["effectValue"].IsNumber) { throw new SerializationException(); }  EffectValue = _buf["effectValue"]; }
         { if(!_buf["effectParam"].IsString) { throw new SerializationException(); }  EffectParam = _buf["effectParam"]; }
         { if(!_buf["baseWeight"].IsNumber) { throw new SerializationException(); }  BaseWeight = _buf["baseWeight"]; }
@@ -29,6 +29,7 @@ public sealed partial class PassiveItem : Luban.BeanBase
         { if(!_buf["targetScoreHiddenOffset"].IsNumber) { throw new SerializationException(); }  TargetScoreHiddenOffset = _buf["targetScoreHiddenOffset"]; }
         { if(!_buf["dishHiddenOffset"].IsNumber) { throw new SerializationException(); }  DishHiddenOffset = _buf["dishHiddenOffset"]; }
         { if(!_buf["passiveItemHiddenOffset"].IsNumber) { throw new SerializationException(); }  PassiveItemHiddenOffset = _buf["passiveItemHiddenOffset"]; }
+        { if(!_buf["activeItemHiddenOffset"].IsNumber) { throw new SerializationException(); }  ActiveItemHiddenOffset = _buf["activeItemHiddenOffset"]; }
         { if(!_buf["fragmentHiddenOffset"].IsNumber) { throw new SerializationException(); }  FragmentHiddenOffset = _buf["fragmentHiddenOffset"]; }
         { if(!_buf["goldHiddenOffset"].IsNumber) { throw new SerializationException(); }  GoldHiddenOffset = _buf["goldHiddenOffset"]; }
         { if(!_buf["termId"].IsString) { throw new SerializationException(); }  TermId = _buf["termId"]; }
@@ -58,7 +59,7 @@ public sealed partial class PassiveItem : Luban.BeanBase
     /// <summary>
     /// 特殊标签标记
     /// </summary>
-    public readonly ItemSpecialTag SpecialTags;
+    public readonly string SpecialTags;
     /// <summary>
     /// 效果数值
     /// </summary>
@@ -87,6 +88,10 @@ public sealed partial class PassiveItem : Luban.BeanBase
     /// 被动道具隐藏分修正
     /// </summary>
     public readonly int PassiveItemHiddenOffset;
+    /// <summary>
+    /// 主动道具隐藏分修正
+    /// </summary>
+    public readonly int ActiveItemHiddenOffset;
     /// <summary>
     /// 餐桌格子隐藏分修正
     /// </summary>
@@ -123,6 +128,7 @@ public sealed partial class PassiveItem : Luban.BeanBase
         + "targetScoreHiddenOffset:" + TargetScoreHiddenOffset + ","
         + "dishHiddenOffset:" + DishHiddenOffset + ","
         + "passiveItemHiddenOffset:" + PassiveItemHiddenOffset + ","
+        + "activeItemHiddenOffset:" + ActiveItemHiddenOffset + ","
         + "fragmentHiddenOffset:" + FragmentHiddenOffset + ","
         + "goldHiddenOffset:" + GoldHiddenOffset + ","
         + "termId:" + TermId + ","
