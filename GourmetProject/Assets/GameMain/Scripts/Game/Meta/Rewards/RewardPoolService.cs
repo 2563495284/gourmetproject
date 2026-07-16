@@ -248,7 +248,7 @@ namespace GourmetProject.Game.Meta
                     cfg.RewardKind.FragmentChoice,
                     fragment.Id,
                     fragment.Id,
-                    $"扩展餐桌，价格参考 {fragment.Price}",
+                    $"扩展餐桌",
                     HiddenScoreService.FragmentFallbackGold(context.Run, context.ActionContext)));
             }
         }

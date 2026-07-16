@@ -87,7 +87,6 @@ namespace GourmetProject.Game.Adapter
                     f.HiddenRange.Min,
                     f.HiddenRange.Max,
                     f.BaseWeight,
-                    f.Price,
                     new List<string>(f.MaterialIds),
                     new List<CellMaterial>()));
             }
