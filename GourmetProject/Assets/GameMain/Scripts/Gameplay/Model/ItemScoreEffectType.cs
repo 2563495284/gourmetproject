@@ -42,5 +42,8 @@ namespace GourmetProject.Gameplay.Model
 
         /// <summary>所有食物额外「视为」+value 个食物（影响计数类前提；本次结算 live 生效）。</summary>
         CountAsBonusAll = 11,
+
+        /// <summary>上菜顺序第 N 个（1-based）的菜倍率 +value；param: "index:N"，N=-1 表示最后一个。</summary>
+        NthServeMultFlat = 12,
     }
 }

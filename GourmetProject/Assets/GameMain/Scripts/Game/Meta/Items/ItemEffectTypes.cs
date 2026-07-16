@@ -19,6 +19,7 @@ namespace GourmetProject.Game.Meta
         public const string PerDishSettledMultFlat = "PerDishSettledMultFlat";
         public const string PerSkillMultFlat = "PerSkillMultFlat";
         public const string NthServeMult = "NthServeMult";
+        public const string NthServeMultFlat = "NthServeMultFlat";
         public const string EveryNthServeMult = "EveryNthServeMult";
         public const string CountAsBonusAll = "CountAsBonusAll";
 

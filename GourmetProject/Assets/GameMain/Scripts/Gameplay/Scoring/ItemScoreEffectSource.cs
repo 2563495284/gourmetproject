@@ -154,6 +154,7 @@ namespace GourmetProject.Gameplay.Scoring
                 }
 
                 case ItemScoreEffectType.NthServeMult:
+                case ItemScoreEffectType.NthServeMultFlat:
                 {
                     // 上菜顺序 = 实例 Id 升序（Serve 时递增分配）。
                     List<DishInstance> ordered = dishes.OrderBy(d => d.Id).ToList();
@@ -163,7 +164,14 @@ namespace GourmetProject.Gameplay.Scoring
                         : (index - 1 < ordered.Count && index - 1 >= 0 ? ordered[index - 1] : null);
                     if (target != null)
                     {
-                        ctx.MultiplyTo(target, value);
+                        if (_spec.Type == ItemScoreEffectType.NthServeMult)
+                        {
+                            ctx.MultiplyTo(target, value);
+                        }
+                        else
+                        {
+                            ctx.AddMultFlatTo(target, value);
+                        }
                     }
 
                     break;
