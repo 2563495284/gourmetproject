@@ -33,7 +33,7 @@ public sealed partial class Recipe : Luban.BeanBase
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 固定初始菜品ID列表，多个用 | 分隔
+    /// 固定初始菜品
     /// </summary>
     public readonly string FixedDishes;
     /// <summary>
