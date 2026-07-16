@@ -161,7 +161,19 @@ namespace GourmetProject.Gameplay.Scoring
                     {
                         foreach (DishInstance t in Targets(ctx))
                         {
-                            if (t.Id != _self.Id) ctx.RecordSkillTransfer(t, effects, _self.Def.Name);
+                            if (t.Id == _self.Id)
+                            {
+                                continue;
+                            }
+
+                            IReadOnlyList<SkillEffect> newEffects = NewTransferredEffects(t, effects);
+                            if (newEffects.Count == 0)
+                            {
+                                continue;
+                            }
+
+                            ctx.RecordSkillTransfer(t, newEffects, _self.Def.Name);
+                            ResolveTransferredEffects(ctx, t, newEffects);
                         }
                     }
                     break;
@@ -193,6 +205,64 @@ namespace GourmetProject.Gameplay.Scoring
         private bool IsTiered() => IsTiered(_rule);
 
         private float TierValue(int tier) => TierValue(_rule, tier);
+
+        private static IReadOnlyList<SkillEffect> NewTransferredEffects(DishInstance target, IReadOnlyList<SkillEffect> effects)
+        {
+            var result = new List<SkillEffect>();
+            foreach (SkillEffect effect in effects)
+            {
+                if (!HasTransferredRule(target, effect?.Rule))
+                {
+                    result.Add(effect);
+                }
+            }
+
+            return result;
+        }
+
+        private static bool HasTransferredRule(DishInstance target, SkillRuleDef rule)
+        {
+            if (target == null || rule == null)
+            {
+                return false;
+            }
+
+            foreach (TransferredSkill transferred in target.TransferredSkills)
+            {
+                if (ReferenceEquals(transferred.Effect.Rule, rule))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void ResolveTransferredEffects(ScoreContext ctx, DishInstance target, IReadOnlyList<SkillEffect> effects)
+        {
+            SkillDef parent = ctx.Db.GetSkill(_rule.SkillId);
+            string sourceLabel = $"{_self.Def.Name}<甜蜜传递>";
+            int boardOrder = target.Placement.Origin.Y * ctx.DiningTable.Width + target.Placement.Origin.X;
+            foreach (SkillEffect effect in effects)
+            {
+                SkillRuleDef rule = effect.Rule;
+                if (rule == null || rule.Trigger != SkillTrigger.OnSettle)
+                {
+                    continue;
+                }
+
+                var entry = new ScoreEffectEntry(
+                    ScorePhase.DishSkills,
+                    ScoreSource.TransferredDishSkill(parent, target, sourceLabel),
+                    new SkillRuleEffect(rule, target),
+                    target,
+                    null,
+                    null,
+                    rule.Order,
+                    boardOrder);
+                ctx.SubmitCommand(new ResolveScoreEffectCommand(entry));
+            }
+        }
 
         /// <summary>规则是否为阶梯：condParam 含 tiers:…（阈值）且 actionParam 含 tiervals:…（各档值）。</summary>
         internal static bool IsTiered(SkillRuleDef rule)

@@ -6,8 +6,6 @@ using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Scoring;
 using UnityEngine;
-using GourmetProject.Game.Meta;
-using GourmetProject.Game.Run;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 using UnityEngine.InputSystem;
 #endif
@@ -15,8 +13,8 @@ using UnityEngine.InputSystem;
 namespace GourmetProject.Game.Presentation.Battle
 {
     /// <summary>
-    /// 背包乱斗式的结算演出：点「吃」后，按结算顺序逐道菜依次触发标签演出、
-    /// 飘出贡献分，并把总分逐步累加。纯消费 <see cref="ScoreResult"/>，不改动任何计分逻辑。
+    /// 背包乱斗式的结算演出：点「吃」后，按真实结算明细顺序播放来源 cue，
+    /// 最后在分数汇总阶段滚到总分。纯消费 <see cref="ScoreResult"/>，不改动任何计分逻辑。
     /// </summary>
     public sealed class SettlementSequencer : MonoBehaviour
     {
@@ -29,8 +27,6 @@ namespace GourmetProject.Game.Presentation.Battle
         private static readonly Color SideEffectColor = new(0.55f, 1f, 0.35f);
         private static readonly Color DefaultCueColor = Color.white;
 
-        private const float PerDishInterval = 0.32f;
-        private const float ScoreTweenStep = 0.28f;
         private const float SourceCueRise = 0.48f;
         private const float SourceCueDuration = 0.62f;
         private const float SourceCueCharacterSize = 0.12f;
@@ -49,8 +45,6 @@ namespace GourmetProject.Game.Presentation.Battle
         private float _savedTimeScale = 1f;
         private float _currentSettlementSpeed = 1f;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-        [SerializeField, Tooltip("开发版结算调试：是否打印结算演出关键流程日志。")]
-        private bool _debugLogSettlementFlow = true;
         [SerializeField, Tooltip("开发版结算调试：Space 暂停/继续时的当前状态。")]
         private bool _debugScorePaused;
         private bool _debugScoreControlsActive;
@@ -85,104 +79,47 @@ namespace GourmetProject.Game.Presentation.Battle
 
             float runningTotal = 0f;
             renderScore?.Invoke(0);
-            SettlementCueCollection cues = BuildSettlementCues(result, dishViews);
-            var playback = new SettlementPlaybackState(CountSettlementCues(cues, result, dishViews), scoreFire);
+            SettlementPlaybackPlan plan = BuildSettlementPlaybackPlan(result, dishViews);
+            var playback = new SettlementPlaybackState(CountSettlementCues(plan), scoreFire);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             using CancellationTokenSource debugScorePauseCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             _debugScorePaused = false;
             _debugScoreControlsActive = true;
             RestoreDebugScorePauseTimeScale();
             _ = MonitorDebugScorePauseAsync(debugScorePauseCts.Token);
-            LogDebugSettlementFlow(
-                $"开始：dishScores={result.DishScores.Count}, scoreLines={result.ScoreLines.Count}, cues={playback.CueCount}, total={result.Total}");
 #endif
             BeginSettlementSpeed();
             scoreFire?.Show();
 
             try
             {
-                int dishIndex = 0;
-                foreach (DishScore dishScore in result.DishScores)
+                foreach (SettlementPlaybackStep step in plan.Steps)
                 {
-                    dishIndex++;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     await WaitWhileDebugScorePausedAsync(cancellationToken);
 #endif
-                    if (!dishViews.TryGetValue(dishScore.DishInstanceId, out DishPieceView view) || view == null)
+                    if (!dishViews.TryGetValue(step.DishInstanceId, out DishPieceView view) || view == null)
                     {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                        LogDebugSettlementFlow(
-                            $"菜品 {dishIndex}/{result.DishScores.Count} 跳过：id={dishScore.DishInstanceId}, missingView=true, contribution={dishScore.Contribution:0.##}");
-#endif
-                        runningTotal += dishScore.Contribution;
                         continue;
                     }
 
                     DishInstance instance = view.Instance;
                     Vector3 center = DishCenter(instance, mapper);
-                    IReadOnlyList<SettlementCue> sourceCues = cues.GetDishCues(dishScore.DishInstanceId);
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                    LogDebugSettlementFlow(
-                        $"菜品 {dishIndex}/{result.DishScores.Count} 开始：id={dishScore.DishInstanceId}, sourceCues={sourceCues.Count}, contribution={dishScore.Contribution:0.##}, multiplier={dishScore.Multiplier:0.##}, running={runningTotal:0.##}");
-#endif
-
-                    await PlaySourceCuesAsync(sourceCues, view, center, fxRoot, playback, cancellationToken);
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                    await WaitWhileDebugScorePausedAsync(cancellationToken);
-                    LogDebugSettlementFlow($"菜品 {dishIndex}/{result.DishScores.Count} 贡献飘字：{FormatGain(dishScore)}");
-#endif
-                    AdvanceSettlementSpeed(playback, SettlementCueKind.DishContribution);
-                    if (fxRoot != null)
-                    {
-                        FloatingTextView.Spawn(_floatingTextPrefab, fxRoot, center + new Vector3(0f, 0.35f, 0f), FormatGain(dishScore), GainColor);
-                    }
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                    LogDebugSettlementFlow($"菜品 {dishIndex}/{result.DishScores.Count} 反馈开始。");
-#endif
-                    await view.PlayDeliciousnessGainFeedbackAsync(cancellationToken);
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                    LogDebugSettlementFlow($"菜品 {dishIndex}/{result.DishScores.Count} 反馈结束。");
-#endif
-
-                    float from = runningTotal;
-                    runningTotal += dishScore.Contribution;
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                    LogDebugSettlementFlow($"菜品 {dishIndex}/{result.DishScores.Count} 滚分开始：{from:0.##} -> {runningTotal:0.##}");
-#endif
-                    await TweenScoreAsync(from, runningTotal, ScoreTweenStep, renderScore, cancellationToken);
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                    LogDebugSettlementFlow($"菜品 {dishIndex}/{result.DishScores.Count} 滚分结束：running={runningTotal:0.##}");
-                    LogDebugSettlementFlow($"菜品 {dishIndex}/{result.DishScores.Count} 间隔等待：{PerDishInterval:0.##}s");
-#endif
-
-                    await Awaitable.WaitForSecondsAsync(PerDishInterval, cancellationToken);
+                    await PlayCueAsync(step.Cue, view, center, fxRoot, playback, cancellationToken);
                 }
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                LogDebugSettlementFlow($"最终 cue 开始：count={cues.FinalCues.Count}");
-#endif
-                await PlayFinalCuesAsync(cues.FinalCues, mapper.Center, fxRoot, playback, cancellationToken);
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                LogDebugSettlementFlow("最终 cue 结束。");
-#endif
+                await PlayFinalCuesAsync(plan.FinalCues, mapper.Center, fxRoot, playback, cancellationToken);
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 await WaitWhileDebugScorePausedAsync(cancellationToken);
-                LogDebugSettlementFlow($"最终滚分开始：{runningTotal:0.##} -> {result.Total}");
 #endif
                 AdvanceSettlementSpeed(playback, SettlementCueKind.FinalScore);
                 await TweenScoreAsync(runningTotal, result.Total, 0.45f, renderScore, cancellationToken);
                 renderScore?.Invoke(result.Total);
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                LogDebugSettlementFlow($"完成：total={result.Total}");
-#endif
             }
             finally
             {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-                LogDebugSettlementFlow("清理：停止暂停监听并恢复结算状态。");
                 debugScorePauseCts.Cancel();
                 ClearDebugScorePauseState();
 #endif
@@ -228,40 +165,32 @@ namespace GourmetProject.Game.Presentation.Battle
             RestoreSettlementSpeed();
         }
 
-        private async Awaitable PlaySourceCuesAsync(
-            IReadOnlyList<SettlementCue> cues,
+        private async Awaitable PlayCueAsync(
+            SettlementCue cue,
             DishPieceView view,
             Vector3 center,
             Transform fxRoot,
             SettlementPlaybackState playback,
             CancellationToken cancellationToken)
         {
-            for (int i = 0; i < cues.Count; i++)
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            await WaitWhileDebugScorePausedAsync(cancellationToken);
+#endif
+            AdvanceSettlementSpeed(playback, cue.Kind);
+            if (fxRoot != null)
             {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                await WaitWhileDebugScorePausedAsync(cancellationToken);
-#endif
-                SettlementCue cue = cues[i];
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                LogDebugSettlementFlow($"Source cue {i + 1}/{cues.Count}：kind={cue.Kind}, text={cue.Text}");
-#endif
-                AdvanceSettlementSpeed(playback, cue.Kind);
-                if (fxRoot != null)
-                {
-                    Vector3 offset = new(0f, 0.34f + SourceCueStackOffset * i, 0f);
-                    FloatingTextView.Spawn(
-                        _floatingTextPrefab,
-                        fxRoot,
-                        center + offset,
-                        cue.Text,
-                        cue.Color,
-                        SourceCueCharacterSize,
-                        SourceCueRise,
-                        SourceCueDuration);
-                }
-
-                await view.PlayDeliciousnessGainFeedbackAsync(cancellationToken);
+                FloatingTextView.Spawn(
+                    _floatingTextPrefab,
+                    fxRoot,
+                    center + new Vector3(0f, 0.34f, 0f),
+                    cue.Text,
+                    cue.Color,
+                    cue.CharacterSize,
+                    cue.Rise,
+                    cue.Duration);
             }
+
+            await view.PlayDeliciousnessGainFeedbackAsync(cancellationToken);
         }
 
         private async Awaitable PlayFinalCuesAsync(
@@ -277,9 +206,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 await WaitWhileDebugScorePausedAsync(cancellationToken);
 #endif
                 SettlementCue cue = cues[i];
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                LogDebugSettlementFlow($"Final cue {i + 1}/{cues.Count}：kind={cue.Kind}, text={cue.Text}");
-#endif
                 AdvanceSettlementSpeed(playback, cue.Kind);
                 if (fxRoot != null)
                 {
@@ -362,25 +288,9 @@ namespace GourmetProject.Game.Presentation.Battle
             // 预留音效入口：后续可在这里按 kind 播放结算音效，并用 speed 映射 pitch。
         }
 
-        private static int CountSettlementCues(
-            SettlementCueCollection cues,
-            ScoreResult result,
-            IReadOnlyDictionary<int, DishPieceView> dishViews)
+        private static int CountSettlementCues(SettlementPlaybackPlan plan)
         {
-            int count = 1; // 最终滚分。
-            foreach (DishScore dishScore in result.DishScores)
-            {
-                if (!dishViews.TryGetValue(dishScore.DishInstanceId, out DishPieceView view) || view == null)
-                {
-                    continue;
-                }
-
-                count++; // 本菜贡献飘字 + 滚分。
-                count += cues.GetDishCues(dishScore.DishInstanceId).Count;
-            }
-
-            count += cues.FinalCues.Count;
-
+            int count = 1 + (plan?.Steps.Count ?? 0) + (plan?.FinalCues.Count ?? 0);
             return Mathf.Max(1, count);
         }
 
@@ -484,17 +394,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 RestoreDebugScorePauseTimeScale();
             }
 
-            Debug.Log($"结算演出{(_debugScorePaused ? "暂停" : "继续")}（Space 切换）。", this);
-        }
-
-        private void LogDebugSettlementFlow(string message)
-        {
-            if (!_debugLogSettlementFlow)
-            {
-                return;
-            }
-
-            Debug.Log($"[SettlementSequencer] {message}", this);
         }
 
         private void ClearDebugScorePauseState()
@@ -533,22 +432,11 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 #endif
 
-        private static string FormatGain(DishScore dishScore)
-        {
-            string text = $"+{Mathf.RoundToInt(dishScore.Contribution)}";
-            if (dishScore.Multiplier > 1.001f)
-            {
-                text += $"  ×{dishScore.Multiplier:0.#}";
-            }
-
-            return text;
-        }
-
-        private static SettlementCueCollection BuildSettlementCues(
+        private static SettlementPlaybackPlan BuildSettlementPlaybackPlan(
             ScoreResult result,
             IReadOnlyDictionary<int, DishPieceView> dishViews)
         {
-            var cues = new SettlementCueCollection();
+            var plan = new SettlementPlaybackPlan();
             bool hasGoldCue = false;
             bool hasLayerCue = false;
             bool hasSilverItemRollCue = false;
@@ -572,45 +460,45 @@ namespace GourmetProject.Game.Presentation.Battle
                     && view != null
                     && cue.Kind != SettlementCueKind.FinalModifier)
                 {
-                    cues.AddDishCue(line.DishInstanceId, cue);
+                    plan.Steps.Add(new SettlementPlaybackStep(line.DishInstanceId, cue));
                 }
                 else
                 {
-                    cues.FinalCues.Add(cue);
+                    plan.FinalCues.Add(cue);
                 }
             }
 
             if (!hasFinalModifierCue && HasFinalModifier(result))
             {
-                cues.FinalCues.Add(BuildFinalSummaryCue(result));
+                plan.FinalCues.Add(BuildFinalSummaryCue(result));
             }
 
             if (!hasGoldCue && Mathf.Abs(result.GoldDelta) > 0.001f)
             {
-                cues.FinalCues.Add(new SettlementCue(SettlementCueKind.SideEffect, $"金币 {FormatSigned(result.GoldDelta)}", SideEffectColor));
+                plan.FinalCues.Add(new SettlementCue(SettlementCueKind.SideEffect, $"金币 {FormatSigned(result.GoldDelta)}", SideEffectColor));
             }
 
             if (!hasLayerCue && result.HappyCakeLayerDelta != 0)
             {
-                cues.FinalCues.Add(new SettlementCue(SettlementCueKind.SideEffect, $"蛋糕层 {FormatSigned(result.HappyCakeLayerDelta)}", SideEffectColor));
+                plan.FinalCues.Add(new SettlementCue(SettlementCueKind.SideEffect, $"蛋糕层 {FormatSigned(result.HappyCakeLayerDelta)}", SideEffectColor));
             }
 
             if (!hasSilverItemRollCue && result.SilverItemRollRequests > 0)
             {
-                cues.FinalCues.Add(new SettlementCue(SettlementCueKind.SideEffect, $"银材质抽道具 ×{result.SilverItemRollRequests}", SideEffectColor));
+                plan.FinalCues.Add(new SettlementCue(SettlementCueKind.SideEffect, $"银材质抽道具 ×{result.SilverItemRollRequests}", SideEffectColor));
             }
 
             if (result.PermanentFlatDeltas.Count > 0)
             {
-                cues.FinalCues.Add(new SettlementCue(SettlementCueKind.SideEffect, $"永久美味 +{result.PermanentFlatDeltas.Count} 道菜", SideEffectColor));
+                plan.FinalCues.Add(new SettlementCue(SettlementCueKind.SideEffect, $"永久美味 +{result.PermanentFlatDeltas.Count} 道菜", SideEffectColor));
             }
 
             if (result.PermanentMultDeltas.Count > 0)
             {
-                cues.FinalCues.Add(new SettlementCue(SettlementCueKind.SideEffect, $"永久倍率 +{result.PermanentMultDeltas.Count} 道菜", SideEffectColor));
+                plan.FinalCues.Add(new SettlementCue(SettlementCueKind.SideEffect, $"永久倍率 +{result.PermanentMultDeltas.Count} 道菜", SideEffectColor));
             }
 
-            return cues;
+            return plan;
         }
 
         private static bool TryBuildCue(ScoreLine line, out SettlementCue cue)
@@ -624,6 +512,13 @@ namespace GourmetProject.Game.Presentation.Battle
             string sourceName = SourceName(line);
             switch (line.Kind)
             {
+                case ScoreLineKind.DishBase:
+                    cue = new SettlementCue(
+                        SettlementCueKind.Source,
+                        $"基础美味 {FormatSigned(line.Value)}",
+                        GainColor);
+                    return true;
+
                 case ScoreLineKind.DishFlat:
                     if (!IsReadableDishSource(line.Source))
                     {
@@ -804,29 +699,24 @@ namespace GourmetProject.Game.Presentation.Battle
             return sum / dish.OccupiedCells.Count;
         }
 
-        private sealed class SettlementCueCollection
+        private sealed class SettlementPlaybackPlan
         {
-            private readonly Dictionary<int, List<SettlementCue>> _dishCues = new();
+            public List<SettlementPlaybackStep> Steps { get; } = new();
 
             public List<SettlementCue> FinalCues { get; } = new();
+        }
 
-            public void AddDishCue(int dishInstanceId, SettlementCue cue)
+        private sealed class SettlementPlaybackStep
+        {
+            public SettlementPlaybackStep(int dishInstanceId, SettlementCue cue)
             {
-                if (!_dishCues.TryGetValue(dishInstanceId, out List<SettlementCue> cues))
-                {
-                    cues = new List<SettlementCue>();
-                    _dishCues.Add(dishInstanceId, cues);
-                }
-
-                cues.Add(cue);
+                DishInstanceId = dishInstanceId;
+                Cue = cue;
             }
 
-            public IReadOnlyList<SettlementCue> GetDishCues(int dishInstanceId)
-            {
-                return _dishCues.TryGetValue(dishInstanceId, out List<SettlementCue> cues)
-                    ? cues
-                    : Array.Empty<SettlementCue>();
-            }
+            public int DishInstanceId { get; }
+
+            public SettlementCue Cue { get; }
         }
 
         private sealed class SettlementCue

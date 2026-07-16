@@ -258,10 +258,18 @@ namespace GourmetProject.Gameplay.Scoring
                 return;
             }
 
+            DishInstance previousDish = Dish;
+            DishAccumulator previousCurrent = _current;
             ScorePhase previousPhase = Phase;
             ScoreSource previousSource = Source;
             GridPos? previousCell = CurrentCell;
             IEffectDef previousEffectDef = EffectDef;
+            if (entry.Dish != null)
+            {
+                Dish = entry.Dish;
+                _current = EnsureAccumulator(entry.Dish);
+            }
+
             Phase = entry.Phase;
             Source = entry.Source;
             CurrentCell = entry.Cell;
@@ -276,6 +284,8 @@ namespace GourmetProject.Gameplay.Scoring
             }
             finally
             {
+                Dish = previousDish;
+                _current = previousCurrent;
                 Phase = previousPhase;
                 Source = previousSource;
                 CurrentCell = previousCell;
