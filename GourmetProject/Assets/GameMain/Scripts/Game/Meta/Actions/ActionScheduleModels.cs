@@ -72,5 +72,8 @@ namespace GourmetProject.Game.Meta
         /// 放置来源（行动轴节点）设为节点 id；随机来源可留空，由执行侧按步数/天数拼 key。
         /// </summary>
         public string SourceKey { get; set; } = string.Empty;
+
+        /// <summary>目标分曲线使用的天数覆盖值；行动轴 Boss 节点用节点所在天数，而非玩家当前游标。</summary>
+        public float? TargetScoreDayOverride { get; set; }
     }
 }

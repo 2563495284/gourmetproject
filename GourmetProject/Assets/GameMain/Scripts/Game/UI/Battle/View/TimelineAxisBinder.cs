@@ -125,7 +125,10 @@ namespace GourmetProject.Game.UI.Battle.View
 
             cfg.BossDebuff debuff = PreviewBossDebuff(run, node, action);
             int required = run != null
-                ? HiddenScoreService.TargetScore(run, new ActionExecutionContext(action), debuff?.TargetScoreHiddenOffset ?? 0)
+                ? HiddenScoreService.TargetScore(
+                    run,
+                    new ActionExecutionContext(action) { TargetScoreDayOverride = node.Day },
+                    debuff?.TargetScoreHiddenOffset ?? 0)
                 : 0;
             tip.Bind(debuff.Name, debuff.Desc, required);
         }

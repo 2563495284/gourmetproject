@@ -32,7 +32,7 @@ namespace GourmetProject.Game.Meta
         public static int TargetScore(GameRun run, ActionExecutionContext context = null, float extraTargetScoreHiddenOffset = 0f)
         {
             float offset = HiddenOffset(run, context, HiddenScorePurpose.TargetScore) + extraTargetScoreHiddenOffset;
-            int derived = EvaluateTargetScore(run, offset);
+            int derived = EvaluateTargetScore(run, offset, context?.TargetScoreDayOverride);
             return Math.Max(1, derived);
         }
 
@@ -104,7 +104,7 @@ namespace GourmetProject.Game.Meta
             return RoundCurveValue(curve, value);
         }
 
-        private static int EvaluateTargetScore(GameRun run, float hiddenOffset)
+        private static int EvaluateTargetScore(GameRun run, float hiddenOffset, float? dayOverride)
         {
             cfg.HiddenScoreCurve curve = ResolveCurve(run?.Tables, cfg.HiddenScorePurpose.TargetScore, run);
             if (curve == null || run == null)
@@ -112,9 +112,10 @@ namespace GourmetProject.Game.Meta
                 return 0;
             }
 
+            float currentDay = dayOverride ?? run.CurrentDay;
             double exponent = curve.ExpConstant;
             exponent += run.WeekIndex * curve.ExpWeekCoeff;
-            exponent += run.CurrentDay * curve.ExpDayCoeff;
+            exponent += currentDay * curve.ExpDayCoeff;
             exponent += hiddenOffset;
             return RoundCurveValue(curve, Math.Exp(exponent));
         }

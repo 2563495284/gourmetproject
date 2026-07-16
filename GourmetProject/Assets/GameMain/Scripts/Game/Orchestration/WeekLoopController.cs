@@ -336,6 +336,11 @@ namespace GourmetProject.Game.Orchestration
         private void ExecutePlacedAction(cfg.TimelineNode node, cfg.GameAction action)
         {
             var context = new ActionExecutionContext(action) { SourceKey = node.Id };
+            if (FoodService.IsBossAction(_run?.Tables, action))
+            {
+                context.TargetScoreDayOverride = node.Day;
+            }
+
             IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Effect, $"node_w{_run.WeekIndex}_{node.Id}_{action.Id}");
             ActionOutcome outcome = ActionExecutor.Execute(_run, context, rng);
             RunPersistence.Save(_run);
