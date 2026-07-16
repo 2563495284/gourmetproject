@@ -4,10 +4,10 @@
     "baseId": "cookie",
     "flavorId": "",
     "baseWeight": 120,
-    "price": 2,
+    "price": 10,
     "hiddenRange": {
-      "min": 5,
-      "max": 15
+      "min": 10,
+      "max": 35
     },
     "rotation": 0
   },
@@ -16,10 +16,10 @@
     "baseId": "macaron",
     "flavorId": "",
     "baseWeight": 120,
-    "price": 2,
+    "price": 10,
     "hiddenRange": {
-      "min": 4,
-      "max": 12
+      "min": 10,
+      "max": 35
     },
     "rotation": 0
   },
@@ -28,10 +28,10 @@
     "baseId": "pudding",
     "flavorId": "",
     "baseWeight": 120,
-    "price": 5,
+    "price": 10,
     "hiddenRange": {
-      "min": 15,
-      "max": 45
+      "min": 10,
+      "max": 35
     },
     "rotation": 0
   },
@@ -40,10 +40,10 @@
     "baseId": "puff",
     "flavorId": "",
     "baseWeight": 120,
-    "price": 2,
+    "price": 10,
     "hiddenRange": {
-      "min": 4,
-      "max": 12
+      "min": 10,
+      "max": 35
     },
     "rotation": 0
   },
@@ -52,10 +52,10 @@
     "baseId": "eggtart",
     "flavorId": "",
     "baseWeight": 120,
-    "price": 2,
+    "price": 10,
     "hiddenRange": {
-      "min": 3,
-      "max": 9
+      "min": 10,
+      "max": 35
     },
     "rotation": 0
   },
@@ -64,10 +64,10 @@
     "baseId": "mochi",
     "flavorId": "",
     "baseWeight": 90,
-    "price": 2,
+    "price": 10,
     "hiddenRange": {
-      "min": 5,
-      "max": 15
+      "min": 10,
+      "max": 35
     },
     "rotation": 0
   },
@@ -76,10 +76,10 @@
     "baseId": "daifuku",
     "flavorId": "",
     "baseWeight": 120,
-    "price": 2,
+    "price": 10,
     "hiddenRange": {
-      "min": 3,
-      "max": 9
+      "min": 10,
+      "max": 35
     },
     "rotation": 0
   },
@@ -88,10 +88,10 @@
     "baseId": "choco_candy",
     "flavorId": "",
     "baseWeight": 90,
-    "price": 2,
+    "price": 10,
     "hiddenRange": {
-      "min": 5,
-      "max": 15
+      "min": 10,
+      "max": 35
     },
     "rotation": 0
   },
@@ -100,10 +100,10 @@
     "baseId": "jelly",
     "flavorId": "",
     "baseWeight": 120,
-    "price": 2,
+    "price": 10,
     "hiddenRange": {
-      "min": 2,
-      "max": 7
+      "min": 10,
+      "max": 35
     },
     "rotation": 0
   },
@@ -112,10 +112,10 @@
     "baseId": "cream_cell",
     "flavorId": "",
     "baseWeight": 120,
-    "price": 2,
+    "price": 10,
     "hiddenRange": {
-      "min": 5,
-      "max": 15
+      "min": 10,
+      "max": 35
     },
     "rotation": 0
   },
@@ -124,10 +124,10 @@
     "baseId": "sugarbean",
     "flavorId": "",
     "baseWeight": 60,
-    "price": 2,
+    "price": 10,
     "hiddenRange": {
-      "min": 5,
-      "max": 15
+      "min": 10,
+      "max": 35
     },
     "rotation": 0
   },
@@ -136,10 +136,10 @@
     "baseId": "gold_choco",
     "flavorId": "",
     "baseWeight": 90,
-    "price": 2,
+    "price": 10,
     "hiddenRange": {
-      "min": 3,
-      "max": 9
+      "min": 10,
+      "max": 35
     },
     "rotation": 0
   },
@@ -148,10 +148,10 @@
     "baseId": "milk_slice",
     "flavorId": "",
     "baseWeight": 90,
-    "price": 2,
+    "price": 10,
     "hiddenRange": {
-      "min": 4,
-      "max": 12
+      "min": 10,
+      "max": 35
     },
     "rotation": 0
   },
@@ -160,10 +160,10 @@
     "baseId": "sundae",
     "flavorId": "",
     "baseWeight": 90,
-    "price": 3,
+    "price": 20,
     "hiddenRange": {
       "min": 10,
-      "max": 30
+      "max": 40
     },
     "rotation": 0
   },
@@ -172,10 +172,10 @@
     "baseId": "cone",
     "flavorId": "",
     "baseWeight": 90,
-    "price": 3,
+    "price": 20,
     "hiddenRange": {
       "min": 10,
-      "max": 30
+      "max": 40
     },
     "rotation": 0
   },
@@ -184,10 +184,10 @@
     "baseId": "lollipop",
     "flavorId": "",
     "baseWeight": 90,
-    "price": 2,
+    "price": 20,
     "hiddenRange": {
-      "min": 5,
-      "max": 15
+      "min": 10,
+      "max": 40
     },
     "rotation": 0
   },
@@ -196,10 +196,10 @@
     "baseId": "gummy",
     "flavorId": "",
     "baseWeight": 90,
-    "price": 2,
+    "price": 20,
     "hiddenRange": {
-      "min": 4,
-      "max": 12
+      "min": 10,
+      "max": 40
     },
     "rotation": 0
   },
@@ -208,10 +208,10 @@
     "baseId": "cupcake",
     "flavorId": "",
     "baseWeight": 60,
-    "price": 2,
+    "price": 20,
     "hiddenRange": {
-      "min": 7,
-      "max": 21
+      "min": 10,
+      "max": 40
     },
     "rotation": 0
   },
@@ -220,10 +220,10 @@
     "baseId": "mousse",
     "flavorId": "",
     "baseWeight": 60,
-    "price": 3,
+    "price": 20,
     "hiddenRange": {
-      "min": 8,
-      "max": 24
+      "min": 10,
+      "max": 40
     },
     "rotation": 0
   },
@@ -232,10 +232,10 @@
     "baseId": "toffee",
     "flavorId": "",
     "baseWeight": 90,
-    "price": 2,
+    "price": 20,
     "hiddenRange": {
-      "min": 7,
-      "max": 22
+      "min": 10,
+      "max": 40
     },
     "rotation": 0
   },
@@ -244,10 +244,10 @@
     "baseId": "nougat",
     "flavorId": "",
     "baseWeight": 90,
-    "price": 3,
+    "price": 20,
     "hiddenRange": {
       "min": 10,
-      "max": 30
+      "max": 40
     },
     "rotation": 0
   },
@@ -256,9 +256,9 @@
     "baseId": "eggroll",
     "flavorId": "",
     "baseWeight": 90,
-    "price": 5,
+    "price": 30,
     "hiddenRange": {
-      "min": 15,
+      "min": 20,
       "max": 45
     },
     "rotation": 0
@@ -268,10 +268,10 @@
     "baseId": "choco_bar",
     "flavorId": "",
     "baseWeight": 90,
-    "price": 7,
+    "price": 30,
     "hiddenRange": {
       "min": 20,
-      "max": 60
+      "max": 45
     },
     "rotation": 0
   },
@@ -280,9 +280,9 @@
     "baseId": "eclair",
     "flavorId": "",
     "baseWeight": 90,
-    "price": 5,
+    "price": 30,
     "hiddenRange": {
-      "min": 15,
+      "min": 20,
       "max": 45
     },
     "rotation": 0
@@ -292,10 +292,10 @@
     "baseId": "tanghulu",
     "flavorId": "",
     "baseWeight": 90,
-    "price": 3,
+    "price": 30,
     "hiddenRange": {
-      "min": 10,
-      "max": 30
+      "min": 20,
+      "max": 45
     },
     "rotation": 0
   },
@@ -304,10 +304,10 @@
     "baseId": "souffle",
     "flavorId": "",
     "baseWeight": 90,
-    "price": 5,
+    "price": 40,
     "hiddenRange": {
-      "min": 15,
-      "max": 45
+      "min": 30,
+      "max": 55
     },
     "rotation": 0
   },
@@ -316,10 +316,10 @@
     "baseId": "taosu",
     "flavorId": "",
     "baseWeight": 60,
-    "price": 3,
+    "price": 40,
     "hiddenRange": {
-      "min": 10,
-      "max": 30
+      "min": 30,
+      "max": 55
     },
     "rotation": 0
   },
@@ -328,10 +328,10 @@
     "baseId": "mooncake",
     "flavorId": "",
     "baseWeight": 60,
-    "price": 4,
+    "price": 40,
     "hiddenRange": {
-      "min": 12,
-      "max": 37
+      "min": 30,
+      "max": 55
     },
     "rotation": 0
   },
@@ -340,10 +340,10 @@
     "baseId": "waffle",
     "flavorId": "",
     "baseWeight": 60,
-    "price": 3,
+    "price": 40,
     "hiddenRange": {
-      "min": 10,
-      "max": 30
+      "min": 30,
+      "max": 55
     },
     "rotation": 0
   },
@@ -352,10 +352,10 @@
     "baseId": "dorayaki",
     "flavorId": "",
     "baseWeight": 60,
-    "price": 3,
+    "price": 40,
     "hiddenRange": {
-      "min": 10,
-      "max": 30
+      "min": 30,
+      "max": 55
     },
     "rotation": 0
   },
@@ -364,10 +364,10 @@
     "baseId": "cream_cake",
     "flavorId": "",
     "baseWeight": 60,
-    "price": 8,
+    "price": 40,
     "hiddenRange": {
-      "min": 25,
-      "max": 75
+      "min": 30,
+      "max": 55
     },
     "rotation": 0
   },
@@ -376,10 +376,10 @@
     "baseId": "donut",
     "flavorId": "",
     "baseWeight": 60,
-    "price": 7,
+    "price": 40,
     "hiddenRange": {
-      "min": 20,
-      "max": 60
+      "min": 30,
+      "max": 55
     },
     "rotation": 0
   },
@@ -388,10 +388,10 @@
     "baseId": "pengtang",
     "flavorId": "",
     "baseWeight": 90,
-    "price": 5,
+    "price": 40,
     "hiddenRange": {
-      "min": 15,
-      "max": 45
+      "min": 30,
+      "max": 55
     },
     "rotation": 0
   },
@@ -400,10 +400,10 @@
     "baseId": "parfait",
     "flavorId": "",
     "baseWeight": 60,
-    "price": 8,
+    "price": 60,
     "hiddenRange": {
-      "min": 25,
-      "max": 75
+      "min": 40,
+      "max": 70
     },
     "rotation": 0
   },
@@ -412,10 +412,10 @@
     "baseId": "sundae_big",
     "flavorId": "",
     "baseWeight": 60,
-    "price": 7,
+    "price": 60,
     "hiddenRange": {
-      "min": 20,
-      "max": 60
+      "min": 40,
+      "max": 70
     },
     "rotation": 0
   },
@@ -424,10 +424,10 @@
     "baseId": "swiss_roll",
     "flavorId": "",
     "baseWeight": 90,
-    "price": 5,
+    "price": 60,
     "hiddenRange": {
-      "min": 15,
-      "max": 45
+      "min": 40,
+      "max": 70
     },
     "rotation": 0
   },
@@ -436,22 +436,22 @@
     "baseId": "mango_sago",
     "flavorId": "",
     "baseWeight": 60,
-    "price": 3,
+    "price": 60,
     "hiddenRange": {
-      "min": 10,
-      "max": 30
+      "min": 40,
+      "max": 70
     },
     "rotation": 0
   },
   {
-    "id": "chiffon",
-    "baseId": "chiffon",
+    "id": "chiffion",
+    "baseId": "chiffion",
     "flavorId": "",
     "baseWeight": 60,
-    "price": 5,
+    "price": 60,
     "hiddenRange": {
-      "min": 15,
-      "max": 45
+      "min": 40,
+      "max": 70
     },
     "rotation": 0
   },
@@ -460,10 +460,10 @@
     "baseId": "apple_pie",
     "flavorId": "",
     "baseWeight": 90,
-    "price": 8,
+    "price": 60,
     "hiddenRange": {
-      "min": 25,
-      "max": 75
+      "min": 40,
+      "max": 70
     },
     "rotation": 0
   },
@@ -472,10 +472,10 @@
     "baseId": "fruit_cake",
     "flavorId": "",
     "baseWeight": 90,
-    "price": 7,
+    "price": 60,
     "hiddenRange": {
-      "min": 20,
-      "max": 60
+      "min": 40,
+      "max": 70
     },
     "rotation": 0
   },
@@ -484,10 +484,10 @@
     "baseId": "chocolate",
     "flavorId": "",
     "baseWeight": 60,
-    "price": 5,
+    "price": 60,
     "hiddenRange": {
-      "min": 15,
-      "max": 45
+      "min": 40,
+      "max": 70
     },
     "rotation": 0
   },
@@ -496,10 +496,10 @@
     "baseId": "croissant",
     "flavorId": "",
     "baseWeight": 90,
-    "price": 3,
+    "price": 30,
     "hiddenRange": {
-      "min": 10,
-      "max": 30
+      "min": 20,
+      "max": 45
     },
     "rotation": 0
   },
@@ -508,9 +508,9 @@
     "baseId": "palmier",
     "flavorId": "",
     "baseWeight": 90,
-    "price": 5,
+    "price": 30,
     "hiddenRange": {
-      "min": 15,
+      "min": 20,
       "max": 45
     },
     "rotation": 0
@@ -520,10 +520,10 @@
     "baseId": "candycane",
     "flavorId": "",
     "baseWeight": 60,
-    "price": 7,
+    "price": 40,
     "hiddenRange": {
-      "min": 20,
-      "max": 60
+      "min": 30,
+      "max": 55
     },
     "rotation": 0
   },
@@ -532,10 +532,10 @@
     "baseId": "big_lollipop",
     "flavorId": "",
     "baseWeight": 60,
-    "price": 17,
+    "price": 110,
     "hiddenRange": {
-      "min": 50,
-      "max": 150
+      "min": 45,
+      "max": 80
     },
     "rotation": 0
   },
@@ -544,10 +544,10 @@
     "baseId": "marshmallow",
     "flavorId": "",
     "baseWeight": 60,
-    "price": 13,
+    "price": 90,
     "hiddenRange": {
-      "min": 40,
-      "max": 120
+      "min": 45,
+      "max": 80
     },
     "rotation": 0
   },
@@ -556,10 +556,3394 @@
     "baseId": "double_cake",
     "flavorId": "",
     "baseWeight": 60,
-    "price": 23,
+    "price": 160,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "cookiet_sweet",
+    "baseId": "cookie",
+    "flavorId": "t_sweet",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "macaront_sweet",
+    "baseId": "macaron",
+    "flavorId": "t_sweet",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "puddingt_sweet",
+    "baseId": "pudding",
+    "flavorId": "t_sweet",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "pufft_sweet",
+    "baseId": "puff",
+    "flavorId": "t_sweet",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "eggtartt_sweet",
+    "baseId": "eggtart",
+    "flavorId": "t_sweet",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "mochit_sweet",
+    "baseId": "mochi",
+    "flavorId": "t_sweet",
+    "baseWeight": 90,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "daifukut_sweet",
+    "baseId": "daifuku",
+    "flavorId": "t_sweet",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "choco_candyt_sweet",
+    "baseId": "choco_candy",
+    "flavorId": "t_sweet",
+    "baseWeight": 90,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "jellyt_sweet",
+    "baseId": "jelly",
+    "flavorId": "t_sweet",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "cream_cellt_sweet",
+    "baseId": "cream_cell",
+    "flavorId": "t_sweet",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "sugarbeant_sweet",
+    "baseId": "sugarbean",
+    "flavorId": "t_sweet",
+    "baseWeight": 60,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "gold_chocot_sweet",
+    "baseId": "gold_choco",
+    "flavorId": "t_sweet",
+    "baseWeight": 90,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "milk_slicet_sweet",
+    "baseId": "milk_slice",
+    "flavorId": "t_sweet",
+    "baseWeight": 90,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "sundaet_sweet",
+    "baseId": "sundae",
+    "flavorId": "t_sweet",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "conet_sweet",
+    "baseId": "cone",
+    "flavorId": "t_sweet",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "lollipopt_sweet",
+    "baseId": "lollipop",
+    "flavorId": "t_sweet",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "gummyt_sweet",
+    "baseId": "gummy",
+    "flavorId": "t_sweet",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "cupcaket_sweet",
+    "baseId": "cupcake",
+    "flavorId": "t_sweet",
+    "baseWeight": 60,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "mousset_sweet",
+    "baseId": "mousse",
+    "flavorId": "t_sweet",
+    "baseWeight": 60,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "toffeet_sweet",
+    "baseId": "toffee",
+    "flavorId": "t_sweet",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "nougatt_sweet",
+    "baseId": "nougat",
+    "flavorId": "t_sweet",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "eggrollt_sweet",
+    "baseId": "eggroll",
+    "flavorId": "t_sweet",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "choco_bart_sweet",
+    "baseId": "choco_bar",
+    "flavorId": "t_sweet",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "eclairt_sweet",
+    "baseId": "eclair",
+    "flavorId": "t_sweet",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "tanghulut_sweet",
+    "baseId": "tanghulu",
+    "flavorId": "t_sweet",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "soufflet_sweet",
+    "baseId": "souffle",
+    "flavorId": "t_sweet",
+    "baseWeight": 90,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "taosut_sweet",
+    "baseId": "taosu",
+    "flavorId": "t_sweet",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "mooncaket_sweet",
+    "baseId": "mooncake",
+    "flavorId": "t_sweet",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "wafflet_sweet",
+    "baseId": "waffle",
+    "flavorId": "t_sweet",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "dorayakit_sweet",
+    "baseId": "dorayaki",
+    "flavorId": "t_sweet",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "cream_caket_sweet",
+    "baseId": "cream_cake",
+    "flavorId": "t_sweet",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "donutt_sweet",
+    "baseId": "donut",
+    "flavorId": "t_sweet",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "pengtangt_sweet",
+    "baseId": "pengtang",
+    "flavorId": "t_sweet",
+    "baseWeight": 90,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "parfaitt_sweet",
+    "baseId": "parfait",
+    "flavorId": "t_sweet",
+    "baseWeight": 60,
+    "price": 120,
     "hiddenRange": {
       "min": 70,
-      "max": 210
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "sundae_bigt_sweet",
+    "baseId": "sundae_big",
+    "flavorId": "t_sweet",
+    "baseWeight": 60,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "swiss_rollt_sweet",
+    "baseId": "swiss_roll",
+    "flavorId": "t_sweet",
+    "baseWeight": 90,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "mango_sagot_sweet",
+    "baseId": "mango_sago",
+    "flavorId": "t_sweet",
+    "baseWeight": 60,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "chiffiont_sweet",
+    "baseId": "chiffion",
+    "flavorId": "t_sweet",
+    "baseWeight": 60,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "apple_piet_sweet",
+    "baseId": "apple_pie",
+    "flavorId": "t_sweet",
+    "baseWeight": 90,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "fruit_caket_sweet",
+    "baseId": "fruit_cake",
+    "flavorId": "t_sweet",
+    "baseWeight": 90,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "chocolatet_sweet",
+    "baseId": "chocolate",
+    "flavorId": "t_sweet",
+    "baseWeight": 60,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "croissantt_sweet",
+    "baseId": "croissant",
+    "flavorId": "t_sweet",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "palmiert_sweet",
+    "baseId": "palmier",
+    "flavorId": "t_sweet",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "candycanet_sweet",
+    "baseId": "candycane",
+    "flavorId": "t_sweet",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "big_lollipopt_sweet",
+    "baseId": "big_lollipop",
+    "flavorId": "t_sweet",
+    "baseWeight": 60,
+    "price": 190,
+    "hiddenRange": {
+      "min": 80,
+      "max": 130
+    },
+    "rotation": 0
+  },
+  {
+    "id": "marshmallowt_sweet",
+    "baseId": "marshmallow",
+    "flavorId": "t_sweet",
+    "baseWeight": 60,
+    "price": 160,
+    "hiddenRange": {
+      "min": 80,
+      "max": 130
+    },
+    "rotation": 0
+  },
+  {
+    "id": "double_caket_sweet",
+    "baseId": "double_cake",
+    "flavorId": "t_sweet",
+    "baseWeight": 60,
+    "price": 260,
+    "hiddenRange": {
+      "min": 80,
+      "max": 130
+    },
+    "rotation": 0
+  },
+  {
+    "id": "cookiet_bitter",
+    "baseId": "cookie",
+    "flavorId": "t_bitter",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "macaront_bitter",
+    "baseId": "macaron",
+    "flavorId": "t_bitter",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "puddingt_bitter",
+    "baseId": "pudding",
+    "flavorId": "t_bitter",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "pufft_bitter",
+    "baseId": "puff",
+    "flavorId": "t_bitter",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "eggtartt_bitter",
+    "baseId": "eggtart",
+    "flavorId": "t_bitter",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "mochit_bitter",
+    "baseId": "mochi",
+    "flavorId": "t_bitter",
+    "baseWeight": 90,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "daifukut_bitter",
+    "baseId": "daifuku",
+    "flavorId": "t_bitter",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "choco_candyt_bitter",
+    "baseId": "choco_candy",
+    "flavorId": "t_bitter",
+    "baseWeight": 90,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "jellyt_bitter",
+    "baseId": "jelly",
+    "flavorId": "t_bitter",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "cream_cellt_bitter",
+    "baseId": "cream_cell",
+    "flavorId": "t_bitter",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "sugarbeant_bitter",
+    "baseId": "sugarbean",
+    "flavorId": "t_bitter",
+    "baseWeight": 60,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "gold_chocot_bitter",
+    "baseId": "gold_choco",
+    "flavorId": "t_bitter",
+    "baseWeight": 90,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "milk_slicet_bitter",
+    "baseId": "milk_slice",
+    "flavorId": "t_bitter",
+    "baseWeight": 90,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "sundaet_bitter",
+    "baseId": "sundae",
+    "flavorId": "t_bitter",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "conet_bitter",
+    "baseId": "cone",
+    "flavorId": "t_bitter",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "lollipopt_bitter",
+    "baseId": "lollipop",
+    "flavorId": "t_bitter",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "gummyt_bitter",
+    "baseId": "gummy",
+    "flavorId": "t_bitter",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "cupcaket_bitter",
+    "baseId": "cupcake",
+    "flavorId": "t_bitter",
+    "baseWeight": 60,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "mousset_bitter",
+    "baseId": "mousse",
+    "flavorId": "t_bitter",
+    "baseWeight": 60,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "toffeet_bitter",
+    "baseId": "toffee",
+    "flavorId": "t_bitter",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "nougatt_bitter",
+    "baseId": "nougat",
+    "flavorId": "t_bitter",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "eggrollt_bitter",
+    "baseId": "eggroll",
+    "flavorId": "t_bitter",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "choco_bart_bitter",
+    "baseId": "choco_bar",
+    "flavorId": "t_bitter",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "eclairt_bitter",
+    "baseId": "eclair",
+    "flavorId": "t_bitter",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "tanghulut_bitter",
+    "baseId": "tanghulu",
+    "flavorId": "t_bitter",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "soufflet_bitter",
+    "baseId": "souffle",
+    "flavorId": "t_bitter",
+    "baseWeight": 90,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "taosut_bitter",
+    "baseId": "taosu",
+    "flavorId": "t_bitter",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "mooncaket_bitter",
+    "baseId": "mooncake",
+    "flavorId": "t_bitter",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "wafflet_bitter",
+    "baseId": "waffle",
+    "flavorId": "t_bitter",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "dorayakit_bitter",
+    "baseId": "dorayaki",
+    "flavorId": "t_bitter",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "cream_caket_bitter",
+    "baseId": "cream_cake",
+    "flavorId": "t_bitter",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "donutt_bitter",
+    "baseId": "donut",
+    "flavorId": "t_bitter",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "pengtangt_bitter",
+    "baseId": "pengtang",
+    "flavorId": "t_bitter",
+    "baseWeight": 90,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "parfaitt_bitter",
+    "baseId": "parfait",
+    "flavorId": "t_bitter",
+    "baseWeight": 60,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "sundae_bigt_bitter",
+    "baseId": "sundae_big",
+    "flavorId": "t_bitter",
+    "baseWeight": 60,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "swiss_rollt_bitter",
+    "baseId": "swiss_roll",
+    "flavorId": "t_bitter",
+    "baseWeight": 90,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "mango_sagot_bitter",
+    "baseId": "mango_sago",
+    "flavorId": "t_bitter",
+    "baseWeight": 60,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "chiffiont_bitter",
+    "baseId": "chiffion",
+    "flavorId": "t_bitter",
+    "baseWeight": 60,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "apple_piet_bitter",
+    "baseId": "apple_pie",
+    "flavorId": "t_bitter",
+    "baseWeight": 90,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "fruit_caket_bitter",
+    "baseId": "fruit_cake",
+    "flavorId": "t_bitter",
+    "baseWeight": 90,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "chocolatet_bitter",
+    "baseId": "chocolate",
+    "flavorId": "t_bitter",
+    "baseWeight": 60,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "croissantt_bitter",
+    "baseId": "croissant",
+    "flavorId": "t_bitter",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "palmiert_bitter",
+    "baseId": "palmier",
+    "flavorId": "t_bitter",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "candycanet_bitter",
+    "baseId": "candycane",
+    "flavorId": "t_bitter",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "big_lollipopt_bitter",
+    "baseId": "big_lollipop",
+    "flavorId": "t_bitter",
+    "baseWeight": 60,
+    "price": 190,
+    "hiddenRange": {
+      "min": 80,
+      "max": 130
+    },
+    "rotation": 0
+  },
+  {
+    "id": "marshmallowt_bitter",
+    "baseId": "marshmallow",
+    "flavorId": "t_bitter",
+    "baseWeight": 60,
+    "price": 160,
+    "hiddenRange": {
+      "min": 80,
+      "max": 130
+    },
+    "rotation": 0
+  },
+  {
+    "id": "double_caket_bitter",
+    "baseId": "double_cake",
+    "flavorId": "t_bitter",
+    "baseWeight": 60,
+    "price": 260,
+    "hiddenRange": {
+      "min": 80,
+      "max": 130
+    },
+    "rotation": 0
+  },
+  {
+    "id": "cookiet_rust",
+    "baseId": "cookie",
+    "flavorId": "t_rust",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "macaront_rust",
+    "baseId": "macaron",
+    "flavorId": "t_rust",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "puddingt_rust",
+    "baseId": "pudding",
+    "flavorId": "t_rust",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "pufft_rust",
+    "baseId": "puff",
+    "flavorId": "t_rust",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "eggtartt_rust",
+    "baseId": "eggtart",
+    "flavorId": "t_rust",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "mochit_rust",
+    "baseId": "mochi",
+    "flavorId": "t_rust",
+    "baseWeight": 90,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "daifukut_rust",
+    "baseId": "daifuku",
+    "flavorId": "t_rust",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "choco_candyt_rust",
+    "baseId": "choco_candy",
+    "flavorId": "t_rust",
+    "baseWeight": 90,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "jellyt_rust",
+    "baseId": "jelly",
+    "flavorId": "t_rust",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "cream_cellt_rust",
+    "baseId": "cream_cell",
+    "flavorId": "t_rust",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "sugarbeant_rust",
+    "baseId": "sugarbean",
+    "flavorId": "t_rust",
+    "baseWeight": 60,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "gold_chocot_rust",
+    "baseId": "gold_choco",
+    "flavorId": "t_rust",
+    "baseWeight": 90,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "milk_slicet_rust",
+    "baseId": "milk_slice",
+    "flavorId": "t_rust",
+    "baseWeight": 90,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "sundaet_rust",
+    "baseId": "sundae",
+    "flavorId": "t_rust",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "conet_rust",
+    "baseId": "cone",
+    "flavorId": "t_rust",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "lollipopt_rust",
+    "baseId": "lollipop",
+    "flavorId": "t_rust",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "gummyt_rust",
+    "baseId": "gummy",
+    "flavorId": "t_rust",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "cupcaket_rust",
+    "baseId": "cupcake",
+    "flavorId": "t_rust",
+    "baseWeight": 60,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "mousset_rust",
+    "baseId": "mousse",
+    "flavorId": "t_rust",
+    "baseWeight": 60,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "toffeet_rust",
+    "baseId": "toffee",
+    "flavorId": "t_rust",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "nougatt_rust",
+    "baseId": "nougat",
+    "flavorId": "t_rust",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "eggrollt_rust",
+    "baseId": "eggroll",
+    "flavorId": "t_rust",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "choco_bart_rust",
+    "baseId": "choco_bar",
+    "flavorId": "t_rust",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "eclairt_rust",
+    "baseId": "eclair",
+    "flavorId": "t_rust",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "tanghulut_rust",
+    "baseId": "tanghulu",
+    "flavorId": "t_rust",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "soufflet_rust",
+    "baseId": "souffle",
+    "flavorId": "t_rust",
+    "baseWeight": 90,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "taosut_rust",
+    "baseId": "taosu",
+    "flavorId": "t_rust",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "mooncaket_rust",
+    "baseId": "mooncake",
+    "flavorId": "t_rust",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "wafflet_rust",
+    "baseId": "waffle",
+    "flavorId": "t_rust",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "dorayakit_rust",
+    "baseId": "dorayaki",
+    "flavorId": "t_rust",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "cream_caket_rust",
+    "baseId": "cream_cake",
+    "flavorId": "t_rust",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "donutt_rust",
+    "baseId": "donut",
+    "flavorId": "t_rust",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "pengtangt_rust",
+    "baseId": "pengtang",
+    "flavorId": "t_rust",
+    "baseWeight": 90,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "parfaitt_rust",
+    "baseId": "parfait",
+    "flavorId": "t_rust",
+    "baseWeight": 60,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "sundae_bigt_rust",
+    "baseId": "sundae_big",
+    "flavorId": "t_rust",
+    "baseWeight": 60,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "swiss_rollt_rust",
+    "baseId": "swiss_roll",
+    "flavorId": "t_rust",
+    "baseWeight": 90,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "mango_sagot_rust",
+    "baseId": "mango_sago",
+    "flavorId": "t_rust",
+    "baseWeight": 60,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "chiffiont_rust",
+    "baseId": "chiffion",
+    "flavorId": "t_rust",
+    "baseWeight": 60,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "apple_piet_rust",
+    "baseId": "apple_pie",
+    "flavorId": "t_rust",
+    "baseWeight": 90,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "fruit_caket_rust",
+    "baseId": "fruit_cake",
+    "flavorId": "t_rust",
+    "baseWeight": 90,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "chocolatet_rust",
+    "baseId": "chocolate",
+    "flavorId": "t_rust",
+    "baseWeight": 60,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "croissantt_rust",
+    "baseId": "croissant",
+    "flavorId": "t_rust",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "palmiert_rust",
+    "baseId": "palmier",
+    "flavorId": "t_rust",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "candycanet_rust",
+    "baseId": "candycane",
+    "flavorId": "t_rust",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "big_lollipopt_rust",
+    "baseId": "big_lollipop",
+    "flavorId": "t_rust",
+    "baseWeight": 60,
+    "price": 190,
+    "hiddenRange": {
+      "min": 80,
+      "max": 130
+    },
+    "rotation": 0
+  },
+  {
+    "id": "marshmallowt_rust",
+    "baseId": "marshmallow",
+    "flavorId": "t_rust",
+    "baseWeight": 60,
+    "price": 160,
+    "hiddenRange": {
+      "min": 80,
+      "max": 130
+    },
+    "rotation": 0
+  },
+  {
+    "id": "double_caket_rust",
+    "baseId": "double_cake",
+    "flavorId": "t_rust",
+    "baseWeight": 60,
+    "price": 260,
+    "hiddenRange": {
+      "min": 80,
+      "max": 130
+    },
+    "rotation": 0
+  },
+  {
+    "id": "cookiet_numb",
+    "baseId": "cookie",
+    "flavorId": "t_numb",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "macaront_numb",
+    "baseId": "macaron",
+    "flavorId": "t_numb",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "puddingt_numb",
+    "baseId": "pudding",
+    "flavorId": "t_numb",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "pufft_numb",
+    "baseId": "puff",
+    "flavorId": "t_numb",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "eggtartt_numb",
+    "baseId": "eggtart",
+    "flavorId": "t_numb",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "mochit_numb",
+    "baseId": "mochi",
+    "flavorId": "t_numb",
+    "baseWeight": 90,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "daifukut_numb",
+    "baseId": "daifuku",
+    "flavorId": "t_numb",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "choco_candyt_numb",
+    "baseId": "choco_candy",
+    "flavorId": "t_numb",
+    "baseWeight": 90,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "jellyt_numb",
+    "baseId": "jelly",
+    "flavorId": "t_numb",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "cream_cellt_numb",
+    "baseId": "cream_cell",
+    "flavorId": "t_numb",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "sugarbeant_numb",
+    "baseId": "sugarbean",
+    "flavorId": "t_numb",
+    "baseWeight": 60,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "gold_chocot_numb",
+    "baseId": "gold_choco",
+    "flavorId": "t_numb",
+    "baseWeight": 90,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "milk_slicet_numb",
+    "baseId": "milk_slice",
+    "flavorId": "t_numb",
+    "baseWeight": 90,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "sundaet_numb",
+    "baseId": "sundae",
+    "flavorId": "t_numb",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "conet_numb",
+    "baseId": "cone",
+    "flavorId": "t_numb",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "lollipopt_numb",
+    "baseId": "lollipop",
+    "flavorId": "t_numb",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "gummyt_numb",
+    "baseId": "gummy",
+    "flavorId": "t_numb",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "cupcaket_numb",
+    "baseId": "cupcake",
+    "flavorId": "t_numb",
+    "baseWeight": 60,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "mousset_numb",
+    "baseId": "mousse",
+    "flavorId": "t_numb",
+    "baseWeight": 60,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "toffeet_numb",
+    "baseId": "toffee",
+    "flavorId": "t_numb",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "nougatt_numb",
+    "baseId": "nougat",
+    "flavorId": "t_numb",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "eggrollt_numb",
+    "baseId": "eggroll",
+    "flavorId": "t_numb",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "choco_bart_numb",
+    "baseId": "choco_bar",
+    "flavorId": "t_numb",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "eclairt_numb",
+    "baseId": "eclair",
+    "flavorId": "t_numb",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "tanghulut_numb",
+    "baseId": "tanghulu",
+    "flavorId": "t_numb",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "soufflet_numb",
+    "baseId": "souffle",
+    "flavorId": "t_numb",
+    "baseWeight": 90,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "taosut_numb",
+    "baseId": "taosu",
+    "flavorId": "t_numb",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "mooncaket_numb",
+    "baseId": "mooncake",
+    "flavorId": "t_numb",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "wafflet_numb",
+    "baseId": "waffle",
+    "flavorId": "t_numb",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "dorayakit_numb",
+    "baseId": "dorayaki",
+    "flavorId": "t_numb",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "cream_caket_numb",
+    "baseId": "cream_cake",
+    "flavorId": "t_numb",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "donutt_numb",
+    "baseId": "donut",
+    "flavorId": "t_numb",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "pengtangt_numb",
+    "baseId": "pengtang",
+    "flavorId": "t_numb",
+    "baseWeight": 90,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "parfaitt_numb",
+    "baseId": "parfait",
+    "flavorId": "t_numb",
+    "baseWeight": 60,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "sundae_bigt_numb",
+    "baseId": "sundae_big",
+    "flavorId": "t_numb",
+    "baseWeight": 60,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "swiss_rollt_numb",
+    "baseId": "swiss_roll",
+    "flavorId": "t_numb",
+    "baseWeight": 90,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "mango_sagot_numb",
+    "baseId": "mango_sago",
+    "flavorId": "t_numb",
+    "baseWeight": 60,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "chiffiont_numb",
+    "baseId": "chiffion",
+    "flavorId": "t_numb",
+    "baseWeight": 60,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "apple_piet_numb",
+    "baseId": "apple_pie",
+    "flavorId": "t_numb",
+    "baseWeight": 90,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "fruit_caket_numb",
+    "baseId": "fruit_cake",
+    "flavorId": "t_numb",
+    "baseWeight": 90,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "chocolatet_numb",
+    "baseId": "chocolate",
+    "flavorId": "t_numb",
+    "baseWeight": 60,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "croissantt_numb",
+    "baseId": "croissant",
+    "flavorId": "t_numb",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "palmiert_numb",
+    "baseId": "palmier",
+    "flavorId": "t_numb",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "candycanet_numb",
+    "baseId": "candycane",
+    "flavorId": "t_numb",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "big_lollipopt_numb",
+    "baseId": "big_lollipop",
+    "flavorId": "t_numb",
+    "baseWeight": 60,
+    "price": 190,
+    "hiddenRange": {
+      "min": 80,
+      "max": 130
+    },
+    "rotation": 0
+  },
+  {
+    "id": "marshmallowt_numb",
+    "baseId": "marshmallow",
+    "flavorId": "t_numb",
+    "baseWeight": 60,
+    "price": 160,
+    "hiddenRange": {
+      "min": 80,
+      "max": 130
+    },
+    "rotation": 0
+  },
+  {
+    "id": "double_caket_numb",
+    "baseId": "double_cake",
+    "flavorId": "t_numb",
+    "baseWeight": 60,
+    "price": 260,
+    "hiddenRange": {
+      "min": 80,
+      "max": 130
+    },
+    "rotation": 0
+  },
+  {
+    "id": "cookiet_sour",
+    "baseId": "cookie",
+    "flavorId": "t_sour",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "macaront_sour",
+    "baseId": "macaron",
+    "flavorId": "t_sour",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "puddingt_sour",
+    "baseId": "pudding",
+    "flavorId": "t_sour",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "pufft_sour",
+    "baseId": "puff",
+    "flavorId": "t_sour",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "eggtartt_sour",
+    "baseId": "eggtart",
+    "flavorId": "t_sour",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "mochit_sour",
+    "baseId": "mochi",
+    "flavorId": "t_sour",
+    "baseWeight": 90,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "daifukut_sour",
+    "baseId": "daifuku",
+    "flavorId": "t_sour",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "choco_candyt_sour",
+    "baseId": "choco_candy",
+    "flavorId": "t_sour",
+    "baseWeight": 90,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "jellyt_sour",
+    "baseId": "jelly",
+    "flavorId": "t_sour",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "cream_cellt_sour",
+    "baseId": "cream_cell",
+    "flavorId": "t_sour",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "sugarbeant_sour",
+    "baseId": "sugarbean",
+    "flavorId": "t_sour",
+    "baseWeight": 60,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "gold_chocot_sour",
+    "baseId": "gold_choco",
+    "flavorId": "t_sour",
+    "baseWeight": 90,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "milk_slicet_sour",
+    "baseId": "milk_slice",
+    "flavorId": "t_sour",
+    "baseWeight": 90,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "sundaet_sour",
+    "baseId": "sundae",
+    "flavorId": "t_sour",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "conet_sour",
+    "baseId": "cone",
+    "flavorId": "t_sour",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "lollipopt_sour",
+    "baseId": "lollipop",
+    "flavorId": "t_sour",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "gummyt_sour",
+    "baseId": "gummy",
+    "flavorId": "t_sour",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "cupcaket_sour",
+    "baseId": "cupcake",
+    "flavorId": "t_sour",
+    "baseWeight": 60,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "mousset_sour",
+    "baseId": "mousse",
+    "flavorId": "t_sour",
+    "baseWeight": 60,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "toffeet_sour",
+    "baseId": "toffee",
+    "flavorId": "t_sour",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "nougatt_sour",
+    "baseId": "nougat",
+    "flavorId": "t_sour",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "eggrollt_sour",
+    "baseId": "eggroll",
+    "flavorId": "t_sour",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "choco_bart_sour",
+    "baseId": "choco_bar",
+    "flavorId": "t_sour",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "eclairt_sour",
+    "baseId": "eclair",
+    "flavorId": "t_sour",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "tanghulut_sour",
+    "baseId": "tanghulu",
+    "flavorId": "t_sour",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "soufflet_sour",
+    "baseId": "souffle",
+    "flavorId": "t_sour",
+    "baseWeight": 90,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "taosut_sour",
+    "baseId": "taosu",
+    "flavorId": "t_sour",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "mooncaket_sour",
+    "baseId": "mooncake",
+    "flavorId": "t_sour",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "wafflet_sour",
+    "baseId": "waffle",
+    "flavorId": "t_sour",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "dorayakit_sour",
+    "baseId": "dorayaki",
+    "flavorId": "t_sour",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "cream_caket_sour",
+    "baseId": "cream_cake",
+    "flavorId": "t_sour",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "donutt_sour",
+    "baseId": "donut",
+    "flavorId": "t_sour",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "pengtangt_sour",
+    "baseId": "pengtang",
+    "flavorId": "t_sour",
+    "baseWeight": 90,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "parfaitt_sour",
+    "baseId": "parfait",
+    "flavorId": "t_sour",
+    "baseWeight": 60,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "sundae_bigt_sour",
+    "baseId": "sundae_big",
+    "flavorId": "t_sour",
+    "baseWeight": 60,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "swiss_rollt_sour",
+    "baseId": "swiss_roll",
+    "flavorId": "t_sour",
+    "baseWeight": 90,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "mango_sagot_sour",
+    "baseId": "mango_sago",
+    "flavorId": "t_sour",
+    "baseWeight": 60,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "chiffiont_sour",
+    "baseId": "chiffion",
+    "flavorId": "t_sour",
+    "baseWeight": 60,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "apple_piet_sour",
+    "baseId": "apple_pie",
+    "flavorId": "t_sour",
+    "baseWeight": 90,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "fruit_caket_sour",
+    "baseId": "fruit_cake",
+    "flavorId": "t_sour",
+    "baseWeight": 90,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "chocolatet_sour",
+    "baseId": "chocolate",
+    "flavorId": "t_sour",
+    "baseWeight": 60,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "croissantt_sour",
+    "baseId": "croissant",
+    "flavorId": "t_sour",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "palmiert_sour",
+    "baseId": "palmier",
+    "flavorId": "t_sour",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "candycanet_sour",
+    "baseId": "candycane",
+    "flavorId": "t_sour",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "big_lollipopt_sour",
+    "baseId": "big_lollipop",
+    "flavorId": "t_sour",
+    "baseWeight": 60,
+    "price": 190,
+    "hiddenRange": {
+      "min": 80,
+      "max": 130
+    },
+    "rotation": 0
+  },
+  {
+    "id": "marshmallowt_sour",
+    "baseId": "marshmallow",
+    "flavorId": "t_sour",
+    "baseWeight": 60,
+    "price": 160,
+    "hiddenRange": {
+      "min": 80,
+      "max": 130
+    },
+    "rotation": 0
+  },
+  {
+    "id": "double_caket_sour",
+    "baseId": "double_cake",
+    "flavorId": "t_sour",
+    "baseWeight": 60,
+    "price": 260,
+    "hiddenRange": {
+      "min": 80,
+      "max": 130
+    },
+    "rotation": 0
+  },
+  {
+    "id": "cookiet_salty",
+    "baseId": "cookie",
+    "flavorId": "t_salty",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "macaront_salty",
+    "baseId": "macaron",
+    "flavorId": "t_salty",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "puddingt_salty",
+    "baseId": "pudding",
+    "flavorId": "t_salty",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "pufft_salty",
+    "baseId": "puff",
+    "flavorId": "t_salty",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "eggtartt_salty",
+    "baseId": "eggtart",
+    "flavorId": "t_salty",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "mochit_salty",
+    "baseId": "mochi",
+    "flavorId": "t_salty",
+    "baseWeight": 90,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "daifukut_salty",
+    "baseId": "daifuku",
+    "flavorId": "t_salty",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "choco_candyt_salty",
+    "baseId": "choco_candy",
+    "flavorId": "t_salty",
+    "baseWeight": 90,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "jellyt_salty",
+    "baseId": "jelly",
+    "flavorId": "t_salty",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "cream_cellt_salty",
+    "baseId": "cream_cell",
+    "flavorId": "t_salty",
+    "baseWeight": 120,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "sugarbeant_salty",
+    "baseId": "sugarbean",
+    "flavorId": "t_salty",
+    "baseWeight": 60,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "gold_chocot_salty",
+    "baseId": "gold_choco",
+    "flavorId": "t_salty",
+    "baseWeight": 90,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "milk_slicet_salty",
+    "baseId": "milk_slice",
+    "flavorId": "t_salty",
+    "baseWeight": 90,
+    "price": 50,
+    "hiddenRange": {
+      "min": 35,
+      "max": 60
+    },
+    "rotation": 0
+  },
+  {
+    "id": "sundaet_salty",
+    "baseId": "sundae",
+    "flavorId": "t_salty",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "conet_salty",
+    "baseId": "cone",
+    "flavorId": "t_salty",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "lollipopt_salty",
+    "baseId": "lollipop",
+    "flavorId": "t_salty",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "gummyt_salty",
+    "baseId": "gummy",
+    "flavorId": "t_salty",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "cupcaket_salty",
+    "baseId": "cupcake",
+    "flavorId": "t_salty",
+    "baseWeight": 60,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "mousset_salty",
+    "baseId": "mousse",
+    "flavorId": "t_salty",
+    "baseWeight": 60,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "toffeet_salty",
+    "baseId": "toffee",
+    "flavorId": "t_salty",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "nougatt_salty",
+    "baseId": "nougat",
+    "flavorId": "t_salty",
+    "baseWeight": 90,
+    "price": 60,
+    "hiddenRange": {
+      "min": 40,
+      "max": 70
+    },
+    "rotation": 0
+  },
+  {
+    "id": "eggrollt_salty",
+    "baseId": "eggroll",
+    "flavorId": "t_salty",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "choco_bart_salty",
+    "baseId": "choco_bar",
+    "flavorId": "t_salty",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "eclairt_salty",
+    "baseId": "eclair",
+    "flavorId": "t_salty",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "tanghulut_salty",
+    "baseId": "tanghulu",
+    "flavorId": "t_salty",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "soufflet_salty",
+    "baseId": "souffle",
+    "flavorId": "t_salty",
+    "baseWeight": 90,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "taosut_salty",
+    "baseId": "taosu",
+    "flavorId": "t_salty",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "mooncaket_salty",
+    "baseId": "mooncake",
+    "flavorId": "t_salty",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "wafflet_salty",
+    "baseId": "waffle",
+    "flavorId": "t_salty",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "dorayakit_salty",
+    "baseId": "dorayaki",
+    "flavorId": "t_salty",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "cream_caket_salty",
+    "baseId": "cream_cake",
+    "flavorId": "t_salty",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "donutt_salty",
+    "baseId": "donut",
+    "flavorId": "t_salty",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "pengtangt_salty",
+    "baseId": "pengtang",
+    "flavorId": "t_salty",
+    "baseWeight": 90,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "parfaitt_salty",
+    "baseId": "parfait",
+    "flavorId": "t_salty",
+    "baseWeight": 60,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "sundae_bigt_salty",
+    "baseId": "sundae_big",
+    "flavorId": "t_salty",
+    "baseWeight": 60,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "swiss_rollt_salty",
+    "baseId": "swiss_roll",
+    "flavorId": "t_salty",
+    "baseWeight": 90,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "mango_sagot_salty",
+    "baseId": "mango_sago",
+    "flavorId": "t_salty",
+    "baseWeight": 60,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "chiffiont_salty",
+    "baseId": "chiffion",
+    "flavorId": "t_salty",
+    "baseWeight": 60,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "apple_piet_salty",
+    "baseId": "apple_pie",
+    "flavorId": "t_salty",
+    "baseWeight": 90,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "fruit_caket_salty",
+    "baseId": "fruit_cake",
+    "flavorId": "t_salty",
+    "baseWeight": 90,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "chocolatet_salty",
+    "baseId": "chocolate",
+    "flavorId": "t_salty",
+    "baseWeight": 60,
+    "price": 120,
+    "hiddenRange": {
+      "min": 70,
+      "max": 120
+    },
+    "rotation": 0
+  },
+  {
+    "id": "croissantt_salty",
+    "baseId": "croissant",
+    "flavorId": "t_salty",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "palmiert_salty",
+    "baseId": "palmier",
+    "flavorId": "t_salty",
+    "baseWeight": 90,
+    "price": 80,
+    "hiddenRange": {
+      "min": 45,
+      "max": 80
+    },
+    "rotation": 0
+  },
+  {
+    "id": "candycanet_salty",
+    "baseId": "candycane",
+    "flavorId": "t_salty",
+    "baseWeight": 60,
+    "price": 90,
+    "hiddenRange": {
+      "min": 55,
+      "max": 100
+    },
+    "rotation": 0
+  },
+  {
+    "id": "big_lollipopt_salty",
+    "baseId": "big_lollipop",
+    "flavorId": "t_salty",
+    "baseWeight": 60,
+    "price": 190,
+    "hiddenRange": {
+      "min": 80,
+      "max": 130
+    },
+    "rotation": 0
+  },
+  {
+    "id": "marshmallowt_salty",
+    "baseId": "marshmallow",
+    "flavorId": "t_salty",
+    "baseWeight": 60,
+    "price": 160,
+    "hiddenRange": {
+      "min": 80,
+      "max": 130
+    },
+    "rotation": 0
+  },
+  {
+    "id": "double_caket_salty",
+    "baseId": "double_cake",
+    "flavorId": "t_salty",
+    "baseWeight": 60,
+    "price": 260,
+    "hiddenRange": {
+      "min": 80,
+      "max": 130
     },
     "rotation": 0
   }
