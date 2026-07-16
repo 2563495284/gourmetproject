@@ -32,8 +32,17 @@ namespace GourmetProject.Game.Orchestration
 
         void ShowNotice(string title, string message, Action onContinue);
 
-        /// <summary>事件「n 选一」：在常驻壳中部就地铺出事件选项卡（与行动选择共用一套中部卡片 UI）。</summary>
-        void ShowEventChoices(string title, string desc, IReadOnlyList<string> options, Action<int> onPick);
+        /// <summary>事件页：在常驻壳中部展示事件背景、正文、结果、后续选项与结束按钮。</summary>
+        void ShowEventPage(
+            string title,
+            string desc,
+            string result,
+            string bgSprite,
+            IReadOnlyList<string> options,
+            bool showEndButton,
+            string endButtonText,
+            Action<int> onPick,
+            Action onEnd);
 
         void ShowRunResult(bool win, int total);
     }
@@ -445,11 +454,11 @@ namespace GourmetProject.Game.Orchestration
             // 事件是一张「页面树」：从根页(正文=event.desc)进入，选项按 parentId 逐页展开直到终止。
             // 一个事件复用同一条随机流（Gamble 等随机效果按序派生），全程内存态，仅结束时(onDone→Commit)存档。
             IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Event, $"resolve_w{_run.WeekIndex}_d{DayKey(_run.CurrentDay)}_{ev.Id}");
-            EnterEventPage(ev, ev.Desc, EventService.GetRootOptions(_run, ev.Id), rng, true, onDone);
+            EnterEventPage(ev, string.Empty, EventService.GetRootOptions(_run, ev.Id), rng, onDone);
         }
 
-        /// <summary>进入事件某页：0 选项=终止展示页；根页单选项且无子页=自动结算；否则铺开选项 n 选一。</summary>
-        private void EnterEventPage(cfg.GameEvent ev, string pageText, List<cfg.EventOption> pageOptions, IRandomStream rng, bool isRoot, Action onDone)
+        /// <summary>进入事件某页：初始页 resultText 为空；结果/子页 resultText 显示在下半区，可随时结束。</summary>
+        private void EnterEventPage(cfg.GameEvent ev, string resultText, List<cfg.EventOption> pageOptions, IRandomStream rng, Action onDone)
         {
             var options = new List<cfg.EventOption>();
             foreach (cfg.EventOption opt in pageOptions)
@@ -463,64 +472,123 @@ namespace GourmetProject.Game.Orchestration
 
             if (options.Count == 0)
             {
-                // 终止展示页（如「离开」结果页）：无选项，正文即结果。
-                EventResolveResult res = EventResolveResult.Immediate(pageText);
-                EventService.OnEventFinished(_run, ev, res);
-                _view.ShowNotice(ev.Name, pageText, onDone);
+                ShowEventPage(
+                    ev,
+                    resultText,
+                    options,
+                    showEndButton: true,
+                    endButtonText: "结束",
+                    onPick: null,
+                    onEnd: () =>
+                    {
+                        EventService.OnEventFinished(_run, ev, EventResolveResult.Immediate(resultText));
+                        onDone?.Invoke();
+                    });
                 return;
-            }
-
-            // 根页单选项且无子页 → 自动结算（奖励/负面/即时事件，保持旧行为，无需玩家点选）。
-            if (isRoot && options.Count == 1 && EventService.GetChildOptions(_run, options[0].Id).Count == 0)
-            {
-                ChooseEventOption(ev, options[0], pageText, rng, onDone);
-                return;
-            }
-
-            // 多选项与「行动 n 选一」共用同一套中部卡片 UI（正文用当前页文本）。
-            var optionTexts = new List<string>(options.Count);
-            foreach (cfg.EventOption option in options)
-            {
-                optionTexts.Add(option.Text);
             }
 
             List<cfg.EventOption> shown = options;
-            _view.ShowEventChoices(ev.Name, pageText, optionTexts, index =>
-            {
-                if (index < 0 || index >= shown.Count)
+            ShowEventPage(
+                ev,
+                resultText,
+                shown,
+                showEndButton: !string.IsNullOrWhiteSpace(resultText),
+                endButtonText: "结束",
+                onPick: index =>
                 {
-                    onDone?.Invoke();
-                    return;
-                }
+                    if (index < 0 || index >= shown.Count)
+                    {
+                        return;
+                    }
 
-                ChooseEventOption(ev, shown[index], pageText, rng, onDone);
-            });
+                    ChooseEventOption(ev, shown[index], rng, onDone);
+                },
+                onEnd: () =>
+                {
+                    EventService.OnEventFinished(_run, ev, EventResolveResult.Immediate(resultText));
+                    onDone?.Invoke();
+                });
         }
 
         /// <summary>结算所选选项：施加效果→跟进类(战斗/商店/结局)终止 / 有子选项则进入子页 / 否则即时终止。</summary>
-        private void ChooseEventOption(cfg.GameEvent ev, cfg.EventOption option, string pageText, IRandomStream rng, Action onDone)
+        private void ChooseEventOption(cfg.GameEvent ev, cfg.EventOption option, IRandomStream rng, Action onDone)
         {
             EventResolveResult result = EventService.ResolveOption(_run, option, rng);
 
             if (result.FollowUpKind != EventFollowUpKind.None)
             {
-                EventService.OnEventFinished(_run, ev, result);
-                ContinueEventResult(ev.Name, ev.Id, result, onDone);
+                ShowEventPage(
+                    ev,
+                    string.IsNullOrEmpty(result.Feedback) ? option.ResultText : ComposeEventText(result.Feedback, option.ResultText),
+                    new List<cfg.EventOption>(),
+                    showEndButton: true,
+                    endButtonText: "继续",
+                    onPick: null,
+                    onEnd: () =>
+                    {
+                        EventService.OnEventFinished(_run, ev, result);
+                        ContinueEventResult(ev.Name, ev.Id, result, onDone);
+                    });
                 return;
             }
 
             // 子页正文=效果反馈 + 选项 resultText（都空则回退当前页正文）。
             string body = ComposeEventText(result.Feedback, option.ResultText);
             List<cfg.EventOption> children = EventService.GetChildOptions(_run, option.Id);
+            if (option.RepeatSelf)
+            {
+                children.Insert(0, option);
+            }
+
             if (children.Count > 0)
             {
-                EnterEventPage(ev, body, children, rng, false, onDone);
+                EnterEventPage(ev, body, children, rng, onDone);
                 return;
             }
 
-            // 无子选项 → 即时终止。
-            EventService.OnEventFinished(_run, ev, result);
-            _view.ShowNotice(ev.Name, string.IsNullOrEmpty(body) ? pageText : body, onDone);
+            // 无子选项 → 显示结果页，玩家点击结束后才提交事件行动。
+            ShowEventPage(
+                ev,
+                body,
+                children,
+                showEndButton: true,
+                endButtonText: "结束",
+                onPick: null,
+                onEnd: () =>
+                {
+                    EventService.OnEventFinished(_run, ev, result);
+                    onDone?.Invoke();
+                });
+        }
+
+        private void ShowEventPage(
+            cfg.GameEvent ev,
+            string resultText,
+            IReadOnlyList<cfg.EventOption> options,
+            bool showEndButton,
+            string endButtonText,
+            Action<int> onPick,
+            Action onEnd)
+        {
+            var optionTexts = new List<string>();
+            if (options != null)
+            {
+                foreach (cfg.EventOption option in options)
+                {
+                    optionTexts.Add(option.Text);
+                }
+            }
+
+            _view.ShowEventPage(
+                ev != null ? ev.Name : string.Empty,
+                ev != null ? ev.Desc : string.Empty,
+                resultText,
+                ev != null ? ev.BgSprite : string.Empty,
+                optionTexts,
+                showEndButton,
+                endButtonText,
+                onPick,
+                onEnd);
         }
 
         /// <summary>拼接页文本：效果反馈在前、选项 resultText 在后；任一为空则取另一个。</summary>
@@ -549,7 +617,7 @@ namespace GourmetProject.Game.Orchestration
                 case EventFollowUpKind.Battle:
                 {
                     string key = $"event_battle_w{_run.WeekIndex}_d{DayKey(_run.CurrentDay)}_{eventId}";
-                    Action start = () => StartBattle(
+                    StartBattle(
                         result.RequiredScore,
                         result.Modifier,
                         key,
@@ -558,7 +626,6 @@ namespace GourmetProject.Game.Orchestration
                         onDone,
                         null,
                         battleResult => OnEventBattleFailed(result, battleResult, onDone));
-                    _view.ShowNotice(title, result.Feedback, start);
                     break;
                 }
 
@@ -567,23 +634,17 @@ namespace GourmetProject.Game.Orchestration
                     break;
 
                 case EventFollowUpKind.GameOver:
-                    _view.ShowNotice(title, result.Feedback, () =>
-                    {
-                        ClearPendingNodes();
-                        _view.ShowRunResult(false, 0);
-                    });
+                    ClearPendingNodes();
+                    _view.ShowRunResult(false, 0);
                     break;
 
                 case EventFollowUpKind.Victory:
-                    _view.ShowNotice(title, result.Feedback, () =>
-                    {
-                        ClearPendingNodes();
-                        OnVictory();
-                    });
+                    ClearPendingNodes();
+                    OnVictory();
                     break;
 
                 default:
-                    _view.ShowNotice(title, result.Feedback, onDone);
+                    onDone?.Invoke();
                     break;
             }
         }

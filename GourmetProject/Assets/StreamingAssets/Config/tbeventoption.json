@@ -12,7 +12,8 @@
     "effectValues": [
       20
     ],
-    "effectParams": []
+    "effectParams": [],
+    "repeatSelf": false
   },
   {
     "id": "opt_market_spree",
@@ -27,7 +28,8 @@
     "effectValues": [
       55
     ],
-    "effectParams": []
+    "effectParams": [],
+    "repeatSelf": false
   },
   {
     "id": "opt_tasting",
@@ -42,7 +44,8 @@
     "effectValues": [
       1
     ],
-    "effectParams": []
+    "effectParams": [],
+    "repeatSelf": false
   },
   {
     "id": "opt_rest",
@@ -57,7 +60,8 @@
     "effectValues": [
       0.1
     ],
-    "effectParams": []
+    "effectParams": [],
+    "repeatSelf": false
   },
   {
     "id": "opt_recruit",
@@ -74,7 +78,8 @@
     ],
     "effectParams": [
       "Passive"
-    ]
+    ],
+    "repeatSelf": false
   },
   {
     "id": "opt_study",
@@ -89,7 +94,8 @@
     "effectValues": [
       5
     ],
-    "effectParams": []
+    "effectParams": [],
+    "repeatSelf": false
   },
   {
     "id": "opt_gamble_small",
@@ -104,7 +110,8 @@
     "effectValues": [
       30
     ],
-    "effectParams": []
+    "effectParams": [],
+    "repeatSelf": true
   },
   {
     "id": "opt_gamble_big",
@@ -119,7 +126,8 @@
     "effectValues": [
       90
     ],
-    "effectParams": []
+    "effectParams": [],
+    "repeatSelf": false
   },
   {
     "id": "opt_gamble_think",
@@ -130,7 +138,8 @@
     "condition": "",
     "effectTypes": [],
     "effectValues": [],
-    "effectParams": []
+    "effectParams": [],
+    "repeatSelf": false
   },
   {
     "id": "opt_gamble_follow",
@@ -145,7 +154,8 @@
     "effectValues": [
       60
     ],
-    "effectParams": []
+    "effectParams": [],
+    "repeatSelf": false
   },
   {
     "id": "opt_gamble_leave",
@@ -156,7 +166,8 @@
     "condition": "",
     "effectTypes": [],
     "effectValues": [],
-    "effectParams": []
+    "effectParams": [],
+    "repeatSelf": false
   },
   {
     "id": "opt_shop",
@@ -171,7 +182,8 @@
     "effectValues": [
       0
     ],
-    "effectParams": []
+    "effectParams": [],
+    "repeatSelf": false
   },
   {
     "id": "opt_tip",
@@ -186,7 +198,8 @@
     "effectValues": [
       25
     ],
-    "effectParams": []
+    "effectParams": [],
+    "repeatSelf": false
   },
   {
     "id": "opt_gift",
@@ -203,7 +216,8 @@
     ],
     "effectParams": [
       "Passive"
-    ]
+    ],
+    "repeatSelf": false
   },
   {
     "id": "opt_tax",
@@ -218,7 +232,8 @@
     "effectValues": [
       -20
     ],
-    "effectParams": []
+    "effectParams": [],
+    "repeatSelf": false
   },
   {
     "id": "opt_spoil",
@@ -233,6 +248,7 @@
     "effectValues": [
       -15
     ],
-    "effectParams": []
+    "effectParams": [],
+    "repeatSelf": false
   }
 ]

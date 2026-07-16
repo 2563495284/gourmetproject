@@ -86,6 +86,9 @@ namespace GourmetProject.Game.UI.Battle
         private RewardItemChoicePanel _rewardItemChoicePanel;
         [SerializeField] private RandomizedItemsPanel _randomizedItemsPanel;
 
+        [Header("Event Page (center)")]
+        [SerializeField] private EventPagePanel _eventPanel;
+
         [Header("DiningTable Edit")]
         [SerializeField] private Button _boardEditSkipButton;
 
@@ -435,6 +438,7 @@ namespace GourmetProject.Game.UI.Battle
             bool rewardDishPack = view == GameplayView.RewardDishPack;
             bool rewardItemChoice = view == GameplayView.RewardItemChoice;
             bool randomizedItems = view == GameplayView.RandomizedItems;
+            bool eventPage = view == GameplayView.Event;
             bool worldView = view == GameplayView.Food || view == GameplayView.TableEdit || view == GameplayView.TableView;
 
             if (_actionSelectionPanel != null)
@@ -467,13 +471,18 @@ namespace GourmetProject.Game.UI.Battle
                 _randomizedItemsPanel.gameObject.SetActive(randomizedItems);
             }
 
+            if (_eventPanel != null)
+            {
+                _eventPanel.gameObject.SetActive(eventPage);
+            }
+
             if (_boardEditSkipButton != null)
             {
                 _boardEditSkipButton.gameObject.SetActive(view == GameplayView.TableEdit);
             }
 
-            // 行动轴：仅行动选择 / 商店常驻显示；编辑菜谱 / 美食 / 餐桌态隐藏。
-            SetActionAxisVisible(actionSel || shop);
+            // 行动轴：行动选择 / 商店 / 事件页常驻显示；编辑菜谱 / 美食 / 餐桌态隐藏。
+            SetActionAxisVisible(actionSel || shop || eventPage);
             SetFoodActionsVisible(view == GameplayView.Food);
 
             // 白底：世界态（美食 / 餐桌）关闭，让 Battle 场景世界空间透出；其余态开启。
@@ -491,6 +500,7 @@ namespace GourmetProject.Game.UI.Battle
                     GameplayView.RewardDishPack => RecipeView.RecipeState.Hidden,
                     GameplayView.RewardItemChoice => RecipeView.RecipeState.Hidden,
                     GameplayView.RandomizedItems => RecipeView.RecipeState.Hidden,
+                    GameplayView.Event => RecipeView.RecipeState.Collapsed,
                     GameplayView.Food => RecipeView.RecipeState.Shown,
                     GameplayView.TableEdit => RecipeView.RecipeState.Collapsed,
                     _ => RecipeView.RecipeState.Hidden,
@@ -567,15 +577,34 @@ namespace GourmetProject.Game.UI.Battle
             }, PlayShowCardsWhenReady);
         }
 
-        /// <summary>事件「n 选一」：与行动选择共用中部卡片 UI，事件名/描述作为中部标题，每个选项一张卡。</summary>
-        public void ShowEventChoices(string title, string desc, IReadOnlyList<string> options, Action<int> onPick)
+        /// <summary>事件页：专用中部面板，展示事件环境、正文、结果、后续选项与结束按钮。</summary>
+        public void ShowEventPage(
+            string title,
+            string desc,
+            string result,
+            string bgSprite,
+            IReadOnlyList<string> options,
+            bool showEndButton,
+            string endButtonText,
+            Action<int> onPick,
+            Action onEnd)
         {
-            string prompt = string.IsNullOrWhiteSpace(desc) ? title : $"{title}\n{desc}";
-            SwitchTo(GameplayView.ActionSelect, () =>
+            SwitchTo(GameplayView.Event, () =>
             {
-                SetCenterTitle(prompt);
-                BuildEventCards(options, onPick);
-            }, PlayShowCardsWhenReady);
+                SetCenterTitle(string.Empty);
+                if (_eventPanel != null)
+                {
+                    _eventPanel.Open(title, desc, result, bgSprite, options, showEndButton, endButtonText, onPick, onEnd);
+                }
+                else if (showEndButton)
+                {
+                    onEnd?.Invoke();
+                }
+                else
+                {
+                    onPick?.Invoke(0);
+                }
+            });
         }
 
         private void SetCenterTitle(string text)

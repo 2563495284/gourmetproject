@@ -24,6 +24,7 @@ public sealed partial class GameEvent : Luban.BeanBase
         { if(!_buf["preconditions"].IsString) { throw new SerializationException(); }  Preconditions = _buf["preconditions"]; }
         { if(!_buf["weight"].IsNumber) { throw new SerializationException(); }  Weight = _buf["weight"]; }
         { if(!_buf["repeatable"].IsBoolean) { throw new SerializationException(); }  Repeatable = _buf["repeatable"]; }
+        { if(!_buf["bgSprite"].IsString) { throw new SerializationException(); }  BgSprite = _buf["bgSprite"]; }
     }
 
     public static GameEvent DeserializeGameEvent(JSONNode _buf)
@@ -59,6 +60,10 @@ public sealed partial class GameEvent : Luban.BeanBase
     /// 是否可重复(false 命中后本局不再出)
     /// </summary>
     public readonly bool Repeatable;
+    /// <summary>
+    /// 事件背景 Sprite(Resources 路径,空=默认占位)
+    /// </summary>
+    public readonly string BgSprite;
    
     public const int __ID__ = -1313800792;
     public override int GetTypeId() => __ID__;
@@ -77,6 +82,7 @@ public sealed partial class GameEvent : Luban.BeanBase
         + "preconditions:" + Preconditions + ","
         + "weight:" + Weight + ","
         + "repeatable:" + Repeatable + ","
+        + "bgSprite:" + BgSprite + ","
         + "}";
     }
 }

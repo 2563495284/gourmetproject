@@ -73,6 +73,19 @@ namespace GourmetProject.Game.UI.Battle.States
         }
     }
 
+    /// <summary>事件页态：行动轴常驻，菜谱扇形收起，中部由 EventPagePanel 构建。</summary>
+    internal sealed class EventState : IGameplayViewState
+    {
+        public GameplayView Kind => GameplayView.Event;
+
+        public void Enter(IBattleViewHost host, Action buildCenter)
+        {
+            host.RebuildActionAxis();
+            host.Recipe.BuildPersistent(host.Run, showAdd: false, onAdd: null);
+            buildCenter?.Invoke();
+        }
+    }
+
     /// <summary>美食战斗态：世界空间餐桌透出，菜谱抽屉切成上菜条。</summary>
     internal sealed class FoodState : IGameplayViewState
     {

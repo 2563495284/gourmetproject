@@ -6,7 +6,8 @@
     "eventType": 0,
     "preconditions": "",
     "weight": 60,
-    "repeatable": true
+    "repeatable": true,
+    "bgSprite": ""
   },
   {
     "id": "ev_tasting",
@@ -15,7 +16,8 @@
     "eventType": 0,
     "preconditions": "",
     "weight": 50,
-    "repeatable": true
+    "repeatable": true,
+    "bgSprite": ""
   },
   {
     "id": "ev_rest",
@@ -24,7 +26,8 @@
     "eventType": 0,
     "preconditions": "",
     "weight": 40,
-    "repeatable": true
+    "repeatable": true,
+    "bgSprite": ""
   },
   {
     "id": "ev_recruit",
@@ -33,7 +36,8 @@
     "eventType": 0,
     "preconditions": "",
     "weight": 35,
-    "repeatable": false
+    "repeatable": false,
+    "bgSprite": ""
   },
   {
     "id": "ev_study",
@@ -42,7 +46,8 @@
     "eventType": 0,
     "preconditions": "",
     "weight": 30,
-    "repeatable": true
+    "repeatable": true,
+    "bgSprite": ""
   },
   {
     "id": "ev_gamble",
@@ -51,7 +56,8 @@
     "eventType": 0,
     "preconditions": "",
     "weight": 30,
-    "repeatable": true
+    "repeatable": true,
+    "bgSprite": ""
   },
   {
     "id": "ev_shop",
@@ -60,7 +66,8 @@
     "eventType": 0,
     "preconditions": "",
     "weight": 0,
-    "repeatable": true
+    "repeatable": true,
+    "bgSprite": ""
   },
   {
     "id": "ev_tip",
@@ -69,7 +76,8 @@
     "eventType": 2,
     "preconditions": "",
     "weight": 25,
-    "repeatable": true
+    "repeatable": true,
+    "bgSprite": ""
   },
   {
     "id": "ev_gift",
@@ -78,7 +86,8 @@
     "eventType": 2,
     "preconditions": "",
     "weight": 20,
-    "repeatable": true
+    "repeatable": true,
+    "bgSprite": ""
   },
   {
     "id": "ev_tax",
@@ -87,7 +96,8 @@
     "eventType": 3,
     "preconditions": "",
     "weight": 30,
-    "repeatable": true
+    "repeatable": true,
+    "bgSprite": ""
   },
   {
     "id": "ev_spoil",
@@ -96,6 +106,7 @@
     "eventType": 3,
     "preconditions": "",
     "weight": 20,
-    "repeatable": true
+    "repeatable": true,
+    "bgSprite": ""
   }
 ]
