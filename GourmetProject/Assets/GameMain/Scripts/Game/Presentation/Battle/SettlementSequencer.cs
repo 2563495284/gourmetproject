@@ -325,12 +325,21 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private static void EmitReveal(Action<SettlementRevealSignal> onReveal, SettlementCue cue)
         {
-            if (onReveal == null || cue == null || cue.Reveal.Channel == SettlementRevealChannel.None)
+            if (onReveal == null || cue == null || cue.Reveal.IsEmpty)
             {
                 return;
             }
 
             onReveal(cue.Reveal);
+        }
+
+        /// <summary>
+        /// 判定某条明细是否来自「甜蜜传递」外来子技能（来源标签带 &lt;甜蜜传递&gt;）。
+        /// 是则该明细在揭示分数/倍率的同时，一并揭示 1 张传递卡片（最终数量由 tips 工厂按实际条数封顶）。
+        /// </summary>
+        private static int SweetTransferCardDelta(ScoreSource source)
+        {
+            return source != null && !string.IsNullOrEmpty(source.Name) && source.Name.Contains("甜蜜传递") ? 1 : 0;
         }
 
         private static int CountSettlementCues(SettlementPlaybackPlan plan)
@@ -513,33 +522,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 }
             }
 
-            // 甜蜜传递不在 ScoreLines 里（只作为副作用），单独补 cue：既让演出可见，又驱动 tips 揭示传递子技能。
-            foreach (SkillTransferSideEffect transfer in result.SkillTransfers)
-            {
-                int transferCount = transfer?.Effects?.Count ?? 0;
-                if (transferCount <= 0)
-                {
-                    continue;
-                }
-
-                string label = string.IsNullOrEmpty(transfer.SourceName) ? "甜蜜传递" : $"{transfer.SourceName}<甜蜜传递>";
-                var transferCue = new SettlementCue(
-                    SettlementCueKind.SideEffect,
-                    $"{label} +{transferCount}",
-                    SkillColor,
-                    reveal: new SettlementRevealSignal(SettlementRevealChannel.SweetTransfer, transfer.TargetInstanceId, 0f, transferCount));
-
-                if (transfer.TargetInstanceId != 0
-                    && dishViews.TryGetValue(transfer.TargetInstanceId, out DishPieceView transferView)
-                    && transferView != null)
-                {
-                    plan.Steps.Add(new SettlementPlaybackStep(transfer.TargetInstanceId, transferCue));
-                }
-                else
-                {
-                    plan.FinalCues.Add(transferCue);
-                }
-            }
+            // 甜蜜传递的「卡片揭示」不单独补 cue，而是绑定在目标菜触发传递效果的那条明细上
+            //（该明细来源名带 <甜蜜传递> 标签，见 SweetTransferCardDelta），做到触发即显示、时机与演出一致。
 
             if (!hasFinalModifierCue && HasFinalModifier(result))
             {
@@ -602,7 +586,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         SettlementCueKind.Source,
                         $"{sourceName} {FormatSigned(line.Value)}",
                         ColorForSource(line.Source),
-                        reveal: new SettlementRevealSignal(SettlementRevealChannel.Flat, line.DishInstanceId, line.After, 0));
+                        reveal: SettlementRevealSignal.FlatReveal(line.DishInstanceId, line.After, SweetTransferCardDelta(line.Source)));
                     return true;
 
                 case ScoreLineKind.DishMultiplier:
@@ -610,7 +594,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         SettlementCueKind.Source,
                         $"倍率 {FormatMultiplier(line.Value)}",
                         MultiplierColor,
-                        reveal: new SettlementRevealSignal(SettlementRevealChannel.Multiplier, line.DishInstanceId, line.After, 0));
+                        reveal: SettlementRevealSignal.MultiplierReveal(line.DishInstanceId, line.After, SweetTransferCardDelta(line.Source)));
                     return true;
 
                 case ScoreLineKind.DishMultiplierAdd:
@@ -618,7 +602,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         SettlementCueKind.Source,
                         $"倍率 {FormatSigned(line.Value)}",
                         MultiplierColor,
-                        reveal: new SettlementRevealSignal(SettlementRevealChannel.Multiplier, line.DishInstanceId, line.After, 0));
+                        reveal: SettlementRevealSignal.MultiplierReveal(line.DishInstanceId, line.After, SweetTransferCardDelta(line.Source)));
                     return true;
 
                 case ScoreLineKind.FinalFlat:
@@ -662,7 +646,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         SettlementCueKind.SideEffect,
                         $"复制技能 ×{Mathf.RoundToInt(line.Value)}",
                         SideEffectColor,
-                        reveal: new SettlementRevealSignal(SettlementRevealChannel.CopySkill, line.DishInstanceId, 0f, Mathf.RoundToInt(line.Value)));
+                        reveal: SettlementRevealSignal.CopySkillReveal(line.DishInstanceId, Mathf.RoundToInt(line.Value)));
                     return true;
 
                 default:

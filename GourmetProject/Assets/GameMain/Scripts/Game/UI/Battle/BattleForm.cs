@@ -1963,27 +1963,29 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnSettlementReveal(SettlementRevealSignal signal)
         {
-            if (_settlementReveal == null)
+            if (_settlementReveal == null || signal.IsEmpty)
             {
                 return;
             }
 
-            switch (signal.Channel)
+            if (signal.HasFlat)
             {
-                case SettlementRevealChannel.Flat:
-                    _settlementReveal.RevealFlat(signal.DishInstanceId, signal.After);
-                    break;
-                case SettlementRevealChannel.Multiplier:
-                    _settlementReveal.RevealMultiplier(signal.DishInstanceId, signal.After);
-                    break;
-                case SettlementRevealChannel.CopySkill:
-                    _settlementReveal.RevealCopiedSkills(signal.DishInstanceId, signal.Count);
-                    break;
-                case SettlementRevealChannel.SweetTransfer:
-                    _settlementReveal.RevealTransferred(signal.DishInstanceId, signal.Count);
-                    break;
-                default:
-                    return;
+                _settlementReveal.RevealFlat(signal.DishInstanceId, signal.Flat);
+            }
+
+            if (signal.HasMultiplier)
+            {
+                _settlementReveal.RevealMultiplier(signal.DishInstanceId, signal.Multiplier);
+            }
+
+            if (signal.CopySkillDelta > 0)
+            {
+                _settlementReveal.RevealCopiedSkills(signal.DishInstanceId, signal.CopySkillDelta);
+            }
+
+            if (signal.TransferredDelta > 0)
+            {
+                _settlementReveal.RevealTransferred(signal.DishInstanceId, signal.TransferredDelta);
             }
 
             // 若正 hover 这道菜，立即把刚揭示的信息刷到 tips 上。
