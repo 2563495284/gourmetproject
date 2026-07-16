@@ -138,6 +138,7 @@ namespace GourmetProject.Game.UI.Battle
         private View.FoodAdjustOverlay _foodAdjustOverlay;
         private DishPieceView _hoveredDishPiece;
         private DiningTableCellView _hoveredCell;
+        private SettlementRevealState _settlementReveal;
         [SerializeField] private GameObject _passiveOverlayRoot;
         [SerializeField] private Text _passiveOverlayText;
         private Sequence _passiveOverlaySeq;
@@ -886,6 +887,28 @@ namespace GourmetProject.Game.UI.Battle
 
         public bool OpenRewardItemChoices(string title, IReadOnlyList<RewardChoice> choices, cfg.ItemKind kind)
         {
+            return OpenRewardItemChoices(
+                title,
+                choices,
+                kind,
+                index =>
+                {
+                    if (index >= 0 && index < choices.Count)
+                    {
+                        RewardGranter.ApplyChoice(_run, choices[index]);
+                        RunPersistence.Save(_run);
+                    }
+                },
+                null);
+        }
+
+        public bool OpenRewardItemChoices(
+            string title,
+            IReadOnlyList<RewardChoice> choices,
+            cfg.ItemKind kind,
+            Action<int> onPick,
+            Action onSkip)
+        {
             if (_run == null || choices == null || choices.Count == 0)
             {
                 return false;
@@ -907,19 +930,15 @@ namespace GourmetProject.Game.UI.Battle
                     kind,
                     index =>
                     {
-                        if (index >= 0 && index < choices.Count)
-                        {
-                            RewardGranter.ApplyChoice(_run, choices[index]);
-                            RunPersistence.Save(_run);
-                        }
-
                         _rewardItemChoicePanel.Close();
                         RestoreAfterAcquireView(previous);
+                        onPick?.Invoke(index);
                     },
                     () =>
                     {
                         _rewardItemChoicePanel.Close();
                         RestoreAfterAcquireView(previous);
+                        onSkip?.Invoke();
                     });
             });
             return true;
@@ -1907,11 +1926,70 @@ namespace GourmetProject.Game.UI.Battle
 
             _hoveredDishPiece = piece;
             _hoveredCell = null;
-            ScoreResult preview = _session.IsSettled ? _session.LastResult : null;
-            tips.Bind(piece.Instance, _session.DiningTable, _session.Database, preview);
+            RebindHoveredDishTips(piece);
+        }
+
+        private void RebindHoveredDishTips(DishPieceView piece)
+        {
+            if (piece == null || piece.Instance == null || _session == null || _tips == null)
+            {
+                return;
+            }
+
+            FoodTipsView tips = _tips.Food;
+            if (tips == null)
+            {
+                return;
+            }
+
+            // 结算演出进行中：只显示已被演出揭示到的分数/倍率/技能；演出走完后（_settlementReveal 清空）恢复完整结果。
+            if (_settlementReveal != null && _settlementReveal.TryBuildReveal(piece.Instance, out FoodTipsReveal reveal))
+            {
+                tips.Bind(FoodTipsDataFactory.BuildRevealed(piece.Instance, _session.DiningTable, _session.Database, reveal));
+            }
+            else
+            {
+                ScoreResult preview = _session.IsSettled ? _session.LastResult : null;
+                tips.Bind(piece.Instance, _session.DiningTable, _session.Database, preview);
+            }
+
             tips.Show();
             tips.transform.SetAsLastSibling();
             tips.PlaceAroundWorldBounds(piece.WorldBounds, Camera.main, GetComponentInParent<Canvas>());
+        }
+
+        private void OnSettlementReveal(SettlementRevealSignal signal)
+        {
+            if (_settlementReveal == null)
+            {
+                return;
+            }
+
+            switch (signal.Channel)
+            {
+                case SettlementRevealChannel.Flat:
+                    _settlementReveal.RevealFlat(signal.DishInstanceId, signal.After);
+                    break;
+                case SettlementRevealChannel.Multiplier:
+                    _settlementReveal.RevealMultiplier(signal.DishInstanceId, signal.After);
+                    break;
+                case SettlementRevealChannel.CopySkill:
+                    _settlementReveal.RevealCopiedSkills(signal.DishInstanceId, signal.Count);
+                    break;
+                case SettlementRevealChannel.SweetTransfer:
+                    _settlementReveal.RevealTransferred(signal.DishInstanceId, signal.Count);
+                    break;
+                default:
+                    return;
+            }
+
+            // 若正 hover 这道菜，立即把刚揭示的信息刷到 tips 上。
+            if (_hoveredDishPiece != null
+                && _hoveredDishPiece.Instance != null
+                && _hoveredDishPiece.Instance.Id == signal.DishInstanceId)
+            {
+                RebindHoveredDishTips(_hoveredDishPiece);
+            }
         }
 
         private void OnDishHoverExited(DishPieceView piece)
@@ -2050,13 +2128,22 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
+            // 结算前拍基线：演出用它逐 cue 揭示，hover tips 与表演同步，而非一上来就显示全部结算信息。
+            var reveal = new SettlementRevealState();
+            foreach (DishInstance dish in _session.DiningTable.Dishes)
+            {
+                reveal.CaptureBaseline(dish);
+            }
+
+            _settlementReveal = reveal;
+
             ScoreResult result = _session.Settle();
             SetSettlementScore(0);
             RefreshFoodActions();
 
             if (_world != null)
             {
-                _world.PlaySettlement(result, _infoColumn != null ? _infoColumn.ScoreFire : null, () => OnSettlementComplete(result));
+                _world.PlaySettlement(result, _infoColumn != null ? _infoColumn.ScoreFire : null, OnSettlementReveal, () => OnSettlementComplete(result));
             }
             else
             {
@@ -2066,6 +2153,13 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnSettlementComplete(ScoreResult result)
         {
+            // 演出走完：清空渐进揭示态，hover 恢复展示完整结算结果。
+            _settlementReveal = null;
+            if (_hoveredDishPiece != null)
+            {
+                RebindHoveredDishTips(_hoveredDishPiece);
+            }
+
             // 结算侧效果写回局外状态：金币入账（经济运营 + 上菜 OnServe）、大局结算历史累计。
             if (_run != null && _session != null)
             {

@@ -115,6 +115,32 @@ namespace GourmetProject.Game.UI.Tooltips
         public string Desc { get; }
     }
 
+    /// <summary>
+    /// 结算演出「渐进揭示」用的覆盖参数：只显示当前已表演到的分数/倍率与技能条目数量。
+    /// </summary>
+    public sealed class FoodTipsReveal
+    {
+        public FoodTipsReveal(float score, float multiplier, int maxSkills, int maxTransferred)
+        {
+            Score = score;
+            Multiplier = multiplier;
+            MaxSkills = maxSkills;
+            MaxTransferred = maxTransferred;
+        }
+
+        /// <summary>已揭示的分数（基础美味度 + 已表演的加法分）。</summary>
+        public float Score { get; }
+
+        /// <summary>已揭示的倍率（已表演到的乘区）。</summary>
+        public float Multiplier { get; }
+
+        /// <summary>技能列表最多显示前几条（含复制技能追加项）；-1 表示全部。</summary>
+        public int MaxSkills { get; }
+
+        /// <summary>甜蜜传递子技能最多显示前几条；-1 表示全部。</summary>
+        public int MaxTransferred { get; }
+    }
+
     public static class FoodTipsDataFactory
     {
         public static FoodTipsData Build(
@@ -145,7 +171,7 @@ namespace GourmetProject.Game.UI.Tooltips
 
             var summary = new FoodSummaryTipsData(
                 dish.Def != null ? dish.Def.Name : string.Empty,
-                BuildSkills(dish, db),
+                BuildSkills(dish, db, -1),
                 BuildFlavorNames(dish, db));
 
             float scoreValue;
@@ -166,8 +192,39 @@ namespace GourmetProject.Game.UI.Tooltips
                 new FoodScoreTipsData(scoreValue, multiplier),
                 BuildMaterials(dish, table, db),
                 BuildFlavorDetails(dish, db),
-                BuildTransferredSubSkills(dish),
-                BuildSpecialTags(dish, db));
+                BuildTransferredSubSkills(dish, -1),
+                BuildSpecialTags(dish, db, -1, -1));
+        }
+
+        /// <summary>
+        /// 结算演出期间的渐进揭示构建：分数/倍率与技能条目数量都受 <paramref name="reveal"/> 约束，
+        /// 让 tips 与演出 cue 同步逐步显示（而非一开始就展示全部结算信息）。
+        /// </summary>
+        public static FoodTipsData BuildRevealed(
+            DishInstance dish,
+            DiningTable table,
+            GameplayDatabase db,
+            FoodTipsReveal reveal)
+        {
+            if (dish == null)
+            {
+                return new FoodTipsData(null, null, null, null, null, null);
+            }
+
+            reveal ??= new FoodTipsReveal(dish.BaseScoreBeforeSettlement, dish.BaseMultiplierBeforeSettlement, -1, -1);
+
+            var summary = new FoodSummaryTipsData(
+                dish.Def != null ? dish.Def.Name : string.Empty,
+                BuildSkills(dish, db, reveal.MaxSkills),
+                BuildFlavorNames(dish, db));
+
+            return new FoodTipsData(
+                summary,
+                new FoodScoreTipsData(reveal.Score, reveal.Multiplier),
+                BuildMaterials(dish, table, db),
+                BuildFlavorDetails(dish, db),
+                BuildTransferredSubSkills(dish, reveal.MaxTransferred),
+                BuildSpecialTags(dish, db, reveal.MaxSkills, reveal.MaxTransferred));
         }
 
         private static DishScore FindScore(ScoreResult result, int dishId)
@@ -189,16 +246,18 @@ namespace GourmetProject.Game.UI.Tooltips
             return null;
         }
 
-        private static IReadOnlyList<FoodInfoEntry> BuildSkills(DishInstance dish, GameplayDatabase db)
+        private static IReadOnlyList<FoodInfoEntry> BuildSkills(DishInstance dish, GameplayDatabase db, int maxEntries)
         {
             if (dish.SkillIds == null || db == null)
             {
                 return Array.Empty<FoodInfoEntry>();
             }
 
+            int limit = maxEntries < 0 ? dish.SkillIds.Count : Math.Min(maxEntries, dish.SkillIds.Count);
             var entries = new List<FoodInfoEntry>();
-            foreach (string skillId in dish.SkillIds)
+            for (int index = 0; index < limit; index++)
             {
+                string skillId = dish.SkillIds[index];
                 SkillDef skill = db.GetSkill(skillId);
                 if (skill == null)
                 {
@@ -325,16 +384,18 @@ namespace GourmetProject.Game.UI.Tooltips
             return BuildMaterialsForCells(dish.OccupiedCells, table, db);
         }
 
-        private static IReadOnlyList<FoodInfoEntry> BuildTransferredSubSkills(DishInstance dish)
+        private static IReadOnlyList<FoodInfoEntry> BuildTransferredSubSkills(DishInstance dish, int maxEntries)
         {
             if (dish.TransferredSkills == null || dish.TransferredSkills.Count == 0)
             {
                 return Array.Empty<FoodInfoEntry>();
             }
 
+            int limit = maxEntries < 0 ? dish.TransferredSkills.Count : Math.Min(maxEntries, dish.TransferredSkills.Count);
             var entries = new List<FoodInfoEntry>();
-            foreach (TransferredSkill transferred in dish.TransferredSkills)
+            for (int index = 0; index < limit; index++)
             {
+                TransferredSkill transferred = dish.TransferredSkills[index];
                 if (transferred == null)
                 {
                     continue;
@@ -346,15 +407,16 @@ namespace GourmetProject.Game.UI.Tooltips
             return entries;
         }
 
-        private static IReadOnlyList<FoodInfoEntry> BuildSpecialTags(DishInstance dish, GameplayDatabase db)
+        private static IReadOnlyList<FoodInfoEntry> BuildSpecialTags(DishInstance dish, GameplayDatabase db, int maxSkills, int maxTransferred)
         {
             // 收集去重后的 termId（技能各子技能 + 甜蜜传递外来子技能），再解析为术语说明卡。
             var termIds = new List<string>();
             if (db != null && dish.SkillIds != null)
             {
-                foreach (string skillId in dish.SkillIds)
+                int skillLimit = maxSkills < 0 ? dish.SkillIds.Count : Math.Min(maxSkills, dish.SkillIds.Count);
+                for (int index = 0; index < skillLimit; index++)
                 {
-                    SkillDef skill = db.GetSkill(skillId);
+                    SkillDef skill = db.GetSkill(dish.SkillIds[index]);
                     if (skill != null)
                     {
                         AddUniqueRange(termIds, skill.TermIds);
@@ -364,9 +426,10 @@ namespace GourmetProject.Game.UI.Tooltips
 
             if (dish.TransferredSkills != null)
             {
-                foreach (TransferredSkill transferred in dish.TransferredSkills)
+                int transferredLimit = maxTransferred < 0 ? dish.TransferredSkills.Count : Math.Min(maxTransferred, dish.TransferredSkills.Count);
+                for (int index = 0; index < transferredLimit; index++)
                 {
-                    AddUniqueRange(termIds, transferred?.Effect?.TermIds);
+                    AddUniqueRange(termIds, dish.TransferredSkills[index]?.Effect?.TermIds);
                 }
             }
 

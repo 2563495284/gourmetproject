@@ -18,12 +18,9 @@ public sealed partial class GoldRewardCurve : Luban.BeanBase
     public GoldRewardCurve(JSONNode _buf) 
     {
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
-        { if(!_buf["minBase"].IsNumber) { throw new SerializationException(); }  MinBase = _buf["minBase"]; }
-        { if(!_buf["maxBase"].IsNumber) { throw new SerializationException(); }  MaxBase = _buf["maxBase"]; }
-        { if(!_buf["minPerWeek"].IsNumber) { throw new SerializationException(); }  MinPerWeek = _buf["minPerWeek"]; }
-        { if(!_buf["maxPerWeek"].IsNumber) { throw new SerializationException(); }  MaxPerWeek = _buf["maxPerWeek"]; }
-        { if(!_buf["minPerDay"].IsNumber) { throw new SerializationException(); }  MinPerDay = _buf["minPerDay"]; }
-        { if(!_buf["maxPerDay"].IsNumber) { throw new SerializationException(); }  MaxPerDay = _buf["maxPerDay"]; }
+        { if(!_buf["baseValue"].IsNumber) { throw new SerializationException(); }  BaseValue = _buf["baseValue"]; }
+        { if(!_buf["perWeek"].IsNumber) { throw new SerializationException(); }  PerWeek = _buf["perWeek"]; }
+        { if(!_buf["perDay"].IsNumber) { throw new SerializationException(); }  PerDay = _buf["perDay"]; }
         { if(!_buf["fluctuationPct"].IsNumber) { throw new SerializationException(); }  FluctuationPct = _buf["fluctuationPct"]; }
     }
 
@@ -37,31 +34,19 @@ public sealed partial class GoldRewardCurve : Luban.BeanBase
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 金币奖励隐藏分下限基础值。
+    /// 金币奖励隐藏分基础值。
     /// </summary>
-    public readonly int MinBase;
+    public readonly float BaseValue;
     /// <summary>
-    /// 金币奖励隐藏分上限基础值。
+    /// 每周递增值。
     /// </summary>
-    public readonly int MaxBase;
+    public readonly float PerWeek;
     /// <summary>
-    /// 下限每周递增值。
+    /// 每行动轴天数递增值。
     /// </summary>
-    public readonly float MinPerWeek;
+    public readonly float PerDay;
     /// <summary>
-    /// 上限每周递增值。
-    /// </summary>
-    public readonly float MaxPerWeek;
-    /// <summary>
-    /// 下限每行动轴天数递增值。
-    /// </summary>
-    public readonly float MinPerDay;
-    /// <summary>
-    /// 上限每行动轴天数递增值。
-    /// </summary>
-    public readonly float MaxPerDay;
-    /// <summary>
-    /// 上下浮动比例，例如 0.2 表示下限*0.8、上限*1.2。
+    /// 上下浮动比例，例如 0.2 表示中心值*0.8 到中心值*1.2。
     /// </summary>
     public readonly float FluctuationPct;
    
@@ -76,12 +61,9 @@ public sealed partial class GoldRewardCurve : Luban.BeanBase
     {
         return "{ "
         + "id:" + Id + ","
-        + "minBase:" + MinBase + ","
-        + "maxBase:" + MaxBase + ","
-        + "minPerWeek:" + MinPerWeek + ","
-        + "maxPerWeek:" + MaxPerWeek + ","
-        + "minPerDay:" + MinPerDay + ","
-        + "maxPerDay:" + MaxPerDay + ","
+        + "baseValue:" + BaseValue + ","
+        + "perWeek:" + PerWeek + ","
+        + "perDay:" + PerDay + ","
         + "fluctuationPct:" + FluctuationPct + ","
         + "}";
     }

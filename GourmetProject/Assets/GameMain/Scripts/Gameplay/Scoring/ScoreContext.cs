@@ -36,6 +36,7 @@ namespace GourmetProject.Gameplay.Scoring
         private int _happyCakeLayerDelta;
         private int _silverItemRolls;
         private readonly List<SkillTransferSideEffect> _skillTransfers = new List<SkillTransferSideEffect>();
+        private readonly List<CopySkillRequest> _copySkillRequests = new List<CopySkillRequest>();
         private readonly Dictionary<int, float> _permanentFlatDeltas = new Dictionary<int, float>();
         private readonly Dictionary<int, float> _permanentMultDeltas = new Dictionary<int, float>();
         private readonly Dictionary<int, int> _liveCountAs = new Dictionary<int, int>();
@@ -204,6 +205,8 @@ namespace GourmetProject.Gameplay.Scoring
         public int SilverItemRollRequests => _silverItemRolls;
 
         public IReadOnlyList<SkillTransferSideEffect> SkillTransfers => _skillTransfers;
+
+        public IReadOnlyList<CopySkillRequest> CopySkillRequests => _copySkillRequests;
 
         /// <summary>本次结算登记的永久加法分增量（实例 Id → 累加值）。正式结算后写回实例。</summary>
         public IReadOnlyDictionary<int, float> PermanentFlatDeltas => _permanentFlatDeltas;
@@ -435,6 +438,92 @@ namespace GourmetProject.Gameplay.Scoring
             EmitEvent(ScoreEventType.CommandExecuted, $"技能传递给 {target.Def.Name}（{effects.Count} 个）");
         }
 
+        /// <summary>登记技能复制请求，并立即触发本次选中的技能效果。</summary>
+        public void RecordCopySkill(DishInstance target, IReadOnlyList<string> candidates, int count, string sourceName = null)
+        {
+            if (target == null || candidates == null || candidates.Count == 0 || count <= 0)
+            {
+                return;
+            }
+
+            int take = Math.Min(count, candidates.Count);
+            IReadOnlyList<string> selected = SelectCopySkills(candidates, take);
+            if (selected.Count == 0)
+            {
+                return;
+            }
+
+            _copySkillRequests.Add(new CopySkillRequest(target.Id, candidates, selected.Count, sourceName, selected));
+            DishAccumulator accum = EnsureAccumulator(target);
+            AddLine(accum, ScoreLineKind.CopySkill, selected.Count, target.SkillIds.Count, target.SkillIds.Count + selected.Count, $"复制技能 +{selected.Count}");
+            EmitEvent(ScoreEventType.CommandExecuted, $"技能复制给 {target.Def.Name}（{selected.Count} 个）");
+            ResolveCopiedSkillEffects(target, selected, sourceName);
+        }
+
+        private IReadOnlyList<string> SelectCopySkills(IReadOnlyList<string> candidates, int count)
+        {
+            IReadOnlyList<string> raw = Snapshot.CopySkillSelector != null
+                ? Snapshot.CopySkillSelector(candidates, count)
+                : candidates.Take(count).ToArray();
+            if (raw == null || raw.Count == 0)
+            {
+                return Array.Empty<string>();
+            }
+
+            var selected = new List<string>();
+            foreach (string skillId in raw)
+            {
+                if (!string.IsNullOrEmpty(skillId)
+                    && candidates.Contains(skillId)
+                    && !selected.Contains(skillId))
+                {
+                    selected.Add(skillId);
+                }
+
+                if (selected.Count >= count)
+                {
+                    break;
+                }
+            }
+
+            return selected;
+        }
+
+        private void ResolveCopiedSkillEffects(DishInstance target, IReadOnlyList<string> selectedSkillIds, string sourceName)
+        {
+            string sourceLabel = string.IsNullOrEmpty(sourceName) ? null : $"{sourceName}<技能复制>";
+            int boardOrder = target.Placement.Origin.Y * DiningTable.Width + target.Placement.Origin.X;
+            foreach (string skillId in selectedSkillIds)
+            {
+                SkillDef skill = Db.GetSkill(skillId);
+                if (skill == null || !skill.HasRules)
+                {
+                    continue;
+                }
+
+                ScoreSource source = ScoreSource.TransferredDishSkill(skill, target, sourceLabel);
+                foreach (SkillRuleDef rule in skill.Rules)
+                {
+                    if (rule.Trigger != SkillTrigger.OnSettle
+                        || rule.ActionType == SkillActionType.CopySkill)
+                    {
+                        continue;
+                    }
+
+                    var entry = new ScoreEffectEntry(
+                        ScorePhase.DishSkills,
+                        source,
+                        new SkillRuleEffect(rule, target),
+                        target,
+                        null,
+                        null,
+                        rule.Order,
+                        boardOrder);
+                    SubmitCommand(new ResolveScoreEffectCommand(entry));
+                }
+            }
+        }
+
         public void SubmitCommand(IScoreCommand command)
         {
             if (command == null)
@@ -518,7 +607,7 @@ namespace GourmetProject.Gameplay.Scoring
 
         public ScoreResult ToResult()
         {
-            return new ScoreResult(_dishScores, RawSum, FinalFlat, FinalMultiplier, _lines, _events, GoldDelta, _happyCakeLayerDelta, _skillTransfers, _permanentFlatDeltas, _permanentMultDeltas, _silverItemRolls);
+            return new ScoreResult(_dishScores, RawSum, FinalFlat, FinalMultiplier, _lines, _events, GoldDelta, _happyCakeLayerDelta, _skillTransfers, _permanentFlatDeltas, _permanentMultDeltas, _silverItemRolls, _copySkillRequests);
         }
 
         // ------- 命令实际改分（internal，供命令调用） -------

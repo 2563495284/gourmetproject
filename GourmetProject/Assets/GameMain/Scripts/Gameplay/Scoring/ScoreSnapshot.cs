@@ -21,7 +21,8 @@ namespace GourmetProject.Gameplay.Scoring
             int extraCountAsPerDish = 0,
             int cakeLayerThresholdReduction = 0,
             bool reverseDishOrder = false,
-            IReadOnlyList<UnservedRecipeDish> unservedRecipeDishes = null)
+            IReadOnlyList<UnservedRecipeDish> unservedRecipeDishes = null,
+            Func<IReadOnlyList<string>, int, IReadOnlyList<string>> copySkillSelector = null)
         {
             DiningTable = board ?? throw new ArgumentNullException(nameof(board));
             Db = db ?? throw new ArgumentNullException(nameof(db));
@@ -33,6 +34,7 @@ namespace GourmetProject.Gameplay.Scoring
             CakeLayerThresholdReduction = cakeLayerThresholdReduction < 0 ? 0 : cakeLayerThresholdReduction;
             History = history ?? EmptyScoreHistory.Instance;
             EffectSources = (effectSources ?? Array.Empty<IScoreEffectSource>()).ToArray();
+            CopySkillSelector = copySkillSelector;
 
             // 结算优先级层级（甜=+1、苦=-1，多风味累加）：层级高者先结算；同层再按棋盘从上到下、从左到右。
             IEnumerable<DishInstance> alive = DiningTable.Dishes.Where(d => !d.ExcludedFromScore);
@@ -97,6 +99,11 @@ namespace GourmetProject.Gameplay.Scoring
         public IScoreHistory History { get; }
 
         public IReadOnlyList<IScoreEffectSource> EffectSources { get; }
+
+        /// <summary>
+        /// 技能复制的选择器。正式结算由 BattleSession 注入随机流；预览未注入时使用稳定顺序。
+        /// </summary>
+        public Func<IReadOnlyList<string>, int, IReadOnlyList<string>> CopySkillSelector { get; }
 
         /// <summary>本次结算时仍未上菜的菜谱条目（槽索引 + dishId），供酸/咸在整体结算末尾遍历。</summary>
         public IReadOnlyList<UnservedRecipeDish> UnservedRecipeDishes { get; }

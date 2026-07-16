@@ -1,12 +1,9 @@
 [
   {
     "id": "gold_default",
-    "minBase": 18,
-    "maxBase": 30,
-    "minPerWeek": 4,
-    "maxPerWeek": 6,
-    "minPerDay": 0.5,
-    "maxPerDay": 1,
+    "baseValue": 24,
+    "perWeek": 5,
+    "perDay": 0.75,
     "fluctuationPct": 0.2
   }
 ]

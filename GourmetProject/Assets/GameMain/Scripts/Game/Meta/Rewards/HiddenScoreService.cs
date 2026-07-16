@@ -26,7 +26,7 @@ namespace GourmetProject.Game.Meta
         Gold,
     }
 
-    /// <summary>v2 隐藏分统一入口：目标分、奖励池隐藏分、金币上下限派生。</summary>
+    /// <summary>v2 隐藏分统一入口：目标分、奖励池隐藏分、金币区间派生。</summary>
     public static class HiddenScoreService
     {
         public static int TargetScore(GameRun run, ActionExecutionContext context = null, float extraTargetScoreHiddenOffset = 0f)
@@ -65,11 +65,10 @@ namespace GourmetProject.Game.Meta
             }
 
             float totalOffset = hiddenOffset + HiddenOffset(run, context, HiddenScorePurpose.Gold);
-            double minHidden = curve.MinBase + run.WeekIndex * curve.MinPerWeek + run.CurrentDay * curve.MinPerDay + totalOffset;
-            double maxHidden = curve.MaxBase + run.WeekIndex * curve.MaxPerWeek + run.CurrentDay * curve.MaxPerDay + totalOffset;
+            double hidden = curve.BaseValue + run.WeekIndex * curve.PerWeek + run.CurrentDay * curve.PerDay + totalOffset;
             double fluctuation = Math.Max(0, curve.FluctuationPct);
-            double minValue = minHidden * (1d - fluctuation);
-            double maxValue = maxHidden * (1d + fluctuation);
+            double minValue = hidden * (1d - fluctuation);
+            double maxValue = hidden * (1d + fluctuation);
             return new GoldRange(
                 Math.Max(0, (int)Math.Round(minValue, MidpointRounding.AwayFromZero)),
                 Math.Max(0, (int)Math.Round(maxValue, MidpointRounding.AwayFromZero)));
@@ -85,7 +84,7 @@ namespace GourmetProject.Game.Meta
             }
 
             int hidden = FragmentHiddenScore(run, context);
-            double value = curve.MinBase + hidden * 0.5f + (run?.WeekIndex ?? 0) * curve.MinPerWeek;
+            double value = curve.BaseValue + hidden * 0.5f + (run?.WeekIndex ?? 0) * curve.PerWeek;
             return Math.Max(1, (int)Math.Round(value, MidpointRounding.AwayFromZero));
         }
 

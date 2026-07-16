@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 金币奖励曲线：按进度和行动难度计算上下限。
+/// 金币奖励曲线：按进度计算中心值，并按 fluctuationPct 浮动取值。
 /// </summary>
 public partial class TbGoldRewardCurve
 {

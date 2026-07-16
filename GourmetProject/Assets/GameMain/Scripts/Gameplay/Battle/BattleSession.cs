@@ -244,7 +244,7 @@ namespace GourmetProject.Gameplay.Battle
         {
             ScoreResult result = MinimumServesForScore > 0 && ServesUsed < MinimumServesForScore
                 ? ZeroScoreResult()
-                : _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes());
+                : _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes(), copySkillSelector: SelectCopySkills);
             ApplySideEffects(result);
             LastResult = result;
             IsSettled = true;
@@ -424,6 +424,9 @@ namespace GourmetProject.Gameplay.Battle
                 }
             }
 
+            // 技能复制：结算阶段只登记候选池，正式结算后由会话随机流落地，避免预览消耗 RNG。
+            ApplyCopySkillRequests(result.CopySkillRequests);
+
             // 永久分 / 永久乘区 / 视为食物数：写回实例（品鉴内跨结算持久）。
             foreach (KeyValuePair<int, float> kv in result.PermanentFlatDeltas)
             {
@@ -523,14 +526,34 @@ namespace GourmetProject.Gameplay.Battle
                     continue;
                 }
 
-                var pool = new List<string>(request.Candidates);
-                _rng.Shuffle(pool);
-                int take = Math.Min(request.Count, pool.Count);
-                for (int i = 0; i < take; i++)
+                IReadOnlyList<string> selected = request.SelectedSkillIds.Count > 0
+                    ? request.SelectedSkillIds
+                    : SelectCopySkills(request.Candidates, request.Count);
+                string label = string.IsNullOrEmpty(request.SourceName) ? null : $"{request.SourceName}<技能复制>";
+                for (int i = 0; i < selected.Count; i++)
                 {
-                    target.AddSkill(pool[i]);
+                    target.AddSkill(selected[i], label);
                 }
             }
+        }
+
+        private IReadOnlyList<string> SelectCopySkills(IReadOnlyList<string> candidates, int count)
+        {
+            if (candidates == null || candidates.Count == 0 || count <= 0)
+            {
+                return Array.Empty<string>();
+            }
+
+            var pool = new List<string>(candidates);
+            _rng.Shuffle(pool);
+            int take = Math.Min(count, pool.Count);
+            var selected = new List<string>(take);
+            for (int i = 0; i < take; i++)
+            {
+                selected.Add(pool[i]);
+            }
+
+            return selected;
         }
 
         /// <summary>临时复制落地：对每个源实例，在空格中克隆一份带同样技能/风味的临时实例并摆放。</summary>

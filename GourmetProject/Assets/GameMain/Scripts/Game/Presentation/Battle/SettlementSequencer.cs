@@ -32,6 +32,10 @@ namespace GourmetProject.Game.Presentation.Battle
         private const float SourceCueCharacterSize = 0.12f;
         private const float SourceCueStackOffset = 0.12f;
         private const float FinalCueInterval = 0.22f;
+        private const float FinalScorePopupCharacterSize = 0.18f;
+        private const float FinalScorePopupRise = 0.78f;
+        private const float FinalScorePopupDuration = 1.1f;
+        private const float FinalScorePopupHold = 0.28f;
 
         [Header("结算加速（小丑牌式：按 cue 进度越来越快）")]
         [SerializeField] private bool _useGlobalTimeScale = true;
@@ -70,6 +74,7 @@ namespace GourmetProject.Game.Presentation.Battle
             Transform fxRoot,
             SettlementScoreFireView scoreFire,
             Action<int> renderScore,
+            Action<SettlementRevealSignal> onReveal,
             CancellationToken cancellationToken)
         {
             if (result == null)
@@ -105,10 +110,10 @@ namespace GourmetProject.Game.Presentation.Battle
 
                     DishInstance instance = view.Instance;
                     Vector3 center = DishCenter(instance, mapper);
-                    await PlayCueAsync(step.Cue, view, center, fxRoot, playback, cancellationToken);
+                    await PlayCueAsync(step.Cue, view, center, fxRoot, playback, onReveal, cancellationToken);
                 }
 
-                await PlayFinalCuesAsync(plan.FinalCues, mapper.Center, fxRoot, playback, cancellationToken);
+                await PlayFinalCuesAsync(plan.FinalCues, mapper.Center, fxRoot, playback, onReveal, cancellationToken);
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 await WaitWhileDebugScorePausedAsync(cancellationToken);
@@ -116,6 +121,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 AdvanceSettlementSpeed(playback, SettlementCueKind.FinalScore);
                 await TweenScoreAsync(runningTotal, result.Total, 0.45f, renderScore, cancellationToken);
                 renderScore?.Invoke(result.Total);
+                await PlayFinalScorePopupAsync(result.Total, mapper.Center, fxRoot, cancellationToken);
             }
             finally
             {
@@ -171,12 +177,14 @@ namespace GourmetProject.Game.Presentation.Battle
             Vector3 center,
             Transform fxRoot,
             SettlementPlaybackState playback,
+            Action<SettlementRevealSignal> onReveal,
             CancellationToken cancellationToken)
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             await WaitWhileDebugScorePausedAsync(cancellationToken);
 #endif
             AdvanceSettlementSpeed(playback, cue.Kind);
+            EmitReveal(onReveal, cue);
             if (fxRoot != null)
             {
                 FloatingTextView.Spawn(
@@ -193,11 +201,37 @@ namespace GourmetProject.Game.Presentation.Battle
             await view.PlayDeliciousnessGainFeedbackAsync(cancellationToken);
         }
 
+        private async Awaitable PlayFinalScorePopupAsync(
+            int total,
+            Vector3 center,
+            Transform fxRoot,
+            CancellationToken cancellationToken)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            await WaitWhileDebugScorePausedAsync(cancellationToken);
+#endif
+            if (fxRoot != null)
+            {
+                FloatingTextView.Spawn(
+                    _floatingTextPrefab,
+                    fxRoot,
+                    center + new Vector3(0f, 0.72f, 0f),
+                    $"总分 {total}",
+                    FinalColor,
+                    FinalScorePopupCharacterSize,
+                    FinalScorePopupRise,
+                    FinalScorePopupDuration);
+            }
+
+            await Awaitable.WaitForSecondsAsync(FinalScorePopupHold, cancellationToken);
+        }
+
         private async Awaitable PlayFinalCuesAsync(
             IReadOnlyList<SettlementCue> cues,
             Vector3 center,
             Transform fxRoot,
             SettlementPlaybackState playback,
+            Action<SettlementRevealSignal> onReveal,
             CancellationToken cancellationToken)
         {
             for (int i = 0; i < cues.Count; i++)
@@ -207,6 +241,7 @@ namespace GourmetProject.Game.Presentation.Battle
 #endif
                 SettlementCue cue = cues[i];
                 AdvanceSettlementSpeed(playback, cue.Kind);
+                EmitReveal(onReveal, cue);
                 if (fxRoot != null)
                 {
                     Vector3 offset = new(0f, 0.52f + SourceCueStackOffset * i, 0f);
@@ -286,6 +321,16 @@ namespace GourmetProject.Game.Presentation.Battle
         private void NotifySettlementCue(SettlementCueKind kind, float speed, float normalized)
         {
             // 预留音效入口：后续可在这里按 kind 播放结算音效，并用 speed 映射 pitch。
+        }
+
+        private static void EmitReveal(Action<SettlementRevealSignal> onReveal, SettlementCue cue)
+        {
+            if (onReveal == null || cue == null || cue.Reveal.Channel == SettlementRevealChannel.None)
+            {
+                return;
+            }
+
+            onReveal(cue.Reveal);
         }
 
         private static int CountSettlementCues(SettlementPlaybackPlan plan)
@@ -468,6 +513,34 @@ namespace GourmetProject.Game.Presentation.Battle
                 }
             }
 
+            // 甜蜜传递不在 ScoreLines 里（只作为副作用），单独补 cue：既让演出可见，又驱动 tips 揭示传递子技能。
+            foreach (SkillTransferSideEffect transfer in result.SkillTransfers)
+            {
+                int transferCount = transfer?.Effects?.Count ?? 0;
+                if (transferCount <= 0)
+                {
+                    continue;
+                }
+
+                string label = string.IsNullOrEmpty(transfer.SourceName) ? "甜蜜传递" : $"{transfer.SourceName}<甜蜜传递>";
+                var transferCue = new SettlementCue(
+                    SettlementCueKind.SideEffect,
+                    $"{label} +{transferCount}",
+                    SkillColor,
+                    reveal: new SettlementRevealSignal(SettlementRevealChannel.SweetTransfer, transfer.TargetInstanceId, 0f, transferCount));
+
+                if (transfer.TargetInstanceId != 0
+                    && dishViews.TryGetValue(transfer.TargetInstanceId, out DishPieceView transferView)
+                    && transferView != null)
+                {
+                    plan.Steps.Add(new SettlementPlaybackStep(transfer.TargetInstanceId, transferCue));
+                }
+                else
+                {
+                    plan.FinalCues.Add(transferCue);
+                }
+            }
+
             if (!hasFinalModifierCue && HasFinalModifier(result))
             {
                 plan.FinalCues.Add(BuildFinalSummaryCue(result));
@@ -515,7 +588,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.DishBase:
                     cue = new SettlementCue(
                         SettlementCueKind.Source,
-                        $"基础美味 {FormatSigned(line.Value)}",
+                        $"分数 {FormatSigned(line.Value)}",
                         GainColor);
                     return true;
 
@@ -528,21 +601,24 @@ namespace GourmetProject.Game.Presentation.Battle
                     cue = new SettlementCue(
                         SettlementCueKind.Source,
                         $"{sourceName} {FormatSigned(line.Value)}",
-                        ColorForSource(line.Source));
+                        ColorForSource(line.Source),
+                        reveal: new SettlementRevealSignal(SettlementRevealChannel.Flat, line.DishInstanceId, line.After, 0));
                     return true;
 
                 case ScoreLineKind.DishMultiplier:
                     cue = new SettlementCue(
                         SettlementCueKind.Source,
-                        $"{sourceName} {FormatMultiplier(line.Value)}",
-                        MultiplierColor);
+                        $"倍率 {FormatMultiplier(line.Value)}",
+                        MultiplierColor,
+                        reveal: new SettlementRevealSignal(SettlementRevealChannel.Multiplier, line.DishInstanceId, line.After, 0));
                     return true;
 
                 case ScoreLineKind.DishMultiplierAdd:
                     cue = new SettlementCue(
                         SettlementCueKind.Source,
-                        $"{sourceName} 倍率 {FormatSigned(line.Value)}",
-                        MultiplierColor);
+                        $"倍率 {FormatSigned(line.Value)}",
+                        MultiplierColor,
+                        reveal: new SettlementRevealSignal(SettlementRevealChannel.Multiplier, line.DishInstanceId, line.After, 0));
                     return true;
 
                 case ScoreLineKind.FinalFlat:
@@ -579,6 +655,14 @@ namespace GourmetProject.Game.Presentation.Battle
 
                 case ScoreLineKind.SilverItemRoll:
                     cue = new SettlementCue(SettlementCueKind.SideEffect, $"银材质抽道具 ×{Mathf.RoundToInt(line.Value)}", SideEffectColor);
+                    return true;
+
+                case ScoreLineKind.CopySkill:
+                    cue = new SettlementCue(
+                        SettlementCueKind.SideEffect,
+                        $"复制技能 ×{Mathf.RoundToInt(line.Value)}",
+                        SideEffectColor,
+                        reveal: new SettlementRevealSignal(SettlementRevealChannel.CopySkill, line.DishInstanceId, 0f, Mathf.RoundToInt(line.Value)));
                     return true;
 
                 default:
@@ -727,7 +811,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 Color color,
                 float characterSize = SourceCueCharacterSize,
                 float rise = SourceCueRise,
-                float duration = SourceCueDuration)
+                float duration = SourceCueDuration,
+                SettlementRevealSignal reveal = default)
             {
                 Kind = kind;
                 Text = text;
@@ -735,6 +820,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 CharacterSize = characterSize;
                 Rise = rise;
                 Duration = duration;
+                Reveal = reveal;
             }
 
             public SettlementCueKind Kind { get; }
@@ -748,6 +834,9 @@ namespace GourmetProject.Game.Presentation.Battle
             public float Rise { get; }
 
             public float Duration { get; }
+
+            /// <summary>该 cue 播放时对 tips 发出的渐进揭示信号（默认 None）。</summary>
+            public SettlementRevealSignal Reveal { get; }
         }
 
         private sealed class SettlementPlaybackState

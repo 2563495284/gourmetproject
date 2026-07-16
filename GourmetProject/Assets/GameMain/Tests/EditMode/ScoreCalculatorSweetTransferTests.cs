@@ -110,16 +110,77 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(bottomIndex, Is.GreaterThan(topIndex));
         }
 
+        [Test]
+        public void OnSettleTransferSkills_DoesNotCarryCopySkill()
+        {
+            DishShape oneCell = DishShape.FromRows(new[] { "X" });
+            DishShape twoCell = DishShape.FromRows(new[] { "XX" });
+            SkillRuleDef copy = RuleWithCondition(
+                "sweet_copy",
+                0,
+                SkillActionType.CopySkill,
+                SkillScope.All,
+                1f,
+                SkillConditionType.OccupiedCell,
+                CountMode.Reach,
+                "gte:2");
+            SkillRuleDef addFlat = Rule("sweet_add", 1, SkillActionType.AddFlat, SkillScope.Self, 5f);
+            SkillRuleDef transfer = Rule("sweet_transfer", 2, SkillActionType.TransferSkills, SkillScope.Other, 0f);
+            var sweetSkill = new SkillDef(
+                "skill_sweet",
+                "甜蜜",
+                string.Empty,
+                Array.Empty<string>(),
+                new[] { copy, addFlat, transfer },
+                new[] { "复制技能", "美味 +5", "甜蜜传递" });
+            SkillRuleDef candidateFlat = Rule("candidate_add", 0, SkillActionType.AddFlat, SkillScope.Self, 3f, "skill_candidate");
+            var candidateSkill = new SkillDef(
+                "skill_candidate",
+                "候选",
+                string.Empty,
+                Array.Empty<string>(),
+                new[] { candidateFlat },
+                new[] { "美味 +3" });
+
+            DishDef sourceDef = Dish("dish_a", "A", oneCell, "skill_sweet");
+            DishDef targetDef = Dish("dish_b", "B", twoCell);
+            DishDef candidateDef = Dish("dish_c", "C", oneCell, "skill_candidate");
+            var db = new GameplayDatabase(
+                new[] { sourceDef, targetDef, candidateDef },
+                new[] { sweetSkill, candidateSkill },
+                Array.Empty<FlavorDef>(),
+                Array.Empty<MaterialDef>(),
+                Array.Empty<RecipeDef>());
+            var table = new DiningTable(4, 1);
+            var source = new DishInstance(1, sourceDef, MakePlacement(oneCell, 0, 0), sourceDef.SkillIds, Array.Empty<string>());
+            var target = new DishInstance(2, targetDef, MakePlacement(twoCell, 1, 0), targetDef.SkillIds, Array.Empty<string>());
+            var candidate = new DishInstance(3, candidateDef, MakePlacement(oneCell, 3, 0), candidateDef.SkillIds, Array.Empty<string>());
+            table.Place(source);
+            table.Place(target);
+            table.Place(candidate);
+
+            ScoreResult result = new ScoreCalculator().Calculate(table, db);
+
+            Assert.That(result.CopySkillRequests.Count, Is.EqualTo(0));
+            Assert.That(result.ScoreLines.Any(l =>
+                l.DishInstanceId == target.Id
+                && l.Kind == ScoreLineKind.DishFlat
+                && l.Source.Name == "A<甜蜜传递>"
+                && Math.Abs(l.Value - 5f) < 0.001f), Is.True);
+            Assert.That(result.ScoreLines.Any(l => l.Kind == ScoreLineKind.CopySkill), Is.False);
+        }
+
         private static SkillRuleDef Rule(
             string id,
             int order,
             SkillActionType actionType,
             SkillScope actionScope,
-            float actionValue)
+            float actionValue,
+            string skillId = "skill_sweet")
         {
             return new SkillRuleDef(
                 id,
-                "skill_sweet",
+                skillId,
                 order,
                 SkillTrigger.OnSettle,
                 SkillConditionType.None,
@@ -127,6 +188,33 @@ namespace GourmetProject.Tests.EditMode
                 CountUnit.Instances,
                 CountMode.Per,
                 string.Empty,
+                actionType,
+                actionScope,
+                0,
+                new[] { actionValue },
+                Array.Empty<string>());
+        }
+
+        private static SkillRuleDef RuleWithCondition(
+            string id,
+            int order,
+            SkillActionType actionType,
+            SkillScope actionScope,
+            float actionValue,
+            SkillConditionType condType,
+            CountMode condMode,
+            string condParam)
+        {
+            return new SkillRuleDef(
+                id,
+                "skill_sweet",
+                order,
+                SkillTrigger.OnSettle,
+                condType,
+                SkillScope.Self,
+                CountUnit.Instances,
+                condMode,
+                condParam,
                 actionType,
                 actionScope,
                 0,

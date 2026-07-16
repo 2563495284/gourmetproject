@@ -44,7 +44,8 @@ namespace GourmetProject.Gameplay.Scoring
             IReadOnlyList<SkillTransferSideEffect> skillTransfers = null,
             IReadOnlyDictionary<int, float> permanentFlatDeltas = null,
             IReadOnlyDictionary<int, float> permanentMultDeltas = null,
-            int silverItemRollRequests = 0)
+            int silverItemRollRequests = 0,
+            IReadOnlyList<CopySkillRequest> copySkillRequests = null)
         {
             DishScores = dishScores;
             RawSum = rawSum;
@@ -58,6 +59,7 @@ namespace GourmetProject.Gameplay.Scoring
             PermanentFlatDeltas = permanentFlatDeltas ?? EmptyFloatDeltas;
             PermanentMultDeltas = permanentMultDeltas ?? EmptyFloatDeltas;
             SilverItemRollRequests = silverItemRollRequests;
+            CopySkillRequests = copySkillRequests ?? System.Array.Empty<CopySkillRequest>();
         }
 
         private static readonly IReadOnlyDictionary<int, float> EmptyFloatDeltas = new Dictionary<int, float>();
@@ -97,6 +99,9 @@ namespace GourmetProject.Gameplay.Scoring
 
         /// <summary>银材质登记的「1/3 获得主动道具」掷骰请求次数。正式结算后由 Game 层掷骰发放（预览不掷）。</summary>
         public int SilverItemRollRequests { get; }
+
+        /// <summary>结算阶段登记的技能复制请求。正式结算后由 BattleSession 用随机流落地。</summary>
+        public IReadOnlyList<CopySkillRequest> CopySkillRequests { get; }
 
         /// <summary>最终得分（四舍五入到整数，0.5 向上取整）。</summary>
         public int Total => (int)System.Math.Round((RawSum + FinalFlat) * FinalMultiplier, System.MidpointRounding.AwayFromZero);

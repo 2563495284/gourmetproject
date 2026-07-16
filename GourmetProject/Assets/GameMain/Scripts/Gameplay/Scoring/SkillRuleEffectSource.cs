@@ -179,6 +179,18 @@ namespace GourmetProject.Gameplay.Scoring
                     break;
                 }
 
+                case SkillActionType.CopySkill:
+                {
+                    List<string> candidates = ServeRuleResolver.BuildCopyCandidates(ctx.DiningTable, ctx.Db, _rule, _self);
+                    if (candidates.Count > 0)
+                    {
+                        int n = Math.Max(1, (int)Math.Round(value, MidpointRounding.AwayFromZero));
+                        ctx.RecordCopySkill(_self, candidates, n, _self.Def.Name);
+                    }
+
+                    break;
+                }
+
                 case SkillActionType.GrantGold:
                     ctx.GrantGold(value * count);
                     break;
@@ -340,7 +352,7 @@ namespace GourmetProject.Gameplay.Scoring
         }
 
         /// <summary>
-        /// 甜蜜传递载荷：取传递子技能「所在 skill」内除传递外的所有子技能(rule)，配上各自描述片段。
+        /// 甜蜜传递载荷：取传递子技能「所在 skill」内除传递/复制外的子技能(rule)，配上各自描述片段。
         /// 目标获得后随其结算一并施加，作用域相对目标计算。
         /// </summary>
         internal static IReadOnlyList<SkillEffect> EffectsToTransfer(GameplayDatabase db, SkillRuleDef transferRule)
@@ -355,7 +367,8 @@ namespace GourmetProject.Gameplay.Scoring
             for (int i = 0; i < parent.Rules.Count; i++)
             {
                 SkillRuleDef rule = parent.Rules[i];
-                if (rule.ActionType == SkillActionType.TransferSkills)
+                if (rule.ActionType == SkillActionType.TransferSkills
+                    || rule.ActionType == SkillActionType.CopySkill)
                 {
                     continue;
                 }

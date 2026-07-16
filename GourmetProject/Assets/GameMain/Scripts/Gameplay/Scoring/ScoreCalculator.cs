@@ -33,10 +33,11 @@ namespace GourmetProject.Gameplay.Scoring
             int extraCountAsPerDish = 0,
             int cakeLayerThresholdReduction = 0,
             bool reverseDishOrder = false,
-            IReadOnlyList<UnservedRecipeDish> unservedRecipeDishes = null)
+            IReadOnlyList<UnservedRecipeDish> unservedRecipeDishes = null,
+            Func<IReadOnlyList<string>, int, IReadOnlyList<string>> copySkillSelector = null)
         {
             IScoreEffectSource[] sources = MergeSources(extraSources);
-            return Calculate(new ScoreSnapshot(board, db, finalFlat, finalMultiplier, sources, history, initialHappyCakeLayers, extraCountAsPerDish, cakeLayerThresholdReduction, reverseDishOrder, unservedRecipeDishes));
+            return Calculate(new ScoreSnapshot(board, db, finalFlat, finalMultiplier, sources, history, initialHappyCakeLayers, extraCountAsPerDish, cakeLayerThresholdReduction, reverseDishOrder, unservedRecipeDishes, copySkillSelector));
         }
 
         public ScoreResult Calculate(ScoreSnapshot snapshot)

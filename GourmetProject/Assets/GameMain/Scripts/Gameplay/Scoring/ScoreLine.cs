@@ -15,6 +15,7 @@ namespace GourmetProject.Gameplay.Scoring
         ExtraSettlement = 7,
         DishMultiplierAdd = 8,
         SilverItemRoll = 9,
+        CopySkill = 10,
     }
 
     /// <summary>一次具体分数变化的可解释记录。</summary>

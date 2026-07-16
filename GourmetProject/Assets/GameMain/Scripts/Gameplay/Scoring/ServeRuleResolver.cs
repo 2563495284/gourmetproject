@@ -193,7 +193,7 @@ namespace GourmetProject.Gameplay.Scoring
                     {
                         int n = System.Math.Max(1, (int)System.Math.Round(value, System.MidpointRounding.AwayFromZero));
                         copyRequests ??= new List<CopySkillRequest>();
-                        copyRequests.Add(new CopySkillRequest(self.Id, candidates, n));
+                        copyRequests.Add(new CopySkillRequest(self.Id, candidates, n, self.Def.Name));
                     }
 
                     break;
@@ -309,7 +309,7 @@ namespace GourmetProject.Gameplay.Scoring
         /// 技能复制的候选池：actionParam 含 cat:xxx 时取该分类全部菜品定义的技能（如「蛋糕技能」）；
         /// 否则取作用域内其它实例的运行时技能。剔除自身已有技能与复制类技能（避免复制「复制」造成循环）。
         /// </summary>
-        private static List<string> BuildCopyCandidates(GpTable board, GameplayDatabase db, SkillRuleDef rule, DishInstance self)
+        internal static List<string> BuildCopyCandidates(GpTable board, GameplayDatabase db, SkillRuleDef rule, DishInstance self)
         {
             var candidates = new List<string>();
             void Add(string s)
@@ -453,11 +453,18 @@ namespace GourmetProject.Gameplay.Scoring
     /// <summary>技能复制请求：把 Candidates 中随机 Count 个技能加到目标实例。RNG 落地由 BattleSession 执行。</summary>
     public sealed class CopySkillRequest
     {
-        public CopySkillRequest(int targetInstanceId, IReadOnlyList<string> candidates, int count)
+        public CopySkillRequest(
+            int targetInstanceId,
+            IReadOnlyList<string> candidates,
+            int count,
+            string sourceName = null,
+            IReadOnlyList<string> selectedSkillIds = null)
         {
             TargetInstanceId = targetInstanceId;
             Candidates = candidates ?? System.Array.Empty<string>();
             Count = count;
+            SourceName = sourceName ?? string.Empty;
+            SelectedSkillIds = selectedSkillIds ?? System.Array.Empty<string>();
         }
 
         public int TargetInstanceId { get; }
@@ -465,6 +472,11 @@ namespace GourmetProject.Gameplay.Scoring
         public IReadOnlyList<string> Candidates { get; }
 
         public int Count { get; }
+
+        public string SourceName { get; }
+
+        /// <summary>结算阶段已选中的具体技能。为空时由 BattleSession 落地时随机选择（上菜阶段请求）。</summary>
+        public IReadOnlyList<string> SelectedSkillIds { get; }
     }
 
     /// <summary>

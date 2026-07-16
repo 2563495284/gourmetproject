@@ -704,8 +704,118 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
+            if (IsItemPack(choices))
+            {
+                OpenItemChoicePopup(groupIndex, choices);
+                return;
+            }
+
             _expandedChoicePackGroupIndex = groupIndex;
             RefreshOffer();
+        }
+
+        private bool OpenItemChoicePopup(int groupIndex, IReadOnlyList<RewardChoice> choices, bool closeRewardFormOnOpen = true)
+        {
+            BattleForm battle = BattleForm.Active;
+            if (battle == null || choices == null)
+            {
+                _expandedChoicePackGroupIndex = groupIndex;
+                RefreshOffer();
+                return false;
+            }
+
+            var remainingChoices = new List<RewardChoice>();
+            var sourceIndices = new List<int>();
+            for (int i = 0; i < choices.Count; i++)
+            {
+                if (IsChoiceClaimed(groupIndex, i))
+                {
+                    continue;
+                }
+
+                RewardChoice choice = choices[i];
+                if (choice == null)
+                {
+                    continue;
+                }
+
+                remainingChoices.Add(choice);
+                sourceIndices.Add(i);
+            }
+
+            if (remainingChoices.Count == 0)
+            {
+                return false;
+            }
+
+            cfg.ItemKind itemKind = remainingChoices[0].Kind == cfg.RewardKind.ActiveItemGrant
+                ? cfg.ItemKind.Active
+                : cfg.ItemKind.Passive;
+            string title = BuildItemChoicePopupTitle(choices, groupIndex);
+            bool opened = battle.OpenRewardItemChoices(
+                title,
+                remainingChoices,
+                itemKind,
+                pickedIndex =>
+                {
+                    if (pickedIndex < 0 || pickedIndex >= sourceIndices.Count)
+                    {
+                        ReopenReward();
+                        return;
+                    }
+
+                    ClaimItemChoiceFromPopup(groupIndex, sourceIndices[pickedIndex], choices);
+                },
+                ReopenReward);
+            if (opened)
+            {
+                if (closeRewardFormOnOpen)
+                {
+                    Close();
+                }
+
+                return true;
+            }
+
+            _expandedChoicePackGroupIndex = groupIndex;
+            RefreshOffer();
+            return false;
+        }
+
+        private void ClaimItemChoiceFromPopup(int groupIndex, int index, IReadOnlyList<RewardChoice> choices)
+        {
+            if (_offer == null || _run == null || choices == null || IsChoiceResolved(groupIndex)
+                || index < 0 || index >= choices.Count || IsChoiceClaimed(groupIndex, index))
+            {
+                ReopenReward();
+                return;
+            }
+
+            RewardChoice choice = choices[index];
+            if (choice == null)
+            {
+                ReopenReward();
+                return;
+            }
+
+            RewardGranter.ApplyChoice(_run, choice);
+            MarkChoiceClaimed(groupIndex, index);
+            SaveCurrentOffer();
+            RunPersistence.Save(_run);
+            RefreshBattlePersistentHud();
+
+            if (TryAutoComplete(closeForm: false))
+            {
+                return;
+            }
+
+            if (!IsChoiceResolved(groupIndex) && IsItemPack(choices)
+                && OpenItemChoicePopup(groupIndex, choices, closeRewardFormOnOpen: false))
+            {
+                return;
+            }
+
+            ReopenReward();
         }
 
         private void ClaimAllRemainingChoices(int groupIndex, IReadOnlyList<RewardChoice> choices)
@@ -834,6 +944,30 @@ namespace GourmetProject.Game.UI.Meta
             return choices != null && choices.Count > 0 && choices[0]?.Kind == cfg.RewardKind.DishChoice;
         }
 
+        private static bool IsItemPack(IReadOnlyList<RewardChoice> choices)
+        {
+            if (choices == null || choices.Count == 0 || choices[0] == null)
+            {
+                return false;
+            }
+
+            cfg.RewardKind kind = choices[0].Kind;
+            if (kind != cfg.RewardKind.ActiveItemGrant && kind != cfg.RewardKind.PassiveItemChoice)
+            {
+                return false;
+            }
+
+            for (int i = 1; i < choices.Count; i++)
+            {
+                if (choices[i]?.Kind != kind)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         private bool ShouldShowChoicePackRow(IReadOnlyList<RewardChoice> choices, int groupIndex)
         {
             if (choices == null || choices.Count <= 1)
@@ -847,6 +981,17 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             return _expandedChoicePackGroupIndex != groupIndex;
+        }
+
+        private string BuildItemChoicePopupTitle(IReadOnlyList<RewardChoice> choices, int groupIndex)
+        {
+            RewardChoiceGroup group = GroupFor(groupIndex);
+            string itemName = ChoicePackName(choices);
+            int currentPick = group.ClaimedIndices.Count + 1;
+            int required = group.RequiredChoiceCount;
+            return required <= 1
+                ? $"选择一个{itemName}"
+                : $"选择{itemName}（{currentPick}/{required}）";
         }
 
         private string BuildChoicePackDescription(IReadOnlyList<RewardChoice> choices, int groupIndex, string packName)

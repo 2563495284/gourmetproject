@@ -1170,7 +1170,7 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>播放背包乱斗式逐菜结算演出，完成后回调上层决定过关/失败 UI。</summary>
-        public async void PlaySettlement(ScoreResult result, SettlementScoreFireView scoreFire, Action onComplete)
+        public async void PlaySettlement(ScoreResult result, SettlementScoreFireView scoreFire, Action<SettlementRevealSignal> onReveal, Action onComplete)
         {
             if (_sequencer == null || _session == null || result == null)
             {
@@ -1190,6 +1190,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     _fxRoot,
                     scoreFire,
                     RenderSettlementScore,
+                    onReveal,
                     token);
             }
             catch (OperationCanceledException)
