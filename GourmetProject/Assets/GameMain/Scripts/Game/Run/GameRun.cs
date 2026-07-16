@@ -1997,6 +1997,18 @@ namespace GourmetProject.Game.Run
             return true;
         }
 
+        public bool AddRecipeScoreFlat(int bookIndex, int dishIndex, float amount)
+        {
+            RecipeBookSlot slot = GetRecipeBookSlot(bookIndex, dishIndex);
+            if (slot == null || System.Math.Abs(amount) < 0.0001f)
+            {
+                return false;
+            }
+
+            slot.AddScoreFlat(amount);
+            return true;
+        }
+
         private RecipeBookSlot GetRecipeBookSlot(int bookIndex, int dishIndex)
         {
             if (!IsRecipeBookIndexValid(bookIndex))
@@ -2626,6 +2638,7 @@ namespace GourmetProject.Game.Run
                     {
                         FlavorIds = new List<string>(slot.ExtraFlavorIds),
                         ExtraSkillIds = new List<string>(slot.ExtraSkillIds),
+                        ScoreFlatBonus = slot.ScoreFlatBonus,
                         ScoreMultiplier = slot.ScoreMultiplier,
                     });
                 }
@@ -2787,6 +2800,7 @@ namespace GourmetProject.Game.Run
                             }
 
                             slot.RestoreScoreMultiplier(extra != null ? extra.ScoreMultiplier : 1f);
+                            slot.RestoreScoreFlatBonus(extra != null ? extra.ScoreFlatBonus : 0f);
                         }
 
                         book.Add(slot);

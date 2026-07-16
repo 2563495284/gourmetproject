@@ -23,6 +23,8 @@ namespace GourmetProject.Gameplay.Battle
         private readonly List<string> _recipeBaseIds = new List<string>();
         private readonly Dictionary<string, int> _mealSettled = new Dictionary<string, int>();
         private readonly Dictionary<string, int> _runSettled = new Dictionary<string, int>();
+        private readonly List<RecipeScoreFlatDelta> _lastRecipeScoreFlatDeltas = new List<RecipeScoreFlatDelta>();
+        private readonly List<RecipeScoreMultiplierDelta> _lastRecipeScoreMultiplierDeltas = new List<RecipeScoreMultiplierDelta>();
         private int _nextInstanceId = 1;
         private int _appetizerRemoved;
 
@@ -124,6 +126,10 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>本次结算各 BaseId 的结算增量（供 Game 层累加进 GameRun 大局历史）。</summary>
         public IReadOnlyDictionary<string, int> LastSettledIncrements { get; private set; } = new Dictionary<string, int>();
 
+        public IReadOnlyList<RecipeScoreFlatDelta> LastRecipeScoreFlatDeltas => _lastRecipeScoreFlatDeltas;
+
+        public IReadOnlyList<RecipeScoreMultiplierDelta> LastRecipeScoreMultiplierDeltas => _lastRecipeScoreMultiplierDeltas;
+
         /// <summary>本次品鉴菜谱内容（BaseId 列表，供菜谱检测）。</summary>
         public IReadOnlyList<string> RecipeBaseIds => _recipeBaseIds;
 
@@ -191,7 +197,7 @@ namespace GourmetProject.Gameplay.Battle
             List<string> skills = ComposeServeSkills(chosen.Dish, entry);
             List<string> flavors = ComposeServeFlavors(chosen.Dish, entry);
             var instance = new DishInstance(_nextInstanceId++, chosen.Dish, chosen.Placement, skills, flavors);
-            instance.SetSourceSlotIndex(slotIndex);
+            instance.SetSourceRecipeIndex(slotIndex, entry.SourceDishIndex);
             ApplyEntryFlags(instance, entry);
             ApplyServeModifiers(instance);
             DiningTable.Place(instance);
@@ -327,6 +333,11 @@ namespace GourmetProject.Gameplay.Battle
             {
                 instance.MultiplyPermanentMult(entry.ScoreMultiplier);
             }
+
+            if (Math.Abs(entry.ScoreFlatBonus) > 0.0001f)
+            {
+                instance.AddPermanentFlat(entry.ScoreFlatBonus);
+            }
         }
 
         private void ApplyServeModifiers(DishInstance instance)
@@ -393,6 +404,9 @@ namespace GourmetProject.Gameplay.Battle
 
         private void ApplySideEffects(ScoreResult result)
         {
+            _lastRecipeScoreFlatDeltas.Clear();
+            _lastRecipeScoreMultiplierDeltas.Clear();
+
             // 金币入账（结算侧效果）。
             PendingGold += result.GoldDelta;
 
@@ -430,12 +444,38 @@ namespace GourmetProject.Gameplay.Battle
             // 永久分 / 永久乘区 / 视为食物数：写回实例（品鉴内跨结算持久）。
             foreach (KeyValuePair<int, float> kv in result.PermanentFlatDeltas)
             {
-                FindInstance(kv.Key)?.AddPermanentFlat(kv.Value);
+                DishInstance inst = FindInstance(kv.Key);
+                if (inst == null)
+                {
+                    continue;
+                }
+
+                inst.AddPermanentFlat(kv.Value);
+                if (inst.SourceSlotIndex >= 0 && inst.SourceDishIndex >= 0)
+                {
+                    _lastRecipeScoreFlatDeltas.Add(new RecipeScoreFlatDelta(
+                        inst.SourceSlotIndex,
+                        inst.SourceDishIndex,
+                        kv.Value));
+                }
             }
 
             foreach (KeyValuePair<int, float> kv in result.PermanentMultDeltas)
             {
-                FindInstance(kv.Key)?.MultiplyPermanentMult(kv.Value);
+                DishInstance inst = FindInstance(kv.Key);
+                if (inst == null)
+                {
+                    continue;
+                }
+
+                inst.MultiplyPermanentMult(kv.Value);
+                if (inst.SourceSlotIndex >= 0 && inst.SourceDishIndex >= 0)
+                {
+                    _lastRecipeScoreMultiplierDeltas.Add(new RecipeScoreMultiplierDelta(
+                        inst.SourceSlotIndex,
+                        inst.SourceDishIndex,
+                        kv.Value));
+                }
             }
 
             // 历史累计：本次结算把盘面每道菜的 BaseId 计入大局/小局。
@@ -580,7 +620,7 @@ namespace GourmetProject.Gameplay.Battle
 
                 Placement placement = placements[_rng.Range(0, placements.Count)];
                 var clone = new DishInstance(_nextInstanceId++, source.Def, placement, source.SkillIds, source.FlavorIds);
-                clone.SetSourceSlotIndex(source.SourceSlotIndex);
+                clone.SetSourceRecipeIndex(source.SourceSlotIndex, source.SourceDishIndex);
                 clone.CopySkillSourcesFrom(source);
                 clone.CopyTransferredSkillsFrom(source);
                 clone.MarkTemporary();
@@ -788,7 +828,7 @@ namespace GourmetProject.Gameplay.Battle
 
             Placement placement = placements[_rng.Range(0, placements.Count)];
             var clone = new DishInstance(_nextInstanceId++, source.Def, placement, source.SkillIds, source.FlavorIds);
-            clone.SetSourceSlotIndex(source.SourceSlotIndex);
+            clone.SetSourceRecipeIndex(source.SourceSlotIndex, source.SourceDishIndex);
             clone.CopySkillSourcesFrom(source);
             clone.CopyTransferredSkillsFrom(source);
             DiningTable.Place(clone);

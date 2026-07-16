@@ -557,9 +557,10 @@ namespace GourmetProject.Game.UI.Meta
 
             var summary = new FoodSummaryTipsData(def.Name, skills, flavorNames);
             float multiplier = slot != null ? slot.ScoreMultiplier : 1f;
+            float score = def.Deliciousness + (slot != null ? slot.ScoreFlatBonus : 0f);
             return new FoodTipsData(
                 summary,
-                new FoodScoreTipsData(def.Deliciousness, multiplier),
+                new FoodScoreTipsData(score, multiplier),
                 Array.Empty<FoodMaterialTipsEntry>(),
                 flavorDetails,
                 Array.Empty<FoodInfoEntry>(),

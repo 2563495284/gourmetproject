@@ -639,7 +639,8 @@ namespace GourmetProject.Game.UI.Meta
         {
             var sb = new StringBuilder();
             sb.AppendLine(def.Name);
-            sb.AppendLine($"美味度 {def.Deliciousness}　形状 {def.Shape.Width}x{def.Shape.Height}");
+            float score = def.Deliciousness + (slot != null ? slot.ScoreFlatBonus : 0f);
+            sb.AppendLine($"美味度 {score}　形状 {def.Shape.Width}x{def.Shape.Height}");
             if (slot != null && Math.Abs(slot.ScoreMultiplier - 1f) > 0.0001f)
             {
                 sb.AppendLine($"倍率 x{slot.ScoreMultiplier:0.##}");
@@ -692,9 +693,10 @@ namespace GourmetProject.Game.UI.Meta
 
             var summary = new FoodSummaryTipsData(def.Name, skills, flavorNames);
             float multiplier = slot != null ? slot.ScoreMultiplier : 1f;
+            float score = def.Deliciousness + (slot != null ? slot.ScoreFlatBonus : 0f);
             return new FoodTipsData(
                 summary,
-                new FoodScoreTipsData(def.Deliciousness, multiplier),
+                new FoodScoreTipsData(score, multiplier),
                 Array.Empty<FoodMaterialTipsEntry>(),
                 flavorDetails,
                 Array.Empty<FoodInfoEntry>(),

@@ -10,6 +10,7 @@ namespace GourmetProject.Game.Run
     {
         private readonly List<string> _extraFlavorIds = new List<string>();
         private readonly List<string> _extraSkillIds = new List<string>();
+        private float _scoreFlatBonus;
         private float _scoreMultiplier = 1f;
 
         public RecipeBookSlot(string dishId)
@@ -23,6 +24,8 @@ namespace GourmetProject.Game.Run
         public IReadOnlyList<string> ExtraFlavorIds => _extraFlavorIds;
 
         public IReadOnlyList<string> ExtraSkillIds => _extraSkillIds;
+
+        public float ScoreFlatBonus => _scoreFlatBonus;
 
         public float ScoreMultiplier => _scoreMultiplier;
 
@@ -96,6 +99,16 @@ namespace GourmetProject.Game.Run
             }
         }
 
+        public void AddScoreFlat(float amount)
+        {
+            _scoreFlatBonus += amount;
+        }
+
+        public void RestoreScoreFlatBonus(float amount)
+        {
+            _scoreFlatBonus = amount;
+        }
+
         public void RestoreScoreMultiplier(float multiplier)
         {
             _scoreMultiplier = multiplier > 0f ? multiplier : 1f;
@@ -106,6 +119,7 @@ namespace GourmetProject.Game.Run
             var copy = new RecipeBookSlot(DishId);
             copy._extraFlavorIds.AddRange(_extraFlavorIds);
             copy._extraSkillIds.AddRange(_extraSkillIds);
+            copy._scoreFlatBonus = _scoreFlatBonus;
             copy._scoreMultiplier = _scoreMultiplier;
             return copy;
         }

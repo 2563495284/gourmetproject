@@ -241,6 +241,7 @@ namespace GourmetProject.Gameplay.Scoring
 
             Phase = ScorePhase.DishBase;
             Source = ScoreSource.Dish(Dish);
+            float baseScore = Dish.BaseScoreBeforeSettlement;
             _lines.Add(new ScoreLine(
                 Phase,
                 ScoreLineKind.DishBase,
@@ -248,10 +249,10 @@ namespace GourmetProject.Gameplay.Scoring
                 Dish.Id,
                 Dish.Def.Id,
                 null,
-                Dish.Def.Deliciousness,
+                baseScore,
                 0f,
-                Dish.Def.Deliciousness,
-                $"{Dish.Def.Name} 基础美味度 {Dish.Def.Deliciousness}"));
+                baseScore,
+                $"{Dish.Def.Name} 基础美味度 {baseScore}"));
         }
 
         public void Apply(ScoreEffectEntry entry)

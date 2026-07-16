@@ -67,10 +67,19 @@ namespace GourmetProject.Gameplay.Board
         /// <summary>溯源：本菜来自哪个菜谱槽（0 基），未知为 -1。供酸/咸「同菜谱」判定。</summary>
         public int SourceSlotIndex { get; private set; } = -1;
 
+        /// <summary>溯源：本菜来自菜谱槽中的哪个条目（0 基），未知为 -1。供永久分写回菜谱条目。</summary>
+        public int SourceDishIndex { get; private set; } = -1;
+
         /// <summary>设置菜谱槽溯源（上菜时写入）。</summary>
         public void SetSourceSlotIndex(int slotIndex)
         {
             SourceSlotIndex = slotIndex;
+        }
+
+        public void SetSourceRecipeIndex(int slotIndex, int dishIndex)
+        {
+            SourceSlotIndex = slotIndex;
+            SourceDishIndex = dishIndex;
         }
 
         /// <summary>该实例的最终风味 id 列表（多槽，可叠加；同类风味按出现次数累计效果，如甜×n）。</summary>

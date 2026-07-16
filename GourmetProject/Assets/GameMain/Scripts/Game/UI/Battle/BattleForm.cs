@@ -1727,7 +1727,10 @@ namespace GourmetProject.Game.UI.Battle
             string mult = snapshot.ScoreMultiplier > 0f && Mathf.Abs(snapshot.ScoreMultiplier - 1f) > 0.0001f
                 ? $" x{snapshot.ScoreMultiplier:0.##}"
                 : string.Empty;
-            return $"{name} [{flavors}, {skills}{mult}]";
+            string score = Mathf.Abs(snapshot.ScoreFlatBonus) > 0.0001f
+                ? $", 美味+{snapshot.ScoreFlatBonus:0.##}"
+                : string.Empty;
+            return $"{name} [{flavors}, {skills}{score}{mult}]";
         }
 
         private List<string> FlavorNames(IReadOnlyList<string> flavorIds)
@@ -2138,6 +2141,7 @@ namespace GourmetProject.Game.UI.Battle
             _settlementReveal = reveal;
 
             ScoreResult result = _session.Settle();
+            ApplyRecipeScoreDeltasToRun();
             SetSettlementScore(0);
             RefreshFoodActions();
 
@@ -2189,6 +2193,24 @@ namespace GourmetProject.Game.UI.Battle
             _infoColumn?.SetBattleScoreOverride(null);
             RefreshAll();
             _loop?.OnBattleSettled(result, _session != null && _session.IsWin);
+        }
+
+        private void ApplyRecipeScoreDeltasToRun()
+        {
+            if (_run == null || _session == null)
+            {
+                return;
+            }
+
+            foreach (RecipeScoreFlatDelta delta in _session.LastRecipeScoreFlatDeltas)
+            {
+                _run.AddRecipeScoreFlat(delta.BookIndex, delta.DishIndex, delta.Delta);
+            }
+
+            foreach (RecipeScoreMultiplierDelta delta in _session.LastRecipeScoreMultiplierDeltas)
+            {
+                _run.MultiplyRecipeScore(delta.BookIndex, delta.DishIndex, delta.Multiplier);
+            }
         }
 
         private void RefreshAll()

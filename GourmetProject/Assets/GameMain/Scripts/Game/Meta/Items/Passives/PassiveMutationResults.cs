@@ -31,6 +31,8 @@ namespace GourmetProject.Game.Meta.Passives
 
         public IReadOnlyList<string> SkillIds { get; set; } = System.Array.Empty<string>();
 
+        public float ScoreFlatBonus { get; set; }
+
         public float ScoreMultiplier { get; set; } = 1f;
     }
 

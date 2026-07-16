@@ -347,6 +347,7 @@ namespace GourmetProject.Game.Meta.Passives
                 DishId = slot.DishId,
                 FlavorIds = flavors,
                 SkillIds = skills,
+                ScoreFlatBonus = slot.ScoreFlatBonus,
                 ScoreMultiplier = slot.ScoreMultiplier,
             };
         }

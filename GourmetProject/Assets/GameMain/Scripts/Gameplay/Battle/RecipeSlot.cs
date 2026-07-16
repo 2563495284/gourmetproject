@@ -93,12 +93,12 @@ namespace GourmetProject.Gameplay.Battle
         private readonly List<string> _extraSkillIds;
 
         public RecipeSlotEntry(string dishId)
-            : this(dishId, null, null, 1f)
+            : this(dishId, null, null, 1f, 0f)
         {
         }
 
         public RecipeSlotEntry(string dishId, IEnumerable<string> extraFlavorIds)
-            : this(dishId, extraFlavorIds, null, 1f)
+            : this(dishId, extraFlavorIds, null, 1f, 0f)
         {
         }
 
@@ -106,12 +106,18 @@ namespace GourmetProject.Gameplay.Battle
             string dishId,
             IEnumerable<string> extraFlavorIds,
             IEnumerable<string> extraSkillIds,
-            float scoreMultiplier)
+            float scoreMultiplier,
+            float scoreFlatBonus = 0f,
+            int sourceBookIndex = -1,
+            int sourceDishIndex = -1)
         {
             DishId = dishId ?? string.Empty;
             _extraFlavorIds = extraFlavorIds != null ? new List<string>(extraFlavorIds) : new List<string>();
             _extraSkillIds = extraSkillIds != null ? new List<string>(extraSkillIds) : new List<string>();
             ScoreMultiplier = scoreMultiplier > 0f ? scoreMultiplier : 1f;
+            ScoreFlatBonus = scoreFlatBonus;
+            SourceBookIndex = sourceBookIndex;
+            SourceDishIndex = sourceDishIndex;
         }
 
         public string DishId { get; }
@@ -127,6 +133,12 @@ namespace GourmetProject.Gameplay.Battle
 
         public float ScoreMultiplier { get; }
 
+        public float ScoreFlatBonus { get; }
+
+        public int SourceBookIndex { get; }
+
+        public int SourceDishIndex { get; }
+
         public void MarkSkillsDisabled()
         {
             DisableSkills = true;
@@ -139,7 +151,14 @@ namespace GourmetProject.Gameplay.Battle
 
         public RecipeSlotEntry Clone()
         {
-            var clone = new RecipeSlotEntry(DishId, _extraFlavorIds, _extraSkillIds, ScoreMultiplier);
+            var clone = new RecipeSlotEntry(
+                DishId,
+                _extraFlavorIds,
+                _extraSkillIds,
+                ScoreMultiplier,
+                ScoreFlatBonus,
+                SourceBookIndex,
+                SourceDishIndex);
             if (DisableSkills)
             {
                 clone.MarkSkillsDisabled();
@@ -152,5 +171,37 @@ namespace GourmetProject.Gameplay.Battle
 
             return clone;
         }
+    }
+
+    public readonly struct RecipeScoreFlatDelta
+    {
+        public RecipeScoreFlatDelta(int bookIndex, int dishIndex, float delta)
+        {
+            BookIndex = bookIndex;
+            DishIndex = dishIndex;
+            Delta = delta;
+        }
+
+        public int BookIndex { get; }
+
+        public int DishIndex { get; }
+
+        public float Delta { get; }
+    }
+
+    public readonly struct RecipeScoreMultiplierDelta
+    {
+        public RecipeScoreMultiplierDelta(int bookIndex, int dishIndex, float multiplier)
+        {
+            BookIndex = bookIndex;
+            DishIndex = dishIndex;
+            Multiplier = multiplier;
+        }
+
+        public int BookIndex { get; }
+
+        public int DishIndex { get; }
+
+        public float Multiplier { get; }
     }
 }

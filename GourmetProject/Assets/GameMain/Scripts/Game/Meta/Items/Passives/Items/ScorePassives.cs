@@ -52,8 +52,8 @@ namespace GourmetProject.Game.Meta.Passives
 
     /// <summary>指定上菜顺序 ×N（first/last 由 effectParam index 区分）。</summary>
     [Preserve]
-    [PassiveItemModel("item_first_x2")]
-    [PassiveItemModel("item_last_x2")]
+    [PassiveItemModel("item_first_+2")]
+    [PassiveItemModel("item_last_+2")]
     public sealed class NthServeMultModel : ScoreSpecModel
     {
         public NthServeMultModel() : base(ItemScoreEffectType.NthServeMult)

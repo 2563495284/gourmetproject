@@ -216,6 +216,8 @@ namespace GourmetProject.Game.Run
 
         public List<string> ExtraSkillIds = new List<string>();
 
+        public float ScoreFlatBonus;
+
         public float ScoreMultiplier = 1f;
     }
 

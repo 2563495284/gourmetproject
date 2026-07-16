@@ -30,15 +30,20 @@ namespace GourmetProject.Game.Run
             for (int i = 0; i < recipeBookCount; i++)
             {
                 var entries = new List<RecipeSlotEntry>();
-                foreach (RecipeBookSlot bookSlot in run.GetRecipeBookEntries(i))
+                IReadOnlyList<RecipeBookSlot> bookSlots = run.GetRecipeBookEntries(i);
+                for (int dishIndex = 0; dishIndex < bookSlots.Count; dishIndex++)
                 {
+                    RecipeBookSlot bookSlot = bookSlots[dishIndex];
                     if (run.Database.GetDish(bookSlot.DishId) != null)
                     {
                         entries.Add(new RecipeSlotEntry(
                             bookSlot.DishId,
                             bookSlot.ExtraFlavorIds,
                             bookSlot.ExtraSkillIds,
-                            bookSlot.ScoreMultiplier));
+                            bookSlot.ScoreMultiplier,
+                            bookSlot.ScoreFlatBonus,
+                            i,
+                            dishIndex));
                     }
                 }
 
