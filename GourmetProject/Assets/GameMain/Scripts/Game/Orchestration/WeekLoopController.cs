@@ -441,6 +441,11 @@ namespace GourmetProject.Game.Orchestration
         {
             cfg.GameAction action = context?.Action;
             cfg.ActionBehavior behavior = action?.Behavior ?? cfg.ActionBehavior.Event;
+            if (action != null && action.Id == "act_event")
+            {
+                _run.MarkActEventActionEntered();
+            }
+
             string seedKey = context != null && !string.IsNullOrEmpty(context.SourceKey)
                 ? $"node_{context.SourceKey}"
                 : $"action_w{_run.WeekIndex}_d{DayKey(_run.CurrentDay)}_s{_run.ActionStepIndex}";

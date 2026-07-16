@@ -100,7 +100,7 @@ namespace GourmetProject.Game.UI.Meta
             EnsureButton();
             if (_button != null)
             {
-                _button.interactable = onClick != null;
+                _button.interactable = dragEnabled || onClick != null;
             }
         }
 

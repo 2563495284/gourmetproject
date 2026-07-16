@@ -337,6 +337,12 @@ namespace GourmetProject.Game.Meta
             string[] parts = SplitParamList(param);
             string counterId = parts.Length > 0 ? parts[0] : string.Empty;
             string forcedEventId = parts.Length > 1 ? parts[1] : string.Empty;
+            if (forcedEventId == "act_event")
+            {
+                run.ScheduleEventCounterAfterActEvents(counterId, System.Math.Max(1, threshold));
+                return $"砂锅的汤汁慢慢变深，经历 {System.Math.Max(1, threshold)} 次事件行动后会彻底变黑。";
+            }
+
             int current = run.IncrementEventCounter(counterId, System.Math.Max(1, threshold), forcedEventId);
             if (current == 0 && !string.IsNullOrEmpty(forcedEventId))
             {

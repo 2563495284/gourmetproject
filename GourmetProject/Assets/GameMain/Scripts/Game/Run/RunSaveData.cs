@@ -76,7 +76,10 @@ namespace GourmetProject.Game.Run
         /// <summary>下一次美食领奖额外金币，领取基础金币时消费。</summary>
         public int NextMealRewardGold;
 
-        /// <summary>事件计数器，如许愿砂锅累计次数。</summary>
+        /// <summary>整局累计进入 act_event 行动的次数。</summary>
+        public int ActEventActionCount;
+
+        /// <summary>事件计数器，如许愿砂锅解锁目标行动序号。</summary>
         public Dictionary<string, int> EventCounters = new Dictionary<string, int>();
 
         /// <summary>下次事件行动优先触发的事件 id 队列。</summary>

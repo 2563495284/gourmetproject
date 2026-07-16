@@ -96,6 +96,7 @@ namespace GourmetProject.Game.Run
         private int _eventChoiceCountDelta;
         private float _nextFoodTargetScoreHiddenOffset;
         private int _nextMealRewardGold;
+        private int _actEventActionCount;
         private readonly Dictionary<string, int> _eventCounters = new Dictionary<string, int>();
         private readonly List<string> _forcedEventIds = new List<string>();
 
@@ -526,6 +527,42 @@ namespace GourmetProject.Game.Run
             return amount;
         }
 
+        public int ActEventActionCount => _actEventActionCount;
+
+        public int MarkActEventActionEntered()
+        {
+            _actEventActionCount++;
+            return _actEventActionCount;
+        }
+
+        public int GetEventCounter(string counterId)
+        {
+            if (string.IsNullOrEmpty(counterId))
+            {
+                return 0;
+            }
+
+            return _eventCounters.TryGetValue(counterId, out int current) ? current : 0;
+        }
+
+        public int ScheduleEventCounterAfterActEvents(string counterId, int delayActEventCount)
+        {
+            if (string.IsNullOrEmpty(counterId))
+            {
+                return 0;
+            }
+
+            if (_eventCounters.TryGetValue(counterId, out int existingTarget) && existingTarget > 0)
+            {
+                return existingTarget;
+            }
+
+            int delay = System.Math.Max(1, delayActEventCount);
+            int targetActEventCount = _actEventActionCount + delay + 1;
+            _eventCounters[counterId] = targetActEventCount;
+            return targetActEventCount;
+        }
+
         public int IncrementEventCounter(string counterId, int threshold, string forcedEventId)
         {
             if (string.IsNullOrEmpty(counterId))
@@ -537,8 +574,15 @@ namespace GourmetProject.Game.Run
             current++;
             if (threshold > 0 && current >= threshold)
             {
-                current = 0;
-                QueueForcedEvent(forcedEventId);
+                if (string.IsNullOrEmpty(forcedEventId))
+                {
+                    current = threshold;
+                }
+                else
+                {
+                    current = 0;
+                    QueueForcedEvent(forcedEventId);
+                }
             }
 
             _eventCounters[counterId] = current;
@@ -1375,6 +1419,7 @@ namespace GourmetProject.Game.Run
                 EventChoiceCountDelta = _eventChoiceCountDelta,
                 NextFoodTargetScoreHiddenOffset = _nextFoodTargetScoreHiddenOffset,
                 NextMealRewardGold = _nextMealRewardGold,
+                ActEventActionCount = _actEventActionCount,
                 EventCounters = new Dictionary<string, int>(_eventCounters),
                 ForcedEventIds = new List<string>(_forcedEventIds),
                 Items = items,
@@ -1450,6 +1495,7 @@ namespace GourmetProject.Game.Run
             run._eventChoiceCountDelta = data.EventChoiceCountDelta;
             run._nextFoodTargetScoreHiddenOffset = data.NextFoodTargetScoreHiddenOffset;
             run._nextMealRewardGold = data.NextMealRewardGold;
+            run._actEventActionCount = System.Math.Max(0, data.ActEventActionCount);
             if (data.EventCounters != null)
             {
                 foreach (KeyValuePair<string, int> kv in data.EventCounters)

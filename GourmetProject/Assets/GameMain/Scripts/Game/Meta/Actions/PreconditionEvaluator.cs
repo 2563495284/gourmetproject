@@ -6,8 +6,10 @@ namespace GourmetProject.Game.Meta
     {
         int Gold { get; }
         int WeekIndex { get; }
+        int ActEventActionCount { get; }
         bool HasItem(string itemId);
         bool HasRecipeDish(bool requireFlavor);
+        int GetEventCounter(string counterId);
     }
 
     /// <summary>
@@ -16,8 +18,9 @@ namespace GourmetProject.Game.Meta
     ///   minGold:N   当前金币 &gt;= N
     ///   maxGold:N   当前金币 &lt;= N
     ///   minWeek:N   当前周 &gt;= N
-        ///   hasItem:id  持有指定道具
-        ///   hasRecipeDish / hasFlavoredRecipeDish  菜谱中存在任意菜 / 带风味菜
+    ///   eventCounterReached:id  指定事件计数目标已达到
+    ///   hasItem:id  持有指定道具
+    ///   hasRecipeDish / hasFlavoredRecipeDish  菜谱中存在任意菜 / 带风味菜
     /// 空串或未知子条件视为满足（宽松默认，避免误杀配置）。
     /// </summary>
     public static class PreconditionEvaluator
@@ -65,6 +68,8 @@ namespace GourmetProject.Game.Meta
                     return int.TryParse(value, out int maxGold) && ctx.Gold <= maxGold;
                 case "minWeek":
                     return int.TryParse(value, out int minWeek) && ctx.WeekIndex >= minWeek;
+                case "eventCounterReached":
+                    return IsEventCounterReached(ctx, value);
                 case "hasItem":
                     return ctx.HasItem(value);
                 case "hasRecipeDish":
@@ -74,6 +79,18 @@ namespace GourmetProject.Game.Meta
                 default:
                     return true;
             }
+        }
+
+        private static bool IsEventCounterReached(IPreconditionContext ctx, string counterId)
+        {
+            counterId = counterId?.Trim() ?? string.Empty;
+            if (counterId.Length == 0)
+            {
+                return false;
+            }
+
+            int targetActEventCount = ctx.GetEventCounter(counterId);
+            return targetActEventCount > 0 && ctx.ActEventActionCount >= targetActEventCount;
         }
     }
 }

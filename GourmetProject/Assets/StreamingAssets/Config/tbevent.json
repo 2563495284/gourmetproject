@@ -84,8 +84,8 @@
     "name": "许愿砂锅II",
     "desc": "砂锅中有着粘稠的黑色汤汁，旁边写着“投入珍贵之物可以获得奖励”",
     "eventType": 0,
-    "preconditions": "",
-    "weight": 0,
+    "preconditions": "eventCounterReached:wishing_casserole",
+    "weight": 1,
     "repeatable": false,
     "bgSprite": ""
   }

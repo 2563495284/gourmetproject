@@ -260,7 +260,7 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             Rect rect = _dishContainer.rect;
-            float x = local.x + rect.width * _dishContainer.pivot.x - _padding.left;
+            float x = local.x + rect.width * _dishContainer.pivot.x - HorizontalStartOffset();
             float y = rect.height * (1f - _dishContainer.pivot.y) - local.y - _padding.top;
             int col = Mathf.Clamp(Mathf.FloorToInt(x / Mathf.Max(1f, _cellSize.x + _spacing.x)), 0, Mathf.Max(0, _columnCount - 1));
             int row = Mathf.Max(0, Mathf.FloorToInt(y / Mathf.Max(1f, _cellSize.y + _spacing.y)));
@@ -272,9 +272,23 @@ namespace GourmetProject.Game.UI.Meta
             int columns = Mathf.Max(1, _columnCount);
             int col = Mathf.Max(0, index) % columns;
             int row = Mathf.Max(0, index) / columns;
+            float startX = HorizontalStartOffset();
             return new Vector2(
-                _padding.left + col * (_cellSize.x + _spacing.x),
+                startX + col * (_cellSize.x + _spacing.x),
                 -_padding.top - row * (_cellSize.y + _spacing.y));
+        }
+
+        private float HorizontalStartOffset()
+        {
+            if (_dishContainer == null)
+            {
+                return _padding.left;
+            }
+
+            int columns = Mathf.Max(1, _columnCount);
+            float rowWidth = columns * _cellSize.x + Mathf.Max(0, columns - 1) * _spacing.x;
+            float innerWidth = Mathf.Max(0f, _dishContainer.rect.width - _padding.left - _padding.right);
+            return _padding.left + Mathf.Max(0f, (innerWidth - rowWidth) * 0.5f);
         }
 
         private void ConfigureDishRect(RectTransform rect)

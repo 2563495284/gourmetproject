@@ -442,7 +442,7 @@
     ],
     "effectParams": [
       "flavored",
-      "wishing_casserole|ev_wishing_casserole_ii"
+      "wishing_casserole|act_event"
     ],
     "repeatSelf": false
   },
