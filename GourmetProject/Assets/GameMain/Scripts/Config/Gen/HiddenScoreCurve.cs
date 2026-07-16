@@ -18,7 +18,7 @@ public sealed partial class HiddenScoreCurve : Luban.BeanBase
     public HiddenScoreCurve(JSONNode _buf) 
     {
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
-        { if(!_buf["purpose"].IsString) { throw new SerializationException(); }  Purpose = _buf["purpose"]; }
+        { if(!_buf["purpose"].IsNumber) { throw new SerializationException(); }  Purpose = (HiddenScorePurpose)_buf["purpose"].AsInt; }
         { var __json0 = _buf["weekList"]; if(!__json0.IsArray) { throw new SerializationException(); } WeekList = new System.Collections.Generic.List<int>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { int __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  WeekList.Add(__v0); }   }
         { if(!_buf["linearBase"].IsNumber) { throw new SerializationException(); }  LinearBase = _buf["linearBase"]; }
         { if(!_buf["weekCoeff"].IsNumber) { throw new SerializationException(); }  WeekCoeff = _buf["weekCoeff"]; }
@@ -41,7 +41,7 @@ public sealed partial class HiddenScoreCurve : Luban.BeanBase
     /// <summary>
     /// 曲线用途
     /// </summary>
-    public readonly string Purpose;
+    public readonly HiddenScorePurpose Purpose;
     /// <summary>
     /// 适用周数列表；空=不限。
     /// </summary>

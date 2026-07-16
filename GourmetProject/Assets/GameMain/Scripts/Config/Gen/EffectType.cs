@@ -60,6 +60,74 @@ namespace cfg
         /// 跟进:直接通关
         /// </summary>
         Victory = 10,
+        /// <summary>
+        /// 调整隐藏分偏移(param=TargetScore/Dish/PassiveItem/Fragment/Gold/Reward/All,value=偏移)
+        /// </summary>
+        AddHiddenScoreOffset = 11,
+        /// <summary>
+        /// 入队菜品多选一奖励(value=候选数,param=标题)
+        /// </summary>
+        EnqueueDishChoice = 12,
+        /// <summary>
+        /// 入队道具多选一奖励(value=候选数,param=Active/Passive|标题)
+        /// </summary>
+        EnqueueItemChoice = 13,
+        /// <summary>
+        /// 给菜谱随机菜品添加随机风味(value=次数,优先无额外风味)
+        /// </summary>
+        AddRandomRecipeFlavor = 14,
+        /// <summary>
+        /// 从指定道具列表随机获得道具(value=次数,param=id|id)
+        /// </summary>
+        GainSpecificItem = 15,
+        /// <summary>
+        /// 获得餐桌碎片包(value=候选数)
+        /// </summary>
+        GrantFragmentPack = 16,
+        /// <summary>
+        /// 商店价格百分比修正(value=0.25 表示+25%)
+        /// </summary>
+        AddShopPricePct = 17,
+        /// <summary>
+        /// 后续奖励候选数惩罚(value=次数,param=数量变化,如-1)
+        /// </summary>
+        AddChoiceCountPenalty = 18,
+        /// <summary>
+        /// 下一场美食目标分隐藏分偏移(value=偏移)
+        /// </summary>
+        AddNextFoodTargetOffset = 19,
+        /// <summary>
+        /// 下一次美食奖励额外金币(value=金币)
+        /// </summary>
+        AddNextMealGold = 20,
+        /// <summary>
+        /// 失去所有主动道具并按件获得金币(value=每件金币)
+        /// </summary>
+        RemoveActiveItemsForGold = 21,
+        /// <summary>
+        /// 增加事件计数并可触发强制事件(value=阈值,param=counterId|eventId)
+        /// </summary>
+        IncrementEventCounter = 22,
+        /// <summary>
+        /// 获得随机带风味菜品(value=数量)
+        /// </summary>
+        GainRandomFlavoredDishes = 23,
+        /// <summary>
+        /// 金币归零
+        /// </summary>
+        LoseAllGold = 24,
+        /// <summary>
+        /// 获得传奇被动道具，缺少传奇时回退高品质被动
+        /// </summary>
+        GainLegendaryItem = 25,
+        /// <summary>
+        /// 需要后续 UI 选目标的占位效果(param=提示)
+        /// </summary>
+        UiTodo = 26,
+        /// <summary>
+        /// 随机删除菜谱菜品(value=数量,param=flavored时只删带风味菜)
+        /// </summary>
+        RemoveRandomRecipeDish = 27,
     }
 
 } 

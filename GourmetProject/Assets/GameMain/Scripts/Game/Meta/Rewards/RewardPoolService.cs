@@ -35,6 +35,11 @@ namespace GourmetProject.Game.Meta
                 return result;
             }
 
+            if (context.Run != null)
+            {
+                count = Math.Max(1, count + context.Run.ConsumeEventChoiceCountDelta());
+            }
+
             cfg.RewardPool pool = context.Tables.TbRewardPool.GetOrDefault(slot.PoolId);
             if (pool == null)
             {
@@ -107,12 +112,30 @@ namespace GourmetProject.Game.Meta
                 int index = PickHiddenWeighted(context, candidates, hidden, pool.DistanceFloor);
                 DishDef dish = candidates[index];
                 candidates.RemoveAt(index);
+
+                string flavorId = pool.WithRandomFlavor ? PickRandomFlavorId(context) : string.Empty;
+                string desc = string.IsNullOrEmpty(flavorId)
+                    ? $"加入菜谱池，美味度 {dish.Deliciousness}"
+                    : $"加入菜谱池并附带随机风味，美味度 {dish.Deliciousness}";
                 result.Add(new RewardChoice(
                     cfg.RewardKind.DishChoice,
                     dish.Id,
                     dish.Name,
-                    $"加入菜谱池，美味度 {dish.Deliciousness}"));
+                    desc,
+                    flavorId: flavorId));
             }
+        }
+
+        private static string PickRandomFlavorId(RewardContext context)
+        {
+            IReadOnlyCollection<FlavorDef> all = context.Run?.Database?.AllFlavors;
+            if (all == null || all.Count == 0 || context.Rng == null)
+            {
+                return string.Empty;
+            }
+
+            IReadOnlyList<FlavorDef> flavors = all as IReadOnlyList<FlavorDef> ?? new List<FlavorDef>(all);
+            return flavors[context.Rng.Range(0, flavors.Count)].Id;
         }
 
         private static void RollItemChoices(
@@ -123,16 +146,37 @@ namespace GourmetProject.Game.Meta
             int count,
             List<RewardChoice> result)
         {
+            // 显式 id 池（如「从指定道具列表随机」）：直接按 id 建候选，不走隐藏分/标签/解锁筛选。
+            if (!string.IsNullOrEmpty(pool.ExplicitIds))
+            {
+                List<ItemDefinition> explicitCandidates = BuildExplicitCandidates(context, pool, kind);
+                for (int i = 0; i < count && explicitCandidates.Count > 0; i++)
+                {
+                    int idx = context.Rng.Range(0, explicitCandidates.Count);
+                    ItemDefinition picked = explicitCandidates[idx];
+                    explicitCandidates.RemoveAt(idx);
+                    result.Add(BuildItemChoice(kind, picked));
+                }
+
+                return;
+            }
+
             bool activeItem = kind == cfg.ItemKind.Active;
-            List<ItemDefinition> candidates = BuildItemCandidates(context, pool, kind, hidden, strictHidden: !activeItem, strictTags: true);
+            List<ItemDefinition> candidates = BuildItemCandidates(context, pool, kind, hidden, strictHidden: !activeItem, strictTags: true, strictQuality: true);
             if (candidates.Count == 0 && pool.AllowFallback)
             {
-                candidates = BuildItemCandidates(context, pool, kind, hidden, strictHidden: false, strictTags: true);
+                candidates = BuildItemCandidates(context, pool, kind, hidden, strictHidden: false, strictTags: true, strictQuality: true);
             }
 
             if (candidates.Count == 0 && pool.AllowFallback)
             {
-                candidates = BuildItemCandidates(context, pool, kind, hidden, strictHidden: false, strictTags: false);
+                candidates = BuildItemCandidates(context, pool, kind, hidden, strictHidden: false, strictTags: false, strictQuality: true);
+            }
+
+            // 品质下限兜底：如传奇缺失时回退到较低品质，避免「奖励池为空」。
+            if (candidates.Count == 0 && pool.AllowFallback && pool.MinQuality > 0)
+            {
+                candidates = BuildItemCandidates(context, pool, kind, hidden, strictHidden: false, strictTags: false, strictQuality: false);
             }
 
             for (int i = 0; i < count && candidates.Count > 0; i++)
@@ -146,14 +190,40 @@ namespace GourmetProject.Game.Meta
                 int index = PickWeightedOrUniform(context, weights, candidates.Count);
                 ItemDefinition chosen = candidates[index];
                 candidates.RemoveAt(index);
-
-                string desc = chosen.IsPassive ? $"被动道具 · {chosen.Quality}" : "主动道具";
-                result.Add(new RewardChoice(
-                    kind == cfg.ItemKind.Passive ? cfg.RewardKind.PassiveItemChoice : cfg.RewardKind.ActiveItemGrant,
-                    chosen.Id,
-                    chosen.Name,
-                    desc));
+                result.Add(BuildItemChoice(kind, chosen));
             }
+        }
+
+        private static RewardChoice BuildItemChoice(cfg.ItemKind kind, ItemDefinition item)
+        {
+            string desc = item.IsPassive ? $"被动道具 · {item.Quality}" : "主动道具";
+            return new RewardChoice(
+                kind == cfg.ItemKind.Passive ? cfg.RewardKind.PassiveItemChoice : cfg.RewardKind.ActiveItemGrant,
+                item.Id,
+                item.Name,
+                desc);
+        }
+
+        private static List<ItemDefinition> BuildExplicitCandidates(RewardContext context, cfg.RewardPool pool, cfg.ItemKind kind)
+        {
+            var candidates = new List<ItemDefinition>();
+            string[] ids = pool.ExplicitIds.Split('|', ';', ',');
+            for (int i = 0; i < ids.Length; i++)
+            {
+                string id = ids[i].Trim();
+                if (id.Length == 0)
+                {
+                    continue;
+                }
+
+                ItemDefinition item = ItemDefinition.Get(context.Tables, id, kind);
+                if (item != null)
+                {
+                    candidates.Add(item);
+                }
+            }
+
+            return candidates;
         }
 
         private static void RollFragmentChoices(
@@ -189,7 +259,8 @@ namespace GourmetProject.Game.Meta
             cfg.ItemKind kind,
             int hidden,
             bool strictHidden,
-            bool strictTags)
+            bool strictTags,
+            bool strictQuality)
         {
             var candidates = new List<ItemDefinition>();
             MetaProgressSaveData progress = context.Progress ?? MetaProgressPersistence.Load();
@@ -207,6 +278,11 @@ namespace GourmetProject.Game.Meta
                 }
 
                 if (strictTags && !MatchesAnyTag(item.SpecialTags, pool.SpecialTags))
+                {
+                    continue;
+                }
+
+                if (strictQuality && pool.MinQuality > 0 && (int)item.Quality < pool.MinQuality)
                 {
                     continue;
                 }
@@ -309,7 +385,7 @@ namespace GourmetProject.Game.Meta
                 case cfg.RewardKind.PassiveItemChoice:
                     return context.PassiveItemHiddenScore;
                 case cfg.RewardKind.ActiveItemGrant:
-                    return context.ActiveItemHiddenScore;
+                    return context.PassiveItemHiddenScore;
                 case cfg.RewardKind.FragmentChoice:
                     return context.FragmentHiddenScore;
                 default:

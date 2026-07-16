@@ -7,6 +7,7 @@ namespace GourmetProject.Game.Meta
         int Gold { get; }
         int WeekIndex { get; }
         bool HasItem(string itemId);
+        bool HasRecipeDish(bool requireFlavor);
     }
 
     /// <summary>
@@ -15,7 +16,8 @@ namespace GourmetProject.Game.Meta
     ///   minGold:N   当前金币 &gt;= N
     ///   maxGold:N   当前金币 &lt;= N
     ///   minWeek:N   当前周 &gt;= N
-    ///   hasItem:id  持有指定道具
+        ///   hasItem:id  持有指定道具
+        ///   hasRecipeDish / hasFlavoredRecipeDish  菜谱中存在任意菜 / 带风味菜
     /// 空串或未知子条件视为满足（宽松默认，避免误杀配置）。
     /// </summary>
     public static class PreconditionEvaluator
@@ -42,13 +44,18 @@ namespace GourmetProject.Game.Meta
         private static bool EvaluateClause(IPreconditionContext ctx, string clause)
         {
             int colon = clause.IndexOf(':');
+            string key;
+            string value;
             if (colon < 0)
             {
-                return true;
+                key = clause.Trim();
+                value = string.Empty;
             }
-
-            string key = clause.Substring(0, colon).Trim();
-            string value = clause.Substring(colon + 1).Trim();
+            else
+            {
+                key = clause.Substring(0, colon).Trim();
+                value = clause.Substring(colon + 1).Trim();
+            }
 
             switch (key)
             {
@@ -60,6 +67,10 @@ namespace GourmetProject.Game.Meta
                     return int.TryParse(value, out int minWeek) && ctx.WeekIndex >= minWeek;
                 case "hasItem":
                     return ctx.HasItem(value);
+                case "hasRecipeDish":
+                    return ctx.HasRecipeDish(requireFlavor: false);
+                case "hasFlavoredRecipeDish":
+                    return ctx.HasRecipeDish(requireFlavor: true);
                 default:
                     return true;
             }

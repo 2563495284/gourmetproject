@@ -238,6 +238,16 @@ namespace GourmetProject.Game.Meta
         /// </summary>
         public static cfg.GameEvent RollActionEventWithGuarantee(GameRun run, IRandomStream rng)
         {
+            if (run != null && run.TryConsumeForcedEventId(out string forcedEventId))
+            {
+                cfg.Tables tables = run.Tables ?? GameApp.Config.Tables;
+                cfg.GameEvent forced = tables.TbEvent.GetOrDefault(forcedEventId);
+                if (forced != null && (forced.Repeatable || !run.HasUsedEvent(forced.Id)))
+                {
+                    return forced;
+                }
+            }
+
             PassiveItemModel guarantee = FindGuaranteeModel(run);
             if (guarantee != null)
             {

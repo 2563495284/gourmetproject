@@ -6,6 +6,7 @@ using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI;
 using GourmetProject.Game.UI.Common;
+using GourmetProject.Game.UI.Meta;
 using GourmetProject.Gameplay.Scoring;
 using GourmetProject.Runtime;
 
@@ -39,6 +40,7 @@ namespace GourmetProject.Game.Orchestration
             string result,
             string bgSprite,
             IReadOnlyList<string> options,
+            IReadOnlyList<bool> optionEnabled,
             bool showEndButton,
             string endButtonText,
             Action<int> onPick,
@@ -460,39 +462,41 @@ namespace GourmetProject.Game.Orchestration
         /// <summary>进入事件某页：初始页 resultText 为空；结果/子页 resultText 显示在下半区，可随时结束。</summary>
         private void EnterEventPage(cfg.GameEvent ev, string resultText, List<cfg.EventOption> pageOptions, IRandomStream rng, Action onDone)
         {
-            var options = new List<cfg.EventOption>();
+            var optionEnabled = new List<bool>();
+            bool hasEnabledOption = false;
             foreach (cfg.EventOption opt in pageOptions)
             {
-                // 逐选项前置条件（空=恒可见）复用行动前置语法。
-                if (PreconditionEvaluator.IsSatisfied(_run, opt.Condition))
-                {
-                    options.Add(opt);
-                }
+                // 逐选项前置条件（空=恒可见）复用行动前置语法；事件页保留不可选项并置灰。
+                bool enabled = PreconditionEvaluator.IsSatisfied(_run, opt.Condition);
+                optionEnabled.Add(enabled);
+                hasEnabledOption |= enabled;
             }
 
-            if (options.Count == 0)
+            if (pageOptions.Count == 0)
             {
                 ShowEventPage(
                     ev,
                     resultText,
-                    options,
+                    pageOptions,
+                    optionEnabled,
                     showEndButton: true,
                     endButtonText: "结束",
                     onPick: null,
                     onEnd: () =>
                     {
-                        EventService.OnEventFinished(_run, ev, EventResolveResult.Immediate(resultText));
-                        onDone?.Invoke();
+                        FinishEventAndContinue(ev, EventResolveResult.Immediate(resultText), onDone);
                     });
                 return;
             }
 
-            List<cfg.EventOption> shown = options;
+            List<cfg.EventOption> shown = pageOptions;
+            List<bool> shownEnabled = optionEnabled;
             ShowEventPage(
                 ev,
                 resultText,
                 shown,
-                showEndButton: !string.IsNullOrWhiteSpace(resultText),
+                shownEnabled,
+                showEndButton: !string.IsNullOrWhiteSpace(resultText) || !hasEnabledOption,
                 endButtonText: "结束",
                 onPick: index =>
                 {
@@ -501,12 +505,16 @@ namespace GourmetProject.Game.Orchestration
                         return;
                     }
 
+                    if (index >= shownEnabled.Count || !shownEnabled[index])
+                    {
+                        return;
+                    }
+
                     ChooseEventOption(ev, shown[index], rng, onDone);
                 },
                 onEnd: () =>
                 {
-                    EventService.OnEventFinished(_run, ev, EventResolveResult.Immediate(resultText));
-                    onDone?.Invoke();
+                    FinishEventAndContinue(ev, EventResolveResult.Immediate(resultText), onDone);
                 });
         }
 
@@ -521,6 +529,7 @@ namespace GourmetProject.Game.Orchestration
                     ev,
                     string.IsNullOrEmpty(result.Feedback) ? option.ResultText : ComposeEventText(result.Feedback, option.ResultText),
                     new List<cfg.EventOption>(),
+                    new List<bool>(),
                     showEndButton: true,
                     endButtonText: "继续",
                     onPick: null,
@@ -551,20 +560,39 @@ namespace GourmetProject.Game.Orchestration
                 ev,
                 body,
                 children,
+                new List<bool>(),
                 showEndButton: true,
                 endButtonText: "结束",
                 onPick: null,
                 onEnd: () =>
                 {
-                    EventService.OnEventFinished(_run, ev, result);
-                    onDone?.Invoke();
+                    FinishEventAndContinue(ev, result, onDone);
                 });
+        }
+
+        private void FinishEventAndContinue(cfg.GameEvent ev, EventResolveResult result, Action onDone)
+        {
+            EventService.OnEventFinished(_run, ev, result);
+            ContinueAfterEventRewards(onDone);
+        }
+
+        private void ContinueAfterEventRewards(Action onDone)
+        {
+            if (_run != null && _run.HasPendingGenericRewards)
+            {
+                _afterBattleWin = onDone;
+                GameApp.UI.OpenUIForm(UIForms.Reward, UIForms.GroupDialog, RewardFormOpenArgs.GenericQueue(confirmBattleRewardAfterDone: true));
+                return;
+            }
+
+            onDone?.Invoke();
         }
 
         private void ShowEventPage(
             cfg.GameEvent ev,
             string resultText,
             IReadOnlyList<cfg.EventOption> options,
+            IReadOnlyList<bool> optionEnabled,
             bool showEndButton,
             string endButtonText,
             Action<int> onPick,
@@ -585,6 +613,7 @@ namespace GourmetProject.Game.Orchestration
                 resultText,
                 ev != null ? ev.BgSprite : string.Empty,
                 optionTexts,
+                optionEnabled,
                 showEndButton,
                 endButtonText,
                 onPick,

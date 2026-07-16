@@ -12,7 +12,8 @@ namespace GourmetProject.Game.Meta
             string name,
             string description,
             int goldAmount = 0,
-            bool isFallbackGold = false)
+            bool isFallbackGold = false,
+            string flavorId = null)
         {
             Kind = kind;
             Id = id ?? string.Empty;
@@ -20,6 +21,7 @@ namespace GourmetProject.Game.Meta
             Description = description ?? string.Empty;
             GoldAmount = goldAmount;
             IsFallbackGold = isFallbackGold;
+            FlavorId = flavorId ?? string.Empty;
         }
 
         public cfg.RewardKind Kind { get; }
@@ -33,6 +35,9 @@ namespace GourmetProject.Game.Meta
         public int GoldAmount { get; }
 
         public bool IsFallbackGold { get; }
+
+        /// <summary>菜品奖励附带的风味 id（来自 withRandomFlavor 池）；空表示无附带风味。</summary>
+        public string FlavorId { get; }
 
         public string DisplayText
         {

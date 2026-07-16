@@ -46,6 +46,42 @@ namespace GourmetProject.Game.Run
         /// <summary>「分数变1」剩余生效局数（RequiredScoreToOne，非盛宴）。</summary>
         public int ScoreToOneRemaining;
 
+        /// <summary>事件带来的目标分隐藏分偏移。</summary>
+        public float EventTargetScoreHiddenOffset;
+
+        /// <summary>事件带来的菜品奖励隐藏分偏移。</summary>
+        public float EventDishHiddenOffset;
+
+        /// <summary>事件带来的被动道具奖励隐藏分偏移。</summary>
+        public float EventPassiveItemHiddenOffset;
+
+        /// <summary>事件带来的餐桌碎片奖励隐藏分偏移。</summary>
+        public float EventFragmentHiddenOffset;
+
+        /// <summary>事件带来的金币奖励隐藏分偏移。</summary>
+        public float EventGoldHiddenOffset;
+
+        /// <summary>事件造成的商店价格百分比修正（0.25 表示 +25%）。</summary>
+        public float EventShopPricePct;
+
+        /// <summary>后续奖励候选数修正剩余次数。</summary>
+        public int EventChoicePenaltyRemaining;
+
+        /// <summary>后续奖励候选数单次变化，通常为 -1。</summary>
+        public int EventChoiceCountDelta;
+
+        /// <summary>下一场美食目标分隐藏分偏移，生成下一场美食时消费。</summary>
+        public float NextFoodTargetScoreHiddenOffset;
+
+        /// <summary>下一次美食领奖额外金币，领取基础金币时消费。</summary>
+        public int NextMealRewardGold;
+
+        /// <summary>事件计数器，如许愿砂锅累计次数。</summary>
+        public Dictionary<string, int> EventCounters = new Dictionary<string, int>();
+
+        /// <summary>下次事件行动优先触发的事件 id 队列。</summary>
+        public List<string> ForcedEventIds = new List<string>();
+
         public List<RunItemSaveData> Items = new List<RunItemSaveData>();
         public List<string> BonusDishIds = new List<string>();
         public List<RunRecipeBookSaveData> RecipeBooks = new List<RunRecipeBookSaveData>();

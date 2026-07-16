@@ -22,7 +22,6 @@ namespace GourmetProject.Game.Meta
         TargetScore,
         Dish,
         PassiveItem,
-        ActiveItem,
         Fragment,
         Gold,
     }
@@ -30,12 +29,6 @@ namespace GourmetProject.Game.Meta
     /// <summary>v2 隐藏分统一入口：目标分、奖励池隐藏分、金币上下限派生。</summary>
     public static class HiddenScoreService
     {
-        private const string TargetPurpose = "TargetScore";
-        private const string DishPurpose = "Dish";
-        private const string PassiveItemPurpose = "PassiveItem";
-        private const string ActiveItemPurpose = "ActiveItem";
-        private const string FragmentPurpose = "Fragment";
-
         public static int TargetScore(GameRun run, ActionExecutionContext context = null, float extraTargetScoreHiddenOffset = 0f)
         {
             float offset = HiddenOffset(run, context, HiddenScorePurpose.TargetScore) + extraTargetScoreHiddenOffset;
@@ -45,22 +38,17 @@ namespace GourmetProject.Game.Meta
 
         public static int DishHiddenScore(GameRun run, ActionExecutionContext context = null)
         {
-            return EvaluateLinear(DishPurpose, run, HiddenOffset(run, context, HiddenScorePurpose.Dish));
+            return EvaluateLinear(cfg.HiddenScorePurpose.Dish, run, HiddenOffset(run, context, HiddenScorePurpose.Dish));
         }
 
         public static int PassiveItemHiddenScore(GameRun run, ActionExecutionContext context = null)
         {
-            return EvaluateLinear(PassiveItemPurpose, run, HiddenOffset(run, context, HiddenScorePurpose.PassiveItem));
-        }
-
-        public static int ActiveItemHiddenScore(GameRun run, ActionExecutionContext context = null)
-        {
-            return EvaluateLinear(ActiveItemPurpose, run, HiddenOffset(run, context, HiddenScorePurpose.ActiveItem));
+            return EvaluateLinear(cfg.HiddenScorePurpose.PassiveItem, run, HiddenOffset(run, context, HiddenScorePurpose.PassiveItem));
         }
 
         public static int FragmentHiddenScore(GameRun run, ActionExecutionContext context = null)
         {
-            return EvaluateLinear(FragmentPurpose, run, HiddenOffset(run, context, HiddenScorePurpose.Fragment));
+            return EvaluateLinear(cfg.HiddenScorePurpose.Fragment, run, HiddenOffset(run, context, HiddenScorePurpose.Fragment));
         }
 
         public static GoldRange GoldRewardRange(GameRun run, ActionExecutionContext context = null)
@@ -101,7 +89,7 @@ namespace GourmetProject.Game.Meta
             return Math.Max(1, (int)Math.Round(value, MidpointRounding.AwayFromZero));
         }
 
-        private static int EvaluateLinear(string purpose, GameRun run, float hiddenOffset)
+        private static int EvaluateLinear(cfg.HiddenScorePurpose purpose, GameRun run, float hiddenOffset)
         {
             cfg.HiddenScoreCurve curve = ResolveCurve(run?.Tables, purpose, run);
             if (curve == null || run == null)
@@ -118,7 +106,7 @@ namespace GourmetProject.Game.Meta
 
         private static int EvaluateTargetScore(GameRun run, float hiddenOffset)
         {
-            cfg.HiddenScoreCurve curve = ResolveCurve(run?.Tables, TargetPurpose, run);
+            cfg.HiddenScoreCurve curve = ResolveCurve(run?.Tables, cfg.HiddenScorePurpose.TargetScore, run);
             if (curve == null || run == null)
             {
                 return 0;
@@ -145,14 +133,14 @@ namespace GourmetProject.Game.Meta
             return (int)Math.Min(rounded, int.MaxValue);
         }
 
-        private static cfg.HiddenScoreCurve ResolveCurve(cfg.Tables tables, string purpose, GameRun run)
+        private static cfg.HiddenScoreCurve ResolveCurve(cfg.Tables tables, cfg.HiddenScorePurpose purpose, GameRun run)
         {
             tables ??= GameApp.Config.Tables;
             cfg.HiddenScoreCurve fallback = null;
             int week = run?.WeekIndex ?? 0;
             foreach (cfg.HiddenScoreCurve curve in tables.TbHiddenScoreCurve.DataList)
             {
-                if (!string.Equals(curve.Purpose, purpose, StringComparison.OrdinalIgnoreCase))
+                if (curve.Purpose != purpose)
                 {
                     continue;
                 }
@@ -190,6 +178,7 @@ namespace GourmetProject.Game.Meta
             if (run != null)
             {
                 offset += new ItemRuntime(run).HiddenScoreOffset(purpose);
+                offset += run.EventHiddenScoreOffset(purpose);
             }
 
             return offset;
@@ -207,7 +196,6 @@ namespace GourmetProject.Game.Meta
                 HiddenScorePurpose.TargetScore => food.TargetScoreHiddenOffset,
                 HiddenScorePurpose.Dish => food.DishHiddenOffset,
                 HiddenScorePurpose.PassiveItem => food.PassiveItemHiddenOffset,
-                HiddenScorePurpose.ActiveItem => food.ActiveItemHiddenOffset,
                 HiddenScorePurpose.Fragment => food.FragmentHiddenOffset,
                 HiddenScorePurpose.Gold => food.GoldHiddenOffset,
                 _ => 0f,

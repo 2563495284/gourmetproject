@@ -584,6 +584,7 @@ namespace GourmetProject.Game.UI.Battle
             string result,
             string bgSprite,
             IReadOnlyList<string> options,
+            IReadOnlyList<bool> optionEnabled,
             bool showEndButton,
             string endButtonText,
             Action<int> onPick,
@@ -594,7 +595,7 @@ namespace GourmetProject.Game.UI.Battle
                 SetCenterTitle(string.Empty);
                 if (_eventPanel != null)
                 {
-                    _eventPanel.Open(title, desc, result, bgSprite, options, showEndButton, endButtonText, onPick, onEnd);
+                    _eventPanel.Open(title, desc, result, bgSprite, options, optionEnabled, showEndButton, endButtonText, onPick, onEnd);
                 }
                 else if (showEndButton)
                 {

@@ -22,6 +22,9 @@ public sealed partial class RewardPool : Luban.BeanBase
         { if(!_buf["specialTags"].IsString) { throw new SerializationException(); }  SpecialTags = _buf["specialTags"]; }
         { if(!_buf["allowFallback"].IsBoolean) { throw new SerializationException(); }  AllowFallback = _buf["allowFallback"]; }
         { if(!_buf["distanceFloor"].IsNumber) { throw new SerializationException(); }  DistanceFloor = _buf["distanceFloor"]; }
+        { if(!_buf["explicitIds"].IsString) { throw new SerializationException(); }  ExplicitIds = _buf["explicitIds"]; }
+        { if(!_buf["minQuality"].IsNumber) { throw new SerializationException(); }  MinQuality = _buf["minQuality"]; }
+        { if(!_buf["withRandomFlavor"].IsBoolean) { throw new SerializationException(); }  WithRandomFlavor = _buf["withRandomFlavor"]; }
     }
 
     public static RewardPool DeserializeRewardPool(JSONNode _buf)
@@ -49,6 +52,18 @@ public sealed partial class RewardPool : Luban.BeanBase
     /// 与当前进度的隐藏分下限距离
     /// </summary>
     public readonly int DistanceFloor;
+    /// <summary>
+    /// 显式道具/菜品id列表(|分隔)，非空则只从这些id抽
+    /// </summary>
+    public readonly string ExplicitIds;
+    /// <summary>
+    /// 品质下限(ItemQuality值0-4)，0=不筛选
+    /// </summary>
+    public readonly int MinQuality;
+    /// <summary>
+    /// 菜品奖励发放时附带随机风味
+    /// </summary>
+    public readonly bool WithRandomFlavor;
    
     public const int __ID__ = -610400245;
     public override int GetTypeId() => __ID__;
@@ -65,6 +80,9 @@ public sealed partial class RewardPool : Luban.BeanBase
         + "specialTags:" + SpecialTags + ","
         + "allowFallback:" + AllowFallback + ","
         + "distanceFloor:" + DistanceFloor + ","
+        + "explicitIds:" + ExplicitIds + ","
+        + "minQuality:" + MinQuality + ","
+        + "withRandomFlavor:" + WithRandomFlavor + ","
         + "}";
     }
 }

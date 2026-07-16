@@ -35,9 +35,7 @@ namespace GourmetProject.Game.Meta
             int count,
             MetaProgressSaveData progress = null)
         {
-            int hidden = kind == cfg.ItemKind.Active
-                ? HiddenScoreService.ActiveItemHiddenScore(run, run?.LastActionContext)
-                : HiddenScoreService.PassiveItemHiddenScore(run, run?.LastActionContext);
+            int hidden = HiddenScoreService.PassiveItemHiddenScore(run, run?.LastActionContext);
             return Roll(tables, run, kind, rng, count, hidden, distanceFloor: 5, progress);
         }
 

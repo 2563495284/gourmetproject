@@ -26,7 +26,6 @@ public sealed partial class Food : Luban.BeanBase
         { if(!_buf["targetScoreHiddenOffset"].IsNumber) { throw new SerializationException(); }  TargetScoreHiddenOffset = _buf["targetScoreHiddenOffset"]; }
         { if(!_buf["dishHiddenOffset"].IsNumber) { throw new SerializationException(); }  DishHiddenOffset = _buf["dishHiddenOffset"]; }
         { if(!_buf["passiveItemHiddenOffset"].IsNumber) { throw new SerializationException(); }  PassiveItemHiddenOffset = _buf["passiveItemHiddenOffset"]; }
-        { if(!_buf["activeItemHiddenOffset"].IsNumber) { throw new SerializationException(); }  ActiveItemHiddenOffset = _buf["activeItemHiddenOffset"]; }
         { if(!_buf["fragmentHiddenOffset"].IsNumber) { throw new SerializationException(); }  FragmentHiddenOffset = _buf["fragmentHiddenOffset"]; }
         { if(!_buf["goldHiddenOffset"].IsNumber) { throw new SerializationException(); }  GoldHiddenOffset = _buf["goldHiddenOffset"]; }
     }
@@ -73,10 +72,6 @@ public sealed partial class Food : Luban.BeanBase
     /// </summary>
     public readonly float PassiveItemHiddenOffset;
     /// <summary>
-    /// 主动道具奖励隐藏分临时修正。
-    /// </summary>
-    public readonly float ActiveItemHiddenOffset;
-    /// <summary>
     /// 餐桌格子奖励隐藏分临时修正。
     /// </summary>
     public readonly float FragmentHiddenOffset;
@@ -104,7 +99,6 @@ public sealed partial class Food : Luban.BeanBase
         + "targetScoreHiddenOffset:" + TargetScoreHiddenOffset + ","
         + "dishHiddenOffset:" + DishHiddenOffset + ","
         + "passiveItemHiddenOffset:" + PassiveItemHiddenOffset + ","
-        + "activeItemHiddenOffset:" + ActiveItemHiddenOffset + ","
         + "fragmentHiddenOffset:" + FragmentHiddenOffset + ","
         + "goldHiddenOffset:" + GoldHiddenOffset + ","
         + "}";

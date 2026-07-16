@@ -84,8 +84,7 @@ namespace GourmetProject.Game.Meta
                 }
             }
 
-            int activeHidden = HiddenScoreService.ActiveItemHiddenScore(run, run.LastActionContext);
-            foreach (string itemId in ItemPoolService.Roll(tables, run, cfg.ItemKind.Active, lootRng, activeCount, activeHidden, distanceFloor: 5))
+            foreach (string itemId in ItemPoolService.Roll(tables, run, cfg.ItemKind.Active, lootRng, activeCount, passiveHidden, distanceFloor: 5))
             {
                 ItemDefinition item = ItemDefinition.Get(tables, itemId, cfg.ItemKind.Active);
                 if (item != null)
@@ -140,7 +139,13 @@ namespace GourmetProject.Game.Meta
                 return 0;
             }
 
-            return run == null ? entry.BasePrice : new ItemRuntime(run).ModifyShopPrice(entry.Kind, entry.BasePrice);
+            if (run == null)
+            {
+                return entry.BasePrice;
+            }
+
+            int itemPrice = new ItemRuntime(run).ModifyShopPrice(entry.Kind, entry.BasePrice);
+            return run.ModifyEventShopPrice(itemPrice);
         }
 
         private static ShopEntry CreateEntry(GameRun run, ShopEntryKind kind, string id, string name, string desc, int basePrice)
@@ -251,12 +256,22 @@ namespace GourmetProject.Game.Meta
         /// <summary>当前删牌花费（含道具折扣/固定价/涨价修正）。</summary>
         public static int DeleteCost(GameRun run)
         {
-            return run == null ? DeleteDishCost : new ItemRuntime(run).ModifyDeletePrice(DeleteDishCost);
+            if (run == null)
+            {
+                return DeleteDishCost;
+            }
+
+            return run.ModifyEventShopPrice(new ItemRuntime(run).ModifyDeletePrice(DeleteDishCost));
         }
 
         public static int RecipeBookCost(GameRun run)
         {
-            return run == null ? EmptyRecipeBookPrice : new ItemRuntime(run).ModifyRecipeBookPrice(EmptyRecipeBookPrice);
+            if (run == null)
+            {
+                return EmptyRecipeBookPrice;
+            }
+
+            return run.ModifyEventShopPrice(new ItemRuntime(run).ModifyRecipeBookPrice(EmptyRecipeBookPrice));
         }
 
         /// <summary>删除菜谱池中的一道菜，花费金币。持有「囤积癖」时禁止删除。</summary>

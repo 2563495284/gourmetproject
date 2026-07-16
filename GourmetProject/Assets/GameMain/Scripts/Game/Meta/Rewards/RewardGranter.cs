@@ -40,18 +40,87 @@ namespace GourmetProject.Game.Meta
                 new RewardChoiceGroup("特定奖励", specificChoices, specificPickCount));
         }
 
-        public static RewardOffer GenerateFamilyPackOffer(GameRun run, ItemDefinition sourceItem, IRandomStream rng)
+        /// <summary>
+        /// 统一奖励入口：按 reward_slot 槽组配置 roll 出一份「纯领取」奖励 offer（不含金币），供事件 / 被动 OnAcquire 走通用领奖队列。
+        /// 无候选返回 null（调用方按需折金币兜底）。
+        /// </summary>
+        public static RewardOffer BuildConfigOffer(GameRun run, IRandomStream rng, string slotGroupId, ActionExecutionContext actionContext = null)
         {
-            if (run == null || sourceItem == null)
+            if (run == null || rng == null || string.IsNullOrEmpty(slotGroupId))
             {
                 return null;
             }
 
-            int gold = System.Math.Max(0, (int)sourceItem.EffectValue);
-            return new RewardOffer(
-                gold,
-                RollSinglePassiveChoice(run, rng),
-                RollSingleDishChoice(run, rng));
+            var context = new RewardContext(run.Tables, run, null, null, rng, 0, actionContext);
+            System.Collections.Generic.List<RewardChoice> choices = RollSlotGroup(context, slotGroupId, out int requiredPickCount);
+            return choices.Count > 0
+                ? new RewardOffer(0, choices, null, baseGoldClaimed: true, mainRequiredChoiceCount: requiredPickCount)
+                : null;
+        }
+
+        /// <summary>
+        /// 组合式奖励 offer：固定金币 + 若干固定槽组 + 一个特定槽组（如全家福 = 金币 + 被动 + 菜品）。全部空则返回 null。
+        /// </summary>
+        public static RewardOffer BuildConfigOffer(
+            GameRun run,
+            IRandomStream rng,
+            int baseGold,
+            System.Collections.Generic.IReadOnlyList<string> fixedSlotGroupIds,
+            string specificSlotGroupId,
+            ActionExecutionContext actionContext = null)
+        {
+            if (run == null || rng == null)
+            {
+                return null;
+            }
+
+            var context = new RewardContext(run.Tables, run, null, null, rng, baseGold, actionContext);
+            var fixedGroups = new System.Collections.Generic.List<RewardChoiceGroup>();
+            if (fixedSlotGroupIds != null)
+            {
+                for (int i = 0; i < fixedSlotGroupIds.Count; i++)
+                {
+                    System.Collections.Generic.List<RewardChoice> choices = RollSlotGroup(context, fixedSlotGroupIds[i], out int pick);
+                    if (choices.Count > 0)
+                    {
+                        fixedGroups.Add(new RewardChoiceGroup(GroupTitleFor(choices), choices, pick));
+                    }
+                }
+            }
+
+            System.Collections.Generic.List<RewardChoice> specific = RollSlotGroup(context, specificSlotGroupId, out int specificPick);
+            RewardChoiceGroup specificGroup = specific.Count > 0
+                ? new RewardChoiceGroup("特定奖励", specific, specificPick)
+                : null;
+
+            if (baseGold <= 0 && fixedGroups.Count == 0 && specificGroup == null)
+            {
+                return null;
+            }
+
+            return new RewardOffer(baseGold, fixedGroups, specificGroup);
+        }
+
+        private static string GroupTitleFor(System.Collections.Generic.IReadOnlyList<RewardChoice> choices)
+        {
+            if (choices == null || choices.Count == 0)
+            {
+                return "奖励";
+            }
+
+            switch (choices[0].Kind)
+            {
+                case cfg.RewardKind.DishChoice:
+                    return "菜品";
+                case cfg.RewardKind.PassiveItemChoice:
+                    return "被动道具";
+                case cfg.RewardKind.ActiveItemGrant:
+                    return "主动道具";
+                case cfg.RewardKind.FragmentChoice:
+                    return "格子奖励";
+                default:
+                    return "奖励";
+            }
         }
 
         public static string Apply(GameRun run, RewardOffer offer, RewardChoice mainChoice, RewardChoice extraChoice)
@@ -121,6 +190,12 @@ namespace GourmetProject.Game.Meta
                 itemRuntime.RefreshIconState(m => m.MealBonusGoldPerMeal() != 0);
             }
 
+            int eventBonusGold = run.ConsumeNextMealRewardGold();
+            if (eventBonusGold != 0)
+            {
+                gold += eventBonusGold;
+            }
+
             run.Gold += gold;
 
             // 「分数变1」按局递减：普通/超级美食奖励结算视为一局（Boss/盛宴不走此路径）。
@@ -152,7 +227,10 @@ namespace GourmetProject.Game.Meta
             switch (choice.Kind)
             {
                 case cfg.RewardKind.DishChoice:
-                    return run.AddBonusDish(choice.Id) ? $"菜品加入菜谱池：{choice.Name}" : $"菜品折算失败：{choice.Name}";
+                    bool added = string.IsNullOrEmpty(choice.FlavorId)
+                        ? run.AddBonusDish(choice.Id)
+                        : run.AddBonusDishWithFlavor(choice.Id, choice.FlavorId);
+                    return added ? $"菜品加入菜谱池：{choice.Name}" : $"菜品折算失败：{choice.Name}";
                 case cfg.RewardKind.PassiveItemChoice:
                 case cfg.RewardKind.ActiveItemGrant:
                     return run.AcquireItem(choice.Id, choice.GoldAmount > 0 ? choice.GoldAmount : 40).ToRewardText(string.Empty);
@@ -170,7 +248,7 @@ namespace GourmetProject.Game.Meta
                 return false;
             }
 
-            return run.AddBonusDishToBook(choice.Id, bookIndex);
+            return run.AddBonusDishToBook(choice.Id, bookIndex, choice.FlavorId);
         }
 
         public static string ApplyFragmentPack(GameRun run, System.Collections.Generic.IReadOnlyList<RewardChoice> choices)
@@ -228,80 +306,6 @@ namespace GourmetProject.Game.Meta
             }
 
             return week == null ? null : tables.TbRewardPackage.GetOrDefault(week.RewardPackageId);
-        }
-
-        private static System.Collections.Generic.List<RewardChoice> RollSinglePassiveChoice(GameRun run, IRandomStream rng)
-        {
-            var result = new System.Collections.Generic.List<RewardChoice>();
-            if (run == null || rng == null)
-            {
-                return result;
-            }
-
-            System.Collections.Generic.List<string> ids = ItemPoolService.Roll(run.Tables, run, cfg.ItemKind.Passive, rng, 1);
-            if (ids.Count == 0)
-            {
-                result.Add(RewardChoice.Gold(40, "被动道具折算金币", isFallback: true));
-                return result;
-            }
-
-            ItemDefinition item = ItemDefinition.Get(run.Tables, ids[0], cfg.ItemKind.Passive);
-            if (item == null)
-            {
-                result.Add(RewardChoice.Gold(40, "被动道具折算金币", isFallback: true));
-                return result;
-            }
-
-            result.Add(new RewardChoice(
-                cfg.RewardKind.PassiveItemChoice,
-                item.Id,
-                item.Name,
-                $"被动道具 · {item.Quality}"));
-            return result;
-        }
-
-        private static System.Collections.Generic.List<RewardChoice> RollSingleDishChoice(GameRun run, IRandomStream rng)
-        {
-            var result = new System.Collections.Generic.List<RewardChoice>();
-            if (run == null || rng == null)
-            {
-                return result;
-            }
-
-            int hidden = HiddenScoreService.DishHiddenScore(run, run.LastActionContext);
-            var candidates = new System.Collections.Generic.List<DishDef>();
-            foreach (DishDef dish in run.Library.Dishes)
-            {
-                if (dish.CoversHiddenScore(hidden))
-                {
-                    candidates.Add(dish);
-                }
-            }
-
-            if (candidates.Count == 0)
-            {
-                candidates.AddRange(run.Library.Dishes);
-            }
-
-            if (candidates.Count == 0)
-            {
-                result.Add(RewardChoice.Gold(30, "食物折算金币", isFallback: true));
-                return result;
-            }
-
-            var weights = new System.Collections.Generic.List<float>(candidates.Count);
-            foreach (DishDef dish in candidates)
-            {
-                weights.Add(RewardPoolService.HiddenScoreWeight(dish.BaseWeight, dish.HiddenMean, hidden, 5));
-            }
-
-            DishDef chosen = candidates[rng.WeightedPickIndex(weights)];
-            result.Add(new RewardChoice(
-                cfg.RewardKind.DishChoice,
-                chosen.Id,
-                chosen.Name,
-                $"加入菜谱池，美味度 {chosen.Deliciousness}"));
-            return result;
         }
 
         private static System.Collections.Generic.List<RewardChoice> RollSlotGroup(RewardContext context, string groupId, out int requiredPickCount)

@@ -90,6 +90,11 @@ namespace GourmetProject.Game.Meta
             cfg.Food food,
             float extraTargetScoreHiddenOffset)
         {
+            if (run != null)
+            {
+                extraTargetScoreHiddenOffset += run.ConsumeNextFoodTargetScoreHiddenOffset();
+            }
+
             if (run != null
                 && food != null
                 && food.ActionKind != cfg.FoodActionKind.Feast

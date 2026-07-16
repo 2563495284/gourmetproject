@@ -97,5 +97,159 @@
     "poolId": "",
     "normalHiddenOffset": 10,
     "hardHiddenOffset": 0
+  },
+  {
+    "id": "dish_choice_3",
+    "groupId": "dish_choice_3",
+    "kind": 2,
+    "choiceCount": 3,
+    "requiredPickCount": 1,
+    "weight": 1,
+    "poolId": "pool_dish",
+    "normalHiddenOffset": 0,
+    "hardHiddenOffset": 0
+  },
+  {
+    "id": "dish_grant_1",
+    "groupId": "dish_grant_1",
+    "kind": 2,
+    "choiceCount": 1,
+    "requiredPickCount": 1,
+    "weight": 1,
+    "poolId": "pool_dish",
+    "normalHiddenOffset": 0,
+    "hardHiddenOffset": 0
+  },
+  {
+    "id": "passive_choice_1",
+    "groupId": "passive_choice_1",
+    "kind": 3,
+    "choiceCount": 1,
+    "requiredPickCount": 1,
+    "weight": 1,
+    "poolId": "pool_passive",
+    "normalHiddenOffset": 0,
+    "hardHiddenOffset": 0
+  },
+  {
+    "id": "passive_choice_3",
+    "groupId": "passive_choice_3",
+    "kind": 3,
+    "choiceCount": 3,
+    "requiredPickCount": 1,
+    "weight": 1,
+    "poolId": "pool_passive",
+    "normalHiddenOffset": 0,
+    "hardHiddenOffset": 0
+  },
+  {
+    "id": "passive_grant_2",
+    "groupId": "passive_grant_2",
+    "kind": 3,
+    "choiceCount": 2,
+    "requiredPickCount": 2,
+    "weight": 1,
+    "poolId": "pool_passive",
+    "normalHiddenOffset": 0,
+    "hardHiddenOffset": 0
+  },
+  {
+    "id": "active_grant_1",
+    "groupId": "active_grant_1",
+    "kind": 4,
+    "choiceCount": 1,
+    "requiredPickCount": 1,
+    "weight": 1,
+    "poolId": "pool_active",
+    "normalHiddenOffset": 0,
+    "hardHiddenOffset": 0
+  },
+  {
+    "id": "active_grant_2",
+    "groupId": "active_grant_2",
+    "kind": 4,
+    "choiceCount": 2,
+    "requiredPickCount": 2,
+    "weight": 1,
+    "poolId": "pool_active",
+    "normalHiddenOffset": 0,
+    "hardHiddenOffset": 0
+  },
+  {
+    "id": "active_choice_3",
+    "groupId": "active_choice_3",
+    "kind": 4,
+    "choiceCount": 3,
+    "requiredPickCount": 1,
+    "weight": 1,
+    "poolId": "pool_active",
+    "normalHiddenOffset": 0,
+    "hardHiddenOffset": 0
+  },
+  {
+    "id": "fragment_choice_3",
+    "groupId": "fragment_choice_3",
+    "kind": 5,
+    "choiceCount": 3,
+    "requiredPickCount": 1,
+    "weight": 1,
+    "poolId": "pool_fragment",
+    "normalHiddenOffset": 0,
+    "hardHiddenOffset": 0
+  },
+  {
+    "id": "flavored_dish_3",
+    "groupId": "flavored_dish_3",
+    "kind": 2,
+    "choiceCount": 3,
+    "requiredPickCount": 3,
+    "weight": 1,
+    "poolId": "pool_flavored_dish",
+    "normalHiddenOffset": 0,
+    "hardHiddenOffset": 0
+  },
+  {
+    "id": "legendary_choice_1",
+    "groupId": "legendary_choice_1",
+    "kind": 3,
+    "choiceCount": 1,
+    "requiredPickCount": 1,
+    "weight": 1,
+    "poolId": "pool_legendary",
+    "normalHiddenOffset": 0,
+    "hardHiddenOffset": 0
+  },
+  {
+    "id": "lay_wood",
+    "groupId": "lay_wood",
+    "kind": 4,
+    "choiceCount": 1,
+    "requiredPickCount": 1,
+    "weight": 1,
+    "poolId": "pool_lay_wood",
+    "normalHiddenOffset": 0,
+    "hardHiddenOffset": 0
+  },
+  {
+    "id": "lay_stone",
+    "groupId": "lay_stone",
+    "kind": 4,
+    "choiceCount": 1,
+    "requiredPickCount": 1,
+    "weight": 1,
+    "poolId": "pool_lay_stone",
+    "normalHiddenOffset": 0,
+    "hardHiddenOffset": 0
+  },
+  {
+    "id": "lay_metal",
+    "groupId": "lay_metal",
+    "kind": 4,
+    "choiceCount": 1,
+    "requiredPickCount": 1,
+    "weight": 1,
+    "poolId": "pool_lay_metal",
+    "normalHiddenOffset": 0,
+    "hardHiddenOffset": 0
   }
 ]

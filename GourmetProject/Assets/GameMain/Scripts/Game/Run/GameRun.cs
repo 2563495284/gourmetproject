@@ -85,6 +85,20 @@ namespace GourmetProject.Game.Run
         private int _mealBonusRemaining;  // 「美食分红」剩余生效局数（GoldMealBonus）
         private int _scoreToOneRemaining; // 「分数变1」剩余生效局数（RequiredScoreToOne，非盛宴）
 
+        // —— 事件运行状态（随存档保存）——
+        private float _eventTargetScoreHiddenOffset;
+        private float _eventDishHiddenOffset;
+        private float _eventPassiveItemHiddenOffset;
+        private float _eventFragmentHiddenOffset;
+        private float _eventGoldHiddenOffset;
+        private float _eventShopPricePct;
+        private int _eventChoicePenaltyRemaining;
+        private int _eventChoiceCountDelta;
+        private float _nextFoodTargetScoreHiddenOffset;
+        private int _nextMealRewardGold;
+        private readonly Dictionary<string, int> _eventCounters = new Dictionary<string, int>();
+        private readonly List<string> _forcedEventIds = new List<string>();
+
         public GameRun(cfg.Tables tables, GameplayDatabase database, string characterId, string seedText, int weekIndex = 1)
             : this(tables, database, characterId, seedText, weekIndex, initializeCharacterLoadout: true)
         {
@@ -409,6 +423,150 @@ namespace GourmetProject.Game.Run
             {
                 _scoreToOneRemaining--;
             }
+        }
+
+        public float EventHiddenScoreOffset(HiddenScorePurpose purpose)
+        {
+            return purpose switch
+            {
+                HiddenScorePurpose.TargetScore => _eventTargetScoreHiddenOffset,
+                HiddenScorePurpose.Dish => _eventDishHiddenOffset,
+                HiddenScorePurpose.PassiveItem => _eventPassiveItemHiddenOffset,
+                HiddenScorePurpose.Fragment => _eventFragmentHiddenOffset,
+                HiddenScorePurpose.Gold => _eventGoldHiddenOffset,
+                _ => 0f,
+            };
+        }
+
+        public void AddEventHiddenScoreOffset(HiddenScorePurpose purpose, float amount)
+        {
+            switch (purpose)
+            {
+                case HiddenScorePurpose.TargetScore:
+                    _eventTargetScoreHiddenOffset += amount;
+                    break;
+                case HiddenScorePurpose.Dish:
+                    _eventDishHiddenOffset += amount;
+                    break;
+                case HiddenScorePurpose.PassiveItem:
+                    _eventPassiveItemHiddenOffset += amount;
+                    break;
+                case HiddenScorePurpose.Fragment:
+                    _eventFragmentHiddenOffset += amount;
+                    break;
+                case HiddenScorePurpose.Gold:
+                    _eventGoldHiddenOffset += amount;
+                    break;
+            }
+        }
+
+        public void AddEventShopPricePct(float pct)
+        {
+            _eventShopPricePct += pct;
+        }
+
+        public int ModifyEventShopPrice(int price)
+        {
+            int result = (int)System.Math.Round(price * (1f + _eventShopPricePct), System.MidpointRounding.AwayFromZero);
+            return System.Math.Max(1, result);
+        }
+
+        public void AddEventChoiceCountPenalty(int times, int delta)
+        {
+            if (times <= 0 || delta == 0)
+            {
+                return;
+            }
+
+            _eventChoicePenaltyRemaining += times;
+            _eventChoiceCountDelta += delta;
+        }
+
+        public int ConsumeEventChoiceCountDelta()
+        {
+            if (_eventChoicePenaltyRemaining <= 0 || _eventChoiceCountDelta == 0)
+            {
+                return 0;
+            }
+
+            _eventChoicePenaltyRemaining--;
+            int delta = _eventChoiceCountDelta;
+            if (_eventChoicePenaltyRemaining <= 0)
+            {
+                _eventChoiceCountDelta = 0;
+            }
+
+            return delta;
+        }
+
+        public void AddNextFoodTargetScoreHiddenOffset(float amount)
+        {
+            _nextFoodTargetScoreHiddenOffset += amount;
+        }
+
+        public float ConsumeNextFoodTargetScoreHiddenOffset()
+        {
+            float amount = _nextFoodTargetScoreHiddenOffset;
+            _nextFoodTargetScoreHiddenOffset = 0f;
+            return amount;
+        }
+
+        public void AddNextMealRewardGold(int amount)
+        {
+            if (amount != 0)
+            {
+                _nextMealRewardGold += amount;
+            }
+        }
+
+        public int ConsumeNextMealRewardGold()
+        {
+            int amount = _nextMealRewardGold;
+            _nextMealRewardGold = 0;
+            return amount;
+        }
+
+        public int IncrementEventCounter(string counterId, int threshold, string forcedEventId)
+        {
+            if (string.IsNullOrEmpty(counterId))
+            {
+                return 0;
+            }
+
+            _eventCounters.TryGetValue(counterId, out int current);
+            current++;
+            if (threshold > 0 && current >= threshold)
+            {
+                current = 0;
+                QueueForcedEvent(forcedEventId);
+            }
+
+            _eventCounters[counterId] = current;
+            return current;
+        }
+
+        public void QueueForcedEvent(string eventId)
+        {
+            if (!string.IsNullOrEmpty(eventId))
+            {
+                _forcedEventIds.Add(eventId);
+            }
+        }
+
+        public bool TryConsumeForcedEventId(out string eventId)
+        {
+            while (_forcedEventIds.Count > 0)
+            {
+                eventId = _forcedEventIds[0];
+                _forcedEventIds.RemoveAt(0);
+                if (!string.IsNullOrEmpty(eventId))
+                {
+                    return true;
+                }
+            }
+
+            eventId = string.Empty;
+            return false;
         }
 
         public IReadOnlyList<string> BonusDishIds => _bonusDishIds;
@@ -1207,6 +1365,18 @@ namespace GourmetProject.Game.Run
                 LoanDebt = _loanDebt,
                 MealBonusRemaining = _mealBonusRemaining,
                 ScoreToOneRemaining = _scoreToOneRemaining,
+                EventTargetScoreHiddenOffset = _eventTargetScoreHiddenOffset,
+                EventDishHiddenOffset = _eventDishHiddenOffset,
+                EventPassiveItemHiddenOffset = _eventPassiveItemHiddenOffset,
+                EventFragmentHiddenOffset = _eventFragmentHiddenOffset,
+                EventGoldHiddenOffset = _eventGoldHiddenOffset,
+                EventShopPricePct = _eventShopPricePct,
+                EventChoicePenaltyRemaining = _eventChoicePenaltyRemaining,
+                EventChoiceCountDelta = _eventChoiceCountDelta,
+                NextFoodTargetScoreHiddenOffset = _nextFoodTargetScoreHiddenOffset,
+                NextMealRewardGold = _nextMealRewardGold,
+                EventCounters = new Dictionary<string, int>(_eventCounters),
+                ForcedEventIds = new List<string>(_forcedEventIds),
                 Items = items,
                 BonusDishIds = new List<string>(_bonusDishIds),
                 RecipeBooks = ToRecipeBookSaveData(),
@@ -1270,6 +1440,38 @@ namespace GourmetProject.Game.Run
             run._loanDebt = System.Math.Max(0, data.LoanDebt);
             run._mealBonusRemaining = System.Math.Max(0, data.MealBonusRemaining);
             run._scoreToOneRemaining = System.Math.Max(0, data.ScoreToOneRemaining);
+            run._eventTargetScoreHiddenOffset = data.EventTargetScoreHiddenOffset;
+            run._eventDishHiddenOffset = data.EventDishHiddenOffset;
+            run._eventPassiveItemHiddenOffset = data.EventPassiveItemHiddenOffset;
+            run._eventFragmentHiddenOffset = data.EventFragmentHiddenOffset;
+            run._eventGoldHiddenOffset = data.EventGoldHiddenOffset;
+            run._eventShopPricePct = data.EventShopPricePct;
+            run._eventChoicePenaltyRemaining = System.Math.Max(0, data.EventChoicePenaltyRemaining);
+            run._eventChoiceCountDelta = data.EventChoiceCountDelta;
+            run._nextFoodTargetScoreHiddenOffset = data.NextFoodTargetScoreHiddenOffset;
+            run._nextMealRewardGold = data.NextMealRewardGold;
+            if (data.EventCounters != null)
+            {
+                foreach (KeyValuePair<string, int> kv in data.EventCounters)
+                {
+                    if (!string.IsNullOrEmpty(kv.Key))
+                    {
+                        run._eventCounters[kv.Key] = System.Math.Max(0, kv.Value);
+                    }
+                }
+            }
+
+            if (data.ForcedEventIds != null)
+            {
+                foreach (string eventId in data.ForcedEventIds)
+                {
+                    if (!string.IsNullOrEmpty(eventId))
+                    {
+                        run._forcedEventIds.Add(eventId);
+                    }
+                }
+            }
+
             run._items.Clear();
 
             if (data.Items != null && data.Items.Count > 0)
@@ -1888,6 +2090,23 @@ namespace GourmetProject.Game.Run
             return GetItemCount(itemId) > 0;
         }
 
+        public bool HasRecipeDish(bool requireFlavor)
+        {
+            for (int bookIndex = 0; bookIndex < _recipeBooks.Count; bookIndex++)
+            {
+                List<RecipeBookSlot> book = _recipeBooks[bookIndex];
+                for (int dishIndex = 0; dishIndex < book.Count; dishIndex++)
+                {
+                    if (!requireFlavor || RecipeSlotHasFlavor(book[dishIndex]))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
         /// <summary>当前持有该道具的份数：被动道具为 0/1，主动道具为实例条目数。</summary>
         public int GetItemCount(string itemId)
         {
@@ -1906,6 +2125,17 @@ namespace GourmetProject.Game.Run
             }
 
             return count;
+        }
+
+        private bool RecipeSlotHasFlavor(RecipeBookSlot slot)
+        {
+            if (slot == null)
+            {
+                return false;
+            }
+
+            DishDef dish = Database?.GetDish(slot.DishId);
+            return (dish != null && dish.HasFlavor) || slot.ExtraFlavorIds.Count > 0;
         }
 
         /// <summary>
@@ -1973,12 +2203,44 @@ namespace GourmetProject.Game.Run
 
         public bool AddBonusDishToBook(string dishId, int bookIndex)
         {
+            return AddBonusDishToBook(dishId, bookIndex, null);
+        }
+
+        public bool AddBonusDishToBook(string dishId, int bookIndex, string flavorId)
+        {
             if (Database.GetDish(dishId) == null || !IsRecipeBookIndexValid(bookIndex))
             {
                 return false;
             }
             List<RecipeBookSlot> book = _recipeBooks[bookIndex];
-            book.Add(new RecipeBookSlot(dishId));
+            var slot = new RecipeBookSlot(dishId);
+            if (!string.IsNullOrEmpty(flavorId))
+            {
+                slot.AddFlavor(flavorId, FoodFlavorLimit);
+            }
+
+            book.Add(slot);
+            RebuildBonusDishCache();
+            return true;
+        }
+
+        public bool AddBonusDishWithFlavor(string dishId, string flavorId)
+        {
+            if (Database.GetDish(dishId) == null || string.IsNullOrEmpty(flavorId))
+            {
+                return false;
+            }
+
+            EnsureRecipeBookCount(InitialRecipeBookCount);
+            List<RecipeBookSlot> target = FirstRecipeBook();
+            if (target == null)
+            {
+                return false;
+            }
+
+            var slot = new RecipeBookSlot(dishId);
+            slot.AddFlavor(flavorId, FoodFlavorLimit);
+            target.Add(slot);
             RebuildBonusDishCache();
             return true;
         }

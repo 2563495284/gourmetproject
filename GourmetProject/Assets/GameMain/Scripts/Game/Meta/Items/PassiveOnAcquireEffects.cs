@@ -97,28 +97,36 @@ namespace GourmetProject.Game.Meta
             }
         }
 
-        /// <summary>随机发放 count 个被动道具（无随机流时跳过）。</summary>
-        public static void GrantRandomPassives(GameRun run, int count, string rngKeyItemId)
+        /// <summary>
+        /// 统一的「获得时发奖」：按道具 EffectParam 指定的 reward_slot 槽组 roll 出 offer，入通用领奖队列并打开 RewardForm。
+        /// 覆盖随机发放 / 多选一 / 碎片 / 风味菜品等，等同于一次正常领奖。
+        /// </summary>
+        public static void GrantConfigReward(GameRun run, ItemDefinition sourceItem)
         {
-            if (run == null || count <= 0)
+            if (run == null || sourceItem == null)
             {
                 return;
             }
 
-            IRandomStream rng = Rng(rngKeyItemId);
+            IRandomStream rng = Rng(sourceItem.Id);
             if (rng == null)
             {
-                Log.Info("GrantRandomPassive 缺少随机流，已跳过。", Tag);
+                Log.Info($"{sourceItem.Name} 缺少随机流，已跳过。", Tag);
                 return;
             }
 
-            for (int i = 0; i < count; i++)
+            RewardOffer offer = RewardGranter.BuildConfigOffer(run, rng, sourceItem.EffectParam, run.LastActionContext);
+            if (offer == null)
             {
-                ItemPoolService.GrantRandom(run.Tables, run, cfg.ItemKind.Passive, rng, fallbackGold: 0);
+                Log.Info($"{sourceItem.Name} 没有可用奖励（配置 '{sourceItem.EffectParam}'），已跳过。", Tag);
+                return;
             }
+
+            run.EnqueueGenericRewardOffer(BuildAcquireKey(run, sourceItem.Id), sourceItem.Name, offer);
+            OpenGenericRewardForm();
         }
 
-        /// <summary>全家福：生成 effectValue 金币 + 一个随机被动道具 + 一个随机食物的通用领奖包。</summary>
+        /// <summary>全家福：EffectValue 金币 + EffectParam="被动槽组|菜品槽组" 各发一份，合成一个通用领奖包。</summary>
         public static void ApplyFamilyPack(GameRun run, ItemDefinition item)
         {
             if (run == null || item == null)
@@ -127,127 +135,31 @@ namespace GourmetProject.Game.Meta
             }
 
             IRandomStream rng = Rng(item.Id);
-            RewardOffer offer = RewardGranter.GenerateFamilyPackOffer(run, item, rng);
+            if (rng == null)
+            {
+                Log.Info($"{item.Name} 缺少随机流，已跳过。", Tag);
+                return;
+            }
+
+            string[] groups = (item.EffectParam ?? string.Empty).Split('|');
+            string passiveGroup = groups.Length > 0 ? groups[0].Trim() : string.Empty;
+            string dishGroup = groups.Length > 1 ? groups[1].Trim() : string.Empty;
+            int gold = System.Math.Max(0, (int)item.EffectValue);
+
+            RewardOffer offer = RewardGranter.BuildConfigOffer(
+                run,
+                rng,
+                gold,
+                string.IsNullOrEmpty(passiveGroup) ? System.Array.Empty<string>() : new[] { passiveGroup },
+                dishGroup,
+                run.LastActionContext);
             if (offer == null)
             {
                 return;
             }
 
-            string day = run.CurrentDay.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
-            string key = $"onacq_{item.Id}_w{run.WeekIndex}_d{day}_s{run.RunActionStepIndex}";
-            run.EnqueueGenericRewardOffer(key, item.Name, offer);
-            Log.Info($"已生成通用领奖包：{item.Name}。", Tag);
-        }
-
-        public static void OpenItemChoice(GameRun run, ItemDefinition sourceItem, cfg.ItemKind kind, int count)
-        {
-            if (run == null || sourceItem == null)
-            {
-                return;
-            }
-
-            List<RewardChoice> choices = RollItemChoices(run, kind, count, sourceItem.Id);
-            if (choices.Count == 0)
-            {
-                Log.Info($"{sourceItem.Name} 没有可选道具，已跳过。", Tag);
-                return;
-            }
-
-            BattleForm battle = BattleForm.Active;
-            if (battle != null && battle.OpenRewardItemChoices(sourceItem.Name, choices, kind))
-            {
-                return;
-            }
-
-            string key = BuildAcquireKey(run, sourceItem.Id);
-            run.EnqueueGenericRewardOffer(key, sourceItem.Name, new RewardOffer(0, choices, null, baseGoldClaimed: true));
+            run.EnqueueGenericRewardOffer(BuildAcquireKey(run, item.Id), item.Name, offer);
             OpenGenericRewardForm();
-        }
-
-        public static void GrantRandomActivesViaRewardForm(GameRun run, ItemDefinition sourceItem, int count)
-        {
-            if (run == null || sourceItem == null || count <= 0)
-            {
-                return;
-            }
-
-            IRandomStream rng = Rng(sourceItem.Id);
-            if (rng == null)
-            {
-                Log.Info("GrantRandomActive 缺少随机流，已跳过。", Tag);
-                return;
-            }
-
-            for (int i = 0; i < count; i++)
-            {
-                List<RewardChoice> choices = RollItemChoices(run, cfg.ItemKind.Active, 1, $"{sourceItem.Id}_{i}");
-                if (choices.Count == 0)
-                {
-                    continue;
-                }
-
-                string key = $"{BuildAcquireKey(run, sourceItem.Id)}_active_{i}";
-                run.EnqueueGenericRewardOffer(key, $"{sourceItem.Name} {i + 1}/{count}", new RewardOffer(0, choices, null, baseGoldClaimed: true));
-            }
-
-            if (run.HasPendingGenericRewards)
-            {
-                OpenGenericRewardForm();
-            }
-        }
-
-        public static void OpenDishChoice(GameRun run, ItemDefinition sourceItem, int count)
-        {
-            if (run == null || sourceItem == null)
-            {
-                return;
-            }
-
-            List<RewardChoice> choices = RollDishChoices(run, count, sourceItem.Id);
-            if (choices.Count == 0)
-            {
-                Log.Info($"{sourceItem.Name} 没有可选菜品，已跳过。", Tag);
-                return;
-            }
-
-            BattleForm battle = BattleForm.Active;
-            if (battle != null && battle.OpenAcquireDishPack(sourceItem.Name, choices))
-            {
-                return;
-            }
-
-            string key = BuildAcquireKey(run, sourceItem.Id);
-            run.EnqueueGenericRewardOffer(key, sourceItem.Name, new RewardOffer(0, choices, null, baseGoldClaimed: true));
-            OpenGenericRewardForm();
-        }
-
-        public static void OpenFragmentChoice(GameRun run, ItemDefinition sourceItem, int count)
-        {
-            if (run == null || sourceItem == null)
-            {
-                return;
-            }
-
-            List<string> fragmentIds = RollFragmentIds(run, count, sourceItem.Id);
-            if (fragmentIds.Count == 0)
-            {
-                Log.Info($"{sourceItem.Name} 没有可用餐桌碎片，已跳过。", Tag);
-                return;
-            }
-
-            run.SetPendingFragmentPack(fragmentIds);
-            BattleForm battle = BattleForm.Active;
-            if (battle != null)
-            {
-                battle.OpenRewardTableEdit(fragmentIds, placed =>
-                {
-                    RunPersistence.Save(run);
-                    if (!placed)
-                    {
-                        battle.OpenShop();
-                    }
-                });
-            }
         }
 
         public static void GrantRecipeBook(GameRun run, ItemDefinition sourceItem)
@@ -357,127 +269,6 @@ namespace GourmetProject.Game.Meta
             }
 
             return false;
-        }
-
-        private static List<RewardChoice> RollItemChoices(GameRun run, cfg.ItemKind kind, int count, string key)
-        {
-            var choices = new List<RewardChoice>();
-            IRandomStream rng = Rng(key);
-            if (run == null || rng == null || count <= 0)
-            {
-                return choices;
-            }
-
-            List<string> ids = ItemPoolService.Roll(run.Tables, run, kind, rng, count);
-            foreach (string id in ids)
-            {
-                ItemDefinition item = ItemDefinition.Get(run.Tables, id, kind);
-                if (item == null)
-                {
-                    continue;
-                }
-
-                choices.Add(new RewardChoice(
-                    kind == cfg.ItemKind.Passive ? cfg.RewardKind.PassiveItemChoice : cfg.RewardKind.ActiveItemGrant,
-                    item.Id,
-                    item.Name,
-                    item.IsPassive ? $"被动道具 · {item.Quality}" : "主动道具"));
-            }
-
-            return choices;
-        }
-
-        private static List<RewardChoice> RollDishChoices(GameRun run, int count, string key)
-        {
-            var choices = new List<RewardChoice>();
-            IRandomStream rng = Rng(key);
-            if (run == null || rng == null || count <= 0)
-            {
-                return choices;
-            }
-
-            int hidden = HiddenScoreService.DishHiddenScore(run, run.LastActionContext);
-            var candidates = new List<GourmetProject.Gameplay.Model.DishDef>();
-            foreach (GourmetProject.Gameplay.Model.DishDef dish in run.Library.Dishes)
-            {
-                if (dish.CoversHiddenScore(hidden))
-                {
-                    candidates.Add(dish);
-                }
-            }
-
-            if (candidates.Count == 0)
-            {
-                candidates.AddRange(run.Library.Dishes);
-            }
-
-            for (int i = 0; i < count && candidates.Count > 0; i++)
-            {
-                var weights = new List<float>(candidates.Count);
-                foreach (GourmetProject.Gameplay.Model.DishDef dish in candidates)
-                {
-                    weights.Add(RewardPoolService.HiddenScoreWeight(dish.BaseWeight, dish.HiddenMean, hidden, 5));
-                }
-
-                int index = rng.WeightedPickIndex(weights);
-                GourmetProject.Gameplay.Model.DishDef chosen = candidates[index];
-                candidates.RemoveAt(index);
-                choices.Add(new RewardChoice(
-                    cfg.RewardKind.DishChoice,
-                    chosen.Id,
-                    chosen.Name,
-                    $"加入菜谱，美味度 {chosen.Deliciousness}"));
-            }
-
-            return choices;
-        }
-
-        private static List<string> RollFragmentIds(GameRun run, int count, string key)
-        {
-            var ids = new List<string>();
-            IRandomStream rng = Rng(key);
-            if (run == null || rng == null || count <= 0)
-            {
-                return ids;
-            }
-
-            int hidden = HiddenScoreService.FragmentHiddenScore(run, run.LastActionContext);
-            var candidates = new List<GourmetProject.Gameplay.Model.TableFragmentDef>();
-            foreach (GourmetProject.Gameplay.Model.TableFragmentDef fragment in run.Database.AllFragments)
-            {
-                if (fragment.BaseWeight <= 0f || hidden < fragment.HiddenMin || hidden > fragment.HiddenMax || !run.CanAttachTableFragment(fragment))
-                {
-                    continue;
-                }
-
-                candidates.Add(fragment);
-            }
-
-            if (candidates.Count == 0)
-            {
-                foreach (GourmetProject.Gameplay.Model.TableFragmentDef fragment in run.Database.AllFragments)
-                {
-                    if (fragment.BaseWeight > 0f && run.CanAttachTableFragment(fragment))
-                    {
-                        candidates.Add(fragment);
-                    }
-                }
-            }
-
-            for (int i = 0; i < count && candidates.Count > 0; i++)
-            {
-                var weights = new List<float>(candidates.Count);
-                foreach (GourmetProject.Gameplay.Model.TableFragmentDef fragment in candidates)
-                {
-                    weights.Add(RewardPoolService.HiddenScoreWeight(fragment.BaseWeight, fragment.HiddenMean, hidden, 5));
-                }
-
-                int index = rng.WeightedPickIndex(weights);
-                ids.Add(candidates[index].Id);
-                candidates.RemoveAt(index);
-            }
-
-            return ids;
         }
 
         private static string BuildAcquireKey(GameRun run, string itemId)

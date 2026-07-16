@@ -50,8 +50,6 @@ namespace GourmetProject.Game.Meta
 
         public int PassiveItemHiddenScore => Run == null ? Week?.RewardHiddenScore ?? 0 : HiddenScoreService.PassiveItemHiddenScore(Run, ActionContext);
 
-        public int ActiveItemHiddenScore => Run == null ? 0 : HiddenScoreService.ActiveItemHiddenScore(Run, ActionContext);
-
         public int FragmentHiddenScore => Run == null ? Week?.RewardHiddenScore ?? 0 : HiddenScoreService.FragmentHiddenScore(Run, ActionContext);
     }
 }

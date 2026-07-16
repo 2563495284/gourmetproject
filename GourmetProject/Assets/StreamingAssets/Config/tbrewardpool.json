@@ -4,34 +4,99 @@
     "kind": 0,
     "specialTags": "",
     "allowFallback": true,
-    "distanceFloor": 5
+    "distanceFloor": 5,
+    "explicitIds": "",
+    "minQuality": 0,
+    "withRandomFlavor": false
   },
   {
     "id": "pool_fragment",
     "kind": 3,
     "specialTags": "",
     "allowFallback": true,
-    "distanceFloor": 5
+    "distanceFloor": 5,
+    "explicitIds": "",
+    "minQuality": 0,
+    "withRandomFlavor": false
   },
   {
     "id": "pool_passive",
     "kind": 1,
     "specialTags": "",
     "allowFallback": true,
-    "distanceFloor": 5
+    "distanceFloor": 5,
+    "explicitIds": "",
+    "minQuality": 0,
+    "withRandomFlavor": false
   },
   {
     "id": "pool_passive_boss",
     "kind": 1,
     "specialTags": "BossReward|ScoreBuild",
     "allowFallback": true,
-    "distanceFloor": 5
+    "distanceFloor": 5,
+    "explicitIds": "",
+    "minQuality": 0,
+    "withRandomFlavor": false
   },
   {
     "id": "pool_active",
     "kind": 2,
     "specialTags": "",
     "allowFallback": true,
-    "distanceFloor": 0
+    "distanceFloor": 0,
+    "explicitIds": "",
+    "minQuality": 0,
+    "withRandomFlavor": false
+  },
+  {
+    "id": "pool_flavored_dish",
+    "kind": 0,
+    "specialTags": "",
+    "allowFallback": true,
+    "distanceFloor": 5,
+    "explicitIds": "",
+    "minQuality": 0,
+    "withRandomFlavor": true
+  },
+  {
+    "id": "pool_legendary",
+    "kind": 1,
+    "specialTags": "",
+    "allowFallback": true,
+    "distanceFloor": 5,
+    "explicitIds": "",
+    "minQuality": 4,
+    "withRandomFlavor": false
+  },
+  {
+    "id": "pool_lay_wood",
+    "kind": 2,
+    "specialTags": "",
+    "allowFallback": true,
+    "distanceFloor": 0,
+    "explicitIds": "item_active_lay_cherry|item_active_lay_walnut",
+    "minQuality": 0,
+    "withRandomFlavor": false
+  },
+  {
+    "id": "pool_lay_stone",
+    "kind": 2,
+    "specialTags": "",
+    "allowFallback": true,
+    "distanceFloor": 0,
+    "explicitIds": "item_active_lay_marble|item_active_lay_obsidian|item_active_lay_emerald",
+    "minQuality": 0,
+    "withRandomFlavor": false
+  },
+  {
+    "id": "pool_lay_metal",
+    "kind": 2,
+    "specialTags": "",
+    "allowFallback": true,
+    "distanceFloor": 0,
+    "explicitIds": "item_active_lay_gold|item_active_lay_silver",
+    "minQuality": 0,
+    "withRandomFlavor": false
   }
 ]

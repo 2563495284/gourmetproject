@@ -9,7 +9,6 @@
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
-    "activeItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0
   },
@@ -23,7 +22,6 @@
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 2,
     "passiveItemHiddenOffset": 2,
-    "activeItemHiddenOffset": 2,
     "fragmentHiddenOffset": 2,
     "goldHiddenOffset": 0
   },
@@ -37,7 +35,6 @@
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 2,
     "passiveItemHiddenOffset": 2,
-    "activeItemHiddenOffset": 2,
     "fragmentHiddenOffset": 2,
     "goldHiddenOffset": 0
   },
@@ -51,7 +48,6 @@
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 1,
     "passiveItemHiddenOffset": 1,
-    "activeItemHiddenOffset": 1,
     "fragmentHiddenOffset": 1,
     "goldHiddenOffset": 0
   },
@@ -65,7 +61,6 @@
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 1,
     "passiveItemHiddenOffset": 1,
-    "activeItemHiddenOffset": 1,
     "fragmentHiddenOffset": 1,
     "goldHiddenOffset": 0
   },
@@ -79,7 +74,6 @@
     "targetScoreHiddenOffset": 0.5,
     "dishHiddenOffset": 7,
     "passiveItemHiddenOffset": 7,
-    "activeItemHiddenOffset": 7,
     "fragmentHiddenOffset": 7,
     "goldHiddenOffset": 12
   },
@@ -93,7 +87,6 @@
     "targetScoreHiddenOffset": 0.5,
     "dishHiddenOffset": 8,
     "passiveItemHiddenOffset": 8,
-    "activeItemHiddenOffset": 8,
     "fragmentHiddenOffset": 8,
     "goldHiddenOffset": 12
   },
@@ -107,7 +100,6 @@
     "targetScoreHiddenOffset": 0.5,
     "dishHiddenOffset": 9,
     "passiveItemHiddenOffset": 9,
-    "activeItemHiddenOffset": 9,
     "fragmentHiddenOffset": 9,
     "goldHiddenOffset": 12
   },
@@ -121,7 +113,6 @@
     "targetScoreHiddenOffset": 0.5,
     "dishHiddenOffset": 7,
     "passiveItemHiddenOffset": 7,
-    "activeItemHiddenOffset": 7,
     "fragmentHiddenOffset": 7,
     "goldHiddenOffset": 12
   },
@@ -135,7 +126,6 @@
     "targetScoreHiddenOffset": 0.5,
     "dishHiddenOffset": 8,
     "passiveItemHiddenOffset": 8,
-    "activeItemHiddenOffset": 8,
     "fragmentHiddenOffset": 8,
     "goldHiddenOffset": 12
   },
@@ -149,7 +139,6 @@
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 8,
     "passiveItemHiddenOffset": 8,
-    "activeItemHiddenOffset": 8,
     "fragmentHiddenOffset": 8,
     "goldHiddenOffset": 55
   }

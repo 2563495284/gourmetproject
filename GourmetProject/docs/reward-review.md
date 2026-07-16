@@ -2,7 +2,7 @@
 
 ## Findings
 
-### 主动道具奖励仍未真正按主动道具隐藏分筛选
+### 主动道具不再配置独立隐藏分
 
 当前 `RewardPoolService.RollItemChoices` 对主动道具仍然跳过严格隐藏分筛选：
 
@@ -10,11 +10,11 @@
 BuildItemCandidates(... strictHidden: !activeItem ...)
 ```
 
-并且 `GetItemWeight` 只在 `item.IsPassive` 时按隐藏分调整权重。结果是 `ActiveItemGrant` 虽然会从 `HiddenForSlot` 得到 `ActiveItemHiddenScore + normal/hard offset`，但这个 hidden 值不会真正影响主动道具候选筛选或权重。
+并且 `GetItemWeight` 只在 `item.IsPassive` 时按隐藏分调整权重。`ActiveItemGrant` 不再有独立的 `ActiveItem` 隐藏分用途；主动道具入口共用道具隐藏分上下文，但主动道具本身不按隐藏分区间筛选。
 
-影响：`specific_active` 的 `normalHiddenOffset/hardHiddenOffset` 对主动道具奖励基本无效，不符合“如果是道具，就临时加道具的隐藏分”的设计目标。
+影响：主动道具奖励的 `normalHiddenOffset/hardHiddenOffset` 不再表达“主动道具隐藏分”，只保留奖励槽统一修正语义。
 
-建议：主动道具也使用 `ItemCoversHidden(item, hidden)` 参与筛选，并在 `GetItemWeight` 中对主动/被动都应用 `HiddenScoreWeight`，除非主动道具确实没有隐藏分区间设计。
+建议：如果后续重新给主动道具做进度分层，再新增明确字段和曲线用途。
 
 ## 变更总结
 

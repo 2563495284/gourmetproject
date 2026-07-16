@@ -30,6 +30,7 @@ namespace GourmetProject.Game.UI.Meta
             string result,
             string bgSpritePath,
             IReadOnlyList<string> options,
+            IReadOnlyList<bool> optionEnabled,
             bool showEndButton,
             string endButtonText,
             Action<int> onPick,
@@ -55,7 +56,8 @@ namespace GourmetProject.Game.UI.Meta
 
             for (int i = 0; i < count; i++)
             {
-                CreateOption(i, options[i], onPick);
+                bool interactable = optionEnabled == null || i >= optionEnabled.Count || optionEnabled[i];
+                CreateOption(i, options[i], interactable, onPick);
             }
 
             if (_endButton != null)
@@ -86,7 +88,7 @@ namespace GourmetProject.Game.UI.Meta
             gameObject.SetActive(false);
         }
 
-        private void CreateOption(int index, string label, Action<int> onPick)
+        private void CreateOption(int index, string label, bool interactable, Action<int> onPick)
         {
             if (_optionsRoot == null || _optionButtonTemplate == null)
             {
@@ -103,16 +105,20 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             button.onClick.RemoveAllListeners();
-            button.onClick.AddListener(() =>
+            button.interactable = interactable;
+            if (interactable)
             {
-                if (_resolved)
+                button.onClick.AddListener(() =>
                 {
-                    return;
-                }
+                    if (_resolved)
+                    {
+                        return;
+                    }
 
-                _resolved = true;
-                onPick?.Invoke(index);
-            });
+                    _resolved = true;
+                    onPick?.Invoke(index);
+                });
+            }
             _spawnedOptions.Add(button);
         }
 

@@ -1,1 +1,92 @@
-[]
+[
+  {
+    "id": "ev_midnight_tasting",
+    "name": "深夜试吃摊",
+    "desc": "行动轴进入夜间事件节点时，一个试菜摊主拿出刚调好的风味样品，邀请你把它放进本周菜谱。",
+    "eventType": 0,
+    "preconditions": "",
+    "weight": 1,
+    "repeatable": false,
+    "bgSprite": ""
+  },
+  {
+    "id": "ev_ancestral_recipe_page",
+    "name": "祖传菜谱残页",
+    "desc": "你得到一页油渍斑驳的菜谱残页，上面记录的不是固定菜品，而是一组菜品线索。",
+    "eventType": 2,
+    "preconditions": "",
+    "weight": 1,
+    "repeatable": false,
+    "bgSprite": ""
+  },
+  {
+    "id": "ev_table_carpenter",
+    "name": "拼桌木匠",
+    "desc": "一个木匠正在修补餐桌碎片，愿意把边角料拼进你的餐桌。",
+    "eventType": 2,
+    "preconditions": "",
+    "weight": 1,
+    "repeatable": false,
+    "bgSprite": ""
+  },
+  {
+    "id": "ev_kitchen_god_statue",
+    "name": "食神像",
+    "desc": "旧街尽头有一座食神像，贡品被摆在不同材质的餐桌碎片上。",
+    "eventType": 0,
+    "preconditions": "",
+    "weight": 1,
+    "repeatable": false,
+    "bgSprite": ""
+  },
+  {
+    "id": "ev_crossroad_sign",
+    "name": "岔路招牌",
+    "desc": "行动轴前方出现会旋转的招牌，可以把本周剩余节奏导向不同收益类型。",
+    "eventType": 0,
+    "preconditions": "",
+    "weight": 1,
+    "repeatable": false,
+    "bgSprite": ""
+  },
+  {
+    "id": "ev_delivery_order",
+    "name": "限时外卖单",
+    "desc": "外卖箱上的计时器开始倒数，下一场美食挑战具有更高的目标分。",
+    "eventType": 0,
+    "preconditions": "",
+    "weight": 1,
+    "repeatable": false,
+    "bgSprite": ""
+  },
+  {
+    "id": "ev_black_market_advance",
+    "name": "黑市预支券",
+    "desc": "黑市商人递来预支券，允许你提前拿走未来几次奖励的一部分。",
+    "eventType": 0,
+    "preconditions": "",
+    "weight": 1,
+    "repeatable": false,
+    "bgSprite": ""
+  },
+  {
+    "id": "ev_wishing_casserole_i",
+    "name": "许愿砂锅I",
+    "desc": "砂锅中有着粘稠的白色汤汁，旁边写着“投入珍贵之物可以获得奖励”",
+    "eventType": 0,
+    "preconditions": "",
+    "weight": 1,
+    "repeatable": true,
+    "bgSprite": ""
+  },
+  {
+    "id": "ev_wishing_casserole_ii",
+    "name": "许愿砂锅II",
+    "desc": "砂锅中有着粘稠的黑色汤汁，旁边写着“投入珍贵之物可以获得奖励”",
+    "eventType": 0,
+    "preconditions": "",
+    "weight": 0,
+    "repeatable": false,
+    "bgSprite": ""
+  }
+]

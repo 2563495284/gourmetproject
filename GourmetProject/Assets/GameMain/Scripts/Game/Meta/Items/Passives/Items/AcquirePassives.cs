@@ -3,14 +3,14 @@ using Log = GourmetProject.Core.Diagnostics.Log;
 
 namespace GourmetProject.Game.Meta.Passives
 {
-    /// <summary>获得时随机发放若干被动道具。</summary>
+    /// <summary>获得时随机发放若干被动道具（走奖励配置 + RewardForm）。</summary>
     [Preserve]
     [PassiveItemModel("item_grant_two_passive")]
     public sealed class GrantRandomPassiveModel : PassiveItemModel
     {
         public override void OnAcquired()
         {
-            PassiveOnAcquireEffects.GrantRandomPassives(Run, (int)Value, ItemId);
+            PassiveOnAcquireEffects.GrantConfigReward(Run, Definition);
             MarkIconUsed();
         }
     }
@@ -71,7 +71,7 @@ namespace GourmetProject.Game.Meta.Passives
     {
         public override void OnAcquired()
         {
-            PassiveOnAcquireEffects.OpenItemChoice(Run, Definition, cfg.ItemKind.Passive, System.Math.Max(1, (int)Value));
+            PassiveOnAcquireEffects.GrantConfigReward(Run, Definition);
             MarkIconUsed();
         }
     }
@@ -82,7 +82,7 @@ namespace GourmetProject.Game.Meta.Passives
     {
         public override void OnAcquired()
         {
-            PassiveOnAcquireEffects.GrantRandomActivesViaRewardForm(Run, Definition, System.Math.Max(1, (int)Value));
+            PassiveOnAcquireEffects.GrantConfigReward(Run, Definition);
             MarkIconUsed();
         }
     }
@@ -93,7 +93,7 @@ namespace GourmetProject.Game.Meta.Passives
     {
         public override void OnAcquired()
         {
-            PassiveOnAcquireEffects.OpenItemChoice(Run, Definition, cfg.ItemKind.Active, System.Math.Max(1, (int)Value));
+            PassiveOnAcquireEffects.GrantConfigReward(Run, Definition);
             MarkIconUsed();
         }
     }
@@ -104,7 +104,7 @@ namespace GourmetProject.Game.Meta.Passives
     {
         public override void OnAcquired()
         {
-            PassiveOnAcquireEffects.OpenDishChoice(Run, Definition, System.Math.Max(1, (int)Value));
+            PassiveOnAcquireEffects.GrantConfigReward(Run, Definition);
             MarkIconUsed();
         }
     }
@@ -115,7 +115,7 @@ namespace GourmetProject.Game.Meta.Passives
     {
         public override void OnAcquired()
         {
-            PassiveOnAcquireEffects.OpenFragmentChoice(Run, Definition, System.Math.Max(1, (int)Value));
+            PassiveOnAcquireEffects.GrantConfigReward(Run, Definition);
             MarkIconUsed();
         }
     }
@@ -159,7 +159,7 @@ namespace GourmetProject.Game.Meta.Passives
     {
         public override void OnAcquired()
         {
-            PassiveOnAcquireEffects.OpenDishChoice(Run, Definition, System.Math.Max(1, (int)Value));
+            PassiveOnAcquireEffects.GrantConfigReward(Run, Definition);
             MarkIconUsed();
         }
     }
