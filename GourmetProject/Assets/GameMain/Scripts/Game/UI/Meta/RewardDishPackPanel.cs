@@ -159,7 +159,6 @@ namespace GourmetProject.Game.UI.Meta
             var books = new List<RecipeEditBookView>(_run.RecipeBookCount);
             for (int i = 0; i < _run.RecipeBookCount; i++)
             {
-                IReadOnlyList<string> dishes = _run.GetRecipeBookDishes(i);
                 RecipeEditBookView book = Instantiate(_editBookPrefab, _editBooksContainer);
                 book.gameObject.name = $"RewardRecipeBook_{i + 1}";
                 book.Bind(i, OnDishDroppedToBook, OnChoiceDroppedToBook);
@@ -172,14 +171,18 @@ namespace GourmetProject.Game.UI.Meta
                     continue;
                 }
 
-                for (int k = 0; k < dishes.Count; k++)
+                IReadOnlyList<RecipeBookSlot> entries = _run.GetRecipeBookEntries(i);
+                for (int k = 0; k < entries.Count; k++)
                 {
-                    string dishId = dishes[k];
+                    string dishId = entries[k].DishId;
+                    DishDef def = _run.Database.GetDish(dishId);
                     RecipeEditDishView dish = Instantiate(_editDishPrefab, dishContainer);
                     dish.gameObject.name = $"RewardRecipeDish_{i + 1}_{k + 1}";
-                    dish.Bind(DishName(GameApp.Config.Tables, dishId), DishShapeText(dishId), i, k);
+                    dish.Bind(DishName(GameApp.Config.Tables, dishId), DishShapeText(dishId), i, k, true, null, def);
                     _spawnedBooks.Add(dish.gameObject);
                 }
+
+                book.ApplyImmediateLayout();
             }
 
             FitBooksToContainer(books);
@@ -198,15 +201,16 @@ namespace GourmetProject.Game.UI.Meta
             _spawnedBooks.Clear();
         }
 
-        private void OnDishDroppedToBook(RecipeEditDishView dish, int targetBookIndex)
+        private void OnDishDroppedToBook(RecipeEditDishView dish, int targetBookIndex, int targetDishIndex)
         {
             if (dish == null)
             {
                 return;
             }
 
-            if (ShopService.MoveDish(_run, dish.BookIndex, dish.DishIndex, targetBookIndex))
+            if (ShopService.MoveDish(_run, dish.BookIndex, dish.DishIndex, targetBookIndex, targetDishIndex))
             {
+                dish.MarkDropHandled();
                 QueueRebuildBooks();
             }
         }

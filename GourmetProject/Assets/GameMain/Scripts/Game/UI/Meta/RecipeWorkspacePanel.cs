@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
+using DG.Tweening;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Common;
+using GourmetProject.Game.UI.Tooltips;
 using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Runtime;
@@ -21,6 +23,7 @@ namespace GourmetProject.Game.UI.Meta
     {
         private const float DesiredBookGap = 24f;
         private const float MinBookScale = 0.1f;
+        private const float DishFlyDuration = 0.28f;
         private static readonly Color CompareOverlayColor = new Color(0f, 0f, 0f, 0.58f);
         private static readonly Color ComparePanelColor = new Color(0.96f, 0.91f, 0.82f, 1f);
         private static readonly Color CompareCardColor = new Color(1f, 0.97f, 0.9f, 1f);
@@ -38,10 +41,13 @@ namespace GourmetProject.Game.UI.Meta
 
         private readonly List<GameObject> _spawned = new();
         private readonly List<RecipeEditDishView> _spawnedDishes = new();
+        private readonly List<RecipeEditBookView> _spawnedBooks = new();
         private GameRun _run;
         private CancellationTokenSource _pendingRebuildCts;
         private Action _onExit;
         private Action _onChanged;
+        private Func<FoodTipsView> _getFoodTips;
+        private RecipeEditDishView _hoveredTipDish;
         private GameObject _compareOverlay;
         private RecipeWorkspacePanelStateMachine _stateMachine;
         private bool _wired;
@@ -55,6 +61,7 @@ namespace GourmetProject.Game.UI.Meta
         {
             _stateMachine?.Clear();
             ClearCompareOverlay();
+            HideRecipeDishTips();
             ClearSpawned();
             CancelPendingRebuild();
         }
@@ -63,12 +70,13 @@ namespace GourmetProject.Game.UI.Meta
         /// <param name="run">当前肉鸽运行。</param>
         /// <param name="onExit">点「离开编辑」按钮时回调（BattleForm 返回商店态）。</param>
         /// <param name="onChanged">编辑（移动 / 删除）后回调，用于刷新常驻壳金币与底部菜谱条。</param>
-        public void Open(GameRun run, Action onExit, Action onChanged)
+        public void Open(GameRun run, Action onExit, Action onChanged, Func<FoodTipsView> getFoodTips = null)
         {
             EnsureWired();
             _run = run;
             _onExit = onExit;
             _onChanged = onChanged;
+            _getFoodTips = getFoodTips;
             _stateMachine.Switch(new RecipeEditState());
         }
 
@@ -78,11 +86,13 @@ namespace GourmetProject.Game.UI.Meta
             ItemDefinition item,
             Action onCancel,
             Action<ActiveTarget> onTargetConfirmed,
-            Action onChanged)
+            Action onChanged,
+            Func<FoodTipsView> getFoodTips = null)
         {
             EnsureWired();
             _run = run;
             _onChanged = onChanged;
+            _getFoodTips = getFoodTips;
             _stateMachine.Switch(new ActiveRecipeDishSelectState(item, onCancel, onTargetConfirmed));
         }
 
@@ -91,11 +101,13 @@ namespace GourmetProject.Game.UI.Meta
             string title,
             Action onCancel,
             Action<ActiveTarget> onTargetConfirmed,
-            Action onChanged)
+            Action onChanged,
+            Func<FoodTipsView> getFoodTips = null)
         {
             EnsureWired();
             _run = run;
             _onChanged = onChanged;
+            _getFoodTips = getFoodTips;
             _stateMachine.Switch(new EventRecipeDishDeleteState(title, onCancel, onTargetConfirmed));
         }
 
@@ -181,11 +193,11 @@ namespace GourmetProject.Game.UI.Meta
             var books = new List<RecipeEditBookView>(_run.RecipeBookCount);
             for (int i = 0; i < _run.RecipeBookCount; i++)
             {
-                IReadOnlyList<string> dishes = _run.GetRecipeBookDishes(i);
                 RecipeEditBookView book = Instantiate(_editBookPrefab, _editBooksContainer);
                 book.gameObject.name = $"RecipeEditBook_{i + 1}";
                 book.Bind(i, state.CanDropDishToBook ? OnDishDroppedToBook : null);
                 _spawned.Add(book.gameObject);
+                _spawnedBooks.Add(book);
                 books.Add(book);
 
                 RectTransform dishContainer = book.DishContainer;
@@ -194,9 +206,12 @@ namespace GourmetProject.Game.UI.Meta
                     continue;
                 }
 
-                for (int k = 0; k < dishes.Count; k++)
+                IReadOnlyList<RecipeBookSlot> entries = _run.GetRecipeBookEntries(i);
+                for (int k = 0; k < entries.Count; k++)
                 {
-                    string dishId = dishes[k];
+                    RecipeBookSlot slot = entries[k];
+                    string dishId = slot.DishId;
+                    DishDef def = _run.Database.GetDish(dishId);
                     RecipeEditDishView dish = Instantiate(_editDishPrefab, dishContainer);
                     dish.gameObject.name = $"RecipeDish_{i + 1}_{k + 1}";
                     dish.Bind(
@@ -205,10 +220,17 @@ namespace GourmetProject.Game.UI.Meta
                         i,
                         k,
                         state.EnableDishDrag,
-                        state.CanClickDish ? OnRecipeDishClicked : null);
+                        state.CanClickDish ? OnRecipeDishClicked : null,
+                        def,
+                        OnRecipeDishBeginDrag,
+                        OnRecipeDishDragCancelled,
+                        ShowRecipeDishTips,
+                        HideRecipeDishTips);
                     _spawned.Add(dish.gameObject);
                     _spawnedDishes.Add(dish);
                 }
+
+                book.ApplyImmediateLayout();
             }
 
             FitBooksToContainer(books);
@@ -276,16 +298,28 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
-        private void OnDishDroppedToBook(RecipeEditDishView dish, int targetBookIndex)
+        private void OnDishDroppedToBook(RecipeEditDishView dish, int targetBookIndex, int targetDishIndex)
         {
             if (dish == null || _stateMachine?.Current == null)
             {
                 return;
             }
 
-            if (_stateMachine.Current.OnDishDroppedToBook(this, dish, targetBookIndex))
+            RecipeEditBookView targetBook = FindBook(targetBookIndex);
+            targetDishIndex = Mathf.Max(0, targetDishIndex);
+            targetBook?.AnimateInsertionGap(targetDishIndex, dish);
+            if (_stateMachine.Current.OnDishDroppedToBook(this, dish, targetBookIndex, targetDishIndex))
             {
-                QueueRebuild();
+                dish.MarkDropHandled();
+                HideRecipeDishTips();
+                if (targetBook == null)
+                {
+                    QueueRebuild();
+                    return;
+                }
+
+                targetBook.ScrollToIndex(targetDishIndex, DishFlyDuration);
+                PlayDishFlyToSlot(dish, targetBook, targetDishIndex, RebuildBooksForCurrentState);
             }
         }
 
@@ -298,13 +332,135 @@ namespace GourmetProject.Game.UI.Meta
 
             if (_stateMachine.Current.OnDishDroppedToTrash(this, dish))
             {
-                QueueRebuild();
+                dish.MarkDropHandled();
+                HideRecipeDishTips();
+                RectTransform rect = (RectTransform)dish.transform;
+                DOTween.Kill(rect);
+                DOTween.To(() => rect.localScale, value => rect.localScale = value, Vector3.zero, 0.16f)
+                    .SetEase(Ease.InCubic)
+                    .SetUpdate(true)
+                    .SetTarget(rect)
+                    .SetLink(dish.gameObject)
+                    .OnComplete(RebuildBooksForCurrentState);
             }
         }
 
         private void OnRecipeDishClicked(RecipeEditDishView dish)
         {
             _stateMachine?.Current?.OnDishClicked(this, dish);
+        }
+
+        private void OnRecipeDishBeginDrag(RecipeEditDishView dish)
+        {
+            HideRecipeDishTips();
+            FindBook(dish.BookIndex)?.AnimateCompaction(dish);
+        }
+
+        private bool OnRecipeDishDragCancelled(RecipeEditDishView dish)
+        {
+            if (_run == null || dish == null)
+            {
+                return false;
+            }
+
+            RecipeEditBookView book = FindBook(dish.BookIndex);
+            if (book == null)
+            {
+                return false;
+            }
+
+            int targetIndex = book.CurrentDishCount(dish);
+            if (!ShopService.MoveDish(_run, dish.BookIndex, dish.DishIndex, dish.BookIndex, targetIndex))
+            {
+                return false;
+            }
+
+            dish.MarkDropHandled();
+            book.ScrollToIndex(targetIndex, DishFlyDuration);
+            PlayDishFlyToSlot(dish, book, targetIndex, RebuildBooksForCurrentState);
+            return true;
+        }
+
+        private RecipeEditBookView FindBook(int bookIndex)
+        {
+            return bookIndex >= 0 && bookIndex < _spawnedBooks.Count ? _spawnedBooks[bookIndex] : null;
+        }
+
+        private void PlayDishFlyToSlot(RecipeEditDishView dish, RecipeEditBookView targetBook, int targetDishIndex, Action onComplete)
+        {
+            if (dish == null || targetBook == null)
+            {
+                onComplete?.Invoke();
+                return;
+            }
+
+            RectTransform rect = (RectTransform)dish.transform;
+            dish.PrepareAsFloating();
+            Vector3 start = rect.position;
+            Vector3 startScale = rect.localScale;
+            DOTween.Kill(rect);
+            DOTween.To(
+                    () => 0f,
+                    t =>
+                    {
+                        Vector3 target = targetBook.SlotWorldCenter(targetDishIndex);
+                        rect.position = Vector3.LerpUnclamped(start, target, t);
+                        float scale = Mathf.Lerp(startScale.x, 1f, t);
+                        rect.localScale = new Vector3(scale, scale, 1f);
+                    },
+                    1f,
+                    DishFlyDuration)
+                .SetEase(Ease.OutCubic)
+                .SetUpdate(true)
+                .SetTarget(rect)
+                .SetLink(dish.gameObject)
+                .OnComplete(() =>
+                {
+                    dish.SetInteractableAfterAnimation(false);
+                    onComplete?.Invoke();
+                });
+        }
+
+        private void ShowRecipeDishTips(RecipeEditDishView dish)
+        {
+            if (dish == null || _run == null)
+            {
+                return;
+            }
+
+            FoodTipsView tips = _getFoodTips?.Invoke();
+            if (tips == null)
+            {
+                return;
+            }
+
+            RecipeBookSlot slot = RecipeSlot(new ActiveTarget(string.Empty, dish.BookIndex, dish.DishIndex, cfg.ItemTargetKind.RecipeDish));
+            DishDef def = slot == null ? null : _run.Database.GetDish(slot.DishId);
+            if (slot == null || def == null)
+            {
+                return;
+            }
+
+            _hoveredTipDish = dish;
+            tips.Bind(BuildRecipeDishTipsData(def, slot));
+            tips.Show();
+            tips.transform.SetAsLastSibling();
+            tips.PlaceAroundRectTransform((RectTransform)dish.transform, GetComponentInParent<Canvas>());
+        }
+
+        private void HideRecipeDishTips(RecipeEditDishView dish = null)
+        {
+            if (dish != null && _hoveredTipDish != null && _hoveredTipDish != dish)
+            {
+                return;
+            }
+
+            _hoveredTipDish = null;
+            FoodTipsView tips = _getFoodTips?.Invoke();
+            if (tips != null)
+            {
+                tips.Hide();
+            }
         }
 
         private bool TryBuildRecipeTarget(RecipeEditDishView dish, out ActiveTarget target)
@@ -483,6 +639,87 @@ namespace GourmetProject.Game.UI.Meta
             return sb.ToString().TrimEnd();
         }
 
+        private FoodTipsData BuildRecipeDishTipsData(DishDef def, RecipeBookSlot slot)
+        {
+            List<string> skillIds = ComposeSkillIds(def, slot?.ExtraSkillIds);
+            List<string> flavorIds = ComposeFlavorIds(def, slot?.ExtraFlavorIds);
+            var skills = new List<FoodInfoEntry>();
+            foreach (string skillId in skillIds)
+            {
+                SkillDef skill = _run.Database.GetSkill(skillId);
+                if (skill != null)
+                {
+                    skills.Add(new FoodInfoEntry(skill.Name, skill.Desc));
+                }
+            }
+
+            var flavorNames = new List<string>();
+            var flavorDetails = new List<FoodInfoEntry>();
+            foreach (string flavorId in flavorIds)
+            {
+                FlavorDef flavor = _run.Database.GetFlavor(flavorId);
+                if (flavor == null)
+                {
+                    continue;
+                }
+
+                flavorNames.Add(flavor.Name);
+                flavorDetails.Add(new FoodInfoEntry(flavor.Name, flavor.Desc));
+            }
+
+            var summary = new FoodSummaryTipsData(def.Name, skills, flavorNames);
+            float multiplier = slot != null ? slot.ScoreMultiplier : 1f;
+            return new FoodTipsData(
+                summary,
+                new FoodScoreTipsData(def.Deliciousness, multiplier),
+                Array.Empty<FoodMaterialTipsEntry>(),
+                flavorDetails,
+                Array.Empty<FoodInfoEntry>(),
+                BuildRecipeSpecialTags(skillIds));
+        }
+
+        private IReadOnlyList<FoodInfoEntry> BuildRecipeSpecialTags(IReadOnlyList<string> skillIds)
+        {
+            if (skillIds == null || _run?.Database == null)
+            {
+                return Array.Empty<FoodInfoEntry>();
+            }
+
+            var termIds = new List<string>();
+            foreach (string skillId in skillIds)
+            {
+                SkillDef skill = _run.Database.GetSkill(skillId);
+                AddUniqueRange(termIds, skill?.TermIds);
+            }
+
+            var tags = new List<FoodInfoEntry>(termIds.Count);
+            foreach (string termId in termIds)
+            {
+                cfg.Term term = GameApp.Config?.Tables?.TbTerm?.GetOrDefault(termId);
+                tags.Add(term != null
+                    ? new FoodInfoEntry(term.Name, term.Desc)
+                    : new FoodInfoEntry(termId, string.Empty));
+            }
+
+            return tags;
+        }
+
+        private static void AddUniqueRange(List<string> list, IReadOnlyList<string> values)
+        {
+            if (list == null || values == null)
+            {
+                return;
+            }
+
+            foreach (string value in values)
+            {
+                if (!string.IsNullOrEmpty(value) && !list.Contains(value))
+                {
+                    list.Add(value);
+                }
+            }
+        }
+
         private static List<string> ComposeSkillIds(DishDef def, IReadOnlyList<string> extraSkillIds)
         {
             var ids = new List<string>();
@@ -615,6 +852,7 @@ namespace GourmetProject.Game.UI.Meta
 
             _spawned.Clear();
             _spawnedDishes.Clear();
+            _spawnedBooks.Clear();
         }
 
         private void ClearCompareOverlay()

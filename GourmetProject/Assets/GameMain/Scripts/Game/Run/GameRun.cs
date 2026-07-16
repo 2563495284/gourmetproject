@@ -1989,6 +1989,11 @@ namespace GourmetProject.Game.Run
 
         public bool MoveBonusDish(int fromBookIndex, int dishIndex, int toBookIndex)
         {
+            return MoveBonusDish(fromBookIndex, dishIndex, toBookIndex, int.MaxValue);
+        }
+
+        public bool MoveBonusDish(int fromBookIndex, int dishIndex, int toBookIndex, int toDishIndex)
+        {
             if (!IsRecipeBookIndexValid(fromBookIndex) || !IsRecipeBookIndexValid(toBookIndex))
             {
                 return false;
@@ -2001,17 +2006,32 @@ namespace GourmetProject.Game.Run
                 return false;
             }
 
-            if (fromBookIndex == toBookIndex)
-            {
-                return true;
-            }
-
             // 整个条目搬走，玩家附加风味随之一起走。
             RecipeBookSlot slot = from[dishIndex];
             from.RemoveAt(dishIndex);
-            to.Add(slot);
+            if (fromBookIndex == toBookIndex)
+            {
+                toDishIndex = ClampIndex(toDishIndex, from.Count);
+                from.Insert(toDishIndex, slot);
+            }
+            else
+            {
+                toDishIndex = ClampIndex(toDishIndex, to.Count);
+                to.Insert(toDishIndex, slot);
+            }
+
             RebuildBonusDishCache();
             return true;
+        }
+
+        private static int ClampIndex(int index, int maxInclusive)
+        {
+            if (index < 0)
+            {
+                return 0;
+            }
+
+            return index > maxInclusive ? maxInclusive : index;
         }
 
         public bool RemoveBonusDishAt(int bookIndex, int dishIndex)

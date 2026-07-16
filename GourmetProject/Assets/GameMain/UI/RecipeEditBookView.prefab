@@ -90,6 +90,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Meta.RecipeEditBookView
   _dishContainer: {fileID: 5863749107548733066}
+  _cellSize: {x: 140, y: 140}
+  _spacing: {x: 20, y: 20}
+  _columnCount: 2
+  _padding:
+    m_Left: 0
+    m_Right: 0
+    m_Top: 0
+    m_Bottom: 0
+  _scrollRect: {fileID: 0}
 --- !u!1 &5572654048109249570
 GameObject:
   m_ObjectHideFlags: 0
@@ -183,10 +192,10 @@ MonoBehaviour:
     m_Right: 0
     m_Top: 0
     m_Bottom: 0
-  m_ChildAlignment: 0
+  m_ChildAlignment: 4
   m_StartCorner: 0
   m_StartAxis: 0
-  m_CellSize: {x: 88, y: 56}
-  m_Spacing: {x: 8, y: 8}
+  m_CellSize: {x: 140, y: 140}
+  m_Spacing: {x: 30, y: 20}
   m_Constraint: 1
   m_ConstraintCount: 2

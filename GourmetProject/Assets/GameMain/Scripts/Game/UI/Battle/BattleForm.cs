@@ -537,7 +537,8 @@ namespace GourmetProject.Game.UI.Battle
                         _activeItemRecipeTargetItem,
                         CancelActiveItemRecipeTarget,
                         ConfirmActiveItemRecipeTarget,
-                        RefreshShopPersistent);
+                        RefreshShopPersistent,
+                        () => _tips != null ? _tips.Food : null);
                     return;
                 }
 
@@ -549,11 +550,12 @@ namespace GourmetProject.Game.UI.Battle
                         _eventRecipeDeleteTitle,
                         CancelEventRecipeDelete,
                         ConfirmEventRecipeDelete,
-                        _eventRecipeDeleteChanged ?? RefreshShopPersistent);
+                        _eventRecipeDeleteChanged ?? RefreshShopPersistent,
+                        () => _tips != null ? _tips.Food : null);
                     return;
                 }
 
-                _recipeWorkspacePanel.Open(_run, OpenShopFromEdit, RefreshShopPersistent);
+                _recipeWorkspacePanel.Open(_run, OpenShopFromEdit, RefreshShopPersistent, () => _tips != null ? _tips.Food : null);
             }
         }
 

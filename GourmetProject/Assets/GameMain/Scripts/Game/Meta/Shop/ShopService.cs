@@ -331,6 +331,11 @@ namespace GourmetProject.Game.Meta
             return run != null && run.MoveBonusDish(fromBookIndex, dishIndex, toBookIndex);
         }
 
+        public static bool MoveDish(GameRun run, int fromBookIndex, int dishIndex, int toBookIndex, int toDishIndex)
+        {
+            return run != null && run.MoveBonusDish(fromBookIndex, dishIndex, toBookIndex, toDishIndex);
+        }
+
         private static List<cfg.DishVariant> RollDishVariants(cfg.Tables tables, GameRun run, int hidden, IRandomStream rng, int count)
         {
             var candidates = new List<cfg.DishVariant>();

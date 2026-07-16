@@ -72,7 +72,7 @@ namespace GourmetProject.Game.UI.Meta
             {
             }
 
-            public virtual bool OnDishDroppedToBook(RecipeWorkspacePanel panel, RecipeEditDishView dish, int targetBookIndex)
+            public virtual bool OnDishDroppedToBook(RecipeWorkspacePanel panel, RecipeEditDishView dish, int targetBookIndex, int targetDishIndex)
             {
                 return false;
             }
@@ -107,9 +107,9 @@ namespace GourmetProject.Game.UI.Meta
                 panel._onExit?.Invoke();
             }
 
-            public override bool OnDishDroppedToBook(RecipeWorkspacePanel panel, RecipeEditDishView dish, int targetBookIndex)
+            public override bool OnDishDroppedToBook(RecipeWorkspacePanel panel, RecipeEditDishView dish, int targetBookIndex, int targetDishIndex)
             {
-                return panel._run != null && ShopService.MoveDish(panel._run, dish.BookIndex, dish.DishIndex, targetBookIndex);
+                return panel._run != null && ShopService.MoveDish(panel._run, dish.BookIndex, dish.DishIndex, targetBookIndex, targetDishIndex);
             }
 
             public override bool OnDishDroppedToTrash(RecipeWorkspacePanel panel, RecipeEditDishView dish)
