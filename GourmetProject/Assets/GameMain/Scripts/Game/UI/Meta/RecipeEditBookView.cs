@@ -186,9 +186,10 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             Vector2 anchored = SlotAnchoredPosition(index);
+            Rect containerRect = _dishContainer.rect;
             Vector2 local = new Vector2(
-                anchored.x + _cellSize.x * 0.5f,
-                anchored.y - _cellSize.y * 0.5f);
+                -containerRect.width * _dishContainer.pivot.x + anchored.x + _cellSize.x * 0.5f,
+                containerRect.height * (1f - _dishContainer.pivot.y) + anchored.y - _cellSize.y * 0.5f);
             return _dishContainer.TransformPoint(local);
         }
 

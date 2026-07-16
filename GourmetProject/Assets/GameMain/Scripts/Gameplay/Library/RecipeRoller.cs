@@ -10,7 +10,8 @@ namespace GourmetProject.Gameplay.Library
     /// 初始菜谱生成（遵循策划文档）：
     /// 1) 固定菜品总会进入菜谱；
     /// 2) 其余从随机池按权重「放回」随机，受每菜最多次数限制；
-    /// 3) 每随机一道，累加该菜谱池条目的初始分，达到要求初始分即停止。
+    /// 3) 每轮仅从未超剩余初始分的池条目中抽选（如要求 500 分则先筛 ≤500，抽到 300 后剩 200 则再筛 ≤200）；
+    /// 4) 每随机一道累加初始分，达到要求初始分即停止。
     /// 结果为菜谱牌组的菜品 id 列表（固定在前，随机在后，顺序稳定可复现）。
     /// </summary>
     public static class RecipeRoller
@@ -46,10 +47,11 @@ namespace GourmetProject.Gameplay.Library
 
             while (rolledScore < recipe.RequiredInitScore && iterations++ < SafetyIterationCap)
             {
-                List<RecipeEntryDef> available = CollectAvailable(recipe, rolledCounts);
+                int remainingScore = recipe.RequiredInitScore - rolledScore;
+                List<RecipeEntryDef> available = CollectAvailable(recipe, rolledCounts, remainingScore);
                 if (available.Count == 0)
                 {
-                    break; // 池已耗尽（全部达到上限），无法继续随机。
+                    break; // 池已耗尽（达上限或剩余分下无可用条目），无法继续随机。
                 }
 
                 var weights = new List<float>(available.Count);
@@ -71,12 +73,20 @@ namespace GourmetProject.Gameplay.Library
             return result;
         }
 
-        private static List<RecipeEntryDef> CollectAvailable(RecipeDef recipe, IReadOnlyDictionary<string, int> rolledCounts)
+        private static List<RecipeEntryDef> CollectAvailable(
+            RecipeDef recipe,
+            IReadOnlyDictionary<string, int> rolledCounts,
+            int remainingScore)
         {
             var available = new List<RecipeEntryDef>();
             foreach (RecipeEntryDef entry in recipe.Pool)
             {
                 if (entry.Weight <= 0f)
+                {
+                    continue;
+                }
+
+                if (entry.InitScore > remainingScore)
                 {
                     continue;
                 }

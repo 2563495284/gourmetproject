@@ -398,6 +398,10 @@ namespace GourmetProject.Game.UI.Meta
             dish.PrepareAsFloating();
             Vector3 start = rect.position;
             Vector3 startScale = rect.localScale;
+            RectTransform targetScaleSource = targetBook.DishContainer != null
+                ? targetBook.DishContainer
+                : (RectTransform)targetBook.transform;
+            Vector3 targetScale = FloatingScaleForTarget(rect.parent as RectTransform, targetScaleSource);
             DOTween.Kill(rect);
             DOTween.To(
                     () => 0f,
@@ -405,8 +409,7 @@ namespace GourmetProject.Game.UI.Meta
                     {
                         Vector3 target = targetBook.SlotWorldCenter(targetDishIndex);
                         rect.position = Vector3.LerpUnclamped(start, target, t);
-                        float scale = Mathf.Lerp(startScale.x, 1f, t);
-                        rect.localScale = new Vector3(scale, scale, 1f);
+                        rect.localScale = Vector3.LerpUnclamped(startScale, targetScale, t);
                     },
                     1f,
                     DishFlyDuration)
@@ -419,6 +422,26 @@ namespace GourmetProject.Game.UI.Meta
                     dish.SetInteractableAfterAnimation(false);
                     onComplete?.Invoke();
                 });
+        }
+
+        private static Vector3 FloatingScaleForTarget(RectTransform floatingParent, RectTransform target)
+        {
+            if (target == null)
+            {
+                return Vector3.one;
+            }
+
+            Vector3 parentScale = floatingParent != null ? floatingParent.lossyScale : Vector3.one;
+            Vector3 targetScale = target.lossyScale;
+            return new Vector3(
+                SafeScaleDiv(targetScale.x, parentScale.x),
+                SafeScaleDiv(targetScale.y, parentScale.y),
+                SafeScaleDiv(targetScale.z, parentScale.z));
+        }
+
+        private static float SafeScaleDiv(float value, float divisor)
+        {
+            return Mathf.Abs(divisor) <= 0.0001f ? value : value / divisor;
         }
 
         private void ShowRecipeDishTips(RecipeEditDishView dish)

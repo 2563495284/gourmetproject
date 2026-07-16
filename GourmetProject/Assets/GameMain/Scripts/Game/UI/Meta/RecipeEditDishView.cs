@@ -14,7 +14,7 @@ namespace GourmetProject.Game.UI.Meta
     [RequireComponent(typeof(CanvasGroup))]
     public sealed class RecipeEditDishView : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
     {
-        private const float DragAlpha = 0.86f;
+        private static readonly Vector2 FloatingAnchor = new(0.5f, 0.5f);
 
         [SerializeField] private Button _button;
         [SerializeField] private DishShapePreview _shapePreview;
@@ -22,6 +22,10 @@ namespace GourmetProject.Game.UI.Meta
         private CanvasGroup _canvasGroup;
         private RectTransform _rect;
         private Transform _originalParent;
+        private Vector2 _originalAnchorMin;
+        private Vector2 _originalAnchorMax;
+        private Vector2 _originalPivot;
+        private Vector2 _originalSizeDelta;
         private Vector2 _originalAnchoredPosition;
         private int _originalSiblingIndex;
         private Canvas _dragCanvas;
@@ -117,14 +121,8 @@ namespace GourmetProject.Game.UI.Meta
 
         public void PrepareAsFloating()
         {
-            DOTween.Kill(_rect);
-            if (_canvasGroup != null)
-            {
-                _canvasGroup.blocksRaycasts = false;
-                _canvasGroup.alpha = 1f;
-            }
-
-            transform.SetAsLastSibling();
+            Vector3 center = _rect.TransformPoint(_rect.rect.center);
+            PrepareAsFloating(center);
         }
 
         public void SetInteractableAfterAnimation(bool blocksRaycasts)
@@ -146,14 +144,20 @@ namespace GourmetProject.Game.UI.Meta
             _dragging = true;
             _dropHandled = false;
             _originalParent = transform.parent;
+            _originalAnchorMin = _rect.anchorMin;
+            _originalAnchorMax = _rect.anchorMax;
+            _originalPivot = _rect.pivot;
+            _originalSizeDelta = _rect.sizeDelta;
             _originalAnchoredPosition = _rect.anchoredPosition;
             _originalSiblingIndex = transform.GetSiblingIndex();
             _dragCanvas = GetComponentInParent<Canvas>();
+            Vector3 center = _rect.TransformPoint(_rect.rect.center);
             HideHover();
             transform.SetParent(_dragCanvas != null ? _dragCanvas.transform : transform.root, true);
-            transform.SetAsLastSibling();
+            PrepareAsFloating(center);
             _canvasGroup.blocksRaycasts = false;
-            _canvasGroup.alpha = DragAlpha;
+            _canvasGroup.alpha = 1f;
+            MoveToPointer(eventData);
             _onBeginDrag?.Invoke(this);
         }
 
@@ -164,19 +168,7 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            RectTransform parentRect = _rect.parent as RectTransform;
-            if (parentRect != null
-                && RectTransformUtility.ScreenPointToWorldPointInRectangle(
-                    parentRect,
-                    eventData.position,
-                    eventData.pressEventCamera,
-                    out Vector3 worldPoint))
-            {
-                _rect.position = worldPoint;
-                return;
-            }
-
-            _rect.position = eventData.position;
+            MoveToPointer(eventData);
         }
 
         public void OnEndDrag(PointerEventData eventData)
@@ -204,6 +196,10 @@ namespace GourmetProject.Game.UI.Meta
             {
                 transform.SetParent(_originalParent, true);
                 transform.SetSiblingIndex(_originalSiblingIndex);
+                _rect.anchorMin = _originalAnchorMin;
+                _rect.anchorMax = _originalAnchorMax;
+                _rect.pivot = _originalPivot;
+                _rect.sizeDelta = _originalSizeDelta;
                 _rect.anchoredPosition = _originalAnchoredPosition;
             }
         }
@@ -241,6 +237,42 @@ namespace GourmetProject.Game.UI.Meta
 
             _hovered = false;
             _onHoverExit?.Invoke(this);
+        }
+
+        private void PrepareAsFloating(Vector3 worldCenter)
+        {
+            DOTween.Kill(_rect);
+            _rect.anchorMin = FloatingAnchor;
+            _rect.anchorMax = FloatingAnchor;
+            _rect.pivot = FloatingAnchor;
+            _rect.sizeDelta = _originalSizeDelta.sqrMagnitude > 0.0001f ? _originalSizeDelta : _rect.sizeDelta;
+            _rect.position = worldCenter;
+            transform.SetAsLastSibling();
+            if (_canvasGroup != null)
+            {
+                _canvasGroup.blocksRaycasts = false;
+                _canvasGroup.alpha = 1f;
+            }
+        }
+
+        private void MoveToPointer(PointerEventData eventData)
+        {
+            RectTransform parentRect = _rect.parent as RectTransform;
+            Camera camera = _dragCanvas != null && _dragCanvas.renderMode != RenderMode.ScreenSpaceOverlay
+                ? _dragCanvas.worldCamera
+                : eventData.pressEventCamera;
+            if (parentRect != null
+                && RectTransformUtility.ScreenPointToWorldPointInRectangle(
+                    parentRect,
+                    eventData.position,
+                    camera,
+                    out Vector3 worldPoint))
+            {
+                _rect.position = worldPoint;
+                return;
+            }
+
+            _rect.position = eventData.position;
         }
 
         private void EnsureButton()
