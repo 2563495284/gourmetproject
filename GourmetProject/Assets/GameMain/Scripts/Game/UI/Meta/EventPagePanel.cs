@@ -146,22 +146,22 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            Sprite sprite = null;
-            if (!string.IsNullOrWhiteSpace(spritePath))
-            {
-                sprite = Resources.Load<Sprite>(spritePath);
-            }
+            // Sprite sprite = null;
+            // if (!string.IsNullOrWhiteSpace(spritePath))
+            // {
+            //     sprite = Resources.Load<Sprite>(spritePath);
+            // }
 
-            if (sprite == null)
-            {
-                sprite = _defaultBackgroundSprite != null
-                    ? _defaultBackgroundSprite
-                    : Resources.Load<Sprite>("Sprites/UI/card_action_event");
-            }
+            // if (sprite == null)
+            // {
+            //     sprite = _defaultBackgroundSprite != null
+            //         ? _defaultBackgroundSprite
+            //         : Resources.Load<Sprite>("Sprites/UI/card_action_event");
+            // }
 
-            _backgroundImage.sprite = sprite;
-            _backgroundImage.enabled = sprite != null;
-            _backgroundImage.color = sprite != null ? Color.white : new Color(0.12f, 0.1f, 0.08f, 0.92f);
+            // _backgroundImage.sprite = sprite;
+            // _backgroundImage.enabled = sprite != null;
+            // _backgroundImage.color = sprite != null ? Color.white : new Color(0.12f, 0.1f, 0.08f, 0.92f);
         }
 
         private void EnsureRefs()

@@ -299,6 +299,11 @@ namespace GourmetProject.Game.Meta
         /// </summary>
         public static EventResolveResult ResolveOption(GameRun run, cfg.EventOption option, IRandomStream rng)
         {
+            return ResolveOption(run, option, rng, cfg.EffectType.None);
+        }
+
+        public static EventResolveResult ResolveOption(GameRun run, cfg.EventOption option, IRandomStream rng, cfg.EffectType skipEffectType)
+        {
             if (option == null)
             {
                 return EventResolveResult.Immediate(string.Empty);
@@ -310,6 +315,11 @@ namespace GourmetProject.Game.Meta
             for (int i = 0; i < count; i++)
             {
                 cfg.EffectType type = option.EffectTypes[i];
+                if (skipEffectType != cfg.EffectType.None && type == skipEffectType)
+                {
+                    continue;
+                }
+
                 float value = i < option.EffectValues.Count ? option.EffectValues[i] : 0f;
                 string param = i < option.EffectParams.Count ? option.EffectParams[i] : string.Empty;
                 EventResolveResult r = ResolveEffect(run, type, value, param, option.Text, rng);

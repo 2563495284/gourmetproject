@@ -25,19 +25,19 @@
     "eventId": "ev_midnight_tasting",
     "parentId": "",
     "text": "帮摊主整理菜单",
-    "resultText": "这需要打开菜谱选择目标，后续接入 UI 后再实际删除。",
-    "condition": "minGold:20",
+    "resultText": "选择一道菜品后，摊主会帮你把它从菜谱中删去。",
+    "condition": "minGold:20|hasRecipeDish",
     "effectTypes": [
       1,
-      26
+      28
     ],
     "effectValues": [
       -20,
-      0
+      1
     ],
     "effectParams": [
       "-",
-      "TODO: 打开菜谱选择并删除 1 道菜。"
+      "-"
     ],
     "repeatSelf": false
   },
@@ -193,18 +193,18 @@
     "eventId": "ev_kitchen_god_statue",
     "parentId": "",
     "text": "供奉一道菜",
-    "resultText": "供奉目标需要菜谱选择 UI，后续接入后再实际移除菜品。",
-    "condition": "",
+    "resultText": "选择一道菜品供奉给食神像。",
+    "condition": "hasRecipeDish",
     "effectTypes": [
-      26,
+      28,
       3
     ],
     "effectValues": [
-      0,
+      1,
       0
     ],
     "effectParams": [
-      "TODO: 打开菜谱选择并移除 1 道菜。",
+      "-",
       "passive_choice_1"
     ],
     "repeatSelf": false

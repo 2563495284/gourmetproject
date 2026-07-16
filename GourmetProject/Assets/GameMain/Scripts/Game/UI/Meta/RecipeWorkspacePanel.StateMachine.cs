@@ -154,6 +154,44 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
+        private sealed class EventRecipeDishDeleteState : RecipeWorkspacePanelState
+        {
+            private readonly string _title;
+            private readonly Action _onCancel;
+            private readonly Action<ActiveTarget> _onTargetConfirmed;
+
+            public EventRecipeDishDeleteState(string title, Action onCancel, Action<ActiveTarget> onTargetConfirmed)
+            {
+                _title = title;
+                _onCancel = onCancel;
+                _onTargetConfirmed = onTargetConfirmed;
+            }
+
+            public override string ExitButtonText => "返回事件";
+
+            public override bool CanClickDish => true;
+
+            public override void Enter(RecipeWorkspacePanel panel)
+            {
+                panel.RebuildBooksForCurrentState();
+            }
+
+            public override void OnExitClicked(RecipeWorkspacePanel panel)
+            {
+                _onCancel?.Invoke();
+            }
+
+            public override void OnDishClicked(RecipeWorkspacePanel panel, RecipeEditDishView dish)
+            {
+                if (!panel.TryBuildRecipeTarget(dish, out ActiveTarget target))
+                {
+                    return;
+                }
+
+                panel.ShowEventDeleteConfirm(_title, target, () => { }, _onTargetConfirmed);
+            }
+        }
+
         private sealed class ActiveRecipeDishCompareState : RecipeWorkspacePanelState
         {
             private readonly ActiveRecipeDishSelectState _selectState;

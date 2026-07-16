@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
+using GourmetProject.Game.UI.Common;
 using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Runtime;
@@ -83,6 +84,19 @@ namespace GourmetProject.Game.UI.Meta
             _run = run;
             _onChanged = onChanged;
             _stateMachine.Switch(new ActiveRecipeDishSelectState(item, onCancel, onTargetConfirmed));
+        }
+
+        public void OpenForEventRecipeDishDelete(
+            GameRun run,
+            string title,
+            Action onCancel,
+            Action<ActiveTarget> onTargetConfirmed,
+            Action onChanged)
+        {
+            EnsureWired();
+            _run = run;
+            _onChanged = onChanged;
+            _stateMachine.Switch(new EventRecipeDishDeleteState(title, onCancel, onTargetConfirmed));
         }
 
         /// <summary>供外部（如金币变化）请求刷新当前工作区状态。</summary>
@@ -383,6 +397,23 @@ namespace GourmetProject.Game.UI.Meta
                 {
                     onConfirm?.Invoke();
                 });
+        }
+
+        private void ShowEventDeleteConfirm(string title, ActiveTarget target, Action onCancel, Action<ActiveTarget> onConfirm)
+        {
+            RecipeBookSlot slot = RecipeSlot(target);
+            DishDef def = slot == null ? null : _run.Database.GetDish(slot.DishId);
+            string dishName = def != null ? def.Name : target.Id;
+            var data = new ConfirmDialogData
+            {
+                Title = string.IsNullOrWhiteSpace(title) ? "确认删除菜品" : title,
+                Message = $"确定要从菜谱中删除「{dishName}」吗？",
+                ConfirmText = "删除",
+                CancelText = "返回",
+                OnConfirm = () => onConfirm?.Invoke(target),
+                OnCancel = onCancel,
+            };
+            GameApp.UI.OpenUIForm(UIForms.ConfirmDialog, UIForms.GroupDialog, data);
         }
 
         private RecipeBookSlot RecipeSlot(ActiveTarget target)

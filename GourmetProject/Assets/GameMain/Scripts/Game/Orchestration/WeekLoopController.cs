@@ -33,6 +33,13 @@ namespace GourmetProject.Game.Orchestration
 
         void ShowNotice(string title, string message, Action onContinue);
 
+        void OpenEventRecipeDishDelete(
+            GameRun run,
+            string title,
+            Action onCancel,
+            Action<ActiveTarget> onTargetConfirmed,
+            Action onChanged);
+
         /// <summary>事件页：在常驻壳中部展示事件背景、正文、结果、后续选项与结束按钮。</summary>
         void ShowEventPage(
             string title,
@@ -521,7 +528,18 @@ namespace GourmetProject.Game.Orchestration
         /// <summary>结算所选选项：施加效果→跟进类(战斗/商店/结局)终止 / 有子选项则进入子页 / 否则即时终止。</summary>
         private void ChooseEventOption(cfg.GameEvent ev, cfg.EventOption option, IRandomStream rng, Action onDone)
         {
+            if (RequiresRecipeDishDelete(option))
+            {
+                BeginEventRecipeDishDelete(ev, option, rng, onDone);
+                return;
+            }
+
             EventResolveResult result = EventService.ResolveOption(_run, option, rng);
+            ContinueResolvedEventOption(ev, option, result, rng, onDone);
+        }
+
+        private void ContinueResolvedEventOption(cfg.GameEvent ev, cfg.EventOption option, EventResolveResult result, IRandomStream rng, Action onDone)
+        {
 
             if (result.FollowUpKind != EventFollowUpKind.None)
             {
@@ -568,6 +586,46 @@ namespace GourmetProject.Game.Orchestration
                 {
                     FinishEventAndContinue(ev, result, onDone);
                 });
+        }
+
+        private void BeginEventRecipeDishDelete(cfg.GameEvent ev, cfg.EventOption option, IRandomStream rng, Action onDone)
+        {
+            _view.OpenEventRecipeDishDelete(
+                _run,
+                option.Text,
+                onCancel: () => EnterEventPage(ev, string.Empty, EventService.GetRootOptions(_run, ev.Id), rng, onDone),
+                onTargetConfirmed: target =>
+                {
+                    if (_run == null || !_run.RemoveBonusDishAt(target.X, target.Y))
+                    {
+                        EnterEventPage(ev, "目标菜品已经不存在，请重新选择。", EventService.GetRootOptions(_run, ev.Id), rng, onDone);
+                        return;
+                    }
+
+                    EventResolveResult result = EventService.ResolveOption(_run, option, rng, cfg.EffectType.SelectRemoveRecipeDish);
+                    string deleteFeedback = "已从菜谱中删除 1 道菜。";
+                    EventResolveResult composed = EventResolveResult.Immediate(ComposeEventText(deleteFeedback, result.Feedback));
+                    ContinueResolvedEventOption(ev, option, composed, rng, onDone);
+                },
+                onChanged: null);
+        }
+
+        private static bool RequiresRecipeDishDelete(cfg.EventOption option)
+        {
+            if (option?.EffectTypes == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < option.EffectTypes.Count; i++)
+            {
+                if (option.EffectTypes[i] == cfg.EffectType.SelectRemoveRecipeDish)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void FinishEventAndContinue(cfg.GameEvent ev, EventResolveResult result, Action onDone)

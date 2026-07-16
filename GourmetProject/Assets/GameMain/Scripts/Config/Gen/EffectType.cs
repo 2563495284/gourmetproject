@@ -128,6 +128,10 @@ namespace cfg
         /// 随机删除菜谱菜品(value=数量,param=flavored时只删带风味菜)
         /// </summary>
         RemoveRandomRecipeDish = 27,
+        /// <summary>
+        /// 交互选择并删除菜谱中1道菜(事件专用)
+        /// </summary>
+        SelectRemoveRecipeDish = 28,
     }
 
 } 

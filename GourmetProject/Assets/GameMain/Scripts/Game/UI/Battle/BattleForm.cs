@@ -131,6 +131,10 @@ namespace GourmetProject.Game.UI.Battle
         private GameplayView _activeItemRecipeReturnView = GameplayView.None;
         private Action _activeItemRecipeTargetCancel;
         private Action<ActiveTarget> _activeItemRecipeTargetConfirmed;
+        private string _eventRecipeDeleteTitle;
+        private Action _eventRecipeDeleteCancel;
+        private Action<ActiveTarget> _eventRecipeDeleteConfirmed;
+        private Action _eventRecipeDeleteChanged;
         private View.FoodAdjustOverlay _foodAdjustOverlay;
         private DishPieceView _hoveredDishPiece;
         private DiningTableCellView _hoveredCell;
@@ -537,6 +541,18 @@ namespace GourmetProject.Game.UI.Battle
                     return;
                 }
 
+                if (_eventRecipeDeleteConfirmed != null)
+                {
+                    SetCenterTitle(string.IsNullOrWhiteSpace(_eventRecipeDeleteTitle) ? "选择要删除的菜品" : _eventRecipeDeleteTitle);
+                    _recipeWorkspacePanel.OpenForEventRecipeDishDelete(
+                        _run,
+                        _eventRecipeDeleteTitle,
+                        CancelEventRecipeDelete,
+                        ConfirmEventRecipeDelete,
+                        _eventRecipeDeleteChanged ?? RefreshShopPersistent);
+                    return;
+                }
+
                 _recipeWorkspacePanel.Open(_run, OpenShopFromEdit, RefreshShopPersistent);
             }
         }
@@ -608,6 +624,20 @@ namespace GourmetProject.Game.UI.Battle
             });
         }
 
+        public void OpenEventRecipeDishDelete(
+            GameRun run,
+            string title,
+            Action onCancel,
+            Action<ActiveTarget> onTargetConfirmed,
+            Action onChanged)
+        {
+            _eventRecipeDeleteTitle = title;
+            _eventRecipeDeleteCancel = onCancel;
+            _eventRecipeDeleteConfirmed = onTargetConfirmed;
+            _eventRecipeDeleteChanged = onChanged;
+            SwitchTo(GameplayView.RecipeEdit);
+        }
+
         private void SetCenterTitle(string text)
         {
             if (_centerTitleText != null)
@@ -631,6 +661,7 @@ namespace GourmetProject.Game.UI.Battle
         private void OpenRecipeEdit()
         {
             ClearActiveItemRecipeTargetRequest();
+            ClearEventRecipeDeleteRequest();
             SwitchTo(GameplayView.RecipeEdit);
         }
 
@@ -718,6 +749,28 @@ namespace GourmetProject.Game.UI.Battle
                     SwitchTo(GameplayView.Shop);
                     break;
             }
+        }
+
+        private void CancelEventRecipeDelete()
+        {
+            Action onCancel = _eventRecipeDeleteCancel;
+            ClearEventRecipeDeleteRequest();
+            onCancel?.Invoke();
+        }
+
+        private void ConfirmEventRecipeDelete(ActiveTarget target)
+        {
+            Action<ActiveTarget> onConfirmed = _eventRecipeDeleteConfirmed;
+            ClearEventRecipeDeleteRequest();
+            onConfirmed?.Invoke(target);
+        }
+
+        private void ClearEventRecipeDeleteRequest()
+        {
+            _eventRecipeDeleteTitle = null;
+            _eventRecipeDeleteCancel = null;
+            _eventRecipeDeleteConfirmed = null;
+            _eventRecipeDeleteChanged = null;
         }
 
         internal void OpenActiveItemTableCellTarget(Action onOpened)
