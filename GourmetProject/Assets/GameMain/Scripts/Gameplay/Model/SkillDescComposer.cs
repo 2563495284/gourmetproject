@@ -23,7 +23,7 @@ namespace GourmetProject.Gameplay.Model
     public static class SkillDescComposer
     {
         /// <summary>技能内各子技能描述之间的分隔符。</summary>
-        public const string Separator = "。";
+        public const string Separator = "。\n";
 
         private const string PlainFormat = "0.######";
         private const string SignedFormat = "+0.######;-0.######;0";

@@ -842,7 +842,7 @@ namespace GourmetProject.Game.UI.Battle
             SwitchTo(GameplayView.RewardDishPack, () =>
             {
                 SetCenterTitle("菜品包");
-                _rewardDishPackPanel.Open(_run, choices, _recipeView, onChoiceDropped, onSkip);
+                _rewardDishPackPanel.Open(_run, choices, _recipeView, onChoiceDropped, onSkip, () => _tips != null ? _tips.Food : null);
             });
             return true;
         }
@@ -878,7 +878,8 @@ namespace GourmetProject.Game.UI.Battle
                         RestoreAfterAcquireView(previous);
                         return true;
                     },
-                    () => RestoreAfterAcquireView(previous));
+                    () => RestoreAfterAcquireView(previous),
+                    () => _tips != null ? _tips.Food : null);
             });
             return true;
         }
@@ -1219,6 +1220,11 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             RefreshFoodActions();
+        }
+
+        internal void RefreshPersistentHud()
+        {
+            RefreshPersistent();
         }
 
         private void RefreshFoodActions()

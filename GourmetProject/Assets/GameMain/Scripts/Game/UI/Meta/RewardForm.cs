@@ -60,6 +60,8 @@ namespace GourmetProject.Game.UI.Meta
         [Min(0f)]
         [SerializeField] private float _rewardScrollbarFadeSeconds = 0.2f;
 
+        private const int NoExpandedChoicePackGroup = int.MinValue;
+
         private GameRun _run;
         private RewardOffer _offer;
         private readonly List<RewardChoiceRowView> _spawnedRows = new List<RewardChoiceRowView>();
@@ -74,6 +76,7 @@ namespace GourmetProject.Game.UI.Meta
         private bool _rewardScrollbarVisible;
         private bool _genericMode;
         private bool _confirmBattleRewardAfterGeneric;
+        private int _expandedChoicePackGroupIndex = NoExpandedChoicePackGroup;
 
         protected override void OnInit(object userData)
         {
@@ -101,6 +104,7 @@ namespace GourmetProject.Game.UI.Meta
             _genericRewardKey = string.Empty;
             _genericRewardTitle = string.Empty;
             _rewardKey = string.Empty;
+            _expandedChoicePackGroupIndex = NoExpandedChoicePackGroup;
 
             if (_genericMode)
             {
@@ -188,6 +192,7 @@ namespace GourmetProject.Game.UI.Meta
             _offer = offer;
             _genericRewardKey = key;
             _genericRewardTitle = string.IsNullOrWhiteSpace(title) ? "奖励" : title;
+            _expandedChoicePackGroupIndex = NoExpandedChoicePackGroup;
             return true;
         }
 
@@ -292,6 +297,7 @@ namespace GourmetProject.Game.UI.Meta
 
             SaveCurrentOffer();
             RunPersistence.Save(_run);
+            RefreshBattlePersistentHud();
 
             // 只剩金币这一个奖励，领完直接等效于点「继续」。
             if (TryAutoComplete(closeForm: true))
@@ -359,6 +365,7 @@ namespace GourmetProject.Game.UI.Meta
             MarkChoiceClaimed(groupIndex, index);
             SaveCurrentOffer();
             RunPersistence.Save(_run);
+            RefreshBattlePersistentHud();
 
             if (TryAutoComplete(closeForm: true))
             {
@@ -461,6 +468,15 @@ namespace GourmetProject.Game.UI.Meta
         private void MarkChoiceClaimed(int groupIndex, int index)
         {
             GroupFor(groupIndex).MarkClaimed(index);
+            if (IsChoiceResolved(groupIndex))
+            {
+                _expandedChoicePackGroupIndex = NoExpandedChoicePackGroup;
+            }
+        }
+
+        private static void RefreshBattlePersistentHud()
+        {
+            BattleForm.Active?.RefreshPersistentHud();
         }
 
         private RewardChoiceGroup GroupFor(int groupIndex)
@@ -624,6 +640,12 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
+            if (IsItemChoicePack(choices, groupIndex) && _expandedChoicePackGroupIndex != groupIndex)
+            {
+                AddItemChoicePackRow(groupName, choices, groupIndex);
+                return;
+            }
+
             for (int i = 0; i < choices.Count; i++)
             {
                 int index = i;
@@ -648,6 +670,78 @@ namespace GourmetProject.Game.UI.Meta
                     false,
                     () => ClaimChoice(groupIndex, index, choices));
             }
+        }
+
+        private void AddItemChoicePackRow(
+            string groupName,
+            IReadOnlyList<RewardChoice> choices,
+            int groupIndex)
+        {
+            RewardChoiceRowView row = CreateRewardRow();
+            if (row == null)
+            {
+                return;
+            }
+
+            RewardChoice firstChoice = FirstUnclaimedChoice(choices, groupIndex) ?? choices[0];
+            string itemName = ItemChoicePackName(choices);
+            row.Bind(
+                $"{groupName}：{itemName}选择包",
+                BuildItemChoicePackDescription(choices, groupIndex, itemName),
+                LoadChoiceIcon(firstChoice),
+                false,
+                true,
+                false,
+                () => OpenItemChoicePack(groupIndex, choices));
+        }
+
+        private void OpenItemChoicePack(int groupIndex, IReadOnlyList<RewardChoice> choices)
+        {
+            RewardChoiceGroup group = GroupFor(groupIndex);
+            if (group.RequiredChoiceCount >= group.Choices.Count)
+            {
+                ClaimAllRemainingChoices(groupIndex, choices);
+                return;
+            }
+
+            _expandedChoicePackGroupIndex = groupIndex;
+            RefreshOffer();
+        }
+
+        private void ClaimAllRemainingChoices(int groupIndex, IReadOnlyList<RewardChoice> choices)
+        {
+            if (_offer == null || choices == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < choices.Count && !IsChoiceResolved(groupIndex); i++)
+            {
+                if (IsChoiceClaimed(groupIndex, i))
+                {
+                    continue;
+                }
+
+                RewardChoice choice = choices[i];
+                if (choice == null)
+                {
+                    continue;
+                }
+
+                RewardGranter.ApplyChoice(_run, choice);
+                MarkChoiceClaimed(groupIndex, i);
+            }
+
+            SaveCurrentOffer();
+            RunPersistence.Save(_run);
+            RefreshBattlePersistentHud();
+
+            if (TryAutoComplete(closeForm: true))
+            {
+                return;
+            }
+
+            RefreshOffer();
         }
 
         private void AddFragmentPackRow(
@@ -782,6 +876,95 @@ namespace GourmetProject.Game.UI.Meta
         private static bool IsDishPack(IReadOnlyList<RewardChoice> choices)
         {
             return choices != null && choices.Count > 0 && choices[0]?.Kind == cfg.RewardKind.DishChoice;
+        }
+
+        private bool IsItemChoicePack(IReadOnlyList<RewardChoice> choices, int groupIndex)
+        {
+            if (choices == null || choices.Count == 0)
+            {
+                return false;
+            }
+
+            RewardChoiceGroup group = GroupFor(groupIndex);
+            if (group.RequiredChoiceCount <= 1)
+            {
+                return false;
+            }
+
+            if (choices[0] == null)
+            {
+                return false;
+            }
+
+            cfg.RewardKind kind = choices[0].Kind;
+            if (kind != cfg.RewardKind.ActiveItemGrant && kind != cfg.RewardKind.PassiveItemChoice)
+            {
+                return false;
+            }
+
+            for (int i = 1; i < choices.Count; i++)
+            {
+                if (choices[i]?.Kind != kind)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private string BuildItemChoicePackDescription(IReadOnlyList<RewardChoice> choices, int groupIndex, string itemName)
+        {
+            RewardChoiceGroup group = GroupFor(groupIndex);
+            int required = group.RequiredChoiceCount;
+            int claimed = group.ClaimedIndices.Count;
+            if (required >= choices.Count)
+            {
+                return $"点击后获得这 {choices.Count} 个{itemName}。";
+            }
+
+            return $"点击后从 {choices.Count} 个{itemName}中选择 {required} 个。（已选 {claimed}/{required}）";
+        }
+
+        private RewardChoice FirstUnclaimedChoice(IReadOnlyList<RewardChoice> choices, int groupIndex)
+        {
+            if (choices == null)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < choices.Count; i++)
+            {
+                if (!IsChoiceClaimed(groupIndex, i))
+                {
+                    return choices[i];
+                }
+            }
+
+            return null;
+        }
+
+        private static string ItemChoicePackName(IReadOnlyList<RewardChoice> choices)
+        {
+            if (choices == null || choices.Count == 0)
+            {
+                return "道具";
+            }
+
+            if (choices[0] == null)
+            {
+                return "道具";
+            }
+
+            switch (choices[0].Kind)
+            {
+                case cfg.RewardKind.ActiveItemGrant:
+                    return "主动道具";
+                case cfg.RewardKind.PassiveItemChoice:
+                    return "被动道具";
+                default:
+                    return "道具";
+            }
         }
 
         private static string BuildFragmentPackDescription(IReadOnlyList<RewardChoice> choices)

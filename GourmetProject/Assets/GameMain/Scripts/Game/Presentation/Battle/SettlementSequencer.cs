@@ -18,13 +18,13 @@ namespace GourmetProject.Game.Presentation.Battle
     /// </summary>
     public sealed class SettlementSequencer : MonoBehaviour
     {
-        private static readonly Color GainColor = new(1f, 0.15f, 0.08f);
-        private static readonly Color FinalColor = new(1f, 0.24f, 0.12f);
-        private static readonly Color SkillColor = new(1f, 0.65f, 0.05f);
-        private static readonly Color FlavorColor = new(1f, 0.35f, 0.85f);
-        private static readonly Color MaterialColor = new(0.25f, 0.85f, 1f);
-        private static readonly Color MultiplierColor = new(1f, 0.95f, 0.2f);
-        private static readonly Color SideEffectColor = new(0.55f, 1f, 0.35f);
+        private static readonly Color GainColor = Color.green;
+        private static readonly Color FinalColor = Color.red;
+        private static readonly Color SkillColor = Color.blue;
+        private static readonly Color FlavorColor = Color.pink;
+        private static readonly Color MaterialColor = Color.black;
+        private static readonly Color MultiplierColor = Color.red;
+        private static readonly Color SideEffectColor = Color.cyan;
         private static readonly Color DefaultCueColor = Color.white;
 
         private const float SourceCueRise = 0.48f;
