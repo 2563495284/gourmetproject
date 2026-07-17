@@ -24,10 +24,6 @@ public sealed partial class Food : Luban.BeanBase
         { if(!_buf["rewardKind"].IsNumber) { throw new SerializationException(); }  RewardKind = (RewardKind)_buf["rewardKind"].AsInt; }
         { if(!_buf["rewardPackageId"].IsString) { throw new SerializationException(); }  RewardPackageId = _buf["rewardPackageId"]; }
         { if(!_buf["targetScoreHiddenOffset"].IsNumber) { throw new SerializationException(); }  TargetScoreHiddenOffset = _buf["targetScoreHiddenOffset"]; }
-        { if(!_buf["dishHiddenOffset"].IsNumber) { throw new SerializationException(); }  DishHiddenOffset = _buf["dishHiddenOffset"]; }
-        { if(!_buf["passiveItemHiddenOffset"].IsNumber) { throw new SerializationException(); }  PassiveItemHiddenOffset = _buf["passiveItemHiddenOffset"]; }
-        { if(!_buf["fragmentHiddenOffset"].IsNumber) { throw new SerializationException(); }  FragmentHiddenOffset = _buf["fragmentHiddenOffset"]; }
-        { if(!_buf["goldHiddenOffset"].IsNumber) { throw new SerializationException(); }  GoldHiddenOffset = _buf["goldHiddenOffset"]; }
     }
 
     public static Food DeserializeFood(JSONNode _buf)
@@ -63,22 +59,6 @@ public sealed partial class Food : Luban.BeanBase
     /// 目标分隐藏分临时修正。
     /// </summary>
     public readonly float TargetScoreHiddenOffset;
-    /// <summary>
-    /// 食物奖励隐藏分临时修正。
-    /// </summary>
-    public readonly float DishHiddenOffset;
-    /// <summary>
-    /// 被动道具奖励隐藏分临时修正。
-    /// </summary>
-    public readonly float PassiveItemHiddenOffset;
-    /// <summary>
-    /// 餐桌格子奖励隐藏分临时修正。
-    /// </summary>
-    public readonly float FragmentHiddenOffset;
-    /// <summary>
-    /// 金币奖励隐藏分临时修正。
-    /// </summary>
-    public readonly float GoldHiddenOffset;
    
     public const int __ID__ = 2195582;
     public override int GetTypeId() => __ID__;
@@ -97,10 +77,6 @@ public sealed partial class Food : Luban.BeanBase
         + "rewardKind:" + RewardKind + ","
         + "rewardPackageId:" + RewardPackageId + ","
         + "targetScoreHiddenOffset:" + TargetScoreHiddenOffset + ","
-        + "dishHiddenOffset:" + DishHiddenOffset + ","
-        + "passiveItemHiddenOffset:" + PassiveItemHiddenOffset + ","
-        + "fragmentHiddenOffset:" + FragmentHiddenOffset + ","
-        + "goldHiddenOffset:" + GoldHiddenOffset + ","
         + "}";
     }
 }

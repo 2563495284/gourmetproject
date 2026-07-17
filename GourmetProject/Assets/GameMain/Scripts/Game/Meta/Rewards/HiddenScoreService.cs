@@ -186,20 +186,12 @@ namespace GourmetProject.Game.Meta
 
         private static float FoodHiddenOffset(cfg.Food food, HiddenScorePurpose purpose)
         {
-            if (food == null)
+            if (food == null || purpose != HiddenScorePurpose.TargetScore)
             {
                 return 0f;
             }
 
-            return purpose switch
-            {
-                HiddenScorePurpose.TargetScore => food.TargetScoreHiddenOffset,
-                HiddenScorePurpose.Dish => food.DishHiddenOffset,
-                HiddenScorePurpose.PassiveItem => food.PassiveItemHiddenOffset,
-                HiddenScorePurpose.Fragment => food.FragmentHiddenOffset,
-                HiddenScorePurpose.Gold => food.GoldHiddenOffset,
-                _ => 0f,
-            };
+            return food.TargetScoreHiddenOffset;
         }
 
         private static cfg.GoldRewardCurve ResolveGoldCurve(cfg.Tables tables)

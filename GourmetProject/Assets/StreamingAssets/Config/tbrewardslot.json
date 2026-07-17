@@ -7,8 +7,22 @@
     "requiredPickCount": 1,
     "weight": 1,
     "poolId": "pool_dish",
-    "normalHiddenOffset": 0,
-    "hardHiddenOffset": 0
+    "dishHiddenOffset": [
+      0,
+      5
+    ],
+    "passiveItemHiddenOffset": [
+      0,
+      5
+    ],
+    "fragmentHiddenOffset": [
+      0,
+      5
+    ],
+    "goldHiddenOffset": [
+      0,
+      10
+    ]
   },
   {
     "id": "slot_specific_gold",
@@ -18,8 +32,22 @@
     "requiredPickCount": 1,
     "weight": 1,
     "poolId": "",
-    "normalHiddenOffset": 30,
-    "hardHiddenOffset": 5
+    "dishHiddenOffset": [
+      0,
+      5
+    ],
+    "passiveItemHiddenOffset": [
+      0,
+      5
+    ],
+    "fragmentHiddenOffset": [
+      0,
+      5
+    ],
+    "goldHiddenOffset": [
+      30,
+      15
+    ]
   },
   {
     "id": "slot_specific_dish",
@@ -29,8 +57,22 @@
     "requiredPickCount": 1,
     "weight": 1,
     "poolId": "pool_dish",
-    "normalHiddenOffset": 0,
-    "hardHiddenOffset": 5
+    "dishHiddenOffset": [
+      0,
+      10
+    ],
+    "passiveItemHiddenOffset": [
+      0,
+      5
+    ],
+    "fragmentHiddenOffset": [
+      0,
+      5
+    ],
+    "goldHiddenOffset": [
+      0,
+      10
+    ]
   },
   {
     "id": "slot_specific_passive",
@@ -40,8 +82,22 @@
     "requiredPickCount": 1,
     "weight": 1,
     "poolId": "pool_passive",
-    "normalHiddenOffset": 0,
-    "hardHiddenOffset": 5
+    "dishHiddenOffset": [
+      0,
+      5
+    ],
+    "passiveItemHiddenOffset": [
+      0,
+      10
+    ],
+    "fragmentHiddenOffset": [
+      0,
+      5
+    ],
+    "goldHiddenOffset": [
+      0,
+      10
+    ]
   },
   {
     "id": "slot_specific_active",
@@ -51,8 +107,22 @@
     "requiredPickCount": 2,
     "weight": 1,
     "poolId": "pool_active",
-    "normalHiddenOffset": 0,
-    "hardHiddenOffset": 5
+    "dishHiddenOffset": [
+      0,
+      5
+    ],
+    "passiveItemHiddenOffset": [
+      0,
+      10
+    ],
+    "fragmentHiddenOffset": [
+      0,
+      5
+    ],
+    "goldHiddenOffset": [
+      0,
+      10
+    ]
   },
   {
     "id": "slot_specific_fragment",
@@ -62,8 +132,22 @@
     "requiredPickCount": 1,
     "weight": 1,
     "poolId": "pool_fragment",
-    "normalHiddenOffset": 0,
-    "hardHiddenOffset": 5
+    "dishHiddenOffset": [
+      0,
+      5
+    ],
+    "passiveItemHiddenOffset": [
+      0,
+      5
+    ],
+    "fragmentHiddenOffset": [
+      0,
+      10
+    ],
+    "goldHiddenOffset": [
+      0,
+      10
+    ]
   },
   {
     "id": "slot_boss_passive",
@@ -73,8 +157,22 @@
     "requiredPickCount": 1,
     "weight": 1,
     "poolId": "pool_passive_boss",
-    "normalHiddenOffset": 10,
-    "hardHiddenOffset": 0
+    "dishHiddenOffset": [
+      0,
+      0
+    ],
+    "passiveItemHiddenOffset": [
+      18,
+      0
+    ],
+    "fragmentHiddenOffset": [
+      0,
+      0
+    ],
+    "goldHiddenOffset": [
+      0,
+      0
+    ]
   },
   {
     "id": "slot_boss_fragment",
@@ -84,8 +182,22 @@
     "requiredPickCount": 1,
     "weight": 1,
     "poolId": "pool_fragment",
-    "normalHiddenOffset": 10,
-    "hardHiddenOffset": 0
+    "dishHiddenOffset": [
+      0,
+      0
+    ],
+    "passiveItemHiddenOffset": [
+      0,
+      0
+    ],
+    "fragmentHiddenOffset": [
+      18,
+      0
+    ],
+    "goldHiddenOffset": [
+      0,
+      0
+    ]
   },
   {
     "id": "slot_boss_gold",
@@ -95,8 +207,22 @@
     "requiredPickCount": 1,
     "weight": 1,
     "poolId": "",
-    "normalHiddenOffset": 50,
-    "hardHiddenOffset": 0
+    "dishHiddenOffset": [
+      0,
+      0
+    ],
+    "passiveItemHiddenOffset": [
+      0,
+      0
+    ],
+    "fragmentHiddenOffset": [
+      0,
+      0
+    ],
+    "goldHiddenOffset": [
+      100,
+      0
+    ]
   },
   {
     "id": "dish_choice_3",
@@ -106,8 +232,22 @@
     "requiredPickCount": 1,
     "weight": 1,
     "poolId": "pool_dish",
-    "normalHiddenOffset": 0,
-    "hardHiddenOffset": 0
+    "dishHiddenOffset": [
+      0,
+      0
+    ],
+    "passiveItemHiddenOffset": [
+      0,
+      0
+    ],
+    "fragmentHiddenOffset": [
+      0,
+      0
+    ],
+    "goldHiddenOffset": [
+      0,
+      0
+    ]
   },
   {
     "id": "dish_grant_1",
@@ -117,8 +257,22 @@
     "requiredPickCount": 1,
     "weight": 1,
     "poolId": "pool_dish",
-    "normalHiddenOffset": 0,
-    "hardHiddenOffset": 0
+    "dishHiddenOffset": [
+      0,
+      0
+    ],
+    "passiveItemHiddenOffset": [
+      0,
+      0
+    ],
+    "fragmentHiddenOffset": [
+      0,
+      0
+    ],
+    "goldHiddenOffset": [
+      0,
+      0
+    ]
   },
   {
     "id": "passive_choice_1",
@@ -128,8 +282,22 @@
     "requiredPickCount": 1,
     "weight": 1,
     "poolId": "pool_passive",
-    "normalHiddenOffset": 0,
-    "hardHiddenOffset": 0
+    "dishHiddenOffset": [
+      0,
+      0
+    ],
+    "passiveItemHiddenOffset": [
+      0,
+      0
+    ],
+    "fragmentHiddenOffset": [
+      0,
+      0
+    ],
+    "goldHiddenOffset": [
+      0,
+      0
+    ]
   },
   {
     "id": "passive_choice_3",
@@ -139,8 +307,22 @@
     "requiredPickCount": 1,
     "weight": 1,
     "poolId": "pool_passive",
-    "normalHiddenOffset": 0,
-    "hardHiddenOffset": 0
+    "dishHiddenOffset": [
+      0,
+      0
+    ],
+    "passiveItemHiddenOffset": [
+      0,
+      0
+    ],
+    "fragmentHiddenOffset": [
+      0,
+      0
+    ],
+    "goldHiddenOffset": [
+      0,
+      0
+    ]
   },
   {
     "id": "passive_grant_2",
@@ -150,8 +332,22 @@
     "requiredPickCount": 2,
     "weight": 1,
     "poolId": "pool_passive",
-    "normalHiddenOffset": 0,
-    "hardHiddenOffset": 0
+    "dishHiddenOffset": [
+      0,
+      0
+    ],
+    "passiveItemHiddenOffset": [
+      0,
+      0
+    ],
+    "fragmentHiddenOffset": [
+      0,
+      0
+    ],
+    "goldHiddenOffset": [
+      0,
+      0
+    ]
   },
   {
     "id": "active_grant_1",
@@ -161,8 +357,22 @@
     "requiredPickCount": 1,
     "weight": 1,
     "poolId": "pool_active",
-    "normalHiddenOffset": 0,
-    "hardHiddenOffset": 0
+    "dishHiddenOffset": [
+      0,
+      0
+    ],
+    "passiveItemHiddenOffset": [
+      0,
+      0
+    ],
+    "fragmentHiddenOffset": [
+      0,
+      0
+    ],
+    "goldHiddenOffset": [
+      0,
+      0
+    ]
   },
   {
     "id": "active_grant_2",
@@ -172,8 +382,22 @@
     "requiredPickCount": 2,
     "weight": 1,
     "poolId": "pool_active",
-    "normalHiddenOffset": 0,
-    "hardHiddenOffset": 0
+    "dishHiddenOffset": [
+      0,
+      0
+    ],
+    "passiveItemHiddenOffset": [
+      0,
+      0
+    ],
+    "fragmentHiddenOffset": [
+      0,
+      0
+    ],
+    "goldHiddenOffset": [
+      0,
+      0
+    ]
   },
   {
     "id": "active_choice_3",
@@ -183,8 +407,22 @@
     "requiredPickCount": 1,
     "weight": 1,
     "poolId": "pool_active",
-    "normalHiddenOffset": 0,
-    "hardHiddenOffset": 0
+    "dishHiddenOffset": [
+      0,
+      0
+    ],
+    "passiveItemHiddenOffset": [
+      0,
+      0
+    ],
+    "fragmentHiddenOffset": [
+      0,
+      0
+    ],
+    "goldHiddenOffset": [
+      0,
+      0
+    ]
   },
   {
     "id": "fragment_choice_3",
@@ -194,8 +432,22 @@
     "requiredPickCount": 1,
     "weight": 1,
     "poolId": "pool_fragment",
-    "normalHiddenOffset": 0,
-    "hardHiddenOffset": 0
+    "dishHiddenOffset": [
+      0,
+      0
+    ],
+    "passiveItemHiddenOffset": [
+      0,
+      0
+    ],
+    "fragmentHiddenOffset": [
+      0,
+      0
+    ],
+    "goldHiddenOffset": [
+      0,
+      0
+    ]
   },
   {
     "id": "flavored_dish_3",
@@ -205,8 +457,22 @@
     "requiredPickCount": 3,
     "weight": 1,
     "poolId": "pool_flavored_dish",
-    "normalHiddenOffset": 0,
-    "hardHiddenOffset": 0
+    "dishHiddenOffset": [
+      0,
+      0
+    ],
+    "passiveItemHiddenOffset": [
+      0,
+      0
+    ],
+    "fragmentHiddenOffset": [
+      0,
+      0
+    ],
+    "goldHiddenOffset": [
+      0,
+      0
+    ]
   },
   {
     "id": "legendary_choice_1",
@@ -216,8 +482,22 @@
     "requiredPickCount": 1,
     "weight": 1,
     "poolId": "pool_legendary",
-    "normalHiddenOffset": 0,
-    "hardHiddenOffset": 0
+    "dishHiddenOffset": [
+      0,
+      0
+    ],
+    "passiveItemHiddenOffset": [
+      0,
+      0
+    ],
+    "fragmentHiddenOffset": [
+      0,
+      0
+    ],
+    "goldHiddenOffset": [
+      0,
+      0
+    ]
   },
   {
     "id": "lay_wood",
@@ -227,8 +507,22 @@
     "requiredPickCount": 1,
     "weight": 1,
     "poolId": "pool_lay_wood",
-    "normalHiddenOffset": 0,
-    "hardHiddenOffset": 0
+    "dishHiddenOffset": [
+      0,
+      0
+    ],
+    "passiveItemHiddenOffset": [
+      0,
+      0
+    ],
+    "fragmentHiddenOffset": [
+      0,
+      0
+    ],
+    "goldHiddenOffset": [
+      0,
+      0
+    ]
   },
   {
     "id": "lay_stone",
@@ -238,8 +532,22 @@
     "requiredPickCount": 1,
     "weight": 1,
     "poolId": "pool_lay_stone",
-    "normalHiddenOffset": 0,
-    "hardHiddenOffset": 0
+    "dishHiddenOffset": [
+      0,
+      0
+    ],
+    "passiveItemHiddenOffset": [
+      0,
+      0
+    ],
+    "fragmentHiddenOffset": [
+      0,
+      0
+    ],
+    "goldHiddenOffset": [
+      0,
+      0
+    ]
   },
   {
     "id": "lay_metal",
@@ -249,7 +557,21 @@
     "requiredPickCount": 1,
     "weight": 1,
     "poolId": "pool_lay_metal",
-    "normalHiddenOffset": 0,
-    "hardHiddenOffset": 0
+    "dishHiddenOffset": [
+      0,
+      0
+    ],
+    "passiveItemHiddenOffset": [
+      0,
+      0
+    ],
+    "fragmentHiddenOffset": [
+      0,
+      0
+    ],
+    "goldHiddenOffset": [
+      0,
+      0
+    ]
   }
 ]

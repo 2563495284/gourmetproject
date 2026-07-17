@@ -389,7 +389,32 @@ namespace GourmetProject.Game.Meta
 
         private static int HiddenOffsetForSlot(RewardContext context, cfg.RewardSlot slot)
         {
-            return slot.NormalHiddenOffset;
+            int tierIndex = ResolveFoodTierIndex(context);
+            return slot.Kind switch
+            {
+                cfg.RewardKind.DishChoice => ListOffset(slot.DishHiddenOffset, tierIndex),
+                cfg.RewardKind.PassiveItemChoice => ListOffset(slot.PassiveItemHiddenOffset, tierIndex),
+                cfg.RewardKind.ActiveItemGrant => ListOffset(slot.PassiveItemHiddenOffset, tierIndex),
+                cfg.RewardKind.FragmentChoice => ListOffset(slot.FragmentHiddenOffset, tierIndex),
+                cfg.RewardKind.Gold => ListOffset(slot.GoldHiddenOffset, tierIndex),
+                _ => 0,
+            };
+        }
+
+        private static int ResolveFoodTierIndex(RewardContext context)
+        {
+            cfg.Food food = FoodService.Resolve(context.Tables, context.ActionContext?.Action);
+            return food?.ActionKind == cfg.FoodActionKind.Super ? 1 : 0;
+        }
+
+        private static int ListOffset(System.Collections.Generic.IReadOnlyList<int> offsets, int index)
+        {
+            if (offsets == null || offsets.Count == 0)
+            {
+                return 0;
+            }
+
+            return index < offsets.Count ? offsets[index] : offsets[0];
         }
 
         private static bool ItemCoversHidden(ItemDefinition item, int hidden)

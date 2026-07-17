@@ -24,8 +24,10 @@ public sealed partial class RewardSlot : Luban.BeanBase
         { if(!_buf["requiredPickCount"].IsNumber) { throw new SerializationException(); }  RequiredPickCount = _buf["requiredPickCount"]; }
         { if(!_buf["weight"].IsNumber) { throw new SerializationException(); }  Weight = _buf["weight"]; }
         { if(!_buf["poolId"].IsString) { throw new SerializationException(); }  PoolId = _buf["poolId"]; }
-        { if(!_buf["normalHiddenOffset"].IsNumber) { throw new SerializationException(); }  NormalHiddenOffset = _buf["normalHiddenOffset"]; }
-        { if(!_buf["hardHiddenOffset"].IsNumber) { throw new SerializationException(); }  HardHiddenOffset = _buf["hardHiddenOffset"]; }
+        { var __json0 = _buf["dishHiddenOffset"]; if(!__json0.IsArray) { throw new SerializationException(); } DishHiddenOffset = new System.Collections.Generic.List<int>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { int __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  DishHiddenOffset.Add(__v0); }   }
+        { var __json0 = _buf["passiveItemHiddenOffset"]; if(!__json0.IsArray) { throw new SerializationException(); } PassiveItemHiddenOffset = new System.Collections.Generic.List<int>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { int __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  PassiveItemHiddenOffset.Add(__v0); }   }
+        { var __json0 = _buf["fragmentHiddenOffset"]; if(!__json0.IsArray) { throw new SerializationException(); } FragmentHiddenOffset = new System.Collections.Generic.List<int>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { int __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  FragmentHiddenOffset.Add(__v0); }   }
+        { var __json0 = _buf["goldHiddenOffset"]; if(!__json0.IsArray) { throw new SerializationException(); } GoldHiddenOffset = new System.Collections.Generic.List<int>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { int __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  GoldHiddenOffset.Add(__v0); }   }
     }
 
     public static RewardSlot DeserializeRewardSlot(JSONNode _buf)
@@ -62,13 +64,21 @@ public sealed partial class RewardSlot : Luban.BeanBase
     /// </summary>
     public readonly string PoolId;
     /// <summary>
-    /// 普通美食临时隐藏分修正（boss也读这些）
+    /// 菜品奖励隐藏分修正；index0=Normal，index1=Super。
     /// </summary>
-    public readonly int NormalHiddenOffset;
+    public readonly System.Collections.Generic.List<int> DishHiddenOffset;
     /// <summary>
-    /// 困难美食临时隐藏分修正
+    /// 被动/主动道具奖励隐藏分修正；index0=Normal，index1=Super。
     /// </summary>
-    public readonly int HardHiddenOffset;
+    public readonly System.Collections.Generic.List<int> PassiveItemHiddenOffset;
+    /// <summary>
+    /// 胃部碎片奖励隐藏分修正；index0=Normal，index1=Super。
+    /// </summary>
+    public readonly System.Collections.Generic.List<int> FragmentHiddenOffset;
+    /// <summary>
+    /// 金币奖励隐藏分修正；index0=Normal，index1=Super。
+    /// </summary>
+    public readonly System.Collections.Generic.List<int> GoldHiddenOffset;
    
     public const int __ID__ = -610313747;
     public override int GetTypeId() => __ID__;
@@ -87,8 +97,10 @@ public sealed partial class RewardSlot : Luban.BeanBase
         + "requiredPickCount:" + RequiredPickCount + ","
         + "weight:" + Weight + ","
         + "poolId:" + PoolId + ","
-        + "normalHiddenOffset:" + NormalHiddenOffset + ","
-        + "hardHiddenOffset:" + HardHiddenOffset + ","
+        + "dishHiddenOffset:" + Luban.StringUtil.CollectionToString(DishHiddenOffset) + ","
+        + "passiveItemHiddenOffset:" + Luban.StringUtil.CollectionToString(PassiveItemHiddenOffset) + ","
+        + "fragmentHiddenOffset:" + Luban.StringUtil.CollectionToString(FragmentHiddenOffset) + ","
+        + "goldHiddenOffset:" + Luban.StringUtil.CollectionToString(GoldHiddenOffset) + ","
         + "}";
     }
 }
