@@ -42,11 +42,11 @@ public sealed partial class GoldRewardCurve : Luban.BeanBase
     /// </summary>
     public readonly float PerWeek;
     /// <summary>
-    /// 每行动轴天数递增值。
+    /// 每天数递增值。
     /// </summary>
     public readonly float PerDay;
     /// <summary>
-    /// 上下浮动比例，例如 0.2 表示中心值*0.8 到中心值*1.2。
+    /// 上下浮动比例
     /// </summary>
     public readonly float FluctuationPct;
    

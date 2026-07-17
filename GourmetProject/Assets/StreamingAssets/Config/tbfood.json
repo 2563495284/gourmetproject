@@ -20,9 +20,9 @@
     "rewardKind": 5,
     "rewardPackageId": "reward_food_fragment",
     "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 2,
-    "passiveItemHiddenOffset": 2,
-    "fragmentHiddenOffset": 2,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0
   },
   {
@@ -33,9 +33,9 @@
     "rewardKind": 3,
     "rewardPackageId": "reward_food_passive",
     "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 2,
-    "passiveItemHiddenOffset": 2,
-    "fragmentHiddenOffset": 2,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0
   },
   {
@@ -46,9 +46,9 @@
     "rewardKind": 4,
     "rewardPackageId": "reward_food_active",
     "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 1,
-    "passiveItemHiddenOffset": 1,
-    "fragmentHiddenOffset": 1,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0
   },
   {
@@ -59,9 +59,9 @@
     "rewardKind": 2,
     "rewardPackageId": "reward_food_dish",
     "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 1,
-    "passiveItemHiddenOffset": 1,
-    "fragmentHiddenOffset": 1,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0
   },
   {
@@ -72,10 +72,10 @@
     "rewardKind": 1,
     "rewardPackageId": "reward_food_hard_gold",
     "targetScoreHiddenOffset": 0.5,
-    "dishHiddenOffset": 7,
-    "passiveItemHiddenOffset": 7,
-    "fragmentHiddenOffset": 7,
-    "goldHiddenOffset": 12
+    "dishHiddenOffset": 5,
+    "passiveItemHiddenOffset": 5,
+    "fragmentHiddenOffset": 5,
+    "goldHiddenOffset": 10
   },
   {
     "id": "food_hard_fragment",
@@ -85,10 +85,10 @@
     "rewardKind": 5,
     "rewardPackageId": "reward_food_hard_fragment",
     "targetScoreHiddenOffset": 0.5,
-    "dishHiddenOffset": 8,
-    "passiveItemHiddenOffset": 8,
-    "fragmentHiddenOffset": 8,
-    "goldHiddenOffset": 12
+    "dishHiddenOffset": 5,
+    "passiveItemHiddenOffset": 5,
+    "fragmentHiddenOffset": 5,
+    "goldHiddenOffset": 10
   },
   {
     "id": "food_hard_passive",
@@ -98,10 +98,10 @@
     "rewardKind": 3,
     "rewardPackageId": "reward_food_hard_passive",
     "targetScoreHiddenOffset": 0.5,
-    "dishHiddenOffset": 9,
-    "passiveItemHiddenOffset": 9,
-    "fragmentHiddenOffset": 9,
-    "goldHiddenOffset": 12
+    "dishHiddenOffset": 5,
+    "passiveItemHiddenOffset": 5,
+    "fragmentHiddenOffset": 5,
+    "goldHiddenOffset": 10
   },
   {
     "id": "food_hard_active",
@@ -111,10 +111,10 @@
     "rewardKind": 4,
     "rewardPackageId": "reward_food_hard_active",
     "targetScoreHiddenOffset": 0.5,
-    "dishHiddenOffset": 7,
-    "passiveItemHiddenOffset": 7,
-    "fragmentHiddenOffset": 7,
-    "goldHiddenOffset": 12
+    "dishHiddenOffset": 5,
+    "passiveItemHiddenOffset": 5,
+    "fragmentHiddenOffset": 5,
+    "goldHiddenOffset": 10
   },
   {
     "id": "food_hard_dish",
@@ -124,10 +124,10 @@
     "rewardKind": 2,
     "rewardPackageId": "reward_food_hard_dish",
     "targetScoreHiddenOffset": 0.5,
-    "dishHiddenOffset": 8,
-    "passiveItemHiddenOffset": 8,
-    "fragmentHiddenOffset": 8,
-    "goldHiddenOffset": 12
+    "dishHiddenOffset": 5,
+    "passiveItemHiddenOffset": 5,
+    "fragmentHiddenOffset": 5,
+    "goldHiddenOffset": 10
   },
   {
     "id": "food_boss",
@@ -140,6 +140,6 @@
     "dishHiddenOffset": 8,
     "passiveItemHiddenOffset": 8,
     "fragmentHiddenOffset": 8,
-    "goldHiddenOffset": 55
+    "goldHiddenOffset": 50
   }
 ]

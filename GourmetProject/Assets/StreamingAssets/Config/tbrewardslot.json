@@ -18,7 +18,7 @@
     "requiredPickCount": 1,
     "weight": 1,
     "poolId": "",
-    "normalHiddenOffset": 0,
+    "normalHiddenOffset": 30,
     "hardHiddenOffset": 5
   },
   {
@@ -95,7 +95,7 @@
     "requiredPickCount": 1,
     "weight": 1,
     "poolId": "",
-    "normalHiddenOffset": 10,
+    "normalHiddenOffset": 50,
     "hardHiddenOffset": 0
   },
   {

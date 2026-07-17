@@ -1,9 +1,9 @@
 [
   {
     "id": "gold_default",
-    "baseValue": 24,
+    "baseValue": 20,
     "perWeek": 5,
-    "perDay": 0.75,
+    "perDay": 2,
     "fluctuationPct": 0.2
   }
 ]
