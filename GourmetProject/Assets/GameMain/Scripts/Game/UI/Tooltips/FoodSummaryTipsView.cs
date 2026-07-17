@@ -26,7 +26,7 @@ namespace GourmetProject.Game.UI.Tooltips
             data ??= FoodSummaryTipsData.Empty;
 
             _nameText.text = data.FoodName;
-            BuildSkills(data.Skills);
+            BuildSkills(data.Skills, data.SkillsDisabled);
             BuildFlavors(data.Flavors);
             Show();
         }
@@ -62,7 +62,7 @@ namespace GourmetProject.Game.UI.Tooltips
             ValidateReferences();
         }
 
-        private void BuildSkills(IReadOnlyList<FoodInfoEntry> skills)
+        private void BuildSkills(IReadOnlyList<FoodInfoEntry> skills, bool debuffed)
         {
             FoodTipUiUtility.ClearChildren(_skillsContent);
             int count = skills != null ? skills.Count : 0;
@@ -73,7 +73,7 @@ namespace GourmetProject.Game.UI.Tooltips
                 FoodInfoEntry skill = skills[i];
                 FoodTipCardView card = Instantiate(_skillCardPrefab, _skillsContent, false);
                 card.name = $"Skill_{i}";
-                card.Bind(skill.Title, skill.Desc);
+                card.Bind(skill.Title, skill.Desc, debuffed);
             }
         }
 

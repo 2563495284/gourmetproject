@@ -220,7 +220,7 @@ namespace GourmetProject.Game.Run
             }
             else if (modifier == BossDebuffModifiers.VeganMeal)
             {
-                MarkRandomRecipeEntries(slots, TotalRecipeEntries(slots) / 8, rng, excludeFromScore: true);
+                MarkRandomRecipeEntries(slots, System.Math.Max(1, TotalRecipeEntries(slots) / 8), rng, excludeFromScore: true);
             }
         }
 

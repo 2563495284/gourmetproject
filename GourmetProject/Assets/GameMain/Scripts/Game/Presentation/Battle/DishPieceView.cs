@@ -7,6 +7,7 @@ using GourmetProject.Gameplay.Model;
 using UnityEngine;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
+using GourmetProject.Game.Visual;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
@@ -424,6 +425,7 @@ namespace GourmetProject.Game.Presentation.Battle
             t.localRotation = Quaternion.Euler(0f, 0f, -90f * rot);
 
             ApplyFlavorStain();
+            ApplyDebuffVisual();
         }
 
         /// <summary>
@@ -474,6 +476,17 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _spriteRenderer.SetPropertyBlock(_stainBlock);
+        }
+
+        private void ApplyDebuffVisual()
+        {
+            if (_spriteRenderer == null || Instance == null || !Instance.ExcludedFromScore)
+            {
+                return;
+            }
+
+            _spriteRenderer.SetPropertyBlock(null);
+            DebuffVisualStyle.ApplyToSprite(_spriteRenderer);
         }
 
         private Vector3 FootprintCenterLocal(DishShape shape)

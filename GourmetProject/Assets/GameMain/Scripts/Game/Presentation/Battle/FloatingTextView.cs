@@ -18,6 +18,9 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private float _duration = 0.9f;
         [SerializeField] private int _fontSize = 64;
 
+        private TextMesh _text;
+        private Tween _tween;
+
         public static void Spawn(
             FloatingTextView prefab,
             Transform parent,
@@ -40,8 +43,45 @@ namespace GourmetProject.Game.Presentation.Battle
             view.Play(text, color, characterSize, rise, duration);
         }
 
+        public static FloatingTextView SpawnStatic(
+            FloatingTextView prefab,
+            Transform parent,
+            Vector3 worldPos,
+            string text,
+            Color color,
+            float? characterSize = null)
+        {
+            if (prefab == null)
+            {
+                Debug.LogError($"{nameof(FloatingTextView)} 缺少 prefab。");
+                return null;
+            }
+
+            FloatingTextView view = Instantiate(prefab, parent);
+            view.transform.position = worldPos;
+            view.SetStaticText(text, color, characterSize);
+            return view;
+        }
+
+        public void SetStaticText(string text, Color color, float? characterSize = null)
+        {
+            KillAnimation();
+
+            TextMesh tm = EnsureText();
+            if (tm == null)
+            {
+                return;
+            }
+
+            tm.text = text;
+            tm.color = color;
+            tm.characterSize = characterSize ?? _characterSize;
+        }
+
         private void Play(string text, Color color, float? characterSize, float? rise, float? duration)
         {
+            KillAnimation();
+
             float cs = characterSize ?? _characterSize;
             float r = rise ?? _rise;
             float d = duration ?? _duration;
@@ -59,9 +99,19 @@ namespace GourmetProject.Game.Presentation.Battle
             Animate(tm, transform.position, r, d);
         }
 
+        private void OnDestroy()
+        {
+            KillAnimation();
+        }
+
         /// <summary>解析 prefab 预拼的 TextMesh 并归一化锚点/排序。</summary>
         private TextMesh EnsureText()
         {
+            if (_text != null)
+            {
+                return _text;
+            }
+
             TextMesh tm = GetComponent<TextMesh>();
             if (tm == null)
             {
@@ -74,13 +124,14 @@ namespace GourmetProject.Game.Presentation.Battle
             tm.fontSize = _fontSize;
 
             BattleSorting.Apply(GetComponent<MeshRenderer>(), BattleSorting.Fx, BattleSorting.OrderFloatingText);
+            _text = tm;
             return tm;
         }
 
         private void Animate(TextMesh tm, Vector3 start, float rise, float duration)
         {
             Color baseColor = tm.color;
-            DOVirtual.Float(0f, 1f, Mathf.Max(0.0001f, duration), t =>
+            _tween = DOVirtual.Float(0f, 1f, Mathf.Max(0.0001f, duration), t =>
                 {
                     if (tm == null)
                     {
@@ -101,6 +152,16 @@ namespace GourmetProject.Game.Presentation.Battle
                         Destroy(gameObject);
                     }
                 });
+        }
+
+        private void KillAnimation()
+        {
+            if (_tween != null && _tween.IsActive())
+            {
+                _tween.Kill(false);
+            }
+
+            _tween = null;
         }
     }
 }

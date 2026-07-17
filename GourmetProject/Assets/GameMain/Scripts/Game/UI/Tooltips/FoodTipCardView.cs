@@ -1,3 +1,4 @@
+using GourmetProject.Game.Visual;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -9,7 +10,7 @@ namespace GourmetProject.Game.UI.Tooltips
         [SerializeField] private Text _titleText;
         [SerializeField] private Text _descText;
 
-        public void Bind(string title, string desc)
+        public void Bind(string title, string desc, bool debuffed = false)
         {
             if (!ValidateReferences())
             {
@@ -20,6 +21,7 @@ namespace GourmetProject.Game.UI.Tooltips
             _titleText.gameObject.SetActive(hasTitle);
             _titleText.text = title ?? string.Empty;
             _descText.text = desc ?? string.Empty;
+            SetDebuffed(debuffed);
         }
 
         private void Awake()
@@ -38,6 +40,50 @@ namespace GourmetProject.Game.UI.Tooltips
             valid &= ReportMissing(_titleText, nameof(_titleText));
             valid &= ReportMissing(_descText, nameof(_descText));
             return valid;
+        }
+
+        private void SetDebuffed(bool debuffed)
+        {
+            Graphic[] graphics = GetComponentsInChildren<Graphic>(true);
+            bool appliedToBackground = false;
+            for (int i = 0; i < graphics.Length; i++)
+            {
+                Graphic graphic = graphics[i];
+                if (graphic == null || graphic is Text)
+                {
+                    continue;
+                }
+
+                SetDebuffMaterial(graphic, debuffed);
+                appliedToBackground = true;
+            }
+
+            if (appliedToBackground)
+            {
+                return;
+            }
+
+            for (int i = 0; i < graphics.Length; i++)
+            {
+                SetDebuffMaterial(graphics[i], debuffed);
+            }
+        }
+
+        private static void SetDebuffMaterial(Graphic graphic, bool debuffed)
+        {
+            if (graphic == null)
+            {
+                return;
+            }
+
+            if (debuffed)
+            {
+                DebuffVisualStyle.ApplyToGraphic(graphic);
+            }
+            else if (DebuffVisualStyle.IsAppliedToGraphic(graphic))
+            {
+                DebuffVisualStyle.ClearGraphic(graphic);
+            }
         }
 
         private bool ReportMissing(Object reference, string fieldName)

@@ -49,11 +49,12 @@ namespace GourmetProject.Game.UI.Tooltips
             Array.Empty<FoodInfoEntry>(),
             Array.Empty<string>());
 
-        public FoodSummaryTipsData(string foodName, IReadOnlyList<FoodInfoEntry> skills, IReadOnlyList<string> flavors)
+        public FoodSummaryTipsData(string foodName, IReadOnlyList<FoodInfoEntry> skills, IReadOnlyList<string> flavors, bool skillsDisabled = false)
         {
             FoodName = foodName ?? string.Empty;
             Skills = skills ?? Array.Empty<FoodInfoEntry>();
             Flavors = flavors ?? Array.Empty<string>();
+            SkillsDisabled = skillsDisabled;
         }
 
         public string FoodName { get; }
@@ -61,6 +62,8 @@ namespace GourmetProject.Game.UI.Tooltips
         public IReadOnlyList<FoodInfoEntry> Skills { get; }
 
         public IReadOnlyList<string> Flavors { get; }
+
+        public bool SkillsDisabled { get; }
     }
 
     public sealed class FoodScoreTipsData
@@ -172,7 +175,8 @@ namespace GourmetProject.Game.UI.Tooltips
             var summary = new FoodSummaryTipsData(
                 dish.Def != null ? dish.Def.Name : string.Empty,
                 BuildSkills(dish, db, -1),
-                BuildFlavorNames(dish, db));
+                BuildFlavorNames(dish, db),
+                dish.SkillsDisabled);
 
             float scoreValue;
             float multiplier;
@@ -216,7 +220,8 @@ namespace GourmetProject.Game.UI.Tooltips
             var summary = new FoodSummaryTipsData(
                 dish.Def != null ? dish.Def.Name : string.Empty,
                 BuildSkills(dish, db, reveal.MaxSkills),
-                BuildFlavorNames(dish, db));
+                BuildFlavorNames(dish, db),
+                dish.SkillsDisabled);
 
             return new FoodTipsData(
                 summary,

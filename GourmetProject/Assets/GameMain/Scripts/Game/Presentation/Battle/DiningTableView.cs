@@ -106,10 +106,12 @@ namespace GourmetProject.Game.Presentation.Battle
                 if (!_board.Exists(pos))
                 {
                     view.SetColor(_voidAsPlaceholder ? VoidPlaceholderColor : VoidColor);
+                    view.SetDebuffed(false);
                 }
                 else
                 {
                     view.SetColor(EmptyColor);
+                    view.SetDebuffed(_board.IsDisabled(pos));
                 }
             }
         }

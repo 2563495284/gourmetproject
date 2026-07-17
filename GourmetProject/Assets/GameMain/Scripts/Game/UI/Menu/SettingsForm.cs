@@ -196,10 +196,10 @@ namespace GourmetProject.Game.UI.Menu
             var data = new ConfirmDialogData
             {
                 Title = "返回主菜单",
-                Message = "当前进度将保存，可以从主菜单继续游戏。",
+                Message = "当前未保存的进度将丢失，可以从上一次存档继续游戏。",
                 ConfirmText = "返回",
                 CancelText = "取消",
-                OnConfirm = ReturnToMenuWithSave,
+                OnConfirm = ReturnToMenuWithoutSave,
             };
             GameApp.UI.OpenUIForm(UIForms.ConfirmDialog, UIForms.GroupDialog, data);
         }
@@ -217,14 +217,8 @@ namespace GourmetProject.Game.UI.Menu
             GameApp.UI.OpenUIForm(UIForms.ConfirmDialog, UIForms.GroupDialog, data);
         }
 
-        private void ReturnToMenuWithSave()
+        private void ReturnToMenuWithoutSave()
         {
-            GameRun run = GameRunContext.Current;
-            if (run != null)
-            {
-                RunPersistence.Save(run);
-            }
-
             var data = new CartoonSceneTransitionData
             {
                 TransitionType = CartoonTransitionType.FoodWipe,

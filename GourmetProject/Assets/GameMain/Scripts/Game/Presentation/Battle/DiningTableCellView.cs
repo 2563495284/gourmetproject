@@ -4,6 +4,7 @@ using GourmetProject.Gameplay.Model;
 using UnityEngine;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
+using GourmetProject.Game.Visual;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
@@ -183,6 +184,25 @@ namespace GourmetProject.Game.Presentation.Battle
             EnsureRefs();
             _renderer.SetPropertyBlock(null);
             SpriteRenderStyle.ApplyUnlitMaterial(_renderer);
+        }
+
+        public void SetDebuffed(bool debuffed)
+        {
+            EnsureRefs();
+            if (_renderer == null)
+            {
+                return;
+            }
+
+            if (debuffed)
+            {
+                _renderer.SetPropertyBlock(null);
+                DebuffVisualStyle.ApplyToSprite(_renderer);
+            }
+            else if (DebuffVisualStyle.IsAppliedToSprite(_renderer))
+            {
+                DebuffVisualStyle.ClearSprite(_renderer);
+            }
         }
 
         /// <summary>调整渲染排序序号（编辑页放置预览幽灵需盖在餐桌格之上）。</summary>

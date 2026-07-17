@@ -161,7 +161,6 @@ namespace GourmetProject.Gameplay.Battle
             }
 
             var candidates = new List<ServeCandidate>();
-            var weights = new List<float>();
             for (int i = 0; i < slot.Entries.Count; i++)
             {
                 DishDef dish = _db.GetDish(slot.Entries[i].DishId);
@@ -180,10 +179,9 @@ namespace GourmetProject.Gameplay.Battle
                     placements = DiningTable.FindValidPlacements(dish);
                 }
 
-                foreach (Placement placement in placements)
+                if (placements.Count > 0)
                 {
-                    candidates.Add(new ServeCandidate(i, dish, placement));
-                    weights.Add(Math.Max(1, dish.Shape.CellCount));
+                    candidates.Add(new ServeCandidate(i, dish, placements));
                 }
             }
 
@@ -192,11 +190,12 @@ namespace GourmetProject.Gameplay.Battle
                 return ServeResult.Fail(ServeOutcome.NoFittingDish);
             }
 
-            ServeCandidate chosen = candidates[_rng.WeightedPickIndex(weights)];
+            ServeCandidate chosen = candidates[_rng.Range(0, candidates.Count)];
             RecipeSlotEntry entry = slot.RemoveEntryAt(chosen.SlotEntryIndex);
+            Placement placement = chosen.Placements[_rng.Range(0, chosen.Placements.Count)];
             List<string> skills = ComposeServeSkills(chosen.Dish, entry);
             List<string> flavors = ComposeServeFlavors(chosen.Dish, entry);
-            var instance = new DishInstance(_nextInstanceId++, chosen.Dish, chosen.Placement, skills, flavors);
+            var instance = new DishInstance(_nextInstanceId++, chosen.Dish, placement, skills, flavors);
             instance.SetSourceRecipeIndex(slotIndex, entry.SourceDishIndex);
             ApplyEntryFlags(instance, entry);
             ApplyServeModifiers(instance);
@@ -899,18 +898,18 @@ namespace GourmetProject.Gameplay.Battle
 
         private readonly struct ServeCandidate
         {
-            public ServeCandidate(int slotEntryIndex, DishDef dish, Placement placement)
+            public ServeCandidate(int slotEntryIndex, DishDef dish, IReadOnlyList<Placement> placements)
             {
                 SlotEntryIndex = slotEntryIndex;
                 Dish = dish;
-                Placement = placement;
+                Placements = placements;
             }
 
             public int SlotEntryIndex { get; }
 
             public DishDef Dish { get; }
 
-            public Placement Placement { get; }
+            public IReadOnlyList<Placement> Placements { get; }
         }
     }
 }

@@ -26,11 +26,16 @@ namespace GourmetProject.Game.Presentation.Battle
         private static readonly Color MultiplierColor = Color.red;
         private static readonly Color SideEffectColor = Color.cyan;
         private static readonly Color DefaultCueColor = Color.white;
+        private static readonly Color DishValueColor = Color.white;
 
         private const float SourceCueRise = 0.48f;
         private const float SourceCueDuration = 0.62f;
         private const float SourceCueCharacterSize = 0.12f;
         private const float SourceCueStackOffset = 0.12f;
+        private const float DishValueCharacterSize = 0.13f;
+        private const float DishValueVerticalOffset = 0.08f;
+        private const float DishValuePunchScale = 0.18f;
+        private const float DishValuePunchDuration = 0.18f;
         private const float FinalCueInterval = 0.22f;
         private const float FinalScorePopupCharacterSize = 0.18f;
         private const float FinalScorePopupRise = 0.78f;
@@ -86,6 +91,7 @@ namespace GourmetProject.Game.Presentation.Battle
             renderScore?.Invoke(0);
             SettlementPlaybackPlan plan = BuildSettlementPlaybackPlan(result, dishViews);
             var playback = new SettlementPlaybackState(CountSettlementCues(plan), scoreFire);
+            var dishValueBadges = new Dictionary<int, DishValueBadge>();
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             using CancellationTokenSource debugScorePauseCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             _debugScorePaused = false;
@@ -110,7 +116,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
                     DishInstance instance = view.Instance;
                     Vector3 center = DishCenter(instance, mapper);
-                    await PlayCueAsync(step.Cue, view, center, fxRoot, playback, onReveal, cancellationToken);
+                    await PlayCueAsync(step.Cue, view, center, fxRoot, playback, dishValueBadges, onReveal, cancellationToken);
                 }
 
                 await PlayFinalCuesAsync(plan.FinalCues, mapper.Center, fxRoot, playback, onReveal, cancellationToken);
@@ -131,6 +137,7 @@ namespace GourmetProject.Game.Presentation.Battle
 #endif
                 RestoreSettlementSpeed();
                 scoreFire?.Hide();
+                ClearDishValueBadges(dishValueBadges);
             }
         }
 
@@ -177,6 +184,7 @@ namespace GourmetProject.Game.Presentation.Battle
             Vector3 center,
             Transform fxRoot,
             SettlementPlaybackState playback,
+            Dictionary<int, DishValueBadge> dishValueBadges,
             Action<SettlementRevealSignal> onReveal,
             CancellationToken cancellationToken)
         {
@@ -185,6 +193,7 @@ namespace GourmetProject.Game.Presentation.Battle
 #endif
             AdvanceSettlementSpeed(playback, cue.Kind);
             EmitReveal(onReveal, cue);
+            ApplyDishValueChange(cue, view, center, fxRoot, dishValueBadges);
             if (fxRoot != null)
             {
                 FloatingTextView.Spawn(
@@ -199,6 +208,96 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             await view.PlayDeliciousnessGainFeedbackAsync(cancellationToken);
+        }
+
+        private void ApplyDishValueChange(
+            SettlementCue cue,
+            DishPieceView view,
+            Vector3 center,
+            Transform fxRoot,
+            Dictionary<int, DishValueBadge> dishValueBadges)
+        {
+            if (cue == null
+                || cue.ValueChange.Kind == DishValueChangeKind.None
+                || view == null
+                || view.Instance == null
+                || dishValueBadges == null)
+            {
+                return;
+            }
+
+            DishInstance instance = view.Instance;
+            if (!dishValueBadges.TryGetValue(instance.Id, out DishValueBadge badge))
+            {
+                badge = new DishValueBadge(instance.BaseScoreBeforeSettlement, instance.BaseMultiplierBeforeSettlement);
+                dishValueBadges[instance.Id] = badge;
+            }
+
+            badge.Apply(cue.ValueChange);
+
+            if (!badge.IsVisible && cue.ValueChange.Kind != DishValueChangeKind.Base)
+            {
+                return;
+            }
+
+            if (badge.View == null)
+            {
+                if (fxRoot == null)
+                {
+                    return;
+                }
+
+                badge.View = FloatingTextView.SpawnStatic(
+                    _floatingTextPrefab,
+                    fxRoot,
+                    center + new Vector3(0f, DishValueVerticalOffset, 0f),
+                    FormatDishValue(badge.Contribution),
+                    DishValueColor,
+                    DishValueCharacterSize);
+                badge.IsVisible = badge.View != null;
+            }
+            else
+            {
+                badge.View.SetStaticText(FormatDishValue(badge.Contribution), DishValueColor, DishValueCharacterSize);
+            }
+
+            PunchDishValueBadge(badge.View);
+        }
+
+        private static void PunchDishValueBadge(FloatingTextView view)
+        {
+            if (view == null)
+            {
+                return;
+            }
+
+            Transform t = view.transform;
+            t.DOKill(false);
+            t.localScale = Vector3.one;
+            t.DOPunchScale(
+                    Vector3.one * DishValuePunchScale,
+                    DishValuePunchDuration,
+                    1,
+                    0.45f)
+                .SetLink(view.gameObject);
+        }
+
+        private static void ClearDishValueBadges(Dictionary<int, DishValueBadge> dishValueBadges)
+        {
+            if (dishValueBadges == null)
+            {
+                return;
+            }
+
+            foreach (DishValueBadge badge in dishValueBadges.Values)
+            {
+                if (badge?.View != null)
+                {
+                    Destroy(badge.View.gameObject);
+                }
+            }
+
+            dishValueBadges.Clear();
         }
 
         private async Awaitable PlayFinalScorePopupAsync(
@@ -495,6 +594,7 @@ namespace GourmetProject.Game.Presentation.Battle
             bool hasLayerCue = false;
             bool hasSilverItemRollCue = false;
             bool hasFinalModifierCue = false;
+            var shownDishBases = new HashSet<int>();
 
             foreach (ScoreLine line in result.ScoreLines)
             {
@@ -514,6 +614,22 @@ namespace GourmetProject.Game.Presentation.Battle
                     && view != null
                     && cue.Kind != SettlementCueKind.FinalModifier)
                 {
+                    if (cue.ValueChange.Kind == DishValueChangeKind.Base)
+                    {
+                        if (shownDishBases.Contains(line.DishInstanceId))
+                        {
+                            continue;
+                        }
+
+                        shownDishBases.Add(line.DishInstanceId);
+                    }
+                    else if (cue.ValueChange.Kind != DishValueChangeKind.None
+                        && !shownDishBases.Contains(line.DishInstanceId))
+                    {
+                        plan.Steps.Add(new SettlementPlaybackStep(line.DishInstanceId, BuildDishBaseCue(view.Instance)));
+                        shownDishBases.Add(line.DishInstanceId);
+                    }
+
                     plan.Steps.Add(new SettlementPlaybackStep(line.DishInstanceId, cue));
                 }
                 else
@@ -558,6 +674,16 @@ namespace GourmetProject.Game.Presentation.Battle
             return plan;
         }
 
+        private static SettlementCue BuildDishBaseCue(DishInstance instance)
+        {
+            float baseScore = instance != null ? instance.BaseScoreBeforeSettlement : 0f;
+            return new SettlementCue(
+                SettlementCueKind.Source,
+                $"分数 {FormatSigned(baseScore)}",
+                GainColor,
+                valueChange: DishValueChange.Base(baseScore));
+        }
+
         private static bool TryBuildCue(ScoreLine line, out SettlementCue cue)
         {
             cue = null;
@@ -573,7 +699,8 @@ namespace GourmetProject.Game.Presentation.Battle
                     cue = new SettlementCue(
                         SettlementCueKind.Source,
                         $"分数 {FormatSigned(line.Value)}",
-                        GainColor);
+                        GainColor,
+                        valueChange: DishValueChange.Base(line.After));
                     return true;
 
                 case ScoreLineKind.DishFlat:
@@ -586,7 +713,8 @@ namespace GourmetProject.Game.Presentation.Battle
                         SettlementCueKind.Source,
                         $"{sourceName} {FormatSigned(line.Value)}",
                         ColorForSource(line.Source),
-                        reveal: SettlementRevealSignal.FlatReveal(line.DishInstanceId, line.After, SweetTransferCardDelta(line.Source)));
+                        reveal: SettlementRevealSignal.FlatReveal(line.DishInstanceId, line.After, SweetTransferCardDelta(line.Source)),
+                        valueChange: DishValueChange.FlatBonus(line.After));
                     return true;
 
                 case ScoreLineKind.DishMultiplier:
@@ -594,7 +722,8 @@ namespace GourmetProject.Game.Presentation.Battle
                         SettlementCueKind.Source,
                         $"倍率 {FormatMultiplier(line.Value)}",
                         MultiplierColor,
-                        reveal: SettlementRevealSignal.MultiplierReveal(line.DishInstanceId, line.After, SweetTransferCardDelta(line.Source)));
+                        reveal: SettlementRevealSignal.MultiplierReveal(line.DishInstanceId, line.After, SweetTransferCardDelta(line.Source)),
+                        valueChange: DishValueChange.Multiplier(line.After));
                     return true;
 
                 case ScoreLineKind.DishMultiplierAdd:
@@ -602,7 +731,8 @@ namespace GourmetProject.Game.Presentation.Battle
                         SettlementCueKind.Source,
                         $"倍率 {FormatSigned(line.Value)}",
                         MultiplierColor,
-                        reveal: SettlementRevealSignal.MultiplierReveal(line.DishInstanceId, line.After, SweetTransferCardDelta(line.Source)));
+                        reveal: SettlementRevealSignal.MultiplierReveal(line.DishInstanceId, line.After, SweetTransferCardDelta(line.Source)),
+                        valueChange: DishValueChange.Multiplier(line.After));
                     return true;
 
                 case ScoreLineKind.FinalFlat:
@@ -751,6 +881,15 @@ namespace GourmetProject.Game.Presentation.Battle
             return $"×{value:0.##}";
         }
 
+        private static string FormatDishValue(float value)
+        {
+            float rounded = (float)Math.Round(Mathf.Max(0f, value), 1, MidpointRounding.AwayFromZero);
+            float whole = (float)Math.Round(rounded, MidpointRounding.AwayFromZero);
+            return Mathf.Abs(rounded - whole) <= 0.001f
+                ? $"{whole:0}"
+                : $"{rounded:0.#}";
+        }
+
         private static Vector3 DishCenter(DishInstance dish, DiningTableCoordinateMapper mapper)
         {
             if (dish == null || dish.OccupiedCells.Count == 0)
@@ -796,7 +935,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 float characterSize = SourceCueCharacterSize,
                 float rise = SourceCueRise,
                 float duration = SourceCueDuration,
-                SettlementRevealSignal reveal = default)
+                SettlementRevealSignal reveal = default,
+                DishValueChange valueChange = default)
             {
                 Kind = kind;
                 Text = text;
@@ -805,6 +945,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 Rise = rise;
                 Duration = duration;
                 Reveal = reveal;
+                ValueChange = valueChange;
             }
 
             public SettlementCueKind Kind { get; }
@@ -821,6 +962,81 @@ namespace GourmetProject.Game.Presentation.Battle
 
             /// <summary>该 cue 播放时对 tips 发出的渐进揭示信号（默认 None）。</summary>
             public SettlementRevealSignal Reveal { get; }
+
+            public DishValueChange ValueChange { get; }
+        }
+
+        private enum DishValueChangeKind
+        {
+            None = 0,
+            Base = 1,
+            FlatBonus = 2,
+            Multiplier = 3,
+        }
+
+        private readonly struct DishValueChange
+        {
+            private DishValueChange(DishValueChangeKind kind, float value)
+            {
+                Kind = kind;
+                Value = value;
+            }
+
+            public DishValueChangeKind Kind { get; }
+
+            public float Value { get; }
+
+            public static DishValueChange Base(float value)
+            {
+                return new DishValueChange(DishValueChangeKind.Base, value);
+            }
+
+            public static DishValueChange FlatBonus(float value)
+            {
+                return new DishValueChange(DishValueChangeKind.FlatBonus, value);
+            }
+
+            public static DishValueChange Multiplier(float value)
+            {
+                return new DishValueChange(DishValueChangeKind.Multiplier, value);
+            }
+        }
+
+        private sealed class DishValueBadge
+        {
+            public DishValueBadge(float baseScore, float multiplier)
+            {
+                BaseScore = baseScore;
+                Multiplier = multiplier;
+            }
+
+            public FloatingTextView View { get; set; }
+
+            public bool IsVisible { get; set; }
+
+            private float BaseScore { get; set; }
+
+            private float FlatBonus { get; set; }
+
+            private float Multiplier { get; set; }
+
+            public float Contribution => (BaseScore + FlatBonus) * Multiplier;
+
+            public void Apply(DishValueChange change)
+            {
+                switch (change.Kind)
+                {
+                    case DishValueChangeKind.Base:
+                        BaseScore = change.Value;
+                        break;
+                    case DishValueChangeKind.FlatBonus:
+                        FlatBonus = change.Value;
+                        break;
+                    case DishValueChangeKind.Multiplier:
+                        Multiplier = change.Value;
+                        break;
+                }
+            }
         }
 
         private sealed class SettlementPlaybackState
