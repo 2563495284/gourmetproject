@@ -155,7 +155,10 @@ namespace GourmetProject.Game.UI.Meta
                     null,
                     null,
                     ShowDishTips,
-                    HideDishTips);
+                    HideDishTips,
+                    ComposeFlavorIds(
+                        def,
+                        string.IsNullOrEmpty(choice.FlavorId) ? null : new[] { choice.FlavorId }));
                 _spawnedChoices.Add(dish);
             }
         }
@@ -221,7 +224,8 @@ namespace GourmetProject.Game.UI.Meta
                         null,
                         null,
                         ShowDishTips,
-                        HideDishTips);
+                        HideDishTips,
+                        ComposeFlavorIds(def, entries[k].ExtraFlavorIds));
                     _spawnedBooks.Add(dish.gameObject);
                 }
 

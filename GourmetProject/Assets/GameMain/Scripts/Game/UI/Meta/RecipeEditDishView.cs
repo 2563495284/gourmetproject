@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using DG.Tweening;
 using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Gameplay.Model;
@@ -75,7 +76,8 @@ namespace GourmetProject.Game.UI.Meta
             Action<RecipeEditDishView> onBeginDrag = null,
             Func<RecipeEditDishView, bool> onDragCancelled = null,
             Action<RecipeEditDishView> onHoverEnter = null,
-            Action<RecipeEditDishView> onHoverExit = null)
+            Action<RecipeEditDishView> onHoverExit = null,
+            IReadOnlyList<string> flavorIds = null)
         {
             BookIndex = bookIndex;
             DishIndex = dishIndex;
@@ -93,7 +95,7 @@ namespace GourmetProject.Game.UI.Meta
             {
                 if (dishDef != null)
                 {
-                    _shapePreview.Bind(dishDef);
+                    _shapePreview.Bind(dishDef, flavorIds: flavorIds);
                 }
                 else
                 {

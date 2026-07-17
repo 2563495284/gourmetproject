@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using GourmetProject.Core.Utility;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Gameplay.Model;
 using UnityEngine;
@@ -19,11 +20,18 @@ namespace GourmetProject.Game.UI.Widgets
         [SerializeField] private Color _filledCellColor = Color.white;
         [SerializeField] private Color _emptyCellColor = new Color(1f, 1f, 1f, 0.35f);
         [SerializeField] private float _cellPadding = 3f;
+        [Header("风味脏印（程序化噪声，仅作用于菜品图）")]
+        [SerializeField] private float _stainScale = 8f;
+        [SerializeField, Range(0f, 1f)] private float _stainThreshold = 0.62f;
+        [SerializeField, Range(0.001f, 0.5f)] private float _stainSoftness = 0.12f;
+        [SerializeField, Range(0f, 1f)] private float _stainDarken = 0.12f;
 
         private readonly List<GameObject> _spawnedCells = new();
+        private readonly List<string> _flavorScratch = new();
         private readonly DishSpriteProvider _spriteProvider = new();
+        private Material _stainMaterial;
 
-        public void Bind(DishDef def, Sprite spriteOverride = null)
+        public void Bind(DishDef def, Sprite spriteOverride = null, IReadOnlyList<string> flavorIds = null)
         {
             EnsureRefs();
             ClearCells();
@@ -42,7 +50,7 @@ namespace GourmetProject.Game.UI.Widgets
             float offY = (dim - shape.Height) * 0.5f;
 
             BuildBoardGrid(shape, dim, offX, offY);
-            BuildDishImage(def, spriteOverride, shape, dim, offX, offY);
+            BuildDishImage(def, spriteOverride, flavorIds, shape, dim, offX, offY);
         }
 
         public void Hide()
@@ -53,6 +61,11 @@ namespace GourmetProject.Game.UI.Widgets
             if (_contentRoot != null)
             {
                 _contentRoot.gameObject.SetActive(false);
+            }
+
+            if (_dishImage != null)
+            {
+                _dishImage.material = null;
             }
         }
 
@@ -86,7 +99,14 @@ namespace GourmetProject.Game.UI.Widgets
             }
         }
 
-        private void BuildDishImage(DishDef def, Sprite spriteOverride, DishShape shape, int dim, float offX, float offY)
+        private void BuildDishImage(
+            DishDef def,
+            Sprite spriteOverride,
+            IReadOnlyList<string> flavorIds,
+            DishShape shape,
+            int dim,
+            float offX,
+            float offY)
         {
             if (_dishImage == null)
             {
@@ -98,6 +118,7 @@ namespace GourmetProject.Game.UI.Widgets
             _dishImage.color = Color.white;
             _dishImage.raycastTarget = false;
             _dishImage.preserveAspect = false;
+            ApplyFlavorStain(def, flavorIds);
 
             RectTransform rect = _dishImage.rectTransform;
             rect.anchorMin = new Vector2(offX / dim, 1f - (offY + shape.Height) / dim);
@@ -106,6 +127,32 @@ namespace GourmetProject.Game.UI.Widgets
             rect.offsetMax = Vector2.zero;
             rect.localScale = Vector3.one;
             rect.SetAsLastSibling();
+        }
+
+        private void ApplyFlavorStain(DishDef def, IReadOnlyList<string> flavorIds)
+        {
+            _flavorScratch.Clear();
+            if (flavorIds != null)
+            {
+                _flavorScratch.AddRange(flavorIds);
+            }
+            else if (def != null && !string.IsNullOrEmpty(def.FlavorId))
+            {
+                _flavorScratch.Add(def.FlavorId);
+            }
+
+            var settings = new FlavorStainPalette.Settings(
+                _stainScale,
+                _stainThreshold,
+                _stainSoftness,
+                _stainDarken,
+                def != null ? (float)(StableHash.Fnv1a64(def.Id) & 0xFFFFFF) : 0f);
+            FlavorStainPalette.ApplyToGraphic(_dishImage, _flavorScratch, ref _stainMaterial, settings);
+        }
+
+        private void OnDestroy()
+        {
+            FlavorStainPalette.ReleaseMaterial(ref _stainMaterial);
         }
 
         private void EnsureRefs()

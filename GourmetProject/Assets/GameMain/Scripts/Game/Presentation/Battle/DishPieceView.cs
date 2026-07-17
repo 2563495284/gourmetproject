@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
@@ -91,23 +90,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private Action<DishPieceView> _hoverExited;
         private bool _clickEnabled = true;
         private bool _hovered;
-        private const int MaxStains = 4;
-        private static readonly int StainCountId = Shader.PropertyToID("_StainCount");
-        private static readonly int StainScaleId = Shader.PropertyToID("_StainScale");
-        private static readonly int StainThresholdId = Shader.PropertyToID("_StainThreshold");
-        private static readonly int StainSoftnessId = Shader.PropertyToID("_StainSoftness");
-        private static readonly int StainDarkenId = Shader.PropertyToID("_StainDarken");
-        private static readonly int SeedId = Shader.PropertyToID("_Seed");
-        private static readonly int[] StainColorIds =
-        {
-            Shader.PropertyToID("_StainColor0"),
-            Shader.PropertyToID("_StainColor1"),
-            Shader.PropertyToID("_StainColor2"),
-            Shader.PropertyToID("_StainColor3"),
-        };
-
         private MaterialPropertyBlock _stainBlock;
-        private readonly List<Color> _stainColorScratch = new(MaxStains);
 
         public DishInstance Instance { get; private set; }
 
@@ -439,43 +422,13 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            _stainColorScratch.Clear();
-            IReadOnlyList<string> flavorIds = Instance?.FlavorIds;
-            if (flavorIds != null)
-            {
-                for (int i = 0; i < flavorIds.Count && _stainColorScratch.Count < MaxStains; i++)
-                {
-                    if (FlavorStainPalette.TryResolve(flavorIds[i], out Color color)
-                        && !_stainColorScratch.Contains(color))
-                    {
-                        _stainColorScratch.Add(color);
-                    }
-                }
-            }
-
-            if (_stainColorScratch.Count == 0 || SpriteRenderStyle.SpriteStainMaterial == null)
-            {
-                _spriteRenderer.SetPropertyBlock(null);
-                SpriteRenderStyle.ApplyUnlitMaterial(_spriteRenderer);
-                return;
-            }
-
-            SpriteRenderStyle.ApplyStainMaterial(_spriteRenderer);
-            _stainBlock ??= new MaterialPropertyBlock();
-            _spriteRenderer.GetPropertyBlock(_stainBlock);
-            _stainBlock.SetFloat(StainCountId, _stainColorScratch.Count);
-            _stainBlock.SetFloat(StainScaleId, _stainScale);
-            _stainBlock.SetFloat(StainThresholdId, _stainThreshold);
-            _stainBlock.SetFloat(StainSoftnessId, _stainSoftness);
-            _stainBlock.SetFloat(StainDarkenId, _stainDarken);
-            _stainBlock.SetFloat(SeedId, Instance != null ? Instance.Id : 0f);
-            for (int i = 0; i < MaxStains; i++)
-            {
-                Color c = i < _stainColorScratch.Count ? _stainColorScratch[i] : Color.clear;
-                _stainBlock.SetColor(StainColorIds[i], c);
-            }
-
-            _spriteRenderer.SetPropertyBlock(_stainBlock);
+            var settings = new FlavorStainPalette.Settings(
+                _stainScale,
+                _stainThreshold,
+                _stainSoftness,
+                _stainDarken,
+                Instance != null ? Instance.Id : 0f);
+            FlavorStainPalette.ApplyToSpriteRenderer(_spriteRenderer, Instance?.FlavorIds, ref _stainBlock, settings);
         }
 
         private void ApplyDebuffVisual()

@@ -253,7 +253,8 @@ namespace GourmetProject.Game.UI.Meta
                         OnRecipeDishBeginDrag,
                         OnRecipeDishDragCancelled,
                         ShowRecipeDishTips,
-                        HideRecipeDishTips);
+                        HideRecipeDishTips,
+                        ComposeFlavorIds(def, slot.ExtraFlavorIds));
                     _spawned.Add(dish.gameObject);
                     _spawnedDishes.Add(dish);
                 }
