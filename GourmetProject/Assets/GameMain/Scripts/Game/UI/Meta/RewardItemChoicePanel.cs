@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using GourmetProject.Game.Meta;
+using GourmetProject.Game.Run;
+using GourmetProject.Game.UI.Tooltips;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,11 +16,20 @@ namespace GourmetProject.Game.UI.Meta
         [SerializeField] private Button _skipButton;
         [SerializeField] private RewardItemChoiceCardView _cardPrefab;
         private bool _resolved;
+        private GameRun _run;
 
-        public void Open(string title, IReadOnlyList<RewardChoice> choices, cfg.ItemKind kind, Action<int> onPick, Action onSkip)
+        public void Open(
+            string title,
+            IReadOnlyList<RewardChoice> choices,
+            cfg.ItemKind kind,
+            Action<int> onPick,
+            Action onSkip,
+            GameRun run = null,
+            ItemTipView itemTip = null)
         {
             ClearCards();
             _resolved = false;
+            _run = run;
             gameObject.SetActive(true);
 
             if (_titleText != null)
@@ -31,7 +42,7 @@ namespace GourmetProject.Game.UI.Meta
             {
                 int index = i;
                 RewardChoice choice = choices[i];
-                RewardItemChoiceCardView card = CreateCard(choice, kind, () =>
+                RewardItemChoiceCardView card = CreateCard(choice, kind, itemTip, () =>
                 {
                     if (_resolved)
                     {
@@ -66,10 +77,11 @@ namespace GourmetProject.Game.UI.Meta
         public void Close()
         {
             ClearCards();
+            _run = null;
             gameObject.SetActive(false);
         }
 
-        private RewardItemChoiceCardView CreateCard(RewardChoice choice, cfg.ItemKind kind, Action onClick)
+        private RewardItemChoiceCardView CreateCard(RewardChoice choice, cfg.ItemKind kind, ItemTipView itemTip, Action onClick)
         {
             if (_cardsRoot == null || _cardPrefab == null)
             {
@@ -80,8 +92,27 @@ namespace GourmetProject.Game.UI.Meta
             RewardItemChoiceCardView card = Instantiate(_cardPrefab, _cardsRoot);
             card.gameObject.name = $"ItemChoice_{choice?.Id}";
             card.gameObject.SetActive(true);
-            card.Bind(choice, kind, onClick);
+            string slotWarning = ActiveSlotWarning(choice, kind);
+            card.Bind(
+                choice,
+                kind,
+                onClick,
+                itemTip,
+                true,
+                slotWarning);
             return card;
+        }
+
+        private string ActiveSlotWarning(RewardChoice choice, cfg.ItemKind kind)
+        {
+            if (choice == null || (kind != cfg.ItemKind.Active && choice.Kind != cfg.RewardKind.ActiveItemGrant))
+            {
+                return null;
+            }
+
+            return _run == null || _run.HasFreeActiveSlot
+                ? null
+                : "主动道具槽已满，选择后会折算金币";
         }
 
         private void ClearCards()

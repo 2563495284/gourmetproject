@@ -12,8 +12,10 @@ namespace GourmetProject.Game.UI.Tooltips
     /// 标题「道具名」+ 效果描述框；无底部信息行。
     /// 固定结构在 ItemTipView.prefab，内容由 <see cref="Bind"/> 数据驱动。
     /// </summary>
-    public sealed class ItemTipView : ActionTipView
+    public sealed class ItemTipView : ActionTipView, ITooltipPlacementAware
     {
+        private const float SpecialTagsGap = 18f;
+
         [SerializeField] private RectTransform _specialTagsRoot;
         [SerializeField] private FoodTipCardView _infoCardPrefab;
 
@@ -40,6 +42,11 @@ namespace GourmetProject.Game.UI.Tooltips
             ApplyTexts(itemName, desc);
             ApplyFooter(null);
             BuildInfoCards(_specialTagsRoot, specialTags, "SpecialTag");
+        }
+
+        public void OnPlacedAroundTarget(bool placedLeftOfTarget)
+        {
+            PlaceSpecialTags(placedLeftOfTarget);
         }
 
         private static IReadOnlyList<FoodInfoEntry> BuildSpecialTags(IReadOnlyList<string> termIds)
@@ -89,6 +96,19 @@ namespace GourmetProject.Game.UI.Tooltips
                 card.name = $"{prefix}_{i}";
                 card.Bind(entry.Title, entry.Desc);
             }
+        }
+
+        private void PlaceSpecialTags(bool left)
+        {
+            if (_specialTagsRoot == null)
+            {
+                return;
+            }
+
+            _specialTagsRoot.anchorMin = new Vector2(left ? 0f : 1f, 1f);
+            _specialTagsRoot.anchorMax = new Vector2(left ? 0f : 1f, 1f);
+            _specialTagsRoot.pivot = new Vector2(left ? 1f : 0f, 1f);
+            _specialTagsRoot.anchoredPosition = new Vector2(left ? -SpecialTagsGap : SpecialTagsGap, 0f);
         }
     }
 }

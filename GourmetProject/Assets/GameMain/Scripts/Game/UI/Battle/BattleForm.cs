@@ -939,7 +939,9 @@ namespace GourmetProject.Game.UI.Battle
                         _rewardItemChoicePanel.Close();
                         RestoreAfterAcquireView(previous);
                         onSkip?.Invoke();
-                    });
+                    },
+                    _run,
+                    _tips != null ? _tips.Item : null);
             });
             return true;
         }
@@ -1048,6 +1050,17 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             _rewardItemChoicePanel = Instantiate(_rewardItemChoicePanelPrefab, (RectTransform)_center.transform);
+            RectTransform rect = _rewardItemChoicePanel.transform as RectTransform;
+            if (rect != null)
+            {
+                rect.anchorMin = new Vector2(0.18f, 0.03f);
+                rect.anchorMax = new Vector2(0.82f, 0.9f);
+                rect.offsetMin = Vector2.zero;
+                rect.offsetMax = Vector2.zero;
+                rect.anchoredPosition = Vector2.zero;
+                rect.localScale = Vector3.one;
+            }
+
             _rewardItemChoicePanel.gameObject.SetActive(false);
         }
 

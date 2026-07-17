@@ -295,6 +295,9 @@ namespace GourmetProject.Game.UI.Meta
                 rect.localScale = new Vector3(scale, scale, 1f);
                 rect.anchoredPosition = new Vector2(x, 0f);
                 x += scaledBookWidth + gap;
+
+                book.FitSlotsWithinView(GameRun.RecipeBookCapacity);
+                book.ApplyImmediateLayout();
             }
         }
 

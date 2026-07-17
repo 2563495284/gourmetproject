@@ -102,10 +102,10 @@
   {
     "id": "ss_flat_per_run_v6",
     "trigger": 0,
-    "condType": 8,
+    "condType": 0,
     "condScope": 0,
     "condUnit": 0,
-    "condMode": 0,
+    "condMode": 2,
     "condParam": "",
     "actionType": 10,
     "actionScope": 0,

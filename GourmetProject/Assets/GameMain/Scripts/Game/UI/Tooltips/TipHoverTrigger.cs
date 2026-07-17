@@ -5,6 +5,11 @@ using UnityEngine.UI;
 
 namespace GourmetProject.Game.UI.Tooltips
 {
+    internal interface ITooltipPlacementAware
+    {
+        void OnPlacedAroundTarget(bool placedLeftOfTarget);
+    }
+
     /// <summary>
     /// 通用「悬停显示 Tips」口子：挂在任意可悬停的 UI 元素上（行动轴节点格 / 道具槽等），
     /// 指针进入时 <see cref="ActionTipView.Show"/> 目标 Tips，离开时 <see cref="ActionTipView.Hide"/>。
@@ -230,6 +235,7 @@ namespace GourmetProject.Game.UI.Tooltips
 
             Vector2 best = candidates[0];
             float bestScore = float.MaxValue;
+            int bestIndex = 0;
             for (int i = 0; i < candidates.Length; i++)
             {
                 Vector2 clamped = ClampCenter(candidates[i], tipSize, parentRect);
@@ -241,10 +247,15 @@ namespace GourmetProject.Game.UI.Tooltips
                 {
                     best = clamped;
                     bestScore = score;
+                    bestIndex = i;
                 }
             }
 
             _tipRect.anchoredPosition = best;
+            if (ActiveTip is ITooltipPlacementAware placementAware)
+            {
+                placementAware.OnPlacedAroundTarget(bestIndex == 1 || best.x < targetRect.center.x);
+            }
         }
 
         private Vector2 TipSize()

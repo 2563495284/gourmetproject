@@ -1,6 +1,7 @@
 using System;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.UI.Hud;
+using GourmetProject.Game.UI.Tooltips;
 using GourmetProject.Runtime;
 using UnityEngine;
 using UnityEngine.UI;
@@ -15,7 +16,13 @@ namespace GourmetProject.Game.UI.Meta
         [SerializeField] private Text _descriptionText;
         [SerializeField] private Button _button;
 
-        public void Bind(RewardChoice choice, cfg.ItemKind kind, Action onClick)
+        public void Bind(
+            RewardChoice choice,
+            cfg.ItemKind kind,
+            Action onClick,
+            ItemTipView itemTip = null,
+            bool selectable = true,
+            string disabledReason = null)
         {
             ItemDefinition item = ItemDefinition.Get(GameApp.Config.Tables, choice?.Id, kind);
 
@@ -39,17 +46,46 @@ namespace GourmetProject.Game.UI.Meta
 
             if (_descriptionText != null)
             {
-                _descriptionText.text = item != null ? item.Desc : choice?.Description ?? string.Empty;
+                string description = item != null ? item.Desc : choice?.Description ?? string.Empty;
+                _descriptionText.text = string.IsNullOrWhiteSpace(disabledReason)
+                    ? description
+                    : $"{description}\n\n{disabledReason}";
             }
 
             if (_button != null)
             {
                 _button.onClick.RemoveAllListeners();
-                if (onClick != null)
+                _button.interactable = selectable;
+                if (selectable && onClick != null)
                 {
                     _button.onClick.AddListener(() => onClick());
                 }
             }
+
+            BindTip(itemTip, item);
+        }
+
+        private void BindTip(ItemTipView itemTip, ItemDefinition item)
+        {
+            TipHoverTrigger trigger = GetComponent<TipHoverTrigger>();
+            if (itemTip == null || item == null)
+            {
+                if (trigger != null)
+                {
+                    trigger.ClearTip();
+                }
+
+                return;
+            }
+
+            if (trigger == null)
+            {
+                trigger = gameObject.AddComponent<TipHoverTrigger>();
+            }
+
+            RectTransform target = _icon != null ? _icon.rectTransform : transform as RectTransform;
+            trigger.SetTarget(target);
+            trigger.SetTip(itemTip, () => itemTip.Bind(item));
         }
     }
 }

@@ -24,6 +24,7 @@ namespace GourmetProject.Game.UI.Meta
         private Action<RecipeEditDishView, int, int> _onDishDropped;
         private Action<RewardDishChoiceCardView, int> _onChoiceDropped;
         private GridLayoutGroup _grid;
+        private int _fitSlotCapacity;
 
         public RectTransform DishContainer => _dishContainer;
 
@@ -81,6 +82,46 @@ namespace GourmetProject.Game.UI.Meta
                 rect.sizeDelta = _cellSize;
                 index++;
             }
+
+            UpdateContentSize(index);
+        }
+
+        public void FitSlotsWithinView(int slotCapacity)
+        {
+            _fitSlotCapacity = Mathf.Max(0, slotCapacity);
+            ResolveLayout();
+        }
+
+        private void ApplySlotFit()
+        {
+            if (_dishContainer == null || _fitSlotCapacity <= 0)
+            {
+                return;
+            }
+
+            int columns = Mathf.Max(1, _columnCount);
+            int rows = Mathf.CeilToInt(_fitSlotCapacity / (float)columns);
+            if (rows <= 0)
+            {
+                return;
+            }
+
+            Vector2 available = _dishContainer.rect.size;
+            if (available.x <= 0f || available.y <= 0f)
+            {
+                return;
+            }
+
+            float desiredWidth = _padding.left + _padding.right + columns * _cellSize.x + Mathf.Max(0, columns - 1) * _spacing.x;
+            float desiredHeight = _padding.top + _padding.bottom + rows * _cellSize.y + Mathf.Max(0, rows - 1) * _spacing.y;
+            if (desiredWidth <= 0f || desiredHeight <= 0f)
+            {
+                return;
+            }
+
+            float scale = Mathf.Min(available.x / desiredWidth, available.y / desiredHeight, 1f);
+            _cellSize *= scale;
+            _spacing *= scale;
         }
 
         public void AnimateCompaction(RecipeEditDishView exclude = null)
@@ -105,6 +146,8 @@ namespace GourmetProject.Game.UI.Meta
                     .SetLink(rect.gameObject);
                 index++;
             }
+
+            UpdateContentSize(index);
         }
 
         public void AnimateInsertionGap(int insertIndex, RecipeEditDishView exclude = null)
@@ -131,6 +174,8 @@ namespace GourmetProject.Game.UI.Meta
                     .SetLink(rect.gameObject);
                 index++;
             }
+
+            UpdateContentSize(index + 1);
         }
 
         public void ScrollToIndex(int index, float duration)
@@ -239,6 +284,8 @@ namespace GourmetProject.Game.UI.Meta
                 _padding = new RectOffset(_grid.padding.left, _grid.padding.right, _grid.padding.top, _grid.padding.bottom);
             }
 
+            ApplySlotFit();
+
             _grid.enabled = false;
         }
 
@@ -290,6 +337,26 @@ namespace GourmetProject.Game.UI.Meta
             float rowWidth = columns * _cellSize.x + Mathf.Max(0, columns - 1) * _spacing.x;
             float innerWidth = Mathf.Max(0f, _dishContainer.rect.width - _padding.left - _padding.right);
             return _padding.left + Mathf.Max(0f, (innerWidth - rowWidth) * 0.5f);
+        }
+
+        private void UpdateContentSize(int slotCount)
+        {
+            if (_dishContainer == null || _scrollRect == null || _scrollRect.content != _dishContainer)
+            {
+                return;
+            }
+
+            int columns = Mathf.Max(1, _columnCount);
+            int rows = slotCount <= 0 ? 0 : Mathf.CeilToInt(slotCount / (float)columns);
+            float contentHeight = _padding.top + _padding.bottom;
+            if (rows > 0)
+            {
+                contentHeight += rows * _cellSize.y + Mathf.Max(0, rows - 1) * _spacing.y;
+            }
+
+            Vector2 size = _dishContainer.sizeDelta;
+            size.y = Mathf.Max(size.y, contentHeight);
+            _dishContainer.sizeDelta = size;
         }
 
         private void ConfigureDishRect(RectTransform rect)
