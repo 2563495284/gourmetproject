@@ -104,6 +104,12 @@ namespace GourmetProject.Game.Run
         /// <summary>已购买但尚未拼贴的碎片包内容（rolled 出的候选碎片 id）；拼贴或跳过后清空。</summary>
         public List<string> PendingFragmentPackIds = new List<string>();
 
+        /// <summary>本局商店碎片包成功购买次数，用于递增定价。</summary>
+        public int FragmentPackPurchaseCount;
+
+        /// <summary>本局商店/菜谱编辑成功删除菜品次数，用于递增定价。</summary>
+        public int DeleteDishCount;
+
         /// <summary>整局累计已结算的菜品 BaseId 次数（技能「大局相同检测」）。</summary>
         public Dictionary<string, int> RunSettledCounts = new Dictionary<string, int>();
 

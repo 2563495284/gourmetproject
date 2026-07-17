@@ -43,6 +43,8 @@ namespace GourmetProject.Game.Run
 
         // 已购买待拼贴的碎片包内容（rolled 出的候选碎片 id）；拼贴或跳过后清空。
         private readonly List<string> _pendingFragmentPack = new List<string>();
+        private int _fragmentPackPurchaseCount;
+        private int _deleteDishCount;
 
         // 餐桌碎片开包时随机出的局部材质落点。候选阶段即确定，之后随已拼贴碎片保存。
         private readonly Dictionary<string, List<CellMaterial>> _fragmentMaterialRolls =
@@ -663,6 +665,20 @@ namespace GourmetProject.Game.Run
 
         /// <summary>已购买待拼贴的碎片包候选碎片 id（三选一）；为空表示没有待处理的碎片包。</summary>
         public IReadOnlyList<string> PendingFragmentPack => _pendingFragmentPack;
+
+        public int FragmentPackPurchaseCount => _fragmentPackPurchaseCount;
+
+        public int DeleteDishCount => _deleteDishCount;
+
+        public void RecordFragmentPackPurchased()
+        {
+            _fragmentPackPurchaseCount++;
+        }
+
+        public void RecordDishDeleted()
+        {
+            _deleteDishCount++;
+        }
 
         public TableFragmentDef GetTableFragmentDef(string fragmentId)
         {
@@ -1430,6 +1446,8 @@ namespace GourmetProject.Game.Run
                 FragmentMaterialRolls = ToFragmentMaterialRollSaveData(),
                 CellMaterialOverrides = ToCellMaterialSaveData(),
                 PendingFragmentPackIds = new List<string>(_pendingFragmentPack),
+                FragmentPackPurchaseCount = _fragmentPackPurchaseCount,
+                DeleteDishCount = _deleteDishCount,
                 RunSettledCounts = new Dictionary<string, int>(_runSettledCounts),
                 CurrentTimelineId = CurrentTimelineId,
                 TimelineLengthDays = TimelineLengthDays,
@@ -1600,6 +1618,9 @@ namespace GourmetProject.Game.Run
             {
                 run._pendingFragmentPack.AddRange(data.PendingFragmentPackIds);
             }
+
+            run._fragmentPackPurchaseCount = System.Math.Max(0, data.FragmentPackPurchaseCount);
+            run._deleteDishCount = System.Math.Max(0, data.DeleteDishCount);
 
             if (data.RunSettledCounts != null)
             {

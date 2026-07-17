@@ -48,6 +48,8 @@ namespace GourmetProject.Game.UI.Meta
         private Action _onChanged;
         private Func<FoodTipsView> _getFoodTips;
         private RecipeEditDishView _hoveredTipDish;
+        private int _pendingRestoreBookIndex = -1;
+        private int _pendingRestoreDishIndex = -1;
         private GameObject _compareOverlay;
         private RecipeWorkspacePanelStateMachine _stateMachine;
         private bool _wired;
@@ -64,6 +66,7 @@ namespace GourmetProject.Game.UI.Meta
             HideRecipeDishTips();
             ClearSpawned();
             CancelPendingRebuild();
+            ClearPendingRestoreScroll();
         }
 
         /// <summary>由 BattleForm 进入编辑菜谱态时调用：绑定运行数据与回调并铺出工作区。</summary>
@@ -234,6 +237,7 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             FitBooksToContainer(books);
+            RestorePendingScroll(books);
             _onChanged?.Invoke();
         }
 
@@ -322,7 +326,11 @@ namespace GourmetProject.Game.UI.Meta
                 }
 
                 targetBook.ScrollToIndex(targetDishIndex, DishFlyDuration);
-                PlayDishFlyToSlot(dish, targetBook, targetDishIndex, RebuildBooksForCurrentState);
+                PlayDishFlyToSlot(dish, targetBook, targetDishIndex, () =>
+                {
+                    RequestRestoreScroll(targetBookIndex, targetDishIndex);
+                    RebuildBooksForCurrentState();
+                });
             }
         }
 
@@ -380,8 +388,43 @@ namespace GourmetProject.Game.UI.Meta
 
             dish.MarkDropHandled();
             book.ScrollToIndex(targetIndex, DishFlyDuration);
-            PlayDishFlyToSlot(dish, book, targetIndex, RebuildBooksForCurrentState);
+            PlayDishFlyToSlot(dish, book, targetIndex, () =>
+            {
+                RequestRestoreScroll(dish.BookIndex, targetIndex);
+                RebuildBooksForCurrentState();
+            });
             return true;
+        }
+
+        private void RequestRestoreScroll(int bookIndex, int dishIndex)
+        {
+            _pendingRestoreBookIndex = bookIndex;
+            _pendingRestoreDishIndex = dishIndex;
+        }
+
+        private void ClearPendingRestoreScroll()
+        {
+            _pendingRestoreBookIndex = -1;
+            _pendingRestoreDishIndex = -1;
+        }
+
+        private void RestorePendingScroll(IReadOnlyList<RecipeEditBookView> books)
+        {
+            if (_pendingRestoreBookIndex < 0 || books == null)
+            {
+                return;
+            }
+
+            int bookIndex = _pendingRestoreBookIndex;
+            int dishIndex = _pendingRestoreDishIndex;
+            _pendingRestoreBookIndex = -1;
+            _pendingRestoreDishIndex = -1;
+            if (bookIndex < 0 || bookIndex >= books.Count || books[bookIndex] == null)
+            {
+                return;
+            }
+
+            books[bookIndex].ScrollToIndex(Mathf.Max(0, dishIndex), 0f);
         }
 
         private RecipeEditBookView FindBook(int bookIndex)
@@ -401,17 +444,17 @@ namespace GourmetProject.Game.UI.Meta
             dish.PrepareAsFloating();
             Vector3 start = rect.position;
             Vector3 startScale = rect.localScale;
-            RectTransform targetScaleSource = targetBook.DishContainer != null
-                ? targetBook.DishContainer
+            RectTransform targetScaleSource = targetBook.ViewportRect != null
+                ? targetBook.ViewportRect
                 : (RectTransform)targetBook.transform;
             Vector3 targetScale = FloatingScaleForTarget(rect.parent as RectTransform, targetScaleSource);
+            Vector3 targetPosition = targetBook.SlotWorldCenterAfterScrollToIndex(targetDishIndex);
             DOTween.Kill(rect);
             DOTween.To(
                     () => 0f,
                     t =>
                     {
-                        Vector3 target = targetBook.SlotWorldCenter(targetDishIndex);
-                        rect.position = Vector3.LerpUnclamped(start, target, t);
+                        rect.position = Vector3.LerpUnclamped(start, targetPosition, t);
                         rect.localScale = Vector3.LerpUnclamped(startScale, targetScale, t);
                     },
                     1f,

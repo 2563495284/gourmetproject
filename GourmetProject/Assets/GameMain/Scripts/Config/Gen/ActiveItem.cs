@@ -28,6 +28,7 @@ public sealed partial class ActiveItem : Luban.BeanBase
         { if(!_buf["targetKind"].IsNumber) { throw new SerializationException(); }  TargetKind = (ItemTargetKind)_buf["targetKind"].AsInt; }
         { if(!_buf["targetCount"].IsNumber) { throw new SerializationException(); }  TargetCount = _buf["targetCount"]; }
         { if(!_buf["termId"].IsString) { throw new SerializationException(); }  TermId = _buf["termId"]; }
+        { if(!_buf["price"].IsNumber) { throw new SerializationException(); }  Price = _buf["price"]; }
     }
 
     public static ActiveItem DeserializeActiveItem(JSONNode _buf)
@@ -79,6 +80,10 @@ public sealed partial class ActiveItem : Luban.BeanBase
     /// 关联术语ID(可空,| 分隔)
     /// </summary>
     public readonly string TermId;
+    /// <summary>
+    /// 商店基础价格
+    /// </summary>
+    public readonly int Price;
    
     public const int __ID__ = -257861799;
     public override int GetTypeId() => __ID__;
@@ -101,6 +106,7 @@ public sealed partial class ActiveItem : Luban.BeanBase
         + "targetKind:" + TargetKind + ","
         + "targetCount:" + TargetCount + ","
         + "termId:" + TermId + ","
+        + "price:" + Price + ","
         + "}";
     }
 }

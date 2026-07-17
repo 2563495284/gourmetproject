@@ -71,6 +71,18 @@ public partial class TbGameBase
     /// 食物风味上限
     /// </summary>
      public int FoodFlavorLimit => _data.FoodFlavorLimit;
+    /// <summary>
+    /// 碎片包按购买次数递增价格
+    /// </summary>
+     public System.Collections.Generic.List<int> FragmentPackPrices => _data.FragmentPackPrices;
+    /// <summary>
+    /// 删除菜品按删除次数递增价格
+    /// </summary>
+     public System.Collections.Generic.List<int> DeleteDishPrices => _data.DeleteDishPrices;
+    /// <summary>
+    /// 商店食物/主动/被动道具基础价格随机浮动比例
+    /// </summary>
+     public float ShopPriceFluctuationPct => _data.ShopPriceFluctuationPct;
     
     public void ResolveRef(Tables tables)
     {

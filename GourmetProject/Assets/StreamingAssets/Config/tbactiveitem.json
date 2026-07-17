@@ -10,7 +10,8 @@
     "baseWeight": 1,
     "targetKind": 2,
     "targetCount": 1,
-    "termId": "t_sweet"
+    "termId": "t_sweet",
+    "price": 35
   },
   {
     "id": "item_active_season_bitter",
@@ -23,7 +24,8 @@
     "baseWeight": 1,
     "targetKind": 2,
     "targetCount": 1,
-    "termId": "t_bitter"
+    "termId": "t_bitter",
+    "price": 35
   },
   {
     "id": "item_active_season_umami",
@@ -36,7 +38,8 @@
     "baseWeight": 1,
     "targetKind": 2,
     "targetCount": 1,
-    "termId": "t_rust"
+    "termId": "t_rust",
+    "price": 35
   },
   {
     "id": "item_active_season_numb",
@@ -49,7 +52,8 @@
     "baseWeight": 1,
     "targetKind": 2,
     "targetCount": 1,
-    "termId": "t_numb"
+    "termId": "t_numb",
+    "price": 35
   },
   {
     "id": "item_active_season_sour",
@@ -62,7 +66,8 @@
     "baseWeight": 1,
     "targetKind": 2,
     "targetCount": 1,
-    "termId": "t_sour"
+    "termId": "t_sour",
+    "price": 35
   },
   {
     "id": "item_active_season_salty",
@@ -75,7 +80,8 @@
     "baseWeight": 1,
     "targetKind": 2,
     "targetCount": 1,
-    "termId": "t_salty"
+    "termId": "t_salty",
+    "price": 35
   },
   {
     "id": "item_active_lay_cherry",
@@ -88,7 +94,8 @@
     "baseWeight": 1,
     "targetKind": 3,
     "targetCount": 1,
-    "termId": "m_cherry"
+    "termId": "m_cherry",
+    "price": 35
   },
   {
     "id": "item_active_lay_walnut",
@@ -101,7 +108,8 @@
     "baseWeight": 1,
     "targetKind": 3,
     "targetCount": 1,
-    "termId": "m_walnut"
+    "termId": "m_walnut",
+    "price": 35
   },
   {
     "id": "item_active_lay_marble",
@@ -114,7 +122,8 @@
     "baseWeight": 1,
     "targetKind": 3,
     "targetCount": 1,
-    "termId": "m_marble"
+    "termId": "m_marble",
+    "price": 35
   },
   {
     "id": "item_active_lay_obsidian",
@@ -127,7 +136,8 @@
     "baseWeight": 1,
     "targetKind": 3,
     "targetCount": 1,
-    "termId": "m_obsidian"
+    "termId": "m_obsidian",
+    "price": 35
   },
   {
     "id": "item_active_lay_emerald",
@@ -140,7 +150,8 @@
     "baseWeight": 1,
     "targetKind": 3,
     "targetCount": 1,
-    "termId": "m_emerald"
+    "termId": "m_emerald",
+    "price": 35
   },
   {
     "id": "item_active_lay_gold",
@@ -153,7 +164,8 @@
     "baseWeight": 1,
     "targetKind": 3,
     "targetCount": 1,
-    "termId": "m_gold"
+    "termId": "m_gold",
+    "price": 35
   },
   {
     "id": "item_active_lay_silver",
@@ -166,7 +178,8 @@
     "baseWeight": 1,
     "targetKind": 3,
     "targetCount": 1,
-    "termId": "m_silver"
+    "termId": "m_silver",
+    "price": 35
   },
   {
     "id": "item_active_sched_reroll",
@@ -179,7 +192,8 @@
     "baseWeight": 1,
     "targetKind": 6,
     "targetCount": 0,
-    "termId": ""
+    "termId": "",
+    "price": 35
   },
   {
     "id": "item_active_sched_feast",
@@ -192,7 +206,8 @@
     "baseWeight": 1,
     "targetKind": 6,
     "targetCount": 0,
-    "termId": ""
+    "termId": "",
+    "price": 35
   },
   {
     "id": "item_active_sched_rush",
@@ -205,7 +220,8 @@
     "baseWeight": 1,
     "targetKind": 6,
     "targetCount": 0,
-    "termId": ""
+    "termId": "",
+    "price": 35
   },
   {
     "id": "item_active_sched_reward",
@@ -218,6 +234,7 @@
     "baseWeight": 1,
     "targetKind": 6,
     "targetCount": 0,
-    "termId": ""
+    "termId": "",
+    "price": 35
   }
 ]

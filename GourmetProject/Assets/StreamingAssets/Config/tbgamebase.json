@@ -9,6 +9,13 @@
     "shopFoodSaleSlotCount": 3,
     "shopPassiveItemSaleSlotCount": 2,
     "shopActiveItemSaleSlotCount": 2,
-    "foodFlavorLimit": 1
+    "foodFlavorLimit": 1,
+    "fragmentPackPrices": [
+      60
+    ],
+    "deleteDishPrices": [
+      15
+    ],
+    "shopPriceFluctuationPct": 0.2
   }
 ]

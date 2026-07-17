@@ -44,6 +44,8 @@ namespace GourmetProject.Game.UI.Meta
         private Func<FoodTipsView> _getFoodTips;
         private RecipeEditDishView _hoveredTipDish;
         private CancellationTokenSource _pendingRebuildCts;
+        private int _pendingRestoreBookIndex = -1;
+        private int _pendingRestoreDishIndex = -1;
         private bool _wired;
 
         private void Awake()
@@ -57,6 +59,7 @@ namespace GourmetProject.Game.UI.Meta
             HideDishTips();
             ClearBooks();
             ClearCards();
+            ClearPendingRestoreScroll();
         }
 
         public void Open(
@@ -226,6 +229,7 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             FitBooksToContainer(books);
+            RestorePendingScroll(books);
         }
 
         private void ClearBooks()
@@ -258,6 +262,7 @@ namespace GourmetProject.Game.UI.Meta
             if (ShopService.MoveDish(_run, dish.BookIndex, dish.DishIndex, targetBookIndex, targetDishIndex))
             {
                 dish.MarkDropHandled();
+                RequestRestoreScroll(targetBookIndex, targetDishIndex);
                 QueueRebuildBooks();
             }
         }
@@ -316,6 +321,7 @@ namespace GourmetProject.Game.UI.Meta
 
                 if (this != null && isActiveAndEnabled)
                 {
+                    RequestRestoreScroll(targetBookIndex, targetDishIndex);
                     QueueRebuildBooks();
                 }
             });
@@ -326,6 +332,37 @@ namespace GourmetProject.Game.UI.Meta
             return bookIndex >= 0 && bookIndex < _spawnedBookViews.Count
                 ? _spawnedBookViews[bookIndex]
                 : null;
+        }
+
+        private void RequestRestoreScroll(int bookIndex, int dishIndex)
+        {
+            _pendingRestoreBookIndex = bookIndex;
+            _pendingRestoreDishIndex = dishIndex;
+        }
+
+        private void ClearPendingRestoreScroll()
+        {
+            _pendingRestoreBookIndex = -1;
+            _pendingRestoreDishIndex = -1;
+        }
+
+        private void RestorePendingScroll(IReadOnlyList<RecipeEditBookView> books)
+        {
+            if (_pendingRestoreBookIndex < 0 || books == null)
+            {
+                return;
+            }
+
+            int bookIndex = _pendingRestoreBookIndex;
+            int dishIndex = _pendingRestoreDishIndex;
+            _pendingRestoreBookIndex = -1;
+            _pendingRestoreDishIndex = -1;
+            if (bookIndex < 0 || bookIndex >= books.Count || books[bookIndex] == null)
+            {
+                return;
+            }
+
+            books[bookIndex].ScrollToIndex(Mathf.Max(0, dishIndex), 0f);
         }
 
         private void PlayDishFlyToSlot(RecipeEditDishView dish, RecipeEditBookView targetBook, int targetDishIndex, Action onComplete)
@@ -340,17 +377,17 @@ namespace GourmetProject.Game.UI.Meta
             dish.PrepareAsFloating();
             Vector3 start = rect.position;
             Vector3 startScale = rect.localScale;
-            RectTransform targetScaleSource = targetBook.DishContainer != null
-                ? targetBook.DishContainer
+            RectTransform targetScaleSource = targetBook.ViewportRect != null
+                ? targetBook.ViewportRect
                 : (RectTransform)targetBook.transform;
             Vector3 targetScale = FloatingScaleForTarget(rect.parent as RectTransform, targetScaleSource);
+            Vector3 targetPosition = targetBook.SlotWorldCenterAfterScrollToIndex(targetDishIndex);
             DOTween.Kill(rect);
             DOTween.To(
                     () => 0f,
                     t =>
                     {
-                        Vector3 target = targetBook.SlotWorldCenter(targetDishIndex);
-                        rect.position = Vector3.LerpUnclamped(start, target, t);
+                        rect.position = Vector3.LerpUnclamped(start, targetPosition, t);
                         rect.localScale = Vector3.LerpUnclamped(startScale, targetScale, t);
                     },
                     1f,

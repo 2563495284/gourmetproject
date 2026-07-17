@@ -23,6 +23,7 @@ namespace GourmetProject.Game.Meta
             EffectValue = passive.EffectValue;
             EffectParam = passive.EffectParam;
             BaseWeight = passive.BaseWeight;
+            Price = passive.Price;
             HiddenRange = passive.HiddenRange;
             TargetScoreHiddenOffset = passive.TargetScoreHiddenOffset;
             DishHiddenOffset = passive.DishHiddenOffset;
@@ -47,6 +48,7 @@ namespace GourmetProject.Game.Meta
             EffectValue = active.EffectValue;
             EffectParam = active.EffectParam;
             BaseWeight = active.BaseWeight;
+            Price = active.Price;
             TargetScoreHiddenOffset = 0;
             DishHiddenOffset = 0;
             PassiveItemHiddenOffset = 0;
@@ -82,6 +84,8 @@ namespace GourmetProject.Game.Meta
         public string EffectParam { get; }
 
         public float BaseWeight { get; }
+
+        public int Price { get; }
 
         public cfg.HiddenRange HiddenRange { get; }
 

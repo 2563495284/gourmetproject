@@ -24,9 +24,21 @@ namespace GourmetProject.Game.UI.Meta
         private Action<RecipeEditDishView, int, int> _onDishDropped;
         private Action<RewardDishChoiceCardView, int> _onChoiceDropped;
         private GridLayoutGroup _grid;
-        private int _fitSlotCapacity;
+        private RectTransform _viewport;
+        private bool _scrollWired;
 
         public RectTransform DishContainer => _dishContainer;
+
+        public RectTransform ViewportRect
+        {
+            get
+            {
+                ResolveLayout();
+                return _scrollRect != null && _scrollRect.viewport != null
+                    ? _scrollRect.viewport
+                    : transform as RectTransform;
+            }
+        }
 
         private void Awake()
         {
@@ -88,38 +100,31 @@ namespace GourmetProject.Game.UI.Meta
 
         public void FitSlotsWithinView(int slotCapacity)
         {
-            _fitSlotCapacity = Mathf.Max(0, slotCapacity);
+            _ = slotCapacity;
             ResolveLayout();
         }
 
         private void ApplySlotFit()
         {
-            if (_dishContainer == null || _fitSlotCapacity <= 0)
+            if (_dishContainer == null)
             {
                 return;
             }
 
             int columns = Mathf.Max(1, _columnCount);
-            int rows = Mathf.CeilToInt(_fitSlotCapacity / (float)columns);
-            if (rows <= 0)
-            {
-                return;
-            }
-
-            Vector2 available = _dishContainer.rect.size;
-            if (available.x <= 0f || available.y <= 0f)
+            Vector2 available = ViewportSize();
+            if (available.x <= 0f)
             {
                 return;
             }
 
             float desiredWidth = _padding.left + _padding.right + columns * _cellSize.x + Mathf.Max(0, columns - 1) * _spacing.x;
-            float desiredHeight = _padding.top + _padding.bottom + rows * _cellSize.y + Mathf.Max(0, rows - 1) * _spacing.y;
-            if (desiredWidth <= 0f || desiredHeight <= 0f)
+            if (desiredWidth <= 0f)
             {
                 return;
             }
 
-            float scale = Mathf.Min(available.x / desiredWidth, available.y / desiredHeight, 1f);
+            float scale = Mathf.Min(available.x / desiredWidth, 1f);
             _cellSize *= scale;
             _spacing *= scale;
         }
@@ -178,40 +183,36 @@ namespace GourmetProject.Game.UI.Meta
             UpdateContentSize(index + 1);
         }
 
-        public void ScrollToIndex(int index, float duration)
+        public void ScrollToIndex(int index, float duration, Action onComplete = null)
         {
             ResolveLayout();
             if (_scrollRect == null || _scrollRect.content == null || _scrollRect.viewport == null)
             {
+                onComplete?.Invoke();
                 return;
             }
 
+            UpdateContentSize(Mathf.Max(CurrentDishCount(), index + 1));
             Canvas.ForceUpdateCanvases();
             float contentHeight = Mathf.Max(_scrollRect.content.rect.height, _scrollRect.viewport.rect.height);
             float scrollableHeight = contentHeight - _scrollRect.viewport.rect.height;
             if (scrollableHeight <= 0.01f)
             {
+                onComplete?.Invoke();
                 return;
             }
 
-            int row = Mathf.Max(0, index) / Mathf.Max(1, _columnCount);
-            float slotTop = _padding.top + row * (_cellSize.y + _spacing.y);
-            float slotBottom = slotTop + _cellSize.y;
-            float currentTop = (1f - _scrollRect.verticalNormalizedPosition) * scrollableHeight;
-            float targetTop = currentTop;
-            if (slotTop < currentTop)
-            {
-                targetTop = slotTop;
-            }
-            else if (slotBottom > currentTop + _scrollRect.viewport.rect.height)
-            {
-                targetTop = slotBottom - _scrollRect.viewport.rect.height;
-            }
-
-            targetTop = Mathf.Clamp(targetTop, 0f, scrollableHeight);
+            float targetTop = TargetTopForIndex(index, scrollableHeight);
             float targetNormalized = 1f - targetTop / scrollableHeight;
             _scrollRect.StopMovement();
             DOTween.Kill(_scrollRect);
+            if (duration <= 0f)
+            {
+                _scrollRect.verticalNormalizedPosition = targetNormalized;
+                onComplete?.Invoke();
+                return;
+            }
+
             DOTween.To(
                     () => _scrollRect.verticalNormalizedPosition,
                     value => _scrollRect.verticalNormalizedPosition = value,
@@ -219,7 +220,8 @@ namespace GourmetProject.Game.UI.Meta
                     Mathf.Max(0f, duration))
                 .SetEase(Ease.OutCubic)
                 .SetUpdate(true)
-                .SetTarget(_scrollRect);
+                .SetTarget(_scrollRect)
+                .OnComplete(() => onComplete?.Invoke());
         }
 
         public Vector3 SlotWorldCenter(int index)
@@ -236,6 +238,35 @@ namespace GourmetProject.Game.UI.Meta
                 -containerRect.width * _dishContainer.pivot.x + anchored.x + _cellSize.x * 0.5f,
                 containerRect.height * (1f - _dishContainer.pivot.y) + anchored.y - _cellSize.y * 0.5f);
             return _dishContainer.TransformPoint(local);
+        }
+
+        public Vector3 SlotWorldCenterAfterScrollToIndex(int index)
+        {
+            ResolveLayout();
+            if (_dishContainer == null || _scrollRect == null || _scrollRect.viewport == null)
+            {
+                return SlotWorldCenter(index);
+            }
+
+            UpdateContentSize(Mathf.Max(CurrentDishCount(), index + 1));
+            Canvas.ForceUpdateCanvases();
+            float contentHeight = Mathf.Max(_scrollRect.content.rect.height, _scrollRect.viewport.rect.height);
+            float scrollableHeight = contentHeight - _scrollRect.viewport.rect.height;
+            if (scrollableHeight <= 0.01f)
+            {
+                return SlotWorldCenter(index);
+            }
+
+            float targetTop = TargetTopForIndex(index, scrollableHeight);
+            float currentTop = (1f - _scrollRect.verticalNormalizedPosition) * scrollableHeight;
+            Vector2 anchored = SlotAnchoredPosition(index);
+            Rect containerRect = _dishContainer.rect;
+            Vector2 contentLocal = new Vector2(
+                -containerRect.width * _dishContainer.pivot.x + anchored.x + _cellSize.x * 0.5f,
+                containerRect.height * (1f - _dishContainer.pivot.y) + anchored.y - _cellSize.y * 0.5f);
+            Vector3 contentLocalPosition = _dishContainer.localPosition;
+            contentLocalPosition.y += targetTop - currentTop;
+            return _scrollRect.viewport.TransformPoint(contentLocalPosition + (Vector3)contentLocal);
         }
 
         public int CurrentDishCount(RecipeEditDishView exclude = null)
@@ -265,10 +296,8 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             _padding ??= new RectOffset(0, 0, 0, 0);
-            if (_scrollRect == null)
-            {
-                _scrollRect = _dishContainer.GetComponentInParent<ScrollRect>(true);
-            }
+            EnsureScrollRect();
+            ConfigureContentRect();
 
             _grid ??= _dishContainer.GetComponent<GridLayoutGroup>();
             if (_grid == null)
@@ -287,6 +316,61 @@ namespace GourmetProject.Game.UI.Meta
             ApplySlotFit();
 
             _grid.enabled = false;
+        }
+
+        private void EnsureScrollRect()
+        {
+            if (_scrollWired)
+            {
+                return;
+            }
+
+            _scrollWired = true;
+            _viewport = transform as RectTransform;
+            if (_viewport == null)
+            {
+                return;
+            }
+
+            if (_scrollRect == null)
+            {
+                _scrollRect = GetComponent<ScrollRect>() ?? gameObject.AddComponent<ScrollRect>();
+            }
+
+            if (GetComponent<RectMask2D>() == null)
+            {
+                gameObject.AddComponent<RectMask2D>();
+            }
+
+            _scrollRect.content = _dishContainer;
+            _scrollRect.viewport = _viewport;
+            _scrollRect.horizontal = false;
+            _scrollRect.vertical = true;
+            _scrollRect.movementType = ScrollRect.MovementType.Clamped;
+            _scrollRect.inertia = true;
+            _scrollRect.scrollSensitivity = 32f;
+        }
+
+        private void ConfigureContentRect()
+        {
+            if (_dishContainer == null)
+            {
+                return;
+            }
+
+            _dishContainer.anchorMin = new Vector2(0f, 1f);
+            _dishContainer.anchorMax = new Vector2(1f, 1f);
+            _dishContainer.pivot = new Vector2(0.5f, 1f);
+            _dishContainer.anchoredPosition = Vector2.zero;
+
+            Vector2 size = _dishContainer.sizeDelta;
+            if (Mathf.Approximately(size.x, 0f))
+            {
+                size.x = -10f;
+            }
+
+            size.y = Mathf.Max(size.y, ViewportSize().y);
+            _dishContainer.sizeDelta = size;
         }
 
         private int DropIndex(PointerEventData eventData)
@@ -341,7 +425,7 @@ namespace GourmetProject.Game.UI.Meta
 
         private void UpdateContentSize(int slotCount)
         {
-            if (_dishContainer == null || _scrollRect == null || _scrollRect.content != _dishContainer)
+            if (_dishContainer == null)
             {
                 return;
             }
@@ -355,8 +439,37 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             Vector2 size = _dishContainer.sizeDelta;
-            size.y = Mathf.Max(size.y, contentHeight);
+            size.y = Mathf.Max(ViewportSize().y, contentHeight);
             _dishContainer.sizeDelta = size;
+        }
+
+        private float TargetTopForIndex(int index, float scrollableHeight)
+        {
+            int row = Mathf.Max(0, index) / Mathf.Max(1, _columnCount);
+            float slotTop = _padding.top + row * (_cellSize.y + _spacing.y);
+            float slotBottom = slotTop + _cellSize.y;
+            float currentTop = _scrollRect != null
+                ? (1f - _scrollRect.verticalNormalizedPosition) * scrollableHeight
+                : 0f;
+            float targetTop = currentTop;
+            if (slotTop < currentTop)
+            {
+                targetTop = slotTop;
+            }
+            else if (_scrollRect != null && slotBottom > currentTop + _scrollRect.viewport.rect.height)
+            {
+                targetTop = slotBottom - _scrollRect.viewport.rect.height;
+            }
+
+            return Mathf.Clamp(targetTop, 0f, scrollableHeight);
+        }
+
+        private Vector2 ViewportSize()
+        {
+            RectTransform viewport = _scrollRect != null && _scrollRect.viewport != null
+                ? _scrollRect.viewport
+                : transform as RectTransform;
+            return viewport != null ? viewport.rect.size : Vector2.zero;
         }
 
         private void ConfigureDishRect(RectTransform rect)
