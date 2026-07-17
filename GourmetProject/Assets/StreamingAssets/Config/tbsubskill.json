@@ -11,7 +11,7 @@
     "actionScope": 0,
     "actionCount": 0,
     "actionValue": [
-      3
+      4
     ],
     "actionParam": [],
     "isPassive": false,
@@ -111,7 +111,7 @@
     "actionScope": 0,
     "actionCount": 0,
     "actionValue": [
-      6
+      8
     ],
     "actionParam": [],
     "isPassive": false,
@@ -611,7 +611,7 @@
     "actionScope": 12,
     "actionCount": 0,
     "actionValue": [
-      5
+      3
     ],
     "actionParam": [],
     "isPassive": false,
@@ -629,7 +629,7 @@
     "condParam": "",
     "actionType": 5,
     "actionScope": 15,
-    "actionCount": 3,
+    "actionCount": 2,
     "actionValue": [
       0
     ],
