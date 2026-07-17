@@ -11,6 +11,7 @@ namespace GourmetProject.Game.UI.Battle
         RewardItemChoice,
         RandomizedItems,
         Event,
+        RecipeInspect,
         Food,
         TableEdit,
         TableView,

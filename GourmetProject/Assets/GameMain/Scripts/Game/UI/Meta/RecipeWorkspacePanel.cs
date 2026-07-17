@@ -32,6 +32,7 @@ namespace GourmetProject.Game.UI.Meta
         [Header("Books")]
         [SerializeField] private RectTransform _editBooksContainer;
         [SerializeField] private RecipeEditBookView _editBookPrefab;
+        [SerializeField] private RecipeEditBookView _readonlyBookPrefab;
         [SerializeField] private RecipeEditDishView _editDishPrefab;
 
         [Header("Trash / Exit")]
@@ -81,6 +82,22 @@ namespace GourmetProject.Game.UI.Meta
             _onChanged = onChanged;
             _getFoodTips = getFoodTips;
             _stateMachine.Switch(new RecipeEditState());
+        }
+
+        /// <summary>只读查看单本菜谱：禁拖拽，菜品只响应悬停 tips。</summary>
+        public void OpenForReadonlyBook(
+            GameRun run,
+            int bookIndex,
+            Action onExit,
+            Action onChanged,
+            Func<FoodTipsView> getFoodTips = null)
+        {
+            EnsureWired();
+            _run = run;
+            _onExit = onExit;
+            _onChanged = onChanged;
+            _getFoodTips = getFoodTips;
+            _stateMachine.Switch(new ReadonlyRecipeBookState(bookIndex));
         }
 
         /// <summary>以主动道具选择态打开菜谱面板：禁用拖拽/删除，只允许点击菜品进入确认。</summary>
@@ -196,7 +213,15 @@ namespace GourmetProject.Game.UI.Meta
             var books = new List<RecipeEditBookView>(_run.RecipeBookCount);
             for (int i = 0; i < _run.RecipeBookCount; i++)
             {
-                RecipeEditBookView book = Instantiate(_editBookPrefab, _editBooksContainer);
+                if (state.BookIndexFilter >= 0 && state.BookIndexFilter != i)
+                {
+                    continue;
+                }
+
+                RecipeEditBookView bookPrefab = state.BookIndexFilter >= 0 && _readonlyBookPrefab != null
+                    ? _readonlyBookPrefab
+                    : _editBookPrefab;
+                RecipeEditBookView book = Instantiate(bookPrefab, _editBooksContainer);
                 book.gameObject.name = $"RecipeEditBook_{i + 1}";
                 book.Bind(i, state.CanDropDishToBook ? OnDishDroppedToBook : null);
                 _spawned.Add(book.gameObject);

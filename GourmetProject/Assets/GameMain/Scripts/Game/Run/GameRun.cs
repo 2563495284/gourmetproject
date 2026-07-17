@@ -61,6 +61,8 @@ namespace GourmetProject.Game.Run
         private readonly List<string> _usedEventIds = new List<string>();
         private readonly List<string> _completedBossIds = new List<string>();
         private readonly List<string> _rolledBossDebuffIds = new List<string>();
+        private int _forcedBossDebuffWeekIndex;
+        private string _forcedBossDebuffId = string.Empty;
         private readonly List<string> _actionGroupSequence = new List<string>();
 
         // —— 本周大组计划（周开始时一次性预排，供 EnsureCurrentGroup 消费；随存档保存）——
@@ -906,6 +908,9 @@ namespace GourmetProject.Game.Run
 
         public IReadOnlyList<string> RolledBossDebuffIds => _rolledBossDebuffIds;
 
+        public string ForcedBossDebuffId =>
+            _forcedBossDebuffWeekIndex == WeekIndex ? _forcedBossDebuffId : string.Empty;
+
         /// <summary>本周已执行的行动次数，用于 UI、随机流和隐藏分进度。</summary>
         public int ActionStepIndex { get; private set; }
 
@@ -989,6 +994,18 @@ namespace GourmetProject.Game.Run
         public bool IsBossCompleted(string bossId) => !string.IsNullOrEmpty(bossId) && _completedBossIds.Contains(bossId);
 
         public bool IsBossDebuffRolled(string debuffId) => !string.IsNullOrEmpty(debuffId) && _rolledBossDebuffIds.Contains(debuffId);
+
+        public void ForceBossDebuffForCurrentWeek(string debuffId)
+        {
+            _forcedBossDebuffWeekIndex = WeekIndex;
+            _forcedBossDebuffId = debuffId ?? string.Empty;
+        }
+
+        public void ClearForcedBossDebuff()
+        {
+            _forcedBossDebuffWeekIndex = 0;
+            _forcedBossDebuffId = string.Empty;
+        }
 
         public void MarkBossCompleted(string bossId)
         {
@@ -1469,6 +1486,8 @@ namespace GourmetProject.Game.Run
                 UsedEventIds = new List<string>(_usedEventIds),
                 CompletedBossIds = new List<string>(_completedBossIds),
                 RolledBossDebuffIds = new List<string>(_rolledBossDebuffIds),
+                ForcedBossDebuffWeekIndex = _forcedBossDebuffWeekIndex,
+                ForcedBossDebuffId = _forcedBossDebuffId,
                 PendingActionChoiceKey = _pendingActionChoiceKey,
                 PendingActionChoices = new List<RunActionChoiceSaveData>(_pendingActionChoices),
                 PendingShopKey = _pendingShopKey,
@@ -1687,6 +1706,9 @@ namespace GourmetProject.Game.Run
             {
                 run._rolledBossDebuffIds.AddRange(data.RolledBossDebuffIds);
             }
+
+            run._forcedBossDebuffWeekIndex = data.ForcedBossDebuffWeekIndex;
+            run._forcedBossDebuffId = data.ForcedBossDebuffId ?? string.Empty;
 
             run._pendingActionChoiceKey = data.PendingActionChoiceKey ?? string.Empty;
             if (data.PendingActionChoices != null)

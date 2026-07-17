@@ -336,7 +336,7 @@ namespace GourmetProject.Game.UI.Tooltips
             }
 
             Vector2 size = PreferredSize(rect);
-            Vector2 anchorCenter = anchor.anchoredPosition;
+            Vector2 anchorCenter = RectCenterInParent(anchor);
             Vector2 anchorSize = PreferredSize(anchor);
             Vector2 center = new Vector2(anchorCenter.x, anchorCenter.y - anchorSize.y * 0.5f - _detailGap - size.y * 0.5f);
             SetCenter(rect, Clamp(center, size, bounds));
@@ -350,7 +350,7 @@ namespace GourmetProject.Game.UI.Tooltips
             }
 
             Vector2 size = PreferredSize(rect);
-            Vector2 anchorCenter = anchor.anchoredPosition;
+            Vector2 anchorCenter = RectCenterInParent(anchor);
             Vector2 anchorSize = PreferredSize(anchor);
             Vector2 center = new Vector2(anchorCenter.x, anchorCenter.y + anchorSize.y * 0.5f + _detailGap + size.y * 0.5f);
             SetCenter(rect, Clamp(center, size, bounds));
@@ -364,7 +364,7 @@ namespace GourmetProject.Game.UI.Tooltips
             }
 
             Vector2 size = PreferredSize(rect);
-            Vector2 anchorCenter = anchor.anchoredPosition;
+            Vector2 anchorCenter = RectCenterInParent(anchor);
             Vector2 anchorSize = PreferredSize(anchor);
             Vector2 center = new Vector2(anchorCenter.x + anchorSize.x * 0.5f + _detailGap + size.x * 0.5f, anchorCenter.y);
             SetCenter(rect, Clamp(center, size, bounds));
@@ -395,6 +395,18 @@ namespace GourmetProject.Game.UI.Tooltips
             rect.anchorMax = new Vector2(0.5f, 0.5f);
             rect.pivot = new Vector2(0.5f, 0.5f);
             rect.anchoredPosition = center;
+        }
+
+        private static Vector2 RectCenterInParent(RectTransform rect)
+        {
+            RectTransform parent = rect.parent as RectTransform;
+            if (parent == null)
+            {
+                return rect.anchoredPosition;
+            }
+
+            Vector3 worldCenter = rect.TransformPoint(rect.rect.center);
+            return parent.InverseTransformPoint(worldCenter);
         }
     }
 }

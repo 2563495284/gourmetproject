@@ -26,6 +26,8 @@ namespace GourmetProject.Game.UI.Battle.States
 
         void OpenRecipeWorkspacePanel();
 
+        void OpenRecipeInspect(int bookIndex);
+
         void BuildBattleRecipe();
 
         void BuyRecipeBook();
@@ -59,6 +61,7 @@ namespace GourmetProject.Game.UI.Battle.States
             Register(new RewardItemChoiceState());
             Register(new RandomizedItemsState());
             Register(new EventState());
+            Register(new RecipeInspectState());
             Register(new FoodState());
             Register(new TableEditState());
             Register(new TableViewState());

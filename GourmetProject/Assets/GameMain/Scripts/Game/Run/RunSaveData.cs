@@ -174,6 +174,12 @@ namespace GourmetProject.Game.Run
         /// <summary>Boss Debuff 不放回随机的已抽取记录；抽光后会重置。</summary>
         public List<string> RolledBossDebuffIds = new List<string>();
 
+        /// <summary>开发者控制台指定的 Boss Debuff 所属周；0=未指定。</summary>
+        public int ForcedBossDebuffWeekIndex;
+
+        /// <summary>开发者控制台指定的本周 Boss Debuff id。</summary>
+        public string ForcedBossDebuffId;
+
         /// <summary>当前行动选择快照 key；同一步 UI 重开时沿用已有候选。</summary>
         public string PendingActionChoiceKey;
 

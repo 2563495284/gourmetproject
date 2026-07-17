@@ -22,7 +22,7 @@ namespace GourmetProject.Game.UI.Battle.View
         }
 
         /// <summary>底部扇形菜谱条：按持有的菜谱本铺卡，显示已放数量。showAdd 时末尾追加购买空菜谱卡。</summary>
-        public void BuildPersistent(GameRun run, bool showAdd, Action onAdd)
+        public void BuildPersistent(GameRun run, bool showAdd, Action onAdd, Action<int> onInspect = null)
         {
             if (_recipeView == null || run == null)
             {
@@ -33,11 +33,12 @@ namespace GourmetProject.Game.UI.Battle.View
             for (int i = 0; i < run.RecipeBookCount; i++)
             {
                 int count = run.GetRecipeBookDishes(i).Count;
+                int bookIndex = i;
                 books.Add(new RecipeView.BookEntry(
                     $"菜谱{i + 1}",
                     $"{count}",
-                    false,
-                    null,
+                    onInspect != null,
+                    onInspect == null ? null : () => onInspect.Invoke(bookIndex),
                     true));
             }
 
@@ -46,7 +47,7 @@ namespace GourmetProject.Game.UI.Battle.View
         }
 
         /// <summary>商店态菜谱条：展示持有菜谱本；未满上限时末尾追加唯一的「购买空菜谱」卡（买得起才可点）。</summary>
-        public void BuildShop(GameRun run, Action onBuy)
+        public void BuildShop(GameRun run, Action onBuy, Action<int> onInspect = null)
         {
             if (run == null)
             {
@@ -55,7 +56,7 @@ namespace GourmetProject.Game.UI.Battle.View
 
             bool showAdd = run.RecipeBookCount < GameRun.MaxRecipeBookCount;
             bool canBuy = showAdd && run.Gold >= ShopService.RecipeBookCost(run);
-            BuildPersistent(run, showAdd, canBuy ? onBuy : null);
+            BuildPersistent(run, showAdd, canBuy ? onBuy : null, onInspect);
         }
 
         /// <summary>战斗态扇形菜谱条：每本菜谱一张卡，点击从该菜谱上菜（触发世界空间上菜动画）。</summary>

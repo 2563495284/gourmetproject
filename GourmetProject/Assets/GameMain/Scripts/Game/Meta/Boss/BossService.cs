@@ -48,6 +48,12 @@ namespace GourmetProject.Game.Meta
                 return null;
             }
 
+            cfg.BossDebuff forced = ResolveForcedDebuff(run, available);
+            if (forced != null)
+            {
+                return forced;
+            }
+
             List<cfg.BossDebuff> candidates = BuildUnrolledDebuffCandidates(run, available);
             if (candidates.Count == 0)
             {
@@ -66,6 +72,25 @@ namespace GourmetProject.Game.Meta
             }
 
             return candidates[rng.WeightedPickIndex(weights)];
+        }
+
+        private static cfg.BossDebuff ResolveForcedDebuff(GameRun run, IReadOnlyList<cfg.BossDebuff> available)
+        {
+            string forcedId = run?.ForcedBossDebuffId;
+            if (string.IsNullOrEmpty(forcedId))
+            {
+                return null;
+            }
+
+            foreach (cfg.BossDebuff debuff in available)
+            {
+                if (debuff != null && debuff.Id == forcedId)
+                {
+                    return debuff;
+                }
+            }
+
+            return null;
         }
 
         private static bool IsEligible(GameRun run, cfg.BossDebuff debuff)

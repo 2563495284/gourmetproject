@@ -10,7 +10,7 @@ namespace GourmetProject.Game.UI.Battle.States
         public void Enter(IBattleViewHost host, Action buildCenter)
         {
             host.RebuildActionAxis();
-            host.Recipe.BuildPersistent(host.Run, showAdd: false, onAdd: null);
+            host.Recipe.BuildPersistent(host.Run, showAdd: false, onAdd: null, host.OpenRecipeInspect);
             buildCenter?.Invoke();
         }
     }
@@ -23,7 +23,7 @@ namespace GourmetProject.Game.UI.Battle.States
         public void Enter(IBattleViewHost host, Action buildCenter)
         {
             host.RebuildActionAxis();
-            host.Recipe.BuildShop(host.Run, host.BuyRecipeBook);
+            host.Recipe.BuildShop(host.Run, host.BuyRecipeBook, host.OpenRecipeInspect);
             host.OpenShopPanel();
         }
     }
@@ -46,7 +46,7 @@ namespace GourmetProject.Game.UI.Battle.States
 
         public void Enter(IBattleViewHost host, Action buildCenter)
         {
-            host.Recipe.BuildPersistent(host.Run, showAdd: false, onAdd: null);
+            host.Recipe.BuildPersistent(host.Run, showAdd: false, onAdd: null, host.OpenRecipeInspect);
             buildCenter?.Invoke();
         }
     }
@@ -81,8 +81,21 @@ namespace GourmetProject.Game.UI.Battle.States
         public void Enter(IBattleViewHost host, Action buildCenter)
         {
             host.RebuildActionAxis();
-            host.Recipe.BuildPersistent(host.Run, showAdd: false, onAdd: null);
+            host.Recipe.BuildPersistent(host.Run, showAdd: false, onAdd: null, host.OpenRecipeInspect);
             buildCenter?.Invoke();
+        }
+    }
+
+    /// <summary>只读查看单本菜谱：中部交给 RecipeWorkspacePanel，底部菜谱条保持可切换其它菜谱。</summary>
+    internal sealed class RecipeInspectState : IGameplayViewState
+    {
+        public GameplayView Kind => GameplayView.RecipeInspect;
+
+        public void Enter(IBattleViewHost host, Action buildCenter)
+        {
+            host.RebuildActionAxis();
+            host.Recipe.BuildPersistent(host.Run, showAdd: false, onAdd: null, host.OpenRecipeInspect);
+            host.OpenRecipeWorkspacePanel();
         }
     }
 

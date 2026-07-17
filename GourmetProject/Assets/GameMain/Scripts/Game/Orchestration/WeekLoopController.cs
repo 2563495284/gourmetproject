@@ -286,11 +286,10 @@ namespace GourmetProject.Game.Orchestration
             }
 
             cfg.TimelineNode node = _pendingNodes.Dequeue();
-            _run.MarkNodeTriggered(node.Id);
-
             cfg.GameAction action = TimelineService.NodeAction(_run, node);
             if (action == null)
             {
+                _run.MarkNodeTriggered(node.Id);
                 ProcessNextNode();
                 return;
             }
@@ -298,6 +297,7 @@ namespace GourmetProject.Game.Orchestration
             if (_run.HasItem("item_skip_node") && IsSkippableBySkipNode(action))
             {
                 _run.RemoveItem("item_skip_node");
+                _run.MarkNodeTriggered(node.Id);
                 RunPersistence.Save(_run);
                 _view.ShowTimelineNodeSkipped(node, ProcessNextNode);
                 return;
@@ -343,8 +343,11 @@ namespace GourmetProject.Game.Orchestration
 
             IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Effect, $"node_w{_run.WeekIndex}_{node.Id}_{action.Id}");
             ActionOutcome outcome = ActionExecutor.Execute(_run, context, rng);
-            RunPersistence.Save(_run);
-            DispatchOutcome(outcome, context, ProcessNextNode);
+            DispatchOutcome(outcome, context, () =>
+            {
+                _run.MarkNodeTriggered(node.Id);
+                ProcessNextNode();
+            }, () => _run.MarkNodeTriggered(node.Id));
         }
 
         private int InterestMaxGain()
@@ -353,13 +356,12 @@ namespace GourmetProject.Game.Orchestration
         }
 
         /// <summary>行动执行结果的统一续接：随机行动与放置节点共用；Boss 战胜利走推进/通关而非发奖。</summary>
-        private void DispatchOutcome(ActionOutcome outcome, ActionExecutionContext context, Action onContinue)
+        private void DispatchOutcome(ActionOutcome outcome, ActionExecutionContext context, Action onContinue, Action onBossComplete = null)
         {
             string title = context?.Action?.Name ?? string.Empty;
             switch (outcome.Kind)
             {
                 case ActionOutcomeKind.Immediate:
-                    RunPersistence.Save(_run);
                     if (IsInterestAction(context))
                     {
                         ShowInterestEventPage(outcome.Feedback, onContinue);
@@ -378,7 +380,7 @@ namespace GourmetProject.Game.Orchestration
                 case ActionOutcomeKind.Battle:
                     if (outcome.IsBoss)
                     {
-                        StartBossBattle(outcome);
+                        StartBossBattle(outcome, context, onBossComplete);
                     }
                     else
                     {
@@ -412,7 +414,7 @@ namespace GourmetProject.Game.Orchestration
                 onEnd: onContinue);
         }
 
-        private void StartBossBattle(ActionOutcome outcome)
+        private void StartBossBattle(ActionOutcome outcome, ActionExecutionContext context, Action onBossComplete)
         {
             cfg.Tables tables = _run.Tables ?? GameApp.Config.Tables;
             cfg.Food boss = tables.TbFood.GetOrDefault(outcome.BossId);
@@ -422,6 +424,7 @@ namespace GourmetProject.Game.Orchestration
                 _run.MarkBossDebuffRolled(outcome.BossDebuffId);
                 StartBattle(outcome.RequiredScore, outcome.Modifier, outcome.BattleKey, true, outcome.BossId, () =>
                 {
+                    onBossComplete?.Invoke();
                     _run.MarkBossCompleted(outcome.BossId);
                     // Boss 赏金（GoldOnBossComplete）：通关本次 Boss 后额外获得金币。
                     var itemRuntime = new ItemRuntime(_run);
@@ -442,7 +445,7 @@ namespace GourmetProject.Game.Orchestration
                     {
                         EndWeek();
                     }
-                }, null);
+                }, context);
             });
         }
 

@@ -142,6 +142,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Meta.RecipeEditPanel
   _editBooksContainer: {fileID: 7040490371683412696}
   _editBookPrefab: {fileID: 239492086359488531, guid: 368da7794fd6c4c008b95aad8794c33b, type: 3}
+  _readonlyBookPrefab: {fileID: 239492086359488531, guid: 480c54a03e0248be9fa356b19a51c657, type: 3}
   _editDishPrefab: {fileID: 5026984067668980655, guid: 1c842cb75485f4b34b79364d1b7be34f, type: 3}
   _trashZone: {fileID: 1836146076092515224}
   _trashPriceText: {fileID: 4240963604245982997}

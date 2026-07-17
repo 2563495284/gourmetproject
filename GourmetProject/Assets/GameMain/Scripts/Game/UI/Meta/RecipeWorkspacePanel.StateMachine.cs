@@ -54,6 +54,8 @@ namespace GourmetProject.Game.UI.Meta
 
             public virtual bool CanDropDishToBook => false;
 
+            public virtual int BookIndexFilter => -1;
+
             public virtual void Enter(RecipeWorkspacePanel panel)
             {
             }
@@ -115,6 +117,30 @@ namespace GourmetProject.Game.UI.Meta
             public override bool OnDishDroppedToTrash(RecipeWorkspacePanel panel, RecipeEditDishView dish)
             {
                 return panel._run != null && ShopService.DeleteDishAt(panel._run, dish.BookIndex, dish.DishIndex);
+            }
+        }
+
+        private sealed class ReadonlyRecipeBookState : RecipeWorkspacePanelState
+        {
+            private readonly int _bookIndex;
+
+            public ReadonlyRecipeBookState(int bookIndex)
+            {
+                _bookIndex = bookIndex;
+            }
+
+            public override string ExitButtonText => "返回";
+
+            public override int BookIndexFilter => _bookIndex;
+
+            public override void Enter(RecipeWorkspacePanel panel)
+            {
+                panel.RebuildBooksForCurrentState();
+            }
+
+            public override void OnExitClicked(RecipeWorkspacePanel panel)
+            {
+                panel._onExit?.Invoke();
             }
         }
 

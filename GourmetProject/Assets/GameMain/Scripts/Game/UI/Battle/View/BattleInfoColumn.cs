@@ -26,6 +26,9 @@ namespace GourmetProject.Game.UI.Battle.View
         [SerializeField] private Button _viewTableButton;
         [SerializeField] private Button _settingsButton;
         [SerializeField] private SettlementScoreFireView _scoreFire;
+        [SerializeField] private GameObject _bossStat;
+        [SerializeField] private Text _bossTitleText;
+        [SerializeField] private Text _bossSkillText;
 
         private Text _viewTableButtonText;
         private bool _foodAdjustActive;
@@ -33,6 +36,11 @@ namespace GourmetProject.Game.UI.Battle.View
         private Canvas _foodAdjustRaiseCanvas;
 
         public SettlementScoreFireView ScoreFire => _scoreFire;
+
+        private void Awake()
+        {
+            SetBossStatVisible(false);
+        }
 
         /// <summary>接线按钮回调（由壳在 OnInit 调用一次）。</summary>
         public void Bind(Action onSettings, Action onViewTable, Action onFoodAdjust)
@@ -105,7 +113,7 @@ namespace GourmetProject.Game.UI.Battle.View
         }
 
         /// <summary>刷新左栏常驻信息：周/金币（局外），分数要求/食物调整（局内为真值，非战斗态占位）。</summary>
-        public void Refresh(GameRun run, BattleSession session, GameplayView current, BattleWorldController world)
+        public void Refresh(GameRun run, BattleSession session, GameplayView current, BattleWorldController world, cfg.BossDebuff bossDebuff = null)
         {
             if (run == null)
             {
@@ -159,6 +167,8 @@ namespace GourmetProject.Game.UI.Battle.View
             {
                 _foodAdjustButton.interactable = foodView || _foodAdjustActive;
             }
+
+            RefreshBossStat(current, session, bossDebuff);
         }
 
         public void ResetTableLabel()
@@ -176,6 +186,34 @@ namespace GourmetProject.Game.UI.Battle.View
             if (_viewTableButtonText != null)
             {
                 _viewTableButtonText.text = text;
+            }
+        }
+
+        private void RefreshBossStat(GameplayView current, BattleSession session, cfg.BossDebuff bossDebuff)
+        {
+            bool visible = current == GameplayView.Food && session != null && bossDebuff != null;
+            SetBossStatVisible(visible);
+            if (!visible)
+            {
+                return;
+            }
+
+            if (_bossTitleText != null)
+            {
+                _bossTitleText.text = bossDebuff.Name ?? string.Empty;
+            }
+
+            if (_bossSkillText != null)
+            {
+                _bossSkillText.text = bossDebuff.Desc ?? string.Empty;
+            }
+        }
+
+        private void SetBossStatVisible(bool visible)
+        {
+            if (_bossStat != null && _bossStat.activeSelf != visible)
+            {
+                _bossStat.SetActive(visible);
             }
         }
     }

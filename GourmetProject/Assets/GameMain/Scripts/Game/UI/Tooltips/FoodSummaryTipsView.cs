@@ -16,6 +16,10 @@ namespace GourmetProject.Game.UI.Tooltips
         [SerializeField] private FoodTipCardView _skillCardPrefab;
         [SerializeField] private FoodFlavorTagView _flavorTagPrefab;
 
+        private const int MaxFlavorColumns = 1;
+        private const float FlavorCellHeight = 44f;
+        private const float FlavorRowSpacing = 8f;
+
         public void Bind(FoodSummaryTipsData data)
         {
             if (!ValidateReferences())
@@ -83,10 +87,18 @@ namespace GourmetProject.Game.UI.Tooltips
             int count = flavors != null ? flavors.Count : 0;
             _flavorContent.gameObject.SetActive(count > 0);
             LayoutElement flavorRootLayout = _flavorContent.gameObject.GetComponent<LayoutElement>();
+            GridLayoutGroup flavorGrid = _flavorContent.gameObject.GetComponent<GridLayoutGroup>();
             if (count > 0)
             {
-                int rows = Mathf.CeilToInt(count / 3f);
-                float preferredHeight = rows * 44f + Mathf.Max(0, rows - 1) * 8f;
+                int columns = Mathf.Clamp(count, 1, MaxFlavorColumns);
+                int rows = Mathf.CeilToInt(count / (float)columns);
+                float preferredHeight = rows * FlavorCellHeight + Mathf.Max(0, rows - 1) * FlavorRowSpacing;
+                if (flavorGrid != null)
+                {
+                    flavorGrid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+                    flavorGrid.constraintCount = columns;
+                }
+
                 if (flavorRootLayout != null)
                 {
                     flavorRootLayout.minHeight = preferredHeight;
