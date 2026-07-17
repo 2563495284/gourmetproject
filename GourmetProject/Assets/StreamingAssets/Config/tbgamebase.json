@@ -1,8 +1,8 @@
 [
   {
-    "initialGold": 9999,
-    "initialInterestCap": 5,
-    "initialFoodAdjustCount": 3,
+    "initialGold": 50,
+    "initialInterestCap": 30,
+    "initialFoodAdjustCount": 1,
     "interestThreshold": 5,
     "interestGoldPer": 1,
     "initialActionRerollCount": 0,
@@ -11,10 +11,18 @@
     "shopActiveItemSaleSlotCount": 2,
     "foodFlavorLimit": 1,
     "fragmentPackPrices": [
-      60
+      30,
+      45,
+      60,
+      80,
+      100
     ],
     "deleteDishPrices": [
-      15
+      20,
+      25,
+      30,
+      40,
+      50
     ],
     "shopPriceFluctuationPct": 0.2
   }
