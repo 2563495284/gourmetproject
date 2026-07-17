@@ -360,7 +360,14 @@ namespace GourmetProject.Game.Orchestration
             {
                 case ActionOutcomeKind.Immediate:
                     RunPersistence.Save(_run);
-                    _view.ShowNotice(title, outcome.Feedback, onContinue);
+                    if (IsInterestAction(context))
+                    {
+                        ShowInterestEventPage(outcome.Feedback, onContinue);
+                    }
+                    else
+                    {
+                        _view.ShowNotice(title, outcome.Feedback, onContinue);
+                    }
                     break;
                 case ActionOutcomeKind.Shop:
                     OpenShopThen(onContinue);
@@ -383,6 +390,26 @@ namespace GourmetProject.Game.Orchestration
                     onContinue?.Invoke();
                     break;
             }
+        }
+
+        private static bool IsInterestAction(ActionExecutionContext context)
+        {
+            return context?.Action?.Behavior == cfg.ActionBehavior.Interest;
+        }
+
+        private void ShowInterestEventPage(string result, Action onContinue)
+        {
+            _view.ShowEventPage(
+                "收取利息",
+                "根据当前金币结算利息。",
+                result,
+                string.Empty,
+                new List<string>(),
+                new List<bool>(),
+                showEndButton: true,
+                endButtonText: "继续",
+                onPick: null,
+                onEnd: onContinue);
         }
 
         private void StartBossBattle(ActionOutcome outcome)
