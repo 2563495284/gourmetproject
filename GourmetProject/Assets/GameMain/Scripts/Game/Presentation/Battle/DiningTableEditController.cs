@@ -32,6 +32,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private const float EditTrayCellJitter = 0.045f;
         private const float EditTrayCellRotation = 4f;
         private const float EditTrayCellScaleJitter = 0.035f;
+        private const float EditTrayBottomOffset = 2.6f;
 
         // 编辑页餐桌定位的底部边距：比 Food 态更大，给候选碎片托盘条让位。
         private const float EditTableBottomMargin = 3.6f;
@@ -806,7 +807,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            float trayY = -_halfH + 1.9f;
+            float trayY = -_halfH + EditTrayBottomOffset;
             float spacing = Mathf.Min(3.2f, (2f * (_halfW - 2.6f)) / n);
             float startX = -(n - 1) * 0.5f * spacing;
 

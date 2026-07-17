@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game;
 using GourmetProject.Game.Meta;
@@ -296,6 +297,7 @@ namespace GourmetProject.Game.UI.Meta
         private void FinishPurchasedEntry(ShopEntry entry)
         {
             _stock.Remove(entry);
+            TryAutoRestock(entry);
             _run.SetPendingShopStock(_shopKey, _stock);
             Rebuild();
 
@@ -310,6 +312,57 @@ namespace GourmetProject.Game.UI.Meta
             {
                 GameApp.UI.OpenUIForm(UIForms.Reward, UIForms.GroupDialog, RewardFormOpenArgs.GenericQueue());
             }
+        }
+
+        private void TryAutoRestock(ShopEntry purchasedEntry)
+        {
+            if (_run == null || purchasedEntry == null || !new ItemRuntime(_run).AutoRestock())
+            {
+                return;
+            }
+
+            string restockKey = BuildRestockKey(purchasedEntry);
+            IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Shop, restockKey);
+            IRandomStream lootRng = GameApp.Random.DomainStream(SeedDomains.Loot, $"loot_{restockKey}");
+            ShopEntry restock = ShopService.RollRestockEntry(
+                GameApp.Config.Tables,
+                _run,
+                purchasedEntry.Kind,
+                rng,
+                lootRng,
+                _stock);
+            if (restock == null)
+            {
+                return;
+            }
+
+            _stock.Add(restock);
+            new ItemRuntime(_run).FlashTriggered(m => m.AutoRestock());
+        }
+
+        private string BuildRestockKey(ShopEntry purchasedEntry)
+        {
+            var builder = new StringBuilder();
+            builder.Append("restock_");
+            builder.Append(_shopKey);
+            builder.Append('_');
+            builder.Append(purchasedEntry.Kind);
+            builder.Append('_');
+            builder.Append(purchasedEntry.Id);
+            foreach (ShopEntry entry in _stock)
+            {
+                if (entry == null)
+                {
+                    continue;
+                }
+
+                builder.Append('|');
+                builder.Append(entry.Kind);
+                builder.Append(':');
+                builder.Append(entry.Id);
+            }
+
+            return builder.ToString();
         }
 
         private void BeginDishTargeting(ShopBuyItemViewBase card, ShopEntry entry)
