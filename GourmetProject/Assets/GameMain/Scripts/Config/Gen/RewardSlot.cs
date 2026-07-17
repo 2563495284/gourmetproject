@@ -64,15 +64,15 @@ public sealed partial class RewardSlot : Luban.BeanBase
     /// </summary>
     public readonly string PoolId;
     /// <summary>
-    /// 菜品奖励隐藏分修正；index0=Normal，index1=Super。
+    /// 菜品奖励隐藏分修正
     /// </summary>
     public readonly System.Collections.Generic.List<int> DishHiddenOffset;
     /// <summary>
-    /// 被动/主动道具奖励隐藏分修正；index0=Normal，index1=Super。
+    /// 被动道具奖励隐藏分修正
     /// </summary>
     public readonly System.Collections.Generic.List<int> PassiveItemHiddenOffset;
     /// <summary>
-    /// 胃部碎片奖励隐藏分修正；index0=Normal，index1=Super。
+    /// 胃部碎片奖励隐藏分修正
     /// </summary>
     public readonly System.Collections.Generic.List<int> FragmentHiddenOffset;
     /// <summary>

@@ -9,19 +9,19 @@
     "poolId": "pool_dish",
     "dishHiddenOffset": [
       0,
-      5
+      3
     ],
     "passiveItemHiddenOffset": [
       0,
-      5
+      0
     ],
     "fragmentHiddenOffset": [
       0,
-      5
+      0
     ],
     "goldHiddenOffset": [
       0,
-      10
+      0
     ]
   },
   {
@@ -34,19 +34,19 @@
     "poolId": "",
     "dishHiddenOffset": [
       0,
-      5
+      0
     ],
     "passiveItemHiddenOffset": [
       0,
-      5
+      0
     ],
     "fragmentHiddenOffset": [
       0,
-      5
+      0
     ],
     "goldHiddenOffset": [
-      30,
-      15
+      10,
+      30
     ]
   },
   {
@@ -58,20 +58,20 @@
     "weight": 1,
     "poolId": "pool_dish",
     "dishHiddenOffset": [
-      0,
-      10
+      3,
+      6
     ],
     "passiveItemHiddenOffset": [
       0,
-      5
+      0
     ],
     "fragmentHiddenOffset": [
       0,
-      5
+      0
     ],
     "goldHiddenOffset": [
       0,
-      10
+      0
     ]
   },
   {
@@ -84,44 +84,19 @@
     "poolId": "pool_passive",
     "dishHiddenOffset": [
       0,
-      5
+      0
     ],
     "passiveItemHiddenOffset": [
-      0,
-      10
+      3,
+      6
     ],
     "fragmentHiddenOffset": [
       0,
-      5
+      0
     ],
     "goldHiddenOffset": [
       0,
-      10
-    ]
-  },
-  {
-    "id": "slot_specific_active",
-    "groupId": "specific_active",
-    "kind": 4,
-    "choiceCount": 5,
-    "requiredPickCount": 2,
-    "weight": 1,
-    "poolId": "pool_active",
-    "dishHiddenOffset": [
-      0,
-      5
-    ],
-    "passiveItemHiddenOffset": [
-      0,
-      10
-    ],
-    "fragmentHiddenOffset": [
-      0,
-      5
-    ],
-    "goldHiddenOffset": [
-      0,
-      10
+      0
     ]
   },
   {
@@ -134,19 +109,19 @@
     "poolId": "pool_fragment",
     "dishHiddenOffset": [
       0,
-      5
+      0
     ],
     "passiveItemHiddenOffset": [
       0,
-      5
+      0
     ],
     "fragmentHiddenOffset": [
-      0,
-      10
+      3,
+      6
     ],
     "goldHiddenOffset": [
       0,
-      10
+      0
     ]
   },
   {
@@ -162,7 +137,7 @@
       0
     ],
     "passiveItemHiddenOffset": [
-      18,
+      7,
       0
     ],
     "fragmentHiddenOffset": [
@@ -191,7 +166,7 @@
       0
     ],
     "fragmentHiddenOffset": [
-      18,
+      7,
       0
     ],
     "goldHiddenOffset": [
@@ -220,7 +195,7 @@
       0
     ],
     "goldHiddenOffset": [
-      100,
+      50,
       0
     ]
   },
