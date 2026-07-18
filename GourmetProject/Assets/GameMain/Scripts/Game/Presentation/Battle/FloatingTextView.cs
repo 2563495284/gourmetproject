@@ -12,6 +12,10 @@ namespace GourmetProject.Game.Presentation.Battle
     /// </summary>
     internal sealed class FloatingTextView : MonoBehaviour
     {
+        private const int FloatingOrderBase = BattleSorting.OrderFloatingText;
+        private const int FloatingOrderRange = 10000;
+        private static int _nextOrderOffset;
+
         [Header("默认参数（prefab 可调，Spawn 不传时沿用）")]
         [SerializeField] private float _characterSize = 0.14f;
         [SerializeField] private float _rise = 0.9f;
@@ -20,6 +24,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private TextMesh _text;
         private Tween _tween;
+        private int _sortingOrder = FloatingOrderBase;
 
         public static void Spawn(
             FloatingTextView prefab,
@@ -40,6 +45,7 @@ namespace GourmetProject.Game.Presentation.Battle
             FloatingTextView view = Instantiate(prefab, parent);
 
             view.transform.position = worldPos;
+            view.SetSortingOrder(NextSortingOrder());
             view.Play(text, color, characterSize, rise, duration);
         }
 
@@ -59,8 +65,22 @@ namespace GourmetProject.Game.Presentation.Battle
 
             FloatingTextView view = Instantiate(prefab, parent);
             view.transform.position = worldPos;
+            view.SetSortingOrder(NextSortingOrder());
             view.SetStaticText(text, color, characterSize);
             return view;
+        }
+
+        private static int NextSortingOrder()
+        {
+            int order = FloatingOrderBase + _nextOrderOffset;
+            _nextOrderOffset = (_nextOrderOffset + 1) % FloatingOrderRange;
+            return order;
+        }
+
+        private void SetSortingOrder(int sortingOrder)
+        {
+            _sortingOrder = sortingOrder;
+            ApplySortingOrder();
         }
 
         public void SetStaticText(string text, Color color, float? characterSize = null)
@@ -123,9 +143,14 @@ namespace GourmetProject.Game.Presentation.Battle
             tm.alignment = TextAlignment.Center;
             tm.fontSize = _fontSize;
 
-            BattleSorting.Apply(GetComponent<MeshRenderer>(), BattleSorting.Fx, BattleSorting.OrderFloatingText);
+            ApplySortingOrder();
             _text = tm;
             return tm;
+        }
+
+        private void ApplySortingOrder()
+        {
+            BattleSorting.Apply(GetComponent<MeshRenderer>(), BattleSorting.Fx, _sortingOrder);
         }
 
         private void Animate(TextMesh tm, Vector3 start, float rise, float duration)

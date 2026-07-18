@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading;
 using DG.Tweening;
 using GourmetProject.Gameplay.Battle;
@@ -41,6 +42,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private const float FinalScorePopupRise = 0.78f;
         private const float FinalScorePopupDuration = 1.1f;
         private const float FinalScorePopupHold = 0.28f;
+        private const float BatchedCueHold = 0.24f;
 
         [Header("结算加速（小丑牌式：按 cue 进度越来越快）")]
         [SerializeField] private bool _useGlobalTimeScale = true;
@@ -104,19 +106,14 @@ namespace GourmetProject.Game.Presentation.Battle
 
             try
             {
-                foreach (SettlementPlaybackStep step in plan.Steps)
+                for (int i = 0; i < plan.Steps.Count;)
                 {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     await WaitWhileDebugScorePausedAsync(cancellationToken);
 #endif
-                    if (!dishViews.TryGetValue(step.DishInstanceId, out DishPieceView view) || view == null)
-                    {
-                        continue;
-                    }
-
-                    DishInstance instance = view.Instance;
-                    Vector3 center = DishCenter(instance, mapper);
-                    await PlayCueAsync(step.Cue, view, center, fxRoot, playback, dishValueBadges, onReveal, cancellationToken);
+                    IReadOnlyList<SettlementPlaybackStep> batch = CollectStepBatch(plan.Steps, i, out int nextIndex);
+                    await PlayStepBatchAsync(batch, dishViews, mapper, fxRoot, playback, dishValueBadges, onReveal, cancellationToken);
+                    i = nextIndex;
                 }
 
                 await PlayFinalCuesAsync(plan.FinalCues, mapper.Center, fxRoot, playback, onReveal, cancellationToken);
@@ -208,6 +205,87 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             await view.PlayDeliciousnessGainFeedbackAsync(cancellationToken);
+        }
+
+        private async Awaitable PlayStepBatchAsync(
+            IReadOnlyList<SettlementPlaybackStep> batch,
+            IReadOnlyDictionary<int, DishPieceView> dishViews,
+            DiningTableCoordinateMapper mapper,
+            Transform fxRoot,
+            SettlementPlaybackState playback,
+            Dictionary<int, DishValueBadge> dishValueBadges,
+            Action<SettlementRevealSignal> onReveal,
+            CancellationToken cancellationToken)
+        {
+            if (batch == null || batch.Count == 0)
+            {
+                return;
+            }
+
+            if (batch.Count == 1)
+            {
+                SettlementPlaybackStep step = batch[0];
+                if (!dishViews.TryGetValue(step.DishInstanceId, out DishPieceView view) || view == null)
+                {
+                    return;
+                }
+
+                DishInstance instance = view.Instance;
+                Vector3 center = DishCenter(instance, mapper);
+                await PlayCueAsync(step.Cue, view, center, fxRoot, playback, dishValueBadges, onReveal, cancellationToken);
+                return;
+            }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            await WaitWhileDebugScorePausedAsync(cancellationToken);
+#endif
+            AdvanceSettlementSpeed(playback, batch[0].Cue.Kind);
+            foreach (SettlementPlaybackStep step in batch)
+            {
+                if (!dishViews.TryGetValue(step.DishInstanceId, out DishPieceView view) || view == null)
+                {
+                    continue;
+                }
+
+                DishInstance instance = view.Instance;
+                Vector3 center = DishCenter(instance, mapper);
+                SettlementCue cue = step.Cue;
+                EmitReveal(onReveal, cue);
+                ApplyDishValueChange(cue, view, center, fxRoot, dishValueBadges);
+                if (fxRoot != null)
+                {
+                    FloatingTextView.Spawn(
+                        _floatingTextPrefab,
+                        fxRoot,
+                        center + new Vector3(0f, 0.34f, 0f),
+                        cue.Text,
+                        cue.Color,
+                        cue.CharacterSize,
+                        cue.Rise,
+                        cue.Duration);
+                }
+
+                _ = PlayFeedbackSafelyAsync(view, cancellationToken);
+            }
+
+            await Awaitable.WaitForSecondsAsync(BatchedCueHold, cancellationToken);
+        }
+
+        private static async Awaitable PlayFeedbackSafelyAsync(DishPieceView view, CancellationToken cancellationToken)
+        {
+            if (view == null)
+            {
+                return;
+            }
+
+            try
+            {
+                await view.PlayDeliciousnessGainFeedbackAsync(cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                // 结算被中断时，已经启动的并行动画正常退出。
+            }
         }
 
         private void ApplyDishValueChange(
@@ -443,8 +521,68 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private static int CountSettlementCues(SettlementPlaybackPlan plan)
         {
-            int count = 1 + (plan?.Steps.Count ?? 0) + (plan?.FinalCues.Count ?? 0);
+            int count = 1 + CountStepBatches(plan?.Steps) + (plan?.FinalCues.Count ?? 0);
             return Mathf.Max(1, count);
+        }
+
+        private static int CountStepBatches(IReadOnlyList<SettlementPlaybackStep> steps)
+        {
+            if (steps == null || steps.Count == 0)
+            {
+                return 0;
+            }
+
+            int count = 0;
+            for (int i = 0; i < steps.Count;)
+            {
+                CollectStepBatch(steps, i, out int nextIndex);
+                count++;
+                i = nextIndex;
+            }
+
+            return count;
+        }
+
+        private static IReadOnlyList<SettlementPlaybackStep> CollectStepBatch(
+            IReadOnlyList<SettlementPlaybackStep> steps,
+            int startIndex,
+            out int nextIndex)
+        {
+            nextIndex = startIndex + 1;
+            if (steps == null || startIndex < 0 || startIndex >= steps.Count)
+            {
+                return Array.Empty<SettlementPlaybackStep>();
+            }
+
+            SettlementPlaybackStep first = steps[startIndex];
+            if (string.IsNullOrEmpty(first.Cue.BatchKey))
+            {
+                return new[] { first };
+            }
+
+            var result = new List<SettlementPlaybackStep> { first };
+            var dishIds = new HashSet<int> { first.DishInstanceId };
+            for (int i = startIndex + 1; i < steps.Count; i++)
+            {
+                SettlementPlaybackStep next = steps[i];
+                if (!CanBatchStepWith(first, next) || !dishIds.Add(next.DishInstanceId))
+                {
+                    break;
+                }
+
+                result.Add(next);
+                nextIndex = i + 1;
+            }
+
+            return result;
+        }
+
+        private static bool CanBatchStepWith(SettlementPlaybackStep first, SettlementPlaybackStep next)
+        {
+            return first?.Cue != null
+                && next?.Cue != null
+                && !string.IsNullOrEmpty(first.Cue.BatchKey)
+                && string.Equals(first.Cue.BatchKey, next.Cue.BatchKey, StringComparison.Ordinal);
         }
 
         private async Awaitable TweenScoreAsync(float from, float to, float duration, Action<int> renderScore, CancellationToken cancellationToken)
@@ -596,46 +734,44 @@ namespace GourmetProject.Game.Presentation.Battle
             bool hasFinalModifierCue = false;
             var shownDishBases = new HashSet<int>();
 
-            foreach (ScoreLine line in result.ScoreLines)
+            IReadOnlyList<ScoreLine> scoreLines = result.ScoreLines;
+            for (int i = 0; i < scoreLines.Count; i++)
             {
+                ScoreLine line = scoreLines[i];
                 if (!TryBuildCue(line, out SettlementCue cue))
                 {
                     continue;
                 }
 
-                hasGoldCue |= line.Kind == ScoreLineKind.Gold;
-                hasLayerCue |= line.Kind == ScoreLineKind.Layer;
-                hasSilverItemRollCue |= line.Kind == ScoreLineKind.SilverItemRoll;
-                hasFinalModifierCue |= line.Kind == ScoreLineKind.FinalFlat
-                    || line.Kind == ScoreLineKind.FinalMultiplier;
+                TrackCueFlags(
+                    line,
+                    ref hasGoldCue,
+                    ref hasLayerCue,
+                    ref hasSilverItemRollCue,
+                    ref hasFinalModifierCue);
 
-                if (line.DishInstanceId != 0
-                    && dishViews.TryGetValue(line.DishInstanceId, out DishPieceView view)
-                    && view != null
-                    && cue.Kind != SettlementCueKind.FinalModifier)
+                if (!string.IsNullOrEmpty(cue.BatchKey))
                 {
-                    if (cue.ValueChange.Kind == DishValueChangeKind.Base)
+                    List<PendingLineCue> cueBatch = CollectLineCueBatch(scoreLines, i, cue);
+                    if (cueBatch.Count > 1)
                     {
-                        if (shownDishBases.Contains(line.DishInstanceId))
+                        for (int b = 1; b < cueBatch.Count; b++)
                         {
-                            continue;
+                            TrackCueFlags(
+                                cueBatch[b].Line,
+                                ref hasGoldCue,
+                                ref hasLayerCue,
+                                ref hasSilverItemRollCue,
+                                ref hasFinalModifierCue);
                         }
 
-                        shownDishBases.Add(line.DishInstanceId);
+                        AddCueBatchSteps(plan, cueBatch, dishViews, shownDishBases);
+                        i += cueBatch.Count - 1;
+                        continue;
                     }
-                    else if (cue.ValueChange.Kind != DishValueChangeKind.None
-                        && !shownDishBases.Contains(line.DishInstanceId))
-                    {
-                        plan.Steps.Add(new SettlementPlaybackStep(line.DishInstanceId, BuildDishBaseCue(view.Instance)));
-                        shownDishBases.Add(line.DishInstanceId);
-                    }
+                }
 
-                    plan.Steps.Add(new SettlementPlaybackStep(line.DishInstanceId, cue));
-                }
-                else
-                {
-                    plan.FinalCues.Add(cue);
-                }
+                AddCueStep(plan, line, cue, dishViews, shownDishBases);
             }
 
             // 甜蜜传递的「卡片揭示」不单独补 cue，而是绑定在目标菜触发传递效果的那条明细上
@@ -674,14 +810,154 @@ namespace GourmetProject.Game.Presentation.Battle
             return plan;
         }
 
-        private static SettlementCue BuildDishBaseCue(DishInstance instance)
+        private static void TrackCueFlags(
+            ScoreLine line,
+            ref bool hasGoldCue,
+            ref bool hasLayerCue,
+            ref bool hasSilverItemRollCue,
+            ref bool hasFinalModifierCue)
+        {
+            hasGoldCue |= line.Kind == ScoreLineKind.Gold;
+            hasLayerCue |= line.Kind == ScoreLineKind.Layer;
+            hasSilverItemRollCue |= line.Kind == ScoreLineKind.SilverItemRoll;
+            hasFinalModifierCue |= line.Kind == ScoreLineKind.FinalFlat
+                || line.Kind == ScoreLineKind.FinalMultiplier;
+        }
+
+        private static List<PendingLineCue> CollectLineCueBatch(
+            IReadOnlyList<ScoreLine> scoreLines,
+            int startIndex,
+            SettlementCue firstCue)
+        {
+            var result = new List<PendingLineCue>
+            {
+                new PendingLineCue(scoreLines[startIndex], firstCue)
+            };
+            var dishIds = new HashSet<int> { scoreLines[startIndex].DishInstanceId };
+
+            for (int i = startIndex + 1; i < scoreLines.Count; i++)
+            {
+                ScoreLine line = scoreLines[i];
+                if (!TryBuildCue(line, out SettlementCue cue)
+                    || !string.Equals(firstCue.BatchKey, cue.BatchKey, StringComparison.Ordinal)
+                    || !dishIds.Add(line.DishInstanceId))
+                {
+                    break;
+                }
+
+                result.Add(new PendingLineCue(line, cue));
+            }
+
+            return result;
+        }
+
+        private static void AddCueBatchSteps(
+            SettlementPlaybackPlan plan,
+            IReadOnlyList<PendingLineCue> cueBatch,
+            IReadOnlyDictionary<int, DishPieceView> dishViews,
+            HashSet<int> shownDishBases)
+        {
+            if (!CanAddAsDishCueBatch(cueBatch, dishViews))
+            {
+                for (int i = 0; i < cueBatch.Count; i++)
+                {
+                    AddCueStep(plan, cueBatch[i].Line, cueBatch[i].Cue, dishViews, shownDishBases);
+                }
+
+                return;
+            }
+
+            string baseBatchKey = $"base:{cueBatch[0].Cue.BatchKey}";
+            for (int i = 0; i < cueBatch.Count; i++)
+            {
+                ScoreLine line = cueBatch[i].Line;
+                SettlementCue cue = cueBatch[i].Cue;
+                dishViews.TryGetValue(line.DishInstanceId, out DishPieceView view);
+
+                if (cue.ValueChange.Kind != DishValueChangeKind.None
+                    && !shownDishBases.Contains(line.DishInstanceId))
+                {
+                    plan.Steps.Add(new SettlementPlaybackStep(line.DishInstanceId, BuildDishBaseCue(view.Instance, baseBatchKey)));
+                    shownDishBases.Add(line.DishInstanceId);
+                }
+            }
+
+            for (int i = 0; i < cueBatch.Count; i++)
+            {
+                AddCueStep(plan, cueBatch[i].Line, cueBatch[i].Cue, dishViews, shownDishBases);
+            }
+        }
+
+        private static bool CanAddAsDishCueBatch(
+            IReadOnlyList<PendingLineCue> cueBatch,
+            IReadOnlyDictionary<int, DishPieceView> dishViews)
+        {
+            if (cueBatch == null || cueBatch.Count == 0)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < cueBatch.Count; i++)
+            {
+                ScoreLine line = cueBatch[i].Line;
+                SettlementCue cue = cueBatch[i].Cue;
+                if (line.DishInstanceId == 0
+                    || cue.Kind == SettlementCueKind.FinalModifier
+                    || !dishViews.TryGetValue(line.DishInstanceId, out DishPieceView view)
+                    || view == null)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static void AddCueStep(
+            SettlementPlaybackPlan plan,
+            ScoreLine line,
+            SettlementCue cue,
+            IReadOnlyDictionary<int, DishPieceView> dishViews,
+            HashSet<int> shownDishBases)
+        {
+            if (line.DishInstanceId != 0
+                && dishViews.TryGetValue(line.DishInstanceId, out DishPieceView view)
+                && view != null
+                && cue.Kind != SettlementCueKind.FinalModifier)
+            {
+                if (cue.ValueChange.Kind == DishValueChangeKind.Base)
+                {
+                    if (shownDishBases.Contains(line.DishInstanceId))
+                    {
+                        return;
+                    }
+
+                    shownDishBases.Add(line.DishInstanceId);
+                }
+                else if (cue.ValueChange.Kind != DishValueChangeKind.None
+                    && !shownDishBases.Contains(line.DishInstanceId))
+                {
+                    plan.Steps.Add(new SettlementPlaybackStep(line.DishInstanceId, BuildDishBaseCue(view.Instance)));
+                    shownDishBases.Add(line.DishInstanceId);
+                }
+
+                plan.Steps.Add(new SettlementPlaybackStep(line.DishInstanceId, cue));
+            }
+            else
+            {
+                plan.FinalCues.Add(cue);
+            }
+        }
+
+        private static SettlementCue BuildDishBaseCue(DishInstance instance, string batchKey = null)
         {
             float baseScore = instance != null ? instance.BaseScoreBeforeSettlement : 0f;
             return new SettlementCue(
                 SettlementCueKind.Source,
                 $"分数 {FormatSigned(baseScore)}",
                 GainColor,
-                valueChange: DishValueChange.Base(baseScore));
+                valueChange: DishValueChange.Base(baseScore),
+                batchKey: batchKey);
         }
 
         private static bool TryBuildCue(ScoreLine line, out SettlementCue cue)
@@ -714,7 +990,8 @@ namespace GourmetProject.Game.Presentation.Battle
                         $"{sourceName} {FormatSigned(line.Value)}",
                         ColorForSource(line.Source),
                         reveal: SettlementRevealSignal.FlatReveal(line.DishInstanceId, line.After, SweetTransferCardDelta(line.Source)),
-                        valueChange: DishValueChange.FlatBonus(line.After));
+                        valueChange: DishValueChange.FlatBonus(line.After),
+                        batchKey: BuildDishSkillBatchKey(line));
                     return true;
 
                 case ScoreLineKind.DishMultiplier:
@@ -723,7 +1000,8 @@ namespace GourmetProject.Game.Presentation.Battle
                         $"倍率 {FormatMultiplier(line.Value)}",
                         MultiplierColor,
                         reveal: SettlementRevealSignal.MultiplierReveal(line.DishInstanceId, line.After, SweetTransferCardDelta(line.Source)),
-                        valueChange: DishValueChange.Multiplier(line.After));
+                        valueChange: DishValueChange.Multiplier(line.After),
+                        batchKey: BuildDishSkillBatchKey(line));
                     return true;
 
                 case ScoreLineKind.DishMultiplierAdd:
@@ -732,7 +1010,8 @@ namespace GourmetProject.Game.Presentation.Battle
                         $"倍率 {FormatSigned(line.Value)}",
                         MultiplierColor,
                         reveal: SettlementRevealSignal.MultiplierReveal(line.DishInstanceId, line.After, SweetTransferCardDelta(line.Source)),
-                        valueChange: DishValueChange.Multiplier(line.After));
+                        valueChange: DishValueChange.Multiplier(line.After),
+                        batchKey: BuildDishSkillBatchKey(line));
                     return true;
 
                 case ScoreLineKind.FinalFlat:
@@ -782,6 +1061,26 @@ namespace GourmetProject.Game.Presentation.Battle
                 default:
                     return false;
             }
+        }
+
+        private static string BuildDishSkillBatchKey(ScoreLine line)
+        {
+            ScoreSource source = line?.Source;
+            if (source == null
+                || source.Type != ScoreSourceType.DishSkill
+                || SweetTransferCardDelta(source) > 0)
+            {
+                return null;
+            }
+
+            return string.Join(
+                "|",
+                line.Phase,
+                line.Kind,
+                source.Id,
+                source.Name,
+                source.DishInstanceId.ToString(CultureInfo.InvariantCulture),
+                line.Value.ToString("R", CultureInfo.InvariantCulture));
         }
 
         private static bool IsReadableDishSource(ScoreSource source)
@@ -936,7 +1235,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 float rise = SourceCueRise,
                 float duration = SourceCueDuration,
                 SettlementRevealSignal reveal = default,
-                DishValueChange valueChange = default)
+                DishValueChange valueChange = default,
+                string batchKey = null)
             {
                 Kind = kind;
                 Text = text;
@@ -946,6 +1246,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 Duration = duration;
                 Reveal = reveal;
                 ValueChange = valueChange;
+                BatchKey = batchKey;
             }
 
             public SettlementCueKind Kind { get; }
@@ -964,6 +1265,21 @@ namespace GourmetProject.Game.Presentation.Battle
             public SettlementRevealSignal Reveal { get; }
 
             public DishValueChange ValueChange { get; }
+
+            public string BatchKey { get; }
+        }
+
+        private sealed class PendingLineCue
+        {
+            public PendingLineCue(ScoreLine line, SettlementCue cue)
+            {
+                Line = line;
+                Cue = cue;
+            }
+
+            public ScoreLine Line { get; }
+
+            public SettlementCue Cue { get; }
         }
 
         private enum DishValueChangeKind
