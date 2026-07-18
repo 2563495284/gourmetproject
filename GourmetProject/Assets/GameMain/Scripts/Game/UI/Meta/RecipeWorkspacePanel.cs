@@ -76,12 +76,7 @@ namespace GourmetProject.Game.UI.Meta
         /// <param name="onChanged">编辑（移动 / 删除）后回调，用于刷新常驻壳金币与底部菜谱条。</param>
         public void Open(GameRun run, Action onExit, Action onChanged, Func<FoodTipsView> getFoodTips = null)
         {
-            EnsureWired();
-            _run = run;
-            _onExit = onExit;
-            _onChanged = onChanged;
-            _getFoodTips = getFoodTips;
-            _stateMachine.Switch(new RecipeEditState());
+            Open(run, RecipeWorkspaceRequest.Edit(onExit, onChanged), getFoodTips);
         }
 
         /// <summary>只读查看单本菜谱：禁拖拽，菜品只响应悬停 tips。</summary>
@@ -92,12 +87,7 @@ namespace GourmetProject.Game.UI.Meta
             Action onChanged,
             Func<FoodTipsView> getFoodTips = null)
         {
-            EnsureWired();
-            _run = run;
-            _onExit = onExit;
-            _onChanged = onChanged;
-            _getFoodTips = getFoodTips;
-            _stateMachine.Switch(new ReadonlyRecipeBookState(bookIndex));
+            Open(run, RecipeWorkspaceRequest.ReadonlyBook(bookIndex, onExit, onChanged), getFoodTips);
         }
 
         /// <summary>以主动道具选择态打开菜谱面板：禁用拖拽/删除，只允许点击菜品进入确认。</summary>
@@ -109,11 +99,7 @@ namespace GourmetProject.Game.UI.Meta
             Action onChanged,
             Func<FoodTipsView> getFoodTips = null)
         {
-            EnsureWired();
-            _run = run;
-            _onChanged = onChanged;
-            _getFoodTips = getFoodTips;
-            _stateMachine.Switch(new ActiveRecipeDishSelectState(item, onCancel, onTargetConfirmed));
+            Open(run, RecipeWorkspaceRequest.ActiveItemTarget(item, onCancel, onTargetConfirmed, onChanged), getFoodTips);
         }
 
         public void OpenForEventRecipeDishDelete(
@@ -124,11 +110,38 @@ namespace GourmetProject.Game.UI.Meta
             Action onChanged,
             Func<FoodTipsView> getFoodTips = null)
         {
+            Open(run, RecipeWorkspaceRequest.EventDeleteDish(title, onCancel, onTargetConfirmed, onChanged), getFoodTips);
+        }
+
+        internal void Open(GameRun run, RecipeWorkspaceRequest request, Func<FoodTipsView> getFoodTips = null)
+        {
             EnsureWired();
             _run = run;
-            _onChanged = onChanged;
+            _onExit = request.OnExit;
+            _onChanged = request.OnChanged;
             _getFoodTips = getFoodTips;
-            _stateMachine.Switch(new EventRecipeDishDeleteState(title, onCancel, onTargetConfirmed));
+
+            switch (request.Mode)
+            {
+                case RecipeWorkspaceMode.ReadonlyBook:
+                    _stateMachine.Switch(new ReadonlyRecipeBookState(request.BookIndex));
+                    break;
+                case RecipeWorkspaceMode.ActiveItemTarget:
+                    _stateMachine.Switch(new ActiveRecipeDishSelectState(
+                        request.Item,
+                        request.OnCancel,
+                        request.OnTargetConfirmed));
+                    break;
+                case RecipeWorkspaceMode.EventDeleteDish:
+                    _stateMachine.Switch(new EventRecipeDishDeleteState(
+                        request.Title,
+                        request.OnCancel,
+                        request.OnTargetConfirmed));
+                    break;
+                default:
+                    _stateMachine.Switch(new RecipeEditState());
+                    break;
+            }
         }
 
         /// <summary>供外部（如金币变化）请求刷新当前工作区状态。</summary>

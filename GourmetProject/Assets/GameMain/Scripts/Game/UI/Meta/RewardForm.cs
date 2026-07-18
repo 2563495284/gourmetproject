@@ -25,19 +25,27 @@ namespace GourmetProject.Game.UI.Meta
 {
     public sealed class RewardFormOpenArgs
     {
-        private RewardFormOpenArgs(bool useGenericQueue, bool confirmBattleRewardAfterDone)
+        private RewardFormOpenArgs(bool useGenericQueue, bool confirmBattleRewardAfterDone, bool allowResultPeek)
         {
             UseGenericQueue = useGenericQueue;
             ConfirmBattleRewardAfterDone = confirmBattleRewardAfterDone;
+            AllowResultPeek = allowResultPeek;
         }
 
         public bool UseGenericQueue { get; }
 
         public bool ConfirmBattleRewardAfterDone { get; }
 
-        public static RewardFormOpenArgs GenericQueue(bool confirmBattleRewardAfterDone = false)
+        public bool AllowResultPeek { get; }
+
+        public static RewardFormOpenArgs BattleReward(bool allowResultPeek = true)
         {
-            return new RewardFormOpenArgs(true, confirmBattleRewardAfterDone);
+            return new RewardFormOpenArgs(false, false, allowResultPeek);
+        }
+
+        public static RewardFormOpenArgs GenericQueue(bool confirmBattleRewardAfterDone = false, bool allowResultPeek = false)
+        {
+            return new RewardFormOpenArgs(true, confirmBattleRewardAfterDone, allowResultPeek);
         }
     }
 
@@ -50,6 +58,8 @@ namespace GourmetProject.Game.UI.Meta
     {
         [SerializeField] private Text _titleText;
         [SerializeField] private Button _continueButton;
+        [SerializeField] private Button _peekHideButton;
+        [SerializeField] private Button _peekReturnButton;
         [SerializeField] private RectTransform _rewardListContent;
         [SerializeField] private RewardChoiceRowView _rewardRowTemplate;
         [Header("Reward Scrollbar")]
@@ -76,12 +86,25 @@ namespace GourmetProject.Game.UI.Meta
         private bool _rewardScrollbarVisible;
         private bool _genericMode;
         private bool _confirmBattleRewardAfterGeneric;
+        private bool _allowResultPeek;
+        private bool _peekHidden;
         private int _expandedChoicePackGroupIndex = NoExpandedChoicePackGroup;
+        private readonly List<PeekChildState> _peekChildStates = new List<PeekChildState>();
 
         protected override void OnInit(object userData)
         {
             base.OnInit(userData);
             _continueButton.onClick.AddListener(OnContinue);
+            if (_peekHideButton != null)
+            {
+                _peekHideButton.onClick.AddListener(HideForResultPeek);
+            }
+
+            if (_peekReturnButton != null)
+            {
+                _peekReturnButton.onClick.AddListener(ShowFromResultPeek);
+            }
+
             ConfigureRewardScrollbar();
         }
 
@@ -100,7 +123,18 @@ namespace GourmetProject.Game.UI.Meta
 
             RewardFormOpenArgs args = userData as RewardFormOpenArgs;
             _genericMode = args != null && args.UseGenericQueue;
-            _confirmBattleRewardAfterGeneric = args != null && args.ConfirmBattleRewardAfterDone;
+            _confirmBattleRewardAfterGeneric = args != null
+                ? args.ConfirmBattleRewardAfterDone
+                : _run.PendingGenericRewardsConfirmBattleAfterDone;
+            if (_genericMode)
+            {
+                _run.PendingGenericRewardsConfirmBattleAfterDone = _confirmBattleRewardAfterGeneric;
+            }
+
+            _allowResultPeek = args != null && args.AllowResultPeek;
+            _peekHidden = false;
+            _peekChildStates.Clear();
+            ConfigurePeekButtons();
             _genericRewardKey = string.Empty;
             _genericRewardTitle = string.Empty;
             _rewardKey = string.Empty;
@@ -127,11 +161,18 @@ namespace GourmetProject.Game.UI.Meta
             _rewardKey = GameRun.BuildRewardKey(_run.WeekIndex, _run.CurrentDay, actionContext);
 
             _offer = _run.GetPendingRewardOffer(_rewardKey);
+            if (_offer == null && _run.HasPendingRewardOffer)
+            {
+                _rewardKey = _run.PendingRewardKey;
+                _offer = _run.GetPendingRewardOffer();
+            }
+
             if (_offer == null)
             {
                 IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Reward, _rewardKey);
                 _offer = RewardGranter.GenerateOffer(_run, _run.CurrentWeek, rng, actionContext);
                 _run.SetPendingRewardOffer(_rewardKey, _offer);
+                BattleForm.Active?.SavePendingRewardBattleView();
                 RunPersistence.Save(_run);
             }
 
@@ -143,6 +184,12 @@ namespace GourmetProject.Game.UI.Meta
 
         protected override void OnClose(bool isShutdown, object userData)
         {
+            if (_peekHidden)
+            {
+                ShowFromResultPeek();
+            }
+
+            BattleForm.Active?.SetRewardPeekOnly(false);
             if (_rewardScrollbarGroup != null)
             {
                 DOTween.Kill(_rewardScrollbarGroup);
@@ -204,17 +251,20 @@ namespace GourmetProject.Game.UI.Meta
         /// <summary>结算并推进：清空 pending offer/碎片包、存档、（可选）关界面并回到行动轴，等效于点「继续」。</summary>
         private void CompleteRewards(bool closeForm)
         {
+            BattleForm.Active?.CloseRewardOperationPages();
             _run.ClearPendingFragmentPack();
 
             if (_genericMode)
             {
                 _run.ClearPendingGenericRewardOffer(_genericRewardKey);
-                RunPersistence.Save(_run);
                 if (LoadNextGenericReward())
                 {
                     RefreshOffer();
                     return;
                 }
+
+                _run.PendingGenericRewardsConfirmBattleAfterDone = false;
+                RunPersistence.Save(_run);
 
                 if (closeForm)
                 {
@@ -236,9 +286,9 @@ namespace GourmetProject.Game.UI.Meta
             _run.ClearPendingRewardOffer();
             if (_run.HasPendingGenericRewards)
             {
-                RunPersistence.Save(_run);
                 _genericMode = true;
                 _confirmBattleRewardAfterGeneric = true;
+                _run.PendingGenericRewardsConfirmBattleAfterDone = true;
                 if (LoadNextGenericReward())
                 {
                     if (!closeForm)
@@ -278,6 +328,69 @@ namespace GourmetProject.Game.UI.Meta
             GameApp.UI.CloseUIForm(UIForm);
         }
 
+        private void ConfigurePeekButtons()
+        {
+            if (_peekHideButton != null)
+            {
+                _peekHideButton.gameObject.SetActive(_allowResultPeek && !_peekHidden);
+            }
+
+            if (_peekReturnButton != null)
+            {
+                _peekReturnButton.gameObject.SetActive(_allowResultPeek && _peekHidden);
+            }
+        }
+
+        private void HideForResultPeek()
+        {
+            if (!_allowResultPeek || _peekHidden || _peekReturnButton == null)
+            {
+                return;
+            }
+
+            _peekHidden = true;
+            _peekChildStates.Clear();
+            Transform returnTransform = _peekReturnButton.transform;
+            for (int i = 0; i < transform.childCount; i++)
+            {
+                Transform child = transform.GetChild(i);
+                if (child == null || child == returnTransform)
+                {
+                    continue;
+                }
+
+                _peekChildStates.Add(new PeekChildState(child, child.gameObject.activeSelf));
+                child.gameObject.SetActive(false);
+            }
+
+            ConfigurePeekButtons();
+            BattleForm.Active?.SetRewardPeekOnly(true);
+        }
+
+        private void ShowFromResultPeek()
+        {
+            if (!_peekHidden)
+            {
+                ConfigurePeekButtons();
+                BattleForm.Active?.SetRewardPeekOnly(false);
+                return;
+            }
+
+            for (int i = 0; i < _peekChildStates.Count; i++)
+            {
+                PeekChildState state = _peekChildStates[i];
+                if (state.Transform != null)
+                {
+                    state.Transform.gameObject.SetActive(state.ActiveSelf);
+                }
+            }
+
+            _peekChildStates.Clear();
+            _peekHidden = false;
+            ConfigurePeekButtons();
+            BattleForm.Active?.SetRewardPeekOnly(false);
+        }
+
         private void ClaimBaseGold()
         {
             if (_offer == null || _offer.BaseGoldClaimed)
@@ -292,11 +405,13 @@ namespace GourmetProject.Game.UI.Meta
             }
             else
             {
-                RewardGranter.ApplyBaseGold(_run, _offer);
+                using (RunPersistence.SuppressSave())
+                {
+                    RewardGranter.ApplyBaseGold(_run, _offer);
+                }
             }
 
             SaveCurrentOffer();
-            RunPersistence.Save(_run);
             RefreshBattlePersistentHud();
 
             // 只剩金币这一个奖励，领完直接等效于点「继续」。
@@ -334,9 +449,12 @@ namespace GourmetProject.Game.UI.Meta
 
             if (choice.Kind == cfg.RewardKind.FragmentChoice)
             {
-                RewardGranter.ApplyFragmentPack(_run, groupChoices);
+                using (RunPersistence.SuppressSave())
+                {
+                    RewardGranter.ApplyFragmentPack(_run, groupChoices);
+                }
+
                 SaveCurrentOffer();
-                RunPersistence.Save(_run);
 
                 Close();
                 BattleForm.Active?.OpenRewardTableEdit(placed =>
@@ -346,8 +464,6 @@ namespace GourmetProject.Game.UI.Meta
                         MarkChoiceClaimed(groupIndex, index);
                         SaveCurrentOffer();
                     }
-
-                    RunPersistence.Save(_run);
 
                     // 拼完碎片（placed）且这是最后一个奖励：不再弹回 RewardForm，直接等效于点「继续」。
                     // 若在餐桌编辑里选择跳过（!placed），碎片奖励仍保留，照常弹回 RewardForm。
@@ -361,10 +477,13 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            RewardGranter.ApplyChoice(_run, choice);
+            using (RunPersistence.SuppressSave())
+            {
+                RewardGranter.ApplyChoice(_run, choice);
+            }
+
             MarkChoiceClaimed(groupIndex, index);
             SaveCurrentOffer();
-            RunPersistence.Save(_run);
             RefreshBattlePersistentHud();
 
             if (TryAutoComplete(closeForm: true))
@@ -429,7 +548,6 @@ namespace GourmetProject.Game.UI.Meta
         private void SaveOfferAndReopenReward()
         {
             SaveCurrentOffer();
-            RunPersistence.Save(_run);
 
             // 菜品是最后一个奖励且已放入菜谱：直接等效于点「继续」，不再弹回 RewardForm。
             if (TryAutoComplete(closeForm: false))
@@ -442,16 +560,20 @@ namespace GourmetProject.Game.UI.Meta
 
         private void ReopenReward()
         {
+            BattleForm.Active?.CloseRewardOperationPages();
             if (_genericMode)
             {
                 GameApp.UI.OpenUIForm(
                     UIForms.Reward,
                     UIForms.GroupDialog,
-                    RewardFormOpenArgs.GenericQueue(_confirmBattleRewardAfterGeneric));
+                    RewardFormOpenArgs.GenericQueue(_confirmBattleRewardAfterGeneric, _allowResultPeek));
                 return;
             }
 
-            GameApp.UI.OpenUIForm(UIForms.Reward, UIForms.GroupDialog);
+            GameApp.UI.OpenUIForm(
+                UIForms.Reward,
+                UIForms.GroupDialog,
+                _allowResultPeek ? RewardFormOpenArgs.BattleReward() : null);
         }
 
         private void SaveCurrentOffer()
@@ -481,7 +603,57 @@ namespace GourmetProject.Game.UI.Meta
 
         private RewardChoiceGroup GroupFor(int groupIndex)
         {
+            if (_offer == null)
+            {
+                return new RewardChoiceGroup(string.Empty, null, 0);
+            }
+
             return groupIndex < 0 ? _offer.SpecificGroup : _offer.GetFixedGroup(groupIndex);
+        }
+
+        private bool RestoreRewardContextForCallback()
+        {
+            if (_run == null)
+            {
+                _run = GameRunContext.Current;
+            }
+
+            if (_run == null)
+            {
+                _offer = null;
+                return false;
+            }
+
+            if (_genericMode)
+            {
+                if (!_run.TryPeekPendingGenericReward(out string key, out string title, out RewardOffer offer))
+                {
+                    _offer = null;
+                    return false;
+                }
+
+                if (!string.IsNullOrEmpty(_genericRewardKey) && !string.Equals(_genericRewardKey, key, StringComparison.Ordinal))
+                {
+                    _offer = null;
+                    return false;
+                }
+
+                _genericRewardKey = key;
+                _genericRewardTitle = string.IsNullOrWhiteSpace(title) ? "奖励" : title;
+                _offer = offer;
+                return _offer != null;
+            }
+
+            if (!string.IsNullOrEmpty(_rewardKey))
+            {
+                RewardOffer offer = _run.GetPendingRewardOffer(_rewardKey);
+                if (offer != null)
+                {
+                    _offer = offer;
+                }
+            }
+
+            return _offer != null;
         }
 
         private void RebuildRewardRows()
@@ -764,7 +936,7 @@ namespace GourmetProject.Game.UI.Meta
                         return;
                     }
 
-                    ClaimItemChoiceFromPopup(groupIndex, sourceIndices[pickedIndex], choices);
+                    ClaimItemChoiceFromPopup(groupIndex, sourceIndices[pickedIndex]);
                 },
                 ReopenReward);
             if (opened)
@@ -782,26 +954,37 @@ namespace GourmetProject.Game.UI.Meta
             return false;
         }
 
-        private void ClaimItemChoiceFromPopup(int groupIndex, int index, IReadOnlyList<RewardChoice> choices)
+        private void ClaimItemChoiceFromPopup(int groupIndex, int index)
         {
-            if (_offer == null || _run == null || choices == null || IsChoiceResolved(groupIndex)
-                || index < 0 || index >= choices.Count || IsChoiceClaimed(groupIndex, index))
+            if (!RestoreRewardContextForCallback())
             {
                 ReopenReward();
                 return;
             }
 
-            RewardChoice choice = choices[index];
+            RewardChoiceGroup group = GroupFor(groupIndex);
+            IReadOnlyList<RewardChoice> currentChoices = group.Choices;
+            if (currentChoices == null || IsChoiceResolved(groupIndex)
+                || index < 0 || index >= currentChoices.Count || IsChoiceClaimed(groupIndex, index))
+            {
+                ReopenReward();
+                return;
+            }
+
+            RewardChoice choice = currentChoices[index];
             if (choice == null)
             {
                 ReopenReward();
                 return;
             }
 
-            RewardGranter.ApplyChoice(_run, choice);
+            using (RunPersistence.SuppressSave())
+            {
+                RewardGranter.ApplyChoice(_run, choice);
+            }
+
             MarkChoiceClaimed(groupIndex, index);
             SaveCurrentOffer();
-            RunPersistence.Save(_run);
             RefreshBattlePersistentHud();
 
             if (TryAutoComplete(closeForm: false))
@@ -809,8 +992,8 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            if (!IsChoiceResolved(groupIndex) && IsItemPack(choices)
-                && OpenItemChoicePopup(groupIndex, choices, closeRewardFormOnOpen: false))
+            if (!IsChoiceResolved(groupIndex) && IsItemPack(currentChoices)
+                && OpenItemChoicePopup(groupIndex, currentChoices, closeRewardFormOnOpen: false))
             {
                 return;
             }
@@ -838,12 +1021,15 @@ namespace GourmetProject.Game.UI.Meta
                     continue;
                 }
 
-                RewardGranter.ApplyChoice(_run, choice);
+                using (RunPersistence.SuppressSave())
+                {
+                    RewardGranter.ApplyChoice(_run, choice);
+                }
+
                 MarkChoiceClaimed(groupIndex, i);
             }
 
             SaveCurrentOffer();
-            RunPersistence.Save(_run);
             RefreshBattlePersistentHud();
 
             if (TryAutoComplete(closeForm: true))
@@ -1126,6 +1312,19 @@ namespace GourmetProject.Game.UI.Meta
             {
                 label.text = text;
             }
+        }
+
+        private readonly struct PeekChildState
+        {
+            public PeekChildState(Transform transform, bool activeSelf)
+            {
+                Transform = transform;
+                ActiveSelf = activeSelf;
+            }
+
+            public Transform Transform { get; }
+
+            public bool ActiveSelf { get; }
         }
     }
 }

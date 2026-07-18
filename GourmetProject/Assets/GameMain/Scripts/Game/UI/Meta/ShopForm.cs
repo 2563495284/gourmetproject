@@ -1,8 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
-using GourmetProject.Core.Rng;
-using GourmetProject.Game;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Hud;
@@ -58,7 +55,6 @@ namespace GourmetProject.Game.UI.Meta
         private readonly List<GameObject> _spawned = new();
         private GameRun _run;
         private RecipeView _recipeView;
-        private string _shopKey;
         private bool _wired;
         private TargetArrowView _activeArrow;
         private ShopEntry _targetingEntry;
@@ -69,10 +65,9 @@ namespace GourmetProject.Game.UI.Meta
         private int _targetingFrame;
 
         private Action _onLeave;
-        private Action _onChanged;
-        private Action _onOpenRecipeEdit;
-        private Action _onOpenTableEdit;
-        private Action<ShopEntry, ShopBuyItemViewBase> _onItemPurchased;
+        private Action _onOpenRecipeWorkspace;
+        private Func<ShopEntry, ShopBuyItemViewBase, bool> _onBuy;
+        private Func<ShopEntry, int, ShopBuyItemViewBase, bool> _onBuyDishToBook;
 
         private void Awake()
         {
@@ -118,28 +113,29 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
-        /// <summary>由 BattleForm 进入商店态时调用：刷新库存并展示商店购买区。</summary>
+        /// <summary>由商店页面协调器进入商店态时调用：渲染给定库存并展示商店购买区。</summary>
+        /// <param name="run">当前肉鸽运行。</param>
+        /// <param name="stock">页面协调器准备好的库存快照。</param>
         /// <param name="onLeave">点「离开商店」时回调（BattleForm 继续周循环编排）。</param>
-        /// <param name="onChanged">商店内数据变化（买卖）后回调，用于刷新常驻壳金币/道具与底部菜谱条。</param>
-        /// <param name="onOpenRecipeEdit">点「编辑菜谱」时回调：BattleForm 切到编辑菜谱态（独立状态）。</param>
-        /// <param name="onOpenTableEdit">购买碎片包后回调：BattleForm 切到餐桌编辑页手动拼贴。</param>
+        /// <param name="onOpenRecipeWorkspace">点「编辑菜谱」时回调：BattleForm 切到菜谱工作区态。</param>
         public void Open(
+            GameRun run,
+            IReadOnlyList<ShopEntry> stock,
             Action onLeave,
-            Action onChanged,
-            Action onOpenRecipeEdit = null,
-            Action onOpenTableEdit = null,
+            Action onOpenRecipeWorkspace = null,
             RecipeView recipeView = null,
-            Action<ShopEntry, ShopBuyItemViewBase> onItemPurchased = null)
+            Func<ShopEntry, ShopBuyItemViewBase, bool> onBuy = null,
+            Func<ShopEntry, int, ShopBuyItemViewBase, bool> onBuyDishToBook = null)
         {
             EnsureWired();
+            _run = run;
+            ReplaceStock(stock);
             _onLeave = onLeave;
-            _onChanged = onChanged;
-            _onOpenRecipeEdit = onOpenRecipeEdit;
-            _onOpenTableEdit = onOpenTableEdit;
-            _onItemPurchased = onItemPurchased;
+            _onOpenRecipeWorkspace = onOpenRecipeWorkspace;
+            _onBuy = onBuy;
+            _onBuyDishToBook = onBuyDishToBook;
             _recipeView = recipeView;
 
-            _run = GameRunContext.Current;
             if (_run == null)
             {
                 _onLeave?.Invoke();
@@ -151,7 +147,6 @@ namespace GourmetProject.Game.UI.Meta
                 _shopPanel.SetActive(true);
             }
 
-            RollStock();
             Rebuild();
         }
 
@@ -173,37 +168,31 @@ namespace GourmetProject.Game.UI.Meta
             if (_editRecipeButton != null)
             {
                 _editRecipeButton.onClick.RemoveAllListeners();
-                _editRecipeButton.onClick.AddListener(() => _onOpenRecipeEdit?.Invoke());
+                _editRecipeButton.onClick.AddListener(() => _onOpenRecipeWorkspace?.Invoke());
             }
         }
 
-        private void RollStock()
+        private void ReplaceStock(IReadOnlyList<ShopEntry> stock)
         {
             _stock.Clear();
-            _shopKey = GameRun.BuildShopKey(_run.WeekIndex, _run.CurrentDay);
-            if (_run.HasPendingShopStock(_shopKey))
+            if (stock == null)
             {
-                _stock.AddRange(_run.GetPendingShopStock(_shopKey));
                 return;
             }
 
-            IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Shop, _shopKey);
-            IRandomStream lootRng = GameApp.Random.DomainStream(SeedDomains.Loot, $"shop_{_shopKey}");
-            _stock.AddRange(ShopService.RollStock(GameApp.Config.Tables, _run, rng, lootRng));
-            // 掷库存只写内存 pending（同一天重开商店复用同一份）；不存档，退出商店结算时才统一存。
-            _run.SetPendingShopStock(_shopKey, _stock);
+            _stock.AddRange(stock);
         }
 
         private void Rebuild()
         {
+            if (_run == null)
+            {
+                return;
+            }
+
             CancelDishTargeting();
             ClearSpawned();
             EnsureTipViews();
-            ShopService.RefreshStockPrices(_run, _stock);
-            if (_run != null && !string.IsNullOrEmpty(_shopKey))
-            {
-                _run.SetPendingShopStock(_shopKey, _stock);
-            }
 
             SetText(_goldText, $"金币 {_run.Gold}");
             BuildBuySection(ShopEntryKind.Dish, _foodContainer, _foodEmptyText, "暂无食物", _foodCardPrefab);
@@ -211,8 +200,6 @@ namespace GourmetProject.Game.UI.Meta
             BuildBuySection(ShopEntryKind.PassiveItem, _passiveContainer, _passiveEmptyText, "暂无被动道具", _passiveCardPrefab);
             BuildBuySection(ShopEntryKind.ActiveItem, _activeContainer, _activeEmptyText, "暂无主动道具", _activeCardPrefab);
             SetText(_recipeLimitText, $"{_run.RecipeBookCount}/{GameRun.MaxRecipeBookCount}");
-
-            _onChanged?.Invoke();
         }
 
         private void BuildBuySection(
@@ -269,100 +256,17 @@ namespace GourmetProject.Game.UI.Meta
             container.gameObject.SetActive(count > 0);
         }
 
-        /// <summary>供 BattleForm 在底部扇形「购买空菜谱」后回调：重建商店购买区与上限文本。</summary>
-        public void RefreshShop()
+        /// <summary>供页面协调器在库存或金币变化后回调：重建商店购买区与上限文本。</summary>
+        public void RefreshShop(GameRun run, IReadOnlyList<ShopEntry> stock)
         {
-            if (_run != null)
-            {
-                Rebuild();
-            }
+            _run = run;
+            ReplaceStock(stock);
+            Rebuild();
         }
 
         private bool BuyImmediate(ShopEntry entry, ShopBuyItemViewBase card)
         {
-            if (!ShopService.Purchase(_run, entry))
-            {
-                return false;
-            }
-
-            if (entry.Kind == ShopEntryKind.PassiveItem || entry.Kind == ShopEntryKind.ActiveItem)
-            {
-                _onItemPurchased?.Invoke(entry, card);
-            }
-
-            FinishPurchasedEntry(entry);
-            return true;
-        }
-
-        private void FinishPurchasedEntry(ShopEntry entry)
-        {
-            _stock.Remove(entry);
-            TryAutoRestock(entry);
-            _run.SetPendingShopStock(_shopKey, _stock);
-            Rebuild();
-
-            // 碎片包：购买后进入餐桌编辑页手动拼贴（金币已扣，待开包状态已置）。
-            if (entry.Kind == ShopEntryKind.Fragment && _run.PendingFragmentPack.Count > 0 && _onOpenTableEdit != null)
-            {
-                _onOpenTableEdit.Invoke();
-                return;
-            }
-
-            if (_run.HasPendingGenericRewards && !GameApp.UI.HasUIForm(UIForms.Reward))
-            {
-                GameApp.UI.OpenUIForm(UIForms.Reward, UIForms.GroupDialog, RewardFormOpenArgs.GenericQueue());
-            }
-        }
-
-        private void TryAutoRestock(ShopEntry purchasedEntry)
-        {
-            if (_run == null || purchasedEntry == null || !new ItemRuntime(_run).AutoRestock())
-            {
-                return;
-            }
-
-            string restockKey = BuildRestockKey(purchasedEntry);
-            IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Shop, restockKey);
-            IRandomStream lootRng = GameApp.Random.DomainStream(SeedDomains.Loot, $"loot_{restockKey}");
-            ShopEntry restock = ShopService.RollRestockEntry(
-                GameApp.Config.Tables,
-                _run,
-                purchasedEntry.Kind,
-                rng,
-                lootRng,
-                _stock);
-            if (restock == null)
-            {
-                return;
-            }
-
-            _stock.Add(restock);
-            new ItemRuntime(_run).FlashTriggered(m => m.AutoRestock());
-        }
-
-        private string BuildRestockKey(ShopEntry purchasedEntry)
-        {
-            var builder = new StringBuilder();
-            builder.Append("restock_");
-            builder.Append(_shopKey);
-            builder.Append('_');
-            builder.Append(purchasedEntry.Kind);
-            builder.Append('_');
-            builder.Append(purchasedEntry.Id);
-            foreach (ShopEntry entry in _stock)
-            {
-                if (entry == null)
-                {
-                    continue;
-                }
-
-                builder.Append('|');
-                builder.Append(entry.Kind);
-                builder.Append(':');
-                builder.Append(entry.Id);
-            }
-
-            return builder.ToString();
+            return _onBuy != null && _onBuy.Invoke(entry, card);
         }
 
         private void BeginDishTargeting(ShopBuyItemViewBase card, ShopEntry entry)
@@ -416,7 +320,7 @@ namespace GourmetProject.Game.UI.Meta
         {
             ShopEntry entry = _targetingEntry;
             ShopBuyItemViewBase card = _targetingCard;
-            if (!ShopService.PurchaseDishToBook(_run, entry, bookIndex))
+            if (_onBuyDishToBook == null || !_onBuyDishToBook.Invoke(entry, bookIndex, card))
             {
                 card?.PlayPurchaseFailed();
                 CancelDishTargeting();
@@ -424,7 +328,6 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             CancelDishTargeting();
-            FinishPurchasedEntry(entry);
         }
 
         private TargetArrowView CreateTargetArrow(Vector2 startScreenPoint)

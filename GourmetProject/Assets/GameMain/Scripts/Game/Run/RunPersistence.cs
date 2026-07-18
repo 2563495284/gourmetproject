@@ -19,12 +19,13 @@ namespace GourmetProject.Game.Run
     public static class RunPersistence
     {
         private const string Tag = "RunSave";
+        private static int _saveSuppressionDepth;
 
         public static bool HasSave => GameApp.Save.Has(UIForms.GameSaveSlot);
 
         public static void Save(GameRun run)
         {
-            if (run == null)
+            if (run == null || _saveSuppressionDepth > 0)
             {
                 return;
             }
@@ -33,6 +34,12 @@ namespace GourmetProject.Game.Run
             data.RandomSnapshot = GameApp.Random.Capture();
             GameApp.Save.Save(UIForms.GameSaveSlot, data);
             Log.Info($"Run saved. week={run.WeekIndex}, gold={run.Gold}.", Tag);
+        }
+
+        public static System.IDisposable SuppressSave()
+        {
+            _saveSuppressionDepth++;
+            return new SaveSuppressionScope();
         }
 
         public static void Delete()
@@ -62,6 +69,22 @@ namespace GourmetProject.Game.Run
             GameRun run = GameRun.FromSaveData(tables, db, data);
             Log.Info($"Run loaded. character={run.CharacterId}, week={run.WeekIndex}.", Tag);
             return run;
+        }
+
+        private sealed class SaveSuppressionScope : System.IDisposable
+        {
+            private bool _disposed;
+
+            public void Dispose()
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                _disposed = true;
+                _saveSuppressionDepth = System.Math.Max(0, _saveSuppressionDepth - 1);
+            }
         }
     }
 }

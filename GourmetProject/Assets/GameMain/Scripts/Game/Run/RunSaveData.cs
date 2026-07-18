@@ -147,6 +147,15 @@ namespace GourmetProject.Game.Run
         /// <summary>最近一次行动的耗时快照（天，0.1 粒度）。</summary>
         public float LastActionCostDays;
 
+        /// <summary>最近一次行动的来源 key；行动轴节点恢复奖励续接时使用。</summary>
+        public string LastActionSourceKey;
+
+        /// <summary>最近一次行动是否带有目标分天数覆盖。</summary>
+        public bool LastActionHasTargetScoreDayOverride;
+
+        /// <summary>最近一次行动的目标分天数覆盖值。</summary>
+        public float LastActionTargetScoreDayOverride;
+
         /// <summary>已生成的整局行动组序列。</summary>
         public List<string> ActionGroupSequence = new List<string>();
 
@@ -195,8 +204,14 @@ namespace GourmetProject.Game.Run
 
         public RewardOfferSaveData PendingRewardOffer;
 
+        /// <summary>战斗胜利后待领奖期间的只读 Food 画面快照；用于读档恢复领奖背景和常驻 HUD。</summary>
+        public PendingRewardBattleViewSaveData PendingRewardBattleView;
+
         /// <summary>通用待领奖队列（被动获得时、商店、事件等非过关奖励来源）。</summary>
         public List<GenericRewardSaveData> PendingGenericRewards = new List<GenericRewardSaveData>();
+
+        /// <summary>通用领奖队列结束后是否要续接战斗胜利流程。</summary>
+        public bool PendingGenericRewardsConfirmBattleAfterDone;
     }
 
     [Serializable]
@@ -327,6 +342,40 @@ namespace GourmetProject.Game.Run
         public string Key;
         public string Title;
         public RewardOfferSaveData Offer;
+    }
+
+    [Serializable]
+    public sealed class PendingRewardBattleViewSaveData
+    {
+        public int RequiredScore;
+        public int RawRequiredScore;
+        public string Modifier;
+        public string BattleKey;
+        public bool IsBoss;
+        public int LastTotal;
+        public List<PendingRewardBattleDishSaveData> Dishes = new List<PendingRewardBattleDishSaveData>();
+    }
+
+    [Serializable]
+    public sealed class PendingRewardBattleDishSaveData
+    {
+        public int Id;
+        public string DishId;
+        public int OriginX;
+        public int OriginY;
+        public int Rotation;
+        public int SourceSlotIndex = -1;
+        public int SourceDishIndex = -1;
+        public List<string> SkillIds = new List<string>();
+        public List<string> FlavorIds = new List<string>();
+        public int RuntimeCountAsBonus;
+        public float PermanentFlatBonus;
+        public float PermanentMultBonus = 1f;
+        public float TemporaryBaseMultiplier = 1f;
+        public float ServeMultiplier = 1f;
+        public bool SkillsDisabled;
+        public bool ExcludedFromScore;
+        public bool IsTemporary;
     }
 
     [Serializable]

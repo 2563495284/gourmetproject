@@ -664,6 +664,13 @@ namespace GourmetProject.Gameplay.Battle
             return null;
         }
 
+        /// <summary>读档恢复待领奖界面时，把会话标记为已结算的只读 UI 状态；不触发任何结算副作用。</summary>
+        public void RestoreSettledForRewardView(int total)
+        {
+            LastResult = new ScoreResult(Array.Empty<DishScore>(), Math.Max(0, total), 0f, 1f);
+            IsSettled = true;
+        }
+
         public bool IsWin => IsSettled && LastResult != null && LastResult.Total >= RequiredScore;
 
         /// <summary>清空餐桌（主动道具「重摆铃」）。已结算后不允许。</summary>

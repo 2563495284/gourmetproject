@@ -76,6 +76,8 @@ namespace GourmetProject.Game.Run
         private string _pendingShopKey = string.Empty;
         private string _pendingRewardKey = string.Empty;
         private RewardOfferSaveData _pendingRewardOffer;
+        private PendingRewardBattleViewSaveData _pendingRewardBattleView;
+        private bool _pendingGenericRewardsConfirmBattleAfterDone;
         private int _activeUseIndex;
         private int _interestThreshold;
         private int _interestGoldPer;
@@ -1227,6 +1229,15 @@ namespace GourmetProject.Game.Run
             return FromSaveData(_pendingRewardOffer);
         }
 
+        public bool HasPendingRewardOffer => !string.IsNullOrEmpty(_pendingRewardKey) && _pendingRewardOffer != null;
+
+        public string PendingRewardKey => _pendingRewardKey;
+
+        public RewardOffer GetPendingRewardOffer()
+        {
+            return HasPendingRewardOffer ? FromSaveData(_pendingRewardOffer) : null;
+        }
+
         public void SetPendingRewardOffer(string key, RewardOffer offer)
         {
             _pendingRewardKey = key ?? string.Empty;
@@ -1237,9 +1248,33 @@ namespace GourmetProject.Game.Run
         {
             _pendingRewardKey = string.Empty;
             _pendingRewardOffer = null;
+            ClearPendingRewardBattleView();
+        }
+
+        public bool HasPendingRewardBattleView => _pendingRewardBattleView != null;
+
+        public PendingRewardBattleViewSaveData GetPendingRewardBattleView()
+        {
+            return ClonePendingRewardBattleView(_pendingRewardBattleView);
+        }
+
+        public void SetPendingRewardBattleView(PendingRewardBattleViewSaveData data)
+        {
+            _pendingRewardBattleView = ClonePendingRewardBattleView(data);
+        }
+
+        public void ClearPendingRewardBattleView()
+        {
+            _pendingRewardBattleView = null;
         }
 
         public bool HasPendingGenericRewards => _pendingGenericRewards.Count > 0;
+
+        public bool PendingGenericRewardsConfirmBattleAfterDone
+        {
+            get => _pendingGenericRewardsConfirmBattleAfterDone;
+            set => _pendingGenericRewardsConfirmBattleAfterDone = value;
+        }
 
         public void EnqueueGenericRewardOffer(string key, string title, RewardOffer offer)
         {
@@ -1477,6 +1512,9 @@ namespace GourmetProject.Game.Run
                 LastRunActionStepIndex = LastActionContext?.RunStepIndex ?? 0,
                 LastActionGroupId = LastActionContext?.ActionGroupId ?? string.Empty,
                 LastActionCostDays = LastActionContext?.CostDays ?? 0,
+                LastActionSourceKey = LastActionContext?.SourceKey ?? string.Empty,
+                LastActionHasTargetScoreDayOverride = LastActionContext?.TargetScoreDayOverride.HasValue ?? false,
+                LastActionTargetScoreDayOverride = LastActionContext?.TargetScoreDayOverride ?? 0f,
                 ActionGroupSequence = new List<string>(_actionGroupSequence),
                 ActionWeekPlan = new List<string>(_actionWeekPlan),
                 ActionWeekPlanWeek = _actionWeekPlanWeek,
@@ -1494,7 +1532,9 @@ namespace GourmetProject.Game.Run
                 PendingShopStock = new List<ShopEntrySaveData>(_pendingShopStock),
                 PendingRewardKey = _pendingRewardKey,
                 PendingRewardOffer = _pendingRewardOffer,
+                PendingRewardBattleView = ClonePendingRewardBattleView(_pendingRewardBattleView),
                 PendingGenericRewards = CloneGenericRewardSaveData(_pendingGenericRewards),
+                PendingGenericRewardsConfirmBattleAfterDone = _pendingGenericRewardsConfirmBattleAfterDone,
             };
         }
 
@@ -1668,7 +1708,13 @@ namespace GourmetProject.Game.Run
                         data.LastActionStepIndex,
                         data.LastRunActionStepIndex,
                         data.LastActionGroupId,
-                        costDays));
+                        costDays)
+                    {
+                        SourceKey = data.LastActionSourceKey ?? string.Empty,
+                        TargetScoreDayOverride = data.LastActionHasTargetScoreDayOverride
+                            ? (float?)data.LastActionTargetScoreDayOverride
+                            : null,
+                    });
                 }
             }
 
@@ -1724,6 +1770,8 @@ namespace GourmetProject.Game.Run
 
             run._pendingRewardKey = data.PendingRewardKey ?? string.Empty;
             run._pendingRewardOffer = data.PendingRewardOffer;
+            run._pendingRewardBattleView = ClonePendingRewardBattleView(data.PendingRewardBattleView);
+            run._pendingGenericRewardsConfirmBattleAfterDone = data.PendingGenericRewardsConfirmBattleAfterDone;
             if (data.PendingGenericRewards != null)
             {
                 run._pendingGenericRewards.AddRange(CloneGenericRewardSaveData(data.PendingGenericRewards));
@@ -1941,6 +1989,61 @@ namespace GourmetProject.Game.Run
                     Key = reward.Key ?? string.Empty,
                     Title = reward.Title ?? string.Empty,
                     Offer = ToSaveData(FromSaveData(reward.Offer)),
+                });
+            }
+
+            return result;
+        }
+
+        private static PendingRewardBattleViewSaveData ClonePendingRewardBattleView(PendingRewardBattleViewSaveData data)
+        {
+            if (data == null)
+            {
+                return null;
+            }
+
+            var result = new PendingRewardBattleViewSaveData
+            {
+                RequiredScore = data.RequiredScore,
+                RawRequiredScore = data.RawRequiredScore,
+                Modifier = data.Modifier ?? string.Empty,
+                BattleKey = data.BattleKey ?? string.Empty,
+                IsBoss = data.IsBoss,
+                LastTotal = data.LastTotal,
+                Dishes = new List<PendingRewardBattleDishSaveData>(),
+            };
+
+            if (data.Dishes == null)
+            {
+                return result;
+            }
+
+            foreach (PendingRewardBattleDishSaveData dish in data.Dishes)
+            {
+                if (dish == null || string.IsNullOrEmpty(dish.DishId))
+                {
+                    continue;
+                }
+
+                result.Dishes.Add(new PendingRewardBattleDishSaveData
+                {
+                    Id = dish.Id,
+                    DishId = dish.DishId,
+                    OriginX = dish.OriginX,
+                    OriginY = dish.OriginY,
+                    Rotation = dish.Rotation,
+                    SourceSlotIndex = dish.SourceSlotIndex,
+                    SourceDishIndex = dish.SourceDishIndex,
+                    SkillIds = dish.SkillIds != null ? new List<string>(dish.SkillIds) : new List<string>(),
+                    FlavorIds = dish.FlavorIds != null ? new List<string>(dish.FlavorIds) : new List<string>(),
+                    RuntimeCountAsBonus = dish.RuntimeCountAsBonus,
+                    PermanentFlatBonus = dish.PermanentFlatBonus,
+                    PermanentMultBonus = dish.PermanentMultBonus,
+                    TemporaryBaseMultiplier = dish.TemporaryBaseMultiplier,
+                    ServeMultiplier = dish.ServeMultiplier,
+                    SkillsDisabled = dish.SkillsDisabled,
+                    ExcludedFromScore = dish.ExcludedFromScore,
+                    IsTemporary = dish.IsTemporary,
                 });
             }
 

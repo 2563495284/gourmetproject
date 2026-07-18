@@ -18,6 +18,17 @@ namespace GourmetProject.Game.UI.Meta
         private bool _resolved;
         private GameRun _run;
 
+        private void OnDisable()
+        {
+            ClearCards();
+            _resolved = false;
+            _run = null;
+            if (_skipButton != null)
+            {
+                _skipButton.onClick.RemoveAllListeners();
+            }
+        }
+
         public void Open(
             string title,
             IReadOnlyList<RewardChoice> choices,
@@ -38,6 +49,14 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             int count = choices?.Count ?? 0;
+            if (count == 0)
+            {
+                _resolved = true;
+                Close();
+                onSkip?.Invoke();
+                return;
+            }
+
             for (int i = 0; i < count; i++)
             {
                 int index = i;
@@ -78,6 +97,12 @@ namespace GourmetProject.Game.UI.Meta
         {
             ClearCards();
             _run = null;
+            _resolved = false;
+            if (_skipButton != null)
+            {
+                _skipButton.onClick.RemoveAllListeners();
+            }
+
             gameObject.SetActive(false);
         }
 

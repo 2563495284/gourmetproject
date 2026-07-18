@@ -248,7 +248,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: eec2779cd6854b8d94b7d68e8c105256, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.ShopForm
+  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Meta.ShopForm
   _shopPanel: {fileID: 5148361356335124181}
   _goldText: {fileID: 0}
   _leaveButton: {fileID: 1516031610153690384}

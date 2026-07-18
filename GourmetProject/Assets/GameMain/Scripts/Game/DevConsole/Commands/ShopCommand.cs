@@ -26,7 +26,7 @@ namespace GourmetProject.Game.DevConsole.Commands
             BattleForm battle = BattleForm.Active;
             if (battle != null && battle.CurrentView == GameplayView.Shop)
             {
-                // 正在商店态：重进商店态即重掷（ShopForm.Open 在无 pending 时会重新 RollStock）。
+                // 正在商店态：重进商店态即重掷（ShopPageCoordinator 在无 pending 时会重新 RollStock）。
                 battle.OpenShop();
                 return CmdResult.Ok("商店已重新随机。");
             }

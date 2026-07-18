@@ -588,7 +588,7 @@ namespace GourmetProject.Game.UI.Battle
             return _host.CurrentView switch
             {
                 GameplayView.Shop => ActiveUseContextKind.Shop,
-                GameplayView.RecipeEdit => ActiveUseContextKind.Shop,
+                GameplayView.RecipeWorkspace => ActiveUseContextKind.Shop,
                 GameplayView.TableEdit => ActiveUseContextKind.Shop,
                 GameplayView.TableView => ActiveUseContextKind.Shop,
                 GameplayView.ActionSelect => ActiveUseContextKind.ActionSelect,

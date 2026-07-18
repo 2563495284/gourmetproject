@@ -56,7 +56,7 @@ namespace GourmetProject.Game.UI.Battle.States
             _states = new Dictionary<GameplayView, IGameplayViewState>();
             Register(new ActionSelectState());
             Register(new ShopState());
-            Register(new RecipeEditState());
+            Register(new RecipeWorkspaceState());
             Register(new RewardDishPackState());
             Register(new RewardItemChoiceState());
             Register(new RandomizedItemsState());

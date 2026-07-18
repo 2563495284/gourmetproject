@@ -6,7 +6,7 @@ namespace GourmetProject.Game.UI.Battle
         None,
         ActionSelect,
         Shop,
-        RecipeEdit,
+        RecipeWorkspace,
         RewardDishPack,
         RewardItemChoice,
         RandomizedItems,

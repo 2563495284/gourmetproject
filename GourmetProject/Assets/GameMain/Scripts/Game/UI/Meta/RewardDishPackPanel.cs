@@ -108,6 +108,27 @@ namespace GourmetProject.Game.UI.Meta
             BuildCards();
         }
 
+        public void Close()
+        {
+            CancelPendingRebuild();
+            HideDishTips();
+            ClearBooks();
+            ClearCards();
+            ClearPendingRestoreScroll();
+            _choices.Clear();
+            _run = null;
+            _onChoiceDropped = null;
+            _onSkip = null;
+            _getFoodTips = null;
+
+            if (_panelRoot != null)
+            {
+                _panelRoot.SetActive(false);
+            }
+
+            gameObject.SetActive(false);
+        }
+
         private void EnsureWired()
         {
             if (_wired)

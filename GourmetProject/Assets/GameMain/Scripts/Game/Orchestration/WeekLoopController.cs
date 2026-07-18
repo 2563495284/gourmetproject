@@ -18,6 +18,8 @@ namespace GourmetProject.Game.Orchestration
 
         void HideBattleWorld();
 
+        void RestorePendingRewardBattleView();
+
         void HideResultPanel();
 
         void OpenWeekMap();
@@ -69,6 +71,7 @@ namespace GourmetProject.Game.Orchestration
         private Action _afterBattleWin;
         private Action<ScoreResult> _afterBattleLose;
         private Action _afterShop;
+        private bool _currentBattleIsBoss;
 
         public WeekLoopController(GameRun run, IWeekLoopView view)
         {
@@ -81,8 +84,24 @@ namespace GourmetProject.Game.Orchestration
         /// <summary>进入（或继续）一周：随机/沿用行动轴后开始行动循环。</summary>
         public void BeginWeek()
         {
-            _view.HideBattleWorld();
             _view.HideResultPanel();
+
+            if (_run.HasPendingRewardOffer)
+            {
+                OpenPendingBattleReward();
+                return;
+            }
+
+            if (_run.HasPendingGenericRewards)
+            {
+                GameApp.UI.OpenUIForm(
+                    UIForms.Reward,
+                    UIForms.GroupDialog,
+                    RewardFormOpenArgs.GenericQueue(_run.PendingGenericRewardsConfirmBattleAfterDone));
+                return;
+            }
+
+            _view.HideBattleWorld();
 
             // 新周或上一周已走完 → 随机一条新行动轴；中途读档则沿用存档里的行动轴。
             if (string.IsNullOrEmpty(_run.CurrentTimelineId) || _run.CurrentDay >= _run.TimelineLengthDays)
@@ -171,17 +190,22 @@ namespace GourmetProject.Game.Orchestration
 
         public void OnBattleSettled(ScoreResult result, bool isWin)
         {
-            // 结算演出已放完 → 立即退出美食态，隐藏世界餐桌与其专属按钮（总览/吃/涂鸦）。
-            // 否则战斗后到下一次 PromptNextAction 之间的发奖 / 事件 / 利息 / 通知等弹层背后，
-            // 美食态按钮会一直残留（事件选择时按钮仍显示的根因就在这里）。
-            _view.HideBattleWorld();
+            if (isWin && _currentBattleIsBoss)
+            {
+                ContinueBattleWin(hideBattleWorld: true);
+                return;
+            }
 
             if (isWin)
             {
                 // 达标：发奖（不推进周），奖励确认后继续编排。
-                GameApp.UI.OpenUIForm(UIForms.Reward, UIForms.GroupDialog);
+                GameApp.UI.OpenUIForm(UIForms.Reward, UIForms.GroupDialog, RewardFormOpenArgs.BattleReward());
                 return;
             }
+
+            _currentBattleIsBoss = false;
+            // 未达标时立即退出美食态；胜利领奖期间保留 Battle 场景，供 RewardForm 隐藏后查看结果。
+            _view.HideBattleWorld();
 
             if (_afterBattleLose != null)
             {
@@ -213,11 +237,91 @@ namespace GourmetProject.Game.Orchestration
         /// <summary>RewardForm 发奖确认后回调：继续战斗后的编排续接。</summary>
         public void OnRewardConfirmed()
         {
+            ContinueBattleWin(hideBattleWorld: true);
+        }
+
+        private void ContinueBattleWin(bool hideBattleWorld)
+        {
             Action cb = _afterBattleWin;
             _afterBattleWin = null;
             _afterBattleLose = null;
             CurrentBattleActionContext = null;
-            cb?.Invoke();
+            _currentBattleIsBoss = false;
+            if (hideBattleWorld)
+            {
+                _view.HideBattleWorld();
+            }
+
+            if (cb != null)
+            {
+                cb.Invoke();
+                return;
+            }
+
+            ContinueAfterRecoveredBattleReward();
+        }
+
+        private void OpenPendingBattleReward()
+        {
+            CurrentBattleActionContext = _run.LastActionContext;
+            _afterBattleWin = ContinueAfterRecoveredBattleReward;
+            _view.RestorePendingRewardBattleView();
+            GameApp.UI.OpenUIForm(UIForms.Reward, UIForms.GroupDialog, RewardFormOpenArgs.BattleReward());
+        }
+
+        private void ContinueAfterRecoveredBattleReward()
+        {
+            ActionExecutionContext context = _run.LastActionContext;
+            if (context == null || context.Action == null)
+            {
+                RunPersistence.Save(_run);
+                PromptNextAction();
+                return;
+            }
+
+            if (FoodService.IsBossAction(_run.Tables, context.Action))
+            {
+                CompleteRecoveredBossBattle(context);
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(context.SourceKey))
+            {
+                _run.MarkNodeTriggered(context.SourceKey);
+                RunPersistence.Save(_run);
+                PromptNextAction();
+                return;
+            }
+
+            float prevDay = ActionExecutor.Commit(_run, context);
+            RunPersistence.Save(_run);
+            ResolveNodes(prevDay, PromptNextAction);
+        }
+
+        private void CompleteRecoveredBossBattle(ActionExecutionContext context)
+        {
+            if (!string.IsNullOrEmpty(context.SourceKey))
+            {
+                _run.MarkNodeTriggered(context.SourceKey);
+            }
+
+            cfg.Food boss = FoodService.ResolveBoss(_run, context.Action);
+            if (boss != null)
+            {
+                _run.MarkBossCompleted(boss.Id);
+            }
+
+            ApplyBossCompleteGold();
+            RunPersistence.Save(_run);
+            ClearPendingNodes();
+            if (IsFinalBossVictory(boss))
+            {
+                OnVictory();
+            }
+            else
+            {
+                EndWeek();
+            }
         }
 
         /// <summary>行动轴走完：推进到下一周（最终周胜利由 Boss 节点判定）。</summary>
@@ -426,15 +530,7 @@ namespace GourmetProject.Game.Orchestration
                 {
                     onBossComplete?.Invoke();
                     _run.MarkBossCompleted(outcome.BossId);
-                    // Boss 赏金（GoldOnBossComplete）：通关本次 Boss 后额外获得金币。
-                    var itemRuntime = new ItemRuntime(_run);
-                    int bossGold = itemRuntime.BossCompleteGold();
-                    if (bossGold > 0)
-                    {
-                        itemRuntime.FlashTriggered(m => m.BossCompleteGold() > 0);
-                        _run.Gold += bossGold;
-                    }
-
+                    ApplyBossCompleteGold();
                     RunPersistence.Save(_run);
                     ClearPendingNodes();
                     if (IsFinalBossVictory(boss))
@@ -447,6 +543,20 @@ namespace GourmetProject.Game.Orchestration
                     }
                 }, context);
             });
+        }
+
+        private void ApplyBossCompleteGold()
+        {
+            // Boss 赏金（GoldOnBossComplete）：通关本次 Boss 后额外获得金币。
+            var itemRuntime = new ItemRuntime(_run);
+            int bossGold = itemRuntime.BossCompleteGold();
+            if (bossGold <= 0)
+            {
+                return;
+            }
+
+            itemRuntime.FlashTriggered(m => m.BossCompleteGold() > 0);
+            _run.Gold += bossGold;
         }
 
         private bool IsFinalBossVictory(cfg.Food boss)
@@ -804,6 +914,7 @@ namespace GourmetProject.Game.Orchestration
             _afterBattleWin = onWin;
             _afterBattleLose = onLose;
             CurrentBattleActionContext = actionContext;
+            _currentBattleIsBoss = isBoss;
             _view.HideResultPanel();
             _view.StartBattle(requiredScore, modifier, key, actionContext);
         }

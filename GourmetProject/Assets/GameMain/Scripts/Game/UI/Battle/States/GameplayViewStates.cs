@@ -28,10 +28,10 @@ namespace GourmetProject.Game.UI.Battle.States
         }
     }
 
-    /// <summary>编辑菜谱态：中部交给 RecipeWorkspacePanel，行动轴隐藏。</summary>
-    internal sealed class RecipeEditState : IGameplayViewState
+    /// <summary>菜谱工作区态：中部交给 RecipeWorkspacePanel，行动轴隐藏。</summary>
+    internal sealed class RecipeWorkspaceState : IGameplayViewState
     {
-        public GameplayView Kind => GameplayView.RecipeEdit;
+        public GameplayView Kind => GameplayView.RecipeWorkspace;
 
         public void Enter(IBattleViewHost host, Action buildCenter)
         {
