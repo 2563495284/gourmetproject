@@ -88,8 +88,13 @@ namespace GourmetProject.Game.Orchestration
 
             if (_run.HasPendingRewardOffer)
             {
-                OpenPendingBattleReward();
-                return;
+                if (_run.HasPendingRewardBattleView)
+                {
+                    OpenPendingBattleReward();
+                    return;
+                }
+
+                _run.ClearPendingRewardOffer();
             }
 
             if (_run.HasPendingGenericRewards)
@@ -118,6 +123,13 @@ namespace GourmetProject.Game.Orchestration
         /// <summary>行动轴未走完则弹「n 选一行动」；走完则进入下一周。</summary>
         public void PromptNextAction()
         {
+            RepairIncompleteTriggeredBossNodes();
+
+            if (ResolveDueNodes(PromptNextAction))
+            {
+                return;
+            }
+
             if (TimelineService.IsWeekFinished(_run))
             {
                 EndWeek();
@@ -127,6 +139,58 @@ namespace GourmetProject.Game.Orchestration
             _view.HideBattleWorld();
             _view.HideResultPanel();
             _view.OpenWeekMap();
+        }
+
+        private void RepairIncompleteTriggeredBossNodes()
+        {
+            if (_run == null || _run.CurrentDay <= TimelineMath.Epsilon)
+            {
+                return;
+            }
+
+            foreach (cfg.TimelineNode node in TimelineService.GetNodes(_run))
+            {
+                if (node == null
+                    || node.Day > _run.CurrentDay + TimelineMath.Epsilon
+                    || !_run.IsNodeTriggered(node.Id))
+                {
+                    continue;
+                }
+
+                cfg.GameAction action = TimelineService.NodeAction(_run, node);
+                if (!FoodService.IsBossAction(_run.Tables, action))
+                {
+                    continue;
+                }
+
+                cfg.Food boss = FoodService.ResolveBoss(_run, action);
+                if (boss != null && _run.IsBossCompleted(boss.Id))
+                {
+                    continue;
+                }
+
+                _run.UnmarkNodeTriggered(node.Id);
+            }
+        }
+
+        /// <summary>读档/回到行动选择时，优先补处理当前天数已经到达但尚未结算的行动轴节点。</summary>
+        private bool ResolveDueNodes(Action onDone)
+        {
+            if (_run == null || _run.CurrentDay <= TimelineMath.Epsilon)
+            {
+                return false;
+            }
+
+            List<cfg.TimelineNode> dueNodes = TimelineService.CollectPassedNodes(_run, 0f, _run.CurrentDay);
+            if (dueNodes.Count == 0)
+            {
+                return false;
+            }
+
+            _pendingNodes = new Queue<cfg.TimelineNode>(dueNodes);
+            _afterNodes = onDone;
+            ProcessNextNode();
+            return true;
         }
 
         /// <summary>WeekMapForm 选择行动后回调（null = 无行动可选时的「休息」）。</summary>

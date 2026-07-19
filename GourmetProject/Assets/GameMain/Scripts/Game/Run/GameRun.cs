@@ -983,6 +983,14 @@ namespace GourmetProject.Game.Run
             }
         }
 
+        public void UnmarkNodeTriggered(string nodeId)
+        {
+            if (!string.IsNullOrEmpty(nodeId))
+            {
+                _triggeredNodeIds.Remove(nodeId);
+            }
+        }
+
         public void MarkEventUsed(string eventId)
         {
             if (!string.IsNullOrEmpty(eventId) && !_usedEventIds.Contains(eventId))
