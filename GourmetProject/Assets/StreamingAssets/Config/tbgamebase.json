@@ -26,10 +26,10 @@
       50
     ],
     "recipeBookPrices": [
-      20,
       30,
-      40,
-      50
+      50,
+      80,
+      120
     ],
     "maxRecipeBookCount": 4,
     "shopPriceFluctuationPct": 0.2
