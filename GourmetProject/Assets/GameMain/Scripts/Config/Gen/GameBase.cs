@@ -23,12 +23,15 @@ public sealed partial class GameBase : Luban.BeanBase
         { if(!_buf["interestThreshold"].IsNumber) { throw new SerializationException(); }  InterestThreshold = _buf["interestThreshold"]; }
         { if(!_buf["interestGoldPer"].IsNumber) { throw new SerializationException(); }  InterestGoldPer = _buf["interestGoldPer"]; }
         { if(!_buf["initialActionRerollCount"].IsNumber) { throw new SerializationException(); }  InitialActionRerollCount = _buf["initialActionRerollCount"]; }
+        { if(!_buf["baseActiveSlots"].IsNumber) { throw new SerializationException(); }  BaseActiveSlots = _buf["baseActiveSlots"]; }
         { if(!_buf["shopFoodSaleSlotCount"].IsNumber) { throw new SerializationException(); }  ShopFoodSaleSlotCount = _buf["shopFoodSaleSlotCount"]; }
         { if(!_buf["shopPassiveItemSaleSlotCount"].IsNumber) { throw new SerializationException(); }  ShopPassiveItemSaleSlotCount = _buf["shopPassiveItemSaleSlotCount"]; }
         { if(!_buf["shopActiveItemSaleSlotCount"].IsNumber) { throw new SerializationException(); }  ShopActiveItemSaleSlotCount = _buf["shopActiveItemSaleSlotCount"]; }
         { if(!_buf["foodFlavorLimit"].IsNumber) { throw new SerializationException(); }  FoodFlavorLimit = _buf["foodFlavorLimit"]; }
         { var __json0 = _buf["fragmentPackPrices"]; if(!__json0.IsArray) { throw new SerializationException(); } FragmentPackPrices = new System.Collections.Generic.List<int>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { int __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  FragmentPackPrices.Add(__v0); }   }
         { var __json0 = _buf["deleteDishPrices"]; if(!__json0.IsArray) { throw new SerializationException(); } DeleteDishPrices = new System.Collections.Generic.List<int>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { int __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  DeleteDishPrices.Add(__v0); }   }
+        { var __json0 = _buf["recipeBookPrices"]; if(!__json0.IsArray) { throw new SerializationException(); } RecipeBookPrices = new System.Collections.Generic.List<int>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { int __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  RecipeBookPrices.Add(__v0); }   }
+        { if(!_buf["maxRecipeBookCount"].IsNumber) { throw new SerializationException(); }  MaxRecipeBookCount = _buf["maxRecipeBookCount"]; }
         { if(!_buf["shopPriceFluctuationPct"].IsNumber) { throw new SerializationException(); }  ShopPriceFluctuationPct = _buf["shopPriceFluctuationPct"]; }
     }
 
@@ -62,6 +65,10 @@ public sealed partial class GameBase : Luban.BeanBase
     /// </summary>
     public readonly int InitialActionRerollCount;
     /// <summary>
+    /// 主动道具基础消耗槽数
+    /// </summary>
+    public readonly int BaseActiveSlots;
+    /// <summary>
     /// 商店食物出售栏位数量
     /// </summary>
     public readonly int ShopFoodSaleSlotCount;
@@ -86,6 +93,14 @@ public sealed partial class GameBase : Luban.BeanBase
     /// </summary>
     public readonly System.Collections.Generic.List<int> DeleteDishPrices;
     /// <summary>
+    /// 商店购买菜谱按购买次数递增价格
+    /// </summary>
+    public readonly System.Collections.Generic.List<int> RecipeBookPrices;
+    /// <summary>
+    /// 菜谱最大数量（商店购买/获取菜谱上限）
+    /// </summary>
+    public readonly int MaxRecipeBookCount;
+    /// <summary>
     /// 商店食物/主动/被动道具基础价格随机浮动比例
     /// </summary>
     public readonly float ShopPriceFluctuationPct;
@@ -106,12 +121,15 @@ public sealed partial class GameBase : Luban.BeanBase
         + "interestThreshold:" + InterestThreshold + ","
         + "interestGoldPer:" + InterestGoldPer + ","
         + "initialActionRerollCount:" + InitialActionRerollCount + ","
+        + "baseActiveSlots:" + BaseActiveSlots + ","
         + "shopFoodSaleSlotCount:" + ShopFoodSaleSlotCount + ","
         + "shopPassiveItemSaleSlotCount:" + ShopPassiveItemSaleSlotCount + ","
         + "shopActiveItemSaleSlotCount:" + ShopActiveItemSaleSlotCount + ","
         + "foodFlavorLimit:" + FoodFlavorLimit + ","
         + "fragmentPackPrices:" + Luban.StringUtil.CollectionToString(FragmentPackPrices) + ","
         + "deleteDishPrices:" + Luban.StringUtil.CollectionToString(DeleteDishPrices) + ","
+        + "recipeBookPrices:" + Luban.StringUtil.CollectionToString(RecipeBookPrices) + ","
+        + "maxRecipeBookCount:" + MaxRecipeBookCount + ","
         + "shopPriceFluctuationPct:" + ShopPriceFluctuationPct + ","
         + "}";
     }

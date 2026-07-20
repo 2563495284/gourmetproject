@@ -107,6 +107,9 @@ namespace GourmetProject.Game.Run
         /// <summary>本局商店碎片包成功购买次数，用于递增定价。</summary>
         public int FragmentPackPurchaseCount;
 
+        /// <summary>本局商店空菜谱成功购买次数，用于递增定价。</summary>
+        public int RecipeBookPurchaseCount;
+
         /// <summary>本局商店/菜谱编辑成功删除菜品次数，用于递增定价。</summary>
         public int DeleteDishCount;
 

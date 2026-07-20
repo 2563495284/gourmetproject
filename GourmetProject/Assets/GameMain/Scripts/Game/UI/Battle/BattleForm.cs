@@ -162,6 +162,7 @@ namespace GourmetProject.Game.UI.Battle
         internal WeekLoopController ActiveLoop => _loop;
         internal GameplayView CurrentView => _current;
         internal bool InBattle => _inBattle;
+        internal bool IsViewingBattleTable => _tableCoordinator != null && _tableCoordinator.IsViewingBattleTable;
         internal BattleWorldController ActiveWorld => _world ?? BattleWorldController.Instance;
         internal ActiveItemActionPopup ActiveItemPopupPrefab => _activeItemPopupPrefab;
         internal TargetArrowView ActiveItemTargetArrowPrefab => _activeItemTargetArrowPrefab;
@@ -770,6 +771,7 @@ namespace GourmetProject.Game.UI.Battle
 
         GameplayView ITableViewHost.CurrentView => _current;
         GameRun ITableViewHost.Run => _run;
+        BattleSession ITableViewHost.Session => _session;
         BattleWorldController ITableViewHost.World => _world ?? BattleWorldController.Instance;
         void ITableViewHost.SwitchTo(GameplayView view, Action buildCenter, Action onShown) => SwitchTo(view, buildCenter, onShown);
         void ITableViewHost.RestoreBattleWorld() => RestoreBattleWorld();

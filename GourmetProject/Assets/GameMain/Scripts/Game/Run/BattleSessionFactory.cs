@@ -97,8 +97,8 @@ namespace GourmetProject.Game.Run
         /// </summary>
         private static GpTable BuildTable(GameRun run, cfg.Character character, string modifier)
         {
-            int maxW = character != null && character.MaxDiningTableWidth > 0 ? character.MaxDiningTableWidth : GameRun.BoardWidth;
-            int maxH = character != null && character.MaxDiningTableHeight > 0 ? character.MaxDiningTableHeight : GameRun.BoardHeight;
+            int maxW = character.MaxDiningTableWidth;
+            int maxH = character.MaxDiningTableHeight;
 
             if (BossDebuffModifiers.IsSmallBoard(modifier))
             {

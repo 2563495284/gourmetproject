@@ -162,7 +162,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            if (ShouldUseTableCellTargeting(item))
+            if (ShouldUseTableCellTargeting(item) && !CanUseCurrentBattleTableCellTargeting())
             {
                 BeginTableCellTargeting(ctx, item, slot);
                 return;
@@ -416,30 +416,35 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            if (_tableCellTargeting)
-            {
-                CompleteTableCellTargeting();
-                return;
-            }
-
             IActiveUseContext ctx = _pendingContext;
             ItemDefinition item = _pendingItem;
             ActiveTarget[] targets = _selectedTargets.ToArray();
+            if (ShouldPlayCellMaterialApply(item, targets))
+            {
+                CompleteCellMaterialTargeting(ctx, item, targets, closeTableCellTarget: _tableCellTargeting);
+                return;
+            }
+
             CleanupTargeting();
             ApplyAndConsume(ctx, item, targets);
         }
 
-        private void CompleteTableCellTargeting()
+        private void CompleteCellMaterialTargeting(
+            IActiveUseContext ctx,
+            ItemDefinition item,
+            ActiveTarget[] targets,
+            bool closeTableCellTarget)
         {
-            IActiveUseContext ctx = _pendingContext;
-            ItemDefinition item = _pendingItem;
-            ActiveTarget[] targets = _selectedTargets.ToArray();
             ActiveItemUseResult result = ActiveItemEffectRegistry.Apply(ctx, item, targets);
             _host.ShowActiveItemMessage(result.Message);
             if (!result.Success)
             {
                 CleanupTargeting();
-                _host.CloseActiveItemTableCellTarget();
+                if (closeTableCellTarget)
+                {
+                    _host.CloseActiveItemTableCellTarget();
+                }
+
                 _host.RefreshAfterActiveItem(boardChanged: false, persist: false);
                 return;
             }
@@ -459,7 +464,11 @@ namespace GourmetProject.Game.UI.Battle
 
             void FinishTableCellTargeting()
             {
-                _host.CloseActiveItemTableCellTarget();
+                if (closeTableCellTarget)
+                {
+                    _host.CloseActiveItemTableCellTarget();
+                }
+
                 _host.RefreshAfterActiveItem(result.BoardChanged, persist: false, result.ActionChoicesChanged);
             }
         }
@@ -585,6 +594,11 @@ namespace GourmetProject.Game.UI.Battle
                 return ActiveUseContextKind.Battle;
             }
 
+            if (_host.CurrentView == GameplayView.TableView && _host.IsViewingBattleTable)
+            {
+                return ActiveUseContextKind.Battle;
+            }
+
             return _host.CurrentView switch
             {
                 GameplayView.Shop => ActiveUseContextKind.Shop,
@@ -704,6 +718,19 @@ namespace GourmetProject.Game.UI.Battle
             return item != null
                 && item.TargetKind == cfg.ItemTargetKind.DiningTableCell
                 && item.EffectType == ItemEffectTypes.AddMaterial;
+        }
+
+        private bool CanUseCurrentBattleTableCellTargeting()
+        {
+            return _host.CurrentView == GameplayView.Food && _host.InBattle;
+        }
+
+        private static bool ShouldPlayCellMaterialApply(ItemDefinition item, IReadOnlyList<ActiveTarget> targets)
+        {
+            return ShouldUseTableCellTargeting(item)
+                && targets != null
+                && targets.Count > 0
+                && targets[0].TargetKind == cfg.ItemTargetKind.DiningTableCell;
         }
 
         private static bool ContainsTarget(IReadOnlyList<ActiveTarget> targets, ActiveTarget candidate)

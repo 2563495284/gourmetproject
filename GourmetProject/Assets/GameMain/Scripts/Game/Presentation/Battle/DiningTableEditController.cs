@@ -173,7 +173,7 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>进入只读餐桌视图：复用编辑页餐桌布局，但不显示候选碎片托盘，也不启用拖拽输入。</summary>
-        public void BeginTableView(GameRun run)
+        public void BeginTableView(GameRun run, GpTable tableOverride = null)
         {
             _editRun = run;
             ClearTray();
@@ -185,13 +185,13 @@ namespace GourmetProject.Game.Presentation.Battle
             ComputeViewport();
 
             _editCellSprite = Resources.Load<Sprite>("Sprites/UI/board_cell");
-            _editTable = run.BuildTablePreviewFromFragments(run.WeekModifier);
+            _editTable = tableOverride ?? run.BuildTablePreviewFromFragments(run.WeekModifier);
             LayoutEditorTable(_editTable, useBoardArea: true);
             _state = TableInteractionState.ReadOnlyView;
         }
 
         /// <summary>进入主动道具选格态：复用餐桌查看布局，但允许外层用世界箭头选择格子。</summary>
-        public void BeginCellTargeting(GameRun run)
+        public void BeginCellTargeting(GameRun run, GpTable tableOverride = null)
         {
             _editRun = run;
             ClearTray();
@@ -203,7 +203,7 @@ namespace GourmetProject.Game.Presentation.Battle
             ComputeViewport();
 
             _editCellSprite = Resources.Load<Sprite>("Sprites/UI/board_cell");
-            _editTable = run.BuildTablePreviewFromFragments(run.WeekModifier);
+            _editTable = tableOverride ?? run.BuildTablePreviewFromFragments(run.WeekModifier);
             LayoutEditorTable(_editTable, useBoardArea: true);
             _state = TableInteractionState.CellTargeting;
         }
@@ -586,8 +586,8 @@ namespace GourmetProject.Game.Presentation.Battle
         private void ConfigureEditMaxBounds(GameRun run)
         {
             cfg.Character character = run.Tables.TbCharacter.GetOrDefault(run.CharacterId);
-            _editMaxWidth = character != null && character.MaxDiningTableWidth > 0 ? character.MaxDiningTableWidth : GameRun.BoardWidth;
-            _editMaxHeight = character != null && character.MaxDiningTableHeight > 0 ? character.MaxDiningTableHeight : GameRun.BoardHeight;
+            _editMaxWidth = character.MaxDiningTableWidth;
+            _editMaxHeight = character.MaxDiningTableHeight;
         }
 
         private void ShowBoundsWarning(BoundsWarningInfo warning)

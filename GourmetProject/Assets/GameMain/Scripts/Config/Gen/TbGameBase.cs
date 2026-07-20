@@ -56,6 +56,10 @@ public partial class TbGameBase
     /// </summary>
      public int InitialActionRerollCount => _data.InitialActionRerollCount;
     /// <summary>
+    /// 主动道具基础消耗槽数
+    /// </summary>
+     public int BaseActiveSlots => _data.BaseActiveSlots;
+    /// <summary>
     /// 商店食物出售栏位数量
     /// </summary>
      public int ShopFoodSaleSlotCount => _data.ShopFoodSaleSlotCount;
@@ -79,6 +83,14 @@ public partial class TbGameBase
     /// 删除菜品按删除次数递增价格
     /// </summary>
      public System.Collections.Generic.List<int> DeleteDishPrices => _data.DeleteDishPrices;
+    /// <summary>
+    /// 商店购买菜谱按购买次数递增价格
+    /// </summary>
+     public System.Collections.Generic.List<int> RecipeBookPrices => _data.RecipeBookPrices;
+    /// <summary>
+    /// 菜谱最大数量（商店购买/获取菜谱上限）
+    /// </summary>
+     public int MaxRecipeBookCount => _data.MaxRecipeBookCount;
     /// <summary>
     /// 商店食物/主动/被动道具基础价格随机浮动比例
     /// </summary>

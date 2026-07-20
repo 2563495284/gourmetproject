@@ -435,7 +435,7 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>进入只读餐桌视图：外壳收起 Food 态并切到餐桌视图互斥态，交由协作组件复用餐桌布局渲染。</summary>
-        public void BeginTableView(GameRun run)
+        public void BeginTableView(GameRun run, GpTable tableOverride = null)
         {
             if (run == null || !CanEnterTableView)
             {
@@ -460,12 +460,12 @@ namespace GourmetProject.Game.Presentation.Battle
             HideWorldPanels();
             ClearPlacedPieces();
 
-            _boardEdit.BeginTableView(run);
+            _boardEdit.BeginTableView(run, tableOverride);
             _boardView?.SetCellHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
         }
 
         /// <summary>进入主动道具餐桌选格态：布局同只读餐桌视图，但外层会用世界箭头接管点击确认/取消。</summary>
-        public void BeginTableCellTargeting(GameRun run)
+        public void BeginTableCellTargeting(GameRun run, GpTable tableOverride = null)
         {
             if (run == null)
             {
@@ -490,7 +490,7 @@ namespace GourmetProject.Game.Presentation.Battle
             HideWorldPanels();
             ClearPlacedPieces();
 
-            _boardEdit.BeginCellTargeting(run);
+            _boardEdit.BeginCellTargeting(run, tableOverride);
             _boardView?.SetCellHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
         }
 

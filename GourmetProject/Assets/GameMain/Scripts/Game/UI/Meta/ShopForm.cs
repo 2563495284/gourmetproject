@@ -199,7 +199,7 @@ namespace GourmetProject.Game.UI.Meta
             BuildBuySection(ShopEntryKind.Fragment, _fragmentContainer, _fragmentEmptyText, "暂无碎片包", _fragmentCardPrefab);
             BuildBuySection(ShopEntryKind.PassiveItem, _passiveContainer, _passiveEmptyText, "暂无被动道具", _passiveCardPrefab);
             BuildBuySection(ShopEntryKind.ActiveItem, _activeContainer, _activeEmptyText, "暂无主动道具", _activeCardPrefab);
-            SetText(_recipeLimitText, $"{_run.RecipeBookCount}/{GameRun.MaxRecipeBookCount}");
+            SetText(_recipeLimitText, $"{_run.RecipeBookCount}/{_run.RecipeBookMaxCount}");
         }
 
         private void BuildBuySection(

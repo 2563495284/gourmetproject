@@ -54,7 +54,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 return;
             }
 
-            bool showAdd = run.RecipeBookCount < GameRun.MaxRecipeBookCount;
+            bool showAdd = run.RecipeBookCount < run.RecipeBookMaxCount;
             bool canBuy = showAdd && run.Gold >= ShopService.RecipeBookCost(run);
             BuildPersistent(run, showAdd, canBuy ? onBuy : null, onInspect);
         }

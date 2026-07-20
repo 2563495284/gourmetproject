@@ -6,6 +6,7 @@
     "interestThreshold": 5,
     "interestGoldPer": 1,
     "initialActionRerollCount": 0,
+    "baseActiveSlots": 2,
     "shopFoodSaleSlotCount": 3,
     "shopPassiveItemSaleSlotCount": 2,
     "shopActiveItemSaleSlotCount": 2,
@@ -24,6 +25,13 @@
       40,
       50
     ],
+    "recipeBookPrices": [
+      20,
+      30,
+      40,
+      50
+    ],
+    "maxRecipeBookCount": 4,
     "shopPriceFluctuationPct": 0.2
   }
 ]

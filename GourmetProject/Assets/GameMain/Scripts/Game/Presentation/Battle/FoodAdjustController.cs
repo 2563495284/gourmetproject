@@ -27,9 +27,12 @@ namespace GourmetProject.Game.Presentation.Battle
         private bool _active;
         private Action _onExited;
         private State _state = State.Idle;
+        private const float DragStartScreenThreshold = 8f;
 
         private DishInstance _movingDish;
         private Placement _originalPlacement;
+        private Vector2 _moveStartScreen;
+        private bool _dragReleaseArmed;
         private DishPieceView _ghostView;
         private DishPieceView _cursorView;
         private WorldTargetArrow _arrow;
@@ -184,6 +187,8 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             _movingDish = dish;
             _originalPlacement = dish.Placement;
+            _moveStartScreen = WorldInput.MouseScreen;
+            _dragReleaseArmed = false;
 
             DiningTable.RemoveDish(dish);
             HideDeleteButton();
@@ -199,18 +204,33 @@ namespace GourmetProject.Game.Presentation.Battle
             _cursorView = CreateLoosePiece(dish);
             if (_cursorView == null)
             {
-                _state = State.Idle;
+                AbortFailedMoveStart();
                 return;
             }
 
             _arrow = WorldTargetArrow.Create(_world.ActiveTargetArrowPrefab, _world.AdjustPiecesRoot, Mapper.CellSize);
             if (_arrow == null)
             {
-                _state = State.Idle;
+                Destroy(_cursorView.gameObject);
+                _cursorView = null;
+                AbortFailedMoveStart();
                 return;
             }
 
             _state = State.Moving;
+        }
+
+        private void AbortFailedMoveStart()
+        {
+            RestoreMovingDishToOriginal();
+            if (_ghostView != null)
+            {
+                _ghostView.SetGhost(false);
+                _ghostView = null;
+            }
+
+            _movingDish = null;
+            _state = State.Idle;
         }
 
         private void UpdateMoving()
@@ -219,11 +239,12 @@ namespace GourmetProject.Game.Presentation.Battle
             Vector3 world = WorldInput.MouseWorld(Cam);
             GridPos origin = SnapOrigin(world, shape);
             bool canPlace = DiningTable.CanPlace(shape, origin);
+            bool originalOrigin = IsOriginalOrigin(origin);
 
             if (_cursorView != null)
             {
                 _cursorView.transform.localPosition = Mapper.CellCenterLocal(origin);
-                _cursorView.SetPlacementGlow(true, canPlace);
+                _cursorView.SetPlacementGlow(true, canPlace && !originalOrigin);
             }
 
             if (_arrow != null)
@@ -233,10 +254,40 @@ namespace GourmetProject.Game.Presentation.Battle
                 _arrow.SetEndpoints(start, end);
             }
 
-            if (WorldInput.PrimaryPressedThisFrame && canPlace)
+            if (WorldInput.PrimaryHeld)
             {
-                TentativePlace(shape, origin);
+                Vector2 delta = WorldInput.MouseScreen - _moveStartScreen;
+                if (delta.sqrMagnitude >= DragStartScreenThreshold * DragStartScreenThreshold)
+                {
+                    _dragReleaseArmed = true;
+                }
             }
+
+            if (WorldInput.PrimaryReleasedThisFrame)
+            {
+                if (_dragReleaseArmed)
+                {
+                    TryPlaceOrCancel(shape, origin, canPlace);
+                }
+
+                return;
+            }
+
+            if (WorldInput.PrimaryPressedThisFrame)
+            {
+                TryPlaceOrCancel(shape, origin, canPlace);
+            }
+        }
+
+        private void TryPlaceOrCancel(DishShape shape, GridPos origin, bool canPlace)
+        {
+            if (!canPlace || IsOriginalOrigin(origin))
+            {
+                CancelMoveToOriginal();
+                return;
+            }
+
+            TentativePlace(shape, origin);
         }
 
         private void TentativePlace(DishShape shape, GridPos origin)
@@ -251,9 +302,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 _cursorView.SetPlacementGlow(false, false);
                 _cursorView.SetGhost(false);
             }
-
-            _arrow?.Destroy();
-            _arrow = null;
 
             ShowConfirmUndoButtons();
             _state = State.Placed;
@@ -304,18 +352,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void UndoMove()
         {
-            RestoreMovingDishToOriginal();
-            CleanupTransient();
-
-            if (_ghostView != null)
-            {
-                _ghostView.SetGhost(false);
-                _ghostView = null;
-            }
-
-            _movingDish = null;
-            _state = State.Idle;
-            _world.RebuildAfterAdjust();
+            CancelMoveToOriginal();
         }
 
         /// <summary>把正在移动/暂放的菜品还原到原始摆放（餐桌状态复位）。</summary>
@@ -329,6 +366,22 @@ namespace GourmetProject.Game.Presentation.Battle
             DiningTable.RemoveDish(_movingDish);
             _movingDish.Relocate(_originalPlacement);
             DiningTable.Place(_movingDish);
+        }
+
+        private void CancelMoveToOriginal()
+        {
+            RestoreMovingDishToOriginal();
+            CleanupTransient();
+
+            if (_ghostView != null)
+            {
+                _ghostView.SetGhost(false);
+                _ghostView = null;
+            }
+
+            _movingDish = null;
+            _state = State.Idle;
+            _world.RebuildAfterAdjust();
         }
 
         private void CleanupTransient()
@@ -364,6 +417,11 @@ namespace GourmetProject.Game.Presentation.Battle
             local.y += (shape.Height - 1) * pitch * 0.5f;
             Vector3 shifted = root != null ? root.TransformPoint(local) : local;
             return Mapper.NearestCell(shifted);
+        }
+
+        private bool IsOriginalOrigin(GridPos origin)
+        {
+            return origin.Equals(_originalPlacement.Origin);
         }
 
         private Vector3 CellsCenterWorld(IReadOnlyList<GridPos> cells)

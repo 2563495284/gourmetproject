@@ -1,6 +1,8 @@
 using System;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Game.Run;
+using GourmetProject.Gameplay.Battle;
+using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 
 namespace GourmetProject.Game.UI.Battle.View
 {
@@ -29,6 +31,8 @@ namespace GourmetProject.Game.UI.Battle.View
         GameplayView CurrentView { get; }
 
         GameRun Run { get; }
+
+        BattleSession Session { get; }
 
         BattleWorldController World { get; }
 
@@ -67,6 +71,8 @@ namespace GourmetProject.Game.UI.Battle.View
 
         public bool IsActive => _host.CurrentView == GameplayView.TableView;
 
+        public bool IsViewingBattleTable => IsActive && _returnView == GameplayView.Food;
+
         public void Open()
         {
             if (_transitioning)
@@ -89,7 +95,7 @@ namespace GourmetProject.Game.UI.Battle.View
             _host.SwitchTo(GameplayView.TableView, () =>
             {
                 _host.BindWorldHoverCallbacks();
-                world.BeginTableView(_host.Run);
+                world.BeginTableView(_host.Run, SourceBattleTable());
                 _host.BindWorldHoverCallbacks();
                 world.FadeTableViewIn(TableViewFadeDuration);
             }, CompleteTransition);
@@ -112,7 +118,7 @@ namespace GourmetProject.Game.UI.Battle.View
 
             if (IsActive)
             {
-                world.BeginTableCellTargeting(_host.Run);
+                world.BeginTableCellTargeting(_host.Run, SourceBattleTable());
                 _host.BindWorldHoverCallbacks();
                 onOpened?.Invoke();
                 return;
@@ -133,7 +139,7 @@ namespace GourmetProject.Game.UI.Battle.View
             _host.SwitchTo(GameplayView.TableView, () =>
             {
                 _host.BindWorldHoverCallbacks();
-                world.BeginTableCellTargeting(_host.Run);
+                world.BeginTableCellTargeting(_host.Run, SourceBattleTable());
                 _host.BindWorldHoverCallbacks();
                 world.FadeTableViewIn(TableViewFadeDuration);
             }, () =>
@@ -212,6 +218,11 @@ namespace GourmetProject.Game.UI.Battle.View
         private void CompleteTransition()
         {
             _transitioning = false;
+        }
+
+        private GpTable SourceBattleTable()
+        {
+            return _returnView == GameplayView.Food ? _host.Session?.DiningTable : null;
         }
     }
 }

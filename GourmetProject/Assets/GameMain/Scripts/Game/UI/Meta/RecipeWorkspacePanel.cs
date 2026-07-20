@@ -339,7 +339,7 @@ namespace GourmetProject.Game.UI.Meta
                 rect.anchoredPosition = new Vector2(x, 0f);
                 x += scaledBookWidth + gap;
 
-                book.FitSlotsWithinView(GameRun.RecipeBookCapacity);
+                book.FitSlotsWithinView(_run.Tables.TbGameBase.MaxRecipeBookCount);
                 book.ApplyImmediateLayout();
             }
         }

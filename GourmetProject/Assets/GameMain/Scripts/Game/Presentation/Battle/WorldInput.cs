@@ -25,6 +25,9 @@ namespace GourmetProject.Game.Presentation.Battle
         public static bool PrimaryHeld
             => Mouse.current != null && Mouse.current.leftButton.isPressed;
 
+        public static Vector2 MouseScreen
+            => Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
+
         public static bool SecondaryPressedThisFrame
             => Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame && !PointerOverUi;
 

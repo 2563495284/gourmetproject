@@ -48,17 +48,7 @@ namespace GourmetProject.Game.Meta
     /// </summary>
     public static class ShopService
     {
-        public const int PassiveItemPrice = 45;
-        public const int ActiveItemPrice = 35;
-        public const int ItemSellPrice = 20;
-        public const int DeleteDishCost = 15;
-        public const int EmptyRecipeBookPrice = 20;
-
-        /// <summary>碎片包售价（固定）。</summary>
-        public const int FragmentPackPrice = 60;
-
-        /// <summary>碎片包开出的候选碎片数量（三选一）。</summary>
-        public const int FragmentPackSize = 3;
+        private const string FragmentPackRewardSlotId = "fragment_choice_3";
 
         /// <summary>
         /// 按隐藏分刷新一批商品。道具（被动/主动）走 <paramref name="lootRng"/>，
@@ -80,7 +70,7 @@ namespace GourmetProject.Game.Meta
                 ItemDefinition item = ItemDefinition.Get(tables, itemId, cfg.ItemKind.Passive);
                 if (item != null)
                 {
-                    int basePrice = item.Price > 0 ? item.Price : PassiveItemPrice;
+                    int basePrice = item.Price;
                     stock.Add(CreateEntry(run, ShopEntryKind.PassiveItem, item.Id, item.Name, item.Desc, FluctuatePrice(tables, basePrice, lootRng)));
                 }
             }
@@ -90,7 +80,7 @@ namespace GourmetProject.Game.Meta
                 ItemDefinition item = ItemDefinition.Get(tables, itemId, cfg.ItemKind.Active);
                 if (item != null)
                 {
-                    int basePrice = item.Price > 0 ? item.Price : ActiveItemPrice;
+                    int basePrice = item.Price;
                     stock.Add(CreateEntry(run, ShopEntryKind.ActiveItem, item.Id, item.Name, item.Desc, FluctuatePrice(tables, basePrice, lootRng)));
                 }
             }
@@ -111,7 +101,7 @@ namespace GourmetProject.Game.Meta
                     ShopEntryKind.Fragment,
                     "fragment_pack",
                     "碎片包",
-                    "开出三种碎片，选一块拼入餐桌",
+                    FragmentPackDesc(tables),
                     FragmentPackCost(run)));
             }
 
@@ -136,83 +126,83 @@ namespace GourmetProject.Game.Meta
             switch (kind)
             {
                 case ShopEntryKind.PassiveItem:
-                {
-                    int hidden = HiddenScoreService.PassiveItemHiddenScore(run, run.LastActionContext);
-                    foreach (string itemId in ItemPoolService.Roll(tables, run, cfg.ItemKind.Passive, lootRng, ExistingCount(existingStock) + 1, hidden, distanceFloor: 5))
                     {
-                        if (ContainsEntryId(existingStock, kind, itemId))
+                        int hidden = HiddenScoreService.PassiveItemHiddenScore(run, run.LastActionContext);
+                        foreach (string itemId in ItemPoolService.Roll(tables, run, cfg.ItemKind.Passive, lootRng, ExistingCount(existingStock) + 1, hidden, distanceFloor: 5))
                         {
-                            continue;
+                            if (ContainsEntryId(existingStock, kind, itemId))
+                            {
+                                continue;
+                            }
+
+                            ItemDefinition item = ItemDefinition.Get(tables, itemId, cfg.ItemKind.Passive);
+                            if (item == null)
+                            {
+                                continue;
+                            }
+
+                            int basePrice = item.Price;
+                            return CreateEntry(run, kind, item.Id, item.Name, item.Desc, FluctuatePrice(tables, basePrice, lootRng));
                         }
 
-                        ItemDefinition item = ItemDefinition.Get(tables, itemId, cfg.ItemKind.Passive);
-                        if (item == null)
-                        {
-                            continue;
-                        }
-
-                        int basePrice = item.Price > 0 ? item.Price : PassiveItemPrice;
-                        return CreateEntry(run, kind, item.Id, item.Name, item.Desc, FluctuatePrice(tables, basePrice, lootRng));
+                        return null;
                     }
-
-                    return null;
-                }
                 case ShopEntryKind.ActiveItem:
-                {
-                    int hidden = HiddenScoreService.PassiveItemHiddenScore(run, run.LastActionContext);
-                    foreach (string itemId in ItemPoolService.Roll(tables, run, cfg.ItemKind.Active, lootRng, 1, hidden, distanceFloor: 5))
                     {
-                        ItemDefinition item = ItemDefinition.Get(tables, itemId, cfg.ItemKind.Active);
-                        if (item == null)
+                        int hidden = HiddenScoreService.PassiveItemHiddenScore(run, run.LastActionContext);
+                        foreach (string itemId in ItemPoolService.Roll(tables, run, cfg.ItemKind.Active, lootRng, 1, hidden, distanceFloor: 5))
                         {
-                            continue;
+                            ItemDefinition item = ItemDefinition.Get(tables, itemId, cfg.ItemKind.Active);
+                            if (item == null)
+                            {
+                                continue;
+                            }
+
+                            int basePrice = item.Price;
+                            return CreateEntry(run, kind, item.Id, item.Name, item.Desc, FluctuatePrice(tables, basePrice, lootRng));
                         }
 
-                        int basePrice = item.Price > 0 ? item.Price : ActiveItemPrice;
-                        return CreateEntry(run, kind, item.Id, item.Name, item.Desc, FluctuatePrice(tables, basePrice, lootRng));
+                        return null;
                     }
-
-                    return null;
-                }
                 case ShopEntryKind.Dish:
-                {
-                    int hidden = HiddenScoreService.DishHiddenScore(run, run.LastActionContext);
-                    foreach (cfg.DishVariant variant in RollDishVariants(tables, run, hidden, rng, ExistingCount(existingStock) + 1))
                     {
-                        if (ContainsEntryId(existingStock, kind, variant.Id))
+                        int hidden = HiddenScoreService.DishHiddenScore(run, run.LastActionContext);
+                        foreach (cfg.DishVariant variant in RollDishVariants(tables, run, hidden, rng, ExistingCount(existingStock) + 1))
                         {
-                            continue;
+                            if (ContainsEntryId(existingStock, kind, variant.Id))
+                            {
+                                continue;
+                            }
+
+                            cfg.DishBase baseDish = tables.TbDishBase.GetOrDefault(variant.BaseId);
+                            string name = baseDish != null ? baseDish.Name : variant.Id;
+                            int price = variant.Price > 0 ? variant.Price : 30;
+                            return CreateEntry(run, kind, variant.Id, name, "加入菜谱池的菜品", FluctuatePrice(tables, price, rng));
                         }
 
-                        cfg.DishBase baseDish = tables.TbDishBase.GetOrDefault(variant.BaseId);
-                        string name = baseDish != null ? baseDish.Name : variant.Id;
-                        int price = variant.Price > 0 ? variant.Price : 30;
-                        return CreateEntry(run, kind, variant.Id, name, "加入菜谱池的菜品", FluctuatePrice(tables, price, rng));
+                        return null;
                     }
-
-                    return null;
-                }
                 case ShopEntryKind.Fragment:
-                {
-                    if (ContainsEntryId(existingStock, kind, "fragment_pack"))
                     {
-                        return null;
-                    }
+                        if (ContainsEntryId(existingStock, kind, "fragment_pack"))
+                        {
+                            return null;
+                        }
 
-                    int hidden = HiddenScoreService.FragmentHiddenScore(run, run.LastActionContext);
-                    if (BuildFragmentCandidates(tables, run, hidden).Count <= 0)
-                    {
-                        return null;
-                    }
+                        int hidden = HiddenScoreService.FragmentHiddenScore(run, run.LastActionContext);
+                        if (BuildFragmentCandidates(tables, run, hidden).Count <= 0)
+                        {
+                            return null;
+                        }
 
-                    return CreateEntry(
-                        run,
-                        kind,
-                        "fragment_pack",
-                        "碎片包",
-                        "开出三种碎片，选一块拼入餐桌",
-                        FragmentPackCost(run));
-                }
+                        return CreateEntry(
+                            run,
+                            kind,
+                            "fragment_pack",
+                            "碎片包",
+                            FragmentPackDesc(tables),
+                            FragmentPackCost(run));
+                    }
                 default:
                     return null;
             }
@@ -306,20 +296,20 @@ namespace GourmetProject.Game.Meta
         private static int FragmentPackCost(GameRun run)
         {
             cfg.GameBase gameBase = run?.Tables?.TbGameBase?.Data;
-            return ProgressivePrice(gameBase?.FragmentPackPrices, run?.FragmentPackPurchaseCount ?? 0, FragmentPackPrice);
+            return ProgressivePrice(gameBase?.FragmentPackPrices, run?.FragmentPackPurchaseCount ?? 0);
         }
 
         private static int DeleteDishCostBase(GameRun run)
         {
             cfg.GameBase gameBase = run?.Tables?.TbGameBase?.Data;
-            return ProgressivePrice(gameBase?.DeleteDishPrices, run?.DeleteDishCount ?? 0, DeleteDishCost);
+            return ProgressivePrice(gameBase?.DeleteDishPrices, run?.DeleteDishCount ?? 0);
         }
 
-        private static int ProgressivePrice(IReadOnlyList<int> prices, int completedCount, int fallback)
+        private static int ProgressivePrice(IReadOnlyList<int> prices, int completedCount)
         {
             if (prices == null || prices.Count == 0)
             {
-                return System.Math.Max(1, fallback);
+                return 0;
             }
 
             int index = System.Math.Max(0, completedCount);
@@ -358,18 +348,18 @@ namespace GourmetProject.Game.Meta
                     applied = run.AddBonusDish(entry.Id);
                     break;
                 case ShopEntryKind.Fragment:
-                {
-                    // 碎片包：开出三种候选碎片置为待拼贴状态；实际拼入餐桌在餐桌编辑页完成。
-                    List<string> pack = RollFragmentPack(run, FragmentPackSize);
-                    if (pack.Count == 0)
                     {
-                        return false;
-                    }
+                        // 碎片包：按奖励槽配置开出候选碎片置为待拼贴状态；实际拼入餐桌在餐桌编辑页完成。
+                        List<string> pack = RollFragmentPack(run);
+                        if (pack.Count == 0)
+                        {
+                            return false;
+                        }
 
-                    run.SetPendingFragmentPack(pack);
-                    applied = true;
-                    break;
-                }
+                        run.SetPendingFragmentPack(pack);
+                        applied = true;
+                        break;
+                    }
                 default:
                     applied = false;
                     break;
@@ -412,24 +402,12 @@ namespace GourmetProject.Game.Meta
             return true;
         }
 
-        /// <summary>出售一份道具实例（被动整条移除；主动移除一份），返还金币。</summary>
-        public static bool SellItem(GameRun run, string itemId)
-        {
-            if (run == null || !run.RemoveItem(itemId))
-            {
-                return false;
-            }
-
-            run.Gold += ItemSellPrice;
-            return true;
-        }
-
         /// <summary>当前删牌花费（含道具折扣/固定价/涨价修正）。</summary>
         public static int DeleteCost(GameRun run)
         {
             if (run == null)
             {
-                return DeleteDishCost;
+                return 0;
             }
 
             return run.ModifyEventShopPrice(new ItemRuntime(run).ModifyDeletePrice(DeleteDishCostBase(run)));
@@ -439,10 +417,12 @@ namespace GourmetProject.Game.Meta
         {
             if (run == null)
             {
-                return EmptyRecipeBookPrice;
+                return 0;
             }
 
-            return run.ModifyEventShopPrice(new ItemRuntime(run).ModifyRecipeBookPrice(EmptyRecipeBookPrice));
+            cfg.GameBase gameBase = run.Tables?.TbGameBase?.Data;
+            int basePrice = ProgressivePrice(gameBase?.RecipeBookPrices, run.RecipeBookPurchaseCount);
+            return run.ModifyEventShopPrice(new ItemRuntime(run).ModifyRecipeBookPrice(basePrice));
         }
 
         /// <summary>删除菜谱池中的一道菜，花费金币。持有「囤积癖」时禁止删除。</summary>
@@ -496,6 +476,7 @@ namespace GourmetProject.Game.Meta
             }
 
             run.Gold -= price;
+            run.RecordRecipeBookPurchased();
             return true;
         }
 
@@ -523,6 +504,12 @@ namespace GourmetProject.Game.Meta
             return WeightedTake(candidates, v => RewardPoolService.HiddenScoreWeight(v.BaseWeight, HiddenMean(v.HiddenRange), hidden, 5), count, rng);
         }
 
+        /// <summary>开一份商店碎片包：候选数量读取 reward_slot(fragment_choice_3).choiceCount。</summary>
+        public static List<string> RollFragmentPack(GameRun run)
+        {
+            return RollFragmentPack(run, FragmentPackSize(run?.Tables));
+        }
+
         /// <summary>开一份碎片包：按当前隐藏分加权 roll 出 <paramref name="count"/> 个可拼入当前餐桌的候选碎片 id。</summary>
         public static List<string> RollFragmentPack(GameRun run, int count)
         {
@@ -548,6 +535,17 @@ namespace GourmetProject.Game.Meta
             }
 
             return ids;
+        }
+
+        private static string FragmentPackDesc(cfg.Tables tables)
+        {
+            return $"开出{FragmentPackSize(tables)}种碎片，选一块拼入餐桌";
+        }
+
+        private static int FragmentPackSize(cfg.Tables tables)
+        {
+            cfg.RewardSlot slot = tables?.TbRewardSlot?.GetOrDefault(FragmentPackRewardSlotId);
+            return slot.ChoiceCount;
         }
 
         /// <summary>筛选可拼入当前餐桌、且隐藏分覆盖的碎片候选（不消耗随机流）。</summary>

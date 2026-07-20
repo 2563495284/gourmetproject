@@ -20,13 +20,6 @@ namespace GourmetProject.Game.Run
     /// </summary>
     public sealed class GameRun : IPreconditionContext
     {
-        public const int BoardWidth = 4;
-        public const int BoardHeight = 4;
-        public const int MaxRecipeBookCount = 4;
-        public const int RecipeBookCapacity = 12;
-        /// <summary>主动道具基础消耗槽数（可被 ExtraActiveSlot 被动道具增加）。</summary>
-        public const int BaseActiveSlots = 2;
-
         private readonly cfg.Tables _tables;
 
         // 被动道具同一 id 唯一一条且不升级；主动道具同一 id 可有多条，每条为一份独立实例。
@@ -44,6 +37,7 @@ namespace GourmetProject.Game.Run
         // 已购买待拼贴的碎片包内容（rolled 出的候选碎片 id）；拼贴或跳过后清空。
         private readonly List<string> _pendingFragmentPack = new List<string>();
         private int _fragmentPackPurchaseCount;
+        private int _recipeBookPurchaseCount;
         private int _deleteDishCount;
 
         // 餐桌碎片开包时随机出的局部材质落点。候选阶段即确定，之后随已拼贴碎片保存。
@@ -165,7 +159,7 @@ namespace GourmetProject.Game.Run
         {
             get
             {
-                int baseLimit = _tables?.TbGameBase != null ? _tables.TbGameBase.FoodFlavorLimit : 1;
+                int baseLimit = _tables.TbGameBase.FoodFlavorLimit;
                 return System.Math.Max(1, baseLimit + new ItemRuntime(this).FoodFlavorLimitBonus());
             }
         }
@@ -332,8 +326,14 @@ namespace GourmetProject.Game.Run
         }
 
         /// <summary>主动道具消耗槽总容量 = 基础槽 + ExtraActiveSlot 被动加成（下限 0）。</summary>
-        public int ActiveSlotCapacity =>
-            System.Math.Max(0, BaseActiveSlots + new ItemRuntime(this).ExtraActiveSlots());
+        public int ActiveSlotCapacity
+        {
+            get
+            {
+                int baseSlots = _tables.TbGameBase.BaseActiveSlots;
+                return System.Math.Max(0, baseSlots + new ItemRuntime(this).ExtraActiveSlots());
+            }
+        }
 
         /// <summary>主动道具是否还有空槽。</summary>
         public bool HasFreeActiveSlot => ActiveItemCount < ActiveSlotCapacity;
@@ -637,13 +637,22 @@ namespace GourmetProject.Game.Run
 
         public int RecipeBookCount => _recipeBooks.Count;
 
+        public int RecipeBookMaxCount
+        {
+            get
+            {
+                int configured = _tables.TbGameBase.MaxRecipeBookCount;
+                return System.Math.Max(1, configured);
+            }
+        }
+
         private int InitialRecipeBookCount
         {
             get
             {
                 cfg.Character character = _tables.TbCharacter.GetOrDefault(CharacterId);
                 int count = character?.InitialRecipeId?.Count ?? 0;
-                return System.Math.Min(count, MaxRecipeBookCount);
+                return System.Math.Min(count, RecipeBookMaxCount);
             }
         }
 
@@ -672,11 +681,18 @@ namespace GourmetProject.Game.Run
 
         public int FragmentPackPurchaseCount => _fragmentPackPurchaseCount;
 
+        public int RecipeBookPurchaseCount => _recipeBookPurchaseCount;
+
         public int DeleteDishCount => _deleteDishCount;
 
         public void RecordFragmentPackPurchased()
         {
             _fragmentPackPurchaseCount++;
+        }
+
+        public void RecordRecipeBookPurchased()
+        {
+            _recipeBookPurchaseCount++;
         }
 
         public void RecordDishDeleted()
@@ -1507,6 +1523,7 @@ namespace GourmetProject.Game.Run
                 CellMaterialOverrides = ToCellMaterialSaveData(),
                 PendingFragmentPackIds = new List<string>(_pendingFragmentPack),
                 FragmentPackPurchaseCount = _fragmentPackPurchaseCount,
+                RecipeBookPurchaseCount = _recipeBookPurchaseCount,
                 DeleteDishCount = _deleteDishCount,
                 RunSettledCounts = new Dictionary<string, int>(_runSettledCounts),
                 CurrentTimelineId = CurrentTimelineId,
@@ -1687,6 +1704,7 @@ namespace GourmetProject.Game.Run
             }
 
             run._fragmentPackPurchaseCount = System.Math.Max(0, data.FragmentPackPurchaseCount);
+            run._recipeBookPurchaseCount = System.Math.Max(0, data.RecipeBookPurchaseCount);
             run._deleteDishCount = System.Math.Max(0, data.DeleteDishCount);
 
             if (data.RunSettledCounts != null)
@@ -2185,7 +2203,7 @@ namespace GourmetProject.Game.Run
             return ids;
         }
 
-        public bool CanAddRecipeBook => _recipeBooks.Count < MaxRecipeBookCount;
+        public bool CanAddRecipeBook => _recipeBooks.Count < RecipeBookMaxCount;
 
         public bool AddRecipeBook()
         {
@@ -2635,8 +2653,8 @@ namespace GourmetProject.Game.Run
             // 基于当前实际胃形判断；餐桌碎片奖励固定朝向，不允许旋转。
             GpTable board = BattleSessionFactory.BuildTablePreview(this);
             cfg.Character character = Tables.TbCharacter.GetOrDefault(CharacterId);
-            int maxW = character != null && character.MaxDiningTableWidth > 0 ? character.MaxDiningTableWidth : BoardWidth;
-            int maxH = character != null && character.MaxDiningTableHeight > 0 ? character.MaxDiningTableHeight : BoardHeight;
+            int maxW = character.MaxDiningTableWidth;
+            int maxH = character.MaxDiningTableHeight;
             return TableFragmentBuilder.CanAttachAnywhereLocalBounds(board, fragment, maxW, maxH);
         }
 
@@ -2708,7 +2726,7 @@ namespace GourmetProject.Game.Run
                 return;
             }
 
-            int count = System.Math.Min(character.InitialRecipeId.Count, MaxRecipeBookCount);
+            int count = System.Math.Min(character.InitialRecipeId.Count, RecipeBookMaxCount);
             IRandomStream recipeStream = InitialRecipeStream();
             for (int i = 0; i < count; i++)
             {
@@ -2917,7 +2935,7 @@ namespace GourmetProject.Game.Run
         private void RestoreRecipeBooks(RunSaveData data)
         {
             _recipeBooks.Clear();
-            int count = System.Math.Min(data.RecipeBooks?.Count ?? 0, MaxRecipeBookCount);
+            int count = System.Math.Min(data.RecipeBooks?.Count ?? 0, RecipeBookMaxCount);
             for (int i = 0; i < count; i++)
             {
                 var book = new List<RecipeBookSlot>();
