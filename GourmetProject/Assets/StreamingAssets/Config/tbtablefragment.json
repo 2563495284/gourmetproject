@@ -106,7 +106,7 @@
     "id": "frag_2x2",
     "baseWeight": 700,
     "hiddenRange": {
-      "min": 40,
+      "min": 30,
       "max": 100
     },
     "shapeRows": [
@@ -119,7 +119,7 @@
     "id": "frag_L5",
     "baseWeight": 700,
     "hiddenRange": {
-      "min": 40,
+      "min": 30,
       "max": 100
     },
     "shapeRows": [
@@ -133,7 +133,7 @@
     "id": "frag_L6",
     "baseWeight": 700,
     "hiddenRange": {
-      "min": 40,
+      "min": 30,
       "max": 100
     },
     "shapeRows": [
@@ -147,7 +147,7 @@
     "id": "frag_L7",
     "baseWeight": 700,
     "hiddenRange": {
-      "min": 40,
+      "min": 30,
       "max": 100
     },
     "shapeRows": [
@@ -161,7 +161,7 @@
     "id": "frag_L8",
     "baseWeight": 700,
     "hiddenRange": {
-      "min": 40,
+      "min": 30,
       "max": 100
     },
     "shapeRows": [
@@ -175,7 +175,7 @@
     "id": "frag_S1",
     "baseWeight": 700,
     "hiddenRange": {
-      "min": 40,
+      "min": 30,
       "max": 100
     },
     "shapeRows": [
@@ -189,7 +189,7 @@
     "id": "frag_S2",
     "baseWeight": 700,
     "hiddenRange": {
-      "min": 40,
+      "min": 30,
       "max": 100
     },
     "shapeRows": [
@@ -203,7 +203,7 @@
     "id": "frag_S3",
     "baseWeight": 700,
     "hiddenRange": {
-      "min": 40,
+      "min": 30,
       "max": 100
     },
     "shapeRows": [
@@ -216,7 +216,7 @@
     "id": "frag_S4",
     "baseWeight": 700,
     "hiddenRange": {
-      "min": 40,
+      "min": 30,
       "max": 100
     },
     "shapeRows": [
