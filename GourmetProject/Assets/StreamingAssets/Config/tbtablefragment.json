@@ -51,6 +51,32 @@
     "materialIds": []
   },
   {
+    "id": "frag_3x1",
+    "baseWeight": 700,
+    "hiddenRange": {
+      "min": 10,
+      "max": 60
+    },
+    "shapeRows": [
+      "XXX"
+    ],
+    "materialIds": []
+  },
+  {
+    "id": "frag_1x3",
+    "baseWeight": 700,
+    "hiddenRange": {
+      "min": 10,
+      "max": 60
+    },
+    "shapeRows": [
+      "X",
+      "X",
+      "X"
+    ],
+    "materialIds": []
+  },
+  {
     "id": "frag_L1",
     "baseWeight": 700,
     "hiddenRange": {

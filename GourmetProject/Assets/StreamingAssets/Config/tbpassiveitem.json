@@ -22,28 +22,6 @@
     "price": 45
   },
   {
-    "id": "item_choose_one_passive",
-    "name": "被动三选一",
-    "desc": "从3个被动道具中选择1个获得",
-    "quality": 0,
-    "specialTags": 0,
-    "effectValue": 0,
-    "effectParam": "passive_choice_3",
-    "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
-    "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
-    "activeItemHiddenOffset": 0,
-    "fragmentHiddenOffset": 0,
-    "goldHiddenOffset": 0,
-    "termId": "",
-    "price": 45
-  },
-  {
     "id": "item_grant_two_active",
     "name": "随机主动包",
     "desc": "随机获得2个主动道具",
@@ -51,72 +29,6 @@
     "specialTags": 0,
     "effectValue": 0,
     "effectParam": "active_grant_2",
-    "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
-    "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
-    "activeItemHiddenOffset": 0,
-    "fragmentHiddenOffset": 0,
-    "goldHiddenOffset": 0,
-    "termId": "",
-    "price": 45
-  },
-  {
-    "id": "item_choose_one_active",
-    "name": "主动三选一",
-    "desc": "从3个主动道具中选择1个获得",
-    "quality": 0,
-    "specialTags": 0,
-    "effectValue": 0,
-    "effectParam": "active_choice_3",
-    "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
-    "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
-    "activeItemHiddenOffset": 0,
-    "fragmentHiddenOffset": 0,
-    "goldHiddenOffset": 0,
-    "termId": "",
-    "price": 45
-  },
-  {
-    "id": "item_choose_one_food",
-    "name": "食物三选一",
-    "desc": "从3个食物中选择1个获得",
-    "quality": 0,
-    "specialTags": 0,
-    "effectValue": 0,
-    "effectParam": "dish_choice_3",
-    "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
-    "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
-    "activeItemHiddenOffset": 0,
-    "fragmentHiddenOffset": 0,
-    "goldHiddenOffset": 0,
-    "termId": "",
-    "price": 45
-  },
-  {
-    "id": "item_choose_one_fragment",
-    "name": "碎片三选一",
-    "desc": "从3个餐桌格子中选择1个获得",
-    "quality": 0,
-    "specialTags": 0,
-    "effectValue": 0,
-    "effectParam": "fragment_choice_3",
     "baseWeight": 300,
     "hiddenRange": {
       "min": 10,
@@ -244,7 +156,7 @@
   {
     "id": "item_gold_boss",
     "name": "Boss赏金",
-    "desc": "下次盛宴\n额外+100金币",
+    "desc": "完成下次盛宴\n额外+100金币",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 100,
@@ -291,7 +203,7 @@
     "desc": "食物价格-15%",
     "quality": 1,
     "specialTags": 0,
-    "effectValue": 0.2,
+    "effectValue": 0.15,
     "effectParam": "",
     "baseWeight": 100,
     "hiddenRange": {
@@ -335,7 +247,7 @@
     "desc": "主动道具价格-15%",
     "quality": 1,
     "specialTags": 0,
-    "effectValue": 0.2,
+    "effectValue": 0.15,
     "effectParam": "",
     "baseWeight": 100,
     "hiddenRange": {
@@ -357,7 +269,7 @@
     "desc": "被动道具价格-15%",
     "quality": 1,
     "specialTags": 0,
-    "effectValue": 0.2,
+    "effectValue": 0.15,
     "effectParam": "",
     "baseWeight": 100,
     "hiddenRange": {
@@ -379,7 +291,7 @@
     "desc": "删牌价格-30%",
     "quality": 0,
     "specialTags": 0,
-    "effectValue": 0.2,
+    "effectValue": 0.3,
     "effectParam": "",
     "baseWeight": 300,
     "hiddenRange": {
