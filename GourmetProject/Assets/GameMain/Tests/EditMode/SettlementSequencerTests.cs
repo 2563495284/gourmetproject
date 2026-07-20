@@ -60,5 +60,46 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(built, Is.False);
             Assert.That(args[1], Is.Null);
         }
+
+        [Test]
+        public void SweetTransferBatchesScopeTargetsButKeepsRecipientsSeparate()
+        {
+            MethodInfo method = typeof(SettlementSequencer).GetMethod(
+                "BuildDishSkillBatchKey",
+                BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(method, Is.Not.Null);
+
+            ScoreLine recipientTwoSelf = SweetTransferLine(2, 2);
+            ScoreLine recipientTwoNeighbor = SweetTransferLine(2, 3);
+            ScoreLine recipientSixSelf = SweetTransferLine(6, 6);
+
+            string recipientTwoKey = (string)method.Invoke(null, new object[] { recipientTwoSelf });
+            string recipientTwoNeighborKey = (string)method.Invoke(null, new object[] { recipientTwoNeighbor });
+            string recipientSixKey = (string)method.Invoke(null, new object[] { recipientSixSelf });
+
+            Assert.That(recipientTwoKey, Is.Not.Null.And.Not.Empty);
+            Assert.That(recipientTwoNeighborKey, Is.EqualTo(recipientTwoKey));
+            Assert.That(recipientSixKey, Is.Not.EqualTo(recipientTwoKey));
+        }
+
+        private static ScoreLine SweetTransferLine(int recipientInstanceId, int affectedInstanceId)
+        {
+            return new ScoreLine(
+                ScorePhase.DishSkills,
+                ScoreLineKind.DishFlat,
+                new ScoreSource(
+                    ScoreSourceType.DishSkill,
+                    "sk_toffee",
+                    "太妃糖<甜蜜传递>",
+                    recipientInstanceId,
+                    "lollipop"),
+                affectedInstanceId,
+                "target",
+                null,
+                3f,
+                0f,
+                3f,
+                "太妃糖<甜蜜传递>: 美味度 +3");
+        }
     }
 }

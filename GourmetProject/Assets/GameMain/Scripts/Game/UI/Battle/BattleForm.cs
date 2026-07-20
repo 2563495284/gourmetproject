@@ -51,6 +51,7 @@ namespace GourmetProject.Game.UI.Battle
     {
         private const string Tag = "Battle";
         private const float ShopItemFlyDuration = 0.42f;
+        private const float FoodAdjustMaskPaddingPixels = 50f;
 
         /// <summary>当前打开的战斗界面，供各弹窗回调推进周循环。</summary>
         public static BattleForm Active { get; private set; }
@@ -1731,7 +1732,16 @@ namespace GourmetProject.Game.UI.Battle
         private void EnterFoodAdjustUI()
         {
             EnsureFoodAdjustOverlay();
-            _foodAdjustOverlay?.Show(_boardArea);
+            BattleWorldController world = _world ?? BattleWorldController.Instance;
+            if (world != null && world.TryGetExistingGridScreenRect(FoodAdjustMaskPaddingPixels, out Rect screenRect))
+            {
+                _foodAdjustOverlay?.Show(_boardArea, screenRect);
+            }
+            else
+            {
+                _foodAdjustOverlay?.Show(_boardArea);
+            }
+
             _infoColumn?.SetFoodAdjustActive(true, _run != null ? _run.FoodAdjustCount : 0);
         }
 

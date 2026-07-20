@@ -66,6 +66,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             CleanupTransient();
+            RestoreGhostView();
             HideDeleteButton();
             _state = State.Idle;
             _active = false;
@@ -198,6 +199,7 @@ namespace GourmetProject.Game.Presentation.Battle
             if (_ghostView != null)
             {
                 _ghostView.SetGhost(true);
+                _ghostView.SetFlying(true);
                 _ghostView.SetClickEnabled(false);
             }
 
@@ -207,6 +209,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 AbortFailedMoveStart();
                 return;
             }
+
+            _cursorView.SetFlying(true);
 
             _arrow = WorldTargetArrow.Create(_world.ActiveTargetArrowPrefab, _world.AdjustPiecesRoot, Mapper.CellSize);
             if (_arrow == null)
@@ -223,11 +227,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private void AbortFailedMoveStart()
         {
             RestoreMovingDishToOriginal();
-            if (_ghostView != null)
-            {
-                _ghostView.SetGhost(false);
-                _ghostView = null;
-            }
+            RestoreGhostView();
 
             _movingDish = null;
             _state = State.Idle;
@@ -299,6 +299,7 @@ namespace GourmetProject.Game.Presentation.Battle
             if (_cursorView != null)
             {
                 _cursorView.transform.localPosition = Mapper.CellCenterLocal(origin);
+                _cursorView.SetFlying(false);
                 _cursorView.SetPlacementGlow(false, false);
                 _cursorView.SetGhost(false);
             }
@@ -343,6 +344,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             CleanupTransient();
             _movingDish = null;
+            _ghostView = null;
             _state = State.Idle;
             _active = false;
 
@@ -375,8 +377,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             if (_ghostView != null)
             {
-                _ghostView.SetGhost(false);
-                _ghostView = null;
+                RestoreGhostView();
             }
 
             _movingDish = null;
@@ -404,6 +405,18 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 _undoButton.gameObject.SetActive(false);
             }
+        }
+
+        private void RestoreGhostView()
+        {
+            if (_ghostView == null)
+            {
+                return;
+            }
+
+            _ghostView.SetFlying(false);
+            _ghostView.SetGhost(false);
+            _ghostView = null;
         }
 
         // —— 世界坐标与占格辅助 ——

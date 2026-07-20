@@ -249,6 +249,44 @@ namespace GourmetProject.Game.Presentation.Battle
 
         internal WorldTargetArrow ActiveTargetArrowPrefab => _worldTargetArrowPrefab;
 
+        public bool TryGetExistingGridScreenRect(float paddingPixels, out Rect screenRect)
+        {
+            screenRect = default;
+            GpTable table = _session?.DiningTable;
+            if (table == null || _boardView?.Mapper == null || _camera == null || !table.TryGetExistingBounds(out _, out _, out _, out _))
+            {
+                return false;
+            }
+
+            bool hasPoint = false;
+            float minX = float.MaxValue;
+            float maxX = float.MinValue;
+            float minY = float.MaxValue;
+            float maxY = float.MinValue;
+
+            foreach (GridPos cell in table.ExistingCells())
+            {
+                if (_boardView.TryGetCellView(cell, out DiningTableCellView view) && view != null)
+                {
+                    EncapsulateWorldBounds(view.WorldBounds, ref minX, ref maxX, ref minY, ref maxY, ref hasPoint);
+                }
+            }
+
+            if (!hasPoint)
+            {
+                EncapsulateExistingGridMapperBounds(table, ref minX, ref maxX, ref minY, ref maxY, ref hasPoint);
+            }
+
+            if (!hasPoint || maxX <= minX || maxY <= minY)
+            {
+                return false;
+            }
+
+            float padding = Mathf.Max(0f, paddingPixels);
+            screenRect = Rect.MinMaxRect(minX - padding, minY - padding, maxX + padding, maxY + padding);
+            return screenRect.width > 0f && screenRect.height > 0f;
+        }
+
         internal Vector3 ScreenToWorld(Vector2 screenPoint)
         {
             Camera cam = _camera != null ? _camera : Camera.main;
@@ -261,6 +299,64 @@ namespace GourmetProject.Game.Presentation.Battle
             Vector3 world = cam.ScreenToWorldPoint(p);
             world.z = 0f;
             return world;
+        }
+
+        private void EncapsulateWorldBounds(
+            Bounds bounds,
+            ref float minX,
+            ref float maxX,
+            ref float minY,
+            ref float maxY,
+            ref bool hasPoint)
+        {
+            Vector3 min = bounds.min;
+            Vector3 max = bounds.max;
+            EncapsulateWorldPoint(new Vector3(min.x, min.y, bounds.center.z), ref minX, ref maxX, ref minY, ref maxY, ref hasPoint);
+            EncapsulateWorldPoint(new Vector3(min.x, max.y, bounds.center.z), ref minX, ref maxX, ref minY, ref maxY, ref hasPoint);
+            EncapsulateWorldPoint(new Vector3(max.x, min.y, bounds.center.z), ref minX, ref maxX, ref minY, ref maxY, ref hasPoint);
+            EncapsulateWorldPoint(new Vector3(max.x, max.y, bounds.center.z), ref minX, ref maxX, ref minY, ref maxY, ref hasPoint);
+        }
+
+        private void EncapsulateExistingGridMapperBounds(
+            GpTable table,
+            ref float minX,
+            ref float maxX,
+            ref float minY,
+            ref float maxY,
+            ref bool hasPoint)
+        {
+            if (table == null || _boardView?.Mapper == null || !table.TryGetExistingBounds(out int minCellX, out int minCellY, out int maxCellX, out int maxCellY))
+            {
+                return;
+            }
+
+            DiningTableCoordinateMapper mapper = _boardView.Mapper;
+            float halfCell = mapper.CellSize * 0.5f;
+            Vector3 topLeft = mapper.CellCenter(new GridPos(minCellX, minCellY)) + new Vector3(-halfCell, halfCell, 0f);
+            Vector3 topRight = mapper.CellCenter(new GridPos(maxCellX, minCellY)) + new Vector3(halfCell, halfCell, 0f);
+            Vector3 bottomLeft = mapper.CellCenter(new GridPos(minCellX, maxCellY)) + new Vector3(-halfCell, -halfCell, 0f);
+            Vector3 bottomRight = mapper.CellCenter(new GridPos(maxCellX, maxCellY)) + new Vector3(halfCell, -halfCell, 0f);
+
+            EncapsulateWorldPoint(topLeft, ref minX, ref maxX, ref minY, ref maxY, ref hasPoint);
+            EncapsulateWorldPoint(topRight, ref minX, ref maxX, ref minY, ref maxY, ref hasPoint);
+            EncapsulateWorldPoint(bottomLeft, ref minX, ref maxX, ref minY, ref maxY, ref hasPoint);
+            EncapsulateWorldPoint(bottomRight, ref minX, ref maxX, ref minY, ref maxY, ref hasPoint);
+        }
+
+        private void EncapsulateWorldPoint(
+            Vector3 world,
+            ref float minX,
+            ref float maxX,
+            ref float minY,
+            ref float maxY,
+            ref bool hasPoint)
+        {
+            Vector3 screen = _camera.WorldToScreenPoint(world);
+            minX = Mathf.Min(minX, screen.x);
+            maxX = Mathf.Max(maxX, screen.x);
+            minY = Mathf.Min(minY, screen.y);
+            maxY = Mathf.Max(maxY, screen.y);
+            hasPoint = true;
         }
 
         internal bool TryPointerCellTarget(out ActiveTarget target)

@@ -4,7 +4,7 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI.Battle.View
 {
     /// <summary>
-    /// 食物调整态的全屏遮黑 + 餐桌高亮：用 4 条黑色半透明条围绕 BoardArea 拼出「中间挖洞」的遮罩
+    /// 食物调整态的全屏遮黑 + 餐桌高亮：用 4 条黑色半透明条围绕餐桌网格拼出「中间挖洞」的遮罩
     /// （世界餐桌在 UI 之后，未遮住的洞即高亮透出），洞四周再加一圈亮色描边框做高亮。
     /// 自身挂 overrideSorting 的 Canvas，压在常驻 HUD 之上；食物调整按钮用更高 sortingOrder 浮于本遮罩之上。
     /// </summary>
@@ -17,6 +17,8 @@ namespace GourmetProject.Game.UI.Battle.View
 
         private RectTransform _rect;
         private RectTransform _boardArea;
+        private Rect _screenHoleRect;
+        private bool _useScreenHoleRect;
 
         [SerializeField] private Image _dimTop;
         [SerializeField] private Image _dimBottom;
@@ -72,6 +74,16 @@ namespace GourmetProject.Game.UI.Battle.View
         public void Show(RectTransform boardArea)
         {
             _boardArea = boardArea;
+            _useScreenHoleRect = false;
+            gameObject.SetActive(true);
+            Layout();
+        }
+
+        public void Show(RectTransform boardArea, Rect screenHoleRect)
+        {
+            _boardArea = boardArea;
+            _screenHoleRect = screenHoleRect;
+            _useScreenHoleRect = true;
             gameObject.SetActive(true);
             Layout();
         }
@@ -83,29 +95,15 @@ namespace GourmetProject.Game.UI.Battle.View
 
         private void Layout()
         {
-            if (_boardArea == null || _rect == null)
+            if (_rect == null)
             {
                 return;
             }
 
             Canvas.ForceUpdateCanvases();
-            Canvas canvas = GetComponentInParent<Canvas>();
-            Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
-
-            var corners = new Vector3[4];
-            _boardArea.GetWorldCorners(corners);
-
-            float minX = float.MaxValue, maxX = float.MinValue, minY = float.MaxValue, maxY = float.MinValue;
-            for (int i = 0; i < 4; i++)
+            if (!TryGetHoleLocalBounds(out float minX, out float maxX, out float minY, out float maxY))
             {
-                Vector2 screen = RectTransformUtility.WorldToScreenPoint(cam, corners[i]);
-                if (RectTransformUtility.ScreenPointToLocalPointInRectangle(_rect, screen, cam, out Vector2 local))
-                {
-                    minX = Mathf.Min(minX, local.x);
-                    maxX = Mathf.Max(maxX, local.x);
-                    minY = Mathf.Min(minY, local.y);
-                    maxY = Mathf.Max(maxY, local.y);
-                }
+                return;
             }
 
             Rect r = _rect.rect;
@@ -120,6 +118,101 @@ namespace GourmetProject.Game.UI.Battle.View
             SetStrip(_frameBottom, minX, maxX, minY, minY + FrameThickness);
             SetStrip(_frameLeft, minX, minX + FrameThickness, minY, maxY);
             SetStrip(_frameRight, maxX - FrameThickness, maxX, minY, maxY);
+        }
+
+        private bool TryGetHoleLocalBounds(out float minX, out float maxX, out float minY, out float maxY)
+        {
+            if (_useScreenHoleRect && TryScreenRectToLocalBounds(_screenHoleRect, out minX, out maxX, out minY, out maxY))
+            {
+                return true;
+            }
+
+            return TryBoardAreaToLocalBounds(out minX, out maxX, out minY, out maxY);
+        }
+
+        private bool TryScreenRectToLocalBounds(Rect screenRect, out float minX, out float maxX, out float minY, out float maxY)
+        {
+            minX = float.MaxValue;
+            maxX = float.MinValue;
+            minY = float.MaxValue;
+            maxY = float.MinValue;
+
+            if (screenRect.width <= 0f || screenRect.height <= 0f)
+            {
+                return false;
+            }
+
+            Camera overlayCam = CanvasCamera(GetComponentInParent<Canvas>());
+            Vector2[] points =
+            {
+                new Vector2(screenRect.xMin, screenRect.yMin),
+                new Vector2(screenRect.xMin, screenRect.yMax),
+                new Vector2(screenRect.xMax, screenRect.yMin),
+                new Vector2(screenRect.xMax, screenRect.yMax),
+            };
+
+            return AccumulateLocalBounds(points, overlayCam, ref minX, ref maxX, ref minY, ref maxY);
+        }
+
+        private bool TryBoardAreaToLocalBounds(out float minX, out float maxX, out float minY, out float maxY)
+        {
+            minX = float.MaxValue;
+            maxX = float.MinValue;
+            minY = float.MaxValue;
+            maxY = float.MinValue;
+
+            if (_boardArea == null)
+            {
+                return false;
+            }
+
+            Canvas boardCanvas = _boardArea.GetComponentInParent<Canvas>();
+            Camera boardCam = CanvasCamera(boardCanvas);
+            Camera overlayCam = CanvasCamera(GetComponentInParent<Canvas>());
+
+            var corners = new Vector3[4];
+            _boardArea.GetWorldCorners(corners);
+
+            Vector2[] points =
+            {
+                RectTransformUtility.WorldToScreenPoint(boardCam, corners[0]),
+                RectTransformUtility.WorldToScreenPoint(boardCam, corners[1]),
+                RectTransformUtility.WorldToScreenPoint(boardCam, corners[2]),
+                RectTransformUtility.WorldToScreenPoint(boardCam, corners[3]),
+            };
+
+            return AccumulateLocalBounds(points, overlayCam, ref minX, ref maxX, ref minY, ref maxY);
+        }
+
+        private bool AccumulateLocalBounds(
+            Vector2[] screenPoints,
+            Camera overlayCam,
+            ref float minX,
+            ref float maxX,
+            ref float minY,
+            ref float maxY)
+        {
+            bool any = false;
+            for (int i = 0; i < screenPoints.Length; i++)
+            {
+                if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(_rect, screenPoints[i], overlayCam, out Vector2 local))
+                {
+                    continue;
+                }
+
+                minX = Mathf.Min(minX, local.x);
+                maxX = Mathf.Max(maxX, local.x);
+                minY = Mathf.Min(minY, local.y);
+                maxY = Mathf.Max(maxY, local.y);
+                any = true;
+            }
+
+            return any && maxX > minX && maxY > minY;
+        }
+
+        private static Camera CanvasCamera(Canvas canvas)
+        {
+            return canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
         }
 
         private static void SetStrip(Image strip, float xMin, float xMax, float yMin, float yMax)

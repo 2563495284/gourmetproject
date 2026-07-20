@@ -1124,8 +1124,7 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             ScoreSource source = line?.Source;
             if (source == null
-                || source.Type != ScoreSourceType.DishSkill
-                || SweetTransferCardDelta(source) > 0)
+                || source.Type != ScoreSourceType.DishSkill)
             {
                 return null;
             }
