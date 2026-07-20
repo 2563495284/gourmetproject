@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
-    /// <summary>统一管理技能 scope 高亮：hover 常驻与结算短闪互不覆盖。</summary>
+    /// <summary>统一管理技能 scope 高亮：hover 常驻与上菜短闪互不覆盖。</summary>
     public sealed class BattleScopeHighlightController : MonoBehaviour
     {
         private static readonly Color[] DefaultPalette =
@@ -52,21 +52,21 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public void Flash(
             DiningTableView tableView,
-            SettlementScopeSignal signal,
+            IReadOnlyList<SkillExecutionTrace> traces,
             CancellationToken cancellationToken)
         {
             _activeTableView = tableView;
             ClearChannel(BattleScopeHighlightChannel.Flash);
-            if (signal.IsEmpty)
+            if (traces == null || traces.Count == 0)
             {
                 return;
             }
 
-            if (signal.Trace != null)
+            for (int i = 0; i < traces.Count; i++)
             {
-                int index = signal.Trace.VisualIndex >= 0 ? signal.Trace.VisualIndex : signal.Trace.RuleOrder;
-                RenderTrace(BattleScopeHighlightChannel.Flash, signal.Trace, index, persistent: false);
+                RenderTrace(BattleScopeHighlightChannel.Flash, traces[i], i, persistent: false);
             }
+
             int version = ++_flashVersion;
             _ = ClearFlashAfterAsync(version, cancellationToken);
         }
@@ -123,13 +123,26 @@ namespace GourmetProject.Game.Presentation.Battle
                     material);
             }
 
-            _activeTableView?.SetScopeRegionHighlight(
-                trace.VisualTargetCells,
-                channel,
-                targetLayer,
-                subSkillColor,
-                cellWidth,
-                material);
+            if (trace.ActionType == SkillActionType.TransferSkills
+                && trace.ActionScope == SkillScope.Other)
+            {
+                _activeTableView?.SetAllExistingScopeHighlight(
+                    channel,
+                    targetLayer,
+                    subSkillColor,
+                    cellWidth,
+                    material);
+            }
+            else
+            {
+                _activeTableView?.SetScopeRegionHighlight(
+                    trace.VisualTargetCells,
+                    channel,
+                    targetLayer,
+                    subSkillColor,
+                    cellWidth,
+                    material);
+            }
         }
 
         private void RenderConditionScope(

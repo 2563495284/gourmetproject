@@ -1,10 +1,15 @@
+using System.Collections.Generic;
+using GourmetProject.Gameplay.Model;
 using UnityEngine;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
-    /// <summary>把一组 scope 格子的包围盒画成单个矩形外轮廓。</summary>
+    /// <summary>把一组真实存在的 scope 格子合并成一个不规则外轮廓。</summary>
     public sealed class BattleScopeRegionOutlineView : MonoBehaviour
     {
+        private const int PixelsPerCell = 128;
+        private const int MaskPadding = 8;
+
         private static readonly int OutlineColorId = Shader.PropertyToID("_OutlineColor");
         private static readonly int OutlineWidthId = Shader.PropertyToID("_OutlineWidth");
         private static readonly int FillAlphaId = Shader.PropertyToID("_FillAlpha");
@@ -13,52 +18,66 @@ namespace GourmetProject.Game.Presentation.Battle
         private static readonly int PulseAmplitudeId = Shader.PropertyToID("_PulseAmplitude");
         private static readonly int PulseFrequencyId = Shader.PropertyToID("_PulseFrequency");
         private static readonly int UseRectMaskId = Shader.PropertyToID("_UseRectMask");
-        private static readonly int RectSizeId = Shader.PropertyToID("_RectSize");
+        private static readonly int UseGridMaskId = Shader.PropertyToID("_UseGridMask");
+        private static readonly int GridOutlinePixelsId = Shader.PropertyToID("_GridOutlinePixels");
+        private static readonly int UvInflateId = Shader.PropertyToID("_UvInflate");
         private static readonly int SpriteUvRectId = Shader.PropertyToID("_SpriteUvRect");
 
         [SerializeField] private SpriteRenderer _renderer;
         [SerializeField] private Material _outlineMaterial;
-        [SerializeField, Range(0.25f, 3f)] private float _persistentGlowIntensity = 1.5f;
-        [SerializeField, Range(0.25f, 3f)] private float _flashGlowIntensity = 1.8f;
+        [SerializeField, Range(1f, 3f)] private float _persistentOutlinePixels = 2f;
+        [SerializeField, Range(1f, 3f)] private float _flashOutlinePixels = 2f;
+        [SerializeField, Range(0.25f, 3f)] private float _persistentGlowIntensity = 1.1f;
+        [SerializeField, Range(0.25f, 3f)] private float _flashGlowIntensity = 1.2f;
         [SerializeField, Range(0f, 8f)] private float _persistentPulseSpeed = 0.55f;
         [SerializeField, Range(0f, 8f)] private float _flashPulseSpeed = 1.8f;
         [SerializeField, Range(0f, 0.5f)] private float _persistentPulseAmplitude = 0.035f;
         [SerializeField, Range(0f, 0.5f)] private float _flashPulseAmplitude = 0.1f;
         [SerializeField, Range(0f, 64f)] private float _pulseFrequency = 18f;
-        [SerializeField, Min(0f)] private float _outsidePaddingMultiplier = 1f;
-
         private MaterialPropertyBlock _propertyBlock;
+        private Texture2D _runtimeMaskTexture;
+        private Sprite _runtimeMaskSprite;
 
         public void Show(
             BattleScopeHighlightChannel channel,
             int layer,
+            IReadOnlyList<GridPos> cells,
+            int minX,
+            int minY,
+            int maxX,
+            int maxY,
             Vector3 localCenter,
             Vector2 localSize,
             Color color,
             float width,
             Material materialOverride)
         {
-            if (_renderer == null || _renderer.sprite == null)
+            if (_renderer == null
+                || cells == null
+                || cells.Count == 0
+                || maxX < minX
+                || maxY < minY)
             {
                 return;
             }
 
-            Sprite sprite = _renderer.sprite;
-            float safeWidth = Mathf.Max(0.001f, width);
-            float padding = safeWidth * Mathf.Max(0f, _outsidePaddingMultiplier);
-            Vector2 visualSize = new Vector2(
-                Mathf.Max(0.001f, localSize.x + padding * 2f),
-                Mathf.Max(0.001f, localSize.y + padding * 2f));
-            Vector2 spriteSize = sprite.bounds.size;
+            BuildMaskSprite(cells, minX, minY, maxX, maxY);
+            if (_runtimeMaskSprite == null)
+            {
+                return;
+            }
 
+            float safeWidth = Mathf.Max(0.001f, width);
+            int columns = maxX - minX + 1;
+            int rows = maxY - minY + 1;
             transform.localPosition = localCenter;
             transform.localRotation = Quaternion.identity;
             transform.localScale = new Vector3(
-                spriteSize.x > 0f ? visualSize.x / spriteSize.x : visualSize.x,
-                spriteSize.y > 0f ? visualSize.y / spriteSize.y : visualSize.y,
+                Mathf.Max(0.001f, localSize.x / columns),
+                Mathf.Max(0.001f, localSize.y / rows),
                 1f);
 
-            _renderer.sprite = sprite;
+            _renderer.sprite = _runtimeMaskSprite;
             _renderer.color = Color.white;
             _renderer.sharedMaterial = materialOverride != null ? materialOverride : _outlineMaterial;
             BattleSorting.Apply(
@@ -87,9 +106,15 @@ namespace GourmetProject.Game.Presentation.Battle
                     ? _persistentPulseAmplitude
                     : _flashPulseAmplitude);
             _propertyBlock.SetFloat(PulseFrequencyId, _pulseFrequency);
-            _propertyBlock.SetFloat(UseRectMaskId, 1f);
-            _propertyBlock.SetVector(RectSizeId, new Vector4(visualSize.x, visualSize.y, 0f, 0f));
-            _propertyBlock.SetVector(SpriteUvRectId, SpriteUvRect(sprite));
+            _propertyBlock.SetFloat(UseRectMaskId, 0f);
+            _propertyBlock.SetFloat(UseGridMaskId, 1f);
+            _propertyBlock.SetFloat(
+                GridOutlinePixelsId,
+                channel == BattleScopeHighlightChannel.Persistent
+                    ? _persistentOutlinePixels
+                    : _flashOutlinePixels);
+            _propertyBlock.SetFloat(UvInflateId, 1f);
+            _propertyBlock.SetVector(SpriteUvRectId, new Vector4(0f, 0f, 1f, 1f));
             _renderer.SetPropertyBlock(_propertyBlock);
             gameObject.SetActive(true);
         }
@@ -99,23 +124,89 @@ namespace GourmetProject.Game.Presentation.Battle
             gameObject.SetActive(false);
         }
 
-        private static Vector4 SpriteUvRect(Sprite sprite)
+        private void BuildMaskSprite(
+            IReadOnlyList<GridPos> cells,
+            int minX,
+            int minY,
+            int maxX,
+            int maxY)
         {
-            Vector2[] uvs = sprite != null ? sprite.uv : null;
-            if (uvs == null || uvs.Length == 0)
+            ReleaseRuntimeMask();
+
+            int columns = maxX - minX + 1;
+            int rows = maxY - minY + 1;
+            int width = columns * PixelsPerCell + MaskPadding * 2;
+            int height = rows * PixelsPerCell + MaskPadding * 2;
+            var pixels = new Color32[width * height];
+
+            foreach (GridPos cell in cells)
             {
-                return new Vector4(0f, 0f, 1f, 1f);
+                int column = cell.X - minX;
+                int rowFromBottom = maxY - cell.Y;
+                if (column < 0 || column >= columns || rowFromBottom < 0 || rowFromBottom >= rows)
+                {
+                    continue;
+                }
+
+                int startX = MaskPadding + column * PixelsPerCell;
+                int startY = MaskPadding + rowFromBottom * PixelsPerCell;
+                for (int y = 0; y < PixelsPerCell; y++)
+                {
+                    int rowOffset = (startY + y) * width + startX;
+                    for (int x = 0; x < PixelsPerCell; x++)
+                    {
+                        pixels[rowOffset + x] = new Color32(255, 255, 255, 255);
+                    }
+                }
             }
 
-            Vector2 min = uvs[0];
-            Vector2 max = uvs[0];
-            for (int i = 1; i < uvs.Length; i++)
+            _runtimeMaskTexture = new Texture2D(width, height, TextureFormat.RGBA32, false)
             {
-                min = Vector2.Min(min, uvs[i]);
-                max = Vector2.Max(max, uvs[i]);
+                name = "ScopeGridMask",
+                filterMode = FilterMode.Point,
+                wrapMode = TextureWrapMode.Clamp,
+            };
+            _runtimeMaskTexture.SetPixels32(pixels);
+            _runtimeMaskTexture.Apply(updateMipmaps: false, makeNoLongerReadable: true);
+
+            _runtimeMaskSprite = Sprite.Create(
+                _runtimeMaskTexture,
+                new Rect(0f, 0f, width, height),
+                new Vector2(0.5f, 0.5f),
+                PixelsPerCell,
+                0u,
+                SpriteMeshType.FullRect);
+            _runtimeMaskSprite.name = "ScopeGridMask";
+        }
+
+        private void OnDestroy()
+        {
+            ReleaseRuntimeMask();
+        }
+
+        private void ReleaseRuntimeMask()
+        {
+            DestroyRuntimeObject(_runtimeMaskSprite);
+            DestroyRuntimeObject(_runtimeMaskTexture);
+            _runtimeMaskSprite = null;
+            _runtimeMaskTexture = null;
+        }
+
+        private static void DestroyRuntimeObject(Object value)
+        {
+            if (value == null)
+            {
+                return;
             }
 
-            return new Vector4(min.x, min.y, max.x, max.y);
+            if (Application.isPlaying)
+            {
+                Destroy(value);
+            }
+            else
+            {
+                DestroyImmediate(value);
+            }
         }
     }
 }

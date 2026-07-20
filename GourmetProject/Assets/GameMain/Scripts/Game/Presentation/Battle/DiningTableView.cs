@@ -248,14 +248,16 @@ namespace GourmetProject.Game.Presentation.Battle
             int minY = int.MaxValue;
             int maxX = int.MinValue;
             int maxY = int.MinValue;
+            var validCells = new List<GridPos>();
             foreach (GridPos cell in cells)
             {
-                if (!_cells.ContainsKey(cell))
+                if (!_cells.ContainsKey(cell) || _board == null || !_board.Exists(cell))
                 {
                     continue;
                 }
 
                 hasCell = true;
+                validCells.Add(cell);
                 minX = Mathf.Min(minX, cell.X);
                 minY = Mathf.Min(minY, cell.Y);
                 maxX = Mathf.Max(maxX, cell.X);
@@ -282,8 +284,34 @@ namespace GourmetProject.Game.Presentation.Battle
             outline.Show(
                 channel,
                 layer,
+                validCells,
+                minX,
+                minY,
+                maxX,
+                maxY,
                 localCenter,
                 localSize,
+                color,
+                width,
+                materialOverride);
+        }
+
+        public void SetAllExistingScopeHighlight(
+            BattleScopeHighlightChannel channel,
+            int layer,
+            Color color,
+            float width,
+            Material materialOverride = null)
+        {
+            if (_board == null)
+            {
+                return;
+            }
+
+            SetScopeRegionHighlight(
+                _board.ExistingCells(),
+                channel,
+                layer,
                 color,
                 width,
                 materialOverride);

@@ -15,7 +15,7 @@ namespace GourmetProject.Game.Presentation.Battle
 {
     /// <summary>
     /// 背包乱斗式的结算演出：点「吃」后，按真实结算明细顺序播放来源 cue，
-    /// 最后在分数汇总阶段滚到总分。纯消费 <see cref="ScoreResult"/>，不改动任何计分逻辑。
+    /// 最后在分数汇总阶段滚到总分。消费结算结果与结算前基线，不改动任何计分逻辑。
     /// </summary>
     public sealed class SettlementSequencer : MonoBehaviour
     {
@@ -83,6 +83,7 @@ namespace GourmetProject.Game.Presentation.Battle
             Action<int> renderScore,
             Action<SettlementRevealSignal> onReveal,
             Action<SettlementScopeSignal> onScope,
+            SettlementBaselineSnapshot baselineSnapshot,
             CancellationToken cancellationToken)
         {
             if (result == null)
@@ -92,7 +93,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             float runningTotal = 0f;
             renderScore?.Invoke(0);
-            SettlementPlaybackPlan plan = BuildSettlementPlaybackPlan(result, dishViews);
+            SettlementPlaybackPlan plan = BuildSettlementPlaybackPlan(result, dishViews, baselineSnapshot);
             var playback = new SettlementPlaybackState(CountSettlementCues(plan), scoreFire);
             var dishValueBadges = new Dictionary<int, DishValueBadge>();
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -743,7 +744,8 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private static SettlementPlaybackPlan BuildSettlementPlaybackPlan(
             ScoreResult result,
-            IReadOnlyDictionary<int, DishPieceView> dishViews)
+            IReadOnlyDictionary<int, DishPieceView> dishViews,
+            SettlementBaselineSnapshot baselineSnapshot)
         {
             var plan = new SettlementPlaybackPlan();
             bool hasGoldCue = false;
@@ -783,13 +785,13 @@ namespace GourmetProject.Game.Presentation.Battle
                                 ref hasFinalModifierCue);
                         }
 
-                        AddCueBatchSteps(plan, cueBatch, dishViews, shownDishBases);
+                        AddCueBatchSteps(plan, cueBatch, dishViews, shownDishBases, baselineSnapshot);
                         i += cueBatch.Count - 1;
                         continue;
                     }
                 }
 
-                AddCueStep(plan, line, cue, dishViews, shownDishBases);
+                AddCueStep(plan, line, cue, dishViews, shownDishBases, baselineSnapshot);
             }
 
             // 甜蜜传递的「卡片揭示」不单独补 cue，而是绑定在目标菜触发传递效果的那条明细上
@@ -873,13 +875,14 @@ namespace GourmetProject.Game.Presentation.Battle
             SettlementPlaybackPlan plan,
             IReadOnlyList<PendingLineCue> cueBatch,
             IReadOnlyDictionary<int, DishPieceView> dishViews,
-            HashSet<int> shownDishBases)
+            HashSet<int> shownDishBases,
+            SettlementBaselineSnapshot baselineSnapshot)
         {
             if (!CanAddAsDishCueBatch(cueBatch, dishViews))
             {
                 for (int i = 0; i < cueBatch.Count; i++)
                 {
-                    AddCueStep(plan, cueBatch[i].Line, cueBatch[i].Cue, dishViews, shownDishBases);
+                    AddCueStep(plan, cueBatch[i].Line, cueBatch[i].Cue, dishViews, shownDishBases, baselineSnapshot);
                 }
 
                 return;
@@ -898,7 +901,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     SettlementScopeSignal effectScope = SettlementScopeSignal.FromScoreLine(line);
                     plan.Steps.Add(new SettlementPlaybackStep(
                         line.DishInstanceId,
-                        BuildDishBaseCue(view.Instance, baseBatchKey),
+                        BuildDishBaseCue(view.Instance, baselineSnapshot, baseBatchKey),
                         BuildDishFocusSignal(view.Instance, effectScope.OwnerDishInstanceId)));
                     shownDishBases.Add(line.DishInstanceId);
                 }
@@ -906,7 +909,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             for (int i = 0; i < cueBatch.Count; i++)
             {
-                AddCueStep(plan, cueBatch[i].Line, cueBatch[i].Cue, dishViews, shownDishBases);
+                AddCueStep(plan, cueBatch[i].Line, cueBatch[i].Cue, dishViews, shownDishBases, baselineSnapshot);
             }
         }
 
@@ -940,7 +943,8 @@ namespace GourmetProject.Game.Presentation.Battle
             ScoreLine line,
             SettlementCue cue,
             IReadOnlyDictionary<int, DishPieceView> dishViews,
-            HashSet<int> shownDishBases)
+            HashSet<int> shownDishBases,
+            SettlementBaselineSnapshot baselineSnapshot)
         {
             if (line.DishInstanceId != 0
                 && dishViews.TryGetValue(line.DishInstanceId, out DishPieceView view)
@@ -962,7 +966,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     SettlementScopeSignal effectScope = SettlementScopeSignal.FromScoreLine(line);
                     plan.Steps.Add(new SettlementPlaybackStep(
                         line.DishInstanceId,
-                        BuildDishBaseCue(view.Instance),
+                        BuildDishBaseCue(view.Instance, baselineSnapshot),
                         BuildDishFocusSignal(view.Instance, effectScope.OwnerDishInstanceId)));
                     shownDishBases.Add(line.DishInstanceId);
                 }
@@ -975,9 +979,19 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        private static SettlementCue BuildDishBaseCue(DishInstance instance, string batchKey = null)
+        private static SettlementCue BuildDishBaseCue(
+            DishInstance instance,
+            SettlementBaselineSnapshot baselineSnapshot,
+            string batchKey = null)
         {
-            float baseScore = instance != null ? instance.BaseScoreBeforeSettlement : 0f;
+            float baseScore = 0f;
+            if (instance != null)
+            {
+                baseScore = baselineSnapshot != null && baselineSnapshot.TryGet(instance.Id, out SettlementDishBaseline baseline)
+                    ? baseline.BaseScore
+                    : instance.BaseScoreBeforeSettlement;
+            }
+
             return new SettlementCue(
                 SettlementCueKind.Source,
                 $"分数 {FormatSigned(baseScore)}",

@@ -20,7 +20,7 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private float _characterSize = 0.14f;
         [SerializeField] private float _rise = 0.9f;
         [SerializeField] private float _duration = 0.9f;
-        [SerializeField] private int _fontSize = 64;
+        [SerializeField] private int _fontSize = 32;
 
         private TextMesh _text;
         private Tween _tween;

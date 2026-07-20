@@ -106,11 +106,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Presentation.Battle.BattleScopeRegionOutlineView
   _renderer: {fileID: 8310507455387599003}
   _outlineMaterial: {fileID: 2100000, guid: ddae4db2e52d4ddda932874405152ce7, type: 2}
-  _persistentGlowIntensity: 1.5
-  _flashGlowIntensity: 1.8
+  _persistentOutlinePixels: 2
+  _flashOutlinePixels: 2
+  _persistentGlowIntensity: 1.1
+  _flashGlowIntensity: 1.2
   _persistentPulseSpeed: 0.55
   _flashPulseSpeed: 1.8
   _persistentPulseAmplitude: 0.035
   _flashPulseAmplitude: 0.1
   _pulseFrequency: 18
-  _outsidePaddingMultiplier: 1

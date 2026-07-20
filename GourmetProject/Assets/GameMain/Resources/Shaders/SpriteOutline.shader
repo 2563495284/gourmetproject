@@ -15,6 +15,8 @@ Shader "GourmetProject/SpriteOutline"
         _PulseFrequency ("Pulse Frequency", Range(0, 64)) = 18
         _AlphaThreshold ("Alpha Threshold", Range(0.001, 0.5)) = 0.08
         [PerRendererData] _UseRectMask ("Use Rectangle Mask", Float) = 0
+        [PerRendererData] _UseGridMask ("Use Grid Mask", Float) = 0
+        [PerRendererData] _GridOutlinePixels ("Grid Outline Pixels", Float) = 2
         [PerRendererData] _RectSize ("Rectangle Size", Vector) = (1, 1, 0, 0)
         [PerRendererData] _UvInflate ("UV Inflate Compensation", Float) = 1
         [PerRendererData] _SpriteUvRect ("Sprite UV Rect", Vector) = (0, 0, 1, 1)
@@ -76,6 +78,8 @@ Shader "GourmetProject/SpriteOutline"
                 float _PulseFrequency;
                 float _AlphaThreshold;
                 float _UseRectMask;
+                float _UseGridMask;
+                float _GridOutlinePixels;
                 float4 _RectSize;
                 float _UvInflate;
                 float4 _SpriteUvRect;
@@ -165,6 +169,23 @@ Shader "GourmetProject/SpriteOutline"
                 half4 tex = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, sourceUv) * input.color;
                 tex.a *= InsideSpriteRect(sourceUv);
                 half sourceMask = AlphaMask(tex.a);
+
+                if (_UseGridMask > 0.5)
+                {
+                    float gridPixels = clamp(_GridOutlinePixels, 1.0, 3.0);
+                    half ring1 = RingAlpha(sourceUv, _MainTex_TexelSize.xy);
+                    half ring2 = RingAlpha(sourceUv, _MainTex_TexelSize.xy * 2.0);
+                    half ring3 = RingAlpha(sourceUv, _MainTex_TexelSize.xy * 3.0);
+                    half outside = max(
+                        ring1,
+                        max(
+                            ring2 * (half)step(1.5, gridPixels),
+                            ring3 * (half)step(2.5, gridPixels)));
+                    half outlineAlpha = (half)(outside * (1.0 - sourceMask) * _OutlineColor.a);
+                    half3 outlineRgb = (half3)(_OutlineColor.rgb * _GlowIntensity * wave);
+                    clip(outlineAlpha - 0.001);
+                    return half4(outlineRgb, outlineAlpha);
+                }
 
                 // Treat the old 0..0.2 width as a normalized authoring control, then sample in texture pixels.
                 float pixelRadius = max(1.0, saturate(_OutlineWidth) * 140.0);

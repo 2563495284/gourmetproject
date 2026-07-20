@@ -32,14 +32,20 @@ Material:
     - _AlphaThreshold: 0.08
     - _FillAlpha: 0
     - _GlowIntensity: 2.2
+    - _GridOutlinePixels: 2
     - _InnerAlpha: 0.68
     - _OuterAlpha: 1
-    - _OutlineWidth: 0.095
+    - _OutlineWidth: 0.052
     - _PulseAmplitude: 0.04
     - _PulseFrequency: 18
     - _PulseSpeed: 0.65
+    - _UseGridMask: 0
+    - _UseRectMask: 0
+    - _UvInflate: 1
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _OutlineColor: {r: 0.22, g: 0.86, b: 1, a: 1}
+    - _RectSize: {r: 1, g: 1, b: 0, a: 0}
+    - _SpriteUvRect: {r: 0, g: 0, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

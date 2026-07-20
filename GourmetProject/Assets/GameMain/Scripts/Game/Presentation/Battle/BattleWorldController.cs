@@ -888,6 +888,7 @@ namespace GourmetProject.Game.Presentation.Battle
             if (!token.IsCancellationRequested && _serving)
             {
                 FinishServing();
+                FlashServeScopeHighlights(result.Dish, token);
             }
         }
 
@@ -1098,7 +1099,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public void ShowDishScopeHighlights(DishInstance dish)
         {
-            if (_session == null || dish == null)
+            if (_settling || _session == null || dish == null)
             {
                 ClearDishScopeHighlights();
                 return;
@@ -1114,15 +1115,16 @@ namespace GourmetProject.Game.Presentation.Battle
             _scopeHighlights?.ClearPersistent();
         }
 
-        private void FlashSettlementScope(SettlementScopeSignal signal)
+        private void FlashServeScopeHighlights(DishInstance dish, CancellationToken cancellationToken)
         {
-            if (signal.IsEmpty)
+            if (_session == null || dish == null || cancellationToken.IsCancellationRequested)
             {
                 return;
             }
 
             EnsureScopeHighlights();
-            _scopeHighlights.Flash(_boardView, signal, GetPresentationToken());
+            IReadOnlyList<SkillExecutionTrace> traces = BuildHoverScopeTraces(dish);
+            _scopeHighlights.Flash(_boardView, traces, cancellationToken);
         }
 
         private IReadOnlyList<SkillExecutionTrace> BuildHoverScopeTraces(DishInstance dish)
@@ -1352,7 +1354,12 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>播放背包乱斗式逐菜结算演出，完成后回调上层决定过关/失败 UI。</summary>
-        public async void PlaySettlement(ScoreResult result, SettlementScoreFireView scoreFire, Action<SettlementRevealSignal> onReveal, Action onComplete)
+        public async void PlaySettlement(
+            ScoreResult result,
+            SettlementBaselineSnapshot baselineSnapshot,
+            SettlementScoreFireView scoreFire,
+            Action<SettlementRevealSignal> onReveal,
+            Action onComplete)
         {
             if (_sequencer == null || _session == null || result == null)
             {
@@ -1361,6 +1368,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _settling = true;
+            _scopeHighlights?.ClearAll();
             CancellationToken token = GetPresentationToken();
             try
             {
@@ -1373,7 +1381,8 @@ namespace GourmetProject.Game.Presentation.Battle
                     scoreFire,
                     RenderSettlementScore,
                     onReveal,
-                    FlashSettlementScope,
+                    null,
+                    baselineSnapshot,
                     token);
             }
             catch (OperationCanceledException)

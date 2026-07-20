@@ -2080,9 +2080,11 @@ namespace GourmetProject.Game.UI.Battle
 
             // 结算前拍基线：演出用它逐 cue 揭示，hover tips 与表演同步，而非一上来就显示全部结算信息。
             var reveal = new SettlementRevealState();
+            var settlementBaseline = new SettlementBaselineSnapshot();
             foreach (DishInstance dish in _session.DiningTable.Dishes)
             {
                 reveal.CaptureBaseline(dish);
+                settlementBaseline.Capture(dish);
             }
 
             _settlementReveal = reveal;
@@ -2094,7 +2096,7 @@ namespace GourmetProject.Game.UI.Battle
 
             if (_world != null)
             {
-                _world.PlaySettlement(result, _infoColumn != null ? _infoColumn.ScoreFire : null, OnSettlementReveal, () => OnSettlementComplete(result));
+                _world.PlaySettlement(result, settlementBaseline, _infoColumn != null ? _infoColumn.ScoreFire : null, OnSettlementReveal, () => OnSettlementComplete(result));
             }
             else
             {
