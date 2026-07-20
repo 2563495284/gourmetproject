@@ -1013,7 +1013,14 @@ namespace GourmetProject.Game.Presentation.Battle
         private static bool TryBuildCue(ScoreLine line, out SettlementCue cue)
         {
             cue = null;
-            if (line == null || Mathf.Abs(line.Value) <= 0.001f)
+            if (line == null)
+            {
+                return false;
+            }
+
+            bool isExecutedDishSkill = line.Trace != null
+                || line.Source?.Type == ScoreSourceType.DishSkill;
+            if (Mathf.Abs(line.Value) <= 0.001f && !isExecutedDishSkill)
             {
                 return false;
             }

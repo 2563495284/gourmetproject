@@ -120,4 +120,4 @@ MonoBehaviour:
   _characterSize: 0.14
   _rise: 0.9
   _duration: 0.9
-  _fontSize: 32
+  _fontSize: 64

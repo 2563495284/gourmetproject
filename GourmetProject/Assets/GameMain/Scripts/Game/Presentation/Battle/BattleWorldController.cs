@@ -1135,7 +1135,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return traces;
             }
 
-            int visualIndex = FirstHoverVisualIndexFor(dish);
+            int visualIndex = 0;
             foreach (string skillId in dish.SkillIds)
             {
                 SkillDef skill = _session.Database.GetSkill(skillId);
@@ -1213,58 +1213,6 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             return traces;
-        }
-
-        private int FirstHoverVisualIndexFor(DishInstance dish)
-        {
-            int visualIndex = 0;
-            foreach (DishInstance candidate in _session.DiningTable.Dishes)
-            {
-                if (candidate == null)
-                {
-                    continue;
-                }
-
-                if (candidate.Id == dish.Id)
-                {
-                    return visualIndex;
-                }
-
-                visualIndex += CountHoverScopeEntries(candidate);
-            }
-
-            return Mathf.Max(0, dish.Id);
-        }
-
-        private int CountHoverScopeEntries(DishInstance dish)
-        {
-            int count = 0;
-            foreach (string skillId in dish.SkillIds)
-            {
-                SkillDef skill = _session.Database.GetSkill(skillId);
-                if (skill == null || !skill.HasRules)
-                {
-                    continue;
-                }
-
-                foreach (SkillRuleDef rule in skill.Rules)
-                {
-                    if (ShouldShowHoverScope(rule))
-                    {
-                        count++;
-                    }
-                }
-            }
-
-            foreach (TransferredSkill transferred in dish.TransferredSkills)
-            {
-                if (ShouldShowHoverScope(transferred.Rule))
-                {
-                    count++;
-                }
-            }
-
-            return count;
         }
 
         private static bool ShouldShowHoverScope(SkillRuleDef rule)
