@@ -49,6 +49,7 @@ namespace GourmetProject.Game.UI.Meta
     {
         [SerializeField] private Button _buyButton;
         [SerializeField] private Image _itemIcon;
+        [SerializeField] private Text _buyLabel;
 
         private RectTransform _rect;
         private RectTransform _iconRect;
@@ -239,16 +240,38 @@ namespace GourmetProject.Game.UI.Meta
 
         private void SetBuyLabel(int price)
         {
-            if (_buyButton == null)
-            {
-                return;
-            }
-
-            Text label = _buyButton.GetComponentInChildren<Text>();
+            Text label = BuyLabel;
             if (label != null)
             {
                 label.text = $"购买 {price}";
             }
+        }
+
+        private Text BuyLabel
+        {
+            get
+            {
+                if (_buyLabel == null)
+                {
+                    _buyLabel = ResolveBuyLabel();
+                }
+
+                return _buyLabel;
+            }
+        }
+
+        private Text ResolveBuyLabel()
+        {
+            if (_buyButton != null)
+            {
+                Text label = _buyButton.GetComponentInChildren<Text>(true);
+                if (label != null)
+                {
+                    return label;
+                }
+            }
+
+            return GetComponentInChildren<Text>(true);
         }
 
         private void EnsureDefaultButtonTransition()
