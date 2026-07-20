@@ -862,7 +862,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             Vector2 world = WorldInput.MouseWorld(cam);
-            if (_collider.OverlapPoint(world))
+            if (ContainsOccupiedCellAtWorldPoint(world))
             {
                 _clicked?.Invoke(Instance);
             }
@@ -883,13 +883,44 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            bool pointerInside = _collider.OverlapPoint(WorldInput.MouseWorld(cam));
+            bool pointerInside = ContainsOccupiedCellAtWorldPoint(WorldInput.MouseWorld(cam));
             if (!_hovered && WorldInput.PointerOverUi)
             {
                 return;
             }
 
             SetHovered(pointerInside);
+        }
+
+        private bool ContainsOccupiedCellAtWorldPoint(Vector2 world)
+        {
+            if (_collider == null || !_collider.OverlapPoint(world))
+            {
+                return false;
+            }
+
+            if (CurrentShape == null || CurrentShape.CellCount == 0)
+            {
+                return true;
+            }
+
+            Vector3 local = transform.InverseTransformPoint(new Vector3(world.x, world.y, transform.position.z));
+            float half = _cellSize * 0.5f;
+            const float epsilon = 0.0001f;
+            foreach (GridPos cell in CurrentShape.Cells)
+            {
+                float centerX = cell.X * _pitch;
+                float centerY = -cell.Y * _pitch;
+                if (local.x >= centerX - half - epsilon
+                    && local.x <= centerX + half + epsilon
+                    && local.y >= centerY - half - epsilon
+                    && local.y <= centerY + half + epsilon)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void SetHovered(bool hovered)
