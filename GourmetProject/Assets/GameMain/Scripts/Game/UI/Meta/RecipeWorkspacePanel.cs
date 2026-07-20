@@ -62,6 +62,8 @@ namespace GourmetProject.Game.UI.Meta
         private int _pendingRestoreDishIndex = -1;
         private GameObject _compareOverlay;
         private RecipeWorkspacePanelStateMachine _stateMachine;
+        private int _readonlyEntriesBookIndex = -1;
+        private IReadOnlyList<RecipeBookSlot> _readonlyEntries;
         private bool _compareTemplateMissingReported;
         private bool _wired;
 
@@ -130,6 +132,8 @@ namespace GourmetProject.Game.UI.Meta
             _onExit = request.OnExit;
             _onChanged = request.OnChanged;
             _getFoodTips = getFoodTips;
+            _readonlyEntriesBookIndex = request.Mode == RecipeWorkspaceMode.ReadonlyBook ? request.BookIndex : -1;
+            _readonlyEntries = request.Mode == RecipeWorkspaceMode.ReadonlyBook ? request.ReadonlyEntries : null;
 
             switch (request.Mode)
             {
@@ -257,7 +261,7 @@ namespace GourmetProject.Game.UI.Meta
                     continue;
                 }
 
-                IReadOnlyList<RecipeBookSlot> entries = _run.GetRecipeBookEntries(i);
+                IReadOnlyList<RecipeBookSlot> entries = EntriesForBook(i);
                 for (int k = 0; k < entries.Count; k++)
                 {
                     RecipeBookSlot slot = entries[k];
@@ -288,6 +292,16 @@ namespace GourmetProject.Game.UI.Meta
             FitBooksToContainer(books);
             RestorePendingScroll(books);
             _onChanged?.Invoke();
+        }
+
+        private IReadOnlyList<RecipeBookSlot> EntriesForBook(int bookIndex)
+        {
+            if (_readonlyEntries != null && _readonlyEntriesBookIndex == bookIndex)
+            {
+                return _readonlyEntries;
+            }
+
+            return _run != null ? _run.GetRecipeBookEntries(bookIndex) : Array.Empty<RecipeBookSlot>();
         }
 
         private void ConfigureBooksLayoutGroup()
@@ -589,7 +603,7 @@ namespace GourmetProject.Game.UI.Meta
                 return false;
             }
 
-            IReadOnlyList<RecipeBookSlot> entries = _run.GetRecipeBookEntries(dish.BookIndex);
+            IReadOnlyList<RecipeBookSlot> entries = EntriesForBook(dish.BookIndex);
             if (dish.DishIndex < 0 || dish.DishIndex >= entries.Count)
             {
                 return false;
@@ -713,7 +727,7 @@ namespace GourmetProject.Game.UI.Meta
                 return null;
             }
 
-            IReadOnlyList<RecipeBookSlot> entries = _run.GetRecipeBookEntries(target.X);
+            IReadOnlyList<RecipeBookSlot> entries = EntriesForBook(target.X);
             return target.Y >= 0 && target.Y < entries.Count ? entries[target.Y] : null;
         }
 

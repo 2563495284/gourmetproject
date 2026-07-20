@@ -47,6 +47,8 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         RecipeBooksPresenter RecipePresenter { get; }
 
+        bool RecipeInspectShowsActionAxis { get; }
+
         void OnLeavingPage(GameplayView current, GameplayView next);
 
         void OnBeforeApplyPage(GameplayView view);
@@ -66,6 +68,8 @@ namespace GourmetProject.Game.UI.Battle.Pages
         void OpenRecipeInspect(int bookIndex);
 
         void BuildBattleRecipe();
+
+        void BuildRecipeInspectCards();
 
         void BuyRecipeBook();
 
@@ -92,6 +96,8 @@ namespace GourmetProject.Game.UI.Battle.Pages
         GameRun IBattleViewHost.Run => _host.Run;
 
         RecipeBooksPresenter IBattleViewHost.Recipe => _host.RecipePresenter;
+
+        bool IBattleViewHost.RecipeInspectShowsActionAxis => _host.RecipeInspectShowsActionAxis;
 
         public void SwitchTo(GameplayView next, Action buildCenter = null, Action onShown = null)
         {
@@ -199,7 +205,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 _host.BoardEditSkipButton.gameObject.SetActive(view == GameplayView.TableEdit);
             }
 
-            _host.SetActionAxisVisible(actionSelect || shop || eventPage || recipeInspect);
+            _host.SetActionAxisVisible(actionSelect || shop || eventPage || (recipeInspect && _host.RecipeInspectShowsActionAxis));
             _host.SetFoodActionsVisible(view == GameplayView.Food);
 
             if (_host.Backdrop != null)
@@ -222,6 +228,8 @@ namespace GourmetProject.Game.UI.Battle.Pages
         void IBattleViewHost.OpenRecipeInspect(int bookIndex) => _host.OpenRecipeInspect(bookIndex);
 
         void IBattleViewHost.BuildBattleRecipe() => _host.BuildBattleRecipe();
+
+        void IBattleViewHost.BuildRecipeInspectCards() => _host.BuildRecipeInspectCards();
 
         void IBattleViewHost.BuyRecipeBook() => _host.BuyRecipeBook();
 

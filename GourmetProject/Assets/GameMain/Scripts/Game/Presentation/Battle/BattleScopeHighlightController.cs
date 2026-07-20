@@ -18,36 +18,21 @@ namespace GourmetProject.Game.Presentation.Battle
             new Color(0.98f, 0.88f, 0.24f, 0.86f),
         };
 
-        [SerializeField] private Color _ownerColor = new Color(1f, 0.92f, 0.35f, 0.9f);
-        [SerializeField] private Color _settlementOwnerColor = new Color(1f, 0.82f, 0.15f, 0.98f);
-        [SerializeField] private Color _runtimeSelfColor = new Color(0.42f, 0.92f, 1f, 0.9f);
         [SerializeField] private Color[] _subSkillPalette;
         [SerializeField] private float _persistentCellWidth = 0.048f;
         [SerializeField] private float _flashCellWidth = 0.085f;
-        [SerializeField] private float _persistentDishInflate = 1.08f;
-        [SerializeField] private float _flashDishInflate = 1.12f;
-        [SerializeField] private float _dishInflateStep = 0.018f;
-        [SerializeField, Range(0f, 0.2f)] private float _persistentDishOutlineWidth = 0.095f;
-        [SerializeField, Range(0f, 0.2f)] private float _flashDishOutlineWidth = 0.13f;
-        [SerializeField] private float _settlementOwnerInflate = 1.16f;
-        [SerializeField, Range(0f, 0.2f)] private float _settlementOwnerOutlineWidth = 0.16f;
         [SerializeField] private float _flashDuration = 0.32f;
         [SerializeField] private Material _sweetTransferMaterial;
         [SerializeField] private Material _copySkillMaterial;
-        [SerializeField] private Material _settlementOwnerMaterial;
 
         private DiningTableView _activeTableView;
-        private IReadOnlyDictionary<int, DishPieceView> _activeDishViews;
         private int _flashVersion;
-        private int _settlementOwnerDishInstanceId;
 
         public void ShowPersistent(
             DiningTableView tableView,
-            IReadOnlyDictionary<int, DishPieceView> dishViews,
             IReadOnlyList<SkillExecutionTrace> traces)
         {
             _activeTableView = tableView;
-            _activeDishViews = dishViews;
             ClearChannel(BattleScopeHighlightChannel.Persistent);
             if (traces == null)
             {
@@ -65,49 +50,12 @@ namespace GourmetProject.Game.Presentation.Battle
             ClearChannel(BattleScopeHighlightChannel.Persistent);
         }
 
-        public void ShowSettlementOwner(
-            DiningTableView tableView,
-            IReadOnlyDictionary<int, DishPieceView> dishViews,
-            int ownerDishInstanceId)
-        {
-            _activeTableView = tableView;
-            _activeDishViews = dishViews;
-            if (_settlementOwnerDishInstanceId == ownerDishInstanceId && ownerDishInstanceId > 0)
-            {
-                return;
-            }
-
-            ClearSettlementOwner();
-            if (ownerDishInstanceId <= 0)
-            {
-                return;
-            }
-
-            _settlementOwnerDishInstanceId = ownerDishInstanceId;
-            SetDishGlow(
-                ownerDishInstanceId,
-                BattleScopeHighlightChannel.SettlementOwner,
-                0,
-                _settlementOwnerColor,
-                _settlementOwnerInflate,
-                _settlementOwnerOutlineWidth,
-                _settlementOwnerMaterial);
-        }
-
-        public void ClearSettlementOwner()
-        {
-            ClearChannel(BattleScopeHighlightChannel.SettlementOwner);
-            _settlementOwnerDishInstanceId = 0;
-        }
-
         public void Flash(
             DiningTableView tableView,
-            IReadOnlyDictionary<int, DishPieceView> dishViews,
             SettlementScopeSignal signal,
             CancellationToken cancellationToken)
         {
             _activeTableView = tableView;
-            _activeDishViews = dishViews;
             ClearChannel(BattleScopeHighlightChannel.Flash);
             if (signal.IsEmpty)
             {
@@ -119,18 +67,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 int index = signal.Trace.VisualIndex >= 0 ? signal.Trace.VisualIndex : signal.Trace.RuleOrder;
                 RenderTrace(BattleScopeHighlightChannel.Flash, signal.Trace, index, persistent: false);
             }
-            else if (signal.OwnerDishInstanceId > 0)
-            {
-                SetDishGlow(
-                    signal.OwnerDishInstanceId,
-                    BattleScopeHighlightChannel.Flash,
-                    0,
-                    _ownerColor,
-                    _flashDishInflate,
-                    _flashDishOutlineWidth,
-                    null);
-            }
-
             int version = ++_flashVersion;
             _ = ClearFlashAfterAsync(version, cancellationToken);
         }
@@ -139,7 +75,6 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             ClearChannel(BattleScopeHighlightChannel.Persistent);
             ClearChannel(BattleScopeHighlightChannel.Flash);
-            ClearSettlementOwner();
         }
 
         private async Awaitable ClearFlashAfterAsync(int version, CancellationToken cancellationToken)
@@ -166,30 +101,10 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            float dishInflate = persistent ? _persistentDishInflate : _flashDishInflate;
-            float dishOutlineWidth = persistent ? _persistentDishOutlineWidth : _flashDishOutlineWidth;
             float cellWidth = persistent ? _persistentCellWidth : _flashCellWidth;
             int baseLayer = Mathf.Max(0, index);
             Color subSkillColor = PaletteColor(baseLayer);
             Material material = MaterialFor(trace);
-
-            if (trace.OwnerDishInstanceId > 0)
-            {
-                SetDishGlow(trace.OwnerDishInstanceId, channel, 0, _ownerColor, dishInflate, dishOutlineWidth, null);
-            }
-
-            if (trace.RuntimeSelfDishInstanceId > 0
-                && trace.RuntimeSelfDishInstanceId != trace.OwnerDishInstanceId)
-            {
-                SetDishGlow(
-                    trace.RuntimeSelfDishInstanceId,
-                    channel,
-                    1,
-                    _runtimeSelfColor,
-                    dishInflate + _dishInflateStep,
-                    dishOutlineWidth,
-                    null);
-            }
 
             int conditionLayer = 2 + baseLayer * 2;
             int targetLayer = conditionLayer + 1;
@@ -204,34 +119,17 @@ namespace GourmetProject.Game.Presentation.Battle
                     trace.ConditionCells,
                     conditionLayer,
                     conditionColor,
-                    dishInflate,
-                    dishOutlineWidth * 0.72f,
                     cellWidth * 0.78f,
-                    persistent);
-            }
-
-            foreach (int dishId in trace.VisualTargetDishInstanceIds)
-            {
-                SetDishGlow(
-                    dishId,
-                    channel,
-                    targetLayer,
-                    subSkillColor,
-                    dishInflate + _dishInflateStep * baseLayer,
-                    dishOutlineWidth,
                     material);
             }
 
-            foreach (GridPos cell in trace.VisualTargetCells)
-            {
-                _activeTableView?.SetScopeHighlight(
-                    cell,
-                    channel,
-                    targetLayer,
-                    subSkillColor,
-                    cellWidth,
-                    persistent ? 0.14f : 0.26f);
-            }
+            _activeTableView?.SetScopeRegionHighlight(
+                trace.VisualTargetCells,
+                channel,
+                targetLayer,
+                subSkillColor,
+                cellWidth,
+                material);
         }
 
         private void RenderConditionScope(
@@ -239,58 +137,16 @@ namespace GourmetProject.Game.Presentation.Battle
             IReadOnlyList<GridPos> cells,
             int layer,
             Color color,
-            float dishInflate,
-            float dishOutlineWidth,
             float cellWidth,
-            bool persistent)
+            Material material)
         {
-            var conditionCells = new HashSet<GridPos>(cells);
-            foreach (GridPos cell in cells)
-            {
-                _activeTableView?.SetScopeHighlight(
-                    cell,
-                    channel,
-                    layer,
-                    color,
-                    cellWidth,
-                    persistent ? 0.08f : 0.16f);
-            }
-
-            if (_activeDishViews == null)
-            {
-                return;
-            }
-
-            foreach (KeyValuePair<int, DishPieceView> pair in _activeDishViews)
-            {
-                DishPieceView view = pair.Value;
-                if (view?.Instance == null || !TouchesAnyCell(view.Instance.OccupiedCells, conditionCells))
-                {
-                    continue;
-                }
-
-                view.SetScopeGlow(channel, layer, color, dishInflate, dishOutlineWidth);
-            }
-        }
-
-        private static bool TouchesAnyCell(
-            IReadOnlyList<GridPos> occupiedCells,
-            HashSet<GridPos> scopeCells)
-        {
-            if (occupiedCells == null || scopeCells == null)
-            {
-                return false;
-            }
-
-            foreach (GridPos cell in occupiedCells)
-            {
-                if (scopeCells.Contains(cell))
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            _activeTableView?.SetScopeRegionHighlight(
+                cells,
+                channel,
+                layer,
+                color,
+                cellWidth,
+                material);
         }
 
         private static bool SameCells(IReadOnlyList<GridPos> a, IReadOnlyList<GridPos> b)
@@ -312,37 +168,9 @@ namespace GourmetProject.Game.Presentation.Battle
             return true;
         }
 
-        private void SetDishGlow(
-            int dishInstanceId,
-            BattleScopeHighlightChannel channel,
-            int layer,
-            Color color,
-            float inflate,
-            float outlineWidth,
-            Material material)
-        {
-            if (_activeDishViews == null
-                || !_activeDishViews.TryGetValue(dishInstanceId, out DishPieceView view)
-                || view == null)
-            {
-                return;
-            }
-
-            view.SetScopeGlow(channel, layer, color, inflate, outlineWidth, material);
-        }
-
         private void ClearChannel(BattleScopeHighlightChannel channel)
         {
             _activeTableView?.ClearScopeHighlights(channel);
-            if (_activeDishViews == null)
-            {
-                return;
-            }
-
-            foreach (DishPieceView view in _activeDishViews.Values)
-            {
-                view?.ClearScopeGlows(channel);
-            }
         }
 
         private Color PaletteColor(int index)

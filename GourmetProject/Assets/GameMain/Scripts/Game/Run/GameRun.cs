@@ -71,6 +71,7 @@ namespace GourmetProject.Game.Run
         private string _pendingRewardKey = string.Empty;
         private RewardOfferSaveData _pendingRewardOffer;
         private PendingRewardBattleViewSaveData _pendingRewardBattleView;
+        private PendingActionExecutionSaveData _pendingActionExecution;
         private bool _pendingGenericRewardsConfirmBattleAfterDone;
         private int _activeUseIndex;
         private int _interestThreshold;
@@ -1082,6 +1083,7 @@ namespace GourmetProject.Game.Run
             }
 
             LastActionContext = null;
+            ClearPendingActionExecution();
             ClearPendingActionChoices();
             ClearPendingShopStock();
             ClearPendingRewardOffer();
@@ -1089,6 +1091,7 @@ namespace GourmetProject.Game.Run
 
         public void AdvanceActionStep()
         {
+            ClearPendingActionExecution();
             ClearPendingActionChoices();
             ActionStepIndex++;
             RunActionStepIndex++;
@@ -1126,6 +1129,54 @@ namespace GourmetProject.Game.Run
         public void SetLastActionContext(ActionExecutionContext context)
         {
             LastActionContext = context;
+        }
+
+        public bool HasPendingActionExecution =>
+            _pendingActionExecution != null && !string.IsNullOrEmpty(_pendingActionExecution.ActionId);
+
+        public PendingActionExecutionSaveData GetPendingActionExecution()
+        {
+            return ClonePendingActionExecution(_pendingActionExecution);
+        }
+
+        public void SetPendingActionExecution(
+            ActionExecutionContext context,
+            ActionOutcome outcome,
+            string resolvedEventId = null)
+        {
+            if (context == null || !context.IsValid)
+            {
+                _pendingActionExecution = null;
+                return;
+            }
+
+            SetLastActionContext(context);
+
+            _pendingActionExecution = new PendingActionExecutionSaveData
+            {
+                ActionId = context.Action.Id,
+                StepIndex = context.StepIndex,
+                RunStepIndex = context.RunStepIndex,
+                ActionGroupId = context.ActionGroupId ?? string.Empty,
+                CostDays = context.CostDays,
+                SourceKey = context.SourceKey ?? string.Empty,
+                HasTargetScoreDayOverride = context.TargetScoreDayOverride.HasValue,
+                TargetScoreDayOverride = context.TargetScoreDayOverride ?? 0f,
+                OutcomeKind = outcome?.Kind ?? ActionOutcomeKind.Immediate,
+                Feedback = outcome?.Feedback ?? string.Empty,
+                RequiredScore = outcome?.RequiredScore ?? 0,
+                Modifier = outcome?.Modifier ?? string.Empty,
+                BattleKey = outcome?.BattleKey ?? string.Empty,
+                IsBoss = outcome?.IsBoss ?? false,
+                BossId = outcome?.BossId ?? string.Empty,
+                BossDebuffId = outcome?.BossDebuffId ?? string.Empty,
+                EventId = resolvedEventId ?? outcome?.EventId ?? string.Empty,
+            };
+        }
+
+        public void ClearPendingActionExecution()
+        {
+            _pendingActionExecution = null;
         }
 
         public List<ActionChoice> GetPendingActionChoices(string key)
@@ -1540,6 +1591,7 @@ namespace GourmetProject.Game.Run
                 LastActionSourceKey = LastActionContext?.SourceKey ?? string.Empty,
                 LastActionHasTargetScoreDayOverride = LastActionContext?.TargetScoreDayOverride.HasValue ?? false,
                 LastActionTargetScoreDayOverride = LastActionContext?.TargetScoreDayOverride ?? 0f,
+                PendingActionExecution = ClonePendingActionExecution(_pendingActionExecution),
                 ActionGroupSequence = new List<string>(_actionGroupSequence),
                 ActionWeekPlan = new List<string>(_actionWeekPlan),
                 ActionWeekPlanWeek = _actionWeekPlanWeek,
@@ -1743,6 +1795,8 @@ namespace GourmetProject.Game.Run
                     });
                 }
             }
+
+            run._pendingActionExecution = ClonePendingActionExecution(data.PendingActionExecution);
 
             if (data.TriggeredNodeIds != null)
             {
@@ -2074,6 +2128,35 @@ namespace GourmetProject.Game.Run
             }
 
             return result;
+        }
+
+        private static PendingActionExecutionSaveData ClonePendingActionExecution(PendingActionExecutionSaveData data)
+        {
+            if (data == null || string.IsNullOrEmpty(data.ActionId))
+            {
+                return null;
+            }
+
+            return new PendingActionExecutionSaveData
+            {
+                ActionId = data.ActionId ?? string.Empty,
+                StepIndex = data.StepIndex,
+                RunStepIndex = data.RunStepIndex,
+                ActionGroupId = data.ActionGroupId ?? string.Empty,
+                CostDays = data.CostDays,
+                SourceKey = data.SourceKey ?? string.Empty,
+                HasTargetScoreDayOverride = data.HasTargetScoreDayOverride,
+                TargetScoreDayOverride = data.TargetScoreDayOverride,
+                OutcomeKind = data.OutcomeKind,
+                Feedback = data.Feedback ?? string.Empty,
+                RequiredScore = data.RequiredScore,
+                Modifier = data.Modifier ?? string.Empty,
+                BattleKey = data.BattleKey ?? string.Empty,
+                IsBoss = data.IsBoss,
+                BossId = data.BossId ?? string.Empty,
+                BossDebuffId = data.BossDebuffId ?? string.Empty,
+                EventId = data.EventId ?? string.Empty,
+            };
         }
 
         public int TotalWeeks => _tables.TbWeek.DataList.Count;

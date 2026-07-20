@@ -26,6 +26,8 @@ namespace GourmetProject.Game.UI.Hud
         private RectTransform _rect;
         private Material _glowMaterial;
         private Action _onRightClick;
+        private bool _clickSuppressed;
+        private int _clickSuppressedUntilFrame = -1;
 
         public RectTransform Rect
         {
@@ -81,20 +83,51 @@ namespace GourmetProject.Game.UI.Hud
                 _button.interactable = interactable;
                 if (onClick != null)
                 {
-                    _button.onClick.AddListener(() => onClick());
+                    _button.onClick.AddListener(() =>
+                    {
+                        if (!ShouldSuppressClick())
+                        {
+                            onClick();
+                        }
+                    });
                 }
+            }
+        }
+
+        public void SetClickSuppressed(bool suppressed)
+        {
+            _clickSuppressed = suppressed;
+            if (!suppressed)
+            {
+                _clickSuppressedUntilFrame = Time.frameCount;
             }
         }
 
         public void OnPointerClick(PointerEventData eventData)
         {
-            if (eventData == null || eventData.button != PointerEventData.InputButton.Right)
+            if (eventData == null)
+            {
+                return;
+            }
+
+            if (ShouldSuppressClick())
+            {
+                eventData.Use();
+                return;
+            }
+
+            if (eventData.button != PointerEventData.InputButton.Right)
             {
                 return;
             }
 
             _onRightClick?.Invoke();
             eventData.Use();
+        }
+
+        private bool ShouldSuppressClick()
+        {
+            return _clickSuppressed || Time.frameCount <= _clickSuppressedUntilFrame;
         }
 
         public bool ContainsScreenPoint(Vector2 screenPoint, Camera eventCamera)

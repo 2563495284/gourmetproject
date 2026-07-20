@@ -4,6 +4,5 @@ namespace GourmetProject.Game.Presentation.Battle
     {
         Persistent = 0,
         Flash = 1,
-        SettlementOwner = 2,
     }
 }

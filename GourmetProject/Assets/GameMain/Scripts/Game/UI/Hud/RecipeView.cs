@@ -95,6 +95,7 @@ namespace GourmetProject.Game.UI.Hud
         private RecipeState _state = RecipeState.Hidden;
         private bool _hovering;
         private bool _initialized;
+        private bool _bookClicksSuppressed;
 
         public RecipeState State => _state;
 
@@ -188,6 +189,7 @@ namespace GourmetProject.Game.UI.Hud
                 slot.CanReceiveDish = entry.CanReceiveDish;
                 var view = slot.Go.GetComponent<RecipeCardView>();
                 view?.Bind(entry.Capacity, entry.Interactable, entry.OnClick, entry.OnRightClick);
+                view?.SetClickSuppressed(_bookClicksSuppressed);
                 view?.SetTargetHighlight(false, false);
             }
 
@@ -300,6 +302,16 @@ namespace GourmetProject.Game.UI.Hud
 
                 bool show = visible && slot.CanReceiveDish;
                 view.SetTargetHighlight(show, show && slot.BookIndex == hoveredBookIndex);
+            }
+        }
+
+        public void SetBookClicksSuppressed(bool suppressed)
+        {
+            _bookClicksSuppressed = suppressed;
+            foreach (CardSlot slot in _bookSlots)
+            {
+                RecipeCardView view = slot?.Go == null ? null : slot.Go.GetComponent<RecipeCardView>();
+                view?.SetClickSuppressed(suppressed);
             }
         }
 

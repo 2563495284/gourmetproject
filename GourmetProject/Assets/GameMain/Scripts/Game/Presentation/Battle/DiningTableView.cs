@@ -21,8 +21,10 @@ namespace GourmetProject.Game.Presentation.Battle
         private bool _voidAsPlaceholder;
 
         [SerializeField] private DiningTableCellView _cellPrefab;
+        [SerializeField] private BattleScopeRegionOutlineView _scopeRegionOutlinePrefab;
 
         private readonly Dictionary<GridPos, DiningTableCellView> _cells = new Dictionary<GridPos, DiningTableCellView>();
+        private readonly Dictionary<int, BattleScopeRegionOutlineView> _scopeRegionOutlines = new Dictionary<int, BattleScopeRegionOutlineView>();
         private readonly Dictionary<string, Sprite> _materialCellSprites = new Dictionary<string, Sprite>();
         private Sprite _cellSprite;
         private float _cellSize;
@@ -211,32 +213,93 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public void ClearScopeHighlights(BattleScopeHighlightChannel channel)
         {
-            foreach (DiningTableCellView view in _cells.Values)
+            foreach (KeyValuePair<int, BattleScopeRegionOutlineView> pair in _scopeRegionOutlines)
             {
-                view?.ClearScopeOutlines(channel);
+                if (ChannelFromScopeKey(pair.Key) == channel)
+                {
+                    pair.Value?.Hide();
+                }
             }
         }
 
         public void ClearAllScopeHighlights()
         {
-            foreach (DiningTableCellView view in _cells.Values)
+            foreach (BattleScopeRegionOutlineView outline in _scopeRegionOutlines.Values)
             {
-                view?.ClearAllScopeOutlines();
+                outline?.Hide();
             }
         }
 
-        public void SetScopeHighlight(GridPos pos, BattleScopeHighlightChannel channel, int layer, Color color, float width, float fillAlpha)
+        public void SetScopeRegionHighlight(
+            IReadOnlyList<GridPos> cells,
+            BattleScopeHighlightChannel channel,
+            int layer,
+            Color color,
+            float width,
+            Material materialOverride = null)
         {
-            if (!TryGetCellView(pos, out DiningTableCellView view))
+            if (cells == null || cells.Count == 0 || Mapper == null)
             {
                 return;
             }
 
-            view.SetScopeOutline(channel, layer, color, width, fillAlpha);
+            bool hasCell = false;
+            int minX = int.MaxValue;
+            int minY = int.MaxValue;
+            int maxX = int.MinValue;
+            int maxY = int.MinValue;
+            foreach (GridPos cell in cells)
+            {
+                if (!_cells.ContainsKey(cell))
+                {
+                    continue;
+                }
+
+                hasCell = true;
+                minX = Mathf.Min(minX, cell.X);
+                minY = Mathf.Min(minY, cell.Y);
+                maxX = Mathf.Max(maxX, cell.X);
+                maxY = Mathf.Max(maxY, cell.Y);
+            }
+
+            if (!hasCell)
+            {
+                return;
+            }
+
+            BattleScopeRegionOutlineView outline = EnsureScopeRegionOutline(channel, layer);
+            if (outline == null)
+            {
+                return;
+            }
+
+            Vector3 firstCenter = Mapper.CellCenterLocal(new GridPos(minX, minY));
+            Vector3 lastCenter = Mapper.CellCenterLocal(new GridPos(maxX, maxY));
+            Vector3 localCenter = (firstCenter + lastCenter) * 0.5f;
+            Vector2 localSize = new Vector2(
+                Mathf.Abs(lastCenter.x - firstCenter.x) + _cellSize,
+                Mathf.Abs(lastCenter.y - firstCenter.y) + _cellSize);
+            outline.Show(
+                channel,
+                layer,
+                localCenter,
+                localSize,
+                color,
+                width,
+                materialOverride);
         }
 
         private void Clear()
         {
+            foreach (BattleScopeRegionOutlineView outline in _scopeRegionOutlines.Values)
+            {
+                if (outline != null)
+                {
+                    Destroy(outline.gameObject);
+                }
+            }
+
+            _scopeRegionOutlines.Clear();
             foreach (DiningTableCellView cell in _cells.Values)
             {
                 if (cell != null)
@@ -246,6 +309,40 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _cells.Clear();
+        }
+
+        private BattleScopeRegionOutlineView EnsureScopeRegionOutline(
+            BattleScopeHighlightChannel channel,
+            int layer)
+        {
+            int key = ScopeLayerKey(channel, layer);
+            if (_scopeRegionOutlines.TryGetValue(key, out BattleScopeRegionOutlineView existing)
+                && existing != null)
+            {
+                return existing;
+            }
+
+            if (_scopeRegionOutlinePrefab == null)
+            {
+                Debug.LogError($"{nameof(DiningTableView)} 缺少 ScopeRegionOutline prefab。", this);
+                return null;
+            }
+
+            BattleScopeRegionOutlineView outline = Instantiate(_scopeRegionOutlinePrefab, transform);
+            outline.name = $"ScopeRegion_{channel}_{layer}";
+            outline.Hide();
+            _scopeRegionOutlines[key] = outline;
+            return outline;
+        }
+
+        private static int ScopeLayerKey(BattleScopeHighlightChannel channel, int layer)
+        {
+            return ((int)channel * 1000) + Mathf.Clamp(layer, 0, 999);
+        }
+
+        private static BattleScopeHighlightChannel ChannelFromScopeKey(int key)
+        {
+            return (BattleScopeHighlightChannel)Mathf.Max(0, key / 1000);
         }
 
         private void OnCellHoverEntered(DiningTableCellView cell)

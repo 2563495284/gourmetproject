@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
@@ -59,8 +58,6 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private BoxCollider2D _collider;
         [Tooltip("放置合法性发光层（子物体 PlacementGlow 上的 SpriteRenderer）。")]
         [SerializeField] private SpriteRenderer _placementGlow;
-        [Tooltip("技能 scope 发光层模板。建议在 DishPiece prefab 的 Sprite 节点下放一个禁用的 ScopeGlowTemplate，避免和放置合法性发光共用模板。")]
-        [SerializeField] private SpriteRenderer _scopeGlowPrefab;
 
         [Header("落定反馈（仅作用于本体视觉枢轴，不影响格子锚点/碰撞盒）")]
         [SerializeField] private bool _useOccupiedCentroidPivot = true;
@@ -91,8 +88,6 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField, Range(0.25f, 3f)] private float _outlineGlowIntensity = 2.2f;
         [SerializeField, Range(0f, 8f)] private float _persistentPulseSpeed = 0.65f;
         [SerializeField, Range(0f, 0.5f)] private float _persistentPulseAmplitude = 0.045f;
-        [SerializeField, Range(0f, 8f)] private float _flashPulseSpeed = 2.2f;
-        [SerializeField, Range(0f, 0.5f)] private float _flashPulseAmplitude = 0.14f;
         [SerializeField, Range(0f, 64f)] private float _pulseFrequency = 18f;
 
         [Header("结算标签反馈：美味度增加（仅作用于本体视觉枢轴）")]
@@ -116,9 +111,6 @@ namespace GourmetProject.Game.Presentation.Battle
         private bool _hovered;
         private MaterialPropertyBlock _stainBlock;
         private MaterialPropertyBlock _placementGlowBlock;
-        private readonly Dictionary<int, SpriteRenderer> _scopeGlowRenderers = new Dictionary<int, SpriteRenderer>();
-        private readonly Dictionary<int, MaterialPropertyBlock> _scopeGlowBlocks = new Dictionary<int, MaterialPropertyBlock>();
-        private bool _scopeGlowTemplateMissingReported;
 
         public DishInstance Instance { get; private set; }
 
@@ -216,70 +208,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 materialOverride: null,
                 pulseSpeed: _persistentPulseSpeed,
                 pulseAmplitude: _persistentPulseAmplitude);
-        }
-
-        public void SetScopeGlow(
-            BattleScopeHighlightChannel channel,
-            int layer,
-            Color color,
-            float inflate,
-            float outlineWidth,
-            Material materialOverride = null)
-        {
-            EnsureRefs();
-            if (_spriteRenderer == null)
-            {
-                return;
-            }
-
-            SpriteRenderer glow = EnsureScopeGlowRenderer(channel, layer);
-            if (glow == null)
-            {
-                return;
-            }
-
-            glow.gameObject.SetActive(true);
-            int key = ScopeLayerKey(channel, layer);
-            if (!_scopeGlowBlocks.TryGetValue(key, out MaterialPropertyBlock block) || block == null)
-            {
-                block = new MaterialPropertyBlock();
-                _scopeGlowBlocks[key] = block;
-            }
-
-            ConfigureOutlineGlowRenderer(
-                glow,
-                ref block,
-                color,
-                outlineWidth,
-                fillAlpha: 0f,
-                inflate: inflate,
-                sortingOrderOffset: 1 + layer,
-                materialOverride: materialOverride,
-                pulseSpeed: channel == BattleScopeHighlightChannel.Persistent ? _persistentPulseSpeed : _flashPulseSpeed,
-                pulseAmplitude: channel == BattleScopeHighlightChannel.Persistent ? _persistentPulseAmplitude : _flashPulseAmplitude);
-            _scopeGlowBlocks[key] = block;
-        }
-
-        public void ClearScopeGlows(BattleScopeHighlightChannel channel)
-        {
-            foreach (KeyValuePair<int, SpriteRenderer> kv in _scopeGlowRenderers)
-            {
-                if (ChannelFromKey(kv.Key) == channel && kv.Value != null)
-                {
-                    kv.Value.gameObject.SetActive(false);
-                }
-            }
-        }
-
-        public void ClearAllScopeGlows()
-        {
-            foreach (SpriteRenderer renderer in _scopeGlowRenderers.Values)
-            {
-                if (renderer != null)
-                {
-                    renderer.gameObject.SetActive(false);
-                }
-            }
         }
 
         public void SetGhost(bool ghost)
@@ -638,13 +566,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _shadowHaloRenderer = ResolveChildRenderer(_shadowHaloRenderer, "ShadowHalo");
             _spriteRenderer = ResolveChildRenderer(_spriteRenderer, "Sprite");
             _placementGlow = ResolveChildRenderer(_placementGlow, "PlacementGlow");
-            _scopeGlowPrefab = ResolveChildRenderer(_scopeGlowPrefab, "ScopeGlowTemplate");
             EnsureSpriteUnderVisualPivot();
-
-            if (_scopeGlowPrefab != null)
-            {
-                _scopeGlowPrefab.gameObject.SetActive(false);
-            }
 
             if (_collider == null || _visualPivot == null || _shadowRenderer == null || _spriteRenderer == null || _placementGlow == null)
             {
@@ -666,38 +588,6 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             SpriteRenderer renderer = t.GetComponent<SpriteRenderer>();
-            return renderer;
-        }
-
-        private SpriteRenderer EnsureScopeGlowRenderer(BattleScopeHighlightChannel channel, int layer)
-        {
-            int key = ScopeLayerKey(channel, layer);
-            if (_scopeGlowRenderers.TryGetValue(key, out SpriteRenderer existing) && existing != null)
-            {
-                return existing;
-            }
-
-            SpriteRenderer template = _scopeGlowPrefab != null ? _scopeGlowPrefab : _placementGlow;
-            if (template == null)
-            {
-                if (!_scopeGlowTemplateMissingReported)
-                {
-                    Debug.LogError($"{nameof(DishPieceView)} prefab 缺少 ScopeGlowTemplate/PlacementGlow。", this);
-                    _scopeGlowTemplateMissingReported = true;
-                }
-
-                return null;
-            }
-
-            Transform parent = template.transform.parent != null
-                ? template.transform.parent
-                : (_spriteRenderer != null && _spriteRenderer.transform.parent != null
-                    ? _spriteRenderer.transform.parent
-                    : (_visualPivot != null ? _visualPivot : transform));
-            SpriteRenderer renderer = Instantiate(template, parent, false);
-            renderer.name = $"ScopeGlow_{channel}_{layer}";
-            renderer.gameObject.SetActive(false);
-            _scopeGlowRenderers[key] = renderer;
             return renderer;
         }
 
@@ -795,16 +685,6 @@ namespace GourmetProject.Game.Presentation.Battle
         private static float SafeDivide(float value, float divisor)
         {
             return Mathf.Abs(divisor) > 0.0001f ? value / divisor : value;
-        }
-
-        private static int ScopeLayerKey(BattleScopeHighlightChannel channel, int layer)
-        {
-            return ((int)channel * 1000) + Mathf.Clamp(layer, 0, 999);
-        }
-
-        private static BattleScopeHighlightChannel ChannelFromKey(int key)
-        {
-            return (BattleScopeHighlightChannel)Mathf.Max(0, key / 1000);
         }
 
         private Transform ResolveChildTransform(Transform current, string childName)

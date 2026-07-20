@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using GourmetProject.Game.Meta;
+using GourmetProject.Game.Run;
 
 namespace GourmetProject.Game.UI.Meta
 {
@@ -21,7 +23,8 @@ namespace GourmetProject.Game.UI.Meta
             Action onChanged,
             ItemDefinition item,
             string title,
-            int bookIndex)
+            int bookIndex,
+            IReadOnlyList<RecipeBookSlot> readonlyEntries)
         {
             Mode = mode;
             OnExit = onExit;
@@ -31,6 +34,7 @@ namespace GourmetProject.Game.UI.Meta
             Item = item;
             Title = title;
             BookIndex = bookIndex;
+            ReadonlyEntries = readonlyEntries;
         }
 
         public RecipeWorkspaceMode Mode { get; }
@@ -49,6 +53,8 @@ namespace GourmetProject.Game.UI.Meta
 
         public int BookIndex { get; }
 
+        public IReadOnlyList<RecipeBookSlot> ReadonlyEntries { get; }
+
         public static RecipeWorkspaceRequest Edit(Action onExit, Action onChanged)
         {
             return new RecipeWorkspaceRequest(
@@ -59,10 +65,15 @@ namespace GourmetProject.Game.UI.Meta
                 onChanged,
                 null,
                 null,
-                -1);
+                -1,
+                null);
         }
 
-        public static RecipeWorkspaceRequest ReadonlyBook(int bookIndex, Action onExit, Action onChanged)
+        public static RecipeWorkspaceRequest ReadonlyBook(
+            int bookIndex,
+            Action onExit,
+            Action onChanged,
+            IReadOnlyList<RecipeBookSlot> readonlyEntries = null)
         {
             return new RecipeWorkspaceRequest(
                 RecipeWorkspaceMode.ReadonlyBook,
@@ -72,7 +83,8 @@ namespace GourmetProject.Game.UI.Meta
                 onChanged,
                 null,
                 null,
-                bookIndex);
+                bookIndex,
+                readonlyEntries);
         }
 
         public static RecipeWorkspaceRequest ActiveItemTarget(
@@ -89,7 +101,8 @@ namespace GourmetProject.Game.UI.Meta
                 onChanged,
                 item,
                 null,
-                -1);
+                -1,
+                null);
         }
 
         public static RecipeWorkspaceRequest EventDeleteDish(
@@ -106,7 +119,8 @@ namespace GourmetProject.Game.UI.Meta
                 onChanged,
                 null,
                 title,
-                -1);
+                -1,
+                null);
         }
     }
 }

@@ -15,6 +15,8 @@ namespace GourmetProject.Game.UI.Battle.States
 
         RecipeBooksPresenter Recipe { get; }
 
+        bool RecipeInspectShowsActionAxis { get; }
+
         /// <summary>按 view 落地常驻壳通用配置：面板显隐 / 行动轴 / 白底 / 菜谱抽屉态 / 刷新常驻信息。</summary>
         void ApplyShellForView(GameplayView view);
 
@@ -29,6 +31,8 @@ namespace GourmetProject.Game.UI.Battle.States
         void OpenRecipeInspect(int bookIndex);
 
         void BuildBattleRecipe();
+
+        void BuildRecipeInspectCards();
 
         void BuyRecipeBook();
     }

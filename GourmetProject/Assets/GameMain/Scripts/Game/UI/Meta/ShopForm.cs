@@ -289,6 +289,7 @@ namespace GourmetProject.Game.UI.Meta
             _targetingFrame = Time.frameCount;
 
             _recipeView?.SetState(RecipeView.RecipeState.Shown);
+            _recipeView?.SetBookClicksSuppressed(true);
             _activeArrow = CreateTargetArrow(card.IconScreenCenter());
             UpdateTargetingHighlight(Mouse.current != null ? Mouse.current.position.ReadValue() : card.IconScreenCenter());
         }
@@ -635,6 +636,7 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             _recipeView?.SetDishTargetingHighlights(false, -1);
+            _recipeView?.SetBookClicksSuppressed(false);
             if (restoreRecipeState)
             {
                 _recipeView?.SetState(RecipeView.RecipeState.Shown);

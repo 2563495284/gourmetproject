@@ -14,6 +14,8 @@ Shader "GourmetProject/SpriteOutline"
         _PulseAmplitude ("Pulse Amplitude", Range(0, 0.5)) = 0
         _PulseFrequency ("Pulse Frequency", Range(0, 64)) = 18
         _AlphaThreshold ("Alpha Threshold", Range(0.001, 0.5)) = 0.08
+        [PerRendererData] _UseRectMask ("Use Rectangle Mask", Float) = 0
+        [PerRendererData] _RectSize ("Rectangle Size", Vector) = (1, 1, 0, 0)
         [PerRendererData] _UvInflate ("UV Inflate Compensation", Float) = 1
         [PerRendererData] _SpriteUvRect ("Sprite UV Rect", Vector) = (0, 0, 1, 1)
     }
@@ -73,6 +75,8 @@ Shader "GourmetProject/SpriteOutline"
                 float _PulseAmplitude;
                 float _PulseFrequency;
                 float _AlphaThreshold;
+                float _UseRectMask;
+                float4 _RectSize;
                 float _UvInflate;
                 float4 _SpriteUvRect;
             CBUFFER_END
@@ -140,6 +144,23 @@ Shader "GourmetProject/SpriteOutline"
 
             half4 Frag(Varyings input) : SV_Target
             {
+                float wave = 1.0 + sin((input.uv.y * _PulseFrequency + _Time.y * _PulseSpeed) * 6.2831853) * _PulseAmplitude;
+                if (_UseRectMask > 0.5)
+                {
+                    float2 safeSize = max(_RectSize.xy, float2(0.001, 0.001));
+                    float2 uvSpan = max(_SpriteUvRect.zw - _SpriteUvRect.xy, float2(0.0001, 0.0001));
+                    float2 rectUv = saturate((input.uv - _SpriteUvRect.xy) / uvSpan);
+                    float2 edgeUv = min(rectUv, 1.0 - rectUv);
+                    float edgeDistance = min(edgeUv.x * safeSize.x, edgeUv.y * safeSize.y);
+                    float lineWidth = max(_OutlineWidth, 0.001);
+                    half core = (half)(1.0 - smoothstep(lineWidth * 0.35, lineWidth, edgeDistance));
+                    half softGlow = (half)(1.0 - smoothstep(lineWidth, lineWidth * 2.4, edgeDistance));
+                    half outlineAlpha = (half)(saturate(core + softGlow * 0.32) * _OutlineColor.a);
+                    half3 outlineRgb = (half3)(_OutlineColor.rgb * _GlowIntensity * wave);
+                    clip(outlineAlpha - 0.001);
+                    return half4(outlineRgb, outlineAlpha);
+                }
+
                 float2 sourceUv = CompensatedUv(input.uv);
                 half4 tex = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, sourceUv) * input.color;
                 tex.a *= InsideSpriteRect(sourceUv);
@@ -160,7 +181,6 @@ Shader "GourmetProject/SpriteOutline"
                 half inner = (half)saturate(sourceMask * (1.0 - eroded) * _InnerAlpha);
                 half outline = max(outer, inner);
 
-                float wave = 1.0 + sin((input.uv.y * _PulseFrequency + _Time.y * _PulseSpeed) * 6.2831853) * _PulseAmplitude;
                 half outlineAlpha = (half)(outline * _OutlineColor.a);
                 half3 outlineRgb = (half3)(_OutlineColor.rgb * _GlowIntensity * wave);
 

@@ -93,8 +93,12 @@ namespace GourmetProject.Game.UI.Battle.States
 
         public void Enter(IBattleViewHost host, Action buildCenter)
         {
-            host.RebuildActionAxis();
-            host.Recipe.BuildPersistent(host.Run, showAdd: false, onAdd: null, host.OpenRecipeInspect);
+            if (host.RecipeInspectShowsActionAxis)
+            {
+                host.RebuildActionAxis();
+            }
+
+            host.BuildRecipeInspectCards();
             host.OpenRecipeWorkspacePanel();
         }
     }

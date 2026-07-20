@@ -159,6 +159,9 @@ namespace GourmetProject.Game.Run
         /// <summary>最近一次行动的目标分天数覆盖值。</summary>
         public float LastActionTargetScoreDayOverride;
 
+        /// <summary>已进入但尚未结算/提交的行动；用于读档恢复到 food/interest/event/shop 页面。</summary>
+        public PendingActionExecutionSaveData PendingActionExecution;
+
         /// <summary>已生成的整局行动组序列。</summary>
         public List<string> ActionGroupSequence = new List<string>();
 
@@ -282,6 +285,28 @@ namespace GourmetProject.Game.Run
         public string TimelineId;
         public int Day;
         public string ActionId;
+    }
+
+    [Serializable]
+    public sealed class PendingActionExecutionSaveData
+    {
+        public string ActionId;
+        public int StepIndex;
+        public int RunStepIndex;
+        public string ActionGroupId;
+        public float CostDays;
+        public string SourceKey;
+        public bool HasTargetScoreDayOverride;
+        public float TargetScoreDayOverride;
+        public ActionOutcomeKind OutcomeKind;
+        public string Feedback;
+        public int RequiredScore;
+        public string Modifier;
+        public string BattleKey;
+        public bool IsBoss;
+        public string BossId;
+        public string BossDebuffId;
+        public string EventId;
     }
 
     [Serializable]

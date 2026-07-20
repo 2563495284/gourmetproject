@@ -1106,7 +1106,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             EnsureScopeHighlights();
             IReadOnlyList<SkillExecutionTrace> traces = BuildHoverScopeTraces(dish);
-            _scopeHighlights.ShowPersistent(_boardView, _dishViewsById, traces);
+            _scopeHighlights.ShowPersistent(_boardView, traces);
         }
 
         public void ClearDishScopeHighlights()
@@ -1118,16 +1118,11 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             if (signal.IsEmpty)
             {
-                _scopeHighlights?.ClearSettlementOwner();
                 return;
             }
 
             EnsureScopeHighlights();
-            _scopeHighlights.ShowSettlementOwner(
-                _boardView,
-                _dishViewsById,
-                signal.OwnerDishInstanceId);
-            _scopeHighlights.Flash(_boardView, _dishViewsById, signal, GetPresentationToken());
+            _scopeHighlights.Flash(_boardView, signal, GetPresentationToken());
         }
 
         private IReadOnlyList<SkillExecutionTrace> BuildHoverScopeTraces(DishInstance dish)
@@ -1389,11 +1384,6 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 Debug.LogException(ex, this);
             }
-            finally
-            {
-                _scopeHighlights?.ClearSettlementOwner();
-            }
-
             if (!token.IsCancellationRequested)
             {
                 _settling = false;

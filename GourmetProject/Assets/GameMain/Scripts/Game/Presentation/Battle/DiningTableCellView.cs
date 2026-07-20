@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using DG.Tweening;
 using GourmetProject.Gameplay.Model;
 using UnityEngine;
@@ -33,27 +32,11 @@ namespace GourmetProject.Game.Presentation.Battle
         [Tooltip("点击命中用碰撞盒（prefab 根节点上的 BoxCollider2D）。")]
         [SerializeField] private BoxCollider2D _collider;
 
-        [Header("Scope 高亮模板")]
-        [Tooltip("Scope 高亮层模板。建议在 DiningTableCell prefab 下放一个禁用的 ScopeOutlineTemplate 子物体，设计师可调材质/默认色/排序。")]
-        [SerializeField] private SpriteRenderer _scopeOutlinePrefab;
-        [Tooltip("Scope 高亮默认材质。留空时使用 GourmetProject/SpriteOutline 的运行时材质。")]
-        [SerializeField] private Material _scopeOutlineMaterial;
-        [SerializeField, Range(0.25f, 3f)] private float _scopePersistentGlowIntensity = 1.25f;
-        [SerializeField, Range(0.25f, 3f)] private float _scopeFlashGlowIntensity = 1.45f;
-        [SerializeField, Range(0f, 8f)] private float _scopePersistentPulseSpeed = 0.55f;
-        [SerializeField, Range(0f, 8f)] private float _scopeFlashPulseSpeed = 1.8f;
-        [SerializeField, Range(0f, 0.5f)] private float _scopePersistentPulseAmplitude = 0.035f;
-        [SerializeField, Range(0f, 0.5f)] private float _scopeFlashPulseAmplitude = 0.1f;
-        [SerializeField, Range(0f, 64f)] private float _scopePulseFrequency = 18f;
-
         private GridPos _position;
         private Action<GridPos> _clicked;
         private Action<DiningTableCellView> _hoverEntered;
         private Action<DiningTableCellView> _hoverExited;
         private MaterialPropertyBlock _propertyBlock;
-        private readonly Dictionary<int, SpriteRenderer> _scopeOutlineRenderers = new Dictionary<int, SpriteRenderer>();
-        private readonly Dictionary<int, MaterialPropertyBlock> _scopeOutlineBlocks = new Dictionary<int, MaterialPropertyBlock>();
-        private bool _scopeOutlineTemplateMissingReported;
         private float _configuredSize;
         private bool _hovered;
         private Sequence _transformSequence;
@@ -211,67 +194,6 @@ namespace GourmetProject.Game.Presentation.Battle
             SpriteRenderStyle.ApplyUnlitMaterial(_renderer);
         }
 
-        public void SetScopeOutline(BattleScopeHighlightChannel channel, int layer, Color color, float width, float fillAlpha = 0.16f)
-        {
-            EnsureRefs();
-            if (_renderer == null)
-            {
-                return;
-            }
-
-            SpriteRenderer scopeRenderer = EnsureScopeOutlineRenderer(channel, layer);
-            if (scopeRenderer == null)
-            {
-                return;
-            }
-
-            scopeRenderer.gameObject.SetActive(true);
-            scopeRenderer.sprite = _renderer.sprite;
-            scopeRenderer.color = Color.white;
-            scopeRenderer.sortingLayerName = _renderer.sortingLayerName;
-            scopeRenderer.sortingOrder = _renderer.sortingOrder + 1 + layer;
-            ApplyScopeOutlineMaterial(scopeRenderer);
-
-            int key = ScopeLayerKey(channel, layer);
-            if (!_scopeOutlineBlocks.TryGetValue(key, out MaterialPropertyBlock block) || block == null)
-            {
-                block = new MaterialPropertyBlock();
-                _scopeOutlineBlocks[key] = block;
-            }
-
-            scopeRenderer.GetPropertyBlock(block);
-            block.SetColor(OutlineColorId, color);
-            block.SetFloat(OutlineWidthId, Mathf.Clamp(width, 0f, 0.2f));
-            block.SetFloat(FillAlphaId, Mathf.Clamp01(fillAlpha));
-            block.SetFloat(GlowIntensityId, channel == BattleScopeHighlightChannel.Persistent ? _scopePersistentGlowIntensity : _scopeFlashGlowIntensity);
-            block.SetFloat(PulseSpeedId, channel == BattleScopeHighlightChannel.Persistent ? _scopePersistentPulseSpeed : _scopeFlashPulseSpeed);
-            block.SetFloat(PulseAmplitudeId, channel == BattleScopeHighlightChannel.Persistent ? _scopePersistentPulseAmplitude : _scopeFlashPulseAmplitude);
-            block.SetFloat(PulseFrequencyId, _scopePulseFrequency);
-            scopeRenderer.SetPropertyBlock(block);
-        }
-
-        public void ClearScopeOutlines(BattleScopeHighlightChannel channel)
-        {
-            foreach (KeyValuePair<int, SpriteRenderer> kv in _scopeOutlineRenderers)
-            {
-                if (ChannelFromKey(kv.Key) == channel && kv.Value != null)
-                {
-                    kv.Value.gameObject.SetActive(false);
-                }
-            }
-        }
-
-        public void ClearAllScopeOutlines()
-        {
-            foreach (SpriteRenderer renderer in _scopeOutlineRenderers.Values)
-            {
-                if (renderer != null)
-                {
-                    renderer.gameObject.SetActive(false);
-                }
-            }
-        }
-
         public void SetDebuffed(bool debuffed)
         {
             EnsureRefs();
@@ -314,61 +236,6 @@ namespace GourmetProject.Game.Presentation.Battle
             _propertyBlock.SetVector(BoingId, new Vector4(0.2f * t, -0.14f * t, 0f, 0f));
             _propertyBlock.SetVector(EdgeClampPointId, new Vector4(0.24f, 0.24f, 0f, 0f));
             _renderer.SetPropertyBlock(_propertyBlock);
-        }
-
-        private SpriteRenderer EnsureScopeOutlineRenderer(BattleScopeHighlightChannel channel, int layer)
-        {
-            int key = ScopeLayerKey(channel, layer);
-            if (_scopeOutlineRenderers.TryGetValue(key, out SpriteRenderer existing) && existing != null)
-            {
-                return existing;
-            }
-
-            if (_scopeOutlinePrefab == null)
-            {
-                if (!_scopeOutlineTemplateMissingReported)
-                {
-                    Debug.LogError($"{nameof(DiningTableCellView)} prefab 缺少 ScopeOutlineTemplate。", this);
-                    _scopeOutlineTemplateMissingReported = true;
-                }
-
-                return null;
-            }
-
-            Transform parent = _scopeOutlinePrefab.transform.parent != null
-                ? _scopeOutlinePrefab.transform.parent
-                : transform;
-            SpriteRenderer renderer = Instantiate(_scopeOutlinePrefab, parent, false);
-            renderer.name = $"ScopeOutline_{channel}_{layer}";
-            renderer.gameObject.SetActive(false);
-            _scopeOutlineRenderers[key] = renderer;
-            return renderer;
-        }
-
-        private void ApplyScopeOutlineMaterial(SpriteRenderer renderer)
-        {
-            if (renderer == null)
-            {
-                return;
-            }
-
-            Material material = _scopeOutlineMaterial != null
-                ? _scopeOutlineMaterial
-                : SpriteRenderStyle.SpriteOutlineMaterial;
-            if (material != null)
-            {
-                renderer.sharedMaterial = material;
-            }
-        }
-
-        private static int ScopeLayerKey(BattleScopeHighlightChannel channel, int layer)
-        {
-            return ((int)channel * 1000) + Mathf.Clamp(layer, 0, 999);
-        }
-
-        private static BattleScopeHighlightChannel ChannelFromKey(int key)
-        {
-            return key >= 1000 ? BattleScopeHighlightChannel.Flash : BattleScopeHighlightChannel.Persistent;
         }
 
         private bool IsTransformMaterialActive()
@@ -415,19 +282,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 }
             }
 
-            if (_scopeOutlinePrefab == null)
-            {
-                Transform template = transform.Find("ScopeOutlineTemplate");
-                if (template != null)
-                {
-                    _scopeOutlinePrefab = template.GetComponent<SpriteRenderer>();
-                }
-            }
-
-            if (_scopeOutlinePrefab != null)
-            {
-                _scopeOutlinePrefab.gameObject.SetActive(false);
-            }
         }
 
         private void OnMouseDown()

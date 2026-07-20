@@ -39,6 +39,7 @@ namespace GourmetProject.Game.Presentation.Battle
         public const int OrderButtonLabel = 1;
         public const int OrderScoreFire = 5;
         public const int OrderFloatingText = 10;
+        public const int OrderScopeRegion = -100;
 
         /// <summary>把任意 Renderer（Sprite/Mesh/Line 等）归入指定 Sorting Layer 与层内 order。</summary>
         public static void Apply(Renderer renderer, string layer, int order = 0)

@@ -146,6 +146,7 @@ namespace GourmetProject.Game.UI.Battle
         private string _activeBattleKey = string.Empty;
         private bool _activeBattleIsBoss;
         private bool _rewardPeekOnly;
+        private bool _discardSettlementCallbacks;
         private View.FoodAdjustOverlay _foodAdjustOverlay;
         private DishPieceView _hoveredDishPiece;
         private DiningTableCellView _hoveredCell;
@@ -217,6 +218,7 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             Active = this;
+            _discardSettlementCallbacks = false;
             // 尽早绑定场景里的战斗世界单例：否则首次 StartBattle 之前 _world 为 null，
             // BeginWeek 里的 HideBattleWorld 会变成空操作，导致进场景默认态残留美食专属按钮。
             _world = BattleWorldController.Instance;
@@ -236,6 +238,8 @@ namespace GourmetProject.Game.UI.Battle
                 Active = null;
             }
 
+            _discardSettlementCallbacks = true;
+            _settlementReveal = null;
             _loop = null;
             _activeItemUse?.Dispose();
             _rewardPeekOnly = false;
@@ -679,6 +683,7 @@ namespace GourmetProject.Game.UI.Battle
         Button IGameplayPageRouterHost.BoardEditSkipButton => _boardEditSkipButton;
         RecipeView IGameplayPageRouterHost.RecipeView => _recipeView;
         RecipeBooksPresenter IGameplayPageRouterHost.RecipePresenter => _recipePresenter;
+        bool IGameplayPageRouterHost.RecipeInspectShowsActionAxis => _recipeWorkspacePage?.InspectShowsActionAxis == true;
         void IGameplayPageRouterHost.OnLeavingPage(GameplayView current, GameplayView next) => _recipeWorkspacePage?.OnLeavingPage(current, next);
         void IGameplayPageRouterHost.OnBeforeApplyPage(GameplayView view)
         {
@@ -708,11 +713,13 @@ namespace GourmetProject.Game.UI.Battle
         void IGameplayPageRouterHost.OpenRecipeWorkspacePanel() => _recipeWorkspacePage?.OpenPanel();
         void IGameplayPageRouterHost.OpenRecipeInspect(int bookIndex) => _recipeWorkspacePage?.OpenInspect(bookIndex);
         void IGameplayPageRouterHost.BuildBattleRecipe() => BuildBattleRecipe();
+        void IGameplayPageRouterHost.BuildRecipeInspectCards() => BuildRecipeInspectCards();
         void IGameplayPageRouterHost.BuyRecipeBook() => _shopPage?.BuyRecipeBook();
         void IGameplayPageRouterHost.BuildActionCards() => BuildActionCards();
         void IGameplayPageRouterHost.RefreshPersistent() => RefreshPersistent();
 
         GameRun IRecipeWorkspaceHost.Run => _run;
+        BattleSession IRecipeWorkspaceHost.Session => _session;
         GameplayView IRecipeWorkspaceHost.CurrentView => _current;
         RecipeWorkspacePanel IRecipeWorkspaceHost.RecipeWorkspacePanel => _recipeWorkspacePanel;
         void IRecipeWorkspaceHost.SwitchTo(GameplayView view, Action buildCenter, Action onShown) => SwitchTo(view, buildCenter, onShown);
@@ -1132,6 +1139,17 @@ namespace GourmetProject.Game.UI.Battle
         private void BuildBattleRecipe()
         {
             _recipePresenter?.BuildBattle(_session, ServeFromRecipe, OpenRecipeInspect);
+        }
+
+        private void BuildRecipeInspectCards()
+        {
+            if (_recipeWorkspacePage?.InspectUsesBattleRecipe == true)
+            {
+                _recipePresenter?.BuildBattleInspect(_session, OpenRecipeInspect);
+                return;
+            }
+
+            _recipePresenter?.BuildPersistent(_run, false, null, OpenRecipeInspect);
         }
 
         private void ServeFromRecipe(int slotIndex)
@@ -1882,7 +1900,7 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnSettlementReveal(SettlementRevealSignal signal)
         {
-            if (_settlementReveal == null || signal.IsEmpty)
+            if (_discardSettlementCallbacks || _settlementReveal == null || signal.IsEmpty)
             {
                 return;
             }
@@ -2086,6 +2104,11 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnSettlementComplete(ScoreResult result)
         {
+            if (_discardSettlementCallbacks || Active != this || _loop == null)
+            {
+                return;
+            }
+
             // 演出走完：清空渐进揭示态，hover 恢复展示完整结算结果。
             _settlementReveal = null;
             if (_hoveredDishPiece != null)

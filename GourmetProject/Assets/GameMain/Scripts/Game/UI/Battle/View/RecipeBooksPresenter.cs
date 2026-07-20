@@ -85,6 +85,31 @@ namespace GourmetProject.Game.UI.Battle.View
             _recipeView.SetBooks(books);
         }
 
+        /// <summary>战斗菜谱查看态：同步战斗槽剩余数量，点击只切换查看的菜谱，不执行上菜。</summary>
+        public void BuildBattleInspect(BattleSession session, Action<int> onInspect)
+        {
+            if (_recipeView == null || session == null)
+            {
+                return;
+            }
+
+            var books = new List<RecipeView.BookEntry>();
+            for (int i = 0; i < session.Slots.Count; i++)
+            {
+                RecipeSlot slot = session.Slots[i];
+                int slotIndex = i;
+                books.Add(new RecipeView.BookEntry(
+                    $"菜谱{i + 1}",
+                    $"剩 {slot.Count}",
+                    onInspect != null,
+                    onInspect == null ? null : () => onInspect.Invoke(slotIndex),
+                    true,
+                    onInspect == null ? null : () => onInspect.Invoke(slotIndex)));
+            }
+
+            _recipeView.SetBooks(books);
+        }
+
         public void RemoveAddCard()
         {
             _recipeView?.RemoveAddCard();

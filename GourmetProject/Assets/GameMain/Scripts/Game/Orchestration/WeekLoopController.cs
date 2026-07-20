@@ -106,6 +106,12 @@ namespace GourmetProject.Game.Orchestration
                 return;
             }
 
+            if (_run.HasPendingActionExecution)
+            {
+                RestorePendingActionExecution();
+                return;
+            }
+
             _view.HideBattleWorld();
 
             // 新周或上一周已走完 → 随机一条新行动轴；中途读档则沿用存档里的行动轴。
@@ -118,6 +124,137 @@ namespace GourmetProject.Game.Orchestration
 
             RunPersistence.Save(_run);
             PromptNextAction();
+        }
+
+        private void RestorePendingActionExecution()
+        {
+            PendingActionExecutionSaveData data = _run.GetPendingActionExecution();
+            ActionExecutionContext context = RestoreActionContext(data);
+            if (context == null || !context.IsValid)
+            {
+                _run.ClearPendingActionExecution();
+                RunPersistence.Save(_run);
+                PromptNextAction();
+                return;
+            }
+
+            ActionOutcome outcome = RestoreActionOutcome(data);
+            _run.SetLastActionContext(context);
+
+            if (outcome.Kind != ActionOutcomeKind.Battle)
+            {
+                _view.HideBattleWorld();
+            }
+
+            DispatchOutcome(
+                outcome,
+                context,
+                BuildRecoveredPendingContinuation(context, outcome),
+                outcome.IsBoss ? BuildRecoveredBossComplete(context) : null,
+                resolvedEventId: data?.EventId,
+                restoringPending: true);
+        }
+
+        private ActionExecutionContext RestoreActionContext(PendingActionExecutionSaveData data)
+        {
+            if (data == null || string.IsNullOrEmpty(data.ActionId))
+            {
+                return null;
+            }
+
+            cfg.GameAction action = _run.Tables.TbAction.GetOrDefault(data.ActionId);
+            if (action == null)
+            {
+                return null;
+            }
+
+            float costDays = data.CostDays > 0f ? data.CostDays : action.MinCostDays;
+            var context = new ActionExecutionContext(
+                action,
+                data.StepIndex,
+                data.RunStepIndex,
+                data.ActionGroupId,
+                costDays)
+            {
+                SourceKey = data.SourceKey ?? string.Empty,
+                TargetScoreDayOverride = data.HasTargetScoreDayOverride
+                    ? (float?)data.TargetScoreDayOverride
+                    : null,
+            };
+            return context;
+        }
+
+        private static ActionOutcome RestoreActionOutcome(PendingActionExecutionSaveData data)
+        {
+            if (data == null)
+            {
+                return ActionOutcome.Immediate(string.Empty);
+            }
+
+            switch (data.OutcomeKind)
+            {
+                case ActionOutcomeKind.Battle:
+                    return ActionOutcome.Battle(
+                        data.RequiredScore,
+                        data.Modifier,
+                        data.BattleKey,
+                        data.IsBoss,
+                        data.BossId,
+                        data.BossDebuffId);
+                case ActionOutcomeKind.Event:
+                    return ActionOutcome.Event(data.EventId);
+                case ActionOutcomeKind.Shop:
+                    return ActionOutcome.Shop();
+                default:
+                    return ActionOutcome.Immediate(data.Feedback);
+            }
+        }
+
+        private Action BuildRecoveredPendingContinuation(ActionExecutionContext context, ActionOutcome outcome)
+        {
+            if (context == null)
+            {
+                return PromptNextAction;
+            }
+
+            if (!string.IsNullOrEmpty(context.SourceKey))
+            {
+                return () =>
+                {
+                    _run.ClearPendingActionExecution();
+                    _run.MarkNodeTriggered(context.SourceKey);
+                    RunPersistence.Save(_run);
+
+                    if (outcome != null && outcome.IsBoss)
+                    {
+                        CompleteRecoveredBossBattle(context);
+                    }
+                    else
+                    {
+                        PromptNextAction();
+                    }
+                };
+            }
+
+            return () =>
+            {
+                _run.ClearPendingActionExecution();
+                float prevDay = ActionExecutor.Commit(_run, context);
+                RunPersistence.Save(_run);
+                ResolveNodes(prevDay, PromptNextAction);
+            };
+        }
+
+        private Action BuildRecoveredBossComplete(ActionExecutionContext context)
+        {
+            return () =>
+            {
+                _run.ClearPendingActionExecution();
+                if (!string.IsNullOrEmpty(context?.SourceKey))
+                {
+                    _run.MarkNodeTriggered(context.SourceKey);
+                }
+            };
         }
 
         /// <summary>行动轴未走完则弹「n 选一行动」；走完则进入下一周。</summary>
@@ -218,8 +355,8 @@ namespace GourmetProject.Game.Orchestration
             IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Effect, $"exec_r{context.RunStepIndex}_w{_run.WeekIndex}_s{context.StepIndex}_{context.ActionGroupId}_{context.Action.Id}");
             ActionOutcome outcome = ActionExecutor.Execute(_run, context, rng);
 
-            // 进入行动时不推进天数/步数、不存档；只有玩家明确结算（商店退出、事件选完、战斗结算、
-            // 通知点继续）时才 Commit（推进天数/步数 + 标记已用）并存档。中途放弃/退出游戏则该行动不消耗。
+            // 进入行动时只记录可恢复的 pending 页面，不推进天数/步数；只有玩家明确结算
+            // （商店退出、事件选完、战斗结算、通知点继续）时才 Commit（推进天数/步数 + 标记已用）。
             bool committed = false;
             float committedPrevDay = _run.CurrentDay;
 
@@ -338,6 +475,7 @@ namespace GourmetProject.Game.Orchestration
             ActionExecutionContext context = _run.LastActionContext;
             if (context == null || context.Action == null)
             {
+                _run.ClearPendingActionExecution();
                 RunPersistence.Save(_run);
                 PromptNextAction();
                 return;
@@ -351,12 +489,14 @@ namespace GourmetProject.Game.Orchestration
 
             if (!string.IsNullOrEmpty(context.SourceKey))
             {
+                _run.ClearPendingActionExecution();
                 _run.MarkNodeTriggered(context.SourceKey);
                 RunPersistence.Save(_run);
                 PromptNextAction();
                 return;
             }
 
+            _run.ClearPendingActionExecution();
             float prevDay = ActionExecutor.Commit(_run, context);
             RunPersistence.Save(_run);
             ResolveNodes(prevDay, PromptNextAction);
@@ -364,6 +504,7 @@ namespace GourmetProject.Game.Orchestration
 
         private void CompleteRecoveredBossBattle(ActionExecutionContext context)
         {
+            _run.ClearPendingActionExecution();
             if (!string.IsNullOrEmpty(context.SourceKey))
             {
                 _run.MarkNodeTriggered(context.SourceKey);
@@ -513,9 +654,15 @@ namespace GourmetProject.Game.Orchestration
             ActionOutcome outcome = ActionExecutor.Execute(_run, context, rng);
             DispatchOutcome(outcome, context, () =>
             {
+                _run.ClearPendingActionExecution();
                 _run.MarkNodeTriggered(node.Id);
+                RunPersistence.Save(_run);
                 ProcessNextNode();
-            }, () => _run.MarkNodeTriggered(node.Id));
+            }, () =>
+            {
+                _run.ClearPendingActionExecution();
+                _run.MarkNodeTriggered(node.Id);
+            });
         }
 
         private int InterestMaxGain()
@@ -524,12 +671,29 @@ namespace GourmetProject.Game.Orchestration
         }
 
         /// <summary>行动执行结果的统一续接：随机行动与放置节点共用；Boss 战胜利走推进/通关而非发奖。</summary>
-        private void DispatchOutcome(ActionOutcome outcome, ActionExecutionContext context, Action onContinue, Action onBossComplete = null)
+        private void DispatchOutcome(
+            ActionOutcome outcome,
+            ActionExecutionContext context,
+            Action onContinue,
+            Action onBossComplete = null,
+            string resolvedEventId = null,
+            bool restoringPending = false)
         {
+            if (outcome == null)
+            {
+                onContinue?.Invoke();
+                return;
+            }
+
             string title = context?.Action?.Name ?? string.Empty;
             switch (outcome.Kind)
             {
                 case ActionOutcomeKind.Immediate:
+                    if (!restoringPending)
+                    {
+                        SavePendingActionExecution(context, outcome);
+                    }
+
                     if (IsInterestAction(context))
                     {
                         ShowInterestEventPage(outcome.Feedback, onContinue);
@@ -540,12 +704,31 @@ namespace GourmetProject.Game.Orchestration
                     }
                     break;
                 case ActionOutcomeKind.Shop:
-                    OpenShopThen(onContinue);
+                    if (restoringPending)
+                    {
+                        OpenRecoveredShopThen(onContinue);
+                    }
+                    else
+                    {
+                        OpenShopThen(onContinue, context, outcome);
+                    }
                     break;
                 case ActionOutcomeKind.Event:
-                    ResolveEventAction(context, onContinue);
+                    if (!string.IsNullOrEmpty(resolvedEventId))
+                    {
+                        ResolveSavedEventAction(context, resolvedEventId, onContinue, outcome, restoringPending);
+                    }
+                    else
+                    {
+                        ResolveEventAction(context, onContinue, outcome);
+                    }
                     break;
                 case ActionOutcomeKind.Battle:
+                    if (!restoringPending)
+                    {
+                        SavePendingActionExecution(context, outcome);
+                    }
+
                     if (outcome.IsBoss)
                     {
                         StartBossBattle(outcome, context, onBossComplete);
@@ -560,6 +743,12 @@ namespace GourmetProject.Game.Orchestration
                     onContinue?.Invoke();
                     break;
             }
+        }
+
+        private void SavePendingActionExecution(ActionExecutionContext context, ActionOutcome outcome, string resolvedEventId = null)
+        {
+            _run.SetPendingActionExecution(context, outcome, resolvedEventId);
+            RunPersistence.Save(_run);
         }
 
         private static bool IsInterestAction(ActionExecutionContext context)
@@ -592,6 +781,7 @@ namespace GourmetProject.Game.Orchestration
                 _run.MarkBossDebuffRolled(outcome.BossDebuffId);
                 StartBattle(outcome.RequiredScore, outcome.Modifier, outcome.BattleKey, true, outcome.BossId, () =>
                 {
+                    _run.ClearPendingActionExecution();
                     onBossComplete?.Invoke();
                     _run.MarkBossCompleted(outcome.BossId);
                     ApplyBossCompleteGold();
@@ -632,7 +822,7 @@ namespace GourmetProject.Game.Orchestration
         /// 解析事件行动：act_event(Event) 从「全类型合并池」抽取（含 LuckyEventChance/MoreEvents 权重修正与
         /// LuckyEventGuarantee 保底），其余 behavior(Reward/Negative) 仍从各自分类事件池随机，再统一结算。
         /// </summary>
-        private void ResolveEventAction(ActionExecutionContext context, Action onDone)
+        private void ResolveEventAction(ActionExecutionContext context, Action onDone, ActionOutcome outcome)
         {
             cfg.GameAction action = context?.Action;
             cfg.ActionBehavior behavior = action?.Behavior ?? cfg.ActionBehavior.Event;
@@ -649,6 +839,35 @@ namespace GourmetProject.Game.Orchestration
             cfg.GameEvent ev = behavior == cfg.ActionBehavior.Event
                 ? EventService.RollActionEventWithGuarantee(_run, rng)
                 : EventService.RollEvent(_run, rng, behavior);
+            if (ev != null)
+            {
+                SavePendingActionExecution(context, outcome, ev.Id);
+            }
+
+            ResolveEvent(ev, onDone);
+        }
+
+        private void ResolveSavedEventAction(
+            ActionExecutionContext context,
+            string eventId,
+            Action onDone,
+            ActionOutcome outcome,
+            bool restoringPending)
+        {
+            cfg.GameEvent ev = _run.Tables.TbEvent.GetOrDefault(eventId);
+            if (ev == null)
+            {
+                _run.ClearPendingActionExecution();
+                RunPersistence.Save(_run);
+                onDone?.Invoke();
+                return;
+            }
+
+            if (!restoringPending)
+            {
+                SavePendingActionExecution(context, outcome, ev.Id);
+            }
+
             ResolveEvent(ev, onDone);
         }
 
@@ -921,11 +1140,13 @@ namespace GourmetProject.Game.Orchestration
                     break;
 
                 case EventFollowUpKind.GameOver:
+                    _run.ClearPendingActionExecution();
                     ClearPendingNodes();
                     _view.ShowRunResult(false, 0);
                     break;
 
                 case EventFollowUpKind.Victory:
+                    _run.ClearPendingActionExecution();
                     ClearPendingNodes();
                     OnVictory();
                     break;
@@ -952,6 +1173,11 @@ namespace GourmetProject.Game.Orchestration
 
         private void OpenShopThen(Action onClose)
         {
+            OpenShopThen(onClose, null, null);
+        }
+
+        private void OpenShopThen(Action onClose, ActionExecutionContext context, ActionOutcome outcome)
+        {
             // 商会返利（GoldOnShopEnter）：进入商店时额外获得金币（每次进入结算一次）。
             var itemRuntime = new ItemRuntime(_run);
             int shopGold = itemRuntime.ShopEnterGold();
@@ -961,6 +1187,17 @@ namespace GourmetProject.Game.Orchestration
                 _run.Gold += shopGold;
             }
 
+            _afterShop = onClose;
+            if (context != null && outcome != null)
+            {
+                SavePendingActionExecution(context, outcome);
+            }
+
+            _view.OpenShop();
+        }
+
+        private void OpenRecoveredShopThen(Action onClose)
+        {
             _afterShop = onClose;
             _view.OpenShop();
         }

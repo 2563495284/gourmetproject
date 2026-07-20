@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Battle.View;
 using GourmetProject.Game.UI.Meta;
 using GourmetProject.Game.UI.Tooltips;
+using GourmetProject.Gameplay.Battle;
 using UnityEngine;
 
 namespace GourmetProject.Game.UI.Battle.Pages
@@ -11,6 +13,8 @@ namespace GourmetProject.Game.UI.Battle.Pages
     internal interface IRecipeWorkspaceHost
     {
         GameRun Run { get; }
+
+        BattleSession Session { get; }
 
         GameplayView CurrentView { get; }
 
@@ -49,11 +53,17 @@ namespace GourmetProject.Game.UI.Battle.Pages
         private int _inspectBookIndex = -1;
         private GameplayView _inspectReturnView = GameplayView.None;
         private ActionSelectSnapshot _inspectActionSnapshot;
+        private bool _inspectShowsActionAxis;
+        private bool _inspectUsesBattleRecipe;
 
         public RecipeWorkspaceCoordinator(IRecipeWorkspaceHost host)
         {
             _host = host;
         }
+
+        public bool InspectShowsActionAxis => _inspectBookIndex >= 0 && _inspectShowsActionAxis;
+
+        public bool InspectUsesBattleRecipe => _inspectBookIndex >= 0 && _inspectUsesBattleRecipe;
 
         public void OnLeavingPage(GameplayView current, GameplayView next)
         {
@@ -91,7 +101,11 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 _host.SetCenterTitle($"菜谱{bookIndex + 1}");
                 panel.Open(
                     _host.Run,
-                    RecipeWorkspaceRequest.ReadonlyBook(bookIndex, CloseInspect, _host.RefreshPersistent),
+                    RecipeWorkspaceRequest.ReadonlyBook(
+                        bookIndex,
+                        CloseInspect,
+                        _host.RefreshPersistent,
+                        _inspectUsesBattleRecipe ? BuildBattleReadonlyEntries(bookIndex) : null),
                     _host.FoodTips);
                 return;
             }
@@ -138,12 +152,15 @@ namespace GourmetProject.Game.UI.Battle.Pages
             }
 
             _inspectBookIndex = bookIndex;
-            _inspectReturnView = _host.CurrentView == GameplayView.RecipeInspect ? _inspectReturnView : _host.CurrentView;
+            bool alreadyInspecting = _host.CurrentView == GameplayView.RecipeInspect;
+            _inspectReturnView = alreadyInspecting ? _inspectReturnView : _host.CurrentView;
             if (_host.CurrentView != GameplayView.RecipeInspect)
             {
                 _inspectActionSnapshot = _host.CurrentView == GameplayView.ActionSelect
                     ? _host.CaptureActionSelection()
                     : ActionSelectSnapshot.None;
+                _inspectShowsActionAxis = ShouldShowActionAxis(_host.CurrentView);
+                _inspectUsesBattleRecipe = _host.CurrentView == GameplayView.Food;
             }
 
             _host.SwitchTo(GameplayView.RecipeInspect);
@@ -230,11 +247,12 @@ namespace GourmetProject.Game.UI.Battle.Pages
         {
             GameplayView returnView = _inspectReturnView;
             ActionSelectSnapshot actionSnapshot = _inspectActionSnapshot;
+            bool fromBattleRecipe = _inspectUsesBattleRecipe;
             ClearInspectRequest();
-            RestoreInspectReturnView(returnView, actionSnapshot);
+            RestoreInspectReturnView(returnView, actionSnapshot, fromBattleRecipe);
         }
 
-        private void RestoreInspectReturnView(GameplayView returnView, ActionSelectSnapshot actionSnapshot)
+        private void RestoreInspectReturnView(GameplayView returnView, ActionSelectSnapshot actionSnapshot, bool fromBattleRecipe)
         {
             switch (returnView)
             {
@@ -255,7 +273,14 @@ namespace GourmetProject.Game.UI.Battle.Pages
                     _host.SwitchTo(returnView);
                     break;
                 default:
-                    _host.ShowActionSelection();
+                    if (fromBattleRecipe)
+                    {
+                        _host.SwitchTo(GameplayView.Food);
+                    }
+                    else
+                    {
+                        _host.ShowActionSelection();
+                    }
                     break;
             }
         }
@@ -296,6 +321,8 @@ namespace GourmetProject.Game.UI.Battle.Pages
             _inspectBookIndex = -1;
             _inspectReturnView = GameplayView.None;
             _inspectActionSnapshot = ActionSelectSnapshot.None;
+            _inspectShowsActionAxis = false;
+            _inspectUsesBattleRecipe = false;
         }
 
         private void ClearActiveItemTargetRequest()
@@ -312,6 +339,55 @@ namespace GourmetProject.Game.UI.Battle.Pages
             _eventDeleteCancel = null;
             _eventDeleteConfirmed = null;
             _eventDeleteChanged = null;
+        }
+
+        private IReadOnlyList<RecipeBookSlot> BuildBattleReadonlyEntries(int bookIndex)
+        {
+            BattleSession session = _host.Session;
+            if (session == null || bookIndex < 0 || bookIndex >= session.Slots.Count)
+            {
+                return null;
+            }
+
+            IReadOnlyList<RecipeSlotEntry> source = session.Slots[bookIndex].Entries;
+            var entries = new List<RecipeBookSlot>(source.Count);
+            for (int i = 0; i < source.Count; i++)
+            {
+                RecipeSlotEntry entry = source[i];
+                if (entry == null)
+                {
+                    continue;
+                }
+
+                var slot = new RecipeBookSlot(entry.DishId);
+                AddRange(value => slot.AddFlavor(value), entry.ExtraFlavorIds);
+                AddRange(value => slot.AddExtraSkill(value), entry.ExtraSkillIds);
+                slot.RestoreScoreFlatBonus(entry.ScoreFlatBonus);
+                slot.RestoreScoreMultiplier(entry.ScoreMultiplier);
+                entries.Add(slot);
+            }
+
+            return entries;
+        }
+
+        private static bool ShouldShowActionAxis(GameplayView view)
+        {
+            return view == GameplayView.ActionSelect
+                || view == GameplayView.Shop
+                || view == GameplayView.Event;
+        }
+
+        private static void AddRange(Action<string> add, IReadOnlyList<string> values)
+        {
+            if (add == null || values == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < values.Count; i++)
+            {
+                add(values[i]);
+            }
         }
     }
 }
