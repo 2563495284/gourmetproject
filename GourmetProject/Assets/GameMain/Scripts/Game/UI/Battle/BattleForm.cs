@@ -1842,6 +1842,7 @@ namespace GourmetProject.Game.UI.Battle
             _hoveredDishPiece = piece;
             _hoveredCell = null;
             RebindHoveredDishTips(piece);
+            (_world ?? BattleWorldController.Instance)?.ShowDishScopeHighlights(piece.Instance);
         }
 
         private void RebindHoveredDishTips(DishPieceView piece)
@@ -1932,6 +1933,8 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
+            (_world ?? BattleWorldController.Instance)?.ClearDishScopeHighlights();
+
             if (_current != GameplayView.Food && _current != GameplayView.TableView)
             {
                 return;
@@ -2016,6 +2019,7 @@ namespace GourmetProject.Game.UI.Battle
         {
             _hoveredDishPiece = null;
             _hoveredCell = null;
+            (_world ?? BattleWorldController.Instance)?.ClearDishScopeHighlights();
             if (_tips != null)
             {
                 FoodTipsView foodTips = _tips.Food;

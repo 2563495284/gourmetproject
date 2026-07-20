@@ -6,6 +6,8 @@ namespace GourmetProject.Gameplay.Scoring
     /// <summary>单个菜品的结算明细，供 UI 展示与单测断言。</summary>
     public sealed class DishScore
     {
+        private const double ContributionIntegerEpsilon = 0.0001d;
+
         public DishScore(int dishInstanceId, string dishId, float baseValue, float flatBonus, float multiplier)
         {
             DishInstanceId = dishInstanceId;
@@ -25,8 +27,20 @@ namespace GourmetProject.Gameplay.Scoring
 
         public float Multiplier { get; }
 
-        /// <summary>本菜品最终贡献 = (美味度 + 加法) × 乘区。</summary>
-        public float Contribution => (BaseValue + FlatBonus) * Multiplier;
+        /// <summary>本菜品最终贡献 = (美味度 + 加法) × 乘区 后向上取整。</summary>
+        public float Contribution => CeilContribution(BaseValue + FlatBonus, Multiplier);
+
+        public static float CeilContribution(float score, float multiplier)
+        {
+            double value = (double)score * multiplier;
+            double nearestInteger = System.Math.Round(value);
+            if (System.Math.Abs(value - nearestInteger) <= ContributionIntegerEpsilon)
+            {
+                return (float)nearestInteger;
+            }
+
+            return (float)System.Math.Ceiling(value);
+        }
     }
 
     /// <summary>一次结算的完整结果。</summary>
@@ -129,7 +143,8 @@ namespace GourmetProject.Gameplay.Scoring
             int dishInstanceId,
             string dishId,
             GridPos? cell,
-            string message)
+            string message,
+            SkillExecutionTrace trace = null)
         {
             Type = type;
             Phase = phase;
@@ -138,6 +153,7 @@ namespace GourmetProject.Gameplay.Scoring
             DishId = dishId ?? string.Empty;
             Cell = cell;
             Message = message ?? string.Empty;
+            Trace = trace;
         }
 
         public ScoreEventType Type { get; }
@@ -153,5 +169,7 @@ namespace GourmetProject.Gameplay.Scoring
         public GridPos? Cell { get; }
 
         public string Message { get; }
+
+        public SkillExecutionTrace Trace { get; }
     }
 }

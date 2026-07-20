@@ -132,7 +132,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
         public void OpenInspect(int bookIndex)
         {
             GameRun run = _host.Run;
-            if (run == null || bookIndex < 0 || bookIndex >= run.RecipeBookCount || _host.CurrentView == GameplayView.Food)
+            if (run == null || bookIndex < 0 || bookIndex >= run.RecipeBookCount)
             {
                 return;
             }
@@ -249,6 +249,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 case GameplayView.RewardDishPack:
                 case GameplayView.RewardItemChoice:
                 case GameplayView.RandomizedItems:
+                case GameplayView.Food:
                 case GameplayView.TableEdit:
                 case GameplayView.TableView:
                     _host.SwitchTo(returnView);

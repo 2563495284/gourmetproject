@@ -556,7 +556,7 @@ namespace GourmetProject.Gameplay.Scoring
         }
 
         /// <summary>作用域涉及的「存在格」集合（同行/同列/相邻/周围）。</summary>
-        private static IEnumerable<GridPos> ScopeCells(GpTable board, DishInstance self, SkillScope scope)
+        public static IEnumerable<GridPos> ScopeCells(GpTable board, DishInstance self, SkillScope scope)
         {
             var cells = new List<GridPos>();
             var seen = new HashSet<int>();

@@ -112,6 +112,45 @@ namespace GourmetProject.Tests.EditMode
             Assert.AreEqual(3f, session.LastRecipeScoreMultiplierDeltas[0].Multiplier);
         }
 
+        [Test]
+        public void DishContributionIsCeiledBeforeRawSum()
+        {
+            DishShape oneCell = DishShape.FromRows(new[] { "X" });
+            DishDef dishDef = new DishDef(
+                "dish_fractional",
+                "小数菜",
+                10,
+                oneCell,
+                0,
+                0,
+                1f,
+                Array.Empty<string>(),
+                string.Empty,
+                false);
+            var db = new GameplayDatabase(
+                new[] { dishDef },
+                Array.Empty<SkillDef>(),
+                Array.Empty<FlavorDef>(),
+                Array.Empty<MaterialDef>(),
+                Array.Empty<RecipeDef>());
+            var table = new DiningTable(1, 1);
+            var dish = new DishInstance(
+                1,
+                dishDef,
+                new Placement(oneCell, 0, new GridPos(0, 0)),
+                dishDef.SkillIds,
+                Array.Empty<string>());
+            dish.MultiplyServeMultiplier(1.01f);
+            table.Place(dish);
+
+            ScoreResult result = new ScoreCalculator().Calculate(table, db);
+
+            Assert.That(result.DishScores, Has.Count.EqualTo(1));
+            Assert.AreEqual(11f, result.DishScores.Single().Contribution);
+            Assert.AreEqual(11f, result.RawSum);
+            Assert.AreEqual(11, result.Total);
+        }
+
         private static SkillDef Skill(string id, string name, params SkillRuleDef[] rules)
         {
             return new SkillDef(id, name, string.Empty, Array.Empty<string>(), rules, rules.Select(_ => string.Empty).ToArray());

@@ -15,7 +15,8 @@ namespace GourmetProject.Gameplay.Scoring
             IEffectDef effectDef = null,
             GridPos? cell = null,
             int priority = 0,
-            int boardOrder = 0)
+            int boardOrder = 0,
+            SkillExecutionTrace trace = null)
         {
             Phase = phase;
             Source = source ?? throw new ArgumentNullException(nameof(source));
@@ -25,6 +26,7 @@ namespace GourmetProject.Gameplay.Scoring
             Cell = cell;
             Priority = priority;
             BoardOrder = boardOrder;
+            Trace = trace;
         }
 
         public ScorePhase Phase { get; }
@@ -43,6 +45,8 @@ namespace GourmetProject.Gameplay.Scoring
         public int Priority { get; }
 
         public int BoardOrder { get; }
+
+        public SkillExecutionTrace Trace { get; }
 
         public int Sequence { get; internal set; }
     }

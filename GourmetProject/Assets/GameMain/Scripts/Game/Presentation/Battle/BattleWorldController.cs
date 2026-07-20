@@ -44,6 +44,7 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private Transform _passiveItemsRoot;
         [SerializeField] private Transform _activeItemsRoot;
         [SerializeField] private SettlementSequencer _sequencer;
+        [SerializeField] private BattleScopeHighlightController _scopeHighlights;
         [SerializeField] private BattleDoodleController _doodle;
 
         // —— 运行时实例化用的 prefab ——
@@ -125,6 +126,7 @@ namespace GourmetProject.Game.Presentation.Battle
             Instance = this;
 
             EnsureTableEdit();
+            EnsureScopeHighlights();
 
             // 默认非美食态：世界餐桌与其专属按钮（总览/吃/涂鸦）默认隐藏，只有 StartBattle→Initialize 才显示。
             // 场景里 BattleSceneRoot 默认 active，若不在此处收起，行动选择等非美食态一进场景就会露出这堆美食专属按钮。
@@ -172,6 +174,18 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _foodAdjust.Configure(this);
+        }
+
+        private void EnsureScopeHighlights()
+        {
+            if (_scopeHighlights == null)
+            {
+                _scopeHighlights = GetComponent<BattleScopeHighlightController>();
+                if (_scopeHighlights == null)
+                {
+                    _scopeHighlights = gameObject.AddComponent<BattleScopeHighlightController>();
+                }
+            }
         }
 
         /// <summary>是否正处于食物调整态。</summary>
@@ -782,6 +796,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void CancelPresentationTasks()
         {
+            _scopeHighlights?.ClearAll();
             if (_presentationCts == null)
             {
                 return;
@@ -917,6 +932,8 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 _sequencer = GetComponent<SettlementSequencer>();
             }
+
+            EnsureScopeHighlights();
         }
 
         private Transform EnsureChildRoot(string childName)
@@ -1043,6 +1060,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void ClearPlacedPieces()
         {
+            _scopeHighlights?.ClearAll();
             foreach (DishPieceView piece in _placedPieces)
             {
                 if (piece != null)
@@ -1076,6 +1094,175 @@ namespace GourmetProject.Game.Presentation.Battle
             _placedPieces.Add(piece);
             _dishViewsById[dish.Id] = piece;
             return piece;
+        }
+
+        public void ShowDishScopeHighlights(DishInstance dish)
+        {
+            if (_session == null || dish == null)
+            {
+                ClearDishScopeHighlights();
+                return;
+            }
+
+            EnsureScopeHighlights();
+            IReadOnlyList<SkillExecutionTrace> traces = BuildHoverScopeTraces(dish);
+            _scopeHighlights.ShowPersistent(_boardView, _dishViewsById, traces);
+        }
+
+        public void ClearDishScopeHighlights()
+        {
+            _scopeHighlights?.ClearPersistent();
+        }
+
+        private void FlashSettlementScope(SettlementScopeSignal signal)
+        {
+            if (signal.IsEmpty)
+            {
+                _scopeHighlights?.ClearSettlementOwner();
+                return;
+            }
+
+            EnsureScopeHighlights();
+            _scopeHighlights.ShowSettlementOwner(
+                _boardView,
+                _dishViewsById,
+                signal.OwnerDishInstanceId);
+            _scopeHighlights.Flash(_boardView, _dishViewsById, signal, GetPresentationToken());
+        }
+
+        private IReadOnlyList<SkillExecutionTrace> BuildHoverScopeTraces(DishInstance dish)
+        {
+            var traces = new List<SkillExecutionTrace>();
+            if (dish == null || _session?.Database == null || _session.DiningTable == null)
+            {
+                return traces;
+            }
+
+            int visualIndex = 0;
+            foreach (string skillId in dish.SkillIds)
+            {
+                SkillDef skill = _session.Database.GetSkill(skillId);
+                if (skill == null || !skill.HasRules)
+                {
+                    continue;
+                }
+
+                string sourceLabel = dish.GetSkillSource(skillId);
+                SkillExecutionKind kind = !string.IsNullOrEmpty(sourceLabel)
+                                          && sourceLabel.IndexOf("技能复制", StringComparison.OrdinalIgnoreCase) >= 0
+                    ? SkillExecutionKind.CopiedSkill
+                    : SkillExecutionKind.NativeSkill;
+
+                foreach (SkillRuleDef rule in skill.Rules)
+                {
+                    if (!ShouldShowHoverScope(rule))
+                    {
+                        continue;
+                    }
+
+                    SkillExecutionTrace trace = SkillExecutionTrace.Create(
+                        _session.Database,
+                        _session.DiningTable,
+                        dish,
+                        dish,
+                        skill,
+                        rule,
+                        kind,
+                        sourceLabel,
+                        SkillScopeVisualMode.CandidateScope);
+                    if (trace != null)
+                    {
+                        traces.Add(trace.WithVisualIndex(visualIndex++));
+                    }
+                }
+            }
+
+            foreach (TransferredSkill transferred in dish.TransferredSkills)
+            {
+                SkillRuleDef rule = transferred.Rule;
+                if (!ShouldShowHoverScope(rule))
+                {
+                    continue;
+                }
+
+                SkillDef skill = _session.Database.GetSkill(rule.SkillId);
+                DishInstance owner = FindDish(transferred.SourceInstanceId);
+                SkillExecutionTrace trace = owner != null
+                    ? SkillExecutionTrace.Create(
+                        _session.Database,
+                        _session.DiningTable,
+                        owner,
+                        dish,
+                        skill,
+                        rule,
+                        SkillExecutionKind.SweetTransfer,
+                        transferred.SourceLabel,
+                        SkillScopeVisualMode.CandidateScope)
+                    : SkillExecutionTrace.CreateWithOwnerFallback(
+                        _session.Database,
+                        _session.DiningTable,
+                        transferred.SourceInstanceId,
+                        SourceNameWithoutTag(transferred.SourceLabel),
+                        dish,
+                        skill,
+                        rule,
+                        SkillExecutionKind.SweetTransfer,
+                        transferred.SourceLabel,
+                        SkillScopeVisualMode.CandidateScope);
+                if (trace != null)
+                {
+                    traces.Add(trace.WithVisualIndex(visualIndex++));
+                }
+            }
+
+            return traces;
+        }
+
+        private static bool ShouldShowHoverScope(SkillRuleDef rule)
+        {
+            if (rule == null || rule.ActionType == SkillActionType.None)
+            {
+                return false;
+            }
+
+            if (rule.Trigger == SkillTrigger.OnSettle)
+            {
+                return true;
+            }
+
+            return rule.ActionType == SkillActionType.TransferSkills
+                || rule.ActionType == SkillActionType.TriggerSweetTransfer
+                || rule.ActionType == SkillActionType.CopySkill
+                || rule.ActionType == SkillActionType.TempCopyDish;
+        }
+
+        private DishInstance FindDish(int instanceId)
+        {
+            if (_session?.DiningTable == null || instanceId <= 0)
+            {
+                return null;
+            }
+
+            foreach (DishInstance dish in _session.DiningTable.Dishes)
+            {
+                if (dish.Id == instanceId)
+                {
+                    return dish;
+                }
+            }
+
+            return null;
+        }
+
+        private static string SourceNameWithoutTag(string sourceLabel)
+        {
+            if (string.IsNullOrEmpty(sourceLabel))
+            {
+                return string.Empty;
+            }
+
+            int index = sourceLabel.IndexOf('<');
+            return index > 0 ? sourceLabel.Substring(0, index) : sourceLabel;
         }
 
         private void OnDishHoverEntered(DishPieceView piece)
@@ -1191,6 +1378,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     scoreFire,
                     RenderSettlementScore,
                     onReveal,
+                    FlashSettlementScope,
                     token);
             }
             catch (OperationCanceledException)
@@ -1200,6 +1388,10 @@ namespace GourmetProject.Game.Presentation.Battle
             catch (Exception ex)
             {
                 Debug.LogException(ex, this);
+            }
+            finally
+            {
+                _scopeHighlights?.ClearSettlementOwner();
             }
 
             if (!token.IsCancellationRequested)

@@ -173,6 +173,8 @@ namespace GourmetProject.Gameplay.Scoring
         /// <summary>当前正在结算的风味或材质定义；非配置定义来源时为空。</summary>
         public IEffectDef EffectDef { get; set; }
 
+        public SkillExecutionTrace Trace { get; private set; }
+
         public float FlatBonus => _current?.Flat ?? 0f;
 
         public float Multiplier => _current?.Mult ?? 1f;
@@ -218,7 +220,7 @@ namespace GourmetProject.Gameplay.Scoring
         {
             int dishInstanceId = Dish != null ? Dish.Id : 0;
             string dishId = Dish != null ? Dish.Def.Id : string.Empty;
-            _events.Add(new ScoreEvent(type, Phase, Source, dishInstanceId, dishId, CurrentCell, message));
+            _events.Add(new ScoreEvent(type, Phase, Source, dishInstanceId, dishId, CurrentCell, message, Trace));
         }
 
         public void BeginDish(DishInstance dish)
@@ -268,6 +270,7 @@ namespace GourmetProject.Gameplay.Scoring
             ScoreSource previousSource = Source;
             GridPos? previousCell = CurrentCell;
             IEffectDef previousEffectDef = EffectDef;
+            SkillExecutionTrace previousTrace = Trace;
             if (entry.Dish != null)
             {
                 Dish = entry.Dish;
@@ -278,6 +281,7 @@ namespace GourmetProject.Gameplay.Scoring
             Source = entry.Source;
             CurrentCell = entry.Cell;
             EffectDef = entry.EffectDef;
+            Trace = entry.Trace;
             string effectName = Source.Name;
             EmitEvent(ScoreEventType.EffectStarted, $"开始效果 {effectName}");
             try
@@ -294,6 +298,7 @@ namespace GourmetProject.Gameplay.Scoring
                 Source = previousSource;
                 CurrentCell = previousCell;
                 EffectDef = previousEffectDef;
+                Trace = previousTrace;
             }
         }
 
@@ -428,14 +433,14 @@ namespace GourmetProject.Gameplay.Scoring
         }
 
         /// <summary>登记技能传递（副作用，正式结算后应用到实例的运行时技能集）。</summary>
-        public void RecordSkillTransfer(DishInstance target, IReadOnlyList<SkillEffect> effects, string sourceName = null)
+        public void RecordSkillTransfer(DishInstance target, IReadOnlyList<SkillEffect> effects, string sourceName = null, int sourceInstanceId = 0)
         {
             if (target == null || effects == null || effects.Count == 0)
             {
                 return;
             }
 
-            _skillTransfers.Add(new SkillTransferSideEffect(target.Id, effects, sourceName));
+            _skillTransfers.Add(new SkillTransferSideEffect(target.Id, effects, sourceName, sourceInstanceId));
             EmitEvent(ScoreEventType.CommandExecuted, $"技能传递给 {target.Def.Name}（{effects.Count} 个）");
         }
 
@@ -519,7 +524,17 @@ namespace GourmetProject.Gameplay.Scoring
                         null,
                         null,
                         rule.Order,
-                        boardOrder);
+                        boardOrder,
+                        SkillExecutionTrace.Create(
+                            Db,
+                            DiningTable,
+                            target,
+                            target,
+                            skill,
+                            rule,
+                            SkillExecutionKind.CopiedSkill,
+                            sourceLabel,
+                            SkillScopeVisualMode.ResolvedTargets));
                     SubmitCommand(new ResolveScoreEffectCommand(entry));
                 }
             }
@@ -532,7 +547,7 @@ namespace GourmetProject.Gameplay.Scoring
                 return;
             }
 
-            _commands.Enqueue(new PendingScoreCommand(command, Phase, Source, CurrentCell, EffectDef));
+            _commands.Enqueue(new PendingScoreCommand(command, Phase, Source, CurrentCell, EffectDef, Trace));
             ResolveCommandQueue();
         }
 
@@ -771,10 +786,12 @@ namespace GourmetProject.Gameplay.Scoring
                     ScoreSource previousSource = Source;
                     GridPos? previousCell = CurrentCell;
                     IEffectDef previousEffectDef = EffectDef;
+                    SkillExecutionTrace previousTrace = Trace;
                     Phase = pending.Phase;
                     Source = pending.Source;
                     CurrentCell = pending.Cell;
                     EffectDef = pending.EffectDef;
+                    Trace = pending.Trace;
                     try
                     {
                         EmitEvent(ScoreEventType.CommandExecuted, $"执行命令 {pending.Command.Name}");
@@ -786,6 +803,7 @@ namespace GourmetProject.Gameplay.Scoring
                         Source = previousSource;
                         CurrentCell = previousCell;
                         EffectDef = previousEffectDef;
+                        Trace = previousTrace;
                     }
                 }
             }
@@ -801,7 +819,7 @@ namespace GourmetProject.Gameplay.Scoring
             string dishId = accum != null ? accum.Dish.Def.Id : (Dish != null ? Dish.Def.Id : string.Empty);
             string sourceName = Source != null ? Source.Name : string.Empty;
             string message = string.IsNullOrEmpty(sourceName) ? fallbackMessage : $"{sourceName}: {fallbackMessage}";
-            _lines.Add(new ScoreLine(Phase, kind, Source, dishInstanceId, dishId, CurrentCell, value, before, after, message));
+            _lines.Add(new ScoreLine(Phase, kind, Source, dishInstanceId, dishId, CurrentCell, value, before, after, message, Trace));
         }
 
         private sealed class PendingScoreCommand
@@ -811,13 +829,15 @@ namespace GourmetProject.Gameplay.Scoring
                 ScorePhase phase,
                 ScoreSource source,
                 GridPos? cell,
-                IEffectDef effectDef)
+                IEffectDef effectDef,
+                SkillExecutionTrace trace)
             {
                 Command = command;
                 Phase = phase;
                 Source = source;
                 Cell = cell;
                 EffectDef = effectDef;
+                Trace = trace;
             }
 
             public IScoreCommand Command { get; }
@@ -829,17 +849,20 @@ namespace GourmetProject.Gameplay.Scoring
             public GridPos? Cell { get; }
 
             public IEffectDef EffectDef { get; }
+
+            public SkillExecutionTrace Trace { get; }
         }
     }
 
     /// <summary>技能传递副作用：把外来子技能(Effects) 追加给某目标实例（可带来源名，用于「源名&lt;甜蜜传递&gt;」展示）。</summary>
     public sealed class SkillTransferSideEffect
     {
-        public SkillTransferSideEffect(int targetInstanceId, IReadOnlyList<SkillEffect> effects, string sourceName = null)
+        public SkillTransferSideEffect(int targetInstanceId, IReadOnlyList<SkillEffect> effects, string sourceName = null, int sourceInstanceId = 0)
         {
             TargetInstanceId = targetInstanceId;
             Effects = effects ?? Array.Empty<SkillEffect>();
             SourceName = sourceName ?? string.Empty;
+            SourceInstanceId = sourceInstanceId;
         }
 
         public int TargetInstanceId { get; }
@@ -848,6 +871,8 @@ namespace GourmetProject.Gameplay.Scoring
 
         /// <summary>来源菜名（非空时应用为「源名&lt;甜蜜传递&gt;」来源标签）。</summary>
         public string SourceName { get; }
+
+        public int SourceInstanceId { get; }
     }
 
     /// <summary>

@@ -31,7 +31,8 @@ namespace GourmetProject.Gameplay.Scoring
             float value,
             float before,
             float after,
-            string message)
+            string message,
+            SkillExecutionTrace trace = null)
         {
             Phase = phase;
             Kind = kind;
@@ -43,6 +44,7 @@ namespace GourmetProject.Gameplay.Scoring
             Before = before;
             After = after;
             Message = message ?? string.Empty;
+            Trace = trace;
         }
 
         public ScorePhase Phase { get; }
@@ -64,5 +66,7 @@ namespace GourmetProject.Gameplay.Scoring
         public float After { get; }
 
         public string Message { get; }
+
+        public SkillExecutionTrace Trace { get; }
     }
 }

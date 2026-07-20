@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
@@ -17,6 +18,16 @@ namespace GourmetProject.Game.Presentation.Battle
     /// </summary>
     public sealed class DishPieceView : MonoBehaviour
     {
+        private static readonly int OutlineColorId = Shader.PropertyToID("_OutlineColor");
+        private static readonly int OutlineWidthId = Shader.PropertyToID("_OutlineWidth");
+        private static readonly int FillAlphaId = Shader.PropertyToID("_FillAlpha");
+        private static readonly int GlowIntensityId = Shader.PropertyToID("_GlowIntensity");
+        private static readonly int PulseSpeedId = Shader.PropertyToID("_PulseSpeed");
+        private static readonly int PulseAmplitudeId = Shader.PropertyToID("_PulseAmplitude");
+        private static readonly int PulseFrequencyId = Shader.PropertyToID("_PulseFrequency");
+        private static readonly int UvInflateId = Shader.PropertyToID("_UvInflate");
+        private static readonly int SpriteUvRectId = Shader.PropertyToID("_SpriteUvRect");
+
         [Header("接触阴影：贴桌态（偏移按单格尺寸取比例，适配不同餐桌缩放）")]
         [SerializeField] private float _shadowBaseAlpha = 0.5f;
         [SerializeField] private float _shadowGroundScale = 1.22f;
@@ -40,6 +51,10 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private SpriteRenderer _spriteRenderer;
         [Tooltip("菜品本体动画枢轴（子物体 VisualPivot）。多格菜的缩放/晃动绕这里执行，根节点保持贴格。")]
         [SerializeField] private Transform _visualPivot;
+        [Tooltip("当前结算菜的持续动画枢轴（子物体 SettlementFocusPivot）。")]
+        [SerializeField] private Transform _settlementFocusPivot;
+        [Tooltip("获得增益时的一次性动画枢轴（子物体 FeedbackPivot）。")]
+        [SerializeField] private Transform _feedbackPivot;
         [Tooltip("脚下接触阴影锐利核心层（子物体 Shadow 上的 SpriteRenderer）。")]
         [SerializeField] private SpriteRenderer _shadowRenderer;
         [Tooltip("脚下接触阴影弥散光晕层（子物体 ShadowHalo 上的 SpriteRenderer），高空时显现做虚化。")]
@@ -48,6 +63,8 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private BoxCollider2D _collider;
         [Tooltip("放置合法性发光层（子物体 PlacementGlow 上的 SpriteRenderer）。")]
         [SerializeField] private SpriteRenderer _placementGlow;
+        [Tooltip("技能 scope 发光层模板。建议在 DishPiece prefab 的 Sprite 节点下放一个禁用的 ScopeGlowTemplate，避免和放置合法性发光共用模板。")]
+        [SerializeField] private SpriteRenderer _scopeGlowPrefab;
 
         [Header("落定反馈（仅作用于本体视觉枢轴，不影响格子锚点/碰撞盒）")]
         [SerializeField] private bool _useOccupiedCentroidPivot = true;
@@ -71,12 +88,30 @@ namespace GourmetProject.Game.Presentation.Battle
         [Tooltip("脏印处对底色的压暗强度（越大越脏，不发亮）。")]
         [SerializeField, Range(0f, 1f)] private float _stainDarken = 0.12f;
 
-        [Header("结算标签反馈：美味度增加（仅作用于本体视觉枢轴）")]
-        [SerializeField] private float _deliciousnessGainPunchScale = 1.18f;
-        [SerializeField] private float _deliciousnessGainPunchDuration = 0.18f;
-        [SerializeField] private float _deliciousnessGainWobbleDegrees = 5f;
-        [SerializeField] private float _deliciousnessGainWobbleDuration = 0.22f;
-        [SerializeField] private float _deliciousnessGainWobbleCycles = 2f;
+        [Header("外轮廓发光（shader alpha outline）")]
+        [SerializeField] private Material _outlineGlowMaterial;
+        [SerializeField, Range(0f, 0.2f)] private float _placementGlowOutlineWidth = 0.11f;
+        [SerializeField] private float _placementGlowInflate = 1.08f;
+        [SerializeField, Range(0.25f, 3f)] private float _outlineGlowIntensity = 2.2f;
+        [SerializeField, Range(0f, 8f)] private float _persistentPulseSpeed = 0.65f;
+        [SerializeField, Range(0f, 0.5f)] private float _persistentPulseAmplitude = 0.045f;
+        [SerializeField, Range(0f, 8f)] private float _flashPulseSpeed = 2.2f;
+        [SerializeField, Range(0f, 0.5f)] private float _flashPulseAmplitude = 0.14f;
+        [SerializeField, Range(0f, 64f)] private float _pulseFrequency = 18f;
+
+        [Header("当前结算菜：持续轻摆与呼吸")]
+        [SerializeField] private float _settlementFocusScale = 1.1f;
+        [SerializeField] private float _settlementFocusScaleAmplitude = 0.012f;
+        [SerializeField] private float _settlementFocusRotationDegrees = 1.6f;
+        [SerializeField] private float _settlementFocusCycleDuration = 1.35f;
+        [SerializeField] private float _settlementFocusBlendDuration = 0.12f;
+
+        [Header("获得增益：快速旋转与缩放一次")]
+        [SerializeField] private float _deliciousnessGainPunchScale = 1.08f;
+        [SerializeField] private float _deliciousnessGainPunchDuration = 0.15f;
+        [SerializeField] private float _deliciousnessGainWobbleDegrees = 3f;
+        [SerializeField] private float _deliciousnessGainWobbleDuration = 0.18f;
+        [SerializeField] private float _deliciousnessGainWobbleCycles = 1.5f;
 
         private Sprite _sprite;
         private float _cellSize;
@@ -91,6 +126,13 @@ namespace GourmetProject.Game.Presentation.Battle
         private bool _clickEnabled = true;
         private bool _hovered;
         private MaterialPropertyBlock _stainBlock;
+        private MaterialPropertyBlock _placementGlowBlock;
+        private readonly Dictionary<int, SpriteRenderer> _scopeGlowRenderers = new Dictionary<int, SpriteRenderer>();
+        private readonly Dictionary<int, MaterialPropertyBlock> _scopeGlowBlocks = new Dictionary<int, MaterialPropertyBlock>();
+        private bool _scopeGlowTemplateMissingReported;
+        private bool _settlementFocusRequested;
+        private float _settlementFocusWeight;
+        private float _settlementFocusTime;
 
         public DishInstance Instance { get; private set; }
 
@@ -126,6 +168,17 @@ namespace GourmetProject.Game.Presentation.Battle
             _hoverExited = exited;
         }
 
+        public void SetSettlementFocus(bool active)
+        {
+            EnsureRefs();
+            if (active && !_settlementFocusRequested)
+            {
+                _settlementFocusTime = 0f;
+            }
+
+            _settlementFocusRequested = active;
+        }
+
         public Bounds WorldBounds
         {
             get
@@ -147,7 +200,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         /// <summary>
         /// 放置可否的外轮廓发光：食物调整移动态给「光标菜品」显示——绿=可放，红=不可放；关闭则隐藏。
-        /// 用一层复制本体 sprite、略放大并染色的描边层实现。
+        /// 用 shader 按 sprite alpha 边界采样外描边，避免出现整张 sprite 复制投影。
         /// </summary>
         public void SetPlacementGlow(bool show, bool valid)
         {
@@ -174,15 +227,84 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _placementGlow.gameObject.SetActive(true);
-            _placementGlow.sprite = _spriteRenderer.sprite;
-            _placementGlow.transform.localPosition = Vector3.zero;
-            _placementGlow.transform.localRotation = Quaternion.identity;
-            _placementGlow.transform.localScale = Vector3.one * 1.16f;
-            _placementGlow.sortingLayerName = _spriteRenderer.sortingLayerName;
-            _placementGlow.sortingOrder = _spriteRenderer.sortingOrder - 1;
-            _placementGlow.color = valid
+            Color color = valid
                 ? new Color(0.30f, 1f, 0.42f, 0.9f)
                 : new Color(1f, 0.32f, 0.30f, 0.9f);
+            ConfigureOutlineGlowRenderer(
+                _placementGlow,
+                ref _placementGlowBlock,
+                color,
+                _placementGlowOutlineWidth,
+                fillAlpha: 0f,
+                inflate: _placementGlowInflate,
+                sortingOrderOffset: 1,
+                materialOverride: null,
+                pulseSpeed: _persistentPulseSpeed,
+                pulseAmplitude: _persistentPulseAmplitude);
+        }
+
+        public void SetScopeGlow(
+            BattleScopeHighlightChannel channel,
+            int layer,
+            Color color,
+            float inflate,
+            float outlineWidth,
+            Material materialOverride = null)
+        {
+            EnsureRefs();
+            if (_spriteRenderer == null)
+            {
+                return;
+            }
+
+            SpriteRenderer glow = EnsureScopeGlowRenderer(channel, layer);
+            if (glow == null)
+            {
+                return;
+            }
+
+            glow.gameObject.SetActive(true);
+            int key = ScopeLayerKey(channel, layer);
+            if (!_scopeGlowBlocks.TryGetValue(key, out MaterialPropertyBlock block) || block == null)
+            {
+                block = new MaterialPropertyBlock();
+                _scopeGlowBlocks[key] = block;
+            }
+
+            ConfigureOutlineGlowRenderer(
+                glow,
+                ref block,
+                color,
+                outlineWidth,
+                fillAlpha: 0f,
+                inflate: inflate,
+                sortingOrderOffset: 1 + layer,
+                materialOverride: materialOverride,
+                pulseSpeed: channel == BattleScopeHighlightChannel.Persistent ? _persistentPulseSpeed : _flashPulseSpeed,
+                pulseAmplitude: channel == BattleScopeHighlightChannel.Persistent ? _persistentPulseAmplitude : _flashPulseAmplitude);
+            _scopeGlowBlocks[key] = block;
+        }
+
+        public void ClearScopeGlows(BattleScopeHighlightChannel channel)
+        {
+            foreach (KeyValuePair<int, SpriteRenderer> kv in _scopeGlowRenderers)
+            {
+                if (ChannelFromKey(kv.Key) == channel && kv.Value != null)
+                {
+                    kv.Value.gameObject.SetActive(false);
+                }
+            }
+        }
+
+        public void ClearAllScopeGlows()
+        {
+            foreach (SpriteRenderer renderer in _scopeGlowRenderers.Values)
+            {
+                if (renderer != null)
+                {
+                    renderer.gameObject.SetActive(false);
+                }
+            }
         }
 
         public void SetGhost(bool ghost)
@@ -302,7 +424,7 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             EnsureRefs();
             return PresentationTween.PunchScaleAndWobbleAsync(
-                VisualAnimationTarget(),
+                _feedbackPivot,
                 _deliciousnessGainPunchScale,
                 _deliciousnessGainPunchDuration,
                 _deliciousnessGainWobbleDegrees,
@@ -537,15 +659,31 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _visualPivot = ResolveChildTransform(_visualPivot, "VisualPivot");
+            _settlementFocusPivot = ResolveChildTransform(_settlementFocusPivot, "SettlementFocusPivot");
+            _feedbackPivot = ResolveChildTransform(_feedbackPivot, "FeedbackPivot");
             _shadowRenderer = ResolveChildRenderer(_shadowRenderer, "Shadow");
             _shadowHaloRenderer = ResolveChildRenderer(_shadowHaloRenderer, "ShadowHalo");
             _spriteRenderer = ResolveChildRenderer(_spriteRenderer, "Sprite");
             _placementGlow = ResolveChildRenderer(_placementGlow, "PlacementGlow");
-            EnsureSpriteUnderVisualPivot();
+            _scopeGlowPrefab = ResolveChildRenderer(_scopeGlowPrefab, "ScopeGlowTemplate");
+            EnsureSpriteUnderAnimationPivots();
 
-            if (_collider == null || _visualPivot == null || _shadowRenderer == null || _spriteRenderer == null || _placementGlow == null)
+            if (_scopeGlowPrefab != null)
             {
-                Debug.LogError($"{nameof(DishPieceView)} prefab 缺少固定结构：BoxCollider2D/VisualPivot/Sprite/Shadow/PlacementGlow。", this);
+                _scopeGlowPrefab.gameObject.SetActive(false);
+            }
+
+            if (_collider == null
+                || _visualPivot == null
+                || _settlementFocusPivot == null
+                || _feedbackPivot == null
+                || _shadowRenderer == null
+                || _spriteRenderer == null
+                || _placementGlow == null)
+            {
+                Debug.LogError(
+                    $"{nameof(DishPieceView)} prefab 缺少固定结构：BoxCollider2D/VisualPivot/SettlementFocusPivot/FeedbackPivot/Sprite/Shadow/PlacementGlow。",
+                    this);
             }
         }
 
@@ -564,6 +702,144 @@ namespace GourmetProject.Game.Presentation.Battle
 
             SpriteRenderer renderer = t.GetComponent<SpriteRenderer>();
             return renderer;
+        }
+
+        private SpriteRenderer EnsureScopeGlowRenderer(BattleScopeHighlightChannel channel, int layer)
+        {
+            int key = ScopeLayerKey(channel, layer);
+            if (_scopeGlowRenderers.TryGetValue(key, out SpriteRenderer existing) && existing != null)
+            {
+                return existing;
+            }
+
+            SpriteRenderer template = _scopeGlowPrefab != null ? _scopeGlowPrefab : _placementGlow;
+            if (template == null)
+            {
+                if (!_scopeGlowTemplateMissingReported)
+                {
+                    Debug.LogError($"{nameof(DishPieceView)} prefab 缺少 ScopeGlowTemplate/PlacementGlow。", this);
+                    _scopeGlowTemplateMissingReported = true;
+                }
+
+                return null;
+            }
+
+            Transform parent = template.transform.parent != null
+                ? template.transform.parent
+                : (_spriteRenderer != null && _spriteRenderer.transform.parent != null
+                    ? _spriteRenderer.transform.parent
+                    : (_visualPivot != null ? _visualPivot : transform));
+            SpriteRenderer renderer = Instantiate(template, parent, false);
+            renderer.name = $"ScopeGlow_{channel}_{layer}";
+            renderer.gameObject.SetActive(false);
+            _scopeGlowRenderers[key] = renderer;
+            return renderer;
+        }
+
+        private void ConfigureOutlineGlowRenderer(
+            SpriteRenderer renderer,
+            ref MaterialPropertyBlock block,
+            Color color,
+            float outlineWidth,
+            float fillAlpha,
+            float inflate,
+            int sortingOrderOffset,
+            Material materialOverride,
+            float pulseSpeed,
+            float pulseAmplitude)
+        {
+            if (renderer == null || _spriteRenderer == null)
+            {
+                return;
+            }
+
+            Transform source = _spriteRenderer.transform;
+            Transform target = renderer.transform;
+            if (target.parent == source.parent)
+            {
+                target.localPosition = source.localPosition;
+                target.localRotation = source.localRotation;
+                target.localScale = new Vector3(
+                    source.localScale.x * Mathf.Max(0.01f, inflate),
+                    source.localScale.y * Mathf.Max(0.01f, inflate),
+                    source.localScale.z);
+            }
+            else
+            {
+                target.position = source.position;
+                target.rotation = source.rotation;
+                Vector3 sourceLossy = source.lossyScale;
+                Vector3 parentLossy = target.parent != null ? target.parent.lossyScale : Vector3.one;
+                target.localScale = new Vector3(
+                    SafeDivide(sourceLossy.x * Mathf.Max(0.01f, inflate), parentLossy.x),
+                    SafeDivide(sourceLossy.y * Mathf.Max(0.01f, inflate), parentLossy.y),
+                    SafeDivide(sourceLossy.z, parentLossy.z));
+            }
+
+            renderer.sprite = _spriteRenderer.sprite;
+            renderer.sortingLayerName = _spriteRenderer.sortingLayerName;
+            renderer.sortingOrder = _spriteRenderer.sortingOrder + sortingOrderOffset;
+
+            Material material = materialOverride != null
+                ? materialOverride
+                : (_outlineGlowMaterial != null ? _outlineGlowMaterial : SpriteRenderStyle.SpriteOutlineMaterial);
+            if (material != null)
+            {
+                renderer.sharedMaterial = material;
+                renderer.color = materialOverride != null ? color : Color.white;
+            }
+            else
+            {
+                SpriteRenderStyle.ApplyUnlitMaterial(renderer);
+                renderer.color = color;
+            }
+
+            block ??= new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(block);
+            block.SetColor(OutlineColorId, color);
+            block.SetFloat(OutlineWidthId, Mathf.Clamp(outlineWidth, 0f, 0.2f));
+            block.SetFloat(FillAlphaId, Mathf.Clamp01(fillAlpha));
+            block.SetFloat(GlowIntensityId, _outlineGlowIntensity);
+            block.SetFloat(PulseSpeedId, Mathf.Max(0f, pulseSpeed));
+            block.SetFloat(PulseAmplitudeId, Mathf.Clamp(pulseAmplitude, 0f, 0.5f));
+            block.SetFloat(PulseFrequencyId, Mathf.Max(0f, _pulseFrequency));
+            block.SetFloat(UvInflateId, Mathf.Max(1f, inflate));
+            block.SetVector(SpriteUvRectId, SpriteUvRect(_spriteRenderer.sprite));
+            renderer.SetPropertyBlock(block);
+        }
+
+        private static Vector4 SpriteUvRect(Sprite sprite)
+        {
+            Vector2[] uvs = sprite != null ? sprite.uv : null;
+            if (uvs == null || uvs.Length == 0)
+            {
+                return new Vector4(0f, 0f, 1f, 1f);
+            }
+
+            Vector2 min = uvs[0];
+            Vector2 max = uvs[0];
+            for (int i = 1; i < uvs.Length; i++)
+            {
+                min = Vector2.Min(min, uvs[i]);
+                max = Vector2.Max(max, uvs[i]);
+            }
+
+            return new Vector4(min.x, min.y, max.x, max.y);
+        }
+
+        private static float SafeDivide(float value, float divisor)
+        {
+            return Mathf.Abs(divisor) > 0.0001f ? value / divisor : value;
+        }
+
+        private static int ScopeLayerKey(BattleScopeHighlightChannel channel, int layer)
+        {
+            return ((int)channel * 1000) + Mathf.Clamp(layer, 0, 999);
+        }
+
+        private static BattleScopeHighlightChannel ChannelFromKey(int key)
+        {
+            return (BattleScopeHighlightChannel)Mathf.Max(0, key / 1000);
         }
 
         private Transform ResolveChildTransform(Transform current, string childName)
@@ -590,14 +866,14 @@ namespace GourmetProject.Game.Presentation.Battle
             return null;
         }
 
-        private void EnsureSpriteUnderVisualPivot()
+        private void EnsureSpriteUnderAnimationPivots()
         {
-            if (_visualPivot == null || _spriteRenderer == null || _spriteRenderer.transform.parent == _visualPivot)
+            if (_feedbackPivot == null || _spriteRenderer == null || _spriteRenderer.transform.parent == _feedbackPivot)
             {
                 return;
             }
 
-            _spriteRenderer.transform.SetParent(_visualPivot, false);
+            _spriteRenderer.transform.SetParent(_feedbackPivot, false);
         }
 
         private Transform VisualAnimationTarget()
@@ -607,6 +883,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void Update()
         {
+            UpdateSettlementFocus();
             UpdateHover();
 
             if (!_clickEnabled || Instance == null || !WorldInput.PrimaryPressedThisFrame || _collider == null)
@@ -627,9 +904,51 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
+        private void UpdateSettlementFocus()
+        {
+            if (_settlementFocusPivot == null)
+            {
+                return;
+            }
+
+            float blendDuration = Mathf.Max(0.0001f, _settlementFocusBlendDuration);
+            float targetWeight = _settlementFocusRequested ? 1f : 0f;
+            _settlementFocusWeight = Mathf.MoveTowards(
+                _settlementFocusWeight,
+                targetWeight,
+                Time.unscaledDeltaTime / blendDuration);
+
+            if (_settlementFocusWeight <= 0f && !_settlementFocusRequested)
+            {
+                ResetSettlementFocusTransform();
+                return;
+            }
+
+            _settlementFocusTime += Time.unscaledDeltaTime;
+            float cycle = Mathf.Max(0.0001f, _settlementFocusCycleDuration);
+            float wave = Mathf.Sin(_settlementFocusTime * Mathf.PI * 2f / cycle);
+            float focusedScale = Mathf.Max(
+                0.0001f,
+                _settlementFocusScale + wave * _settlementFocusScaleAmplitude);
+            float scale = Mathf.Lerp(1f, focusedScale, _settlementFocusWeight);
+            float angle = wave * _settlementFocusRotationDegrees * _settlementFocusWeight;
+
+            _settlementFocusPivot.localScale = new Vector3(scale, scale, 1f);
+            _settlementFocusPivot.localRotation = Quaternion.Euler(0f, 0f, angle);
+        }
+
+        private void ResetSettlementFocusTransform()
+        {
+            if (_settlementFocusPivot != null)
+            {
+                _settlementFocusPivot.localScale = Vector3.one;
+                _settlementFocusPivot.localRotation = Quaternion.identity;
+            }
+        }
+
         private void UpdateHover()
         {
-            if (!_clickEnabled || Instance == null || _collider == null || WorldInput.PointerOverUi)
+            if (!_clickEnabled || Instance == null || _collider == null)
             {
                 SetHovered(false);
                 return;
@@ -642,7 +961,13 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            SetHovered(_collider.OverlapPoint(WorldInput.MouseWorld(cam)));
+            bool pointerInside = _collider.OverlapPoint(WorldInput.MouseWorld(cam));
+            if (!_hovered && WorldInput.PointerOverUi)
+            {
+                return;
+            }
+
+            SetHovered(pointerInside);
         }
 
         private void SetHovered(bool hovered)
@@ -665,6 +990,10 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void OnDisable()
         {
+            _settlementFocusRequested = false;
+            _settlementFocusWeight = 0f;
+            _settlementFocusTime = 0f;
+            ResetSettlementFocusTransform();
             SetHovered(false);
         }
     }

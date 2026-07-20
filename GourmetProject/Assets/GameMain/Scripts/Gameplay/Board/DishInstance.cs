@@ -252,6 +252,11 @@ namespace GourmetProject.Gameplay.Board
         /// <summary>追加一条外来子技能（甜蜜传递落地）。按 rule 引用去重，重复来源不叠加。</summary>
         public void AddTransferredSkill(SkillEffect effect, string sourceLabel)
         {
+            AddTransferredSkill(effect, sourceLabel, 0);
+        }
+
+        public void AddTransferredSkill(SkillEffect effect, string sourceLabel, int sourceInstanceId)
+        {
             if (effect?.Rule == null)
             {
                 return;
@@ -265,7 +270,7 @@ namespace GourmetProject.Gameplay.Board
                 }
             }
 
-            _transferredSkills.Add(new TransferredSkill(effect, sourceLabel));
+            _transferredSkills.Add(new TransferredSkill(effect, sourceLabel, sourceInstanceId));
         }
 
         /// <summary>从另一实例复制技能来源标签（临时克隆时保留来源展示）。</summary>
@@ -322,7 +327,7 @@ namespace GourmetProject.Gameplay.Board
 
             foreach (TransferredSkill t in other._transferredSkills)
             {
-                AddTransferredSkill(t.Effect, t.SourceLabel);
+                AddTransferredSkill(t.Effect, t.SourceLabel, t.SourceInstanceId);
             }
         }
     }
@@ -331,14 +336,22 @@ namespace GourmetProject.Gameplay.Board
     public sealed class TransferredSkill
     {
         public TransferredSkill(GourmetProject.Gameplay.Model.SkillEffect effect, string sourceLabel)
+            : this(effect, sourceLabel, 0)
+        {
+        }
+
+        public TransferredSkill(GourmetProject.Gameplay.Model.SkillEffect effect, string sourceLabel, int sourceInstanceId)
         {
             Effect = effect;
             SourceLabel = sourceLabel ?? string.Empty;
+            SourceInstanceId = sourceInstanceId;
         }
 
         public GourmetProject.Gameplay.Model.SkillEffect Effect { get; }
 
         public string SourceLabel { get; }
+
+        public int SourceInstanceId { get; }
 
         /// <summary>该外来子技能的展示描述（等于 <see cref="Effect"/> 的描述片段），供 UI/tips 直接使用。</summary>
         public string Desc => Effect != null ? Effect.Desc : string.Empty;

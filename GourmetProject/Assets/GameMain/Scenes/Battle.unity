@@ -241,6 +241,7 @@ GameObject:
   - component: {fileID: 420685135}
   - component: {fileID: 420685134}
   - component: {fileID: 420685137}
+  - component: {fileID: 420685138}
   m_Layer: 0
   m_Name: BattleSceneRoot
   m_TagString: Untagged
@@ -284,6 +285,7 @@ MonoBehaviour:
   _passiveItemsRoot: {fileID: 0}
   _activeItemsRoot: {fileID: 1785965446}
   _sequencer: {fileID: 420685134}
+  _scopeHighlights: {fileID: 420685138}
   _doodle: {fileID: 232143573}
   _boardCellPrefab: {fileID: 6341408356780686608, guid: 51f2e9c520382400dbab9879cf9e2308, type: 3}
   _dishPiecePrefab: {fileID: 8981609610198139403, guid: 6cfc41d91a00c45199a5910983b1608b, type: 3}
@@ -330,6 +332,36 @@ MonoBehaviour:
   _editRoot: {fileID: 1940384804}
   _editDragRootPrefab: {fileID: 8396664245392105574, guid: 93e7164cc69bb44b3b6c496906ac84a4, type: 3}
   _editBoundsWarningLinePrefab: {fileID: 1894718084639076821, guid: 4155fca9de68f4b57b35d37188ee9a3b, type: 3}
+--- !u!114 &420685138
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 420685133}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3197060a8459346d49e797435db7d7d6, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Presentation.Battle.BattleScopeHighlightController
+  _ownerColor: {r: 1, g: 0.92, b: 0.35, a: 0.9}
+  _runtimeSelfColor: {r: 0.42, g: 0.92, b: 1, a: 0.9}
+  _subSkillPalette:
+  - {r: 0.22, g: 0.74, b: 1, a: 0.86}
+  - {r: 1, g: 0.58, b: 0.2, a: 0.86}
+  - {r: 0.42, g: 1, b: 0.47, a: 0.86}
+  - {r: 1, g: 0.36, b: 0.66, a: 0.86}
+  - {r: 0.98, g: 0.88, b: 0.24, a: 0.86}
+  _persistentCellWidth: 0.048
+  _flashCellWidth: 0.085
+  _persistentDishInflate: 1.08
+  _flashDishInflate: 1.12
+  _dishInflateStep: 0.018
+  _persistentDishOutlineWidth: 0.095
+  _flashDishOutlineWidth: 0.13
+  _flashDuration: 0.32
+  _sweetTransferMaterial: {fileID: 0}
+  _copySkillMaterial: {fileID: 0}
 --- !u!1 &788870929
 GameObject:
   m_ObjectHideFlags: 0

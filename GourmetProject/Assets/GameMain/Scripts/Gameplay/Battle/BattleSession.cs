@@ -433,7 +433,7 @@ namespace GourmetProject.Gameplay.Battle
                 string label = string.IsNullOrEmpty(transfer.SourceName) ? null : $"{transfer.SourceName}<甜蜜传递>";
                 foreach (SkillEffect effect in transfer.Effects)
                 {
-                    inst.AddTransferredSkill(effect, label);
+                    inst.AddTransferredSkill(effect, label, transfer.SourceInstanceId);
                 }
             }
 
@@ -536,7 +536,7 @@ namespace GourmetProject.Gameplay.Battle
 
                     foreach (SkillEffect effect in request.Effects)
                     {
-                        target.AddTransferredSkill(effect, sourceLabel);
+                        target.AddTransferredSkill(effect, sourceLabel, request.SourceInstanceId);
                     }
 
                     transferred = true;

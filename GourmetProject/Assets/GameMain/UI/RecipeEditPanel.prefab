@@ -147,6 +147,14 @@ MonoBehaviour:
   _trashZone: {fileID: 1836146076092515224}
   _trashPriceText: {fileID: 4240963604245982997}
   _exitEditButton: {fileID: 6966688297698746324}
+  _compareOverlayPrefab: {fileID: 100001, guid: 9b4f1b6d4f2845d983ed3dfc53fb90c1, type: 3}
+  _comparePanelPrefab: {fileID: 110003, guid: ad3cb901f8564801b54bd165d10389c4, type: 3}
+  _compareCardPrefab: {fileID: 120003, guid: b8b2946a29c64f7a8b62f4b512980e33, type: 3}
+  _compareTextPrefab: {fileID: 130003, guid: c9c474eb175c46f6aa5429f773a0c04a, type: 3}
+  _compareButtonPrefab: {fileID: 140004, guid: d7d02b6de5774f01853cd2a0e3bf63e4, type: 3}
+  _compareOverlayColor: {r: 0, g: 0, b: 0, a: 0.58}
+  _comparePanelColor: {r: 0.96, g: 0.91, b: 0.82, a: 1}
+  _compareCardColor: {r: 1, g: 0.97, b: 0.9, a: 1}
 --- !u!1 &905116585536431420
 GameObject:
   m_ObjectHideFlags: 0

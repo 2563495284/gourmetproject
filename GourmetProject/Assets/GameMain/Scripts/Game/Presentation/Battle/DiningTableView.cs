@@ -209,6 +209,32 @@ namespace GourmetProject.Game.Presentation.Battle
             view.SetOutline(color, hovered || selected ? 0.08f : 0.045f);
         }
 
+        public void ClearScopeHighlights(BattleScopeHighlightChannel channel)
+        {
+            foreach (DiningTableCellView view in _cells.Values)
+            {
+                view?.ClearScopeOutlines(channel);
+            }
+        }
+
+        public void ClearAllScopeHighlights()
+        {
+            foreach (DiningTableCellView view in _cells.Values)
+            {
+                view?.ClearAllScopeOutlines();
+            }
+        }
+
+        public void SetScopeHighlight(GridPos pos, BattleScopeHighlightChannel channel, int layer, Color color, float width, float fillAlpha)
+        {
+            if (!TryGetCellView(pos, out DiningTableCellView view))
+            {
+                return;
+            }
+
+            view.SetScopeOutline(channel, layer, color, width, fillAlpha);
+        }
+
         private void Clear()
         {
             foreach (DiningTableCellView cell in _cells.Values)

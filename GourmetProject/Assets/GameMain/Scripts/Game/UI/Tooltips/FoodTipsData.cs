@@ -82,8 +82,8 @@ namespace GourmetProject.Game.UI.Tooltips
         /// <summary>倍率：本食物当前乘区。</summary>
         public float Multiplier { get; }
 
-        /// <summary>美味度：倍率 * 分数。</summary>
-        public float Deliciousness => Score * Multiplier;
+        /// <summary>美味度：倍率 * 分数 后向上取整。</summary>
+        public float Deliciousness => DishScore.CeilContribution(Score, Multiplier);
     }
 
     public sealed class FoodMaterialTipsEntry

@@ -49,7 +49,17 @@ namespace GourmetProject.Gameplay.Scoring
                             null,
                             null,
                             rule.Order,
-                            boardOrder));
+                            boardOrder,
+                            SkillExecutionTrace.Create(
+                                snapshot.Db,
+                                snapshot.DiningTable,
+                                dish,
+                                dish,
+                                skill,
+                                rule,
+                                TraceKindForSourceLabel(sourceLabel),
+                                sourceLabel,
+                                SkillScopeVisualMode.ResolvedTargets)));
                     }
                 }
 
@@ -63,6 +73,7 @@ namespace GourmetProject.Gameplay.Scoring
                     }
 
                     SkillDef parent = snapshot.Db.GetSkill(rule.SkillId);
+                    DishInstance owner = FindDish(snapshot.DiningTable, transferred.SourceInstanceId);
                     collector.Add(new ScoreEffectEntry(
                         ScorePhase.DishSkills,
                         ScoreSource.TransferredDishSkill(parent, dish, transferred.SourceLabel),
@@ -71,9 +82,68 @@ namespace GourmetProject.Gameplay.Scoring
                         null,
                         null,
                         rule.Order,
-                        boardOrder));
+                        boardOrder,
+                        owner != null
+                            ? SkillExecutionTrace.Create(
+                                snapshot.Db,
+                                snapshot.DiningTable,
+                                owner,
+                                dish,
+                                parent,
+                                rule,
+                                SkillExecutionKind.SweetTransfer,
+                                transferred.SourceLabel,
+                                SkillScopeVisualMode.ResolvedTargets)
+                            : SkillExecutionTrace.CreateWithOwnerFallback(
+                                snapshot.Db,
+                                snapshot.DiningTable,
+                                transferred.SourceInstanceId,
+                                SourceNameWithoutTag(transferred.SourceLabel),
+                                dish,
+                                parent,
+                                rule,
+                                SkillExecutionKind.SweetTransfer,
+                                transferred.SourceLabel,
+                                SkillScopeVisualMode.ResolvedTargets)));
                 }
             }
+        }
+
+        private static SkillExecutionKind TraceKindForSourceLabel(string sourceLabel)
+        {
+            return !string.IsNullOrEmpty(sourceLabel)
+                   && sourceLabel.IndexOf("技能复制", StringComparison.OrdinalIgnoreCase) >= 0
+                ? SkillExecutionKind.CopiedSkill
+                : SkillExecutionKind.NativeSkill;
+        }
+
+        private static DishInstance FindDish(GpTable board, int instanceId)
+        {
+            if (board == null || instanceId <= 0)
+            {
+                return null;
+            }
+
+            foreach (DishInstance dish in board.Dishes)
+            {
+                if (dish.Id == instanceId)
+                {
+                    return dish;
+                }
+            }
+
+            return null;
+        }
+
+        private static string SourceNameWithoutTag(string sourceLabel)
+        {
+            if (string.IsNullOrEmpty(sourceLabel))
+            {
+                return string.Empty;
+            }
+
+            int index = sourceLabel.IndexOf('<');
+            return index > 0 ? sourceLabel.Substring(0, index) : sourceLabel;
         }
     }
 
@@ -172,7 +242,7 @@ namespace GourmetProject.Gameplay.Scoring
                                 continue;
                             }
 
-                            ctx.RecordSkillTransfer(t, newEffects, _self.Def.Name);
+                            ctx.RecordSkillTransfer(t, newEffects, _self.Def.Name, _self.Id);
                             ResolveTransferredEffects(ctx, t, newEffects);
                         }
                     }
@@ -271,7 +341,17 @@ namespace GourmetProject.Gameplay.Scoring
                     null,
                     null,
                     rule.Order,
-                    boardOrder);
+                    boardOrder,
+                    SkillExecutionTrace.Create(
+                        ctx.Db,
+                        ctx.DiningTable,
+                        _self,
+                        target,
+                        parent,
+                        rule,
+                        SkillExecutionKind.SweetTransfer,
+                        sourceLabel,
+                        SkillScopeVisualMode.ResolvedTargets));
                 ctx.SubmitCommand(new ResolveScoreEffectCommand(entry));
             }
         }
@@ -382,40 +462,12 @@ namespace GourmetProject.Gameplay.Scoring
 
         private IReadOnlyList<DishInstance> Targets(ScoreContext ctx)
         {
-            if (_rule.ActionScope == SkillScope.Self)
-            {
-                return new[] { _self };
-            }
-
-            if (_rule.ActionScope == SkillScope.Category)
-            {
-                // 分类定向（如「所有蛋糕」）：取餐桌上匹配 cat:xxx 的全部菜（含自身若匹配）。
-                return SkillConditionEvaluator.CategoryDishes(ctx.DiningTable, SkillConditionEvaluator.ParseCategoryParam(_rule.ActionParams));
-            }
-
-            List<DishInstance> dishes = SkillConditionEvaluator.ScopeDishes(ctx.DiningTable, _self, _rule.ActionScope);
-
-            // skilltype:X 过滤：只作用于「带某行为类技能」的食物（巧克力「此类食物」= 带甜蜜传递的食物）。
-            string skillTypeToken = ParseSkillTypeParam(_rule.ActionParams);
-            if (!string.IsNullOrEmpty(skillTypeToken)
-                && Enum.TryParse(skillTypeToken, ignoreCase: true, out SkillActionType filterType))
-            {
-                dishes = dishes.Where(d => HasSkillOfType(ctx.Db, d, filterType)).ToList();
-            }
-
-            dishes = dishes
-                .OrderBy(BoardTop)
-                .ThenBy(BoardLeft)
-                .ThenBy(d => d.Id)
-                .ToList();
-
-            if (_rule.ActionCount > 0 && dishes.Count > _rule.ActionCount)
-            {
-                // 无随机流时以棋盘阅读顺序取前 N，保证确定性可复现。
-                dishes = dishes.Take(_rule.ActionCount).ToList();
-            }
-
-            return dishes;
+            return SkillScopeResolver.ResolveActionTargetDishes(
+                ctx.Db,
+                ctx.DiningTable,
+                _self,
+                _rule,
+                SkillScopeVisualMode.ResolvedTargets);
         }
 
         private static int BoardTop(DishInstance dish)

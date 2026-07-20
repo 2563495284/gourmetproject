@@ -24,9 +24,6 @@ namespace GourmetProject.Game.UI.Meta
         private const float DesiredBookGap = 24f;
         private const float MinBookScale = 0.1f;
         private const float DishFlyDuration = 0.28f;
-        private static readonly Color CompareOverlayColor = new Color(0f, 0f, 0f, 0.58f);
-        private static readonly Color ComparePanelColor = new Color(0.96f, 0.91f, 0.82f, 1f);
-        private static readonly Color CompareCardColor = new Color(1f, 0.97f, 0.9f, 1f);
         private static Font s_defaultFont;
 
         [Header("Books")]
@@ -39,6 +36,18 @@ namespace GourmetProject.Game.UI.Meta
         [SerializeField] private RecipeTrashDropZone _trashZone;
         [SerializeField] private Text _trashPriceText;
         [SerializeField] private Button _exitEditButton;
+
+        [Header("Compare Popup Templates")]
+        [SerializeField] private RectTransform _compareOverlayPrefab;
+        [SerializeField] private Image _comparePanelPrefab;
+        [SerializeField] private Image _compareCardPrefab;
+        [SerializeField] private Text _compareTextPrefab;
+        [SerializeField] private Button _compareButtonPrefab;
+
+        [Header("Compare Popup Style")]
+        [SerializeField] private Color _compareOverlayColor = new Color(0f, 0f, 0f, 0.58f);
+        [SerializeField] private Color _comparePanelColor = new Color(0.96f, 0.91f, 0.82f, 1f);
+        [SerializeField] private Color _compareCardColor = new Color(1f, 0.97f, 0.9f, 1f);
 
         private readonly List<GameObject> _spawned = new();
         private readonly List<RecipeEditDishView> _spawnedDishes = new();
@@ -53,6 +62,7 @@ namespace GourmetProject.Game.UI.Meta
         private int _pendingRestoreDishIndex = -1;
         private GameObject _compareOverlay;
         private RecipeWorkspacePanelStateMachine _stateMachine;
+        private bool _compareTemplateMissingReported;
         private bool _wired;
 
         private void Awake()
@@ -600,19 +610,35 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            _compareOverlay = CreateStretchChild("ActiveItemDishCompare_Runtime", transform);
-            Image overlayImage = _compareOverlay.AddComponent<Image>();
-            overlayImage.color = CompareOverlayColor;
-            overlayImage.raycastTarget = true;
+            RectTransform overlay = CreateStretchChild("ActiveItemDishCompare_Runtime", transform);
+            if (overlay == null)
+            {
+                return;
+            }
+
+            _compareOverlay = overlay.gameObject;
+            Image overlayImage = _compareOverlay.GetComponent<Image>();
+            if (overlayImage != null)
+            {
+                overlayImage.color = _compareOverlayColor;
+                overlayImage.raycastTarget = true;
+            }
+
             _compareOverlay.transform.SetAsLastSibling();
 
-            GameObject panel = CreateRectChild("Panel", _compareOverlay.transform, new Vector2(960f, 520f));
-            Image panelImage = panel.AddComponent<Image>();
-            panelImage.color = ComparePanelColor;
+            Image panelImage = CreateImage(_comparePanelPrefab, "Panel", _compareOverlay.transform, new Vector2(960f, 520f));
+            if (panelImage == null)
+            {
+                ClearCompareOverlay();
+                return;
+            }
+
+            panelImage.color = _comparePanelColor;
+            Transform panel = panelImage.transform;
 
             CreateText(
                 "Title",
-                panel.transform,
+                panel,
                 $"{item.Name}：确认目标菜品",
                 new Vector2(0f, 216f),
                 new Vector2(860f, 44f),
@@ -621,14 +647,14 @@ namespace GourmetProject.Game.UI.Meta
                 TextAnchor.MiddleCenter);
 
             CreateDishInfoCard(
-                panel.transform,
+                panel,
                 "原菜品",
                 BuildDishInfo(def, ComposeFlavorIds(def, slot.ExtraFlavorIds), slot),
                 new Vector2(-260f, 28f));
 
             CreateText(
                 "Arrow",
-                panel.transform,
+                panel,
                 "=>",
                 new Vector2(0f, 40f),
                 new Vector2(92f, 60f),
@@ -638,14 +664,14 @@ namespace GourmetProject.Game.UI.Meta
 
             List<string> previewExtraFlavors = PreviewExtraFlavors(slot.ExtraFlavorIds, item.EffectParam);
             CreateDishInfoCard(
-                panel.transform,
+                panel,
                 "使用后",
                 BuildDishInfo(def, ComposeFlavorIds(def, previewExtraFlavors), slot),
                 new Vector2(260f, 28f));
 
             CreateButton(
                 "BackButton",
-                panel.transform,
+                panel,
                 "返回",
                 new Vector2(-260f, -214f),
                 new Vector2(180f, 48f),
@@ -653,7 +679,7 @@ namespace GourmetProject.Game.UI.Meta
 
             CreateButton(
                 "ConfirmButton",
-                panel.transform,
+                panel,
                 "确认",
                 new Vector2(260f, -214f),
                 new Vector2(180f, 48f),
@@ -693,13 +719,18 @@ namespace GourmetProject.Game.UI.Meta
 
         private void CreateDishInfoCard(Transform parent, string title, string info, Vector2 center)
         {
-            GameObject card = CreateRectChild(title, parent, new Vector2(350f, 330f), center);
-            Image image = card.AddComponent<Image>();
-            image.color = CompareCardColor;
+            Image image = CreateImage(_compareCardPrefab, title, parent, new Vector2(350f, 330f), center);
+            if (image == null)
+            {
+                return;
+            }
+
+            image.color = _compareCardColor;
+            Transform card = image.transform;
 
             CreateText(
                 "Title",
-                card.transform,
+                card,
                 title,
                 new Vector2(0f, 132f),
                 new Vector2(310f, 36f),
@@ -709,15 +740,18 @@ namespace GourmetProject.Game.UI.Meta
 
             Text body = CreateText(
                 "Body",
-                card.transform,
+                card,
                 info,
                 new Vector2(0f, -28f),
                 new Vector2(300f, 250f),
                 17,
                 FontStyle.Normal,
                 TextAnchor.UpperLeft);
-            body.horizontalOverflow = HorizontalWrapMode.Wrap;
-            body.verticalOverflow = VerticalWrapMode.Truncate;
+            if (body != null)
+            {
+                body.horizontalOverflow = HorizontalWrapMode.Wrap;
+                body.verticalOverflow = VerticalWrapMode.Truncate;
+            }
         }
 
         private string BuildDishInfo(DishDef def, IReadOnlyList<string> flavorIds, RecipeBookSlot slot)
@@ -988,25 +1022,34 @@ namespace GourmetProject.Game.UI.Meta
             SetText(text, value);
         }
 
-        private static GameObject CreateStretchChild(string name, Transform parent)
+        private RectTransform CreateStretchChild(string name, Transform parent)
         {
-            var go = new GameObject(name, typeof(RectTransform));
-            go.transform.SetParent(parent, false);
-            var rect = (RectTransform)go.transform;
+            if (_compareOverlayPrefab == null)
+            {
+                ReportMissingCompareTemplate(nameof(_compareOverlayPrefab));
+                return null;
+            }
+
+            RectTransform rect = Instantiate(_compareOverlayPrefab, parent, false);
+            rect.gameObject.name = name;
             rect.anchorMin = Vector2.zero;
             rect.anchorMax = Vector2.one;
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
             rect.localScale = Vector3.one;
             rect.localRotation = Quaternion.identity;
-            return go;
+            rect.gameObject.SetActive(true);
+            return rect;
         }
 
-        private static GameObject CreateRectChild(string name, Transform parent, Vector2 size, Vector2 anchoredPosition = default)
+        private static void ConfigureRect(RectTransform rect, string name, Vector2 size, Vector2 anchoredPosition)
         {
-            var go = new GameObject(name, typeof(RectTransform));
-            go.transform.SetParent(parent, false);
-            var rect = (RectTransform)go.transform;
+            if (rect == null)
+            {
+                return;
+            }
+
+            rect.gameObject.name = name;
             rect.anchorMin = new Vector2(0.5f, 0.5f);
             rect.anchorMax = new Vector2(0.5f, 0.5f);
             rect.pivot = new Vector2(0.5f, 0.5f);
@@ -1014,10 +1057,28 @@ namespace GourmetProject.Game.UI.Meta
             rect.anchoredPosition = anchoredPosition;
             rect.localScale = Vector3.one;
             rect.localRotation = Quaternion.identity;
-            return go;
         }
 
-        private static Text CreateText(
+        private Image CreateImage(
+            Image prefab,
+            string name,
+            Transform parent,
+            Vector2 size,
+            Vector2 anchoredPosition = default)
+        {
+            if (prefab == null)
+            {
+                ReportMissingCompareTemplate(name);
+                return null;
+            }
+
+            Image image = Instantiate(prefab, parent, false);
+            ConfigureRect((RectTransform)image.transform, name, size, anchoredPosition);
+            image.gameObject.SetActive(true);
+            return image;
+        }
+
+        private Text CreateText(
             string name,
             Transform parent,
             string text,
@@ -1027,19 +1088,30 @@ namespace GourmetProject.Game.UI.Meta
             FontStyle style,
             TextAnchor alignment)
         {
-            GameObject go = CreateRectChild(name, parent, size, anchoredPosition);
-            Text label = go.AddComponent<Text>();
-            label.font = ResolveFont();
+            if (_compareTextPrefab == null)
+            {
+                ReportMissingCompareTemplate(nameof(_compareTextPrefab));
+                return null;
+            }
+
+            Text label = Instantiate(_compareTextPrefab, parent, false);
+            ConfigureRect((RectTransform)label.transform, name, size, anchoredPosition);
+            if (label.font == null)
+            {
+                label.font = ResolveFont();
+            }
+
             label.text = text ?? string.Empty;
             label.fontSize = fontSize;
             label.fontStyle = style;
             label.alignment = alignment;
             label.color = Color.black;
             label.raycastTarget = false;
+            label.gameObject.SetActive(true);
             return label;
         }
 
-        private static Button CreateButton(
+        private Button CreateButton(
             string name,
             Transform parent,
             string label,
@@ -1047,15 +1119,52 @@ namespace GourmetProject.Game.UI.Meta
             Vector2 size,
             Action onClick)
         {
-            GameObject go = CreateRectChild(name, parent, size, anchoredPosition);
-            Image image = go.AddComponent<Image>();
-            image.color = Color.white;
-            Button button = go.AddComponent<Button>();
-            button.targetGraphic = image;
-            button.onClick.AddListener(() => onClick?.Invoke());
+            if (_compareButtonPrefab == null)
+            {
+                ReportMissingCompareTemplate(nameof(_compareButtonPrefab));
+                return null;
+            }
 
-            CreateText("Label", go.transform, label, Vector2.zero, size, 20, FontStyle.Bold, TextAnchor.MiddleCenter);
+            Button button = Instantiate(_compareButtonPrefab, parent, false);
+            ConfigureRect((RectTransform)button.transform, name, size, anchoredPosition);
+            button.onClick.RemoveAllListeners();
+            button.onClick.AddListener(() => onClick?.Invoke());
+            if (button.targetGraphic == null)
+            {
+                button.targetGraphic = button.GetComponent<Image>();
+            }
+
+            SetButtonText(button, label);
+            Text text = button.GetComponentInChildren<Text>(true);
+            if (text != null)
+            {
+                ConfigureRect((RectTransform)text.transform, "Label", size, Vector2.zero);
+                if (text.font == null)
+                {
+                    text.font = ResolveFont();
+                }
+
+                text.fontSize = 20;
+                text.fontStyle = FontStyle.Bold;
+                text.alignment = TextAnchor.MiddleCenter;
+                text.color = Color.black;
+                text.raycastTarget = false;
+                text.gameObject.SetActive(true);
+            }
+
+            button.gameObject.SetActive(true);
             return button;
+        }
+
+        private void ReportMissingCompareTemplate(string templateName)
+        {
+            if (_compareTemplateMissingReported)
+            {
+                return;
+            }
+
+            Debug.LogError($"{nameof(RecipeWorkspacePanel)} 缺少对比弹窗模板：{templateName}。", this);
+            _compareTemplateMissingReported = true;
         }
 
         private static Font ResolveFont()
