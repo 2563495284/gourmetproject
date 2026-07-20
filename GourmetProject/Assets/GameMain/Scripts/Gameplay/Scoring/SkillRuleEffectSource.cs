@@ -164,10 +164,48 @@ namespace GourmetProject.Gameplay.Scoring
             int count = SkillConditionEvaluator.Evaluate(_rule, ctx, _self);
             if (count <= 0)
             {
+                if (count == 0 && _rule.CondMode == CountMode.Per)
+                {
+                    DispatchZeroCountScoreCue(ctx);
+                }
+
                 return;
             }
 
             Dispatch(ctx, count);
+        }
+
+        private void DispatchZeroCountScoreCue(ScoreContext ctx)
+        {
+            switch (_rule.ActionType)
+            {
+                case SkillActionType.AddFlat:
+                {
+                    float value = _rule.ActionValue * 0f;
+                    foreach (DishInstance target in Targets(ctx))
+                    {
+                        ctx.AddFlatTo(target, value);
+                    }
+
+                    break;
+                }
+
+                case SkillActionType.AddMultFlat:
+                    foreach (DishInstance target in Targets(ctx))
+                    {
+                        ctx.AddMultFlatTo(target, 0f);
+                    }
+
+                    break;
+
+                case SkillActionType.AddMult:
+                    foreach (DishInstance target in Targets(ctx))
+                    {
+                        ctx.MultiplyTo(target, 1f);
+                    }
+
+                    break;
+            }
         }
 
         private void Dispatch(ScoreContext ctx, int count)

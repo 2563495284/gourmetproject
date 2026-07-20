@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
+using GourmetProject.Gameplay.Model;
 using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 
 namespace GourmetProject.Gameplay.Scoring
@@ -41,13 +42,11 @@ namespace GourmetProject.Gameplay.Scoring
             IEnumerable<DishInstance> ordered = reverseDishOrder
                 ? alive
                     .OrderByDescending(d => SettlementLayerOf(d, Db))
-                    .ThenByDescending(d => d.Placement.Origin.Y)
-                    .ThenByDescending(d => d.Placement.Origin.X)
+                    .ThenByDescending(d => SettlementBoardOrderOf(d, DiningTable.Width, true))
                     .ThenBy(d => d.Id)
                 : alive
                     .OrderByDescending(d => SettlementLayerOf(d, Db))
-                    .ThenBy(d => d.Placement.Origin.Y)
-                    .ThenBy(d => d.Placement.Origin.X)
+                    .ThenBy(d => SettlementBoardOrderOf(d, DiningTable.Width, false))
                     .ThenBy(d => d.Id);
 
             DishesInDefaultOrder = ordered.ToArray();
@@ -75,6 +74,33 @@ namespace GourmetProject.Gameplay.Scoring
             }
 
             return layer;
+        }
+
+        /// <summary>
+        /// 同层菜品按实际占用格排序。普通顺序取最靠前的占用格，反转顺序取最靠后的占用格，
+        /// 避免带空洞形状与其他菜共享 placement origin 时退化为实例创建顺序。
+        /// </summary>
+        public static int SettlementBoardOrderOf(DishInstance dish, int boardWidth, bool reverse)
+        {
+            if (dish == null)
+            {
+                return reverse ? int.MinValue : int.MaxValue;
+            }
+
+            int width = Math.Max(1, boardWidth);
+            int result = reverse ? int.MinValue : int.MaxValue;
+            foreach (GridPos cell in dish.OccupiedCells)
+            {
+                int order = cell.Y * width + cell.X;
+                result = reverse ? Math.Max(result, order) : Math.Min(result, order);
+            }
+
+            if (result != int.MinValue && result != int.MaxValue)
+            {
+                return result;
+            }
+
+            return dish.Placement.Origin.Y * width + dish.Placement.Origin.X;
         }
 
         public GpTable DiningTable { get; }
