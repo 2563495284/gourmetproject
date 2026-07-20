@@ -103,7 +103,9 @@ namespace GourmetProject.Game.Presentation.Battle
 
             float cellWidth = persistent ? _persistentCellWidth : _flashCellWidth;
             int baseLayer = Mathf.Max(0, index);
-            Color subSkillColor = PaletteColor(baseLayer);
+            int visualIndex = trace.VisualIndex >= 0 ? trace.VisualIndex : baseLayer;
+            Color targetColor = PaletteColor(visualIndex * 2);
+            Color conditionColor = PaletteColor(visualIndex * 2 + 1);
             Material material = MaterialFor(trace);
 
             int conditionLayer = 2 + baseLayer * 2;
@@ -112,8 +114,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 && trace.ConditionCells.Count > 0
                 && !SameCells(trace.ConditionCells, trace.VisualTargetCells))
             {
-                Color conditionColor = Color.Lerp(subSkillColor, Color.white, 0.28f);
-                conditionColor.a = subSkillColor.a * 0.62f;
                 RenderConditionScope(
                     channel,
                     trace.ConditionCells,
@@ -129,7 +129,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 _activeTableView?.SetAllExistingScopeHighlight(
                     channel,
                     targetLayer,
-                    subSkillColor,
+                    targetColor,
                     cellWidth,
                     material);
             }
@@ -139,7 +139,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     trace.VisualTargetCells,
                     channel,
                     targetLayer,
-                    subSkillColor,
+                    targetColor,
                     cellWidth,
                     material);
             }

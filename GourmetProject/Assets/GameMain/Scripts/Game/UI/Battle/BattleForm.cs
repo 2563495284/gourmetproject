@@ -1951,8 +1951,6 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            (_world ?? BattleWorldController.Instance)?.ClearDishScopeHighlights();
-
             if (_current != GameplayView.Food && _current != GameplayView.TableView)
             {
                 return;
@@ -1986,6 +1984,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
+            (_world ?? BattleWorldController.Instance)?.ClearDishScopeHighlights();
             _hoveredDishPiece = null;
             _hoveredCell = cell;
             tips.BindMaterialsOnly(materials);

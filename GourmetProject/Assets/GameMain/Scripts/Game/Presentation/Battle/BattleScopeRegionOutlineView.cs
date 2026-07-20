@@ -25,8 +25,9 @@ namespace GourmetProject.Game.Presentation.Battle
 
         [SerializeField] private SpriteRenderer _renderer;
         [SerializeField] private Material _outlineMaterial;
-        [SerializeField, Range(1f, 3f)] private float _persistentOutlinePixels = 2f;
-        [SerializeField, Range(1f, 3f)] private float _flashOutlinePixels = 2f;
+        [SerializeField, Range(1f, 8f)] private float _persistentOutlinePixels = 6f;
+        [SerializeField, Range(1f, 8f)] private float _flashOutlinePixels = 6f;
+        [SerializeField, Range(0f, 1f)] private float _outlineAlpha = 0.95f;
         [SerializeField, Range(0.25f, 3f)] private float _persistentGlowIntensity = 1.1f;
         [SerializeField, Range(0.25f, 3f)] private float _flashGlowIntensity = 1.2f;
         [SerializeField, Range(0f, 8f)] private float _persistentPulseSpeed = 0.55f;
@@ -87,6 +88,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             _propertyBlock ??= new MaterialPropertyBlock();
             _renderer.GetPropertyBlock(_propertyBlock);
+            color.a = _outlineAlpha;
             _propertyBlock.SetColor(OutlineColorId, color);
             _propertyBlock.SetFloat(OutlineWidthId, safeWidth);
             _propertyBlock.SetFloat(FillAlphaId, 0f);

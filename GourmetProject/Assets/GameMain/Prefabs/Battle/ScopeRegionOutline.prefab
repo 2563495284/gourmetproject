@@ -17,7 +17,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &8310507455387599002
 Transform:
   m_ObjectHideFlags: 0
@@ -106,8 +106,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Presentation.Battle.BattleScopeRegionOutlineView
   _renderer: {fileID: 8310507455387599003}
   _outlineMaterial: {fileID: 2100000, guid: ddae4db2e52d4ddda932874405152ce7, type: 2}
-  _persistentOutlinePixels: 2
-  _flashOutlinePixels: 2
+  _persistentOutlinePixels: 6
+  _flashOutlinePixels: 6
+  _outlineAlpha: 0.5
   _persistentGlowIntensity: 1.1
   _flashGlowIntensity: 1.2
   _persistentPulseSpeed: 0.55

@@ -16,7 +16,7 @@ Shader "GourmetProject/SpriteOutline"
         _AlphaThreshold ("Alpha Threshold", Range(0.001, 0.5)) = 0.08
         [PerRendererData] _UseRectMask ("Use Rectangle Mask", Float) = 0
         [PerRendererData] _UseGridMask ("Use Grid Mask", Float) = 0
-        [PerRendererData] _GridOutlinePixels ("Grid Outline Pixels", Float) = 2
+        [PerRendererData] _GridOutlinePixels ("Grid Outline Pixels", Float) = 6
         [PerRendererData] _RectSize ("Rectangle Size", Vector) = (1, 1, 0, 0)
         [PerRendererData] _UvInflate ("UV Inflate Compensation", Float) = 1
         [PerRendererData] _SpriteUvRect ("Sprite UV Rect", Vector) = (0, 0, 1, 1)
@@ -172,15 +172,10 @@ Shader "GourmetProject/SpriteOutline"
 
                 if (_UseGridMask > 0.5)
                 {
-                    float gridPixels = clamp(_GridOutlinePixels, 1.0, 3.0);
-                    half ring1 = RingAlpha(sourceUv, _MainTex_TexelSize.xy);
-                    half ring2 = RingAlpha(sourceUv, _MainTex_TexelSize.xy * 2.0);
-                    half ring3 = RingAlpha(sourceUv, _MainTex_TexelSize.xy * 3.0);
-                    half outside = max(
-                        ring1,
-                        max(
-                            ring2 * (half)step(1.5, gridPixels),
-                            ring3 * (half)step(2.5, gridPixels)));
+                    float gridPixels = floor(clamp(_GridOutlinePixels, 1.0, 8.0) + 0.5);
+                    half outside = RingAlpha(
+                        sourceUv,
+                        _MainTex_TexelSize.xy * gridPixels);
                     half outlineAlpha = (half)(outside * (1.0 - sourceMask) * _OutlineColor.a);
                     half3 outlineRgb = (half3)(_OutlineColor.rgb * _GlowIntensity * wave);
                     clip(outlineAlpha - 0.001);
