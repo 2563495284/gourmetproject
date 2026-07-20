@@ -304,14 +304,14 @@
     "trigger": 0,
     "condType": 4,
     "condScope": 13,
-    "condUnit": 0,
+    "condUnit": 1,
     "condMode": 0,
     "condParam": "",
     "actionType": 9,
     "actionScope": 0,
     "actionCount": 0,
     "actionValue": [
-      0.6
+      0.3
     ],
     "actionParam": [],
     "isPassive": false,
@@ -536,7 +536,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{ascope}分数永久 {0}",
+    "descTemplate": "{ascope}\n分数永久 {0}",
     "termId": ""
   },
   {
@@ -651,7 +651,7 @@
     "actionScope": 16,
     "actionCount": 0,
     "actionValue": [
-      10
+      5
     ],
     "actionParam": [],
     "isPassive": false,
@@ -671,7 +671,7 @@
     "actionScope": 0,
     "actionCount": 0,
     "actionValue": [
-      5
+      3
     ],
     "actionParam": [],
     "isPassive": false,
@@ -786,21 +786,21 @@
   {
     "id": "ss_mult_v3",
     "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
+    "condType": 4,
+    "condScope": 14,
+    "condUnit": 1,
     "condMode": 0,
     "condParam": "",
     "actionType": 2,
     "actionScope": 0,
     "actionCount": 0,
     "actionValue": [
-      3
+      0.4
     ],
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "{ascope}倍率 ×{0}",
+    "descTemplate": "{cscope}每有 1 {unit}食物\n{ascope}倍率 {0}",
     "termId": ""
   },
   {
@@ -820,7 +820,7 @@
     "actionParam": [],
     "isPassive": true,
     "signed": false,
-    "descTemplate": "若{cscope}被填满\n{ascope}额外视为 {0} 个食物",
+    "descTemplate": "{ascope}额外视为 {0} 个食物",
     "termId": ""
   },
   {
@@ -1203,12 +1203,32 @@
     "actionScope": 12,
     "actionCount": 0,
     "actionValue": [
-      2
+      2.5
     ],
     "actionParam": [],
     "isPassive": false,
     "signed": false,
     "descTemplate": "{ascope}倍率 ×{0}",
+    "termId": ""
+  },
+  {
+    "id": "ss_count_as_base_v3_1",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 12,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      3
+    ],
+    "actionParam": [],
+    "isPassive": true,
+    "signed": false,
+    "descTemplate": "{ascope}视为 {countas} 个食物",
     "termId": ""
   },
   {

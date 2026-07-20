@@ -464,7 +464,7 @@
   {
     "id": "item_count_le_mult",
     "name": "精致料理",
-    "desc": "结算时食物数量<=10\n所有美食倍率×1.2",
+    "desc": "结算开始\n若食物数量<=10\n所有美食倍率×1.2",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 1.1,
@@ -486,7 +486,7 @@
   {
     "id": "item_count_ge_mult",
     "name": "丰盛大餐",
-    "desc": "结算时食物数量>=10\n所有美食倍率×1.2",
+    "desc": "结算开始\n若食物数量>=10\n所有美食倍率×1.2",
     "quality": 2,
     "specialTags": 0,
     "effectValue": 1.1,
@@ -494,28 +494,6 @@
     "baseWeight": 30,
     "hiddenRange": {
       "min": 30,
-      "max": 80
-    },
-    "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
-    "activeItemHiddenOffset": 0,
-    "fragmentHiddenOffset": 0,
-    "goldHiddenOffset": 0,
-    "termId": "",
-    "price": 45
-  },
-  {
-    "id": "item_per_dish_mult",
-    "name": "流水席",
-    "desc": "结算时每结算1个食物\n所有食物倍率+0.2",
-    "quality": 1,
-    "specialTags": 0,
-    "effectValue": 0.1,
-    "effectParam": "",
-    "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
       "max": 80
     },
     "targetScoreHiddenOffset": 0,
@@ -596,7 +574,7 @@
   {
     "id": "item_free_move_first",
     "name": "免费调整",
-    "desc": "每局第1次上菜后\n可不消耗修正次数移动",
+    "desc": "每局第1次上菜时\n可不消耗修正次数移动",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 0,
@@ -640,32 +618,10 @@
   {
     "id": "item_adjust_to_mult",
     "name": "节俭加成",
-    "desc": "每1个未使用的调整次数\n使所有食物倍率+0.1",
+    "desc": "结算开始\n每个未使用的调整次数\n使所有食物倍率+0.1",
     "quality": 2,
     "specialTags": 0,
     "effectValue": 0.2,
-    "effectParam": "",
-    "baseWeight": 30,
-    "hiddenRange": {
-      "min": 30,
-      "max": 80
-    },
-    "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
-    "activeItemHiddenOffset": 0,
-    "fragmentHiddenOffset": 0,
-    "goldHiddenOffset": 0,
-    "termId": "",
-    "price": 45
-  },
-  {
-    "id": "item_food_convert",
-    "name": "点石成金",
-    "desc": "将5个随机食物\n变为至少同品质的食物",
-    "quality": 2,
-    "specialTags": 0,
-    "effectValue": 5,
     "effectParam": "",
     "baseWeight": 30,
     "hiddenRange": {
