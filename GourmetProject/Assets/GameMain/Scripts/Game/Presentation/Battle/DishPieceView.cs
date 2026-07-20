@@ -51,10 +51,6 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private SpriteRenderer _spriteRenderer;
         [Tooltip("菜品本体动画枢轴（子物体 VisualPivot）。多格菜的缩放/晃动绕这里执行，根节点保持贴格。")]
         [SerializeField] private Transform _visualPivot;
-        [Tooltip("当前结算菜的持续动画枢轴（子物体 SettlementFocusPivot）。")]
-        [SerializeField] private Transform _settlementFocusPivot;
-        [Tooltip("获得增益时的一次性动画枢轴（子物体 FeedbackPivot）。")]
-        [SerializeField] private Transform _feedbackPivot;
         [Tooltip("脚下接触阴影锐利核心层（子物体 Shadow 上的 SpriteRenderer）。")]
         [SerializeField] private SpriteRenderer _shadowRenderer;
         [Tooltip("脚下接触阴影弥散光晕层（子物体 ShadowHalo 上的 SpriteRenderer），高空时显现做虚化。")]
@@ -99,19 +95,12 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField, Range(0f, 0.5f)] private float _flashPulseAmplitude = 0.14f;
         [SerializeField, Range(0f, 64f)] private float _pulseFrequency = 18f;
 
-        [Header("当前结算菜：持续轻摆与呼吸")]
-        [SerializeField] private float _settlementFocusScale = 1.1f;
-        [SerializeField] private float _settlementFocusScaleAmplitude = 0.012f;
-        [SerializeField] private float _settlementFocusRotationDegrees = 1.6f;
-        [SerializeField] private float _settlementFocusCycleDuration = 1.35f;
-        [SerializeField] private float _settlementFocusBlendDuration = 0.12f;
-
-        [Header("获得增益：快速旋转与缩放一次")]
-        [SerializeField] private float _deliciousnessGainPunchScale = 1.08f;
-        [SerializeField] private float _deliciousnessGainPunchDuration = 0.15f;
-        [SerializeField] private float _deliciousnessGainWobbleDegrees = 3f;
-        [SerializeField] private float _deliciousnessGainWobbleDuration = 0.18f;
-        [SerializeField] private float _deliciousnessGainWobbleCycles = 1.5f;
+        [Header("结算标签反馈：美味度增加（仅作用于本体视觉枢轴）")]
+        [SerializeField] private float _deliciousnessGainPunchScale = 1.18f;
+        [SerializeField] private float _deliciousnessGainPunchDuration = 0.18f;
+        [SerializeField] private float _deliciousnessGainWobbleDegrees = 5f;
+        [SerializeField] private float _deliciousnessGainWobbleDuration = 0.22f;
+        [SerializeField] private float _deliciousnessGainWobbleCycles = 2f;
 
         private Sprite _sprite;
         private float _cellSize;
@@ -130,9 +119,6 @@ namespace GourmetProject.Game.Presentation.Battle
         private readonly Dictionary<int, SpriteRenderer> _scopeGlowRenderers = new Dictionary<int, SpriteRenderer>();
         private readonly Dictionary<int, MaterialPropertyBlock> _scopeGlowBlocks = new Dictionary<int, MaterialPropertyBlock>();
         private bool _scopeGlowTemplateMissingReported;
-        private bool _settlementFocusRequested;
-        private float _settlementFocusWeight;
-        private float _settlementFocusTime;
 
         public DishInstance Instance { get; private set; }
 
@@ -166,17 +152,6 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             _hoverEntered = entered;
             _hoverExited = exited;
-        }
-
-        public void SetSettlementFocus(bool active)
-        {
-            EnsureRefs();
-            if (active && !_settlementFocusRequested)
-            {
-                _settlementFocusTime = 0f;
-            }
-
-            _settlementFocusRequested = active;
         }
 
         public Bounds WorldBounds
@@ -424,7 +399,7 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             EnsureRefs();
             return PresentationTween.PunchScaleAndWobbleAsync(
-                _feedbackPivot,
+                VisualAnimationTarget(),
                 _deliciousnessGainPunchScale,
                 _deliciousnessGainPunchDuration,
                 _deliciousnessGainWobbleDegrees,
@@ -659,31 +634,21 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _visualPivot = ResolveChildTransform(_visualPivot, "VisualPivot");
-            _settlementFocusPivot = ResolveChildTransform(_settlementFocusPivot, "SettlementFocusPivot");
-            _feedbackPivot = ResolveChildTransform(_feedbackPivot, "FeedbackPivot");
             _shadowRenderer = ResolveChildRenderer(_shadowRenderer, "Shadow");
             _shadowHaloRenderer = ResolveChildRenderer(_shadowHaloRenderer, "ShadowHalo");
             _spriteRenderer = ResolveChildRenderer(_spriteRenderer, "Sprite");
             _placementGlow = ResolveChildRenderer(_placementGlow, "PlacementGlow");
             _scopeGlowPrefab = ResolveChildRenderer(_scopeGlowPrefab, "ScopeGlowTemplate");
-            EnsureSpriteUnderAnimationPivots();
+            EnsureSpriteUnderVisualPivot();
 
             if (_scopeGlowPrefab != null)
             {
                 _scopeGlowPrefab.gameObject.SetActive(false);
             }
 
-            if (_collider == null
-                || _visualPivot == null
-                || _settlementFocusPivot == null
-                || _feedbackPivot == null
-                || _shadowRenderer == null
-                || _spriteRenderer == null
-                || _placementGlow == null)
+            if (_collider == null || _visualPivot == null || _shadowRenderer == null || _spriteRenderer == null || _placementGlow == null)
             {
-                Debug.LogError(
-                    $"{nameof(DishPieceView)} prefab 缺少固定结构：BoxCollider2D/VisualPivot/SettlementFocusPivot/FeedbackPivot/Sprite/Shadow/PlacementGlow。",
-                    this);
+                Debug.LogError($"{nameof(DishPieceView)} prefab 缺少固定结构：BoxCollider2D/VisualPivot/Sprite/Shadow/PlacementGlow。", this);
             }
         }
 
@@ -866,14 +831,14 @@ namespace GourmetProject.Game.Presentation.Battle
             return null;
         }
 
-        private void EnsureSpriteUnderAnimationPivots()
+        private void EnsureSpriteUnderVisualPivot()
         {
-            if (_feedbackPivot == null || _spriteRenderer == null || _spriteRenderer.transform.parent == _feedbackPivot)
+            if (_visualPivot == null || _spriteRenderer == null || _spriteRenderer.transform.parent == _visualPivot)
             {
                 return;
             }
 
-            _spriteRenderer.transform.SetParent(_feedbackPivot, false);
+            _spriteRenderer.transform.SetParent(_visualPivot, false);
         }
 
         private Transform VisualAnimationTarget()
@@ -883,7 +848,6 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void Update()
         {
-            UpdateSettlementFocus();
             UpdateHover();
 
             if (!_clickEnabled || Instance == null || !WorldInput.PrimaryPressedThisFrame || _collider == null)
@@ -901,48 +865,6 @@ namespace GourmetProject.Game.Presentation.Battle
             if (_collider.OverlapPoint(world))
             {
                 _clicked?.Invoke(Instance);
-            }
-        }
-
-        private void UpdateSettlementFocus()
-        {
-            if (_settlementFocusPivot == null)
-            {
-                return;
-            }
-
-            float blendDuration = Mathf.Max(0.0001f, _settlementFocusBlendDuration);
-            float targetWeight = _settlementFocusRequested ? 1f : 0f;
-            _settlementFocusWeight = Mathf.MoveTowards(
-                _settlementFocusWeight,
-                targetWeight,
-                Time.unscaledDeltaTime / blendDuration);
-
-            if (_settlementFocusWeight <= 0f && !_settlementFocusRequested)
-            {
-                ResetSettlementFocusTransform();
-                return;
-            }
-
-            _settlementFocusTime += Time.unscaledDeltaTime;
-            float cycle = Mathf.Max(0.0001f, _settlementFocusCycleDuration);
-            float wave = Mathf.Sin(_settlementFocusTime * Mathf.PI * 2f / cycle);
-            float focusedScale = Mathf.Max(
-                0.0001f,
-                _settlementFocusScale + wave * _settlementFocusScaleAmplitude);
-            float scale = Mathf.Lerp(1f, focusedScale, _settlementFocusWeight);
-            float angle = wave * _settlementFocusRotationDegrees * _settlementFocusWeight;
-
-            _settlementFocusPivot.localScale = new Vector3(scale, scale, 1f);
-            _settlementFocusPivot.localRotation = Quaternion.Euler(0f, 0f, angle);
-        }
-
-        private void ResetSettlementFocusTransform()
-        {
-            if (_settlementFocusPivot != null)
-            {
-                _settlementFocusPivot.localScale = Vector3.one;
-                _settlementFocusPivot.localRotation = Quaternion.identity;
             }
         }
 
@@ -990,10 +912,6 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void OnDisable()
         {
-            _settlementFocusRequested = false;
-            _settlementFocusWeight = 0f;
-            _settlementFocusTime = 0f;
-            ResetSettlementFocusTransform();
             SetHovered(false);
         }
     }

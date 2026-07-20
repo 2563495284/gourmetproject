@@ -210,10 +210,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     cue.Duration);
             }
 
-            if (cue.PlayGainFeedback)
-            {
-                await view.PlayDeliciousnessGainFeedbackAsync(cancellationToken);
-            }
+            await view.PlayDeliciousnessGainFeedbackAsync(cancellationToken);
         }
 
         private async Awaitable PlayStepBatchAsync(
@@ -276,10 +273,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         cue.Duration);
                 }
 
-                if (cue.PlayGainFeedback)
-                {
-                    _ = PlayFeedbackSafelyAsync(view, cancellationToken);
-                }
+                _ = PlayFeedbackSafelyAsync(view, cancellationToken);
             }
 
             await Awaitable.WaitForSecondsAsync(BatchedCueHold, cancellationToken);
@@ -1033,8 +1027,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         ColorForSource(line.Source),
                         reveal: SettlementRevealSignal.FlatReveal(line.DishInstanceId, line.After, SweetTransferCardDelta(line.Source)),
                         valueChange: DishValueChange.FlatBonus(line.After),
-                        batchKey: BuildDishSkillBatchKey(line),
-                        playGainFeedback: line.After > line.Before + 0.001f);
+                        batchKey: BuildDishSkillBatchKey(line));
                     return true;
 
                 case ScoreLineKind.DishMultiplier:
@@ -1044,8 +1037,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         MultiplierColor,
                         reveal: SettlementRevealSignal.MultiplierReveal(line.DishInstanceId, line.After, SweetTransferCardDelta(line.Source)),
                         valueChange: DishValueChange.Multiplier(line.After),
-                        batchKey: BuildDishSkillBatchKey(line),
-                        playGainFeedback: line.After > line.Before + 0.001f);
+                        batchKey: BuildDishSkillBatchKey(line));
                     return true;
 
                 case ScoreLineKind.DishMultiplierAdd:
@@ -1055,8 +1047,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         MultiplierColor,
                         reveal: SettlementRevealSignal.MultiplierReveal(line.DishInstanceId, line.After, SweetTransferCardDelta(line.Source)),
                         valueChange: DishValueChange.Multiplier(line.After),
-                        batchKey: BuildDishSkillBatchKey(line),
-                        playGainFeedback: line.After > line.Before + 0.001f);
+                        batchKey: BuildDishSkillBatchKey(line));
                     return true;
 
                 case ScoreLineKind.FinalFlat:
@@ -1284,8 +1275,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 float duration = SourceCueDuration,
                 SettlementRevealSignal reveal = default,
                 DishValueChange valueChange = default,
-                string batchKey = null,
-                bool playGainFeedback = false)
+                string batchKey = null)
             {
                 Kind = kind;
                 Text = text;
@@ -1296,7 +1286,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 Reveal = reveal;
                 ValueChange = valueChange;
                 BatchKey = batchKey;
-                PlayGainFeedback = playGainFeedback;
             }
 
             public SettlementCueKind Kind { get; }
@@ -1317,8 +1306,6 @@ namespace GourmetProject.Game.Presentation.Battle
             public DishValueChange ValueChange { get; }
 
             public string BatchKey { get; }
-
-            public bool PlayGainFeedback { get; }
         }
 
         private sealed class PendingLineCue
