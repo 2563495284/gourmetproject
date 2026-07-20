@@ -19,6 +19,7 @@ namespace GourmetProject.Game.Presentation.Battle
         };
 
         [SerializeField] private Color _ownerColor = new Color(1f, 0.92f, 0.35f, 0.9f);
+        [SerializeField] private Color _settlementOwnerColor = new Color(1f, 0.82f, 0.15f, 0.98f);
         [SerializeField] private Color _runtimeSelfColor = new Color(0.42f, 0.92f, 1f, 0.9f);
         [SerializeField] private Color[] _subSkillPalette;
         [SerializeField] private float _persistentCellWidth = 0.048f;
@@ -28,15 +29,17 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private float _dishInflateStep = 0.018f;
         [SerializeField, Range(0f, 0.2f)] private float _persistentDishOutlineWidth = 0.095f;
         [SerializeField, Range(0f, 0.2f)] private float _flashDishOutlineWidth = 0.13f;
+        [SerializeField] private float _settlementOwnerInflate = 1.16f;
+        [SerializeField, Range(0f, 0.2f)] private float _settlementOwnerOutlineWidth = 0.16f;
         [SerializeField] private float _flashDuration = 0.32f;
         [SerializeField] private Material _sweetTransferMaterial;
         [SerializeField] private Material _copySkillMaterial;
+        [SerializeField] private Material _settlementOwnerMaterial;
 
         private DiningTableView _activeTableView;
         private IReadOnlyDictionary<int, DishPieceView> _activeDishViews;
         private int _flashVersion;
         private int _settlementOwnerDishInstanceId;
-        private DishPieceView _settlementOwnerView;
 
         public void ShowPersistent(
             DiningTableView tableView,
@@ -81,19 +84,19 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _settlementOwnerDishInstanceId = ownerDishInstanceId;
-            if (_activeDishViews != null
-                && _activeDishViews.TryGetValue(ownerDishInstanceId, out DishPieceView view)
-                && view != null)
-            {
-                _settlementOwnerView = view;
-                _settlementOwnerView.SetSettlementFocus(true);
-            }
+            SetDishGlow(
+                ownerDishInstanceId,
+                BattleScopeHighlightChannel.SettlementOwner,
+                0,
+                _settlementOwnerColor,
+                _settlementOwnerInflate,
+                _settlementOwnerOutlineWidth,
+                _settlementOwnerMaterial);
         }
 
         public void ClearSettlementOwner()
         {
-            _settlementOwnerView?.SetSettlementFocus(false);
-            _settlementOwnerView = null;
+            ClearChannel(BattleScopeHighlightChannel.SettlementOwner);
             _settlementOwnerDishInstanceId = 0;
         }
 
@@ -116,6 +119,18 @@ namespace GourmetProject.Game.Presentation.Battle
                 int index = signal.Trace.VisualIndex >= 0 ? signal.Trace.VisualIndex : signal.Trace.RuleOrder;
                 RenderTrace(BattleScopeHighlightChannel.Flash, signal.Trace, index, persistent: false);
             }
+            else if (signal.OwnerDishInstanceId > 0)
+            {
+                SetDishGlow(
+                    signal.OwnerDishInstanceId,
+                    BattleScopeHighlightChannel.Flash,
+                    0,
+                    _ownerColor,
+                    _flashDishInflate,
+                    _flashDishOutlineWidth,
+                    null);
+            }
+
             int version = ++_flashVersion;
             _ = ClearFlashAfterAsync(version, cancellationToken);
         }
@@ -158,8 +173,7 @@ namespace GourmetProject.Game.Presentation.Battle
             Color subSkillColor = PaletteColor(baseLayer);
             Material material = MaterialFor(trace);
 
-            if (channel == BattleScopeHighlightChannel.Persistent
-                && trace.OwnerDishInstanceId > 0)
+            if (trace.OwnerDishInstanceId > 0)
             {
                 SetDishGlow(trace.OwnerDishInstanceId, channel, 0, _ownerColor, dishInflate, dishOutlineWidth, null);
             }

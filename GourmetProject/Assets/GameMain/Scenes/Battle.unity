@@ -345,6 +345,7 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Presentation.Battle.BattleScopeHighlightController
   _ownerColor: {r: 1, g: 0.92, b: 0.35, a: 0.9}
+  _settlementOwnerColor: {r: 1, g: 0.82, b: 0.15, a: 0.98}
   _runtimeSelfColor: {r: 0.42, g: 0.92, b: 1, a: 0.9}
   _subSkillPalette:
   - {r: 0.22, g: 0.74, b: 1, a: 0.86}
@@ -359,9 +360,12 @@ MonoBehaviour:
   _dishInflateStep: 0.018
   _persistentDishOutlineWidth: 0.095
   _flashDishOutlineWidth: 0.13
+  _settlementOwnerInflate: 1.16
+  _settlementOwnerOutlineWidth: 0.16
   _flashDuration: 0.32
   _sweetTransferMaterial: {fileID: 0}
   _copySkillMaterial: {fileID: 0}
+  _settlementOwnerMaterial: {fileID: 0}
 --- !u!1 &788870929
 GameObject:
   m_ObjectHideFlags: 0
