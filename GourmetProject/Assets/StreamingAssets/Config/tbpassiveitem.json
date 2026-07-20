@@ -511,7 +511,7 @@
     "desc": "所有食物分数永久+20",
     "quality": 1,
     "specialTags": 0,
-    "effectValue": 10,
+    "effectValue": 20,
     "effectParam": "",
     "baseWeight": 100,
     "hiddenRange": {
@@ -621,7 +621,7 @@
     "desc": "结算开始\n每个未使用的调整次数\n使所有食物倍率+0.1",
     "quality": 2,
     "specialTags": 0,
-    "effectValue": 0.1,
+    "effectValue": 0.2,
     "effectParam": "",
     "baseWeight": 30,
     "hiddenRange": {
@@ -863,7 +863,7 @@
     "desc": "每上3个食物后\n下个食物倍率+1",
     "quality": 1,
     "specialTags": 0,
-    "effectValue": 1,
+    "effectValue": 2,
     "effectParam": "every:3",
     "baseWeight": 100,
     "hiddenRange": {

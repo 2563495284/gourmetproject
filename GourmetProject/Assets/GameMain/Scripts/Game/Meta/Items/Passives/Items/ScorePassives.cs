@@ -7,10 +7,26 @@ namespace GourmetProject.Game.Meta.Passives
 {
     [Preserve]
     [PassiveItemModel("item_perma_flat_all")]
-    public sealed class PermanentAddFlatAllModel : ScoreSpecModel
+    public sealed class PermanentAddFlatAllModel : PassiveItemModel
     {
-        public PermanentAddFlatAllModel() : base(ItemScoreEffectType.PermanentAddFlatAll)
+        public override void OnAcquired()
         {
+            if (Run == null || Value <= 0f)
+            {
+                return;
+            }
+
+            for (int bookIndex = 0; bookIndex < Run.RecipeBookCount; bookIndex++)
+            {
+                System.Collections.Generic.IReadOnlyList<GourmetProject.Game.Run.RecipeBookSlot> book =
+                    Run.GetRecipeBookEntries(bookIndex);
+                for (int dishIndex = 0; dishIndex < book.Count; dishIndex++)
+                {
+                    Run.AddRecipeScoreFlat(bookIndex, dishIndex, Value);
+                }
+            }
+
+            MarkIconUsed();
         }
     }
 
