@@ -1,3 +1,6 @@
+using System.Globalization;
+using GourmetProject.Gameplay.Battle;
+using GourmetProject.Gameplay.Scoring;
 using UnityEngine.Scripting;
 
 namespace GourmetProject.Game.Meta.Passives
@@ -121,17 +124,74 @@ namespace GourmetProject.Game.Meta.Passives
         }
     }
 
-    // —— TODO(passive-item): 以下缺消费方，保留模型占位（行为与现状一致，无副作用）——
-
     [Preserve]
     [PassiveItemModel("item_gold_on_transfer")]
     public sealed class GoldOnTransferCountModel : PassiveItemModel
     {
+        private const int DefaultTransferCount = 10;
+        private const int DefaultGold = 10;
+
+        private int _transferCount;
+        private bool _rewarded;
+
+        public override string InfoText => _transferCount.ToString(CultureInfo.InvariantCulture);
+
+        public override void ApplyToBattle(BattleSession session)
+        {
+            if (session != null)
+            {
+                session.SweetTransferTriggered += OnSweetTransferTriggered;
+            }
+        }
+
+        public override void OnSweetTransferTriggered(SkillTransferRequest request)
+        {
+            if (_rewarded)
+            {
+                return;
+            }
+
+            _transferCount++;
+            int threshold = System.Math.Max(1, PassiveParam.ParseInt(Param, "count", DefaultTransferCount));
+            if (_transferCount >= threshold)
+            {
+                Run.Gold += System.Math.Max(0, GoldAmount);
+                _rewarded = true;
+                Flash();
+            }
+
+            RefreshInfoText();
+        }
+
+        public override string CaptureState()
+            => JoinState(
+                CaptureIconState(),
+                $"count:{_transferCount.ToString(CultureInfo.InvariantCulture)}",
+                _rewarded ? "rewarded:1" : string.Empty);
+
+        public override void RestoreState(string data)
+        {
+            RestoreIconState(data);
+            _transferCount = System.Math.Max(0, ParseStateInt(data, "count", 0));
+            _rewarded = ParseStateBool(data, "rewarded", false);
+        }
+
+        private int GoldAmount => Value > 0f ? (int)Value : DefaultGold;
     }
 
     [Preserve]
     [PassiveItemModel("item_cake_to_gold")]
     public sealed class GoldOnCakeLayersModel : PassiveItemModel
     {
+        private const int DefaultThreshold = 100;
+        private const int DefaultGold = 10;
+
+        public override int GoldForCakeLayers(int happyCakeLayers)
+        {
+            int threshold = System.Math.Max(0, PassiveParam.ParseInt(Param, "threshold", DefaultThreshold));
+            return happyCakeLayers > threshold ? GoldAmount : 0;
+        }
+
+        private int GoldAmount => Value > 0f ? (int)Value : DefaultGold;
     }
 }

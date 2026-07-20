@@ -8,6 +8,7 @@
         "GourmetProject.Gameplay",
         "GourmetProject.Runtime",
         "Luban.Runtime",
+        "UnityGameFramework.Runtime",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

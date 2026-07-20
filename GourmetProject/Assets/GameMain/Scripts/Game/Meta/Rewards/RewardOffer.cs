@@ -156,6 +156,14 @@ namespace GourmetProject.Game.Meta
             BonusGroup.MarkSkipped();
         }
 
+        public void AddFixedGroup(RewardChoiceGroup group)
+        {
+            if (group != null && group.HasChoices)
+            {
+                _fixedGroups.Add(group);
+            }
+        }
+
         public RewardChoiceGroup GetFixedGroup(int index)
         {
             return index >= 0 && index < _fixedGroups.Count ? _fixedGroups[index] : EmptyGroup;

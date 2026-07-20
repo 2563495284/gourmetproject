@@ -34,10 +34,11 @@ namespace GourmetProject.Game.Meta
             var context = new RewardContext(run.Tables, run, effectiveWeek, package, rng, baseGold, actionContext);
             System.Collections.Generic.List<RewardChoiceGroup> fixedGroups = RollFixedGroups(context, package);
             System.Collections.Generic.List<RewardChoice> specificChoices = RollSlotGroup(context, package.SpecificSlotGroupId, out int specificPickCount);
-            return new RewardOffer(
+            RewardOffer offer = new RewardOffer(
                 baseGold,
                 fixedGroups,
                 new RewardChoiceGroup("特定奖励", specificChoices, specificPickCount));
+            return new ItemRuntime(run).ModifyBattleRewardOffer(offer, actionContext, rng);
         }
 
         /// <summary>
@@ -55,6 +56,25 @@ namespace GourmetProject.Game.Meta
             System.Collections.Generic.List<RewardChoice> choices = RollSlotGroup(context, slotGroupId, out int requiredPickCount);
             return choices.Count > 0
                 ? new RewardOffer(0, choices, null, baseGoldClaimed: true, mainRequiredChoiceCount: requiredPickCount)
+                : null;
+        }
+
+        public static RewardChoiceGroup BuildConfigChoiceGroup(
+            GameRun run,
+            IRandomStream rng,
+            string slotGroupId,
+            string title,
+            ActionExecutionContext actionContext = null)
+        {
+            if (run == null || rng == null || string.IsNullOrEmpty(slotGroupId))
+            {
+                return null;
+            }
+
+            var context = new RewardContext(run.Tables, run, null, null, rng, 0, actionContext);
+            System.Collections.Generic.List<RewardChoice> choices = RollSlotGroup(context, slotGroupId, out int requiredPickCount);
+            return choices.Count > 0
+                ? new RewardChoiceGroup(string.IsNullOrWhiteSpace(title) ? GroupTitleFor(choices) : title, choices, requiredPickCount)
                 : null;
         }
 

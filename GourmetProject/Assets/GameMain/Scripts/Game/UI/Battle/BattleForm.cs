@@ -974,12 +974,6 @@ namespace GourmetProject.Game.UI.Battle
                 return false;
             }
 
-            if (_recipeView == null || _recipeView.State != RecipeView.RecipeState.Shown)
-            {
-                ShowNotice(sourceName, "当前菜谱栏没有展开，菜谱券使用失败。", null);
-                return false;
-            }
-
             if (!_run.AddRecipeBook())
             {
                 ShowNotice(sourceName, "菜谱已经满了，无法再获得新菜谱。", null);
@@ -2155,7 +2149,7 @@ namespace GourmetProject.Game.UI.Battle
 
             _infoColumn?.SetBattleScoreOverride(null);
             RefreshAll();
-            _loop?.OnBattleSettled(result, _session != null && _session.IsWin);
+            _loop?.OnBattleSettled(result, _session != null && _session.IsWin, _session?.HappyCakeLayers ?? 0);
         }
 
         private void ApplyRecipeScoreDeltasToRun()

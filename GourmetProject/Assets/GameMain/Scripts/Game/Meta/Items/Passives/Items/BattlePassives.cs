@@ -143,15 +143,4 @@ namespace GourmetProject.Game.Meta.Passives
     public sealed class TransferSourceMultModel : SweetTransferCounterModel
     {
     }
-
-    /// <summary>TODO(passive-item): 需选目标/食物转换子系统；获得时占位。</summary>
-    [Preserve]
-    [PassiveItemModel("item_food_convert")]
-    public sealed class FoodConvertModel : PassiveItemModel
-    {
-        public override void OnAcquired()
-        {
-            Log.Info($"OnAcquire 效果 FoodConvert({ItemId}) 尚未实装，已忽略。", "Item");
-        }
-    }
 }

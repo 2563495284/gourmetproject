@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using GourmetProject.Core.Rng;
 using GourmetProject.Game.Meta.Passives;
 using GourmetProject.Game.Run;
 
@@ -246,6 +247,19 @@ namespace GourmetProject.Game.Meta
         /// <summary>多选一可选「次数」增加（各模型累加）。</summary>
         public int ChoiceTimesBonus() => SumInt(m => m.ChoiceTimesBonus());
 
+        public RewardOffer ModifyBattleRewardOffer(
+            RewardOffer offer,
+            ActionExecutionContext actionContext,
+            IRandomStream rng)
+        {
+            foreach (PassiveItemModel m in Models)
+            {
+                offer = m.ModifyBattleRewardOffer(offer, actionContext, rng);
+            }
+
+            return offer;
+        }
+
         // ================= 事件 / 行动概率族 =================
 
         /// <summary>遇到奖励事件的额外概率（累加）。</summary>
@@ -272,6 +286,8 @@ namespace GourmetProject.Game.Meta
         public int CakeThresholdReduction() => SumInt(m => m.CakeThresholdReduction());
 
         public int CakeAccelBonus() => SumInt(m => m.CakeAccelBonus());
+
+        public int GoldForCakeLayers(int happyCakeLayers) => SumInt(m => m.GoldForCakeLayers(happyCakeLayers));
 
         /// <summary>跨品鉴保留的蛋糕层数比例（取最大；0 表示不保留）。</summary>
         public float CakeRetainFraction()

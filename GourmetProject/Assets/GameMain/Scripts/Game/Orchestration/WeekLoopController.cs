@@ -389,8 +389,13 @@ namespace GourmetProject.Game.Orchestration
             cb?.Invoke();
         }
 
-        public void OnBattleSettled(ScoreResult result, bool isWin)
+        public void OnBattleSettled(ScoreResult result, bool isWin, int finalHappyCakeLayers)
         {
+            if (isWin)
+            {
+                ApplyCakeLayerGold(finalHappyCakeLayers);
+            }
+
             if (isWin && _currentBattleIsBoss)
             {
                 ContinueBattleWin(hideBattleWorld: true);
@@ -433,6 +438,19 @@ namespace GourmetProject.Game.Orchestration
                 // 常规美食/Boss 挑战不达标即失败；事件战斗可通过 onLose 覆盖为惩罚后继续。
                 _view.ShowRunResult(false, result.Total);
             }
+        }
+
+        private void ApplyCakeLayerGold(int finalHappyCakeLayers)
+        {
+            var itemRuntime = new ItemRuntime(_run);
+            int gold = itemRuntime.GoldForCakeLayers(finalHappyCakeLayers);
+            if (gold <= 0)
+            {
+                return;
+            }
+
+            itemRuntime.FlashTriggered(m => m.GoldForCakeLayers(finalHappyCakeLayers) > 0);
+            _run.Gold += gold;
         }
 
         /// <summary>RewardForm 发奖确认后回调：继续战斗后的编排续接。</summary>

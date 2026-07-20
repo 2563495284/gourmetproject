@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using GourmetProject.Core.Rng;
+using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Scoring;
@@ -191,6 +193,12 @@ namespace GourmetProject.Game.Meta.Passives
         /// <summary>多选一可选「次数」增加（分发器累加）。</summary>
         public virtual int ChoiceTimesBonus() => 0;
 
+        /// <summary>战斗胜利奖励生成后，允许被动道具追加奖励组。</summary>
+        public virtual RewardOffer ModifyBattleRewardOffer(
+            RewardOffer offer,
+            ActionExecutionContext actionContext,
+            IRandomStream rng) => offer;
+
         // ================= 事件 / 行动概率族 =================
 
         /// <summary>遇到奖励事件的额外概率（分发器累加）。</summary>
@@ -228,6 +236,9 @@ namespace GourmetProject.Game.Meta.Passives
         public virtual int CakeThresholdReduction() => 0;
 
         public virtual int CakeAccelBonus() => 0;
+
+        /// <summary>最终蛋糕层数满足条件时给予的金币。</summary>
+        public virtual int GoldForCakeLayers(int happyCakeLayers) => 0;
 
         /// <summary>跨品鉴保留的蛋糕层数比例（取最大）。返回 false 表示不提供。</summary>
         public virtual bool TryGetCakeRetainFraction(out float value)
