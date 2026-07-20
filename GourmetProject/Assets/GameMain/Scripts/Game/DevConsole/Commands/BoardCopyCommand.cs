@@ -60,12 +60,12 @@ namespace GourmetProject.Game.DevConsole.Commands
                 ? board.Dishes
                     .Where(d => !d.ExcludedFromScore)
                     .OrderByDescending(d => ScoreSnapshot.SettlementLayerOf(d, db))
-                    .ThenByDescending(d => ScoreSnapshot.SettlementBoardOrderOf(d, board.Width, true))
+                    .ThenByDescending(d => ScoreSnapshot.SettlementBoardOrderOf(d, board.Width))
                     .ThenBy(d => d.Id)
                 : board.Dishes
                     .Where(d => !d.ExcludedFromScore)
                     .OrderByDescending(d => ScoreSnapshot.SettlementLayerOf(d, db))
-                    .ThenBy(d => ScoreSnapshot.SettlementBoardOrderOf(d, board.Width, false))
+                    .ThenBy(d => ScoreSnapshot.SettlementBoardOrderOf(d, board.Width))
                     .ThenBy(d => d.Id);
             int expectedIndex = 0;
             foreach (DishInstance dish in expectedOrder)

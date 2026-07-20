@@ -35,8 +35,10 @@ namespace GourmetProject.Tests.EditMode
             table.Place(eggTart);
 
             var snapshot = new ScoreSnapshot(table, db);
+            var reversed = new ScoreSnapshot(table, db, reverseDishOrder: true);
 
             Assert.That(snapshot.DishesInDefaultOrder.Select(d => d.Id), Is.EqualTo(new[] { 8, 1 }));
+            Assert.That(reversed.DishesInDefaultOrder.Select(d => d.Id), Is.EqualTo(new[] { 1, 8 }));
         }
 
         [Test]
