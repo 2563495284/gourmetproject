@@ -43,14 +43,16 @@ namespace GourmetProject.Game.UI.Widgets
             }
 
             _contentRoot.gameObject.SetActive(true);
+            ComposeFlavorScratch(def, flavorIds);
 
-            DishShape shape = def.Shape.RotatedBy(def.RotationIndex);
+            int rotationIndex = DisplayRotationIndex(def);
+            DishShape shape = def.Shape.RotatedBy(rotationIndex);
             int dim = Mathf.Max(shape.Width, shape.Height);
             float offX = (dim - shape.Width) * 0.5f;
             float offY = (dim - shape.Height) * 0.5f;
 
             BuildBoardGrid(shape, dim, offX, offY);
-            BuildDishImage(def, spriteOverride, flavorIds, shape, dim, offX, offY);
+            BuildDishImage(def, spriteOverride, rotationIndex, shape, dim, offX, offY);
         }
 
         public void Hide()
@@ -102,7 +104,7 @@ namespace GourmetProject.Game.UI.Widgets
         private void BuildDishImage(
             DishDef def,
             Sprite spriteOverride,
-            IReadOnlyList<string> flavorIds,
+            int rotationIndex,
             DishShape shape,
             int dim,
             float offX,
@@ -118,18 +120,19 @@ namespace GourmetProject.Game.UI.Widgets
             _dishImage.color = Color.white;
             _dishImage.raycastTarget = false;
             _dishImage.preserveAspect = false;
-            ApplyFlavorStain(def, flavorIds);
+            ApplyFlavorStain(def);
 
             RectTransform rect = _dishImage.rectTransform;
-            rect.anchorMin = new Vector2(offX / dim, 1f - (offY + shape.Height) / dim);
-            rect.anchorMax = new Vector2((offX + shape.Width) / dim, 1f - offY / dim);
+            ApplyDishImageRect(rect, rotationIndex, shape, dim, offX, offY);
+            rect.localRotation = Quaternion.Euler(0f, 0f, -90f * rotationIndex);
+            rect.anchoredPosition = Vector2.zero;
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
             rect.localScale = Vector3.one;
             rect.SetAsLastSibling();
         }
 
-        private void ApplyFlavorStain(DishDef def, IReadOnlyList<string> flavorIds)
+        private void ComposeFlavorScratch(DishDef def, IReadOnlyList<string> flavorIds)
         {
             _flavorScratch.Clear();
             if (flavorIds != null)
@@ -140,7 +143,30 @@ namespace GourmetProject.Game.UI.Widgets
             {
                 _flavorScratch.Add(def.FlavorId);
             }
+        }
 
+        private int DisplayRotationIndex(DishDef def)
+        {
+            return FlavorStainPalette.DisplayRotationIndex(def != null ? def.RotationIndex : 0, _flavorScratch);
+        }
+
+        private void ApplyDishImageRect(RectTransform rect, int rotationIndex, DishShape shape, int dim, float offX, float offY)
+        {
+            int rot = ((rotationIndex % 4) + 4) % 4;
+            bool swapped = (rot % 2) == 1;
+            float imageW = swapped ? shape.Height : shape.Width;
+            float imageH = swapped ? shape.Width : shape.Height;
+            float centerX = (offX + shape.Width * 0.5f) / dim;
+            float centerY = 1f - (offY + shape.Height * 0.5f) / dim;
+            float halfW = imageW * 0.5f / dim;
+            float halfH = imageH * 0.5f / dim;
+
+            rect.anchorMin = new Vector2(centerX - halfW, centerY - halfH);
+            rect.anchorMax = new Vector2(centerX + halfW, centerY + halfH);
+        }
+
+        private void ApplyFlavorStain(DishDef def)
+        {
             var settings = new FlavorStainPalette.Settings(
                 _stainScale,
                 _stainThreshold,

@@ -10,6 +10,8 @@ namespace GourmetProject.Game.Presentation.Battle
     /// </summary>
     internal static class FlavorStainPalette
     {
+        public const string NumbFlavorId = "t_numb";
+
         private const int MaxStains = 4;
         private static readonly int StainCountId = Shader.PropertyToID("_StainCount");
         private static readonly int StainScaleId = Shader.PropertyToID("_StainScale");
@@ -141,6 +143,20 @@ namespace GourmetProject.Game.Presentation.Battle
             material = null;
         }
 
+        /// <summary>按「麻」风味计算显示朝向：麻为逆时针 90°，折算到 DishShape 的顺时针 rotationIndex。</summary>
+        public static int DisplayRotationIndex(int baseRotationIndex, IReadOnlyList<string> flavorIds)
+        {
+            int rotationIndex = ((baseRotationIndex % 4) + 4) % 4;
+            int numbSteps = NumbSteps(flavorIds);
+            if (numbSteps <= 0)
+            {
+                return rotationIndex;
+            }
+
+            int clockwiseSteps = (4 - (numbSteps % 4)) % 4;
+            return ((rotationIndex + clockwiseSteps) % 4 + 4) % 4;
+        }
+
         private static List<Color> ResolveColors(IReadOnlyList<string> flavorIds)
         {
             var colors = new List<Color>(MaxStains);
@@ -158,6 +174,25 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             return colors;
+        }
+
+        private static int NumbSteps(IReadOnlyList<string> flavorIds)
+        {
+            if (flavorIds == null)
+            {
+                return 0;
+            }
+
+            int steps = 0;
+            for (int i = 0; i < flavorIds.Count; i++)
+            {
+                if (flavorIds[i] == NumbFlavorId)
+                {
+                    steps++;
+                }
+            }
+
+            return steps;
         }
 
         private static void ApplyProperties(MaterialPropertyBlock block, IReadOnlyList<Color> colors, Settings settings)

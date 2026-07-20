@@ -828,7 +828,9 @@ namespace GourmetProject.Game.UI.Meta
                     false,
                     true,
                     false,
-                    () => ClaimChoice(groupIndex, index, choices));
+                    () => ClaimChoice(groupIndex, index, choices),
+                    dish: DishForChoice(choice),
+                    flavorIds: FlavorIdsForChoice(choice));
             }
         }
 
@@ -852,7 +854,9 @@ namespace GourmetProject.Game.UI.Meta
                 false,
                 true,
                 false,
-                () => OpenChoicePack(groupIndex, choices));
+                () => OpenChoicePack(groupIndex, choices),
+                dish: DishForChoice(firstChoice),
+                flavorIds: FlavorIdsForChoice(firstChoice));
         }
 
         private void OpenChoicePack(int groupIndex, IReadOnlyList<RewardChoice> choices)
@@ -1284,6 +1288,23 @@ namespace GourmetProject.Game.UI.Meta
                 default:
                     return null;
             }
+        }
+
+        private DishDef DishForChoice(RewardChoice choice)
+        {
+            return choice != null && choice.Kind == cfg.RewardKind.DishChoice
+                ? _run?.Database.GetDish(choice.Id)
+                : null;
+        }
+
+        private static IReadOnlyList<string> FlavorIdsForChoice(RewardChoice choice)
+        {
+            if (choice == null || choice.Kind != cfg.RewardKind.DishChoice || string.IsNullOrEmpty(choice.FlavorId))
+            {
+                return null;
+            }
+
+            return new[] { choice.FlavorId };
         }
 
         private Sprite LoadDishIcon(string dishId)

@@ -1131,7 +1131,7 @@ namespace GourmetProject.Game.UI.Battle
         /// <summary>战斗态扇形菜谱条：每本菜谱一张卡，点击从该菜谱上菜（触发世界空间上菜动画）。</summary>
         private void BuildBattleRecipe()
         {
-            _recipePresenter?.BuildBattle(_session, ServeFromRecipe);
+            _recipePresenter?.BuildBattle(_session, ServeFromRecipe, OpenRecipeInspect);
         }
 
         private void ServeFromRecipe(int slotIndex)

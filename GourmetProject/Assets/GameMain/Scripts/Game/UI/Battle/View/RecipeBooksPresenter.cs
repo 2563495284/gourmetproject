@@ -59,8 +59,8 @@ namespace GourmetProject.Game.UI.Battle.View
             BuildPersistent(run, showAdd, canBuy ? onBuy : null, onInspect);
         }
 
-        /// <summary>战斗态扇形菜谱条：每本菜谱一张卡，点击从该菜谱上菜（触发世界空间上菜动画）。</summary>
-        public void BuildBattle(BattleSession session, Action<int> onServe)
+        /// <summary>战斗态扇形菜谱条：每本菜谱一张卡，左键上菜，右键查看菜谱。</summary>
+        public void BuildBattle(BattleSession session, Action<int> onServe, Action<int> onInspect = null)
         {
             if (_recipeView == null || session == null)
             {
@@ -77,7 +77,9 @@ namespace GourmetProject.Game.UI.Battle.View
                     $"菜谱{i + 1}",
                     $"剩 {slot.Count}",
                     interactable,
-                    () => onServe?.Invoke(slotIndex)));
+                    () => onServe?.Invoke(slotIndex),
+                    true,
+                    onInspect == null ? null : () => onInspect.Invoke(slotIndex)));
             }
 
             _recipeView.SetBooks(books);

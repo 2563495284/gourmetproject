@@ -23,13 +23,20 @@ namespace GourmetProject.Game.UI.Hud
         /// <summary>一本菜谱本的数据（标题、容量文本、是否可点、点击回调）。</summary>
         public readonly struct BookEntry
         {
-            public BookEntry(string title, string capacity, bool interactable, Action onClick, bool canReceiveDish = true)
+            public BookEntry(
+                string title,
+                string capacity,
+                bool interactable,
+                Action onClick,
+                bool canReceiveDish = true,
+                Action onRightClick = null)
             {
                 Title = title;
                 Capacity = capacity;
                 Interactable = interactable;
                 OnClick = onClick;
                 CanReceiveDish = canReceiveDish;
+                OnRightClick = onRightClick;
             }
 
             public string Title { get; }
@@ -37,6 +44,7 @@ namespace GourmetProject.Game.UI.Hud
             public bool Interactable { get; }
             public Action OnClick { get; }
             public bool CanReceiveDish { get; }
+            public Action OnRightClick { get; }
         }
 
         [Header("Prefabs")]
@@ -179,7 +187,7 @@ namespace GourmetProject.Game.UI.Hud
                 slot.BookIndex = i;
                 slot.CanReceiveDish = entry.CanReceiveDish;
                 var view = slot.Go.GetComponent<RecipeCardView>();
-                view?.Bind(entry.Capacity, entry.Interactable, entry.OnClick);
+                view?.Bind(entry.Capacity, entry.Interactable, entry.OnClick, entry.OnRightClick);
                 view?.SetTargetHighlight(false, false);
             }
 

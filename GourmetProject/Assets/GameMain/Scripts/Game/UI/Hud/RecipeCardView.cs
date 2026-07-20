@@ -1,5 +1,7 @@
 using System;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace GourmetProject.Game.UI.Hud
@@ -8,20 +10,22 @@ namespace GourmetProject.Game.UI.Hud
     /// 扇形菜谱条里的一本菜谱本卡：显示容量文本（如 10/12）+ 点击回调（战斗态用于上菜，非战斗态置灰）。
     /// 固定结构在 Recipe.prefab，由 <see cref="RecipeView"/> 数据驱动实例化并做扇形排布/补间动画。
     /// </summary>
-    public sealed class RecipeCardView : MonoBehaviour
+    public sealed class RecipeCardView : MonoBehaviour, IPointerClickHandler
     {
         private static readonly int QuadSizeId = Shader.PropertyToID("_QuadSize");
         private static readonly int PaddingId = Shader.PropertyToID("_Padding");
 
         private const float GlowPadding = 28f;
 
-        [SerializeField] private Text _capacityText;
+        [FormerlySerializedAs("_capacityText")]
+        [SerializeField] private Text _infoText;
         [SerializeField] private Button _button;
         [SerializeField] private CanvasGroup _canvasGroup;
         [SerializeField] private Image _glowBorder;
 
         private RectTransform _rect;
         private Material _glowMaterial;
+        private Action _onRightClick;
 
         public RectTransform Rect
         {
@@ -62,11 +66,13 @@ namespace GourmetProject.Game.UI.Hud
             }
         }
 
-        public void Bind(string capacity, bool interactable, Action onClick)
+        public void Bind(string capacity, bool interactable, Action onClick, Action onRightClick = null)
         {
-            if (_capacityText != null)
+            _onRightClick = onRightClick;
+
+            if (_infoText != null)
             {
-                _capacityText.text = capacity ?? string.Empty;
+                _infoText.text = capacity ?? string.Empty;
             }
 
             if (_button != null)
@@ -78,6 +84,17 @@ namespace GourmetProject.Game.UI.Hud
                     _button.onClick.AddListener(() => onClick());
                 }
             }
+        }
+
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            if (eventData == null || eventData.button != PointerEventData.InputButton.Right)
+            {
+                return;
+            }
+
+            _onRightClick?.Invoke();
+            eventData.Use();
         }
 
         public bool ContainsScreenPoint(Vector2 screenPoint, Camera eventCamera)
