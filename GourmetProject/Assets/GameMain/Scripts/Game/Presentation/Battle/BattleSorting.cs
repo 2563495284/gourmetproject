@@ -35,6 +35,8 @@ namespace GourmetProject.Game.Presentation.Battle
         // —— 层内细分 order ——
         public const int OrderShadow = 0;
         public const int OrderBody = 10;
+        public const int OrderTargetArrowLine = -2;
+        public const int OrderTargetArrowHead = -1;
         public const int OrderButtonBg = 0;
         public const int OrderButtonLabel = 1;
         public const int OrderScoreFire = 5;

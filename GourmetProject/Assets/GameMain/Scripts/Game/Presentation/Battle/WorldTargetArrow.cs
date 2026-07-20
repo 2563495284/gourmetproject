@@ -61,7 +61,7 @@ namespace GourmetProject.Game.Presentation.Battle
             var lineColor = new Color(0.15f, 0.15f, 0.15f, 0.95f);
             _line.startColor = lineColor;
             _line.endColor = lineColor;
-            BattleSorting.Apply(_line, BattleSorting.WorldUi, BattleSorting.OrderButtonBg + 2);
+            BattleSorting.Apply(_line, BattleSorting.WorldUi, BattleSorting.OrderTargetArrowLine);
 
             if (_head.sprite == null)
             {
@@ -70,7 +70,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             _head.color = new Color(0.15f, 0.15f, 0.15f, 0.98f);
             SpriteRenderStyle.ApplyUnlitMaterial(_head);
-            BattleSorting.Apply(_head, BattleSorting.WorldUi, BattleSorting.OrderButtonBg + 3);
+            BattleSorting.Apply(_head, BattleSorting.WorldUi, BattleSorting.OrderTargetArrowHead);
 
             float headSize = Mathf.Max(0.2f, cellSize * 0.55f);
             Sprite headSprite = _head.sprite;
