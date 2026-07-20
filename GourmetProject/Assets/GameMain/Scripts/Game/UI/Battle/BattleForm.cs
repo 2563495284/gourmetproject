@@ -364,6 +364,7 @@ namespace GourmetProject.Game.UI.Battle
                     PermanentMultBonus = dish.PermanentMultBonus,
                     TemporaryBaseMultiplier = dish.TemporaryBaseMultiplier,
                     ServeMultiplier = dish.ServeMultiplier,
+                    ServeMultiplierFlatBonus = dish.ServeMultiplierFlatBonus,
                     SkillsDisabled = dish.SkillsDisabled,
                     ExcludedFromScore = dish.ExcludedFromScore,
                     IsTemporary = dish.IsTemporary,
@@ -504,6 +505,11 @@ namespace GourmetProject.Game.UI.Battle
             if (saved.ServeMultiplier > 0f && Math.Abs(saved.ServeMultiplier - 1f) > 0.0001f)
             {
                 dish.MultiplyServeMultiplier(saved.ServeMultiplier);
+            }
+
+            if (Math.Abs(saved.ServeMultiplierFlatBonus) > 0.0001f)
+            {
+                dish.AddServeMultiplierFlat(saved.ServeMultiplierFlatBonus);
             }
 
             if (saved.SkillsDisabled)
@@ -1736,13 +1742,19 @@ namespace GourmetProject.Game.UI.Battle
                 _foodAdjustOverlay?.Show(_boardArea);
             }
 
-            _infoColumn?.SetFoodAdjustActive(true, _run != null ? _run.FoodAdjustCount : 0);
+            _infoColumn?.SetFoodAdjustActive(
+                true,
+                _run != null ? _run.FoodAdjustCount : 0,
+                _run != null && _run.FoodAdjustFreeAvailable);
         }
 
         private void ExitFoodAdjustUI()
         {
             _foodAdjustOverlay?.Hide();
-            _infoColumn?.SetFoodAdjustActive(false, _run != null ? _run.FoodAdjustCount : 0);
+            _infoColumn?.SetFoodAdjustActive(
+                false,
+                _run != null ? _run.FoodAdjustCount : 0,
+                _run != null && _run.FoodAdjustFreeAvailable);
             RefreshPersistent();
         }
 
@@ -1790,6 +1802,7 @@ namespace GourmetProject.Game.UI.Battle
             SetMessage(string.Empty);
             _run.BeginFoodActionAdjustments(BossDebuffModifiers.IsPrefabFood(modifier));
             _session = _run.BuildBattleSession(requiredScore, modifier, key);
+            _session.Served += OnBattleServed;
             // 常驻壳在战斗中持续显示并接管分数/道具/菜谱面板（餐桌/菜品仍在世界空间场景）。
             SwitchTo(GameplayView.Food);
 
@@ -1812,6 +1825,12 @@ namespace GourmetProject.Game.UI.Battle
             _world.SetDishHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
             _world.SetCellHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
             RefreshAll();
+        }
+
+        private void OnBattleServed(DishInstance dish, int servesUsed)
+        {
+            _run?.RefreshFoodAdjustFreeMove(servesUsed);
+            RefreshPersistent();
         }
 
         private cfg.BossDebuff ResolveBossDebuff(string modifier)
@@ -2092,6 +2111,7 @@ namespace GourmetProject.Game.UI.Battle
 
             _settlementReveal = reveal;
 
+            ApplyStartSettlementPassiveEffects();
             ScoreResult result = _session.Settle();
             ApplyRecipeScoreDeltasToRun();
             SetSettlementScore(0);
@@ -2150,6 +2170,47 @@ namespace GourmetProject.Game.UI.Battle
             _infoColumn?.SetBattleScoreOverride(null);
             RefreshAll();
             _loop?.OnBattleSettled(result, _session != null && _session.IsWin, _session?.HappyCakeLayers ?? 0);
+        }
+
+        private void ApplyStartSettlementPassiveEffects()
+        {
+            if (_run == null || _session == null)
+            {
+                return;
+            }
+
+            int unusedAdjust = _run.FoodAdjustCount;
+            if (unusedAdjust <= 0)
+            {
+                return;
+            }
+
+            var itemRuntime = new ItemRuntime(_run);
+            float multPerUnused = itemRuntime.AdjustToMultPerUnused();
+            if (multPerUnused > 0f)
+            {
+                _session.ApplySettlementDishMultiplierFlat(
+                    unusedAdjust * multPerUnused,
+                    "item_adjust_to_mult",
+                    PassiveItemName("item_adjust_to_mult"));
+                itemRuntime.FlashTriggered(m =>
+                {
+                    return m.TryGetAdjustToMult(out float value) && value > 0f;
+                });
+            }
+
+            int goldPerUnused = itemRuntime.GoldPerUnusedAdjust();
+            if (goldPerUnused > 0)
+            {
+                _session.AddPendingGold(unusedAdjust * goldPerUnused);
+                itemRuntime.FlashTriggered(m => m.GoldPerUnusedAdjust() > 0);
+            }
+        }
+
+        private string PassiveItemName(string itemId)
+        {
+            ItemDefinition item = ItemDefinition.Get(_run?.Tables, itemId, cfg.ItemKind.Passive);
+            return item != null ? item.Name : itemId;
         }
 
         private void ApplyRecipeScoreDeltasToRun()

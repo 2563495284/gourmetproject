@@ -260,6 +260,34 @@ namespace GourmetProject.Game.Meta
             return offer;
         }
 
+        public float SweetTransferTargetMultiplier()
+        {
+            float best = 1f;
+            foreach (PassiveItemModel m in Models)
+            {
+                if (m.TryGetSweetTransferTargetMultiplier(out float v) && v > best)
+                {
+                    best = v;
+                }
+            }
+
+            return best;
+        }
+
+        public float SweetTransferSourceMultiplier()
+        {
+            float best = 1f;
+            foreach (PassiveItemModel m in Models)
+            {
+                if (m.TryGetSweetTransferSourceMultiplier(out float v) && v > best)
+                {
+                    best = v;
+                }
+            }
+
+            return best;
+        }
+
         // ================= 事件 / 行动概率族 =================
 
         /// <summary>遇到奖励事件的额外概率（累加）。</summary>

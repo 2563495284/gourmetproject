@@ -73,6 +73,26 @@ namespace GourmetProject.Game.Presentation.Battle
             FinalScore = 4,
         }
 
+        public void PlayFloatingText(
+            Transform parent,
+            Vector3 worldPos,
+            string text,
+            Color color,
+            float? characterSize = null,
+            float? rise = null,
+            float? duration = null)
+        {
+            FloatingTextView.Spawn(
+                _floatingTextPrefab,
+                parent != null ? parent : transform,
+                worldPos,
+                text,
+                color,
+                characterSize,
+                rise,
+                duration);
+        }
+
         public async Awaitable PlayAsync(
             BattleSession session,
             ScoreResult result,

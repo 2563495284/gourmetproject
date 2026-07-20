@@ -136,11 +136,21 @@ namespace GourmetProject.Game.Meta.Passives
     [PassiveItemModel("item_transfer_target_mult")]
     public sealed class TransferTargetMultModel : SweetTransferCounterModel
     {
+        public override bool TryGetSweetTransferTargetMultiplier(out float value)
+        {
+            value = Value;
+            return value > 0f;
+        }
     }
 
     [Preserve]
     [PassiveItemModel("item_transfer_source_mult")]
     public sealed class TransferSourceMultModel : SweetTransferCounterModel
     {
+        public override bool TryGetSweetTransferSourceMultiplier(out float value)
+        {
+            value = Value;
+            return value > 0f;
+        }
     }
 }

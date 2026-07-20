@@ -184,6 +184,10 @@ namespace GourmetProject.Game.Run
         private bool _foodAdjustSuppressBase;
         private int _foodAdjustActionBonus;
         private int _foodAdjustSpent;
+        private bool _foodAdjustFreeAvailable;
+        private bool _foodAdjustFreeSpent;
+        private bool _foodAdjustFreeExpired;
+        private int _retainedHappyCakeLayers;
 
         /// <summary>「食物调整」本次美食行动额度：本局基础值 + 被动道具加成。</summary>
         public int FoodAdjustBaseCount
@@ -197,6 +201,12 @@ namespace GourmetProject.Game.Run
         /// <summary>「食物调整」剩余次数。只在当前美食行动内消耗，行动结束后恢复为基础额度。</summary>
         public int FoodAdjustCount => System.Math.Max(0, FoodAdjustLimit - _foodAdjustSpent);
 
+        public bool FoodAdjustFreeAvailable =>
+            _foodAdjustActionActive
+            && _foodAdjustFreeAvailable
+            && !_foodAdjustFreeSpent
+            && !_foodAdjustFreeExpired;
+
         private int FoodAdjustLimit =>
             System.Math.Max(0, (_foodAdjustSuppressBase ? 0 : FoodAdjustBaseCount) + (_foodAdjustActionActive ? _foodAdjustActionBonus : 0));
 
@@ -206,6 +216,9 @@ namespace GourmetProject.Game.Run
             _foodAdjustSuppressBase = suppressBase;
             _foodAdjustActionBonus = 0;
             _foodAdjustSpent = 0;
+            _foodAdjustFreeAvailable = false;
+            _foodAdjustFreeSpent = false;
+            _foodAdjustFreeExpired = false;
         }
 
         public void EndFoodActionAdjustments()
@@ -214,6 +227,9 @@ namespace GourmetProject.Game.Run
             _foodAdjustSuppressBase = false;
             _foodAdjustActionBonus = 0;
             _foodAdjustSpent = 0;
+            _foodAdjustFreeAvailable = false;
+            _foodAdjustFreeSpent = false;
+            _foodAdjustFreeExpired = false;
         }
 
         /// <summary>增加当前美食行动的临时调整次数，供主动道具等一次性效果使用。</summary>
@@ -231,6 +247,13 @@ namespace GourmetProject.Game.Run
         /// <summary>尝试消耗一次食物调整：仅在 &gt;0 时 -1 并返回 true。</summary>
         public bool TrySpendFoodAdjust()
         {
+            if (FoodAdjustFreeAvailable)
+            {
+                _foodAdjustFreeSpent = true;
+                _foodAdjustFreeAvailable = false;
+                return true;
+            }
+
             if (FoodAdjustCount <= 0)
             {
                 return false;
@@ -238,6 +261,36 @@ namespace GourmetProject.Game.Run
 
             _foodAdjustSpent++;
             return true;
+        }
+
+        public void RefreshFoodAdjustFreeMove(int servesUsed)
+        {
+            if (!_foodAdjustActionActive || !new ItemRuntime(this).FreeMoveFirstServe())
+            {
+                return;
+            }
+
+            if (servesUsed == 1 && !_foodAdjustFreeSpent && !_foodAdjustFreeExpired)
+            {
+                _foodAdjustFreeAvailable = true;
+            }
+            else if (servesUsed >= 2)
+            {
+                _foodAdjustFreeAvailable = false;
+                _foodAdjustFreeExpired = true;
+            }
+        }
+
+        public int ConsumeRetainedHappyCakeLayers()
+        {
+            int layers = System.Math.Max(0, _retainedHappyCakeLayers);
+            _retainedHappyCakeLayers = 0;
+            return layers;
+        }
+
+        public void SetRetainedHappyCakeLayers(int layers)
+        {
+            _retainedHappyCakeLayers = System.Math.Max(0, layers);
         }
 
         /// <summary>
@@ -1547,6 +1600,7 @@ namespace GourmetProject.Game.Run
                 InterestGoldPer = _interestGoldPer,
                 InterestCap = _interestCap,
                 FoodAdjustCount = _foodAdjustBaseCount,
+                RetainedHappyCakeLayers = _retainedHappyCakeLayers,
                 ActiveUseIndex = _activeUseIndex,
                 ActionRerollCount = _actionRerollCount,
                 LoanDebt = _loanDebt,
@@ -1632,6 +1686,7 @@ namespace GourmetProject.Game.Run
             run._foodAdjustBaseCount = data.FoodAdjustCount >= 0
                 ? data.FoodAdjustCount
                 : System.Math.Max(0, tables.TbGameBase.InitialFoodAdjustCount);
+            run._retainedHappyCakeLayers = System.Math.Max(0, data.RetainedHappyCakeLayers);
             run._activeUseIndex = data.ActiveUseIndex;
             run._actionRerollCount = data.ActionRerollCount >= 0
                 ? data.ActionRerollCount
@@ -2121,6 +2176,7 @@ namespace GourmetProject.Game.Run
                     PermanentMultBonus = dish.PermanentMultBonus,
                     TemporaryBaseMultiplier = dish.TemporaryBaseMultiplier,
                     ServeMultiplier = dish.ServeMultiplier,
+                    ServeMultiplierFlatBonus = dish.ServeMultiplierFlatBonus,
                     SkillsDisabled = dish.SkillsDisabled,
                     ExcludedFromScore = dish.ExcludedFromScore,
                     IsTemporary = dish.IsTemporary,
@@ -3077,7 +3133,20 @@ namespace GourmetProject.Game.Run
                 return false;
             }
 
-            return RemoveOneInstance(itemId);
+            if (!RemoveOneInstance(itemId))
+            {
+                return false;
+            }
+
+            var itemRuntime = new ItemRuntime(this);
+            int gold = itemRuntime.ActiveUseGold();
+            if (gold > 0)
+            {
+                Gold += gold;
+                itemRuntime.FlashTriggered(m => m.ActiveUseGold() > 0);
+            }
+
+            return true;
         }
     }
 }

@@ -362,6 +362,13 @@ namespace GourmetProject.Game.Meta
             requiredPickCount = choices.Count > 0
                 ? System.Math.Min(choices.Count, System.Math.Max(1, chosen.RequiredPickCount))
                 : 0;
+            if (requiredPickCount > 0 && chosen.Kind == cfg.RewardKind.DishChoice && context.Run != null)
+            {
+                requiredPickCount = System.Math.Min(
+                    choices.Count,
+                    System.Math.Max(1, requiredPickCount + new ItemRuntime(context.Run).ChoiceTimesBonus()));
+            }
+
             return choices;
         }
 

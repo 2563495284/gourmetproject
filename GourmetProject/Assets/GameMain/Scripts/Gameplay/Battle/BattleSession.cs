@@ -27,6 +27,9 @@ namespace GourmetProject.Gameplay.Battle
         private readonly List<RecipeScoreMultiplierDelta> _lastRecipeScoreMultiplierDeltas = new List<RecipeScoreMultiplierDelta>();
         private int _nextInstanceId = 1;
         private int _appetizerRemoved;
+        private float _settlementDishMultiplierFlat;
+        private string _settlementDishMultiplierItemId = string.Empty;
+        private string _settlementDishMultiplierItemName = string.Empty;
 
         public BattleSession(
             GpTable board,
@@ -136,6 +139,46 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>一次甜蜜传递请求成功落到至少一个目标后触发。</summary>
         public event Action<SkillTransferRequest> SweetTransferTriggered;
 
+        public event Action<DishInstance, int> Served;
+
+        public event Action<DishInstance, float> ServeMultiplierFlatApplied;
+
+        public float SweetTransferTargetMultiplier { get; set; } = 1f;
+
+        public float SweetTransferSourceMultiplier { get; set; } = 1f;
+
+        public void AddPendingGold(float amount)
+        {
+            PendingGold += amount;
+        }
+
+        public void AddServeMultiplierFlat(DishInstance dish, float value)
+        {
+            if (dish == null || Math.Abs(value) < 0.0001f)
+            {
+                return;
+            }
+
+            dish.AddServeMultiplierFlat(value);
+            ServeMultiplierFlatApplied?.Invoke(dish, value);
+        }
+
+        public void ApplySettlementDishMultiplierFlat(float value, string itemId, string itemName)
+        {
+            if (value <= 0f)
+            {
+                return;
+            }
+
+            _settlementDishMultiplierFlat += value;
+            _settlementDishMultiplierItemId = string.IsNullOrEmpty(_settlementDishMultiplierItemId)
+                ? itemId ?? string.Empty
+                : _settlementDishMultiplierItemId;
+            _settlementDishMultiplierItemName = string.IsNullOrEmpty(_settlementDishMultiplierItemName)
+                ? itemName ?? itemId ?? string.Empty
+                : _settlementDishMultiplierItemName;
+        }
+
         /// <summary>从指定菜谱槽随机上一道能放下的菜，并随机朝向/位置摆上餐桌。</summary>
         public ServeResult Serve(int slotIndex)
         {
@@ -201,6 +244,7 @@ namespace GourmetProject.Gameplay.Battle
             ApplyServeModifiers(instance);
             DiningTable.Place(instance);
             ServesUsed++;
+            Served?.Invoke(instance, ServesUsed);
 
             // 上菜时（OnServe）规则：直接改运行时状态（技能）并积累金币/全局层数。
             if (!instance.SkillsDisabled)
@@ -241,7 +285,7 @@ namespace GourmetProject.Gameplay.Battle
                 return ZeroScoreResult();
             }
 
-            return _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes());
+            return _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, extraSources: BuildSettlementExtraSources(), history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes());
         }
 
         /// <summary>「吃」：结算、应用副作用（金币/层数/技能传递/历史）并记录结果。</summary>
@@ -249,7 +293,7 @@ namespace GourmetProject.Gameplay.Battle
         {
             ScoreResult result = MinimumServesForScore > 0 && ServesUsed < MinimumServesForScore
                 ? ZeroScoreResult()
-                : _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes(), copySkillSelector: SelectCopySkills);
+                : _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, extraSources: BuildSettlementExtraSources(), history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes(), copySkillSelector: SelectCopySkills);
             ApplySideEffects(result);
             LastResult = result;
             IsSettled = true;
@@ -422,6 +466,7 @@ namespace GourmetProject.Gameplay.Battle
             HappyCakeLayers = Math.Max(0, HappyCakeLayers + result.HappyCakeLayerDelta + AccelFor(result.HappyCakeLayerDelta));
 
             // 技能传递。
+            var transferSourcesMultiplied = new HashSet<int>();
             foreach (SkillTransferSideEffect transfer in result.SkillTransfers)
             {
                 DishInstance inst = FindInstance(transfer.TargetInstanceId);
@@ -434,6 +479,12 @@ namespace GourmetProject.Gameplay.Battle
                 foreach (SkillEffect effect in transfer.Effects)
                 {
                     inst.AddTransferredSkill(effect, label, transfer.SourceInstanceId);
+                }
+
+                ApplySweetTransferTargetMultiplier(inst);
+                if (transfer.SourceInstanceId > 0 && transferSourcesMultiplied.Add(transfer.SourceInstanceId))
+                {
+                    ApplySweetTransferSourceMultiplier(FindInstance(transfer.SourceInstanceId));
                 }
             }
 
@@ -526,6 +577,7 @@ namespace GourmetProject.Gameplay.Battle
 
                 string sourceLabel = $"{request.SourceName}<甜蜜传递>";
                 bool transferred = false;
+                bool sourceMultiplied = false;
                 foreach (int targetId in targets)
                 {
                     DishInstance target = FindInstance(targetId);
@@ -539,6 +591,12 @@ namespace GourmetProject.Gameplay.Battle
                         target.AddTransferredSkill(effect, sourceLabel, request.SourceInstanceId);
                     }
 
+                    ApplySweetTransferTargetMultiplier(target);
+                    if (!sourceMultiplied)
+                    {
+                        ApplySweetTransferSourceMultiplier(FindInstance(request.SourceInstanceId));
+                        sourceMultiplied = true;
+                    }
                     transferred = true;
                 }
 
@@ -546,6 +604,38 @@ namespace GourmetProject.Gameplay.Battle
                 {
                     SweetTransferTriggered?.Invoke(request);
                 }
+            }
+        }
+
+        private IReadOnlyList<IScoreEffectSource> BuildSettlementExtraSources()
+        {
+            if (_settlementDishMultiplierFlat <= 0f)
+            {
+                return Array.Empty<IScoreEffectSource>();
+            }
+
+            return new IScoreEffectSource[]
+            {
+                new AllDishMultiplierFlatSource(
+                    _settlementDishMultiplierFlat,
+                    _settlementDishMultiplierItemId,
+                    _settlementDishMultiplierItemName),
+            };
+        }
+
+        private void ApplySweetTransferTargetMultiplier(DishInstance target)
+        {
+            if (target != null && SweetTransferTargetMultiplier > 0f && Math.Abs(SweetTransferTargetMultiplier - 1f) > 0.0001f)
+            {
+                target.MultiplyPermanentMult(SweetTransferTargetMultiplier);
+            }
+        }
+
+        private void ApplySweetTransferSourceMultiplier(DishInstance source)
+        {
+            if (source != null && SweetTransferSourceMultiplier > 0f && Math.Abs(SweetTransferSourceMultiplier - 1f) > 0.0001f)
+            {
+                source.MultiplyPermanentMult(SweetTransferSourceMultiplier);
             }
         }
 
@@ -901,6 +991,51 @@ namespace GourmetProject.Gameplay.Battle
             }
 
             return false;
+        }
+
+        private sealed class AllDishMultiplierFlatSource : IScoreEffectSource
+        {
+            private readonly float _value;
+            private readonly string _itemId;
+            private readonly string _itemName;
+
+            public AllDishMultiplierFlatSource(float value, string itemId, string itemName)
+            {
+                _value = value;
+                _itemId = itemId ?? string.Empty;
+                _itemName = itemName ?? _itemId;
+            }
+
+            public void CollectEffects(ScoreSnapshot snapshot, ScoreEffectCollector collector)
+            {
+                if (_value <= 0f)
+                {
+                    return;
+                }
+
+                collector.Add(new ScoreEffectEntry(
+                    ScorePhase.AfterAllDishes,
+                    ScoreSource.Relic(_itemId, _itemName),
+                    new AllDishMultiplierFlatEffect(_value)));
+            }
+        }
+
+        private sealed class AllDishMultiplierFlatEffect : IScoreEffect
+        {
+            private readonly float _value;
+
+            public AllDishMultiplierFlatEffect(float value)
+            {
+                _value = value;
+            }
+
+            public void Apply(ScoreContext context)
+            {
+                foreach (DishInstance dish in context.DiningTable.Dishes)
+                {
+                    context.AddMultFlatTo(dish, _value);
+                }
+            }
         }
 
         private readonly struct ServeCandidate

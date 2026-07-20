@@ -643,7 +643,7 @@
     "desc": "每1个未使用的调整次数\n使所有食物倍率+0.1",
     "quality": 2,
     "specialTags": 0,
-    "effectValue": 0.2,
+    "effectValue": 0.1,
     "effectParam": "",
     "baseWeight": 30,
     "hiddenRange": {
@@ -907,7 +907,7 @@
     "desc": "每上3个食物后\n下个食物倍率+1",
     "quality": 1,
     "specialTags": 0,
-    "effectValue": 2,
+    "effectValue": 1,
     "effectParam": "every:3",
     "baseWeight": 100,
     "hiddenRange": {

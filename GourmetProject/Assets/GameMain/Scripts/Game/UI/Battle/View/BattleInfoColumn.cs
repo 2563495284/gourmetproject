@@ -66,7 +66,7 @@ namespace GourmetProject.Game.UI.Battle.View
         }
 
         /// <summary>切换食物调整态：文案在「食物调整/次数」与「返回」间切换，激活时把按钮浮到遮罩之上。</summary>
-        public void SetFoodAdjustActive(bool active, int count)
+        public void SetFoodAdjustActive(bool active, int count, bool free = false)
         {
             _foodAdjustActive = active;
             SetFoodAdjustRaised(active);
@@ -74,7 +74,7 @@ namespace GourmetProject.Game.UI.Battle.View
             {
                 _foodAdjustText.text = active
                     ? FoodAdjustBackLabel
-                    : $"<size=28>食物调整</size>\n{count}";
+                    : $"<size=28>食物调整</size>\n{FoodAdjustDisplayValue(count, free)}";
             }
         }
 
@@ -160,7 +160,7 @@ namespace GourmetProject.Game.UI.Battle.View
             {
                 _foodAdjustText.text = _foodAdjustActive
                     ? FoodAdjustBackLabel
-                    : $"<size=28>食物调整</size>\n{run.FoodAdjustCount}";
+                    : $"<size=28>食物调整</size>\n{FoodAdjustDisplayValue(run.FoodAdjustCount, run.FoodAdjustFreeAvailable)}";
             }
 
             if (_foodAdjustButton != null)
@@ -187,6 +187,11 @@ namespace GourmetProject.Game.UI.Battle.View
             {
                 _viewTableButtonText.text = text;
             }
+        }
+
+        private static string FoodAdjustDisplayValue(int count, bool free)
+        {
+            return free ? "免费" : count.ToString();
         }
 
         private void RefreshBossStat(GameplayView current, BattleSession session, cfg.BossDebuff bossDebuff)

@@ -31,6 +31,9 @@ namespace GourmetProject.Game.Run
         /// <summary>「食物调整」行动外基础次数快照；被动道具加成由持有道具在运行时叠加。</summary>
         public int FoodAdjustCount = -1;
 
+        /// <summary>蛋糕保鲜保留到下一次美食的初始层数。</summary>
+        public int RetainedHappyCakeLayers;
+
         /// <summary>主动道具累计使用次数（单调递增）。随机类主动效果按此序号派生随机流以保证可复现。</summary>
         public int ActiveUseIndex;
 
@@ -401,6 +404,7 @@ namespace GourmetProject.Game.Run
         public float PermanentMultBonus = 1f;
         public float TemporaryBaseMultiplier = 1f;
         public float ServeMultiplier = 1f;
+        public float ServeMultiplierFlatBonus;
         public bool SkillsDisabled;
         public bool ExcludedFromScore;
         public bool IsTemporary;

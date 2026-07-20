@@ -19,6 +19,8 @@ namespace GourmetProject.Game.Meta.Passives
     public sealed class ChoiceTimesModel : PassiveItemModel
     {
         public override int ChoiceTimesBonus() => (int)Value;
+
+        public override int ChoiceCountDelta() => -(int)Value;
     }
 
     public abstract class NormalFoodExtraChoiceModel : PassiveItemModel

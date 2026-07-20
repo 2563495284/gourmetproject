@@ -83,6 +83,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private readonly DishSpriteProvider _spriteProvider = new DishSpriteProvider();
         private readonly List<DishPieceView> _placedPieces = new List<DishPieceView>();
         private readonly Dictionary<int, DishPieceView> _dishViewsById = new Dictionary<int, DishPieceView>();
+        private readonly Dictionary<int, float> _pendingServeMultiplierFlat = new Dictionary<int, float>();
 
         private enum WorldMode
         {
@@ -668,6 +669,11 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void OnDestroy()
         {
+            if (_session != null)
+            {
+                _session.ServeMultiplierFlatApplied -= OnServeMultiplierFlatApplied;
+            }
+
             if (Instance == this)
             {
                 Instance = null;
@@ -686,8 +692,19 @@ namespace GourmetProject.Game.Presentation.Battle
             Action<DishInstance> dishClicked,
             bool resetDoodle = true)
         {
+            if (_session != null)
+            {
+                _session.ServeMultiplierFlatApplied -= OnServeMultiplierFlatApplied;
+            }
+
             _run = run;
             _session = session;
+            if (_session != null)
+            {
+                _session.ServeMultiplierFlatApplied += OnServeMultiplierFlatApplied;
+            }
+
+            _pendingServeMultiplierFlat.Clear();
             _messageSink = messageSink;
             _settlementScoreSink = settlementScoreSink;
             _stateChanged = stateChanged;
@@ -984,8 +1001,62 @@ namespace GourmetProject.Game.Presentation.Battle
             if (!token.IsCancellationRequested && _serving)
             {
                 FinishServing();
+                PlayPendingServeMultiplierTexts();
                 FlashServeScopeHighlights(result.Dish, token);
             }
+        }
+
+        private void OnServeMultiplierFlatApplied(DishInstance dish, float value)
+        {
+            if (dish == null || Math.Abs(value) < 0.0001f)
+            {
+                return;
+            }
+
+            _pendingServeMultiplierFlat.TryGetValue(dish.Id, out float current);
+            _pendingServeMultiplierFlat[dish.Id] = current + value;
+        }
+
+        private void PlayPendingServeMultiplierTexts()
+        {
+            if (_pendingServeMultiplierFlat.Count == 0)
+            {
+                return;
+            }
+
+            var dishIds = new List<int>(_pendingServeMultiplierFlat.Keys);
+            foreach (int dishId in dishIds)
+            {
+                PlayPendingServeMultiplierText(dishId);
+            }
+        }
+
+        private void PlayPendingServeMultiplierText(int dishId)
+        {
+            if (!_pendingServeMultiplierFlat.TryGetValue(dishId, out float value))
+            {
+                return;
+            }
+
+            _pendingServeMultiplierFlat.Remove(dishId);
+            if (Math.Abs(value) < 0.0001f || _sequencer == null)
+            {
+                return;
+            }
+
+            if (!_dishViewsById.TryGetValue(dishId, out DishPieceView view) || view == null)
+            {
+                return;
+            }
+
+            _sequencer.PlayFloatingText(
+                _fxRoot != null ? _fxRoot : transform,
+                view.WorldBounds.center + new Vector3(0f, _cellSize * 0.35f, 0f),
+                $"倍率 +{value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)}",
+                Color.red,
+                0.13f,
+                0.55f,
+                0.75f);
         }
 
         private void EnsureServeAnimator()

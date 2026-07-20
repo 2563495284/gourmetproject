@@ -1,4 +1,6 @@
 using GourmetProject.Gameplay.Model;
+using GourmetProject.Gameplay.Battle;
+using GourmetProject.Gameplay.Board;
 using UnityEngine.Scripting;
 
 namespace GourmetProject.Game.Meta.Passives
@@ -28,15 +30,6 @@ namespace GourmetProject.Game.Meta.Passives
     public sealed class CountThresholdFinalMultModel : ScoreSpecModel
     {
         public CountThresholdFinalMultModel() : base(ItemScoreEffectType.CountThresholdFinalMult)
-        {
-        }
-    }
-
-    [Preserve]
-    [PassiveItemModel("item_per_dish_mult")]
-    public sealed class PerDishSettledMultFlatModel : ScoreSpecModel
-    {
-        public PerDishSettledMultFlatModel() : base(ItemScoreEffectType.PerDishSettledMultFlat)
         {
         }
     }
@@ -74,10 +67,34 @@ namespace GourmetProject.Game.Meta.Passives
 
     [Preserve]
     [PassiveItemModel("item_every3_next_mult")]
-    public sealed class EveryNthServeMultModel : ScoreSpecModel
+    public sealed class EveryNthServeMultModel : PassiveItemModel
     {
-        public EveryNthServeMultModel() : base(ItemScoreEffectType.EveryNthServeMult)
+        private const int DefaultEvery = 3;
+
+        public override void ApplyToBattle(BattleSession session)
         {
+            if (session != null)
+            {
+                session.Served += (dish, serveIndex) => OnServed(session, dish, serveIndex);
+            }
+        }
+
+        private void OnServed(BattleSession session, DishInstance dish, int serveIndex)
+        {
+            int every = System.Math.Max(1, PassiveParam.ParseInt(Param, "every", DefaultEvery));
+            if (dish == null || serveIndex <= every || serveIndex % (every + 1) != 0)
+            {
+                return;
+            }
+
+            float value = Value;
+            if (value <= 0f)
+            {
+                return;
+            }
+
+            session.AddServeMultiplierFlat(dish, value);
+            Flash();
         }
     }
 

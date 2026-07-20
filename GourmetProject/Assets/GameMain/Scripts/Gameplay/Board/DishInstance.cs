@@ -147,11 +147,14 @@ namespace GourmetProject.Gameplay.Board
         /// <summary>上菜时确定的临时乘区倍率（Boss Debuff 等），只影响当前战斗内结算。</summary>
         public float ServeMultiplier { get; private set; } = 1f;
 
+        /// <summary>上菜落地时追加的临时倍率加值（如「每 3 个后的下一个」），只影响当前战斗内结算。</summary>
+        public float ServeMultiplierFlatBonus { get; private set; }
+
         /// <summary>结算前「固化基础分」：基础美味度 + 永久加分，再乘本场基础分倍率（不含本次结算临时触发的加成）。</summary>
         public float BaseScoreBeforeSettlement => (Def.Deliciousness + PermanentFlatBonus) * TemporaryBaseMultiplier;
 
         /// <summary>结算前「固化乘区」：永久乘区 × 上菜临时乘区（不含本次结算临时触发的乘区）。</summary>
-        public float BaseMultiplierBeforeSettlement => PermanentMultBonus * ServeMultiplier;
+        public float BaseMultiplierBeforeSettlement => PermanentMultBonus * ServeMultiplier + ServeMultiplierFlatBonus;
 
         /// <summary>本实例技能是否失效（清淡餐）。</summary>
         public bool SkillsDisabled { get; private set; }
@@ -194,6 +197,11 @@ namespace GourmetProject.Gameplay.Board
             {
                 ServeMultiplier *= value;
             }
+        }
+
+        public void AddServeMultiplierFlat(float value)
+        {
+            ServeMultiplierFlatBonus += value;
         }
 
         public void DisableSkills()
@@ -298,6 +306,7 @@ namespace GourmetProject.Gameplay.Board
 
             MultiplyTemporaryBase(other.TemporaryBaseMultiplier);
             MultiplyServeMultiplier(other.ServeMultiplier);
+            AddServeMultiplierFlat(other.ServeMultiplierFlatBonus);
         }
 
         /// <summary>是否为「临时复制」产生的克隆实例（品鉴结束时清理，且自身不再触发临时复制）。</summary>

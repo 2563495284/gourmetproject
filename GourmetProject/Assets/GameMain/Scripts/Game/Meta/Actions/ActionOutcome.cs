@@ -39,7 +39,7 @@ namespace GourmetProject.Game.Meta
         /// <summary>战斗随机流 key（Battle）。</summary>
         public string BattleKey { get; private set; } = string.Empty;
 
-        /// <summary>是否为 Boss 战（Battle）：Boss = 难度为 Boss 的 Food 行为，胜利后推进/通关而非发奖。</summary>
+        /// <summary>是否为 Boss 战（Battle）：Boss = 难度为 Boss 的 Food 行为，领奖后推进/通关。</summary>
         public bool IsBoss { get; private set; }
 
         /// <summary>Boss id（Battle 且 IsBoss 时有效）。</summary>

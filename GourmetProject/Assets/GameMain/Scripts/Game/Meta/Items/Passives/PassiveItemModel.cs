@@ -258,6 +258,18 @@ namespace GourmetProject.Game.Meta.Passives
         {
         }
 
+        public virtual bool TryGetSweetTransferTargetMultiplier(out float value)
+        {
+            value = 1f;
+            return false;
+        }
+
+        public virtual bool TryGetSweetTransferSourceMultiplier(out float value)
+        {
+            value = 1f;
+            return false;
+        }
+
         /// <summary>本次结算每道菜额外「视为食物数」加成（分发器累加）。</summary>
         public virtual int ExtraCountAsPerDish() => 0;
 
