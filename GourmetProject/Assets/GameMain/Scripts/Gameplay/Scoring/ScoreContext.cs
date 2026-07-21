@@ -39,7 +39,6 @@ namespace GourmetProject.Gameplay.Scoring
         private readonly Dictionary<int, float> _permanentFlatDeltas = new Dictionary<int, float>();
         private readonly Dictionary<int, float> _permanentMultDeltas = new Dictionary<int, float>();
         private readonly Dictionary<int, int> _liveCountAs = new Dictionary<int, int>();
-        private readonly Dictionary<int, int> _extraSweetTransferTriggers = new Dictionary<int, int>();
         private readonly Dictionary<int, List<ScoreEffectEntry>> _pendingTransferredEffects = new Dictionary<int, List<ScoreEffectEntry>>();
         private readonly HashSet<int> _completedDishSkillPhases = new HashSet<int>();
         private DishAccumulator _current;
@@ -360,31 +359,6 @@ namespace GourmetProject.Gameplay.Scoring
             }
 
             return accumulator.Mult;
-        }
-
-        /// <summary>
-        /// 给目标菜挂「额外触发一次甜蜜传递」（持续存在，不消耗）。
-        /// 目标每次执行 TransferSkills 时，在本轮传递后再多传该层数，且每次重新随机目标。
-        /// </summary>
-        public void AddExtraSweetTransfer(DishInstance target, int times)
-        {
-            if (target == null || times <= 0)
-            {
-                return;
-            }
-
-            SubmitCommand(new ExtraSweetTransferCommand(target.Id, times));
-        }
-
-        /// <summary>读取目标当前额外甜蜜传递层数（只读，不清除）。</summary>
-        public int GetExtraSweetTransfers(DishInstance target)
-        {
-            if (target == null || !_extraSweetTransferTriggers.TryGetValue(target.Id, out int times) || times <= 0)
-            {
-                return 0;
-            }
-
-            return times;
         }
 
         public void GrantGold(float value)
@@ -727,17 +701,6 @@ namespace GourmetProject.Gameplay.Scoring
             AddLine(a, ScoreLineKind.DishMultiplierAdd, value, before, a.Mult, $"倍率 +{value}");
         }
 
-        internal void ApplyExtraSweetTransferCommand(int dishId, int times)
-        {
-            if (!_accums.ContainsKey(dishId))
-            {
-                return;
-            }
-
-            _extraSweetTransferTriggers.TryGetValue(dishId, out int before);
-            _extraSweetTransferTriggers[dishId] = before + times;
-        }
-
         internal void ApplyGrantGoldCommand(float value)
         {
             float before = GoldDelta;
@@ -980,23 +943,6 @@ namespace GourmetProject.Gameplay.Scoring
         public string Name => "AddDishMultFlat";
 
         public void Execute(ScoreContext context) => context.ApplyDishMultFlatCommand(_dishId, _value);
-    }
-
-    /// <summary>目标菜的「甜蜜传递」额外触发若干次（代触发甜蜜传递，仅重放其传递）。</summary>
-    public sealed class ExtraSweetTransferCommand : IScoreCommand
-    {
-        private readonly int _dishId;
-        private readonly int _times;
-
-        public ExtraSweetTransferCommand(int dishId, int times)
-        {
-            _dishId = dishId;
-            _times = times;
-        }
-
-        public string Name => "ExtraSweetTransfer";
-
-        public void Execute(ScoreContext context) => context.ApplyExtraSweetTransferCommand(_dishId, _times);
     }
 
     /// <summary>获得金币（副作用）。</summary>

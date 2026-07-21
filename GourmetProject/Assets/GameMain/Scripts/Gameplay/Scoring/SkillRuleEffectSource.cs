@@ -156,13 +156,11 @@ namespace GourmetProject.Gameplay.Scoring
     {
         private readonly SkillRuleDef _rule;
         private readonly DishInstance _self;
-        private readonly bool _allowExtraSweetTransfer;
 
-        public SkillRuleEffect(SkillRuleDef rule, DishInstance self, bool allowExtraSweetTransfer = false)
+        public SkillRuleEffect(SkillRuleDef rule, DishInstance self)
         {
             _rule = rule;
             _self = self;
-            _allowExtraSweetTransfer = allowExtraSweetTransfer;
         }
 
         public void Apply(ScoreContext ctx)
@@ -266,18 +264,7 @@ namespace GourmetProject.Gameplay.Scoring
 
                 case SkillActionType.TransferSkills:
                 {
-                    // 本轮甜蜜传递；只有食物自带 TransferSkills 会吃「额外甜蜜传递」层数。
-                    // 甜蜜传递来的外源子技能只执行自身一次，不继承这类内源加成。
                     ExecuteOneSweetTransfer(ctx);
-                    if (CanUseExtraSweetTransfer(ctx))
-                    {
-                        int extra = ctx.GetExtraSweetTransfers(_self);
-                        for (int i = 0; i < extra; i++)
-                        {
-                            ExecuteOneSweetTransfer(ctx);
-                        }
-                    }
-
                     break;
                 }
 
@@ -295,31 +282,11 @@ namespace GourmetProject.Gameplay.Scoring
 
                 case SkillActionType.TriggerSweetTransfer:
                 {
-                    // 立即让作用域内的来源各执行一次自身甜蜜传递（例如大棒棒糖）。
+                    // 只代执行来源的 TransferSkills 子技能：把其他可传递子技能交给目标，
+                    // 不重跑来源技能中的加分/倍率等其他子技能。
                     foreach (DishInstance source in SweetTransferSources(ctx))
                     {
                         ExecuteSweetTransfersFrom(ctx, source);
-                    }
-
-                    break;
-                }
-
-                case SkillActionType.ExtraSweetTransfer:
-                {
-                    // 复制技能与甜蜜传递得到的外来子技能不能施加额外甜蜜传递。
-                    // 标记只允许由食物自身原生的 ExtraSweetTransfer 写入。
-                    if (!IsNativeSkillExecution(ctx))
-                    {
-                        break;
-                    }
-
-                    // 枫糖语义：给随机选中的来源挂隐藏层数。之后该来源每次执行甜蜜传递，
-                    // 都会在本轮传递后按层数追加独立传递；每次调用都会重新选择传递目标。
-                    int extraTimes = Math.Max(1, (int)Math.Round(value * count, MidpointRounding.AwayFromZero));
-
-                    foreach (DishInstance target in SweetTransferSources(ctx))
-                    {
-                        ctx.AddExtraSweetTransfer(target, extraTimes);
                     }
 
                     break;
@@ -342,18 +309,6 @@ namespace GourmetProject.Gameplay.Scoring
                 default:
                     break;
             }
-        }
-
-        private bool CanUseExtraSweetTransfer(ScoreContext ctx)
-        {
-            return _allowExtraSweetTransfer || IsNativeSkillExecution(ctx);
-        }
-
-        private bool IsNativeSkillExecution(ScoreContext ctx)
-        {
-            return ctx?.Trace?.Kind == SkillExecutionKind.NativeSkill
-                && ctx.Trace.RuntimeSelfDishInstanceId == _self.Id
-                && string.Equals(ctx.Trace.RuleId, _rule.Id, StringComparison.Ordinal);
         }
 
         private bool IsTiered() => IsTiered(_rule);
@@ -401,9 +356,7 @@ namespace GourmetProject.Gameplay.Scoring
                     if (transferRule.Trigger == SkillTrigger.OnSettle
                         && transferRule.ActionType == SkillActionType.TransferSkills)
                     {
-                        // 代触发仍会执行复制来的甜蜜传递，但只有原生技能可以读取额外次数。
-                        bool isNativeTransferSkill = string.IsNullOrEmpty(source.GetSkillSource(skillId));
-                        new SkillRuleEffect(transferRule, source, allowExtraSweetTransfer: isNativeTransferSkill).Apply(ctx);
+                        new SkillRuleEffect(transferRule, source).Apply(ctx);
                     }
                 }
             }
@@ -516,8 +469,7 @@ namespace GourmetProject.Gameplay.Scoring
                     return;
                 }
 
-                bool nativeOnly = _rule.ActionType == SkillActionType.ExtraSweetTransfer;
-                if (HasSkillOfType(ctx.Db, dish, SkillActionType.TransferSkills, nativeOnly))
+                if (HasSkillOfType(ctx.Db, dish, SkillActionType.TransferSkills))
                 {
                     qualified.Add(dish);
                 }
@@ -685,8 +637,7 @@ namespace GourmetProject.Gameplay.Scoring
             {
                 SkillRuleDef rule = parent.Rules[i];
                 if (rule.ActionType == SkillActionType.TransferSkills
-                    || rule.ActionType == SkillActionType.CopySkill
-                    || rule.ActionType == SkillActionType.ExtraSweetTransfer)
+                    || rule.ActionType == SkillActionType.CopySkill)
                 {
                     continue;
                 }
@@ -770,20 +721,11 @@ namespace GourmetProject.Gameplay.Scoring
             return string.Empty;
         }
 
-        private static bool HasSkillOfType(
-            GameplayDatabase db,
-            DishInstance dish,
-            SkillActionType actionType,
-            bool nativeOnly = false)
+        private static bool HasSkillOfType(GameplayDatabase db, DishInstance dish, SkillActionType actionType)
         {
             if (db == null) return false;
             foreach (string skillId in dish.SkillIds)
             {
-                if (nativeOnly && !string.IsNullOrEmpty(dish.GetSkillSource(skillId)))
-                {
-                    continue;
-                }
-
                 SkillDef def = db.GetSkill(skillId);
                 if (def == null || !def.HasRules) continue;
                 for (int i = 0; i < def.Rules.Count; i++)

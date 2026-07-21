@@ -152,7 +152,6 @@ namespace GourmetProject.Gameplay.Model
         AddCountAs = 12,
         CopySkill = 13,
         TriggerSweetTransfer = 15,
-        ExtraSweetTransfer = 16,
         AddCurrentMult = 17,
     }
 

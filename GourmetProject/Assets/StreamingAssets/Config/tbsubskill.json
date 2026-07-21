@@ -1527,16 +1527,18 @@
     "condUnit": 0,
     "condMode": 0,
     "condParam": "",
-    "actionType": 16,
+    "actionType": 15,
     "actionScope": 4,
     "actionCount": 1,
     "actionValue": [
-      1
+      0
     ],
-    "actionParam": [],
+    "actionParam": [
+      "skilltype:TransferSkills"
+    ],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "使 1 个带甜蜜传递的食物\n额外结算 1 次甜蜜传递",
+    "descTemplate": "使 1 个带甜蜜传递的食物\n执行 1 次甜蜜传递",
     "termId": "term_sweet_transfer"
   }
 ]
