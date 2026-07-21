@@ -43,14 +43,17 @@ namespace GourmetProject.Game.Presentation.Battle
         private const float FinalScorePopupDuration = 1.1f;
         private const float FinalScorePopupHold = 0.28f;
         private const float BatchedCueHold = 0.24f;
+        private const float SweetTransferParticleDuration = 0.34f;
+        private const float SettlementAnimationDurationScale = 2f;
 
         [Header("结算加速（小丑牌式：按 cue 进度越来越快）")]
         [SerializeField] private bool _useGlobalTimeScale = true;
-        [SerializeField] private float _startSpeed = 0.5f;
-        [SerializeField] private float _maxSpeed = 1.5f;
+        [SerializeField] private float _startSpeed = 1f;
+        [SerializeField] private float _maxSpeed = 3f;
         [SerializeField] private float _speedCurveExponent = 1.35f;
 
         [SerializeField] private FloatingTextView _floatingTextPrefab;
+        [SerializeField] private SweetTransferParticleView _sweetTransferParticlePrefab;
 
         private bool _hasSavedTimeScale;
         private float _savedTimeScale = 1f;
@@ -116,7 +119,7 @@ namespace GourmetProject.Game.Presentation.Battle
             SettlementPlaybackPlan plan = BuildSettlementPlaybackPlan(result, dishViews, baselineSnapshot);
             var playback = new SettlementPlaybackState(CountSettlementCues(plan), scoreFire);
             var dishValueBadges = new Dictionary<int, DishValueBadge>();
-            int activeSweetTransferSourceDishId = 0;
+            var sweetTransferPlayback = new SweetTransferPlaybackState();
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             using CancellationTokenSource debugScorePauseCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             _debugScorePaused = false;
@@ -135,16 +138,17 @@ namespace GourmetProject.Game.Presentation.Battle
                     await WaitWhileDebugScorePausedAsync(cancellationToken);
 #endif
                     IReadOnlyList<SettlementPlaybackStep> batch = CollectStepBatch(plan.Steps, i, out int nextIndex);
-                    SetSweetTransferSourceFeedback(
-                        ref activeSweetTransferSourceDishId,
-                        ResolveSweetTransferSourceDishId(batch),
+                    await UpdateSweetTransferVisualsAsync(
+                        sweetTransferPlayback,
+                        ResolveSweetTransferVisualContext(batch),
                         dishViews,
+                        fxRoot,
                         cancellationToken);
                     await PlayStepBatchAsync(batch, dishViews, mapper, fxRoot, playback, dishValueBadges, onReveal, onScope, cancellationToken);
                     i = nextIndex;
                 }
 
-                SetSweetTransferSourceFeedback(ref activeSweetTransferSourceDishId, 0, dishViews, cancellationToken);
+                ClearSweetTransferVisuals(sweetTransferPlayback, dishViews);
                 onScope?.Invoke(default);
                 await PlayFinalCuesAsync(plan.FinalCues, mapper.Center, fxRoot, playback, onReveal, cancellationToken);
 
@@ -152,13 +156,18 @@ namespace GourmetProject.Game.Presentation.Battle
                 await WaitWhileDebugScorePausedAsync(cancellationToken);
 #endif
                 AdvanceSettlementSpeed(playback, SettlementCueKind.FinalScore);
-                await TweenScoreAsync(runningTotal, result.Total, 0.45f, renderScore, cancellationToken);
+                await TweenScoreAsync(
+                    runningTotal,
+                    result.Total,
+                    ScaleSettlementDuration(0.45f),
+                    renderScore,
+                    cancellationToken);
                 renderScore?.Invoke(result.Total);
                 await PlayFinalScorePopupAsync(result.Total, mapper.Center, fxRoot, cancellationToken);
             }
             finally
             {
-                SetSweetTransferSourceFeedback(ref activeSweetTransferSourceDishId, 0, dishViews, cancellationToken);
+                ClearSweetTransferVisuals(sweetTransferPlayback, dishViews);
                 onScope?.Invoke(default);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 debugScorePauseCts.Cancel();
@@ -238,7 +247,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     cue.Color,
                     cue.CharacterSize,
                     cue.Rise,
-                    cue.Duration);
+                    ScaleSettlementDuration(cue.Duration));
             }
 
             await view.PlaySettlementFeedbackAsync(cue.FeedbackKind, cancellationToken);
@@ -309,13 +318,13 @@ namespace GourmetProject.Game.Presentation.Battle
                         cue.Color,
                         cue.CharacterSize,
                         cue.Rise,
-                        cue.Duration);
+                        ScaleSettlementDuration(cue.Duration));
                 }
 
                 _ = PlayFeedbackSafelyAsync(view, cue.FeedbackKind, cancellationToken);
             }
 
-            await Awaitable.WaitForSecondsAsync(BatchedCueHold, cancellationToken);
+            await Awaitable.WaitForSecondsAsync(ScaleSettlementDuration(BatchedCueHold), cancellationToken);
         }
 
         private static void PlayActorFeedbackIfNeeded(
@@ -366,24 +375,32 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        private static int ResolveSweetTransferSourceDishId(IReadOnlyList<SettlementPlaybackStep> batch)
+        private static SweetTransferVisualContext ResolveSweetTransferVisualContext(
+            IReadOnlyList<SettlementPlaybackStep> batch)
         {
             if (batch == null)
             {
-                return 0;
+                return default;
             }
 
+            int fallbackSourceDishId = 0;
             for (int i = 0; i < batch.Count; i++)
             {
                 SettlementPlaybackStep step = batch[i];
-                int sourceDishId = ResolveSweetTransferSourceDishId(step.Scope, step.Cue?.BatchKey);
-                if (sourceDishId > 0)
+                if (step.Scope.Trace?.Kind == SkillExecutionKind.SweetTransfer)
                 {
-                    return sourceDishId;
+                    return new SweetTransferVisualContext(
+                        step.Scope.OwnerDishInstanceId,
+                        step.Scope.RuntimeSelfDishInstanceId);
+                }
+
+                if (fallbackSourceDishId == 0)
+                {
+                    fallbackSourceDishId = ResolveSweetTransferSourceDishId(step.Scope, step.Cue?.BatchKey);
                 }
             }
 
-            return 0;
+            return new SweetTransferVisualContext(fallbackSourceDishId, 0);
         }
 
         private static int ResolveSweetTransferSourceDishId(SettlementScopeSignal scope, string batchKey)
@@ -400,39 +417,83 @@ namespace GourmetProject.Game.Presentation.Battle
                     : 0;
         }
 
-        private static void SetSweetTransferSourceFeedback(
-            ref int activeSourceDishId,
-            int nextSourceDishId,
+        private async Awaitable UpdateSweetTransferVisualsAsync(
+            SweetTransferPlaybackState playback,
+            SweetTransferVisualContext next,
             IReadOnlyDictionary<int, DishPieceView> dishViews,
+            Transform fxRoot,
             CancellationToken cancellationToken)
         {
-            if (activeSourceDishId == nextSourceDishId)
+            if (playback.SourceDishInstanceId != next.SourceDishInstanceId)
+            {
+                EndSweetTransferSourceFeedback(playback.SourceDishInstanceId, dishViews);
+                playback.SourceDishInstanceId = next.SourceDishInstanceId;
+                playback.ReceiverDishInstanceId = 0;
+
+                if (playback.SourceDishInstanceId > 0
+                    && dishViews != null
+                    && dishViews.TryGetValue(playback.SourceDishInstanceId, out DishPieceView sourceView)
+                    && sourceView != null)
+                {
+                    sourceView.BeginSweetTransferSourceFeedback();
+                    _ = PlayFeedbackSafelyAsync(
+                        sourceView,
+                        SettlementDishFeedbackKind.SweetTransferSkillTriggered,
+                        cancellationToken);
+                }
+            }
+
+            if (next.ReceiverDishInstanceId <= 0
+                || playback.ReceiverDishInstanceId == next.ReceiverDishInstanceId)
             {
                 return;
             }
 
-            if (activeSourceDishId > 0
-                && dishViews != null
-                && dishViews.TryGetValue(activeSourceDishId, out DishPieceView previousSource)
-                && previousSource != null)
-            {
-                previousSource.EndSweetTransferSourceFeedback();
-            }
-
-            activeSourceDishId = nextSourceDishId;
-            if (activeSourceDishId <= 0
+            playback.ReceiverDishInstanceId = next.ReceiverDishInstanceId;
+            if (_sweetTransferParticlePrefab == null
                 || dishViews == null
-                || !dishViews.TryGetValue(activeSourceDishId, out DishPieceView nextSource)
-                || nextSource == null)
+                || !dishViews.TryGetValue(playback.SourceDishInstanceId, out DishPieceView source)
+                || source == null
+                || !dishViews.TryGetValue(playback.ReceiverDishInstanceId, out DishPieceView receiver)
+                || receiver == null)
             {
                 return;
             }
 
-            nextSource.BeginSweetTransferSourceFeedback();
-            _ = PlayFeedbackSafelyAsync(
-                nextSource,
-                SettlementDishFeedbackKind.SweetTransferSkillTriggered,
+            await SweetTransferParticleView.PlayAsync(
+                _sweetTransferParticlePrefab,
+                fxRoot != null ? fxRoot : transform,
+                source.WorldBounds.center,
+                receiver.WorldBounds.center,
+                ScaleSettlementDuration(SweetTransferParticleDuration),
                 cancellationToken);
+        }
+
+        private static void ClearSweetTransferVisuals(
+            SweetTransferPlaybackState playback,
+            IReadOnlyDictionary<int, DishPieceView> dishViews)
+        {
+            if (playback == null)
+            {
+                return;
+            }
+
+            EndSweetTransferSourceFeedback(playback.SourceDishInstanceId, dishViews);
+            playback.SourceDishInstanceId = 0;
+            playback.ReceiverDishInstanceId = 0;
+        }
+
+        private static void EndSweetTransferSourceFeedback(
+            int sourceDishInstanceId,
+            IReadOnlyDictionary<int, DishPieceView> dishViews)
+        {
+            if (sourceDishInstanceId > 0
+                && dishViews != null
+                && dishViews.TryGetValue(sourceDishInstanceId, out DishPieceView source)
+                && source != null)
+            {
+                source.EndSweetTransferSourceFeedback();
+            }
         }
 
         private static async Awaitable PlayFeedbackSafelyAsync(
@@ -521,7 +582,7 @@ namespace GourmetProject.Game.Presentation.Battle
             t.localScale = Vector3.one;
             t.DOPunchScale(
                     Vector3.one * DishValuePunchScale,
-                    DishValuePunchDuration,
+                    ScaleSettlementDuration(DishValuePunchDuration),
                     1,
                     0.45f)
                 .SetLink(view.gameObject);
@@ -564,10 +625,10 @@ namespace GourmetProject.Game.Presentation.Battle
                     FinalColor,
                     FinalScorePopupCharacterSize,
                     FinalScorePopupRise,
-                    FinalScorePopupDuration);
+                    ScaleSettlementDuration(FinalScorePopupDuration));
             }
 
-            await Awaitable.WaitForSecondsAsync(FinalScorePopupHold, cancellationToken);
+            await Awaitable.WaitForSecondsAsync(ScaleSettlementDuration(FinalScorePopupHold), cancellationToken);
         }
 
         private async Awaitable PlayFinalCuesAsync(
@@ -597,11 +658,16 @@ namespace GourmetProject.Game.Presentation.Battle
                         cue.Color,
                         cue.CharacterSize,
                         cue.Rise,
-                        cue.Duration);
+                        ScaleSettlementDuration(cue.Duration));
                 }
 
-                await Awaitable.WaitForSecondsAsync(FinalCueInterval, cancellationToken);
+                await Awaitable.WaitForSecondsAsync(ScaleSettlementDuration(FinalCueInterval), cancellationToken);
             }
+        }
+
+        private static float ScaleSettlementDuration(float duration)
+        {
+            return Mathf.Max(0.0001f, duration * SettlementAnimationDurationScale);
         }
 
         private void BeginSettlementSpeed()
@@ -1488,6 +1554,26 @@ namespace GourmetProject.Game.Presentation.Battle
             public List<SettlementPlaybackStep> Steps { get; } = new();
 
             public List<SettlementCue> FinalCues { get; } = new();
+        }
+
+        private readonly struct SweetTransferVisualContext
+        {
+            public SweetTransferVisualContext(int sourceDishInstanceId, int receiverDishInstanceId)
+            {
+                SourceDishInstanceId = sourceDishInstanceId;
+                ReceiverDishInstanceId = receiverDishInstanceId;
+            }
+
+            public int SourceDishInstanceId { get; }
+
+            public int ReceiverDishInstanceId { get; }
+        }
+
+        private sealed class SweetTransferPlaybackState
+        {
+            public int SourceDishInstanceId { get; set; }
+
+            public int ReceiverDishInstanceId { get; set; }
         }
 
         private sealed class SettlementPlaybackStep

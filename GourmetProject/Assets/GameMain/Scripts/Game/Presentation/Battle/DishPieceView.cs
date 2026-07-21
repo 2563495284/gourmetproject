@@ -35,6 +35,8 @@ namespace GourmetProject.Game.Presentation.Battle
     /// </summary>
     public sealed class DishPieceView : MonoBehaviour
     {
+        private const float SettlementFeedbackDurationScale = 2f;
+
         private static readonly int OutlineColorId = Shader.PropertyToID("_OutlineColor");
         private static readonly int OutlineWidthId = Shader.PropertyToID("_OutlineWidth");
         private static readonly int FillAlphaId = Shader.PropertyToID("_FillAlpha");
@@ -406,7 +408,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _settlementFeedbackKind = kind;
             ShowSettlementGlow(profile);
 
-            float duration = Mathf.Max(0.0001f, profile.Duration);
+            float duration = Mathf.Max(0.0001f, profile.Duration * SettlementFeedbackDurationScale);
             _settlementFeedbackTween = DOVirtual.Float(0f, 1f, duration, progress =>
                 {
                     if (target == null || version != _settlementFeedbackVersion)
@@ -680,7 +682,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 profile.GlowInflate,
                 sortingOrderOffset: 2,
                 materialOverride: null,
-                pulseSpeed: profile.GlowPulseSpeed,
+                pulseSpeed: profile.GlowPulseSpeed / SettlementFeedbackDurationScale,
                 pulseAmplitude: profile.GlowPulseAmplitude);
         }
 
@@ -701,7 +703,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 inflate: 1.11f,
                 sortingOrderOffset: 3,
                 materialOverride: null,
-                pulseSpeed: 4.5f,
+                pulseSpeed: 4.5f / SettlementFeedbackDurationScale,
                 pulseAmplitude: 0.26f);
         }
 
