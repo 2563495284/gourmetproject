@@ -1,0 +1,26 @@
+{
+  "provider": "gemini",
+  "model": "gemini-3.1-flash-image-preview",
+  "stylePrefix": "90s American cable TV cartoon style, surreal funny food shapes, thick clean black ink outlines, flat cel animation colors, hand-drawn 2D animation look, warm appetizing dessert palette, polished Unity game dish sprite quality, funny, weird, charming, pure food only, no face, no eyes, no mouth, no limbs, no mascot treatment, no text, no logo, no watermark",
+  "typeDefaults": {
+    "dish": {
+      "outputDir": "Assets/GameMain/Resources/Sprites/Dishes",
+      "postprocess": "magenta-alpha",
+      "background": "opaque",
+      "quality": "high"
+    }
+  },
+  "typePromptPrefixes": {
+    "dish": "Dish sprite rule: board food sprite on a perfectly flat solid #FF00FF chroma key background. The background must be one uniform color with no shadows, gradients, texture, reflections, floor plane, or lighting variation. Do not use #FF00FF anywhere in the food. No cast shadow, no contact shadow, no plate, no table, no utensils, no grid lines, no cell borders, no checkerboard."
+  },
+  "assets": [
+    {
+      "name": "choco_bar",
+      "type": "dish",
+      "requestSize": "1536x512",
+      "targetSize": "1536x512",
+      "shapeRows": ["XXX"],
+      "prompt": "long horizontal choco bar candy, one continuous narrow snack bar partly unwrapped from a bright crinkled wrapper, exposed chocolate coating with caramel and wafer cross-section at one bitten end, clearly not a flat segmented chocolate slab, no straight vertical divider marks anywhere, fills horizontal footprint"
+    }
+  ]
+}
