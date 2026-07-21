@@ -68,6 +68,10 @@ namespace cfg
         /// 目标每次甜蜜传递额外触发X次（隐藏、可叠加、每次重新随机目标）
         /// </summary>
         ExtraSweetTransfer = 16,
+        /// <summary>
+        /// 目标倍率加上来源当前倍率之和；默认来源自身，source:one-cell时来源为所有实际占1格食物
+        /// </summary>
+        AddCurrentMult = 17,
     }
 
 } 

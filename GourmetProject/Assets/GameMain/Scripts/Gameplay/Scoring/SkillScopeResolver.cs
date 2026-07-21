@@ -187,7 +187,8 @@ namespace GourmetProject.Gameplay.Scoring
                     return;
                 }
 
-                if (HasSkillOfType(db, dish, SkillActionType.TransferSkills))
+                bool nativeOnly = rule.ActionType == SkillActionType.ExtraSweetTransfer;
+                if (HasSkillOfType(db, dish, SkillActionType.TransferSkills, nativeOnly))
                 {
                     result.Add(dish);
                 }
@@ -401,7 +402,11 @@ namespace GourmetProject.Gameplay.Scoring
             return string.Empty;
         }
 
-        private static bool HasSkillOfType(GameplayDatabase db, DishInstance dish, SkillActionType actionType)
+        private static bool HasSkillOfType(
+            GameplayDatabase db,
+            DishInstance dish,
+            SkillActionType actionType,
+            bool nativeOnly = false)
         {
             if (db == null || dish == null)
             {
@@ -410,6 +415,11 @@ namespace GourmetProject.Gameplay.Scoring
 
             foreach (string skillId in dish.SkillIds)
             {
+                if (nativeOnly && !string.IsNullOrEmpty(dish.GetSkillSource(skillId)))
+                {
+                    continue;
+                }
+
                 SkillDef def = db.GetSkill(skillId);
                 if (def == null || !def.HasRules)
                 {

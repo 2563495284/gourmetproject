@@ -245,6 +245,13 @@ namespace GourmetProject.Gameplay.Scoring
                     foreach (DishInstance t in Targets(ctx)) ctx.AddMultFlatTo(t, value * count);
                     break;
 
+                case SkillActionType.AddCurrentMult:
+                {
+                    float sourceMultiplier = CurrentMultiplierSources(ctx).Sum(ctx.GetCurrentMultiplier) * count;
+                    foreach (DishInstance t in Targets(ctx)) ctx.AddMultFlatTo(t, sourceMultiplier);
+                    break;
+                }
+
                 case SkillActionType.AddLayer:
                 {
                     // 全局欢乐蛋糕层数：无论作用域，统一改一次全局计数器。
@@ -299,6 +306,13 @@ namespace GourmetProject.Gameplay.Scoring
 
                 case SkillActionType.ExtraSweetTransfer:
                 {
+                    // 复制技能与甜蜜传递得到的外来子技能不能施加额外甜蜜传递。
+                    // 标记只允许由食物自身原生的 ExtraSweetTransfer 写入。
+                    if (!IsNativeSkillExecution(ctx))
+                    {
+                        break;
+                    }
+
                     // 枫糖语义：给随机选中的来源挂隐藏层数。之后该来源每次执行甜蜜传递，
                     // 都会在本轮传递后按层数追加独立传递；每次调用都会重新选择传递目标。
                     int extraTimes = Math.Max(1, (int)Math.Round(value * count, MidpointRounding.AwayFromZero));
@@ -387,7 +401,9 @@ namespace GourmetProject.Gameplay.Scoring
                     if (transferRule.Trigger == SkillTrigger.OnSettle
                         && transferRule.ActionType == SkillActionType.TransferSkills)
                     {
-                        new SkillRuleEffect(transferRule, source, allowExtraSweetTransfer: true).Apply(ctx);
+                        // 代触发仍会执行复制来的甜蜜传递，但只有原生技能可以读取额外次数。
+                        bool isNativeTransferSkill = string.IsNullOrEmpty(source.GetSkillSource(skillId));
+                        new SkillRuleEffect(transferRule, source, allowExtraSweetTransfer: isNativeTransferSkill).Apply(ctx);
                     }
                 }
             }
@@ -500,7 +516,8 @@ namespace GourmetProject.Gameplay.Scoring
                     return;
                 }
 
-                if (HasSkillOfType(ctx.Db, dish, SkillActionType.TransferSkills))
+                bool nativeOnly = _rule.ActionType == SkillActionType.ExtraSweetTransfer;
+                if (HasSkillOfType(ctx.Db, dish, SkillActionType.TransferSkills, nativeOnly))
                 {
                     qualified.Add(dish);
                 }
@@ -668,7 +685,8 @@ namespace GourmetProject.Gameplay.Scoring
             {
                 SkillRuleDef rule = parent.Rules[i];
                 if (rule.ActionType == SkillActionType.TransferSkills
-                    || rule.ActionType == SkillActionType.CopySkill)
+                    || rule.ActionType == SkillActionType.CopySkill
+                    || rule.ActionType == SkillActionType.ExtraSweetTransfer)
                 {
                     continue;
                 }
@@ -688,6 +706,25 @@ namespace GourmetProject.Gameplay.Scoring
                 _self,
                 _rule,
                 SkillScopeVisualMode.ResolvedTargets);
+        }
+
+        /// <summary>
+        /// 动态倍率来源。默认取技能运行时自身；<c>actionParam=source:one-cell</c> 时，
+        /// 取餐桌上全部实际占 1 格的食物。倍率在行为执行前统一快照，避免目标包含来源时边加边读。
+        /// </summary>
+        private IReadOnlyList<DishInstance> CurrentMultiplierSources(ScoreContext ctx)
+        {
+            if (!HasActionParam(_rule, "source:one-cell"))
+            {
+                return new[] { _self };
+            }
+
+            return ctx.DiningTable.Dishes
+                .Where(dish => dish.OccupiedCells.Count == 1)
+                .OrderBy(BoardTop)
+                .ThenBy(BoardLeft)
+                .ThenBy(dish => dish.Id)
+                .ToArray();
         }
 
         private static int BoardTop(DishInstance dish)
@@ -733,11 +770,20 @@ namespace GourmetProject.Gameplay.Scoring
             return string.Empty;
         }
 
-        private static bool HasSkillOfType(GameplayDatabase db, DishInstance dish, SkillActionType actionType)
+        private static bool HasSkillOfType(
+            GameplayDatabase db,
+            DishInstance dish,
+            SkillActionType actionType,
+            bool nativeOnly = false)
         {
             if (db == null) return false;
             foreach (string skillId in dish.SkillIds)
             {
+                if (nativeOnly && !string.IsNullOrEmpty(dish.GetSkillSource(skillId)))
+                {
+                    continue;
+                }
+
                 SkillDef def = db.GetSkill(skillId);
                 if (def == null || !def.HasRules) continue;
                 for (int i = 0; i < def.Rules.Count; i++)

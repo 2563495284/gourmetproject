@@ -153,6 +153,7 @@ namespace GourmetProject.Gameplay.Model
         CopySkill = 13,
         TriggerSweetTransfer = 15,
         ExtraSweetTransfer = 16,
+        AddCurrentMult = 17,
     }
 
     /// <summary>技能触发时机。与 cfg.SkillTrigger 一一对应。</summary>

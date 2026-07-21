@@ -1166,6 +1166,28 @@
     "termId": ""
   },
   {
+    "id": "sk_mango_sago_2",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 17,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      0
+    ],
+    "actionParam": [
+      "source:one-cell"
+    ],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "所有占 1 格食物的倍率\n添加到自身",
+    "termId": ""
+  },
+  {
     "id": "sk_mango_sago_1",
     "trigger": 0,
     "condType": 0,
@@ -1203,6 +1225,28 @@
     "isPassive": false,
     "signed": true,
     "descTemplate": "{ascope}倍率 {0}",
+    "termId": ""
+  },
+  {
+    "id": "sk_chiffon_2",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 17,
+    "actionScope": 10,
+    "actionCount": 0,
+    "actionValue": [
+      0
+    ],
+    "actionParam": [
+      "cat:cake"
+    ],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "将自身倍率添加到所有{cat}食物",
     "termId": ""
   },
   {

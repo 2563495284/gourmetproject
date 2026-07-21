@@ -351,6 +351,17 @@ namespace GourmetProject.Gameplay.Scoring
             SubmitCommand(new AddDishMultFlatCommand(target.Id, value));
         }
 
+        /// <summary>读取目标菜结算到当前时刻的倍率（含固化倍率与此前已执行的倍率效果）。</summary>
+        public float GetCurrentMultiplier(DishInstance target)
+        {
+            if (target == null || !_accums.TryGetValue(target.Id, out DishAccumulator accumulator))
+            {
+                return 0f;
+            }
+
+            return accumulator.Mult;
+        }
+
         /// <summary>
         /// 给目标菜挂「额外触发一次甜蜜传递」（持续存在，不消耗）。
         /// 目标每次执行 TransferSkills 时，在本轮传递后再多传该层数，且每次重新随机目标。
