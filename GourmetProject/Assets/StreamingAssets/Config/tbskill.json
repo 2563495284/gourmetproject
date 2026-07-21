@@ -105,7 +105,7 @@
   },
   {
     "id": "sk_taosu",
-    "subSkills": "sk_taosu_1"
+    "subSkills": "sk_taosu_1|sk_taosu_2"
   },
   {
     "id": "sk_mooncake",
@@ -125,7 +125,7 @@
   },
   {
     "id": "sk_donut",
-    "subSkills": "sk_donut_1|sk_donut_2"
+    "subSkills": "sk_donut_1"
   },
   {
     "id": "sk_pengtang",
