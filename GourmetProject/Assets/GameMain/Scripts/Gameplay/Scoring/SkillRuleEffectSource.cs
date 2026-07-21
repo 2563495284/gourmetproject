@@ -111,10 +111,14 @@ namespace GourmetProject.Gameplay.Scoring
 
         private static SkillExecutionKind TraceKindForSourceLabel(string sourceLabel)
         {
-            return !string.IsNullOrEmpty(sourceLabel)
-                   && sourceLabel.IndexOf("技能复制", StringComparison.OrdinalIgnoreCase) >= 0
+            if (string.IsNullOrEmpty(sourceLabel))
+            {
+                return SkillExecutionKind.NativeSkill;
+            }
+
+            return sourceLabel.IndexOf("技能复制", StringComparison.OrdinalIgnoreCase) >= 0
                 ? SkillExecutionKind.CopiedSkill
-                : SkillExecutionKind.NativeSkill;
+                : SkillExecutionKind.SweetTransfer;
         }
 
         private static DishInstance FindDish(GpTable board, int instanceId)
@@ -152,11 +156,13 @@ namespace GourmetProject.Gameplay.Scoring
     {
         private readonly SkillRuleDef _rule;
         private readonly DishInstance _self;
+        private readonly bool _allowExtraSweetTransfer;
 
-        public SkillRuleEffect(SkillRuleDef rule, DishInstance self)
+        public SkillRuleEffect(SkillRuleDef rule, DishInstance self, bool allowExtraSweetTransfer = false)
         {
             _rule = rule;
             _self = self;
+            _allowExtraSweetTransfer = allowExtraSweetTransfer;
         }
 
         public void Apply(ScoreContext ctx)
@@ -253,12 +259,16 @@ namespace GourmetProject.Gameplay.Scoring
 
                 case SkillActionType.TransferSkills:
                 {
-                    // 本轮甜蜜传递；若挂有「传递一次额外甜蜜传递」，同技能再传若干次，每次重新随机目标。
+                    // 本轮甜蜜传递；只有食物自带 TransferSkills 会吃「额外甜蜜传递」层数。
+                    // 甜蜜传递来的外源子技能只执行自身一次，不继承这类内源加成。
                     ExecuteOneSweetTransfer(ctx);
-                    int extra = ctx.GetExtraSweetTransfers(_self);
-                    for (int i = 0; i < extra; i++)
+                    if (CanUseExtraSweetTransfer(ctx))
                     {
-                        ExecuteOneSweetTransfer(ctx);
+                        int extra = ctx.GetExtraSweetTransfers(_self);
+                        for (int i = 0; i < extra; i++)
+                        {
+                            ExecuteOneSweetTransfer(ctx);
+                        }
                     }
 
                     break;
@@ -320,6 +330,18 @@ namespace GourmetProject.Gameplay.Scoring
             }
         }
 
+        private bool CanUseExtraSweetTransfer(ScoreContext ctx)
+        {
+            return _allowExtraSweetTransfer || IsNativeSkillExecution(ctx);
+        }
+
+        private bool IsNativeSkillExecution(ScoreContext ctx)
+        {
+            return ctx?.Trace?.Kind == SkillExecutionKind.NativeSkill
+                && ctx.Trace.RuntimeSelfDishInstanceId == _self.Id
+                && string.Equals(ctx.Trace.RuleId, _rule.Id, StringComparison.Ordinal);
+        }
+
         private bool IsTiered() => IsTiered(_rule);
 
         private float TierValue(int tier) => TierValue(_rule, tier);
@@ -365,7 +387,7 @@ namespace GourmetProject.Gameplay.Scoring
                     if (transferRule.Trigger == SkillTrigger.OnSettle
                         && transferRule.ActionType == SkillActionType.TransferSkills)
                     {
-                        new SkillRuleEffect(transferRule, source).Apply(ctx);
+                        new SkillRuleEffect(transferRule, source, allowExtraSweetTransfer: true).Apply(ctx);
                     }
                 }
             }
