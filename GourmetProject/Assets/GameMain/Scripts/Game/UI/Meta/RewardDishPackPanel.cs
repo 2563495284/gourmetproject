@@ -23,6 +23,7 @@ namespace GourmetProject.Game.UI.Meta
         private const float DesiredBookGap = 24f;
         private const float MinBookScale = 0.1f;
         private const float DishFlyDuration = 0.28f;
+        private const float DefaultChoiceSpacing = 16f;
         private static readonly Vector2 ChoiceDishSize = new(140f, 140f);
 
         [SerializeField] private GameObject _panelRoot;
@@ -151,6 +152,8 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
+            ConfigureChoiceContainerLayout(out RectOffset choicePadding, out float choiceSpacing, out TextAnchor choiceAlignment);
+
             if (_cardTemplate != null)
             {
                 _cardTemplate.gameObject.SetActive(false);
@@ -182,6 +185,8 @@ namespace GourmetProject.Game.UI.Meta
                         string.IsNullOrEmpty(choice.FlavorId) ? null : new[] { choice.FlavorId }));
                 _spawnedChoices.Add(dish);
             }
+
+            ArrangeChoiceDishes(choicePadding, choiceSpacing, choiceAlignment);
         }
 
         private void ClearCards()
@@ -195,6 +200,74 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             _spawnedChoices.Clear();
+        }
+
+        private void ConfigureChoiceContainerLayout(out RectOffset padding, out float spacing, out TextAnchor alignment)
+        {
+            padding = new RectOffset(12, 12, 8, 8);
+            spacing = DefaultChoiceSpacing;
+            alignment = TextAnchor.MiddleCenter;
+            if (_choiceContainer == null)
+            {
+                return;
+            }
+
+            HorizontalLayoutGroup layout = _choiceContainer.GetComponent<HorizontalLayoutGroup>();
+            if (layout == null)
+            {
+                return;
+            }
+
+            if (layout.padding != null)
+            {
+                padding = new RectOffset(
+                    layout.padding.left,
+                    layout.padding.right,
+                    layout.padding.top,
+                    layout.padding.bottom);
+            }
+
+            spacing = layout.spacing;
+            alignment = layout.childAlignment;
+            layout.enabled = false;
+        }
+
+        private void ArrangeChoiceDishes(RectOffset padding, float spacing, TextAnchor alignment)
+        {
+            if (_choiceContainer == null || _spawnedChoices.Count == 0)
+            {
+                return;
+            }
+
+            Canvas.ForceUpdateCanvases();
+            float totalWidth = ChoiceDishSize.x * _spawnedChoices.Count
+                + Mathf.Max(0, _spawnedChoices.Count - 1) * spacing;
+            float containerWidth = _choiceContainer.rect.width;
+            float containerHeight = _choiceContainer.rect.height;
+            if (containerWidth <= 0f)
+            {
+                containerWidth = totalWidth + padding.horizontal;
+            }
+
+            if (containerHeight <= 0f)
+            {
+                containerHeight = ChoiceDishSize.y + padding.vertical;
+            }
+
+            float x = ChoiceStartX(containerWidth, padding, totalWidth, alignment);
+            float y = ChoiceY(containerHeight, padding, alignment);
+            for (int i = 0; i < _spawnedChoices.Count; i++)
+            {
+                RecipeEditDishView dish = _spawnedChoices[i];
+                if (dish == null)
+                {
+                    continue;
+                }
+
+                RectTransform rect = (RectTransform)dish.transform;
+                ConfigureChoiceDishRect(rect);
+                rect.anchoredPosition = new Vector2(x + i * (ChoiceDishSize.x + spacing), y);
+            }
         }
 
         private void RebuildBooks()
@@ -332,8 +405,7 @@ namespace GourmetProject.Game.UI.Meta
                 {
                     if (dish != null)
                     {
-                        PlayTargetFailed(dish);
-                        dish.SetInteractableAfterAnimation(true);
+                        dish.PlayReturnToOriginalPosition(() => PlayTargetFailed(dish));
                     }
 
                     return;
@@ -461,6 +533,64 @@ namespace GourmetProject.Game.UI.Meta
             rect.sizeDelta = ChoiceDishSize;
             rect.localScale = Vector3.one;
             rect.localRotation = Quaternion.identity;
+        }
+
+        private static float ChoiceStartX(float containerWidth, RectOffset padding, float totalWidth, TextAnchor alignment)
+        {
+            float x = -containerWidth * 0.5f + padding.left;
+            if (IsRightAligned(alignment))
+            {
+                x = containerWidth * 0.5f - padding.right - totalWidth;
+            }
+            else if (!IsLeftAligned(alignment))
+            {
+                x += (containerWidth - padding.horizontal - totalWidth) * 0.5f;
+            }
+
+            return x + ChoiceDishSize.x * 0.5f;
+        }
+
+        private static float ChoiceY(float containerHeight, RectOffset padding, TextAnchor alignment)
+        {
+            if (IsUpperAligned(alignment))
+            {
+                return containerHeight * 0.5f - padding.top - ChoiceDishSize.y * 0.5f;
+            }
+
+            if (IsLowerAligned(alignment))
+            {
+                return -containerHeight * 0.5f + padding.bottom + ChoiceDishSize.y * 0.5f;
+            }
+
+            return (padding.bottom - padding.top) * 0.5f;
+        }
+
+        private static bool IsLeftAligned(TextAnchor alignment)
+        {
+            return alignment == TextAnchor.UpperLeft
+                || alignment == TextAnchor.MiddleLeft
+                || alignment == TextAnchor.LowerLeft;
+        }
+
+        private static bool IsRightAligned(TextAnchor alignment)
+        {
+            return alignment == TextAnchor.UpperRight
+                || alignment == TextAnchor.MiddleRight
+                || alignment == TextAnchor.LowerRight;
+        }
+
+        private static bool IsUpperAligned(TextAnchor alignment)
+        {
+            return alignment == TextAnchor.UpperLeft
+                || alignment == TextAnchor.UpperCenter
+                || alignment == TextAnchor.UpperRight;
+        }
+
+        private static bool IsLowerAligned(TextAnchor alignment)
+        {
+            return alignment == TextAnchor.LowerLeft
+                || alignment == TextAnchor.LowerCenter
+                || alignment == TextAnchor.LowerRight;
         }
 
         private static void PlayTargetFailed(RecipeEditDishView dish)

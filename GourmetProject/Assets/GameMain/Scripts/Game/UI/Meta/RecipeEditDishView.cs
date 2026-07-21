@@ -15,6 +15,7 @@ namespace GourmetProject.Game.UI.Meta
     [RequireComponent(typeof(CanvasGroup))]
     public sealed class RecipeEditDishView : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
     {
+        private const float ReturnFlyDuration = 0.22f;
         private static readonly Vector2 FloatingAnchor = new(0.5f, 0.5f);
 
         [SerializeField] private Button _button;
@@ -28,6 +29,9 @@ namespace GourmetProject.Game.UI.Meta
         private Vector2 _originalPivot;
         private Vector2 _originalSizeDelta;
         private Vector2 _originalAnchoredPosition;
+        private Vector3 _originalLocalScale;
+        private Quaternion _originalLocalRotation;
+        private Vector3 _originalWorldCenter;
         private int _originalSiblingIndex;
         private Canvas _dragCanvas;
         private Action<RecipeEditDishView> _onClick;
@@ -136,6 +140,47 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
+        public void PlayReturnToOriginalPosition(Action onComplete = null)
+        {
+            EnsureDragStateRefs();
+            if (_rect == null || _originalParent == null)
+            {
+                SetInteractableAfterAnimation(true);
+                onComplete?.Invoke();
+                return;
+            }
+
+            Vector3 start = _rect.position;
+            Vector3 startScale = _rect.localScale;
+            Vector3 targetScale = FloatingScaleForOriginalParent();
+            if (_canvasGroup != null)
+            {
+                _canvasGroup.blocksRaycasts = false;
+                _canvasGroup.alpha = 1f;
+            }
+
+            DOTween.Kill(_rect);
+            DOVirtual.Float(0f, 1f, ReturnFlyDuration, t =>
+                {
+                    if (_rect == null)
+                    {
+                        return;
+                    }
+
+                    _rect.position = Vector3.LerpUnclamped(start, _originalWorldCenter, t);
+                    _rect.localScale = Vector3.LerpUnclamped(startScale, targetScale, t);
+                })
+                .SetEase(Ease.OutCubic)
+                .SetUpdate(true)
+                .SetTarget(_rect)
+                .SetLink(gameObject)
+                .OnComplete(() =>
+                {
+                    RestoreOriginalTransform();
+                    onComplete?.Invoke();
+                });
+        }
+
         public void PlayFlavorTransform(DishDef dishDef, IReadOnlyList<string> flavorIds, Action onComplete)
         {
             HideHover();
@@ -170,6 +215,7 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
+            DOTween.Kill(_rect);
             _dragging = true;
             _dropHandled = false;
             _originalParent = transform.parent;
@@ -178,9 +224,12 @@ namespace GourmetProject.Game.UI.Meta
             _originalPivot = _rect.pivot;
             _originalSizeDelta = _rect.sizeDelta;
             _originalAnchoredPosition = _rect.anchoredPosition;
+            _originalLocalScale = _rect.localScale;
+            _originalLocalRotation = _rect.localRotation;
             _originalSiblingIndex = transform.GetSiblingIndex();
             _dragCanvas = GetComponentInParent<Canvas>();
             Vector3 center = _rect.TransformPoint(_rect.rect.center);
+            _originalWorldCenter = center;
             HideHover();
             transform.SetParent(_dragCanvas != null ? _dragCanvas.transform : transform.root, true);
             PrepareAsFloating(center);
@@ -220,17 +269,7 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            _canvasGroup.blocksRaycasts = true;
-            if (_originalParent != null)
-            {
-                transform.SetParent(_originalParent, true);
-                transform.SetSiblingIndex(_originalSiblingIndex);
-                _rect.anchorMin = _originalAnchorMin;
-                _rect.anchorMax = _originalAnchorMax;
-                _rect.pivot = _originalPivot;
-                _rect.sizeDelta = _originalSizeDelta;
-                _rect.anchoredPosition = _originalAnchoredPosition;
-            }
+            PlayReturnToOriginalPosition();
         }
 
         public void OnPointerClick(PointerEventData eventData)
@@ -302,6 +341,55 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             _rect.position = eventData.position;
+        }
+
+        private void RestoreOriginalTransform()
+        {
+            if (_rect == null || _originalParent == null)
+            {
+                SetInteractableAfterAnimation(true);
+                return;
+            }
+
+            transform.SetParent(_originalParent, false);
+            transform.SetSiblingIndex(_originalSiblingIndex);
+            _rect.anchorMin = _originalAnchorMin;
+            _rect.anchorMax = _originalAnchorMax;
+            _rect.pivot = _originalPivot;
+            _rect.sizeDelta = _originalSizeDelta;
+            _rect.localScale = _originalLocalScale;
+            _rect.localRotation = _originalLocalRotation;
+            _rect.anchoredPosition = _originalAnchoredPosition;
+            _dragging = false;
+            _dropHandled = false;
+            SetInteractableAfterAnimation(true);
+        }
+
+        private Vector3 FloatingScaleForOriginalParent()
+        {
+            Transform floatingParent = transform.parent;
+            Vector3 parentScale = floatingParent != null ? floatingParent.lossyScale : Vector3.one;
+            Vector3 targetWorldScale = _originalParent != null
+                ? Vector3.Scale(_originalParent.lossyScale, _originalLocalScale)
+                : _originalLocalScale;
+            return new Vector3(
+                SafeScaleDiv(targetWorldScale.x, parentScale.x),
+                SafeScaleDiv(targetWorldScale.y, parentScale.y),
+                SafeScaleDiv(targetWorldScale.z, parentScale.z));
+        }
+
+        private static float SafeScaleDiv(float value, float divisor)
+        {
+            return Mathf.Abs(divisor) <= 0.0001f ? value : value / divisor;
+        }
+
+        private void EnsureDragStateRefs()
+        {
+            _rect ??= transform as RectTransform;
+            if (_canvasGroup == null)
+            {
+                _canvasGroup = GetComponent<CanvasGroup>();
+            }
         }
 
         private void EnsureButton()
