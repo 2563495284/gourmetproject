@@ -28,6 +28,9 @@ namespace GourmetProject.Game.UI.Tooltips
         [SerializeField] private GameObject _footerRoot;
         [SerializeField] private Text _footerText;
 
+        protected Text TitleText => _titleText;
+        protected Text DescText => _descText;
+
         /// <summary>显示 Tips（不吃射线，纯展示）。</summary>
         public void Show()
         {

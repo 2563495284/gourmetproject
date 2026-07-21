@@ -4,6 +4,7 @@ using GourmetProject.Game;
 using GourmetProject.Game.Meta;
 using GourmetProject.Runtime;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace GourmetProject.Game.UI.Tooltips
 {
@@ -15,6 +16,9 @@ namespace GourmetProject.Game.UI.Tooltips
     public sealed class ItemTipView : ActionTipView, ITooltipPlacementAware
     {
         private const float SpecialTagsGap = 18f;
+        private const float MinWidth = 260f;
+        private const float MaxWidth = 480f;
+        private const float DescHorizontalPadding = 76f;
 
         [SerializeField] private RectTransform _specialTagsRoot;
         [SerializeField] private FoodTipCardView _infoCardPrefab;
@@ -42,6 +46,7 @@ namespace GourmetProject.Game.UI.Tooltips
             ApplyTexts(itemName, desc);
             ApplyFooter(null);
             BuildInfoCards(_specialTagsRoot, specialTags, "SpecialTag");
+            ResizeToDescText();
         }
 
         public void OnPlacedAroundTarget(bool placedLeftOfTarget)
@@ -109,6 +114,26 @@ namespace GourmetProject.Game.UI.Tooltips
             _specialTagsRoot.anchorMax = new Vector2(left ? 0f : 1f, 1f);
             _specialTagsRoot.pivot = new Vector2(left ? 1f : 0f, 1f);
             _specialTagsRoot.anchoredPosition = new Vector2(left ? -SpecialTagsGap : SpecialTagsGap, 0f);
+        }
+
+        private void ResizeToDescText()
+        {
+            if (DescText == null || transform is not RectTransform rect)
+            {
+                return;
+            }
+
+            float preferredWidth = Mathf.Max(
+                DescText.preferredWidth,
+                TitleText != null ? TitleText.preferredWidth : 0f);
+            if (preferredWidth <= 0f)
+            {
+                return;
+            }
+
+            float width = Mathf.Clamp(preferredWidth + DescHorizontalPadding, MinWidth, MaxWidth);
+            rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
+            LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
         }
     }
 }

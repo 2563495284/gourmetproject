@@ -10,6 +10,12 @@ namespace GourmetProject.Game.UI.Tooltips
         [SerializeField] private Text _titleText;
         [SerializeField] private Text _descText;
 
+        public float PreferredTitleWidth => _titleText != null && _titleText.gameObject.activeSelf
+            ? _titleText.preferredWidth
+            : 0f;
+
+        public float PreferredDescWidth => _descText != null ? _descText.preferredWidth : 0f;
+
         public void Bind(string title, string desc, bool debuffed = false)
         {
             if (!ValidateReferences())

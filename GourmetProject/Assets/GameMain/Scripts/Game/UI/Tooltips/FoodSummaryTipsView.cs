@@ -18,7 +18,12 @@ namespace GourmetProject.Game.UI.Tooltips
 
         private const int MaxFlavorColumns = 1;
         private const float FlavorCellHeight = 44f;
+        private const float FlavorCellWidth = 96f;
         private const float FlavorRowSpacing = 8f;
+        private const float MinWidth = 180f;
+        private const float MaxWidth = 330f;
+        private const float SummaryHorizontalPadding = 24f;
+        private const float SkillCardHorizontalPadding = 20f;
 
         public void Bind(FoodSummaryTipsData data)
         {
@@ -30,8 +35,9 @@ namespace GourmetProject.Game.UI.Tooltips
             data ??= FoodSummaryTipsData.Empty;
 
             _nameText.text = data.FoodName;
-            BuildSkills(data.Skills, data.SkillsDisabled);
+            float skillsTextWidth = BuildSkills(data.Skills, data.SkillsDisabled);
             BuildFlavors(data.Flavors);
+            ResizeToContent(skillsTextWidth, data.Flavors);
             Show();
         }
 
@@ -66,19 +72,23 @@ namespace GourmetProject.Game.UI.Tooltips
             ValidateReferences();
         }
 
-        private void BuildSkills(IReadOnlyList<FoodInfoEntry> skills, bool debuffed)
+        private float BuildSkills(IReadOnlyList<FoodInfoEntry> skills, bool debuffed)
         {
             FoodTipUiUtility.ClearChildren(_skillsContent);
             int count = skills != null ? skills.Count : 0;
             _skillsContent.gameObject.SetActive(count > 0);
 
+            float maxTextWidth = 0f;
             for (int i = 0; i < count; i++)
             {
                 FoodInfoEntry skill = skills[i];
                 FoodTipCardView card = Instantiate(_skillCardPrefab, _skillsContent, false);
                 card.name = $"Skill_{i}";
                 card.Bind(skill.Title, skill.Desc, debuffed);
+                maxTextWidth = Mathf.Max(maxTextWidth, card.PreferredDescWidth, card.PreferredTitleWidth);
             }
+
+            return maxTextWidth;
         }
 
         private void BuildFlavors(IReadOnlyList<string> flavors)
@@ -112,6 +122,34 @@ namespace GourmetProject.Game.UI.Tooltips
                 tag.name = $"Flavor_{i}";
                 tag.Bind(flavors[i]);
             }
+        }
+
+        private void ResizeToContent(float skillsTextWidth, IReadOnlyList<string> flavors)
+        {
+            if (transform is not RectTransform rect)
+            {
+                return;
+            }
+
+            float preferredWidth = _nameText != null
+                ? _nameText.preferredWidth + SummaryHorizontalPadding
+                : MinWidth;
+
+            if (skillsTextWidth > 0f)
+            {
+                preferredWidth = Mathf.Max(
+                    preferredWidth,
+                    skillsTextWidth + SummaryHorizontalPadding + SkillCardHorizontalPadding);
+            }
+
+            if (flavors != null && flavors.Count > 0)
+            {
+                preferredWidth = Mathf.Max(preferredWidth, FlavorCellWidth + SummaryHorizontalPadding);
+            }
+
+            float width = Mathf.Clamp(preferredWidth, MinWidth, MaxWidth);
+            rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
+            LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
         }
 
         private bool ValidateReferences()
