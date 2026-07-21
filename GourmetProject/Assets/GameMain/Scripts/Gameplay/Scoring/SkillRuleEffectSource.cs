@@ -267,21 +267,15 @@ namespace GourmetProject.Gameplay.Scoring
                     IReadOnlyList<SkillEffect> effects = EffectsToTransfer(ctx.Db, _rule);
                     if (effects.Count > 0)
                     {
-                        foreach (DishInstance t in Targets(ctx))
+                        foreach (DishInstance t in TransferTargets(ctx))
                         {
                             if (t.Id == _self.Id)
                             {
                                 continue;
                             }
 
-                            IReadOnlyList<SkillEffect> newEffects = NewTransferredEffects(t, effects);
-                            if (newEffects.Count == 0)
-                            {
-                                continue;
-                            }
-
-                            ctx.RecordSkillTransfer(t, newEffects, _self.Def.Name, _self.Id);
-                            ResolveTransferredEffects(ctx, t, newEffects);
+                            ctx.RecordSkillTransfer(t, effects, _self.Def.Name, _self.Id);
+                            ResolveTransferredEffects(ctx, t, effects);
                         }
                     }
                     break;
@@ -326,36 +320,58 @@ namespace GourmetProject.Gameplay.Scoring
 
         private float TierValue(int tier) => TierValue(_rule, tier);
 
-        private static IReadOnlyList<SkillEffect> NewTransferredEffects(DishInstance target, IReadOnlyList<SkillEffect> effects)
+        private IReadOnlyList<DishInstance> TransferTargets(ScoreContext ctx)
         {
-            var result = new List<SkillEffect>();
-            foreach (SkillEffect effect in effects)
+            IReadOnlyList<DishInstance> candidates = SkillScopeResolver.ResolveActionTargetDishes(
+                ctx.Db,
+                ctx.DiningTable,
+                _self,
+                _rule,
+                SkillScopeVisualMode.CandidateScope);
+            var candidateIds = new List<int>();
+            foreach (DishInstance dish in candidates)
             {
-                if (!HasTransferredRule(target, effect?.Rule))
+                if (dish != null && dish.Id != _self.Id && !candidateIds.Contains(dish.Id))
                 {
-                    result.Add(effect);
+                    candidateIds.Add(dish.Id);
+                }
+            }
+
+            if (candidateIds.Count == 0)
+            {
+                return Array.Empty<DishInstance>();
+            }
+
+            int count = _rule.ActionCount <= 0 ? candidateIds.Count : Math.Min(_rule.ActionCount, candidateIds.Count);
+            IReadOnlyList<int> selectedIds = ctx.Snapshot.TransferTargetSelector != null
+                ? ctx.Snapshot.TransferTargetSelector(candidateIds, count)
+                : candidateIds.Take(count).ToArray();
+            if (selectedIds == null || selectedIds.Count == 0)
+            {
+                return Array.Empty<DishInstance>();
+            }
+
+            var result = new List<DishInstance>();
+            foreach (int selectedId in selectedIds)
+            {
+                if (selectedId == _self.Id || !candidateIds.Contains(selectedId) || result.Any(d => d.Id == selectedId))
+                {
+                    continue;
+                }
+
+                DishInstance dish = ctx.DiningTable.Dishes.FirstOrDefault(d => d.Id == selectedId);
+                if (dish != null)
+                {
+                    result.Add(dish);
+                }
+
+                if (result.Count >= count)
+                {
+                    break;
                 }
             }
 
             return result;
-        }
-
-        private static bool HasTransferredRule(DishInstance target, SkillRuleDef rule)
-        {
-            if (target == null || rule == null)
-            {
-                return false;
-            }
-
-            foreach (TransferredSkill transferred in target.TransferredSkills)
-            {
-                if (ReferenceEquals(transferred.Effect.Rule, rule))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         private void ResolveTransferredEffects(ScoreContext ctx, DishInstance target, IReadOnlyList<SkillEffect> effects)

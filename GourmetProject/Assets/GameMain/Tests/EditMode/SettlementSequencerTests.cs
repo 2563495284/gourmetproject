@@ -140,6 +140,36 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(FeedbackKind(line), Is.EqualTo(SettlementDishFeedbackKind.CopySkillTriggered));
         }
 
+        [Test]
+        public void SweetTransferExtraSettlementCueRevealsTransferredCard()
+        {
+            var line = new ScoreLine(
+                ScorePhase.DishSkills,
+                ScoreLineKind.ExtraSettlement,
+                new ScoreSource(
+                    ScoreSourceType.DishSkill,
+                    "sk_nougat",
+                    "牛轧糖<甜蜜传递>",
+                    5,
+                    "daifuku"),
+                5,
+                "daifuku",
+                null,
+                1f,
+                0f,
+                1f,
+                "牛轧糖<甜蜜传递>: 技能额外触发 +1 次");
+
+            object cue = BuildCue(line);
+            PropertyInfo revealProperty = cue.GetType().GetProperty("Reveal");
+            Assert.That(revealProperty, Is.Not.Null);
+
+            var reveal = (SettlementRevealSignal)revealProperty.GetValue(cue);
+            Assert.That(reveal.DishInstanceId, Is.EqualTo(5));
+            Assert.That(reveal.TransferredDelta, Is.EqualTo(1));
+            Assert.That(reveal.IsEmpty, Is.False);
+        }
+
         private static ScoreLine SweetTransferLine(int recipientInstanceId, int affectedInstanceId)
         {
             return new ScoreLine(
@@ -187,6 +217,20 @@ namespace GourmetProject.Tests.EditMode
                 BindingFlags.NonPublic | BindingFlags.Static);
             Assert.That(method, Is.Not.Null);
             return (SettlementDishFeedbackKind)method.Invoke(null, new object[] { line });
+        }
+
+        private static object BuildCue(ScoreLine line)
+        {
+            MethodInfo method = typeof(SettlementSequencer).GetMethod(
+                "TryBuildCue",
+                BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(method, Is.Not.Null);
+
+            object[] args = { line, null };
+            bool built = (bool)method.Invoke(null, args);
+            Assert.That(built, Is.True);
+            Assert.That(args[1], Is.Not.Null);
+            return args[1];
         }
     }
 }

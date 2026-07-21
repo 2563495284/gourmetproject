@@ -257,7 +257,7 @@ namespace GourmetProject.Gameplay.Board
         /// </summary>
         public IReadOnlyList<TransferredSkill> TransferredSkills => _transferredSkills;
 
-        /// <summary>追加一条外来子技能（甜蜜传递落地）。按 rule 引用去重，重复来源不叠加。</summary>
+        /// <summary>追加一条外来子技能（甜蜜传递落地）。同 rule 多次传入按多条记录保留，用于叠加触发与 tips 展示。</summary>
         public void AddTransferredSkill(SkillEffect effect, string sourceLabel)
         {
             AddTransferredSkill(effect, sourceLabel, 0);
@@ -268,14 +268,6 @@ namespace GourmetProject.Gameplay.Board
             if (effect?.Rule == null)
             {
                 return;
-            }
-
-            for (int i = 0; i < _transferredSkills.Count; i++)
-            {
-                if (ReferenceEquals(_transferredSkills[i].Effect.Rule, effect.Rule))
-                {
-                    return;
-                }
             }
 
             _transferredSkills.Add(new TransferredSkill(effect, sourceLabel, sourceInstanceId));

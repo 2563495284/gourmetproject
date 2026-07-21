@@ -23,7 +23,8 @@ namespace GourmetProject.Gameplay.Scoring
             int cakeLayerThresholdReduction = 0,
             bool reverseDishOrder = false,
             IReadOnlyList<UnservedRecipeDish> unservedRecipeDishes = null,
-            Func<IReadOnlyList<string>, int, IReadOnlyList<string>> copySkillSelector = null)
+            Func<IReadOnlyList<string>, int, IReadOnlyList<string>> copySkillSelector = null,
+            Func<IReadOnlyList<int>, int, IReadOnlyList<int>> transferTargetSelector = null)
         {
             DiningTable = board ?? throw new ArgumentNullException(nameof(board));
             Db = db ?? throw new ArgumentNullException(nameof(db));
@@ -36,6 +37,7 @@ namespace GourmetProject.Gameplay.Scoring
             History = history ?? EmptyScoreHistory.Instance;
             EffectSources = (effectSources ?? Array.Empty<IScoreEffectSource>()).ToArray();
             CopySkillSelector = copySkillSelector;
+            TransferTargetSelector = transferTargetSelector;
 
             // 结算优先级层级（甜=+1、苦=-1，多风味累加）：层级高者先结算；同层再按棋盘从上到下、从左到右。
             IEnumerable<DishInstance> alive = DiningTable.Dishes.Where(d => !d.ExcludedFromScore);
@@ -130,6 +132,11 @@ namespace GourmetProject.Gameplay.Scoring
         /// 技能复制的选择器。正式结算由 BattleSession 注入随机流；预览未注入时使用稳定顺序。
         /// </summary>
         public Func<IReadOnlyList<string>, int, IReadOnlyList<string>> CopySkillSelector { get; }
+
+        /// <summary>
+        /// 甜蜜传递目标选择器。正式结算由 BattleSession 注入随机流；预览未注入时使用稳定顺序。
+        /// </summary>
+        public Func<IReadOnlyList<int>, int, IReadOnlyList<int>> TransferTargetSelector { get; }
 
         /// <summary>本次结算时仍未上菜的菜谱条目（槽索引 + dishId），供酸/咸在整体结算末尾遍历。</summary>
         public IReadOnlyList<UnservedRecipeDish> UnservedRecipeDishes { get; }

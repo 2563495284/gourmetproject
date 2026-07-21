@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using GourmetProject.Game.UI.Tooltips;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
@@ -170,6 +171,199 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(result.ScoreLines.Any(l => l.Kind == ScoreLineKind.CopySkill), Is.False);
         }
 
+        [Test]
+        public void ExtraSettlement_ReplaysTargetDishSkillsOnce()
+        {
+            DishShape oneCell = DishShape.FromRows(new[] { "X" });
+            SkillRuleDef extra = Rule("extra_trigger", 0, SkillActionType.ExtraSettlement, SkillScope.Other, 1f, "skill_extra");
+            var extraSkill = new SkillDef(
+                "skill_extra",
+                "额外触发",
+                string.Empty,
+                Array.Empty<string>(),
+                new[] { extra },
+                new[] { "目标技能额外触发 +1" });
+            SkillRuleDef addFlat = Rule("target_add", 0, SkillActionType.AddFlat, SkillScope.Self, 5f, "skill_target");
+            var targetSkill = new SkillDef(
+                "skill_target",
+                "目标加分",
+                string.Empty,
+                Array.Empty<string>(),
+                new[] { addFlat },
+                new[] { "美味 +5" });
+
+            DishDef sourceDef = Dish("dish_a", "A", oneCell, "skill_extra");
+            DishDef targetDef = Dish("dish_b", "B", oneCell, "skill_target");
+            var db = new GameplayDatabase(
+                new[] { sourceDef, targetDef },
+                new[] { extraSkill, targetSkill },
+                Array.Empty<FlavorDef>(),
+                Array.Empty<MaterialDef>(),
+                Array.Empty<RecipeDef>());
+            var table = new DiningTable(2, 1);
+            var source = new DishInstance(1, sourceDef, MakePlacement(oneCell, 0, 0), sourceDef.SkillIds, Array.Empty<string>());
+            var target = new DishInstance(2, targetDef, MakePlacement(oneCell, 1, 0), targetDef.SkillIds, Array.Empty<string>());
+            table.Place(source);
+            table.Place(target);
+
+            ScoreResult result = new ScoreCalculator().Calculate(table, db);
+
+            Assert.That(result.ScoreLines.Count(l =>
+                l.DishInstanceId == target.Id
+                && l.Kind == ScoreLineKind.DishFlat
+                && l.Source.Name == "目标加分"
+                && Math.Abs(l.Value - 5f) < 0.001f), Is.EqualTo(2));
+            Assert.That(result.RawSum, Is.EqualTo(30f));
+        }
+
+        [Test]
+        public void ExtraSettlement_ReplaysSkillWithoutRecursingExtraSettlement()
+        {
+            DishShape oneCell = DishShape.FromRows(new[] { "X" });
+            SkillRuleDef extraSelf = Rule("extra_self", 0, SkillActionType.ExtraSettlement, SkillScope.Self, 1f, "skill_sweet");
+            SkillRuleDef transfer = Rule("sweet_transfer", 1, SkillActionType.TransferSkills, SkillScope.Other, 0f);
+            var sweetSkill = new SkillDef(
+                "skill_sweet",
+                "甜蜜",
+                string.Empty,
+                Array.Empty<string>(),
+                new[] { extraSelf, transfer },
+                new[] { "技能额外触发 +1", "甜蜜传递" });
+
+            SkillRuleDef addFlat = Rule("sweet_add", 0, SkillActionType.AddFlat, SkillScope.Self, 5f, "skill_bonus");
+            var bonusSkill = new SkillDef(
+                "skill_bonus",
+                "甜蜜加分",
+                string.Empty,
+                Array.Empty<string>(),
+                new[] { addFlat },
+                new[] { "美味 +5" });
+
+            DishDef sourceDef = Dish("dish_a", "A", oneCell, "skill_sweet");
+            DishDef targetDef = Dish("dish_b", "B", oneCell, "skill_bonus");
+            var db = new GameplayDatabase(
+                new[] { sourceDef, targetDef },
+                new[] { sweetSkill, bonusSkill },
+                Array.Empty<FlavorDef>(),
+                Array.Empty<MaterialDef>(),
+                Array.Empty<RecipeDef>());
+            var table = new DiningTable(2, 1);
+            var source = new DishInstance(1, sourceDef, MakePlacement(oneCell, 0, 0), sourceDef.SkillIds, Array.Empty<string>());
+            var target = new DishInstance(2, targetDef, MakePlacement(oneCell, 1, 0), targetDef.SkillIds, Array.Empty<string>());
+            table.Place(source);
+            table.Place(target);
+
+            ScoreResult result = new ScoreCalculator().Calculate(table, db);
+
+            Assert.That(result.ScoreLines.Count(l =>
+                l.DishInstanceId == source.Id
+                && l.Kind == ScoreLineKind.ExtraSettlement
+                && l.Source.Name == "甜蜜"), Is.EqualTo(1));
+            Assert.That(result.ScoreLines.Count(l =>
+                l.DishInstanceId == target.Id
+                && l.Kind == ScoreLineKind.ExtraSettlement
+                && l.Source.Name == "A<甜蜜传递>"
+                && Math.Abs(l.Value - 1f) < 0.001f), Is.EqualTo(2));
+            Assert.That(result.ScoreLines.Count(l =>
+                l.DishInstanceId == target.Id
+                && l.Kind == ScoreLineKind.DishFlat
+                && l.Source.Name == "甜蜜加分"
+                && Math.Abs(l.Value - 5f) < 0.001f), Is.EqualTo(3));
+            Assert.That(result.RawSum, Is.EqualTo(35f));
+        }
+
+        [Test]
+        public void ExtraSettlement_RerollsTransferTargetsPerTrigger()
+        {
+            DishShape oneCell = DishShape.FromRows(new[] { "X" });
+            SkillRuleDef extraSelf = Rule("extra_self", 0, SkillActionType.ExtraSettlement, SkillScope.Self, 1f, "skill_sweet");
+            SkillRuleDef transfer = RuleWithActionCount("sweet_transfer", 1, SkillActionType.TransferSkills, SkillScope.Other, 0f, 1, "skill_sweet");
+            var sweetSkill = new SkillDef(
+                "skill_sweet",
+                "甜蜜",
+                string.Empty,
+                Array.Empty<string>(),
+                new[] { extraSelf, transfer },
+                new[] { "技能额外触发 +1", "甜蜜传递" });
+
+            DishDef sourceDef = Dish("dish_a", "A", oneCell, "skill_sweet");
+            DishDef targetOneDef = Dish("dish_b", "B", oneCell);
+            DishDef targetTwoDef = Dish("dish_c", "C", oneCell);
+            var db = new GameplayDatabase(
+                new[] { sourceDef, targetOneDef, targetTwoDef },
+                new[] { sweetSkill },
+                Array.Empty<FlavorDef>(),
+                Array.Empty<MaterialDef>(),
+                Array.Empty<RecipeDef>());
+            var table = new DiningTable(3, 1);
+            var source = new DishInstance(1, sourceDef, MakePlacement(oneCell, 0, 0), sourceDef.SkillIds, Array.Empty<string>());
+            var targetOne = new DishInstance(2, targetOneDef, MakePlacement(oneCell, 1, 0), targetOneDef.SkillIds, Array.Empty<string>());
+            var targetTwo = new DishInstance(3, targetTwoDef, MakePlacement(oneCell, 2, 0), targetTwoDef.SkillIds, Array.Empty<string>());
+            table.Place(source);
+            table.Place(targetOne);
+            table.Place(targetTwo);
+
+            int call = 0;
+            ScoreResult result = new ScoreCalculator().Calculate(
+                table,
+                db,
+                transferTargetSelector: (candidates, count) =>
+                {
+                    call++;
+                    return new[] { call == 1 ? targetOne.Id : targetTwo.Id };
+                });
+
+            Assert.That(call, Is.EqualTo(2));
+            Assert.That(result.SkillTransfers.Select(t => t.TargetInstanceId).ToArray(), Is.EqualTo(new[] { targetOne.Id, targetTwo.Id }));
+        }
+
+        [Test]
+        public void TransferredSkillTipsKeepDuplicateEntriesInRevealOrder()
+        {
+            DishShape oneCell = DishShape.FromRows(new[] { "X" });
+            SkillRuleDef nougatExtra = Rule("nougat_extra", 0, SkillActionType.ExtraSettlement, SkillScope.Self, 1f, "skill_nougat");
+            SkillRuleDef chocoMult = Rule("choco_mult", 0, SkillActionType.AddMultFlat, SkillScope.Self, 3f, "skill_choco");
+            var nougatSkill = new SkillDef(
+                "skill_nougat",
+                "牛轧糖",
+                string.Empty,
+                Array.Empty<string>(),
+                new[] { nougatExtra },
+                new[] { "技能额外触发 +1" });
+            var chocoSkill = new SkillDef(
+                "skill_choco",
+                "巧克力棒",
+                string.Empty,
+                Array.Empty<string>(),
+                new[] { chocoMult },
+                new[] { "倍率 +3" });
+            DishDef cookieDef = Dish("dish_cookie", "曲奇", oneCell);
+            var db = new GameplayDatabase(
+                new[] { cookieDef },
+                new[] { nougatSkill, chocoSkill },
+                Array.Empty<FlavorDef>(),
+                Array.Empty<MaterialDef>(),
+                Array.Empty<RecipeDef>());
+            var table = new DiningTable(1, 1);
+            var cookie = new DishInstance(1, cookieDef, MakePlacement(oneCell, 0, 0), cookieDef.SkillIds, Array.Empty<string>());
+            table.Place(cookie);
+
+            cookie.AddTransferredSkill(new SkillEffect(nougatExtra, "技能额外触发 +1"), "牛轧糖<甜蜜传递>", 4);
+            cookie.AddTransferredSkill(new SkillEffect(nougatExtra, "技能额外触发 +1"), "牛轧糖<甜蜜传递>", 4);
+            cookie.AddTransferredSkill(new SkillEffect(chocoMult, "倍率 +3"), "巧克力棒<甜蜜传递>", 3);
+
+            FoodTipsData revealed = FoodTipsDataFactory.BuildRevealed(
+                cookie,
+                table,
+                db,
+                new FoodTipsReveal(cookie.BaseScoreBeforeSettlement, cookie.BaseMultiplierBeforeSettlement, -1, 2));
+            FoodTipsData full = FoodTipsDataFactory.Build(cookie, table, db);
+
+            Assert.That(cookie.TransferredSkills.Count, Is.EqualTo(3));
+            Assert.That(revealed.TransferredSubSkills.Select(e => e.Title).ToArray(), Is.EqualTo(new[] { "牛轧糖<甜蜜传递>", "牛轧糖<甜蜜传递>" }));
+            Assert.That(full.TransferredSubSkills.Select(e => e.Title).ToArray(), Is.EqualTo(new[] { "牛轧糖<甜蜜传递>", "牛轧糖<甜蜜传递>", "巧克力棒<甜蜜传递>" }));
+        }
+
         private static SkillRuleDef Rule(
             string id,
             int order,
@@ -191,6 +385,32 @@ namespace GourmetProject.Tests.EditMode
                 actionType,
                 actionScope,
                 0,
+                new[] { actionValue },
+                Array.Empty<string>());
+        }
+
+        private static SkillRuleDef RuleWithActionCount(
+            string id,
+            int order,
+            SkillActionType actionType,
+            SkillScope actionScope,
+            float actionValue,
+            int actionCount,
+            string skillId = "skill_sweet")
+        {
+            return new SkillRuleDef(
+                id,
+                skillId,
+                order,
+                SkillTrigger.OnSettle,
+                SkillConditionType.None,
+                SkillScope.Self,
+                CountUnit.Instances,
+                CountMode.Per,
+                string.Empty,
+                actionType,
+                actionScope,
+                actionCount,
                 new[] { actionValue },
                 Array.Empty<string>());
         }

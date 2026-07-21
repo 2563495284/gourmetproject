@@ -293,7 +293,7 @@ namespace GourmetProject.Gameplay.Battle
         {
             ScoreResult result = MinimumServesForScore > 0 && ServesUsed < MinimumServesForScore
                 ? ZeroScoreResult()
-                : _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, extraSources: BuildSettlementExtraSources(), history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes(), copySkillSelector: SelectCopySkills);
+                : _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, extraSources: BuildSettlementExtraSources(), history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes(), copySkillSelector: SelectCopySkills, transferTargetSelector: SelectTransferTargets);
             ApplySideEffects(result);
             LastResult = result;
             IsSettled = true;
@@ -303,6 +303,23 @@ namespace GourmetProject.Gameplay.Battle
         private static ScoreResult ZeroScoreResult()
         {
             return new ScoreResult(Array.Empty<DishScore>(), 0f, 0f, 1f);
+        }
+
+        private IReadOnlyList<int> SelectTransferTargets(IReadOnlyList<int> candidates, int count)
+        {
+            if (candidates == null || candidates.Count == 0 || count <= 0)
+            {
+                return Array.Empty<int>();
+            }
+
+            var targets = new List<int>(candidates);
+            if (targets.Count > count)
+            {
+                _rng.Shuffle(targets);
+                targets = targets.GetRange(0, count);
+            }
+
+            return targets;
         }
 
         private List<string> ComposeServeSkills(DishDef dish, RecipeSlotEntry entry)

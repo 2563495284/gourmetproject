@@ -10,7 +10,7 @@ namespace GourmetProject.Gameplay.Scoring
 {
     /// <summary>
     /// 结算过程中的可变上下文与累加器。
-    /// 每道菜有独立累加器（加法区/乘区/额外结算次数），支持跨菜改分；
+    /// 每道菜有独立累加器（加法区/乘区），支持跨菜改分；
     /// 所有菜在全部阶段跑完后统一定稿（deferred finalization），因此技能可以改到别的菜。
     /// 层数/金币/技能传递等对外副作用只累积，不在结算中直接改实例（保证预览安全、纯计算）。
     /// </summary>
@@ -24,7 +24,6 @@ namespace GourmetProject.Gameplay.Scoring
             public float Base;
             public float Flat;
             public float Mult = 1f;
-            public int ExtraTimes;
         }
 
         private readonly Dictionary<int, DishAccumulator> _accums = new Dictionary<int, DishAccumulator>();
@@ -40,6 +39,7 @@ namespace GourmetProject.Gameplay.Scoring
         private readonly Dictionary<int, float> _permanentFlatDeltas = new Dictionary<int, float>();
         private readonly Dictionary<int, float> _permanentMultDeltas = new Dictionary<int, float>();
         private readonly Dictionary<int, int> _liveCountAs = new Dictionary<int, int>();
+        private readonly Dictionary<int, int> _extraSkillTriggers = new Dictionary<int, int>();
         private DishAccumulator _current;
         private bool _initialFinalModifiersRecorded;
         private bool _finalized;
@@ -360,7 +360,7 @@ namespace GourmetProject.Gameplay.Scoring
             SubmitCommand(new TransferScoreCommand(from.Id, to.Id, fraction));
         }
 
-        /// <summary>目标菜额外结算 times 次（贡献额外计入总分）。</summary>
+        /// <summary>目标菜技能额外触发 times 次。</summary>
         public void AddExtraSettlement(DishInstance target, int times)
         {
             if (target == null || times <= 0)
@@ -369,6 +369,17 @@ namespace GourmetProject.Gameplay.Scoring
             }
 
             SubmitCommand(new ExtraSettlementCommand(target.Id, times));
+        }
+
+        public int ConsumeExtraSkillTriggers(DishInstance target)
+        {
+            if (target == null || !_extraSkillTriggers.TryGetValue(target.Id, out int times) || times <= 0)
+            {
+                return 0;
+            }
+
+            _extraSkillTriggers.Remove(target.Id);
+            return times;
         }
 
         public void GrantGold(float value)
@@ -577,7 +588,7 @@ namespace GourmetProject.Gameplay.Scoring
                 DishAccumulator a = _accums[id];
                 var score = new DishScore(a.Dish.Id, a.Dish.Def.Id, a.Base, a.Flat, a.Mult);
                 _dishScores.Add(score);
-                RawSum += score.Contribution * (1 + a.ExtraTimes);
+                RawSum += score.Contribution;
             }
         }
 
@@ -687,9 +698,9 @@ namespace GourmetProject.Gameplay.Scoring
                 return;
             }
 
-            int before = a.ExtraTimes;
-            a.ExtraTimes += times;
-            AddLine(a, ScoreLineKind.ExtraSettlement, times, before, a.ExtraTimes, $"额外结算 +{times} 次");
+            _extraSkillTriggers.TryGetValue(dishId, out int before);
+            _extraSkillTriggers[dishId] = before + times;
+            AddLine(a, ScoreLineKind.ExtraSettlement, times, before, before + times, $"技能额外触发 +{times} 次");
         }
 
         internal void ApplyGrantGoldCommand(float value)
@@ -955,7 +966,7 @@ namespace GourmetProject.Gameplay.Scoring
         public void Execute(ScoreContext context) => context.ApplyTransferScoreCommand(_fromId, _toId, _fraction);
     }
 
-    /// <summary>目标菜额外结算若干次。</summary>
+    /// <summary>目标菜技能额外触发若干次。</summary>
     public sealed class ExtraSettlementCommand : IScoreCommand
     {
         private readonly int _dishId;

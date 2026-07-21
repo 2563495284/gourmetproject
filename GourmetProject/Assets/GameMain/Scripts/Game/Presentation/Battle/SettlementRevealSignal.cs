@@ -60,5 +60,10 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             return new SettlementRevealSignal(dishInstanceId, false, 0f, false, 0f, count, 0);
         }
+
+        public static SettlementRevealSignal TransferredReveal(int dishInstanceId, int count)
+        {
+            return new SettlementRevealSignal(dishInstanceId, false, 0f, false, 0f, 0, count);
+        }
     }
 }

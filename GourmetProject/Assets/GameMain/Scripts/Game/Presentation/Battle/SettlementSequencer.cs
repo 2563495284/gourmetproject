@@ -1329,7 +1329,11 @@ namespace GourmetProject.Game.Presentation.Battle
                     return true;
 
                 case ScoreLineKind.ExtraSettlement:
-                    cue = new SettlementCue(SettlementCueKind.SideEffect, $"额外结算 {FormatSigned(line.Value)}", SideEffectColor);
+                    cue = new SettlementCue(
+                        SettlementCueKind.SideEffect,
+                        $"额外触发 {FormatSigned(line.Value)}",
+                        SideEffectColor,
+                        reveal: SettlementRevealSignal.TransferredReveal(line.DishInstanceId, SweetTransferCardDelta(line.Source)));
                     return true;
 
                 case ScoreLineKind.SilverItemRoll:
