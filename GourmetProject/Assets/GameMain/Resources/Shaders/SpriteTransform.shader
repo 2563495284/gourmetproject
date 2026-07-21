@@ -55,7 +55,6 @@ Shader "GourmetProject/SpriteTransform"
             #pragma multi_compile_local _ UNITY_UI_ALPHACLIP
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "UnityUI.cginc"
 
             struct Attributes
             {
@@ -84,6 +83,12 @@ Shader "GourmetProject/SpriteTransform"
                 float4 _EdgeClampPoint;
             CBUFFER_END
 
+            half UnityGet2DClippingHlsl(float2 position, float4 clipRect)
+            {
+                float2 inside = step(clipRect.xy, position) * step(position, clipRect.zw);
+                return (half)(inside.x * inside.y);
+            }
+
             Varyings Vert(Attributes input)
             {
                 Varyings output;
@@ -107,7 +112,7 @@ Shader "GourmetProject/SpriteTransform"
                 color.rgb += (half)_Brightness;
 
                 #ifdef UNITY_UI_CLIP_RECT
-                color.a *= UnityGet2DClipping(input.worldPosition.xy, _ClipRect);
+                color.a *= UnityGet2DClippingHlsl(input.worldPosition.xy, _ClipRect);
                 #endif
 
                 #ifdef UNITY_UI_ALPHACLIP

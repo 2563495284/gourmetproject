@@ -19,6 +19,7 @@ namespace GourmetProject.Game.UI.Tooltips
         private const float MaxWidth = 480f;
         private const float DescHorizontalPadding = 76f;
         private const string MinWidthSampleText = "十十十十十十十十十十";
+        private const string MinHeightSampleText = "十\n十";
 
         [SerializeField] private RectTransform _specialTagsRoot;
         [SerializeField] private FoodTipCardView _infoCardPrefab;
@@ -131,6 +132,7 @@ namespace GourmetProject.Game.UI.Tooltips
             float width = Mathf.Min(preferredWidth + DescHorizontalPadding, MaxWidth);
             rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
             LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
+            ResizeHeightToDescText(rect);
         }
 
         private static float PreferredWidthFor(Text text, string value)
@@ -142,6 +144,44 @@ namespace GourmetProject.Game.UI.Tooltips
 
             TextGenerationSettings settings = text.GetGenerationSettings(Vector2.zero);
             return text.cachedTextGeneratorForLayout.GetPreferredWidth(value ?? string.Empty, settings)
+                / Mathf.Max(1f, text.pixelsPerUnit);
+        }
+
+        private void ResizeHeightToDescText(RectTransform rootRect)
+        {
+            RectTransform descRect = DescText.rectTransform;
+            RectTransform descBoxRect = descRect.parent as RectTransform;
+            if (descBoxRect == null)
+            {
+                return;
+            }
+
+            float descWidth = Mathf.Max(1f, descRect.rect.width);
+            float preferredDescHeight = Mathf.Max(
+                DescText.preferredHeight,
+                PreferredHeightFor(DescText, MinHeightSampleText, descWidth));
+
+            float descBoxAnchorHeight = descBoxRect.anchorMax.y - descBoxRect.anchorMin.y;
+            if (descBoxAnchorHeight <= 0.001f)
+            {
+                return;
+            }
+
+            float height = (preferredDescHeight - descRect.sizeDelta.y - descBoxRect.sizeDelta.y)
+                / descBoxAnchorHeight;
+            rootRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, Mathf.Max(1f, height));
+            LayoutRebuilder.ForceRebuildLayoutImmediate(rootRect);
+        }
+
+        private static float PreferredHeightFor(Text text, string value, float width)
+        {
+            if (text == null)
+            {
+                return 0f;
+            }
+
+            TextGenerationSettings settings = text.GetGenerationSettings(new Vector2(width, 0f));
+            return text.cachedTextGeneratorForLayout.GetPreferredHeight(value ?? string.Empty, settings)
                 / Mathf.Max(1f, text.pixelsPerUnit);
         }
     }
