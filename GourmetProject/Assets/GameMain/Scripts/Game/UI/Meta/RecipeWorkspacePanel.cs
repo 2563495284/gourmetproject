@@ -26,6 +26,9 @@ namespace GourmetProject.Game.UI.Meta
         private const float DishFlyDuration = 0.28f;
         private static Font s_defaultFont;
 
+        [Header("Header")]
+        [SerializeField] private Text _titleText;
+
         [Header("Books")]
         [SerializeField] private RectTransform _editBooksContainer;
         [SerializeField] private RecipeEditBookView _editBookPrefab;
@@ -222,6 +225,12 @@ namespace GourmetProject.Game.UI.Meta
 
             _wired = true;
             _stateMachine ??= new RecipeWorkspacePanelStateMachine(this);
+            if (_titleText == null)
+            {
+                Transform title = transform.Find("Title");
+                _titleText = title != null ? title.GetComponent<Text>() : null;
+            }
+
             if (_exitEditButton != null)
             {
                 _exitEditButton.onClick.RemoveAllListeners();
@@ -240,6 +249,7 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             ConfigureBooksLayoutGroup();
+            SetText(_titleText, state.PanelTitle);
 
             if (_trashZone != null)
             {

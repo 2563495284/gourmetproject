@@ -1155,13 +1155,14 @@ namespace GourmetProject.Game.UI.Battle
 
         private void BuildRecipeInspectCards()
         {
+            int selectedBookIndex = _recipeWorkspacePage?.InspectBookIndex ?? -1;
             if (_recipeWorkspacePage?.InspectUsesBattleRecipe == true)
             {
-                _recipePresenter?.BuildBattleInspect(_session, OpenRecipeInspect);
+                _recipePresenter?.BuildBattleInspect(_session, OpenRecipeInspect, selectedBookIndex);
                 return;
             }
 
-            _recipePresenter?.BuildPersistent(_run, false, null, OpenRecipeInspect);
+            _recipePresenter?.BuildPersistent(_run, false, null, OpenRecipeInspect, selectedBookIndex);
         }
 
         private void ServeFromRecipe(int slotIndex)

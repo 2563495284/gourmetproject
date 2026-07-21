@@ -65,6 +65,8 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         public bool InspectUsesBattleRecipe => _inspectBookIndex >= 0 && _inspectUsesBattleRecipe;
 
+        public int InspectBookIndex => _inspectBookIndex;
+
         public void OnLeavingPage(GameplayView current, GameplayView next)
         {
             if (current == GameplayView.RecipeInspect && next != GameplayView.RecipeInspect)
@@ -98,7 +100,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
             if (_inspectBookIndex >= 0)
             {
                 int bookIndex = _inspectBookIndex;
-                _host.SetCenterTitle($"菜谱{bookIndex + 1}");
+                _host.SetCenterTitle("查看菜谱");
                 panel.Open(
                     _host.Run,
                     RecipeWorkspaceRequest.ReadonlyBook(
@@ -148,6 +150,12 @@ namespace GourmetProject.Game.UI.Battle.Pages
             GameRun run = _host.Run;
             if (run == null || bookIndex < 0 || bookIndex >= run.RecipeBookCount)
             {
+                return;
+            }
+
+            if (_host.CurrentView == GameplayView.RecipeInspect && _inspectBookIndex == bookIndex)
+            {
+                CloseInspect();
                 return;
             }
 

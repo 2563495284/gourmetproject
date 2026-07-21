@@ -44,6 +44,8 @@ namespace GourmetProject.Game.UI.Meta
 
         private abstract class RecipeWorkspacePanelState
         {
+            public virtual string PanelTitle => "编辑菜谱   拖拽移动 / 拖入垃圾桶删除";
+
             public virtual string ExitButtonText => "取消";
 
             public virtual bool ShowTrash => false;
@@ -129,6 +131,8 @@ namespace GourmetProject.Game.UI.Meta
                 _bookIndex = bookIndex;
             }
 
+            public override string PanelTitle => "查看菜谱";
+
             public override string ExitButtonText => "返回";
 
             public override int BookIndexFilter => _bookIndex;
@@ -158,6 +162,8 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             public override bool CanClickDish => true;
+
+            public override string PanelTitle => _item != null ? _item.Desc : "选择菜品";
 
             public override void Enter(RecipeWorkspacePanel panel)
             {
@@ -196,6 +202,8 @@ namespace GourmetProject.Game.UI.Meta
             public override string ExitButtonText => "返回事件";
 
             public override bool CanClickDish => true;
+
+            public override string PanelTitle => string.IsNullOrWhiteSpace(_title) ? "选择要删除的菜品" : _title;
 
             public override void Enter(RecipeWorkspacePanel panel)
             {

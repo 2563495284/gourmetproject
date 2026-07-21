@@ -22,7 +22,7 @@ namespace GourmetProject.Game.UI.Battle.View
         }
 
         /// <summary>底部扇形菜谱条：按持有的菜谱本铺卡，显示已放数量。showAdd 时末尾追加购买空菜谱卡。</summary>
-        public void BuildPersistent(GameRun run, bool showAdd, Action onAdd, Action<int> onInspect = null)
+        public void BuildPersistent(GameRun run, bool showAdd, Action onAdd, Action<int> onInspect = null, int selectedBookIndex = -1)
         {
             if (_recipeView == null || run == null)
             {
@@ -43,7 +43,7 @@ namespace GourmetProject.Game.UI.Battle.View
             }
 
             string addCost = showAdd ? $"+ {ShopService.RecipeBookCost(run)}" : null;
-            _recipeView.SetBooks(books, showAdd, onAdd, addCost);
+            _recipeView.SetBooks(books, showAdd, onAdd, addCost, selectedBookIndex);
         }
 
         /// <summary>商店态菜谱条：展示持有菜谱本；未满上限时末尾追加唯一的「购买空菜谱」卡（买得起才可点）。</summary>
@@ -86,7 +86,7 @@ namespace GourmetProject.Game.UI.Battle.View
         }
 
         /// <summary>战斗菜谱查看态：同步战斗槽剩余数量，点击只切换查看的菜谱，不执行上菜。</summary>
-        public void BuildBattleInspect(BattleSession session, Action<int> onInspect)
+        public void BuildBattleInspect(BattleSession session, Action<int> onInspect, int selectedBookIndex = -1)
         {
             if (_recipeView == null || session == null)
             {
@@ -107,7 +107,7 @@ namespace GourmetProject.Game.UI.Battle.View
                     onInspect == null ? null : () => onInspect.Invoke(slotIndex)));
             }
 
-            _recipeView.SetBooks(books);
+            _recipeView.SetBooks(books, selectedBookIndex: selectedBookIndex);
         }
 
         public void RemoveAddCard()

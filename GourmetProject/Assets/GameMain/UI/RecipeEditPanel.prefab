@@ -140,6 +140,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3657596b08fef4c39a6270897c5722c6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Meta.RecipeWorkspacePanel
+  _titleText: {fileID: 2132747204680316154}
   _editBooksContainer: {fileID: 7040490371683412696}
   _editBookPrefab: {fileID: 239492086359488531, guid: 368da7794fd6c4c008b95aad8794c33b, type: 3}
   _readonlyBookPrefab: {fileID: 239492086359488531, guid: 480c54a03e0248be9fa356b19a51c657, type: 3}

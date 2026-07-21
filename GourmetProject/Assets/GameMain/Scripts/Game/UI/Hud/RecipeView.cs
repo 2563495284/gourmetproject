@@ -163,7 +163,7 @@ namespace GourmetProject.Game.UI.Hud
         }
 
         /// <summary>用菜谱本数据重建扇形（增减自动做调整动画）。showAdd=true 时末尾追加购买空菜谱卡。</summary>
-        public void SetBooks(IReadOnlyList<BookEntry> books, bool showAdd = false, Action onAdd = null, string addCost = null)
+        public void SetBooks(IReadOnlyList<BookEntry> books, bool showAdd = false, Action onAdd = null, string addCost = null, int selectedBookIndex = -1)
         {
             int want = books?.Count ?? 0;
 
@@ -190,7 +190,7 @@ namespace GourmetProject.Game.UI.Hud
                 var view = slot.Go.GetComponent<RecipeCardView>();
                 view?.Bind(entry.Capacity, entry.Interactable, entry.OnClick, entry.OnRightClick);
                 view?.SetClickSuppressed(_bookClicksSuppressed);
-                view?.SetTargetHighlight(false, false);
+                view?.SetTargetHighlight(slot.BookIndex == selectedBookIndex, true);
             }
 
             // 购买空菜谱卡（仅商店态）。
