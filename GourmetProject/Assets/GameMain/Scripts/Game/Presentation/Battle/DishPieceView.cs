@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using DG.Tweening;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Model;
@@ -10,6 +11,23 @@ using GourmetProject.Game.Visual;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
+    public enum SettlementDishFeedbackKind
+    {
+        None = 0,
+        DishBase = 1,
+        GenericSkillTriggered = 2,
+        SweetTransferSkillTriggered = 3,
+        CopiedSkillTriggered = 4,
+        CopySkillTriggered = 5,
+        PassiveFlatBonus = 6,
+        PassiveMultiplier = 7,
+        PassiveMultiplierAdd = 8,
+        ActiveFlatBonus = 9,
+        ActiveMultiplier = 10,
+        ActiveMultiplierAdd = 11,
+        GenericValueChanged = 12,
+    }
+
     /// <summary>
     /// 已摆放菜品表现：固定结构（接触阴影 + 菜品本体 + 碰撞盒）预拼在 prefab 上，由 <see cref="BuildPlaced"/> 喂数据。
     /// sprite/缩放/旋转/碰撞尺寸随形状(1x1/2x1/L/T...)与朝向变化，必须运行时计算（见 dish-footprint-sprite 规则）。
@@ -111,6 +129,14 @@ namespace GourmetProject.Game.Presentation.Battle
         private bool _hovered;
         private MaterialPropertyBlock _stainBlock;
         private MaterialPropertyBlock _placementGlowBlock;
+        private Tween _settlementFeedbackTween;
+        private Transform _settlementFeedbackTarget;
+        private Vector3 _settlementFeedbackBasePosition;
+        private Vector3 _settlementFeedbackBaseScale;
+        private Quaternion _settlementFeedbackBaseRotation;
+        private int _settlementFeedbackVersion;
+        private SettlementDishFeedbackKind _settlementFeedbackKind;
+        private bool _sweetTransferSourceActive;
 
         public DishInstance Instance { get; private set; }
 
@@ -325,15 +351,438 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public Awaitable PlayDeliciousnessGainFeedbackAsync(CancellationToken cancellationToken)
         {
+            return PlaySettlementFeedbackAsync(SettlementDishFeedbackKind.GenericValueChanged, cancellationToken);
+        }
+
+        public void BeginSweetTransferSourceFeedback()
+        {
             EnsureRefs();
-            return PresentationTween.PunchScaleAndWobbleAsync(
-                VisualAnimationTarget(),
-                _deliciousnessGainPunchScale,
-                _deliciousnessGainPunchDuration,
-                _deliciousnessGainWobbleDegrees,
-                _deliciousnessGainWobbleCycles,
-                _deliciousnessGainWobbleDuration,
-                cancellationToken);
+            _sweetTransferSourceActive = true;
+            if (_settlementFeedbackTween == null || !_settlementFeedbackTween.active)
+            {
+                ShowSweetTransferSourceGlow();
+            }
+        }
+
+        public void EndSweetTransferSourceFeedback()
+        {
+            bool stopSourceIntro = _settlementFeedbackKind == SettlementDishFeedbackKind.SweetTransferSkillTriggered;
+            _sweetTransferSourceActive = false;
+            if (stopSourceIntro)
+            {
+                _settlementFeedbackVersion++;
+                StopSettlementFeedback(restoreTransform: true);
+                return;
+            }
+
+            if ((_settlementFeedbackTween == null || !_settlementFeedbackTween.active) && _placementGlow != null)
+            {
+                _placementGlow.gameObject.SetActive(false);
+            }
+        }
+
+        public async Awaitable PlaySettlementFeedbackAsync(SettlementDishFeedbackKind kind, CancellationToken cancellationToken)
+        {
+            EnsureRefs();
+            int version = ++_settlementFeedbackVersion;
+            StopSettlementFeedback(restoreTransform: true);
+
+            if (kind == SettlementDishFeedbackKind.None)
+            {
+                return;
+            }
+
+            Transform target = VisualAnimationTarget();
+            if (target == null)
+            {
+                return;
+            }
+
+            SettlementFeedbackProfile profile = BuildSettlementFeedbackProfile(kind);
+            _settlementFeedbackTarget = target;
+            _settlementFeedbackBasePosition = target.localPosition;
+            _settlementFeedbackBaseScale = target.localScale;
+            _settlementFeedbackBaseRotation = target.localRotation;
+            _settlementFeedbackKind = kind;
+            ShowSettlementGlow(profile);
+
+            float duration = Mathf.Max(0.0001f, profile.Duration);
+            _settlementFeedbackTween = DOVirtual.Float(0f, 1f, duration, progress =>
+                {
+                    if (target == null || version != _settlementFeedbackVersion)
+                    {
+                        return;
+                    }
+
+                    ApplySettlementMotion(target, profile, progress);
+                })
+                .SetEase(Ease.Linear)
+                .SetLink(target.gameObject);
+
+            try
+            {
+                await PresentationTween.AwaitCompletionAsync(_settlementFeedbackTween, cancellationToken);
+            }
+            finally
+            {
+                if (version == _settlementFeedbackVersion)
+                {
+                    StopSettlementFeedback(restoreTransform: true);
+                }
+            }
+        }
+
+        private SettlementFeedbackProfile BuildSettlementFeedbackProfile(SettlementDishFeedbackKind kind)
+        {
+            switch (kind)
+            {
+                case SettlementDishFeedbackKind.DishBase:
+                    return new SettlementFeedbackProfile(
+                        duration: 0.14f,
+                        anticipationScale: 1f,
+                        peakScale: new Vector2(1.07f, 1.07f),
+                        liftInCells: 0.02f,
+                        sideInCells: 0f,
+                        rotationDegrees: 0f,
+                        rotationCycles: 0f,
+                        pulseCount: 1f,
+                        glowColor: new Color(1f, 0.92f, 0.58f, 0.72f),
+                        glowWidth: 0.055f,
+                        glowInflate: 1.035f,
+                        glowFillAlpha: 0.02f,
+                        glowPulseSpeed: 5f,
+                        glowPulseAmplitude: 0.08f);
+
+                case SettlementDishFeedbackKind.GenericSkillTriggered:
+                    return new SettlementFeedbackProfile(
+                        duration: 0.34f,
+                        anticipationScale: 0.90f,
+                        peakScale: new Vector2(1.24f, 1.24f),
+                        liftInCells: 0.08f,
+                        sideInCells: 0f,
+                        rotationDegrees: 6f,
+                        rotationCycles: 1.5f,
+                        pulseCount: 1f,
+                        glowColor: new Color(1f, 0.72f, 0.18f, 0.95f),
+                        glowWidth: 0.105f,
+                        glowInflate: 1.08f,
+                        glowFillAlpha: 0.08f,
+                        glowPulseSpeed: 9f,
+                        glowPulseAmplitude: 0.20f,
+                        anticipationFraction: 0.20f);
+
+                case SettlementDishFeedbackKind.SweetTransferSkillTriggered:
+                    return new SettlementFeedbackProfile(
+                        duration: 0.42f,
+                        anticipationScale: 0.94f,
+                        peakScale: new Vector2(1.19f, 1.12f),
+                        liftInCells: 0.06f,
+                        sideInCells: 0.10f,
+                        rotationDegrees: 7f,
+                        rotationCycles: 2f,
+                        pulseCount: 2f,
+                        glowColor: new Color(1f, 0.35f, 0.72f, 0.95f),
+                        glowWidth: 0.11f,
+                        glowInflate: 1.09f,
+                        glowFillAlpha: 0.09f,
+                        glowPulseSpeed: 12f,
+                        glowPulseAmplitude: 0.22f,
+                        anticipationFraction: 0.12f);
+
+                case SettlementDishFeedbackKind.CopiedSkillTriggered:
+                    return new SettlementFeedbackProfile(
+                        duration: 0.44f,
+                        anticipationScale: 0.88f,
+                        peakScale: new Vector2(1.20f, 1.20f),
+                        liftInCells: 0.08f,
+                        sideInCells: -0.04f,
+                        rotationDegrees: 10f,
+                        rotationCycles: 2f,
+                        pulseCount: 2f,
+                        glowColor: new Color(0.32f, 0.92f, 1f, 0.95f),
+                        glowWidth: 0.12f,
+                        glowInflate: 1.10f,
+                        glowFillAlpha: 0.08f,
+                        glowPulseSpeed: 13f,
+                        glowPulseAmplitude: 0.24f,
+                        anticipationFraction: 0.18f);
+
+                case SettlementDishFeedbackKind.CopySkillTriggered:
+                    return new SettlementFeedbackProfile(
+                        duration: 0.46f,
+                        anticipationScale: 0.92f,
+                        peakScale: new Vector2(0.58f, 1.14f),
+                        liftInCells: 0.05f,
+                        sideInCells: 0f,
+                        rotationDegrees: 4f,
+                        rotationCycles: 2f,
+                        pulseCount: 2f,
+                        glowColor: new Color(0.72f, 0.46f, 1f, 0.95f),
+                        glowWidth: 0.12f,
+                        glowInflate: 1.10f,
+                        glowFillAlpha: 0.10f,
+                        glowPulseSpeed: 14f,
+                        glowPulseAmplitude: 0.25f,
+                        anticipationFraction: 0.18f);
+
+                case SettlementDishFeedbackKind.PassiveFlatBonus:
+                    return BonusProfile(
+                        active: false,
+                        peakScale: new Vector2(1.12f, 1.15f),
+                        liftInCells: 0.055f,
+                        sideInCells: 0f,
+                        rotationDegrees: 1.5f,
+                        color: new Color(0.32f, 1f, 0.48f, 0.86f));
+
+                case SettlementDishFeedbackKind.ActiveFlatBonus:
+                    return BonusProfile(
+                        active: true,
+                        peakScale: new Vector2(1.14f, 1.25f),
+                        liftInCells: 0.13f,
+                        sideInCells: 0f,
+                        rotationDegrees: 2.5f,
+                        color: new Color(0.24f, 1f, 0.42f, 0.96f));
+
+                case SettlementDishFeedbackKind.PassiveMultiplier:
+                    return BonusProfile(
+                        active: false,
+                        peakScale: new Vector2(1.17f, 1.17f),
+                        liftInCells: 0.03f,
+                        sideInCells: 0f,
+                        rotationDegrees: 5f,
+                        color: new Color(1f, 0.28f, 0.20f, 0.86f));
+
+                case SettlementDishFeedbackKind.ActiveMultiplier:
+                    return BonusProfile(
+                        active: true,
+                        peakScale: new Vector2(1.30f, 1.30f),
+                        liftInCells: 0.05f,
+                        sideInCells: 0f,
+                        rotationDegrees: 9f,
+                        color: new Color(1f, 0.20f, 0.12f, 0.98f));
+
+                case SettlementDishFeedbackKind.PassiveMultiplierAdd:
+                    return BonusProfile(
+                        active: false,
+                        peakScale: new Vector2(1.17f, 1.06f),
+                        liftInCells: 0.025f,
+                        sideInCells: 0.04f,
+                        rotationDegrees: 3f,
+                        color: new Color(1f, 0.70f, 0.16f, 0.86f));
+
+                case SettlementDishFeedbackKind.ActiveMultiplierAdd:
+                    return BonusProfile(
+                        active: true,
+                        peakScale: new Vector2(1.28f, 1.09f),
+                        liftInCells: 0.04f,
+                        sideInCells: 0.065f,
+                        rotationDegrees: 5f,
+                        color: new Color(1f, 0.62f, 0.08f, 0.98f));
+
+                case SettlementDishFeedbackKind.GenericValueChanged:
+                default:
+                    return new SettlementFeedbackProfile(
+                        duration: Mathf.Max(_deliciousnessGainPunchDuration, _deliciousnessGainWobbleDuration),
+                        anticipationScale: 1f,
+                        peakScale: Vector2.one * _deliciousnessGainPunchScale,
+                        liftInCells: 0.035f,
+                        sideInCells: 0f,
+                        rotationDegrees: _deliciousnessGainWobbleDegrees,
+                        rotationCycles: _deliciousnessGainWobbleCycles,
+                        pulseCount: 1f,
+                        glowColor: new Color(0.45f, 0.90f, 1f, 0.78f),
+                        glowWidth: 0.07f,
+                        glowInflate: 1.05f,
+                        glowFillAlpha: 0.025f,
+                        glowPulseSpeed: 7f,
+                        glowPulseAmplitude: 0.12f);
+            }
+        }
+
+        private static SettlementFeedbackProfile BonusProfile(
+            bool active,
+            Vector2 peakScale,
+            float liftInCells,
+            float sideInCells,
+            float rotationDegrees,
+            Color color)
+        {
+            return new SettlementFeedbackProfile(
+                duration: active ? 0.36f : 0.27f,
+                anticipationScale: active ? 0.90f : 1f,
+                peakScale: peakScale,
+                liftInCells: liftInCells,
+                sideInCells: sideInCells,
+                rotationDegrees: rotationDegrees,
+                rotationCycles: active ? 1.5f : 1f,
+                pulseCount: 1f,
+                glowColor: color,
+                glowWidth: active ? 0.115f : 0.075f,
+                glowInflate: active ? 1.095f : 1.055f,
+                glowFillAlpha: active ? 0.08f : 0.025f,
+                glowPulseSpeed: active ? 10f : 7f,
+                glowPulseAmplitude: active ? 0.22f : 0.12f,
+                anticipationFraction: active ? 0.20f : 0f);
+        }
+
+        private void ApplySettlementMotion(Transform target, SettlementFeedbackProfile profile, float progress)
+        {
+            float t = Mathf.Clamp01(progress);
+            float anticipationEnd = Mathf.Clamp(profile.AnticipationFraction, 0f, 0.45f);
+            if (anticipationEnd > 0f && t < anticipationEnd)
+            {
+                float anticipation = Mathf.SmoothStep(0f, 1f, t / anticipationEnd);
+                float scale = Mathf.Lerp(1f, profile.AnticipationScale, anticipation);
+                target.localScale = Vector3.Scale(_settlementFeedbackBaseScale, new Vector3(scale, scale, 1f));
+                target.localPosition = _settlementFeedbackBasePosition;
+                target.localRotation = _settlementFeedbackBaseRotation;
+                return;
+            }
+
+            float release = anticipationEnd < 1f
+                ? Mathf.Clamp01((t - anticipationEnd) / (1f - anticipationEnd))
+                : 1f;
+            float settle = Mathf.SmoothStep(0f, 1f, release);
+            float pulse = Mathf.Abs(Mathf.Sin(release * profile.PulseCount * Mathf.PI)) * (1f - release * 0.16f);
+            float baseScale = Mathf.Lerp(profile.AnticipationScale, 1f, settle);
+            float scaleX = baseScale + (profile.PeakScale.x - 1f) * pulse;
+            float scaleY = baseScale + (profile.PeakScale.y - 1f) * pulse;
+            target.localScale = Vector3.Scale(_settlementFeedbackBaseScale, new Vector3(scaleX, scaleY, 1f));
+
+            float cell = Mathf.Max(0.01f, _cellSize);
+            float lateral = Mathf.Sin(release * profile.PulseCount * Mathf.PI * 2f)
+                * profile.SideInCells
+                * cell
+                * (1f - release);
+            float lift = pulse * profile.LiftInCells * cell;
+            target.localPosition = _settlementFeedbackBasePosition + new Vector3(lateral, lift, 0f);
+
+            float rotation = Mathf.Sin(release * profile.RotationCycles * Mathf.PI * 2f)
+                * profile.RotationDegrees
+                * (1f - release);
+            target.localRotation = _settlementFeedbackBaseRotation * Quaternion.Euler(0f, 0f, rotation);
+        }
+
+        private void ShowSettlementGlow(SettlementFeedbackProfile profile)
+        {
+            if (_placementGlow == null)
+            {
+                return;
+            }
+
+            _placementGlow.gameObject.SetActive(true);
+            ConfigureOutlineGlowRenderer(
+                _placementGlow,
+                ref _placementGlowBlock,
+                profile.GlowColor,
+                profile.GlowWidth,
+                profile.GlowFillAlpha,
+                profile.GlowInflate,
+                sortingOrderOffset: 2,
+                materialOverride: null,
+                pulseSpeed: profile.GlowPulseSpeed,
+                pulseAmplitude: profile.GlowPulseAmplitude);
+        }
+
+        private void ShowSweetTransferSourceGlow()
+        {
+            if (_placementGlow == null)
+            {
+                return;
+            }
+
+            _placementGlow.gameObject.SetActive(true);
+            ConfigureOutlineGlowRenderer(
+                _placementGlow,
+                ref _placementGlowBlock,
+                new Color(1f, 0.30f, 0.68f, 0.98f),
+                outlineWidth: 0.13f,
+                fillAlpha: 0.055f,
+                inflate: 1.11f,
+                sortingOrderOffset: 3,
+                materialOverride: null,
+                pulseSpeed: 4.5f,
+                pulseAmplitude: 0.26f);
+        }
+
+        private void StopSettlementFeedback(bool restoreTransform)
+        {
+            _settlementFeedbackTween?.Kill();
+            _settlementFeedbackTween = null;
+            _settlementFeedbackKind = SettlementDishFeedbackKind.None;
+
+            if (restoreTransform && _settlementFeedbackTarget != null)
+            {
+                _settlementFeedbackTarget.localPosition = _settlementFeedbackBasePosition;
+                _settlementFeedbackTarget.localScale = _settlementFeedbackBaseScale;
+                _settlementFeedbackTarget.localRotation = _settlementFeedbackBaseRotation;
+            }
+
+            _settlementFeedbackTarget = null;
+            if (_placementGlow != null)
+            {
+                if (_sweetTransferSourceActive && isActiveAndEnabled)
+                {
+                    ShowSweetTransferSourceGlow();
+                }
+                else
+                {
+                    _placementGlow.gameObject.SetActive(false);
+                }
+            }
+        }
+
+        private readonly struct SettlementFeedbackProfile
+        {
+            public SettlementFeedbackProfile(
+                float duration,
+                float anticipationScale,
+                Vector2 peakScale,
+                float liftInCells,
+                float sideInCells,
+                float rotationDegrees,
+                float rotationCycles,
+                float pulseCount,
+                Color glowColor,
+                float glowWidth,
+                float glowInflate,
+                float glowFillAlpha,
+                float glowPulseSpeed,
+                float glowPulseAmplitude,
+                float anticipationFraction = 0f)
+            {
+                Duration = duration;
+                AnticipationScale = anticipationScale;
+                PeakScale = peakScale;
+                LiftInCells = liftInCells;
+                SideInCells = sideInCells;
+                RotationDegrees = rotationDegrees;
+                RotationCycles = rotationCycles;
+                PulseCount = pulseCount;
+                GlowColor = glowColor;
+                GlowWidth = glowWidth;
+                GlowInflate = glowInflate;
+                GlowFillAlpha = glowFillAlpha;
+                GlowPulseSpeed = glowPulseSpeed;
+                GlowPulseAmplitude = glowPulseAmplitude;
+                AnticipationFraction = anticipationFraction;
+            }
+
+            public float Duration { get; }
+            public float AnticipationScale { get; }
+            public Vector2 PeakScale { get; }
+            public float LiftInCells { get; }
+            public float SideInCells { get; }
+            public float RotationDegrees { get; }
+            public float RotationCycles { get; }
+            public float PulseCount { get; }
+            public Color GlowColor { get; }
+            public float GlowWidth { get; }
+            public float GlowInflate { get; }
+            public float GlowFillAlpha { get; }
+            public float GlowPulseSpeed { get; }
+            public float GlowPulseAmplitude { get; }
+            public float AnticipationFraction { get; }
         }
 
         private void RebuildCells(DishShape shape)
@@ -823,6 +1272,9 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void OnDisable()
         {
+            _sweetTransferSourceActive = false;
+            _settlementFeedbackVersion++;
+            StopSettlementFeedback(restoreTransform: true);
             SetHovered(false);
         }
     }

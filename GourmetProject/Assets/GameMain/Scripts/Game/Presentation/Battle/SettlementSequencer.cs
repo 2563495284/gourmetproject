@@ -46,8 +46,8 @@ namespace GourmetProject.Game.Presentation.Battle
 
         [Header("结算加速（小丑牌式：按 cue 进度越来越快）")]
         [SerializeField] private bool _useGlobalTimeScale = true;
-        [SerializeField] private float _startSpeed = 1f;
-        [SerializeField] private float _maxSpeed = 3f;
+        [SerializeField] private float _startSpeed = 0.5f;
+        [SerializeField] private float _maxSpeed = 1.5f;
         [SerializeField] private float _speedCurveExponent = 1.35f;
 
         [SerializeField] private FloatingTextView _floatingTextPrefab;
@@ -116,6 +116,7 @@ namespace GourmetProject.Game.Presentation.Battle
             SettlementPlaybackPlan plan = BuildSettlementPlaybackPlan(result, dishViews, baselineSnapshot);
             var playback = new SettlementPlaybackState(CountSettlementCues(plan), scoreFire);
             var dishValueBadges = new Dictionary<int, DishValueBadge>();
+            int activeSweetTransferSourceDishId = 0;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             using CancellationTokenSource debugScorePauseCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             _debugScorePaused = false;
@@ -134,10 +135,16 @@ namespace GourmetProject.Game.Presentation.Battle
                     await WaitWhileDebugScorePausedAsync(cancellationToken);
 #endif
                     IReadOnlyList<SettlementPlaybackStep> batch = CollectStepBatch(plan.Steps, i, out int nextIndex);
+                    SetSweetTransferSourceFeedback(
+                        ref activeSweetTransferSourceDishId,
+                        ResolveSweetTransferSourceDishId(batch),
+                        dishViews,
+                        cancellationToken);
                     await PlayStepBatchAsync(batch, dishViews, mapper, fxRoot, playback, dishValueBadges, onReveal, onScope, cancellationToken);
                     i = nextIndex;
                 }
 
+                SetSweetTransferSourceFeedback(ref activeSweetTransferSourceDishId, 0, dishViews, cancellationToken);
                 onScope?.Invoke(default);
                 await PlayFinalCuesAsync(plan.FinalCues, mapper.Center, fxRoot, playback, onReveal, cancellationToken);
 
@@ -151,6 +158,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
             finally
             {
+                SetSweetTransferSourceFeedback(ref activeSweetTransferSourceDishId, 0, dishViews, cancellationToken);
                 onScope?.Invoke(default);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 debugScorePauseCts.Cancel();
@@ -203,6 +211,7 @@ namespace GourmetProject.Game.Presentation.Battle
             SettlementCue cue,
             SettlementScopeSignal scope,
             DishPieceView view,
+            IReadOnlyDictionary<int, DishPieceView> dishViews,
             Vector3 center,
             Transform fxRoot,
             SettlementPlaybackState playback,
@@ -218,6 +227,7 @@ namespace GourmetProject.Game.Presentation.Battle
             EmitScope(onScope, scope);
             EmitReveal(onReveal, cue);
             ApplyDishValueChange(cue, view, center, fxRoot, dishValueBadges);
+            PlayActorFeedbackIfNeeded(scope, view.Instance != null ? view.Instance.Id : 0, cue.FeedbackKind, dishViews, cancellationToken);
             if (fxRoot != null)
             {
                 FloatingTextView.Spawn(
@@ -231,7 +241,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     cue.Duration);
             }
 
-            await view.PlayDeliciousnessGainFeedbackAsync(cancellationToken);
+            await view.PlaySettlementFeedbackAsync(cue.FeedbackKind, cancellationToken);
         }
 
         private async Awaitable PlayStepBatchAsync(
@@ -260,7 +270,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
                 DishInstance instance = view.Instance;
                 Vector3 center = DishCenter(instance, mapper);
-                await PlayCueAsync(step.Cue, step.Scope, view, center, fxRoot, playback, dishValueBadges, onReveal, onScope, cancellationToken);
+                await PlayCueAsync(step.Cue, step.Scope, view, dishViews, center, fxRoot, playback, dishValueBadges, onReveal, onScope, cancellationToken);
                 return;
             }
 
@@ -268,6 +278,7 @@ namespace GourmetProject.Game.Presentation.Battle
             await WaitWhileDebugScorePausedAsync(cancellationToken);
 #endif
             AdvanceSettlementSpeed(playback, batch[0].Cue.Kind);
+            var triggeredActorIds = new HashSet<int>();
             foreach (SettlementPlaybackStep step in batch)
             {
                 if (!dishViews.TryGetValue(step.DishInstanceId, out DishPieceView view) || view == null)
@@ -281,6 +292,13 @@ namespace GourmetProject.Game.Presentation.Battle
                 EmitScope(onScope, step.Scope);
                 EmitReveal(onReveal, cue);
                 ApplyDishValueChange(cue, view, center, fxRoot, dishValueBadges);
+                PlayActorFeedbackIfNeeded(
+                    step.Scope,
+                    step.DishInstanceId,
+                    cue.FeedbackKind,
+                    dishViews,
+                    cancellationToken,
+                    triggeredActorIds);
                 if (fxRoot != null)
                 {
                     FloatingTextView.Spawn(
@@ -294,13 +312,133 @@ namespace GourmetProject.Game.Presentation.Battle
                         cue.Duration);
                 }
 
-                _ = PlayFeedbackSafelyAsync(view, cancellationToken);
+                _ = PlayFeedbackSafelyAsync(view, cue.FeedbackKind, cancellationToken);
             }
 
             await Awaitable.WaitForSecondsAsync(BatchedCueHold, cancellationToken);
         }
 
-        private static async Awaitable PlayFeedbackSafelyAsync(DishPieceView view, CancellationToken cancellationToken)
+        private static void PlayActorFeedbackIfNeeded(
+            SettlementScopeSignal scope,
+            int targetDishInstanceId,
+            SettlementDishFeedbackKind targetFeedbackKind,
+            IReadOnlyDictionary<int, DishPieceView> dishViews,
+            CancellationToken cancellationToken,
+            HashSet<int> triggeredActorIds = null)
+        {
+            SettlementDishFeedbackKind actorFeedbackKind = ActorFeedbackKindFor(targetFeedbackKind);
+            if (actorFeedbackKind == SettlementDishFeedbackKind.None || dishViews == null)
+            {
+                return;
+            }
+
+            int actorDishInstanceId = scope.RuntimeSelfDishInstanceId > 0
+                ? scope.RuntimeSelfDishInstanceId
+                : scope.OwnerDishInstanceId;
+            if (actorDishInstanceId == 0 || actorDishInstanceId == targetDishInstanceId)
+            {
+                return;
+            }
+
+            if (triggeredActorIds != null && !triggeredActorIds.Add(actorDishInstanceId))
+            {
+                return;
+            }
+
+            if (dishViews.TryGetValue(actorDishInstanceId, out DishPieceView actorView) && actorView != null)
+            {
+                _ = PlayFeedbackSafelyAsync(actorView, actorFeedbackKind, cancellationToken);
+            }
+        }
+
+        private static SettlementDishFeedbackKind ActorFeedbackKindFor(SettlementDishFeedbackKind targetFeedbackKind)
+        {
+            switch (targetFeedbackKind)
+            {
+                case SettlementDishFeedbackKind.CopiedSkillTriggered:
+                    return targetFeedbackKind;
+                case SettlementDishFeedbackKind.PassiveFlatBonus:
+                case SettlementDishFeedbackKind.PassiveMultiplier:
+                case SettlementDishFeedbackKind.PassiveMultiplierAdd:
+                    return SettlementDishFeedbackKind.GenericSkillTriggered;
+                default:
+                    return SettlementDishFeedbackKind.None;
+            }
+        }
+
+        private static int ResolveSweetTransferSourceDishId(IReadOnlyList<SettlementPlaybackStep> batch)
+        {
+            if (batch == null)
+            {
+                return 0;
+            }
+
+            for (int i = 0; i < batch.Count; i++)
+            {
+                SettlementPlaybackStep step = batch[i];
+                int sourceDishId = ResolveSweetTransferSourceDishId(step.Scope, step.Cue?.BatchKey);
+                if (sourceDishId > 0)
+                {
+                    return sourceDishId;
+                }
+            }
+
+            return 0;
+        }
+
+        private static int ResolveSweetTransferSourceDishId(SettlementScopeSignal scope, string batchKey)
+        {
+            if (scope.Trace?.Kind == SkillExecutionKind.SweetTransfer)
+            {
+                return scope.OwnerDishInstanceId;
+            }
+
+            return scope.OwnerDishInstanceId > 0
+                && !string.IsNullOrEmpty(batchKey)
+                && batchKey.Contains("甜蜜传递")
+                    ? scope.OwnerDishInstanceId
+                    : 0;
+        }
+
+        private static void SetSweetTransferSourceFeedback(
+            ref int activeSourceDishId,
+            int nextSourceDishId,
+            IReadOnlyDictionary<int, DishPieceView> dishViews,
+            CancellationToken cancellationToken)
+        {
+            if (activeSourceDishId == nextSourceDishId)
+            {
+                return;
+            }
+
+            if (activeSourceDishId > 0
+                && dishViews != null
+                && dishViews.TryGetValue(activeSourceDishId, out DishPieceView previousSource)
+                && previousSource != null)
+            {
+                previousSource.EndSweetTransferSourceFeedback();
+            }
+
+            activeSourceDishId = nextSourceDishId;
+            if (activeSourceDishId <= 0
+                || dishViews == null
+                || !dishViews.TryGetValue(activeSourceDishId, out DishPieceView nextSource)
+                || nextSource == null)
+            {
+                return;
+            }
+
+            nextSource.BeginSweetTransferSourceFeedback();
+            _ = PlayFeedbackSafelyAsync(
+                nextSource,
+                SettlementDishFeedbackKind.SweetTransferSkillTriggered,
+                cancellationToken);
+        }
+
+        private static async Awaitable PlayFeedbackSafelyAsync(
+            DishPieceView view,
+            SettlementDishFeedbackKind feedbackKind,
+            CancellationToken cancellationToken)
         {
             if (view == null)
             {
@@ -309,7 +447,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             try
             {
-                await view.PlayDeliciousnessGainFeedbackAsync(cancellationToken);
+                await view.PlaySettlementFeedbackAsync(feedbackKind, cancellationToken);
             }
             catch (OperationCanceledException)
             {
@@ -1016,6 +1154,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 SettlementCueKind.Source,
                 $"分数 {FormatSigned(baseScore)}",
                 GainColor,
+                feedbackKind: SettlementDishFeedbackKind.DishBase,
                 valueChange: DishValueChange.Base(baseScore),
                 batchKey: batchKey);
         }
@@ -1053,6 +1192,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         SettlementCueKind.Source,
                         $"分数 {FormatSigned(line.Value)}",
                         GainColor,
+                        feedbackKind: SettlementDishFeedbackKind.DishBase,
                         valueChange: DishValueChange.Base(line.After));
                     return true;
 
@@ -1066,6 +1206,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         SettlementCueKind.Source,
                         $"{sourceName} {FormatSigned(line.Value)}",
                         ColorForSource(line.Source),
+                        feedbackKind: BuildDishFeedbackKind(line),
                         reveal: SettlementRevealSignal.FlatReveal(line.DishInstanceId, line.After, SweetTransferCardDelta(line.Source)),
                         valueChange: DishValueChange.FlatBonus(line.After),
                         batchKey: BuildDishSkillBatchKey(line));
@@ -1076,6 +1217,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         SettlementCueKind.Source,
                         $"倍率 {FormatMultiplier(line.Value)}",
                         MultiplierColor,
+                        feedbackKind: BuildDishFeedbackKind(line),
                         reveal: SettlementRevealSignal.MultiplierReveal(line.DishInstanceId, line.After, SweetTransferCardDelta(line.Source)),
                         valueChange: DishValueChange.Multiplier(line.After),
                         batchKey: BuildDishSkillBatchKey(line));
@@ -1086,6 +1228,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         SettlementCueKind.Source,
                         $"倍率 {FormatSigned(line.Value)}",
                         MultiplierColor,
+                        feedbackKind: BuildDishFeedbackKind(line),
                         reveal: SettlementRevealSignal.MultiplierReveal(line.DishInstanceId, line.After, SweetTransferCardDelta(line.Source)),
                         valueChange: DishValueChange.Multiplier(line.After),
                         batchKey: BuildDishSkillBatchKey(line));
@@ -1132,6 +1275,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         SettlementCueKind.SideEffect,
                         $"复制技能 ×{Mathf.RoundToInt(line.Value)}",
                         SideEffectColor,
+                        feedbackKind: SettlementDishFeedbackKind.CopySkillTriggered,
                         reveal: SettlementRevealSignal.CopySkillReveal(line.DishInstanceId, Mathf.RoundToInt(line.Value)));
                     return true;
 
@@ -1157,6 +1301,64 @@ namespace GourmetProject.Game.Presentation.Battle
                 source.Name,
                 source.DishInstanceId.ToString(CultureInfo.InvariantCulture),
                 line.Value.ToString("R", CultureInfo.InvariantCulture));
+        }
+
+        private static SettlementDishFeedbackKind BuildDishFeedbackKind(ScoreLine line)
+        {
+            if (line == null)
+            {
+                return SettlementDishFeedbackKind.None;
+            }
+
+            if (line.Kind == ScoreLineKind.CopySkill)
+            {
+                return SettlementDishFeedbackKind.CopySkillTriggered;
+            }
+
+            if (line.Trace != null && line.Trace.Kind == SkillExecutionKind.CopiedSkill)
+            {
+                return SettlementDishFeedbackKind.CopiedSkillTriggered;
+            }
+
+            bool isDishSkill = line.Trace != null || line.Source?.Type == ScoreSourceType.DishSkill;
+            if (!isDishSkill)
+            {
+                return SettlementDishFeedbackKind.GenericValueChanged;
+            }
+
+            bool active = IsActiveDishSkillTarget(line);
+            switch (line.Kind)
+            {
+                case ScoreLineKind.DishFlat:
+                    return active
+                        ? SettlementDishFeedbackKind.ActiveFlatBonus
+                        : SettlementDishFeedbackKind.PassiveFlatBonus;
+                case ScoreLineKind.DishMultiplier:
+                    return active
+                        ? SettlementDishFeedbackKind.ActiveMultiplier
+                        : SettlementDishFeedbackKind.PassiveMultiplier;
+                case ScoreLineKind.DishMultiplierAdd:
+                    return active
+                        ? SettlementDishFeedbackKind.ActiveMultiplierAdd
+                        : SettlementDishFeedbackKind.PassiveMultiplierAdd;
+                default:
+                    return active
+                        ? SettlementDishFeedbackKind.GenericSkillTriggered
+                        : SettlementDishFeedbackKind.GenericValueChanged;
+            }
+        }
+
+        private static bool IsActiveDishSkillTarget(ScoreLine line)
+        {
+            if (line == null || line.DishInstanceId == 0)
+            {
+                return false;
+            }
+
+            int runtimeSelfId = line.Trace != null
+                ? line.Trace.RuntimeSelfDishInstanceId
+                : line.Source?.DishInstanceId ?? 0;
+            return runtimeSelfId != 0 && runtimeSelfId == line.DishInstanceId;
         }
 
         private static bool IsReadableDishSource(ScoreSource source)
@@ -1313,6 +1515,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 float characterSize = SourceCueCharacterSize,
                 float rise = SourceCueRise,
                 float duration = SourceCueDuration,
+                SettlementDishFeedbackKind feedbackKind = SettlementDishFeedbackKind.GenericValueChanged,
                 SettlementRevealSignal reveal = default,
                 DishValueChange valueChange = default,
                 string batchKey = null)
@@ -1323,6 +1526,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 CharacterSize = characterSize;
                 Rise = rise;
                 Duration = duration;
+                FeedbackKind = feedbackKind;
                 Reveal = reveal;
                 ValueChange = valueChange;
                 BatchKey = batchKey;
@@ -1339,6 +1543,8 @@ namespace GourmetProject.Game.Presentation.Battle
             public float Rise { get; }
 
             public float Duration { get; }
+
+            public SettlementDishFeedbackKind FeedbackKind { get; }
 
             /// <summary>该 cue 播放时对 tips 发出的渐进揭示信号（默认 None）。</summary>
             public SettlementRevealSignal Reveal { get; }

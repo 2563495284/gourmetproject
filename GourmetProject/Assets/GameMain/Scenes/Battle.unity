@@ -262,8 +262,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Gameplay.Presentation.SettlementSequencer
   _useGlobalTimeScale: 1
-  _startSpeed: 1
-  _maxSpeed: 3
+  _startSpeed: 0.5
+  _maxSpeed: 1.5
   _speedCurveExponent: 1.35
   _floatingTextPrefab: {fileID: 53574951656091332, guid: a4fd950c8e27e41338ddf6a6eee5f53e, type: 3}
 --- !u!114 &420685135
