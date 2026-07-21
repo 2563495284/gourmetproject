@@ -45,6 +45,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private const float BatchedCueHold = 0.24f;
         private const float SweetTransferParticleDuration = 0.34f;
         private const float SettlementAnimationDurationScale = 2f;
+        private const string InitialDishBaseBatchKey = "initial:dish-bases";
 
         [Header("结算加速（小丑牌式：按 cue 进度越来越快）")]
         [SerializeField] private bool _useGlobalTimeScale = true;
@@ -977,6 +978,7 @@ namespace GourmetProject.Game.Presentation.Battle
             bool hasSilverItemRollCue = false;
             bool hasFinalModifierCue = false;
             var shownDishBases = new HashSet<int>();
+            AddInitialDishBaseBatch(plan, result.DishScores, dishViews, shownDishBases, baselineSnapshot);
 
             IReadOnlyList<ScoreLine> scoreLines = result.ScoreLines;
             for (int i = 0; i < scoreLines.Count; i++)
@@ -1052,6 +1054,38 @@ namespace GourmetProject.Game.Presentation.Battle
             // }
 
             return plan;
+        }
+
+        private static void AddInitialDishBaseBatch(
+            SettlementPlaybackPlan plan,
+            IReadOnlyList<DishScore> dishScores,
+            IReadOnlyDictionary<int, DishPieceView> dishViews,
+            HashSet<int> shownDishBases,
+            SettlementBaselineSnapshot baselineSnapshot)
+        {
+            if (plan == null || dishScores == null || dishViews == null || shownDishBases == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < dishScores.Count; i++)
+            {
+                DishScore dishScore = dishScores[i];
+                if (dishScore == null
+                    || shownDishBases.Contains(dishScore.DishInstanceId)
+                    || !dishViews.TryGetValue(dishScore.DishInstanceId, out DishPieceView view)
+                    || view == null
+                    || view.Instance == null)
+                {
+                    continue;
+                }
+
+                shownDishBases.Add(dishScore.DishInstanceId);
+                plan.Steps.Add(new SettlementPlaybackStep(
+                    dishScore.DishInstanceId,
+                    BuildDishBaseCue(view.Instance, baselineSnapshot, InitialDishBaseBatchKey),
+                    BuildDishFocusSignal(view.Instance)));
+            }
         }
 
         private static void TrackCueFlags(

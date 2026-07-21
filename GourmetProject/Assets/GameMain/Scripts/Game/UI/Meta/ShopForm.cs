@@ -190,6 +190,8 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
+            // UI 与购买共用 ShopService.CurrentPrice：重建卡片前刷新，避免被动道具/事件改价后仍显示旧表价。
+            ShopService.RefreshStockPrices(_run, _stock);
             CancelDishTargeting();
             ClearSpawned();
             EnsureTipViews();

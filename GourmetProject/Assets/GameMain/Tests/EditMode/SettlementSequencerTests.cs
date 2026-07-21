@@ -1,7 +1,13 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Reflection;
 using GourmetProject.Game.Presentation.Battle;
+using GourmetProject.Gameplay.Board;
+using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace GourmetProject.Tests.EditMode
 {
@@ -123,6 +129,63 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void SettlementPlanStartsWithOneBatchForAllDishScores()
+        {
+            DishShape shape = DishShape.FromRows(new[] { "X" });
+            DishInstance first = DishInstanceForTest(1, "first", shape, 0);
+            DishInstance second = DishInstanceForTest(2, "second", shape, 1);
+            GameObject firstObject = new("FirstDishView");
+            GameObject secondObject = new("SecondDishView");
+
+            try
+            {
+                DishPieceView firstView = firstObject.AddComponent<DishPieceView>();
+                DishPieceView secondView = secondObject.AddComponent<DishPieceView>();
+                SetViewInstance(firstView, first);
+                SetViewInstance(secondView, second);
+
+                var dishViews = new Dictionary<int, DishPieceView>
+                {
+                    [first.Id] = firstView,
+                    [second.Id] = secondView,
+                };
+                var result = new ScoreResult(
+                    new[]
+                    {
+                        new DishScore(second.Id, second.Def.Id, 7f, 0f, 1f),
+                        new DishScore(first.Id, first.Def.Id, 4f, 0f, 1f),
+                    },
+                    11f,
+                    0f,
+                    1f,
+                    Array.Empty<ScoreLine>());
+                var baseline = new SettlementBaselineSnapshot();
+                baseline.Capture(first);
+                baseline.Capture(second);
+
+                MethodInfo buildPlan = typeof(SettlementSequencer).GetMethod(
+                    "BuildSettlementPlaybackPlan",
+                    BindingFlags.NonPublic | BindingFlags.Static);
+                Assert.That(buildPlan, Is.Not.Null);
+                object plan = buildPlan.Invoke(null, new object[] { result, dishViews, baseline });
+                IList steps = (IList)plan.GetType().GetProperty("Steps")?.GetValue(plan);
+
+                Assert.That(steps, Is.Not.Null);
+                Assert.That(steps.Count, Is.EqualTo(2));
+                Assert.That(StepDishInstanceId(steps[0]), Is.EqualTo(second.Id));
+                Assert.That(StepDishInstanceId(steps[1]), Is.EqualTo(first.Id));
+                Assert.That(StepBatchKey(steps[0]), Is.Not.Empty.And.EqualTo(StepBatchKey(steps[1])));
+                Assert.That(StepFeedbackKind(steps[0]), Is.EqualTo(SettlementDishFeedbackKind.DishBase));
+                Assert.That(StepFeedbackKind(steps[1]), Is.EqualTo(SettlementDishFeedbackKind.DishBase));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(firstObject);
+                UnityEngine.Object.DestroyImmediate(secondObject);
+            }
+        }
+
+        [Test]
         public void CopySkillFeedbackUsesDedicatedKind()
         {
             var line = new ScoreLine(
@@ -231,6 +294,53 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(built, Is.True);
             Assert.That(args[1], Is.Not.Null);
             return args[1];
+        }
+
+        private static DishInstance DishInstanceForTest(int id, string dishId, DishShape shape, int x)
+        {
+            var def = new DishDef(
+                dishId,
+                dishId,
+                id + 3,
+                shape,
+                0,
+                0,
+                1f,
+                Array.Empty<string>(),
+                string.Empty,
+                false);
+            return new DishInstance(
+                id,
+                def,
+                new Placement(shape, 0, new GridPos(x, 0)),
+                Array.Empty<string>(),
+                Array.Empty<string>());
+        }
+
+        private static void SetViewInstance(DishPieceView view, DishInstance instance)
+        {
+            MethodInfo setter = typeof(DishPieceView)
+                .GetProperty("Instance", BindingFlags.Instance | BindingFlags.Public)
+                ?.GetSetMethod(true);
+            Assert.That(setter, Is.Not.Null);
+            setter.Invoke(view, new object[] { instance });
+        }
+
+        private static int StepDishInstanceId(object step)
+        {
+            return (int)step.GetType().GetProperty("DishInstanceId")?.GetValue(step);
+        }
+
+        private static string StepBatchKey(object step)
+        {
+            object cue = step.GetType().GetProperty("Cue")?.GetValue(step);
+            return (string)cue?.GetType().GetProperty("BatchKey")?.GetValue(cue);
+        }
+
+        private static SettlementDishFeedbackKind StepFeedbackKind(object step)
+        {
+            object cue = step.GetType().GetProperty("Cue")?.GetValue(step);
+            return (SettlementDishFeedbackKind)cue?.GetType().GetProperty("FeedbackKind")?.GetValue(cue);
         }
     }
 }

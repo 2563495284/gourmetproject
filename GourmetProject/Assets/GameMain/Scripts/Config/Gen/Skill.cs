@@ -31,7 +31,7 @@ public sealed partial class Skill : Luban.BeanBase
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 有序引用的子技能ID列表(| 分隔)
+    /// 本技能独占的有序子技能ID列表（| 分隔，命名为 skillId_序号）
     /// </summary>
     public readonly string SubSkills;
    

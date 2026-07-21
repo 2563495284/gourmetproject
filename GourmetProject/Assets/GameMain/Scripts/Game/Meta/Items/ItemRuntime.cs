@@ -336,7 +336,7 @@ namespace GourmetProject.Game.Meta
 
         private static int ClampPrice(float price)
         {
-            int result = (int)System.Math.Round(price, System.MidpointRounding.AwayFromZero);
+            int result = (int)System.Math.Floor(price);
             return result < 1 ? 1 : result;
         }
 

@@ -1,194 +1,194 @@
 [
   {
     "id": "sk_cookie",
-    "subSkills": "ss_edge_multflat_v3"
+    "subSkills": "sk_cookie_1"
   },
   {
     "id": "sk_macaron",
-    "subSkills": "ss_flat_per_dish_adj_v8|ss_transfer_row_n1"
+    "subSkills": "sk_macaron_1|sk_macaron_2"
   },
   {
     "id": "sk_pudding",
-    "subSkills": "ss_flat_per_empty_adj_vm2"
+    "subSkills": "sk_pudding_1"
   },
   {
     "id": "sk_puff",
-    "subSkills": "ss_layer_per_dish_adj_v2"
+    "subSkills": "sk_puff_1"
   },
   {
     "id": "sk_eggtart",
-    "subSkills": "ss_flat_per_run_v6"
+    "subSkills": "sk_eggtart_1"
   },
   {
     "id": "sk_mochi",
-    "subSkills": "ss_multflat_per_dish_col_v1"
+    "subSkills": "sk_mochi_1"
   },
   {
     "id": "sk_daifuku",
-    "subSkills": "ss_flat_per_dish_row_v10"
+    "subSkills": "sk_daifuku_1"
   },
   {
     "id": "sk_choco_candy",
-    "subSkills": "ss_permflat_per_tag_v5"
+    "subSkills": "sk_choco_candy_1"
   },
   {
     "id": "sk_jelly",
-    "subSkills": "ss_multflat_per_dish_all_adj_v0p2"
+    "subSkills": "sk_jelly_1"
   },
   {
     "id": "sk_cream_cell",
-    "subSkills": "ss_layer_add_v5"
+    "subSkills": "sk_cream_cell_1"
   },
   {
     "id": "sk_sugarbean",
-    "subSkills": "ss_multflat_per_dish_round_v0p2|ss_transfer_round_n1"
+    "subSkills": "sk_sugarbean_1|sk_sugarbean_2"
   },
   {
     "id": "sk_gold_choco",
-    "subSkills": "ss_grant_gold_filled_adj_v30"
+    "subSkills": "sk_gold_choco_1"
   },
   {
     "id": "sk_milk_slice",
-    "subSkills": "ss_layer_filled_row_v10"
+    "subSkills": "sk_milk_slice_1"
   },
   {
     "id": "sk_sundae",
-    "subSkills": "ss_multflat_per_dish_row_v2|ss_count_as_base_v1"
+    "subSkills": "sk_sundae_1|sk_sundae_2"
   },
   {
     "id": "sk_cone",
-    "subSkills": "ss_layer_add_v10"
+    "subSkills": "sk_cone_1"
   },
   {
     "id": "sk_lollipop",
-    "subSkills": "ss_shape_mult_adj_v1p5|ss_transfer_col_n2"
+    "subSkills": "sk_lollipop_1|sk_lollipop_2"
   },
   {
     "id": "sk_gummy",
-    "subSkills": "ss_flat_row_self_v10|ss_transfer_col_n1"
+    "subSkills": "sk_gummy_1|sk_gummy_2"
   },
   {
     "id": "sk_cupcake",
-    "subSkills": "ss_layer_per_tag_v6|ss_transfer_row_n1"
+    "subSkills": "sk_cupcake_1|sk_cupcake_2"
   },
   {
     "id": "sk_mousse",
-    "subSkills": "ss_mult_category_cat_v1p2|ss_layer_add_v5"
+    "subSkills": "sk_mousse_1|sk_mousse_2"
   },
   {
     "id": "sk_toffee",
-    "subSkills": "ss_perm_flat_v10|ss_transfer_all_n2"
+    "subSkills": "sk_toffee_1|sk_toffee_2"
   },
   {
     "id": "sk_nougat",
-    "subSkills": "ss_extra_settle_v1|ss_transfer_adj_n2"
+    "subSkills": "sk_nougat_1|sk_nougat_2"
   },
   {
     "id": "sk_eggroll",
-    "subSkills": "ss_multflat_per_dish_all_v0p2|ss_count_as_base_v3"
+    "subSkills": "sk_eggroll_1|sk_eggroll_2"
   },
   {
     "id": "sk_choco_bar",
-    "subSkills": "ss_multflat_adj_v5|ss_transfer_all_n3"
+    "subSkills": "sk_choco_bar_1|sk_choco_bar_2"
   },
   {
     "id": "sk_eclair",
-    "subSkills": "ss_consume_layer_v10|ss_multflat_per_layer_cap5_row_v0p8"
+    "subSkills": "sk_eclair_1|sk_eclair_2"
   },
   {
     "id": "sk_tanghulu",
-    "subSkills": "ss_multflat_col_v3|ss_transfer_row_n3"
+    "subSkills": "sk_tanghulu_1|sk_tanghulu_2"
   },
   {
     "id": "sk_souffle",
-    "subSkills": "ss_layer_mult_v1p5"
+    "subSkills": "sk_souffle_1"
   },
   {
     "id": "sk_taosu",
-    "subSkills": "ss_mult_tier_dishcount_row_row"
+    "subSkills": "sk_taosu_1"
   },
   {
     "id": "sk_mooncake",
-    "subSkills": "ss_copy_skill_adj_v1|ss_count_as_base_v4"
+    "subSkills": "sk_mooncake_1|sk_mooncake_2"
   },
   {
     "id": "sk_waffle",
-    "subSkills": "ss_mult_v3|ss_count_as_filled_row_v9"
+    "subSkills": "sk_waffle_1|sk_waffle_2"
   },
   {
     "id": "sk_dorayaki",
-    "subSkills": "ss_count_as_col_v2|ss_multflat_v4"
+    "subSkills": "sk_dorayaki_1|sk_dorayaki_2"
   },
   {
     "id": "sk_cream_cake",
-    "subSkills": "ss_perm_flat_v10|ss_flat_category_cat_v10"
+    "subSkills": "sk_cream_cake_1|sk_cream_cake_2"
   },
   {
     "id": "sk_donut",
-    "subSkills": "ss_layer_add_v15|ss_multflat_v5"
+    "subSkills": "sk_donut_1|sk_donut_2"
   },
   {
     "id": "sk_pengtang",
-    "subSkills": "ss_multflat_per_tag_v5|ss_transfer_col"
+    "subSkills": "sk_pengtang_1|sk_pengtang_2"
   },
   {
     "id": "sk_parfait",
-    "subSkills": "ss_mult_per_dish_adj_v1p2|ss_count_as_base_v9"
+    "subSkills": "sk_parfait_1|sk_parfait_2"
   },
   {
     "id": "sk_sundae_big",
-    "subSkills": "ss_mult_col_v2|ss_count_as_base_v4"
+    "subSkills": "sk_sundae_big_1|sk_sundae_big_2"
   },
   {
     "id": "sk_swiss_roll",
-    "subSkills": "ss_layer_add_v20|ss_multflat_all_v0p5"
+    "subSkills": "sk_swiss_roll_1|sk_swiss_roll_2"
   },
   {
     "id": "sk_mango_sago",
-    "subSkills": "ss_copy_skill_adj_v2|ss_count_as_base_v7"
+    "subSkills": "sk_mango_sago_1|sk_mango_sago_2"
   },
   {
     "id": "sk_chiffon",
-    "subSkills": "ss_multflat_v5|ss_multflat_category_cat_v5"
+    "subSkills": "sk_chiffon_1|sk_chiffon_2"
   },
   {
     "id": "sk_apple_pie",
-    "subSkills": "ss_multflat_per_dish_row_adj_v0p3"
+    "subSkills": "sk_apple_pie_1"
   },
   {
     "id": "sk_fruit_cake",
-    "subSkills": "ss_mult_v2|ss_layer_tier_all"
+    "subSkills": "sk_fruit_cake_1|sk_fruit_cake_2"
   },
   {
     "id": "sk_chocolate",
-    "subSkills": "ss_mult_tier_skilltype_all_all"
+    "subSkills": "sk_chocolate_1"
   },
   {
     "id": "sk_croissant",
-    "subSkills": "ss_layer_per_dish_adj_v2_2"
+    "subSkills": "sk_croissant_1"
   },
   {
     "id": "sk_palmier",
-    "subSkills": "ss_mult_adj_v1p5|ss_count_as_base_v3_1"
+    "subSkills": "sk_palmier_1|sk_palmier_2"
   },
   {
     "id": "sk_candycane",
-    "subSkills": "ss_mult_col_v1p4|ss_transfer_adj"
+    "subSkills": "sk_candycane_1|sk_candycane_2"
   },
   {
     "id": "sk_big_lollipop",
-    "subSkills": "ss_trigger_transfer_all"
+    "subSkills": "sk_big_lollipop_1"
   },
   {
     "id": "sk_marshmallow",
-    "subSkills": "ss_mult_per_tag_v1p5|ss_transfer_row"
+    "subSkills": "sk_marshmallow_1|sk_marshmallow_2"
   },
   {
     "id": "sk_double_cake",
-    "subSkills": "ss_copy_cat_skill_v3"
+    "subSkills": "sk_double_cake_1"
   },
   {
     "id": "sk_maple_sugar",
-    "subSkills": "ss_extra_transfer_n1"
+    "subSkills": "sk_maple_sugar_1"
   }
 ]

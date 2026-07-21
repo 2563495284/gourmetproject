@@ -1,6 +1,6 @@
 [
   {
-    "id": "ss_edge_multflat_v3",
+    "id": "sk_cookie_1",
     "trigger": 0,
     "condType": 3,
     "condScope": 0,
@@ -20,7 +20,7 @@
     "termId": ""
   },
   {
-    "id": "ss_flat_per_dish_adj_v8",
+    "id": "sk_macaron_1",
     "trigger": 0,
     "condType": 4,
     "condScope": 11,
@@ -40,7 +40,7 @@
     "termId": ""
   },
   {
-    "id": "ss_transfer_row_n1",
+    "id": "sk_macaron_2",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -60,7 +60,7 @@
     "termId": "term_sweet_transfer"
   },
   {
-    "id": "ss_flat_per_empty_adj_vm2",
+    "id": "sk_pudding_1",
     "trigger": 0,
     "condType": 2,
     "condScope": 11,
@@ -80,7 +80,7 @@
     "termId": ""
   },
   {
-    "id": "ss_layer_per_dish_adj_v2",
+    "id": "sk_puff_1",
     "trigger": 0,
     "condType": 4,
     "condScope": 11,
@@ -100,7 +100,7 @@
     "termId": "clb"
   },
   {
-    "id": "ss_flat_per_run_v6",
+    "id": "sk_eggtart_1",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -120,7 +120,7 @@
     "termId": ""
   },
   {
-    "id": "ss_multflat_per_dish_col_v1",
+    "id": "sk_mochi_1",
     "trigger": 0,
     "condType": 4,
     "condScope": 14,
@@ -140,7 +140,7 @@
     "termId": ""
   },
   {
-    "id": "ss_flat_per_dish_row_v10",
+    "id": "sk_daifuku_1",
     "trigger": 0,
     "condType": 4,
     "condScope": 13,
@@ -160,7 +160,7 @@
     "termId": ""
   },
   {
-    "id": "ss_permflat_per_tag_v5",
+    "id": "sk_choco_candy_1",
     "trigger": 0,
     "condType": 10,
     "condScope": 0,
@@ -180,7 +180,7 @@
     "termId": ""
   },
   {
-    "id": "ss_multflat_per_dish_all_adj_v0p2",
+    "id": "sk_jelly_1",
     "trigger": 0,
     "condType": 4,
     "condScope": 13,
@@ -200,7 +200,7 @@
     "termId": ""
   },
   {
-    "id": "ss_layer_add_v5",
+    "id": "sk_cream_cell_1",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -220,27 +220,27 @@
     "termId": "clb"
   },
   {
-    "id": "ss_extra_settle_v1",
+    "id": "sk_sugarbean_1",
     "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
+    "condType": 4,
+    "condScope": 11,
     "condUnit": 0,
     "condMode": 0,
     "condParam": "",
-    "actionType": 4,
+    "actionType": 9,
     "actionScope": 0,
     "actionCount": 0,
     "actionValue": [
-      1
+      0.2
     ],
     "actionParam": [],
-    "isPassive": true,
-    "signed": false,
-    "descTemplate": "技能额外结算 {0} 次",
+    "isPassive": false,
+    "signed": true,
+    "descTemplate": "{cscope}每有 1 {unit}食物\n{ascope}倍率 {0}",
     "termId": ""
   },
   {
-    "id": "ss_transfer_all_n1",
+    "id": "sk_sugarbean_2",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -248,7 +248,7 @@
     "condMode": 0,
     "condParam": "",
     "actionType": 5,
-    "actionScope": 15,
+    "actionScope": 11,
     "actionCount": 1,
     "actionValue": [
       0
@@ -260,7 +260,7 @@
     "termId": "term_sweet_transfer"
   },
   {
-    "id": "ss_grant_gold_filled_adj_v30",
+    "id": "sk_gold_choco_1",
     "trigger": 0,
     "condType": 1,
     "condScope": 11,
@@ -280,7 +280,7 @@
     "termId": ""
   },
   {
-    "id": "ss_layer_filled_row_v10",
+    "id": "sk_milk_slice_1",
     "trigger": 0,
     "condType": 1,
     "condScope": 13,
@@ -300,7 +300,7 @@
     "termId": "clb"
   },
   {
-    "id": "ss_multflat_per_dish_row_v2",
+    "id": "sk_sundae_1",
     "trigger": 0,
     "condType": 4,
     "condScope": 13,
@@ -320,7 +320,7 @@
     "termId": ""
   },
   {
-    "id": "ss_count_as_base_v1",
+    "id": "sk_sundae_2",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -340,7 +340,7 @@
     "termId": ""
   },
   {
-    "id": "ss_layer_add_v10",
+    "id": "sk_cone_1",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -360,27 +360,7 @@
     "termId": "clb"
   },
   {
-    "id": "ss_temp_copy_v1",
-    "trigger": 1,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 14,
-    "actionScope": 0,
-    "actionCount": 0,
-    "actionValue": [
-      1
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": false,
-    "descTemplate": "复制至空格中\n并立即结算此食物",
-    "termId": ""
-  },
-  {
-    "id": "ss_shape_mult_adj_v1p5",
+    "id": "sk_lollipop_1",
     "trigger": 0,
     "condType": 11,
     "condScope": 11,
@@ -400,7 +380,7 @@
     "termId": ""
   },
   {
-    "id": "ss_transfer_col_n2",
+    "id": "sk_lollipop_2",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -420,983 +400,7 @@
     "termId": "term_sweet_transfer"
   },
   {
-    "id": "ss_mult_per_dish_adj_v1p2",
-    "trigger": 0,
-    "condType": 4,
-    "condScope": 11,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 2,
-    "actionScope": 0,
-    "actionCount": 0,
-    "actionValue": [
-      1.2
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": false,
-    "descTemplate": "{cscope}每有 1 {unit}食物\n{ascope}倍率 ×{0}",
-    "termId": ""
-  },
-  {
-    "id": "ss_transfer_adj_n2",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 5,
-    "actionScope": 11,
-    "actionCount": 2,
-    "actionValue": [
-      0
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": false,
-    "descTemplate": "甜蜜传递至{ascope}食物",
-    "termId": "term_sweet_transfer"
-  },
-  {
-    "id": "ss_copy_skill_adj_v1",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 13,
-    "actionScope": 11,
-    "actionCount": 0,
-    "actionValue": [
-      1
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": false,
-    "descTemplate": "复制{ascope}食物的 {0} 个技能",
-    "termId": ""
-  },
-  {
-    "id": "ss_layer_per_tag_v6",
-    "trigger": 0,
-    "condType": 10,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 6,
-    "actionScope": 16,
-    "actionCount": 0,
-    "actionValue": [
-      6
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": true,
-    "descTemplate": "每有 1 个技能\n欢乐蛋糕 {0} 层",
-    "termId": "clb"
-  },
-  {
-    "id": "ss_mult_v1p5",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 2,
-    "actionScope": 0,
-    "actionCount": 0,
-    "actionValue": [
-      2
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": false,
-    "descTemplate": "{ascope}倍率 ×{0}",
-    "termId": ""
-  },
-  {
-    "id": "ss_perm_flat_v10",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 10,
-    "actionScope": 12,
-    "actionCount": 0,
-    "actionValue": [
-      3
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": true,
-    "descTemplate": "{ascope}\n分数永久 {0}",
-    "termId": ""
-  },
-  {
-    "id": "ss_transfer_all_n2",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 5,
-    "actionScope": 15,
-    "actionCount": 1,
-    "actionValue": [
-      0
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": false,
-    "descTemplate": "甜蜜传递至{ascope}食物",
-    "termId": "term_sweet_transfer"
-  },
-  {
-    "id": "ss_multflat_per_dish_all_v0p2",
-    "trigger": 0,
-    "condType": 4,
-    "condScope": 4,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 9,
-    "actionScope": 0,
-    "actionCount": 0,
-    "actionValue": [
-      0.2
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物\n{ascope}倍率 {0}",
-    "termId": ""
-  },
-  {
-    "id": "ss_count_as_base_v3",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 12,
-    "actionScope": 0,
-    "actionCount": 0,
-    "actionValue": [
-      3
-    ],
-    "actionParam": [],
-    "isPassive": true,
-    "signed": false,
-    "descTemplate": "{ascope}视为 {countas} 个食物",
-    "termId": ""
-  },
-  {
-    "id": "ss_multflat_adj_v5",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 9,
-    "actionScope": 12,
-    "actionCount": 0,
-    "actionValue": [
-      3
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": true,
-    "descTemplate": "{ascope}倍率 {0}",
-    "termId": ""
-  },
-  {
-    "id": "ss_transfer_all_n3",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 5,
-    "actionScope": 15,
-    "actionCount": 2,
-    "actionValue": [
-      0
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": false,
-    "descTemplate": "甜蜜传递至{ascope}食物",
-    "termId": "term_sweet_transfer"
-  },
-  {
-    "id": "ss_consume_layer_v10",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 7,
-    "actionScope": 16,
-    "actionCount": 0,
-    "actionValue": [
-      5
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": false,
-    "descTemplate": "消耗 {0} 层欢乐蛋糕",
-    "termId": "clb"
-  },
-  {
-    "id": "ss_multflat_v5",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 9,
-    "actionScope": 0,
-    "actionCount": 0,
-    "actionValue": [
-      3
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": true,
-    "descTemplate": "{ascope}倍率 {0}",
-    "termId": ""
-  },
-  {
-    "id": "ss_multflat_col_v3",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 9,
-    "actionScope": 14,
-    "actionCount": 0,
-    "actionValue": [
-      3
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": true,
-    "descTemplate": "{ascope}倍率 {0}",
-    "termId": ""
-  },
-  {
-    "id": "ss_transfer_row_n3",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 5,
-    "actionScope": 2,
-    "actionCount": 3,
-    "actionValue": [
-      0
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": false,
-    "descTemplate": "甜蜜传递至{ascope}食物",
-    "termId": "term_sweet_transfer"
-  },
-  {
-    "id": "ss_layer_mult_v1p5",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 6,
-    "actionScope": 16,
-    "actionCount": 0,
-    "actionValue": [
-      1.5
-    ],
-    "actionParam": [
-      "multfloor:5"
-    ],
-    "isPassive": false,
-    "signed": false,
-    "descTemplate": "欢乐蛋糕 ×{0} 层\n至少 +{floor} 层",
-    "termId": "clb"
-  },
-  {
-    "id": "ss_mult_tier_dishcount_row_row",
-    "trigger": 0,
-    "condType": 4,
-    "condScope": 13,
-    "condUnit": 0,
-    "condMode": 1,
-    "condParam": "tiers:5|15|25",
-    "actionType": 2,
-    "actionScope": 13,
-    "actionCount": 0,
-    "actionValue": [
-      0
-    ],
-    "actionParam": [
-      "tiervals:1.5|2.5|5"
-    ],
-    "isPassive": false,
-    "signed": false,
-    "descTemplate": "{cscope}食物达 {tiers} 个时\n{ascope}倍率 ×{tiervals}",
-    "termId": ""
-  },
-  {
-    "id": "ss_count_as_base_v4",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 12,
-    "actionScope": 0,
-    "actionCount": 0,
-    "actionValue": [
-      4
-    ],
-    "actionParam": [],
-    "isPassive": true,
-    "signed": false,
-    "descTemplate": "{ascope}视为 {countas} 个食物",
-    "termId": ""
-  },
-  {
-    "id": "ss_mult_v3",
-    "trigger": 0,
-    "condType": 4,
-    "condScope": 14,
-    "condUnit": 1,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 2,
-    "actionScope": 0,
-    "actionCount": 0,
-    "actionValue": [
-      0.4
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": false,
-    "descTemplate": "{cscope}每有 1 {unit}食物\n{ascope}倍率 {0}",
-    "termId": ""
-  },
-  {
-    "id": "ss_count_as_filled_row_v9",
-    "trigger": 0,
-    "condType": 1,
-    "condScope": 13,
-    "condUnit": 0,
-    "condMode": 2,
-    "condParam": "",
-    "actionType": 12,
-    "actionScope": 0,
-    "actionCount": 0,
-    "actionValue": [
-      9
-    ],
-    "actionParam": [],
-    "isPassive": true,
-    "signed": false,
-    "descTemplate": "{ascope}额外视为 {0} 个食物",
-    "termId": ""
-  },
-  {
-    "id": "ss_count_as_col_v2",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 12,
-    "actionScope": 14,
-    "actionCount": 0,
-    "actionValue": [
-      2
-    ],
-    "actionParam": [],
-    "isPassive": true,
-    "signed": false,
-    "descTemplate": "{ascope}额外视为 {0} 个食物",
-    "termId": ""
-  },
-  {
-    "id": "ss_multflat_v4",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 9,
-    "actionScope": 0,
-    "actionCount": 0,
-    "actionValue": [
-      4
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": true,
-    "descTemplate": "{ascope}倍率 {0}",
-    "termId": ""
-  },
-  {
-    "id": "ss_flat_category_cat_v10",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 1,
-    "actionScope": 10,
-    "actionCount": 0,
-    "actionValue": [
-      10
-    ],
-    "actionParam": [
-      "cat:cake"
-    ],
-    "isPassive": false,
-    "signed": true,
-    "descTemplate": "将分数加到所有{cat}上\n（每个{cat} {0} 分）",
-    "termId": ""
-  },
-  {
-    "id": "ss_layer_add_v15",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 6,
-    "actionScope": 16,
-    "actionCount": 0,
-    "actionValue": [
-      15
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": true,
-    "descTemplate": "欢乐蛋糕 {0} 层",
-    "termId": "clb"
-  },
-  {
-    "id": "ss_multflat_per_tag_v5",
-    "trigger": 0,
-    "condType": 10,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 9,
-    "actionScope": 0,
-    "actionCount": 0,
-    "actionValue": [
-      5
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": true,
-    "descTemplate": "{cscope}每有 1 个技能\n{ascope}倍率 {0}",
-    "termId": ""
-  },
-  {
-    "id": "ss_transfer_col",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 5,
-    "actionScope": 3,
-    "actionCount": 0,
-    "actionValue": [
-      0
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": false,
-    "descTemplate": "甜蜜传递至{ascope}食物",
-    "termId": "term_sweet_transfer"
-  },
-  {
-    "id": "ss_count_as_base_v9",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 12,
-    "actionScope": 0,
-    "actionCount": 0,
-    "actionValue": [
-      9
-    ],
-    "actionParam": [],
-    "isPassive": true,
-    "signed": false,
-    "descTemplate": "{ascope}视为 {countas} 个食物",
-    "termId": ""
-  },
-  {
-    "id": "ss_mult_col_v2",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 2,
-    "actionScope": 14,
-    "actionCount": 0,
-    "actionValue": [
-      2
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": false,
-    "descTemplate": "{ascope}倍率 ×{0}",
-    "termId": ""
-  },
-  {
-    "id": "ss_layer_add_v20",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 6,
-    "actionScope": 16,
-    "actionCount": 0,
-    "actionValue": [
-      20
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": true,
-    "descTemplate": "欢乐蛋糕 {0} 层",
-    "termId": "clb"
-  },
-  {
-    "id": "ss_multflat_all_v0p5",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 9,
-    "actionScope": 4,
-    "actionCount": 0,
-    "actionValue": [
-      0.5
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": true,
-    "descTemplate": "{ascope}倍率 {0}",
-    "termId": ""
-  },
-  {
-    "id": "ss_copy_skill_adj_v2",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 13,
-    "actionScope": 11,
-    "actionCount": 0,
-    "actionValue": [
-      2
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": false,
-    "descTemplate": "复制{ascope}食物的 {0} 个技能",
-    "termId": ""
-  },
-  {
-    "id": "ss_count_as_base_v7",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 12,
-    "actionScope": 0,
-    "actionCount": 0,
-    "actionValue": [
-      7
-    ],
-    "actionParam": [],
-    "isPassive": true,
-    "signed": false,
-    "descTemplate": "{ascope}视为 {countas} 个食物",
-    "termId": ""
-  },
-  {
-    "id": "ss_multflat_category_cat_v5",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 9,
-    "actionScope": 10,
-    "actionCount": 0,
-    "actionValue": [
-      5
-    ],
-    "actionParam": [
-      "cat:cake"
-    ],
-    "isPassive": false,
-    "signed": true,
-    "descTemplate": "将倍率 {0} 加到所有{cat}上",
-    "termId": ""
-  },
-  {
-    "id": "ss_multflat_per_dish_row_adj_v0p3",
-    "trigger": 0,
-    "condType": 4,
-    "condScope": 13,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 9,
-    "actionScope": 12,
-    "actionCount": 0,
-    "actionValue": [
-      0.3
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物\n{ascope}倍率 {0}",
-    "termId": ""
-  },
-  {
-    "id": "ss_mult_v2",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 2,
-    "actionScope": 0,
-    "actionCount": 0,
-    "actionValue": [
-      2
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": false,
-    "descTemplate": "{ascope}倍率 ×{0}",
-    "termId": ""
-  },
-  {
-    "id": "ss_layer_tier_all",
-    "trigger": 0,
-    "condType": 15,
-    "condScope": 4,
-    "condUnit": 0,
-    "condMode": 1,
-    "condParam": "cake;tiers:3|5|8",
-    "actionType": 6,
-    "actionScope": 16,
-    "actionCount": 0,
-    "actionValue": [
-      0
-    ],
-    "actionParam": [
-      "tiervals:10|20|40"
-    ],
-    "isPassive": false,
-    "signed": false,
-    "descTemplate": "蛋糕数量达 {tiers} 时\n欢乐蛋糕 +{tiervals} 层",
-    "termId": "clb"
-  },
-  {
-    "id": "ss_mult_tier_skilltype_all_all",
-    "trigger": 0,
-    "condType": 16,
-    "condScope": 4,
-    "condUnit": 1,
-    "condMode": 1,
-    "condParam": "TransferSkills;tiers:3|5|8",
-    "actionType": 2,
-    "actionScope": 4,
-    "actionCount": 0,
-    "actionValue": [
-      0
-    ],
-    "actionParam": [
-      "tiervals:1.5|2.5|5;skilltype:TransferSkills"
-    ],
-    "isPassive": false,
-    "signed": false,
-    "descTemplate": "带甜蜜传递的食物达 {tiers} 种时\n此类食物倍率 ×{tiervals}",
-    "termId": "term_sweet_transfer"
-  },
-  {
-    "id": "ss_layer_per_dish_adj_v2_2",
-    "trigger": 0,
-    "condType": 4,
-    "condScope": 11,
-    "condUnit": 1,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 6,
-    "actionScope": 16,
-    "actionCount": 0,
-    "actionValue": [
-      2
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物\n欢乐蛋糕 {0} 层",
-    "termId": "clb"
-  },
-  {
-    "id": "ss_mult_adj_v1p5",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 2,
-    "actionScope": 12,
-    "actionCount": 0,
-    "actionValue": [
-      2.5
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": false,
-    "descTemplate": "{ascope}倍率 ×{0}",
-    "termId": ""
-  },
-  {
-    "id": "ss_count_as_base_v3_1",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 12,
-    "actionScope": 0,
-    "actionCount": 0,
-    "actionValue": [
-      3
-    ],
-    "actionParam": [],
-    "isPassive": true,
-    "signed": false,
-    "descTemplate": "{ascope}视为 {countas} 个食物",
-    "termId": ""
-  },
-  {
-    "id": "ss_mult_col_v1p4",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 2,
-    "actionScope": 14,
-    "actionCount": 0,
-    "actionValue": [
-      1.4
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": false,
-    "descTemplate": "{ascope}倍率 ×{0}",
-    "termId": ""
-  },
-  {
-    "id": "ss_transfer_adj",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 5,
-    "actionScope": 11,
-    "actionCount": 0,
-    "actionValue": [
-      0
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": false,
-    "descTemplate": "甜蜜传递至{ascope}食物",
-    "termId": "term_sweet_transfer"
-  },
-  {
-    "id": "ss_trigger_transfer_all",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 15,
-    "actionScope": 4,
-    "actionCount": 0,
-    "actionValue": [
-      0
-    ],
-    "actionParam": [
-      "axis:rowcol;skilltype:TransferSkills"
-    ],
-    "isPassive": false,
-    "signed": false,
-    "descTemplate": "同行同列带甜蜜传递的食物\n各执行一次它们的甜蜜传递",
-    "termId": "term_sweet_transfer"
-  },
-  {
-    "id": "ss_mult_per_tag_v1p5",
-    "trigger": 0,
-    "condType": 10,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 2,
-    "actionScope": 0,
-    "actionCount": 0,
-    "actionValue": [
-      1.5
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": false,
-    "descTemplate": "{cscope}每有 1 个技能\n{ascope}倍率 ×{0}",
-    "termId": ""
-  },
-  {
-    "id": "ss_transfer_row",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 5,
-    "actionScope": 2,
-    "actionCount": 0,
-    "actionValue": [
-      0
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": false,
-    "descTemplate": "甜蜜传递至{ascope}食物",
-    "termId": "term_sweet_transfer"
-  },
-  {
-    "id": "ss_copy_cat_skill_v3",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 13,
-    "actionScope": 0,
-    "actionCount": 0,
-    "actionValue": [
-      3
-    ],
-    "actionParam": [
-      "cat:cake"
-    ],
-    "isPassive": false,
-    "signed": false,
-    "descTemplate": "{ascope}获得 {0} 种不同的{cat}技能",
-    "termId": ""
-  },
-  {
-    "id": "ss_multflat_per_dish_round_v0p2",
-    "trigger": 0,
-    "condType": 4,
-    "condScope": 11,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 9,
-    "actionScope": 0,
-    "actionCount": 0,
-    "actionValue": [
-      0.2
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物\n{ascope}倍率 {0}",
-    "termId": ""
-  },
-  {
-    "id": "ss_transfer_round_n1",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 5,
-    "actionScope": 11,
-    "actionCount": 1,
-    "actionValue": [
-      0
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": false,
-    "descTemplate": "甜蜜传递至{ascope}食物",
-    "termId": "term_sweet_transfer"
-  },
-  {
-    "id": "ss_flat_row_self_v10",
+    "id": "sk_gummy_1",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -1416,7 +420,7 @@
     "termId": ""
   },
   {
-    "id": "ss_transfer_col_n1",
+    "id": "sk_gummy_2",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -1436,7 +440,47 @@
     "termId": "term_sweet_transfer"
   },
   {
-    "id": "ss_mult_category_cat_v1p2",
+    "id": "sk_cupcake_1",
+    "trigger": 0,
+    "condType": 10,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 6,
+    "actionScope": 16,
+    "actionCount": 0,
+    "actionValue": [
+      6
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": true,
+    "descTemplate": "每有 1 个技能\n欢乐蛋糕 {0} 层",
+    "termId": "clb"
+  },
+  {
+    "id": "sk_cupcake_2",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 5,
+    "actionScope": 2,
+    "actionCount": 1,
+    "actionValue": [
+      0
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "甜蜜传递至{ascope}食物",
+    "termId": "term_sweet_transfer"
+  },
+  {
+    "id": "sk_mousse_1",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -1458,7 +502,207 @@
     "termId": ""
   },
   {
-    "id": "ss_multflat_per_layer_cap5_row_v0p8",
+    "id": "sk_mousse_2",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 6,
+    "actionScope": 16,
+    "actionCount": 0,
+    "actionValue": [
+      5
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": true,
+    "descTemplate": "欢乐蛋糕 {0} 层",
+    "termId": "clb"
+  },
+  {
+    "id": "sk_toffee_1",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 10,
+    "actionScope": 12,
+    "actionCount": 0,
+    "actionValue": [
+      3
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": true,
+    "descTemplate": "{ascope}\n分数永久 {0}",
+    "termId": ""
+  },
+  {
+    "id": "sk_toffee_2",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 5,
+    "actionScope": 15,
+    "actionCount": 1,
+    "actionValue": [
+      0
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "甜蜜传递至{ascope}食物",
+    "termId": "term_sweet_transfer"
+  },
+  {
+    "id": "sk_nougat_1",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 4,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      1
+    ],
+    "actionParam": [],
+    "isPassive": true,
+    "signed": false,
+    "descTemplate": "技能额外结算 {0} 次",
+    "termId": ""
+  },
+  {
+    "id": "sk_nougat_2",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 5,
+    "actionScope": 11,
+    "actionCount": 2,
+    "actionValue": [
+      0
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "甜蜜传递至{ascope}食物",
+    "termId": "term_sweet_transfer"
+  },
+  {
+    "id": "sk_eggroll_1",
+    "trigger": 0,
+    "condType": 4,
+    "condScope": 4,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 9,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      0.2
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": true,
+    "descTemplate": "{cscope}每有 1 {unit}食物\n{ascope}倍率 {0}",
+    "termId": ""
+  },
+  {
+    "id": "sk_eggroll_2",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 12,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      3
+    ],
+    "actionParam": [],
+    "isPassive": true,
+    "signed": false,
+    "descTemplate": "{ascope}视为 {countas} 个食物",
+    "termId": ""
+  },
+  {
+    "id": "sk_choco_bar_1",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 9,
+    "actionScope": 12,
+    "actionCount": 0,
+    "actionValue": [
+      3
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": true,
+    "descTemplate": "{ascope}倍率 {0}",
+    "termId": ""
+  },
+  {
+    "id": "sk_choco_bar_2",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 5,
+    "actionScope": 15,
+    "actionCount": 2,
+    "actionValue": [
+      0
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "甜蜜传递至{ascope}食物",
+    "termId": "term_sweet_transfer"
+  },
+  {
+    "id": "sk_eclair_1",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 7,
+    "actionScope": 16,
+    "actionCount": 0,
+    "actionValue": [
+      5
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "消耗 {0} 层欢乐蛋糕",
+    "termId": "clb"
+  },
+  {
+    "id": "sk_eclair_2",
     "trigger": 0,
     "condType": 13,
     "condScope": 0,
@@ -1478,7 +722,803 @@
     "termId": ""
   },
   {
-    "id": "ss_extra_transfer_n1",
+    "id": "sk_tanghulu_1",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 9,
+    "actionScope": 14,
+    "actionCount": 0,
+    "actionValue": [
+      3
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": true,
+    "descTemplate": "{ascope}倍率 {0}",
+    "termId": ""
+  },
+  {
+    "id": "sk_tanghulu_2",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 5,
+    "actionScope": 2,
+    "actionCount": 3,
+    "actionValue": [
+      0
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "甜蜜传递至{ascope}食物",
+    "termId": "term_sweet_transfer"
+  },
+  {
+    "id": "sk_souffle_1",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 6,
+    "actionScope": 16,
+    "actionCount": 0,
+    "actionValue": [
+      1.5
+    ],
+    "actionParam": [
+      "multfloor:5"
+    ],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "欢乐蛋糕 ×{0} 层\n至少 +{floor} 层",
+    "termId": "clb"
+  },
+  {
+    "id": "sk_taosu_1",
+    "trigger": 0,
+    "condType": 4,
+    "condScope": 13,
+    "condUnit": 0,
+    "condMode": 1,
+    "condParam": "tiers:5|15|25",
+    "actionType": 2,
+    "actionScope": 13,
+    "actionCount": 0,
+    "actionValue": [
+      0
+    ],
+    "actionParam": [
+      "tiervals:1.5|2.5|5"
+    ],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "{cscope}食物达 {tiers} 个时\n{ascope}倍率 ×{tiervals}",
+    "termId": ""
+  },
+  {
+    "id": "sk_mooncake_1",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 13,
+    "actionScope": 11,
+    "actionCount": 0,
+    "actionValue": [
+      1
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "复制{ascope}食物的 {0} 个技能",
+    "termId": ""
+  },
+  {
+    "id": "sk_mooncake_2",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 12,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      4
+    ],
+    "actionParam": [],
+    "isPassive": true,
+    "signed": false,
+    "descTemplate": "{ascope}视为 {countas} 个食物",
+    "termId": ""
+  },
+  {
+    "id": "sk_waffle_1",
+    "trigger": 0,
+    "condType": 4,
+    "condScope": 14,
+    "condUnit": 1,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 2,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      0.4
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "{cscope}每有 1 {unit}食物\n{ascope}倍率 {0}",
+    "termId": ""
+  },
+  {
+    "id": "sk_waffle_2",
+    "trigger": 0,
+    "condType": 1,
+    "condScope": 13,
+    "condUnit": 0,
+    "condMode": 2,
+    "condParam": "",
+    "actionType": 12,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      9
+    ],
+    "actionParam": [],
+    "isPassive": true,
+    "signed": false,
+    "descTemplate": "{ascope}额外视为 {0} 个食物",
+    "termId": ""
+  },
+  {
+    "id": "sk_dorayaki_1",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 12,
+    "actionScope": 14,
+    "actionCount": 0,
+    "actionValue": [
+      2
+    ],
+    "actionParam": [],
+    "isPassive": true,
+    "signed": false,
+    "descTemplate": "{ascope}额外视为 {0} 个食物",
+    "termId": ""
+  },
+  {
+    "id": "sk_dorayaki_2",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 9,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      4
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": true,
+    "descTemplate": "{ascope}倍率 {0}",
+    "termId": ""
+  },
+  {
+    "id": "sk_cream_cake_1",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 10,
+    "actionScope": 12,
+    "actionCount": 0,
+    "actionValue": [
+      3
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": true,
+    "descTemplate": "{ascope}\n分数永久 {0}",
+    "termId": ""
+  },
+  {
+    "id": "sk_cream_cake_2",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 1,
+    "actionScope": 10,
+    "actionCount": 0,
+    "actionValue": [
+      10
+    ],
+    "actionParam": [
+      "cat:cake"
+    ],
+    "isPassive": false,
+    "signed": true,
+    "descTemplate": "将分数加到所有{cat}上\n（每个{cat} {0} 分）",
+    "termId": ""
+  },
+  {
+    "id": "sk_donut_1",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 6,
+    "actionScope": 16,
+    "actionCount": 0,
+    "actionValue": [
+      15
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": true,
+    "descTemplate": "欢乐蛋糕 {0} 层",
+    "termId": "clb"
+  },
+  {
+    "id": "sk_donut_2",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 9,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      3
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": true,
+    "descTemplate": "{ascope}倍率 {0}",
+    "termId": ""
+  },
+  {
+    "id": "sk_pengtang_1",
+    "trigger": 0,
+    "condType": 10,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 9,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      5
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": true,
+    "descTemplate": "{cscope}每有 1 个技能\n{ascope}倍率 {0}",
+    "termId": ""
+  },
+  {
+    "id": "sk_pengtang_2",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 5,
+    "actionScope": 3,
+    "actionCount": 0,
+    "actionValue": [
+      0
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "甜蜜传递至{ascope}食物",
+    "termId": "term_sweet_transfer"
+  },
+  {
+    "id": "sk_parfait_1",
+    "trigger": 0,
+    "condType": 4,
+    "condScope": 11,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 2,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      1.2
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "{cscope}每有 1 {unit}食物\n{ascope}倍率 ×{0}",
+    "termId": ""
+  },
+  {
+    "id": "sk_parfait_2",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 12,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      9
+    ],
+    "actionParam": [],
+    "isPassive": true,
+    "signed": false,
+    "descTemplate": "{ascope}视为 {countas} 个食物",
+    "termId": ""
+  },
+  {
+    "id": "sk_sundae_big_1",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 2,
+    "actionScope": 14,
+    "actionCount": 0,
+    "actionValue": [
+      2
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "{ascope}倍率 ×{0}",
+    "termId": ""
+  },
+  {
+    "id": "sk_sundae_big_2",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 12,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      4
+    ],
+    "actionParam": [],
+    "isPassive": true,
+    "signed": false,
+    "descTemplate": "{ascope}视为 {countas} 个食物",
+    "termId": ""
+  },
+  {
+    "id": "sk_swiss_roll_1",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 6,
+    "actionScope": 16,
+    "actionCount": 0,
+    "actionValue": [
+      20
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": true,
+    "descTemplate": "欢乐蛋糕 {0} 层",
+    "termId": "clb"
+  },
+  {
+    "id": "sk_swiss_roll_2",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 9,
+    "actionScope": 4,
+    "actionCount": 0,
+    "actionValue": [
+      0.5
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": true,
+    "descTemplate": "{ascope}倍率 {0}",
+    "termId": ""
+  },
+  {
+    "id": "sk_mango_sago_1",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 13,
+    "actionScope": 11,
+    "actionCount": 0,
+    "actionValue": [
+      2
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "复制{ascope}食物的 {0} 个技能",
+    "termId": ""
+  },
+  {
+    "id": "sk_mango_sago_2",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 12,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      7
+    ],
+    "actionParam": [],
+    "isPassive": true,
+    "signed": false,
+    "descTemplate": "{ascope}视为 {countas} 个食物",
+    "termId": ""
+  },
+  {
+    "id": "sk_chiffon_1",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 9,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      3
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": true,
+    "descTemplate": "{ascope}倍率 {0}",
+    "termId": ""
+  },
+  {
+    "id": "sk_chiffon_2",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 9,
+    "actionScope": 10,
+    "actionCount": 0,
+    "actionValue": [
+      5
+    ],
+    "actionParam": [
+      "cat:cake"
+    ],
+    "isPassive": false,
+    "signed": true,
+    "descTemplate": "将倍率 {0} 加到所有{cat}上",
+    "termId": ""
+  },
+  {
+    "id": "sk_apple_pie_1",
+    "trigger": 0,
+    "condType": 4,
+    "condScope": 13,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 9,
+    "actionScope": 12,
+    "actionCount": 0,
+    "actionValue": [
+      0.3
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": true,
+    "descTemplate": "{cscope}每有 1 {unit}食物\n{ascope}倍率 {0}",
+    "termId": ""
+  },
+  {
+    "id": "sk_fruit_cake_1",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 2,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      2
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "{ascope}倍率 ×{0}",
+    "termId": ""
+  },
+  {
+    "id": "sk_fruit_cake_2",
+    "trigger": 0,
+    "condType": 15,
+    "condScope": 4,
+    "condUnit": 0,
+    "condMode": 1,
+    "condParam": "cake;tiers:3|5|8",
+    "actionType": 6,
+    "actionScope": 16,
+    "actionCount": 0,
+    "actionValue": [
+      0
+    ],
+    "actionParam": [
+      "tiervals:10|20|40"
+    ],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "蛋糕数量达 {tiers} 时\n欢乐蛋糕 +{tiervals} 层",
+    "termId": "clb"
+  },
+  {
+    "id": "sk_chocolate_1",
+    "trigger": 0,
+    "condType": 16,
+    "condScope": 4,
+    "condUnit": 1,
+    "condMode": 1,
+    "condParam": "TransferSkills;tiers:3|5|8",
+    "actionType": 2,
+    "actionScope": 4,
+    "actionCount": 0,
+    "actionValue": [
+      0
+    ],
+    "actionParam": [
+      "tiervals:1.5|2.5|5;skilltype:TransferSkills"
+    ],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "带甜蜜传递的食物达 {tiers} 种时\n此类食物倍率 ×{tiervals}",
+    "termId": "term_sweet_transfer"
+  },
+  {
+    "id": "sk_croissant_1",
+    "trigger": 0,
+    "condType": 4,
+    "condScope": 11,
+    "condUnit": 1,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 6,
+    "actionScope": 16,
+    "actionCount": 0,
+    "actionValue": [
+      2
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": true,
+    "descTemplate": "{cscope}每有 1 {unit}食物\n欢乐蛋糕 {0} 层",
+    "termId": "clb"
+  },
+  {
+    "id": "sk_palmier_1",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 2,
+    "actionScope": 12,
+    "actionCount": 0,
+    "actionValue": [
+      2.5
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "{ascope}倍率 ×{0}",
+    "termId": ""
+  },
+  {
+    "id": "sk_palmier_2",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 12,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      3
+    ],
+    "actionParam": [],
+    "isPassive": true,
+    "signed": false,
+    "descTemplate": "{ascope}视为 {countas} 个食物",
+    "termId": ""
+  },
+  {
+    "id": "sk_candycane_1",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 2,
+    "actionScope": 14,
+    "actionCount": 0,
+    "actionValue": [
+      1.4
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "{ascope}倍率 ×{0}",
+    "termId": ""
+  },
+  {
+    "id": "sk_candycane_2",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 5,
+    "actionScope": 11,
+    "actionCount": 0,
+    "actionValue": [
+      0
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "甜蜜传递至{ascope}食物",
+    "termId": "term_sweet_transfer"
+  },
+  {
+    "id": "sk_big_lollipop_1",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 15,
+    "actionScope": 4,
+    "actionCount": 0,
+    "actionValue": [
+      0
+    ],
+    "actionParam": [
+      "axis:rowcol;skilltype:TransferSkills"
+    ],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "同行同列带甜蜜传递的食物\n各执行一次它们的甜蜜传递",
+    "termId": "term_sweet_transfer"
+  },
+  {
+    "id": "sk_marshmallow_1",
+    "trigger": 0,
+    "condType": 10,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 2,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      1.5
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "{cscope}每有 1 个技能\n{ascope}倍率 ×{0}",
+    "termId": ""
+  },
+  {
+    "id": "sk_marshmallow_2",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 5,
+    "actionScope": 2,
+    "actionCount": 0,
+    "actionValue": [
+      0
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "甜蜜传递至{ascope}食物",
+    "termId": "term_sweet_transfer"
+  },
+  {
+    "id": "sk_double_cake_1",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 13,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      3
+    ],
+    "actionParam": [
+      "cat:cake"
+    ],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "{ascope}获得 {0} 种不同的{cat}技能",
+    "termId": ""
+  },
+  {
+    "id": "sk_maple_sugar_1",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,

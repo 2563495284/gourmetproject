@@ -41,7 +41,7 @@ public sealed partial class SubSkill : Luban.BeanBase
     }
 
     /// <summary>
-    /// 子技能ID(主键)
+    /// 子技能ID（skillId_序号；每次关联独立一行，不复用）
     /// </summary>
     public readonly string Id;
     /// <summary>
