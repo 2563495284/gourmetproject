@@ -256,6 +256,51 @@ namespace GourmetProject.Game.UI.Tooltips
             {
                 placementAware.OnPlacedAroundTarget(bestIndex == 1 || best.x < targetRect.center.x);
             }
+
+            // Item tips can lay term cards outside the main tip rect. Their final side is only
+            // known after OnPlacedAroundTarget, so clamp the complete visible hierarchy now;
+            // otherwise the main card can be inside the Canvas while its term cards are clipped.
+            Canvas.ForceUpdateCanvases();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_tipRect);
+            ClampVisibleTipToBounds(parent, parentRect);
+        }
+
+        private void ClampVisibleTipToBounds(RectTransform parent, Rect bounds)
+        {
+            Rect visibleRect = VisualRect(parent, _tipRect);
+            float minX = bounds.xMin + _screenPadding;
+            float maxX = bounds.xMax - _screenPadding;
+            float minY = bounds.yMin + _screenPadding;
+            float maxY = bounds.yMax - _screenPadding;
+            Vector2 offset = Vector2.zero;
+
+            if (visibleRect.width > maxX - minX)
+            {
+                offset.x = bounds.center.x - visibleRect.center.x;
+            }
+            else if (visibleRect.xMax > maxX)
+            {
+                offset.x = maxX - visibleRect.xMax;
+            }
+            else if (visibleRect.xMin < minX)
+            {
+                offset.x = minX - visibleRect.xMin;
+            }
+
+            if (visibleRect.height > maxY - minY)
+            {
+                offset.y = bounds.center.y - visibleRect.center.y;
+            }
+            else if (visibleRect.yMax > maxY)
+            {
+                offset.y = maxY - visibleRect.yMax;
+            }
+            else if (visibleRect.yMin < minY)
+            {
+                offset.y = minY - visibleRect.yMin;
+            }
+
+            _tipRect.anchoredPosition += offset;
         }
 
         private Vector2 TipSize()

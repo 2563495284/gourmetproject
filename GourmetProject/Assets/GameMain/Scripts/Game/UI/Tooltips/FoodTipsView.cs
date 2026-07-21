@@ -149,10 +149,7 @@ namespace GourmetProject.Game.UI.Tooltips
 
             PlaceLeft(_materialsView.transform as RectTransform, targetRect, canvasRect.rect);
             PlaceAbove(_scoreView.transform as RectTransform, targetRect, canvasRect.rect);
-            PlaceRightTop(_summaryView.transform as RectTransform, targetRect, canvasRect.rect);
-            PlaceBelow(_flavorDetailsRoot, _summaryView.transform as RectTransform, canvasRect.rect);
-            PlaceAbove(_specialTagsRoot, _summaryView.transform as RectTransform, canvasRect.rect);
-            PlaceRight(_transferredSubSkillsRoot, _summaryView.transform as RectTransform, canvasRect.rect);
+            PlaceSummaryGroup(targetRect, canvasRect);
         }
 
         public void PlaceAroundRectTransform(RectTransform target, Canvas canvas)
@@ -180,10 +177,22 @@ namespace GourmetProject.Game.UI.Tooltips
 
             PlaceLeft(_materialsView.transform as RectTransform, targetRect, canvasRect.rect);
             PlaceAbove(_scoreView.transform as RectTransform, targetRect, canvasRect.rect);
-            PlaceRightTop(_summaryView.transform as RectTransform, targetRect, canvasRect.rect);
-            PlaceBelow(_flavorDetailsRoot, _summaryView.transform as RectTransform, canvasRect.rect);
-            PlaceAbove(_specialTagsRoot, _summaryView.transform as RectTransform, canvasRect.rect);
-            PlaceRight(_transferredSubSkillsRoot, _summaryView.transform as RectTransform, canvasRect.rect);
+            PlaceSummaryGroup(targetRect, canvasRect);
+        }
+
+        private void PlaceSummaryGroup(Rect targetRect, RectTransform canvasRect)
+        {
+            RectTransform summaryRect = _summaryView.transform as RectTransform;
+            PlaceRightTop(summaryRect, targetRect, canvasRect.rect);
+
+            // Detail lists belong to the summary card. Keep their intended relative positions
+            // first, then clamp the complete group so a long flavor list moves the whole column
+            // upward instead of being clamped into (and overlapping) the summary card.
+            PlaceBelow(_flavorDetailsRoot, summaryRect);
+            PlaceAbove(_specialTagsRoot, summaryRect);
+            PlaceRight(_transferredSubSkillsRoot, summaryRect);
+            Canvas.ForceUpdateCanvases();
+            ClampSummaryGroupToBounds(canvasRect, canvasRect.rect, summaryRect);
         }
 
         private void Awake()
@@ -328,7 +337,7 @@ namespace GourmetProject.Game.UI.Tooltips
             SetCenter(rect, Clamp(center, size, bounds));
         }
 
-        private void PlaceBelow(RectTransform rect, RectTransform anchor, Rect bounds)
+        private void PlaceBelow(RectTransform rect, RectTransform anchor)
         {
             if (rect == null || anchor == null || !rect.gameObject.activeSelf || !anchor.gameObject.activeSelf)
             {
@@ -339,10 +348,10 @@ namespace GourmetProject.Game.UI.Tooltips
             Vector2 anchorCenter = RectCenterInParent(anchor);
             Vector2 anchorSize = PreferredSize(anchor);
             Vector2 center = new Vector2(anchorCenter.x, anchorCenter.y - anchorSize.y * 0.5f - _detailGap - size.y * 0.5f);
-            SetCenter(rect, Clamp(center, size, bounds));
+            SetCenter(rect, center);
         }
 
-        private void PlaceAbove(RectTransform rect, RectTransform anchor, Rect bounds)
+        private void PlaceAbove(RectTransform rect, RectTransform anchor)
         {
             if (rect == null || anchor == null || !rect.gameObject.activeSelf || !anchor.gameObject.activeSelf)
             {
@@ -353,10 +362,10 @@ namespace GourmetProject.Game.UI.Tooltips
             Vector2 anchorCenter = RectCenterInParent(anchor);
             Vector2 anchorSize = PreferredSize(anchor);
             Vector2 center = new Vector2(anchorCenter.x, anchorCenter.y + anchorSize.y * 0.5f + _detailGap + size.y * 0.5f);
-            SetCenter(rect, Clamp(center, size, bounds));
+            SetCenter(rect, center);
         }
 
-        private void PlaceRight(RectTransform rect, RectTransform anchor, Rect bounds)
+        private void PlaceRight(RectTransform rect, RectTransform anchor)
         {
             if (rect == null || anchor == null || !rect.gameObject.activeSelf || !anchor.gameObject.activeSelf)
             {
@@ -367,7 +376,90 @@ namespace GourmetProject.Game.UI.Tooltips
             Vector2 anchorCenter = RectCenterInParent(anchor);
             Vector2 anchorSize = PreferredSize(anchor);
             Vector2 center = new Vector2(anchorCenter.x + anchorSize.x * 0.5f + _detailGap + size.x * 0.5f, anchorCenter.y);
-            SetCenter(rect, Clamp(center, size, bounds));
+            SetCenter(rect, center);
+        }
+
+        private void ClampSummaryGroupToBounds(RectTransform canvasRect, Rect bounds, RectTransform summaryRect)
+        {
+            RectTransform[] group =
+            {
+                summaryRect,
+                _flavorDetailsRoot,
+                _specialTagsRoot,
+                _transferredSubSkillsRoot,
+            };
+
+            bool hasVisibleRect = false;
+            Rect visibleRect = default;
+            for (int i = 0; i < group.Length; i++)
+            {
+                RectTransform rect = group[i];
+                if (rect == null || !rect.gameObject.activeSelf)
+                {
+                    continue;
+                }
+
+                Rect childRect = RectTransformToLocalRect(rect, canvasRect);
+                if (!hasVisibleRect)
+                {
+                    visibleRect = childRect;
+                    hasVisibleRect = true;
+                }
+                else
+                {
+                    visibleRect = Rect.MinMaxRect(
+                        Mathf.Min(visibleRect.xMin, childRect.xMin),
+                        Mathf.Min(visibleRect.yMin, childRect.yMin),
+                        Mathf.Max(visibleRect.xMax, childRect.xMax),
+                        Mathf.Max(visibleRect.yMax, childRect.yMax));
+                }
+            }
+
+            if (!hasVisibleRect)
+            {
+                return;
+            }
+
+            float minX = bounds.xMin + _screenPadding;
+            float maxX = bounds.xMax - _screenPadding;
+            float minY = bounds.yMin + _screenPadding;
+            float maxY = bounds.yMax - _screenPadding;
+            Vector2 offset = Vector2.zero;
+
+            if (visibleRect.width > maxX - minX)
+            {
+                offset.x = bounds.center.x - visibleRect.center.x;
+            }
+            else if (visibleRect.xMax > maxX)
+            {
+                offset.x = maxX - visibleRect.xMax;
+            }
+            else if (visibleRect.xMin < minX)
+            {
+                offset.x = minX - visibleRect.xMin;
+            }
+
+            if (visibleRect.height > maxY - minY)
+            {
+                offset.y = bounds.center.y - visibleRect.center.y;
+            }
+            else if (visibleRect.yMax > maxY)
+            {
+                offset.y = maxY - visibleRect.yMax;
+            }
+            else if (visibleRect.yMin < minY)
+            {
+                offset.y = minY - visibleRect.yMin;
+            }
+
+            for (int i = 0; i < group.Length; i++)
+            {
+                RectTransform rect = group[i];
+                if (rect != null && rect.gameObject.activeSelf)
+                {
+                    rect.anchoredPosition += offset;
+                }
+            }
         }
 
         private Vector2 PreferredSize(RectTransform rect)
