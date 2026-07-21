@@ -438,7 +438,7 @@
   },
   {
     "id": "sundae_big",
-    "name": "圣代",
+    "name": "大圣代",
     "deliciousness": 60,
     "allowRotate": false,
     "skills": "sk_sundae_big",
