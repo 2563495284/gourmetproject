@@ -206,7 +206,7 @@
   },
   {
     "id": "cupcake",
-    "name": "杯子蛋糕",
+    "name": "糖霜蛋糕",
     "deliciousness": 20,
     "allowRotate": false,
     "skills": "sk_cupcake",
@@ -317,6 +317,18 @@
     "countAs": 1,
     "shapeRows": [
       "XX",
+      "XX"
+    ]
+  },
+  {
+    "id": "maple_sugar",
+    "name": "枫糖",
+    "deliciousness": 40,
+    "allowRotate": false,
+    "skills": "sk_maple_sugar",
+    "category": "",
+    "countAs": 1,
+    "shapeRows": [
       "XX"
     ]
   },

@@ -364,6 +364,94 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(full.TransferredSubSkills.Select(e => e.Title).ToArray(), Is.EqualTo(new[] { "牛轧糖<甜蜜传递>", "牛轧糖<甜蜜传递>", "巧克力棒<甜蜜传递>" }));
         }
 
+        [Test]
+        public void TriggerSweetTransfer_MarksTarget_ExtraTransferRerollsWhenTargetSettles()
+        {
+            DishShape oneCell = DishShape.FromRows(new[] { "X" });
+
+            // 来源 S：自身 +5，甜蜜传递给同行 1 个食物。
+            SkillRuleDef sourceAdd = Rule("s_add", 0, SkillActionType.AddFlat, SkillScope.Self, 5f, "skill_source");
+            SkillRuleDef sourceTransfer = RuleWithActionCount(
+                "s_transfer", 1, SkillActionType.TransferSkills, SkillScope.Row, 0f, 1, "skill_source");
+            var sourceSkill = new SkillDef(
+                "skill_source",
+                "来源",
+                string.Empty,
+                Array.Empty<string>(),
+                new[] { sourceAdd, sourceTransfer },
+                new[] { "美味 +5", "甜蜜传递" });
+
+            // 枫糖：使 1 个带甜蜜传递的食物，在其结算甜蜜传递时额外再传 1 次（重掷目标）。
+            var mapleTrigger = new SkillRuleDef(
+                "m_trigger",
+                "skill_maple",
+                0,
+                SkillTrigger.OnSettle,
+                SkillConditionType.None,
+                SkillScope.Self,
+                CountUnit.Instances,
+                CountMode.Per,
+                string.Empty,
+                SkillActionType.TriggerSweetTransfer,
+                SkillScope.All,
+                1,
+                new[] { 1f },
+                new[] { "skilltype:TransferSkills" });
+            var mapleSkill = new SkillDef(
+                "skill_maple",
+                "枫糖",
+                string.Empty,
+                Array.Empty<string>(),
+                new[] { mapleTrigger },
+                new[] { "额外甜蜜传递" });
+
+            DishDef mapleDef = Dish("dish_maple", "枫糖", oneCell, "skill_maple");
+            DishDef sourceDef = Dish("dish_source", "S", oneCell, "skill_source");
+            DishDef targetADef = Dish("dish_a", "A", oneCell);
+            DishDef targetBDef = Dish("dish_b", "B", oneCell);
+            var db = new GameplayDatabase(
+                new[] { mapleDef, sourceDef, targetADef, targetBDef },
+                new[] { mapleSkill, sourceSkill },
+                Array.Empty<FlavorDef>(),
+                Array.Empty<MaterialDef>(),
+                Array.Empty<RecipeDef>());
+
+            // 枫糖先结算并挂标记，再轮到来源结算做甜蜜传递。
+            var table = new DiningTable(4, 1);
+            var maple = new DishInstance(1, mapleDef, MakePlacement(oneCell, 0, 0), mapleDef.SkillIds, Array.Empty<string>());
+            var source = new DishInstance(2, sourceDef, MakePlacement(oneCell, 1, 0), sourceDef.SkillIds, Array.Empty<string>());
+            var targetA = new DishInstance(3, targetADef, MakePlacement(oneCell, 2, 0), targetADef.SkillIds, Array.Empty<string>());
+            var targetB = new DishInstance(4, targetBDef, MakePlacement(oneCell, 3, 0), targetBDef.SkillIds, Array.Empty<string>());
+            table.Place(maple);
+            table.Place(source);
+            table.Place(targetA);
+            table.Place(targetB);
+
+            int transferRoll = 0;
+            ScoreResult result = new ScoreCalculator().Calculate(
+                table,
+                db,
+                transferTargetSelector: (candidates, count) =>
+                {
+                    // 仅来源有甜蜜传递时，枫糖挂载不必走 selector；两次传递分别重掷到 A / B。
+                    transferRoll++;
+                    int pick = transferRoll == 1 ? targetA.Id : targetB.Id;
+                    Assert.That(candidates, Does.Contain(pick));
+                    return new[] { pick };
+                });
+
+            Assert.That(transferRoll, Is.EqualTo(2));
+            Assert.That(result.SkillTransfers.Select(t => t.TargetInstanceId).ToArray(), Is.EqualTo(new[] { targetA.Id, targetB.Id }));
+            Assert.That(result.ScoreLines.Count(l =>
+                l.DishInstanceId == targetA.Id
+                && l.Kind == ScoreLineKind.DishFlat
+                && l.Source.Name == "S<甜蜜传递>"), Is.EqualTo(1));
+            Assert.That(result.ScoreLines.Count(l =>
+                l.DishInstanceId == targetB.Id
+                && l.Kind == ScoreLineKind.DishFlat
+                && l.Source.Name == "S<甜蜜传递>"), Is.EqualTo(1));
+        }
+
         private static SkillRuleDef Rule(
             string id,
             int order,

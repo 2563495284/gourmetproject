@@ -1354,5 +1354,147 @@
     "signed": false,
     "descTemplate": "{ascope}获得 {0} 种不同的{cat}技能",
     "termId": ""
+  },
+  {
+    "id": "ss_multflat_per_dish_round_v0p2",
+    "trigger": 0,
+    "condType": 4,
+    "condScope": 11,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 9,
+    "actionScope": 0,
+    "actionCount": 0,
+    "actionValue": [
+      0.2
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": true,
+    "descTemplate": "{cscope}每有 1 {unit}食物\n{ascope}倍率 {0}",
+    "termId": ""
+  },
+  {
+    "id": "ss_transfer_round_n1",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 5,
+    "actionScope": 11,
+    "actionCount": 1,
+    "actionValue": [
+      0
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "甜蜜传递至{ascope}食物",
+    "termId": "term_sweet_transfer"
+  },
+  {
+    "id": "ss_flat_row_self_v10",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 1,
+    "actionScope": 13,
+    "actionCount": 0,
+    "actionValue": [
+      10
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": true,
+    "descTemplate": "{ascope}食物\n分数 {0}",
+    "termId": ""
+  },
+  {
+    "id": "ss_transfer_col_n1",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 5,
+    "actionScope": 3,
+    "actionCount": 1,
+    "actionValue": [
+      0
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "甜蜜传递至{ascope}食物",
+    "termId": "term_sweet_transfer"
+  },
+  {
+    "id": "ss_mult_category_cat_v1p2",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 2,
+    "actionScope": 10,
+    "actionCount": 0,
+    "actionValue": [
+      1.2
+    ],
+    "actionParam": [
+      "cat:cake"
+    ],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "所有{cat}倍率 ×{0}",
+    "termId": ""
+  },
+  {
+    "id": "ss_multflat_per_layer_cap5_row_v0p8",
+    "trigger": 0,
+    "condType": 13,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 9,
+    "actionScope": 13,
+    "actionCount": 0,
+    "actionValue": [
+      0.8
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": true,
+    "descTemplate": "每消耗一层\n{ascope}倍率 {0}",
+    "termId": ""
+  },
+  {
+    "id": "ss_trigger_transfer_n1",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 15,
+    "actionScope": 4,
+    "actionCount": 1,
+    "actionValue": [
+      0
+    ],
+    "actionParam": [],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "使 1 个带甜蜜传递的食物\n额外结算 1 次甜蜜传递",
+    "termId": "term_sweet_transfer"
   }
 ]

@@ -264,20 +264,14 @@ namespace GourmetProject.Gameplay.Scoring
 
                 case SkillActionType.TransferSkills:
                 {
-                    IReadOnlyList<SkillEffect> effects = EffectsToTransfer(ctx.Db, _rule);
-                    if (effects.Count > 0)
+                    // 本轮甜蜜传递；若挂有「传递一次额外甜蜜传递」，同技能再传若干次，每次重新随机目标。
+                    ExecuteOneSweetTransfer(ctx);
+                    int extra = ctx.GetExtraSweetTransfers(_self);
+                    for (int i = 0; i < extra; i++)
                     {
-                        foreach (DishInstance t in TransferTargets(ctx))
-                        {
-                            if (t.Id == _self.Id)
-                            {
-                                continue;
-                            }
-
-                            ctx.RecordSkillTransfer(t, effects, _self.Def.Name, _self.Id);
-                            ResolveTransferredEffects(ctx, t, effects);
-                        }
+                        ExecuteOneSweetTransfer(ctx);
                     }
+
                     break;
                 }
 
@@ -288,6 +282,23 @@ namespace GourmetProject.Gameplay.Scoring
                     {
                         int n = Math.Max(1, (int)Math.Round(value, MidpointRounding.AwayFromZero));
                         ctx.RecordCopySkill(_self, candidates, n, _self.Def.Name);
+                    }
+
+                    break;
+                }
+
+                case SkillActionType.TriggerSweetTransfer:
+                {
+                    // 给「带甜蜜传递」的目标挂持续 buff：其每次甜蜜传递都额外再传 actionValue 次（默认 1），重掷目标；buff 不消耗。
+                    int extraTimes = value >= 1f ? (int)Math.Round(value * count, MidpointRounding.AwayFromZero) : count;
+                    if (extraTimes <= 0)
+                    {
+                        extraTimes = 1;
+                    }
+
+                    foreach (DishInstance target in TriggerSweetTransferSources(ctx))
+                    {
+                        ctx.AddExtraSweetTransfer(target, extraTimes);
                     }
 
                     break;
@@ -319,6 +330,27 @@ namespace GourmetProject.Gameplay.Scoring
         private bool IsTiered() => IsTiered(_rule);
 
         private float TierValue(int tier) => TierValue(_rule, tier);
+
+        /// <summary>执行一轮甜蜜传递：每次调用都会重新解析/随机目标。</summary>
+        private void ExecuteOneSweetTransfer(ScoreContext ctx)
+        {
+            IReadOnlyList<SkillEffect> effects = EffectsToTransfer(ctx.Db, _rule);
+            if (effects.Count == 0)
+            {
+                return;
+            }
+
+            foreach (DishInstance t in TransferTargets(ctx))
+            {
+                if (t.Id == _self.Id)
+                {
+                    continue;
+                }
+
+                ctx.RecordSkillTransfer(t, effects, _self.Def.Name, _self.Id);
+                ResolveTransferredEffects(ctx, t, effects);
+            }
+        }
 
         private IReadOnlyList<DishInstance> TransferTargets(ScoreContext ctx)
         {
@@ -408,6 +440,99 @@ namespace GourmetProject.Gameplay.Scoring
                         SkillScopeVisualMode.ResolvedTargets));
                 ctx.SubmitCommand(new ResolveScoreEffectCommand(entry));
             }
+        }
+
+        /// <summary>
+        /// 额外甜蜜传递挂载目标：作用域内「带甜蜜传递」的其它食物。
+        /// <c>actionParam=axis:rowcol</c> 时取同行+同列；
+        /// <c>actionCount&gt;0</c> 时从候选中取 N 个（有 TransferTargetSelector 则走随机，否则棋盘序）。
+        /// </summary>
+        private IReadOnlyList<DishInstance> TriggerSweetTransferSources(ScoreContext ctx)
+        {
+            var qualified = new List<DishInstance>();
+            var seen = new HashSet<int>();
+
+            void TryAdd(DishInstance dish)
+            {
+                if (dish == null || dish.Id == _self.Id || !seen.Add(dish.Id))
+                {
+                    return;
+                }
+
+                if (HasSkillOfType(ctx.Db, dish, SkillActionType.TransferSkills))
+                {
+                    qualified.Add(dish);
+                }
+            }
+
+            if (HasActionParam(_rule, "axis:rowcol"))
+            {
+                foreach (DishInstance dish in SkillConditionEvaluator.ScopeDishes(ctx.DiningTable, _self, SkillScope.Row, includeSelf: false))
+                {
+                    TryAdd(dish);
+                }
+
+                foreach (DishInstance dish in SkillConditionEvaluator.ScopeDishes(ctx.DiningTable, _self, SkillScope.Column, includeSelf: false))
+                {
+                    TryAdd(dish);
+                }
+            }
+            else
+            {
+                foreach (DishInstance dish in SkillConditionEvaluator.ScopeDishes(ctx.DiningTable, _self, _rule.ActionScope, includeSelf: false))
+                {
+                    TryAdd(dish);
+                }
+            }
+
+            if (_rule.ActionCount <= 0 || qualified.Count <= _rule.ActionCount)
+            {
+                return qualified;
+            }
+
+            var candidateIds = qualified
+                .OrderBy(d => d.Placement.Origin.Y)
+                .ThenBy(d => d.Placement.Origin.X)
+                .ThenBy(d => d.Id)
+                .Select(d => d.Id)
+                .ToList();
+            int count = _rule.ActionCount;
+            IReadOnlyList<int> selectedIds = ctx.Snapshot.TransferTargetSelector != null
+                ? ctx.Snapshot.TransferTargetSelector(candidateIds, count)
+                : candidateIds.Take(count).ToArray();
+
+            var selected = new List<DishInstance>();
+            if (selectedIds != null)
+            {
+                foreach (int id in selectedIds)
+                {
+                    DishInstance dish = qualified.FirstOrDefault(d => d.Id == id);
+                    if (dish != null && !selected.Any(d => d.Id == dish.Id))
+                    {
+                        selected.Add(dish);
+                    }
+
+                    if (selected.Count >= count)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            return selected;
+        }
+
+        private static bool HasActionParam(SkillRuleDef rule, string token)
+        {
+            foreach (string param in rule.ActionParams)
+            {
+                if (param != null && param.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>规则是否为阶梯：condParam 含 tiers:…（阈值）且 actionParam 含 tiervals:…（各档值）。</summary>

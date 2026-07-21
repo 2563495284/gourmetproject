@@ -41,7 +41,7 @@
   },
   {
     "id": "sk_sugarbean",
-    "subSkills": "ss_extra_settle_v1|ss_transfer_all_n1"
+    "subSkills": "ss_multflat_per_dish_round_v0p2|ss_transfer_round_n1"
   },
   {
     "id": "sk_gold_choco",
@@ -65,15 +65,15 @@
   },
   {
     "id": "sk_gummy",
-    "subSkills": "ss_mult_per_dish_adj_v1p2|ss_transfer_adj_n2"
+    "subSkills": "ss_flat_row_self_v10|ss_transfer_col_n1"
   },
   {
     "id": "sk_cupcake",
-    "subSkills": "ss_copy_skill_adj_v1|ss_layer_per_tag_v6"
+    "subSkills": "ss_layer_per_tag_v6|ss_transfer_row_n1"
   },
   {
     "id": "sk_mousse",
-    "subSkills": "ss_mult_v1p5|ss_extra_settle_v1"
+    "subSkills": "ss_mult_category_cat_v1p2|ss_layer_add_v5"
   },
   {
     "id": "sk_toffee",
@@ -93,7 +93,7 @@
   },
   {
     "id": "sk_eclair",
-    "subSkills": "ss_consume_layer_v10|ss_multflat_v5"
+    "subSkills": "ss_consume_layer_v10|ss_multflat_per_layer_cap5_row_v0p8"
   },
   {
     "id": "sk_tanghulu",
@@ -186,5 +186,9 @@
   {
     "id": "sk_double_cake",
     "subSkills": "ss_copy_cat_skill_v3"
+  },
+  {
+    "id": "sk_maple_sugar",
+    "subSkills": "ss_trigger_transfer_n1"
   }
 ]
