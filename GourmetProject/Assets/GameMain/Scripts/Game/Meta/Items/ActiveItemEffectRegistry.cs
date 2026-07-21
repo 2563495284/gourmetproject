@@ -125,8 +125,8 @@ namespace GourmetProject.Game.Meta
 
                 case ItemEffectTypes.ResetBossDebuff:
                     return ctx.ResetWeekBoss()
-                        ? new ActiveItemUseResult(true, false, $"{item.Name}：已重置本周 Boss。")
-                        : new ActiveItemUseResult(false, false, $"{item.Name}：现在无法重置本周 Boss。");
+                        ? new ActiveItemUseResult(true, false, $"{item.Name}：已重新随机本周 Boss。")
+                        : new ActiveItemUseResult(false, false, $"{item.Name}：现在无法重新随机本周 Boss。");
 
                 case ItemEffectTypes.TimelineExecuteNext:
                     return ctx.ExecuteNextTimelineNode()

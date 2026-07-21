@@ -603,18 +603,10 @@ namespace GourmetProject.Gameplay.Scoring
                     }
                     foreach (GridPos c in self.OccupiedCells)
                     {
-                        for (int dx = -1; dx <= 1; dx++)
-                        {
-                            for (int dy = -1; dy <= 1; dy++)
-                            {
-                                if (dx == 0 && dy == 0)
-                                {
-                                    continue;
-                                }
-
-                                TryNeighbor(board, selfCells, cells, seen, c.Offset(dx, dy));
-                            }
-                        }
+                        TryNeighbor(board, selfCells, cells, seen, c.Offset(1, 0));
+                        TryNeighbor(board, selfCells, cells, seen, c.Offset(-1, 0));
+                        TryNeighbor(board, selfCells, cells, seen, c.Offset(0, 1));
+                        TryNeighbor(board, selfCells, cells, seen, c.Offset(0, -1));
                     }
                     break;
                 }

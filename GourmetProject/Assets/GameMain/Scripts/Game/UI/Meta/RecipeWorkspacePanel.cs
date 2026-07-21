@@ -107,7 +107,7 @@ namespace GourmetProject.Game.UI.Meta
             GameRun run,
             ItemDefinition item,
             Action onCancel,
-            Action<ActiveTarget> onTargetConfirmed,
+            Action<ActiveTarget, Action> onTargetConfirmed,
             Action onChanged,
             Func<FoodTipsView> getFoodTips = null)
         {
@@ -150,7 +150,7 @@ namespace GourmetProject.Game.UI.Meta
                     _stateMachine.Switch(new EventRecipeDishDeleteState(
                         request.Title,
                         request.OnCancel,
-                        request.OnTargetConfirmed));
+                        target => request.OnTargetConfirmed?.Invoke(target, null)));
                     break;
                 default:
                     _stateMachine.Switch(new RecipeEditState());
@@ -190,6 +190,27 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             return false;
+        }
+
+        public bool PlayActiveItemRecipeFlavorApplied(ActiveTarget target, Action onComplete)
+        {
+            if (target.TargetKind != cfg.ItemTargetKind.RecipeDish || _run == null)
+            {
+                return false;
+            }
+
+            RecipeEditDishView dish = FindDish(target.X, target.Y);
+            RecipeBookSlot slot = RecipeSlot(target);
+            DishDef def = slot == null ? null : _run.Database.GetDish(slot.DishId);
+            if (dish == null || def == null)
+            {
+                return false;
+            }
+
+            HideRecipeDishTips(dish);
+            List<string> flavorIds = ComposeFlavorIds(def, slot.ExtraFlavorIds);
+            dish.PlayFlavorTransform(def, flavorIds, onComplete);
+            return true;
         }
 
         private void EnsureWired()
@@ -493,6 +514,20 @@ namespace GourmetProject.Game.UI.Meta
         private RecipeEditBookView FindBook(int bookIndex)
         {
             return bookIndex >= 0 && bookIndex < _spawnedBooks.Count ? _spawnedBooks[bookIndex] : null;
+        }
+
+        private RecipeEditDishView FindDish(int bookIndex, int dishIndex)
+        {
+            for (int i = 0; i < _spawnedDishes.Count; i++)
+            {
+                RecipeEditDishView dish = _spawnedDishes[i];
+                if (dish != null && dish.BookIndex == bookIndex && dish.DishIndex == dishIndex)
+                {
+                    return dish;
+                }
+            }
+
+            return null;
         }
 
         private void PlayDishFlyToSlot(RecipeEditDishView dish, RecipeEditBookView targetBook, int targetDishIndex, Action onComplete)

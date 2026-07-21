@@ -61,7 +61,7 @@ namespace cfg
         /// </summary>
         Category = 10,
         /// <summary>
-        /// 周围菜(共边相邻+对角相邻)
+        /// 周围菜(仅共边相邻)
         /// </summary>
         Round = 11,
         /// <summary>

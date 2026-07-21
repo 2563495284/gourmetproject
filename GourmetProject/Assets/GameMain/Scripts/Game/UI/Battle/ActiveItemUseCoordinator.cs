@@ -256,18 +256,58 @@ namespace GourmetProject.Game.UI.Battle
             });
         }
 
-        private void CompleteRecipePanelTargeting(ActiveTarget target)
+        private void CompleteRecipePanelTargeting(ActiveTarget target, Action onComplete)
         {
             if (_pendingContext == null || _pendingItem == null)
             {
                 CancelTargeting(showMessage: false);
+                onComplete?.Invoke();
                 return;
             }
 
             IActiveUseContext ctx = _pendingContext;
             ItemDefinition item = _pendingItem;
+            if (ShouldPlayRecipeFlavorApply(item, target))
+            {
+                CompleteRecipeFlavorTargeting(ctx, item, target, onComplete);
+                return;
+            }
+
             CleanupTargeting();
             ApplyAndConsume(ctx, item, new[] { target });
+            onComplete?.Invoke();
+        }
+
+        private void CompleteRecipeFlavorTargeting(
+            IActiveUseContext ctx,
+            ItemDefinition item,
+            ActiveTarget target,
+            Action onComplete)
+        {
+            ActiveItemUseResult result = ActiveItemEffectRegistry.Apply(ctx, item, new[] { target });
+            _host.ShowActiveItemMessage(result.Message);
+            if (!result.Success)
+            {
+                CleanupTargeting();
+                _host.RefreshAfterActiveItem(boardChanged: false, persist: false);
+                onComplete?.Invoke();
+                return;
+            }
+
+            _host.ActiveRun?.UseActiveItem(item.Id);
+            CleanupTargeting();
+
+            bool animationStarted = _host.PlayActiveItemRecipeFlavorApplied(target, FinishRecipeFlavorTargeting);
+            if (!animationStarted)
+            {
+                FinishRecipeFlavorTargeting();
+            }
+
+            void FinishRecipeFlavorTargeting()
+            {
+                _host.RefreshAfterActiveItem(result.BoardChanged, persist: false, result.ActionChoicesChanged);
+                onComplete?.Invoke();
+            }
         }
 
         private void UpdateRecipePanelTargeting()
@@ -731,6 +771,12 @@ namespace GourmetProject.Game.UI.Battle
                 && targets != null
                 && targets.Count > 0
                 && targets[0].TargetKind == cfg.ItemTargetKind.DiningTableCell;
+        }
+
+        private static bool ShouldPlayRecipeFlavorApply(ItemDefinition item, ActiveTarget target)
+        {
+            return ShouldUseRecipePanelTargeting(item)
+                && target.TargetKind == cfg.ItemTargetKind.RecipeDish;
         }
 
         private static bool ContainsTarget(IReadOnlyList<ActiveTarget> targets, ActiveTarget candidate)

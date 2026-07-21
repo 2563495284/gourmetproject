@@ -511,7 +511,7 @@
     "desc": "所有食物分数永久+20",
     "quality": 1,
     "specialTags": 0,
-    "effectValue": 20,
+    "effectValue": 10,
     "effectParam": "",
     "baseWeight": 100,
     "hiddenRange": {

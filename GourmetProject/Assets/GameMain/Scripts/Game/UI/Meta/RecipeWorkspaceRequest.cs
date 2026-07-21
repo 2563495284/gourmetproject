@@ -19,7 +19,7 @@ namespace GourmetProject.Game.UI.Meta
             RecipeWorkspaceMode mode,
             Action onExit,
             Action onCancel,
-            Action<ActiveTarget> onTargetConfirmed,
+            Action<ActiveTarget, Action> onTargetConfirmed,
             Action onChanged,
             ItemDefinition item,
             string title,
@@ -43,7 +43,7 @@ namespace GourmetProject.Game.UI.Meta
 
         public Action OnCancel { get; }
 
-        public Action<ActiveTarget> OnTargetConfirmed { get; }
+        public Action<ActiveTarget, Action> OnTargetConfirmed { get; }
 
         public Action OnChanged { get; }
 
@@ -90,7 +90,7 @@ namespace GourmetProject.Game.UI.Meta
         public static RecipeWorkspaceRequest ActiveItemTarget(
             ItemDefinition item,
             Action onCancel,
-            Action<ActiveTarget> onTargetConfirmed,
+            Action<ActiveTarget, Action> onTargetConfirmed,
             Action onChanged)
         {
             return new RecipeWorkspaceRequest(
@@ -115,7 +115,7 @@ namespace GourmetProject.Game.UI.Meta
                 RecipeWorkspaceMode.EventDeleteDish,
                 null,
                 onCancel,
-                onTargetConfirmed,
+                onTargetConfirmed != null ? (target, _) => onTargetConfirmed(target) : null,
                 onChanged,
                 null,
                 title,

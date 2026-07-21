@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 8946939877809501476}
   - component: {fileID: 4227929924693593611}
   - component: {fileID: 239492086359488531}
+  - component: {fileID: 1826708861196345754}
   m_Layer: 0
   m_Name: RecipeEditBookView
   m_TagString: Untagged
@@ -57,7 +58,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -99,6 +100,20 @@ MonoBehaviour:
     m_Top: 0
     m_Bottom: 0
   _scrollRect: {fileID: 0}
+--- !u!114 &1826708861196345754
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3026309972228553401}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3312d7739989d2b4e91e6319e9a96d76, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RectMask2D
+  m_Padding: {x: 0, y: 0, z: 0, w: 0}
+  m_Softness: {x: 0, y: 0}
 --- !u!1 &5572654048109249570
 GameObject:
   m_ObjectHideFlags: 0

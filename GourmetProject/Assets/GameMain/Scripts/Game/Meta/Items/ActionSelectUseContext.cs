@@ -122,7 +122,7 @@ namespace GourmetProject.Game.Meta
                 return false;
             }
 
-            Run.ResetBossDebuffRollHistory();
+            Run.RerollBossDebuffForCurrentWeek();
             return true;
         }
 

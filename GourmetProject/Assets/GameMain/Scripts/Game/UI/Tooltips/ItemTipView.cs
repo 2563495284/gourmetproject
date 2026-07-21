@@ -16,9 +16,9 @@ namespace GourmetProject.Game.UI.Tooltips
     public sealed class ItemTipView : ActionTipView, ITooltipPlacementAware
     {
         private const float SpecialTagsGap = 18f;
-        private const float MinWidth = 260f;
         private const float MaxWidth = 480f;
         private const float DescHorizontalPadding = 76f;
+        private const string MinWidthSampleText = "十十十十十十十十十十";
 
         [SerializeField] private RectTransform _specialTagsRoot;
         [SerializeField] private FoodTipCardView _infoCardPrefab;
@@ -126,14 +126,23 @@ namespace GourmetProject.Game.UI.Tooltips
             float preferredWidth = Mathf.Max(
                 DescText.preferredWidth,
                 TitleText != null ? TitleText.preferredWidth : 0f);
-            if (preferredWidth <= 0f)
-            {
-                return;
-            }
+            preferredWidth = Mathf.Max(preferredWidth, PreferredWidthFor(DescText, MinWidthSampleText));
 
-            float width = Mathf.Clamp(preferredWidth + DescHorizontalPadding, MinWidth, MaxWidth);
+            float width = Mathf.Min(preferredWidth + DescHorizontalPadding, MaxWidth);
             rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
             LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
+        }
+
+        private static float PreferredWidthFor(Text text, string value)
+        {
+            if (text == null)
+            {
+                return 0f;
+            }
+
+            TextGenerationSettings settings = text.GetGenerationSettings(Vector2.zero);
+            return text.cachedTextGeneratorForLayout.GetPreferredWidth(value ?? string.Empty, settings)
+                / Mathf.Max(1f, text.pixelsPerUnit);
         }
     }
 }

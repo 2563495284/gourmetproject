@@ -117,8 +117,9 @@ namespace GourmetProject.Game.Orchestration
 
             _view.HideBattleWorld();
 
-            // 新周或上一周已走完 → 随机一条新行动轴；中途读档则沿用存档里的行动轴。
-            if (string.IsNullOrEmpty(_run.CurrentTimelineId) || _run.CurrentDay >= _run.TimelineLengthDays)
+            // 无行动轴，或换周后仍拿着上一周行动轴 → 随机一条新行动轴。
+            // 同周即使 CurrentDay 已到末尾，也先交给 PromptNextAction 恢复尚未点击的行动轴节点卡。
+            if (string.IsNullOrEmpty(_run.CurrentTimelineId) || _run.CurrentTimelineWeekIndex != _run.WeekIndex)
             {
                 _run.RequiredScoreOverride = -1;
                 IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Map, $"w{_run.WeekIndex}");

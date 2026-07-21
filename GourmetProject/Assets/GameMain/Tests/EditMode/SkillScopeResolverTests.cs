@@ -50,9 +50,9 @@ namespace GourmetProject.Tests.EditMode
 
             Assert.That(visual.ConditionCells, Has.Count.EqualTo(5));
             Assert.That(visual.ConditionCells.All(c => c.Y == 1), Is.True);
-            Assert.That(visual.VisualTargetCells, Has.Count.EqualTo(9));
-            Assert.That(visual.VisualTargetCells, Does.Contain(new GridPos(1, 0)));
-            Assert.That(visual.VisualTargetCells, Does.Contain(new GridPos(3, 2)));
+            Assert.That(visual.VisualTargetCells, Has.Count.EqualTo(5));
+            Assert.That(visual.VisualTargetCells, Does.Contain(new GridPos(1, 1)));
+            Assert.That(visual.VisualTargetCells, Has.No.Member(new GridPos(3, 2)));
             Assert.That(visual.VisualTargetDishInstanceIds, Is.EquivalentTo(new[] { 1, 2 }));
         }
 

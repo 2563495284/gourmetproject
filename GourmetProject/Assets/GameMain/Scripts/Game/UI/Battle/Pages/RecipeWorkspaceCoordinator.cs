@@ -45,7 +45,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
         private ItemDefinition _activeItemTargetItem;
         private GameplayView _activeItemReturnView = GameplayView.None;
         private Action _activeItemTargetCancel;
-        private Action<ActiveTarget> _activeItemTargetConfirmed;
+        private Action<ActiveTarget, Action> _activeItemTargetConfirmed;
         private string _eventDeleteTitle;
         private Action _eventDeleteCancel;
         private Action<ActiveTarget> _eventDeleteConfirmed;
@@ -169,7 +169,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
         public void OpenActiveItemTarget(
             ItemDefinition item,
             Action onCancel,
-            Action<ActiveTarget> onTargetConfirmed,
+            Action<ActiveTarget, Action> onTargetConfirmed,
             Action onOpened = null)
         {
             if (item == null)
@@ -209,18 +209,38 @@ namespace GourmetProject.Game.UI.Battle.Pages
             RestoreActiveItemReturnView(returnView);
         }
 
-        public void ConfirmActiveItemTarget(ActiveTarget target)
+        public void ConfirmActiveItemTarget(ActiveTarget target, Action onDone = null)
         {
             if (_activeItemTargetItem == null)
             {
+                onDone?.Invoke();
                 return;
             }
 
             GameplayView returnView = _activeItemReturnView;
-            Action<ActiveTarget> onConfirmed = _activeItemTargetConfirmed;
+            Action<ActiveTarget, Action> onConfirmed = _activeItemTargetConfirmed;
             ClearActiveItemTargetRequest();
-            onConfirmed?.Invoke(target);
-            RestoreActiveItemReturnView(returnView);
+            if (onConfirmed == null)
+            {
+                RestoreActiveItemReturnView(returnView);
+                onDone?.Invoke();
+                return;
+            }
+
+            bool completed = false;
+            onConfirmed.Invoke(target, Finish);
+
+            void Finish()
+            {
+                if (completed)
+                {
+                    return;
+                }
+
+                completed = true;
+                RestoreActiveItemReturnView(returnView);
+                onDone?.Invoke();
+            }
         }
 
         public void OpenEventDelete(
@@ -241,6 +261,13 @@ namespace GourmetProject.Game.UI.Battle.Pages
         public void RefreshPanel()
         {
             _host.RecipeWorkspacePanel?.Refresh();
+        }
+
+        public bool PlayActiveItemRecipeFlavorApplied(ActiveTarget target, Action onComplete)
+        {
+            return _host.CurrentView == GameplayView.RecipeWorkspace
+                && _host.RecipeWorkspacePanel != null
+                && _host.RecipeWorkspacePanel.PlayActiveItemRecipeFlavorApplied(target, onComplete);
         }
 
         private void CloseInspect()

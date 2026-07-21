@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using DG.Tweening;
 using GourmetProject.Core.Utility;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Gameplay.Model;
@@ -26,10 +28,20 @@ namespace GourmetProject.Game.UI.Widgets
         [SerializeField, Range(0.001f, 0.5f)] private float _stainSoftness = 0.12f;
         [SerializeField, Range(0f, 1f)] private float _stainDarken = 0.12f;
 
+        private static readonly int BrightnessId = Shader.PropertyToID("_Brightness");
+        private static readonly int BoingId = Shader.PropertyToID("_Boing");
+        private static readonly int EdgeClampPointId = Shader.PropertyToID("_EdgeClampPoint");
+        private const float TransformInDuration = 0.14f;
+        private const float TransformOutDuration = 0.2f;
+        private const float TransformHoldDuration = 0.5f;
+        private static readonly Color TransformFlashColor = new(1.85f, 1.85f, 1.85f, 1f);
+
         private readonly List<GameObject> _spawnedCells = new();
         private readonly List<string> _flavorScratch = new();
         private readonly DishSpriteProvider _spriteProvider = new();
         private Material _stainMaterial;
+        private Material _transformMaterial;
+        private Sequence _transformSequence;
 
         public void Bind(DishDef def, Sprite spriteOverride = null, IReadOnlyList<string> flavorIds = null)
         {
@@ -58,6 +70,7 @@ namespace GourmetProject.Game.UI.Widgets
         public void Hide()
         {
             EnsureRefs();
+            KillTransformSequence();
             ClearCells();
 
             if (_contentRoot != null)
@@ -69,6 +82,54 @@ namespace GourmetProject.Game.UI.Widgets
             {
                 _dishImage.material = null;
             }
+        }
+
+        public void PlayTransformTo(DishDef def, IReadOnlyList<string> flavorIds, Action onComplete)
+        {
+            EnsureRefs();
+            KillTransformSequence();
+            if (_dishImage == null)
+            {
+                Bind(def, flavorIds: flavorIds);
+                onComplete?.Invoke();
+                return;
+            }
+
+            if (SpriteRenderStyle.SpriteTransformMaterial == null)
+            {
+                _transformSequence = DOTween.Sequence()
+                    .Append(_dishImage.rectTransform.DOPunchScale(Vector3.one * 0.08f, 0.24f, vibrato: 6, elasticity: 0.6f))
+                    .InsertCallback(0.12f, () => Bind(def, flavorIds: flavorIds))
+                    .AppendInterval(TransformHoldDuration)
+                    .SetUpdate(true)
+                    .SetLink(gameObject)
+                    .OnComplete(() =>
+                    {
+                        _transformSequence = null;
+                        onComplete?.Invoke();
+                    });
+                return;
+            }
+
+            EnsureTransformMaterial();
+            _dishImage.material = _transformMaterial;
+            ApplyTransformEffect(0f);
+            _transformSequence = DOTween.Sequence()
+                .Append(DOTween.To(() => 0f, ApplyTransformEffect, 1f, TransformInDuration).SetEase(Ease.OutQuad))
+                .AppendCallback(() =>
+                {
+                    Bind(def, flavorIds: flavorIds);
+                    _dishImage.color = TransformFlashColor;
+                })
+                .Append(DOTween.To(() => _dishImage.color, value => _dishImage.color = value, Color.white, TransformOutDuration).SetEase(Ease.InOutQuad))
+                .AppendInterval(TransformHoldDuration)
+                .SetUpdate(true)
+                .SetLink(gameObject)
+                .OnComplete(() =>
+                {
+                    _transformSequence = null;
+                    onComplete?.Invoke();
+                });
         }
 
         private void BuildBoardGrid(DishShape shape, int dim, float offX, float offY)
@@ -178,7 +239,46 @@ namespace GourmetProject.Game.UI.Widgets
 
         private void OnDestroy()
         {
+            KillTransformSequence();
             FlavorStainPalette.ReleaseMaterial(ref _stainMaterial);
+            FlavorStainPalette.ReleaseMaterial(ref _transformMaterial);
+        }
+
+        private void EnsureTransformMaterial()
+        {
+            if (_transformMaterial != null || SpriteRenderStyle.SpriteTransformMaterial == null)
+            {
+                return;
+            }
+
+            _transformMaterial = new Material(SpriteRenderStyle.SpriteTransformMaterial)
+            {
+                name = "RuntimeUISpriteTransform",
+            };
+        }
+
+        private void ApplyTransformEffect(float amount)
+        {
+            if (_transformMaterial == null)
+            {
+                return;
+            }
+
+            float t = Mathf.Clamp01(amount);
+            _transformMaterial.SetFloat(BrightnessId, t);
+            _transformMaterial.SetVector(BoingId, new Vector4(0.2f * t, -0.14f * t, 0f, 0f));
+            _transformMaterial.SetVector(EdgeClampPointId, new Vector4(0.24f, 0.24f, 0f, 0f));
+        }
+
+        private void KillTransformSequence()
+        {
+            if (_transformSequence == null)
+            {
+                return;
+            }
+
+            _transformSequence.Kill();
+            _transformSequence = null;
         }
 
         private void EnsureRefs()

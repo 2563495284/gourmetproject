@@ -148,9 +148,9 @@ namespace GourmetProject.Game.UI.Meta
         {
             private readonly ItemDefinition _item;
             private readonly Action _onCancel;
-            private readonly Action<ActiveTarget> _onTargetConfirmed;
+            private readonly Action<ActiveTarget, Action> _onTargetConfirmed;
 
-            public ActiveRecipeDishSelectState(ItemDefinition item, Action onCancel, Action<ActiveTarget> onTargetConfirmed)
+            public ActiveRecipeDishSelectState(ItemDefinition item, Action onCancel, Action<ActiveTarget, Action> onTargetConfirmed)
             {
                 _item = item;
                 _onCancel = onCancel;
@@ -176,7 +176,7 @@ namespace GourmetProject.Game.UI.Meta
                     return;
                 }
 
-                _onTargetConfirmed?.Invoke(target);
+                _onTargetConfirmed?.Invoke(target, null);
             }
         }
 
@@ -223,13 +223,13 @@ namespace GourmetProject.Game.UI.Meta
             private readonly ActiveRecipeDishSelectState _selectState;
             private readonly ItemDefinition _item;
             private readonly ActiveTarget _target;
-            private readonly Action<ActiveTarget> _onTargetConfirmed;
+            private readonly Action<ActiveTarget, Action> _onTargetConfirmed;
 
             public ActiveRecipeDishCompareState(
                 ActiveRecipeDishSelectState selectState,
                 ItemDefinition item,
                 ActiveTarget target,
-                Action<ActiveTarget> onTargetConfirmed)
+                Action<ActiveTarget, Action> onTargetConfirmed)
             {
                 _selectState = selectState;
                 _item = item;
@@ -246,7 +246,7 @@ namespace GourmetProject.Game.UI.Meta
                     () =>
                     {
                         panel.ClearCompareOverlay();
-                        _onTargetConfirmed?.Invoke(_target);
+                        _onTargetConfirmed?.Invoke(_target, null);
                     });
             }
 

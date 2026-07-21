@@ -142,6 +142,9 @@ namespace GourmetProject.Game.UI.Battle
         private ActiveItemUseCoordinator _activeItemUse;
         private int _shopItemFlyInFlight;
         private cfg.BossDebuff _currentBossDebuff;
+        private cfg.TimelineNode _currentTimelineNodeCard;
+        private int? _currentTimelineNodeInterestMaxGain;
+        private Action _currentTimelineNodePick;
         private int _activeBattleRawRequiredScore;
         private string _activeBattleModifier = string.Empty;
         private string _activeBattleKey = string.Empty;
@@ -564,6 +567,7 @@ namespace GourmetProject.Game.UI.Battle
         /// <summary>行动轴节点卡片：先展示节点卡，玩家点击后再执行节点效果。</summary>
         public void ShowTimelineNodeCard(cfg.TimelineNode node, int? interestMaxGain, Action onPick)
         {
+            TrackTimelineNodeCard(node, interestMaxGain, onPick);
             SwitchTo(GameplayView.ActionSelect, () =>
             {
                 SetCenterTitle("行动轴事件");
@@ -799,6 +803,7 @@ namespace GourmetProject.Game.UI.Battle
 
         private void ShowActionSelection()
         {
+            ClearTimelineNodeCard();
             SwitchTo(GameplayView.ActionSelect, () =>
             {
                 SetCenterTitle("选择行动");
@@ -855,7 +860,7 @@ namespace GourmetProject.Game.UI.Battle
         internal void OpenActiveItemRecipeTarget(
             ItemDefinition item,
             Action onCancel,
-            Action<ActiveTarget> onTargetConfirmed,
+            Action<ActiveTarget, Action> onTargetConfirmed,
             Action onOpened = null)
         {
             _recipeWorkspacePage?.OpenActiveItemTarget(item, onCancel, onTargetConfirmed, onOpened);
@@ -885,6 +890,12 @@ namespace GourmetProject.Game.UI.Battle
         internal void ConfirmActiveItemRecipeTarget(ActiveTarget target)
         {
             _recipeWorkspacePage?.ConfirmActiveItemTarget(target);
+        }
+
+        internal bool PlayActiveItemRecipeFlavorApplied(ActiveTarget target, Action onComplete)
+        {
+            return _recipeWorkspacePage != null
+                && _recipeWorkspacePage.PlayActiveItemRecipeFlavorApplied(target, onComplete);
         }
 
         internal void OpenActiveItemTableCellTarget(Action onOpened)
@@ -1425,7 +1436,35 @@ namespace GourmetProject.Game.UI.Battle
 
         private void BuildActionCards()
         {
+            ClearTimelineNodeCard();
             _deck?.ShowActionChoices(RollChoices(_run), OnActionSelectionPicked, OnActionRerollClicked, _run != null ? _run.ActionRerollCount : 0);
+        }
+
+        private void TrackTimelineNodeCard(cfg.TimelineNode node, int? interestMaxGain, Action onPick)
+        {
+            _currentTimelineNodeCard = node;
+            _currentTimelineNodeInterestMaxGain = interestMaxGain;
+            _currentTimelineNodePick = onPick;
+        }
+
+        private void ClearTimelineNodeCard()
+        {
+            _currentTimelineNodeCard = null;
+            _currentTimelineNodeInterestMaxGain = null;
+            _currentTimelineNodePick = null;
+        }
+
+        private bool RefreshTimelineNodeCardIfActive()
+        {
+            if (_currentTimelineNodeCard == null || _currentTimelineNodePick == null)
+            {
+                return false;
+            }
+
+            SetCenterTitle("行动轴事件");
+            BuildTimelineNodeCard(_currentTimelineNodeCard, _currentTimelineNodeInterestMaxGain, _currentTimelineNodePick);
+            PlayShowCardsWhenReady();
+            return true;
         }
 
         /// <summary>行动轴节点单卡：用于商店等节点，点击卡片后才执行节点效果。</summary>
@@ -1507,6 +1546,7 @@ namespace GourmetProject.Game.UI.Battle
         /// <summary>玩家点击行动轴节点卡片。</summary>
         private void OnTimelineNodePicked(Action onPick)
         {
+            ClearTimelineNodeCard();
             _deck?.HideThenDestroy(() =>
             {
                 if (_actionSelectionPanel != null)
@@ -1544,6 +1584,7 @@ namespace GourmetProject.Game.UI.Battle
         private void HideHud()
         {
             _rewardPeekOnly = false;
+            ClearTimelineNodeCard();
             _pageRouter?.HideHud();
             SyncPageStateFromRouter();
             _infoColumn?.ScoreFire?.Hide();
@@ -2318,7 +2359,11 @@ namespace GourmetProject.Game.UI.Battle
             RebuildActionAxis();
             if (_current == GameplayView.ActionSelect)
             {
-                if (actionChoicesChanged)
+                if (RefreshTimelineNodeCardIfActive())
+                {
+                    RefreshPersistent();
+                }
+                else if (actionChoicesChanged)
                 {
                     RefreshActionCardsAnimated();
                 }

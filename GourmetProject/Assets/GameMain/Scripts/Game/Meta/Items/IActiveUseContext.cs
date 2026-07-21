@@ -96,7 +96,7 @@ namespace GourmetProject.Game.Meta
         /// <summary>能力：重掷当前行动选项（保 Boss）。不支持或非选择态返回 false。</summary>
         bool RerollCurrentAction();
 
-        /// <summary>能力：重置本周 Boss 类型（清 Boss debuff 抽取历史）。不支持返回 false。</summary>
+        /// <summary>能力：重新随机本周 Boss Debuff。不支持返回 false。</summary>
         bool ResetWeekBoss();
 
         /// <summary>能力：立即执行行动轴上尚未结算的下一个节点。无可执行节点返回 false。</summary>

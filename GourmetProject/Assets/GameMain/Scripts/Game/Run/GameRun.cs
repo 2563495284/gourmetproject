@@ -55,6 +55,8 @@ namespace GourmetProject.Game.Run
         private readonly List<string> _usedEventIds = new List<string>();
         private readonly List<string> _completedBossIds = new List<string>();
         private readonly List<string> _rolledBossDebuffIds = new List<string>();
+        private int _bossDebuffRerollWeekIndex;
+        private int _bossDebuffRerollIndex;
         private int _forcedBossDebuffWeekIndex;
         private string _forcedBossDebuffId = string.Empty;
         private readonly List<string> _actionGroupSequence = new List<string>();
@@ -795,6 +797,9 @@ namespace GourmetProject.Game.Run
         /// <summary>本周行动轴 id。</summary>
         public string CurrentTimelineId { get; set; } = string.Empty;
 
+        /// <summary>当前行动轴所属周。</summary>
+        public int CurrentTimelineWeekIndex { get; set; }
+
         /// <summary>本周行动轴长度（天，0.1 粒度）。</summary>
         public float TimelineLengthDays { get; set; }
 
@@ -980,6 +985,9 @@ namespace GourmetProject.Game.Run
 
         public IReadOnlyList<string> RolledBossDebuffIds => _rolledBossDebuffIds;
 
+        public int BossDebuffRerollIndex =>
+            _bossDebuffRerollWeekIndex == WeekIndex ? _bossDebuffRerollIndex : 0;
+
         public string ForcedBossDebuffId =>
             _forcedBossDebuffWeekIndex == WeekIndex ? _forcedBossDebuffId : string.Empty;
 
@@ -1108,6 +1116,18 @@ namespace GourmetProject.Game.Run
             _rolledBossDebuffIds.Clear();
         }
 
+        public void RerollBossDebuffForCurrentWeek()
+        {
+            _rolledBossDebuffIds.Clear();
+            if (_bossDebuffRerollWeekIndex != WeekIndex)
+            {
+                _bossDebuffRerollWeekIndex = WeekIndex;
+                _bossDebuffRerollIndex = 0;
+            }
+
+            _bossDebuffRerollIndex++;
+        }
+
         /// <summary>开始一条新的本周行动轴：重置天数游标、节点结算记录与本周行动使用记录。</summary>
         public void BeginTimeline(string timelineId, float lengthDays)
         {
@@ -1117,6 +1137,7 @@ namespace GourmetProject.Game.Run
         public void BeginTimeline(string timelineId, float lengthDays, IEnumerable<RuntimeTimelineNode> nodes)
         {
             CurrentTimelineId = timelineId ?? string.Empty;
+            CurrentTimelineWeekIndex = WeekIndex;
             TimelineLengthDays = lengthDays;
             CurrentDay = 0f;
             ActionStepIndex = 0;
@@ -1632,6 +1653,7 @@ namespace GourmetProject.Game.Run
                 DeleteDishCount = _deleteDishCount,
                 RunSettledCounts = new Dictionary<string, int>(_runSettledCounts),
                 CurrentTimelineId = CurrentTimelineId,
+                CurrentTimelineWeekIndex = CurrentTimelineWeekIndex,
                 TimelineLengthDays = TimelineLengthDays,
                 CurrentDay = CurrentDay,
                 ActionStepIndex = ActionStepIndex,
@@ -1655,6 +1677,8 @@ namespace GourmetProject.Game.Run
                 UsedEventIds = new List<string>(_usedEventIds),
                 CompletedBossIds = new List<string>(_completedBossIds),
                 RolledBossDebuffIds = new List<string>(_rolledBossDebuffIds),
+                BossDebuffRerollWeekIndex = _bossDebuffRerollWeekIndex,
+                BossDebuffRerollIndex = _bossDebuffRerollIndex,
                 ForcedBossDebuffWeekIndex = _forcedBossDebuffWeekIndex,
                 ForcedBossDebuffId = _forcedBossDebuffId,
                 PendingActionChoiceKey = _pendingActionChoiceKey,
@@ -1823,6 +1847,7 @@ namespace GourmetProject.Game.Run
             }
 
             run.CurrentTimelineId = data.CurrentTimelineId ?? string.Empty;
+            run.CurrentTimelineWeekIndex = data.CurrentTimelineWeekIndex;
             run.TimelineLengthDays = data.TimelineLengthDays;
             run.CurrentDay = data.CurrentDay;
             run.RestoreActionStepIndex(data.ActionStepIndex);
@@ -1888,6 +1913,8 @@ namespace GourmetProject.Game.Run
                 run._rolledBossDebuffIds.AddRange(data.RolledBossDebuffIds);
             }
 
+            run._bossDebuffRerollWeekIndex = data.BossDebuffRerollWeekIndex;
+            run._bossDebuffRerollIndex = data.BossDebuffRerollIndex;
             run._forcedBossDebuffWeekIndex = data.ForcedBossDebuffWeekIndex;
             run._forcedBossDebuffId = data.ForcedBossDebuffId ?? string.Empty;
 

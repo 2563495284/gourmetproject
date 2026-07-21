@@ -147,7 +147,8 @@ namespace GourmetProject.Game.UI.Battle.View
                 return null;
             }
 
-            IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Boss, $"w{run.WeekIndex}_{node.Id}_debuff");
+            string bossKey = $"w{run.WeekIndex}_{node.Id}";
+            IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Boss, BossService.BuildBossDebuffSeedKey(run, bossKey));
             RngState state = rng.State;
             try
             {

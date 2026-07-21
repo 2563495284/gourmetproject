@@ -136,6 +136,33 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
+        public void PlayFlavorTransform(DishDef dishDef, IReadOnlyList<string> flavorIds, Action onComplete)
+        {
+            HideHover();
+            if (_canvasGroup != null)
+            {
+                _canvasGroup.blocksRaycasts = false;
+                _canvasGroup.alpha = 1f;
+            }
+
+            if (_shapePreview == null)
+            {
+                onComplete?.Invoke();
+                return;
+            }
+
+            _shapePreview.PlayTransformTo(dishDef, flavorIds, () =>
+            {
+                if (_canvasGroup != null)
+                {
+                    _canvasGroup.blocksRaycasts = true;
+                    _canvasGroup.alpha = 1f;
+                }
+
+                onComplete?.Invoke();
+            });
+        }
+
         public void OnBeginDrag(PointerEventData eventData)
         {
             if (!_dragEnabled)

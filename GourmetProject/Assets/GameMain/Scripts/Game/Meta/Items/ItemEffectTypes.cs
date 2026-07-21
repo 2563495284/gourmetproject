@@ -101,7 +101,7 @@ namespace GourmetProject.Game.Meta
         public const string TimelineAddInterestNode = "TimelineAddInterestNode";
         public const string TimelineSkipNode = "TimelineSkipNode";
         public const string TimelineExecuteNext = "TimelineExecuteNext"; // 主动：加急单，立即执行行动轴下一个节点
-        public const string ResetBossDebuff = "ResetBossDebuff";           // 主动：盛宴调整单，重置本周 Boss（清 Boss debuff 抽取历史）
+        public const string ResetBossDebuff = "ResetBossDebuff";           // 主动：盛宴调整单，重新随机本周 Boss Debuff
 
         // —— 奖励/获得/选择族 ——
         public const string GrantRandomPassive = "GrantRandomPassive";

@@ -16,6 +16,18 @@ namespace GourmetProject.Game.UI.Tooltips
 
         public float PreferredDescWidth => _descText != null ? _descText.preferredWidth : 0f;
 
+        public float PreferredDescWidthFor(string value)
+        {
+            if (_descText == null)
+            {
+                return 0f;
+            }
+
+            TextGenerationSettings settings = _descText.GetGenerationSettings(Vector2.zero);
+            return _descText.cachedTextGeneratorForLayout.GetPreferredWidth(value ?? string.Empty, settings)
+                / Mathf.Max(1f, _descText.pixelsPerUnit);
+        }
+
         public void Bind(string title, string desc, bool debuffed = false)
         {
             if (!ValidateReferences())

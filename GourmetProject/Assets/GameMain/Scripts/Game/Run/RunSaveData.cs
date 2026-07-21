@@ -123,6 +123,9 @@ namespace GourmetProject.Game.Run
         /// <summary>本周行动轴 id（用于读档时按配置重建节点）。</summary>
         public string CurrentTimelineId;
 
+        /// <summary>当前行动轴所属周；用于区分同周末节点待处理与换周后旧轴残留。</summary>
+        public int CurrentTimelineWeekIndex;
+
         /// <summary>本周行动轴长度（天，0.1 粒度）。</summary>
         public float TimelineLengthDays;
 
@@ -191,6 +194,12 @@ namespace GourmetProject.Game.Run
 
         /// <summary>Boss Debuff 不放回随机的已抽取记录；抽光后会重置。</summary>
         public List<string> RolledBossDebuffIds = new List<string>();
+
+        /// <summary>本周 Boss Debuff 主动重抽所属周；0=未重抽。</summary>
+        public int BossDebuffRerollWeekIndex;
+
+        /// <summary>本周 Boss Debuff 主动重抽序号，用于改变当前周 Boss 随机 key。</summary>
+        public int BossDebuffRerollIndex;
 
         /// <summary>开发者控制台指定的 Boss Debuff 所属周；0=未指定。</summary>
         public int ForcedBossDebuffWeekIndex;

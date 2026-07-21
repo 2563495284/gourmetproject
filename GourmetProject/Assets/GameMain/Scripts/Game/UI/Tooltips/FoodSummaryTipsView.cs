@@ -20,10 +20,10 @@ namespace GourmetProject.Game.UI.Tooltips
         private const float FlavorCellHeight = 44f;
         private const float FlavorCellWidth = 96f;
         private const float FlavorRowSpacing = 8f;
-        private const float MinWidth = 180f;
         private const float MaxWidth = 330f;
         private const float SummaryHorizontalPadding = 24f;
         private const float SkillCardHorizontalPadding = 20f;
+        private const string MinWidthSampleText = "十十十十十十十十十十";
 
         public void Bind(FoodSummaryTipsData data)
         {
@@ -133,7 +133,9 @@ namespace GourmetProject.Game.UI.Tooltips
 
             float preferredWidth = _nameText != null
                 ? _nameText.preferredWidth + SummaryHorizontalPadding
-                : MinWidth;
+                : 0f;
+
+            preferredWidth = Mathf.Max(preferredWidth, MinWidthForTenDescCharacters());
 
             if (skillsTextWidth > 0f)
             {
@@ -147,9 +149,21 @@ namespace GourmetProject.Game.UI.Tooltips
                 preferredWidth = Mathf.Max(preferredWidth, FlavorCellWidth + SummaryHorizontalPadding);
             }
 
-            float width = Mathf.Clamp(preferredWidth, MinWidth, MaxWidth);
+            float width = Mathf.Min(preferredWidth, MaxWidth);
             rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
             LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
+        }
+
+        private float MinWidthForTenDescCharacters()
+        {
+            if (_skillCardPrefab == null)
+            {
+                return 0f;
+            }
+
+            return _skillCardPrefab.PreferredDescWidthFor(MinWidthSampleText)
+                + SummaryHorizontalPadding
+                + SkillCardHorizontalPadding;
         }
 
         private bool ValidateReferences()
