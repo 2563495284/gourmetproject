@@ -57,7 +57,7 @@
   },
   {
     "id": "sk_cone",
-    "subSkills": "sk_cone_1"
+    "subSkills": "sk_cone_1|sk_cone_2"
   },
   {
     "id": "sk_lollipop",
