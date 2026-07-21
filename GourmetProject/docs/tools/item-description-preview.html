@@ -410,7 +410,7 @@
           case "unit":
             return Number(rule.condUnit) === 1 ? "种" : "个";
           case "countas":
-            return String(Math.round((Number(rule.actionValues[0]) || 0) + 1));
+            return String(Math.round((Number(rule.actionValues[0]) || 0)));
           case "thr":
             return String(thresholdOrDefault(rule.condParam));
           case "count":

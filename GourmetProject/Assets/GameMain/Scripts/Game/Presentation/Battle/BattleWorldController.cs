@@ -1396,8 +1396,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             return rule.ActionType == SkillActionType.TransferSkills
                 || rule.ActionType == SkillActionType.TriggerSweetTransfer
-                || rule.ActionType == SkillActionType.CopySkill
-                || rule.ActionType == SkillActionType.TempCopyDish;
+                || rule.ActionType == SkillActionType.CopySkill;
         }
 
         private DishInstance FindDish(int instanceId)

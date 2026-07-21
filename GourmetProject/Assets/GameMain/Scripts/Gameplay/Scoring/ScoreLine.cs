@@ -12,7 +12,6 @@ namespace GourmetProject.Gameplay.Scoring
         FinalMultiplier = 4,
         Gold = 5,
         Layer = 6,
-        ExtraSettlement = 7,
         DishMultiplierAdd = 8,
         SilverItemRoll = 9,
         CopySkill = 10,

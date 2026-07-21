@@ -55,16 +55,15 @@ namespace GourmetProject.Gameplay.Scoring
 
             RunGlobalPhase(ctx, entries, ScorePhase.BeforeAll);
 
-            var extraTriggerEligibleDishes = new List<DishInstance>();
             foreach (DishInstance dish in snapshot.DishesInDefaultOrder)
             {
                 ctx.BeginDish(dish);
                 RunDishPhase(ctx, entries, ScorePhase.BeforeDish, dish);
                 ctx.RecordDishBase();
                 RunDishPhase(ctx, entries, ScorePhase.DishBase, dish);
+                ctx.ApplyPendingTransferredEffects(dish);
                 RunDishPhase(ctx, entries, ScorePhase.DishSkills, dish);
-                extraTriggerEligibleDishes.Add(dish);
-                DrainExtraSkillTriggers(ctx, entries, extraTriggerEligibleDishes);
+                ctx.CompleteDishSkillPhase(dish);
                 RunDishPhase(ctx, entries, ScorePhase.DishFlavor, dish);
                 RunDishPhase(ctx, entries, ScorePhase.Materials, dish);
                 RunDishPhase(ctx, entries, ScorePhase.AfterDish, dish);
@@ -77,38 +76,6 @@ namespace GourmetProject.Gameplay.Scoring
             RunGlobalPhase(ctx, entries, ScorePhase.Final);
             ctx.EmitEvent(ScoreEventType.CalculationFinished, "结束分数结算");
             return ctx.ToResult();
-        }
-
-        private static void DrainExtraSkillTriggers(
-            ScoreContext ctx,
-            IEnumerable<ScoreEffectEntry> entries,
-            IReadOnlyList<DishInstance> eligibleDishes)
-        {
-            if (ctx == null || eligibleDishes == null || eligibleDishes.Count == 0)
-            {
-                return;
-            }
-
-            bool ran;
-            do
-            {
-                ran = false;
-                foreach (DishInstance dish in eligibleDishes)
-                {
-                    int times = ctx.ConsumeExtraSkillTriggers(dish);
-                    if (times <= 0)
-                    {
-                        continue;
-                    }
-
-                    ran = true;
-                    for (int i = 0; i < times; i++)
-                    {
-                        RunDishPhase(ctx, entries, ScorePhase.DishSkills, dish, skipRecursiveExtraSettlement: true);
-                    }
-                }
-            }
-            while (ran);
         }
 
         private List<ScoreEffectEntry> CollectEntries(ScoreSnapshot snapshot)
@@ -148,31 +115,15 @@ namespace GourmetProject.Gameplay.Scoring
             ScoreContext ctx,
             IEnumerable<ScoreEffectEntry> entries,
             ScorePhase phase,
-            DishInstance dish,
-            bool skipRecursiveExtraSettlement = false)
+            DishInstance dish)
         {
             foreach (ScoreEffectEntry entry in entries)
             {
-                if (skipRecursiveExtraSettlement && entry.Dish == null)
-                {
-                    continue;
-                }
-
-                if (skipRecursiveExtraSettlement && IsExtraSettlementEntry(entry))
-                {
-                    continue;
-                }
-
                 if (entry.Phase == phase && (entry.Dish == null || entry.Dish.Id == dish.Id))
                 {
                     ctx.Apply(entry);
                 }
             }
-        }
-
-        private static bool IsExtraSettlementEntry(ScoreEffectEntry entry)
-        {
-            return entry?.Trace?.ActionType == SkillActionType.ExtraSettlement;
         }
 
         private IScoreEffectSource[] MergeSources(IEnumerable<IScoreEffectSource> extraSources)

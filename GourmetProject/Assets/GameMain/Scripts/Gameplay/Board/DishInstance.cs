@@ -138,7 +138,7 @@ namespace GourmetProject.Gameplay.Board
         /// <summary>运行时永久加法分（PermanentAddFlat 累加，计入基础分）。</summary>
         public float PermanentFlatBonus { get; private set; }
 
-        /// <summary>运行时永久乘区（PermanentAddMult 累乘，计入乘区初值），初始 1。</summary>
+        /// <summary>运行时永久乘区（效果累乘并计入乘区初值），初始 1。</summary>
         public float PermanentMultBonus { get; private set; } = 1f;
 
         /// <summary>本场临时基础分倍率（Boss Debuff 等），只影响当前战斗内结算。</summary>

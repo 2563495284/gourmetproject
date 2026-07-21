@@ -239,17 +239,6 @@ namespace GourmetProject.Gameplay.Scoring
                     foreach (DishInstance t in Targets(ctx)) ctx.AddMultFlatTo(t, value * count);
                     break;
 
-                case SkillActionType.TransferScore:
-                    foreach (DishInstance t in Targets(ctx)) ctx.TransferScore(_self, t, value);
-                    break;
-
-                case SkillActionType.ExtraSettlement:
-                {
-                    int times = (int)Math.Round(value * count, MidpointRounding.AwayFromZero);
-                    foreach (DishInstance t in Targets(ctx)) ctx.AddExtraSettlement(t, times);
-                    break;
-                }
-
                 case SkillActionType.AddLayer:
                 {
                     // 全局欢乐蛋糕层数：无论作用域，统一改一次全局计数器。
@@ -318,10 +307,6 @@ namespace GourmetProject.Gameplay.Scoring
 
                 case SkillActionType.PermanentAddFlat:
                     foreach (DishInstance t in Targets(ctx)) ctx.AddPermanentFlatTo(t, value * count);
-                    break;
-
-                case SkillActionType.PermanentAddMult:
-                    foreach (DishInstance t in Targets(ctx)) ctx.AddPermanentMultTo(t, value);
                     break;
 
                 case SkillActionType.AddCountAs:
@@ -472,7 +457,7 @@ namespace GourmetProject.Gameplay.Scoring
                         SkillExecutionKind.SweetTransfer,
                         sourceLabel,
                         SkillScopeVisualMode.ResolvedTargets));
-                ctx.SubmitCommand(new ResolveScoreEffectCommand(entry));
+                ctx.QueueOrResolveTransferredEffect(entry);
             }
         }
 

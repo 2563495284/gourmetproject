@@ -93,8 +93,7 @@ namespace GourmetProject.Gameplay.Scoring
 
             if (rule.ActionType == SkillActionType.AddLayer
                 || rule.ActionType == SkillActionType.ConsumeLayer
-                || rule.ActionType == SkillActionType.GrantGold
-                || rule.ActionType == SkillActionType.TempCopyDish)
+                || rule.ActionType == SkillActionType.GrantGold)
             {
                 return System.Array.Empty<DishInstance>();
             }

@@ -1362,14 +1362,6 @@ namespace GourmetProject.Game.Presentation.Battle
                     cue = new SettlementCue(SettlementCueKind.SideEffect, $"蛋糕层 {FormatSigned(line.Value)}", SideEffectColor);
                     return true;
 
-                case ScoreLineKind.ExtraSettlement:
-                    cue = new SettlementCue(
-                        SettlementCueKind.SideEffect,
-                        $"额外触发 {FormatSigned(line.Value)}",
-                        SideEffectColor,
-                        reveal: SettlementRevealSignal.TransferredReveal(line.DishInstanceId, SweetTransferCardDelta(line.Source)));
-                    return true;
-
                 case ScoreLineKind.SilverItemRoll:
                     cue = new SettlementCue(SettlementCueKind.SideEffect, $"银材质抽道具 ×{Mathf.RoundToInt(line.Value)}", SideEffectColor);
                     return true;

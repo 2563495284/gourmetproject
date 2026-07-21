@@ -13,19 +13,17 @@ namespace GourmetProject.Gameplay.Scoring
     /// </summary>
     public static class ServeRuleResolver
     {
-        /// <summary>上菜结算产物：金币/层数增量、技能复制请求、以及临时复制请求（均需 RNG 落地）。</summary>
+        /// <summary>上菜结算产物：金币/层数增量、技能复制请求与甜蜜传递请求。</summary>
         public readonly struct ServeResolveResult
         {
             public ServeResolveResult(
                 float gold, int happyCakeLayerDelta,
                 IReadOnlyList<CopySkillRequest> copySkillRequests,
-                IReadOnlyList<int> tempCopySourceIds,
                 IReadOnlyList<SkillTransferRequest> transferRequests)
             {
                 Gold = gold;
                 HappyCakeLayerDelta = happyCakeLayerDelta;
                 CopySkillRequests = copySkillRequests ?? System.Array.Empty<CopySkillRequest>();
-                TempCopySourceIds = tempCopySourceIds ?? System.Array.Empty<int>();
                 TransferRequests = transferRequests ?? System.Array.Empty<SkillTransferRequest>();
             }
 
@@ -35,9 +33,6 @@ namespace GourmetProject.Gameplay.Scoring
 
             /// <summary>技能复制请求：由 BattleSession 用注入的随机流从候选池挑选并加到目标实例。</summary>
             public IReadOnlyList<CopySkillRequest> CopySkillRequests { get; }
-
-            /// <summary>临时复制请求：需被克隆到空格的源实例 Id（BattleSession 用随机流找空格落地）。</summary>
-            public IReadOnlyList<int> TempCopySourceIds { get; }
 
             /// <summary>甜蜜传递请求：由 BattleSession 用随机流在候选目标中均权取 N 个并追加技能（带来源标签）。</summary>
             public IReadOnlyList<SkillTransferRequest> TransferRequests { get; }
@@ -49,13 +44,12 @@ namespace GourmetProject.Gameplay.Scoring
         {
             if (served == null)
             {
-                return new ServeResolveResult(0f, 0, null, null, null);
+                return new ServeResolveResult(0f, 0, null, null);
             }
 
             float gold = 0f;
             int layerDelta = 0;
             List<CopySkillRequest> copyRequests = null;
-            List<int> tempCopyIds = null;
             List<SkillTransferRequest> transferRequests = null;
             foreach (string skillId in served.SkillIds)
             {
@@ -79,17 +73,17 @@ namespace GourmetProject.Gameplay.Scoring
                         continue;
                     }
 
-                    ApplyServeAction(board, db, history, rule, served, count, running, ref gold, ref layerDelta, ref copyRequests, ref tempCopyIds, ref transferRequests);
+                    ApplyServeAction(board, db, history, rule, served, count, running, ref gold, ref layerDelta, ref copyRequests, ref transferRequests);
                 }
             }
 
-            return new ServeResolveResult(gold, layerDelta, copyRequests, tempCopyIds, transferRequests);
+            return new ServeResolveResult(gold, layerDelta, copyRequests, transferRequests);
         }
 
         private static void ApplyServeAction(
             GpTable board, GameplayDatabase db, IScoreHistory history, SkillRuleDef rule, DishInstance self, int count,
             int runningLayers, ref float gold, ref int layerDelta, ref List<CopySkillRequest> copyRequests,
-            ref List<int> tempCopyIds, ref List<SkillTransferRequest> transferRequests)
+            ref List<SkillTransferRequest> transferRequests)
         {
             // 阶梯规则：count 为满足档序号，取对应档值并按触发一次应用。
             float value;
@@ -173,18 +167,6 @@ namespace GourmetProject.Gameplay.Scoring
                 case SkillActionType.GrantGold:
                     gold += value * count;
                     break;
-
-                case SkillActionType.TempCopyDish:
-                {
-                    // 临时复制本菜品至空格：克隆源实例，避免临时克隆再触发临时复制。
-                    if (!self.IsTemporary)
-                    {
-                        tempCopyIds ??= new List<int>();
-                        tempCopyIds.Add(self.Id);
-                    }
-
-                    break;
-                }
 
                 case SkillActionType.CopySkill:
                 {

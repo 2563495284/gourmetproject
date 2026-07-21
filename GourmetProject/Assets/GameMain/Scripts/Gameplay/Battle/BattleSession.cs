@@ -255,7 +255,6 @@ namespace GourmetProject.Gameplay.Battle
                 HappyCakeLayers = Math.Max(0, HappyCakeLayers + serveResult.HappyCakeLayerDelta + AccelFor(serveResult.HappyCakeLayerDelta));
                 ApplyTransferRequests(serveResult.TransferRequests);
                 ApplyCopySkillRequests(serveResult.CopySkillRequests);
-                ApplyTempCopyRequests(serveResult.TempCopySourceIds);
             }
 
             if (GoldCostPerServe > 0)
@@ -702,38 +701,6 @@ namespace GourmetProject.Gameplay.Battle
             return selected;
         }
 
-        /// <summary>临时复制落地：对每个源实例，在空格中克隆一份带同样技能/风味的临时实例并摆放。</summary>
-        private void ApplyTempCopyRequests(IReadOnlyList<int> sourceIds)
-        {
-            if (sourceIds == null || sourceIds.Count == 0)
-            {
-                return;
-            }
-
-            foreach (int sourceId in sourceIds)
-            {
-                DishInstance source = FindInstance(sourceId);
-                if (source == null)
-                {
-                    continue;
-                }
-
-                List<Placement> placements = DiningTable.FindValidPlacements(source.Def);
-                if (placements.Count == 0)
-                {
-                    continue;
-                }
-
-                Placement placement = placements[_rng.Range(0, placements.Count)];
-                var clone = new DishInstance(_nextInstanceId++, source.Def, placement, source.SkillIds, source.FlavorIds);
-                clone.SetSourceRecipeIndex(source.SourceSlotIndex, source.SourceDishIndex);
-                clone.CopySkillSourcesFrom(source);
-                clone.CopyTransferredSkillsFrom(source);
-                clone.MarkTemporary();
-                DiningTable.Place(clone);
-            }
-        }
-
         /// <summary>清理本次品鉴产生的临时克隆实例（品鉴结束时调用）。</summary>
         public void ClearTemporaryDishes()
         {
@@ -918,7 +885,7 @@ namespace GourmetProject.Gameplay.Battle
 
         /// <summary>
         /// 主动道具：复制指定餐桌菜到空位（对标增殖族）。摆放位置由战斗随机流选取，
-        /// 与临时复制（<see cref="ApplyTempCopyRequests"/>）一致但产出为常驻实例。空位不足返回 false。
+        /// 复制产物为常驻实例。空位不足返回 false。
         /// </summary>
         public bool DuplicateDishById(int dishId)
         {

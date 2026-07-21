@@ -39,8 +39,9 @@ namespace GourmetProject.Gameplay.Scoring
         private readonly Dictionary<int, float> _permanentFlatDeltas = new Dictionary<int, float>();
         private readonly Dictionary<int, float> _permanentMultDeltas = new Dictionary<int, float>();
         private readonly Dictionary<int, int> _liveCountAs = new Dictionary<int, int>();
-        private readonly Dictionary<int, int> _extraSkillTriggers = new Dictionary<int, int>();
         private readonly Dictionary<int, int> _extraSweetTransferTriggers = new Dictionary<int, int>();
+        private readonly Dictionary<int, List<ScoreEffectEntry>> _pendingTransferredEffects = new Dictionary<int, List<ScoreEffectEntry>>();
+        private readonly HashSet<int> _completedDishSkillPhases = new HashSet<int>();
         private DishAccumulator _current;
         private bool _initialFinalModifiersRecorded;
         private bool _finalized;
@@ -350,39 +351,6 @@ namespace GourmetProject.Gameplay.Scoring
             SubmitCommand(new AddDishMultFlatCommand(target.Id, value));
         }
 
-        /// <summary>把来源菜「加法区分数（含基础）」的 fraction 比例转移给目标菜（作用于加法层）。</summary>
-        public void TransferScore(DishInstance from, DishInstance to, float fraction)
-        {
-            if (from == null || to == null || from.Id == to.Id)
-            {
-                return;
-            }
-
-            SubmitCommand(new TransferScoreCommand(from.Id, to.Id, fraction));
-        }
-
-        /// <summary>目标菜技能额外触发 times 次。</summary>
-        public void AddExtraSettlement(DishInstance target, int times)
-        {
-            if (target == null || times <= 0)
-            {
-                return;
-            }
-
-            SubmitCommand(new ExtraSettlementCommand(target.Id, times));
-        }
-
-        public int ConsumeExtraSkillTriggers(DishInstance target)
-        {
-            if (target == null || !_extraSkillTriggers.TryGetValue(target.Id, out int times) || times <= 0)
-            {
-                return 0;
-            }
-
-            _extraSkillTriggers.Remove(target.Id);
-            return times;
-        }
-
         /// <summary>
         /// 给目标菜挂「额外触发一次甜蜜传递」（持续存在，不消耗）。
         /// 目标每次执行 TransferSkills 时，在本轮传递后再多传该层数，且每次重新随机目标。
@@ -479,6 +447,53 @@ namespace GourmetProject.Gameplay.Scoring
 
             _skillTransfers.Add(new SkillTransferSideEffect(target.Id, effects, sourceName, sourceInstanceId));
             EmitEvent(ScoreEventType.CommandExecuted, $"技能传递给 {target.Def.Name}（{effects.Count} 个）");
+        }
+
+        public void QueueOrResolveTransferredEffect(ScoreEffectEntry entry)
+        {
+            if (entry?.Dish == null)
+            {
+                return;
+            }
+
+            if (_completedDishSkillPhases.Contains(entry.Dish.Id))
+            {
+                SubmitCommand(new ResolveScoreEffectCommand(entry));
+                return;
+            }
+
+            if (!_pendingTransferredEffects.TryGetValue(entry.Dish.Id, out List<ScoreEffectEntry> pending))
+            {
+                pending = new List<ScoreEffectEntry>();
+                _pendingTransferredEffects[entry.Dish.Id] = pending;
+            }
+
+            pending.Add(entry);
+        }
+
+        public void ApplyPendingTransferredEffects(DishInstance dish)
+        {
+            if (dish == null)
+            {
+                return;
+            }
+
+            while (_pendingTransferredEffects.TryGetValue(dish.Id, out List<ScoreEffectEntry> pending) && pending.Count > 0)
+            {
+                _pendingTransferredEffects.Remove(dish.Id);
+                foreach (ScoreEffectEntry entry in pending)
+                {
+                    Apply(entry);
+                }
+            }
+        }
+
+        public void CompleteDishSkillPhase(DishInstance dish)
+        {
+            if (dish != null)
+            {
+                _completedDishSkillPhases.Add(dish.Id);
+            }
         }
 
         /// <summary>登记技能复制请求，并立即触发本次选中的技能效果。</summary>
@@ -699,34 +714,6 @@ namespace GourmetProject.Gameplay.Scoring
             float before = a.Mult;
             a.Mult += value;
             AddLine(a, ScoreLineKind.DishMultiplierAdd, value, before, a.Mult, $"倍率 +{value}");
-        }
-
-        internal void ApplyTransferScoreCommand(int fromId, int toId, float fraction)
-        {
-            if (!_accums.TryGetValue(fromId, out DishAccumulator from) || !_accums.TryGetValue(toId, out DishAccumulator to))
-            {
-                return;
-            }
-
-            float amount = (from.Base + from.Flat) * fraction;
-            float beforeFrom = from.Flat;
-            from.Flat -= amount;
-            AddLine(from, ScoreLineKind.DishFlat, -amount, beforeFrom, from.Flat, $"分数传出 -{amount}");
-            float beforeTo = to.Flat;
-            to.Flat += amount;
-            AddLine(to, ScoreLineKind.DishFlat, amount, beforeTo, to.Flat, $"分数传入 +{amount}");
-        }
-
-        internal void ApplyExtraSettlementCommand(int dishId, int times)
-        {
-            if (!_accums.TryGetValue(dishId, out DishAccumulator a))
-            {
-                return;
-            }
-
-            _extraSkillTriggers.TryGetValue(dishId, out int before);
-            _extraSkillTriggers[dishId] = before + times;
-            AddLine(a, ScoreLineKind.ExtraSettlement, times, before, before + times, $"技能额外触发 +{times} 次");
         }
 
         internal void ApplyExtraSweetTransferCommand(int dishId, int times)
@@ -982,42 +969,6 @@ namespace GourmetProject.Gameplay.Scoring
         public string Name => "AddDishMultFlat";
 
         public void Execute(ScoreContext context) => context.ApplyDishMultFlatCommand(_dishId, _value);
-    }
-
-    /// <summary>分数按比例从来源菜转移到目标菜（加法层）。</summary>
-    public sealed class TransferScoreCommand : IScoreCommand
-    {
-        private readonly int _fromId;
-        private readonly int _toId;
-        private readonly float _fraction;
-
-        public TransferScoreCommand(int fromId, int toId, float fraction)
-        {
-            _fromId = fromId;
-            _toId = toId;
-            _fraction = fraction;
-        }
-
-        public string Name => "TransferScore";
-
-        public void Execute(ScoreContext context) => context.ApplyTransferScoreCommand(_fromId, _toId, _fraction);
-    }
-
-    /// <summary>目标菜技能额外触发若干次。</summary>
-    public sealed class ExtraSettlementCommand : IScoreCommand
-    {
-        private readonly int _dishId;
-        private readonly int _times;
-
-        public ExtraSettlementCommand(int dishId, int times)
-        {
-            _dishId = dishId;
-            _times = times;
-        }
-
-        public string Name => "ExtraSettlement";
-
-        public void Execute(ScoreContext context) => context.ApplyExtraSettlementCommand(_dishId, _times);
     }
 
     /// <summary>目标菜的「甜蜜传递」额外触发若干次（代触发甜蜜传递，仅重放其传递）。</summary>
