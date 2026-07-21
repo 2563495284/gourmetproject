@@ -80,6 +80,10 @@ namespace cfg
         /// 触发作用域内食物各执行一次自身甜蜜传递
         /// </summary>
         TriggerSweetTransfer = 15,
+        /// <summary>
+        /// 目标每次甜蜜传递额外触发X次（隐藏、可叠加、每次重新随机目标）
+        /// </summary>
+        ExtraSweetTransfer = 16,
     }
 
 } 

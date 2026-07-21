@@ -1478,18 +1478,18 @@
     "termId": ""
   },
   {
-    "id": "ss_trigger_transfer_n1",
+    "id": "ss_extra_transfer_n1",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
     "condUnit": 0,
     "condMode": 0,
     "condParam": "",
-    "actionType": 15,
+    "actionType": 16,
     "actionScope": 4,
     "actionCount": 1,
     "actionValue": [
-      0
+      1
     ],
     "actionParam": [],
     "isPassive": false,

@@ -365,7 +365,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void TriggerSweetTransfer_MarksTarget_ExtraTransferRerollsWhenTargetSettles()
+        public void ExtraSweetTransfer_MarksTarget_ExtraTransferRerollsWhenTargetSettles()
         {
             DishShape oneCell = DishShape.FromRows(new[] { "X" });
 
@@ -392,11 +392,11 @@ namespace GourmetProject.Tests.EditMode
                 CountUnit.Instances,
                 CountMode.Per,
                 string.Empty,
-                SkillActionType.TriggerSweetTransfer,
+                SkillActionType.ExtraSweetTransfer,
                 SkillScope.All,
                 1,
                 new[] { 1f },
-                new[] { "skilltype:TransferSkills" });
+                Array.Empty<string>());
             var mapleSkill = new SkillDef(
                 "skill_maple",
                 "枫糖",
@@ -450,6 +450,157 @@ namespace GourmetProject.Tests.EditMode
                 l.DishInstanceId == targetB.Id
                 && l.Kind == ScoreLineKind.DishFlat
                 && l.Source.Name == "S<甜蜜传递>"), Is.EqualTo(1));
+        }
+
+        [Test]
+        public void ExtraSweetTransfer_MultipleMarkersStackAndStayOutOfTips()
+        {
+            DishShape oneCell = DishShape.FromRows(new[] { "X" });
+            SkillRuleDef sourceAdd = Rule("s_add", 0, SkillActionType.AddFlat, SkillScope.Self, 5f, "skill_source");
+            SkillRuleDef sourceTransfer = RuleWithActionCount(
+                "s_transfer", 1, SkillActionType.TransferSkills, SkillScope.Row, 0f, 1, "skill_source");
+            var sourceSkill = new SkillDef(
+                "skill_source",
+                "来源",
+                string.Empty,
+                Array.Empty<string>(),
+                new[] { sourceAdd, sourceTransfer },
+                new[] { "美味 +5", "甜蜜传递" });
+            var mapleTrigger = new SkillRuleDef(
+                "m_trigger",
+                "skill_maple",
+                0,
+                SkillTrigger.OnSettle,
+                SkillConditionType.None,
+                SkillScope.Self,
+                CountUnit.Instances,
+                CountMode.Per,
+                string.Empty,
+                SkillActionType.ExtraSweetTransfer,
+                SkillScope.All,
+                1,
+                new[] { 1f },
+                Array.Empty<string>());
+            var mapleSkill = new SkillDef(
+                "skill_maple",
+                "枫糖",
+                string.Empty,
+                Array.Empty<string>(),
+                new[] { mapleTrigger },
+                new[] { "额外甜蜜传递" });
+
+            DishDef mapleDef = Dish("dish_maple", "枫糖", oneCell, "skill_maple");
+            DishDef sourceDef = Dish("dish_source", "S", oneCell, "skill_source");
+            DishDef targetDef = Dish("dish_target", "目标", oneCell);
+            var db = new GameplayDatabase(
+                new[] { mapleDef, sourceDef, targetDef },
+                new[] { mapleSkill, sourceSkill },
+                Array.Empty<FlavorDef>(),
+                Array.Empty<MaterialDef>(),
+                Array.Empty<RecipeDef>());
+            var table = new DiningTable(6, 1);
+            var mapleA = new DishInstance(1, mapleDef, MakePlacement(oneCell, 0, 0), mapleDef.SkillIds, Array.Empty<string>());
+            var mapleB = new DishInstance(2, mapleDef, MakePlacement(oneCell, 1, 0), mapleDef.SkillIds, Array.Empty<string>());
+            var source = new DishInstance(3, sourceDef, MakePlacement(oneCell, 2, 0), sourceDef.SkillIds, Array.Empty<string>());
+            var targetA = new DishInstance(4, targetDef, MakePlacement(oneCell, 3, 0), targetDef.SkillIds, Array.Empty<string>());
+            var targetB = new DishInstance(5, targetDef, MakePlacement(oneCell, 4, 0), targetDef.SkillIds, Array.Empty<string>());
+            var targetC = new DishInstance(6, targetDef, MakePlacement(oneCell, 5, 0), targetDef.SkillIds, Array.Empty<string>());
+            table.Place(mapleA);
+            table.Place(mapleB);
+            table.Place(source);
+            table.Place(targetA);
+            table.Place(targetB);
+            table.Place(targetC);
+
+            int transferRoll = 0;
+            int[] picks = { targetA.Id, targetB.Id, targetC.Id };
+            ScoreResult result = new ScoreCalculator().Calculate(
+                table,
+                db,
+                transferTargetSelector: (candidates, count) =>
+                {
+                    int pick = picks[transferRoll++];
+                    Assert.That(candidates, Does.Contain(pick));
+                    return new[] { pick };
+                });
+
+            Assert.That(transferRoll, Is.EqualTo(3));
+            Assert.That(result.SkillTransfers.Select(t => t.TargetInstanceId).ToArray(), Is.EqualTo(picks));
+            Assert.That(result.ScoreLines.Any(l =>
+                l.DishInstanceId == source.Id && l.Kind == ScoreLineKind.ExtraSettlement), Is.False);
+
+            FoodTipsData tips = FoodTipsDataFactory.Build(source, table, db, result);
+            Assert.That(tips.Summary.Skills.Count, Is.EqualTo(1));
+            Assert.That(tips.TransferredSubSkills, Is.Empty);
+        }
+
+        [Test]
+        public void TriggerSweetTransfer_ExecutesSourcesImmediately()
+        {
+            DishShape oneCell = DishShape.FromRows(new[] { "X" });
+            SkillRuleDef sourceAdd = Rule("s_add", 0, SkillActionType.AddFlat, SkillScope.Self, 5f, "skill_source");
+            SkillRuleDef sourceTransfer = RuleWithActionCount(
+                "s_transfer", 1, SkillActionType.TransferSkills, SkillScope.All, 0f, 1, "skill_source");
+            var sourceSkill = new SkillDef(
+                "skill_source",
+                "来源",
+                string.Empty,
+                Array.Empty<string>(),
+                new[] { sourceAdd, sourceTransfer },
+                new[] { "美味 +5", "甜蜜传递" });
+            var immediateTrigger = new SkillRuleDef(
+                "trigger_all",
+                "skill_trigger",
+                0,
+                SkillTrigger.OnSettle,
+                SkillConditionType.None,
+                SkillScope.Self,
+                CountUnit.Instances,
+                CountMode.Per,
+                string.Empty,
+                SkillActionType.TriggerSweetTransfer,
+                SkillScope.All,
+                0,
+                new[] { 0f },
+                Array.Empty<string>());
+            var triggerSkill = new SkillDef(
+                "skill_trigger",
+                "立即触发",
+                string.Empty,
+                Array.Empty<string>(),
+                new[] { immediateTrigger },
+                new[] { "立即甜蜜传递" });
+
+            DishDef triggerDef = Dish("dish_trigger", "触发者", oneCell, "skill_trigger");
+            DishDef sourceDef = Dish("dish_source", "S", oneCell, "skill_source");
+            DishDef targetDef = Dish("dish_target", "目标", oneCell);
+            var db = new GameplayDatabase(
+                new[] { triggerDef, sourceDef, targetDef },
+                new[] { triggerSkill, sourceSkill },
+                Array.Empty<FlavorDef>(),
+                Array.Empty<MaterialDef>(),
+                Array.Empty<RecipeDef>());
+            var table = new DiningTable(3, 1);
+            var trigger = new DishInstance(1, triggerDef, MakePlacement(oneCell, 0, 0), triggerDef.SkillIds, Array.Empty<string>());
+            var source = new DishInstance(2, sourceDef, MakePlacement(oneCell, 1, 0), sourceDef.SkillIds, Array.Empty<string>());
+            var target = new DishInstance(3, targetDef, MakePlacement(oneCell, 2, 0), targetDef.SkillIds, Array.Empty<string>());
+            table.Place(trigger);
+            table.Place(source);
+            table.Place(target);
+
+            int transferRoll = 0;
+            ScoreResult result = new ScoreCalculator().Calculate(
+                table,
+                db,
+                transferTargetSelector: (candidates, count) =>
+                {
+                    transferRoll++;
+                    Assert.That(candidates, Does.Contain(target.Id));
+                    return new[] { target.Id };
+                });
+
+            Assert.That(transferRoll, Is.EqualTo(2));
+            Assert.That(result.SkillTransfers.Count(t => t.TargetInstanceId == target.Id), Is.EqualTo(2));
         }
 
         private static SkillRuleDef Rule(

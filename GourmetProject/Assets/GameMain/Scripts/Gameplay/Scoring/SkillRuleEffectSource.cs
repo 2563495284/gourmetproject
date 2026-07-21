@@ -289,14 +289,22 @@ namespace GourmetProject.Gameplay.Scoring
 
                 case SkillActionType.TriggerSweetTransfer:
                 {
-                    // 给「带甜蜜传递」的目标挂持续 buff：其每次甜蜜传递都额外再传 actionValue 次（默认 1），重掷目标；buff 不消耗。
-                    int extraTimes = value >= 1f ? (int)Math.Round(value * count, MidpointRounding.AwayFromZero) : count;
-                    if (extraTimes <= 0)
+                    // 立即让作用域内的来源各执行一次自身甜蜜传递（例如大棒棒糖）。
+                    foreach (DishInstance source in SweetTransferSources(ctx))
                     {
-                        extraTimes = 1;
+                        ExecuteSweetTransfersFrom(ctx, source);
                     }
 
-                    foreach (DishInstance target in TriggerSweetTransferSources(ctx))
+                    break;
+                }
+
+                case SkillActionType.ExtraSweetTransfer:
+                {
+                    // 枫糖语义：给随机选中的来源挂隐藏层数。之后该来源每次执行甜蜜传递，
+                    // 都会在本轮传递后按层数追加独立传递；每次调用都会重新选择传递目标。
+                    int extraTimes = Math.Max(1, (int)Math.Round(value * count, MidpointRounding.AwayFromZero));
+
+                    foreach (DishInstance target in SweetTransferSources(ctx))
                     {
                         ctx.AddExtraSweetTransfer(target, extraTimes);
                     }
@@ -349,6 +357,32 @@ namespace GourmetProject.Gameplay.Scoring
 
                 ctx.RecordSkillTransfer(t, effects, _self.Def.Name, _self.Id);
                 ResolveTransferredEffects(ctx, t, effects);
+            }
+        }
+
+        private static void ExecuteSweetTransfersFrom(ScoreContext ctx, DishInstance source)
+        {
+            if (ctx?.Db == null || source == null || source.SkillsDisabled)
+            {
+                return;
+            }
+
+            foreach (string skillId in source.SkillIds)
+            {
+                SkillDef skill = ctx.Db.GetSkill(skillId);
+                if (skill == null || !skill.HasRules)
+                {
+                    continue;
+                }
+
+                foreach (SkillRuleDef transferRule in skill.Rules)
+                {
+                    if (transferRule.Trigger == SkillTrigger.OnSettle
+                        && transferRule.ActionType == SkillActionType.TransferSkills)
+                    {
+                        new SkillRuleEffect(transferRule, source).Apply(ctx);
+                    }
+                }
             }
         }
 
@@ -443,18 +477,18 @@ namespace GourmetProject.Gameplay.Scoring
         }
 
         /// <summary>
-        /// 额外甜蜜传递挂载目标：作用域内「带甜蜜传递」的其它食物。
+        /// 甜蜜传递来源候选：作用域内「带甜蜜传递」的其它食物。
         /// <c>actionParam=axis:rowcol</c> 时取同行+同列；
         /// <c>actionCount&gt;0</c> 时从候选中取 N 个（有 TransferTargetSelector 则走随机，否则棋盘序）。
         /// </summary>
-        private IReadOnlyList<DishInstance> TriggerSweetTransferSources(ScoreContext ctx)
+        private IReadOnlyList<DishInstance> SweetTransferSources(ScoreContext ctx)
         {
             var qualified = new List<DishInstance>();
             var seen = new HashSet<int>();
 
             void TryAdd(DishInstance dish)
             {
-                if (dish == null || dish.Id == _self.Id || !seen.Add(dish.Id))
+                if (dish == null || dish.SkillsDisabled || dish.Id == _self.Id || !seen.Add(dish.Id))
                 {
                     return;
                 }

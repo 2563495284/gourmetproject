@@ -85,9 +85,10 @@ namespace GourmetProject.Gameplay.Scoring
                 return ResolveCopyCandidateDishes(db, board, self, rule, mode);
             }
 
-            if (rule.ActionType == SkillActionType.TriggerSweetTransfer)
+            if (rule.ActionType == SkillActionType.TriggerSweetTransfer
+                || rule.ActionType == SkillActionType.ExtraSweetTransfer)
             {
-                return ResolveTriggerTransferSources(db, board, self, rule);
+                return ResolveSweetTransferSources(db, board, self, rule);
             }
 
             if (rule.ActionType == SkillActionType.AddLayer
@@ -172,7 +173,7 @@ namespace GourmetProject.Gameplay.Scoring
             return dishes;
         }
 
-        private static List<DishInstance> ResolveTriggerTransferSources(
+        private static List<DishInstance> ResolveSweetTransferSources(
             GameplayDatabase db,
             GpTable board,
             DishInstance self,
@@ -182,7 +183,7 @@ namespace GourmetProject.Gameplay.Scoring
             var seen = new HashSet<int>();
             void Add(DishInstance dish)
             {
-                if (dish == null || dish.Id == self.Id || !seen.Add(dish.Id))
+                if (dish == null || dish.SkillsDisabled || dish.Id == self.Id || !seen.Add(dish.Id))
                 {
                     return;
                 }
