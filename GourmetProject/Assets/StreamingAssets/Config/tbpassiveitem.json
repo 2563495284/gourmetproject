@@ -19,7 +19,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_grant_two_active",
@@ -41,7 +41,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 50
   },
   {
     "id": "item_grant_recipe",
@@ -63,7 +63,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 50
   },
   {
     "id": "item_family_pack",
@@ -85,7 +85,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 120
   },
   {
     "id": "item_randomize_items",
@@ -107,7 +107,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 120
   },
   {
     "id": "item_gold_random",
@@ -129,7 +129,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 50
   },
   {
     "id": "item_gold_meal_bonus",
@@ -151,7 +151,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 50
   },
   {
     "id": "item_gold_boss",
@@ -173,7 +173,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 50
   },
   {
     "id": "item_gold_percent",
@@ -195,7 +195,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_discount_food",
@@ -217,7 +217,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_discount_fragment",
@@ -239,7 +239,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 50
   },
   {
     "id": "item_discount_active",
@@ -261,7 +261,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_discount_passive",
@@ -283,7 +283,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_discount_remove",
@@ -305,7 +305,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 50
   },
   {
     "id": "item_remove_fixed_30",
@@ -327,7 +327,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 120
   },
   {
     "id": "item_discount_recipe",
@@ -349,7 +349,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 50
   },
   {
     "id": "item_famous_knife",
@@ -371,7 +371,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 120
   },
   {
     "id": "item_score_to_one",
@@ -393,7 +393,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 50
   },
   {
     "id": "item_req_normal_down",
@@ -415,7 +415,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 50
   },
   {
     "id": "item_req_super_down",
@@ -437,7 +437,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_req_feast_down",
@@ -459,7 +459,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 120
   },
   {
     "id": "item_count_le_mult",
@@ -481,7 +481,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_count_ge_mult",
@@ -503,7 +503,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 120
   },
   {
     "id": "item_perma_flat_all",
@@ -525,7 +525,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_stargaze_every5",
@@ -547,7 +547,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_stargaze_first3",
@@ -569,7 +569,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_free_move_first",
@@ -591,7 +591,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_adjust_plus1",
@@ -613,7 +613,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_adjust_to_mult",
@@ -635,7 +635,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 120
   },
   {
     "id": "item_adjust_to_gold",
@@ -657,7 +657,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_gold_on_shop",
@@ -679,7 +679,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_extra_interest",
@@ -701,7 +701,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_interest_cap",
@@ -723,7 +723,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 120
   },
   {
     "id": "item_loan",
@@ -745,7 +745,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_timeline_random",
@@ -767,7 +767,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_extra_day",
@@ -789,7 +789,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_week_minus",
@@ -811,7 +811,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 200
   },
   {
     "id": "item_add_reward_node",
@@ -833,7 +833,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_add_interest_node",
@@ -855,7 +855,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_every3_next_mult",
@@ -877,7 +877,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_first_+2",
@@ -899,7 +899,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 50
   },
   {
     "id": "item_last_+2",
@@ -921,7 +921,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 50
   },
   {
     "id": "item_extra_active_slots",
@@ -943,7 +943,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_gold_on_active",
@@ -965,7 +965,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_block_active",
@@ -987,7 +987,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_flavor_enhance",
@@ -1009,7 +1009,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_flavor_remove_gold",
@@ -1031,7 +1031,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_flavor_remove_double",
@@ -1053,7 +1053,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_flavor_double_slot",
@@ -1075,7 +1075,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 200
   },
   {
     "id": "item_flavor_contagion",
@@ -1097,7 +1097,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_celltag_enhance",
@@ -1119,7 +1119,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_celltag_contagion",
@@ -1141,7 +1141,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_lucky_guarantee",
@@ -1163,7 +1163,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 120
   },
   {
     "id": "item_lucky_chance",
@@ -1185,7 +1185,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 120
   },
   {
     "id": "item_more_events",
@@ -1207,7 +1207,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 50
   },
   {
     "id": "item_gold_on_event",
@@ -1229,7 +1229,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 50
   },
   {
     "id": "item_shop_restock",
@@ -1251,7 +1251,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 120
   },
   {
     "id": "item_choice_count_plus1",
@@ -1273,7 +1273,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_choice_times_plus1",
@@ -1295,7 +1295,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 120
   },
   {
     "id": "item_extra_food_choice",
@@ -1317,7 +1317,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_extra_item_choice",
@@ -1339,7 +1339,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_copy_food",
@@ -1361,7 +1361,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_discard_negative",
@@ -1383,7 +1383,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 50
   },
   {
     "id": "item_discard_negative_gold",
@@ -1405,7 +1405,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_gold_meal_penalty",
@@ -1427,7 +1427,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 50
   },
   {
     "id": "item_shop_price_up",
@@ -1449,7 +1449,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 50
   },
   {
     "id": "item_no_remove",
@@ -1471,7 +1471,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 50
   },
   {
     "id": "item_skip_node",
@@ -1493,7 +1493,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 50
   },
   {
     "id": "item_choice_minus1",
@@ -1515,7 +1515,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 50
   },
   {
     "id": "item_req_normal_up",
@@ -1537,7 +1537,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 50
   },
   {
     "id": "item_req_super_up",
@@ -1559,7 +1559,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 50
   },
   {
     "id": "item_req_feast_up",
@@ -1581,7 +1581,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 50
   },
   {
     "id": "item_gold_week_clear",
@@ -1603,7 +1603,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 50
   },
   {
     "id": "item_count_as_all",
@@ -1625,7 +1625,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 45
+    "price": 200
   },
   {
     "id": "item_transfer_target_mult",
@@ -1647,7 +1647,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "term_sweet_transfer",
-    "price": 45
+    "price": 200
   },
   {
     "id": "item_transfer_source_mult",
@@ -1669,7 +1669,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "term_sweet_transfer",
-    "price": 45
+    "price": 200
   },
   {
     "id": "item_skill_count_mult",
@@ -1691,7 +1691,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "term_sweet_transfer",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_gold_on_transfer",
@@ -1713,7 +1713,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "term_sweet_transfer",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_cake_retain",
@@ -1735,7 +1735,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "clb",
-    "price": 45
+    "price": 200
   },
   {
     "id": "item_cake_init_bonus",
@@ -1757,7 +1757,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "clb",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_cake_accel",
@@ -1779,7 +1779,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "clb",
-    "price": 45
+    "price": 120
   },
   {
     "id": "item_cake_to_gold",
@@ -1801,7 +1801,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "clb",
-    "price": 45
+    "price": 80
   },
   {
     "id": "item_cake_req_minus",
@@ -1823,6 +1823,6 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "clb",
-    "price": 45
+    "price": 80
   }
 ]
