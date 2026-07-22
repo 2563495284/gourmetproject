@@ -135,6 +135,44 @@ namespace GourmetProject.Tests.EditMode
                 "两个来源应在大棒棒糖代触发时立即各生效一次，之后自身结算再各生效一次");
         }
 
+        [Test]
+        public void SweetTransfer_ToUnsettledDish_ResolvesImmediately()
+        {
+            DishShape cell = DishShape.FromRows(new[] { "X" });
+            SkillDef transferSkill = TransferSkill("skill_source");
+            DishDef sourceDef = Dish("source", cell, "skill_source");
+            DishDef targetDef = Dish("target", cell);
+            GameplayDatabase db = Database(new[] { sourceDef, targetDef }, transferSkill);
+            var table = new DiningTable(1, 2);
+            DishInstance source = Instance(1, sourceDef, cell, 0, 0);
+            DishInstance target = Instance(2, targetDef, cell, 0, 1);
+            Place(table, source, target);
+
+            ScoreResult result = new ScoreCalculator().Calculate(
+                table,
+                db,
+                transferTargetSelector: (candidates, count) => new[] { target.Id });
+
+            int transferredEffectIndex = result.ScoreLines
+                .Select((line, index) => new { line, index })
+                .Single(x =>
+                    x.line.DishInstanceId == target.Id
+                    && x.line.Kind == ScoreLineKind.DishFlat
+                    && x.line.Source.Name == "source<甜蜜传递>")
+                .index;
+            int targetBaseIndex = result.ScoreLines
+                .Select((line, index) => new { line, index })
+                .Single(x =>
+                    x.line.DishInstanceId == target.Id
+                    && x.line.Kind == ScoreLineKind.DishBase)
+                .index;
+
+            Assert.That(
+                transferredEffectIndex,
+                Is.LessThan(targetBaseIndex),
+                "目标尚未开始自身结算时，收到的甜蜜传递子技能也必须当场执行");
+        }
+
         private static SkillDef TransferSkill(string skillId)
         {
             return Skill(

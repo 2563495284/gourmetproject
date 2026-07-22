@@ -61,9 +61,7 @@ namespace GourmetProject.Gameplay.Scoring
                 RunDishPhase(ctx, entries, ScorePhase.BeforeDish, dish);
                 ctx.RecordDishBase();
                 RunDishPhase(ctx, entries, ScorePhase.DishBase, dish);
-                ctx.ApplyPendingTransferredEffects(dish);
                 RunDishPhase(ctx, entries, ScorePhase.DishSkills, dish);
-                ctx.CompleteDishSkillPhase(dish);
                 RunDishPhase(ctx, entries, ScorePhase.DishFlavor, dish);
                 RunDishPhase(ctx, entries, ScorePhase.Materials, dish);
                 RunDishPhase(ctx, entries, ScorePhase.AfterDish, dish);

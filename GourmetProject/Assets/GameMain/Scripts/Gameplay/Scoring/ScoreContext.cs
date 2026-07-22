@@ -39,8 +39,6 @@ namespace GourmetProject.Gameplay.Scoring
         private readonly Dictionary<int, float> _permanentFlatDeltas = new Dictionary<int, float>();
         private readonly Dictionary<int, float> _permanentMultDeltas = new Dictionary<int, float>();
         private readonly Dictionary<int, int> _liveCountAs = new Dictionary<int, int>();
-        private readonly Dictionary<int, List<ScoreEffectEntry>> _pendingTransferredEffects = new Dictionary<int, List<ScoreEffectEntry>>();
-        private readonly HashSet<int> _completedDishSkillPhases = new HashSet<int>();
         private DishAccumulator _current;
         private bool _initialFinalModifiersRecorded;
         private bool _finalized;
@@ -479,54 +477,14 @@ namespace GourmetProject.Gameplay.Scoring
                 $"触发甜蜜传递 {index}/{total}");
         }
 
-        public void QueueOrResolveTransferredEffect(ScoreEffectEntry entry)
+        public void ResolveTransferredEffect(ScoreEffectEntry entry)
         {
             if (entry?.Dish == null)
             {
                 return;
             }
 
-            bool targetSkillPhaseIsRunning = Dish != null
-                && Dish.Id == entry.Dish.Id
-                && Phase == ScorePhase.DishSkills;
-            if (targetSkillPhaseIsRunning || _completedDishSkillPhases.Contains(entry.Dish.Id))
-            {
-                SubmitCommand(new ResolveScoreEffectCommand(entry));
-                return;
-            }
-
-            if (!_pendingTransferredEffects.TryGetValue(entry.Dish.Id, out List<ScoreEffectEntry> pending))
-            {
-                pending = new List<ScoreEffectEntry>();
-                _pendingTransferredEffects[entry.Dish.Id] = pending;
-            }
-
-            pending.Add(entry);
-        }
-
-        public void ApplyPendingTransferredEffects(DishInstance dish)
-        {
-            if (dish == null)
-            {
-                return;
-            }
-
-            while (_pendingTransferredEffects.TryGetValue(dish.Id, out List<ScoreEffectEntry> pending) && pending.Count > 0)
-            {
-                _pendingTransferredEffects.Remove(dish.Id);
-                foreach (ScoreEffectEntry entry in pending)
-                {
-                    Apply(entry);
-                }
-            }
-        }
-
-        public void CompleteDishSkillPhase(DishInstance dish)
-        {
-            if (dish != null)
-            {
-                _completedDishSkillPhases.Add(dish.Id);
-            }
+            SubmitCommand(new ResolveScoreEffectCommand(entry));
         }
 
         /// <summary>登记技能复制请求，并立即触发本次选中的技能效果。</summary>

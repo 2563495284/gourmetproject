@@ -460,7 +460,7 @@ namespace GourmetProject.Gameplay.Scoring
                         SkillExecutionKind.SweetTransfer,
                         sourceLabel,
                         SkillScopeVisualMode.ResolvedTargets));
-                ctx.QueueOrResolveTransferredEffect(entry);
+                ctx.ResolveTransferredEffect(entry);
             }
         }
 

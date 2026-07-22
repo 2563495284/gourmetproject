@@ -1531,12 +1531,7 @@ namespace GourmetProject.Game.Run
                     return RequiredScoreOverride;
                 }
 
-                if (CurrentWeek != null)
-                {
-                    return ComputeRequiredScore(CurrentWeek, 0);
-                }
-
-                return EndlessRequiredScore();
+                return HiddenScoreService.TargetScore(this);
             }
         }
 
@@ -1556,49 +1551,6 @@ namespace GourmetProject.Game.Run
         }
 
         private cfg.Week LastConfiguredWeek => TotalWeeks > 0 ? _tables.TbWeek.GetOrDefault(TotalWeeks) : null;
-
-        private cfg.ScoreProfile CurrentScoreProfile(cfg.Week week)
-        {
-            return week == null ? null : _tables.TbScoreProfile.GetOrDefault(week.ScoreProfileId);
-        }
-
-        private int ComputeRequiredScore(cfg.Week week, int endlessExtra)
-        {
-            return ComputeRequiredScore(CurrentScoreProfile(week), false, endlessExtra);
-        }
-
-        private int ComputeRequiredScore(cfg.ScoreProfile profile, bool boss, int endlessExtra)
-        {
-            if (profile == null)
-            {
-                return 100;
-            }
-
-            double value = profile.BaseScore;
-            value *= profile.DifficultyMul > 0f ? profile.DifficultyMul : 1f;
-            if (boss)
-            {
-                value *= profile.BossMul > 0f ? profile.BossMul : 1f;
-            }
-
-            if (endlessExtra > 0)
-            {
-                double growth = profile.EndlessGrowthMul > 0f ? profile.EndlessGrowthMul : 1.5f;
-                value *= System.Math.Pow(growth, endlessExtra);
-            }
-
-            int rounded = (int)System.Math.Round(value, System.MidpointRounding.AwayFromZero);
-            int roundTo = profile.RoundTo > 0 ? profile.RoundTo : 1;
-            return ((rounded + roundTo - 1) / roundTo) * roundTo;
-        }
-
-        /// <summary>无尽模式要求分：以最后一周的目标分曲线为基准递增。</summary>
-        private int EndlessRequiredScore()
-        {
-            cfg.Week last = LastConfiguredWeek;
-            int extra = System.Math.Max(1, WeekIndex - TotalWeeks);
-            return ComputeRequiredScore(last, extra);
-        }
 
         /// <summary>导出为存档数据。</summary>
         public RunSaveData ToSaveData()
@@ -2448,7 +2400,7 @@ namespace GourmetProject.Game.Run
             return true;
         }
 
-        /// <summary>美食行动目标分：当前周目标分 × 倍率（倍率 &lt;= 0 视为 1）。</summary>
+        /// <summary>美食行动目标分：隐藏分曲线结果 × 倍率（倍率 &lt;= 0 视为 1）。</summary>
         public int ComputeFoodRequiredScore(float multiplier)
         {
             // 「分数变1」（RequiredScoreToOne）：非盛宴美食剩余生效局数内，要求分固定为 1（计数消耗在每局奖励结算时）。
@@ -2469,15 +2421,13 @@ namespace GourmetProject.Game.Run
             return new ItemRuntime(this).ModifyRequiredScore(scaled, tier);
         }
 
-        /// <summary>Boss 目标分：用指定分数曲线（空则用当前周曲线），强制应用 Boss 倍率。</summary>
+        /// <summary>
+        /// Boss 目标分兼容入口。目标分已统一由隐藏分曲线生成，旧的 scoreProfileId 不再参与计算。
+        /// 新调用应携带行动上下文直接使用 <see cref="HiddenScoreService.TargetScore"/>，以包含节点天数和隐藏分修正。
+        /// </summary>
         public int ComputeBossRequiredScore(string scoreProfileId)
         {
-            cfg.ScoreProfile profile = !string.IsNullOrEmpty(scoreProfileId)
-                ? _tables.TbScoreProfile.GetOrDefault(scoreProfileId)
-                : CurrentScoreProfile(CurrentWeek ?? LastConfiguredWeek);
-            int endlessExtra = IsEndless ? System.Math.Max(1, WeekIndex - TotalWeeks) : 0;
-            int bossReq = ComputeRequiredScore(profile, true, endlessExtra);
-            return new ItemRuntime(this).ModifyRequiredScore(bossReq, cfg.FoodActionKind.Feast);
+            return new ItemRuntime(this).ModifyRequiredScore(RequiredScore, cfg.FoodActionKind.Feast);
         }
 
         /// <summary>当前周的修正标识（small_board / limit_serve …），无则空串。</summary>
