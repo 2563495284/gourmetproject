@@ -123,7 +123,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         _sourceText.color = WithAlpha(sourceColor, alpha);
                     }
                 })
-                .SetEase(Ease.InExpo)
+                .SetEase(Ease.Linear)
                 .SetLink(gameObject)
                 .OnComplete(() =>
                 {

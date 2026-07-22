@@ -284,7 +284,7 @@ namespace GourmetProject.Gameplay.Scoring
                     if (candidates.Count > 0)
                     {
                         int n = Math.Max(1, (int)Math.Round(value, MidpointRounding.AwayFromZero));
-                        ctx.RecordCopySkill(_self, candidates, n, _self.Def.Name);
+                        ctx.RecordCopySkill(_self, candidates, n, CurrentSkillSourceName(ctx));
                     }
 
                     break;
@@ -338,6 +338,7 @@ namespace GourmetProject.Gameplay.Scoring
                 return;
             }
 
+            string sourceName = CurrentSkillSourceName(ctx);
             foreach (DishInstance t in TransferTargets(ctx))
             {
                 if (t.Id == _self.Id)
@@ -345,9 +346,20 @@ namespace GourmetProject.Gameplay.Scoring
                     continue;
                 }
 
-                ctx.RecordSkillTransfer(t, effects, _self.Def.Name, _self.Id);
-                ResolveTransferredEffects(ctx, t, effects);
+                ctx.RecordSkillTransfer(t, effects, sourceName, _self.Id);
+                ResolveTransferredEffects(ctx, t, effects, sourceName);
             }
+        }
+
+        private string CurrentSkillSourceName(ScoreContext ctx)
+        {
+            if (ctx?.Source?.Type == ScoreSourceType.DishSkill
+                && !string.IsNullOrEmpty(ctx.Source.Name))
+            {
+                return ctx.Source.Name;
+            }
+
+            return _self?.Def?.Name ?? string.Empty;
         }
 
         private static void ExecuteSweetTransfersFrom(ScoreContext ctx, DishInstance source)
@@ -430,10 +442,14 @@ namespace GourmetProject.Gameplay.Scoring
             return result;
         }
 
-        private void ResolveTransferredEffects(ScoreContext ctx, DishInstance target, IReadOnlyList<SkillEffect> effects)
+        private void ResolveTransferredEffects(
+            ScoreContext ctx,
+            DishInstance target,
+            IReadOnlyList<SkillEffect> effects,
+            string sourceName)
         {
             SkillDef parent = ctx.Db.GetSkill(_rule.SkillId);
-            string sourceLabel = $"{_self.Def.Name}<甜蜜传递>";
+            string sourceLabel = $"{sourceName}<甜蜜传递>";
             int boardOrder = target.Placement.Origin.Y * ctx.DiningTable.Width + target.Placement.Origin.X;
             foreach (SkillEffect effect in effects)
             {

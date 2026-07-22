@@ -248,7 +248,7 @@ namespace GourmetProject.Game.Presentation.Battle
             EmitReveal(onReveal, cue);
             ApplyDishValueChange(cue, view, dishValueAnchor, fxRoot, dishValueBadges);
             PlayActorFeedbackIfNeeded(scope, view.Instance != null ? view.Instance.Id : 0, cue.FeedbackKind, dishViews, cancellationToken);
-            if (fxRoot != null)
+            if (fxRoot != null && cue.ShowEffectLabel)
             {
                 FloatingTextView.SpawnEffect(
                     _settlementEffectLabelPrefab,
@@ -332,7 +332,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     dishViews,
                     cancellationToken,
                     triggeredActorIds);
-                if (fxRoot != null)
+                if (fxRoot != null && cue.ShowEffectLabel)
                 {
                     FloatingTextView.SpawnEffect(
                         _settlementEffectLabelPrefab,
@@ -1386,7 +1386,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 feedbackKind: SettlementDishFeedbackKind.DishBase,
                 valueChange: DishValueChange.Base(baseScore),
                 batchKey: batchKey,
-                sourceName: instance?.Def?.Name);
+                sourceName: instance?.Def?.Name,
+                showEffectLabel: false);
         }
 
         private static SettlementScopeSignal BuildDishFocusSignal(DishInstance instance, int ownerDishInstanceId = 0)
@@ -1423,7 +1424,8 @@ namespace GourmetProject.Game.Presentation.Battle
                         $"分数 {FormatSigned(line.Value)}",
                         feedbackKind: SettlementDishFeedbackKind.DishBase,
                         valueChange: DishValueChange.Base(line.After),
-                        sourceName: sourceName);
+                        sourceName: sourceName,
+                        showEffectLabel: false);
                     return true;
 
                 case ScoreLineKind.DishFlat:
@@ -1852,7 +1854,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 DishValueChange valueChange = default,
                 string batchKey = null,
                 TriggerSweetTransferCuePhase triggerSweetTransferPhase = TriggerSweetTransferCuePhase.None,
-                string sourceName = null)
+                string sourceName = null,
+                bool showEffectLabel = true)
             {
                 Kind = kind;
                 Text = text;
@@ -1864,6 +1867,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 ValueChange = valueChange;
                 BatchKey = batchKey;
                 TriggerSweetTransferPhase = triggerSweetTransferPhase;
+                ShowEffectLabel = showEffectLabel;
             }
 
             public SettlementCueKind Kind { get; }
@@ -1886,6 +1890,8 @@ namespace GourmetProject.Game.Presentation.Battle
             public string BatchKey { get; }
 
             public TriggerSweetTransferCuePhase TriggerSweetTransferPhase { get; }
+
+            public bool ShowEffectLabel { get; }
         }
 
         private readonly struct GridRun

@@ -62,23 +62,41 @@ namespace GourmetProject.Gameplay.Scoring
             return new ScoreSource(
                 ScoreSourceType.DishSkill,
                 skill?.Id,
-                skill?.Name,
+                DishSkillSourceName(dish, null, skill?.Name),
                 dish != null ? dish.Id : 0,
                 dish?.Def?.Id);
         }
 
         /// <summary>
-        /// 由甜蜜传递/技能复制获得的技能来源：Id 仍为技能 id，但 Name 用来源标签（如「马卡龙&lt;甜蜜传递&gt;」），
-        /// 使结算明细显示该技能来自别的菜。类型仍归为 DishSkill 保持排序一致。
+        /// 由甜蜜传递/技能复制获得的技能来源：Id 仍为技能 id，
+        /// Name 只保留归属食物名；完整的来源标签继续由运行时技能与 Trace 保留。
+        /// 类型仍归为 DishSkill 保持排序一致。
         /// </summary>
         public static ScoreSource TransferredDishSkill(SkillDef skill, DishInstance dish, string sourceLabel)
         {
             return new ScoreSource(
                 ScoreSourceType.DishSkill,
                 skill?.Id,
-                string.IsNullOrEmpty(sourceLabel) ? skill?.Name : sourceLabel,
+                DishSkillSourceName(dish, sourceLabel, skill?.Name),
                 dish != null ? dish.Id : 0,
                 dish?.Def?.Id);
+        }
+
+        /// <summary>技能结算归属的食物名。外来技能的标签只取 &lt;...&gt; 前的原始来源名。</summary>
+        public static string DishSkillSourceName(DishInstance dish, string sourceLabel, string fallbackName = null)
+        {
+            if (!string.IsNullOrEmpty(sourceLabel))
+            {
+                int tagIndex = sourceLabel.IndexOf('<');
+                return tagIndex > 0 ? sourceLabel.Substring(0, tagIndex) : sourceLabel;
+            }
+
+            if (!string.IsNullOrEmpty(dish?.Def?.Name))
+            {
+                return dish.Def.Name;
+            }
+
+            return fallbackName ?? string.Empty;
         }
 
         public static ScoreSource DishFlavor(IEffectDef effectDef, DishInstance dish)

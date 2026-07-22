@@ -25,6 +25,27 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(ReadInt(run, "EndX"), Is.EqualTo(expectedEndX));
         }
 
+        [Test]
+        public void DishBaseCueUsesBadgeWithoutSettlementEffectLabel()
+        {
+            MethodInfo method = typeof(SettlementSequencer).GetMethod(
+                "BuildDishBaseCue",
+                BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(method, Is.Not.Null);
+
+            object cue = method.Invoke(null, new object[] { null, null, null });
+            PropertyInfo showEffectLabel = cue?.GetType().GetProperty("ShowEffectLabel");
+            PropertyInfo valueChange = cue?.GetType().GetProperty("ValueChange");
+            Assert.That(showEffectLabel, Is.Not.Null);
+            Assert.That(valueChange, Is.Not.Null);
+            Assert.That((bool)showEffectLabel.GetValue(cue), Is.False);
+
+            object change = valueChange.GetValue(cue);
+            PropertyInfo kind = change?.GetType().GetProperty("Kind");
+            Assert.That(kind, Is.Not.Null);
+            Assert.That(kind.GetValue(change)?.ToString(), Is.EqualTo("Base"));
+        }
+
         private static object InvokeFindTopContinuousRun(IReadOnlyList<GridPos> cells)
         {
             MethodInfo method = typeof(SettlementSequencer).GetMethod(

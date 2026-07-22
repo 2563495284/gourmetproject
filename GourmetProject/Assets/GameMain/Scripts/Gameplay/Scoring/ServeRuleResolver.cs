@@ -73,7 +73,23 @@ namespace GourmetProject.Gameplay.Scoring
                         continue;
                     }
 
-                    ApplyServeAction(board, db, history, rule, served, count, running, ref gold, ref layerDelta, ref copyRequests, ref transferRequests);
+                    string sourceName = ScoreSource.DishSkillSourceName(
+                        served,
+                        served.GetSkillSource(skillId),
+                        skill.Name);
+                    ApplyServeAction(
+                        board,
+                        db,
+                        history,
+                        rule,
+                        served,
+                        sourceName,
+                        count,
+                        running,
+                        ref gold,
+                        ref layerDelta,
+                        ref copyRequests,
+                        ref transferRequests);
                 }
             }
 
@@ -81,7 +97,8 @@ namespace GourmetProject.Gameplay.Scoring
         }
 
         private static void ApplyServeAction(
-            GpTable board, GameplayDatabase db, IScoreHistory history, SkillRuleDef rule, DishInstance self, int count,
+            GpTable board, GameplayDatabase db, IScoreHistory history, SkillRuleDef rule, DishInstance self,
+            string sourceName, int count,
             int runningLayers, ref float gold, ref int layerDelta, ref List<CopySkillRequest> copyRequests,
             ref List<SkillTransferRequest> transferRequests)
         {
@@ -147,7 +164,7 @@ namespace GourmetProject.Gameplay.Scoring
                         if (candidateIds.Count > 0)
                         {
                             transferRequests ??= new List<SkillTransferRequest>();
-                            transferRequests.Add(new SkillTransferRequest(self.Id, self.Def.Name, candidateIds, effects, rule.ActionCount));
+                            transferRequests.Add(new SkillTransferRequest(self.Id, sourceName, candidateIds, effects, rule.ActionCount));
                         }
                     }
 
@@ -158,7 +175,14 @@ namespace GourmetProject.Gameplay.Scoring
                 {
                     foreach (DishInstance source in TriggerTransferSources(board, db, self, rule))
                     {
-                        AppendTransferRequestsFromSource(board, db, history, source, runningLayers, ref transferRequests);
+                        AppendTransferRequestsFromSource(
+                            board,
+                            db,
+                            history,
+                            source,
+                            sourceName,
+                            runningLayers,
+                            ref transferRequests);
                     }
 
                     break;
@@ -175,7 +199,7 @@ namespace GourmetProject.Gameplay.Scoring
                     {
                         int n = System.Math.Max(1, (int)System.Math.Round(value, System.MidpointRounding.AwayFromZero));
                         copyRequests ??= new List<CopySkillRequest>();
-                        copyRequests.Add(new CopySkillRequest(self.Id, candidates, n, self.Def.Name));
+                        copyRequests.Add(new CopySkillRequest(self.Id, candidates, n, sourceName));
                     }
 
                     break;
@@ -192,6 +216,7 @@ namespace GourmetProject.Gameplay.Scoring
             GameplayDatabase db,
             IScoreHistory history,
             DishInstance source,
+            string sourceName,
             int runningLayers,
             ref List<SkillTransferRequest> transferRequests)
         {
@@ -238,7 +263,7 @@ namespace GourmetProject.Gameplay.Scoring
                     }
 
                     transferRequests ??= new List<SkillTransferRequest>();
-                    transferRequests.Add(new SkillTransferRequest(source.Id, source.Def.Name, candidateIds, effects, transferRule.ActionCount));
+                    transferRequests.Add(new SkillTransferRequest(source.Id, sourceName, candidateIds, effects, transferRule.ActionCount));
                 }
             }
         }

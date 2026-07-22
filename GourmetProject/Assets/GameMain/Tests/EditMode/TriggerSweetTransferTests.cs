@@ -34,14 +34,20 @@ namespace GourmetProject.Tests.EditMode
                 transferTargetSelector: (candidates, count) => new[] { target.Id });
 
             Assert.That(result.SkillTransfers.Count(x => x.SourceInstanceId == source.Id), Is.EqualTo(2));
+            Assert.That(result.SkillTransfers.Count(x => x.SourceName == source.Def.Name), Is.EqualTo(1));
+            Assert.That(result.SkillTransfers.Count(x => x.SourceName == maple.Def.Name), Is.EqualTo(1));
             Assert.That(result.ScoreLines.Count(x =>
                 x.DishInstanceId == source.Id
                 && x.Kind == ScoreLineKind.DishFlat
-                && x.Source.Name == transferSkill.Name), Is.EqualTo(1), "代触发不能重跑来源技能的加分子技能");
+                && x.Source.Name == source.Def.Name), Is.EqualTo(1), "食物的原生技能应以食物名作为来源");
             Assert.That(result.ScoreLines.Count(x =>
                 x.DishInstanceId == target.Id
                 && x.Kind == ScoreLineKind.DishFlat
-                && x.Source.Name == "source<甜蜜传递>"), Is.EqualTo(2));
+                && x.Source.Name == source.Def.Name), Is.EqualTo(1));
+            Assert.That(result.ScoreLines.Count(x =>
+                x.DishInstanceId == target.Id
+                && x.Kind == ScoreLineKind.DishFlat
+                && x.Source.Name == maple.Def.Name), Is.EqualTo(1), "代触发 B 的甜蜜传递时，B 传给 C 的技能应归属触发者 A");
         }
 
         [Test]
@@ -95,7 +101,7 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(result.ScoreLines.Count(x =>
                     x.DishInstanceId == source.Id
                     && x.Kind == ScoreLineKind.DishFlat
-                    && x.Source.Name == transferSkill.Name), Is.EqualTo(1), "大棒棒糖不能重跑来源技能的其他子技能");
+                    && x.Source.Name == source.Def.Name), Is.EqualTo(1), "大棒棒糖不能重跑来源技能的其他子技能");
             }
         }
 
@@ -131,8 +137,13 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(result.ScoreLines.Count(x =>
                 x.DishInstanceId == bigLollipop.Id
                 && x.Kind == ScoreLineKind.DishFlat
-                && x.Source.Name == "source<甜蜜传递>"), Is.EqualTo(4),
-                "两个来源应在大棒棒糖代触发时立即各生效一次，之后自身结算再各生效一次");
+                && x.Source.Name == sourceDef.Name), Is.EqualTo(2),
+                "两个来源自身结算的甜蜜传递应归属来源食物");
+            Assert.That(result.ScoreLines.Count(x =>
+                x.DishInstanceId == bigLollipop.Id
+                && x.Kind == ScoreLineKind.DishFlat
+                && x.Source.Name == bigLollipop.Def.Name), Is.EqualTo(2),
+                "两个来源被代触发时，传递效果应归属大棒棒糖");
         }
 
         [Test]
@@ -158,7 +169,7 @@ namespace GourmetProject.Tests.EditMode
                 .Single(x =>
                     x.line.DishInstanceId == target.Id
                     && x.line.Kind == ScoreLineKind.DishFlat
-                    && x.line.Source.Name == "source<甜蜜传递>")
+                    && x.line.Source.Name == source.Def.Name)
                 .index;
             int targetBaseIndex = result.ScoreLines
                 .Select((line, index) => new { line, index })
@@ -171,6 +182,67 @@ namespace GourmetProject.Tests.EditMode
                 transferredEffectIndex,
                 Is.LessThan(targetBaseIndex),
                 "目标尚未开始自身结算时，收到的甜蜜传递子技能也必须当场执行");
+        }
+
+        [Test]
+        public void CopySkill_UsesCopyingDishNameWhenCopiedSkillExecutes()
+        {
+            DishShape cell = DishShape.FromRows(new[] { "X" });
+            SkillDef copiedSkill = Skill(
+                "skill_b",
+                Rule("b_flat", "skill_b", 0, SkillActionType.AddFlat, SkillScope.Self));
+            SkillDef copySkill = Skill(
+                "skill_a",
+                Rule("a_copy", "skill_a", 0, SkillActionType.CopySkill, SkillScope.Other));
+            DishDef aDef = Dish("a", cell, "skill_a");
+            DishDef bDef = Dish("b", cell, "skill_b");
+            GameplayDatabase db = Database(new[] { aDef, bDef }, copySkill, copiedSkill);
+            var table = new DiningTable(2, 1);
+            DishInstance a = Instance(1, aDef, cell, 0, 0);
+            DishInstance b = Instance(2, bDef, cell, 1, 0);
+            Place(table, a, b);
+
+            ScoreResult result = new ScoreCalculator().Calculate(
+                table,
+                db,
+                copySkillSelector: (candidates, count) => new[] { copiedSkill.Id });
+
+            Assert.That(result.ScoreLines.Count(x =>
+                x.DishInstanceId == a.Id
+                && x.Kind == ScoreLineKind.DishFlat
+                && x.Source.Name == a.Def.Name), Is.EqualTo(1));
+            Assert.That(result.ScoreLines.Count(x =>
+                x.DishInstanceId == b.Id
+                && x.Kind == ScoreLineKind.DishFlat
+                && x.Source.Name == b.Def.Name), Is.EqualTo(1));
+        }
+
+        [Test]
+        public void OnServeTriggerSweetTransfer_AttributesRequestToActivator()
+        {
+            DishShape cell = DishShape.FromRows(new[] { "X" });
+            SkillDef transferSkill = Skill(
+                "skill_b",
+                Rule("b_flat", "skill_b", 0, SkillActionType.AddFlat, SkillScope.Self, trigger: SkillTrigger.OnServe),
+                Rule("b_transfer", "skill_b", 1, SkillActionType.TransferSkills, SkillScope.Other, 1, trigger: SkillTrigger.OnServe));
+            SkillDef triggerSkill = Skill(
+                "skill_a",
+                Rule("a_trigger", "skill_a", 0, SkillActionType.TriggerSweetTransfer, SkillScope.All, 1, trigger: SkillTrigger.OnServe));
+            DishDef aDef = Dish("a", cell, "skill_a");
+            DishDef bDef = Dish("b", cell, "skill_b");
+            DishDef cDef = Dish("c", cell);
+            GameplayDatabase db = Database(new[] { aDef, bDef, cDef }, triggerSkill, transferSkill);
+            var table = new DiningTable(3, 1);
+            DishInstance a = Instance(1, aDef, cell, 0, 0);
+            DishInstance b = Instance(2, bDef, cell, 1, 0);
+            DishInstance c = Instance(3, cDef, cell, 2, 0);
+            Place(table, a, b, c);
+
+            ServeRuleResolver.ServeResolveResult result = ServeRuleResolver.ResolveOnServe(table, db, null, a, 0);
+
+            Assert.That(result.TransferRequests, Has.Count.EqualTo(1));
+            Assert.That(result.TransferRequests[0].SourceInstanceId, Is.EqualTo(b.Id));
+            Assert.That(result.TransferRequests[0].SourceName, Is.EqualTo(a.Def.Name));
         }
 
         private static SkillDef TransferSkill(string skillId)
@@ -199,13 +271,14 @@ namespace GourmetProject.Tests.EditMode
             SkillActionType action,
             SkillScope actionScope,
             int actionCount = 0,
-            string actionParam = null)
+            string actionParam = null,
+            SkillTrigger trigger = SkillTrigger.OnSettle)
         {
             return new SkillRuleDef(
                 id,
                 skillId,
                 order,
-                SkillTrigger.OnSettle,
+                trigger,
                 SkillConditionType.None,
                 SkillScope.Self,
                 CountUnit.Instances,
