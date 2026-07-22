@@ -61,6 +61,11 @@ namespace GourmetProject.Game.Run
             var calculator = new ScoreCalculator(effectSources: ItemScoreEffectAdapter.BuildScoreSources(run));
             var session = new BattleSession(board, run.Database, battleStream, slots, requiredScore, calculator, runSettledCounts: run.RunSettledCounts);
             session.ExtraCountAsPerDish = ItemScoreEffectAdapter.ExtraCountAsPerDish(run);
+            cfg.GameBase gameBase = run.Tables.TbGameBase.Data;
+            session.ConfigureRandomServeMultiplier(
+                gameBase.RandomServeMultiplierMin,
+                gameBase.RandomServeMultiplierMax,
+                gameBase.RandomServeMultiplierStep);
 
             // 蛋糕层数族道具：初始层数 / 阈值下调 / 叠层加速。
             var itemRuntime = new ItemRuntime(run);

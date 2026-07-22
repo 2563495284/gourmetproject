@@ -77,6 +77,7 @@ namespace GourmetProject.Game.UI.Battle
 
         [Header("Hover Tips")]
         [SerializeField] private BattleTipRegistry _tips;
+        private CakeLayerBuffHud _cakeLayerBuffHud;
 
         [Header("Action Selection (center)")]
         [SerializeField] private GameObject _actionSelectionPanel;
@@ -186,6 +187,7 @@ namespace GourmetProject.Game.UI.Battle
             base.OnInit(userData);
 
             _infoColumn?.Bind(OnSettingsClicked, OnViewTableClicked, OnFoodAdjustClicked);
+            _cakeLayerBuffHud = GetComponent<CakeLayerBuffHud>();
             _foodBar?.Bind(OnEatClicked, OnDoodleClearClicked, OnDoodleToggleClicked);
 
             if (_boardEditSkipButton != null)
@@ -255,6 +257,8 @@ namespace GourmetProject.Game.UI.Battle
                 _world.HideWorld();
             }
 
+            UnsubscribeCakeLayerChanges();
+
             base.OnClose(isShutdown, userData);
         }
 
@@ -275,6 +279,7 @@ namespace GourmetProject.Game.UI.Battle
         /// <summary>进入（或继续）一周：随机/沿用行动轴后开始行动循环。</summary>
         public void BeginWeek()
         {
+            UnsubscribeCakeLayerChanges();
             _session = null;
             _loop?.BeginWeek();
         }
@@ -398,7 +403,9 @@ namespace GourmetProject.Game.UI.Battle
             _activeBattleIsBoss = snapshot.IsBoss;
             _currentBossDebuff = _activeBattleIsBoss ? ResolveBossDebuff(_activeBattleModifier) : null;
 
+            UnsubscribeCakeLayerChanges();
             _session = _run.BuildBattleSession(_activeBattleRawRequiredScore, _activeBattleModifier, _activeBattleKey);
+            _session.HappyCakeLayersChanged += OnHappyCakeLayersChanged;
             _session.DiningTable.Clear();
             RestorePendingRewardBattleDishes(_session, snapshot);
             _session.RestoreSettledForRewardView(snapshot.LastTotal);
@@ -1191,6 +1198,7 @@ namespace GourmetProject.Game.UI.Battle
 
             BattleWorldController world = _world ?? BattleWorldController.Instance;
             _infoColumn?.Refresh(_run, _session, _current, world, _currentBossDebuff);
+            RefreshCakeLayerBuff();
 
             if (refreshItems)
             {
@@ -1203,6 +1211,25 @@ namespace GourmetProject.Game.UI.Battle
         internal void RefreshPersistentHud()
         {
             RefreshPersistent();
+        }
+
+        private void RefreshCakeLayerBuff()
+        {
+            if (_cakeLayerBuffHud == null)
+            {
+                return;
+            }
+
+            if (_session == null)
+            {
+                _cakeLayerBuffHud.Hide();
+                return;
+            }
+
+            _cakeLayerBuffHud.Bind(
+                _session.HappyCakeLayers,
+                _session.Database?.CakeLayerBuffs,
+                _tips != null ? _tips.Item : null);
         }
 
         private void RefreshFoodActions()
@@ -1843,8 +1870,10 @@ namespace GourmetProject.Game.UI.Battle
             _currentBossDebuff = _activeBattleIsBoss ? ResolveBossDebuff(modifier) : null;
             SetMessage(string.Empty);
             _run.BeginFoodActionAdjustments(BossDebuffModifiers.IsPrefabFood(modifier));
+            UnsubscribeCakeLayerChanges();
             _session = _run.BuildBattleSession(requiredScore, modifier, key);
             _session.Served += OnBattleServed;
+            _session.HappyCakeLayersChanged += OnHappyCakeLayersChanged;
             // 常驻壳在战斗中持续显示并接管分数/道具/菜谱面板（餐桌/菜品仍在世界空间场景）。
             SwitchTo(GameplayView.Food);
 
@@ -1867,6 +1896,20 @@ namespace GourmetProject.Game.UI.Battle
             _world.SetDishHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
             _world.SetCellHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
             RefreshAll();
+        }
+
+        private void OnHappyCakeLayersChanged(int before, int after)
+        {
+            RefreshCakeLayerBuff();
+            (_world ?? BattleWorldController.Instance)?.PlayCakeLayerChange(before, after);
+        }
+
+        private void UnsubscribeCakeLayerChanges()
+        {
+            if (_session != null)
+            {
+                _session.HappyCakeLayersChanged -= OnHappyCakeLayersChanged;
+            }
         }
 
         private void OnBattleServed(DishInstance dish, int servesUsed)

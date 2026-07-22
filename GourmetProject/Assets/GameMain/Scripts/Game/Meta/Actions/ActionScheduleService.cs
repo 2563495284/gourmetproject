@@ -16,10 +16,10 @@ namespace GourmetProject.Game.Meta
     /// </summary>
     public static class ActionScheduleService
     {
-        public static List<ActionChoice> GenerateChoices(GameRun run, IRandomStream rng, int count = ActionRandomService.MaxChoiceCount)
+        public static List<ActionChoice> GenerateChoices(GameRun run, IRandomStream rng, int count = 0)
         {
             var result = new List<ActionChoice>();
-            if (run == null || rng == null || count <= 0)
+            if (run == null || rng == null)
             {
                 return result;
             }
@@ -28,6 +28,12 @@ namespace GourmetProject.Game.Meta
             //   实现见 EventService.RollActionEvent 与 WeekLoopController.ResolveEventAction，不在此大组/小组权重里注入。
 
             cfg.Tables tables = run.Tables ?? GameApp.Config.Tables;
+            int maxChoiceCount = ActionRandomService.ChoiceCount(run);
+            if (count <= 0)
+            {
+                count = maxChoiceCount;
+            }
+
             string largeId = EnsureCurrentGroup(run, rng);
             cfg.ActionLargeGroup large = string.IsNullOrEmpty(largeId) ? null : tables.TbActionLargeGroup.GetOrDefault(largeId);
             if (large == null)
@@ -41,7 +47,7 @@ namespace GourmetProject.Game.Meta
                 return result;
             }
 
-            int limit = Math.Min(count, ActionRandomService.MaxChoiceCount);
+            int limit = Math.Min(count, maxChoiceCount);
             foreach (string actionId in small.ActionIds)
             {
                 if (result.Count >= limit)
@@ -75,6 +81,7 @@ namespace GourmetProject.Game.Meta
             }
 
             cfg.Tables tables = run.Tables ?? GameApp.Config.Tables;
+            int maxChoiceCount = ActionRandomService.ChoiceCount(run);
 
             if (previous != null)
             {
@@ -87,14 +94,14 @@ namespace GourmetProject.Game.Meta
                 }
             }
 
-            if (result.Count >= ActionRandomService.MaxChoiceCount)
+            if (result.Count >= maxChoiceCount)
             {
                 return result;
             }
 
-            foreach (ActionChoice choice in GenerateChoices(run, rng, ActionRandomService.MaxChoiceCount))
+            foreach (ActionChoice choice in GenerateChoices(run, rng, maxChoiceCount))
             {
-                if (result.Count >= ActionRandomService.MaxChoiceCount)
+                if (result.Count >= maxChoiceCount)
                 {
                     break;
                 }
@@ -125,7 +132,8 @@ namespace GourmetProject.Game.Meta
                 if (small != null)
                 {
                     smalls.Add(small);
-                    weights.Add(small.Weight > 0f ? small.Weight : 1f);
+                    float defaultWeight = Math.Max(float.Epsilon, tables.TbGameBase.DefaultRandomWeight);
+                    weights.Add(small.Weight > 0f ? small.Weight : defaultWeight);
                 }
             }
 
@@ -389,7 +397,9 @@ namespace GourmetProject.Game.Meta
             {
                 // 保底权重 0 但参与规则的大组，给一个极小正值保证仍可被选中（也避免总权重为 0）。
                 float w = FallbackWeight(group, run.WeekIndex);
-                weights.Add(w > 0f ? w : 0.0001f);
+                cfg.Tables tables = run.Tables ?? GameApp.Config.Tables;
+                float minimumWeight = Math.Max(float.Epsilon, tables.TbGameBase.MinimumRandomWeight);
+                weights.Add(w > 0f ? w : minimumWeight);
             }
 
             return groups[rng.WeightedPickIndex(weights)].Id;

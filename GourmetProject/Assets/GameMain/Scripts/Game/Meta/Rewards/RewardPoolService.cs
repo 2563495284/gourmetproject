@@ -109,7 +109,7 @@ namespace GourmetProject.Game.Meta
 
             for (int i = 0; i < count && candidates.Count > 0; i++)
             {
-                int index = PickHiddenWeighted(context, candidates, hidden, pool.DistanceFloor);
+                int index = PickHiddenWeighted(context, candidates, hidden, HiddenScoreDistanceFloor(context));
                 DishDef dish = candidates[index];
                 candidates.RemoveAt(index);
 
@@ -179,7 +179,7 @@ namespace GourmetProject.Game.Meta
                 var weights = new List<float>(candidates.Count);
                 foreach (ItemDefinition item in candidates)
                 {
-                    weights.Add(GetItemWeight(item, hidden, pool.DistanceFloor));
+                    weights.Add(GetItemWeight(item, hidden, HiddenScoreDistanceFloor(context), context.Tables));
                 }
 
                 int index = PickWeightedOrUniform(context, weights, candidates.Count);
@@ -236,7 +236,7 @@ namespace GourmetProject.Game.Meta
 
             for (int i = 0; i < count && candidates.Count > 0; i++)
             {
-                int index = PickHiddenWeighted(context, candidates, hidden, pool.DistanceFloor);
+                int index = PickHiddenWeighted(context, candidates, hidden, HiddenScoreDistanceFloor(context));
                 TableFragmentDef fragment = candidates[index];
                 candidates.RemoveAt(index);
                 result.Add(new RewardChoice(
@@ -337,6 +337,17 @@ namespace GourmetProject.Game.Meta
             return PickWeightedOrUniform(context, weights, candidates.Count);
         }
 
+        private static int HiddenScoreDistanceFloor(RewardContext context)
+        {
+            return Math.Max(1, context.Tables.TbGameBase.HiddenScoreDistanceFloor);
+        }
+
+        private static float DefaultRandomWeight(cfg.Tables tables)
+        {
+            tables ??= GameApp.Config.Tables;
+            return Math.Max(float.Epsilon, tables.TbGameBase.DefaultRandomWeight);
+        }
+
         private static int PickHiddenWeighted(RewardContext context, IReadOnlyList<TableFragmentDef> candidates, int hidden, int distanceFloor)
         {
             var weights = new List<float>(candidates.Count);
@@ -359,9 +370,9 @@ namespace GourmetProject.Game.Meta
             return total > 0f ? context.Rng.WeightedPickIndex(weights) : context.Rng.Range(0, count);
         }
 
-        private static float GetItemWeight(ItemDefinition item, int hidden, int distanceFloor)
+        private static float GetItemWeight(ItemDefinition item, int hidden, int distanceFloor, cfg.Tables tables)
         {
-            float weight = item.BaseWeight > 0f ? item.BaseWeight : 1f;
+            float weight = item.BaseWeight > 0f ? item.BaseWeight : DefaultRandomWeight(tables);
             if (item.IsPassive)
             {
                 weight = HiddenScoreWeight(weight, HiddenMean(item), hidden, distanceFloor);

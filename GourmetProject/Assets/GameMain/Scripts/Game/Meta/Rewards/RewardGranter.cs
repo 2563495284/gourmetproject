@@ -354,7 +354,8 @@ namespace GourmetProject.Game.Meta
             var weights = new System.Collections.Generic.List<float>(slots.Count);
             for (int i = 0; i < slots.Count; i++)
             {
-                weights.Add(slots[i].Weight > 0f ? slots[i].Weight : 1f);
+                float defaultWeight = System.Math.Max(float.Epsilon, context.Tables.TbGameBase.DefaultRandomWeight);
+                weights.Add(slots[i].Weight > 0f ? slots[i].Weight : defaultWeight);
             }
 
             cfg.RewardSlot chosen = slots[context.Rng.WeightedPickIndex(weights)];

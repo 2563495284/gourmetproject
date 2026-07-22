@@ -30,6 +30,9 @@ namespace GourmetProject.Gameplay.Battle
         private float _settlementDishMultiplierFlat;
         private string _settlementDishMultiplierItemId = string.Empty;
         private string _settlementDishMultiplierItemName = string.Empty;
+        private float _randomServeMultiplierMin;
+        private float _randomServeMultiplierMax;
+        private float _randomServeMultiplierStep;
 
         public BattleSession(
             GpTable board,
@@ -84,7 +87,7 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>设置本次品鉴的初始蛋糕层数（道具「蛋糕打底」/跨局保留）。下限 0。</summary>
         public void SeedHappyCakeLayers(int layers)
         {
-            HappyCakeLayers = layers < 0 ? 0 : layers;
+            SetHappyCakeLayers(layers);
         }
 
         /// <summary>本局允许的最大上菜次数（-1 表示不限；Boss 机制「限量供应」会设上限）。</summary>
@@ -101,6 +104,18 @@ namespace GourmetProject.Gameplay.Battle
         public bool AlternateServeMultiplier { get; set; }
 
         public bool RandomServeMultiplier { get; set; }
+
+        public void ConfigureRandomServeMultiplier(float min, float max, float step)
+        {
+            if (max < min)
+            {
+                (min, max) = (max, min);
+            }
+
+            _randomServeMultiplierMin = min;
+            _randomServeMultiplierMax = max;
+            _randomServeMultiplierStep = step > 0f ? step : 0f;
+        }
 
         public bool ReverseSettlementOrder { get; set; }
 
@@ -140,6 +155,9 @@ namespace GourmetProject.Gameplay.Battle
         public event Action<SkillTransferRequest> SweetTransferTriggered;
 
         public event Action<DishInstance, int> Served;
+
+        /// <summary>欢乐蛋糕层数变化（旧值, 新值），供表现层驱动 HUD 与场景蛋糕演出。</summary>
+        public event Action<int, int> HappyCakeLayersChanged;
 
         public event Action<DishInstance, float> ServeMultiplierFlatApplied;
 
@@ -252,7 +270,7 @@ namespace GourmetProject.Gameplay.Battle
                 ServeRuleResolver.ServeResolveResult serveResult =
                     ServeRuleResolver.ResolveOnServe(DiningTable, _db, BuildHistory(), instance, HappyCakeLayers);
                 PendingGold += serveResult.Gold;
-                HappyCakeLayers = Math.Max(0, HappyCakeLayers + serveResult.HappyCakeLayerDelta + AccelFor(serveResult.HappyCakeLayerDelta));
+                SetHappyCakeLayers(HappyCakeLayers + serveResult.HappyCakeLayerDelta + AccelFor(serveResult.HappyCakeLayerDelta));
                 ApplyTransferRequests(serveResult.TransferRequests);
                 ApplyCopySkillRequests(serveResult.CopySkillRequests);
             }
@@ -419,8 +437,16 @@ namespace GourmetProject.Gameplay.Battle
             }
             else if (RandomServeMultiplier)
             {
-                int step = _rng.Range(5, 16);
-                instance.MultiplyServeMultiplier(step / 10f);
+                if (_randomServeMultiplierStep <= 0f)
+                {
+                    return;
+                }
+
+                float span = Math.Max(0f, _randomServeMultiplierMax - _randomServeMultiplierMin);
+                int stepCount = Math.Max(0, (int)Math.Round(span / _randomServeMultiplierStep, MidpointRounding.AwayFromZero));
+                int stepIndex = stepCount > 0 ? _rng.Range(0, stepCount + 1) : 0;
+                float multiplier = Math.Min(_randomServeMultiplierMax, _randomServeMultiplierMin + stepIndex * _randomServeMultiplierStep);
+                instance.MultiplyServeMultiplier(multiplier);
             }
         }
 
@@ -481,7 +507,7 @@ namespace GourmetProject.Gameplay.Battle
             }
 
             // 全局欢乐蛋糕层数：写回品鉴级计数器（层数净增时叠加道具加速）。
-            HappyCakeLayers = Math.Max(0, HappyCakeLayers + result.HappyCakeLayerDelta + AccelFor(result.HappyCakeLayerDelta));
+            SetHappyCakeLayers(HappyCakeLayers + result.HappyCakeLayerDelta + AccelFor(result.HappyCakeLayerDelta));
 
             // 技能传递。
             var transferSourcesMultiplied = new HashSet<int>();
@@ -725,6 +751,16 @@ namespace GourmetProject.Gameplay.Battle
         private int AccelFor(int delta)
         {
             return delta > 0 ? CakeLayerAccelBonus : 0;
+        }
+
+        private void SetHappyCakeLayers(int layers)
+        {
+            int before = HappyCakeLayers;
+            HappyCakeLayers = Math.Max(0, layers);
+            if (before != HappyCakeLayers)
+            {
+                HappyCakeLayersChanged?.Invoke(before, HappyCakeLayers);
+            }
         }
 
         private DishInstance FindInstance(int id)

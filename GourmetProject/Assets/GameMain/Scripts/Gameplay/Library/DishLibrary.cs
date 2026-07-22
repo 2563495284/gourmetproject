@@ -15,9 +15,6 @@ namespace GourmetProject.Gameplay.Library
     {
         private readonly List<DishDef> _dishes;
 
-        /// <summary>未显式指定时使用的距离下限 c。调用方应优先按进度从配置传入。</summary>
-        public const int DefaultDistanceFloor = 5;
-
         public DishLibrary(IEnumerable<DishDef> dishes)
         {
             if (dishes == null)
@@ -31,11 +28,6 @@ namespace GourmetProject.Gameplay.Library
         public IReadOnlyList<DishDef> Dishes => _dishes;
 
         /// <summary>计算单个菜品在给定要求隐藏分下的权重（含基础权重系数）。</summary>
-        public static float ComputeWeight(DishDef dish, int requiredHidden)
-        {
-            return ComputeWeight(dish, requiredHidden, DefaultDistanceFloor);
-        }
-
         public static float ComputeWeight(DishDef dish, int requiredHidden, int distanceFloor)
         {
             if (requiredHidden == 0)
@@ -77,8 +69,8 @@ namespace GourmetProject.Gameplay.Library
         /// <summary>
         /// 按隐藏分加权随机取一个菜品。无候选时返回 null。
         /// </summary>
-        /// <param name="distanceFloor">权重公式中的距离下限 c，按当前进度由调用方传入；缺省回退到 <see cref="DefaultDistanceFloor"/>。</param>
-        public DishDef Roll(IRandomStream stream, int requiredHidden, Func<DishDef, bool> filter = null, int distanceFloor = DefaultDistanceFloor)
+        /// <param name="distanceFloor">权重公式中的距离下限 c，由调用方从全局配置传入。</param>
+        public DishDef Roll(IRandomStream stream, int requiredHidden, int distanceFloor, Func<DishDef, bool> filter = null)
         {
             if (stream == null)
             {

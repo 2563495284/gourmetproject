@@ -68,7 +68,8 @@ namespace GourmetProject.Game.Meta
             var weights = new List<float>(candidates.Count);
             foreach (cfg.BossDebuff debuff in candidates)
             {
-                weights.Add(debuff.Weight > 0f ? debuff.Weight : 1f);
+                float defaultWeight = System.Math.Max(float.Epsilon, tables.TbGameBase.DefaultRandomWeight);
+                weights.Add(debuff.Weight > 0f ? debuff.Weight : defaultWeight);
             }
 
             return candidates[rng.WeightedPickIndex(weights)];

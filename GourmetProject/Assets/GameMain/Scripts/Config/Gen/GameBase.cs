@@ -33,6 +33,13 @@ public sealed partial class GameBase : Luban.BeanBase
         { var __json0 = _buf["recipeBookPrices"]; if(!__json0.IsArray) { throw new SerializationException(); } RecipeBookPrices = new System.Collections.Generic.List<int>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { int __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  RecipeBookPrices.Add(__v0); }   }
         { if(!_buf["maxRecipeBookCount"].IsNumber) { throw new SerializationException(); }  MaxRecipeBookCount = _buf["maxRecipeBookCount"]; }
         { if(!_buf["shopPriceFluctuationPct"].IsNumber) { throw new SerializationException(); }  ShopPriceFluctuationPct = _buf["shopPriceFluctuationPct"]; }
+        { if(!_buf["actionChoiceCount"].IsNumber) { throw new SerializationException(); }  ActionChoiceCount = _buf["actionChoiceCount"]; }
+        { if(!_buf["hiddenScoreDistanceFloor"].IsNumber) { throw new SerializationException(); }  HiddenScoreDistanceFloor = _buf["hiddenScoreDistanceFloor"]; }
+        { if(!_buf["minimumRandomWeight"].IsNumber) { throw new SerializationException(); }  MinimumRandomWeight = _buf["minimumRandomWeight"]; }
+        { if(!_buf["defaultRandomWeight"].IsNumber) { throw new SerializationException(); }  DefaultRandomWeight = _buf["defaultRandomWeight"]; }
+        { if(!_buf["randomServeMultiplierMin"].IsNumber) { throw new SerializationException(); }  RandomServeMultiplierMin = _buf["randomServeMultiplierMin"]; }
+        { if(!_buf["randomServeMultiplierMax"].IsNumber) { throw new SerializationException(); }  RandomServeMultiplierMax = _buf["randomServeMultiplierMax"]; }
+        { if(!_buf["randomServeMultiplierStep"].IsNumber) { throw new SerializationException(); }  RandomServeMultiplierStep = _buf["randomServeMultiplierStep"]; }
     }
 
     public static GameBase DeserializeGameBase(JSONNode _buf)
@@ -104,6 +111,34 @@ public sealed partial class GameBase : Luban.BeanBase
     /// 商店食物/主动/被动道具基础价格随机浮动比例
     /// </summary>
     public readonly float ShopPriceFluctuationPct;
+    /// <summary>
+    /// 行动随机候选数量
+    /// </summary>
+    public readonly int ActionChoiceCount;
+    /// <summary>
+    /// 隐藏分距离加权下限（菜品/道具/碎片随机池共用）
+    /// </summary>
+    public readonly int HiddenScoreDistanceFloor;
+    /// <summary>
+    /// 随机池修正后权重的最小正值
+    /// </summary>
+    public readonly float MinimumRandomWeight;
+    /// <summary>
+    /// 随机池基础权重未配置或非正数时的默认值
+    /// </summary>
+    public readonly float DefaultRandomWeight;
+    /// <summary>
+    /// 黑暗料理随机上菜倍率下限
+    /// </summary>
+    public readonly float RandomServeMultiplierMin;
+    /// <summary>
+    /// 黑暗料理随机上菜倍率上限
+    /// </summary>
+    public readonly float RandomServeMultiplierMax;
+    /// <summary>
+    /// 黑暗料理随机上菜倍率步长
+    /// </summary>
+    public readonly float RandomServeMultiplierStep;
    
     public const int __ID__ = -1705057789;
     public override int GetTypeId() => __ID__;
@@ -131,6 +166,13 @@ public sealed partial class GameBase : Luban.BeanBase
         + "recipeBookPrices:" + Luban.StringUtil.CollectionToString(RecipeBookPrices) + ","
         + "maxRecipeBookCount:" + MaxRecipeBookCount + ","
         + "shopPriceFluctuationPct:" + ShopPriceFluctuationPct + ","
+        + "actionChoiceCount:" + ActionChoiceCount + ","
+        + "hiddenScoreDistanceFloor:" + HiddenScoreDistanceFloor + ","
+        + "minimumRandomWeight:" + MinimumRandomWeight + ","
+        + "defaultRandomWeight:" + DefaultRandomWeight + ","
+        + "randomServeMultiplierMin:" + RandomServeMultiplierMin + ","
+        + "randomServeMultiplierMax:" + RandomServeMultiplierMax + ","
+        + "randomServeMultiplierStep:" + RandomServeMultiplierStep + ","
         + "}";
     }
 }

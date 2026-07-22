@@ -95,6 +95,34 @@ public partial class TbGameBase
     /// 商店食物/主动/被动道具基础价格随机浮动比例
     /// </summary>
      public float ShopPriceFluctuationPct => _data.ShopPriceFluctuationPct;
+    /// <summary>
+    /// 行动随机候选数量
+    /// </summary>
+     public int ActionChoiceCount => _data.ActionChoiceCount;
+    /// <summary>
+    /// 隐藏分距离加权下限（菜品/道具/碎片随机池共用）
+    /// </summary>
+     public int HiddenScoreDistanceFloor => _data.HiddenScoreDistanceFloor;
+    /// <summary>
+    /// 随机池修正后权重的最小正值
+    /// </summary>
+     public float MinimumRandomWeight => _data.MinimumRandomWeight;
+    /// <summary>
+    /// 随机池基础权重未配置或非正数时的默认值
+    /// </summary>
+     public float DefaultRandomWeight => _data.DefaultRandomWeight;
+    /// <summary>
+    /// 黑暗料理随机上菜倍率下限
+    /// </summary>
+     public float RandomServeMultiplierMin => _data.RandomServeMultiplierMin;
+    /// <summary>
+    /// 黑暗料理随机上菜倍率上限
+    /// </summary>
+     public float RandomServeMultiplierMax => _data.RandomServeMultiplierMax;
+    /// <summary>
+    /// 黑暗料理随机上菜倍率步长
+    /// </summary>
+     public float RandomServeMultiplierStep => _data.RandomServeMultiplierStep;
     
     public void ResolveRef(Tables tables)
     {

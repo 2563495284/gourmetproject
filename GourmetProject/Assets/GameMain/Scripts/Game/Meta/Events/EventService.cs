@@ -149,7 +149,8 @@ namespace GourmetProject.Game.Meta
             var weights = new List<float>(candidates.Count);
             foreach (cfg.GameEvent ev in candidates)
             {
-                float weight = ev.Weight > 0f ? ev.Weight : 1f;
+                float defaultWeight = System.Math.Max(float.Epsilon, tables.TbGameBase.DefaultRandomWeight);
+                float weight = ev.Weight > 0f ? ev.Weight : defaultWeight;
                 if (ev.EventType == cfg.ActionBehavior.Reward)
                 {
                     weight *= System.Math.Max(0f, rewardMul);
@@ -209,7 +210,8 @@ namespace GourmetProject.Game.Meta
 
                 candidates.Add(ev);
                 // 修正后权重下限保护：负修正等极端配置也保证仍是正权重可被选中。
-                weights.Add(w > 0f ? w : 0.0001f);
+                float minimumWeight = System.Math.Max(float.Epsilon, tables.TbGameBase.MinimumRandomWeight);
+                weights.Add(w > 0f ? w : minimumWeight);
             }
 
             if (candidates.Count == 0)

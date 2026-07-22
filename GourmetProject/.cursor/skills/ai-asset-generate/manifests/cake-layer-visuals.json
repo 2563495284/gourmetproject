@@ -1,0 +1,25 @@
+{
+  "provider": "gemini",
+  "model": "gemini-3.1-flash-image-preview",
+  "stylePrefix": "90s American cable TV cartoon food art matching GourmetProject, thick expressive black ink outlines, flat cel animation colors with a few hand-painted highlight strokes, warm appetizing palette, polished Unity game asset, bold readable silhouette, pure food only, no face, no eyes, no mouth, no limbs, no mascot treatment, no text, no logo, no watermark",
+  "typeDefaults": {
+    "item": {
+      "outputDir": "Assets/GameMain/Resources/Sprites/Battle",
+      "postprocess": "magenta-alpha",
+      "background": "opaque",
+      "quality": "high"
+    }
+  },
+  "typePromptPrefixes": {
+    "item": "Isolated game sprite on a perfectly flat solid #FF00FF chroma key background. Background must be one uniform color with no shadows, gradients, texture, floor or lighting variation. Do not use magenta or purple in the object. No cast shadow, no contact shadow, no plate, no table, no frame, no badge, no grid, no checkerboard. Keep the complete object centered with generous padding."
+  },
+  "assets": [
+    {
+      "name": "cake_layer_world",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "A single compact three-tier celebration cake used both as a buff icon and as a cake falling from the sky. Signature design: squat slightly crooked stack, bottom tier golden vanilla sponge with red jam seam, middle tier chocolate sponge, small top tier strawberry pink; thick ivory frosting dripping over every tier; one glossy red cherry on top; one tiny warm yellow triangular pennant behind the cherry. Three-quarter front view, chunky uneven handmade silhouette, visually close to the existing cake_accel item but rendered with the richer appetizing ink-and-cel detail of the existing cake dish. Fully opaque cake, no motion lines, no glow, no symbols, no numbers."
+    }
+  ]
+}

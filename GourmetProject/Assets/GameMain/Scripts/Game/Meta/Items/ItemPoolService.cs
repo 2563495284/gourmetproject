@@ -36,7 +36,8 @@ namespace GourmetProject.Game.Meta
             MetaProgressSaveData progress = null)
         {
             int hidden = HiddenScoreService.PassiveItemHiddenScore(run, run?.LastActionContext);
-            return Roll(tables, run, kind, rng, count, hidden, distanceFloor: 5, requiredTag: cfg.ItemSpecialTag.None, progress);
+            int distanceFloor = System.Math.Max(1, tables.TbGameBase.HiddenScoreDistanceFloor);
+            return Roll(tables, run, kind, rng, count, hidden, distanceFloor, requiredTag: cfg.ItemSpecialTag.None, progress);
         }
 
         public static List<string> Roll(
@@ -69,7 +70,7 @@ namespace GourmetProject.Game.Meta
                 var weights = new List<float>(candidates.Count);
                 foreach (ItemDefinition item in candidates)
                 {
-                    weights.Add(GetWeight(item, hidden, distanceFloor));
+                    weights.Add(GetWeight(item, hidden, distanceFloor, tables));
                 }
 
                 int index = rng.WeightedPickIndex(weights);
@@ -136,9 +137,11 @@ namespace GourmetProject.Game.Meta
             return candidates;
         }
 
-        private static float GetWeight(ItemDefinition item, int hidden, int distanceFloor)
+        private static float GetWeight(ItemDefinition item, int hidden, int distanceFloor, cfg.Tables tables)
         {
-            float baseWeight = item.BaseWeight > 0f ? item.BaseWeight : 1f;
+            tables ??= GameApp.Config.Tables;
+            float defaultWeight = System.Math.Max(float.Epsilon, tables.TbGameBase.DefaultRandomWeight);
+            float baseWeight = item.BaseWeight > 0f ? item.BaseWeight : defaultWeight;
             return RewardPoolService.HiddenScoreWeight(baseWeight, HiddenMean(item), hidden, distanceFloor);
         }
 

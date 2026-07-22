@@ -73,6 +73,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private float _halfH = FallbackHalfH;
 
         private ServeAnimator _serveAnimator;
+        private CakeLayerWorldFx _cakeLayerFx;
 
         // 餐桌编辑 / 只读餐桌视图的表现与交互拆到协作组件；本类只做 Food 态与世界互斥态调度（外壳）。
         private DiningTableEditController _boardEdit;
@@ -743,6 +744,9 @@ namespace GourmetProject.Game.Presentation.Battle
                 _doodle?.SetVisible(true);
             }
             RefreshAll();
+            EnsureCakeLayerFx();
+            // 初始/继承层数只更新 HUD，不生成世界蛋糕；世界表现只响应本局实际加层事件。
+            _cakeLayerFx?.Clear();
         }
 
         public void SetDishHoverCallbacks(Action<DishPieceView> entered, Action<DishPieceView> exited)
@@ -784,6 +788,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _serving = false;
             SetFoodWorldElementsVisible(false);
             _worldMode = WorldMode.Hidden;
+            _cakeLayerFx?.Clear();
             gameObject.SetActive(false);
         }
 
@@ -928,6 +933,27 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _boardView.Sync();
+        }
+
+        public void PlayCakeLayerChange(int before, int after)
+        {
+            EnsureCakeLayerFx();
+            _cakeLayerFx?.PlayChange(before, after);
+        }
+
+        private void EnsureCakeLayerFx()
+        {
+            if (_cakeLayerFx == null)
+            {
+                _cakeLayerFx = GetComponent<CakeLayerWorldFx>();
+                if (_cakeLayerFx == null)
+                {
+                    Debug.LogError($"{nameof(BattleWorldController)} scene is missing {nameof(CakeLayerWorldFx)}.", this);
+                    return;
+                }
+            }
+
+            _cakeLayerFx.Configure(this, _camera);
         }
 
         /// <summary>隐藏迁到 HUD 的世界空间面板：被动/主动道具槽、道具标题、菜谱书。</summary>

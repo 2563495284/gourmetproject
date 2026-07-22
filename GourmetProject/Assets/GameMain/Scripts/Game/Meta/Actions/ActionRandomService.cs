@@ -9,7 +9,11 @@ namespace GourmetProject.Game.Meta
     /// </summary>
     public static class ActionRandomService
     {
-        public const int MaxChoiceCount = 3;
+        public static int ChoiceCount(GameRun run)
+        {
+            cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
+            return System.Math.Max(1, tables.TbGameBase.ActionChoiceCount);
+        }
 
         public static bool IsAvailable(GameRun run, cfg.GameAction action)
         {

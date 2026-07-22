@@ -64,8 +64,9 @@ namespace GourmetProject.Game.Meta
             int passiveCount = ConfiguredSlotCount(tables.TbGameBase.ShopPassiveItemSaleSlotCount);
             int activeCount = ConfiguredSlotCount(tables.TbGameBase.ShopActiveItemSaleSlotCount);
             int dishCount = ConfiguredSlotCount(tables.TbGameBase.ShopFoodSaleSlotCount);
+            int distanceFloor = HiddenScoreDistanceFloor(tables);
 
-            foreach (string itemId in ItemPoolService.Roll(tables, run, cfg.ItemKind.Passive, lootRng, passiveCount, passiveHidden, distanceFloor: 5))
+            foreach (string itemId in ItemPoolService.Roll(tables, run, cfg.ItemKind.Passive, lootRng, passiveCount, passiveHidden, distanceFloor))
             {
                 ItemDefinition item = ItemDefinition.Get(tables, itemId, cfg.ItemKind.Passive);
                 if (item != null)
@@ -75,7 +76,7 @@ namespace GourmetProject.Game.Meta
                 }
             }
 
-            foreach (string itemId in ItemPoolService.Roll(tables, run, cfg.ItemKind.Active, lootRng, activeCount, passiveHidden, distanceFloor: 5))
+            foreach (string itemId in ItemPoolService.Roll(tables, run, cfg.ItemKind.Active, lootRng, activeCount, passiveHidden, distanceFloor))
             {
                 ItemDefinition item = ItemDefinition.Get(tables, itemId, cfg.ItemKind.Active);
                 if (item != null)
@@ -128,7 +129,7 @@ namespace GourmetProject.Game.Meta
                 case ShopEntryKind.PassiveItem:
                     {
                         int hidden = HiddenScoreService.PassiveItemHiddenScore(run, run.LastActionContext);
-                        foreach (string itemId in ItemPoolService.Roll(tables, run, cfg.ItemKind.Passive, lootRng, ExistingCount(existingStock) + 1, hidden, distanceFloor: 5))
+                        foreach (string itemId in ItemPoolService.Roll(tables, run, cfg.ItemKind.Passive, lootRng, ExistingCount(existingStock) + 1, hidden, HiddenScoreDistanceFloor(tables)))
                         {
                             if (ContainsEntryId(existingStock, kind, itemId))
                             {
@@ -150,7 +151,7 @@ namespace GourmetProject.Game.Meta
                 case ShopEntryKind.ActiveItem:
                     {
                         int hidden = HiddenScoreService.PassiveItemHiddenScore(run, run.LastActionContext);
-                        foreach (string itemId in ItemPoolService.Roll(tables, run, cfg.ItemKind.Active, lootRng, 1, hidden, distanceFloor: 5))
+                        foreach (string itemId in ItemPoolService.Roll(tables, run, cfg.ItemKind.Active, lootRng, 1, hidden, HiddenScoreDistanceFloor(tables)))
                         {
                             ItemDefinition item = ItemDefinition.Get(tables, itemId, cfg.ItemKind.Active);
                             if (item == null)
@@ -501,7 +502,8 @@ namespace GourmetProject.Game.Meta
                 }
             }
 
-            return WeightedTake(candidates, v => RewardPoolService.HiddenScoreWeight(v.BaseWeight, HiddenMean(v.HiddenRange), hidden, 5), count, rng);
+            int distanceFloor = HiddenScoreDistanceFloor(tables);
+            return WeightedTake(candidates, v => RewardPoolService.HiddenScoreWeight(v.BaseWeight, HiddenMean(v.HiddenRange), hidden, distanceFloor), count, rng, DefaultRandomWeight(tables));
         }
 
         /// <summary>开一份商店碎片包：候选数量读取 reward_slot(fragment_choice_3).choiceCount。</summary>
@@ -528,8 +530,13 @@ namespace GourmetProject.Game.Meta
 
             IRandomStream rng = GameApp.Random.DomainStream(
                 SeedDomains.Shop, $"pack_{run.WeekIndex}_{run.CurrentDay}_{run.FragmentPlacements.Count}");
+            int distanceFloor = HiddenScoreDistanceFloor(run.Tables);
             foreach (cfg.TableFragment fragment in WeightedTake(
-                candidates, f => RewardPoolService.HiddenScoreWeight(f.BaseWeight, HiddenMean(f.HiddenRange), hidden, 5), count, rng))
+                candidates,
+                f => RewardPoolService.HiddenScoreWeight(f.BaseWeight, HiddenMean(f.HiddenRange), hidden, distanceFloor),
+                count,
+                rng,
+                DefaultRandomWeight(run.Tables)))
             {
                 ids.Add(fragment.Id);
             }
@@ -584,7 +591,19 @@ namespace GourmetProject.Game.Meta
             return (range.Min + range.Max) * 0.5f;
         }
 
-        private static List<T> WeightedTake<T>(List<T> candidates, System.Func<T, float> weightOf, int count, IRandomStream rng)
+        private static int HiddenScoreDistanceFloor(cfg.Tables tables)
+        {
+            tables ??= GameApp.Config.Tables;
+            return System.Math.Max(1, tables.TbGameBase.HiddenScoreDistanceFloor);
+        }
+
+        private static float DefaultRandomWeight(cfg.Tables tables)
+        {
+            tables ??= GameApp.Config.Tables;
+            return System.Math.Max(float.Epsilon, tables.TbGameBase.DefaultRandomWeight);
+        }
+
+        private static List<T> WeightedTake<T>(List<T> candidates, System.Func<T, float> weightOf, int count, IRandomStream rng, float defaultWeight)
         {
             var result = new List<T>();
             for (int i = 0; i < count && candidates.Count > 0; i++)
@@ -593,7 +612,7 @@ namespace GourmetProject.Game.Meta
                 foreach (T c in candidates)
                 {
                     float w = weightOf(c);
-                    weights.Add(w > 0f ? w : 1f);
+                    weights.Add(w > 0f ? w : defaultWeight);
                 }
 
                 int index = rng.WeightedPickIndex(weights);
