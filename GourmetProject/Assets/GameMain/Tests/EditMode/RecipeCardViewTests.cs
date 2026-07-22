@@ -53,6 +53,9 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(info.text, Does.Contain("2"));
                 Assert.That(view.transform.Find("BattleContent/Overflow").gameObject.activeSelf, Is.True);
                 Assert.That(view.transform.Find("BattleContent/DishList").childCount, Is.EqualTo(6));
+                Assert.That(
+                    view.transform.Find("BattleContent/DishList/Dish_1").GetComponent<RecipeDishEntryView>(),
+                    Is.Not.Null);
             }
             finally
             {
