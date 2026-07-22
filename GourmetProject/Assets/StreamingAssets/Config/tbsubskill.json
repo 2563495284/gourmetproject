@@ -283,7 +283,7 @@
     "id": "sk_milk_slice_1",
     "trigger": 0,
     "condType": 1,
-    "condScope": 13,
+    "condScope": 14,
     "condUnit": 0,
     "condMode": 2,
     "condParam": "",
@@ -653,12 +653,12 @@
     "actionScope": 0,
     "actionCount": 0,
     "actionValue": [
-      4
+      3
     ],
     "actionParam": [],
     "isPassive": true,
     "signed": false,
-    "descTemplate": "{ascope}视为 {countas} 个食物",
+    "descTemplate": "{ascope}额外视为 {countas} 个食物",
     "termId": ""
   },
   {
@@ -827,12 +827,12 @@
     "id": "sk_taosu_2",
     "trigger": 0,
     "condType": 4,
-    "condScope": 13,
+    "condScope": 14,
     "condUnit": 0,
     "condMode": 1,
     "condParam": "tiers:10|18|25",
     "actionType": 2,
-    "actionScope": 13,
+    "actionScope": 14,
     "actionCount": 0,
     "actionValue": [
       0
@@ -881,28 +881,28 @@
     ],
     "actionParam": [],
     "isPassive": false,
-    "signed": true,
-    "descTemplate": "{ascope}倍率 {0}",
+    "signed": false,
+    "descTemplate": "{ascope}倍率 ×{0}",
     "termId": ""
   },
   {
     "id": "sk_waffle_2",
     "trigger": 0,
     "condType": 4,
-    "condScope": 14,
-    "condUnit": 1,
+    "condScope": 13,
+    "condUnit": 0,
     "condMode": 0,
     "condParam": "",
     "actionType": 9,
     "actionScope": 12,
     "actionCount": 0,
     "actionValue": [
-      5
+      0.3
     ],
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{ascope}倍率 {0}",
+    "descTemplate": "{cscope}每有 1 {unit}食物\n{ascope}倍率 {0}",
     "termId": ""
   },
   {

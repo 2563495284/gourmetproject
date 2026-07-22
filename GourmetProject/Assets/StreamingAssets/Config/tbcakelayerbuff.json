@@ -5,8 +5,8 @@
     "threshold": 1,
     "category": "cake",
     "effectType": 1,
-    "valuePerLayer": 5,
-    "desc": "欢乐蛋糕≥1层：所有蛋糕基础分 +5×层数。"
+    "valuePerLayer": 3,
+    "desc": "欢乐蛋糕≥1层：所有蛋糕基础分 +3×层数。"
   },
   {
     "id": "clb_multflat",
@@ -14,8 +14,8 @@
     "threshold": 50,
     "category": "cake",
     "effectType": 9,
-    "valuePerLayer": 0.1,
-    "desc": "欢乐蛋糕≥50层：所有蛋糕倍率 +0.1×层数。"
+    "valuePerLayer": 0.05,
+    "desc": "欢乐蛋糕≥50层：所有蛋糕倍率 +0.05×层数。"
   },
   {
     "id": "clb_mult",
