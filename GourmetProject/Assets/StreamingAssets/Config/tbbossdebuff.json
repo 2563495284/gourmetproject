@@ -6,7 +6,7 @@
     "modifier": "feast_indulgent",
     "weight": 1,
     "unlockCondition": "",
-    "targetScoreHiddenOffset": 0.5
+    "targetScoreHiddenOffset": 0.7
   },
   {
     "id": "debuff_kids_meal",
@@ -15,7 +15,7 @@
     "modifier": "feast_kids_meal",
     "weight": 1,
     "unlockCondition": "",
-    "targetScoreHiddenOffset": 0.5
+    "targetScoreHiddenOffset": 0
   },
   {
     "id": "debuff_gluttony",
@@ -24,7 +24,7 @@
     "modifier": "feast_gluttony",
     "weight": 1,
     "unlockCondition": "",
-    "targetScoreHiddenOffset": 0.5
+    "targetScoreHiddenOffset": 0.35
   },
   {
     "id": "debuff_prefab_food",
@@ -33,7 +33,7 @@
     "modifier": "feast_prefab_food",
     "weight": 1,
     "unlockCondition": "",
-    "targetScoreHiddenOffset": 0.5
+    "targetScoreHiddenOffset": 0.35
   },
   {
     "id": "debuff_omakase",
@@ -42,7 +42,7 @@
     "modifier": "feast_omakase",
     "weight": 1,
     "unlockCondition": "",
-    "targetScoreHiddenOffset": 0.5
+    "targetScoreHiddenOffset": 0.35
   },
   {
     "id": "debuff_light_meal",
@@ -51,7 +51,7 @@
     "modifier": "feast_light_meal",
     "weight": 1,
     "unlockCondition": "",
-    "targetScoreHiddenOffset": 0.5
+    "targetScoreHiddenOffset": 0.35
   },
   {
     "id": "debuff_vegan_meal",
@@ -60,7 +60,7 @@
     "modifier": "feast_vegan_meal",
     "weight": 1,
     "unlockCondition": "",
-    "targetScoreHiddenOffset": 0.5
+    "targetScoreHiddenOffset": 0.35
   },
   {
     "id": "debuff_dine_and_dash",
@@ -69,7 +69,7 @@
     "modifier": "feast_dine_and_dash",
     "weight": 1,
     "unlockCondition": "",
-    "targetScoreHiddenOffset": 0.5
+    "targetScoreHiddenOffset": 0.35
   },
   {
     "id": "debuff_fine_dining",
@@ -78,7 +78,7 @@
     "modifier": "feast_fine_dining",
     "weight": 1,
     "unlockCondition": "",
-    "targetScoreHiddenOffset": 0.5
+    "targetScoreHiddenOffset": 0.35
   },
   {
     "id": "debuff_vegetarian",
@@ -87,7 +87,7 @@
     "modifier": "feast_vegetarian",
     "weight": 1,
     "unlockCondition": "",
-    "targetScoreHiddenOffset": 0.5
+    "targetScoreHiddenOffset": 0.35
   },
   {
     "id": "debuff_dark_cuisine",
@@ -96,7 +96,7 @@
     "modifier": "feast_dark_cuisine",
     "weight": 1,
     "unlockCondition": "",
-    "targetScoreHiddenOffset": 0.5
+    "targetScoreHiddenOffset": 0.35
   },
   {
     "id": "debuff_combo_meal",
@@ -105,7 +105,7 @@
     "modifier": "feast_combo_meal",
     "weight": 1,
     "unlockCondition": "",
-    "targetScoreHiddenOffset": 0.5
+    "targetScoreHiddenOffset": 0.35
   },
   {
     "id": "debuff_late_night",
@@ -114,7 +114,7 @@
     "modifier": "feast_late_night",
     "weight": 1,
     "unlockCondition": "",
-    "targetScoreHiddenOffset": 0.5
+    "targetScoreHiddenOffset": 0.35
   },
   {
     "id": "debuff_appetizer",
@@ -123,7 +123,7 @@
     "modifier": "feast_appetizer",
     "weight": 1,
     "unlockCondition": "",
-    "targetScoreHiddenOffset": 0.5
+    "targetScoreHiddenOffset": 0.35
   },
   {
     "id": "debuff_tasting",
@@ -132,7 +132,7 @@
     "modifier": "feast_tasting",
     "weight": 1,
     "unlockCondition": "",
-    "targetScoreHiddenOffset": 0.5
+    "targetScoreHiddenOffset": 0.35
   },
   {
     "id": "debuff_buffet",
@@ -141,6 +141,6 @@
     "modifier": "feast_buffet",
     "weight": 1,
     "unlockCondition": "",
-    "targetScoreHiddenOffset": 0.5
+    "targetScoreHiddenOffset": 0.35
   }
 ]

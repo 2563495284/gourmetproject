@@ -2,7 +2,7 @@
   {
     "id": "recipe_glutton",
     "fixedDishes": "",
-    "requiredInitScore": 500,
+    "requiredInitScore": 100,
     "pool": [
       {
         "dishId": "cookie",
