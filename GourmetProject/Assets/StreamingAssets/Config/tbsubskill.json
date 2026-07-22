@@ -1398,6 +1398,28 @@
     "termId": ""
   },
   {
+    "id": "sk_palmier_2",
+    "trigger": 0,
+    "condType": 4,
+    "condScope": 14,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 2,
+    "actionScope": 12,
+    "actionCount": 0,
+    "actionValue": [
+      0.05
+    ],
+    "actionParam": [
+      "linear"
+    ],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "{ascope}倍率 ×N\n（N=1+{cscope}食物个数×{0}）",
+    "termId": ""
+  },
+  {
     "id": "sk_candycane_1",
     "trigger": 0,
     "condType": 0,

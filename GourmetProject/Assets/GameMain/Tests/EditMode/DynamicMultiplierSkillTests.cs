@@ -96,6 +96,42 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(ScoreOf(result, other).FlatBonus, Is.EqualTo(0f).Within(0.0001f));
         }
 
+        [Test]
+        public void Palmier_MultipliesRoundAndSelfByLinearColumnDishCount()
+        {
+            DishShape cell = DishShape.FromRows(new[] { "X" });
+            SkillDef palmierSkill = Skill(
+                "sk_palmier",
+                Rule("sk_palmier_1", "sk_palmier", 0, SkillActionType.AddCountAs, SkillScope.Self, value: 3f),
+                Rule(
+                    "sk_palmier_2",
+                    "sk_palmier",
+                    1,
+                    SkillActionType.AddMult,
+                    SkillScope.RoundAndSelf,
+                    "linear",
+                    0.05f,
+                    SkillConditionType.DishCount,
+                    SkillScope.ColumnAndSelf));
+            DishDef palmierDef = Dish("palmier", cell, "sk_palmier");
+            DishDef otherDef = Dish("other", cell);
+            GameplayDatabase db = Database(new[] { palmierDef, otherDef }, palmierSkill);
+            var table = new DiningTable(4, 2);
+            DishInstance palmier = Instance(1, palmierDef, cell, 1, 1);
+            DishInstance sameColumn = Instance(2, otherDef, cell, 1, 0);
+            DishInstance adjacent = Instance(3, otherDef, cell, 2, 1);
+            DishInstance distant = Instance(4, otherDef, cell, 3, 0);
+            Place(table, palmier, sameColumn, adjacent, distant);
+
+            ScoreResult result = new ScoreCalculator().Calculate(table, db);
+
+            // 本列食物数 = 蝴蝶酥视为 4 个 + 同列食物 1 个，因此 N = 1 + 5×0.05 = 1.25。
+            Assert.That(ScoreOf(result, palmier).Multiplier, Is.EqualTo(1.25f).Within(0.0001f));
+            Assert.That(ScoreOf(result, sameColumn).Multiplier, Is.EqualTo(1.25f).Within(0.0001f));
+            Assert.That(ScoreOf(result, adjacent).Multiplier, Is.EqualTo(1.25f).Within(0.0001f));
+            Assert.That(ScoreOf(result, distant).Multiplier, Is.EqualTo(1f).Within(0.0001f));
+        }
+
         private static DishScore ScoreOf(ScoreResult result, DishInstance dish)
             => result.DishScores.Single(score => score.DishInstanceId == dish.Id);
 
@@ -117,15 +153,17 @@ namespace GourmetProject.Tests.EditMode
             SkillActionType actionType,
             SkillScope actionScope,
             string actionParam = null,
-            float value = 0f)
+            float value = 0f,
+            SkillConditionType condType = SkillConditionType.None,
+            SkillScope condScope = SkillScope.Self)
         {
             return new SkillRuleDef(
                 id,
                 skillId,
                 order,
                 SkillTrigger.OnSettle,
-                SkillConditionType.None,
-                SkillScope.Self,
+                condType,
+                condScope,
                 CountUnit.Instances,
                 CountMode.Per,
                 string.Empty,
@@ -156,12 +194,12 @@ namespace GourmetProject.Tests.EditMode
                 category: category);
         }
 
-        private static DishInstance Instance(int id, DishDef def, DishShape shape, int x)
+        private static DishInstance Instance(int id, DishDef def, DishShape shape, int x, int y = 0)
         {
             return new DishInstance(
                 id,
                 def,
-                new Placement(shape, 0, new GridPos(x, 0)),
+                new Placement(shape, 0, new GridPos(x, y)),
                 def.SkillIds,
                 Array.Empty<string>());
         }

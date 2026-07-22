@@ -234,7 +234,9 @@ namespace GourmetProject.Gameplay.Scoring
 
                 case SkillActionType.AddMult:
                 {
-                    float factor = (float)Math.Pow(value, count);
+                    float factor = HasActionParam(_rule, "linear")
+                        ? 1f + value * count
+                        : (float)Math.Pow(value, count);
                     foreach (DishInstance t in Targets(ctx)) ctx.MultiplyTo(t, factor);
                     break;
                 }
