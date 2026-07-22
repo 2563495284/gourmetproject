@@ -445,6 +445,40 @@ namespace GourmetProject.Gameplay.Scoring
             EmitEvent(ScoreEventType.CommandExecuted, $"技能传递给 {target.Def.Name}（{effects.Count} 个）");
         }
 
+        /// <summary>记录一次「代触发甜蜜传递」技能命中来源食物，仅供施放者的结算演出。</summary>
+        public void RecordTriggerSweetTransfer(DishInstance sourceDish, int sourceCount)
+        {
+            if (sourceDish == null || sourceCount <= 0)
+            {
+                return;
+            }
+
+            AddLine(
+                EnsureAccumulator(sourceDish),
+                ScoreLineKind.TriggerSweetTransfer,
+                sourceCount,
+                0f,
+                sourceCount,
+                $"代触发甜蜜传递 ×{sourceCount}");
+        }
+
+        /// <summary>记录「代触发」流程中某个来源食物开始执行，供逐个演出与状态收尾。</summary>
+        public void RecordTriggeredSweetTransferSource(DishInstance sourceDish, int index, int total)
+        {
+            if (sourceDish == null || index <= 0 || total <= 0)
+            {
+                return;
+            }
+
+            AddLine(
+                EnsureAccumulator(sourceDish),
+                ScoreLineKind.TriggeredSweetTransferSource,
+                index,
+                0f,
+                total,
+                $"触发甜蜜传递 {index}/{total}");
+        }
+
         public void QueueOrResolveTransferredEffect(ScoreEffectEntry entry)
         {
             if (entry?.Dish == null)
@@ -452,7 +486,10 @@ namespace GourmetProject.Gameplay.Scoring
                 return;
             }
 
-            if (_completedDishSkillPhases.Contains(entry.Dish.Id))
+            bool targetSkillPhaseIsRunning = Dish != null
+                && Dish.Id == entry.Dish.Id
+                && Phase == ScorePhase.DishSkills;
+            if (targetSkillPhaseIsRunning || _completedDishSkillPhases.Contains(entry.Dish.Id))
             {
                 SubmitCommand(new ResolveScoreEffectCommand(entry));
                 return;

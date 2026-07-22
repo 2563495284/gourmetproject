@@ -15,6 +15,8 @@ namespace GourmetProject.Gameplay.Scoring
         DishMultiplierAdd = 8,
         SilverItemRoll = 9,
         CopySkill = 10,
+        TriggerSweetTransfer = 11,
+        TriggeredSweetTransferSource = 12,
     }
 
     /// <summary>一次具体分数变化的可解释记录。</summary>

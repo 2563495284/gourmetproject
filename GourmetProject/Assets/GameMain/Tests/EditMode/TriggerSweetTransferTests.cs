@@ -79,6 +79,17 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(result.SkillTransfers.Count(x => x.SourceInstanceId == row.Id), Is.EqualTo(2));
             Assert.That(result.SkillTransfers.Count(x => x.SourceInstanceId == column.Id), Is.EqualTo(2));
             Assert.That(result.SkillTransfers.Count(x => x.SourceInstanceId == offAxis.Id), Is.EqualTo(1));
+            ScoreLine triggerCue = result.ScoreLines.Single(x => x.Kind == ScoreLineKind.TriggerSweetTransfer);
+            Assert.That(triggerCue.DishInstanceId, Is.EqualTo(bigLollipop.Id), "代触发表现应归属大棒棒糖");
+            Assert.That(triggerCue.Value, Is.EqualTo(2f), "表现应记录实际被代触发的食物数");
+            int[] triggeredSourceOrder = result.ScoreLines
+                .Where(x => x.Kind == ScoreLineKind.TriggeredSweetTransferSource)
+                .Select(x => x.DishInstanceId)
+                .ToArray();
+            Assert.That(
+                triggeredSourceOrder,
+                Is.EqualTo(new[] { column.Id, row.Id }),
+                "被代触发食物应按实际占格从上到下、再从左到右执行");
             foreach (DishInstance source in new[] { offAxis, column, row })
             {
                 Assert.That(result.ScoreLines.Count(x =>
@@ -86,6 +97,42 @@ namespace GourmetProject.Tests.EditMode
                     && x.Kind == ScoreLineKind.DishFlat
                     && x.Source.Name == transferSkill.Name), Is.EqualTo(1), "大棒棒糖不能重跑来源技能的其他子技能");
             }
+        }
+
+        [Test]
+        public void BigLollipop_ResolvesTriggeredTransfersBackToItselfDuringItsSkillPhase()
+        {
+            DishShape cell = DishShape.FromRows(new[] { "X" });
+            SkillDef transferSkill = TransferSkill("skill_source");
+            SkillDef bigLollipopSkill = Skill(
+                "skill_big_lollipop",
+                Rule(
+                    "big_lollipop_trigger",
+                    "skill_big_lollipop",
+                    0,
+                    SkillActionType.TriggerSweetTransfer,
+                    SkillScope.All,
+                    0,
+                    "axis:rowcol;skilltype:TransferSkills"));
+            DishDef sourceDef = Dish("source", cell, "skill_source");
+            DishDef bigLollipopDef = Dish("big_lollipop", cell, "skill_big_lollipop");
+            GameplayDatabase db = Database(new[] { sourceDef, bigLollipopDef }, transferSkill, bigLollipopSkill);
+            var table = new DiningTable(3, 3);
+            DishInstance bigLollipop = Instance(1, bigLollipopDef, cell, 1, 0);
+            DishInstance upperSource = Instance(2, sourceDef, cell, 1, 1);
+            DishInstance lowerSource = Instance(3, sourceDef, cell, 1, 2);
+            Place(table, bigLollipop, upperSource, lowerSource);
+
+            ScoreResult result = new ScoreCalculator().Calculate(
+                table,
+                db,
+                transferTargetSelector: (candidates, count) => new[] { bigLollipop.Id });
+
+            Assert.That(result.ScoreLines.Count(x =>
+                x.DishInstanceId == bigLollipop.Id
+                && x.Kind == ScoreLineKind.DishFlat
+                && x.Source.Name == "source<甜蜜传递>"), Is.EqualTo(4),
+                "两个来源应在大棒棒糖代触发时立即各生效一次，之后自身结算再各生效一次");
         }
 
         private static SkillDef TransferSkill(string skillId)

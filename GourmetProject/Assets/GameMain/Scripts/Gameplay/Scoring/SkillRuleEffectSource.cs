@@ -292,8 +292,12 @@ namespace GourmetProject.Gameplay.Scoring
                 {
                     // 只代执行来源的 TransferSkills 子技能：把其他可传递子技能交给目标，
                     // 不重跑来源技能中的加分/倍率等其他子技能。
-                    foreach (DishInstance source in SweetTransferSources(ctx))
+                    IReadOnlyList<DishInstance> sources = SweetTransferSources(ctx);
+                    ctx.RecordTriggerSweetTransfer(_self, sources.Count);
+                    for (int i = 0; i < sources.Count; i++)
                     {
+                        DishInstance source = sources[i];
+                        ctx.RecordTriggeredSweetTransferSource(source, i + 1, sources.Count);
                         ExecuteSweetTransfersFrom(ctx, source);
                     }
 
@@ -503,16 +507,19 @@ namespace GourmetProject.Gameplay.Scoring
                 }
             }
 
-            if (_rule.ActionCount <= 0 || qualified.Count <= _rule.ActionCount)
+            List<DishInstance> ordered = qualified
+                .OrderBy(BoardTop)
+                .ThenBy(BoardLeft)
+                .ThenBy(d => d.Id)
+                .ToList();
+
+            if (_rule.ActionCount <= 0 || ordered.Count <= _rule.ActionCount)
             {
-                return qualified;
+                return ordered;
             }
 
-            var candidateIds = qualified
-                .OrderBy(d => d.Placement.Origin.Y)
-                .ThenBy(d => d.Placement.Origin.X)
-                .ThenBy(d => d.Id)
-                .Select(d => d.Id)
+            var candidateIds = ordered
+                .Select(dish => dish.Id)
                 .ToList();
             int count = _rule.ActionCount;
             IReadOnlyList<int> selectedIds = ctx.Snapshot.TransferTargetSelector != null
@@ -524,7 +531,7 @@ namespace GourmetProject.Gameplay.Scoring
             {
                 foreach (int id in selectedIds)
                 {
-                    DishInstance dish = qualified.FirstOrDefault(d => d.Id == id);
+                    DishInstance dish = ordered.FirstOrDefault(d => d.Id == id);
                     if (dish != null && !selected.Any(d => d.Id == dish.Id))
                     {
                         selected.Add(dish);
@@ -537,7 +544,11 @@ namespace GourmetProject.Gameplay.Scoring
                 }
             }
 
-            return selected;
+            return selected
+                .OrderBy(BoardTop)
+                .ThenBy(BoardLeft)
+                .ThenBy(dish => dish.Id)
+                .ToArray();
         }
 
         private static bool HasActionParam(SkillRuleDef rule, string token)

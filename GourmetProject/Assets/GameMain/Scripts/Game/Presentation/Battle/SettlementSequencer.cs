@@ -77,6 +77,14 @@ namespace GourmetProject.Game.Presentation.Battle
             FinalScore = 4,
         }
 
+        private enum TriggerSweetTransferCuePhase
+        {
+            None = 0,
+            ActivatorStarted = 1,
+            SourceStarted = 2,
+            FinalSourceStarted = 3,
+        }
+
         public void PlayFloatingText(
             Transform parent,
             Vector3 worldPos,
@@ -139,6 +147,11 @@ namespace GourmetProject.Game.Presentation.Battle
                     await WaitWhileDebugScorePausedAsync(cancellationToken);
 #endif
                     IReadOnlyList<SettlementPlaybackStep> batch = CollectStepBatch(plan.Steps, i, out int nextIndex);
+                    BeginTriggerSweetTransferStateIfNeeded(
+                        sweetTransferPlayback,
+                        batch,
+                        dishViews,
+                        cancellationToken);
                     await UpdateSweetTransferVisualsAsync(
                         sweetTransferPlayback,
                         ResolveSweetTransferVisualContext(batch),
@@ -146,6 +159,10 @@ namespace GourmetProject.Game.Presentation.Battle
                         fxRoot,
                         cancellationToken);
                     await PlayStepBatchAsync(batch, dishViews, mapper, fxRoot, playback, dishValueBadges, onReveal, onScope, cancellationToken);
+                    IReadOnlyList<SettlementPlaybackStep> nextBatch = nextIndex < plan.Steps.Count
+                        ? CollectStepBatch(plan.Steps, nextIndex, out _)
+                        : Array.Empty<SettlementPlaybackStep>();
+                    CompleteTriggerSweetTransferStateIfNeeded(sweetTransferPlayback, nextBatch, dishViews);
                     i = nextIndex;
                 }
 
@@ -388,6 +405,12 @@ namespace GourmetProject.Game.Presentation.Battle
             for (int i = 0; i < batch.Count; i++)
             {
                 SettlementPlaybackStep step = batch[i];
+                if (step.Cue?.TriggerSweetTransferPhase == TriggerSweetTransferCuePhase.SourceStarted
+                    || step.Cue?.TriggerSweetTransferPhase == TriggerSweetTransferCuePhase.FinalSourceStarted)
+                {
+                    return new SweetTransferVisualContext(step.DishInstanceId, 0, playSourceIntro: false);
+                }
+
                 if (step.Scope.Trace?.Kind == SkillExecutionKind.SweetTransfer)
                 {
                     return new SweetTransferVisualContext(
@@ -402,6 +425,99 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             return new SweetTransferVisualContext(fallbackSourceDishId, 0);
+        }
+
+        private static void BeginTriggerSweetTransferStateIfNeeded(
+            SweetTransferPlaybackState playback,
+            IReadOnlyList<SettlementPlaybackStep> batch,
+            IReadOnlyDictionary<int, DishPieceView> dishViews,
+            CancellationToken cancellationToken)
+        {
+            if (playback == null || batch == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < batch.Count; i++)
+            {
+                SettlementPlaybackStep step = batch[i];
+                TriggerSweetTransferCuePhase phase = step.Cue?.TriggerSweetTransferPhase
+                    ?? TriggerSweetTransferCuePhase.None;
+                if (phase == TriggerSweetTransferCuePhase.ActivatorStarted)
+                {
+                    EndTriggerSweetTransferActivatorFeedback(playback, dishViews);
+                    playback.TriggerSweetTransferActivatorDishInstanceId = step.DishInstanceId;
+                    playback.TriggerSweetTransferFinalSourceDishInstanceId = 0;
+                    if (dishViews != null
+                        && dishViews.TryGetValue(step.DishInstanceId, out DishPieceView activator)
+                        && activator != null)
+                    {
+                        activator.BeginTriggerSweetTransferActivatorFeedback();
+                    }
+                }
+                else if (phase == TriggerSweetTransferCuePhase.FinalSourceStarted)
+                {
+                    playback.TriggerSweetTransferFinalSourceDishInstanceId = step.DishInstanceId;
+                }
+
+                if ((phase == TriggerSweetTransferCuePhase.SourceStarted
+                        || phase == TriggerSweetTransferCuePhase.FinalSourceStarted)
+                    && playback.TriggerSweetTransferActivatorDishInstanceId > 0
+                    && dishViews != null
+                    && dishViews.TryGetValue(
+                        playback.TriggerSweetTransferActivatorDishInstanceId,
+                        out DishPieceView pulseActivator)
+                    && pulseActivator != null)
+                {
+                    _ = PlayFeedbackSafelyAsync(
+                        pulseActivator,
+                        SettlementDishFeedbackKind.TriggerSweetTransferActivatorPulse,
+                        cancellationToken);
+                }
+            }
+        }
+
+        private static void CompleteTriggerSweetTransferStateIfNeeded(
+            SweetTransferPlaybackState playback,
+            IReadOnlyList<SettlementPlaybackStep> nextBatch,
+            IReadOnlyDictionary<int, DishPieceView> dishViews)
+        {
+            if (playback == null
+                || playback.TriggerSweetTransferActivatorDishInstanceId <= 0
+                || playback.TriggerSweetTransferFinalSourceDishInstanceId <= 0)
+            {
+                return;
+            }
+
+            SweetTransferVisualContext next = ResolveSweetTransferVisualContext(nextBatch);
+            if (next.SourceDishInstanceId == playback.TriggerSweetTransferFinalSourceDishInstanceId)
+            {
+                return;
+            }
+
+            EndTriggerSweetTransferActivatorFeedback(playback, dishViews);
+        }
+
+        private static void EndTriggerSweetTransferActivatorFeedback(
+            SweetTransferPlaybackState playback,
+            IReadOnlyDictionary<int, DishPieceView> dishViews)
+        {
+            if (playback == null)
+            {
+                return;
+            }
+
+            int activatorId = playback.TriggerSweetTransferActivatorDishInstanceId;
+            if (activatorId > 0
+                && dishViews != null
+                && dishViews.TryGetValue(activatorId, out DishPieceView activator)
+                && activator != null)
+            {
+                activator.EndTriggerSweetTransferActivatorFeedback();
+            }
+
+            playback.TriggerSweetTransferActivatorDishInstanceId = 0;
+            playback.TriggerSweetTransferFinalSourceDishInstanceId = 0;
         }
 
         private static int ResolveSweetTransferSourceDishId(SettlementScopeSignal scope, string batchKey)
@@ -437,10 +553,13 @@ namespace GourmetProject.Game.Presentation.Battle
                     && sourceView != null)
                 {
                     sourceView.BeginSweetTransferSourceFeedback();
-                    _ = PlayFeedbackSafelyAsync(
-                        sourceView,
-                        SettlementDishFeedbackKind.SweetTransferSkillTriggered,
-                        cancellationToken);
+                    if (next.PlaySourceIntro)
+                    {
+                        _ = PlayFeedbackSafelyAsync(
+                            sourceView,
+                            SettlementDishFeedbackKind.SweetTransferSkillTriggered,
+                            cancellationToken);
+                    }
                 }
             }
 
@@ -480,6 +599,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             EndSweetTransferSourceFeedback(playback.SourceDishInstanceId, dishViews);
+            EndTriggerSweetTransferActivatorFeedback(playback, dishViews);
             playback.SourceDishInstanceId = 0;
             playback.ReceiverDishInstanceId = 0;
         }
@@ -1375,6 +1495,26 @@ namespace GourmetProject.Game.Presentation.Battle
                         reveal: SettlementRevealSignal.CopySkillReveal(line.DishInstanceId, Mathf.RoundToInt(line.Value)));
                     return true;
 
+                case ScoreLineKind.TriggerSweetTransfer:
+                    cue = new SettlementCue(
+                        SettlementCueKind.SideEffect,
+                        line.Value > 1f ? $"触发甜蜜传递 ×{Mathf.RoundToInt(line.Value)}" : "触发甜蜜传递",
+                        SideEffectColor,
+                        feedbackKind: SettlementDishFeedbackKind.GenericSkillTriggered,
+                        triggerSweetTransferPhase: TriggerSweetTransferCuePhase.ActivatorStarted);
+                    return true;
+
+                case ScoreLineKind.TriggeredSweetTransferSource:
+                    cue = new SettlementCue(
+                        SettlementCueKind.SideEffect,
+                        "触发甜蜜传递",
+                        SideEffectColor,
+                        feedbackKind: SettlementDishFeedbackKind.SweetTransferSkillTriggered,
+                        triggerSweetTransferPhase: line.Value >= line.After
+                            ? TriggerSweetTransferCuePhase.FinalSourceStarted
+                            : TriggerSweetTransferCuePhase.SourceStarted);
+                    return true;
+
                 default:
                     return false;
             }
@@ -1409,6 +1549,11 @@ namespace GourmetProject.Game.Presentation.Battle
             if (line.Kind == ScoreLineKind.CopySkill)
             {
                 return SettlementDishFeedbackKind.CopySkillTriggered;
+            }
+
+            if (line.Kind == ScoreLineKind.TriggerSweetTransfer)
+            {
+                return SettlementDishFeedbackKind.GenericSkillTriggered;
             }
 
             if (line.Trace != null && line.Trace.Kind == SkillExecutionKind.CopiedSkill)
@@ -1588,15 +1733,21 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private readonly struct SweetTransferVisualContext
         {
-            public SweetTransferVisualContext(int sourceDishInstanceId, int receiverDishInstanceId)
+            public SweetTransferVisualContext(
+                int sourceDishInstanceId,
+                int receiverDishInstanceId,
+                bool playSourceIntro = true)
             {
                 SourceDishInstanceId = sourceDishInstanceId;
                 ReceiverDishInstanceId = receiverDishInstanceId;
+                PlaySourceIntro = playSourceIntro;
             }
 
             public int SourceDishInstanceId { get; }
 
             public int ReceiverDishInstanceId { get; }
+
+            public bool PlaySourceIntro { get; }
         }
 
         private sealed class SweetTransferPlaybackState
@@ -1604,6 +1755,10 @@ namespace GourmetProject.Game.Presentation.Battle
             public int SourceDishInstanceId { get; set; }
 
             public int ReceiverDishInstanceId { get; set; }
+
+            public int TriggerSweetTransferActivatorDishInstanceId { get; set; }
+
+            public int TriggerSweetTransferFinalSourceDishInstanceId { get; set; }
         }
 
         private sealed class SettlementPlaybackStep
@@ -1634,7 +1789,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 SettlementDishFeedbackKind feedbackKind = SettlementDishFeedbackKind.GenericValueChanged,
                 SettlementRevealSignal reveal = default,
                 DishValueChange valueChange = default,
-                string batchKey = null)
+                string batchKey = null,
+                TriggerSweetTransferCuePhase triggerSweetTransferPhase = TriggerSweetTransferCuePhase.None)
             {
                 Kind = kind;
                 Text = text;
@@ -1646,6 +1802,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 Reveal = reveal;
                 ValueChange = valueChange;
                 BatchKey = batchKey;
+                TriggerSweetTransferPhase = triggerSweetTransferPhase;
             }
 
             public SettlementCueKind Kind { get; }
@@ -1668,6 +1825,8 @@ namespace GourmetProject.Game.Presentation.Battle
             public DishValueChange ValueChange { get; }
 
             public string BatchKey { get; }
+
+            public TriggerSweetTransferCuePhase TriggerSweetTransferPhase { get; }
         }
 
         private sealed class PendingLineCue

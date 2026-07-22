@@ -26,6 +26,7 @@ namespace GourmetProject.Game.Presentation.Battle
         ActiveMultiplier = 10,
         ActiveMultiplierAdd = 11,
         GenericValueChanged = 12,
+        TriggerSweetTransferActivatorPulse = 13,
     }
 
     /// <summary>
@@ -139,6 +140,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private int _settlementFeedbackVersion;
         private SettlementDishFeedbackKind _settlementFeedbackKind;
         private bool _sweetTransferSourceActive;
+        private bool _triggerSweetTransferActivatorActive;
 
         public DishInstance Instance { get; private set; }
 
@@ -383,6 +385,33 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
+        /// <summary>进入「代触发甜蜜传递」持续状态：施放者在所有来源食物执行期间保持金色脉冲外发光。</summary>
+        public void BeginTriggerSweetTransferActivatorFeedback()
+        {
+            EnsureRefs();
+            _triggerSweetTransferActivatorActive = true;
+            if (_settlementFeedbackTween == null || !_settlementFeedbackTween.active)
+            {
+                ShowTriggerSweetTransferActivatorGlow();
+            }
+        }
+
+        public void EndTriggerSweetTransferActivatorFeedback()
+        {
+            _triggerSweetTransferActivatorActive = false;
+            if ((_settlementFeedbackTween == null || !_settlementFeedbackTween.active) && _placementGlow != null)
+            {
+                if (_sweetTransferSourceActive && isActiveAndEnabled)
+                {
+                    ShowSweetTransferSourceGlow();
+                }
+                else
+                {
+                    _placementGlow.gameObject.SetActive(false);
+                }
+            }
+        }
+
         public async Awaitable PlaySettlementFeedbackAsync(SettlementDishFeedbackKind kind, CancellationToken cancellationToken)
         {
             EnsureRefs();
@@ -472,6 +501,24 @@ namespace GourmetProject.Game.Presentation.Battle
                         glowPulseSpeed: 9f,
                         glowPulseAmplitude: 0.20f,
                         anticipationFraction: 0.20f);
+
+                case SettlementDishFeedbackKind.TriggerSweetTransferActivatorPulse:
+                    return new SettlementFeedbackProfile(
+                        duration: 0.24f,
+                        anticipationScale: 0.97f,
+                        peakScale: new Vector2(1.08f, 1.05f),
+                        liftInCells: 0.015f,
+                        sideInCells: 0.035f,
+                        rotationDegrees: 3.5f,
+                        rotationCycles: 2f,
+                        pulseCount: 1f,
+                        glowColor: new Color(1f, 0.70f, 0.16f, 0.98f),
+                        glowWidth: 0.14f,
+                        glowInflate: 1.12f,
+                        glowFillAlpha: 0.07f,
+                        glowPulseSpeed: 10f,
+                        glowPulseAmplitude: 0.22f,
+                        anticipationFraction: 0.10f);
 
                 case SettlementDishFeedbackKind.SweetTransferSkillTriggered:
                     return new SettlementFeedbackProfile(
@@ -707,6 +754,27 @@ namespace GourmetProject.Game.Presentation.Battle
                 pulseAmplitude: 0.26f);
         }
 
+        private void ShowTriggerSweetTransferActivatorGlow()
+        {
+            if (_placementGlow == null)
+            {
+                return;
+            }
+
+            _placementGlow.gameObject.SetActive(true);
+            ConfigureOutlineGlowRenderer(
+                _placementGlow,
+                ref _placementGlowBlock,
+                new Color(1f, 0.70f, 0.16f, 0.98f),
+                outlineWidth: 0.14f,
+                fillAlpha: 0.07f,
+                inflate: 1.12f,
+                sortingOrderOffset: 4,
+                materialOverride: null,
+                pulseSpeed: 3.4f / SettlementFeedbackDurationScale,
+                pulseAmplitude: 0.24f);
+        }
+
         private void StopSettlementFeedback(bool restoreTransform)
         {
             _settlementFeedbackTween?.Kill();
@@ -723,7 +791,11 @@ namespace GourmetProject.Game.Presentation.Battle
             _settlementFeedbackTarget = null;
             if (_placementGlow != null)
             {
-                if (_sweetTransferSourceActive && isActiveAndEnabled)
+                if (_triggerSweetTransferActivatorActive && isActiveAndEnabled)
+                {
+                    ShowTriggerSweetTransferActivatorGlow();
+                }
+                else if (_sweetTransferSourceActive && isActiveAndEnabled)
                 {
                     ShowSweetTransferSourceGlow();
                 }
@@ -1275,6 +1347,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private void OnDisable()
         {
             _sweetTransferSourceActive = false;
+            _triggerSweetTransferActivatorActive = false;
             _settlementFeedbackVersion++;
             StopSettlementFeedback(restoreTransform: true);
             SetHovered(false);
