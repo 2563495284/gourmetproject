@@ -8,6 +8,7 @@ namespace GourmetProject.Game.Presentation.Battle
         [Header("固定结构（prefab 预拼）")]
         [SerializeField] private SpriteRenderer _background;
         [SerializeField] private SpriteRenderer _icon;
+        [SerializeField] private MeshRenderer _valueMeshRenderer;
         [SerializeField] private TextMesh _valueText;
 
         private int _sortingOrder = BattleSorting.OrderFloatingText;
@@ -56,7 +57,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void ApplySortingOrder()
         {
-            BattleSorting.Apply(GetComponent<MeshRenderer>(), BattleSorting.Fx, _sortingOrder + 2);
+            BattleSorting.Apply(_valueMeshRenderer, BattleSorting.Fx, _sortingOrder + 2);
             BattleSorting.Apply(_background, BattleSorting.Fx, _sortingOrder);
             BattleSorting.Apply(_icon, BattleSorting.Fx, _sortingOrder + 3);
         }

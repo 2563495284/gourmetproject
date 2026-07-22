@@ -153,6 +153,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Presentation.Battle.DishValueBadgeView
   _background: {fileID: 6205118769964160020}
   _icon: {fileID: 5651302646453377863}
+  _valueMeshRenderer: {fileID: 5833066624263754315}
   _valueText: {fileID: 4718471409204608599}
 --- !u!1 &7134189926884300127
 GameObject:

@@ -11,6 +11,8 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private TextMesh _sourceText;
 
         [SerializeField] private TextMesh _effectText;
+
+        [SerializeField] private MeshRenderer _effectMeshRenderer;
         [Header("飘动")]
         [SerializeField] private float _rise = 0.9f;
         [SerializeField] private float _duration = 0.9f;
@@ -58,38 +60,15 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             KillAnimation();
 
-            TextMesh effect = EnsureEffectText();
-            if (effect == null)
-            {
-                return;
-            }
-
-            effect.text = effectText;
+            _effectText.text = effectText;
             ConfigureSourceText(sourceName);
             ApplySortingOrder();
-            Animate(effect, transform.position, rise ?? _rise, duration ?? _duration);
+            Animate(_effectText, transform.position, rise ?? _rise, duration ?? _duration);
         }
 
         private void OnDestroy()
         {
             KillAnimation();
-        }
-
-        private TextMesh EnsureEffectText()
-        {
-            if (_effectText != null)
-            {
-                return _effectText;
-            }
-
-            _effectText = GetComponent<TextMesh>();
-            if (_effectText == null)
-            {
-                Debug.LogError($"{nameof(FloatingTextView)} prefab 缺少 TextMesh。", this);
-                return null;
-            }
-
-            return _effectText;
         }
 
         private void ConfigureSourceText(string sourceName)
@@ -111,7 +90,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void ApplySortingOrder()
         {
-            BattleSorting.Apply(GetComponent<MeshRenderer>(), BattleSorting.Fx, _sortingOrder + 2);
+            BattleSorting.Apply(_effectMeshRenderer, BattleSorting.Fx, _sortingOrder + 2);
             BattleSorting.Apply(_background, BattleSorting.Fx, _sortingOrder);
             BattleSorting.Apply(
                 _sourceText != null ? _sourceText.GetComponent<MeshRenderer>() : null,
