@@ -1378,26 +1378,6 @@
     "termId": "clb"
   },
   {
-    "id": "sk_palmier_2",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 2,
-    "actionScope": 12,
-    "actionCount": 0,
-    "actionValue": [
-      1.5
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": false,
-    "descTemplate": "{ascope}倍率 ×{0}",
-    "termId": ""
-  },
-  {
     "id": "sk_palmier_1",
     "trigger": 0,
     "condType": 0,
