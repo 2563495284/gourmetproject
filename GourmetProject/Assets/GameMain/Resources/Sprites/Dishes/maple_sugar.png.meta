@@ -102,10 +102,10 @@ TextureImporter:
       name: maple_sugar_0
       rect:
         serializedVersion: 2
-        x: 52
-        y: 64
-        width: 932
-        height: 423
+        x: 30
+        y: 39
+        width: 949
+        height: 927
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

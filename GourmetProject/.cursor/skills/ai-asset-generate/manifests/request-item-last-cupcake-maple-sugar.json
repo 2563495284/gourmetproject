@@ -39,10 +39,10 @@
     {
       "name": "maple_sugar",
       "type": "dish",
-      "requestSize": "1536x768",
-      "targetSize": "1024x512",
-      "shapeRows": ["XX"],
-      "prompt": "wide two-cell maple sugar candy dessert, connected row of amber maple leaf shaped sugar candies and glossy maple syrup crystals, warm golden brown translucent edges, small maple leaf silhouettes molded into the candy, clearly maple sugar not caramel, fills a wide footprint"
+      "requestSize": "1024x1024",
+      "targetSize": "1024x1024",
+      "shapeRows": ["XX", "XX"],
+      "prompt": "maple sugar candy dessert for a square 2x2 board footprint, one continuous dense mound of amber maple leaf shaped sugar candies and glossy maple syrup crystals, warm golden brown translucent edges, small maple leaf silhouettes molded into the candy, clearly maple sugar not caramel. It must read as one connected food mass, not four separate piles; no cross-shaped empty gap, no quadrant split, no grid seams."
     }
   ]
 }

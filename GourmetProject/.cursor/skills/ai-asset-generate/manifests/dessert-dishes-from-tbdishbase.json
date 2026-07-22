@@ -279,6 +279,14 @@
       "prompt": "two-by-two dalgona honeycomb candy, large amber sugar disk with stamped simple star impression, cracked crispy texture"
     },
     {
+      "name": "maple_sugar",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "1024x1024",
+      "shapeRows": ["XX", "XX"],
+      "prompt": "maple sugar candy dessert for a square 2x2 board footprint, one continuous dense mound of amber maple leaf shaped sugar candies and glossy maple syrup crystals, warm golden brown translucent edges, small maple leaf silhouettes molded into the candy, clearly maple sugar not caramel. It must read as one connected food mass, not four separate piles; no cross-shaped empty gap, no quadrant split, no grid seams."
+    },
+    {
       "name": "parfait",
       "type": "dish",
       "requestSize": "1536x1024",
