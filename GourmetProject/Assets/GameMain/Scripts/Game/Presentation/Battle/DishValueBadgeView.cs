@@ -8,8 +8,8 @@ namespace GourmetProject.Game.Presentation.Battle
         [Header("固定结构（prefab 预拼）")]
         [SerializeField] private SpriteRenderer _background;
         [SerializeField] private SpriteRenderer _icon;
+        [SerializeField] private TextMesh _valueText;
 
-        private TextMesh _valueText;
         private int _sortingOrder = BattleSorting.OrderFloatingText;
 
         public float PanelHeight
@@ -29,8 +29,7 @@ namespace GourmetProject.Game.Presentation.Battle
             DishValueBadgeView prefab,
             Transform parent,
             Vector3 worldPos,
-            string text,
-            float? characterSize = null)
+            string text)
         {
             if (prefab == null)
             {
@@ -41,37 +40,18 @@ namespace GourmetProject.Game.Presentation.Battle
             DishValueBadgeView view = Instantiate(prefab, parent);
             view.transform.position = worldPos;
             view._sortingOrder = WorldLabelSorting.NextOrder();
-            view.SetValue(text, characterSize);
+            view.SetValue(text);
             return view;
         }
 
-        public void SetValue(string text, float? characterSize = null)
-        {
-            TextMesh value = EnsureValueText();
-            if (value == null)
-            {
-                return;
-            }
-
-            value.text = text;
-            ApplySortingOrder();
-        }
-
-        private TextMesh EnsureValueText()
+        public void SetValue(string text)
         {
             if (_valueText != null)
             {
-                return _valueText;
+                _valueText.text = text;
             }
 
-            _valueText = GetComponent<TextMesh>();
-            if (_valueText == null)
-            {
-                Debug.LogError($"{nameof(DishValueBadgeView)} prefab 缺少 TextMesh。", this);
-                return null;
-            }
-
-            return _valueText;
+            ApplySortingOrder();
         }
 
         private void ApplySortingOrder()

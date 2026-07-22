@@ -10,11 +10,11 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private SpriteRenderer _background;
         [SerializeField] private TextMesh _sourceText;
 
+        [SerializeField] private TextMesh _effectText;
         [Header("飘动")]
         [SerializeField] private float _rise = 0.9f;
         [SerializeField] private float _duration = 0.9f;
 
-        private TextMesh _effectText;
         private Tween _tween;
         private int _sortingOrder = BattleSorting.OrderFloatingText;
 
@@ -23,12 +23,10 @@ namespace GourmetProject.Game.Presentation.Battle
             Transform parent,
             Vector3 worldPos,
             string text,
-            Color color,
-            float? characterSize = null,
             float? rise = null,
             float? duration = null)
         {
-            SpawnEffect(prefab, parent, worldPos, string.Empty, text, color, characterSize, rise, duration);
+            SpawnEffect(prefab, parent, worldPos, string.Empty, text, rise, duration);
         }
 
         public static void SpawnEffect(
@@ -37,8 +35,6 @@ namespace GourmetProject.Game.Presentation.Battle
             Vector3 worldPos,
             string sourceName,
             string effectText,
-            Color color,
-            float? characterSize = null,
             float? rise = null,
             float? duration = null)
         {
@@ -51,14 +47,12 @@ namespace GourmetProject.Game.Presentation.Battle
             FloatingTextView view = Instantiate(prefab, parent);
             view.transform.position = worldPos;
             view._sortingOrder = WorldLabelSorting.NextOrder();
-            view.PlayEffect(sourceName, effectText, color, characterSize, rise, duration);
+            view.PlayEffect(sourceName, effectText, rise, duration);
         }
 
         private void PlayEffect(
             string sourceName,
             string effectText,
-            Color color,
-            float? characterSize,
             float? rise,
             float? duration)
         {
@@ -150,7 +144,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         _sourceText.color = WithAlpha(sourceColor, alpha);
                     }
                 })
-                .SetEase(Ease.Linear)
+                .SetEase(Ease.InExpo)
                 .SetLink(gameObject)
                 .OnComplete(() =>
                 {

@@ -1084,8 +1084,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 _fxRoot != null ? _fxRoot : transform,
                 view.WorldBounds.center + new Vector3(0f, _cellSize * 0.35f, 0f),
                 $"倍率 +{value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)}",
-                Color.red,
-                0.13f,
                 0.55f,
                 0.75f);
         }

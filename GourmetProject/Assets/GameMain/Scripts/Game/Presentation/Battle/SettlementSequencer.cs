@@ -21,24 +21,12 @@ namespace GourmetProject.Game.Presentation.Battle
     /// </summary>
     public sealed class SettlementSequencer : MonoBehaviour
     {
-        private static readonly Color GainColor = Color.green;
-        private static readonly Color FinalColor = Color.red;
-        private static readonly Color SkillColor = Color.blue;
-        private static readonly Color FlavorColor = Color.pink;
-        private static readonly Color MaterialColor = Color.black;
-        private static readonly Color MultiplierColor = Color.red;
-        private static readonly Color SideEffectColor = Color.cyan;
-        private static readonly Color DefaultCueColor = Color.white;
-
         private const float SourceCueRise = 0.12f;
         private const float SourceCueDuration = 0.62f;
-        private const float SourceCueCharacterSize = 0.12f;
         private const float SourceCueStackOffset = 0.12f;
-        private const float DishValueCharacterSize = 0.13f;
         private const float DishValuePunchScale = 0.18f;
         private const float DishValuePunchDuration = 0.18f;
         private const float FinalCueInterval = 0.22f;
-        private const float FinalScorePopupCharacterSize = 0.18f;
         private const float FinalScorePopupRise = 0.78f;
         private const float FinalScorePopupDuration = 1.1f;
         private const float FinalScorePopupHold = 0.28f;
@@ -97,8 +85,6 @@ namespace GourmetProject.Game.Presentation.Battle
             Transform parent,
             Vector3 worldPos,
             string text,
-            Color color,
-            float? characterSize = null,
             float? rise = null,
             float? duration = null)
         {
@@ -107,8 +93,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 parent != null ? parent : transform,
                 worldPos,
                 text,
-                color,
-                characterSize,
                 rise,
                 duration);
         }
@@ -272,8 +256,6 @@ namespace GourmetProject.Game.Presentation.Battle
                     floatingAnchor,
                     cue.SourceName,
                     cue.Text,
-                    cue.Color,
-                    cue.CharacterSize,
                     cue.Rise,
                     ScaleSettlementDuration(cue.Duration));
             }
@@ -358,8 +340,6 @@ namespace GourmetProject.Game.Presentation.Battle
                         floatingAnchor,
                         cue.SourceName,
                         cue.Text,
-                        cue.Color,
-                        cue.CharacterSize,
                         cue.Rise,
                         ScaleSettlementDuration(cue.Duration));
                 }
@@ -703,13 +683,12 @@ namespace GourmetProject.Game.Presentation.Battle
                     _dishValueBadgePrefab,
                     fxRoot,
                     anchor,
-                    FormatDishValue(badge.Contribution),
-                    DishValueCharacterSize);
+                    FormatDishValue(badge.Contribution));
                 badge.IsVisible = badge.View != null;
             }
             else
             {
-                badge.View.SetValue(FormatDishValue(badge.Contribution), DishValueCharacterSize);
+                badge.View.SetValue(FormatDishValue(badge.Contribution));
             }
 
             PunchDishValueBadge(badge.View);
@@ -768,8 +747,6 @@ namespace GourmetProject.Game.Presentation.Battle
                     center + new Vector3(0f, 0.72f, 0f),
                     "结算",
                     $"总分 {total}",
-                    FinalColor,
-                    FinalScorePopupCharacterSize,
                     FinalScorePopupRise,
                     ScaleSettlementDuration(FinalScorePopupDuration));
             }
@@ -802,8 +779,6 @@ namespace GourmetProject.Game.Presentation.Battle
                         center + offset,
                         cue.SourceName,
                         cue.Text,
-                        cue.Color,
-                        cue.CharacterSize,
                         cue.Rise,
                         ScaleSettlementDuration(cue.Duration));
                 }
@@ -1179,7 +1154,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 plan.FinalCues.Add(new SettlementCue(
                     SettlementCueKind.SideEffect,
                     $"金币 {FormatSigned(result.GoldDelta)}",
-                    SideEffectColor,
                     sourceName: "结算"));
             }
 
@@ -1188,7 +1162,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 plan.FinalCues.Add(new SettlementCue(
                     SettlementCueKind.SideEffect,
                     $"层数 {FormatSigned(result.HappyCakeLayerDelta)}",
-                    SideEffectColor,
                     sourceName: "快乐蛋糕"));
             }
 
@@ -1197,18 +1170,17 @@ namespace GourmetProject.Game.Presentation.Battle
                 plan.FinalCues.Add(new SettlementCue(
                     SettlementCueKind.SideEffect,
                     $"获得道具 ×{result.SilverItemRollRequests}",
-                    SideEffectColor,
                     sourceName: "银材质"));
             }
 
             // if (result.PermanentFlatDeltas.Count > 0)
             // {
-            //     plan.FinalCues.Add(new SettlementCue(SettlementCueKind.SideEffect, $"永久美味 +{result.PermanentFlatDeltas.Count} 道菜", SideEffectColor));
+            //     plan.FinalCues.Add(new SettlementCue(SettlementCueKind.SideEffect, $"永久美味 +{result.PermanentFlatDeltas.Count} 道菜"));
             // }
 
             // if (result.PermanentMultDeltas.Count > 0)
             // {
-            //     plan.FinalCues.Add(new SettlementCue(SettlementCueKind.SideEffect, $"永久倍率 +{result.PermanentMultDeltas.Count} 道菜", SideEffectColor));
+            //     plan.FinalCues.Add(new SettlementCue(SettlementCueKind.SideEffect, $"永久倍率 +{result.PermanentMultDeltas.Count} 道菜"));
             // }
 
             return plan;
@@ -1411,7 +1383,6 @@ namespace GourmetProject.Game.Presentation.Battle
             return new SettlementCue(
                 SettlementCueKind.Source,
                 $"分数 {FormatSigned(baseScore)}",
-                GainColor,
                 feedbackKind: SettlementDishFeedbackKind.DishBase,
                 valueChange: DishValueChange.Base(baseScore),
                 batchKey: batchKey,
@@ -1450,7 +1421,6 @@ namespace GourmetProject.Game.Presentation.Battle
                     cue = new SettlementCue(
                         SettlementCueKind.Source,
                         $"分数 {FormatSigned(line.Value)}",
-                        GainColor,
                         feedbackKind: SettlementDishFeedbackKind.DishBase,
                         valueChange: DishValueChange.Base(line.After),
                         sourceName: sourceName);
@@ -1465,7 +1435,6 @@ namespace GourmetProject.Game.Presentation.Battle
                     cue = new SettlementCue(
                         SettlementCueKind.Source,
                         $"分数 {FormatSigned(line.Value)}",
-                        ColorForSource(line.Source),
                         feedbackKind: BuildDishFeedbackKind(line),
                         reveal: SettlementRevealSignal.FlatReveal(line.DishInstanceId, line.After, SweetTransferCardDelta(line.Source)),
                         valueChange: DishValueChange.FlatBonus(line.After),
@@ -1477,7 +1446,6 @@ namespace GourmetProject.Game.Presentation.Battle
                     cue = new SettlementCue(
                         SettlementCueKind.Source,
                         $"倍率 {FormatMultiplier(line.Value)}",
-                        MultiplierColor,
                         feedbackKind: BuildDishFeedbackKind(line),
                         reveal: SettlementRevealSignal.MultiplierReveal(line.DishInstanceId, line.After, SweetTransferCardDelta(line.Source)),
                         valueChange: DishValueChange.Multiplier(line.After),
@@ -1489,7 +1457,6 @@ namespace GourmetProject.Game.Presentation.Battle
                     cue = new SettlementCue(
                         SettlementCueKind.Source,
                         $"倍率 {FormatSigned(line.Value)}",
-                        MultiplierColor,
                         feedbackKind: BuildDishFeedbackKind(line),
                         reveal: SettlementRevealSignal.MultiplierReveal(line.DishInstanceId, line.After, SweetTransferCardDelta(line.Source)),
                         valueChange: DishValueChange.Multiplier(line.After),
@@ -1501,10 +1468,8 @@ namespace GourmetProject.Game.Presentation.Battle
                     cue = new SettlementCue(
                         SettlementCueKind.FinalModifier,
                         $"分数 {FormatSigned(line.Value)}",
-                        FinalColor,
-                        0.18f,
-                        0.7f,
-                        1.1f,
+                        rise: 0.7f,
+                        duration: 1.1f,
                         sourceName: sourceName);
                     return true;
 
@@ -1512,10 +1477,8 @@ namespace GourmetProject.Game.Presentation.Battle
                     cue = new SettlementCue(
                         SettlementCueKind.FinalModifier,
                         $"倍率 {FormatMultiplier(line.Value)}",
-                        FinalColor,
-                        0.18f,
-                        0.7f,
-                        1.1f,
+                        rise: 0.7f,
+                        duration: 1.1f,
                         sourceName: sourceName);
                     return true;
 
@@ -1523,7 +1486,6 @@ namespace GourmetProject.Game.Presentation.Battle
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
                         $"金币 {FormatSigned(line.Value)}",
-                        SideEffectColor,
                         sourceName: sourceName);
                     return true;
 
@@ -1531,7 +1493,6 @@ namespace GourmetProject.Game.Presentation.Battle
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
                         $"层数 {FormatSigned(line.Value)}",
-                        SideEffectColor,
                         sourceName: sourceName);
                     return true;
 
@@ -1539,7 +1500,6 @@ namespace GourmetProject.Game.Presentation.Battle
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
                         $"获得道具 ×{Mathf.RoundToInt(line.Value)}",
-                        SideEffectColor,
                         sourceName: sourceName);
                     return true;
 
@@ -1547,7 +1507,6 @@ namespace GourmetProject.Game.Presentation.Battle
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
                         $"获得技能 ×{Mathf.RoundToInt(line.Value)}",
-                        SideEffectColor,
                         feedbackKind: SettlementDishFeedbackKind.CopySkillTriggered,
                         reveal: SettlementRevealSignal.CopySkillReveal(line.DishInstanceId, Mathf.RoundToInt(line.Value)),
                         sourceName: sourceName);
@@ -1557,7 +1516,6 @@ namespace GourmetProject.Game.Presentation.Battle
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
                         line.Value > 1f ? $"触发甜蜜传递 ×{Mathf.RoundToInt(line.Value)}" : "触发甜蜜传递",
-                        SideEffectColor,
                         feedbackKind: SettlementDishFeedbackKind.GenericSkillTriggered,
                         triggerSweetTransferPhase: TriggerSweetTransferCuePhase.ActivatorStarted,
                         sourceName: sourceName);
@@ -1567,7 +1525,6 @@ namespace GourmetProject.Game.Presentation.Battle
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
                         "触发甜蜜传递",
-                        SideEffectColor,
                         feedbackKind: SettlementDishFeedbackKind.SweetTransferSkillTriggered,
                         triggerSweetTransferPhase: line.Value >= line.After
                             ? TriggerSweetTransferCuePhase.FinalSourceStarted
@@ -1692,30 +1649,6 @@ namespace GourmetProject.Game.Presentation.Battle
             return string.IsNullOrEmpty(line.Source.Id) ? "结算" : line.Source.Id;
         }
 
-        private static Color ColorForSource(ScoreSource source)
-        {
-            if (source == null)
-            {
-                return DefaultCueColor;
-            }
-
-            switch (source.Type)
-            {
-                case ScoreSourceType.DishSkill:
-                    return SkillColor;
-                case ScoreSourceType.DishFlavor:
-                    return FlavorColor;
-                case ScoreSourceType.Material:
-                    return MaterialColor;
-                case ScoreSourceType.TableTag:
-                case ScoreSourceType.Relic:
-                case ScoreSourceType.WeekModifier:
-                    return MultiplierColor;
-                default:
-                    return DefaultCueColor;
-            }
-        }
-
         private static bool HasFinalModifier(ScoreResult result)
         {
             return Mathf.Abs(result.FinalFlat) > 0.001f
@@ -1743,10 +1676,8 @@ namespace GourmetProject.Game.Presentation.Battle
             return new SettlementCue(
                 SettlementCueKind.FinalModifier,
                 summary,
-                FinalColor,
-                0.18f,
-                0.7f,
-                1.1f,
+                rise: 0.7f,
+                duration: 1.1f,
                 sourceName: "局加成");
         }
 
@@ -1914,8 +1845,6 @@ namespace GourmetProject.Game.Presentation.Battle
             public SettlementCue(
                 SettlementCueKind kind,
                 string text,
-                Color color,
-                float characterSize = SourceCueCharacterSize,
                 float rise = SourceCueRise,
                 float duration = SourceCueDuration,
                 SettlementDishFeedbackKind feedbackKind = SettlementDishFeedbackKind.GenericValueChanged,
@@ -1928,8 +1857,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 Kind = kind;
                 Text = text;
                 SourceName = sourceName ?? string.Empty;
-                Color = color;
-                CharacterSize = characterSize;
                 Rise = rise;
                 Duration = duration;
                 FeedbackKind = feedbackKind;
@@ -1944,10 +1871,6 @@ namespace GourmetProject.Game.Presentation.Battle
             public string Text { get; }
 
             public string SourceName { get; }
-
-            public Color Color { get; }
-
-            public float CharacterSize { get; }
 
             public float Rise { get; }
 
