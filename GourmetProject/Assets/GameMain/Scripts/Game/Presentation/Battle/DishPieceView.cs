@@ -47,6 +47,10 @@ namespace GourmetProject.Game.Presentation.Battle
         private static readonly int PulseFrequencyId = Shader.PropertyToID("_PulseFrequency");
         private static readonly int UvInflateId = Shader.PropertyToID("_UvInflate");
         private static readonly int SpriteUvRectId = Shader.PropertyToID("_SpriteUvRect");
+        private static readonly int DigestProgressId = Shader.PropertyToID("_DigestProgress");
+        private static readonly int DigestCenterId = Shader.PropertyToID("_DigestCenter");
+        private static readonly int DigestGridSizeId = Shader.PropertyToID("_DigestGridSize");
+        private static readonly int DigestSeedId = Shader.PropertyToID("_DigestSeed");
 
         [Header("接触阴影：贴桌态（偏移按单格尺寸取比例，适配不同餐桌缩放）")]
         [SerializeField] private float _shadowBaseAlpha = 0.5f;
@@ -92,6 +96,10 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private float _serveLandImpactScale = 1.02f;
         [SerializeField] private float _serveLandImpactDuration = 0.14f;
 
+        [Header("Boss 开胃菜：消化溶解")]
+        [Tooltip("落地后从食物外圈向占格视觉中心溶解的时长。")]
+        [SerializeField] private float _digestDissolveDuration = 0.85f;
+
         [Header("风味脏印（程序化噪声，仅作用于本体）")]
         [Tooltip("噪声频率：越大斑点越碎密。")]
         [SerializeField] private float _stainScale = 8f;
@@ -133,6 +141,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private MaterialPropertyBlock _stainBlock;
         private MaterialPropertyBlock _placementGlowBlock;
         private Tween _settlementFeedbackTween;
+        private MaterialPropertyBlock _digestBlock;
         private Transform _settlementFeedbackTarget;
         private Vector3 _settlementFeedbackBasePosition;
         private Vector3 _settlementFeedbackBaseScale;
@@ -351,6 +360,143 @@ namespace GourmetProject.Game.Presentation.Battle
                 _serveLandImpactScale,
                 _serveLandImpactDuration,
                 cancellationToken);
+        }
+
+        /// <summary>
+        /// 播放“被消化”溶解：以实际占格的平均位置为视觉中心，从不规则食物的外圈向内收缩。
+        /// 溶解只作用于本体，脚下阴影同步淡出；结束后由餐桌重建销毁该临时表现。
+        /// </summary>
+        public async Awaitable PlayDigestDissolveAsync(CancellationToken cancellationToken)
+        {
+            EnsureRefs();
+            if (_spriteRenderer == null)
+            {
+                return;
+            }
+
+            _clickEnabled = false;
+            SetHovered(false);
+            if (_collider != null)
+            {
+                _collider.enabled = false;
+            }
+
+            if (_placementGlow != null)
+            {
+                _placementGlow.gameObject.SetActive(false);
+            }
+
+            Material dissolveMaterial = SpriteRenderStyle.DigestDissolveMaterial;
+            if (dissolveMaterial == null)
+            {
+                await FadeDigestFallbackAsync(cancellationToken);
+                return;
+            }
+
+            _digestBlock ??= new MaterialPropertyBlock();
+            _spriteRenderer.GetPropertyBlock(_digestBlock);
+            _digestBlock.SetVector(SpriteUvRectId, SpriteUvRect(_spriteRenderer.sprite));
+            _digestBlock.SetVector(DigestCenterId, DigestCenterInSpriteRect());
+            _digestBlock.SetVector(DigestGridSizeId, DigestGridSize());
+            _digestBlock.SetFloat(DigestSeedId, Instance != null ? Instance.Id * 1.6180339f : 0f);
+            _digestBlock.SetFloat(DigestProgressId, 0f);
+            SpriteRenderStyle.ApplyDigestDissolveMaterial(_spriteRenderer);
+            _spriteRenderer.SetPropertyBlock(_digestBlock);
+
+            float shadowAlpha = _shadowRenderer != null ? _shadowRenderer.color.a : 0f;
+            float haloAlpha = _shadowHaloRenderer != null ? _shadowHaloRenderer.color.a : 0f;
+            float duration = Mathf.Max(0.0001f, _digestDissolveDuration);
+            Tween tween = DOVirtual.Float(0f, 1f, duration, progress =>
+                {
+                    if (_spriteRenderer == null)
+                    {
+                        return;
+                    }
+
+                    float eased = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(progress));
+                    _digestBlock.SetFloat(DigestProgressId, eased);
+                    _spriteRenderer.SetPropertyBlock(_digestBlock);
+                    FadeDigestShadow(eased, shadowAlpha, haloAlpha);
+                })
+                .SetEase(Ease.Linear)
+                .SetLink(gameObject);
+
+            await PresentationTween.AwaitCompletionAsync(tween, cancellationToken);
+            if (_spriteRenderer != null)
+            {
+                _digestBlock.SetFloat(DigestProgressId, 1f);
+                _spriteRenderer.SetPropertyBlock(_digestBlock);
+            }
+
+            FadeDigestShadow(1f, shadowAlpha, haloAlpha);
+        }
+
+        private async Awaitable FadeDigestFallbackAsync(CancellationToken cancellationToken)
+        {
+            Color body = _spriteRenderer.color;
+            float shadowAlpha = _shadowRenderer != null ? _shadowRenderer.color.a : 0f;
+            float haloAlpha = _shadowHaloRenderer != null ? _shadowHaloRenderer.color.a : 0f;
+            Tween tween = DOVirtual.Float(0f, 1f, Mathf.Max(0.0001f, _digestDissolveDuration), progress =>
+                {
+                    float eased = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(progress));
+                    if (_spriteRenderer != null)
+                    {
+                        Color faded = body;
+                        faded.a = body.a * (1f - eased);
+                        _spriteRenderer.color = faded;
+                    }
+
+                    FadeDigestShadow(eased, shadowAlpha, haloAlpha);
+                })
+                .SetEase(Ease.Linear)
+                .SetLink(gameObject);
+            await PresentationTween.AwaitCompletionAsync(tween, cancellationToken);
+        }
+
+        private Vector2 DigestCenterInSpriteRect()
+        {
+            if (_sprite == null || CurrentShape == null)
+            {
+                return new Vector2(0.5f, 0.5f);
+            }
+
+            Vector3 visualCenterWorld = transform.TransformPoint(VisualPivotLocal(CurrentShape));
+            Vector3 spriteLocal = _spriteRenderer.transform.InverseTransformPoint(visualCenterWorld);
+            Bounds bounds = _sprite.bounds;
+            return new Vector2(
+                bounds.size.x > 0.0001f ? Mathf.Clamp01((spriteLocal.x - bounds.min.x) / bounds.size.x) : 0.5f,
+                bounds.size.y > 0.0001f ? Mathf.Clamp01((spriteLocal.y - bounds.min.y) / bounds.size.y) : 0.5f);
+        }
+
+        private Vector2 DigestGridSize()
+        {
+            if (CurrentShape == null)
+            {
+                return Vector2.one;
+            }
+
+            int rot = ((RotationIndex % 4) + 4) % 4;
+            return (rot & 1) == 0
+                ? new Vector2(Mathf.Max(1, CurrentShape.Width), Mathf.Max(1, CurrentShape.Height))
+                : new Vector2(Mathf.Max(1, CurrentShape.Height), Mathf.Max(1, CurrentShape.Width));
+        }
+
+        private void FadeDigestShadow(float progress, float shadowAlpha, float haloAlpha)
+        {
+            float remaining = 1f - Mathf.Clamp01(progress);
+            if (_shadowRenderer != null)
+            {
+                Color color = _shadowRenderer.color;
+                color.a = shadowAlpha * remaining;
+                _shadowRenderer.color = color;
+            }
+
+            if (_shadowHaloRenderer != null)
+            {
+                Color color = _shadowHaloRenderer.color;
+                color.a = haloAlpha * remaining;
+                _shadowHaloRenderer.color = color;
+            }
         }
 
         public Awaitable PlayDeliciousnessGainFeedbackAsync(CancellationToken cancellationToken)

@@ -20,15 +20,22 @@ namespace GourmetProject.Gameplay.Battle
     /// <summary>一次「上菜」的结果。</summary>
     public readonly struct ServeResult
     {
-        public ServeResult(ServeOutcome outcome, DishInstance dish)
+        public ServeResult(ServeOutcome outcome, DishInstance dish, bool removedAfterServe = false)
         {
             Outcome = outcome;
             Dish = dish;
+            RemovedAfterServe = removedAfterServe;
         }
 
         public ServeOutcome Outcome { get; }
 
         public DishInstance Dish { get; }
+
+        /// <summary>
+        /// 菜品完成上菜触发后是否立刻被局内规则移除。
+        /// 表现层仍可用 <see cref="Dish"/> 播完落地与消失演出，但不能把它重建回餐桌。
+        /// </summary>
+        public bool RemovedAfterServe { get; }
 
         public bool Success => Outcome == ServeOutcome.Placed;
 

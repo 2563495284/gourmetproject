@@ -14,6 +14,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private static Material _spriteOutlineMaterial;
         private static Material _spriteStainMaterial;
         private static Material _spriteTransformMaterial;
+        private static Material _digestDissolveMaterial;
 
         public static Material SpriteUnlitMaterial
         {
@@ -95,6 +96,27 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
+        public static Material DigestDissolveMaterial
+        {
+            get
+            {
+                if (_digestDissolveMaterial == null)
+                {
+                    Shader shader = Resources.Load<Shader>("Shaders/DigestDissolve")
+                                    ?? Shader.Find("GourmetProject/DigestDissolve");
+                    if (shader != null)
+                    {
+                        _digestDissolveMaterial = new Material(shader)
+                        {
+                            name = "RuntimeDigestDissolve",
+                        };
+                    }
+                }
+
+                return _digestDissolveMaterial;
+            }
+        }
+
         public static void ApplyUnlitMaterial(SpriteRenderer renderer)
         {
             if (renderer != null && SpriteUnlitMaterial != null)
@@ -124,6 +146,14 @@ namespace GourmetProject.Game.Presentation.Battle
             if (renderer != null && SpriteTransformMaterial != null)
             {
                 renderer.sharedMaterial = SpriteTransformMaterial;
+            }
+        }
+
+        public static void ApplyDigestDissolveMaterial(SpriteRenderer renderer)
+        {
+            if (renderer != null && DigestDissolveMaterial != null)
+            {
+                renderer.sharedMaterial = DigestDissolveMaterial;
             }
         }
     }

@@ -262,10 +262,12 @@ namespace GourmetProject.Gameplay.Battle
                 PendingGold -= GoldCostPerServe;
             }
 
+            bool removedAfterServe = false;
             if (RemoveFirstServedDishes && _appetizerRemoved < FirstServedDishesToRemove)
             {
                 _appetizerRemoved++;
                 DiningTable.RemoveDish(instance);
+                removedAfterServe = true;
             }
 
             if (allowAutoServe && AutoServeSecondDish)
@@ -273,7 +275,7 @@ namespace GourmetProject.Gameplay.Battle
                 ServeInternal(slotIndex, allowAutoServe: false);
             }
 
-            return new ServeResult(ServeOutcome.Placed, instance);
+            return new ServeResult(ServeOutcome.Placed, instance, removedAfterServe);
         }
 
         /// <summary>计算当前餐桌的预览分数（不标记结算，不产生副作用），供 UI 实时展示。</summary>

@@ -988,6 +988,11 @@ namespace GourmetProject.Game.Presentation.Battle
             try
             {
                 await _serveAnimator.AnimateAsync(placed, target, _camera, _cellSize, _halfH, token);
+                if (result.RemovedAfterServe && placed != null && !token.IsCancellationRequested)
+                {
+                    SetMessage($"开胃菜消化了：{result.Dish.Def.Name}");
+                    await placed.PlayDigestDissolveAsync(token);
+                }
             }
             catch (OperationCanceledException)
             {
