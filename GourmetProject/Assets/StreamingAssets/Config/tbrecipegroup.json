@@ -8,8 +8,18 @@
         "maxCount": 2
       },
       {
-        "dishId": "daifuku",
+        "dishId": "macaron",
+        "weight": 70,
+        "maxCount": 2
+      },
+      {
+        "dishId": "pudding",
         "weight": 40,
+        "maxCount": 2
+      },
+      {
+        "dishId": "puff",
+        "weight": 70,
         "maxCount": 2
       },
       {
@@ -18,19 +28,44 @@
         "maxCount": 2
       },
       {
+        "dishId": "mochi",
+        "weight": 40,
+        "maxCount": 2
+      },
+      {
+        "dishId": "daifuku",
+        "weight": 40,
+        "maxCount": 2
+      },
+      {
+        "dishId": "choco_candy",
+        "weight": 70,
+        "maxCount": 2
+      },
+      {
         "dishId": "jelly",
         "weight": 40,
         "maxCount": 2
       },
       {
-        "dishId": "sundae",
-        "weight": 60,
+        "dishId": "cream_cell",
+        "weight": 70,
         "maxCount": 2
       },
       {
-        "dishId": "eggroll",
-        "weight": 50,
-        "maxCount": 1
+        "dishId": "sugarbean",
+        "weight": 70,
+        "maxCount": 2
+      },
+      {
+        "dishId": "gold_choco",
+        "weight": 40,
+        "maxCount": 2
+      },
+      {
+        "dishId": "milk_slice",
+        "weight": 70,
+        "maxCount": 2
       }
     ]
   },
@@ -38,8 +73,33 @@
     "id": "recipe_glutton_group_2",
     "pool": [
       {
-        "dishId": "macaron",
-        "weight": 70,
+        "dishId": "sundae",
+        "weight": 60,
+        "maxCount": 2
+      },
+      {
+        "dishId": "cone",
+        "weight": 40,
+        "maxCount": 2
+      },
+      {
+        "dishId": "lollipop",
+        "weight": 30,
+        "maxCount": 2
+      },
+      {
+        "dishId": "gummy",
+        "weight": 30,
+        "maxCount": 2
+      },
+      {
+        "dishId": "cupcake",
+        "weight": 40,
+        "maxCount": 2
+      },
+      {
+        "dishId": "mousse",
+        "weight": 40,
         "maxCount": 2
       },
       {
@@ -48,9 +108,9 @@
         "maxCount": 2
       },
       {
-        "dishId": "choco_bar",
-        "weight": 50,
-        "maxCount": 1
+        "dishId": "nougat",
+        "weight": 30,
+        "maxCount": 2
       }
     ]
   },
@@ -58,9 +118,14 @@
     "id": "recipe_glutton_group_3",
     "pool": [
       {
-        "dishId": "cupcake",
-        "weight": 40,
-        "maxCount": 2
+        "dishId": "eggroll",
+        "weight": 50,
+        "maxCount": 1
+      },
+      {
+        "dishId": "choco_bar",
+        "weight": 50,
+        "maxCount": 1
       },
       {
         "dishId": "eclair",
