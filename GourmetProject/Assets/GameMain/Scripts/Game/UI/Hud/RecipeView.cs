@@ -6,6 +6,20 @@ using UnityEngine.InputSystem;
 
 namespace GourmetProject.Game.UI.Hud
 {
+    /// <summary>战斗菜谱卡内一条剩余食物的显示数据。</summary>
+    public readonly struct RecipeDishDisplayData
+    {
+        public RecipeDishDisplayData(string name, bool canPlace)
+        {
+            Name = name;
+            CanPlace = canPlace;
+        }
+
+        public string Name { get; }
+
+        public bool CanPlace { get; }
+    }
+
     /// <summary>
     /// 底部扇形菜谱条：把各本菜谱本（+商店态末尾的「购买空菜谱」）按扇形排布，替代原 RecipeDrawer(BottomDrawer)。
     /// 三态：隐藏 / 显示(完全展开) / 收缩(只露一点，鼠标移到底部区时从左到右逐张弹起)。
@@ -29,7 +43,11 @@ namespace GourmetProject.Game.UI.Hud
                 bool interactable,
                 Action onClick,
                 bool canReceiveDish = true,
-                Action onRightClick = null)
+                Action onRightClick = null,
+                bool showBattleContent = false,
+                bool serveInteractable = false,
+                Action onServe = null,
+                IReadOnlyList<RecipeDishDisplayData> dishes = null)
             {
                 Title = title;
                 Capacity = capacity;
@@ -37,6 +55,10 @@ namespace GourmetProject.Game.UI.Hud
                 OnClick = onClick;
                 CanReceiveDish = canReceiveDish;
                 OnRightClick = onRightClick;
+                ShowBattleContent = showBattleContent;
+                ServeInteractable = serveInteractable;
+                OnServe = onServe;
+                Dishes = dishes;
             }
 
             public string Title { get; }
@@ -45,6 +67,10 @@ namespace GourmetProject.Game.UI.Hud
             public Action OnClick { get; }
             public bool CanReceiveDish { get; }
             public Action OnRightClick { get; }
+            public bool ShowBattleContent { get; }
+            public bool ServeInteractable { get; }
+            public Action OnServe { get; }
+            public IReadOnlyList<RecipeDishDisplayData> Dishes { get; }
         }
 
         [Header("Prefabs")]
@@ -188,7 +214,15 @@ namespace GourmetProject.Game.UI.Hud
                 slot.BookIndex = i;
                 slot.CanReceiveDish = entry.CanReceiveDish;
                 var view = slot.Go.GetComponent<RecipeCardView>();
-                view?.Bind(entry.Capacity, entry.Interactable, entry.OnClick, entry.OnRightClick);
+                view?.Bind(
+                    entry.Capacity,
+                    entry.Interactable,
+                    entry.OnClick,
+                    entry.OnRightClick,
+                    entry.ShowBattleContent,
+                    entry.ServeInteractable,
+                    entry.OnServe,
+                    entry.Dishes);
                 view?.SetClickSuppressed(_bookClicksSuppressed);
                 view?.SetTargetHighlight(slot.BookIndex == selectedBookIndex, true);
             }

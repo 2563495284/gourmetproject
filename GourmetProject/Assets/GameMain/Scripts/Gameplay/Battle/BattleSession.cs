@@ -90,6 +90,12 @@ namespace GourmetProject.Gameplay.Battle
             SetHappyCakeLayers(layers);
         }
 
+        /// <summary>本次美食品鉴结束后清空蛋糕层数。</summary>
+        public void ClearHappyCakeLayers()
+        {
+            SetHappyCakeLayers(0);
+        }
+
         /// <summary>本局允许的最大上菜次数（-1 表示不限；Boss 机制「限量供应」会设上限）。</summary>
         public int MaxServes { get; set; } = -1;
 
@@ -203,6 +209,28 @@ namespace GourmetProject.Gameplay.Battle
             return ServeInternal(slotIndex, allowAutoServe: true);
         }
 
+        /// <summary>
+        /// 当前餐桌状态下，指定菜谱条目是否至少存在一个合法上菜位置。
+        /// 与真正上菜共用同一套风味旋转/回退规则，供 HUD 实时展示可放置状态。
+        /// </summary>
+        public bool CanFitRecipeEntry(int slotIndex, int entryIndex)
+        {
+            if (slotIndex < 0 || slotIndex >= _slots.Count)
+            {
+                return false;
+            }
+
+            RecipeSlot slot = _slots[slotIndex];
+            if (entryIndex < 0 || entryIndex >= slot.Entries.Count)
+            {
+                return false;
+            }
+
+            RecipeSlotEntry entry = slot.Entries[entryIndex];
+            DishDef dish = _db.GetDish(entry.DishId);
+            return dish != null && FindServePlacements(dish, entry).Count > 0;
+        }
+
         private ServeResult ServeInternal(int slotIndex, bool allowAutoServe)
         {
             if (slotIndex < 0 || slotIndex >= _slots.Count)
@@ -230,15 +258,7 @@ namespace GourmetProject.Gameplay.Battle
                     continue;
                 }
 
-                // 麻：菜谱里带「麻」风味的菜在上菜前即按逆时针 n×90° 旋转，用旋转后的形状随机放置；放不下则回退不旋转。
-                int numbSteps = NumbStepsFor(ComposeServeFlavors(dish, slot.Entries[i]));
-                List<Placement> placements = numbSteps > 0
-                    ? DiningTable.FindValidPlacementsRotatedCcw(dish, numbSteps)
-                    : DiningTable.FindValidPlacements(dish);
-                if (placements.Count == 0 && numbSteps > 0)
-                {
-                    placements = DiningTable.FindValidPlacements(dish);
-                }
+                List<Placement> placements = FindServePlacements(dish, slot.Entries[i]);
 
                 if (placements.Count > 0)
                 {
@@ -294,6 +314,21 @@ namespace GourmetProject.Gameplay.Battle
             }
 
             return new ServeResult(ServeOutcome.Placed, instance, removedAfterServe);
+        }
+
+        private List<Placement> FindServePlacements(DishDef dish, RecipeSlotEntry entry)
+        {
+            // 麻：菜谱里带「麻」风味的菜在上菜前即按逆时针 n×90° 旋转，用旋转后的形状随机放置；放不下则回退不旋转。
+            int numbSteps = NumbStepsFor(ComposeServeFlavors(dish, entry));
+            List<Placement> placements = numbSteps > 0
+                ? DiningTable.FindValidPlacementsRotatedCcw(dish, numbSteps)
+                : DiningTable.FindValidPlacements(dish);
+            if (placements.Count == 0 && numbSteps > 0)
+            {
+                placements = DiningTable.FindValidPlacements(dish);
+            }
+
+            return placements;
         }
 
         /// <summary>计算当前餐桌的预览分数（不标记结算，不产生副作用），供 UI 实时展示。</summary>

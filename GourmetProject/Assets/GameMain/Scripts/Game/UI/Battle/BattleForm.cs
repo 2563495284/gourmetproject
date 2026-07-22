@@ -156,6 +156,9 @@ namespace GourmetProject.Game.UI.Battle
         private DishPieceView _hoveredDishPiece;
         private DiningTableCellView _hoveredCell;
         private SettlementRevealState _settlementReveal;
+        private int _displayedCakeLayers;
+        private int? _pendingSettlementCakeLayers;
+        private int _pendingSettlementCakeLayerBonus;
         [SerializeField] private GameObject _passiveOverlayRoot;
         [SerializeField] private Text _passiveOverlayText;
         private Sequence _passiveOverlaySeq;
@@ -405,6 +408,8 @@ namespace GourmetProject.Game.UI.Battle
 
             UnsubscribeCakeLayerChanges();
             _session = _run.BuildBattleSession(_activeBattleRawRequiredScore, _activeBattleModifier, _activeBattleKey);
+            _displayedCakeLayers = _session.HappyCakeLayers;
+            _pendingSettlementCakeLayers = null;
             _session.HappyCakeLayersChanged += OnHappyCakeLayersChanged;
             _session.DiningTable.Clear();
             RestorePendingRewardBattleDishes(_session, snapshot);
@@ -1154,7 +1159,7 @@ namespace GourmetProject.Game.UI.Battle
             _foodBar?.SetVisible(visible);
         }
 
-        /// <summary>战斗态扇形菜谱条：每本菜谱一张卡，点击从该菜谱上菜（触发世界空间上菜动画）。</summary>
+        /// <summary>战斗态扇形菜谱条：卡片点击查看详情，上餐铃从该菜谱随机上菜。</summary>
         private void BuildBattleRecipe()
         {
             _recipePresenter?.BuildBattle(_session, ServeFromRecipe, OpenRecipeInspect);
@@ -1227,7 +1232,7 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             _cakeLayerBuffHud.Bind(
-                _session.HappyCakeLayers,
+                _displayedCakeLayers,
                 _session.Database?.CakeLayerBuffs,
                 _tips != null ? _tips.Item : null);
         }
@@ -1872,6 +1877,8 @@ namespace GourmetProject.Game.UI.Battle
             _run.BeginFoodActionAdjustments(BossDebuffModifiers.IsPrefabFood(modifier));
             UnsubscribeCakeLayerChanges();
             _session = _run.BuildBattleSession(requiredScore, modifier, key);
+            _displayedCakeLayers = _session.HappyCakeLayers;
+            _pendingSettlementCakeLayers = null;
             _session.Served += OnBattleServed;
             _session.HappyCakeLayersChanged += OnHappyCakeLayersChanged;
             // 常驻壳在战斗中持续显示并接管分数/道具/菜谱面板（餐桌/菜品仍在世界空间场景）。
@@ -1900,8 +1907,21 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnHappyCakeLayersChanged(int before, int after)
         {
+            if (_settlementReveal != null)
+            {
+                _pendingSettlementCakeLayers = after;
+                return;
+            }
+
+            ApplyCakeLayerPresentation(after);
+        }
+
+        private void ApplyCakeLayerPresentation(int targetLayers)
+        {
+            int before = _displayedCakeLayers;
+            _displayedCakeLayers = Mathf.Max(0, targetLayers);
             RefreshCakeLayerBuff();
-            (_world ?? BattleWorldController.Instance)?.PlayCakeLayerChange(before, after);
+            (_world ?? BattleWorldController.Instance)?.PlayCakeLayerChange(before, _displayedCakeLayers);
         }
 
         private void UnsubscribeCakeLayerChanges()
@@ -2031,6 +2051,18 @@ namespace GourmetProject.Game.UI.Battle
             if (signal.TransferredDelta > 0)
             {
                 _settlementReveal.RevealTransferred(signal.DishInstanceId, signal.TransferredDelta);
+            }
+
+            if (signal.HasCakeLayer)
+            {
+                int delta = signal.CakeLayerDelta;
+                if (delta > 0 && _pendingSettlementCakeLayerBonus > 0)
+                {
+                    delta += _pendingSettlementCakeLayerBonus;
+                    _pendingSettlementCakeLayerBonus = 0;
+                }
+
+                ApplyCakeLayerPresentation(_displayedCakeLayers + delta);
             }
 
             // 若正 hover 这道菜，立即把刚揭示的信息刷到 tips 上。
@@ -2195,9 +2227,14 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             _settlementReveal = reveal;
+            _pendingSettlementCakeLayers = null;
+            _pendingSettlementCakeLayerBonus = 0;
 
             ApplyStartSettlementPassiveEffects();
             ScoreResult result = _session.Settle();
+            _pendingSettlementCakeLayerBonus = Mathf.Max(
+                0,
+                _session.HappyCakeLayers - _displayedCakeLayers - result.HappyCakeLayerDelta);
             ApplyRecipeScoreDeltasToRun();
             SetSettlementScore(0);
             RefreshFoodActions();
@@ -2221,6 +2258,13 @@ namespace GourmetProject.Game.UI.Battle
 
             // 演出走完：清空渐进揭示态，hover 恢复展示完整结算结果。
             _settlementReveal = null;
+            if (_pendingSettlementCakeLayers.HasValue)
+            {
+                int targetLayers = _pendingSettlementCakeLayers.Value;
+                _pendingSettlementCakeLayers = null;
+                ApplyCakeLayerPresentation(targetLayers);
+            }
+            _pendingSettlementCakeLayerBonus = 0;
             if (_hoveredDishPiece != null)
             {
                 RebindHoveredDishTips(_hoveredDishPiece);
@@ -2254,7 +2298,13 @@ namespace GourmetProject.Game.UI.Battle
 
             _infoColumn?.SetBattleScoreOverride(null);
             RefreshAll();
-            _loop?.OnBattleSettled(result, _session != null && _session.IsWin, _session?.HappyCakeLayers ?? 0);
+
+            // Food 结算完成后本局层数必须归零；先保留最终值，供层数金币、跨局保留等结算读取。
+            BattleSession settledSession = _session;
+            int finalHappyCakeLayers = settledSession?.HappyCakeLayers ?? 0;
+            bool isWin = settledSession != null && settledSession.IsWin;
+            settledSession?.ClearHappyCakeLayers();
+            _loop?.OnBattleSettled(result, isWin, finalHappyCakeLayers);
         }
 
         private void ApplyStartSettlementPassiveEffects()

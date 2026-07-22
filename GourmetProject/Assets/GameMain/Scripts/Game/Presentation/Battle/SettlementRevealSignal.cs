@@ -15,7 +15,8 @@ namespace GourmetProject.Game.Presentation.Battle
             bool hasMultiplier,
             float multiplier,
             int copySkillDelta,
-            int transferredDelta)
+            int transferredDelta,
+            int cakeLayerDelta)
         {
             DishInstanceId = dishInstanceId;
             HasFlat = hasFlat;
@@ -24,6 +25,7 @@ namespace GourmetProject.Game.Presentation.Battle
             Multiplier = multiplier;
             CopySkillDelta = copySkillDelta;
             TransferredDelta = transferredDelta;
+            CakeLayerDelta = cakeLayerDelta;
         }
 
         public int DishInstanceId { get; }
@@ -44,26 +46,36 @@ namespace GourmetProject.Game.Presentation.Battle
         /// <summary>本次新揭示的甜蜜传递子技能条数（追加进传递列表末尾）。</summary>
         public int TransferredDelta { get; }
 
-        public bool IsEmpty => !HasFlat && !HasMultiplier && CopySkillDelta == 0 && TransferredDelta == 0;
+        /// <summary>当前技能 cue 产生的蛋糕层数变化量；HUD 与世界表现按 cue 顺序逐条应用。</summary>
+        public int CakeLayerDelta { get; }
+
+        public bool HasCakeLayer => CakeLayerDelta != 0;
+
+        public bool IsEmpty => !HasFlat && !HasMultiplier && CopySkillDelta == 0 && TransferredDelta == 0 && !HasCakeLayer;
 
         public static SettlementRevealSignal FlatReveal(int dishInstanceId, float flatAfter, int transferredDelta = 0)
         {
-            return new SettlementRevealSignal(dishInstanceId, true, flatAfter, false, 0f, 0, transferredDelta);
+            return new SettlementRevealSignal(dishInstanceId, true, flatAfter, false, 0f, 0, transferredDelta, 0);
         }
 
         public static SettlementRevealSignal MultiplierReveal(int dishInstanceId, float multiplierAfter, int transferredDelta = 0)
         {
-            return new SettlementRevealSignal(dishInstanceId, false, 0f, true, multiplierAfter, 0, transferredDelta);
+            return new SettlementRevealSignal(dishInstanceId, false, 0f, true, multiplierAfter, 0, transferredDelta, 0);
         }
 
         public static SettlementRevealSignal CopySkillReveal(int dishInstanceId, int count)
         {
-            return new SettlementRevealSignal(dishInstanceId, false, 0f, false, 0f, count, 0);
+            return new SettlementRevealSignal(dishInstanceId, false, 0f, false, 0f, count, 0, 0);
         }
 
         public static SettlementRevealSignal TransferredReveal(int dishInstanceId, int count)
         {
-            return new SettlementRevealSignal(dishInstanceId, false, 0f, false, 0f, 0, count);
+            return new SettlementRevealSignal(dishInstanceId, false, 0f, false, 0f, 0, count, 0);
+        }
+
+        public static SettlementRevealSignal CakeLayerReveal(int delta)
+        {
+            return new SettlementRevealSignal(0, false, 0f, false, 0f, 0, 0, delta);
         }
     }
 }

@@ -1162,7 +1162,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 plan.FinalCues.Add(new SettlementCue(
                     SettlementCueKind.SideEffect,
                     $"层数 {FormatSigned(result.HappyCakeLayerDelta)}",
-                    sourceName: "快乐蛋糕"));
+                    sourceName: "快乐蛋糕",
+                    reveal: SettlementRevealSignal.CakeLayerReveal(result.HappyCakeLayerDelta)));
             }
 
             if (!hasSilverItemRollCue && result.SilverItemRollRequests > 0)
@@ -1495,7 +1496,8 @@ namespace GourmetProject.Game.Presentation.Battle
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
                         $"层数 {FormatSigned(line.Value)}",
-                        sourceName: sourceName);
+                        sourceName: sourceName,
+                        reveal: SettlementRevealSignal.CakeLayerReveal(Mathf.RoundToInt(line.Value)));
                     return true;
 
                 case ScoreLineKind.SilverItemRoll:

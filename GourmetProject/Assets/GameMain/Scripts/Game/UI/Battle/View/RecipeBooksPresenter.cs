@@ -59,7 +59,7 @@ namespace GourmetProject.Game.UI.Battle.View
             BuildPersistent(run, showAdd, canBuy ? onBuy : null, onInspect);
         }
 
-        /// <summary>战斗态扇形菜谱条：每本菜谱一张卡，左键上菜，右键查看菜谱。</summary>
+        /// <summary>战斗态扇形菜谱条：点击卡片查看详情，独立上餐铃负责随机上菜。</summary>
         public void BuildBattle(BattleSession session, Action<int> onServe, Action<int> onInspect = null)
         {
             if (_recipeView == null || session == null)
@@ -72,14 +72,36 @@ namespace GourmetProject.Game.UI.Battle.View
             {
                 RecipeSlot slot = session.Slots[i];
                 int slotIndex = i;
-                bool interactable = !session.IsSettled && !slot.IsEmpty;
+                var dishes = new List<RecipeDishDisplayData>(slot.Count);
+                int placeableCount = 0;
+
+                // TODO: 确认战斗菜谱内剩余食物的最终显示排序规则。
+                for (int entryIndex = 0; entryIndex < slot.Entries.Count; entryIndex++)
+                {
+                    RecipeSlotEntry entry = slot.Entries[entryIndex];
+                    var dish = session.Database.GetDish(entry.DishId);
+                    bool canPlace = session.CanFitRecipeEntry(slotIndex, entryIndex);
+                    if (canPlace)
+                    {
+                        placeableCount++;
+                    }
+
+                    dishes.Add(new RecipeDishDisplayData(dish?.Name ?? entry.DishId, canPlace));
+                }
+
+                bool serveLimitReached = session.MaxServes >= 0 && session.ServesUsed >= session.MaxServes;
+                bool serveInteractable = !session.IsSettled && !serveLimitReached && placeableCount > 0;
                 books.Add(new RecipeView.BookEntry(
                     $"菜谱{i + 1}",
                     $"剩 {slot.Count}",
-                    interactable,
-                    () => onServe?.Invoke(slotIndex),
+                    onInspect != null,
+                    onInspect == null ? null : () => onInspect.Invoke(slotIndex),
                     true,
-                    onInspect == null ? null : () => onInspect.Invoke(slotIndex)));
+                    onInspect == null ? null : () => onInspect.Invoke(slotIndex),
+                    showBattleContent: true,
+                    serveInteractable: serveInteractable,
+                    onServe: onServe == null ? null : () => onServe.Invoke(slotIndex),
+                    dishes: dishes));
             }
 
             _recipeView.SetBooks(books);
