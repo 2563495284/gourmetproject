@@ -35,7 +35,7 @@ public partial class Tables
     /// </summary>
     public TbTableFragment TbTableFragment {get; }
     /// <summary>
-    /// 菜谱：固定菜品(fixedDishes 用 | 分隔)+加权放回随机池(pool: list,RecipeEntry)，随机到累计初始分&gt;=requiredInitScore 为止。
+    /// 菜谱：直接配置有序 groupIds 与带权数量方案 rollPlans；随机小组内容由 TbRecipeGroup 配置。
     /// </summary>
     public TbRecipe TbRecipe {get; }
     /// <summary>
@@ -146,6 +146,10 @@ public partial class Tables
     /// 全局基础配置：整局初始金币、利息与食物调整等基础数值。
     /// </summary>
     public TbGameBase TbGameBase {get; }
+    /// <summary>
+    /// 菜谱随机小组：仅配置组ID与组内带权放回随机池，菜谱通过 groupIds 正向引用。
+    /// </summary>
+    public TbRecipeGroup TbRecipeGroup {get; }
 
     public Tables(System.Func<string, JSONNode> loader)
     {
@@ -182,6 +186,7 @@ public partial class Tables
         TbActionSmallGroup = new TbActionSmallGroup(loader("tbactionsmallgroup"));
         TbActionLargeGroup = new TbActionLargeGroup(loader("tbactionlargegroup"));
         TbGameBase = new TbGameBase(loader("tbgamebase"));
+        TbRecipeGroup = new TbRecipeGroup(loader("tbrecipegroup"));
         ResolveRef();
     }
     
@@ -220,6 +225,7 @@ public partial class Tables
         TbActionSmallGroup.ResolveRef(this);
         TbActionLargeGroup.ResolveRef(this);
         TbGameBase.ResolveRef(this);
+        TbRecipeGroup.ResolveRef(this);
     }
 }
 

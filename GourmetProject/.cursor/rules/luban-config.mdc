@@ -38,7 +38,7 @@ alwaysApply: false
    - 单格 `#sep=` / `(list#sep=…)` 与「横向流式多列」均**不生效**，不要用。
    - 多元素 list 用**多行模式**：字段名前加 `*`（如 `*shapeRows`、`*pool`）放在 ##var 行末（多行字段须是最后一列）。
      每个元素占一行，续行的所有前导字段列**留空**（靠 index 列是否为空区分记录）。
-   - `list,Bean`：每个元素写在一个单元格里，靠该 bean 的 `sep=","` 切分字段（如 `__beans__.xlsx` 里的 `RecipeEntry`），单元格写 `rice,150,0,5`（`dishId,weight,maxCount,initScore`）。
+   - `list,Bean`：每个元素写在一个单元格里，靠该 bean 的 `sep=","` 切分字段（如 `__beans__.xlsx` 里的 `RecipeEntry`），单元格写 `rice,150,2`（`dishId,weight,maxCount`）。
    - 仅含 0/1 个元素的 list 可直接用单格，无需多行。
    - 转换/校验以当前策划配表来源为准，本仓库不维护同步脚本。
 6. 生成：

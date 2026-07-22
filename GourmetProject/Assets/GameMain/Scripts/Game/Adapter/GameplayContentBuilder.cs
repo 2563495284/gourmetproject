@@ -52,9 +52,15 @@ namespace GourmetProject.Game.Adapter
             }
 
             var recipes = new List<RecipeDef>(tables.TbRecipe.DataList.Count);
+            var recipeGroups = new Dictionary<string, cfg.RecipeGroup>(System.StringComparer.Ordinal);
+            foreach (cfg.RecipeGroup group in tables.TbRecipeGroup.DataList)
+            {
+                recipeGroups[group.Id] = group;
+            }
+
             foreach (cfg.Recipe r in tables.TbRecipe.DataList)
             {
-                recipes.Add(ToRecipeDef(r));
+                recipes.Add(ToRecipeDef(r, recipeGroups));
             }
 
             var fragments = BuildFragments(tables);
@@ -214,15 +220,62 @@ namespace GourmetProject.Game.Adapter
                 c.TermId);
         }
 
-        private static RecipeDef ToRecipeDef(cfg.Recipe r)
+        private static RecipeDef ToRecipeDef(
+            cfg.Recipe r,
+            IReadOnlyDictionary<string, cfg.RecipeGroup> configuredGroups)
         {
-            var pool = new List<RecipeEntryDef>(r.Pool.Count);
-            foreach (cfg.RecipeEntry e in r.Pool)
+            List<string> groupIds = SplitPipeList(r.GroupIds);
+            var groups = new List<RecipeGroupDef>(groupIds.Count);
+            foreach (string groupId in groupIds)
             {
-                pool.Add(new RecipeEntryDef(e.DishId, e.Weight, e.MaxCount, e.InitScore));
+                if (!configuredGroups.TryGetValue(groupId, out cfg.RecipeGroup configuredGroup))
+                {
+                    throw new System.InvalidOperationException(
+                        $"菜谱 '{r.Id}' 引用了不存在的随机小组 '{groupId}'。");
+                }
+
+                var pool = new List<RecipeEntryDef>(configuredGroup.Pool.Count);
+                foreach (cfg.RecipeEntry entry in configuredGroup.Pool)
+                {
+                    pool.Add(new RecipeEntryDef(entry.DishId, entry.Weight, entry.MaxCount));
+                }
+
+                groups.Add(new RecipeGroupDef(configuredGroup.Id, pool));
             }
 
-            return new RecipeDef(r.Id, SplitPipeList(r.FixedDishes), pool, r.RequiredInitScore);
+            var plans = new List<RecipeRollPlanDef>(r.RollPlans.Count);
+            foreach (cfg.RecipeRollPlan configuredPlan in r.RollPlans)
+            {
+                plans.Add(new RecipeRollPlanDef(
+                    $"{r.Id}_plan_{plans.Count + 1}",
+                    configuredPlan.Weight,
+                    ParseCommaIntList(r.Id, configuredPlan.GroupCounts)));
+            }
+
+            return new RecipeDef(r.Id, SplitPipeList(r.FixedDishes), groups, plans);
+        }
+
+        private static List<int> ParseCommaIntList(string recipeId, string value)
+        {
+            var result = new List<int>();
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return result;
+            }
+
+            foreach (string item in value.Split(','))
+            {
+                string trimmed = item.Trim();
+                if (!int.TryParse(trimmed, out int count))
+                {
+                    throw new System.InvalidOperationException(
+                        $"菜谱 '{recipeId}' 的数量方案包含非法数量 '{trimmed}'。");
+                }
+
+                result.Add(count);
+            }
+
+            return result;
         }
 
         private static List<string> SplitPipeList(string value)

@@ -14,36 +14,31 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 菜谱小组随机条目：单元格写 dishId,weight,maxCount
+/// 菜谱带权数量方案：单元格写 count1,count2,...;weight
 /// </summary>
-public sealed partial class RecipeEntry : Luban.BeanBase
+public sealed partial class RecipeRollPlan : Luban.BeanBase
 {
-    public RecipeEntry(JSONNode _buf) 
+    public RecipeRollPlan(JSONNode _buf) 
     {
-        { if(!_buf["dishId"].IsString) { throw new SerializationException(); }  DishId = _buf["dishId"]; }
+        { if(!_buf["groupCounts"].IsString) { throw new SerializationException(); }  GroupCounts = _buf["groupCounts"]; }
         { if(!_buf["weight"].IsNumber) { throw new SerializationException(); }  Weight = _buf["weight"]; }
-        { if(!_buf["maxCount"].IsNumber) { throw new SerializationException(); }  MaxCount = _buf["maxCount"]; }
     }
 
-    public static RecipeEntry DeserializeRecipeEntry(JSONNode _buf)
+    public static RecipeRollPlan DeserializeRecipeRollPlan(JSONNode _buf)
     {
-        return new RecipeEntry(_buf);
+        return new RecipeRollPlan(_buf);
     }
 
     /// <summary>
-    /// 菜品ID
+    /// 各小组抽取数量（逗号分隔，运行时转 int 数组）
     /// </summary>
-    public readonly string DishId;
+    public readonly string GroupCounts;
     /// <summary>
-    /// 权重
+    /// 方案权重
     /// </summary>
     public readonly float Weight;
-    /// <summary>
-    /// 最大数量(0=不限)
-    /// </summary>
-    public readonly int MaxCount;
    
-    public const int __ID__ = -652168348;
+    public const int __ID__ = -776662764;
     public override int GetTypeId() => __ID__;
 
     public  void ResolveRef(Tables tables)
@@ -53,9 +48,8 @@ public sealed partial class RecipeEntry : Luban.BeanBase
     public override string ToString()
     {
         return "{ "
-        + "dishId:" + DishId + ","
+        + "groupCounts:" + GroupCounts + ","
         + "weight:" + Weight + ","
-        + "maxCount:" + MaxCount + ","
         + "}";
     }
 }

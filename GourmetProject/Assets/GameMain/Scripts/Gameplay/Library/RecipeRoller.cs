@@ -9,15 +9,13 @@ namespace GourmetProject.Gameplay.Library
     /// <summary>
     /// 初始菜谱生成（遵循策划文档）：
     /// 1) 固定菜品总会进入菜谱；
-    /// 2) 其余从随机池按权重「放回」随机，受每菜最多次数限制；
-    /// 3) 每轮仅从未超剩余初始分的池条目中抽选（如要求 500 分则先筛 ≤500，抽到 300 后剩 200 则再筛 ≤200）；
-    /// 4) 每随机一道累加初始分，达到要求初始分即停止。
-    /// 结果为菜谱牌组的菜品 id 列表（固定在前，随机在后，顺序稳定可复现）。
+    /// 2) 先按权重选择一套数量方案；
+    /// 3) 数量方案按菜谱配置的 groupIds 顺序指定各小组的抽取数量；
+    /// 4) 每个小组内按权重「放回」随机，受每菜最多次数限制。
+    /// 结果为菜谱牌组的菜品 id 列表（固定在前，各小组结果依次在后，顺序稳定可复现）。
     /// </summary>
     public static class RecipeRoller
     {
-        private const int SafetyIterationCap = 1000;
-
         public static List<string> Roll(RecipeDef recipe, GameplayDatabase db, IRandomStream stream)
         {
             if (recipe == null)
@@ -41,52 +39,80 @@ namespace GourmetProject.Gameplay.Library
                 result.Add(fixedDish);
             }
 
-            var rolledCounts = new Dictionary<string, int>(StringComparer.Ordinal);
-            int rolledScore = 0;
-            int iterations = 0;
-
-            while (rolledScore < recipe.RequiredInitScore && iterations++ < SafetyIterationCap)
+            if (recipe.RollPlans.Count == 0)
             {
-                int remainingScore = recipe.RequiredInitScore - rolledScore;
-                List<RecipeEntryDef> available = CollectAvailable(recipe, rolledCounts, remainingScore);
-                if (available.Count == 0)
+                return result;
+            }
+
+            RecipeRollPlanDef plan = PickPlan(recipe.RollPlans, stream);
+            if (plan.GroupCounts.Count != recipe.Groups.Count)
+            {
+                throw new InvalidOperationException(
+                    $"菜谱 '{recipe.Id}' 的数量方案 '{plan.Id}' 配置了 {plan.GroupCounts.Count} 个数量，" +
+                    $"但菜谱共有 {recipe.Groups.Count} 个小组。");
+            }
+
+            var rolledCounts = new Dictionary<string, int>(StringComparer.Ordinal);
+            for (int groupIndex = 0; groupIndex < recipe.Groups.Count; groupIndex++)
+            {
+                RecipeGroupDef group = recipe.Groups[groupIndex];
+                int targetCount = plan.GroupCounts[groupIndex];
+                if (targetCount < 0)
                 {
-                    break; // 池已耗尽（达上限或剩余分下无可用条目），无法继续随机。
+                    throw new InvalidOperationException(
+                        $"菜谱 '{recipe.Id}' 的数量方案 '{plan.Id}' 在小组 '{group.Id}' 配置了负数 {targetCount}。");
                 }
 
-                var weights = new List<float>(available.Count);
-                foreach (RecipeEntryDef entry in available)
+                for (int i = 0; i < targetCount; i++)
                 {
-                    weights.Add(Math.Max(0f, entry.Weight));
+                    List<RecipeEntryDef> available = CollectAvailable(group, rolledCounts);
+                    if (available.Count == 0)
+                    {
+                        throw new InvalidOperationException(
+                            $"菜谱 '{recipe.Id}' 的小组 '{group.Id}' 需要抽取 {targetCount} 个菜品，" +
+                            $"但抽到第 {i + 1} 个时池已因权重或 maxCount 耗尽。");
+                    }
+
+                    RecipeEntryDef picked = PickEntry(available, stream);
+                    result.Add(picked.DishId);
+                    rolledCounts.TryGetValue(picked.DishId, out int count);
+                    rolledCounts[picked.DishId] = count + 1;
                 }
-
-                int pickIndex = stream.WeightedPickIndex(weights);
-                RecipeEntryDef picked = available[pickIndex];
-
-                result.Add(picked.DishId);
-                rolledCounts.TryGetValue(picked.DishId, out int c);
-                rolledCounts[picked.DishId] = c + 1;
-
-                rolledScore += picked.InitScore;
             }
 
             return result;
         }
 
+        private static RecipeRollPlanDef PickPlan(IReadOnlyList<RecipeRollPlanDef> plans, IRandomStream stream)
+        {
+            var weights = new List<float>(plans.Count);
+            foreach (RecipeRollPlanDef plan in plans)
+            {
+                weights.Add(Math.Max(0f, plan.Weight));
+            }
+
+            return plans[stream.WeightedPickIndex(weights)];
+        }
+
+        private static RecipeEntryDef PickEntry(IReadOnlyList<RecipeEntryDef> entries, IRandomStream stream)
+        {
+            var weights = new List<float>(entries.Count);
+            foreach (RecipeEntryDef entry in entries)
+            {
+                weights.Add(Math.Max(0f, entry.Weight));
+            }
+
+            return entries[stream.WeightedPickIndex(weights)];
+        }
+
         private static List<RecipeEntryDef> CollectAvailable(
-            RecipeDef recipe,
-            IReadOnlyDictionary<string, int> rolledCounts,
-            int remainingScore)
+            RecipeGroupDef group,
+            IReadOnlyDictionary<string, int> rolledCounts)
         {
             var available = new List<RecipeEntryDef>();
-            foreach (RecipeEntryDef entry in recipe.Pool)
+            foreach (RecipeEntryDef entry in group.Pool)
             {
                 if (entry.Weight <= 0f)
-                {
-                    continue;
-                }
-
-                if (entry.InitScore > remainingScore)
                 {
                     continue;
                 }

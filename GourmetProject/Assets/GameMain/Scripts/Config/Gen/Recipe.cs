@@ -19,8 +19,8 @@ public sealed partial class Recipe : Luban.BeanBase
     {
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
         { if(!_buf["fixedDishes"].IsString) { throw new SerializationException(); }  FixedDishes = _buf["fixedDishes"]; }
-        { if(!_buf["requiredInitScore"].IsNumber) { throw new SerializationException(); }  RequiredInitScore = _buf["requiredInitScore"]; }
-        { var __json0 = _buf["pool"]; if(!__json0.IsArray) { throw new SerializationException(); } Pool = new System.Collections.Generic.List<RecipeEntry>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { RecipeEntry __v0;  { if(!__e0.IsObject) { throw new SerializationException(); }  __v0 = global::cfg.RecipeEntry.DeserializeRecipeEntry(__e0);  }  Pool.Add(__v0); }   }
+        { if(!_buf["groupIds"].IsString) { throw new SerializationException(); }  GroupIds = _buf["groupIds"]; }
+        { var __json0 = _buf["rollPlans"]; if(!__json0.IsArray) { throw new SerializationException(); } RollPlans = new System.Collections.Generic.List<RecipeRollPlan>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { RecipeRollPlan __v0;  { if(!__e0.IsObject) { throw new SerializationException(); }  __v0 = global::cfg.RecipeRollPlan.DeserializeRecipeRollPlan(__e0);  }  RollPlans.Add(__v0); }   }
     }
 
     public static Recipe DeserializeRecipe(JSONNode _buf)
@@ -37,20 +37,20 @@ public sealed partial class Recipe : Luban.BeanBase
     /// </summary>
     public readonly string FixedDishes;
     /// <summary>
-    /// 初始要求分
+    /// 有序随机小组ID（|分隔）
     /// </summary>
-    public readonly int RequiredInitScore;
+    public readonly string GroupIds;
     /// <summary>
-    /// 随机菜品池条目列表（dishId,weight,maxCount,initScore）
+    /// 带权数量方案（groupCounts;weight）
     /// </summary>
-    public readonly System.Collections.Generic.List<RecipeEntry> Pool;
+    public readonly System.Collections.Generic.List<RecipeRollPlan> RollPlans;
    
     public const int __ID__ = -1851047506;
     public override int GetTypeId() => __ID__;
 
     public  void ResolveRef(Tables tables)
     {
-        foreach (var _e in Pool) { _e?.ResolveRef(tables); }
+        foreach (var _e in RollPlans) { _e?.ResolveRef(tables); }
     }
 
     public override string ToString()
@@ -58,8 +58,8 @@ public sealed partial class Recipe : Luban.BeanBase
         return "{ "
         + "id:" + Id + ","
         + "fixedDishes:" + FixedDishes + ","
-        + "requiredInitScore:" + RequiredInitScore + ","
-        + "pool:" + Luban.StringUtil.CollectionToString(Pool) + ","
+        + "groupIds:" + GroupIds + ","
+        + "rollPlans:" + Luban.StringUtil.CollectionToString(RollPlans) + ","
         + "}";
     }
 }
