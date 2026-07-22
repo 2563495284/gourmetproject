@@ -1,36 +1,42 @@
 using DG.Tweening;
 using UnityEngine;
-using GourmetProject.Game.Meta;
-using GourmetProject.Game.Run;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
-    /// <summary>
-    /// 结算演出用的飘字：从某处缓缓上浮并淡出后自毁。
-    /// 渲染体（TextMesh）预拼在 prefab 上、默认参数走 SerializeField（见 presentation-prefab 规则）。
-    /// <see cref="Spawn"/> 传 null 的可选参数表示沿用 prefab 里的默认值。
-    /// </summary>
+    /// <summary>结算效果条：来源名在上，效果文字显示在底板内，上浮淡出后自毁。</summary>
     internal sealed class FloatingTextView : MonoBehaviour
     {
-        private const int FloatingOrderBase = BattleSorting.OrderFloatingText;
-        private const int FloatingOrderRange = 10000;
-        private static int _nextOrderOffset;
+        [Header("固定结构（prefab 预拼）")]
+        [SerializeField] private SpriteRenderer _background;
+        [SerializeField] private TextMesh _sourceText;
 
-        [Header("默认参数（prefab 可调，Spawn 不传时沿用）")]
-        [SerializeField] private float _characterSize = 0.14f;
+        [Header("飘动")]
         [SerializeField] private float _rise = 0.9f;
         [SerializeField] private float _duration = 0.9f;
-        [SerializeField] private int _fontSize = 32;
 
-        private TextMesh _text;
+        private TextMesh _effectText;
         private Tween _tween;
-        private int _sortingOrder = FloatingOrderBase;
+        private int _sortingOrder = BattleSorting.OrderFloatingText;
 
         public static void Spawn(
             FloatingTextView prefab,
             Transform parent,
             Vector3 worldPos,
             string text,
+            Color color,
+            float? characterSize = null,
+            float? rise = null,
+            float? duration = null)
+        {
+            SpawnEffect(prefab, parent, worldPos, string.Empty, text, color, characterSize, rise, duration);
+        }
+
+        public static void SpawnEffect(
+            FloatingTextView prefab,
+            Transform parent,
+            Vector3 worldPos,
+            string sourceName,
+            string effectText,
             Color color,
             float? characterSize = null,
             float? rise = null,
@@ -43,80 +49,31 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             FloatingTextView view = Instantiate(prefab, parent);
-
             view.transform.position = worldPos;
-            view.SetSortingOrder(NextSortingOrder());
-            view.Play(text, color, characterSize, rise, duration);
+            view._sortingOrder = WorldLabelSorting.NextOrder();
+            view.PlayEffect(sourceName, effectText, color, characterSize, rise, duration);
         }
 
-        public static FloatingTextView SpawnStatic(
-            FloatingTextView prefab,
-            Transform parent,
-            Vector3 worldPos,
-            string text,
+        private void PlayEffect(
+            string sourceName,
+            string effectText,
             Color color,
-            float? characterSize = null)
+            float? characterSize,
+            float? rise,
+            float? duration)
         {
-            if (prefab == null)
+            KillAnimation();
+
+            TextMesh effect = EnsureEffectText();
+            if (effect == null)
             {
-                Debug.LogError($"{nameof(FloatingTextView)} 缺少 prefab。");
-                return null;
+                return;
             }
 
-            FloatingTextView view = Instantiate(prefab, parent);
-            view.transform.position = worldPos;
-            view.SetSortingOrder(NextSortingOrder());
-            view.SetStaticText(text, color, characterSize);
-            return view;
-        }
-
-        private static int NextSortingOrder()
-        {
-            int order = FloatingOrderBase + _nextOrderOffset;
-            _nextOrderOffset = (_nextOrderOffset + 1) % FloatingOrderRange;
-            return order;
-        }
-
-        private void SetSortingOrder(int sortingOrder)
-        {
-            _sortingOrder = sortingOrder;
+            effect.text = effectText;
+            ConfigureSourceText(sourceName);
             ApplySortingOrder();
-        }
-
-        public void SetStaticText(string text, Color color, float? characterSize = null)
-        {
-            KillAnimation();
-
-            TextMesh tm = EnsureText();
-            if (tm == null)
-            {
-                return;
-            }
-
-            tm.text = text;
-            tm.color = color;
-            tm.characterSize = characterSize ?? _characterSize;
-        }
-
-        private void Play(string text, Color color, float? characterSize, float? rise, float? duration)
-        {
-            KillAnimation();
-
-            float cs = characterSize ?? _characterSize;
-            float r = rise ?? _rise;
-            float d = duration ?? _duration;
-
-            TextMesh tm = EnsureText();
-            if (tm == null)
-            {
-                return;
-            }
-
-            tm.text = text;
-            tm.color = color;
-            tm.characterSize = cs;
-
-            Animate(tm, transform.position, r, d);
+            Animate(effect, transform.position, rise ?? _rise, duration ?? _duration);
         }
 
         private void OnDestroy()
@@ -124,49 +81,74 @@ namespace GourmetProject.Game.Presentation.Battle
             KillAnimation();
         }
 
-        /// <summary>解析 prefab 预拼的 TextMesh 并归一化锚点/排序。</summary>
-        private TextMesh EnsureText()
+        private TextMesh EnsureEffectText()
         {
-            if (_text != null)
+            if (_effectText != null)
             {
-                return _text;
+                return _effectText;
             }
 
-            TextMesh tm = GetComponent<TextMesh>();
-            if (tm == null)
+            _effectText = GetComponent<TextMesh>();
+            if (_effectText == null)
             {
                 Debug.LogError($"{nameof(FloatingTextView)} prefab 缺少 TextMesh。", this);
                 return null;
             }
 
-            tm.anchor = TextAnchor.MiddleCenter;
-            tm.alignment = TextAlignment.Center;
-            tm.fontSize = _fontSize;
+            return _effectText;
+        }
 
-            ApplySortingOrder();
-            _text = tm;
-            return tm;
+        private void ConfigureSourceText(string sourceName)
+        {
+            if (_sourceText == null)
+            {
+                return;
+            }
+
+            bool visible = !string.IsNullOrWhiteSpace(sourceName);
+            _sourceText.gameObject.SetActive(visible);
+            if (!visible)
+            {
+                return;
+            }
+
+            _sourceText.text = sourceName;
         }
 
         private void ApplySortingOrder()
         {
-            BattleSorting.Apply(GetComponent<MeshRenderer>(), BattleSorting.Fx, _sortingOrder);
+            BattleSorting.Apply(GetComponent<MeshRenderer>(), BattleSorting.Fx, _sortingOrder + 2);
+            BattleSorting.Apply(_background, BattleSorting.Fx, _sortingOrder);
+            BattleSorting.Apply(
+                _sourceText != null ? _sourceText.GetComponent<MeshRenderer>() : null,
+                BattleSorting.Fx,
+                _sortingOrder + 2);
         }
 
-        private void Animate(TextMesh tm, Vector3 start, float rise, float duration)
+        private void Animate(TextMesh effect, Vector3 start, float rise, float duration)
         {
-            Color baseColor = tm.color;
+            Color effectColor = effect.color;
+            Color backgroundColor = _background != null ? _background.color : Color.clear;
+            Color sourceColor = _sourceText != null ? _sourceText.color : Color.clear;
             _tween = DOVirtual.Float(0f, 1f, Mathf.Max(0.0001f, duration), t =>
                 {
-                    if (tm == null)
+                    if (effect == null)
                     {
                         return;
                     }
 
                     transform.position = start + new Vector3(0f, rise * t, 0f);
-                    Color c = baseColor;
-                    c.a = 1f - t;
-                    tm.color = c;
+                    float alpha = 1f - t;
+                    effect.color = WithAlpha(effectColor, alpha);
+                    if (_background != null)
+                    {
+                        _background.color = WithAlpha(backgroundColor, alpha);
+                    }
+
+                    if (_sourceText != null)
+                    {
+                        _sourceText.color = WithAlpha(sourceColor, alpha);
+                    }
                 })
                 .SetEase(Ease.Linear)
                 .SetLink(gameObject)
@@ -187,6 +169,25 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _tween = null;
+        }
+
+        private static Color WithAlpha(Color color, float alpha)
+        {
+            color.a *= alpha;
+            return color;
+        }
+    }
+
+    internal static class WorldLabelSorting
+    {
+        private const int OrderRange = 10000;
+        private static int _nextOrderOffset;
+
+        public static int NextOrder()
+        {
+            int order = BattleSorting.OrderFloatingText + _nextOrderOffset;
+            _nextOrderOffset = (_nextOrderOffset + 1) % OrderRange;
+            return order;
         }
     }
 }

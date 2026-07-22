@@ -267,8 +267,11 @@ MonoBehaviour:
   _startSpeed: 1
   _maxSpeed: 3
   _speedCurveExponent: 1.35
-  _floatingTextPrefab: {fileID: 53574951656091332, guid: a4fd950c8e27e41338ddf6a6eee5f53e, type: 3}
+  _settlementEffectLabelPrefab: {fileID: 53574951656091332, guid: a4fd950c8e27e41338ddf6a6eee5f53e, type: 3}
+  _dishValueBadgePrefab: {fileID: 7481417833520339617, guid: 9ff8bbea9b3da4ac7ba3eda713852b62, type: 3}
   _sweetTransferParticlePrefab: {fileID: 2557560503732837231, guid: 6e93469c519004ab588908d00ea6b741, type: 3}
+  _dishValueTopEdgeOffset: 0
+  _dishFloatingVerticalOffset: -0.45
 --- !u!114 &420685135
 MonoBehaviour:
   m_ObjectHideFlags: 0

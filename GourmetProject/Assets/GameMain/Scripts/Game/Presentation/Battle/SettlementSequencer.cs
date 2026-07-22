@@ -5,8 +5,10 @@ using System.Threading;
 using DG.Tweening;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
+using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
 using UnityEngine;
+using UnityEngine.Serialization;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 using UnityEngine.InputSystem;
 #endif
@@ -27,14 +29,12 @@ namespace GourmetProject.Game.Presentation.Battle
         private static readonly Color MultiplierColor = Color.red;
         private static readonly Color SideEffectColor = Color.cyan;
         private static readonly Color DefaultCueColor = Color.white;
-        private static readonly Color DishValueColor = Color.white;
 
-        private const float SourceCueRise = 0.48f;
+        private const float SourceCueRise = 0.12f;
         private const float SourceCueDuration = 0.62f;
         private const float SourceCueCharacterSize = 0.12f;
         private const float SourceCueStackOffset = 0.12f;
         private const float DishValueCharacterSize = 0.13f;
-        private const float DishValueVerticalOffset = 0.08f;
         private const float DishValuePunchScale = 0.18f;
         private const float DishValuePunchDuration = 0.18f;
         private const float FinalCueInterval = 0.22f;
@@ -53,8 +53,16 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private float _maxSpeed = 3f;
         [SerializeField] private float _speedCurveExponent = 1.35f;
 
-        [SerializeField] private FloatingTextView _floatingTextPrefab;
+        [FormerlySerializedAs("_floatingTextPrefab")]
+        [SerializeField] private FloatingTextView _settlementEffectLabelPrefab;
+        [SerializeField] private DishValueBadgeView _dishValueBadgePrefab;
         [SerializeField] private SweetTransferParticleView _sweetTransferParticlePrefab;
+
+        [Header("结算标签布局")]
+        [Tooltip("常驻美味值上边缘相对最上层网格顶边的偏移；0 表示两条边完全贴合。")]
+        [SerializeField] private float _dishValueTopEdgeOffset;
+        [Tooltip("结算效果标签相对常驻美味值的垂直偏移，负值表示显示在下方。")]
+        [SerializeField] private float _dishFloatingVerticalOffset = -0.45f;
 
         private bool _hasSavedTimeScale;
         private float _savedTimeScale = 1f;
@@ -95,7 +103,7 @@ namespace GourmetProject.Game.Presentation.Battle
             float? duration = null)
         {
             FloatingTextView.Spawn(
-                _floatingTextPrefab,
+                _settlementEffectLabelPrefab,
                 parent != null ? parent : transform,
                 worldPos,
                 text,
@@ -239,7 +247,8 @@ namespace GourmetProject.Game.Presentation.Battle
             SettlementScopeSignal scope,
             DishPieceView view,
             IReadOnlyDictionary<int, DishPieceView> dishViews,
-            Vector3 center,
+            Vector3 dishValueAnchor,
+            Vector3 floatingAnchor,
             Transform fxRoot,
             SettlementPlaybackState playback,
             Dictionary<int, DishValueBadge> dishValueBadges,
@@ -253,14 +262,15 @@ namespace GourmetProject.Game.Presentation.Battle
             AdvanceSettlementSpeed(playback, cue.Kind);
             EmitScope(onScope, scope);
             EmitReveal(onReveal, cue);
-            ApplyDishValueChange(cue, view, center, fxRoot, dishValueBadges);
+            ApplyDishValueChange(cue, view, dishValueAnchor, fxRoot, dishValueBadges);
             PlayActorFeedbackIfNeeded(scope, view.Instance != null ? view.Instance.Id : 0, cue.FeedbackKind, dishViews, cancellationToken);
             if (fxRoot != null)
             {
-                FloatingTextView.Spawn(
-                    _floatingTextPrefab,
+                FloatingTextView.SpawnEffect(
+                    _settlementEffectLabelPrefab,
                     fxRoot,
-                    center + new Vector3(0f, 0.34f, 0f),
+                    floatingAnchor,
+                    cue.SourceName,
                     cue.Text,
                     cue.Color,
                     cue.CharacterSize,
@@ -296,8 +306,21 @@ namespace GourmetProject.Game.Presentation.Battle
                 }
 
                 DishInstance instance = view.Instance;
-                Vector3 center = DishCenter(instance, mapper);
-                await PlayCueAsync(step.Cue, step.Scope, view, dishViews, center, fxRoot, playback, dishValueBadges, onReveal, onScope, cancellationToken);
+                Vector3 dishValueAnchor = DishValueAnchor(instance, mapper);
+                Vector3 floatingAnchor = DishFloatingAnchor(dishValueAnchor, mapper);
+                await PlayCueAsync(
+                    step.Cue,
+                    step.Scope,
+                    view,
+                    dishViews,
+                    dishValueAnchor,
+                    floatingAnchor,
+                    fxRoot,
+                    playback,
+                    dishValueBadges,
+                    onReveal,
+                    onScope,
+                    cancellationToken);
                 return;
             }
 
@@ -314,11 +337,12 @@ namespace GourmetProject.Game.Presentation.Battle
                 }
 
                 DishInstance instance = view.Instance;
-                Vector3 center = DishCenter(instance, mapper);
+                Vector3 dishValueAnchor = DishValueAnchor(instance, mapper);
+                Vector3 floatingAnchor = DishFloatingAnchor(dishValueAnchor, mapper);
                 SettlementCue cue = step.Cue;
                 EmitScope(onScope, step.Scope);
                 EmitReveal(onReveal, cue);
-                ApplyDishValueChange(cue, view, center, fxRoot, dishValueBadges);
+                ApplyDishValueChange(cue, view, dishValueAnchor, fxRoot, dishValueBadges);
                 PlayActorFeedbackIfNeeded(
                     step.Scope,
                     step.DishInstanceId,
@@ -328,10 +352,11 @@ namespace GourmetProject.Game.Presentation.Battle
                     triggeredActorIds);
                 if (fxRoot != null)
                 {
-                    FloatingTextView.Spawn(
-                        _floatingTextPrefab,
+                    FloatingTextView.SpawnEffect(
+                        _settlementEffectLabelPrefab,
                         fxRoot,
-                        center + new Vector3(0f, 0.34f, 0f),
+                        floatingAnchor,
+                        cue.SourceName,
                         cue.Text,
                         cue.Color,
                         cue.CharacterSize,
@@ -640,7 +665,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private void ApplyDishValueChange(
             SettlementCue cue,
             DishPieceView view,
-            Vector3 center,
+            Vector3 anchor,
             Transform fxRoot,
             Dictionary<int, DishValueBadge> dishValueBadges)
         {
@@ -674,24 +699,23 @@ namespace GourmetProject.Game.Presentation.Battle
                     return;
                 }
 
-                badge.View = FloatingTextView.SpawnStatic(
-                    _floatingTextPrefab,
+                badge.View = DishValueBadgeView.Spawn(
+                    _dishValueBadgePrefab,
                     fxRoot,
-                    center + new Vector3(0f, DishValueVerticalOffset, 0f),
+                    anchor,
                     FormatDishValue(badge.Contribution),
-                    DishValueColor,
                     DishValueCharacterSize);
                 badge.IsVisible = badge.View != null;
             }
             else
             {
-                badge.View.SetStaticText(FormatDishValue(badge.Contribution), DishValueColor, DishValueCharacterSize);
+                badge.View.SetValue(FormatDishValue(badge.Contribution), DishValueCharacterSize);
             }
 
             PunchDishValueBadge(badge.View);
         }
 
-        private static void PunchDishValueBadge(FloatingTextView view)
+        private static void PunchDishValueBadge(DishValueBadgeView view)
         {
             if (view == null)
             {
@@ -738,10 +762,11 @@ namespace GourmetProject.Game.Presentation.Battle
 #endif
             if (fxRoot != null)
             {
-                FloatingTextView.Spawn(
-                    _floatingTextPrefab,
+                FloatingTextView.SpawnEffect(
+                    _settlementEffectLabelPrefab,
                     fxRoot,
                     center + new Vector3(0f, 0.72f, 0f),
+                    "结算",
                     $"总分 {total}",
                     FinalColor,
                     FinalScorePopupCharacterSize,
@@ -771,10 +796,11 @@ namespace GourmetProject.Game.Presentation.Battle
                 if (fxRoot != null)
                 {
                     Vector3 offset = new(0f, 0.52f + SourceCueStackOffset * i, 0f);
-                    FloatingTextView.Spawn(
-                        _floatingTextPrefab,
+                    FloatingTextView.SpawnEffect(
+                        _settlementEffectLabelPrefab,
                         fxRoot,
                         center + offset,
+                        cue.SourceName,
                         cue.Text,
                         cue.Color,
                         cue.CharacterSize,
@@ -1150,17 +1176,29 @@ namespace GourmetProject.Game.Presentation.Battle
 
             if (!hasGoldCue && Mathf.Abs(result.GoldDelta) > 0.001f)
             {
-                plan.FinalCues.Add(new SettlementCue(SettlementCueKind.SideEffect, $"金币 {FormatSigned(result.GoldDelta)}", SideEffectColor));
+                plan.FinalCues.Add(new SettlementCue(
+                    SettlementCueKind.SideEffect,
+                    $"金币 {FormatSigned(result.GoldDelta)}",
+                    SideEffectColor,
+                    sourceName: "结算"));
             }
 
             if (!hasLayerCue && result.HappyCakeLayerDelta != 0)
             {
-                plan.FinalCues.Add(new SettlementCue(SettlementCueKind.SideEffect, $"蛋糕层 {FormatSigned(result.HappyCakeLayerDelta)}", SideEffectColor));
+                plan.FinalCues.Add(new SettlementCue(
+                    SettlementCueKind.SideEffect,
+                    $"层数 {FormatSigned(result.HappyCakeLayerDelta)}",
+                    SideEffectColor,
+                    sourceName: "快乐蛋糕"));
             }
 
             if (!hasSilverItemRollCue && result.SilverItemRollRequests > 0)
             {
-                plan.FinalCues.Add(new SettlementCue(SettlementCueKind.SideEffect, $"银材质抽道具 ×{result.SilverItemRollRequests}", SideEffectColor));
+                plan.FinalCues.Add(new SettlementCue(
+                    SettlementCueKind.SideEffect,
+                    $"获得道具 ×{result.SilverItemRollRequests}",
+                    SideEffectColor,
+                    sourceName: "银材质"));
             }
 
             // if (result.PermanentFlatDeltas.Count > 0)
@@ -1376,7 +1414,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 GainColor,
                 feedbackKind: SettlementDishFeedbackKind.DishBase,
                 valueChange: DishValueChange.Base(baseScore),
-                batchKey: batchKey);
+                batchKey: batchKey,
+                sourceName: instance?.Def?.Name);
         }
 
         private static SettlementScopeSignal BuildDishFocusSignal(DishInstance instance, int ownerDishInstanceId = 0)
@@ -1413,7 +1452,8 @@ namespace GourmetProject.Game.Presentation.Battle
                         $"分数 {FormatSigned(line.Value)}",
                         GainColor,
                         feedbackKind: SettlementDishFeedbackKind.DishBase,
-                        valueChange: DishValueChange.Base(line.After));
+                        valueChange: DishValueChange.Base(line.After),
+                        sourceName: sourceName);
                     return true;
 
                 case ScoreLineKind.DishFlat:
@@ -1424,12 +1464,13 @@ namespace GourmetProject.Game.Presentation.Battle
 
                     cue = new SettlementCue(
                         SettlementCueKind.Source,
-                        $"{sourceName} {FormatSigned(line.Value)}",
+                        $"分数 {FormatSigned(line.Value)}",
                         ColorForSource(line.Source),
                         feedbackKind: BuildDishFeedbackKind(line),
                         reveal: SettlementRevealSignal.FlatReveal(line.DishInstanceId, line.After, SweetTransferCardDelta(line.Source)),
                         valueChange: DishValueChange.FlatBonus(line.After),
-                        batchKey: BuildDishSkillBatchKey(line));
+                        batchKey: BuildDishSkillBatchKey(line),
+                        sourceName: sourceName);
                     return true;
 
                 case ScoreLineKind.DishMultiplier:
@@ -1440,7 +1481,8 @@ namespace GourmetProject.Game.Presentation.Battle
                         feedbackKind: BuildDishFeedbackKind(line),
                         reveal: SettlementRevealSignal.MultiplierReveal(line.DishInstanceId, line.After, SweetTransferCardDelta(line.Source)),
                         valueChange: DishValueChange.Multiplier(line.After),
-                        batchKey: BuildDishSkillBatchKey(line));
+                        batchKey: BuildDishSkillBatchKey(line),
+                        sourceName: sourceName);
                     return true;
 
                 case ScoreLineKind.DishMultiplierAdd:
@@ -1451,48 +1493,64 @@ namespace GourmetProject.Game.Presentation.Battle
                         feedbackKind: BuildDishFeedbackKind(line),
                         reveal: SettlementRevealSignal.MultiplierReveal(line.DishInstanceId, line.After, SweetTransferCardDelta(line.Source)),
                         valueChange: DishValueChange.Multiplier(line.After),
-                        batchKey: BuildDishSkillBatchKey(line));
+                        batchKey: BuildDishSkillBatchKey(line),
+                        sourceName: sourceName);
                     return true;
 
                 case ScoreLineKind.FinalFlat:
                     cue = new SettlementCue(
                         SettlementCueKind.FinalModifier,
-                        $"{sourceName} {FormatSigned(line.Value)}",
+                        $"分数 {FormatSigned(line.Value)}",
                         FinalColor,
                         0.18f,
                         0.7f,
-                        1.1f);
+                        1.1f,
+                        sourceName: sourceName);
                     return true;
 
                 case ScoreLineKind.FinalMultiplier:
                     cue = new SettlementCue(
                         SettlementCueKind.FinalModifier,
-                        $"{sourceName} {FormatMultiplier(line.Value)}",
+                        $"倍率 {FormatMultiplier(line.Value)}",
                         FinalColor,
                         0.18f,
                         0.7f,
-                        1.1f);
+                        1.1f,
+                        sourceName: sourceName);
                     return true;
 
                 case ScoreLineKind.Gold:
-                    cue = new SettlementCue(SettlementCueKind.SideEffect, $"金币 {FormatSigned(line.Value)}", SideEffectColor);
+                    cue = new SettlementCue(
+                        SettlementCueKind.SideEffect,
+                        $"金币 {FormatSigned(line.Value)}",
+                        SideEffectColor,
+                        sourceName: sourceName);
                     return true;
 
                 case ScoreLineKind.Layer:
-                    cue = new SettlementCue(SettlementCueKind.SideEffect, $"蛋糕层 {FormatSigned(line.Value)}", SideEffectColor);
+                    cue = new SettlementCue(
+                        SettlementCueKind.SideEffect,
+                        $"层数 {FormatSigned(line.Value)}",
+                        SideEffectColor,
+                        sourceName: sourceName);
                     return true;
 
                 case ScoreLineKind.SilverItemRoll:
-                    cue = new SettlementCue(SettlementCueKind.SideEffect, $"银材质抽道具 ×{Mathf.RoundToInt(line.Value)}", SideEffectColor);
+                    cue = new SettlementCue(
+                        SettlementCueKind.SideEffect,
+                        $"获得道具 ×{Mathf.RoundToInt(line.Value)}",
+                        SideEffectColor,
+                        sourceName: sourceName);
                     return true;
 
                 case ScoreLineKind.CopySkill:
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
-                        $"复制技能 ×{Mathf.RoundToInt(line.Value)}",
+                        $"获得技能 ×{Mathf.RoundToInt(line.Value)}",
                         SideEffectColor,
                         feedbackKind: SettlementDishFeedbackKind.CopySkillTriggered,
-                        reveal: SettlementRevealSignal.CopySkillReveal(line.DishInstanceId, Mathf.RoundToInt(line.Value)));
+                        reveal: SettlementRevealSignal.CopySkillReveal(line.DishInstanceId, Mathf.RoundToInt(line.Value)),
+                        sourceName: sourceName);
                     return true;
 
                 case ScoreLineKind.TriggerSweetTransfer:
@@ -1501,7 +1559,8 @@ namespace GourmetProject.Game.Presentation.Battle
                         line.Value > 1f ? $"触发甜蜜传递 ×{Mathf.RoundToInt(line.Value)}" : "触发甜蜜传递",
                         SideEffectColor,
                         feedbackKind: SettlementDishFeedbackKind.GenericSkillTriggered,
-                        triggerSweetTransferPhase: TriggerSweetTransferCuePhase.ActivatorStarted);
+                        triggerSweetTransferPhase: TriggerSweetTransferCuePhase.ActivatorStarted,
+                        sourceName: sourceName);
                     return true;
 
                 case ScoreLineKind.TriggeredSweetTransferSource:
@@ -1512,7 +1571,8 @@ namespace GourmetProject.Game.Presentation.Battle
                         feedbackKind: SettlementDishFeedbackKind.SweetTransferSkillTriggered,
                         triggerSweetTransferPhase: line.Value >= line.After
                             ? TriggerSweetTransferCuePhase.FinalSourceStarted
-                            : TriggerSweetTransferCuePhase.SourceStarted);
+                            : TriggerSweetTransferCuePhase.SourceStarted,
+                        sourceName: sourceName);
                     return true;
 
                 default:
@@ -1682,11 +1742,12 @@ namespace GourmetProject.Game.Presentation.Battle
 
             return new SettlementCue(
                 SettlementCueKind.FinalModifier,
-                $"局加成 {summary}",
+                summary,
                 FinalColor,
                 0.18f,
                 0.7f,
-                1.1f);
+                1.1f,
+                sourceName: "局加成");
         }
 
         private static string FormatSigned(float value)
@@ -1708,20 +1769,91 @@ namespace GourmetProject.Game.Presentation.Battle
                 : $"{rounded:0.#}";
         }
 
-        private static Vector3 DishCenter(DishInstance dish, DiningTableCoordinateMapper mapper)
+        private Vector3 DishValueAnchor(DishInstance dish, DiningTableCoordinateMapper mapper)
         {
             if (dish == null || dish.OccupiedCells.Count == 0)
             {
                 return mapper.Center;
             }
 
-            Vector3 sum = Vector3.zero;
-            foreach (var cell in dish.OccupiedCells)
+            GridRun run = FindTopContinuousRun(dish.OccupiedCells);
+            Vector3 left = mapper.CellCenter(new GridPos(run.StartX, run.Row));
+            Vector3 right = mapper.CellCenter(new GridPos(run.EndX, run.Row));
+            Vector3 topOffset = new(0f, mapper.CellSize * 0.5f, 0f);
+            if (mapper.Root != null)
             {
-                sum += mapper.CellCenter(cell);
+                topOffset = mapper.Root.TransformVector(topOffset);
             }
 
-            return sum / dish.OccupiedCells.Count;
+            float panelHeight = _dishValueBadgePrefab != null ? _dishValueBadgePrefab.PanelHeight : 0f;
+            Vector3 labelOffset = new(0f, -panelHeight * 0.5f + _dishValueTopEdgeOffset, 0f);
+            return (left + right) * 0.5f + topOffset + labelOffset;
+        }
+
+        private Vector3 DishFloatingAnchor(Vector3 dishValueAnchor, DiningTableCoordinateMapper mapper)
+        {
+            Vector3 offset = new(0f, _dishFloatingVerticalOffset, 0f);
+            if (mapper.Root != null)
+            {
+                offset = mapper.Root.TransformVector(offset);
+            }
+
+            return dishValueAnchor + offset;
+        }
+
+        private static GridRun FindTopContinuousRun(IReadOnlyList<GridPos> cells)
+        {
+            int topRow = int.MaxValue;
+            for (int i = 0; i < cells.Count; i++)
+            {
+                topRow = Mathf.Min(topRow, cells[i].Y);
+            }
+
+            var xs = new List<int>();
+            for (int i = 0; i < cells.Count; i++)
+            {
+                if (cells[i].Y == topRow)
+                {
+                    xs.Add(cells[i].X);
+                }
+            }
+
+            xs.Sort();
+            int bestStart = xs[0];
+            int bestEnd = xs[0];
+            int currentStart = xs[0];
+            int currentEnd = xs[0];
+            for (int i = 1; i < xs.Count; i++)
+            {
+                int x = xs[i];
+                if (x <= currentEnd)
+                {
+                    continue;
+                }
+
+                if (x == currentEnd + 1)
+                {
+                    currentEnd = x;
+                    continue;
+                }
+
+                if (currentEnd - currentStart > bestEnd - bestStart)
+                {
+                    bestStart = currentStart;
+                    bestEnd = currentEnd;
+                }
+
+                currentStart = x;
+                currentEnd = x;
+            }
+
+            if (currentEnd - currentStart > bestEnd - bestStart)
+            {
+                bestStart = currentStart;
+                bestEnd = currentEnd;
+            }
+
+            return new GridRun(topRow, bestStart, bestEnd);
         }
 
         private sealed class SettlementPlaybackPlan
@@ -1790,10 +1922,12 @@ namespace GourmetProject.Game.Presentation.Battle
                 SettlementRevealSignal reveal = default,
                 DishValueChange valueChange = default,
                 string batchKey = null,
-                TriggerSweetTransferCuePhase triggerSweetTransferPhase = TriggerSweetTransferCuePhase.None)
+                TriggerSweetTransferCuePhase triggerSweetTransferPhase = TriggerSweetTransferCuePhase.None,
+                string sourceName = null)
             {
                 Kind = kind;
                 Text = text;
+                SourceName = sourceName ?? string.Empty;
                 Color = color;
                 CharacterSize = characterSize;
                 Rise = rise;
@@ -1808,6 +1942,8 @@ namespace GourmetProject.Game.Presentation.Battle
             public SettlementCueKind Kind { get; }
 
             public string Text { get; }
+
+            public string SourceName { get; }
 
             public Color Color { get; }
 
@@ -1827,6 +1963,22 @@ namespace GourmetProject.Game.Presentation.Battle
             public string BatchKey { get; }
 
             public TriggerSweetTransferCuePhase TriggerSweetTransferPhase { get; }
+        }
+
+        private readonly struct GridRun
+        {
+            public GridRun(int row, int startX, int endX)
+            {
+                Row = row;
+                StartX = startX;
+                EndX = endX;
+            }
+
+            public int Row { get; }
+
+            public int StartX { get; }
+
+            public int EndX { get; }
         }
 
         private sealed class PendingLineCue
@@ -1886,7 +2038,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 Multiplier = multiplier;
             }
 
-            public FloatingTextView View { get; set; }
+            public DishValueBadgeView View { get; set; }
 
             public bool IsVisible { get; set; }
 
