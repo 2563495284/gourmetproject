@@ -986,6 +986,28 @@
     "termId": ""
   },
   {
+    "id": "sk_cream_cake_2",
+    "trigger": 0,
+    "condType": 0,
+    "condScope": 0,
+    "condUnit": 0,
+    "condMode": 0,
+    "condParam": "",
+    "actionType": 18,
+    "actionScope": 10,
+    "actionCount": 0,
+    "actionValue": [
+      0
+    ],
+    "actionParam": [
+      "cat:cake"
+    ],
+    "isPassive": false,
+    "signed": false,
+    "descTemplate": "将自身当前分数添加到所有{cat}食物",
+    "termId": ""
+  },
+  {
     "id": "sk_donut_1",
     "trigger": 0,
     "condType": 0,

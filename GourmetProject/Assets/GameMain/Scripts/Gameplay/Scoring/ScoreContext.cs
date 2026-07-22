@@ -361,6 +361,17 @@ namespace GourmetProject.Gameplay.Scoring
             return accumulator.Mult;
         }
 
+        /// <summary>读取目标菜结算到当前时刻的分数（基础分 + 此前已执行的固定加分，不含倍率）。</summary>
+        public float GetCurrentScore(DishInstance target)
+        {
+            if (target == null || !_accums.TryGetValue(target.Id, out DishAccumulator accumulator))
+            {
+                return 0f;
+            }
+
+            return accumulator.Base + accumulator.Flat;
+        }
+
         public void GrantGold(float value)
         {
             SubmitCommand(new GrantGoldCommand(value));

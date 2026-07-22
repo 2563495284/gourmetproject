@@ -70,6 +70,32 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(ScoreOf(result, other).Multiplier, Is.EqualTo(1f).Within(0.0001f));
         }
 
+        [Test]
+        public void CreamCake_AddsItsSnapshottedCurrentScoreToEveryCake()
+        {
+            DishShape cell = DishShape.FromRows(new[] { "X" });
+            SkillDef creamCakeSkill = Skill(
+                "sk_cream_cake",
+                Rule("sk_cream_cake_1", "sk_cream_cake", 0, SkillActionType.PermanentAddFlat, SkillScope.Self, value: 10f),
+                Rule("sk_cream_cake_2", "sk_cream_cake", 1, SkillActionType.AddCurrentScore, SkillScope.Category, "cat:cake"));
+            DishDef creamCakeDef = Dish("cream_cake", cell, "sk_cream_cake", "cake");
+            DishDef cakeDef = Dish("cake", cell, category: "cake");
+            DishDef otherDef = Dish("other", cell);
+            GameplayDatabase db = Database(new[] { creamCakeDef, cakeDef, otherDef }, creamCakeSkill);
+            var table = new DiningTable(3, 1);
+            DishInstance creamCake = Instance(1, creamCakeDef, cell, 0);
+            DishInstance cake = Instance(2, cakeDef, cell, 1);
+            DishInstance other = Instance(3, otherDef, cell, 2);
+            Place(table, creamCake, cake, other);
+
+            ScoreResult result = new ScoreCalculator().Calculate(table, db);
+
+            // 基础分 10 + 一技能永久加分 10 = 快照分数 20；二技能把该快照加给所有蛋糕。
+            Assert.That(ScoreOf(result, creamCake).FlatBonus, Is.EqualTo(30f).Within(0.0001f));
+            Assert.That(ScoreOf(result, cake).FlatBonus, Is.EqualTo(20f).Within(0.0001f));
+            Assert.That(ScoreOf(result, other).FlatBonus, Is.EqualTo(0f).Within(0.0001f));
+        }
+
         private static DishScore ScoreOf(ScoreResult result, DishInstance dish)
             => result.DishScores.Single(score => score.DishInstanceId == dish.Id);
 

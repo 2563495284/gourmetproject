@@ -250,6 +250,14 @@ namespace GourmetProject.Gameplay.Scoring
                     break;
                 }
 
+                case SkillActionType.AddCurrentScore:
+                {
+                    // 先读来源快照，再统一写目标；目标包含自身时不会改变后续目标获得的数值。
+                    float sourceScore = ctx.GetCurrentScore(_self) * count;
+                    foreach (DishInstance t in Targets(ctx)) ctx.AddFlatTo(t, sourceScore);
+                    break;
+                }
+
                 case SkillActionType.AddLayer:
                 {
                     // 全局欢乐蛋糕层数：无论作用域，统一改一次全局计数器。

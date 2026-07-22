@@ -68,6 +68,10 @@ namespace cfg
         /// 目标倍率加上来源当前倍率之和；默认来源自身，source:one-cell时来源为所有实际占1格食物
         /// </summary>
         AddCurrentMult = 17,
+        /// <summary>
+        /// 目标分数加上自身当前分数（基础分+固定加分，不含倍率）
+        /// </summary>
+        AddCurrentScore = 18,
     }
 
 } 
