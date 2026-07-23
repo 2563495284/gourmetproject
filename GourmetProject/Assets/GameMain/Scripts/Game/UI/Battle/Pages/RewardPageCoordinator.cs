@@ -54,7 +54,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         public bool OpenRewardDishPack(
             IReadOnlyList<RewardChoice> choices,
-            Func<int, int, bool> onChoiceDropped,
+            Func<int, bool> onChoiceSelected,
             Action onSkip)
         {
             if (_host.Run == null || _host.RewardDishPackPanel == null)
@@ -70,7 +70,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 _host.RewardDishPackPanel.Open(
                     _host.Run,
                     choices,
-                    onChoiceDropped,
+                    onChoiceSelected,
                     onSkip,
                     _host.FoodTips);
             });
@@ -92,7 +92,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 _host.RewardDishPackPanel.Open(
                     _host.Run,
                     choices,
-                    (choiceIndex, bookIndex) =>
+                    choiceIndex =>
                     {
                         if (choiceIndex < 0 || choiceIndex >= choices.Count)
                         {

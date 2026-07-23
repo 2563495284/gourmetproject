@@ -7,7 +7,7 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>
-    /// 菜谱网格视图。奖励流程中可作为 Drop 目标；普通查看与选择流程只负责布局。
+    /// 菜谱网格视图。普通查看与选择流程负责布局，也可接收菜品内部调整的 Drop。
     /// </summary>
     public sealed class RecipeEditBookView : MonoBehaviour, IDropHandler
     {
@@ -22,7 +22,6 @@ namespace GourmetProject.Game.UI.Meta
 
         private int _bookIndex;
         private Action<RecipeEditDishView, int, int> _onDishDropped;
-        private Action<RewardDishChoiceCardView, int> _onChoiceDropped;
         private GridLayoutGroup _grid;
         private RectTransform _viewport;
         private bool _scrollWired;
@@ -47,13 +46,11 @@ namespace GourmetProject.Game.UI.Meta
 
         public void Bind(
             int bookIndex,
-            Action<RecipeEditDishView, int, int> onDishDropped,
-            Action<RewardDishChoiceCardView, int> onChoiceDropped = null)
+            Action<RecipeEditDishView, int, int> onDishDropped)
         {
             ResolveLayout();
             _bookIndex = bookIndex;
             _onDishDropped = onDishDropped;
-            _onChoiceDropped = onChoiceDropped;
             ApplyImmediateLayout();
         }
 
@@ -65,15 +62,6 @@ namespace GourmetProject.Game.UI.Meta
             if (dish != null)
             {
                 _onDishDropped?.Invoke(dish, _bookIndex, DropIndex(eventData));
-                return;
-            }
-
-            RewardDishChoiceCardView choice = eventData.pointerDrag == null
-                ? null
-                : eventData.pointerDrag.GetComponentInParent<RewardDishChoiceCardView>();
-            if (choice != null)
-            {
-                _onChoiceDropped?.Invoke(choice, _bookIndex);
             }
         }
 

@@ -1,52 +1,37 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
-using DG.Tweening;
 using GourmetProject.Game;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
-using GourmetProject.Game.UI.Hud;
+using GourmetProject.Game.UI.Common;
 using GourmetProject.Game.UI.Tooltips;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Runtime;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>
-    /// 菜品奖励选择页。上方展示并整理当前菜谱；下方候选菜可拖入菜谱完成领取。
+    /// 菜品奖励选择页。候选菜品居中展示，点击后通过二次确认完成领取。
     /// </summary>
     public sealed class RewardDishPackPanel : MonoBehaviour
     {
-        private const float DesiredBookGap = 24f;
-        private const float MinBookScale = 0.1f;
-        private const float DishFlyDuration = 0.28f;
-        private const float DefaultChoiceSpacing = 16f;
-        private static readonly Vector2 ChoiceDishSize = new(140f, 140f);
-
         [SerializeField] private GameObject _panelRoot;
         [SerializeField] private Text _promptText;
-        [SerializeField] private RectTransform _editBooksContainer;
-        [SerializeField] private RecipeEditBookView _editBookPrefab;
-        [SerializeField] private RecipeEditDishView _editDishPrefab;
         [SerializeField] private RectTransform _choiceContainer;
         [SerializeField] private RewardDishChoiceCardView _cardTemplate;
         [SerializeField] private Button _skipButton;
 
-        private readonly List<RecipeEditDishView> _spawnedChoices = new();
-        private readonly List<GameObject> _spawnedBooks = new();
-        private readonly List<RecipeEditBookView> _spawnedBookViews = new();
+        private readonly List<RewardDishChoiceCardView> _spawnedCards = new();
         private readonly List<RewardChoice> _choices = new();
         private GameRun _run;
-        private Func<int, int, bool> _onChoiceDropped;
+        private Func<int, bool> _onChoiceSelected;
         private Action _onSkip;
         private Func<FoodTipsView> _getFoodTips;
-        private RecipeEditDishView _hoveredTipDish;
-        private CancellationTokenSource _pendingRebuildCts;
-        private int _pendingRestoreBookIndex = -1;
-        private int _pendingRestoreDishIndex = -1;
+        private RewardDishChoiceCardView _hoveredCard;
+        private bool _resolved;
+        private bool _confirmPending;
         private bool _wired;
 
         private void Awake()
@@ -56,30 +41,29 @@ namespace GourmetProject.Game.UI.Meta
 
         private void OnDisable()
         {
-            CancelPendingRebuild();
             HideDishTips();
-            ClearBooks();
             ClearCards();
-            ClearPendingRestoreScroll();
+            _resolved = false;
+            _confirmPending = false;
         }
 
         public void Open(
             GameRun run,
             IReadOnlyList<RewardChoice> choices,
-            Func<int, int, bool> onChoiceDropped,
+            Func<int, bool> onChoiceSelected,
             Action onSkip,
             Func<FoodTipsView> getFoodTips = null)
         {
             EnsureWired();
-            CancelPendingRebuild();
             HideDishTips();
-            ClearBooks();
             ClearCards();
 
             _run = run;
-            _onChoiceDropped = onChoiceDropped;
+            _onChoiceSelected = onChoiceSelected;
             _onSkip = onSkip;
             _getFoodTips = getFoodTips;
+            _resolved = false;
+            _confirmPending = false;
             _choices.Clear();
 
             if (choices != null)
@@ -101,25 +85,23 @@ namespace GourmetProject.Game.UI.Meta
 
             if (_promptText != null)
             {
-                _promptText.text = "拖拽下方一个菜品到上方菜谱中，或移动已有菜品调整菜谱。";
+                _promptText.text = "选择一个菜品";
             }
 
-            RebuildBooks();
             BuildCards();
         }
 
         public void Close()
         {
-            CancelPendingRebuild();
             HideDishTips();
-            ClearBooks();
             ClearCards();
-            ClearPendingRestoreScroll();
             _choices.Clear();
             _run = null;
-            _onChoiceDropped = null;
+            _onChoiceSelected = null;
             _onSkip = null;
             _getFoodTips = null;
+            _resolved = false;
+            _confirmPending = false;
 
             if (_panelRoot != null)
             {
@@ -146,498 +128,142 @@ namespace GourmetProject.Game.UI.Meta
 
         private void BuildCards()
         {
-            if (_editDishPrefab == null || _choiceContainer == null)
+            if (_cardTemplate == null || _choiceContainer == null)
             {
+                Debug.LogError($"{nameof(RewardDishPackPanel)} 缺少 ChoiceContainer 或 RewardDishChoiceCardTemplate。", this);
                 return;
             }
 
-            ConfigureChoiceContainerLayout(out RectOffset choicePadding, out float choiceSpacing, out TextAnchor choiceAlignment);
-
-            if (_cardTemplate != null)
+            _cardTemplate.gameObject.SetActive(false);
+            HorizontalLayoutGroup layout = _choiceContainer.GetComponent<HorizontalLayoutGroup>();
+            if (layout != null)
             {
-                _cardTemplate.gameObject.SetActive(false);
+                layout.enabled = true;
+                layout.childAlignment = TextAnchor.MiddleCenter;
             }
 
             for (int i = 0; i < _choices.Count; i++)
             {
                 int index = i;
-                RewardChoice choice = _choices[i];
-                DishDef def = _run?.Database.GetDish(choice.Id);
-                RecipeEditDishView dish = Instantiate(_editDishPrefab, _choiceContainer);
-                dish.gameObject.name = $"RewardDishChoice_{index + 1}";
-                dish.gameObject.SetActive(true);
-                ConfigureChoiceDishRect((RectTransform)dish.transform);
-                dish.Bind(
-                    choice.Name,
-                    DishShapeText(choice.Id),
-                    -1,
+                RewardChoice choice = _choices[index];
+                DishDef dish = _run?.Database.GetDish(choice.Id);
+                RewardDishChoiceCardView card = Instantiate(_cardTemplate, _choiceContainer);
+                card.gameObject.name = $"RewardDishChoice_{index + 1}";
+                card.gameObject.SetActive(true);
+                card.Bind(
+                    choice,
+                    LoadDishIcon(dish),
                     index,
-                    true,
-                    null,
-                    def,
-                    null,
-                    null,
+                    OnChoiceClicked,
                     ShowDishTips,
-                    HideDishTips,
-                    ComposeFlavorIds(
-                        def,
-                        string.IsNullOrEmpty(choice.FlavorId) ? null : new[] { choice.FlavorId }));
-                _spawnedChoices.Add(dish);
+                    HideDishTips);
+                _spawnedCards.Add(card);
             }
 
-            ArrangeChoiceDishes(choicePadding, choiceSpacing, choiceAlignment);
+            Canvas.ForceUpdateCanvases();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_choiceContainer);
         }
 
         private void ClearCards()
         {
-            for (int i = 0; i < _spawnedChoices.Count; i++)
+            for (int i = 0; i < _spawnedCards.Count; i++)
             {
-                if (_spawnedChoices[i] != null)
+                if (_spawnedCards[i] != null)
                 {
-                    Destroy(_spawnedChoices[i].gameObject);
+                    Destroy(_spawnedCards[i].gameObject);
                 }
             }
 
-            _spawnedChoices.Clear();
+            _spawnedCards.Clear();
         }
 
-        private void ConfigureChoiceContainerLayout(out RectOffset padding, out float spacing, out TextAnchor alignment)
+        private void OnChoiceClicked(RewardDishChoiceCardView card, int choiceIndex)
         {
-            padding = new RectOffset(12, 12, 8, 8);
-            spacing = DefaultChoiceSpacing;
-            alignment = TextAnchor.MiddleCenter;
-            if (_choiceContainer == null)
+            if (_resolved || _confirmPending || choiceIndex < 0 || choiceIndex >= _choices.Count)
             {
                 return;
             }
 
-            HorizontalLayoutGroup layout = _choiceContainer.GetComponent<HorizontalLayoutGroup>();
-            if (layout == null)
-            {
-                return;
-            }
-
-            if (layout.padding != null)
-            {
-                padding = new RectOffset(
-                    layout.padding.left,
-                    layout.padding.right,
-                    layout.padding.top,
-                    layout.padding.bottom);
-            }
-
-            spacing = layout.spacing;
-            alignment = layout.childAlignment;
-            layout.enabled = false;
-        }
-
-        private void ArrangeChoiceDishes(RectOffset padding, float spacing, TextAnchor alignment)
-        {
-            if (_choiceContainer == null || _spawnedChoices.Count == 0)
-            {
-                return;
-            }
-
-            Canvas.ForceUpdateCanvases();
-            float totalWidth = ChoiceDishSize.x * _spawnedChoices.Count
-                + Mathf.Max(0, _spawnedChoices.Count - 1) * spacing;
-            float containerWidth = _choiceContainer.rect.width;
-            float containerHeight = _choiceContainer.rect.height;
-            if (containerWidth <= 0f)
-            {
-                containerWidth = totalWidth + padding.horizontal;
-            }
-
-            if (containerHeight <= 0f)
-            {
-                containerHeight = ChoiceDishSize.y + padding.vertical;
-            }
-
-            float x = ChoiceStartX(containerWidth, padding, totalWidth, alignment);
-            float y = ChoiceY(containerHeight, padding, alignment);
-            for (int i = 0; i < _spawnedChoices.Count; i++)
-            {
-                RecipeEditDishView dish = _spawnedChoices[i];
-                if (dish == null)
-                {
-                    continue;
-                }
-
-                RectTransform rect = (RectTransform)dish.transform;
-                ConfigureChoiceDishRect(rect);
-                rect.anchoredPosition = new Vector2(x + i * (ChoiceDishSize.x + spacing), y);
-            }
-        }
-
-        private void RebuildBooks()
-        {
-            ClearBooks();
-            if (_run == null || _editBooksContainer == null || _editBookPrefab == null || _editDishPrefab == null)
-            {
-                return;
-            }
-
-            HorizontalLayoutGroup layout = _editBooksContainer.GetComponent<HorizontalLayoutGroup>();
-            if (layout != null)
-            {
-                layout.enabled = false;
-            }
-
-            var books = new List<RecipeEditBookView>(1);
-            const int i = 0;
-            {
-                RecipeEditBookView book = Instantiate(_editBookPrefab, _editBooksContainer);
-                book.gameObject.name = $"RewardRecipeBook_{i + 1}";
-                book.Bind(i, OnDishDroppedToBook, OnChoiceDroppedToBook);
-                _spawnedBooks.Add(book.gameObject);
-                _spawnedBookViews.Add(book);
-                books.Add(book);
-
-                RectTransform dishContainer = book.DishContainer;
-                if (dishContainer != null)
-                {
-                    IReadOnlyList<RecipeBookSlot> entries = _run.RecipeEntries;
-                    for (int k = 0; k < entries.Count; k++)
-                    {
-                        string dishId = entries[k].DishId;
-                        DishDef def = _run.Database.GetDish(dishId);
-                        RecipeEditDishView dish = Instantiate(_editDishPrefab, dishContainer);
-                        dish.gameObject.name = $"RewardRecipeDish_{i + 1}_{k + 1}";
-                        dish.Bind(
-                            DishName(GameApp.Config.Tables, dishId),
-                            DishShapeText(dishId),
-                            i,
-                            k,
-                            true,
-                            null,
-                            def,
-                            null,
-                            null,
-                            ShowDishTips,
-                            HideDishTips,
-                            ComposeFlavorIds(def, entries[k].ExtraFlavorIds));
-                        _spawnedBooks.Add(dish.gameObject);
-                    }
-                }
-
-                book.ApplyImmediateLayout();
-            }
-
-            FitBooksToContainer(books);
-            RestorePendingScroll(books);
-        }
-
-        private void ClearBooks()
-        {
-            for (int i = 0; i < _spawnedBooks.Count; i++)
-            {
-                if (_spawnedBooks[i] != null)
-                {
-                    Destroy(_spawnedBooks[i]);
-                }
-            }
-
-            _spawnedBooks.Clear();
-            _spawnedBookViews.Clear();
-        }
-
-        private void OnDishDroppedToBook(RecipeEditDishView dish, int targetBookIndex, int targetDishIndex)
-        {
-            if (dish == null)
-            {
-                return;
-            }
-
-            if (dish.BookIndex < 0)
-            {
-                OnChoiceDroppedToBook(dish, targetBookIndex);
-                return;
-            }
-
-            if (targetBookIndex == 0 && ShopService.MoveDish(_run, dish.DishIndex, targetDishIndex))
-            {
-                dish.MarkDropHandled();
-                RequestRestoreScroll(targetBookIndex, targetDishIndex);
-                QueueRebuildBooks();
-            }
-        }
-
-        private void OnChoiceDroppedToBook(RewardDishChoiceCardView card, int targetBookIndex)
-        {
-            if (card == null || card.ChoiceIndex < 0 || card.ChoiceIndex >= _choices.Count || _onChoiceDropped == null)
-            {
-                return;
-            }
-
-            if (!_onChoiceDropped.Invoke(card.ChoiceIndex, targetBookIndex))
-            {
-                card.PlayTargetFailed();
-                return;
-            }
-
-            card.SetResolved(true);
-        }
-
-        private void OnChoiceDroppedToBook(RecipeEditDishView dish, int targetBookIndex)
-        {
-            if (dish == null || dish.DishIndex < 0 || dish.DishIndex >= _choices.Count || _onChoiceDropped == null)
-            {
-                return;
-            }
-
-            RecipeEditBookView targetBook = FindBook(targetBookIndex);
-            if (targetBook == null)
-            {
-                return;
-            }
-
-            int targetDishIndex = targetBook.CurrentDishCount();
-            dish.MarkDropHandled();
             HideDishTips();
-            targetBook.ScrollToIndex(targetDishIndex, DishFlyDuration);
-            PlayDishFlyToSlot(dish, targetBook, targetDishIndex, () =>
+            _confirmPending = true;
+            RewardChoice choice = _choices[choiceIndex];
+            string choiceName = string.IsNullOrWhiteSpace(choice.Name) ? choice.Id : choice.Name;
+            var data = new ConfirmDialogData
             {
-                bool dropped = _onChoiceDropped.Invoke(dish.DishIndex, targetBookIndex);
-                if (!dropped)
-                {
-                    if (dish != null)
-                    {
-                        dish.PlayReturnToOriginalPosition(() => PlayTargetFailed(dish));
-                    }
-
-                    return;
-                }
-
-                if (dish != null)
-                {
-                    dish.gameObject.SetActive(false);
-                }
-
-                if (this != null && isActiveAndEnabled)
-                {
-                    RequestRestoreScroll(targetBookIndex, targetDishIndex);
-                    QueueRebuildBooks();
-                }
-            });
+                Title = "确认选择菜品",
+                Message = $"确定选择「{choiceName}」吗？",
+                ConfirmText = "选择",
+                CancelText = "返回",
+                OnConfirm = () => ConfirmChoice(card, choiceIndex),
+                OnCancel = () => _confirmPending = false,
+            };
+            GameApp.UI.OpenUIForm(UIForms.ConfirmDialog, UIForms.GroupDialog, data);
         }
 
-        private RecipeEditBookView FindBook(int bookIndex)
+        private void ConfirmChoice(RewardDishChoiceCardView card, int choiceIndex)
         {
-            return bookIndex >= 0 && bookIndex < _spawnedBookViews.Count
-                ? _spawnedBookViews[bookIndex]
-                : null;
-        }
-
-        private void RequestRestoreScroll(int bookIndex, int dishIndex)
-        {
-            _pendingRestoreBookIndex = bookIndex;
-            _pendingRestoreDishIndex = dishIndex;
-        }
-
-        private void ClearPendingRestoreScroll()
-        {
-            _pendingRestoreBookIndex = -1;
-            _pendingRestoreDishIndex = -1;
-        }
-
-        private void RestorePendingScroll(IReadOnlyList<RecipeEditBookView> books)
-        {
-            if (_pendingRestoreBookIndex < 0 || books == null)
+            _confirmPending = false;
+            if (_resolved || choiceIndex < 0 || choiceIndex >= _choices.Count || _onChoiceSelected == null)
             {
                 return;
             }
 
-            int bookIndex = _pendingRestoreBookIndex;
-            int dishIndex = _pendingRestoreDishIndex;
-            _pendingRestoreBookIndex = -1;
-            _pendingRestoreDishIndex = -1;
-            if (bookIndex < 0 || bookIndex >= books.Count || books[bookIndex] == null)
+            if (!_onChoiceSelected.Invoke(choiceIndex))
             {
+                card?.PlayTargetFailed();
                 return;
             }
 
-            books[bookIndex].ScrollToIndex(Mathf.Max(0, dishIndex), 0f);
-        }
-
-        private void PlayDishFlyToSlot(RecipeEditDishView dish, RecipeEditBookView targetBook, int targetDishIndex, Action onComplete)
-        {
-            if (dish == null || targetBook == null)
+            _resolved = true;
+            for (int i = 0; i < _spawnedCards.Count; i++)
             {
-                onComplete?.Invoke();
-                return;
+                _spawnedCards[i]?.SetResolved(true);
             }
-
-            RectTransform rect = (RectTransform)dish.transform;
-            dish.PrepareAsFloating();
-            Vector3 start = rect.position;
-            Vector3 startScale = rect.localScale;
-            RectTransform targetScaleSource = targetBook.ViewportRect != null
-                ? targetBook.ViewportRect
-                : (RectTransform)targetBook.transform;
-            Vector3 targetScale = FloatingScaleForTarget(rect.parent as RectTransform, targetScaleSource);
-            Vector3 targetPosition = targetBook.SlotWorldCenterAfterScrollToIndex(targetDishIndex);
-            DOTween.Kill(rect);
-            DOTween.To(
-                    () => 0f,
-                    t =>
-                    {
-                        rect.position = Vector3.LerpUnclamped(start, targetPosition, t);
-                        rect.localScale = Vector3.LerpUnclamped(startScale, targetScale, t);
-                    },
-                    1f,
-                    DishFlyDuration)
-                .SetEase(Ease.OutCubic)
-                .SetUpdate(true)
-                .SetTarget(rect)
-                .SetLink(dish.gameObject)
-                .OnComplete(() =>
-                {
-                    dish.SetInteractableAfterAnimation(false);
-                    onComplete?.Invoke();
-                });
-        }
-
-        private static Vector3 FloatingScaleForTarget(RectTransform floatingParent, RectTransform target)
-        {
-            if (target == null)
-            {
-                return Vector3.one;
-            }
-
-            Vector3 parentScale = floatingParent != null ? floatingParent.lossyScale : Vector3.one;
-            Vector3 targetScale = target.lossyScale;
-            return new Vector3(
-                SafeScaleDiv(targetScale.x, parentScale.x),
-                SafeScaleDiv(targetScale.y, parentScale.y),
-                SafeScaleDiv(targetScale.z, parentScale.z));
-        }
-
-        private static float SafeScaleDiv(float value, float divisor)
-        {
-            return Mathf.Abs(divisor) <= 0.0001f ? value : value / divisor;
-        }
-
-        private static void ConfigureChoiceDishRect(RectTransform rect)
-        {
-            if (rect == null)
-            {
-                return;
-            }
-
-            rect.anchorMin = new Vector2(0.5f, 0.5f);
-            rect.anchorMax = new Vector2(0.5f, 0.5f);
-            rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.sizeDelta = ChoiceDishSize;
-            rect.localScale = Vector3.one;
-            rect.localRotation = Quaternion.identity;
-        }
-
-        private static float ChoiceStartX(float containerWidth, RectOffset padding, float totalWidth, TextAnchor alignment)
-        {
-            float x = -containerWidth * 0.5f + padding.left;
-            if (IsRightAligned(alignment))
-            {
-                x = containerWidth * 0.5f - padding.right - totalWidth;
-            }
-            else if (!IsLeftAligned(alignment))
-            {
-                x += (containerWidth - padding.horizontal - totalWidth) * 0.5f;
-            }
-
-            return x + ChoiceDishSize.x * 0.5f;
-        }
-
-        private static float ChoiceY(float containerHeight, RectOffset padding, TextAnchor alignment)
-        {
-            if (IsUpperAligned(alignment))
-            {
-                return containerHeight * 0.5f - padding.top - ChoiceDishSize.y * 0.5f;
-            }
-
-            if (IsLowerAligned(alignment))
-            {
-                return -containerHeight * 0.5f + padding.bottom + ChoiceDishSize.y * 0.5f;
-            }
-
-            return (padding.bottom - padding.top) * 0.5f;
-        }
-
-        private static bool IsLeftAligned(TextAnchor alignment)
-        {
-            return alignment == TextAnchor.UpperLeft
-                || alignment == TextAnchor.MiddleLeft
-                || alignment == TextAnchor.LowerLeft;
-        }
-
-        private static bool IsRightAligned(TextAnchor alignment)
-        {
-            return alignment == TextAnchor.UpperRight
-                || alignment == TextAnchor.MiddleRight
-                || alignment == TextAnchor.LowerRight;
-        }
-
-        private static bool IsUpperAligned(TextAnchor alignment)
-        {
-            return alignment == TextAnchor.UpperLeft
-                || alignment == TextAnchor.UpperCenter
-                || alignment == TextAnchor.UpperRight;
-        }
-
-        private static bool IsLowerAligned(TextAnchor alignment)
-        {
-            return alignment == TextAnchor.LowerLeft
-                || alignment == TextAnchor.LowerCenter
-                || alignment == TextAnchor.LowerRight;
-        }
-
-        private static void PlayTargetFailed(RecipeEditDishView dish)
-        {
-            if (dish == null)
-            {
-                return;
-            }
-
-            RectTransform rect = (RectTransform)dish.transform;
-            Vector3 origin = rect.localPosition;
-            DOTween.Kill(rect);
-            DOVirtual.Float(0f, 1f, 0.25f, t =>
-                {
-                    if (rect == null)
-                    {
-                        return;
-                    }
-
-                    float offset = Mathf.Sin(t * Mathf.PI * 12f) * 9f * (1f - t);
-                    rect.localPosition = origin + new Vector3(offset, 0f, 0f);
-                })
-                .SetEase(Ease.Linear)
-                .SetUpdate(true)
-                .SetTarget(rect)
-                .SetLink(dish.gameObject)
-                .OnComplete(() =>
-                {
-                    if (rect != null)
-                    {
-                        rect.localPosition = origin;
-                    }
-                });
         }
 
         private void OnSkipClicked()
         {
-            _onSkip?.Invoke();
-        }
-
-        private void ShowDishTips(RecipeEditDishView dish)
-        {
-            if (dish == null || _run == null)
+            if (_resolved || _confirmPending)
             {
                 return;
             }
 
-            if (!TryGetTipsContext(dish, out DishDef def, out RecipeBookSlot slot) || def == null)
+            _resolved = true;
+            _onSkip?.Invoke();
+        }
+
+        private Sprite LoadDishIcon(DishDef dish)
+        {
+            return ContentIconLoader.LoadDish(dish)
+                ?? Resources.Load<Sprite>("Sprites/UI/ui_icon_shop_food")
+                ?? Resources.Load<Sprite>("Sprites/UI/card_action_food_dish");
+        }
+
+        private void ShowDishTips(RewardDishChoiceCardView card)
+        {
+            if (card == null || _run?.Database == null)
             {
                 return;
+            }
+
+            int index = card.ChoiceIndex;
+            if (index < 0 || index >= _choices.Count)
+            {
+                return;
+            }
+
+            RewardChoice choice = _choices[index];
+            DishDef def = _run.Database.GetDish(choice.Id);
+            if (def == null)
+            {
+                return;
+            }
+
+            RecipeBookSlot slot = null;
+            if (!string.IsNullOrEmpty(choice.FlavorId))
+            {
+                slot = new RecipeBookSlot(choice.Id);
+                slot.AddFlavor(choice.FlavorId);
             }
 
             FoodTipsView tips = _getFoodTips?.Invoke();
@@ -646,74 +272,26 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            _hoveredTipDish = dish;
+            _hoveredCard = card;
             tips.Bind(BuildDishTipsData(def, slot));
             tips.Show();
             tips.transform.SetAsLastSibling();
-            tips.PlaceAroundRectTransform((RectTransform)dish.transform, GetComponentInParent<Canvas>());
+            tips.PlaceAroundRectTransform((RectTransform)card.transform, GetComponentInParent<Canvas>());
         }
 
-        private void HideDishTips(RecipeEditDishView dish = null)
+        private void HideDishTips(RewardDishChoiceCardView card = null)
         {
-            if (dish != null && _hoveredTipDish != null && _hoveredTipDish != dish)
+            if (card != null && _hoveredCard != null && _hoveredCard != card)
             {
                 return;
             }
 
-            _hoveredTipDish = null;
+            _hoveredCard = null;
             FoodTipsView tips = _getFoodTips?.Invoke();
             if (tips != null)
             {
                 tips.Hide();
             }
-        }
-
-        private bool TryGetTipsContext(RecipeEditDishView dish, out DishDef def, out RecipeBookSlot slot)
-        {
-            def = null;
-            slot = null;
-            if (dish == null || _run?.Database == null)
-            {
-                return false;
-            }
-
-            if (dish.BookIndex >= 0)
-            {
-                IReadOnlyList<RecipeBookSlot> entries = _run.RecipeEntries;
-                if (dish.DishIndex < 0 || dish.DishIndex >= entries.Count)
-                {
-                    return false;
-                }
-
-                slot = entries[dish.DishIndex];
-                def = _run.Database.GetDish(slot.DishId);
-                return def != null;
-            }
-
-            if (dish.DishIndex < 0 || dish.DishIndex >= _choices.Count)
-            {
-                return false;
-            }
-
-            RewardChoice choice = _choices[dish.DishIndex];
-            if (choice == null || choice.Kind != cfg.RewardKind.DishChoice)
-            {
-                return false;
-            }
-
-            def = _run.Database.GetDish(choice.Id);
-            if (def == null)
-            {
-                return false;
-            }
-
-            if (!string.IsNullOrEmpty(choice.FlavorId))
-            {
-                slot = new RecipeBookSlot(choice.Id);
-                slot.AddFlavor(choice.FlavorId);
-            }
-
-            return true;
         }
 
         private FoodTipsData BuildDishTipsData(DishDef def, RecipeBookSlot slot)
@@ -829,118 +407,5 @@ namespace GourmetProject.Game.UI.Meta
 
             return ids;
         }
-
-        private void QueueRebuildBooks()
-        {
-            CancelPendingRebuild();
-            RebuildBooksNextFrameAsync();
-        }
-
-        private async void RebuildBooksNextFrameAsync()
-        {
-            _pendingRebuildCts = CancellationTokenSource.CreateLinkedTokenSource(destroyCancellationToken);
-            CancellationToken token = _pendingRebuildCts.Token;
-            try
-            {
-                await Awaitable.NextFrameAsync(token);
-            }
-            catch (OperationCanceledException)
-            {
-                return;
-            }
-
-            CancelPendingRebuild();
-            if (isActiveAndEnabled)
-            {
-                RebuildBooks();
-            }
-        }
-
-        private void CancelPendingRebuild()
-        {
-            if (_pendingRebuildCts == null)
-            {
-                return;
-            }
-
-            _pendingRebuildCts.Cancel();
-            _pendingRebuildCts.Dispose();
-            _pendingRebuildCts = null;
-        }
-
-        private void FitBooksToContainer(IReadOnlyList<RecipeEditBookView> books)
-        {
-            if (books == null || books.Count == 0)
-            {
-                return;
-            }
-
-            RectTransform firstBookRect = (RectTransform)books[0].transform;
-            Vector2 bookSize = firstBookRect.sizeDelta;
-            if (bookSize.x <= 0f || bookSize.y <= 0f)
-            {
-                bookSize = firstBookRect.rect.size;
-            }
-
-            if (bookSize.x <= 0f || bookSize.y <= 0f)
-            {
-                return;
-            }
-
-            float availableWidth = _editBooksContainer.rect.width;
-            float availableHeight = _editBooksContainer.rect.height;
-            if (availableWidth <= 0f || availableHeight <= 0f)
-            {
-                return;
-            }
-
-            float totalDesiredGap = DesiredBookGap * (books.Count + 1);
-            float widthScale = (availableWidth - totalDesiredGap) / (bookSize.x * books.Count);
-            float heightScale = availableHeight / bookSize.y;
-            float scale = Mathf.Clamp(Mathf.Min(widthScale, heightScale, 1f), MinBookScale, 1f);
-            float scaledBookWidth = bookSize.x * scale;
-            float gap = books.Count == 1
-                ? (availableWidth - scaledBookWidth) * 0.5f
-                : (availableWidth - scaledBookWidth * books.Count) / (books.Count + 1);
-            gap = Mathf.Max(0f, gap);
-            float x = -availableWidth * 0.5f + gap + scaledBookWidth * 0.5f;
-
-            foreach (RecipeEditBookView book in books)
-            {
-                RectTransform rect = (RectTransform)book.transform;
-                rect.anchorMin = new Vector2(0.5f, 0.5f);
-                rect.anchorMax = new Vector2(0.5f, 0.5f);
-                rect.pivot = new Vector2(0.5f, 0.5f);
-                rect.sizeDelta = bookSize;
-                rect.localScale = new Vector3(scale, scale, 1f);
-                rect.anchoredPosition = new Vector2(x, 0f);
-                x += scaledBookWidth + gap;
-
-                book.FitSlotsWithinView();
-                book.ApplyImmediateLayout();
-            }
-        }
-
-        private static string DishName(cfg.Tables tables, string dishId)
-        {
-            cfg.DishVariant variant = tables.TbDishVariant.GetOrDefault(dishId);
-            if (variant != null)
-            {
-                cfg.DishBase baseDish = tables.TbDishBase.GetOrDefault(variant.BaseId);
-                if (baseDish != null)
-                {
-                    return baseDish.Name;
-                }
-            }
-
-            return dishId;
-        }
-
-        private string DishShapeText(string dishId)
-        {
-            DishDef dish = _run?.Database.GetDish(dishId);
-            return dish?.Shape == null ? string.Empty : $"{dish.Shape.Width}x{dish.Shape.Height}";
-        }
-
     }
 }

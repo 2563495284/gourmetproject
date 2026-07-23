@@ -925,10 +925,10 @@ namespace GourmetProject.Game.UI.Battle
 
         public bool OpenRewardDishPack(
             IReadOnlyList<RewardChoice> choices,
-            Func<int, int, bool> onChoiceDropped,
+            Func<int, bool> onChoiceSelected,
             Action onSkip)
         {
-            return _rewardPage != null && _rewardPage.OpenRewardDishPack(choices, onChoiceDropped, onSkip);
+            return _rewardPage != null && _rewardPage.OpenRewardDishPack(choices, onChoiceSelected, onSkip);
         }
 
         public bool OpenAcquireDishPack(string title, IReadOnlyList<RewardChoice> choices)

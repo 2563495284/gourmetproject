@@ -514,7 +514,7 @@ namespace GourmetProject.Game.UI.Meta
 
             bool opened = battle.OpenRewardDishPack(
                 groupChoices,
-                (choiceIndex, bookIndex) => ClaimDishChoiceToBook(groupIndex, choiceIndex, bookIndex, groupChoices),
+                choiceIndex => ClaimDishChoice(groupIndex, choiceIndex, groupChoices),
                 ReopenReward);
             if (opened)
             {
@@ -522,10 +522,9 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
-        private bool ClaimDishChoiceToBook(
+        private bool ClaimDishChoice(
             int groupIndex,
             int choiceIndex,
-            int bookIndex,
             IReadOnlyList<RewardChoice> groupChoices)
         {
             if (_offer == null || _run == null || groupChoices == null || IsChoiceResolved(groupIndex)

@@ -8,9 +8,9 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>
-    /// 菜品包领奖页上方的一张候选菜品卡。只负责展示与拖拽起止事件，落点结算由 RewardDishPackPanel 处理。
+    /// 菜品奖励选择页中的候选卡片。负责展示、点击和悬浮事件，不再参与拖拽。
     /// </summary>
-    public sealed class RewardDishChoiceCardView : MonoBehaviour
+    public sealed class RewardDishChoiceCardView : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
         [SerializeField] private Button _button;
         [SerializeField] private Image _icon;
@@ -18,30 +18,13 @@ namespace GourmetProject.Game.UI.Meta
         [SerializeField] private Text _descriptionText;
         [SerializeField] private CanvasGroup _canvasGroup;
 
-        private RectTransform _rect;
-        private RectTransform _iconRect;
-        private Canvas _canvas;
-        private Transform _originalParent;
-        private Vector2 _originalAnchoredPosition;
-        private Canvas _dragCanvas;
         private int _choiceIndex = -1;
         private bool _resolved;
-        private Action<RewardDishChoiceCardView, int> _onPointerDown;
-        private Action<RewardDishChoiceCardView, int, Vector2> _onPointerUp;
+        private bool _hovered;
+        private Action<RewardDishChoiceCardView, int> _onClick;
+        private Action<RewardDishChoiceCardView> _onHoverEntered;
+        private Action<RewardDishChoiceCardView> _onHoverExited;
         private Tween _failureTween;
-
-        public RectTransform Rect
-        {
-            get
-            {
-                if (_rect == null)
-                {
-                    _rect = (RectTransform)transform;
-                }
-
-                return _rect;
-            }
-        }
 
         public int ChoiceIndex => _choiceIndex;
 
@@ -49,14 +32,16 @@ namespace GourmetProject.Game.UI.Meta
             RewardChoice choice,
             Sprite icon,
             int choiceIndex,
-            Action<RewardDishChoiceCardView, int> onPointerDown,
-            Action<RewardDishChoiceCardView, int, Vector2> onPointerUp)
+            Action<RewardDishChoiceCardView, int> onClick,
+            Action<RewardDishChoiceCardView> onHoverEntered = null,
+            Action<RewardDishChoiceCardView> onHoverExited = null)
         {
             EnsureRefs();
             _choiceIndex = choiceIndex;
             _resolved = false;
-            _onPointerDown = onPointerDown;
-            _onPointerUp = onPointerUp;
+            _onClick = onClick;
+            _onHoverEntered = onHoverEntered;
+            _onHoverExited = onHoverExited;
 
             if (_nameText != null)
             {
@@ -69,13 +54,8 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             SetIcon(icon);
-
-            if (_canvasGroup != null)
-            {
-                _canvasGroup.alpha = 1f;
-                _canvasGroup.interactable = true;
-                _canvasGroup.blocksRaycasts = true;
-            }
+            SetResolved(false);
+            WireButton();
         }
 
         public void SetResolved(bool resolved)
@@ -95,22 +75,9 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
-        public Vector2 IconScreenCenter()
-        {
-            RectTransform target = _iconRect != null ? _iconRect : Rect;
-            Camera cam = ResolveEventCamera();
-            return RectTransformUtility.WorldToScreenPoint(cam, target.TransformPoint(target.rect.center));
-        }
-
-        public bool ContainsScreenPoint(Vector2 screenPoint)
-        {
-            Camera cam = ResolveEventCamera();
-            return RectTransformUtility.RectangleContainsScreenPoint(Rect, screenPoint, cam);
-        }
-
         public void PlayTargetFailed()
         {
-            RectTransform target = _iconRect != null ? _iconRect : Rect;
+            RectTransform target = _icon != null ? _icon.rectTransform : transform as RectTransform;
             if (target == null)
             {
                 return;
@@ -119,15 +86,15 @@ namespace GourmetProject.Game.UI.Meta
             _failureTween?.Kill();
             Vector2 origin = target.anchoredPosition;
             _failureTween = DOVirtual.Float(0f, 1f, 0.25f, t =>
-            {
-                if (target == null)
                 {
-                    return;
-                }
+                    if (target == null)
+                    {
+                        return;
+                    }
 
-                float offset = Mathf.Sin(t * Mathf.PI * 12f) * 9f * (1f - t);
-                target.anchoredPosition = origin + new Vector2(offset, 0f);
-            })
+                    float offset = Mathf.Sin(t * Mathf.PI * 12f) * 9f * (1f - t);
+                    target.anchoredPosition = origin + new Vector2(offset, 0f);
+                })
                 .SetEase(Ease.Linear)
                 .SetUpdate(true)
                 .OnComplete(() =>
@@ -139,80 +106,30 @@ namespace GourmetProject.Game.UI.Meta
                 });
         }
 
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            if (_resolved || _hovered)
+            {
+                return;
+            }
+
+            _hovered = true;
+            _onHoverEntered?.Invoke(this);
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            EndHover();
+        }
+
+        private void OnDisable()
+        {
+            EndHover();
+        }
+
         private void OnDestroy()
         {
             _failureTween?.Kill();
-        }
-
-        private void HandlePointerDown(PointerEventData eventData)
-        {
-            if (_resolved)
-            {
-                return;
-            }
-
-            _onPointerDown?.Invoke(this, _choiceIndex);
-        }
-
-        private void HandlePointerUp(PointerEventData eventData)
-        {
-            if (_resolved)
-            {
-                return;
-            }
-
-            _onPointerUp?.Invoke(this, _choiceIndex, eventData.position);
-        }
-
-        private void HandleBeginDrag(PointerEventData eventData)
-        {
-            if (_resolved)
-            {
-                return;
-            }
-
-            EnsureRefs();
-            _originalParent = transform.parent;
-            _originalAnchoredPosition = Rect.anchoredPosition;
-            _dragCanvas = GetComponentInParent<Canvas>();
-            transform.SetParent(_dragCanvas != null ? _dragCanvas.transform : transform.root, true);
-            transform.SetAsLastSibling();
-            _canvasGroup.blocksRaycasts = false;
-            _canvasGroup.alpha = 0.82f;
-        }
-
-        private void HandleDrag(PointerEventData eventData)
-        {
-            if (_resolved)
-            {
-                return;
-            }
-
-            RectTransform parentRect = Rect.parent as RectTransform;
-            if (parentRect != null
-                && RectTransformUtility.ScreenPointToWorldPointInRectangle(
-                    parentRect,
-                    eventData.position,
-                    eventData.pressEventCamera,
-                    out Vector3 worldPoint))
-            {
-                Rect.position = worldPoint;
-                return;
-            }
-
-            Rect.position = eventData.position;
-        }
-
-        private void HandleEndDrag(PointerEventData eventData)
-        {
-            EnsureRefs();
-            _canvasGroup.blocksRaycasts = !_resolved;
-            _canvasGroup.alpha = _resolved ? 0.45f : 1f;
-            if (_originalParent != null)
-            {
-                transform.SetParent(_originalParent, true);
-                Rect.anchoredPosition = _originalAnchoredPosition;
-            }
         }
 
         private void EnsureRefs()
@@ -248,8 +165,23 @@ namespace GourmetProject.Game.UI.Meta
                     _canvasGroup = gameObject.AddComponent<CanvasGroup>();
                 }
             }
+        }
 
-            EnsurePointerProxy();
+        private void WireButton()
+        {
+            if (_button == null)
+            {
+                return;
+            }
+
+            _button.onClick.RemoveAllListeners();
+            _button.onClick.AddListener(() =>
+            {
+                if (!_resolved)
+                {
+                    _onClick?.Invoke(this, _choiceIndex);
+                }
+            });
         }
 
         private void SetIcon(Sprite icon)
@@ -259,70 +191,21 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            _iconRect = _icon.rectTransform;
             _icon.preserveAspect = true;
             _icon.enabled = icon != null;
             _icon.sprite = icon;
             _icon.color = Color.white;
         }
 
-        private Camera ResolveEventCamera()
+        private void EndHover()
         {
-            if (_canvas == null)
+            if (!_hovered)
             {
-                _canvas = GetComponentInParent<Canvas>();
+                return;
             }
 
-            return _canvas != null && _canvas.renderMode != RenderMode.ScreenSpaceOverlay
-                ? _canvas.worldCamera
-                : null;
-        }
-
-        private void EnsurePointerProxy()
-        {
-            GameObject target = _button != null ? _button.gameObject : gameObject;
-            PointerProxy proxy = target.GetComponent<PointerProxy>();
-            if (proxy == null)
-            {
-                proxy = target.AddComponent<PointerProxy>();
-            }
-
-            proxy.Bind(this);
-        }
-
-        private sealed class PointerProxy : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
-        {
-            private RewardDishChoiceCardView _owner;
-
-            public void Bind(RewardDishChoiceCardView owner)
-            {
-                _owner = owner;
-            }
-
-            public void OnPointerDown(PointerEventData eventData)
-            {
-                _owner?.HandlePointerDown(eventData);
-            }
-
-            public void OnPointerUp(PointerEventData eventData)
-            {
-                _owner?.HandlePointerUp(eventData);
-            }
-
-            public void OnBeginDrag(PointerEventData eventData)
-            {
-                _owner?.HandleBeginDrag(eventData);
-            }
-
-            public void OnDrag(PointerEventData eventData)
-            {
-                _owner?.HandleDrag(eventData);
-            }
-
-            public void OnEndDrag(PointerEventData eventData)
-            {
-                _owner?.HandleEndDrag(eventData);
-            }
+            _hovered = false;
+            _onHoverExited?.Invoke(this);
         }
     }
 }
