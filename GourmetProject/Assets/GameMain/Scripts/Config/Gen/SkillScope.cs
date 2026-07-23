@@ -84,6 +84,22 @@ namespace cfg
         /// 全局欢乐蛋糕层数效果
         /// </summary>
         CakeBuff = 16,
+        /// <summary>
+        /// 本菜左侧（逐行取本菜最左占格左边的存在格）
+        /// </summary>
+        Left = 17,
+        /// <summary>
+        /// 本菜上侧（逐列取本菜最上占格上边的存在格）
+        /// </summary>
+        Up = 18,
+        /// <summary>
+        /// 本菜右侧（逐行取本菜最右占格右边的存在格）
+        /// </summary>
+        Right = 19,
+        /// <summary>
+        /// 本菜下侧（逐列取本菜最下占格下边的存在格）
+        /// </summary>
+        Down = 20,
     }
 
 } 

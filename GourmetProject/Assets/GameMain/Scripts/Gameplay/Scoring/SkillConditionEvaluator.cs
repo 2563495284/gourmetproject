@@ -313,6 +313,10 @@ namespace GourmetProject.Gameplay.Scoring
 
                 case SkillScope.Round:
                 case SkillScope.RoundAndSelf:
+                case SkillScope.Left:
+                case SkillScope.Up:
+                case SkillScope.Right:
+                case SkillScope.Down:
                     CollectDishesFromCells(board, ScopeCells(board, self, scope), result);
                     return result;
 
@@ -555,7 +559,7 @@ namespace GourmetProject.Gameplay.Scoring
             return any;
         }
 
-        /// <summary>作用域涉及的「存在格」集合（同行/同列/相邻/周围）。</summary>
+        /// <summary>作用域涉及的「存在格」集合（同行/同列/相邻/周围/四方向）。</summary>
         public static IEnumerable<GridPos> ScopeCells(GpTable board, DishInstance self, SkillScope scope)
         {
             var cells = new List<GridPos>();
@@ -565,6 +569,68 @@ namespace GourmetProject.Gameplay.Scoring
                 if (!board.Exists(p)) return;
                 int key = p.Y * board.Width + p.X;
                 if (seen.Add(key)) cells.Add(p);
+            }
+
+            void AddHorizontalDirection(bool left)
+            {
+                var edgeByRow = new Dictionary<int, int>();
+                foreach (GridPos c in self.OccupiedCells)
+                {
+                    if (!edgeByRow.TryGetValue(c.Y, out int edge))
+                    {
+                        edgeByRow[c.Y] = c.X;
+                    }
+                    else
+                    {
+                        edgeByRow[c.Y] = left ? System.Math.Min(edge, c.X) : System.Math.Max(edge, c.X);
+                    }
+                }
+
+                for (int y = 0; y < board.Height; y++)
+                {
+                    if (!edgeByRow.TryGetValue(y, out int edge))
+                    {
+                        continue;
+                    }
+
+                    int start = left ? 0 : edge + 1;
+                    int end = left ? edge : board.Width;
+                    for (int x = start; x < end; x++)
+                    {
+                        AddCell(new GridPos(x, y));
+                    }
+                }
+            }
+
+            void AddVerticalDirection(bool up)
+            {
+                var edgeByColumn = new Dictionary<int, int>();
+                foreach (GridPos c in self.OccupiedCells)
+                {
+                    if (!edgeByColumn.TryGetValue(c.X, out int edge))
+                    {
+                        edgeByColumn[c.X] = c.Y;
+                    }
+                    else
+                    {
+                        edgeByColumn[c.X] = up ? System.Math.Min(edge, c.Y) : System.Math.Max(edge, c.Y);
+                    }
+                }
+
+                for (int x = 0; x < board.Width; x++)
+                {
+                    if (!edgeByColumn.TryGetValue(x, out int edge))
+                    {
+                        continue;
+                    }
+
+                    int start = up ? 0 : edge + 1;
+                    int end = up ? edge : board.Height;
+                    for (int y = start; y < end; y++)
+                    {
+                        AddCell(new GridPos(x, y));
+                    }
+                }
             }
 
             switch (scope)
@@ -624,6 +690,22 @@ namespace GourmetProject.Gameplay.Scoring
                     }
                     break;
                 }
+
+                case SkillScope.Left:
+                    AddHorizontalDirection(left: true);
+                    break;
+
+                case SkillScope.Up:
+                    AddVerticalDirection(up: true);
+                    break;
+
+                case SkillScope.Right:
+                    AddHorizontalDirection(left: false);
+                    break;
+
+                case SkillScope.Down:
+                    AddVerticalDirection(up: false);
+                    break;
             }
 
             return cells;

@@ -109,6 +109,10 @@ namespace GourmetProject.Gameplay.Model
         ColumnAndSelf = 14,
         Other = 15,
         CakeBuff = 16,
+        Left = 17,
+        Up = 18,
+        Right = 19,
+        Down = 20,
     }
 
     /// <summary>比较符。与 cfg.CompareOp 一一对应。</summary>

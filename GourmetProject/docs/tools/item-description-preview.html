@@ -214,6 +214,10 @@
       14: "ColumnAndSelf",
       15: "Other",
       16: "CakeBuff",
+      17: "Left",
+      18: "Up",
+      19: "Right",
+      20: "Down",
     };
 
     const searchInput = document.getElementById("search");
@@ -516,6 +520,10 @@
         case "Other": return "其他";
         case "CakeBuff": return "欢乐蛋糕";
         case "Category": return "指定分类";
+        case "Left": return "左侧";
+        case "Up": return "上侧";
+        case "Right": return "右侧";
+        case "Down": return "下侧";
         default: return "";
       }
     }
@@ -541,6 +549,10 @@
           case "Other": return "其他";
           case "CakeBuff": return "欢乐蛋糕";
           case "Category": return catWord(rule) ? `所有${catWord(rule)}` : "指定分类";
+          case "Left": return "左侧";
+          case "Up": return "上侧";
+          case "Right": return "右侧";
+          case "Down": return "下侧";
           default: return scopeWord(scopeValue);
         }
       }
@@ -555,6 +567,10 @@
         case "ColumnAndSelf": return `本列 ${normalizedCount} 个`;
         case "All": return `${normalizedCount} 个`;
         case "Other": return `其他 ${normalizedCount} 个`;
+        case "Left": return `左侧 ${normalizedCount} 个`;
+        case "Up": return `上侧 ${normalizedCount} 个`;
+        case "Right": return `右侧 ${normalizedCount} 个`;
+        case "Down": return `下侧 ${normalizedCount} 个`;
         case "Category": return catWord(rule) ? `${catWord(rule)} ${normalizedCount} 个` : `指定分类 ${normalizedCount} 个`;
         default: return scopeWord(scopeValue);
       }
