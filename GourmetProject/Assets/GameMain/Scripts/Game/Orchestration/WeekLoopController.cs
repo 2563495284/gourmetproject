@@ -1113,7 +1113,7 @@ namespace GourmetProject.Game.Orchestration
                 onCancel: () => EnterEventPage(ev, pageDescription, pageOptions, rng, onDone),
                 onTargetConfirmed: target =>
                 {
-                    if (_run == null || !_run.RemoveBonusDishAt(target.X, target.Y))
+                    if (_run == null || !_run.RemoveBonusDishAt(target.Y))
                     {
                         EnterEventPage(ev, pageDescription, pageOptions, rng, onDone);
                         return;

@@ -100,8 +100,6 @@ namespace GourmetProject.Game.Meta.Passives
 
         public virtual float ModifyShopPrice(ShopEntryKind kind, float price) => price;
 
-        public virtual float ModifyRecipeBookPrice(float price) => price;
-
         public virtual float ModifyDeletePrice(float price) => price;
 
         /// <summary>删牌固定价（取最低）。返回 false 表示不提供固定价。</summary>

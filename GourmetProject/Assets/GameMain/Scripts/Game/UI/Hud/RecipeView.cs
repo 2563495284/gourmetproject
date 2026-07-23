@@ -21,9 +21,9 @@ namespace GourmetProject.Game.UI.Hud
     }
 
     /// <summary>
-    /// 底部扇形菜谱条：把各本菜谱本（+商店态末尾的「购买空菜谱」）按扇形排布。
+    /// 底部菜谱条：展示唯一菜谱，并保留扇形布局动画以兼容战斗态表现。
     /// 三态：隐藏 / 显示(完全展开) / 收缩(只露一点，鼠标移到底部区时从左到右逐张弹起)。
-    /// 状态切换与菜谱本增减都走协程补间动画。卡片固定结构在 <see cref="RecipeCardView"/> / <see cref="RecipeAddCardView"/>。
+    /// 状态切换走补间动画，卡片固定结构在 <see cref="RecipeCardView"/>。
     /// </summary>
     public sealed class RecipeView : MonoBehaviour
     {
@@ -34,7 +34,7 @@ namespace GourmetProject.Game.UI.Hud
             Shown,
         }
 
-        /// <summary>一本菜谱本的数据（标题、容量文本、是否可点、点击回调）。</summary>
+        /// <summary>菜谱卡的数据（标题、容量文本、是否可点、点击回调）。</summary>
         public readonly struct BookEntry
         {
             public BookEntry(
@@ -42,7 +42,6 @@ namespace GourmetProject.Game.UI.Hud
                 string capacity,
                 bool interactable,
                 Action onClick,
-                bool canReceiveDish = true,
                 Action onRightClick = null,
                 bool showBattleContent = false,
                 bool serveInteractable = false,
@@ -53,7 +52,6 @@ namespace GourmetProject.Game.UI.Hud
                 Capacity = capacity;
                 Interactable = interactable;
                 OnClick = onClick;
-                CanReceiveDish = canReceiveDish;
                 OnRightClick = onRightClick;
                 ShowBattleContent = showBattleContent;
                 ServeInteractable = serveInteractable;
@@ -65,7 +63,6 @@ namespace GourmetProject.Game.UI.Hud
             public string Capacity { get; }
             public bool Interactable { get; }
             public Action OnClick { get; }
-            public bool CanReceiveDish { get; }
             public Action OnRightClick { get; }
             public bool ShowBattleContent { get; }
             public bool ServeInteractable { get; }
@@ -75,7 +72,6 @@ namespace GourmetProject.Game.UI.Hud
 
         [Header("Prefabs")]
         [SerializeField] private RecipeCardView _recipePrefab;
-        [SerializeField] private RecipeAddCardView _recipeAddPrefab;
 
         [Header("扇形布局")]
         [Tooltip("扇形圆弧半径（越大越平）")]
@@ -109,11 +105,9 @@ namespace GourmetProject.Game.UI.Hud
             public CanvasGroup Group;
             public Tween Tween;
             public int BookIndex;
-            public bool CanReceiveDish;
         }
 
         private readonly List<CardSlot> _bookSlots = new();
-        private CardSlot _addSlot;
         private readonly List<CardSlot> _ordered = new();
 
         private RectTransform _rect;
@@ -145,7 +139,6 @@ namespace GourmetProject.Game.UI.Hud
 
         private void OnDestroy()
         {
-            KillTween(_addSlot);
             foreach (CardSlot slot in _bookSlots)
             {
                 KillTween(slot);
@@ -188,12 +181,12 @@ namespace GourmetProject.Game.UI.Hud
             RefreshPoses(animated: _initialized, staggered: state == RecipeState.Shown);
         }
 
-        /// <summary>用菜谱本数据重建扇形（增减自动做调整动画）。showAdd=true 时末尾追加购买空菜谱卡。</summary>
-        public void SetBooks(IReadOnlyList<BookEntry> books, bool showAdd = false, Action onAdd = null, string addCost = null, int selectedBookIndex = -1)
+        /// <summary>用菜谱数据重建底部卡片。</summary>
+        public void SetBooks(IReadOnlyList<BookEntry> books, int selectedBookIndex = -1)
         {
             int want = books?.Count ?? 0;
 
-            // 补齐 / 淘汰菜谱本卡。
+            // 补齐 / 淘汰菜谱卡。
             while (_bookSlots.Count < want)
             {
                 _bookSlots.Add(SpawnBookSlot());
@@ -212,7 +205,6 @@ namespace GourmetProject.Game.UI.Hud
                 CardSlot slot = _bookSlots[i];
                 slot.Go.name = $"RecipeBook_{i + 1}";
                 slot.BookIndex = i;
-                slot.CanReceiveDish = entry.CanReceiveDish;
                 var view = slot.Go.GetComponent<RecipeCardView>();
                 view?.Bind(
                     entry.Capacity,
@@ -227,38 +219,6 @@ namespace GourmetProject.Game.UI.Hud
                 view?.SetTargetHighlight(slot.BookIndex == selectedBookIndex, true);
             }
 
-            // 购买空菜谱卡（仅商店态）。
-            if (showAdd && _recipeAddPrefab != null)
-            {
-                if (_addSlot == null)
-                {
-                    _addSlot = SpawnAddSlot();
-                }
-
-                _addSlot.Go.name = "RecipeAdd";
-                var addView = _addSlot.Go.GetComponent<RecipeAddCardView>();
-                addView?.Bind(addCost ?? string.Empty, onAdd != null, onAdd);
-            }
-            else if (_addSlot != null)
-            {
-                RetireSlot(_addSlot);
-                _addSlot = null;
-            }
-
-            RebuildOrdered();
-            RefreshPoses(animated: _initialized, staggered: false);
-        }
-
-        /// <summary>临时移除商店态的购买空菜谱卡；下次 <see cref="SetBooks"/> 传入 showAdd=true 时会重新创建。</summary>
-        public void RemoveAddCard()
-        {
-            if (_addSlot == null)
-            {
-                return;
-            }
-
-            RetireSlot(_addSlot);
-            _addSlot = null;
             RebuildOrdered();
             RefreshPoses(animated: _initialized, staggered: false);
         }
@@ -267,75 +227,11 @@ namespace GourmetProject.Game.UI.Hud
         {
             _ordered.Clear();
             _ordered.AddRange(_bookSlots);
-            if (_addSlot != null)
-            {
-                _ordered.Add(_addSlot);
-            }
 
             // 保证扇形从左到右的 sibling 顺序，右侧卡叠在上层。
             for (int i = 0; i < _ordered.Count; i++)
             {
                 _ordered[i].Rect.SetSiblingIndex(i);
-            }
-        }
-
-        public bool TryGetRecipeBookAtScreenPoint(Vector2 screenPoint, out int bookIndex)
-        {
-            Camera cam = ResolveEventCamera();
-            for (int i = _bookSlots.Count - 1; i >= 0; i--)
-            {
-                CardSlot slot = _bookSlots[i];
-                if (slot == null || slot.Go == null || !slot.Go.activeInHierarchy || !slot.CanReceiveDish)
-                {
-                    continue;
-                }
-
-                RecipeCardView view = slot.Go.GetComponent<RecipeCardView>();
-                if (view != null && view.ContainsScreenPoint(screenPoint, cam))
-                {
-                    bookIndex = slot.BookIndex;
-                    return true;
-                }
-            }
-
-            bookIndex = -1;
-            return false;
-        }
-
-        public bool TryGetRecipeBookCenterScreenPoint(int bookIndex, out Vector2 screenPoint)
-        {
-            Camera cam = ResolveEventCamera();
-            foreach (CardSlot slot in _bookSlots)
-            {
-                if (slot == null || slot.BookIndex != bookIndex || slot.Go == null || !slot.Go.activeInHierarchy)
-                {
-                    continue;
-                }
-
-                RecipeCardView view = slot.Go.GetComponent<RecipeCardView>();
-                if (view != null)
-                {
-                    screenPoint = view.CenterScreenPoint(cam);
-                    return true;
-                }
-            }
-
-            screenPoint = Vector2.zero;
-            return false;
-        }
-
-        public void SetDishTargetingHighlights(bool visible, int hoveredBookIndex)
-        {
-            foreach (CardSlot slot in _bookSlots)
-            {
-                RecipeCardView view = slot?.Go == null ? null : slot.Go.GetComponent<RecipeCardView>();
-                if (view == null)
-                {
-                    continue;
-                }
-
-                bool show = visible && slot.CanReceiveDish;
-                view.SetTargetHighlight(show, show && slot.BookIndex == hoveredBookIndex);
             }
         }
 
@@ -352,19 +248,6 @@ namespace GourmetProject.Game.UI.Hud
         private CardSlot SpawnBookSlot()
         {
             RecipeCardView view = Instantiate(_recipePrefab, Rect);
-            var slot = new CardSlot
-            {
-                Go = view.gameObject,
-                Rect = view.Rect,
-                Group = view.CanvasGroup,
-            };
-            InitSlotTransform(slot);
-            return slot;
-        }
-
-        private CardSlot SpawnAddSlot()
-        {
-            RecipeAddCardView view = Instantiate(_recipeAddPrefab, Rect);
             var slot = new CardSlot
             {
                 Go = view.gameObject,

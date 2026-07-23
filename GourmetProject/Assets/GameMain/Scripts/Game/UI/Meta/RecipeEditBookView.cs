@@ -98,9 +98,8 @@ namespace GourmetProject.Game.UI.Meta
             UpdateContentSize(index);
         }
 
-        public void FitSlotsWithinView(int slotCapacity)
+        public void FitSlotsWithinView()
         {
-            _ = slotCapacity;
             ResolveLayout();
         }
 

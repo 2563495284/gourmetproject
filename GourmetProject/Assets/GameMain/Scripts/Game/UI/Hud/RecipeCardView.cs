@@ -8,7 +8,7 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI.Hud
 {
     /// <summary>
-    /// 扇形菜谱条里的一本菜谱本卡：普通态显示数量；战斗态额外显示上餐铃、可放/不可放计数与剩余食物列表。
+    /// 菜谱条里的菜谱卡：普通态显示数量；战斗态额外显示上餐铃、可放/不可放计数与剩余食物列表。
     /// 卡片点击始终用于打开菜谱详情，上菜只由独立上餐铃触发。
     /// 固定结构在 Recipe.prefab，由 <see cref="RecipeView"/> 数据驱动实例化并做扇形排布/补间动画。
     /// </summary>
@@ -238,16 +238,6 @@ namespace GourmetProject.Game.UI.Hud
         private bool ShouldSuppressClick()
         {
             return _clickSuppressed || Time.frameCount <= _clickSuppressedUntilFrame;
-        }
-
-        public bool ContainsScreenPoint(Vector2 screenPoint, Camera eventCamera)
-        {
-            return RectTransformUtility.RectangleContainsScreenPoint(Rect, screenPoint, eventCamera);
-        }
-
-        public Vector2 CenterScreenPoint(Camera eventCamera)
-        {
-            return RectTransformUtility.WorldToScreenPoint(eventCamera, Rect.TransformPoint(Rect.rect.center));
         }
 
         public void SetTargetHighlight(bool visible, bool emphasized)

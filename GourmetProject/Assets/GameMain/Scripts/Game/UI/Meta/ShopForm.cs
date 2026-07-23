@@ -8,7 +8,6 @@ using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Runtime;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace GourmetProject.Game.UI.Meta
@@ -41,33 +40,23 @@ namespace GourmetProject.Game.UI.Meta
         [SerializeField] private ShopFragmentPackBuyItemView _fragmentCardPrefab;
         [SerializeField] private ShopPassiveItemBuyItemView _passiveCardPrefab;
         [SerializeField] private ShopActiveItemBuyItemView _activeCardPrefab;
-        [SerializeField] private TargetArrowView _targetArrowPrefab;
-
         [Header("Hover Tips")]
         [SerializeField] private FoodTipsView _foodTipsPrefab;
         [SerializeField] private ItemTipView _itemTipPrefab;
 
         [Header("Recipe Entry")]
         [SerializeField] private Button _editRecipeButton;
-        [SerializeField] private Text _recipeLimitText;
 
         private readonly List<ShopEntry> _stock = new();
         private readonly List<GameObject> _spawned = new();
         private GameRun _run;
-        private RecipeView _recipeView;
         private bool _wired;
-        private TargetArrowView _activeArrow;
-        private ShopEntry _targetingEntry;
-        private ShopBuyItemViewBase _targetingCard;
         private FoodTipsView _foodTipsView;
         private ItemTipView _itemTipView;
-        private bool _waitingForRecipeClick;
-        private int _targetingFrame;
 
         private Action _onLeave;
         private Action _onOpenRecipeWorkspace;
         private Func<ShopEntry, ShopBuyItemViewBase, bool> _onBuy;
-        private Func<ShopEntry, int, ShopBuyItemViewBase, bool> _onBuyDishToBook;
 
         private void Awake()
         {
@@ -76,41 +65,7 @@ namespace GourmetProject.Game.UI.Meta
 
         private void OnDisable()
         {
-            CancelDishTargeting(restoreRecipeState: false);
             ClearSpawned();
-        }
-
-        private void Update()
-        {
-            if (_activeArrow == null || Mouse.current == null)
-            {
-                return;
-            }
-
-            Vector2 pointer = Mouse.current.position.ReadValue();
-            int hovered = TryGetRecipeBookAt(pointer, out int bookIndex) ? bookIndex : -1;
-            _recipeView?.SetDishTargetingHighlights(true, hovered);
-
-            if (Mouse.current.rightButton.wasPressedThisFrame
-                || (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame))
-            {
-                CancelDishTargeting();
-                return;
-            }
-
-            if (!_waitingForRecipeClick || Time.frameCount <= _targetingFrame || !Mouse.current.leftButton.wasPressedThisFrame)
-            {
-                return;
-            }
-
-            if (hovered >= 0)
-            {
-                CompleteDishTargeting(hovered);
-            }
-            else
-            {
-                CancelDishTargeting();
-            }
         }
 
         /// <summary>由商店页面协调器进入商店态时调用：渲染给定库存并展示商店购买区。</summary>
@@ -123,9 +78,7 @@ namespace GourmetProject.Game.UI.Meta
             IReadOnlyList<ShopEntry> stock,
             Action onLeave,
             Action onOpenRecipeWorkspace = null,
-            RecipeView recipeView = null,
-            Func<ShopEntry, ShopBuyItemViewBase, bool> onBuy = null,
-            Func<ShopEntry, int, ShopBuyItemViewBase, bool> onBuyDishToBook = null)
+            Func<ShopEntry, ShopBuyItemViewBase, bool> onBuy = null)
         {
             EnsureWired();
             _run = run;
@@ -133,8 +86,6 @@ namespace GourmetProject.Game.UI.Meta
             _onLeave = onLeave;
             _onOpenRecipeWorkspace = onOpenRecipeWorkspace;
             _onBuy = onBuy;
-            _onBuyDishToBook = onBuyDishToBook;
-            _recipeView = recipeView;
 
             if (_run == null)
             {
@@ -192,7 +143,6 @@ namespace GourmetProject.Game.UI.Meta
 
             // UI 与购买共用 ShopService.CurrentPrice：重建卡片前刷新，避免被动道具/事件改价后仍显示旧表价。
             ShopService.RefreshStockPrices(_run, _stock);
-            CancelDishTargeting();
             ClearSpawned();
             EnsureTipViews();
 
@@ -201,7 +151,6 @@ namespace GourmetProject.Game.UI.Meta
             BuildBuySection(ShopEntryKind.Fragment, _fragmentContainer, _fragmentEmptyText, "暂无碎片包", _fragmentCardPrefab);
             BuildBuySection(ShopEntryKind.PassiveItem, _passiveContainer, _passiveEmptyText, "暂无被动道具", _passiveCardPrefab);
             BuildBuySection(ShopEntryKind.ActiveItem, _activeContainer, _activeEmptyText, "暂无主动道具", _activeCardPrefab);
-            SetText(_recipeLimitText, $"{_run.RecipeBookCount}/{_run.RecipeBookMaxCount}");
         }
 
         private void BuildBuySection(
@@ -231,13 +180,6 @@ namespace GourmetProject.Game.UI.Meta
                 bool affordable = _run.Gold >= entry.Price;
                 Sprite icon = LoadEntryIcon(entry);
                 DishDef dish = entry.Kind == ShopEntryKind.Dish ? _run.Database.GetDish(entry.Id) : null;
-                Action<ShopBuyItemViewBase, ShopEntry> onTargetDown = null;
-                Action<ShopBuyItemViewBase, ShopEntry, Vector2> onTargetUp = null;
-                if (entry.Kind == ShopEntryKind.Dish)
-                {
-                    onTargetDown = BeginDishTargeting;
-                    onTargetUp = EndDishTargeting;
-                }
 
                 card.Bind(new ShopBuyItemViewContext(
                     _run,
@@ -245,9 +187,7 @@ namespace GourmetProject.Game.UI.Meta
                     affordable,
                     icon,
                     dish,
-                    BuyImmediate,
-                    onTargetDown,
-                    onTargetUp));
+                    BuyImmediate));
 
                 BindBuyCardTip(card, captured);
                 _spawned.Add(card.gameObject);
@@ -269,84 +209,6 @@ namespace GourmetProject.Game.UI.Meta
         private bool BuyImmediate(ShopEntry entry, ShopBuyItemViewBase card)
         {
             return _onBuy != null && _onBuy.Invoke(entry, card);
-        }
-
-        private void BeginDishTargeting(ShopBuyItemViewBase card, ShopEntry entry)
-        {
-            if (_run == null || card == null || entry == null)
-            {
-                return;
-            }
-
-            if (_run.Gold < entry.Price)
-            {
-                card.PlayPurchaseFailed();
-                return;
-            }
-
-            CancelDishTargeting();
-            _targetingEntry = entry;
-            _targetingCard = card;
-            _waitingForRecipeClick = false;
-            _targetingFrame = Time.frameCount;
-
-            _recipeView?.SetState(RecipeView.RecipeState.Shown);
-            _recipeView?.SetBookClicksSuppressed(true);
-            _activeArrow = CreateTargetArrow(card.IconScreenCenter());
-            UpdateTargetingHighlight(Mouse.current != null ? Mouse.current.position.ReadValue() : card.IconScreenCenter());
-        }
-
-        private void EndDishTargeting(ShopBuyItemViewBase card, ShopEntry entry, Vector2 screenPoint)
-        {
-            if (_activeArrow == null || _targetingCard != card || _targetingEntry != entry)
-            {
-                return;
-            }
-
-            if (TryGetRecipeBookAt(screenPoint, out int bookIndex))
-            {
-                CompleteDishTargeting(bookIndex);
-                return;
-            }
-
-            if (card.ContainsScreenPoint(screenPoint))
-            {
-                _waitingForRecipeClick = true;
-                _targetingFrame = Time.frameCount;
-                return;
-            }
-
-            CancelDishTargeting();
-        }
-
-        private void CompleteDishTargeting(int bookIndex)
-        {
-            ShopEntry entry = _targetingEntry;
-            ShopBuyItemViewBase card = _targetingCard;
-            if (_onBuyDishToBook == null || !_onBuyDishToBook.Invoke(entry, bookIndex, card))
-            {
-                card?.PlayPurchaseFailed();
-                CancelDishTargeting();
-                return;
-            }
-
-            CancelDishTargeting();
-        }
-
-        private TargetArrowView CreateTargetArrow(Vector2 startScreenPoint)
-        {
-            Canvas canvas = _recipeView != null ? _recipeView.GetComponentInParent<Canvas>() : GetComponentInParent<Canvas>();
-            Transform parent = canvas != null ? canvas.transform : transform;
-            if (_targetArrowPrefab == null)
-            {
-                Debug.LogError($"{nameof(ShopForm)} 缺少 TargetArrowView prefab。", this);
-                return null;
-            }
-
-            TargetArrowView arrow = Instantiate(_targetArrowPrefab, parent);
-            arrow.transform.SetAsLastSibling();
-            arrow.SetupArrow(startScreenPoint);
-            return arrow;
         }
 
         private void EnsureTipViews()
@@ -612,44 +474,6 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
-        private bool TryGetRecipeBookAt(Vector2 screenPoint, out int bookIndex)
-        {
-            if (_recipeView != null && _recipeView.TryGetRecipeBookAtScreenPoint(screenPoint, out bookIndex))
-            {
-                return true;
-            }
-
-            bookIndex = -1;
-            return false;
-        }
-
-        private void UpdateTargetingHighlight(Vector2 screenPoint)
-        {
-            int hovered = TryGetRecipeBookAt(screenPoint, out int bookIndex) ? bookIndex : -1;
-            _recipeView?.SetDishTargetingHighlights(true, hovered);
-        }
-
-        private void CancelDishTargeting(bool restoreRecipeState = true)
-        {
-            if (_activeArrow != null)
-            {
-                Destroy(_activeArrow.gameObject);
-                _activeArrow = null;
-            }
-
-            _recipeView?.SetDishTargetingHighlights(false, -1);
-            _recipeView?.SetBookClicksSuppressed(false);
-            if (restoreRecipeState)
-            {
-                _recipeView?.SetState(RecipeView.RecipeState.Shown);
-            }
-
-            _targetingEntry = null;
-            _targetingCard = null;
-            _waitingForRecipeClick = false;
-            _targetingFrame = -1;
-        }
-
         private Sprite LoadEntryIcon(ShopEntry entry)
         {
             if (entry == null)
@@ -699,7 +523,6 @@ namespace GourmetProject.Game.UI.Meta
         {
             // 商店内买卖只改内存，不即时存档；离开商店 = 结算，由编排层（WeekLoopController）
             // 在 OnShopClosed 续接里 Commit（推进步数）并统一存最终态。这里只负责继续编排。
-            CancelDishTargeting();
             _onLeave?.Invoke();
         }
 

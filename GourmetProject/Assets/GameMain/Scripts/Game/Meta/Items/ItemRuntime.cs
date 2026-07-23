@@ -36,18 +36,6 @@ namespace GourmetProject.Game.Meta
             return ClampPrice(price);
         }
 
-        /// <summary>菜谱本购买价：走「食物」折扣分类（ShopDiscountRecipe）+ 涨价。</summary>
-        public int ModifyRecipeBookPrice(int basePrice)
-        {
-            float price = basePrice;
-            foreach (PassiveItemModel m in Models)
-            {
-                price = m.ModifyRecipeBookPrice(price);
-            }
-
-            return ClampPrice(price);
-        }
-
         /// <summary>删牌价：固定价优先（取最低），否则按删牌折扣 + 涨价。下限 1。</summary>
         public int ModifyDeletePrice(int basePrice)
         {

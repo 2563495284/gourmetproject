@@ -38,18 +38,6 @@ namespace GourmetProject.Game.Meta.Passives
         }
     }
 
-    /// <summary>菜谱本购买折扣：走 ModifyRecipeBookPrice。</summary>
-    [Preserve]
-    [PassiveItemModel("item_discount_recipe")]
-    public sealed class DiscountRecipeModel : PassiveItemModel
-    {
-        public override float ModifyRecipeBookPrice(float price)
-        {
-            float d = Value;
-            return d > 0f && d < 1f ? price * (1f - d) : price;
-        }
-    }
-
     /// <summary>删牌折扣：走 ModifyDeletePrice。</summary>
     [Preserve]
     [PassiveItemModel("item_discount_remove")]
@@ -80,8 +68,6 @@ namespace GourmetProject.Game.Meta.Passives
     public sealed class ShopPriceUpModel : PassiveItemModel
     {
         public override float ModifyShopPrice(ShopEntryKind kind, float price) => Up(price);
-
-        public override float ModifyRecipeBookPrice(float price) => Up(price);
 
         public override float ModifyDeletePrice(float price) => Up(price);
 

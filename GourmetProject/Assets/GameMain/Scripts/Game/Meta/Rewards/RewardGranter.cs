@@ -261,14 +261,14 @@ namespace GourmetProject.Game.Meta
             }
         }
 
-        public static bool ApplyDishChoiceToBook(GameRun run, RewardChoice choice, int bookIndex)
+        public static bool ApplyDishChoice(GameRun run, RewardChoice choice)
         {
             if (run == null || choice == null || choice.Kind != cfg.RewardKind.DishChoice)
             {
                 return false;
             }
 
-            return run.AddBonusDishToBook(choice.Id, bookIndex, choice.FlavorId);
+            return run.AddBonusDish(choice.Id, choice.FlavorId);
         }
 
         public static string ApplyFragmentPack(GameRun run, System.Collections.Generic.IReadOnlyList<RewardChoice> choices)

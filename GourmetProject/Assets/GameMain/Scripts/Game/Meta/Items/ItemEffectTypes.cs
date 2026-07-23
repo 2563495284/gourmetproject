@@ -65,7 +65,6 @@ namespace GourmetProject.Game.Meta
         public const string ShopDiscountPassive = "ShopDiscountPassive";
         public const string ShopDiscountRemove = "ShopDiscountRemove";
         public const string RemovePriceFixed = "RemovePriceFixed";
-        public const string ShopDiscountRecipe = "ShopDiscountRecipe";
         public const string ShopRestock = "ShopRestock";
         public const string ShopPriceUp = "ShopPriceUp";
         public const string NoRemoveDish = "NoRemoveDish";
@@ -110,7 +109,6 @@ namespace GourmetProject.Game.Meta
         public const string ChooseOneActive = "ChooseOneActive";
         public const string ChooseOneFood = "ChooseOneFood";
         public const string ChooseOneFragment = "ChooseOneFragment";
-        public const string GrantRecipe = "GrantRecipe";
         public const string FamilyPack = "FamilyPack";
         public const string RandomizeItems = "RandomizeItems";
         public const string RerollAction = "RerollAction";

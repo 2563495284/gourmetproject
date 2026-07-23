@@ -264,11 +264,9 @@ MonoBehaviour:
   _fragmentCardPrefab: {fileID: 6826539389142825901, guid: f1302d239425408bb37d480a785e8b6e, type: 3}
   _passiveCardPrefab: {fileID: 6826539389142825901, guid: c91ce059b26141778b4ddca206d2ffca, type: 3}
   _activeCardPrefab: {fileID: 6826539389142825901, guid: 33a2d399adfd4f84b834b1f8dcea1571, type: 3}
-  _targetArrowPrefab: {fileID: 6438548458035383761, guid: caa9c853a25e6402c8a49f9cd3dfc8f3, type: 3}
   _foodTipsPrefab: {fileID: 7013095112852541377, guid: ea2c95d613a824d08884a70e0025c9df, type: 3}
   _itemTipPrefab: {fileID: 8646951620094238264, guid: 49d929799dca94ac9bec5bb3a1fbffec, type: 3}
   _editRecipeButton: {fileID: 1084479458987173440}
-  _recipeLimitText: {fileID: 0}
 --- !u!1 &1006846443479302409
 GameObject:
   m_ObjectHideFlags: 0

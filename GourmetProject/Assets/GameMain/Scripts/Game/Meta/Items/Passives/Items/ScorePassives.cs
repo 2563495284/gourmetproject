@@ -16,14 +16,11 @@ namespace GourmetProject.Game.Meta.Passives
                 return;
             }
 
-            for (int bookIndex = 0; bookIndex < Run.RecipeBookCount; bookIndex++)
+            System.Collections.Generic.IReadOnlyList<GourmetProject.Game.Run.RecipeBookSlot> recipe =
+                Run.RecipeEntries;
+            for (int dishIndex = 0; dishIndex < recipe.Count; dishIndex++)
             {
-                System.Collections.Generic.IReadOnlyList<GourmetProject.Game.Run.RecipeBookSlot> book =
-                    Run.GetRecipeBookEntries(bookIndex);
-                for (int dishIndex = 0; dishIndex < book.Count; dishIndex++)
-                {
-                    Run.AddRecipeScoreFlat(bookIndex, dishIndex, Value);
-                }
+                Run.AddRecipeScoreFlat(dishIndex, Value);
             }
 
             MarkIconUsed();

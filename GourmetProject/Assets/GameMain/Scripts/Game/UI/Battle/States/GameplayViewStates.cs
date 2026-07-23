@@ -10,12 +10,12 @@ namespace GourmetProject.Game.UI.Battle.States
         public void Enter(IBattleViewHost host, Action buildCenter)
         {
             host.RebuildActionAxis();
-            host.Recipe.BuildPersistent(host.Run, showAdd: false, onAdd: null, host.OpenRecipeInspect);
+            host.Recipe.BuildPersistent(host.Run, host.OpenRecipeInspect);
             buildCenter?.Invoke();
         }
     }
 
-    /// <summary>商店态：行动轴常驻，菜谱抽屉可购买空菜谱本。</summary>
+    /// <summary>商店态：行动轴常驻，底部展示唯一菜谱。</summary>
     internal sealed class ShopState : IGameplayViewState
     {
         public GameplayView Kind => GameplayView.Shop;
@@ -23,7 +23,7 @@ namespace GourmetProject.Game.UI.Battle.States
         public void Enter(IBattleViewHost host, Action buildCenter)
         {
             host.RebuildActionAxis();
-            host.Recipe.BuildShop(host.Run, host.BuyRecipeBook, host.OpenRecipeInspect);
+            host.Recipe.BuildShop(host.Run, host.OpenRecipeInspect);
             host.OpenShopPanel();
         }
     }
@@ -46,7 +46,7 @@ namespace GourmetProject.Game.UI.Battle.States
 
         public void Enter(IBattleViewHost host, Action buildCenter)
         {
-            host.Recipe.BuildPersistent(host.Run, showAdd: false, onAdd: null, host.OpenRecipeInspect);
+            host.Recipe.BuildPersistent(host.Run, host.OpenRecipeInspect);
             buildCenter?.Invoke();
         }
     }
@@ -81,7 +81,7 @@ namespace GourmetProject.Game.UI.Battle.States
         public void Enter(IBattleViewHost host, Action buildCenter)
         {
             host.RebuildActionAxis();
-            host.Recipe.BuildPersistent(host.Run, showAdd: false, onAdd: null, host.OpenRecipeInspect);
+            host.Recipe.BuildPersistent(host.Run, host.OpenRecipeInspect);
             buildCenter?.Invoke();
         }
     }
@@ -123,7 +123,6 @@ namespace GourmetProject.Game.UI.Battle.States
         public void Enter(IBattleViewHost host, Action buildCenter)
         {
             host.SetCenterTitle(string.Empty);
-            host.Recipe.RemoveAddCard();
             buildCenter?.Invoke();
         }
     }
@@ -136,7 +135,6 @@ namespace GourmetProject.Game.UI.Battle.States
         public void Enter(IBattleViewHost host, Action buildCenter)
         {
             host.SetCenterTitle(string.Empty);
-            host.Recipe.RemoveAddCard();
             buildCenter?.Invoke();
         }
     }

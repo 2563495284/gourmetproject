@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Model;
@@ -9,8 +8,7 @@ using GourmetProject.Game.UI.Hud;
 namespace GourmetProject.Game.UI.Battle.View
 {
     /// <summary>
-    /// 底部扇形菜谱抽屉（<see cref="RecipeView"/>）的渲染器：把「持有菜谱本 / 商店购买 / 战斗上菜」三种模式的
-    /// 卡片构建从 BattleForm 里剥离出来，只负责喂数据，购买/上菜等副作用由外层回调处理。
+    /// 底部菜谱抽屉（<see cref="RecipeView"/>）的渲染器：负责局外菜谱与战斗菜谱的展示。
     /// </summary>
     internal sealed class RecipeBooksPresenter
     {
@@ -21,42 +19,29 @@ namespace GourmetProject.Game.UI.Battle.View
             _recipeView = recipeView;
         }
 
-        /// <summary>底部扇形菜谱条：按持有的菜谱本铺卡，显示已放数量。showAdd 时末尾追加购买空菜谱卡。</summary>
-        public void BuildPersistent(GameRun run, bool showAdd, Action onAdd, Action<int> onInspect = null, int selectedBookIndex = -1)
+        /// <summary>底部菜谱条：展示唯一菜谱及已放数量。</summary>
+        public void BuildPersistent(GameRun run, Action<int> onInspect = null, int selectedBookIndex = -1)
         {
             if (_recipeView == null || run == null)
             {
                 return;
             }
 
-            var books = new List<RecipeView.BookEntry>();
-            for (int i = 0; i < run.RecipeBookCount; i++)
+            var books = new List<RecipeView.BookEntry>
             {
-                int count = run.GetRecipeBookDishes(i).Count;
-                int bookIndex = i;
-                books.Add(new RecipeView.BookEntry(
-                    $"菜谱{i + 1}",
-                    $"{count}",
+                new RecipeView.BookEntry(
+                    "菜谱",
+                    $"{run.RecipeDishes.Count}",
                     onInspect != null,
-                    onInspect == null ? null : () => onInspect.Invoke(bookIndex),
-                    true));
-            }
-
-            string addCost = showAdd ? $"+ {ShopService.RecipeBookCost(run)}" : null;
-            _recipeView.SetBooks(books, showAdd, onAdd, addCost, selectedBookIndex);
+                    onInspect == null ? null : () => onInspect.Invoke(0)),
+            };
+            _recipeView.SetBooks(books, selectedBookIndex: selectedBookIndex);
         }
 
-        /// <summary>商店态菜谱条：展示持有菜谱本；未满上限时末尾追加唯一的「购买空菜谱」卡（买得起才可点）。</summary>
-        public void BuildShop(GameRun run, Action onBuy, Action<int> onInspect = null)
+        /// <summary>商店态菜谱条：展示唯一菜谱。</summary>
+        public void BuildShop(GameRun run, Action<int> onInspect = null)
         {
-            if (run == null)
-            {
-                return;
-            }
-
-            bool showAdd = run.RecipeBookCount < run.RecipeBookMaxCount;
-            bool canBuy = showAdd && run.Gold >= ShopService.RecipeBookCost(run);
-            BuildPersistent(run, showAdd, canBuy ? onBuy : null, onInspect);
+            BuildPersistent(run, onInspect);
         }
 
         /// <summary>战斗态扇形菜谱条：点击卡片查看详情，独立上餐铃负责随机上菜。</summary>
@@ -92,11 +77,10 @@ namespace GourmetProject.Game.UI.Battle.View
                 bool serveLimitReached = session.MaxServes >= 0 && session.ServesUsed >= session.MaxServes;
                 bool serveInteractable = !session.IsSettled && !serveLimitReached && placeableCount > 0;
                 books.Add(new RecipeView.BookEntry(
-                    $"菜谱{i + 1}",
+                    "菜谱",
                     $"剩 {slot.Count}",
                     onInspect != null,
                     onInspect == null ? null : () => onInspect.Invoke(slotIndex),
-                    true,
                     onInspect == null ? null : () => onInspect.Invoke(slotIndex),
                     showBattleContent: true,
                     serveInteractable: serveInteractable,
@@ -121,20 +105,14 @@ namespace GourmetProject.Game.UI.Battle.View
                 RecipeSlot slot = session.Slots[i];
                 int slotIndex = i;
                 books.Add(new RecipeView.BookEntry(
-                    $"菜谱{i + 1}",
+                    "菜谱",
                     $"剩 {slot.Count}",
                     onInspect != null,
                     onInspect == null ? null : () => onInspect.Invoke(slotIndex),
-                    true,
                     onInspect == null ? null : () => onInspect.Invoke(slotIndex)));
             }
 
             _recipeView.SetBooks(books, selectedBookIndex: selectedBookIndex);
-        }
-
-        public void RemoveAddCard()
-        {
-            _recipeView?.RemoveAddCard();
         }
 
         public void SetState(RecipeView.RecipeState state)

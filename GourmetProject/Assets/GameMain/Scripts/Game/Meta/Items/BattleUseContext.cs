@@ -111,7 +111,7 @@ namespace GourmetProject.Game.Meta
                     && _session.AddFlavorToDishById(dishId, flavorId);
             }
 
-            return Run != null && Run.AddRecipeFlavor(target.X, target.Y, flavorId);
+            return Run != null && Run.AddRecipeFlavor(target.Y, flavorId);
         }
 
         public bool RemoveFlavorFromDish(ActiveTarget target, string flavorId)
@@ -122,7 +122,7 @@ namespace GourmetProject.Game.Meta
                     && _session.RemoveFlavorFromDishById(dishId, flavorId);
             }
 
-            return Run != null && Run.RemoveRecipeFlavor(target.X, target.Y, flavorId);
+            return Run != null && Run.RemoveRecipeFlavor(target.Y, flavorId);
         }
 
         public bool ConvertFlavorOnDish(ActiveTarget target, string toFlavorId)
@@ -133,7 +133,7 @@ namespace GourmetProject.Game.Meta
                     && _session.ReplaceFlavorOnDishById(dishId, toFlavorId);
             }
 
-            return Run != null && Run.ReplaceRecipeFlavor(target.X, target.Y, toFlavorId);
+            return Run != null && Run.ReplaceRecipeFlavor(target.Y, toFlavorId);
         }
 
         public bool ConvertDishCategory(ActiveTarget target, string category)
@@ -168,7 +168,7 @@ namespace GourmetProject.Game.Meta
             return int.TryParse(target.Id, out dishId);
         }
 
-        /// <summary>枚举菜谱所有条目为候选：Id=dishId，X=书序，Y=菜序（供选目标 UI 与效果定位）。</summary>
+        /// <summary>枚举菜谱所有条目为候选：Id=dishId，X 固定为 0，Y=菜序（供选目标 UI 与效果定位）。</summary>
         internal static IReadOnlyList<ActiveTarget> EnumerateRecipeDishes(GameRun run)
         {
             var targets = new List<ActiveTarget>();
@@ -177,13 +177,10 @@ namespace GourmetProject.Game.Meta
                 return targets;
             }
 
-            for (int book = 0; book < run.RecipeBookCount; book++)
+            IReadOnlyList<string> dishes = run.RecipeDishes;
+            for (int dish = 0; dish < dishes.Count; dish++)
             {
-                IReadOnlyList<string> dishes = run.GetRecipeBookDishes(book);
-                for (int dish = 0; dish < dishes.Count; dish++)
-                {
-                    targets.Add(new ActiveTarget(dishes[dish], book, dish, cfg.ItemTargetKind.RecipeDish));
-                }
+                targets.Add(new ActiveTarget(dishes[dish], 0, dish, cfg.ItemTargetKind.RecipeDish));
             }
 
             return targets;
@@ -250,28 +247,25 @@ namespace GourmetProject.Game.Meta
                 return targets;
             }
 
-            for (int book = 0; book < run.RecipeBookCount; book++)
+            IReadOnlyList<RecipeBookSlot> dishes = run.RecipeEntries;
+            for (int dish = 0; dish < dishes.Count; dish++)
             {
-                IReadOnlyList<RecipeBookSlot> dishes = run.GetRecipeBookEntries(book);
-                for (int dish = 0; dish < dishes.Count; dish++)
+                RecipeBookSlot slot = dishes[dish];
+                if (slot == null)
                 {
-                    RecipeBookSlot slot = dishes[dish];
-                    if (slot == null)
-                    {
-                        continue;
-                    }
+                    continue;
+                }
 
-                    IReadOnlyList<string> flavors = slot.ExtraFlavorIds;
-                    if (flavors.Count == 0)
-                    {
-                        targets.Add(new ActiveTarget(string.Empty, book, dish, cfg.ItemTargetKind.FlavorSlot));
-                        continue;
-                    }
+                IReadOnlyList<string> flavors = slot.ExtraFlavorIds;
+                if (flavors.Count == 0)
+                {
+                    targets.Add(new ActiveTarget(string.Empty, 0, dish, cfg.ItemTargetKind.FlavorSlot));
+                    continue;
+                }
 
-                    for (int i = 0; i < flavors.Count; i++)
-                    {
-                        targets.Add(new ActiveTarget(flavors[i], book, dish, cfg.ItemTargetKind.FlavorSlot));
-                    }
+                for (int i = 0; i < flavors.Count; i++)
+                {
+                    targets.Add(new ActiveTarget(flavors[i], 0, dish, cfg.ItemTargetKind.FlavorSlot));
                 }
             }
 

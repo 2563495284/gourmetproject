@@ -121,17 +121,6 @@ namespace GourmetProject.Game.Meta.Passives
     }
 
     [Preserve]
-    [PassiveItemModel("item_grant_recipe")]
-    public sealed class GrantRecipeModel : PassiveItemModel
-    {
-        public override void OnAcquired()
-        {
-            PassiveOnAcquireEffects.GrantRecipeBook(Run, Definition);
-            MarkIconUsed();
-        }
-    }
-
-    [Preserve]
     [PassiveItemModel("item_randomize_items")]
     public sealed class RandomizeItemsModel : PassiveItemModel
     {

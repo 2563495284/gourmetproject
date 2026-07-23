@@ -737,7 +737,6 @@ namespace GourmetProject.Game.UI.Battle
         void IGameplayPageRouterHost.OpenRecipeInspect(int bookIndex) => _recipeWorkspacePage?.OpenInspect(bookIndex);
         void IGameplayPageRouterHost.BuildBattleRecipe() => BuildBattleRecipe();
         void IGameplayPageRouterHost.BuildRecipeInspectCards() => BuildRecipeInspectCards();
-        void IGameplayPageRouterHost.BuyRecipeBook() => _shopPage?.BuyRecipeBook();
         void IGameplayPageRouterHost.BuildActionCards() => BuildActionCards();
         void IGameplayPageRouterHost.RefreshPersistent() => RefreshPersistent();
 
@@ -992,33 +991,6 @@ namespace GourmetProject.Game.UI.Battle
             return _rewardPage != null && _rewardPage.OpenRandomizedItemsPanel(title, results);
         }
 
-        public bool TryGrantRecipeBookFromPassive(string sourceName)
-        {
-            if (_run == null)
-            {
-                return false;
-            }
-
-            if (!_run.AddRecipeBook())
-            {
-                ShowNotice(sourceName, "菜谱已经满了，无法再获得新菜谱。", null);
-                return false;
-            }
-
-            RunPersistence.Save(_run);
-            RefreshPersistent();
-            if (_current == GameplayView.Food)
-            {
-                BuildBattleRecipe();
-            }
-            else
-            {
-                _recipePresenter?.BuildShop(_run, BuyRecipeBook, OpenRecipeInspect);
-            }
-
-            return true;
-        }
-
         private ActionSelectSnapshot CaptureActionSelectSnapshot()
         {
             return _pageRouter != null ? _pageRouter.CaptureActionSelection() : ActionSelectSnapshot.None;
@@ -1170,7 +1142,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            _recipePresenter?.BuildPersistent(_run, false, null, OpenRecipeInspect, selectedBookIndex);
+            _recipePresenter?.BuildPersistent(_run, OpenRecipeInspect, selectedBookIndex);
         }
 
         private void ServeFromRecipe(int slotIndex)
@@ -1268,12 +1240,6 @@ namespace GourmetProject.Game.UI.Battle
             {
                 _tips.HideAll();
             }
-        }
-
-        /// <summary>点击扇形末尾的「购买空菜谱」卡：扣金币加一本菜谱，随后刷新商店与底部菜谱条。</summary>
-        private void BuyRecipeBook()
-        {
-            _shopPage?.BuyRecipeBook();
         }
 
         /// <summary>商店内数据变化回调：刷新常驻壳信息 + 底部扇形菜谱条。</summary>
@@ -2370,12 +2336,12 @@ namespace GourmetProject.Game.UI.Battle
 
             foreach (RecipeScoreFlatDelta delta in _session.LastRecipeScoreFlatDeltas)
             {
-                _run.AddRecipeScoreFlat(delta.BookIndex, delta.DishIndex, delta.Delta);
+                _run.AddRecipeScoreFlat(delta.DishIndex, delta.Delta);
             }
 
             foreach (RecipeScoreMultiplierDelta delta in _session.LastRecipeScoreMultiplierDeltas)
             {
-                _run.MultiplyRecipeScore(delta.BookIndex, delta.DishIndex, delta.Multiplier);
+                _run.MultiplyRecipeScore(delta.DishIndex, delta.Multiplier);
             }
         }
 

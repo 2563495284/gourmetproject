@@ -7,7 +7,7 @@ using GourmetProject.Runtime;
 
 namespace GourmetProject.Game.DevConsole.Commands
 {
-    /// <summary>给当前对局的菜谱本添加一道菜（按菜品变体 id）。</summary>
+    /// <summary>给当前对局的菜谱添加一道菜（按菜品变体 id）。</summary>
     public sealed class DishCommand : ConsoleCommand
     {
         public override string CmdName => "dish";
@@ -32,7 +32,7 @@ namespace GourmetProject.Game.DevConsole.Commands
             GameRun run = GameRunContext.Current;
             if (!run.AddBonusDish(dishId))
             {
-                return CmdResult.Fail($"添加失败：找不到菜品 '{dishId}' 或菜谱本已满。");
+                return CmdResult.Fail($"添加失败：找不到菜品 '{dishId}' 或菜谱已满。");
             }
 
             BattleForm.Active?.RefreshPersistentHud();

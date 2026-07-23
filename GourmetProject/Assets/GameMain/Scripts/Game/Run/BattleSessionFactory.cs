@@ -25,30 +25,24 @@ namespace GourmetProject.Game.Run
             cfg.Character character = run.Tables.TbCharacter.GetOrDefault(run.CharacterId);
             var debuffStream = GameApp.Random.DomainStream(SeedDomains.Combat, $"{key}_debuff_setup");
 
-            int recipeBookCount = run.RecipeBookCount;
-            var slots = new List<RecipeSlot>(recipeBookCount);
-            for (int i = 0; i < recipeBookCount; i++)
+            var entries = new List<RecipeSlotEntry>();
+            IReadOnlyList<RecipeBookSlot> recipeSlots = run.RecipeEntries;
+            for (int dishIndex = 0; dishIndex < recipeSlots.Count; dishIndex++)
             {
-                var entries = new List<RecipeSlotEntry>();
-                IReadOnlyList<RecipeBookSlot> bookSlots = run.GetRecipeBookEntries(i);
-                for (int dishIndex = 0; dishIndex < bookSlots.Count; dishIndex++)
+                RecipeBookSlot recipeSlot = recipeSlots[dishIndex];
+                if (run.Database.GetDish(recipeSlot.DishId) != null)
                 {
-                    RecipeBookSlot bookSlot = bookSlots[dishIndex];
-                    if (run.Database.GetDish(bookSlot.DishId) != null)
-                    {
-                        entries.Add(new RecipeSlotEntry(
-                            bookSlot.DishId,
-                            bookSlot.ExtraFlavorIds,
-                            bookSlot.ExtraSkillIds,
-                            bookSlot.ScoreMultiplier,
-                            bookSlot.ScoreFlatBonus,
-                            i,
-                            dishIndex));
-                    }
+                    entries.Add(new RecipeSlotEntry(
+                        recipeSlot.DishId,
+                        recipeSlot.ExtraFlavorIds,
+                        recipeSlot.ExtraSkillIds,
+                        recipeSlot.ScoreMultiplier,
+                        recipeSlot.ScoreFlatBonus,
+                        0,
+                        dishIndex));
                 }
-
-                slots.Add(new RecipeSlot($"菜谱{i + 1}", entries));
             }
+            var slots = new List<RecipeSlot> { new RecipeSlot("菜谱", entries) };
 
             ApplyRecipeModifiers(slots, run, modifier, debuffStream);
 

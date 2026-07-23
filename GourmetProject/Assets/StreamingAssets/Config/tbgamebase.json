@@ -25,13 +25,6 @@
       40,
       50
     ],
-    "recipeBookPrices": [
-      30,
-      50,
-      80,
-      120
-    ],
-    "maxRecipeBookCount": 4,
     "shopPriceFluctuationPct": 0.2,
     "actionChoiceCount": 3,
     "hiddenScoreDistanceFloor": 5,

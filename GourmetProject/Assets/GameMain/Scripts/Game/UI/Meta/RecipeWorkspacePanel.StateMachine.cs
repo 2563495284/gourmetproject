@@ -113,12 +113,13 @@ namespace GourmetProject.Game.UI.Meta
 
             public override bool OnDishDroppedToBook(RecipeWorkspacePanel panel, RecipeEditDishView dish, int targetBookIndex, int targetDishIndex)
             {
-                return panel._run != null && ShopService.MoveDish(panel._run, dish.BookIndex, dish.DishIndex, targetBookIndex, targetDishIndex);
+                return panel._run != null && targetBookIndex == 0
+                    && ShopService.MoveDish(panel._run, dish.DishIndex, targetDishIndex);
             }
 
             public override bool OnDishDroppedToTrash(RecipeWorkspacePanel panel, RecipeEditDishView dish)
             {
-                return panel._run != null && ShopService.DeleteDishAt(panel._run, dish.BookIndex, dish.DishIndex);
+                return panel._run != null && ShopService.DeleteDishAt(panel._run, dish.DishIndex);
             }
         }
 

@@ -211,18 +211,15 @@ namespace GourmetProject.Game.Meta
 
         private static string AddRandomRecipeFlavor(GameRun run, IRandomStream rng, int count)
         {
-            List<(int BookIndex, int DishIndex)> emptyFlavorTargets = new List<(int, int)>();
-            List<(int BookIndex, int DishIndex)> allTargets = new List<(int, int)>();
-            for (int bookIndex = 0; bookIndex < run.RecipeBookCount; bookIndex++)
+            var emptyFlavorTargets = new List<int>();
+            var allTargets = new List<int>();
+            IReadOnlyList<RecipeBookSlot> recipe = run.RecipeEntries;
+            for (int dishIndex = 0; dishIndex < recipe.Count; dishIndex++)
             {
-                IReadOnlyList<RecipeBookSlot> book = run.GetRecipeBookEntries(bookIndex);
-                for (int dishIndex = 0; dishIndex < book.Count; dishIndex++)
+                allTargets.Add(dishIndex);
+                if (recipe[dishIndex].ExtraFlavorIds.Count == 0)
                 {
-                    allTargets.Add((bookIndex, dishIndex));
-                    if (book[dishIndex].ExtraFlavorIds.Count == 0)
-                    {
-                        emptyFlavorTargets.Add((bookIndex, dishIndex));
-                    }
+                    emptyFlavorTargets.Add(dishIndex);
                 }
             }
 
@@ -240,14 +237,14 @@ namespace GourmetProject.Game.Meta
             int applied = 0;
             for (int i = 0; i < count; i++)
             {
-                List<(int BookIndex, int DishIndex)> pool = emptyFlavorTargets.Count > 0 ? emptyFlavorTargets : allTargets;
+                List<int> pool = emptyFlavorTargets.Count > 0 ? emptyFlavorTargets : allTargets;
                 int targetIndex = rng != null ? rng.Range(0, pool.Count) : 0;
-                (int bookIndex, int dishIndex) = pool[targetIndex];
+                int dishIndex = pool[targetIndex];
                 string flavorId = PickFlavor(flavors, rng).Id;
-                if (run.AddRecipeFlavor(bookIndex, dishIndex, flavorId))
+                if (run.AddRecipeFlavor(dishIndex, flavorId))
                 {
                     applied++;
-                    emptyFlavorTargets.Remove((bookIndex, dishIndex));
+                    emptyFlavorTargets.Remove(dishIndex);
                 }
             }
 
@@ -260,14 +257,14 @@ namespace GourmetProject.Game.Meta
             int removed = 0;
             for (int i = 0; i < count; i++)
             {
-                List<(int BookIndex, int DishIndex, string DishName)> targets = RecipeDishTargets(run, requireFlavor);
+                List<(int DishIndex, string DishName)> targets = RecipeDishTargets(run, requireFlavor);
                 if (targets.Count == 0)
                 {
                     break;
                 }
 
-                (int bookIndex, int dishIndex, _) = targets[rng != null ? rng.Range(0, targets.Count) : 0];
-                if (run.RemoveBonusDishAt(bookIndex, dishIndex))
+                (int dishIndex, _) = targets[rng != null ? rng.Range(0, targets.Count) : 0];
+                if (run.RemoveBonusDishAt(dishIndex))
                 {
                     removed++;
                 }
@@ -281,26 +278,23 @@ namespace GourmetProject.Game.Meta
             return requireFlavor ? $"随机献上了 {removed} 道带风味的美食。" : $"随机献上了 {removed} 道美食。";
         }
 
-        private static List<(int BookIndex, int DishIndex, string DishName)> RecipeDishTargets(GameRun run, bool requireFlavor)
+        private static List<(int DishIndex, string DishName)> RecipeDishTargets(GameRun run, bool requireFlavor)
         {
-            var targets = new List<(int, int, string)>();
+            var targets = new List<(int, string)>();
             if (run == null)
             {
                 return targets;
             }
 
-            for (int bookIndex = 0; bookIndex < run.RecipeBookCount; bookIndex++)
+            IReadOnlyList<RecipeBookSlot> recipe = run.RecipeEntries;
+            for (int dishIndex = 0; dishIndex < recipe.Count; dishIndex++)
             {
-                IReadOnlyList<RecipeBookSlot> book = run.GetRecipeBookEntries(bookIndex);
-                for (int dishIndex = 0; dishIndex < book.Count; dishIndex++)
+                RecipeBookSlot slot = recipe[dishIndex];
+                DishDef dish = run.Database?.GetDish(slot.DishId);
+                bool hasFlavor = (dish != null && dish.HasFlavor) || slot.ExtraFlavorIds.Count > 0;
+                if (!requireFlavor || hasFlavor)
                 {
-                    RecipeBookSlot slot = book[dishIndex];
-                    DishDef dish = run.Database?.GetDish(slot.DishId);
-                    bool hasFlavor = (dish != null && dish.HasFlavor) || slot.ExtraFlavorIds.Count > 0;
-                    if (!requireFlavor || hasFlavor)
-                    {
-                        targets.Add((bookIndex, dishIndex, dish?.Name ?? slot.DishId));
-                    }
+                    targets.Add((dishIndex, dish?.Name ?? slot.DishId));
                 }
             }
 

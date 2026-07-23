@@ -160,30 +160,6 @@ namespace GourmetProject.Game.Meta
             OpenGenericRewardForm();
         }
 
-        public static void GrantRecipeBook(GameRun run, ItemDefinition sourceItem)
-        {
-            if (run == null || sourceItem == null)
-            {
-                return;
-            }
-
-            BattleForm battle = BattleForm.Active;
-            if (battle != null)
-            {
-                battle.TryGrantRecipeBookFromPassive(sourceItem.Name);
-                return;
-            }
-
-            if (run.AddRecipeBook())
-            {
-                RunPersistence.Save(run);
-            }
-            else
-            {
-                Log.Info($"{sourceItem.Name} 使用失败：菜谱已满。", Tag);
-            }
-        }
-
         public static void RandomizeItems(GameRun run, ItemDefinition sourceItem)
         {
             if (run == null || sourceItem == null)

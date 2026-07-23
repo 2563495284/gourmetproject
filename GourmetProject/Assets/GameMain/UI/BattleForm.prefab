@@ -8568,7 +8568,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Hud.RecipeView
   _recipePrefab: {fileID: 3983555695959146410, guid: e15ce1b185bde447eb66902d74648421, type: 3}
-  _recipeAddPrefab: {fileID: 2973243729664783813, guid: 43473782ac387493cadcf48e22634272, type: 3}
   _arcRadius: 760
   _anglePerCard: 11
   _tiltFactor: 1

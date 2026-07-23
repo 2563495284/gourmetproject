@@ -535,7 +535,7 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             RewardChoice choice = groupChoices[choiceIndex];
-            if (!RewardGranter.ApplyDishChoiceToBook(_run, choice, bookIndex))
+            if (!RewardGranter.ApplyDishChoice(_run, choice))
             {
                 return false;
             }

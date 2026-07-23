@@ -103,7 +103,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
                             return false;
                         }
 
-                        if (!RewardGranter.ApplyDishChoiceToBook(_host.Run, choices[choiceIndex], bookIndex))
+                        if (!RewardGranter.ApplyDishChoice(_host.Run, choices[choiceIndex]))
                         {
                             return false;
                         }

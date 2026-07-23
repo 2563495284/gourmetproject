@@ -268,14 +268,10 @@ namespace GourmetProject.Game.UI.Meta
 
             SetButtonText(_exitEditButton, state.ExitButtonText);
 
-            var books = new List<RecipeEditBookView>(_run.RecipeBookCount);
-            for (int i = 0; i < _run.RecipeBookCount; i++)
+            var books = new List<RecipeEditBookView>(1);
+            const int i = 0;
+            if (state.BookIndexFilter < 0 || state.BookIndexFilter == i)
             {
-                if (state.BookIndexFilter >= 0 && state.BookIndexFilter != i)
-                {
-                    continue;
-                }
-
                 RecipeEditBookView bookPrefab = state.BookIndexFilter >= 0 && _readonlyBookPrefab != null
                     ? _readonlyBookPrefab
                     : _editBookPrefab;
@@ -287,34 +283,32 @@ namespace GourmetProject.Game.UI.Meta
                 books.Add(book);
 
                 RectTransform dishContainer = book.DishContainer;
-                if (dishContainer == null)
+                if (dishContainer != null)
                 {
-                    continue;
-                }
-
-                IReadOnlyList<RecipeBookSlot> entries = EntriesForBook(i);
-                for (int k = 0; k < entries.Count; k++)
-                {
-                    RecipeBookSlot slot = entries[k];
-                    string dishId = slot.DishId;
-                    DishDef def = _run.Database.GetDish(dishId);
-                    RecipeEditDishView dish = Instantiate(_editDishPrefab, dishContainer);
-                    dish.gameObject.name = $"RecipeDish_{i + 1}_{k + 1}";
-                    dish.Bind(
-                        DishName(GameApp.Config.Tables, dishId),
-                        DishShapeText(dishId),
-                        i,
-                        k,
-                        state.EnableDishDrag,
-                        state.CanClickDish ? OnRecipeDishClicked : null,
-                        def,
-                        OnRecipeDishBeginDrag,
-                        OnRecipeDishDragCancelled,
-                        ShowRecipeDishTips,
-                        HideRecipeDishTips,
-                        ComposeFlavorIds(def, slot.ExtraFlavorIds));
-                    _spawned.Add(dish.gameObject);
-                    _spawnedDishes.Add(dish);
+                    IReadOnlyList<RecipeBookSlot> entries = EntriesForBook(i);
+                    for (int k = 0; k < entries.Count; k++)
+                    {
+                        RecipeBookSlot slot = entries[k];
+                        string dishId = slot.DishId;
+                        DishDef def = _run.Database.GetDish(dishId);
+                        RecipeEditDishView dish = Instantiate(_editDishPrefab, dishContainer);
+                        dish.gameObject.name = $"RecipeDish_{i + 1}_{k + 1}";
+                        dish.Bind(
+                            DishName(GameApp.Config.Tables, dishId),
+                            DishShapeText(dishId),
+                            i,
+                            k,
+                            state.EnableDishDrag,
+                            state.CanClickDish ? OnRecipeDishClicked : null,
+                            def,
+                            OnRecipeDishBeginDrag,
+                            OnRecipeDishDragCancelled,
+                            ShowRecipeDishTips,
+                            HideRecipeDishTips,
+                            ComposeFlavorIds(def, slot.ExtraFlavorIds));
+                        _spawned.Add(dish.gameObject);
+                        _spawnedDishes.Add(dish);
+                    }
                 }
 
                 book.ApplyImmediateLayout();
@@ -332,7 +326,7 @@ namespace GourmetProject.Game.UI.Meta
                 return _readonlyEntries;
             }
 
-            return _run != null ? _run.GetRecipeBookEntries(bookIndex) : Array.Empty<RecipeBookSlot>();
+            return _run != null && bookIndex == 0 ? _run.RecipeEntries : Array.Empty<RecipeBookSlot>();
         }
 
         private void ConfigureBooksLayoutGroup()
@@ -394,7 +388,7 @@ namespace GourmetProject.Game.UI.Meta
                 rect.anchoredPosition = new Vector2(x, 0f);
                 x += scaledBookWidth + gap;
 
-                book.FitSlotsWithinView(_run.Tables.TbGameBase.MaxRecipeBookCount);
+                book.FitSlotsWithinView();
                 book.ApplyImmediateLayout();
             }
         }
@@ -475,7 +469,7 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             int targetIndex = book.CurrentDishCount(dish);
-            if (!ShopService.MoveDish(_run, dish.BookIndex, dish.DishIndex, dish.BookIndex, targetIndex))
+            if (!ShopService.MoveDish(_run, dish.DishIndex, targetIndex))
             {
                 return false;
             }
@@ -767,7 +761,7 @@ namespace GourmetProject.Game.UI.Meta
 
         private RecipeBookSlot RecipeSlot(ActiveTarget target)
         {
-            if (_run == null || target.X < 0 || target.X >= _run.RecipeBookCount)
+            if (_run == null || target.X != 0)
             {
                 return null;
             }

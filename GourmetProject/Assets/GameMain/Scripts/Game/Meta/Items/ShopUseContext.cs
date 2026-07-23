@@ -60,17 +60,17 @@ namespace GourmetProject.Game.Meta
 
         public bool AddFlavorToDish(ActiveTarget target, string flavorId)
         {
-            return Run != null && Run.AddRecipeFlavor(target.X, target.Y, flavorId);
+            return Run != null && Run.AddRecipeFlavor(target.Y, flavorId);
         }
 
         public bool RemoveFlavorFromDish(ActiveTarget target, string flavorId)
         {
-            return Run != null && Run.RemoveRecipeFlavor(target.X, target.Y, flavorId);
+            return Run != null && Run.RemoveRecipeFlavor(target.Y, flavorId);
         }
 
         public bool ConvertFlavorOnDish(ActiveTarget target, string toFlavorId)
         {
-            return Run != null && Run.ReplaceRecipeFlavor(target.X, target.Y, toFlavorId);
+            return Run != null && Run.ReplaceRecipeFlavor(target.Y, toFlavorId);
         }
 
         public bool ConvertDishCategory(ActiveTarget target, string category)

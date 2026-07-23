@@ -24,14 +24,14 @@ namespace GourmetProject.Game.Meta.Passives
                 RecipeTarget target = targets[i];
                 RecipeDishSnapshot before = Snapshot(run, target);
                 string flavorId = flavors[rng.Range(0, flavors.Count)];
-                if (!run.AddRecipeFlavor(target.BookIndex, target.DishIndex, flavorId))
+                if (!run.AddRecipeFlavor(target.DishIndex, flavorId))
                 {
                     continue;
                 }
 
                 result.Entries.Add(new RecipeMutationEntry
                 {
-                    BookIndex = target.BookIndex,
+                    BookIndex = 0,
                     DishIndex = target.DishIndex,
                     Before = before,
                     After = Snapshot(run, target),
@@ -62,14 +62,14 @@ namespace GourmetProject.Game.Meta.Passives
                 }
 
                 string skillId = dish.SkillIds[rng.Range(0, dish.SkillIds.Count)];
-                return run.AddRecipeExtraSkill(target.BookIndex, target.DishIndex, skillId);
+                return run.AddRecipeExtraSkill(target.DishIndex, skillId);
             });
         }
 
         public static RecipeMutationResult RemoveFlavorDoubleScore(GameRun run, string title, float multiplier, IRandomStream rng)
         {
             return RemoveFlavor(run, title, rng, target =>
-                run.MultiplyRecipeScore(target.BookIndex, target.DishIndex, multiplier));
+                run.MultiplyRecipeScore(target.DishIndex, multiplier));
         }
 
         public static RecipeMutationResult ContagionFlavor(GameRun run, string title, IRandomStream rng)
@@ -93,20 +93,20 @@ namespace GourmetProject.Game.Meta.Passives
             rng.Shuffle(targets);
             foreach (RecipeTarget target in targets)
             {
-                if (target.BookIndex == source.BookIndex && target.DishIndex == source.DishIndex)
+                if (target.DishIndex == source.DishIndex)
                 {
                     continue;
                 }
 
                 RecipeDishSnapshot before = Snapshot(run, target);
-                if (!run.AddRecipeFlavor(target.BookIndex, target.DishIndex, flavorId))
+                if (!run.AddRecipeFlavor(target.DishIndex, flavorId))
                 {
                     continue;
                 }
 
                 result.Entries.Add(new RecipeMutationEntry
                 {
-                    BookIndex = target.BookIndex,
+                    BookIndex = 0,
                     DishIndex = target.DishIndex,
                     Before = before,
                     After = Snapshot(run, target),
@@ -200,7 +200,7 @@ namespace GourmetProject.Game.Meta.Passives
 
             RecipeTarget target = targets[rng.Range(0, targets.Count)];
             RecipeDishSnapshot before = Snapshot(run, target);
-            if (!run.RemoveRecipeFlavor(target.BookIndex, target.DishIndex, string.Empty))
+            if (!run.RemoveRecipeFlavor(target.DishIndex, string.Empty))
             {
                 return result;
             }
@@ -208,7 +208,7 @@ namespace GourmetProject.Game.Meta.Passives
             afterRemove?.Invoke(target);
             result.Entries.Add(new RecipeMutationEntry
             {
-                BookIndex = target.BookIndex,
+                BookIndex = 0,
                 DishIndex = target.DishIndex,
                 Before = before,
                 After = Snapshot(run, target),
@@ -224,17 +224,14 @@ namespace GourmetProject.Game.Meta.Passives
                 return targets;
             }
 
-            for (int book = 0; book < run.RecipeBookCount; book++)
+            IReadOnlyList<RecipeBookSlot> entries = run.RecipeEntries;
+            for (int dish = 0; dish < entries.Count; dish++)
             {
-                IReadOnlyList<RecipeBookSlot> entries = run.GetRecipeBookEntries(book);
-                for (int dish = 0; dish < entries.Count; dish++)
+                RecipeBookSlot slot = entries[dish];
+                DishDef def = run.Database.GetDish(slot.DishId);
+                if (def != null && !def.HasFlavor && slot.ExtraFlavorIds.Count == 0)
                 {
-                    RecipeBookSlot slot = entries[dish];
-                    DishDef def = run.Database.GetDish(slot.DishId);
-                    if (def != null && !def.HasFlavor && slot.ExtraFlavorIds.Count == 0)
-                    {
-                        targets.Add(new RecipeTarget(book, dish));
-                    }
+                    targets.Add(new RecipeTarget(dish));
                 }
             }
 
@@ -249,15 +246,12 @@ namespace GourmetProject.Game.Meta.Passives
                 return targets;
             }
 
-            for (int book = 0; book < run.RecipeBookCount; book++)
+            IReadOnlyList<RecipeBookSlot> entries = run.RecipeEntries;
+            for (int dish = 0; dish < entries.Count; dish++)
             {
-                IReadOnlyList<RecipeBookSlot> entries = run.GetRecipeBookEntries(book);
-                for (int dish = 0; dish < entries.Count; dish++)
+                if (entries[dish].ExtraFlavorIds.Count > 0)
                 {
-                    if (entries[dish].ExtraFlavorIds.Count > 0)
-                    {
-                        targets.Add(new RecipeTarget(book, dish));
-                    }
+                    targets.Add(new RecipeTarget(dish));
                 }
             }
 
@@ -359,7 +353,7 @@ namespace GourmetProject.Game.Meta.Passives
                 return null;
             }
 
-            IReadOnlyList<RecipeBookSlot> entries = run.GetRecipeBookEntries(target.BookIndex);
+            IReadOnlyList<RecipeBookSlot> entries = run.RecipeEntries;
             return target.DishIndex >= 0 && target.DishIndex < entries.Count ? entries[target.DishIndex] : null;
         }
 
@@ -371,13 +365,10 @@ namespace GourmetProject.Game.Meta.Passives
 
         private readonly struct RecipeTarget
         {
-            public RecipeTarget(int bookIndex, int dishIndex)
+            public RecipeTarget(int dishIndex)
             {
-                BookIndex = bookIndex;
                 DishIndex = dishIndex;
             }
-
-            public int BookIndex { get; }
 
             public int DishIndex { get; }
         }

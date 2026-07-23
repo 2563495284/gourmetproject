@@ -90,7 +90,7 @@ namespace GourmetProject.Game.Run
 
         public List<RunItemSaveData> Items = new List<RunItemSaveData>();
         public List<string> BonusDishIds = new List<string>();
-        public List<RunRecipeBookSaveData> RecipeBooks = new List<RunRecipeBookSaveData>();
+        public RunRecipeBookSaveData Recipe = new RunRecipeBookSaveData();
 
         /// <summary>奖励获得、自动附着的餐桌碎片 id（无手动位置）。</summary>
         public List<string> TableFragmentIds = new List<string>();
@@ -109,9 +109,6 @@ namespace GourmetProject.Game.Run
 
         /// <summary>本局商店碎片包成功购买次数，用于递增定价。</summary>
         public int FragmentPackPurchaseCount;
-
-        /// <summary>本局商店空菜谱成功购买次数，用于递增定价。</summary>
-        public int RecipeBookPurchaseCount;
 
         /// <summary>本局商店/菜谱编辑成功删除菜品次数，用于递增定价。</summary>
         public int DeleteDishCount;

@@ -148,7 +148,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
         public void OpenInspect(int bookIndex)
         {
             GameRun run = _host.Run;
-            if (run == null || bookIndex < 0 || bookIndex >= run.RecipeBookCount)
+            if (run == null || bookIndex != 0)
             {
                 return;
             }

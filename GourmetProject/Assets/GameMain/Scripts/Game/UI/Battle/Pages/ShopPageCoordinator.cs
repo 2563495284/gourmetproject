@@ -63,9 +63,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 _stock,
                 OnLeave,
                 _host.OpenRecipeWorkspace,
-                _host.RecipeView,
-                BuyImmediate,
-                BuyDishToBook);
+                BuyImmediate);
             RefreshPersistent();
         }
 
@@ -73,20 +71,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
         {
             RefreshStock();
             _host.RefreshPersistent(_host.ShouldRefreshItemsAfterShopChange);
-            _host.RecipePresenter?.BuildShop(_host.Run, BuyRecipeBook, _host.OpenRecipeInspect);
-        }
-
-        public void BuyRecipeBook()
-        {
-            if (_host.Run == null)
-            {
-                return;
-            }
-
-            if (ShopService.PurchaseRecipeBook(_host.Run))
-            {
-                RefreshPanel();
-            }
+            _host.RecipePresenter?.BuildShop(_host.Run, _host.OpenRecipeInspect);
         }
 
         private void EnsureStock(GameRun run)
@@ -140,18 +125,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
             if (entry.Kind == ShopEntryKind.PassiveItem || entry.Kind == ShopEntryKind.ActiveItem)
             {
                 _host.PlayShopItemPurchaseFly(entry, card);
-            }
-
-            FinishPurchasedEntry(entry);
-            return true;
-        }
-
-        private bool BuyDishToBook(ShopEntry entry, int bookIndex, ShopBuyItemViewBase card)
-        {
-            GameRun run = _host.Run;
-            if (run == null || entry == null || !ShopService.PurchaseDishToBook(run, entry, bookIndex))
-            {
-                return false;
             }
 
             FinishPurchasedEntry(entry);

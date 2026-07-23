@@ -71,7 +71,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         void BuildRecipeInspectCards();
 
-        void BuyRecipeBook();
 
         void BuildActionCards();
 
@@ -231,7 +230,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         void IBattleViewHost.BuildRecipeInspectCards() => _host.BuildRecipeInspectCards();
 
-        void IBattleViewHost.BuyRecipeBook() => _host.BuyRecipeBook();
 
         private static RecipeView.RecipeState RecipeStateFor(GameplayView view)
         {

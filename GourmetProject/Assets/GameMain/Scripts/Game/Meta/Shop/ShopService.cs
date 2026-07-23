@@ -380,29 +380,6 @@ namespace GourmetProject.Game.Meta
             return true;
         }
 
-        public static bool PurchaseDishToBook(GameRun run, ShopEntry entry, int bookIndex)
-        {
-            if (run == null || entry == null || entry.Kind != ShopEntryKind.Dish)
-            {
-                return false;
-            }
-
-            int price = CurrentPrice(run, entry);
-            entry.SetPrice(price);
-            if (run.Gold < price)
-            {
-                return false;
-            }
-
-            if (!run.AddBonusDishToBook(entry.Id, bookIndex))
-            {
-                return false;
-            }
-
-            run.Gold -= price;
-            return true;
-        }
-
         /// <summary>当前删牌花费（含道具折扣/固定价/涨价修正）。</summary>
         public static int DeleteCost(GameRun run)
         {
@@ -412,18 +389,6 @@ namespace GourmetProject.Game.Meta
             }
 
             return run.ModifyEventShopPrice(new ItemRuntime(run).ModifyDeletePrice(DeleteDishCostBase(run)));
-        }
-
-        public static int RecipeBookCost(GameRun run)
-        {
-            if (run == null)
-            {
-                return 0;
-            }
-
-            cfg.GameBase gameBase = run.Tables?.TbGameBase?.Data;
-            int basePrice = ProgressivePrice(gameBase?.RecipeBookPrices, run.RecipeBookPurchaseCount);
-            return run.ModifyEventShopPrice(new ItemRuntime(run).ModifyRecipeBookPrice(basePrice));
         }
 
         /// <summary>删除菜谱池中的一道菜，花费金币。持有「囤积癖」时禁止删除。</summary>
@@ -445,7 +410,7 @@ namespace GourmetProject.Game.Meta
             return true;
         }
 
-        public static bool DeleteDishAt(GameRun run, int bookIndex, int dishIndex)
+        public static bool DeleteDishAt(GameRun run, int dishIndex)
         {
             if (run == null || new ItemRuntime(run).BlockRemoveDish())
             {
@@ -453,7 +418,7 @@ namespace GourmetProject.Game.Meta
             }
 
             int cost = DeleteCost(run);
-            if (run.Gold < cost || !run.RemoveBonusDishAt(bookIndex, dishIndex))
+            if (run.Gold < cost || !run.RemoveBonusDishAt(dishIndex))
             {
                 return false;
             }
@@ -463,32 +428,9 @@ namespace GourmetProject.Game.Meta
             return true;
         }
 
-        public static bool PurchaseRecipeBook(GameRun run)
+        public static bool MoveDish(GameRun run, int dishIndex, int toDishIndex)
         {
-            if (run == null || !run.CanAddRecipeBook)
-            {
-                return false;
-            }
-
-            int price = RecipeBookCost(run);
-            if (run.Gold < price || !run.AddRecipeBook())
-            {
-                return false;
-            }
-
-            run.Gold -= price;
-            run.RecordRecipeBookPurchased();
-            return true;
-        }
-
-        public static bool MoveDish(GameRun run, int fromBookIndex, int dishIndex, int toBookIndex)
-        {
-            return run != null && run.MoveBonusDish(fromBookIndex, dishIndex, toBookIndex);
-        }
-
-        public static bool MoveDish(GameRun run, int fromBookIndex, int dishIndex, int toBookIndex, int toDishIndex)
-        {
-            return run != null && run.MoveBonusDish(fromBookIndex, dishIndex, toBookIndex, toDishIndex);
+            return run != null && run.MoveBonusDish(dishIndex, toDishIndex);
         }
 
         private static List<cfg.DishVariant> RollDishVariants(cfg.Tables tables, GameRun run, int hidden, IRandomStream rng, int count)

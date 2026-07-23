@@ -34,7 +34,6 @@ namespace GourmetProject.Game.UI.Battle.States
 
         void BuildRecipeInspectCards();
 
-        void BuyRecipeBook();
     }
 
     /// <summary>中部单一态：淡出完成后由状态机调用 <see cref="Enter"/> 落地本态的特化构建。</summary>
