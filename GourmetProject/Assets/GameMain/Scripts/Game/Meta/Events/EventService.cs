@@ -62,11 +62,10 @@ namespace GourmetProject.Game.Meta
     }
 
     /// <summary>
-    /// 事件结算：像《杀戮尖塔2》一样，事件是一张「页面树」，但只用两张表表达。
-    /// - <see cref="cfg.GameEvent"/>（TbEvent）是事件池条目：正文(desc=根页文本)/权重/前置/可重复。
-    /// - <see cref="cfg.EventOption"/>（TbEventOption）既是选项(边)也承载分支页：
-    ///   按 <see cref="cfg.EventOption.ParentId"/> 挂树（空=根页选项）；选中后施加效果，
-    ///   若存在以其为父的子选项则进入子页（子页正文=<see cref="cfg.EventOption.ResultText"/>），否则结算后结束。
+    /// 事件结算：
+    /// - <see cref="cfg.GameEvent"/>（TbEvent）是事件池条目：正文/权重/前置/可重复。
+    /// - <see cref="cfg.EventOption"/>（TbEventOption）是事件选项；选中后施加效果，
+    ///   再以 <see cref="cfg.EventOption.ResultText"/> 作为结束按钮文本等待玩家确认。
     ///   跟进类效果（FoodBattle/Shop/GameOver/Victory）为终止分支。
     /// 页面导航全程内存态，仅在事件结束（onDone→Commit）时存档；结束时写入 UsedEventIds。
     /// </summary>
@@ -85,27 +84,6 @@ namespace GourmetProject.Game.Meta
             foreach (cfg.EventOption opt in tables.TbEventOption.DataList)
             {
                 if (opt.EventId == eventId && string.IsNullOrEmpty(opt.ParentId))
-                {
-                    options.Add(opt);
-                }
-            }
-
-            return options;
-        }
-
-        /// <summary>取某选项的子页选项（parentId 指向该选项，按配置顺序）。</summary>
-        public static List<cfg.EventOption> GetChildOptions(GameRun run, string parentOptionId)
-        {
-            var options = new List<cfg.EventOption>();
-            if (string.IsNullOrEmpty(parentOptionId))
-            {
-                return options;
-            }
-
-            cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
-            foreach (cfg.EventOption opt in tables.TbEventOption.DataList)
-            {
-                if (opt.ParentId == parentOptionId)
                 {
                     options.Add(opt);
                 }

@@ -11,23 +11,19 @@ namespace GourmetProject.Game.UI.Battle.Pages
         public EventPageRequest(
             string title,
             string description,
-            string result,
+            string resultButtonText,
             string backgroundSprite,
             IReadOnlyList<string> options,
             IReadOnlyList<bool> optionEnabled,
-            bool showEndButton,
-            string endButtonText,
             Action<int> onPick,
             Action onEnd)
         {
             Title = title;
             Description = description;
-            Result = result;
+            ResultButtonText = resultButtonText;
             BackgroundSprite = backgroundSprite;
             Options = options;
             OptionEnabled = optionEnabled;
-            ShowEndButton = showEndButton;
-            EndButtonText = endButtonText;
             OnPick = onPick;
             OnEnd = onEnd;
         }
@@ -36,17 +32,13 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         public string Description { get; }
 
-        public string Result { get; }
+        public string ResultButtonText { get; }
 
         public string BackgroundSprite { get; }
 
         public IReadOnlyList<string> Options { get; }
 
         public IReadOnlyList<bool> OptionEnabled { get; }
-
-        public bool ShowEndButton { get; }
-
-        public string EndButtonText { get; }
 
         public Action<int> OnPick { get; }
 
@@ -88,16 +80,16 @@ namespace GourmetProject.Game.UI.Battle.Pages
                     _host.EventPagePanel.Open(
                         request.Title,
                         request.Description,
-                        request.Result,
+                        request.ResultButtonText,
                         request.BackgroundSprite,
                         request.Options,
                         request.OptionEnabled,
-                        request.ShowEndButton,
-                        request.EndButtonText,
                         request.OnPick,
                         request.OnEnd);
                 }
-                else if (request.ShowEndButton)
+                else if (!string.IsNullOrWhiteSpace(request.ResultButtonText)
+                    || request.Options == null
+                    || request.Options.Count == 0)
                 {
                     request.OnEnd?.Invoke();
                 }

@@ -44,16 +44,14 @@ namespace GourmetProject.Game.Orchestration
             Action<ActiveTarget> onTargetConfirmed,
             Action onChanged);
 
-        /// <summary>事件页：在常驻壳中部展示事件背景、正文、结果、后续选项与结束按钮。</summary>
+        /// <summary>事件页：在常驻壳中部展示事件背景、正文、选项或结果结束按钮。</summary>
         void ShowEventPage(
             string title,
             string desc,
-            string result,
+            string resultButtonText,
             string bgSprite,
             IReadOnlyList<string> options,
             IReadOnlyList<bool> optionEnabled,
-            bool showEndButton,
-            string endButtonText,
             Action<int> onPick,
             Action onEnd);
 
@@ -846,8 +844,6 @@ namespace GourmetProject.Game.Orchestration
                 string.Empty,
                 new List<string>(),
                 new List<bool>(),
-                showEndButton: true,
-                endButtonText: "继续",
                 onPick: null,
                 onEnd: onContinue);
         }
@@ -975,14 +971,13 @@ namespace GourmetProject.Game.Orchestration
                 return;
             }
 
-            // 事件是一张「页面树」：从根页(正文=event.desc)进入，选项按 parentId 逐页展开直到终止。
-            // 一个事件复用同一条随机流（Gamble 等随机效果按序派生），全程内存态，仅结束时(onDone→Commit)存档。
+            // 一个事件复用同一条随机流（Gamble 等随机效果按序派生），选择一个选项后结算并等待玩家确认结果。
             IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Event, $"resolve_w{_run.WeekIndex}_d{DayKey(_run.CurrentDay)}_{ev.Id}");
-            EnterEventPage(ev, string.Empty, EventService.GetRootOptions(_run, ev.Id), rng, onDone);
+            EnterEventPage(ev, EventService.GetRootOptions(_run, ev.Id), rng, onDone);
         }
 
-        /// <summary>进入事件某页：初始页 resultText 为空；结果/子页 resultText 显示在下半区，可随时结束。</summary>
-        private void EnterEventPage(cfg.GameEvent ev, string resultText, List<cfg.EventOption> pageOptions, IRandomStream rng, Action onDone)
+        /// <summary>进入事件：展示所有根选项；如果没有可选项，则提供兜底结束按钮。</summary>
+        private void EnterEventPage(cfg.GameEvent ev, List<cfg.EventOption> pageOptions, IRandomStream rng, Action onDone)
         {
             var optionEnabled = new List<bool>();
             bool hasEnabledOption = false;
@@ -994,19 +989,17 @@ namespace GourmetProject.Game.Orchestration
                 hasEnabledOption |= enabled;
             }
 
-            if (pageOptions.Count == 0)
+            if (pageOptions.Count == 0 || !hasEnabledOption)
             {
                 ShowEventPage(
                     ev,
-                    resultText,
-                    pageOptions,
-                    optionEnabled,
-                    showEndButton: true,
-                    endButtonText: "结束",
+                    "结束",
+                    new List<cfg.EventOption>(),
+                    new List<bool>(),
                     onPick: null,
                     onEnd: () =>
                     {
-                        FinishEventAndContinue(ev, EventResolveResult.Immediate(resultText), onDone);
+                        FinishEventAndContinue(ev, EventResolveResult.Immediate(string.Empty), onDone);
                     });
                 return;
             }
@@ -1015,11 +1008,9 @@ namespace GourmetProject.Game.Orchestration
             List<bool> shownEnabled = optionEnabled;
             ShowEventPage(
                 ev,
-                resultText,
+                string.Empty,
                 shown,
                 shownEnabled,
-                showEndButton: !string.IsNullOrWhiteSpace(resultText) || !hasEnabledOption,
-                endButtonText: "结束",
                 onPick: index =>
                 {
                     if (index < 0 || index >= shown.Count)
@@ -1034,13 +1025,10 @@ namespace GourmetProject.Game.Orchestration
 
                     ChooseEventOption(ev, shown[index], rng, onDone);
                 },
-                onEnd: () =>
-                {
-                    FinishEventAndContinue(ev, EventResolveResult.Immediate(resultText), onDone);
-                });
+                onEnd: null);
         }
 
-        /// <summary>结算所选选项：施加效果→跟进类(战斗/商店/结局)终止 / 有子选项则进入子页 / 否则即时终止。</summary>
+        /// <summary>结算所选选项；全部效果处理完成后，仅展示 resultText 结束按钮。</summary>
         private void ChooseEventOption(cfg.GameEvent ev, cfg.EventOption option, IRandomStream rng, Action onDone)
         {
             if (RequiresRecipeDishDelete(option))
@@ -1050,56 +1038,30 @@ namespace GourmetProject.Game.Orchestration
             }
 
             EventResolveResult result = EventService.ResolveOption(_run, option, rng);
-            ContinueResolvedEventOption(ev, option, result, rng, onDone);
+            ContinueResolvedEventOption(ev, option, result, onDone);
         }
 
-        private void ContinueResolvedEventOption(cfg.GameEvent ev, cfg.EventOption option, EventResolveResult result, IRandomStream rng, Action onDone)
+        private void ContinueResolvedEventOption(cfg.GameEvent ev, cfg.EventOption option, EventResolveResult result, Action onDone)
         {
-
-            if (result.FollowUpKind != EventFollowUpKind.None)
-            {
-                ShowEventPage(
-                    ev,
-                    string.IsNullOrEmpty(result.Feedback) ? option.ResultText : ComposeEventText(result.Feedback, option.ResultText),
-                    new List<cfg.EventOption>(),
-                    new List<bool>(),
-                    showEndButton: true,
-                    endButtonText: "继续",
-                    onPick: null,
-                    onEnd: () =>
-                    {
-                        EventService.OnEventFinished(_run, ev, result);
-                        ContinueEventResult(ev.Name, ev.Id, result, onDone);
-                    });
-                return;
-            }
-
-            // 子页正文=效果反馈 + 选项 resultText（都空则回退当前页正文）。
-            string body = ComposeEventText(result.Feedback, option.ResultText);
-            List<cfg.EventOption> children = EventService.GetChildOptions(_run, option.Id);
-            if (option.RepeatSelf)
-            {
-                children.Insert(0, option);
-            }
-
-            if (children.Count > 0)
-            {
-                EnterEventPage(ev, body, children, rng, onDone);
-                return;
-            }
-
-            // 无子选项 → 显示结果页，玩家点击结束后才提交事件行动。
+            string resultButtonText = !string.IsNullOrWhiteSpace(option.ResultText)
+                ? option.ResultText
+                : (!string.IsNullOrWhiteSpace(result.Feedback) ? result.Feedback : "结束");
             ShowEventPage(
                 ev,
-                body,
-                children,
+                resultButtonText,
+                new List<cfg.EventOption>(),
                 new List<bool>(),
-                showEndButton: true,
-                endButtonText: "结束",
                 onPick: null,
                 onEnd: () =>
                 {
-                    FinishEventAndContinue(ev, result, onDone);
+                    if (result.FollowUpKind == EventFollowUpKind.None)
+                    {
+                        FinishEventAndContinue(ev, result, onDone);
+                        return;
+                    }
+
+                    EventService.OnEventFinished(_run, ev, result);
+                    ContinueEventResult(ev.Name, ev.Id, result, onDone);
                 });
         }
 
@@ -1108,19 +1070,17 @@ namespace GourmetProject.Game.Orchestration
             _view.OpenEventRecipeDishDelete(
                 _run,
                 option.Text,
-                onCancel: () => EnterEventPage(ev, string.Empty, EventService.GetRootOptions(_run, ev.Id), rng, onDone),
+                onCancel: () => EnterEventPage(ev, EventService.GetRootOptions(_run, ev.Id), rng, onDone),
                 onTargetConfirmed: target =>
                 {
                     if (_run == null || !_run.RemoveBonusDishAt(target.X, target.Y))
                     {
-                        EnterEventPage(ev, "目标菜品已经不存在，请重新选择。", EventService.GetRootOptions(_run, ev.Id), rng, onDone);
+                        EnterEventPage(ev, EventService.GetRootOptions(_run, ev.Id), rng, onDone);
                         return;
                     }
 
                     EventResolveResult result = EventService.ResolveOption(_run, option, rng, cfg.EffectType.SelectRemoveRecipeDish);
-                    string deleteFeedback = "已从菜谱中删除 1 道菜。";
-                    EventResolveResult composed = EventResolveResult.Immediate(ComposeEventText(deleteFeedback, result.Feedback));
-                    ContinueResolvedEventOption(ev, option, composed, rng, onDone);
+                    ContinueResolvedEventOption(ev, option, result, onDone);
                 },
                 onChanged: null);
         }
@@ -1163,11 +1123,9 @@ namespace GourmetProject.Game.Orchestration
 
         private void ShowEventPage(
             cfg.GameEvent ev,
-            string resultText,
+            string resultButtonText,
             IReadOnlyList<cfg.EventOption> options,
             IReadOnlyList<bool> optionEnabled,
-            bool showEndButton,
-            string endButtonText,
             Action<int> onPick,
             Action onEnd)
         {
@@ -1183,27 +1141,12 @@ namespace GourmetProject.Game.Orchestration
             _view.ShowEventPage(
                 ev != null ? ev.Name : string.Empty,
                 ev != null ? ev.Desc : string.Empty,
-                resultText,
+                resultButtonText,
                 ev != null ? ev.BgSprite : string.Empty,
                 optionTexts,
                 optionEnabled,
-                showEndButton,
-                endButtonText,
                 onPick,
                 onEnd);
-        }
-
-        /// <summary>拼接页文本：效果反馈在前、选项 resultText 在后；任一为空则取另一个。</summary>
-        private static string ComposeEventText(string feedback, string resultText)
-        {
-            bool hasFeedback = !string.IsNullOrEmpty(feedback);
-            bool hasResult = !string.IsNullOrEmpty(resultText);
-            if (hasFeedback && hasResult)
-            {
-                return feedback + "\n" + resultText;
-            }
-
-            return hasResult ? resultText : (feedback ?? string.Empty);
         }
 
         private void ContinueEventResult(string title, string eventId, EventResolveResult result, Action onDone)

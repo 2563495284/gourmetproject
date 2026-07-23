@@ -823,28 +823,24 @@ namespace GourmetProject.Game.UI.Battle
             }, PlayShowCardsWhenReady);
         }
 
-        /// <summary>事件页：专用中部面板，展示事件环境、正文、结果、后续选项与结束按钮。</summary>
+        /// <summary>事件页：专用中部面板，展示事件环境、正文、选项或结果结束按钮。</summary>
         public void ShowEventPage(
             string title,
             string desc,
-            string result,
+            string resultButtonText,
             string bgSprite,
             IReadOnlyList<string> options,
             IReadOnlyList<bool> optionEnabled,
-            bool showEndButton,
-            string endButtonText,
             Action<int> onPick,
             Action onEnd)
         {
             _eventPage?.Show(new EventPageRequest(
                 title,
                 desc,
-                result,
+                resultButtonText,
                 bgSprite,
                 options,
                 optionEnabled,
-                showEndButton,
-                endButtonText,
                 onPick,
                 onEnd));
         }

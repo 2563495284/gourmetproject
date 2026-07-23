@@ -14,8 +14,7 @@
     ],
     "effectParams": [
       "-"
-    ],
-    "repeatSelf": false
+    ]
   },
   {
     "id": "opt_midnight_menu",
@@ -32,8 +31,7 @@
     ],
     "effectParams": [
       "-"
-    ],
-    "repeatSelf": false
+    ]
   },
   {
     "id": "opt_midnight_leave",
@@ -50,8 +48,7 @@
     ],
     "effectParams": [
       "-"
-    ],
-    "repeatSelf": false
+    ]
   },
   {
     "id": "opt_recipe_page_cover",
@@ -68,8 +65,7 @@
     ],
     "effectParams": [
       "Dish"
-    ],
-    "repeatSelf": false
+    ]
   },
   {
     "id": "opt_recipe_page_body",
@@ -86,8 +82,7 @@
     ],
     "effectParams": [
       "dish_choice_3|祖传菜谱残页"
-    ],
-    "repeatSelf": false
+    ]
   },
   {
     "id": "opt_recipe_page_sell",
@@ -104,8 +99,7 @@
     ],
     "effectParams": [
       "-"
-    ],
-    "repeatSelf": false
+    ]
   },
   {
     "id": "opt_carpenter_wood",
@@ -122,8 +116,7 @@
     ],
     "effectParams": [
       "lay_wood"
-    ],
-    "repeatSelf": false
+    ]
   },
   {
     "id": "opt_carpenter_stone",
@@ -140,8 +133,7 @@
     ],
     "effectParams": [
       "lay_stone"
-    ],
-    "repeatSelf": false
+    ]
   },
   {
     "id": "opt_carpenter_metal",
@@ -158,8 +150,7 @@
     ],
     "effectParams": [
       "lay_metal"
-    ],
-    "repeatSelf": false
+    ]
   },
   {
     "id": "opt_statue_gold",
@@ -179,8 +170,7 @@
     "effectParams": [
       "-",
       "passive_choice_1"
-    ],
-    "repeatSelf": false
+    ]
   },
   {
     "id": "opt_statue_dish",
@@ -200,8 +190,7 @@
     "effectParams": [
       "-",
       "passive_choice_1"
-    ],
-    "repeatSelf": false
+    ]
   },
   {
     "id": "opt_statue_steal",
@@ -224,8 +213,7 @@
       "-",
       "active_grant_1",
       "-"
-    ],
-    "repeatSelf": false
+    ]
   },
   {
     "id": "opt_sign_food_street",
@@ -242,8 +230,7 @@
     ],
     "effectParams": [
       "Dish"
-    ],
-    "repeatSelf": false
+    ]
   },
   {
     "id": "opt_sign_secondhand",
@@ -260,8 +247,7 @@
     ],
     "effectParams": [
       "PassiveItem"
-    ],
-    "repeatSelf": false
+    ]
   },
   {
     "id": "opt_sign_mall",
@@ -278,8 +264,7 @@
     ],
     "effectParams": [
       "Gold"
-    ],
-    "repeatSelf": false
+    ]
   },
   {
     "id": "opt_delivery_normal",
@@ -299,8 +284,7 @@
     "effectParams": [
       "-",
       "-"
-    ],
-    "repeatSelf": false
+    ]
   },
   {
     "id": "opt_delivery_luxury",
@@ -320,8 +304,7 @@
     "effectParams": [
       "-",
       "-"
-    ],
-    "repeatSelf": false
+    ]
   },
   {
     "id": "opt_delivery_reject",
@@ -338,8 +321,7 @@
     ],
     "effectParams": [
       "-"
-    ],
-    "repeatSelf": false
+    ]
   },
   {
     "id": "opt_advance_passive",
@@ -359,8 +341,7 @@
     "effectParams": [
       "passive_choice_1",
       "PassiveItem"
-    ],
-    "repeatSelf": false
+    ]
   },
   {
     "id": "opt_advance_fragment",
@@ -380,8 +361,7 @@
     "effectParams": [
       "fragment_choice_3",
       "Fragment"
-    ],
-    "repeatSelf": false
+    ]
   },
   {
     "id": "opt_advance_active",
@@ -401,8 +381,7 @@
     "effectParams": [
       "active_grant_1",
       "-1"
-    ],
-    "repeatSelf": false
+    ]
   },
   {
     "id": "opt_casserole_i_food",
@@ -422,8 +401,7 @@
     "effectParams": [
       "-",
       "-"
-    ],
-    "repeatSelf": false
+    ]
   },
   {
     "id": "opt_casserole_i_flavored",
@@ -443,8 +421,7 @@
     "effectParams": [
       "flavored",
       "wishing_casserole|act_event"
-    ],
-    "repeatSelf": false
+    ]
   },
   {
     "id": "opt_casserole_i_gold",
@@ -464,8 +441,7 @@
     "effectParams": [
       "-",
       "passive_choice_1"
-    ],
-    "repeatSelf": false
+    ]
   },
   {
     "id": "opt_casserole_ii_flavored",
@@ -485,8 +461,7 @@
     "effectParams": [
       "flavored",
       "flavored_dish_3"
-    ],
-    "repeatSelf": false
+    ]
   },
   {
     "id": "opt_casserole_ii_gold",
@@ -506,8 +481,7 @@
     "effectParams": [
       "-",
       "legendary_choice_1"
-    ],
-    "repeatSelf": false
+    ]
   },
   {
     "id": "opt_casserole_ii_actives",
@@ -524,7 +498,6 @@
     ],
     "effectParams": [
       "-"
-    ],
-    "repeatSelf": false
+    ]
   }
 ]

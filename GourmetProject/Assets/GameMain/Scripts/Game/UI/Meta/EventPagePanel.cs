@@ -6,51 +6,54 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>
-    /// 事件页面中部面板：展示事件环境背景、标题/正文、结果文本、后续选项与结束按钮。
+    /// 事件页面中部面板：先展示事件选项，选择后改为展示以结果文本为标签的结束按钮。
     /// 规则与结算由 WeekLoopController / EventService 驱动，本组件只负责数据绑定和点击回调。
     /// </summary>
     public sealed class EventPagePanel : MonoBehaviour
     {
+        private const float ResultButtonMinWidth = 128f;
+        private const float ResultButtonHorizontalPadding = 56f;
+
         [SerializeField] private Image _backgroundImage;
         [SerializeField] private Sprite _defaultBackgroundSprite;
         [SerializeField] private Text _titleText;
         [SerializeField] private Text _descriptionText;
-        [SerializeField] private Text _resultText;
         [SerializeField] private RectTransform _optionsRoot;
         [SerializeField] private Button _optionButtonTemplate;
-        [SerializeField] private Button _endButton;
-        [SerializeField] private Text _endButtonLabel;
 
-        private readonly List<Button> _spawnedOptions = new();
+        private readonly List<Button> _spawnedButtons = new();
         private bool _resolved;
 
         public void Open(
             string title,
             string description,
-            string result,
+            string resultButtonText,
             string bgSpritePath,
             IReadOnlyList<string> options,
             IReadOnlyList<bool> optionEnabled,
-            bool showEndButton,
-            string endButtonText,
             Action<int> onPick,
             Action onEnd)
         {
-            ClearOptions();
+            ClearButtons();
             _resolved = false;
             gameObject.SetActive(true);
 
             SetText(_titleText, title);
             SetText(_descriptionText, description);
-            SetText(_resultText, result);
             SetVisible(_descriptionText, !string.IsNullOrWhiteSpace(description));
-            SetVisible(_resultText, !string.IsNullOrWhiteSpace(result));
             SetBackground(bgSpritePath);
 
             int count = options?.Count ?? 0;
+            bool showResultButton = !string.IsNullOrWhiteSpace(resultButtonText) || count == 0;
             if (_optionsRoot != null)
             {
-                _optionsRoot.gameObject.SetActive(count > 0);
+                _optionsRoot.gameObject.SetActive(showResultButton || count > 0);
+            }
+
+            if (showResultButton)
+            {
+                CreateResultButton(resultButtonText, onEnd);
+                return;
             }
 
             for (int i = 0; i < count; i++)
@@ -58,32 +61,11 @@ namespace GourmetProject.Game.UI.Meta
                 bool interactable = optionEnabled == null || i >= optionEnabled.Count || optionEnabled[i];
                 CreateOption(i, options[i], interactable, onPick);
             }
-
-            if (_endButton != null)
-            {
-                _endButton.gameObject.SetActive(showEndButton);
-                _endButton.onClick.RemoveAllListeners();
-                _endButton.onClick.AddListener(() =>
-                {
-                    if (_resolved)
-                    {
-                        return;
-                    }
-
-                    _resolved = true;
-                    onEnd?.Invoke();
-                });
-            }
-
-            if (_endButtonLabel != null)
-            {
-                _endButtonLabel.text = string.IsNullOrWhiteSpace(endButtonText) ? "结束" : endButtonText;
-            }
         }
 
         public void Close()
         {
-            ClearOptions();
+            ClearButtons();
             gameObject.SetActive(false);
         }
 
@@ -115,23 +97,83 @@ namespace GourmetProject.Game.UI.Meta
                     }
 
                     _resolved = true;
+                    ClearButtons();
                     onPick?.Invoke(index);
                 });
             }
-            _spawnedOptions.Add(button);
+            _spawnedButtons.Add(button);
         }
 
-        private void ClearOptions()
+        private void CreateResultButton(string resultText, Action onEnd)
         {
-            foreach (Button button in _spawnedOptions)
+            if (_optionsRoot == null || _optionButtonTemplate == null)
+            {
+                onEnd?.Invoke();
+                return;
+            }
+
+            Button button = Instantiate(_optionButtonTemplate, _optionsRoot);
+            button.gameObject.name = "EventResult";
+            button.gameObject.SetActive(true);
+
+            Text text = button.GetComponentInChildren<Text>(true);
+            if (text != null)
+            {
+                text.text = string.IsNullOrWhiteSpace(resultText) ? "结束" : resultText;
+                ApplyResultButtonWidth(button, text);
+            }
+
+            button.onClick.RemoveAllListeners();
+            button.interactable = true;
+            button.onClick.AddListener(() =>
+            {
+                if (_resolved)
+                {
+                    return;
+                }
+
+                _resolved = true;
+                onEnd?.Invoke();
+            });
+            _spawnedButtons.Add(button);
+        }
+
+        private static void ApplyResultButtonWidth(Button button, Text label)
+        {
+            float width = Mathf.Max(ResultButtonMinWidth, label.preferredWidth + ResultButtonHorizontalPadding);
+            if (button.transform is RectTransform rectTransform)
+            {
+                rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
+            }
+
+            LayoutElement layoutElement = button.GetComponent<LayoutElement>();
+            if (layoutElement != null)
+            {
+                layoutElement.minWidth = width;
+                layoutElement.preferredWidth = width;
+                layoutElement.flexibleWidth = 0f;
+            }
+        }
+
+        private void ClearButtons()
+        {
+            foreach (Button button in _spawnedButtons)
             {
                 if (button != null)
                 {
-                    Destroy(button.gameObject);
+                    button.gameObject.SetActive(false);
+                    if (Application.isPlaying)
+                    {
+                        Destroy(button.gameObject);
+                    }
+                    else
+                    {
+                        DestroyImmediate(button.gameObject);
+                    }
                 }
             }
 
-            _spawnedOptions.Clear();
+            _spawnedButtons.Clear();
             if (_optionButtonTemplate != null)
             {
                 _optionButtonTemplate.gameObject.SetActive(false);
