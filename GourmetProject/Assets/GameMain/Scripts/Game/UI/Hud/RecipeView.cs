@@ -21,7 +21,7 @@ namespace GourmetProject.Game.UI.Hud
     }
 
     /// <summary>
-    /// 底部扇形菜谱条：把各本菜谱本（+商店态末尾的「购买空菜谱」）按扇形排布，替代原 RecipeDrawer(BottomDrawer)。
+    /// 底部扇形菜谱条：把各本菜谱本（+商店态末尾的「购买空菜谱」）按扇形排布。
     /// 三态：隐藏 / 显示(完全展开) / 收缩(只露一点，鼠标移到底部区时从左到右逐张弹起)。
     /// 状态切换与菜谱本增减都走协程补间动画。卡片固定结构在 <see cref="RecipeCardView"/> / <see cref="RecipeAddCardView"/>。
     /// </summary>
