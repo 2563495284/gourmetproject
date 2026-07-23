@@ -64,9 +64,10 @@ namespace GourmetProject.Game.Meta
     /// <summary>
     /// 事件结算：
     /// - <see cref="cfg.GameEvent"/>（TbEvent）是事件池条目：正文/权重/前置/可重复。
-    /// - <see cref="cfg.EventOption"/>（TbEventOption）是事件选项；选中后施加效果，
-    ///   再以 <see cref="cfg.EventOption.ResultText"/> 作为结束按钮文本等待玩家确认。
-    ///   跟进类效果（FoodBattle/Shop/GameOver/Victory）为终止分支。
+    /// - <see cref="cfg.EventOption"/>（TbEventOption）是流程边：parentId 为空时属于根页，
+    ///   否则挂在父选项之后。选中后先施加效果；有子选项时 ResultText 成为下一页描述，
+    ///   无子选项时 ResultText 成为结束按钮文本。
+    /// - 跟进类效果（FoodBattle/Shop/GameOver/Victory）以及奖励弹窗会终止当前分支。
     /// 页面导航全程内存态，仅在事件结束（onDone→Commit）时存档；结束时写入 UsedEventIds。
     /// </summary>
     public static class EventService
@@ -84,6 +85,27 @@ namespace GourmetProject.Game.Meta
             foreach (cfg.EventOption opt in tables.TbEventOption.DataList)
             {
                 if (opt.EventId == eventId && string.IsNullOrEmpty(opt.ParentId))
+                {
+                    options.Add(opt);
+                }
+            }
+
+            return options;
+        }
+
+        /// <summary>取父选项之后的下一组选项；同时校验 eventId，避免跨事件串线。</summary>
+        public static List<cfg.EventOption> GetChildOptions(GameRun run, string eventId, string parentOptionId)
+        {
+            var options = new List<cfg.EventOption>();
+            if (string.IsNullOrEmpty(eventId) || string.IsNullOrEmpty(parentOptionId))
+            {
+                return options;
+            }
+
+            cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
+            foreach (cfg.EventOption opt in tables.TbEventOption.DataList)
+            {
+                if (opt.EventId == eventId && opt.ParentId == parentOptionId)
                 {
                     options.Add(opt);
                 }

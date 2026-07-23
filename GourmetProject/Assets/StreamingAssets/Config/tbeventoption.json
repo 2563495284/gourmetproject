@@ -499,5 +499,124 @@
     "effectParams": [
       "-"
     ]
+  },
+  {
+    "id": "opt_roast_meat_pork",
+    "eventId": "ev_roast_meat",
+    "parentId": "",
+    "text": "吃猪肉，-30金币",
+    "resultText": "猪肉好香好美味",
+    "condition": "",
+    "effectTypes": [
+      1
+    ],
+    "effectValues": [
+      -30
+    ],
+    "effectParams": [
+      "-"
+    ]
+  },
+  {
+    "id": "opt_roast_meat_beef",
+    "eventId": "ev_roast_meat",
+    "parentId": "",
+    "text": "吃牛肉",
+    "resultText": "被毒死了",
+    "condition": "",
+    "effectTypes": [
+      9
+    ],
+    "effectValues": [
+      0
+    ],
+    "effectParams": [
+      "被毒死了"
+    ]
+  },
+  {
+    "id": "opt_roast_meat_mutton",
+    "eventId": "ev_roast_meat",
+    "parentId": "",
+    "text": "吃羊肉",
+    "resultText": "羊肉好香好美味",
+    "condition": "",
+    "effectTypes": [
+      0
+    ],
+    "effectValues": [
+      0
+    ],
+    "effectParams": [
+      "-"
+    ]
+  },
+  {
+    "id": "opt_roast_meat_pork_all",
+    "eventId": "ev_roast_meat",
+    "parentId": "opt_roast_meat_pork",
+    "text": "全部吃完",
+    "resultText": "获得食物烤猪肉",
+    "condition": "",
+    "effectTypes": [
+      5
+    ],
+    "effectValues": [
+      1
+    ],
+    "effectParams": [
+      "dish_grant_1|获得食物烤猪肉"
+    ]
+  },
+  {
+    "id": "opt_roast_meat_pork_half",
+    "eventId": "ev_roast_meat",
+    "parentId": "opt_roast_meat_pork",
+    "text": "吃一半",
+    "resultText": "非常开心",
+    "condition": "",
+    "effectTypes": [
+      0
+    ],
+    "effectValues": [
+      0
+    ],
+    "effectParams": [
+      "-"
+    ]
+  },
+  {
+    "id": "opt_roast_meat_pork_other_half",
+    "eventId": "ev_roast_meat",
+    "parentId": "opt_roast_meat_pork_half",
+    "text": "吃另一半",
+    "resultText": "获得食物烤猪肉",
+    "condition": "",
+    "effectTypes": [
+      5
+    ],
+    "effectValues": [
+      1
+    ],
+    "effectParams": [
+      "dish_grant_1|获得食物烤猪肉"
+    ]
+  },
+  {
+    "id": "opt_roast_meat_mutton_all",
+    "eventId": "ev_roast_meat",
+    "parentId": "opt_roast_meat_mutton",
+    "text": "全部吃完",
+    "resultText": "获得食物烤羊肉",
+    "condition": "",
+    "effectTypes": [
+      5
+    ],
+    "effectValues": [
+      1
+    ],
+    "effectParams": [
+      "dish_grant_1|获得食物烤羊肉"
+    ]
   }
 ]
