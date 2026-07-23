@@ -22,6 +22,7 @@ namespace GourmetProject.Game.UI.Hud
     public sealed class ServingOutletView : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
     {
         private const float BottomPaddingPixels = 12f;
+        private const float PreparedDishRaycastPadding = 24f;
 
         [SerializeField] private RecipeCardView _recipeSummary;
         [SerializeField] private Button _serveButton;
@@ -86,7 +87,7 @@ namespace GourmetProject.Game.UI.Hud
             BattleSession session,
             Action onServe,
             Action onInspect,
-            Action onDishHoverEntered,
+            Func<bool> onDishHoverEntered,
             Action onDishHoverExited,
             Action<Vector2> beginDrag,
             Action<Vector2> drag,
@@ -177,6 +178,9 @@ namespace GourmetProject.Game.UI.Hud
             {
                 _dishImage.gameObject.SetActive(waitingForDrag);
                 _dishImage.raycastTarget = waitingForDrag;
+                _dishImage.raycastPadding = waitingForDrag
+                    ? Vector4.one * -PreparedDishRaycastPadding
+                    : Vector4.zero;
                 if (waitingForDrag)
                 {
                     _dishImage.sprite = _spriteProvider.Get(prepared.Definition);

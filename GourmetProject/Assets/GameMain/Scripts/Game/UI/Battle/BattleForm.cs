@@ -52,6 +52,14 @@ namespace GourmetProject.Game.UI.Battle
         private const string Tag = "Battle";
         private const float ShopItemFlyDuration = 0.42f;
 
+        private enum FoodTipsHoverOwner
+        {
+            None,
+            TableDish,
+            TableCell,
+            ServingOutlet,
+        }
+
         /// <summary>当前打开的战斗界面，供各弹窗回调推进周循环。</summary>
         public static BattleForm Active { get; private set; }
 
@@ -153,6 +161,7 @@ namespace GourmetProject.Game.UI.Battle
         private bool _discardSettlementCallbacks;
         private DishPieceView _hoveredDishPiece;
         private DiningTableCellView _hoveredCell;
+        private FoodTipsHoverOwner _foodTipsHoverOwner;
         private SettlementRevealState _settlementReveal;
         private int _displayedCakeLayers;
         private int? _pendingSettlementCakeLayers;
@@ -1227,6 +1236,7 @@ namespace GourmetProject.Game.UI.Battle
         {
             _hoveredDishPiece = null;
             _hoveredCell = null;
+            _foodTipsHoverOwner = FoodTipsHoverOwner.None;
             if (_tips != null)
             {
                 _tips.HideAll();
@@ -1860,41 +1870,50 @@ namespace GourmetProject.Game.UI.Battle
 
             _hoveredDishPiece = piece;
             _hoveredCell = null;
+            _foodTipsHoverOwner = FoodTipsHoverOwner.TableDish;
             RebindHoveredDishTips(piece);
             (_world ?? BattleWorldController.Instance)?.ShowDishScopeHighlights(piece.Instance);
         }
 
-        private void OnServingOutletDishHoverEntered(ServingOutletView servingOutlet)
+        private bool OnServingOutletDishHoverEntered(ServingOutletView servingOutlet)
         {
             if (_current != GameplayView.Food
                 || servingOutlet == null
                 || _session?.PreparedServe?.Dish == null
                 || _tips == null)
             {
-                return;
+                return false;
             }
 
             FoodTipsView tips = _tips.Food;
             if (tips == null)
             {
-                return;
+                return false;
             }
 
             _hoveredDishPiece = null;
             _hoveredCell = null;
+            _foodTipsHoverOwner = FoodTipsHoverOwner.ServingOutlet;
             tips.Bind(_session.PreparedServe.Dish, null, _session.Database);
             tips.Show();
             tips.transform.SetAsLastSibling();
 
             BattleWorldController world = _world ?? BattleWorldController.Instance;
+            world?.ClearDishScopeHighlights();
             tips.PlaceAroundWorldBounds(
                 servingOutlet.DishWorldBounds,
                 world != null ? world.WorldCamera : Camera.main,
                 GetComponentInParent<Canvas>());
+            return true;
         }
 
         private void OnServingOutletDishHoverExited()
         {
+            if (_foodTipsHoverOwner != FoodTipsHoverOwner.ServingOutlet)
+            {
+                return;
+            }
+
             HideFoodTips();
         }
 
@@ -1983,6 +2002,11 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnDishHoverExited(DishPieceView piece)
         {
+            if (_foodTipsHoverOwner != FoodTipsHoverOwner.TableDish)
+            {
+                return;
+            }
+
             if (_hoveredDishPiece != null && piece != null && _hoveredDishPiece != piece)
             {
                 return;
@@ -2034,6 +2058,7 @@ namespace GourmetProject.Game.UI.Battle
             (_world ?? BattleWorldController.Instance)?.ClearDishScopeHighlights();
             _hoveredDishPiece = null;
             _hoveredCell = cell;
+            _foodTipsHoverOwner = FoodTipsHoverOwner.TableCell;
             tips.BindMaterialsOnly(materials);
             tips.Show();
             tips.transform.SetAsLastSibling();
@@ -2068,21 +2093,24 @@ namespace GourmetProject.Game.UI.Battle
 
         private void HideCellMaterialTips(DiningTableCellView cell)
         {
+            if (_foodTipsHoverOwner != FoodTipsHoverOwner.TableCell)
+            {
+                return;
+            }
+
             if (_hoveredCell != null && cell != null && _hoveredCell != cell)
             {
                 return;
             }
 
-            if (_hoveredDishPiece == null)
-            {
-                HideFoodTips();
-            }
+            HideFoodTips();
         }
 
         private void HideFoodTips()
         {
             _hoveredDishPiece = null;
             _hoveredCell = null;
+            _foodTipsHoverOwner = FoodTipsHoverOwner.None;
             (_world ?? BattleWorldController.Instance)?.ClearDishScopeHighlights();
             if (_tips != null)
             {
