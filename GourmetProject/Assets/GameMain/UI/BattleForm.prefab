@@ -11474,14 +11474,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: RecipeReadonlyBookView
       objectReference: {fileID: 0}
-    - target: {fileID: 340822506070461114, guid: 34528d52803b847879e14ad815f88c34, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5393761621085186644, guid: 34528d52803b847879e14ad815f88c34, type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: 560
-      objectReference: {fileID: 0}
     - target: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
