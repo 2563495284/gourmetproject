@@ -18,8 +18,11 @@ namespace GourmetProject.Game.UI.Hud
     /// 战斗底部出餐口：负责显示菜谱可放统计、准备出餐按钮，以及等待玩家拖到餐桌的食物。
     /// 具体餐桌预览与提交由 <see cref="BattleWorldController"/> 完成。
     /// </summary>
+    [RequireComponent(typeof(Canvas), typeof(GraphicRaycaster))]
     public sealed class ServingOutletView : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
     {
+        private const float BottomPaddingPixels = 12f;
+
         [SerializeField] private RecipeCardView _recipeSummary;
         [SerializeField] private Button _serveButton;
         [SerializeField] private Image _serveBellImage;
@@ -39,8 +42,32 @@ namespace GourmetProject.Game.UI.Hud
         private Action<Vector2> _drag;
         private Func<Vector2, bool> _endDrag;
         private bool _dragging;
+        private Camera _worldCamera;
+        private Canvas _worldCanvas;
+        private ServingOutletDishHoverTrigger _dishHoverTrigger;
+        private int _lastScreenWidth;
+        private int _lastScreenHeight;
+        private float _lastOrthographicSize = -1f;
 
         public ServingOutletState State { get; private set; }
+
+        public void ConfigureWorldSpace(Camera worldCamera)
+        {
+            _worldCamera = worldCamera != null ? worldCamera : Camera.main;
+            _worldCanvas = GetComponent<Canvas>();
+            if (_worldCanvas == null)
+            {
+                Debug.LogError($"{nameof(ServingOutletView)} 缺少 World Space Canvas。", this);
+                return;
+            }
+
+            _worldCanvas.renderMode = RenderMode.WorldSpace;
+            _worldCanvas.worldCamera = _worldCamera;
+            _worldCanvas.overrideSorting = true;
+            _worldCanvas.sortingLayerName = BattleSorting.WorldUi;
+            _worldCanvas.sortingOrder = 0;
+            UpdateWorldSpaceLayout(force: true);
+        }
 
         public void SetVisible(bool visible)
         {
@@ -48,12 +75,19 @@ namespace GourmetProject.Game.UI.Hud
             {
                 gameObject.SetActive(visible);
             }
+
+            if (visible)
+            {
+                UpdateWorldSpaceLayout(force: true);
+            }
         }
 
         public void Bind(
             BattleSession session,
             Action onServe,
             Action onInspect,
+            Action onDishHoverEntered,
+            Action onDishHoverExited,
             Action<Vector2> beginDrag,
             Action<Vector2> drag,
             Func<Vector2, bool> endDrag)
@@ -62,6 +96,8 @@ namespace GourmetProject.Game.UI.Hud
             _drag = drag;
             _endDrag = endDrag;
             _dragging = false;
+            EnsureDishHoverTrigger();
+            _dishHoverTrigger?.Bind(onDishHoverEntered, onDishHoverExited);
 
             int placeable = 0;
             int blocked = 0;
@@ -124,6 +160,11 @@ namespace GourmetProject.Game.UI.Hud
             SetText(_titleText, "出餐口");
 
             bool waitingForDrag = state == ServingOutletState.WaitingForDishDrag && prepared != null;
+            if (!waitingForDrag)
+            {
+                _dishHoverTrigger?.CancelHover();
+            }
+
             if (_serveBellImage != null)
             {
                 _serveBellImage.gameObject.SetActive(!waitingForDrag);
@@ -176,6 +217,7 @@ namespace GourmetProject.Game.UI.Hud
             }
 
             _dragging = true;
+            _dishHoverTrigger?.CancelHover();
             SetDishAlpha(0.35f);
             _beginDrag?.Invoke(eventData.position);
             eventData.Use();
@@ -209,6 +251,53 @@ namespace GourmetProject.Game.UI.Hud
             eventData?.Use();
         }
 
+        private void LateUpdate()
+        {
+            UpdateWorldSpaceLayout(force: false);
+        }
+
+        private void UpdateWorldSpaceLayout(bool force)
+        {
+            if (_worldCanvas == null || _worldCanvas.renderMode != RenderMode.WorldSpace)
+            {
+                return;
+            }
+
+            Camera camera = _worldCamera != null ? _worldCamera : Camera.main;
+            if (camera == null || Screen.height <= 0)
+            {
+                return;
+            }
+
+            float orthoSize = camera.orthographic ? camera.orthographicSize : 0f;
+            if (!force
+                && _lastScreenWidth == Screen.width
+                && _lastScreenHeight == Screen.height
+                && Mathf.Approximately(_lastOrthographicSize, orthoSize))
+            {
+                return;
+            }
+
+            _lastScreenWidth = Screen.width;
+            _lastScreenHeight = Screen.height;
+            _lastOrthographicSize = orthoSize;
+
+            RectTransform rect = (RectTransform)transform;
+            float panelHeightPixels = Mathf.Max(1f, rect.rect.height);
+            float centerViewportY = (BottomPaddingPixels + panelHeightPixels * 0.5f) / Screen.height;
+            float depth = Mathf.Abs(camera.transform.position.z);
+            Vector3 center = camera.ViewportToWorldPoint(new Vector3(0.5f, centerViewportY, depth));
+            center.z = 0f;
+
+            float worldUnitsPerPixel = camera.orthographic
+                ? camera.orthographicSize * 2f / Screen.height
+                : Mathf.Max(0.0001f, rect.localScale.x);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.position = center;
+            rect.rotation = Quaternion.identity;
+            rect.localScale = Vector3.one * worldUnitsPerPixel;
+        }
+
         private void SetDishAlpha(float alpha)
         {
             if (_dishImage == null)
@@ -219,6 +308,41 @@ namespace GourmetProject.Game.UI.Hud
             Color color = _dishImage.color;
             color.a = alpha;
             _dishImage.color = color;
+        }
+
+        public Bounds DishWorldBounds
+        {
+            get
+            {
+                if (_dishImage == null)
+                {
+                    return new Bounds(transform.position, Vector3.zero);
+                }
+
+                RectTransform rect = _dishImage.rectTransform;
+                var corners = new Vector3[4];
+                rect.GetWorldCorners(corners);
+                var bounds = new Bounds(corners[0], Vector3.zero);
+                for (int i = 1; i < corners.Length; i++)
+                {
+                    bounds.Encapsulate(corners[i]);
+                }
+
+                return bounds;
+            }
+        }
+
+        private void EnsureDishHoverTrigger()
+        {
+            if (_dishHoverTrigger == null && _dishImage != null)
+            {
+                _dishHoverTrigger = _dishImage.GetComponent<ServingOutletDishHoverTrigger>();
+            }
+
+            if (_dishHoverTrigger == null)
+            {
+                Debug.LogError($"{nameof(ServingOutletView)} prefab 的 PreparedDish 缺少 {nameof(ServingOutletDishHoverTrigger)}。", this);
+            }
         }
 
         private void SetBackground(Color color)

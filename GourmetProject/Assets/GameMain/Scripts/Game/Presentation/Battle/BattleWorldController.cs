@@ -110,6 +110,8 @@ namespace GourmetProject.Game.Presentation.Battle
         /// <summary>当前已加载战斗场景里的控制器实例（由战斗 UI/流程取用）。</summary>
         public static BattleWorldController Instance { get; private set; }
 
+        public Camera WorldCamera => _camera != null ? _camera : Camera.main;
+
         public bool CanEnterTableView
             => _worldMode != WorldMode.TableView
                 && _worldMode != WorldMode.TableCellTargeting
@@ -654,8 +656,8 @@ namespace GourmetProject.Game.Presentation.Battle
             ComputeViewport();
             BuildTable(session.DiningTable);
             EnsureSequencer();
-            // 道具（被动/主动）与菜谱面板已迁到常驻屏幕空间 HUD（BattleForm），世界空间不再渲染这些面板；
-            // 世界空间只保留餐桌、菜品、上菜/结算演出与涂鸦表现。
+            // 道具（被动/主动）与右下角菜谱仍在屏幕空间 HUD；
+            // 出餐口是 World Space Canvas，和餐桌、菜品、上菜/结算演出、涂鸦一起由战斗世界承载。
             HideWorldPanels();
             SetFoodWorldElementsVisible(true);
             RebuildPlacedPieces();
@@ -880,7 +882,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _cakeLayerFx.Configure(this, _camera);
         }
 
-        /// <summary>隐藏迁到 HUD 的世界空间面板：被动/主动道具槽、道具标题、菜谱书。</summary>
+        /// <summary>隐藏已迁到 HUD 的旧世界空间面板：被动/主动道具槽与旧菜谱书。</summary>
         private void HideWorldPanels()
         {
             if (_passiveItemsRoot != null)
@@ -935,6 +937,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
+            ClearDishScopeHighlights();
             PreparedServeDish prepared = _session.PreparedServe;
             DishPieceView piece = InstantiateLoosePiece(prepared.Dish, "ServingOutletDragPreview");
             if (piece == null)
@@ -964,12 +967,14 @@ namespace GourmetProject.Game.Presentation.Battle
                 _outletDragPiece.UpdatePlacement(placement);
                 _outletDragPiece.transform.localPosition = _boardView.Mapper.CellCenterLocal(placement.Origin);
                 _outletDragPiece.SetPlacementGlow(true, true);
+                ShowDishScopeHighlights(_outletDragPiece.Instance);
             }
             else
             {
                 _outletHoverPlacement = null;
-                _outletDragPiece.transform.position = world;
+                MoveOccupiedCellCenterToWorld(_outletDragPiece, world);
                 _outletDragPiece.SetPlacementGlow(true, false);
+                ClearDishScopeHighlights();
             }
         }
 
@@ -1038,16 +1043,26 @@ namespace GourmetProject.Game.Presentation.Battle
                 return false;
             }
 
-            GridPos origin = _boardView.Mapper.NearestCell(world);
-            for (int i = 0; i < prepared.Placements.Count; i++)
+            int preferredRotation = prepared.Dish.Placement.RotationIndex;
+            for (int pass = 0; pass < 2; pass++)
             {
-                Placement candidate = prepared.Placements[i];
-                if (candidate.Origin.X == origin.X
-                    && candidate.Origin.Y == origin.Y
-                    && _session.DiningTable.CanPlace(candidate.Orientation, candidate.Origin))
+                for (int i = 0; i < prepared.Placements.Count; i++)
                 {
-                    placement = candidate;
-                    return true;
+                    Placement candidate = prepared.Placements[i];
+                    bool preferred = candidate.RotationIndex == preferredRotation;
+                    if ((pass == 0 && !preferred) || (pass == 1 && preferred))
+                    {
+                        continue;
+                    }
+
+                    GridPos origin = NearestOriginForOccupiedCellCenter(world, candidate.Orientation);
+                    if (candidate.Origin.X == origin.X
+                        && candidate.Origin.Y == origin.Y
+                        && _session.DiningTable.CanPlace(candidate.Orientation, candidate.Origin))
+                    {
+                        placement = candidate;
+                        return true;
+                    }
                 }
             }
 
@@ -1056,6 +1071,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void ClearOutletDragPreview()
         {
+            ClearDishScopeHighlights();
             if (_outletDragPiece != null)
             {
                 Destroy(_outletDragPiece.gameObject);
@@ -1132,6 +1148,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _movingOriginalPlacement = dish.Placement;
             _movingHoverPlacement = null;
             _session.DiningTable.RemoveDish(dish);
+            ClearDishScopeHighlights();
             piece.SetGhost(true);
             piece.SetFlying(true);
             piece.SetPlacementGlow(true, true);
@@ -1152,12 +1169,14 @@ namespace GourmetProject.Game.Presentation.Battle
                 _movingPiece.UpdatePlacement(placement);
                 _movingPiece.transform.localPosition = _boardView.Mapper.CellCenterLocal(placement.Origin);
                 _movingPiece.SetPlacementGlow(true, true);
+                ShowDishScopeHighlights(_movingPiece.Instance);
             }
             else
             {
                 _movingHoverPlacement = null;
-                _movingPiece.transform.position = world;
+                MoveOccupiedCellCenterToWorld(_movingPiece, world);
                 _movingPiece.SetPlacementGlow(true, false);
+                ClearDishScopeHighlights();
             }
         }
 
@@ -1171,6 +1190,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             UpdateMovableDishDrag(screenPoint);
+            ClearDishScopeHighlights();
             DishPieceView piece = _movingPiece;
             DishInstance dish = piece.Instance;
             Placement placement = _movingHoverPlacement ?? _movingOriginalPlacement;
@@ -1195,7 +1215,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 return false;
             }
 
-            GridPos origin = _boardView.Mapper.NearestCell(world);
             IReadOnlyList<Placement> placements = _session.FindMovableDishPlacements(dish);
 
             // 优先保持当前朝向；若该原点只允许其它朝向，则使用第一个合法朝向。
@@ -1204,6 +1223,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 for (int i = 0; i < placements.Count; i++)
                 {
                     Placement candidate = placements[i];
+                    GridPos origin = NearestOriginForOccupiedCellCenter(world, candidate.Orientation);
                     if (candidate.Origin.X != origin.X || candidate.Origin.Y != origin.Y)
                     {
                         continue;
@@ -1222,6 +1242,50 @@ namespace GourmetProject.Game.Presentation.Battle
             return false;
         }
 
+        private GridPos NearestOriginForOccupiedCellCenter(Vector3 centerWorld, DishShape shape)
+        {
+            DiningTableCoordinateMapper mapper = _boardView?.Mapper;
+            if (mapper == null)
+            {
+                return default;
+            }
+
+            Vector3 localCenter = mapper.Root != null
+                ? mapper.Root.InverseTransformPoint(centerWorld)
+                : centerWorld;
+            Vector3 originCenterLocal = localCenter - OccupiedCellCenterOffsetLocal(shape, mapper.Pitch);
+            Vector3 originCenterWorld = mapper.Root != null
+                ? mapper.Root.TransformPoint(originCenterLocal)
+                : originCenterLocal;
+            return mapper.NearestCell(originCenterWorld);
+        }
+
+        private static Vector3 OccupiedCellCenterOffsetLocal(DishShape shape, float pitch)
+        {
+            if (shape == null || shape.CellCount <= 0)
+            {
+                return Vector3.zero;
+            }
+
+            Vector3 sum = Vector3.zero;
+            foreach (GridPos cell in shape.Cells)
+            {
+                sum += new Vector3(cell.X * pitch, -cell.Y * pitch, 0f);
+            }
+
+            return sum / shape.CellCount;
+        }
+
+        private static void MoveOccupiedCellCenterToWorld(DishPieceView piece, Vector3 centerWorld)
+        {
+            if (piece == null)
+            {
+                return;
+            }
+
+            piece.transform.position += centerWorld - piece.OccupiedCellCenterWorld();
+        }
+
         private void LockMovableDish()
         {
             if (_movableDishId > 0 && _dishViewsById.TryGetValue(_movableDishId, out DishPieceView piece) && piece != null)
@@ -1235,6 +1299,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void CancelServeInteractions()
         {
+            ClearDishScopeHighlights();
             ClearOutletDragPreview();
             if (_movingPiece?.Instance != null && _session?.DiningTable != null)
             {

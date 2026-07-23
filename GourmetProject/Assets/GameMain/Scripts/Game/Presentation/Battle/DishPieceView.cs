@@ -142,6 +142,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private bool _clickEnabled = true;
         private bool _hovered;
         private bool _moveDragging;
+        private bool _flying;
         private MaterialPropertyBlock _stainBlock;
         private MaterialPropertyBlock _placementGlowBlock;
         private Tween _settlementFeedbackTween;
@@ -313,6 +314,7 @@ namespace GourmetProject.Game.Presentation.Battle
         public void SetFlying(bool flying)
         {
             EnsureRefs();
+            _flying = flying;
             string layer = flying ? BattleSorting.PiecesFlying : BattleSorting.Pieces;
             if (_spriteRenderer != null)
             {
@@ -343,6 +345,21 @@ namespace GourmetProject.Game.Presentation.Battle
                 float safeScale = Mathf.Max(0.0001f, scale);
                 target.localScale = new Vector3(safeScale, safeScale, 1f);
             }
+        }
+
+        /// <summary>
+        /// 当前朝向下，占用格中心点的平均位置（相对菜品根节点）。
+        /// 拖拽时用它把不规则形状的视觉重心对准鼠标，而不是把原点格对准鼠标。
+        /// </summary>
+        public Vector3 OccupiedCellCenterLocal()
+        {
+            return CurrentShape != null ? VisualPivotLocal(CurrentShape) : Vector3.zero;
+        }
+
+        /// <summary>当前占格视觉重心的世界坐标。</summary>
+        public Vector3 OccupiedCellCenterWorld()
+        {
+            return transform.TransformPoint(OccupiedCellCenterLocal());
         }
 
         /// <summary>指定视觉缩放下，食品实际渲染中心相对根节点（原点格锚点）的偏移。</summary>
@@ -1119,7 +1136,10 @@ namespace GourmetProject.Game.Presentation.Battle
             t.localPosition = footprintCenter - visualCenter;
 
             _spriteRenderer.sprite = _sprite;
-            BattleSorting.Apply(_spriteRenderer, BattleSorting.Pieces, BattleSorting.OrderBody);
+            BattleSorting.Apply(
+                _spriteRenderer,
+                _flying ? BattleSorting.PiecesFlying : BattleSorting.Pieces,
+                BattleSorting.OrderBody);
             _spriteRenderer.color = Color.white;
             SpriteRenderStyle.ApplyUnlitMaterial(_spriteRenderer);
 

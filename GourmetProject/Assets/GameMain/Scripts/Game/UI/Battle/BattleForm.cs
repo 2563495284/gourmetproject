@@ -1090,7 +1090,10 @@ namespace GourmetProject.Game.UI.Battle
         private void SetFoodActionsVisible(bool visible)
         {
             _foodBar?.SetVisible(visible);
-            _servingOutlet?.SetVisible(visible);
+            ServingOutletView servingOutlet = ResolveServingOutlet();
+            BattleWorldController world = _world ?? BattleWorldController.Instance;
+            servingOutlet?.ConfigureWorldSpace(world != null ? world.WorldCamera : Camera.main);
+            servingOutlet?.SetVisible(visible);
         }
 
         /// <summary>战斗态固定菜谱只显示剩余数量；出餐与可放统计由底部出餐口承担。</summary>
@@ -1098,13 +1101,27 @@ namespace GourmetProject.Game.UI.Battle
         {
             _recipePresenter?.BuildBattle(_session, OpenRecipeInspect);
             BattleWorldController world = _world ?? BattleWorldController.Instance;
-            _servingOutlet?.Bind(
+            ServingOutletView servingOutlet = ResolveServingOutlet();
+            servingOutlet?.ConfigureWorldSpace(world != null ? world.WorldCamera : Camera.main);
+            servingOutlet?.Bind(
                 _session,
                 ServeFromOutlet,
                 () => OpenRecipeInspect(0),
+                () => OnServingOutletDishHoverEntered(servingOutlet),
+                OnServingOutletDishHoverExited,
                 world == null ? null : screen => world.BeginServingOutletDrag(screen),
                 world == null ? null : screen => world.UpdateServingOutletDrag(screen),
                 world == null ? null : screen => world.EndServingOutletDrag(screen));
+        }
+
+        private ServingOutletView ResolveServingOutlet()
+        {
+            if (_servingOutlet == null)
+            {
+                _servingOutlet = FindFirstObjectByType<ServingOutletView>(FindObjectsInactive.Include);
+            }
+
+            return _servingOutlet;
         }
 
         private void BuildRecipeInspectCards()
@@ -1845,6 +1862,40 @@ namespace GourmetProject.Game.UI.Battle
             _hoveredCell = null;
             RebindHoveredDishTips(piece);
             (_world ?? BattleWorldController.Instance)?.ShowDishScopeHighlights(piece.Instance);
+        }
+
+        private void OnServingOutletDishHoverEntered(ServingOutletView servingOutlet)
+        {
+            if (_current != GameplayView.Food
+                || servingOutlet == null
+                || _session?.PreparedServe?.Dish == null
+                || _tips == null)
+            {
+                return;
+            }
+
+            FoodTipsView tips = _tips.Food;
+            if (tips == null)
+            {
+                return;
+            }
+
+            _hoveredDishPiece = null;
+            _hoveredCell = null;
+            tips.Bind(_session.PreparedServe.Dish, null, _session.Database);
+            tips.Show();
+            tips.transform.SetAsLastSibling();
+
+            BattleWorldController world = _world ?? BattleWorldController.Instance;
+            tips.PlaceAroundWorldBounds(
+                servingOutlet.DishWorldBounds,
+                world != null ? world.WorldCamera : Camera.main,
+                GetComponentInParent<Canvas>());
+        }
+
+        private void OnServingOutletDishHoverExited()
+        {
+            HideFoodTips();
         }
 
         private void RebindHoveredDishTips(DishPieceView piece)
