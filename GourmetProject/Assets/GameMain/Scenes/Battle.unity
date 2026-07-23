@@ -297,7 +297,6 @@ MonoBehaviour:
   _dishPiecePrefab: {fileID: 8981609610198139403, guid: 6cfc41d91a00c45199a5910983b1608b, type: 3}
   _serveHandPrefab: {fileID: 6071260432894370099, guid: 959711ce1de1f489f86e491f9e943669, type: 3}
   _worldTargetArrowPrefab: {fileID: 2640625609003083573, guid: a87a49c2746414ebdb9afded82d52abf, type: 3}
-  _worldButtonPrefab: {fileID: 7008792684074489567, guid: f6a4e9f4890bc4629b5d7a85ab280e8e, type: 3}
   _serveCarryScale: 1.22
   _serveDescendDuration: 0.34
   _serveWithdrawDuration: 0.18

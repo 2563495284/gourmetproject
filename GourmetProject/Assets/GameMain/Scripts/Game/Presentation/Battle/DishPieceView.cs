@@ -169,7 +169,7 @@ namespace GourmetProject.Game.Presentation.Battle
             RebuildCells(CurrentShape);
         }
 
-        /// <summary>是否响应普通点击（打开详情）。食物调整态下关闭，改由 FoodAdjustController 自行命中处理。</summary>
+        /// <summary>是否响应普通点击（打开详情）。目标选择等互斥交互期间可临时关闭。</summary>
         public void SetClickEnabled(bool enabled)
         {
             _clickEnabled = enabled;
@@ -205,7 +205,7 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>
-        /// 放置可否的外轮廓发光：食物调整移动态给「光标菜品」显示——绿=可放，红=不可放；关闭则隐藏。
+        /// 放置可否的外轮廓发光：绿=可放，红=不可放；关闭则隐藏。
         /// 用 shader 按 sprite alpha 边界采样外描边，避免出现整张 sprite 复制投影。
         /// </summary>
         public void SetPlacementGlow(bool show, bool valid)

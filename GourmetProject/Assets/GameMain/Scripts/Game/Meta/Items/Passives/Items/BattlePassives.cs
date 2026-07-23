@@ -47,31 +47,6 @@ namespace GourmetProject.Game.Meta.Passives
     }
 
     [Preserve]
-    [PassiveItemModel("item_adjust_plus1")]
-    public sealed class AdjustCountModel : PassiveItemModel
-    {
-        public override int AdjustCountBonus() => (int)Value;
-    }
-
-    [Preserve]
-    [PassiveItemModel("item_adjust_to_mult")]
-    public sealed class AdjustToMultModel : PassiveItemModel
-    {
-        public override bool TryGetAdjustToMult(out float value)
-        {
-            value = Value;
-            return true;
-        }
-    }
-
-    [Preserve]
-    [PassiveItemModel("item_free_move_first")]
-    public sealed class FreeMoveFirstModel : PassiveItemModel
-    {
-        public override bool FreeMoveFirstServe() => true;
-    }
-
-    [Preserve]
     [PassiveItemModel("item_stargaze_every5")]
     public sealed class StarGazeEveryModel : PassiveItemModel
     {

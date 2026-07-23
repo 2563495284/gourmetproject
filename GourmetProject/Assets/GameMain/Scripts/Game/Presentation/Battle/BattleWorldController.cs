@@ -53,8 +53,6 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private DishPieceView _dishPiecePrefab;
         [SerializeField] private ServeHandView _serveHandPrefab;
         [SerializeField] private WorldTargetArrow _worldTargetArrowPrefab;
-        [Tooltip("食物调整态的世界按钮（X/勾/撤销）prefab，复用 Prefabs/Battle/WorldButton。")]
-        [SerializeField] private WorldButtonView _worldButtonPrefab;
 
         [Header("上菜动画")]
         [SerializeField] private float _serveCarryScale = 1.22f;
@@ -77,9 +75,6 @@ namespace GourmetProject.Game.Presentation.Battle
 
         // 餐桌编辑 / 只读餐桌视图的表现与交互拆到协作组件；本类只做 Food 态与世界互斥态调度（外壳）。
         private DiningTableEditController _boardEdit;
-
-        // 食物调整（局内删除/移动菜品）交互拆到协作组件，仅 Food 态启用。
-        private FoodAdjustController _foodAdjust;
 
         private readonly DishSpriteProvider _spriteProvider = new DishSpriteProvider();
         private readonly List<DishPieceView> _placedPieces = new List<DishPieceView>();
@@ -164,20 +159,6 @@ namespace GourmetProject.Game.Presentation.Battle
         /// <summary>是否正处于可拖拽的餐桌编辑态。</summary>
         public bool IsEditingTable => _boardEdit != null && _boardEdit.IsEditing;
 
-        private void EnsureFoodAdjust()
-        {
-            if (_foodAdjust == null)
-            {
-                _foodAdjust = GetComponent<FoodAdjustController>();
-                if (_foodAdjust == null)
-                {
-                    _foodAdjust = gameObject.AddComponent<FoodAdjustController>();
-                }
-            }
-
-            _foodAdjust.Configure(this);
-        }
-
         private void EnsureScopeHighlights()
         {
             if (_scopeHighlights == null)
@@ -190,35 +171,6 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        /// <summary>是否正处于食物调整态。</summary>
-        public bool IsFoodAdjusting => _foodAdjust != null && _foodAdjust.IsActive;
-
-        /// <summary>进入食物调整态（仅 Food 态、未结算时可用）。<paramref name="onExited"/> 供确认提交后自动退出时回通知壳更新 UI。</summary>
-        public void BeginFoodAdjust(Action onExited)
-        {
-            if (_worldMode != WorldMode.Food || _session == null || _session.IsSettled)
-            {
-                return;
-            }
-
-            EnsureFoodAdjust();
-            _foodAdjust.Begin(onExited);
-            SetPlacedPiecesClickEnabled(false);
-        }
-
-        /// <summary>退出食物调整态（用户点「返回」或提交后调用）。会取消未提交的移动并复位表现。</summary>
-        public void EndFoodAdjust()
-        {
-            if (_foodAdjust == null || !_foodAdjust.IsActive)
-            {
-                return;
-            }
-
-            _foodAdjust.End();
-            RebuildPlacedPieces();
-            SetPlacedPiecesClickEnabled(true);
-        }
-
         private void SetPlacedPiecesClickEnabled(bool enabled)
         {
             foreach (DishPieceView piece in _placedPieces)
@@ -226,17 +178,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 piece?.SetClickEnabled(enabled);
             }
         }
-
-        // —— 供 FoodAdjustController 读取的内部引用 ——
-        internal GpTable AdjustTable => _session?.DiningTable;
-        internal DiningTableView AdjustTableView => _boardView;
-        internal Transform AdjustPiecesRoot => _piecesRoot;
-        internal Camera AdjustCamera => _camera;
-        internal float AdjustCellSize => _cellSize;
-        internal DishPieceView AdjustDishPiecePrefab => _dishPiecePrefab;
-        internal WorldButtonView AdjustWorldButtonPrefab => _worldButtonPrefab;
-        internal DishSpriteProvider AdjustSpriteProvider => _spriteProvider;
-        internal GameRun AdjustRun => _run;
 
         internal DishPieceView GetPieceView(int id)
         {
@@ -508,18 +449,6 @@ namespace GourmetProject.Game.Presentation.Battle
             return a.TargetKind == b.TargetKind && a.Id == b.Id && a.X == b.X && a.Y == b.Y;
         }
 
-        /// <summary>食物调整删除/撤销后重建餐桌菜品表现，并保持调整态下的点击屏蔽。</summary>
-        internal void RebuildAfterAdjust()
-        {
-            RebuildPlacedPieces();
-            RefreshAll();
-            _stateChanged?.Invoke();
-            if (IsFoodAdjusting)
-            {
-                SetPlacedPiecesClickEnabled(false);
-            }
-        }
-
         /// <summary>
         /// 进入餐桌编辑页：外壳先收起 Food 态表现并切到编辑互斥态，再把编辑页构建交给协作组件。
         /// </summary>
@@ -717,12 +646,6 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             EnsureServeAnimator();
-            EnsureFoodAdjust();
-            if (_foodAdjust != null && _foodAdjust.IsActive)
-            {
-                _foodAdjust.End();
-            }
-
             gameObject.SetActive(true);
             CancelPresentationTasks();
             _worldMode = WorldMode.Food;
@@ -773,11 +696,6 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             CancelPresentationTasks();
             ResetTableViewFade();
-            if (_foodAdjust != null && _foodAdjust.IsActive)
-            {
-                _foodAdjust.End();
-            }
-
             if (_boardEdit != null && _boardEdit.IsEditing)
             {
                 _boardEdit.EndTableEdit();
@@ -1510,7 +1428,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void OnCellClicked(GridPos pos)
         {
-            if (_session == null || IsFoodAdjusting)
+            if (_session == null)
             {
                 return;
             }

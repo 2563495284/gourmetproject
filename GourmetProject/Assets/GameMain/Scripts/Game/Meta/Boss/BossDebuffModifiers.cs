@@ -5,7 +5,6 @@ namespace GourmetProject.Game.Meta
         public const string Indulgent = "feast_indulgent";
         public const string KidsMeal = "feast_kids_meal";
         public const string Gluttony = "feast_gluttony";
-        public const string PrefabFood = "feast_prefab_food";
         public const string Omakase = "feast_omakase";
         public const string LightMeal = "feast_light_meal";
         public const string VeganMeal = "feast_vegan_meal";
@@ -21,8 +20,6 @@ namespace GourmetProject.Game.Meta
 
         public const string LegacyLimitServe = "limit_serve";
         public const string LegacySmallBoard = "small_board";
-
-        public static bool IsPrefabFood(string modifier) => modifier == PrefabFood;
 
         public static bool IsLimitServe(string modifier) => modifier == LegacyLimitServe;
 

@@ -407,7 +407,7 @@ namespace GourmetProject.Gameplay.Board
 
         /// <summary>
         /// 移除一个已放置实例：把它占据的格子还原为空，并从菜品列表中剔除。
-        /// 用于「食物调整」态的删除 / 移动（移动 = 先移除再 <see cref="Place"/> 到新位置）。
+        /// 从餐桌移除菜品；移动时先移除，再调用 <see cref="Place"/> 放到新位置。
         /// </summary>
         public void RemoveDish(DishInstance dish)
         {

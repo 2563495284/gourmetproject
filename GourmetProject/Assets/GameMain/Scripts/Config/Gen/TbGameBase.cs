@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 全局基础配置：整局初始金币、利息与食物调整等基础数值。
+/// 全局基础配置：整局初始金币、利息与商店等基础数值。
 /// </summary>
 public partial class TbGameBase
 {
@@ -39,10 +39,6 @@ public partial class TbGameBase
     /// 利息节点单次最高可获得金币数
     /// </summary>
      public int InitialInterestCap => _data.InitialInterestCap;
-    /// <summary>
-    /// 初始食物调整次数
-    /// </summary>
-     public int InitialFoodAdjustCount => _data.InitialFoodAdjustCount;
     /// <summary>
     /// Interest:每满该金币阈值
     /// </summary>

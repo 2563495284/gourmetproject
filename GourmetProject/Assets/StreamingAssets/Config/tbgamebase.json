@@ -2,7 +2,6 @@
   {
     "initialGold": 50,
     "initialInterestCap": 30,
-    "initialFoodAdjustCount": 1,
     "interestThreshold": 5,
     "interestGoldPer": 1,
     "initialActionRerollCount": 0,

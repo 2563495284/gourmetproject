@@ -22,7 +22,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             WorldTargetArrow arrow = Instantiate(prefab, parent);
-            arrow.gameObject.name = "FoodAdjustArrow";
+            arrow.gameObject.name = "WorldTargetArrow";
             arrow.Build(cellSize);
             return arrow;
         }

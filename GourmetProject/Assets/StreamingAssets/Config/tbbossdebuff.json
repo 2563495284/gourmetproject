@@ -27,15 +27,6 @@
     "targetScoreHiddenOffset": 0.35
   },
   {
-    "id": "debuff_prefab_food",
-    "name": "预制菜",
-    "desc": "调整食物基础次数为 0",
-    "modifier": "feast_prefab_food",
-    "weight": 1,
-    "unlockCondition": "",
-    "targetScoreHiddenOffset": 0.35
-  },
-  {
     "id": "debuff_omakase",
     "name": "Omakase",
     "desc": "打乱各个食谱中的食物",

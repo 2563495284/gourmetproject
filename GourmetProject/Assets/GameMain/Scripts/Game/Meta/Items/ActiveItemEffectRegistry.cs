@@ -58,17 +58,6 @@ namespace GourmetProject.Game.Meta
 
                     return new ActiveItemUseResult(true, false, $"{item.Name}：获得 {(int)item.EffectValue} 金币。");
 
-                case ItemEffectTypes.AdjustCountBonus:
-                {
-                    int amount = (int)item.EffectValue;
-                    if (ctx.Run != null && ctx.Run.AddFoodAdjustCount(amount))
-                    {
-                        return new ActiveItemUseResult(true, false, $"{item.Name}：食物调整次数 +{amount}。");
-                    }
-
-                    return new ActiveItemUseResult(false, false, $"{item.Name}：现在无法增加食物调整次数。");
-                }
-
                 // —— 需选目标的目标操作族（对标杀戮尖塔2 药水的 OnUse(target)）——
                 case ItemEffectTypes.AddScore:
                     return ApplyToTargets(targets, t => ctx.AddPermanentScore(t, item.EffectValue),

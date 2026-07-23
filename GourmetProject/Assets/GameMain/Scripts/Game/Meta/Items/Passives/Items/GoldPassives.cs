@@ -78,13 +78,6 @@ namespace GourmetProject.Game.Meta.Passives
         public override bool HasExtraInterest() => true;
     }
 
-    [Preserve]
-    [PassiveItemModel("item_adjust_to_gold")]
-    public sealed class GoldPerUnusedAdjustModel : PassiveItemModel
-    {
-        public override int GoldPerUnusedAdjust() => (int)Value;
-    }
-
     /// <summary>美食分红：获得时登记生效局数；每局额外金币由 MealBonusGoldPerMeal 提供。</summary>
     [Preserve]
     [PassiveItemModel("item_gold_meal_bonus")]

@@ -157,25 +157,12 @@ namespace GourmetProject.Game.Meta.Passives
             return false;
         }
 
-        public virtual int GoldPerUnusedAdjust() => 0;
-
         // ================= 不死族 =================
 
         /// <summary>是否为「不死」道具（供保底与失败判定；本模型对应道具会被消耗移除）。</summary>
         public virtual bool IsUndying() => false;
 
-        // ================= 上菜 / 调整族 =================
-
-        public virtual int AdjustCountBonus() => 0;
-
-        /// <summary>每个未使用调整次数带来的倍率加成（取最大）。返回 false 表示不提供。</summary>
-        public virtual bool TryGetAdjustToMult(out float value)
-        {
-            value = 0f;
-            return false;
-        }
-
-        public virtual bool FreeMoveFirstServe() => false;
+        // ================= 上菜族 =================
 
         /// <summary>观星「每 N 次上菜后可预见」的周期（无则 0）。</summary>
         public virtual int StarGazeEvery() => 0;

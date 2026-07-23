@@ -143,7 +143,7 @@ public partial class Tables
     /// </summary>
     public TbActionLargeGroup TbActionLargeGroup {get; }
     /// <summary>
-    /// 全局基础配置：整局初始金币、利息与食物调整等基础数值。
+    /// 全局基础配置：整局初始金币、利息与商店等基础数值。
     /// </summary>
     public TbGameBase TbGameBase {get; }
     /// <summary>

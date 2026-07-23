@@ -28,9 +28,6 @@ namespace GourmetProject.Game.Run
         /// <summary>本局利息节点单次最高收益基础值。</summary>
         public int InterestCap = -1;
 
-        /// <summary>「食物调整」行动外基础次数快照；被动道具加成由持有道具在运行时叠加。</summary>
-        public int FoodAdjustCount = -1;
-
         /// <summary>蛋糕保鲜保留到下一次美食的初始层数。</summary>
         public int RetainedHappyCakeLayers;
 

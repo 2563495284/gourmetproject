@@ -49,7 +49,7 @@ namespace GourmetProject.Gameplay.Board
 
         /// <summary>
         /// 迁移到新的摆放（朝向 + 原点）并重算绝对占格，保留 Id/层数/技能/风味。
-        /// 供「食物调整」态移动菜品：调用方需先 <see cref="DiningTable.RemoveDish"/>，再 Relocate，最后 <see cref="DiningTable.Place"/>。
+        /// 重定位菜品：调用方需先 <see cref="DiningTable.RemoveDish"/>，再 Relocate，最后 <see cref="DiningTable.Place"/>。
         /// </summary>
         public void Relocate(Placement placement)
         {

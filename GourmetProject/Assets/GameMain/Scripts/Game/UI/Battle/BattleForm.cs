@@ -51,7 +51,6 @@ namespace GourmetProject.Game.UI.Battle
     {
         private const string Tag = "Battle";
         private const float ShopItemFlyDuration = 0.42f;
-        private const float FoodAdjustMaskPaddingPixels = 50f;
 
         /// <summary>当前打开的战斗界面，供各弹窗回调推进周循环。</summary>
         public static BattleForm Active { get; private set; }
@@ -66,7 +65,7 @@ namespace GourmetProject.Game.UI.Battle
         [SerializeField] private Text _centerTitleText;
 
         [Header("DiningTable Area (餐桌锁定区)")]
-        [Tooltip("HUD 里的空区矩形：世界餐桌将 fit 并居中锁定在该屏幕区域内；同时作为食物调整遮黑的挖洞区。")]
+        [Tooltip("HUD 里的空区矩形：世界餐桌将 fit 并居中锁定在该屏幕区域内。")]
         [SerializeField] private RectTransform _boardArea;
 
         [Header("Left Column")]
@@ -117,7 +116,6 @@ namespace GourmetProject.Game.UI.Battle
 
         [Header("Food Actions")]
         [SerializeField] private BattleFoodActionBar _foodBar;
-        [SerializeField] private View.FoodAdjustOverlay _foodAdjustOverlayPrefab;
 
         [Header("Battle Message")]
         [SerializeField] private Text _messageText;
@@ -152,7 +150,6 @@ namespace GourmetProject.Game.UI.Battle
         private bool _activeBattleIsBoss;
         private bool _rewardPeekOnly;
         private bool _discardSettlementCallbacks;
-        private View.FoodAdjustOverlay _foodAdjustOverlay;
         private DishPieceView _hoveredDishPiece;
         private DiningTableCellView _hoveredCell;
         private SettlementRevealState _settlementReveal;
@@ -189,7 +186,7 @@ namespace GourmetProject.Game.UI.Battle
         {
             base.OnInit(userData);
 
-            _infoColumn?.Bind(OnSettingsClicked, OnViewTableClicked, OnFoodAdjustClicked);
+            _infoColumn?.Bind(OnSettingsClicked, OnViewTableClicked);
             _cakeLayerBuffHud = GetComponent<CakeLayerBuffHud>();
             _foodBar?.Bind(OnEatClicked, OnDoodleClearClicked, OnDoodleToggleClicked);
 
@@ -327,7 +324,6 @@ namespace GourmetProject.Game.UI.Battle
 
         public void HideBattleWorld()
         {
-            _run?.EndFoodActionAdjustments();
             _infoColumn?.SetBattleScoreOverride(null);
             BattleWorldController world = _world ?? BattleWorldController.Instance;
             world?.HideWorld();
@@ -394,7 +390,6 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             HideAllTips();
-            _run.EndFoodActionAdjustments();
             _infoColumn?.ScoreFire?.Hide();
             _infoColumn?.SetBattleScoreOverride(snapshot.LastTotal);
 
@@ -710,21 +705,9 @@ namespace GourmetProject.Game.UI.Battle
         void IGameplayPageRouterHost.OnLeavingPage(GameplayView current, GameplayView next) => _recipeWorkspacePage?.OnLeavingPage(current, next);
         void IGameplayPageRouterHost.OnBeforeApplyPage(GameplayView view)
         {
-            // 离开美食态时确保退出食物调整（含遮罩），避免残留到其它态。
             if (view != GameplayView.Food)
             {
                 HideFoodTips();
-            }
-
-            if (view != GameplayView.Food && _foodAdjustOverlay != null)
-            {
-                BattleWorldController world = _world ?? BattleWorldController.Instance;
-                if (world != null && world.IsFoodAdjusting)
-                {
-                    world.EndFoodAdjust();
-                }
-
-                ExitFoodAdjustUI();
             }
         }
 
@@ -1161,7 +1144,7 @@ namespace GourmetProject.Game.UI.Battle
             RefreshAll();
         }
 
-        /// <summary>刷新常驻信息：左栏周/金币（分数、食物调整为局内占位）、右栏道具。</summary>
+        /// <summary>刷新常驻信息：左栏周/金币/分数、右栏道具。</summary>
         private void RefreshPersistent(bool refreshItems = true)
         {
             if (_run == null)
@@ -1734,81 +1717,6 @@ namespace GourmetProject.Game.UI.Battle
             _tableCoordinator.Open();
         }
 
-        // —— 食物调整态 ——
-
-        private void OnFoodAdjustClicked()
-        {
-            if (_rewardPeekOnly)
-            {
-                return;
-            }
-
-            BattleWorldController world = _world ?? BattleWorldController.Instance;
-            if (world == null)
-            {
-                return;
-            }
-
-            if (world.IsFoodAdjusting)
-            {
-                world.EndFoodAdjust();
-                ExitFoodAdjustUI();
-                return;
-            }
-
-            if (_current != GameplayView.Food || _session == null || _session.IsSettled)
-            {
-                return;
-            }
-
-            EnterFoodAdjustUI();
-            world.BeginFoodAdjust(ExitFoodAdjustUI);
-        }
-
-        private void EnterFoodAdjustUI()
-        {
-            EnsureFoodAdjustOverlay();
-            BattleWorldController world = _world ?? BattleWorldController.Instance;
-            if (world != null && world.TryGetExistingGridScreenRect(FoodAdjustMaskPaddingPixels, out Rect screenRect))
-            {
-                _foodAdjustOverlay?.Show(_boardArea, screenRect);
-            }
-            else
-            {
-                _foodAdjustOverlay?.Show(_boardArea);
-            }
-
-            _infoColumn?.SetFoodAdjustActive(
-                true,
-                _run != null ? _run.FoodAdjustCount : 0,
-                _run != null && _run.FoodAdjustFreeAvailable);
-        }
-
-        private void ExitFoodAdjustUI()
-        {
-            _foodAdjustOverlay?.Hide();
-            _infoColumn?.SetFoodAdjustActive(
-                false,
-                _run != null ? _run.FoodAdjustCount : 0,
-                _run != null && _run.FoodAdjustFreeAvailable);
-            RefreshPersistent();
-        }
-
-        private void EnsureFoodAdjustOverlay()
-        {
-            if (_foodAdjustOverlay == null)
-            {
-                if (_foodAdjustOverlayPrefab == null)
-                {
-                    Debug.LogError($"{nameof(BattleForm)} 缺少食物调整遮罩 prefab。", this);
-                    return;
-                }
-
-                _foodAdjustOverlay = Instantiate(_foodAdjustOverlayPrefab, (RectTransform)transform);
-                _foodAdjustOverlay.Hide();
-            }
-        }
-
         public void ShowRunResult(bool win, int total)
         {
             _world?.HideWorld();
@@ -1836,7 +1744,6 @@ namespace GourmetProject.Game.UI.Battle
             _activeBattleIsBoss = IsBossFoodAction(actionContext);
             _currentBossDebuff = _activeBattleIsBoss ? ResolveBossDebuff(modifier) : null;
             SetMessage(string.Empty);
-            _run.BeginFoodActionAdjustments(BossDebuffModifiers.IsPrefabFood(modifier));
             UnsubscribeCakeLayerChanges();
             _session = _run.BuildBattleSession(requiredScore, modifier, key);
             _displayedCakeLayers = _session.HappyCakeLayers;
@@ -1894,11 +1801,7 @@ namespace GourmetProject.Game.UI.Battle
             }
         }
 
-        private void OnBattleServed(DishInstance dish, int servesUsed)
-        {
-            _run?.RefreshFoodAdjustFreeMove(servesUsed);
-            RefreshPersistent();
-        }
+        private void OnBattleServed(DishInstance dish, int servesUsed) => RefreshPersistent();
 
         private cfg.BossDebuff ResolveBossDebuff(string modifier)
         {
@@ -2192,7 +2095,6 @@ namespace GourmetProject.Game.UI.Battle
             _pendingSettlementCakeLayers = null;
             _pendingSettlementCakeLayerBonus = 0;
 
-            ApplyStartSettlementPassiveEffects();
             ScoreResult result = _session.Settle();
             _pendingSettlementCakeLayerBonus = Mathf.Max(
                 0,
@@ -2261,7 +2163,6 @@ namespace GourmetProject.Game.UI.Battle
                 }
 
                 _run.AddSettledCounts(_session.LastSettledIncrements);
-                _run.EndFoodActionAdjustments();
             }
 
             _infoColumn?.SetBattleScoreOverride(null);
@@ -2284,47 +2185,6 @@ namespace GourmetProject.Game.UI.Battle
 
             new ItemRuntime(_run).FlashTriggered(model =>
                 string.Equals(model.ItemId, itemId, StringComparison.Ordinal));
-        }
-
-        private void ApplyStartSettlementPassiveEffects()
-        {
-            if (_run == null || _session == null)
-            {
-                return;
-            }
-
-            int unusedAdjust = _run.FoodAdjustCount;
-            if (unusedAdjust <= 0)
-            {
-                return;
-            }
-
-            var itemRuntime = new ItemRuntime(_run);
-            float multPerUnused = itemRuntime.AdjustToMultPerUnused();
-            if (multPerUnused > 0f)
-            {
-                _session.ApplySettlementDishMultiplierFlat(
-                    unusedAdjust * multPerUnused,
-                    "item_adjust_to_mult",
-                    PassiveItemName("item_adjust_to_mult"));
-                itemRuntime.FlashTriggered(m =>
-                {
-                    return m.TryGetAdjustToMult(out float value) && value > 0f;
-                });
-            }
-
-            int goldPerUnused = itemRuntime.GoldPerUnusedAdjust();
-            if (goldPerUnused > 0)
-            {
-                _session.AddPendingGold(unusedAdjust * goldPerUnused);
-                itemRuntime.FlashTriggered(m => m.GoldPerUnusedAdjust() > 0);
-            }
-        }
-
-        private string PassiveItemName(string itemId)
-        {
-            ItemDefinition item = ItemDefinition.Get(_run?.Tables, itemId, cfg.ItemKind.Passive);
-            return item != null ? item.Name : itemId;
         }
 
         private void ApplyRecipeScoreDeltasToRun()

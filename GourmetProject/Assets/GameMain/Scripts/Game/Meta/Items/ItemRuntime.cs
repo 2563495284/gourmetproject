@@ -193,33 +193,12 @@ namespace GourmetProject.Game.Meta
             return best;
         }
 
-        public int GoldPerUnusedAdjust() => SumInt(m => m.GoldPerUnusedAdjust());
-
         // ================= 不死族 =================
 
         /// <summary>是否持有「不死」道具（名刀·加护）。</summary>
         public bool HasUndying() => AnyFlag(m => m.IsUndying());
 
-        // ================= 上菜 / 调整族 =================
-
-        public int AdjustCountBonus() => SumInt(m => m.AdjustCountBonus());
-
-        /// <summary>每个未使用调整次数带来的倍率加成（取最大）。</summary>
-        public float AdjustToMultPerUnused()
-        {
-            float best = 0f;
-            foreach (PassiveItemModel m in Models)
-            {
-                if (m.TryGetAdjustToMult(out float v) && v > best)
-                {
-                    best = v;
-                }
-            }
-
-            return best;
-        }
-
-        public bool FreeMoveFirstServe() => AnyFlag(m => m.FreeMoveFirstServe());
+        // ================= 上菜族 =================
 
         /// <summary>观星「每 N 次上菜后可预见」的周期（取最大；无则 0）。</summary>
         public int StarGazeEvery() => MaxInt(m => m.StarGazeEvery());

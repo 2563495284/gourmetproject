@@ -78,7 +78,6 @@ namespace GourmetProject.Game.Run
         private int _interestThreshold;
         private int _interestGoldPer;
         private int _interestCap;
-        private int _foodAdjustBaseCount;
         private int _actionRerollCount;
         private int _weekIndex = 1;
 
@@ -121,7 +120,6 @@ namespace GourmetProject.Game.Run
             _interestThreshold = System.Math.Max(0, gameBase.InterestThreshold);
             _interestGoldPer = gameBase.InterestGoldPer > 0 ? gameBase.InterestGoldPer : 1;
             _interestCap = System.Math.Max(0, gameBase.InitialInterestCap);
-            _foodAdjustBaseCount = System.Math.Max(0, gameBase.InitialFoodAdjustCount);
             _actionRerollCount = System.Math.Max(0, gameBase.InitialActionRerollCount);
 
             if (initializeCharacterLoadout)
@@ -181,106 +179,7 @@ namespace GourmetProject.Game.Run
             }
         }
 
-        private bool _foodAdjustActionActive;
-        private bool _foodAdjustSuppressBase;
-        private int _foodAdjustActionBonus;
-        private int _foodAdjustSpent;
-        private bool _foodAdjustFreeAvailable;
-        private bool _foodAdjustFreeSpent;
-        private bool _foodAdjustFreeExpired;
         private int _retainedHappyCakeLayers;
-
-        /// <summary>「食物调整」本次美食行动额度：本局基础值 + 被动道具加成。</summary>
-        public int FoodAdjustBaseCount
-        {
-            get
-            {
-                return System.Math.Max(0, _foodAdjustBaseCount + new ItemRuntime(this).AdjustCountBonus());
-            }
-        }
-
-        /// <summary>「食物调整」剩余次数。只在当前美食行动内消耗，行动结束后恢复为基础额度。</summary>
-        public int FoodAdjustCount => System.Math.Max(0, FoodAdjustLimit - _foodAdjustSpent);
-
-        public bool FoodAdjustFreeAvailable =>
-            _foodAdjustActionActive
-            && _foodAdjustFreeAvailable
-            && !_foodAdjustFreeSpent
-            && !_foodAdjustFreeExpired;
-
-        private int FoodAdjustLimit =>
-            System.Math.Max(0, (_foodAdjustSuppressBase ? 0 : FoodAdjustBaseCount) + (_foodAdjustActionActive ? _foodAdjustActionBonus : 0));
-
-        public void BeginFoodActionAdjustments(bool suppressBase = false)
-        {
-            _foodAdjustActionActive = true;
-            _foodAdjustSuppressBase = suppressBase;
-            _foodAdjustActionBonus = 0;
-            _foodAdjustSpent = 0;
-            _foodAdjustFreeAvailable = false;
-            _foodAdjustFreeSpent = false;
-            _foodAdjustFreeExpired = false;
-        }
-
-        public void EndFoodActionAdjustments()
-        {
-            _foodAdjustActionActive = false;
-            _foodAdjustSuppressBase = false;
-            _foodAdjustActionBonus = 0;
-            _foodAdjustSpent = 0;
-            _foodAdjustFreeAvailable = false;
-            _foodAdjustFreeSpent = false;
-            _foodAdjustFreeExpired = false;
-        }
-
-        /// <summary>增加当前美食行动的临时调整次数，供主动道具等一次性效果使用。</summary>
-        public bool AddFoodAdjustCount(int amount)
-        {
-            if (!_foodAdjustActionActive || amount <= 0)
-            {
-                return false;
-            }
-
-            _foodAdjustActionBonus += amount;
-            return true;
-        }
-
-        /// <summary>尝试消耗一次食物调整：仅在 &gt;0 时 -1 并返回 true。</summary>
-        public bool TrySpendFoodAdjust()
-        {
-            if (FoodAdjustFreeAvailable)
-            {
-                _foodAdjustFreeSpent = true;
-                _foodAdjustFreeAvailable = false;
-                return true;
-            }
-
-            if (FoodAdjustCount <= 0)
-            {
-                return false;
-            }
-
-            _foodAdjustSpent++;
-            return true;
-        }
-
-        public void RefreshFoodAdjustFreeMove(int servesUsed)
-        {
-            if (!_foodAdjustActionActive || !new ItemRuntime(this).FreeMoveFirstServe())
-            {
-                return;
-            }
-
-            if (servesUsed == 1 && !_foodAdjustFreeSpent && !_foodAdjustFreeExpired)
-            {
-                _foodAdjustFreeAvailable = true;
-            }
-            else if (servesUsed >= 2)
-            {
-                _foodAdjustFreeAvailable = false;
-                _foodAdjustFreeExpired = true;
-            }
-        }
 
         public int ConsumeRetainedHappyCakeLayers()
         {
@@ -1533,7 +1432,6 @@ namespace GourmetProject.Game.Run
                 InterestThreshold = _interestThreshold,
                 InterestGoldPer = _interestGoldPer,
                 InterestCap = _interestCap,
-                FoodAdjustCount = _foodAdjustBaseCount,
                 RetainedHappyCakeLayers = _retainedHappyCakeLayers,
                 ActiveUseIndex = _activeUseIndex,
                 ActionRerollCount = _actionRerollCount,
@@ -1619,9 +1517,6 @@ namespace GourmetProject.Game.Run
             run._interestCap = data.InterestCap >= 0
                 ? data.InterestCap
                 : System.Math.Max(0, tables.TbGameBase.InitialInterestCap);
-            run._foodAdjustBaseCount = data.FoodAdjustCount >= 0
-                ? data.FoodAdjustCount
-                : System.Math.Max(0, tables.TbGameBase.InitialFoodAdjustCount);
             run._retainedHappyCakeLayers = System.Math.Max(0, data.RetainedHappyCakeLayers);
             run._activeUseIndex = data.ActiveUseIndex;
             run._actionRerollCount = data.ActionRerollCount >= 0

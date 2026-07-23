@@ -45,7 +45,6 @@ namespace GourmetProject.Game.Meta
         public const string GoldMealBonus = "GoldMealBonus";
         public const string GoldOnBossComplete = "GoldOnBossComplete";
         public const string GoldMealPercent = "GoldMealPercent";
-        public const string GoldPerUnusedAdjust = "GoldPerUnusedAdjust";
         public const string GoldOnShopEnter = "GoldOnShopEnter";
         public const string ExtraInterest = "ExtraInterest";
         public const string MinGoldGuarantee = "MinGoldGuarantee";
@@ -81,9 +80,6 @@ namespace GourmetProject.Game.Meta
         // —— 上菜/调整族 ——
         public const string StarGazeEveryN = "StarGazeEveryN";
         public const string StarGazeFirstN = "StarGazeFirstN";
-        public const string FreeMoveFirst = "FreeMoveFirst";
-        public const string AdjustCountBonus = "AdjustCountBonus";
-        public const string AdjustToMult = "AdjustToMult";
         public const string FoodConvert = "FoodConvert";
 
         // —— 蛋糕层数族 ——
@@ -154,7 +150,6 @@ namespace GourmetProject.Game.Meta
             ClearBoard,
             ExtraServe,
             GoldNow,
-            AdjustCountBonus,
             AddScore,
             AddCountAs,
             AddFlavor,
