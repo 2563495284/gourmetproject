@@ -26,7 +26,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private const float MaxCellSize = DiningTableLayout.MaxCellSize;
         private const float MinCellSize = DiningTableLayout.MinCellSize;
 
-        // 餐桌居中定位的底部边距：Food 态给底部菜谱抽屉让 2.7，编辑态还要给候选托盘条让到 3.6。
+        // 餐桌居中定位的底部边距：Food 态给固定菜谱让 2.7，编辑态还要给候选托盘条让到 3.6。
         private const float FoodTableBottomMargin = 2.7f;
         private const float EditTableBottomMargin = 3.6f;
         private const int PassiveSlotCapacity = 10;
@@ -1097,7 +1097,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void BuildTable(GpTable board)
         {
-            // 中央可用区：菜谱/道具面板已迁到常驻 HUD（左右栏 + 底部菜谱抽屉），餐桌居中在中部内容区，
+            // 中央可用区：菜谱/道具面板已迁到常驻 HUD（左右栏 + 固定菜谱），餐桌居中在中部内容区，
             // 由 DiningTableLayout 统一按胃包围盒铺满可用区并居中（与编辑/餐桌视图态共用同一套定位算法）。
             BoardPlacement placement = TryComputeTableAreaPlacement(board, out BoardPlacement boardAreaPlacement)
                 ? boardAreaPlacement

@@ -26,8 +26,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         RandomizedItemsPanel RandomizedItemsPanel { get; }
 
-        GourmetProject.Game.UI.Hud.RecipeView RecipeView { get; }
-
         void SwitchTo(GameplayView view, Action buildCenter = null, Action onShown = null);
 
         void SetCenterTitle(string text);
@@ -72,7 +70,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 _host.RewardDishPackPanel.Open(
                     _host.Run,
                     choices,
-                    _host.RecipeView,
                     onChoiceDropped,
                     onSkip,
                     _host.FoodTips);
@@ -95,7 +92,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 _host.RewardDishPackPanel.Open(
                     _host.Run,
                     choices,
-                    _host.RecipeView,
                     (choiceIndex, bookIndex) =>
                     {
                         if (choiceIndex < 0 || choiceIndex >= choices.Count)

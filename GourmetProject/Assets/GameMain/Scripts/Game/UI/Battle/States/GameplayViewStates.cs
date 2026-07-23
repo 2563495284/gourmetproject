@@ -2,7 +2,7 @@ using System;
 
 namespace GourmetProject.Game.UI.Battle.States
 {
-    /// <summary>行动选择态（含事件 n 选一 / 行动轴节点卡，共用中部卡片）：行动轴常驻，菜谱抽屉折叠。</summary>
+    /// <summary>行动选择态（含事件 n 选一 / 行动轴节点卡，共用中部卡片）：行动轴与固定菜谱常驻。</summary>
     internal sealed class ActionSelectState : IGameplayViewState
     {
         public GameplayView Kind => GameplayView.ActionSelect;
@@ -10,7 +10,6 @@ namespace GourmetProject.Game.UI.Battle.States
         public void Enter(IBattleViewHost host, Action buildCenter)
         {
             host.RebuildActionAxis();
-            host.Recipe.BuildPersistent(host.Run, host.OpenRecipeInspect);
             buildCenter?.Invoke();
         }
     }
@@ -23,7 +22,6 @@ namespace GourmetProject.Game.UI.Battle.States
         public void Enter(IBattleViewHost host, Action buildCenter)
         {
             host.RebuildActionAxis();
-            host.Recipe.BuildShop(host.Run, host.OpenRecipeInspect);
             host.OpenShopPanel();
         }
     }
@@ -39,19 +37,18 @@ namespace GourmetProject.Game.UI.Battle.States
         }
     }
 
-    /// <summary>菜品包发奖态：菜谱抽屉展示，中部由 buildCenter 构建菜品包三选一。</summary>
+    /// <summary>菜品包发奖态：固定菜谱常驻，中部由 buildCenter 构建菜品包三选一。</summary>
     internal sealed class RewardDishPackState : IGameplayViewState
     {
         public GameplayView Kind => GameplayView.RewardDishPack;
 
         public void Enter(IBattleViewHost host, Action buildCenter)
         {
-            host.Recipe.BuildPersistent(host.Run, host.OpenRecipeInspect);
             buildCenter?.Invoke();
         }
     }
 
-    /// <summary>道具获得 n 选一态：中部由道具选择面板构建，底部菜谱隐藏。</summary>
+    /// <summary>道具获得 n 选一态：固定菜谱常驻，中部由道具选择面板构建。</summary>
     internal sealed class RewardItemChoiceState : IGameplayViewState
     {
         public GameplayView Kind => GameplayView.RewardItemChoice;
@@ -73,7 +70,7 @@ namespace GourmetProject.Game.UI.Battle.States
         }
     }
 
-    /// <summary>事件页态：行动轴常驻，菜谱扇形收起，中部由 EventPagePanel 构建。</summary>
+    /// <summary>事件页态：行动轴与固定菜谱常驻，中部由 EventPagePanel 构建。</summary>
     internal sealed class EventState : IGameplayViewState
     {
         public GameplayView Kind => GameplayView.Event;
@@ -81,12 +78,11 @@ namespace GourmetProject.Game.UI.Battle.States
         public void Enter(IBattleViewHost host, Action buildCenter)
         {
             host.RebuildActionAxis();
-            host.Recipe.BuildPersistent(host.Run, host.OpenRecipeInspect);
             buildCenter?.Invoke();
         }
     }
 
-    /// <summary>只读查看单本菜谱：中部交给 RecipeWorkspacePanel，底部菜谱条保持可切换其它菜谱。</summary>
+    /// <summary>只读查看唯一菜谱：中部交给 RecipeWorkspacePanel，固定菜谱同步高亮。</summary>
     internal sealed class RecipeInspectState : IGameplayViewState
     {
         public GameplayView Kind => GameplayView.RecipeInspect;
@@ -103,7 +99,7 @@ namespace GourmetProject.Game.UI.Battle.States
         }
     }
 
-    /// <summary>美食战斗态：世界空间餐桌透出，菜谱抽屉切成上菜条。</summary>
+    /// <summary>美食战斗态：世界空间餐桌透出，固定菜谱展示战斗内容与上餐铃。</summary>
     internal sealed class FoodState : IGameplayViewState
     {
         public GameplayView Kind => GameplayView.Food;
@@ -115,7 +111,7 @@ namespace GourmetProject.Game.UI.Battle.States
         }
     }
 
-    /// <summary>餐桌编辑态：世界空间碎片拖拽，中部无标题，菜谱抽屉移除购买卡。</summary>
+    /// <summary>餐桌编辑态：世界空间碎片拖拽，中部无标题，固定菜谱常驻。</summary>
     internal sealed class TableEditState : IGameplayViewState
     {
         public GameplayView Kind => GameplayView.TableEdit;
@@ -127,7 +123,7 @@ namespace GourmetProject.Game.UI.Battle.States
         }
     }
 
-    /// <summary>查看餐桌态：只读餐桌视图，中部无标题，菜谱抽屉移除购买卡。</summary>
+    /// <summary>查看餐桌态：只读餐桌视图，中部无标题，固定菜谱常驻。</summary>
     internal sealed class TableViewState : IGameplayViewState
     {
         public GameplayView Kind => GameplayView.TableView;

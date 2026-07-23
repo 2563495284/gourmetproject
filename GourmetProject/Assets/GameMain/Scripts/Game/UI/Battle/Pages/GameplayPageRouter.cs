@@ -43,9 +43,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         Button BoardEditSkipButton { get; }
 
-        RecipeView RecipeView { get; }
-
-        RecipeBooksPresenter RecipePresenter { get; }
+        RecipePresenter RecipePresenter { get; }
 
         bool RecipeInspectShowsActionAxis { get; }
 
@@ -94,8 +92,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         GameRun IBattleViewHost.Run => _host.Run;
 
-        RecipeBooksPresenter IBattleViewHost.Recipe => _host.RecipePresenter;
-
         bool IBattleViewHost.RecipeInspectShowsActionAxis => _host.RecipeInspectShowsActionAxis;
 
         public void SwitchTo(GameplayView next, Action buildCenter = null, Action onShown = null)
@@ -131,7 +127,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 _host.BoardEditSkipButton.gameObject.SetActive(false);
             }
 
-            _host.RecipeView?.SetState(RecipeView.RecipeState.Hidden);
             _host.SetFoodActionsVisible(false);
             _host.SetCenterTitle(string.Empty);
 
@@ -212,7 +207,8 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 _host.Backdrop.SetActive(!worldView);
             }
 
-            _host.RecipeView?.SetState(RecipeStateFor(view));
+            // 固定菜谱始终存在；各特化状态可在 Enter 中覆盖为战斗态或查看态数据。
+            _host.RecipePresenter?.BuildPersistent(_host.Run, _host.OpenRecipeInspect);
             _host.RefreshPersistent();
         }
 
@@ -230,23 +226,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         void IBattleViewHost.BuildRecipeInspectCards() => _host.BuildRecipeInspectCards();
 
-
-        private static RecipeView.RecipeState RecipeStateFor(GameplayView view)
-        {
-            return view switch
-            {
-                GameplayView.ActionSelect => RecipeView.RecipeState.Collapsed,
-                GameplayView.Shop => RecipeView.RecipeState.Shown,
-                GameplayView.RewardDishPack => RecipeView.RecipeState.Hidden,
-                GameplayView.RewardItemChoice => RecipeView.RecipeState.Hidden,
-                GameplayView.RandomizedItems => RecipeView.RecipeState.Hidden,
-                GameplayView.Event => RecipeView.RecipeState.Collapsed,
-                GameplayView.RecipeInspect => RecipeView.RecipeState.Shown,
-                GameplayView.Food => RecipeView.RecipeState.Shown,
-                GameplayView.TableEdit => RecipeView.RecipeState.Collapsed,
-                _ => RecipeView.RecipeState.Hidden,
-            };
-        }
 
         private static void SetActive(Component component, bool active)
         {

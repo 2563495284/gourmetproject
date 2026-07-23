@@ -7,10 +7,25 @@ using UnityEngine.UI;
 
 namespace GourmetProject.Game.UI.Hud
 {
+    /// <summary>战斗菜谱卡内一条剩余食物的显示数据。</summary>
+    public readonly struct RecipeDishDisplayData
+    {
+        public RecipeDishDisplayData(string name, bool canPlace)
+        {
+            Name = name;
+            CanPlace = canPlace;
+        }
+
+        public string Name { get; }
+
+        public bool CanPlace { get; }
+    }
+
     /// <summary>
-    /// 菜谱条里的菜谱卡：普通态显示数量；战斗态额外显示上餐铃、可放/不可放计数与剩余食物列表。
+    /// BattleForm 中固定显示的唯一菜谱：普通态显示数量；战斗态额外显示上餐铃、
+    /// 可放/不可放计数与剩余食物列表。
     /// 卡片点击始终用于打开菜谱详情，上菜只由独立上餐铃触发。
-    /// 固定结构在 Recipe.prefab，由 <see cref="RecipeView"/> 数据驱动实例化并做扇形排布/补间动画。
+    /// 固定结构在 Recipe.prefab，由 BattleForm 直接持有，不再经过动态容器或状态动画。
     /// </summary>
     public sealed class RecipeCardView : MonoBehaviour, IPointerClickHandler
     {

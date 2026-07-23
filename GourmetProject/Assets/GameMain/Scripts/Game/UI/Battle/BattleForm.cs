@@ -36,7 +36,7 @@ namespace GourmetProject.Game.UI.Battle
 {
     /// <summary>
     /// 局外周循环编排枢纽 + 局内战斗结果壳。
-    /// 常驻壳（左列信息 / 右列道具 / 顶部行动轴 / 底部扇形菜谱）进入玩法后全程常驻，只有中部内容区在五态间切换：
+    /// 常驻壳（左列信息 / 右列道具 / 顶部行动轴 / 固定菜谱）进入玩法后全程常驻，只有中部内容区在五态间切换：
     /// 行动选择(含事件 n 选一) / 商店 / 编辑菜谱 / 美食战斗 / 餐桌编辑。切换只对中部内容区做 DOTween 渐隐渐显
     /// （<see cref="UITransition.FadeSwap"/>），常驻壳不参与动画；美食 / 餐桌态在同一 Battle 场景内透出世界空间表现。
     /// </summary>
@@ -111,8 +111,8 @@ namespace GourmetProject.Game.UI.Battle
         [SerializeField] private ActiveItemTargetOverlayView _activeItemTargetOverlayPrefab;
         [SerializeField] private GameObject _shopItemFlyFxPrefab;
 
-        [Header("Recipe View")]
-        [SerializeField] private RecipeView _recipeView;
+        [Header("Recipe")]
+        [SerializeField] private RecipeCardView _recipe;
 
         [Header("Food Actions")]
         [SerializeField] private BattleFoodActionBar _foodBar;
@@ -130,7 +130,7 @@ namespace GourmetProject.Game.UI.Battle
 
         private WeekLoopController _loop;
 
-        private RecipeBooksPresenter _recipePresenter;
+        private RecipePresenter _recipePresenter;
         private TimelineAxisBinder _axisBinder;
         private TableViewCoordinator _tableCoordinator;
         private GameplayPageRouter _pageRouter;
@@ -195,7 +195,7 @@ namespace GourmetProject.Game.UI.Battle
                 _boardEditSkipButton.onClick.AddListener(OnTableEditSkipClicked);
             }
 
-            _recipePresenter = new RecipeBooksPresenter(_recipeView);
+            _recipePresenter = new RecipePresenter(_recipe);
             _axisBinder = new TimelineAxisBinder(
                 _actionAxisBar,
                 () => _tips != null ? _tips.Shop : null,
@@ -699,8 +699,7 @@ namespace GourmetProject.Game.UI.Battle
         RandomizedItemsPanel IGameplayPageRouterHost.RandomizedItemsPanel => _randomizedItemsPanel;
         EventPagePanel IGameplayPageRouterHost.EventPagePanel => _eventPagePanel;
         Button IGameplayPageRouterHost.BoardEditSkipButton => _boardEditSkipButton;
-        RecipeView IGameplayPageRouterHost.RecipeView => _recipeView;
-        RecipeBooksPresenter IGameplayPageRouterHost.RecipePresenter => _recipePresenter;
+        RecipePresenter IGameplayPageRouterHost.RecipePresenter => _recipePresenter;
         bool IGameplayPageRouterHost.RecipeInspectShowsActionAxis => _recipeWorkspacePage?.InspectShowsActionAxis == true;
         void IGameplayPageRouterHost.OnLeavingPage(GameplayView current, GameplayView next) => _recipeWorkspacePage?.OnLeavingPage(current, next);
         void IGameplayPageRouterHost.OnBeforeApplyPage(GameplayView view)
@@ -739,8 +738,7 @@ namespace GourmetProject.Game.UI.Battle
 
         GameRun IShopPageHost.Run => _run;
         ShopForm IShopPageHost.ShopPanel => _shopPanel;
-        RecipeView IShopPageHost.RecipeView => _recipeView;
-        RecipeBooksPresenter IShopPageHost.RecipePresenter => _recipePresenter;
+        RecipePresenter IShopPageHost.RecipePresenter => _recipePresenter;
         bool IShopPageHost.ShouldRefreshItemsAfterShopChange => _shopItemFlyInFlight <= 0;
         void IShopPageHost.OnShopClosed() => OnShopClosed();
         void IShopPageHost.RefreshPersistent(bool refreshItems) => RefreshPersistent(refreshItems);
@@ -760,7 +758,6 @@ namespace GourmetProject.Game.UI.Battle
         }
         RewardItemChoicePanel IRewardPageHost.RewardItemChoicePanelPrefab => _rewardItemChoicePanelPrefab;
         RandomizedItemsPanel IRewardPageHost.RandomizedItemsPanel => _randomizedItemsPanel;
-        RecipeView IRewardPageHost.RecipeView => _recipeView;
         void IRewardPageHost.SwitchTo(GameplayView view, Action buildCenter, Action onShown) => SwitchTo(view, buildCenter, onShown);
         void IRewardPageHost.SetCenterTitle(string text) => SetCenterTitle(text);
         void IRewardPageHost.RefreshPersistent() => RefreshPersistent();
@@ -1110,7 +1107,7 @@ namespace GourmetProject.Game.UI.Battle
             _foodBar?.SetVisible(visible);
         }
 
-        /// <summary>战斗态扇形菜谱条：卡片点击查看详情，上餐铃从该菜谱随机上菜。</summary>
+        /// <summary>战斗态固定菜谱：卡片点击查看详情，上餐铃从该菜谱随机上菜。</summary>
         private void BuildBattleRecipe()
         {
             _recipePresenter?.BuildBattle(_session, ServeFromRecipe, OpenRecipeInspect);
@@ -1225,7 +1222,7 @@ namespace GourmetProject.Game.UI.Battle
             }
         }
 
-        /// <summary>商店内数据变化回调：刷新常驻壳信息 + 底部扇形菜谱条。</summary>
+        /// <summary>商店内数据变化回调：刷新常驻壳信息与固定菜谱。</summary>
         private void RefreshShopPersistent()
         {
             _shopPage?.RefreshPersistent();

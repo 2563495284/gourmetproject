@@ -66,7 +66,6 @@ namespace GourmetProject.Game.UI.Meta
         public void Open(
             GameRun run,
             IReadOnlyList<RewardChoice> choices,
-            RecipeView recipeView,
             Func<int, int, bool> onChoiceDropped,
             Action onSkip,
             Func<FoodTipsView> getFoodTips = null)

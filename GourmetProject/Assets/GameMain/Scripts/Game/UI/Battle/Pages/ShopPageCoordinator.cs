@@ -18,9 +18,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         ShopForm ShopPanel { get; }
 
-        RecipeView RecipeView { get; }
-
-        RecipeBooksPresenter RecipePresenter { get; }
+        RecipePresenter RecipePresenter { get; }
 
         bool ShouldRefreshItemsAfterShopChange { get; }
 

@@ -6,7 +6,7 @@ namespace GourmetProject.Game.UI.Common
 {
     /// <summary>
     /// 通用局部过程动画工具：对某个「变化区域」做「淡出 → swap → 淡入」的中部内容切换。
-    /// 常驻壳（左列 / 右列 / 行动轴 / 菜谱抽屉外框）不参与动画，只对传入的 <see cref="CanvasGroup"/> 做渐隐渐显。
+    /// 常驻壳（左列 / 右列 / 行动轴 / 固定菜谱）不参与动画，只对传入的 <see cref="CanvasGroup"/> 做渐隐渐显。
     /// 时长 &lt;= 0（或 region 为 null）时立即执行 swap（等价于直切，功能与动画解耦，便于独立开发/调试）。
     /// 动画走 unscaled 时间，暂停 / 时间缩放下仍生效；全部基于 DOTween 核心 API（无需 Modules asmdef）。
     /// </summary>

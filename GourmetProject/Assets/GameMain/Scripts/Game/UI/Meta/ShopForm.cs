@@ -14,7 +14,7 @@ namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>
     /// 商店「中部态」面板：作为 <c>BattleForm</c> 常驻壳的中部内容之一（不再是独立弹层）。
-    /// 常驻壳（左列信息 / 行动轴 / 右列道具 / 底部扇形菜谱条）由 BattleForm 提供，本面板只负责中部四区
+    /// 常驻壳（左列信息 / 行动轴 / 右列道具 / 固定菜谱）由 BattleForm 提供，本面板只负责中部四区
     /// （食物 / 碎片包 / 被动 / 主动）与「编辑菜谱」入口。编辑菜谱已抽出为独立状态
     /// <see cref="RecipeWorkspacePanel"/>，点入口时通过回调交回 BattleForm 状态机切换。
     /// </summary>

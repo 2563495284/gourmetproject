@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using GourmetProject.Game.Run;
-using GourmetProject.Game.UI.Battle.View;
 
 namespace GourmetProject.Game.UI.Battle.States
 {
@@ -13,11 +12,9 @@ namespace GourmetProject.Game.UI.Battle.States
     {
         GameRun Run { get; }
 
-        RecipeBooksPresenter Recipe { get; }
-
         bool RecipeInspectShowsActionAxis { get; }
 
-        /// <summary>按 view 落地常驻壳通用配置：面板显隐 / 行动轴 / 白底 / 菜谱抽屉态 / 刷新常驻信息。</summary>
+        /// <summary>按 view 落地常驻壳通用配置：面板显隐 / 行动轴 / 白底 / 刷新常驻信息。</summary>
         void ApplyShellForView(GameplayView view);
 
         void SetCenterTitle(string text);
