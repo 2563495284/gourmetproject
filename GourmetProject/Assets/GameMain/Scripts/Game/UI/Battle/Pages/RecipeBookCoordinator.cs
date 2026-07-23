@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace GourmetProject.Game.UI.Battle.Pages
 {
-    internal interface IRecipeWorkspaceHost
+    internal interface IRecipeBookHost
     {
         GameRun Run { get; }
 
@@ -18,7 +18,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         GameplayView CurrentView { get; }
 
-        RecipeWorkspacePanel RecipeWorkspacePanel { get; }
+        RecipeReadonlyBookView RecipeReadonlyBookView { get; }
 
         void SwitchTo(GameplayView view, Action buildCenter = null, Action onShown = null);
 
@@ -39,13 +39,14 @@ namespace GourmetProject.Game.UI.Battle.Pages
         FoodTipsView FoodTips();
     }
 
-    internal sealed class RecipeWorkspaceCoordinator
+    internal sealed class RecipeBookCoordinator
     {
-        private readonly IRecipeWorkspaceHost _host;
+        private readonly IRecipeBookHost _host;
         private ItemDefinition _activeItemTargetItem;
         private GameplayView _activeItemReturnView = GameplayView.None;
         private Action _activeItemTargetCancel;
         private Action<ActiveTarget, Action> _activeItemTargetConfirmed;
+        private bool _shopDeleteRequested;
         private string _eventDeleteTitle;
         private Action _eventDeleteCancel;
         private Action<ActiveTarget> _eventDeleteConfirmed;
@@ -56,7 +57,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
         private bool _inspectShowsActionAxis;
         private bool _inspectUsesBattleRecipe;
 
-        public RecipeWorkspaceCoordinator(IRecipeWorkspaceHost host)
+        public RecipeBookCoordinator(IRecipeBookHost host)
         {
             _host = host;
         }
@@ -77,7 +78,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         public void OpenPanel()
         {
-            RecipeWorkspacePanel panel = _host.RecipeWorkspacePanel;
+            RecipeReadonlyBookView panel = _host.RecipeReadonlyBookView;
             if (panel == null)
             {
                 return;
@@ -88,7 +89,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 _host.SetCenterTitle(_activeItemTargetItem.Desc);
                 panel.Open(
                     _host.Run,
-                    RecipeWorkspaceRequest.ActiveItemTarget(
+                    RecipeReadonlyBookRequest.ActiveItemTarget(
                         _activeItemTargetItem,
                         CancelActiveItemTarget,
                         ConfirmActiveItemTarget,
@@ -103,7 +104,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 _host.SetCenterTitle("查看菜谱");
                 panel.Open(
                     _host.Run,
-                    RecipeWorkspaceRequest.ReadonlyBook(
+                    RecipeReadonlyBookRequest.ReadonlyBook(
                         bookIndex,
                         CloseInspect,
                         _host.RefreshPersistent,
@@ -117,7 +118,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 _host.SetCenterTitle(string.IsNullOrWhiteSpace(_eventDeleteTitle) ? "选择要删除的菜品" : _eventDeleteTitle);
                 panel.Open(
                     _host.Run,
-                    RecipeWorkspaceRequest.EventDeleteDish(
+                    RecipeReadonlyBookRequest.EventDeleteDish(
                         _eventDeleteTitle,
                         CancelEventDelete,
                         ConfirmEventDelete,
@@ -126,22 +127,30 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 return;
             }
 
-            panel.Open(
-                _host.Run,
-                RecipeWorkspaceRequest.Edit(OpenShopFromEdit, _host.RefreshShopPersistent),
-                _host.FoodTips);
+            if (_shopDeleteRequested)
+            {
+                _host.SetCenterTitle($"删除食物　花费 {ShopService.DeleteCost(_host.Run)} 金币");
+                panel.Open(
+                    _host.Run,
+                    RecipeReadonlyBookRequest.ShopDeleteDish(
+                        CloseShopDelete,
+                        _host.RefreshShopPersistent),
+                    _host.FoodTips);
+            }
         }
 
-        public void OpenEdit()
+        public void OpenShopDelete()
         {
             ClearInspectRequest();
             ClearActiveItemTargetRequest();
             ClearEventDeleteRequest();
-            _host.SwitchTo(GameplayView.RecipeWorkspace);
+            _shopDeleteRequested = true;
+            _host.SwitchTo(GameplayView.RecipeSelection);
         }
 
-        public void OpenShopFromEdit()
+        private void CloseShopDelete()
         {
+            _shopDeleteRequested = false;
             _host.SwitchTo(GameplayView.Shop);
         }
 
@@ -160,6 +169,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
             }
 
             _inspectBookIndex = bookIndex;
+            _shopDeleteRequested = false;
             bool alreadyInspecting = _host.CurrentView == GameplayView.RecipeInspect;
             _inspectReturnView = alreadyInspecting ? _inspectReturnView : _host.CurrentView;
             if (_host.CurrentView != GameplayView.RecipeInspect)
@@ -187,20 +197,12 @@ namespace GourmetProject.Game.UI.Battle.Pages
             }
 
             _activeItemTargetItem = item;
+            _shopDeleteRequested = false;
             _activeItemReturnView = _host.CurrentView;
             _activeItemTargetCancel = onCancel;
             _activeItemTargetConfirmed = onTargetConfirmed;
             ClearInspectRequest();
-            _host.SwitchTo(GameplayView.RecipeWorkspace, onShown: onOpened);
-        }
-
-        public bool TryPointerActiveItemTarget(Vector2 screenPoint, out ActiveTarget target)
-        {
-            target = default;
-            return _host.CurrentView == GameplayView.RecipeWorkspace
-                && _activeItemTargetItem != null
-                && _host.RecipeWorkspacePanel != null
-                && _host.RecipeWorkspacePanel.TryPointerRecipeDishTarget(screenPoint, out target);
+            _host.SwitchTo(GameplayView.RecipeSelection, onShown: onOpened);
         }
 
         public void CancelActiveItemTarget()
@@ -259,23 +261,24 @@ namespace GourmetProject.Game.UI.Battle.Pages
             Action onChanged)
         {
             _eventDeleteTitle = title;
+            _shopDeleteRequested = false;
             _eventDeleteCancel = onCancel;
             _eventDeleteConfirmed = onTargetConfirmed;
             _eventDeleteChanged = onChanged;
             ClearInspectRequest();
-            _host.SwitchTo(GameplayView.RecipeWorkspace);
+            _host.SwitchTo(GameplayView.RecipeSelection);
         }
 
         public void RefreshPanel()
         {
-            _host.RecipeWorkspacePanel?.Refresh();
+            _host.RecipeReadonlyBookView?.Refresh();
         }
 
         public bool PlayActiveItemRecipeFlavorApplied(ActiveTarget target, Action onComplete)
         {
-            return _host.CurrentView == GameplayView.RecipeWorkspace
-                && _host.RecipeWorkspacePanel != null
-                && _host.RecipeWorkspacePanel.PlayActiveItemRecipeFlavorApplied(target, onComplete);
+            return _host.CurrentView == GameplayView.RecipeSelection
+                && _host.RecipeReadonlyBookView != null
+                && _host.RecipeReadonlyBookView.PlayActiveItemRecipeFlavorApplied(target, onComplete);
         }
 
         private void CloseInspect()

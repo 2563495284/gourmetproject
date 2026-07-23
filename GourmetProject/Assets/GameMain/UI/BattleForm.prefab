@@ -5463,7 +5463,7 @@ MonoBehaviour:
   _actionSelectionPanel: {fileID: 364573485979498198}
   _deck: {fileID: 8087920037263753580}
   _shopPanel: {fileID: 9064086834078507581}
-  _recipeWorkspacePanel: {fileID: 640277735806117130}
+  _recipeReadonlyBookView: {fileID: 640277735806117130}
   _rewardDishPackPanel: {fileID: 5993152883319482668}
   _rewardItemChoicePanelPrefab: {fileID: 882731687564183615, guid: f0fb2abd580ed47dfabf97ab7bcd9e1a, type: 3}
   _randomizedItemsPanel: {fileID: 3697955443635163090}
@@ -11472,7 +11472,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 340822506070461114, guid: 34528d52803b847879e14ad815f88c34, type: 3}
       propertyPath: m_Name
-      value: RecipeWorkspacePanel
+      value: RecipeReadonlyBookView
       objectReference: {fileID: 0}
     - target: {fileID: 340822506070461114, guid: 34528d52803b847879e14ad815f88c34, type: 3}
       propertyPath: m_IsActive
@@ -11576,8 +11576,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3657596b08fef4c39a6270897c5722c6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Meta.RecipeWorkspacePanel
+  m_Name: RecipeReadonlyBookView
+  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Meta.RecipeReadonlyBookView
 --- !u!224 &4326582166000000528 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
@@ -11597,7 +11597,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1000000000000000020, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1000000000000000021, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
       propertyPath: m_Pivot.x

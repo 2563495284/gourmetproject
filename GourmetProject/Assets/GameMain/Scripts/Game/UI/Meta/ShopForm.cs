@@ -15,8 +15,8 @@ namespace GourmetProject.Game.UI.Meta
     /// <summary>
     /// 商店「中部态」面板：作为 <c>BattleForm</c> 常驻壳的中部内容之一（不再是独立弹层）。
     /// 常驻壳（左列信息 / 行动轴 / 右列道具 / 固定菜谱）由 BattleForm 提供，本面板只负责中部四区
-    /// （食物 / 碎片包 / 被动 / 主动）与「编辑菜谱」入口。编辑菜谱已抽出为独立状态
-    /// <see cref="RecipeWorkspacePanel"/>，点入口时通过回调交回 BattleForm 状态机切换。
+    /// （食物 / 碎片包 / 被动 / 主动）与「删除食物」入口。删除时切换到
+    /// <see cref="RecipeReadonlyBookView"/> 选择目标并二次确认。
     /// </summary>
     public sealed class ShopForm : MonoBehaviour
     {
@@ -44,8 +44,8 @@ namespace GourmetProject.Game.UI.Meta
         [SerializeField] private FoodTipsView _foodTipsPrefab;
         [SerializeField] private ItemTipView _itemTipPrefab;
 
-        [Header("Recipe Entry")]
-        [SerializeField] private Button _editRecipeButton;
+        [Header("Delete Dish")]
+        [SerializeField] private Button _deleteDishButton;
 
         private readonly List<ShopEntry> _stock = new();
         private readonly List<GameObject> _spawned = new();
@@ -55,7 +55,7 @@ namespace GourmetProject.Game.UI.Meta
         private ItemTipView _itemTipView;
 
         private Action _onLeave;
-        private Action _onOpenRecipeWorkspace;
+        private Action _onOpenDeleteDish;
         private Func<ShopEntry, ShopBuyItemViewBase, bool> _onBuy;
 
         private void Awake()
@@ -72,19 +72,19 @@ namespace GourmetProject.Game.UI.Meta
         /// <param name="run">当前肉鸽运行。</param>
         /// <param name="stock">页面协调器准备好的库存快照。</param>
         /// <param name="onLeave">点「离开商店」时回调（BattleForm 继续周循环编排）。</param>
-        /// <param name="onOpenRecipeWorkspace">点「编辑菜谱」时回调：BattleForm 切到菜谱工作区态。</param>
+        /// <param name="onOpenDeleteDish">点「删除食物」时回调：BattleForm 打开菜谱选择页。</param>
         public void Open(
             GameRun run,
             IReadOnlyList<ShopEntry> stock,
             Action onLeave,
-            Action onOpenRecipeWorkspace = null,
+            Action onOpenDeleteDish = null,
             Func<ShopEntry, ShopBuyItemViewBase, bool> onBuy = null)
         {
             EnsureWired();
             _run = run;
             ReplaceStock(stock);
             _onLeave = onLeave;
-            _onOpenRecipeWorkspace = onOpenRecipeWorkspace;
+            _onOpenDeleteDish = onOpenDeleteDish;
             _onBuy = onBuy;
 
             if (_run == null)
@@ -116,10 +116,10 @@ namespace GourmetProject.Game.UI.Meta
                 _leaveButton.onClick.AddListener(OnLeaveClicked);
             }
 
-            if (_editRecipeButton != null)
+            if (_deleteDishButton != null)
             {
-                _editRecipeButton.onClick.RemoveAllListeners();
-                _editRecipeButton.onClick.AddListener(() => _onOpenRecipeWorkspace?.Invoke());
+                _deleteDishButton.onClick.RemoveAllListeners();
+                _deleteDishButton.onClick.AddListener(() => _onOpenDeleteDish?.Invoke());
             }
         }
 
@@ -147,10 +147,26 @@ namespace GourmetProject.Game.UI.Meta
             EnsureTipViews();
 
             SetText(_goldText, $"金币 {_run.Gold}");
+            RefreshDeleteDishButton();
             BuildBuySection(ShopEntryKind.Dish, _foodContainer, _foodEmptyText, "暂无食物", _foodCardPrefab);
             BuildBuySection(ShopEntryKind.Fragment, _fragmentContainer, _fragmentEmptyText, "暂无碎片包", _fragmentCardPrefab);
             BuildBuySection(ShopEntryKind.PassiveItem, _passiveContainer, _passiveEmptyText, "暂无被动道具", _passiveCardPrefab);
             BuildBuySection(ShopEntryKind.ActiveItem, _activeContainer, _activeEmptyText, "暂无主动道具", _activeCardPrefab);
+        }
+
+        private void RefreshDeleteDishButton()
+        {
+            if (_deleteDishButton == null || _run == null)
+            {
+                return;
+            }
+
+            int cost = ShopService.DeleteCost(_run);
+            Text label = _deleteDishButton.GetComponentInChildren<Text>(true);
+            SetText(label, $"删除食物 -{cost}");
+            _deleteDishButton.interactable = _run.RecipeEntries.Count > 0
+                && _run.Gold >= cost
+                && !new ItemRuntime(_run).BlockRemoveDish();
         }
 
         private void BuildBuySection(

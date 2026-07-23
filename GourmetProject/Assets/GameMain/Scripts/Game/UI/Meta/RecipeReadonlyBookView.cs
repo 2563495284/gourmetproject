@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Threading;
-using DG.Tweening;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Common;
@@ -16,29 +14,25 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>
-    /// 菜谱工作区面板：作为 <c>BattleForm</c> 常驻壳中部内容区的复用状态容器。
-    /// 当前承载编辑菜谱、主动道具选菜与确认预览等流程；具体交互由内部状态机切换。
+    /// 唯一菜谱页面：作为 <c>BattleForm</c> 中部内容区的复用状态视图。
+    /// 承载普通查看、商店删除、事件删除和主动道具选菜流程。
     /// </summary>
-    public sealed partial class RecipeWorkspacePanel : MonoBehaviour
+    public sealed partial class RecipeReadonlyBookView : MonoBehaviour
     {
         private const float DesiredBookGap = 24f;
         private const float MinBookScale = 0.1f;
-        private const float DishFlyDuration = 0.28f;
         private static Font s_defaultFont;
 
         [Header("Header")]
         [SerializeField] private Text _titleText;
 
         [Header("Books")]
-        [SerializeField] private RectTransform _editBooksContainer;
-        [SerializeField] private RecipeEditBookView _editBookPrefab;
-        [SerializeField] private RecipeEditBookView _readonlyBookPrefab;
-        [SerializeField] private RecipeEditDishView _editDishPrefab;
+        [SerializeField] private RectTransform _bookContainer;
+        [SerializeField] private RecipeEditBookView _bookPrefab;
+        [SerializeField] private RecipeEditDishView _dishPrefab;
 
-        [Header("Trash / Exit")]
-        [SerializeField] private RecipeTrashDropZone _trashZone;
-        [SerializeField] private Text _trashPriceText;
-        [SerializeField] private Button _exitEditButton;
+        [Header("Back")]
+        [SerializeField] private Button _backButton;
 
         [Header("Compare Popup Templates")]
         [SerializeField] private RectTransform _compareOverlayPrefab;
@@ -56,15 +50,12 @@ namespace GourmetProject.Game.UI.Meta
         private readonly List<RecipeEditDishView> _spawnedDishes = new();
         private readonly List<RecipeEditBookView> _spawnedBooks = new();
         private GameRun _run;
-        private CancellationTokenSource _pendingRebuildCts;
         private Action _onExit;
         private Action _onChanged;
         private Func<FoodTipsView> _getFoodTips;
         private RecipeEditDishView _hoveredTipDish;
-        private int _pendingRestoreBookIndex = -1;
-        private int _pendingRestoreDishIndex = -1;
         private GameObject _compareOverlay;
-        private RecipeWorkspacePanelStateMachine _stateMachine;
+        private RecipeReadonlyBookStateMachine _stateMachine;
         private int _readonlyEntriesBookIndex = -1;
         private IReadOnlyList<RecipeBookSlot> _readonlyEntries;
         private bool _compareTemplateMissingReported;
@@ -81,17 +72,16 @@ namespace GourmetProject.Game.UI.Meta
             ClearCompareOverlay();
             HideRecipeDishTips();
             ClearSpawned();
-            CancelPendingRebuild();
-            ClearPendingRestoreScroll();
         }
 
-        /// <summary>由 BattleForm 进入编辑菜谱态时调用：绑定运行数据与回调并铺出工作区。</summary>
-        /// <param name="run">当前肉鸽运行。</param>
-        /// <param name="onExit">点「离开编辑」按钮时回调（BattleForm 返回商店态）。</param>
-        /// <param name="onChanged">编辑（移动 / 删除）后回调，用于刷新常驻壳金币与底部菜谱条。</param>
-        public void Open(GameRun run, Action onExit, Action onChanged, Func<FoodTipsView> getFoodTips = null)
+        /// <summary>商店删除食物：点击食物后通过通用确认弹窗二次确认。</summary>
+        public void OpenForShopDelete(
+            GameRun run,
+            Action onExit,
+            Action onChanged,
+            Func<FoodTipsView> getFoodTips = null)
         {
-            Open(run, RecipeWorkspaceRequest.Edit(onExit, onChanged), getFoodTips);
+            Open(run, RecipeReadonlyBookRequest.ShopDeleteDish(onExit, onChanged), getFoodTips);
         }
 
         /// <summary>只读查看单本菜谱：禁拖拽，菜品只响应悬停 tips。</summary>
@@ -102,7 +92,7 @@ namespace GourmetProject.Game.UI.Meta
             Action onChanged,
             Func<FoodTipsView> getFoodTips = null)
         {
-            Open(run, RecipeWorkspaceRequest.ReadonlyBook(bookIndex, onExit, onChanged), getFoodTips);
+            Open(run, RecipeReadonlyBookRequest.ReadonlyBook(bookIndex, onExit, onChanged), getFoodTips);
         }
 
         /// <summary>以主动道具选择态打开菜谱面板：禁用拖拽/删除，只允许点击菜品进入确认。</summary>
@@ -114,7 +104,7 @@ namespace GourmetProject.Game.UI.Meta
             Action onChanged,
             Func<FoodTipsView> getFoodTips = null)
         {
-            Open(run, RecipeWorkspaceRequest.ActiveItemTarget(item, onCancel, onTargetConfirmed, onChanged), getFoodTips);
+            Open(run, RecipeReadonlyBookRequest.ActiveItemTarget(item, onCancel, onTargetConfirmed, onChanged), getFoodTips);
         }
 
         public void OpenForEventRecipeDishDelete(
@@ -125,38 +115,38 @@ namespace GourmetProject.Game.UI.Meta
             Action onChanged,
             Func<FoodTipsView> getFoodTips = null)
         {
-            Open(run, RecipeWorkspaceRequest.EventDeleteDish(title, onCancel, onTargetConfirmed, onChanged), getFoodTips);
+            Open(run, RecipeReadonlyBookRequest.EventDeleteDish(title, onCancel, onTargetConfirmed, onChanged), getFoodTips);
         }
 
-        internal void Open(GameRun run, RecipeWorkspaceRequest request, Func<FoodTipsView> getFoodTips = null)
+        internal void Open(GameRun run, RecipeReadonlyBookRequest request, Func<FoodTipsView> getFoodTips = null)
         {
             EnsureWired();
             _run = run;
             _onExit = request.OnExit;
             _onChanged = request.OnChanged;
             _getFoodTips = getFoodTips;
-            _readonlyEntriesBookIndex = request.Mode == RecipeWorkspaceMode.ReadonlyBook ? request.BookIndex : -1;
-            _readonlyEntries = request.Mode == RecipeWorkspaceMode.ReadonlyBook ? request.ReadonlyEntries : null;
+            _readonlyEntriesBookIndex = request.Mode == RecipeReadonlyBookMode.ReadonlyBook ? request.BookIndex : -1;
+            _readonlyEntries = request.Mode == RecipeReadonlyBookMode.ReadonlyBook ? request.ReadonlyEntries : null;
 
             switch (request.Mode)
             {
-                case RecipeWorkspaceMode.ReadonlyBook:
+                case RecipeReadonlyBookMode.ReadonlyBook:
                     _stateMachine.Switch(new ReadonlyRecipeBookState(request.BookIndex));
                     break;
-                case RecipeWorkspaceMode.ActiveItemTarget:
+                case RecipeReadonlyBookMode.ShopDeleteDish:
+                    _stateMachine.Switch(new ShopDeleteDishState(request.OnExit));
+                    break;
+                case RecipeReadonlyBookMode.ActiveItemTarget:
                     _stateMachine.Switch(new ActiveRecipeDishSelectState(
                         request.Item,
                         request.OnCancel,
                         request.OnTargetConfirmed));
                     break;
-                case RecipeWorkspaceMode.EventDeleteDish:
+                case RecipeReadonlyBookMode.EventDeleteDish:
                     _stateMachine.Switch(new EventRecipeDishDeleteState(
                         request.Title,
                         request.OnCancel,
                         target => request.OnTargetConfirmed?.Invoke(target, null)));
-                    break;
-                default:
-                    _stateMachine.Switch(new RecipeEditState());
                     break;
             }
         }
@@ -168,31 +158,6 @@ namespace GourmetProject.Game.UI.Meta
             {
                 _stateMachine?.Refresh();
             }
-        }
-
-        public bool TryPointerRecipeDishTarget(Vector2 screenPoint, out ActiveTarget target)
-        {
-            target = default;
-            if (_run == null)
-            {
-                return false;
-            }
-
-            for (int i = _spawnedDishes.Count - 1; i >= 0; i--)
-            {
-                RecipeEditDishView dish = _spawnedDishes[i];
-                if (dish == null || !dish.ContainsScreenPoint(screenPoint))
-                {
-                    continue;
-                }
-
-                if (TryBuildRecipeTarget(dish, out target))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         public bool PlayActiveItemRecipeFlavorApplied(ActiveTarget target, Action onComplete)
@@ -224,17 +189,17 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             _wired = true;
-            _stateMachine ??= new RecipeWorkspacePanelStateMachine(this);
+            _stateMachine ??= new RecipeReadonlyBookStateMachine(this);
             if (_titleText == null)
             {
                 Transform title = transform.Find("Title");
                 _titleText = title != null ? title.GetComponent<Text>() : null;
             }
 
-            if (_exitEditButton != null)
+            if (_backButton != null)
             {
-                _exitEditButton.onClick.RemoveAllListeners();
-                _exitEditButton.onClick.AddListener(() => _stateMachine?.OnExitClicked());
+                _backButton.onClick.RemoveAllListeners();
+                _backButton.onClick.AddListener(() => _stateMachine?.OnExitClicked());
             }
         }
 
@@ -242,42 +207,27 @@ namespace GourmetProject.Game.UI.Meta
         {
             ClearCompareOverlay();
             ClearSpawned();
-            RecipeWorkspacePanelState state = _stateMachine?.Current;
-            if (state == null || _run == null || _editBooksContainer == null || _editBookPrefab == null || _editDishPrefab == null)
+            RecipeReadonlyBookState state = _stateMachine?.Current;
+            if (state == null || _run == null || _bookContainer == null || _bookPrefab == null || _dishPrefab == null)
             {
                 return;
             }
 
             ConfigureBooksLayoutGroup();
-            SetText(_titleText, state.PanelTitle);
+            string title = state is ShopDeleteDishState
+                ? $"删除食物　花费 {ShopService.DeleteCost(_run)} 金币"
+                : state.PanelTitle;
+            SetText(_titleText, title);
 
-            if (_trashZone != null)
-            {
-                _trashZone.gameObject.SetActive(state.ShowTrash);
-                if (state.ShowTrash)
-                {
-                    _trashZone.Bind(OnDishDroppedToTrash);
-                }
-            }
-
-            if (_trashPriceText != null)
-            {
-                _trashPriceText.gameObject.SetActive(state.ShowTrash);
-                SetText(_trashPriceText, state.ShowTrash ? $"-{ShopService.DeleteCost(_run)}" : string.Empty);
-            }
-
-            SetButtonText(_exitEditButton, state.ExitButtonText);
+            SetButtonText(_backButton, state.ExitButtonText);
 
             var books = new List<RecipeEditBookView>(1);
             const int i = 0;
             if (state.BookIndexFilter < 0 || state.BookIndexFilter == i)
             {
-                RecipeEditBookView bookPrefab = state.BookIndexFilter >= 0 && _readonlyBookPrefab != null
-                    ? _readonlyBookPrefab
-                    : _editBookPrefab;
-                RecipeEditBookView book = Instantiate(bookPrefab, _editBooksContainer);
-                book.gameObject.name = $"RecipeEditBook_{i + 1}";
-                book.Bind(i, state.CanDropDishToBook ? OnDishDroppedToBook : null);
+                RecipeEditBookView book = Instantiate(_bookPrefab, _bookContainer);
+                book.gameObject.name = "RecipeReadonlyBook";
+                book.Bind(i, null);
                 _spawned.Add(book.gameObject);
                 _spawnedBooks.Add(book);
                 books.Add(book);
@@ -291,18 +241,18 @@ namespace GourmetProject.Game.UI.Meta
                         RecipeBookSlot slot = entries[k];
                         string dishId = slot.DishId;
                         DishDef def = _run.Database.GetDish(dishId);
-                        RecipeEditDishView dish = Instantiate(_editDishPrefab, dishContainer);
+                        RecipeEditDishView dish = Instantiate(_dishPrefab, dishContainer);
                         dish.gameObject.name = $"RecipeDish_{i + 1}_{k + 1}";
                         dish.Bind(
                             DishName(GameApp.Config.Tables, dishId),
                             DishShapeText(dishId),
                             i,
                             k,
-                            state.EnableDishDrag,
+                            false,
                             state.CanClickDish ? OnRecipeDishClicked : null,
                             def,
-                            OnRecipeDishBeginDrag,
-                            OnRecipeDishDragCancelled,
+                            null,
+                            null,
                             ShowRecipeDishTips,
                             HideRecipeDishTips,
                             ComposeFlavorIds(def, slot.ExtraFlavorIds));
@@ -315,7 +265,6 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             FitBooksToContainer(books);
-            RestorePendingScroll(books);
             _onChanged?.Invoke();
         }
 
@@ -331,7 +280,7 @@ namespace GourmetProject.Game.UI.Meta
 
         private void ConfigureBooksLayoutGroup()
         {
-            HorizontalLayoutGroup layout = _editBooksContainer.GetComponent<HorizontalLayoutGroup>();
+            HorizontalLayoutGroup layout = _bookContainer.GetComponent<HorizontalLayoutGroup>();
             if (layout == null)
             {
                 return;
@@ -359,8 +308,8 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            float availableWidth = _editBooksContainer.rect.width;
-            float availableHeight = _editBooksContainer.rect.height;
+            float availableWidth = _bookContainer.rect.width;
+            float availableHeight = _bookContainer.rect.height;
             if (availableWidth <= 0f || availableHeight <= 0f)
             {
                 return;
@@ -393,131 +342,9 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
-        private void OnDishDroppedToBook(RecipeEditDishView dish, int targetBookIndex, int targetDishIndex)
-        {
-            if (dish == null || _stateMachine?.Current == null)
-            {
-                return;
-            }
-
-            RecipeEditBookView targetBook = FindBook(targetBookIndex);
-            targetDishIndex = Mathf.Max(0, targetDishIndex);
-            targetBook?.AnimateInsertionGap(targetDishIndex, dish);
-            if (_stateMachine.Current.OnDishDroppedToBook(this, dish, targetBookIndex, targetDishIndex))
-            {
-                dish.MarkDropHandled();
-                HideRecipeDishTips();
-                if (targetBook == null)
-                {
-                    QueueRebuild();
-                    return;
-                }
-
-                targetBook.ScrollToIndex(targetDishIndex, DishFlyDuration);
-                PlayDishFlyToSlot(dish, targetBook, targetDishIndex, () =>
-                {
-                    RequestRestoreScroll(targetBookIndex, targetDishIndex);
-                    RebuildBooksForCurrentState();
-                });
-            }
-        }
-
-        private void OnDishDroppedToTrash(RecipeEditDishView dish)
-        {
-            if (dish == null || _stateMachine?.Current == null)
-            {
-                return;
-            }
-
-            if (_stateMachine.Current.OnDishDroppedToTrash(this, dish))
-            {
-                dish.MarkDropHandled();
-                HideRecipeDishTips();
-                RectTransform rect = (RectTransform)dish.transform;
-                DOTween.Kill(rect);
-                DOTween.To(() => rect.localScale, value => rect.localScale = value, Vector3.zero, 0.16f)
-                    .SetEase(Ease.InCubic)
-                    .SetUpdate(true)
-                    .SetTarget(rect)
-                    .SetLink(dish.gameObject)
-                    .OnComplete(RebuildBooksForCurrentState);
-            }
-        }
-
         private void OnRecipeDishClicked(RecipeEditDishView dish)
         {
             _stateMachine?.Current?.OnDishClicked(this, dish);
-        }
-
-        private void OnRecipeDishBeginDrag(RecipeEditDishView dish)
-        {
-            HideRecipeDishTips();
-            FindBook(dish.BookIndex)?.AnimateCompaction(dish);
-        }
-
-        private bool OnRecipeDishDragCancelled(RecipeEditDishView dish)
-        {
-            if (_run == null || dish == null)
-            {
-                return false;
-            }
-
-            RecipeEditBookView book = FindBook(dish.BookIndex);
-            if (book == null)
-            {
-                return false;
-            }
-
-            int targetIndex = book.CurrentDishCount(dish);
-            if (!ShopService.MoveDish(_run, dish.DishIndex, targetIndex))
-            {
-                return false;
-            }
-
-            dish.MarkDropHandled();
-            book.ScrollToIndex(targetIndex, DishFlyDuration);
-            PlayDishFlyToSlot(dish, book, targetIndex, () =>
-            {
-                RequestRestoreScroll(dish.BookIndex, targetIndex);
-                RebuildBooksForCurrentState();
-            });
-            return true;
-        }
-
-        private void RequestRestoreScroll(int bookIndex, int dishIndex)
-        {
-            _pendingRestoreBookIndex = bookIndex;
-            _pendingRestoreDishIndex = dishIndex;
-        }
-
-        private void ClearPendingRestoreScroll()
-        {
-            _pendingRestoreBookIndex = -1;
-            _pendingRestoreDishIndex = -1;
-        }
-
-        private void RestorePendingScroll(IReadOnlyList<RecipeEditBookView> books)
-        {
-            if (_pendingRestoreBookIndex < 0 || books == null)
-            {
-                return;
-            }
-
-            int bookIndex = _pendingRestoreBookIndex;
-            int dishIndex = _pendingRestoreDishIndex;
-            _pendingRestoreBookIndex = -1;
-            _pendingRestoreDishIndex = -1;
-            if (bookIndex < 0 || bookIndex >= books.Count || books[bookIndex] == null)
-            {
-                return;
-            }
-
-            books[bookIndex].ScrollToIndex(Mathf.Max(0, dishIndex), 0f);
-        }
-
-        private RecipeEditBookView FindBook(int bookIndex)
-        {
-            return bookIndex >= 0 && bookIndex < _spawnedBooks.Count ? _spawnedBooks[bookIndex] : null;
         }
 
         private RecipeEditDishView FindDish(int bookIndex, int dishIndex)
@@ -532,64 +359,6 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             return null;
-        }
-
-        private void PlayDishFlyToSlot(RecipeEditDishView dish, RecipeEditBookView targetBook, int targetDishIndex, Action onComplete)
-        {
-            if (dish == null || targetBook == null)
-            {
-                onComplete?.Invoke();
-                return;
-            }
-
-            RectTransform rect = (RectTransform)dish.transform;
-            dish.PrepareAsFloating();
-            Vector3 start = rect.position;
-            Vector3 startScale = rect.localScale;
-            RectTransform targetScaleSource = targetBook.ViewportRect != null
-                ? targetBook.ViewportRect
-                : (RectTransform)targetBook.transform;
-            Vector3 targetScale = FloatingScaleForTarget(rect.parent as RectTransform, targetScaleSource);
-            Vector3 targetPosition = targetBook.SlotWorldCenterAfterScrollToIndex(targetDishIndex);
-            DOTween.Kill(rect);
-            DOTween.To(
-                    () => 0f,
-                    t =>
-                    {
-                        rect.position = Vector3.LerpUnclamped(start, targetPosition, t);
-                        rect.localScale = Vector3.LerpUnclamped(startScale, targetScale, t);
-                    },
-                    1f,
-                    DishFlyDuration)
-                .SetEase(Ease.OutCubic)
-                .SetUpdate(true)
-                .SetTarget(rect)
-                .SetLink(dish.gameObject)
-                .OnComplete(() =>
-                {
-                    dish.SetInteractableAfterAnimation(false);
-                    onComplete?.Invoke();
-                });
-        }
-
-        private static Vector3 FloatingScaleForTarget(RectTransform floatingParent, RectTransform target)
-        {
-            if (target == null)
-            {
-                return Vector3.one;
-            }
-
-            Vector3 parentScale = floatingParent != null ? floatingParent.lossyScale : Vector3.one;
-            Vector3 targetScale = target.lossyScale;
-            return new Vector3(
-                SafeScaleDiv(targetScale.x, parentScale.x),
-                SafeScaleDiv(targetScale.y, parentScale.y),
-                SafeScaleDiv(targetScale.z, parentScale.z));
-        }
-
-        private static float SafeScaleDiv(float value, float divisor)
-        {
-            return Mathf.Abs(divisor) <= 0.0001f ? value : value / divisor;
         }
 
         private void ShowRecipeDishTips(RecipeEditDishView dish)
@@ -755,6 +524,37 @@ namespace GourmetProject.Game.UI.Meta
                 CancelText = "返回",
                 OnConfirm = () => onConfirm?.Invoke(target),
                 OnCancel = onCancel,
+            };
+            GameApp.UI.OpenUIForm(UIForms.ConfirmDialog, UIForms.GroupDialog, data);
+        }
+
+        private void ShowShopDeleteConfirm(ActiveTarget target)
+        {
+            RecipeBookSlot slot = RecipeSlot(target);
+            DishDef def = slot == null ? null : _run.Database.GetDish(slot.DishId);
+            if (slot == null || def == null)
+            {
+                return;
+            }
+
+            int cost = ShopService.DeleteCost(_run);
+            var data = new ConfirmDialogData
+            {
+                Title = "确认删除食物",
+                Message = $"花费 {cost} 金币，从菜谱中删除「{def.Name}」？",
+                ConfirmText = $"删除 -{cost}",
+                CancelText = "返回",
+                OnConfirm = () =>
+                {
+                    if (!ShopService.DeleteDishAt(_run, target.Y))
+                    {
+                        RebuildBooksForCurrentState();
+                        return;
+                    }
+
+                    _onChanged?.Invoke();
+                    RebuildBooksForCurrentState();
+                },
             };
             GameApp.UI.OpenUIForm(UIForms.ConfirmDialog, UIForms.GroupDialog, data);
         }
@@ -975,47 +775,6 @@ namespace GourmetProject.Game.UI.Meta
             return ids;
         }
 
-        private void QueueRebuild()
-        {
-            CancelPendingRebuild();
-
-            RebuildNextFrameAsync();
-        }
-
-        private async void RebuildNextFrameAsync()
-        {
-            _pendingRebuildCts = CancellationTokenSource.CreateLinkedTokenSource(destroyCancellationToken);
-            CancellationToken token = _pendingRebuildCts.Token;
-            try
-            {
-                await Awaitable.NextFrameAsync(token);
-            }
-            catch (OperationCanceledException)
-            {
-                return;
-            }
-
-            CancelPendingRebuild();
-            if (!isActiveAndEnabled)
-            {
-                return;
-            }
-
-            RebuildBooksForCurrentState();
-        }
-
-        private void CancelPendingRebuild()
-        {
-            if (_pendingRebuildCts == null)
-            {
-                return;
-            }
-
-            _pendingRebuildCts.Cancel();
-            _pendingRebuildCts.Dispose();
-            _pendingRebuildCts = null;
-        }
-
         private static string DishName(cfg.Tables tables, string dishId)
         {
             cfg.DishVariant variant = tables.TbDishVariant.GetOrDefault(dishId);
@@ -1216,7 +975,7 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            Debug.LogError($"{nameof(RecipeWorkspacePanel)} 缺少对比弹窗模板：{templateName}。", this);
+            Debug.LogError($"{nameof(RecipeReadonlyBookView)} 缺少对比弹窗模板：{templateName}。", this);
             _compareTemplateMissingReported = true;
         }
 

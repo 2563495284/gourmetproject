@@ -226,7 +226,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
                     _host.ShowActionSelection();
                     break;
                 case GameplayView.Shop:
-                case GameplayView.RecipeWorkspace:
+                case GameplayView.RecipeSelection:
                 case GameplayView.Food:
                 case GameplayView.TableEdit:
                 case GameplayView.TableView:
@@ -300,8 +300,8 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 case GameplayView.Shop:
                     _host.SwitchTo(GameplayView.Shop);
                     break;
-                case GameplayView.RecipeWorkspace:
-                    _host.SwitchTo(GameplayView.RecipeWorkspace);
+                case GameplayView.RecipeSelection:
+                    _host.SwitchTo(GameplayView.RecipeSelection);
                     break;
                 case GameplayView.Food:
                     _host.SwitchTo(GameplayView.Food);

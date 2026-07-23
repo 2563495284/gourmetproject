@@ -5,18 +5,18 @@ using GourmetProject.Game.Run;
 
 namespace GourmetProject.Game.UI.Meta
 {
-    internal enum RecipeWorkspaceMode
+    internal enum RecipeReadonlyBookMode
     {
-        Edit,
         ReadonlyBook,
+        ShopDeleteDish,
         ActiveItemTarget,
         EventDeleteDish,
     }
 
-    internal readonly struct RecipeWorkspaceRequest
+    internal readonly struct RecipeReadonlyBookRequest
     {
-        private RecipeWorkspaceRequest(
-            RecipeWorkspaceMode mode,
+        private RecipeReadonlyBookRequest(
+            RecipeReadonlyBookMode mode,
             Action onExit,
             Action onCancel,
             Action<ActiveTarget, Action> onTargetConfirmed,
@@ -37,7 +37,7 @@ namespace GourmetProject.Game.UI.Meta
             ReadonlyEntries = readonlyEntries;
         }
 
-        public RecipeWorkspaceMode Mode { get; }
+        public RecipeReadonlyBookMode Mode { get; }
 
         public Action OnExit { get; }
 
@@ -55,28 +55,14 @@ namespace GourmetProject.Game.UI.Meta
 
         public IReadOnlyList<RecipeBookSlot> ReadonlyEntries { get; }
 
-        public static RecipeWorkspaceRequest Edit(Action onExit, Action onChanged)
-        {
-            return new RecipeWorkspaceRequest(
-                RecipeWorkspaceMode.Edit,
-                onExit,
-                null,
-                null,
-                onChanged,
-                null,
-                null,
-                -1,
-                null);
-        }
-
-        public static RecipeWorkspaceRequest ReadonlyBook(
+        public static RecipeReadonlyBookRequest ReadonlyBook(
             int bookIndex,
             Action onExit,
             Action onChanged,
             IReadOnlyList<RecipeBookSlot> readonlyEntries = null)
         {
-            return new RecipeWorkspaceRequest(
-                RecipeWorkspaceMode.ReadonlyBook,
+            return new RecipeReadonlyBookRequest(
+                RecipeReadonlyBookMode.ReadonlyBook,
                 onExit,
                 null,
                 null,
@@ -87,14 +73,28 @@ namespace GourmetProject.Game.UI.Meta
                 readonlyEntries);
         }
 
-        public static RecipeWorkspaceRequest ActiveItemTarget(
+        public static RecipeReadonlyBookRequest ShopDeleteDish(Action onExit, Action onChanged)
+        {
+            return new RecipeReadonlyBookRequest(
+                RecipeReadonlyBookMode.ShopDeleteDish,
+                onExit,
+                null,
+                null,
+                onChanged,
+                null,
+                null,
+                0,
+                null);
+        }
+
+        public static RecipeReadonlyBookRequest ActiveItemTarget(
             ItemDefinition item,
             Action onCancel,
             Action<ActiveTarget, Action> onTargetConfirmed,
             Action onChanged)
         {
-            return new RecipeWorkspaceRequest(
-                RecipeWorkspaceMode.ActiveItemTarget,
+            return new RecipeReadonlyBookRequest(
+                RecipeReadonlyBookMode.ActiveItemTarget,
                 null,
                 onCancel,
                 onTargetConfirmed,
@@ -105,14 +105,14 @@ namespace GourmetProject.Game.UI.Meta
                 null);
         }
 
-        public static RecipeWorkspaceRequest EventDeleteDish(
+        public static RecipeReadonlyBookRequest EventDeleteDish(
             string title,
             Action onCancel,
             Action<ActiveTarget> onTargetConfirmed,
             Action onChanged)
         {
-            return new RecipeWorkspaceRequest(
-                RecipeWorkspaceMode.EventDeleteDish,
+            return new RecipeReadonlyBookRequest(
+                RecipeReadonlyBookMode.EventDeleteDish,
                 null,
                 onCancel,
                 onTargetConfirmed != null ? (target, _) => onTargetConfirmed(target) : null,

@@ -74,7 +74,6 @@ namespace GourmetProject.Game.UI.Battle
 
             if (_recipePanelTargeting)
             {
-                UpdateRecipePanelTargeting();
                 return;
             }
 
@@ -308,29 +307,6 @@ namespace GourmetProject.Game.UI.Battle
                 _host.RefreshAfterActiveItem(result.BoardChanged, persist: false, result.ActionChoicesChanged);
                 onComplete?.Invoke();
             }
-        }
-
-        private void UpdateRecipePanelTargeting()
-        {
-            if (Mouse.current == null || _pendingItem == null)
-            {
-                return;
-            }
-
-            Vector2 pointer = Mouse.current.position.ReadValue();
-            bool hasTarget = _host.TryPointerActiveItemRecipeTarget(pointer, out ActiveTarget target);
-            if (Time.frameCount <= _targetFrame || !Mouse.current.leftButton.wasPressedThisFrame)
-            {
-                return;
-            }
-
-            if (hasTarget)
-            {
-                _host.ConfirmActiveItemRecipeTarget(target);
-                return;
-            }
-
-            _host.CancelActiveItemRecipeTarget();
         }
 
         private void BeginWorldTargeting()
@@ -642,7 +618,7 @@ namespace GourmetProject.Game.UI.Battle
             return _host.CurrentView switch
             {
                 GameplayView.Shop => ActiveUseContextKind.Shop,
-                GameplayView.RecipeWorkspace => ActiveUseContextKind.Shop,
+                GameplayView.RecipeSelection => ActiveUseContextKind.Shop,
                 GameplayView.TableEdit => ActiveUseContextKind.Shop,
                 GameplayView.TableView => ActiveUseContextKind.Shop,
                 GameplayView.ActionSelect => ActiveUseContextKind.ActionSelect,

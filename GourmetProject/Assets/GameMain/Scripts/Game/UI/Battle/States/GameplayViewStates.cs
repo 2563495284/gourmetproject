@@ -26,14 +26,14 @@ namespace GourmetProject.Game.UI.Battle.States
         }
     }
 
-    /// <summary>菜谱工作区态：中部交给 RecipeWorkspacePanel，行动轴隐藏。</summary>
-    internal sealed class RecipeWorkspaceState : IGameplayViewState
+    /// <summary>菜谱选择态：中部交给 RecipeReadonlyBookView，行动轴隐藏。</summary>
+    internal sealed class RecipeSelectionState : IGameplayViewState
     {
-        public GameplayView Kind => GameplayView.RecipeWorkspace;
+        public GameplayView Kind => GameplayView.RecipeSelection;
 
         public void Enter(IBattleViewHost host, Action buildCenter)
         {
-            host.OpenRecipeWorkspacePanel();
+            host.OpenRecipeBookPanel();
         }
     }
 
@@ -82,7 +82,7 @@ namespace GourmetProject.Game.UI.Battle.States
         }
     }
 
-    /// <summary>只读查看唯一菜谱：中部交给 RecipeWorkspacePanel，固定菜谱同步高亮。</summary>
+    /// <summary>只读查看唯一菜谱：中部交给 RecipeReadonlyBookView，固定菜谱同步高亮。</summary>
     internal sealed class RecipeInspectState : IGameplayViewState
     {
         public GameplayView Kind => GameplayView.RecipeInspect;
@@ -95,7 +95,7 @@ namespace GourmetProject.Game.UI.Battle.States
             }
 
             host.BuildRecipeInspectCards();
-            host.OpenRecipeWorkspacePanel();
+            host.OpenRecipeBookPanel();
         }
     }
 

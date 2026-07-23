@@ -5,20 +5,20 @@ using GourmetProject.Game.Run;
 
 namespace GourmetProject.Game.UI.Meta
 {
-    public sealed partial class RecipeWorkspacePanel
+    public sealed partial class RecipeReadonlyBookView
     {
-        private sealed class RecipeWorkspacePanelStateMachine
+        private sealed class RecipeReadonlyBookStateMachine
         {
-            private readonly RecipeWorkspacePanel _panel;
+            private readonly RecipeReadonlyBookView _panel;
 
-            public RecipeWorkspacePanelStateMachine(RecipeWorkspacePanel panel)
+            public RecipeReadonlyBookStateMachine(RecipeReadonlyBookView panel)
             {
                 _panel = panel;
             }
 
-            public RecipeWorkspacePanelState Current { get; private set; }
+            public RecipeReadonlyBookState Current { get; private set; }
 
-            public void Switch(RecipeWorkspacePanelState next)
+            public void Switch(RecipeReadonlyBookState next)
             {
                 Current?.Exit(_panel);
                 Current = next;
@@ -42,88 +42,74 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
-        private abstract class RecipeWorkspacePanelState
+        private abstract class RecipeReadonlyBookState
         {
-            public virtual string PanelTitle => "编辑菜谱   拖拽移动 / 拖入垃圾桶删除";
+            public virtual string PanelTitle => "查看菜谱";
 
             public virtual string ExitButtonText => "取消";
 
-            public virtual bool ShowTrash => false;
-
-            public virtual bool EnableDishDrag => false;
-
             public virtual bool CanClickDish => false;
-
-            public virtual bool CanDropDishToBook => false;
 
             public virtual int BookIndexFilter => -1;
 
-            public virtual void Enter(RecipeWorkspacePanel panel)
+            public virtual void Enter(RecipeReadonlyBookView panel)
             {
             }
 
-            public virtual void Exit(RecipeWorkspacePanel panel)
+            public virtual void Exit(RecipeReadonlyBookView panel)
             {
                 panel.ClearCompareOverlay();
             }
 
-            public virtual void Refresh(RecipeWorkspacePanel panel)
+            public virtual void Refresh(RecipeReadonlyBookView panel)
             {
                 panel.RebuildBooksForCurrentState();
             }
 
-            public virtual void OnExitClicked(RecipeWorkspacePanel panel)
+            public virtual void OnExitClicked(RecipeReadonlyBookView panel)
             {
             }
 
-            public virtual bool OnDishDroppedToBook(RecipeWorkspacePanel panel, RecipeEditDishView dish, int targetBookIndex, int targetDishIndex)
-            {
-                return false;
-            }
-
-            public virtual bool OnDishDroppedToTrash(RecipeWorkspacePanel panel, RecipeEditDishView dish)
-            {
-                return false;
-            }
-
-            public virtual void OnDishClicked(RecipeWorkspacePanel panel, RecipeEditDishView dish)
+            public virtual void OnDishClicked(RecipeReadonlyBookView panel, RecipeEditDishView dish)
             {
             }
         }
 
-        private sealed class RecipeEditState : RecipeWorkspacePanelState
+        private sealed class ShopDeleteDishState : RecipeReadonlyBookState
         {
-            public override string ExitButtonText => "离开编辑";
+            private readonly Action _onExit;
 
-            public override bool ShowTrash => true;
+            public ShopDeleteDishState(Action onExit)
+            {
+                _onExit = onExit;
+            }
 
-            public override bool EnableDishDrag => true;
+            public override bool CanClickDish => true;
 
-            public override bool CanDropDishToBook => true;
+            public override string PanelTitle => "删除食物";
 
-            public override void Enter(RecipeWorkspacePanel panel)
+            public override string ExitButtonText => "返回商店";
+
+            public override void Enter(RecipeReadonlyBookView panel)
             {
                 panel.RebuildBooksForCurrentState();
             }
 
-            public override void OnExitClicked(RecipeWorkspacePanel panel)
+            public override void OnExitClicked(RecipeReadonlyBookView panel)
             {
-                panel._onExit?.Invoke();
+                _onExit?.Invoke();
             }
 
-            public override bool OnDishDroppedToBook(RecipeWorkspacePanel panel, RecipeEditDishView dish, int targetBookIndex, int targetDishIndex)
+            public override void OnDishClicked(RecipeReadonlyBookView panel, RecipeEditDishView dish)
             {
-                return panel._run != null && targetBookIndex == 0
-                    && ShopService.MoveDish(panel._run, dish.DishIndex, targetDishIndex);
-            }
-
-            public override bool OnDishDroppedToTrash(RecipeWorkspacePanel panel, RecipeEditDishView dish)
-            {
-                return panel._run != null && ShopService.DeleteDishAt(panel._run, dish.DishIndex);
+                if (panel.TryBuildRecipeTarget(dish, out ActiveTarget target))
+                {
+                    panel.ShowShopDeleteConfirm(target);
+                }
             }
         }
 
-        private sealed class ReadonlyRecipeBookState : RecipeWorkspacePanelState
+        private sealed class ReadonlyRecipeBookState : RecipeReadonlyBookState
         {
             private readonly int _bookIndex;
 
@@ -138,18 +124,18 @@ namespace GourmetProject.Game.UI.Meta
 
             public override int BookIndexFilter => _bookIndex;
 
-            public override void Enter(RecipeWorkspacePanel panel)
+            public override void Enter(RecipeReadonlyBookView panel)
             {
                 panel.RebuildBooksForCurrentState();
             }
 
-            public override void OnExitClicked(RecipeWorkspacePanel panel)
+            public override void OnExitClicked(RecipeReadonlyBookView panel)
             {
                 panel._onExit?.Invoke();
             }
         }
 
-        private sealed class ActiveRecipeDishSelectState : RecipeWorkspacePanelState
+        private sealed class ActiveRecipeDishSelectState : RecipeReadonlyBookState
         {
             private readonly ItemDefinition _item;
             private readonly Action _onCancel;
@@ -166,28 +152,32 @@ namespace GourmetProject.Game.UI.Meta
 
             public override string PanelTitle => _item != null ? _item.Desc : "选择菜品";
 
-            public override void Enter(RecipeWorkspacePanel panel)
+            public override void Enter(RecipeReadonlyBookView panel)
             {
                 panel.RebuildBooksForCurrentState();
             }
 
-            public override void OnExitClicked(RecipeWorkspacePanel panel)
+            public override void OnExitClicked(RecipeReadonlyBookView panel)
             {
                 _onCancel?.Invoke();
             }
 
-            public override void OnDishClicked(RecipeWorkspacePanel panel, RecipeEditDishView dish)
+            public override void OnDishClicked(RecipeReadonlyBookView panel, RecipeEditDishView dish)
             {
                 if (_item == null || !panel.TryBuildRecipeTarget(dish, out ActiveTarget target))
                 {
                     return;
                 }
 
-                _onTargetConfirmed?.Invoke(target, null);
+                panel._stateMachine.Switch(new ActiveRecipeDishCompareState(
+                    this,
+                    _item,
+                    target,
+                    _onTargetConfirmed));
             }
         }
 
-        private sealed class EventRecipeDishDeleteState : RecipeWorkspacePanelState
+        private sealed class EventRecipeDishDeleteState : RecipeReadonlyBookState
         {
             private readonly string _title;
             private readonly Action _onCancel;
@@ -206,17 +196,17 @@ namespace GourmetProject.Game.UI.Meta
 
             public override string PanelTitle => string.IsNullOrWhiteSpace(_title) ? "选择要删除的菜品" : _title;
 
-            public override void Enter(RecipeWorkspacePanel panel)
+            public override void Enter(RecipeReadonlyBookView panel)
             {
                 panel.RebuildBooksForCurrentState();
             }
 
-            public override void OnExitClicked(RecipeWorkspacePanel panel)
+            public override void OnExitClicked(RecipeReadonlyBookView panel)
             {
                 _onCancel?.Invoke();
             }
 
-            public override void OnDishClicked(RecipeWorkspacePanel panel, RecipeEditDishView dish)
+            public override void OnDishClicked(RecipeReadonlyBookView panel, RecipeEditDishView dish)
             {
                 if (!panel.TryBuildRecipeTarget(dish, out ActiveTarget target))
                 {
@@ -227,7 +217,7 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
-        private sealed class ActiveRecipeDishCompareState : RecipeWorkspacePanelState
+        private sealed class ActiveRecipeDishCompareState : RecipeReadonlyBookState
         {
             private readonly ActiveRecipeDishSelectState _selectState;
             private readonly ItemDefinition _item;
@@ -246,7 +236,7 @@ namespace GourmetProject.Game.UI.Meta
                 _onTargetConfirmed = onTargetConfirmed;
             }
 
-            public override void Enter(RecipeWorkspacePanel panel)
+            public override void Enter(RecipeReadonlyBookView panel)
             {
                 panel.ShowActiveItemCompare(
                     _item,
@@ -259,12 +249,12 @@ namespace GourmetProject.Game.UI.Meta
                     });
             }
 
-            public override void Refresh(RecipeWorkspacePanel panel)
+            public override void Refresh(RecipeReadonlyBookView panel)
             {
                 // 对比确认态保持当前预览，避免外部刷新把确认弹层冲掉。
             }
 
-            public override void OnExitClicked(RecipeWorkspacePanel panel)
+            public override void OnExitClicked(RecipeReadonlyBookView panel)
             {
                 panel._stateMachine.Switch(_selectState);
             }

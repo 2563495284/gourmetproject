@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 6912809580085232593}
   - component: {fileID: 1084479458987173440}
   m_Layer: 5
-  m_Name: EditRecipeButton
+  m_Name: DeleteDishButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -266,7 +266,7 @@ MonoBehaviour:
   _activeCardPrefab: {fileID: 6826539389142825901, guid: 33a2d399adfd4f84b834b1f8dcea1571, type: 3}
   _foodTipsPrefab: {fileID: 7013095112852541377, guid: ea2c95d613a824d08884a70e0025c9df, type: 3}
   _itemTipPrefab: {fileID: 8646951620094238264, guid: 49d929799dca94ac9bec5bb3a1fbffec, type: 3}
-  _editRecipeButton: {fileID: 1084479458987173440}
+  _deleteDishButton: {fileID: 1084479458987173440}
 --- !u!1 &1006846443479302409
 GameObject:
   m_ObjectHideFlags: 0
@@ -1147,7 +1147,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: "\u7F16\u8F91\u83DC\u8C31"
+  m_Text: "\u5220\u9664\u98DF\u7269"
 --- !u!1 &6245762351736550092
 GameObject:
   m_ObjectHideFlags: 0

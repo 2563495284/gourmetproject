@@ -7,7 +7,7 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>
-    /// 编辑菜谱态中的一本菜谱。作为 Drop 目标接收从其它菜谱拖来的菜品。
+    /// 菜谱网格视图。奖励流程中可作为 Drop 目标；普通查看与选择流程只负责布局。
     /// </summary>
     public sealed class RecipeEditBookView : MonoBehaviour, IDropHandler
     {

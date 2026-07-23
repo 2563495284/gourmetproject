@@ -31,7 +31,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         ShopForm ShopPanel { get; }
 
-        RecipeWorkspacePanel RecipeWorkspacePanel { get; }
+        RecipeReadonlyBookView RecipeReadonlyBookView { get; }
 
         RewardDishPackPanel RewardDishPackPanel { get; }
 
@@ -61,7 +61,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         void OpenShopPanel();
 
-        void OpenRecipeWorkspacePanel();
+        void OpenRecipeBookPanel();
 
         void OpenRecipeInspect(int bookIndex);
 
@@ -116,7 +116,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
             SetActive(_host.ActionSelectionPanel, false);
             SetActive(_host.ShopPanel, false);
-            SetActive(_host.RecipeWorkspacePanel, false);
+            SetActive(_host.RecipeReadonlyBookView, false);
             SetActive(_host.RewardDishPackPanel, false);
             _host.RewardItemChoicePanel?.Close();
             _host.RandomizedItemsPanel?.Close();
@@ -178,7 +178,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
             bool actionSelect = view == GameplayView.ActionSelect;
             bool shop = view == GameplayView.Shop;
-            bool recipeEdit = view == GameplayView.RecipeWorkspace;
+            bool recipeSelection = view == GameplayView.RecipeSelection;
             bool rewardDishPack = view == GameplayView.RewardDishPack;
             bool rewardItemChoice = view == GameplayView.RewardItemChoice;
             bool randomizedItems = view == GameplayView.RandomizedItems;
@@ -188,7 +188,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
             SetActive(_host.ActionSelectionPanel, actionSelect);
             SetActive(_host.ShopPanel, shop);
-            SetActive(_host.RecipeWorkspacePanel, recipeEdit || recipeInspect);
+            SetActive(_host.RecipeReadonlyBookView, recipeSelection || recipeInspect);
             SetActive(_host.RewardDishPackPanel, rewardDishPack);
             SetActive(_host.RewardItemChoicePanel, rewardItemChoice);
             SetActive(_host.RandomizedItemsPanel, randomizedItems);
@@ -218,7 +218,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         void IBattleViewHost.OpenShopPanel() => _host.OpenShopPanel();
 
-        void IBattleViewHost.OpenRecipeWorkspacePanel() => _host.OpenRecipeWorkspacePanel();
+        void IBattleViewHost.OpenRecipeBookPanel() => _host.OpenRecipeBookPanel();
 
         void IBattleViewHost.OpenRecipeInspect(int bookIndex) => _host.OpenRecipeInspect(bookIndex);
 

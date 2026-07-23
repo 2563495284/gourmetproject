@@ -26,7 +26,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         void RefreshPersistent(bool refreshItems = true);
 
-        void OpenRecipeWorkspace();
+        void OpenDeleteDish();
 
         void OpenTableEdit(Action onShown = null);
 
@@ -60,7 +60,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 run,
                 _stock,
                 OnLeave,
-                _host.OpenRecipeWorkspace,
+                _host.OpenDeleteDish,
                 BuyImmediate);
             RefreshPersistent();
         }
