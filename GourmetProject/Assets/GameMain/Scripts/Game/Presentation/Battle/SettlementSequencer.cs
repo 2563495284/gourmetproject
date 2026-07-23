@@ -107,6 +107,7 @@ namespace GourmetProject.Game.Presentation.Battle
             Action<int> renderScore,
             Action<SettlementRevealSignal> onReveal,
             Action<SettlementScopeSignal> onScope,
+            Action<string> onPassiveTriggered,
             SettlementBaselineSnapshot baselineSnapshot,
             CancellationToken cancellationToken)
         {
@@ -150,7 +151,17 @@ namespace GourmetProject.Game.Presentation.Battle
                         dishViews,
                         fxRoot,
                         cancellationToken);
-                    await PlayStepBatchAsync(batch, dishViews, mapper, fxRoot, playback, dishValueBadges, onReveal, onScope, cancellationToken);
+                    await PlayStepBatchAsync(
+                        batch,
+                        dishViews,
+                        mapper,
+                        fxRoot,
+                        playback,
+                        dishValueBadges,
+                        onReveal,
+                        onScope,
+                        onPassiveTriggered,
+                        cancellationToken);
                     IReadOnlyList<SettlementPlaybackStep> nextBatch = nextIndex < plan.Steps.Count
                         ? CollectStepBatch(plan.Steps, nextIndex, out _)
                         : Array.Empty<SettlementPlaybackStep>();
@@ -160,7 +171,14 @@ namespace GourmetProject.Game.Presentation.Battle
 
                 ClearSweetTransferVisuals(sweetTransferPlayback, dishViews);
                 onScope?.Invoke(default);
-                await PlayFinalCuesAsync(plan.FinalCues, mapper.Center, fxRoot, playback, onReveal, cancellationToken);
+                await PlayFinalCuesAsync(
+                    plan.FinalCues,
+                    mapper.Center,
+                    fxRoot,
+                    playback,
+                    onReveal,
+                    onPassiveTriggered,
+                    cancellationToken);
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 await WaitWhileDebugScorePausedAsync(cancellationToken);
@@ -238,6 +256,7 @@ namespace GourmetProject.Game.Presentation.Battle
             Dictionary<int, DishValueBadge> dishValueBadges,
             Action<SettlementRevealSignal> onReveal,
             Action<SettlementScopeSignal> onScope,
+            Action<string> onPassiveTriggered,
             CancellationToken cancellationToken)
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -245,6 +264,7 @@ namespace GourmetProject.Game.Presentation.Battle
 #endif
             AdvanceSettlementSpeed(playback, cue.Kind);
             EmitScope(onScope, scope);
+            EmitPassiveTriggered(onPassiveTriggered, cue);
             EmitReveal(onReveal, cue);
             ApplyDishValueChange(cue, view, dishValueAnchor, fxRoot, dishValueBadges);
             PlayActorFeedbackIfNeeded(scope, view.Instance != null ? view.Instance.Id : 0, cue.FeedbackKind, dishViews, cancellationToken);
@@ -272,6 +292,7 @@ namespace GourmetProject.Game.Presentation.Battle
             Dictionary<int, DishValueBadge> dishValueBadges,
             Action<SettlementRevealSignal> onReveal,
             Action<SettlementScopeSignal> onScope,
+            Action<string> onPassiveTriggered,
             CancellationToken cancellationToken)
         {
             if (batch == null || batch.Count == 0)
@@ -302,6 +323,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     dishValueBadges,
                     onReveal,
                     onScope,
+                    onPassiveTriggered,
                     cancellationToken);
                 return;
             }
@@ -311,6 +333,7 @@ namespace GourmetProject.Game.Presentation.Battle
 #endif
             AdvanceSettlementSpeed(playback, batch[0].Cue.Kind);
             var triggeredActorIds = new HashSet<int>();
+            var triggeredPassiveItemIds = new HashSet<string>(StringComparer.Ordinal);
             foreach (SettlementPlaybackStep step in batch)
             {
                 if (!dishViews.TryGetValue(step.DishInstanceId, out DishPieceView view) || view == null)
@@ -323,6 +346,11 @@ namespace GourmetProject.Game.Presentation.Battle
                 Vector3 floatingAnchor = DishFloatingAnchor(dishValueAnchor, mapper);
                 SettlementCue cue = step.Cue;
                 EmitScope(onScope, step.Scope);
+                if (!string.IsNullOrEmpty(cue.SourceItemId)
+                    && triggeredPassiveItemIds.Add(cue.SourceItemId))
+                {
+                    EmitPassiveTriggered(onPassiveTriggered, cue);
+                }
                 EmitReveal(onReveal, cue);
                 ApplyDishValueChange(cue, view, dishValueAnchor, fxRoot, dishValueBadges);
                 PlayActorFeedbackIfNeeded(
@@ -760,6 +788,7 @@ namespace GourmetProject.Game.Presentation.Battle
             Transform fxRoot,
             SettlementPlaybackState playback,
             Action<SettlementRevealSignal> onReveal,
+            Action<string> onPassiveTriggered,
             CancellationToken cancellationToken)
         {
             for (int i = 0; i < cues.Count; i++)
@@ -769,6 +798,7 @@ namespace GourmetProject.Game.Presentation.Battle
 #endif
                 SettlementCue cue = cues[i];
                 AdvanceSettlementSpeed(playback, cue.Kind);
+                EmitPassiveTriggered(onPassiveTriggered, cue);
                 EmitReveal(onReveal, cue);
                 if (fxRoot != null)
                 {
@@ -863,6 +893,16 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             onReveal(cue.Reveal);
+        }
+
+        private static void EmitPassiveTriggered(Action<string> onPassiveTriggered, SettlementCue cue)
+        {
+            if (onPassiveTriggered == null || cue == null || string.IsNullOrEmpty(cue.SourceItemId))
+            {
+                return;
+            }
+
+            onPassiveTriggered(cue.SourceItemId);
         }
 
         private static void EmitScope(Action<SettlementScopeSignal> onScope, SettlementScopeSignal scope)
@@ -1110,6 +1150,8 @@ namespace GourmetProject.Game.Presentation.Battle
                     continue;
                 }
 
+                AttachPassiveSource(line, cue);
+
                 TrackCueFlags(
                     line,
                     ref hasGoldCue,
@@ -1254,6 +1296,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     break;
                 }
 
+                AttachPassiveSource(line, cue);
                 result.Add(new PendingLineCue(line, cue));
             }
 
@@ -1539,6 +1582,16 @@ namespace GourmetProject.Game.Presentation.Battle
                 default:
                     return false;
             }
+        }
+
+        private static void AttachPassiveSource(ScoreLine line, SettlementCue cue)
+        {
+            if (cue == null || line?.Source?.Type != ScoreSourceType.Relic)
+            {
+                return;
+            }
+
+            cue.SetSourceItemId(line.Source.Id);
         }
 
         private static string BuildDishSkillBatchKey(ScoreLine line)
@@ -1877,6 +1930,13 @@ namespace GourmetProject.Game.Presentation.Battle
             public string Text { get; }
 
             public string SourceName { get; }
+
+            public string SourceItemId { get; private set; }
+
+            public void SetSourceItemId(string itemId)
+            {
+                SourceItemId = itemId ?? string.Empty;
+            }
 
             public float Rise { get; }
 

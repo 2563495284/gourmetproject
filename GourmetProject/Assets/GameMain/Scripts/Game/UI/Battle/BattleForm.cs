@@ -2241,7 +2241,13 @@ namespace GourmetProject.Game.UI.Battle
 
             if (_world != null)
             {
-                _world.PlaySettlement(result, settlementBaseline, _infoColumn != null ? _infoColumn.ScoreFire : null, OnSettlementReveal, () => OnSettlementComplete(result));
+                _world.PlaySettlement(
+                    result,
+                    settlementBaseline,
+                    _infoColumn != null ? _infoColumn.ScoreFire : null,
+                    OnSettlementReveal,
+                    OnSettlementPassiveTriggered,
+                    () => OnSettlementComplete(result));
             }
             else
             {
@@ -2305,6 +2311,17 @@ namespace GourmetProject.Game.UI.Battle
             bool isWin = settledSession != null && settledSession.IsWin;
             settledSession?.ClearHappyCakeLayers();
             _loop?.OnBattleSettled(result, isWin, finalHappyCakeLayers);
+        }
+
+        private void OnSettlementPassiveTriggered(string itemId)
+        {
+            if (_run == null || string.IsNullOrEmpty(itemId))
+            {
+                return;
+            }
+
+            new ItemRuntime(_run).FlashTriggered(model =>
+                string.Equals(model.ItemId, itemId, StringComparison.Ordinal));
         }
 
         private void ApplyStartSettlementPassiveEffects()

@@ -54,9 +54,15 @@ namespace GourmetProject.Gameplay.Scoring
                     continue;
                 }
 
-                ScorePhase phase = spec.Type == ItemScoreEffectType.CountThresholdFinalMult
-                    ? ScorePhase.Final
-                    : ScorePhase.AfterAllDishes;
+                ScorePhase phase = spec.Type switch
+                {
+                    // 首/末位 +N 必须在结算开场生效。演出层会先统一播放所有食物基础分，
+                    // 再按 ScoreLine 顺序播放，因此 BeforeAll 明细会紧跟基础分批次出现，
+                    // 且后续技能的倍率 before/after 会自然包含这次加成，不会视觉倒退。
+                    ItemScoreEffectType.NthServeMultFlat => ScorePhase.BeforeAll,
+                    ItemScoreEffectType.CountThresholdFinalMult => ScorePhase.Final,
+                    _ => ScorePhase.AfterAllDishes,
+                };
 
                 collector.Add(new ScoreEffectEntry(
                     phase,

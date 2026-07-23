@@ -22,6 +22,13 @@
   },
   "assets": [
     {
+      "name": "item_first_+2",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "passive item icon for first dish multiplier, a restaurant door opening onto a spotlighted first serving plate, golden morning opening-act sparkles, welcoming start-of-service bonus feeling, no letters or numbers"
+    },
+    {
       "name": "item_last_+2",
       "type": "item",
       "requestSize": "1024x1024",

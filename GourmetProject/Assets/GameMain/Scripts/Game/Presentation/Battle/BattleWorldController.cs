@@ -1554,6 +1554,7 @@ namespace GourmetProject.Game.Presentation.Battle
             SettlementBaselineSnapshot baselineSnapshot,
             SettlementScoreFireView scoreFire,
             Action<SettlementRevealSignal> onReveal,
+            Action<string> onPassiveTriggered,
             Action onComplete)
         {
             if (_sequencer == null || _session == null || result == null)
@@ -1577,6 +1578,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     RenderSettlementScore,
                     onReveal,
                     null,
+                    onPassiveTriggered,
                     baselineSnapshot,
                     token);
             }
