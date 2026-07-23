@@ -72,6 +72,10 @@ public partial class TbGameBase
     /// </summary>
      public int FoodFlavorLimit => _data.FoodFlavorLimit;
     /// <summary>
+    /// 美食战斗每局可丢弃出餐食物次数
+    /// </summary>
+     public int FoodDeleteCount => _data.FoodDeleteCount;
+    /// <summary>
     /// 碎片包按购买次数递增价格
     /// </summary>
      public System.Collections.Generic.List<int> FragmentPackPrices => _data.FragmentPackPrices;

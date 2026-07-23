@@ -196,7 +196,7 @@ namespace GourmetProject.Game.UI.Hud
                     SetBackground(_readyColor);
                     break;
                 case ServingOutletState.WaitingForDishDrag:
-                    SetText(_statusText, "拖拽食物至餐桌上");
+                    SetText(_statusText, "拖到餐桌，或拖进垃圾桶丢弃");
                     SetBackground(_dragColor);
                     break;
                 default:

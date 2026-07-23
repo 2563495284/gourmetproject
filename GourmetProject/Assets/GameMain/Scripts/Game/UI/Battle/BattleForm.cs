@@ -125,6 +125,7 @@ namespace GourmetProject.Game.UI.Battle
         [Header("Food Actions")]
         [SerializeField] private BattleFoodActionBar _foodBar;
         [SerializeField] private ServingOutletView _servingOutlet;
+        [SerializeField] private FoodDiscardBinView _foodDiscardBin;
 
         [Header("Battle Message")]
         [SerializeField] private Text _messageText;
@@ -1103,6 +1104,10 @@ namespace GourmetProject.Game.UI.Battle
             BattleWorldController world = _world ?? BattleWorldController.Instance;
             servingOutlet?.ConfigureWorldSpace(world != null ? world.WorldCamera : Camera.main);
             servingOutlet?.SetVisible(visible);
+            FoodDiscardBinView discardBin = ResolveFoodDiscardBin();
+            discardBin?.ConfigureWorldSpace(world != null ? world.WorldCamera : Camera.main);
+            discardBin?.Bind(_session);
+            discardBin?.SetVisible(visible);
         }
 
         /// <summary>战斗态固定菜谱只显示剩余数量；出餐与可放统计由底部出餐口承担。</summary>
@@ -1111,7 +1116,17 @@ namespace GourmetProject.Game.UI.Battle
             _recipePresenter?.BuildBattle(_session, OpenRecipeInspect);
             BattleWorldController world = _world ?? BattleWorldController.Instance;
             ServingOutletView servingOutlet = ResolveServingOutlet();
+            FoodDiscardBinView discardBin = ResolveFoodDiscardBin();
             servingOutlet?.ConfigureWorldSpace(world != null ? world.WorldCamera : Camera.main);
+            discardBin?.ConfigureWorldSpace(world != null ? world.WorldCamera : Camera.main);
+            discardBin?.Bind(_session);
+            if (world != null)
+            {
+                world.SetPreparedDishDiscardTarget(
+                    discardBin == null ? null : discardBin.CanAcceptDropAt,
+                    discardBin == null ? null : discardBin.SetDragHovered);
+            }
+
             servingOutlet?.Bind(
                 _session,
                 ServeFromOutlet,
@@ -1131,6 +1146,16 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             return _servingOutlet;
+        }
+
+        private FoodDiscardBinView ResolveFoodDiscardBin()
+        {
+            if (_foodDiscardBin == null)
+            {
+                _foodDiscardBin = FindFirstObjectByType<FoodDiscardBinView>(FindObjectsInactive.Include);
+            }
+
+            return _foodDiscardBin;
         }
 
         private void BuildRecipeInspectCards()

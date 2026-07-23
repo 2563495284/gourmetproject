@@ -101,6 +101,9 @@ namespace GourmetProject.Game.Presentation.Battle
         private Action<DishPieceView> _dishHoverExited;
         private Action<DiningTableCellView> _cellHoverEntered;
         private Action<DiningTableCellView> _cellHoverExited;
+        private Func<Vector2, bool> _preparedDishDiscardHitTest;
+        private Action<bool> _preparedDishDiscardHoverChanged;
+        private bool _outletHoveringDiscard;
         private Action _stateChanged;
         private CancellationTokenSource _presentationCts;
         private Tween _tableViewFadeTween;
@@ -695,6 +698,20 @@ namespace GourmetProject.Game.Presentation.Battle
             _boardView?.SetCellHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
         }
 
+        public void SetPreparedDishDiscardTarget(
+            Func<Vector2, bool> hitTest,
+            Action<bool> hoverChanged)
+        {
+            if (_outletHoveringDiscard)
+            {
+                _preparedDishDiscardHoverChanged?.Invoke(false);
+                _outletHoveringDiscard = false;
+            }
+
+            _preparedDishDiscardHitTest = hitTest;
+            _preparedDishDiscardHoverChanged = hoverChanged;
+        }
+
         public void HideWorld()
         {
             CancelPresentationTasks();
@@ -961,6 +978,18 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             Vector3 world = ScreenToWorld(screenPoint);
+            bool hoveringDiscard = _session.FoodDiscardsRemaining > 0
+                && _preparedDishDiscardHitTest?.Invoke(screenPoint) == true;
+            SetOutletDiscardHover(hoveringDiscard);
+            if (hoveringDiscard)
+            {
+                _outletHoverPlacement = null;
+                MoveOccupiedCellCenterToWorld(_outletDragPiece, world);
+                _outletDragPiece.SetPlacementGlow(true, true);
+                ClearDishScopeHighlights();
+                return;
+            }
+
             if (TryFindPreparedPlacement(world, out Placement placement))
             {
                 _outletHoverPlacement = placement;
@@ -987,10 +1016,28 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             UpdateServingOutletDrag(screenPoint);
+            if (_outletHoveringDiscard)
+            {
+                string dishName = _session.PreparedServe.Dish.Def.Name;
+                ClearOutletDragPreview();
+                if (_session.TryDiscardPreparedServe())
+                {
+                    SetMessage($"已丢弃：{dishName}");
+                    RefreshAll();
+                    _stateChanged?.Invoke();
+                    return true;
+                }
+
+                SetMessage("本局已经不能再丢弃食物。");
+                RefreshAll();
+                _stateChanged?.Invoke();
+                return false;
+            }
+
             if (!_outletHoverPlacement.HasValue)
             {
                 ClearOutletDragPreview();
-                SetMessage("这里放不下这道食物，请重新拖到餐桌空位。");
+                SetMessage("请拖到餐桌空位，或拖进可用的垃圾桶。");
                 return false;
             }
 
@@ -1072,6 +1119,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private void ClearOutletDragPreview()
         {
             ClearDishScopeHighlights();
+            SetOutletDiscardHover(false);
             if (_outletDragPiece != null)
             {
                 Destroy(_outletDragPiece.gameObject);
@@ -1079,6 +1127,17 @@ namespace GourmetProject.Game.Presentation.Battle
 
             _outletDragPiece = null;
             _outletHoverPlacement = null;
+        }
+
+        private void SetOutletDiscardHover(bool hovered)
+        {
+            if (_outletHoveringDiscard == hovered)
+            {
+                return;
+            }
+
+            _outletHoveringDiscard = hovered;
+            _preparedDishDiscardHoverChanged?.Invoke(hovered);
         }
 
         private void OnServeMultiplierFlatApplied(DishInstance dish, float value)

@@ -132,6 +132,14 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>本局已上菜次数。</summary>
         public int ServesUsed { get; private set; }
 
+        /// <summary>本局允许从出餐口丢弃食物的总次数。</summary>
+        public int FoodDiscardLimit { get; private set; }
+
+        /// <summary>本局已经从出餐口丢弃食物的次数。</summary>
+        public int FoodDiscardsUsed { get; private set; }
+
+        public int FoodDiscardsRemaining => Math.Max(0, FoodDiscardLimit - FoodDiscardsUsed);
+
         /// <summary>已随机出餐、尚未由玩家摆上餐桌的食物。</summary>
         public PreparedServeDish PreparedServe { get; private set; }
 
@@ -169,6 +177,28 @@ namespace GourmetProject.Gameplay.Battle
         public event Action<int, int> HappyCakeLayersChanged;
 
         public event Action<DishInstance, float> ServeMultiplierFlatApplied;
+
+        public void ConfigureFoodDiscardLimit(int count)
+        {
+            FoodDiscardLimit = Math.Max(0, count);
+            FoodDiscardsUsed = Math.Min(FoodDiscardsUsed, FoodDiscardLimit);
+        }
+
+        /// <summary>
+        /// 丢弃当前出餐口食物。食物已从本局菜谱副本取出，因此这里只清空暂存态；
+        /// 不写回 GameRun 菜谱，也不触发上菜次数、技能或费用。
+        /// </summary>
+        public bool TryDiscardPreparedServe()
+        {
+            if (IsSettled || PreparedServe == null || FoodDiscardsRemaining <= 0)
+            {
+                return false;
+            }
+
+            PreparedServe = null;
+            FoodDiscardsUsed++;
+            return true;
+        }
 
         public float SweetTransferTargetMultiplier { get; set; } = 1f;
 

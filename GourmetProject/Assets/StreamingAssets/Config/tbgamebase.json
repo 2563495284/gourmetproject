@@ -10,6 +10,7 @@
     "shopPassiveItemSaleSlotCount": 2,
     "shopActiveItemSaleSlotCount": 2,
     "foodFlavorLimit": 1,
+    "foodDeleteCount": 1,
     "fragmentPackPrices": [
       30,
       45,

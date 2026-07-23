@@ -159,6 +159,33 @@ namespace GourmetProject.Tests.EditMode
             }
         }
 
+        [Test]
+        public void FoodDiscardBin_IsNonBlockingWorldSpaceUi()
+        {
+            FoodDiscardBinView prefab = AssetDatabase.LoadAssetAtPath<FoodDiscardBinView>(
+                "Assets/GameMain/UI/Hud/FoodDiscardBin.prefab");
+
+            Assert.That(prefab, Is.Not.Null);
+            FoodDiscardBinView view = UnityEngine.Object.Instantiate(prefab);
+            try
+            {
+                view.ConfigureWorldSpace(null);
+                Canvas canvas = view.GetComponent<Canvas>();
+                CanvasGroup canvasGroup = view.GetComponent<CanvasGroup>();
+
+                Assert.That(canvas, Is.Not.Null);
+                Assert.That(canvas.renderMode, Is.EqualTo(RenderMode.WorldSpace));
+                Assert.That(canvas.sortingLayerName, Is.EqualTo("WorldUI"));
+                Assert.That(canvasGroup, Is.Not.Null);
+                Assert.That(canvasGroup.blocksRaycasts, Is.False);
+                Assert.That(view.GetComponent<UnityEngine.UI.GraphicRaycaster>(), Is.Null);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(view.gameObject);
+            }
+        }
+
         private static SpriteRenderer FindRenderer(DishPieceView view, string objectName)
         {
             foreach (SpriteRenderer renderer in view.GetComponentsInChildren<SpriteRenderer>(true))

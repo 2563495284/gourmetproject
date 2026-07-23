@@ -56,6 +56,7 @@ namespace GourmetProject.Game.Run
             var session = new BattleSession(board, run.Database, battleStream, slots, requiredScore, calculator, runSettledCounts: run.RunSettledCounts);
             session.ExtraCountAsPerDish = ItemScoreEffectAdapter.ExtraCountAsPerDish(run);
             cfg.GameBase gameBase = run.Tables.TbGameBase.Data;
+            session.ConfigureFoodDiscardLimit(gameBase.FoodDeleteCount);
             session.ConfigureRandomServeMultiplier(
                 gameBase.RandomServeMultiplierMin,
                 gameBase.RandomServeMultiplierMax,

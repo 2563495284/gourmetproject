@@ -111,6 +111,55 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(session.ServesUsed, Is.Zero);
         }
 
+        [Test]
+        public void DiscardPreparedServe_ConsumesBattleOnlyEntryAndConfiguredUse()
+        {
+            DishShape cell = DishShape.FromRows(new[] { "X" });
+            DishDef dish = Dish("dish", "菜", cell);
+            var table = new DiningTable(1, 1);
+            var slot = new RecipeSlot("recipe", new[] { dish.Id, dish.Id });
+            var session = new BattleSession(
+                table,
+                Database(dish),
+                new FirstRandomStream(),
+                new[] { slot },
+                0);
+            session.ConfigureFoodDiscardLimit(1);
+            session.PrepareServe(0);
+
+            bool discarded = session.TryDiscardPreparedServe();
+
+            Assert.That(discarded, Is.True);
+            Assert.That(session.PreparedServe, Is.Null);
+            Assert.That(session.FoodDiscardsUsed, Is.EqualTo(1));
+            Assert.That(session.FoodDiscardsRemaining, Is.Zero);
+            Assert.That(session.ServesUsed, Is.Zero);
+            Assert.That(table.DishCount, Is.Zero);
+            Assert.That(slot.Count, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void DiscardPreparedServe_RejectsWhenConfiguredUsesAreExhausted()
+        {
+            DishShape cell = DishShape.FromRows(new[] { "X" });
+            DishDef dish = Dish("dish", "菜", cell);
+            var slot = new RecipeSlot("recipe", new[] { dish.Id });
+            var session = new BattleSession(
+                new DiningTable(1, 1),
+                Database(dish),
+                new FirstRandomStream(),
+                new[] { slot },
+                0);
+            session.ConfigureFoodDiscardLimit(0);
+            PreparedServeDish prepared = session.PrepareServe(0).PreparedDish;
+
+            bool discarded = session.TryDiscardPreparedServe();
+
+            Assert.That(discarded, Is.False);
+            Assert.That(session.PreparedServe, Is.SameAs(prepared));
+            Assert.That(session.FoodDiscardsUsed, Is.Zero);
+        }
+
         private static DishDef Dish(string id, string name, DishShape shape)
         {
             return new DishDef(
