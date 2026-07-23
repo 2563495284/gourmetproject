@@ -61,7 +61,7 @@ namespace GourmetProject.Game.Meta
 
             for (int i = 0; i < _session.Slots.Count; i++)
             {
-                if (_session.Serve(i).Success)
+                if (_session.PrepareServe(i).Success)
                 {
                     return true;
                 }

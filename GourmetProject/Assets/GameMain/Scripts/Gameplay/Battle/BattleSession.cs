@@ -11,7 +11,7 @@ using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 namespace GourmetProject.Gameplay.Battle
 {
     /// <summary>
-    /// 一局局内战斗的完整逻辑（纯 C#，可单测）：持有餐桌与菜谱槽，处理「上菜」随机摆放与「吃」结算。
+    /// 一局局内战斗的完整逻辑（纯 C#，可单测）：持有餐桌与菜谱槽，处理「准备出餐 / 玩家摆放 / 吃」结算。
     /// 所有随机经由注入的确定性流，保证同种子可复现。表现层（BattleForm）只读取状态并转发操作。
     /// </summary>
     public sealed class BattleSession
@@ -132,6 +132,9 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>本局已上菜次数。</summary>
         public int ServesUsed { get; private set; }
 
+        /// <summary>已随机出餐、尚未由玩家摆上餐桌的食物。</summary>
+        public PreparedServeDish PreparedServe { get; private set; }
+
         /// <summary>本次品鉴共享的全局「欢乐蛋糕层数」，随上菜/结算累加，跨品鉴重置。</summary>
         public int HappyCakeLayers { get; private set; }
 
@@ -203,12 +206,6 @@ namespace GourmetProject.Gameplay.Battle
                 : _settlementDishMultiplierItemName;
         }
 
-        /// <summary>从指定菜谱槽随机上一道能放下的菜，并随机朝向/位置摆上餐桌。</summary>
-        public ServeResult Serve(int slotIndex)
-        {
-            return ServeInternal(slotIndex, allowAutoServe: true);
-        }
-
         /// <summary>
         /// 当前餐桌状态下，指定菜谱条目是否至少存在一个合法上菜位置。
         /// 与真正上菜共用同一套风味旋转/回退规则，供 HUD 实时展示可放置状态。
@@ -231,8 +228,17 @@ namespace GourmetProject.Gameplay.Battle
             return dish != null && FindServePlacements(dish, entry).Count > 0;
         }
 
-        private ServeResult ServeInternal(int slotIndex, bool allowAutoServe)
+        /// <summary>
+        /// 从指定菜谱随机取出一道当前可摆放的食物，放到出餐口等待玩家拖拽。
+        /// 该步骤只消耗菜谱条目，不占用餐桌，也不触发上菜效果。
+        /// </summary>
+        public ServePrepareResult PrepareServe(int slotIndex)
         {
+            if (PreparedServe != null)
+            {
+                return ServePrepareResult.Fail(ServePrepareOutcome.AlreadyPrepared);
+            }
+
             if (slotIndex < 0 || slotIndex >= _slots.Count)
             {
                 throw new ArgumentOutOfRangeException(nameof(slotIndex));
@@ -240,13 +246,13 @@ namespace GourmetProject.Gameplay.Battle
 
             if (MaxServes >= 0 && ServesUsed >= MaxServes)
             {
-                return ServeResult.Fail(ServeOutcome.LimitReached);
+                return ServePrepareResult.Fail(ServePrepareOutcome.LimitReached);
             }
 
             RecipeSlot slot = _slots[slotIndex];
             if (slot.IsEmpty)
             {
-                return ServeResult.Fail(ServeOutcome.SlotEmpty);
+                return ServePrepareResult.Fail(ServePrepareOutcome.SlotEmpty);
             }
 
             var candidates = new List<ServeCandidate>();
@@ -268,16 +274,40 @@ namespace GourmetProject.Gameplay.Battle
 
             if (candidates.Count == 0)
             {
-                return ServeResult.Fail(ServeOutcome.NoFittingDish);
+                return ServePrepareResult.Fail(ServePrepareOutcome.NoFittingDish);
             }
 
             ServeCandidate chosen = candidates[_rng.Range(0, candidates.Count)];
             RecipeSlotEntry entry = slot.RemoveEntryAt(chosen.SlotEntryIndex);
-            Placement placement = chosen.Placements[_rng.Range(0, chosen.Placements.Count)];
+            Placement initialPlacement = chosen.Placements[0];
             List<string> skills = ComposeServeSkills(chosen.Dish, entry);
             List<string> flavors = ComposeServeFlavors(chosen.Dish, entry);
-            var instance = new DishInstance(_nextInstanceId++, chosen.Dish, placement, skills, flavors);
+            var instance = new DishInstance(_nextInstanceId++, chosen.Dish, initialPlacement, skills, flavors);
             instance.SetSourceRecipeIndex(slotIndex, entry.SourceDishIndex);
+            PreparedServe = new PreparedServeDish(slotIndex, entry, instance, chosen.Placements);
+            return new ServePrepareResult(ServePrepareOutcome.Prepared, PreparedServe);
+        }
+
+        /// <summary>
+        /// 把出餐口食物提交到玩家选择的位置，并在成功落桌后执行上菜次数、技能和费用等副作用。
+        /// </summary>
+        public ServeResult CommitPreparedServe(Placement placement)
+        {
+            PreparedServeDish prepared = PreparedServe;
+            if (prepared == null)
+            {
+                return ServeResult.Fail(ServeOutcome.NoPreparedDish);
+            }
+
+            if (!prepared.Contains(placement) || !DiningTable.CanPlace(placement.Orientation, placement.Origin))
+            {
+                return ServeResult.Fail(ServeOutcome.InvalidPlacement);
+            }
+
+            PreparedServe = null;
+            DishInstance instance = prepared.Dish;
+            instance.Relocate(placement);
+            RecipeSlotEntry entry = prepared.Entry;
             ApplyEntryFlags(instance, entry);
             ApplyServeModifiers(instance);
             DiningTable.Place(instance);
@@ -308,9 +338,9 @@ namespace GourmetProject.Gameplay.Battle
                 removedAfterServe = true;
             }
 
-            if (allowAutoServe && AutoServeSecondDish)
+            if (AutoServeSecondDish)
             {
-                ServeInternal(slotIndex, allowAutoServe: false);
+                PrepareServe(prepared.SlotIndex);
             }
 
             return new ServeResult(ServeOutcome.Placed, instance, removedAfterServe);
@@ -326,6 +356,26 @@ namespace GourmetProject.Gameplay.Battle
             if (placements.Count == 0 && numbSteps > 0)
             {
                 placements = DiningTable.FindValidPlacements(dish);
+            }
+
+            return placements;
+        }
+
+        /// <summary>枚举刚上桌且尚未锁定的食物在当前餐桌上的合法重定位位置。</summary>
+        public IReadOnlyList<Placement> FindMovableDishPlacements(DishInstance dish)
+        {
+            if (dish == null)
+            {
+                return Array.Empty<Placement>();
+            }
+
+            int numbSteps = NumbStepsFor(dish.FlavorIds);
+            List<Placement> placements = numbSteps > 0
+                ? DiningTable.FindValidPlacementsRotatedCcw(dish.Def, numbSteps)
+                : DiningTable.FindValidPlacements(dish.Def);
+            if (placements.Count == 0 && numbSteps > 0)
+            {
+                placements = DiningTable.FindValidPlacements(dish.Def);
             }
 
             return placements;
@@ -1025,6 +1075,11 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>当前所有菜谱槽是否都无法再上菜（用于提示玩家结算）。</summary>
         public bool CanServeAny()
         {
+            if (PreparedServe != null)
+            {
+                return true;
+            }
+
             if (MaxServes >= 0 && ServesUsed >= MaxServes)
             {
                 return false;

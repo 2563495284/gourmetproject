@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.Serialization;
@@ -7,24 +6,9 @@ using UnityEngine.UI;
 
 namespace GourmetProject.Game.UI.Hud
 {
-    /// <summary>战斗菜谱卡内一条剩余食物的显示数据。</summary>
-    public readonly struct RecipeDishDisplayData
-    {
-        public RecipeDishDisplayData(string name, bool canPlace)
-        {
-            Name = name;
-            CanPlace = canPlace;
-        }
-
-        public string Name { get; }
-
-        public bool CanPlace { get; }
-    }
-
     /// <summary>
-    /// BattleForm 中固定显示的唯一菜谱：普通态显示数量；战斗态额外显示上餐铃、
-    /// 可放/不可放计数与剩余食物列表。
-    /// 卡片点击始终用于打开菜谱详情，上菜只由独立上餐铃触发。
+    /// BattleForm 中固定显示的唯一菜谱：只显示当前食物数量。
+    /// 点击卡片打开菜谱详情；出餐与可放/不可放统计由独立的出餐口负责。
     /// 固定结构在 Recipe.prefab，由 BattleForm 直接持有，不再经过动态容器或状态动画。
     /// </summary>
     public sealed class RecipeCardView : MonoBehaviour, IPointerClickHandler
@@ -33,26 +17,17 @@ namespace GourmetProject.Game.UI.Hud
         private static readonly int PaddingId = Shader.PropertyToID("_Padding");
 
         private const float GlowPadding = 28f;
-        private const int MaxVisibleDishEntries = 6;
-
         [FormerlySerializedAs("_capacityText")]
         [SerializeField] private Text _infoText;
         [SerializeField] private Button _button;
         [SerializeField] private CanvasGroup _canvasGroup;
         [SerializeField] private Image _glowBorder;
-        [SerializeField] private Button _serveButton;
-        [SerializeField] private GameObject _battleContent;
-        [SerializeField] private RectTransform _dishListRoot;
-        [SerializeField] private RecipeDishEntryView _dishEntryPrefab;
-        [SerializeField] private Text _overflowText;
 
         private RectTransform _rect;
         private Material _glowMaterial;
         private Action _onRightClick;
         private bool _clickSuppressed;
         private int _clickSuppressedUntilFrame = -1;
-        private readonly List<RecipeDishEntryView> _dishEntries = new();
-
         public RectTransform Rect
         {
             get
@@ -96,17 +71,13 @@ namespace GourmetProject.Game.UI.Hud
             string capacity,
             bool interactable,
             Action onClick,
-            Action onRightClick = null,
-            bool showBattleContent = false,
-            bool serveInteractable = false,
-            Action onServe = null,
-            IReadOnlyList<RecipeDishDisplayData> dishes = null)
+            Action onRightClick = null)
         {
             _onRightClick = onRightClick;
 
             if (_infoText != null)
             {
-                _infoText.text = showBattleContent ? BuildPlacementSummary(dishes) : capacity ?? string.Empty;
+                _infoText.text = capacity ?? string.Empty;
             }
 
             if (_button != null)
@@ -125,98 +96,6 @@ namespace GourmetProject.Game.UI.Hud
                 }
             }
 
-            BindBattleContent(showBattleContent, serveInteractable, onServe, dishes);
-        }
-
-        private void BindBattleContent(
-            bool visible,
-            bool serveInteractable,
-            Action onServe,
-            IReadOnlyList<RecipeDishDisplayData> dishes)
-        {
-            if (_battleContent != null)
-            {
-                _battleContent.SetActive(visible);
-            }
-
-            if (_serveButton != null)
-            {
-                _serveButton.gameObject.SetActive(visible);
-                _serveButton.onClick.RemoveAllListeners();
-                _serveButton.interactable = visible && serveInteractable;
-                if (onServe != null)
-                {
-                    _serveButton.onClick.AddListener(() =>
-                    {
-                        if (!ShouldSuppressClick())
-                        {
-                            onServe();
-                        }
-                    });
-                }
-            }
-
-            if (!visible)
-            {
-                return;
-            }
-
-            int count = dishes?.Count ?? 0;
-            int shown = Mathf.Min(count, MaxVisibleDishEntries);
-            EnsureDishEntryVisuals(shown);
-            for (int i = 0; i < _dishEntries.Count; i++)
-            {
-                RecipeDishEntryView visual = _dishEntries[i];
-                bool active = i < shown;
-                visual.gameObject.SetActive(active);
-                if (!active)
-                {
-                    continue;
-                }
-
-                RecipeDishDisplayData dish = dishes[i];
-                visual.Bind(dish.Name, dish.CanPlace);
-            }
-
-            if (_overflowText != null)
-            {
-                _overflowText.gameObject.SetActive(count > MaxVisibleDishEntries);
-            }
-        }
-
-        private static string BuildPlacementSummary(IReadOnlyList<RecipeDishDisplayData> dishes)
-        {
-            int placeable = 0;
-            int blocked = 0;
-            int count = dishes?.Count ?? 0;
-            for (int i = 0; i < count; i++)
-            {
-                if (dishes[i].CanPlace)
-                {
-                    placeable++;
-                }
-                else
-                {
-                    blocked++;
-                }
-            }
-
-            return $"{placeable}<color=#35B84A>✓</color>  {blocked}<color=#E33A3A>×</color>";
-        }
-
-        private void EnsureDishEntryVisuals(int count)
-        {
-            if (_dishListRoot == null || _dishEntryPrefab == null)
-            {
-                return;
-            }
-
-            while (_dishEntries.Count < count)
-            {
-                RecipeDishEntryView entry = Instantiate(_dishEntryPrefab, _dishListRoot);
-                entry.gameObject.name = $"Dish_{_dishEntries.Count + 1}";
-                _dishEntries.Add(entry);
-            }
         }
 
         public void SetClickSuppressed(bool suppressed)

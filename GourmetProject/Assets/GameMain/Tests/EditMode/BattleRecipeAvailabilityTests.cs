@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using GourmetProject.Core.Rng;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
@@ -36,6 +37,78 @@ namespace GourmetProject.Tests.EditMode
 
             Assert.That(session.CanFitRecipeEntry(0, 0), Is.True);
             Assert.That(session.CanFitRecipeEntry(0, 1), Is.False);
+        }
+
+        [Test]
+        public void PrepareServe_StagesDishWithoutPlacingOrTriggeringServe()
+        {
+            DishShape cell = DishShape.FromRows(new[] { "X" });
+            DishDef dish = Dish("dish", "菜", cell);
+            var table = new DiningTable(2, 1);
+            var slot = new RecipeSlot("recipe", new[] { dish.Id });
+            var session = new BattleSession(table, Database(dish), new FirstRandomStream(), new[] { slot }, 0);
+            int servedEvents = 0;
+            session.Served += (_, _) => servedEvents++;
+
+            ServePrepareResult result = session.PrepareServe(0);
+
+            Assert.That(result.Success, Is.True);
+            Assert.That(session.PreparedServe, Is.SameAs(result.PreparedDish));
+            Assert.That(slot.Count, Is.Zero);
+            Assert.That(table.DishCount, Is.Zero);
+            Assert.That(session.ServesUsed, Is.Zero);
+            Assert.That(servedEvents, Is.Zero);
+        }
+
+        [Test]
+        public void CommitPreparedServe_UsesPlayerPlacementAndThenTriggersServe()
+        {
+            DishShape cell = DishShape.FromRows(new[] { "X" });
+            DishDef dish = Dish("dish", "菜", cell);
+            var table = new DiningTable(2, 1);
+            var session = new BattleSession(
+                table,
+                Database(dish),
+                new FirstRandomStream(),
+                new[] { new RecipeSlot("recipe", new[] { dish.Id }) },
+                0);
+            int servedEvents = 0;
+            session.Served += (_, _) => servedEvents++;
+            PreparedServeDish prepared = session.PrepareServe(0).PreparedDish;
+            Placement rightCell = prepared.Placements.First(
+                p => p.Origin.X == 1 && p.Origin.Y == 0);
+
+            ServeResult result = session.CommitPreparedServe(rightCell);
+
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.Dish.Placement.Origin.X, Is.EqualTo(1));
+            Assert.That(table.DishAt(new GridPos(1, 0)), Is.SameAs(result.Dish));
+            Assert.That(session.PreparedServe, Is.Null);
+            Assert.That(session.ServesUsed, Is.EqualTo(1));
+            Assert.That(servedEvents, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void InvalidCommit_KeepsDishWaitingAtOutlet()
+        {
+            DishShape cell = DishShape.FromRows(new[] { "X" });
+            DishDef dish = Dish("dish", "菜", cell);
+            var table = new DiningTable(1, 1);
+            var session = new BattleSession(
+                table,
+                Database(dish),
+                new FirstRandomStream(),
+                new[] { new RecipeSlot("recipe", new[] { dish.Id }) },
+                0);
+            PreparedServeDish prepared = session.PrepareServe(0).PreparedDish;
+            var outside = new Placement(cell, 0, new GridPos(2, 0));
+
+            ServeResult result = session.CommitPreparedServe(outside);
+
+            Assert.That(result.Outcome, Is.EqualTo(ServeOutcome.InvalidPlacement));
+            Assert.That(session.PreparedServe, Is.SameAs(prepared));
+            Assert.That(table.DishCount, Is.Zero);
+            Assert.That(session.ServesUsed, Is.Zero);
         }
 
         private static DishDef Dish(string id, string name, DishShape shape)

@@ -51,14 +51,7 @@ namespace GourmetProject.Game.Presentation.Battle
         [Header("Prefabs")]
         [SerializeField] private DiningTableCellView _boardCellPrefab;
         [SerializeField] private DishPieceView _dishPiecePrefab;
-        [SerializeField] private ServeHandView _serveHandPrefab;
         [SerializeField] private WorldTargetArrow _worldTargetArrowPrefab;
-
-        [Header("上菜动画")]
-        [SerializeField] private float _serveCarryScale = 1.22f;
-        [SerializeField] private float _serveDescendDuration = 0.34f;
-        [SerializeField] private float _serveWithdrawDuration = 0.18f;
-        [SerializeField] private float _serveDropDuration = 0.24f;
 
         // 餐桌锁定在该屏幕矩形内 fit 并居中（由 BattleForm 传入的 HUD 空区 BoardArea）；为空则回落视口边距布局。
         private const float BoardAreaMinCellSize = 0.12f;
@@ -70,7 +63,6 @@ namespace GourmetProject.Game.Presentation.Battle
         private float _halfW = FallbackHalfW;
         private float _halfH = FallbackHalfH;
 
-        private ServeAnimator _serveAnimator;
         private CakeLayerWorldFx _cakeLayerFx;
 
         // 餐桌编辑 / 只读餐桌视图的表现与交互拆到协作组件；本类只做 Food 态与世界互斥态调度（外壳）。
@@ -93,7 +85,12 @@ namespace GourmetProject.Game.Presentation.Battle
         private GameRun _run;
         private BattleSession _session;
         private bool _settling;
-        private bool _serving;
+        private DishPieceView _outletDragPiece;
+        private Placement? _outletHoverPlacement;
+        private int _movableDishId = -1;
+        private DishPieceView _movingPiece;
+        private Placement _movingOriginalPlacement;
+        private Placement? _movingHoverPlacement;
         private WorldMode _worldMode = WorldMode.Hidden;
 
         private Action<string> _messageSink;
@@ -116,7 +113,11 @@ namespace GourmetProject.Game.Presentation.Battle
         public bool CanEnterTableView
             => _worldMode != WorldMode.TableView
                 && _worldMode != WorldMode.TableCellTargeting
-                && (_worldMode != WorldMode.Food || (!_settling && !_serving));
+                && (_worldMode != WorldMode.Food
+                    || (!_settling
+                        && _outletDragPiece == null
+                        && _movingPiece == null
+                        && _session?.PreparedServe == null));
 
         private void Awake()
         {
@@ -467,7 +468,7 @@ namespace GourmetProject.Game.Presentation.Battle
             CancelPresentationTasks();
             _worldMode = WorldMode.TableEdit;
             _settling = false;
-            _serving = false;
+            CancelServeInteractions();
             _session = null;
             SetFoodWorldElementsVisible(false);
             ClearPlacedPieces();
@@ -496,7 +497,7 @@ namespace GourmetProject.Game.Presentation.Battle
             CancelPresentationTasks();
             _worldMode = WorldMode.TableView;
             _settling = false;
-            _serving = false;
+            CancelServeInteractions();
             SetFoodWorldElementsVisible(false);
             HideWorldPanels();
             ClearPlacedPieces();
@@ -526,7 +527,7 @@ namespace GourmetProject.Game.Presentation.Battle
             CancelPresentationTasks();
             _worldMode = WorldMode.TableCellTargeting;
             _settling = false;
-            _serving = false;
+            CancelServeInteractions();
             SetFoodWorldElementsVisible(false);
             HideWorldPanels();
             ClearPlacedPieces();
@@ -627,6 +628,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 _session.ServeMultiplierFlatApplied -= OnServeMultiplierFlatApplied;
             }
 
+            CancelServeInteractions();
             _run = run;
             _session = session;
             if (_session != null)
@@ -645,7 +647,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 _camera = Camera.main;
             }
 
-            EnsureServeAnimator();
             gameObject.SetActive(true);
             CancelPresentationTasks();
             _worldMode = WorldMode.Food;
@@ -703,7 +704,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             EndTableView();
             _settling = false;
-            _serving = false;
+            CancelServeInteractions();
             SetFoodWorldElementsVisible(false);
             _worldMode = WorldMode.Hidden;
             _cakeLayerFx?.Clear();
@@ -715,7 +716,7 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             CancelPresentationTasks();
             _settling = false;
-            _serving = false;
+            CancelServeInteractions();
             _session = null;
             ClearPlacedPieces();
             _doodle?.Clear();
@@ -850,6 +851,11 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
+            if (_session.PreparedServe != null)
+            {
+                LockMovableDish();
+            }
+
             _boardView.Sync();
         }
 
@@ -899,60 +905,164 @@ namespace GourmetProject.Game.Presentation.Battle
             RefreshAll();
         }
 
-        public async void TryServeDish(int slotIndex)
+        public bool TryPrepareServeDish(int slotIndex)
         {
-            if (_session == null || _session.IsSettled || _settling)
+            if (_session == null || _session.IsSettled || _settling || _outletDragPiece != null || _movingPiece != null)
             {
-                return;
+                return false;
             }
 
-            if (_serving)
-            {
-                _serveAnimator?.TrySpeedUpCurrentAnimation();
-                return;
-            }
-
-            ServeResult result = _session.Serve(slotIndex);
+            ServePrepareResult result = _session.PrepareServe(slotIndex);
             if (!result.Success)
             {
-                SetMessage(ServeMessage(result.Outcome, slotIndex));
+                SetMessage(PrepareServeMessage(result.Outcome, slotIndex));
                 RefreshAll();
+                _stateChanged?.Invoke();
+                return false;
+            }
+
+            LockMovableDish();
+            SetMessage($"已出餐：{result.PreparedDish.Definition.Name}，拖到餐桌上摆放。");
+            RefreshAll();
+            _stateChanged?.Invoke();
+            return true;
+        }
+
+        public void BeginServingOutletDrag(Vector2 screenPoint)
+        {
+            if (_session?.PreparedServe == null || _settling || _outletDragPiece != null)
+            {
                 return;
             }
 
-            DishPieceView placed = CreatePlacedPiece(result.Dish);
-            Vector3 target = _boardView.Mapper.CellCenter(result.Dish.Placement.Origin);
-            _serving = true;
-            EnsureServeAnimator();
-            _boardView.Sync();
-            SetMessage($"上菜：{result.Dish.Def.Name}");
-            _stateChanged?.Invoke();
-
-            CancellationToken token = GetPresentationToken();
-            try
+            PreparedServeDish prepared = _session.PreparedServe;
+            DishPieceView piece = InstantiateLoosePiece(prepared.Dish, "ServingOutletDragPreview");
+            if (piece == null)
             {
-                await _serveAnimator.AnimateAsync(placed, target, _camera, _cellSize, _halfH, token);
-                if (result.RemovedAfterServe && placed != null && !token.IsCancellationRequested)
+                return;
+            }
+
+            _outletDragPiece = piece;
+            _outletHoverPlacement = null;
+            piece.SetClickEnabled(false);
+            piece.SetGhost(true);
+            piece.SetFlying(true);
+            UpdateServingOutletDrag(screenPoint);
+        }
+
+        public void UpdateServingOutletDrag(Vector2 screenPoint)
+        {
+            if (_outletDragPiece == null || _session?.PreparedServe == null)
+            {
+                return;
+            }
+
+            Vector3 world = ScreenToWorld(screenPoint);
+            if (TryFindPreparedPlacement(world, out Placement placement))
+            {
+                _outletHoverPlacement = placement;
+                _outletDragPiece.UpdatePlacement(placement);
+                _outletDragPiece.transform.localPosition = _boardView.Mapper.CellCenterLocal(placement.Origin);
+                _outletDragPiece.SetPlacementGlow(true, true);
+            }
+            else
+            {
+                _outletHoverPlacement = null;
+                _outletDragPiece.transform.position = world;
+                _outletDragPiece.SetPlacementGlow(true, false);
+            }
+        }
+
+        public bool EndServingOutletDrag(Vector2 screenPoint)
+        {
+            if (_outletDragPiece == null || _session?.PreparedServe == null)
+            {
+                ClearOutletDragPreview();
+                return false;
+            }
+
+            UpdateServingOutletDrag(screenPoint);
+            if (!_outletHoverPlacement.HasValue)
+            {
+                ClearOutletDragPreview();
+                SetMessage("这里放不下这道食物，请重新拖到餐桌空位。");
+                return false;
+            }
+
+            Placement placement = _outletHoverPlacement.Value;
+            ClearOutletDragPreview();
+            ServeResult result = _session.CommitPreparedServe(placement);
+            if (!result.Success)
+            {
+                SetMessage("摆放位置已失效，请重新拖动。");
+                RefreshAll();
+                _stateChanged?.Invoke();
+                return false;
+            }
+
+            _movableDishId = !result.RemovedAfterServe && _session.PreparedServe == null
+                ? result.Dish.Id
+                : -1;
+            RebuildPlacedPieces();
+            _boardView.Sync();
+            SetMessage(result.RemovedAfterServe
+                ? $"开胃菜消化了：{result.Dish.Def.Name}"
+                : $"上菜：{result.Dish.Def.Name}");
+            PlayPendingServeMultiplierTexts();
+            FlashServeScopeHighlights(result.Dish, GetPresentationToken());
+            _stateChanged?.Invoke();
+            return true;
+        }
+
+        private DishPieceView InstantiateLoosePiece(DishInstance dish, string objectName)
+        {
+            if (_dishPiecePrefab == null || dish == null)
+            {
+                Debug.LogError($"{nameof(BattleWorldController)} 缺少 DishPiece prefab。", this);
+                return null;
+            }
+
+            DishPieceView piece = Instantiate(_dishPiecePrefab, _piecesRoot);
+            piece.gameObject.name = objectName;
+            piece.BuildPlaced(dish, _spriteProvider.Get(dish.Def), _cellSize, _cellSize + Gap, null);
+            piece.SetHoverCallbacks(null, null);
+            return piece;
+        }
+
+        private bool TryFindPreparedPlacement(Vector3 world, out Placement placement)
+        {
+            placement = default;
+            PreparedServeDish prepared = _session?.PreparedServe;
+            if (prepared == null || _boardView?.Mapper == null)
+            {
+                return false;
+            }
+
+            GridPos origin = _boardView.Mapper.NearestCell(world);
+            for (int i = 0; i < prepared.Placements.Count; i++)
+            {
+                Placement candidate = prepared.Placements[i];
+                if (candidate.Origin.X == origin.X
+                    && candidate.Origin.Y == origin.Y
+                    && _session.DiningTable.CanPlace(candidate.Orientation, candidate.Origin))
                 {
-                    SetMessage($"开胃菜消化了：{result.Dish.Def.Name}");
-                    await placed.PlayDigestDissolveAsync(token);
+                    placement = candidate;
+                    return true;
                 }
             }
-            catch (OperationCanceledException)
+
+            return false;
+        }
+
+        private void ClearOutletDragPreview()
+        {
+            if (_outletDragPiece != null)
             {
-                return;
-            }
-            catch (Exception ex)
-            {
-                Debug.LogException(ex, this);
+                Destroy(_outletDragPiece.gameObject);
             }
 
-            if (!token.IsCancellationRequested && _serving)
-            {
-                FinishServing();
-                PlayPendingServeMultiplierTexts();
-                FlashServeScopeHighlights(result.Dish, token);
-            }
+            _outletDragPiece = null;
+            _outletHoverPlacement = null;
         }
 
         private void OnServeMultiplierFlatApplied(DishInstance dish, float value)
@@ -1006,25 +1116,157 @@ namespace GourmetProject.Game.Presentation.Battle
                 0.75f);
         }
 
-        private void EnsureServeAnimator()
+        private void BeginMovableDishDrag(DishPieceView piece, Vector2 screenPoint)
         {
-            _serveAnimator ??= new ServeAnimator(
-                transform,
-                _serveHandPrefab,
-                new ServeAnimator.Config
-                {
-                    CarryScale = _serveCarryScale,
-                    DescendDuration = _serveDescendDuration,
-                    WithdrawDuration = _serveWithdrawDuration,
-                    DropDuration = _serveDropDuration,
-                });
+            DishInstance dish = piece?.Instance;
+            if (dish == null
+                || dish.Id != _movableDishId
+                || _session == null
+                || _session.PreparedServe != null
+                || _settling)
+            {
+                return;
+            }
+
+            _movingPiece = piece;
+            _movingOriginalPlacement = dish.Placement;
+            _movingHoverPlacement = null;
+            _session.DiningTable.RemoveDish(dish);
+            piece.SetGhost(true);
+            piece.SetFlying(true);
+            piece.SetPlacementGlow(true, true);
+            UpdateMovableDishDrag(screenPoint);
         }
 
-        private void FinishServing()
+        private void UpdateMovableDishDrag(Vector2 screenPoint)
         {
-            _serving = false;
-            RebuildPlacedPieces();
+            if (_movingPiece?.Instance == null || _session == null)
+            {
+                return;
+            }
+
+            Vector3 world = ScreenToWorld(screenPoint);
+            if (TryFindMovablePlacement(_movingPiece.Instance, world, out Placement placement))
+            {
+                _movingHoverPlacement = placement;
+                _movingPiece.UpdatePlacement(placement);
+                _movingPiece.transform.localPosition = _boardView.Mapper.CellCenterLocal(placement.Origin);
+                _movingPiece.SetPlacementGlow(true, true);
+            }
+            else
+            {
+                _movingHoverPlacement = null;
+                _movingPiece.transform.position = world;
+                _movingPiece.SetPlacementGlow(true, false);
+            }
+        }
+
+        private void EndMovableDishDrag(Vector2 screenPoint)
+        {
+            if (_movingPiece?.Instance == null || _session == null)
+            {
+                _movingPiece = null;
+                _movingHoverPlacement = null;
+                return;
+            }
+
+            UpdateMovableDishDrag(screenPoint);
+            DishPieceView piece = _movingPiece;
+            DishInstance dish = piece.Instance;
+            Placement placement = _movingHoverPlacement ?? _movingOriginalPlacement;
+            dish.Relocate(placement);
+            _session.DiningTable.Place(dish);
+            piece.UpdatePlacement(placement);
+            piece.transform.localPosition = _boardView.Mapper.CellCenterLocal(placement.Origin);
+            piece.SetGhost(false);
+            piece.SetFlying(false);
+            piece.SetPlacementGlow(true, true);
+            _movingPiece = null;
+            _movingHoverPlacement = null;
+            _boardView.Sync();
             _stateChanged?.Invoke();
+        }
+
+        private bool TryFindMovablePlacement(DishInstance dish, Vector3 world, out Placement placement)
+        {
+            placement = default;
+            if (dish == null || _session == null || _boardView?.Mapper == null)
+            {
+                return false;
+            }
+
+            GridPos origin = _boardView.Mapper.NearestCell(world);
+            IReadOnlyList<Placement> placements = _session.FindMovableDishPlacements(dish);
+
+            // 优先保持当前朝向；若该原点只允许其它朝向，则使用第一个合法朝向。
+            for (int pass = 0; pass < 2; pass++)
+            {
+                for (int i = 0; i < placements.Count; i++)
+                {
+                    Placement candidate = placements[i];
+                    if (candidate.Origin.X != origin.X || candidate.Origin.Y != origin.Y)
+                    {
+                        continue;
+                    }
+
+                    if (pass == 0 && candidate.RotationIndex != dish.Placement.RotationIndex)
+                    {
+                        continue;
+                    }
+
+                    placement = candidate;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void LockMovableDish()
+        {
+            if (_movableDishId > 0 && _dishViewsById.TryGetValue(_movableDishId, out DishPieceView piece) && piece != null)
+            {
+                piece.SetMoveCallbacks(null, null, null);
+                piece.SetPlacementGlow(false, false);
+            }
+
+            _movableDishId = -1;
+        }
+
+        private void CancelServeInteractions()
+        {
+            ClearOutletDragPreview();
+            if (_movingPiece?.Instance != null && _session?.DiningTable != null)
+            {
+                DishInstance dish = _movingPiece.Instance;
+                dish.Relocate(_movingOriginalPlacement);
+                if (!IsDishOnTable(dish.Id))
+                {
+                    _session.DiningTable.Place(dish);
+                }
+            }
+
+            _movingPiece = null;
+            _movingHoverPlacement = null;
+            LockMovableDish();
+        }
+
+        private bool IsDishOnTable(int dishId)
+        {
+            if (_session?.DiningTable == null)
+            {
+                return false;
+            }
+
+            foreach (DishInstance dish in _session.DiningTable.Dishes)
+            {
+                if (dish.Id == dishId)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void ComputeViewport()
@@ -1206,6 +1448,16 @@ namespace GourmetProject.Game.Presentation.Battle
             piece.transform.localPosition = _boardView.Mapper.CellCenterLocal(dish.Placement.Origin);
             piece.BuildPlaced(dish, _spriteProvider.Get(dish.Def), _cellSize, _cellSize + Gap, _dishClicked);
             piece.SetHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
+            if (dish.Id == _movableDishId && _session?.PreparedServe == null)
+            {
+                piece.SetMoveCallbacks(BeginMovableDishDrag, UpdateMovableDishDrag, EndMovableDishDrag);
+                piece.SetPlacementGlow(true, true);
+            }
+            else
+            {
+                piece.SetMoveCallbacks(null, null, null);
+                piece.SetPlacementGlow(false, false);
+            }
             _placedPieces.Add(piece);
             _dishViewsById[dish.Id] = piece;
             return piece;
@@ -1450,20 +1702,21 @@ namespace GourmetProject.Game.Presentation.Battle
             SetMessage(message);
         }
 
-        private string ServeMessage(ServeOutcome outcome, int slotIndex)
+        private string PrepareServeMessage(ServePrepareOutcome outcome, int slotIndex)
         {
-            return "";
-            // switch (outcome)
-            // {
-            //     case ServeOutcome.SlotEmpty:
-            //         return $"菜谱{slotIndex + 1} 已空。";
-            //     case ServeOutcome.NoFittingDish:
-            //         return "这本菜谱里没有能放下的菜了。";
-            //     case ServeOutcome.LimitReached:
-            //         return $"限量供应：本局最多上 {_session.MaxServes} 道菜。";
-            //     default:
-            //         return "现在不能上菜。";
-            // }
+            switch (outcome)
+            {
+                case ServePrepareOutcome.SlotEmpty:
+                    return $"菜谱{slotIndex + 1} 已空。";
+                case ServePrepareOutcome.NoFittingDish:
+                    return "剩余食物都无法摆入当前餐桌。";
+                case ServePrepareOutcome.LimitReached:
+                    return $"限量供应：本局最多上 {_session.MaxServes} 道菜。";
+                case ServePrepareOutcome.AlreadyPrepared:
+                    return "先把出餐口的食物摆上餐桌。";
+                default:
+                    return "现在不能出餐。";
+            }
         }
 
         /// <summary>播放背包乱斗式逐菜结算演出，完成后回调上层决定过关/失败 UI。</summary>

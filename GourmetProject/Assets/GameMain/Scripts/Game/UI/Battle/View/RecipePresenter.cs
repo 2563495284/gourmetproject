@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Generic;
 using GourmetProject.Game.Run;
 using GourmetProject.Gameplay.Battle;
-using GourmetProject.Gameplay.Model;
 using GourmetProject.Game.UI.Hud;
 
 namespace GourmetProject.Game.UI.Battle.View
@@ -38,8 +36,8 @@ namespace GourmetProject.Game.UI.Battle.View
             BuildPersistent(run, onInspect);
         }
 
-        /// <summary>战斗态固定菜谱：点击卡片查看详情，独立上餐铃负责随机上菜。</summary>
-        public void BuildBattle(BattleSession session, Action<int> onServe, Action<int> onInspect = null)
+        /// <summary>战斗态固定菜谱：只显示剩余数量，点击卡片查看剩余食物。</summary>
+        public void BuildBattle(BattleSession session, Action<int> onInspect = null)
         {
             if (_recipe == null || session == null || session.Slots.Count == 0)
             {
@@ -48,34 +46,11 @@ namespace GourmetProject.Game.UI.Battle.View
 
             const int slotIndex = 0;
             RecipeSlot slot = session.Slots[slotIndex];
-            var dishes = new List<RecipeDishDisplayData>(slot.Count);
-            int placeableCount = 0;
-
-            // TODO: 确认战斗菜谱内剩余食物的最终显示排序规则。
-            for (int entryIndex = 0; entryIndex < slot.Entries.Count; entryIndex++)
-            {
-                RecipeSlotEntry entry = slot.Entries[entryIndex];
-                var dish = session.Database.GetDish(entry.DishId);
-                bool canPlace = session.CanFitRecipeEntry(slotIndex, entryIndex);
-                if (canPlace)
-                {
-                    placeableCount++;
-                }
-
-                dishes.Add(new RecipeDishDisplayData(dish?.Name ?? entry.DishId, canPlace));
-            }
-
-            bool serveLimitReached = session.MaxServes >= 0 && session.ServesUsed >= session.MaxServes;
-            bool serveInteractable = !session.IsSettled && !serveLimitReached && placeableCount > 0;
             _recipe.Bind(
-                $"剩 {slot.Count}",
+                $"{slot.Count}",
                 onInspect != null,
                 onInspect == null ? null : () => onInspect.Invoke(slotIndex),
-                onInspect == null ? null : () => onInspect.Invoke(slotIndex),
-                showBattleContent: true,
-                serveInteractable: serveInteractable,
-                onServe: onServe == null ? null : () => onServe.Invoke(slotIndex),
-                dishes: dishes);
+                onInspect == null ? null : () => onInspect.Invoke(slotIndex));
             _recipe.SetTargetHighlight(false, true);
         }
 
@@ -90,7 +65,7 @@ namespace GourmetProject.Game.UI.Battle.View
             const int slotIndex = 0;
             RecipeSlot slot = session.Slots[slotIndex];
             _recipe.Bind(
-                $"剩 {slot.Count}",
+                $"{slot.Count}",
                 onInspect != null,
                 onInspect == null ? null : () => onInspect.Invoke(slotIndex),
                 onInspect == null ? null : () => onInspect.Invoke(slotIndex));

@@ -116,6 +116,7 @@ namespace GourmetProject.Game.UI.Battle
 
         [Header("Food Actions")]
         [SerializeField] private BattleFoodActionBar _foodBar;
+        [SerializeField] private ServingOutletView _servingOutlet;
 
         [Header("Battle Message")]
         [SerializeField] private Text _messageText;
@@ -1089,12 +1090,21 @@ namespace GourmetProject.Game.UI.Battle
         private void SetFoodActionsVisible(bool visible)
         {
             _foodBar?.SetVisible(visible);
+            _servingOutlet?.SetVisible(visible);
         }
 
-        /// <summary>战斗态固定菜谱：卡片点击查看详情，上餐铃从该菜谱随机上菜。</summary>
+        /// <summary>战斗态固定菜谱只显示剩余数量；出餐与可放统计由底部出餐口承担。</summary>
         private void BuildBattleRecipe()
         {
-            _recipePresenter?.BuildBattle(_session, ServeFromRecipe, OpenRecipeInspect);
+            _recipePresenter?.BuildBattle(_session, OpenRecipeInspect);
+            BattleWorldController world = _world ?? BattleWorldController.Instance;
+            _servingOutlet?.Bind(
+                _session,
+                ServeFromOutlet,
+                () => OpenRecipeInspect(0),
+                world == null ? null : screen => world.BeginServingOutletDrag(screen),
+                world == null ? null : screen => world.UpdateServingOutletDrag(screen),
+                world == null ? null : screen => world.EndServingOutletDrag(screen));
         }
 
         private void BuildRecipeInspectCards()
@@ -1109,7 +1119,7 @@ namespace GourmetProject.Game.UI.Battle
             _recipePresenter?.BuildPersistent(_run, OpenRecipeInspect, selectedBookIndex);
         }
 
-        private void ServeFromRecipe(int slotIndex)
+        private void ServeFromOutlet()
         {
             if (_rewardPeekOnly)
             {
@@ -1121,7 +1131,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            _world.TryServeDish(slotIndex);
+            _world.TryPrepareServeDish(0);
             RefreshAll();
         }
 
@@ -2052,7 +2062,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            if (_session == null || _session.IsSettled)
+            if (_session == null || _session.IsSettled || _session.PreparedServe != null)
             {
                 return;
             }

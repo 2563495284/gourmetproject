@@ -36,7 +36,10 @@ namespace GourmetProject.Game.UI.Battle.View
         {
             if (_eatButton != null)
             {
-                _eatButton.interactable = food && session != null && !session.IsSettled;
+                _eatButton.interactable = food
+                    && session != null
+                    && !session.IsSettled
+                    && session.PreparedServe == null;
             }
 
             bool doodleReady = food && world != null;

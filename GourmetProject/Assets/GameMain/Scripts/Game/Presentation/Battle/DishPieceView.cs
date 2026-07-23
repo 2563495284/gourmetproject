@@ -136,8 +136,12 @@ namespace GourmetProject.Game.Presentation.Battle
         private Action<DishInstance> _clicked;
         private Action<DishPieceView> _hoverEntered;
         private Action<DishPieceView> _hoverExited;
+        private Action<DishPieceView, Vector2> _moveBegin;
+        private Action<Vector2> _moveUpdate;
+        private Action<Vector2> _moveEnd;
         private bool _clickEnabled = true;
         private bool _hovered;
+        private bool _moveDragging;
         private MaterialPropertyBlock _stainBlock;
         private MaterialPropertyBlock _placementGlowBlock;
         private Tween _settlementFeedbackTween;
@@ -169,6 +173,19 @@ namespace GourmetProject.Game.Presentation.Battle
             RebuildCells(CurrentShape);
         }
 
+        public void UpdatePlacement(Placement placement)
+        {
+            if (Instance == null)
+            {
+                return;
+            }
+
+            Instance.Relocate(placement);
+            RotationIndex = placement.RotationIndex;
+            CurrentShape = placement.Orientation;
+            RebuildCells(CurrentShape);
+        }
+
         /// <summary>是否响应普通点击（打开详情）。目标选择等互斥交互期间可临时关闭。</summary>
         public void SetClickEnabled(bool enabled)
         {
@@ -183,6 +200,28 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             _hoverEntered = entered;
             _hoverExited = exited;
+        }
+
+        /// <summary>
+        /// 仅给“本次刚上桌”的菜注入移动回调。其它已锁定菜保持 null，因此完全不可拖拽。
+        /// </summary>
+        public void SetMoveCallbacks(
+            Action<DishPieceView, Vector2> begin,
+            Action<Vector2> update,
+            Action<Vector2> end)
+        {
+            _moveBegin = begin;
+            _moveUpdate = update;
+            _moveEnd = end;
+            if (begin == null)
+            {
+                _moveDragging = false;
+            }
+        }
+
+        public bool ContainsWorldPoint(Vector2 world)
+        {
+            return ContainsOccupiedCellAtWorldPoint(world);
         }
 
         public Bounds WorldBounds
@@ -1397,6 +1436,21 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void Update()
         {
+            if (_moveDragging)
+            {
+                SetHovered(false);
+                Vector2 screen = WorldInput.MouseScreen;
+                if (WorldInput.PrimaryReleasedThisFrame || !WorldInput.PrimaryHeld)
+                {
+                    _moveDragging = false;
+                    _moveEnd?.Invoke(screen);
+                    return;
+                }
+
+                _moveUpdate?.Invoke(screen);
+                return;
+            }
+
             UpdateHover();
 
             if (!_clickEnabled || Instance == null || !WorldInput.PrimaryPressedThisFrame || _collider == null)
@@ -1413,6 +1467,14 @@ namespace GourmetProject.Game.Presentation.Battle
             Vector2 world = WorldInput.MouseWorld(cam);
             if (ContainsOccupiedCellAtWorldPoint(world))
             {
+                if (_moveBegin != null)
+                {
+                    _moveDragging = true;
+                    SetHovered(false);
+                    _moveBegin.Invoke(this, WorldInput.MouseScreen);
+                    return;
+                }
+
                 _clicked?.Invoke(Instance);
             }
         }
