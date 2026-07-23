@@ -36,7 +36,6 @@ namespace GourmetProject.Game.UI.Meta
             Action<int> onPick,
             Action onEnd)
         {
-            EnsureRefs();
             ClearOptions();
             _resolved = false;
             gameObject.SetActive(true);
@@ -162,56 +161,6 @@ namespace GourmetProject.Game.UI.Meta
             // _backgroundImage.sprite = sprite;
             // _backgroundImage.enabled = sprite != null;
             // _backgroundImage.color = sprite != null ? Color.white : new Color(0.12f, 0.1f, 0.08f, 0.92f);
-        }
-
-        private void EnsureRefs()
-        {
-            if (_backgroundImage == null)
-            {
-                Transform bg = transform.Find("Background");
-                _backgroundImage = bg != null ? bg.GetComponent<Image>() : null;
-            }
-
-            if (_titleText == null)
-            {
-                Transform title = transform.Find("Content/Top/Title");
-                _titleText = title != null ? title.GetComponent<Text>() : null;
-            }
-
-            if (_descriptionText == null)
-            {
-                Transform desc = transform.Find("Content/Top/Description");
-                _descriptionText = desc != null ? desc.GetComponent<Text>() : null;
-            }
-
-            if (_resultText == null)
-            {
-                Transform result = transform.Find("Content/Bottom/Result");
-                _resultText = result != null ? result.GetComponent<Text>() : null;
-            }
-
-            if (_optionsRoot == null)
-            {
-                Transform options = transform.Find("Content/Bottom/Options");
-                _optionsRoot = options as RectTransform;
-            }
-
-            if (_optionButtonTemplate == null && _optionsRoot != null)
-            {
-                Transform template = _optionsRoot.Find("OptionTemplate");
-                _optionButtonTemplate = template != null ? template.GetComponent<Button>() : null;
-            }
-
-            if (_endButton == null)
-            {
-                Transform end = transform.Find("Content/Bottom/EndButton");
-                _endButton = end != null ? end.GetComponent<Button>() : null;
-            }
-
-            if (_endButtonLabel == null && _endButton != null)
-            {
-                _endButtonLabel = _endButton.GetComponentInChildren<Text>(true);
-            }
         }
 
         private static void SetText(Text text, string value)
