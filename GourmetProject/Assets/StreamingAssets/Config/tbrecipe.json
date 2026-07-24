@@ -5,19 +5,15 @@
     "groupIds": "recipe_glutton_group_1|recipe_glutton_group_2|recipe_glutton_group_3",
     "rollPlans": [
       {
-        "groupCounts": "3,2,1",
-        "weight": 10
-      },
-      {
         "groupCounts": "4,0,2",
         "weight": 10
       },
       {
-        "groupCounts": "5,1,1",
-        "weight": 10
+        "groupCounts": "3,2,1",
+        "weight": 30
       },
       {
-        "groupCounts": "4,3,0",
+        "groupCounts": "3,3,0",
         "weight": 10
       }
     ]

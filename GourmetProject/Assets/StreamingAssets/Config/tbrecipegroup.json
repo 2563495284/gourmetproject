@@ -3,68 +3,23 @@
     "id": "recipe_glutton_group_1",
     "pool": [
       {
-        "dishId": "cookie",
-        "weight": 40,
+        "dishId": "arrow_cookie_1",
+        "weight": 1,
         "maxCount": 2
       },
       {
-        "dishId": "macaron",
-        "weight": 70,
+        "dishId": "arrow_cookie_2",
+        "weight": 1,
         "maxCount": 2
       },
       {
-        "dishId": "pudding",
-        "weight": 40,
+        "dishId": "arrow_cookie_3",
+        "weight": 1,
         "maxCount": 2
       },
       {
-        "dishId": "puff",
-        "weight": 70,
-        "maxCount": 2
-      },
-      {
-        "dishId": "eggtart",
-        "weight": 40,
-        "maxCount": 2
-      },
-      {
-        "dishId": "mochi",
-        "weight": 40,
-        "maxCount": 2
-      },
-      {
-        "dishId": "daifuku",
-        "weight": 40,
-        "maxCount": 2
-      },
-      {
-        "dishId": "choco_candy",
-        "weight": 70,
-        "maxCount": 2
-      },
-      {
-        "dishId": "jelly",
-        "weight": 40,
-        "maxCount": 2
-      },
-      {
-        "dishId": "cream_cell",
-        "weight": 70,
-        "maxCount": 2
-      },
-      {
-        "dishId": "sugarbean",
-        "weight": 70,
-        "maxCount": 2
-      },
-      {
-        "dishId": "gold_choco",
-        "weight": 40,
-        "maxCount": 2
-      },
-      {
-        "dishId": "milk_slice",
-        "weight": 70,
+        "dishId": "arrow_cookie_4",
+        "weight": 1,
         "maxCount": 2
       }
     ]
@@ -73,44 +28,59 @@
     "id": "recipe_glutton_group_2",
     "pool": [
       {
-        "dishId": "sundae",
-        "weight": 60,
-        "maxCount": 2
-      },
-      {
-        "dishId": "cone",
-        "weight": 40,
-        "maxCount": 2
-      },
-      {
-        "dishId": "lollipop",
-        "weight": 30,
-        "maxCount": 2
-      },
-      {
-        "dishId": "gummy",
-        "weight": 30,
-        "maxCount": 2
+        "dishId": "jelly",
+        "weight": 1,
+        "maxCount": 1
       },
       {
         "dishId": "cupcake",
-        "weight": 40,
-        "maxCount": 2
+        "weight": 1,
+        "maxCount": 1
+      },
+      {
+        "dishId": "eggtart",
+        "weight": 1,
+        "maxCount": 1
+      },
+      {
+        "dishId": "sugarbean",
+        "weight": 1,
+        "maxCount": 1
+      },
+      {
+        "dishId": "cheesecake",
+        "weight": 1,
+        "maxCount": 1
       },
       {
         "dishId": "mousse",
-        "weight": 40,
-        "maxCount": 2
+        "weight": 1,
+        "maxCount": 1
       },
       {
-        "dishId": "toffee",
-        "weight": 30,
-        "maxCount": 2
+        "dishId": "fruit_candy",
+        "weight": 1,
+        "maxCount": 1
       },
       {
-        "dishId": "nougat",
-        "weight": 30,
-        "maxCount": 2
+        "dishId": "choco_bar",
+        "weight": 1,
+        "maxCount": 1
+      },
+      {
+        "dishId": "mochi",
+        "weight": 1,
+        "maxCount": 1
+      },
+      {
+        "dishId": "cup_cake",
+        "weight": 1,
+        "maxCount": 1
+      },
+      {
+        "dishId": "cream",
+        "weight": 1,
+        "maxCount": 1
       }
     ]
   },
@@ -119,17 +89,52 @@
     "pool": [
       {
         "dishId": "eggroll",
-        "weight": 50,
+        "weight": 1,
         "maxCount": 1
       },
       {
-        "dishId": "choco_bar",
-        "weight": 50,
+        "dishId": "baguette",
+        "weight": 1,
+        "maxCount": 1
+      },
+      {
+        "dishId": "tanghulu",
+        "weight": 1,
+        "maxCount": 1
+      },
+      {
+        "dishId": "cake_slice",
+        "weight": 1,
+        "maxCount": 1
+      },
+      {
+        "dishId": "long_cake",
+        "weight": 1,
         "maxCount": 1
       },
       {
         "dishId": "eclair",
-        "weight": 50,
+        "weight": 1,
+        "maxCount": 1
+      },
+      {
+        "dishId": "gummy",
+        "weight": 1,
+        "maxCount": 1
+      },
+      {
+        "dishId": "chocolate_strip",
+        "weight": 1,
+        "maxCount": 1
+      },
+      {
+        "dishId": "cake_roll",
+        "weight": 1,
+        "maxCount": 1
+      },
+      {
+        "dishId": "palmier",
+        "weight": 1,
         "maxCount": 1
       }
     ]
