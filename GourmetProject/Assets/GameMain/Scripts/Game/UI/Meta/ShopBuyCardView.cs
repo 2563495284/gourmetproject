@@ -12,7 +12,7 @@ namespace GourmetProject.Game.UI.Meta
     /// </summary>
     public sealed class ShopBuyCardView : ShopBuyItemViewBase
     {
-        [SerializeField] private DishShapePreview _dishShapePreview;
+        [SerializeField] private DishIconRenderTexturePreview _dishIconPreview;
 
         public void Bind(ItemDefinition item, int price, bool affordable, Action onBuy)
         {
@@ -81,11 +81,11 @@ namespace GourmetProject.Game.UI.Meta
             SetIcon(context?.Icon);
             if (context?.Dish == null)
             {
-                _dishShapePreview?.Hide();
+                _dishIconPreview?.Hide();
                 return;
             }
 
-            _dishShapePreview?.Bind(context.Dish, context.Icon);
+            _dishIconPreview?.Bind(context.Dish, context.Icon, context.Dish.Deliciousness);
             UseIconAsHitTargetOnly();
         }
     }

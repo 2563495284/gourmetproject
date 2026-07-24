@@ -1,10 +1,19 @@
 fileFormatVersion: 2
-guid: d0be796690cce4bf1bd02b6e287e4dd1
+guid: 7c0385d6f55d04dbbbcc0054cd77353f
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -2515165020970988701
-    second: arrow_cookie_4_0
+      213: 1932399322933391530
+    second: arrow_cookie_3_0
+  - first:
+      213: 5061739494073605430
+    second: arrow_cookie_3_1
+  - first:
+      213: -1989439136691221702
+    second: arrow_cookie_3_2
+  - first:
+      213: -666790617604857356
+    second: arrow_cookie_3_3
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -46,7 +55,7 @@ TextureImporter:
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
-  spriteMode: 2
+  spriteMode: 1
   spriteExtrude: 1
   spriteMeshType: 1
   alignment: 0
@@ -100,13 +109,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: arrow_cookie_4_0
+      name: arrow_cookie_3_0
       rect:
         serializedVersion: 2
-        x: 31
-        y: 60
-        width: 450
-        height: 904
+        x: 13
+        y: 528
+        width: 227
+        height: 481
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +124,74 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 36b49854db6581dd0800000000000000
-      internalID: -2515165020970988701
+      spriteID: aa076a722f241da10800000000000000
+      internalID: 1932399322933391530
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: arrow_cookie_3_1
+      rect:
+        serializedVersion: 2
+        x: 272
+        y: 525
+        width: 225
+        height: 488
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 63d92d96049ee3640800000000000000
+      internalID: 5061739494073605430
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: arrow_cookie_3_2
+      rect:
+        serializedVersion: 2
+        x: 16
+        y: 15
+        width: 226
+        height: 479
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a3b824b45a71464e0800000000000000
+      internalID: -1989439136691221702
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: arrow_cookie_3_3
+      rect:
+        serializedVersion: 2
+        x: 271
+        y: 11
+        width: 225
+        height: 488
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4f1691257751fb6f0800000000000000
+      internalID: -666790617604857356
       vertices: []
       indices: 
       edges: []
@@ -125,7 +200,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: 5e97eb03825dee720800000000000000
     internalID: 0
     vertices: []
     indices: 
@@ -135,7 +210,10 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      arrow_cookie_4_0: -2515165020970988701
+      arrow_cookie_3_0: 1932399322933391530
+      arrow_cookie_3_1: 5061739494073605430
+      arrow_cookie_3_2: -1989439136691221702
+      arrow_cookie_3_3: -666790617604857356
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

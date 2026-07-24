@@ -152,6 +152,7 @@ namespace GourmetProject.Game.UI.Meta
                 card.gameObject.SetActive(true);
                 card.Bind(
                     choice,
+                    dish,
                     LoadDishIcon(dish),
                     index,
                     OnChoiceClicked,

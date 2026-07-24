@@ -5,6 +5,7 @@ using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Gameplay.Model;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace GourmetProject.Game.UI.Meta
@@ -19,7 +20,8 @@ namespace GourmetProject.Game.UI.Meta
         private static readonly Vector2 FloatingAnchor = new(0.5f, 0.5f);
 
         [SerializeField] private Button _button;
-        [SerializeField] private DishShapePreview _shapePreview;
+        [FormerlySerializedAs("_shapePreview")]
+        [SerializeField] private DishIconRenderTexturePreview _dishPreview;
 
         private CanvasGroup _canvasGroup;
         private RectTransform _rect;
@@ -66,7 +68,7 @@ namespace GourmetProject.Game.UI.Meta
             _canvasGroup = GetComponent<CanvasGroup>();
             _rect = (RectTransform)transform;
             EnsureButton();
-            ResolveShapePreview();
+            ResolveDishPreview();
         }
 
         public void Bind(
@@ -95,15 +97,15 @@ namespace GourmetProject.Game.UI.Meta
             _dropHandled = false;
             _hovered = false;
 
-            if (_shapePreview != null)
+            if (_dishPreview != null)
             {
                 if (dishDef != null)
                 {
-                    _shapePreview.Bind(dishDef, flavorIds: flavorIds);
+                    _dishPreview.Bind(dishDef, flavorIds: flavorIds);
                 }
                 else
                 {
-                    _shapePreview.Hide();
+                    _dishPreview.Hide();
                 }
             }
 
@@ -190,13 +192,13 @@ namespace GourmetProject.Game.UI.Meta
                 _canvasGroup.alpha = 1f;
             }
 
-            if (_shapePreview == null)
+            if (_dishPreview == null)
             {
                 onComplete?.Invoke();
                 return;
             }
 
-            _shapePreview.PlayTransformTo(dishDef, flavorIds, () =>
+            _dishPreview.PlayTransformTo(dishDef, flavorIds, () =>
             {
                 if (_canvasGroup != null)
                 {
@@ -411,9 +413,9 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
-        private void ResolveShapePreview()
+        private void ResolveDishPreview()
         {
-            _shapePreview ??= GetComponentInChildren<DishShapePreview>(true);
+            _dishPreview ??= GetComponentInChildren<DishIconRenderTexturePreview>(true);
         }
     }
 }

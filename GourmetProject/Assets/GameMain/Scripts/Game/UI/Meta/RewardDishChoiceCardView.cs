@@ -1,5 +1,7 @@
 using System;
 using DG.Tweening;
+using GourmetProject.Game.UI.Widgets;
+using GourmetProject.Gameplay.Model;
 using GourmetProject.Game.Meta;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -13,6 +15,7 @@ namespace GourmetProject.Game.UI.Meta
     public sealed class RewardDishChoiceCardView : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
         [SerializeField] private Button _button;
+        [SerializeField] private DishIconRenderTexturePreview _dishPreview;
         [SerializeField] private Image _icon;
         [SerializeField] private Text _nameText;
         [SerializeField] private Text _descriptionText;
@@ -36,6 +39,18 @@ namespace GourmetProject.Game.UI.Meta
             Action<RewardDishChoiceCardView> onHoverEntered = null,
             Action<RewardDishChoiceCardView> onHoverExited = null)
         {
+            Bind(choice, null, icon, choiceIndex, onClick, onHoverEntered, onHoverExited);
+        }
+
+        public void Bind(
+            RewardChoice choice,
+            DishDef dish,
+            Sprite icon,
+            int choiceIndex,
+            Action<RewardDishChoiceCardView, int> onClick,
+            Action<RewardDishChoiceCardView> onHoverEntered = null,
+            Action<RewardDishChoiceCardView> onHoverExited = null)
+        {
             EnsureRefs();
             _choiceIndex = choiceIndex;
             _resolved = false;
@@ -53,7 +68,17 @@ namespace GourmetProject.Game.UI.Meta
                 _descriptionText.text = choice?.Description ?? string.Empty;
             }
 
-            SetIcon(icon);
+            if (_dishPreview != null && dish != null)
+            {
+                _dishPreview.Bind(dish, icon, dish.Deliciousness);
+                SetIcon(null);
+            }
+            else
+            {
+                _dishPreview?.Hide();
+                SetIcon(icon);
+            }
+
             SetResolved(false);
             WireButton();
         }
@@ -77,7 +102,9 @@ namespace GourmetProject.Game.UI.Meta
 
         public void PlayTargetFailed()
         {
-            RectTransform target = _icon != null ? _icon.rectTransform : transform as RectTransform;
+            RectTransform target = _dishPreview != null
+                ? _dishPreview.transform as RectTransform
+                : (_icon != null ? _icon.rectTransform : transform as RectTransform);
             if (target == null)
             {
                 return;
@@ -137,6 +164,11 @@ namespace GourmetProject.Game.UI.Meta
             if (_button == null)
             {
                 _button = GetComponent<Button>() ?? GetComponentInChildren<Button>(true);
+            }
+
+            if (_dishPreview == null)
+            {
+                _dishPreview = GetComponentInChildren<DishIconRenderTexturePreview>(true);
             }
 
             if (_icon == null)
