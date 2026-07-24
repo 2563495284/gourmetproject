@@ -12,9 +12,6 @@ namespace GourmetProject.Game.UI.Hud
     [RequireComponent(typeof(Canvas), typeof(CanvasGroup))]
     public sealed class FoodDiscardBinView : MonoBehaviour
     {
-        private const float LeftPaddingPixels = 220f;
-        private const float BottomPaddingPixels = 12f;
-
         [SerializeField] private Image _binImage;
         [SerializeField] private Text _remainingText;
         [SerializeField] private Text _hintText;
@@ -25,9 +22,6 @@ namespace GourmetProject.Game.UI.Hud
         private BattleSession _session;
         private Camera _worldCamera;
         private Canvas _worldCanvas;
-        private int _lastScreenWidth;
-        private int _lastScreenHeight;
-        private float _lastOrthographicSize = -1f;
         private bool _dragHovered;
 
         public void ConfigureWorldSpace(Camera worldCamera)
@@ -45,7 +39,6 @@ namespace GourmetProject.Game.UI.Hud
             _worldCanvas.overrideSorting = true;
             _worldCanvas.sortingLayerName = BattleSorting.WorldUi;
             _worldCanvas.sortingOrder = 1;
-            UpdateWorldSpaceLayout(force: true);
         }
 
         public void SetVisible(bool visible)
@@ -57,7 +50,6 @@ namespace GourmetProject.Game.UI.Hud
 
             if (visible)
             {
-                UpdateWorldSpaceLayout(force: true);
                 RefreshVisual();
             }
             else
@@ -100,53 +92,6 @@ namespace GourmetProject.Game.UI.Hud
 
             _dragHovered = hovered;
             RefreshVisual();
-        }
-
-        private void LateUpdate()
-        {
-            UpdateWorldSpaceLayout(force: false);
-        }
-
-        private void UpdateWorldSpaceLayout(bool force)
-        {
-            if (_worldCanvas == null || _worldCanvas.renderMode != RenderMode.WorldSpace)
-            {
-                return;
-            }
-
-            Camera camera = _worldCamera != null ? _worldCamera : Camera.main;
-            if (camera == null || Screen.width <= 0 || Screen.height <= 0)
-            {
-                return;
-            }
-
-            float orthoSize = camera.orthographic ? camera.orthographicSize : 0f;
-            if (!force
-                && _lastScreenWidth == Screen.width
-                && _lastScreenHeight == Screen.height
-                && Mathf.Approximately(_lastOrthographicSize, orthoSize))
-            {
-                return;
-            }
-
-            _lastScreenWidth = Screen.width;
-            _lastScreenHeight = Screen.height;
-            _lastOrthographicSize = orthoSize;
-
-            RectTransform rect = (RectTransform)transform;
-            float centerViewportX = (LeftPaddingPixels + rect.rect.width * 0.5f) / Screen.width;
-            float centerViewportY = (BottomPaddingPixels + rect.rect.height * 0.5f) / Screen.height;
-            float depth = Mathf.Abs(camera.transform.position.z);
-            Vector3 center = camera.ViewportToWorldPoint(new Vector3(centerViewportX, centerViewportY, depth));
-            center.z = 0f;
-
-            float worldUnitsPerPixel = camera.orthographic
-                ? camera.orthographicSize * 2f / Screen.height
-                : Mathf.Max(0.0001f, rect.localScale.x);
-            rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.position = center;
-            rect.rotation = Quaternion.identity;
-            rect.localScale = Vector3.one * worldUnitsPerPixel;
         }
 
         private void RefreshVisual()

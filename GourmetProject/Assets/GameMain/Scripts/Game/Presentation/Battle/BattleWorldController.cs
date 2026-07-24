@@ -46,6 +46,8 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private SettlementSequencer _sequencer;
         [SerializeField] private BattleScopeHighlightController _scopeHighlights;
         [SerializeField] private BattleDoodleController _doodle;
+        [Tooltip("Battle 场景内可直接移动和缩放的餐桌布局区域；存在时优先于 HUD BoardArea。")]
+        [SerializeField] private RectTransform _sceneBoardArea;
 
         // —— 运行时实例化用的 prefab ——
         [Header("Prefabs")]
@@ -53,9 +55,9 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private DishPieceView _dishPiecePrefab;
         [SerializeField] private WorldTargetArrow _worldTargetArrowPrefab;
 
-        // 餐桌锁定在该屏幕矩形内 fit 并居中（由 BattleForm 传入的 HUD 空区 BoardArea）；为空则回落视口边距布局。
+        // 餐桌优先锁定到 Battle 场景的布局区域；场景未配置时才使用 BattleForm 的 HUD BoardArea。
         private const float BoardAreaMinCellSize = 0.12f;
-        private RectTransform _boardArea;
+        private RectTransform _hudBoardArea;
 
         // 按餐桌尺寸自适应的单格世界尺寸与餐桌中心，BuildTable 中计算。
         private float _cellSize = MaxCellSize;
@@ -1441,12 +1443,11 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>
-        /// 由 BattleForm 传入 HUD 里的空区矩形，餐桌将始终 fit 并居中锁定在该屏幕区域内（超大餐桌继续缩放显示）。
-        /// 传 null 回落到按视口边距布局。
+        /// 记录 BattleForm 的 HUD 空区作为兼容回退；场景中配置了 _sceneBoardArea 时不会覆盖设计师布局。
         /// </summary>
         public void SetTableArea(RectTransform area)
         {
-            _boardArea = area;
+            _hudBoardArea = area;
         }
 
         internal bool TryComputeTableAreaPlacement(GpTable board, out BoardPlacement placement)
@@ -1463,8 +1464,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void BuildTable(GpTable board)
         {
-            // 中央可用区：菜谱/道具面板已迁到常驻 HUD（左右栏 + 固定菜谱），餐桌居中在中部内容区，
-            // 由 DiningTableLayout 统一按胃包围盒铺满可用区并居中（与编辑/餐桌视图态共用同一套定位算法）。
+            // 餐桌按胃包围盒适配到场景 TableLayoutArea；场景未配置时回退到 HUD/视口区域。
             BoardPlacement placement = TryComputeTableAreaPlacement(board, out BoardPlacement boardAreaPlacement)
                 ? boardAreaPlacement
                 : DiningTableLayout.Compute(_halfW, _halfH, board, FoodTableBottomMargin);
@@ -1491,21 +1491,30 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        /// <summary>把 HUD 里的 BoardArea 矩形四角投影到 BattleCamera 世界平面(z=0)，得到餐桌可用区的世界矩形边界。</summary>
+        /// <summary>读取场景或 HUD 布局区域，得到餐桌可用区的世界矩形边界。</summary>
         private bool TryComputeTableAreaRect(out float left, out float right, out float bottom, out float top)
         {
             left = right = bottom = top = 0f;
-            if (_boardArea == null || _camera == null)
+            RectTransform boardArea = _sceneBoardArea != null ? _sceneBoardArea : _hudBoardArea;
+            if (boardArea == null || _camera == null)
             {
                 return false;
             }
 
-            Canvas canvas = _boardArea.GetComponentInParent<Canvas>();
-            Camera uiCam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
-
             var corners = new Vector3[4];
-            _boardArea.GetWorldCorners(corners);
+            boardArea.GetWorldCorners(corners);
 
+            Canvas canvas = boardArea.GetComponentInParent<Canvas>();
+            if (canvas == null)
+            {
+                left = Mathf.Min(corners[0].x, corners[1].x, corners[2].x, corners[3].x);
+                right = Mathf.Max(corners[0].x, corners[1].x, corners[2].x, corners[3].x);
+                bottom = Mathf.Min(corners[0].y, corners[1].y, corners[2].y, corners[3].y);
+                top = Mathf.Max(corners[0].y, corners[1].y, corners[2].y, corners[3].y);
+                return right > left && top > bottom;
+            }
+
+            Camera uiCam = canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
             float minX = float.MaxValue, maxX = float.MinValue, minY = float.MaxValue, maxY = float.MinValue;
             float depth = -_camera.transform.position.z;
             for (int i = 0; i < 4; i++)

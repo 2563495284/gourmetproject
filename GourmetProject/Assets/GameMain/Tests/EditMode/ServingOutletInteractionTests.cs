@@ -169,6 +169,10 @@ namespace GourmetProject.Tests.EditMode
             FoodDiscardBinView view = UnityEngine.Object.Instantiate(prefab);
             try
             {
+                var authoredPosition = new Vector3(-5f, -4.38f, 0f);
+                var authoredScale = Vector3.one * 0.01f;
+                view.transform.position = authoredPosition;
+                view.transform.localScale = authoredScale;
                 view.ConfigureWorldSpace(null);
                 Canvas canvas = view.GetComponent<Canvas>();
                 CanvasGroup canvasGroup = view.GetComponent<CanvasGroup>();
@@ -176,9 +180,37 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(canvas, Is.Not.Null);
                 Assert.That(canvas.renderMode, Is.EqualTo(RenderMode.WorldSpace));
                 Assert.That(canvas.sortingLayerName, Is.EqualTo("WorldUI"));
+                Assert.That(view.transform.position, Is.EqualTo(authoredPosition));
+                Assert.That(view.transform.localScale, Is.EqualTo(authoredScale));
                 Assert.That(canvasGroup, Is.Not.Null);
                 Assert.That(canvasGroup.blocksRaycasts, Is.False);
                 Assert.That(view.GetComponent<UnityEngine.UI.GraphicRaycaster>(), Is.Null);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(view.gameObject);
+            }
+        }
+
+        [Test]
+        public void ServingOutlet_UsesSceneAuthoredTransform()
+        {
+            ServingOutletView prefab = AssetDatabase.LoadAssetAtPath<ServingOutletView>(
+                "Assets/GameMain/UI/Hud/ServingOutlet.prefab");
+            Assert.That(prefab, Is.Not.Null);
+
+            ServingOutletView view = UnityEngine.Object.Instantiate(prefab);
+            try
+            {
+                var authoredPosition = new Vector3(0f, -4.23f, 0f);
+                var authoredScale = Vector3.one * 0.01f;
+                view.transform.position = authoredPosition;
+                view.transform.localScale = authoredScale;
+
+                view.ConfigureWorldSpace(null);
+
+                Assert.That(view.transform.position, Is.EqualTo(authoredPosition));
+                Assert.That(view.transform.localScale, Is.EqualTo(authoredScale));
             }
             finally
             {

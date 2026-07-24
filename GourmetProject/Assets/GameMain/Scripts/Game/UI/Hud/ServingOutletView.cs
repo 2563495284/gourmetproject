@@ -21,7 +21,6 @@ namespace GourmetProject.Game.UI.Hud
     [RequireComponent(typeof(Canvas), typeof(GraphicRaycaster))]
     public sealed class ServingOutletView : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
     {
-        private const float BottomPaddingPixels = 12f;
         private const float PreparedDishRaycastPadding = 24f;
 
         [SerializeField] private RecipeCardView _recipeSummary;
@@ -46,9 +45,6 @@ namespace GourmetProject.Game.UI.Hud
         private Camera _worldCamera;
         private Canvas _worldCanvas;
         private ServingOutletDishHoverTrigger _dishHoverTrigger;
-        private int _lastScreenWidth;
-        private int _lastScreenHeight;
-        private float _lastOrthographicSize = -1f;
 
         public ServingOutletState State { get; private set; }
 
@@ -67,7 +63,6 @@ namespace GourmetProject.Game.UI.Hud
             _worldCanvas.overrideSorting = true;
             _worldCanvas.sortingLayerName = BattleSorting.WorldUi;
             _worldCanvas.sortingOrder = 0;
-            UpdateWorldSpaceLayout(force: true);
         }
 
         public void SetVisible(bool visible)
@@ -77,10 +72,6 @@ namespace GourmetProject.Game.UI.Hud
                 gameObject.SetActive(visible);
             }
 
-            if (visible)
-            {
-                UpdateWorldSpaceLayout(force: true);
-            }
         }
 
         public void Bind(
@@ -253,53 +244,6 @@ namespace GourmetProject.Game.UI.Hud
             }
 
             eventData?.Use();
-        }
-
-        private void LateUpdate()
-        {
-            UpdateWorldSpaceLayout(force: false);
-        }
-
-        private void UpdateWorldSpaceLayout(bool force)
-        {
-            if (_worldCanvas == null || _worldCanvas.renderMode != RenderMode.WorldSpace)
-            {
-                return;
-            }
-
-            Camera camera = _worldCamera != null ? _worldCamera : Camera.main;
-            if (camera == null || Screen.height <= 0)
-            {
-                return;
-            }
-
-            float orthoSize = camera.orthographic ? camera.orthographicSize : 0f;
-            if (!force
-                && _lastScreenWidth == Screen.width
-                && _lastScreenHeight == Screen.height
-                && Mathf.Approximately(_lastOrthographicSize, orthoSize))
-            {
-                return;
-            }
-
-            _lastScreenWidth = Screen.width;
-            _lastScreenHeight = Screen.height;
-            _lastOrthographicSize = orthoSize;
-
-            RectTransform rect = (RectTransform)transform;
-            float panelHeightPixels = Mathf.Max(1f, rect.rect.height);
-            float centerViewportY = (BottomPaddingPixels + panelHeightPixels * 0.5f) / Screen.height;
-            float depth = Mathf.Abs(camera.transform.position.z);
-            Vector3 center = camera.ViewportToWorldPoint(new Vector3(0.5f, centerViewportY, depth));
-            center.z = 0f;
-
-            float worldUnitsPerPixel = camera.orthographic
-                ? camera.orthographicSize * 2f / Screen.height
-                : Mathf.Max(0.0001f, rect.localScale.x);
-            rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.position = center;
-            rect.rotation = Quaternion.identity;
-            rect.localScale = Vector3.one * worldUnitsPerPixel;
         }
 
         private void SetDishAlpha(float alpha)
