@@ -24,6 +24,32 @@
     ]
   },
   {
+    "id": "arrow_cookie_3",
+    "name": "箭头饼干3",
+    "deliciousness": 20,
+    "allowRotate": false,
+    "skills": "sk_arrow_cookie_3",
+    "category": "",
+    "countAs": 1,
+    "shapeRows": [
+      "X",
+      "X"
+    ]
+  },
+  {
+    "id": "arrow_cookie_4",
+    "name": "箭头饼干4",
+    "deliciousness": 20,
+    "allowRotate": false,
+    "skills": "sk_arrow_cookie_4",
+    "category": "",
+    "countAs": 1,
+    "shapeRows": [
+      "X",
+      "X"
+    ]
+  },
+  {
     "id": "jelly",
     "name": "果冻",
     "deliciousness": 20,
@@ -96,6 +122,71 @@
     ]
   },
   {
+    "id": "fruit_candy",
+    "name": "水果糖",
+    "deliciousness": 20,
+    "allowRotate": false,
+    "skills": "sk_fruit_candy",
+    "category": "",
+    "countAs": 1,
+    "shapeRows": [
+      "X",
+      "X"
+    ]
+  },
+  {
+    "id": "choco_bar",
+    "name": "巧克力棒",
+    "deliciousness": 20,
+    "allowRotate": false,
+    "skills": "sk_choco_bar",
+    "category": "",
+    "countAs": 1,
+    "shapeRows": [
+      "X",
+      "X"
+    ]
+  },
+  {
+    "id": "mochi",
+    "name": "麻薯",
+    "deliciousness": 20,
+    "allowRotate": false,
+    "skills": "sk_mochi",
+    "category": "",
+    "countAs": 2,
+    "shapeRows": [
+      "X",
+      "X"
+    ]
+  },
+  {
+    "id": "cup_cake",
+    "name": "杯子蛋糕",
+    "deliciousness": 20,
+    "allowRotate": false,
+    "skills": "sk_cup_cake",
+    "category": "cake",
+    "countAs": 1,
+    "shapeRows": [
+      "X",
+      "X"
+    ]
+  },
+  {
+    "id": "cream",
+    "name": "奶油",
+    "deliciousness": 20,
+    "allowRotate": false,
+    "skills": "sk_cream",
+    "category": "",
+    "countAs": 1,
+    "shapeRows": [
+      "X",
+      "X"
+    ]
+  },
+  {
     "id": "eggroll",
     "name": "蛋卷",
     "deliciousness": 30,
@@ -156,59 +247,6 @@
     ]
   },
   {
-    "id": "apple_pie",
-    "name": "苹果派",
-    "deliciousness": 90,
-    "allowRotate": false,
-    "skills": "sk_apple_pie",
-    "category": "",
-    "countAs": 1,
-    "shapeRows": [
-      "XXX",
-      "XXX",
-      "XXX"
-    ]
-  },
-  {
-    "id": "arrow_cookie_3",
-    "name": "箭头饼干3",
-    "deliciousness": 20,
-    "allowRotate": false,
-    "skills": "sk_arrow_cookie_3",
-    "category": "",
-    "countAs": 1,
-    "shapeRows": [
-      "X",
-      "X"
-    ]
-  },
-  {
-    "id": "arrow_cookie_4",
-    "name": "箭头饼干4",
-    "deliciousness": 20,
-    "allowRotate": false,
-    "skills": "sk_arrow_cookie_4",
-    "category": "",
-    "countAs": 1,
-    "shapeRows": [
-      "X",
-      "X"
-    ]
-  },
-  {
-    "id": "fruit_candy",
-    "name": "水果糖",
-    "deliciousness": 20,
-    "allowRotate": false,
-    "skills": "sk_fruit_candy",
-    "category": "",
-    "countAs": 1,
-    "shapeRows": [
-      "X",
-      "X"
-    ]
-  },
-  {
     "id": "eclair",
     "name": "闪电泡芙",
     "deliciousness": 30,
@@ -237,53 +275,29 @@
     ]
   },
   {
-    "id": "choco_bar",
-    "name": "巧克力棒",
-    "deliciousness": 20,
+    "id": "chocolate_strip",
+    "name": "巧克力条",
+    "deliciousness": 30,
     "allowRotate": false,
-    "skills": "sk_choco_bar",
+    "skills": "sk_chocolate_strip",
     "category": "",
     "countAs": 1,
     "shapeRows": [
       "X",
-      "X"
-    ]
-  },
-  {
-    "id": "mochi",
-    "name": "麻薯",
-    "deliciousness": 20,
-    "allowRotate": false,
-    "skills": "sk_mochi",
-    "category": "",
-    "countAs": 2,
-    "shapeRows": [
       "X",
       "X"
     ]
   },
   {
-    "id": "cup_cake",
-    "name": "杯子蛋糕",
-    "deliciousness": 20,
+    "id": "cake_roll",
+    "name": "蛋糕卷",
+    "deliciousness": 30,
     "allowRotate": false,
-    "skills": "sk_cup_cake",
+    "skills": "sk_cake_roll",
     "category": "cake",
     "countAs": 1,
     "shapeRows": [
       "X",
-      "X"
-    ]
-  },
-  {
-    "id": "cream",
-    "name": "奶油",
-    "deliciousness": 20,
-    "allowRotate": false,
-    "skills": "sk_cream",
-    "category": "",
-    "countAs": 1,
-    "shapeRows": [
       "X",
       "X"
     ]
@@ -367,31 +381,17 @@
     ]
   },
   {
-    "id": "chocolate_strip",
-    "name": "巧克力条",
-    "deliciousness": 30,
+    "id": "candycane",
+    "name": "拐杖糖",
+    "deliciousness": 40,
     "allowRotate": false,
-    "skills": "sk_chocolate_strip",
+    "skills": "sk_candycane",
     "category": "",
     "countAs": 1,
     "shapeRows": [
-      "X",
-      "X",
-      "X"
-    ]
-  },
-  {
-    "id": "cake_roll",
-    "name": "蛋糕卷",
-    "deliciousness": 30,
-    "allowRotate": false,
-    "skills": "sk_cake_roll",
-    "category": "cake",
-    "countAs": 1,
-    "shapeRows": [
-      "X",
-      "X",
-      "X"
+      "XX",
+      ".X",
+      ".X"
     ]
   },
   {
@@ -421,17 +421,16 @@
     ]
   },
   {
-    "id": "candycane",
-    "name": "拐杖糖",
-    "deliciousness": 40,
+    "id": "mango_sago",
+    "name": "杨枝甘露",
+    "deliciousness": 60,
     "allowRotate": false,
-    "skills": "sk_candycane",
+    "skills": "sk_mango_sago",
     "category": "",
-    "countAs": 1,
+    "countAs": 8,
     "shapeRows": [
-      "XX",
-      ".X",
-      ".X"
+      "XXX",
+      "XXX"
     ]
   },
   {
@@ -449,24 +448,25 @@
     ]
   },
   {
-    "id": "mango_sago",
-    "name": "杨枝甘露",
-    "deliciousness": 60,
-    "allowRotate": false,
-    "skills": "sk_mango_sago",
-    "category": "",
-    "countAs": 8,
-    "shapeRows": [
-      "XXX",
-      "XXX"
-    ]
-  },
-  {
     "id": "parfait",
     "name": "芭菲",
     "deliciousness": 60,
     "allowRotate": false,
     "skills": "sk_parfait",
+    "category": "",
+    "countAs": 1,
+    "shapeRows": [
+      "XX",
+      "XX",
+      "XX"
+    ]
+  },
+  {
+    "id": "marshmallow",
+    "name": "棉花糖",
+    "deliciousness": 60,
+    "allowRotate": false,
+    "skills": "sk_marshmallow",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -490,17 +490,17 @@
     ]
   },
   {
-    "id": "marshmallow",
-    "name": "棉花糖",
-    "deliciousness": 60,
+    "id": "apple_pie",
+    "name": "苹果派",
+    "deliciousness": 90,
     "allowRotate": false,
-    "skills": "sk_marshmallow",
+    "skills": "sk_apple_pie",
     "category": "",
     "countAs": 1,
     "shapeRows": [
-      "XX",
-      "XX",
-      "XX"
+      "XXX",
+      "XXX",
+      "XXX"
     ]
   },
   {
