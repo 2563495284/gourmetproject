@@ -8,12 +8,18 @@ namespace GourmetProject.Game.UI.Meta
     {
         [SerializeField] private DishIconRenderTexturePreview _dishIconPreview;
 
+        public override RectTransform TipPlacementTarget =>
+            _dishIconPreview != null
+                ? _dishIconPreview.transform as RectTransform
+                : base.TipPlacementTarget;
+
         protected override void ConfigureContent(ShopBuyItemViewContext context)
         {
             SetIcon(context?.Icon);
             if (_dishIconPreview != null && context?.Dish != null)
             {
                 _dishIconPreview.Bind(context.Dish, context.Icon, context.Dish.Deliciousness);
+                _dishIconPreview.SetRaycastTarget(true);
             }
             else
             {

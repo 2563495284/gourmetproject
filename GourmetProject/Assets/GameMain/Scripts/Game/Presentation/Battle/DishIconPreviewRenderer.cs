@@ -194,6 +194,10 @@ namespace GourmetProject.Game.Presentation.Battle
                 antiAliasing = 1,
             };
             texture.Create();
+            RenderTexture previous = RenderTexture.active;
+            RenderTexture.active = texture;
+            GL.Clear(true, true, Color.clear);
+            RenderTexture.active = previous;
 
             _camera.aspect = (float)boardWidth / boardHeight;
             _camera.orthographicSize = boardHeight * CellSize * 0.5f;

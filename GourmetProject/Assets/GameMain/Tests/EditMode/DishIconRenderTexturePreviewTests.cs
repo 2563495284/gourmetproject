@@ -6,6 +6,7 @@ using GourmetProject.Gameplay.Model;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace GourmetProject.Tests.EditMode
 {
@@ -69,6 +70,73 @@ namespace GourmetProject.Tests.EditMode
             AssertSerializedPreviewReference<RecipeEditDishView>(
                 "Assets/GameMain/UI/RecipeEditDishView.prefab",
                 "_dishPreview");
+        }
+
+        [Test]
+        public void ShopFoodCard_UsesRenderTextureAsTipPlacementTarget()
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/GameMain/UI/ShopFoodBuyItemView.prefab");
+            GameObject instance = UnityEngine.Object.Instantiate(prefab);
+            try
+            {
+                ShopFoodBuyItemView card = instance.GetComponent<ShopFoodBuyItemView>();
+                DishIconRenderTexturePreview preview =
+                    instance.GetComponentInChildren<DishIconRenderTexturePreview>(true);
+
+                Assert.That(card.TipPlacementTarget, Is.SameAs(preview.transform));
+                Assert.That(card.PurchaseFlySource, Is.Not.SameAs(preview.transform));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
+        }
+
+        [Test]
+        public void ShopFoodCard_RtReceivesPointerEventsForTipsAndPurchase()
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/GameMain/UI/ShopFoodBuyItemView.prefab");
+            GameObject instance = UnityEngine.Object.Instantiate(prefab);
+            try
+            {
+                ShopFoodBuyItemView card = instance.GetComponent<ShopFoodBuyItemView>();
+                DishIconRenderTexturePreview preview =
+                    instance.GetComponentInChildren<DishIconRenderTexturePreview>(true);
+                Sprite sprite = Resources.Load<Sprite>("Sprites/Dishes/donut");
+                var dish = new DishDef(
+                    "shop_pointer_test",
+                    "Shop Pointer Test",
+                    10,
+                    DishShape.FromRows(new[] { "X" }),
+                    0,
+                    0,
+                    1f,
+                    Array.Empty<string>(),
+                    string.Empty,
+                    false,
+                    baseId: "donut");
+
+                card.Bind(new ShopBuyItemViewContext(
+                    null,
+                    null,
+                    true,
+                    sprite,
+                    dish,
+                    null));
+
+                RawImage rawImage = preview.GetComponent<RawImage>();
+                Assert.That(rawImage.raycastTarget, Is.True);
+                Assert.That(
+                    rawImage.GetComponentInParent<Button>(),
+                    Is.SameAs(instance.GetComponent<Button>()),
+                    "The RT hit must bubble to the shop card Button.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
         }
 
         [TestCase("Assets/GameMain/UI/RecipeEditDishView.prefab", 1)]

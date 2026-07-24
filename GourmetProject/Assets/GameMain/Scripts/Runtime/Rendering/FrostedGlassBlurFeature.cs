@@ -50,6 +50,15 @@ namespace GourmetProject.Runtime.Rendering
                 return;
             }
 
+            int previewLayer = LayerMask.NameToLayer("DishIconPreview");
+            Camera camera = renderingData.cameraData.camera;
+            if (camera != null
+                && previewLayer >= 0
+                && camera.cullingMask == 1 << previewLayer)
+            {
+                return;
+            }
+
             if (renderingData.cameraData.cameraType != CameraType.Game)
             {
                 return;

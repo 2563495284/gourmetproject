@@ -30,6 +30,15 @@ namespace GourmetProject.Game.UI.Widgets
 
         public RenderTexture CurrentTexture => _renderTexture;
 
+        public void SetRaycastTarget(bool value)
+        {
+            EnsureRefs();
+            if (_targetImage != null)
+            {
+                _targetImage.raycastTarget = value;
+            }
+        }
+
         public static Vector2Int ExpandedBoardSize(DishShape shape)
         {
             return shape == null
@@ -70,7 +79,6 @@ namespace GourmetProject.Game.UI.Widgets
 
             _targetImage.texture = _renderTexture;
             _targetImage.color = Color.white;
-            _targetImage.raycastTarget = false;
             _targetImage.enabled = _renderTexture != null;
             gameObject.SetActive(_renderTexture != null);
 

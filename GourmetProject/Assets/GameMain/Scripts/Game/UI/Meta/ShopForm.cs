@@ -252,18 +252,24 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            TipHoverTrigger trigger = card.GetComponent<TipHoverTrigger>();
+            RectTransform hoverReceiver = entry.Kind == ShopEntryKind.Dish
+                ? card.PurchaseFlySource
+                : card.transform as RectTransform;
+            GameObject triggerObject = hoverReceiver != null
+                ? hoverReceiver.gameObject
+                : card.gameObject;
+            TipHoverTrigger trigger = triggerObject.GetComponent<TipHoverTrigger>();
             if (trigger == null)
             {
-                trigger = card.gameObject.AddComponent<TipHoverTrigger>();
+                trigger = triggerObject.AddComponent<TipHoverTrigger>();
             }
 
-            trigger.SetTarget(card.transform as RectTransform);
+            trigger.SetTarget(card.TipPlacementTarget);
             trigger.SetFollowPointer(true);
 
             if (entry.Kind == ShopEntryKind.Dish)
             {
-                BindDishTip(trigger, entry, card.transform as RectTransform);
+                BindDishTip(trigger, entry, card.TipPlacementTarget);
                 return;
             }
 

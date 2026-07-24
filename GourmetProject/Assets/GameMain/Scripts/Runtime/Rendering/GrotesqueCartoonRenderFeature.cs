@@ -29,13 +29,23 @@ namespace GourmetProject.Runtime.Rendering
 
         public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
         {
-            if (material == null || renderingData.cameraData.isPreviewCamera)
+            if (material == null
+                || renderingData.cameraData.isPreviewCamera
+                || IsDishIconPreviewCamera(renderingData.cameraData.camera))
             {
                 return;
             }
 
             pass.Setup(material, saturation, contrast, posterizeSteps, inkStrength, vignetteStrength, warmTint);
             renderer.EnqueuePass(pass);
+        }
+
+        private static bool IsDishIconPreviewCamera(Camera camera)
+        {
+            int layer = LayerMask.NameToLayer("DishIconPreview");
+            return camera != null
+                && layer >= 0
+                && camera.cullingMask == 1 << layer;
         }
 
         protected override void Dispose(bool disposing)

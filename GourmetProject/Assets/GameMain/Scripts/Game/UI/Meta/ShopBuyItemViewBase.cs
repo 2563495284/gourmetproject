@@ -95,6 +95,8 @@ namespace GourmetProject.Game.UI.Meta
 
         public RectTransform PurchaseFlySource => _iconRect != null ? _iconRect : Rect;
 
+        public virtual RectTransform TipPlacementTarget => PurchaseFlySource;
+
         public Sprite PurchaseFlySprite => _itemIcon != null && _itemIcon.enabled ? _itemIcon.sprite : null;
 
         public bool ContainsScreenPoint(Vector2 screenPoint)
