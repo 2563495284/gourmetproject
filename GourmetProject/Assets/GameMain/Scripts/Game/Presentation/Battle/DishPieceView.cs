@@ -70,6 +70,15 @@ namespace GourmetProject.Game.Presentation.Battle
         [Tooltip("弥散光晕层在最高处的透明度（绝对值，贴桌时为 0）。")]
         [SerializeField] private float _haloAlphaWhenHigh = 0.28f;
 
+        [Header("拖拽悬浮（本体中心始终跟随鼠标，阴影只负责制造离桌感）")]
+        [SerializeField] private float _dragVisualScale = 1.15f;
+        [SerializeField] private float _dragShadowSideCells = 0.18f;
+        [SerializeField] private float _dragShadowDropCells = 0.28f;
+        [SerializeField] private float _dragShadowCoreScale = 1.30f;
+        [SerializeField] private float _dragShadowCoreAlpha = 0.44f;
+        [SerializeField] private float _dragShadowHaloScale = 1.75f;
+        [SerializeField] private float _dragShadowHaloAlpha = 0.20f;
+
         [Header("固定结构（prefab 预拼，运行时引用）")]
         [Tooltip("菜品本体渲染体（子物体 Sprite 上的 SpriteRenderer）。")]
         [SerializeField] private SpriteRenderer _spriteRenderer;
@@ -143,6 +152,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private bool _hovered;
         private bool _moveDragging;
         private bool _flying;
+        private bool _dragPresentationActive;
         private MaterialPropertyBlock _stainBlock;
         private MaterialPropertyBlock _placementGlowBlock;
         private Tween _settlementFeedbackTween;
@@ -307,9 +317,9 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>
-        /// 飞入餐桌时只把<b>本体</b>切到 PiecesFlying 层，压在已摆放食品之上；
-        /// 接触阴影（核心+光晕）始终留在 Pieces 地面层、排在所有菜本体之下，
-        /// 这样下落途中阴影铺在桌面、被沿途菜品遮挡，不会盖出脏暗斑。落定后本体切回 Pieces 层。
+        /// 悬浮/飞行时把本体和两层假阴影一起切到 PiecesFlying：
+        /// 阴影仍以层内 order 排在本体下方，但整组都会压过餐桌和已摆放食物。
+        /// 落定后整组切回 Pieces。
         /// </summary>
         public void SetFlying(bool flying)
         {
@@ -326,12 +336,76 @@ namespace GourmetProject.Game.Presentation.Battle
 
             if (_shadowRenderer != null)
             {
-                _shadowRenderer.sortingLayerName = BattleSorting.Pieces;
+                BattleSorting.Apply(_shadowRenderer, layer, BattleSorting.OrderShadow);
             }
 
             if (_shadowHaloRenderer != null)
             {
-                _shadowHaloRenderer.sortingLayerName = BattleSorting.Pieces;
+                BattleSorting.Apply(_shadowHaloRenderer, layer, BattleSorting.OrderShadow - 1);
+            }
+        }
+
+        /// <summary>
+        /// 切换统一拖拽悬浮表现。拖拽本体和两层阴影一起进入 PiecesFlying，
+        /// 本体保持不透明并放大，阴影改为更大、更偏移的悬浮投影。
+        /// </summary>
+        public void SetDragPresentation(bool active)
+        {
+            EnsureRefs();
+            _dragPresentationActive = active;
+            _liftHeight = 0f;
+            SetFlying(active);
+
+            if (_placementGlow != null)
+            {
+                _placementGlow.gameObject.SetActive(false);
+            }
+
+            if (_spriteRenderer != null)
+            {
+                Color body = _spriteRenderer.color;
+                body.a = 1f;
+                _spriteRenderer.color = body;
+            }
+
+            if (active)
+            {
+                ApplyDragPresentation();
+                return;
+            }
+
+            Transform target = VisualAnimationTarget();
+            if (target != null)
+            {
+                target.localScale = Vector3.one;
+                target.localRotation = Quaternion.identity;
+            }
+
+            ApplyLiftHeight(0f);
+        }
+
+        /// <summary>把实际渲染出来的食物本体中心移动到指定世界点；合法位置也不会在拖拽中吸格。</summary>
+        public void MoveVisualCenterToWorld(Vector3 centerWorld)
+        {
+            EnsureRefs();
+            Vector3 currentCenter = _spriteRenderer != null
+                ? _spriteRenderer.bounds.center
+                : OccupiedCellCenterWorld();
+            transform.position += centerWorld - currentCenter;
+        }
+
+        public Vector2 FootprintWorldSize
+        {
+            get
+            {
+                if (CurrentShape == null)
+                {
+                    return Vector2.one * Mathf.Max(_cellSize, 0.01f);
+                }
+
+                return new Vector2(
+                    Mathf.Max(_cellSize, (CurrentShape.Width - 1) * _pitch + _cellSize),
+                    Mathf.Max(_cellSize, (CurrentShape.Height - 1) * _pitch + _cellSize));
             }
         }
 
@@ -1072,6 +1146,10 @@ namespace GourmetProject.Game.Presentation.Battle
             ConfigureContactShadow(shape);
             ConfigureFootprintSprite(shape);
             ApplyLiftHeight(_liftHeight);
+            if (_dragPresentationActive)
+            {
+                ApplyDragPresentation();
+            }
 
             _collider.size = new Vector2(
                 Mathf.Max(_cellSize, shape.Width * _pitch - (_pitch - _cellSize)),
@@ -1278,6 +1356,57 @@ namespace GourmetProject.Game.Presentation.Battle
                 Color hc = _shadowHaloRenderer.color;
                 hc.a = Mathf.Lerp(0f, _haloAlphaWhenHigh, t);
                 _shadowHaloRenderer.color = hc;
+            }
+        }
+
+        private void ApplyDragPresentation()
+        {
+            Transform target = VisualAnimationTarget();
+            if (target != null)
+            {
+                target.localPosition = _visualBaseLocalPos;
+                target.localRotation = Quaternion.identity;
+                float scale = Mathf.Max(0.0001f, _dragVisualScale);
+                target.localScale = new Vector3(scale, scale, 1f);
+            }
+
+            Vector3 dragShadowPosition = _shadowBaseLocalPos
+                + new Vector3(
+                    _cellSize * _dragShadowSideCells,
+                    -_cellSize * _dragShadowDropCells,
+                    0f);
+            if (_shadowRenderer != null)
+            {
+                _shadowRenderer.transform.localPosition = dragShadowPosition;
+                _shadowRenderer.transform.localScale = new Vector3(
+                    _shadowBaseScale.x * _dragShadowCoreScale,
+                    _shadowBaseScale.y * _dragShadowCoreScale,
+                    1f);
+                Color color = _shadowRenderer.color;
+                color.a = Mathf.Clamp01(_dragShadowCoreAlpha);
+                _shadowRenderer.color = color;
+                BattleSorting.Apply(_shadowRenderer, BattleSorting.PiecesFlying, BattleSorting.OrderShadow);
+            }
+
+            if (_shadowHaloRenderer != null)
+            {
+                _shadowHaloRenderer.transform.localPosition = dragShadowPosition;
+                _shadowHaloRenderer.transform.localScale = new Vector3(
+                    _shadowBaseScale.x * _dragShadowHaloScale,
+                    _shadowBaseScale.y * _dragShadowHaloScale,
+                    1f);
+                Color color = _shadowHaloRenderer.color;
+                color.a = Mathf.Clamp01(_dragShadowHaloAlpha);
+                _shadowHaloRenderer.color = color;
+                BattleSorting.Apply(_shadowHaloRenderer, BattleSorting.PiecesFlying, BattleSorting.OrderShadow - 1);
+            }
+
+            if (_spriteRenderer != null)
+            {
+                foreach (SpriteRenderer renderer in _spriteRenderer.GetComponentsInChildren<SpriteRenderer>(true))
+                {
+                    renderer.sortingLayerName = BattleSorting.PiecesFlying;
+                }
             }
         }
 

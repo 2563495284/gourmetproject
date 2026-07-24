@@ -422,6 +422,13 @@ MonoBehaviour:
   _coreFadeWhenHigh: 0.15
   _haloGrow: 2
   _haloAlphaWhenHigh: 0.28
+  _dragVisualScale: 1.15
+  _dragShadowSideCells: 0.18
+  _dragShadowDropCells: 0.28
+  _dragShadowCoreScale: 1.3
+  _dragShadowCoreAlpha: 0.44
+  _dragShadowHaloScale: 1.75
+  _dragShadowHaloAlpha: 0.2
   _spriteRenderer: {fileID: 2000022}
   _visualPivot: {fileID: 652070270221368771}
   _shadowRenderer: {fileID: 2000012}

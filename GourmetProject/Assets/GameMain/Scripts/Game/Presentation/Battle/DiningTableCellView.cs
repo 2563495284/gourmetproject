@@ -222,6 +222,25 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
+        public void SetSorting(string layer, int order)
+        {
+            EnsureRefs();
+            BattleSorting.Apply(_renderer, layer, order);
+        }
+
+        public void SetInteractionEnabled(bool enabled)
+        {
+            EnsureRefs();
+            _collider.enabled = enabled;
+            if (!enabled)
+            {
+                _clicked = null;
+                _hoverEntered = null;
+                _hoverExited = null;
+                SetHovered(false);
+            }
+        }
+
         private void ApplyTransformEffect(float amount)
         {
             if (_renderer == null)

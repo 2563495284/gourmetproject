@@ -33,21 +33,21 @@
       "type": "dish",
       "requestSize": "1536x768",
       "targetSize": "1024x512",
-      "prompt": "wide two-cell fruit jelly dessert, connected translucent red and orange gelatin slab with fruit pieces, glossy highlights, fills horizontal footprint"
+      "prompt": "wide two-cell jelly dessert as one clear rectangular plastic dessert cup or bento tray, one continuous red-orange gelatin slab with fruit pieces inside, transparent rim and lid edge, the container naturally forms a 2x1 horizontal footprint. Do not make two separate jelly blobs, do not duplicate cups, do not stretch loose jelly without packaging."
     },
     {
       "name": "eggtart",
       "type": "dish",
       "requestSize": "1536x768",
       "targetSize": "1024x512",
-      "prompt": "wide two-cell egg tart dessert, two flaky egg tarts fused as one connected wide pastry sprite, glossy yellow custard with toasted spots"
+      "prompt": "wide two-cell egg tart dish: two normal round egg tarts placed side by side inside one shallow paper bakery tray, each tart keeps its natural circular flaky crust and glossy yellow custard, small gap between the two tarts, tray makes the whole sprite read as one 2x1 dish. Do not fuse the tarts together, do not stretch the custard into a peanut shape."
     },
     {
       "name": "sugarbean",
       "type": "dish",
       "requestSize": "1536x768",
       "targetSize": "1024x512",
-      "prompt": "wide two-cell pile of colorful sugar beans, glossy oval candies forming one connected horizontal mound, bold simple readable candy shapes"
+      "prompt": "wide two-cell sugar bean candy as one shallow paper candy carton or tray filled with many glossy colorful oval sugar beans, the tray holds the small candies together and forms one 2x1 horizontal dish sprite. No loose mound spilling everywhere, no duplicated piles, no fused bean slab."
     },
     {
       "name": "cheesecake",
@@ -89,7 +89,7 @@
       "type": "dish",
       "requestSize": "1536x512",
       "targetSize": "1536x512",
-      "prompt": "three-cell long cake dessert, connected rectangular roll cake bar with frosting, fruit pieces, piped cream border, fills horizontal footprint"
+      "prompt": "three-cell long cake as one elegant rectangular cake bar in a slim bakery tray, continuous sponge cake slab with cream layers visible on the side, one smooth frosting top, fruit garnish and piped cream spaced naturally along the length, no repeated slices, no three panels, no segmented cakes"
     },
     {
       "name": "apple_pie",
@@ -117,7 +117,7 @@
       "type": "dish",
       "requestSize": "768x1536",
       "targetSize": "512x1024",
-      "prompt": "vertical two-cell fruit candy, stacked translucent fruit-flavored hard candies with bright citrus colors and glossy wrappers, connected tall candy sprite"
+      "prompt": "vertical two-cell fruit candy as one narrow transparent candy tube package filled with individually wrapped colorful hard candies, each candy has small twisted wrapper ends and fruit-color stripes, sealed crimped top and bottom, one complete package forms a 1x2 footprint. Do not draw real fruit pieces, no bananas, no apples, no citrus slices, no loose floating candies, no two candies glued together."
     },
     {
       "name": "cup_cake",
@@ -131,14 +131,14 @@
       "type": "dish",
       "requestSize": "768x1536",
       "targetSize": "512x1024",
-      "prompt": "vertical two-cell whipped cream dessert, tall connected swirl of white cream with soft peaks and tiny sugar sparkles, fills tall footprint"
+      "prompt": "vertical two-cell cream as one tall whipped cream piping bag or squeeze pouch with a metal nozzle, creamy white frosting visible through a translucent pouch and a small swirl at the nozzle, single packaged object forms a 1x2 footprint. Do not make a loose cream tower, do not make two stacked cream blobs."
     },
     {
       "name": "gummy",
       "type": "dish",
       "requestSize": "512x1536",
       "targetSize": "512x1536",
-      "prompt": "vertical three-cell gummy candy strip, translucent colorful worm-like gummy standing upright with chunky bends, connected tall shape"
+      "prompt": "vertical three-cell gummy candy as one tall slim transparent hanging bag or candy tube, filled with one long colorful gummy worm coiled in an S path plus a few small gummies visible inside, the package forms a clean 1x3 footprint. No three separate gummy pieces, no floating stack, no glued blobs."
     },
     {
       "name": "choco_bar",
@@ -152,7 +152,7 @@
       "type": "dish",
       "requestSize": "768x1536",
       "targetSize": "512x1024",
-      "prompt": "vertical two-cell mochi dessert, two soft mochi balls stacked and fused with powdered sugar, squishy lumpy silhouette, pale pink and white dessert colors"
+      "prompt": "vertical two-cell mochi dish: two natural round mochi placed one above the other in one narrow paper tray dusted with rice flour, visible soft powdery texture, one mochi has a small cut showing strawberry and red bean filling. They are separate mochi arranged as one 1x2 dish, not fused into a finger shape."
     },
     {
       "name": "chiffion",
@@ -180,7 +180,7 @@
       "type": "dish",
       "requestSize": "512x1536",
       "targetSize": "512x1536",
-      "prompt": "vertical three-cell cake roll, stacked Swiss roll slices with visible cream spiral and berry jam, connected tall dessert sprite"
+      "prompt": "vertical three-cell cake roll as one long upright Swiss roll log in a paper sleeve, tall cylindrical sponge cake with one large cream spiral visible on the top face and a berry jam ribbon spiraling down the side, frosting cap and crumbs for dessert appeal, no stacked slices, no repeated spirals"
     },
     {
       "name": "big_lollipop",
@@ -194,7 +194,7 @@
       "type": "dish",
       "requestSize": "1024x1536",
       "targetSize": "1024x1536",
-      "prompt": "two-by-three marshmallow dessert, tall pile of soft white and pastel marshmallow cubes with toasted edges, connected vertical mound"
+      "prompt": "two-by-three marshmallow as one large upright clear-window pouch or bakery bag filled with pastel marshmallow cubes, sealed top, broad stable bag silhouette naturally fills a 2x3 footprint. The cubes are contained by packaging, no loose stacked tower, no fused marshmallow block."
     },
     {
       "name": "black_forest_cake",

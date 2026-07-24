@@ -1,0 +1,60 @@
+{
+  "provider": "gemini",
+  "model": "gemini-3.1-flash-image-preview",
+  "stylePrefix": "90s American cable TV cartoon style, surreal funny food shapes, thick clean black ink outlines, flat cel animation colors, hand-drawn 2D animation look, warm appetizing dessert palette, polished Unity game dish sprite quality, funny, weird, charming, pure food only, no face, no eyes, no mouth, no limbs, no mascot treatment, no text, no logo, no watermark",
+  "typeDefaults": {
+    "dish": {
+      "outputDir": "Assets/GameMain/Resources/Sprites/Dishes",
+      "postprocess": "magenta-alpha",
+      "background": "opaque",
+      "quality": "high"
+    }
+  },
+  "typePromptPrefixes": {
+    "dish": "Dish sprite rule: board food sprite on a perfectly flat solid #FF00FF chroma key background. The background must be one uniform color with no shadows, gradients, texture, reflections, floor plane, or lighting variation. Do not use #FF00FF anywhere in the food. No cast shadow, no contact shadow, no table, no utensils, no grid lines, no cell borders, no checkerboard."
+  },
+  "assets": [
+    {
+      "name": "jelly",
+      "type": "dish",
+      "requestSize": "1536x768",
+      "targetSize": "1024x512",
+      "prompt": "wide two-cell jelly dessert as one clear rectangular plastic dessert cup or bento tray, one continuous red-orange gelatin slab with fruit pieces inside, transparent rim and lid edge, the container naturally forms a 2x1 horizontal footprint. Do not make two separate jelly blobs, do not duplicate cups, do not stretch loose jelly without packaging."
+    },
+    {
+      "name": "sugarbean",
+      "type": "dish",
+      "requestSize": "1536x768",
+      "targetSize": "1024x512",
+      "prompt": "wide two-cell sugar bean candy as one shallow paper candy carton or tray filled with many glossy colorful oval sugar beans, the tray holds the small candies together and forms one 2x1 horizontal dish sprite. No loose mound spilling everywhere, no duplicated piles, no fused bean slab."
+    },
+    {
+      "name": "fruit_candy",
+      "type": "dish",
+      "requestSize": "768x1536",
+      "targetSize": "512x1024",
+      "prompt": "vertical two-cell fruit candy as one narrow transparent candy tube package filled with individually wrapped colorful hard candies, each candy has small twisted wrapper ends and fruit-color stripes, sealed crimped top and bottom, one complete package forms a 1x2 footprint. Do not draw real fruit pieces, no bananas, no apples, no citrus slices, no loose floating candies, no two candies glued together."
+    },
+    {
+      "name": "cream",
+      "type": "dish",
+      "requestSize": "768x1536",
+      "targetSize": "512x1024",
+      "prompt": "vertical two-cell cream as one tall whipped cream piping bag or squeeze pouch with a metal nozzle, creamy white frosting visible through a translucent pouch and a small swirl at the nozzle, single packaged object forms a 1x2 footprint. Do not make a loose cream tower, do not make two stacked cream blobs."
+    },
+    {
+      "name": "gummy",
+      "type": "dish",
+      "requestSize": "512x1536",
+      "targetSize": "512x1536",
+      "prompt": "vertical three-cell gummy candy as one tall slim transparent hanging bag or candy tube, filled with one long colorful gummy worm coiled in an S path plus a few small gummies visible inside, the package forms a clean 1x3 footprint. No three separate gummy pieces, no floating stack, no glued blobs."
+    },
+    {
+      "name": "marshmallow",
+      "type": "dish",
+      "requestSize": "1024x1536",
+      "targetSize": "1024x1536",
+      "prompt": "two-by-three marshmallow as one large upright clear-window pouch or bakery bag filled with pastel marshmallow cubes, sealed top, broad stable bag silhouette naturally fills a 2x3 footprint. The cubes are contained by packaging, no loose stacked tower, no fused marshmallow block."
+    }
+  ]
+}

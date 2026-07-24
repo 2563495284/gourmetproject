@@ -1,0 +1,60 @@
+{
+  "provider": "gemini",
+  "model": "gemini-3.1-flash-image-preview",
+  "stylePrefix": "90s American cable TV cartoon style, surreal funny food shapes, thick clean black ink outlines, flat cel animation colors, hand-drawn 2D animation look, warm appetizing dessert palette, polished Unity game dish sprite quality, pure food only, no face, no eyes, no mouth, no limbs, no mascot treatment, no text, no logo, no watermark",
+  "typeDefaults": {
+    "dish": {
+      "outputDir": "Assets/GameMain/Resources/Sprites/Dishes",
+      "postprocess": "magenta-alpha",
+      "background": "opaque",
+      "quality": "high"
+    }
+  },
+  "typePromptPrefixes": {
+    "dish": "Dish sprite rule: one coherent food object on a perfectly flat solid #FF00FF chroma key background. The background must be one uniform color with no shadows, gradients, texture, reflections, floor plane, or lighting variation. Do not use #FF00FF anywhere in the food. No cast shadow, no contact shadow, no plate, no table, no utensils, no grid lines, no cell borders, no checkerboard. Most important: do not duplicate separate copies of the food to fill the footprint; redesign the food as one single continuous object that naturally fits the requested canvas."
+  },
+  "assets": [
+    {
+      "name": "eggtart",
+      "type": "dish",
+      "requestSize": "1536x768",
+      "targetSize": "1024x512",
+      "prompt": "wide two-cell egg tart dish: two normal round egg tarts placed side by side inside one shallow paper bakery tray, each tart keeps its natural circular flaky crust and glossy yellow custard, small gap between the two tarts, tray makes the whole sprite read as one 2x1 dish. Do not fuse the tarts together, do not stretch the custard into a peanut shape."
+    },
+    {
+      "name": "eggroll",
+      "type": "dish",
+      "requestSize": "1536x512",
+      "targetSize": "1536x512",
+      "prompt": "three-cell egg roll wafer as one extra-long rolled wafer tube, continuous crispy golden cylinder with a visible hollow spiral opening at both ends, subtle cream seam winding along the length, appetizing flaky texture, no multiple rolls, no repeated tubes"
+    },
+    {
+      "name": "long_cake",
+      "type": "dish",
+      "requestSize": "1536x512",
+      "targetSize": "1536x512",
+      "prompt": "three-cell long cake as one elegant rectangular cake bar in a slim bakery tray, continuous sponge cake slab with cream layers visible on the side, one smooth frosting top, fruit garnish and piped cream spaced naturally along the length, no repeated slices, no three panels, no segmented cakes"
+    },
+    {
+      "name": "fruit_candy",
+      "type": "dish",
+      "requestSize": "768x1536",
+      "targetSize": "512x1024",
+      "prompt": "vertical two-cell fruit candy as one long twisted hard-candy rope, translucent rainbow candy with glossy highlights, gentle spiral stripes from top to bottom, tiny wrapper twist only at the very top and bottom, continuous vertical candy silhouette, no two separate candies, no stacked pieces"
+    },
+    {
+      "name": "mochi",
+      "type": "dish",
+      "requestSize": "768x1536",
+      "targetSize": "512x1024",
+      "prompt": "vertical two-cell mochi dish: two natural round mochi placed one above the other in one narrow paper tray dusted with rice flour, visible soft powdery texture, one mochi has a small cut showing strawberry and red bean filling. They are separate mochi arranged as one 1x2 dish, not fused into a finger shape."
+    },
+    {
+      "name": "cake_roll",
+      "type": "dish",
+      "requestSize": "512x1536",
+      "targetSize": "512x1536",
+      "prompt": "vertical three-cell cake roll as one long upright Swiss roll log in a paper sleeve, tall cylindrical sponge cake with one large cream spiral visible on the top face and a berry jam ribbon spiraling down the side, frosting cap and crumbs for dessert appeal, no stacked slices, no repeated spirals"
+    }
+  ]
+}

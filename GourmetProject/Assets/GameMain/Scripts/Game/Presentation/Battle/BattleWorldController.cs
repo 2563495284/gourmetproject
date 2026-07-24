@@ -54,6 +54,7 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private DiningTableCellView _boardCellPrefab;
         [SerializeField] private DishPieceView _dishPiecePrefab;
         [SerializeField] private WorldTargetArrow _worldTargetArrowPrefab;
+        [SerializeField] private DishDropDustView _dishDropDustPrefab;
 
         // 餐桌优先锁定到 Battle 场景的布局区域；场景未配置时才使用 BattleForm 的 HUD BoardArea。
         private const float BoardAreaMinCellSize = 0.12f;
@@ -93,6 +94,10 @@ namespace GourmetProject.Game.Presentation.Battle
         private DishPieceView _movingPiece;
         private Placement _movingOriginalPlacement;
         private Placement? _movingHoverPlacement;
+        private Vector3 _dragPointerPreviousWorld;
+        private float _dragPointerPreviousTime;
+        private Vector2 _dragPointerVelocity;
+        private bool _dragPointerSampled;
         private WorldMode _worldMode = WorldMode.Hidden;
 
         private Action<string> _messageSink;
@@ -967,8 +972,8 @@ namespace GourmetProject.Game.Presentation.Battle
             _outletDragPiece = piece;
             _outletHoverPlacement = null;
             piece.SetClickEnabled(false);
-            piece.SetGhost(true);
-            piece.SetFlying(true);
+            piece.SetDragPresentation(true);
+            BeginDragPointerTracking(ScreenToWorld(screenPoint));
             UpdateServingOutletDrag(screenPoint);
         }
 
@@ -980,33 +985,32 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             Vector3 world = ScreenToWorld(screenPoint);
+            SampleDragPointer(world);
+            _outletDragPiece.MoveVisualCenterToWorld(world);
             bool hoveringDiscard = _session.FoodDiscardsRemaining > 0
                 && _preparedDishDiscardHitTest?.Invoke(screenPoint) == true;
             SetOutletDiscardHover(hoveringDiscard);
             if (hoveringDiscard)
             {
                 _outletHoverPlacement = null;
-                MoveOccupiedCellCenterToWorld(_outletDragPiece, world);
-                _outletDragPiece.SetPlacementGlow(true, true);
+                _boardView.ClearDragPlacementFeedback();
                 ClearDishScopeHighlights();
                 return;
             }
 
-            if (TryFindPreparedPlacement(world, out Placement placement))
+            DishDragPlacementResult result = EvaluateDragPlacement(_outletDragPiece, world);
+            if (result != null
+                && result.CanCommit
+                && !_session.PreparedServe.Contains(result.Placement))
             {
-                _outletHoverPlacement = placement;
-                _outletDragPiece.UpdatePlacement(placement);
-                _outletDragPiece.transform.localPosition = _boardView.Mapper.CellCenterLocal(placement.Origin);
-                _outletDragPiece.SetPlacementGlow(true, true);
-                ShowDishScopeHighlights(_outletDragPiece.Instance);
+                result = WithOverallState(result, DishDragCellState.Blocked);
             }
-            else
-            {
-                _outletHoverPlacement = null;
-                MoveOccupiedCellCenterToWorld(_outletDragPiece, world);
-                _outletDragPiece.SetPlacementGlow(true, false);
-                ClearDishScopeHighlights();
-            }
+
+            _outletHoverPlacement = result != null && result.CanCommit
+                ? result.Placement
+                : null;
+            _boardView.ShowDragPlacementFeedback(result);
+            ClearDishScopeHighlights();
         }
 
         public bool EndServingOutletDrag(Vector2 screenPoint)
@@ -1044,6 +1048,8 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             Placement placement = _outletHoverPlacement.Value;
+            Vector2 footprintSize = _outletDragPiece.FootprintWorldSize;
+            Vector2 releaseVelocity = _dragPointerVelocity;
             ClearOutletDragPreview();
             ServeResult result = _session.CommitPreparedServe(placement);
             if (!result.Success)
@@ -1059,6 +1065,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 : -1;
             RebuildPlacedPieces();
             _boardView.Sync();
+            PlayDropDust(placement, footprintSize, releaseVelocity);
             SetMessage(result.RemovedAfterServe
                 ? $"开胃菜消化了：{result.Dish.Def.Name}"
                 : $"上菜：{result.Dish.Def.Name}");
@@ -1083,52 +1090,20 @@ namespace GourmetProject.Game.Presentation.Battle
             return piece;
         }
 
-        private bool TryFindPreparedPlacement(Vector3 world, out Placement placement)
-        {
-            placement = default;
-            PreparedServeDish prepared = _session?.PreparedServe;
-            if (prepared == null || _boardView?.Mapper == null)
-            {
-                return false;
-            }
-
-            int preferredRotation = prepared.Dish.Placement.RotationIndex;
-            for (int pass = 0; pass < 2; pass++)
-            {
-                for (int i = 0; i < prepared.Placements.Count; i++)
-                {
-                    Placement candidate = prepared.Placements[i];
-                    bool preferred = candidate.RotationIndex == preferredRotation;
-                    if ((pass == 0 && !preferred) || (pass == 1 && preferred))
-                    {
-                        continue;
-                    }
-
-                    GridPos origin = NearestOriginForOccupiedCellCenter(world, candidate.Orientation);
-                    if (candidate.Origin.X == origin.X
-                        && candidate.Origin.Y == origin.Y
-                        && _session.DiningTable.CanPlace(candidate.Orientation, candidate.Origin))
-                    {
-                        placement = candidate;
-                        return true;
-                    }
-                }
-            }
-
-            return false;
-        }
-
         private void ClearOutletDragPreview()
         {
             ClearDishScopeHighlights();
+            _boardView?.ClearDragPlacementFeedback();
             SetOutletDiscardHover(false);
             if (_outletDragPiece != null)
             {
+                _outletDragPiece.gameObject.SetActive(false);
                 Destroy(_outletDragPiece.gameObject);
             }
 
             _outletDragPiece = null;
             _outletHoverPlacement = null;
+            ResetDragPointerTracking();
         }
 
         private void SetOutletDiscardHover(bool hovered)
@@ -1210,9 +1185,8 @@ namespace GourmetProject.Game.Presentation.Battle
             _movingHoverPlacement = null;
             _session.DiningTable.RemoveDish(dish);
             ClearDishScopeHighlights();
-            piece.SetGhost(true);
-            piece.SetFlying(true);
-            piece.SetPlacementGlow(true, true);
+            piece.SetDragPresentation(true);
+            BeginDragPointerTracking(ScreenToWorld(screenPoint));
             UpdateMovableDishDrag(screenPoint);
         }
 
@@ -1224,21 +1198,21 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             Vector3 world = ScreenToWorld(screenPoint);
-            if (TryFindMovablePlacement(_movingPiece.Instance, world, out Placement placement))
+            SampleDragPointer(world);
+            _movingPiece.MoveVisualCenterToWorld(world);
+            DishDragPlacementResult result = EvaluateDragPlacement(_movingPiece, world);
+            if (result != null
+                && result.CanCommit
+                && !ContainsPlacement(_session.FindMovableDishPlacements(_movingPiece.Instance), result.Placement))
             {
-                _movingHoverPlacement = placement;
-                _movingPiece.UpdatePlacement(placement);
-                _movingPiece.transform.localPosition = _boardView.Mapper.CellCenterLocal(placement.Origin);
-                _movingPiece.SetPlacementGlow(true, true);
-                ShowDishScopeHighlights(_movingPiece.Instance);
+                result = WithOverallState(result, DishDragCellState.Blocked);
             }
-            else
-            {
-                _movingHoverPlacement = null;
-                MoveOccupiedCellCenterToWorld(_movingPiece, world);
-                _movingPiece.SetPlacementGlow(true, false);
-                ClearDishScopeHighlights();
-            }
+
+            _movingHoverPlacement = result != null && result.CanCommit
+                ? result.Placement
+                : null;
+            _boardView.ShowDragPlacementFeedback(result);
+            ClearDishScopeHighlights();
         }
 
         private void EndMovableDishDrag(Vector2 screenPoint)
@@ -1252,50 +1226,73 @@ namespace GourmetProject.Game.Presentation.Battle
 
             UpdateMovableDishDrag(screenPoint);
             ClearDishScopeHighlights();
+            _boardView?.ClearDragPlacementFeedback();
             DishPieceView piece = _movingPiece;
             DishInstance dish = piece.Instance;
+            bool placedAtHoveredPosition = _movingHoverPlacement.HasValue;
             Placement placement = _movingHoverPlacement ?? _movingOriginalPlacement;
+            Vector2 footprintSize = piece.FootprintWorldSize;
+            Vector2 releaseVelocity = _dragPointerVelocity;
             dish.Relocate(placement);
             _session.DiningTable.Place(dish);
             piece.UpdatePlacement(placement);
             piece.transform.localPosition = _boardView.Mapper.CellCenterLocal(placement.Origin);
+            piece.SetDragPresentation(false);
             piece.SetGhost(false);
-            piece.SetFlying(false);
             piece.SetPlacementGlow(true, true);
             _movingPiece = null;
             _movingHoverPlacement = null;
+            ResetDragPointerTracking();
             _boardView.Sync();
+            if (placedAtHoveredPosition)
+            {
+                PlayDropDust(placement, footprintSize, releaseVelocity);
+            }
+
             _stateChanged?.Invoke();
         }
 
-        private bool TryFindMovablePlacement(DishInstance dish, Vector3 world, out Placement placement)
+        private DishDragPlacementResult EvaluateDragPlacement(DishPieceView piece, Vector3 visualCenterWorld)
         {
-            placement = default;
-            if (dish == null || _session == null || _boardView?.Mapper == null)
+            if (piece?.CurrentShape == null || _session?.DiningTable == null || _boardView?.Mapper == null)
+            {
+                return null;
+            }
+
+            return DishDragPlacementEvaluator.Evaluate(
+                _session.DiningTable,
+                _boardView.Mapper,
+                piece.CurrentShape,
+                piece.RotationIndex,
+                visualCenterWorld);
+        }
+
+        private static DishDragPlacementResult WithOverallState(
+            DishDragPlacementResult source,
+            DishDragCellState state)
+        {
+            return source == null
+                ? null
+                : new DishDragPlacementResult(
+                    source.Placement,
+                    source.CenterCell,
+                    state,
+                    source.Cells);
+        }
+
+        private static bool ContainsPlacement(IReadOnlyList<Placement> placements, Placement placement)
+        {
+            if (placements == null)
             {
                 return false;
             }
 
-            IReadOnlyList<Placement> placements = _session.FindMovableDishPlacements(dish);
-
-            // 优先保持当前朝向；若该原点只允许其它朝向，则使用第一个合法朝向。
-            for (int pass = 0; pass < 2; pass++)
+            for (int i = 0; i < placements.Count; i++)
             {
-                for (int i = 0; i < placements.Count; i++)
+                Placement candidate = placements[i];
+                if (candidate.RotationIndex == placement.RotationIndex
+                    && candidate.Origin.Equals(placement.Origin))
                 {
-                    Placement candidate = placements[i];
-                    GridPos origin = NearestOriginForOccupiedCellCenter(world, candidate.Orientation);
-                    if (candidate.Origin.X != origin.X || candidate.Origin.Y != origin.Y)
-                    {
-                        continue;
-                    }
-
-                    if (pass == 0 && candidate.RotationIndex != dish.Placement.RotationIndex)
-                    {
-                        continue;
-                    }
-
-                    placement = candidate;
                     return true;
                 }
             }
@@ -1303,22 +1300,66 @@ namespace GourmetProject.Game.Presentation.Battle
             return false;
         }
 
-        private GridPos NearestOriginForOccupiedCellCenter(Vector3 centerWorld, DishShape shape)
+        private void BeginDragPointerTracking(Vector3 world)
+        {
+            _dragPointerPreviousWorld = world;
+            _dragPointerPreviousTime = Time.unscaledTime;
+            _dragPointerVelocity = Vector2.zero;
+            _dragPointerSampled = true;
+        }
+
+        private void SampleDragPointer(Vector3 world)
+        {
+            float now = Time.unscaledTime;
+            if (!_dragPointerSampled)
+            {
+                BeginDragPointerTracking(world);
+                return;
+            }
+
+            float delta = now - _dragPointerPreviousTime;
+            if (delta > 0.0001f)
+            {
+                Vector2 instantaneous = (world - _dragPointerPreviousWorld) / delta;
+                float maxSpeed = Mathf.Max(_cellSize, 0.1f) * 30f;
+                instantaneous = Vector2.ClampMagnitude(instantaneous, maxSpeed);
+                _dragPointerVelocity = Vector2.Lerp(_dragPointerVelocity, instantaneous, 0.65f);
+            }
+
+            _dragPointerPreviousWorld = world;
+            _dragPointerPreviousTime = now;
+        }
+
+        private void ResetDragPointerTracking()
+        {
+            _dragPointerSampled = false;
+            _dragPointerVelocity = Vector2.zero;
+            _dragPointerPreviousTime = 0f;
+            _dragPointerPreviousWorld = Vector3.zero;
+        }
+
+        private void PlayDropDust(
+            Placement placement,
+            Vector2 footprintWorldSize,
+            Vector2 pointerVelocityWorld)
         {
             DiningTableCoordinateMapper mapper = _boardView?.Mapper;
             if (mapper == null)
             {
-                return default;
+                return;
             }
 
-            Vector3 localCenter = mapper.Root != null
-                ? mapper.Root.InverseTransformPoint(centerWorld)
-                : centerWorld;
-            Vector3 originCenterLocal = localCenter - OccupiedCellCenterOffsetLocal(shape, mapper.Pitch);
-            Vector3 originCenterWorld = mapper.Root != null
-                ? mapper.Root.TransformPoint(originCenterLocal)
-                : originCenterLocal;
-            return mapper.NearestCell(originCenterWorld);
+            Vector3 centerLocal = mapper.CellCenterLocal(placement.Origin)
+                + OccupiedCellCenterOffsetLocal(placement.Orientation, mapper.Pitch);
+            Vector3 centerWorld = mapper.Root != null
+                ? mapper.Root.TransformPoint(centerLocal)
+                : centerLocal;
+            DishDropDustView.Play(
+                _dishDropDustPrefab,
+                _fxRoot != null ? _fxRoot : transform,
+                centerWorld,
+                footprintWorldSize,
+                pointerVelocityWorld);
         }
 
         private static Vector3 OccupiedCellCenterOffsetLocal(DishShape shape, float pitch)
@@ -1337,16 +1378,6 @@ namespace GourmetProject.Game.Presentation.Battle
             return sum / shape.CellCount;
         }
 
-        private static void MoveOccupiedCellCenterToWorld(DishPieceView piece, Vector3 centerWorld)
-        {
-            if (piece == null)
-            {
-                return;
-            }
-
-            piece.transform.position += centerWorld - piece.OccupiedCellCenterWorld();
-        }
-
         private void LockMovableDish()
         {
             if (_movableDishId > 0 && _dishViewsById.TryGetValue(_movableDishId, out DishPieceView piece) && piece != null)
@@ -1361,6 +1392,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private void CancelServeInteractions()
         {
             ClearDishScopeHighlights();
+            _boardView?.ClearDragPlacementFeedback();
             ClearOutletDragPreview();
             if (_movingPiece?.Instance != null && _session?.DiningTable != null)
             {
@@ -1370,10 +1402,16 @@ namespace GourmetProject.Game.Presentation.Battle
                 {
                     _session.DiningTable.Place(dish);
                 }
+
+                _movingPiece.UpdatePlacement(_movingOriginalPlacement);
+                _movingPiece.transform.localPosition = _boardView.Mapper.CellCenterLocal(_movingOriginalPlacement.Origin);
+                _movingPiece.SetDragPresentation(false);
+                _movingPiece.SetGhost(false);
             }
 
             _movingPiece = null;
             _movingHoverPlacement = null;
+            ResetDragPointerTracking();
             LockMovableDish();
         }
 
