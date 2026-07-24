@@ -1,0 +1,221 @@
+{
+  "provider": "gemini",
+  "model": "gemini-3.1-flash-image-preview",
+  "stylePrefix": "90s American cable TV cartoon style, surreal funny food shapes, thick clean black ink outlines, flat cel animation colors, hand-drawn 2D animation look, warm appetizing dessert palette, polished Unity game dish sprite quality, funny, weird, charming, pure food only, no face, no eyes, no mouth, no limbs, no mascot treatment, no text, no logo, no watermark",
+  "typeDefaults": {
+    "dish": {
+      "outputDir": "Assets/GameMain/Resources/Sprites/Dishes",
+      "postprocess": "magenta-alpha",
+      "background": "opaque",
+      "quality": "high"
+    }
+  },
+  "typePromptPrefixes": {
+    "dish": "Dish sprite rule: board food sprite on a perfectly flat solid #FF00FF chroma key background. The background must be one uniform color with no shadows, gradients, texture, reflections, floor plane, or lighting variation. Do not use #FF00FF anywhere in the food. No cast shadow, no contact shadow, no plate unless the dish requires a cup or glass vessel, no table, no utensils, no grid lines, no cell borders, no checkerboard."
+  },
+  "assets": [
+    {
+      "name": "arrow_cookie_1",
+      "type": "dish",
+      "requestSize": "1536x768",
+      "targetSize": "1024x512",
+      "prompt": "wide two-cell arrow cookie pointing right, golden butter cookie shaped like a bold arrow, sugar glaze stripes, connected horizontal silhouette"
+    },
+    {
+      "name": "arrow_cookie_2",
+      "type": "dish",
+      "requestSize": "1536x768",
+      "targetSize": "1024x512",
+      "prompt": "wide two-cell arrow cookie pointing left, golden butter cookie shaped like a bold arrow, sugar glaze stripes, connected horizontal silhouette"
+    },
+    {
+      "name": "jelly",
+      "type": "dish",
+      "requestSize": "1536x768",
+      "targetSize": "1024x512",
+      "prompt": "wide two-cell fruit jelly dessert, connected translucent red and orange gelatin slab with fruit pieces, glossy highlights, fills horizontal footprint"
+    },
+    {
+      "name": "eggtart",
+      "type": "dish",
+      "requestSize": "1536x768",
+      "targetSize": "1024x512",
+      "prompt": "wide two-cell egg tart dessert, two flaky egg tarts fused as one connected wide pastry sprite, glossy yellow custard with toasted spots"
+    },
+    {
+      "name": "sugarbean",
+      "type": "dish",
+      "requestSize": "1536x768",
+      "targetSize": "1024x512",
+      "prompt": "wide two-cell pile of colorful sugar beans, glossy oval candies forming one connected horizontal mound, bold simple readable candy shapes"
+    },
+    {
+      "name": "cheesecake",
+      "type": "dish",
+      "requestSize": "1536x768",
+      "targetSize": "1024x512",
+      "prompt": "wide two-cell cheesecake dessert, one connected rectangular cheesecake slice slab with creamy pale yellow filling, biscuit crust, berry sauce swirl"
+    },
+    {
+      "name": "mousse",
+      "type": "dish",
+      "requestSize": "1536x768",
+      "targetSize": "1024x512",
+      "prompt": "wide two-cell mousse cake dessert, one connected horizontal layered chocolate and berry mousse bar, glossy top and cream layers"
+    },
+    {
+      "name": "baguette",
+      "type": "dish",
+      "requestSize": "1536x512",
+      "targetSize": "1536x512",
+      "prompt": "three-cell baguette bread, long crusty French loaf with diagonal scoring and golden cracked crust, fills horizontal footprint"
+    },
+    {
+      "name": "tanghulu",
+      "type": "dish",
+      "requestSize": "1536x512",
+      "targetSize": "1536x512",
+      "prompt": "three-cell tanghulu skewer, glossy red candied hawthorn balls on a stick arranged horizontally, connected long silhouette"
+    },
+    {
+      "name": "cake_slice",
+      "type": "dish",
+      "requestSize": "1536x512",
+      "targetSize": "1536x512",
+      "prompt": "three-cell cake slice dessert, long triangular cake wedge stretched across horizontal footprint, visible sponge layers, cream filling, strawberry garnish"
+    },
+    {
+      "name": "long_cake",
+      "type": "dish",
+      "requestSize": "1536x512",
+      "targetSize": "1536x512",
+      "prompt": "three-cell long cake dessert, connected rectangular roll cake bar with frosting, fruit pieces, piped cream border, fills horizontal footprint"
+    },
+    {
+      "name": "apple_pie",
+      "type": "dish",
+      "requestSize": "1536x1536",
+      "targetSize": "1536x1536",
+      "prompt": "three-by-three apple pie, large square footprint round lattice pie with glossy apple filling bubbling through crust, fills the full square footprint"
+    },
+    {
+      "name": "arrow_cookie_3",
+      "type": "dish",
+      "requestSize": "768x1536",
+      "targetSize": "512x1024",
+      "prompt": "vertical two-cell arrow cookie pointing up, golden butter cookie shaped like a bold arrow, sugar glaze stripes, connected tall silhouette"
+    },
+    {
+      "name": "arrow_cookie_4",
+      "type": "dish",
+      "requestSize": "768x1536",
+      "targetSize": "512x1024",
+      "prompt": "vertical two-cell arrow cookie pointing down, golden butter cookie shaped like a bold arrow, sugar glaze stripes, connected tall silhouette"
+    },
+    {
+      "name": "fruit_candy",
+      "type": "dish",
+      "requestSize": "768x1536",
+      "targetSize": "512x1024",
+      "prompt": "vertical two-cell fruit candy, stacked translucent fruit-flavored hard candies with bright citrus colors and glossy wrappers, connected tall candy sprite"
+    },
+    {
+      "name": "cup_cake",
+      "type": "dish",
+      "requestSize": "768x1536",
+      "targetSize": "512x1024",
+      "prompt": "vertical two-cell cup cake, tall cupcake with ridged paper cup and oversized frosting swirl, sprinkles and cherry, fills tall footprint"
+    },
+    {
+      "name": "cream",
+      "type": "dish",
+      "requestSize": "768x1536",
+      "targetSize": "512x1024",
+      "prompt": "vertical two-cell whipped cream dessert, tall connected swirl of white cream with soft peaks and tiny sugar sparkles, fills tall footprint"
+    },
+    {
+      "name": "gummy",
+      "type": "dish",
+      "requestSize": "512x1536",
+      "targetSize": "512x1536",
+      "prompt": "vertical three-cell gummy candy strip, translucent colorful worm-like gummy standing upright with chunky bends, connected tall shape"
+    },
+    {
+      "name": "choco_bar",
+      "type": "dish",
+      "requestSize": "768x1536",
+      "targetSize": "512x1024",
+      "prompt": "vertical two-cell choco bar candy, one narrow snack bar partly unwrapped from a bright crinkled wrapper, exposed chocolate coating with caramel and wafer cross-section, fills tall footprint"
+    },
+    {
+      "name": "mochi",
+      "type": "dish",
+      "requestSize": "768x1536",
+      "targetSize": "512x1024",
+      "prompt": "vertical two-cell mochi dessert, two soft mochi balls stacked and fused with powdered sugar, squishy lumpy silhouette, pale pink and white dessert colors"
+    },
+    {
+      "name": "chiffion",
+      "type": "dish",
+      "requestSize": "1024x1024",
+      "targetSize": "1024x1024",
+      "prompt": "two-by-two chiffon cake, airy ring cake with fluffy cut slice, cream and fruit accents, fills square footprint"
+    },
+    {
+      "name": "parfait",
+      "type": "dish",
+      "requestSize": "1024x1536",
+      "targetSize": "1024x1536",
+      "prompt": "two-by-three parfait dessert, tall glass cup with layered cream, fruit, wafers, syrup and cherry, fills vertical footprint"
+    },
+    {
+      "name": "chocolate_strip",
+      "type": "dish",
+      "requestSize": "512x1536",
+      "targetSize": "512x1536",
+      "prompt": "vertical three-cell chocolate strip, long segmented chocolate stick rotated upright, glossy raised blocks and a bitten top corner, fills tall footprint"
+    },
+    {
+      "name": "cake_roll",
+      "type": "dish",
+      "requestSize": "512x1536",
+      "targetSize": "512x1536",
+      "prompt": "vertical three-cell cake roll, stacked Swiss roll slices with visible cream spiral and berry jam, connected tall dessert sprite"
+    },
+    {
+      "name": "big_lollipop",
+      "type": "dish",
+      "requestSize": "1536x1536",
+      "targetSize": "1536x1536",
+      "prompt": "three-by-three big lollipop, giant spiral candy head with short stick and colorful swirls, fills square footprint as one connected candy"
+    },
+    {
+      "name": "marshmallow",
+      "type": "dish",
+      "requestSize": "1024x1536",
+      "targetSize": "1024x1536",
+      "prompt": "two-by-three marshmallow dessert, tall pile of soft white and pastel marshmallow cubes with toasted edges, connected vertical mound"
+    },
+    {
+      "name": "black_forest_cake",
+      "type": "dish",
+      "requestSize": "1536x1024",
+      "targetSize": "1536x1024",
+      "prompt": "three-by-two black forest cake, wide chocolate layer cake with whipped cream, cherries, chocolate shavings and dark sponge layers, fills rectangular footprint"
+    },
+    {
+      "name": "chocolate_sauce",
+      "type": "dish",
+      "requestSize": "1536x1024",
+      "targetSize": "1536x1024",
+      "prompt": "three-by-two chocolate sauce dessert, glossy flowing chocolate sauce pool with swirls and drips, thick rich brown highlights, fills rectangular footprint as one connected food mass"
+    },
+    {
+      "name": "double_cake",
+      "type": "dish",
+      "requestSize": "1536x2048",
+      "targetSize": "1536x2048",
+      "prompt": "three-by-four double layer cake, very tall stacked celebration cake with two tiers, cream frosting, cherries and sponge layers, fills tall rectangular footprint"
+    }
+  ]
+}
