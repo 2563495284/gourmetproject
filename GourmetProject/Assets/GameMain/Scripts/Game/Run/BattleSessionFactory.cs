@@ -17,6 +17,8 @@ namespace GourmetProject.Game.Run
     /// </summary>
     public static class BattleSessionFactory
     {
+        private const float CarbMealMantouChance = 0.5f;
+
         public static BattleSession Build(GameRun run, int requiredScore, string modifier, string key)
         {
             modifier ??= string.Empty;
@@ -103,8 +105,11 @@ namespace GourmetProject.Game.Run
             }
             else if (modifier == BossDebuffModifiers.Indulgent)
             {
-                maxW += 1;
                 maxH += 1;
+            }
+            else if (modifier == BossDebuffModifiers.Binge)
+            {
+                maxW += 1;
             }
 
             TableFragmentDef fragment = run.Database.GetFragment(character?.InitialFragmentId);
@@ -157,9 +162,11 @@ namespace GourmetProject.Game.Run
             switch (modifier)
             {
                 case BossDebuffModifiers.Indulgent:
+                case BossDebuffModifiers.Binge:
                     multiplier = 1.5f;
                     break;
                 case BossDebuffModifiers.KidsMeal:
+                case BossDebuffModifiers.WeightLoss:
                     multiplier = 0.8f;
                     break;
                 case BossDebuffModifiers.Gluttony:
@@ -186,28 +193,6 @@ namespace GourmetProject.Game.Run
                     {
                         slot.AddEntry(copy);
                     }
-                }
-            }
-            else if (modifier == BossDebuffModifiers.Omakase)
-            {
-                var all = new List<RecipeSlotEntry>();
-                foreach (RecipeSlot slot in slots)
-                {
-                    foreach (RecipeSlotEntry entry in slot.Entries)
-                    {
-                        all.Add(entry.Clone());
-                    }
-                }
-
-                rng.Shuffle(all);
-                foreach (RecipeSlot slot in slots)
-                {
-                    slot.ReplaceEntries(System.Array.Empty<RecipeSlotEntry>());
-                }
-
-                for (int i = 0; i < all.Count; i++)
-                {
-                    slots[i % slots.Count].AddEntry(all[i]);
                 }
             }
             else if (modifier == BossDebuffModifiers.LightMeal)
@@ -274,15 +259,23 @@ namespace GourmetProject.Game.Run
 
             if (modifier == BossDebuffModifiers.Indulgent)
             {
-                AddBottomAndRightCells(board);
+                AddBottomCells(board);
+            }
+            else if (modifier == BossDebuffModifiers.Binge)
+            {
+                AddRightCells(board);
             }
             else if (modifier == BossDebuffModifiers.KidsMeal)
             {
-                RemoveBottomAndRightCells(board);
+                RemoveBottomCells(board);
+            }
+            else if (modifier == BossDebuffModifiers.WeightLoss)
+            {
+                RemoveRightCells(board);
             }
         }
 
-        private static void AddBottomAndRightCells(GpTable board)
+        private static void AddBottomCells(GpTable board)
         {
             List<GridPos> cells = board.ExistingCells();
             var toAdd = new List<GridPos>();
@@ -303,6 +296,16 @@ namespace GourmetProject.Game.Run
                 }
             }
 
+            foreach (GridPos cell in toAdd)
+            {
+                board.SetExists(cell, true);
+            }
+        }
+
+        private static void AddRightCells(GpTable board)
+        {
+            List<GridPos> cells = board.ExistingCells();
+            var toAdd = new List<GridPos>();
             for (int y = 0; y < board.Height; y++)
             {
                 int maxX = -1;
@@ -326,7 +329,7 @@ namespace GourmetProject.Game.Run
             }
         }
 
-        private static void RemoveBottomAndRightCells(GpTable board)
+        private static void RemoveBottomCells(GpTable board)
         {
             List<GridPos> cells = board.ExistingCells();
             var toRemove = new HashSet<GridPos>();
@@ -347,6 +350,16 @@ namespace GourmetProject.Game.Run
                 }
             }
 
+            foreach (GridPos cell in toRemove)
+            {
+                board.SetExists(cell, false);
+            }
+        }
+
+        private static void RemoveRightCells(GpTable board)
+        {
+            List<GridPos> cells = board.ExistingCells();
+            var toRemove = new HashSet<GridPos>();
             for (int y = 0; y < board.Height; y++)
             {
                 int maxX = -1;
@@ -410,10 +423,16 @@ namespace GourmetProject.Game.Run
                     session.MaxServes = 5;
                     break;
                 case BossDebuffModifiers.DineAndDash:
-                    session.GoldCostPerServe = 5;
+                    session.GoldCostPerBellServe = 5;
+                    break;
+                case BossDebuffModifiers.Omakase:
+                    session.ConfigureFoodDiscardLimit(0);
                     break;
                 case BossDebuffModifiers.FineDining:
                     session.HalveBaseScore = true;
+                    break;
+                case BossDebuffModifiers.CarbMeal:
+                    session.BellServeMantouChance = CarbMealMantouChance;
                     break;
                 case BossDebuffModifiers.DarkCuisine:
                     session.RandomServeMultiplier = true;
@@ -426,7 +445,7 @@ namespace GourmetProject.Game.Run
                     break;
                 case BossDebuffModifiers.Appetizer:
                     session.RemoveFirstServedDishes = true;
-                    session.FirstServedDishesToRemove = 3;
+                    session.FirstServedDishesToRemove = 2;
                     break;
                 case BossDebuffModifiers.Tasting:
                     session.AlternateServeMultiplier = true;

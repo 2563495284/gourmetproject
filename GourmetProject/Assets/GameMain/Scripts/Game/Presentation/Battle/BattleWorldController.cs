@@ -933,7 +933,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return false;
             }
 
-            ServePrepareResult result = _session.PrepareServe(slotIndex);
+            ServePrepareResult result = _session.PrepareServeFromBell(slotIndex);
             if (!result.Success)
             {
                 SetMessage(PrepareServeMessage(result.Outcome, slotIndex));

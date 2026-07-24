@@ -99,7 +99,11 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>本局允许的最大上菜次数（-1 表示不限；Boss 机制「限量供应」会设上限）。</summary>
         public int MaxServes { get; set; } = -1;
 
-        public int GoldCostPerServe { get; set; }
+        /// <summary>玩家点击铃铛并成功让出菜口出现食物时扣除的金币。</summary>
+        public int GoldCostPerBellServe { get; set; }
+
+        /// <summary>玩家点击铃铛出菜时，食物变为馒头的概率。</summary>
+        public float BellServeMantouChance { get; set; }
 
         public bool AutoServeSecondDish { get; set; }
 
@@ -259,10 +263,22 @@ namespace GourmetProject.Gameplay.Battle
         }
 
         /// <summary>
-        /// 从指定菜谱随机取出一道当前可摆放的食物，放到出餐口等待玩家拖拽。
-        /// 该步骤只消耗菜谱条目，不占用餐桌，也不触发上菜效果。
+        /// 由系统效果准备一道食物，不触发“点击铃铛出菜”类 Boss 效果。
         /// </summary>
         public ServePrepareResult PrepareServe(int slotIndex)
+        {
+            return PrepareServeCore(slotIndex, triggeredByServingBell: false);
+        }
+
+        /// <summary>
+        /// 玩家点击铃铛出菜：成功后出菜口出现食物，并触发对应 Boss 效果。
+        /// </summary>
+        public ServePrepareResult PrepareServeFromBell(int slotIndex)
+        {
+            return PrepareServeCore(slotIndex, triggeredByServingBell: true);
+        }
+
+        private ServePrepareResult PrepareServeCore(int slotIndex, bool triggeredByServingBell)
         {
             if (PreparedServe != null)
             {
@@ -309,13 +325,48 @@ namespace GourmetProject.Gameplay.Battle
 
             ServeCandidate chosen = candidates[_rng.Range(0, candidates.Count)];
             RecipeSlotEntry entry = slot.RemoveEntryAt(chosen.SlotEntryIndex);
+            bool becomesMantou = triggeredByServingBell
+                && BellServeMantouChance > 0f
+                && _rng.NextBool(Math.Min(1d, BellServeMantouChance));
+            DishDef servedDish = becomesMantou ? CreateMantouDefinition(chosen.Dish) : chosen.Dish;
             Placement initialPlacement = chosen.Placements[0];
-            List<string> skills = ComposeServeSkills(chosen.Dish, entry);
-            List<string> flavors = ComposeServeFlavors(chosen.Dish, entry);
-            var instance = new DishInstance(_nextInstanceId++, chosen.Dish, initialPlacement, skills, flavors);
+            List<string> skills = becomesMantou
+                ? new List<string>()
+                : ComposeServeSkills(servedDish, entry);
+            List<string> flavors = becomesMantou
+                ? new List<string>()
+                : ComposeServeFlavors(servedDish, entry);
+            var instance = new DishInstance(_nextInstanceId++, servedDish, initialPlacement, skills, flavors);
             instance.SetSourceRecipeIndex(slotIndex, entry.SourceDishIndex);
             PreparedServe = new PreparedServeDish(slotIndex, entry, instance, chosen.Placements);
+            if (triggeredByServingBell && GoldCostPerBellServe > 0)
+            {
+                PendingGold -= GoldCostPerBellServe;
+            }
+
             return new ServePrepareResult(ServePrepareOutcome.Prepared, PreparedServe);
+        }
+
+        private static DishDef CreateMantouDefinition(DishDef source)
+        {
+            // 馒头沿用原菜的分数、形状与摆放朝向，避免“变成馒头”后突然无处可放；
+            // 但移除原菜技能、风味和分类，并用现有 dumpling 图标表现。
+            return new DishDef(
+                $"{source.Id}_boss_mantou",
+                "馒头",
+                source.Deliciousness,
+                source.Shape,
+                source.HiddenMin,
+                source.HiddenMax,
+                source.BaseWeight,
+                Array.Empty<string>(),
+                string.Empty,
+                source.AllowRotate,
+                "dumpling",
+                source.Price,
+                source.RotationIndex,
+                string.Empty,
+                source.CountAs);
         }
 
         /// <summary>
@@ -353,11 +404,6 @@ namespace GourmetProject.Gameplay.Battle
                 SetHappyCakeLayers(HappyCakeLayers + serveResult.HappyCakeLayerDelta + AccelFor(serveResult.HappyCakeLayerDelta));
                 ApplyTransferRequests(serveResult.TransferRequests);
                 ApplyCopySkillRequests(serveResult.CopySkillRequests);
-            }
-
-            if (GoldCostPerServe > 0)
-            {
-                PendingGold -= GoldCostPerServe;
             }
 
             bool removedAfterServe = false;

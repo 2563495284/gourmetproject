@@ -2,25 +2,43 @@
   {
     "id": "debuff_indulgent",
     "name": "放纵餐",
-    "desc": "获得一行与一列格子",
+    "desc": "获得一行格子",
     "modifier": "feast_indulgent",
     "weight": 1,
     "unlockCondition": "",
-    "targetScoreHiddenOffset": 0.7
+    "targetScoreHiddenOffset": 0.5
+  },
+  {
+    "id": "debuff_binge",
+    "name": "暴食餐",
+    "desc": "获得一列格子",
+    "modifier": "feast_binge",
+    "weight": 1,
+    "unlockCondition": "",
+    "targetScoreHiddenOffset": 0.5
   },
   {
     "id": "debuff_kids_meal",
     "name": "儿童餐",
-    "desc": "失去一行与一列格子",
+    "desc": "失去一行格子",
     "modifier": "feast_kids_meal",
     "weight": 1,
     "unlockCondition": "",
-    "targetScoreHiddenOffset": 0
+    "targetScoreHiddenOffset": 0.1
+  },
+  {
+    "id": "debuff_weight_loss",
+    "name": "减脂餐",
+    "desc": "失去一列格子",
+    "modifier": "feast_weight_loss",
+    "weight": 1,
+    "unlockCondition": "",
+    "targetScoreHiddenOffset": 0.1
   },
   {
     "id": "debuff_gluttony",
     "name": "贪食餐",
-    "desc": "食谱中的食物翻倍",
+    "desc": "复制所有食物加入食谱",
     "modifier": "feast_gluttony",
     "weight": 1,
     "unlockCondition": "",
@@ -29,7 +47,7 @@
   {
     "id": "debuff_omakase",
     "name": "Omakase",
-    "desc": "打乱各个食谱中的食物",
+    "desc": "初始食物废弃次数为0",
     "modifier": "feast_omakase",
     "weight": 1,
     "unlockCondition": "",
@@ -56,7 +74,7 @@
   {
     "id": "debuff_dine_and_dash",
     "name": "霸王餐",
-    "desc": "每次上菜-5金币",
+    "desc": "每次出菜-5金币",
     "modifier": "feast_dine_and_dash",
     "weight": 1,
     "unlockCondition": "",
@@ -81,6 +99,15 @@
     "targetScoreHiddenOffset": 0.35
   },
   {
+    "id": "debuff_carb_meal",
+    "name": "碳水餐",
+    "desc": "出菜时有概率为馒头",
+    "modifier": "feast_carb_meal",
+    "weight": 1,
+    "unlockCondition": "",
+    "targetScoreHiddenOffset": 0.35
+  },
+  {
     "id": "debuff_dark_cuisine",
     "name": "黑暗料理",
     "desc": "食物的初始倍率随机化",
@@ -90,18 +117,9 @@
     "targetScoreHiddenOffset": 0.35
   },
   {
-    "id": "debuff_combo_meal",
-    "name": "套餐",
-    "desc": "上菜时\n会从本菜谱额外上一道菜。",
-    "modifier": "feast_combo_meal",
-    "weight": 1,
-    "unlockCondition": "",
-    "targetScoreHiddenOffset": 0.35
-  },
-  {
     "id": "debuff_late_night",
     "name": "夜宵",
-    "desc": "结算顺序颠倒。",
+    "desc": "结算顺序颠倒",
     "modifier": "feast_late_night",
     "weight": 1,
     "unlockCondition": "",
@@ -110,7 +128,7 @@
   {
     "id": "debuff_appetizer",
     "name": "开胃菜",
-    "desc": "前 3 个上的菜会消失",
+    "desc": "前 2 个上的菜会消失",
     "modifier": "feast_appetizer",
     "weight": 1,
     "unlockCondition": "",
