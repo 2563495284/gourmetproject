@@ -113,6 +113,10 @@ namespace GourmetProject.Gameplay.Model
         Up = 18,
         Right = 19,
         Down = 20,
+        LeftAndSelf = 21,
+        UpAndSelf = 22,
+        RightAndSelf = 23,
+        DownAndSelf = 24,
     }
 
     /// <summary>比较符。与 cfg.CompareOp 一一对应。</summary>
