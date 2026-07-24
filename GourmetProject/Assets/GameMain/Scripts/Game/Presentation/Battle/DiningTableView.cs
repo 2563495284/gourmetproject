@@ -232,6 +232,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 overlay.gameObject.SetActive(true);
                 overlay.transform.localRotation = Quaternion.identity;
                 overlay.Configure(entry.Key, Mapper.CellCenterLocal(entry.Key), _cellSize, _cellSprite, null);
+                overlay.name = "DragPlacementFeedback";
                 overlay.SetInteractionEnabled(false);
                 overlay.SetOutline(
                     DragFeedbackColor(entry.Value),

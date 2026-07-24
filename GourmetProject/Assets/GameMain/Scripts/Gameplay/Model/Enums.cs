@@ -20,11 +20,11 @@ namespace GourmetProject.Gameplay.Model
         /// <summary>麻：使食物逆时针旋转 EffectValue×90 度（默认 1）。不产生分数效果，由上菜时读取并旋转形状。</summary>
         Rotate = 9,
 
-        /// <summary>酸：整体结算末尾，未上菜时使场上同菜谱食物倍率 ×EffectValue（1.5）。由未上菜结算源读取。</summary>
+        /// <summary>酸：结算开始时，未上菜则使场上全部食物倍率 ×EffectValue（1.5）。由未上菜结算源读取。</summary>
         SourRecipeMult = 10,
 
-        /// <summary>咸：整体结算末尾，未上菜时使场上每个同菜谱食物获得 EffectValue 金币（2）。由未上菜结算源读取。</summary>
-        SaltyRecipeGold = 11,
+        /// <summary>咸：结算开始时，未上菜则使场上全部食物基础分 +EffectValue（20）。由未上菜结算源读取。</summary>
+        SaltyRecipeFlat = 11,
     }
 
     /// <summary>
@@ -175,7 +175,9 @@ namespace GourmetProject.Gameplay.Model
         /// </summary>
         public static bool IsMultiplier(this FlavorEffectType type)
         {
-            return type == FlavorEffectType.AddMult || type == FlavorEffectType.PerDishOnBoard;
+            return type == FlavorEffectType.AddMult
+                || type == FlavorEffectType.PerDishOnBoard
+                || type == FlavorEffectType.SourRecipeMult;
         }
     }
 

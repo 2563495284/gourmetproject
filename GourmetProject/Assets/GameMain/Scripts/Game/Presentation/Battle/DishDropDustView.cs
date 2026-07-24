@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 namespace GourmetProject.Game.Presentation.Battle
@@ -8,51 +9,45 @@ namespace GourmetProject.Game.Presentation.Battle
     /// </summary>
     public sealed class DishDropDustView : MonoBehaviour
     {
-        private const int ParticleCount = 16;
-
-        [SerializeField] private Texture2D _particleTexture;
-        [SerializeField] private Color _lightColor = new(0.88f, 0.79f, 0.65f, 0.82f);
-        [SerializeField] private Color _darkColor = new(0.48f, 0.38f, 0.29f, 0.72f);
+        [SerializeField] private ParticleSystem _particles;
+        [SerializeField] private Vector2 _emissionAreaScale = new(0.68f, 0.24f);
+        [SerializeField, Min(0f)] private float _spreadPerOccupiedCellRoot = 0.35f;
         [SerializeField] private float _pointerVelocityInfluence = 0.16f;
-        [SerializeField] private float _gravity = 0.30f;
-        [SerializeField] private float _damping = 0.58f;
-
-        private ParticleSystem _particles;
-        private ParticleSystemRenderer _particleRenderer;
-        private Material _runtimeMaterial;
+        private ParticleSystem.Particle[] _particleBuffer;
 
         public static void Play(
             DishDropDustView prefab,
             Transform parent,
             Vector3 centerWorld,
             Vector2 footprintWorldSize,
+            int occupiedCellCount,
             Vector2 pointerVelocityWorld)
         {
-            DishDropDustView view;
-            if (prefab != null)
+            if (prefab == null)
             {
-                view = Instantiate(prefab, parent);
-            }
-            else
-            {
-                var host = new GameObject("DishDropDust");
-                if (parent != null)
-                {
-                    host.transform.SetParent(parent, false);
-                }
-
-                view = host.AddComponent<DishDropDustView>();
+                Debug.LogError($"{nameof(DishDropDustView)} 无法播放：没有配置灰尘 Prefab。");
+                return;
             }
 
-            view.PlayInternal(centerWorld, footprintWorldSize, pointerVelocityWorld);
+            DishDropDustView view = Instantiate(prefab, parent);
+            view.PlayInternal(centerWorld, footprintWorldSize, occupiedCellCount, pointerVelocityWorld);
         }
 
         private void PlayInternal(
             Vector3 centerWorld,
             Vector2 footprintWorldSize,
+            int occupiedCellCount,
             Vector2 pointerVelocityWorld)
         {
-            EnsureParticles();
+            if (_particles == null)
+            {
+                Debug.LogError(
+                    $"{nameof(DishDropDustView)} Prefab 缺少已配置的 ParticleSystem 引用。",
+                    this);
+                Destroy(gameObject);
+                return;
+            }
+
             transform.position = centerWorld;
 
             float cellReference = Mathf.Max(
@@ -60,147 +55,63 @@ namespace GourmetProject.Game.Presentation.Battle
                 Mathf.Min(
                     Mathf.Max(0.05f, footprintWorldSize.x),
                     Mathf.Max(0.05f, footprintWorldSize.y)));
-            float baseSize = cellReference * 0.15f;
-            float radialSpeed = cellReference * 1.15f;
-            Vector2 halfEmission = footprintWorldSize * 0.34f;
-
+            float occupiedSpread = 1f
+                + Mathf.Max(0f, Mathf.Sqrt(Mathf.Max(1, occupiedCellCount)) - 1f)
+                * Mathf.Max(0f, _spreadPerOccupiedCellRoot);
             _particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-            for (int i = 0; i < ParticleCount; i++)
+
+            // Prefab 中的 Shape、尺寸和速度均以 1 个餐桌格为基准；
+            // 运行时只根据本次食物占格做整体适配，不创建或重配任何粒子模块。
+            ParticleSystem.ShapeModule shape = _particles.shape;
+            if (shape.enabled)
             {
-                Vector2 direction = Random.insideUnitCircle;
-                if (direction.sqrMagnitude < 0.001f)
-                {
-                    direction = Vector2.up;
-                }
+                shape.scale = new Vector3(
+                    Mathf.Max(0.05f, footprintWorldSize.x * _emissionAreaScale.x * occupiedSpread),
+                    Mathf.Max(0.05f, footprintWorldSize.y * _emissionAreaScale.y * occupiedSpread),
+                    0.01f);
+            }
 
-                direction.Normalize();
-                direction.y = Mathf.Abs(direction.y) * 0.75f + 0.12f;
-                Vector2 velocity = direction * Random.Range(radialSpeed * 0.35f, radialSpeed)
-                    + pointerVelocityWorld * _pointerVelocityInfluence;
-                Vector2 offset = new(
-                    Random.Range(-halfEmission.x, halfEmission.x),
-                    Random.Range(-halfEmission.y, halfEmission.y) * 0.35f);
-
-                var emit = new ParticleSystem.EmitParams
-                {
-                    position = centerWorld + (Vector3)offset,
-                    velocity = velocity,
-                    startColor = Color.Lerp(_darkColor, _lightColor, Random.value),
-                    startLifetime = Random.Range(0.4f, 0.7f),
-                    startSize = baseSize * Random.Range(0.65f, 1.45f),
-                    rotation = Random.Range(0f, Mathf.PI * 2f),
-                    angularVelocity = Random.Range(-4.5f, 4.5f),
-                };
-                _particles.Emit(emit, 1);
+            ParticleSystem.MainModule main = _particles.main;
+            main.startSizeMultiplier *= cellReference;
+            ParticleSystem.VelocityOverLifetimeModule velocity = _particles.velocityOverLifetime;
+            if (velocity.enabled)
+            {
+                velocity.xMultiplier *= cellReference * occupiedSpread;
+                velocity.yMultiplier *= cellReference * occupiedSpread;
             }
 
             _particles.Play();
-        }
 
-        private void EnsureParticles()
-        {
-            if (_particles == null)
+            // Burst 由 Prefab 自然播放。不要在这里手动 Simulate：首帧推进会暂停一次性系统，
+            // 使 stopAction=Destroy 的粒子在真正渲染前结束。下一帧再叠加释放方向速度。
+            if (_pointerVelocityInfluence > 0f && pointerVelocityWorld.sqrMagnitude > 0.0001f)
             {
-                _particles = GetComponent<ParticleSystem>();
-            }
-
-            if (_particles == null)
-            {
-                _particles = gameObject.AddComponent<ParticleSystem>();
-            }
-
-            if (_particleRenderer == null)
-            {
-                _particleRenderer = GetComponent<ParticleSystemRenderer>();
-            }
-
-            _particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-            ParticleSystem.MainModule main = _particles.main;
-            main.loop = false;
-            main.playOnAwake = false;
-            main.duration = 0.08f;
-            main.simulationSpace = ParticleSystemSimulationSpace.World;
-            main.maxParticles = 32;
-            main.gravityModifier = _gravity;
-            main.stopAction = ParticleSystemStopAction.Destroy;
-
-            ParticleSystem.EmissionModule emission = _particles.emission;
-            emission.enabled = false;
-            ParticleSystem.ShapeModule shape = _particles.shape;
-            shape.enabled = false;
-
-            ParticleSystem.LimitVelocityOverLifetimeModule limit = _particles.limitVelocityOverLifetime;
-            limit.enabled = true;
-            limit.limit = 10f;
-            limit.dampen = Mathf.Clamp01(_damping);
-
-            ParticleSystem.SizeOverLifetimeModule size = _particles.sizeOverLifetime;
-            size.enabled = true;
-            size.size = new ParticleSystem.MinMaxCurve(
-                1f,
-                new AnimationCurve(
-                    new Keyframe(0f, 0.65f),
-                    new Keyframe(0.28f, 1.12f),
-                    new Keyframe(1f, 0.18f)));
-
-            ParticleSystem.ColorOverLifetimeModule color = _particles.colorOverLifetime;
-            color.enabled = true;
-            var alpha = new Gradient
-            {
-                alphaKeys = new[]
-                {
-                    new GradientAlphaKey(0f, 0f),
-                    new GradientAlphaKey(1f, 0.12f),
-                    new GradientAlphaKey(0f, 1f),
-                },
-                colorKeys = new[]
-                {
-                    new GradientColorKey(Color.white, 0f),
-                    new GradientColorKey(Color.white, 1f),
-                },
-            };
-            color.color = alpha;
-
-            if (_particleRenderer != null)
-            {
-                _particleRenderer.renderMode = ParticleSystemRenderMode.Billboard;
-                _particleRenderer.sortingLayerName = BattleSorting.Fx;
-                _particleRenderer.sortingOrder = BattleSorting.OrderFloatingText - 5;
-                EnsureMaterial();
+                StartCoroutine(ApplyReleaseVelocityNextFrame(
+                    pointerVelocityWorld * _pointerVelocityInfluence));
             }
         }
 
-        private void EnsureMaterial()
+        private IEnumerator ApplyReleaseVelocityNextFrame(Vector3 releaseVelocity)
         {
-            if (_runtimeMaterial != null || _particleRenderer == null)
+            yield return null;
+            if (_particles == null || !_particles.IsAlive(true))
             {
-                return;
+                yield break;
             }
 
-            Shader shader = Shader.Find("Universal Render Pipeline/Particles/Unlit")
-                ?? Shader.Find("Sprites/Default");
-            if (shader == null)
+            int capacity = Mathf.Max(1, _particles.main.maxParticles);
+            if (_particleBuffer == null || _particleBuffer.Length < capacity)
             {
-                return;
+                _particleBuffer = new ParticleSystem.Particle[capacity];
             }
 
-            _runtimeMaterial = new Material(shader)
+            int count = _particles.GetParticles(_particleBuffer);
+            for (int i = 0; i < count; i++)
             {
-                name = "DishDropDust_Runtime",
-                mainTexture = _particleTexture != null
-                    ? _particleTexture
-                    : BattleShadow.DiffuseShadowSprite.texture,
-            };
-            _particleRenderer.sharedMaterial = _runtimeMaterial;
-        }
-
-        private void OnDestroy()
-        {
-            if (_runtimeMaterial != null)
-            {
-                Destroy(_runtimeMaterial);
-                _runtimeMaterial = null;
+                _particleBuffer[i].velocity += releaseVelocity;
             }
+
+            _particles.SetParticles(_particleBuffer, count);
         }
     }
 }

@@ -138,7 +138,7 @@ namespace GourmetProject.Gameplay.Scoring
         /// </summary>
         public Func<IReadOnlyList<int>, int, IReadOnlyList<int>> TransferTargetSelector { get; }
 
-        /// <summary>本次结算时仍未上菜的菜谱条目（槽索引 + dishId），供酸/咸在整体结算末尾遍历。</summary>
+        /// <summary>本次结算时仍未上菜的菜谱条目（槽索引 + dishId），供酸/咸在结算开始时遍历。</summary>
         public IReadOnlyList<UnservedRecipeDish> UnservedRecipeDishes { get; }
     }
 

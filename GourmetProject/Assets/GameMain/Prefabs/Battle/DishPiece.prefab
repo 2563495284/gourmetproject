@@ -441,6 +441,9 @@ MonoBehaviour:
   _landWobbleDegrees: 4
   _landWobbleDuration: 0.18
   _landWobbleCycles: 1.5
+  _scopeAffectedShakeCells: 0.045
+  _scopeAffectedShakeDuration: 0.18
+  _scopeAffectedShakeCycles: 2.25
   _serveLandImpactScale: 1.02
   _serveLandImpactDuration: 0.14
   _stainScale: 8

@@ -36,13 +36,13 @@ namespace cfg
         /// </summary>
         Rotate = 9,
         /// <summary>
-        /// 酸：未上菜时场上同菜谱食物倍率&#215;value
+        /// 酸：结算开始时，未上菜则场上全部食物倍率&#215;value
         /// </summary>
         SourRecipeMult = 10,
         /// <summary>
-        /// 咸：未上菜时场上每个同菜谱食物+value金币
+        /// 咸：结算开始时，未上菜则场上全部食物基础分+value
         /// </summary>
-        SaltyRecipeGold = 11,
+        SaltyRecipeFlat = 11,
     }
 
 } 

@@ -620,7 +620,7 @@ namespace GourmetProject.Gameplay.Battle
                 _recipeBaseIds);
         }
 
-        /// <summary>收集当前仍未上菜的菜谱条目（槽索引 + dishId），供酸/咸在整体结算末尾遍历。</summary>
+        /// <summary>收集当前仍未上菜的菜谱条目（槽索引 + dishId），供酸/咸在结算开始时遍历。</summary>
         private List<UnservedRecipeDish> BuildUnservedRecipeDishes()
         {
             var result = new List<UnservedRecipeDish>();

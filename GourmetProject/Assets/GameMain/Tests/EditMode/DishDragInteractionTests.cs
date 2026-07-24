@@ -207,6 +207,60 @@ namespace GourmetProject.Tests.EditMode
             }
         }
 
+        [Test]
+        public void DishPiecePrefab_HasDesignerTunableScopeAffectedShake()
+        {
+            DishPieceView prefab = AssetDatabase.LoadAssetAtPath<DishPieceView>(
+                "Assets/GameMain/Prefabs/Battle/DishPiece.prefab");
+
+            Assert.That(prefab, Is.Not.Null);
+            var serialized = new SerializedObject(prefab);
+            SerializedProperty distance = serialized.FindProperty("_scopeAffectedShakeCells");
+            SerializedProperty duration = serialized.FindProperty("_scopeAffectedShakeDuration");
+            SerializedProperty cycles = serialized.FindProperty("_scopeAffectedShakeCycles");
+
+            Assert.That(distance, Is.Not.Null);
+            Assert.That(duration, Is.Not.Null);
+            Assert.That(cycles, Is.Not.Null);
+            Assert.That(distance.floatValue, Is.GreaterThan(0f));
+            Assert.That(duration.floatValue, Is.GreaterThan(0f));
+            Assert.That(cycles.floatValue, Is.GreaterThan(0f));
+        }
+
+        [Test]
+        public void DishDropDustPrefab_HasEditableParticleSystemAndProvidedMaterial()
+        {
+            DishDropDustView prefab = AssetDatabase.LoadAssetAtPath<DishDropDustView>(
+                "Assets/GameMain/Prefabs/Battle/DishDropDust.prefab");
+            Material material = AssetDatabase.LoadAssetAtPath<Material>(
+                "Assets/GameMain/Materials/DishDropDust.mat");
+            Texture2D expected = AssetDatabase.LoadAssetAtPath<Texture2D>(
+                "Assets/GameMain/Resources/Particles/Dust1.png");
+
+            Assert.That(prefab, Is.Not.Null);
+            Assert.That(material, Is.Not.Null);
+            Assert.That(expected, Is.Not.Null);
+
+            var serialized = new SerializedObject(prefab);
+            SerializedProperty particlesProperty = serialized.FindProperty("_particles");
+            Assert.That(particlesProperty, Is.Not.Null);
+            Assert.That(particlesProperty.objectReferenceValue, Is.Not.Null);
+
+            ParticleSystem particles = prefab.GetComponent<ParticleSystem>();
+            ParticleSystemRenderer renderer = prefab.GetComponent<ParticleSystemRenderer>();
+            Assert.That(particles, Is.Not.Null);
+            Assert.That(renderer, Is.Not.Null);
+            Assert.That(particles.main.playOnAwake, Is.False);
+            Assert.That(particles.emission.burstCount, Is.GreaterThan(0));
+            Assert.That(renderer.sharedMaterial, Is.SameAs(material));
+            Assert.That(material.GetTexture("_BaseMap"), Is.SameAs(expected));
+            Assert.That(renderer.sortingLayerName, Is.EqualTo("Fx"));
+
+            ParticleSystem.VelocityOverLifetimeModule velocity = particles.velocityOverLifetime;
+            Assert.That(velocity.x.mode, Is.EqualTo(velocity.y.mode));
+            Assert.That(velocity.z.mode, Is.EqualTo(velocity.x.mode));
+        }
+
         private static Vector3 VisualCenter(
             DiningTableCoordinateMapper mapper,
             DishShape shape,

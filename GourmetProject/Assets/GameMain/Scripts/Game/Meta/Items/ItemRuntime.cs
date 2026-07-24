@@ -206,6 +206,9 @@ namespace GourmetProject.Game.Meta
         /// <summary>观星「每局前 N 次上菜可预见」的次数（取最大；无则 0）。</summary>
         public int StarGazeFirst() => MaxInt(m => m.StarGazeFirst());
 
+        /// <summary>每场战斗可额外丢弃的出菜数量（各道具累加）。</summary>
+        public int FoodDiscardLimitBonus() => SumInt(m => m.FoodDiscardLimitBonus());
+
         // ================= 奖励 / 多选一族 =================
 
         /// <summary>多选一可选「数量」增减（各模型累加）。</summary>

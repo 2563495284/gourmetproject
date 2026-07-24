@@ -101,6 +101,12 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private float _landWobbleDuration = 0.18f;
         [SerializeField] private float _landWobbleCycles = 1.5f;
 
+        [Header("Scope 受影响反馈（仅作用于本体视觉枢轴）")]
+        [Tooltip("横向抖动幅度，按单格尺寸取比例。")]
+        [SerializeField] private float _scopeAffectedShakeCells = 0.045f;
+        [SerializeField] private float _scopeAffectedShakeDuration = 0.18f;
+        [SerializeField] private float _scopeAffectedShakeCycles = 2.25f;
+
         [Header("上菜落格砰反馈（仅缩放）")]
         [SerializeField] private float _serveLandImpactScale = 1.02f;
         [SerializeField] private float _serveLandImpactDuration = 0.14f;
@@ -155,6 +161,10 @@ namespace GourmetProject.Game.Presentation.Battle
         private bool _dragPresentationActive;
         private MaterialPropertyBlock _stainBlock;
         private MaterialPropertyBlock _placementGlowBlock;
+        private Tween _scopeAffectedTween;
+        private Transform _scopeAffectedTarget;
+        private Vector3 _scopeAffectedBasePosition;
+        private int _scopeAffectedVersion;
         private Tween _settlementFeedbackTween;
         private MaterialPropertyBlock _digestBlock;
         private Transform _settlementFeedbackTarget;
@@ -352,6 +362,8 @@ namespace GourmetProject.Game.Presentation.Battle
         public void SetDragPresentation(bool active)
         {
             EnsureRefs();
+            _scopeAffectedVersion++;
+            StopScopeAffectedShake(restoreTransform: true);
             _dragPresentationActive = active;
             _liftHeight = 0f;
             SetFlying(active);
@@ -480,6 +492,55 @@ namespace GourmetProject.Game.Presentation.Battle
                 _landWobbleCycles,
                 _landWobbleDuration,
                 cancellationToken);
+        }
+
+        /// <summary>
+        /// 放置后提示“会被新食物 scope 影响”：围绕当前位置做很轻的衰减抖动，
+        /// 不移动菜品根节点，因此不会改变占格、碰撞盒或餐桌数据。
+        /// </summary>
+        public void PlayScopeAffectedShake()
+        {
+            EnsureRefs();
+            int version = ++_scopeAffectedVersion;
+            StopScopeAffectedShake(restoreTransform: true);
+
+            Transform target = VisualAnimationTarget();
+            if (target == null)
+            {
+                return;
+            }
+
+            _scopeAffectedTarget = target;
+            _scopeAffectedBasePosition = target.localPosition;
+            float duration = Mathf.Max(0.0001f, _scopeAffectedShakeDuration);
+            float cycles = Mathf.Max(0f, _scopeAffectedShakeCycles);
+            float distance = Mathf.Max(0f, _scopeAffectedShakeCells) * Mathf.Max(_cellSize, 0.01f);
+            Vector3 basePosition = _scopeAffectedBasePosition;
+
+            _scopeAffectedTween = DOVirtual.Float(0f, 1f, duration, progress =>
+                {
+                    if (target == null || version != _scopeAffectedVersion)
+                    {
+                        return;
+                    }
+
+                    float decay = 1f - progress;
+                    float phase = progress * cycles * Mathf.PI * 2f;
+                    float x = Mathf.Sin(phase) * distance * decay;
+                    float y = Mathf.Sin(phase * 2f + Mathf.PI * 0.35f) * distance * 0.18f * decay;
+                    target.localPosition = basePosition + new Vector3(x, y, 0f);
+                })
+                .SetEase(Ease.Linear)
+                .SetLink(target.gameObject)
+                .OnComplete(() =>
+                {
+                    if (target != null && version == _scopeAffectedVersion)
+                    {
+                        target.localPosition = basePosition;
+                        _scopeAffectedTween = null;
+                        _scopeAffectedTarget = null;
+                    }
+                });
         }
 
         public Awaitable PlayServeLandImpactFeedbackAsync(CancellationToken cancellationToken)
@@ -691,6 +752,8 @@ namespace GourmetProject.Game.Presentation.Battle
         public async Awaitable PlaySettlementFeedbackAsync(SettlementDishFeedbackKind kind, CancellationToken cancellationToken)
         {
             EnsureRefs();
+            _scopeAffectedVersion++;
+            StopScopeAffectedShake(restoreTransform: true);
             int version = ++_settlementFeedbackVersion;
             StopSettlementFeedback(restoreTransform: true);
 
@@ -1080,6 +1143,19 @@ namespace GourmetProject.Game.Presentation.Battle
                     _placementGlow.gameObject.SetActive(false);
                 }
             }
+        }
+
+        private void StopScopeAffectedShake(bool restoreTransform)
+        {
+            _scopeAffectedTween?.Kill();
+            _scopeAffectedTween = null;
+
+            if (restoreTransform && _scopeAffectedTarget != null)
+            {
+                _scopeAffectedTarget.localPosition = _scopeAffectedBasePosition;
+            }
+
+            _scopeAffectedTarget = null;
         }
 
         private readonly struct SettlementFeedbackProfile
@@ -1705,6 +1781,8 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             _sweetTransferSourceActive = false;
             _triggerSweetTransferActivatorActive = false;
+            _scopeAffectedVersion++;
+            StopScopeAffectedShake(restoreTransform: true);
             _settlementFeedbackVersion++;
             StopSettlementFeedback(restoreTransform: true);
             SetHovered(false);

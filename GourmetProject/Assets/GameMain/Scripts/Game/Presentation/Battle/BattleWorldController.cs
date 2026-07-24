@@ -1010,7 +1010,9 @@ namespace GourmetProject.Game.Presentation.Battle
                 ? result.Placement
                 : null;
             _boardView.ShowDragPlacementFeedback(result);
-            ClearDishScopeHighlights();
+            ShowDishScopeHighlightsAtPlacement(
+                _outletDragPiece.Instance,
+                result != null ? result.Placement : (Placement?)null);
         }
 
         public bool EndServingOutletDrag(Vector2 screenPoint)
@@ -1048,6 +1050,9 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             Placement placement = _outletHoverPlacement.Value;
+            IReadOnlyList<int> affectedDishIds = BuildScopeAffectedDishIdsAtPlacement(
+                _outletDragPiece.Instance,
+                placement);
             Vector2 footprintSize = _outletDragPiece.FootprintWorldSize;
             Vector2 releaseVelocity = _dragPointerVelocity;
             ClearOutletDragPreview();
@@ -1066,6 +1071,7 @@ namespace GourmetProject.Game.Presentation.Battle
             RebuildPlacedPieces();
             _boardView.Sync();
             PlayDropDust(placement, footprintSize, releaseVelocity);
+            PlayScopeAffectedDishFeedback(affectedDishIds);
             SetMessage(result.RemovedAfterServe
                 ? $"开胃菜消化了：{result.Dish.Def.Name}"
                 : $"上菜：{result.Dish.Def.Name}");
@@ -1212,7 +1218,9 @@ namespace GourmetProject.Game.Presentation.Battle
                 ? result.Placement
                 : null;
             _boardView.ShowDragPlacementFeedback(result);
-            ClearDishScopeHighlights();
+            ShowDishScopeHighlightsAtPlacement(
+                _movingPiece.Instance,
+                result != null ? result.Placement : (Placement?)null);
         }
 
         private void EndMovableDishDrag(Vector2 screenPoint)
@@ -1231,6 +1239,9 @@ namespace GourmetProject.Game.Presentation.Battle
             DishInstance dish = piece.Instance;
             bool placedAtHoveredPosition = _movingHoverPlacement.HasValue;
             Placement placement = _movingHoverPlacement ?? _movingOriginalPlacement;
+            IReadOnlyList<int> affectedDishIds = placedAtHoveredPosition
+                ? BuildScopeAffectedDishIdsAtPlacement(dish, placement)
+                : Array.Empty<int>();
             Vector2 footprintSize = piece.FootprintWorldSize;
             Vector2 releaseVelocity = _dragPointerVelocity;
             dish.Relocate(placement);
@@ -1247,6 +1258,8 @@ namespace GourmetProject.Game.Presentation.Battle
             if (placedAtHoveredPosition)
             {
                 PlayDropDust(placement, footprintSize, releaseVelocity);
+                PlayScopeAffectedDishFeedback(affectedDishIds);
+                FlashServeScopeHighlights(dish, GetPresentationToken());
             }
 
             _stateChanged?.Invoke();
@@ -1359,6 +1372,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 _fxRoot != null ? _fxRoot : transform,
                 centerWorld,
                 footprintWorldSize,
+                placement.Orientation.CellCount,
                 pointerVelocityWorld);
         }
 
@@ -1647,6 +1661,22 @@ namespace GourmetProject.Game.Presentation.Battle
             _scopeHighlights.ShowPersistent(_boardView, traces);
         }
 
+        private void ShowDishScopeHighlightsAtPlacement(DishInstance dish, Placement? placement)
+        {
+            if (_settling || _session == null || dish == null || !placement.HasValue)
+            {
+                ClearDishScopeHighlights();
+                return;
+            }
+
+            EnsureScopeHighlights();
+            IReadOnlyList<SkillExecutionTrace> traces = BuildHoverScopeTracesAtPlacement(
+                dish,
+                placement.Value,
+                SkillScopeVisualMode.CandidateScope);
+            _scopeHighlights.ShowPersistent(_boardView, traces);
+        }
+
         public void ClearDishScopeHighlights()
         {
             _scopeHighlights?.ClearPersistent();
@@ -1664,7 +1694,71 @@ namespace GourmetProject.Game.Presentation.Battle
             _scopeHighlights.Flash(_boardView, traces, cancellationToken);
         }
 
-        private IReadOnlyList<SkillExecutionTrace> BuildHoverScopeTraces(DishInstance dish)
+        private IReadOnlyList<SkillExecutionTrace> BuildHoverScopeTracesAtPlacement(
+            DishInstance dish,
+            Placement placement,
+            SkillScopeVisualMode visualMode)
+        {
+            if (dish == null)
+            {
+                return Array.Empty<SkillExecutionTrace>();
+            }
+
+            Placement originalPlacement = dish.Placement;
+            dish.Relocate(placement);
+            try
+            {
+                return BuildHoverScopeTraces(dish, visualMode);
+            }
+            finally
+            {
+                dish.Relocate(originalPlacement);
+            }
+        }
+
+        private IReadOnlyList<int> BuildScopeAffectedDishIdsAtPlacement(
+            DishInstance dish,
+            Placement placement)
+        {
+            IReadOnlyList<SkillExecutionTrace> traces = BuildHoverScopeTracesAtPlacement(
+                dish,
+                placement,
+                SkillScopeVisualMode.ResolvedTargets);
+            var result = new List<int>();
+            var seen = new HashSet<int>();
+            foreach (SkillExecutionTrace trace in traces)
+            {
+                foreach (int instanceId in trace.VisualTargetDishInstanceIds)
+                {
+                    if (instanceId > 0 && instanceId != dish.Id && seen.Add(instanceId))
+                    {
+                        result.Add(instanceId);
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        private void PlayScopeAffectedDishFeedback(IReadOnlyList<int> dishIds)
+        {
+            if (dishIds == null)
+            {
+                return;
+            }
+
+            foreach (int dishId in dishIds)
+            {
+                if (_dishViewsById.TryGetValue(dishId, out DishPieceView view) && view != null)
+                {
+                    view.PlayScopeAffectedShake();
+                }
+            }
+        }
+
+        private IReadOnlyList<SkillExecutionTrace> BuildHoverScopeTraces(
+            DishInstance dish,
+            SkillScopeVisualMode visualMode = SkillScopeVisualMode.CandidateScope)
         {
             var traces = new List<SkillExecutionTrace>();
             if (dish == null || _session?.Database == null || _session.DiningTable == null)
@@ -1703,7 +1797,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         rule,
                         kind,
                         sourceLabel,
-                        SkillScopeVisualMode.CandidateScope);
+                        visualMode);
                     if (trace != null)
                     {
                         traces.Add(trace.WithVisualIndex(visualIndex++));
@@ -1731,7 +1825,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         rule,
                         SkillExecutionKind.SweetTransfer,
                         transferred.SourceLabel,
-                        SkillScopeVisualMode.CandidateScope)
+                        visualMode)
                     : SkillExecutionTrace.CreateWithOwnerFallback(
                         _session.Database,
                         _session.DiningTable,
@@ -1742,7 +1836,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         rule,
                         SkillExecutionKind.SweetTransfer,
                         transferred.SourceLabel,
-                        SkillScopeVisualMode.CandidateScope);
+                        visualMode);
                 if (trace != null)
                 {
                     traces.Add(trace.WithVisualIndex(visualIndex++));

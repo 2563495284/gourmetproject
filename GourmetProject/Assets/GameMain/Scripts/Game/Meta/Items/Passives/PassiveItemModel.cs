@@ -170,6 +170,9 @@ namespace GourmetProject.Game.Meta.Passives
         /// <summary>观星「每局前 N 次上菜可预见」的次数（无则 0）。</summary>
         public virtual int StarGazeFirst() => 0;
 
+        /// <summary>每场战斗可额外丢弃的出菜数量（各道具累加）。</summary>
+        public virtual int FoodDiscardLimitBonus() => 0;
+
         // ================= 奖励 / 多选一族 =================
 
         /// <summary>多选一可选「数量」增减（分发器累加）。</summary>

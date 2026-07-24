@@ -68,6 +68,16 @@ namespace GourmetProject.Game.Meta.Passives
     }
 
     [Preserve]
+    [PassiveItemModel("item_trash_upgrade")]
+    [PassiveItemModel("item_trash_expand")]
+    [PassiveItemModel("item_trash_evolve")]
+    [PassiveItemModel("item_trash_mutate")]
+    public sealed class FoodDiscardLimitBonusModel : PassiveItemModel
+    {
+        public override int FoodDiscardLimitBonus() => System.Math.Max(0, (int)Value);
+    }
+
+    [Preserve]
     [PassiveItemModel("item_block_active")]
     public sealed class BlockActiveModel : PassiveItemModel
     {
