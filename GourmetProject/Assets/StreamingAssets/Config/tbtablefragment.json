@@ -1,15 +1,15 @@
 [
   {
-    "id": "gut_3x3",
+    "id": "gut_4x3",
     "baseWeight": 0,
     "hiddenRange": {
       "min": 0,
       "max": 0
     },
     "shapeRows": [
-      "XXX",
-      "XXX",
-      "XXX"
+      "XXXX",
+      "XXXX",
+      "XXXX"
     ],
     "materialIds": []
   },
