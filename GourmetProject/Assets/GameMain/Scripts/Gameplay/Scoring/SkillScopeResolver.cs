@@ -129,17 +129,33 @@ namespace GourmetProject.Gameplay.Scoring
             SkillRuleDef rule,
             bool includeSelfForSelfScope)
         {
+            List<DishInstance> dishes;
             if (rule.ActionScope == SkillScope.Self)
             {
-                return includeSelfForSelfScope ? new List<DishInstance> { self } : new List<DishInstance>();
+                dishes = includeSelfForSelfScope ? new List<DishInstance> { self } : new List<DishInstance>();
             }
-
-            if (rule.ActionScope == SkillScope.Category)
+            else if (rule.ActionScope == SkillScope.Category)
             {
-                return SkillConditionEvaluator.CategoryDishes(board, SkillConditionEvaluator.ParseCategoryParam(rule.ActionParams));
+                dishes = SkillConditionEvaluator.CategoryDishes(
+                    board,
+                    SkillConditionEvaluator.ParseCategoryParam(rule.ActionParams));
+            }
+            else
+            {
+                dishes = SkillConditionEvaluator.ScopeDishes(board, self, rule.ActionScope);
             }
 
-            List<DishInstance> dishes = SkillConditionEvaluator.ScopeDishes(board, self, rule.ActionScope);
+            if (HasActionParam(rule, "include:self") && dishes.All(d => d.Id != self.Id))
+            {
+                dishes.Add(self);
+            }
+
+            string category = SkillConditionEvaluator.ParseCategoryParam(rule.ActionParams);
+            if (!string.IsNullOrEmpty(category))
+            {
+                dishes = dishes.Where(d => d.Def.IsCategory(category)).ToList();
+            }
+
             string skillTypeToken = ParseSkillTypeParam(rule.ActionParams);
             if (!string.IsNullOrEmpty(skillTypeToken)
                 && System.Enum.TryParse(skillTypeToken, ignoreCase: true, out SkillActionType filterType))
@@ -236,6 +252,29 @@ namespace GourmetProject.Gameplay.Scoring
                 return new List<GridPos>();
             }
 
+            if (isActionScope && rule != null)
+            {
+                string category = SkillConditionEvaluator.ParseCategoryParam(rule.ActionParams);
+                string skillType = ParseSkillTypeParam(rule.ActionParams);
+                if (!string.IsNullOrEmpty(category)
+                    || !string.IsNullOrEmpty(skillType)
+                    || HasActionParam(rule, "include:self"))
+                {
+                    List<DishInstance> filtered = ResolveScopeDishes(
+                        db,
+                        board,
+                        self,
+                        rule,
+                        includeSelfForSelfScope: true);
+                    if (rule.ActionType == SkillActionType.TransferSkills)
+                    {
+                        filtered.RemoveAll(d => d.Id == self.Id);
+                    }
+
+                    return CellsForDishes(filtered);
+                }
+            }
+
             switch (scope)
             {
                 case SkillScope.Self:
@@ -264,6 +303,19 @@ namespace GourmetProject.Gameplay.Scoring
                 default:
                 {
                     List<GridPos> cells = SkillConditionEvaluator.ScopeCells(board, self, scope).ToList();
+                    if (!isActionScope
+                        && rule != null
+                        && SkillConditionEvaluator.HasParam(rule.CondParam, "include:self"))
+                    {
+                        foreach (GridPos cell in self.OccupiedCells)
+                        {
+                            if (!cells.Contains(cell))
+                            {
+                                cells.Add(cell);
+                            }
+                        }
+                    }
+
                     if (cells.Count > 0)
                     {
                         return cells;
