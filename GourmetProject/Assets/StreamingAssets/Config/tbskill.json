@@ -1,19 +1,19 @@
 [
   {
     "id": "sk_arrow_cookie_1",
-    "subSkills": "sk_arrow_cookie_1_1|sk_arrow_cookie_1_2"
+    "subSkills": "sk_arrow_cookie_1_1"
   },
   {
     "id": "sk_arrow_cookie_2",
-    "subSkills": "sk_arrow_cookie_2_1|sk_arrow_cookie_2_2"
+    "subSkills": "sk_arrow_cookie_2_1"
   },
   {
     "id": "sk_arrow_cookie_3",
-    "subSkills": "sk_arrow_cookie_3_1|sk_arrow_cookie_3_2"
+    "subSkills": "sk_arrow_cookie_3_1"
   },
   {
     "id": "sk_arrow_cookie_4",
-    "subSkills": "sk_arrow_cookie_4_1|sk_arrow_cookie_4_2"
+    "subSkills": "sk_arrow_cookie_4_1"
   },
   {
     "id": "sk_jelly",
@@ -25,11 +25,11 @@
   },
   {
     "id": "sk_eggtart",
-    "subSkills": "sk_eggtart_1|sk_eggtart_2|sk_eggtart_3|sk_eggtart_4"
+    "subSkills": "sk_eggtart_1"
   },
   {
     "id": "sk_sugarbean",
-    "subSkills": "sk_sugarbean_1|sk_sugarbean_2|sk_sugarbean_3|sk_sugarbean_4|sk_sugarbean_5"
+    "subSkills": "sk_sugarbean_1|sk_sugarbean_2"
   },
   {
     "id": "sk_cheesecake",
@@ -37,11 +37,11 @@
   },
   {
     "id": "sk_mousse",
-    "subSkills": "sk_mousse_1|sk_mousse_2"
+    "subSkills": "sk_mousse_1"
   },
   {
     "id": "sk_fruit_candy",
-    "subSkills": "sk_fruit_candy_1|sk_fruit_candy_2|sk_fruit_candy_3"
+    "subSkills": "sk_fruit_candy_1|sk_fruit_candy_2"
   },
   {
     "id": "sk_choco_bar",
@@ -69,7 +69,7 @@
   },
   {
     "id": "sk_tanghulu",
-    "subSkills": "sk_tanghulu_1|sk_tanghulu_2|sk_tanghulu_3"
+    "subSkills": "sk_tanghulu_1|sk_tanghulu_2"
   },
   {
     "id": "sk_cake_slice",
@@ -97,7 +97,7 @@
   },
   {
     "id": "sk_palmier",
-    "subSkills": "sk_palmier_1|sk_palmier_2"
+    "subSkills": "sk_palmier_1"
   },
   {
     "id": "sk_chiffion",
@@ -129,7 +129,7 @@
   },
   {
     "id": "sk_chocolate_sauce",
-    "subSkills": "sk_chocolate_sauce_1|sk_chocolate_sauce_2|sk_chocolate_sauce_3"
+    "subSkills": "sk_chocolate_sauce_1|sk_chocolate_sauce_2"
   },
   {
     "id": "sk_mango_sago",

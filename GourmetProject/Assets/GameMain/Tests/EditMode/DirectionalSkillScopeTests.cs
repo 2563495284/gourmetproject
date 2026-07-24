@@ -35,6 +35,28 @@ namespace GourmetProject.Tests.EditMode
                     .Concat(Column(6, 5, 8))
                     .Concat(Column(7, 5, 6))
                     .Concat(Column(8, 5, 6)));
+            AssertCells(table, self, SkillScope.LeftAndSelf,
+                Row(2, 2, 7)
+                    .Concat(Row(3, 2, 5))
+                    .Concat(Row(4, 0, 4))
+                    .Concat(self.OccupiedCells));
+            AssertCells(table, self, SkillScope.UpAndSelf,
+                Column(5, 0, 3)
+                    .Concat(Column(6, 0, 2))
+                    .Concat(Column(7, 0, 3))
+                    .Concat(Column(8, 0, 1))
+                    .Concat(self.OccupiedCells));
+            AssertCells(table, self, SkillScope.RightAndSelf,
+                Row(2, 9, 10)
+                    .Concat(Row(3, 9, 10))
+                    .Concat(Row(4, 9, 10))
+                    .Concat(self.OccupiedCells));
+            AssertCells(table, self, SkillScope.DownAndSelf,
+                Column(5, 5, 8)
+                    .Concat(Column(6, 5, 8))
+                    .Concat(Column(7, 5, 6))
+                    .Concat(Column(8, 5, 6))
+                    .Concat(self.OccupiedCells));
 
             CollectionAssert.Contains(
                 SkillConditionEvaluator.ScopeCells(table, self, SkillScope.Left).ToList(),
@@ -70,6 +92,10 @@ namespace GourmetProject.Tests.EditMode
             AssertDishIds(table, self, SkillScope.Up, 2, 4);
             AssertDishIds(table, self, SkillScope.Right, 5);
             AssertDishIds(table, self, SkillScope.Down, 6);
+            AssertDishIds(table, self, SkillScope.LeftAndSelf, 1, 2, 3);
+            AssertDishIds(table, self, SkillScope.UpAndSelf, 1, 2, 4);
+            AssertDishIds(table, self, SkillScope.RightAndSelf, 1, 5);
+            AssertDishIds(table, self, SkillScope.DownAndSelf, 1, 6);
         }
 
         [Test]
@@ -79,6 +105,10 @@ namespace GourmetProject.Tests.EditMode
             Assert.That((int)SkillScope.Up, Is.EqualTo((int)cfg.SkillScope.Up));
             Assert.That((int)SkillScope.Right, Is.EqualTo((int)cfg.SkillScope.Right));
             Assert.That((int)SkillScope.Down, Is.EqualTo((int)cfg.SkillScope.Down));
+            Assert.That((int)SkillScope.LeftAndSelf, Is.EqualTo((int)cfg.SkillScope.LeftAndSelf));
+            Assert.That((int)SkillScope.UpAndSelf, Is.EqualTo((int)cfg.SkillScope.UpAndSelf));
+            Assert.That((int)SkillScope.RightAndSelf, Is.EqualTo((int)cfg.SkillScope.RightAndSelf));
+            Assert.That((int)SkillScope.DownAndSelf, Is.EqualTo((int)cfg.SkillScope.DownAndSelf));
         }
 
         private static DiningTable CreateReferenceTable()

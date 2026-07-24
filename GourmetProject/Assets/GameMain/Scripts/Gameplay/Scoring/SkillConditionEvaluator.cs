@@ -450,6 +450,10 @@ namespace GourmetProject.Gameplay.Scoring
                 case SkillScope.Up:
                 case SkillScope.Right:
                 case SkillScope.Down:
+                case SkillScope.LeftAndSelf:
+                case SkillScope.UpAndSelf:
+                case SkillScope.RightAndSelf:
+                case SkillScope.DownAndSelf:
                     CollectDishesFromCells(board, ScopeCells(board, self, scope), result);
                     return result;
 
@@ -692,7 +696,7 @@ namespace GourmetProject.Gameplay.Scoring
             return any;
         }
 
-        /// <summary>作用域涉及的「存在格」集合（同行/同列/相邻/周围/四方向）。</summary>
+        /// <summary>作用域涉及的「存在格」集合（同行/同列/相邻/周围/四方向及自身）。</summary>
         public static IEnumerable<GridPos> ScopeCells(GpTable board, DishInstance self, SkillScope scope)
         {
             var cells = new List<GridPos>();
@@ -828,16 +832,36 @@ namespace GourmetProject.Gameplay.Scoring
                     AddHorizontalDirection(left: true);
                     break;
 
+                case SkillScope.LeftAndSelf:
+                    AddHorizontalDirection(left: true);
+                    foreach (GridPos cell in self.OccupiedCells) AddCell(cell);
+                    break;
+
                 case SkillScope.Up:
                     AddVerticalDirection(up: true);
+                    break;
+
+                case SkillScope.UpAndSelf:
+                    AddVerticalDirection(up: true);
+                    foreach (GridPos cell in self.OccupiedCells) AddCell(cell);
                     break;
 
                 case SkillScope.Right:
                     AddHorizontalDirection(left: false);
                     break;
 
+                case SkillScope.RightAndSelf:
+                    AddHorizontalDirection(left: false);
+                    foreach (GridPos cell in self.OccupiedCells) AddCell(cell);
+                    break;
+
                 case SkillScope.Down:
                     AddVerticalDirection(up: false);
+                    break;
+
+                case SkillScope.DownAndSelf:
+                    AddVerticalDirection(up: false);
+                    foreach (GridPos cell in self.OccupiedCells) AddCell(cell);
                     break;
             }
 

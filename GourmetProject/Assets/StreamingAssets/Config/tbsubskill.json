@@ -8,7 +8,7 @@
     "condMode": 2,
     "condParam": "",
     "actionType": 1,
-    "actionScope": 0,
+    "actionScope": 23,
     "actionCount": 0,
     "actionValue": [
       15
@@ -20,26 +20,6 @@
     "termId": ""
   },
   {
-    "id": "sk_arrow_cookie_1_2",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 19,
-    "condUnit": 0,
-    "condMode": 2,
-    "condParam": "",
-    "actionType": 1,
-    "actionScope": 19,
-    "actionCount": 0,
-    "actionValue": [
-      15
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": true,
-    "descTemplate": "385",
-    "termId": ""
-  },
-  {
     "id": "sk_arrow_cookie_2_1",
     "trigger": 0,
     "condType": 0,
@@ -48,7 +28,7 @@
     "condMode": 2,
     "condParam": "",
     "actionType": 9,
-    "actionScope": 0,
+    "actionScope": 21,
     "actionCount": 0,
     "actionValue": [
       0.5
@@ -60,26 +40,6 @@
     "termId": ""
   },
   {
-    "id": "sk_arrow_cookie_2_2",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 17,
-    "condUnit": 0,
-    "condMode": 2,
-    "condParam": "",
-    "actionType": 9,
-    "actionScope": 17,
-    "actionCount": 0,
-    "actionValue": [
-      0.5
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": true,
-    "descTemplate": "385",
-    "termId": ""
-  },
-  {
     "id": "sk_arrow_cookie_3_1",
     "trigger": 0,
     "condType": 0,
@@ -88,7 +48,7 @@
     "condMode": 2,
     "condParam": "",
     "actionType": 1,
-    "actionScope": 0,
+    "actionScope": 24,
     "actionCount": 0,
     "actionValue": [
       15
@@ -100,26 +60,6 @@
     "termId": ""
   },
   {
-    "id": "sk_arrow_cookie_3_2",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 20,
-    "condUnit": 0,
-    "condMode": 2,
-    "condParam": "",
-    "actionType": 1,
-    "actionScope": 20,
-    "actionCount": 0,
-    "actionValue": [
-      15
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": true,
-    "descTemplate": "385",
-    "termId": ""
-  },
-  {
     "id": "sk_arrow_cookie_4_1",
     "trigger": 0,
     "condType": 0,
@@ -128,7 +68,7 @@
     "condMode": 2,
     "condParam": "",
     "actionType": 9,
-    "actionScope": 0,
+    "actionScope": 22,
     "actionCount": 0,
     "actionValue": [
       0.5
@@ -137,26 +77,6 @@
     "isPassive": false,
     "signed": true,
     "descTemplate": "上侧及自身倍率+0.5",
-    "termId": ""
-  },
-  {
-    "id": "sk_arrow_cookie_4_2",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 18,
-    "condUnit": 0,
-    "condMode": 2,
-    "condParam": "",
-    "actionType": 9,
-    "actionScope": 18,
-    "actionCount": 0,
-    "actionValue": [
-      0.5
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": true,
-    "descTemplate": "385",
     "termId": ""
   },
   {
@@ -203,12 +123,12 @@
     "id": "sk_eggtart_1",
     "trigger": 0,
     "condType": 4,
-    "condScope": 17,
+    "condScope": 21,
     "condUnit": 0,
     "condMode": 0,
     "condParam": "",
     "actionType": 9,
-    "actionScope": 17,
+    "actionScope": 21,
     "actionCount": 0,
     "actionValue": [
       0.8
@@ -220,75 +140,15 @@
     "termId": ""
   },
   {
-    "id": "sk_eggtart_2",
-    "trigger": 0,
-    "condType": 4,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 9,
-    "actionScope": 17,
-    "actionCount": 0,
-    "actionValue": [
-      0.8
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": true,
-    "descTemplate": "385",
-    "termId": ""
-  },
-  {
-    "id": "sk_eggtart_3",
-    "trigger": 0,
-    "condType": 4,
-    "condScope": 17,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 9,
-    "actionScope": 0,
-    "actionCount": 0,
-    "actionValue": [
-      0.8
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": true,
-    "descTemplate": "385",
-    "termId": ""
-  },
-  {
-    "id": "sk_eggtart_4",
-    "trigger": 0,
-    "condType": 4,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 9,
-    "actionScope": 0,
-    "actionCount": 0,
-    "actionValue": [
-      0.8
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": true,
-    "descTemplate": "385",
-    "termId": ""
-  },
-  {
     "id": "sk_sugarbean_1",
     "trigger": 0,
     "condType": 17,
-    "condScope": 19,
+    "condScope": 23,
     "condUnit": 0,
     "condMode": 0,
     "condParam": "",
     "actionType": 1,
-    "actionScope": 19,
+    "actionScope": 23,
     "actionCount": 0,
     "actionValue": [
       6
@@ -301,66 +161,6 @@
   },
   {
     "id": "sk_sugarbean_2",
-    "trigger": 0,
-    "condType": 17,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 1,
-    "actionScope": 19,
-    "actionCount": 0,
-    "actionValue": [
-      6
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": true,
-    "descTemplate": "385",
-    "termId": ""
-  },
-  {
-    "id": "sk_sugarbean_3",
-    "trigger": 0,
-    "condType": 17,
-    "condScope": 19,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 1,
-    "actionScope": 0,
-    "actionCount": 0,
-    "actionValue": [
-      6
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": true,
-    "descTemplate": "385",
-    "termId": ""
-  },
-  {
-    "id": "sk_sugarbean_4",
-    "trigger": 0,
-    "condType": 17,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 1,
-    "actionScope": 0,
-    "actionCount": 0,
-    "actionValue": [
-      6
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": true,
-    "descTemplate": "385",
-    "termId": ""
-  },
-  {
-    "id": "sk_sugarbean_5",
     "trigger": 0,
     "condType": 0,
     "condScope": 19,
@@ -423,7 +223,7 @@
     "id": "sk_mousse_1",
     "trigger": 0,
     "condType": 4,
-    "condScope": 17,
+    "condScope": 21,
     "condUnit": 0,
     "condMode": 0,
     "condParam": "",
@@ -440,26 +240,6 @@
     "termId": "clb"
   },
   {
-    "id": "sk_mousse_2",
-    "trigger": 0,
-    "condType": 4,
-    "condScope": 0,
-    "condUnit": 0,
-    "condMode": 0,
-    "condParam": "",
-    "actionType": 6,
-    "actionScope": 16,
-    "actionCount": 0,
-    "actionValue": [
-      2
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": true,
-    "descTemplate": "385",
-    "termId": "clb"
-  },
-  {
     "id": "sk_fruit_candy_1",
     "trigger": 0,
     "condType": 0,
@@ -468,7 +248,7 @@
     "condMode": 2,
     "condParam": "",
     "actionType": 9,
-    "actionScope": 0,
+    "actionScope": 22,
     "actionCount": 0,
     "actionValue": [
       0.4
@@ -481,26 +261,6 @@
   },
   {
     "id": "sk_fruit_candy_2",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 18,
-    "condUnit": 0,
-    "condMode": 2,
-    "condParam": "",
-    "actionType": 9,
-    "actionScope": 18,
-    "actionCount": 0,
-    "actionValue": [
-      0.4
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": true,
-    "descTemplate": "385",
-    "termId": ""
-  },
-  {
-    "id": "sk_fruit_candy_3",
     "trigger": 0,
     "condType": 0,
     "condScope": 18,
@@ -563,19 +323,17 @@
     "id": "sk_mochi_1",
     "trigger": 0,
     "condType": 4,
-    "condScope": 20,
+    "condScope": 24,
     "condUnit": 0,
     "condMode": 0,
-    "condParam": "include:self;div:2",
+    "condParam": "div:2",
     "actionType": 9,
-    "actionScope": 20,
+    "actionScope": 24,
     "actionCount": 0,
     "actionValue": [
       0.8
     ],
-    "actionParam": [
-      "include:self"
-    ],
+    "actionParam": [],
     "isPassive": false,
     "signed": true,
     "descTemplate": "下侧及自身每有2个食物，倍率+0.8",
@@ -690,7 +448,7 @@
     "condMode": 2,
     "condParam": "",
     "actionType": 9,
-    "actionScope": 0,
+    "actionScope": 23,
     "actionCount": 0,
     "actionValue": [
       2
@@ -703,26 +461,6 @@
   },
   {
     "id": "sk_tanghulu_2",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 19,
-    "condUnit": 0,
-    "condMode": 2,
-    "condParam": "",
-    "actionType": 9,
-    "actionScope": 19,
-    "actionCount": 0,
-    "actionValue": [
-      2
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": true,
-    "descTemplate": "385",
-    "termId": ""
-  },
-  {
-    "id": "sk_tanghulu_3",
     "trigger": 0,
     "condType": 0,
     "condScope": 19,
@@ -958,7 +696,7 @@
     "condMode": 2,
     "condParam": "",
     "actionType": 2,
-    "actionScope": 0,
+    "actionScope": 21,
     "actionCount": 0,
     "actionValue": [
       2
@@ -967,26 +705,6 @@
     "isPassive": false,
     "signed": false,
     "descTemplate": "左侧及自身倍率x2",
-    "termId": ""
-  },
-  {
-    "id": "sk_palmier_2",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 17,
-    "condUnit": 0,
-    "condMode": 2,
-    "condParam": "",
-    "actionType": 2,
-    "actionScope": 17,
-    "actionCount": 0,
-    "actionValue": [
-      2
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": false,
-    "descTemplate": "385",
     "termId": ""
   },
   {
@@ -1210,7 +928,7 @@
     "condMode": 2,
     "condParam": "",
     "actionType": 2,
-    "actionScope": 0,
+    "actionScope": 23,
     "actionCount": 0,
     "actionValue": [
       2.5
@@ -1223,26 +941,6 @@
   },
   {
     "id": "sk_chocolate_sauce_2",
-    "trigger": 0,
-    "condType": 0,
-    "condScope": 19,
-    "condUnit": 0,
-    "condMode": 2,
-    "condParam": "",
-    "actionType": 2,
-    "actionScope": 19,
-    "actionCount": 0,
-    "actionValue": [
-      2.5
-    ],
-    "actionParam": [],
-    "isPassive": false,
-    "signed": false,
-    "descTemplate": "385",
-    "termId": ""
-  },
-  {
-    "id": "sk_chocolate_sauce_3",
     "trigger": 0,
     "condType": 0,
     "condScope": 19,

@@ -53,13 +53,13 @@ namespace GourmetProject.Tests.EditMode
                     "sk_mochi_1",
                     "sk_mochi",
                     SkillConditionType.DishCount,
-                    SkillScope.Down,
+                    SkillScope.DownAndSelf,
                     CountMode.Per,
-                    "include:self;div:2",
+                    "div:2",
                     SkillActionType.AddMultFlat,
-                    SkillScope.Down,
+                    SkillScope.DownAndSelf,
                     0.8f,
-                    "include:self"));
+                    null));
             DishDef mochiDef = Dish("mochi", cell, new[] { mochiSkill.Id });
             DishDef plainDef = Dish("plain", cell);
             GameplayDatabase db = Database(new[] { mochiDef, plainDef }, mochiSkill);

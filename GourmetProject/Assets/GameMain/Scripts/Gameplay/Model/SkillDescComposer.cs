@@ -115,6 +115,10 @@ namespace GourmetProject.Gameplay.Model
                 case SkillScope.Up: return "上侧";
                 case SkillScope.Right: return "右侧";
                 case SkillScope.Down: return "下侧";
+                case SkillScope.LeftAndSelf: return "左侧及自身";
+                case SkillScope.UpAndSelf: return "上侧及自身";
+                case SkillScope.RightAndSelf: return "右侧及自身";
+                case SkillScope.DownAndSelf: return "下侧及自身";
                 default: return string.Empty;
             }
         }
@@ -148,6 +152,10 @@ namespace GourmetProject.Gameplay.Model
                     case SkillScope.Up: return "上侧";
                     case SkillScope.Right: return "右侧";
                     case SkillScope.Down: return "下侧";
+                    case SkillScope.LeftAndSelf: return "左侧及自身";
+                    case SkillScope.UpAndSelf: return "上侧及自身";
+                    case SkillScope.RightAndSelf: return "右侧及自身";
+                    case SkillScope.DownAndSelf: return "下侧及自身";
                     default: return ScopeWord(scope);
                 }
             }
@@ -167,6 +175,10 @@ namespace GourmetProject.Gameplay.Model
                 case SkillScope.Up: return $"上侧 {count} 个";
                 case SkillScope.Right: return $"右侧 {count} 个";
                 case SkillScope.Down: return $"下侧 {count} 个";
+                case SkillScope.LeftAndSelf: return $"左侧及自身 {count} 个";
+                case SkillScope.UpAndSelf: return $"上侧及自身 {count} 个";
+                case SkillScope.RightAndSelf: return $"右侧及自身 {count} 个";
+                case SkillScope.DownAndSelf: return $"下侧及自身 {count} 个";
                 default: return ScopeWord(scope);
             }
         }

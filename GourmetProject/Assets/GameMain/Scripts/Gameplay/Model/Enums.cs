@@ -113,9 +113,17 @@ namespace GourmetProject.Gameplay.Model
         Up = 18,
         Right = 19,
         Down = 20,
+
+        /// <summary>本菜左侧及自身。</summary>
         LeftAndSelf = 21,
+
+        /// <summary>本菜上侧及自身。</summary>
         UpAndSelf = 22,
+
+        /// <summary>本菜右侧及自身。</summary>
         RightAndSelf = 23,
+
+        /// <summary>本菜下侧及自身。</summary>
         DownAndSelf = 24,
     }
 
