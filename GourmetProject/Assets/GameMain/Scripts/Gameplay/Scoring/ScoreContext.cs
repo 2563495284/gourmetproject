@@ -111,14 +111,19 @@ namespace GourmetProject.Gameplay.Scoring
                             continue;
                         }
 
-                        int value = (int)Math.Round(rule.ActionValue * count, MidpointRounding.AwayFromZero);
-                        if (value == 0)
-                        {
-                            continue;
-                        }
-
                         foreach (DishInstance t in CountAsTargets(rule, src))
                         {
+                            float basis = HasActionParam(rule, "target:occupiedcells")
+                                ? t.OccupiedCells.Count
+                                : 1f;
+                            int value = (int)Math.Round(
+                                rule.ActionValue * count * basis,
+                                MidpointRounding.AwayFromZero);
+                            if (value == 0)
+                            {
+                                continue;
+                            }
+
                             extra.TryGetValue(t.Id, out int cur);
                             extra[t.Id] = cur + value;
                         }
@@ -136,23 +141,32 @@ namespace GourmetProject.Gameplay.Scoring
 
         private List<DishInstance> CountAsTargets(SkillRuleDef rule, DishInstance self)
         {
-            if (rule.ActionScope == SkillScope.Self)
+            return SkillScopeResolver.ResolveActionTargetDishes(
+                    Db,
+                    DiningTable,
+                    self,
+                    rule,
+                    SkillScopeVisualMode.ResolvedTargets)
+                .ToList();
+        }
+
+        private static bool HasActionParam(SkillRuleDef rule, string token)
+        {
+            if (rule?.ActionParams == null)
             {
-                return new List<DishInstance> { self };
+                return false;
             }
 
-            List<DishInstance> dishes = SkillConditionEvaluator.ScopeDishes(DiningTable, self, rule.ActionScope);
-            if (rule.ActionCount > 0 && dishes.Count > rule.ActionCount)
+            foreach (string param in rule.ActionParams)
             {
-                dishes = dishes
-                    .OrderBy(d => d.Placement.Origin.Y)
-                    .ThenBy(d => d.Placement.Origin.X)
-                    .ThenBy(d => d.Id)
-                    .Take(rule.ActionCount)
-                    .ToList();
+                if (param != null
+                    && param.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return true;
+                }
             }
 
-            return dishes;
+            return false;
         }
 
         public ScoreSnapshot Snapshot { get; }

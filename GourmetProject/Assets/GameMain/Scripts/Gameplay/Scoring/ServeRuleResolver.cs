@@ -67,7 +67,7 @@ namespace GourmetProject.Gameplay.Scoring
                     }
 
                     int running = System.Math.Max(0, currentHappyCakeLayers + layerDelta);
-                    int count = SkillConditionEvaluator.Evaluate(rule, board, history, served, running);
+                    int count = SkillConditionEvaluator.Evaluate(rule, board, history, served, running, db);
                     if (count <= 0)
                     {
                         continue;
@@ -114,6 +114,11 @@ namespace GourmetProject.Gameplay.Scoring
                 value = rule.ActionValue;
             }
 
+            if (IsSweetTransferModifier(rule))
+            {
+                return;
+            }
+
             switch (rule.ActionType)
             {
                 case SkillActionType.AddLayer:
@@ -156,15 +161,29 @@ namespace GourmetProject.Gameplay.Scoring
                     if (effects.Count > 0)
                     {
                         var candidateIds = new List<int>();
-                        foreach (DishInstance t in ScopeDishesForTransfer(board, self, rule))
+                        foreach (DishInstance t in ScopeDishesForTransfer(board, db, self, rule))
                         {
                             if (t.Id != self.Id) candidateIds.Add(t.Id);
                         }
 
                         if (candidateIds.Count > 0)
                         {
+                            int effectiveTargetCount = EffectiveTransferTargetCount(
+                                rule.ActionCount,
+                                SweetTransferExtraTargetCount(
+                                    board,
+                                    db,
+                                    history,
+                                    self,
+                                    runningLayers,
+                                    rule.Trigger));
                             transferRequests ??= new List<SkillTransferRequest>();
-                            transferRequests.Add(new SkillTransferRequest(self.Id, sourceName, candidateIds, effects, rule.ActionCount));
+                            transferRequests.Add(new SkillTransferRequest(
+                                self.Id,
+                                sourceName,
+                                candidateIds,
+                                effects,
+                                effectiveTargetCount));
                         }
                     }
 
@@ -236,7 +255,13 @@ namespace GourmetProject.Gameplay.Scoring
                         continue;
                     }
 
-                    int count = SkillConditionEvaluator.Evaluate(transferRule, board, history, source, runningLayers);
+                    int count = SkillConditionEvaluator.Evaluate(
+                        transferRule,
+                        board,
+                        history,
+                        source,
+                        runningLayers,
+                        db);
                     if (count <= 0)
                     {
                         continue;
@@ -249,7 +274,7 @@ namespace GourmetProject.Gameplay.Scoring
                     }
 
                     var candidateIds = new List<int>();
-                    foreach (DishInstance target in ScopeDishesForTransfer(board, source, transferRule))
+                    foreach (DishInstance target in ScopeDishesForTransfer(board, db, source, transferRule))
                     {
                         if (target.Id != source.Id)
                         {
@@ -262,8 +287,22 @@ namespace GourmetProject.Gameplay.Scoring
                         continue;
                     }
 
+                    int effectiveTargetCount = EffectiveTransferTargetCount(
+                        transferRule.ActionCount,
+                        SweetTransferExtraTargetCount(
+                            board,
+                            db,
+                            history,
+                            source,
+                            runningLayers,
+                            transferRule.Trigger));
                     transferRequests ??= new List<SkillTransferRequest>();
-                    transferRequests.Add(new SkillTransferRequest(source.Id, sourceName, candidateIds, effects, transferRule.ActionCount));
+                    transferRequests.Add(new SkillTransferRequest(
+                        source.Id,
+                        sourceName,
+                        candidateIds,
+                        effects,
+                        effectiveTargetCount));
                 }
             }
         }
@@ -337,7 +376,7 @@ namespace GourmetProject.Gameplay.Scoring
             }
             else
             {
-                foreach (DishInstance t in Targets(board, self, rule))
+                foreach (DishInstance t in Targets(board, db, self, rule))
                 {
                     if (t.Id == self.Id) continue;
                     foreach (string s in t.SkillIds) Add(s);
@@ -384,6 +423,14 @@ namespace GourmetProject.Gameplay.Scoring
                 }
             }
 
+            foreach (TransferredSkill transferred in dish.TransferredSkills)
+            {
+                if (transferred?.Rule?.ActionType == actionType)
+                {
+                    return true;
+                }
+            }
+
             return false;
         }
 
@@ -414,47 +461,124 @@ namespace GourmetProject.Gameplay.Scoring
         }
 
         /// <summary>甜蜜传递的候选目标：作用域内「有食物」的其它菜（不做 ActionCount 截断，随机取 N 交由 BattleSession）。</summary>
-        private static IReadOnlyList<DishInstance> ScopeDishesForTransfer(GpTable board, DishInstance self, SkillRuleDef rule)
+        private static IReadOnlyList<DishInstance> ScopeDishesForTransfer(
+            GpTable board,
+            GameplayDatabase db,
+            DishInstance self,
+            SkillRuleDef rule)
         {
-            if (rule.ActionScope == SkillScope.Self)
-            {
-                return System.Array.Empty<DishInstance>();
-            }
-
-            if (rule.ActionScope == SkillScope.Category)
-            {
-                return SkillConditionEvaluator.CategoryDishes(board, SkillConditionEvaluator.ParseCategoryParam(rule.ActionParams));
-            }
-
-            return SkillConditionEvaluator.ScopeDishes(board, self, rule.ActionScope, includeSelf: false);
+            return SkillScopeResolver.ResolveActionTargetDishes(
+                db,
+                board,
+                self,
+                rule,
+                SkillScopeVisualMode.CandidateScope);
         }
 
-        private static IReadOnlyList<DishInstance> Targets(GpTable board, DishInstance self, SkillRuleDef rule)
+        private static IReadOnlyList<DishInstance> Targets(
+            GpTable board,
+            GameplayDatabase db,
+            DishInstance self,
+            SkillRuleDef rule)
         {
-            if (rule.ActionScope == SkillScope.Self)
-            {
-                return new[] { self };
-            }
-
-            if (rule.ActionScope == SkillScope.Category)
-            {
-                return SkillConditionEvaluator.CategoryDishes(board, SkillConditionEvaluator.ParseCategoryParam(rule.ActionParams));
-            }
-
-            List<DishInstance> dishes = SkillConditionEvaluator.ScopeDishes(board, self, rule.ActionScope, includeSelf: false);
-            if (rule.ActionCount > 0 && dishes.Count > rule.ActionCount)
-            {
-                // 与 SkillRuleEffect 一致：无随机流时以餐桌顺序取前 N，保证确定性可复现。
-                dishes = dishes
-                    .OrderBy(d => d.Placement.Origin.Y)
-                    .ThenBy(d => d.Placement.Origin.X)
-                    .ThenBy(d => d.Id)
-                    .Take(rule.ActionCount)
-                    .ToList();
-            }
-
-            return dishes;
+            return SkillScopeResolver.ResolveActionTargetDishes(
+                db,
+                board,
+                self,
+                rule,
+                SkillScopeVisualMode.ResolvedTargets);
         }
+
+        private static int SweetTransferExtraTargetCount(
+            GpTable board,
+            GameplayDatabase db,
+            IScoreHistory history,
+            DishInstance source,
+            int runningLayers,
+            SkillTrigger trigger)
+        {
+            int extra = 0;
+            foreach (DishInstance owner in board.Dishes)
+            {
+                if (owner == null || owner.SkillsDisabled)
+                {
+                    continue;
+                }
+
+                foreach (SkillRuleDef modifier in RulesOf(db, owner))
+                {
+                    if (modifier == null
+                        || modifier.Trigger != trigger
+                        || modifier.ActionType != SkillActionType.TriggerSweetTransfer
+                        || !HasActionParam(modifier, "modifier:add-targets"))
+                    {
+                        continue;
+                    }
+
+                    IReadOnlyList<DishInstance> targets =
+                        SkillScopeResolver.ResolveActionTargetDishes(
+                            db,
+                            board,
+                            owner,
+                            modifier,
+                            SkillScopeVisualMode.ResolvedTargets);
+                    if (targets.All(dish => dish.Id != source.Id))
+                    {
+                        continue;
+                    }
+
+                    int count = SkillConditionEvaluator.Evaluate(
+                        modifier,
+                        board,
+                        history,
+                        owner,
+                        runningLayers,
+                        db);
+                    if (count > 0)
+                    {
+                        extra += System.Math.Max(
+                            0,
+                            (int)System.Math.Round(
+                                modifier.ActionValue * count,
+                                System.MidpointRounding.AwayFromZero));
+                    }
+                }
+            }
+
+            return extra;
+        }
+
+        private static int EffectiveTransferTargetCount(int configured, int extra)
+            => configured <= 0 ? 0 : configured + System.Math.Max(0, extra);
+
+        private static IEnumerable<SkillRuleDef> RulesOf(GameplayDatabase db, DishInstance dish)
+        {
+            foreach (string skillId in dish.SkillIds)
+            {
+                SkillDef skill = db?.GetSkill(skillId);
+                if (skill == null || !skill.HasRules)
+                {
+                    continue;
+                }
+
+                foreach (SkillRuleDef rule in skill.Rules)
+                {
+                    yield return rule;
+                }
+            }
+
+            foreach (TransferredSkill transferred in dish.TransferredSkills)
+            {
+                if (transferred?.Rule != null)
+                {
+                    yield return transferred.Rule;
+                }
+            }
+        }
+
+        private static bool IsSweetTransferModifier(SkillRuleDef rule)
+            => HasActionParam(rule, "when:transfer")
+               || HasActionParam(rule, "modifier:add-targets");
     }
 
     /// <summary>技能复制请求：把 Candidates 中随机 Count 个技能加到目标实例。RNG 落地由 BattleSession 执行。</summary>
