@@ -16,9 +16,6 @@ namespace GourmetProject.Game.UI.Meta
     {
         [SerializeField] private Button _button;
         [SerializeField] private DishIconRenderTexturePreview _dishPreview;
-        [SerializeField] private Image _icon;
-        [SerializeField] private Text _nameText;
-        [SerializeField] private Text _descriptionText;
         [SerializeField] private CanvasGroup _canvasGroup;
 
         private int _choiceIndex = -1;
@@ -58,25 +55,13 @@ namespace GourmetProject.Game.UI.Meta
             _onHoverEntered = onHoverEntered;
             _onHoverExited = onHoverExited;
 
-            if (_nameText != null)
-            {
-                _nameText.text = choice?.Name ?? string.Empty;
-            }
-
-            if (_descriptionText != null)
-            {
-                _descriptionText.text = choice?.Description ?? string.Empty;
-            }
-
             if (_dishPreview != null && dish != null)
             {
                 _dishPreview.Bind(dish, icon, dish.Deliciousness);
-                SetIcon(null);
             }
             else
             {
                 _dishPreview?.Hide();
-                SetIcon(icon);
             }
 
             SetResolved(false);
@@ -104,7 +89,7 @@ namespace GourmetProject.Game.UI.Meta
         {
             RectTransform target = _dishPreview != null
                 ? _dishPreview.transform as RectTransform
-                : (_icon != null ? _icon.rectTransform : transform as RectTransform);
+                : transform as RectTransform;
             if (target == null)
             {
                 return;
@@ -171,24 +156,6 @@ namespace GourmetProject.Game.UI.Meta
                 _dishPreview = GetComponentInChildren<DishIconRenderTexturePreview>(true);
             }
 
-            if (_icon == null)
-            {
-                Transform icon = transform.Find("IconFrame/Icon") ?? transform.Find("Icon");
-                _icon = icon != null ? icon.GetComponent<Image>() : null;
-            }
-
-            if (_nameText == null)
-            {
-                Transform title = transform.Find("Texts/Title") ?? transform.Find("Title") ?? transform.Find("Name");
-                _nameText = title != null ? title.GetComponent<Text>() : null;
-            }
-
-            if (_descriptionText == null)
-            {
-                Transform desc = transform.Find("Texts/Description") ?? transform.Find("Description");
-                _descriptionText = desc != null ? desc.GetComponent<Text>() : null;
-            }
-
             if (_canvasGroup == null)
             {
                 _canvasGroup = GetComponent<CanvasGroup>();
@@ -214,19 +181,6 @@ namespace GourmetProject.Game.UI.Meta
                     _onClick?.Invoke(this, _choiceIndex);
                 }
             });
-        }
-
-        private void SetIcon(Sprite icon)
-        {
-            if (_icon == null)
-            {
-                return;
-            }
-
-            _icon.preserveAspect = true;
-            _icon.enabled = icon != null;
-            _icon.sprite = icon;
-            _icon.color = Color.white;
         }
 
         private void EndHover()

@@ -40,7 +40,7 @@ namespace GourmetProject.Runtime.Rendering
             renderer.EnqueuePass(pass);
         }
 
-        private static bool IsDishIconPreviewCamera(Camera camera)
+        private static bool IsDishIconPreviewCamera(UnityEngine.Camera camera)
         {
             int layer = LayerMask.NameToLayer("DishIconPreview");
             return camera != null

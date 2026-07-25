@@ -51,7 +51,7 @@ namespace GourmetProject.Runtime.Rendering
             }
 
             int previewLayer = LayerMask.NameToLayer("DishIconPreview");
-            Camera camera = renderingData.cameraData.camera;
+            UnityEngine.Camera camera = renderingData.cameraData.camera;
             if (camera != null
                 && previewLayer >= 0
                 && camera.cullingMask == 1 << previewLayer)

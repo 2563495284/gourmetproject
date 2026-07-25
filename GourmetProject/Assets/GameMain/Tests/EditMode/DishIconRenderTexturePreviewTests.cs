@@ -59,6 +59,46 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void RewardDishCard_BindKeepsRenderedTexture()
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/GameMain/UI/RewardDishPanel.prefab");
+            RewardDishChoiceCardView template = prefab
+                .GetComponentInChildren<RewardDishChoiceCardView>(true);
+            RewardDishChoiceCardView card = UnityEngine.Object.Instantiate(template);
+            try
+            {
+                card.gameObject.SetActive(true);
+                DishIconRenderTexturePreview preview =
+                    card.GetComponentInChildren<DishIconRenderTexturePreview>(true);
+                Sprite sprite = Resources.Load<Sprite>("Sprites/Dishes/donut");
+                var dish = new DishDef(
+                    "reward_preview_test",
+                    "Reward Preview Test",
+                    30,
+                    DishShape.FromRows(new[] { "X" }),
+                    0,
+                    0,
+                    1f,
+                    Array.Empty<string>(),
+                    string.Empty,
+                    false,
+                    baseId: "donut");
+
+                card.Bind(null, dish, sprite, 0, null);
+
+                RawImage rawImage = preview.GetComponent<RawImage>();
+                Assert.That(preview.gameObject.activeSelf, Is.True);
+                Assert.That(preview.CurrentTexture, Is.Not.Null);
+                Assert.That(rawImage.texture, Is.SameAs(preview.CurrentTexture));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(card.gameObject);
+            }
+        }
+
+        [Test]
         public void EveryDishPrefab_UsesRenderTexturePreview()
         {
             AssertSerializedPreviewReference<ShopBuyCardView>(
@@ -200,6 +240,8 @@ namespace GourmetProject.Tests.EditMode
                 Camera previewCamera = FindPreviewCamera();
                 Assert.That(previewCamera, Is.Not.Null);
                 Assert.That(previewCamera.transform.parent.position.x, Is.GreaterThan(9000f));
+                Assert.That(previewCamera.clearFlags, Is.EqualTo(CameraClearFlags.SolidColor));
+                Assert.That(previewCamera.backgroundColor, Is.EqualTo(Color.white));
 
                 int previewLayer = LayerMask.NameToLayer("DishIconPreview");
                 Assert.That(previewLayer, Is.GreaterThanOrEqualTo(0));
@@ -219,6 +261,64 @@ namespace GourmetProject.Tests.EditMode
                     previewStage.GetComponentsInChildren<DiningTableCellView>(true),
                     Is.Empty,
                     "Preview grid cells must remain render-only objects.");
+                Assert.That(
+                    CountErrorMagentaPixels(preview.CurrentTexture),
+                    Is.Zero,
+                    "The preview contains Unity's magenta error-shader color.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
+        }
+
+        [Test]
+        public void Preview_RebuildPurgesOrphanedRuntimeStage()
+        {
+            Type rendererType = typeof(DishIconRenderTexturePreview).Assembly.GetType(
+                "GourmetProject.Game.Presentation.Battle.DishIconPreviewRenderer",
+                throwOnError: true);
+            var resetStatics = rendererType.GetMethod(
+                "ResetStatics",
+                System.Reflection.BindingFlags.Static |
+                System.Reflection.BindingFlags.NonPublic);
+            Assert.That(resetStatics, Is.Not.Null);
+            resetStatics.Invoke(null, null);
+
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/GameMain/UI/ShopFoodBuyItemView.prefab");
+            GameObject instance = UnityEngine.Object.Instantiate(prefab);
+            try
+            {
+                DishIconRenderTexturePreview preview =
+                    instance.GetComponentInChildren<DishIconRenderTexturePreview>(true);
+                Sprite sprite = Resources.Load<Sprite>("Sprites/Dishes/donut");
+                var dish = new DishDef(
+                    "preview_rebuild_test",
+                    "Preview Rebuild Test",
+                    30,
+                    DishShape.FromRows(new[] { "X" }),
+                    0,
+                    0,
+                    1f,
+                    Array.Empty<string>(),
+                    string.Empty,
+                    false,
+                    baseId: "donut");
+
+                preview.gameObject.SetActive(true);
+                preview.Bind(dish, sprite, dish.Deliciousness);
+                Camera firstCamera = FindPreviewCamera();
+                Assert.That(firstCamera, Is.Not.Null);
+
+                resetStatics.Invoke(null, null);
+                preview.Bind(dish, sprite, dish.Deliciousness);
+                Camera rebuiltCamera = FindPreviewCamera();
+
+                Assert.That(rebuiltCamera, Is.Not.Null);
+                Assert.That(rebuiltCamera, Is.Not.SameAs(firstCamera));
+                Assert.That(CountPreviewCameras(), Is.EqualTo(1));
+                Assert.That(CountErrorMagentaPixels(preview.CurrentTexture), Is.Zero);
             }
             finally
             {
@@ -286,6 +386,56 @@ namespace GourmetProject.Tests.EditMode
             }
 
             return null;
+        }
+
+        private static int CountPreviewCameras()
+        {
+            int count = 0;
+            foreach (Camera camera in Resources.FindObjectsOfTypeAll<Camera>())
+            {
+                if (camera.name == "Dish Icon Camera" && camera.gameObject.activeInHierarchy)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private static int CountErrorMagentaPixels(RenderTexture texture)
+        {
+            Assert.That(texture, Is.Not.Null);
+            RenderTexture previous = RenderTexture.active;
+            var readable = new Texture2D(
+                texture.width,
+                texture.height,
+                TextureFormat.RGBA32,
+                false);
+            try
+            {
+                RenderTexture.active = texture;
+                readable.ReadPixels(
+                    new Rect(0f, 0f, texture.width, texture.height),
+                    0,
+                    0);
+                readable.Apply();
+
+                int count = 0;
+                foreach (Color32 pixel in readable.GetPixels32())
+                {
+                    if (pixel.r == 255 && pixel.g == 0 && pixel.b == 255)
+                    {
+                        count++;
+                    }
+                }
+
+                return count;
+            }
+            finally
+            {
+                RenderTexture.active = previous;
+                UnityEngine.Object.DestroyImmediate(readable);
+            }
         }
 
         private static void AssertPreviewIsConfigured(DishIconRenderTexturePreview preview)

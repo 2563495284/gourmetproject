@@ -23,6 +23,8 @@ namespace GourmetProject.Game.Presentation.Battle
         private const float StainSoftness = 0.12f;
         private const float StainDarken = 0.12f;
         private static readonly Vector3 StageWorldPosition = new(10000f, 10000f, 0f);
+        private const float StageSlotSpacing = 64f;
+        private static readonly Color PreviewBackgroundColor = Color.white;
 
         private static DishIconPreviewRenderer _instance;
         private static int _sceneSerial;
@@ -64,6 +66,7 @@ namespace GourmetProject.Game.Presentation.Battle
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics()
         {
+            PurgeStaleInstances();
             _instance = null;
             _sceneSerial = 0;
         }
@@ -77,6 +80,12 @@ namespace GourmetProject.Game.Presentation.Battle
                     return _instance;
                 }
 
+                // HideAndDontSave preview rigs can survive a script/domain reload while their
+                // runtime-created materials do not. If a new rig is then placed on top of one
+                // of those orphaned rigs, the stale SpriteRenderers are drawn as Unity's
+                // magenta error material through every transparent part of the new sprites.
+                PurgeStaleInstances();
+
                 Scene previousActiveScene = SceneManager.GetActiveScene();
                 Scene scene = CreatePreviewScene();
                 if (previousActiveScene.IsValid() && previousActiveScene.isLoaded)
@@ -88,12 +97,46 @@ namespace GourmetProject.Game.Presentation.Battle
                 {
                     hideFlags = HideFlags.HideAndDontSave,
                 };
-                root.transform.position = StageWorldPosition;
+                root.transform.position = StagePositionFor(scene);
                 SceneManager.MoveGameObjectToScene(root, scene);
                 _instance = root.AddComponent<DishIconPreviewRenderer>();
                 _instance.BuildRig();
                 return _instance;
             }
+        }
+
+        private static void PurgeStaleInstances()
+        {
+            DishIconPreviewRenderer[] instances =
+                Resources.FindObjectsOfTypeAll<DishIconPreviewRenderer>();
+            for (int i = 0; i < instances.Length; i++)
+            {
+                DishIconPreviewRenderer renderer = instances[i];
+                if (renderer == null)
+                {
+                    continue;
+                }
+
+                GameObject root = renderer.gameObject;
+                root.SetActive(false);
+                if (Application.isPlaying)
+                {
+                    Destroy(root);
+                }
+                else
+                {
+                    DestroyImmediate(root);
+                }
+            }
+        }
+
+        private static Vector3 StagePositionFor(Scene scene)
+        {
+            int slot = Mathf.Abs(scene.handle % 1024);
+            return StageWorldPosition + new Vector3(
+                (slot % 32) * StageSlotSpacing,
+                (slot / 32) * StageSlotSpacing,
+                0f);
         }
 
         private void BuildRig()
@@ -120,7 +163,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _camera.nearClipPlane = 0.1f;
             _camera.farClipPlane = 50f;
             _camera.clearFlags = CameraClearFlags.SolidColor;
-            _camera.backgroundColor = Color.clear;
+            _camera.backgroundColor = PreviewBackgroundColor;
             _camera.allowHDR = false;
             _camera.allowMSAA = false;
             _camera.cullingMask = 1 << _previewLayer;
@@ -196,9 +239,11 @@ namespace GourmetProject.Game.Presentation.Battle
             texture.Create();
             RenderTexture previous = RenderTexture.active;
             RenderTexture.active = texture;
-            GL.Clear(true, true, Color.clear);
+            GL.Clear(true, true, PreviewBackgroundColor);
             RenderTexture.active = previous;
 
+            _camera.clearFlags = CameraClearFlags.SolidColor;
+            _camera.backgroundColor = PreviewBackgroundColor;
             _camera.aspect = (float)boardWidth / boardHeight;
             _camera.orthographicSize = boardHeight * CellSize * 0.5f;
             var request = new RenderPipeline.StandardRequest
