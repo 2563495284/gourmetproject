@@ -214,7 +214,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 608.2561, y: -324}
-  m_SizeDelta: {x: 200, y: 200}
+  m_SizeDelta: {x: 300, y: 300}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &805065948503477729
 CanvasRenderer:
@@ -498,6 +498,7 @@ MonoBehaviour:
   _cellPrefab: {fileID: 7200723304387205229, guid: 51f2e9c520382400dbab9879cf9e2308, type: 3}
   _badgePrefab: {fileID: 4634900531494509900, guid: 9ff8bbea9b3da4ac7ba3eda713852b62, type: 3}
   _pixelsPerCell: 96
+  _prefabThreeByThreeSize: {x: 0, y: 0}
 --- !u!1 &7693211278502444004
 GameObject:
   m_ObjectHideFlags: 0

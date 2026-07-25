@@ -25,6 +25,76 @@ namespace GourmetProject.Tests.EditMode
                 Is.EqualTo(new Vector2Int(width, height)));
         }
 
+        [TestCase(200f, 200f, 3, 3, 200f, 200f)]
+        [TestCase(200f, 200f, 5, 3, 333.3333f, 200f)]
+        [TestCase(200f, 200f, 3, 4, 200f, 266.6667f)]
+        public void DisplaySizeForGrid_ScalesFromPrefabThreeByThreeSize(
+            float prefabWidth,
+            float prefabHeight,
+            int gridWidth,
+            int gridHeight,
+            float expectedWidth,
+            float expectedHeight)
+        {
+            Vector2 size = DishIconRenderTexturePreview.DisplaySizeForGrid(
+                new Vector2(prefabWidth, prefabHeight),
+                new Vector2Int(gridWidth, gridHeight));
+
+            Assert.That(size.x, Is.EqualTo(expectedWidth).Within(0.001f));
+            Assert.That(size.y, Is.EqualTo(expectedHeight).Within(0.001f));
+        }
+
+        [TestCase("Assets/GameMain/UI/RecipeEditDishView.prefab", 140f)]
+        [TestCase("Assets/GameMain/UI/ShopBuyCardView.prefab", 70f)]
+        [TestCase("Assets/GameMain/UI/ShopFoodBuyItemView.prefab", 180f)]
+        [TestCase("Assets/GameMain/UI/RewardDishPanel.prefab", 200f)]
+        public void EveryPreview_ResizesFromItsPrefabThreeByThreeSize(
+            string prefabPath,
+            float prefabSize)
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+            GameObject instance = UnityEngine.Object.Instantiate(prefab);
+            try
+            {
+                DishIconRenderTexturePreview preview =
+                    instance.GetComponentInChildren<DishIconRenderTexturePreview>(true);
+                RectTransform sizeTarget = preview.transform.parent as RectTransform;
+                Sprite sprite = Resources.Load<Sprite>("Sprites/Dishes/donut");
+                var dish = new DishDef(
+                    "preview_resize_test",
+                    "Preview Resize Test",
+                    30,
+                    DishShape.FromRows(new[] { "XXX" }),
+                    0,
+                    0,
+                    1f,
+                    Array.Empty<string>(),
+                    string.Empty,
+                    false,
+                    baseId: "donut");
+
+                preview.gameObject.SetActive(true);
+                preview.Bind(dish, sprite, dish.Deliciousness);
+                Canvas.ForceUpdateCanvases();
+
+                Assert.That(
+                    sizeTarget.rect.width,
+                    Is.EqualTo(prefabSize * 5f / 3f).Within(0.01f));
+                Assert.That(
+                    sizeTarget.rect.height,
+                    Is.EqualTo(prefabSize).Within(0.01f));
+
+                preview.Hide();
+                Canvas.ForceUpdateCanvases();
+                Assert.That(sizeTarget.rect.width, Is.EqualTo(prefabSize).Within(0.01f));
+                Assert.That(sizeTarget.rect.height, Is.EqualTo(prefabSize).Within(0.01f));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
+        }
+
         [Test]
         public void RewardAndShopPrefabs_UseTheSameRenderTexturePreview()
         {
@@ -368,6 +438,11 @@ namespace GourmetProject.Tests.EditMode
                     Is.LessThan(0.01f));
                 Assert.That(preview.CurrentTexture.width, Is.EqualTo(288));
                 Assert.That(preview.CurrentTexture.height, Is.EqualTo(384));
+
+                RectTransform sizeTarget = preview.transform.parent as RectTransform;
+                Canvas.ForceUpdateCanvases();
+                Assert.That(sizeTarget.rect.width, Is.EqualTo(180f).Within(0.01f));
+                Assert.That(sizeTarget.rect.height, Is.EqualTo(240f).Within(0.01f));
             }
             finally
             {

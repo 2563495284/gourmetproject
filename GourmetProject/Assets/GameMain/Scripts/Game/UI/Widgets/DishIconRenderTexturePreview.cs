@@ -18,15 +18,18 @@ namespace GourmetProject.Game.UI.Widgets
         private const float TransformInDuration = 0.14f;
         private const float TransformOutDuration = 0.2f;
         private const float TransformHoldDuration = 0.5f;
+        private const float PrefabGridSize = 3f;
         private static readonly Color TransformFlashColor = new(1.85f, 1.85f, 1.85f, 1f);
 
         [SerializeField] private RawImage _targetImage;
         [SerializeField] private GameObject _cellPrefab;
         [SerializeField] private GameObject _badgePrefab;
         [SerializeField, Range(32, 256)] private int _pixelsPerCell = 96;
+        [SerializeField, HideInInspector] private Vector2 _prefabThreeByThreeSize;
 
         private RenderTexture _renderTexture;
         private Sequence _transformSequence;
+        private RectTransform _displaySizeTarget;
 
         public RenderTexture CurrentTexture => _renderTexture;
 
@@ -44,6 +47,20 @@ namespace GourmetProject.Game.UI.Widgets
             return shape == null
                 ? Vector2Int.zero
                 : new Vector2Int(shape.Width + 2, shape.Height + 2);
+        }
+
+        public static Vector2 DisplaySizeForGrid(
+            Vector2 prefabThreeByThreeSize,
+            Vector2Int gridSize)
+        {
+            if (gridSize.x <= 0 || gridSize.y <= 0)
+            {
+                return prefabThreeByThreeSize;
+            }
+
+            return new Vector2(
+                prefabThreeByThreeSize.x * gridSize.x / PrefabGridSize,
+                prefabThreeByThreeSize.y * gridSize.y / PrefabGridSize);
         }
 
         public void Bind(
@@ -84,6 +101,11 @@ namespace GourmetProject.Game.UI.Widgets
 
             if (_renderTexture != null)
             {
+                Vector2Int renderedGridSize = new(
+                    Mathf.Max(1, _renderTexture.width / _pixelsPerCell),
+                    Mathf.Max(1, _renderTexture.height / _pixelsPerCell));
+                ApplyDisplaySize(renderedGridSize);
+
                 AspectRatioFitter fitter = GetComponent<AspectRatioFitter>();
                 if (fitter == null)
                 {
@@ -93,6 +115,12 @@ namespace GourmetProject.Game.UI.Widgets
                 fitter.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
                 fitter.aspectRatio = (float)_renderTexture.width / _renderTexture.height;
             }
+        }
+
+        private void OnEnable()
+        {
+            EnsureRefs();
+            CapturePrefabSize();
         }
 
         public void PlayTransformTo(
@@ -158,6 +186,8 @@ namespace GourmetProject.Game.UI.Widgets
                 _targetImage.texture = null;
                 _targetImage.enabled = false;
             }
+
+            RestorePrefabSize();
         }
 
         private void OnDestroy()
@@ -183,6 +213,81 @@ namespace GourmetProject.Game.UI.Widgets
             {
                 _targetImage = GetComponent<RawImage>();
             }
+
+            if (_displaySizeTarget == null)
+            {
+                _displaySizeTarget =
+                    transform.parent as RectTransform ??
+                    transform as RectTransform;
+            }
+        }
+
+        private void CapturePrefabSize()
+        {
+            if (_prefabThreeByThreeSize.x > 0f
+                && _prefabThreeByThreeSize.y > 0f)
+            {
+                return;
+            }
+
+            EnsureRefs();
+            if (_displaySizeTarget == null)
+            {
+                return;
+            }
+
+            Vector2 size = _displaySizeTarget.rect.size;
+            if (size.x <= 0f || size.y <= 0f)
+            {
+                size = new Vector2(
+                    Mathf.Abs(_displaySizeTarget.sizeDelta.x),
+                    Mathf.Abs(_displaySizeTarget.sizeDelta.y));
+            }
+
+            if (size.x > 0f && size.y > 0f)
+            {
+                _prefabThreeByThreeSize = size;
+            }
+        }
+
+        private void ApplyDisplaySize(Vector2Int gridSize)
+        {
+            CapturePrefabSize();
+            if (_displaySizeTarget == null
+                || _prefabThreeByThreeSize.x <= 0f
+                || _prefabThreeByThreeSize.y <= 0f)
+            {
+                return;
+            }
+
+            Vector2 displaySize = DisplaySizeForGrid(
+                _prefabThreeByThreeSize,
+                gridSize);
+            _displaySizeTarget.SetSizeWithCurrentAnchors(
+                RectTransform.Axis.Horizontal,
+                displaySize.x);
+            _displaySizeTarget.SetSizeWithCurrentAnchors(
+                RectTransform.Axis.Vertical,
+                displaySize.y);
+            LayoutRebuilder.MarkLayoutForRebuild(_displaySizeTarget);
+        }
+
+        private void RestorePrefabSize()
+        {
+            if (_displaySizeTarget == null
+                || _prefabThreeByThreeSize.x <= 0f
+                || _prefabThreeByThreeSize.y <= 0f)
+            {
+                return;
+            }
+
+            _displaySizeTarget.SetSizeWithCurrentAnchors(
+                RectTransform.Axis.Horizontal,
+                _prefabThreeByThreeSize.x);
+            _displaySizeTarget.SetSizeWithCurrentAnchors(
+                RectTransform.Axis.Vertical,
+                _prefabThreeByThreeSize.y);
+            LayoutRebuilder.MarkLayoutForRebuild(_displaySizeTarget);
         }
 
         private void ReleaseTexture()
