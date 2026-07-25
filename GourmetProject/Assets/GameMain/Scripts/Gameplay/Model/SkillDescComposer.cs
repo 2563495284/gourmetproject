@@ -9,8 +9,9 @@ namespace GourmetProject.Gameplay.Model
     /// 技能描述拼接器：把子技能模板（sub_skill.descTemplate）里的占位符按组合层参数（合成后的 SkillRuleDef）回填，
     /// 再将同一技能的各子技能描述用「；」拼接成技能完整描述。纯逻辑、无 Unity 依赖，便于单测。
     ///
-    /// 支持的占位符：
+    /// 支持的占位符（同时兼容 {token} 与 ${token}）：
     ///   {0}{1}..  actionValue[i]（signed=true 补正负号，倍率类 signed=false 原样，配合模板里的 ×）
+    ///   {value}   首个 actionValue 的无符号格式（用于“额外视为 N 个”这类已含增量语义的文案）
     ///   {cscope}  前提作用域词（自身/相邻/周围/同行/同列/本行/本列/全场/其他/欢乐蛋糕）
     ///   {ascope}  行为目标短语（不含「食物」）：自身/相邻所有/相邻 2 个/所有/2 个
     ///   {unit}    计数单位：个 / 种；{thr} 阈值；{count} 目标数
@@ -28,7 +29,7 @@ namespace GourmetProject.Gameplay.Model
         private const string PlainFormat = "0.######";
         private const string SignedFormat = "+0.######;-0.######;0";
 
-        private static readonly Regex Token = new Regex(@"\{([A-Za-z]+|\d+)\}", RegexOptions.Compiled);
+        private static readonly Regex Token = new Regex(@"\$?\{([A-Za-z]+|\d+)\}", RegexOptions.Compiled);
 
         /// <summary>把若干子技能描述按顺序用「。」拼接（空片段跳过）。</summary>
         public static string ComposeSkill(IReadOnlyList<string> componentDescs)
@@ -83,13 +84,18 @@ namespace GourmetProject.Gameplay.Model
                 {
                     case "cscope": return ScopeWord(rule.CondScope);
                     case "ascope": return ActionScopePhrase(rule.ActionScope, rule.ActionCount);
+                    case "atargets":
+                    case "targets": return ActionScopePhrase(rule.ActionScope, rule.ActionCount) + "食物";
                     case "unit": return rule.CondUnit == CountUnit.Kinds ? "种" : "个";
+                    case "value": return rule.ActionValue.ToString(PlainFormat, CultureInfo.InvariantCulture);
                     // 本体「视为N个食物」：actionValue 存的是相对 base(=1) 的增量 N-1，显示总数 N。
                     case "countas": return ((int)System.Math.Round(rule.ActionValue, System.MidpointRounding.AwayFromZero) + 1).ToString(CultureInfo.InvariantCulture);
                     case "thr": return SkillConditionParamParser.ThresholdOrDefault(rule.CondParam).ToString(CultureInfo.InvariantCulture);
                     case "count": return rule.ActionCount.ToString(CultureInfo.InvariantCulture);
                     case "tiers": return JoinBar(ExtractAfter(rule.CondParam, "tiers:"));
-                    case "tiervals": return JoinBar(ExtractAfter(FindEntry(rule.ActionParams, "tiervals:"), "tiervals:"));
+                    case "tiervals": return FormatNumberList(
+                        ExtractAfter(FindEntry(rule.ActionParams, "tiervals:"), "tiervals:"),
+                        numberFormat);
                     case "floor": return ExtractNumber(rule.ActionParams, "multfloor:", "floor:");
                     case "cat": return CatWord(rule);
                     default: return match.Value;
@@ -273,6 +279,37 @@ namespace GourmetProject.Gameplay.Model
             }
 
             return string.Join("/", trimmed);
+        }
+
+        /// <summary>把多档数值归一化为斜杠分隔，并与普通 {0} 一样应用 signed 格式。</summary>
+        private static string FormatNumberList(string raw, string numberFormat)
+        {
+            if (string.IsNullOrEmpty(raw))
+            {
+                return string.Empty;
+            }
+
+            string[] parts = raw.Split('|', ',');
+            var formatted = new List<string>(parts.Length);
+            foreach (string part in parts)
+            {
+                string value = part.Trim();
+                if (value.Length == 0)
+                {
+                    continue;
+                }
+
+                if (float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out float number))
+                {
+                    formatted.Add(number.ToString(numberFormat, CultureInfo.InvariantCulture));
+                }
+                else
+                {
+                    formatted.Add(value);
+                }
+            }
+
+            return string.Join("/", formatted);
         }
     }
 }
