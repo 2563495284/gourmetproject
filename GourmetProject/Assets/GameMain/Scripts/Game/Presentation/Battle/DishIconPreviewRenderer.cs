@@ -7,6 +7,34 @@ using UnityEngine.SceneManagement;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
+    internal static class DishIconPreviewGridSizing
+    {
+        public static Vector2Int ExpandedBoardSize(DishShape shape)
+        {
+            return shape == null
+                ? Vector2Int.zero
+                : new Vector2Int(
+                    ExpandedAxisSize(shape.Width),
+                    ExpandedAxisSize(shape.Height));
+        }
+
+        private static int ExpandedAxisSize(int foodSize)
+        {
+            if (foodSize <= 0)
+            {
+                return 0;
+            }
+
+            int boardSize = Mathf.Max(3, foodSize);
+            if ((boardSize - foodSize) % 2 != 0)
+            {
+                boardSize++;
+            }
+
+            return boardSize;
+        }
+    }
+
     /// <summary>
     /// 在独立运行时场景中复用一套棋盘、菜品和美味值标签，并把结果渲染到每个 UI 预览自己的 RenderTexture。
     /// </summary>
@@ -213,8 +241,10 @@ namespace GourmetProject.Game.Presentation.Battle
                 dish.RotationIndex,
                 _flavorScratch);
             DishShape displayShape = dish.Shape.RotatedBy(rotationIndex);
-            int boardWidth = displayShape.Width + 2;
-            int boardHeight = displayShape.Height + 2;
+            Vector2Int boardSize =
+                DishIconPreviewGridSizing.ExpandedBoardSize(displayShape);
+            int boardWidth = boardSize.x;
+            int boardHeight = boardSize.y;
 
             BuildBoard(cellPrefab, boardWidth, boardHeight);
             BuildDish(dish.Shape, rotationIndex, sprite, dish.Id);

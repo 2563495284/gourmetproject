@@ -44,9 +44,7 @@ namespace GourmetProject.Game.UI.Widgets
 
         public static Vector2Int ExpandedBoardSize(DishShape shape)
         {
-            return shape == null
-                ? Vector2Int.zero
-                : new Vector2Int(shape.Width + 2, shape.Height + 2);
+            return DishIconPreviewGridSizing.ExpandedBoardSize(shape);
         }
 
         public static Vector2 DisplaySizeForGrid(
@@ -263,13 +261,7 @@ namespace GourmetProject.Game.UI.Widgets
             Vector2 displaySize = DisplaySizeForGrid(
                 _prefabThreeByThreeSize,
                 gridSize);
-            _displaySizeTarget.SetSizeWithCurrentAnchors(
-                RectTransform.Axis.Horizontal,
-                displaySize.x);
-            _displaySizeTarget.SetSizeWithCurrentAnchors(
-                RectTransform.Axis.Vertical,
-                displaySize.y);
-            LayoutRebuilder.MarkLayoutForRebuild(_displaySizeTarget);
+            SetDisplaySizeKeepingBottom(displaySize);
         }
 
         private void RestorePrefabSize()
@@ -281,12 +273,28 @@ namespace GourmetProject.Game.UI.Widgets
                 return;
             }
 
+            SetDisplaySizeKeepingBottom(_prefabThreeByThreeSize);
+        }
+
+        private void SetDisplaySizeKeepingBottom(Vector2 displaySize)
+        {
+            Vector3 bottomCenterBefore = _displaySizeTarget.TransformPoint(
+                new Vector3(
+                    _displaySizeTarget.rect.center.x,
+                    _displaySizeTarget.rect.yMin,
+                    0f));
             _displaySizeTarget.SetSizeWithCurrentAnchors(
                 RectTransform.Axis.Horizontal,
-                _prefabThreeByThreeSize.x);
+                displaySize.x);
             _displaySizeTarget.SetSizeWithCurrentAnchors(
                 RectTransform.Axis.Vertical,
-                _prefabThreeByThreeSize.y);
+                displaySize.y);
+            Vector3 bottomCenterAfter = _displaySizeTarget.TransformPoint(
+                new Vector3(
+                    _displaySizeTarget.rect.center.x,
+                    _displaySizeTarget.rect.yMin,
+                    0f));
+            _displaySizeTarget.position += bottomCenterBefore - bottomCenterAfter;
             LayoutRebuilder.MarkLayoutForRebuild(_displaySizeTarget);
         }
 

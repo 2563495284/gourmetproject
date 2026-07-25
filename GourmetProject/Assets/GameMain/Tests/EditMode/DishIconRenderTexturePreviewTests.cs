@@ -13,10 +13,12 @@ namespace GourmetProject.Tests.EditMode
     public sealed class DishIconRenderTexturePreviewTests
     {
         [TestCase(new[] { "X" }, 3, 3)]
-        [TestCase(new[] { "XXX" }, 5, 3)]
+        [TestCase(new[] { "XXX" }, 3, 3)]
         [TestCase(new[] { "XX" }, 4, 3)]
-        [TestCase(new[] { "X", "X", "X" }, 3, 5)]
-        public void ExpandedBoardSize_LeavesOneCellOnEverySide(string[] rows, int width, int height)
+        [TestCase(new[] { "X", "X", "X" }, 3, 3)]
+        [TestCase(new[] { "X.X", "XXX" }, 3, 4)]
+        [TestCase(new[] { "XX", "XX" }, 4, 4)]
+        public void ExpandedBoardSize_UsesMinimumCenteredGrid(string[] rows, int width, int height)
         {
             DishShape shape = DishShape.FromRows(rows);
 
@@ -44,13 +46,12 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(size.y, Is.EqualTo(expectedHeight).Within(0.001f));
         }
 
-        [TestCase("Assets/GameMain/UI/RecipeEditDishView.prefab", 140f)]
-        [TestCase("Assets/GameMain/UI/ShopBuyCardView.prefab", 70f)]
-        [TestCase("Assets/GameMain/UI/ShopFoodBuyItemView.prefab", 180f)]
-        [TestCase("Assets/GameMain/UI/RewardDishPanel.prefab", 200f)]
-        public void EveryPreview_ResizesFromItsPrefabThreeByThreeSize(
-            string prefabPath,
-            float prefabSize)
+        [TestCase("Assets/GameMain/UI/RecipeEditDishView.prefab")]
+        [TestCase("Assets/GameMain/UI/ShopBuyCardView.prefab")]
+        [TestCase("Assets/GameMain/UI/ShopFoodBuyItemView.prefab")]
+        [TestCase("Assets/GameMain/UI/RewardDishPanel.prefab")]
+        public void EveryPreview_ResizesFromItsPrefabThreeByThreeSizeAndKeepsBottom(
+            string prefabPath)
         {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
             GameObject instance = UnityEngine.Object.Instantiate(prefab);
@@ -59,12 +60,13 @@ namespace GourmetProject.Tests.EditMode
                 DishIconRenderTexturePreview preview =
                     instance.GetComponentInChildren<DishIconRenderTexturePreview>(true);
                 RectTransform sizeTarget = preview.transform.parent as RectTransform;
+                Vector2 prefabSize = sizeTarget.rect.size;
                 Sprite sprite = Resources.Load<Sprite>("Sprites/Dishes/donut");
                 var dish = new DishDef(
                     "preview_resize_test",
                     "Preview Resize Test",
                     30,
-                    DishShape.FromRows(new[] { "XXX" }),
+                    DishShape.FromRows(new[] { "XX", "XX" }),
                     0,
                     0,
                     1f,
@@ -74,20 +76,23 @@ namespace GourmetProject.Tests.EditMode
                     baseId: "donut");
 
                 preview.gameObject.SetActive(true);
+                float prefabBottom = WorldBottom(sizeTarget);
                 preview.Bind(dish, sprite, dish.Deliciousness);
                 Canvas.ForceUpdateCanvases();
 
                 Assert.That(
                     sizeTarget.rect.width,
-                    Is.EqualTo(prefabSize * 5f / 3f).Within(0.01f));
+                    Is.EqualTo(prefabSize.x * 4f / 3f).Within(0.01f));
                 Assert.That(
                     sizeTarget.rect.height,
-                    Is.EqualTo(prefabSize).Within(0.01f));
+                    Is.EqualTo(prefabSize.y * 4f / 3f).Within(0.01f));
+                Assert.That(WorldBottom(sizeTarget), Is.EqualTo(prefabBottom).Within(0.01f));
 
                 preview.Hide();
                 Canvas.ForceUpdateCanvases();
-                Assert.That(sizeTarget.rect.width, Is.EqualTo(prefabSize).Within(0.01f));
-                Assert.That(sizeTarget.rect.height, Is.EqualTo(prefabSize).Within(0.01f));
+                Assert.That(sizeTarget.rect.width, Is.EqualTo(prefabSize.x).Within(0.01f));
+                Assert.That(sizeTarget.rect.height, Is.EqualTo(prefabSize.y).Within(0.01f));
+                Assert.That(WorldBottom(sizeTarget), Is.EqualTo(prefabBottom).Within(0.01f));
             }
             finally
             {
@@ -461,6 +466,13 @@ namespace GourmetProject.Tests.EditMode
             }
 
             return null;
+        }
+
+        private static float WorldBottom(RectTransform rectTransform)
+        {
+            var corners = new Vector3[4];
+            rectTransform.GetWorldCorners(corners);
+            return corners[0].y;
         }
 
         private static int CountPreviewCameras()

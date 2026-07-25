@@ -61,5 +61,85 @@ namespace GourmetProject.Tests.EditMode
                 Object.DestroyImmediate(instance);
             }
         }
+
+        [Test]
+        public void ChoiceCard_HitSurfaceDispatchesHoverAndClick()
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
+            var canvasObject = new GameObject(
+                "RewardDishPanelTestCanvas",
+                typeof(RectTransform),
+                typeof(Canvas));
+            var eventSystemObject = new GameObject(
+                "RewardDishPanelTestEventSystem",
+                typeof(EventSystem));
+            GameObject instance = null;
+            try
+            {
+                Canvas canvas = canvasObject.GetComponent<Canvas>();
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                EventSystem eventSystem = eventSystemObject.GetComponent<EventSystem>();
+                instance = Object.Instantiate(prefab, canvasObject.transform);
+
+                RewardDishChoiceCardView card = instance
+                    .transform
+                    .Find("ChoiceContainer/RewardDishChoiceCardTemplate")
+                    .GetComponent<RewardDishChoiceCardView>();
+                card.gameObject.SetActive(true);
+                Canvas.ForceUpdateCanvases();
+
+                Image hitSurface = card.GetComponent<Image>();
+                Button button = card.GetComponent<Button>();
+                Assert.That(hitSurface, Is.Not.Null);
+                Assert.That(hitSurface.raycastTarget, Is.True);
+                Assert.That(button.targetGraphic, Is.SameAs(hitSurface));
+
+                var pointer = new PointerEventData(eventSystem)
+                {
+                    button = PointerEventData.InputButton.Left,
+                    position = RectTransformUtility.WorldToScreenPoint(
+                        null,
+                        ((RectTransform)card.transform).TransformPoint(
+                            ((RectTransform)card.transform).rect.center)),
+                };
+                Assert.That(hitSurface.Raycast(pointer.position, null), Is.True);
+
+                int hovered = 0;
+                int clickedIndex = -1;
+                var choice = new RewardChoice(
+                    cfg.RewardKind.DishChoice,
+                    "test_dish",
+                    "测试菜品",
+                    "测试描述");
+                card.Bind(
+                    choice,
+                    null,
+                    3,
+                    (_, index) => clickedIndex = index,
+                    _ => hovered++);
+
+                ExecuteEvents.Execute(
+                    card.gameObject,
+                    pointer,
+                    ExecuteEvents.pointerEnterHandler);
+                ExecuteEvents.Execute(
+                    card.gameObject,
+                    pointer,
+                    ExecuteEvents.pointerClickHandler);
+
+                Assert.That(hovered, Is.EqualTo(1));
+                Assert.That(clickedIndex, Is.EqualTo(3));
+            }
+            finally
+            {
+                if (instance != null)
+                {
+                    Object.DestroyImmediate(instance);
+                }
+
+                Object.DestroyImmediate(eventSystemObject);
+                Object.DestroyImmediate(canvasObject);
+            }
+        }
     }
 }
