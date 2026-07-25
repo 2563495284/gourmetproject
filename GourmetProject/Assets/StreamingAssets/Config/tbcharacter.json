@@ -7,7 +7,7 @@
     "initialRecipeId": [
       "recipe_glutton"
     ],
-    "initialFragmentId": "gut_4x3",
+    "initialFragmentId": "gut_4x4",
     "maxDiningTableWidth": 8,
     "maxDiningTableHeight": 8,
     "timelinePool": "tl_normal",
@@ -23,7 +23,7 @@
     "initialRecipeId": [
       "recipe_wok"
     ],
-    "initialFragmentId": "gut_4x3",
+    "initialFragmentId": "gut_4x4",
     "maxDiningTableWidth": 8,
     "maxDiningTableHeight": 8,
     "timelinePool": "tl_busy",
@@ -39,7 +39,7 @@
     "initialRecipeId": [
       "recipe_chili"
     ],
-    "initialFragmentId": "gut_4x3",
+    "initialFragmentId": "gut_4x4",
     "maxDiningTableWidth": 8,
     "maxDiningTableHeight": 8,
     "timelinePool": "",
