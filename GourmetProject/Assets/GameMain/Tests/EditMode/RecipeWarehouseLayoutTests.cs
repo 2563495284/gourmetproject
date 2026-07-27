@@ -17,11 +17,11 @@ namespace GourmetProject.Tests.EditMode
         public void Pack_EmptyInputReturnsMinimalGrid()
         {
             RecipeWarehouseLayout.Result result =
-                RecipeWarehouseLayout.Pack(Array.Empty<Vector2Int>(), 16f / 9f);
+                RecipeWarehouseLayout.Pack(Array.Empty<Vector2Int>(), 12);
 
             Assert.That(result.Placements, Is.Empty);
-            Assert.That(result.Columns, Is.EqualTo(1));
-            Assert.That(result.Rows, Is.EqualTo(1));
+            Assert.That(result.Columns, Is.EqualTo(12));
+            Assert.That(result.Rows, Is.Zero);
         }
 
         [Test]
@@ -37,9 +37,10 @@ namespace GourmetProject.Tests.EditMode
             };
 
             RecipeWarehouseLayout.Result result =
-                RecipeWarehouseLayout.Pack(sizes, 16f / 9f);
+                RecipeWarehouseLayout.Pack(sizes, 12);
 
             Assert.That(result.Placements.Count, Is.EqualTo(sizes.Length));
+            Assert.That(result.Columns, Is.EqualTo(12));
             var occupied = new HashSet<Vector2Int>();
             for (int i = 0; i < result.Placements.Count; i++)
             {
@@ -75,9 +76,9 @@ namespace GourmetProject.Tests.EditMode
             };
 
             RecipeWarehouseLayout.Result first =
-                RecipeWarehouseLayout.Pack(sizes, 2f);
+                RecipeWarehouseLayout.Pack(sizes, 12);
             RecipeWarehouseLayout.Result second =
-                RecipeWarehouseLayout.Pack(sizes, 2f);
+                RecipeWarehouseLayout.Pack(sizes, 12);
 
             Assert.That(second.Columns, Is.EqualTo(first.Columns));
             Assert.That(second.Rows, Is.EqualTo(first.Rows));
@@ -93,7 +94,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void Pack_FiftyLargeDishesExpandsBothAxes()
+        public void Pack_FiftyLargeDishesKeepsFixedWidthAndExtendsDownward()
         {
             var sizes = new Vector2Int[50];
             for (int i = 0; i < sizes.Length; i++)
@@ -102,10 +103,62 @@ namespace GourmetProject.Tests.EditMode
             }
 
             RecipeWarehouseLayout.Result result =
-                RecipeWarehouseLayout.Pack(sizes, 2f);
+                RecipeWarehouseLayout.Pack(sizes, 12);
 
-            Assert.That(result.Columns, Is.GreaterThan(14));
-            Assert.That(result.Rows, Is.GreaterThan(7));
+            Assert.That(result.Columns, Is.EqualTo(12));
+            Assert.That(result.Rows, Is.EqualTo(26));
+        }
+
+        [Test]
+        public void Pack_ItemWiderThanConfiguredWidthExpandsSafely()
+        {
+            RecipeWarehouseLayout.Result result =
+                RecipeWarehouseLayout.Pack(
+                    new[] { new Vector2Int(14, 2) },
+                    12);
+
+            Assert.That(result.Columns, Is.EqualTo(14));
+            Assert.That(result.Rows, Is.EqualTo(2));
+            Assert.That(result.Placements[0].Position, Is.EqualTo(Vector2Int.zero));
+        }
+
+        [TestCase(1920f)]
+        [TestCase(1280f)]
+        public void WidthScale_AlwaysFillsAvailableViewport(float viewportWidth)
+        {
+            const int columns = 12;
+            const float cellSize = 88f;
+            const float padding = 24f;
+            float scale = RecipeWarehouseLayout.ScaleForViewportWidth(
+                columns,
+                viewportWidth,
+                cellSize,
+                padding);
+
+            float renderedWidth =
+                (padding * 2f + columns * cellSize) * scale;
+            Assert.That(renderedWidth, Is.EqualTo(viewportWidth).Within(0.001f));
+        }
+
+        [Test]
+        public void ContentRows_UsesOccupiedRowsPlusTenOrViewportMinimum()
+        {
+            Assert.That(
+                RecipeWarehouseLayout.ContentRows(
+                    7,
+                    10,
+                    500f,
+                    50f,
+                    20f),
+                Is.EqualTo(17));
+            Assert.That(
+                RecipeWarehouseLayout.ContentRows(
+                    0,
+                    10,
+                    760f,
+                    50f,
+                    20f),
+                Is.EqualTo(15));
         }
 
         [Test]
@@ -135,7 +188,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void WarehousePrefab_BuildsDoubleAxisViewportAndGrid()
+        public void WarehousePrefab_BuildsFixedWidthVerticalViewportAndGrid()
         {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
                 "Assets/GameMain/UI/RecipeBookGridView.prefab");
@@ -148,7 +201,7 @@ namespace GourmetProject.Tests.EditMode
                 RecipeWarehouseScrollRect scrollRect =
                     instance.GetComponent<RecipeWarehouseScrollRect>();
                 Assert.That(scrollRect, Is.Not.Null);
-                Assert.That(scrollRect.horizontal, Is.True);
+                Assert.That(scrollRect.horizontal, Is.False);
                 Assert.That(scrollRect.vertical, Is.True);
                 Assert.That(scrollRect.viewport, Is.Not.Null);
                 Assert.That(scrollRect.content, Is.SameAs(book.DishContainer));
@@ -158,6 +211,9 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(
                     book.DishContainer.GetComponent<GridLayoutGroup>().enabled,
                     Is.False);
+                Assert.That(
+                    book.DishContainer.rect.width,
+                    Is.EqualTo(scrollRect.viewport.rect.width).Within(0.001f));
             }
             finally
             {
@@ -223,8 +279,11 @@ namespace GourmetProject.Tests.EditMode
                 firstDish.OnEndDrag(pointer);
 
                 Assert.That(
-                    book.DishContainer.anchoredPosition,
-                    Is.Not.EqualTo(before));
+                    book.DishContainer.anchoredPosition.x,
+                    Is.EqualTo(before.x).Within(0.001f));
+                Assert.That(
+                    book.DishContainer.anchoredPosition.y,
+                    Is.Not.EqualTo(before.y));
                 firstDish.OnPointerClick(pointer);
                 Assert.That(clickCount, Is.Zero);
 

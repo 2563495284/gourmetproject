@@ -6,7 +6,7 @@ namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>
     /// 统一菜谱仓库的纯逻辑矩形排布器。
-    /// 保持输入顺序，按行优先 first-fit 放置，不依赖任何场景对象。
+    /// 保持输入顺序，在固定列数内按行优先 first-fit 放置，不依赖任何场景对象。
     /// </summary>
     public static class RecipeWarehouseLayout
     {
@@ -29,7 +29,7 @@ namespace GourmetProject.Game.UI.Meta
             {
                 Placements = placements ?? Array.Empty<Placement>();
                 Columns = Mathf.Max(1, columns);
-                Rows = Mathf.Max(1, rows);
+                Rows = Mathf.Max(0, rows);
             }
 
             public IReadOnlyList<Placement> Placements { get; }
@@ -39,14 +39,14 @@ namespace GourmetProject.Game.UI.Meta
             public int Rows { get; }
         }
 
-        public static Result Pack(IReadOnlyList<Vector2Int> itemSizes, float targetAspect)
+        public static Result Pack(IReadOnlyList<Vector2Int> itemSizes, int fixedColumns)
         {
+            int requestedColumns = Mathf.Max(1, fixedColumns);
             if (itemSizes == null || itemSizes.Count == 0)
             {
-                return new Result(Array.Empty<Placement>(), 1, 1);
+                return new Result(Array.Empty<Placement>(), requestedColumns, 0);
             }
 
-            int totalArea = 0;
             int widest = 1;
             var normalized = new Vector2Int[itemSizes.Count];
             for (int i = 0; i < itemSizes.Count; i++)
@@ -56,16 +56,13 @@ namespace GourmetProject.Game.UI.Meta
                 size.y = Mathf.Max(1, size.y);
                 normalized[i] = size;
                 widest = Mathf.Max(widest, size.x);
-                totalArea += size.x * size.y;
             }
 
-            float aspect = Mathf.Clamp(targetAspect, 0.25f, 4f);
-            int columns = Mathf.Max(
-                widest,
-                Mathf.CeilToInt(Mathf.Sqrt(Mathf.Max(1, totalArea) * aspect)));
+            // A wider-than-configured item is invalid content, but expanding for that run is
+            // safer than hanging the unbounded first-fit row search.
+            int columns = Mathf.Max(requestedColumns, widest);
             var occupied = new List<bool[]>();
             var placements = new Placement[normalized.Length];
-            int usedColumns = 0;
             int usedRows = 0;
 
             for (int i = 0; i < normalized.Length; i++)
@@ -74,14 +71,45 @@ namespace GourmetProject.Game.UI.Meta
                 Vector2Int position = FindFirstFree(occupied, columns, size);
                 MarkOccupied(occupied, columns, position, size);
                 placements[i] = new Placement(position, size);
-                usedColumns = Mathf.Max(usedColumns, position.x + size.x);
                 usedRows = Mathf.Max(usedRows, position.y + size.y);
             }
 
             return new Result(
                 placements,
-                Mathf.Max(columns, usedColumns),
-                Mathf.Max(1, usedRows));
+                columns,
+                usedRows);
+        }
+
+        public static float ScaleForViewportWidth(
+            int columns,
+            float viewportWidth,
+            float baseCellSize,
+            float basePadding)
+        {
+            float cellSize = Mathf.Max(1f, baseCellSize);
+            float padding = Mathf.Max(0f, basePadding);
+            float designWidth = padding * 2f + Mathf.Max(1, columns) * cellSize;
+            return viewportWidth > 0.01f
+                ? viewportWidth / designWidth
+                : 1f;
+        }
+
+        public static int ContentRows(
+            int usedRows,
+            int trailingRows,
+            float viewportHeight,
+            float scaledCellSize,
+            float scaledPadding)
+        {
+            float cellSize = Mathf.Max(0.0001f, scaledCellSize);
+            float availableGridHeight = Mathf.Max(
+                0f,
+                viewportHeight - Mathf.Max(0f, scaledPadding) * 2f);
+            int minimumViewportRows = Mathf.CeilToInt(
+                availableGridHeight / cellSize);
+            return Mathf.Max(
+                Mathf.Max(0, usedRows) + Mathf.Max(0, trailingRows),
+                minimumViewportRows);
         }
 
         private static Vector2Int FindFirstFree(

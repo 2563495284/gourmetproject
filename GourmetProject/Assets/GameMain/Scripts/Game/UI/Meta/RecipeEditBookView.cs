@@ -8,7 +8,7 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>
-    /// 菜谱统一仓库视图：矩形占格、自动紧凑排布与双轴拖拽浏览。
+    /// 菜谱统一仓库视图：固定列数、矩形占格、自动紧凑排布与纵向拖拽浏览。
     /// 保留原类型名，避免已有 prefab 和页面引用迁移。
     /// </summary>
     public sealed class RecipeEditBookView : MonoBehaviour, IDropHandler
@@ -23,6 +23,8 @@ namespace GourmetProject.Game.UI.Meta
         [SerializeField] private RecipeWarehouseScrollRect _scrollRect;
 
         [Header("Warehouse Layout")]
+        [SerializeField, Min(1)] private int _warehouseColumns = 12;
+        [SerializeField, Min(0)] private int _warehouseTrailingRows = 10;
         [SerializeField, Min(24f)] private float _warehouseCellSize = 88f;
         [SerializeField, Min(0f)] private float _warehousePadding = 24f;
         [SerializeField, Min(0f)] private float _itemInset = 6f;
@@ -41,6 +43,10 @@ namespace GourmetProject.Game.UI.Meta
         private RecipeWarehouseGridGraphic _gridGraphic;
         private bool _scrollWired;
         private bool _hasLayout;
+        private int _lastWarnedEffectiveColumns;
+        private float _renderedCellSize;
+        private float _renderedPadding;
+        private float _renderedLineWidth;
         private readonly List<RecipeEditDishView> _layoutDishes = new();
         private readonly List<Vector2Int> _layoutSizes = new();
 
@@ -60,7 +66,9 @@ namespace GourmetProject.Game.UI.Meta
             get
             {
                 ResolveLayout();
-                return _scrollRect != null ? _scrollRect.normalizedPosition : new Vector2(0f, 1f);
+                return _scrollRect != null
+                    ? new Vector2(0f, _scrollRect.verticalNormalizedPosition)
+                    : new Vector2(0f, 1f);
             }
         }
 
@@ -90,9 +98,9 @@ namespace GourmetProject.Game.UI.Meta
 
             Canvas.ForceUpdateCanvases();
             _scrollRect.StopMovement();
-            _scrollRect.normalizedPosition = new Vector2(
-                Mathf.Clamp01(normalizedPosition.x),
-                Mathf.Clamp01(normalizedPosition.y));
+            _scrollRect.horizontalNormalizedPosition = 0f;
+            _scrollRect.verticalNormalizedPosition =
+                Mathf.Clamp01(normalizedPosition.y);
         }
 
         public void OnDrop(PointerEventData eventData)
@@ -116,30 +124,46 @@ namespace GourmetProject.Game.UI.Meta
 
             Canvas.ForceUpdateCanvases();
             Vector2 previousNormalized = _hasLayout && _scrollRect != null
-                ? _scrollRect.normalizedPosition
+                ? NormalizedPosition
                 : new Vector2(0f, 1f);
             BuildLayoutInputs(exclude);
             Vector2 viewportSize = ViewportSize();
-            float aspect = viewportSize.y > 0.01f
-                ? viewportSize.x / viewportSize.y
-                : 1f;
             RecipeWarehouseLayout.Result layout = RecipeWarehouseLayout.Pack(
                 _layoutSizes,
-                aspect);
+                _warehouseColumns);
+            WarnIfColumnsExpanded(layout.Columns);
 
-            float desiredWidth = _warehousePadding * 2f
+            float widthScale = RecipeWarehouseLayout.ScaleForViewportWidth(
+                layout.Columns,
+                viewportSize.x,
+                _warehouseCellSize,
+                _warehousePadding);
+            _renderedCellSize = _warehouseCellSize * widthScale;
+            _renderedPadding = _warehousePadding * widthScale;
+            _renderedLineWidth = _gridLineWidth * widthScale;
+            float renderedInset = _itemInset * widthScale;
+            int contentRows = RecipeWarehouseLayout.ContentRows(
+                layout.Rows,
+                _warehouseTrailingRows,
+                viewportSize.y,
+                _renderedCellSize,
+                _renderedPadding);
+            float designWidth = _warehousePadding * 2f
                 + layout.Columns * _warehouseCellSize;
-            float desiredHeight = _warehousePadding * 2f
-                + layout.Rows * _warehouseCellSize;
-            Vector2 contentSize = new(
-                Mathf.Max(viewportSize.x, desiredWidth),
-                Mathf.Max(viewportSize.y, desiredHeight));
+            float contentWidth = viewportSize.x > 0.01f
+                ? viewportSize.x
+                : designWidth;
+            float contentHeight = _renderedPadding * 2f
+                + contentRows * _renderedCellSize;
             _dishContainer.SetSizeWithCurrentAnchors(
                 RectTransform.Axis.Horizontal,
-                contentSize.x);
+                contentWidth);
             _dishContainer.SetSizeWithCurrentAnchors(
                 RectTransform.Axis.Vertical,
-                contentSize.y);
+                contentHeight);
+            _dishContainer.anchoredPosition = new Vector2(
+                0f,
+                _dishContainer.anchoredPosition.y);
 
             int count = Mathf.Min(_layoutDishes.Count, layout.Placements.Count);
             for (int i = 0; i < count; i++)
@@ -148,15 +172,15 @@ namespace GourmetProject.Game.UI.Meta
                 RectTransform rect = (RectTransform)_layoutDishes[i].transform;
                 ConfigureDishRect(rect);
                 rect.anchoredPosition = new Vector2(
-                    _warehousePadding
-                        + placement.Position.x * _warehouseCellSize
-                        + _itemInset * 0.5f,
-                    -_warehousePadding
-                        - placement.Position.y * _warehouseCellSize
-                        - _itemInset * 0.5f);
+                    _renderedPadding
+                        + placement.Position.x * _renderedCellSize
+                        + renderedInset * 0.5f,
+                    -_renderedPadding
+                        - placement.Position.y * _renderedCellSize
+                        - renderedInset * 0.5f);
                 rect.sizeDelta = new Vector2(
-                    Mathf.Max(1f, placement.Size.x * _warehouseCellSize - _itemInset),
-                    Mathf.Max(1f, placement.Size.y * _warehouseCellSize - _itemInset));
+                    Mathf.Max(1f, placement.Size.x * _renderedCellSize - renderedInset),
+                    Mathf.Max(1f, placement.Size.y * _renderedCellSize - renderedInset));
             }
 
             ConfigureGridGraphic();
@@ -202,9 +226,9 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             DOTween.To(
-                    () => _scrollRect.normalizedPosition,
-                    value => _scrollRect.normalizedPosition = value,
-                    destination,
+                    () => _scrollRect.verticalNormalizedPosition,
+                    value => _scrollRect.verticalNormalizedPosition = value,
+                    destination.y,
                     duration)
                 .SetEase(Ease.OutCubic)
                 .SetUpdate(true)
@@ -369,7 +393,7 @@ namespace GourmetProject.Game.UI.Meta
 
             _scrollRect.content = _dishContainer;
             _scrollRect.viewport = _viewport;
-            _scrollRect.horizontal = true;
+            _scrollRect.horizontal = false;
             _scrollRect.vertical = true;
             _scrollRect.movementType = ScrollRect.MovementType.Clamped;
             _scrollRect.inertia = true;
@@ -381,10 +405,16 @@ namespace GourmetProject.Game.UI.Meta
 
         private void ConfigureContentRect()
         {
+            bool alreadyTopLeft = _dishContainer.anchorMin == new Vector2(0f, 1f)
+                && _dishContainer.anchorMax == new Vector2(0f, 1f)
+                && _dishContainer.pivot == new Vector2(0f, 1f);
             _dishContainer.anchorMin = new Vector2(0f, 1f);
             _dishContainer.anchorMax = new Vector2(0f, 1f);
             _dishContainer.pivot = new Vector2(0f, 1f);
-            _dishContainer.anchoredPosition = Vector2.zero;
+            if (!alreadyTopLeft)
+            {
+                _dishContainer.anchoredPosition = Vector2.zero;
+            }
         }
 
         private void EnsureGridGraphic()
@@ -429,9 +459,9 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             _gridGraphic.Configure(
-                _warehouseCellSize,
-                _warehousePadding,
-                _gridLineWidth,
+                _renderedCellSize > 0f ? _renderedCellSize : _warehouseCellSize,
+                _renderedPadding > 0f ? _renderedPadding : _warehousePadding,
+                _renderedLineWidth > 0f ? _renderedLineWidth : _gridLineWidth,
                 _surfaceColor,
                 _gridColor);
             _gridGraphic.transform.SetAsFirstSibling();
@@ -456,6 +486,27 @@ namespace GourmetProject.Game.UI.Meta
                     Mathf.Max(1, size.x),
                     Mathf.Max(1, size.y)));
             }
+        }
+
+        private void WarnIfColumnsExpanded(int effectiveColumns)
+        {
+            int configuredColumns = Mathf.Max(1, _warehouseColumns);
+            if (effectiveColumns <= configuredColumns)
+            {
+                _lastWarnedEffectiveColumns = 0;
+                return;
+            }
+
+            if (_lastWarnedEffectiveColumns == effectiveColumns)
+            {
+                return;
+            }
+
+            _lastWarnedEffectiveColumns = effectiveColumns;
+            Debug.LogWarning(
+                $"Warehouse width expanded from {configuredColumns} to {effectiveColumns} columns "
+                + "because at least one dish is wider than the configured warehouse.",
+                this);
         }
 
         private int DropIndex(PointerEventData eventData)
@@ -496,14 +547,10 @@ namespace GourmetProject.Game.UI.Meta
         {
             Vector2 viewportSize = ViewportSize();
             Vector2 contentSize = _dishContainer.rect.size;
-            float scrollableWidth = Mathf.Max(0f, contentSize.x - viewportSize.x);
             float scrollableHeight = Mathf.Max(0f, contentSize.y - viewportSize.y);
-            float targetLeft = Mathf.Max(0f, target.anchoredPosition.x);
             float targetTop = Mathf.Max(0f, -target.anchoredPosition.y);
             return new Vector2(
-                scrollableWidth > 0.01f
-                    ? Mathf.Clamp01(targetLeft / scrollableWidth)
-                    : 0f,
+                0f,
                 scrollableHeight > 0.01f
                     ? 1f - Mathf.Clamp01(targetTop / scrollableHeight)
                     : 1f);

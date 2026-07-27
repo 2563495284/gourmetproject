@@ -92,6 +92,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Meta.RecipeEditBookView
   _dishContainer: {fileID: 5863749107548733066}
   _scrollRect: {fileID: 0}
+  _warehouseColumns: 12
+  _warehouseTrailingRows: 10
   _warehouseCellSize: 88
   _warehousePadding: 24
   _itemInset: 6
