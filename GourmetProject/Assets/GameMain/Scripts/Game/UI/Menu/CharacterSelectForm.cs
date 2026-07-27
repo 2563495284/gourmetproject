@@ -110,9 +110,15 @@ namespace GourmetProject.Game.UI.Menu
                     Log.Info($"Selected character '{option.Id}', starting run.", Tag);
                     GameplayEntryRequest.RequestNewRun(option.Id);
                 },
+                IsReadyToReveal = IsBattleReady,
             };
 
             CartoonSceneTransitionForm.Show(data);
+        }
+
+        private static bool IsBattleReady()
+        {
+            return GameApp.Scenes.IsLoaded(SceneNames.Battle) && BattleForm.Active != null;
         }
 
         private void OnBackClicked()

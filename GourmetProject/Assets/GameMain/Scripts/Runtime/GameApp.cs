@@ -94,6 +94,7 @@ namespace GourmetProject.Runtime
 
             Settings = new SettingsService(Setting);
             Config = new global::GourmetProject.Config.ConfigService();
+            Settings.ApplyAll();
 
             ServiceLocator.Instance.Register(Random);
             ServiceLocator.Instance.Register(Save);

@@ -26,6 +26,7 @@ namespace GourmetProject.Game.UI.Common
         private const float PrewarmAlpha = 0.001f;
         private const float PrewarmProgress = 0.12f;
         private const int PrewarmFrameCount = 2;
+        private const int ReadyRenderFrameCount = 2;
 
         [Header("食物擦除 / 速度线 / 消息")]
         [SerializeField] private RectTransform _wipeMask;
@@ -226,6 +227,8 @@ namespace GourmetProject.Game.UI.Common
                     }
                 }
 
+                await WaitUntilTargetReadyAsync(token);
+
                 if (_data.HoldDuration > 0f)
                 {
                     Tween holdTween = DOVirtual.DelayedCall(_data.HoldDuration, () => { }, ignoreTimeScale: true)
@@ -252,6 +255,33 @@ namespace GourmetProject.Game.UI.Common
                 {
                     _canvasGroup.alpha = 1f;
                 }
+            }
+        }
+
+        /// <summary>
+        /// 场景加载成功只代表场景依赖已载入，目标 UI 仍可能处于异步实例化阶段。
+        /// 保持全屏遮罩直到调用方确认目标内容已完成初始化，再提交两个完整渲染帧，
+        /// 避免揭开时看到未加载完的 Battle 场景或空白 UI。
+        /// </summary>
+        private async Awaitable WaitUntilTargetReadyAsync(CancellationToken cancellationToken)
+        {
+            Func<bool> isReady = _data.IsReadyToReveal;
+            if (isReady == null)
+            {
+                return;
+            }
+
+            while (!isReady())
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                await Awaitable.NextFrameAsync(cancellationToken);
+            }
+
+            for (int i = 0; i < ReadyRenderFrameCount; i++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                Canvas.ForceUpdateCanvases();
+                await Awaitable.NextFrameAsync(cancellationToken);
             }
         }
 

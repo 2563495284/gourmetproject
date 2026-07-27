@@ -47,6 +47,14 @@ namespace GourmetProject.Game.UI.Menu
         {
             base.OnOpen(userData);
 
+            // Launch 场景内的同步背景只用于遮住首个 UI 资源加载帧。
+            // 主菜单完成实例化后立即关闭，避免它在后续 Battle 场景中遮挡世界相机。
+            GameObject startupBackground = GameObject.Find("StartupBackground");
+            if (startupBackground != null)
+            {
+                startupBackground.SetActive(false);
+            }
+
             RefreshState();
         }
 
@@ -75,6 +83,7 @@ namespace GourmetProject.Game.UI.Menu
                         GameApp.UI.CloseUIForm(UIForm);
                         GameplayEntryRequest.RequestContinue();
                     },
+                    IsReadyToReveal = IsBattleReady,
                 };
 
                 CartoonSceneTransitionForm.Show(data);
@@ -85,6 +94,11 @@ namespace GourmetProject.Game.UI.Menu
             // 开局转场由角色选择界面在“确认”时触发。
             GameApp.UI.CloseUIForm(UIForm);
             GameApp.UI.OpenUIForm(UIForms.CharacterSelect, UIForms.GroupDefault);
+        }
+
+        private static bool IsBattleReady()
+        {
+            return GameApp.Scenes.IsLoaded(SceneNames.Battle) && BattleForm.Active != null;
         }
 
         private void OnAbandonClicked()

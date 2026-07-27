@@ -30,6 +30,11 @@ namespace GourmetProject.Game.UI.Common
         public float HoldDuration = 0.18f;
         public float RevealDuration = 0.28f;
         public Action OnCovered;
+        /// <summary>
+        /// 可选的目标界面就绪条件。遮罩完全覆盖后会一直等待，确保场景依赖资源和目标 UI
+        /// 都初始化完成，再开始揭开转场。
+        /// </summary>
+        public Func<bool> IsReadyToReveal;
         public Action OnFinished;
     }
 }

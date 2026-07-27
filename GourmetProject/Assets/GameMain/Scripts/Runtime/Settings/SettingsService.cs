@@ -14,6 +14,8 @@ namespace GourmetProject.Runtime.Settings
     public sealed class SettingsService
     {
         private const string Tag = "Settings";
+        private const int DefaultResolutionWidth = 1920;
+        private const int DefaultResolutionHeight = 1080;
 
         private readonly SettingComponent _setting;
 
@@ -67,17 +69,17 @@ namespace GourmetProject.Runtime.Settings
             set => _setting.SetString(KeyLanguage, value ?? string.Empty);
         }
 
-        // —— 画面显示偏好。默认值取自当前屏幕状态，保证首次进入与系统一致。——
+        // —— 画面显示偏好。首次启动固定使用项目的 1920×1080 设计分辨率。——
 
         public int ResolutionWidth
         {
-            get => _setting.GetInt(KeyResolutionWidth, Screen.currentResolution.width);
+            get => _setting.GetInt(KeyResolutionWidth, DefaultResolutionWidth);
             set => _setting.SetInt(KeyResolutionWidth, value);
         }
 
         public int ResolutionHeight
         {
-            get => _setting.GetInt(KeyResolutionHeight, Screen.currentResolution.height);
+            get => _setting.GetInt(KeyResolutionHeight, DefaultResolutionHeight);
             set => _setting.SetInt(KeyResolutionHeight, value);
         }
 
