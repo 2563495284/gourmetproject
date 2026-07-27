@@ -91,15 +91,15 @@ MonoBehaviour:
   m_Name: RecipeBookGridView
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Meta.RecipeEditBookView
   _dishContainer: {fileID: 5863749107548733066}
-  _cellSize: {x: 140, y: 140}
-  _spacing: {x: 30, y: 20}
-  _columnCount: 4
-  _padding:
-    m_Left: 0
-    m_Right: 0
-    m_Top: 0
-    m_Bottom: 0
   _scrollRect: {fileID: 0}
+  _warehouseCellSize: 88
+  _warehousePadding: 24
+  _itemInset: 6
+  _gridLineWidth: 2
+  _frameThickness: 14
+  _frameColor: {r: 0.82, g: 0.74, b: 0.58, a: 1}
+  _surfaceColor: {r: 0.075, g: 0.09, b: 0.095, a: 1}
+  _gridColor: {r: 0.34, g: 0.39, b: 0.4, a: 0.82}
 --- !u!114 &4658881047195407422
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -197,7 +197,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5572654048109249570}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8a8695521f0d02e499659fee002a26c2, type: 3}
   m_Name: 

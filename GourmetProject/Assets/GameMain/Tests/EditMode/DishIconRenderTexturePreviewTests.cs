@@ -46,6 +46,54 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(size.y, Is.EqualTo(expectedHeight).Within(0.001f));
         }
 
+        [Test]
+        public void WarehouseMode_UsesExactGridAndKeepsLayoutOwnedSize()
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/GameMain/UI/RecipeEditDishView.prefab");
+            GameObject instance = UnityEngine.Object.Instantiate(prefab);
+            try
+            {
+                DishIconRenderTexturePreview preview =
+                    instance.GetComponentInChildren<DishIconRenderTexturePreview>(true);
+                RectTransform sizeTarget = preview.transform.parent as RectTransform;
+                Vector2 prefabSize = sizeTarget.rect.size;
+                Sprite sprite = Resources.Load<Sprite>("Sprites/Dishes/donut");
+                var dish = new DishDef(
+                    "warehouse_preview_test",
+                    "Warehouse Preview Test",
+                    30,
+                    DishShape.FromRows(new[] { "XX" }),
+                    0,
+                    0,
+                    1f,
+                    Array.Empty<string>(),
+                    string.Empty,
+                    false,
+                    baseId: "donut");
+                int pixelsPerCell = new SerializedObject(preview)
+                    .FindProperty("_pixelsPerCell")
+                    .intValue;
+
+                preview.gameObject.SetActive(true);
+                preview.Bind(
+                    dish,
+                    sprite,
+                    dish.Deliciousness,
+                    mode: DishIconPreviewMode.Warehouse);
+                Canvas.ForceUpdateCanvases();
+
+                Assert.That(preview.DisplayedGridSize, Is.EqualTo(new Vector2Int(2, 1)));
+                Assert.That(preview.CurrentTexture.width, Is.EqualTo(pixelsPerCell * 2));
+                Assert.That(preview.CurrentTexture.height, Is.EqualTo(pixelsPerCell));
+                Assert.That(sizeTarget.rect.size, Is.EqualTo(prefabSize));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
+        }
+
         [TestCase("Assets/GameMain/UI/RecipeEditDishView.prefab")]
         [TestCase("Assets/GameMain/UI/ShopBuyCardView.prefab")]
         [TestCase("Assets/GameMain/UI/ShopFoodBuyItemView.prefab")]

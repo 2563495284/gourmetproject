@@ -19,8 +19,6 @@ namespace GourmetProject.Game.UI.Meta
     /// </summary>
     public sealed partial class RecipeReadonlyBookView : MonoBehaviour
     {
-        private const float DesiredBookGap = 24f;
-        private const float MinBookScale = 0.1f;
         private static Font s_defaultFont;
 
         [Header("Header")]
@@ -206,6 +204,10 @@ namespace GourmetProject.Game.UI.Meta
         private void RebuildBooksForCurrentState()
         {
             ClearCompareOverlay();
+            bool preserveScroll = _spawnedBooks.Count > 0 && _spawnedBooks[0] != null;
+            Vector2 previousScroll = preserveScroll
+                ? _spawnedBooks[0].NormalizedPosition
+                : new Vector2(0f, 1f);
             ClearSpawned();
             RecipeReadonlyBookState state = _stateMachine?.Current;
             if (state == null || _run == null || _bookContainer == null || _bookPrefab == null || _dishPrefab == null)
@@ -221,16 +223,15 @@ namespace GourmetProject.Game.UI.Meta
 
             SetButtonText(_backButton, state.ExitButtonText);
 
-            var books = new List<RecipeEditBookView>(1);
             const int i = 0;
             if (state.BookIndexFilter < 0 || state.BookIndexFilter == i)
             {
                 RecipeEditBookView book = Instantiate(_bookPrefab, _bookContainer);
-                book.gameObject.name = "RecipeReadonlyBook";
+                book.gameObject.name = "RecipeWarehouse";
+                StretchWarehouseToContainer(book);
                 book.Bind(i, null);
                 _spawned.Add(book.gameObject);
                 _spawnedBooks.Add(book);
-                books.Add(book);
 
                 RectTransform dishContainer = book.DishContainer;
                 if (dishContainer != null)
@@ -255,16 +256,18 @@ namespace GourmetProject.Game.UI.Meta
                             null,
                             ShowRecipeDishTips,
                             HideRecipeDishTips,
-                            ComposeFlavorIds(def, slot.ExtraFlavorIds));
+                            ComposeFlavorIds(def, slot.ExtraFlavorIds),
+                            DishIconPreviewMode.Warehouse);
                         _spawned.Add(dish.gameObject);
                         _spawnedDishes.Add(dish);
                     }
                 }
 
                 book.ApplyImmediateLayout();
+                book.SetNormalizedPosition(
+                    preserveScroll ? previousScroll : new Vector2(0f, 1f));
             }
 
-            FitBooksToContainer(books);
             _onChanged?.Invoke();
         }
 
@@ -289,57 +292,21 @@ namespace GourmetProject.Game.UI.Meta
             layout.enabled = false;
         }
 
-        private void FitBooksToContainer(IReadOnlyList<RecipeEditBookView> books)
+        private void StretchWarehouseToContainer(RecipeEditBookView book)
         {
-            if (books == null || books.Count == 0)
+            if (book == null)
             {
                 return;
             }
 
-            RectTransform firstBookRect = (RectTransform)books[0].transform;
-            Vector2 bookSize = firstBookRect.sizeDelta;
-            if (bookSize.x <= 0f || bookSize.y <= 0f)
-            {
-                bookSize = firstBookRect.rect.size;
-            }
-
-            if (bookSize.x <= 0f || bookSize.y <= 0f)
-            {
-                return;
-            }
-
-            float availableWidth = _bookContainer.rect.width;
-            float availableHeight = _bookContainer.rect.height;
-            if (availableWidth <= 0f || availableHeight <= 0f)
-            {
-                return;
-            }
-
-            float totalDesiredGap = DesiredBookGap * (books.Count + 1);
-            float widthScale = (availableWidth - totalDesiredGap) / (bookSize.x * books.Count);
-            float heightScale = availableHeight / bookSize.y;
-            float scale = Mathf.Clamp(Mathf.Min(widthScale, heightScale, 1f), MinBookScale, 1f);
-            float scaledBookWidth = bookSize.x * scale;
-            float gap = books.Count == 1
-                ? (availableWidth - scaledBookWidth) * 0.5f
-                : (availableWidth - scaledBookWidth * books.Count) / (books.Count + 1);
-            gap = Mathf.Max(0f, gap);
-            float x = -availableWidth * 0.5f + gap + scaledBookWidth * 0.5f;
-
-            foreach (RecipeEditBookView book in books)
-            {
-                RectTransform rect = (RectTransform)book.transform;
-                rect.anchorMin = new Vector2(0.5f, 0.5f);
-                rect.anchorMax = new Vector2(0.5f, 0.5f);
-                rect.pivot = new Vector2(0.5f, 0.5f);
-                rect.sizeDelta = bookSize;
-                rect.localScale = new Vector3(scale, scale, 1f);
-                rect.anchoredPosition = new Vector2(x, 0f);
-                x += scaledBookWidth + gap;
-
-                book.FitSlotsWithinView();
-                book.ApplyImmediateLayout();
-            }
+            RectTransform rect = (RectTransform)book.transform;
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            rect.localScale = Vector3.one;
+            rect.localRotation = Quaternion.identity;
         }
 
         private void OnRecipeDishClicked(RecipeEditDishView dish)
