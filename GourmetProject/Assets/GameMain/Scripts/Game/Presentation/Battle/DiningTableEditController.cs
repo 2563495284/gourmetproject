@@ -21,24 +21,20 @@ namespace GourmetProject.Game.Presentation.Battle
     /// </summary>
     public sealed class DiningTableEditController : MonoBehaviour
     {
-        private const int EditGhostSortingOrder = 200;
         private const int EditTraySortingOrder = 150;
         private const int EditDragSortingOrder = 260;
         private const float EditDragGrabDuration = 0.12f;
         private const float EditDragReturnDuration = 0.16f;
+        private const float EditTableLayoutTweenDuration = 0.8f;
         private const float EditGhostOutlineWidth = 0.075f;
-        private const float EditGhostFillAlpha = 0.08f;
         private const float EditBoundsWarningWidth = 0.055f;
         private const float EditTrayCellJitter = 0.045f;
         private const float EditTrayCellRotation = 4f;
         private const float EditTrayCellScaleJitter = 0.035f;
-        private const float EditTrayBottomOffset = 2.6f;
 
         // 编辑页餐桌定位的底部边距：比 Food 态更大，给候选碎片托盘条让位。
         private const float EditTableBottomMargin = 3.6f;
 
-        private static readonly Color GhostValidColor = new Color(0.35f, 0.9f, 0.4f, 0.85f);
-        private static readonly Color GhostInvalidColor = new Color(0.95f, 0.35f, 0.3f, 0.7f);
         private static readonly Color BoundsWarningColor = new Color(1f, 0.05f, 0.02f, 0.42f);
         private static readonly Color EditFragmentFillColor = Color.white;
 
@@ -48,6 +44,15 @@ namespace GourmetProject.Game.Presentation.Battle
             FragmentPlacement,
             ReadOnlyView,
             CellTargeting,
+        }
+
+        private enum FragmentChoiceInteractionState
+        {
+            Idle,
+            Dragging,
+            AwaitingConfirmation,
+            Returning,
+            Completing,
         }
 
         // —— 由外壳注入的共享场景引用 ——
@@ -68,19 +73,34 @@ namespace GourmetProject.Game.Presentation.Battle
         private Action<bool> _editOnDone;
         private readonly List<TableFragmentDef> _editCandidates = new List<TableFragmentDef>();
         private int _editSelected = -1;
-        private bool _editDragging;
+        private FragmentChoiceInteractionState _fragmentChoiceState;
         private bool _editDragAnimating;
-        private bool _editDragReturning;
+        private int _choiceSessionVersion;
+        private int _placementConfirmationRequestId;
+        private int _hoveredCandidateIndex = -1;
+        private Action<TableFragmentHoverInfo> _candidateHoverEntered;
+        private Action<TableFragmentHoverInfo> _candidateHoverExited;
+        private Action<TableFragmentPlacementConfirmationRequest> _requestPlacementConfirmation;
+        private TableFragmentPlacementEvaluation _currentPlacementEvaluation;
+        private Vector3 _editDragPointerWorld;
+        private Tween _editTableLayoutTween;
+        private Vector3 _editTableBasePosition;
+        private Vector3 _editTableBaseScale = Vector3.one;
+        private Vector3 _editTableLayoutTargetPosition;
+        private Vector3 _editTableLayoutTargetScale = Vector3.one;
+        private bool _editTableLayoutTargetInitialized;
+        private bool _editTablePreviewLayoutActive;
 
         [Header("编辑态固定结构")]
-        [SerializeField] private Transform _editRoot;
+        [SerializeField] private BoardEditTrayLayoutArea _editLayoutArea;
         [SerializeField] private Transform _editDragRootPrefab;
         [SerializeField] private LineRenderer _editBoundsWarningLinePrefab;
 
-        private readonly List<DiningTableCellView> _editGhostCells = new List<DiningTableCellView>();
         private readonly List<DiningTableCellView> _editTrayCells = new List<DiningTableCellView>();
         private readonly List<DiningTableCellView> _editDragCells = new List<DiningTableCellView>();
         private readonly List<TrayCluster> _editTrayClusters = new List<TrayCluster>();
+        private readonly List<Vector2Int> _editTrayFragmentSizes = new List<Vector2Int>();
+        private readonly List<Vector2> _editTrayColumnCenters = new List<Vector2>();
         private readonly Dictionary<string, Sprite> _editMaterialCellSprites = new Dictionary<string, Sprite>();
         private Sprite _editCellSprite;
         private float _editTraySize;
@@ -95,14 +115,15 @@ namespace GourmetProject.Game.Presentation.Battle
 
         /// <summary>是否正处于可拖拽的餐桌编辑态（只读餐桌视图不算）。</summary>
         public bool IsEditing => _state == TableInteractionState.FragmentPlacement;
+        public bool IsDragging => _fragmentChoiceState != FragmentChoiceInteractionState.Idle;
 
         public GpTable CurrentTable => _editTable;
+        private Transform EditRoot => _editLayoutArea != null ? _editLayoutArea.transform : null;
 
         private struct TrayCluster
         {
             public int CandidateIndex;
-            public Vector3 Center;
-            public Vector2 HalfExtents;
+            public Bounds WorldBounds;
         }
 
         private struct BoundsWarningInfo
@@ -131,31 +152,46 @@ namespace GourmetProject.Game.Presentation.Battle
             _camera = camera;
         }
 
+        public void SetCandidateHoverCallbacks(
+            Action<TableFragmentHoverInfo> entered,
+            Action<TableFragmentHoverInfo> exited)
+        {
+            SetHoveredCandidate(-1);
+            _candidateHoverEntered = entered;
+            _candidateHoverExited = exited;
+        }
+
         /// <summary>
-        /// 进入餐桌编辑页。<paramref name="candidateIds"/> 为碎片包开出的候选碎片 id（三选一）；
-        /// <paramref name="onDone"/> 在拼贴完成或放弃后回调（由外层负责存档与返回商店）。
+        /// 进入统一餐桌碎片选择页。商店与奖励入口只负责传入不同的完成回调。
         /// 外壳已完成 Food 态清场与世界互斥态切换，这里只做编辑页的构建。
         /// </summary>
-        public void BeginTableEdit(GameRun run, IReadOnlyList<string> candidateIds, Action<bool> onDone)
+        public void BeginTableFragmentChoice(TableFragmentChoiceRequest request)
         {
+            GameRun run = request?.Run;
+            if (run == null)
+            {
+                request?.Completed?.Invoke(false);
+                return;
+            }
+
+            SetHoveredCandidate(-1);
+            _choiceSessionVersion = request.SessionVersion;
             _editRun = run;
-            _editOnDone = onDone;
+            _editOnDone = request.Completed;
+            _requestPlacementConfirmation = request.RequestPlacementConfirmation;
             _editSelected = -1;
-            _editDragging = false;
+            _fragmentChoiceState = FragmentChoiceInteractionState.Idle;
             _editDragAnimating = false;
-            _editDragReturning = false;
+            _currentPlacementEvaluation = null;
             ConfigureEditMaxBounds(run);
 
             _editCandidates.Clear();
-            if (candidateIds != null)
+            foreach (string id in request.CandidateIds)
             {
-                foreach (string id in candidateIds)
+                TableFragmentDef def = run.GetTableFragmentDef(id);
+                if (def != null)
                 {
-                    TableFragmentDef def = run.GetTableFragmentDef(id);
-                    if (def != null)
-                    {
-                        _editCandidates.Add(def);
-                    }
+                    _editCandidates.Add(def);
                 }
             }
 
@@ -167,9 +203,24 @@ namespace GourmetProject.Game.Presentation.Battle
             _editTable = BattleSessionFactory.BuildTablePreview(run);
             LayoutEditorTable(_editTable);
             EnsureEditRoot();
-            BuildCandidateTray();
-
             _state = TableInteractionState.FragmentPlacement;
+            BuildCandidateTray();
+        }
+
+        public void BeginTableEdit(
+            GameRun run,
+            IReadOnlyList<string> candidateIds,
+            Action<bool> onDone,
+            Action<Action, Action> requestPlacementConfirmation)
+        {
+            Action<TableFragmentPlacementConfirmationRequest> confirmation = requestPlacementConfirmation == null
+                ? null
+                : request => requestPlacementConfirmation(request.Confirm, request.Cancel);
+            BeginTableFragmentChoice(new TableFragmentChoiceRequest(
+                run,
+                candidateIds,
+                onDone,
+                confirmation));
         }
 
         /// <summary>进入只读餐桌视图：复用编辑页餐桌布局，但不显示候选碎片托盘，也不启用拖拽输入。</summary>
@@ -243,26 +294,30 @@ namespace GourmetProject.Game.Presentation.Battle
         /// <summary>退出餐桌编辑页：清理动态内容，恢复餐桌常规显示。外层负责隐藏世界与返回。</summary>
         public void EndTableEdit()
         {
+            SetHoveredCandidate(-1);
             _state = TableInteractionState.None;
+            _choiceSessionVersion++;
             _editSelected = -1;
-            _editDragging = false;
+            _fragmentChoiceState = FragmentChoiceInteractionState.Idle;
             _editDragAnimating = false;
-            _editDragReturning = false;
+            _currentPlacementEvaluation = null;
             _editCandidates.Clear();
             ClearGhost();
             ClearDragVisual();
             ClearTray();
             HideBoundsWarning();
+            KillEditTableLayoutTween(restoreImmediately: true);
             _boardView?.ShowVoidAsPlaceholders(false);
             _editRun = null;
             _editTable = null;
             _editOnDone = null;
+            _requestPlacementConfirmation = null;
             _owner?.ClearTableMode();
         }
 
         public void SkipTableEditPack()
         {
-            if (!IsEditing)
+            if (!IsEditing || _fragmentChoiceState == FragmentChoiceInteractionState.AwaitingConfirmation)
             {
                 return;
             }
@@ -300,9 +355,17 @@ namespace GourmetProject.Game.Presentation.Battle
 
             Vector3 mouseWorld = WorldInput.MouseWorld(_camera);
 
-            if (_editDragReturning)
+            if (_fragmentChoiceState == FragmentChoiceInteractionState.AwaitingConfirmation
+                || _fragmentChoiceState == FragmentChoiceInteractionState.Completing)
             {
+                return;
+            }
+
+            if (_fragmentChoiceState == FragmentChoiceInteractionState.Returning)
+            {
+                SetHoveredCandidate(-1);
                 ClearGhost();
+                RestoreEditTableLayout();
                 return;
             }
 
@@ -312,8 +375,9 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            if (!_editDragging)
+            if (_fragmentChoiceState == FragmentChoiceInteractionState.Idle)
             {
+                UpdateCandidateHover(mouseWorld);
                 if (WorldInput.PrimaryPressedThisFrame && TryPickTray(mouseWorld, out int picked))
                 {
                     BeginCandidateDrag(picked, mouseWorld);
@@ -323,27 +387,28 @@ namespace GourmetProject.Game.Presentation.Battle
 
                 ClearGhost();
                 HideBoundsWarning();
+                RestoreEditTableLayout();
                 return;
             }
 
-            if (!_editDragAnimating && _editDragRoot != null)
+            if (_fragmentChoiceState != FragmentChoiceInteractionState.Dragging)
             {
-                UpdateDragFeedback(mouseWorld);
+                return;
             }
 
+            _editDragPointerWorld = mouseWorld;
+            UpdateDragFeedback(mouseWorld);
             if (WorldInput.PrimaryReleasedThisFrame || !WorldInput.PrimaryHeld)
             {
-                if (_editSelected >= 0 && TryGetHoverPlacement(mouseWorld, out GridPos origin, out bool valid) && valid)
+                TableFragmentPlacementEvaluation evaluation = _currentPlacementEvaluation;
+                if (evaluation != null && evaluation.CanCommit)
                 {
-                    PlaceAt(origin);
+                    RequestPlacementConfirmation(evaluation);
                     return;
                 }
 
                 ReturnCandidateDrag();
-                return;
             }
-
-            UpdateDragFeedback(mouseWorld);
         }
 
         private void BeginCandidateDrag(int index, Vector3 mouseWorld)
@@ -354,26 +419,32 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _editSelected = index;
-            _editDragging = true;
-            _editDragReturning = false;
+            _fragmentChoiceState = FragmentChoiceInteractionState.Dragging;
+            _currentPlacementEvaluation = null;
+            SetHoveredCandidate(-1);
             _editDragReturnCenter = TrayCenterForCandidate(index, mouseWorld);
             _editDragReturnScale = Mathf.Clamp(_editTraySize / Mathf.Max(0.0001f, _cellSize), 0.01f, 1f);
             BuildCandidateTray();
             BuildDragVisual(_editCandidates[index], _editDragReturnCenter, _editDragReturnScale);
-            Vector3 target = TryGetDragPlacement(mouseWorld, out _, out _, out _, out Vector3 snappedCenter)
-                ? snappedCenter
-                : mouseWorld;
-            StartDragAnimation(target, Vector3.one, EditDragGrabDuration, keepFollowing: true);
+            _editDragPointerWorld = mouseWorld;
+            StartDragAnimation(mouseWorld, Vector3.one, EditDragGrabDuration, keepFollowing: true);
             ClearGhost();
         }
 
         private void ReturnCandidateDrag()
         {
-            _editDragging = false;
-            _editDragReturning = true;
+            if (_fragmentChoiceState == FragmentChoiceInteractionState.Returning
+                || _fragmentChoiceState == FragmentChoiceInteractionState.Completing)
+            {
+                return;
+            }
+
+            _fragmentChoiceState = FragmentChoiceInteractionState.Returning;
+            _currentPlacementEvaluation = null;
             BuildCandidateTray();
             ClearGhost();
             HideBoundsWarning();
+            RestoreEditTableLayout();
 
             if (_editDragRoot == null)
             {
@@ -386,29 +457,43 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void UpdateDragFeedback(Vector3 mouseWorld)
         {
-            if (!_editDragging || _editSelected < 0)
+            if (_fragmentChoiceState != FragmentChoiceInteractionState.Dragging
+                || _editSelected < 0
+                || _editSelected >= _editCandidates.Count
+                || _boardView?.Mapper == null)
             {
                 ClearGhost();
                 return;
             }
 
-            if (!TryGetDragPlacement(mouseWorld, out GridPos origin, out bool valid, out _, out Vector3 snappedCenter))
+            TableFragmentDef def = _editCandidates[_editSelected];
+            _currentPlacementEvaluation = TableFragmentPlacementEvaluator.Evaluate(
+                _editTable,
+                _boardView.Mapper,
+                def,
+                mouseWorld,
+                _editMaxWidth,
+                _editMaxHeight);
+            if (_currentPlacementEvaluation == null)
             {
                 ClearGhost();
                 HideBoundsWarning();
+                HoldOrRestoreEditTableLayout();
                 return;
             }
 
-            Color color = valid ? GhostValidColor : GhostInvalidColor;
-            if (_editDragRoot != null && !_editDragAnimating)
+            if (_editDragRoot != null)
             {
-                _editDragRoot.position = snappedCenter;
+                _editDragRoot.position = mouseWorld;
             }
+            _editDragPointerWorld = mouseWorld;
 
+            GridPlacementFeedbackState feedbackState = _currentPlacementEvaluation.Feedback.OverallState;
+            Color color = GridPlacementFeedbackPalette.ColorFor(feedbackState);
             SetDragOutline(color);
-            TableFragmentDef def = _editCandidates[_editSelected];
-            ShowGhost(origin, def, color);
-            if (TryGetBoundsWarning(origin, def, out BoundsWarningInfo warning))
+            _boardView.ShowGridPlacementFeedback(_currentPlacementEvaluation.Feedback);
+            UpdateProjectedTableLayout(_currentPlacementEvaluation);
+            if (TryGetBoundsWarning(_currentPlacementEvaluation.Origin, def, out BoundsWarningInfo warning))
             {
                 ShowBoundsWarning(warning);
             }
@@ -418,111 +503,23 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        private bool TryGetHoverPlacement(Vector3 mouseWorld, out GridPos origin, out bool valid)
-        {
-            origin = default;
-            valid = false;
-            if (_editSelected < 0 || _editSelected >= _editCandidates.Count)
-            {
-                return false;
-            }
-
-            TableFragmentDef def = _editCandidates[_editSelected];
-            origin = NearestOriginForFragmentCenter(mouseWorld, def);
-            TableFragmentBuilder.FragmentPlacementStatus status = TableFragmentBuilder.GetFragmentPlacementStatusWithinMaxBounds(
-                TableFragmentBuilder.ToExistingSet(_editTable),
-                def,
-                origin,
-                _editMaxWidth,
-                _editMaxHeight);
-            valid = status == TableFragmentBuilder.FragmentPlacementStatus.Valid;
-            return true;
-        }
-
-        private bool TryGetDragPlacement(
-            Vector3 mouseWorld,
-            out GridPos origin,
-            out bool valid,
-            out TableFragmentBuilder.FragmentPlacementStatus status,
-            out Vector3 centerWorld)
-        {
-            centerWorld = mouseWorld;
-            status = TableFragmentBuilder.FragmentPlacementStatus.Detached;
-            if (!TryGetHoverPlacement(mouseWorld, out origin, out valid))
-            {
-                return false;
-            }
-
-            TableFragmentDef def = _editCandidates[_editSelected];
-            status = TableFragmentBuilder.GetFragmentPlacementStatusWithinMaxBounds(
-                TableFragmentBuilder.ToExistingSet(_editTable),
-                def,
-                origin,
-                _editMaxWidth,
-                _editMaxHeight);
-            valid = status == TableFragmentBuilder.FragmentPlacementStatus.Valid;
-            centerWorld = FragmentCenterWorld(origin, def);
-            return true;
-        }
-
-        private GridPos NearestOriginForFragmentCenter(Vector3 mouseWorld, TableFragmentDef def)
-        {
-            DiningTableCoordinateMapper mapper = _boardView.Mapper;
-            if (mapper == null)
-            {
-                return default;
-            }
-
-            Vector3 localMouse = mapper.Root != null ? mapper.Root.InverseTransformPoint(mouseWorld) : mouseWorld;
-            Vector3 originCenterLocal = localMouse - FragmentCenterOffsetLocal(def);
-            Vector3 originCenterWorld = mapper.Root != null ? mapper.Root.TransformPoint(originCenterLocal) : originCenterLocal;
-            return mapper.NearestCell(originCenterWorld);
-        }
-
-        private Vector3 FragmentCenterOffsetLocal(TableFragmentDef def)
-        {
-            List<GridPos> cells = TableFragmentBuilder.FilledCells(def);
-            if (cells.Count == 0 || _boardView.Mapper == null)
-            {
-                return Vector3.zero;
-            }
-
-            float sumX = 0f;
-            float sumY = 0f;
-            foreach (GridPos cell in cells)
-            {
-                sumX += cell.X;
-                sumY += cell.Y;
-            }
-
-            float inv = 1f / cells.Count;
-            float pitch = _boardView.Mapper.Pitch;
-            return new Vector3(sumX * inv * pitch, -sumY * inv * pitch, 0f);
-        }
-
-        private Vector3 FragmentCenterWorld(GridPos origin, TableFragmentDef def)
-        {
-            DiningTableCoordinateMapper mapper = _boardView.Mapper;
-            if (mapper == null)
-            {
-                return Vector3.zero;
-            }
-
-            Vector3 local = mapper.CellCenterLocal(origin) + FragmentCenterOffsetLocal(def);
-            return mapper.Root != null ? mapper.Root.TransformPoint(local) : local;
-        }
-
         private void PlaceAt(GridPos origin)
         {
-            if (_editSelected < 0)
+            if (_editSelected < 0 || _editSelected >= _editCandidates.Count || _editRun == null)
             {
                 return;
             }
 
             string fragmentId = _editCandidates[_editSelected].Id;
-            _editRun.AddFragmentPlacement(fragmentId, 0, origin);
+            if (!_editRun.AddFragmentPlacement(fragmentId, 0, origin))
+            {
+                ReturnCandidateDrag();
+                return;
+            }
+
+            _fragmentChoiceState = FragmentChoiceInteractionState.Completing;
             _editRun.ClearPendingFragmentPack();
-            _editDragging = false;
+            _currentPlacementEvaluation = null;
             HideBoundsWarning();
 
             Action<bool> done = _editOnDone;
@@ -530,8 +527,80 @@ namespace GourmetProject.Game.Presentation.Battle
             done?.Invoke(true);
         }
 
+        private void RequestPlacementConfirmation(TableFragmentPlacementEvaluation capturedEvaluation)
+        {
+            if (_fragmentChoiceState == FragmentChoiceInteractionState.AwaitingConfirmation
+                || capturedEvaluation == null
+                || !capturedEvaluation.CanCommit
+                || _editSelected < 0
+                || _editSelected >= _editCandidates.Count)
+            {
+                return;
+            }
+
+            _fragmentChoiceState = FragmentChoiceInteractionState.AwaitingConfirmation;
+            SetHoveredCandidate(-1);
+            int sessionVersion = _choiceSessionVersion;
+            int requestId = ++_placementConfirmationRequestId;
+            int candidateIndex = _editSelected;
+            TableFragmentDef fragment = _editCandidates[candidateIndex];
+            GridPos origin = capturedEvaluation.Origin;
+            GridPos centerCell = capturedEvaluation.CenterCell;
+
+            void Resolve(bool confirmed)
+            {
+                if (sessionVersion != _choiceSessionVersion
+                    || requestId != _placementConfirmationRequestId
+                    || !IsEditing
+                    || _fragmentChoiceState != FragmentChoiceInteractionState.AwaitingConfirmation
+                    || candidateIndex != _editSelected)
+                {
+                    return;
+                }
+
+                TableFragmentPlacementEvaluation current = TableFragmentPlacementEvaluator.EvaluateAtOrigin(
+                    _editTable,
+                    fragment,
+                    origin,
+                    centerCell,
+                    _editMaxWidth,
+                    _editMaxHeight);
+                if (confirmed && current.CanCommit)
+                {
+                    PlaceAt(origin);
+                    return;
+                }
+
+                ReturnCandidateDrag();
+            }
+
+            if (_requestPlacementConfirmation != null)
+            {
+                _requestPlacementConfirmation(new TableFragmentPlacementConfirmationRequest(
+                    sessionVersion,
+                    requestId,
+                    fragment,
+                    origin,
+                    () => Resolve(true),
+                    () => Resolve(false)));
+            }
+            else
+            {
+                Debug.LogError(
+                    "餐桌碎片拼接缺少二级确认回调，已取消本次放置，避免未经确认直接写入餐桌。",
+                    this);
+                ReturnCandidateDrag();
+            }
+        }
+
+        public static bool ExtendsAboveExistingTop(GpTable table, TableFragmentDef fragment, GridPos origin)
+        {
+            return TableFragmentPlacementEvaluator.ExtendsAboveExistingTop(table, fragment, origin);
+        }
+
         private void SkipPack()
         {
+            _fragmentChoiceState = FragmentChoiceInteractionState.Completing;
             _editRun?.ClearPendingFragmentPack();
             Action<bool> done = _editOnDone;
             EndTableEdit();
@@ -540,6 +609,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void LayoutEditorTable(GpTable board, bool useBoardArea = false)
         {
+            KillEditTableLayoutTween(restoreImmediately: false);
             // 编辑页按当前实际胃形居中；最大包围盒只参与逻辑限制，不作为背景网格铺出来。
             // 只读查看态复用 Food 态的 HUD 空区，编辑态仍保留底部托盘让位。
             BoardPlacement placement = useBoardArea && _owner != null && _owner.TryComputeTableAreaPlacement(board, out BoardPlacement boardAreaPlacement)
@@ -549,6 +619,11 @@ namespace GourmetProject.Game.Presentation.Battle
             _boardView.transform.rotation = Quaternion.identity;
             _boardView.transform.localScale = Vector3.one;
             _boardView.transform.position = placement.Position;
+            _editTableBasePosition = placement.Position;
+            _editTableBaseScale = Vector3.one;
+            _editTableLayoutTargetPosition = _editTableBasePosition;
+            _editTableLayoutTargetScale = _editTableBaseScale;
+            _editTableLayoutTargetInitialized = true;
 
             if (_piecesRoot != null && _piecesRoot.parent != _boardView.transform)
             {
@@ -559,28 +634,115 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _boardView.Build(board, _cellSize, DiningTableLayout.Gap, null, _boardCellPrefab);
-            _editGhostCells.Clear();
+            _boardView.ClearDragPlacementFeedback();
             _boardView.ShowVoidAsPlaceholders(false);
+        }
 
-            _editTraySize = Mathf.Clamp(_cellSize * 0.62f, 0.28f, 0.6f);
+        private void UpdateProjectedTableLayout(TableFragmentPlacementEvaluation evaluation)
+        {
+            if (evaluation == null
+                || !evaluation.CanCommit
+                || !evaluation.ExpandsExistingBounds
+                || _editTable == null
+                || _boardView == null)
+            {
+                HoldOrRestoreEditTableLayout();
+                return;
+            }
+
+            BoardPlacement placement = DiningTableLayout.ComputeForBounds(
+                _halfW,
+                _halfH,
+                _editTable.Width,
+                _editTable.Height,
+                evaluation.ProjectedBounds,
+                EditTableBottomMargin);
+            float scale = placement.CellSize / Mathf.Max(0.0001f, _cellSize);
+            _editTablePreviewLayoutActive = true;
+            TweenEditTableLayout(placement.Position, _editTableBaseScale * scale);
+        }
+
+        private void RestoreEditTableLayout()
+        {
+            _editTablePreviewLayoutActive = false;
+            if (_boardView == null || !_editTableLayoutTargetInitialized)
+            {
+                return;
+            }
+
+            TweenEditTableLayout(_editTableBasePosition, _editTableBaseScale);
+        }
+
+        private void HoldOrRestoreEditTableLayout()
+        {
+            // 一旦本次拖拽触发过扩 Bounds 预布局，就保持到拖拽结束。
+            // 这样鼠标继续按当前布局映射，移开不会因自动回弹再次改变落点。
+            if (_fragmentChoiceState == FragmentChoiceInteractionState.Dragging
+                && _editTablePreviewLayoutActive)
+            {
+                return;
+            }
+
+            RestoreEditTableLayout();
+        }
+
+        private void TweenEditTableLayout(Vector3 targetPosition, Vector3 targetScale)
+        {
+            if (_boardView == null)
+            {
+                return;
+            }
+
+            if (_editTableLayoutTargetInitialized
+                && Vector3.SqrMagnitude(_editTableLayoutTargetPosition - targetPosition) < 0.000001f
+                && Vector3.SqrMagnitude(_editTableLayoutTargetScale - targetScale) < 0.000001f)
+            {
+                return;
+            }
+
+            _editTableLayoutTargetInitialized = true;
+            _editTableLayoutTargetPosition = targetPosition;
+            _editTableLayoutTargetScale = targetScale;
+            _editTableLayoutTween?.Kill(false);
+
+            _editTableLayoutTween = DOTween.Sequence()
+                .Join(_boardView.transform.DOMove(targetPosition, EditTableLayoutTweenDuration))
+                .Join(_boardView.transform.DOScale(targetScale, EditTableLayoutTweenDuration))
+                .SetEase(Ease.OutCubic)
+                .SetUpdate(true)
+                .SetLink(_boardView.gameObject)
+                .OnComplete(() =>
+                {
+                    _editTableLayoutTween = null;
+                });
+        }
+
+        private void KillEditTableLayoutTween(bool restoreImmediately)
+        {
+            _editTableLayoutTween?.Kill(false);
+            _editTableLayoutTween = null;
+            if (restoreImmediately && _boardView != null && _editTableLayoutTargetInitialized)
+            {
+                _boardView.transform.position = _editTableBasePosition;
+                _boardView.transform.localScale = _editTableBaseScale;
+            }
+
+            _editTableLayoutTargetInitialized = false;
+            _editTablePreviewLayoutActive = false;
         }
 
         private void EnsureEditRoot()
         {
-            if (_editRoot == null)
+            if (_editLayoutArea == null)
             {
                 Transform root = transform.Find("BoardEditRoot");
-                _editRoot = root;
+                _editLayoutArea = root != null ? root.GetComponent<BoardEditTrayLayoutArea>() : null;
             }
 
-            if (_editRoot == null)
+            if (_editLayoutArea == null)
             {
-                Debug.LogError($"{nameof(DiningTableEditController)} 缺少 BoardEditRoot 预置节点。", this);
-                return;
+                Debug.LogError($"{nameof(DiningTableEditController)} 缺少带 {nameof(BoardEditTrayLayoutArea)} 的 BoardEditRoot 预置节点。", this);
             }
-
-            _editRoot.localPosition = Vector3.zero;
-            _editRoot.localScale = Vector3.one;
         }
 
         private void ConfigureEditMaxBounds(GameRun run)
@@ -684,13 +846,13 @@ namespace GourmetProject.Game.Presentation.Battle
             EnsureEditRoot();
             while (_editBoundsWarningLines.Count <= index)
             {
-                if (_editRoot == null || _editBoundsWarningLinePrefab == null)
+                if (EditRoot == null || _editBoundsWarningLinePrefab == null)
                 {
                     Debug.LogError($"{nameof(DiningTableEditController)} 缺少 BoundsWarningLine prefab。", this);
                     return null;
                 }
 
-                LineRenderer line = Instantiate(_editBoundsWarningLinePrefab, _editRoot);
+                LineRenderer line = Instantiate(_editBoundsWarningLinePrefab, EditRoot);
                 line.gameObject.name = $"BoundsWarning{_editBoundsWarningLines.Count}";
                 line.useWorldSpace = true;
                 line.loop = false;
@@ -802,43 +964,56 @@ namespace GourmetProject.Game.Presentation.Battle
             EnsureEditRoot();
 
             int n = _editCandidates.Count;
-            if (n == 0)
+            if (n == 0 || _editLayoutArea == null || EditRoot == null)
             {
                 return;
             }
 
-            float trayY = -_halfH + EditTrayBottomOffset;
-            float spacing = Mathf.Min(3.2f, (2f * (_halfW - 2.6f)) / n);
-            float startX = -(n - 1) * 0.5f * spacing;
+            _editTrayFragmentSizes.Clear();
+            var fragmentCells = new List<List<GridPos>>(n);
+            var fragmentBounds = new List<RectInt>(n);
+            for (int i = 0; i < n; i++)
+            {
+                List<GridPos> cells = TableFragmentBuilder.FilledCells(_editCandidates[i]);
+                fragmentCells.Add(cells);
+                if (TryGetCellBounds(cells, out RectInt bounds))
+                {
+                    fragmentBounds.Add(bounds);
+                    _editTrayFragmentSizes.Add(bounds.size);
+                }
+                else
+                {
+                    fragmentBounds.Add(new RectInt(0, 0, 1, 1));
+                    _editTrayFragmentSizes.Add(Vector2Int.one);
+                }
+            }
+
+            if (!_editLayoutArea.TryCalculate(_editTrayFragmentSizes, _editTrayColumnCenters, out _editTraySize))
+            {
+                Debug.LogError($"{nameof(DiningTableEditController)} 的 BoardEditRoot 布局区域尺寸无效。", _editLayoutArea);
+                return;
+            }
 
             for (int i = 0; i < n; i++)
             {
                 TableFragmentDef shown = _editCandidates[i];
-                List<GridPos> cells = TableFragmentBuilder.FilledCells(shown);
+                List<GridPos> cells = fragmentCells[i];
                 if (cells.Count == 0)
                 {
                     continue;
                 }
 
-                int maxX = 0;
-                int maxY = 0;
-                foreach (GridPos c in cells)
-                {
-                    if (c.X > maxX) maxX = c.X;
-                    if (c.Y > maxY) maxY = c.Y;
-                }
-
-                int w = maxX + 1;
-                int h = maxY + 1;
-                float clusterCenterX = startX + i * spacing;
-                float leftX = clusterCenterX - (w - 1) * 0.5f * _editTraySize;
-                float topY = trayY + (h - 1) * 0.5f * _editTraySize;
-
-                if ((_editDragging || _editDragReturning) && i == _editSelected)
+                if (_fragmentChoiceState != FragmentChoiceInteractionState.Idle && i == _editSelected)
                 {
                     continue;
                 }
 
+                RectInt bounds = fragmentBounds[i];
+                Vector2 columnCenter = _editTrayColumnCenters[i];
+                float centerGridX = (bounds.xMin + bounds.xMax - 1) * 0.5f;
+                float centerGridY = (bounds.yMin + bounds.yMax - 1) * 0.5f;
+                bool hasWorldBounds = false;
+                Bounds worldBounds = default;
                 foreach (GridPos c in cells)
                 {
                     DiningTableCellView cell = InstantiateTrayCell();
@@ -847,23 +1022,64 @@ namespace GourmetProject.Game.Presentation.Battle
                         continue;
                     }
 
-                    var world = new Vector3(leftX + c.X * _editTraySize, topY - c.Y * _editTraySize, 0f);
-                    ApplyTrayCellOffset(i, c, ref world, out Quaternion rotation, out float scale);
-                    cell.Configure(c, world, _editTraySize, FragmentCellSprite(shown, c), null);
+                    var local = new Vector3(
+                        columnCenter.x + (c.X - centerGridX) * _editTraySize,
+                        columnCenter.y - (c.Y - centerGridY) * _editTraySize,
+                        0f);
+                    ApplyTrayCellOffset(i, c, ref local, out Quaternion rotation, out float scale);
+                    cell.Configure(c, local, _editTraySize, FragmentCellSprite(shown, c), null);
                     cell.transform.localRotation = rotation;
                     cell.transform.localScale *= scale;
                     cell.SetColor(EditFragmentFillColor);
                     cell.SetSortingOrder(EditTraySortingOrder);
                     _editTrayCells.Add(cell);
+
+                    if (hasWorldBounds)
+                    {
+                        worldBounds.Encapsulate(cell.WorldBounds);
+                    }
+                    else
+                    {
+                        worldBounds = cell.WorldBounds;
+                        hasWorldBounds = true;
+                    }
                 }
 
-                _editTrayClusters.Add(new TrayCluster
+                if (hasWorldBounds)
                 {
-                    CandidateIndex = i,
-                    Center = new Vector3(clusterCenterX, trayY, 0f),
-                    HalfExtents = new Vector2(w * _editTraySize * 0.5f + 0.15f, h * _editTraySize * 0.5f + 0.15f),
-                });
+                    float padding = _editLayoutArea.HitPadding;
+                    worldBounds.Expand(new Vector3(padding * 2f, padding * 2f, 0f));
+                    _editTrayClusters.Add(new TrayCluster
+                    {
+                        CandidateIndex = i,
+                        WorldBounds = worldBounds,
+                    });
+                }
             }
+        }
+
+        private static bool TryGetCellBounds(IReadOnlyList<GridPos> cells, out RectInt bounds)
+        {
+            bounds = default;
+            if (cells == null || cells.Count == 0)
+            {
+                return false;
+            }
+
+            int minX = int.MaxValue;
+            int minY = int.MaxValue;
+            int maxX = int.MinValue;
+            int maxY = int.MinValue;
+            foreach (GridPos cell in cells)
+            {
+                minX = Mathf.Min(minX, cell.X);
+                minY = Mathf.Min(minY, cell.Y);
+                maxX = Mathf.Max(maxX, cell.X);
+                maxY = Mathf.Max(maxY, cell.Y);
+            }
+
+            bounds = new RectInt(minX, minY, maxX - minX + 1, maxY - minY + 1);
+            return true;
         }
 
         private Vector3 TrayCenterForCandidate(int candidateIndex, Vector3 fallback)
@@ -872,23 +1088,11 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 if (cluster.CandidateIndex == candidateIndex)
                 {
-                    return cluster.Center;
+                    return cluster.WorldBounds.center;
                 }
             }
 
             return fallback;
-        }
-
-        private void RebuildDragVisualAt(Vector3 mouseWorld)
-        {
-            if (!_editDragging || _editSelected < 0 || _editSelected >= _editCandidates.Count)
-            {
-                return;
-            }
-
-            Vector3 center = _editDragRoot != null ? _editDragRoot.position : mouseWorld;
-            Vector3 scale = _editDragRoot != null ? _editDragRoot.localScale : Vector3.one;
-            BuildDragVisual(_editCandidates[_editSelected], center, scale);
         }
 
         private void BuildDragVisual(TableFragmentDef def, Vector3 center, float scale)
@@ -900,13 +1104,13 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             ClearDragVisual();
             EnsureEditRoot();
-            if (_editRoot == null || _editDragRootPrefab == null)
+            if (EditRoot == null || _editDragRootPrefab == null)
             {
                 Debug.LogError($"{nameof(DiningTableEditController)} 缺少 BoardEditDrag prefab。", this);
                 return;
             }
 
-            _editDragRoot = Instantiate(_editDragRootPrefab, _editRoot);
+            _editDragRoot = Instantiate(_editDragRootPrefab, EditRoot);
             _editDragRoot.gameObject.name = "BoardEditDrag";
             _editDragRoot.position = center;
             _editDragRoot.localRotation = Quaternion.identity;
@@ -1062,7 +1266,9 @@ namespace GourmetProject.Game.Presentation.Battle
                     }
 
                     float eased = 1f - Mathf.Pow(1f - Mathf.Clamp01(t), 3f);
-                    _editDragRoot.position = Vector3.Lerp(startPosition, targetPosition, eased);
+                    _editDragRoot.position = keepFollowing
+                        ? _editDragPointerWorld
+                        : Vector3.Lerp(startPosition, targetPosition, eased);
                     _editDragRoot.localScale = Vector3.Lerp(startScale, targetScale, eased);
                 })
                 .SetEase(Ease.Linear)
@@ -1083,7 +1289,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             if (_editDragRoot != null)
             {
-                _editDragRoot.position = targetPosition;
+                _editDragRoot.position = keepFollowing ? _editDragPointerWorld : targetPosition;
                 _editDragRoot.localScale = targetScale;
             }
 
@@ -1099,8 +1305,8 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             ClearDragVisual(stopRoutine: false);
             _editSelected = -1;
-            _editDragging = false;
-            _editDragReturning = false;
+            _fragmentChoiceState = FragmentChoiceInteractionState.Idle;
+            _currentPlacementEvaluation = null;
             _editDragAnimating = false;
             BuildCandidateTray();
         }
@@ -1110,8 +1316,11 @@ namespace GourmetProject.Game.Presentation.Battle
             candidateIndex = -1;
             foreach (TrayCluster cluster in _editTrayClusters)
             {
-                if (Mathf.Abs(worldPos.x - cluster.Center.x) <= cluster.HalfExtents.x &&
-                    Mathf.Abs(worldPos.y - cluster.Center.y) <= cluster.HalfExtents.y)
+                Bounds bounds = cluster.WorldBounds;
+                if (worldPos.x >= bounds.min.x
+                    && worldPos.x <= bounds.max.x
+                    && worldPos.y >= bounds.min.y
+                    && worldPos.y <= bounds.max.y)
                 {
                     candidateIndex = cluster.CandidateIndex;
                     return true;
@@ -1119,6 +1328,65 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             return false;
+        }
+
+        private void UpdateCandidateHover(Vector3 worldPos)
+        {
+            SetHoveredCandidate(TryPickTray(worldPos, out int candidateIndex) ? candidateIndex : -1);
+        }
+
+        private void SetHoveredCandidate(int candidateIndex)
+        {
+            if (_hoveredCandidateIndex == candidateIndex)
+            {
+                return;
+            }
+
+            int previous = _hoveredCandidateIndex;
+            _hoveredCandidateIndex = candidateIndex;
+            if (previous >= 0 && previous < _editCandidates.Count)
+            {
+                _candidateHoverExited?.Invoke(BuildHoverInfo(previous));
+            }
+
+            if (candidateIndex < 0 || candidateIndex >= _editCandidates.Count)
+            {
+                return;
+            }
+
+            foreach (TrayCluster cluster in _editTrayClusters)
+            {
+                if (cluster.CandidateIndex == candidateIndex)
+                {
+                    _candidateHoverEntered?.Invoke(new TableFragmentHoverInfo(
+                        _choiceSessionVersion,
+                        candidateIndex,
+                        _editCandidates[candidateIndex],
+                        cluster.WorldBounds));
+                    return;
+                }
+            }
+        }
+
+        private TableFragmentHoverInfo BuildHoverInfo(int candidateIndex)
+        {
+            Bounds bounds = default;
+            foreach (TrayCluster cluster in _editTrayClusters)
+            {
+                if (cluster.CandidateIndex == candidateIndex)
+                {
+                    bounds = cluster.WorldBounds;
+                    break;
+                }
+            }
+
+            return new TableFragmentHoverInfo(
+                _choiceSessionVersion,
+                candidateIndex,
+                candidateIndex >= 0 && candidateIndex < _editCandidates.Count
+                    ? _editCandidates[candidateIndex]
+                    : null,
+                bounds);
         }
 
         private DiningTableCellView InstantiateDragCell()
@@ -1134,91 +1402,23 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private DiningTableCellView InstantiateTrayCell()
         {
-            if (_boardCellPrefab != null)
+            if (_boardCellPrefab != null && EditRoot != null)
             {
-                return Instantiate(_boardCellPrefab, _editRoot);
+                return Instantiate(_boardCellPrefab, EditRoot);
             }
 
             Debug.LogError($"{nameof(DiningTableEditController)} 缺少 DiningTableCell prefab。", this);
             return null;
         }
 
-        private void EnsureGhostCount(int count)
-        {
-            for (int i = _editGhostCells.Count - 1; i >= 0; i--)
-            {
-                if (_editGhostCells[i] == null)
-                {
-                    _editGhostCells.RemoveAt(i);
-                }
-            }
-
-            while (_editGhostCells.Count < count)
-            {
-                DiningTableCellView ghost;
-                if (_boardCellPrefab != null)
-                {
-                    ghost = Instantiate(_boardCellPrefab, _boardView.transform);
-                }
-                else
-                {
-                    Debug.LogError($"{nameof(DiningTableEditController)} 缺少 DiningTableCell prefab。", this);
-                    return;
-                }
-
-                ghost.Configure(new GridPos(0, 0), Vector3.zero, _cellSize, _editCellSprite, null);
-                ghost.gameObject.SetActive(false);
-                _editGhostCells.Add(ghost);
-            }
-        }
-
-        private void ShowGhost(GridPos origin, TableFragmentDef def, Color color)
-        {
-            if (def == null || _boardView == null || _boardView.Mapper == null)
-            {
-                ClearGhost();
-                return;
-            }
-
-            List<GridPos> cells = TableFragmentBuilder.FilledCells(def);
-            EnsureGhostCount(cells.Count);
-            DiningTableCoordinateMapper mapper = _boardView.Mapper;
-            for (int i = 0; i < _editGhostCells.Count; i++)
-            {
-                DiningTableCellView ghost = _editGhostCells[i];
-                if (ghost == null)
-                {
-                    continue;
-                }
-
-                if (i >= cells.Count)
-                {
-                    ghost.gameObject.SetActive(false);
-                    continue;
-                }
-
-                GridPos pos = cells[i].Offset(origin.X, origin.Y);
-                ghost.gameObject.SetActive(true);
-                ghost.transform.localRotation = Quaternion.identity;
-                ghost.Configure(pos, mapper.CellCenterLocal(pos), _cellSize, FragmentCellSprite(def, cells[i]), null);
-                ghost.SetOutline(color, EditGhostOutlineWidth, EditGhostFillAlpha);
-                ghost.SetSortingOrder(EditGhostSortingOrder);
-            }
-        }
-
         private void ClearGhost()
         {
-            foreach (DiningTableCellView ghost in _editGhostCells)
-            {
-                if (ghost != null)
-                {
-                    ghost.gameObject.SetActive(false);
-                }
-            }
+            _boardView?.ClearDragPlacementFeedback();
         }
 
         private void ClearTray()
         {
+            SetHoveredCandidate(-1);
             foreach (DiningTableCellView cell in _editTrayCells)
             {
                 if (cell != null)

@@ -108,6 +108,8 @@ namespace GourmetProject.Game.Presentation.Battle
         private Action<DishPieceView> _dishHoverExited;
         private Action<DiningTableCellView> _cellHoverEntered;
         private Action<DiningTableCellView> _cellHoverExited;
+        private Action<TableFragmentHoverInfo> _tableFragmentHoverEntered;
+        private Action<TableFragmentHoverInfo> _tableFragmentHoverExited;
         private Func<Vector2, bool> _preparedDishDiscardHitTest;
         private Action<bool> _preparedDishDiscardHoverChanged;
         private bool _outletHoveringDiscard;
@@ -171,6 +173,8 @@ namespace GourmetProject.Game.Presentation.Battle
 
         /// <summary>是否正处于可拖拽的餐桌编辑态。</summary>
         public bool IsEditingTable => _boardEdit != null && _boardEdit.IsEditing;
+        public bool IsTableEditDragging => _boardEdit != null && _boardEdit.IsDragging;
+        public GpTable ActiveTable => _session?.DiningTable ?? _boardEdit?.CurrentTable;
 
         private void EnsureScopeHighlights()
         {
@@ -465,11 +469,28 @@ namespace GourmetProject.Game.Presentation.Battle
         /// <summary>
         /// 进入餐桌编辑页：外壳先收起 Food 态表现并切到编辑互斥态，再把编辑页构建交给协作组件。
         /// </summary>
-        public void BeginTableEdit(GameRun run, IReadOnlyList<string> candidateIds, Action<bool> onDone)
+        public void BeginTableEdit(
+            GameRun run,
+            IReadOnlyList<string> candidateIds,
+            Action<bool> onDone,
+            Action<Action, Action> requestPlacementConfirmation = null)
         {
+            Action<TableFragmentPlacementConfirmationRequest> confirmation = requestPlacementConfirmation == null
+                ? null
+                : request => requestPlacementConfirmation(request.Confirm, request.Cancel);
+            BeginTableFragmentChoice(new TableFragmentChoiceRequest(
+                run,
+                candidateIds,
+                onDone,
+                confirmation));
+        }
+
+        public void BeginTableFragmentChoice(TableFragmentChoiceRequest request)
+        {
+            GameRun run = request?.Run;
             if (run == null)
             {
-                onDone?.Invoke(false);
+                request?.Completed?.Invoke(false);
                 return;
             }
 
@@ -485,7 +506,9 @@ namespace GourmetProject.Game.Presentation.Battle
             SetFoodWorldElementsVisible(false);
             ClearPlacedPieces();
 
-            _boardEdit.BeginTableEdit(run, candidateIds, onDone);
+            _boardEdit.BeginTableFragmentChoice(request);
+            _boardEdit.SetCandidateHoverCallbacks(_tableFragmentHoverEntered, _tableFragmentHoverExited);
+            _boardView?.SetCellHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
         }
 
         /// <summary>进入只读餐桌视图：外壳收起 Food 态并切到餐桌视图互斥态，交由协作组件复用餐桌布局渲染。</summary>
@@ -703,6 +726,16 @@ namespace GourmetProject.Game.Presentation.Battle
             _cellHoverEntered = entered;
             _cellHoverExited = exited;
             _boardView?.SetCellHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
+        }
+
+        public void SetTableFragmentHoverCallbacks(
+            Action<TableFragmentHoverInfo> entered,
+            Action<TableFragmentHoverInfo> exited)
+        {
+            _tableFragmentHoverEntered = entered;
+            _tableFragmentHoverExited = exited;
+            EnsureTableEdit();
+            _boardEdit.SetCandidateHoverCallbacks(entered, exited);
         }
 
         public void SetPreparedDishDiscardTarget(

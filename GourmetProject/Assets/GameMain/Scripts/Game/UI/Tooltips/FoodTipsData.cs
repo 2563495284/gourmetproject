@@ -368,6 +368,59 @@ namespace GourmetProject.Game.UI.Tooltips
                 }
             }
 
+            return BuildMaterialEntries(byMaterial, db);
+        }
+
+        public static IReadOnlyList<FoodMaterialTipsEntry> BuildMaterialsForFragment(
+            TableFragmentDef fragment,
+            GameplayDatabase db)
+        {
+            if (fragment == null || db == null || fragment.CellMaterials == null)
+            {
+                return Array.Empty<FoodMaterialTipsEntry>();
+            }
+
+            int width = 1;
+            if (fragment.ShapeRows != null)
+            {
+                foreach (string row in fragment.ShapeRows)
+                {
+                    width = Math.Max(width, row?.Length ?? 0);
+                }
+            }
+
+            var byMaterial = new Dictionary<string, MaterialAggregate>();
+            foreach (CellMaterial cellMaterial in fragment.CellMaterials)
+            {
+                string materialId = cellMaterial.MaterialId;
+                if (string.IsNullOrEmpty(materialId))
+                {
+                    continue;
+                }
+
+                int boardOrder = cellMaterial.Pos.Y * width + cellMaterial.Pos.X;
+                if (!byMaterial.TryGetValue(materialId, out MaterialAggregate aggregate))
+                {
+                    byMaterial[materialId] = new MaterialAggregate
+                    {
+                        Count = 1,
+                        BoardOrder = boardOrder,
+                    };
+                }
+                else
+                {
+                    aggregate.Count++;
+                    aggregate.BoardOrder = Math.Min(aggregate.BoardOrder, boardOrder);
+                }
+            }
+
+            return BuildMaterialEntries(byMaterial, db);
+        }
+
+        private static IReadOnlyList<FoodMaterialTipsEntry> BuildMaterialEntries(
+            IReadOnlyDictionary<string, MaterialAggregate> byMaterial,
+            GameplayDatabase db)
+        {
             return byMaterial
                 .OrderBy(e => e.Value.BoardOrder)
                 .Select(e =>

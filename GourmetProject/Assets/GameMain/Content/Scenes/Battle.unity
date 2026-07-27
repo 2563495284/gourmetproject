@@ -384,7 +384,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c259970fec142412f97c275ec4806018, type: 3}
   m_Name: 
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Presentation.Battle.DiningTableEditController
-  _editRoot: {fileID: 1940384804}
+  _editLayoutArea: {fileID: 1940384805}
   _editDragRootPrefab: {fileID: 8396664245392105574, guid: 93e7164cc69bb44b3b6c496906ac84a4, type: 3}
   _editBoundsWarningLinePrefab: {fileID: 1894718084639076821, guid: 4155fca9de68f4b57b35d37188ee9a3b, type: 3}
 --- !u!114 &420685138
@@ -1114,6 +1114,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1940384804}
+  - component: {fileID: 1940384805}
   m_Layer: 0
   m_Name: BoardEditRoot
   m_TagString: Untagged
@@ -1121,21 +1122,43 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &1940384804
-Transform:
+--- !u!224 &1940384804
+RectTransform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1940384803}
-  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: -3.6, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 420685136}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: -3.6}
+  m_SizeDelta: {x: 10.2, y: 3}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1940384805
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1940384803}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d2a3f2f7991d4c6da749365609706d72, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Presentation.Battle.BoardEditTrayLayoutArea
+  _padding: {x: 0.25, y: 0.25}
+  _columnGap: 0.25
+  _maxCellSize: 0.6
+  _hitPadding: 0.15
+  _previewColumns: 3
+  _gizmoColor: {r: 1, g: 0.72, b: 0.18, a: 0.9}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

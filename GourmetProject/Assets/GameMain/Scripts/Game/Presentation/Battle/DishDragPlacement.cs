@@ -52,6 +52,27 @@ namespace GourmetProject.Game.Presentation.Battle
         public IReadOnlyList<DishDragCellFeedback> Cells { get; }
 
         public bool CanCommit => OverallState == DishDragCellState.Valid;
+
+        public GridPlacementFeedback ToGridPlacementFeedback()
+        {
+            var cells = new List<GridPlacementFeedbackCell>(Cells.Count);
+            foreach (DishDragCellFeedback cell in Cells)
+            {
+                cells.Add(new GridPlacementFeedbackCell(cell.Position, ToGridState(cell.State)));
+            }
+
+            return new GridPlacementFeedback(CenterCell, ToGridState(OverallState), cells);
+        }
+
+        private static GridPlacementFeedbackState ToGridState(DishDragCellState state)
+        {
+            return state switch
+            {
+                DishDragCellState.Blocked => GridPlacementFeedbackState.Blocked,
+                DishDragCellState.Missing => GridPlacementFeedbackState.Missing,
+                _ => GridPlacementFeedbackState.Valid,
+            };
+        }
     }
 
     /// <summary>

@@ -57,6 +57,7 @@ namespace GourmetProject.Game.UI.Battle
             None,
             TableDish,
             TableCell,
+            TableFragment,
             ServingOutlet,
         }
 
@@ -165,6 +166,8 @@ namespace GourmetProject.Game.UI.Battle
         private bool _discardSettlementCallbacks;
         private DishPieceView _hoveredDishPiece;
         private DiningTableCellView _hoveredCell;
+        private int _hoveredTableFragmentSession = -1;
+        private int _hoveredTableFragmentIndex = -1;
         private FoodTipsHoverOwner _foodTipsHoverOwner;
         private SettlementRevealState _settlementReveal;
         private int _displayedCakeLayers;
@@ -447,6 +450,7 @@ namespace GourmetProject.Game.UI.Battle
                 OnDishClicked);
             _world.SetDishHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
             _world.SetCellHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
+            _world.SetTableFragmentHoverCallbacks(OnTableFragmentHoverEntered, OnTableFragmentHoverExited);
             SetSettlementScore(snapshot.LastTotal);
             RefreshAll();
         }
@@ -908,17 +912,13 @@ namespace GourmetProject.Game.UI.Battle
         /// <summary>购买碎片包后进入餐桌编辑态（世界空间）：隐藏商店/行动轴，露出餐桌手动拼贴。</summary>
         private void OpenTableEdit(Action onShown = null)
         {
-            BattleWorldController world = _world ?? BattleWorldController.Instance;
-            if (world == null || _run == null || _run.PendingFragmentPack.Count == 0)
+            if (_run == null || _run.PendingFragmentPack.Count == 0)
             {
                 onShown?.Invoke();
                 return;
             }
 
-            SwitchTo(
-                GameplayView.TableEdit,
-                () => world.BeginTableEdit(_run, _run.PendingFragmentPack, OnTableEditDone),
-                onShown);
+            OpenTableFragmentChoice(_run.PendingFragmentPack, OnTableEditDone, onShown);
         }
 
         public void OpenRewardTableEdit(Action<bool> onDone)
@@ -928,15 +928,38 @@ namespace GourmetProject.Game.UI.Battle
 
         public void OpenRewardTableEdit(IReadOnlyList<string> candidateIds, Action<bool> onDone)
         {
-            BattleWorldController world = _world ?? BattleWorldController.Instance;
-            if (world == null || _run == null || candidateIds == null || candidateIds.Count == 0)
+            if (_run == null || candidateIds == null || candidateIds.Count == 0)
             {
                 onDone?.Invoke(false);
                 return;
             }
 
             _afterRewardTableEdit = onDone;
-            SwitchTo(GameplayView.TableEdit, () => world.BeginTableEdit(_run, candidateIds, OnRewardTableEditDone));
+            OpenTableFragmentChoice(candidateIds, OnRewardTableEditDone);
+        }
+
+        private void OpenTableFragmentChoice(
+            IReadOnlyList<string> candidateIds,
+            Action<bool> completed,
+            Action onShown = null)
+        {
+            BattleWorldController world = _world ?? BattleWorldController.Instance;
+            if (world == null || _run == null || candidateIds == null || candidateIds.Count == 0)
+            {
+                completed?.Invoke(false);
+                onShown?.Invoke();
+                return;
+            }
+
+            var request = new TableFragmentChoiceRequest(
+                _run,
+                candidateIds,
+                completed,
+                OpenTableFragmentPlacementConfirmation);
+            SwitchTo(
+                GameplayView.TableEdit,
+                () => world.BeginTableFragmentChoice(request),
+                onShown);
         }
 
         public bool OpenRewardDishPack(
@@ -1055,6 +1078,7 @@ namespace GourmetProject.Game.UI.Battle
                 resetDoodle: false);
             _world.SetDishHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
             _world.SetCellHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
+            _world.SetTableFragmentHoverCallbacks(OnTableFragmentHoverEntered, OnTableFragmentHoverExited);
             RefreshAll();
         }
 
@@ -1069,6 +1093,7 @@ namespace GourmetProject.Game.UI.Battle
             _world = world;
             _world.SetDishHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
             _world.SetCellHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
+            _world.SetTableFragmentHoverCallbacks(OnTableFragmentHoverEntered, OnTableFragmentHoverExited);
         }
 
         private void OnTableEditDone(bool placed)
@@ -1083,6 +1108,26 @@ namespace GourmetProject.Game.UI.Battle
             Action<bool> cb = _afterRewardTableEdit;
             _afterRewardTableEdit = null;
             SwitchTo(GameplayView.None, onShown: () => cb?.Invoke(placed));
+        }
+
+        private void OpenTableFragmentPlacementConfirmation(TableFragmentPlacementConfirmationRequest request)
+        {
+            if (request == null)
+            {
+                return;
+            }
+
+            HideFoodTips();
+            var data = new ConfirmDialogData
+            {
+                Title = "确认拼接",
+                Message = "确定要将这块餐桌碎片拼到当前餐桌上吗？",
+                ConfirmText = "确认拼接",
+                CancelText = "取消",
+                OnConfirm = request.Confirm,
+                OnCancel = request.Cancel,
+            };
+            GameApp.UI.OpenUIForm(UIForms.ConfirmDialog, UIForms.GroupDialog, data);
         }
 
         private void OnTableEditSkipClicked()
@@ -2032,6 +2077,7 @@ namespace GourmetProject.Game.UI.Battle
                 OnDishClicked);
             _world.SetDishHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
             _world.SetCellHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
+            _world.SetTableFragmentHoverCallbacks(OnTableFragmentHoverEntered, OnTableFragmentHoverExited);
             RefreshAll();
         }
 
@@ -2265,8 +2311,17 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            if (_current != GameplayView.Food && _current != GameplayView.TableView)
+            if (_current != GameplayView.Food
+                && _current != GameplayView.TableView
+                && _current != GameplayView.TableEdit)
             {
+                return;
+            }
+
+            BattleWorldController world = _world ?? BattleWorldController.Instance;
+            if (_current == GameplayView.TableEdit && world != null && world.IsTableEditDragging)
+            {
+                HideCellMaterialTips(cell);
                 return;
             }
 
@@ -2324,6 +2379,13 @@ namespace GourmetProject.Game.UI.Battle
                 return table != null && db != null;
             }
 
+            if (_current == GameplayView.TableEdit && _run != null)
+            {
+                table = (_world ?? BattleWorldController.Instance)?.ActiveTable;
+                db = _run.Database;
+                return table != null && db != null;
+            }
+
             table = null;
             db = null;
             return false;
@@ -2349,10 +2411,78 @@ namespace GourmetProject.Game.UI.Battle
             HideFoodTips();
         }
 
+        private void OnTableFragmentHoverEntered(TableFragmentHoverInfo info)
+        {
+            TableFragmentDef fragment = info.Definition;
+            if (_current != GameplayView.TableEdit
+                || fragment == null
+                || _run?.Database == null
+                || _tips == null)
+            {
+                return;
+            }
+
+            BattleWorldController world = _world ?? BattleWorldController.Instance;
+            if (world != null && world.IsTableEditDragging)
+            {
+                return;
+            }
+
+            IReadOnlyList<FoodMaterialTipsEntry> materials =
+                FoodTipsDataFactory.BuildMaterialsForFragment(fragment, _run.Database);
+            if (materials == null || materials.Count == 0)
+            {
+                HideTableFragmentMaterialTips(info);
+                return;
+            }
+
+            FoodTipsView tips = _tips.Food;
+            if (tips == null)
+            {
+                return;
+            }
+
+            _hoveredDishPiece = null;
+            _hoveredCell = null;
+            _hoveredTableFragmentSession = info.SessionVersion;
+            _hoveredTableFragmentIndex = info.CandidateIndex;
+            _foodTipsHoverOwner = FoodTipsHoverOwner.TableFragment;
+            tips.BindMaterialsOnly(materials);
+            tips.Show();
+            tips.transform.SetAsLastSibling();
+            tips.PlaceAroundWorldBounds(
+                info.WorldBounds,
+                world != null ? world.WorldCamera : Camera.main,
+                GetComponentInParent<Canvas>());
+        }
+
+        private void OnTableFragmentHoverExited(TableFragmentHoverInfo info)
+        {
+            HideTableFragmentMaterialTips(info);
+        }
+
+        private void HideTableFragmentMaterialTips(TableFragmentHoverInfo info)
+        {
+            if (_foodTipsHoverOwner != FoodTipsHoverOwner.TableFragment)
+            {
+                return;
+            }
+
+            if (_hoveredTableFragmentSession != info.SessionVersion
+                || _hoveredTableFragmentIndex != info.CandidateIndex)
+            {
+                return;
+            }
+
+            HideFoodTips();
+        }
+
         private void HideFoodTips()
         {
             _hoveredDishPiece = null;
             _hoveredCell = null;
+            _hoveredTableFragmentSession = -1;
+            _hoveredTableFragmentIndex = -1;
             _foodTipsHoverOwner = FoodTipsHoverOwner.None;
             (_world ?? BattleWorldController.Instance)?.ClearDishScopeHighlights();
             if (_tips != null)
@@ -2375,6 +2505,7 @@ namespace GourmetProject.Game.UI.Battle
 
             world.SetDishHoverCallbacks(null, null);
             world.SetCellHoverCallbacks(null, null);
+            world.SetTableFragmentHoverCallbacks(null, null);
         }
 
         private void OnEatClicked()

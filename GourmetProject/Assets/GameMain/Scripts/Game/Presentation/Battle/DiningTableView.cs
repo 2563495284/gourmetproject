@@ -17,9 +17,6 @@ namespace GourmetProject.Game.Presentation.Battle
 
         // 餐桌编辑页：把「胃外虚格」显示为浅色占位（原型里的虚线格），让玩家看到可扩展的最大网格范围。
         private static readonly Color VoidPlaceholderColor = new Color(0.85f, 0.85f, 0.85f, 0.22f);
-        private static readonly Color DragValidColor = new Color(0.30f, 1f, 0.42f, 0.95f);
-        private static readonly Color DragMissingColor = new Color(1f, 0.76f, 0.12f, 0.95f);
-        private static readonly Color DragBlockedColor = new Color(1f, 0.25f, 0.22f, 0.95f);
         private const int DragFeedbackSortingOrder = -80;
 
         private bool _voidAsPlaceholder;
@@ -203,14 +200,19 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public void ShowDragPlacementFeedback(DishDragPlacementResult result)
         {
+            ShowGridPlacementFeedback(result?.ToGridPlacementFeedback());
+        }
+
+        public void ShowGridPlacementFeedback(GridPlacementFeedback result)
+        {
             if (result == null || Mapper == null)
             {
                 ClearDragPlacementFeedback();
                 return;
             }
 
-            var display = new Dictionary<GridPos, DishDragCellState>();
-            foreach (DishDragCellFeedback cell in result.Cells)
+            var display = new Dictionary<GridPos, GridPlacementFeedbackState>();
+            foreach (GridPlacementFeedbackCell cell in result.Cells)
             {
                 display[cell.Position] = cell.State;
             }
@@ -225,7 +227,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             int index = 0;
-            foreach (KeyValuePair<GridPos, DishDragCellState> entry in display)
+            foreach (KeyValuePair<GridPos, GridPlacementFeedbackState> entry in display)
             {
                 DiningTableCellView overlay = _dragFeedbackCells[index++];
                 bool center = entry.Key.Equals(result.CenterCell);
@@ -235,7 +237,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 overlay.name = "DragPlacementFeedback";
                 overlay.SetInteractionEnabled(false);
                 overlay.SetOutline(
-                    DragFeedbackColor(entry.Value),
+                    GridPlacementFeedbackPalette.ColorFor(entry.Value),
                     center ? 0.12f : 0.08f,
                     center ? 0.28f : 0.16f);
                 overlay.SetSorting(BattleSorting.Fx, DragFeedbackSortingOrder);
@@ -425,16 +427,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 overlay.gameObject.SetActive(false);
                 _dragFeedbackCells.Add(overlay);
             }
-        }
-
-        private static Color DragFeedbackColor(DishDragCellState state)
-        {
-            return state switch
-            {
-                DishDragCellState.Blocked => DragBlockedColor,
-                DishDragCellState.Missing => DragMissingColor,
-                _ => DragValidColor,
-            };
         }
 
         private BattleScopeRegionOutlineView EnsureScopeRegionOutline(

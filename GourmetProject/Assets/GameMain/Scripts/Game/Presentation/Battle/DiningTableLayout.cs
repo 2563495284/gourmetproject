@@ -1,4 +1,5 @@
 using UnityEngine;
+using GourmetProject.Gameplay.Board;
 using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 
 namespace GourmetProject.Game.Presentation.Battle
@@ -59,6 +60,30 @@ namespace GourmetProject.Game.Presentation.Battle
             return ComputeInRect(boardLeft, boardRight, boardBottom, boardTop, board, MinCellSize);
         }
 
+        /// <summary>按预测存在格包围盒计算餐桌布局，不必先构造一张临时餐桌。</summary>
+        public static BoardPlacement ComputeForBounds(
+            float halfW,
+            float halfH,
+            int boardWidth,
+            int boardHeight,
+            TableFragmentBuilder.PlacementBounds bounds,
+            float bottomMargin)
+        {
+            float boardLeft = -halfW + SideMargin;
+            float boardRight = halfW - SideMargin;
+            float boardTop = halfH - TopMargin;
+            float boardBottom = -halfH + bottomMargin;
+            return ComputeInRectForBounds(
+                boardLeft,
+                boardRight,
+                boardBottom,
+                boardTop,
+                boardWidth,
+                boardHeight,
+                bounds,
+                MinCellSize);
+        }
+
         /// <summary>
         /// 在给定「世界矩形可用区」内把胃包围盒铺满并居中（用于把餐桌锁定在屏幕固定区域）。
         /// <paramref name="minCellSize"/> 传更小或 0 可让超大餐桌继续缩放以完整显示。
@@ -71,9 +96,6 @@ namespace GourmetProject.Game.Presentation.Battle
             GpTable board,
             float minCellSize)
         {
-            float availW = Mathf.Max(1f, boardRight - boardLeft);
-            float availH = Mathf.Max(1f, boardTop - boardBottom);
-
             if (!board.TryGetExistingBounds(out int minX, out int minY, out int maxX, out int maxY))
             {
                 minX = minY = 0;
@@ -81,6 +103,33 @@ namespace GourmetProject.Game.Presentation.Battle
                 maxY = board.Height - 1;
             }
 
+            return ComputeInRectForBounds(
+                boardLeft,
+                boardRight,
+                boardBottom,
+                boardTop,
+                board.Width,
+                board.Height,
+                new TableFragmentBuilder.PlacementBounds(minX, minY, maxX, maxY),
+                minCellSize);
+        }
+
+        public static BoardPlacement ComputeInRectForBounds(
+            float boardLeft,
+            float boardRight,
+            float boardBottom,
+            float boardTop,
+            int boardWidth,
+            int boardHeight,
+            TableFragmentBuilder.PlacementBounds bounds,
+            float minCellSize)
+        {
+            float availW = Mathf.Max(1f, boardRight - boardLeft);
+            float availH = Mathf.Max(1f, boardTop - boardBottom);
+            int minX = bounds.MinX;
+            int minY = bounds.MinY;
+            int maxX = bounds.MaxX;
+            int maxY = bounds.MaxY;
             int boxW = Mathf.Max(1, maxX - minX + 1);
             int boxH = Mathf.Max(1, maxY - minY + 1);
             float lowerBound = Mathf.Min(minCellSize, MaxCellSize);
@@ -89,8 +138,8 @@ namespace GourmetProject.Game.Presentation.Battle
             // mapper 仍按完整 Width×Height 排布；这里反推 Position，使胃包围盒的几何中心落在可用区中心。
             var areaCenter = new Vector3((boardLeft + boardRight) * 0.5f, (boardTop + boardBottom) * 0.5f, 0f);
             float pitch = cellSize + Gap;
-            float fullWorldWidth = board.Width * cellSize + Mathf.Max(0, board.Width - 1) * Gap;
-            float fullWorldHeight = board.Height * cellSize + Mathf.Max(0, board.Height - 1) * Gap;
+            float fullWorldWidth = boardWidth * cellSize + Mathf.Max(0, boardWidth - 1) * Gap;
+            float fullWorldHeight = boardHeight * cellSize + Mathf.Max(0, boardHeight - 1) * Gap;
             float boxCenterIndexX = (minX + maxX) * 0.5f;
             float boxCenterIndexY = (minY + maxY) * 0.5f;
             var position = new Vector3(
