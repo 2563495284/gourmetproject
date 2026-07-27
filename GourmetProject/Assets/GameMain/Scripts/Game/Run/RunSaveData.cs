@@ -329,6 +329,7 @@ namespace GourmetProject.Game.Run
     public sealed class ShopEntrySaveData
     {
         public ShopEntryKind Kind;
+        public int SlotIndex = -1;
         public string Id;
         public string Name;
         public string Desc;

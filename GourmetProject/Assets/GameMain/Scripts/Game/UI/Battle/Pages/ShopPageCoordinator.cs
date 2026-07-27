@@ -137,8 +137,16 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 return;
             }
 
-            _stock.Remove(entry);
-            TryAutoRestock(entry);
+            ShopEntry restock = TryAutoRestock(entry);
+            if (restock != null)
+            {
+                entry.RestockFrom(restock);
+            }
+            else
+            {
+                entry.ClearStock();
+            }
+
             RefreshPanel();
 
             // 碎片包：购买后进入餐桌编辑页手动拼贴（金币已扣，待开包状态已置）。
@@ -154,31 +162,40 @@ namespace GourmetProject.Game.UI.Battle.Pages
             }
         }
 
-        private void TryAutoRestock(ShopEntry purchasedEntry)
+        private ShopEntry TryAutoRestock(ShopEntry purchasedEntry)
         {
             GameRun run = _host.Run;
             if (run == null || purchasedEntry == null || !new ItemRuntime(run).AutoRestock())
             {
-                return;
+                return null;
             }
 
             string restockKey = BuildRestockKey(purchasedEntry);
             IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Shop, restockKey);
             IRandomStream lootRng = GameApp.Random.DomainStream(SeedDomains.Loot, $"loot_{restockKey}");
+            var remainingStock = new List<ShopEntry>(_stock.Count);
+            foreach (ShopEntry entry in _stock)
+            {
+                if (entry != null && !ReferenceEquals(entry, purchasedEntry))
+                {
+                    remainingStock.Add(entry);
+                }
+            }
+
             ShopEntry restock = ShopService.RollRestockEntry(
                 GameApp.Config.Tables,
                 run,
                 purchasedEntry.Kind,
                 rng,
                 lootRng,
-                _stock);
+                remainingStock);
             if (restock == null)
             {
-                return;
+                return null;
             }
 
-            _stock.Add(restock);
             new ItemRuntime(run).FlashTriggered(m => m.AutoRestock());
+            return restock;
         }
 
         private string BuildRestockKey(ShopEntry purchasedEntry)
@@ -192,13 +209,15 @@ namespace GourmetProject.Game.UI.Battle.Pages
             builder.Append(purchasedEntry.Id);
             foreach (ShopEntry entry in _stock)
             {
-                if (entry == null)
+                if (entry == null || ReferenceEquals(entry, purchasedEntry))
                 {
                     continue;
                 }
 
                 builder.Append('|');
                 builder.Append(entry.Kind);
+                builder.Append(':');
+                builder.Append(entry.SlotIndex);
                 builder.Append(':');
                 builder.Append(entry.Id);
             }

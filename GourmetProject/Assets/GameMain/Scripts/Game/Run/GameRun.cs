@@ -1181,9 +1181,37 @@ namespace GourmetProject.Game.Run
                 return result;
             }
 
+            var usedSlots = new Dictionary<ShopEntryKind, HashSet<int>>();
             foreach (ShopEntrySaveData entry in _pendingShopStock)
             {
-                result.Add(new ShopEntry(entry.Kind, entry.Id, entry.Name, entry.Desc, entry.BasePrice, entry.Price));
+                if (entry == null)
+                {
+                    continue;
+                }
+
+                if (!usedSlots.TryGetValue(entry.Kind, out HashSet<int> used))
+                {
+                    used = new HashSet<int>();
+                    usedSlots.Add(entry.Kind, used);
+                }
+
+                int slotIndex = entry.SlotIndex;
+                if (slotIndex < 0 || !used.Add(slotIndex))
+                {
+                    slotIndex = NextAvailableShopSlot(used);
+                    used.Add(slotIndex);
+                }
+
+                result.Add(string.IsNullOrEmpty(entry.Id)
+                    ? ShopEntry.CreateEmpty(entry.Kind, slotIndex)
+                    : new ShopEntry(
+                        entry.Kind,
+                        entry.Id,
+                        entry.Name,
+                        entry.Desc,
+                        entry.BasePrice,
+                        entry.Price,
+                        slotIndex));
             }
 
             return result;
@@ -1213,6 +1241,7 @@ namespace GourmetProject.Game.Run
                 _pendingShopStock.Add(new ShopEntrySaveData
                 {
                     Kind = entry.Kind,
+                    SlotIndex = entry.SlotIndex,
                     Id = entry.Id,
                     Name = entry.Name,
                     Desc = entry.Desc,
@@ -1220,6 +1249,17 @@ namespace GourmetProject.Game.Run
                     Price = entry.Price,
                 });
             }
+        }
+
+        private static int NextAvailableShopSlot(HashSet<int> used)
+        {
+            int slotIndex = 0;
+            while (used != null && used.Contains(slotIndex))
+            {
+                slotIndex++;
+            }
+
+            return slotIndex;
         }
 
         public void ClearPendingShopStock()

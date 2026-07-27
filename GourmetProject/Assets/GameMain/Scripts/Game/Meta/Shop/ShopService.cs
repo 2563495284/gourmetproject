@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using GourmetProject.Core.Rng;
 using GourmetProject.Gameplay.Model;
@@ -19,26 +20,104 @@ namespace GourmetProject.Game.Meta
 
     public sealed class ShopEntry
     {
-        public ShopEntry(ShopEntryKind kind, string id, string name, string desc, int basePrice, int price = -1)
+        public ShopEntry(
+            ShopEntryKind kind,
+            string id,
+            string name,
+            string desc,
+            int basePrice,
+            int price = -1,
+            int slotIndex = -1)
         {
             Kind = kind;
-            Id = id;
-            Name = name;
-            Desc = desc;
-            BasePrice = System.Math.Max(1, basePrice);
-            Price = price > 0 ? price : BasePrice;
+            SlotIndex = slotIndex;
+            SetContent(id, name, desc, basePrice, price);
         }
 
         public ShopEntryKind Kind { get; }
-        public string Id { get; }
-        public string Name { get; }
-        public string Desc { get; }
-        public int BasePrice { get; }
+
+        /// <summary>同一商品类型内的稳定槽位编号；兼容临时旧调用时可为 -1。</summary>
+        public int SlotIndex { get; }
+
+        public bool IsStocked => !string.IsNullOrEmpty(Id);
+
+        public string Id { get; private set; }
+        public string Name { get; private set; }
+        public string Desc { get; private set; }
+        public int BasePrice { get; private set; }
         public int Price { get; private set; }
+
+        /// <summary>槽位被清空或在原位补货时触发；槽位身份不会改变。</summary>
+        public event Action<ShopEntry> StockChanged;
+
+        public static ShopEntry CreateEmpty(ShopEntryKind kind, int slotIndex)
+        {
+            return new ShopEntry(kind, string.Empty, string.Empty, string.Empty, 0, 0, slotIndex);
+        }
 
         public void SetPrice(int price)
         {
-            Price = System.Math.Max(1, price);
+            Price = IsStocked ? System.Math.Max(1, price) : 0;
+        }
+
+        public void ClearStock()
+        {
+            if (!IsStocked)
+            {
+                return;
+            }
+
+            SetContent(string.Empty, string.Empty, string.Empty, 0, 0);
+            StockChanged?.Invoke(this);
+        }
+
+        public void RestockFrom(ShopEntry replacement)
+        {
+            if (replacement == null)
+            {
+                throw new ArgumentNullException(nameof(replacement));
+            }
+
+            if (replacement.Kind != Kind)
+            {
+                throw new ArgumentException(
+                    $"Cannot restock {Kind} slot with {replacement.Kind}.",
+                    nameof(replacement));
+            }
+
+            if (!replacement.IsStocked)
+            {
+                throw new ArgumentException("Replacement entry must be stocked.", nameof(replacement));
+            }
+
+            SetContent(
+                replacement.Id,
+                replacement.Name,
+                replacement.Desc,
+                replacement.BasePrice,
+                replacement.Price);
+            StockChanged?.Invoke(this);
+        }
+
+        private void SetContent(
+            string id,
+            string name,
+            string desc,
+            int basePrice,
+            int price)
+        {
+            Id = id ?? string.Empty;
+            Name = name ?? string.Empty;
+            Desc = desc ?? string.Empty;
+            if (!IsStocked)
+            {
+                BasePrice = 0;
+                Price = 0;
+                return;
+            }
+
+            BasePrice = System.Math.Max(1, basePrice);
+            Price = price > 0 ? price : BasePrice;
         }
     }
 
@@ -65,6 +144,9 @@ namespace GourmetProject.Game.Meta
             int activeCount = ConfiguredSlotCount(tables.TbGameBase.ShopActiveItemSaleSlotCount);
             int dishCount = ConfiguredSlotCount(tables.TbGameBase.ShopFoodSaleSlotCount);
             int distanceFloor = HiddenScoreDistanceFloor(tables);
+            int passiveSlotIndex = 0;
+            int activeSlotIndex = 0;
+            int dishSlotIndex = 0;
 
             foreach (string itemId in ItemPoolService.Roll(tables, run, cfg.ItemKind.Passive, lootRng, passiveCount, passiveHidden, distanceFloor))
             {
@@ -72,7 +154,14 @@ namespace GourmetProject.Game.Meta
                 if (item != null)
                 {
                     int basePrice = item.Price;
-                    stock.Add(CreateEntry(run, ShopEntryKind.PassiveItem, item.Id, item.Name, item.Desc, FluctuatePrice(tables, basePrice, lootRng)));
+                    stock.Add(CreateEntry(
+                        run,
+                        ShopEntryKind.PassiveItem,
+                        item.Id,
+                        item.Name,
+                        item.Desc,
+                        FluctuatePrice(tables, basePrice, lootRng),
+                        passiveSlotIndex++));
                 }
             }
 
@@ -82,7 +171,14 @@ namespace GourmetProject.Game.Meta
                 if (item != null)
                 {
                     int basePrice = item.Price;
-                    stock.Add(CreateEntry(run, ShopEntryKind.ActiveItem, item.Id, item.Name, item.Desc, FluctuatePrice(tables, basePrice, lootRng)));
+                    stock.Add(CreateEntry(
+                        run,
+                        ShopEntryKind.ActiveItem,
+                        item.Id,
+                        item.Name,
+                        item.Desc,
+                        FluctuatePrice(tables, basePrice, lootRng),
+                        activeSlotIndex++));
                 }
             }
 
@@ -91,7 +187,14 @@ namespace GourmetProject.Game.Meta
                 cfg.DishBase baseDish = tables.TbDishBase.GetOrDefault(variant.BaseId);
                 string name = baseDish != null ? baseDish.Name : variant.Id;
                 int price = variant.Price > 0 ? variant.Price : 30;
-                stock.Add(CreateEntry(run, ShopEntryKind.Dish, variant.Id, name, "加入菜谱池的菜品", FluctuatePrice(tables, price, rng)));
+                stock.Add(CreateEntry(
+                    run,
+                    ShopEntryKind.Dish,
+                    variant.Id,
+                    name,
+                    "加入菜谱池的菜品",
+                    FluctuatePrice(tables, price, rng),
+                    dishSlotIndex++));
             }
 
             // 碎片包：仅当存在「可拼入当前餐桌」的候选碎片时才上架（避免买了无处可放）。
@@ -103,7 +206,8 @@ namespace GourmetProject.Game.Meta
                     "fragment_pack",
                     "碎片包",
                     FragmentPackDesc(tables),
-                    FragmentPackCost(run)));
+                    FragmentPackCost(run),
+                    0));
             }
 
             return stock;
@@ -129,7 +233,14 @@ namespace GourmetProject.Game.Meta
                 case ShopEntryKind.PassiveItem:
                     {
                         int hidden = HiddenScoreService.PassiveItemHiddenScore(run, run.LastActionContext);
-                        foreach (string itemId in ItemPoolService.Roll(tables, run, cfg.ItemKind.Passive, lootRng, ExistingCount(existingStock) + 1, hidden, HiddenScoreDistanceFloor(tables)))
+                        foreach (string itemId in ItemPoolService.Roll(
+                                     tables,
+                                     run,
+                                     cfg.ItemKind.Passive,
+                                     lootRng,
+                                     ExistingStockedCount(existingStock, kind) + 1,
+                                     hidden,
+                                     HiddenScoreDistanceFloor(tables)))
                         {
                             if (ContainsEntryId(existingStock, kind, itemId))
                             {
@@ -151,8 +262,20 @@ namespace GourmetProject.Game.Meta
                 case ShopEntryKind.ActiveItem:
                     {
                         int hidden = HiddenScoreService.PassiveItemHiddenScore(run, run.LastActionContext);
-                        foreach (string itemId in ItemPoolService.Roll(tables, run, cfg.ItemKind.Active, lootRng, 1, hidden, HiddenScoreDistanceFloor(tables)))
+                        foreach (string itemId in ItemPoolService.Roll(
+                                     tables,
+                                     run,
+                                     cfg.ItemKind.Active,
+                                     lootRng,
+                                     ExistingStockedCount(existingStock, kind) + 1,
+                                     hidden,
+                                     HiddenScoreDistanceFloor(tables)))
                         {
+                            if (ContainsEntryId(existingStock, kind, itemId))
+                            {
+                                continue;
+                            }
+
                             ItemDefinition item = ItemDefinition.Get(tables, itemId, cfg.ItemKind.Active);
                             if (item == null)
                             {
@@ -168,7 +291,12 @@ namespace GourmetProject.Game.Meta
                 case ShopEntryKind.Dish:
                     {
                         int hidden = HiddenScoreService.DishHiddenScore(run, run.LastActionContext);
-                        foreach (cfg.DishVariant variant in RollDishVariants(tables, run, hidden, rng, ExistingCount(existingStock) + 1))
+                        foreach (cfg.DishVariant variant in RollDishVariants(
+                                     tables,
+                                     run,
+                                     hidden,
+                                     rng,
+                                     ExistingStockedCount(existingStock, kind) + 1))
                         {
                             if (ContainsEntryId(existingStock, kind, variant.Id))
                             {
@@ -224,7 +352,7 @@ namespace GourmetProject.Game.Meta
 
         public static int CurrentPrice(GameRun run, ShopEntry entry)
         {
-            if (entry == null)
+            if (entry == null || !entry.IsStocked)
             {
                 return 0;
             }
@@ -239,16 +367,26 @@ namespace GourmetProject.Game.Meta
             return run.ModifyEventShopPrice(itemPrice);
         }
 
-        private static ShopEntry CreateEntry(GameRun run, ShopEntryKind kind, string id, string name, string desc, int basePrice)
+        private static ShopEntry CreateEntry(
+            GameRun run,
+            ShopEntryKind kind,
+            string id,
+            string name,
+            string desc,
+            int basePrice,
+            int slotIndex = -1)
         {
-            var entry = new ShopEntry(kind, id, name, desc, basePrice);
+            var entry = new ShopEntry(kind, id, name, desc, basePrice, slotIndex: slotIndex);
             RefreshPrice(run, entry);
             return entry;
         }
 
         private static void RefreshPrice(GameRun run, ShopEntry entry)
         {
-            entry?.SetPrice(CurrentPrice(run, entry));
+            if (entry != null)
+            {
+                entry.SetPrice(CurrentPrice(run, entry));
+            }
         }
 
         private static int ConfiguredSlotCount(int value)
@@ -256,9 +394,25 @@ namespace GourmetProject.Game.Meta
             return System.Math.Max(0, value);
         }
 
-        private static int ExistingCount(IReadOnlyList<ShopEntry> stock)
+        private static int ExistingStockedCount(
+            IReadOnlyList<ShopEntry> stock,
+            ShopEntryKind kind)
         {
-            return stock != null ? stock.Count : 0;
+            if (stock == null)
+            {
+                return 0;
+            }
+
+            int count = 0;
+            foreach (ShopEntry entry in stock)
+            {
+                if (entry != null && entry.IsStocked && entry.Kind == kind)
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
 
         private static bool ContainsEntryId(IReadOnlyList<ShopEntry> stock, ShopEntryKind kind, string id)
@@ -270,7 +424,10 @@ namespace GourmetProject.Game.Meta
 
             foreach (ShopEntry entry in stock)
             {
-                if (entry != null && entry.Kind == kind && entry.Id == id)
+                if (entry != null
+                    && entry.IsStocked
+                    && entry.Kind == kind
+                    && entry.Id == id)
                 {
                     return true;
                 }
@@ -325,7 +482,7 @@ namespace GourmetProject.Game.Meta
         /// <summary>购买一件商品：扣金并结算到运行状态。返回是否成功。</summary>
         public static bool Purchase(GameRun run, ShopEntry entry)
         {
-            if (run == null || entry == null)
+            if (run == null || entry == null || !entry.IsStocked)
             {
                 return false;
             }

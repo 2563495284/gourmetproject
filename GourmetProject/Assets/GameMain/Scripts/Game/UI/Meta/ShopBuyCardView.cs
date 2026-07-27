@@ -41,7 +41,13 @@ namespace GourmetProject.Game.UI.Meta
             Action<ShopBuyCardView> onTargetPointerDown = null,
             Action<ShopBuyCardView, Vector2> onTargetPointerUp = null)
         {
-            var entry = new ShopEntry(ShopEntryKind.PassiveItem, string.Empty, name, desc, price, price);
+            var entry = new ShopEntry(
+                ShopEntryKind.PassiveItem,
+                "legacy_shop_card",
+                name,
+                desc,
+                price,
+                price);
             Bind(new ShopBuyItemViewContext(
                 null,
                 entry,

@@ -55,8 +55,10 @@ namespace GourmetProject.Game.UI.Meta
         private RectTransform _iconRect;
         private RectTransform _interactionFeedbackRect;
         private Canvas _canvas;
+        private CanvasGroup _canvasGroup;
         private bool _affordable;
         private bool _usesTargeting;
+        private bool _isStocked;
         private ShopBuyItemViewContext _context;
         private Tween _failureTween;
         private Selectable.Transition _defaultButtonTransition;
@@ -68,22 +70,49 @@ namespace GourmetProject.Game.UI.Meta
         {
             _context = context;
             EnsureDefaultButtonTransition();
-            _affordable = context?.Affordable == true;
+            _isStocked = context?.Entry?.IsStocked == true;
+            _affordable = _isStocked && context.Affordable;
             _usesTargeting = UsesTargeting(context);
             EnsurePointerProxy();
             ConfigureContent(context);
-            SetBuyLabel(context?.Entry != null ? context.Entry.Price : 0);
+            SetBuyLabel(_isStocked ? context.Entry.Price : 0);
 
             if (_buyButton == null)
             {
+                SetStocked(_isStocked);
                 return;
             }
 
-            _buyButton.interactable = true;
             _buyButton.onClick.RemoveAllListeners();
-            if (!_usesTargeting)
+            if (_isStocked && !_usesTargeting)
             {
                 _buyButton.onClick.AddListener(HandleImmediateBuyClicked);
+            }
+
+            SetStocked(_isStocked);
+        }
+
+        /// <summary>
+        /// 切换槽位内容的可见和交互状态。根节点始终保持激活，以继续占据布局位置。
+        /// </summary>
+        public void SetStocked(bool stocked)
+        {
+            _isStocked = stocked;
+            if (_canvasGroup == null)
+            {
+                _canvasGroup = GetComponent<CanvasGroup>();
+                if (_canvasGroup == null)
+                {
+                    _canvasGroup = gameObject.AddComponent<CanvasGroup>();
+                }
+            }
+
+            _canvasGroup.alpha = stocked ? 1f : 0f;
+            _canvasGroup.interactable = stocked;
+            _canvasGroup.blocksRaycasts = stocked;
+            if (_buyButton != null)
+            {
+                _buyButton.interactable = stocked;
             }
         }
 
@@ -220,6 +249,11 @@ namespace GourmetProject.Game.UI.Meta
 
         private void HandleImmediateBuyClicked()
         {
+            if (!_isStocked || _context?.Entry?.IsStocked != true)
+            {
+                return;
+            }
+
             if (!_affordable)
             {
                 PlayPurchaseFailed();
@@ -234,7 +268,7 @@ namespace GourmetProject.Game.UI.Meta
 
         private void HandlePointerDown(PointerEventData eventData)
         {
-            if (!_usesTargeting)
+            if (!_isStocked || _context?.Entry?.IsStocked != true || !_usesTargeting)
             {
                 return;
             }
@@ -250,7 +284,10 @@ namespace GourmetProject.Game.UI.Meta
 
         private void HandlePointerUp(PointerEventData eventData)
         {
-            if (!_usesTargeting || !_affordable)
+            if (!_isStocked
+                || _context?.Entry?.IsStocked != true
+                || !_usesTargeting
+                || !_affordable)
             {
                 return;
             }
@@ -263,7 +300,7 @@ namespace GourmetProject.Game.UI.Meta
             Text label = BuyLabel;
             if (label != null)
             {
-                label.text = $"购买 {price}";
+                label.text = _isStocked ? $"购买 {price}" : string.Empty;
             }
         }
 

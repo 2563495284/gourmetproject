@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Presentation.Battle;
+using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Meta;
 using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Gameplay.Model;
@@ -298,10 +299,17 @@ namespace GourmetProject.Tests.EditMode
                     string.Empty,
                     false,
                     baseId: "donut");
+                var entry = new ShopEntry(
+                    ShopEntryKind.Dish,
+                    dish.Id,
+                    dish.Name,
+                    string.Empty,
+                    10,
+                    slotIndex: 0);
 
                 card.Bind(new ShopBuyItemViewContext(
                     null,
-                    null,
+                    entry,
                     true,
                     sprite,
                     dish,
@@ -347,46 +355,206 @@ namespace GourmetProject.Tests.EditMode
         [TestCase(ShopEntryKind.Fragment)]
         [TestCase(ShopEntryKind.PassiveItem)]
         [TestCase(ShopEntryKind.ActiveItem)]
-        public void ShopSection_PurchaseKeepsExistingSlotIndicesAndRestockFillsGap(
+        public void ShopEntry_ClearAndRestockPreserveStableSlot(
             ShopEntryKind kind)
         {
-            var first = new ShopEntry(kind, "first", "First", string.Empty, 10);
-            var purchased = new ShopEntry(kind, "purchased", "Purchased", string.Empty, 20);
-            var third = new ShopEntry(kind, "third", "Third", string.Empty, 30);
-            var restock = new ShopEntry(kind, "restock", "Restock", string.Empty, 40);
-            System.Reflection.MethodInfo reconcile = typeof(ShopForm).GetMethod(
-                "ReconcileSlotEntries",
-                System.Reflection.BindingFlags.Static
-                    | System.Reflection.BindingFlags.NonPublic);
-            Assert.That(reconcile, Is.Not.Null);
+            var first = new ShopEntry(
+                kind,
+                "first",
+                "First",
+                string.Empty,
+                10,
+                slotIndex: 0);
+            var slot = new ShopEntry(
+                kind,
+                "purchased",
+                "Purchased",
+                "Old",
+                20,
+                slotIndex: 1);
+            var replacement = new ShopEntry(
+                kind,
+                "restock",
+                "Restock",
+                "New",
+                40,
+                37,
+                slotIndex: 99);
+            var third = new ShopEntry(
+                kind,
+                "third",
+                "Third",
+                string.Empty,
+                30,
+                slotIndex: 2);
+            var stock = new List<ShopEntry> { first, slot, third };
+            int changedCount = 0;
+            slot.StockChanged += _ => changedCount++;
 
-            var afterPurchase = reconcile.Invoke(
-                null,
-                new object[]
+            slot.ClearStock();
+
+            Assert.That(slot.SlotIndex, Is.EqualTo(1));
+            Assert.That(slot.IsStocked, Is.False);
+            Assert.That(slot.Id, Is.Empty);
+            Assert.That(slot.Price, Is.Zero);
+            Assert.That(changedCount, Is.EqualTo(1));
+            Assert.That(stock, Has.Count.EqualTo(3));
+            Assert.That(stock[0], Is.SameAs(first));
+            Assert.That(stock[1], Is.SameAs(slot));
+            Assert.That(stock[2], Is.SameAs(third));
+
+            slot.RestockFrom(replacement);
+
+            Assert.That(slot.SlotIndex, Is.EqualTo(1));
+            Assert.That(slot.IsStocked, Is.True);
+            Assert.That(slot.Id, Is.EqualTo("restock"));
+            Assert.That(slot.Name, Is.EqualTo("Restock"));
+            Assert.That(slot.Desc, Is.EqualTo("New"));
+            Assert.That(slot.BasePrice, Is.EqualTo(40));
+            Assert.That(slot.Price, Is.EqualTo(37));
+            Assert.That(changedCount, Is.EqualTo(2));
+            Assert.That(stock[1], Is.SameAs(slot));
+        }
+
+        [Test]
+        public void ShopEntrySaveData_RoundTripsEmptySlotAndMigratesMissingSlotIndex()
+        {
+            var wrapper = new ShopStockSaveWrapper
+            {
+                Stock = new List<ShopEntrySaveData>
                 {
-                    new[] { first, purchased, third },
-                    new[] { first, third },
-                    kind,
-                }) as IReadOnlyList<ShopEntry>;
+                    new ShopEntrySaveData
+                    {
+                        Kind = ShopEntryKind.Dish,
+                        SlotIndex = 2,
+                        Id = string.Empty,
+                        Name = string.Empty,
+                        Desc = string.Empty,
+                        BasePrice = 0,
+                        Price = 0,
+                    },
+                },
+            };
 
-            Assert.That(afterPurchase, Has.Count.EqualTo(3));
-            Assert.That(afterPurchase[0], Is.SameAs(first));
-            Assert.That(afterPurchase[1], Is.Null);
-            Assert.That(afterPurchase[2], Is.SameAs(third));
+            var serializer = new GourmetProject.Core.Save.JsonSerializer(false);
+            ShopStockSaveWrapper restored =
+                serializer.Deserialize<ShopStockSaveWrapper>(
+                    serializer.Serialize(wrapper));
+            ShopEntrySaveData emptySlot = restored.Stock[0];
+            Assert.That(emptySlot.Kind, Is.EqualTo(ShopEntryKind.Dish));
+            Assert.That(emptySlot.SlotIndex, Is.EqualTo(2));
+            Assert.That(emptySlot.Id, Is.Empty);
 
-            var afterRestock = reconcile.Invoke(
-                null,
-                new object[]
-                {
-                    afterPurchase,
-                    new[] { first, third, restock },
-                    kind,
-                }) as IReadOnlyList<ShopEntry>;
+            ShopEntrySaveData legacy = serializer.Deserialize<ShopEntrySaveData>(
+                System.Text.Encoding.UTF8.GetBytes(
+                    "{\"Kind\":2,\"Id\":\"legacy_dish\"}"));
+            Assert.That(legacy.SlotIndex, Is.EqualTo(-1));
+        }
 
-            Assert.That(afterRestock, Has.Count.EqualTo(3));
-            Assert.That(afterRestock[0], Is.SameAs(first));
-            Assert.That(afterRestock[1], Is.SameAs(restock));
-            Assert.That(afterRestock[2], Is.SameAs(third));
+        [Test]
+        public void ShopFoodCard_EmptyStockKeepsLayoutRootButClearsInteractionAndRt()
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/GameMain/UI/ShopFoodBuyItemView.prefab");
+            GameObject instance = UnityEngine.Object.Instantiate(prefab);
+            try
+            {
+                ShopFoodBuyItemView card = instance.GetComponent<ShopFoodBuyItemView>();
+                DishIconRenderTexturePreview preview =
+                    instance.GetComponentInChildren<DishIconRenderTexturePreview>(true);
+                Sprite sprite = Resources.Load<Sprite>("Sprites/Dishes/donut");
+                var dish = new DishDef(
+                    "shop_empty_slot_test",
+                    "Shop Empty Slot Test",
+                    10,
+                    DishShape.FromRows(new[] { "X" }),
+                    0,
+                    0,
+                    1f,
+                    Array.Empty<string>(),
+                    string.Empty,
+                    false,
+                    baseId: "donut");
+                var entry = new ShopEntry(
+                    ShopEntryKind.Dish,
+                    dish.Id,
+                    dish.Name,
+                    string.Empty,
+                    10,
+                    slotIndex: 1);
+                int buyCalls = 0;
+
+                card.Bind(new ShopBuyItemViewContext(
+                    null,
+                    entry,
+                    true,
+                    sprite,
+                    dish,
+                    (_, _) =>
+                    {
+                        buyCalls++;
+                        return true;
+                    }));
+                entry.ClearStock();
+                card.Bind(new ShopBuyItemViewContext(
+                    null,
+                    entry,
+                    false,
+                    null,
+                    null,
+                    (_, _) =>
+                    {
+                        buyCalls++;
+                        return true;
+                    }));
+
+                CanvasGroup group = instance.GetComponent<CanvasGroup>();
+                Button button = instance.GetComponent<Button>();
+                RawImage rawImage = preview.GetComponent<RawImage>();
+                Assert.That(instance.activeSelf, Is.True);
+                Assert.That(group, Is.Not.Null);
+                Assert.That(group.alpha, Is.Zero);
+                Assert.That(group.interactable, Is.False);
+                Assert.That(group.blocksRaycasts, Is.False);
+                Assert.That(button.interactable, Is.False);
+                Assert.That(preview.CurrentTexture, Is.Null);
+                Assert.That(rawImage.texture, Is.Null);
+                Assert.That(rawImage.enabled, Is.False);
+                button.onClick.Invoke();
+                Assert.That(buyCalls, Is.Zero);
+
+                entry.RestockFrom(new ShopEntry(
+                    ShopEntryKind.Dish,
+                    dish.Id,
+                    dish.Name,
+                    string.Empty,
+                    10));
+                card.Bind(new ShopBuyItemViewContext(
+                    null,
+                    entry,
+                    true,
+                    sprite,
+                    dish,
+                    (_, _) =>
+                    {
+                        buyCalls++;
+                        return true;
+                    }));
+
+                Assert.That(instance.activeSelf, Is.True);
+                Assert.That(group.alpha, Is.EqualTo(1f));
+                Assert.That(group.interactable, Is.True);
+                Assert.That(group.blocksRaycasts, Is.True);
+                Assert.That(button.interactable, Is.True);
+                Assert.That(preview.CurrentTexture, Is.Not.Null);
+                Assert.That(rawImage.enabled, Is.True);
+                button.onClick.Invoke();
+                Assert.That(buyCalls, Is.EqualTo(1));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
         }
 
         [TestCase("Assets/GameMain/UI/RecipeEditDishView.prefab", 1)]
@@ -599,6 +767,12 @@ namespace GourmetProject.Tests.EditMode
             {
                 UnityEngine.Object.DestroyImmediate(instance);
             }
+        }
+
+        [Serializable]
+        private sealed class ShopStockSaveWrapper
+        {
+            public List<ShopEntrySaveData> Stock = new();
         }
 
         private static Camera FindPreviewCamera()
