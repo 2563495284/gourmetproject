@@ -49,6 +49,7 @@ namespace GourmetProject.Game.UI.Meta
 
         private readonly List<ShopEntry> _stock = new();
         private readonly List<GameObject> _spawned = new();
+        private readonly List<ShopCardSlot> _buySlots = new();
         private GameRun _run;
         private bool _wired;
         private FoodTipsView _foodTipsView;
@@ -57,6 +58,13 @@ namespace GourmetProject.Game.UI.Meta
         private Action _onLeave;
         private Action _onOpenDeleteDish;
         private Func<ShopEntry, ShopBuyItemViewBase, bool> _onBuy;
+
+        private sealed class ShopCardSlot
+        {
+            public ShopEntryKind Kind;
+            public ShopEntry Entry;
+            public ShopBuyItemViewBase Card;
+        }
 
         private void Awake()
         {
@@ -190,23 +198,7 @@ namespace GourmetProject.Game.UI.Meta
                     continue;
                 }
 
-                ShopBuyItemViewBase card = Instantiate(prefab, container);
-                card.gameObject.name = $"ShopBuy_{kind}_{count}";
-                ShopEntry captured = entry;
-                bool affordable = _run.Gold >= entry.Price;
-                Sprite icon = LoadEntryIcon(entry);
-                DishDef dish = entry.Kind == ShopEntryKind.Dish ? _run.Database.GetDish(entry.Id) : null;
-
-                card.Bind(new ShopBuyItemViewContext(
-                    _run,
-                    captured,
-                    affordable,
-                    icon,
-                    dish,
-                    BuyImmediate));
-
-                BindBuyCardTip(card, captured);
-                _spawned.Add(card.gameObject);
+                CreateSlot(kind, container, prefab, entry, count);
                 count++;
             }
 
@@ -214,12 +206,254 @@ namespace GourmetProject.Game.UI.Meta
             container.gameObject.SetActive(count > 0);
         }
 
-        /// <summary>供页面协调器在库存或金币变化后回调：重建商店购买区与上限文本。</summary>
+        /// <summary>供页面协调器在库存或金币变化后回调：原槽位刷新商店购买区与上限文本。</summary>
         public void RefreshShop(GameRun run, IReadOnlyList<ShopEntry> stock)
         {
             _run = run;
             ReplaceStock(stock);
-            Rebuild();
+            if (_buySlots.Count == 0)
+            {
+                Rebuild();
+                return;
+            }
+
+            RefreshWithoutReflow();
+        }
+
+        private void RefreshWithoutReflow()
+        {
+            if (_run == null)
+            {
+                return;
+            }
+
+            ShopService.RefreshStockPrices(_run, _stock);
+            EnsureTipViews();
+            _foodTipsView?.Hide();
+            _itemTipView?.Hide();
+
+            SetText(_goldText, $"金币 {_run.Gold}");
+            RefreshDeleteDishButton();
+            RefreshBuySection(
+                ShopEntryKind.Dish,
+                _foodContainer,
+                _foodEmptyText,
+                "暂无食物",
+                _foodCardPrefab);
+            RefreshBuySection(
+                ShopEntryKind.Fragment,
+                _fragmentContainer,
+                _fragmentEmptyText,
+                "暂无碎片包",
+                _fragmentCardPrefab);
+            RefreshBuySection(
+                ShopEntryKind.PassiveItem,
+                _passiveContainer,
+                _passiveEmptyText,
+                "暂无被动道具",
+                _passiveCardPrefab);
+            RefreshBuySection(
+                ShopEntryKind.ActiveItem,
+                _activeContainer,
+                _activeEmptyText,
+                "暂无主动道具",
+                _activeCardPrefab);
+        }
+
+        private void RefreshBuySection(
+            ShopEntryKind kind,
+            RectTransform container,
+            Text emptyText,
+            string emptyMessage,
+            ShopBuyItemViewBase prefab)
+        {
+            if (container == null || prefab == null)
+            {
+                SetEmpty(emptyText, true, emptyMessage);
+                return;
+            }
+
+            var slots = new List<ShopCardSlot>();
+            var previousEntries = new List<ShopEntry>();
+            foreach (ShopCardSlot slot in _buySlots)
+            {
+                if (slot.Kind != kind)
+                {
+                    continue;
+                }
+
+                slots.Add(slot);
+                previousEntries.Add(slot.Entry);
+            }
+
+            List<ShopEntry> assignments = ReconcileSlotEntries(previousEntries, _stock, kind);
+            for (int i = 0; i < assignments.Count; i++)
+            {
+                ShopEntry entry = assignments[i];
+                if (i < slots.Count)
+                {
+                    if (entry != null)
+                    {
+                        BindSlot(slots[i], entry);
+                    }
+                    else
+                    {
+                        HideSlot(slots[i]);
+                    }
+
+                    continue;
+                }
+
+                if (entry != null)
+                {
+                    slots.Add(CreateSlot(kind, container, prefab, entry, i));
+                }
+            }
+
+            int occupiedCount = 0;
+            foreach (ShopEntry entry in assignments)
+            {
+                if (entry != null)
+                {
+                    occupiedCount++;
+                }
+            }
+
+            // 已经出现过的槽位始终保留在布局中。售罄只清空视觉，不让同区剩余卡片重新居中。
+            bool hasReservedSlots = slots.Count > 0;
+            SetEmpty(emptyText, occupiedCount == 0 && !hasReservedSlots, emptyMessage);
+            container.gameObject.SetActive(hasReservedSlots || occupiedCount > 0);
+        }
+
+        private ShopCardSlot CreateSlot(
+            ShopEntryKind kind,
+            RectTransform container,
+            ShopBuyItemViewBase prefab,
+            ShopEntry entry,
+            int slotIndex)
+        {
+            ShopBuyItemViewBase card = Instantiate(prefab, container);
+            card.gameObject.name = $"ShopBuy_{kind}_{slotIndex}";
+            var slot = new ShopCardSlot
+            {
+                Kind = kind,
+                Card = card,
+            };
+
+            _buySlots.Add(slot);
+            _spawned.Add(card.gameObject);
+            BindSlot(slot, entry);
+            return slot;
+        }
+
+        private void BindSlot(ShopCardSlot slot, ShopEntry entry)
+        {
+            if (slot?.Card == null || entry == null || _run == null)
+            {
+                return;
+            }
+
+            slot.Entry = entry;
+            Sprite icon = LoadEntryIcon(entry);
+            DishDef dish = entry.Kind == ShopEntryKind.Dish
+                ? _run.Database.GetDish(entry.Id)
+                : null;
+            slot.Card.Bind(new ShopBuyItemViewContext(
+                _run,
+                entry,
+                _run.Gold >= entry.Price,
+                icon,
+                dish,
+                BuyImmediate));
+            BindBuyCardTip(slot.Card, entry);
+            SetSlotVisible(slot.Card, true);
+        }
+
+        private static void HideSlot(ShopCardSlot slot)
+        {
+            if (slot?.Card == null)
+            {
+                return;
+            }
+
+            slot.Entry = null;
+            SetSlotVisible(slot.Card, false);
+        }
+
+        private static void SetSlotVisible(ShopBuyItemViewBase card, bool visible)
+        {
+            if (card == null)
+            {
+                return;
+            }
+
+            CanvasGroup group = card.GetComponent<CanvasGroup>();
+            if (group == null)
+            {
+                group = card.gameObject.AddComponent<CanvasGroup>();
+            }
+
+            group.alpha = visible ? 1f : 0f;
+            group.interactable = visible;
+            group.blocksRaycasts = visible;
+        }
+
+        private static List<ShopEntry> ReconcileSlotEntries(
+            IReadOnlyList<ShopEntry> previousSlots,
+            IReadOnlyList<ShopEntry> currentStock,
+            ShopEntryKind kind)
+        {
+            var currentEntries = new List<ShopEntry>();
+            if (currentStock != null)
+            {
+                foreach (ShopEntry entry in currentStock)
+                {
+                    if (entry != null && entry.Kind == kind)
+                    {
+                        currentEntries.Add(entry);
+                    }
+                }
+            }
+
+            int previousCount = previousSlots?.Count ?? 0;
+            int slotCount = Mathf.Max(previousCount, currentEntries.Count);
+            var result = new List<ShopEntry>(slotCount);
+            for (int i = 0; i < slotCount; i++)
+            {
+                result.Add(null);
+            }
+
+            var assigned = new HashSet<ShopEntry>();
+            for (int i = 0; i < previousCount; i++)
+            {
+                ShopEntry previous = previousSlots[i];
+                if (previous != null
+                    && currentEntries.Contains(previous)
+                    && assigned.Add(previous))
+                {
+                    result[i] = previous;
+                }
+            }
+
+            foreach (ShopEntry entry in currentEntries)
+            {
+                if (!assigned.Add(entry))
+                {
+                    continue;
+                }
+
+                int emptyIndex = result.IndexOf(null);
+                if (emptyIndex >= 0)
+                {
+                    result[emptyIndex] = entry;
+                }
+                else
+                {
+                    result.Add(entry);
+                }
+            }
+
+            return result;
         }
 
         private bool BuyImmediate(ShopEntry entry, ShopBuyItemViewBase card)
@@ -564,11 +798,13 @@ namespace GourmetProject.Game.UI.Meta
             {
                 if (go != null)
                 {
+                    go.SetActive(false);
                     Destroy(go);
                 }
             }
 
             _spawned.Clear();
+            _buySlots.Clear();
         }
 
         private static void SetEmpty(Text emptyText, bool visible, string message)

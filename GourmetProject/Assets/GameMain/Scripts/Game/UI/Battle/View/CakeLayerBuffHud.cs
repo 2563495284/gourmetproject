@@ -27,12 +27,6 @@ namespace GourmetProject.Game.UI.Battle.View
                 return;
             }
 
-            if (layers <= 0)
-            {
-                Hide();
-                return;
-            }
-
             _countText.text = layers.ToString();
             _desc = buffs == null
                 ? string.Empty

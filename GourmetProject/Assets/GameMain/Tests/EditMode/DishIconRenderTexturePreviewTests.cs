@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using GourmetProject.Game.Meta;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Game.UI.Meta;
 using GourmetProject.Game.UI.Widgets;
@@ -339,6 +341,52 @@ namespace GourmetProject.Tests.EditMode
             {
                 UnityEngine.Object.DestroyImmediate(instance);
             }
+        }
+
+        [TestCase(ShopEntryKind.Dish)]
+        [TestCase(ShopEntryKind.Fragment)]
+        [TestCase(ShopEntryKind.PassiveItem)]
+        [TestCase(ShopEntryKind.ActiveItem)]
+        public void ShopSection_PurchaseKeepsExistingSlotIndicesAndRestockFillsGap(
+            ShopEntryKind kind)
+        {
+            var first = new ShopEntry(kind, "first", "First", string.Empty, 10);
+            var purchased = new ShopEntry(kind, "purchased", "Purchased", string.Empty, 20);
+            var third = new ShopEntry(kind, "third", "Third", string.Empty, 30);
+            var restock = new ShopEntry(kind, "restock", "Restock", string.Empty, 40);
+            System.Reflection.MethodInfo reconcile = typeof(ShopForm).GetMethod(
+                "ReconcileSlotEntries",
+                System.Reflection.BindingFlags.Static
+                    | System.Reflection.BindingFlags.NonPublic);
+            Assert.That(reconcile, Is.Not.Null);
+
+            var afterPurchase = reconcile.Invoke(
+                null,
+                new object[]
+                {
+                    new[] { first, purchased, third },
+                    new[] { first, third },
+                    kind,
+                }) as IReadOnlyList<ShopEntry>;
+
+            Assert.That(afterPurchase, Has.Count.EqualTo(3));
+            Assert.That(afterPurchase[0], Is.SameAs(first));
+            Assert.That(afterPurchase[1], Is.Null);
+            Assert.That(afterPurchase[2], Is.SameAs(third));
+
+            var afterRestock = reconcile.Invoke(
+                null,
+                new object[]
+                {
+                    afterPurchase,
+                    new[] { first, third, restock },
+                    kind,
+                }) as IReadOnlyList<ShopEntry>;
+
+            Assert.That(afterRestock, Has.Count.EqualTo(3));
+            Assert.That(afterRestock[0], Is.SameAs(first));
+            Assert.That(afterRestock[1], Is.SameAs(restock));
+            Assert.That(afterRestock[2], Is.SameAs(third));
         }
 
         [TestCase("Assets/GameMain/UI/RecipeEditDishView.prefab", 1)]

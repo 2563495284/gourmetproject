@@ -197,7 +197,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1aba4852efa274b9e9fda87546dea5c2, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Presentation.Battle.BattleTableLayoutArea
   _gizmoColor: {r: 0.2, g: 0.9, b: 0.75, a: 0.85}
 --- !u!1 &230226104
@@ -541,7 +541,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2565838062378997705, guid: 0f58c60cda34548149eed4f0d284e5f4, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -4.23
+      value: -5.2
       objectReference: {fileID: 0}
     - target: {fileID: 2565838062378997705, guid: 0f58c60cda34548149eed4f0d284e5f4, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -557,7 +557,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3246526508175876816, guid: 0f58c60cda34548149eed4f0d284e5f4, type: 3}
       propertyPath: m_Camera
-      value:
+      value: 
       objectReference: {fileID: 788870930}
     - target: {fileID: 3246526508175876816, guid: 0f58c60cda34548149eed4f0d284e5f4, type: 3}
       propertyPath: m_SortingLayerID
@@ -966,7 +966,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4622956555603512374, guid: 2529e15f097f74b98826e32d5451acf3, type: 3}
       propertyPath: m_Camera
-      value:
+      value: 
       objectReference: {fileID: 788870930}
     - target: {fileID: 4622956555603512374, guid: 2529e15f097f74b98826e32d5451acf3, type: 3}
       propertyPath: m_SortingLayerID
