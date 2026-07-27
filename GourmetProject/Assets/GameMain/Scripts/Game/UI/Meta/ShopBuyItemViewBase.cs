@@ -53,6 +53,7 @@ namespace GourmetProject.Game.UI.Meta
 
         private RectTransform _rect;
         private RectTransform _iconRect;
+        private RectTransform _interactionFeedbackRect;
         private Canvas _canvas;
         private bool _affordable;
         private bool _usesTargeting;
@@ -107,35 +108,36 @@ namespace GourmetProject.Game.UI.Meta
 
         public void PlayPurchaseFailed()
         {
-            if (_iconRect == null && _itemIcon != null)
+            if (_interactionFeedbackRect == null && _iconRect == null && _itemIcon != null)
             {
                 _iconRect = _itemIcon.rectTransform;
             }
 
-            if (_iconRect == null)
+            RectTransform feedbackRect = _interactionFeedbackRect ?? _iconRect;
+            if (feedbackRect == null)
             {
                 return;
             }
 
             _failureTween?.Kill();
-            Vector2 origin = _iconRect.anchoredPosition;
+            Vector2 origin = feedbackRect.anchoredPosition;
             _failureTween = DOVirtual.Float(0f, 1f, 0.25f, t =>
             {
-                if (_iconRect == null)
+                if (feedbackRect == null)
                 {
                     return;
                 }
 
                 float offset = Mathf.Sin(t * Mathf.PI * 12f) * 9f * (1f - t);
-                _iconRect.anchoredPosition = origin + new Vector2(offset, 0f);
+                feedbackRect.anchoredPosition = origin + new Vector2(offset, 0f);
             })
                 .SetEase(Ease.Linear)
                 .SetUpdate(true)
                 .OnComplete(() =>
                 {
-                    if (_iconRect != null)
+                    if (feedbackRect != null)
                     {
-                        _iconRect.anchoredPosition = origin;
+                        feedbackRect.anchoredPosition = origin;
                     }
                 });
         }
@@ -180,6 +182,22 @@ namespace GourmetProject.Game.UI.Meta
             {
                 _buyButton.transition = Selectable.Transition.None;
             }
+        }
+
+        /// <summary>
+        /// 为没有普通 Image 图标的商品指定按钮变色与购买失败晃动目标。
+        /// 该目标独立于购买飞行动画源，避免 RT 预览改变既有飞行动画行为。
+        /// </summary>
+        protected void UseGraphicAsInteractionFeedback(Graphic graphic)
+        {
+            _interactionFeedbackRect = graphic != null ? graphic.rectTransform : null;
+            if (_buyButton == null)
+            {
+                return;
+            }
+
+            _buyButton.targetGraphic = graphic;
+            RestoreButtonTransition();
         }
 
         private RectTransform Rect

@@ -51,11 +51,6 @@ namespace GourmetProject.Game.UI.Widgets
             }
         }
 
-        public static Vector2Int ExpandedBoardSize(DishShape shape)
-        {
-            return DishIconPreviewGridSizing.ExpandedBoardSize(shape);
-        }
-
         public static Vector2 DisplaySizeForGrid(
             Vector2 prefabThreeByThreeSize,
             Vector2Int gridSize)
@@ -76,7 +71,7 @@ namespace GourmetProject.Game.UI.Widgets
         {
             if (dish?.Shape == null)
             {
-                return Vector2Int.one;
+                return Vector2Int.zero;
             }
 
             IReadOnlyList<string> displayFlavors = flavorIds;
@@ -89,9 +84,7 @@ namespace GourmetProject.Game.UI.Widgets
                 dish.RotationIndex,
                 displayFlavors);
             DishShape displayShape = dish.Shape.RotatedBy(rotationIndex);
-            return new Vector2Int(
-                Mathf.Max(1, displayShape.Width),
-                Mathf.Max(1, displayShape.Height));
+            return new Vector2Int(displayShape.Width, displayShape.Height);
         }
 
         public void Bind(
@@ -137,8 +130,8 @@ namespace GourmetProject.Game.UI.Widgets
             if (_renderTexture != null)
             {
                 Vector2Int renderedGridSize = new(
-                    Mathf.Max(1, _renderTexture.width / _pixelsPerCell),
-                    Mathf.Max(1, _renderTexture.height / _pixelsPerCell));
+                    _renderTexture.width / _pixelsPerCell,
+                    _renderTexture.height / _pixelsPerCell);
                 if (mode == DishIconPreviewMode.Card)
                 {
                     ApplyDisplaySize(renderedGridSize);
