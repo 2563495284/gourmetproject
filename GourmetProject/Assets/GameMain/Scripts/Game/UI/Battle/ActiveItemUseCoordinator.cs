@@ -44,6 +44,8 @@ namespace GourmetProject.Game.UI.Battle
             _host = host;
         }
 
+        public bool IsRecipePanelTargeting => _recipePanelTargeting;
+
         public void Dispose()
         {
             CancelTargeting(showMessage: false);
@@ -85,6 +87,11 @@ namespace GourmetProject.Game.UI.Battle
 
         public void OpenActionPopup(string itemId, RunItemSlotView slot)
         {
+            if (_recipePanelTargeting)
+            {
+                return;
+            }
+
             ClosePopup();
             CancelTargeting(showMessage: false);
 
@@ -218,6 +225,7 @@ namespace GourmetProject.Game.UI.Battle
             _selectedTargets.Clear();
             _recipePanelTargeting = true;
             _targetFrame = Time.frameCount;
+            _host.RefreshPersistentHud();
             _host.OpenActiveItemRecipeTarget(
                 item,
                 () => CancelTargeting(),
@@ -226,7 +234,6 @@ namespace GourmetProject.Game.UI.Battle
                 {
                     if (_pendingItem == item && _recipePanelTargeting)
                     {
-                        CreateUiArrow();
                         _host.ShowActiveItemMessage($"{item.Name}：选择菜品，右键或 Esc 取消。");
                     }
                 });

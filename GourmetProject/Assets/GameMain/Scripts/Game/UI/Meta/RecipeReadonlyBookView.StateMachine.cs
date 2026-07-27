@@ -58,7 +58,6 @@ namespace GourmetProject.Game.UI.Meta
 
             public virtual void Exit(RecipeReadonlyBookView panel)
             {
-                panel.ClearCompareOverlay();
             }
 
             public virtual void Refresh(RecipeReadonlyBookView panel)
@@ -169,11 +168,10 @@ namespace GourmetProject.Game.UI.Meta
                     return;
                 }
 
-                panel._stateMachine.Switch(new ActiveRecipeDishCompareState(
-                    this,
+                panel.ShowActiveItemConfirm(
                     _item,
                     target,
-                    _onTargetConfirmed));
+                    _onTargetConfirmed);
             }
         }
 
@@ -217,47 +215,5 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
-        private sealed class ActiveRecipeDishCompareState : RecipeReadonlyBookState
-        {
-            private readonly ActiveRecipeDishSelectState _selectState;
-            private readonly ItemDefinition _item;
-            private readonly ActiveTarget _target;
-            private readonly Action<ActiveTarget, Action> _onTargetConfirmed;
-
-            public ActiveRecipeDishCompareState(
-                ActiveRecipeDishSelectState selectState,
-                ItemDefinition item,
-                ActiveTarget target,
-                Action<ActiveTarget, Action> onTargetConfirmed)
-            {
-                _selectState = selectState;
-                _item = item;
-                _target = target;
-                _onTargetConfirmed = onTargetConfirmed;
-            }
-
-            public override void Enter(RecipeReadonlyBookView panel)
-            {
-                panel.ShowActiveItemCompare(
-                    _item,
-                    _target,
-                    () => panel._stateMachine.Switch(_selectState),
-                    () =>
-                    {
-                        panel.ClearCompareOverlay();
-                        _onTargetConfirmed?.Invoke(_target, null);
-                    });
-            }
-
-            public override void Refresh(RecipeReadonlyBookView panel)
-            {
-                // 对比确认态保持当前预览，避免外部刷新把确认弹层冲掉。
-            }
-
-            public override void OnExitClicked(RecipeReadonlyBookView panel)
-            {
-                panel._stateMachine.Switch(_selectState);
-            }
-        }
     }
 }

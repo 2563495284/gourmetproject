@@ -38,6 +38,7 @@ namespace GourmetProject.Game.UI.Battle.View
             GameRun run,
             BattleSession session,
             bool inBattle,
+            bool activeItemsInteractable,
             ItemTipView tipView,
             Action<string, RunItemSlotView> onActiveItemClicked,
             Action<ItemDefinition, RunItemState> onShowItemInfo)
@@ -51,7 +52,15 @@ namespace GourmetProject.Game.UI.Battle.View
 
             cfg.Tables tables = GameApp.Config.Tables;
             RefreshPassive(run, tables, tipView, onShowItemInfo);
-            RefreshActive(run, session, inBattle, tables, tipView, onActiveItemClicked, onShowItemInfo);
+            RefreshActive(
+                run,
+                session,
+                inBattle,
+                activeItemsInteractable,
+                tables,
+                tipView,
+                onActiveItemClicked,
+                onShowItemInfo);
         }
 
         public RunItemSlotView GetItemSlot(string itemId, cfg.ItemKind kind, bool revealPassive = true)
@@ -528,6 +537,7 @@ namespace GourmetProject.Game.UI.Battle.View
             GameRun run,
             BattleSession session,
             bool inBattle,
+            bool activeItemsInteractable,
             cfg.Tables tables,
             ItemTipView tipView,
             Action<string, RunItemSlotView> onActiveItemClicked,
@@ -574,7 +584,7 @@ namespace GourmetProject.Game.UI.Battle.View
                         RunItemSlotView.ShortName(item.Name),
                         string.Empty,
                         RunItemSlotView.QualityColor(item.Quality),
-                        true,
+                        activeItemsInteractable,
                         onClick);
                     slot.SetTip(tipView, captured);
                     _activeSlotByItemId[state.ItemId] = slot;

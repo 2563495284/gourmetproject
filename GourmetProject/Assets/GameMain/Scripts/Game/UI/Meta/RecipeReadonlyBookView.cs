@@ -51,7 +51,6 @@ namespace GourmetProject.Game.UI.Meta
         private void OnDisable()
         {
             _stateMachine?.Clear();
-            ClearCompareOverlay();
             HideRecipeDishTips();
             ClearWarehouse();
         }
@@ -235,7 +234,6 @@ namespace GourmetProject.Game.UI.Meta
 
         private void RebuildWarehouseForCurrentState()
         {
-            ClearCompareOverlay();
             bool preserveScroll = _warehouse != null;
             float previousScroll = preserveScroll
                 ? _warehouse.VerticalNormalizedPosition

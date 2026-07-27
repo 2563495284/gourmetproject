@@ -1245,7 +1245,17 @@ namespace GourmetProject.Game.UI.Battle
         /// <summary>右栏道具：被动网格（2 列）+ 固定主动道具槽，每份主动实例占一格。</summary>
         private void RefreshItems()
         {
-            _itemsColumn?.Refresh(_run, _session, _inBattle, _tips != null ? _tips.Item : null, OnActiveItemClicked, ShowItemInfo);
+            bool activeItemsInteractable =
+                _activeItemUse == null
+                || !_activeItemUse.IsRecipePanelTargeting;
+            _itemsColumn?.Refresh(
+                _run,
+                _session,
+                _inBattle,
+                activeItemsInteractable,
+                _tips != null ? _tips.Item : null,
+                OnActiveItemClicked,
+                ShowItemInfo);
         }
 
         private void ShowItemInfo(ItemDefinition item, RunItemState state)

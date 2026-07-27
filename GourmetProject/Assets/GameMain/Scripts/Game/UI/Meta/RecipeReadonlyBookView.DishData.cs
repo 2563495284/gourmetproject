@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Tooltips;
@@ -50,45 +49,6 @@ namespace GourmetProject.Game.UI.Meta
             return target.Y >= 0 && target.Y < entries.Count
                 ? entries[target.Y]
                 : null;
-        }
-
-        private string BuildDishInfo(
-            DishDef def,
-            IReadOnlyList<string> flavorIds,
-            RecipeBookSlot slot)
-        {
-            var sb = new StringBuilder();
-            sb.AppendLine(def.Name);
-            float score = def.Deliciousness
-                + (slot != null ? slot.ScoreFlatBonus : 0f);
-            sb.AppendLine(
-                $"美味度 {score}　形状 {def.Shape.Width}x{def.Shape.Height}");
-            if (slot != null
-                && Math.Abs(slot.ScoreMultiplier - 1f) > 0.0001f)
-            {
-                sb.AppendLine($"倍率 x{slot.ScoreMultiplier:0.##}");
-            }
-
-            List<string> skillIds =
-                ComposeSkillIds(def, slot?.ExtraSkillIds);
-            List<string> lines = DishInfoText.TagLines(
-                skillIds,
-                flavorIds,
-                _run.Database,
-                out List<string> terms);
-            foreach (string line in lines)
-            {
-                sb.AppendLine(line);
-            }
-
-            string termText = DishInfoText.TermBlock(terms);
-            if (!string.IsNullOrEmpty(termText))
-            {
-                sb.AppendLine();
-                sb.Append(termText);
-            }
-
-            return sb.ToString().TrimEnd();
         }
 
         private FoodTipsData BuildRecipeDishTipsData(
@@ -218,36 +178,6 @@ namespace GourmetProject.Game.UI.Meta
             if (extraFlavorIds != null)
             {
                 ids.AddRange(extraFlavorIds);
-            }
-
-            return ids;
-        }
-
-        private List<string> PreviewExtraFlavors(
-            IReadOnlyList<string> current,
-            string flavorId)
-        {
-            var ids = new List<string>();
-            if (current != null)
-            {
-                ids.AddRange(current);
-            }
-
-            if (string.IsNullOrEmpty(flavorId))
-            {
-                return ids;
-            }
-
-            int flavorLimit = Math.Max(
-                1,
-                _run != null ? _run.FoodFlavorLimit : 1);
-            if (ids.Count < flavorLimit)
-            {
-                ids.Add(flavorId);
-            }
-            else
-            {
-                ids[ids.Count - 1] = flavorId;
             }
 
             return ids;
