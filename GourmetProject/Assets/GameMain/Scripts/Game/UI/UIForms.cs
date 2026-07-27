@@ -11,23 +11,23 @@ namespace GourmetProject.Game.UI
         public const string GroupDialog = "Dialog";
 
         // 界面预制体资源路径（编辑器资源模式下直接用工程内路径）。
-        public const string MainMenu = "Assets/GameMain/UI/MainMenuForm.prefab";
-        public const string CharacterSelect = "Assets/GameMain/UI/CharacterSelectForm.prefab";
-        public const string Settings = "Assets/GameMain/UI/SettingsForm.prefab";
-        public const string ConfirmDialog = "Assets/GameMain/UI/ConfirmDialogForm.prefab";
-        public const string CartoonSceneTransition = "Assets/GameMain/UI/CartoonSceneTransitionForm.prefab";
+        public const string MainMenu = "Assets/GameMain/Content/Prefabs/UI/MainMenuForm.prefab";
+        public const string CharacterSelect = "Assets/GameMain/Content/Prefabs/UI/CharacterSelectForm.prefab";
+        public const string Settings = "Assets/GameMain/Content/Prefabs/UI/SettingsForm.prefab";
+        public const string ConfirmDialog = "Assets/GameMain/Content/Prefabs/UI/ConfirmDialogForm.prefab";
+        public const string CartoonSceneTransition = "Assets/GameMain/Content/Prefabs/UI/CartoonSceneTransitionForm.prefab";
 
         // 玩法界面。
-        public const string Battle = "Assets/GameMain/UI/BattleForm.prefab";
+        public const string Battle = "Assets/GameMain/Content/Prefabs/UI/BattleForm.prefab";
 
         // 行动轴节点 / 道具 hover Tips（同为 View，配合 TipHoverTrigger 悬停显示）。
-        public const string BossFeastTip = "Assets/GameMain/UI/TipsView/BossFeastTipView.prefab";
-        public const string ShopNodeTip = "Assets/GameMain/UI/TipsView/ShopNodeTipView.prefab";
-        public const string InterestNodeTip = "Assets/GameMain/UI/InterestNodeTipView.prefab";
-        public const string ItemTip = "Assets/GameMain/UI/TipsView/ItemTipView.prefab";
-        public const string Reward = "Assets/GameMain/UI/RewardForm.prefab";
-        public const string Result = "Assets/GameMain/UI/ResultForm.prefab";
-        public const string Defeat = "Assets/GameMain/UI/DefeatForm.prefab";
+        public const string BossFeastTip = "Assets/GameMain/Content/Prefabs/UI/TipsView/BossFeastTipView.prefab";
+        public const string ShopNodeTip = "Assets/GameMain/Content/Prefabs/UI/TipsView/ShopNodeTipView.prefab";
+        public const string InterestNodeTip = "Assets/GameMain/Content/Prefabs/UI/InterestNodeTipView.prefab";
+        public const string ItemTip = "Assets/GameMain/Content/Prefabs/UI/TipsView/ItemTipView.prefab";
+        public const string Reward = "Assets/GameMain/Content/Prefabs/UI/RewardForm.prefab";
+        public const string Result = "Assets/GameMain/Content/Prefabs/UI/ResultForm.prefab";
+        public const string Defeat = "Assets/GameMain/Content/Prefabs/UI/DefeatForm.prefab";
 
         // 主存档槽位：用于判断“开始游戏 / 继续游戏”。
         public const string GameSaveSlot = "slot0";

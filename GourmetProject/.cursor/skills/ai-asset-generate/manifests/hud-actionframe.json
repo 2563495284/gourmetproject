@@ -4,7 +4,7 @@
   "model": "gpt-image-2",
   "typeDefaults": {
     "ui": {
-      "outputDir": "Assets/GameMain/Resources/Sprites/UI",
+      "outputDir": "Assets/GameMain/Content/Resources/Sprites/UI",
       "outputFormat": "png",
       "quality": "high",
       "requestSize": "1024x1024",

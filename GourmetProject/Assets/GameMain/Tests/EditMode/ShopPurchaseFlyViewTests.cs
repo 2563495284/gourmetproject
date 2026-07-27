@@ -20,7 +20,7 @@ namespace GourmetProject.Tests.EditMode
         public void ShopFlyPrefab_ContainsPurchaseFlyComponent()
         {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
-                "Assets/GameMain/UI/Hud/ShopItemFlyFx.prefab");
+                "Assets/GameMain/Content/Prefabs/UI/Hud/ShopItemFlyFx.prefab");
 
             Assert.That(prefab, Is.Not.Null);
             Assert.That(prefab.GetComponent<ShopPurchaseFlyView>(), Is.Not.Null);
@@ -29,9 +29,9 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(prefab.GetComponent<Image>(), Is.Not.Null);
         }
 
-        [TestCase("Assets/GameMain/UI/ShopActiveItemBuyItemView.prefab")]
-        [TestCase("Assets/GameMain/UI/ShopPassiveItemBuyItemView.prefab")]
-        [TestCase("Assets/GameMain/UI/ShopFragmentPackBuyItemView.prefab")]
+        [TestCase("Assets/GameMain/Content/Prefabs/UI/ShopActiveItemBuyItemView.prefab")]
+        [TestCase("Assets/GameMain/Content/Prefabs/UI/ShopPassiveItemBuyItemView.prefab")]
+        [TestCase("Assets/GameMain/Content/Prefabs/UI/ShopFragmentPackBuyItemView.prefab")]
         public void NonFoodShopCards_UseWholeCardAsBuyButton(string prefabPath)
         {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
@@ -80,7 +80,7 @@ namespace GourmetProject.Tests.EditMode
         public void ActiveItemSlot_UsesVisibleIconRectForPurchaseFlyTarget()
         {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
-                "Assets/GameMain/UI/BattleForm.prefab");
+                "Assets/GameMain/Content/Prefabs/UI/BattleForm.prefab");
             Assert.That(prefab, Is.Not.Null);
 
             BattleItemsColumn column = prefab.GetComponentInChildren<BattleItemsColumn>(true);

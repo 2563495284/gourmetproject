@@ -4,13 +4,13 @@
   "stylePrefix": "90s American cable TV cartoon style, thick clean black ink outlines, flat cel animation colors, hand-drawn 2D animation look, polished Unity game asset quality, playful restaurant roguelike visual language, centered composition, no characters, no face, no eyes, no mouth, no limbs, no mascot treatment, no readable text, no letters, no numbers, no logo, no watermark",
   "typeDefaults": {
     "item": {
-      "outputDir": "Assets/GameMain/Resources/Sprites/Items",
+      "outputDir": "Assets/GameMain/Content/Resources/Sprites/Items",
       "postprocess": "magenta-alpha",
       "background": "opaque",
       "quality": "high"
     },
     "dish": {
-      "outputDir": "Assets/GameMain/Resources/Sprites/Dishes",
+      "outputDir": "Assets/GameMain/Content/Resources/Sprites/Dishes",
       "postprocess": "magenta-alpha",
       "background": "opaque",
       "quality": "high"

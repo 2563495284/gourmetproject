@@ -8,7 +8,7 @@ namespace GourmetProject.Game.Editor
 {
     public static class UiSpriteAssetUtility
     {
-        private const string UiSpriteRoot = "Assets/GameMain/Resources/Sprites/UI/";
+        private const string UiSpriteRoot = "Assets/GameMain/Content/Resources/Sprites/UI/";
 
         public static Sprite Load(string spriteName)
         {

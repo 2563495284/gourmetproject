@@ -20,8 +20,8 @@ from PIL import Image
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SPRITE_DIRS = [
-    PROJECT_ROOT / "Assets/GameMain/Resources/Sprites/Items",
-    PROJECT_ROOT / "Assets/GameMain/Resources/Sprites/Dishes",
+    PROJECT_ROOT / "Assets/GameMain/Content/Resources/Sprites/Items",
+    PROJECT_ROOT / "Assets/GameMain/Content/Resources/Sprites/Dishes",
 ]
 
 

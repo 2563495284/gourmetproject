@@ -1,6 +1,6 @@
 ---
 description: 菜品脚印贴图必须与 dish_base 的 shapeRows 形状一致，否则会和邻格菜视觉重合
-globs: Assets/GameMain/Resources/Sprites/Dishes/**,Assets/StreamingAssets/Config/tbdishbase.json,GameConfig/Datas/dish_base.xlsx,Assets/GameMain/Scripts/Game/Gameplay/Presentation/DishPieceView.cs
+globs: Assets/GameMain/Content/Resources/Sprites/Dishes/**,Assets/StreamingAssets/Config/tbdishbase.json,GameConfig/Datas/dish_base.xlsx,Assets/GameMain/Scripts/Game/Gameplay/Presentation/DishPieceView.cs
 alwaysApply: false
 ---
 

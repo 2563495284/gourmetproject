@@ -4,7 +4,7 @@
   "stylePrefix": "90s American cable TV grotesque cartoon game art, GourmetProject food-battle style, thick imperfect black ink outlines, chunky hand-drawn shapes, flat cel colors, warm cream base with selective accent colors, playful but slightly weird appetite mood, polished 2D Unity art sprite, no text, no letters, no numbers, no logo, no watermark",
   "typeDefaults": {
     "ui": {
-      "outputDir": "Assets/GameMain/Resources/Sprites/UI",
+      "outputDir": "Assets/GameMain/Content/Resources/Sprites/UI",
       "outputFormat": "png",
       "quality": "medium",
       "requestSize": "1024x1536",

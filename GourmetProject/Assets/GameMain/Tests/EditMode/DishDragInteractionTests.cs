@@ -132,7 +132,7 @@ namespace GourmetProject.Tests.EditMode
         public void DiningTableFeedback_CreatesOverlayOutsideBoardBounds()
         {
             DiningTableCellView cellPrefab = AssetDatabase.LoadAssetAtPath<DiningTableCellView>(
-                "Assets/GameMain/Prefabs/Battle/DiningTableCell.prefab");
+                "Assets/GameMain/Content/Prefabs/Battle/DiningTableCell.prefab");
             var host = new GameObject("DiningTableView");
             DiningTableView view = host.AddComponent<DiningTableView>();
             try
@@ -174,7 +174,7 @@ namespace GourmetProject.Tests.EditMode
         public void DragPresentation_PromotesBodyAndShadowsAndRestoresThem()
         {
             DishPieceView prefab = AssetDatabase.LoadAssetAtPath<DishPieceView>(
-                "Assets/GameMain/Prefabs/Battle/DishPiece.prefab");
+                "Assets/GameMain/Content/Prefabs/Battle/DishPiece.prefab");
             DishPieceView view = UnityEngine.Object.Instantiate(prefab);
             try
             {
@@ -211,7 +211,7 @@ namespace GourmetProject.Tests.EditMode
         public void DishPiecePrefab_HasDesignerTunableScopeAffectedShake()
         {
             DishPieceView prefab = AssetDatabase.LoadAssetAtPath<DishPieceView>(
-                "Assets/GameMain/Prefabs/Battle/DishPiece.prefab");
+                "Assets/GameMain/Content/Prefabs/Battle/DishPiece.prefab");
 
             Assert.That(prefab, Is.Not.Null);
             var serialized = new SerializedObject(prefab);
@@ -231,11 +231,11 @@ namespace GourmetProject.Tests.EditMode
         public void DishDropDustPrefab_HasEditableParticleSystemAndProvidedMaterial()
         {
             DishDropDustView prefab = AssetDatabase.LoadAssetAtPath<DishDropDustView>(
-                "Assets/GameMain/Prefabs/Battle/DishDropDust.prefab");
+                "Assets/GameMain/Content/Prefabs/Battle/DishDropDust.prefab");
             Material material = AssetDatabase.LoadAssetAtPath<Material>(
-                "Assets/GameMain/Materials/DishDropDust.mat");
+                "Assets/GameMain/Content/Art/Materials/DishDropDust.mat");
             Texture2D expected = AssetDatabase.LoadAssetAtPath<Texture2D>(
-                "Assets/GameMain/Resources/Particles/Dust1.png");
+                "Assets/GameMain/Content/Resources/Particles/Dust1.png");
 
             Assert.That(prefab, Is.Not.Null);
             Assert.That(material, Is.Not.Null);

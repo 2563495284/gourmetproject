@@ -10,7 +10,7 @@ namespace GourmetProject.Tests.EditMode
 {
     public sealed class RewardDishPanelTests
     {
-        private const string PrefabPath = "Assets/GameMain/UI/RewardDishPanel.prefab";
+        private const string PrefabPath = "Assets/GameMain/Content/Prefabs/UI/RewardDishPanel.prefab";
 
         [Test]
         public void Prefab_KeepsRequiredChoiceCardRefs()

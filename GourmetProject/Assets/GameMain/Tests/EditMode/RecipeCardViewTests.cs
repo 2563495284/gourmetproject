@@ -12,7 +12,7 @@ namespace GourmetProject.Tests.EditMode
         public void RecipeCard_ShowsOnlyCountAndOpensInspect()
         {
             RecipeCardView prefab = AssetDatabase.LoadAssetAtPath<RecipeCardView>(
-                "Assets/GameMain/UI/Recipe/Recipe.prefab");
+                "Assets/GameMain/Content/Prefabs/UI/Recipe/Recipe.prefab");
             RecipeCardView view = Object.Instantiate(prefab);
             try
             {

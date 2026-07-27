@@ -4,7 +4,7 @@
   "stylePrefix": "90s American cable TV cartoon style, thick clean black ink outlines, flat cel animation colors, hand-drawn 2D animation look, polished Unity game item icon quality, playful restaurant roguelike active item prop icon, centered composition, single readable object or compact prop bundle, no characters, no face, no eyes, no mouth, no limbs, no mascot treatment, no readable text, no letters, no numbers, no logo, no watermark, no UI frame, no circular badge background, avoid hot pink, avoid magenta, avoid purple objects",
   "typeDefaults": {
     "item": {
-      "outputDir": "Assets/GameMain/Resources/Sprites/Items",
+      "outputDir": "Assets/GameMain/Content/Resources/Sprites/Items",
       "postprocess": "magenta-alpha",
       "background": "opaque",
       "quality": "high"

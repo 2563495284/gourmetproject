@@ -26,12 +26,12 @@ Generates 2D game assets via Gemini's `gemini-3.1-flash-image-preview` API or Op
 
 | Asset Type | Output Directory | Default Size |
 |------------|-----------------|---------------|
-| 道具 / 物品 / Item | `Assets/GameMain/Resources/Sprites/Items/` | 1024x1024 |
-| 菜品 / Dish | `Assets/GameMain/Resources/Sprites/Dishes/` | 512x512 per occupied grid cell |
-| 背景 / Background | `Assets/GameMain/Resources/Sprites/Backgrounds/` | 1536x1024 |
-| 角色 / Character | `Assets/GameMain/Resources/Sprites/Characters/` | 1024x1024 |
-| UI / 按钮 / 面板 | `Assets/GameMain/Resources/Sprites/UI/` | 1024x1024 |
-| 动画帧 / Animation | `Assets/GameMain/Resources/Sprites/Animations/{name}/` | 1024x1024 |
+| 道具 / 物品 / Item | `Assets/GameMain/Content/Resources/Sprites/Items/` | 1024x1024 |
+| 菜品 / Dish | `Assets/GameMain/Content/Resources/Sprites/Dishes/` | 512x512 per occupied grid cell |
+| 背景 / Background | `Assets/GameMain/Content/Resources/Sprites/Backgrounds/` | 1536x1024 |
+| 角色 / Character | `Assets/GameMain/Content/Resources/Sprites/Characters/` | 1024x1024 |
+| UI / 按钮 / 面板 | `Assets/GameMain/Content/Resources/Sprites/UI/` | 1024x1024 |
+| 动画帧 / Animation | `Assets/GameMain/Content/Resources/Sprites/Animations/{name}/` | 1024x1024 |
 
 ## Usage
 
@@ -123,11 +123,11 @@ Create a JSON file with an array of asset requests:
   "stylePrefix": "pixel art, top-down view, fantasy game, 32-bit style",
   "typeDefaults": {
     "item": {
-      "outputDir": "Assets/GameMain/Resources/Sprites/Items",
+      "outputDir": "Assets/GameMain/Content/Resources/Sprites/Items",
       "postprocess": "magenta-alpha"
     },
     "dish": {
-      "outputDir": "Assets/GameMain/Resources/Sprites/Dishes",
+      "outputDir": "Assets/GameMain/Content/Resources/Sprites/Dishes",
       "postprocess": "magenta-alpha"
     }
   },
@@ -209,7 +209,7 @@ When crafting prompts for Gemini image generation, include these elements for us
 
 ### Item rules
 
-Use `type: "item"` only for non-dish props under `Assets/GameMain/Resources/Sprites/Items/`, such as knives, bells, plates, coupons, or other gameplay items.
+Use `type: "item"` only for non-dish props under `Assets/GameMain/Content/Resources/Sprites/Items/`, such as knives, bells, plates, coupons, or other gameplay items.
 
 - Treat each item as one centered icon object on a square canvas.
 - Do not use `shapeRows` for item assets.
@@ -219,7 +219,7 @@ Use `type: "item"` only for non-dish props under `Assets/GameMain/Resources/Spri
 
 ### Dish rules
 
-Use `type: "dish"` only for board food sprites under `Assets/GameMain/Resources/Sprites/Dishes/`.
+Use `type: "dish"` only for board food sprites under `Assets/GameMain/Content/Resources/Sprites/Dishes/`.
 
 - Add `shapeRows` from `TbDishBase.shapeRows`.
 - One occupied grid cell is `512x512`; final canvas should match the shape bounding box, for example `1x1=512x512`, `2x1=1024x512`, `2x2=1024x1024`, `3x2=1536x1024`.
@@ -237,7 +237,7 @@ Unity auto-imports new files in `Assets/`. The script outputs the file path.
 
 Sprite import settings are centralized in `Assets/GameMain/Editor/SpriteImportPolicy.cs`:
 
-- Generated PNG sprites under `Assets/GameMain/Resources/Sprites/` import as sprites
+- Generated PNG sprites under `Assets/GameMain/Content/Resources/Sprites/` import as sprites
 - PPU is normalized to `100`
 - mipmaps are disabled
 - alpha transparency is enabled
@@ -251,7 +251,7 @@ For 9-slice UI, keep sprite borders in Unity/importer data and keep the PNG's ac
 
 Animation generation is supported as a frame sequence, not as a single magic `n` variants call.
 
-Use `type: "animation"` with a stable base prompt and a `frames` array. The script expands each frame to a separate output PNG under `Assets/GameMain/Resources/Sprites/Animations/{name}/` unless `outputDir` is provided. Keep the frame prompts explicit and boring: describe pose, silhouette change, and camera consistency. Do not rely on `n` for frame animation; `n` is for alternate variants of the same frame.
+Use `type: "animation"` with a stable base prompt and a `frames` array. The script expands each frame to a separate output PNG under `Assets/GameMain/Content/Resources/Sprites/Animations/{name}/` unless `outputDir` is provided. Keep the frame prompts explicit and boring: describe pose, silhouette change, and camera consistency. Do not rely on `n` for frame animation; `n` is for alternate variants of the same frame.
 
 ## Style pipelines
 

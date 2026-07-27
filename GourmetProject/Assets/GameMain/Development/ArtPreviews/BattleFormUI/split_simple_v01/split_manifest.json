@@ -1,5 +1,5 @@
 {
-  "source": "Assets/GameMain/ArtPreviews/BattleFormUI/battleform_prototype_style_simple_v01.png",
+  "source": "Assets/GameMain/Development/ArtPreviews/BattleFormUI/battleform_prototype_style_simple_v01.png",
   "note": "Crops from generated preview; groups preserve background, pieces use simple border flood transparency.",
   "groups": {
     "left_sidebar": [

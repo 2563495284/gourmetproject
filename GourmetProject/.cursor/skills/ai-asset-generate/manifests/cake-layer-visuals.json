@@ -4,7 +4,7 @@
   "stylePrefix": "90s American cable TV cartoon food art matching GourmetProject, thick expressive black ink outlines, flat cel animation colors with a few hand-painted highlight strokes, warm appetizing palette, polished Unity game asset, bold readable silhouette, pure food only, no face, no eyes, no mouth, no limbs, no mascot treatment, no text, no logo, no watermark",
   "typeDefaults": {
     "item": {
-      "outputDir": "Assets/GameMain/Resources/Sprites/Battle",
+      "outputDir": "Assets/GameMain/Content/Resources/Sprites/Battle",
       "postprocess": "magenta-alpha",
       "background": "opaque",
       "quality": "high"

@@ -2,11 +2,11 @@
   "stylePrefix": "pixel art, top-down view, fantasy RPG style, clean pixel edges, game asset",
   "typeDefaults": {
     "item": {
-      "outputDir": "Assets/GameMain/Resources/Sprites/Items",
+      "outputDir": "Assets/GameMain/Content/Resources/Sprites/Items",
       "postprocess": "magenta-alpha"
     },
     "dish": {
-      "outputDir": "Assets/GameMain/Resources/Sprites/Dishes",
+      "outputDir": "Assets/GameMain/Content/Resources/Sprites/Dishes",
       "postprocess": "magenta-alpha"
     }
   },

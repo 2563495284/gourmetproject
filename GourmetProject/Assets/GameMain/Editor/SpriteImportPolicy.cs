@@ -12,8 +12,8 @@ namespace GourmetProject.Editor
     {
         public const float ProjectSpritePixelsPerUnit = 100f;
 
-        private const string SpriteRoot = "Assets/GameMain/Resources/Sprites/";
-        private const string SpriteRootFolder = "Assets/GameMain/Resources/Sprites";
+        private const string SpriteRoot = "Assets/GameMain/Content/Resources/Sprites/";
+        private const string SpriteRootFolder = "Assets/GameMain/Content/Resources/Sprites";
         private const string ReportMenuPath = "Tools/GourmetProject/Assets/Report Non-100 Sprite PPU";
         private const string ReimportMenuPath = "Tools/GourmetProject/Assets/Reimport Sprites With Import Policy";
 

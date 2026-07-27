@@ -2,7 +2,7 @@
   "stylePrefix": "90s American cable TV cartoon game art style, thick clean hand-drawn black ink outlines, flat cel animation colors, warm appetizing cream yellow and orange palette, slightly uneven organic hand-drawn silhouette, polished 2D game asset, no text, no letters, no numbers, no logo, no watermark",
   "typeDefaults": {
     "item": {
-      "outputDir": "Assets/GameMain/Resources/Sprites/Items",
+      "outputDir": "Assets/GameMain/Content/Resources/Sprites/Items",
       "postprocess": "magenta-alpha",
       "outputFormat": "png",
       "quality": "high"

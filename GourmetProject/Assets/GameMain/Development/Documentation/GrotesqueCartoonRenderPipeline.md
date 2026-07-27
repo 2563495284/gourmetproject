@@ -11,8 +11,8 @@
 核心文件：
 
 - `Assets/GameMain/Scripts/Runtime/Rendering/GrotesqueCartoonRenderFeature.cs`
-- `Assets/GameMain/Shaders/GrotesqueCartoonPostProcess.shader`
-- `Assets/GameMain/Materials/GrotesqueCartoonPostProcess.mat`
+- `Assets/GameMain/Content/Art/Shaders/GrotesqueCartoonPostProcess.shader`
+- `Assets/GameMain/Content/Art/Materials/GrotesqueCartoonPostProcess.mat`
 - `Assets/Settings/Renderer2D.asset`
 
 `Renderer2D.asset` 中已经注册了：

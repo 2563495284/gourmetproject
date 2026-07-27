@@ -4,7 +4,7 @@
   "stylePrefix": "90s American cable TV cartoon style, thick clean black ink outlines, flat cel animation colors, hand-drawn 2D animation look, warm appetizing dessert palette, polished Unity game dish sprite quality, funny, weird, charming, pure food only, no face, no eyes, no mouth, no limbs, no mascot treatment, no text, no logo, no watermark. Absolutely no auxiliary lines, no construction lines, no crop marks, no guide marks, no grid lines, no cell borders, no ruler ticks, no gray hairlines, no white repair patches.",
   "typeDefaults": {
     "dish": {
-      "outputDir": "Assets/GameMain/Resources/Sprites/Dishes",
+      "outputDir": "Assets/GameMain/Content/Resources/Sprites/Dishes",
       "postprocess": "magenta-alpha",
       "background": "opaque",
       "quality": "high"

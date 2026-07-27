@@ -69,7 +69,7 @@ namespace GourmetProject.Tests.EditMode
         public void WarehouseMode_UsesExactGridAndKeepsLayoutOwnedSize()
         {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
-                "Assets/GameMain/UI/RecipeEditDishView.prefab");
+                "Assets/GameMain/Content/Prefabs/UI/RecipeEditDishView.prefab");
             GameObject instance = UnityEngine.Object.Instantiate(prefab);
             try
             {
@@ -113,10 +113,10 @@ namespace GourmetProject.Tests.EditMode
             }
         }
 
-        [TestCase("Assets/GameMain/UI/RecipeEditDishView.prefab")]
-        [TestCase("Assets/GameMain/UI/ShopBuyCardView.prefab")]
-        [TestCase("Assets/GameMain/UI/ShopFoodBuyItemView.prefab")]
-        [TestCase("Assets/GameMain/UI/RewardDishPanel.prefab")]
+        [TestCase("Assets/GameMain/Content/Prefabs/UI/RecipeEditDishView.prefab")]
+        [TestCase("Assets/GameMain/Content/Prefabs/UI/ShopBuyCardView.prefab")]
+        [TestCase("Assets/GameMain/Content/Prefabs/UI/ShopFoodBuyItemView.prefab")]
+        [TestCase("Assets/GameMain/Content/Prefabs/UI/RewardDishPanel.prefab")]
         public void EveryPreview_ResizesFromItsPrefabThreeByThreeSizeAndKeepsBottom(
             string prefabPath)
         {
@@ -171,9 +171,9 @@ namespace GourmetProject.Tests.EditMode
         public void RewardAndShopPrefabs_UseTheSameRenderTexturePreview()
         {
             GameObject rewardPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
-                "Assets/GameMain/UI/RewardDishPanel.prefab");
+                "Assets/GameMain/Content/Prefabs/UI/RewardDishPanel.prefab");
             GameObject shopPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
-                "Assets/GameMain/UI/ShopFoodBuyItemView.prefab");
+                "Assets/GameMain/Content/Prefabs/UI/ShopFoodBuyItemView.prefab");
 
             DishIconRenderTexturePreview rewardPreview = rewardPrefab
                 .transform
@@ -204,7 +204,7 @@ namespace GourmetProject.Tests.EditMode
         public void RewardDishCard_BindKeepsRenderedTexture()
         {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
-                "Assets/GameMain/UI/RewardDishPanel.prefab");
+                "Assets/GameMain/Content/Prefabs/UI/RewardDishPanel.prefab");
             RewardDishChoiceCardView template = prefab
                 .GetComponentInChildren<RewardDishChoiceCardView>(true);
             RewardDishChoiceCardView card = UnityEngine.Object.Instantiate(template);
@@ -244,13 +244,13 @@ namespace GourmetProject.Tests.EditMode
         public void EveryDishPrefab_UsesRenderTexturePreview()
         {
             AssertSerializedPreviewReference<ShopBuyCardView>(
-                "Assets/GameMain/UI/ShopBuyCardView.prefab",
+                "Assets/GameMain/Content/Prefabs/UI/ShopBuyCardView.prefab",
                 "_dishIconPreview");
             AssertSerializedPreviewReference<ShopFoodBuyItemView>(
-                "Assets/GameMain/UI/ShopFoodBuyItemView.prefab",
+                "Assets/GameMain/Content/Prefabs/UI/ShopFoodBuyItemView.prefab",
                 "_dishIconPreview");
             AssertSerializedPreviewReference<RecipeEditDishView>(
-                "Assets/GameMain/UI/RecipeEditDishView.prefab",
+                "Assets/GameMain/Content/Prefabs/UI/RecipeEditDishView.prefab",
                 "_dishPreview");
         }
 
@@ -258,7 +258,7 @@ namespace GourmetProject.Tests.EditMode
         public void ShopFoodCard_UsesRenderTextureAsTipPlacementTarget()
         {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
-                "Assets/GameMain/UI/ShopFoodBuyItemView.prefab");
+                "Assets/GameMain/Content/Prefabs/UI/ShopFoodBuyItemView.prefab");
             GameObject instance = UnityEngine.Object.Instantiate(prefab);
             try
             {
@@ -279,7 +279,7 @@ namespace GourmetProject.Tests.EditMode
         public void ShopFoodCard_RtReceivesPointerEventsForTipsAndPurchase()
         {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
-                "Assets/GameMain/UI/ShopFoodBuyItemView.prefab");
+                "Assets/GameMain/Content/Prefabs/UI/ShopFoodBuyItemView.prefab");
             GameObject instance = UnityEngine.Object.Instantiate(prefab);
             try
             {
@@ -455,7 +455,7 @@ namespace GourmetProject.Tests.EditMode
         public void ShopFoodCard_EmptyStockKeepsLayoutRootButClearsInteractionAndRt()
         {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
-                "Assets/GameMain/UI/ShopFoodBuyItemView.prefab");
+                "Assets/GameMain/Content/Prefabs/UI/ShopFoodBuyItemView.prefab");
             GameObject instance = UnityEngine.Object.Instantiate(prefab);
             try
             {
@@ -557,12 +557,12 @@ namespace GourmetProject.Tests.EditMode
             }
         }
 
-        [TestCase("Assets/GameMain/UI/RecipeEditDishView.prefab", 1)]
-        [TestCase("Assets/GameMain/UI/ShopBuyCardView.prefab", 1)]
-        [TestCase("Assets/GameMain/UI/ShopFoodBuyItemView.prefab", 1)]
-        [TestCase("Assets/GameMain/UI/ShopPassiveItemBuyItemView.prefab", 0)]
-        [TestCase("Assets/GameMain/UI/ShopActiveItemBuyItemView.prefab", 0)]
-        [TestCase("Assets/GameMain/UI/ShopFragmentPackBuyItemView.prefab", 0)]
+        [TestCase("Assets/GameMain/Content/Prefabs/UI/RecipeEditDishView.prefab", 1)]
+        [TestCase("Assets/GameMain/Content/Prefabs/UI/ShopBuyCardView.prefab", 1)]
+        [TestCase("Assets/GameMain/Content/Prefabs/UI/ShopFoodBuyItemView.prefab", 1)]
+        [TestCase("Assets/GameMain/Content/Prefabs/UI/ShopPassiveItemBuyItemView.prefab", 0)]
+        [TestCase("Assets/GameMain/Content/Prefabs/UI/ShopActiveItemBuyItemView.prefab", 0)]
+        [TestCase("Assets/GameMain/Content/Prefabs/UI/ShopFragmentPackBuyItemView.prefab", 0)]
         public void FormerShapePreviewPrefabs_HaveNoMissingScripts(
             string prefabPath,
             int expectedRtPreviewCount)
@@ -588,7 +588,7 @@ namespace GourmetProject.Tests.EditMode
         public void Preview_RendersExpectedRectangleToTexture()
         {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
-                "Assets/GameMain/UI/ShopFoodBuyItemView.prefab");
+                "Assets/GameMain/Content/Prefabs/UI/ShopFoodBuyItemView.prefab");
             GameObject instance = UnityEngine.Object.Instantiate(prefab);
             try
             {
@@ -667,7 +667,7 @@ namespace GourmetProject.Tests.EditMode
             resetStatics.Invoke(null, null);
 
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
-                "Assets/GameMain/UI/ShopFoodBuyItemView.prefab");
+                "Assets/GameMain/Content/Prefabs/UI/ShopFoodBuyItemView.prefab");
             GameObject instance = UnityEngine.Object.Instantiate(prefab);
             try
             {
@@ -711,7 +711,7 @@ namespace GourmetProject.Tests.EditMode
         public void ShopPreview_AppliesFlavorShaderAndNumbRotationInsideRtStage()
         {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
-                "Assets/GameMain/UI/ShopFoodBuyItemView.prefab");
+                "Assets/GameMain/Content/Prefabs/UI/ShopFoodBuyItemView.prefab");
             GameObject instance = UnityEngine.Object.Instantiate(prefab);
             try
             {

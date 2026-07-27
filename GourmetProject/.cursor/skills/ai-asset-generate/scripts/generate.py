@@ -25,12 +25,12 @@ DEFAULT_OPENAI_BASE_URL = "https://sapi-ai.hortorgames.com/v1"
 DEFAULT_API_KEY = "sk-hortor-09f38819c14fa3e2a3551b6de96c3168952239efbc0b04fd"
 
 TYPE_DIRS = {
-    "item": "Assets/GameMain/Resources/Sprites/Items",
-    "dish": "Assets/GameMain/Resources/Sprites/Dishes",
-    "background": "Assets/GameMain/Resources/Sprites/Backgrounds",
-    "character": "Assets/GameMain/Resources/Sprites/Characters",
-    "ui": "Assets/GameMain/Resources/Sprites/UI",
-    "animation": "Assets/GameMain/Resources/Sprites/Animations",
+    "item": "Assets/GameMain/Content/Resources/Sprites/Items",
+    "dish": "Assets/GameMain/Content/Resources/Sprites/Dishes",
+    "background": "Assets/GameMain/Content/Resources/Sprites/Backgrounds",
+    "character": "Assets/GameMain/Content/Resources/Sprites/Characters",
+    "ui": "Assets/GameMain/Content/Resources/Sprites/UI",
+    "animation": "Assets/GameMain/Content/Resources/Sprites/Animations",
 }
 
 TYPE_SIZES = {

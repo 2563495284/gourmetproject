@@ -4,7 +4,7 @@
   "model": "gpt-image-2",
   "typeDefaults": {
     "dish": {
-      "outputDir": "Assets/GameMain/Resources/Sprites/Dishes",
+      "outputDir": "Assets/GameMain/Content/Resources/Sprites/Dishes",
       "postprocess": "magenta-alpha",
       "outputFormat": "png",
       "quality": "high"

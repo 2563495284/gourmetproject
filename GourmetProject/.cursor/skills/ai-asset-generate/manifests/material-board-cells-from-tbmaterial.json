@@ -4,7 +4,7 @@
   "stylePrefix": "90s American cable TV cartoon style, thick clean black ink outlines, flat cel animation colors, hand-drawn 2D animation look, polished Unity game board tile sprite quality, playful restaurant tabletop tile, readable material surface, no characters, no face, no eyes, no mouth, no limbs, no readable text, no letters, no numbers, no logo, no watermark, no UI icon symbol, no decorative badge",
   "typeDefaults": {
     "ui": {
-      "outputDir": "Assets/GameMain/Resources/Sprites/UI",
+      "outputDir": "Assets/GameMain/Content/Resources/Sprites/UI",
       "postprocess": "magenta-alpha",
       "background": "opaque",
       "quality": "high"

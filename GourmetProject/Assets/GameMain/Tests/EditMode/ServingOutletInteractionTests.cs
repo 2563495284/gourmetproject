@@ -17,7 +17,7 @@ namespace GourmetProject.Tests.EditMode
         public void FlyingDish_KeepsFlyingSortingLayerAfterPlacementRebuild()
         {
             DishPieceView prefab = AssetDatabase.LoadAssetAtPath<DishPieceView>(
-                "Assets/GameMain/Prefabs/Battle/DishPiece.prefab");
+                "Assets/GameMain/Content/Prefabs/Battle/DishPiece.prefab");
             DishPieceView view = UnityEngine.Object.Instantiate(prefab);
             try
             {
@@ -58,7 +58,7 @@ namespace GourmetProject.Tests.EditMode
         public void PreparedDish_HasDedicatedHoverTrigger()
         {
             ServingOutletView prefab = AssetDatabase.LoadAssetAtPath<ServingOutletView>(
-                "Assets/GameMain/UI/Hud/ServingOutlet.prefab");
+                "Assets/GameMain/Content/Prefabs/UI/Hud/ServingOutlet.prefab");
             ServingOutletView view = UnityEngine.Object.Instantiate(prefab);
             try
             {
@@ -92,7 +92,7 @@ namespace GourmetProject.Tests.EditMode
         public void PreparedDish_RetriesFailedFastHoverWithoutReenter()
         {
             ServingOutletView prefab = AssetDatabase.LoadAssetAtPath<ServingOutletView>(
-                "Assets/GameMain/UI/Hud/ServingOutlet.prefab");
+                "Assets/GameMain/Content/Prefabs/UI/Hud/ServingOutlet.prefab");
             ServingOutletView view = UnityEngine.Object.Instantiate(prefab);
             try
             {
@@ -163,7 +163,7 @@ namespace GourmetProject.Tests.EditMode
         public void FoodDiscardBin_IsNonBlockingWorldSpaceUi()
         {
             FoodDiscardBinView prefab = AssetDatabase.LoadAssetAtPath<FoodDiscardBinView>(
-                "Assets/GameMain/UI/Hud/FoodDiscardBin.prefab");
+                "Assets/GameMain/Content/Prefabs/UI/Hud/FoodDiscardBin.prefab");
 
             Assert.That(prefab, Is.Not.Null);
             FoodDiscardBinView view = UnityEngine.Object.Instantiate(prefab);
@@ -196,7 +196,7 @@ namespace GourmetProject.Tests.EditMode
         public void ServingOutlet_UsesSceneAuthoredTransform()
         {
             ServingOutletView prefab = AssetDatabase.LoadAssetAtPath<ServingOutletView>(
-                "Assets/GameMain/UI/Hud/ServingOutlet.prefab");
+                "Assets/GameMain/Content/Prefabs/UI/Hud/ServingOutlet.prefab");
             Assert.That(prefab, Is.Not.Null);
 
             ServingOutletView view = UnityEngine.Object.Instantiate(prefab);

@@ -11,12 +11,12 @@ namespace GourmetProject.Editor
 {
     internal static class DishIconPreviewPrefabBuilder
     {
-        private const string RewardPrefabPath = "Assets/GameMain/UI/RewardDishPanel.prefab";
-        private const string ShopFoodPrefabPath = "Assets/GameMain/UI/ShopFoodBuyItemView.prefab";
-        private const string ShopBuyCardPrefabPath = "Assets/GameMain/UI/ShopBuyCardView.prefab";
-        private const string RecipeEditDishPrefabPath = "Assets/GameMain/UI/RecipeEditDishView.prefab";
-        private const string CellPrefabPath = "Assets/GameMain/Prefabs/Battle/DiningTableCell.prefab";
-        private const string BadgePrefabPath = "Assets/GameMain/Prefabs/Battle/DishValueBadge.prefab";
+        private const string RewardPrefabPath = "Assets/GameMain/Content/Prefabs/UI/RewardDishPanel.prefab";
+        private const string ShopFoodPrefabPath = "Assets/GameMain/Content/Prefabs/UI/ShopFoodBuyItemView.prefab";
+        private const string ShopBuyCardPrefabPath = "Assets/GameMain/Content/Prefabs/UI/ShopBuyCardView.prefab";
+        private const string RecipeEditDishPrefabPath = "Assets/GameMain/Content/Prefabs/UI/RecipeEditDishView.prefab";
+        private const string CellPrefabPath = "Assets/GameMain/Content/Prefabs/Battle/DiningTableCell.prefab";
+        private const string BadgePrefabPath = "Assets/GameMain/Content/Prefabs/Battle/DishValueBadge.prefab";
         [MenuItem("GourmetProject/UI/Rebuild Dish Icon Previews")]
         private static void RebuildDishIconPreviews()
         {

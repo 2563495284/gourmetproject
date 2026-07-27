@@ -191,7 +191,7 @@ namespace GourmetProject.Tests.EditMode
         public void WarehousePrefab_BuildsFixedWidthVerticalViewportAndGrid()
         {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
-                "Assets/GameMain/UI/RecipeWarehouseView.prefab");
+                "Assets/GameMain/Content/Prefabs/UI/RecipeWarehouseView.prefab");
             GameObject instance = UnityEngine.Object.Instantiate(prefab);
             try
             {
@@ -229,7 +229,7 @@ namespace GourmetProject.Tests.EditMode
         public void DishDrag_PansWarehouseAndSuppressesSelectionClick()
         {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
-                "Assets/GameMain/UI/RecipeWarehouseView.prefab");
+                "Assets/GameMain/Content/Prefabs/UI/RecipeWarehouseView.prefab");
             GameObject instance = UnityEngine.Object.Instantiate(prefab);
             var eventSystemObject = new GameObject(
                 "Warehouse Test EventSystem",
@@ -309,19 +309,19 @@ namespace GourmetProject.Tests.EditMode
         {
             Assert.That(
                 AssetDatabase.LoadAssetAtPath<GameObject>(
-                    "Assets/GameMain/UI/RecipeEditBookView.prefab"),
+                    "Assets/GameMain/Content/Prefabs/UI/RecipeEditBookView.prefab"),
                 Is.Null);
             Assert.That(
                 AssetDatabase.LoadAssetAtPath<GameObject>(
-                    "Assets/GameMain/UI/RecipeBookGridView.prefab"),
+                    "Assets/GameMain/Content/Prefabs/UI/RecipeBookGridView.prefab"),
                 Is.Null);
 
             GameObject warehousePrefab =
                 AssetDatabase.LoadAssetAtPath<GameObject>(
-                    "Assets/GameMain/UI/RecipeWarehouseView.prefab");
+                    "Assets/GameMain/Content/Prefabs/UI/RecipeWarehouseView.prefab");
             GameObject readonlyPrefab =
                 AssetDatabase.LoadAssetAtPath<GameObject>(
-                    "Assets/GameMain/UI/RecipeReadonlyBookView.prefab");
+                    "Assets/GameMain/Content/Prefabs/UI/RecipeReadonlyBookView.prefab");
             Assert.That(warehousePrefab, Is.Not.Null);
             Assert.That(readonlyPrefab, Is.Not.Null);
             Assert.That(
@@ -340,7 +340,7 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(referencedWarehouse, Is.Not.Null);
             Assert.That(
                 AssetDatabase.GetAssetPath(referencedWarehouse),
-                Is.EqualTo("Assets/GameMain/UI/RecipeWarehouseView.prefab"));
+                Is.EqualTo("Assets/GameMain/Content/Prefabs/UI/RecipeWarehouseView.prefab"));
         }
 
         private static int MissingScriptCount(GameObject root)
