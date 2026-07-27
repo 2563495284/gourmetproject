@@ -7,7 +7,7 @@ namespace GourmetProject.Gameplay.Model
 {
     /// <summary>
     /// 技能描述拼接器：把子技能模板（sub_skill.descTemplate）里的占位符按组合层参数（合成后的 SkillRuleDef）回填，
-    /// 再将同一技能的各子技能描述用「；」拼接成技能完整描述。纯逻辑、无 Unity 依赖，便于单测。
+    /// 再将同一技能的各子技能描述用「。+换行」拼接成技能完整描述。纯逻辑、无 Unity 依赖，便于单测。
     ///
     /// 支持的占位符（同时兼容 {token} 与 ${token}）：
     ///   {0}{1}..  actionValue[i]（signed=true 补正负号，倍率类 signed=false 原样，配合模板里的 ×）
@@ -31,7 +31,7 @@ namespace GourmetProject.Gameplay.Model
 
         private static readonly Regex Token = new Regex(@"\$?\{([A-Za-z]+|\d+)\}", RegexOptions.Compiled);
 
-        /// <summary>把若干子技能描述按顺序用「。」拼接（空片段跳过）。</summary>
+        /// <summary>把若干子技能描述按顺序用「。+换行」拼接（空片段跳过）。</summary>
         public static string ComposeSkill(IReadOnlyList<string> componentDescs)
         {
             if (componentDescs == null || componentDescs.Count == 0)
@@ -196,6 +196,10 @@ namespace GourmetProject.Gameplay.Model
             {
                 cat = ExtractAfter(rule.CondParam, "cat:");
             }
+            if (string.IsNullOrEmpty(cat))
+            {
+                cat = CategoryFromCondition(rule.CondParam);
+            }
 
             switch (cat)
             {
@@ -203,6 +207,38 @@ namespace GourmetProject.Gameplay.Model
                 case "": return string.Empty;
                 default: return cat;
             }
+        }
+
+        /// <summary>
+        /// CategoryCount 的 condParam 允许把分类直接写在第一个普通片段里，
+        /// 例如 "cake;tiers:3|5|8"，同时跳过 tiers/div 等控制片段。
+        /// </summary>
+        private static string CategoryFromCondition(string condParam)
+        {
+            if (string.IsNullOrEmpty(condParam))
+            {
+                return string.Empty;
+            }
+
+            string[] segments = condParam.Split(';');
+            foreach (string raw in segments)
+            {
+                string segment = raw.Trim();
+                if (segment.Length == 0 ||
+                    segment.StartsWith("tiers:", System.StringComparison.OrdinalIgnoreCase) ||
+                    segment.StartsWith("div:", System.StringComparison.OrdinalIgnoreCase) ||
+                    segment.StartsWith("include:", System.StringComparison.OrdinalIgnoreCase) ||
+                    segment.StartsWith("source:", System.StringComparison.OrdinalIgnoreCase) ||
+                    segment.StartsWith("skilltype:", System.StringComparison.OrdinalIgnoreCase) ||
+                    segment.StartsWith("cat:", System.StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                return segment;
+            }
+
+            return string.Empty;
         }
 
         /// <summary>取 source 中 token 之后、首个 ';' 之前的原始片段（如 "cake;tiers:3|5|8" + "tiers:" → "3|5|8"）。</summary>

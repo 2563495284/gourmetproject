@@ -15,6 +15,7 @@
       --line: #343948;
       --accent: #f3b35b;
       --accent-2: #78d4ff;
+      --warning: #ffd166;
       --danger: #ff8278;
     }
 
@@ -102,6 +103,10 @@
       color: var(--danger);
     }
 
+    .status.warning {
+      color: var(--warning);
+    }
+
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -118,6 +123,10 @@
       border-radius: 18px;
       background: linear-gradient(180deg, var(--panel) 0%, #171922 100%);
       box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+    }
+
+    .card.has-issues {
+      border-color: color-mix(in srgb, var(--warning) 65%, var(--line));
     }
 
     .card h2 {
@@ -151,6 +160,46 @@
     .pill.accent {
       border-color: color-mix(in srgb, var(--accent-2) 55%, var(--line));
       color: var(--accent-2);
+    }
+
+    .issues,
+    .terms,
+    .details {
+      display: grid;
+      gap: 6px;
+    }
+
+    .issue,
+    .term,
+    .detail {
+      padding: 7px 9px;
+      border-radius: 10px;
+      white-space: pre-wrap;
+    }
+
+    .issue {
+      border: 1px solid color-mix(in srgb, var(--warning) 55%, var(--line));
+      background: color-mix(in srgb, var(--warning) 8%, transparent);
+      color: var(--warning);
+      font-size: 12px;
+    }
+
+    .term {
+      border-left: 3px solid var(--accent-2);
+      background: rgba(120, 212, 255, 0.06);
+      color: #dff5ff;
+      font-size: 13px;
+    }
+
+    .term strong {
+      color: var(--accent-2);
+    }
+
+    .detail {
+      overflow-wrap: anywhere;
+      border: 1px dashed var(--line);
+      color: var(--muted);
+      font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace;
     }
 
     .empty {
@@ -188,6 +237,7 @@
 
   <script>
     const CONFIG_BASE = "../../Assets/StreamingAssets/Config/";
+    const SKILL_SEPARATOR = "。\n";
 
     const state = {
       mode: "dish",
@@ -218,6 +268,10 @@
       18: "Up",
       19: "Right",
       20: "Down",
+      21: "LeftAndSelf",
+      22: "UpAndSelf",
+      23: "RightAndSelf",
+      24: "DownAndSelf",
     };
 
     const searchInput = document.getElementById("search");
@@ -294,9 +348,10 @@
 
       const rows = state.mode === "item" ? buildItemRows() : buildDishRows();
       const filtered = filterRows(rows);
+      const issueCount = filtered.reduce((sum, row) => sum + (row.issues || []).length, 0);
 
-      statusEl.className = "status";
-      statusEl.textContent = `共 ${rows.length} 条，当前显示 ${filtered.length} 条。`;
+      statusEl.className = issueCount > 0 ? "status warning" : "status";
+      statusEl.textContent = `共 ${rows.length} 条，当前显示 ${filtered.length} 条${issueCount > 0 ? `，发现 ${issueCount} 个问题` : "，占位符均已解析"}。`;
       listEl.innerHTML = filtered.length > 0
         ? filtered.map(renderCard).join("")
         : `<div class="empty">没有匹配结果。</div>`;
@@ -312,17 +367,26 @@
           if (!skill) {
             return {
               id: skillId,
-              term: "",
               desc: `缺少技能配置：${skillId}`,
               subSkillIds: [],
+              components: [],
+              terms: [],
+              issues: [`缺少技能配置：${skillId}`],
             };
           }
 
           const subSkillIds = splitPipe(skill.subSkills);
-          const parts = subSkillIds.map((subSkillId, order) => {
+          const components = subSkillIds.map((subSkillId, order) => {
             const subSkill = subSkillsById[subSkillId];
             if (!subSkill) {
-              return `缺少子技能配置：${subSkillId}`;
+              return {
+                id: subSkillId,
+                template: "",
+                desc: `缺少子技能配置：${subSkillId}`,
+                terms: [],
+                issues: [`缺少子技能配置：${subSkillId}`],
+                details: [],
+              };
             }
 
             const rule = {
@@ -336,18 +400,48 @@
               actionParams: Array.isArray(subSkill.actionParam) ? subSkill.actionParam : [],
             };
 
-            return composeSkillComponent(subSkill.descTemplate || "", rule, Boolean(subSkill.signed));
-          }).filter(Boolean);
+            const template = subSkill.descTemplate || "";
+            const desc = composeSkillComponent(template, rule, Boolean(subSkill.signed));
+            const unresolved = findUnresolvedTokens(desc);
+            const issues = unresolved.length > 0
+              ? [`${subSkillId} 未解析：${unresolved.join("、")}`]
+              : [];
+            const terms = splitPipe(subSkill.termId).map(termId => {
+              const term = termsById[termId];
+              if (!term) {
+                issues.push(`${subSkillId} 缺少术语配置：${termId}`);
+                return null;
+              }
+              return term;
+            }).filter(Boolean);
 
-          const term = skill.termId && termsById[skill.termId] ? termsById[skill.termId].name : "";
+            return {
+              id: subSkillId,
+              template,
+              desc,
+              terms,
+              issues,
+              details: [
+                `sub:${subSkillId} · template:${template || "（空）"}`,
+                `cond: scope=${subSkill.condScope} unit=${subSkill.condUnit} param=${subSkill.condParam || "（空）"}`,
+                `action: scope=${subSkill.actionScope} count=${subSkill.actionCount || 0} value=${rule.actionValues.join("|") || "（空）"} param=${rule.actionParams.join("|") || "（空）"}`,
+              ],
+            };
+          });
+
+          const parts = components.map(component => component.desc).filter(Boolean);
           return {
             id: skillId,
-            term,
-            desc: parts.join("。"),
+            desc: parts.join(SKILL_SEPARATOR),
             subSkillIds,
+            components,
+            terms: uniqueById(components.flatMap(component => component.terms)),
+            issues: components.flatMap(component => component.issues),
           };
         });
 
+        const terms = uniqueById(skillDescs.flatMap(skill => skill.terms));
+        const issues = skillDescs.flatMap(skill => skill.issues);
         return {
           id: dish.id,
           name: dish.name || dish.id,
@@ -355,33 +449,48 @@
           meta: [
             `dish:${dish.id}`,
             ...skillDescs.map(skill => `skill:${skill.id}`),
-            ...skillDescs.filter(skill => skill.term).map(skill => `术语:${skill.term}`),
+            ...terms.map(term => `术语:${term.name}`),
             ...(state.showParams ? skillDescs.flatMap(skill => skill.subSkillIds.map(id => `sub:${id}`)) : []),
           ],
+          terms,
+          issues,
+          details: state.showParams
+            ? skillDescs.flatMap(skill => skill.components.flatMap(component => component.details))
+            : [],
         };
       });
     }
 
     function buildItemRows() {
-      return state.data.items.map(item => ({
-        id: item.id,
-        name: item.name || item.id,
-        desc: composeItemDesc(item),
-        meta: [
-          `item:${item.id}`,
-          `kind:${item.itemKind || ""}`,
-          ...(state.showParams ? [
-            `effect:${item.effectType || ""}`,
-            `value:${formatPlain(item.effectValue || 0)}`,
-            item.effectParam ? `param:${item.effectParam}` : "",
-          ].filter(Boolean) : []),
-        ],
-      }));
+      return state.data.items.map(item => {
+        const desc = composeItemDesc(item);
+        const unresolved = findUnresolvedTokens(desc);
+        return {
+          id: item.id,
+          name: item.name || item.id,
+          desc,
+          meta: [
+            `item:${item.id}`,
+            `kind:${item.itemKind || ""}`,
+            ...(state.showParams ? [
+              `effect:${item.effectType || ""}`,
+              `value:${formatPlain(item.effectValue || 0)}`,
+              item.effectParam ? `param:${item.effectParam}` : "",
+            ].filter(Boolean) : []),
+          ],
+          terms: [],
+          issues: unresolved.length > 0 ? [`未解析：${unresolved.join("、")}`] : [],
+          details: state.showParams ? [
+            `template:${item.desc || "（空）"}`,
+            `effect: type=${item.effectType || "（空）"} value=${formatPlain(item.effectValue || 0)} param=${item.effectParam || "（空）"}`,
+          ] : [],
+        };
+      });
     }
 
     function composeItemDesc(item) {
       const values = [item.effectValue, ...splitParamValues(item.effectParam)];
-      return String(item.desc || "").replace(/\{(\d+|effectValue|effectParam|param)\}/g, (match, key) => {
+      return String(item.desc || "").replace(/\$?\{(\d+|effectValue|effectParam|param)\}/g, (match, key) => {
         if (key === "effectValue") {
           return formatPlain(item.effectValue || 0);
         }
@@ -398,7 +507,7 @@
     function composeSkillComponent(template, rule, signed) {
       const numberFormat = value => signed ? formatSigned(value) : formatPlain(value);
 
-      return String(template || "").replace(/\{([A-Za-z]+|\d+)\}/g, (match, key) => {
+      return String(template || "").replace(/\$?\{([A-Za-z]+|\d+)\}/g, (match, key) => {
         if (/^\d+$/.test(key)) {
           const index = Number(key);
           return index >= 0 && index < rule.actionValues.length
@@ -407,6 +516,8 @@
         }
 
         switch (key) {
+          case "value":
+            return formatPlain(rule.actionValues[0] || 0);
           case "cscope":
             return scopeWord(rule.condScope);
           case "ascope":
@@ -414,7 +525,7 @@
           case "unit":
             return Number(rule.condUnit) === 1 ? "种" : "个";
           case "countas":
-            return String(Math.round((Number(rule.actionValues[0]) || 0)));
+            return String(Math.round((Number(rule.actionValues[0]) || 0)) + 1);
           case "thr":
             return String(thresholdOrDefault(rule.condParam));
           case "count":
@@ -422,7 +533,9 @@
           case "tiers":
             return joinBar(extractAfter(rule.condParam, "tiers:"));
           case "tiervals":
-            return joinBar(extractAfter(findEntry(rule.actionParams, "tiervals:"), "tiervals:"));
+            return formatNumberList(
+              extractAfter(findEntry(rule.actionParams, "tiervals:"), "tiervals:"),
+              signed);
           case "floor":
             return extractNumber(rule.actionParams, ["multfloor:", "floor:"]);
           case "cat":
@@ -447,6 +560,9 @@
           row.name,
           row.desc,
           ...(row.meta || []),
+          ...(row.issues || []),
+          ...(row.terms || []).flatMap(term => [term.name, term.desc]),
+          ...(row.details || []),
         ].join(" ").toLowerCase();
         return haystack.includes(state.query);
       });
@@ -456,11 +572,23 @@
       const meta = (row.meta || []).map((text, index) => (
         `<span class="pill ${index === 0 ? "accent" : ""}">${escapeHtml(text)}</span>`
       )).join("");
+      const issues = (row.issues || []).map(text => (
+        `<div class="issue">${escapeHtml(text)}</div>`
+      )).join("");
+      const terms = (row.terms || []).map(term => (
+        `<div class="term"><strong>${escapeHtml(term.name)}</strong> · ${escapeHtml(term.desc || "（无术语说明）")}</div>`
+      )).join("");
+      const details = (row.details || []).map(text => (
+        `<div class="detail">${escapeHtml(text)}</div>`
+      )).join("");
 
       return `
-        <article class="card">
+        <article class="card ${(row.issues || []).length > 0 ? "has-issues" : ""}">
           <h2>${escapeHtml(row.name)}</h2>
           <p class="desc">${escapeHtml(row.desc || "（无描述）")}</p>
+          ${issues ? `<div class="issues">${issues}</div>` : ""}
+          ${terms ? `<div class="terms">${terms}</div>` : ""}
+          ${details ? `<div class="details">${details}</div>` : ""}
           <div class="meta">${meta}</div>
         </article>
       `;
@@ -524,6 +652,10 @@
         case "Up": return "上侧";
         case "Right": return "右侧";
         case "Down": return "下侧";
+        case "LeftAndSelf": return "左侧及自身";
+        case "UpAndSelf": return "上侧及自身";
+        case "RightAndSelf": return "右侧及自身";
+        case "DownAndSelf": return "下侧及自身";
         default: return "";
       }
     }
@@ -553,6 +685,10 @@
           case "Up": return "上侧";
           case "Right": return "右侧";
           case "Down": return "下侧";
+          case "LeftAndSelf": return "左侧及自身";
+          case "UpAndSelf": return "上侧及自身";
+          case "RightAndSelf": return "右侧及自身";
+          case "DownAndSelf": return "下侧及自身";
           default: return scopeWord(scopeValue);
         }
       }
@@ -571,6 +707,10 @@
         case "Up": return `上侧 ${normalizedCount} 个`;
         case "Right": return `右侧 ${normalizedCount} 个`;
         case "Down": return `下侧 ${normalizedCount} 个`;
+        case "LeftAndSelf": return `左侧及自身 ${normalizedCount} 个`;
+        case "UpAndSelf": return `上侧及自身 ${normalizedCount} 个`;
+        case "RightAndSelf": return `右侧及自身 ${normalizedCount} 个`;
+        case "DownAndSelf": return `下侧及自身 ${normalizedCount} 个`;
         case "Category": return catWord(rule) ? `${catWord(rule)} ${normalizedCount} 个` : `指定分类 ${normalizedCount} 个`;
         default: return scopeWord(scopeValue);
       }
@@ -609,6 +749,9 @@
       let cat = extractAfter(findEntry(rule.actionParams, "cat:"), "cat:");
       if (!cat) {
         cat = extractAfter(rule.condParam, "cat:");
+      }
+      if (!cat) {
+        cat = categoryFromCondition(rule.condParam);
       }
 
       switch (cat) {
@@ -656,6 +799,34 @@
         .map(part => part.trim())
         .filter(Boolean)
         .join("/");
+    }
+
+    function formatNumberList(raw, signed) {
+      return String(raw || "")
+        .split(/[|,]/)
+        .map(part => part.trim())
+        .filter(Boolean)
+        .map(value => signed ? formatSigned(value) : formatPlain(value))
+        .join("/");
+    }
+
+    function categoryFromCondition(condParam) {
+      const controlPrefixes = ["tiers:", "div:", "include:", "source:", "skilltype:", "cat:"];
+      for (const rawSegment of String(condParam || "").split(";")) {
+        const segment = rawSegment.trim();
+        if (segment && !controlPrefixes.some(prefix => segment.toLowerCase().startsWith(prefix))) {
+          return segment;
+        }
+      }
+      return "";
+    }
+
+    function findUnresolvedTokens(value) {
+      return [...new Set(String(value || "").match(/\$?\{[^{}]+\}/g) || [])];
+    }
+
+    function uniqueById(rows) {
+      return [...new Map((rows || []).map(row => [row.id, row])).values()];
     }
 
     function escapeHtml(value) {
