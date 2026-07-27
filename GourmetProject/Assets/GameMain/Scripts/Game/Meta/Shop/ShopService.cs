@@ -499,8 +499,9 @@ namespace GourmetProject.Game.Meta
             {
                 case ShopEntryKind.PassiveItem:
                 case ShopEntryKind.ActiveItem:
-                    run.AcquireItem(entry.Id, 0);
-                    applied = true;
+                    ItemAcquireResult acquireResult = run.AcquireItem(entry.Id, 0);
+                    applied = acquireResult.Outcome == ItemAcquireOutcome.Added
+                        || acquireResult.Outcome == ItemAcquireOutcome.Stacked;
                     break;
                 case ShopEntryKind.Dish:
                     applied = run.AddBonusDish(entry.Id);

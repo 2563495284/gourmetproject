@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
 using NaughtyAttributes;
-using UnityEditor;
 using UnityEngine;
 
 namespace SentryToolkit
@@ -44,7 +43,9 @@ namespace SentryToolkit
 
             // Write to file
             File.WriteAllText(filePath, enumContent);
-            AssetDatabase.Refresh();
+#if UNITY_EDITOR
+            UnityEditor.AssetDatabase.Refresh();
+#endif
 
             Debug.Log("ButtonID enum generated successfully at: " + filePath);
         }

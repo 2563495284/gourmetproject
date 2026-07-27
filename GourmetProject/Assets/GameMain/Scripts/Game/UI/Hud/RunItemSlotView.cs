@@ -39,9 +39,22 @@ namespace GourmetProject.Game.UI.Hud
 
         public RectTransform RectTransform => transform as RectTransform;
 
+        /// <summary>
+        /// 槽位中真正绘制道具图标的矩形。
+        /// 主动槽根节点只负责定位，运行时尺寸可能为 0；飞行动画与闪光应使用此矩形。
+        /// </summary>
+        public RectTransform VisualRectTransform
+        {
+            get
+            {
+                EnsureRefs();
+                return _icon != null ? _icon.rectTransform : RectTransform;
+            }
+        }
+
         public Vector2 IconScreenCenter()
         {
-            RectTransform rect = _icon != null ? _icon.rectTransform : RectTransform;
+            RectTransform rect = VisualRectTransform;
             if (rect == null)
             {
                 return Vector2.zero;

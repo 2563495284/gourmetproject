@@ -191,12 +191,13 @@ namespace GourmetProject.Tests.EditMode
         public void WarehousePrefab_BuildsFixedWidthVerticalViewportAndGrid()
         {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
-                "Assets/GameMain/UI/RecipeBookGridView.prefab");
+                "Assets/GameMain/UI/RecipeWarehouseView.prefab");
             GameObject instance = UnityEngine.Object.Instantiate(prefab);
             try
             {
-                RecipeEditBookView book = instance.GetComponent<RecipeEditBookView>();
-                book.Bind(0, null);
+                RecipeWarehouseView warehouse =
+                    instance.GetComponent<RecipeWarehouseView>();
+                warehouse.RefreshLayout();
 
                 RecipeWarehouseScrollRect scrollRect =
                     instance.GetComponent<RecipeWarehouseScrollRect>();
@@ -204,15 +205,18 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(scrollRect.horizontal, Is.False);
                 Assert.That(scrollRect.vertical, Is.True);
                 Assert.That(scrollRect.viewport, Is.Not.Null);
-                Assert.That(scrollRect.content, Is.SameAs(book.DishContainer));
                 Assert.That(
-                    book.DishContainer.GetComponentInChildren<RecipeWarehouseGridGraphic>(true),
+                    scrollRect.content,
+                    Is.SameAs(warehouse.DishContainer));
+                Assert.That(
+                    warehouse.DishContainer
+                        .GetComponentInChildren<RecipeWarehouseGridGraphic>(true),
                     Is.Not.Null);
                 Assert.That(
-                    book.DishContainer.GetComponent<GridLayoutGroup>().enabled,
-                    Is.False);
+                    warehouse.DishContainer.GetComponent<GridLayoutGroup>(),
+                    Is.Null);
                 Assert.That(
-                    book.DishContainer.rect.width,
+                    warehouse.DishContainer.rect.width,
                     Is.EqualTo(scrollRect.viewport.rect.width).Within(0.001f));
             }
             finally
@@ -225,7 +229,7 @@ namespace GourmetProject.Tests.EditMode
         public void DishDrag_PansWarehouseAndSuppressesSelectionClick()
         {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
-                "Assets/GameMain/UI/RecipeBookGridView.prefab");
+                "Assets/GameMain/UI/RecipeWarehouseView.prefab");
             GameObject instance = UnityEngine.Object.Instantiate(prefab);
             var eventSystemObject = new GameObject(
                 "Warehouse Test EventSystem",
@@ -234,7 +238,8 @@ namespace GourmetProject.Tests.EditMode
             {
                 RectTransform bookRect = (RectTransform)instance.transform;
                 bookRect.sizeDelta = new Vector2(300f, 220f);
-                RecipeEditBookView book = instance.GetComponent<RecipeEditBookView>();
+                RecipeWarehouseView warehouse =
+                    instance.GetComponent<RecipeWarehouseView>();
                 int clickCount = 0;
                 RecipeEditDishView firstDish = null;
                 for (int i = 0; i < 30; i++)
@@ -244,7 +249,9 @@ namespace GourmetProject.Tests.EditMode
                         typeof(RectTransform),
                         typeof(CanvasGroup),
                         typeof(RecipeEditDishView));
-                    dishObject.transform.SetParent(book.DishContainer, false);
+                    dishObject.transform.SetParent(
+                        warehouse.DishContainer,
+                        false);
                     RecipeEditDishView dish =
                         dishObject.GetComponent<RecipeEditDishView>();
                     dish.Bind(
@@ -258,10 +265,9 @@ namespace GourmetProject.Tests.EditMode
                     firstDish ??= dish;
                 }
 
-                book.Bind(0, null);
-                book.ApplyImmediateLayout();
+                warehouse.RefreshLayout();
                 Canvas.ForceUpdateCanvases();
-                Vector2 before = book.DishContainer.anchoredPosition;
+                Vector2 before = warehouse.DishContainer.anchoredPosition;
                 var pointer = new PointerEventData(
                     eventSystemObject.GetComponent<EventSystem>())
                 {
@@ -279,10 +285,10 @@ namespace GourmetProject.Tests.EditMode
                 firstDish.OnEndDrag(pointer);
 
                 Assert.That(
-                    book.DishContainer.anchoredPosition.x,
+                    warehouse.DishContainer.anchoredPosition.x,
                     Is.EqualTo(before.x).Within(0.001f));
                 Assert.That(
-                    book.DishContainer.anchoredPosition.y,
+                    warehouse.DishContainer.anchoredPosition.y,
                     Is.Not.EqualTo(before.y));
                 firstDish.OnPointerClick(pointer);
                 Assert.That(clickCount, Is.Zero);
@@ -296,6 +302,57 @@ namespace GourmetProject.Tests.EditMode
                 UnityEngine.Object.DestroyImmediate(eventSystemObject);
                 UnityEngine.Object.DestroyImmediate(instance);
             }
+        }
+
+        [Test]
+        public void WarehouseAssets_AreRenamedAndReadonlyPrefabReferencesWarehouse()
+        {
+            Assert.That(
+                AssetDatabase.LoadAssetAtPath<GameObject>(
+                    "Assets/GameMain/UI/RecipeEditBookView.prefab"),
+                Is.Null);
+            Assert.That(
+                AssetDatabase.LoadAssetAtPath<GameObject>(
+                    "Assets/GameMain/UI/RecipeBookGridView.prefab"),
+                Is.Null);
+
+            GameObject warehousePrefab =
+                AssetDatabase.LoadAssetAtPath<GameObject>(
+                    "Assets/GameMain/UI/RecipeWarehouseView.prefab");
+            GameObject readonlyPrefab =
+                AssetDatabase.LoadAssetAtPath<GameObject>(
+                    "Assets/GameMain/UI/RecipeReadonlyBookView.prefab");
+            Assert.That(warehousePrefab, Is.Not.Null);
+            Assert.That(readonlyPrefab, Is.Not.Null);
+            Assert.That(
+                MissingScriptCount(warehousePrefab),
+                Is.Zero);
+            Assert.That(
+                MissingScriptCount(readonlyPrefab),
+                Is.Zero);
+
+            RecipeReadonlyBookView readonlyView =
+                readonlyPrefab.GetComponent<RecipeReadonlyBookView>();
+            var serializedView = new SerializedObject(readonlyView);
+            RecipeWarehouseView referencedWarehouse =
+                serializedView.FindProperty("_warehousePrefab")
+                    .objectReferenceValue as RecipeWarehouseView;
+            Assert.That(referencedWarehouse, Is.Not.Null);
+            Assert.That(
+                AssetDatabase.GetAssetPath(referencedWarehouse),
+                Is.EqualTo("Assets/GameMain/UI/RecipeWarehouseView.prefab"));
+        }
+
+        private static int MissingScriptCount(GameObject root)
+        {
+            int count = 0;
+            foreach (Transform child in root.GetComponentsInChildren<Transform>(true))
+            {
+                count += GameObjectUtility.GetMonoBehavioursWithMissingScriptCount(
+                    child.gameObject);
+            }
+
+            return count;
         }
     }
 }

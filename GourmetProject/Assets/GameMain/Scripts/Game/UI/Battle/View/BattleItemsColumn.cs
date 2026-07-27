@@ -430,7 +430,9 @@ namespace GourmetProject.Game.UI.Battle.View
                 return false;
             }
 
-            RectTransform target = _activeItemSlots[index].transform as RectTransform;
+            // ActiveSlot 根 RectTransform 仅用于锚点定位，BattleForm prefab 中其尺寸为 0。
+            // 使用真实 Icon 的矩形，否则动画目标会被钳成 1×1 像素而完全不可见。
+            RectTransform target = _activeItemSlots[index].VisualRectTransform;
             return TryGetRectInLayer(target, layer, out center, out size);
         }
 

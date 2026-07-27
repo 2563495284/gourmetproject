@@ -63,7 +63,7 @@ namespace GourmetProject.Game.UI.Meta
 
             public virtual void Refresh(RecipeReadonlyBookView panel)
             {
-                panel.RebuildBooksForCurrentState();
+                panel.RebuildWarehouseForCurrentState();
             }
 
             public virtual void OnExitClicked(RecipeReadonlyBookView panel)
@@ -92,7 +92,7 @@ namespace GourmetProject.Game.UI.Meta
 
             public override void Enter(RecipeReadonlyBookView panel)
             {
-                panel.RebuildBooksForCurrentState();
+                panel.RebuildWarehouseForCurrentState();
             }
 
             public override void OnExitClicked(RecipeReadonlyBookView panel)
@@ -126,7 +126,7 @@ namespace GourmetProject.Game.UI.Meta
 
             public override void Enter(RecipeReadonlyBookView panel)
             {
-                panel.RebuildBooksForCurrentState();
+                panel.RebuildWarehouseForCurrentState();
             }
 
             public override void OnExitClicked(RecipeReadonlyBookView panel)
@@ -154,7 +154,7 @@ namespace GourmetProject.Game.UI.Meta
 
             public override void Enter(RecipeReadonlyBookView panel)
             {
-                panel.RebuildBooksForCurrentState();
+                panel.RebuildWarehouseForCurrentState();
             }
 
             public override void OnExitClicked(RecipeReadonlyBookView panel)
@@ -198,7 +198,7 @@ namespace GourmetProject.Game.UI.Meta
 
             public override void Enter(RecipeReadonlyBookView panel)
             {
-                panel.RebuildBooksForCurrentState();
+                panel.RebuildWarehouseForCurrentState();
             }
 
             public override void OnExitClicked(RecipeReadonlyBookView panel)

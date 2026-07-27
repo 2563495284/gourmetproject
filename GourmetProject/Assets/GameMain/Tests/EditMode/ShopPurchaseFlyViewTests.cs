@@ -1,5 +1,11 @@
 using System.Reflection;
+using GourmetProject.Config;
+using GourmetProject.Game.Adapter;
+using GourmetProject.Game.Meta;
+using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Battle.View;
+using GourmetProject.Game.UI.Hud;
+using GourmetProject.Game.UI.Meta;
 using GourmetProject.Game.UI.Widgets;
 using NUnit.Framework;
 using UnityEditor;
@@ -21,6 +27,86 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(prefab.GetComponent<RectTransform>(), Is.Not.Null);
             Assert.That(prefab.GetComponent<CanvasGroup>(), Is.Not.Null);
             Assert.That(prefab.GetComponent<Image>(), Is.Not.Null);
+        }
+
+        [TestCase("Assets/GameMain/UI/ShopActiveItemBuyItemView.prefab")]
+        [TestCase("Assets/GameMain/UI/ShopPassiveItemBuyItemView.prefab")]
+        [TestCase("Assets/GameMain/UI/ShopFragmentPackBuyItemView.prefab")]
+        public void NonFoodShopCards_UseWholeCardAsBuyButton(string prefabPath)
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+            Assert.That(prefab, Is.Not.Null);
+
+            ShopBuyItemViewBase card = prefab.GetComponent<ShopBuyItemViewBase>();
+            Button[] buttons = prefab.GetComponentsInChildren<Button>(true);
+            Assert.That(card, Is.Not.Null);
+            Assert.That(buttons, Has.Length.EqualTo(1));
+            Assert.That(buttons[0].gameObject, Is.SameAs(prefab));
+        }
+
+        [Test]
+        public void ActiveShopPurchase_WhenSlotsAreFull_DoesNotChargeOrClearStock()
+        {
+            var config = new ConfigService();
+            config.LoadAll();
+            var run = new GameRun(
+                config.Tables,
+                GameplayContentBuilder.BuildDatabase(config.Tables),
+                "shop_test_character",
+                "shop_test_seed");
+            run.Gold = 1000;
+            run.AcquireItem("item_active_season_sweet", 0);
+            run.AcquireItem("item_active_season_bitter", 0);
+            Assert.That(run.HasFreeActiveSlot, Is.False);
+
+            var entry = new ShopEntry(
+                ShopEntryKind.ActiveItem,
+                "item_active_season_numb",
+                "加麻单",
+                string.Empty,
+                35,
+                slotIndex: 0);
+            int goldBefore = run.Gold;
+
+            bool purchased = ShopService.Purchase(run, entry);
+
+            Assert.That(purchased, Is.False);
+            Assert.That(run.Gold, Is.EqualTo(goldBefore));
+            Assert.That(run.ActiveItemCount, Is.EqualTo(run.ActiveSlotCapacity));
+            Assert.That(entry.IsStocked, Is.True);
+        }
+
+        [Test]
+        public void ActiveItemSlot_UsesVisibleIconRectForPurchaseFlyTarget()
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/GameMain/UI/BattleForm.prefab");
+            Assert.That(prefab, Is.Not.Null);
+
+            BattleItemsColumn column = prefab.GetComponentInChildren<BattleItemsColumn>(true);
+            Assert.That(column, Is.Not.Null);
+
+            RunItemSlotView[] slots = column.GetComponentsInChildren<RunItemSlotView>(true);
+            Assert.That(slots, Is.Not.Empty);
+
+            bool foundZeroSizedAnchor = false;
+            foreach (RunItemSlotView slot in slots)
+            {
+                RectTransform root = slot.RectTransform;
+                RectTransform visual = slot.VisualRectTransform;
+                Assert.That(visual, Is.Not.Null);
+                Assert.That(visual.rect.width, Is.GreaterThan(1f));
+                Assert.That(visual.rect.height, Is.GreaterThan(1f));
+                if (root != null && (root.rect.width <= 1f || root.rect.height <= 1f))
+                {
+                    foundZeroSizedAnchor = true;
+                }
+            }
+
+            Assert.That(
+                foundZeroSizedAnchor,
+                Is.True,
+                "测试应覆盖 BattleForm 中仅负责定位、没有可见尺寸的主动槽根节点。");
         }
 
         [Test]

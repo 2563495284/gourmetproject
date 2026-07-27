@@ -61,6 +61,7 @@ namespace GourmetProject.Game.UI.Battle.View
             _group.blocksRaycasts = false;
             _image.raycastTarget = false;
             _image.preserveAspect = true;
+            gameObject.layer = _layer.gameObject.layer;
             ConfigureRect(_rect, Vector2.zero, Vector2.one * 100f);
             return true;
         }
@@ -322,7 +323,7 @@ namespace GourmetProject.Game.UI.Battle.View
                     _sequence.Kill();
                 }
 
-                CompleteFinish();
+                CompleteFinish(completeArrival: false);
             }
         }
 
@@ -397,6 +398,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 typeof(CanvasRenderer),
                 typeof(ShopPurchaseTrailGraphic));
             go.transform.SetParent(_layer, false);
+            go.layer = _layer.gameObject.layer;
             ConfigureFullLayerRect(go.transform as RectTransform);
             var trail = go.GetComponent<ShopPurchaseTrailGraphic>();
             trail.raycastTarget = false;
@@ -414,6 +416,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 typeof(CanvasRenderer),
                 typeof(ShopPurchaseSparkGraphic));
             go.transform.SetParent(_layer, false);
+            go.layer = _layer.gameObject.layer;
             ConfigureFullLayerRect(go.transform as RectTransform);
             var sparks = go.GetComponent<ShopPurchaseSparkGraphic>();
             sparks.raycastTarget = false;
@@ -434,6 +437,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 typeof(CanvasRenderer),
                 typeof(Image));
             go.transform.SetParent(_layer, false);
+            go.layer = _layer.gameObject.layer;
             var image = go.GetComponent<Image>();
             ConfigureRect(image.rectTransform, center, size);
             image.sprite = sprite;
@@ -509,8 +513,8 @@ namespace GourmetProject.Game.UI.Battle.View
 
         private void BindCompletionCallbacks()
         {
-            _sequence.OnComplete(CompleteFinish);
-            _sequence.OnKill(CompleteFinish);
+            _sequence.OnComplete(() => CompleteFinish());
+            _sequence.OnKill(() => CompleteFinish(completeArrival: !_beingDestroyed));
         }
 
         private void CompleteArrival()
@@ -526,7 +530,7 @@ namespace GourmetProject.Game.UI.Battle.View
             callback?.Invoke();
         }
 
-        private void CompleteFinish()
+        private void CompleteFinish(bool completeArrival = true)
         {
             if (_finished)
             {
@@ -534,7 +538,17 @@ namespace GourmetProject.Game.UI.Battle.View
             }
 
             _finished = true;
-            CompleteArrival();
+            if (completeArrival)
+            {
+                CompleteArrival();
+            }
+            else
+            {
+                // 场景/父 UI 正在销毁时，刷新抵达目标会访问同样正在销毁的 HUD。
+                // 完成回调仍会注销本动画；宿主销毁时会自行清零飞行计数。
+                _onArrived = null;
+            }
+
             ReleaseOwnedTexture();
             for (int i = 0; i < _spawnedObjects.Count; i++)
             {
