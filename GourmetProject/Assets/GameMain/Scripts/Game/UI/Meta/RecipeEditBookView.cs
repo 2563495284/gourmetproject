@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -7,24 +8,41 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>
-    /// 菜谱网格视图。普通查看与选择流程负责布局，也可接收菜品内部调整的 Drop。
+    /// 菜谱统一仓库视图：矩形占格、自动紧凑排布与双轴拖拽浏览。
+    /// 保留原类型名，避免已有 prefab 和页面引用迁移。
     /// </summary>
     public sealed class RecipeEditBookView : MonoBehaviour, IDropHandler
     {
         private const float LayoutTweenDuration = 0.2f;
+        private static readonly Color DefaultFrameColor = new(0.82f, 0.74f, 0.58f, 1f);
+        private static readonly Color DefaultSurfaceColor = new(0.075f, 0.09f, 0.095f, 1f);
+        private static readonly Color DefaultGridColor = new(0.34f, 0.39f, 0.4f, 0.82f);
 
+        [Header("Hierarchy")]
         [SerializeField] private RectTransform _dishContainer;
-        [SerializeField] private Vector2 _cellSize = new Vector2(96f, 96f);
-        [SerializeField] private Vector2 _spacing = new Vector2(8f, 8f);
-        [SerializeField] private int _columnCount = 2;
-        [SerializeField] private RectOffset _padding;
-        [SerializeField] private ScrollRect _scrollRect;
+        [SerializeField] private RecipeWarehouseScrollRect _scrollRect;
+
+        [Header("Warehouse Layout")]
+        [SerializeField, Min(24f)] private float _warehouseCellSize = 88f;
+        [SerializeField, Min(0f)] private float _warehousePadding = 24f;
+        [SerializeField, Min(0f)] private float _itemInset = 6f;
+        [SerializeField, Min(0.5f)] private float _gridLineWidth = 2f;
+        [SerializeField, Min(0f)] private float _frameThickness = 14f;
+
+        [Header("Warehouse Style")]
+        [SerializeField] private Color _frameColor = DefaultFrameColor;
+        [SerializeField] private Color _surfaceColor = DefaultSurfaceColor;
+        [SerializeField] private Color _gridColor = DefaultGridColor;
 
         private int _bookIndex;
         private Action<RecipeEditDishView, int, int> _onDishDropped;
-        private GridLayoutGroup _grid;
+        private GridLayoutGroup _legacyGrid;
         private RectTransform _viewport;
+        private RecipeWarehouseGridGraphic _gridGraphic;
         private bool _scrollWired;
+        private bool _hasLayout;
+        private readonly List<RecipeEditDishView> _layoutDishes = new();
+        private readonly List<Vector2Int> _layoutSizes = new();
 
         public RectTransform DishContainer => _dishContainer;
 
@@ -33,9 +51,16 @@ namespace GourmetProject.Game.UI.Meta
             get
             {
                 ResolveLayout();
-                return _scrollRect != null && _scrollRect.viewport != null
-                    ? _scrollRect.viewport
-                    : transform as RectTransform;
+                return _viewport != null ? _viewport : transform as RectTransform;
+            }
+        }
+
+        public Vector2 NormalizedPosition
+        {
+            get
+            {
+                ResolveLayout();
+                return _scrollRect != null ? _scrollRect.normalizedPosition : new Vector2(0f, 1f);
             }
         }
 
@@ -52,11 +77,27 @@ namespace GourmetProject.Game.UI.Meta
             _bookIndex = bookIndex;
             _onDishDropped = onDishDropped;
             ApplyImmediateLayout();
+            SetNormalizedPosition(new Vector2(0f, 1f));
+        }
+
+        public void SetNormalizedPosition(Vector2 normalizedPosition)
+        {
+            ResolveLayout();
+            if (_scrollRect == null)
+            {
+                return;
+            }
+
+            Canvas.ForceUpdateCanvases();
+            _scrollRect.StopMovement();
+            _scrollRect.normalizedPosition = new Vector2(
+                Mathf.Clamp01(normalizedPosition.x),
+                Mathf.Clamp01(normalizedPosition.y));
         }
 
         public void OnDrop(PointerEventData eventData)
         {
-            RecipeEditDishView dish = eventData.pointerDrag == null
+            RecipeEditDishView dish = eventData?.pointerDrag == null
                 ? null
                 : eventData.pointerDrag.GetComponentInParent<RecipeEditDishView>();
             if (dish != null)
@@ -68,143 +109,103 @@ namespace GourmetProject.Game.UI.Meta
         public void ApplyImmediateLayout(RecipeEditDishView exclude = null)
         {
             ResolveLayout();
-            int index = 0;
-            foreach (RecipeEditDishView child in Dishes())
-            {
-                if (child == null || child == exclude)
-                {
-                    continue;
-                }
-
-                RectTransform rect = (RectTransform)child.transform;
-                ConfigureDishRect(rect);
-                rect.anchoredPosition = SlotAnchoredPosition(index);
-                rect.sizeDelta = _cellSize;
-                index++;
-            }
-
-            UpdateContentSize(index);
-        }
-
-        public void FitSlotsWithinView()
-        {
-            ResolveLayout();
-        }
-
-        private void ApplySlotFit()
-        {
             if (_dishContainer == null)
             {
                 return;
             }
 
-            int columns = Mathf.Max(1, _columnCount);
-            Vector2 available = ViewportSize();
-            if (available.x <= 0f)
+            Canvas.ForceUpdateCanvases();
+            Vector2 previousNormalized = _hasLayout && _scrollRect != null
+                ? _scrollRect.normalizedPosition
+                : new Vector2(0f, 1f);
+            BuildLayoutInputs(exclude);
+            Vector2 viewportSize = ViewportSize();
+            float aspect = viewportSize.y > 0.01f
+                ? viewportSize.x / viewportSize.y
+                : 1f;
+            RecipeWarehouseLayout.Result layout = RecipeWarehouseLayout.Pack(
+                _layoutSizes,
+                aspect);
+
+            float desiredWidth = _warehousePadding * 2f
+                + layout.Columns * _warehouseCellSize;
+            float desiredHeight = _warehousePadding * 2f
+                + layout.Rows * _warehouseCellSize;
+            Vector2 contentSize = new(
+                Mathf.Max(viewportSize.x, desiredWidth),
+                Mathf.Max(viewportSize.y, desiredHeight));
+            _dishContainer.SetSizeWithCurrentAnchors(
+                RectTransform.Axis.Horizontal,
+                contentSize.x);
+            _dishContainer.SetSizeWithCurrentAnchors(
+                RectTransform.Axis.Vertical,
+                contentSize.y);
+
+            int count = Mathf.Min(_layoutDishes.Count, layout.Placements.Count);
+            for (int i = 0; i < count; i++)
             {
-                return;
+                RecipeWarehouseLayout.Placement placement = layout.Placements[i];
+                RectTransform rect = (RectTransform)_layoutDishes[i].transform;
+                ConfigureDishRect(rect);
+                rect.anchoredPosition = new Vector2(
+                    _warehousePadding
+                        + placement.Position.x * _warehouseCellSize
+                        + _itemInset * 0.5f,
+                    -_warehousePadding
+                        - placement.Position.y * _warehouseCellSize
+                        - _itemInset * 0.5f);
+                rect.sizeDelta = new Vector2(
+                    Mathf.Max(1f, placement.Size.x * _warehouseCellSize - _itemInset),
+                    Mathf.Max(1f, placement.Size.y * _warehouseCellSize - _itemInset));
             }
 
-            float desiredWidth = _padding.left + _padding.right + columns * _cellSize.x + Mathf.Max(0, columns - 1) * _spacing.x;
-            if (desiredWidth <= 0f)
-            {
-                return;
-            }
+            ConfigureGridGraphic();
+            Canvas.ForceUpdateCanvases();
+            _hasLayout = true;
+            SetNormalizedPosition(previousNormalized);
+        }
 
-            float scale = Mathf.Min(available.x / desiredWidth, 1f);
-            _cellSize *= scale;
-            _spacing *= scale;
+        public void FitSlotsWithinView()
+        {
+            ApplyImmediateLayout();
         }
 
         public void AnimateCompaction(RecipeEditDishView exclude = null)
         {
-            ResolveLayout();
-            int index = 0;
-            foreach (RecipeEditDishView child in Dishes())
-            {
-                if (child == null || child == exclude)
-                {
-                    continue;
-                }
-
-                RectTransform rect = (RectTransform)child.transform;
-                ConfigureDishRect(rect);
-                DOTween.Kill(rect);
-                Vector2 target = SlotAnchoredPosition(index);
-                DOTween.To(() => rect.anchoredPosition, value => rect.anchoredPosition = value, target, LayoutTweenDuration)
-                    .SetEase(Ease.OutCubic)
-                    .SetUpdate(true)
-                    .SetTarget(rect)
-                    .SetLink(rect.gameObject);
-                index++;
-            }
-
-            UpdateContentSize(index);
+            AnimateRelayout(exclude);
         }
 
         public void AnimateInsertionGap(int insertIndex, RecipeEditDishView exclude = null)
         {
-            ResolveLayout();
-            insertIndex = Mathf.Max(0, insertIndex);
-            int index = 0;
-            foreach (RecipeEditDishView child in Dishes())
-            {
-                if (child == null || child == exclude)
-                {
-                    continue;
-                }
-
-                RectTransform rect = (RectTransform)child.transform;
-                ConfigureDishRect(rect);
-                int targetIndex = index >= insertIndex ? index + 1 : index;
-                DOTween.Kill(rect);
-                Vector2 target = SlotAnchoredPosition(targetIndex);
-                DOTween.To(() => rect.anchoredPosition, value => rect.anchoredPosition = value, target, LayoutTweenDuration)
-                    .SetEase(Ease.OutCubic)
-                    .SetUpdate(true)
-                    .SetTarget(rect)
-                    .SetLink(rect.gameObject);
-                index++;
-            }
-
-            UpdateContentSize(index + 1);
+            AnimateRelayout(exclude);
         }
 
         public void ScrollToIndex(int index, float duration, Action onComplete = null)
         {
             ResolveLayout();
-            if (_scrollRect == null || _scrollRect.content == null || _scrollRect.viewport == null)
+            RecipeEditDishView[] dishes = Dishes();
+            if (_scrollRect == null || index < 0 || index >= dishes.Length)
             {
                 onComplete?.Invoke();
                 return;
             }
 
-            UpdateContentSize(Mathf.Max(CurrentDishCount(), index + 1));
-            Canvas.ForceUpdateCanvases();
-            float contentHeight = Mathf.Max(_scrollRect.content.rect.height, _scrollRect.viewport.rect.height);
-            float scrollableHeight = contentHeight - _scrollRect.viewport.rect.height;
-            if (scrollableHeight <= 0.01f)
-            {
-                onComplete?.Invoke();
-                return;
-            }
-
-            float targetTop = TargetTopForIndex(index, scrollableHeight);
-            float targetNormalized = 1f - targetTop / scrollableHeight;
+            RectTransform target = (RectTransform)dishes[index].transform;
+            Vector2 destination = NormalizedPositionForRect(target);
             _scrollRect.StopMovement();
             DOTween.Kill(_scrollRect);
             if (duration <= 0f)
             {
-                _scrollRect.verticalNormalizedPosition = targetNormalized;
+                SetNormalizedPosition(destination);
                 onComplete?.Invoke();
                 return;
             }
 
             DOTween.To(
-                    () => _scrollRect.verticalNormalizedPosition,
-                    value => _scrollRect.verticalNormalizedPosition = value,
-                    targetNormalized,
-                    Mathf.Max(0f, duration))
+                    () => _scrollRect.normalizedPosition,
+                    value => _scrollRect.normalizedPosition = value,
+                    destination,
+                    duration)
                 .SetEase(Ease.OutCubic)
                 .SetUpdate(true)
                 .SetTarget(_scrollRect)
@@ -213,55 +214,26 @@ namespace GourmetProject.Game.UI.Meta
 
         public Vector3 SlotWorldCenter(int index)
         {
-            ResolveLayout();
-            if (_dishContainer == null)
-            {
-                return transform.position;
-            }
-
-            Vector2 anchored = SlotAnchoredPosition(index);
-            Rect containerRect = _dishContainer.rect;
-            Vector2 local = new Vector2(
-                -containerRect.width * _dishContainer.pivot.x + anchored.x + _cellSize.x * 0.5f,
-                containerRect.height * (1f - _dishContainer.pivot.y) + anchored.y - _cellSize.y * 0.5f);
-            return _dishContainer.TransformPoint(local);
+            RecipeEditDishView[] dishes = Dishes();
+            return index >= 0 && index < dishes.Length
+                ? ((RectTransform)dishes[index].transform).TransformPoint(
+                    ((RectTransform)dishes[index].transform).rect.center)
+                : transform.position;
         }
 
         public Vector3 SlotWorldCenterAfterScrollToIndex(int index)
         {
-            ResolveLayout();
-            if (_dishContainer == null || _scrollRect == null || _scrollRect.viewport == null)
-            {
-                return SlotWorldCenter(index);
-            }
-
-            UpdateContentSize(Mathf.Max(CurrentDishCount(), index + 1));
-            Canvas.ForceUpdateCanvases();
-            float contentHeight = Mathf.Max(_scrollRect.content.rect.height, _scrollRect.viewport.rect.height);
-            float scrollableHeight = contentHeight - _scrollRect.viewport.rect.height;
-            if (scrollableHeight <= 0.01f)
-            {
-                return SlotWorldCenter(index);
-            }
-
-            float targetTop = TargetTopForIndex(index, scrollableHeight);
-            float currentTop = (1f - _scrollRect.verticalNormalizedPosition) * scrollableHeight;
-            Vector2 anchored = SlotAnchoredPosition(index);
-            Rect containerRect = _dishContainer.rect;
-            Vector2 contentLocal = new Vector2(
-                -containerRect.width * _dishContainer.pivot.x + anchored.x + _cellSize.x * 0.5f,
-                containerRect.height * (1f - _dishContainer.pivot.y) + anchored.y - _cellSize.y * 0.5f);
-            Vector3 contentLocalPosition = _dishContainer.localPosition;
-            contentLocalPosition.y += targetTop - currentTop;
-            return _scrollRect.viewport.TransformPoint(contentLocalPosition + (Vector3)contentLocal);
+            ScrollToIndex(index, 0f);
+            return SlotWorldCenter(index);
         }
 
         public int CurrentDishCount(RecipeEditDishView exclude = null)
         {
             int count = 0;
-            foreach (RecipeEditDishView child in Dishes())
+            RecipeEditDishView[] dishes = Dishes();
+            for (int i = 0; i < dishes.Length; i++)
             {
-                if (child != null && child != exclude)
+                if (dishes[i] != null && dishes[i] != exclude)
                 {
                     count++;
                 }
@@ -270,8 +242,51 @@ namespace GourmetProject.Game.UI.Meta
             return count;
         }
 
+        private void AnimateRelayout(RecipeEditDishView exclude)
+        {
+            ResolveLayout();
+            var starts = new Dictionary<RectTransform, Vector2>();
+            RecipeEditDishView[] dishes = Dishes();
+            for (int i = 0; i < dishes.Length; i++)
+            {
+                if (dishes[i] != null && dishes[i] != exclude)
+                {
+                    RectTransform rect = (RectTransform)dishes[i].transform;
+                    starts[rect] = rect.anchoredPosition;
+                }
+            }
+
+            ApplyImmediateLayout(exclude);
+            foreach (KeyValuePair<RectTransform, Vector2> pair in starts)
+            {
+                RectTransform rect = pair.Key;
+                if (rect == null)
+                {
+                    continue;
+                }
+
+                Vector2 target = rect.anchoredPosition;
+                rect.anchoredPosition = pair.Value;
+                DOTween.Kill(rect);
+                DOTween.To(
+                        () => rect.anchoredPosition,
+                        value => rect.anchoredPosition = value,
+                        target,
+                        LayoutTweenDuration)
+                    .SetEase(Ease.OutCubic)
+                    .SetUpdate(true)
+                    .SetTarget(rect)
+                    .SetLink(rect.gameObject);
+            }
+        }
+
         private void ResolveLayout()
         {
+            if (_dishContainer == null)
+            {
+                _dishContainer = transform.Find("DishContainer") as RectTransform;
+            }
+
             if (_dishContainer == null)
             {
                 _dishContainer = transform as RectTransform;
@@ -282,27 +297,15 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            _padding ??= new RectOffset(0, 0, 0, 0);
+            _legacyGrid ??= _dishContainer.GetComponent<GridLayoutGroup>();
+            if (_legacyGrid != null)
+            {
+                _legacyGrid.enabled = false;
+            }
+
             EnsureScrollRect();
             ConfigureContentRect();
-
-            _grid ??= _dishContainer.GetComponent<GridLayoutGroup>();
-            if (_grid == null)
-            {
-                return;
-            }
-
-            _cellSize = _grid.cellSize;
-            _spacing = _grid.spacing;
-            _columnCount = Mathf.Max(1, _grid.constraintCount);
-            if (_grid.padding != null)
-            {
-                _padding = new RectOffset(_grid.padding.left, _grid.padding.right, _grid.padding.top, _grid.padding.bottom);
-            }
-
-            ApplySlotFit();
-
-            _grid.enabled = false;
+            EnsureGridGraphic();
         }
 
         private void EnsureScrollRect()
@@ -313,153 +316,208 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             _scrollWired = true;
-            _viewport = transform as RectTransform;
-            if (_viewport == null)
+            RectTransform root = transform as RectTransform;
+            if (root == null)
             {
                 return;
             }
 
-            if (_scrollRect == null)
+            Image frame = GetComponent<Image>() ?? gameObject.AddComponent<Image>();
+            frame.color = _frameColor;
+            frame.raycastTarget = true;
+
+            _viewport = transform.Find("WarehouseViewport") as RectTransform;
+            if (_viewport == null)
             {
-                _scrollRect = GetComponent<ScrollRect>() ?? gameObject.AddComponent<ScrollRect>();
+                var viewportObject = new GameObject(
+                    "WarehouseViewport",
+                    typeof(RectTransform),
+                    typeof(CanvasRenderer),
+                    typeof(Image),
+                    typeof(RectMask2D));
+                viewportObject.layer = gameObject.layer;
+                _viewport = viewportObject.GetComponent<RectTransform>();
+                _viewport.SetParent(transform, false);
+                _viewport.SetAsFirstSibling();
             }
 
-            if (GetComponent<RectMask2D>() == null)
+            _viewport.anchorMin = Vector2.zero;
+            _viewport.anchorMax = Vector2.one;
+            _viewport.pivot = new Vector2(0.5f, 0.5f);
+            _viewport.offsetMin = Vector2.one * _frameThickness;
+            _viewport.offsetMax = -Vector2.one * _frameThickness;
+            Image viewportImage = _viewport.GetComponent<Image>();
+            viewportImage.color = _surfaceColor;
+            viewportImage.raycastTarget = true;
+
+            if (_dishContainer.parent != _viewport)
             {
-                gameObject.AddComponent<RectMask2D>();
+                _dishContainer.SetParent(_viewport, false);
+            }
+
+            _scrollRect = GetComponent<RecipeWarehouseScrollRect>();
+            if (_scrollRect == null)
+            {
+                ScrollRect legacyScrollRect = GetComponent<ScrollRect>();
+                if (legacyScrollRect != null)
+                {
+                    DestroyComponent(legacyScrollRect);
+                }
+
+                _scrollRect = gameObject.AddComponent<RecipeWarehouseScrollRect>();
             }
 
             _scrollRect.content = _dishContainer;
             _scrollRect.viewport = _viewport;
-            _scrollRect.horizontal = false;
+            _scrollRect.horizontal = true;
             _scrollRect.vertical = true;
             _scrollRect.movementType = ScrollRect.MovementType.Clamped;
             _scrollRect.inertia = true;
+            _scrollRect.decelerationRate = 0.12f;
             _scrollRect.scrollSensitivity = 32f;
+            _scrollRect.horizontalScrollbar = null;
+            _scrollRect.verticalScrollbar = null;
         }
 
         private void ConfigureContentRect()
         {
-            if (_dishContainer == null)
+            _dishContainer.anchorMin = new Vector2(0f, 1f);
+            _dishContainer.anchorMax = new Vector2(0f, 1f);
+            _dishContainer.pivot = new Vector2(0f, 1f);
+            _dishContainer.anchoredPosition = Vector2.zero;
+        }
+
+        private void EnsureGridGraphic()
+        {
+            if (_gridGraphic != null)
             {
                 return;
             }
 
-            _dishContainer.anchorMin = new Vector2(0f, 1f);
-            _dishContainer.anchorMax = new Vector2(1f, 1f);
-            _dishContainer.pivot = new Vector2(0.5f, 1f);
-            _dishContainer.anchoredPosition = Vector2.zero;
-
-            Vector2 size = _dishContainer.sizeDelta;
-            if (Mathf.Approximately(size.x, 0f))
+            Transform existing = _dishContainer.Find("WarehouseGrid");
+            if (existing != null)
             {
-                size.x = -10f;
+                _gridGraphic = existing.GetComponent<RecipeWarehouseGridGraphic>();
             }
 
-            size.y = Mathf.Max(size.y, ViewportSize().y);
-            _dishContainer.sizeDelta = size;
+            if (_gridGraphic == null)
+            {
+                var gridObject = new GameObject(
+                    "WarehouseGrid",
+                    typeof(RectTransform),
+                    typeof(CanvasRenderer),
+                    typeof(RecipeWarehouseGridGraphic));
+                gridObject.layer = gameObject.layer;
+                RectTransform gridRect = gridObject.GetComponent<RectTransform>();
+                gridRect.SetParent(_dishContainer, false);
+                gridRect.anchorMin = Vector2.zero;
+                gridRect.anchorMax = Vector2.one;
+                gridRect.offsetMin = Vector2.zero;
+                gridRect.offsetMax = Vector2.zero;
+                _gridGraphic = gridObject.GetComponent<RecipeWarehouseGridGraphic>();
+            }
+
+            _gridGraphic.transform.SetAsFirstSibling();
+            ConfigureGridGraphic();
+        }
+
+        private void ConfigureGridGraphic()
+        {
+            if (_gridGraphic == null)
+            {
+                return;
+            }
+
+            _gridGraphic.Configure(
+                _warehouseCellSize,
+                _warehousePadding,
+                _gridLineWidth,
+                _surfaceColor,
+                _gridColor);
+            _gridGraphic.transform.SetAsFirstSibling();
+        }
+
+        private void BuildLayoutInputs(RecipeEditDishView exclude)
+        {
+            _layoutDishes.Clear();
+            _layoutSizes.Clear();
+            RecipeEditDishView[] dishes = Dishes();
+            for (int i = 0; i < dishes.Length; i++)
+            {
+                RecipeEditDishView dish = dishes[i];
+                if (dish == null || dish == exclude)
+                {
+                    continue;
+                }
+
+                _layoutDishes.Add(dish);
+                Vector2Int size = dish.DisplayedGridSize;
+                _layoutSizes.Add(new Vector2Int(
+                    Mathf.Max(1, size.x),
+                    Mathf.Max(1, size.y)));
+            }
         }
 
         private int DropIndex(PointerEventData eventData)
         {
-            ResolveLayout();
-            int count = CurrentDishCount();
-            if (_dishContainer == null)
+            if (_dishContainer == null || eventData == null)
             {
-                return count;
+                return CurrentDishCount();
             }
 
             Canvas canvas = GetComponentInParent<Canvas>();
-            Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay
+            Camera camera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay
                 ? canvas.worldCamera
                 : eventData.pressEventCamera;
-            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(_dishContainer, eventData.position, cam, out Vector2 local))
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                    _dishContainer,
+                    eventData.position,
+                    camera,
+                    out Vector2 local))
             {
-                return count;
+                return CurrentDishCount();
             }
 
-            Rect rect = _dishContainer.rect;
-            float x = local.x + rect.width * _dishContainer.pivot.x - HorizontalStartOffset();
-            float y = rect.height * (1f - _dishContainer.pivot.y) - local.y - _padding.top;
-            int col = Mathf.Clamp(Mathf.FloorToInt(x / Mathf.Max(1f, _cellSize.x + _spacing.x)), 0, Mathf.Max(0, _columnCount - 1));
-            int row = Mathf.Max(0, Mathf.FloorToInt(y / Mathf.Max(1f, _cellSize.y + _spacing.y)));
-            return Mathf.Clamp(row * Mathf.Max(1, _columnCount) + col, 0, count);
+            RecipeEditDishView[] dishes = Dishes();
+            for (int i = 0; i < dishes.Length; i++)
+            {
+                RectTransform rect = (RectTransform)dishes[i].transform;
+                if (rect.rect.Contains(rect.InverseTransformPoint(
+                        _dishContainer.TransformPoint(local))))
+                {
+                    return i;
+                }
+            }
+
+            return dishes.Length;
         }
 
-        private Vector2 SlotAnchoredPosition(int index)
+        private Vector2 NormalizedPositionForRect(RectTransform target)
         {
-            int columns = Mathf.Max(1, _columnCount);
-            int col = Mathf.Max(0, index) % columns;
-            int row = Mathf.Max(0, index) / columns;
-            float startX = HorizontalStartOffset();
+            Vector2 viewportSize = ViewportSize();
+            Vector2 contentSize = _dishContainer.rect.size;
+            float scrollableWidth = Mathf.Max(0f, contentSize.x - viewportSize.x);
+            float scrollableHeight = Mathf.Max(0f, contentSize.y - viewportSize.y);
+            float targetLeft = Mathf.Max(0f, target.anchoredPosition.x);
+            float targetTop = Mathf.Max(0f, -target.anchoredPosition.y);
             return new Vector2(
-                startX + col * (_cellSize.x + _spacing.x),
-                -_padding.top - row * (_cellSize.y + _spacing.y));
-        }
-
-        private float HorizontalStartOffset()
-        {
-            if (_dishContainer == null)
-            {
-                return _padding.left;
-            }
-
-            int columns = Mathf.Max(1, _columnCount);
-            float rowWidth = columns * _cellSize.x + Mathf.Max(0, columns - 1) * _spacing.x;
-            float innerWidth = Mathf.Max(0f, _dishContainer.rect.width - _padding.left - _padding.right);
-            return _padding.left + Mathf.Max(0f, (innerWidth - rowWidth) * 0.5f);
-        }
-
-        private void UpdateContentSize(int slotCount)
-        {
-            if (_dishContainer == null)
-            {
-                return;
-            }
-
-            int columns = Mathf.Max(1, _columnCount);
-            int rows = slotCount <= 0 ? 0 : Mathf.CeilToInt(slotCount / (float)columns);
-            float contentHeight = _padding.top + _padding.bottom;
-            if (rows > 0)
-            {
-                contentHeight += rows * _cellSize.y + Mathf.Max(0, rows - 1) * _spacing.y;
-            }
-
-            Vector2 size = _dishContainer.sizeDelta;
-            size.y = Mathf.Max(ViewportSize().y, contentHeight);
-            _dishContainer.sizeDelta = size;
-        }
-
-        private float TargetTopForIndex(int index, float scrollableHeight)
-        {
-            int row = Mathf.Max(0, index) / Mathf.Max(1, _columnCount);
-            float slotTop = _padding.top + row * (_cellSize.y + _spacing.y);
-            float slotBottom = slotTop + _cellSize.y;
-            float currentTop = _scrollRect != null
-                ? (1f - _scrollRect.verticalNormalizedPosition) * scrollableHeight
-                : 0f;
-            float targetTop = currentTop;
-            if (slotTop < currentTop)
-            {
-                targetTop = slotTop;
-            }
-            else if (_scrollRect != null && slotBottom > currentTop + _scrollRect.viewport.rect.height)
-            {
-                targetTop = slotBottom - _scrollRect.viewport.rect.height;
-            }
-
-            return Mathf.Clamp(targetTop, 0f, scrollableHeight);
+                scrollableWidth > 0.01f
+                    ? Mathf.Clamp01(targetLeft / scrollableWidth)
+                    : 0f,
+                scrollableHeight > 0.01f
+                    ? 1f - Mathf.Clamp01(targetTop / scrollableHeight)
+                    : 1f);
         }
 
         private Vector2 ViewportSize()
         {
-            RectTransform viewport = _scrollRect != null && _scrollRect.viewport != null
-                ? _scrollRect.viewport
+            RectTransform viewport = _viewport != null
+                ? _viewport
                 : transform as RectTransform;
             return viewport != null ? viewport.rect.size : Vector2.zero;
         }
 
-        private void ConfigureDishRect(RectTransform rect)
+        private static void ConfigureDishRect(RectTransform rect)
         {
             if (rect == null)
             {
@@ -478,6 +536,23 @@ namespace GourmetProject.Game.UI.Meta
             return _dishContainer == null
                 ? Array.Empty<RecipeEditDishView>()
                 : _dishContainer.GetComponentsInChildren<RecipeEditDishView>(false);
+        }
+
+        private static void DestroyComponent(Component component)
+        {
+            if (component == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(component);
+            }
+            else
+            {
+                DestroyImmediate(component);
+            }
         }
     }
 }

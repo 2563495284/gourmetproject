@@ -12,21 +12,37 @@ namespace GourmetProject.Tests.EditMode
 {
     public sealed class DishIconRenderTexturePreviewTests
     {
-        [TestCase(new[] { "X" }, 3, 3)]
-        [TestCase(new[] { "XXX" }, 3, 3)]
-        [TestCase(new[] { "XX" }, 4, 3)]
-        [TestCase(new[] { "X", "X", "X" }, 3, 3)]
-        [TestCase(new[] { "X.X", "XXX" }, 3, 4)]
-        [TestCase(new[] { "XX", "XX" }, 4, 4)]
-        public void ExpandedBoardSize_UsesMinimumCenteredGrid(string[] rows, int width, int height)
+        [TestCase(new[] { "X" }, 1, 1)]
+        [TestCase(new[] { "XXX" }, 3, 1)]
+        [TestCase(new[] { "XX" }, 2, 1)]
+        [TestCase(new[] { "X", "X", "X" }, 1, 3)]
+        [TestCase(new[] { "X.X", "XXX" }, 3, 2)]
+        [TestCase(new[] { "XX", "XX" }, 2, 2)]
+        public void DisplayedGridSizeFor_UsesExactFoodBounds(
+            string[] rows,
+            int width,
+            int height)
         {
-            DishShape shape = DishShape.FromRows(rows);
+            var dish = new DishDef(
+                "exact_grid_test",
+                "Exact Grid Test",
+                30,
+                DishShape.FromRows(rows),
+                0,
+                0,
+                1f,
+                Array.Empty<string>(),
+                string.Empty,
+                false,
+                baseId: "donut");
 
             Assert.That(
-                DishIconRenderTexturePreview.ExpandedBoardSize(shape),
+                DishIconRenderTexturePreview.DisplayedGridSizeFor(dish),
                 Is.EqualTo(new Vector2Int(width, height)));
         }
 
+        [TestCase(200f, 200f, 1, 1, 66.6667f, 66.6667f)]
+        [TestCase(200f, 200f, 2, 2, 133.3333f, 133.3333f)]
         [TestCase(200f, 200f, 3, 3, 200f, 200f)]
         [TestCase(200f, 200f, 5, 3, 333.3333f, 200f)]
         [TestCase(200f, 200f, 3, 4, 200f, 266.6667f)]
@@ -44,6 +60,54 @@ namespace GourmetProject.Tests.EditMode
 
             Assert.That(size.x, Is.EqualTo(expectedWidth).Within(0.001f));
             Assert.That(size.y, Is.EqualTo(expectedHeight).Within(0.001f));
+        }
+
+        [Test]
+        public void WarehouseMode_UsesExactGridAndKeepsLayoutOwnedSize()
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/GameMain/UI/RecipeEditDishView.prefab");
+            GameObject instance = UnityEngine.Object.Instantiate(prefab);
+            try
+            {
+                DishIconRenderTexturePreview preview =
+                    instance.GetComponentInChildren<DishIconRenderTexturePreview>(true);
+                RectTransform sizeTarget = preview.transform.parent as RectTransform;
+                Vector2 prefabSize = sizeTarget.rect.size;
+                Sprite sprite = Resources.Load<Sprite>("Sprites/Dishes/donut");
+                var dish = new DishDef(
+                    "warehouse_preview_test",
+                    "Warehouse Preview Test",
+                    30,
+                    DishShape.FromRows(new[] { "XX" }),
+                    0,
+                    0,
+                    1f,
+                    Array.Empty<string>(),
+                    string.Empty,
+                    false,
+                    baseId: "donut");
+                int pixelsPerCell = new SerializedObject(preview)
+                    .FindProperty("_pixelsPerCell")
+                    .intValue;
+
+                preview.gameObject.SetActive(true);
+                preview.Bind(
+                    dish,
+                    sprite,
+                    dish.Deliciousness,
+                    mode: DishIconPreviewMode.Warehouse);
+                Canvas.ForceUpdateCanvases();
+
+                Assert.That(preview.DisplayedGridSize, Is.EqualTo(new Vector2Int(2, 1)));
+                Assert.That(preview.CurrentTexture.width, Is.EqualTo(pixelsPerCell * 2));
+                Assert.That(preview.CurrentTexture.height, Is.EqualTo(pixelsPerCell));
+                Assert.That(sizeTarget.rect.size, Is.EqualTo(prefabSize));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
         }
 
         [TestCase("Assets/GameMain/UI/RecipeEditDishView.prefab")]
@@ -82,10 +146,10 @@ namespace GourmetProject.Tests.EditMode
 
                 Assert.That(
                     sizeTarget.rect.width,
-                    Is.EqualTo(prefabSize.x * 4f / 3f).Within(0.01f));
+                    Is.EqualTo(prefabSize.x * 2f / 3f).Within(0.01f));
                 Assert.That(
                     sizeTarget.rect.height,
-                    Is.EqualTo(prefabSize.y * 4f / 3f).Within(0.01f));
+                    Is.EqualTo(prefabSize.y * 2f / 3f).Within(0.01f));
                 Assert.That(WorldBottom(sizeTarget), Is.EqualTo(prefabBottom).Within(0.01f));
 
                 preview.Hide();
@@ -242,11 +306,34 @@ namespace GourmetProject.Tests.EditMode
                     null));
 
                 RawImage rawImage = preview.GetComponent<RawImage>();
+                Button button = instance.GetComponent<Button>();
                 Assert.That(rawImage.raycastTarget, Is.True);
                 Assert.That(
                     rawImage.GetComponentInParent<Button>(),
-                    Is.SameAs(instance.GetComponent<Button>()),
+                    Is.SameAs(button),
                     "The RT hit must bubble to the shop card Button.");
+                Assert.That(button.targetGraphic, Is.SameAs(rawImage));
+                Assert.That(button.transition, Is.EqualTo(Selectable.Transition.ColorTint));
+                Assert.That(
+                    button.colors.pressedColor.grayscale,
+                    Is.LessThan(button.colors.normalColor.grayscale));
+
+                RectTransform failureTarget = typeof(ShopBuyItemViewBase)
+                    .GetField(
+                        "_interactionFeedbackRect",
+                        System.Reflection.BindingFlags.Instance
+                            | System.Reflection.BindingFlags.NonPublic)
+                    ?.GetValue(card) as RectTransform;
+                Assert.That(failureTarget, Is.SameAs(rawImage.rectTransform));
+
+                button.onClick.Invoke();
+                object failureTween = typeof(ShopBuyItemViewBase)
+                    .GetField(
+                        "_failureTween",
+                        System.Reflection.BindingFlags.Instance
+                            | System.Reflection.BindingFlags.NonPublic)
+                    ?.GetValue(card);
+                Assert.That(failureTween, Is.Not.Null);
             }
             finally
             {
@@ -306,11 +393,14 @@ namespace GourmetProject.Tests.EditMode
 
                 preview.gameObject.SetActive(true);
                 preview.Bind(dish, sprite, dish.Deliciousness);
+                int pixelsPerCell = new SerializedObject(preview)
+                    .FindProperty("_pixelsPerCell")
+                    .intValue;
 
                 Assert.That(preview.CurrentTexture, Is.Not.Null);
                 Assert.That(preview.CurrentTexture.IsCreated(), Is.True);
-                Assert.That(preview.CurrentTexture.width, Is.EqualTo(288));
-                Assert.That(preview.CurrentTexture.height, Is.EqualTo(288));
+                Assert.That(preview.CurrentTexture.width, Is.EqualTo(pixelsPerCell));
+                Assert.That(preview.CurrentTexture.height, Is.EqualTo(pixelsPerCell));
 
                 Camera previewCamera = FindPreviewCamera();
                 Assert.That(previewCamera, Is.Not.Null);
@@ -410,6 +500,8 @@ namespace GourmetProject.Tests.EditMode
             try
             {
                 DishIconRenderTexturePreview preview = instance.GetComponentInChildren<DishIconRenderTexturePreview>(true);
+                RectTransform sizeTarget = preview.transform.parent as RectTransform;
+                Vector2 prefabSize = sizeTarget.rect.size;
                 Sprite sprite = Resources.Load<Sprite>("Sprites/Dishes/donut");
                 var dish = new DishDef(
                     "preview_test_numb_donut",
@@ -426,6 +518,9 @@ namespace GourmetProject.Tests.EditMode
 
                 preview.gameObject.SetActive(true);
                 preview.Bind(dish, sprite, dish.Deliciousness);
+                int pixelsPerCell = new SerializedObject(preview)
+                    .FindProperty("_pixelsPerCell")
+                    .intValue;
 
                 Camera previewCamera = FindPreviewCamera();
                 SpriteRenderer dishRenderer = previewCamera
@@ -441,13 +536,16 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(
                     Mathf.Abs(Mathf.DeltaAngle(dishRenderer.transform.localEulerAngles.z, 90f)),
                     Is.LessThan(0.01f));
-                Assert.That(preview.CurrentTexture.width, Is.EqualTo(288));
-                Assert.That(preview.CurrentTexture.height, Is.EqualTo(384));
+                Assert.That(preview.CurrentTexture.width, Is.EqualTo(pixelsPerCell));
+                Assert.That(preview.CurrentTexture.height, Is.EqualTo(pixelsPerCell * 2));
 
-                RectTransform sizeTarget = preview.transform.parent as RectTransform;
                 Canvas.ForceUpdateCanvases();
-                Assert.That(sizeTarget.rect.width, Is.EqualTo(180f).Within(0.01f));
-                Assert.That(sizeTarget.rect.height, Is.EqualTo(240f).Within(0.01f));
+                Assert.That(
+                    sizeTarget.rect.width,
+                    Is.EqualTo(prefabSize.x / 3f).Within(0.01f));
+                Assert.That(
+                    sizeTarget.rect.height,
+                    Is.EqualTo(prefabSize.y * 2f / 3f).Within(0.01f));
             }
             finally
             {

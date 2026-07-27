@@ -14,7 +14,7 @@ namespace GourmetProject.Game.UI.Meta
     /// 菜谱中的单个菜品卡。奖励流程支持拖拽；查看/删除/主动道具模式禁用拖拽并响应点击。
     /// </summary>
     [RequireComponent(typeof(CanvasGroup))]
-    public sealed class RecipeEditDishView : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
+    public sealed class RecipeEditDishView : MonoBehaviour, IPointerDownHandler, IInitializePotentialDragHandler, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
     {
         private const float ReturnFlyDuration = 0.22f;
         private static readonly Vector2 FloatingAnchor = new(0.5f, 0.5f);
@@ -45,10 +45,16 @@ namespace GourmetProject.Game.UI.Meta
         private bool _dragging;
         private bool _dropHandled;
         private bool _hovered;
+        private ScrollRect _panScrollRect;
+        private RecipeWarehouseItemFrameGraphic _warehouseHighlight;
+        private DishIconPreviewMode _previewMode;
+        private bool _warehouseClickable;
+        private bool _suppressClick;
 
         public int BookIndex { get; private set; }
         public int DishIndex { get; private set; }
         public DishDef DishDef { get; private set; }
+        public Vector2Int DisplayedGridSize { get; private set; } = Vector2Int.one;
 
         public bool ContainsScreenPoint(Vector2 screenPoint)
         {
@@ -83,7 +89,8 @@ namespace GourmetProject.Game.UI.Meta
             Func<RecipeEditDishView, bool> onDragCancelled = null,
             Action<RecipeEditDishView> onHoverEnter = null,
             Action<RecipeEditDishView> onHoverExit = null,
-            IReadOnlyList<string> flavorIds = null)
+            IReadOnlyList<string> flavorIds = null,
+            DishIconPreviewMode previewMode = DishIconPreviewMode.Card)
         {
             BookIndex = bookIndex;
             DishIndex = dishIndex;
@@ -96,12 +103,21 @@ namespace GourmetProject.Game.UI.Meta
             _onHoverExit = onHoverExit;
             _dropHandled = false;
             _hovered = false;
+            _previewMode = previewMode;
+            _warehouseClickable = onClick != null;
+            DisplayedGridSize = DishIconRenderTexturePreview.DisplayedGridSizeFor(
+                dishDef,
+                flavorIds);
 
             if (_dishPreview != null)
             {
                 if (dishDef != null)
                 {
-                    _dishPreview.Bind(dishDef, flavorIds: flavorIds);
+                    _dishPreview.Bind(
+                        dishDef,
+                        flavorIds: flavorIds,
+                        mode: previewMode);
+                    DisplayedGridSize = _dishPreview.DisplayedGridSize;
                 }
                 else
                 {
@@ -109,11 +125,28 @@ namespace GourmetProject.Game.UI.Meta
                 }
             }
 
+            ConfigureWarehouseStyle();
             EnsureButton();
             if (_button != null)
             {
                 _button.interactable = dragEnabled || onClick != null;
             }
+        }
+
+        public void OnInitializePotentialDrag(PointerEventData eventData)
+        {
+            if (_dragEnabled)
+            {
+                return;
+            }
+
+            ResolvePanScrollRect();
+            _panScrollRect?.OnInitializePotentialDrag(eventData);
+        }
+
+        public void OnPointerDown(PointerEventData eventData)
+        {
+            _suppressClick = false;
         }
 
         public void MarkDropHandled()
@@ -214,6 +247,10 @@ namespace GourmetProject.Game.UI.Meta
         {
             if (!_dragEnabled)
             {
+                _suppressClick = true;
+                HideHover();
+                ResolvePanScrollRect();
+                _panScrollRect?.OnBeginDrag(eventData);
                 return;
             }
 
@@ -243,7 +280,14 @@ namespace GourmetProject.Game.UI.Meta
 
         public void OnDrag(PointerEventData eventData)
         {
-            if (!_dragEnabled || !_dragging)
+            if (!_dragEnabled)
+            {
+                ResolvePanScrollRect();
+                _panScrollRect?.OnDrag(eventData);
+                return;
+            }
+
+            if (!_dragging)
             {
                 return;
             }
@@ -253,7 +297,14 @@ namespace GourmetProject.Game.UI.Meta
 
         public void OnEndDrag(PointerEventData eventData)
         {
-            if (!_dragEnabled || !_dragging)
+            if (!_dragEnabled)
+            {
+                ResolvePanScrollRect();
+                _panScrollRect?.OnEndDrag(eventData);
+                return;
+            }
+
+            if (!_dragging)
             {
                 return;
             }
@@ -276,6 +327,12 @@ namespace GourmetProject.Game.UI.Meta
 
         public void OnPointerClick(PointerEventData eventData)
         {
+            if (_suppressClick)
+            {
+                _suppressClick = false;
+                return;
+            }
+
             if (!_dragging && eventData != null && eventData.button == PointerEventData.InputButton.Left)
             {
                 _onClick?.Invoke(this);
@@ -290,6 +347,7 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             _hovered = true;
+            SetWarehouseHighlight(true);
             _onHoverEnter?.Invoke(this);
         }
 
@@ -306,6 +364,7 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             _hovered = false;
+            SetWarehouseHighlight(false);
             _onHoverExit?.Invoke(this);
         }
 
@@ -416,6 +475,68 @@ namespace GourmetProject.Game.UI.Meta
         private void ResolveDishPreview()
         {
             _dishPreview ??= GetComponentInChildren<DishIconRenderTexturePreview>(true);
+        }
+
+        private void ResolvePanScrollRect()
+        {
+            if (_panScrollRect == null)
+            {
+                _panScrollRect = GetComponentInParent<RecipeWarehouseScrollRect>();
+            }
+        }
+
+        private void ConfigureWarehouseStyle()
+        {
+            if (_previewMode != DishIconPreviewMode.Warehouse)
+            {
+                if (_warehouseHighlight != null)
+                {
+                    _warehouseHighlight.gameObject.SetActive(false);
+                }
+
+                return;
+            }
+
+            if (_warehouseHighlight == null)
+            {
+                Transform existing = transform.Find("WarehouseHighlight");
+                if (existing != null)
+                {
+                    _warehouseHighlight = existing.GetComponent<RecipeWarehouseItemFrameGraphic>();
+                }
+            }
+
+            if (_warehouseHighlight == null)
+            {
+                var highlightObject = new GameObject(
+                    "WarehouseHighlight",
+                    typeof(RectTransform),
+                    typeof(CanvasRenderer),
+                    typeof(RecipeWarehouseItemFrameGraphic));
+                highlightObject.layer = gameObject.layer;
+                RectTransform highlightRect = highlightObject.GetComponent<RectTransform>();
+                highlightRect.SetParent(transform, false);
+                highlightRect.anchorMin = Vector2.zero;
+                highlightRect.anchorMax = Vector2.one;
+                highlightRect.offsetMin = Vector2.zero;
+                highlightRect.offsetMax = Vector2.zero;
+                highlightRect.SetAsFirstSibling();
+                _warehouseHighlight =
+                    highlightObject.GetComponent<RecipeWarehouseItemFrameGraphic>();
+            }
+
+            _warehouseHighlight.gameObject.SetActive(true);
+            SetWarehouseHighlight(false);
+        }
+
+        private void SetWarehouseHighlight(bool highlighted)
+        {
+            if (_previewMode != DishIconPreviewMode.Warehouse || _warehouseHighlight == null)
+            {
+                return;
+            }
+
+            _warehouseHighlight.Configure(highlighted, _warehouseClickable);
         }
     }
 }

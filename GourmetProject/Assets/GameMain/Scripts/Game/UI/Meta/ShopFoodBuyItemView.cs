@@ -1,5 +1,6 @@
 using GourmetProject.Game.UI.Widgets;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace GourmetProject.Game.UI.Meta
 {
@@ -16,10 +17,12 @@ namespace GourmetProject.Game.UI.Meta
         protected override void ConfigureContent(ShopBuyItemViewContext context)
         {
             SetIcon(context?.Icon);
+            RawImage interactionGraphic = null;
             if (_dishIconPreview != null && context?.Dish != null)
             {
                 _dishIconPreview.Bind(context.Dish, context.Icon, context.Dish.Deliciousness);
                 _dishIconPreview.SetRaycastTarget(true);
+                interactionGraphic = _dishIconPreview.GetComponent<RawImage>();
             }
             else
             {
@@ -27,6 +30,7 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             UseIconAsHitTargetOnly();
+            UseGraphicAsInteractionFeedback(interactionGraphic);
         }
     }
 }

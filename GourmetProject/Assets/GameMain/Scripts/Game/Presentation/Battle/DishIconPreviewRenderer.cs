@@ -1,40 +1,14 @@
 using System.Collections.Generic;
 using GourmetProject.Core.Utility;
+using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Gameplay.Model;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
-    internal static class DishIconPreviewGridSizing
-    {
-        public static Vector2Int ExpandedBoardSize(DishShape shape)
-        {
-            return shape == null
-                ? Vector2Int.zero
-                : new Vector2Int(
-                    ExpandedAxisSize(shape.Width),
-                    ExpandedAxisSize(shape.Height));
-        }
-
-        private static int ExpandedAxisSize(int foodSize)
-        {
-            if (foodSize <= 0)
-            {
-                return 0;
-            }
-
-            int boardSize = Mathf.Max(3, foodSize);
-            if ((boardSize - foodSize) % 2 != 0)
-            {
-                boardSize++;
-            }
-
-            return boardSize;
-        }
-    }
-
     /// <summary>
     /// 在独立运行时场景中复用一套棋盘、菜品和美味值标签，并把结果渲染到每个 UI 预览自己的 RenderTexture。
     /// </summary>
@@ -74,7 +48,8 @@ namespace GourmetProject.Game.Presentation.Battle
             IReadOnlyList<string> flavorIds,
             GameObject cellPrefab,
             GameObject badgePrefab,
-            int pixelsPerCell)
+            int pixelsPerCell,
+            DishIconPreviewMode mode)
         {
             if (dish?.Shape == null || sprite == null || cellPrefab == null || badgePrefab == null)
             {
@@ -88,7 +63,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 flavorIds,
                 cellPrefab,
                 badgePrefab,
-                Mathf.Clamp(pixelsPerCell, 32, 256));
+                Mathf.Clamp(pixelsPerCell, 32, 256),
+                mode);
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -232,7 +208,8 @@ namespace GourmetProject.Game.Presentation.Battle
             IReadOnlyList<string> flavorIds,
             GameObject cellPrefab,
             GameObject badgePrefab,
-            int pixelsPerCell)
+            int pixelsPerCell,
+            DishIconPreviewMode mode)
         {
             ClearStage();
 
@@ -241,39 +218,46 @@ namespace GourmetProject.Game.Presentation.Battle
                 dish.RotationIndex,
                 _flavorScratch);
             DishShape displayShape = dish.Shape.RotatedBy(rotationIndex);
-            Vector2Int boardSize =
-                DishIconPreviewGridSizing.ExpandedBoardSize(displayShape);
+            Vector2Int boardSize = new(displayShape.Width, displayShape.Height);
             int boardWidth = boardSize.x;
             int boardHeight = boardSize.y;
 
-            BuildBoard(cellPrefab, boardWidth, boardHeight);
+            if (mode == DishIconPreviewMode.Card)
+            {
+                BuildBoard(cellPrefab, boardWidth, boardHeight);
+            }
+
             BuildDish(dish.Shape, rotationIndex, sprite, dish.Id);
-            BuildBadge(badgePrefab, displayShape, deliciousness);
+            BuildBadge(badgePrefab, displayShape, deliciousness, mode);
 
             int textureWidth = boardWidth * pixelsPerCell;
             int textureHeight = boardHeight * pixelsPerCell;
-            var texture = new RenderTexture(
-                textureWidth,
-                textureHeight,
-                24,
-                RenderTextureFormat.ARGB32,
-                RenderTextureReadWrite.sRGB)
+            Color backgroundColor = mode == DishIconPreviewMode.Warehouse
+                ? Color.clear
+                : PreviewBackgroundColor;
+            var descriptor = new RenderTextureDescriptor(textureWidth, textureHeight)
             {
-                name = $"DishIcon_{dish.Id}_{boardWidth}x{boardHeight}",
-                filterMode = FilterMode.Bilinear,
-                wrapMode = TextureWrapMode.Clamp,
+                graphicsFormat = SystemInfo.GetGraphicsFormat(DefaultFormat.LDR),
+                depthStencilFormat = SystemInfo.GetGraphicsFormat(DefaultFormat.DepthStencil),
+                msaaSamples = 1,
                 useMipMap = false,
                 autoGenerateMips = false,
-                antiAliasing = 1,
+                memoryless = RenderTextureMemoryless.None,
+            };
+            var texture = new RenderTexture(descriptor)
+            {
+                name = $"DishIcon_{mode}_{dish.Id}_{boardWidth}x{boardHeight}",
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp,
             };
             texture.Create();
             RenderTexture previous = RenderTexture.active;
             RenderTexture.active = texture;
-            GL.Clear(true, true, PreviewBackgroundColor);
+            GL.Clear(true, true, backgroundColor);
             RenderTexture.active = previous;
 
             _camera.clearFlags = CameraClearFlags.SolidColor;
-            _camera.backgroundColor = PreviewBackgroundColor;
+            _camera.backgroundColor = backgroundColor;
             _camera.aspect = (float)boardWidth / boardHeight;
             _camera.orthographicSize = boardHeight * CellSize * 0.5f;
             var request = new RenderPipeline.StandardRequest
@@ -392,7 +376,11 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        private void BuildBadge(GameObject badgePrefab, DishShape displayShape, int deliciousness)
+        private void BuildBadge(
+            GameObject badgePrefab,
+            DishShape displayShape,
+            int deliciousness,
+            DishIconPreviewMode mode)
         {
             DishValueBadgeView prefabView = badgePrefab.GetComponent<DishValueBadgeView>();
             if (prefabView == null)
@@ -400,7 +388,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            float badgeY = displayShape.Height * CellSize * 0.5f - 0.12f;
+            float badgeTopInset = mode == DishIconPreviewMode.Warehouse ? 0.42f : 0.12f;
+            float badgeY = displayShape.Height * CellSize * 0.5f - badgeTopInset;
             _badge = Instantiate(prefabView, transform);
             if (_badge == null)
             {

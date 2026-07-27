@@ -8,6 +8,12 @@ using UnityEngine.UI;
 
 namespace GourmetProject.Game.UI.Widgets
 {
+    public enum DishIconPreviewMode
+    {
+        Card,
+        Warehouse,
+    }
+
     /// <summary>
     /// UI 侧的统一菜品图标：显示矩形棋盘、居中的菜品和 DishValueBadge 美味值。
     /// 实际世界对象由共享的独立预览场景渲染，本组件只持有自己的 RenderTexture。
@@ -30,8 +36,11 @@ namespace GourmetProject.Game.UI.Widgets
         private RenderTexture _renderTexture;
         private Sequence _transformSequence;
         private RectTransform _displaySizeTarget;
+        private DishIconPreviewMode _mode;
 
         public RenderTexture CurrentTexture => _renderTexture;
+
+        public Vector2Int DisplayedGridSize { get; private set; }
 
         public void SetRaycastTarget(bool value)
         {
@@ -40,11 +49,6 @@ namespace GourmetProject.Game.UI.Widgets
             {
                 _targetImage.raycastTarget = value;
             }
-        }
-
-        public static Vector2Int ExpandedBoardSize(DishShape shape)
-        {
-            return DishIconPreviewGridSizing.ExpandedBoardSize(shape);
         }
 
         public static Vector2 DisplaySizeForGrid(
@@ -61,14 +65,39 @@ namespace GourmetProject.Game.UI.Widgets
                 prefabThreeByThreeSize.y * gridSize.y / PrefabGridSize);
         }
 
+        public static Vector2Int DisplayedGridSizeFor(
+            DishDef dish,
+            IReadOnlyList<string> flavorIds = null)
+        {
+            if (dish?.Shape == null)
+            {
+                return Vector2Int.zero;
+            }
+
+            IReadOnlyList<string> displayFlavors = flavorIds;
+            if (displayFlavors == null && !string.IsNullOrEmpty(dish.FlavorId))
+            {
+                displayFlavors = new[] { dish.FlavorId };
+            }
+
+            int rotationIndex = FlavorStainPalette.DisplayRotationIndex(
+                dish.RotationIndex,
+                displayFlavors);
+            DishShape displayShape = dish.Shape.RotatedBy(rotationIndex);
+            return new Vector2Int(displayShape.Width, displayShape.Height);
+        }
+
         public void Bind(
             DishDef dish,
             Sprite spriteOverride = null,
             int? deliciousnessOverride = null,
-            IReadOnlyList<string> flavorIds = null)
+            IReadOnlyList<string> flavorIds = null,
+            DishIconPreviewMode mode = DishIconPreviewMode.Card)
         {
             EnsureRefs();
             ReleaseTexture();
+            _mode = mode;
+            DisplayedGridSize = DisplayedGridSizeFor(dish, flavorIds);
 
             if (dish?.Shape == null || _targetImage == null)
             {
@@ -90,7 +119,8 @@ namespace GourmetProject.Game.UI.Widgets
                 flavorIds,
                 _cellPrefab,
                 _badgePrefab,
-                _pixelsPerCell);
+                _pixelsPerCell,
+                mode);
 
             _targetImage.texture = _renderTexture;
             _targetImage.color = Color.white;
@@ -100,9 +130,12 @@ namespace GourmetProject.Game.UI.Widgets
             if (_renderTexture != null)
             {
                 Vector2Int renderedGridSize = new(
-                    Mathf.Max(1, _renderTexture.width / _pixelsPerCell),
-                    Mathf.Max(1, _renderTexture.height / _pixelsPerCell));
-                ApplyDisplaySize(renderedGridSize);
+                    _renderTexture.width / _pixelsPerCell,
+                    _renderTexture.height / _pixelsPerCell);
+                if (mode == DishIconPreviewMode.Card)
+                {
+                    ApplyDisplaySize(renderedGridSize);
+                }
 
                 AspectRatioFitter fitter = GetComponent<AspectRatioFitter>();
                 if (fitter == null)
@@ -130,7 +163,7 @@ namespace GourmetProject.Game.UI.Widgets
             KillTransformSequence();
             if (dish?.Shape == null || _targetImage == null)
             {
-                Bind(dish, flavorIds: flavorIds);
+                Bind(dish, flavorIds: flavorIds, mode: _mode);
                 onComplete?.Invoke();
                 return;
             }
@@ -141,7 +174,7 @@ namespace GourmetProject.Game.UI.Widgets
                 .Append(target.DOPunchScale(Vector3.one * 0.08f, 0.24f, vibrato: 6, elasticity: 0.6f))
                 .InsertCallback(TransformInDuration, () =>
                 {
-                    Bind(dish, flavorIds: flavorIds);
+                    Bind(dish, flavorIds: flavorIds, mode: _mode);
                     if (_targetImage != null)
                     {
                         _targetImage.color = TransformFlashColor;
@@ -185,7 +218,10 @@ namespace GourmetProject.Game.UI.Widgets
                 _targetImage.enabled = false;
             }
 
-            RestorePrefabSize();
+            if (_mode == DishIconPreviewMode.Card)
+            {
+                RestorePrefabSize();
+            }
         }
 
         private void OnDestroy()
