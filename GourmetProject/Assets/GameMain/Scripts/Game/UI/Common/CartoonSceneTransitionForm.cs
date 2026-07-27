@@ -108,7 +108,16 @@ namespace GourmetProject.Game.UI.Common
                 return;
             }
 
-            GameApp.UI.OpenUIForm(UIForms.CartoonSceneTransition, UIForms.GroupDialog, data);
+            // 转场必须盖住加载期间新打开的奖励页、确认框等 Dialog 界面。
+            // 当前 Game Framework 的 DefaultUIGroupHelper.SetDepth() 没有实际调整渲染层级，
+            // 因此除了使用独立组，还要显式把组容器移动到 UI 根节点的最后。
+            var transitionGroup = GameApp.UI.GetUIGroup(UIForms.GroupTransition);
+            if (transitionGroup?.Helper is Component helper)
+            {
+                helper.transform.SetAsLastSibling();
+            }
+
+            GameApp.UI.OpenUIForm(UIForms.CartoonSceneTransition, UIForms.GroupTransition, data);
         }
 
         protected override void OnOpen(object userData)

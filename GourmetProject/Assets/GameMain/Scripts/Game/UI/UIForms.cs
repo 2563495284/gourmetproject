@@ -9,6 +9,7 @@ namespace GourmetProject.Game.UI
         // 界面组名（在 ProcedureMenu 启动时通过 AddUIGroup 注册）。
         public const string GroupDefault = "Default";
         public const string GroupDialog = "Dialog";
+        public const string GroupTransition = "Transition";
 
         // 界面预制体资源路径（编辑器资源模式下直接用工程内路径）。
         public const string MainMenu = "Assets/GameMain/Content/Prefabs/UI/MainMenuForm.prefab";

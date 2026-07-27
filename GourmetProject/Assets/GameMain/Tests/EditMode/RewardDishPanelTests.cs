@@ -1,5 +1,6 @@
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.UI.Meta;
+using GourmetProject.Game.UI.Widgets;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -23,6 +24,29 @@ namespace GourmetProject.Tests.EditMode
             var serializedPanel = new SerializedObject(panel);
             Assert.That(serializedPanel.FindProperty("_choiceContainer").objectReferenceValue, Is.Not.Null);
             Assert.That(serializedPanel.FindProperty("_cardTemplate").objectReferenceValue, Is.Not.Null);
+        }
+
+        [Test]
+        public void ChoiceCard_UsesRenderedDishBoundsForTipPlacement()
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
+            GameObject instance = Object.Instantiate(prefab);
+            try
+            {
+                RewardDishChoiceCardView card = instance
+                    .transform
+                    .Find("ChoiceContainer/RewardDishChoiceCardTemplate")
+                    .GetComponent<RewardDishChoiceCardView>();
+                DishIconRenderTexturePreview preview =
+                    card.GetComponentInChildren<DishIconRenderTexturePreview>(true);
+
+                Assert.That(card.TipPlacementTarget, Is.SameAs(preview.transform));
+                Assert.That(card.TipPlacementTarget, Is.Not.SameAs(card.transform));
+            }
+            finally
+            {
+                Object.DestroyImmediate(instance);
+            }
         }
 
         [Test]

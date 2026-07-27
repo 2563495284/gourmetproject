@@ -277,7 +277,7 @@ namespace GourmetProject.Game.UI.Meta
             tips.Bind(BuildDishTipsData(def, slot));
             tips.Show();
             tips.transform.SetAsLastSibling();
-            tips.PlaceAroundRectTransform((RectTransform)card.transform, GetComponentInParent<Canvas>());
+            tips.PlaceAroundRectTransform(card.TipPlacementTarget, GetComponentInParent<Canvas>());
         }
 
         private void HideDishTips(RewardDishChoiceCardView card = null)

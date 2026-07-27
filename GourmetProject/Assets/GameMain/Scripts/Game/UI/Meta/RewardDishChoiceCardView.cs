@@ -28,6 +28,17 @@ namespace GourmetProject.Game.UI.Meta
 
         public int ChoiceIndex => _choiceIndex;
 
+        public RectTransform TipPlacementTarget
+        {
+            get
+            {
+                EnsureRefs();
+                return _dishPreview != null
+                    ? _dishPreview.transform as RectTransform
+                    : transform as RectTransform;
+            }
+        }
+
         public void Bind(
             RewardChoice choice,
             Sprite icon,
