@@ -22,6 +22,8 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         bool ShouldRefreshItemsAfterShopChange { get; }
 
+        bool ShouldRefreshRecipeAfterShopChange { get; }
+
         void OnShopClosed();
 
         void RefreshPersistent(bool refreshItems = true);
@@ -32,7 +34,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         void OpenRecipeInspect(int bookIndex);
 
-        void PlayShopItemPurchaseFly(ShopEntry entry, ShopBuyItemViewBase sourceCard);
+        void PlayShopPurchaseAnimation(ShopEntry entry, ShopBuyItemViewBase sourceCard);
     }
 
     internal sealed class ShopPageCoordinator
@@ -69,7 +71,10 @@ namespace GourmetProject.Game.UI.Battle.Pages
         {
             RefreshStock();
             _host.RefreshPersistent(_host.ShouldRefreshItemsAfterShopChange);
-            _host.RecipePresenter?.BuildShop(_host.Run, _host.OpenRecipeInspect);
+            if (_host.ShouldRefreshRecipeAfterShopChange)
+            {
+                _host.RecipePresenter?.BuildShop(_host.Run, _host.OpenRecipeInspect);
+            }
         }
 
         private void EnsureStock(GameRun run)
@@ -120,9 +125,9 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 return false;
             }
 
-            if (entry.Kind == ShopEntryKind.PassiveItem || entry.Kind == ShopEntryKind.ActiveItem)
+            if (entry.Kind != ShopEntryKind.Fragment)
             {
-                _host.PlayShopItemPurchaseFly(entry, card);
+                _host.PlayShopPurchaseAnimation(entry, card);
             }
 
             FinishPurchasedEntry(entry);

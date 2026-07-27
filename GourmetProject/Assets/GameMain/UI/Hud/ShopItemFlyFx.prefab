@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 7150940799169268678}
   - component: {fileID: 6543275360939060874}
   - component: {fileID: 7932932223998907116}
+  - component: {fileID: 2432440159255783910}
   m_Layer: 0
   m_Name: ShopItemFlyFx
   m_TagString: Untagged
@@ -88,3 +89,15 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &2432440159255783910
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 213553975987372630}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb4f83fc40d044cfb28d4735beba75bf, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Battle.View.ShopPurchaseFlyView

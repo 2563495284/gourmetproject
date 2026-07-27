@@ -9,10 +9,22 @@ namespace GourmetProject.Game.UI.Meta
     {
         [SerializeField] private DishIconRenderTexturePreview _dishIconPreview;
 
+        public override RectTransform PurchaseFlySource =>
+            _dishIconPreview != null
+                ? _dishIconPreview.transform as RectTransform
+                : base.PurchaseFlySource;
+
         public override RectTransform TipPlacementTarget =>
             _dishIconPreview != null
                 ? _dishIconPreview.transform as RectTransform
                 : base.TipPlacementTarget;
+
+        public override RenderTexture CapturePurchaseFlyTexture()
+        {
+            return _dishIconPreview != null
+                ? _dishIconPreview.CopyCurrentTexture()
+                : null;
+        }
 
         protected override void ConfigureContent(ShopBuyItemViewContext context)
         {

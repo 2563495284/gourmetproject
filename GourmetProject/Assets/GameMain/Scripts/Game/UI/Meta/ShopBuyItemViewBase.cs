@@ -123,11 +123,20 @@ namespace GourmetProject.Game.UI.Meta
             return RectTransformUtility.WorldToScreenPoint(cam, target.TransformPoint(target.rect.center));
         }
 
-        public RectTransform PurchaseFlySource => _iconRect != null ? _iconRect : Rect;
+        public virtual RectTransform PurchaseFlySource => _iconRect != null ? _iconRect : Rect;
 
         public virtual RectTransform TipPlacementTarget => PurchaseFlySource;
 
-        public Sprite PurchaseFlySprite => _itemIcon != null && _itemIcon.enabled ? _itemIcon.sprite : null;
+        public virtual Sprite PurchaseFlySprite => _itemIcon != null && _itemIcon.enabled ? _itemIcon.sprite : null;
+
+        /// <summary>
+        /// 捕获一份供购买动画独占的纹理。返回值的生命周期交由调用方负责；
+        /// 普通 Sprite 商品不需要纹理，因此默认返回 null。
+        /// </summary>
+        public virtual RenderTexture CapturePurchaseFlyTexture()
+        {
+            return null;
+        }
 
         public bool ContainsScreenPoint(Vector2 screenPoint)
         {

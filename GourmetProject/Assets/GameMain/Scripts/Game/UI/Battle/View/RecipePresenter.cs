@@ -36,6 +36,21 @@ namespace GourmetProject.Game.UI.Battle.View
             BuildPersistent(run, onInspect);
         }
 
+        /// <summary>商店购买动画期间显示已抵达牌堆的食物数量，而不是提前显示运行态总数。</summary>
+        public void BuildShopCount(int displayedCount, Action<int> onInspect = null)
+        {
+            if (_recipe == null)
+            {
+                return;
+            }
+
+            _recipe.Bind(
+                $"{System.Math.Max(0, displayedCount)}",
+                onInspect != null,
+                onInspect == null ? null : () => onInspect.Invoke(0));
+            _recipe.SetTargetHighlight(false, true);
+        }
+
         /// <summary>战斗态固定菜谱：只显示剩余数量，点击卡片查看剩余食物。</summary>
         public void BuildBattle(BattleSession session, Action<int> onInspect = null)
         {

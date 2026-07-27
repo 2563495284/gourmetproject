@@ -42,6 +42,33 @@ namespace GourmetProject.Game.UI.Widgets
 
         public Vector2Int DisplayedGridSize { get; private set; }
 
+        /// <summary>
+        /// 复制当前 RT，供源卡被清空后仍需继续显示的购买动画独占使用。
+        /// 调用方负责 Release/Destroy 返回的 RenderTexture。
+        /// </summary>
+        public RenderTexture CopyCurrentTexture()
+        {
+            if (_renderTexture == null || !_renderTexture.IsCreated())
+            {
+                return null;
+            }
+
+            RenderTextureDescriptor descriptor = _renderTexture.descriptor;
+            descriptor.depthBufferBits = 0;
+            descriptor.msaaSamples = 1;
+            descriptor.useMipMap = false;
+            descriptor.autoGenerateMips = false;
+            var copy = new RenderTexture(descriptor)
+            {
+                name = $"{_renderTexture.name}_PurchaseSnapshot",
+                filterMode = _renderTexture.filterMode,
+                wrapMode = _renderTexture.wrapMode,
+            };
+            copy.Create();
+            Graphics.Blit(_renderTexture, copy);
+            return copy;
+        }
+
         public void SetRaycastTarget(bool value)
         {
             EnsureRefs();

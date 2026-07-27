@@ -267,7 +267,7 @@ namespace GourmetProject.Tests.EditMode
                     instance.GetComponentInChildren<DishIconRenderTexturePreview>(true);
 
                 Assert.That(card.TipPlacementTarget, Is.SameAs(preview.transform));
-                Assert.That(card.PurchaseFlySource, Is.Not.SameAs(preview.transform));
+                Assert.That(card.PurchaseFlySource, Is.SameAs(preview.transform));
             }
             finally
             {

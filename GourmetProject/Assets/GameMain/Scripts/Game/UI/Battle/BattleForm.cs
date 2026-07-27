@@ -50,7 +50,7 @@ namespace GourmetProject.Game.UI.Battle
         IEventPageHost
     {
         private const string Tag = "Battle";
-        private const float ShopItemFlyDuration = 0.42f;
+        private const float RandomizedItemFlyDuration = 0.42f;
 
         private enum FoodTipsHoverOwner
         {
@@ -150,6 +150,9 @@ namespace GourmetProject.Game.UI.Battle
         private EventPageCoordinator _eventPage;
         private ActiveItemUseCoordinator _activeItemUse;
         private int _shopItemFlyInFlight;
+        private int _shopFoodFlyInFlight;
+        private int _shopFoodDisplayedCount;
+        private readonly HashSet<ShopPurchaseFlyView> _activeShopPurchaseFlys = new();
         private cfg.BossDebuff _currentBossDebuff;
         private cfg.TimelineNode _currentTimelineNodeCard;
         private int? _currentTimelineNodeInterestMaxGain;
@@ -173,6 +176,7 @@ namespace GourmetProject.Game.UI.Battle
 
         public GameRun Run => _run;
         public BattleSession Session => _session;
+        public event Action<ShopEntryKind> ShopPurchaseAnimationStarted;
         public ActionExecutionContext CurrentBattleActionContext => _loop?.CurrentBattleActionContext;
         internal GameRun ActiveRun => _run;
         internal BattleSession ActiveSession => _session;
@@ -256,6 +260,7 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             _discardSettlementCallbacks = true;
+            CancelActiveShopPurchaseAnimations();
             _settlementReveal = null;
             _loop = null;
             _activeItemUse?.Dispose();
@@ -751,12 +756,13 @@ namespace GourmetProject.Game.UI.Battle
         ShopForm IShopPageHost.ShopPanel => _shopPanel;
         RecipePresenter IShopPageHost.RecipePresenter => _recipePresenter;
         bool IShopPageHost.ShouldRefreshItemsAfterShopChange => _shopItemFlyInFlight <= 0;
+        bool IShopPageHost.ShouldRefreshRecipeAfterShopChange => _shopFoodFlyInFlight <= 0;
         void IShopPageHost.OnShopClosed() => OnShopClosed();
         void IShopPageHost.RefreshPersistent(bool refreshItems) => RefreshPersistent(refreshItems);
         void IShopPageHost.OpenDeleteDish() => _recipeBookPage?.OpenShopDelete();
         void IShopPageHost.OpenTableEdit(Action onShown) => OpenTableEdit(onShown);
         void IShopPageHost.OpenRecipeInspect(int bookIndex) => _recipeBookPage?.OpenInspect(bookIndex);
-        void IShopPageHost.PlayShopItemPurchaseFly(ShopEntry entry, ShopBuyItemViewBase sourceCard) => PlayShopItemPurchaseFly(entry, sourceCard);
+        void IShopPageHost.PlayShopPurchaseAnimation(ShopEntry entry, ShopBuyItemViewBase sourceCard) => PlayShopPurchaseAnimation(entry, sourceCard);
 
         GameRun IRewardPageHost.Run => _run;
         GameplayView IRewardPageHost.CurrentView => _current;
@@ -1274,16 +1280,9 @@ namespace GourmetProject.Game.UI.Battle
             _shopPage?.RefreshPersistent();
         }
 
-        private void PlayShopItemPurchaseFly(ShopEntry entry, ShopBuyItemViewBase sourceCard)
+        private void PlayShopPurchaseAnimation(ShopEntry entry, ShopBuyItemViewBase sourceCard)
         {
-            if (entry == null || sourceCard == null || _itemsColumn == null)
-            {
-                return;
-            }
-
-            cfg.ItemKind kind = entry.Kind == ShopEntryKind.ActiveItem ? cfg.ItemKind.Active : cfg.ItemKind.Passive;
-            ItemDefinition item = ItemDefinition.Get(GameApp.Config.Tables, entry.Id, kind);
-            if (item == null)
+            if (entry == null || sourceCard == null || entry.Kind == ShopEntryKind.Fragment)
             {
                 return;
             }
@@ -1297,20 +1296,238 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             Canvas.ForceUpdateCanvases();
-            if (!TryGetRectInLayer(sourceRect, layer, out RectSnapshot start) ||
-                !_itemsColumn.TryGetItemFlyTarget(_run, entry.Id, item.Kind, layer, out Vector2 targetCenter, out Vector2 targetSize))
+            if (!TryGetRectInLayer(sourceRect, layer, out RectSnapshot start))
             {
                 return;
             }
 
-            _shopItemFlyInFlight++;
+            if (entry.Kind == ShopEntryKind.Dish)
+            {
+                PlayShopFoodPurchase(entry, sourceCard, layer, start);
+                return;
+            }
+
+            PlayShopItemPurchase(entry, sourceCard, layer, start);
+        }
+
+        private void PlayShopFoodPurchase(
+            ShopEntry entry,
+            ShopBuyItemViewBase sourceCard,
+            RectTransform layer,
+            RectSnapshot start)
+        {
+            if (_recipe == null ||
+                !TryGetRectInLayer(_recipe.Rect, layer, out RectSnapshot end))
+            {
+                return;
+            }
+
+            RenderTexture texture = sourceCard.CapturePurchaseFlyTexture();
+            if (texture == null)
+            {
+                return;
+            }
+
+            ShopPurchaseFlyView fly = CreateShopPurchaseFly(layer);
+            if (fly == null)
+            {
+                ReleasePurchaseTexture(texture);
+                return;
+            }
+
+            if (_shopFoodFlyInFlight == 0)
+            {
+                _shopFoodDisplayedCount = Mathf.Max(0, _run.RecipeDishes.Count - 1);
+            }
+
+            _shopFoodFlyInFlight++;
+            RegisterShopPurchaseFly(fly);
+            try
+            {
+                fly.PlayFood(
+                    start.Center,
+                    start.Size,
+                    end.Center,
+                    texture,
+                    OnShopFoodFlyArrived,
+                    () => UnregisterShopPurchaseFly(fly));
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception, fly);
+                fly.Cancel();
+                return;
+            }
+
+            ShopPurchaseAnimationStarted?.Invoke(entry.Kind);
+        }
+
+        private void PlayShopItemPurchase(
+            ShopEntry entry,
+            ShopBuyItemViewBase sourceCard,
+            RectTransform layer,
+            RectSnapshot start)
+        {
+            if (_itemsColumn == null)
+            {
+                return;
+            }
+
+            cfg.ItemKind kind = entry.Kind == ShopEntryKind.ActiveItem
+                ? cfg.ItemKind.Active
+                : cfg.ItemKind.Passive;
+            ItemDefinition item = ItemDefinition.Get(GameApp.Config.Tables, entry.Id, kind);
+            if (item == null ||
+                !_itemsColumn.TryGetItemFlyTarget(
+                    _run,
+                    entry.Id,
+                    item.Kind,
+                    layer,
+                    out Vector2 targetCenter,
+                    out Vector2 targetSize))
+            {
+                return;
+            }
+
+            ShopPurchaseFlyView fly = CreateShopPurchaseFly(layer);
+            if (fly == null)
+            {
+                return;
+            }
+
             Sprite sprite = sourceCard.PurchaseFlySprite ?? RunItemSlotView.LoadIcon(item) ?? LoadShopItemFallbackIcon(item.Kind);
-            PlayItemFlyTween(
-                start,
-                new RectSnapshot(targetCenter, targetSize),
-                sprite,
-                RunItemSlotView.QualityColor(item.Quality),
-                OnShopItemFlyComplete);
+            Color fallbackColor = RunItemSlotView.QualityColor(item.Quality);
+            _shopItemFlyInFlight++;
+            RegisterShopPurchaseFly(fly);
+            try
+            {
+                if (entry.Kind == ShopEntryKind.ActiveItem)
+                {
+                    fly.PlayActive(
+                        start.Center,
+                        targetCenter,
+                        targetSize,
+                        sprite,
+                        fallbackColor,
+                        OnShopItemFlyArrived,
+                        () => UnregisterShopPurchaseFly(fly));
+                }
+                else
+                {
+                    fly.PlayPassive(
+                        start.Center,
+                        start.Size,
+                        targetCenter,
+                        targetSize,
+                        sprite,
+                        fallbackColor,
+                        OnShopItemFlyArrived,
+                        () => UnregisterShopPurchaseFly(fly));
+                }
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception, fly);
+                fly.Cancel();
+                return;
+            }
+
+            ShopPurchaseAnimationStarted?.Invoke(entry.Kind);
+        }
+
+        private ShopPurchaseFlyView CreateShopPurchaseFly(RectTransform layer)
+        {
+            if (_shopItemFlyFxPrefab == null)
+            {
+                Debug.LogError($"{nameof(BattleForm)} 缺少商店购买飞行动画 prefab。", this);
+                return null;
+            }
+
+            GameObject go = Instantiate(_shopItemFlyFxPrefab, layer);
+            go.name = "ShopPurchaseFlyFx";
+            ShopPurchaseFlyView fly =
+                go.GetComponent<ShopPurchaseFlyView>() ??
+                go.AddComponent<ShopPurchaseFlyView>();
+            if (!fly.Initialize(layer))
+            {
+                Debug.LogError(
+                    "ShopItemFlyFx prefab 必须包含 RectTransform、CanvasGroup、Image。",
+                    go);
+                Destroy(go);
+                return null;
+            }
+
+            return fly;
+        }
+
+        private void RegisterShopPurchaseFly(ShopPurchaseFlyView fly)
+        {
+            if (fly != null)
+            {
+                _activeShopPurchaseFlys.Add(fly);
+            }
+        }
+
+        private void UnregisterShopPurchaseFly(ShopPurchaseFlyView fly)
+        {
+            if (fly != null)
+            {
+                _activeShopPurchaseFlys.Remove(fly);
+            }
+        }
+
+        private void OnShopFoodFlyArrived()
+        {
+            _shopFoodFlyInFlight = Mathf.Max(0, _shopFoodFlyInFlight - 1);
+            _shopFoodDisplayedCount++;
+            if (_shopFoodFlyInFlight == 0)
+            {
+                _shopFoodDisplayedCount = _run != null ? _run.RecipeDishes.Count : 0;
+                _recipePresenter?.BuildShop(_run, OpenRecipeInspect);
+                return;
+            }
+
+            _recipePresenter?.BuildShopCount(_shopFoodDisplayedCount, OpenRecipeInspect);
+        }
+
+        private void OnShopItemFlyArrived()
+        {
+            _shopItemFlyInFlight = Mathf.Max(0, _shopItemFlyInFlight - 1);
+            RefreshItems();
+        }
+
+        private void CancelActiveShopPurchaseAnimations()
+        {
+            if (_activeShopPurchaseFlys.Count > 0)
+            {
+                var active = new List<ShopPurchaseFlyView>(_activeShopPurchaseFlys);
+                for (int i = 0; i < active.Count; i++)
+                {
+                    active[i]?.Cancel();
+                }
+            }
+
+            _activeShopPurchaseFlys.Clear();
+            _shopItemFlyInFlight = 0;
+            _shopFoodFlyInFlight = 0;
+        }
+
+        private static void ReleasePurchaseTexture(RenderTexture texture)
+        {
+            if (texture == null)
+            {
+                return;
+            }
+
+            texture.Release();
+            if (Application.isPlaying)
+            {
+                Destroy(texture);
+            }
+            else
+            {
+                DestroyImmediate(texture);
+            }
         }
 
         private void PlayItemFlyTween(RectSnapshot start, RectSnapshot end, Sprite sprite, Color fallbackColor, Action onComplete)
@@ -1374,7 +1591,7 @@ namespace GourmetProject.Game.UI.Battle
             };
 
             Sequence sequence = DOTween.Sequence().SetUpdate(true).SetLink(go);
-            sequence.Append(DOVirtual.Float(0f, 1f, ShopItemFlyDuration, t =>
+            sequence.Append(DOVirtual.Float(0f, 1f, RandomizedItemFlyDuration, t =>
             {
                 if (rect == null)
                 {
@@ -1384,7 +1601,7 @@ namespace GourmetProject.Game.UI.Battle
                 rect.anchoredPosition = Vector2.LerpUnclamped(start.Center, end.Center, t);
                 rect.sizeDelta = Vector2.LerpUnclamped(start.Size, end.Size, t);
             }).SetEase(Ease.InOutCubic));
-            sequence.Insert(ShopItemFlyDuration * 0.8f, DOVirtual.Float(1f, 0f, ShopItemFlyDuration * 0.2f, alpha =>
+            sequence.Insert(RandomizedItemFlyDuration * 0.8f, DOVirtual.Float(1f, 0f, RandomizedItemFlyDuration * 0.2f, alpha =>
             {
                 if (group != null)
                 {
@@ -1393,15 +1610,6 @@ namespace GourmetProject.Game.UI.Battle
             }).SetEase(Ease.InQuad));
             sequence.OnComplete(() => finish());
             sequence.OnKill(() => finish());
-        }
-
-        private void OnShopItemFlyComplete()
-        {
-            _shopItemFlyInFlight = Mathf.Max(0, _shopItemFlyInFlight - 1);
-            if (_shopItemFlyInFlight == 0)
-            {
-                RefreshItems();
-            }
         }
 
         private static bool TryGetRectInLayer(RectTransform rect, RectTransform layer, out RectSnapshot snapshot)
