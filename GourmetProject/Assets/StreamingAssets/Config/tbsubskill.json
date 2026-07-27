@@ -16,7 +16,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{ascope}分数 {0}",
+    "descTemplate": "{ascope}\n分数 {0}",
     "termId": ""
   },
   {
@@ -36,7 +36,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{ascope}倍率 {0}",
+    "descTemplate": "{ascope}\n倍率 {0}",
     "termId": ""
   },
   {
@@ -56,7 +56,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{ascope}分数 {0}",
+    "descTemplate": "{ascope}\n分数 {0}",
     "termId": ""
   },
   {
@@ -76,7 +76,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{ascope}倍率 {0}",
+    "descTemplate": "{ascope}\n倍率 {0}",
     "termId": ""
   },
   {
@@ -96,7 +96,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}没有空格时\n倍率 {0}",
+    "descTemplate": "{cscope}\n没有空格时，倍率 {0}",
     "termId": ""
   },
   {
@@ -136,7 +136,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物\n倍率 {0}",
+    "descTemplate": "{cscope}\n每有 1 {unit}食物，倍率 {0}",
     "termId": ""
   },
   {
@@ -156,7 +156,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}技能\n分数 {0}",
+    "descTemplate": "{cscope}\n每有 1 {unit}技能，分数 {0}",
     "termId": ""
   },
   {
@@ -296,7 +296,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物\n分数 {0}",
+    "descTemplate": "{cscope}\n每有 1 {unit}食物，分数 {0}",
     "termId": ""
   },
   {
@@ -336,7 +336,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 2 {unit}食物\n倍率 {0}",
+    "descTemplate": "{cscope}\n每有 2 {unit}食物，倍率 {0}",
     "termId": ""
   },
   {
@@ -356,7 +356,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{ascope}食物倍率 {0}",
+    "descTemplate": "{ascope}倍率 {0}",
     "termId": ""
   },
   {
@@ -416,7 +416,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物\n分数 {0}",
+    "descTemplate": "{cscope}\n每有 1 {unit}食物，分数 {0}",
     "termId": ""
   },
   {
@@ -602,7 +602,7 @@
     ],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "{cscope}食物发动甜蜜传递时\n倍率 ×{0}",
+    "descTemplate": "{cscope}\n发动甜蜜传递，倍率 ×{0}",
     "termId": ""
   },
   {
@@ -1018,7 +1018,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "将餐桌格子总数加至欢乐蛋糕层数",
+    "descTemplate": "将餐桌格子总数\n加至欢乐蛋糕层数",
     "termId": "clb"
   },
   {
@@ -1082,7 +1082,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "{cscope}每有 1 {unit}技能\n倍率 ×{0}",
+    "descTemplate": "{cscope}\n每有 1 {unit}技能，倍率 ×{0}",
     "termId": ""
   },
   {
