@@ -62,7 +62,7 @@ namespace GourmetProject.Tests.EditMode
                 SkillScope.CakeBuff,
                 0,
                 new[] { 0f },
-                new[] { "cat:cake", "tiervals:15|30|50" });
+                new[] { "tiervals:15|30|50" });
 
             string desc = SkillDescComposer.ComposeComponent(
                 "${cat}数量达 ${tiers} 时\n欢乐蛋糕 ${tiervals} 层",
@@ -70,6 +70,22 @@ namespace GourmetProject.Tests.EditMode
                 signed: true);
 
             Assert.That(desc, Is.EqualTo("蛋糕数量达 3/5/8 时\n欢乐蛋糕 +15/+30/+50 层"));
+        }
+
+        [Test]
+        public void ComposeComponent_FillsValueCountAsAndDirectionalSelfScope()
+        {
+            SkillRuleDef rule = Rule(
+                SkillConditionType.None,
+                SkillScope.Self,
+                CountUnit.Instances,
+                SkillActionType.AddCountAs,
+                SkillScope.RightAndSelf,
+                2f);
+
+            Assert.That(
+                SkillDescComposer.ComposeComponent("${ascope}额外视为 ${value} 个食物（共 ${countas} 个）", rule, signed: false),
+                Is.EqualTo("右侧及自身额外视为 2 个食物（共 3 个）"));
         }
 
         private static SkillRuleDef Rule(
