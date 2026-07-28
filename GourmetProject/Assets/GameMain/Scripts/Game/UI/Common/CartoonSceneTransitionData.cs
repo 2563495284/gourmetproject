@@ -24,7 +24,7 @@ namespace GourmetProject.Game.UI.Common
     public sealed class CartoonSceneTransitionData
     {
         public CartoonTransitionType TransitionType = CartoonTransitionType.PlateWipe;
-        public string Message = "开饭啦！";
+        public string Message = "";
         public string SceneAssetName;
         public float CoverDuration = 0.32f;
         public float HoldDuration = 0.18f;

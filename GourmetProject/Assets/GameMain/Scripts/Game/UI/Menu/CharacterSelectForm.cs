@@ -25,8 +25,6 @@ namespace GourmetProject.Game.UI.Menu
 
         private static readonly Color DotSelected = new(1f, 0.6f, 0.16f, 1f);
         private static readonly Color DotNormal = new(1f, 1f, 1f, 0.45f);
-
-        private Image _portraitImage;
         private Text _nameText;
         private Text _descText;
         private Button _leftArrow;
@@ -44,7 +42,6 @@ namespace GourmetProject.Game.UI.Menu
 
             _options = CharacterOptions.All;
 
-            _portraitImage = FindRequiredComponentInChildren<Image>("PortraitImage");
             _nameText = FindRequiredComponentInChildren<Text>("CharacterName");
             _descText = FindRequiredComponentInChildren<Text>("CharacterDesc");
             _leftArrow = FindRequiredComponentInChildren<Button>("LeftArrow");
@@ -100,8 +97,8 @@ namespace GourmetProject.Game.UI.Menu
             CharacterOption option = _options[_index];
             var data = new CartoonSceneTransitionData
             {
-                TransitionType = CartoonTransitionType.FoodWipe,
-                Message = "开饭啦！",
+                TransitionType = CartoonTransitionType.Fade,
+                Message = "",
                 CoverDuration = 0.42f,
                 HoldDuration = 0.2f,
                 RevealDuration = 0.34f,
@@ -138,33 +135,13 @@ namespace GourmetProject.Game.UI.Menu
             {
                 _nameText.text = string.Empty;
                 _descText.text = string.Empty;
-                _portraitImage.enabled = false;
                 return;
             }
 
             CharacterOption option = _options[_index];
             _nameText.text = option.DisplayName;
             _descText.text = option.Description;
-            ApplyPortrait(option.PortraitResource);
             RefreshDots();
-        }
-
-        private void ApplyPortrait(string portraitResource)
-        {
-            Sprite sprite = string.IsNullOrEmpty(portraitResource)
-                ? null
-                : Resources.Load<Sprite>(portraitResource);
-
-            if (sprite != null)
-            {
-                _portraitImage.sprite = sprite;
-                _portraitImage.enabled = true;
-            }
-            else
-            {
-                // 立绘资源尚未就绪时保留占位底图，避免空界面。
-                Log.Warning($"Portrait sprite not found at Resources path '{portraitResource}'.", Tag);
-            }
         }
 
         private void CollectDots()

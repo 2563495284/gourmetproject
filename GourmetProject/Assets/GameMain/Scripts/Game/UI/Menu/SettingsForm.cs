@@ -221,8 +221,8 @@ namespace GourmetProject.Game.UI.Menu
         {
             var data = new CartoonSceneTransitionData
             {
-                TransitionType = CartoonTransitionType.FoodWipe,
-                Message = "收摊啦！",
+                TransitionType = CartoonTransitionType.Fade,
+                Message = "",
                 CoverDuration = 0.42f,
                 HoldDuration = 0.2f,
                 RevealDuration = 0.34f,
