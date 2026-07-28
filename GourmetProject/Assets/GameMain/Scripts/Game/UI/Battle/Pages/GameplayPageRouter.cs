@@ -4,7 +4,6 @@ using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Battle.States;
 using GourmetProject.Game.UI.Battle.View;
 using GourmetProject.Game.UI.Common;
-using GourmetProject.Game.UI.Hud;
 using GourmetProject.Game.UI.Meta;
 using UnityEngine;
 using UnityEngine.UI;
@@ -43,8 +42,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         Button BoardEditSkipButton { get; }
 
-        RecipePresenter RecipePresenter { get; }
-
         bool RecipeInspectShowsActionAxis { get; }
 
         void OnLeavingPage(GameplayView current, GameplayView next);
@@ -63,12 +60,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         void OpenRecipeBookPanel();
 
-        void OpenRecipeInspect(int bookIndex);
-
-        void BuildBattleRecipe();
-
-        void BuildRecipeInspectCards();
-
+        void BuildBattleControls();
 
         void BuildActionCards();
 
@@ -207,8 +199,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 _host.Backdrop.SetActive(!worldView);
             }
 
-            // 固定菜谱始终存在；各特化状态可在 Enter 中覆盖为战斗态或查看态数据。
-            _host.RecipePresenter?.BuildPersistent(_host.Run, _host.OpenRecipeInspect);
             _host.RefreshPersistent();
         }
 
@@ -220,12 +210,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         void IBattleViewHost.OpenRecipeBookPanel() => _host.OpenRecipeBookPanel();
 
-        void IBattleViewHost.OpenRecipeInspect(int bookIndex) => _host.OpenRecipeInspect(bookIndex);
-
-        void IBattleViewHost.BuildBattleRecipe() => _host.BuildBattleRecipe();
-
-        void IBattleViewHost.BuildRecipeInspectCards() => _host.BuildRecipeInspectCards();
-
+        void IBattleViewHost.BuildBattleControls() => _host.BuildBattleControls();
 
         private static void SetActive(Component component, bool active)
         {

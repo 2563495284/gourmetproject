@@ -26,7 +26,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private const float MaxCellSize = DiningTableLayout.MaxCellSize;
         private const float MinCellSize = DiningTableLayout.MinCellSize;
 
-        // 餐桌居中定位的底部边距：Food 态给固定菜谱让 2.7，编辑态还要给候选托盘条让到 3.6。
+        // 餐桌居中定位的底部边距：Food 态给出餐口让 2.7，编辑态还要给候选托盘条让到 3.6。
         private const float FoodTableBottomMargin = 2.7f;
         private const float EditTableBottomMargin = 3.6f;
         private const int PassiveSlotCapacity = 10;

@@ -5,8 +5,6 @@ using GourmetProject.Core.Rng;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI;
-using GourmetProject.Game.UI.Battle.View;
-using GourmetProject.Game.UI.Hud;
 using GourmetProject.Game.UI.Meta;
 using GourmetProject.Runtime;
 
@@ -18,11 +16,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         ShopForm ShopPanel { get; }
 
-        RecipePresenter RecipePresenter { get; }
-
         bool ShouldRefreshItemsAfterShopChange { get; }
-
-        bool ShouldRefreshRecipeAfterShopChange { get; }
 
         void OnShopClosed();
 
@@ -71,10 +65,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
         {
             RefreshStock();
             _host.RefreshPersistent(_host.ShouldRefreshItemsAfterShopChange);
-            if (_host.ShouldRefreshRecipeAfterShopChange)
-            {
-                _host.RecipePresenter?.BuildShop(_host.Run, _host.OpenRecipeInspect);
-            }
         }
 
         private void EnsureStock(GameRun run)

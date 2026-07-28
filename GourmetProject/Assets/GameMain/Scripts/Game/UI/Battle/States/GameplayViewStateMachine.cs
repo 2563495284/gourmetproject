@@ -25,11 +25,7 @@ namespace GourmetProject.Game.UI.Battle.States
 
         void OpenRecipeBookPanel();
 
-        void OpenRecipeInspect(int bookIndex);
-
-        void BuildBattleRecipe();
-
-        void BuildRecipeInspectCards();
+        void BuildBattleControls();
 
     }
 
