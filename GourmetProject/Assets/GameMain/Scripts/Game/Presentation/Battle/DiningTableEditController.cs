@@ -74,7 +74,6 @@ namespace GourmetProject.Game.Presentation.Battle
         private readonly List<TableFragmentDef> _editCandidates = new List<TableFragmentDef>();
         private int _editSelected = -1;
         private FragmentChoiceInteractionState _fragmentChoiceState;
-        private bool _editDragAnimating;
         private int _choiceSessionVersion;
         private int _placementConfirmationRequestId;
         private int _hoveredCandidateIndex = -1;
@@ -181,7 +180,6 @@ namespace GourmetProject.Game.Presentation.Battle
             _requestPlacementConfirmation = request.RequestPlacementConfirmation;
             _editSelected = -1;
             _fragmentChoiceState = FragmentChoiceInteractionState.Idle;
-            _editDragAnimating = false;
             _currentPlacementEvaluation = null;
             ConfigureEditMaxBounds(run);
 
@@ -299,7 +297,6 @@ namespace GourmetProject.Game.Presentation.Battle
             _choiceSessionVersion++;
             _editSelected = -1;
             _fragmentChoiceState = FragmentChoiceInteractionState.Idle;
-            _editDragAnimating = false;
             _currentPlacementEvaluation = null;
             _editCandidates.Clear();
             ClearGhost();
@@ -1253,7 +1250,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            _editDragAnimating = true;
             Vector3 startPosition = _editDragRoot.position;
             Vector3 startScale = _editDragRoot.localScale;
             float safeDuration = Mathf.Max(0.0001f, duration);
@@ -1293,7 +1289,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 _editDragRoot.localScale = targetScale;
             }
 
-            _editDragAnimating = false;
             DisposeDragToken();
             if (!keepFollowing)
             {
@@ -1307,7 +1302,6 @@ namespace GourmetProject.Game.Presentation.Battle
             _editSelected = -1;
             _fragmentChoiceState = FragmentChoiceInteractionState.Idle;
             _currentPlacementEvaluation = null;
-            _editDragAnimating = false;
             BuildCandidateTray();
         }
 
@@ -1470,7 +1464,6 @@ namespace GourmetProject.Game.Presentation.Battle
             _editDragCts.Cancel();
             _editDragCts.Dispose();
             _editDragCts = null;
-            _editDragAnimating = false;
         }
 
         private void DisposeDragToken()

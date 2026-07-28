@@ -8,7 +8,7 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI.Battle.View
 {
     /// <summary>
-    /// 常驻壳左栏信息组件：周/金币/分数要求，以及「查看餐桌」「设置」按钮。
+    /// 常驻壳左栏信息组件：周/金币/分数要求，以及「查看菜谱」「查看餐桌」「设置」按钮。
     /// 数据刷新与「查看餐桌」按钮文案/可点态集中在此，点击通过 <see cref="Bind"/> 回调壳。
     /// </summary>
     public sealed class BattleInfoColumn : MonoBehaviour
@@ -19,6 +19,7 @@ namespace GourmetProject.Game.UI.Battle.View
         [SerializeField] private Text _weekText;
         [SerializeField] private Text _goldText;
         [SerializeField] private Text _scoreReqText;
+        [SerializeField] private Button _viewRecipeButton;
         [SerializeField] private Button _viewTableButton;
         [SerializeField] private Button _settingsButton;
         [SerializeField] private SettlementScoreFireView _scoreFire;
@@ -30,6 +31,10 @@ namespace GourmetProject.Game.UI.Battle.View
         private int? _battleScoreOverride;
 
         public SettlementScoreFireView ScoreFire => _scoreFire;
+        public RectTransform ViewRecipeButtonRect =>
+            ResolveViewRecipeButton() != null
+                ? _viewRecipeButton.transform as RectTransform
+                : null;
 
         private void Awake()
         {
@@ -37,7 +42,7 @@ namespace GourmetProject.Game.UI.Battle.View
         }
 
         /// <summary>接线按钮回调（由壳在 OnInit 调用一次）。</summary>
-        public void Bind(Action onSettings, Action onViewTable)
+        public void Bind(Action onSettings, Action onViewTable, Action onViewRecipe)
         {
             if (_settingsButton != null)
             {
@@ -52,6 +57,12 @@ namespace GourmetProject.Game.UI.Battle.View
                 _viewTableButton.onClick.AddListener(() => onViewTable?.Invoke());
             }
 
+            Button viewRecipeButton = ResolveViewRecipeButton();
+            if (viewRecipeButton != null)
+            {
+                viewRecipeButton.onClick.RemoveAllListeners();
+                viewRecipeButton.onClick.AddListener(() => onViewRecipe?.Invoke());
+            }
         }
 
         /// <summary>结算动画逐步写入当前显示分；为空时按 session 的稳定状态刷新。</summary>
@@ -121,6 +132,19 @@ namespace GourmetProject.Game.UI.Battle.View
             {
                 _viewTableButtonText.text = text;
             }
+        }
+
+        private Button ResolveViewRecipeButton()
+        {
+            if (_viewRecipeButton == null)
+            {
+                Transform child = transform.Find("ViewRecipe");
+                _viewRecipeButton = child != null
+                    ? child.GetComponent<Button>()
+                    : null;
+            }
+
+            return _viewRecipeButton;
         }
 
         private void RefreshBossStat(GameplayView current, BattleSession session, cfg.BossDebuff bossDebuff)

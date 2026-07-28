@@ -200,10 +200,17 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public void ShowDragPlacementFeedback(DishDragPlacementResult result)
         {
-            ShowGridPlacementFeedback(result?.ToGridPlacementFeedback());
+            ShowGridPlacementFeedback(result?.ToGridPlacementFeedback(), dishPlacement: true);
         }
 
         public void ShowGridPlacementFeedback(GridPlacementFeedback result)
+        {
+            ShowGridPlacementFeedback(result, dishPlacement: false);
+        }
+
+        private void ShowGridPlacementFeedback(
+            GridPlacementFeedback result,
+            bool dishPlacement)
         {
             if (result == null || Mapper == null)
             {
@@ -217,8 +224,13 @@ namespace GourmetProject.Game.Presentation.Battle
                 display[cell.Position] = cell.State;
             }
 
-            // 映射中心格汇总整块优先级；即使它落在不规则形状的空洞里也要显示。
-            display[result.CenterCell] = result.OverallState;
+            // 餐桌碎片仍显示中心格的整体状态；食物只映射其实际占用格，
+            // 避免中心格覆盖单格反馈或在不规则形状的空洞中多画一格。
+            if (!dishPlacement)
+            {
+                display[result.CenterCell] = result.OverallState;
+            }
+
             EnsureDragFeedbackCount(display.Count);
             if (_dragFeedbackCells.Count < display.Count)
             {
@@ -230,16 +242,19 @@ namespace GourmetProject.Game.Presentation.Battle
             foreach (KeyValuePair<GridPos, GridPlacementFeedbackState> entry in display)
             {
                 DiningTableCellView overlay = _dragFeedbackCells[index++];
-                bool center = entry.Key.Equals(result.CenterCell);
+                bool center = !dishPlacement && entry.Key.Equals(result.CenterCell);
+                Color color = dishPlacement
+                    ? GridPlacementFeedbackPalette.DishColorFor(result.OverallState, entry.Value)
+                    : GridPlacementFeedbackPalette.ColorFor(entry.Value);
                 overlay.gameObject.SetActive(true);
                 overlay.transform.localRotation = Quaternion.identity;
                 overlay.Configure(entry.Key, Mapper.CellCenterLocal(entry.Key), _cellSize, _cellSprite, null);
                 overlay.name = "DragPlacementFeedback";
                 overlay.SetInteractionEnabled(false);
                 overlay.SetOutline(
-                    GridPlacementFeedbackPalette.ColorFor(entry.Value),
+                    color,
                     center ? 0.12f : 0.08f,
-                    center ? 0.28f : 0.16f);
+                    dishPlacement ? 0f : center ? 0.28f : 0.16f);
                 overlay.SetSorting(BattleSorting.Fx, DragFeedbackSortingOrder);
             }
 

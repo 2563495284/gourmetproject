@@ -36,7 +36,7 @@ namespace GourmetProject.Game.UI.Battle
 {
     /// <summary>
     /// 局外周循环编排枢纽 + 局内战斗结果壳。
-    /// 常驻壳（左列信息 / 右列道具 / 顶部行动轴 / 固定菜谱）进入玩法后全程常驻，只有中部内容区在五态间切换：
+    /// 常驻壳（左列信息 / 右列道具 / 顶部行动轴）进入玩法后全程常驻，只有中部内容区在五态间切换：
     /// 行动选择(含事件 n 选一) / 商店 / 菜谱查看与选择 / 美食战斗 / 餐桌编辑。切换只对中部内容区做 DOTween 渐隐渐显
     /// （<see cref="UITransition.FadeSwap"/>），常驻壳不参与动画；美食 / 餐桌态在同一 Battle 场景内透出世界空间表现。
     /// </summary>
@@ -71,7 +71,6 @@ namespace GourmetProject.Game.UI.Battle
         [Header("Center (切换动画区)")]
         [Tooltip("中部内容区根的 CanvasGroup：五态切换时对它做渐隐渐显；常驻壳不在其下。")]
         [SerializeField] private CanvasGroup _center;
-        [SerializeField] private Text _centerTitleText;
 
         [Header("DiningTable Area (餐桌锁定区)")]
         [Tooltip("HUD 里的空区矩形：世界餐桌将 fit 并居中锁定在该屏幕区域内。")]
@@ -120,9 +119,6 @@ namespace GourmetProject.Game.UI.Battle
         [SerializeField] private ActiveItemTargetOverlayView _activeItemTargetOverlayPrefab;
         [SerializeField] private GameObject _shopItemFlyFxPrefab;
 
-        [Header("Recipe")]
-        [SerializeField] private RecipeCardView _recipe;
-
         [Header("Food Actions")]
         [SerializeField] private BattleFoodActionBar _foodBar;
         [SerializeField] private ServingOutletView _servingOutlet;
@@ -141,7 +137,6 @@ namespace GourmetProject.Game.UI.Battle
 
         private WeekLoopController _loop;
 
-        private RecipePresenter _recipePresenter;
         private TimelineAxisBinder _axisBinder;
         private TableViewCoordinator _tableCoordinator;
         private GameplayPageRouter _pageRouter;
@@ -151,8 +146,6 @@ namespace GourmetProject.Game.UI.Battle
         private EventPageCoordinator _eventPage;
         private ActiveItemUseCoordinator _activeItemUse;
         private int _shopItemFlyInFlight;
-        private int _shopFoodFlyInFlight;
-        private int _shopFoodDisplayedCount;
         private readonly HashSet<ShopPurchaseFlyView> _activeShopPurchaseFlys = new();
         private cfg.BossDebuff _currentBossDebuff;
         private cfg.TimelineNode _currentTimelineNodeCard;
@@ -204,7 +197,7 @@ namespace GourmetProject.Game.UI.Battle
         {
             base.OnInit(userData);
 
-            _infoColumn?.Bind(OnSettingsClicked, OnViewTableClicked);
+            _infoColumn?.Bind(OnSettingsClicked, OnViewTableClicked, OnViewRecipeClicked);
             _cakeLayerBuffHud = GetComponent<CakeLayerBuffHud>();
             _foodBar?.Bind(OnEatClicked, OnDoodleClearClicked, OnDoodleToggleClicked);
 
@@ -213,7 +206,6 @@ namespace GourmetProject.Game.UI.Battle
                 _boardEditSkipButton.onClick.AddListener(OnTableEditSkipClicked);
             }
 
-            _recipePresenter = new RecipePresenter(_recipe);
             _axisBinder = new TimelineAxisBinder(
                 _actionAxisBar,
                 () => _tips != null ? _tips.Shop : null,
@@ -597,7 +589,6 @@ namespace GourmetProject.Game.UI.Battle
             TrackTimelineNodeCard(node, interestMaxGain, onPick);
             SwitchTo(GameplayView.ActionSelect, () =>
             {
-                SetCenterTitle("行动轴事件");
                 BuildTimelineNodeCard(node, interestMaxGain, onPick);
             }, PlayShowCardsWhenReady);
         }
@@ -666,7 +657,7 @@ namespace GourmetProject.Game.UI.Battle
         // —— 中部态切换中枢（淡入淡出调度 + 派发给状态机）——
 
         /// <summary>
-        /// 切到某一中部态：只对中部内容区 <see cref="_center"/> 做 DOTween 渐隐渐显，常驻壳（左/右/行动轴/菜谱框）不动。
+        /// 切到某一中部态：只对中部内容区 <see cref="_center"/> 做 DOTween 渐隐渐显，常驻壳（左/右/行动轴）不动。
         /// 内容交换（隐藏旧面板 + 启用新面板 + 重建）集中在淡出完成后的 <see cref="GameplayViewStateMachine.Apply"/> 里执行。
         /// </summary>
         private void SwitchTo(GameplayView next, Action buildCenter = null, Action onShown = null)
@@ -707,7 +698,6 @@ namespace GourmetProject.Game.UI.Battle
         GameRun IGameplayPageRouterHost.Run => _run;
         BattleWorldController IGameplayPageRouterHost.World => _world ?? BattleWorldController.Instance;
         CanvasGroup IGameplayPageRouterHost.Center => _center;
-        string IGameplayPageRouterHost.CenterTitle => _centerTitleText != null ? _centerTitleText.text : string.Empty;
         GameObject IGameplayPageRouterHost.HudFrame => _hudFrame;
         GameObject IGameplayPageRouterHost.Backdrop => _backdrop;
         GameObject IGameplayPageRouterHost.ActionSelectionPanel => _actionSelectionPanel;
@@ -719,7 +709,6 @@ namespace GourmetProject.Game.UI.Battle
         RandomizedItemsPanel IGameplayPageRouterHost.RandomizedItemsPanel => _randomizedItemsPanel;
         EventPagePanel IGameplayPageRouterHost.EventPagePanel => _eventPagePanel;
         Button IGameplayPageRouterHost.BoardEditSkipButton => _boardEditSkipButton;
-        RecipePresenter IGameplayPageRouterHost.RecipePresenter => _recipePresenter;
         bool IGameplayPageRouterHost.RecipeInspectShowsActionAxis => _recipeBookPage?.InspectShowsActionAxis == true;
         void IGameplayPageRouterHost.OnLeavingPage(GameplayView current, GameplayView next) => _recipeBookPage?.OnLeavingPage(current, next);
         void IGameplayPageRouterHost.OnBeforeApplyPage(GameplayView view)
@@ -732,13 +721,10 @@ namespace GourmetProject.Game.UI.Battle
 
         void IGameplayPageRouterHost.SetActionAxisVisible(bool visible) => SetActionAxisVisible(visible);
         void IGameplayPageRouterHost.SetFoodActionsVisible(bool visible) => SetFoodActionsVisible(visible);
-        void IGameplayPageRouterHost.SetCenterTitle(string text) => SetCenterTitle(text);
         void IGameplayPageRouterHost.RebuildActionAxis() => RebuildActionAxis();
         void IGameplayPageRouterHost.OpenShopPanel() => _shopPage?.OpenPanel();
         void IGameplayPageRouterHost.OpenRecipeBookPanel() => _recipeBookPage?.OpenPanel();
-        void IGameplayPageRouterHost.OpenRecipeInspect(int bookIndex) => _recipeBookPage?.OpenInspect(bookIndex);
-        void IGameplayPageRouterHost.BuildBattleRecipe() => BuildBattleRecipe();
-        void IGameplayPageRouterHost.BuildRecipeInspectCards() => BuildRecipeInspectCards();
+        void IGameplayPageRouterHost.BuildBattleControls() => BuildBattleControls();
         void IGameplayPageRouterHost.BuildActionCards() => BuildActionCards();
         void IGameplayPageRouterHost.RefreshPersistent() => RefreshPersistent();
 
@@ -747,20 +733,17 @@ namespace GourmetProject.Game.UI.Battle
         GameplayView IRecipeBookHost.CurrentView => _current;
         RecipeReadonlyBookView IRecipeBookHost.RecipeReadonlyBookView => _recipeReadonlyBookView;
         void IRecipeBookHost.SwitchTo(GameplayView view, Action buildCenter, Action onShown) => SwitchTo(view, buildCenter, onShown);
-        void IRecipeBookHost.SetCenterTitle(string text) => SetCenterTitle(text);
         void IRecipeBookHost.RefreshPersistent() => RefreshPersistent();
         void IRecipeBookHost.RefreshShopPersistent() => RefreshShopPersistent();
         ActionSelectSnapshot IRecipeBookHost.CaptureActionSelection() => CaptureActionSelectSnapshot();
         void IRecipeBookHost.RestoreActionSelection(ActionSelectSnapshot snapshot) => RestoreActionSelection(snapshot);
-        void IRecipeBookHost.ShowActionSelection() => ShowActionSelection();
+        void IRecipeBookHost.ShowActionSelection(Action onShown) => ShowActionSelection(onShown);
         void IRecipeBookHost.PlayShowCardsWhenReady() => PlayShowCardsWhenReady();
         FoodTipsView IRecipeBookHost.FoodTips() => _tips != null ? _tips.Food : null;
 
         GameRun IShopPageHost.Run => _run;
         ShopForm IShopPageHost.ShopPanel => _shopPanel;
-        RecipePresenter IShopPageHost.RecipePresenter => _recipePresenter;
         bool IShopPageHost.ShouldRefreshItemsAfterShopChange => _shopItemFlyInFlight <= 0;
-        bool IShopPageHost.ShouldRefreshRecipeAfterShopChange => _shopFoodFlyInFlight <= 0;
         void IShopPageHost.OnShopClosed() => OnShopClosed();
         void IShopPageHost.RefreshPersistent(bool refreshItems) => RefreshPersistent(refreshItems);
         void IShopPageHost.OpenDeleteDish() => _recipeBookPage?.OpenShopDelete();
@@ -780,7 +763,6 @@ namespace GourmetProject.Game.UI.Battle
         RewardItemChoicePanel IRewardPageHost.RewardItemChoicePanelPrefab => _rewardItemChoicePanelPrefab;
         RandomizedItemsPanel IRewardPageHost.RandomizedItemsPanel => _randomizedItemsPanel;
         void IRewardPageHost.SwitchTo(GameplayView view, Action buildCenter, Action onShown) => SwitchTo(view, buildCenter, onShown);
-        void IRewardPageHost.SetCenterTitle(string text) => SetCenterTitle(text);
         void IRewardPageHost.RefreshPersistent() => RefreshPersistent();
         void IRewardPageHost.ShowActionSelection() => ShowActionSelection();
         FoodTipsView IRewardPageHost.FoodTips() => _tips != null ? _tips.Food : null;
@@ -789,7 +771,6 @@ namespace GourmetProject.Game.UI.Battle
 
         EventPagePanel IEventPageHost.EventPagePanel => _eventPagePanel;
         void IEventPageHost.SwitchTo(GameplayView view, Action buildCenter, Action onShown) => SwitchTo(view, buildCenter, onShown);
-        void IEventPageHost.SetCenterTitle(string text) => SetCenterTitle(text);
         void IEventPageHost.OpenEventRecipeDishDelete(
             GameRun run,
             string title,
@@ -813,14 +794,17 @@ namespace GourmetProject.Game.UI.Battle
 
         // —— 行动选择态（含事件 n 选一，共用中部卡片）——
 
-        private void ShowActionSelection()
+        private void ShowActionSelection(Action onShown = null)
         {
             ClearTimelineNodeCard();
             SwitchTo(GameplayView.ActionSelect, () =>
             {
-                SetCenterTitle("选择行动");
                 BuildActionCards();
-            }, PlayShowCardsWhenReady);
+            }, () =>
+            {
+                PlayShowCardsWhenReady();
+                onShown?.Invoke();
+            });
         }
 
         /// <summary>事件页：专用中部面板，展示事件环境、正文、选项或结果结束按钮。</summary>
@@ -853,14 +837,6 @@ namespace GourmetProject.Game.UI.Battle
             Action onChanged)
         {
             _eventPage?.OpenRecipeDishDelete(run, title, onCancel, onTargetConfirmed, onChanged);
-        }
-
-        private void SetCenterTitle(string text)
-        {
-            if (_centerTitleText != null)
-            {
-                _centerTitleText.text = text ?? string.Empty;
-            }
         }
 
         // —— 商店 / 菜谱工作区 / 餐桌编辑入口 ——
@@ -1161,10 +1137,9 @@ namespace GourmetProject.Game.UI.Battle
             discardBin?.SetVisible(visible);
         }
 
-        /// <summary>战斗态固定菜谱只显示剩余数量；出餐与可放统计由底部出餐口承担。</summary>
-        private void BuildBattleRecipe()
+        /// <summary>初始化战斗态的出餐口、弃置区与世界拖拽回调。</summary>
+        private void BuildBattleControls()
         {
-            _recipePresenter?.BuildBattle(_session, OpenRecipeInspect);
             BattleWorldController world = _world ?? BattleWorldController.Instance;
             ServingOutletView servingOutlet = ResolveServingOutlet();
             FoodDiscardBinView discardBin = ResolveFoodDiscardBin();
@@ -1207,18 +1182,6 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             return _foodDiscardBin;
-        }
-
-        private void BuildRecipeInspectCards()
-        {
-            int selectedBookIndex = _recipeBookPage?.InspectBookIndex ?? -1;
-            if (_recipeBookPage?.InspectUsesBattleRecipe == true)
-            {
-                _recipePresenter?.BuildBattleInspect(_session, OpenRecipeInspect, selectedBookIndex);
-                return;
-            }
-
-            _recipePresenter?.BuildPersistent(_run, OpenRecipeInspect, selectedBookIndex);
         }
 
         private void ServeFromOutlet()
@@ -1329,7 +1292,7 @@ namespace GourmetProject.Game.UI.Battle
             }
         }
 
-        /// <summary>商店内数据变化回调：刷新常驻壳信息与固定菜谱。</summary>
+        /// <summary>商店内数据变化回调：刷新常驻壳信息。</summary>
         private void RefreshShopPersistent()
         {
             _shopPage?.RefreshPersistent();
@@ -1358,7 +1321,7 @@ namespace GourmetProject.Game.UI.Battle
 
             if (entry.Kind == ShopEntryKind.Dish)
             {
-                PlayShopFoodPurchase(entry, sourceCard, layer, start);
+                PlayShopFoodPurchase(sourceCard, layer, start);
                 return;
             }
 
@@ -1366,13 +1329,13 @@ namespace GourmetProject.Game.UI.Battle
         }
 
         private void PlayShopFoodPurchase(
-            ShopEntry entry,
             ShopBuyItemViewBase sourceCard,
             RectTransform layer,
             RectSnapshot start)
         {
-            if (_recipe == null ||
-                !TryGetRectInLayer(_recipe.Rect, layer, out RectSnapshot end))
+            RectTransform target = _infoColumn?.ViewRecipeButtonRect;
+            if (target == null ||
+                !TryGetRectInLayer(target, layer, out RectSnapshot end))
             {
                 return;
             }
@@ -1390,12 +1353,6 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            if (_shopFoodFlyInFlight == 0)
-            {
-                _shopFoodDisplayedCount = Mathf.Max(0, _run.RecipeDishes.Count - 1);
-            }
-
-            _shopFoodFlyInFlight++;
             RegisterShopPurchaseFly(fly);
             try
             {
@@ -1404,7 +1361,7 @@ namespace GourmetProject.Game.UI.Battle
                     start.Size,
                     end.Center,
                     texture,
-                    OnShopFoodFlyArrived,
+                    null,
                     () => UnregisterShopPurchaseFly(fly));
             }
             catch (Exception exception)
@@ -1414,7 +1371,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            ShopPurchaseAnimationStarted?.Invoke(entry.Kind);
+            ShopPurchaseAnimationStarted?.Invoke(ShopEntryKind.Dish);
         }
 
         private void PlayShopItemPurchase(
@@ -1531,20 +1488,6 @@ namespace GourmetProject.Game.UI.Battle
             }
         }
 
-        private void OnShopFoodFlyArrived()
-        {
-            _shopFoodFlyInFlight = Mathf.Max(0, _shopFoodFlyInFlight - 1);
-            _shopFoodDisplayedCount++;
-            if (_shopFoodFlyInFlight == 0)
-            {
-                _shopFoodDisplayedCount = _run != null ? _run.RecipeDishes.Count : 0;
-                _recipePresenter?.BuildShop(_run, OpenRecipeInspect);
-                return;
-            }
-
-            _recipePresenter?.BuildShopCount(_shopFoodDisplayedCount, OpenRecipeInspect);
-        }
-
         private void OnShopItemFlyArrived()
         {
             _shopItemFlyInFlight = Mathf.Max(0, _shopItemFlyInFlight - 1);
@@ -1564,7 +1507,6 @@ namespace GourmetProject.Game.UI.Battle
 
             _activeShopPurchaseFlys.Clear();
             _shopItemFlyInFlight = 0;
-            _shopFoodFlyInFlight = 0;
         }
 
         private static void ReleasePurchaseTexture(RenderTexture texture)
@@ -1745,7 +1687,6 @@ namespace GourmetProject.Game.UI.Battle
                 return false;
             }
 
-            SetCenterTitle("行动轴事件");
             BuildTimelineNodeCard(_currentTimelineNodeCard, _currentTimelineNodeInterestMaxGain, _currentTimelineNodePick);
             PlayShowCardsWhenReady();
             return true;
@@ -1886,6 +1827,27 @@ namespace GourmetProject.Game.UI.Battle
             GameApp.UI.OpenUIForm(UIForms.Settings, UIForms.GroupDialog, new SettingsFormData(inGameplay: true));
         }
 
+        private void OnViewRecipeClicked()
+        {
+            if (_rewardPeekOnly || _run == null || _current == GameplayView.None)
+            {
+                return;
+            }
+
+            if (IsViewToggleTransitioning())
+            {
+                return;
+            }
+
+            if (_current == GameplayView.TableView && _tableCoordinator != null)
+            {
+                _tableCoordinator.Back(() => OpenRecipeInspect(0));
+                return;
+            }
+
+            OpenRecipeInspect(0);
+        }
+
         private string BuildRecipeMutationText(RecipeMutationResult result)
         {
             var lines = new List<string>();
@@ -2011,6 +1973,11 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
+            if (IsViewToggleTransitioning())
+            {
+                return;
+            }
+
             _world = _world ?? BattleWorldController.Instance;
             _world?.SetTableArea(_boardArea);
 
@@ -2020,7 +1987,19 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
+            if (_current == GameplayView.RecipeInspect && _recipeBookPage != null)
+            {
+                _recipeBookPage.CloseInspect(_tableCoordinator.Open);
+                return;
+            }
+
             _tableCoordinator.Open();
+        }
+
+        private bool IsViewToggleTransitioning()
+        {
+            return (_center != null && DOTween.IsTweening(_center, true))
+                || (_tableCoordinator != null && _tableCoordinator.IsTransitioning);
         }
 
         public void ShowRunResult(bool win, int total)
@@ -2056,7 +2035,7 @@ namespace GourmetProject.Game.UI.Battle
             _pendingSettlementCakeLayers = null;
             _session.Served += OnBattleServed;
             _session.HappyCakeLayersChanged += OnHappyCakeLayersChanged;
-            // 常驻壳在战斗中持续显示并接管分数/道具/菜谱面板（餐桌/菜品仍在世界空间场景）。
+            // 常驻壳在战斗中持续显示并接管分数/道具入口（餐桌/菜品仍在世界空间场景）。
             SwitchTo(GameplayView.Food);
 
             _world = BattleWorldController.Instance;
@@ -2655,7 +2634,7 @@ namespace GourmetProject.Game.UI.Battle
             if (_inBattle)
             {
                 RefreshPersistent();
-                BuildBattleRecipe();
+                BuildBattleControls();
             }
         }
 

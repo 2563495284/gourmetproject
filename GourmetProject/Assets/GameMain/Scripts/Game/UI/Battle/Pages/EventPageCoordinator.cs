@@ -51,8 +51,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         void SwitchTo(GameplayView view, Action buildCenter = null, Action onShown = null);
 
-        void SetCenterTitle(string text);
-
         void OpenEventRecipeDishDelete(
             GameRun run,
             string title,
@@ -74,7 +72,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
         {
             _host.SwitchTo(GameplayView.Event, () =>
             {
-                _host.SetCenterTitle(string.Empty);
                 if (_host.EventPagePanel != null)
                 {
                     _host.EventPagePanel.Open(

@@ -22,8 +22,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         void SwitchTo(GameplayView view, Action buildCenter = null, Action onShown = null);
 
-        void SetCenterTitle(string text);
-
         void RefreshPersistent();
 
         void RefreshShopPersistent();
@@ -32,7 +30,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         void RestoreActionSelection(ActionSelectSnapshot snapshot);
 
-        void ShowActionSelection();
+        void ShowActionSelection(Action onShown = null);
 
         void PlayShowCardsWhenReady();
 
@@ -64,10 +62,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         public bool InspectShowsActionAxis => _inspectBookIndex >= 0 && _inspectShowsActionAxis;
 
-        public bool InspectUsesBattleRecipe => _inspectBookIndex >= 0 && _inspectUsesBattleRecipe;
-
-        public int InspectBookIndex => _inspectBookIndex;
-
         public void OnLeavingPage(GameplayView current, GameplayView next)
         {
             if (current == GameplayView.RecipeInspect && next != GameplayView.RecipeInspect)
@@ -86,7 +80,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
             if (_activeItemTargetItem != null)
             {
-                _host.SetCenterTitle(_activeItemTargetItem.Desc);
                 panel.Open(
                     _host.Run,
                     RecipeReadonlyBookRequest.ActiveItemTarget(
@@ -101,7 +94,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
             if (_inspectBookIndex >= 0)
             {
                 int bookIndex = _inspectBookIndex;
-                _host.SetCenterTitle("查看菜谱");
                 panel.Open(
                     _host.Run,
                     RecipeReadonlyBookRequest.ReadonlyBook(
@@ -115,7 +107,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
             if (_eventDeleteConfirmed != null)
             {
-                _host.SetCenterTitle(string.IsNullOrWhiteSpace(_eventDeleteTitle) ? "选择要删除的菜品" : _eventDeleteTitle);
                 panel.Open(
                     _host.Run,
                     RecipeReadonlyBookRequest.EventDeleteDish(
@@ -129,7 +120,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
             if (_shopDeleteRequested)
             {
-                _host.SetCenterTitle($"删除食物　花费 {ShopService.DeleteCost(_host.Run)} 金币");
                 panel.Open(
                     _host.Run,
                     RecipeReadonlyBookRequest.ShopDeleteDish(
@@ -283,14 +273,29 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         private void CloseInspect()
         {
+            CloseInspect(null);
+        }
+
+        public void CloseInspect(Action onClosed)
+        {
+            if (_host.CurrentView != GameplayView.RecipeInspect || _inspectBookIndex < 0)
+            {
+                onClosed?.Invoke();
+                return;
+            }
+
             GameplayView returnView = _inspectReturnView;
             ActionSelectSnapshot actionSnapshot = _inspectActionSnapshot;
             bool fromBattleRecipe = _inspectUsesBattleRecipe;
             ClearInspectRequest();
-            RestoreInspectReturnView(returnView, actionSnapshot, fromBattleRecipe);
+            RestoreInspectReturnView(returnView, actionSnapshot, fromBattleRecipe, onClosed);
         }
 
-        private void RestoreInspectReturnView(GameplayView returnView, ActionSelectSnapshot actionSnapshot, bool fromBattleRecipe)
+        private void RestoreInspectReturnView(
+            GameplayView returnView,
+            ActionSelectSnapshot actionSnapshot,
+            bool fromBattleRecipe,
+            Action onRestored)
         {
             switch (returnView)
             {
@@ -298,7 +303,11 @@ namespace GourmetProject.Game.UI.Battle.Pages
                     _host.SwitchTo(
                         GameplayView.ActionSelect,
                         () => _host.RestoreActionSelection(actionSnapshot),
-                        _host.PlayShowCardsWhenReady);
+                        () =>
+                        {
+                            _host.PlayShowCardsWhenReady();
+                            onRestored?.Invoke();
+                        });
                     break;
                 case GameplayView.Shop:
                 case GameplayView.Event:
@@ -308,16 +317,16 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 case GameplayView.Food:
                 case GameplayView.TableEdit:
                 case GameplayView.TableView:
-                    _host.SwitchTo(returnView);
+                    _host.SwitchTo(returnView, onShown: onRestored);
                     break;
                 default:
                     if (fromBattleRecipe)
                     {
-                        _host.SwitchTo(GameplayView.Food);
+                        _host.SwitchTo(GameplayView.Food, onShown: onRestored);
                     }
                     else
                     {
-                        _host.ShowActionSelection();
+                        _host.ShowActionSelection(onRestored);
                     }
                     break;
             }

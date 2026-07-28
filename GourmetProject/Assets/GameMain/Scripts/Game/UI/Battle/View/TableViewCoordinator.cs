@@ -10,16 +10,12 @@ namespace GourmetProject.Game.UI.Battle.View
     internal readonly struct ActionSelectSnapshot
     {
         public readonly bool HasSnapshot;
-        public readonly string Title;
         public readonly bool CardsActive;
-        public readonly bool SkipActive;
 
-        public ActionSelectSnapshot(string title, bool cardsActive, bool skipActive)
+        public ActionSelectSnapshot(bool cardsActive)
         {
             HasSnapshot = true;
-            Title = title;
             CardsActive = cardsActive;
-            SkipActive = skipActive;
         }
 
         public static ActionSelectSnapshot None => default;
@@ -72,6 +68,8 @@ namespace GourmetProject.Game.UI.Battle.View
         public bool IsActive => _host.CurrentView == GameplayView.TableView;
 
         public bool IsViewingBattleTable => IsActive && _returnView == GameplayView.Food;
+
+        public bool IsTransitioning => _transitioning;
 
         public void Open()
         {
@@ -149,7 +147,7 @@ namespace GourmetProject.Game.UI.Battle.View
             });
         }
 
-        public void Back()
+        public void Back(Action onBack = null)
         {
             if (_transitioning)
             {
@@ -166,14 +164,14 @@ namespace GourmetProject.Game.UI.Battle.View
             _transitioning = true;
             if (world == null)
             {
-                CompleteBack(target, null);
+                CompleteBack(target, null, onBack);
                 return;
             }
 
-            world.FadeTableViewOut(TableViewFadeDuration, () => CompleteBack(target, world));
+            world.FadeTableViewOut(TableViewFadeDuration, () => CompleteBack(target, world, onBack));
         }
 
-        private void CompleteBack(GameplayView target, BattleWorldController world)
+        private void CompleteBack(GameplayView target, BattleWorldController world, Action onBack)
         {
             _returnView = GameplayView.None;
             world?.EndTableView();
@@ -181,7 +179,10 @@ namespace GourmetProject.Game.UI.Battle.View
             switch (target)
             {
                 case GameplayView.Food:
-                    _host.SwitchTo(GameplayView.Food, _host.RestoreBattleWorld, CompleteTransition);
+                    _host.SwitchTo(
+                        GameplayView.Food,
+                        _host.RestoreBattleWorld,
+                        () => CompleteBackTransition(onBack));
                     break;
                 case GameplayView.ActionSelect:
                     world?.HideWorld();
@@ -193,26 +194,34 @@ namespace GourmetProject.Game.UI.Battle.View
                         () =>
                         {
                             _host.PlayShowCardsWhenReady();
-                            CompleteTransition();
+                            CompleteBackTransition(onBack);
                         });
                     break;
                 case GameplayView.TableEdit:
                     if (_host.Run != null && _host.Run.PendingFragmentPack.Count > 0)
                     {
-                        _host.OpenTableEdit(CompleteTransition);
+                        _host.OpenTableEdit(() => CompleteBackTransition(onBack));
                     }
                     else
                     {
                         world?.HideWorld();
-                        _host.SwitchTo(GameplayView.Shop, onShown: CompleteTransition);
+                        _host.SwitchTo(
+                            GameplayView.Shop,
+                            onShown: () => CompleteBackTransition(onBack));
                     }
 
                     break;
                 default:
                     world?.HideWorld();
-                    _host.SwitchTo(target, onShown: CompleteTransition);
+                    _host.SwitchTo(target, onShown: () => CompleteBackTransition(onBack));
                     break;
             }
+        }
+
+        private void CompleteBackTransition(Action onBack)
+        {
+            CompleteTransition();
+            onBack?.Invoke();
         }
 
         private void CompleteTransition()

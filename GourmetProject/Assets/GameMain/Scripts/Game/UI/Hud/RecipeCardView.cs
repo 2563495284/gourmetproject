@@ -7,9 +7,8 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI.Hud
 {
     /// <summary>
-    /// BattleForm 中固定显示的唯一菜谱：只显示当前食物数量。
-    /// 点击卡片打开菜谱详情；出餐与可放/不可放统计由独立的出餐口负责。
-    /// 固定结构在 Recipe.prefab，由 BattleForm 直接持有，不再经过动态容器或状态动画。
+    /// 紧凑菜谱摘要卡：显示当前食物数量并转发点击/右键回调。
+    /// 目前由出餐口等局部 HUD 复用；BattleForm 不再直接持有固定菜谱卡。
     /// </summary>
     public sealed class RecipeCardView : MonoBehaviour, IPointerClickHandler
     {

@@ -14,8 +14,8 @@ namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>
     /// 商店「中部态」面板：作为 <c>BattleForm</c> 常驻壳的中部内容之一（不再是独立弹层）。
-    /// 常驻壳（左列信息 / 行动轴 / 右列道具 / 固定菜谱）由 BattleForm 提供，本面板只负责中部四区
-    /// （食物 / 碎片包 / 被动 / 主动）与「删除食物」入口。删除时切换到
+    /// 常驻壳（左列信息 / 行动轴 / 右列道具）由 BattleForm 提供，本面板负责中部购买区
+    /// （食物 / 碎片包 / 被动 / 主动）与「删除食物」商店服务。购买该服务时切换到
     /// <see cref="RecipeReadonlyBookView"/> 选择目标并二次确认。
     /// </summary>
     public sealed class ShopForm : MonoBehaviour
@@ -29,31 +29,27 @@ namespace GourmetProject.Game.UI.Meta
 
         [Header("Shop Sections")]
         [SerializeField] private RectTransform _foodContainer;
-        [SerializeField] private RectTransform _fragmentContainer;
         [SerializeField] private RectTransform _passiveContainer;
         [SerializeField] private RectTransform _activeContainer;
-        [SerializeField] private Text _foodEmptyText;
-        [SerializeField] private Text _fragmentEmptyText;
-        [SerializeField] private Text _passiveEmptyText;
-        [SerializeField] private Text _activeEmptyText;
-        [SerializeField] private ShopFoodBuyItemView _foodCardPrefab;
-        [SerializeField] private ShopFragmentPackBuyItemView _fragmentCardPrefab;
-        [SerializeField] private ShopPassiveItemBuyItemView _passiveCardPrefab;
-        [SerializeField] private ShopActiveItemBuyItemView _activeCardPrefab;
+        [SerializeField] private RectTransform _fragmentCardRoot;
         [Header("Hover Tips")]
         [SerializeField] private FoodTipsView _foodTipsPrefab;
         [SerializeField] private ItemTipView _itemTipPrefab;
 
-        [Header("Delete Dish")]
-        [SerializeField] private Button _deleteDishButton;
+        [Header("Delete Food Service")]
+        [SerializeField] private RectTransform _deleteFoodCardRoot;
 
         private readonly List<ShopEntry> _stock = new();
-        private readonly List<GameObject> _spawned = new();
         private readonly List<ShopCardSlot> _buySlots = new();
+        private readonly List<ShopBuyItemViewBase> _foodCards = new();
+        private readonly List<ShopBuyItemViewBase> _passiveCards = new();
+        private readonly List<ShopBuyItemViewBase> _activeCards = new();
         private GameRun _run;
         private bool _wired;
         private FoodTipsView _foodTipsView;
         private ItemTipView _itemTipView;
+        private ShopFragmentPackBuyItemView _fragmentCard;
+        private ShopBuyItemViewBase _deleteFoodCard;
 
         private Action _onLeave;
         private Action _onOpenDeleteDish;
@@ -72,7 +68,7 @@ namespace GourmetProject.Game.UI.Meta
 
         private void OnDisable()
         {
-            ClearSpawned();
+            ClearBoundSlots();
         }
 
         /// <summary>由商店页面协调器进入商店态时调用：渲染给定库存并展示商店购买区。</summary>
@@ -122,12 +118,6 @@ namespace GourmetProject.Game.UI.Meta
                 _leaveButton.onClick.RemoveAllListeners();
                 _leaveButton.onClick.AddListener(OnLeaveClicked);
             }
-
-            if (_deleteDishButton != null)
-            {
-                _deleteDishButton.onClick.RemoveAllListeners();
-                _deleteDishButton.onClick.AddListener(() => _onOpenDeleteDish?.Invoke());
-            }
         }
 
         private void ReplaceStock(IReadOnlyList<ShopEntry> stock)
@@ -150,53 +140,146 @@ namespace GourmetProject.Game.UI.Meta
 
             // UI 与购买共用 ShopService.CurrentPrice：重建卡片前刷新，避免被动道具/事件改价后仍显示旧表价。
             ShopService.RefreshStockPrices(_run, _stock);
-            ClearSpawned();
+            ClearBoundSlots();
             EnsureTipViews();
 
             SetText(_goldText, $"金币 {_run.Gold}");
-            RefreshDeleteDishButton();
-            BuildBuySection(ShopEntryKind.Dish, _foodContainer, _foodEmptyText, "暂无食物", _foodCardPrefab);
-            BuildBuySection(ShopEntryKind.Fragment, _fragmentContainer, _fragmentEmptyText, "暂无碎片包", _fragmentCardPrefab);
-            BuildBuySection(ShopEntryKind.PassiveItem, _passiveContainer, _passiveEmptyText, "暂无被动道具", _passiveCardPrefab);
-            BuildBuySection(ShopEntryKind.ActiveItem, _activeContainer, _activeEmptyText, "暂无主动道具", _activeCardPrefab);
+            RefreshDeleteFoodSection();
+            BindFixedSlotSection(ShopEntryKind.Dish, _foodContainer, _foodCards);
+            BindFixedBuySection(ShopEntryKind.Fragment, ResolveFragmentCard());
+            BindFixedSlotSection(ShopEntryKind.PassiveItem, _passiveContainer, _passiveCards);
+            BindFixedSlotSection(ShopEntryKind.ActiveItem, _activeContainer, _activeCards);
         }
 
-        private void RefreshDeleteDishButton()
+        private void RefreshDeleteFoodSection()
         {
-            if (_deleteDishButton == null || _run == null)
+            if (_deleteFoodCard == null && _deleteFoodCardRoot != null)
+            {
+                _deleteFoodCard = _deleteFoodCardRoot.GetComponent<ShopBuyItemViewBase>();
+            }
+
+            if (_deleteFoodCard == null || _run == null)
             {
                 return;
             }
 
+            _deleteFoodCard.gameObject.SetActive(true);
             int cost = ShopService.DeleteCost(_run);
-            Text label = _deleteDishButton.GetComponentInChildren<Text>(true);
-            SetText(label, $"删除食物 -{cost}");
-            _deleteDishButton.interactable = _run.RecipeEntries.Count > 0
+            var entry = new ShopEntry(
+                ShopEntryKind.Dish,
+                "__delete_food_service__",
+                "删除食物",
+                "从菜谱中选择一道食物删除。",
+                cost,
+                cost);
+            bool canUse = _onOpenDeleteDish != null
+                && _run.RecipeEntries.Count > 0
                 && _run.Gold >= cost
                 && !new ItemRuntime(_run).BlockRemoveDish();
+            Sprite icon = Resources.Load<Sprite>("Sprites/Items/discount_remove");
+            _deleteFoodCard.Bind(new ShopBuyItemViewContext(
+                _run,
+                entry,
+                canUse,
+                icon,
+                null,
+                OpenDeleteFoodService));
         }
 
-        private void BuildBuySection(
+        private bool OpenDeleteFoodService(ShopEntry entry, ShopBuyItemViewBase card)
+        {
+            if (_run == null
+                || _onOpenDeleteDish == null
+                || _run.RecipeEntries.Count == 0
+                || _run.Gold < ShopService.DeleteCost(_run)
+                || new ItemRuntime(_run).BlockRemoveDish())
+            {
+                return false;
+            }
+
+            _onOpenDeleteDish.Invoke();
+            return true;
+        }
+
+        private ShopFragmentPackBuyItemView ResolveFragmentCard()
+        {
+            if (_fragmentCard == null && _fragmentCardRoot != null)
+            {
+                _fragmentCard = _fragmentCardRoot.GetComponent<ShopFragmentPackBuyItemView>();
+            }
+
+            return _fragmentCard;
+        }
+
+        private void BindFixedSlotSection(
             ShopEntryKind kind,
             RectTransform container,
-            Text emptyText,
-            string emptyMessage,
-            ShopBuyItemViewBase prefab)
+            List<ShopBuyItemViewBase> cards)
         {
-            if (container == null || prefab == null)
+            if (container == null)
             {
-                SetEmpty(emptyText, true, emptyMessage);
+                return;
+            }
+
+            cards.Clear();
+            container.GetComponentsInChildren(true, cards);
+            cards.Sort((left, right) =>
+                left.transform.GetSiblingIndex().CompareTo(right.transform.GetSiblingIndex()));
+
+            List<ShopEntry> entries = EntriesForKind(kind);
+            container.gameObject.SetActive(entries.Count > 0);
+
+            for (int i = 0; i < cards.Count; i++)
+            {
+                ShopBuyItemViewBase card = cards[i];
+                bool hasEntry = i < entries.Count;
+                card.gameObject.SetActive(hasEntry);
+                if (hasEntry)
+                {
+                    BindFixedCard(entries[i], card);
+                }
+                else
+                {
+                    ClearBuyCardTip(card);
+                }
+            }
+
+            if (entries.Count > cards.Count)
+            {
+                Debug.LogWarning(
+                    $"{kind} 固定槽位不足：库存 {entries.Count}，槽位 {cards.Count}。",
+                    this);
+            }
+        }
+
+        private void BindFixedBuySection(ShopEntryKind kind, ShopBuyItemViewBase card)
+        {
+            if (card == null)
+            {
                 return;
             }
 
             List<ShopEntry> entries = EntriesForKind(kind);
-            for (int i = 0; i < entries.Count; i++)
+            if (entries.Count == 0)
             {
-                CreateSlot(container, prefab, entries[i]);
+                card.gameObject.SetActive(false);
+                return;
             }
 
-            SetEmpty(emptyText, entries.Count == 0, emptyMessage);
-            container.gameObject.SetActive(entries.Count > 0);
+            card.gameObject.SetActive(true);
+            BindFixedCard(entries[0], card);
+        }
+
+        private void BindFixedCard(ShopEntry entry, ShopBuyItemViewBase card)
+        {
+            var slot = new ShopCardSlot
+            {
+                Entry = entry,
+                Card = card,
+            };
+            _buySlots.Add(slot);
+            entry.StockChanged += OnEntryStockChanged;
+            BindSlot(slot);
         }
 
         /// <summary>供页面协调器在库存或金币变化后回调：原槽位刷新商店购买区与上限文本。</summary>
@@ -221,7 +304,7 @@ namespace GourmetProject.Game.UI.Meta
             _itemTipView?.Hide();
 
             SetText(_goldText, $"金币 {_run.Gold}");
-            RefreshDeleteDishButton();
+            RefreshDeleteFoodSection();
             foreach (ShopCardSlot slot in _buySlots)
             {
                 BindSlot(slot);
@@ -291,26 +374,6 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             return true;
-        }
-
-        private ShopCardSlot CreateSlot(
-            RectTransform container,
-            ShopBuyItemViewBase prefab,
-            ShopEntry entry)
-        {
-            ShopBuyItemViewBase card = Instantiate(prefab, container);
-            card.gameObject.name = $"ShopBuy_{entry.Kind}_{entry.SlotIndex}";
-            var slot = new ShopCardSlot
-            {
-                Entry = entry,
-                Card = card,
-            };
-
-            _buySlots.Add(slot);
-            _spawned.Add(card.gameObject);
-            entry.StockChanged += OnEntryStockChanged;
-            BindSlot(slot);
-            return slot;
         }
 
         private void BindSlot(ShopCardSlot slot)
@@ -695,7 +758,7 @@ namespace GourmetProject.Game.UI.Meta
                 case ShopEntryKind.Dish:
                     return LoadDishIcon(entry.Id);
                 case ShopEntryKind.Fragment:
-                    return Resources.Load<Sprite>("Sprites/UI/white");
+                    return Resources.Load<Sprite>("Sprites/UI/ui_icon_shop_fragment");
                 default:
                     return null;
             }
@@ -720,7 +783,7 @@ namespace GourmetProject.Game.UI.Meta
             _onLeave?.Invoke();
         }
 
-        private void ClearSpawned()
+        private void ClearBoundSlots()
         {
             if (_foodTipsView != null)
             {
@@ -740,28 +803,7 @@ namespace GourmetProject.Game.UI.Meta
                 }
             }
 
-            foreach (GameObject go in _spawned)
-            {
-                if (go != null)
-                {
-                    go.SetActive(false);
-                    Destroy(go);
-                }
-            }
-
-            _spawned.Clear();
             _buySlots.Clear();
-        }
-
-        private static void SetEmpty(Text emptyText, bool visible, string message)
-        {
-            if (emptyText == null)
-            {
-                return;
-            }
-
-            emptyText.gameObject.SetActive(visible);
-            emptyText.text = message ?? string.Empty;
         }
 
         private static void SetText(Text text, string value)

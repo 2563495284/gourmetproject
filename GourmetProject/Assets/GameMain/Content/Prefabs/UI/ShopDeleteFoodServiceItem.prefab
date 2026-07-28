@@ -32,10 +32,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 8565501803974096424}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 15}
-  m_SizeDelta: {x: -30, y: -30}
+  m_SizeDelta: {x: 70, y: 70}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7191314157699010941
 CanvasRenderer:
@@ -65,7 +65,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: -5783681739351387402, guid: ba89ffa198e4f43de86279b1cd0dc92f, type: 3}
+  m_Sprite: {fileID: 21300000, guid: d9db37ba443d34c6dabe759cf514c4eb, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -88,7 +88,7 @@ GameObject:
   - component: {fileID: 7456794520888149866}
   - component: {fileID: 4719521885201320055}
   m_Layer: 5
-  m_Name: ShopFragmentPackBuyItemView
+  m_Name: ShopDeleteFoodServiceItem
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -124,9 +124,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 5487008944542873924}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: da3ebbffd61d4fda8d938510ac693131, type: 3}
+  m_Script: {fileID: 11500000, guid: 4d814bca1c424359a5860d6f18cff5e3, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Meta.ShopFragmentPackBuyItemView
+  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Meta.ShopPassiveItemBuyItemView
   _buyButton: {fileID: 4719521885201320055}
   _itemIcon: {fileID: 1879703325217066510}
   _buyLabel: {fileID: 0}
@@ -148,7 +148,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name: BuyButton
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -294,10 +294,10 @@ RectTransform:
   - {fileID: 1427849781373460425}
   m_Father: {fileID: 8565501803974096424}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -37.500004}
-  m_SizeDelta: {x: -20, y: -74.99999}
+  m_AnchorMin: {x: 0.5, y: 0.165}
+  m_AnchorMax: {x: 0.5, y: 0.165}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 80, y: 23}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &689855696113772548
 CanvasRenderer:

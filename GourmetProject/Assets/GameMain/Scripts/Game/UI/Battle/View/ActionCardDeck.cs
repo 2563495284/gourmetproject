@@ -17,7 +17,6 @@ namespace GourmetProject.Game.UI.Battle.View
     {
         [SerializeField] private RectTransform _cardsContainer;
         [SerializeField] private WeekEventCardView _cardPrefab;
-        [SerializeField] private Button _skipButton;
         [SerializeField] private Button _rerollButton;
 
         private readonly List<WeekEventCardView> _cards = new List<WeekEventCardView>();
@@ -27,21 +26,11 @@ namespace GourmetProject.Game.UI.Battle.View
 
         public bool CardsActive => _cardsContainer != null && _cardsContainer.gameObject.activeSelf;
 
-        public bool SkipActive => _skipButton != null && _skipButton.gameObject.activeSelf;
-
         public void SetCardsActive(bool active)
         {
             if (_cardsContainer != null)
             {
                 _cardsContainer.gameObject.SetActive(active);
-            }
-        }
-
-        public void SetSkipActive(bool active)
-        {
-            if (_skipButton != null)
-            {
-                _skipButton.gameObject.SetActive(active);
             }
         }
 
@@ -62,12 +51,6 @@ namespace GourmetProject.Game.UI.Battle.View
 
             bool hasActions = choices != null && choices.Count > 0;
             _cardsContainer.gameObject.SetActive(hasActions);
-            if (_skipButton != null)
-            {
-                _skipButton.gameObject.SetActive(!hasActions);
-                _skipButton.onClick.RemoveAllListeners();
-                _skipButton.onClick.AddListener(() => onPick?.Invoke(null));
-            }
 
             if (_rerollButton != null)
             {
@@ -110,10 +93,6 @@ namespace GourmetProject.Game.UI.Battle.View
 
             int n = options?.Count ?? 0;
             _cardsContainer.gameObject.SetActive(n > 0);
-            if (_skipButton != null)
-            {
-                _skipButton.gameObject.SetActive(false);
-            }
             if (_rerollButton != null)
             {
                 _rerollButton.gameObject.SetActive(false);
@@ -153,10 +132,6 @@ namespace GourmetProject.Game.UI.Battle.View
             }
 
             _cardsContainer.gameObject.SetActive(true);
-            if (_skipButton != null)
-            {
-                _skipButton.gameObject.SetActive(false);
-            }
             if (_rerollButton != null)
             {
                 _rerollButton.gameObject.SetActive(false);
@@ -235,11 +210,6 @@ namespace GourmetProject.Game.UI.Battle.View
 
         private void EnsureRefs()
         {
-            if (_rerollButton == null)
-            {
-                Transform found = transform.Find("ReRollButton") ?? transform.Find("RerollButton") ?? transform.Find("Buttons/ReRollButton");
-                _rerollButton = found != null ? found.GetComponent<Button>() : null;
-            }
         }
 
         private static void SetButtonText(Button button, string text)
