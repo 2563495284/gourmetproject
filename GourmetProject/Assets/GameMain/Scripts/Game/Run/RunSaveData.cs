@@ -34,6 +34,9 @@ namespace GourmetProject.Game.Run
         /// <summary>主动道具累计使用次数（单调递增）。随机类主动效果按此序号派生随机流以保证可复现。</summary>
         public int ActiveUseIndex;
 
+        /// <summary>剩余半日券层数；每次完成日常行动消费一层。</summary>
+        public int NextDailyActionHalfCostStacks;
+
         /// <summary>行动选择页剩余刷新次数。</summary>
         public int ActionRerollCount = -1;
 
@@ -159,6 +162,10 @@ namespace GourmetProject.Game.Run
         /// <summary>最近一次行动的目标分天数覆盖值。</summary>
         public float LastActionTargetScoreDayOverride;
 
+        public bool LastActionHalfDayBuffApplied;
+
+        public bool LastActionIsExtraTimelineExecution;
+
         /// <summary>已进入但尚未结算/提交的行动；用于读档恢复到 food/interest/event/shop 页面。</summary>
         public PendingActionExecutionSaveData PendingActionExecution;
 
@@ -180,6 +187,9 @@ namespace GourmetProject.Game.Run
         /// <summary>本周由主动道具（奖励单等）动态追加的行动轴节点；换周清空。</summary>
         public List<RuntimeTimelineNodeSaveData> RuntimeTimelineNodes = new List<RuntimeTimelineNodeSaveData>();
 
+        /// <summary>本周动态行动轴节点的单调递增序号；删除节点后不回退，避免 id 重复。</summary>
+        public int RuntimeTimelineNodeSerial;
+
         /// <summary>已触发事件 id（整局，供结算统计与跨局进度）。</summary>
         public List<string> UsedEventIds = new List<string>();
 
@@ -194,6 +204,12 @@ namespace GourmetProject.Game.Run
 
         /// <summary>本周 Boss Debuff 主动重抽序号，用于改变当前周 Boss 随机 key。</summary>
         public int BossDebuffRerollIndex;
+
+        /// <summary>当前重掷序号只作用于该 Boss 节点。</summary>
+        public string BossDebuffRerollNodeId;
+
+        /// <summary>商店/事件结束后按 FIFO 额外执行的节点 id。</summary>
+        public List<string> PendingExtraTimelineNodeIds = new List<string>();
 
         /// <summary>开发者控制台指定的 Boss Debuff 所属周；0=未指定。</summary>
         public int ForcedBossDebuffWeekIndex;
@@ -304,6 +320,8 @@ namespace GourmetProject.Game.Run
         public string SourceKey;
         public bool HasTargetScoreDayOverride;
         public float TargetScoreDayOverride;
+        public bool HalfDayBuffApplied;
+        public bool IsExtraTimelineExecution;
         public ActionOutcomeKind OutcomeKind;
         public string Feedback;
         public int RequiredScore;

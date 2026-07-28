@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
+using GourmetProject.Game.Meta;
 using GourmetProject.Game.UI.Tooltips;
 using GourmetProject.Gameplay.Model;
+using GourmetProject.Runtime;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -18,6 +20,9 @@ namespace GourmetProject.Game.UI.Battle.View
         [SerializeField] private Text _countText;
         [SerializeField] private TipHoverTrigger _hover;
         private string _desc = string.Empty;
+        private GameObject _halfDaySlot;
+        private Text _halfDayCountText;
+        private TipHoverTrigger _halfDayHover;
 
         public void Bind(int layers, IReadOnlyList<CakeLayerBuffDef> buffs, ItemTipView tip)
         {
@@ -54,6 +59,77 @@ namespace GourmetProject.Game.UI.Battle.View
             }
 
             _slot?.SetActive(false);
+        }
+
+        public void BindHalfDayCost(int stacks, ItemTipView tip)
+        {
+            EnsureHalfDaySlot();
+            if (_halfDaySlot == null)
+            {
+                return;
+            }
+
+            if (stacks <= 0)
+            {
+                _halfDayHover?.ClearTip();
+                _halfDaySlot.SetActive(false);
+                return;
+            }
+
+            if (_halfDayCountText != null)
+            {
+                _halfDayCountText.text = stacks.ToString();
+            }
+
+            if (_halfDayHover != null)
+            {
+                if (tip != null)
+                {
+                    _halfDayHover.SetTip(
+                        tip,
+                        () => tip.Bind("半日券", $"下一次日常行动耗时减半\n剩余次数：{stacks}"));
+                }
+                else
+                {
+                    _halfDayHover.ClearTip();
+                }
+            }
+
+            _halfDaySlot.SetActive(true);
+        }
+
+        private void EnsureHalfDaySlot()
+        {
+            if (_halfDaySlot != null || _slot == null || _listRoot == null)
+            {
+                return;
+            }
+
+            _halfDaySlot = Instantiate(_slot, _listRoot);
+            _halfDaySlot.name = "HalfDayCostBuff";
+            _halfDayCountText = _halfDaySlot.transform.Find("LayerCount")?.GetComponent<Text>();
+            _halfDayHover = _halfDaySlot.GetComponent<TipHoverTrigger>();
+
+            Transform iconRoot = _halfDaySlot.transform.Find("IconPlaceholder");
+            Image icon = iconRoot != null ? iconRoot.GetComponent<Image>() : null;
+            if (icon != null)
+            {
+                ItemDefinition item = ItemDefinition.Get(
+                    GameApp.Config.Tables,
+                    "item_active_half_next_action_cost",
+                    cfg.ItemKind.Active);
+                Sprite sprite = ContentIconLoader.LoadItem(item);
+                if (sprite != null)
+                {
+                    icon.sprite = sprite;
+                }
+                else
+                {
+                    icon.color = new Color(1f, 0.78f, 0.25f, 1f);
+                }
+            }
+
+            _halfDaySlot.SetActive(false);
         }
     }
 }

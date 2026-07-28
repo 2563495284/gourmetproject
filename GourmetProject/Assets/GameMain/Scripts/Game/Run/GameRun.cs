@@ -51,11 +51,13 @@ namespace GourmetProject.Game.Run
 
         // 当前周行动轴节点快照：周开始时从配置复制，之后可被道具改写；随 BeginTimeline（换周）重建。
         private readonly List<RuntimeTimelineNode> _runtimeTimelineNodes = new List<RuntimeTimelineNode>();
+        private int _runtimeTimelineNodeSerial;
         private readonly List<string> _usedEventIds = new List<string>();
         private readonly List<string> _completedBossIds = new List<string>();
         private readonly List<string> _rolledBossDebuffIds = new List<string>();
         private int _bossDebuffRerollWeekIndex;
         private int _bossDebuffRerollIndex;
+        private string _bossDebuffRerollNodeId = string.Empty;
         private int _forcedBossDebuffWeekIndex;
         private string _forcedBossDebuffId = string.Empty;
         private readonly List<string> _actionGroupSequence = new List<string>();
@@ -75,6 +77,8 @@ namespace GourmetProject.Game.Run
         private PendingActionExecutionSaveData _pendingActionExecution;
         private bool _pendingGenericRewardsConfirmBattleAfterDone;
         private int _activeUseIndex;
+        private int _nextDailyActionHalfCostStacks;
+        private readonly List<string> _pendingExtraTimelineNodeIds = new List<string>();
         private int _interestThreshold;
         private int _interestGoldPer;
         private int _interestCap;
@@ -671,6 +675,61 @@ namespace GourmetProject.Game.Run
         /// <summary>当前周行动轴节点快照（配置节点 + 道具插入/改写后的节点）。</summary>
         public IReadOnlyList<RuntimeTimelineNode> RuntimeTimelineNodes => _runtimeTimelineNodes;
 
+        public int NextDailyActionHalfCostStacks => _nextDailyActionHalfCostStacks;
+
+        public IReadOnlyList<string> PendingExtraTimelineNodeIds => _pendingExtraTimelineNodeIds;
+
+        public void AddNextDailyActionHalfCostStack()
+        {
+            _nextDailyActionHalfCostStacks++;
+        }
+
+        public bool TryConsumeNextDailyActionHalfCostStack()
+        {
+            if (_nextDailyActionHalfCostStacks <= 0)
+            {
+                return false;
+            }
+
+            _nextDailyActionHalfCostStacks--;
+            return true;
+        }
+
+        public float PreviewDailyActionCost(float baseCostDays)
+        {
+            float cost = System.Math.Max(0f, baseCostDays);
+            if (_nextDailyActionHalfCostStacks > 0)
+            {
+                cost *= 0.5f;
+            }
+
+            return GourmetProject.Game.Meta.TimelineMath.Quantize(cost);
+        }
+
+        public bool EnqueueExtraTimelineNode(string nodeId)
+        {
+            if (string.IsNullOrEmpty(nodeId))
+            {
+                return false;
+            }
+
+            _pendingExtraTimelineNodeIds.Add(nodeId);
+            return true;
+        }
+
+        public bool TryDequeueExtraTimelineNode(out string nodeId)
+        {
+            if (_pendingExtraTimelineNodeIds.Count == 0)
+            {
+                nodeId = string.Empty;
+                return false;
+            }
+
+            nodeId = _pendingExtraTimelineNodeIds[0];
+            _pendingExtraTimelineNodeIds.RemoveAt(0);
+            return true;
+        }
+
         public void SetWeekIndex(int weekIndex)
         {
             WeekIndex = System.Math.Max(1, weekIndex);
@@ -689,8 +748,7 @@ namespace GourmetProject.Game.Run
         }
 
         /// <summary>
-        /// 「奖励单」落地：在当前天数之后、行动轴长度以内的空整数日追加一个节点。
-        /// 返回新节点 id（未开始行动轴或没有空位时返回空串）。
+        /// 兼容被动道具的随机追加路径：仍优先寻找未来空整数日，实际创建统一走定点接口。
         /// </summary>
         public string AddRuntimeTimelineNode(string actionId, IRandomStream rng = null)
         {
@@ -725,11 +783,84 @@ namespace GourmetProject.Game.Run
                 index = days.Count - 1;
             }
 
-            int chosenDay = days[index];
-            string id = $"dyn_w{WeekIndex}_{_runtimeTimelineNodes.Count}";
-            _runtimeTimelineNodes.Add(new RuntimeTimelineNode(id, CurrentTimelineId, chosenDay, actionId));
+            return AddRuntimeTimelineNodeAtDay(actionId, days[index]);
+        }
+
+        /// <summary>
+        /// 在玩家指定的未来整数日追加一个行动轴节点。同一天允许叠放多个节点。
+        /// </summary>
+        public string AddRuntimeTimelineNodeAtDay(string actionId, int day)
+        {
+            if (string.IsNullOrEmpty(CurrentTimelineId)
+                || string.IsNullOrEmpty(actionId)
+                || Tables.TbAction.GetOrDefault(actionId) == null
+                || day <= CurrentDay + GourmetProject.Game.Meta.TimelineMath.Epsilon
+                || day < 1
+                || day > (int)System.Math.Floor(TimelineLengthDays + GourmetProject.Game.Meta.TimelineMath.Epsilon))
+            {
+                return string.Empty;
+            }
+
+            string id;
+            do
+            {
+                _runtimeTimelineNodeSerial++;
+                id = $"dyn_w{WeekIndex}_{_runtimeTimelineNodeSerial}";
+            }
+            while (ContainsRuntimeTimelineNode(id));
+
+            _runtimeTimelineNodes.Add(new RuntimeTimelineNode(id, CurrentTimelineId, day, actionId));
             SortRuntimeTimelineNodes();
             return id;
+        }
+
+        /// <summary>
+        /// 删除尚未结算、尚未开始执行的运行态节点，并同步清理额外执行队列。
+        /// </summary>
+        public bool RemoveRuntimeTimelineNode(string nodeId)
+        {
+            if (string.IsNullOrEmpty(nodeId)
+                || IsNodeTriggered(nodeId)
+                || IsTimelineNodeExecutionInProgress(nodeId))
+            {
+                return false;
+            }
+
+            int index = _runtimeTimelineNodes.FindIndex(node => node.Id == nodeId);
+            if (index < 0)
+            {
+                return false;
+            }
+
+            _runtimeTimelineNodes.RemoveAt(index);
+            _pendingExtraTimelineNodeIds.RemoveAll(id => id == nodeId);
+            if (_bossDebuffRerollNodeId == nodeId)
+            {
+                _bossDebuffRerollNodeId = string.Empty;
+                _bossDebuffRerollIndex = 0;
+            }
+
+            return true;
+        }
+
+        public bool IsTimelineNodeExecutionInProgress(string nodeId)
+        {
+            return !string.IsNullOrEmpty(nodeId)
+                && _pendingActionExecution != null
+                && _pendingActionExecution.SourceKey == nodeId;
+        }
+
+        private bool ContainsRuntimeTimelineNode(string nodeId)
+        {
+            for (int i = 0; i < _runtimeTimelineNodes.Count; i++)
+            {
+                if (_runtimeTimelineNodes[i].Id == nodeId)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public bool RandomizeFutureTimelineActions(IRandomStream rng)
@@ -827,8 +958,39 @@ namespace GourmetProject.Game.Run
             _runtimeTimelineNodes.Sort((a, b) =>
             {
                 int cmp = a.Day.CompareTo(b.Day);
-                return cmp != 0 ? cmp : string.CompareOrdinal(a.Id, b.Id);
+                return cmp != 0 ? cmp : CompareTimelineNodeIds(a.Id, b.Id);
             });
+        }
+
+        private static int CompareTimelineNodeIds(string left, string right)
+        {
+            bool leftDynamic = TryGetDynamicNodeSerial(left, out int leftSerial);
+            bool rightDynamic = TryGetDynamicNodeSerial(right, out int rightSerial);
+            if (leftDynamic != rightDynamic)
+            {
+                return leftDynamic ? 1 : -1;
+            }
+
+            if (leftDynamic && leftSerial != rightSerial)
+            {
+                return leftSerial.CompareTo(rightSerial);
+            }
+
+            return string.CompareOrdinal(left, right);
+        }
+
+        private static bool TryGetDynamicNodeSerial(string id, out int serial)
+        {
+            serial = 0;
+            if (string.IsNullOrEmpty(id) || !id.StartsWith("dyn_", System.StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            int separator = id.LastIndexOf('_');
+            return separator >= 0
+                && separator + 1 < id.Length
+                && int.TryParse(id.Substring(separator + 1), out serial);
         }
 
         private bool IsBossAction(string actionId)
@@ -847,6 +1009,9 @@ namespace GourmetProject.Game.Run
 
         public int BossDebuffRerollIndex =>
             _bossDebuffRerollWeekIndex == WeekIndex ? _bossDebuffRerollIndex : 0;
+
+        public string BossDebuffRerollNodeId =>
+            _bossDebuffRerollWeekIndex == WeekIndex ? _bossDebuffRerollNodeId : string.Empty;
 
         public string ForcedBossDebuffId =>
             _forcedBossDebuffWeekIndex == WeekIndex ? _forcedBossDebuffId : string.Empty;
@@ -976,16 +1141,22 @@ namespace GourmetProject.Game.Run
             _rolledBossDebuffIds.Clear();
         }
 
-        public void RerollBossDebuffForCurrentWeek()
+        public bool RerollBossDebuffForNode(string nodeId)
         {
-            _rolledBossDebuffIds.Clear();
+            if (string.IsNullOrEmpty(nodeId))
+            {
+                return false;
+            }
+
             if (_bossDebuffRerollWeekIndex != WeekIndex)
             {
                 _bossDebuffRerollWeekIndex = WeekIndex;
                 _bossDebuffRerollIndex = 0;
             }
 
+            _bossDebuffRerollNodeId = nodeId;
             _bossDebuffRerollIndex++;
+            return true;
         }
 
         /// <summary>开始一条新的本周行动轴：重置天数游标、节点结算记录与本周行动使用记录。</summary>
@@ -1003,6 +1174,9 @@ namespace GourmetProject.Game.Run
             ActionStepIndex = 0;
             _triggeredNodeIds.Clear();
             _runtimeTimelineNodes.Clear();
+            _runtimeTimelineNodeSerial = 0;
+            _pendingExtraTimelineNodeIds.Clear();
+            _bossDebuffRerollNodeId = string.Empty;
             if (nodes != null)
             {
                 foreach (RuntimeTimelineNode node in nodes)
@@ -1096,6 +1270,8 @@ namespace GourmetProject.Game.Run
                 SourceKey = context.SourceKey ?? string.Empty,
                 HasTargetScoreDayOverride = context.TargetScoreDayOverride.HasValue,
                 TargetScoreDayOverride = context.TargetScoreDayOverride ?? 0f,
+                HalfDayBuffApplied = context.HalfDayBuffApplied,
+                IsExtraTimelineExecution = context.IsExtraTimelineExecution,
                 OutcomeKind = outcome?.Kind ?? ActionOutcomeKind.Immediate,
                 Feedback = outcome?.Feedback ?? string.Empty,
                 RequiredScore = outcome?.RequiredScore ?? 0,
@@ -1474,6 +1650,7 @@ namespace GourmetProject.Game.Run
                 InterestCap = _interestCap,
                 RetainedHappyCakeLayers = _retainedHappyCakeLayers,
                 ActiveUseIndex = _activeUseIndex,
+                NextDailyActionHalfCostStacks = _nextDailyActionHalfCostStacks,
                 ActionRerollCount = _actionRerollCount,
                 LoanDebt = _loanDebt,
                 MealBonusRemaining = _mealBonusRemaining,
@@ -1517,6 +1694,8 @@ namespace GourmetProject.Game.Run
                 LastActionSourceKey = LastActionContext?.SourceKey ?? string.Empty,
                 LastActionHasTargetScoreDayOverride = LastActionContext?.TargetScoreDayOverride.HasValue ?? false,
                 LastActionTargetScoreDayOverride = LastActionContext?.TargetScoreDayOverride ?? 0f,
+                LastActionHalfDayBuffApplied = LastActionContext?.HalfDayBuffApplied ?? false,
+                LastActionIsExtraTimelineExecution = LastActionContext?.IsExtraTimelineExecution ?? false,
                 PendingActionExecution = ClonePendingActionExecution(_pendingActionExecution),
                 ActionGroupSequence = new List<string>(_actionGroupSequence),
                 ActionWeekPlan = new List<string>(_actionWeekPlan),
@@ -1524,11 +1703,14 @@ namespace GourmetProject.Game.Run
                 ActionWeekPlanStartRunStep = _actionWeekPlanStartRunStep,
                 TriggeredNodeIds = new List<string>(_triggeredNodeIds),
                 RuntimeTimelineNodes = ToRuntimeTimelineNodeSaveData(),
+                RuntimeTimelineNodeSerial = _runtimeTimelineNodeSerial,
                 UsedEventIds = new List<string>(_usedEventIds),
                 CompletedBossIds = new List<string>(_completedBossIds),
                 RolledBossDebuffIds = new List<string>(_rolledBossDebuffIds),
                 BossDebuffRerollWeekIndex = _bossDebuffRerollWeekIndex,
                 BossDebuffRerollIndex = _bossDebuffRerollIndex,
+                BossDebuffRerollNodeId = _bossDebuffRerollNodeId,
+                PendingExtraTimelineNodeIds = new List<string>(_pendingExtraTimelineNodeIds),
                 ForcedBossDebuffWeekIndex = _forcedBossDebuffWeekIndex,
                 ForcedBossDebuffId = _forcedBossDebuffId,
                 PendingActionChoiceKey = _pendingActionChoiceKey,
@@ -1559,6 +1741,7 @@ namespace GourmetProject.Game.Run
                 : System.Math.Max(0, tables.TbGameBase.InitialInterestCap);
             run._retainedHappyCakeLayers = System.Math.Max(0, data.RetainedHappyCakeLayers);
             run._activeUseIndex = data.ActiveUseIndex;
+            run._nextDailyActionHalfCostStacks = System.Math.Max(0, data.NextDailyActionHalfCostStacks);
             run._actionRerollCount = data.ActionRerollCount >= 0
                 ? data.ActionRerollCount
                 : System.Math.Max(0, tables.TbGameBase.InitialActionRerollCount);
@@ -1718,6 +1901,8 @@ namespace GourmetProject.Game.Run
                         TargetScoreDayOverride = data.LastActionHasTargetScoreDayOverride
                             ? (float?)data.LastActionTargetScoreDayOverride
                             : null,
+                        HalfDayBuffApplied = data.LastActionHalfDayBuffApplied,
+                        IsExtraTimelineExecution = data.LastActionIsExtraTimelineExecution,
                     });
                 }
             }
@@ -1744,6 +1929,25 @@ namespace GourmetProject.Game.Run
                 run.SortRuntimeTimelineNodes();
             }
 
+            run._runtimeTimelineNodeSerial = System.Math.Max(
+                System.Math.Max(0, data.RuntimeTimelineNodeSerial),
+                HighestDynamicTimelineNodeSerial(run._runtimeTimelineNodes, run.WeekIndex));
+
+            float minimumTimelineLength = 7f;
+            cfg.Timeline savedTimeline = tables.TbTimeline.GetOrDefault(run.CurrentTimelineId);
+            if (savedTimeline != null && savedTimeline.BaseLengthDays > 0)
+            {
+                minimumTimelineLength = savedTimeline.BaseLengthDays;
+            }
+
+            foreach (RuntimeTimelineNode node in run._runtimeTimelineNodes)
+            {
+                minimumTimelineLength = System.Math.Max(minimumTimelineLength, node.Day);
+            }
+
+            run.TimelineLengthDays = GourmetProject.Game.Meta.TimelineMath.Quantize(
+                System.Math.Max(run.TimelineLengthDays, minimumTimelineLength));
+
             if (data.UsedEventIds != null)
             {
                 run._usedEventIds.AddRange(data.UsedEventIds);
@@ -1761,6 +1965,17 @@ namespace GourmetProject.Game.Run
 
             run._bossDebuffRerollWeekIndex = data.BossDebuffRerollWeekIndex;
             run._bossDebuffRerollIndex = data.BossDebuffRerollIndex;
+            run._bossDebuffRerollNodeId = data.BossDebuffRerollNodeId ?? string.Empty;
+            if (data.PendingExtraTimelineNodeIds != null)
+            {
+                foreach (string nodeId in data.PendingExtraTimelineNodeIds)
+                {
+                    if (!string.IsNullOrEmpty(nodeId))
+                    {
+                        run._pendingExtraTimelineNodeIds.Add(nodeId);
+                    }
+                }
+            }
             run._forcedBossDebuffWeekIndex = data.ForcedBossDebuffWeekIndex;
             run._forcedBossDebuffId = data.ForcedBossDebuffId ?? string.Empty;
 
@@ -2076,6 +2291,8 @@ namespace GourmetProject.Game.Run
                 SourceKey = data.SourceKey ?? string.Empty,
                 HasTargetScoreDayOverride = data.HasTargetScoreDayOverride,
                 TargetScoreDayOverride = data.TargetScoreDayOverride,
+                HalfDayBuffApplied = data.HalfDayBuffApplied,
+                IsExtraTimelineExecution = data.IsExtraTimelineExecution,
                 OutcomeKind = data.OutcomeKind,
                 Feedback = data.Feedback ?? string.Empty,
                 RequiredScore = data.RequiredScore,
@@ -2809,6 +3026,31 @@ namespace GourmetProject.Game.Run
             }
 
             return list;
+        }
+
+        private static int HighestDynamicTimelineNodeSerial(IReadOnlyList<RuntimeTimelineNode> nodes, int weekIndex)
+        {
+            int highest = 0;
+            string prefix = $"dyn_w{weekIndex}_";
+            if (nodes == null)
+            {
+                return highest;
+            }
+
+            for (int i = 0; i < nodes.Count; i++)
+            {
+                string id = nodes[i].Id;
+                if (string.IsNullOrEmpty(id)
+                    || !id.StartsWith(prefix, System.StringComparison.Ordinal)
+                    || !int.TryParse(id.Substring(prefix.Length), out int serial))
+                {
+                    continue;
+                }
+
+                highest = System.Math.Max(highest, serial);
+            }
+
+            return highest;
         }
 
         private void RestoreRecipeBooks(RunSaveData data)

@@ -211,11 +211,24 @@ namespace GourmetProject.Game.Meta
 
         public bool RerollCurrentAction() => false;
 
-        public bool ResetWeekBoss() => false;
+        public bool ResetLastBossDebuff() => false;
 
-        public bool ExecuteNextTimelineNode() => false;
+        public bool ExecuteExtraTimelineNode(string nodeId) => false;
 
-        public bool AddRewardNodeToTimeline(string actionId) => false;
+        public bool AddTimelineNode(string actionId, int day) => false;
+
+        public bool DeleteTimelineNode(string nodeId) => false;
+
+        public bool AddNextActionHalfCostStack()
+        {
+            if (Run == null)
+            {
+                return false;
+            }
+
+            Run.AddNextDailyActionHalfCostStack();
+            return true;
+        }
 
         /// <summary>餐桌菜目标的 <see cref="ActiveTarget.Id"/> 为 <see cref="Gameplay.Board.DishInstance.Id"/> 的字符串形式。</summary>
         private static bool TryGetDishId(ActiveTarget target, out int dishId)

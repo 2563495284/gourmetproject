@@ -39,6 +39,7 @@ namespace GourmetProject.Game.UI.Battle
         private int _targetFrame;
         private bool _recipePanelTargeting;
         private bool _tableCellTargeting;
+        private bool _timelineAxisTargeting;
         private bool _cursorStateCaptured;
         private bool _previousCursorVisible;
         private CursorLockMode _previousCursorLockMode;
@@ -68,6 +69,12 @@ namespace GourmetProject.Game.UI.Battle
                     || !_host.InBattle
                     || _host.ActiveSession == null
                     || _host.ActiveSession.IsSettled))
+            {
+                CancelTargeting(showMessage: false);
+                return;
+            }
+
+            if (_timelineAxisTargeting && !IsTimelineAxisContextValid())
             {
                 CancelTargeting(showMessage: false);
                 return;
@@ -163,7 +170,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            if (!ItemActiveUsage.RequiresTarget(item.TargetKind))
+            if (!ItemActiveUsage.RequiresTarget(item))
             {
                 ApplyAndConsume(ctx, item, Array.Empty<ActiveTarget>());
                 return;
@@ -185,6 +192,12 @@ namespace GourmetProject.Game.UI.Battle
             if (ShouldUseTableCellTargeting(item) && !CanUseCurrentBattleTableCellTargeting())
             {
                 BeginTableCellTargeting(ctx, item, slot);
+                return;
+            }
+
+            if (ShouldUseTimelineAxisTargeting(item))
+            {
+                BeginTimelineAxisTargeting(ctx, item, slot, targets);
                 return;
             }
 
@@ -276,6 +289,56 @@ namespace GourmetProject.Game.UI.Battle
 
                 _host.CloseActiveItemTableCellTarget();
             });
+        }
+
+        private void BeginTimelineAxisTargeting(
+            IActiveUseContext ctx,
+            ItemDefinition item,
+            RunItemSlotView slot,
+            IReadOnlyList<ActiveTarget> targets)
+        {
+            _recipePanelTargeting = false;
+            _tableCellTargeting = false;
+            _timelineAxisTargeting = true;
+            _pendingContext = ctx;
+            _pendingItem = item;
+            _pendingSlot = slot;
+            _pendingStartScreen = slot != null ? slot.IconScreenCenter() : Vector2.zero;
+            _selectedTargets.Clear();
+            _candidateTargets.Clear();
+            _candidateTargets.AddRange(targets);
+            _targetFrame = Time.frameCount;
+
+            bool opened = _host.BeginActiveItemTimelineAxisTarget(
+                item,
+                targets,
+                CompleteTimelineAxisTargeting,
+                () => CancelTargeting());
+            if (!opened)
+            {
+                CancelTargeting(showMessage: false);
+                _host.ShowActiveItemMessage($"{item.Name}：行动轴上没有可选目标。");
+                return;
+            }
+
+            _host.ShowActiveItemMessage(
+                ItemActiveUsage.IsTimelineAddEffect(item.EffectType)
+                    ? $"{item.Name}：移动到未来日期预览，点击后确认。"
+                    : $"{item.Name}：选择红色描边节点，点击后确认。");
+        }
+
+        private void CompleteTimelineAxisTargeting(ActiveTarget target)
+        {
+            if (!_timelineAxisTargeting || _pendingContext == null || _pendingItem == null)
+            {
+                CancelTargeting(showMessage: false);
+                return;
+            }
+
+            IActiveUseContext ctx = _pendingContext;
+            ItemDefinition item = _pendingItem;
+            CleanupTargeting();
+            ApplyAndConsume(ctx, item, new[] { target });
         }
 
         private void CompleteRecipePanelTargeting(ActiveTarget target, Action onComplete)
@@ -602,11 +665,13 @@ namespace GourmetProject.Game.UI.Battle
 
         private void CleanupTargeting()
         {
+            bool closeTimelineAxisTarget = _timelineAxisTargeting;
             _pendingItem = null;
             _pendingContext = null;
             _pendingSlot = null;
             _recipePanelTargeting = false;
             _tableCellTargeting = false;
+            _timelineAxisTargeting = false;
             _selectedTargets.Clear();
             _candidateTargets.Clear();
             _worldArrow?.Destroy();
@@ -629,6 +694,10 @@ namespace GourmetProject.Game.UI.Battle
 
             _targetButtons.Clear();
             _host.ActiveWorld?.EndActiveItemWorldTargeting();
+            if (closeTimelineAxisTarget)
+            {
+                _host.EndActiveItemTimelineAxisTarget();
+            }
         }
 
         private void ApplyAndConsume(IActiveUseContext ctx, ItemDefinition item, IReadOnlyList<ActiveTarget> targets)
@@ -648,7 +717,14 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            _host.RefreshAfterActiveItem(result.BoardChanged, persist: false, result.ActionChoicesChanged);
+            _host.RefreshAfterActiveItem(
+                result.BoardChanged,
+                persist: result.PersistImmediately,
+                result.ActionChoicesChanged);
+            if (result.ExecuteQueuedImmediately)
+            {
+                _host.ActiveLoop?.ExecuteQueuedExtraTimelineNodes();
+            }
         }
 
         private bool CanUse(ItemDefinition item, ActiveUseContextKind contextKind, out string reason)
@@ -664,6 +740,43 @@ namespace GourmetProject.Game.UI.Battle
             if (new ItemRuntime(run).BlocksActiveItems())
             {
                 reason = "当前被动效果禁止使用主动道具。";
+                return false;
+            }
+
+            if (ItemActiveUsage.IsTodoTimelineEffect(item.EffectType))
+            {
+                reason = "功能开发中：需要玩家在时间轴上指定位置/节点。";
+                return false;
+            }
+
+            if (item.EffectType == ItemEffectTypes.RerollAction && !_host.IsDailyActionSelectionActive)
+            {
+                reason = "只能在日常行动选择时使用。";
+                return false;
+            }
+
+            if ((ItemActiveUsage.IsTimelineAddEffect(item.EffectType)
+                    || item.EffectType == ItemEffectTypes.TimelineDeleteNode)
+                && contextKind == ActiveUseContextKind.ActionSelect
+                && !_host.IsDailyActionSelectionActive)
+            {
+                reason = "时间轴节点卡期间不能使用。";
+                return false;
+            }
+
+            if ((item.EffectType == ItemEffectTypes.TimelineExecuteFuture
+                    || item.EffectType == ItemEffectTypes.TimelineExecutePast)
+                && contextKind == ActiveUseContextKind.ActionSelect
+                && !_host.IsDailyActionSelectionActive)
+            {
+                reason = "时间轴节点卡期间不能使用加急单。";
+                return false;
+            }
+
+            if (item.EffectType == ItemEffectTypes.ResetBossDebuff
+                && TimelineService.GetLastUntriggeredBossNode(run) == null)
+            {
+                reason = "没有可重掷的 Boss 节点。";
                 return false;
             }
 
@@ -693,7 +806,7 @@ namespace GourmetProject.Game.UI.Battle
                 return false;
             }
 
-            if (ItemActiveUsage.RequiresTarget(item.TargetKind) && ctx.EnumerateTargets(item).Count == 0)
+            if (ItemActiveUsage.RequiresTarget(item) && ctx.EnumerateTargets(item).Count == 0)
             {
                 reason = "没有可选目标。";
                 return false;
@@ -709,6 +822,8 @@ namespace GourmetProject.Game.UI.Battle
                 ActiveUseContextKind.Battle => new BattleUseContext(_host.ActiveSession, _host.ActiveRun),
                 ActiveUseContextKind.ActionSelect => new ActionSelectUseContext(_host.ActiveRun, _host.ActiveLoop),
                 ActiveUseContextKind.Shop => new ShopUseContext(_host.ActiveRun, _host.ActiveLoop),
+                ActiveUseContextKind.Event => new ShopUseContext(_host.ActiveRun, _host.ActiveLoop, ActiveUseContextKind.Event),
+                ActiveUseContextKind.Reward => new ShopUseContext(_host.ActiveRun, _host.ActiveLoop, ActiveUseContextKind.Reward),
                 _ => null,
             };
         }
@@ -732,6 +847,7 @@ namespace GourmetProject.Game.UI.Battle
                 GameplayView.TableEdit => ActiveUseContextKind.Shop,
                 GameplayView.TableView => ActiveUseContextKind.Shop,
                 GameplayView.ActionSelect => ActiveUseContextKind.ActionSelect,
+                GameplayView.Event => ActiveUseContextKind.Event,
                 _ => ActiveUseContextKind.Reward,
             };
         }
@@ -794,6 +910,17 @@ namespace GourmetProject.Game.UI.Battle
         private string TargetLabel(ActiveTarget target)
         {
             GameRun run = _host.ActiveRun;
+            if (_pendingItem != null
+                && (_pendingItem.EffectType == ItemEffectTypes.TimelineExecuteFuture
+                    || _pendingItem.EffectType == ItemEffectTypes.TimelineExecutePast))
+            {
+                cfg.TimelineNode node = TimelineService.GetNode(run, target.Id);
+                cfg.GameAction action = TimelineService.NodeAction(run, node);
+                return node != null
+                    ? $"第 {node.Day} 天 · {action?.Name ?? node.ActionId}"
+                    : target.Id;
+            }
+
             switch (target.TargetKind)
             {
                 case cfg.ItemTargetKind.RecipeDish:
@@ -846,9 +973,23 @@ namespace GourmetProject.Game.UI.Battle
                 && item.EffectType == ItemEffectTypes.AddMaterial;
         }
 
+        private static bool ShouldUseTimelineAxisTargeting(ItemDefinition item)
+        {
+            return item != null
+                && (ItemActiveUsage.IsTimelineAddEffect(item.EffectType)
+                    || item.EffectType == ItemEffectTypes.TimelineDeleteNode);
+        }
+
         private bool CanUseCurrentBattleTableCellTargeting()
         {
             return _host.CurrentView == GameplayView.Food && _host.InBattle;
+        }
+
+        private bool IsTimelineAxisContextValid()
+        {
+            return _host.CurrentView == GameplayView.Shop
+                || _host.CurrentView == GameplayView.Event
+                || (_host.CurrentView == GameplayView.ActionSelect && _host.IsDailyActionSelectionActive);
         }
 
         private static bool ShouldPlayCellMaterialApply(ItemDefinition item, IReadOnlyList<ActiveTarget> targets)

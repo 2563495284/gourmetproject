@@ -7,12 +7,20 @@ namespace GourmetProject.Game.Meta
 {
     public readonly struct ActiveItemUseResult
     {
-        public ActiveItemUseResult(bool success, bool boardChanged, string message, bool actionChoicesChanged = false)
+        public ActiveItemUseResult(
+            bool success,
+            bool boardChanged,
+            string message,
+            bool actionChoicesChanged = false,
+            bool persistImmediately = false,
+            bool executeQueuedImmediately = false)
         {
             Success = success;
             BoardChanged = boardChanged;
             Message = message;
             ActionChoicesChanged = actionChoicesChanged;
+            PersistImmediately = persistImmediately;
+            ExecuteQueuedImmediately = executeQueuedImmediately;
         }
 
         public bool Success { get; }
@@ -22,6 +30,10 @@ namespace GourmetProject.Game.Meta
         public string Message { get; }
 
         public bool ActionChoicesChanged { get; }
+
+        public bool PersistImmediately { get; }
+
+        public bool ExecuteQueuedImmediately { get; }
     }
 
     /// <summary>
@@ -109,23 +121,68 @@ namespace GourmetProject.Game.Meta
                 // —— 排程小票：Global 无目标，直接调情境钩子（仅地图支持，战斗返回 false）——
                 case ItemEffectTypes.RerollAction:
                     return ctx.RerollCurrentAction()
-                        ? new ActiveItemUseResult(true, false, $"{item.Name}：已重掷当前行动选项。", actionChoicesChanged: true)
+                        ? new ActiveItemUseResult(true, false, $"{item.Name}：已重掷当前行动选项。", actionChoicesChanged: true, persistImmediately: true)
                         : new ActiveItemUseResult(false, false, $"{item.Name}：现在无法重掷行动。");
 
-                case ItemEffectTypes.ResetBossDebuff:
-                    return ctx.ResetWeekBoss()
-                        ? new ActiveItemUseResult(true, false, $"{item.Name}：已重新随机本周 Boss。")
-                        : new ActiveItemUseResult(false, false, $"{item.Name}：现在无法重新随机本周 Boss。");
+                case ItemEffectTypes.HalfNextActionCost:
+                    return ctx.AddNextActionHalfCostStack()
+                        ? new ActiveItemUseResult(true, false, $"{item.Name}：下一次日常行动耗时减半。", actionChoicesChanged: true, persistImmediately: true)
+                        : new ActiveItemUseResult(false, false, $"{item.Name}：现在无法使用。");
 
-                case ItemEffectTypes.TimelineExecuteNext:
-                    return ctx.ExecuteNextTimelineNode()
-                        ? new ActiveItemUseResult(true, false, $"{item.Name}：已执行下一个行动轴节点。")
-                        : new ActiveItemUseResult(false, false, $"{item.Name}：行动轴上没有可执行的节点。");
+                case ItemEffectTypes.ResetBossDebuff:
+                    // TODO: 为盛宴调整单补专属重掷表现；当前先完成确定性随机结果与时间轴提示刷新。
+                    return ctx.ResetLastBossDebuff()
+                        ? new ActiveItemUseResult(true, false, $"{item.Name}：已重新随机最后一个 Boss 节点的餐食类别。", persistImmediately: true)
+                        : new ActiveItemUseResult(false, false, $"{item.Name}：没有可重掷的 Boss 节点。");
+
+                case ItemEffectTypes.TimelineExecuteFuture:
+                case ItemEffectTypes.TimelineExecutePast:
+                    if (targets == null || targets.Count == 0)
+                    {
+                        return new ActiveItemUseResult(false, false, $"{item.Name}：请先选择节点。");
+                    }
+
+                    return ctx.ExecuteExtraTimelineNode(targets[0].Id)
+                        ? new ActiveItemUseResult(
+                            true,
+                            false,
+                            $"{item.Name}：已安排额外执行所选节点。",
+                            persistImmediately: true,
+                            executeQueuedImmediately: ctx.ContextKind == ActiveUseContextKind.ActionSelect)
+                        : new ActiveItemUseResult(false, false, $"{item.Name}：现在无法执行所选节点。");
 
                 case ItemEffectTypes.TimelineAddRewardNode:
-                    return ctx.AddRewardNodeToTimeline(item.EffectParam)
-                        ? new ActiveItemUseResult(true, false, $"{item.Name}：已在行动轴上添加奖励节点。")
-                        : new ActiveItemUseResult(false, false, $"{item.Name}：现在无法添加奖励节点。");
+                case ItemEffectTypes.TimelineAddInterestNode:
+                case ItemEffectTypes.TimelineAddShopNode:
+                    if (targets == null || targets.Count == 0)
+                    {
+                        return new ActiveItemUseResult(false, false, $"{item.Name}：请先选择日期。");
+                    }
+
+                    return ctx.AddTimelineNode(item.EffectParam, targets[0].X)
+                        ? new ActiveItemUseResult(
+                            true,
+                            false,
+                            $"{item.Name}：已添加到第 {targets[0].X} 天。",
+                            persistImmediately: true)
+                        : new ActiveItemUseResult(false, false, $"{item.Name}：无法添加到所选日期。");
+
+                case ItemEffectTypes.TimelineDeleteNode:
+                    if (targets == null || targets.Count == 0)
+                    {
+                        return new ActiveItemUseResult(false, false, $"{item.Name}：请先选择节点。");
+                    }
+
+                    return ctx.DeleteTimelineNode(targets[0].Id)
+                        ? new ActiveItemUseResult(
+                            true,
+                            false,
+                            $"{item.Name}：已删除所选节点。",
+                            persistImmediately: true)
+                        : new ActiveItemUseResult(false, false, $"{item.Name}：所选节点已经无法删除。");
+
+                case ItemEffectTypes.TimelineAddLotteryNode:
+                    return new ActiveItemUseResult(false, false, $"{item.Name}：功能开发中。");
 
                 default:
                     return new ActiveItemUseResult(true, false, $"使用了 {item.Name}。");

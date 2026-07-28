@@ -1,0 +1,21 @@
+{
+    "name": "GourmetProject.Tests.PlayMode",
+    "rootNamespace": "GourmetProject.Tests.PlayMode",
+    "references": [
+        "GourmetProject.Game",
+        "GourmetProject.Config",
+        "GourmetProject.Gameplay"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false,
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ]
+}

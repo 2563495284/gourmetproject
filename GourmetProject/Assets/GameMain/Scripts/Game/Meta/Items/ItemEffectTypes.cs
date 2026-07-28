@@ -92,11 +92,16 @@ namespace GourmetProject.Game.Meta
         public const string TimelineRandomize = "TimelineRandomize";
         public const string TimelineExtraDay = "TimelineExtraDay";
         public const string TimelineWeekMinus = "TimelineWeekMinus";
-        public const string TimelineAddRewardNode = "TimelineAddRewardNode"; // 主动：奖励单，运行时加一个奖励节点
+        public const string TimelineAddRewardNode = "TimelineAddRewardNode";
         public const string TimelineAddInterestNode = "TimelineAddInterestNode";
+        public const string TimelineAddShopNode = "TimelineAddShopNode";
+        public const string TimelineAddLotteryNode = "TimelineAddLotteryNode";
+        public const string TimelineDeleteNode = "TimelineDeleteNode";
         public const string TimelineSkipNode = "TimelineSkipNode";
-        public const string TimelineExecuteNext = "TimelineExecuteNext"; // 主动：加急单，立即执行行动轴下一个节点
-        public const string ResetBossDebuff = "ResetBossDebuff";           // 主动：盛宴调整单，重新随机本周 Boss Debuff
+        public const string TimelineExecuteNext = "TimelineExecuteNext"; // 旧配置兼容
+        public const string TimelineExecuteFuture = "TimelineExecuteFuture";
+        public const string TimelineExecutePast = "TimelineExecutePast";
+        public const string ResetBossDebuff = "ResetBossDebuff";
 
         // —— 奖励/获得/选择族 ——
         public const string GrantRandomPassive = "GrantRandomPassive";
@@ -108,6 +113,7 @@ namespace GourmetProject.Game.Meta
         public const string FamilyPack = "FamilyPack";
         public const string RandomizeItems = "RandomizeItems";
         public const string RerollAction = "RerollAction";
+        public const string HalfNextActionCost = "HalfNextActionCost";
         public const string ChoiceCountBonus = "ChoiceCountBonus";
         public const string ChoiceTimesBonus = "ChoiceTimesBonus";
         public const string ExtraFoodChoice = "ExtraFoodChoice";
@@ -163,9 +169,16 @@ namespace GourmetProject.Game.Meta
             RemoveFlavor,
             // —— 排程小票（Global，局外/地图专用，由情境限制）——
             RerollAction,
+            HalfNextActionCost,
             ResetBossDebuff,
             TimelineExecuteNext,
+            TimelineExecuteFuture,
+            TimelineExecutePast,
             TimelineAddRewardNode,
+            TimelineAddInterestNode,
+            TimelineAddShopNode,
+            TimelineAddLotteryNode,
+            TimelineDeleteNode,
         };
 
         /// <summary>该 effectType 是否为合法的主动道具效果（按主动词表校验）。</summary>

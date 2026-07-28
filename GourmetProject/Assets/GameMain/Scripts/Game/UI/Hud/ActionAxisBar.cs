@@ -4,16 +4,20 @@ using System.Globalization;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace GourmetProject.Game.UI.Hud
 {
+    public enum TimelineAxisSelectionMode
+    {
+        None,
+        AddDay,
+        DeleteNode,
+    }
+
     /// <summary>
-    /// 行动轴进度条：把当前周的行动轴渲染成一条连续进度条，绿色填充覆盖 [0, CurrentDay/长度]，
-    /// 下方三角箭头指向当前进度，整天位置画刻度线与天序号，特殊节点图标（商店/利息/Boss/事件）
-    /// 按 day/长度 比例摆在进度条上方。天数为 0.1 粒度的 float（见 <see cref="GameRun.CurrentDay"/>）。
-    /// 所有子物体在 <see cref="Build"/> 时数据驱动重建到 <see cref="_container"/>，节点数据来自
-    /// <see cref="TimelineService.GetNodes"/>。
+    /// BattleForm 顶部离散行动轴：整数日期点、当前进度、节点气泡及主动道具的轴上选点交互。
     /// </summary>
     public sealed class ActionAxisBar : MonoBehaviour
     {
@@ -26,6 +30,7 @@ namespace GourmetProject.Game.UI.Hud
         [SerializeField] private Text _dayLabelTemplate;
         [SerializeField] private Image _nodeIconTemplate;
         [SerializeField] private Text _nodeLabelTemplate;
+        [SerializeField] private TimelineNodeBubbleView _nodeBubblePrefab;
 
         [Header("节点图标")]
         [SerializeField] private Sprite _shopNodeSprite;
@@ -34,166 +39,590 @@ namespace GourmetProject.Game.UI.Hud
         [SerializeField] private Sprite _eventNodeSprite;
 
         [Header("样式")]
-        [SerializeField] private Color _fillColor = new Color(0.55f, 0.85f, 0.45f, 0.85f);
-        [SerializeField] private Color _tickColor = new Color(0.15f, 0.12f, 0.08f, 0.35f);
-        [SerializeField] private Color _dayTextColor = new Color(0.12f, 0.09f, 0.06f, 1f);
+        [SerializeField] private Color _fillColor = new Color(0.30f, 0.76f, 0.28f, 0.95f);
+        [SerializeField] private Color _tickColor = new Color(1f, 0.66f, 0.08f, 1f);
+        [SerializeField] private Color _dayTextColor = new Color(0.22f, 0.12f, 0.07f, 1f);
         [SerializeField] private float _nodeIconHeight = 26f;
 
-        private readonly List<GameObject> _spawned = new();
-        private Font _cachedFont;
+        private readonly List<GameObject> _spawned = new List<GameObject>();
+        private readonly Dictionary<int, Image> _dayDots = new Dictionary<int, Image>();
+        private readonly Dictionary<string, TimelineNodeBubbleView> _nodeBubbles =
+            new Dictionary<string, TimelineNodeBubbleView>();
+        private readonly HashSet<int> _validAddDays = new HashSet<int>();
+        private readonly HashSet<string> _deletableNodeIds = new HashSet<string>();
 
-        /// <summary>按当前 run 的行动轴状态重建进度条填充、整天刻度、节点图标与当前位置箭头。</summary>
+        private GameRun _run;
+        private Action<cfg.TimelineNode, GameObject> _onNodeCreated;
+        private TimelineAxisSelectionMode _selectionMode;
+        private string _previewActionId;
+        private int _selectedDay = -1;
+        private string _selectedNodeId;
+        private TimelineNodeBubbleView _previewBubble;
+        private Text _confirmLabel;
+        private Button _confirmButton;
+        private Action<int> _confirmDay;
+        private Action<string> _confirmNode;
+        private Action _cancelSelection;
+        private Font _cachedFont;
+        private Sprite _whiteSprite;
+        private Sprite _panelSprite;
+
+        public TimelineAxisSelectionMode SelectionMode => _selectionMode;
+
         public void Build(GameRun run, Action<cfg.TimelineNode, GameObject> onNodeCreated = null)
         {
-            Clear();
-            if (run == null || _container == null)
+            _run = run;
+            if (onNodeCreated != null)
+            {
+                _onNodeCreated = onNodeCreated;
+            }
+
+            RebuildVisuals();
+        }
+
+        public bool BeginAddDaySelection(
+            GameRun run,
+            string actionId,
+            IEnumerable<int> validDays,
+            Action<int> onConfirm,
+            Action onCancel)
+        {
+            if (run == null || string.IsNullOrEmpty(actionId) || onConfirm == null)
+            {
+                return false;
+            }
+
+            _run = run;
+            _selectionMode = TimelineAxisSelectionMode.AddDay;
+            _previewActionId = actionId;
+            _confirmDay = onConfirm;
+            _confirmNode = null;
+            _cancelSelection = onCancel;
+            _selectedDay = -1;
+            _selectedNodeId = string.Empty;
+            _validAddDays.Clear();
+            if (validDays != null)
+            {
+                foreach (int day in validDays)
+                {
+                    _validAddDays.Add(day);
+                }
+            }
+
+            if (_validAddDays.Count == 0)
+            {
+                EndSelection(rebuild: false);
+                return false;
+            }
+
+            RebuildVisuals();
+            return true;
+        }
+
+        public bool BeginDeleteNodeSelection(
+            GameRun run,
+            IEnumerable<string> nodeIds,
+            Action<string> onConfirm,
+            Action onCancel)
+        {
+            if (run == null || onConfirm == null)
+            {
+                return false;
+            }
+
+            _run = run;
+            _selectionMode = TimelineAxisSelectionMode.DeleteNode;
+            _confirmNode = onConfirm;
+            _confirmDay = null;
+            _cancelSelection = onCancel;
+            _selectedDay = -1;
+            _selectedNodeId = string.Empty;
+            _deletableNodeIds.Clear();
+            if (nodeIds != null)
+            {
+                foreach (string id in nodeIds)
+                {
+                    if (!string.IsNullOrEmpty(id))
+                    {
+                        _deletableNodeIds.Add(id);
+                    }
+                }
+            }
+
+            if (_deletableNodeIds.Count == 0)
+            {
+                EndSelection(rebuild: false);
+                return false;
+            }
+
+            RebuildVisuals();
+            return true;
+        }
+
+        public void CancelSelection()
+        {
+            if (_selectionMode == TimelineAxisSelectionMode.None)
             {
                 return;
             }
 
-            float length = Mathf.Max(0.1f, run.TimelineLengthDays);
-            int wholeDays = Mathf.Max(1, Mathf.RoundToInt(length));
-            float ratio = Mathf.Clamp01(run.CurrentDay / length);
+            Action cancel = _cancelSelection;
+            EndSelection();
+            cancel?.Invoke();
+        }
 
-            var nodeByDay = new Dictionary<int, cfg.TimelineNode>();
-            foreach (cfg.TimelineNode node in TimelineService.GetNodes(run))
+        public void EndSelection(bool rebuild = true)
+        {
+            _selectionMode = TimelineAxisSelectionMode.None;
+            _previewActionId = string.Empty;
+            _selectedDay = -1;
+            _selectedNodeId = string.Empty;
+            _validAddDays.Clear();
+            _deletableNodeIds.Clear();
+            _confirmDay = null;
+            _confirmNode = null;
+            _cancelSelection = null;
+            if (rebuild)
             {
-                nodeByDay[node.Day] = node;
+                RebuildVisuals();
+            }
+        }
+
+        private void RebuildVisuals()
+        {
+            ClearSpawned();
+            if (_run == null || _container == null)
+            {
+                return;
             }
 
-            BuildFill(ratio);
-            BuildTicksAndLabels(wholeDays, length);
-            BuildNodeIcons(run, nodeByDay, length, onNodeCreated);
+            _whiteSprite = _whiteSprite != null ? _whiteSprite : Resources.Load<Sprite>("Sprites/UI/white");
+            _panelSprite = _panelSprite != null ? _panelSprite : Resources.Load<Sprite>("Sprites/UI/ui_panel_card");
+
+            float length = Mathf.Max(1f, _run.TimelineLengthDays);
+            int wholeDays = Mathf.Max(1, Mathf.FloorToInt(length + TimelineMath.Epsilon));
+            float ratio = Mathf.Clamp01(_run.CurrentDay / length);
+
+            BuildRail(ratio);
+            BuildDayPoints(wholeDays, length);
+            BuildNodeBubbles(length);
             PositionMarker(ratio);
-            RefreshRemainingDays(run, length);
-        }
-
-        /// <summary>绿色进度填充：用锚点宽度表示 [0, ratio]，置于最底层。</summary>
-        private void BuildFill(float ratio)
-        {
-            Image image = SpawnTemplate(_fillTemplate, "AxisFill");
-            if (image == null)
+            RefreshRemainingDays(length);
+            if (_selectionMode != TimelineAxisSelectionMode.None)
             {
-                return;
+                BuildSelectionConfirmBar();
             }
-
-            var rect = (RectTransform)image.transform;
-            rect.anchorMin = new Vector2(0f, 0f);
-            rect.anchorMax = new Vector2(ratio, 1f);
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-            image.color = _fillColor;
-            image.raycastTarget = false;
-            image.transform.SetAsFirstSibling();
         }
 
-        /// <summary>整天刻度线（1..N-1 分隔）与每格天序号。</summary>
-        private void BuildTicksAndLabels(int wholeDays, float length)
+        private void BuildRail(float ratio)
         {
-            for (int i = 1; i < wholeDays; i++)
+            Image baseRail = CreateImage("AxisRail", _container, _whiteSprite);
+            SetAnchoredRect(baseRail.rectTransform, new Vector2(0f, 0.27f), new Vector2(1f, 0.27f), new Vector2(0f, 6f));
+            baseRail.color = new Color(0.38f, 0.28f, 0.18f, 0.28f);
+            baseRail.raycastTarget = false;
+            baseRail.transform.SetAsFirstSibling();
+
+            Image elapsed = CreateImage("AxisElapsed", _container, _whiteSprite);
+            elapsed.rectTransform.anchorMin = new Vector2(0f, 0.27f);
+            elapsed.rectTransform.anchorMax = new Vector2(ratio, 0.27f);
+            elapsed.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            elapsed.rectTransform.sizeDelta = new Vector2(0f, 7f);
+            elapsed.rectTransform.anchoredPosition = Vector2.zero;
+            elapsed.color = _fillColor;
+            elapsed.raycastTarget = false;
+            elapsed.transform.SetSiblingIndex(1);
+        }
+
+        private void BuildDayPoints(int wholeDays, float length)
+        {
+            for (int day = 0; day <= wholeDays; day++)
             {
-                float x = Mathf.Clamp01(i / length);
-                Image image = SpawnTemplate(_tickTemplate, $"Tick_{i}");
-                if (image == null)
+                float x = Mathf.Clamp01(day / length);
+                Image hit = CreateImage($"DayHit_{day}", _container, _whiteSprite);
+                SetAnchoredRect(hit.rectTransform, new Vector2(x, 0.27f), new Vector2(x, 0.27f), new Vector2(46f, 58f));
+                hit.color = new Color(1f, 1f, 1f, 0.001f);
+                hit.raycastTarget = _selectionMode == TimelineAxisSelectionMode.AddDay && _validAddDays.Contains(day);
+
+                Image dot = CreateImage($"DayDot_{day}", hit.rectTransform, _whiteSprite);
+                SetAnchoredRect(dot.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(14f, 14f));
+                dot.color = day <= _run.CurrentDay + TimelineMath.Epsilon
+                    ? _fillColor
+                    : _tickColor;
+                dot.raycastTarget = false;
+                Outline outline = dot.gameObject.AddComponent<Outline>();
+                outline.effectColor = new Color(0.25f, 0.14f, 0.07f, 0.50f);
+                outline.effectDistance = new Vector2(1f, -1f);
+                _dayDots[day] = dot;
+
+                if (day > 0)
                 {
-                    continue;
+                    Text label = CreateText($"DayLabel_{day}", _container);
+                    label.text = day.ToString(CultureInfo.InvariantCulture);
+                    label.color = _dayTextColor;
+                    label.alignment = TextAnchor.UpperCenter;
+                    label.resizeTextForBestFit = true;
+                    label.resizeTextMinSize = 9;
+                    label.resizeTextMaxSize = 17;
+                    label.raycastTarget = false;
+                    SetAnchoredRect(
+                        label.rectTransform,
+                        new Vector2(x, 0.27f),
+                        new Vector2(x, 0.27f),
+                        new Vector2(34f, 24f),
+                        new Vector2(0f, -24f));
                 }
 
-                var rect = (RectTransform)image.transform;
-                rect.anchorMin = new Vector2(x, 0.12f);
-                rect.anchorMax = new Vector2(x, 0.88f);
-                rect.pivot = new Vector2(0.5f, 0.5f);
-                rect.sizeDelta = new Vector2(2f, 0f);
-                rect.anchoredPosition = Vector2.zero;
-                image.color = _tickColor;
-                image.raycastTarget = false;
-            }
-
-            for (int day = 1; day <= wholeDays; day++)
-            {
-                float minX = Mathf.Clamp01((day - 1) / length);
-                float maxX = Mathf.Clamp01(day / length);
-                Text text = SpawnTemplate(_dayLabelTemplate, $"Day_{day}");
-                if (text == null)
+                if (hit.raycastTarget)
                 {
-                    continue;
+                    int capturedDay = day;
+                    TimelineAxisPointerTarget pointer = hit.gameObject.AddComponent<TimelineAxisPointerTarget>();
+                    pointer.Bind(
+                        () => HoverAddDay(capturedDay),
+                        () => ExitAddDay(capturedDay),
+                        data =>
+                        {
+                            if (data.button == PointerEventData.InputButton.Left)
+                            {
+                                SelectAddDay(capturedDay);
+                            }
+                        });
                 }
-
-                var rect = (RectTransform)text.transform;
-                rect.anchorMin = new Vector2(minX, 0f);
-                rect.anchorMax = new Vector2(maxX, 1f);
-                rect.offsetMin = Vector2.zero;
-                rect.offsetMax = Vector2.zero;
-                text.text = day.ToString();
-                text.font = ResolveFont();
-                text.color = _dayTextColor;
-                text.alignment = TextAnchor.MiddleCenter;
-                text.resizeTextForBestFit = true;
-                text.resizeTextMinSize = 8;
-                text.resizeTextMaxSize = 22;
-                text.raycastTarget = false;
             }
         }
 
-        /// <summary>特殊节点图标：按 day/长度 比例摆在进度条上方。</summary>
-        private void BuildNodeIcons(GameRun run, Dictionary<int, cfg.TimelineNode> nodeByDay, float length, Action<cfg.TimelineNode, GameObject> onNodeCreated)
+        private void BuildNodeBubbles(float length)
         {
-            foreach (KeyValuePair<int, cfg.TimelineNode> kv in nodeByDay)
+            var stackByDay = new Dictionary<int, int>();
+            foreach (cfg.TimelineNode node in TimelineService.GetNodes(_run))
             {
-                cfg.TimelineNode node = kv.Value;
                 if (node == null)
                 {
                     continue;
                 }
 
-                ActionDisplayKind kind = ActionDisplay.KindOf(run.Tables, TimelineService.NodeAction(run, node));
-                Sprite sprite = NodeSprite(kind);
-                float x = Mathf.Clamp01(kv.Key / length);
-                GameObject go;
-                RectTransform rect;
-                // 锚定到进度条顶边、图标底部贴着顶边向上突出。
-                if (sprite != null)
+                int stack = stackByDay.TryGetValue(node.Day, out int existing) ? existing : 0;
+                stackByDay[node.Day] = stack + 1;
+                cfg.GameAction action = TimelineService.NodeAction(_run, node);
+                ActionDisplayKind kind = ActionDisplay.KindOf(_run.Tables, action);
+                TimelineNodeBubbleView bubble = CreateBubble($"NodeBubble_{node.Id}");
+                if (bubble == null)
                 {
-                    Image image = SpawnTemplate(_nodeIconTemplate, $"Node_{kv.Key}");
-                    if (image == null)
-                    {
-                        continue;
-                    }
-
-                    go = image.gameObject;
-                    rect = (RectTransform)image.transform;
-                    rect.sizeDelta = new Vector2(_nodeIconHeight, _nodeIconHeight);
-                    image.sprite = sprite;
-                    image.preserveAspect = true;
-                    image.raycastTarget = true;
-                }
-                else
-                {
-                    Text text = SpawnTemplate(_nodeLabelTemplate, $"Node_{kv.Key}");
-                    if (text == null)
-                    {
-                        continue;
-                    }
-
-                    go = text.gameObject;
-                    rect = (RectTransform)text.transform;
-                    text.text = NodeLabel(kind);
-                    text.font = ResolveFont();
-                    text.color = _dayTextColor;
-                    text.alignment = TextAnchor.LowerCenter;
-                    text.resizeTextForBestFit = true;
-                    text.resizeTextMinSize = 8;
-                    text.resizeTextMaxSize = 18;
-                    text.raycastTarget = true;
-                    rect.sizeDelta = new Vector2(_nodeIconHeight * 2f, _nodeIconHeight);
+                    continue;
                 }
 
-                rect.anchorMin = new Vector2(x, 1f);
-                rect.anchorMax = new Vector2(x, 1f);
-                rect.pivot = new Vector2(0.5f, 0f);
-                rect.anchoredPosition = new Vector2(0f, 2f);
-                onNodeCreated?.Invoke(node, go);
+                bubble.Bind(
+                    NodeSprite(kind),
+                    _run.IsNodeTriggered(node.Id),
+                    kind == ActionDisplayKind.Boss,
+                    preview: false,
+                    Mathf.Clamp01(node.Day / length),
+                    stack);
+                _nodeBubbles[node.Id] = bubble;
+                if (_selectionMode != TimelineAxisSelectionMode.DeleteNode)
+                {
+                    _onNodeCreated?.Invoke(node, bubble.gameObject);
+                }
+
+                if (_selectionMode == TimelineAxisSelectionMode.DeleteNode)
+                {
+                    string capturedId = node.Id;
+                    bool eligible = _deletableNodeIds.Contains(capturedId);
+                    bubble.BindPointer(
+                        () => HoverDeleteNode(capturedId),
+                        () => ExitDeleteNode(capturedId),
+                        () => SelectDeleteNode(capturedId));
+                    bubble.SetDeleteState(eligible, selected: false, hovered: false);
+                }
             }
+        }
+
+        private void HoverAddDay(int day)
+        {
+            if (_selectedDay >= 0 || !_validAddDays.Contains(day))
+            {
+                return;
+            }
+
+            ShowAddPreview(day);
+            SetDayDotHighlight(day, true);
+        }
+
+        private void ExitAddDay(int day)
+        {
+            if (_selectedDay >= 0)
+            {
+                return;
+            }
+
+            DestroyPreviewBubble();
+            SetDayDotHighlight(day, false);
+        }
+
+        private void SelectAddDay(int day)
+        {
+            if (!_validAddDays.Contains(day))
+            {
+                return;
+            }
+
+            if (_selectedDay >= 0)
+            {
+                SetDayDotHighlight(_selectedDay, false);
+            }
+
+            _selectedDay = day;
+            ShowAddPreview(day);
+            SetDayDotHighlight(day, true);
+            RefreshSelectionConfirmBar();
+        }
+
+        private void ShowAddPreview(int day)
+        {
+            DestroyPreviewBubble();
+            cfg.GameAction action = _run.Tables.TbAction.GetOrDefault(_previewActionId);
+            ActionDisplayKind kind = ActionDisplay.KindOf(_run.Tables, action);
+            int stack = 0;
+            foreach (cfg.TimelineNode node in TimelineService.GetNodes(_run))
+            {
+                if (node.Day == day)
+                {
+                    stack++;
+                }
+            }
+
+            _previewBubble = CreateBubble("NodeBubble_Preview");
+            if (_previewBubble == null)
+            {
+                return;
+            }
+
+            _previewBubble.Bind(
+                NodeSprite(kind),
+                completed: false,
+                kind == ActionDisplayKind.Boss,
+                preview: true,
+                Mathf.Clamp01(day / Mathf.Max(1f, _run.TimelineLengthDays)),
+                stack);
+        }
+
+        private void HoverDeleteNode(string nodeId)
+        {
+            if (!_deletableNodeIds.Contains(nodeId) || !string.IsNullOrEmpty(_selectedNodeId))
+            {
+                return;
+            }
+
+            RefreshDeleteVisuals(nodeId);
+        }
+
+        private void ExitDeleteNode(string nodeId)
+        {
+            if (string.IsNullOrEmpty(_selectedNodeId))
+            {
+                RefreshDeleteVisuals(string.Empty);
+            }
+        }
+
+        private void SelectDeleteNode(string nodeId)
+        {
+            if (!_deletableNodeIds.Contains(nodeId))
+            {
+                return;
+            }
+
+            _selectedNodeId = nodeId;
+            RefreshDeleteVisuals(nodeId);
+            RefreshSelectionConfirmBar();
+        }
+
+        private void RefreshDeleteVisuals(string hoveredNodeId)
+        {
+            foreach (KeyValuePair<string, TimelineNodeBubbleView> pair in _nodeBubbles)
+            {
+                bool eligible = _deletableNodeIds.Contains(pair.Key);
+                pair.Value.SetDeleteState(
+                    eligible,
+                    pair.Key == _selectedNodeId,
+                    string.IsNullOrEmpty(_selectedNodeId) && pair.Key == hoveredNodeId);
+            }
+        }
+
+        private void BuildSelectionConfirmBar()
+        {
+            Image panel = CreateImage("AxisSelectionConfirm", _container, _panelSprite);
+            panel.type = _panelSprite != null ? Image.Type.Sliced : Image.Type.Simple;
+            panel.color = new Color(1f, 0.96f, 0.84f, 0.98f);
+            panel.raycastTarget = true;
+            RectTransform panelRect = panel.rectTransform;
+            panelRect.anchorMin = new Vector2(0.5f, 0f);
+            panelRect.anchorMax = new Vector2(0.5f, 0f);
+            panelRect.pivot = new Vector2(0.5f, 1f);
+            panelRect.sizeDelta = new Vector2(390f, 42f);
+            panelRect.anchoredPosition = new Vector2(0f, -9f);
+            panel.transform.SetAsLastSibling();
+
+            _confirmLabel = CreateText("Prompt", panelRect);
+            _confirmLabel.alignment = TextAnchor.MiddleLeft;
+            _confirmLabel.color = _dayTextColor;
+            _confirmLabel.resizeTextForBestFit = true;
+            _confirmLabel.resizeTextMinSize = 10;
+            _confirmLabel.resizeTextMaxSize = 16;
+            _confirmLabel.raycastTarget = false;
+            _confirmLabel.rectTransform.anchorMin = Vector2.zero;
+            _confirmLabel.rectTransform.anchorMax = Vector2.one;
+            _confirmLabel.rectTransform.offsetMin = new Vector2(12f, 5f);
+            _confirmLabel.rectTransform.offsetMax = new Vector2(-154f, -5f);
+
+            _confirmButton = CreateButton("Confirm", panelRect, "确定", new Color(0.30f, 0.72f, 0.31f, 1f));
+            SetButtonRect(_confirmButton, -80f);
+            _confirmButton.onClick.AddListener(ConfirmSelection);
+
+            Button cancel = CreateButton("Cancel", panelRect, "取消", new Color(0.74f, 0.31f, 0.26f, 1f));
+            SetButtonRect(cancel, -16f);
+            cancel.onClick.AddListener(CancelSelection);
+            RefreshSelectionConfirmBar();
+        }
+
+        private void RefreshSelectionConfirmBar()
+        {
+            if (_confirmLabel == null || _confirmButton == null)
+            {
+                return;
+            }
+
+            bool ready;
+            if (_selectionMode == TimelineAxisSelectionMode.AddDay)
+            {
+                ready = _selectedDay >= 0;
+                _confirmLabel.text = ready
+                    ? $"确定添加到第 {_selectedDay} 天？"
+                    : "移动鼠标到未来日期，预览新增节点";
+            }
+            else
+            {
+                ready = !string.IsNullOrEmpty(_selectedNodeId);
+                _confirmLabel.text = ready
+                    ? "确定删除高亮节点？"
+                    : "选择一个红色描边的未结算节点";
+            }
+
+            _confirmButton.interactable = ready;
+        }
+
+        private void ConfirmSelection()
+        {
+            if (_selectionMode == TimelineAxisSelectionMode.AddDay && _selectedDay >= 0)
+            {
+                _confirmDay?.Invoke(_selectedDay);
+            }
+            else if (_selectionMode == TimelineAxisSelectionMode.DeleteNode && !string.IsNullOrEmpty(_selectedNodeId))
+            {
+                _confirmNode?.Invoke(_selectedNodeId);
+            }
+        }
+
+        private void SetDayDotHighlight(int day, bool highlighted)
+        {
+            if (!_dayDots.TryGetValue(day, out Image dot))
+            {
+                return;
+            }
+
+            dot.color = highlighted
+                ? new Color(0.02f, 0.86f, 0.67f, 1f)
+                : (day <= _run.CurrentDay + TimelineMath.Epsilon ? _fillColor : _tickColor);
+            dot.rectTransform.sizeDelta = highlighted ? new Vector2(21f, 21f) : new Vector2(14f, 14f);
+        }
+
+        private TimelineNodeBubbleView CreateBubble(string objectName)
+        {
+            TimelineNodeBubbleView prefab = _nodeBubblePrefab != null
+                ? _nodeBubblePrefab
+                : Resources.Load<TimelineNodeBubbleView>("Prefabs/UI/Hud/TimelineNodeBubbleView");
+            if (prefab == null)
+            {
+                Debug.LogError($"{nameof(ActionAxisBar)} 缺少 TimelineNodeBubbleView Prefab。", this);
+                return null;
+            }
+
+            TimelineNodeBubbleView view = Instantiate(prefab, _container);
+            view.gameObject.name = objectName;
+            view.transform.localScale = Vector3.one;
+            _spawned.Add(view.gameObject);
+            return view;
+        }
+
+        private Image CreateImage(string objectName, Transform parent, Sprite sprite)
+        {
+            var go = new GameObject(objectName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            go.transform.SetParent(parent, false);
+            var image = go.GetComponent<Image>();
+            image.sprite = sprite;
+            if (parent == _container)
+            {
+                _spawned.Add(go);
+            }
+
+            return image;
+        }
+
+        private Text CreateText(string objectName, Transform parent)
+        {
+            var go = new GameObject(objectName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
+            go.transform.SetParent(parent, false);
+            var text = go.GetComponent<Text>();
+            text.font = ResolveFont();
+            if (parent == _container)
+            {
+                _spawned.Add(go);
+            }
+
+            return text;
+        }
+
+        private Button CreateButton(string objectName, Transform parent, string label, Color tint)
+        {
+            Image image = CreateImage(objectName, parent, Resources.Load<Sprite>("Sprites/UI/ui_btn_primary_compact"));
+            image.type = image.sprite != null ? Image.Type.Sliced : Image.Type.Simple;
+            image.color = tint;
+            image.raycastTarget = true;
+            Button button = image.gameObject.AddComponent<Button>();
+            Text text = CreateText("Label", image.transform);
+            text.text = label;
+            text.color = Color.white;
+            text.fontStyle = FontStyle.Bold;
+            text.alignment = TextAnchor.MiddleCenter;
+            text.raycastTarget = false;
+            text.rectTransform.anchorMin = Vector2.zero;
+            text.rectTransform.anchorMax = Vector2.one;
+            text.rectTransform.offsetMin = Vector2.zero;
+            text.rectTransform.offsetMax = Vector2.zero;
+            return button;
+        }
+
+        private static void SetButtonRect(Button button, float right)
+        {
+            RectTransform rect = (RectTransform)button.transform;
+            rect.anchorMin = new Vector2(1f, 0.5f);
+            rect.anchorMax = new Vector2(1f, 0.5f);
+            rect.pivot = new Vector2(1f, 0.5f);
+            rect.sizeDelta = new Vector2(58f, 30f);
+            rect.anchoredPosition = new Vector2(right, 0f);
+        }
+
+        private static void SetAnchoredRect(
+            RectTransform rect,
+            Vector2 anchorMin,
+            Vector2 anchorMax,
+            Vector2 size,
+            Vector2? position = null)
+        {
+            rect.anchorMin = anchorMin;
+            rect.anchorMax = anchorMax;
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.sizeDelta = size;
+            rect.anchoredPosition = position ?? Vector2.zero;
+            rect.localScale = Vector3.one;
         }
 
         private void PositionMarker(float ratio)
@@ -203,11 +632,8 @@ namespace GourmetProject.Game.UI.Hud
                 return;
             }
 
-            // 三角箭头指向当前进度点：把 [0,1] 的进度映射到进度条容器所占的水平区间
-            // （容器相对父物体是内缩的，marker 与容器同父，需按容器锚点区间换算），
-            // 并保留 marker 原有宽度与竖直位置。
             float mapped = ratio;
-            if (_container != null && _positionMarker.parent == _container.parent)
+            if (_positionMarker.parent == _container.parent)
             {
                 mapped = _container.anchorMin.x + ratio * (_container.anchorMax.x - _container.anchorMin.x);
             }
@@ -218,37 +644,43 @@ namespace GourmetProject.Game.UI.Hud
             _positionMarker.anchoredPosition = new Vector2(0f, _positionMarker.anchoredPosition.y);
         }
 
-        private void RefreshRemainingDays(GameRun run, float length)
+        private void RefreshRemainingDays(float length)
         {
-            if (_remainingDaysText == null)
+            if (_remainingDaysText != null)
+            {
+                float remaining = Mathf.Max(0f, length - _run.CurrentDay);
+                _remainingDaysText.text = $"{remaining.ToString("0.#", CultureInfo.InvariantCulture)}天";
+            }
+        }
+
+        private void DestroyPreviewBubble()
+        {
+            if (_previewBubble == null)
             {
                 return;
             }
 
-            float remaining = Mathf.Max(0f, length - run.CurrentDay);
-            _remainingDaysText.text = $"{remaining.ToString("0.#", CultureInfo.InvariantCulture)}天";
+            _spawned.Remove(_previewBubble.gameObject);
+            Destroy(_previewBubble.gameObject);
+            _previewBubble = null;
         }
 
-        private T SpawnTemplate<T>(T template, string childName) where T : Component
+        private void ClearSpawned()
         {
-            if (template == null)
+            foreach (GameObject go in _spawned)
             {
-                Debug.LogError($"{nameof(ActionAxisBar)} 缺少 {childName} 对应的 UI template。", this);
-                return null;
+                if (go != null)
+                {
+                    Destroy(go);
+                }
             }
 
-            T instance = Instantiate(template, _container);
-            instance.gameObject.name = childName;
-            instance.gameObject.SetActive(true);
-            var rect = (RectTransform)instance.transform;
-            rect.SetParent(_container, false);
-            rect.localScale = Vector3.one;
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-            _spawned.Add(instance.gameObject);
-            return instance;
+            _spawned.Clear();
+            _dayDots.Clear();
+            _nodeBubbles.Clear();
+            _previewBubble = null;
+            _confirmLabel = null;
+            _confirmButton = null;
         }
 
         private Font ResolveFont()
@@ -270,46 +702,37 @@ namespace GourmetProject.Game.UI.Hud
             return _cachedFont;
         }
 
-        private void Clear()
-        {
-            foreach (GameObject go in _spawned)
-            {
-                if (go != null)
-                {
-                    Destroy(go);
-                }
-            }
-
-            _spawned.Clear();
-        }
-
         private static string NodeLabel(ActionDisplayKind kind)
         {
-            switch (kind)
+            return kind switch
             {
-                case ActionDisplayKind.Boss: return "BOSS";
-                case ActionDisplayKind.Interest: return "利息";
-                case ActionDisplayKind.Shop: return "商店";
-                case ActionDisplayKind.Event: return "事件";
-                default: return string.Empty;
-            }
+                ActionDisplayKind.Boss => "BOSS",
+                ActionDisplayKind.Interest => "利息",
+                ActionDisplayKind.Shop => "商店",
+                ActionDisplayKind.Reward => "奖励",
+                ActionDisplayKind.Event => "事件",
+                _ => "节点行动",
+            };
         }
 
         private Sprite NodeSprite(ActionDisplayKind kind)
         {
-            switch (kind)
+            return kind switch
             {
-                case ActionDisplayKind.Boss:
-                    return _bossNodeSprite != null ? _bossNodeSprite : Resources.Load<Sprite>("Sprites/UI/icon_axis_boss");
-                case ActionDisplayKind.Interest:
-                    return _interestNodeSprite != null ? _interestNodeSprite : Resources.Load<Sprite>("Sprites/UI/icon_axis_interest");
-                case ActionDisplayKind.Shop:
-                    return _shopNodeSprite != null ? _shopNodeSprite : Resources.Load<Sprite>("Sprites/UI/icon_axis_shop");
-                case ActionDisplayKind.Event:
-                    return _eventNodeSprite != null ? _eventNodeSprite : Resources.Load<Sprite>("Sprites/UI/icon_axis_event");
-                default:
-                    return null;
-            }
+                ActionDisplayKind.Boss => _bossNodeSprite != null
+                    ? _bossNodeSprite
+                    : Resources.Load<Sprite>("Sprites/UI/icon_axis_boss"),
+                ActionDisplayKind.Interest => _interestNodeSprite != null
+                    ? _interestNodeSprite
+                    : Resources.Load<Sprite>("Sprites/UI/icon_axis_interest"),
+                ActionDisplayKind.Shop => _shopNodeSprite != null
+                    ? _shopNodeSprite
+                    : Resources.Load<Sprite>("Sprites/UI/icon_axis_shop"),
+                ActionDisplayKind.Event or ActionDisplayKind.Reward => _eventNodeSprite != null
+                    ? _eventNodeSprite
+                    : Resources.Load<Sprite>("Sprites/UI/icon_axis_event"),
+                _ => null,
+            };
         }
     }
 }

@@ -179,6 +179,8 @@ namespace GourmetProject.Game.UI.Battle
         internal WeekLoopController ActiveLoop => _loop;
         internal GameplayView CurrentView => _current;
         internal bool InBattle => _inBattle;
+        internal bool IsDailyActionSelectionActive =>
+            _current == GameplayView.ActionSelect && _currentTimelineNodeCard == null;
         internal bool IsViewingBattleTable => _tableCoordinator != null && _tableCoordinator.IsViewingBattleTable;
         internal BattleWorldController ActiveWorld => _world ?? BattleWorldController.Instance;
         internal ActiveItemActionPopup ActiveItemPopupPrefab => _activeItemPopupPrefab;
@@ -860,6 +862,28 @@ namespace GourmetProject.Game.UI.Battle
             _recipeBookPage?.CancelActiveItemTarget();
         }
 
+        internal bool BeginActiveItemTimelineAxisTarget(
+            ItemDefinition item,
+            IReadOnlyList<ActiveTarget> targets,
+            Action<ActiveTarget> onConfirm,
+            Action onCancel)
+        {
+            SetActionAxisVisible(true);
+            bool opened = _axisBinder != null
+                && _axisBinder.BeginActiveItemTargeting(_run, item, targets, onConfirm, onCancel);
+            if (opened)
+            {
+                HideAllTips();
+            }
+
+            return opened;
+        }
+
+        internal void EndActiveItemTimelineAxisTarget()
+        {
+            _axisBinder?.EndActiveItemTargeting();
+        }
+
         internal bool PlayActiveItemRecipeFlavorApplied(ActiveTarget target, Action onComplete)
         {
             return _recipeBookPage != null
@@ -1235,12 +1259,17 @@ namespace GourmetProject.Game.UI.Battle
             if (_session == null)
             {
                 _cakeLayerBuffHud.Hide();
-                return;
+            }
+            else
+            {
+                _cakeLayerBuffHud.Bind(
+                    _displayedCakeLayers,
+                    _session.Database?.CakeLayerBuffs,
+                    _tips != null ? _tips.Item : null);
             }
 
-            _cakeLayerBuffHud.Bind(
-                _displayedCakeLayers,
-                _session.Database?.CakeLayerBuffs,
+            _cakeLayerBuffHud.BindHalfDayCost(
+                _run != null ? _run.NextDailyActionHalfCostStacks : 0,
                 _tips != null ? _tips.Item : null);
         }
 
@@ -1663,7 +1692,39 @@ namespace GourmetProject.Game.UI.Battle
         private void BuildActionCards()
         {
             ClearTimelineNodeCard();
-            _deck?.ShowActionChoices(RollChoices(_run), OnActionSelectionPicked, OnActionRerollClicked, _run != null ? _run.ActionRerollCount : 0);
+            _deck?.ShowActionChoices(
+                BuildDisplayedActionChoices(RollChoices(_run)),
+                OnActionSelectionPicked,
+                OnActionRerollClicked,
+                _run != null ? _run.ActionRerollCount : 0);
+        }
+
+        private List<ActionChoice> BuildDisplayedActionChoices(IReadOnlyList<ActionChoice> baseChoices)
+        {
+            var result = new List<ActionChoice>();
+            if (baseChoices == null)
+            {
+                return result;
+            }
+
+            bool applyHalfDay = _run != null && _run.NextDailyActionHalfCostStacks > 0;
+            foreach (ActionChoice choice in baseChoices)
+            {
+                if (choice == null)
+                {
+                    continue;
+                }
+
+                result.Add(new ActionChoice(
+                    choice.Action,
+                    choice.ActionGroupId,
+                    choice.WeekStepIndex,
+                    choice.RunStepIndex,
+                    applyHalfDay ? _run.PreviewDailyActionCost(choice.CostDays) : choice.CostDays,
+                    halfDayBuffApplied: applyHalfDay));
+            }
+
+            return result;
         }
 
         private void TrackTimelineNodeCard(cfg.TimelineNode node, int? interestMaxGain, Action onPick)

@@ -9243,6 +9243,7 @@ MonoBehaviour:
   _dayLabelTemplate: {fileID: 1309673116625800570}
   _nodeIconTemplate: {fileID: 2541587066110756972}
   _nodeLabelTemplate: {fileID: 8848700051572944500}
+  _nodeBubblePrefab: {fileID: 5617616724660983606, guid: 2f056028eff1d416caef3039b0453ad6, type: 3}
   _shopNodeSprite: {fileID: -301693539505010683, guid: 5035cc02892a84b298e3e07bf6e89fe1, type: 3}
   _interestNodeSprite: {fileID: -368961291865462981, guid: 70943e5c6b5ec41279e4f5e1a1958c66, type: 3}
   _bossNodeSprite: {fileID: -894558083634107281, guid: 08d8f77b0cee54c8f81e0e24aa8b3b7f, type: 3}

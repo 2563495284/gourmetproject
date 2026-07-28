@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
@@ -35,6 +36,68 @@ namespace GourmetProject.Game.UI.Battle.View
         public void Rebuild(GameRun run)
         {
             _axis?.Build(run, (node, go) => ConfigureNodeTip(run, node, go));
+        }
+
+        public bool BeginActiveItemTargeting(
+            GameRun run,
+            ItemDefinition item,
+            IReadOnlyList<ActiveTarget> targets,
+            Action<ActiveTarget> onConfirm,
+            Action onCancel)
+        {
+            if (_axis == null || run == null || item == null || targets == null || onConfirm == null)
+            {
+                return false;
+            }
+
+            Rebuild(run);
+            if (ItemActiveUsage.IsTimelineAddEffect(item.EffectType))
+            {
+                var days = new List<int>(targets.Count);
+                foreach (ActiveTarget target in targets)
+                {
+                    days.Add(target.X);
+                }
+
+                return _axis.BeginAddDaySelection(
+                    run,
+                    item.EffectParam,
+                    days,
+                    day => onConfirm(new ActiveTarget(
+                        day.ToString(),
+                        day,
+                        targetKind: cfg.ItemTargetKind.Global)),
+                    onCancel);
+            }
+
+            if (item.EffectType == ItemEffectTypes.TimelineDeleteNode)
+            {
+                var ids = new List<string>(targets.Count);
+                foreach (ActiveTarget target in targets)
+                {
+                    ids.Add(target.Id);
+                }
+
+                return _axis.BeginDeleteNodeSelection(
+                    run,
+                    ids,
+                    nodeId => onConfirm(new ActiveTarget(
+                        nodeId,
+                        targetKind: cfg.ItemTargetKind.Global)),
+                    onCancel);
+            }
+
+            return false;
+        }
+
+        public void EndActiveItemTargeting()
+        {
+            _axis?.EndSelection();
+        }
+
+        public void CancelActiveItemTargeting()
+        {
+            _axis?.CancelSelection();
         }
 
         private void ConfigureNodeTip(GameRun run, cfg.TimelineNode node, GameObject nodeObject)
@@ -148,7 +211,9 @@ namespace GourmetProject.Game.UI.Battle.View
             }
 
             string bossKey = $"w{run.WeekIndex}_{node.Id}";
-            IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Boss, BossService.BuildBossDebuffSeedKey(run, bossKey));
+            IRandomStream rng = GameApp.Random.DomainStream(
+                SeedDomains.Boss,
+                BossService.BuildBossDebuffSeedKey(run, bossKey, node.Id));
             RngState state = rng.State;
             try
             {

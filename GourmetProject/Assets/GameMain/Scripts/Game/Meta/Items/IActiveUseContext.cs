@@ -9,6 +9,7 @@ namespace GourmetProject.Game.Meta
         Battle,
         Shop,
         ActionSelect,
+        Event,
         Reward,
     }
 
@@ -99,13 +100,19 @@ namespace GourmetProject.Game.Meta
         /// <summary>能力：重掷当前行动选项（保 Boss）。不支持或非选择态返回 false。</summary>
         bool RerollCurrentAction();
 
-        /// <summary>能力：重新随机本周 Boss Debuff。不支持返回 false。</summary>
-        bool ResetWeekBoss();
+        /// <summary>能力：重新随机时间轴上最后一个未结算 Boss 节点的 Debuff。</summary>
+        bool ResetLastBossDebuff();
 
-        /// <summary>能力：立即执行行动轴上尚未结算的下一个节点。无可执行节点返回 false。</summary>
-        bool ExecuteNextTimelineNode();
+        /// <summary>能力：立即执行或排队执行指定行动轴节点；原节点状态不变。</summary>
+        bool ExecuteExtraTimelineNode(string nodeId);
 
-        /// <summary>能力：在当前行动轴上追加一个奖励节点（<paramref name="actionId"/>=奖励行动 id）。不支持返回 false。</summary>
-        bool AddRewardNodeToTimeline(string actionId);
+        /// <summary>能力：在指定未来整数日追加行动轴节点。</summary>
+        bool AddTimelineNode(string actionId, int day);
+
+        /// <summary>能力：删除指定尚未结算、尚未开始执行的行动轴节点。</summary>
+        bool DeleteTimelineNode(string nodeId);
+
+        /// <summary>能力：为下一次日常行动增加一层半日 Buff。</summary>
+        bool AddNextActionHalfCostStack();
     }
 }
