@@ -420,7 +420,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 {
                     onVisualSwitch?.Invoke();
                     ApplyFlavorStain();
-                    SpriteRenderStyle.ApplyTransformMaterial(_spriteRenderer);
                     ApplyActiveItemTransformEffect(1f);
                 })
                 .Append(DOTween.To(() => 1f, ApplyActiveItemTransformEffect, 0f, 0.2f).SetEase(Ease.InOutQuad))
@@ -1917,6 +1916,7 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 _activeItemFlavorSequence.Kill();
                 _activeItemFlavorSequence = null;
+                ApplyActiveItemTransformEffect(0f);
                 ApplyFlavorStain();
             }
 

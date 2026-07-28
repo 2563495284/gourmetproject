@@ -14,6 +14,7 @@ Shader "GourmetProject/FlavorStain"
         _StainSoftness ("Stain Softness", Range(0.001, 0.5)) = 0.12
         _StainDarken ("Stain Darken", Range(0, 1)) = 0.12
         _Seed ("Seed", Float) = 0
+        _Brightness ("Brightness", Range(0, 1)) = 0
 
         _StencilComp ("Stencil Comparison", Float) = 8
         _Stencil ("Stencil ID", Float) = 0
@@ -95,6 +96,7 @@ Shader "GourmetProject/FlavorStain"
                 float _StainSoftness;
                 float _StainDarken;
                 float _Seed;
+                float _Brightness;
             CBUFFER_END
 
             // 程序化噪声：hash -> value noise -> fbm，无需外部贴图。
@@ -181,6 +183,9 @@ Shader "GourmetProject/FlavorStain"
                     half3 darkened = rgb * (1.0 - _StainDarken * k);
                     rgb = lerp(darkened, c.rgb, k);
                 }
+
+                // 主动调味在闪白峰值切入本 Shader，并由这里完成白光退场。
+                rgb += (half)_Brightness;
 
                 // alpha 保持原图轮廓，脏印天然被约束在食物内部，不溢出。
                 half4 color = half4(rgb, tex.a);
