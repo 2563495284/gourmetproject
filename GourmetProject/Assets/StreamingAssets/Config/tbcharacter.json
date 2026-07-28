@@ -1,50 +1,16 @@
 [
   {
     "id": "glutton_dog",
-    "name": "甜品小熊",
-    "desc": "爱吃甜品的小熊",
+    "name": "甜品",
+    "desc": "糖霜、奶油与烘焙香气打造的甜蜜世界\n众多精致甜品，让甜蜜在餐桌间不断传递，共享蛋糕盛宴",
     "portrait": "Sprites/Characters/char_glutton_dog",
     "initialRecipeId": [
       "recipe_glutton"
     ],
     "initialFragmentId": "gut_4x4",
-    "maxDiningTableWidth": 8,
-    "maxDiningTableHeight": 8,
+    "maxDiningTableWidth": 12,
+    "maxDiningTableHeight": 12,
     "timelinePool": "tl_normal",
-    "startItems": [
-      "item_big_plate"
-    ]
-  },
-  {
-    "id": "wok_cat",
-    "name": "铁锅喵",
-    "desc": "料理流。一手颠勺，一手挥刀，火候即是胜负。",
-    "portrait": "Sprites/Characters/char_wok_cat",
-    "initialRecipeId": [
-      "recipe_wok"
-    ],
-    "initialFragmentId": "gut_4x4",
-    "maxDiningTableWidth": 8,
-    "maxDiningTableHeight": 8,
-    "timelinePool": "tl_busy",
-    "startItems": [
-      "item_chef_knife"
-    ]
-  },
-  {
-    "id": "chili_rat",
-    "name": "辣魔鼠",
-    "desc": "火辣流。越吃越上头，辣到对手举旗投降。",
-    "portrait": "Sprites/Characters/char_chili_rat",
-    "initialRecipeId": [
-      "recipe_chili"
-    ],
-    "initialFragmentId": "gut_4x4",
-    "maxDiningTableWidth": 8,
-    "maxDiningTableHeight": 8,
-    "timelinePool": "",
-    "startItems": [
-      "item_pepper_jar"
-    ]
+    "startItems": []
   }
 ]

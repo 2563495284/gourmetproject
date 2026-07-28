@@ -39,11 +39,11 @@ public sealed partial class Character : Luban.BeanBase
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 角色名称
+    /// 营业方向
     /// </summary>
     public readonly string Name;
     /// <summary>
-    /// 角色描述
+    /// 方向描述
     /// </summary>
     public readonly string Desc;
     /// <summary>
