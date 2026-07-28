@@ -2,7 +2,7 @@
   {
     "id": "term_sweet_transfer",
     "name": "甜蜜传递",
-    "desc": "使目标食物\n获得并结算此技能"
+    "desc": "使随机食物\n获得并结算此技能"
   },
   {
     "id": "t_sweet",
