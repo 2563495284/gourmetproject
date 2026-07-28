@@ -100,7 +100,7 @@ namespace GourmetProject.Editor
             GFPlatform platform = ToGameFrameworkPlatform(report.summary.platform);
             ResourceBuilderController controller = CreateController(platform);
             string packageDirectory = Path.Combine(controller.OutputPackagePath, platform.ToString());
-            ValidatePackageFreshness(packageDirectory);
+            ValidatePackageFreshness(packageDirectory, platform);
             StagePackage(packageDirectory);
             Debug.Log($"[Build] GameFramework package staged from '{packageDirectory}'.");
         }
@@ -109,6 +109,20 @@ namespace GourmetProject.Editor
         {
             CleanupStagedPackage();
             Debug.Log("[Build] Removed temporary GameFramework files from StreamingAssets.");
+        }
+
+        [MenuItem("Gourmet Project/Build/Build Window", false, 0)]
+        private static void OpenBuildWindowMenu()
+        {
+            GameFrameworkBuildWindow.Open();
+        }
+
+        [MenuItem("Gourmet Project/Resources/Rebuild Active Target Package", false, 0)]
+        private static void BuildActiveTargetPackageMenu()
+        {
+            GFPlatform platform =
+                ToGameFrameworkPlatform(EditorUserBuildSettings.activeBuildTarget);
+            BuildPackageResources(platform);
         }
 
         [MenuItem("Gourmet Project/Resources/Rebuild Resource Collection")]
@@ -126,19 +140,32 @@ namespace GourmetProject.Editor
             BuildPackageResources(GFPlatform.MacOS);
         }
 
+        [MenuItem("Gourmet Project/Build/Build Active Target Player", false, 1)]
+        private static void BuildActiveTargetPlayerMenu()
+        {
+            BuildTarget target = EditorUserBuildSettings.activeBuildTarget;
+            BuildPlayer(target, GetDefaultPlayerOutputPath(target));
+        }
+
         [MenuItem("Gourmet Project/Build/Build macOS Player")]
         private static void BuildMacOsPlayerMenu()
         {
-            if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.StandaloneOSX)
+            BuildPlayer(
+                BuildTarget.StandaloneOSX,
+                GetDefaultPlayerOutputPath(BuildTarget.StandaloneOSX));
+        }
+
+        private static void BuildPlayer(BuildTarget target, string outputPath)
+        {
+            if (EditorUserBuildSettings.activeBuildTarget != target)
             {
                 throw new BuildFailedException(
-                    "Switch the active build target to macOS before building the Player.");
+                    $"Switch the active build target to '{target}' before building the Player.");
             }
 
-            BuildPackageResources(GFPlatform.MacOS);
+            GFPlatform platform = ToGameFrameworkPlatform(target);
+            BuildPackageResources(platform);
 
-            string projectRoot = Directory.GetParent(Application.dataPath).FullName;
-            string outputPath = Path.Combine(projectRoot, "Build", "Player", "GourmetProject.app");
             Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
 
             string[] scenes = EditorBuildSettings.scenes
@@ -150,7 +177,7 @@ namespace GourmetProject.Editor
             {
                 scenes = scenes,
                 locationPathName = outputPath,
-                target = BuildTarget.StandaloneOSX,
+                target = target,
                 options = BuildOptions.None,
             };
 
@@ -158,10 +185,44 @@ namespace GourmetProject.Editor
             if (report.summary.result != BuildResult.Succeeded)
             {
                 throw new BuildFailedException(
-                    $"macOS Player build failed with {report.summary.totalErrors} error(s).");
+                    $"{target} Player build failed with {report.summary.totalErrors} error(s).");
             }
 
-            Debug.Log($"[Build] macOS Player created at '{outputPath}'.");
+            Debug.Log($"[Build] {target} Player created at '{outputPath}'.");
+        }
+
+        private static string GetDefaultPlayerOutputPath(BuildTarget target)
+        {
+            string projectRoot = Directory.GetParent(Application.dataPath).FullName;
+            string playerRoot = Path.Combine(projectRoot, "Build", "Player");
+
+            switch (target)
+            {
+                case BuildTarget.StandaloneWindows:
+                case BuildTarget.StandaloneWindows64:
+                    return Path.Combine(playerRoot, "GourmetProject.exe");
+                case BuildTarget.StandaloneOSX:
+                    return Path.Combine(playerRoot, "GourmetProject.app");
+                case BuildTarget.StandaloneLinux64:
+                    return Path.Combine(playerRoot, "GourmetProject.x86_64");
+                case BuildTarget.Android:
+                    return Path.Combine(playerRoot, "GourmetProject.apk");
+                case BuildTarget.iOS:
+                    return Path.Combine(playerRoot, "iOS");
+                case BuildTarget.WSAPlayer:
+                    return Path.Combine(playerRoot, "WindowsStore");
+                case BuildTarget.WebGL:
+                    return Path.Combine(playerRoot, "WebGL");
+                default:
+                    throw new BuildFailedException(
+                        $"No default Player output path is configured for '{target}'.");
+            }
+        }
+
+        private static string GetPackageDirectory(GFPlatform platform)
+        {
+            ResourceBuilderController controller = CreateController(platform);
+            return Path.Combine(controller.OutputPackagePath, platform.ToString());
         }
 
         private static ResourceBuilderController CreateController(GFPlatform platform)
@@ -405,14 +466,17 @@ namespace GourmetProject.Editor
             File.WriteAllLines(manifestPath, manifestLines);
         }
 
-        private static void ValidatePackageFreshness(string packageDirectory)
+        private static void ValidatePackageFreshness(
+            string packageDirectory,
+            GFPlatform platform)
         {
             string versionFile = Path.Combine(packageDirectory, "GameFrameworkVersion.dat");
             if (!File.Exists(versionFile))
             {
                 throw new BuildFailedException(
-                    "GameFramework package resources are missing. Run " +
-                    "'Gourmet Project/Resources/Rebuild macOS Package' before building.");
+                    $"GameFramework package resources for {platform} are missing at " +
+                    $"'{packageDirectory}'. Open 'Gourmet Project/Build/Build Window' and run " +
+                    $"'Rebuild {platform} Package' before building.");
             }
 
             DateTime packageTime = File.GetLastWriteTimeUtc(versionFile);
@@ -441,8 +505,9 @@ namespace GourmetProject.Editor
             if (!string.IsNullOrEmpty(stalePath))
             {
                 throw new BuildFailedException(
-                    $"GameFramework package resources are older than '{stalePath}'. Run " +
-                    "'Gourmet Project/Resources/Rebuild macOS Package' before building.");
+                    $"GameFramework package resources for {platform} are older than " +
+                    $"'{stalePath}'. Open 'Gourmet Project/Build/Build Window' and run " +
+                    $"'Rebuild {platform} Package' before building.");
             }
         }
 
@@ -553,6 +618,336 @@ namespace GourmetProject.Editor
             public string Name { get; }
             public string Filter { get; }
             public string[] SearchPaths { get; }
+        }
+
+        private sealed class GameFrameworkBuildWindow : EditorWindow
+        {
+            private const float LabelWidth = 130f;
+
+            private Vector2 _scrollPosition;
+            private string _packageDirectory;
+            private string _packageStatus;
+            private MessageType _packageStatusType;
+            private string _lastOperation;
+            private MessageType _lastOperationType;
+
+            public static void Open()
+            {
+                GameFrameworkBuildWindow window =
+                    GetWindow<GameFrameworkBuildWindow>("Gourmet Build");
+                window.minSize = new Vector2(500f, 430f);
+                window.RefreshStatus();
+                window.Show();
+            }
+
+            private void OnEnable()
+            {
+                titleContent = new GUIContent("Gourmet Build");
+                RefreshStatus();
+            }
+
+            private void OnFocus()
+            {
+                RefreshStatus();
+                Repaint();
+            }
+
+            private void OnGUI()
+            {
+                _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition);
+
+                GUILayout.Space(8f);
+                EditorGUILayout.LabelField("Gourmet Project Build", EditorStyles.boldLabel);
+                EditorGUILayout.Space(4f);
+
+                DrawBuildOverview();
+                EditorGUILayout.Space(8f);
+                DrawResourceActions();
+                EditorGUILayout.Space(8f);
+                DrawPlayerActions();
+
+                if (!string.IsNullOrEmpty(_lastOperation))
+                {
+                    EditorGUILayout.Space(8f);
+                    EditorGUILayout.HelpBox(_lastOperation, _lastOperationType);
+                }
+
+                EditorGUILayout.EndScrollView();
+            }
+
+            private void DrawBuildOverview()
+            {
+                using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                {
+                    EditorGUILayout.LabelField("Build Overview", EditorStyles.boldLabel);
+
+                    float previousLabelWidth = EditorGUIUtility.labelWidth;
+                    EditorGUIUtility.labelWidth = LabelWidth;
+                    EditorGUILayout.LabelField(
+                        "Active target",
+                        EditorUserBuildSettings.activeBuildTarget.ToString());
+                    EditorGUILayout.LabelField(
+                        "Enabled scenes",
+                        EditorBuildSettings.scenes.Count(scene => scene.enabled).ToString());
+                    EditorGUILayout.LabelField(
+                        "Player output",
+                        GetActivePlayerOutputPathOrUnavailable());
+                    EditorGUILayout.LabelField(
+                        "Package output",
+                        string.IsNullOrEmpty(_packageDirectory) ? "Unavailable" : _packageDirectory);
+                    EditorGUIUtility.labelWidth = previousLabelWidth;
+
+                    EditorGUILayout.Space(4f);
+                    EditorGUILayout.HelpBox(
+                        string.IsNullOrEmpty(_packageStatus)
+                            ? "Package status has not been checked."
+                            : _packageStatus,
+                        _packageStatusType);
+
+                    if (GUILayout.Button("Refresh Status"))
+                    {
+                        RefreshStatus();
+                    }
+                }
+            }
+
+            private void DrawResourceActions()
+            {
+                using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                {
+                    EditorGUILayout.LabelField("GameFramework Resources", EditorStyles.boldLabel);
+
+                    bool editorBusy = IsEditorBusy();
+                    bool isSupported = TryGetActivePlatform(out GFPlatform platform);
+                    using (new EditorGUI.DisabledScope(editorBusy || !isSupported))
+                    {
+                        if (GUILayout.Button("Rebuild Resource Collection", GUILayout.Height(28f)))
+                        {
+                            RunOperation(
+                                "Resource collection rebuild",
+                                GenerateResourceCollectionMenu);
+                        }
+
+                        string packageButtonLabel = isSupported
+                            ? $"Rebuild {platform} Package"
+                            : "Rebuild Active Target Package";
+                        if (GUILayout.Button(packageButtonLabel, GUILayout.Height(32f)))
+                        {
+                            RunOperation(
+                                $"{platform} package rebuild",
+                                () => BuildPackageResources(platform));
+                        }
+                    }
+
+                    using (new EditorGUI.DisabledScope(
+                               string.IsNullOrEmpty(_packageDirectory) ||
+                               !Directory.Exists(_packageDirectory)))
+                    {
+                        if (GUILayout.Button("Reveal Package Output"))
+                        {
+                            EditorUtility.RevealInFinder(_packageDirectory);
+                        }
+                    }
+
+                    if (editorBusy)
+                    {
+                        EditorGUILayout.HelpBox(
+                            "Wait for the current compilation, import, or Player build to finish.",
+                            MessageType.Info);
+                    }
+                    else if (!isSupported)
+                    {
+                        EditorGUILayout.HelpBox(
+                            $"GameFramework package building does not support " +
+                            $"'{EditorUserBuildSettings.activeBuildTarget}'.",
+                            MessageType.Error);
+                    }
+                }
+            }
+
+            private void DrawPlayerActions()
+            {
+                using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                {
+                    EditorGUILayout.LabelField("Player", EditorStyles.boldLabel);
+
+                    BuildTarget activeTarget = EditorUserBuildSettings.activeBuildTarget;
+                    bool isSupported = TryGetActivePlatform(out GFPlatform platform);
+                    bool editorBusy = IsEditorBusy();
+
+                    if (!isSupported)
+                    {
+                        EditorGUILayout.HelpBox(
+                            $"The active build target '{activeTarget}' is not supported.",
+                            MessageType.Error);
+                    }
+
+                    using (new EditorGUI.DisabledScope(editorBusy || !isSupported))
+                    {
+                        string buildButtonLabel = isSupported
+                            ? $"Build {platform} Player"
+                            : "Build Active Target Player";
+                        if (GUILayout.Button(buildButtonLabel, GUILayout.Height(38f)))
+                        {
+                            RunOperation(
+                                $"{platform} Player build",
+                                () => BuildPlayer(
+                                    activeTarget,
+                                    GetDefaultPlayerOutputPath(activeTarget)));
+                        }
+                    }
+
+                    string playerOutputPath = GetActivePlayerOutputPathOrUnavailable();
+                    string playerDirectory =
+                        playerOutputPath == "Unavailable"
+                            ? null
+                            : Path.GetDirectoryName(playerOutputPath);
+                    using (new EditorGUI.DisabledScope(
+                               string.IsNullOrEmpty(playerDirectory) ||
+                               !Directory.Exists(playerDirectory)))
+                    {
+                        if (GUILayout.Button("Reveal Player Output"))
+                        {
+                            EditorUtility.RevealInFinder(playerDirectory);
+                        }
+                    }
+
+                    EditorGUILayout.Space(6f);
+                    EditorGUILayout.LabelField("Switch Active Target", EditorStyles.miniBoldLabel);
+                    using (new EditorGUI.DisabledScope(editorBusy))
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        using (new EditorGUI.DisabledScope(
+                                   activeTarget == BuildTarget.StandaloneWindows64))
+                        {
+                            if (GUILayout.Button("Windows 64-bit"))
+                            {
+                                RunOperation(
+                                    "Windows 64-bit target switch",
+                                    () => SwitchActiveTarget(BuildTarget.StandaloneWindows64));
+                            }
+                        }
+
+                        using (new EditorGUI.DisabledScope(
+                                   activeTarget == BuildTarget.StandaloneOSX))
+                        {
+                            if (GUILayout.Button("macOS"))
+                            {
+                                RunOperation(
+                                    "macOS target switch",
+                                    () => SwitchActiveTarget(BuildTarget.StandaloneOSX));
+                            }
+                        }
+                    }
+                }
+            }
+
+            private void RefreshStatus()
+            {
+                if (EditorApplication.isCompiling)
+                {
+                    _packageStatus = "Waiting for script compilation to finish.";
+                    _packageStatusType = MessageType.Info;
+                    return;
+                }
+
+                try
+                {
+                    if (!TryGetActivePlatform(out GFPlatform platform))
+                    {
+                        _packageDirectory = null;
+                        _packageStatus =
+                            $"The active build target " +
+                            $"'{EditorUserBuildSettings.activeBuildTarget}' is not supported.";
+                        _packageStatusType = MessageType.Error;
+                        return;
+                    }
+
+                    _packageDirectory = GetPackageDirectory(platform);
+                    ValidatePackageFreshness(_packageDirectory, platform);
+                    _packageStatus =
+                        $"{platform} package is present and up to date.";
+                    _packageStatusType = MessageType.Info;
+                }
+                catch (BuildFailedException exception)
+                {
+                    _packageStatus = exception.Message;
+                    _packageStatusType = MessageType.Warning;
+                }
+                catch (Exception exception)
+                {
+                    _packageStatus = $"Unable to check package status: {exception.Message}";
+                    _packageStatusType = MessageType.Error;
+                }
+            }
+
+            private void RunOperation(string operationName, Action operation)
+            {
+                try
+                {
+                    operation();
+                    _lastOperation = $"{operationName} completed successfully.";
+                    _lastOperationType = MessageType.Info;
+                }
+                catch (Exception exception)
+                {
+                    _lastOperation = $"{operationName} failed: {exception.Message}";
+                    _lastOperationType = MessageType.Error;
+                    Debug.LogException(exception);
+                }
+                finally
+                {
+                    RefreshStatus();
+                    Repaint();
+                }
+            }
+
+            private static void SwitchActiveTarget(BuildTarget target)
+            {
+                BuildTargetGroup targetGroup = BuildPipeline.GetBuildTargetGroup(target);
+                if (!EditorUserBuildSettings.SwitchActiveBuildTarget(
+                        targetGroup,
+                        target))
+                {
+                    throw new BuildFailedException(
+                        $"Unity could not switch the active build target to '{target}'.");
+                }
+            }
+
+            private static bool TryGetActivePlatform(out GFPlatform platform)
+            {
+                try
+                {
+                    platform =
+                        ToGameFrameworkPlatform(EditorUserBuildSettings.activeBuildTarget);
+                    return true;
+                }
+                catch (BuildFailedException)
+                {
+                    platform = GFPlatform.Undefined;
+                    return false;
+                }
+            }
+
+            private static string GetActivePlayerOutputPathOrUnavailable()
+            {
+                try
+                {
+                    return GetDefaultPlayerOutputPath(
+                        EditorUserBuildSettings.activeBuildTarget);
+                }
+                catch (BuildFailedException)
+                {
+                    return "Unavailable";
+                }
+            }
+
+            private static bool IsEditorBusy()
+            {
+                return EditorApplication.isCompiling ||
+                       EditorApplication.isUpdating ||
+                       BuildPipeline.isBuildingPlayer;
+            }
         }
     }
 }
