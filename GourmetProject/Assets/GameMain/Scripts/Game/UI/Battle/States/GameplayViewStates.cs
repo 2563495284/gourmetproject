@@ -117,7 +117,6 @@ namespace GourmetProject.Game.UI.Battle.States
 
         public void Enter(IBattleViewHost host, Action buildCenter)
         {
-            host.SetCenterTitle(string.Empty);
             buildCenter?.Invoke();
         }
     }
@@ -129,7 +128,6 @@ namespace GourmetProject.Game.UI.Battle.States
 
         public void Enter(IBattleViewHost host, Action buildCenter)
         {
-            host.SetCenterTitle(string.Empty);
             buildCenter?.Invoke();
         }
     }

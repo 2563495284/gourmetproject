@@ -28,8 +28,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         void SwitchTo(GameplayView view, Action buildCenter = null, Action onShown = null);
 
-        void SetCenterTitle(string text);
-
         void RefreshPersistent();
 
         void ShowActionSelection();
@@ -66,7 +64,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
             CaptureReturnView();
             _host.SwitchTo(GameplayView.RewardDishPack, () =>
             {
-                _host.SetCenterTitle("菜品包");
                 _host.RewardDishPackPanel.Open(
                     _host.Run,
                     choices,
@@ -88,7 +85,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
             CaptureReturnView(previous);
             _host.SwitchTo(GameplayView.RewardDishPack, () =>
             {
-                _host.SetCenterTitle(string.IsNullOrWhiteSpace(title) ? "菜品包" : title);
                 _host.RewardDishPackPanel.Open(
                     _host.Run,
                     choices,
@@ -153,7 +149,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
             CaptureReturnView(previous);
             _host.SwitchTo(GameplayView.RewardItemChoice, () =>
             {
-                _host.SetCenterTitle(string.Empty);
                 _host.RewardItemChoicePanel.Open(
                     string.IsNullOrWhiteSpace(title) ? "选择一个道具" : title,
                     choices,
@@ -193,7 +188,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
             CaptureReturnView(previous);
             _host.SwitchTo(GameplayView.RandomizedItems, () =>
             {
-                _host.SetCenterTitle(string.Empty);
                 _host.RandomizedItemsPanel.Open(
                     string.IsNullOrWhiteSpace(title) ? "随机后的道具" : title,
                     results,

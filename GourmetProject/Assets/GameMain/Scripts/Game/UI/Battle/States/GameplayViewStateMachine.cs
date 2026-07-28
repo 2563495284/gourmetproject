@@ -17,8 +17,6 @@ namespace GourmetProject.Game.UI.Battle.States
         /// <summary>按 view 落地常驻壳通用配置：面板显隐 / 行动轴 / 白底 / 刷新常驻信息。</summary>
         void ApplyShellForView(GameplayView view);
 
-        void SetCenterTitle(string text);
-
         void RebuildActionAxis();
 
         void OpenShopPanel();

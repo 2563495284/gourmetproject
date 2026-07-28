@@ -71,7 +71,6 @@ namespace GourmetProject.Game.UI.Battle
         [Header("Center (切换动画区)")]
         [Tooltip("中部内容区根的 CanvasGroup：五态切换时对它做渐隐渐显；常驻壳不在其下。")]
         [SerializeField] private CanvasGroup _center;
-        [SerializeField] private Text _centerTitleText;
 
         [Header("DiningTable Area (餐桌锁定区)")]
         [Tooltip("HUD 里的空区矩形：世界餐桌将 fit 并居中锁定在该屏幕区域内。")]
@@ -590,7 +589,6 @@ namespace GourmetProject.Game.UI.Battle
             TrackTimelineNodeCard(node, interestMaxGain, onPick);
             SwitchTo(GameplayView.ActionSelect, () =>
             {
-                SetCenterTitle("行动轴事件");
                 BuildTimelineNodeCard(node, interestMaxGain, onPick);
             }, PlayShowCardsWhenReady);
         }
@@ -700,7 +698,6 @@ namespace GourmetProject.Game.UI.Battle
         GameRun IGameplayPageRouterHost.Run => _run;
         BattleWorldController IGameplayPageRouterHost.World => _world ?? BattleWorldController.Instance;
         CanvasGroup IGameplayPageRouterHost.Center => _center;
-        string IGameplayPageRouterHost.CenterTitle => _centerTitleText != null ? _centerTitleText.text : string.Empty;
         GameObject IGameplayPageRouterHost.HudFrame => _hudFrame;
         GameObject IGameplayPageRouterHost.Backdrop => _backdrop;
         GameObject IGameplayPageRouterHost.ActionSelectionPanel => _actionSelectionPanel;
@@ -724,7 +721,6 @@ namespace GourmetProject.Game.UI.Battle
 
         void IGameplayPageRouterHost.SetActionAxisVisible(bool visible) => SetActionAxisVisible(visible);
         void IGameplayPageRouterHost.SetFoodActionsVisible(bool visible) => SetFoodActionsVisible(visible);
-        void IGameplayPageRouterHost.SetCenterTitle(string text) => SetCenterTitle(text);
         void IGameplayPageRouterHost.RebuildActionAxis() => RebuildActionAxis();
         void IGameplayPageRouterHost.OpenShopPanel() => _shopPage?.OpenPanel();
         void IGameplayPageRouterHost.OpenRecipeBookPanel() => _recipeBookPage?.OpenPanel();
@@ -737,7 +733,6 @@ namespace GourmetProject.Game.UI.Battle
         GameplayView IRecipeBookHost.CurrentView => _current;
         RecipeReadonlyBookView IRecipeBookHost.RecipeReadonlyBookView => _recipeReadonlyBookView;
         void IRecipeBookHost.SwitchTo(GameplayView view, Action buildCenter, Action onShown) => SwitchTo(view, buildCenter, onShown);
-        void IRecipeBookHost.SetCenterTitle(string text) => SetCenterTitle(text);
         void IRecipeBookHost.RefreshPersistent() => RefreshPersistent();
         void IRecipeBookHost.RefreshShopPersistent() => RefreshShopPersistent();
         ActionSelectSnapshot IRecipeBookHost.CaptureActionSelection() => CaptureActionSelectSnapshot();
@@ -768,7 +763,6 @@ namespace GourmetProject.Game.UI.Battle
         RewardItemChoicePanel IRewardPageHost.RewardItemChoicePanelPrefab => _rewardItemChoicePanelPrefab;
         RandomizedItemsPanel IRewardPageHost.RandomizedItemsPanel => _randomizedItemsPanel;
         void IRewardPageHost.SwitchTo(GameplayView view, Action buildCenter, Action onShown) => SwitchTo(view, buildCenter, onShown);
-        void IRewardPageHost.SetCenterTitle(string text) => SetCenterTitle(text);
         void IRewardPageHost.RefreshPersistent() => RefreshPersistent();
         void IRewardPageHost.ShowActionSelection() => ShowActionSelection();
         FoodTipsView IRewardPageHost.FoodTips() => _tips != null ? _tips.Food : null;
@@ -777,7 +771,6 @@ namespace GourmetProject.Game.UI.Battle
 
         EventPagePanel IEventPageHost.EventPagePanel => _eventPagePanel;
         void IEventPageHost.SwitchTo(GameplayView view, Action buildCenter, Action onShown) => SwitchTo(view, buildCenter, onShown);
-        void IEventPageHost.SetCenterTitle(string text) => SetCenterTitle(text);
         void IEventPageHost.OpenEventRecipeDishDelete(
             GameRun run,
             string title,
@@ -806,7 +799,6 @@ namespace GourmetProject.Game.UI.Battle
             ClearTimelineNodeCard();
             SwitchTo(GameplayView.ActionSelect, () =>
             {
-                SetCenterTitle("选择行动");
                 BuildActionCards();
             }, () =>
             {
@@ -845,14 +837,6 @@ namespace GourmetProject.Game.UI.Battle
             Action onChanged)
         {
             _eventPage?.OpenRecipeDishDelete(run, title, onCancel, onTargetConfirmed, onChanged);
-        }
-
-        private void SetCenterTitle(string text)
-        {
-            if (_centerTitleText != null)
-            {
-                _centerTitleText.text = text ?? string.Empty;
-            }
         }
 
         // —— 商店 / 菜谱工作区 / 餐桌编辑入口 ——
@@ -1703,7 +1687,6 @@ namespace GourmetProject.Game.UI.Battle
                 return false;
             }
 
-            SetCenterTitle("行动轴事件");
             BuildTimelineNodeCard(_currentTimelineNodeCard, _currentTimelineNodeInterestMaxGain, _currentTimelineNodePick);
             PlayShowCardsWhenReady();
             return true;

@@ -22,8 +22,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         void SwitchTo(GameplayView view, Action buildCenter = null, Action onShown = null);
 
-        void SetCenterTitle(string text);
-
         void RefreshPersistent();
 
         void RefreshShopPersistent();
@@ -82,7 +80,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
             if (_activeItemTargetItem != null)
             {
-                _host.SetCenterTitle(_activeItemTargetItem.Desc);
                 panel.Open(
                     _host.Run,
                     RecipeReadonlyBookRequest.ActiveItemTarget(
@@ -97,7 +94,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
             if (_inspectBookIndex >= 0)
             {
                 int bookIndex = _inspectBookIndex;
-                _host.SetCenterTitle("查看菜谱");
                 panel.Open(
                     _host.Run,
                     RecipeReadonlyBookRequest.ReadonlyBook(
@@ -111,7 +107,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
             if (_eventDeleteConfirmed != null)
             {
-                _host.SetCenterTitle(string.IsNullOrWhiteSpace(_eventDeleteTitle) ? "选择要删除的菜品" : _eventDeleteTitle);
                 panel.Open(
                     _host.Run,
                     RecipeReadonlyBookRequest.EventDeleteDish(
@@ -125,7 +120,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
             if (_shopDeleteRequested)
             {
-                _host.SetCenterTitle($"删除食物　花费 {ShopService.DeleteCost(_host.Run)} 金币");
                 panel.Open(
                     _host.Run,
                     RecipeReadonlyBookRequest.ShopDeleteDish(

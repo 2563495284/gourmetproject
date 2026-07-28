@@ -18,8 +18,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         CanvasGroup Center { get; }
 
-        string CenterTitle { get; }
-
         GameObject HudFrame { get; }
 
         GameObject Backdrop { get; }
@@ -51,8 +49,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
         void SetActionAxisVisible(bool visible);
 
         void SetFoodActionsVisible(bool visible);
-
-        void SetCenterTitle(string text);
 
         void RebuildActionAxis();
 
@@ -120,7 +116,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
             }
 
             _host.SetFoodActionsVisible(false);
-            _host.SetCenterTitle(string.Empty);
 
             if (_host.HudFrame != null)
             {
@@ -136,22 +131,18 @@ namespace GourmetProject.Game.UI.Battle.Pages
             }
 
             bool cardsActive = _host.Deck != null && _host.Deck.CardsActive;
-            bool skipActive = _host.Deck != null && _host.Deck.SkipActive;
-            return new ActionSelectSnapshot(_host.CenterTitle, cardsActive, skipActive);
+            return new ActionSelectSnapshot(cardsActive);
         }
 
         public void RestoreActionSelection(ActionSelectSnapshot snapshot)
         {
             if (!snapshot.HasSnapshot)
             {
-                _host.SetCenterTitle("选择行动");
                 _host.BuildActionCards();
                 return;
             }
 
-            _host.SetCenterTitle(string.IsNullOrWhiteSpace(snapshot.Title) ? "选择行动" : snapshot.Title);
             _host.Deck?.SetCardsActive(snapshot.CardsActive);
-            _host.Deck?.SetSkipActive(snapshot.SkipActive);
         }
 
         void IBattleViewHost.ApplyShellForView(GameplayView view)
@@ -201,8 +192,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
             _host.RefreshPersistent();
         }
-
-        void IBattleViewHost.SetCenterTitle(string text) => _host.SetCenterTitle(text);
 
         void IBattleViewHost.RebuildActionAxis() => _host.RebuildActionAxis();
 

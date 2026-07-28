@@ -10,16 +10,12 @@ namespace GourmetProject.Game.UI.Battle.View
     internal readonly struct ActionSelectSnapshot
     {
         public readonly bool HasSnapshot;
-        public readonly string Title;
         public readonly bool CardsActive;
-        public readonly bool SkipActive;
 
-        public ActionSelectSnapshot(string title, bool cardsActive, bool skipActive)
+        public ActionSelectSnapshot(bool cardsActive)
         {
             HasSnapshot = true;
-            Title = title;
             CardsActive = cardsActive;
-            SkipActive = skipActive;
         }
 
         public static ActionSelectSnapshot None => default;
