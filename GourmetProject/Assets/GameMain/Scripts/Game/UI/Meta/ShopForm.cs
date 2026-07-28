@@ -32,10 +32,6 @@ namespace GourmetProject.Game.UI.Meta
         [SerializeField] private RectTransform _fragmentContainer;
         [SerializeField] private RectTransform _passiveContainer;
         [SerializeField] private RectTransform _activeContainer;
-        [SerializeField] private Text _foodEmptyText;
-        [SerializeField] private Text _fragmentEmptyText;
-        [SerializeField] private Text _passiveEmptyText;
-        [SerializeField] private Text _activeEmptyText;
         [SerializeField] private ShopFoodBuyItemView _foodCardPrefab;
         [SerializeField] private ShopFragmentPackBuyItemView _fragmentCardPrefab;
         [SerializeField] private ShopPassiveItemBuyItemView _passiveCardPrefab;
@@ -155,10 +151,10 @@ namespace GourmetProject.Game.UI.Meta
 
             SetText(_goldText, $"金币 {_run.Gold}");
             RefreshDeleteDishButton();
-            BuildBuySection(ShopEntryKind.Dish, _foodContainer, _foodEmptyText, "暂无食物", _foodCardPrefab);
-            BuildBuySection(ShopEntryKind.Fragment, _fragmentContainer, _fragmentEmptyText, "暂无碎片包", _fragmentCardPrefab);
-            BuildBuySection(ShopEntryKind.PassiveItem, _passiveContainer, _passiveEmptyText, "暂无被动道具", _passiveCardPrefab);
-            BuildBuySection(ShopEntryKind.ActiveItem, _activeContainer, _activeEmptyText, "暂无主动道具", _activeCardPrefab);
+            BuildBuySection(ShopEntryKind.Dish, _foodContainer, "暂无食物", _foodCardPrefab);
+            BuildBuySection(ShopEntryKind.Fragment, _fragmentContainer, "暂无碎片包", _fragmentCardPrefab);
+            BuildBuySection(ShopEntryKind.PassiveItem, _passiveContainer, "暂无被动道具", _passiveCardPrefab);
+            BuildBuySection(ShopEntryKind.ActiveItem, _activeContainer, "暂无主动道具", _activeCardPrefab);
         }
 
         private void RefreshDeleteDishButton()
@@ -179,13 +175,11 @@ namespace GourmetProject.Game.UI.Meta
         private void BuildBuySection(
             ShopEntryKind kind,
             RectTransform container,
-            Text emptyText,
             string emptyMessage,
             ShopBuyItemViewBase prefab)
         {
             if (container == null || prefab == null)
             {
-                SetEmpty(emptyText, true, emptyMessage);
                 return;
             }
 
@@ -195,7 +189,6 @@ namespace GourmetProject.Game.UI.Meta
                 CreateSlot(container, prefab, entries[i]);
             }
 
-            SetEmpty(emptyText, entries.Count == 0, emptyMessage);
             container.gameObject.SetActive(entries.Count > 0);
         }
 
@@ -751,17 +744,6 @@ namespace GourmetProject.Game.UI.Meta
 
             _spawned.Clear();
             _buySlots.Clear();
-        }
-
-        private static void SetEmpty(Text emptyText, bool visible, string message)
-        {
-            if (emptyText == null)
-            {
-                return;
-            }
-
-            emptyText.gameObject.SetActive(visible);
-            emptyText.text = message ?? string.Empty;
         }
 
         private static void SetText(Text text, string value)
