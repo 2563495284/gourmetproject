@@ -59,5 +59,24 @@ namespace GourmetProject.Game.Presentation.Battle
                 _ => Valid,
             };
         }
+
+        /// <summary>
+        /// 食物拖拽反馈：
+        /// 整块可放时所有占用格为绿色；否则仅可用餐桌格为黄色，
+        /// 已占用/禁用格与餐桌外网格都为红色。
+        /// </summary>
+        public static Color DishColorFor(
+            GridPlacementFeedbackState overallState,
+            GridPlacementFeedbackState cellState)
+        {
+            if (overallState == GridPlacementFeedbackState.Valid)
+            {
+                return Valid;
+            }
+
+            return cellState == GridPlacementFeedbackState.Valid
+                ? Missing
+                : Blocked;
+        }
     }
 }
