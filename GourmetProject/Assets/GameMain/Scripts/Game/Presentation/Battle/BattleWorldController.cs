@@ -113,6 +113,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private Func<Vector2, bool> _preparedDishDiscardHitTest;
         private Action<bool> _preparedDishDiscardHoverChanged;
         private bool _outletHoveringDiscard;
+        private bool _activeItemDishesDimmed;
         private Action _stateChanged;
         private CancellationTokenSource _presentationCts;
         private Tween _tableViewFadeTween;
@@ -364,35 +365,54 @@ namespace GourmetProject.Game.Presentation.Battle
             return true;
         }
 
-        internal void BeginActiveItemWorldTargeting()
+        internal void BeginActiveItemWorldTargeting(bool dimPlacedDishes)
         {
             SetPlacedPiecesClickEnabled(false);
+            _activeItemDishesDimmed = dimPlacedDishes;
+            foreach (DishPieceView piece in _placedPieces)
+            {
+                piece?.SetActiveItemTargetDimmed(false);
+            }
         }
 
         internal void EndActiveItemWorldTargeting()
         {
             ClearActiveItemTargetHighlights();
+            foreach (DishPieceView piece in _placedPieces)
+            {
+                piece?.SetActiveItemTargetDimmed(false);
+            }
+
+            _activeItemDishesDimmed = false;
             SetPlacedPiecesClickEnabled(true);
         }
 
-        internal void SetActiveItemTargetHighlights(cfg.ItemTargetKind kind, IReadOnlyList<ActiveTarget> selected, ActiveTarget? hovered)
+        internal void SetActiveItemTargetHighlights(
+            cfg.ItemTargetKind kind,
+            IReadOnlyList<ActiveTarget> candidates,
+            IReadOnlyList<ActiveTarget> selected,
+            ActiveTarget? hovered)
         {
             if (kind == cfg.ItemTargetKind.DiningTableCell)
             {
+                SetActiveItemHoveredCellDishDimmed(hovered);
                 _boardView?.ClearTargetHighlights();
-                GpTable table = ActiveCellTargetTable();
-                if (table != null)
+                if (candidates != null)
                 {
-                    foreach (GridPos cell in table.ExistingCells())
+                    foreach (ActiveTarget candidate in candidates)
                     {
-                        var candidate = new ActiveTarget(string.Empty, cell.X, cell.Y, cfg.ItemTargetKind.DiningTableCell);
-                        _boardView?.SetTargetHighlight(cell, ContainsTarget(selected, candidate), TargetEquals(hovered, candidate));
+                        var cell = new GridPos(candidate.X, candidate.Y);
+                        _boardView?.SetTargetHighlight(
+                            cell,
+                            ContainsTarget(selected, candidate),
+                            TargetEquals(hovered, candidate));
                     }
                 }
 
                 return;
             }
 
+            SetActiveItemHoveredCellDishDimmed(null);
             if (kind == cfg.ItemTargetKind.DiningTableDish)
             {
                 foreach (DishPieceView piece in _placedPieces)
@@ -404,9 +424,39 @@ namespace GourmetProject.Game.Presentation.Battle
 
                     GridPos origin = piece.Instance.Placement.Origin;
                     var candidate = new ActiveTarget(piece.Instance.Id.ToString(), origin.X, origin.Y, cfg.ItemTargetKind.DiningTableDish);
-                    bool active = ContainsTarget(selected, candidate) || TargetEquals(hovered, candidate);
+                    bool active = ContainsTarget(candidates, candidate)
+                        && (ContainsTarget(selected, candidate) || TargetEquals(hovered, candidate));
                     piece.SetPlacementGlow(active, true);
                 }
+            }
+        }
+
+        private void SetActiveItemHoveredCellDishDimmed(ActiveTarget? hovered)
+        {
+            int hoveredDishId = 0;
+            bool hasHoveredDish = false;
+            if (_activeItemDishesDimmed
+                && hovered.HasValue
+                && _session?.DiningTable != null)
+            {
+                var cell = new GridPos(hovered.Value.X, hovered.Value.Y);
+                if (_session.DiningTable.InBounds(cell))
+                {
+                    DishInstance dish = _session.DiningTable.DishAt(cell);
+                    if (dish != null)
+                    {
+                        hoveredDishId = dish.Id;
+                        hasHoveredDish = true;
+                    }
+                }
+            }
+
+            foreach (DishPieceView piece in _placedPieces)
+            {
+                bool dimmed = hasHoveredDish
+                    && piece?.Instance != null
+                    && piece.Instance.Id == hoveredDishId;
+                piece?.SetActiveItemTargetDimmed(dimmed);
             }
         }
 
@@ -431,6 +481,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         internal void ClearActiveItemTargetHighlights()
         {
+            SetActiveItemHoveredCellDishDimmed(null);
             _boardView?.ClearTargetHighlights();
             foreach (DishPieceView piece in _placedPieces)
             {
@@ -607,7 +658,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             GpTable table = ActiveCellTargetTable();
-            if (table == null || !table.AddMaterialAt(pos, materialId))
+            if (table == null || !table.Exists(pos))
             {
                 return false;
             }
@@ -620,6 +671,20 @@ namespace GourmetProject.Game.Presentation.Battle
 
             _boardView?.Sync();
             onComplete?.Invoke();
+            return true;
+        }
+
+        public bool PlayActiveItemDishFlavorApplied(ActiveTarget target, Action onComplete)
+        {
+            if (target.TargetKind != cfg.ItemTargetKind.DiningTableDish
+                || !int.TryParse(target.Id, out int dishId)
+                || !_dishViewsById.TryGetValue(dishId, out DishPieceView piece)
+                || piece == null)
+            {
+                return false;
+            }
+
+            piece.PlayActiveItemFlavorTransform(onVisualSwitch: null, onComplete);
             return true;
         }
 
@@ -961,6 +1026,11 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             RebuildPlacedPieces();
+            if (_activeItemDishesDimmed)
+            {
+                SetPlacedPiecesClickEnabled(false);
+            }
+
             RefreshAll();
         }
 

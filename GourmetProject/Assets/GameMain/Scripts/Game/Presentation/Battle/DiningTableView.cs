@@ -282,12 +282,13 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            Color color = selected
-                ? new Color(0.25f, 1f, 0.35f)
-                : hovered
-                    ? new Color(1f, 0.92f, 0.25f)
-                    : new Color(0.25f, 1f, 0.35f);
-            view.SetOutline(color, hovered || selected ? 0.08f : 0.045f);
+            if (!selected && !hovered)
+            {
+                view.ClearOutline();
+                return;
+            }
+
+            view.SetOutline(new Color(0.25f, 1f, 0.35f), selected ? 0.1f : 0.08f);
         }
 
         public void ClearScopeHighlights(BattleScopeHighlightChannel channel)

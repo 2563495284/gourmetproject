@@ -22,6 +22,7 @@ namespace GourmetProject.Game.UI.Battle
     {
         private readonly BattleForm _host;
         private readonly List<ActiveTarget> _selectedTargets = new List<ActiveTarget>();
+        private readonly List<ActiveTarget> _candidateTargets = new List<ActiveTarget>();
         private readonly List<GameObject> _targetButtons = new List<GameObject>();
 
         private ActiveItemActionPopup _popup;
@@ -38,6 +39,9 @@ namespace GourmetProject.Game.UI.Battle
         private int _targetFrame;
         private bool _recipePanelTargeting;
         private bool _tableCellTargeting;
+        private bool _cursorStateCaptured;
+        private bool _previousCursorVisible;
+        private CursorLockMode _previousCursorLockMode;
 
         public ActiveItemUseCoordinator(BattleForm host)
         {
@@ -56,6 +60,16 @@ namespace GourmetProject.Game.UI.Battle
         {
             if (_pendingItem == null)
             {
+                return;
+            }
+
+            if (ItemActiveUsage.RequiresFoodBattle(_pendingItem)
+                && (_host.CurrentView != GameplayView.Food
+                    || !_host.InBattle
+                    || _host.ActiveSession == null
+                    || _host.ActiveSession.IsSettled))
+            {
+                CancelTargeting(showMessage: false);
                 return;
             }
 
@@ -155,7 +169,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            IReadOnlyList<ActiveTarget> targets = ctx.EnumerateTargets(item.TargetKind);
+            IReadOnlyList<ActiveTarget> targets = ctx.EnumerateTargets(item);
             if (targets == null || targets.Count == 0)
             {
                 _host.ShowActiveItemMessage($"{item.Name}：没有可选目标。");
@@ -204,6 +218,8 @@ namespace GourmetProject.Game.UI.Battle
             _pendingSlot = slot;
             _pendingStartScreen = slot != null ? slot.IconScreenCenter() : Vector2.zero;
             _selectedTargets.Clear();
+            _candidateTargets.Clear();
+            _candidateTargets.AddRange(targets);
             _targetFrame = Time.frameCount;
 
             if (IsWorldTargetKind(item.TargetKind) && _host.CurrentView == GameplayView.Food)
@@ -300,7 +316,15 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            _host.ActiveRun?.UseActiveItem(item.Id);
+            if (_host.ActiveRun?.UseActiveItem(item.Id) != true)
+            {
+                CleanupTargeting();
+                _host.ShowActiveItemMessage($"{item.Name}：道具已失效。");
+                _host.RefreshAfterActiveItem(result.BoardChanged, persist: false);
+                onComplete?.Invoke();
+                return;
+            }
+
             CleanupTargeting();
 
             bool animationStarted = _host.PlayActiveItemRecipeFlavorApplied(target, FinishRecipeFlavorTargeting);
@@ -325,15 +349,22 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            world.BeginActiveItemWorldTargeting();
-            _worldArrow = WorldTargetArrow.Create(world.ActiveTargetArrowPrefab, world.ActiveTargetRoot, world.ActiveTargetCellSize);
+            bool dimPlacedDishes = _pendingItem.EffectType == ItemEffectTypes.AddMaterial;
+            world.BeginActiveItemWorldTargeting(dimPlacedDishes);
+            CaptureAndHideCursor();
+            _worldArrow = WorldTargetArrow.Create(
+                world.ActiveTargetArrowPrefab,
+                world.ActiveTargetRoot,
+                world.ActiveTargetCellSize,
+                world.WorldCamera,
+                _pendingStartScreen);
             if (_worldArrow == null)
             {
                 CancelTargeting();
                 return;
             }
 
-            _worldArrow.SetEndpoints(world.ScreenToWorld(_pendingStartScreen), world.ScreenToWorld(Mouse.current != null ? Mouse.current.position.ReadValue() : _pendingStartScreen));
+            _worldArrow.UpdateTo(Mouse.current != null ? Mouse.current.position.ReadValue() : _pendingStartScreen);
             _host.ShowActiveItemMessage($"{_pendingItem.Name}：选择目标，右键或 Esc 取消。");
         }
 
@@ -347,13 +378,19 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             Vector2 pointer = Mouse.current != null ? Mouse.current.position.ReadValue() : _pendingStartScreen;
-            _worldArrow?.SetEndpoints(world.ScreenToWorld(_pendingStartScreen), world.ScreenToWorld(pointer));
+            _worldArrow?.UpdateTo(pointer);
 
-            bool hasHover = _pendingItem.TargetKind == cfg.ItemTargetKind.DiningTableCell
+            bool pointerHasTarget = _pendingItem.TargetKind == cfg.ItemTargetKind.DiningTableCell
                 ? world.TryPointerCellTarget(out ActiveTarget hovered)
                 : world.TryPointerDishTarget(out hovered);
+            bool hasHover = pointerHasTarget && ContainsTarget(_candidateTargets, hovered);
             ActiveTarget? hoverTarget = hasHover ? hovered : null;
-            world.SetActiveItemTargetHighlights(_pendingItem.TargetKind, _selectedTargets, hoverTarget);
+            world.SetActiveItemTargetHighlights(
+                _pendingItem.TargetKind,
+                _candidateTargets,
+                _selectedTargets,
+                hoverTarget);
+            _worldArrow?.SetTargetHighlighted(hasHover);
 
             if (Time.frameCount <= _targetFrame || !WorldInput.PrimaryPressedThisFrame)
             {
@@ -362,11 +399,7 @@ namespace GourmetProject.Game.UI.Battle
 
             if (!hasHover)
             {
-                if (_tableCellTargeting)
-                {
-                    CancelTargeting();
-                }
-
+                CancelTargeting();
                 return;
             }
 
@@ -442,6 +475,12 @@ namespace GourmetProject.Game.UI.Battle
             IActiveUseContext ctx = _pendingContext;
             ItemDefinition item = _pendingItem;
             ActiveTarget[] targets = _selectedTargets.ToArray();
+            if (ShouldPlayDishFlavorApply(item, targets))
+            {
+                CompleteDishFlavorTargeting(ctx, item, targets);
+                return;
+            }
+
             if (ShouldPlayCellMaterialApply(item, targets))
             {
                 CompleteCellMaterialTargeting(ctx, item, targets, closeTableCellTarget: _tableCellTargeting);
@@ -450,6 +489,48 @@ namespace GourmetProject.Game.UI.Battle
 
             CleanupTargeting();
             ApplyAndConsume(ctx, item, targets);
+        }
+
+        private void CompleteDishFlavorTargeting(
+            IActiveUseContext ctx,
+            ItemDefinition item,
+            ActiveTarget[] targets)
+        {
+            ActiveItemUseResult result = ActiveItemEffectRegistry.Apply(ctx, item, targets);
+            _host.ShowActiveItemMessage(result.Message);
+            if (!result.Success)
+            {
+                CleanupTargeting();
+                _host.RefreshAfterActiveItem(boardChanged: false, persist: false);
+                return;
+            }
+
+            if (_host.ActiveRun?.UseActiveItem(item.Id) != true)
+            {
+                CleanupTargeting();
+                _host.ShowActiveItemMessage($"{item.Name}：道具已失效。");
+                _host.RefreshAfterActiveItem(result.BoardChanged, persist: false);
+                return;
+            }
+
+            ActiveTarget target = targets[0];
+            BattleWorldController world = _host.ActiveWorld;
+            CleanupTargeting();
+
+            bool animationStarted = world != null
+                && world.PlayActiveItemDishFlavorApplied(target, FinishDishFlavorTargeting);
+            if (!animationStarted)
+            {
+                FinishDishFlavorTargeting();
+            }
+
+            void FinishDishFlavorTargeting()
+            {
+                _host.RefreshAfterActiveItem(
+                    result.BoardChanged,
+                    persist: false,
+                    result.ActionChoicesChanged);
+            }
         }
 
         private void CompleteCellMaterialTargeting(
@@ -472,7 +553,14 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            _host.ActiveRun?.UseActiveItem(item.Id);
+            if (_host.ActiveRun?.UseActiveItem(item.Id) != true)
+            {
+                CleanupTargeting();
+                _host.ShowActiveItemMessage($"{item.Name}：道具已失效。");
+                _host.RefreshAfterActiveItem(result.BoardChanged, persist: false);
+                return;
+            }
+
             CleanupTargeting();
 
             ActiveTarget target = targets.Length > 0 ? targets[0] : default;
@@ -520,8 +608,10 @@ namespace GourmetProject.Game.UI.Battle
             _recipePanelTargeting = false;
             _tableCellTargeting = false;
             _selectedTargets.Clear();
+            _candidateTargets.Clear();
             _worldArrow?.Destroy();
             _worldArrow = null;
+            RestoreCursorState();
             if (_uiArrow != null)
             {
                 UnityEngine.Object.Destroy(_uiArrow.gameObject);
@@ -551,7 +641,13 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            _host.ActiveRun?.UseActiveItem(item.Id);
+            if (_host.ActiveRun?.UseActiveItem(item.Id) != true)
+            {
+                _host.ShowActiveItemMessage($"{item.Name}：道具已失效。");
+                _host.RefreshAfterActiveItem(result.BoardChanged, persist: false, result.ActionChoicesChanged);
+                return;
+            }
+
             _host.RefreshAfterActiveItem(result.BoardChanged, persist: false, result.ActionChoicesChanged);
         }
 
@@ -577,6 +673,13 @@ namespace GourmetProject.Game.UI.Battle
                 return false;
             }
 
+            if (ItemActiveUsage.RequiresFoodBattle(item)
+                && (_host.CurrentView != GameplayView.Food || !_host.InBattle))
+            {
+                reason = "只能在美食战斗中使用。";
+                return false;
+            }
+
             if (!ItemActiveUsage.CanUse(item, contextKind))
             {
                 reason = "现在不是使用时机。";
@@ -590,7 +693,7 @@ namespace GourmetProject.Game.UI.Battle
                 return false;
             }
 
-            if (ItemActiveUsage.RequiresTarget(item.TargetKind) && ctx.EnumerateTargets(item.TargetKind).Count == 0)
+            if (ItemActiveUsage.RequiresTarget(item.TargetKind) && ctx.EnumerateTargets(item).Count == 0)
             {
                 reason = "没有可选目标。";
                 return false;
@@ -756,6 +859,16 @@ namespace GourmetProject.Game.UI.Battle
                 && targets[0].TargetKind == cfg.ItemTargetKind.DiningTableCell;
         }
 
+        private static bool ShouldPlayDishFlavorApply(ItemDefinition item, IReadOnlyList<ActiveTarget> targets)
+        {
+            return item != null
+                && item.EffectType == ItemEffectTypes.AddFlavor
+                && item.TargetKind == cfg.ItemTargetKind.DiningTableDish
+                && targets != null
+                && targets.Count > 0
+                && targets[0].TargetKind == cfg.ItemTargetKind.DiningTableDish;
+        }
+
         private static bool ShouldPlayRecipeFlavorApply(ItemDefinition item, ActiveTarget target)
         {
             return ShouldUseRecipePanelTargeting(item)
@@ -782,6 +895,30 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             return false;
+        }
+
+        private void CaptureAndHideCursor()
+        {
+            if (!_cursorStateCaptured)
+            {
+                _cursorStateCaptured = true;
+                _previousCursorVisible = Cursor.visible;
+                _previousCursorLockMode = Cursor.lockState;
+            }
+
+            Cursor.visible = false;
+        }
+
+        private void RestoreCursorState()
+        {
+            if (!_cursorStateCaptured)
+            {
+                return;
+            }
+
+            Cursor.visible = _previousCursorVisible;
+            Cursor.lockState = _previousCursorLockMode;
+            _cursorStateCaptured = false;
         }
     }
 }

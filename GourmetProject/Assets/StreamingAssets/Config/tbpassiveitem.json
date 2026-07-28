@@ -25,7 +25,7 @@
     "id": "item_grant_two_active",
     "name": "随机主动包",
     "desc": "随机获得2个主动道具",
-    "quality": 0,
+    "quality": 1,
     "specialTags": 0,
     "effectValue": 0,
     "effectParam": "active_grant_2",
@@ -41,7 +41,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 50
+    "price": 80
   },
   {
     "id": "item_family_pack",
@@ -112,7 +112,7 @@
   {
     "id": "item_gold_meal_bonus",
     "name": "美食分红",
-    "desc": "接下来10局美食\n额外获得20金币",
+    "desc": "接下来10次日常营业\n额外获得20金币",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 20,
@@ -134,7 +134,7 @@
   {
     "id": "item_gold_boss",
     "name": "Boss赏金",
-    "desc": "完成下次盛宴\n额外+100金币",
+    "desc": "完成下次星级评鉴\n额外+100金币",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 100,
@@ -156,7 +156,7 @@
   {
     "id": "item_gold_percent",
     "name": "利润提成",
-    "desc": "美食结束获得的金币\n额外+20%",
+    "desc": "营业结束获得的金币\n额外+20%",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 0.2,
@@ -376,10 +376,10 @@
   {
     "id": "item_remove_fixed_30",
     "name": "固定删牌价",
-    "desc": "删牌价格固定为30金币",
+    "desc": "删牌价格固定为60金币",
     "quality": 2,
     "specialTags": 0,
-    "effectValue": 30,
+    "effectValue": 60,
     "effectParam": "",
     "baseWeight": 30,
     "hiddenRange": {
@@ -420,7 +420,7 @@
   {
     "id": "item_score_to_one",
     "name": "免检通行证",
-    "desc": "接下来3局非盛宴美食\n分数要求为1",
+    "desc": "接下来3次营业\n分数要求为1",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 0,
@@ -442,7 +442,7 @@
   {
     "id": "item_req_normal_down",
     "name": "家常减负",
-    "desc": "普通美食要求分数-20%",
+    "desc": "日常营业要求分数-20%",
     "quality": 0,
     "specialTags": 0,
     "effectValue": -0.2,
@@ -464,7 +464,7 @@
   {
     "id": "item_req_super_down",
     "name": "超级减负",
-    "desc": "超级美食要求分数-20%",
+    "desc": "火热营业要求分数-20%",
     "quality": 1,
     "specialTags": 0,
     "effectValue": -0.2,
@@ -486,7 +486,7 @@
   {
     "id": "item_req_feast_down",
     "name": "盛宴减负",
-    "desc": "盛宴美食要求分数-15%",
+    "desc": "星级评鉴要求分数-15%",
     "quality": 2,
     "specialTags": 0,
     "effectValue": -0.15,
@@ -508,7 +508,7 @@
   {
     "id": "item_count_le_mult",
     "name": "精致料理",
-    "desc": "结算开始\n若食物个数<=20\n所有美食倍率×1.2",
+    "desc": "结算开始\n若食物个数<=20\n所有食物倍率×1.2",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 1.2,
@@ -530,7 +530,7 @@
   {
     "id": "item_count_ge_mult",
     "name": "丰盛大餐",
-    "desc": "结算开始\n若食物数量>=20\n所有美食倍率×1.2",
+    "desc": "结算开始\n若食物数量>=20\n所有食物倍率×1.2",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 1.2,
@@ -574,7 +574,7 @@
   {
     "id": "item_gold_on_shop",
     "name": "商会返利",
-    "desc": "进入商店时\n获得15金币",
+    "desc": "进入商店采购\n获得15金币",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 10,
@@ -596,7 +596,7 @@
   {
     "id": "item_extra_interest",
     "name": "复利账户",
-    "desc": "每周结束时\n额外执行1次利息结算",
+    "desc": "将一个收取利息\n添加至每周末尾",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 1,
@@ -640,7 +640,7 @@
   {
     "id": "item_loan",
     "name": "高利贷",
-    "desc": "临时获得200金币\n下一周开始失去400金币",
+    "desc": "获得200金币\n将失去400金币的节点行动\n添加至本周末尾",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 200,
@@ -662,7 +662,7 @@
   {
     "id": "item_timeline_random",
     "name": "命运骰子",
-    "desc": "打乱时间轴的节点事件",
+    "desc": "打乱时间轴的节点行动",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 0,
@@ -684,7 +684,7 @@
   {
     "id": "item_extra_day",
     "name": "加班一天",
-    "desc": "盛宴延后一天",
+    "desc": "每周长度变为8天",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 1,
@@ -724,50 +724,6 @@
     "goldHiddenOffset": 0,
     "termId": "",
     "price": 200
-  },
-  {
-    "id": "item_add_reward_node",
-    "name": "额外奖励",
-    "desc": "增加一个奖励节点到\n未来时间轴上",
-    "quality": 1,
-    "specialTags": 0,
-    "effectValue": 1,
-    "effectParam": "",
-    "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
-    "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
-    "activeItemHiddenOffset": 0,
-    "fragmentHiddenOffset": 0,
-    "goldHiddenOffset": 0,
-    "termId": "",
-    "price": 80
-  },
-  {
-    "id": "item_add_interest_node",
-    "name": "额外利息节点",
-    "desc": "增加一个利息节点\n到未来时间轴上",
-    "quality": 1,
-    "specialTags": 0,
-    "effectValue": 1,
-    "effectParam": "",
-    "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
-    "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
-    "activeItemHiddenOffset": 0,
-    "fragmentHiddenOffset": 0,
-    "goldHiddenOffset": 0,
-    "termId": "",
-    "price": 80
   },
   {
     "id": "item_every3_next_mult",
@@ -816,7 +772,7 @@
   {
     "id": "item_last_+2",
     "name": "压轴好戏",
-    "desc": "最后上的食物\n倍率+2",
+    "desc": "最后上菜的食物\n倍率+2",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 2,
@@ -882,7 +838,7 @@
   {
     "id": "item_block_active",
     "name": "极简主义",
-    "desc": "无法再获得主动道具\n立即获得600金币",
+    "desc": "无法再使用主动道具\n立即获得600金币",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 600,
@@ -992,7 +948,7 @@
   {
     "id": "item_flavor_contagion",
     "name": "风味传染",
-    "desc": "使1个食物\n拥有菜谱中另1个食物的风味",
+    "desc": "使1个食物\n拥有另1个食物的风味",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 1,
@@ -1146,8 +1102,8 @@
   {
     "id": "item_shop_restock",
     "name": "自动补货",
-    "desc": "商店会自动补货",
-    "quality": 2,
+    "desc": "商店会自动补货食物",
+    "quality": 0,
     "specialTags": 0,
     "effectValue": 0,
     "effectParam": "",
@@ -1163,7 +1119,7 @@
     "fragmentHiddenOffset": 0,
     "goldHiddenOffset": 0,
     "termId": "",
-    "price": 120
+    "price": 50
   },
   {
     "id": "item_choice_count_plus1",
@@ -1190,7 +1146,7 @@
   {
     "id": "item_extra_food_choice",
     "name": "加餐",
-    "desc": "每6次普通美食\n额外获得3选一美食",
+    "desc": "每6次日常营业\n额外获得3选一美食",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 0,
@@ -1212,7 +1168,7 @@
   {
     "id": "item_extra_item_choice",
     "name": "加料",
-    "desc": "每4次超级美食\n额外获得多选一道具",
+    "desc": "每4次火热营业\n额外获得多选一道具",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 0,
@@ -1278,10 +1234,10 @@
   {
     "id": "item_discard_negative_gold",
     "name": "变废为宝",
-    "desc": "丢弃所有负面道具\n每丢弃一个获得100金币",
+    "desc": "丢弃所有负面道具\n每丢弃一个获得50金币",
     "quality": 1,
     "specialTags": 0,
-    "effectValue": 100,
+    "effectValue": 50,
     "effectParam": "",
     "baseWeight": 100,
     "hiddenRange": {
@@ -1300,7 +1256,7 @@
   {
     "id": "item_gold_meal_penalty",
     "name": "克扣工钱",
-    "desc": "美食获得的金币-20%",
+    "desc": "营业获得的金币-20%",
     "quality": 0,
     "specialTags": 1,
     "effectValue": -0.2,
@@ -1366,7 +1322,7 @@
   {
     "id": "item_skip_node",
     "name": "停业整顿",
-    "desc": "跳过下一个商店或利息节点",
+    "desc": "跳过下一个收取利息节点",
     "quality": 0,
     "specialTags": 1,
     "effectValue": 1,
@@ -1410,7 +1366,7 @@
   {
     "id": "item_req_normal_up",
     "name": "家常加码",
-    "desc": "普通美食要求分数+20%",
+    "desc": "日常营业要求分数+20%",
     "quality": 0,
     "specialTags": 1,
     "effectValue": 0.2,
@@ -1432,7 +1388,7 @@
   {
     "id": "item_req_super_up",
     "name": "超级加码",
-    "desc": "超级美食要求分数+15%",
+    "desc": "火热营业要求分数+15%",
     "quality": 0,
     "specialTags": 1,
     "effectValue": 0.15,
@@ -1454,7 +1410,7 @@
   {
     "id": "item_req_feast_up",
     "name": "盛宴加码",
-    "desc": "盛宴美食要求分数+15%",
+    "desc": "星级评鉴要求分数+15%",
     "quality": 0,
     "specialTags": 1,
     "effectValue": 0.15,
@@ -1476,7 +1432,7 @@
   {
     "id": "item_gold_week_clear",
     "name": "月光族",
-    "desc": "本周结束时金币清空",
+    "desc": "将失去所有金币的节点行动\n添加至本周末尾",
     "quality": 0,
     "specialTags": 1,
     "effectValue": 0,

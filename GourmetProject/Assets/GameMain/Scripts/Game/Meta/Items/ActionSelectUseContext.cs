@@ -28,9 +28,14 @@ namespace GourmetProject.Game.Meta
 
         public GameRun Run { get; }
 
-        public IReadOnlyList<ActiveTarget> EnumerateTargets(cfg.ItemTargetKind targetKind)
+        public IReadOnlyList<ActiveTarget> EnumerateTargets(ItemDefinition item)
         {
-            switch (targetKind)
+            if (item == null)
+            {
+                return Array.Empty<ActiveTarget>();
+            }
+
+            switch (item.TargetKind)
             {
                 case cfg.ItemTargetKind.RecipeDish:
                     return BattleUseContext.EnumerateRecipeDishes(Run);

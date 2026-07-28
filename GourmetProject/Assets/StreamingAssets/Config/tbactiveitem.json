@@ -8,7 +8,7 @@
     "effectValue": 0,
     "effectParam": "t_sweet",
     "baseWeight": 1,
-    "targetKind": 2,
+    "targetKind": 1,
     "targetCount": 1,
     "termId": "t_sweet",
     "price": 35
@@ -22,7 +22,7 @@
     "effectValue": 0,
     "effectParam": "t_bitter",
     "baseWeight": 1,
-    "targetKind": 2,
+    "targetKind": 1,
     "targetCount": 1,
     "termId": "t_bitter",
     "price": 35
@@ -36,7 +36,7 @@
     "effectValue": 0,
     "effectParam": "t_rust",
     "baseWeight": 1,
-    "targetKind": 2,
+    "targetKind": 1,
     "targetCount": 1,
     "termId": "t_rust",
     "price": 35
@@ -50,7 +50,7 @@
     "effectValue": 0,
     "effectParam": "t_numb",
     "baseWeight": 1,
-    "targetKind": 2,
+    "targetKind": 1,
     "targetCount": 1,
     "termId": "t_numb",
     "price": 35
@@ -64,7 +64,7 @@
     "effectValue": 0,
     "effectParam": "t_sour",
     "baseWeight": 1,
-    "targetKind": 2,
+    "targetKind": 1,
     "targetCount": 1,
     "termId": "t_sour",
     "price": 35
@@ -78,7 +78,7 @@
     "effectValue": 0,
     "effectParam": "t_salty",
     "baseWeight": 1,
-    "targetKind": 2,
+    "targetKind": 1,
     "targetCount": 1,
     "termId": "t_salty",
     "price": 35
@@ -179,62 +179,6 @@
     "targetKind": 3,
     "targetCount": 1,
     "termId": "m_silver",
-    "price": 35
-  },
-  {
-    "id": "item_active_sched_reroll",
-    "name": "行动调整单",
-    "desc": "重掷一次当前行动选项\nBoss 行动除外",
-    "specialTags": "",
-    "effectType": "RerollAction",
-    "effectValue": 0,
-    "effectParam": "",
-    "baseWeight": 1,
-    "targetKind": 6,
-    "targetCount": 0,
-    "termId": "",
-    "price": 35
-  },
-  {
-    "id": "item_active_sched_feast",
-    "name": "盛宴调整单",
-    "desc": "重置本周 Boss 类型",
-    "specialTags": "",
-    "effectType": "ResetBossDebuff",
-    "effectValue": 0,
-    "effectParam": "",
-    "baseWeight": 1,
-    "targetKind": 6,
-    "targetCount": 0,
-    "termId": "",
-    "price": 35
-  },
-  {
-    "id": "item_active_sched_rush",
-    "name": "加急单",
-    "desc": "立即执行下一个节点事件",
-    "specialTags": "",
-    "effectType": "TimelineExecuteNext",
-    "effectValue": 0,
-    "effectParam": "",
-    "baseWeight": 1,
-    "targetKind": 6,
-    "targetCount": 0,
-    "termId": "",
-    "price": 35
-  },
-  {
-    "id": "item_active_sched_reward",
-    "name": "奖励单",
-    "desc": "在时间轴上添加一个奖励节点",
-    "specialTags": "",
-    "effectType": "TimelineAddRewardNode",
-    "effectValue": 0,
-    "effectParam": "act_event",
-    "baseWeight": 1,
-    "targetKind": 6,
-    "targetCount": 0,
-    "termId": "",
     "price": 35
   }
 ]

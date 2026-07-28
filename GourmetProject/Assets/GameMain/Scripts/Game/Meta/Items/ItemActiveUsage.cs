@@ -57,7 +57,20 @@ namespace GourmetProject.Game.Meta
                 return IsScheduleUsableIn(item.EffectType, ctx);
             }
 
+            if (RequiresFoodBattle(item))
+            {
+                return ctx == ActiveUseContextKind.Battle;
+            }
+
             return IsUsableIn(item.TargetKind, ctx);
+        }
+
+        /// <summary>调味与铺台小票只能在尚未结算的 Food 战斗主界面使用。</summary>
+        public static bool RequiresFoodBattle(ItemDefinition item)
+        {
+            return item != null
+                && (item.EffectType == ItemEffectTypes.AddFlavor
+                    || item.EffectType == ItemEffectTypes.AddMaterial);
         }
 
         /// <summary>排程小票效果（操作行动轴/Boss，局外/地图专用）。</summary>

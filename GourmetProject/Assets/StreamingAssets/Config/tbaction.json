@@ -127,7 +127,7 @@
   },
   {
     "id": "act_boss",
-    "name": "美食家评鉴",
+    "name": "星级评鉴",
     "desc": "",
     "behavior": 1,
     "foodId": "food_boss",

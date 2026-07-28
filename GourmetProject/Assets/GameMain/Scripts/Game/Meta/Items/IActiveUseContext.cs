@@ -47,8 +47,11 @@ namespace GourmetProject.Game.Meta
         /// <summary>当前运行（金币/持有等全局资源类操作用）。</summary>
         GameRun Run { get; }
 
-        /// <summary>列出当前情境下该目标类型的候选目标（供选目标 UI）；无目标类型返回空。</summary>
-        IReadOnlyList<ActiveTarget> EnumerateTargets(cfg.ItemTargetKind targetKind);
+        /// <summary>
+        /// 列出当前情境下该道具的候选目标（供选目标 UI）。
+        /// 传入完整定义，使候选校验可感知具体效果语义。
+        /// </summary>
+        IReadOnlyList<ActiveTarget> EnumerateTargets(ItemDefinition item);
 
         /// <summary>能力：清空餐桌（仅战斗支持）。不支持或无法执行返回 false。</summary>
         bool ClearBoard();
@@ -71,9 +74,9 @@ namespace GourmetProject.Game.Meta
         /// <summary>能力：给目标菜加「视为食物数」。不支持或目标无效返回 false。</summary>
         bool AddCountAs(ActiveTarget target, int amount);
 
-        // —— 调味小票 / 铺台小票：永久改 Run（任意情境含战斗都可用）——
+        // —— 调味小票 / 铺台小票：仅 Food 战斗中使用，并永久改 Run ——
 
-        /// <summary>能力：给目标菜附加风味。菜谱目标永久写 Run；餐桌菜目标写本局实例。</summary>
+        /// <summary>能力：给桌上目标菜附加风味，并永久写回其菜谱来源。</summary>
         bool AddFlavorToDish(ActiveTarget target, string flavorId);
 
         /// <summary>能力：移除目标菜的一个风味。<paramref name="flavorId"/> 为空时移除最后一个风味。</summary>

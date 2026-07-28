@@ -91,7 +91,7 @@
   },
   {
     "id": "food_boss",
-    "name": "美食家评鉴",
+    "name": "星级评鉴",
     "desc": "",
     "actionKind": 2,
     "rewardKind": 0,

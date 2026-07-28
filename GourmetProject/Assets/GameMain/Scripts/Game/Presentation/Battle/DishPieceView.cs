@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using DG.Tweening;
 using GourmetProject.Gameplay.Battle;
@@ -51,6 +52,9 @@ namespace GourmetProject.Game.Presentation.Battle
         private static readonly int DigestCenterId = Shader.PropertyToID("_DigestCenter");
         private static readonly int DigestGridSizeId = Shader.PropertyToID("_DigestGridSize");
         private static readonly int DigestSeedId = Shader.PropertyToID("_DigestSeed");
+        private static readonly int BrightnessId = Shader.PropertyToID("_Brightness");
+        private static readonly int BoingId = Shader.PropertyToID("_Boing");
+        private static readonly int EdgeClampPointId = Shader.PropertyToID("_EdgeClampPoint");
 
         [Header("接触阴影：贴桌态（偏移按单格尺寸取比例，适配不同餐桌缩放）")]
         [SerializeField] private float _shadowBaseAlpha = 0.5f;
@@ -155,6 +159,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private Action<Vector2> _moveUpdate;
         private Action<Vector2> _moveEnd;
         private bool _clickEnabled = true;
+        private bool _suppressPrimaryUntilReleased;
         private bool _hovered;
         private bool _moveDragging;
         private bool _flying;
@@ -175,6 +180,9 @@ namespace GourmetProject.Game.Presentation.Battle
         private SettlementDishFeedbackKind _settlementFeedbackKind;
         private bool _sweetTransferSourceActive;
         private bool _triggerSweetTransferActivatorActive;
+        private readonly Dictionary<SpriteRenderer, Color> _activeItemDimColors = new Dictionary<SpriteRenderer, Color>();
+        private MaterialPropertyBlock _activeItemTransformBlock;
+        private Sequence _activeItemFlavorSequence;
 
         public DishInstance Instance { get; private set; }
 
@@ -210,10 +218,20 @@ namespace GourmetProject.Game.Presentation.Battle
         /// <summary>是否响应普通点击（打开详情）。目标选择等互斥交互期间可临时关闭。</summary>
         public void SetClickEnabled(bool enabled)
         {
+            bool wasEnabled = _clickEnabled;
             _clickEnabled = enabled;
             if (!enabled)
             {
+                _suppressPrimaryUntilReleased = false;
                 SetHovered(false);
+                return;
+            }
+
+            // 主动道具会在目标点击成功的同一帧恢复菜品交互。
+            // 等这次左键完全释放后再接收点击，避免同一次按下穿透成菜品拖拽。
+            if (!wasEnabled && (WorldInput.PrimaryHeld || WorldInput.PrimaryPressedThisFrame))
+            {
+                _suppressPrimaryUntilReleased = true;
             }
         }
 
@@ -324,6 +342,110 @@ namespace GourmetProject.Game.Presentation.Battle
                 color.a = ghost ? Mathf.Min(color.a, 0.65f) : Mathf.Max(color.a, 0.95f);
                 renderer.color = color;
             }
+        }
+
+        /// <summary>
+        /// 铺台小票悬停其所在格时，把该菜品本体降至原透明度的 50%，并精确恢复每个渲染体原色。
+        /// 与拖拽 Ghost 分开管理，避免退出目标选择后把原始 alpha 粗暴改成固定值。
+        /// </summary>
+        public void SetActiveItemTargetDimmed(bool dimmed)
+        {
+            EnsureRefs();
+            if (_spriteRenderer == null)
+            {
+                return;
+            }
+
+            if (!dimmed)
+            {
+                foreach (KeyValuePair<SpriteRenderer, Color> entry in _activeItemDimColors)
+                {
+                    if (entry.Key != null)
+                    {
+                        entry.Key.color = entry.Value;
+                    }
+                }
+
+                _activeItemDimColors.Clear();
+                return;
+            }
+
+            if (_activeItemDimColors.Count > 0)
+            {
+                return;
+            }
+
+            foreach (SpriteRenderer renderer in _spriteRenderer.GetComponentsInChildren<SpriteRenderer>(true))
+            {
+                Color original = renderer.color;
+                _activeItemDimColors[renderer] = original;
+                original.a *= 0.5f;
+                renderer.color = original;
+            }
+        }
+
+        /// <summary>
+        /// 主动调味的纯表现动画。业务数据已在调用前写入；中点只刷新风味污渍。
+        /// Transform Shader 缺失时回退为缩放 Punch。
+        /// </summary>
+        public void PlayActiveItemFlavorTransform(Action onVisualSwitch, Action onComplete)
+        {
+            EnsureRefs();
+            _activeItemFlavorSequence?.Kill();
+            _activeItemFlavorSequence = null;
+            Transform target = _visualPivot != null ? _visualPivot : transform;
+
+            if (_spriteRenderer == null || SpriteRenderStyle.SpriteTransformMaterial == null)
+            {
+                _activeItemFlavorSequence = DOTween.Sequence()
+                    .Append(target.DOPunchScale(Vector3.one * 0.12f, 0.28f, vibrato: 7, elasticity: 0.65f))
+                    .InsertCallback(0.14f, () =>
+                    {
+                        onVisualSwitch?.Invoke();
+                        ApplyFlavorStain();
+                    })
+                    .OnComplete(() =>
+                    {
+                        _activeItemFlavorSequence = null;
+                        onComplete?.Invoke();
+                    });
+                return;
+            }
+
+            SpriteRenderStyle.ApplyTransformMaterial(_spriteRenderer);
+            ApplyActiveItemTransformEffect(0f);
+            _activeItemFlavorSequence = DOTween.Sequence()
+                .Append(DOTween.To(() => 0f, ApplyActiveItemTransformEffect, 1f, 0.14f).SetEase(Ease.OutQuad))
+                .AppendCallback(() =>
+                {
+                    onVisualSwitch?.Invoke();
+                    ApplyFlavorStain();
+                    SpriteRenderStyle.ApplyTransformMaterial(_spriteRenderer);
+                    ApplyActiveItemTransformEffect(1f);
+                })
+                .Append(DOTween.To(() => 1f, ApplyActiveItemTransformEffect, 0f, 0.2f).SetEase(Ease.InOutQuad))
+                .OnComplete(() =>
+                {
+                    _activeItemFlavorSequence = null;
+                    ApplyFlavorStain();
+                    onComplete?.Invoke();
+                });
+        }
+
+        private void ApplyActiveItemTransformEffect(float amount)
+        {
+            if (_spriteRenderer == null)
+            {
+                return;
+            }
+
+            float t = Mathf.Clamp01(amount);
+            _activeItemTransformBlock ??= new MaterialPropertyBlock();
+            _spriteRenderer.GetPropertyBlock(_activeItemTransformBlock);
+            _activeItemTransformBlock.SetFloat(BrightnessId, t);
+            _activeItemTransformBlock.SetVector(BoingId, new Vector4(0.16f * t, -0.12f * t, 0f, 0f));
+            _activeItemTransformBlock.SetVector(EdgeClampPointId, new Vector4(0.24f, 0.24f, 0f, 0f));
+            _spriteRenderer.SetPropertyBlock(_activeItemTransformBlock);
         }
 
         /// <summary>
@@ -1661,6 +1783,17 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void Update()
         {
+            if (_suppressPrimaryUntilReleased)
+            {
+                SetHovered(false);
+                if (WorldInput.PrimaryHeld || WorldInput.PrimaryPressedThisFrame)
+                {
+                    return;
+                }
+
+                _suppressPrimaryUntilReleased = false;
+            }
+
             if (_moveDragging)
             {
                 SetHovered(false);
@@ -1779,6 +1912,14 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void OnDisable()
         {
+            SetActiveItemTargetDimmed(false);
+            if (_activeItemFlavorSequence != null)
+            {
+                _activeItemFlavorSequence.Kill();
+                _activeItemFlavorSequence = null;
+                ApplyFlavorStain();
+            }
+
             _sweetTransferSourceActive = false;
             _triggerSweetTransferActivatorActive = false;
             _scopeAffectedVersion++;

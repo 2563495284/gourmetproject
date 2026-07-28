@@ -22,16 +22,23 @@ namespace GourmetProject.Game.Meta
 
         public GameRun Run { get; }
 
-        public IReadOnlyList<ActiveTarget> EnumerateTargets(cfg.ItemTargetKind targetKind)
+        public IReadOnlyList<ActiveTarget> EnumerateTargets(ItemDefinition item)
         {
-            switch (targetKind)
+            if (item == null)
+            {
+                return Array.Empty<ActiveTarget>();
+            }
+
+            switch (item.TargetKind)
             {
                 case cfg.ItemTargetKind.RecipeDish:
                     return EnumerateRecipeDishes(Run);
                 case cfg.ItemTargetKind.DiningTableCell:
                     return EnumerateTableCells(_session?.DiningTable);
                 case cfg.ItemTargetKind.DiningTableDish:
-                    return EnumerateTableDishes(_session?.DiningTable);
+                    return item.EffectType == ItemEffectTypes.AddFlavor
+                        ? EnumerateSourceBackedTableDishes(_session?.DiningTable, Run)
+                        : EnumerateTableDishes(_session?.DiningTable);
                 case cfg.ItemTargetKind.Material:
                     return EnumerateMaterials(Run);
                 case cfg.ItemTargetKind.FlavorSlot:
@@ -101,17 +108,49 @@ namespace GourmetProject.Game.Meta
                 && _session.AddCountAsToDish(dishId, amount);
         }
 
-        // —— 调味/铺台：永久落到 Run（战斗内使用也是永久生效，下一局起随菜谱/餐桌带入）——
+        // —— 调味/铺台：当前战斗立即同步，并写入本次 Run 内存；落盘仍由既有存档节点负责 ——
 
         public bool AddFlavorToDish(ActiveTarget target, string flavorId)
         {
-            if (target.TargetKind == cfg.ItemTargetKind.DiningTableDish)
+            if (_session == null
+                || _session.IsSettled
+                || Run == null
+                || target.TargetKind != cfg.ItemTargetKind.DiningTableDish
+                || string.IsNullOrEmpty(flavorId)
+                || !TryGetDishId(target, out int dishId))
             {
-                return _session != null && TryGetDishId(target, out int dishId)
-                    && _session.AddFlavorToDishById(dishId, flavorId);
+                return false;
             }
 
-            return Run != null && Run.AddRecipeFlavor(target.Y, flavorId);
+            DishInstance dish = _session.FindDishById(dishId);
+            int sourceIndex = dish?.SourceDishIndex ?? -1;
+            if (sourceIndex < 0 || sourceIndex >= Run.RecipeEntries.Count)
+            {
+                return false;
+            }
+
+            RecipeBookSlot source = Run.RecipeEntries[sourceIndex];
+            bool replacesLastFlavor = source.ExtraFlavorIds.Count >= Run.FoodFlavorLimit;
+            if (!Run.AddRecipeFlavor(sourceIndex, flavorId))
+            {
+                return false;
+            }
+
+            if (replacesLastFlavor)
+            {
+                dish.ReplaceFlavor(flavorId);
+            }
+            else
+            {
+                dish.AddFlavor(flavorId);
+            }
+
+            if (flavorId == "t_numb")
+            {
+                // TODO: “麻”对已摆上餐桌菜品的旋转/重定位规则待产品确认；当前只追加风味。
+            }
+
+            return true;
         }
 
         public bool RemoveFlavorFromDish(ActiveTarget target, string flavorId)
@@ -144,7 +183,23 @@ namespace GourmetProject.Game.Meta
 
         public bool AddMaterialToCell(ActiveTarget target, string materialId)
         {
-            return Run != null && Run.AddCellMaterial(new GridPos(target.X, target.Y), materialId);
+            if (_session == null
+                || _session.IsSettled
+                || Run == null
+                || target.TargetKind != cfg.ItemTargetKind.DiningTableCell
+                || string.IsNullOrEmpty(materialId))
+            {
+                return false;
+            }
+
+            var position = new GridPos(target.X, target.Y);
+            DiningTable table = _session.DiningTable;
+            if (table == null || !table.Exists(position) || !Run.AddCellMaterial(position, materialId))
+            {
+                return false;
+            }
+
+            return table.AddMaterialAt(position, materialId);
         }
 
         public bool GenerateDish(ActiveTarget target, string dishId, string randomKey)
@@ -215,6 +270,35 @@ namespace GourmetProject.Game.Meta
             {
                 GridPos origin = dish.Placement.Origin;
                 targets.Add(new ActiveTarget(dish.Id.ToString(), origin.X, origin.Y, cfg.ItemTargetKind.DiningTableDish));
+            }
+
+            return targets;
+        }
+
+        /// <summary>
+        /// 调味小票只允许选择能永久写回菜谱条目的桌上菜；临时生成或失去来源的实例不进入候选。
+        /// </summary>
+        internal static IReadOnlyList<ActiveTarget> EnumerateSourceBackedTableDishes(DiningTable table, GameRun run)
+        {
+            var targets = new List<ActiveTarget>();
+            if (table == null || run == null)
+            {
+                return targets;
+            }
+
+            foreach (DishInstance dish in table.Dishes)
+            {
+                if (dish == null || dish.SourceDishIndex < 0 || dish.SourceDishIndex >= run.RecipeEntries.Count)
+                {
+                    continue;
+                }
+
+                GridPos origin = dish.Placement.Origin;
+                targets.Add(new ActiveTarget(
+                    dish.Id.ToString(),
+                    origin.X,
+                    origin.Y,
+                    cfg.ItemTargetKind.DiningTableDish));
             }
 
             return targets;
