@@ -71,10 +71,6 @@ public partial class Tables
     /// </summary>
     public TbTimeline TbTimeline {get; }
     /// <summary>
-    /// 行动轴节点：同 timelineId 多行组成一条轴；行动推进时触发 prevDay &lt; day &lt;= newDay 且未触发过的节点，并按 day 升序结算。
-    /// </summary>
-    public TbTimelineNode TbTimelineNode {get; }
-    /// <summary>
     /// 隐藏分曲线：基础隐藏分与派生隐藏分。
     /// </summary>
     public TbHiddenScoreCurve TbHiddenScoreCurve {get; }
@@ -163,7 +159,6 @@ public partial class Tables
         TbWeek = new TbWeek(loader("tbweek"));
         TbAction = new TbAction(loader("tbaction"));
         TbTimeline = new TbTimeline(loader("tbtimeline"));
-        TbTimelineNode = new TbTimelineNode(loader("tbtimelinenode"));
         TbHiddenScoreCurve = new TbHiddenScoreCurve(loader("tbhiddenscorecurve"));
         TbGoldRewardCurve = new TbGoldRewardCurve(loader("tbgoldrewardcurve"));
         TbActionScheduleRule = new TbActionScheduleRule(loader("tbactionschedulerule"));
@@ -201,7 +196,6 @@ public partial class Tables
         TbWeek.ResolveRef(this);
         TbAction.ResolveRef(this);
         TbTimeline.ResolveRef(this);
-        TbTimelineNode.ResolveRef(this);
         TbHiddenScoreCurve.ResolveRef(this);
         TbGoldRewardCurve.ResolveRef(this);
         TbActionScheduleRule.ResolveRef(this);

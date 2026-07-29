@@ -349,7 +349,6 @@
     const REQUIRED_FILES = [
       "tbweek",
       "tbtimeline",
-      "tbtimelinenode",
       "tbaction",
       "tbactionlargegroup",
       "tbactionsmallgroup",
@@ -860,10 +859,27 @@
     }
 
     function timelineNodes(timelineId) {
-      return tables.timelineNodes
-        .filter(node => node.timelineId === timelineId)
-        .slice()
-        .sort((a, b) => a.day - b.day);
+      const timeline = tables.timelineById.get(timelineId);
+      if (!timeline) {
+        return [];
+      }
+      const days = timeline.nodeDays || [];
+      const actionIds = timeline.nodeActionIds || [];
+      const count = Math.min(days.length, actionIds.length);
+      const nodes = [];
+      for (let i = 0; i < count; i++) {
+        const day = Number(days[i]);
+        const actionId = actionIds[i];
+        if (day > 0 && actionId) {
+          nodes.push({
+            id: `cfg_${timelineId}_d${day}_${i}`,
+            timelineId,
+            day,
+            actionId
+          });
+        }
+      }
+      return nodes.sort((a, b) => a.day - b.day);
     }
 
     function collectPassedNodes(run, prevDay, newDay) {
@@ -1138,7 +1154,6 @@
       const normalized = {
         weeks: raw.tbweek || [],
         timelines: raw.tbtimeline || [],
-        timelineNodes: raw.tbtimelinenode || [],
         actions: raw.tbaction || [],
         actionLargeGroups: raw.tbactionlargegroup || [],
         actionSmallGroups: raw.tbactionsmallgroup || [],

@@ -8,7 +8,7 @@ namespace GourmetProject.Game.Meta
 {
     /// <summary>
     /// 行动轴服务：按当前 Week 配置随机一条行动轴，推进天数游标，检测推进区间内经过的节点。
-    /// 节点配置来自 <c>TbTimelineNode</c>（按 timelineId 关联），运行态记录在 <see cref="GameRun"/>。
+    /// 节点配置内嵌于 <c>TbTimeline</c>，进入周时复制到 <see cref="GameRun"/> 的运行态快照。
     /// </summary>
     public static class TimelineService
     {
