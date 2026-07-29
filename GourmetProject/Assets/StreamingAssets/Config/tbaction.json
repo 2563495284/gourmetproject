@@ -36,7 +36,7 @@
     "maxCostDays": 1.2
   },
   {
-    "id": "act_food_active_strengthen_strengthen",
+    "id": "act_food_active_strengthen",
     "name": "日常营业",
     "desc": "",
     "behavior": 1,
@@ -48,7 +48,7 @@
     "maxCostDays": 1.2
   },
   {
-    "id": "act_food_active_ajust",
+    "id": "act_food_active_adjust",
     "name": "日常营业",
     "desc": "",
     "behavior": 1,
@@ -108,7 +108,7 @@
     "maxCostDays": 1.3
   },
   {
-    "id": "act_food_hard_active_ajust",
+    "id": "act_food_hard_active_adjust",
     "name": "火热营业",
     "desc": "",
     "behavior": 1,
