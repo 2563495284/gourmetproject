@@ -50,6 +50,8 @@ namespace GourmetProject.Game.UI.Meta
 
             public virtual bool CanClickDish => false;
 
+            public virtual bool ShowExitButton => true;
+
             public virtual int BookIndexFilter => -1;
 
             public virtual void Enter(RecipeReadonlyBookView panel)
@@ -131,6 +133,30 @@ namespace GourmetProject.Game.UI.Meta
             public override void OnExitClicked(RecipeReadonlyBookView panel)
             {
                 panel._onExit?.Invoke();
+            }
+        }
+
+        private sealed class ReadonlyDishPoolState : RecipeReadonlyBookState
+        {
+            private readonly string _title;
+
+            public ReadonlyDishPoolState(string title)
+            {
+                _title = title;
+            }
+
+            public override string PanelTitle =>
+                string.IsNullOrWhiteSpace(_title)
+                    ? "可能获得的菜品"
+                    : _title;
+
+            public override bool ShowExitButton => false;
+
+            public override int BookIndexFilter => 0;
+
+            public override void Enter(RecipeReadonlyBookView panel)
+            {
+                panel.RebuildWarehouseForCurrentState();
             }
         }
 

@@ -6,6 +6,7 @@ using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Meta;
 using GourmetProject.Gameplay.Data;
+using GourmetProject.Gameplay.Library;
 using GourmetProject.Gameplay.Model;
 using NUnit.Framework;
 using UnityEngine;
@@ -147,6 +148,60 @@ namespace GourmetProject.Tests.EditMode
             {
                 UnityEngine.Object.DestroyImmediate(gameObject);
             }
+        }
+
+        [Test]
+        public void RecipePossibleDishes_CollectsReachableCandidatesOnce()
+        {
+            var recipe = new RecipeDef(
+                "candidate_test",
+                new[] { "fixed", "shared" },
+                new[]
+                {
+                    new RecipeGroupDef(
+                        "group_a",
+                        new[]
+                        {
+                            new RecipeEntryDef("shared", 1f, 1),
+                            new RecipeEntryDef("a", 1f, 1),
+                            new RecipeEntryDef("zero_weight", 0f, 1),
+                        }),
+                    new RecipeGroupDef(
+                        "group_b",
+                        new[]
+                        {
+                            new RecipeEntryDef("b", 1f, 1),
+                            new RecipeEntryDef("a", 1f, 1),
+                        }),
+                    new RecipeGroupDef(
+                        "group_unreachable",
+                        new[]
+                        {
+                            new RecipeEntryDef("unreachable", 1f, 1),
+                        }),
+                },
+                new[]
+                {
+                    new RecipeRollPlanDef(
+                        "plan_a",
+                        1f,
+                        new[] { 1, 0, 0 }),
+                    new RecipeRollPlanDef(
+                        "plan_b",
+                        2f,
+                        new[] { 0, 2, 0 }),
+                    new RecipeRollPlanDef(
+                        "zero_weight_plan",
+                        0f,
+                        new[] { 0, 0, 1 }),
+                });
+
+            List<string> candidates =
+                RecipeRoller.CollectPossibleDishIds(recipe);
+
+            Assert.That(
+                candidates,
+                Is.EqualTo(new[] { "fixed", "shared", "a", "b" }));
         }
 
         private static List<string> SplitPipeList(string value)

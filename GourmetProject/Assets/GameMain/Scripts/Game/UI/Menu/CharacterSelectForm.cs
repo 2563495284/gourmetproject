@@ -1,8 +1,14 @@
 using System;
 using System.Collections.Generic;
+using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Flow;
 using GourmetProject.Game.UI.Battle;
 using GourmetProject.Game.UI.Common;
+using GourmetProject.Game.UI.Meta;
+using GourmetProject.Game.UI.Tooltips;
+using GourmetProject.Gameplay.Data;
+using GourmetProject.Gameplay.Library;
+using GourmetProject.Gameplay.Model;
 using GourmetProject.Runtime;
 using GourmetProject.Runtime.UI;
 using UnityEngine;
@@ -19,9 +25,14 @@ namespace GourmetProject.Game.UI.Menu
     public sealed class CharacterSelectForm : UGuiForm
     {
         private const string Tag = "CharacterSelect";
+        private const float RecipeButtonGlowPadding = 28f;
 
         private static readonly Color DotSelected = new(1f, 0.6f, 0.16f, 1f);
         private static readonly Color DotNormal = new(1f, 1f, 1f, 0.45f);
+        private static readonly Color RecipeButtonGlowColor =
+            new(0.25f, 1f, 0.35f, 0.9f);
+        private static readonly int QuadSizeId = Shader.PropertyToID("_QuadSize");
+        private static readonly int PaddingId = Shader.PropertyToID("_Padding");
         public Text _nameText;
         public Text _descText;
         public Button _leftArrow;
@@ -29,9 +40,19 @@ namespace GourmetProject.Game.UI.Menu
         public Button _confirmButton;
         public Button _backButton;
         public Image _portraitImage;
+        [SerializeField] private RecipeReadonlyBookView _recipeReadonlyBookView;
+        [SerializeField] private Button _recipeViewButton;
+        [SerializeField] private Image _recipeViewGlow;
+        [SerializeField] private FoodTipsView _foodTipsPrefab;
 
         private readonly List<Image> _dots = new();
         private IReadOnlyList<cfg.Character> _characters = Array.Empty<cfg.Character>();
+        private IReadOnlyList<string> _recipePreviewDishIds =
+            Array.Empty<string>();
+        private GameplayDatabase _database;
+        private Material _recipeViewGlowMaterial;
+        private FoodTipsView _foodTipsView;
+        private bool _recipeViewOpen;
         private int _index;
 
         protected override void OnInit(object userData)
@@ -44,6 +65,7 @@ namespace GourmetProject.Game.UI.Menu
             _rightArrow.onClick.AddListener(OnNextClicked);
             _confirmButton.onClick.AddListener(OnConfirmClicked);
             _backButton.onClick.AddListener(OnBackClicked);
+            _recipeViewButton.onClick.AddListener(OnRecipeViewClicked);
         }
 
         protected override void OnOpen(object userData)
@@ -51,8 +73,26 @@ namespace GourmetProject.Game.UI.Menu
             base.OnOpen(userData);
 
             ReloadCharacters();
+            ReloadGameplayDatabase();
             _index = 0;
+            SetRecipeViewOpen(false);
             Refresh();
+        }
+
+        protected override void OnClose(bool isShutdown, object userData)
+        {
+            _foodTipsView?.Hide();
+            SetRecipeViewOpen(false);
+            base.OnClose(isShutdown, userData);
+        }
+
+        private void OnDestroy()
+        {
+            if (_recipeViewGlowMaterial != null)
+            {
+                Destroy(_recipeViewGlowMaterial);
+                _recipeViewGlowMaterial = null;
+            }
         }
 
         private void OnPrevClicked()
@@ -116,6 +156,17 @@ namespace GourmetProject.Game.UI.Menu
             GameApp.UI.OpenUIForm(UIForms.MainMenu, UIForms.GroupDefault);
         }
 
+        private void OnRecipeViewClicked()
+        {
+            if (_recipeViewOpen)
+            {
+                SetRecipeViewOpen(false);
+                return;
+            }
+
+            OpenRecipeView();
+        }
+
         private void Refresh()
         {
             int count = _characters.Count;
@@ -129,6 +180,7 @@ namespace GourmetProject.Game.UI.Menu
                 _nameText.text = string.Empty;
                 _descText.text = string.Empty;
                 SetPortrait(null);
+                RefreshRecipePreview(null);
                 RefreshDots();
                 return;
             }
@@ -140,6 +192,7 @@ namespace GourmetProject.Game.UI.Menu
                 : character.Name;
             _descText.text = character.Desc ?? string.Empty;
             SetPortrait(LoadPortrait(character.Portrait));
+            RefreshRecipePreview(character);
             RefreshDots();
         }
 
@@ -153,6 +206,219 @@ namespace GourmetProject.Game.UI.Menu
             {
                 Log.Warning("TbCharacter has no selectable characters.", Tag);
             }
+        }
+
+        private void ReloadGameplayDatabase()
+        {
+            _database = null;
+            cfg.Tables tables = GameApp.Config?.Tables;
+            if (tables == null)
+            {
+                Log.Warning(
+                    "Cannot build character recipe preview because config tables are unavailable.",
+                    Tag);
+                return;
+            }
+
+            try
+            {
+                _database = GameplayContentBuilder.BuildDatabase(tables);
+            }
+            catch (Exception exception)
+            {
+                Log.Warning(
+                    $"Cannot build character recipe preview: {exception.Message}",
+                    Tag);
+            }
+        }
+
+        private void RefreshRecipePreview(cfg.Character character)
+        {
+            if (_recipeReadonlyBookView == null)
+            {
+                SetRecipeViewAvailable(false);
+                return;
+            }
+
+            if (character?.InitialRecipeId == null
+                || character.InitialRecipeId.Count == 0
+                || _database == null)
+            {
+                SetRecipeViewAvailable(false);
+                return;
+            }
+
+            string recipeId = character.InitialRecipeId[0];
+            RecipeDef recipe = _database.GetRecipe(recipeId);
+            if (recipe == null)
+            {
+                Log.Warning(
+                    $"Character '{character.Id}' references missing recipe '{recipeId}'.",
+                    Tag);
+                SetRecipeViewAvailable(false);
+                return;
+            }
+
+            List<string> candidates =
+                RecipeRoller.CollectPossibleDishIds(recipe);
+            for (int i = candidates.Count - 1; i >= 0; i--)
+            {
+                if (_database.GetDish(candidates[i]) == null)
+                {
+                    Log.Warning(
+                        $"Recipe '{recipeId}' references missing dish '{candidates[i]}'.",
+                        Tag);
+                    candidates.RemoveAt(i);
+                }
+            }
+
+            if (candidates.Count == 0)
+            {
+                Log.Warning(
+                    $"Recipe '{recipeId}' has no valid candidate dishes.",
+                    Tag);
+                SetRecipeViewAvailable(false);
+                return;
+            }
+
+            _recipePreviewDishIds = candidates;
+            SetRecipeViewAvailable(true);
+            if (_recipeViewOpen)
+            {
+                OpenRecipeView();
+            }
+        }
+
+        private void OpenRecipeView()
+        {
+            if (_database == null
+                || _recipePreviewDishIds.Count == 0
+                || _recipeReadonlyBookView == null)
+            {
+                SetRecipeViewOpen(false);
+                return;
+            }
+
+            _recipeReadonlyBookView.OpenForReadonlyDishPool(
+                _database,
+                _recipePreviewDishIds,
+                "可能获得的菜品",
+                GetFoodTips);
+            SetRecipeViewOpen(true);
+        }
+
+        private void SetRecipeViewAvailable(bool available)
+        {
+            if (_recipeViewButton != null)
+            {
+                _recipeViewButton.interactable = available;
+            }
+
+            if (!available)
+            {
+                _recipePreviewDishIds = Array.Empty<string>();
+                SetRecipeViewOpen(false);
+            }
+        }
+
+        private void SetRecipeViewOpen(bool open)
+        {
+            bool canOpen =
+                _recipeViewButton != null
+                && _recipeViewButton.interactable
+                && _recipeReadonlyBookView != null;
+            _recipeViewOpen = open && canOpen;
+
+            if (_recipeReadonlyBookView != null)
+            {
+                _recipeReadonlyBookView.gameObject.SetActive(_recipeViewOpen);
+            }
+
+            if (!_recipeViewOpen)
+            {
+                _foodTipsView?.Hide();
+            }
+
+            SetRecipeViewGlow(_recipeViewOpen);
+        }
+
+        private FoodTipsView GetFoodTips()
+        {
+            if (_foodTipsView == null && _foodTipsPrefab != null)
+            {
+                _foodTipsView = Instantiate(
+                    _foodTipsPrefab,
+                    CachedTransform,
+                    false);
+                _foodTipsView.gameObject.name =
+                    "FoodTipsView_Runtime";
+                _foodTipsView.Hide();
+            }
+
+            if (_foodTipsView != null)
+            {
+                _foodTipsView.transform.SetAsLastSibling();
+            }
+
+            return _foodTipsView;
+        }
+
+        private void SetRecipeViewGlow(bool visible)
+        {
+            if (_recipeViewGlow == null)
+            {
+                return;
+            }
+
+            _recipeViewGlow.gameObject.SetActive(visible);
+            _recipeViewGlow.color =
+                visible ? RecipeButtonGlowColor : Color.clear;
+            if (!visible)
+            {
+                return;
+            }
+
+            EnsureRecipeViewGlowMaterial();
+            if (_recipeViewGlowMaterial == null)
+            {
+                return;
+            }
+
+            Rect rect = _recipeViewGlow.rectTransform.rect;
+            _recipeViewGlowMaterial.SetVector(
+                QuadSizeId,
+                new Vector4(rect.width, rect.height, 0f, 0f));
+            _recipeViewGlowMaterial.SetFloat(
+                PaddingId,
+                RecipeButtonGlowPadding);
+        }
+
+        private void EnsureRecipeViewGlowMaterial()
+        {
+            if (_recipeViewGlow == null || _recipeViewGlowMaterial != null)
+            {
+                return;
+            }
+
+            Material baseMaterial = _recipeViewGlow.material;
+            if (baseMaterial == null
+                || baseMaterial.shader == null
+                || baseMaterial.shader.name != "GourmetProject/UIOuterGlow")
+            {
+                baseMaterial =
+                    Resources.Load<Material>("Materials/UIOuterGlow");
+            }
+
+            if (baseMaterial == null)
+            {
+                Log.Warning(
+                    "RecipeViewButton cannot load UIOuterGlow material.",
+                    Tag);
+                return;
+            }
+
+            _recipeViewGlowMaterial = new Material(baseMaterial);
+            _recipeViewGlow.material = _recipeViewGlowMaterial;
         }
 
         private void CollectDots()
@@ -189,13 +455,22 @@ namespace GourmetProject.Game.UI.Menu
 
         private void EnsureReferences()
         {
+            _recipeReadonlyBookView ??=
+                FindOptionalComponentInChildren<RecipeReadonlyBookView>(
+                    "RecipeReadonlyBookView");
             _nameText ??= FindRequiredComponentInChildren<Text>("CharacterName");
             _descText ??= FindRequiredComponentInChildren<Text>("CharacterDesc");
             _leftArrow ??= FindRequiredComponentInChildren<Button>("LeftArrow");
             _rightArrow ??= FindRequiredComponentInChildren<Button>("RightArrow");
             _confirmButton ??= FindRequiredComponentInChildren<Button>("ConfirmButton");
-            _backButton ??= FindRequiredComponentInChildren<Button>("BackButton");
+            _backButton ??= FindRequiredComponentInChildren<Button>(
+                "BackButton",
+                _recipeReadonlyBookView?.transform);
             _portraitImage ??= FindOptionalComponentInChildren<Image>("CharacterPortrait");
+            _recipeViewButton ??=
+                FindRequiredComponentInChildren<Button>("RecipeViewButton");
+            _recipeViewGlow ??=
+                FindOptionalComponentInChildren<Image>("TargetGlow");
         }
 
         private static Sprite LoadPortrait(string resourcePath)
@@ -229,9 +504,13 @@ namespace GourmetProject.Game.UI.Menu
             return null;
         }
 
-        private T FindRequiredComponentInChildren<T>(string childName) where T : Component
+        private T FindRequiredComponentInChildren<T>(
+            string childName,
+            Transform excludedRoot = null) where T : Component
         {
-            T component = FindOptionalComponentInChildren<T>(childName);
+            T component = FindOptionalComponentInChildren<T>(
+                childName,
+                excludedRoot);
             if (component != null)
             {
                 return component;
@@ -240,10 +519,19 @@ namespace GourmetProject.Game.UI.Menu
             throw new MissingComponentException($"CharacterSelectForm requires child '{childName}' with component {typeof(T).Name}.");
         }
 
-        private T FindOptionalComponentInChildren<T>(string childName) where T : Component
+        private T FindOptionalComponentInChildren<T>(
+            string childName,
+            Transform excludedRoot = null) where T : Component
         {
             foreach (Transform child in CachedTransform.GetComponentsInChildren<Transform>(true))
             {
+                if (excludedRoot != null
+                    && (child == excludedRoot
+                        || child.IsChildOf(excludedRoot)))
+                {
+                    continue;
+                }
+
                 if (child.name == childName && child.TryGetComponent(out T component))
                 {
                     return component;
