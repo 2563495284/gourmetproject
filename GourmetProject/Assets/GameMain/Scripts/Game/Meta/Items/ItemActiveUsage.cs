@@ -26,7 +26,9 @@ namespace GourmetProject.Game.Meta
                 return false;
             }
 
-            return item.EffectType == ItemEffectTypes.TimelineExecuteFuture
+            return IsTimelineAddEffect(item.EffectType)
+                || item.EffectType == ItemEffectTypes.TimelineDeleteNode
+                || item.EffectType == ItemEffectTypes.TimelineExecuteFuture
                 || item.EffectType == ItemEffectTypes.TimelineExecutePast
                 || RequiresTarget(item.TargetKind);
         }

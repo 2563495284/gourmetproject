@@ -2,33 +2,33 @@
   {
     "id": "m_cherry",
     "name": "樱桃木",
-    "desc": "分数+30",
+    "desc": "分数+60",
     "effectType": 1,
     "effectParam": [],
     "effectValue": [
-      30
+      60
     ],
     "termId": ""
   },
   {
     "id": "m_walnut",
     "name": "胡桃木",
-    "desc": "分数永久+10",
+    "desc": "分数永久+15",
     "effectType": 2,
     "effectParam": [],
     "effectValue": [
-      10
+      15
     ],
     "termId": ""
   },
   {
     "id": "m_marble",
     "name": "大理石",
-    "desc": "倍率+3",
+    "desc": "倍率+2",
     "effectType": 3,
     "effectParam": [],
     "effectValue": [
-      3
+      2
     ],
     "termId": ""
   },
@@ -46,11 +46,11 @@
   {
     "id": "m_emerald",
     "name": "翡翠",
-    "desc": "每占 1 格翡翠\n倍率+0.3",
+    "desc": "每占 1 格翡翠\n倍率+0.8",
     "effectType": 5,
     "effectParam": [],
     "effectValue": [
-      0.3
+      0.8
     ],
     "termId": ""
   },

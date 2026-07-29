@@ -59,7 +59,7 @@ public partial class Tables
     /// </summary>
     public TbRewardPool TbRewardPool {get; }
     /// <summary>
-    /// 周/关卡配置：定义每周的目标分曲线、默认奖励包、奖励隐藏分、候选行动轴列表与行动轴权重。
+    /// 周/关卡配置：定义每周修饰符、候选行动轴列表与行动轴权重。
     /// </summary>
     public TbWeek TbWeek {get; }
     /// <summary>
@@ -218,3 +218,4 @@ public partial class Tables
 }
 
 }
+

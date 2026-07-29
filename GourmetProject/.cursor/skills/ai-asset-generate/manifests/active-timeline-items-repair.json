@@ -1,0 +1,88 @@
+{
+  "provider": "gemini",
+  "model": "gemini-3.1-flash-image-preview",
+  "stylePrefix": "90s American cable TV cartoon style, thick clean black ink outlines, flat cel animation colors, hand-drawn 2D animation look, polished Unity game item icon quality, playful restaurant roguelike active item prop icon, centered composition, single readable object or compact prop bundle, no characters, no face, no eyes, no mouth, no limbs, no mascot treatment, no readable text, no letters, no numbers, no logo, no watermark, no UI frame, no circular badge background, avoid hot pink, avoid magenta, avoid purple objects",
+  "typeDefaults": {
+    "item": {
+      "outputDir": "Assets/GameMain/Content/Resources/Sprites/Items",
+      "postprocess": "magenta-alpha",
+      "background": "opaque",
+      "quality": "high"
+    }
+  },
+  "typePromptPrefixes": {
+    "item": "Item icon rule: isolated active item sprite on a perfectly flat solid #FF00FF chroma key background. The background must be one uniform color with no shadows, gradients, texture, reflections, floor plane, or lighting variation. Do not use #FF00FF, hot pink, magenta, or purple anywhere in the item. Keep the entire object fully inside the canvas with generous transparent-safe padding. No cast shadow, no contact shadow, no table, no grid lines, no checkerboard."
+  },
+  "assets": [
+    {
+      "name": "reroll_action",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "action adjustment order slip with two bold circular reroll arrows around a tiny daily action card and a small golden decision die, clear reroll-action active item icon, no readable writing, no letters, no numbers"
+    },
+    {
+      "name": "half_next_action_cost",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "half-day voucher active item icon: a blank restaurant coupon torn diagonally into a clean half shape beside a small sunny calendar page and a tiny chef timer, communicates next action costs half a day, no readable writing, no letters, no numbers"
+    },
+    {
+      "name": "reroll_last_boss_debuff",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "feast adjustment order slip active item icon: covered banquet cloche with a crown-shaped boss stamp being reset by circular arrows, small crossed-out category tag cards as abstract blank icons, no readable writing, no letters, no numbers"
+    },
+    {
+      "name": "add_reward_node",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "timeline add reward node active item icon: dotted route line with a blank order slip pinning a shiny wrapped gift box onto a new glowing route node, bright gold and red accents, no readable writing, no letters, no numbers"
+    },
+    {
+      "name": "add_interest_node",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "timeline add interest node active item icon: dotted route line with a small cash register tray and stacked gold coins being pinned onto a new route node by a blank order slip, banking-interest feeling, no readable writing, no letters, no numbers"
+    },
+    {
+      "name": "add_shop_node",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "timeline add shop node active item icon: dotted route map with a tiny market stall awning and grocery basket placed onto a fresh route node by a blank procurement slip, shop restock feeling, no readable writing, no letters, no numbers"
+    },
+    {
+      "name": "add_lottery_node",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "timeline add lottery node active item icon: dotted route map with a small lottery capsule machine and golden ticket being placed onto a new sparkling route node by a blank order slip, no readable writing, no letters, no numbers"
+    },
+    {
+      "name": "delete_timeline_node",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "timeline delete node active item icon: dotted route map segment with one route node cleanly removed by red wax seal stamp and small eraser tool, blank cancellation order slip, clear delete action, no readable writing, no letters, no numbers"
+    },
+    {
+      "name": "execute_future_node",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "execute future node active item icon: dotted route map with a bright forward arrow jumping from current node to a future glowing node, urgent blank order slip and tiny speed lines, future action acceleration, no readable writing, no letters, no numbers"
+    },
+    {
+      "name": "execute_past_node",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "execute past node active item icon: dotted route map with a curved backward arrow jumping from current node to an older sepia route node, blank retro order slip and tiny clock rewind symbol without numbers, past action execution, no readable writing, no letters, no numbers"
+    }
+  ]
+}

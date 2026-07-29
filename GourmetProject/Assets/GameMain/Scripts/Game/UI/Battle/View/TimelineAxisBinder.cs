@@ -72,15 +72,21 @@ namespace GourmetProject.Game.UI.Battle.View
 
             if (item.EffectType == ItemEffectTypes.TimelineDeleteNode)
             {
-                var ids = new List<string>(targets.Count);
-                foreach (ActiveTarget target in targets)
-                {
-                    ids.Add(target.Id);
-                }
-
                 return _axis.BeginDeleteNodeSelection(
                     run,
-                    ids,
+                    TargetIds(targets),
+                    nodeId => onConfirm(new ActiveTarget(
+                        nodeId,
+                        targetKind: cfg.ItemTargetKind.Global)),
+                    onCancel);
+            }
+
+            if (item.EffectType == ItemEffectTypes.TimelineExecuteFuture
+                || item.EffectType == ItemEffectTypes.TimelineExecutePast)
+            {
+                return _axis.BeginExecuteNodeSelection(
+                    run,
+                    TargetIds(targets),
                     nodeId => onConfirm(new ActiveTarget(
                         nodeId,
                         targetKind: cfg.ItemTargetKind.Global)),
@@ -88,6 +94,25 @@ namespace GourmetProject.Game.UI.Battle.View
             }
 
             return false;
+        }
+
+        private static List<string> TargetIds(IReadOnlyList<ActiveTarget> targets)
+        {
+            var ids = new List<string>(targets?.Count ?? 0);
+            if (targets == null)
+            {
+                return ids;
+            }
+
+            foreach (ActiveTarget target in targets)
+            {
+                if (!string.IsNullOrEmpty(target.Id))
+                {
+                    ids.Add(target.Id);
+                }
+            }
+
+            return ids;
         }
 
         public void EndActiveItemTargeting()

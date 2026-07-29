@@ -159,7 +159,7 @@ namespace GourmetProject.Game.UI.Battle
             if (!CanUse(item, contextKind, out string reason))
             {
                 _host.ShowActiveItemMessage($"{item.Name}：{reason}");
-                _host.RefreshAfterActiveItem(boardChanged: false, persist: false);
+                _host.RefreshAfterActiveItem(boardChanged: false);
                 return;
             }
 
@@ -215,12 +215,12 @@ namespace GourmetProject.Game.UI.Battle
             if (!run.RemoveItem(item.Id))
             {
                 _host.ShowActiveItemMessage($"{item.Name}：没有可丢弃的道具。");
-                _host.RefreshAfterActiveItem(boardChanged: false, persist: false);
+                _host.RefreshAfterActiveItem(boardChanged: false);
                 return;
             }
 
             _host.ShowActiveItemMessage($"{item.Name}：已丢弃。");
-            _host.RefreshAfterActiveItem(boardChanged: false, persist: false);
+            _host.RefreshAfterActiveItem(boardChanged: false);
         }
 
         private void BeginTargeting(IActiveUseContext ctx, ItemDefinition item, RunItemSlotView slot, IReadOnlyList<ActiveTarget> targets)
@@ -321,10 +321,14 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
+            CreateUiArrow();
+            string instruction = ItemActiveUsage.IsTimelineAddEffect(item.EffectType)
+                ? "指向未来日期预览"
+                : item.EffectType == ItemEffectTypes.TimelineDeleteNode
+                    ? "指向红色节点"
+                    : "指向高亮节点";
             _host.ShowActiveItemMessage(
-                ItemActiveUsage.IsTimelineAddEffect(item.EffectType)
-                    ? $"{item.Name}：移动到未来日期预览，点击后确认。"
-                    : $"{item.Name}：选择红色描边节点，点击后确认。");
+                $"{item.Name}：{instruction}，单击立即使用；Esc 或右键取消。");
         }
 
         private void CompleteTimelineAxisTargeting(ActiveTarget target)
@@ -338,7 +342,11 @@ namespace GourmetProject.Game.UI.Battle
             IActiveUseContext ctx = _pendingContext;
             ItemDefinition item = _pendingItem;
             CleanupTargeting();
-            ApplyAndConsume(ctx, item, new[] { target });
+            ApplyAndConsume(
+                ctx,
+                item,
+                new[] { target },
+                refreshActionContent: false);
         }
 
         private void CompleteRecipePanelTargeting(ActiveTarget target, Action onComplete)
@@ -374,7 +382,7 @@ namespace GourmetProject.Game.UI.Battle
             if (!result.Success)
             {
                 CleanupTargeting();
-                _host.RefreshAfterActiveItem(boardChanged: false, persist: false);
+                _host.RefreshAfterActiveItem(boardChanged: false);
                 onComplete?.Invoke();
                 return;
             }
@@ -383,7 +391,7 @@ namespace GourmetProject.Game.UI.Battle
             {
                 CleanupTargeting();
                 _host.ShowActiveItemMessage($"{item.Name}：道具已失效。");
-                _host.RefreshAfterActiveItem(result.BoardChanged, persist: false);
+                _host.RefreshAfterActiveItem(result.BoardChanged);
                 onComplete?.Invoke();
                 return;
             }
@@ -398,7 +406,9 @@ namespace GourmetProject.Game.UI.Battle
 
             void FinishRecipeFlavorTargeting()
             {
-                _host.RefreshAfterActiveItem(result.BoardChanged, persist: false, result.ActionChoicesChanged);
+                _host.RefreshAfterActiveItem(
+                    result.BoardChanged,
+                    result.ActionChoicesChanged);
                 onComplete?.Invoke();
             }
         }
@@ -564,7 +574,7 @@ namespace GourmetProject.Game.UI.Battle
             if (!result.Success)
             {
                 CleanupTargeting();
-                _host.RefreshAfterActiveItem(boardChanged: false, persist: false);
+                _host.RefreshAfterActiveItem(boardChanged: false);
                 return;
             }
 
@@ -572,7 +582,7 @@ namespace GourmetProject.Game.UI.Battle
             {
                 CleanupTargeting();
                 _host.ShowActiveItemMessage($"{item.Name}：道具已失效。");
-                _host.RefreshAfterActiveItem(result.BoardChanged, persist: false);
+                _host.RefreshAfterActiveItem(result.BoardChanged);
                 return;
             }
 
@@ -591,7 +601,6 @@ namespace GourmetProject.Game.UI.Battle
             {
                 _host.RefreshAfterActiveItem(
                     result.BoardChanged,
-                    persist: false,
                     result.ActionChoicesChanged);
             }
         }
@@ -612,7 +621,7 @@ namespace GourmetProject.Game.UI.Battle
                     _host.CloseActiveItemTableCellTarget();
                 }
 
-                _host.RefreshAfterActiveItem(boardChanged: false, persist: false);
+                _host.RefreshAfterActiveItem(boardChanged: false);
                 return;
             }
 
@@ -620,7 +629,7 @@ namespace GourmetProject.Game.UI.Battle
             {
                 CleanupTargeting();
                 _host.ShowActiveItemMessage($"{item.Name}：道具已失效。");
-                _host.RefreshAfterActiveItem(result.BoardChanged, persist: false);
+                _host.RefreshAfterActiveItem(result.BoardChanged);
                 return;
             }
 
@@ -643,7 +652,9 @@ namespace GourmetProject.Game.UI.Battle
                     _host.CloseActiveItemTableCellTarget();
                 }
 
-                _host.RefreshAfterActiveItem(result.BoardChanged, persist: false, result.ActionChoicesChanged);
+                _host.RefreshAfterActiveItem(
+                    result.BoardChanged,
+                    result.ActionChoicesChanged);
             }
         }
 
@@ -700,27 +711,36 @@ namespace GourmetProject.Game.UI.Battle
             }
         }
 
-        private void ApplyAndConsume(IActiveUseContext ctx, ItemDefinition item, IReadOnlyList<ActiveTarget> targets)
+        private void ApplyAndConsume(
+            IActiveUseContext ctx,
+            ItemDefinition item,
+            IReadOnlyList<ActiveTarget> targets,
+            bool refreshActionContent = true)
         {
             ActiveItemUseResult result = ActiveItemEffectRegistry.Apply(ctx, item, targets);
             _host.ShowActiveItemMessage(result.Message);
             if (!result.Success)
             {
-                _host.RefreshAfterActiveItem(boardChanged: false, persist: false);
+                _host.RefreshAfterActiveItem(
+                    boardChanged: false,
+                    refreshActionContent: refreshActionContent);
                 return;
             }
 
             if (_host.ActiveRun?.UseActiveItem(item.Id) != true)
             {
                 _host.ShowActiveItemMessage($"{item.Name}：道具已失效。");
-                _host.RefreshAfterActiveItem(result.BoardChanged, persist: false, result.ActionChoicesChanged);
+                _host.RefreshAfterActiveItem(
+                    result.BoardChanged,
+                    result.ActionChoicesChanged,
+                    refreshActionContent);
                 return;
             }
 
             _host.RefreshAfterActiveItem(
                 result.BoardChanged,
-                persist: result.PersistImmediately,
-                result.ActionChoicesChanged);
+                result.ActionChoicesChanged,
+                refreshActionContent);
             if (result.ExecuteQueuedImmediately)
             {
                 _host.ActiveLoop?.ExecuteQueuedExtraTimelineNodes();
@@ -977,7 +997,9 @@ namespace GourmetProject.Game.UI.Battle
         {
             return item != null
                 && (ItemActiveUsage.IsTimelineAddEffect(item.EffectType)
-                    || item.EffectType == ItemEffectTypes.TimelineDeleteNode);
+                    || item.EffectType == ItemEffectTypes.TimelineDeleteNode
+                    || item.EffectType == ItemEffectTypes.TimelineExecuteFuture
+                    || item.EffectType == ItemEffectTypes.TimelineExecutePast);
         }
 
         private bool CanUseCurrentBattleTableCellTargeting()
