@@ -183,21 +183,154 @@ namespace GourmetProject.Game.UI.Meta
             return ids;
         }
 
-        private static string DishName(cfg.Tables tables, string dishId)
+        /// <summary>
+        /// 返回用于生成 UI 的原始菜谱索引顺序。视觉上按菜品本体和风味排序，
+        /// 但绑定到视图的索引仍是原始索引，避免删除/道具目标因排序而错位。
+        /// </summary>
+        private List<int> BuildDishDisplayOrder(
+            IReadOnlyList<RecipeBookSlot> entries)
         {
-            cfg.DishVariant variant =
-                tables.TbDishVariant.GetOrDefault(dishId);
-            if (variant != null)
+            var items = new List<RecipeDisplaySortItem>(
+                entries?.Count ?? 0);
+            if (entries == null || _run?.Database == null)
             {
-                cfg.DishBase baseDish =
-                    tables.TbDishBase.GetOrDefault(variant.BaseId);
-                if (baseDish != null)
+                return new List<int>();
+            }
+
+            for (int index = 0; index < entries.Count; index++)
+            {
+                RecipeBookSlot slot = entries[index];
+                DishDef dish = slot == null
+                    ? null
+                    : _run.Database.GetDish(slot.DishId);
+                var flavorKeys = new List<FlavorDisplaySortKey>();
+                foreach (string flavorId in ComposeFlavorIds(
+                             dish,
+                             slot?.ExtraFlavorIds))
                 {
-                    return baseDish.Name;
+                    FlavorDef flavor = _run.Database.GetFlavor(flavorId);
+                    flavorKeys.Add(
+                        new FlavorDisplaySortKey(
+                            flavor?.SortOrder ?? int.MaxValue,
+                            flavorId));
+                }
+
+                flavorKeys.Sort(CompareFlavorDisplaySortKeys);
+                items.Add(
+                    new RecipeDisplaySortItem(
+                        index,
+                        dish?.SortOrder ?? int.MaxValue,
+                        dish?.BaseId ?? slot?.DishId ?? string.Empty,
+                        slot?.DishId ?? string.Empty,
+                        flavorKeys));
+            }
+
+            items.Sort(CompareRecipeDisplaySortItems);
+            var result = new List<int>(items.Count);
+            foreach (RecipeDisplaySortItem item in items)
+            {
+                result.Add(item.OriginalIndex);
+            }
+
+            return result;
+        }
+
+        private static int CompareRecipeDisplaySortItems(
+            RecipeDisplaySortItem left,
+            RecipeDisplaySortItem right)
+        {
+            int compare = left.DishSortOrder.CompareTo(
+                right.DishSortOrder);
+            if (compare != 0)
+            {
+                return compare;
+            }
+
+            compare = StringComparer.Ordinal.Compare(
+                left.BaseId,
+                right.BaseId);
+            if (compare != 0)
+            {
+                return compare;
+            }
+
+            int sharedFlavorCount = Math.Min(
+                left.FlavorKeys.Count,
+                right.FlavorKeys.Count);
+            for (int index = 0; index < sharedFlavorCount; index++)
+            {
+                compare = CompareFlavorDisplaySortKeys(
+                    left.FlavorKeys[index],
+                    right.FlavorKeys[index]);
+                if (compare != 0)
+                {
+                    return compare;
                 }
             }
 
-            return dishId;
+            compare = left.FlavorKeys.Count.CompareTo(
+                right.FlavorKeys.Count);
+            if (compare != 0)
+            {
+                return compare;
+            }
+
+            compare = StringComparer.Ordinal.Compare(
+                left.DishId,
+                right.DishId);
+            return compare != 0
+                ? compare
+                : left.OriginalIndex.CompareTo(right.OriginalIndex);
+        }
+
+        private static int CompareFlavorDisplaySortKeys(
+            FlavorDisplaySortKey left,
+            FlavorDisplaySortKey right)
+        {
+            int compare = left.SortOrder.CompareTo(right.SortOrder);
+            return compare != 0
+                ? compare
+                : StringComparer.Ordinal.Compare(left.Id, right.Id);
+        }
+
+        private sealed class RecipeDisplaySortItem
+        {
+            public RecipeDisplaySortItem(
+                int originalIndex,
+                int dishSortOrder,
+                string baseId,
+                string dishId,
+                List<FlavorDisplaySortKey> flavorKeys)
+            {
+                OriginalIndex = originalIndex;
+                DishSortOrder = dishSortOrder;
+                BaseId = baseId;
+                DishId = dishId;
+                FlavorKeys = flavorKeys;
+            }
+
+            public int OriginalIndex { get; }
+
+            public int DishSortOrder { get; }
+
+            public string BaseId { get; }
+
+            public string DishId { get; }
+
+            public List<FlavorDisplaySortKey> FlavorKeys { get; }
+        }
+
+        private sealed class FlavorDisplaySortKey
+        {
+            public FlavorDisplaySortKey(int sortOrder, string id)
+            {
+                SortOrder = sortOrder;
+                Id = id ?? string.Empty;
+            }
+
+            public int SortOrder { get; }
+
+            public string Id { get; }
         }
 
         private string DishShapeText(string dishId)

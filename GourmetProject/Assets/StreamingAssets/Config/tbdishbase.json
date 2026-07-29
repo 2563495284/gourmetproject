@@ -9,7 +9,8 @@
     "countAs": 1,
     "shapeRows": [
       "XX"
-    ]
+    ],
+    "sortOrder": 10
   },
   {
     "id": "arrow_cookie_2",
@@ -21,7 +22,8 @@
     "countAs": 1,
     "shapeRows": [
       "XX"
-    ]
+    ],
+    "sortOrder": 20
   },
   {
     "id": "arrow_cookie_3",
@@ -34,7 +36,8 @@
     "shapeRows": [
       "X",
       "X"
-    ]
+    ],
+    "sortOrder": 30
   },
   {
     "id": "arrow_cookie_4",
@@ -47,7 +50,8 @@
     "shapeRows": [
       "X",
       "X"
-    ]
+    ],
+    "sortOrder": 40
   },
   {
     "id": "jelly",
@@ -59,7 +63,8 @@
     "countAs": 1,
     "shapeRows": [
       "XX"
-    ]
+    ],
+    "sortOrder": 50
   },
   {
     "id": "cupcake",
@@ -71,7 +76,8 @@
     "countAs": 1,
     "shapeRows": [
       "XX"
-    ]
+    ],
+    "sortOrder": 60
   },
   {
     "id": "eggtart",
@@ -83,7 +89,8 @@
     "countAs": 1,
     "shapeRows": [
       "XX"
-    ]
+    ],
+    "sortOrder": 70
   },
   {
     "id": "sugarbean",
@@ -95,7 +102,8 @@
     "countAs": 1,
     "shapeRows": [
       "XX"
-    ]
+    ],
+    "sortOrder": 80
   },
   {
     "id": "cheesecake",
@@ -107,7 +115,8 @@
     "countAs": 1,
     "shapeRows": [
       "XX"
-    ]
+    ],
+    "sortOrder": 90
   },
   {
     "id": "mousse",
@@ -119,7 +128,8 @@
     "countAs": 1,
     "shapeRows": [
       "XX"
-    ]
+    ],
+    "sortOrder": 100
   },
   {
     "id": "fruit_candy",
@@ -132,7 +142,8 @@
     "shapeRows": [
       "X",
       "X"
-    ]
+    ],
+    "sortOrder": 110
   },
   {
     "id": "choco_bar",
@@ -145,7 +156,8 @@
     "shapeRows": [
       "X",
       "X"
-    ]
+    ],
+    "sortOrder": 120
   },
   {
     "id": "mochi",
@@ -158,7 +170,8 @@
     "shapeRows": [
       "X",
       "X"
-    ]
+    ],
+    "sortOrder": 130
   },
   {
     "id": "cup_cake",
@@ -171,7 +184,8 @@
     "shapeRows": [
       "X",
       "X"
-    ]
+    ],
+    "sortOrder": 140
   },
   {
     "id": "cream",
@@ -184,7 +198,8 @@
     "shapeRows": [
       "X",
       "X"
-    ]
+    ],
+    "sortOrder": 150
   },
   {
     "id": "eggroll",
@@ -196,7 +211,8 @@
     "countAs": 3,
     "shapeRows": [
       "XXX"
-    ]
+    ],
+    "sortOrder": 160
   },
   {
     "id": "baguette",
@@ -208,7 +224,8 @@
     "countAs": 1,
     "shapeRows": [
       "XXX"
-    ]
+    ],
+    "sortOrder": 170
   },
   {
     "id": "tanghulu",
@@ -220,7 +237,8 @@
     "countAs": 1,
     "shapeRows": [
       "XXX"
-    ]
+    ],
+    "sortOrder": 180
   },
   {
     "id": "cake_slice",
@@ -232,7 +250,8 @@
     "countAs": 1,
     "shapeRows": [
       "XXX"
-    ]
+    ],
+    "sortOrder": 190
   },
   {
     "id": "long_cake",
@@ -244,7 +263,8 @@
     "countAs": 1,
     "shapeRows": [
       "XXX"
-    ]
+    ],
+    "sortOrder": 200
   },
   {
     "id": "eclair",
@@ -258,7 +278,8 @@
       "X",
       "X",
       "X"
-    ]
+    ],
+    "sortOrder": 210
   },
   {
     "id": "gummy",
@@ -272,7 +293,8 @@
       "X",
       "X",
       "X"
-    ]
+    ],
+    "sortOrder": 220
   },
   {
     "id": "chocolate_strip",
@@ -286,7 +308,8 @@
       "X",
       "X",
       "X"
-    ]
+    ],
+    "sortOrder": 230
   },
   {
     "id": "cake_roll",
@@ -300,7 +323,8 @@
       "X",
       "X",
       "X"
-    ]
+    ],
+    "sortOrder": 240
   },
   {
     "id": "palmier",
@@ -313,7 +337,8 @@
     "shapeRows": [
       ".X",
       "XX"
-    ]
+    ],
+    "sortOrder": 250
   },
   {
     "id": "chiffion",
@@ -326,7 +351,8 @@
     "shapeRows": [
       "XX",
       "XX"
-    ]
+    ],
+    "sortOrder": 260
   },
   {
     "id": "maple_sugar",
@@ -339,7 +365,8 @@
     "shapeRows": [
       "XX",
       "XX"
-    ]
+    ],
+    "sortOrder": 270
   },
   {
     "id": "taosu",
@@ -352,7 +379,8 @@
     "shapeRows": [
       "XX",
       "XX"
-    ]
+    ],
+    "sortOrder": 280
   },
   {
     "id": "waffle",
@@ -365,7 +393,8 @@
     "shapeRows": [
       "XX",
       "XX"
-    ]
+    ],
+    "sortOrder": 290
   },
   {
     "id": "cream_cake",
@@ -378,7 +407,8 @@
     "shapeRows": [
       "XX",
       "XX"
-    ]
+    ],
+    "sortOrder": 300
   },
   {
     "id": "candycane",
@@ -392,7 +422,8 @@
       "XX",
       ".X",
       ".X"
-    ]
+    ],
+    "sortOrder": 310
   },
   {
     "id": "black_forest_cake",
@@ -405,7 +436,8 @@
     "shapeRows": [
       "XXX",
       "XXX"
-    ]
+    ],
+    "sortOrder": 320
   },
   {
     "id": "chocolate_sauce",
@@ -418,7 +450,8 @@
     "shapeRows": [
       "XXX",
       "XXX"
-    ]
+    ],
+    "sortOrder": 330
   },
   {
     "id": "mango_sago",
@@ -431,7 +464,8 @@
     "shapeRows": [
       "XXX",
       "XXX"
-    ]
+    ],
+    "sortOrder": 340
   },
   {
     "id": "fruit_cake",
@@ -445,7 +479,8 @@
       "XX",
       "XX",
       "XX"
-    ]
+    ],
+    "sortOrder": 350
   },
   {
     "id": "parfait",
@@ -459,7 +494,8 @@
       "XX",
       "XX",
       "XX"
-    ]
+    ],
+    "sortOrder": 360
   },
   {
     "id": "marshmallow",
@@ -473,7 +509,8 @@
       "XX",
       "XX",
       "XX"
-    ]
+    ],
+    "sortOrder": 370
   },
   {
     "id": "big_lollipop",
@@ -487,7 +524,8 @@
       "XXX",
       "XXX",
       "XXX"
-    ]
+    ],
+    "sortOrder": 380
   },
   {
     "id": "apple_pie",
@@ -501,7 +539,8 @@
       "XXX",
       "XXX",
       "XXX"
-    ]
+    ],
+    "sortOrder": 390
   },
   {
     "id": "double_cake",
@@ -516,6 +555,7 @@
       "XXX",
       "XXX",
       "XXX"
-    ]
+    ],
+    "sortOrder": 400
   }
 ]

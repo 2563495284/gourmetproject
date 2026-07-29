@@ -19,10 +19,13 @@ public sealed partial class DishVariant : Luban.BeanBase
     {
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
         { if(!_buf["baseId"].IsString) { throw new SerializationException(); }  BaseId = _buf["baseId"]; }
-        { if(!_buf["flavorId"].IsString) { throw new SerializationException(); }  FlavorId = _buf["flavorId"]; }
+        { if(!_buf["flavorIds"].IsString) { throw new SerializationException(); }  FlavorIds = _buf["flavorIds"]; }
         { if(!_buf["baseWeight"].IsNumber) { throw new SerializationException(); }  BaseWeight = _buf["baseWeight"]; }
         { if(!_buf["price"].IsNumber) { throw new SerializationException(); }  Price = _buf["price"]; }
         { if(!_buf["hiddenRange"].IsObject) { throw new SerializationException(); }  HiddenRange = global::cfg.HiddenRange.DeserializeHiddenRange(_buf["hiddenRange"]);  }
+        { if(!_buf["flavoredBaseWeight"].IsNumber) { throw new SerializationException(); }  FlavoredBaseWeight = _buf["flavoredBaseWeight"]; }
+        { if(!_buf["flavoredPrice"].IsNumber) { throw new SerializationException(); }  FlavoredPrice = _buf["flavoredPrice"]; }
+        { if(!_buf["flavoredHiddenRange"].IsObject) { throw new SerializationException(); }  FlavoredHiddenRange = global::cfg.HiddenRange.DeserializeHiddenRange(_buf["flavoredHiddenRange"]);  }
         { if(!_buf["rotation"].IsNumber) { throw new SerializationException(); }  Rotation = (DishRotation)_buf["rotation"].AsInt; }
     }
 
@@ -32,7 +35,7 @@ public sealed partial class DishVariant : Luban.BeanBase
     }
 
     /// <summary>
-    /// 菜品变体ID
+    /// 菜品族ID(无风味菜品ID)
     /// </summary>
     public readonly string Id;
     /// <summary>
@@ -40,23 +43,35 @@ public sealed partial class DishVariant : Luban.BeanBase
     /// </summary>
     public readonly string BaseId;
     /// <summary>
-    /// 风味标签ID(可空,单槽)
+    /// 自动生成的风味ID列表(|分隔;空=不生成风味变体)
     /// </summary>
-    public readonly string FlavorId;
+    public readonly string FlavorIds;
     /// <summary>
-    /// 随机基础权重
+    /// 无风味随机基础权重
     /// </summary>
     public readonly float BaseWeight;
     /// <summary>
-    /// 商店价格
+    /// 无风味商店价格
     /// </summary>
     public readonly int Price;
     /// <summary>
-    /// 出现隐藏分区间(单元格: min,max)
+    /// 无风味出现隐藏分区间(单元格:min,max)
     /// </summary>
     public readonly HiddenRange HiddenRange;
     /// <summary>
-    /// 固定旋转朝向(整格四向)
+    /// 风味变体共用随机基础权重
+    /// </summary>
+    public readonly float FlavoredBaseWeight;
+    /// <summary>
+    /// 风味变体共用商店价格
+    /// </summary>
+    public readonly int FlavoredPrice;
+    /// <summary>
+    /// 风味变体共用出现隐藏分区间(单元格:min,max)
+    /// </summary>
+    public readonly HiddenRange FlavoredHiddenRange;
+    /// <summary>
+    /// 共用固定旋转朝向(整格四向)
     /// </summary>
     public readonly DishRotation Rotation;
    
@@ -66,6 +81,7 @@ public sealed partial class DishVariant : Luban.BeanBase
     public  void ResolveRef(Tables tables)
     {
         HiddenRange?.ResolveRef(tables);
+        FlavoredHiddenRange?.ResolveRef(tables);
     }
 
     public override string ToString()
@@ -73,10 +89,13 @@ public sealed partial class DishVariant : Luban.BeanBase
         return "{ "
         + "id:" + Id + ","
         + "baseId:" + BaseId + ","
-        + "flavorId:" + FlavorId + ","
+        + "flavorIds:" + FlavorIds + ","
         + "baseWeight:" + BaseWeight + ","
         + "price:" + Price + ","
         + "hiddenRange:" + HiddenRange + ","
+        + "flavoredBaseWeight:" + FlavoredBaseWeight + ","
+        + "flavoredPrice:" + FlavoredPrice + ","
+        + "flavoredHiddenRange:" + FlavoredHiddenRange + ","
         + "rotation:" + Rotation + ","
         + "}";
     }

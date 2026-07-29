@@ -20,16 +20,46 @@ namespace GourmetProject.Game.Adapter
                 bases[b.Id] = b;
             }
 
-            var dishes = new List<DishDef>(tables.TbDishVariant.DataList.Count);
-            foreach (cfg.DishVariant v in tables.TbDishVariant.DataList)
+            var dishes = new List<DishDef>(
+                tables.TbDishVariant.DataList.Count * 7);
+            foreach (cfg.DishVariant family in tables.TbDishVariant.DataList)
             {
-                if (!bases.TryGetValue(v.BaseId, out cfg.DishBase b))
+                if (!bases.TryGetValue(
+                        family.BaseId,
+                        out cfg.DishBase baseDish))
                 {
                     throw new System.InvalidOperationException(
-                        $"菜品变体 '{v.Id}' 引用了不存在的本体 baseId '{v.BaseId}'。");
+                        $"菜品族 '{family.Id}' 引用了不存在的本体 baseId '{family.BaseId}'。");
                 }
 
-                dishes.Add(ToDishDef(v, b));
+                dishes.Add(
+                    ToDishDef(
+                        family.Id,
+                        string.Empty,
+                        family.BaseWeight,
+                        family.Price,
+                        family.HiddenRange,
+                        family.Rotation,
+                        baseDish));
+
+                foreach (string flavorId in SplitPipeList(family.FlavorIds))
+                {
+                    if (tables.TbFlavor.GetOrDefault(flavorId) == null)
+                    {
+                        throw new System.InvalidOperationException(
+                            $"菜品族 '{family.Id}' 引用了不存在的风味 '{flavorId}'。");
+                    }
+
+                    dishes.Add(
+                        ToDishDef(
+                            $"{family.Id}{flavorId}",
+                            flavorId,
+                            family.FlavoredBaseWeight,
+                            family.FlavoredPrice,
+                            family.FlavoredHiddenRange,
+                            family.Rotation,
+                            baseDish));
+                }
             }
 
             Dictionary<string, cfg.SubSkill> subSkillIndex = BuildSubSkillIndex(tables);
@@ -105,24 +135,32 @@ namespace GourmetProject.Game.Adapter
             return new DishLibrary(new List<DishDef>(db.AllDishes));
         }
 
-        private static DishDef ToDishDef(cfg.DishVariant v, cfg.DishBase b)
+        private static DishDef ToDishDef(
+            string id,
+            string flavorId,
+            float baseWeight,
+            int price,
+            cfg.HiddenRange hiddenRange,
+            cfg.DishRotation rotation,
+            cfg.DishBase b)
         {
             return new DishDef(
-                v.Id,
+                id,
                 b.Name,
                 b.Deliciousness,
                 DishShape.FromRows(b.ShapeRows),
-                v.HiddenRange.Min,
-                v.HiddenRange.Max,
-                v.BaseWeight,
+                hiddenRange.Min,
+                hiddenRange.Max,
+                baseWeight,
                 SplitPipeList(b.Skills),
-                v.FlavorId,
+                flavorId,
                 b.AllowRotate,
                 b.Id,
-                v.Price,
-                (int)v.Rotation,
+                price,
+                (int)rotation,
                 b.Category,
-                b.CountAs);
+                b.CountAs,
+                b.SortOrder);
         }
 
         /// <summary>把 TbSubSkill（合并后=具体子技能）建成 id→行 的索引，供技能正向引用。</summary>
@@ -204,7 +242,8 @@ namespace GourmetProject.Game.Adapter
                 effectType,
                 f.EffectValue,
                 f.EffectParam,
-                f.TermId);
+                f.TermId,
+                f.SortOrder);
         }
 
         private static MaterialDef ToMaterialDef(cfg.Material c)

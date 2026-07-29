@@ -1,0 +1,172 @@
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using GourmetProject.Config;
+using GourmetProject.Game.Adapter;
+using GourmetProject.Game.Run;
+using GourmetProject.Game.UI.Meta;
+using GourmetProject.Gameplay.Data;
+using GourmetProject.Gameplay.Model;
+using NUnit.Framework;
+using UnityEngine;
+
+namespace GourmetProject.Tests.EditMode
+{
+    public sealed class DishFamilyExpansionTests
+    {
+        private cfg.Tables _tables;
+        private GameplayDatabase _database;
+
+        [OneTimeSetUp]
+        public void LoadConfig()
+        {
+            var config = new ConfigService();
+            config.LoadAll();
+            _tables = config.Tables;
+            _database = GameplayContentBuilder.BuildDatabase(_tables);
+        }
+
+        [Test]
+        public void BuildDatabase_ExpandsEachConfiguredDishFamily()
+        {
+            int expectedDishCount = 0;
+            foreach (cfg.DishVariant family in
+                     _tables.TbDishVariant.DataList)
+            {
+                expectedDishCount++;
+                DishDef unflavored = _database.GetDish(family.Id);
+                Assert.That(unflavored, Is.Not.Null, family.Id);
+                Assert.That(unflavored.BaseId, Is.EqualTo(family.BaseId));
+                Assert.That(unflavored.FlavorId, Is.Empty);
+                Assert.That(
+                    unflavored.BaseWeight,
+                    Is.EqualTo(family.BaseWeight));
+                Assert.That(unflavored.Price, Is.EqualTo(family.Price));
+                Assert.That(
+                    unflavored.HiddenMin,
+                    Is.EqualTo(family.HiddenRange.Min));
+                Assert.That(
+                    unflavored.HiddenMax,
+                    Is.EqualTo(family.HiddenRange.Max));
+
+                foreach (string flavorId in SplitPipeList(
+                             family.FlavorIds))
+                {
+                    expectedDishCount++;
+                    string generatedId = $"{family.Id}{flavorId}";
+                    DishDef flavored = _database.GetDish(generatedId);
+                    Assert.That(flavored, Is.Not.Null, generatedId);
+                    Assert.That(flavored.BaseId, Is.EqualTo(family.BaseId));
+                    Assert.That(flavored.FlavorId, Is.EqualTo(flavorId));
+                    Assert.That(
+                        flavored.BaseWeight,
+                        Is.EqualTo(family.FlavoredBaseWeight));
+                    Assert.That(
+                        flavored.Price,
+                        Is.EqualTo(family.FlavoredPrice));
+                    Assert.That(
+                        flavored.HiddenMin,
+                        Is.EqualTo(family.FlavoredHiddenRange.Min));
+                    Assert.That(
+                        flavored.HiddenMax,
+                        Is.EqualTo(family.FlavoredHiddenRange.Max));
+                }
+            }
+
+            Assert.That(
+                _database.AllDishes.Count,
+                Is.EqualTo(expectedDishCount));
+        }
+
+        [Test]
+        public void SortOrders_AreCarriedIntoGameplayDefinitions()
+        {
+            foreach (cfg.DishBase configured in
+                     _tables.TbDishBase.DataList)
+            {
+                DishDef dish = _database.GetDish(configured.Id);
+                Assert.That(dish, Is.Not.Null, configured.Id);
+                Assert.That(
+                    dish.SortOrder,
+                    Is.EqualTo(configured.SortOrder));
+            }
+
+            foreach (cfg.Flavor configured in
+                     _tables.TbFlavor.DataList)
+            {
+                FlavorDef flavor = _database.GetFlavor(configured.Id);
+                Assert.That(flavor, Is.Not.Null, configured.Id);
+                Assert.That(
+                    flavor.SortOrder,
+                    Is.EqualTo(configured.SortOrder));
+            }
+        }
+
+        [Test]
+        public void RecipeReadonlyBookDisplayOrder_SortsWithoutChangingSourceIndices()
+        {
+            var run = new GameRun(
+                _tables,
+                _database,
+                _tables.TbCharacter.DataList[0].Id,
+                "recipe-readonly-sort-tests");
+            var entries = new List<RecipeBookSlot>
+            {
+                new RecipeBookSlot("cupcaket_bitter"),
+                new RecipeBookSlot("jellyt_sour"),
+                new RecipeBookSlot("jelly"),
+                new RecipeBookSlot("jellyt_sweet"),
+                new RecipeBookSlot("cupcake"),
+                new RecipeBookSlot("jelly"),
+            };
+            entries[5].AddFlavor("t_salty");
+
+            var gameObject = new GameObject("RecipeReadonlyBookViewTest");
+            try
+            {
+                var view =
+                    gameObject.AddComponent<RecipeReadonlyBookView>();
+                typeof(RecipeReadonlyBookView)
+                    .GetField(
+                        "_run",
+                        BindingFlags.Instance | BindingFlags.NonPublic)
+                    ?.SetValue(view, run);
+                MethodInfo buildOrder =
+                    typeof(RecipeReadonlyBookView).GetMethod(
+                        "BuildDishDisplayOrder",
+                        BindingFlags.Instance | BindingFlags.NonPublic);
+
+                Assert.That(buildOrder, Is.Not.Null);
+                var order = (List<int>)buildOrder.Invoke(
+                    view,
+                    new object[] { entries });
+
+                Assert.That(order, Is.EqualTo(new[] { 2, 3, 1, 5, 4, 0 }));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(gameObject);
+            }
+        }
+
+        private static List<string> SplitPipeList(string value)
+        {
+            var result = new List<string>();
+            if (string.IsNullOrEmpty(value))
+            {
+                return result;
+            }
+
+            foreach (string item in value.Split('|'))
+            {
+                string trimmed = item.Trim();
+                if (!string.IsNullOrEmpty(trimmed))
+                {
+                    result.Add(trimmed);
+                }
+            }
+
+            return result;
+        }
+    }
+}

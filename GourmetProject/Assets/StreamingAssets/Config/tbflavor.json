@@ -8,7 +8,8 @@
     "effectValue": [
       1
     ],
-    "termId": ""
+    "termId": "",
+    "sortOrder": 10
   },
   {
     "id": "t_bitter",
@@ -19,7 +20,8 @@
     "effectValue": [
       -1
     ],
-    "termId": ""
+    "termId": "",
+    "sortOrder": 40
   },
   {
     "id": "t_rust",
@@ -30,7 +32,8 @@
     "effectValue": [
       10
     ],
-    "termId": ""
+    "termId": "",
+    "sortOrder": 60
   },
   {
     "id": "t_numb",
@@ -41,7 +44,8 @@
     "effectValue": [
       1
     ],
-    "termId": ""
+    "termId": "",
+    "sortOrder": 50
   },
   {
     "id": "t_sour",
@@ -52,7 +56,8 @@
     "effectValue": [
       1.5
     ],
-    "termId": ""
+    "termId": "",
+    "sortOrder": 20
   },
   {
     "id": "t_salty",
@@ -63,6 +68,7 @@
     "effectValue": [
       20
     ],
-    "termId": ""
+    "termId": "",
+    "sortOrder": 30
   }
 ]
