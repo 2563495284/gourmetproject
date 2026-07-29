@@ -173,20 +173,6 @@
     ]
   },
   {
-    "id": "lg_reward",
-    "name": "奖励大组",
-    "ruleIds": "rule_reward_early,rule_reward_mid",
-    "fallbackWeights": [
-      50,
-      50,
-      50,
-      50
-    ],
-    "smallGroupIds": [
-      "sg_reward_1"
-    ]
-  },
-  {
     "id": "lg_normalEvent",
     "name": "普通事件大组",
     "ruleIds": "",
