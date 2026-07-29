@@ -31,7 +31,7 @@
     "name": "日常营业",
     "desc": "",
     "actionKind": 0,
-    "rewardKind": 0,
+    "rewardKind": 6,
     "rewardPackageId": "reward_food_active_strengthen",
     "targetScoreHiddenOffset": 0
   },
@@ -40,8 +40,8 @@
     "name": "日常营业",
     "desc": "",
     "actionKind": 0,
-    "rewardKind": 0,
-    "rewardPackageId": "reward_active_ajust",
+    "rewardKind": 7,
+    "rewardPackageId": "reward_food_active_adjust",
     "targetScoreHiddenOffset": 0
   },
   {
@@ -76,7 +76,7 @@
     "name": "火热营业",
     "desc": "",
     "actionKind": 1,
-    "rewardKind": 0,
+    "rewardKind": 6,
     "rewardPackageId": "reward_food_hard_active_strengthen",
     "targetScoreHiddenOffset": 0.5
   },
@@ -85,8 +85,8 @@
     "name": "火热营业",
     "desc": "",
     "actionKind": 1,
-    "rewardKind": 0,
-    "rewardPackageId": "reward_food_hard_active_ajust",
+    "rewardKind": 7,
+    "rewardPackageId": "reward_food_hard_active_adjust",
     "targetScoreHiddenOffset": 0.5
   },
   {

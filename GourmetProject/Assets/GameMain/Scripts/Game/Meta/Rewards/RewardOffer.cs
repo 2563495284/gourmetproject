@@ -223,6 +223,8 @@ namespace GourmetProject.Game.Meta
                 case cfg.RewardKind.PassiveItemChoice:
                     return "被动道具";
                 case cfg.RewardKind.ActiveItemGrant:
+                case cfg.RewardKind.ActiveItemStrengthen:
+                case cfg.RewardKind.ActiveItemAdjust:
                     return "主动道具";
                 case cfg.RewardKind.FragmentChoice:
                     return "格子奖励";

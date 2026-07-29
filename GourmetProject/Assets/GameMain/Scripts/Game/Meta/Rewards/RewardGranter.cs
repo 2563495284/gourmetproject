@@ -135,6 +135,8 @@ namespace GourmetProject.Game.Meta
                 case cfg.RewardKind.PassiveItemChoice:
                     return "被动道具";
                 case cfg.RewardKind.ActiveItemGrant:
+                case cfg.RewardKind.ActiveItemStrengthen:
+                case cfg.RewardKind.ActiveItemAdjust:
                     return "主动道具";
                 case cfg.RewardKind.FragmentChoice:
                     return "格子奖励";
@@ -253,6 +255,8 @@ namespace GourmetProject.Game.Meta
                     return added ? $"菜品加入菜谱池：{choice.Name}" : $"菜品折算失败：{choice.Name}";
                 case cfg.RewardKind.PassiveItemChoice:
                 case cfg.RewardKind.ActiveItemGrant:
+                case cfg.RewardKind.ActiveItemStrengthen:
+                case cfg.RewardKind.ActiveItemAdjust:
                     return run.AcquireItem(choice.Id, choice.GoldAmount > 0 ? choice.GoldAmount : 40).ToRewardText(string.Empty);
                 case cfg.RewardKind.FragmentChoice:
                     return ApplyFragmentPack(run, new[] { choice });
@@ -423,6 +427,8 @@ namespace GourmetProject.Game.Meta
                 case cfg.RewardKind.PassiveItemChoice:
                     return "被动道具";
                 case cfg.RewardKind.ActiveItemGrant:
+                case cfg.RewardKind.ActiveItemStrengthen:
+                case cfg.RewardKind.ActiveItemAdjust:
                     return "主动道具";
                 case cfg.RewardKind.FragmentChoice:
                     return "格子奖励";

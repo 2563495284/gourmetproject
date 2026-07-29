@@ -38,15 +38,26 @@
     "minQuality": 0,
     "withRandomFlavor": false,
     "specialTags": [
-      0,
+      0
+    ]
+  },
+  {
+    "id": "pool_active_strengthen",
+    "kind": 4,
+    "allowFallback": true,
+    "distanceFloor": 5,
+    "explicitIds": "",
+    "minQuality": 0,
+    "withRandomFlavor": false,
+    "specialTags": [
       1
     ]
   },
   {
-    "id": "pool_active",
-    "kind": 2,
+    "id": "pool_active_adjust",
+    "kind": 5,
     "allowFallback": true,
-    "distanceFloor": 0,
+    "distanceFloor": 5,
     "explicitIds": "",
     "minQuality": 0,
     "withRandomFlavor": false,

@@ -923,7 +923,7 @@ namespace GourmetProject.Game.UI.Meta
                 return false;
             }
 
-            cfg.ItemKind itemKind = remainingChoices[0].Kind == cfg.RewardKind.ActiveItemGrant
+            cfg.ItemKind itemKind = IsActiveItemReward(remainingChoices[0].Kind)
                 ? cfg.ItemKind.Active
                 : cfg.ItemKind.Passive;
             string title = BuildItemChoicePopupTitle(choices, groupIndex);
@@ -1079,6 +1079,8 @@ namespace GourmetProject.Game.UI.Meta
                     category = "被动道具";
                     break;
                 case cfg.RewardKind.ActiveItemGrant:
+                case cfg.RewardKind.ActiveItemStrengthen:
+                case cfg.RewardKind.ActiveItemAdjust:
                     category = "主动道具";
                     break;
                 default:
@@ -1117,6 +1119,8 @@ namespace GourmetProject.Game.UI.Meta
                 case cfg.RewardKind.PassiveItemChoice:
                     return "获得后持续生效，重复获得时会升级或折算。";
                 case cfg.RewardKind.ActiveItemGrant:
+                case cfg.RewardKind.ActiveItemStrengthen:
+                case cfg.RewardKind.ActiveItemAdjust:
                     return "获得一个主动道具，可在战斗中使用。";
                 default:
                     return "领取后加入本轮运行。";
@@ -1141,7 +1145,7 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             cfg.RewardKind kind = choices[0].Kind;
-            if (kind != cfg.RewardKind.ActiveItemGrant && kind != cfg.RewardKind.PassiveItemChoice)
+            if (!IsActiveItemReward(kind) && kind != cfg.RewardKind.PassiveItemChoice)
             {
                 return false;
             }
@@ -1245,6 +1249,8 @@ namespace GourmetProject.Game.UI.Meta
                 case cfg.RewardKind.FragmentChoice:
                     return "碎片";
                 case cfg.RewardKind.ActiveItemGrant:
+                case cfg.RewardKind.ActiveItemStrengthen:
+                case cfg.RewardKind.ActiveItemAdjust:
                     return "主动道具";
                 case cfg.RewardKind.PassiveItemChoice:
                     return "被动道具";
@@ -1271,8 +1277,10 @@ namespace GourmetProject.Game.UI.Meta
                         ?? Resources.Load<Sprite>("Sprites/UI/card_action_food_fragment");
                 case cfg.RewardKind.PassiveItemChoice:
                 case cfg.RewardKind.ActiveItemGrant:
+                case cfg.RewardKind.ActiveItemStrengthen:
+                case cfg.RewardKind.ActiveItemAdjust:
                 {
-                    cfg.ItemKind kind = choice.Kind == cfg.RewardKind.ActiveItemGrant ? cfg.ItemKind.Active : cfg.ItemKind.Passive;
+                    cfg.ItemKind kind = IsActiveItemReward(choice.Kind) ? cfg.ItemKind.Active : cfg.ItemKind.Passive;
                     ItemDefinition item = ItemDefinition.Get(_run?.Tables ?? GameApp.Config.Tables, choice.Id, kind);
                     Sprite icon = RunItemSlotView.LoadIcon(item);
                     if (icon != null)
@@ -1280,7 +1288,7 @@ namespace GourmetProject.Game.UI.Meta
                         return icon;
                     }
 
-                    return Resources.Load<Sprite>(choice.Kind == cfg.RewardKind.ActiveItemGrant
+                    return Resources.Load<Sprite>(IsActiveItemReward(choice.Kind)
                         ? "Sprites/UI/card_action_food_active"
                         : "Sprites/UI/card_action_food_passive");
                 }
@@ -1323,6 +1331,13 @@ namespace GourmetProject.Game.UI.Meta
         {
             return Resources.Load<Sprite>("Sprites/UI/icon_coin")
                 ?? Resources.Load<Sprite>("Sprites/UI/card_action_food_gold");
+        }
+
+        private static bool IsActiveItemReward(cfg.RewardKind kind)
+        {
+            return kind == cfg.RewardKind.ActiveItemGrant ||
+                   kind == cfg.RewardKind.ActiveItemStrengthen ||
+                   kind == cfg.RewardKind.ActiveItemAdjust;
         }
 
         private static void SetButtonLabel(Button button, string text)

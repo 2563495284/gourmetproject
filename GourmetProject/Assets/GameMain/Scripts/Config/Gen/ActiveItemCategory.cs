@@ -12,27 +12,18 @@
 namespace cfg
 { 
     /// <summary>
-    /// 奖励种类
+    /// 主动道具分类
     /// </summary>
-    public enum RewardKind
+    public enum ActiveItemCategory
     {
-        None = 0,
-        Gold = 1,
-        DishChoice = 2,
-        PassiveItemChoice = 3,
         /// <summary>
-        /// 通用主动道具
+        /// 强化类主动道具
         /// </summary>
-        ActiveItemGrant = 4,
-        FragmentChoice = 5,
+        Strengthen = 0,
         /// <summary>
-        /// 随机强化类主动道具
+        /// 调整类主动道具
         /// </summary>
-        ActiveItemStrengthen = 6,
-        /// <summary>
-        /// 随机调整类主动道具
-        /// </summary>
-        ActiveItemAdjust = 7,
+        Adjust = 1,
     }
 
 } 

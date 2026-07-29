@@ -20,6 +20,14 @@ namespace cfg
         PassiveItem = 1,
         ActiveItem = 2,
         Fragment = 3,
+        /// <summary>
+        /// 强化类主动道具池
+        /// </summary>
+        ActiveItemStrengthen = 4,
+        /// <summary>
+        /// 调整类主动道具池
+        /// </summary>
+        ActiveItemAdjust = 5,
     }
 
 } 

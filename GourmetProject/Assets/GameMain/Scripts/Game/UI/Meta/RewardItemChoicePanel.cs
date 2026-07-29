@@ -130,7 +130,11 @@ namespace GourmetProject.Game.UI.Meta
 
         private string ActiveSlotWarning(RewardChoice choice, cfg.ItemKind kind)
         {
-            if (choice == null || (kind != cfg.ItemKind.Active && choice.Kind != cfg.RewardKind.ActiveItemGrant))
+            if (choice == null ||
+                (kind != cfg.ItemKind.Active &&
+                 choice.Kind != cfg.RewardKind.ActiveItemGrant &&
+                 choice.Kind != cfg.RewardKind.ActiveItemStrengthen &&
+                 choice.Kind != cfg.RewardKind.ActiveItemAdjust))
             {
                 return null;
             }
