@@ -20,10 +20,6 @@ public sealed partial class RewardPool : Luban.BeanBase
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
         { if(!_buf["kind"].IsNumber) { throw new SerializationException(); }  Kind = (RewardPoolKind)_buf["kind"].AsInt; }
         { if(!_buf["allowFallback"].IsBoolean) { throw new SerializationException(); }  AllowFallback = _buf["allowFallback"]; }
-        { if(!_buf["distanceFloor"].IsNumber) { throw new SerializationException(); }  DistanceFloor = _buf["distanceFloor"]; }
-        { if(!_buf["explicitIds"].IsString) { throw new SerializationException(); }  ExplicitIds = _buf["explicitIds"]; }
-        { if(!_buf["minQuality"].IsNumber) { throw new SerializationException(); }  MinQuality = _buf["minQuality"]; }
-        { if(!_buf["withRandomFlavor"].IsBoolean) { throw new SerializationException(); }  WithRandomFlavor = _buf["withRandomFlavor"]; }
         { var __json0 = _buf["specialTags"]; if(!__json0.IsArray) { throw new SerializationException(); } SpecialTags = new System.Collections.Generic.List<RewardPoolSpecialTag>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { RewardPoolSpecialTag __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = (RewardPoolSpecialTag)__e0.AsInt; }  SpecialTags.Add(__v0); }   }
     }
 
@@ -45,22 +41,6 @@ public sealed partial class RewardPool : Luban.BeanBase
     /// </summary>
     public readonly bool AllowFallback;
     /// <summary>
-    /// 是否允许兜底
-    /// </summary>
-    public readonly int DistanceFloor;
-    /// <summary>
-    /// 与当前进度的隐藏分下限距离
-    /// </summary>
-    public readonly string ExplicitIds;
-    /// <summary>
-    /// 显式道具/菜品id列表(|分隔)，非空则只从这些id抽
-    /// </summary>
-    public readonly int MinQuality;
-    /// <summary>
-    /// 品质下限(ItemQuality值0-4)，0=不筛选
-    /// </summary>
-    public readonly bool WithRandomFlavor;
-    /// <summary>
     /// 奖励池特殊标签筛选
     /// </summary>
     public readonly System.Collections.Generic.List<RewardPoolSpecialTag> SpecialTags;
@@ -78,10 +58,6 @@ public sealed partial class RewardPool : Luban.BeanBase
         + "id:" + Id + ","
         + "kind:" + Kind + ","
         + "allowFallback:" + AllowFallback + ","
-        + "distanceFloor:" + DistanceFloor + ","
-        + "explicitIds:" + ExplicitIds + ","
-        + "minQuality:" + MinQuality + ","
-        + "withRandomFlavor:" + WithRandomFlavor + ","
         + "specialTags:" + Luban.StringUtil.CollectionToString(SpecialTags) + ","
         + "}";
     }
