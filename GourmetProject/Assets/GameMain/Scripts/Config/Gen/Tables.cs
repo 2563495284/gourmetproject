@@ -47,10 +47,6 @@ public partial class Tables
     /// </summary>
     public TbActiveItem TbActiveItem {get; }
     /// <summary>
-    /// 目标分曲线：与 week 同在 timeline.xlsx；Week.scoreProfileId/Boss.scoreProfileId 引用它生成普通与 Boss 目标分。
-    /// </summary>
-    public TbScoreProfile TbScoreProfile {get; }
-    /// <summary>
     /// 奖励包：与奖励槽/奖励池同在 reward.xlsx；Food.rewardPackageId 引用它，槽组指向 reward_slot。
     /// </summary>
     public TbRewardPackage TbRewardPackage {get; }
@@ -161,7 +157,6 @@ public partial class Tables
         TbRecipe = new TbRecipe(loader("tbrecipe"));
         TbPassiveItem = new TbPassiveItem(loader("tbpassiveitem"));
         TbActiveItem = new TbActiveItem(loader("tbactiveitem"));
-        TbScoreProfile = new TbScoreProfile(loader("tbscoreprofile"));
         TbRewardPackage = new TbRewardPackage(loader("tbrewardpackage"));
         TbRewardSlot = new TbRewardSlot(loader("tbrewardslot"));
         TbRewardPool = new TbRewardPool(loader("tbrewardpool"));
@@ -200,7 +195,6 @@ public partial class Tables
         TbRecipe.ResolveRef(this);
         TbPassiveItem.ResolveRef(this);
         TbActiveItem.ResolveRef(this);
-        TbScoreProfile.ResolveRef(this);
         TbRewardPackage.ResolveRef(this);
         TbRewardSlot.ResolveRef(this);
         TbRewardPool.ResolveRef(this);

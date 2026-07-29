@@ -2437,15 +2437,6 @@ namespace GourmetProject.Game.Run
             return new ItemRuntime(this).ModifyRequiredScore(scaled, tier);
         }
 
-        /// <summary>
-        /// Boss 目标分兼容入口。目标分已统一由隐藏分曲线生成，旧的 scoreProfileId 不再参与计算。
-        /// 新调用应携带行动上下文直接使用 <see cref="HiddenScoreService.TargetScore"/>，以包含节点天数和隐藏分修正。
-        /// </summary>
-        public int ComputeBossRequiredScore(string scoreProfileId)
-        {
-            return new ItemRuntime(this).ModifyRequiredScore(RequiredScore, cfg.FoodActionKind.Feast);
-        }
-
         /// <summary>当前周的修正标识（small_board / limit_serve …），无则空串。</summary>
         public string WeekModifier => CurrentWeek?.Modifier ?? string.Empty;
 

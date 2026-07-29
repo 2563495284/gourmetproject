@@ -1,7 +1,6 @@
 [
   {
     "id": 1,
-    "scoreProfileId": "score_w1",
     "modifier": "",
     "timelineIds": [
       "tl_normal",
@@ -14,7 +13,6 @@
   },
   {
     "id": 2,
-    "scoreProfileId": "score_w2",
     "modifier": "",
     "timelineIds": [
       "tl_normal",
@@ -27,7 +25,6 @@
   },
   {
     "id": 3,
-    "scoreProfileId": "score_w3",
     "modifier": "",
     "timelineIds": [
       "tl_normal",
@@ -40,7 +37,6 @@
   },
   {
     "id": 4,
-    "scoreProfileId": "score_w4",
     "modifier": "limit_serve",
     "timelineIds": [
       "tl_normal",
