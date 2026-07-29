@@ -12,8 +12,7 @@ namespace GourmetProject.Gameplay.Scoring
         Material = 3,
         TableTag = 4,
         Relic = 5,
-        WeekModifier = 6,
-        FinalModifier = 7,
+        FinalModifier = 6,
     }
 
     /// <summary>记录一个结算效果来自哪里，供排序、调试和 UI 明细展示。</summary>
@@ -128,11 +127,6 @@ namespace GourmetProject.Gameplay.Scoring
         public static ScoreSource Relic(string id, string name)
         {
             return new ScoreSource(ScoreSourceType.Relic, id, name);
-        }
-
-        public static ScoreSource WeekModifier(string id, string name)
-        {
-            return new ScoreSource(ScoreSourceType.WeekModifier, id, name);
         }
 
         public static ScoreSource FinalModifier(string id, string name)

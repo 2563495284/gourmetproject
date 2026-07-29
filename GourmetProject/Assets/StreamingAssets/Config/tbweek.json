@@ -1,7 +1,6 @@
 [
   {
     "id": 1,
-    "modifier": "",
     "timelineIds": [
       "tl_normal",
       "tl_busy"
@@ -13,7 +12,6 @@
   },
   {
     "id": 2,
-    "modifier": "",
     "timelineIds": [
       "tl_normal",
       "tl_busy"
@@ -25,7 +23,6 @@
   },
   {
     "id": 3,
-    "modifier": "",
     "timelineIds": [
       "tl_normal",
       "tl_busy"
@@ -37,7 +34,6 @@
   },
   {
     "id": 4,
-    "modifier": "limit_serve",
     "timelineIds": [
       "tl_normal",
       "tl_busy"

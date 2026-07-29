@@ -2437,9 +2437,6 @@ namespace GourmetProject.Game.Run
             return new ItemRuntime(this).ModifyRequiredScore(scaled, tier);
         }
 
-        /// <summary>当前周的修正标识（small_board / limit_serve …），无则空串。</summary>
-        public string WeekModifier => CurrentWeek?.Modifier ?? string.Empty;
-
         public RunItemState GetItemState(string itemId)
         {
             if (string.IsNullOrEmpty(itemId))

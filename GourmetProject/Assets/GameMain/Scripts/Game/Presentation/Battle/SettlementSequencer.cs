@@ -1687,8 +1687,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 || source.Type == ScoreSourceType.DishFlavor
                 || source.Type == ScoreSourceType.Material
                 || source.Type == ScoreSourceType.TableTag
-                || source.Type == ScoreSourceType.Relic
-                || source.Type == ScoreSourceType.WeekModifier;
+                || source.Type == ScoreSourceType.Relic;
         }
 
         private static string SourceName(ScoreLine line)

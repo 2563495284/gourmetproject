@@ -2414,7 +2414,7 @@ namespace GourmetProject.Game.UI.Battle
 
             if (_current == GameplayView.TableView && _run != null)
             {
-                table = _run.BuildTablePreviewFromFragments(_run.WeekModifier);
+                table = _run.BuildTablePreviewFromFragments();
                 db = _run.Database;
                 return table != null && db != null;
             }
