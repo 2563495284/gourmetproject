@@ -10189,8 +10189,8 @@ RectTransform:
   - {fileID: 6819836467325886386}
   m_Father: {fileID: 3360030364442441627}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.18, y: 0.22}
-  m_AnchorMax: {x: 0.97, y: 0.82}
+  m_AnchorMin: {x: 0.105, y: 0.22}
+  m_AnchorMax: {x: 0.895, y: 0.82}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -10831,6 +10831,10 @@ PrefabInstance:
     - target: {fileID: 1823352157112555038, guid: af369f5a2ad1244aea490e8171a88eb4, type: 3}
       propertyPath: m_Name
       value: ActiveSlot_1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3313307512757295696, guid: af369f5a2ad1244aea490e8171a88eb4, type: 3}
+      propertyPath: m_Enabled
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4852092192568821543, guid: af369f5a2ad1244aea490e8171a88eb4, type: 3}
       propertyPath: m_Pivot.x

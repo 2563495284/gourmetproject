@@ -2,30 +2,26 @@
   {
     "id": 1,
     "timelineIds": [
-      "tl_normal",
-      "tl_busy"
+      "tl_1"
     ],
     "timelineWeights": [
-      100,
-      60
+      100
     ]
   },
   {
     "id": 2,
     "timelineIds": [
-      "tl_normal",
-      "tl_busy"
+      "tl_2"
     ],
     "timelineWeights": [
-      100,
-      60
+      100
     ]
   },
   {
     "id": 3,
     "timelineIds": [
-      "tl_normal",
-      "tl_busy"
+      "tl_1",
+      "tl_2"
     ],
     "timelineWeights": [
       100,
@@ -35,12 +31,11 @@
   {
     "id": 4,
     "timelineIds": [
-      "tl_normal",
-      "tl_busy"
+      "tl_1",
+      "tl_2"
     ],
     "timelineWeights": [
       100,
-      60,
       60
     ]
   }

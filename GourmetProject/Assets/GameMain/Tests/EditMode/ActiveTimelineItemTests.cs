@@ -3,6 +3,7 @@ using GourmetProject.Config;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
+using GourmetProject.Game.UI.Hud;
 using GourmetProject.Gameplay.Data;
 using NUnit.Framework;
 
@@ -83,6 +84,83 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(ItemActiveUsage.IsTodoTimelineEffect(ItemEffectTypes.TimelineAddLotteryNode), Is.True);
             Assert.That(ItemActiveUsage.IsTodoTimelineEffect(ItemEffectTypes.TimelineDeleteNode), Is.False);
             Assert.That(ItemActiveUsage.IsTodoTimelineEffect(ItemEffectTypes.TimelineExecuteFuture), Is.False);
+        }
+
+        [Test]
+        public void TimelineSelectionItems_RequireTargetsEvenWhenConfiguredAsGlobal()
+        {
+            string[] itemIds =
+            {
+                "item_active_add_reward_node",
+                "item_active_add_interest_node",
+                "item_active_add_shop_node",
+                "item_active_add_lottery_node",
+                "item_active_delete_timeline_node",
+                "item_active_execute_future_node",
+                "item_active_execute_past_node",
+            };
+
+            foreach (string itemId in itemIds)
+            {
+                ItemDefinition item = ItemDefinition.Get(_tables, itemId, cfg.ItemKind.Active);
+                Assert.That(item, Is.Not.Null, itemId);
+                Assert.That(item.TargetKind, Is.EqualTo(cfg.ItemTargetKind.Global), itemId);
+                Assert.That(ItemActiveUsage.RequiresTarget(item), Is.True, itemId);
+            }
+        }
+
+        [Test]
+        public void TimelineFanLayout_UsesOneModelAndDensifiesWithoutCountLimit()
+        {
+            TimelineNodeFanPose single = TimelineNodeFanLayout.Calculate(0, 1);
+            Assert.That(single.Position.x, Is.EqualTo(0f).Within(0.001f));
+
+            TimelineNodeFanPose four0 = TimelineNodeFanLayout.Calculate(0, 4);
+            TimelineNodeFanPose four1 = TimelineNodeFanLayout.Calculate(1, 4);
+            TimelineNodeFanPose ten0 = TimelineNodeFanLayout.Calculate(0, 10);
+            TimelineNodeFanPose ten1 = TimelineNodeFanLayout.Calculate(1, 10);
+
+            float fourSpacing = four1.Position.x - four0.Position.x;
+            float tenSpacing = ten1.Position.x - ten0.Position.x;
+            Assert.That(fourSpacing, Is.GreaterThan(0f));
+            Assert.That(tenSpacing, Is.GreaterThan(0f).And.LessThan(fourSpacing));
+
+            TimelineNodeFanPose edgeFirst = TimelineNodeFanLayout.Calculate(0, 2);
+            TimelineNodeFanPose edgeLast = TimelineNodeFanLayout.Calculate(1, 2);
+            Assert.That(edgeFirst.Position.x, Is.LessThan(edgeLast.Position.x));
+            Assert.That(
+                edgeLast.Position.x - edgeFirst.Position.x,
+                Is.EqualTo(29f).Within(0.001f),
+                "边缘日期也要保持正常扇形间距，不能把同日节点 Clamp 到同一位置。");
+            Assert.That(
+                edgeFirst.Position.x + edgeLast.Position.x,
+                Is.EqualTo(0f).Within(0.001f),
+                "最后一天的气泡仍以日期点为中心，不向行动轴内部偏移。");
+
+            TimelineNodeFanPose edgeSingle = TimelineNodeFanLayout.Calculate(0, 1);
+            Assert.That(edgeSingle.Position.x, Is.EqualTo(0f).Within(0.001f));
+        }
+
+        [Test]
+        public void TimelineAddItem_AppliesOnlyToRuntimeState()
+        {
+            GameRun run = CreateRun();
+            run.BeginTimeline("test", 7f);
+            ItemDefinition item = ItemDefinition.Get(
+                _tables,
+                "item_active_add_reward_node",
+                cfg.ItemKind.Active);
+            var context = new ActionSelectUseContext(run, null);
+
+            ActiveItemUseResult result = ActiveItemEffectRegistry.Apply(
+                context,
+                item,
+                new[] { new ActiveTarget("7", 7, targetKind: cfg.ItemTargetKind.Global) });
+
+            Assert.That(result.Success, Is.True);
+            Assert.That(
+                TimelineService.GetNodes(run).Any(node => node.Day == 7),
+                Is.True);
         }
 
         [Test]
@@ -199,6 +277,28 @@ namespace GourmetProject.Tests.EditMode
 
             GameRun restored = GameRun.FromSaveData(_tables, _database, run.ToSaveData());
             Assert.That(restored.NextDailyActionHalfCostStacks, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void TimelineNodeCommit_DoesNotAdvanceOrConsumeHalfDayBuff()
+        {
+            GameRun run = CreateRun();
+            cfg.GameAction action = _tables.TbAction.DataList.First();
+            run.BeginTimeline("test", 7f);
+            run.AddNextDailyActionHalfCostStack();
+            var context = new ActionExecutionContext(action, 0, 0, string.Empty, 0f)
+            {
+                SourceKey = "timeline_node",
+                HalfDayBuffApplied = true,
+            };
+
+            float previousDay = ActionExecutor.Commit(run, context);
+
+            Assert.That(context.IsDailyAction, Is.False);
+            Assert.That(previousDay, Is.Zero);
+            Assert.That(run.CurrentDay, Is.Zero);
+            Assert.That(run.ActionStepIndex, Is.Zero);
+            Assert.That(run.NextDailyActionHalfCostStacks, Is.EqualTo(1));
         }
 
         [Test]

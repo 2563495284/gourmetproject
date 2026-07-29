@@ -93,5 +93,12 @@ namespace GourmetProject.Game.Meta
 
         /// <summary>额外节点执行：不推进天数/行动步数，也不改变原节点完成状态。</summary>
         public bool IsExtraTimelineExecution { get; set; }
+
+        /// <summary>
+        /// 只有玩家从日常行动选项提交的上下文才消费天数、行动步数和半日券。
+        /// 行动轴节点统一带 SourceKey；额外节点还会额外标记 IsExtraTimelineExecution。
+        /// </summary>
+        public bool IsDailyAction =>
+            !IsExtraTimelineExecution && string.IsNullOrEmpty(SourceKey);
     }
 }

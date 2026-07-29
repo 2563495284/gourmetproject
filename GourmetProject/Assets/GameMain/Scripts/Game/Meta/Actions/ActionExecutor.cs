@@ -46,7 +46,7 @@ namespace GourmetProject.Game.Meta
             }
 
             float prevDay = run.CurrentDay;
-            if (context.IsExtraTimelineExecution)
+            if (!context.IsDailyAction)
             {
                 run.ClearPendingActionExecution();
                 return prevDay;

@@ -1741,18 +1741,6 @@ namespace GourmetProject.Game.UI.Battle
             _currentTimelineNodePick = null;
         }
 
-        private bool RefreshTimelineNodeCardIfActive()
-        {
-            if (_currentTimelineNodeCard == null || _currentTimelineNodePick == null)
-            {
-                return false;
-            }
-
-            BuildTimelineNodeCard(_currentTimelineNodeCard, _currentTimelineNodeInterestMaxGain, _currentTimelineNodePick);
-            PlayShowCardsWhenReady();
-            return true;
-        }
-
         /// <summary>行动轴节点单卡：用于商店等节点，点击卡片后才执行节点效果。</summary>
         private void BuildTimelineNodeCard(cfg.TimelineNode node, int? interestMaxGain, Action onPick)
         {
@@ -2761,33 +2749,30 @@ namespace GourmetProject.Game.UI.Battle
             SetMessage(message);
         }
 
-        internal void RefreshAfterActiveItem(bool boardChanged, bool persist, bool actionChoicesChanged = false)
+        internal void RefreshAfterActiveItem(
+            bool boardChanged,
+            bool actionChoicesChanged = false,
+            bool refreshActionContent = true)
         {
             if (boardChanged)
             {
                 (_world ?? BattleWorldController.Instance)?.SyncTableFromSession();
             }
 
-            if (persist && _run != null)
-            {
-                RunPersistence.Save(_run);
-            }
-
             RebuildActionAxis();
             if (_current == GameplayView.ActionSelect)
             {
-                if (RefreshTimelineNodeCardIfActive())
+                if (refreshActionContent && IsDailyActionSelectionActive)
                 {
-                    RefreshPersistent();
-                }
-                else if (actionChoicesChanged)
-                {
-                    RefreshActionCardsAnimated();
-                }
-                else
-                {
-                    BuildActionCards();
-                    PlayShowCardsWhenReady();
+                    if (actionChoicesChanged)
+                    {
+                        RefreshActionCardsAnimated();
+                    }
+                    else
+                    {
+                        BuildActionCards();
+                        PlayShowCardsWhenReady();
+                    }
                 }
 
                 RefreshPersistent();
