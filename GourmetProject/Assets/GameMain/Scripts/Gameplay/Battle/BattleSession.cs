@@ -366,7 +366,8 @@ namespace GourmetProject.Gameplay.Battle
                 source.Price,
                 source.RotationIndex,
                 string.Empty,
-                source.CountAs);
+                source.CountAs,
+                source.SortOrder);
         }
 
         /// <summary>

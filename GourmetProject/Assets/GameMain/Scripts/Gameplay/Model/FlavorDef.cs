@@ -17,7 +17,8 @@ namespace GourmetProject.Gameplay.Model
             FlavorEffectType effectType,
             IReadOnlyList<float> effectValues,
             IReadOnlyList<string> effectParams,
-            string termId)
+            string termId,
+            int sortOrder = 0)
         {
             Id = id;
             Name = name;
@@ -26,6 +27,7 @@ namespace GourmetProject.Gameplay.Model
             EffectValues = effectValues ?? EmptyValues;
             EffectParams = effectParams ?? EmptyParams;
             TermId = termId ?? string.Empty;
+            SortOrder = sortOrder;
         }
 
         public string Id { get; }
@@ -45,6 +47,9 @@ namespace GourmetProject.Gameplay.Model
         public string EffectParam => EffectParams.Count > 0 ? EffectParams[0] : string.Empty;
 
         public string TermId { get; }
+
+        /// <summary>同一菜品本体下的风味展示顺序；数值越小越靠前。</summary>
+        public int SortOrder { get; }
 
         public bool HasTerm => !string.IsNullOrEmpty(TermId);
     }

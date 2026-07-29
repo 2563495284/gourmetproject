@@ -25,7 +25,8 @@ namespace GourmetProject.Gameplay.Model
             int price = 0,
             int rotationIndex = 0,
             string category = null,
-            int countAs = 1)
+            int countAs = 1,
+            int sortOrder = 0)
         {
             Id = id ?? throw new ArgumentNullException(nameof(id));
             Name = name;
@@ -42,6 +43,7 @@ namespace GourmetProject.Gameplay.Model
             RotationIndex = ((rotationIndex % 4) + 4) % 4;
             Category = category ?? string.Empty;
             CountAs = countAs < 1 ? 1 : countAs;
+            SortOrder = sortOrder;
         }
 
         public string Id { get; }
@@ -98,6 +100,9 @@ namespace GourmetProject.Gameplay.Model
 
         /// <summary>「视为食物数」基础值（默认 1）；技能计数时按此累加。</summary>
         public int CountAs { get; }
+
+        /// <summary>菜谱中的展示顺序；数值越小越靠前。</summary>
+        public int SortOrder { get; }
 
         /// <summary>要求隐藏分是否落在本菜品隐藏分范围内。</summary>
         public bool CoversHiddenScore(int requiredHidden)

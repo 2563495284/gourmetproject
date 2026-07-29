@@ -272,10 +272,13 @@ namespace GourmetProject.Game.UI.Meta
                 {
                     IReadOnlyList<RecipeBookSlot> entries =
                         EntriesForBook(bookIndex);
-                    for (int dishIndex = 0;
-                         dishIndex < entries.Count;
-                         dishIndex++)
+                    List<int> displayOrder =
+                        BuildDishDisplayOrder(entries);
+                    for (int displayIndex = 0;
+                         displayIndex < displayOrder.Count;
+                         displayIndex++)
                     {
+                        int dishIndex = displayOrder[displayIndex];
                         SpawnDish(
                             dishContainer,
                             entries[dishIndex],
@@ -306,7 +309,7 @@ namespace GourmetProject.Game.UI.Meta
             dish.gameObject.name =
                 $"RecipeDish_{bookIndex + 1}_{dishIndex + 1}";
             dish.Bind(
-                DishName(GameApp.Config.Tables, dishId),
+                def?.Name ?? dishId,
                 DishShapeText(dishId),
                 bookIndex,
                 dishIndex,

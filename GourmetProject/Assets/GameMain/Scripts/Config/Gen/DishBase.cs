@@ -25,6 +25,7 @@ public sealed partial class DishBase : Luban.BeanBase
         { if(!_buf["category"].IsString) { throw new SerializationException(); }  Category = _buf["category"]; }
         { if(!_buf["countAs"].IsNumber) { throw new SerializationException(); }  CountAs = _buf["countAs"]; }
         { var __json0 = _buf["shapeRows"]; if(!__json0.IsArray) { throw new SerializationException(); } ShapeRows = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  ShapeRows.Add(__v0); }   }
+        { if(!_buf["sortOrder"].IsNumber) { throw new SerializationException(); }  SortOrder = _buf["sortOrder"]; }
     }
 
     public static DishBase DeserializeDishBase(JSONNode _buf)
@@ -64,6 +65,10 @@ public sealed partial class DishBase : Luban.BeanBase
     /// 菜品形状行列表
     /// </summary>
     public readonly System.Collections.Generic.List<string> ShapeRows;
+    /// <summary>
+    /// 菜谱展示顺序(升序:从上到下、从左到右)
+    /// </summary>
+    public readonly int SortOrder;
    
     public const int __ID__ = 341086123;
     public override int GetTypeId() => __ID__;
@@ -83,6 +88,7 @@ public sealed partial class DishBase : Luban.BeanBase
         + "category:" + Category + ","
         + "countAs:" + CountAs + ","
         + "shapeRows:" + Luban.StringUtil.CollectionToString(ShapeRows) + ","
+        + "sortOrder:" + SortOrder + ","
         + "}";
     }
 }
