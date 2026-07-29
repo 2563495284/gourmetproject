@@ -528,6 +528,11 @@ namespace GourmetProject.Tests.PlayMode
             int targetDay,
             string targetNodeId)
         {
+            RuntimeTimelineNode sourceNode =
+                run.RuntimeTimelineNodes.Single(node => node.Id == targetNodeId);
+            var existingNodeIds = new System.Collections.Generic.HashSet<string>(
+                run.RuntimeTimelineNodes.Select(node => node.Id));
+
             BeginUseActiveItem(host, item, slot);
             yield return null;
 
@@ -560,10 +565,23 @@ namespace GourmetProject.Tests.PlayMode
                     .Any(view => view.gameObject.name.Contains("(Clone)")),
                 Is.False,
                 "提交后必须关闭鼠标跟随箭头。");
+
+            RuntimeTimelineNode clonedNode = run.RuntimeTimelineNodes.Single(
+                node => !existingNodeIds.Contains(node.Id));
             Assert.That(
-                run.TryDequeueExtraTimelineNode(out string queuedNodeId),
-                Is.True);
-            Assert.That(queuedNodeId, Is.EqualTo(targetNodeId));
+                clonedNode.Day,
+                Is.EqualTo(Mathf.FloorToInt(run.CurrentDay) + 1),
+                "加急单应把节点行动复制到严格下一个整数日。");
+            Assert.That(clonedNode.ActionId, Is.EqualTo(sourceNode.ActionId));
+            Assert.That(clonedNode.SourceItemId, Is.EqualTo(item.Id));
+            Assert.That(
+                run.RuntimeTimelineNodes.Any(node => node.Id == targetNodeId),
+                Is.True,
+                "复制后原节点必须保留。");
+            Assert.That(
+                run.TryDequeueExtraTimelineNode(out _),
+                Is.False,
+                "新版本加急单不得再写入旧的额外执行队列。");
         }
 
         private static void AttachAxisBinder(BattleForm host, ActionAxisBar axis)

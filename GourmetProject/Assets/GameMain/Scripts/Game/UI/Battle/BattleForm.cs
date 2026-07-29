@@ -1721,7 +1721,8 @@ namespace GourmetProject.Game.UI.Battle
                     choice.WeekStepIndex,
                     choice.RunStepIndex,
                     applyHalfDay ? _run.PreviewDailyActionCost(choice.CostDays) : choice.CostDays,
-                    halfDayBuffApplied: applyHalfDay));
+                    halfDayBuffApplied: applyHalfDay,
+                    timelineStopChance: choice.TimelineStopChance));
             }
 
             return result;

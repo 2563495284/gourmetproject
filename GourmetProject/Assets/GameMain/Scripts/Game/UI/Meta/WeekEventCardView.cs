@@ -345,6 +345,7 @@ namespace GourmetProject.Game.UI.Meta
                     spriteName = "card_action_reward";
                     break;
                 case cfg.ActionBehavior.Negative:
+                case cfg.ActionBehavior.Effect:
                     spriteName = "card_action_negative";
                     break;
                 case cfg.ActionBehavior.Shop:

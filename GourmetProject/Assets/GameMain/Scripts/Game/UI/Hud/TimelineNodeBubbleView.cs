@@ -13,6 +13,7 @@ namespace GourmetProject.Game.UI.Hud
         private static readonly Color NormalFill = new Color(1f, 0.94f, 0.80f, 0.98f);
         private static readonly Color CompletedFill = new Color(0.72f, 0.70f, 0.65f, 0.78f);
         private static readonly Color PreviewFill = new Color(0.74f, 1f, 0.92f, 0.78f);
+        private static readonly Color NegativeFill = new Color(1f, 0.78f, 0.74f, 0.96f);
         private static readonly Color WarningColor = new Color(0.92f, 0.20f, 0.18f, 1f);
         private static readonly Color TargetColor = new Color(0.02f, 0.82f, 0.66f, 1f);
         private static readonly Color NormalOutline = new Color(0.29f, 0.17f, 0.08f, 0.72f);
@@ -49,13 +50,15 @@ namespace GourmetProject.Game.UI.Hud
             _authoredScale = Rect.localScale;
         }
 
-        public void Bind(Sprite icon, bool completed, bool boss, bool preview)
+        public void Bind(Sprite icon, bool completed, bool boss, bool preview, bool negative = false)
         {
             EnsureRefs();
             _icon.sprite = icon;
             _icon.enabled = icon != null;
 
-            _tailColor = preview ? PreviewFill : (completed ? CompletedFill : NormalFill);
+            _tailColor = preview
+                ? PreviewFill
+                : (completed ? CompletedFill : (negative ? NegativeFill : NormalFill));
             _boundAlpha = completed && !preview ? 0.74f : 1f;
             _canvasGroup.alpha = _boundAlpha;
             _canvasGroup.blocksRaycasts = !preview;
@@ -63,7 +66,9 @@ namespace GourmetProject.Game.UI.Hud
             _outline.enabled = true;
             _boundOutlineColor = preview
                 ? PreviewOutline
-                : (boss ? BossOutline : (completed ? CompletedOutline : NormalOutline));
+                : (boss
+                    ? BossOutline
+                    : (completed ? CompletedOutline : (negative ? WarningColor : NormalOutline)));
             _boundOutlineDistance =
                 preview || boss ? new Vector2(2f, -2f) : new Vector2(1f, -1f);
             _outline.effectColor = _boundOutlineColor;
@@ -85,7 +90,7 @@ namespace GourmetProject.Game.UI.Hud
             float x,
             int stackIndex)
         {
-            Bind(icon, completed, boss, preview);
+            Bind(icon, completed, boss, preview, negative: false);
             float axisX = Mathf.Clamp01(x);
             Rect.anchorMin = new Vector2(axisX, 0.48f);
             Rect.anchorMax = new Vector2(axisX, 0.48f);

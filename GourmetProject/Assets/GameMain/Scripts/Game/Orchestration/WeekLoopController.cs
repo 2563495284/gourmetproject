@@ -210,6 +210,9 @@ namespace GourmetProject.Game.Orchestration
                     : null,
                 HalfDayBuffApplied = data.HalfDayBuffApplied,
                 IsExtraTimelineExecution = data.IsExtraTimelineExecution,
+                TimelineStopChance = data.TimelineStopChance,
+                NodeRepeatIndex = System.Math.Max(1, data.NodeRepeatIndex),
+                NodeRepeatTotal = System.Math.Max(1, data.NodeRepeatTotal),
             };
             return context;
         }
@@ -249,17 +252,7 @@ namespace GourmetProject.Game.Orchestration
 
             if (!string.IsNullOrEmpty(context.SourceKey))
             {
-                return () =>
-                {
-                    _run.ClearPendingActionExecution();
-                    if (!context.IsExtraTimelineExecution)
-                    {
-                        _run.MarkNodeTriggered(context.SourceKey);
-                    }
-
-                    RunPersistence.Save(_run);
-                    DrainPendingExtraNodes(PromptNextAction);
-                };
+                return () => ContinueRecoveredTimelineNodePass(context);
             }
 
             return () =>
@@ -273,14 +266,9 @@ namespace GourmetProject.Game.Orchestration
 
         private Action BuildRecoveredBossComplete(ActionExecutionContext context)
         {
-            return () =>
-            {
-                _run.ClearPendingActionExecution();
-                if (!string.IsNullOrEmpty(context?.SourceKey) && !context.IsExtraTimelineExecution)
-                {
-                    _run.MarkNodeTriggered(context.SourceKey);
-                }
-            };
+            // Boss 完成发生在领奖前。节点的完成/重复轮次统一留给领奖后的 continuation，
+            // 避免把节点过早标记为已结算。
+            return () => _run.ClearPendingActionExecution();
         }
 
         /// <summary>行动轴未走完则弹「n 选一行动」；走完则进入下一周。</summary>
@@ -566,20 +554,13 @@ namespace GourmetProject.Game.Orchestration
 
             if (!string.IsNullOrEmpty(context.SourceKey))
             {
-                _run.ClearPendingActionExecution();
-                if (!context.IsExtraTimelineExecution)
-                {
-                    _run.MarkNodeTriggered(context.SourceKey);
-                }
-
                 if (FoodService.IsBossAction(_run.Tables, context.Action))
                 {
                     cfg.Food boss = FoodService.ResolveBoss(_run, context.Action);
                     MarkBossCompletedAndApplyGold(boss?.Id);
                 }
 
-                RunPersistence.Save(_run);
-                DrainPendingExtraNodes(PromptNextAction);
+                ContinueRecoveredTimelineNodePass(context);
                 return;
             }
 
@@ -615,8 +596,8 @@ namespace GourmetProject.Game.Orchestration
         }
 
         /// <summary>
-        /// 周末被动道具结算：先扣高利贷债务，再按「月光族」清空金币，最后按「保底基金」补足下限。
-        /// 三者顺序固定，避免相互覆盖歧义。
+        /// 周末兼容结算：旧存档遗留债务仍会扣除，最后按「保底基金」补足下限。
+        /// 新获得的高利贷与月光族均由周末行动轴节点结算，不再走这里。
         /// </summary>
         private void ApplyEndOfWeekItemSettlement()
         {
@@ -631,11 +612,6 @@ namespace GourmetProject.Game.Orchestration
             if (debt > 0)
             {
                 _run.Gold = System.Math.Max(0, _run.Gold - debt);
-            }
-
-            if (itemRuntime.ClearsGoldOnWeekEnd())
-            {
-                _run.Gold = 0;
             }
 
             int minGold = itemRuntime.MinGoldGuarantee();
@@ -678,9 +654,9 @@ namespace GourmetProject.Game.Orchestration
                 return;
             }
 
-            if (_run.HasItem("item_skip_node") && IsSkippableBySkipNode(action))
+            var itemRuntime = new ItemRuntime(_run);
+            if (itemRuntime.TryConsumeTimelineSkip(action.Behavior))
             {
-                _run.RemoveItem("item_skip_node");
                 _run.MarkNodeTriggered(node.Id);
                 RunPersistence.Save(_run);
                 _view.ShowTimelineNodeSkipped(node, ProcessNextNode);
@@ -689,12 +665,6 @@ namespace GourmetProject.Game.Orchestration
 
             // 节点即「放置来源的原子行动」：先展示放置行动卡，玩家点击后走与随机行动完全相同的执行路径。
             _view.ShowTimelineNodeCard(node, InterestMaxGain(), () => ExecutePlacedAction(node, action));
-        }
-
-        private static bool IsSkippableBySkipNode(cfg.GameAction action)
-        {
-            return action != null
-                && (action.Behavior == cfg.ActionBehavior.Shop || action.Behavior == cfg.ActionBehavior.Interest);
         }
 
         public bool ForceExecuteExtraTimelineNode(string nodeId)
@@ -778,25 +748,101 @@ namespace GourmetProject.Game.Orchestration
         /// <summary>放置行动执行：与随机行动共用 <see cref="ActionExecutor"/> 与 <see cref="DispatchOutcome"/>，节点不消耗天数/步数。</summary>
         private void ExecutePlacedAction(cfg.TimelineNode node, cfg.GameAction action)
         {
-            var context = new ActionExecutionContext(action) { SourceKey = node.Id };
+            int repeatTotal = FoodService.IsBossAction(_run?.Tables, action)
+                ? 1
+                : new ItemRuntime(_run).TimelineNodeRepeatCount();
+            ExecutePlacedActionPass(node, action, 1, repeatTotal, ProcessNextNode);
+        }
+
+        private void ExecutePlacedActionPass(
+            cfg.TimelineNode node,
+            cfg.GameAction action,
+            int repeatIndex,
+            int repeatTotal,
+            Action onNodeDone)
+        {
+            if (node == null || action == null)
+            {
+                onNodeDone?.Invoke();
+                return;
+            }
+
+            var context = new ActionExecutionContext(action)
+            {
+                SourceKey = node.Id,
+                NodeRepeatIndex = System.Math.Max(1, repeatIndex),
+                NodeRepeatTotal = System.Math.Max(1, repeatTotal),
+            };
             if (FoodService.IsBossAction(_run?.Tables, action))
             {
                 context.TargetScoreDayOverride = node.Day;
             }
 
-            IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Effect, $"node_w{_run.WeekIndex}_{node.Id}_{action.Id}");
+            IRandomStream rng = GameApp.Random.DomainStream(
+                SeedDomains.Effect,
+                $"node_w{_run.WeekIndex}_{node.Id}_{action.Id}_repeat{context.NodeRepeatIndex}");
             ActionOutcome outcome = ActionExecutor.Execute(_run, context, rng);
-            DispatchOutcome(outcome, context, () =>
+            DispatchOutcome(
+                outcome,
+                context,
+                () => ContinueTimelineNodePass(node, action, context, onNodeDone),
+                () => _run.ClearPendingActionExecution());
+        }
+
+        private void ContinueTimelineNodePass(
+            cfg.TimelineNode node,
+            cfg.GameAction action,
+            ActionExecutionContext context,
+            Action onNodeDone)
+        {
+            _run.ClearPendingActionExecution();
+            int repeatIndex = System.Math.Max(1, context?.NodeRepeatIndex ?? 1);
+            int repeatTotal = System.Math.Max(repeatIndex, context?.NodeRepeatTotal ?? 1);
+            if (repeatIndex < repeatTotal)
             {
-                _run.ClearPendingActionExecution();
-                _run.MarkNodeTriggered(node.Id);
+                ExecutePlacedActionPass(node, action, repeatIndex + 1, repeatTotal, onNodeDone);
+                return;
+            }
+
+            _run.MarkNodeTriggered(node.Id);
+            RunPersistence.Save(_run);
+            onNodeDone?.Invoke();
+        }
+
+        private void ContinueRecoveredTimelineNodePass(ActionExecutionContext context)
+        {
+            _run.ClearPendingActionExecution();
+            if (context == null || string.IsNullOrEmpty(context.SourceKey))
+            {
                 RunPersistence.Save(_run);
-                ProcessNextNode();
-            }, () =>
+                PromptNextAction();
+                return;
+            }
+
+            if (context.IsExtraTimelineExecution)
             {
-                _run.ClearPendingActionExecution();
+                RunPersistence.Save(_run);
+                DrainPendingExtraNodes(PromptNextAction);
+                return;
+            }
+
+            cfg.TimelineNode node = TimelineService.GetNode(_run, context.SourceKey);
+            cfg.GameAction action = node != null ? TimelineService.NodeAction(_run, node) : null;
+            int repeatIndex = System.Math.Max(1, context.NodeRepeatIndex);
+            int repeatTotal = System.Math.Max(repeatIndex, context.NodeRepeatTotal);
+            if (node != null && action != null && repeatIndex < repeatTotal)
+            {
+                ExecutePlacedActionPass(node, action, repeatIndex + 1, repeatTotal, PromptNextAction);
+                return;
+            }
+
+            if (node != null)
+            {
                 _run.MarkNodeTriggered(node.Id);
-            });
+            }
+
+            RunPersistence.Save(_run);
+            DrainPendingExtraNodes(PromptNextAction);
         }
 
         private int InterestMaxGain()
@@ -1003,7 +1049,7 @@ namespace GourmetProject.Game.Orchestration
             }
 
             string seedKey = context != null && !string.IsNullOrEmpty(context.SourceKey)
-                ? $"node_{context.SourceKey}"
+                ? $"node_{context.SourceKey}_repeat{System.Math.Max(1, context.NodeRepeatIndex)}"
                 : $"action_w{_run.WeekIndex}_d{DayKey(_run.CurrentDay)}_s{_run.ActionStepIndex}";
 
             IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Event, seedKey);

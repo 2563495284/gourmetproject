@@ -81,6 +81,17 @@ namespace GourmetProject.Game.Meta.Passives
     [PassiveItemModel("item_block_active")]
     public sealed class BlockActiveModel : PassiveItemModel
     {
+        public override bool IsIconUsed => false;
+
+        public override void OnAcquired()
+        {
+            if (Run != null)
+            {
+                Run.Gold += System.Math.Max(0, (int)Value);
+                MarkIconUsed();
+            }
+        }
+
         public override bool BlocksActiveItems() => true;
     }
 

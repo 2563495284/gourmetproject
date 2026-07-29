@@ -39,6 +39,11 @@ namespace GourmetProject.Game.Meta
             if (item.EffectType == ItemEffectTypes.TimelineExecuteFuture
                 || item.EffectType == ItemEffectTypes.TimelineExecutePast)
             {
+                if (!CanCloneToNextIntegerDay())
+                {
+                    return Array.Empty<ActiveTarget>();
+                }
+
                 IReadOnlyList<cfg.TimelineNode> nodes = item.EffectType == ItemEffectTypes.TimelineExecuteFuture
                     ? TimelineService.GetFutureUntriggeredNodes(Run)
                     : TimelineService.GetPastTriggeredNodes(Run);
@@ -138,15 +143,18 @@ namespace GourmetProject.Game.Meta
             return Run.RerollBossDebuffForNode(node.Id);
         }
 
-        public bool ExecuteExtraTimelineNode(string nodeId)
+        public string CloneTimelineNodeToNextIntegerDay(string nodeId, string sourceItemId)
         {
-            return _weekLoop != null && _weekLoop.QueueExtraTimelineNode(nodeId);
+            return Run?.CloneRuntimeTimelineNodeToNextIntegerDay(nodeId, sourceItemId) ?? string.Empty;
         }
 
         public bool AddTimelineNode(string actionId, int day)
         {
-            return Run != null && !string.IsNullOrEmpty(Run.AddRuntimeTimelineNodeAtDay(actionId, day));
+            return !string.IsNullOrEmpty(AddTimelineNodeWithId(actionId, day, string.Empty));
         }
+
+        public string AddTimelineNodeWithId(string actionId, int day, string sourceItemId)
+            => Run?.AddRuntimeTimelineNodeAtDay(actionId, day, sourceItemId) ?? string.Empty;
 
         public bool DeleteTimelineNode(string nodeId)
         {
@@ -182,6 +190,13 @@ namespace GourmetProject.Game.Meta
             }
 
             return targets;
+        }
+
+        private bool CanCloneToNextIntegerDay()
+        {
+            return Run != null
+                && (int)System.Math.Floor(Run.CurrentDay) + 1
+                    <= (int)System.Math.Floor(Run.TimelineLengthDays + TimelineMath.Epsilon);
         }
     }
 }

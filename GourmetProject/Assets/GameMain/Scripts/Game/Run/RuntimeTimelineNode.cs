@@ -6,12 +6,20 @@ namespace GourmetProject.Game.Run
     /// </summary>
     public readonly struct RuntimeTimelineNode
     {
-        public RuntimeTimelineNode(string id, string timelineId, int day, string actionId)
+        public RuntimeTimelineNode(
+            string id,
+            string timelineId,
+            int day,
+            string actionId,
+            string sourceItemId = "",
+            bool weekEndAnchored = false)
         {
             Id = id ?? string.Empty;
             TimelineId = timelineId ?? string.Empty;
             Day = day;
             ActionId = actionId ?? string.Empty;
+            SourceItemId = sourceItemId ?? string.Empty;
+            WeekEndAnchored = weekEndAnchored;
         }
 
         public string Id { get; }
@@ -22,14 +30,18 @@ namespace GourmetProject.Game.Run
 
         public string ActionId { get; }
 
+        public string SourceItemId { get; }
+
+        public bool WeekEndAnchored { get; }
+
         public RuntimeTimelineNode WithDay(int day)
         {
-            return new RuntimeTimelineNode(Id, TimelineId, day, ActionId);
+            return new RuntimeTimelineNode(Id, TimelineId, day, ActionId, SourceItemId, WeekEndAnchored);
         }
 
         public RuntimeTimelineNode WithActionId(string actionId)
         {
-            return new RuntimeTimelineNode(Id, TimelineId, Day, actionId);
+            return new RuntimeTimelineNode(Id, TimelineId, Day, actionId, SourceItemId, WeekEndAnchored);
         }
     }
 }

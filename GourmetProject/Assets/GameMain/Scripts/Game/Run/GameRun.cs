@@ -706,6 +706,16 @@ namespace GourmetProject.Game.Run
             return GourmetProject.Game.Meta.TimelineMath.Quantize(cost);
         }
 
+        /// <summary>生成日常行动选项时快照持有被动的耗时倍率；之后获得/失去道具不追溯。</summary>
+        public float SnapshotDailyActionCost(float baseCostDays)
+        {
+            float multiplier = new ItemRuntime(this).DailyActionCostMultiplier();
+            return GourmetProject.Game.Meta.TimelineMath.Quantize(
+                System.Math.Max(0f, baseCostDays) * System.Math.Max(0f, multiplier));
+        }
+
+        public float SnapshotTimelineStopChance() => new ItemRuntime(this).TimelineStopChance();
+
         public bool EnqueueExtraTimelineNode(string nodeId)
         {
             if (string.IsNullOrEmpty(nodeId))
@@ -789,12 +799,53 @@ namespace GourmetProject.Game.Run
         /// <summary>
         /// 在玩家指定的未来整数日追加一个行动轴节点。同一天允许叠放多个节点。
         /// </summary>
-        public string AddRuntimeTimelineNodeAtDay(string actionId, int day)
+        public string AddRuntimeTimelineNodeAtDay(string actionId, int day, string sourceItemId = "")
+            => AddRuntimeTimelineNodeAtDayInternal(actionId, day, sourceItemId, false, false);
+
+        /// <summary>系统级周末追加；允许节点落在当前整数日，并记录来源与锚定属性。</summary>
+        public string AddWeekEndAnchoredTimelineNode(string actionId, string sourceItemId)
+        {
+            int day = System.Math.Max(1, (int)System.Math.Floor(
+                TimelineLengthDays + GourmetProject.Game.Meta.TimelineMath.Epsilon));
+            return AddRuntimeTimelineNodeAtDayInternal(actionId, day, sourceItemId, true, true);
+        }
+
+        /// <summary>把所选节点当前行动复制到严格下一个整数日；原节点及完成状态不变。</summary>
+        public string CloneRuntimeTimelineNodeToNextIntegerDay(string sourceNodeId, string sourceItemId = "")
+        {
+            int index = _runtimeTimelineNodes.FindIndex(node => node.Id == sourceNodeId);
+            if (index < 0)
+            {
+                return string.Empty;
+            }
+
+            int day = (int)System.Math.Floor(CurrentDay) + 1;
+            if (day > (int)System.Math.Floor(
+                    TimelineLengthDays + GourmetProject.Game.Meta.TimelineMath.Epsilon))
+            {
+                return string.Empty;
+            }
+
+            return AddRuntimeTimelineNodeAtDayInternal(
+                _runtimeTimelineNodes[index].ActionId,
+                day,
+                sourceItemId,
+                false,
+                false);
+        }
+
+        private string AddRuntimeTimelineNodeAtDayInternal(
+            string actionId,
+            int day,
+            string sourceItemId,
+            bool weekEndAnchored,
+            bool allowCurrentDay)
         {
             if (string.IsNullOrEmpty(CurrentTimelineId)
                 || string.IsNullOrEmpty(actionId)
                 || Tables.TbAction.GetOrDefault(actionId) == null
-                || day <= CurrentDay + GourmetProject.Game.Meta.TimelineMath.Epsilon
+                || (!allowCurrentDay && day <= CurrentDay + GourmetProject.Game.Meta.TimelineMath.Epsilon)
+                || (allowCurrentDay && day + GourmetProject.Game.Meta.TimelineMath.Epsilon < CurrentDay)
                 || day < 1
                 || day > (int)System.Math.Floor(TimelineLengthDays + GourmetProject.Game.Meta.TimelineMath.Epsilon))
             {
@@ -809,9 +860,46 @@ namespace GourmetProject.Game.Run
             }
             while (ContainsRuntimeTimelineNode(id));
 
-            _runtimeTimelineNodes.Add(new RuntimeTimelineNode(id, CurrentTimelineId, day, actionId));
+            _runtimeTimelineNodes.Add(new RuntimeTimelineNode(
+                id,
+                CurrentTimelineId,
+                day,
+                actionId,
+                sourceItemId,
+                weekEndAnchored));
             SortRuntimeTimelineNodes();
             return id;
+        }
+
+        public bool EnsureTimelineLengthAtLeast(int days)
+        {
+            float target = GourmetProject.Game.Meta.TimelineMath.Quantize(System.Math.Max(1, days));
+            if (TimelineLengthDays + GourmetProject.Game.Meta.TimelineMath.Epsilon >= target)
+            {
+                return false;
+            }
+
+            TimelineLengthDays = target;
+            int endDay = (int)System.Math.Floor(target + GourmetProject.Game.Meta.TimelineMath.Epsilon);
+            bool moved = false;
+            for (int i = 0; i < _runtimeTimelineNodes.Count; i++)
+            {
+                RuntimeTimelineNode node = _runtimeTimelineNodes[i];
+                if (!node.WeekEndAnchored || IsNodeTriggered(node.Id) || IsTimelineNodeExecutionInProgress(node.Id))
+                {
+                    continue;
+                }
+
+                _runtimeTimelineNodes[i] = node.WithDay(endDay);
+                moved = true;
+            }
+
+            if (moved)
+            {
+                SortRuntimeTimelineNodes();
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -996,9 +1084,7 @@ namespace GourmetProject.Game.Run
         private bool IsBossAction(string actionId)
         {
             cfg.GameAction action = _tables?.TbAction.GetOrDefault(actionId);
-            return action != null
-                && action.Behavior == cfg.ActionBehavior.Food
-                && !string.IsNullOrEmpty(action.FoodId);
+            return GourmetProject.Game.Meta.FoodService.IsBossAction(_tables, action);
         }
 
         public IReadOnlyList<string> UsedEventIds => _usedEventIds;
@@ -1070,7 +1156,7 @@ namespace GourmetProject.Game.Run
         {
             if (context != null && context.IsValid)
             {
-                return $"r{context.RunStepIndex}_w{weekIndex}_d{DayKey(currentDay)}_s{context.StepIndex}_{context.ActionGroupId}_{context.Action.Id}";
+                return $"r{context.RunStepIndex}_w{weekIndex}_d{DayKey(currentDay)}_s{context.StepIndex}_{context.ActionGroupId}_{context.Action.Id}_repeat{System.Math.Max(1, context.NodeRepeatIndex)}";
             }
 
             return $"w{weekIndex}_d{DayKey(currentDay)}";
@@ -1272,6 +1358,9 @@ namespace GourmetProject.Game.Run
                 TargetScoreDayOverride = context.TargetScoreDayOverride ?? 0f,
                 HalfDayBuffApplied = context.HalfDayBuffApplied,
                 IsExtraTimelineExecution = context.IsExtraTimelineExecution,
+                TimelineStopChance = context.TimelineStopChance,
+                NodeRepeatIndex = System.Math.Max(1, context.NodeRepeatIndex),
+                NodeRepeatTotal = System.Math.Max(1, context.NodeRepeatTotal),
                 OutcomeKind = outcome?.Kind ?? ActionOutcomeKind.Immediate,
                 Feedback = outcome?.Feedback ?? string.Empty,
                 RequiredScore = outcome?.RequiredScore ?? 0,
@@ -1305,7 +1394,13 @@ namespace GourmetProject.Game.Run
                     continue;
                 }
 
-                result.Add(new ActionChoice(action, data.ActionGroupId, data.WeekStepIndex, data.RunStepIndex, data.CostDays));
+                result.Add(new ActionChoice(
+                    action,
+                    data.ActionGroupId,
+                    data.WeekStepIndex,
+                    data.RunStepIndex,
+                    data.CostDays,
+                    timelineStopChance: data.TimelineStopChance));
             }
 
             return result;
@@ -1339,6 +1434,7 @@ namespace GourmetProject.Game.Run
                     WeekStepIndex = choice.WeekStepIndex,
                     RunStepIndex = choice.RunStepIndex,
                     CostDays = choice.CostDays,
+                    TimelineStopChance = choice.TimelineStopChance,
                 });
             }
         }
@@ -1672,6 +1768,13 @@ namespace GourmetProject.Game.Run
                 LastActionTargetScoreDayOverride = LastActionContext?.TargetScoreDayOverride ?? 0f,
                 LastActionHalfDayBuffApplied = LastActionContext?.HalfDayBuffApplied ?? false,
                 LastActionIsExtraTimelineExecution = LastActionContext?.IsExtraTimelineExecution ?? false,
+                LastActionTimelineStopChance = LastActionContext?.TimelineStopChance ?? 0f,
+                LastActionNodeRepeatIndex = LastActionContext != null
+                    ? System.Math.Max(1, LastActionContext.NodeRepeatIndex)
+                    : 1,
+                LastActionNodeRepeatTotal = LastActionContext != null
+                    ? System.Math.Max(1, LastActionContext.NodeRepeatTotal)
+                    : 1,
                 PendingActionExecution = ClonePendingActionExecution(_pendingActionExecution),
                 ActionGroupSequence = new List<string>(_actionGroupSequence),
                 ActionWeekPlan = new List<string>(_actionWeekPlan),
@@ -1879,6 +1982,9 @@ namespace GourmetProject.Game.Run
                             : null,
                         HalfDayBuffApplied = data.LastActionHalfDayBuffApplied,
                         IsExtraTimelineExecution = data.LastActionIsExtraTimelineExecution,
+                        TimelineStopChance = data.LastActionTimelineStopChance,
+                        NodeRepeatIndex = System.Math.Max(1, data.LastActionNodeRepeatIndex),
+                        NodeRepeatTotal = System.Math.Max(1, data.LastActionNodeRepeatTotal),
                     });
                 }
             }
@@ -1899,7 +2005,13 @@ namespace GourmetProject.Game.Run
                         continue;
                     }
 
-                    run._runtimeTimelineNodes.Add(new RuntimeTimelineNode(n.Id, n.TimelineId, n.Day, n.ActionId));
+                    run._runtimeTimelineNodes.Add(new RuntimeTimelineNode(
+                        n.Id,
+                        n.TimelineId,
+                        n.Day,
+                        n.ActionId,
+                        n.SourceItemId,
+                        n.WeekEndAnchored));
                 }
 
                 run.SortRuntimeTimelineNodes();
@@ -2269,6 +2381,9 @@ namespace GourmetProject.Game.Run
                 TargetScoreDayOverride = data.TargetScoreDayOverride,
                 HalfDayBuffApplied = data.HalfDayBuffApplied,
                 IsExtraTimelineExecution = data.IsExtraTimelineExecution,
+                TimelineStopChance = data.TimelineStopChance,
+                NodeRepeatIndex = System.Math.Max(1, data.NodeRepeatIndex),
+                NodeRepeatTotal = System.Math.Max(1, data.NodeRepeatTotal),
                 OutcomeKind = data.OutcomeKind,
                 Feedback = data.Feedback ?? string.Empty,
                 RequiredScore = data.RequiredScore,
@@ -2989,6 +3104,8 @@ namespace GourmetProject.Game.Run
                     TimelineId = n.TimelineId,
                     Day = n.Day,
                     ActionId = n.ActionId,
+                    SourceItemId = n.SourceItemId,
+                    WeekEndAnchored = n.WeekEndAnchored,
                 });
             }
 

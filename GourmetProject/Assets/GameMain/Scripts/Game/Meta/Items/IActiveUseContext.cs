@@ -103,11 +103,14 @@ namespace GourmetProject.Game.Meta
         /// <summary>能力：重新随机时间轴上最后一个未结算 Boss 节点的 Debuff。</summary>
         bool ResetLastBossDebuff();
 
-        /// <summary>能力：立即执行或排队执行指定行动轴节点；原节点状态不变。</summary>
-        bool ExecuteExtraTimelineNode(string nodeId);
+        /// <summary>能力：把指定节点当前行动复制到严格下一个整数日，返回新节点 id。</summary>
+        string CloneTimelineNodeToNextIntegerDay(string nodeId, string sourceItemId);
 
         /// <summary>能力：在指定未来整数日追加行动轴节点。</summary>
         bool AddTimelineNode(string actionId, int day);
+
+        /// <summary>能力：在指定未来整数日追加行动轴节点并返回新节点 id。</summary>
+        string AddTimelineNodeWithId(string actionId, int day, string sourceItemId);
 
         /// <summary>能力：删除指定尚未结算、尚未开始执行的行动轴节点。</summary>
         bool DeleteTimelineNode(string nodeId);

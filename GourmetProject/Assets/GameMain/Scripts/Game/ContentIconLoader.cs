@@ -32,7 +32,32 @@ namespace GourmetProject.Game
             string resourceName = item.Id.StartsWith(ItemIdPrefix, System.StringComparison.Ordinal)
                 ? item.Id.Substring(ItemIdPrefix.Length)
                 : item.Id;
-            return LoadSprite($"{ItemIconRoot}/{resourceName}");
+            Sprite sprite = LoadSprite($"{ItemIconRoot}/{resourceName}");
+            if (sprite != null)
+            {
+                return sprite;
+            }
+
+            string alias = AliasFor(item.Id);
+            return string.IsNullOrEmpty(alias) ? null : LoadSprite($"{ItemIconRoot}/{alias}");
+        }
+
+        private static string AliasFor(string itemId)
+        {
+            switch (itemId)
+            {
+                case "item_shop_restock_active":
+                case "item_shop_restock_passive":
+                    return "shop_restock";
+                case "item_skip_reward_node":
+                    return "skip_node";
+                case "item_double_daily_cost_repeat_node":
+                    return "extra_day";
+                case "item_timeline_stop_chance":
+                    return "timeline_random";
+                default:
+                    return string.Empty;
+            }
         }
 
         private static Sprite LoadSprite(string path)

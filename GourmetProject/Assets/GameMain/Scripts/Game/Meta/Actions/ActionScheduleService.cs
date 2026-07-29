@@ -61,8 +61,14 @@ namespace GourmetProject.Game.Meta
                     continue;
                 }
 
-                float costDays = RollCostDays(action, rng);
-                result.Add(new ActionChoice(action, large.Id, run.ActionStepIndex, run.RunActionStepIndex, costDays));
+                float costDays = run.SnapshotDailyActionCost(RollCostDays(action, rng));
+                result.Add(new ActionChoice(
+                    action,
+                    large.Id,
+                    run.ActionStepIndex,
+                    run.RunActionStepIndex,
+                    costDays,
+                    timelineStopChance: run.SnapshotTimelineStopChance()));
             }
 
             return result;

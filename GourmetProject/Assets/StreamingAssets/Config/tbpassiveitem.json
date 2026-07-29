@@ -594,6 +594,28 @@
     "price": 50
   },
   {
+    "id": "item_extra_interest",
+    "name": "复利账户",
+    "desc": "将一个收取利息\n添加至每周末尾",
+    "quality": 1,
+    "specialTags": 0,
+    "effectValue": 1,
+    "effectParam": "",
+    "baseWeight": 100,
+    "hiddenRange": {
+      "min": 20,
+      "max": 80
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0,
+    "termId": "",
+    "price": 80
+  },
+  {
     "id": "item_interest_cap",
     "name": "高息账户",
     "desc": "利息上限扩展到50金币",
@@ -614,6 +636,72 @@
     "goldHiddenOffset": 0,
     "termId": "",
     "price": 120
+  },
+  {
+    "id": "item_loan",
+    "name": "高利贷",
+    "desc": "获得200金币\n将失去400金币的节点行动\n添加至本周末尾",
+    "quality": 1,
+    "specialTags": 0,
+    "effectValue": 200,
+    "effectParam": "repay:400",
+    "baseWeight": 100,
+    "hiddenRange": {
+      "min": 20,
+      "max": 80
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0,
+    "termId": "",
+    "price": 80
+  },
+  {
+    "id": "item_timeline_random",
+    "name": "命运骰子",
+    "desc": "打乱时间轴的节点行动",
+    "quality": 1,
+    "specialTags": 0,
+    "effectValue": 0,
+    "effectParam": "",
+    "baseWeight": 100,
+    "hiddenRange": {
+      "min": 20,
+      "max": 80
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0,
+    "termId": "",
+    "price": 80
+  },
+  {
+    "id": "item_extra_day",
+    "name": "加班一天",
+    "desc": "每周长度变为8天",
+    "quality": 1,
+    "specialTags": 0,
+    "effectValue": 8,
+    "effectParam": "",
+    "baseWeight": 100,
+    "hiddenRange": {
+      "min": 20,
+      "max": 80
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0,
+    "termId": "",
+    "price": 80
   },
   {
     "id": "item_week_minus",
@@ -748,6 +836,28 @@
     "price": 80
   },
   {
+    "id": "item_block_active",
+    "name": "极简主义",
+    "desc": "无法再使用主动道具\n立即获得600金币",
+    "quality": 1,
+    "specialTags": 0,
+    "effectValue": 600,
+    "effectParam": "",
+    "baseWeight": 100,
+    "hiddenRange": {
+      "min": 20,
+      "max": 80
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0,
+    "termId": "",
+    "price": 80
+  },
+  {
     "id": "item_flavor_enhance",
     "name": "风味喷雾",
     "desc": "为2个食物添加随机风味",
@@ -834,6 +944,28 @@
     "goldHiddenOffset": 0,
     "termId": "",
     "price": 200
+  },
+  {
+    "id": "item_flavor_contagion",
+    "name": "风味传染",
+    "desc": "使1个食物\n拥有另1个食物的风味",
+    "quality": 1,
+    "specialTags": 0,
+    "effectValue": 1,
+    "effectParam": "",
+    "baseWeight": 100,
+    "hiddenRange": {
+      "min": 20,
+      "max": 80
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0,
+    "termId": "",
+    "price": 80
   },
   {
     "id": "item_celltag_enhance",
@@ -956,6 +1088,72 @@
     "baseWeight": 300,
     "hiddenRange": {
       "min": 10,
+      "max": 80
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0,
+    "termId": "",
+    "price": 50
+  },
+  {
+    "id": "item_shop_restock",
+    "name": "自动补货",
+    "desc": "商店会自动补货食物",
+    "quality": 0,
+    "specialTags": 0,
+    "effectValue": 0,
+    "effectParam": "",
+    "baseWeight": 30,
+    "hiddenRange": {
+      "min": 30,
+      "max": 80
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0,
+    "termId": "",
+    "price": 50
+  },
+  {
+    "id": "item_shop_restock_active",
+    "name": "主动补货",
+    "desc": "商店会自动补货主动道具",
+    "quality": 0,
+    "specialTags": 0,
+    "effectValue": 0,
+    "effectParam": "",
+    "baseWeight": 30,
+    "hiddenRange": {
+      "min": 30,
+      "max": 80
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0,
+    "termId": "",
+    "price": 50
+  },
+  {
+    "id": "item_shop_restock_passive",
+    "name": "被动补货",
+    "desc": "商店会自动补货被动道具",
+    "quality": 0,
+    "specialTags": 0,
+    "effectValue": 0,
+    "effectParam": "",
+    "baseWeight": 30,
+    "hiddenRange": {
+      "min": 30,
       "max": 80
     },
     "targetScoreHiddenOffset": 0,
@@ -1100,6 +1298,28 @@
     "price": 80
   },
   {
+    "id": "item_gold_meal_penalty",
+    "name": "克扣工钱",
+    "desc": "营业获得的金币-20%",
+    "quality": 0,
+    "specialTags": 1,
+    "effectValue": -0.2,
+    "effectParam": "",
+    "baseWeight": 300,
+    "hiddenRange": {
+      "min": 10,
+      "max": 80
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0,
+    "termId": "",
+    "price": 50
+  },
+  {
     "id": "item_shop_price_up",
     "name": "涨价",
     "desc": "商店的价格+20%",
@@ -1128,6 +1348,50 @@
     "quality": 0,
     "specialTags": 1,
     "effectValue": 0,
+    "effectParam": "",
+    "baseWeight": 300,
+    "hiddenRange": {
+      "min": 10,
+      "max": 80
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0,
+    "termId": "",
+    "price": 50
+  },
+  {
+    "id": "item_skip_node",
+    "name": "停业整顿",
+    "desc": "跳过下一个收取利息节点",
+    "quality": 0,
+    "specialTags": 1,
+    "effectValue": 1,
+    "effectParam": "",
+    "baseWeight": 300,
+    "hiddenRange": {
+      "min": 10,
+      "max": 80
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0,
+    "termId": "",
+    "price": 50
+  },
+  {
+    "id": "item_skip_reward_node",
+    "name": "错失良机",
+    "desc": "跳过下一个幸运事件节点",
+    "quality": 0,
+    "specialTags": 1,
+    "effectValue": 1,
     "effectParam": "",
     "baseWeight": 300,
     "hiddenRange": {
@@ -1230,6 +1494,72 @@
     "goldHiddenOffset": 0,
     "termId": "",
     "price": 50
+  },
+  {
+    "id": "item_gold_week_clear",
+    "name": "月光族",
+    "desc": "将失去所有金币的节点行动\n添加至本周末尾",
+    "quality": 0,
+    "specialTags": 1,
+    "effectValue": 0,
+    "effectParam": "",
+    "baseWeight": 300,
+    "hiddenRange": {
+      "min": 10,
+      "max": 80
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0,
+    "termId": "",
+    "price": 50
+  },
+  {
+    "id": "item_double_daily_cost_repeat_node",
+    "name": "时间透支",
+    "desc": "日常行动消耗天数加倍\n节点事件可以执行2次",
+    "quality": 0,
+    "specialTags": 1,
+    "effectValue": 2,
+    "effectParam": "repeat:2",
+    "baseWeight": 300,
+    "hiddenRange": {
+      "min": 10,
+      "max": 80
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0,
+    "termId": "",
+    "price": 50
+  },
+  {
+    "id": "item_timeline_stop_chance",
+    "name": "时间停摆",
+    "desc": "遇到节点事件时\n时间轴有30%概率会停止",
+    "quality": 1,
+    "specialTags": 0,
+    "effectValue": 0.3,
+    "effectParam": "",
+    "baseWeight": 100,
+    "hiddenRange": {
+      "min": 20,
+      "max": 80
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "activeItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "goldHiddenOffset": 0,
+    "termId": "",
+    "price": 80
   },
   {
     "id": "item_count_as_all",

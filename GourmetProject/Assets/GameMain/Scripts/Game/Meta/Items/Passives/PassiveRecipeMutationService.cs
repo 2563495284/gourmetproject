@@ -75,8 +75,8 @@ namespace GourmetProject.Game.Meta.Passives
         public static RecipeMutationResult ContagionFlavor(GameRun run, string title, IRandomStream rng)
         {
             var result = new RecipeMutationResult { Title = title };
-            List<RecipeTarget> sources = ExtraFlavorTargets(run);
-            List<RecipeTarget> targets = NoFlavorRecipeTargets(run);
+            List<RecipeTarget> sources = FlavorSourceTargets(run);
+            List<RecipeTarget> targets = RecipeTargetsWithFreeFlavorSlot(run);
             if (run == null || rng == null || sources.Count == 0 || targets.Count == 0)
             {
                 return result;
@@ -84,12 +84,25 @@ namespace GourmetProject.Game.Meta.Passives
 
             RecipeTarget source = sources[rng.Range(0, sources.Count)];
             RecipeBookSlot sourceSlot = Slot(run, source);
-            if (sourceSlot == null || sourceSlot.ExtraFlavorIds.Count == 0)
+            DishDef sourceDef = Dish(run, source);
+            if (sourceSlot == null || sourceDef == null)
             {
                 return result;
             }
 
-            string flavorId = sourceSlot.ExtraFlavorIds[rng.Range(0, sourceSlot.ExtraFlavorIds.Count)];
+            var sourceFlavors = new List<string>();
+            if (!string.IsNullOrEmpty(sourceDef.FlavorId))
+            {
+                sourceFlavors.Add(sourceDef.FlavorId);
+            }
+
+            sourceFlavors.AddRange(sourceSlot.ExtraFlavorIds);
+            if (sourceFlavors.Count == 0)
+            {
+                return result;
+            }
+
+            string flavorId = sourceFlavors[rng.Range(0, sourceFlavors.Count)];
             rng.Shuffle(targets);
             foreach (RecipeTarget target in targets)
             {
@@ -115,6 +128,47 @@ namespace GourmetProject.Game.Meta.Passives
             }
 
             return result;
+        }
+
+        private static List<RecipeTarget> FlavorSourceTargets(GameRun run)
+        {
+            var targets = new List<RecipeTarget>();
+            if (run == null)
+            {
+                return targets;
+            }
+
+            IReadOnlyList<RecipeBookSlot> entries = run.RecipeEntries;
+            for (int dish = 0; dish < entries.Count; dish++)
+            {
+                DishDef def = run.Database.GetDish(entries[dish].DishId);
+                if ((def != null && def.HasFlavor) || entries[dish].ExtraFlavorIds.Count > 0)
+                {
+                    targets.Add(new RecipeTarget(dish));
+                }
+            }
+
+            return targets;
+        }
+
+        private static List<RecipeTarget> RecipeTargetsWithFreeFlavorSlot(GameRun run)
+        {
+            var targets = new List<RecipeTarget>();
+            if (run == null)
+            {
+                return targets;
+            }
+
+            IReadOnlyList<RecipeBookSlot> entries = run.RecipeEntries;
+            for (int dish = 0; dish < entries.Count; dish++)
+            {
+                if (entries[dish].ExtraFlavorIds.Count < run.FoodFlavorLimit)
+                {
+                    targets.Add(new RecipeTarget(dish));
+                }
+            }
+
+            return targets;
         }
 
         public static CellMutationResult AddRandomMaterials(GameRun run, string title, int count, IRandomStream rng)

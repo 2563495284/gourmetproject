@@ -1,10 +1,13 @@
+using System.Collections.Generic;
 using System.Linq;
 using GourmetProject.Config;
+using GourmetProject.Core.Rng;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Hud;
 using GourmetProject.Gameplay.Data;
+using GourmetProject.Runtime;
 using NUnit.Framework;
 
 namespace GourmetProject.Tests.EditMode
@@ -59,6 +62,48 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(save.RuntimeTimelineNodeSerial, Is.Zero);
             Assert.That(save.LastActionHalfDayBuffApplied, Is.False);
             Assert.That(save.LastActionIsExtraTimelineExecution, Is.False);
+            Assert.That(save.LastActionTimelineStopChance, Is.Zero);
+            Assert.That(save.LastActionNodeRepeatIndex, Is.EqualTo(1));
+            Assert.That(save.LastActionNodeRepeatTotal, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void CommentedPassiveItems_AreGeneratedWithDescriptionsUnchanged()
+        {
+            var expected = new Dictionary<string, string>
+            {
+                ["item_extra_interest"] = "将一个收取利息\n添加至每周末尾",
+                ["item_loan"] = "获得200金币\n将失去400金币的节点行动\n添加至本周末尾",
+                ["item_timeline_random"] = "打乱时间轴的节点行动",
+                ["item_extra_day"] = "每周长度变为8天",
+                ["item_block_active"] = "无法再使用主动道具\n立即获得600金币",
+                ["item_flavor_contagion"] = "使1个食物\n拥有另1个食物的风味",
+                ["item_shop_restock"] = "商店会自动补货食物",
+                ["item_shop_restock_active"] = "商店会自动补货主动道具",
+                ["item_shop_restock_passive"] = "商店会自动补货被动道具",
+                ["item_gold_meal_penalty"] = "营业获得的金币-20%",
+                ["item_skip_node"] = "跳过下一个收取利息节点",
+                ["item_skip_reward_node"] = "跳过下一个幸运事件节点",
+                ["item_gold_week_clear"] = "将失去所有金币的节点行动\n添加至本周末尾",
+                ["item_double_daily_cost_repeat_node"] = "日常行动消耗天数加倍\n节点事件可以执行2次",
+                ["item_timeline_stop_chance"] = "遇到节点事件时\n时间轴有30%概率会停止",
+            };
+
+            foreach (KeyValuePair<string, string> pair in expected)
+            {
+                ItemDefinition item = ItemDefinition.Get(_tables, pair.Key, cfg.ItemKind.Passive);
+                Assert.That(item, Is.Not.Null, pair.Key);
+                Assert.That(item.Desc, Is.EqualTo(pair.Value), pair.Key);
+            }
+
+            Assert.That(
+                ItemDefinition.Get(_tables, "item_extra_day", cfg.ItemKind.Passive).EffectValue,
+                Is.EqualTo(8f));
+            Assert.That(_tables.TbAction.GetOrDefault("act_loan_repay").Behavior, Is.EqualTo(cfg.ActionBehavior.Effect));
+            Assert.That(_tables.TbAction.GetOrDefault("act_gold_clear").Behavior, Is.EqualTo(cfg.ActionBehavior.Effect));
+            Assert.That(
+                ActionDisplay.KindOf(_tables, _tables.TbAction.GetOrDefault("act_loan_repay")),
+                Is.EqualTo(ActionDisplayKind.Negative));
         }
 
         [Test]
@@ -158,9 +203,69 @@ namespace GourmetProject.Tests.EditMode
                 new[] { new ActiveTarget("7", 7, targetKind: cfg.ItemTargetKind.Global) });
 
             Assert.That(result.Success, Is.True);
+            Assert.That(result.CreatedTimelineNodeId, Is.Not.Empty);
             Assert.That(
                 TimelineService.GetNodes(run).Any(node => node.Day == 7),
                 Is.True);
+        }
+
+        [Test]
+        public void RushItem_ClonesSelectedActionToStrictNextIntegerDay()
+        {
+            GameRun run = CreateRun();
+            cfg.GameAction regular = _tables.TbAction.DataList.First(action => !FoodService.IsBossAction(_tables, action));
+            run.BeginTimeline(
+                "test",
+                7f,
+                new[]
+                {
+                    new RuntimeTimelineNode("past", "test", 2, regular.Id),
+                    new RuntimeTimelineNode("future", "test", 6, regular.Id),
+                });
+            run.CurrentDay = 3.4f;
+            run.MarkNodeTriggered("past");
+            var context = new ActionSelectUseContext(run, null);
+            ItemDefinition futureItem = ItemDefinition.Get(
+                _tables,
+                "item_active_execute_future_node",
+                cfg.ItemKind.Active);
+
+            ActiveItemUseResult result = ActiveItemEffectRegistry.Apply(
+                context,
+                futureItem,
+                new[] { new ActiveTarget("future", 6, targetKind: cfg.ItemTargetKind.Global) });
+
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.CreatedTimelineNodeId, Is.Not.Empty);
+            cfg.TimelineNode clone = TimelineService.GetNode(run, result.CreatedTimelineNodeId);
+            Assert.That(clone.Day, Is.EqualTo(4));
+            Assert.That(clone.ActionId, Is.EqualTo(regular.Id));
+            Assert.That(
+                run.RuntimeTimelineNodes.Single(node => node.Id == result.CreatedTimelineNodeId).SourceItemId,
+                Is.EqualTo("item_active_execute_future_node"));
+            Assert.That(run.IsNodeTriggered("future"), Is.False);
+            Assert.That(TimelineService.GetNode(run, "future").Day, Is.EqualTo(6));
+        }
+
+        [Test]
+        public void RushItem_HasNoCandidatesPastWeekEnd()
+        {
+            GameRun run = CreateRun();
+            cfg.GameAction action = _tables.TbAction.DataList.First();
+            run.BeginTimeline(
+                "test",
+                7f,
+                new[] { new RuntimeTimelineNode("past", "test", 2, action.Id) });
+            run.CurrentDay = 7f;
+            run.MarkNodeTriggered("past");
+            var context = new ActionSelectUseContext(run, null);
+            ItemDefinition item = ItemDefinition.Get(
+                _tables,
+                "item_active_execute_past_node",
+                cfg.ItemKind.Active);
+
+            Assert.That(context.EnumerateTargets(item), Is.Empty);
+            Assert.That(run.CloneRuntimeTimelineNodeToNextIntegerDay("past"), Is.Empty);
         }
 
         [Test]
@@ -196,6 +301,54 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(run.AddRuntimeTimelineNodeAtDay(action.Id, 3), Is.Empty);
             Assert.That(run.AddRuntimeTimelineNodeAtDay(action.Id, 8), Is.Empty);
             Assert.That(run.AddRuntimeTimelineNodeAtDay(action.Id, 4), Is.Not.Empty);
+        }
+
+        [Test]
+        public void WeekEndAnchoredNode_AllowsCurrentDayMovesWithWeekAndStaysDeleted()
+        {
+            GameRun run = CreateRun();
+            cfg.GameAction boss = _tables.TbAction.DataList.First(action => FoodService.IsBossAction(_tables, action));
+            run.BeginTimeline(
+                "test",
+                7f,
+                new[] { new RuntimeTimelineNode("boss", "test", 7, boss.Id) });
+            run.CurrentDay = 7f;
+
+            string nodeId = run.AddWeekEndAnchoredTimelineNode("act_interest", "item_extra_interest");
+            Assert.That(nodeId, Is.Not.Empty);
+            RuntimeTimelineNode anchored = run.RuntimeTimelineNodes.Single(node => node.Id == nodeId);
+            Assert.That(anchored.Day, Is.EqualTo(7));
+            Assert.That(anchored.SourceItemId, Is.EqualTo("item_extra_interest"));
+            Assert.That(anchored.WeekEndAnchored, Is.True);
+
+            Assert.That(run.EnsureTimelineLengthAtLeast(8), Is.True);
+            Assert.That(run.RuntimeTimelineNodes.Single(node => node.Id == nodeId).Day, Is.EqualTo(8));
+            Assert.That(run.RuntimeTimelineNodes.Single(node => node.Id == "boss").Day, Is.EqualTo(7));
+            GameRun restored = GameRun.FromSaveData(_tables, _database, run.ToSaveData());
+            RuntimeTimelineNode restoredAnchor =
+                restored.RuntimeTimelineNodes.Single(node => node.Id == nodeId);
+            Assert.That(restoredAnchor.SourceItemId, Is.EqualTo("item_extra_interest"));
+            Assert.That(restoredAnchor.WeekEndAnchored, Is.True);
+            Assert.That(run.RemoveRuntimeTimelineNode(nodeId), Is.True);
+            Assert.That(run.EnsureTimelineLengthAtLeast(9), Is.True);
+            Assert.That(run.RuntimeTimelineNodes.Select(node => node.Id), Is.EqualTo(new[] { "boss" }));
+        }
+
+        [Test]
+        public void LoanAndGoldClear_CreateWeekEndEffectNodes()
+        {
+            GameRun run = CreateRun();
+            run.BeginTimeline("test", 7f);
+
+            int beforeGold = run.Gold;
+            run.AcquireItem("item_loan", 0);
+            run.AcquireItem("item_gold_week_clear", 0);
+
+            Assert.That(run.Gold, Is.EqualTo(beforeGold + 200));
+            Assert.That(
+                run.RuntimeTimelineNodes.Select(node => node.ActionId),
+                Is.EquivalentTo(new[] { "act_loan_repay", "act_gold_clear" }));
+            Assert.That(run.RuntimeTimelineNodes.All(node => node.Day == 7 && node.WeekEndAnchored), Is.True);
         }
 
         [Test]
@@ -299,6 +452,130 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(run.CurrentDay, Is.Zero);
             Assert.That(run.ActionStepIndex, Is.Zero);
             Assert.That(run.NextDailyActionHalfCostStacks, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void DoubleDailyCost_AppliesBeforeHalfDayAndRepeatsNonBossTwice()
+        {
+            GameRun run = CreateRun();
+            run.AcquireItem("item_double_daily_cost_repeat_node", 0);
+            run.AddNextDailyActionHalfCostStack();
+
+            float doubled = run.SnapshotDailyActionCost(1.5f);
+            float halved = run.PreviewDailyActionCost(doubled);
+            var runtime = new ItemRuntime(run);
+
+            Assert.That(doubled, Is.EqualTo(3f));
+            Assert.That(halved, Is.EqualTo(1.5f));
+            Assert.That(runtime.TimelineNodeRepeatCount(), Is.EqualTo(2));
+        }
+
+        [Test]
+        public void CategoryRestockAndMealPenalty_AreIndependent()
+        {
+            GameRun run = CreateRun();
+            run.AcquireItem("item_shop_restock", 0);
+            run.AcquireItem("item_shop_restock_active", 0);
+            run.AcquireItem("item_shop_restock_passive", 0);
+            run.AcquireItem("item_gold_meal_penalty", 0);
+            var runtime = new ItemRuntime(run);
+
+            Assert.That(runtime.AutoRestock(ShopEntryKind.Dish), Is.True);
+            Assert.That(runtime.AutoRestock(ShopEntryKind.ActiveItem), Is.True);
+            Assert.That(runtime.AutoRestock(ShopEntryKind.PassiveItem), Is.True);
+            Assert.That(runtime.AutoRestock(ShopEntryKind.Fragment), Is.False);
+            Assert.That(runtime.ModifyMealRewardGold(100), Is.EqualTo(80));
+        }
+
+        [Test]
+        public void BlockActive_GrantsGoldWithoutDeletingHeldActiveItems()
+        {
+            GameRun run = CreateRun();
+            run.AcquireItem("item_active_reroll_action", 0);
+            int activeBefore = run.GetItemCount("item_active_reroll_action");
+            int goldBefore = run.Gold;
+
+            run.AcquireItem("item_block_active", 0);
+
+            Assert.That(run.Gold, Is.EqualTo(goldBefore + 600));
+            Assert.That(run.GetItemCount("item_active_reroll_action"), Is.EqualTo(activeBefore));
+            Assert.That(new ItemRuntime(run).BlocksActiveItems(), Is.True);
+        }
+
+        [Test]
+        public void SkipItems_OnlyConsumeTheirMatchingNodeBehavior()
+        {
+            GameRun run = CreateRun();
+            run.AcquireItem("item_skip_node", 0);
+            run.AcquireItem("item_skip_reward_node", 0);
+            var runtime = new ItemRuntime(run);
+
+            Assert.That(runtime.TryConsumeTimelineSkip(cfg.ActionBehavior.Shop), Is.False);
+            Assert.That(run.HasItem("item_skip_node"), Is.True);
+            Assert.That(run.HasItem("item_skip_reward_node"), Is.True);
+
+            Assert.That(runtime.TryConsumeTimelineSkip(cfg.ActionBehavior.Interest), Is.True);
+            Assert.That(run.HasItem("item_skip_node"), Is.False);
+            Assert.That(run.HasItem("item_skip_reward_node"), Is.True);
+
+            Assert.That(runtime.TryConsumeTimelineSkip(cfg.ActionBehavior.Reward), Is.True);
+            Assert.That(run.HasItem("item_skip_reward_node"), Is.False);
+        }
+
+        [Test]
+        public void TimelineStopAtFirstNodeDay_TruncatesDailyAdvanceOnce()
+        {
+            var random = new RandomService();
+            random.Init(12345UL);
+            typeof(GameApp)
+                .GetProperty(nameof(GameApp.Random))
+                ?.GetSetMethod(nonPublic: true)
+                ?.Invoke(null, new object[] { random });
+
+            GameRun run = CreateRun();
+            cfg.GameAction action = _tables.TbAction.DataList.First();
+            run.BeginTimeline(
+                "test",
+                7f,
+                new[]
+                {
+                    new RuntimeTimelineNode("same_day_a", "test", 2, action.Id),
+                    new RuntimeTimelineNode("same_day_b", "test", 2, action.Id),
+                    new RuntimeTimelineNode("later", "test", 5, action.Id),
+                });
+            var context = new ActionExecutionContext(action, 0, 0, "daily", 6f)
+            {
+                TimelineStopChance = 1f,
+            };
+
+            ActionExecutor.Commit(run, context);
+
+            Assert.That(context.TimelineStopTriggered, Is.True);
+            Assert.That(context.TimelineStopDay, Is.EqualTo(2));
+            Assert.That(run.CurrentDay, Is.EqualTo(2f));
+            Assert.That(run.ActionStepIndex, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void PendingRepeatAndTimelineStopSnapshot_RoundTripSave()
+        {
+            GameRun run = CreateRun();
+            cfg.GameAction action = _tables.TbAction.DataList.First();
+            var context = new ActionExecutionContext(action)
+            {
+                SourceKey = "node",
+                TimelineStopChance = 0.3f,
+                NodeRepeatIndex = 2,
+                NodeRepeatTotal = 2,
+            };
+            run.SetPendingActionExecution(context, ActionOutcome.Immediate("ok"));
+
+            GameRun restored = GameRun.FromSaveData(_tables, _database, run.ToSaveData());
+            PendingActionExecutionSaveData pending = restored.GetPendingActionExecution();
+
+            Assert.That(pending.TimelineStopChance, Is.EqualTo(0.3f));
+            Assert.That(pending.NodeRepeatIndex, Is.EqualTo(2));
+            Assert.That(pending.NodeRepeatTotal, Is.EqualTo(2));
         }
 
         [Test]

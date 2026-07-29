@@ -87,6 +87,20 @@ namespace GourmetProject.Game.Meta.Passives
     [PassiveItemModel("item_shop_restock")]
     public sealed class ShopRestockModel : PassiveItemModel
     {
-        public override bool AutoRestock() => true;
+        public override bool AutoRestock(ShopEntryKind kind) => kind == ShopEntryKind.Dish;
+    }
+
+    [Preserve]
+    [PassiveItemModel("item_shop_restock_active")]
+    public sealed class ActiveItemRestockModel : PassiveItemModel
+    {
+        public override bool AutoRestock(ShopEntryKind kind) => kind == ShopEntryKind.ActiveItem;
+    }
+
+    [Preserve]
+    [PassiveItemModel("item_shop_restock_passive")]
+    public sealed class PassiveItemRestockModel : PassiveItemModel
+    {
+        public override bool AutoRestock(ShopEntryKind kind) => kind == ShopEntryKind.PassiveItem;
     }
 }

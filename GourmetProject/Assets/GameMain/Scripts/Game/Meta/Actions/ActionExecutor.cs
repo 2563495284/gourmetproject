@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Run;
+using GourmetProject.Runtime;
 
 namespace GourmetProject.Game.Meta
 {
@@ -52,7 +54,8 @@ namespace GourmetProject.Game.Meta
                 return prevDay;
             }
 
-            prevDay = TimelineService.AdvanceDays(run, context.CostDays);
+            float committedCostDays = ResolveTimelineStopCost(run, context);
+            prevDay = TimelineService.AdvanceDays(run, committedCostDays);
             if (context.HalfDayBuffApplied)
             {
                 run.TryConsumeNextDailyActionHalfCostStack();
@@ -60,6 +63,54 @@ namespace GourmetProject.Game.Meta
 
             run.AdvanceActionStep();
             return prevDay;
+        }
+
+        private static float ResolveTimelineStopCost(GameRun run, ActionExecutionContext context)
+        {
+            float plannedCost = System.Math.Max(0f, context.CostDays);
+            float chance = System.Math.Max(0f, System.Math.Min(1f, context.TimelineStopChance));
+            if (plannedCost <= TimelineMath.Epsilon
+                || chance <= 0f
+                || GameApp.Random == null)
+            {
+                return plannedCost;
+            }
+
+            float projectedDay = TimelineMath.Advance(
+                run.CurrentDay,
+                plannedCost,
+                run.TimelineLengthDays);
+            var candidateDays = new SortedSet<int>();
+            foreach (cfg.TimelineNode node in TimelineService.GetNodes(run))
+            {
+                if (node == null
+                    || run.IsNodeTriggered(node.Id)
+                    || node.Day <= run.CurrentDay + TimelineMath.Epsilon
+                    || node.Day > projectedDay + TimelineMath.Epsilon)
+                {
+                    continue;
+                }
+
+                candidateDays.Add(node.Day);
+            }
+
+            foreach (int day in candidateDays)
+            {
+                string key =
+                    $"timeline_stop_r{context.RunStepIndex}_w{run.WeekIndex}_s{context.StepIndex}_d{day}";
+                IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Item, key);
+                if (rng == null || !rng.NextBool(chance))
+                {
+                    continue;
+                }
+
+                context.TimelineStopTriggered = true;
+                context.TimelineStopDay = day;
+                new ItemRuntime(run).FlashTriggered(m => m.TimelineStopChance() > 0f);
+                return TimelineMath.Quantize(System.Math.Max(0f, day - run.CurrentDay));
+            }
+
+            return plannedCost;
         }
     }
 }

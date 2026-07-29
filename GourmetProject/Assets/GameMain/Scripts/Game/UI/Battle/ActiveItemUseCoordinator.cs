@@ -729,6 +729,11 @@ namespace GourmetProject.Game.UI.Battle
 
             if (_host.ActiveRun?.UseActiveItem(item.Id) != true)
             {
+                if (!string.IsNullOrEmpty(result.CreatedTimelineNodeId))
+                {
+                    ctx.DeleteTimelineNode(result.CreatedTimelineNodeId);
+                }
+
                 _host.ShowActiveItemMessage($"{item.Name}：道具已失效。");
                 _host.RefreshAfterActiveItem(
                     result.BoardChanged,
@@ -741,10 +746,6 @@ namespace GourmetProject.Game.UI.Battle
                 result.BoardChanged,
                 result.ActionChoicesChanged,
                 refreshActionContent);
-            if (result.ExecuteQueuedImmediately)
-            {
-                _host.ActiveLoop?.ExecuteQueuedExtraTimelineNodes();
-            }
         }
 
         private bool CanUse(ItemDefinition item, ActiveUseContextKind contextKind, out string reason)

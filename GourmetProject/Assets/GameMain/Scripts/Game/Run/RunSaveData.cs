@@ -166,6 +166,12 @@ namespace GourmetProject.Game.Run
 
         public bool LastActionIsExtraTimelineExecution;
 
+        public float LastActionTimelineStopChance;
+
+        public int LastActionNodeRepeatIndex = 1;
+
+        public int LastActionNodeRepeatTotal = 1;
+
         /// <summary>已进入但尚未结算/提交的行动；用于读档恢复到 food/interest/event/shop 页面。</summary>
         public PendingActionExecutionSaveData PendingActionExecution;
 
@@ -307,6 +313,8 @@ namespace GourmetProject.Game.Run
         public string TimelineId;
         public int Day;
         public string ActionId;
+        public string SourceItemId;
+        public bool WeekEndAnchored;
     }
 
     [Serializable]
@@ -322,6 +330,9 @@ namespace GourmetProject.Game.Run
         public float TargetScoreDayOverride;
         public bool HalfDayBuffApplied;
         public bool IsExtraTimelineExecution;
+        public float TimelineStopChance;
+        public int NodeRepeatIndex = 1;
+        public int NodeRepeatTotal = 1;
         public ActionOutcomeKind OutcomeKind;
         public string Feedback;
         public int RequiredScore;
@@ -341,6 +352,7 @@ namespace GourmetProject.Game.Run
         public int WeekStepIndex;
         public int RunStepIndex;
         public float CostDays;
+        public float TimelineStopChance;
     }
 
     [Serializable]

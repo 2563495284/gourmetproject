@@ -43,6 +43,8 @@ namespace GourmetProject.Game.Meta
                     return ActionDisplayKind.Shop;
                 case cfg.ActionBehavior.Interest:
                     return ActionDisplayKind.Interest;
+                case cfg.ActionBehavior.Effect:
+                    return ActionDisplayKind.Negative;
                 case cfg.ActionBehavior.Event:
                 default:
                     return ActionDisplayKind.Event;

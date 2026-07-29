@@ -160,7 +160,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
         private ShopEntry TryAutoRestock(ShopEntry purchasedEntry)
         {
             GameRun run = _host.Run;
-            if (run == null || purchasedEntry == null || !new ItemRuntime(run).AutoRestock())
+            if (run == null || purchasedEntry == null || !new ItemRuntime(run).AutoRestock(purchasedEntry.Kind))
             {
                 return null;
             }
@@ -189,7 +189,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 return null;
             }
 
-            new ItemRuntime(run).FlashTriggered(m => m.AutoRestock());
+            new ItemRuntime(run).FlashTriggered(m => m.AutoRestock(purchasedEntry.Kind));
             return restock;
         }
 

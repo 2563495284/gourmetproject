@@ -111,7 +111,7 @@ namespace GourmetProject.Game.Meta.Passives
 
         public virtual bool BlockRemoveDish() => false;
 
-        public virtual bool AutoRestock() => false;
+        public virtual bool AutoRestock(ShopEntryKind kind) => false;
 
         // ================= 目标分族（百分比累加） =================
 
@@ -140,15 +140,23 @@ namespace GourmetProject.Game.Meta.Passives
             return false;
         }
 
-        public virtual bool ClearsGoldOnWeekEnd() => false;
-
         public virtual int ExtraActiveSlots() => 0;
 
         public virtual bool BlocksActiveItems() => false;
 
         public virtual int FoodFlavorLimitBonus() => 0;
 
-        public virtual bool HasExtraInterest() => false;
+        /// <summary>日常行动耗时倍率；节点行动和休息不调用。</summary>
+        public virtual float DailyActionCostMultiplier() => 1f;
+
+        /// <summary>自然经过的非 Boss 节点执行次数。</summary>
+        public virtual int TimelineNodeRepeatCount() => 1;
+
+        /// <summary>日常行动经过节点日时，时间轴停摆概率。</summary>
+        public virtual float TimelineStopChance() => 0f;
+
+        /// <summary>是否消费本被动跳过指定类型的下一个节点。</summary>
+        public virtual bool SkipsTimelineBehavior(cfg.ActionBehavior behavior) => false;
 
         /// <summary>利息节点单次上限目标值（取最大）。返回 false 表示不提供。</summary>
         public virtual bool TryGetInterestCapOverride(out int value)

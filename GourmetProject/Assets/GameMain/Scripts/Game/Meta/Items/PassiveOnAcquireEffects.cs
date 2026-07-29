@@ -44,19 +44,6 @@ namespace GourmetProject.Game.Meta
             run.Gold += System.Math.Max(0, gold);
         }
 
-        /// <summary>高利贷：立即获得 effectValue 金币；effectParam="repay:N" 登记下一周应扣的债务。</summary>
-        public static void ApplyLoan(GameRun run, ItemDefinition item)
-        {
-            if (run == null || item == null)
-            {
-                return;
-            }
-
-            run.Gold += System.Math.Max(0, (int)item.EffectValue);
-            int repay = ParseToken(item.EffectParam, "repay");
-            run.RegisterLoanDebt(System.Math.Max(0, repay));
-        }
-
         /// <summary>丢弃负面道具：最多丢 maxCount 个带 Negative 标签的道具；goldPer>0 时每丢一个给钱。</summary>
         public static void DiscardNegatives(GameRun run, int maxCount, int goldPer)
         {
@@ -271,30 +258,5 @@ namespace GourmetProject.Game.Meta
             }
         }
 
-        /// <summary>解析形如 "key:value" 的 token（分隔符 ; , |），无则 0。</summary>
-        private static int ParseToken(string param, string key)
-        {
-            if (string.IsNullOrEmpty(param))
-            {
-                return 0;
-            }
-
-            foreach (string token in param.Split(';', ',', '|'))
-            {
-                int idx = token.IndexOf(':');
-                if (idx < 0)
-                {
-                    continue;
-                }
-
-                if (string.Equals(token.Substring(0, idx).Trim(), key, System.StringComparison.OrdinalIgnoreCase)
-                    && int.TryParse(token.Substring(idx + 1).Trim(), out int v))
-                {
-                    return v;
-                }
-            }
-
-            return 0;
-        }
     }
 }

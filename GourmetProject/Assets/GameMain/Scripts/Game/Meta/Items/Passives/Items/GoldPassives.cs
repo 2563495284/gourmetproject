@@ -57,7 +57,13 @@ namespace GourmetProject.Game.Meta.Passives
     [PassiveItemModel("item_gold_week_clear")]
     public sealed class GoldWeekClearModel : PassiveItemModel
     {
-        public override bool ClearsGoldOnWeekEnd() => true;
+        public override void OnAcquired()
+        {
+            if (Run != null && !string.IsNullOrEmpty(Run.AddWeekEndAnchoredTimelineNode("act_gold_clear", ItemId)))
+            {
+                MarkIconUsed();
+            }
+        }
     }
 
     [Preserve]
@@ -75,7 +81,15 @@ namespace GourmetProject.Game.Meta.Passives
     [PassiveItemModel("item_extra_interest")]
     public sealed class ExtraInterestModel : PassiveItemModel
     {
-        public override bool HasExtraInterest() => true;
+        public override bool IsIconUsed => false;
+
+        public override void OnAcquired()
+        {
+            if (Run != null && !string.IsNullOrEmpty(Run.AddWeekEndAnchoredTimelineNode("act_interest", ItemId)))
+            {
+                MarkIconUsed();
+            }
+        }
     }
 
     /// <summary>美食分红：获得时登记生效局数；每局额外金币由 MealBonusGoldPerMeal 提供。</summary>
@@ -105,15 +119,23 @@ namespace GourmetProject.Game.Meta.Passives
         }
     }
 
-    /// <summary>高利贷：获得时发钱并登记债务。</summary>
+    /// <summary>高利贷：获得时发钱，并把还款行动追加到本周末。</summary>
     [Preserve]
     [PassiveItemModel("item_loan")]
     public sealed class LoanModel : PassiveItemModel
     {
         public override void OnAcquired()
         {
-            PassiveOnAcquireEffects.ApplyLoan(Run, Definition);
-            MarkIconUsed();
+            if (Run == null)
+            {
+                return;
+            }
+
+            Run.Gold += System.Math.Max(0, (int)Value);
+            if (!string.IsNullOrEmpty(Run.AddWeekEndAnchoredTimelineNode("act_loan_repay", ItemId)))
+            {
+                MarkIconUsed();
+            }
         }
     }
 

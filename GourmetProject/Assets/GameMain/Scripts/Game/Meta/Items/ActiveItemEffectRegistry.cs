@@ -12,13 +12,13 @@ namespace GourmetProject.Game.Meta
             bool boardChanged,
             string message,
             bool actionChoicesChanged = false,
-            bool executeQueuedImmediately = false)
+            string createdTimelineNodeId = "")
         {
             Success = success;
             BoardChanged = boardChanged;
             Message = message;
             ActionChoicesChanged = actionChoicesChanged;
-            ExecuteQueuedImmediately = executeQueuedImmediately;
+            CreatedTimelineNodeId = createdTimelineNodeId ?? string.Empty;
         }
 
         public bool Success { get; }
@@ -29,7 +29,7 @@ namespace GourmetProject.Game.Meta
 
         public bool ActionChoicesChanged { get; }
 
-        public bool ExecuteQueuedImmediately { get; }
+        public string CreatedTimelineNodeId { get; }
     }
 
     /// <summary>
@@ -138,13 +138,14 @@ namespace GourmetProject.Game.Meta
                         return new ActiveItemUseResult(false, false, $"{item.Name}：请先选择节点。");
                     }
 
-                    return ctx.ExecuteExtraTimelineNode(targets[0].Id)
+                    string clonedNodeId = ctx.CloneTimelineNodeToNextIntegerDay(targets[0].Id, item.Id);
+                    return !string.IsNullOrEmpty(clonedNodeId)
                         ? new ActiveItemUseResult(
                             true,
                             false,
-                            $"{item.Name}：已安排额外执行所选节点。",
-                            executeQueuedImmediately: ctx.ContextKind == ActiveUseContextKind.ActionSelect)
-                        : new ActiveItemUseResult(false, false, $"{item.Name}：现在无法执行所选节点。");
+                            $"{item.Name}：已复制到下一个整数日。",
+                            createdTimelineNodeId: clonedNodeId)
+                        : new ActiveItemUseResult(false, false, $"{item.Name}：下一个整数日无法放置所选节点。");
 
                 case ItemEffectTypes.TimelineAddRewardNode:
                 case ItemEffectTypes.TimelineAddInterestNode:
@@ -154,11 +155,13 @@ namespace GourmetProject.Game.Meta
                         return new ActiveItemUseResult(false, false, $"{item.Name}：请先选择日期。");
                     }
 
-                    return ctx.AddTimelineNode(item.EffectParam, targets[0].X)
+                    string addedNodeId = ctx.AddTimelineNodeWithId(item.EffectParam, targets[0].X, item.Id);
+                    return !string.IsNullOrEmpty(addedNodeId)
                         ? new ActiveItemUseResult(
                             true,
                             false,
-                            $"{item.Name}：已添加到第 {targets[0].X} 天。")
+                            $"{item.Name}：已添加到第 {targets[0].X} 天。",
+                            createdTimelineNodeId: addedNodeId)
                         : new ActiveItemUseResult(false, false, $"{item.Name}：无法添加到所选日期。");
 
                 case ItemEffectTypes.TimelineDeleteNode:

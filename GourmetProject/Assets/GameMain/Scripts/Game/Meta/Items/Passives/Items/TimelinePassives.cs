@@ -38,9 +38,13 @@ namespace GourmetProject.Game.Meta.Passives
     [PassiveItemModel("item_extra_day")]
     public sealed class TimelineExtraDayModel : TimelineOnAcquireModel
     {
+        public override bool IsIconUsed => false;
+
         public override void OnAcquired()
         {
-            Finish(PassiveTimelineMutationService.DelayBoss(Run, Def.Name, System.Math.Max(1, (int)Value)));
+            var result = new TimelineMutationResult { Title = Def.Name };
+            result.Changed = Run != null && Run.EnsureTimelineLengthAtLeast(System.Math.Max(1, (int)Value));
+            Finish(result);
         }
     }
 
@@ -78,5 +82,32 @@ namespace GourmetProject.Game.Meta.Passives
     [PassiveItemModel("item_skip_node")]
     public sealed class TimelineSkipNodeModel : PassiveItemModel
     {
+        public override bool SkipsTimelineBehavior(cfg.ActionBehavior behavior)
+            => behavior == cfg.ActionBehavior.Interest;
+    }
+
+    [Preserve]
+    [PassiveItemModel("item_skip_reward_node")]
+    public sealed class TimelineSkipRewardNodeModel : PassiveItemModel
+    {
+        public override bool SkipsTimelineBehavior(cfg.ActionBehavior behavior)
+            => behavior == cfg.ActionBehavior.Reward;
+    }
+
+    [Preserve]
+    [PassiveItemModel("item_double_daily_cost_repeat_node")]
+    public sealed class DoubleDailyCostRepeatNodeModel : PassiveItemModel
+    {
+        public override float DailyActionCostMultiplier() => Value > 0f ? Value : 2f;
+
+        public override int TimelineNodeRepeatCount()
+            => System.Math.Max(1, PassiveParam.ParseInt(Param, "repeat", 2));
+    }
+
+    [Preserve]
+    [PassiveItemModel("item_timeline_stop_chance")]
+    public sealed class TimelineStopChanceModel : PassiveItemModel
+    {
+        public override float TimelineStopChance() => Value;
     }
 }

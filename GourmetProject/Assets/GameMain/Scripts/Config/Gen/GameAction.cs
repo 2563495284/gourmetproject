@@ -22,6 +22,9 @@ public sealed partial class GameAction : Luban.BeanBase
         { if(!_buf["desc"].IsString) { throw new SerializationException(); }  Desc = _buf["desc"]; }
         { if(!_buf["behavior"].IsNumber) { throw new SerializationException(); }  Behavior = (ActionBehavior)_buf["behavior"].AsInt; }
         { if(!_buf["foodId"].IsString) { throw new SerializationException(); }  FoodId = _buf["foodId"]; }
+        { if(!_buf["effectType"].IsNumber) { throw new SerializationException(); }  EffectType = (EffectType)_buf["effectType"].AsInt; }
+        { if(!_buf["effectValue"].IsNumber) { throw new SerializationException(); }  EffectValue = _buf["effectValue"]; }
+        { if(!_buf["effectParam"].IsString) { throw new SerializationException(); }  EffectParam = _buf["effectParam"]; }
         { if(!_buf["minCostDays"].IsNumber) { throw new SerializationException(); }  MinCostDays = _buf["minCostDays"]; }
         { if(!_buf["maxCostDays"].IsNumber) { throw new SerializationException(); }  MaxCostDays = _buf["maxCostDays"]; }
     }
@@ -52,6 +55,18 @@ public sealed partial class GameAction : Luban.BeanBase
     /// </summary>
     public readonly string FoodId;
     /// <summary>
+    /// 即时效果类型
+    /// </summary>
+    public readonly EffectType EffectType;
+    /// <summary>
+    /// 即时效果数值
+    /// </summary>
+    public readonly float EffectValue;
+    /// <summary>
+    /// 即时效果参数
+    /// </summary>
+    public readonly string EffectParam;
+    /// <summary>
     /// 本次最小耗时(0.1天)
     /// </summary>
     public readonly float MinCostDays;
@@ -75,6 +90,9 @@ public sealed partial class GameAction : Luban.BeanBase
         + "desc:" + Desc + ","
         + "behavior:" + Behavior + ","
         + "foodId:" + FoodId + ","
+        + "effectType:" + EffectType + ","
+        + "effectValue:" + EffectValue + ","
+        + "effectParam:" + EffectParam + ","
         + "minCostDays:" + MinCostDays + ","
         + "maxCostDays:" + MaxCostDays + ","
         + "}";

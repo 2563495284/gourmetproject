@@ -22,6 +22,7 @@ namespace cfg
         Negative = 3,
         Shop = 4,
         Interest = 5,
+        Effect = 6,
     }
 
 } 

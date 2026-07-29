@@ -12,7 +12,8 @@ namespace GourmetProject.Game.Meta
             int weekStepIndex,
             int runStepIndex,
             float costDays,
-            bool halfDayBuffApplied = false)
+            bool halfDayBuffApplied = false,
+            float timelineStopChance = 0f)
         {
             Action = action;
             ActionGroupId = actionGroupId ?? string.Empty;
@@ -20,6 +21,7 @@ namespace GourmetProject.Game.Meta
             RunStepIndex = Math.Max(0, runStepIndex);
             CostDays = TimelineMath.Quantize(Math.Max(0f, costDays));
             HalfDayBuffApplied = halfDayBuffApplied;
+            TimelineStopChance = Math.Max(0f, Math.Min(1f, timelineStopChance));
         }
 
         public cfg.GameAction Action { get; }
@@ -34,6 +36,8 @@ namespace GourmetProject.Game.Meta
 
         public bool HalfDayBuffApplied { get; }
 
+        public float TimelineStopChance { get; }
+
         public bool IsValid => Action != null;
 
         public ActionExecutionContext ToExecutionContext()
@@ -41,6 +45,7 @@ namespace GourmetProject.Game.Meta
             return new ActionExecutionContext(Action, WeekStepIndex, RunStepIndex, ActionGroupId, CostDays)
             {
                 HalfDayBuffApplied = HalfDayBuffApplied,
+                TimelineStopChance = TimelineStopChance,
             };
         }
     }
@@ -93,6 +98,18 @@ namespace GourmetProject.Game.Meta
 
         /// <summary>额外节点执行：不推进天数/行动步数，也不改变原节点完成状态。</summary>
         public bool IsExtraTimelineExecution { get; set; }
+
+        /// <summary>选择日常行动时快照的时间停摆概率；获得/失去道具不追溯当前行动。</summary>
+        public float TimelineStopChance { get; set; }
+
+        /// <summary>自然节点本次执行轮次与总次数；Boss 和旧档默认 1/1。</summary>
+        public int NodeRepeatIndex { get; set; } = 1;
+
+        public int NodeRepeatTotal { get; set; } = 1;
+
+        public bool TimelineStopTriggered { get; set; }
+
+        public int TimelineStopDay { get; set; }
 
         /// <summary>
         /// 只有玩家从日常行动选项提交的上下文才消费天数、行动步数和半日券。

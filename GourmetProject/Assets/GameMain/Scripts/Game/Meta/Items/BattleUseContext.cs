@@ -213,9 +213,11 @@ namespace GourmetProject.Game.Meta
 
         public bool ResetLastBossDebuff() => false;
 
-        public bool ExecuteExtraTimelineNode(string nodeId) => false;
+        public string CloneTimelineNodeToNextIntegerDay(string nodeId, string sourceItemId) => string.Empty;
 
         public bool AddTimelineNode(string actionId, int day) => false;
+
+        public string AddTimelineNodeWithId(string actionId, int day, string sourceItemId) => string.Empty;
 
         public bool DeleteTimelineNode(string nodeId) => false;
 

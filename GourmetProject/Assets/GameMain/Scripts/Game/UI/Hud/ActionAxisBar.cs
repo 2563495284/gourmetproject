@@ -413,7 +413,8 @@ namespace GourmetProject.Game.UI.Hud
                     NodeSprite(kind),
                     _run.IsNodeTriggered(node.Id),
                     kind == ActionDisplayKind.Boss,
-                    preview: false);
+                    preview: false,
+                    negative: kind == ActionDisplayKind.Negative);
                 if (isNew)
                 {
                     group.Add(node.Id, bubble, preview: false, animate);
@@ -810,6 +811,9 @@ namespace GourmetProject.Game.UI.Hud
                     ? _shopNodeSprite
                     : Resources.Load<Sprite>("Sprites/UI/icon_axis_shop"),
                 ActionDisplayKind.Event or ActionDisplayKind.Reward => _eventNodeSprite != null
+                    ? _eventNodeSprite
+                    : Resources.Load<Sprite>("Sprites/UI/icon_axis_event"),
+                ActionDisplayKind.Negative => _eventNodeSprite != null
                     ? _eventNodeSprite
                     : Resources.Load<Sprite>("Sprites/UI/icon_axis_event"),
                 _ => null,

@@ -62,8 +62,8 @@ namespace GourmetProject.Game.Meta
         /// <summary>是否禁止删除菜品（负面「囤积癖」）。</summary>
         public bool BlockRemoveDish() => AnyFlag(m => m.BlockRemoveDish());
 
-        /// <summary>商店是否自动补货。</summary>
-        public bool AutoRestock() => AnyFlag(m => m.AutoRestock());
+        /// <summary>指定商品分类是否自动补货；碎片没有任何默认补货。</summary>
+        public bool AutoRestock(ShopEntryKind kind) => AnyFlag(m => m.AutoRestock(kind));
 
         public void FlashTriggered(System.Func<PassiveItemModel, bool> predicate)
         {
@@ -168,15 +168,47 @@ namespace GourmetProject.Game.Meta
             return best;
         }
 
-        public bool ClearsGoldOnWeekEnd() => AnyFlag(m => m.ClearsGoldOnWeekEnd());
-
         public int ExtraActiveSlots() => SumInt(m => m.ExtraActiveSlots());
 
         public bool BlocksActiveItems() => AnyFlag(m => m.BlocksActiveItems());
 
         public int FoodFlavorLimitBonus() => SumInt(m => m.FoodFlavorLimitBonus());
 
-        public bool HasExtraInterest() => AnyFlag(m => m.HasExtraInterest());
+        public float DailyActionCostMultiplier()
+        {
+            float multiplier = 1f;
+            foreach (PassiveItemModel m in Models)
+            {
+                multiplier *= System.Math.Max(0f, m.DailyActionCostMultiplier());
+            }
+
+            return multiplier;
+        }
+
+        public int TimelineNodeRepeatCount() => System.Math.Max(1, MaxInt(m => m.TimelineNodeRepeatCount()));
+
+        public float TimelineStopChance()
+        {
+            float chance = SumFloat(m => m.TimelineStopChance());
+            return System.Math.Max(0f, System.Math.Min(1f, chance));
+        }
+
+        public bool TryConsumeTimelineSkip(cfg.ActionBehavior behavior)
+        {
+            foreach (PassiveItemModel m in Models)
+            {
+                if (!m.SkipsTimelineBehavior(behavior))
+                {
+                    continue;
+                }
+
+                string itemId = m.ItemId;
+                m.Flash();
+                return _run.RemoveItem(itemId);
+            }
+
+            return false;
+        }
 
         /// <summary>道具指定的利息上限目标值（取最大）。</summary>
         public int InterestCapOverride()

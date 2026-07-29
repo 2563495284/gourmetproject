@@ -34,6 +34,7 @@ namespace GourmetProject.Game.Meta
             Add(new EventBehaviorHandler(cfg.ActionBehavior.Negative));
             Add(new ShopBehaviorHandler());
             Add(new InterestBehaviorHandler());
+            Add(new EffectBehaviorHandler());
             return map;
         }
 
@@ -82,7 +83,7 @@ namespace GourmetProject.Game.Meta
             int required = RequiredScoreForFood(run, context, food, 0f);
             string key = string.IsNullOrEmpty(context.SourceKey)
                 ? $"food_w{run.WeekIndex}_s{context.StepIndex}_d{run.CurrentDay.ToString("0.0", CultureInfo.InvariantCulture)}_{action.Id}"
-                : $"food_{context.SourceKey}_{action.Id}";
+                : $"food_{context.SourceKey}_{action.Id}_repeat{System.Math.Max(1, context.NodeRepeatIndex)}";
             return ActionOutcome.Battle(required, string.Empty, key);
         }
 
@@ -152,23 +153,10 @@ namespace GourmetProject.Game.Meta
             int gold = TimelineMath.Interest(run.Gold, threshold, goldPer, maxGain);
             run.Gold += gold;
 
-            // 复利账户（ExtraInterest）：本次利息节点额外再结算一次利息。
-            var itemRuntime = new ItemRuntime(run);
-            int extraGold = 0;
-            if (itemRuntime.HasExtraInterest())
-            {
-                itemRuntime.FlashTriggered(m => m.HasExtraInterest());
-                extraGold = TimelineMath.Interest(run.Gold, threshold, goldPer, maxGain);
-                run.Gold += extraGold;
-            }
-
             string msg;
-            if (gold > 0 || extraGold > 0)
+            if (gold > 0)
             {
-                int total = gold + extraGold;
-                msg = extraGold > 0
-                    ? $"利息结算：金币 +{total}（含复利账户额外 +{extraGold}），当前 {run.Gold}。"
-                    : $"利息结算：金币 +{total}（每满 {threshold} 金币得 {goldPer}，最高 {maxGain}），当前 {run.Gold}。";
+                msg = $"利息结算：金币 +{gold}（每满 {threshold} 金币得 {goldPer}，最高 {maxGain}），当前 {run.Gold}。";
             }
             else if (maxGain <= 0)
             {
@@ -180,6 +168,19 @@ namespace GourmetProject.Game.Meta
             }
 
             return ActionOutcome.Immediate(msg);
+        }
+    }
+
+    /// <summary>配置驱动的通用即时效果节点。</summary>
+    public sealed class EffectBehaviorHandler : IActionBehaviorHandler
+    {
+        public cfg.ActionBehavior Behavior => cfg.ActionBehavior.Effect;
+
+        public ActionOutcome Execute(GameRun run, ActionExecutionContext context, IRandomStream rng)
+        {
+            cfg.GameAction action = context.Action;
+            string feedback = EffectResolver.Apply(run, action.EffectType, action.EffectValue, action.EffectParam, rng);
+            return ActionOutcome.Immediate(feedback);
         }
     }
 }
