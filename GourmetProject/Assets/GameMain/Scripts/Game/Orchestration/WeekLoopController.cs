@@ -82,6 +82,32 @@ namespace GourmetProject.Game.Orchestration
 
         public ActionExecutionContext CurrentBattleActionContext { get; private set; }
 
+        /// <summary>删除尚未开始执行的节点，并同步剔除已经收集到本轮待执行队列中的快照。</summary>
+        public bool RemoveTimelineNode(string nodeId)
+        {
+            if (!_run.RemoveRuntimeTimelineNode(nodeId))
+            {
+                return false;
+            }
+
+            if (_pendingNodes != null && _pendingNodes.Count > 0)
+            {
+                var remaining = new Queue<cfg.TimelineNode>();
+                while (_pendingNodes.Count > 0)
+                {
+                    cfg.TimelineNode pending = _pendingNodes.Dequeue();
+                    if (pending != null && pending.Id != nodeId)
+                    {
+                        remaining.Enqueue(pending);
+                    }
+                }
+
+                _pendingNodes = remaining;
+            }
+
+            return true;
+        }
+
         /// <summary>进入（或继续）一周：随机/沿用行动轴后开始行动循环。</summary>
         public void BeginWeek()
         {
@@ -182,6 +208,8 @@ namespace GourmetProject.Game.Orchestration
                 TargetScoreDayOverride = data.HasTargetScoreDayOverride
                     ? (float?)data.TargetScoreDayOverride
                     : null,
+                HalfDayBuffApplied = data.HalfDayBuffApplied,
+                IsExtraTimelineExecution = data.IsExtraTimelineExecution,
             };
             return context;
         }
@@ -224,17 +252,13 @@ namespace GourmetProject.Game.Orchestration
                 return () =>
                 {
                     _run.ClearPendingActionExecution();
-                    _run.MarkNodeTriggered(context.SourceKey);
-                    RunPersistence.Save(_run);
+                    if (!context.IsExtraTimelineExecution)
+                    {
+                        _run.MarkNodeTriggered(context.SourceKey);
+                    }
 
-                    if (outcome != null && outcome.IsBoss)
-                    {
-                        CompleteRecoveredBossBattle(context);
-                    }
-                    else
-                    {
-                        PromptNextAction();
-                    }
+                    RunPersistence.Save(_run);
+                    DrainPendingExtraNodes(PromptNextAction);
                 };
             }
 
@@ -252,7 +276,7 @@ namespace GourmetProject.Game.Orchestration
             return () =>
             {
                 _run.ClearPendingActionExecution();
-                if (!string.IsNullOrEmpty(context?.SourceKey))
+                if (!string.IsNullOrEmpty(context?.SourceKey) && !context.IsExtraTimelineExecution)
                 {
                     _run.MarkNodeTriggered(context.SourceKey);
                 }
@@ -271,7 +295,15 @@ namespace GourmetProject.Game.Orchestration
 
             if (TimelineService.IsWeekFinished(_run))
             {
-                EndWeek();
+                if (IsFinalWeekVictoryReady())
+                {
+                    OnVictory();
+                }
+                else
+                {
+                    EndWeek();
+                }
+
                 return;
             }
 
@@ -388,7 +420,7 @@ namespace GourmetProject.Game.Orchestration
         {
             Action cb = _afterShop;
             _afterShop = null;
-            cb?.Invoke();
+            DrainPendingExtraNodes(cb);
         }
 
         public void OnBattleSettled(ScoreResult result, bool isWin, int finalHappyCakeLayers)
@@ -532,18 +564,22 @@ namespace GourmetProject.Game.Orchestration
                 return;
             }
 
-            if (FoodService.IsBossAction(_run.Tables, context.Action))
-            {
-                ContinueAfterRecoveredBossReward(context);
-                return;
-            }
-
             if (!string.IsNullOrEmpty(context.SourceKey))
             {
                 _run.ClearPendingActionExecution();
-                _run.MarkNodeTriggered(context.SourceKey);
+                if (!context.IsExtraTimelineExecution)
+                {
+                    _run.MarkNodeTriggered(context.SourceKey);
+                }
+
+                if (FoodService.IsBossAction(_run.Tables, context.Action))
+                {
+                    cfg.Food boss = FoodService.ResolveBoss(_run, context.Action);
+                    MarkBossCompletedAndApplyGold(boss?.Id);
+                }
+
                 RunPersistence.Save(_run);
-                PromptNextAction();
+                DrainPendingExtraNodes(PromptNextAction);
                 return;
             }
 
@@ -551,46 +587,6 @@ namespace GourmetProject.Game.Orchestration
             float prevDay = ActionExecutor.Commit(_run, context);
             RunPersistence.Save(_run);
             ResolveNodes(prevDay, PromptNextAction);
-        }
-
-        private void ContinueAfterRecoveredBossReward(ActionExecutionContext context)
-        {
-            cfg.Food boss = FoodService.ResolveBoss(_run, context.Action);
-            if (boss == null || !_run.IsBossCompleted(boss.Id))
-            {
-                CompleteRecoveredBossBattle(context);
-                return;
-            }
-
-            _run.ClearPendingActionExecution();
-            ContinueAfterBossReward(boss);
-        }
-
-        private void CompleteRecoveredBossBattle(ActionExecutionContext context)
-        {
-            _run.ClearPendingActionExecution();
-            if (!string.IsNullOrEmpty(context.SourceKey))
-            {
-                _run.MarkNodeTriggered(context.SourceKey);
-            }
-
-            cfg.Food boss = FoodService.ResolveBoss(_run, context.Action);
-            MarkBossCompletedAndApplyGold(boss?.Id);
-            RunPersistence.Save(_run);
-            ClearPendingNodes();
-            ContinueAfterBossReward(boss);
-        }
-
-        private void ContinueAfterBossReward(cfg.Food boss)
-        {
-            if (IsFinalBossVictory(boss))
-            {
-                OnVictory();
-            }
-            else
-            {
-                EndWeek();
-            }
         }
 
         private void EnsurePendingBattleReward(ActionExecutionContext actionContext)
@@ -701,23 +697,82 @@ namespace GourmetProject.Game.Orchestration
                 && (action.Behavior == cfg.ActionBehavior.Shop || action.Behavior == cfg.ActionBehavior.Interest);
         }
 
-        /// <summary>
-        /// 「加急单」：立即执行行动轴上尚未结算、day 最小的下一个节点（含运行时节点），不推进天数。
-        /// 复用节点卡展示 + <see cref="ExecutePlacedAction"/> 执行链。无可执行节点返回 false。
-        /// </summary>
-        public bool ForceExecuteNextTimelineNode()
+        public bool ForceExecuteExtraTimelineNode(string nodeId)
         {
-            cfg.TimelineNode node = TimelineService.GetNextUntriggeredNode(_run);
+            cfg.TimelineNode node = TimelineService.GetNode(_run, nodeId);
             if (node == null)
             {
                 return false;
             }
 
-            _pendingNodes = new Queue<cfg.TimelineNode>();
-            _pendingNodes.Enqueue(node);
-            _afterNodes = PromptNextAction;
-            ProcessNextNode();
+            ExecuteExtraTimelineNode(node, PromptNextAction);
             return true;
+        }
+
+        public bool QueueExtraTimelineNode(string nodeId)
+        {
+            if (TimelineService.GetNode(_run, nodeId) == null
+                || !_run.EnqueueExtraTimelineNode(nodeId))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        public void ExecuteQueuedExtraTimelineNodes()
+        {
+            DrainPendingExtraNodes(PromptNextAction);
+        }
+
+        private void DrainPendingExtraNodes(Action onDone)
+        {
+            if (_run == null || !_run.TryDequeueExtraTimelineNode(out string nodeId))
+            {
+                onDone?.Invoke();
+                return;
+            }
+
+            RunPersistence.Save(_run);
+            cfg.TimelineNode node = TimelineService.GetNode(_run, nodeId);
+            if (node == null)
+            {
+                DrainPendingExtraNodes(onDone);
+                return;
+            }
+
+            ExecuteExtraTimelineNode(node, () => DrainPendingExtraNodes(onDone));
+        }
+
+        private void ExecuteExtraTimelineNode(cfg.TimelineNode node, Action onDone)
+        {
+            cfg.GameAction action = TimelineService.NodeAction(_run, node);
+            if (action == null)
+            {
+                onDone?.Invoke();
+                return;
+            }
+
+            var context = new ActionExecutionContext(action)
+            {
+                SourceKey = node.Id,
+                TargetScoreDayOverride = FoodService.IsBossAction(_run?.Tables, action) ? (float?)node.Day : null,
+                IsExtraTimelineExecution = true,
+            };
+            IRandomStream rng = GameApp.Random.DomainStream(
+                SeedDomains.Effect,
+                $"extra_node_w{_run.WeekIndex}_{node.Id}_{action.Id}");
+            ActionOutcome outcome = ActionExecutor.Execute(_run, context, rng);
+            DispatchOutcome(
+                outcome,
+                context,
+                () =>
+                {
+                    _run.ClearPendingActionExecution();
+                    RunPersistence.Save(_run);
+                    onDone?.Invoke();
+                },
+                () => _run.ClearPendingActionExecution());
         }
 
         /// <summary>放置行动执行：与随机行动共用 <see cref="ActionExecutor"/> 与 <see cref="DispatchOutcome"/>，节点不消耗天数/步数。</summary>
@@ -810,7 +865,7 @@ namespace GourmetProject.Game.Orchestration
 
                     if (outcome.IsBoss)
                     {
-                        StartBossBattle(outcome, context, onBossComplete);
+                        StartBossBattle(outcome, context, onContinue, onBossComplete);
                     }
                     else
                     {
@@ -848,7 +903,11 @@ namespace GourmetProject.Game.Orchestration
                 onEnd: onContinue);
         }
 
-        private void StartBossBattle(ActionOutcome outcome, ActionExecutionContext context, Action onBossComplete)
+        private void StartBossBattle(
+            ActionOutcome outcome,
+            ActionExecutionContext context,
+            Action onContinue,
+            Action onBossComplete)
         {
             cfg.Tables tables = _run.Tables ?? GameApp.Config.Tables;
             cfg.Food boss = tables.TbFood.GetOrDefault(outcome.BossId);
@@ -862,7 +921,7 @@ namespace GourmetProject.Game.Orchestration
                     outcome.BattleKey,
                     true,
                     outcome.BossId,
-                    () => ContinueAfterBossReward(boss),
+                    onContinue,
                     context,
                     beforeReward: () => CompleteBossBeforeReward(outcome, boss, onBossComplete));
             });
@@ -877,7 +936,7 @@ namespace GourmetProject.Game.Orchestration
                 ? outcome.BossId
                 : boss?.Id ?? string.Empty;
             MarkBossCompletedAndApplyGold(bossId);
-            ClearPendingNodes();
+            RunPersistence.Save(_run);
         }
 
         private void MarkBossCompletedAndApplyGold(string bossId)
@@ -905,9 +964,29 @@ namespace GourmetProject.Game.Orchestration
             _run.Gold += bossGold;
         }
 
-        private bool IsFinalBossVictory(cfg.Food boss)
+        private bool IsFinalWeekVictoryReady()
         {
-            return boss != null && !_run.IsEndless && _run.WeekIndex >= _run.TotalWeeks;
+            if (_run == null || _run.IsEndless || _run.WeekIndex < _run.TotalWeeks)
+            {
+                return false;
+            }
+
+            foreach (cfg.TimelineNode node in TimelineService.GetNodes(_run))
+            {
+                cfg.GameAction action = TimelineService.NodeAction(_run, node);
+                if (!FoodService.IsBossAction(_run.Tables, action) || !_run.IsNodeTriggered(node.Id))
+                {
+                    continue;
+                }
+
+                cfg.Food boss = FoodService.ResolveBoss(_run, action);
+                if (boss != null && _run.IsBossCompleted(boss.Id))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -1168,12 +1247,12 @@ namespace GourmetProject.Game.Orchestration
         {
             if (_run != null && _run.HasPendingGenericRewards)
             {
-                _afterBattleWin = onDone;
+                _afterBattleWin = () => DrainPendingExtraNodes(onDone);
                 GameApp.UI.OpenUIForm(UIForms.Reward, UIForms.GroupDialog, RewardFormOpenArgs.GenericQueue(confirmBattleRewardAfterDone: true));
                 return;
             }
 
-            onDone?.Invoke();
+            DrainPendingExtraNodes(onDone);
         }
 
         private void ShowEventPage(

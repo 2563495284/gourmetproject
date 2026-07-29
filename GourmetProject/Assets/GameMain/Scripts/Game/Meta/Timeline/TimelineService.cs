@@ -105,7 +105,11 @@ namespace GourmetProject.Game.Meta
                 }
             }
 
-            nodes.Sort((a, b) => a.Day.CompareTo(b.Day));
+            nodes.Sort((a, b) =>
+            {
+                int cmp = a.Day.CompareTo(b.Day);
+                return cmp != 0 ? cmp : CompareTimelineNodeIds(a.Id, b.Id);
+            });
             return nodes;
         }
 
@@ -143,28 +147,18 @@ namespace GourmetProject.Game.Meta
 
         private static float ResolveTimelineLength(GameRun run, cfg.Timeline timeline, IReadOnlyList<RuntimeTimelineNode> nodes)
         {
-            int bossDay = 0;
-            cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
+            float length = timeline != null && timeline.BaseLengthDays > 0
+                ? timeline.BaseLengthDays
+                : DefaultLengthDays;
             if (nodes != null)
             {
                 foreach (RuntimeTimelineNode node in nodes)
                 {
-                    cfg.GameAction action = tables.TbAction.GetOrDefault(node.ActionId);
-                    if (action != null
-                        && action.Behavior == cfg.ActionBehavior.Food
-                        && !string.IsNullOrEmpty(action.FoodId))
-                    {
-                        bossDay = System.Math.Max(bossDay, node.Day);
-                    }
+                    length = System.Math.Max(length, node.Day);
                 }
             }
 
-            if (bossDay > 0)
-            {
-                return bossDay;
-            }
-
-            return timeline != null && timeline.BaseLengthDays > 0 ? timeline.BaseLengthDays : DefaultLengthDays;
+            return TimelineMath.Quantize(length);
         }
 
         /// <summary>取当前行动轴上尚未结算、day 最小的下一个节点（含运行时节点）；无则返回 null。「加急单」用。</summary>
@@ -184,6 +178,114 @@ namespace GourmetProject.Game.Meta
             }
 
             return null;
+        }
+
+        public static cfg.TimelineNode GetNode(GameRun run, string nodeId)
+        {
+            if (run == null || string.IsNullOrEmpty(nodeId))
+            {
+                return null;
+            }
+
+            foreach (cfg.TimelineNode node in GetNodes(run))
+            {
+                if (node.Id == nodeId)
+                {
+                    return node;
+                }
+            }
+
+            return null;
+        }
+
+        public static List<cfg.TimelineNode> GetFutureUntriggeredNodes(GameRun run)
+        {
+            var result = new List<cfg.TimelineNode>();
+            if (run == null)
+            {
+                return result;
+            }
+
+            foreach (cfg.TimelineNode node in GetNodes(run))
+            {
+                if (node.Day > run.CurrentDay + TimelineMath.Epsilon && !run.IsNodeTriggered(node.Id))
+                {
+                    result.Add(node);
+                }
+            }
+
+            return result;
+        }
+
+        public static List<cfg.TimelineNode> GetPastTriggeredNodes(GameRun run)
+        {
+            var result = new List<cfg.TimelineNode>();
+            if (run == null)
+            {
+                return result;
+            }
+
+            foreach (cfg.TimelineNode node in GetNodes(run))
+            {
+                if (node.Day < run.CurrentDay - TimelineMath.Epsilon && run.IsNodeTriggered(node.Id))
+                {
+                    result.Add(node);
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>玩家可删除的节点：尚未结算且尚未开始执行，包含当前待执行链中的节点。</summary>
+        public static List<cfg.TimelineNode> GetDeletableUnsettledNodes(GameRun run)
+        {
+            var result = new List<cfg.TimelineNode>();
+            if (run == null)
+            {
+                return result;
+            }
+
+            foreach (cfg.TimelineNode node in GetNodes(run))
+            {
+                if (!run.IsNodeTriggered(node.Id) && !run.IsTimelineNodeExecutionInProgress(node.Id))
+                {
+                    result.Add(node);
+                }
+            }
+
+            return result;
+        }
+
+        public static cfg.TimelineNode GetLastUntriggeredBossNode(GameRun run)
+        {
+            cfg.TimelineNode result = null;
+            if (run == null)
+            {
+                return null;
+            }
+
+            foreach (cfg.TimelineNode node in GetNodes(run))
+            {
+                if (run.IsNodeTriggered(node.Id))
+                {
+                    continue;
+                }
+
+                cfg.GameAction action = NodeAction(run, node);
+                if (!FoodService.IsBossAction(run.Tables, action))
+                {
+                    continue;
+                }
+
+                if (result == null
+                    || node.Day > result.Day
+                    || (node.Day == result.Day && string.CompareOrdinal(node.Id, result.Id) > 0))
+                {
+                    result = node;
+                }
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -244,6 +346,37 @@ namespace GourmetProject.Game.Meta
             }
 
             return false;
+        }
+
+        private static int CompareTimelineNodeIds(string left, string right)
+        {
+            bool leftDynamic = TryGetDynamicNodeSerial(left, out int leftSerial);
+            bool rightDynamic = TryGetDynamicNodeSerial(right, out int rightSerial);
+            if (leftDynamic != rightDynamic)
+            {
+                return leftDynamic ? 1 : -1;
+            }
+
+            if (leftDynamic && leftSerial != rightSerial)
+            {
+                return leftSerial.CompareTo(rightSerial);
+            }
+
+            return string.CompareOrdinal(left, right);
+        }
+
+        private static bool TryGetDynamicNodeSerial(string id, out int serial)
+        {
+            serial = 0;
+            if (string.IsNullOrEmpty(id) || !id.StartsWith("dyn_", System.StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            int separator = id.LastIndexOf('_');
+            return separator >= 0
+                && separator + 1 < id.Length
+                && int.TryParse(id.Substring(separator + 1), out serial);
         }
     }
 }

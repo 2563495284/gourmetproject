@@ -45,7 +45,19 @@ namespace GourmetProject.Game.Meta
                 return run?.CurrentDay ?? 0f;
             }
 
-            float prevDay = TimelineService.AdvanceDays(run, context.CostDays);
+            float prevDay = run.CurrentDay;
+            if (context.IsExtraTimelineExecution)
+            {
+                run.ClearPendingActionExecution();
+                return prevDay;
+            }
+
+            prevDay = TimelineService.AdvanceDays(run, context.CostDays);
+            if (context.HalfDayBuffApplied)
+            {
+                run.TryConsumeNextDailyActionHalfCostStack();
+            }
+
             run.AdvanceActionStep();
             return prevDay;
         }

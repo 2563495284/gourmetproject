@@ -75,9 +75,13 @@ namespace GourmetProject.Game.Meta
             return candidates[rng.WeightedPickIndex(weights)];
         }
 
-        public static string BuildBossDebuffSeedKey(GameRun run, string bossKey)
+        public static string BuildBossDebuffSeedKey(GameRun run, string bossKey, string sourceNodeId = null)
         {
-            int rerollIndex = run?.BossDebuffRerollIndex ?? 0;
+            int rerollIndex = run != null
+                && !string.IsNullOrEmpty(sourceNodeId)
+                && sourceNodeId == run.BossDebuffRerollNodeId
+                    ? run.BossDebuffRerollIndex
+                    : 0;
             return rerollIndex > 0
                 ? $"{bossKey}_debuff_r{rerollIndex}"
                 : $"{bossKey}_debuff";

@@ -19,6 +19,18 @@ namespace GourmetProject.Game.Meta
             }
         }
 
+        public static bool RequiresTarget(ItemDefinition item)
+        {
+            if (item == null)
+            {
+                return false;
+            }
+
+            return item.EffectType == ItemEffectTypes.TimelineExecuteFuture
+                || item.EffectType == ItemEffectTypes.TimelineExecutePast
+                || RequiresTarget(item.TargetKind);
+        }
+
         /// <summary>该目标类型在指定情境是否天然存在（能否使用）。</summary>
         public static bool IsUsableIn(cfg.ItemTargetKind kind, ActiveUseContextKind ctx)
         {
@@ -51,7 +63,11 @@ namespace GourmetProject.Game.Meta
                 return false;
             }
 
-            // 排程小票操作局外核心循环；重掷只属于行动选择页，其余可在行动选择/商店使用。
+            if (item.EffectType == ItemEffectTypes.HalfNextActionCost)
+            {
+                return true;
+            }
+
             if (IsScheduleEffect(item.EffectType))
             {
                 return IsScheduleUsableIn(item.EffectType, ctx);
@@ -81,7 +97,13 @@ namespace GourmetProject.Game.Meta
                 case ItemEffectTypes.RerollAction:
                 case ItemEffectTypes.ResetBossDebuff:
                 case ItemEffectTypes.TimelineExecuteNext:
+                case ItemEffectTypes.TimelineExecuteFuture:
+                case ItemEffectTypes.TimelineExecutePast:
                 case ItemEffectTypes.TimelineAddRewardNode:
+                case ItemEffectTypes.TimelineAddInterestNode:
+                case ItemEffectTypes.TimelineAddShopNode:
+                case ItemEffectTypes.TimelineAddLotteryNode:
+                case ItemEffectTypes.TimelineDeleteNode:
                     return true;
                 default:
                     return false;
@@ -95,12 +117,40 @@ namespace GourmetProject.Game.Meta
                 case ItemEffectTypes.RerollAction:
                     return ctx == ActiveUseContextKind.ActionSelect;
                 case ItemEffectTypes.ResetBossDebuff:
+                    return ctx == ActiveUseContextKind.ActionSelect
+                        || ctx == ActiveUseContextKind.Shop
+                        || ctx == ActiveUseContextKind.Event
+                        || ctx == ActiveUseContextKind.Reward;
+                case ItemEffectTypes.TimelineExecuteFuture:
+                case ItemEffectTypes.TimelineExecutePast:
+                    return ctx == ActiveUseContextKind.ActionSelect
+                        || ctx == ActiveUseContextKind.Shop
+                        || ctx == ActiveUseContextKind.Event;
                 case ItemEffectTypes.TimelineExecuteNext:
                 case ItemEffectTypes.TimelineAddRewardNode:
-                    return ctx == ActiveUseContextKind.ActionSelect || ctx == ActiveUseContextKind.Shop;
+                case ItemEffectTypes.TimelineAddInterestNode:
+                case ItemEffectTypes.TimelineAddShopNode:
+                case ItemEffectTypes.TimelineAddLotteryNode:
+                case ItemEffectTypes.TimelineDeleteNode:
+                    return ctx == ActiveUseContextKind.ActionSelect
+                        || ctx == ActiveUseContextKind.Shop
+                        || ctx == ActiveUseContextKind.Event;
                 default:
                     return false;
             }
+        }
+
+        public static bool IsTimelineAddEffect(string effectType)
+        {
+            return effectType == ItemEffectTypes.TimelineAddRewardNode
+                || effectType == ItemEffectTypes.TimelineAddInterestNode
+                || effectType == ItemEffectTypes.TimelineAddShopNode
+                || effectType == ItemEffectTypes.TimelineAddLotteryNode;
+        }
+
+        public static bool IsTodoTimelineEffect(string effectType)
+        {
+            return effectType == ItemEffectTypes.TimelineAddLotteryNode;
         }
     }
 }

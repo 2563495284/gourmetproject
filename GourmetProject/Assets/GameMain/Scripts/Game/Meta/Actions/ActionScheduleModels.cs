@@ -6,13 +6,20 @@ namespace GourmetProject.Game.Meta
     /// <summary>行动选择快照：UI 展示和执行必须使用同一份耗时/序号数据。</summary>
     public sealed class ActionChoice
     {
-        public ActionChoice(cfg.GameAction action, string actionGroupId, int weekStepIndex, int runStepIndex, float costDays)
+        public ActionChoice(
+            cfg.GameAction action,
+            string actionGroupId,
+            int weekStepIndex,
+            int runStepIndex,
+            float costDays,
+            bool halfDayBuffApplied = false)
         {
             Action = action;
             ActionGroupId = actionGroupId ?? string.Empty;
             WeekStepIndex = Math.Max(0, weekStepIndex);
             RunStepIndex = Math.Max(0, runStepIndex);
             CostDays = TimelineMath.Quantize(Math.Max(0f, costDays));
+            HalfDayBuffApplied = halfDayBuffApplied;
         }
 
         public cfg.GameAction Action { get; }
@@ -25,11 +32,16 @@ namespace GourmetProject.Game.Meta
 
         public float CostDays { get; }
 
+        public bool HalfDayBuffApplied { get; }
+
         public bool IsValid => Action != null;
 
         public ActionExecutionContext ToExecutionContext()
         {
-            return new ActionExecutionContext(Action, WeekStepIndex, RunStepIndex, ActionGroupId, CostDays);
+            return new ActionExecutionContext(Action, WeekStepIndex, RunStepIndex, ActionGroupId, CostDays)
+            {
+                HalfDayBuffApplied = HalfDayBuffApplied,
+            };
         }
     }
 
@@ -75,5 +87,11 @@ namespace GourmetProject.Game.Meta
 
         /// <summary>目标分曲线使用的天数覆盖值；行动轴 Boss 节点用节点所在天数，而非玩家当前游标。</summary>
         public float? TargetScoreDayOverride { get; set; }
+
+        /// <summary>本次日常行动已应用半日券；提交时消费一层。</summary>
+        public bool HalfDayBuffApplied { get; set; }
+
+        /// <summary>额外节点执行：不推进天数/行动步数，也不改变原节点完成状态。</summary>
+        public bool IsExtraTimelineExecution { get; set; }
     }
 }

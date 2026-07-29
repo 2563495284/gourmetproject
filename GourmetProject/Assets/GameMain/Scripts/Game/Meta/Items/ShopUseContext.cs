@@ -1,11 +1,9 @@
 using System;
 using System.Collections.Generic;
-using GourmetProject.Core.Rng;
 using GourmetProject.Game.Orchestration;
 using GourmetProject.Game.Run;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Model;
-using GourmetProject.Runtime;
 
 namespace GourmetProject.Game.Meta
 {
@@ -15,14 +13,19 @@ namespace GourmetProject.Game.Meta
     public sealed class ShopUseContext : IActiveUseContext
     {
         private readonly WeekLoopController _weekLoop;
+        private readonly ActiveUseContextKind _contextKind;
 
-        public ShopUseContext(GameRun run, WeekLoopController weekLoop = null)
+        public ShopUseContext(
+            GameRun run,
+            WeekLoopController weekLoop = null,
+            ActiveUseContextKind contextKind = ActiveUseContextKind.Shop)
         {
             Run = run;
             _weekLoop = weekLoop;
+            _contextKind = contextKind;
         }
 
-        public ActiveUseContextKind ContextKind => ActiveUseContextKind.Shop;
+        public ActiveUseContextKind ContextKind => _contextKind;
 
         public GameRun Run { get; }
 
@@ -31,6 +34,38 @@ namespace GourmetProject.Game.Meta
             if (item == null)
             {
                 return Array.Empty<ActiveTarget>();
+            }
+
+            if (item.EffectType == ItemEffectTypes.TimelineExecuteFuture
+                || item.EffectType == ItemEffectTypes.TimelineExecutePast)
+            {
+                IReadOnlyList<cfg.TimelineNode> nodes = item.EffectType == ItemEffectTypes.TimelineExecuteFuture
+                    ? TimelineService.GetFutureUntriggeredNodes(Run)
+                    : TimelineService.GetPastTriggeredNodes(Run);
+                var targets = new List<ActiveTarget>(nodes.Count);
+                foreach (cfg.TimelineNode node in nodes)
+                {
+                    targets.Add(new ActiveTarget(node.Id, node.Day, targetKind: cfg.ItemTargetKind.Global));
+                }
+
+                return targets;
+            }
+
+            if (ItemActiveUsage.IsTimelineAddEffect(item.EffectType))
+            {
+                return EnumerateFutureDays();
+            }
+
+            if (item.EffectType == ItemEffectTypes.TimelineDeleteNode)
+            {
+                IReadOnlyList<cfg.TimelineNode> nodes = TimelineService.GetDeletableUnsettledNodes(Run);
+                var targets = new List<ActiveTarget>(nodes.Count);
+                foreach (cfg.TimelineNode node in nodes)
+                {
+                    targets.Add(new ActiveTarget(node.Id, node.Day, targetKind: cfg.ItemTargetKind.Global));
+                }
+
+                return targets;
             }
 
             switch (item.TargetKind)
@@ -92,31 +127,61 @@ namespace GourmetProject.Game.Meta
 
         public bool RerollCurrentAction() => false;
 
-        public bool ResetWeekBoss()
+        public bool ResetLastBossDebuff()
+        {
+            cfg.TimelineNode node = TimelineService.GetLastUntriggeredBossNode(Run);
+            if (node == null)
+            {
+                return false;
+            }
+
+            return Run.RerollBossDebuffForNode(node.Id);
+        }
+
+        public bool ExecuteExtraTimelineNode(string nodeId)
+        {
+            return _weekLoop != null && _weekLoop.QueueExtraTimelineNode(nodeId);
+        }
+
+        public bool AddTimelineNode(string actionId, int day)
+        {
+            return Run != null && !string.IsNullOrEmpty(Run.AddRuntimeTimelineNodeAtDay(actionId, day));
+        }
+
+        public bool DeleteTimelineNode(string nodeId)
+        {
+            return _weekLoop != null
+                ? _weekLoop.RemoveTimelineNode(nodeId)
+                : Run != null && Run.RemoveRuntimeTimelineNode(nodeId);
+        }
+
+        public bool AddNextActionHalfCostStack()
         {
             if (Run == null)
             {
                 return false;
             }
 
-            Run.RerollBossDebuffForCurrentWeek();
+            Run.AddNextDailyActionHalfCostStack();
             return true;
         }
 
-        public bool ExecuteNextTimelineNode()
+        private IReadOnlyList<ActiveTarget> EnumerateFutureDays()
         {
-            return _weekLoop != null && _weekLoop.ForceExecuteNextTimelineNode();
-        }
-
-        public bool AddRewardNodeToTimeline(string actionId)
-        {
-            if (Run == null || string.IsNullOrEmpty(actionId))
+            var targets = new List<ActiveTarget>();
+            if (Run == null)
             {
-                return false;
+                return targets;
             }
 
-            IRandomStream rng = GameApp.Random?.DomainStream(SeedDomains.Item, $"timeline_add_{actionId}_{Run.NextActiveUseKey()}");
-            return !string.IsNullOrEmpty(Run.AddRuntimeTimelineNode(actionId, rng));
+            int start = System.Math.Max(1, (int)System.Math.Floor(Run.CurrentDay) + 1);
+            int end = (int)System.Math.Floor(Run.TimelineLengthDays + TimelineMath.Epsilon);
+            for (int day = start; day <= end; day++)
+            {
+                targets.Add(new ActiveTarget(day.ToString(), day, targetKind: cfg.ItemTargetKind.Global));
+            }
+
+            return targets;
         }
     }
 }
