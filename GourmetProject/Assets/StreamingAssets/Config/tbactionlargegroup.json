@@ -264,19 +264,5 @@
       "sg_hardEvent_14",
       "sg_hardEvent_15"
     ]
-  },
-  {
-    "id": "lg_debug",
-    "name": "调试大组",
-    "ruleIds": "rule_debug_first",
-    "fallbackWeights": [
-      0,
-      0,
-      0,
-      0
-    ],
-    "smallGroupIds": [
-      "sg_debug"
-    ]
   }
 ]
