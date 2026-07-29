@@ -2,8 +2,6 @@
   {
     "id": 1,
     "scoreProfileId": "score_w1",
-    "rewardPackageId": "reward_w1",
-    "rewardHiddenScore": 8,
     "modifier": "",
     "timelineIds": [
       "tl_normal",
@@ -17,8 +15,6 @@
   {
     "id": 2,
     "scoreProfileId": "score_w2",
-    "rewardPackageId": "reward_w2",
-    "rewardHiddenScore": 14,
     "modifier": "",
     "timelineIds": [
       "tl_normal",
@@ -32,8 +28,6 @@
   {
     "id": 3,
     "scoreProfileId": "score_w3",
-    "rewardPackageId": "reward_w3",
-    "rewardHiddenScore": 22,
     "modifier": "",
     "timelineIds": [
       "tl_normal",
@@ -47,8 +41,6 @@
   {
     "id": 4,
     "scoreProfileId": "score_w4",
-    "rewardPackageId": "reward_w4_boss",
-    "rewardHiddenScore": 30,
     "modifier": "limit_serve",
     "timelineIds": [
       "tl_normal",

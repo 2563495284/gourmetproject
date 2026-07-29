@@ -1410,15 +1410,6 @@ namespace GourmetProject.Game.Run
 
         public cfg.Week CurrentWeek => _tables.TbWeek.GetOrDefault(WeekIndex);
 
-        public cfg.RewardPackage CurrentRewardPackage
-        {
-            get
-            {
-                cfg.Week week = CurrentWeek ?? LastConfiguredWeek;
-                return week == null ? null : _tables.TbRewardPackage.GetOrDefault(week.RewardPackageId);
-            }
-        }
-
         /// <summary>是否已进入无尽模式（周序号超过配置表最后一周）。</summary>
         public bool IsEndless => WeekIndex > TotalWeeks;
 
@@ -1432,21 +1423,6 @@ namespace GourmetProject.Game.Run
                 }
 
                 return HiddenScoreService.TargetScore(this);
-            }
-        }
-
-        public int RewardHiddenScore
-        {
-            get
-            {
-                int derived = HiddenScoreService.DishHiddenScore(this, LastActionContext);
-                if (derived > 0)
-                {
-                    return derived;
-                }
-
-                cfg.Week week = CurrentWeek ?? LastConfiguredWeek;
-                return week?.RewardHiddenScore ?? 0;
             }
         }
 

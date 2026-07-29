@@ -19,7 +19,7 @@ namespace GourmetProject.Game.Meta
         public static RewardOffer GenerateOffer(GameRun run, cfg.Week week, IRandomStream rng, ActionExecutionContext actionContext)
         {
             cfg.Week effectiveWeek = ResolveWeek(run, week);
-            cfg.RewardPackage package = ResolvePackage(run, effectiveWeek, actionContext);
+            cfg.RewardPackage package = ResolvePackage(run, actionContext);
             if (package == null)
             {
                 Log.Warning("Missing reward package. Falling back to gold-only reward.", Tag);
@@ -312,20 +312,11 @@ namespace GourmetProject.Game.Meta
             return run.TotalWeeks > 0 ? GameApp.Config.Tables.TbWeek.GetOrDefault(run.TotalWeeks) : null;
         }
 
-        private static cfg.RewardPackage ResolvePackage(GameRun run, cfg.Week week, ActionExecutionContext actionContext)
+        private static cfg.RewardPackage ResolvePackage(GameRun run, ActionExecutionContext actionContext)
         {
             cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
             string packageId = FoodService.Resolve(tables, actionContext?.Action)?.RewardPackageId;
-            if (!string.IsNullOrEmpty(packageId))
-            {
-                cfg.RewardPackage actionPackage = tables.TbRewardPackage.GetOrDefault(packageId);
-                if (actionPackage != null)
-                {
-                    return actionPackage;
-                }
-            }
-
-            return week == null ? null : tables.TbRewardPackage.GetOrDefault(week.RewardPackageId);
+            return string.IsNullOrEmpty(packageId) ? null : tables.TbRewardPackage.GetOrDefault(packageId);
         }
 
         private static System.Collections.Generic.List<RewardChoice> RollSlotGroup(RewardContext context, string groupId, out int requiredPickCount)

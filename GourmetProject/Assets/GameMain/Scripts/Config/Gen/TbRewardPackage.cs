@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 奖励包：与奖励槽/奖励池同在 reward.xlsx；Week.rewardPackageId/Action.rewardPackageId 引用它，槽组指向 reward_slot。
+/// 奖励包：与奖励槽/奖励池同在 reward.xlsx；Food.rewardPackageId 引用它，槽组指向 reward_slot。
 /// </summary>
 public partial class TbRewardPackage
 {
@@ -54,4 +54,3 @@ public partial class TbRewardPackage
 }
 
 }
-

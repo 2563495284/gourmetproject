@@ -123,7 +123,7 @@ namespace GourmetProject.Game.Meta
 
     /// <summary>
     /// 商店服务：根据当前进度「隐藏分」刷新商品（道具 + 菜品 + 餐桌碎片），并处理购买、出售、删菜。
-    /// 隐藏分来自 <see cref="GameRun.RewardHiddenScore"/>，与奖励系统共用同一尺度。
+    /// 隐藏分由 <see cref="HiddenScoreService"/> 统一计算，与奖励系统共用同一尺度。
     /// </summary>
     public static class ShopService
     {

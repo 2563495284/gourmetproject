@@ -46,10 +46,10 @@ namespace GourmetProject.Game.Meta
 
         public int RewardHiddenScore => DishHiddenScore;
 
-        public int DishHiddenScore => Run == null ? Week?.RewardHiddenScore ?? 0 : HiddenScoreService.DishHiddenScore(Run, ActionContext);
+        public int DishHiddenScore => Run == null ? 0 : HiddenScoreService.DishHiddenScore(Run, ActionContext);
 
-        public int PassiveItemHiddenScore => Run == null ? Week?.RewardHiddenScore ?? 0 : HiddenScoreService.PassiveItemHiddenScore(Run, ActionContext);
+        public int PassiveItemHiddenScore => Run == null ? 0 : HiddenScoreService.PassiveItemHiddenScore(Run, ActionContext);
 
-        public int FragmentHiddenScore => Run == null ? Week?.RewardHiddenScore ?? 0 : HiddenScoreService.FragmentHiddenScore(Run, ActionContext);
+        public int FragmentHiddenScore => Run == null ? 0 : HiddenScoreService.FragmentHiddenScore(Run, ActionContext);
     }
 }
