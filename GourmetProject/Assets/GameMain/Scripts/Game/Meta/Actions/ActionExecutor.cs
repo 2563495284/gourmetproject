@@ -85,7 +85,7 @@ namespace GourmetProject.Game.Meta
             {
                 if (node == null
                     || run.IsNodeTriggered(node.Id)
-                    || node.Day <= run.CurrentDay + TimelineMath.Epsilon
+                    || node.Day < run.CurrentDay - TimelineMath.Epsilon
                     || node.Day > projectedDay + TimelineMath.Epsilon)
                 {
                     continue;

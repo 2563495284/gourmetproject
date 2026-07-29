@@ -39,7 +39,7 @@ namespace GourmetProject.Game.Meta
             if (item.EffectType == ItemEffectTypes.TimelineExecuteFuture
                 || item.EffectType == ItemEffectTypes.TimelineExecutePast)
             {
-                if (!CanCloneToNextIntegerDay())
+                if (!CanCloneToCurrentOrNextIntegerDay())
                 {
                     return Array.Empty<ActiveTarget>();
                 }
@@ -58,7 +58,7 @@ namespace GourmetProject.Game.Meta
 
             if (ItemActiveUsage.IsTimelineAddEffect(item.EffectType))
             {
-                return EnumerateFutureDays();
+                return EnumerateCurrentAndFutureDays();
             }
 
             if (item.EffectType == ItemEffectTypes.TimelineDeleteNode)
@@ -143,9 +143,10 @@ namespace GourmetProject.Game.Meta
             return Run.RerollBossDebuffForNode(node.Id);
         }
 
-        public string CloneTimelineNodeToNextIntegerDay(string nodeId, string sourceItemId)
+        public string CloneTimelineNodeToCurrentOrNextIntegerDay(string nodeId, string sourceItemId)
         {
-            return Run?.CloneRuntimeTimelineNodeToNextIntegerDay(nodeId, sourceItemId) ?? string.Empty;
+            return Run?.CloneRuntimeTimelineNodeToCurrentOrNextIntegerDay(nodeId, sourceItemId)
+                ?? string.Empty;
         }
 
         public bool AddTimelineNode(string actionId, int day)
@@ -174,7 +175,7 @@ namespace GourmetProject.Game.Meta
             return true;
         }
 
-        private IReadOnlyList<ActiveTarget> EnumerateFutureDays()
+        private IReadOnlyList<ActiveTarget> EnumerateCurrentAndFutureDays()
         {
             var targets = new List<ActiveTarget>();
             if (Run == null)
@@ -182,7 +183,7 @@ namespace GourmetProject.Game.Meta
                 return targets;
             }
 
-            int start = System.Math.Max(1, (int)System.Math.Floor(Run.CurrentDay) + 1);
+            int start = TimelineMath.CurrentOrNextIntegerDay(Run.CurrentDay);
             int end = (int)System.Math.Floor(Run.TimelineLengthDays + TimelineMath.Epsilon);
             for (int day = start; day <= end; day++)
             {
@@ -192,10 +193,10 @@ namespace GourmetProject.Game.Meta
             return targets;
         }
 
-        private bool CanCloneToNextIntegerDay()
+        private bool CanCloneToCurrentOrNextIntegerDay()
         {
             return Run != null
-                && (int)System.Math.Floor(Run.CurrentDay) + 1
+                && TimelineMath.CurrentOrNextIntegerDay(Run.CurrentDay)
                     <= (int)System.Math.Floor(Run.TimelineLengthDays + TimelineMath.Epsilon);
         }
     }

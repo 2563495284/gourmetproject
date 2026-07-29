@@ -37,6 +37,14 @@ namespace GourmetProject.Game.Meta
             return Quantize(Math.Min(next, lengthDays));
         }
 
+        /// <summary>
+        /// 当前游标所在或之后的第一个整数日。整数游标保留当天，小数游标取下一整天。
+        /// </summary>
+        public static int CurrentOrNextIntegerDay(float currentDay)
+        {
+            return Math.Max(1, (int)Math.Ceiling(currentDay - Epsilon));
+        }
+
         /// <summary>是否走完行动轴（含浮点容差）。</summary>
         public static bool IsFinished(float currentDay, float lengthDays) => currentDay >= lengthDays - Epsilon;
 
@@ -52,7 +60,7 @@ namespace GourmetProject.Game.Meta
             return Math.Min(rawGain, Math.Max(0, maxGain));
         }
 
-        /// <summary>收集天数从 prevDay 推进到 newDay 经过的、未触发过的节点（按 day 升序）。节点落在整天，比较含浮点容差。</summary>
+        /// <summary>收集天数从 prevDay 推进到 newDay 经过的、未触发过的节点（按 day 升序，起止日均包含）。</summary>
         public static List<NodeRef> CollectPassed(IEnumerable<NodeRef> nodes, float prevDay, float newDay, ICollection<string> triggered)
         {
             var passed = new List<NodeRef>();
@@ -64,7 +72,7 @@ namespace GourmetProject.Game.Meta
             foreach (NodeRef node in nodes)
             {
                 bool already = triggered != null && triggered.Contains(node.Id);
-                if (node.Day > prevDay + Epsilon && node.Day <= newDay + Epsilon && !already)
+                if (node.Day >= prevDay - Epsilon && node.Day <= newDay + Epsilon && !already)
                 {
                     passed.Add(node);
                 }

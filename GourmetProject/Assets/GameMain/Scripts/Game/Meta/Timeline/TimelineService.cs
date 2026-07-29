@@ -320,13 +320,43 @@ namespace GourmetProject.Game.Meta
             return new cfg.TimelineNode(Luban.SimpleJSON.JSON.Parse(json));
         }
 
-        /// <summary>收集天数从 prevDay 推进到 newDay 经过的、尚未结算的节点（按 day 升序）。节点落在整天，比较含浮点容差。</summary>
+        /// <summary>当前游标已经到达、但尚未结算的全部节点（按稳定时间轴顺序）。</summary>
+        public static List<cfg.TimelineNode> GetDueUntriggeredNodes(GameRun run)
+        {
+            var due = new List<cfg.TimelineNode>();
+            if (run == null)
+            {
+                return due;
+            }
+
+            foreach (cfg.TimelineNode node in GetNodes(run))
+            {
+                if (node.Day <= run.CurrentDay + TimelineMath.Epsilon
+                    && !run.IsNodeTriggered(node.Id))
+                {
+                    due.Add(node);
+                }
+            }
+
+            return due;
+        }
+
+        /// <summary>返回当前最早的到期未结算节点；无则返回 null。</summary>
+        public static cfg.TimelineNode GetNextDueUntriggeredNode(GameRun run)
+        {
+            List<cfg.TimelineNode> due = GetDueUntriggeredNodes(run);
+            return due.Count > 0 ? due[0] : null;
+        }
+
+        /// <summary>收集天数从 prevDay 推进到 newDay 经过的、尚未结算的节点（按 day 升序，起止日均包含）。</summary>
         public static List<cfg.TimelineNode> CollectPassedNodes(GameRun run, float prevDay, float newDay)
         {
             var passed = new List<cfg.TimelineNode>();
             foreach (cfg.TimelineNode node in GetNodes(run))
             {
-                if (node.Day > prevDay + TimelineMath.Epsilon && node.Day <= newDay + TimelineMath.Epsilon && !run.IsNodeTriggered(node.Id))
+                if (node.Day >= prevDay - TimelineMath.Epsilon
+                    && node.Day <= newDay + TimelineMath.Epsilon
+                    && !run.IsNodeTriggered(node.Id))
                 {
                     passed.Add(node);
                 }

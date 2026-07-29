@@ -758,7 +758,7 @@ namespace GourmetProject.Game.Run
         }
 
         /// <summary>
-        /// 兼容被动道具的随机追加路径：仍优先寻找未来空整数日，实际创建统一走定点接口。
+        /// 兼容被动道具的随机追加路径：仍优先寻找当前或未来的空整数日，实际创建统一走定点接口。
         /// </summary>
         public string AddRuntimeTimelineNode(string actionId, IRandomStream rng = null)
         {
@@ -768,8 +768,9 @@ namespace GourmetProject.Game.Run
             }
 
             var days = new List<int>();
-            int start = System.Math.Max(1, (int)System.Math.Floor(CurrentDay) + 1);
-            int end = System.Math.Max(start, (int)System.Math.Floor(TimelineLengthDays));
+            int start = GourmetProject.Game.Meta.TimelineMath.CurrentOrNextIntegerDay(CurrentDay);
+            int end = (int)System.Math.Floor(
+                TimelineLengthDays + GourmetProject.Game.Meta.TimelineMath.Epsilon);
             for (int day = start; day <= end; day++)
             {
                 if (!HasTimelineNodeAtDay(day))
@@ -797,21 +798,23 @@ namespace GourmetProject.Game.Run
         }
 
         /// <summary>
-        /// 在玩家指定的未来整数日追加一个行动轴节点。同一天允许叠放多个节点。
+        /// 在玩家指定的当前或未来整数日追加一个行动轴节点。同一天允许叠放多个节点。
         /// </summary>
         public string AddRuntimeTimelineNodeAtDay(string actionId, int day, string sourceItemId = "")
-            => AddRuntimeTimelineNodeAtDayInternal(actionId, day, sourceItemId, false, false);
+            => AddRuntimeTimelineNodeAtDayInternal(actionId, day, sourceItemId, false);
 
         /// <summary>系统级周末追加；允许节点落在当前整数日，并记录来源与锚定属性。</summary>
         public string AddWeekEndAnchoredTimelineNode(string actionId, string sourceItemId)
         {
             int day = System.Math.Max(1, (int)System.Math.Floor(
                 TimelineLengthDays + GourmetProject.Game.Meta.TimelineMath.Epsilon));
-            return AddRuntimeTimelineNodeAtDayInternal(actionId, day, sourceItemId, true, true);
+            return AddRuntimeTimelineNodeAtDayInternal(actionId, day, sourceItemId, true);
         }
 
-        /// <summary>把所选节点当前行动复制到严格下一个整数日；原节点及完成状态不变。</summary>
-        public string CloneRuntimeTimelineNodeToNextIntegerDay(string sourceNodeId, string sourceItemId = "")
+        /// <summary>把所选节点当前行动复制到当前或下一个整数日；原节点及完成状态不变。</summary>
+        public string CloneRuntimeTimelineNodeToCurrentOrNextIntegerDay(
+            string sourceNodeId,
+            string sourceItemId = "")
         {
             int index = _runtimeTimelineNodes.FindIndex(node => node.Id == sourceNodeId);
             if (index < 0)
@@ -819,7 +822,7 @@ namespace GourmetProject.Game.Run
                 return string.Empty;
             }
 
-            int day = (int)System.Math.Floor(CurrentDay) + 1;
+            int day = GourmetProject.Game.Meta.TimelineMath.CurrentOrNextIntegerDay(CurrentDay);
             if (day > (int)System.Math.Floor(
                     TimelineLengthDays + GourmetProject.Game.Meta.TimelineMath.Epsilon))
             {
@@ -830,7 +833,6 @@ namespace GourmetProject.Game.Run
                 _runtimeTimelineNodes[index].ActionId,
                 day,
                 sourceItemId,
-                false,
                 false);
         }
 
@@ -838,14 +840,12 @@ namespace GourmetProject.Game.Run
             string actionId,
             int day,
             string sourceItemId,
-            bool weekEndAnchored,
-            bool allowCurrentDay)
+            bool weekEndAnchored)
         {
             if (string.IsNullOrEmpty(CurrentTimelineId)
                 || string.IsNullOrEmpty(actionId)
                 || Tables.TbAction.GetOrDefault(actionId) == null
-                || (!allowCurrentDay && day <= CurrentDay + GourmetProject.Game.Meta.TimelineMath.Epsilon)
-                || (allowCurrentDay && day + GourmetProject.Game.Meta.TimelineMath.Epsilon < CurrentDay)
+                || day + GourmetProject.Game.Meta.TimelineMath.Epsilon < CurrentDay
                 || day < 1
                 || day > (int)System.Math.Floor(TimelineLengthDays + GourmetProject.Game.Meta.TimelineMath.Epsilon))
             {

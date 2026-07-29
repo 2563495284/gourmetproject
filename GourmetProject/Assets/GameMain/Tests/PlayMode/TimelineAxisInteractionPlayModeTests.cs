@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using GourmetProject.Config;
@@ -11,6 +12,7 @@ using GourmetProject.Game.UI.Battle.View;
 using GourmetProject.Game.UI.Hud;
 using GourmetProject.Game.UI.Meta;
 using GourmetProject.Gameplay.Data;
+using GourmetProject.Gameplay.Scoring;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -321,6 +323,42 @@ namespace GourmetProject.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator NodeCompletion_RescansDueNodesAndRunsNewCurrentDayNodeNext()
+        {
+            CreateRun(out GameRun run, out cfg.Tables tables);
+            cfg.GameAction effect = tables.TbAction.DataList.First(
+                action => action.Id == "act_gold_clear");
+            run.BeginTimeline(
+                "test",
+                7f,
+                new[]
+                {
+                    new RuntimeTimelineNode("current_static", "test", 2, effect.Id),
+                    new RuntimeTimelineNode("future_static", "test", 3, effect.Id),
+                });
+            run.CurrentDay = 2f;
+
+            var view = new AutoNodeLoopView(run, effect.Id);
+            var loop = new WeekLoopController(run, view);
+            using (RunPersistence.SuppressSave())
+            {
+                loop.PromptNextAction();
+            }
+
+            Assert.That(view.AddedNodeId, Is.Not.Empty);
+            Assert.That(
+                view.ShownNodeIds,
+                Is.EqualTo(new[] { "current_static", view.AddedNodeId }),
+                "当前节点结束后必须重扫行动轴，并优先执行新加入的同日节点。");
+            Assert.That(run.IsNodeTriggered("current_static"), Is.True);
+            Assert.That(run.IsNodeTriggered(view.AddedNodeId), Is.True);
+            Assert.That(run.IsNodeTriggered("future_static"), Is.False);
+            Assert.That(view.OpenWeekMapCount, Is.EqualTo(1));
+
+            yield return null;
+        }
+
+        [UnityTest]
         public IEnumerator DeleteSelection_OverlappedGroupResolvesPointedNodeAndConfirmsImmediately()
         {
             CreateRun(out GameRun run, out cfg.Tables tables);
@@ -570,8 +608,8 @@ namespace GourmetProject.Tests.PlayMode
                 node => !existingNodeIds.Contains(node.Id));
             Assert.That(
                 clonedNode.Day,
-                Is.EqualTo(Mathf.FloorToInt(run.CurrentDay) + 1),
-                "加急单应把节点行动复制到严格下一个整数日。");
+                Is.EqualTo(TimelineMath.CurrentOrNextIntegerDay(run.CurrentDay)),
+                "加急单应把节点行动复制到当前或下一个整数日。");
             Assert.That(clonedNode.ActionId, Is.EqualTo(sourceNode.ActionId));
             Assert.That(clonedNode.SourceItemId, Is.EqualTo(item.Id));
             Assert.That(
@@ -582,6 +620,116 @@ namespace GourmetProject.Tests.PlayMode
                 run.TryDequeueExtraTimelineNode(out _),
                 Is.False,
                 "新版本加急单不得再写入旧的额外执行队列。");
+        }
+
+        private sealed class AutoNodeLoopView : IWeekLoopView
+        {
+            private readonly GameRun _run;
+            private readonly string _actionId;
+            private bool _addedCurrentDayNode;
+
+            public AutoNodeLoopView(GameRun run, string actionId)
+            {
+                _run = run;
+                _actionId = actionId;
+            }
+
+            public int LastBattleTotal => 0;
+
+            public List<string> ShownNodeIds { get; } = new List<string>();
+
+            public string AddedNodeId { get; private set; } = string.Empty;
+
+            public int OpenWeekMapCount { get; private set; }
+
+            public void HideBattleWorld()
+            {
+            }
+
+            public void SavePendingRewardBattleView()
+            {
+            }
+
+            public void RestorePendingRewardBattleView()
+            {
+            }
+
+            public void HideResultPanel()
+            {
+            }
+
+            public void OpenWeekMap()
+            {
+                OpenWeekMapCount++;
+            }
+
+            public void OpenShop()
+            {
+            }
+
+            public void ShowTimelineNodeCard(
+                cfg.TimelineNode node,
+                int? interestMaxGain,
+                System.Action onPick)
+            {
+                ShownNodeIds.Add(node.Id);
+                if (!_addedCurrentDayNode)
+                {
+                    _addedCurrentDayNode = true;
+                    AddedNodeId = _run.AddRuntimeTimelineNodeAtDay(
+                        _actionId,
+                        TimelineMath.CurrentOrNextIntegerDay(_run.CurrentDay));
+                }
+
+                onPick?.Invoke();
+            }
+
+            public void ShowTimelineNodeSkipped(cfg.TimelineNode node, System.Action onDone)
+            {
+                onDone?.Invoke();
+            }
+
+            public void StartBattle(
+                int requiredScore,
+                string modifier,
+                string key,
+                ActionExecutionContext actionContext)
+            {
+                Assert.Fail("Effect node should not start a battle.");
+            }
+
+            public void ShowNotice(string title, string message, System.Action onContinue)
+            {
+                onContinue?.Invoke();
+            }
+
+            public void OpenEventRecipeDishDelete(
+                GameRun run,
+                string title,
+                System.Action onCancel,
+                System.Action<ActiveTarget> onTargetConfirmed,
+                System.Action onChanged)
+            {
+                Assert.Fail("Effect node should not open an event target picker.");
+            }
+
+            public void ShowEventPage(
+                string title,
+                string desc,
+                string resultButtonText,
+                string bgSprite,
+                IReadOnlyList<string> options,
+                IReadOnlyList<bool> optionEnabled,
+                System.Action<int> onPick,
+                System.Action onEnd)
+            {
+                Assert.Fail("Effect node should not open an event page.");
+            }
+
+            public void ShowRunResult(bool win, int total)
+            {
+                Assert.Fail("This test should return to the action map.");
+            }
         }
 
         private static void AttachAxisBinder(BattleForm host, ActionAxisBar axis)

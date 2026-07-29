@@ -210,7 +210,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void RushItem_ClonesSelectedActionToStrictNextIntegerDay()
+        public void RushItem_ClonesSelectedActionToCurrentOrNextIntegerDay()
         {
             GameRun run = CreateRun();
             cfg.GameAction regular = _tables.TbAction.DataList.First(action => !FoodService.IsBossAction(_tables, action));
@@ -248,7 +248,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void RushItem_HasNoCandidatesPastWeekEnd()
+        public void RushItem_AtWeekEndCanCloneToCurrentIntegerDay()
         {
             GameRun run = CreateRun();
             cfg.GameAction action = _tables.TbAction.DataList.First();
@@ -264,8 +264,10 @@ namespace GourmetProject.Tests.EditMode
                 "item_active_execute_past_node",
                 cfg.ItemKind.Active);
 
-            Assert.That(context.EnumerateTargets(item), Is.Empty);
-            Assert.That(run.CloneRuntimeTimelineNodeToNextIntegerDay("past"), Is.Empty);
+            Assert.That(context.EnumerateTargets(item).Select(target => target.Id), Does.Contain("past"));
+            string cloneId = run.CloneRuntimeTimelineNodeToCurrentOrNextIntegerDay("past");
+            Assert.That(cloneId, Is.Not.Empty);
+            Assert.That(TimelineService.GetNode(run, cloneId).Day, Is.EqualTo(7));
         }
 
         [Test]
@@ -291,16 +293,74 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void RuntimeTimelineNode_AddRejectsCurrentPastAndBeyondWeek()
+        public void RuntimeTimelineNode_AddAllowsCurrentIntegerButRejectsPastAndBeyondWeek()
         {
             GameRun run = CreateRun();
             cfg.GameAction action = _tables.TbAction.DataList.First();
             run.BeginTimeline("test", 7f);
-            run.CurrentDay = 3.4f;
 
-            Assert.That(run.AddRuntimeTimelineNodeAtDay(action.Id, 3), Is.Empty);
+            run.CurrentDay = 3f;
+            Assert.That(run.AddRuntimeTimelineNodeAtDay(action.Id, 2), Is.Empty);
+            Assert.That(run.AddRuntimeTimelineNodeAtDay(action.Id, 3), Is.Not.Empty);
             Assert.That(run.AddRuntimeTimelineNodeAtDay(action.Id, 8), Is.Empty);
+
+            run.CurrentDay = 3.4f;
+            Assert.That(run.AddRuntimeTimelineNodeAtDay(action.Id, 3), Is.Empty);
             Assert.That(run.AddRuntimeTimelineNodeAtDay(action.Id, 4), Is.Not.Empty);
+        }
+
+        [Test]
+        public void CurrentOrNextIntegerDay_AndAddCandidatesKeepExactCurrentDay()
+        {
+            Assert.That(TimelineMath.CurrentOrNextIntegerDay(2f), Is.EqualTo(2));
+            Assert.That(TimelineMath.CurrentOrNextIntegerDay(2.1f), Is.EqualTo(3));
+
+            GameRun run = CreateRun();
+            run.BeginTimeline("test", 7f);
+            ItemDefinition item = ItemDefinition.Get(
+                _tables,
+                "item_active_add_reward_node",
+                cfg.ItemKind.Active);
+            var context = new ActionSelectUseContext(run, null);
+
+            run.CurrentDay = 2f;
+            Assert.That(
+                context.EnumerateTargets(item).Select(target => target.X),
+                Is.EqualTo(new[] { 2, 3, 4, 5, 6, 7 }));
+
+            run.CurrentDay = 2.1f;
+            Assert.That(
+                context.EnumerateTargets(item).Select(target => target.X),
+                Is.EqualTo(new[] { 3, 4, 5, 6, 7 }));
+        }
+
+        [Test]
+        public void DueNodes_IncludeCurrentDaySkipTriggeredAndKeepStableOrder()
+        {
+            GameRun run = CreateRun();
+            cfg.GameAction action = _tables.TbAction.DataList.First();
+            run.BeginTimeline(
+                "test",
+                7f,
+                new[]
+                {
+                    new RuntimeTimelineNode("day_2_done", "test", 2, action.Id),
+                    new RuntimeTimelineNode("day_2_static", "test", 2, action.Id),
+                    new RuntimeTimelineNode("day_3_static", "test", 3, action.Id),
+                });
+            run.CurrentDay = 2f;
+            run.MarkNodeTriggered("day_2_done");
+            string dynamicId = run.AddRuntimeTimelineNodeAtDay(action.Id, 2);
+
+            Assert.That(dynamicId, Is.Not.Empty);
+            Assert.That(
+                TimelineService.GetDueUntriggeredNodes(run).Select(node => node.Id),
+                Is.EqualTo(new[] { "day_2_static", dynamicId }));
+
+            run.CurrentDay = 3f;
+            Assert.That(
+                TimelineService.CollectPassedNodes(run, 2f, 3f).Select(node => node.Id),
+                Is.EqualTo(new[] { "day_2_static", dynamicId, "day_3_static" }));
         }
 
         [Test]
@@ -544,6 +604,36 @@ namespace GourmetProject.Tests.EditMode
                     new RuntimeTimelineNode("later", "test", 5, action.Id),
                 });
             var context = new ActionExecutionContext(action, 0, 0, "daily", 6f)
+            {
+                TimelineStopChance = 1f,
+            };
+
+            ActionExecutor.Commit(run, context);
+
+            Assert.That(context.TimelineStopTriggered, Is.True);
+            Assert.That(context.TimelineStopDay, Is.EqualTo(2));
+            Assert.That(run.CurrentDay, Is.EqualTo(2f));
+            Assert.That(run.ActionStepIndex, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void TimelineStop_IncludesUntriggeredNodeOnCurrentIntegerDay()
+        {
+            var random = new RandomService();
+            random.Init(67890UL);
+            typeof(GameApp)
+                .GetProperty(nameof(GameApp.Random))
+                ?.GetSetMethod(nonPublic: true)
+                ?.Invoke(null, new object[] { random });
+
+            GameRun run = CreateRun();
+            cfg.GameAction action = _tables.TbAction.DataList.First();
+            run.BeginTimeline(
+                "test",
+                7f,
+                new[] { new RuntimeTimelineNode("current_day", "test", 2, action.Id) });
+            run.CurrentDay = 2f;
+            var context = new ActionExecutionContext(action, 0, 0, "daily", 3f)
             {
                 TimelineStopChance = 1f,
             };

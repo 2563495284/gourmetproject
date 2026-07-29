@@ -66,7 +66,6 @@ namespace GourmetProject.Game.Orchestration
         private readonly GameRun _run;
         private readonly IWeekLoopView _view;
 
-        private Queue<cfg.TimelineNode> _pendingNodes;
         private Action _afterNodes;
         private Action _afterBattleWin;
         private Action<ScoreResult> _afterBattleLose;
@@ -82,30 +81,10 @@ namespace GourmetProject.Game.Orchestration
 
         public ActionExecutionContext CurrentBattleActionContext { get; private set; }
 
-        /// <summary>删除尚未开始执行的节点，并同步剔除已经收集到本轮待执行队列中的快照。</summary>
+        /// <summary>删除尚未开始执行的节点；到期节点每轮动态重扫，无需维护队列快照。</summary>
         public bool RemoveTimelineNode(string nodeId)
         {
-            if (!_run.RemoveRuntimeTimelineNode(nodeId))
-            {
-                return false;
-            }
-
-            if (_pendingNodes != null && _pendingNodes.Count > 0)
-            {
-                var remaining = new Queue<cfg.TimelineNode>();
-                while (_pendingNodes.Count > 0)
-                {
-                    cfg.TimelineNode pending = _pendingNodes.Dequeue();
-                    if (pending != null && pending.Id != nodeId)
-                    {
-                        remaining.Enqueue(pending);
-                    }
-                }
-
-                _pendingNodes = remaining;
-            }
-
-            return true;
+            return _run.RemoveRuntimeTimelineNode(nodeId);
         }
 
         /// <summary>进入（或继续）一周：随机/沿用行动轴后开始行动循环。</summary>
@@ -258,9 +237,9 @@ namespace GourmetProject.Game.Orchestration
             return () =>
             {
                 _run.ClearPendingActionExecution();
-                float prevDay = ActionExecutor.Commit(_run, context);
+                ActionExecutor.Commit(_run, context);
                 RunPersistence.Save(_run);
-                ResolveNodes(prevDay, PromptNextAction);
+                ResolveNodes(PromptNextAction);
             };
         }
 
@@ -340,13 +319,11 @@ namespace GourmetProject.Game.Orchestration
                 return false;
             }
 
-            List<cfg.TimelineNode> dueNodes = TimelineService.CollectPassedNodes(_run, 0f, _run.CurrentDay);
-            if (dueNodes.Count == 0)
+            if (TimelineService.GetNextDueUntriggeredNode(_run) == null)
             {
                 return false;
             }
 
-            _pendingNodes = new Queue<cfg.TimelineNode>(dueNodes);
             _afterNodes = onDone;
             ProcessNextNode();
             return true;
@@ -357,20 +334,19 @@ namespace GourmetProject.Game.Orchestration
         {
             if (choice == null)
             {
-                float restPrev = TimelineService.AdvanceDays(_run, 1f);
+                TimelineService.AdvanceDays(_run, 1f);
                 _run.AdvanceActionStep();
                 RunPersistence.Save(_run);
-                ResolveNodes(restPrev, PromptNextAction);
+                ResolveNodes(PromptNextAction);
                 return;
             }
 
             ActionExecutionContext context = choice.ToExecutionContext();
             if (!context.IsValid)
             {
-                float prevDay = _run.CurrentDay;
                 _run.AdvanceActionStep();
                 RunPersistence.Save(_run);
-                ResolveNodes(prevDay, PromptNextAction);
+                ResolveNodes(PromptNextAction);
                 return;
             }
 
@@ -380,7 +356,6 @@ namespace GourmetProject.Game.Orchestration
             // 进入行动时只记录可恢复的 pending 页面，不推进天数/步数；只有玩家明确结算
             // （商店退出、事件选完、战斗结算、通知点继续）时才 Commit（推进天数/步数 + 标记已用）。
             bool committed = false;
-            float committedPrevDay = _run.CurrentDay;
 
             void Commit()
             {
@@ -390,14 +365,14 @@ namespace GourmetProject.Game.Orchestration
                 }
 
                 committed = true;
-                committedPrevDay = ActionExecutor.Commit(_run, context);
+                ActionExecutor.Commit(_run, context);
                 RunPersistence.Save(_run);
             }
 
             void CommitAndResolveNodes()
             {
                 Commit();
-                ResolveNodes(committedPrevDay, PromptNextAction);
+                ResolveNodes(PromptNextAction);
             }
 
             DispatchOutcome(outcome, context, CommitAndResolveNodes);
@@ -565,9 +540,9 @@ namespace GourmetProject.Game.Orchestration
             }
 
             _run.ClearPendingActionExecution();
-            float prevDay = ActionExecutor.Commit(_run, context);
+            ActionExecutor.Commit(_run, context);
             RunPersistence.Save(_run);
-            ResolveNodes(prevDay, PromptNextAction);
+            ResolveNodes(PromptNextAction);
         }
 
         private void EnsurePendingBattleReward(ActionExecutionContext actionContext)
@@ -627,16 +602,18 @@ namespace GourmetProject.Game.Orchestration
             return currentDay.ToString("0.0", CultureInfo.InvariantCulture);
         }
 
-        private void ResolveNodes(float prevDay, Action onDone)
+        private void ResolveNodes(Action onDone)
         {
-            _pendingNodes = new Queue<cfg.TimelineNode>(TimelineService.CollectPassedNodes(_run, prevDay, _run.CurrentDay));
             _afterNodes = onDone;
             ProcessNextNode();
         }
 
         private void ProcessNextNode()
         {
-            if (_pendingNodes == null || _pendingNodes.Count == 0)
+            // 每个节点完整结束后重新读取运行态行动轴。这样节点内容期间新增的
+            // 当前日节点会按日期/创建顺序插入，且不会被旧的队列快照漏掉。
+            cfg.TimelineNode node = TimelineService.GetNextDueUntriggeredNode(_run);
+            if (node == null)
             {
                 RunPersistence.Save(_run);
                 Action cb = _afterNodes;
@@ -645,7 +622,6 @@ namespace GourmetProject.Game.Orchestration
                 return;
             }
 
-            cfg.TimelineNode node = _pendingNodes.Dequeue();
             cfg.GameAction action = TimelineService.NodeAction(_run, node);
             if (action == null)
             {
@@ -1387,7 +1363,6 @@ namespace GourmetProject.Game.Orchestration
 
         private void ClearPendingNodes()
         {
-            _pendingNodes = null;
             _afterNodes = null;
         }
 

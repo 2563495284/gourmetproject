@@ -138,14 +138,21 @@ namespace GourmetProject.Game.Meta
                         return new ActiveItemUseResult(false, false, $"{item.Name}：请先选择节点。");
                     }
 
-                    string clonedNodeId = ctx.CloneTimelineNodeToNextIntegerDay(targets[0].Id, item.Id);
+                    string clonedNodeId =
+                        ctx.CloneTimelineNodeToCurrentOrNextIntegerDay(targets[0].Id, item.Id);
+                    int destinationDay = ctx.Run != null
+                        ? TimelineMath.CurrentOrNextIntegerDay(ctx.Run.CurrentDay)
+                        : 0;
                     return !string.IsNullOrEmpty(clonedNodeId)
                         ? new ActiveItemUseResult(
                             true,
                             false,
-                            $"{item.Name}：已复制到下一个整数日。",
+                            $"{item.Name}：已复制到第 {destinationDay} 天。",
                             createdTimelineNodeId: clonedNodeId)
-                        : new ActiveItemUseResult(false, false, $"{item.Name}：下一个整数日无法放置所选节点。");
+                        : new ActiveItemUseResult(
+                            false,
+                            false,
+                            $"{item.Name}：当前或下一个整数日无法放置所选节点。");
 
                 case ItemEffectTypes.TimelineAddRewardNode:
                 case ItemEffectTypes.TimelineAddInterestNode:

@@ -323,7 +323,7 @@ namespace GourmetProject.Game.UI.Battle
 
             CreateUiArrow();
             string instruction = ItemActiveUsage.IsTimelineAddEffect(item.EffectType)
-                ? "指向未来日期预览"
+                ? "指向当前或未来日期预览"
                 : item.EffectType == ItemEffectTypes.TimelineDeleteNode
                     ? "指向红色节点"
                     : "指向高亮节点";
