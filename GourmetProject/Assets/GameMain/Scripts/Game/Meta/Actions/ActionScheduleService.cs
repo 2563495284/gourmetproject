@@ -310,12 +310,9 @@ namespace GourmetProject.Game.Meta
 
         private static bool IsRuleActiveThisWeek(GameRun run, cfg.ActionScheduleRule rule)
         {
-            if (run == null || rule == null || !PreconditionEvaluator.IsSatisfied(run, rule.Preconditions))
-            {
-                return false;
-            }
-
-            return IsRuleWeekActive(rule, run.WeekIndex);
+            return run != null
+                && rule != null
+                && PreconditionEvaluator.IsSatisfied(run, rule.Preconditions);
         }
 
         /// <summary>从「声明了该规则」的可选大组里按保底权重挑一个（供散布落位）。</summary>
@@ -490,26 +487,6 @@ namespace GourmetProject.Game.Meta
                 }
 
                 if (count >= rule.MaxCount)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static bool IsRuleWeekActive(cfg.ActionScheduleRule rule, int weekIndex)
-        {
-            IReadOnlyList<int> activeWeeks = rule.ActiveWeeks;
-            if (activeWeeks == null || activeWeeks.Count == 0)
-            {
-                return true;
-            }
-
-            int currentWeek = Math.Max(1, weekIndex);
-            foreach (int activeWeek in activeWeeks)
-            {
-                if (activeWeek == currentWeek)
                 {
                     return true;
                 }
