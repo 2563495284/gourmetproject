@@ -36,7 +36,7 @@ namespace GourmetProject.Game.Meta
 
         public bool IsFallbackGold { get; }
 
-        /// <summary>菜品奖励附带的风味 id（来自 withRandomFlavor 池）；空表示无附带风味。</summary>
+        /// <summary>菜品奖励附带的风味 id；空表示无附带风味。</summary>
         public string FlavorId { get; }
 
         public string DisplayText

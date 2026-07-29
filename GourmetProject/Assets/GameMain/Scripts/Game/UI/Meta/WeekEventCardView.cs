@@ -369,7 +369,10 @@ namespace GourmetProject.Game.UI.Meta
                 case cfg.RewardKind.Gold: return "card_action_food_gold";
                 case cfg.RewardKind.FragmentChoice: return "card_action_food_fragment";
                 case cfg.RewardKind.PassiveItemChoice: return "card_action_food_passive";
-                case cfg.RewardKind.ActiveItemGrant: return "card_action_food_active";
+                case cfg.RewardKind.ActiveItemGrant:
+                case cfg.RewardKind.ActiveItemStrengthen:
+                case cfg.RewardKind.ActiveItemAdjust:
+                    return "card_action_food_active";
                 case cfg.RewardKind.DishChoice: return "card_action_food_dish";
                 default: return "card_action_food_dish";
             }
@@ -390,6 +393,8 @@ namespace GourmetProject.Game.UI.Meta
                     spriteName = "ui_icon_shop_passive";
                     break;
                 case cfg.RewardKind.ActiveItemGrant:
+                case cfg.RewardKind.ActiveItemStrengthen:
+                case cfg.RewardKind.ActiveItemAdjust:
                     spriteName = "ui_icon_shop_active";
                     break;
                 case cfg.RewardKind.DishChoice:

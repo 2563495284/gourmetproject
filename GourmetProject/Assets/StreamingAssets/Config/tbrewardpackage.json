@@ -7,13 +7,6 @@
     "specificSlotGroupId": "specific_gold"
   },
   {
-    "id": "reward_food_dish",
-    "baseDishSlotGroupId": [
-      "base_dish"
-    ],
-    "specificSlotGroupId": "specific_dish"
-  },
-  {
     "id": "reward_food_passive",
     "baseDishSlotGroupId": [
       "base_dish"
@@ -21,11 +14,18 @@
     "specificSlotGroupId": "specific_passive"
   },
   {
-    "id": "reward_food_active",
+    "id": "reward_food_active_strengthen",
     "baseDishSlotGroupId": [
       "base_dish"
     ],
-    "specificSlotGroupId": "specific_active"
+    "specificSlotGroupId": "specific_active_strengthen"
+  },
+  {
+    "id": "reward_food_active_adjust",
+    "baseDishSlotGroupId": [
+      "base_dish"
+    ],
+    "specificSlotGroupId": "specific_active_adjust"
   },
   {
     "id": "reward_food_fragment",
@@ -42,13 +42,6 @@
     "specificSlotGroupId": "specific_gold"
   },
   {
-    "id": "reward_food_hard_dish",
-    "baseDishSlotGroupId": [
-      "base_dish"
-    ],
-    "specificSlotGroupId": "specific_dish"
-  },
-  {
     "id": "reward_food_hard_passive",
     "baseDishSlotGroupId": [
       "base_dish"
@@ -56,11 +49,18 @@
     "specificSlotGroupId": "specific_passive"
   },
   {
-    "id": "reward_food_hard_active",
+    "id": "reward_food_hard_active_strengthen",
     "baseDishSlotGroupId": [
       "base_dish"
     ],
-    "specificSlotGroupId": "specific_active"
+    "specificSlotGroupId": "specific_active_strengthen"
+  },
+  {
+    "id": "reward_food_hard_active_adjust",
+    "baseDishSlotGroupId": [
+      "base_dish"
+    ],
+    "specificSlotGroupId": "specific_active_adjust"
   },
   {
     "id": "reward_food_hard_fragment",

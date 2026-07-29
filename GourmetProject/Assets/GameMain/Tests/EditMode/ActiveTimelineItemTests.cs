@@ -121,6 +121,41 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void ActiveItems_AreClassifiedForRewardPools()
+        {
+            foreach (cfg.ActiveItem active in _tables.TbActiveItem.DataList)
+            {
+                bool strengthen = active.Id.StartsWith("item_active_season_") ||
+                                  active.Id.StartsWith("item_active_lay_");
+                Assert.That(
+                    active.Category,
+                    Is.EqualTo(strengthen ? cfg.ActiveItemCategory.Strengthen : cfg.ActiveItemCategory.Adjust),
+                    active.Id);
+            }
+        }
+
+        [Test]
+        public void FoodRewards_ReferenceSeparatedActiveItemPackages()
+        {
+            AssertActiveReward(
+                "food_active_strengthen",
+                cfg.RewardKind.ActiveItemStrengthen,
+                "reward_food_active_strengthen");
+            AssertActiveReward(
+                "food_active_ajust",
+                cfg.RewardKind.ActiveItemAdjust,
+                "reward_food_active_adjust");
+            AssertActiveReward(
+                "food_hard_active_strengthen",
+                cfg.RewardKind.ActiveItemStrengthen,
+                "reward_food_hard_active_strengthen");
+            AssertActiveReward(
+                "food_hard_active_ajust",
+                cfg.RewardKind.ActiveItemAdjust,
+                "reward_food_hard_active_adjust");
+        }
+
+        [Test]
         public void OnlyLotteryTimelineEffect_RemainsTodo()
         {
             Assert.That(ItemActiveUsage.IsTodoTimelineEffect(ItemEffectTypes.TimelineAddRewardNode), Is.False);
@@ -152,6 +187,16 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(item.TargetKind, Is.EqualTo(cfg.ItemTargetKind.Global), itemId);
                 Assert.That(ItemActiveUsage.RequiresTarget(item), Is.True, itemId);
             }
+        }
+
+        private static void AssertActiveReward(
+            string foodId,
+            cfg.RewardKind expectedKind,
+            string expectedPackageId)
+        {
+            cfg.Food food = _tables.TbFood.Get(foodId);
+            Assert.That(food.RewardKind, Is.EqualTo(expectedKind), foodId);
+            Assert.That(food.RewardPackageId, Is.EqualTo(expectedPackageId), foodId);
         }
 
         [Test]

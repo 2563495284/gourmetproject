@@ -32,6 +32,7 @@ namespace GourmetProject.Game.Meta
             GoldHiddenOffset = passive.GoldHiddenOffset;
             TargetKind = cfg.ItemTargetKind.None;
             TargetCount = 0;
+            ActiveItemCategory = default;
         }
 
         private ItemDefinition(cfg.ActiveItem active)
@@ -56,6 +57,7 @@ namespace GourmetProject.Game.Meta
             GoldHiddenOffset = 0;
             TargetKind = active.TargetKind;
             TargetCount = active.TargetCount;
+            ActiveItemCategory = active.Category;
         }
 
         public cfg.PassiveItem Passive { get; }
@@ -102,6 +104,8 @@ namespace GourmetProject.Game.Meta
         public cfg.ItemTargetKind TargetKind { get; }
 
         public int TargetCount { get; }
+
+        public cfg.ActiveItemCategory ActiveItemCategory { get; }
 
         public bool IsPassive => Kind == cfg.ItemKind.Passive;
 

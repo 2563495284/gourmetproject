@@ -11,7 +11,8 @@
     "targetKind": 1,
     "targetCount": 1,
     "termId": "t_sweet",
-    "price": 35
+    "price": 50,
+    "category": 0
   },
   {
     "id": "item_active_season_bitter",
@@ -25,7 +26,8 @@
     "targetKind": 1,
     "targetCount": 1,
     "termId": "t_bitter",
-    "price": 35
+    "price": 50,
+    "category": 0
   },
   {
     "id": "item_active_season_umami",
@@ -39,7 +41,8 @@
     "targetKind": 1,
     "targetCount": 1,
     "termId": "t_rust",
-    "price": 35
+    "price": 50,
+    "category": 0
   },
   {
     "id": "item_active_season_numb",
@@ -53,7 +56,8 @@
     "targetKind": 1,
     "targetCount": 1,
     "termId": "t_numb",
-    "price": 35
+    "price": 50,
+    "category": 0
   },
   {
     "id": "item_active_season_sour",
@@ -67,7 +71,8 @@
     "targetKind": 1,
     "targetCount": 1,
     "termId": "t_sour",
-    "price": 35
+    "price": 50,
+    "category": 0
   },
   {
     "id": "item_active_season_salty",
@@ -81,7 +86,8 @@
     "targetKind": 1,
     "targetCount": 1,
     "termId": "t_salty",
-    "price": 35
+    "price": 50,
+    "category": 0
   },
   {
     "id": "item_active_lay_cherry",
@@ -95,7 +101,8 @@
     "targetKind": 3,
     "targetCount": 1,
     "termId": "m_cherry",
-    "price": 35
+    "price": 50,
+    "category": 0
   },
   {
     "id": "item_active_lay_walnut",
@@ -109,7 +116,8 @@
     "targetKind": 3,
     "targetCount": 1,
     "termId": "m_walnut",
-    "price": 35
+    "price": 50,
+    "category": 0
   },
   {
     "id": "item_active_lay_marble",
@@ -123,7 +131,8 @@
     "targetKind": 3,
     "targetCount": 1,
     "termId": "m_marble",
-    "price": 35
+    "price": 50,
+    "category": 0
   },
   {
     "id": "item_active_lay_obsidian",
@@ -137,7 +146,8 @@
     "targetKind": 3,
     "targetCount": 1,
     "termId": "m_obsidian",
-    "price": 35
+    "price": 50,
+    "category": 0
   },
   {
     "id": "item_active_lay_emerald",
@@ -151,7 +161,8 @@
     "targetKind": 3,
     "targetCount": 1,
     "termId": "m_emerald",
-    "price": 35
+    "price": 50,
+    "category": 0
   },
   {
     "id": "item_active_lay_gold",
@@ -165,7 +176,8 @@
     "targetKind": 3,
     "targetCount": 1,
     "termId": "m_gold",
-    "price": 35
+    "price": 50,
+    "category": 0
   },
   {
     "id": "item_active_lay_silver",
@@ -179,7 +191,8 @@
     "targetKind": 3,
     "targetCount": 1,
     "termId": "m_silver",
-    "price": 35
+    "price": 50,
+    "category": 0
   },
   {
     "id": "item_active_reroll_action",
@@ -193,7 +206,8 @@
     "targetKind": 6,
     "targetCount": 0,
     "termId": "",
-    "price": 35
+    "price": 50,
+    "category": 1
   },
   {
     "id": "item_active_half_next_action_cost",
@@ -207,7 +221,8 @@
     "targetKind": 6,
     "targetCount": 0,
     "termId": "",
-    "price": 35
+    "price": 50,
+    "category": 1
   },
   {
     "id": "item_active_reroll_last_boss_debuff",
@@ -221,12 +236,13 @@
     "targetKind": 6,
     "targetCount": 0,
     "termId": "",
-    "price": 35
+    "price": 50,
+    "category": 1
   },
   {
     "id": "item_active_add_reward_node",
     "name": "幸运事件单",
-    "desc": "添加幸运事件至时间轴上",
+    "desc": "添加幸运事件至指定节点上",
     "specialTags": "",
     "effectType": "TimelineAddRewardNode",
     "effectValue": 0,
@@ -235,12 +251,13 @@
     "targetKind": 6,
     "targetCount": 1,
     "termId": "",
-    "price": 35
+    "price": 50,
+    "category": 1
   },
   {
     "id": "item_active_add_interest_node",
     "name": "利息单",
-    "desc": "添加收取利息至时间轴上",
+    "desc": "添加收取利息至指定节点上",
     "specialTags": "",
     "effectType": "TimelineAddInterestNode",
     "effectValue": 0,
@@ -249,12 +266,13 @@
     "targetKind": 6,
     "targetCount": 1,
     "termId": "",
-    "price": 35
+    "price": 50,
+    "category": 1
   },
   {
     "id": "item_active_add_shop_node",
     "name": "进货单",
-    "desc": "添加商店进货至时间轴上",
+    "desc": "添加商店进货至指定节点上",
     "specialTags": "",
     "effectType": "TimelineAddShopNode",
     "effectValue": 0,
@@ -263,12 +281,13 @@
     "targetKind": 6,
     "targetCount": 1,
     "termId": "",
-    "price": 35
+    "price": 50,
+    "category": 1
   },
   {
     "id": "item_active_add_lottery_node",
     "name": "抽奖机单",
-    "desc": "添加抽奖机至时间轴上",
+    "desc": "添加抽奖机至指定节点上",
     "specialTags": "",
     "effectType": "TimelineAddLotteryNode",
     "effectValue": 0,
@@ -277,7 +296,8 @@
     "targetKind": 6,
     "targetCount": 1,
     "termId": "",
-    "price": 35
+    "price": 50,
+    "category": 1
   },
   {
     "id": "item_active_delete_timeline_node",
@@ -291,12 +311,13 @@
     "targetKind": 6,
     "targetCount": 1,
     "termId": "",
-    "price": 35
+    "price": 50,
+    "category": 1
   },
   {
     "id": "item_active_execute_future_node",
     "name": "未来加急单",
-    "desc": "立即执行1个未来的节点行动",
+    "desc": "指定1个未执行的节点行动\n复制到最近的节点",
     "specialTags": "",
     "effectType": "TimelineExecuteFuture",
     "effectValue": 0,
@@ -305,12 +326,13 @@
     "targetKind": 6,
     "targetCount": 1,
     "termId": "",
-    "price": 35
+    "price": 50,
+    "category": 1
   },
   {
     "id": "item_active_execute_past_node",
     "name": "过往加急单",
-    "desc": "立即执行1个过去的节点行动",
+    "desc": "指定1个已执行的节点行动\n复制到最近的节点",
     "specialTags": "",
     "effectType": "TimelineExecutePast",
     "effectValue": 0,
@@ -319,6 +341,7 @@
     "targetKind": 6,
     "targetCount": 1,
     "termId": "",
-    "price": 35
+    "price": 50,
+    "category": 1
   }
 ]
