@@ -1,34 +1,27 @@
 [
   {
     "id": 1,
-    "modifier": "",
     "timelineIds": [
-      "tl_normal",
-      "tl_busy"
+      "tl_1"
     ],
     "timelineWeights": [
-      100,
-      60
+      100
     ]
   },
   {
     "id": 2,
-    "modifier": "",
     "timelineIds": [
-      "tl_normal",
-      "tl_busy"
+      "tl_2"
     ],
     "timelineWeights": [
-      100,
-      60
+      100
     ]
   },
   {
     "id": 3,
-    "modifier": "",
     "timelineIds": [
-      "tl_normal",
-      "tl_busy"
+      "tl_1",
+      "tl_2"
     ],
     "timelineWeights": [
       100,
@@ -37,10 +30,9 @@
   },
   {
     "id": 4,
-    "modifier": "limit_serve",
     "timelineIds": [
-      "tl_normal",
-      "tl_busy"
+      "tl_1",
+      "tl_2"
     ],
     "timelineWeights": [
       100,

@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 周/关卡配置：定义每周修饰符、候选行动轴列表与行动轴权重。
+/// 周/关卡配置：定义每周候选行动轴列表与行动轴权重。
 /// </summary>
 public partial class TbWeek
 {

@@ -234,7 +234,7 @@ namespace GourmetProject.Game.Presentation.Battle
             ComputeViewport();
 
             _editCellSprite = Resources.Load<Sprite>("Sprites/UI/board_cell");
-            _editTable = tableOverride ?? run.BuildTablePreviewFromFragments(run.WeekModifier);
+            _editTable = tableOverride ?? run.BuildTablePreviewFromFragments();
             LayoutEditorTable(_editTable, useBoardArea: true);
             _state = TableInteractionState.ReadOnlyView;
         }
@@ -252,7 +252,7 @@ namespace GourmetProject.Game.Presentation.Battle
             ComputeViewport();
 
             _editCellSprite = Resources.Load<Sprite>("Sprites/UI/board_cell");
-            _editTable = tableOverride ?? run.BuildTablePreviewFromFragments(run.WeekModifier);
+            _editTable = tableOverride ?? run.BuildTablePreviewFromFragments();
             LayoutEditorTable(_editTable, useBoardArea: true);
             _state = TableInteractionState.CellTargeting;
         }
