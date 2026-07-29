@@ -10,7 +10,6 @@
     "initialFragmentId": "gut_4x4",
     "maxDiningTableWidth": 12,
     "maxDiningTableHeight": 12,
-    "timelinePool": "tl_normal",
     "startItems": []
   }
 ]

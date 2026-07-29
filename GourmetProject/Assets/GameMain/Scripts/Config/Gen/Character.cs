@@ -25,7 +25,6 @@ public sealed partial class Character : Luban.BeanBase
         { if(!_buf["initialFragmentId"].IsString) { throw new SerializationException(); }  InitialFragmentId = _buf["initialFragmentId"]; }
         { if(!_buf["maxDiningTableWidth"].IsNumber) { throw new SerializationException(); }  MaxDiningTableWidth = _buf["maxDiningTableWidth"]; }
         { if(!_buf["maxDiningTableHeight"].IsNumber) { throw new SerializationException(); }  MaxDiningTableHeight = _buf["maxDiningTableHeight"]; }
-        { if(!_buf["timelinePool"].IsString) { throw new SerializationException(); }  TimelinePool = _buf["timelinePool"]; }
         { var __json0 = _buf["startItems"]; if(!__json0.IsArray) { throw new SerializationException(); } StartItems = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  StartItems.Add(__v0); }   }
     }
 
@@ -67,10 +66,6 @@ public sealed partial class Character : Luban.BeanBase
     /// </summary>
     public readonly int MaxDiningTableHeight;
     /// <summary>
-    /// 可用行动轴池，空=全部，逗号分隔 timeline.id
-    /// </summary>
-    public readonly string TimelinePool;
-    /// <summary>
     /// 初始携带道具ID列表
     /// </summary>
     public readonly System.Collections.Generic.List<string> StartItems;
@@ -93,7 +88,6 @@ public sealed partial class Character : Luban.BeanBase
         + "initialFragmentId:" + InitialFragmentId + ","
         + "maxDiningTableWidth:" + MaxDiningTableWidth + ","
         + "maxDiningTableHeight:" + MaxDiningTableHeight + ","
-        + "timelinePool:" + TimelinePool + ","
         + "startItems:" + Luban.StringUtil.CollectionToString(StartItems) + ","
         + "}";
     }

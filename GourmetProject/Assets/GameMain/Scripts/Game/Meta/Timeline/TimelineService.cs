@@ -24,7 +24,6 @@ namespace GourmetProject.Game.Meta
             }
 
             cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
-            cfg.Character character = tables.TbCharacter.GetOrDefault(run.CharacterId);
             cfg.Week week = run.CurrentWeek ?? tables.TbWeek.GetOrDefault(run.TotalWeeks);
             IReadOnlyList<string> timelineIds = week?.TimelineIds;
             IReadOnlyList<float> timelineWeights = week?.TimelineWeights;
@@ -44,7 +43,7 @@ namespace GourmetProject.Game.Meta
             {
                 string timelineId = timelineIds[i]?.Trim();
                 float weight = timelineWeights[i];
-                if (string.IsNullOrEmpty(timelineId) || weight <= 0f || !MatchesPool(character?.TimelinePool, timelineId))
+                if (string.IsNullOrEmpty(timelineId) || weight <= 0f)
                 {
                     continue;
                 }
@@ -62,7 +61,7 @@ namespace GourmetProject.Game.Meta
 
             if (candidates.Count == 0)
             {
-                Log.Warning($"第 {run.WeekIndex} 周无匹配行动轴（character={run.CharacterId}），回退为 {DefaultLengthDays} 天空轴。", Tag);
+                Log.Warning($"第 {run.WeekIndex} 周无可用行动轴，回退为 {DefaultLengthDays} 天空轴。", Tag);
                 run.BeginTimeline(string.Empty, DefaultLengthDays);
                 ApplyWeekTimelinePassives(run);
                 return string.Empty;
@@ -348,25 +347,6 @@ namespace GourmetProject.Game.Meta
             float prev = run.CurrentDay;
             run.CurrentDay = TimelineMath.Advance(run.CurrentDay, days, run.TimelineLengthDays);
             return prev;
-        }
-
-        /// <summary>逗号分隔池匹配：空池=任意通过；否则需包含 value。</summary>
-        private static bool MatchesPool(string pool, string value)
-        {
-            if (string.IsNullOrEmpty(pool))
-            {
-                return true;
-            }
-
-            foreach (string part in pool.Split(','))
-            {
-                if (part.Trim() == value)
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         private static int CompareTimelineNodeIds(string left, string right)

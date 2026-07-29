@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 角色：配置初始菜谱/胃形状/道具，并通过 timelinePool/bossPool 限制该角色可随机到的行动轴和 Boss。
+/// 角色：配置初始菜谱/胃形状/道具。
 /// </summary>
 public partial class TbCharacter
 {
