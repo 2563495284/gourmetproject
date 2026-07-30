@@ -68,6 +68,7 @@ namespace GourmetProject.Game.UI.Hud
         private Font _cachedFont;
         private Sprite _whiteSprite;
         private string _builtTimelineId;
+        private string _presentedExecutingNodeId;
         private bool _hasBuiltNodes;
         private bool _commitInProgress;
 
@@ -80,11 +81,15 @@ namespace GourmetProject.Game.UI.Hud
             return _dayGroups.TryGetValue(day, out TimelineDayNodeGroupView group) ? group : null;
         }
 
-        public void Build(GameRun run, Action<cfg.TimelineNode, GameObject> onNodeCreated = null)
+        public void Build(
+            GameRun run,
+            Action<cfg.TimelineNode, GameObject> onNodeCreated = null,
+            string executingNodeId = null)
         {
             bool timelineChanged = _run != run
                 || !string.Equals(_builtTimelineId, run?.CurrentTimelineId, StringComparison.Ordinal);
             _run = run;
+            _presentedExecutingNodeId = executingNodeId ?? string.Empty;
             if (onNodeCreated != null)
             {
                 _onNodeCreated = onNodeCreated;
@@ -409,9 +414,15 @@ namespace GourmetProject.Game.UI.Hud
 
                 cfg.GameAction action = TimelineService.NodeAction(_run, node);
                 ActionDisplayKind kind = ActionDisplay.KindOf(_run.Tables, action);
+                bool executing = _run.IsTimelineNodeExecutionInProgress(node.Id)
+                    || string.Equals(
+                        node.Id,
+                        _presentedExecutingNodeId,
+                        StringComparison.Ordinal);
                 bubble.Bind(
                     NodeSprite(kind),
                     _run.IsNodeTriggered(node.Id),
+                    executing,
                     kind == ActionDisplayKind.Boss,
                     preview: false,
                     negative: kind == ActionDisplayKind.Negative);
@@ -512,6 +523,7 @@ namespace GourmetProject.Game.UI.Hud
             _previewBubble.Bind(
                 NodeSprite(kind),
                 completed: false,
+                executing: false,
                 kind == ActionDisplayKind.Boss,
                 preview: true);
             _previewBubble.SetRaycastEnabled(false);

@@ -1455,7 +1455,7 @@ namespace GourmetProject.Game.UI.Battle
 
         private void RebuildActionAxis()
         {
-            _axisBinder?.Rebuild(_run);
+            _axisBinder?.Rebuild(_run, _currentTimelineNodeCard?.Id);
         }
 
         private void HideAllTips()

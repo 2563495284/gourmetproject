@@ -31,7 +31,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private const float EditTableBottomMargin = 3.6f;
         private const float TemporaryAreaPadding = 0.12f;
         private const float TemporaryAreaPiecePaddingRatio = 0.84f;
-        private const float TemporaryAreaVisibleRatio = 0.5f;
+        private const float TemporaryAreaVisibleRatio = 0.7f;
         private const float TemporaryAreaLayoutDuration = 0.18f;
         private const float TemporaryAreaFadeDuration = 0.18f;
         private const float TemporaryAreaFlyDuration = 0.38f;
@@ -691,40 +691,42 @@ namespace GourmetProject.Game.Presentation.Battle
                 piece.SetClickEnabled(false);
                 piece.SetMoveCallbacks(null, null, null);
                 RefreshTemporaryAreaVisibility(animated: true);
-                LayoutTemporaryAreaPieces(animated: true);
+                int index = TemporaryAreaDishIndex(dishId);
+                TemporaryAreaStackSlot[] targetSlots = CalculateTemporaryAreaSlots();
+                LayoutTemporaryAreaPieces(animated: true, slotsOverride: targetSlots);
+                TemporaryAreaStackSlot targetSlot = index >= 0 && index < targetSlots.Length
+                    ? targetSlots[index]
+                    : new TemporaryAreaStackSlot(
+                        _temporaryArea != null
+                            ? (Vector2)_temporaryArea.position
+                            : (Vector2)transform.position,
+                        1f);
 
                 piece.PlayActiveItemNumbTransform(temporaryDish.Placement, () =>
                 {
                     if (piece == null)
                     {
-                        CompleteTemporaryAreaArrival(onComplete);
+                        CompleteTemporaryAreaArrival(null, temporaryDish, index, onComplete);
                         return;
                     }
 
                     piece.SetFlying(true);
-                    int index = TemporaryAreaDishIndex(dishId);
-                    TemporaryAreaStackSlot[] slots = CalculateTemporaryAreaSlots();
-                    TemporaryAreaStackSlot slot = index >= 0 && index < slots.Length
-                        ? slots[index]
-                        : new TemporaryAreaStackSlot(
-                            _temporaryArea != null
-                                ? (Vector2)_temporaryArea.position
-                                : (Vector2)transform.position,
-                            1f);
                     piece.SetSortingOrderOffset(index * TemporaryAreaSortingStride);
                     Vector3 slotCenter = new Vector3(
-                        slot.Center.x,
-                        slot.Center.y,
+                        targetSlot.Center.x,
+                        targetSlot.Center.y,
                         _temporaryArea != null ? _temporaryArea.position.z : transform.position.z);
-                    Vector3 targetPosition = TemporaryAreaPieceRootPosition(piece, slotCenter, slot.Scale);
+                    Vector3 targetPosition = TemporaryAreaPieceRootPosition(
+                        piece,
+                        slotCenter,
+                        targetSlot.Scale);
                     DOTween.Sequence()
                         .SetLink(piece.gameObject)
                         .Append(piece.transform.DOMove(targetPosition, TemporaryAreaFlyDuration).SetEase(Ease.InOutCubic))
-                        .Join(piece.transform.DOScale(Vector3.one * slot.Scale, TemporaryAreaFlyDuration).SetEase(Ease.InOutCubic))
+                        .Join(piece.transform.DOScale(Vector3.one * targetSlot.Scale, TemporaryAreaFlyDuration).SetEase(Ease.InOutCubic))
                         .OnComplete(() =>
                         {
-                            // 保持 PiecesFlying，直到重建出的临时菜表现原子接管，避免落点闪到 UI 背后。
-                            CompleteTemporaryAreaArrival(onComplete);
+                            CompleteTemporaryAreaArrival(piece, temporaryDish, index, onComplete);
                         });
                 });
                 return true;
@@ -734,11 +736,41 @@ namespace GourmetProject.Game.Presentation.Battle
             return true;
         }
 
-        private void CompleteTemporaryAreaArrival(Action onComplete)
+        private void CompleteTemporaryAreaArrival(
+            DishPieceView piece,
+            DishInstance dish,
+            int index,
+            Action onComplete)
         {
             _activeItemTransitioning = false;
-            RebuildPlacedPieces();
-            RefreshAll();
+            if (piece == null || dish == null)
+            {
+                RebuildPlacedPieces();
+                RefreshAll();
+            }
+            else
+            {
+                _placedPieces.Remove(piece);
+                _dishViewsById.Remove(dish.Id);
+                piece.gameObject.name = $"TemporaryAreaDish_{dish.Id}_{dish.Def.Id}";
+                piece.SetGhost(false);
+                piece.SetPlacementGlow(false, false);
+                piece.SetHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
+                piece.SetMoveCallbacks(
+                    BeginTemporaryAreaDishDrag,
+                    UpdateTemporaryAreaDishDrag,
+                    EndTemporaryAreaDishDrag);
+                piece.SetPointerHitFilter(IsTemporaryAreaPointerHitAccepted);
+                piece.SetFlying(true);
+                piece.SetSortingOrderOffset(index * TemporaryAreaSortingStride);
+                piece.SetClickEnabled(true);
+
+                int insertIndex = Mathf.Clamp(index, 0, _temporaryAreaPieces.Count);
+                _temporaryAreaPieces.Insert(insertIndex, piece);
+                _temporaryAreaViewsById[dish.Id] = piece;
+                _boardView?.Sync();
+            }
+
             _stateChanged?.Invoke();
             onComplete?.Invoke();
         }
@@ -1672,6 +1704,17 @@ namespace GourmetProject.Game.Presentation.Battle
             UpdateTemporaryAreaDishDrag(screenPoint);
         }
 
+        private bool IsTemporaryAreaPointerHitAccepted(
+            DishPieceView candidate,
+            Vector2 world)
+        {
+            return TemporaryAreaPointerHit.IsTopmostAt(
+                candidate,
+                _temporaryAreaPieces,
+                world,
+                _temporaryAreaDragPiece);
+        }
+
         private void UpdateTemporaryAreaDishDrag(Vector2 screenPoint)
         {
             DishInstance dish = _temporaryAreaDragPiece?.Instance;
@@ -1760,6 +1803,7 @@ namespace GourmetProject.Game.Presentation.Battle
             piece.transform.localPosition = _boardView.Mapper.CellCenterLocal(placement.Origin);
             piece.SetDragPresentation(false);
             piece.SetSortingOrderOffset(0);
+            piece.SetPointerHitFilter(null);
             piece.SetGhost(false);
             piece.SetClickEnabled(true);
             piece.SetHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
@@ -1769,7 +1813,9 @@ namespace GourmetProject.Game.Presentation.Battle
             _dishViewsById[dish.Id] = piece;
         }
 
-        private void LayoutTemporaryAreaPieces(bool animated = false)
+        private void LayoutTemporaryAreaPieces(
+            bool animated = false,
+            IReadOnlyList<TemporaryAreaStackSlot> slotsOverride = null)
         {
             if (_session == null || _temporaryAreaPieces.Count == 0)
             {
@@ -1777,7 +1823,8 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             int count = _session.TemporaryAreaDishes.Count;
-            TemporaryAreaStackSlot[] slots = CalculateTemporaryAreaSlots();
+            IReadOnlyList<TemporaryAreaStackSlot> slots =
+                slotsOverride ?? CalculateTemporaryAreaSlots();
             for (int i = 0; i < count; i++)
             {
                 DishInstance dish = _session.TemporaryAreaDishes[i];
@@ -1789,7 +1836,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     continue;
                 }
 
-                TemporaryAreaStackSlot slot = i < slots.Length
+                TemporaryAreaStackSlot slot = i < slots.Count
                     ? slots[i]
                     : new TemporaryAreaStackSlot(
                         _temporaryArea != null
@@ -1871,19 +1918,9 @@ namespace GourmetProject.Game.Presentation.Battle
             for (int i = 0; i < count; i++)
             {
                 DishInstance dish = _session.TemporaryAreaDishes[i];
-                DishPieceView piece = null;
-                if (dish != null)
-                {
-                    _temporaryAreaViewsById.TryGetValue(dish.Id, out piece);
-                    if (piece == null)
-                    {
-                        _dishViewsById.TryGetValue(dish.Id, out piece);
-                    }
-                }
-
-                footprints[i] = piece != null
-                    ? piece.FootprintWorldSize
-                    : TemporaryAreaFootprint(dish);
+                // 数据层已在动画开始前写入旋转后的 Placement；始终使用它，
+                // 避免飞入表现仍持有旧 CurrentShape 时算出另一套临时槽位。
+                footprints[i] = TemporaryAreaFootprint(dish);
             }
 
             return TemporaryAreaStackLayout.Calculate(
@@ -2389,6 +2426,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     BeginTemporaryAreaDishDrag,
                     UpdateTemporaryAreaDishDrag,
                     EndTemporaryAreaDishDrag);
+                piece.SetPointerHitFilter(IsTemporaryAreaPointerHitAccepted);
                 piece.SetPlacementGlow(false, false);
                 _temporaryAreaPieces.Add(piece);
                 _temporaryAreaViewsById[dish.Id] = piece;

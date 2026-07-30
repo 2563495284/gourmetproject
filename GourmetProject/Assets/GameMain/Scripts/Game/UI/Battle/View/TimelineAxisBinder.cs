@@ -33,9 +33,12 @@ namespace GourmetProject.Game.UI.Battle.View
             _bossTip = bossTip;
         }
 
-        public void Rebuild(GameRun run)
+        public void Rebuild(GameRun run, string executingNodeId = null)
         {
-            _axis?.Build(run, (node, go) => ConfigureNodeTip(run, node, go));
+            _axis?.Build(
+                run,
+                (node, go) => ConfigureNodeTip(run, node, go),
+                executingNodeId);
         }
 
         public bool BeginActiveItemTargeting(
