@@ -52,7 +52,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void FullyClaimedOffer_KeepsGrantedSummaryRowsVisible()
+        public void FullyClaimedOffer_HidesAllRewardRows()
         {
             RewardOffer offer = CreateOffer(
                 baseGoldClaimed: true,
@@ -61,18 +61,12 @@ namespace GourmetProject.Tests.EditMode
 
             WithRenderedOffer(offer, rows =>
             {
-                Assert.That(rows, Has.Count.EqualTo(3));
-                Assert.That(
-                    rows.FindAll(RowShowsClaimedState),
-                    Has.Count.EqualTo(3));
-                Assert.That(
-                    rows.FindAll(RowButtonIsInteractable),
-                    Is.Empty);
+                Assert.That(rows, Is.Empty);
             });
         }
 
         [Test]
-        public void PartiallyClaimedMultiPick_KeepsClaimedRowAndRemainingPack()
+        public void PartiallyClaimedMultiPick_HidesClaimedRowsAndKeepsRemainingPacks()
         {
             RewardOffer offer = CreateOffer(
                 baseGoldClaimed: true,
@@ -82,10 +76,10 @@ namespace GourmetProject.Tests.EditMode
 
             WithRenderedOffer(offer, rows =>
             {
-                Assert.That(rows, Has.Count.EqualTo(4));
+                Assert.That(rows, Has.Count.EqualTo(2));
                 Assert.That(
                     rows.FindAll(RowShowsClaimedState),
-                    Has.Count.EqualTo(2));
+                    Is.Empty);
                 Assert.That(
                     rows.FindAll(RowButtonIsInteractable),
                     Has.Count.EqualTo(2));

@@ -836,22 +836,25 @@ namespace GourmetProject.Game.UI.Meta
 
         private void AddFixedGoldRow()
         {
+            if (_offer.BaseGoldClaimed)
+            {
+                return;
+            }
+
             RewardChoiceRowView row = CreateRewardRow();
             if (row == null)
             {
                 return;
             }
 
-            bool claimed = _offer.BaseGoldClaimed;
             row.Bind(
                 $"金币 +{_offer.BaseGold}",
-                claimed ? "固定金币已发放。" : "点击领取固定金币。",
+                "点击领取固定金币。",
                 LoadGoldIcon(),
                 false,
-                !claimed,
-                claimed,
-                claimed ? null : ClaimBaseGold,
-                stateOverride: claimed ? "已领取" : null);
+                true,
+                false,
+                ClaimBaseGold);
         }
 
         private void AddChoiceRows(
@@ -864,7 +867,6 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            AddClaimedChoiceRows(groupName, choices, groupIndex);
             if (IsChoiceResolved(groupIndex))
             {
                 return;
@@ -899,39 +901,6 @@ namespace GourmetProject.Game.UI.Meta
                     true,
                     false,
                     () => ClaimChoice(groupIndex, index, choices),
-                    dish: DishForChoice(choice),
-                    flavorIds: FlavorIdsForChoice(choice));
-            }
-        }
-
-        private void AddClaimedChoiceRows(
-            string groupName,
-            IReadOnlyList<RewardChoice> choices,
-            int groupIndex)
-        {
-            for (int i = 0; i < choices.Count; i++)
-            {
-                RewardChoice choice = choices[i];
-                if (choice == null || !IsChoiceClaimed(groupIndex, i))
-                {
-                    continue;
-                }
-
-                RewardChoiceRowView row = CreateRewardRow();
-                if (row == null)
-                {
-                    return;
-                }
-
-                row.Bind(
-                    BuildChoiceTitle(groupName, choice),
-                    BuildChoiceDescription(choice),
-                    LoadChoiceIcon(choice),
-                    false,
-                    false,
-                    true,
-                    null,
-                    stateOverride: "已领取",
                     dish: DishForChoice(choice),
                     flavorIds: FlavorIdsForChoice(choice));
             }
