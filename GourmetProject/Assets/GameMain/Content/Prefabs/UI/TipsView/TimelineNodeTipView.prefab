@@ -78,7 +78,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "\u8282\u70B9\u5929\u6570\uFF1A3\u5929"
+  m_Text: "\u8282\u70B9\u5929\u6570\uFF1A1\u5929"
 --- !u!1 &2787609656420724042
 GameObject:
   m_ObjectHideFlags: 0
@@ -249,7 +249,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "\u6D88\u8017\u91D1\u5E01\u8D2D\u4E70\u83DC\u54C1\u3001\u9053\u5177\u3001\u80C3\u90E8\u788E\u7247\uFF0C\u4F18\u5316\u83DC\u8C31"
+  m_Text: "\u884C\u52A8\u63CF\u8FF0"
 --- !u!1 &4190737477705729550
 GameObject:
   m_ObjectHideFlags: 0
@@ -262,7 +262,7 @@ GameObject:
   - component: {fileID: 4997383065004317368}
   - component: {fileID: 9107685920200034611}
   m_Layer: 0
-  m_Name: ShopNodeTipView
+  m_Name: TimelineNodeTipView
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -311,7 +311,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 10d207ac1333d45838b58405e71fd940, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Tooltips.ShopNodeTipView
+  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Tooltips.TimelineNodeTipView
   _canvasGroup: {fileID: 4997383065004317368}
   _titleText: {fileID: 8026474154748697523}
   _descText: {fileID: 789741695957064412}
@@ -395,7 +395,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "\u5546\u5E97"
+  m_Text: "\u884C\u52A8\u540D\u79F0"
 --- !u!1 &5006907993289763354
 GameObject:
   m_ObjectHideFlags: 0

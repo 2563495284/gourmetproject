@@ -17,20 +17,14 @@ namespace GourmetProject.Game.UI.Battle.View
     internal sealed class TimelineAxisBinder
     {
         private readonly ActionAxisBar _axis;
-        private readonly Func<ShopNodeTipView> _shopTip;
-        private readonly Func<InterestNodeTipView> _interestTip;
-        private readonly Func<BossFeastTipView> _bossTip;
+        private readonly Func<TimelineNodeTipView> _timelineTip;
 
         public TimelineAxisBinder(
             ActionAxisBar axis,
-            Func<ShopNodeTipView> shopTip,
-            Func<InterestNodeTipView> interestTip,
-            Func<BossFeastTipView> bossTip)
+            Func<TimelineNodeTipView> timelineTip)
         {
             _axis = axis;
-            _shopTip = shopTip;
-            _interestTip = interestTip;
-            _bossTip = bossTip;
+            _timelineTip = timelineTip;
         }
 
         public void Rebuild(GameRun run)
@@ -139,65 +133,45 @@ namespace GourmetProject.Game.UI.Battle.View
             }
 
             cfg.GameAction action = TimelineService.NodeAction(run, node);
-            switch (ActionDisplay.KindOf(run?.Tables, action))
+            if (action == null)
             {
-                case ActionDisplayKind.Shop:
-                {
-                    ShopNodeTipView tip = _shopTip?.Invoke();
-                    if (tip != null)
-                    {
-                        trigger.SetTip(tip, () => tip.Bind(node.Day));
-                    }
-
-                    break;
-                }
-
-                case ActionDisplayKind.Interest:
-                {
-                    InterestNodeTipView tip = _interestTip?.Invoke();
-                    if (tip != null)
-                    {
-                        trigger.SetTip(tip, () => BindInterestNodeTip(run, tip, node, action));
-                    }
-
-                    break;
-                }
-
-                case ActionDisplayKind.Boss:
-                {
-                    BossFeastTipView tip = _bossTip?.Invoke();
-                    if (tip != null)
-                    {
-                        trigger.SetTip(tip, () => BindBossNodeTip(run, tip, node, action));
-                    }
-
-                    break;
-                }
-
-                default:
-                    trigger.ClearTip();
-                    break;
+                trigger.ClearTip();
+                return;
             }
+
+            TimelineNodeTipView tip = _timelineTip?.Invoke();
+            if (tip == null)
+            {
+                trigger.ClearTip();
+                return;
+            }
+
+            bool isBoss = ActionDisplay.KindOf(run?.Tables, action) == ActionDisplayKind.Boss;
+            trigger.SetTip(
+                tip,
+                isBoss
+                    ? () => BindBossNodeTip(run, tip, node, action)
+                    : () => BindActionNodeTip(tip, node, action));
         }
 
-        private static void BindInterestNodeTip(GameRun run, InterestNodeTipView tip, cfg.TimelineNode node, cfg.GameAction action)
+        private static void BindActionNodeTip(
+            TimelineNodeTipView tip,
+            cfg.TimelineNode node,
+            cfg.GameAction action)
         {
             if (tip == null || node == null || action == null)
             {
                 return;
             }
 
-            int threshold = Mathf.Max(0, run?.InterestThreshold ?? 0);
-            int goldPer = run != null && run.InterestGoldPer > 0 ? run.InterestGoldPer : 1;
-            int maxGain = run?.InterestCap ?? 0;
-            int currentGain = TimelineMath.Interest(run?.Gold ?? 0, threshold, goldPer, maxGain);
-            string desc = threshold > 0
-                ? $"每有{threshold}枚金币，获得{goldPer}枚，最高可获得{maxGain}枚。当前可获得{currentGain}枚"
-                : "当前节点没有有效金币阈值。";
-            tip.Bind(desc, node.Day);
+            tip.Bind(action.Name, action.Desc, $"节点天数：{node.Day}天");
         }
 
-        private static void BindBossNodeTip(GameRun run, BossFeastTipView tip, cfg.TimelineNode node, cfg.GameAction action)
+        private static void BindBossNodeTip(
+            GameRun run,
+            TimelineNodeTipView tip,
+            cfg.TimelineNode node,
+            cfg.GameAction action)
         {
             if (tip == null || node == null)
             {
@@ -207,7 +181,10 @@ namespace GourmetProject.Game.UI.Battle.View
             cfg.Food boss = PreviewBoss(run, node, action);
             if (boss == null)
             {
-                tip.Bind("Bug", "不应该出现此条信息，请联系开发者。", run?.RequiredScore ?? 0);
+                tip.Bind(
+                    "Bug",
+                    "不应该出现此条信息，请联系开发者。",
+                    $"美味度要求：{(run?.RequiredScore ?? 0):N0}");
                 return;
             }
 
@@ -218,7 +195,7 @@ namespace GourmetProject.Game.UI.Battle.View
                     new ActionExecutionContext(action) { TargetScoreDayOverride = node.Day },
                     debuff?.TargetScoreHiddenOffset ?? 0)
                 : 0;
-            tip.Bind(debuff.Name, debuff.Desc, required);
+            tip.Bind(debuff.Name, debuff.Desc, $"美味度要求：{required:N0}");
         }
 
         private static cfg.Food PreviewBoss(GameRun run, cfg.TimelineNode node, cfg.GameAction action)

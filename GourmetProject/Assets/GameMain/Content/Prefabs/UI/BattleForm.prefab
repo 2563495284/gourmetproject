@@ -5348,9 +5348,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Battle.View.BattleTipRegistry
   _itemTipPrefab: {fileID: 8646951620094238264, guid: 49d929799dca94ac9bec5bb3a1fbffec, type: 3}
-  _shopNodeTipPrefab: {fileID: 9107685920200034611, guid: b9e5ff8450fd84f10ac61bbee4e63192, type: 3}
-  _interestNodeTipPrefab: {fileID: 5195185591709000967, guid: 1f269ad11b2474164a8179f7f3a1907f, type: 3}
-  _bossFeastTipPrefab: {fileID: 5411248217418625617, guid: a6ef1fab185b941a38b5ba73e96623e3, type: 3}
+  _timelineNodeTipPrefab: {fileID: 9107685920200034611, guid: b9e5ff8450fd84f10ac61bbee4e63192, type: 3}
   _foodTipsPrefab: {fileID: 7013095112852541377, guid: ea2c95d613a824d08884a70e0025c9df, type: 3}
 --- !u!114 &1868257081658797517
 MonoBehaviour:

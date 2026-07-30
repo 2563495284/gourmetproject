@@ -789,7 +789,7 @@ namespace GourmetProject.Tests.PlayMode
             ConstructorInfo binderConstructor = binderType.GetConstructors(
                     BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
                 .Single();
-            object binder = binderConstructor.Invoke(new object[] { axis, null, null, null });
+            object binder = binderConstructor.Invoke(new object[] { axis, null });
             SetPrivate(host, "_axisBinder", binder);
         }
 
