@@ -725,6 +725,7 @@ namespace GourmetProject.Game.UI.Meta
             {
                 if (_spawnedRows[i] != null)
                 {
+                    _spawnedRows[i].gameObject.SetActive(false);
                     Destroy(_spawnedRows[i].gameObject);
                 }
             }
@@ -746,6 +747,14 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             AddChoiceRows(_genericMode ? "随机食物" : "特定奖励", _offer.SpecificGroup.Choices, groupIndex: -1);
+            Canvas.ForceUpdateCanvases();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_rewardListContent);
+            if (_rewardScrollRect != null)
+            {
+                _rewardScrollRect.StopMovement();
+                _rewardScrollRect.verticalNormalizedPosition = 1f;
+            }
+
             HideRewardScrollbar(immediate: true);
         }
 
@@ -827,25 +836,22 @@ namespace GourmetProject.Game.UI.Meta
 
         private void AddFixedGoldRow()
         {
-            if (_offer.BaseGoldClaimed)
-            {
-                return;
-            }
-
             RewardChoiceRowView row = CreateRewardRow();
             if (row == null)
             {
                 return;
             }
 
+            bool claimed = _offer.BaseGoldClaimed;
             row.Bind(
                 $"金币 +{_offer.BaseGold}",
-                "点击领取固定金币。",
+                claimed ? "固定金币已发放。" : "点击领取固定金币。",
                 LoadGoldIcon(),
                 false,
-                true,
-                false,
-                ClaimBaseGold);
+                !claimed,
+                claimed,
+                claimed ? null : ClaimBaseGold,
+                stateOverride: claimed ? "已领取" : null);
         }
 
         private void AddChoiceRows(
@@ -858,6 +864,7 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
+            AddClaimedChoiceRows(groupName, choices, groupIndex);
             if (IsChoiceResolved(groupIndex))
             {
                 return;
@@ -892,6 +899,39 @@ namespace GourmetProject.Game.UI.Meta
                     true,
                     false,
                     () => ClaimChoice(groupIndex, index, choices),
+                    dish: DishForChoice(choice),
+                    flavorIds: FlavorIdsForChoice(choice));
+            }
+        }
+
+        private void AddClaimedChoiceRows(
+            string groupName,
+            IReadOnlyList<RewardChoice> choices,
+            int groupIndex)
+        {
+            for (int i = 0; i < choices.Count; i++)
+            {
+                RewardChoice choice = choices[i];
+                if (choice == null || !IsChoiceClaimed(groupIndex, i))
+                {
+                    continue;
+                }
+
+                RewardChoiceRowView row = CreateRewardRow();
+                if (row == null)
+                {
+                    return;
+                }
+
+                row.Bind(
+                    BuildChoiceTitle(groupName, choice),
+                    BuildChoiceDescription(choice),
+                    LoadChoiceIcon(choice),
+                    false,
+                    false,
+                    true,
+                    null,
+                    stateOverride: "已领取",
                     dish: DishForChoice(choice),
                     flavorIds: FlavorIdsForChoice(choice));
             }
