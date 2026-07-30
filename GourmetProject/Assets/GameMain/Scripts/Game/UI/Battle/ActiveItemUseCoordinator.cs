@@ -811,6 +811,13 @@ namespace GourmetProject.Game.UI.Battle
                 return false;
             }
 
+            if (item.EffectType == ItemEffectTypes.HalfNextActionCost
+                && contextKind == ActiveUseContextKind.Battle)
+            {
+                reason = "美食战斗中不能使用。";
+                return false;
+            }
+
             if (ItemActiveUsage.RequiresFoodBattle(item)
                 && (_host.CurrentView != GameplayView.Food || !_host.InBattle))
             {

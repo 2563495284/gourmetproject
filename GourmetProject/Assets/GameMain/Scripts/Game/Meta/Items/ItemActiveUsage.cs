@@ -67,7 +67,7 @@ namespace GourmetProject.Game.Meta
 
             if (item.EffectType == ItemEffectTypes.HalfNextActionCost)
             {
-                return true;
+                return ctx != ActiveUseContextKind.Battle;
             }
 
             if (IsScheduleEffect(item.EffectType))

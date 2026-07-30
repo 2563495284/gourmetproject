@@ -121,6 +121,22 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void HalfDayItem_CannotBeUsedInBattle()
+        {
+            ItemDefinition item = ItemDefinition.Get(
+                _tables,
+                "item_active_half_next_action_cost",
+                cfg.ItemKind.Active);
+
+            Assert.That(item, Is.Not.Null);
+            Assert.That(ItemActiveUsage.CanUse(item, ActiveUseContextKind.Battle), Is.False);
+            Assert.That(ItemActiveUsage.CanUse(item, ActiveUseContextKind.ActionSelect), Is.True);
+            Assert.That(ItemActiveUsage.CanUse(item, ActiveUseContextKind.Shop), Is.True);
+            Assert.That(ItemActiveUsage.CanUse(item, ActiveUseContextKind.Event), Is.True);
+            Assert.That(ItemActiveUsage.CanUse(item, ActiveUseContextKind.Reward), Is.True);
+        }
+
+        [Test]
         public void ActiveItems_AreClassifiedForRewardPools()
         {
             foreach (cfg.ActiveItem active in _tables.TbActiveItem.DataList)
