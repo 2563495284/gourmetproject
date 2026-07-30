@@ -4,6 +4,7 @@ using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Tooltips;
 using GourmetProject.Game.UI.Widgets;
+using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Runtime;
@@ -42,7 +43,8 @@ namespace GourmetProject.Game.UI.Meta
         private RecipeWarehouseView _warehouse;
         private RecipeReadonlyBookStateMachine _stateMachine;
         private int _readonlyEntriesBookIndex = -1;
-        private IReadOnlyList<RecipeBookSlot> _readonlyEntries;
+        private IReadOnlyList<RecipeReadonlyDishEntry> _readonlyEntries;
+        private IReadOnlyList<RecipeBookSlot> _readonlySlots;
         private bool _wired;
 
         private void Awake()
@@ -109,7 +111,7 @@ namespace GourmetProject.Game.UI.Meta
             _getFoodTips = getFoodTips;
             _readonlyEntriesBookIndex = 0;
 
-            var entries = new List<RecipeBookSlot>(
+            var entries = new List<RecipeReadonlyDishEntry>(
                 dishIds?.Count ?? 0);
             if (dishIds != null)
             {
@@ -117,12 +119,14 @@ namespace GourmetProject.Game.UI.Meta
                 {
                     if (!string.IsNullOrEmpty(dishId))
                     {
-                        entries.Add(new RecipeBookSlot(dishId));
+                        entries.Add(new RecipeReadonlyDishEntry(
+                            new RecipeBookSlot(dishId)));
                     }
                 }
             }
 
             _readonlyEntries = entries;
+            _readonlySlots = BuildReadonlySlots(entries);
             _stateMachine.Switch(new ReadonlyDishPoolState(title));
         }
 
@@ -184,6 +188,7 @@ namespace GourmetProject.Game.UI.Meta
                 request.Mode == RecipeReadonlyBookMode.ReadonlyBook
                     ? request.ReadonlyEntries
                     : null;
+            _readonlySlots = BuildReadonlySlots(_readonlyEntries);
 
             switch (request.Mode)
             {
@@ -368,21 +373,67 @@ namespace GourmetProject.Game.UI.Meta
                 ShowRecipeDishTips,
                 HideRecipeDishTips,
                 ComposeFlavorIds(def, slot.ExtraFlavorIds),
-                DishIconPreviewMode.Warehouse);
+                DishIconPreviewMode.Warehouse,
+                BattleStatusFor(bookIndex, dishIndex));
             _spawnedDishes.Add(dish);
         }
 
         private IReadOnlyList<RecipeBookSlot> EntriesForBook(int bookIndex)
         {
-            if (_readonlyEntries != null
+            if (_readonlySlots != null
                 && _readonlyEntriesBookIndex == bookIndex)
             {
-                return _readonlyEntries;
+                return _readonlySlots;
             }
 
             return _run != null && bookIndex == 0
                 ? _run.RecipeEntries
                 : Array.Empty<RecipeBookSlot>();
+        }
+
+        private BattleRecipeEntryStatus? BattleStatusFor(
+            int bookIndex,
+            int dishIndex)
+        {
+            RecipeReadonlyDishEntry entry = ReadonlyEntryFor(
+                bookIndex,
+                dishIndex);
+            return entry?.BattleStatus;
+        }
+
+        private RecipeReadonlyDishEntry ReadonlyEntryFor(
+            int bookIndex,
+            int dishIndex)
+        {
+            if (_readonlyEntries == null
+                || _readonlyEntriesBookIndex != bookIndex
+                || dishIndex < 0
+                || dishIndex >= _readonlyEntries.Count)
+            {
+                return null;
+            }
+
+            return _readonlyEntries[dishIndex];
+        }
+
+        private static IReadOnlyList<RecipeBookSlot> BuildReadonlySlots(
+            IReadOnlyList<RecipeReadonlyDishEntry> entries)
+        {
+            if (entries == null)
+            {
+                return null;
+            }
+
+            var slots = new List<RecipeBookSlot>(entries.Count);
+            foreach (RecipeReadonlyDishEntry entry in entries)
+            {
+                if (entry?.Slot != null)
+                {
+                    slots.Add(entry.Slot);
+                }
+            }
+
+            return slots;
         }
 
         private GameplayDatabase Database => _run?.Database ?? _database;
@@ -464,7 +515,10 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             _hoveredTipDish = dish;
-            tips.Bind(BuildRecipeDishTipsData(def, slot));
+            tips.Bind(BuildRecipeDishTipsData(
+                def,
+                slot,
+                ReadonlyEntryFor(dish.BookIndex, dish.DishIndex)));
             tips.Show();
             tips.transform.SetAsLastSibling();
             tips.PlaceAroundRectTransform(
