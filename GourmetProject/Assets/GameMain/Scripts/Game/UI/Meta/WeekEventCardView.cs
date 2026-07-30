@@ -14,6 +14,7 @@ using GourmetProject.Game.UI.Battle;
 using GourmetProject.Game.UI.Common;
 using GourmetProject.Game.UI.Menu;
 using GourmetProject.Game.UI.Meta;
+using GourmetProject.Game.UI.Tooltips;
 using GourmetProject.Game.UI.Widgets;
 
 namespace GourmetProject.Game.UI.Meta
@@ -77,10 +78,16 @@ namespace GourmetProject.Game.UI.Meta
         private Tween _scaleTween;
         private Tween _pickDelayTween;
         private Material _glowMat;
+        private ItemTipView _rewardTip;
         private static readonly int QuadSizeId = Shader.PropertyToID("_QuadSize");
 
         // 选中特效停留已在 OnPickClicked 内于回调前播放完毕，退场不再额外等待。
         public float PickEffectHold => 0f;
+
+        public void SetRewardTip(ItemTipView rewardTip)
+        {
+            _rewardTip = rewardTip;
+        }
 
         /// <summary>事件「n 选一」单个选项卡：卡名 = 选项文案，页脚标注为节点行动，无耗时行。</summary>
         public void BindEventOption(string optionText, Action onPick)
@@ -199,7 +206,8 @@ namespace GourmetProject.Game.UI.Meta
             SetRewardBadge(
                 food != null,
                 food?.RewardKind ?? default,
-                food?.ActionKind == cfg.FoodActionKind.Super);
+                food?.ActionKind == cfg.FoodActionKind.Super,
+                action);
         }
 
         public void Bind(string name, string desc, float costDays, Action onPick)
@@ -291,7 +299,11 @@ namespace GourmetProject.Game.UI.Meta
             _artImage.color = Color.white;
         }
 
-        private void SetRewardBadge(bool visible, cfg.RewardKind kind = default, bool showAlert = false)
+        private void SetRewardBadge(
+            bool visible,
+            cfg.RewardKind kind = default,
+            bool showAlert = false,
+            cfg.GameAction action = null)
         {
             if (_rewardBadgeImage != null)
             {
@@ -310,7 +322,36 @@ namespace GourmetProject.Game.UI.Meta
                 _rewardIconImage.gameObject.SetActive(visible);
                 _rewardIconImage.sprite = visible ? RewardIconFor(kind) : null;
                 _rewardIconImage.color = Color.white;
+                BindRewardTip(visible, action);
             }
+        }
+
+        private void BindRewardTip(bool visible, cfg.GameAction action)
+        {
+            if (_rewardIconImage == null)
+            {
+                return;
+            }
+
+            TipHoverTrigger trigger = _rewardIconImage.GetComponent<TipHoverTrigger>();
+            if (!visible
+                || _rewardTip == null
+                || action == null
+                || string.IsNullOrWhiteSpace(action.RewardTitle))
+            {
+                trigger?.ClearTip();
+                return;
+            }
+
+            if (trigger == null)
+            {
+                trigger = _rewardIconImage.gameObject.AddComponent<TipHoverTrigger>();
+            }
+
+            trigger.SetTarget(_rewardIconImage.rectTransform);
+            trigger.SetTip(
+                _rewardTip,
+                () => _rewardTip.Bind(action.RewardTitle, action.RewardDesc));
         }
 
         private static Sprite CardSpriteFor(cfg.GameAction action)
@@ -331,7 +372,9 @@ namespace GourmetProject.Game.UI.Meta
                     else
                     {
                         cfg.Food food = ResolveFood(action);
-                        spriteName = FoodRewardSpriteName(food?.RewardKind ?? cfg.RewardKind.Gold);
+                        spriteName = FoodRewardSpriteName(
+                            food?.ActionKind ?? cfg.FoodActionKind.Normal,
+                            food?.RewardKind ?? cfg.RewardKind.Gold);
                     }
 
                     break;
@@ -359,7 +402,49 @@ namespace GourmetProject.Game.UI.Meta
             return Resources.Load<Sprite>($"Sprites/UI/{spriteName}");
         }
 
-        private static string FoodRewardSpriteName(cfg.RewardKind kind)
+        internal static string FoodRewardSpriteName(
+            cfg.FoodActionKind actionKind,
+            cfg.RewardKind rewardKind)
+        {
+            string actionSuffix;
+            switch (actionKind)
+            {
+                case cfg.FoodActionKind.Normal:
+                    actionSuffix = "normal";
+                    break;
+                case cfg.FoodActionKind.Super:
+                    actionSuffix = "hard";
+                    break;
+                default:
+                    return LegacyFoodRewardSpriteName(rewardKind);
+            }
+
+            string rewardSuffix;
+            switch (rewardKind)
+            {
+                case cfg.RewardKind.Gold:
+                    rewardSuffix = "gold";
+                    break;
+                case cfg.RewardKind.FragmentChoice:
+                    rewardSuffix = "fragment";
+                    break;
+                case cfg.RewardKind.PassiveItemChoice:
+                    rewardSuffix = "passive";
+                    break;
+                case cfg.RewardKind.ActiveItemStrengthen:
+                    rewardSuffix = "active_strengthen";
+                    break;
+                case cfg.RewardKind.ActiveItemAdjust:
+                    rewardSuffix = "active_adjust";
+                    break;
+                default:
+                    return LegacyFoodRewardSpriteName(rewardKind);
+            }
+
+            return $"card_action_food_{actionSuffix}_{rewardSuffix}";
+        }
+
+        private static string LegacyFoodRewardSpriteName(cfg.RewardKind kind)
         {
             switch (kind)
             {

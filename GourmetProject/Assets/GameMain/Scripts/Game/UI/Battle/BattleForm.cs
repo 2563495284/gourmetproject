@@ -226,6 +226,7 @@ namespace GourmetProject.Game.UI.Battle
             _axisBinder = new TimelineAxisBinder(
                 _actionAxisBar,
                 () => _tips != null ? _tips.Timeline : null);
+            _deck?.SetRewardTip(() => _tips != null ? _tips.Item : null);
             _tableCoordinator = new TableViewCoordinator(this);
             _pageRouter = new GameplayPageRouter(this);
             _shopPage = new ShopPageCoordinator(this);

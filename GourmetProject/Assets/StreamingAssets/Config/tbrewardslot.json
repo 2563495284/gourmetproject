@@ -50,31 +50,6 @@
     ]
   },
   {
-    "id": "slot_specific_passive",
-    "groupId": "specific_passive",
-    "kind": 3,
-    "choiceCount": 3,
-    "requiredPickCount": 1,
-    "weight": 1,
-    "poolId": "pool_passive",
-    "dishHiddenOffset": [
-      0,
-      0
-    ],
-    "passiveItemHiddenOffset": [
-      3,
-      6
-    ],
-    "fragmentHiddenOffset": [
-      0,
-      0
-    ],
-    "goldHiddenOffset": [
-      0,
-      0
-    ]
-  },
-  {
     "id": "slot_specific_fragment",
     "groupId": "specific_fragment",
     "kind": 5,
@@ -100,10 +75,35 @@
     ]
   },
   {
+    "id": "slot_specific_passive",
+    "groupId": "specific_passive",
+    "kind": 3,
+    "choiceCount": 2,
+    "requiredPickCount": 1,
+    "weight": 1,
+    "poolId": "pool_passive",
+    "dishHiddenOffset": [
+      0,
+      0
+    ],
+    "passiveItemHiddenOffset": [
+      3,
+      6
+    ],
+    "fragmentHiddenOffset": [
+      0,
+      0
+    ],
+    "goldHiddenOffset": [
+      0,
+      0
+    ]
+  },
+  {
     "id": "slot_specific_active_strengthen",
     "groupId": "specific_active_strengthen",
     "kind": 6,
-    "choiceCount": 3,
+    "choiceCount": 2,
     "requiredPickCount": 1,
     "weight": 1,
     "poolId": "pool_active_strengthen",
@@ -128,7 +128,82 @@
     "id": "slot_specific_active_adjust",
     "groupId": "specific_active_adjust",
     "kind": 7,
-    "choiceCount": 3,
+    "choiceCount": 2,
+    "requiredPickCount": 1,
+    "weight": 1,
+    "poolId": "pool_active_adjust",
+    "dishHiddenOffset": [
+      0,
+      0
+    ],
+    "passiveItemHiddenOffset": [
+      0,
+      0
+    ],
+    "fragmentHiddenOffset": [
+      0,
+      0
+    ],
+    "goldHiddenOffset": [
+      0,
+      0
+    ]
+  },
+  {
+    "id": "slot_specific_hard_passive",
+    "groupId": "specific_hard_passive",
+    "kind": 3,
+    "choiceCount": 4,
+    "requiredPickCount": 1,
+    "weight": 1,
+    "poolId": "pool_passive",
+    "dishHiddenOffset": [
+      0,
+      0
+    ],
+    "passiveItemHiddenOffset": [
+      3,
+      6
+    ],
+    "fragmentHiddenOffset": [
+      0,
+      0
+    ],
+    "goldHiddenOffset": [
+      0,
+      0
+    ]
+  },
+  {
+    "id": "slot_specific_hard_active_strengthen",
+    "groupId": "specific_hard_active_strengthen",
+    "kind": 6,
+    "choiceCount": 4,
+    "requiredPickCount": 1,
+    "weight": 1,
+    "poolId": "pool_active_strengthen",
+    "dishHiddenOffset": [
+      0,
+      0
+    ],
+    "passiveItemHiddenOffset": [
+      0,
+      0
+    ],
+    "fragmentHiddenOffset": [
+      0,
+      0
+    ],
+    "goldHiddenOffset": [
+      0,
+      0
+    ]
+  },
+  {
+    "id": "slot_specific_hard_active_adjust",
+    "groupId": "specific_hard_active_adjust",
+    "kind": 7,
+    "choiceCount": 4,
     "requiredPickCount": 1,
     "weight": 1,
     "poolId": "pool_active_adjust",

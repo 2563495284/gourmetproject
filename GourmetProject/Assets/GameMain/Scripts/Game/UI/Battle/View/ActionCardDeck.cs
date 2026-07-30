@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DG.Tweening;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.UI.Meta;
+using GourmetProject.Game.UI.Tooltips;
 using GourmetProject.Runtime;
 using UnityEngine;
 using UnityEngine.UI;
@@ -23,8 +24,14 @@ namespace GourmetProject.Game.UI.Battle.View
         private Tween _pendingCardShowTween;
         private Tween _cardsHideTween;
         private Func<bool> _canShowPredicate;
+        private Func<ItemTipView> _rewardTip;
 
         public bool CardsActive => _cardsContainer != null && _cardsContainer.gameObject.activeSelf;
+
+        public void SetRewardTip(Func<ItemTipView> rewardTip)
+        {
+            _rewardTip = rewardTip;
+        }
 
         public void SetCardsActive(bool active)
         {
@@ -272,6 +279,7 @@ namespace GourmetProject.Game.UI.Battle.View
         private void SpawnCard(float minX, float maxX, Action<WeekEventCardView> bind)
         {
             WeekEventCardView card = Instantiate(_cardPrefab, _cardsContainer);
+            card.SetRewardTip(_rewardTip?.Invoke());
             var rect = (RectTransform)card.transform;
             Rect parentRect = _cardsContainer.rect;
             if (parentRect.width <= 1f || parentRect.height <= 1f)

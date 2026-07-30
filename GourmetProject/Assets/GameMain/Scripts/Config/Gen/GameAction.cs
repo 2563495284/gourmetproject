@@ -27,6 +27,8 @@ public sealed partial class GameAction : Luban.BeanBase
         { if(!_buf["effectParam"].IsString) { throw new SerializationException(); }  EffectParam = _buf["effectParam"]; }
         { if(!_buf["minCostDays"].IsNumber) { throw new SerializationException(); }  MinCostDays = _buf["minCostDays"]; }
         { if(!_buf["maxCostDays"].IsNumber) { throw new SerializationException(); }  MaxCostDays = _buf["maxCostDays"]; }
+        { if(!_buf["rewardTitle"].IsString) { throw new SerializationException(); }  RewardTitle = _buf["rewardTitle"]; }
+        { if(!_buf["rewardDesc"].IsString) { throw new SerializationException(); }  RewardDesc = _buf["rewardDesc"]; }
     }
 
     public static GameAction DeserializeGameAction(JSONNode _buf)
@@ -74,6 +76,14 @@ public sealed partial class GameAction : Luban.BeanBase
     /// 本次最大耗时(0.1天)
     /// </summary>
     public readonly float MaxCostDays;
+    /// <summary>
+    /// 奖励 Tip 标题
+    /// </summary>
+    public readonly string RewardTitle;
+    /// <summary>
+    /// 奖励 Tip 描述
+    /// </summary>
+    public readonly string RewardDesc;
    
     public const int __ID__ = 2090226920;
     public override int GetTypeId() => __ID__;
@@ -95,6 +105,8 @@ public sealed partial class GameAction : Luban.BeanBase
         + "effectParam:" + EffectParam + ","
         + "minCostDays:" + MinCostDays + ","
         + "maxCostDays:" + MaxCostDays + ","
+        + "rewardTitle:" + RewardTitle + ","
+        + "rewardDesc:" + RewardDesc + ","
         + "}";
     }
 }

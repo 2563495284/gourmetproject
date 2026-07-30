@@ -9,7 +9,9 @@
     "effectValue": 0,
     "effectParam": "",
     "minCostDays": 0.7,
-    "maxCostDays": 1.2
+    "maxCostDays": 1.2,
+    "rewardTitle": "金币奖励",
+    "rewardDesc": "完成营业额外得\n一些金币"
   },
   {
     "id": "act_food_fragment",
@@ -21,7 +23,9 @@
     "effectValue": 0,
     "effectParam": "",
     "minCostDays": 0.7,
-    "maxCostDays": 1.2
+    "maxCostDays": 1.2,
+    "rewardTitle": "餐桌碎片包",
+    "rewardDesc": "完成营业额外得\n餐桌格子3选1"
   },
   {
     "id": "act_food_passive",
@@ -33,7 +37,9 @@
     "effectValue": 0,
     "effectParam": "",
     "minCostDays": 0.7,
-    "maxCostDays": 1.2
+    "maxCostDays": 1.2,
+    "rewardTitle": "被动道具",
+    "rewardDesc": "完成营业额外得\n道具2选1"
   },
   {
     "id": "act_food_active_strengthen",
@@ -45,7 +51,9 @@
     "effectValue": 0,
     "effectParam": "",
     "minCostDays": 0.7,
-    "maxCostDays": 1.2
+    "maxCostDays": 1.2,
+    "rewardTitle": "强化主动道具",
+    "rewardDesc": "完成营业额外得\n强化箱2选1"
   },
   {
     "id": "act_food_active_adjust",
@@ -57,7 +65,9 @@
     "effectValue": 0,
     "effectParam": "",
     "minCostDays": 0.7,
-    "maxCostDays": 1.2
+    "maxCostDays": 1.2,
+    "rewardTitle": "调整主动道具",
+    "rewardDesc": "完成营业额外得\n调整单2选1"
   },
   {
     "id": "act_food_hard_gold",
@@ -69,7 +79,9 @@
     "effectValue": 0,
     "effectParam": "",
     "minCostDays": 0.8,
-    "maxCostDays": 1.3
+    "maxCostDays": 1.3,
+    "rewardTitle": "金币奖励",
+    "rewardDesc": "完成营业额外得\n大量金币"
   },
   {
     "id": "act_food_hard_fragment",
@@ -81,7 +93,9 @@
     "effectValue": 0,
     "effectParam": "",
     "minCostDays": 0.8,
-    "maxCostDays": 1.3
+    "maxCostDays": 1.3,
+    "rewardTitle": "餐桌碎片包",
+    "rewardDesc": "完成营业额外得\n更大的餐桌格子3选1"
   },
   {
     "id": "act_food_hard_passive",
@@ -93,7 +107,9 @@
     "effectValue": 0,
     "effectParam": "",
     "minCostDays": 0.8,
-    "maxCostDays": 1.3
+    "maxCostDays": 1.3,
+    "rewardTitle": "被动道具",
+    "rewardDesc": "完成营业额外得\n道具4选1"
   },
   {
     "id": "act_food_hard_active_strengthen",
@@ -105,7 +121,9 @@
     "effectValue": 0,
     "effectParam": "",
     "minCostDays": 0.8,
-    "maxCostDays": 1.3
+    "maxCostDays": 1.3,
+    "rewardTitle": "强化主动道具",
+    "rewardDesc": "完成营业额外得\n强化箱4选1"
   },
   {
     "id": "act_food_hard_active_adjust",
@@ -117,7 +135,9 @@
     "effectValue": 0,
     "effectParam": "",
     "minCostDays": 0.8,
-    "maxCostDays": 1.3
+    "maxCostDays": 1.3,
+    "rewardTitle": "调整主动道具",
+    "rewardDesc": "完成营业额外得\n调整单4选1"
   },
   {
     "id": "act_event",
@@ -129,7 +149,9 @@
     "effectValue": 0,
     "effectParam": "",
     "minCostDays": 0.8,
-    "maxCostDays": 1.3
+    "maxCostDays": 1.3,
+    "rewardTitle": "",
+    "rewardDesc": ""
   },
   {
     "id": "act_reward",
@@ -141,7 +163,9 @@
     "effectValue": 0,
     "effectParam": "",
     "minCostDays": 0,
-    "maxCostDays": 0
+    "maxCostDays": 0,
+    "rewardTitle": "",
+    "rewardDesc": ""
   },
   {
     "id": "act_shop",
@@ -153,7 +177,9 @@
     "effectValue": 0,
     "effectParam": "",
     "minCostDays": 0,
-    "maxCostDays": 0
+    "maxCostDays": 0,
+    "rewardTitle": "",
+    "rewardDesc": ""
   },
   {
     "id": "act_interest",
@@ -165,7 +191,9 @@
     "effectValue": 0,
     "effectParam": "ev_interest",
     "minCostDays": 0,
-    "maxCostDays": 0
+    "maxCostDays": 0,
+    "rewardTitle": "",
+    "rewardDesc": ""
   },
   {
     "id": "act_boss",
@@ -177,7 +205,9 @@
     "effectValue": 0,
     "effectParam": "",
     "minCostDays": 0,
-    "maxCostDays": 0
+    "maxCostDays": 0,
+    "rewardTitle": "",
+    "rewardDesc": ""
   },
   {
     "id": "act_loan_repay",
@@ -189,7 +219,9 @@
     "effectValue": -400,
     "effectParam": "",
     "minCostDays": 0,
-    "maxCostDays": 0
+    "maxCostDays": 0,
+    "rewardTitle": "",
+    "rewardDesc": ""
   },
   {
     "id": "act_gold_clear",
@@ -201,6 +233,8 @@
     "effectValue": 0,
     "effectParam": "",
     "minCostDays": 0,
-    "maxCostDays": 0
+    "maxCostDays": 0,
+    "rewardTitle": "",
+    "rewardDesc": ""
   }
 ]
