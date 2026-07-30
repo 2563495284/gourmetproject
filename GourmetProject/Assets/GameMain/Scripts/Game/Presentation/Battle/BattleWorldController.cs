@@ -369,21 +369,14 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             SetPlacedPiecesClickEnabled(false);
             _activeItemDishesDimmed = dimPlacedDishes;
-            foreach (DishPieceView piece in _placedPieces)
-            {
-                piece?.SetActiveItemTargetDimmed(false);
-            }
+            RefreshActiveItemPlacedDishDimming();
         }
 
         internal void EndActiveItemWorldTargeting()
         {
             ClearActiveItemTargetHighlights();
-            foreach (DishPieceView piece in _placedPieces)
-            {
-                piece?.SetActiveItemTargetDimmed(false);
-            }
-
             _activeItemDishesDimmed = false;
+            RefreshActiveItemPlacedDishDimming();
             SetPlacedPiecesClickEnabled(true);
         }
 
@@ -395,7 +388,7 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             if (kind == cfg.ItemTargetKind.DiningTableCell)
             {
-                SetActiveItemHoveredCellDishDimmed(hovered);
+                RefreshActiveItemPlacedDishDimming();
                 _boardView?.ClearTargetHighlights();
                 if (candidates != null)
                 {
@@ -412,7 +405,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            SetActiveItemHoveredCellDishDimmed(null);
+            RefreshActiveItemPlacedDishDimming();
             if (kind == cfg.ItemTargetKind.DiningTableDish)
             {
                 foreach (DishPieceView piece in _placedPieces)
@@ -431,32 +424,11 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        private void SetActiveItemHoveredCellDishDimmed(ActiveTarget? hovered)
+        private void RefreshActiveItemPlacedDishDimming()
         {
-            int hoveredDishId = 0;
-            bool hasHoveredDish = false;
-            if (_activeItemDishesDimmed
-                && hovered.HasValue
-                && _session?.DiningTable != null)
-            {
-                var cell = new GridPos(hovered.Value.X, hovered.Value.Y);
-                if (_session.DiningTable.InBounds(cell))
-                {
-                    DishInstance dish = _session.DiningTable.DishAt(cell);
-                    if (dish != null)
-                    {
-                        hoveredDishId = dish.Id;
-                        hasHoveredDish = true;
-                    }
-                }
-            }
-
             foreach (DishPieceView piece in _placedPieces)
             {
-                bool dimmed = hasHoveredDish
-                    && piece?.Instance != null
-                    && piece.Instance.Id == hoveredDishId;
-                piece?.SetActiveItemTargetDimmed(dimmed);
+                piece?.SetActiveItemTargetDimmed(_activeItemDishesDimmed);
             }
         }
 
@@ -481,7 +453,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         internal void ClearActiveItemTargetHighlights()
         {
-            SetActiveItemHoveredCellDishDimmed(null);
+            RefreshActiveItemPlacedDishDimming();
             _boardView?.ClearTargetHighlights();
             foreach (DishPieceView piece in _placedPieces)
             {

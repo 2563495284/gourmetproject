@@ -345,7 +345,7 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>
-        /// 铺台小票悬停其所在格时，把该菜品本体降至原透明度的 50%，并精确恢复每个渲染体原色。
+        /// 强化餐桌选格期间，把菜品本体降至原透明度的 50%，并精确恢复每个渲染体原色。
         /// 与拖拽 Ghost 分开管理，避免退出目标选择后把原始 alpha 粗暴改成固定值。
         /// </summary>
         public void SetActiveItemTargetDimmed(bool dimmed)

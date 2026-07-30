@@ -172,7 +172,11 @@ namespace GourmetProject.Game.UI.Battle
 
             if (!ItemActiveUsage.RequiresTarget(item))
             {
-                ApplyAndConsume(ctx, item, Array.Empty<ActiveTarget>());
+                ApplyAndConsume(
+                    ctx,
+                    item,
+                    Array.Empty<ActiveTarget>(),
+                    refreshActionContent: item.EffectType != ItemEffectTypes.ResetBossDebuff);
                 return;
             }
 

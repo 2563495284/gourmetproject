@@ -253,6 +253,54 @@ namespace GourmetProject.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator RerollBossDebuff_OnDailyActionSelectionKeepsCurrentActionCards()
+        {
+            CreateRun(out GameRun run, out cfg.Tables tables);
+            cfg.GameAction bossAction = tables.TbAction.DataList
+                .First(action => FoodService.IsBossAction(tables, action));
+            run.BeginTimeline(
+                "test",
+                7f,
+                new[] { new RuntimeTimelineNode("boss", "test", 7, bossAction.Id) });
+
+            ItemDefinition item = ItemDefinition.Get(
+                tables,
+                "item_active_reroll_last_boss_debuff",
+                cfg.ItemKind.Active);
+            Assert.That(item, Is.Not.Null);
+            run.AcquireItem(item.Id, fallbackGold: 0);
+
+            var root = new GameObject("RerollBossDebuffTestRoot", typeof(RectTransform));
+            var hostObject = new GameObject(
+                "BattleForm",
+                typeof(RectTransform),
+                typeof(BattleForm));
+            hostObject.transform.SetParent(root.transform, false);
+            BattleForm host = hostObject.GetComponent<BattleForm>();
+            SetPrivate(host, "_run", run);
+            SetPrivate(host, "_current", GameplayView.ActionSelect);
+
+            ActionCardDeck deck = BuildDeckWithSentinel(
+                root.transform,
+                out WeekEventCardView existingActionCard);
+            SetPrivate(host, "_deck", deck);
+            RunItemSlotView slot = BuildItemSlot(root.transform);
+
+            BeginUseActiveItem(host, item, slot);
+            yield return new WaitForSecondsRealtime(0.25f);
+
+            Assert.That(run.HasItem(item.Id), Is.False);
+            Assert.That(run.BossDebuffRerollNodeId, Is.EqualTo("boss"));
+            Assert.That(
+                GetDeckCards(deck),
+                Has.Member(existingActionCard),
+                "重掷 Boss Debuff 只应刷新行动轴，不得重建当前日常行动卡。");
+
+            Object.Destroy(root);
+            yield return null;
+        }
+
+        [UnityTest]
         public IEnumerator ExecuteFutureAndPastItems_UseAxisArrowWithoutPreviewAndCommitOnClick()
         {
             CreateRun(out GameRun run, out cfg.Tables tables);
