@@ -749,7 +749,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void TimelineCandidates_FilterFutureAndPastAndTargetLastBoss()
+        public void TimelineCandidates_FilterFutureAndPastAndTargetNearestBoss()
         {
             GameRun run = CreateRun();
             cfg.GameAction regular = _tables.TbAction.DataList.First(action => !FoodService.IsBossAction(_tables, action));
@@ -761,7 +761,8 @@ namespace GourmetProject.Tests.EditMode
                 {
                     new RuntimeTimelineNode("past", "test", 2, regular.Id),
                     new RuntimeTimelineNode("future", "test", 5, regular.Id),
-                    new RuntimeTimelineNode("boss", "test", 6, boss.Id),
+                    new RuntimeTimelineNode("boss_near", "test", 5, boss.Id),
+                    new RuntimeTimelineNode("boss_far", "test", 6, boss.Id),
                 });
             run.CurrentDay = 4f;
             run.MarkNodeTriggered("past");
@@ -769,8 +770,8 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(TimelineService.GetPastTriggeredNodes(run).Select(node => node.Id), Is.EqualTo(new[] { "past" }));
             Assert.That(
                 TimelineService.GetFutureUntriggeredNodes(run).Select(node => node.Id),
-                Is.EqualTo(new[] { "future", "boss" }));
-            Assert.That(TimelineService.GetLastUntriggeredBossNode(run)?.Id, Is.EqualTo("boss"));
+                Is.EqualTo(new[] { "boss_near", "future", "boss_far" }));
+            Assert.That(TimelineService.GetNearestUntriggeredBossNode(run)?.Id, Is.EqualTo("boss_near"));
         }
 
         [Test]

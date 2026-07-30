@@ -227,7 +227,7 @@
   {
     "id": "item_active_reroll_last_boss_debuff",
     "name": "盛宴调整单",
-    "desc": "重掷星级评鉴的餐食类别",
+    "desc": "重掷最近一个尚未触发的星级评鉴餐食类别",
     "specialTags": "",
     "effectType": "ResetBossDebuff",
     "effectValue": 0,

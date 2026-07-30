@@ -24,6 +24,26 @@ public sealed partial class BossDebuff : Luban.BeanBase
         { if(!_buf["weight"].IsNumber) { throw new SerializationException(); }  Weight = _buf["weight"]; }
         { if(!_buf["unlockCondition"].IsString) { throw new SerializationException(); }  UnlockCondition = _buf["unlockCondition"]; }
         { if(!_buf["targetScoreHiddenOffset"].IsNumber) { throw new SerializationException(); }  TargetScoreHiddenOffset = _buf["targetScoreHiddenOffset"]; }
+        { if(!_buf["shapeLineCount"].IsNumber) { throw new SerializationException(); }  ShapeLineCount = _buf["shapeLineCount"]; }
+        { if(!_buf["recipeCopyCount"].IsNumber) { throw new SerializationException(); }  RecipeCopyCount = _buf["recipeCopyCount"]; }
+        { if(!_buf["foodDiscardLimit"].IsNumber) { throw new SerializationException(); }  FoodDiscardLimit = _buf["foodDiscardLimit"]; }
+        { if(!_buf["recipeEntryDivisor"].IsNumber) { throw new SerializationException(); }  RecipeEntryDivisor = _buf["recipeEntryDivisor"]; }
+        { if(!_buf["recipeEntryExtraCount"].IsNumber) { throw new SerializationException(); }  RecipeEntryExtraCount = _buf["recipeEntryExtraCount"]; }
+        { if(!_buf["recipeEntryMinimumCount"].IsNumber) { throw new SerializationException(); }  RecipeEntryMinimumCount = _buf["recipeEntryMinimumCount"]; }
+        { if(!_buf["goldCostPerBellServe"].IsNumber) { throw new SerializationException(); }  GoldCostPerBellServe = _buf["goldCostPerBellServe"]; }
+        { if(!_buf["baseScoreMultiplier"].IsNumber) { throw new SerializationException(); }  BaseScoreMultiplier = _buf["baseScoreMultiplier"]; }
+        { if(!_buf["disabledCellDivisor"].IsNumber) { throw new SerializationException(); }  DisabledCellDivisor = _buf["disabledCellDivisor"]; }
+        { if(!_buf["disabledCellExtraCount"].IsNumber) { throw new SerializationException(); }  DisabledCellExtraCount = _buf["disabledCellExtraCount"]; }
+        { if(!_buf["insertDishId"].IsString) { throw new SerializationException(); }  InsertDishId = _buf["insertDishId"]; }
+        { if(!_buf["insertDishWindowSize"].IsNumber) { throw new SerializationException(); }  InsertDishWindowSize = _buf["insertDishWindowSize"]; }
+        { if(!_buf["insertDishCountPerWindow"].IsNumber) { throw new SerializationException(); }  InsertDishCountPerWindow = _buf["insertDishCountPerWindow"]; }
+        { if(!_buf["randomServeMultiplierMin"].IsNumber) { throw new SerializationException(); }  RandomServeMultiplierMin = _buf["randomServeMultiplierMin"]; }
+        { if(!_buf["randomServeMultiplierMax"].IsNumber) { throw new SerializationException(); }  RandomServeMultiplierMax = _buf["randomServeMultiplierMax"]; }
+        { if(!_buf["randomServeMultiplierStep"].IsNumber) { throw new SerializationException(); }  RandomServeMultiplierStep = _buf["randomServeMultiplierStep"]; }
+        { if(!_buf["appetizerRemoveCount"].IsNumber) { throw new SerializationException(); }  AppetizerRemoveCount = _buf["appetizerRemoveCount"]; }
+        { if(!_buf["alternateServeMultiplierLow"].IsNumber) { throw new SerializationException(); }  AlternateServeMultiplierLow = _buf["alternateServeMultiplierLow"]; }
+        { if(!_buf["alternateServeMultiplierHigh"].IsNumber) { throw new SerializationException(); }  AlternateServeMultiplierHigh = _buf["alternateServeMultiplierHigh"]; }
+        { if(!_buf["minimumServesForScore"].IsNumber) { throw new SerializationException(); }  MinimumServesForScore = _buf["minimumServesForScore"]; }
     }
 
     public static BossDebuff DeserializeBossDebuff(JSONNode _buf)
@@ -59,6 +79,86 @@ public sealed partial class BossDebuff : Luban.BeanBase
     /// 目标分隐藏分修正；加到 TargetScore 指数输入。
     /// </summary>
     public readonly float TargetScoreHiddenOffset;
+    /// <summary>
+    /// 餐桌增减的行/列数量；放纵/暴食为增加，儿童/减脂为减少。
+    /// </summary>
+    public readonly int ShapeLineCount;
+    /// <summary>
+    /// 贪食餐为每个菜谱条目额外复制的份数。
+    /// </summary>
+    public readonly int RecipeCopyCount;
+    /// <summary>
+    /// 本场食物废弃次数覆盖值；-1=不覆盖。
+    /// </summary>
+    public readonly int FoodDiscardLimit;
+    /// <summary>
+    /// 清淡餐/斋饭按菜谱数量计算受影响条目的除数；0=不启用。
+    /// </summary>
+    public readonly int RecipeEntryDivisor;
+    /// <summary>
+    /// 清淡餐/斋饭受影响条目数量的额外加数。
+    /// </summary>
+    public readonly int RecipeEntryExtraCount;
+    /// <summary>
+    /// 清淡餐/斋饭受影响条目数量下限。
+    /// </summary>
+    public readonly int RecipeEntryMinimumCount;
+    /// <summary>
+    /// 霸王餐每次成功摇铃出餐扣除金币。
+    /// </summary>
+    public readonly int GoldCostPerBellServe;
+    /// <summary>
+    /// 高级料理的食物基础分倍率；1=不修正。
+    /// </summary>
+    public readonly float BaseScoreMultiplier;
+    /// <summary>
+    /// 素食按菜谱数量计算禁用格数量的除数；0=不启用。
+    /// </summary>
+    public readonly int DisabledCellDivisor;
+    /// <summary>
+    /// 素食禁用格数量的额外加数。
+    /// </summary>
+    public readonly int DisabledCellExtraCount;
+    /// <summary>
+    /// 碳水餐插入出菜序列的独立菜品ID。
+    /// </summary>
+    public readonly string InsertDishId;
+    /// <summary>
+    /// 碳水餐随机窗口大小；例如5表示每5次为一组。
+    /// </summary>
+    public readonly int InsertDishWindowSize;
+    /// <summary>
+    /// 碳水餐每个窗口随机插入的菜品次数。
+    /// </summary>
+    public readonly int InsertDishCountPerWindow;
+    /// <summary>
+    /// 黑暗料理随机上菜倍率最小值。
+    /// </summary>
+    public readonly float RandomServeMultiplierMin;
+    /// <summary>
+    /// 黑暗料理随机上菜倍率最大值。
+    /// </summary>
+    public readonly float RandomServeMultiplierMax;
+    /// <summary>
+    /// 黑暗料理随机上菜倍率步长。
+    /// </summary>
+    public readonly float RandomServeMultiplierStep;
+    /// <summary>
+    /// 开胃菜移除最先上桌的菜品数量。
+    /// </summary>
+    public readonly int AppetizerRemoveCount;
+    /// <summary>
+    /// 试吃奇数次上菜倍率。
+    /// </summary>
+    public readonly float AlternateServeMultiplierLow;
+    /// <summary>
+    /// 试吃偶数次上菜倍率。
+    /// </summary>
+    public readonly float AlternateServeMultiplierHigh;
+    /// <summary>
+    /// 自助餐允许正常计分所需的最低上菜次数。
+    /// </summary>
+    public readonly int MinimumServesForScore;
    
     public const int __ID__ = 737555009;
     public override int GetTypeId() => __ID__;
@@ -77,6 +177,26 @@ public sealed partial class BossDebuff : Luban.BeanBase
         + "weight:" + Weight + ","
         + "unlockCondition:" + UnlockCondition + ","
         + "targetScoreHiddenOffset:" + TargetScoreHiddenOffset + ","
+        + "shapeLineCount:" + ShapeLineCount + ","
+        + "recipeCopyCount:" + RecipeCopyCount + ","
+        + "foodDiscardLimit:" + FoodDiscardLimit + ","
+        + "recipeEntryDivisor:" + RecipeEntryDivisor + ","
+        + "recipeEntryExtraCount:" + RecipeEntryExtraCount + ","
+        + "recipeEntryMinimumCount:" + RecipeEntryMinimumCount + ","
+        + "goldCostPerBellServe:" + GoldCostPerBellServe + ","
+        + "baseScoreMultiplier:" + BaseScoreMultiplier + ","
+        + "disabledCellDivisor:" + DisabledCellDivisor + ","
+        + "disabledCellExtraCount:" + DisabledCellExtraCount + ","
+        + "insertDishId:" + InsertDishId + ","
+        + "insertDishWindowSize:" + InsertDishWindowSize + ","
+        + "insertDishCountPerWindow:" + InsertDishCountPerWindow + ","
+        + "randomServeMultiplierMin:" + RandomServeMultiplierMin + ","
+        + "randomServeMultiplierMax:" + RandomServeMultiplierMax + ","
+        + "randomServeMultiplierStep:" + RandomServeMultiplierStep + ","
+        + "appetizerRemoveCount:" + AppetizerRemoveCount + ","
+        + "alternateServeMultiplierLow:" + AlternateServeMultiplierLow + ","
+        + "alternateServeMultiplierHigh:" + AlternateServeMultiplierHigh + ","
+        + "minimumServesForScore:" + MinimumServesForScore + ","
         + "}";
     }
 }

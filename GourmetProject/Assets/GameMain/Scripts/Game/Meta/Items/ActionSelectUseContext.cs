@@ -159,7 +159,7 @@ namespace GourmetProject.Game.Meta
 
         public bool ResetLastBossDebuff()
         {
-            cfg.TimelineNode node = TimelineService.GetLastUntriggeredBossNode(Run);
+            cfg.TimelineNode node = TimelineService.GetNearestUntriggeredBossNode(Run);
             if (node == null)
             {
                 return false;

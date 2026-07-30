@@ -963,12 +963,16 @@ namespace GourmetProject.Game.Orchestration
 
         private void MarkBossCompletedAndApplyGold(string bossId)
         {
-            if (string.IsNullOrEmpty(bossId) || _run.IsBossCompleted(bossId))
+            if (string.IsNullOrEmpty(bossId))
             {
                 return;
             }
 
-            _run.MarkBossCompleted(bossId);
+            if (!_run.IsBossCompleted(bossId))
+            {
+                _run.MarkBossCompleted(bossId);
+            }
+
             ApplyBossCompleteGold();
         }
 
@@ -976,13 +980,12 @@ namespace GourmetProject.Game.Orchestration
         {
             // Boss 赏金（GoldOnBossComplete）：通关本次 Boss 后额外获得金币。
             var itemRuntime = new ItemRuntime(_run);
-            int bossGold = itemRuntime.BossCompleteGold();
+            int bossGold = itemRuntime.ClaimBossCompleteGold();
             if (bossGold <= 0)
             {
                 return;
             }
 
-            itemRuntime.FlashTriggered(m => m.BossCompleteGold() > 0);
             _run.Gold += bossGold;
         }
 

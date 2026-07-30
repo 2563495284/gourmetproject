@@ -127,6 +127,9 @@ namespace GourmetProject.Game.Meta.Passives
 
         public virtual int BossCompleteGold() => 0;
 
+        /// <summary>结算一次 Boss 完成奖励；可由有一次性状态的模型在此消费奖励资格。</summary>
+        public virtual int ClaimBossCompleteGold() => BossCompleteGold();
+
         public virtual int MealBonusGoldPerMeal() => 0;
 
         public virtual int ShopEnterGold() => 0;

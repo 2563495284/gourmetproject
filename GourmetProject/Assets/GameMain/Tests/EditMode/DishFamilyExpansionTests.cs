@@ -31,9 +31,11 @@ namespace GourmetProject.Tests.EditMode
         public void BuildDatabase_ExpandsEachConfiguredDishFamily()
         {
             int expectedDishCount = 0;
+            var referencedBaseIds = new HashSet<string>();
             foreach (cfg.DishVariant family in
                      _tables.TbDishVariant.DataList)
             {
+                referencedBaseIds.Add(family.BaseId);
                 expectedDishCount++;
                 DishDef unflavored = _database.GetDish(family.Id);
                 Assert.That(unflavored, Is.Not.Null, family.Id);
@@ -71,6 +73,15 @@ namespace GourmetProject.Tests.EditMode
                     Assert.That(
                         flavored.HiddenMax,
                         Is.EqualTo(family.FlavoredHiddenRange.Max));
+                }
+            }
+
+            foreach (cfg.DishBase configured in _tables.TbDishBase.DataList)
+            {
+                if (!referencedBaseIds.Contains(configured.Id))
+                {
+                    expectedDishCount++;
+                    Assert.That(_database.GetDish(configured.Id), Is.Not.Null, configured.Id);
                 }
             }
 

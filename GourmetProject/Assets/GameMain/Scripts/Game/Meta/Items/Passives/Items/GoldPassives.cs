@@ -18,7 +18,31 @@ namespace GourmetProject.Game.Meta.Passives
     [PassiveItemModel("item_gold_boss")]
     public sealed class BossGoldModel : PassiveItemModel
     {
-        public override int BossCompleteGold() => (int)Value;
+        private bool _claimed;
+
+        public override int BossCompleteGold() => _claimed ? 0 : System.Math.Max(0, (int)Value);
+
+        public override int ClaimBossCompleteGold()
+        {
+            int amount = BossCompleteGold();
+            if (amount <= 0)
+            {
+                return 0;
+            }
+
+            _claimed = true;
+            MarkIconUsed();
+            return amount;
+        }
+
+        public override string CaptureState()
+            => JoinState(CaptureIconState(), _claimed ? "claimed:1" : string.Empty);
+
+        public override void RestoreState(string data)
+        {
+            RestoreIconState(data);
+            _claimed = ParseStateBool(data, "claimed", false);
+        }
     }
 
     [Preserve]

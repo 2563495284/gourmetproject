@@ -17,12 +17,10 @@ namespace GourmetProject.Game.Run
     /// </summary>
     public static class BattleSessionFactory
     {
-        private const float CarbMealMantouChance = 0.5f;
-
         public static BattleSession Build(GameRun run, int requiredScore, string modifier, string key)
         {
             modifier ??= string.Empty;
-            requiredScore = ApplyRequiredScoreModifier(requiredScore, modifier);
+            cfg.BossDebuff bossDebuff = ResolveBossDebuff(run, modifier);
 
             cfg.Character character = run.Tables.TbCharacter.GetOrDefault(run.CharacterId);
             var debuffStream = GameApp.Random.DomainStream(SeedDomains.Combat, $"{key}_debuff_setup");
@@ -46,10 +44,10 @@ namespace GourmetProject.Game.Run
             }
             var slots = new List<RecipeSlot> { new RecipeSlot("菜谱", entries) };
 
-            ApplyRecipeModifiers(slots, run, modifier, debuffStream);
+            ApplyRecipeModifiers(slots, modifier, bossDebuff, debuffStream);
 
-            GpTable board = BuildTable(run, character, modifier);
-            ApplyTableModifiers(board, TotalRecipeEntries(slots), modifier, debuffStream);
+            GpTable board = BuildTable(run, character, modifier, bossDebuff);
+            ApplyTableModifiers(board, TotalRecipeEntries(slots), modifier, bossDebuff, debuffStream);
 
             var battleStream = GameApp.Random.DomainStream(SeedDomains.Combat, key);
 
@@ -77,7 +75,7 @@ namespace GourmetProject.Game.Run
             session.SweetTransferTargetMultiplier = itemRuntime.SweetTransferTargetMultiplier();
             session.SweetTransferSourceMultiplier = itemRuntime.SweetTransferSourceMultiplier();
 
-            ApplySessionModifiers(session, modifier);
+            ApplySessionModifiers(session, modifier, bossDebuff);
 
             ApplyPassiveItems(run, session);
             return session;
@@ -86,17 +84,23 @@ namespace GourmetProject.Game.Run
         public static GpTable BuildTablePreview(GameRun run, string modifier = "")
         {
             cfg.Character character = run?.Tables.TbCharacter.GetOrDefault(run.CharacterId);
-            return BuildTable(run, character, modifier ?? string.Empty);
+            modifier ??= string.Empty;
+            return BuildTable(run, character, modifier, ResolveBossDebuff(run, modifier));
         }
 
         /// <summary>
         /// 由角色配置构建本局餐桌：初始胃形状取自碎片库，最大包围盒取角色 max 尺寸。
         /// Boss「small_board」修正收缩最大包围盒（初始碎片超出部分自动裁掉）。
         /// </summary>
-        private static GpTable BuildTable(GameRun run, cfg.Character character, string modifier)
+        private static GpTable BuildTable(
+            GameRun run,
+            cfg.Character character,
+            string modifier,
+            cfg.BossDebuff bossDebuff)
         {
             int maxW = character.MaxDiningTableWidth;
             int maxH = character.MaxDiningTableHeight;
+            int shapeLineCount = System.Math.Max(0, bossDebuff?.ShapeLineCount ?? 0);
 
             if (BossDebuffModifiers.IsSmallBoard(modifier))
             {
@@ -105,11 +109,11 @@ namespace GourmetProject.Game.Run
             }
             else if (modifier == BossDebuffModifiers.Indulgent)
             {
-                maxH += 1;
+                maxH += shapeLineCount;
             }
             else if (modifier == BossDebuffModifiers.Binge)
             {
-                maxW += 1;
+                maxW += shapeLineCount;
             }
 
             TableFragmentDef fragment = run.Database.GetFragment(character?.InitialFragmentId);
@@ -117,7 +121,7 @@ namespace GourmetProject.Game.Run
             {
                 Log.Warning($"Character '{run.CharacterId}' 无有效初始餐桌碎片 '{character?.InitialFragmentId}'，回退为满 {maxW}x{maxH} 餐桌。", "GameRun");
                 GpTable fallback = new GpTable(maxW, maxH);
-                ApplyShapeModifier(fallback, modifier);
+                ApplyShapeModifier(fallback, modifier, shapeLineCount);
                 ApplyCellMaterialOverrides(fallback, run);
                 return fallback;
             }
@@ -137,7 +141,7 @@ namespace GourmetProject.Game.Run
                 canvasW,
                 canvasH,
                 initialOrigin);
-            ApplyShapeModifier(board, modifier);
+            ApplyShapeModifier(board, modifier, shapeLineCount);
             ApplyCellMaterialOverrides(board, run);
             return board;
         }
@@ -156,53 +160,78 @@ namespace GourmetProject.Game.Run
             }
         }
 
-        private static int ApplyRequiredScoreModifier(int requiredScore, string modifier)
+        private static cfg.BossDebuff ResolveBossDebuff(GameRun run, string modifier)
         {
-            float multiplier = 1f;
-            switch (modifier)
+            if (run?.Tables?.TbBossDebuff == null || string.IsNullOrEmpty(modifier))
             {
-                case BossDebuffModifiers.Indulgent:
-                case BossDebuffModifiers.Binge:
-                    multiplier = 1.5f;
-                    break;
-                case BossDebuffModifiers.KidsMeal:
-                case BossDebuffModifiers.WeightLoss:
-                    multiplier = 0.8f;
-                    break;
-                case BossDebuffModifiers.Gluttony:
-                    multiplier = 1.1f;
-                    break;
+                return null;
             }
 
-            return (int)System.Math.Round(requiredScore * multiplier, System.MidpointRounding.AwayFromZero);
+            foreach (cfg.BossDebuff debuff in run.Tables.TbBossDebuff.DataList)
+            {
+                if (debuff != null && debuff.Modifier == modifier)
+                {
+                    return debuff;
+                }
+            }
+
+            return null;
         }
 
-        private static void ApplyRecipeModifiers(List<RecipeSlot> slots, GameRun run, string modifier, IRandomStream rng)
+        private static void ApplyRecipeModifiers(
+            List<RecipeSlot> slots,
+            string modifier,
+            cfg.BossDebuff bossDebuff,
+            IRandomStream rng)
         {
             if (modifier == BossDebuffModifiers.Gluttony)
             {
+                int copyCount = System.Math.Max(0, bossDebuff?.RecipeCopyCount ?? 0);
                 foreach (RecipeSlot slot in slots)
                 {
-                    var copies = new List<RecipeSlotEntry>();
+                    var originals = new List<RecipeSlotEntry>();
                     foreach (RecipeSlotEntry entry in slot.Entries)
                     {
-                        copies.Add(entry.Clone());
+                        originals.Add(entry.Clone());
                     }
 
-                    foreach (RecipeSlotEntry copy in copies)
+                    for (int copyIndex = 0; copyIndex < copyCount; copyIndex++)
                     {
-                        slot.AddEntry(copy);
+                        foreach (RecipeSlotEntry original in originals)
+                        {
+                            slot.AddEntry(original.Clone());
+                        }
                     }
                 }
             }
             else if (modifier == BossDebuffModifiers.LightMeal)
             {
-                MarkRandomRecipeEntries(slots, System.Math.Max(1, TotalRecipeEntries(slots) / 8 + 1), rng, disableSkills: true);
+                MarkRandomRecipeEntries(
+                    slots,
+                    RecipeEntryEffectCount(slots, bossDebuff),
+                    rng,
+                    disableSkills: true);
             }
             else if (modifier == BossDebuffModifiers.VeganMeal)
             {
-                MarkRandomRecipeEntries(slots, System.Math.Max(1, TotalRecipeEntries(slots) / 8), rng, excludeFromScore: true);
+                MarkRandomRecipeEntries(
+                    slots,
+                    RecipeEntryEffectCount(slots, bossDebuff),
+                    rng,
+                    excludeFromScore: true);
             }
+        }
+
+        private static int RecipeEntryEffectCount(List<RecipeSlot> slots, cfg.BossDebuff bossDebuff)
+        {
+            int divisor = bossDebuff?.RecipeEntryDivisor ?? 0;
+            if (divisor <= 0)
+            {
+                return 0;
+            }
+
+            int count = TotalRecipeEntries(slots) / divisor + bossDebuff.RecipeEntryExtraCount;
+            return System.Math.Max(bossDebuff.RecipeEntryMinimumCount, count);
         }
 
         private static void MarkRandomRecipeEntries(
@@ -250,28 +279,31 @@ namespace GourmetProject.Game.Run
             return total;
         }
 
-        private static void ApplyShapeModifier(GpTable board, string modifier)
+        private static void ApplyShapeModifier(GpTable board, string modifier, int shapeLineCount)
         {
-            if (board == null)
+            if (board == null || shapeLineCount <= 0)
             {
                 return;
             }
 
-            if (modifier == BossDebuffModifiers.Indulgent)
+            for (int i = 0; i < shapeLineCount; i++)
             {
-                AddBottomCells(board);
-            }
-            else if (modifier == BossDebuffModifiers.Binge)
-            {
-                AddRightCells(board);
-            }
-            else if (modifier == BossDebuffModifiers.KidsMeal)
-            {
-                RemoveBottomCells(board);
-            }
-            else if (modifier == BossDebuffModifiers.WeightLoss)
-            {
-                RemoveRightCells(board);
+                if (modifier == BossDebuffModifiers.Indulgent)
+                {
+                    AddBottomCells(board);
+                }
+                else if (modifier == BossDebuffModifiers.Binge)
+                {
+                    AddRightCells(board);
+                }
+                else if (modifier == BossDebuffModifiers.KidsMeal)
+                {
+                    RemoveBottomCells(board);
+                }
+                else if (modifier == BossDebuffModifiers.WeightLoss)
+                {
+                    RemoveRightCells(board);
+                }
             }
         }
 
@@ -383,14 +415,25 @@ namespace GourmetProject.Game.Run
             }
         }
 
-        private static void ApplyTableModifiers(GpTable board, int foodCount, string modifier, IRandomStream rng)
+        private static void ApplyTableModifiers(
+            GpTable board,
+            int foodCount,
+            string modifier,
+            cfg.BossDebuff bossDebuff,
+            IRandomStream rng)
         {
             if (board == null || modifier != BossDebuffModifiers.Vegetarian)
             {
                 return;
             }
 
-            int disableCount = foodCount / 12 + 1;
+            int divisor = bossDebuff?.DisabledCellDivisor ?? 0;
+            if (divisor <= 0)
+            {
+                return;
+            }
+
+            int disableCount = System.Math.Max(0, foodCount / divisor + bossDebuff.DisabledCellExtraCount);
             List<GridPos> cells = board.ExistingCells();
             rng.Shuffle(cells);
             int disabled = 0;
@@ -410,7 +453,10 @@ namespace GourmetProject.Game.Run
             }
         }
 
-        private static void ApplySessionModifiers(BattleSession session, string modifier)
+        private static void ApplySessionModifiers(
+            BattleSession session,
+            string modifier,
+            cfg.BossDebuff bossDebuff)
         {
             if (session == null)
             {
@@ -423,18 +469,28 @@ namespace GourmetProject.Game.Run
                     session.MaxServes = 5;
                     break;
                 case BossDebuffModifiers.DineAndDash:
-                    session.GoldCostPerBellServe = 5;
+                    session.GoldCostPerBellServe = System.Math.Max(0, bossDebuff?.GoldCostPerBellServe ?? 0);
                     break;
                 case BossDebuffModifiers.Omakase:
-                    session.ConfigureFoodDiscardLimit(0);
+                    if (bossDebuff != null && bossDebuff.FoodDiscardLimit >= 0)
+                    {
+                        session.ConfigureFoodDiscardLimit(bossDebuff.FoodDiscardLimit);
+                    }
                     break;
                 case BossDebuffModifiers.FineDining:
-                    session.HalveBaseScore = true;
+                    session.BaseScoreMultiplier = bossDebuff?.BaseScoreMultiplier ?? 1f;
                     break;
                 case BossDebuffModifiers.CarbMeal:
-                    session.BellServeMantouChance = CarbMealMantouChance;
+                    session.ConfigureInsertedDishSequence(
+                        bossDebuff?.InsertDishId,
+                        bossDebuff?.InsertDishWindowSize ?? 0,
+                        bossDebuff?.InsertDishCountPerWindow ?? 0);
                     break;
                 case BossDebuffModifiers.DarkCuisine:
+                    session.ConfigureRandomServeMultiplier(
+                        bossDebuff?.RandomServeMultiplierMin ?? 0f,
+                        bossDebuff?.RandomServeMultiplierMax ?? 0f,
+                        bossDebuff?.RandomServeMultiplierStep ?? 0f);
                     session.RandomServeMultiplier = true;
                     break;
                 case BossDebuffModifiers.ComboMeal:
@@ -445,13 +501,15 @@ namespace GourmetProject.Game.Run
                     break;
                 case BossDebuffModifiers.Appetizer:
                     session.RemoveFirstServedDishes = true;
-                    session.FirstServedDishesToRemove = 2;
+                    session.FirstServedDishesToRemove = System.Math.Max(0, bossDebuff?.AppetizerRemoveCount ?? 0);
                     break;
                 case BossDebuffModifiers.Tasting:
-                    session.AlternateServeMultiplier = true;
+                    session.ConfigureAlternateServeMultiplier(
+                        bossDebuff?.AlternateServeMultiplierLow ?? 1f,
+                        bossDebuff?.AlternateServeMultiplierHigh ?? 1f);
                     break;
                 case BossDebuffModifiers.Buffet:
-                    session.MinimumServesForScore = 10;
+                    session.MinimumServesForScore = System.Math.Max(0, bossDebuff?.MinimumServesForScore ?? 0);
                     break;
             }
         }

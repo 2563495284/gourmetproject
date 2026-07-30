@@ -147,6 +147,25 @@ namespace GourmetProject.Game.Meta
 
         public int BossCompleteGold() => SumInt(m => m.BossCompleteGold());
 
+        /// <summary>领取当前持有道具的 Boss 完成奖励；一次性模型会在领取时写入自身状态。</summary>
+        public int ClaimBossCompleteGold()
+        {
+            int total = 0;
+            foreach (PassiveItemModel m in Models)
+            {
+                int amount = m.ClaimBossCompleteGold();
+                if (amount <= 0)
+                {
+                    continue;
+                }
+
+                total += amount;
+                m.Flash();
+            }
+
+            return total;
+        }
+
         public int MealBonusGoldPerMeal() => SumInt(m => m.MealBonusGoldPerMeal());
 
         public int ShopEnterGold() => SumInt(m => m.ShopEnterGold());

@@ -276,7 +276,8 @@ namespace GourmetProject.Game.Meta
             return result;
         }
 
-        public static cfg.TimelineNode GetLastUntriggeredBossNode(GameRun run)
+        /// <summary>取得时间轴上最近的尚未触发 Boss 节点；同一天按节点 ID 升序稳定选择。</summary>
+        public static cfg.TimelineNode GetNearestUntriggeredBossNode(GameRun run)
         {
             cfg.TimelineNode result = null;
             if (run == null)
@@ -298,8 +299,8 @@ namespace GourmetProject.Game.Meta
                 }
 
                 if (result == null
-                    || node.Day > result.Day
-                    || (node.Day == result.Day && string.CompareOrdinal(node.Id, result.Id) > 0))
+                    || node.Day < result.Day
+                    || (node.Day == result.Day && string.CompareOrdinal(node.Id, result.Id) < 0))
                 {
                     result = node;
                 }
@@ -307,6 +308,10 @@ namespace GourmetProject.Game.Meta
 
             return result;
         }
+
+        [System.Obsolete("Use GetNearestUntriggeredBossNode.")]
+        public static cfg.TimelineNode GetLastUntriggeredBossNode(GameRun run)
+            => GetNearestUntriggeredBossNode(run);
 
         /// <summary>
         /// 由运行时节点数据构造 cfg.TimelineNode。Luban bean 仅有 JSON 构造，这里拼 JSON 串走

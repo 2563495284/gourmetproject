@@ -795,7 +795,7 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             if (item.EffectType == ItemEffectTypes.ResetBossDebuff
-                && TimelineService.GetLastUntriggeredBossNode(run) == null)
+                && TimelineService.GetNearestUntriggeredBossNode(run) == null)
             {
                 reason = "没有可重掷的 Boss 节点。";
                 return false;

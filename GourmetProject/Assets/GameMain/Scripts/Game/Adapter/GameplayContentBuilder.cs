@@ -21,7 +21,8 @@ namespace GourmetProject.Game.Adapter
             }
 
             var dishes = new List<DishDef>(
-                tables.TbDishVariant.DataList.Count * 7);
+                tables.TbDishVariant.DataList.Count * 7 + tables.TbDishBase.DataList.Count);
+            var referencedBaseIds = new HashSet<string>();
             foreach (cfg.DishVariant family in tables.TbDishVariant.DataList)
             {
                 if (!bases.TryGetValue(
@@ -32,6 +33,7 @@ namespace GourmetProject.Game.Adapter
                         $"菜品族 '{family.Id}' 引用了不存在的本体 baseId '{family.BaseId}'。");
                 }
 
+                referencedBaseIds.Add(family.BaseId);
                 dishes.Add(
                     ToDishDef(
                         family.Id,
@@ -59,6 +61,15 @@ namespace GourmetProject.Game.Adapter
                             family.FlavoredHiddenRange,
                             family.Rotation,
                             baseDish));
+                }
+            }
+
+            // 没有菜品族的本体是系统机制可直接生成的独立菜品（例如 Boss 碳水餐的 mantou）。
+            foreach (cfg.DishBase baseDish in tables.TbDishBase.DataList)
+            {
+                if (!referencedBaseIds.Contains(baseDish.Id))
+                {
+                    dishes.Add(ToStandaloneDishDef(baseDish));
                 }
             }
 
@@ -158,6 +169,27 @@ namespace GourmetProject.Game.Adapter
                 b.Id,
                 price,
                 (int)rotation,
+                b.Category,
+                b.CountAs,
+                b.SortOrder);
+        }
+
+        private static DishDef ToStandaloneDishDef(cfg.DishBase b)
+        {
+            return new DishDef(
+                b.Id,
+                b.Name,
+                b.Deliciousness,
+                DishShape.FromRows(b.ShapeRows),
+                0,
+                0,
+                0f,
+                SplitPipeList(b.Skills),
+                string.Empty,
+                b.AllowRotate,
+                b.Id,
+                0,
+                0,
                 b.Category,
                 b.CountAs,
                 b.SortOrder);
