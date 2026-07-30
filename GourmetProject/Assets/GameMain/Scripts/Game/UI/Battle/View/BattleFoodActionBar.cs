@@ -39,7 +39,8 @@ namespace GourmetProject.Game.UI.Battle.View
                 _eatButton.interactable = food
                     && session != null
                     && !session.IsSettled
-                    && session.PreparedServe == null;
+                    && session.PreparedServe == null
+                    && (world == null || !world.IsFoodInteractionBusy);
             }
 
             bool doodleReady = food && world != null;

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using GourmetProject.Core.Rng;
 using GourmetProject.Runtime;
 using GourmetProject.Game.Meta.Passives;
@@ -112,6 +113,26 @@ namespace GourmetProject.Game.Meta
             }
 
             return options;
+        }
+
+        /// <summary>将事件正文/选项中的运行时利息占位符替换为当前数值。</summary>
+        public static string FormatRuntimeText(GameRun run, string template)
+        {
+            if (string.IsNullOrEmpty(template) || run == null)
+            {
+                return template ?? string.Empty;
+            }
+
+            int threshold = run.InterestThreshold;
+            int goldPer = run.InterestGoldPer > 0 ? run.InterestGoldPer : 1;
+            int maxGain = run.InterestCap;
+            int gain = TimelineMath.Interest(run.Gold, threshold, goldPer, maxGain);
+            return template
+                .Replace("{gain}", gain.ToString(CultureInfo.InvariantCulture))
+                .Replace("{threshold}", threshold.ToString(CultureInfo.InvariantCulture))
+                .Replace("{goldPer}", goldPer.ToString(CultureInfo.InvariantCulture))
+                .Replace("{maxGain}", maxGain.ToString(CultureInfo.InvariantCulture))
+                .Replace("{currentGold}", run.Gold.ToString(CultureInfo.InvariantCulture));
         }
 
         /// <summary>从指定分类池（eventType=Event/Reward/Negative）中按权重/前置/可重复随机一个事件。</summary>

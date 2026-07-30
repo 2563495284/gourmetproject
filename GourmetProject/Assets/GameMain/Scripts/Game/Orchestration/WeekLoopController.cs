@@ -868,14 +868,7 @@ namespace GourmetProject.Game.Orchestration
                         SavePendingActionExecution(context, outcome);
                     }
 
-                    if (IsInterestAction(context))
-                    {
-                        ShowInterestEventPage(outcome.Feedback, onContinue);
-                    }
-                    else
-                    {
-                        _view.ShowNotice(title, outcome.Feedback, onContinue);
-                    }
+                    _view.ShowNotice(title, outcome.Feedback, onContinue);
                     break;
                 case ActionOutcomeKind.Shop:
                     if (restoringPending)
@@ -923,24 +916,6 @@ namespace GourmetProject.Game.Orchestration
         {
             _run.SetPendingActionExecution(context, outcome, resolvedEventId);
             RunPersistence.Save(_run);
-        }
-
-        private static bool IsInterestAction(ActionExecutionContext context)
-        {
-            return context?.Action?.Behavior == cfg.ActionBehavior.Interest;
-        }
-
-        private void ShowInterestEventPage(string result, Action onContinue)
-        {
-            _view.ShowEventPage(
-                "收取利息",
-                "根据当前金币结算利息。",
-                result,
-                string.Empty,
-                new List<string>(),
-                new List<bool>(),
-                onPick: null,
-                onEnd: onContinue);
         }
 
         private void StartBossBattle(
@@ -1050,7 +1025,10 @@ namespace GourmetProject.Game.Orchestration
                 : $"action_w{_run.WeekIndex}_d{DayKey(_run.CurrentDay)}_s{_run.ActionStepIndex}";
 
             IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Event, seedKey);
-            cfg.GameEvent ev = behavior == cfg.ActionBehavior.Event
+            cfg.GameEvent ev = string.IsNullOrEmpty(outcome?.EventId)
+                ? null
+                : _run.Tables.TbEvent.GetOrDefault(outcome.EventId);
+            ev ??= behavior == cfg.ActionBehavior.Event
                 ? EventService.RollActionEventWithGuarantee(_run, rng)
                 : EventService.RollEvent(_run, rng, behavior);
             if (ev != null)
@@ -1194,6 +1172,12 @@ namespace GourmetProject.Game.Orchestration
                 return;
             }
 
+            if (option.AutoEnd)
+            {
+                FinishEventAndContinue(ev, result, onDone);
+                return;
+            }
+
             List<cfg.EventOption> children = EventService.GetChildOptions(_run, ev.Id, option.Id);
             if (children.Count > 0)
             {
@@ -1231,7 +1215,7 @@ namespace GourmetProject.Game.Orchestration
         {
             _view.OpenEventRecipeDishDelete(
                 _run,
-                option.Text,
+                EventService.FormatRuntimeText(_run, option.Text),
                 onCancel: () => EnterEventPage(ev, pageDescription, pageOptions, rng, onDone),
                 onTargetConfirmed: target =>
                 {
@@ -1312,14 +1296,16 @@ namespace GourmetProject.Game.Orchestration
             {
                 foreach (cfg.EventOption option in options)
                 {
-                    optionTexts.Add(option.Text);
+                    optionTexts.Add(EventService.FormatRuntimeText(_run, option.Text));
                 }
             }
 
             _view.ShowEventPage(
                 ev != null ? ev.Name : string.Empty,
-                pageDescription ?? (ev != null ? ev.Desc : string.Empty),
-                resultButtonText,
+                EventService.FormatRuntimeText(
+                    _run,
+                    pageDescription ?? (ev != null ? ev.Desc : string.Empty)),
+                EventService.FormatRuntimeText(_run, resultButtonText),
                 ev != null ? ev.BgSprite : string.Empty,
                 optionTexts,
                 optionEnabled,

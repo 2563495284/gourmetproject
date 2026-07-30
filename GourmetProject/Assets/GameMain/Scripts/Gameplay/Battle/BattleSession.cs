@@ -30,6 +30,7 @@ namespace GourmetProject.Gameplay.Battle
         private readonly Dictionary<string, int> _runSettled = new Dictionary<string, int>();
         private readonly List<RecipeScoreFlatDelta> _lastRecipeScoreFlatDeltas = new List<RecipeScoreFlatDelta>();
         private readonly List<RecipeScoreMultiplierDelta> _lastRecipeScoreMultiplierDeltas = new List<RecipeScoreMultiplierDelta>();
+        private readonly List<DishInstance> _temporaryAreaDishes = new List<DishInstance>();
         private int _nextInstanceId = 1;
         private int _appetizerRemoved;
         private float _settlementDishMultiplierFlat;
@@ -162,6 +163,12 @@ namespace GourmetProject.Gameplay.Battle
 
         /// <summary>已随机出餐、尚未由玩家摆上餐桌的食物。</summary>
         public PreparedServeDish PreparedServe { get; private set; }
+
+        /// <summary>
+        /// 因麻风味旋转后暂存在临时桌、尚未放回主餐桌的菜品。
+        /// 它们不属于 <see cref="DiningTable"/>，因此不参与空间判定、预览分数或结算。
+        /// </summary>
+        public IReadOnlyList<DishInstance> TemporaryAreaDishes => _temporaryAreaDishes;
 
         /// <summary>本次品鉴共享的全局「欢乐蛋糕层数」，随上菜/结算累加，跨品鉴重置。</summary>
         public int HappyCakeLayers { get; private set; }
@@ -1152,6 +1159,92 @@ namespace GourmetProject.Gameplay.Battle
             }
 
             return null;
+        }
+
+        /// <summary>按 Id 查找临时桌上的菜；不存在返回 null。</summary>
+        public DishInstance FindTemporaryAreaDishById(int dishId)
+        {
+            foreach (DishInstance dish in _temporaryAreaDishes)
+            {
+                if (dish.Id == dishId)
+                {
+                    return dish;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// 把已上桌菜品从当前朝向逆时针旋转指定步数，并移动到独立临时桌。
+        /// 不回滚该菜已发生的上菜次数、OnServe 或费用副作用。
+        /// </summary>
+        public bool MoveDishToTemporaryAreaAfterRotate(int dishId, int ccwSteps)
+        {
+            if (IsSettled || ccwSteps <= 0)
+            {
+                return false;
+            }
+
+            DishInstance dish = FindDishById(dishId);
+            if (dish == null)
+            {
+                return false;
+            }
+
+            int rotationIndex = ((dish.Placement.RotationIndex - ccwSteps) % 4 + 4) % 4;
+            var rotatedPlacement = new Placement(
+                dish.Def.Shape.RotatedBy(rotationIndex),
+                rotationIndex,
+                dish.Placement.Origin);
+
+            DiningTable.RemoveDish(dish);
+            dish.Relocate(rotatedPlacement);
+            _temporaryAreaDishes.Add(dish);
+            return true;
+        }
+
+        /// <summary>枚举临时桌菜品以当前固定朝向放回主餐桌的全部合法位置。</summary>
+        public IReadOnlyList<Placement> FindTemporaryAreaDishPlacements(int dishId)
+        {
+            DishInstance dish = FindTemporaryAreaDishById(dishId);
+            if (dish == null)
+            {
+                return Array.Empty<Placement>();
+            }
+
+            return DiningTable.FindValidPlacements(
+                dish.Placement.Orientation,
+                dish.Placement.RotationIndex);
+        }
+
+        /// <summary>
+        /// 把临时桌菜品放回主餐桌。这里只重定位，不再次计入上菜次数，也不触发 OnServe，
+        /// 并且不会读取或修改出餐口的 <see cref="PreparedServe"/>。
+        /// </summary>
+        public bool CommitTemporaryAreaDish(int dishId, Placement placement)
+        {
+            if (IsSettled)
+            {
+                return false;
+            }
+
+            DishInstance dish = FindTemporaryAreaDishById(dishId);
+            if (dish == null
+                || placement.RotationIndex != dish.Placement.RotationIndex
+                || !DiningTable.CanPlace(dish.Placement.Orientation, placement.Origin))
+            {
+                return false;
+            }
+
+            var committedPlacement = new Placement(
+                dish.Placement.Orientation,
+                dish.Placement.RotationIndex,
+                placement.Origin);
+            dish.Relocate(committedPlacement);
+            DiningTable.Place(dish);
+            _temporaryAreaDishes.Remove(dish);
+            return true;
         }
 
         /// <summary>主动道具：给指定餐桌菜永久加分（对标杀戮尖塔2 火焰药水打目标）。成功返回 true。</summary>

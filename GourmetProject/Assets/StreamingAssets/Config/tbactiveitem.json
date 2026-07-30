@@ -1,7 +1,7 @@
 [
   {
     "id": "item_active_season_sweet",
-    "name": "加甜单",
+    "name": "甜味箱",
     "desc": "选择1个食物\n添加「甜」风味",
     "specialTags": "",
     "effectType": "AddFlavor",
@@ -16,7 +16,7 @@
   },
   {
     "id": "item_active_season_bitter",
-    "name": "加苦单",
+    "name": "苦味箱",
     "desc": "选择1个食物\n添加「苦」风味",
     "specialTags": "",
     "effectType": "AddFlavor",
@@ -31,7 +31,7 @@
   },
   {
     "id": "item_active_season_umami",
-    "name": "加鲜单",
+    "name": "鲜味箱",
     "desc": "选择1个食物\n添加「鲜」风味",
     "specialTags": "",
     "effectType": "AddFlavor",
@@ -46,7 +46,7 @@
   },
   {
     "id": "item_active_season_numb",
-    "name": "加麻单",
+    "name": "麻味箱",
     "desc": "选择1个食物\n添加「麻」风味",
     "specialTags": "",
     "effectType": "AddFlavor",
@@ -61,7 +61,7 @@
   },
   {
     "id": "item_active_season_sour",
-    "name": "加酸单",
+    "name": "酸味箱",
     "desc": "选择1个食物\n添加「酸」风味",
     "specialTags": "",
     "effectType": "AddFlavor",
@@ -76,7 +76,7 @@
   },
   {
     "id": "item_active_season_salty",
-    "name": "加咸单",
+    "name": "咸味箱",
     "desc": "选择1个食物\n添加「咸」风味",
     "specialTags": "",
     "effectType": "AddFlavor",
@@ -91,8 +91,8 @@
   },
   {
     "id": "item_active_lay_cherry",
-    "name": "樱桃木采购单",
-    "desc": "选择1个餐桌格子\n强化「樱桃木」材质",
+    "name": "樱桃木箱",
+    "desc": "选择1个餐桌格子\n将其铺装为「樱桃木」材质",
     "specialTags": "",
     "effectType": "AddMaterial",
     "effectValue": 0,
@@ -106,8 +106,8 @@
   },
   {
     "id": "item_active_lay_walnut",
-    "name": "胡桃木采购单",
-    "desc": "选择1个餐桌格子\n强化「胡桃木」材质",
+    "name": "胡桃木箱",
+    "desc": "选择1个餐桌格子\n将其铺装为「胡桃木」材质",
     "specialTags": "",
     "effectType": "AddMaterial",
     "effectValue": 0,
@@ -121,8 +121,8 @@
   },
   {
     "id": "item_active_lay_marble",
-    "name": "大理石采购单",
-    "desc": "选择1个餐桌格子\n强化「大理石」材质",
+    "name": "大理石箱",
+    "desc": "选择1个餐桌格子\n将其铺装为「大理石」材质",
     "specialTags": "",
     "effectType": "AddMaterial",
     "effectValue": 0,
@@ -136,8 +136,8 @@
   },
   {
     "id": "item_active_lay_obsidian",
-    "name": "黑曜石采购单",
-    "desc": "选择1个餐桌格子\n强化「黑曜石」材质",
+    "name": "黑曜石箱",
+    "desc": "选择1个餐桌格子\n将其铺装为「黑曜石」材质",
     "specialTags": "",
     "effectType": "AddMaterial",
     "effectValue": 0,
@@ -151,8 +151,8 @@
   },
   {
     "id": "item_active_lay_emerald",
-    "name": "翡翠采购单",
-    "desc": "选择1个餐桌格子\n强化「翡翠」材质",
+    "name": "翡翠箱",
+    "desc": "选择1个餐桌格子\n将其铺装为「翡翠」材质",
     "specialTags": "",
     "effectType": "AddMaterial",
     "effectValue": 0,
@@ -166,8 +166,8 @@
   },
   {
     "id": "item_active_lay_gold",
-    "name": "金采购单",
-    "desc": "选择1个餐桌格子\n强化「金」材质",
+    "name": "金质箱",
+    "desc": "选择1个餐桌格子\n将其铺装为「金」材质",
     "specialTags": "",
     "effectType": "AddMaterial",
     "effectValue": 0,
@@ -181,8 +181,8 @@
   },
   {
     "id": "item_active_lay_silver",
-    "name": "银采购单",
-    "desc": "选择1个餐桌格子\n强化「银」材质",
+    "name": "银质箱",
+    "desc": "选择1个餐桌格子\n将其铺装为「银」材质",
     "specialTags": "",
     "effectType": "AddMaterial",
     "effectValue": 0,
@@ -197,7 +197,7 @@
   {
     "id": "item_active_reroll_action",
     "name": "行动调整单",
-    "desc": "重掷日常行动选项",
+    "desc": "重掷普通行动选项",
     "specialTags": "",
     "effectType": "RerollAction",
     "effectValue": 0,
@@ -211,8 +211,8 @@
   },
   {
     "id": "item_active_half_next_action_cost",
-    "name": "半日券",
-    "desc": "下个日常行动消耗天数减半",
+    "name": "加速行动单",
+    "desc": "下个普通行动消耗天数减半",
     "specialTags": "",
     "effectType": "HalfNextActionCost",
     "effectValue": 0.5,
@@ -226,7 +226,7 @@
   },
   {
     "id": "item_active_reroll_last_boss_debuff",
-    "name": "盛宴调整单",
+    "name": "评鉴调整单",
     "desc": "重掷最近一个尚未触发的星级评鉴餐食类别",
     "specialTags": "",
     "effectType": "ResetBossDebuff",
@@ -241,7 +241,7 @@
   },
   {
     "id": "item_active_add_reward_node",
-    "name": "幸运事件单",
+    "name": "幸运单",
     "desc": "添加幸运事件至指定节点上",
     "specialTags": "",
     "effectType": "TimelineAddRewardNode",
@@ -271,7 +271,7 @@
   },
   {
     "id": "item_active_add_shop_node",
-    "name": "进货单",
+    "name": "商店单",
     "desc": "添加商店进货至指定节点上",
     "specialTags": "",
     "effectType": "TimelineAddShopNode",
@@ -286,7 +286,7 @@
   },
   {
     "id": "item_active_add_lottery_node",
-    "name": "抽奖机单",
+    "name": "抽奖单",
     "desc": "添加抽奖机至指定节点上",
     "specialTags": "",
     "effectType": "TimelineAddLotteryNode",
@@ -301,7 +301,7 @@
   },
   {
     "id": "item_active_delete_timeline_node",
-    "name": "节点删除单",
+    "name": "删除单",
     "desc": "删除1个节点行动",
     "specialTags": "",
     "effectType": "TimelineDeleteNode",
@@ -316,7 +316,7 @@
   },
   {
     "id": "item_active_execute_future_node",
-    "name": "未来加急单",
+    "name": "未来复制单",
     "desc": "指定1个未执行的节点行动\n复制到最近的节点",
     "specialTags": "",
     "effectType": "TimelineExecuteFuture",
@@ -331,7 +331,7 @@
   },
   {
     "id": "item_active_execute_past_node",
-    "name": "过往加急单",
+    "name": "过往复制单",
     "desc": "指定1个已执行的节点行动\n复制到最近的节点",
     "specialTags": "",
     "effectType": "TimelineExecutePast",

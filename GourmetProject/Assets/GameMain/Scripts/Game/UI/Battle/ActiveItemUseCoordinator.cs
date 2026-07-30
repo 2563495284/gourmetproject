@@ -603,8 +603,10 @@ namespace GourmetProject.Game.UI.Battle
 
             void FinishDishFlavorTargeting()
             {
+                bool movedToTemporaryArea = int.TryParse(target.Id, out int dishId)
+                    && _host.ActiveSession?.FindTemporaryAreaDishById(dishId) != null;
                 _host.RefreshAfterActiveItem(
-                    result.BoardChanged,
+                    result.BoardChanged && !movedToTemporaryArea,
                     result.ActionChoicesChanged);
             }
         }

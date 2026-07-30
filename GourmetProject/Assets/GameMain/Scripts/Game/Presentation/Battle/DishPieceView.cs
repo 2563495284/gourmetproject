@@ -158,11 +158,13 @@ namespace GourmetProject.Game.Presentation.Battle
         private Action<DishPieceView, Vector2> _moveBegin;
         private Action<Vector2> _moveUpdate;
         private Action<Vector2> _moveEnd;
+        private Func<DishPieceView, Vector2, bool> _pointerHitFilter;
         private bool _clickEnabled = true;
         private bool _suppressPrimaryUntilReleased;
         private bool _hovered;
         private bool _moveDragging;
         private bool _flying;
+        private int _sortingOrderOffset;
         private bool _dragPresentationActive;
         private MaterialPropertyBlock _stainBlock;
         private MaterialPropertyBlock _placementGlowBlock;
@@ -239,6 +241,16 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             _hoverEntered = entered;
             _hoverExited = exited;
+        }
+
+        /// <summary>
+        /// 为重叠表现注入唯一命中过滤器。Hover、点击和拖拽起始共用同一判定，
+        /// 避免多个 DishPieceView 在同一帧分别抢占输入。
+        /// </summary>
+        public void SetPointerHitFilter(Func<DishPieceView, Vector2, bool> filter)
+        {
+            _pointerHitFilter = filter;
+            SetHovered(false);
         }
 
         /// <summary>
@@ -431,6 +443,64 @@ namespace GourmetProject.Game.Presentation.Battle
                 });
         }
 
+        /// <summary>
+        /// 麻风味专用变化：先把当前菜品按新摆放朝向做可见的逆时针旋转，再切换真实占格表现。
+        /// 数据层在调用前已经完成迁移；这里只负责从旧朝向平滑过渡到新朝向。
+        /// </summary>
+        public void PlayActiveItemNumbTransform(Placement rotatedPlacement, Action onComplete)
+        {
+            EnsureRefs();
+            _activeItemFlavorSequence?.Kill();
+            _activeItemFlavorSequence = null;
+
+            Transform target = _visualPivot != null ? _visualPivot : transform;
+            Vector3 lockedVisualCenterWorld = target.position;
+            int ccwSteps = ((RotationIndex - rotatedPlacement.RotationIndex) % 4 + 4) % 4;
+            float angle = ccwSteps * 90f;
+            Quaternion baseRotation = target.localRotation;
+
+            if (_spriteRenderer != null && SpriteRenderStyle.SpriteTransformMaterial != null)
+            {
+                SpriteRenderStyle.ApplyTransformMaterial(_spriteRenderer);
+                ApplyActiveItemTransformEffect(0f);
+            }
+
+            _activeItemFlavorSequence = DOTween.Sequence()
+                .Append(target.DOLocalRotate(
+                        new Vector3(0f, 0f, angle),
+                        0.28f,
+                        RotateMode.LocalAxisAdd)
+                    .SetEase(Ease.OutBack))
+                .Join(DOTween.To(
+                        () => 0f,
+                        ApplyActiveItemTransformEffect,
+                        1f,
+                        0.14f)
+                    .SetEase(Ease.OutQuad))
+                .AppendCallback(() =>
+                {
+                    target.localRotation = baseRotation;
+                    UpdatePlacement(rotatedPlacement);
+                    // 新朝向会重建 VisualPivot 的局部位置；补偿根节点以锁住同一个世界视觉中心。
+                    transform.position += lockedVisualCenterWorld - target.position;
+                    ApplyFlavorStain();
+                    ApplyActiveItemTransformEffect(1f);
+                })
+                .Append(DOTween.To(
+                        () => 1f,
+                        ApplyActiveItemTransformEffect,
+                        0f,
+                        0.18f)
+                    .SetEase(Ease.InOutQuad))
+                .OnComplete(() =>
+                {
+                    _activeItemFlavorSequence = null;
+                    ApplyActiveItemTransformEffect(0f);
+                    ApplyFlavorStain();
+                    onComplete?.Invoke();
+                });
+        }
+
         private void ApplyActiveItemTransformEffect(float amount)
         {
             if (_spriteRenderer == null)
@@ -463,17 +533,43 @@ namespace GourmetProject.Game.Presentation.Battle
                 {
                     renderer.sortingLayerName = layer;
                 }
+
+                _spriteRenderer.sortingOrder = BattleSorting.OrderBody + _sortingOrderOffset;
             }
 
             if (_shadowRenderer != null)
             {
-                BattleSorting.Apply(_shadowRenderer, layer, BattleSorting.OrderShadow);
+                BattleSorting.Apply(
+                    _shadowRenderer,
+                    layer,
+                    BattleSorting.OrderShadow + _sortingOrderOffset);
             }
 
             if (_shadowHaloRenderer != null)
             {
-                BattleSorting.Apply(_shadowHaloRenderer, layer, BattleSorting.OrderShadow - 1);
+                BattleSorting.Apply(
+                    _shadowHaloRenderer,
+                    layer,
+                    BattleSorting.OrderShadow - 1 + _sortingOrderOffset);
             }
+
+            if (_placementGlow != null)
+            {
+                _placementGlow.sortingLayerName = layer;
+                _placementGlow.sortingOrder = _spriteRenderer != null
+                    ? _spriteRenderer.sortingOrder + 1
+                    : BattleSorting.OrderBody + 1 + _sortingOrderOffset;
+            }
+        }
+
+        /// <summary>
+        /// 临时桌横向叠放时，以整份菜为单位调整层内顺序。
+        /// 偏移同时作用于本体、阴影和描边，避免新菜只盖住旧菜的一部分表现层。
+        /// </summary>
+        public void SetSortingOrderOffset(int offset)
+        {
+            _sortingOrderOffset = offset;
+            SetFlying(_flying);
         }
 
         /// <summary>
@@ -1362,7 +1458,10 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             Sprite blob = BattleShadow.SoftShadowSprite;
             _shadowRenderer.sprite = blob;
-            BattleSorting.Apply(_shadowRenderer, BattleSorting.Pieces, BattleSorting.OrderShadow);
+            BattleSorting.Apply(
+                _shadowRenderer,
+                BattleSorting.Pieces,
+                BattleSorting.OrderShadow + _sortingOrderOffset);
             _shadowRenderer.color = new Color(0f, 0f, 0f, _shadowBaseAlpha);
             SpriteRenderStyle.ApplyUnlitMaterial(_shadowRenderer);
 
@@ -1388,7 +1487,10 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 _shadowHaloRenderer.sprite = BattleShadow.DiffuseShadowSprite;
                 // 光晕排在核心层之下（仍在所有菜本体之下），保证锐利核心压在弥散光晕之上。
-                BattleSorting.Apply(_shadowHaloRenderer, BattleSorting.Pieces, BattleSorting.OrderShadow - 1);
+                BattleSorting.Apply(
+                    _shadowHaloRenderer,
+                    BattleSorting.Pieces,
+                    BattleSorting.OrderShadow - 1 + _sortingOrderOffset);
                 _shadowHaloRenderer.color = new Color(0f, 0f, 0f, 0f);
                 SpriteRenderStyle.ApplyUnlitMaterial(_shadowHaloRenderer);
                 Transform ht = _shadowHaloRenderer.transform;
@@ -1414,7 +1516,7 @@ namespace GourmetProject.Game.Presentation.Battle
             BattleSorting.Apply(
                 _spriteRenderer,
                 _flying ? BattleSorting.PiecesFlying : BattleSorting.Pieces,
-                BattleSorting.OrderBody);
+                BattleSorting.OrderBody + _sortingOrderOffset);
             _spriteRenderer.color = Color.white;
             SpriteRenderStyle.ApplyUnlitMaterial(_spriteRenderer);
 
@@ -1582,7 +1684,10 @@ namespace GourmetProject.Game.Presentation.Battle
                 Color color = _shadowRenderer.color;
                 color.a = Mathf.Clamp01(_dragShadowCoreAlpha);
                 _shadowRenderer.color = color;
-                BattleSorting.Apply(_shadowRenderer, BattleSorting.PiecesFlying, BattleSorting.OrderShadow);
+                BattleSorting.Apply(
+                    _shadowRenderer,
+                    BattleSorting.PiecesFlying,
+                    BattleSorting.OrderShadow + _sortingOrderOffset);
             }
 
             if (_shadowHaloRenderer != null)
@@ -1595,7 +1700,10 @@ namespace GourmetProject.Game.Presentation.Battle
                 Color color = _shadowHaloRenderer.color;
                 color.a = Mathf.Clamp01(_dragShadowHaloAlpha);
                 _shadowHaloRenderer.color = color;
-                BattleSorting.Apply(_shadowHaloRenderer, BattleSorting.PiecesFlying, BattleSorting.OrderShadow - 1);
+                BattleSorting.Apply(
+                    _shadowHaloRenderer,
+                    BattleSorting.PiecesFlying,
+                    BattleSorting.OrderShadow - 1 + _sortingOrderOffset);
             }
 
             if (_spriteRenderer != null)
@@ -1603,6 +1711,12 @@ namespace GourmetProject.Game.Presentation.Battle
                 foreach (SpriteRenderer renderer in _spriteRenderer.GetComponentsInChildren<SpriteRenderer>(true))
                 {
                     renderer.sortingLayerName = BattleSorting.PiecesFlying;
+                }
+
+                _spriteRenderer.sortingOrder = BattleSorting.OrderBody + _sortingOrderOffset;
+                if (_placementGlow != null)
+                {
+                    _placementGlow.sortingOrder = _spriteRenderer.sortingOrder + 1;
                 }
             }
         }
@@ -1822,7 +1936,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             Vector2 world = WorldInput.MouseWorld(cam);
-            if (ContainsOccupiedCellAtWorldPoint(world))
+            if (AcceptsPointerAtWorldPoint(world))
             {
                 if (_moveBegin != null)
                 {
@@ -1851,13 +1965,19 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            bool pointerInside = ContainsOccupiedCellAtWorldPoint(WorldInput.MouseWorld(cam));
+            bool pointerInside = AcceptsPointerAtWorldPoint(WorldInput.MouseWorld(cam));
             if (!_hovered && WorldInput.PointerOverUi)
             {
                 return;
             }
 
             SetHovered(pointerInside);
+        }
+
+        internal bool AcceptsPointerAtWorldPoint(Vector2 world)
+        {
+            return ContainsOccupiedCellAtWorldPoint(world)
+                && (_pointerHitFilter == null || _pointerHitFilter(this, world));
         }
 
         private bool ContainsOccupiedCellAtWorldPoint(Vector2 world)

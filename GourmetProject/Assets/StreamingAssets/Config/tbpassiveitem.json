@@ -112,7 +112,7 @@
   {
     "id": "item_gold_meal_bonus",
     "name": "美食分红",
-    "desc": "接下来10次日常营业\n额外获得20金币",
+    "desc": "接下来10次普通营业\n额外获得20金币",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 20,
@@ -442,7 +442,7 @@
   {
     "id": "item_req_normal_down",
     "name": "家常减负",
-    "desc": "日常营业要求分数-20%",
+    "desc": "普通营业要求分数-20%",
     "quality": 0,
     "specialTags": 0,
     "effectValue": -0.2,
@@ -1190,7 +1190,7 @@
   {
     "id": "item_extra_food_choice",
     "name": "加餐",
-    "desc": "每6次日常营业\n额外获得3选一美食",
+    "desc": "每6次普通营业\n额外获得3选一美食",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 0,
@@ -1432,7 +1432,7 @@
   {
     "id": "item_req_normal_up",
     "name": "家常加码",
-    "desc": "日常营业要求分数+20%",
+    "desc": "普通营业要求分数+20%",
     "quality": 0,
     "specialTags": 1,
     "effectValue": 0.2,
@@ -1520,7 +1520,7 @@
   {
     "id": "item_double_daily_cost_repeat_node",
     "name": "时间透支",
-    "desc": "日常行动消耗天数加倍\n节点事件可以执行2次",
+    "desc": "普通行动消耗天数加倍\n节点事件可以执行2次",
     "quality": 0,
     "specialTags": 1,
     "effectValue": 2,

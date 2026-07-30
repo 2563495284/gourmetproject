@@ -29,6 +29,13 @@ namespace GourmetProject.Game.Presentation.Battle
         // 餐桌居中定位的底部边距：Food 态给出餐口让 2.7，编辑态还要给候选托盘条让到 3.6。
         private const float FoodTableBottomMargin = 2.7f;
         private const float EditTableBottomMargin = 3.6f;
+        private const float TemporaryAreaPadding = 0.12f;
+        private const float TemporaryAreaPiecePaddingRatio = 0.84f;
+        private const float TemporaryAreaVisibleRatio = 0.7f;
+        private const float TemporaryAreaLayoutDuration = 0.18f;
+        private const float TemporaryAreaFadeDuration = 0.18f;
+        private const float TemporaryAreaFlyDuration = 0.38f;
+        private const int TemporaryAreaSortingStride = 20;
         private const int PassiveSlotCapacity = 10;
         private const int PassiveSlotColumns = 2;
         // 回退视口半宽/半高（16:9 参考：orthographicSize 5.4）。
@@ -48,6 +55,8 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private BattleDoodleController _doodle;
         [Tooltip("Battle 场景内可直接移动和缩放的餐桌布局区域；存在时优先于 HUD BoardArea。")]
         [SerializeField] private RectTransform _sceneBoardArea;
+        [Tooltip("麻风味旋转后的菜品暂存区。")]
+        [SerializeField] private RectTransform _temporaryArea;
 
         // —— 运行时实例化用的 prefab ——
         [Header("Prefabs")]
@@ -74,6 +83,8 @@ namespace GourmetProject.Game.Presentation.Battle
         private readonly DishSpriteProvider _spriteProvider = new DishSpriteProvider();
         private readonly List<DishPieceView> _placedPieces = new List<DishPieceView>();
         private readonly Dictionary<int, DishPieceView> _dishViewsById = new Dictionary<int, DishPieceView>();
+        private readonly List<DishPieceView> _temporaryAreaPieces = new List<DishPieceView>();
+        private readonly Dictionary<int, DishPieceView> _temporaryAreaViewsById = new Dictionary<int, DishPieceView>();
         private readonly Dictionary<int, float> _pendingServeMultiplierFlat = new Dictionary<int, float>();
 
         private enum WorldMode
@@ -94,6 +105,9 @@ namespace GourmetProject.Game.Presentation.Battle
         private DishPieceView _movingPiece;
         private Placement _movingOriginalPlacement;
         private Placement? _movingHoverPlacement;
+        private DishPieceView _temporaryAreaDragPiece;
+        private Placement? _temporaryAreaHoverPlacement;
+        private bool _activeItemTransitioning;
         private Vector3 _dragPointerPreviousWorld;
         private float _dragPointerPreviousTime;
         private Vector2 _dragPointerVelocity;
@@ -117,6 +131,8 @@ namespace GourmetProject.Game.Presentation.Battle
         private Action _stateChanged;
         private CancellationTokenSource _presentationCts;
         private Tween _tableViewFadeTween;
+        private CanvasGroup _temporaryAreaCanvasGroup;
+        private Tween _temporaryAreaFadeTween;
         private readonly Dictionary<SpriteRenderer, float> _tableViewRendererBaseAlphas = new Dictionary<SpriteRenderer, float>();
         private float _tableViewTransitionAlpha = 1f;
 
@@ -130,9 +146,18 @@ namespace GourmetProject.Game.Presentation.Battle
                 && _worldMode != WorldMode.TableCellTargeting
                 && (_worldMode != WorldMode.Food
                     || (!_settling
+                        && !_activeItemTransitioning
                         && _outletDragPiece == null
                         && _movingPiece == null
+                        && _temporaryAreaDragPiece == null
                         && _session?.PreparedServe == null));
+
+        public bool IsFoodInteractionBusy
+            => _settling
+                || _activeItemTransitioning
+                || _outletDragPiece != null
+                || _movingPiece != null
+                || _temporaryAreaDragPiece != null;
 
         private void Awake()
         {
@@ -659,8 +684,95 @@ namespace GourmetProject.Game.Presentation.Battle
                 return false;
             }
 
+            DishInstance temporaryDish = _session?.FindTemporaryAreaDishById(dishId);
+            if (temporaryDish != null)
+            {
+                _activeItemTransitioning = true;
+                piece.SetClickEnabled(false);
+                piece.SetMoveCallbacks(null, null, null);
+                RefreshTemporaryAreaVisibility(animated: true);
+                int index = TemporaryAreaDishIndex(dishId);
+                TemporaryAreaStackSlot[] targetSlots = CalculateTemporaryAreaSlots();
+                LayoutTemporaryAreaPieces(animated: true, slotsOverride: targetSlots);
+                TemporaryAreaStackSlot targetSlot = index >= 0 && index < targetSlots.Length
+                    ? targetSlots[index]
+                    : new TemporaryAreaStackSlot(
+                        _temporaryArea != null
+                            ? (Vector2)_temporaryArea.position
+                            : (Vector2)transform.position,
+                        1f);
+
+                piece.PlayActiveItemNumbTransform(temporaryDish.Placement, () =>
+                {
+                    if (piece == null)
+                    {
+                        CompleteTemporaryAreaArrival(null, temporaryDish, index, onComplete);
+                        return;
+                    }
+
+                    piece.SetFlying(true);
+                    piece.SetSortingOrderOffset(index * TemporaryAreaSortingStride);
+                    Vector3 slotCenter = new Vector3(
+                        targetSlot.Center.x,
+                        targetSlot.Center.y,
+                        _temporaryArea != null ? _temporaryArea.position.z : transform.position.z);
+                    Vector3 targetPosition = TemporaryAreaPieceRootPosition(
+                        piece,
+                        slotCenter,
+                        targetSlot.Scale);
+                    DOTween.Sequence()
+                        .SetLink(piece.gameObject)
+                        .Append(piece.transform.DOMove(targetPosition, TemporaryAreaFlyDuration).SetEase(Ease.InOutCubic))
+                        .Join(piece.transform.DOScale(Vector3.one * targetSlot.Scale, TemporaryAreaFlyDuration).SetEase(Ease.InOutCubic))
+                        .OnComplete(() =>
+                        {
+                            CompleteTemporaryAreaArrival(piece, temporaryDish, index, onComplete);
+                        });
+                });
+                return true;
+            }
+
             piece.PlayActiveItemFlavorTransform(onVisualSwitch: null, onComplete);
             return true;
+        }
+
+        private void CompleteTemporaryAreaArrival(
+            DishPieceView piece,
+            DishInstance dish,
+            int index,
+            Action onComplete)
+        {
+            _activeItemTransitioning = false;
+            if (piece == null || dish == null)
+            {
+                RebuildPlacedPieces();
+                RefreshAll();
+            }
+            else
+            {
+                _placedPieces.Remove(piece);
+                _dishViewsById.Remove(dish.Id);
+                piece.gameObject.name = $"TemporaryAreaDish_{dish.Id}_{dish.Def.Id}";
+                piece.SetGhost(false);
+                piece.SetPlacementGlow(false, false);
+                piece.SetHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
+                piece.SetMoveCallbacks(
+                    BeginTemporaryAreaDishDrag,
+                    UpdateTemporaryAreaDishDrag,
+                    EndTemporaryAreaDishDrag);
+                piece.SetPointerHitFilter(IsTemporaryAreaPointerHitAccepted);
+                piece.SetFlying(true);
+                piece.SetSortingOrderOffset(index * TemporaryAreaSortingStride);
+                piece.SetClickEnabled(true);
+
+                int insertIndex = Mathf.Clamp(index, 0, _temporaryAreaPieces.Count);
+                _temporaryAreaPieces.Insert(insertIndex, piece);
+                _temporaryAreaViewsById[dish.Id] = piece;
+                _boardView?.Sync();
+            }
+
+            _stateChanged?.Invoke();
+            onComplete?.Invoke();
         }
 
         public void SkipTableEditPack()
@@ -685,6 +797,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 Instance = null;
             }
 
+            CancelTemporaryAreaFade();
             CancelPresentationTasks();
         }
 
@@ -727,6 +840,7 @@ namespace GourmetProject.Game.Presentation.Battle
             ClearPendingRewardPresentation();
             _worldMode = WorldMode.Food;
             _settling = false;
+            _activeItemTransitioning = false;
             ComputeViewport();
             BuildTable(session.DiningTable);
             EnsureSequencer();
@@ -754,6 +868,14 @@ namespace GourmetProject.Game.Presentation.Battle
             _dishHoverEntered = entered;
             _dishHoverExited = exited;
             foreach (DishPieceView piece in _placedPieces)
+            {
+                if (piece != null)
+                {
+                    piece.SetHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
+                }
+            }
+
+            foreach (DishPieceView piece in _temporaryAreaPieces)
             {
                 if (piece != null)
                 {
@@ -811,6 +933,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             EndTableView();
             _settling = false;
+            _activeItemTransitioning = false;
             CancelServeInteractions();
             SetFoodWorldElementsVisible(false);
             _worldMode = WorldMode.Hidden;
@@ -864,6 +987,7 @@ namespace GourmetProject.Game.Presentation.Battle
             CancelServeInteractions();
             _session = null;
             ClearPlacedPieces();
+            SetTemporaryAreaVisible(false, animated: false);
             _doodle?.Clear();
             ClearPendingRewardPresentation();
         }
@@ -961,10 +1085,119 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void SetFoodWorldElementsVisible(bool visible)
         {
+            if (visible)
+            {
+                RefreshTemporaryAreaVisibility(animated: false);
+            }
+            else
+            {
+                SetTemporaryAreaVisible(false, animated: false);
+            }
+
             if (!visible)
             {
                 _doodle?.SetVisible(false);
             }
+        }
+
+        private void RefreshTemporaryAreaVisibility(bool animated)
+        {
+            bool shouldShow = _worldMode == WorldMode.Food
+                && _session != null
+                && _session.TemporaryAreaDishes.Count > 0;
+            SetTemporaryAreaVisible(shouldShow, animated);
+        }
+
+        private void SetTemporaryAreaVisible(bool visible, bool animated)
+        {
+            if (_temporaryArea == null)
+            {
+                return;
+            }
+
+            EnsureTemporaryAreaCanvasGroup();
+            CancelTemporaryAreaFade();
+            if (_temporaryAreaCanvasGroup == null)
+            {
+                _temporaryArea.gameObject.SetActive(visible);
+                return;
+            }
+
+            _temporaryAreaCanvasGroup.interactable = visible;
+            _temporaryAreaCanvasGroup.blocksRaycasts = visible;
+            if (!animated)
+            {
+                _temporaryAreaCanvasGroup.alpha = visible ? 1f : 0f;
+                _temporaryArea.gameObject.SetActive(visible);
+                return;
+            }
+
+            if (visible)
+            {
+                if (!_temporaryArea.gameObject.activeSelf)
+                {
+                    _temporaryAreaCanvasGroup.alpha = 0f;
+                    _temporaryArea.gameObject.SetActive(true);
+                }
+
+                if (_temporaryAreaCanvasGroup.alpha >= 0.999f)
+                {
+                    return;
+                }
+
+                _temporaryAreaFadeTween = DOTween
+                    .To(
+                        () => _temporaryAreaCanvasGroup.alpha,
+                        alpha => _temporaryAreaCanvasGroup.alpha = alpha,
+                        1f,
+                        TemporaryAreaFadeDuration)
+                    .SetEase(Ease.OutQuad)
+                    .SetLink(_temporaryArea.gameObject)
+                    .OnComplete(() => _temporaryAreaFadeTween = null);
+                return;
+            }
+
+            if (!_temporaryArea.gameObject.activeSelf)
+            {
+                _temporaryAreaCanvasGroup.alpha = 0f;
+                return;
+            }
+
+            _temporaryAreaFadeTween = DOTween
+                .To(
+                    () => _temporaryAreaCanvasGroup.alpha,
+                    alpha => _temporaryAreaCanvasGroup.alpha = alpha,
+                    0f,
+                    TemporaryAreaFadeDuration)
+                .SetEase(Ease.InQuad)
+                .SetLink(_temporaryArea.gameObject)
+                .OnComplete(() =>
+                {
+                    _temporaryAreaFadeTween = null;
+                    if (_temporaryArea != null)
+                    {
+                        _temporaryArea.gameObject.SetActive(false);
+                    }
+                });
+        }
+
+        private void EnsureTemporaryAreaCanvasGroup()
+        {
+            if (_temporaryAreaCanvasGroup == null && _temporaryArea != null)
+            {
+                _temporaryAreaCanvasGroup = _temporaryArea.GetComponent<CanvasGroup>();
+            }
+        }
+
+        private void CancelTemporaryAreaFade()
+        {
+            if (_temporaryAreaFadeTween == null)
+            {
+                return;
+            }
+
+            _temporaryAreaFadeTween.Kill();
+            _temporaryAreaFadeTween = null;
         }
 
         private CancellationToken GetPresentationToken()
@@ -1003,6 +1236,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _boardView.Sync();
+            LayoutTemporaryAreaPieces();
         }
 
         public void PlayCakeLayerChange(int before, int after)
@@ -1058,7 +1292,13 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public bool TryPrepareServeDish(int slotIndex)
         {
-            if (_session == null || _session.IsSettled || _settling || _outletDragPiece != null || _movingPiece != null)
+            if (_session == null
+                || _session.IsSettled
+                || _settling
+                || _activeItemTransitioning
+                || _outletDragPiece != null
+                || _movingPiece != null
+                || _temporaryAreaDragPiece != null)
             {
                 return false;
             }
@@ -1081,7 +1321,12 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public void BeginServingOutletDrag(Vector2 screenPoint)
         {
-            if (_session?.PreparedServe == null || _settling || _outletDragPiece != null)
+            if (_session?.PreparedServe == null
+                || _settling
+                || _activeItemTransitioning
+                || _outletDragPiece != null
+                || _movingPiece != null
+                || _temporaryAreaDragPiece != null)
             {
                 return;
             }
@@ -1306,7 +1551,10 @@ namespace GourmetProject.Game.Presentation.Battle
                 || dish.Id != _movableDishId
                 || _session == null
                 || _session.PreparedServe != null
-                || _settling)
+                || _settling
+                || _activeItemTransitioning
+                || _outletDragPiece != null
+                || _temporaryAreaDragPiece != null)
             {
                 return;
             }
@@ -1427,6 +1675,327 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _stateChanged?.Invoke();
+        }
+
+        private void BeginTemporaryAreaDishDrag(DishPieceView piece, Vector2 screenPoint)
+        {
+            DishInstance dish = piece?.Instance;
+            if (dish == null
+                || _session?.FindTemporaryAreaDishById(dish.Id) == null
+                || _settling
+                || _activeItemTransitioning
+                || _outletDragPiece != null
+                || _movingPiece != null
+                || _temporaryAreaDragPiece != null)
+            {
+                return;
+            }
+
+            _temporaryAreaDragPiece = piece;
+            _temporaryAreaHoverPlacement = null;
+            ClearDishScopeHighlights();
+
+            Vector3 currentCenter = piece.OccupiedCellCenterWorld();
+            piece.transform.DOKill();
+            piece.transform.localScale = Vector3.one;
+            piece.MoveVisualCenterToWorld(currentCenter);
+            piece.SetDragPresentation(true);
+            BeginDragPointerTracking(ScreenToWorld(screenPoint));
+            UpdateTemporaryAreaDishDrag(screenPoint);
+        }
+
+        private bool IsTemporaryAreaPointerHitAccepted(
+            DishPieceView candidate,
+            Vector2 world)
+        {
+            return TemporaryAreaPointerHit.IsTopmostAt(
+                candidate,
+                _temporaryAreaPieces,
+                world,
+                _temporaryAreaDragPiece);
+        }
+
+        private void UpdateTemporaryAreaDishDrag(Vector2 screenPoint)
+        {
+            DishInstance dish = _temporaryAreaDragPiece?.Instance;
+            if (dish == null || _session == null)
+            {
+                return;
+            }
+
+            Vector3 world = ScreenToWorld(screenPoint);
+            SampleDragPointer(world);
+            _temporaryAreaDragPiece.MoveVisualCenterToWorld(world);
+            DishDragPlacementResult result = EvaluateDragPlacement(_temporaryAreaDragPiece, world);
+            if (result != null
+                && result.CanCommit
+                && !ContainsPlacement(
+                    _session.FindTemporaryAreaDishPlacements(dish.Id),
+                    result.Placement))
+            {
+                result = WithOverallState(result, DishDragCellState.Blocked);
+            }
+
+            _temporaryAreaHoverPlacement = result != null && result.CanCommit
+                ? result.Placement
+                : null;
+            _boardView.ShowDragPlacementFeedback(result);
+            ShowDishScopeHighlightsAtPlacement(
+                dish,
+                result != null ? result.Placement : (Placement?)null);
+        }
+
+        private void EndTemporaryAreaDishDrag(Vector2 screenPoint)
+        {
+            DishInstance dish = _temporaryAreaDragPiece?.Instance;
+            if (dish == null || _session == null)
+            {
+                _temporaryAreaDragPiece = null;
+                _temporaryAreaHoverPlacement = null;
+                return;
+            }
+
+            UpdateTemporaryAreaDishDrag(screenPoint);
+            ClearDishScopeHighlights();
+            _boardView?.ClearDragPlacementFeedback();
+
+            DishPieceView piece = _temporaryAreaDragPiece;
+            Placement? hovered = _temporaryAreaHoverPlacement;
+            Vector2 footprintSize = piece.FootprintWorldSize;
+            Vector2 releaseVelocity = _dragPointerVelocity;
+            _temporaryAreaDragPiece = null;
+            _temporaryAreaHoverPlacement = null;
+            ResetDragPointerTracking();
+
+            if (!hovered.HasValue || !_session.CommitTemporaryAreaDish(dish.Id, hovered.Value))
+            {
+                piece.SetDragPresentation(false);
+                piece.SetGhost(false);
+                piece.SetClickEnabled(true);
+                LayoutTemporaryAreaPieces(animated: true);
+                SetMessage("临时桌食物需要拖到餐桌合法空位。");
+                _stateChanged?.Invoke();
+                return;
+            }
+
+            Placement placement = hovered.Value;
+            PromoteTemporaryPieceToPlaced(piece, dish, placement);
+            _boardView.Sync();
+            LayoutTemporaryAreaPieces(animated: true);
+            RefreshTemporaryAreaVisibility(animated: true);
+            PlayDropDust(placement, footprintSize, releaseVelocity);
+            FlashServeScopeHighlights(dish, GetPresentationToken());
+            SetMessage($"重新摆上餐桌：{dish.Def.Name}");
+            _stateChanged?.Invoke();
+        }
+
+        private void PromoteTemporaryPieceToPlaced(
+            DishPieceView piece,
+            DishInstance dish,
+            Placement placement)
+        {
+            _temporaryAreaPieces.Remove(piece);
+            _temporaryAreaViewsById.Remove(dish.Id);
+
+            piece.transform.DOKill();
+            piece.UpdatePlacement(placement);
+            piece.transform.localScale = Vector3.one;
+            piece.transform.localPosition = _boardView.Mapper.CellCenterLocal(placement.Origin);
+            piece.SetDragPresentation(false);
+            piece.SetSortingOrderOffset(0);
+            piece.SetPointerHitFilter(null);
+            piece.SetGhost(false);
+            piece.SetClickEnabled(true);
+            piece.SetHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
+            ConfigurePlacedPieceInteraction(piece, dish);
+
+            _placedPieces.Add(piece);
+            _dishViewsById[dish.Id] = piece;
+        }
+
+        private void LayoutTemporaryAreaPieces(
+            bool animated = false,
+            IReadOnlyList<TemporaryAreaStackSlot> slotsOverride = null)
+        {
+            if (_session == null || _temporaryAreaPieces.Count == 0)
+            {
+                return;
+            }
+
+            int count = _session.TemporaryAreaDishes.Count;
+            IReadOnlyList<TemporaryAreaStackSlot> slots =
+                slotsOverride ?? CalculateTemporaryAreaSlots();
+            for (int i = 0; i < count; i++)
+            {
+                DishInstance dish = _session.TemporaryAreaDishes[i];
+                if (dish == null
+                    || !_temporaryAreaViewsById.TryGetValue(dish.Id, out DishPieceView piece)
+                    || piece == null
+                    || piece == _temporaryAreaDragPiece)
+                {
+                    continue;
+                }
+
+                TemporaryAreaStackSlot slot = i < slots.Count
+                    ? slots[i]
+                    : new TemporaryAreaStackSlot(
+                        _temporaryArea != null
+                            ? (Vector2)_temporaryArea.position
+                            : (Vector2)transform.position,
+                        1f);
+                Vector3 slotCenter = new Vector3(
+                    slot.Center.x,
+                    slot.Center.y,
+                    _temporaryArea != null ? _temporaryArea.position.z : transform.position.z);
+                Vector3 targetPosition = TemporaryAreaPieceRootPosition(piece, slotCenter, slot.Scale);
+                piece.transform.DOKill();
+                piece.SetDragPresentation(false);
+                // TemporaryArea 是 WorldUI Canvas；临时菜需保持在 PiecesFlying 层才能显示在桌面背景之上。
+                piece.SetFlying(true);
+                piece.SetSortingOrderOffset(i * TemporaryAreaSortingStride);
+                piece.SetClickEnabled(true);
+
+                if (animated && piece.gameObject.activeInHierarchy)
+                {
+                    piece.transform
+                        .DOMove(targetPosition, TemporaryAreaLayoutDuration)
+                        .SetEase(Ease.OutCubic)
+                        .SetLink(piece.gameObject);
+                    piece.transform
+                        .DOScale(Vector3.one * slot.Scale, TemporaryAreaLayoutDuration)
+                        .SetEase(Ease.OutCubic)
+                        .SetLink(piece.gameObject);
+                }
+                else
+                {
+                    piece.transform.position = targetPosition;
+                    piece.transform.localScale = Vector3.one * slot.Scale;
+                }
+            }
+        }
+
+        private int TemporaryAreaDishIndex(int dishId)
+        {
+            if (_session == null)
+            {
+                return 0;
+            }
+
+            for (int i = 0; i < _session.TemporaryAreaDishes.Count; i++)
+            {
+                if (_session.TemporaryAreaDishes[i]?.Id == dishId)
+                {
+                    return i;
+                }
+            }
+
+            return 0;
+        }
+
+        private TemporaryAreaStackSlot[] CalculateTemporaryAreaSlots()
+        {
+            int count = _session?.TemporaryAreaDishes.Count ?? 0;
+            if (count <= 0)
+            {
+                return Array.Empty<TemporaryAreaStackSlot>();
+            }
+
+            Vector2 fallbackCenter = _temporaryArea != null
+                ? (Vector2)_temporaryArea.position
+                : (Vector2)transform.position;
+            if (!TryGetTemporaryAreaContentRect(out Rect rect))
+            {
+                var fallback = new TemporaryAreaStackSlot[count];
+                for (int i = 0; i < count; i++)
+                {
+                    fallback[i] = new TemporaryAreaStackSlot(fallbackCenter, 1f);
+                }
+
+                return fallback;
+            }
+
+            var footprints = new Vector2[count];
+            for (int i = 0; i < count; i++)
+            {
+                DishInstance dish = _session.TemporaryAreaDishes[i];
+                // 数据层已在动画开始前写入旋转后的 Placement；始终使用它，
+                // 避免飞入表现仍持有旧 CurrentShape 时算出另一套临时槽位。
+                footprints[i] = TemporaryAreaFootprint(dish);
+            }
+
+            return TemporaryAreaStackLayout.Calculate(
+                rect,
+                footprints,
+                TemporaryAreaPiecePaddingRatio,
+                TemporaryAreaVisibleRatio);
+        }
+
+        private Vector2 TemporaryAreaFootprint(DishInstance dish)
+        {
+            DishShape shape = dish?.Placement.Orientation;
+            if (shape == null)
+            {
+                return Vector2.one * Mathf.Max(_cellSize, 0.01f);
+            }
+
+            float pitch = _cellSize + Gap;
+            return new Vector2(
+                Mathf.Max(_cellSize, (shape.Width - 1) * pitch + _cellSize),
+                Mathf.Max(_cellSize, (shape.Height - 1) * pitch + _cellSize));
+        }
+
+        private bool TryGetTemporaryAreaContentRect(out Rect rect)
+        {
+            rect = default;
+            if (_temporaryArea == null)
+            {
+                return false;
+            }
+
+            var corners = new Vector3[4];
+            _temporaryArea.GetWorldCorners(corners);
+            float minX = Mathf.Min(corners[0].x, corners[1].x, corners[2].x, corners[3].x);
+            float maxX = Mathf.Max(corners[0].x, corners[1].x, corners[2].x, corners[3].x);
+            float minY = Mathf.Min(corners[0].y, corners[1].y, corners[2].y, corners[3].y);
+            float maxY = Mathf.Max(corners[0].y, corners[1].y, corners[2].y, corners[3].y);
+
+            RectTransform title = _temporaryArea.Find("Title") as RectTransform;
+            if (title != null)
+            {
+                var titleCorners = new Vector3[4];
+                title.GetWorldCorners(titleCorners);
+                float titleMinY = Mathf.Min(
+                    titleCorners[0].y,
+                    titleCorners[1].y,
+                    titleCorners[2].y,
+                    titleCorners[3].y);
+                maxY = Mathf.Min(maxY, titleMinY);
+            }
+
+            rect = Rect.MinMaxRect(
+                minX + TemporaryAreaPadding,
+                minY + TemporaryAreaPadding,
+                maxX - TemporaryAreaPadding,
+                maxY - TemporaryAreaPadding);
+            return rect.width > 0.01f && rect.height > 0.01f;
+        }
+
+        private Vector3 TemporaryAreaPieceRootPosition(
+            DishPieceView piece,
+            Vector3 desiredCenter,
+            float scale)
+        {
+            if (piece == null)
+            {
+                return desiredCenter;
+            }
+
+            Transform parent = piece.transform.parent;
+            Vector3 localOffset = piece.OccupiedCellCenterLocal() * scale;
+            Vector3 worldOffset = parent != null
+                ? parent.TransformVector(localOffset)
+                : localOffset;
+            return desiredCenter - worldOffset;
         }
 
         private DishDragPlacementResult EvaluateDragPlacement(DishPieceView piece, Vector3 visualCenterWorld)
@@ -1589,8 +2158,17 @@ namespace GourmetProject.Game.Presentation.Battle
 
             _movingPiece = null;
             _movingHoverPlacement = null;
+            if (_temporaryAreaDragPiece != null)
+            {
+                _temporaryAreaDragPiece.SetDragPresentation(false);
+                _temporaryAreaDragPiece.SetGhost(false);
+            }
+
+            _temporaryAreaDragPiece = null;
+            _temporaryAreaHoverPlacement = null;
             ResetDragPointerTracking();
             LockMovableDish();
+            LayoutTemporaryAreaPieces();
         }
 
         private bool IsDishOnTable(int dishId)
@@ -1762,6 +2340,8 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 CreatePlacedPiece(dish);
             }
+
+            RebuildTemporaryAreaPieces();
         }
 
         private void ClearPlacedPieces()
@@ -1777,6 +2357,17 @@ namespace GourmetProject.Game.Presentation.Battle
 
             _placedPieces.Clear();
             _dishViewsById.Clear();
+
+            foreach (DishPieceView piece in _temporaryAreaPieces)
+            {
+                if (piece != null)
+                {
+                    Destroy(piece.gameObject);
+                }
+            }
+
+            _temporaryAreaPieces.Clear();
+            _temporaryAreaViewsById.Clear();
         }
 
         private DishPieceView CreatePlacedPiece(DishInstance dish)
@@ -1797,6 +2388,14 @@ namespace GourmetProject.Game.Presentation.Battle
             piece.transform.localPosition = _boardView.Mapper.CellCenterLocal(dish.Placement.Origin);
             piece.BuildPlaced(dish, _spriteProvider.Get(dish.Def), _cellSize, _cellSize + Gap, _dishClicked);
             piece.SetHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
+            ConfigurePlacedPieceInteraction(piece, dish);
+            _placedPieces.Add(piece);
+            _dishViewsById[dish.Id] = piece;
+            return piece;
+        }
+
+        private void ConfigurePlacedPieceInteraction(DishPieceView piece, DishInstance dish)
+        {
             if (dish.Id == _movableDishId && _session?.PreparedServe == null)
             {
                 piece.SetMoveCallbacks(BeginMovableDishDrag, UpdateMovableDishDrag, EndMovableDishDrag);
@@ -1807,14 +2406,41 @@ namespace GourmetProject.Game.Presentation.Battle
                 piece.SetMoveCallbacks(null, null, null);
                 piece.SetPlacementGlow(false, false);
             }
-            _placedPieces.Add(piece);
-            _dishViewsById[dish.Id] = piece;
-            return piece;
+        }
+
+        private void RebuildTemporaryAreaPieces()
+        {
+            if (_session == null || _temporaryArea == null || _dishPiecePrefab == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < _session.TemporaryAreaDishes.Count; i++)
+            {
+                DishInstance dish = _session.TemporaryAreaDishes[i];
+                DishPieceView piece = Instantiate(_dishPiecePrefab, _piecesRoot);
+                piece.gameObject.name = $"TemporaryAreaDish_{dish.Id}_{dish.Def.Id}";
+                piece.BuildPlaced(dish, _spriteProvider.Get(dish.Def), _cellSize, _cellSize + Gap, _dishClicked);
+                piece.SetHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
+                piece.SetMoveCallbacks(
+                    BeginTemporaryAreaDishDrag,
+                    UpdateTemporaryAreaDishDrag,
+                    EndTemporaryAreaDishDrag);
+                piece.SetPointerHitFilter(IsTemporaryAreaPointerHitAccepted);
+                piece.SetPlacementGlow(false, false);
+                _temporaryAreaPieces.Add(piece);
+                _temporaryAreaViewsById[dish.Id] = piece;
+            }
+
+            LayoutTemporaryAreaPieces();
         }
 
         public void ShowDishScopeHighlights(DishInstance dish)
         {
-            if (_settling || _session == null || dish == null)
+            if (_settling
+                || _session == null
+                || dish == null
+                || _session.FindDishById(dish.Id) == null)
             {
                 ClearDishScopeHighlights();
                 return;
@@ -2164,6 +2790,16 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _settling = true;
+            SetTemporaryAreaVisible(false, animated: false);
+
+            foreach (DishPieceView piece in _temporaryAreaPieces)
+            {
+                if (piece != null)
+                {
+                    piece.gameObject.SetActive(false);
+                }
+            }
+
             _scopeHighlights?.ClearAll();
             CancellationToken token = GetPresentationToken();
             try
@@ -2202,5 +2838,6 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             _settlementScoreSink?.Invoke(score);
         }
+
     }
 }

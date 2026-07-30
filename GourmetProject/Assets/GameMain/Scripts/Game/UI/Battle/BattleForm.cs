@@ -1453,7 +1453,7 @@ namespace GourmetProject.Game.UI.Battle
 
         private void RebuildActionAxis()
         {
-            _axisBinder?.Rebuild(_run);
+            _axisBinder?.Rebuild(_run, _currentTimelineNodeCard?.Id);
         }
 
         private void HideAllTips()
@@ -2683,7 +2683,11 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            if (_session == null || _session.IsSettled || _session.PreparedServe != null)
+            BattleWorldController world = _world ?? BattleWorldController.Instance;
+            if (_session == null
+                || _session.IsSettled
+                || _session.PreparedServe != null
+                || (world != null && world.IsFoodInteractionBusy))
             {
                 return;
             }

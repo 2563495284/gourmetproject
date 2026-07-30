@@ -132,6 +132,10 @@ namespace cfg
         /// 交互选择并删除菜谱中1道菜(事件专用)
         /// </summary>
         SelectRemoveRecipeDish = 28,
+        /// <summary>
+        /// 按当前金币及运行时利息参数结算；param=事件ID，读取event.resultText模板
+        /// </summary>
+        CollectInterest = 29,
     }
 
 } 

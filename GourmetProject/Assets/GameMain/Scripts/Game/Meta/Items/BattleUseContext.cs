@@ -145,9 +145,14 @@ namespace GourmetProject.Game.Meta
                 dish.AddFlavor(flavorId);
             }
 
-            if (flavorId == "t_numb")
+            FlavorDef flavor = Run.Database?.GetFlavor(flavorId);
+            if (flavor != null && flavor.EffectType == FlavorEffectType.Rotate)
             {
-                // TODO: “麻”对已摆上餐桌菜品的旋转/重定位规则待产品确认；当前只追加风味。
+                int ccwSteps = Math.Max(0, (int)flavor.EffectValue);
+                if (ccwSteps > 0 && !_session.MoveDishToTemporaryAreaAfterRotate(dishId, ccwSteps))
+                {
+                    return false;
+                }
             }
 
             return true;

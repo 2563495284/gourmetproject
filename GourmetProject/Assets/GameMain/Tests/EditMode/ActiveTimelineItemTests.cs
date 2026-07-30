@@ -52,6 +52,76 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void InterestAction_WaitsForConfiguredEventOptionBeforeSettlement()
+        {
+            cfg.GameAction action = _tables.TbAction.Get("act_interest");
+            Assert.That(action.EffectParam, Is.EqualTo("ev_interest"));
+
+            cfg.GameEvent ev = _tables.TbEvent.Get(action.EffectParam);
+            Assert.That(ev.EventType, Is.EqualTo(cfg.ActionBehavior.Interest));
+            Assert.That(ev.Weight, Is.Zero);
+            Assert.That(ev.Repeatable, Is.True);
+            Assert.That(
+                ev.Desc,
+                Is.EqualTo("利息结算：每满 {threshold} 金币得 {goldPer}，最高 {maxGain}"));
+            Assert.That(ev.ResultText, Is.EqualTo("金币 +{gain}"));
+
+            GameRun run = CreateRun();
+            run.Gold = 78;
+            var context = new ActionExecutionContext(action);
+
+            ActionOutcome outcome = ActionExecutor.Execute(run, context, rng: null);
+
+            Assert.That(outcome.Kind, Is.EqualTo(ActionOutcomeKind.Event));
+            Assert.That(outcome.EventId, Is.EqualTo(ev.Id));
+            Assert.That(run.Gold, Is.EqualTo(78), "进入事件前不应结算利息");
+
+            List<cfg.EventOption> options = EventService.GetRootOptions(run, ev.Id);
+            Assert.That(options.Count, Is.EqualTo(1));
+            cfg.EventOption option = options[0];
+            Assert.That(option.Id, Is.EqualTo("opt_interest_collect"));
+            Assert.That(option.Text, Is.EqualTo("金币 +{gain}"));
+            Assert.That(option.AutoEnd, Is.True);
+            Assert.That(option.EffectTypes, Is.EqualTo(new[] { cfg.EffectType.CollectInterest }));
+            Assert.That(option.EffectParams, Is.EqualTo(new[] { ev.Id }));
+            Assert.That(
+                EventService.FormatRuntimeText(run, ev.Desc),
+                Is.EqualTo(
+                    $"利息结算：每满 {run.InterestThreshold} 金币得 {run.InterestGoldPer}，最高 {run.InterestCap}"));
+            int displayedGain = TimelineMath.Interest(
+                run.Gold,
+                run.InterestThreshold,
+                run.InterestGoldPer,
+                run.InterestCap);
+            Assert.That(
+                EventService.FormatRuntimeText(run, option.Text),
+                Is.EqualTo($"金币 +{displayedGain}"));
+
+            run.SetPendingActionExecution(context, outcome, ev.Id);
+            GameRun restored = GameRun.FromSaveData(_tables, _database, run.ToSaveData());
+            Assert.That(restored.Gold, Is.EqualTo(78), "事件恢复时仍不应提前结算利息");
+
+            int beforeGold = restored.Gold;
+            int gain = TimelineMath.Interest(
+                beforeGold,
+                restored.InterestThreshold,
+                restored.InterestGoldPer,
+                restored.InterestCap);
+            EventResolveResult result = EventService.ResolveOption(
+                restored,
+                EventService.GetRootOptions(restored, ev.Id)[0],
+                rng: null);
+            string expectedResult = ev.ResultText
+                .Replace("{gain}", gain.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                .Replace("{threshold}", restored.InterestThreshold.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                .Replace("{goldPer}", restored.InterestGoldPer.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                .Replace("{maxGain}", restored.InterestCap.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                .Replace("{currentGold}", restored.Gold.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            Assert.That(result.Feedback, Is.EqualTo(expectedResult));
+            Assert.That(restored.Gold, Is.EqualTo(beforeGold + gain));
+        }
+
+        [Test]
         public void NewSaveFields_DefaultToBackwardCompatibleValues()
         {
             var save = new RunSaveData();

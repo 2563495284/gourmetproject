@@ -355,6 +355,21 @@ namespace GourmetProject.Gameplay.Board
             return placements;
         }
 
+        /// <summary>
+        /// 以指定的固定朝向枚举全部合法原点。用于临时桌菜品放回餐桌等必须保留当前朝向的场景。
+        /// </summary>
+        public List<Placement> FindValidPlacements(DishShape orientation, int rotationIndex)
+        {
+            if (orientation == null)
+            {
+                throw new ArgumentNullException(nameof(orientation));
+            }
+
+            var placements = new List<Placement>();
+            AddPlacementsForOrientation(orientation, rotationIndex, placements);
+            return placements;
+        }
+
         private void AddPlacementsForOrientation(DishShape shape, int rotationIndex, List<Placement> placements)
         {
             for (int y = 0; y <= Height - shape.Height; y++)

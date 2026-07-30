@@ -725,6 +725,7 @@ namespace GourmetProject.Game.UI.Meta
             {
                 if (_spawnedRows[i] != null)
                 {
+                    _spawnedRows[i].gameObject.SetActive(false);
                     Destroy(_spawnedRows[i].gameObject);
                 }
             }
@@ -746,6 +747,14 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             AddChoiceRows(_genericMode ? "随机食物" : "特定奖励", _offer.SpecificGroup.Choices, groupIndex: -1);
+            Canvas.ForceUpdateCanvases();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_rewardListContent);
+            if (_rewardScrollRect != null)
+            {
+                _rewardScrollRect.StopMovement();
+                _rewardScrollRect.verticalNormalizedPosition = 1f;
+            }
+
             HideRewardScrollbar(immediate: true);
         }
 

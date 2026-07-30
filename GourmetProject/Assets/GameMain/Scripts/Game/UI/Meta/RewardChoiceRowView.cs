@@ -65,8 +65,11 @@ namespace GourmetProject.Game.UI.Meta
 
             if (_stateText != null)
             {
-                _stateText.text = string.Empty;
-                _stateText.gameObject.SetActive(false);
+                string state = string.IsNullOrWhiteSpace(stateOverride)
+                    ? (granted ? "已领取" : string.Empty)
+                    : stateOverride;
+                _stateText.text = state;
+                _stateText.gameObject.SetActive(!string.IsNullOrEmpty(state));
             }
 
             if (_button != null)
