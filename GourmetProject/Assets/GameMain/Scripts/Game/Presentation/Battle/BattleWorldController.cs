@@ -369,21 +369,14 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             SetPlacedPiecesClickEnabled(false);
             _activeItemDishesDimmed = dimPlacedDishes;
-            foreach (DishPieceView piece in _placedPieces)
-            {
-                piece?.SetActiveItemTargetDimmed(false);
-            }
+            RefreshActiveItemPlacedDishDimming();
         }
 
         internal void EndActiveItemWorldTargeting()
         {
             ClearActiveItemTargetHighlights();
-            foreach (DishPieceView piece in _placedPieces)
-            {
-                piece?.SetActiveItemTargetDimmed(false);
-            }
-
             _activeItemDishesDimmed = false;
+            RefreshActiveItemPlacedDishDimming();
             SetPlacedPiecesClickEnabled(true);
         }
 
@@ -395,7 +388,7 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             if (kind == cfg.ItemTargetKind.DiningTableCell)
             {
-                SetActiveItemHoveredCellDishDimmed(hovered);
+                RefreshActiveItemPlacedDishDimming();
                 _boardView?.ClearTargetHighlights();
                 if (candidates != null)
                 {
@@ -412,7 +405,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            SetActiveItemHoveredCellDishDimmed(null);
+            RefreshActiveItemPlacedDishDimming();
             if (kind == cfg.ItemTargetKind.DiningTableDish)
             {
                 foreach (DishPieceView piece in _placedPieces)
@@ -431,32 +424,11 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        private void SetActiveItemHoveredCellDishDimmed(ActiveTarget? hovered)
+        private void RefreshActiveItemPlacedDishDimming()
         {
-            int hoveredDishId = 0;
-            bool hasHoveredDish = false;
-            if (_activeItemDishesDimmed
-                && hovered.HasValue
-                && _session?.DiningTable != null)
-            {
-                var cell = new GridPos(hovered.Value.X, hovered.Value.Y);
-                if (_session.DiningTable.InBounds(cell))
-                {
-                    DishInstance dish = _session.DiningTable.DishAt(cell);
-                    if (dish != null)
-                    {
-                        hoveredDishId = dish.Id;
-                        hasHoveredDish = true;
-                    }
-                }
-            }
-
             foreach (DishPieceView piece in _placedPieces)
             {
-                bool dimmed = hasHoveredDish
-                    && piece?.Instance != null
-                    && piece.Instance.Id == hoveredDishId;
-                piece?.SetActiveItemTargetDimmed(dimmed);
+                piece?.SetActiveItemTargetDimmed(_activeItemDishesDimmed);
             }
         }
 
@@ -481,7 +453,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         internal void ClearActiveItemTargetHighlights()
         {
-            SetActiveItemHoveredCellDishDimmed(null);
+            RefreshActiveItemPlacedDishDimming();
             _boardView?.ClearTargetHighlights();
             foreach (DishPieceView piece in _placedPieces)
             {
@@ -555,6 +527,7 @@ namespace GourmetProject.Game.Presentation.Battle
             CancelServeInteractions();
             _session = null;
             SetFoodWorldElementsVisible(false);
+            SetPendingRewardPresentationVisible(false);
             ClearPlacedPieces();
 
             _boardEdit.BeginTableFragmentChoice(request);
@@ -586,6 +559,7 @@ namespace GourmetProject.Game.Presentation.Battle
             CancelServeInteractions();
             SetFoodWorldElementsVisible(false);
             HideWorldPanels();
+            SetPendingRewardPresentationVisible(false);
             ClearPlacedPieces();
 
             _boardEdit.BeginTableView(run, tableOverride);
@@ -616,6 +590,7 @@ namespace GourmetProject.Game.Presentation.Battle
             CancelServeInteractions();
             SetFoodWorldElementsVisible(false);
             HideWorldPanels();
+            SetPendingRewardPresentationVisible(false);
             ClearPlacedPieces();
 
             _boardEdit.BeginCellTargeting(run, tableOverride);
@@ -749,6 +724,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             gameObject.SetActive(true);
             CancelPresentationTasks();
+            ClearPendingRewardPresentation();
             _worldMode = WorldMode.Food;
             _settling = false;
             ComputeViewport();
@@ -819,6 +795,13 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public void HideWorld()
         {
+            SuspendWorld();
+            ClearPendingRewardPresentation();
+        }
+
+        /// <summary>页面临时离开 Battle 世界；保留待领奖蛋糕与菜品分数标签，供返回 Food 时恢复。</summary>
+        public void SuspendWorld()
+        {
             CancelPresentationTasks();
             ResetTableViewFade();
             if (_boardEdit != null && _boardEdit.IsEditing)
@@ -831,8 +814,46 @@ namespace GourmetProject.Game.Presentation.Battle
             CancelServeInteractions();
             SetFoodWorldElementsVisible(false);
             _worldMode = WorldMode.Hidden;
-            _cakeLayerFx?.Clear();
             gameObject.SetActive(false);
+        }
+
+        public List<CakeLayerVisualState> CapturePendingRewardCakeVisuals()
+        {
+            EnsureCakeLayerFx();
+            return _cakeLayerFx != null
+                ? _cakeLayerFx.CaptureState()
+                : new List<CakeLayerVisualState>();
+        }
+
+        /// <summary>世界重建后，无动画恢复待领奖的蛋糕与菜品贡献标签。</summary>
+        public void RestorePendingRewardPresentation(
+            IReadOnlyList<CakeLayerVisualState> cakes,
+            IReadOnlyList<DishScore> dishScores)
+        {
+            EnsureCakeLayerFx();
+            _cakeLayerFx?.RestoreState(cakes);
+            EnsureSequencer();
+            if (_sequencer != null && _boardView?.Mapper != null)
+            {
+                _sequencer.RestoreDishValueBadges(
+                    dishScores,
+                    _dishViewsById,
+                    _boardView.Mapper,
+                    _fxRoot);
+            }
+        }
+
+        public void SetPendingRewardPresentationVisible(bool visible)
+        {
+            _cakeLayerFx?.SetVisible(visible);
+            _sequencer?.SetRetainedDishValueBadgesVisible(visible);
+        }
+
+        /// <summary>新战斗、战败、继续行动或退出玩法时最终销毁待领奖表现。</summary>
+        public void ClearPendingRewardPresentation()
+        {
+            _cakeLayerFx?.Clear();
+            _sequencer?.ClearRetainedDishValueBadges();
         }
 
         /// <summary>战斗结束后清理本场运行时餐桌表现，避免已摆菜品残留到后续非战斗状态。</summary>
@@ -844,6 +865,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _session = null;
             ClearPlacedPieces();
             _doodle?.Clear();
+            ClearPendingRewardPresentation();
         }
 
         private void FadeTableViewTo(float targetAlpha, float duration, Action onComplete, bool clearOnComplete)
@@ -1292,6 +1314,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _movingPiece = piece;
             _movingOriginalPlacement = dish.Placement;
             _movingHoverPlacement = null;
+            SetOutletDiscardHover(false);
             _session.DiningTable.RemoveDish(dish);
             ClearDishScopeHighlights();
             piece.SetDragPresentation(true);
@@ -1309,6 +1332,17 @@ namespace GourmetProject.Game.Presentation.Battle
             Vector3 world = ScreenToWorld(screenPoint);
             SampleDragPointer(world);
             _movingPiece.MoveVisualCenterToWorld(world);
+            bool hoveringDiscard = _session.FoodDiscardsRemaining > 0
+                && _preparedDishDiscardHitTest?.Invoke(screenPoint) == true;
+            SetOutletDiscardHover(hoveringDiscard);
+            if (hoveringDiscard)
+            {
+                _movingHoverPlacement = null;
+                _boardView.ClearDragPlacementFeedback();
+                ClearDishScopeHighlights();
+                return;
+            }
+
             DishDragPlacementResult result = EvaluateDragPlacement(_movingPiece, world);
             if (result != null
                 && result.CanCommit
@@ -1340,6 +1374,33 @@ namespace GourmetProject.Game.Presentation.Battle
             _boardView?.ClearDragPlacementFeedback();
             DishPieceView piece = _movingPiece;
             DishInstance dish = piece.Instance;
+            if (_outletHoveringDiscard)
+            {
+                dish.Relocate(_movingOriginalPlacement);
+                _session.DiningTable.Place(dish);
+                bool discarded = _session.TryDiscardPlacedDish(dish);
+                SetOutletDiscardHover(false);
+                if (discarded)
+                {
+                    string dishName = dish.Def.Name;
+                    piece.gameObject.SetActive(false);
+                    _movingPiece = null;
+                    _movingHoverPlacement = null;
+                    ResetDragPointerTracking();
+                    LockMovableDish();
+                    RebuildPlacedPieces();
+                    _boardView.Sync();
+                    SetMessage($"已丢弃：{dishName}");
+                    RefreshAll();
+                    _stateChanged?.Invoke();
+                    return;
+                }
+
+                // 命中后状态若已失效，仍按原有移动逻辑把菜安全放回餐桌。
+                _session.DiningTable.RemoveDish(dish);
+                _movingHoverPlacement = null;
+            }
+
             bool placedAtHoveredPosition = _movingHoverPlacement.HasValue;
             Placement placement = _movingHoverPlacement ?? _movingOriginalPlacement;
             IReadOnlyList<int> affectedDishIds = placedAtHoveredPosition

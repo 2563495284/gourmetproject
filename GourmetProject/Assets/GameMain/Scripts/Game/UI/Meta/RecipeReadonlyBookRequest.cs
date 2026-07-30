@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
+using GourmetProject.Gameplay.Battle;
 
 namespace GourmetProject.Game.UI.Meta
 {
@@ -24,7 +25,7 @@ namespace GourmetProject.Game.UI.Meta
             ItemDefinition item,
             string title,
             int bookIndex,
-            IReadOnlyList<RecipeBookSlot> readonlyEntries)
+            IReadOnlyList<RecipeReadonlyDishEntry> readonlyEntries)
         {
             Mode = mode;
             OnExit = onExit;
@@ -53,13 +54,13 @@ namespace GourmetProject.Game.UI.Meta
 
         public int BookIndex { get; }
 
-        public IReadOnlyList<RecipeBookSlot> ReadonlyEntries { get; }
+        public IReadOnlyList<RecipeReadonlyDishEntry> ReadonlyEntries { get; }
 
         public static RecipeReadonlyBookRequest ReadonlyBook(
             int bookIndex,
             Action onExit,
             Action onChanged,
-            IReadOnlyList<RecipeBookSlot> readonlyEntries = null)
+            IReadOnlyList<RecipeReadonlyDishEntry> readonlyEntries = null)
         {
             return new RecipeReadonlyBookRequest(
                 RecipeReadonlyBookMode.ReadonlyBook,
@@ -122,5 +123,29 @@ namespace GourmetProject.Game.UI.Meta
                 -1,
                 null);
         }
+    }
+
+    internal sealed class RecipeReadonlyDishEntry
+    {
+        public RecipeReadonlyDishEntry(
+            RecipeBookSlot slot,
+            BattleRecipeEntryStatus? battleStatus = null,
+            bool skillsDisabled = false,
+            bool excludedFromScore = false)
+        {
+            Slot = slot;
+            BattleStatus = battleStatus;
+            SkillsDisabled = skillsDisabled;
+            ExcludedFromScore = excludedFromScore;
+        }
+
+        public RecipeBookSlot Slot { get; }
+
+        /// <summary>仅战斗场景 RecipeSummary 入口提供；为空时保持局外菜谱原有视觉。</summary>
+        public BattleRecipeEntryStatus? BattleStatus { get; }
+
+        public bool SkillsDisabled { get; }
+
+        public bool ExcludedFromScore { get; }
     }
 }

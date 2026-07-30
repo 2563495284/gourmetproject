@@ -34,7 +34,7 @@ namespace GourmetProject.Game.DevConsole.Commands
             }
 
             // 清掉 pending offer，RewardForm.OnOpen 会按当前周重新 GenerateOffer。
-            GameRunContext.Current.ClearPendingRewardOffer();
+            GameRunContext.Current.ClearPendingBattleReward();
             GameApp.UI.OpenUIForm(UIForms.Reward, UIForms.GroupDialog);
             return CmdResult.Ok("已打开奖励界面（已重新随机）。");
         }

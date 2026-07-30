@@ -24,7 +24,7 @@ namespace GourmetProject.Game.UI.Meta
     /// </summary>
     public sealed class WeekEventCardView : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
-        private const string NodeEventFooter = "节点事件";
+        private const string NodeEventFooter = "节点行动";
         private const string DefaultBossTitle = "周末盛宴\n恶魔";
         private const float GlowPadding = 48f;
         private const float DefaultHideDuration = 0.2f;
@@ -82,7 +82,7 @@ namespace GourmetProject.Game.UI.Meta
         // 选中特效停留已在 OnPickClicked 内于回调前播放完毕，退场不再额外等待。
         public float PickEffectHold => 0f;
 
-        /// <summary>事件「n 选一」单个选项卡：卡名 = 选项文案，页脚标注为节点事件，无耗时行。</summary>
+        /// <summary>事件「n 选一」单个选项卡：卡名 = 选项文案，页脚标注为节点行动，无耗时行。</summary>
         public void BindEventOption(string optionText, Action onPick)
         {
             ApplyCommon(string.IsNullOrWhiteSpace(optionText) ? "选项" : optionText, string.Empty, onPick);
@@ -119,7 +119,7 @@ namespace GourmetProject.Game.UI.Meta
                     int threshold = Mathf.Max(0, interestThreshold ?? GameApp.Config.Tables.TbGameBase.InterestThreshold);
                     int configuredGoldPer = interestGoldPer ?? GameApp.Config.Tables.TbGameBase.InterestGoldPer;
                     int goldPer = configuredGoldPer > 0 ? configuredGoldPer : 1;
-                    BindInterestNode(threshold, goldPer, interestMaxGain, onPick);
+                    BindNodeCard("收取利息", string.Empty, "card_node_interest", onPick);
                     break;
                 case ActionDisplayKind.Boss:
                     BindNodeCard(DefaultBossTitle, string.Empty, "card_node_boss", onPick);
@@ -131,14 +131,6 @@ namespace GourmetProject.Game.UI.Meta
                     BindNodeCard(string.IsNullOrEmpty(action.Name) ? "事件" : action.Name, string.Empty, "card_action_event", onPick);
                     break;
             }
-        }
-
-        public void BindInterestNode(int threshold, int goldPer, int? maxGain, Action onPick)
-        {
-            string desc = maxGain.HasValue
-                ? $"每有{threshold}枚金币，获得{goldPer}枚，最高可获得{maxGain.Value}枚"
-                : $"每有{threshold}枚金币，获得{goldPer}枚";
-            BindNodeCard("收取利息", desc, "card_node_interest", onPick);
         }
 
         public void BindBossNode(cfg.Food boss, string mechanicDesc, long requiredScore, Action onPick)

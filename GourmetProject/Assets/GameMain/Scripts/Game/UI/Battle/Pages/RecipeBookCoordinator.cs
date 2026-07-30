@@ -144,7 +144,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
             _host.SwitchTo(GameplayView.Shop);
         }
 
-        public void OpenInspect(int bookIndex)
+        public void OpenInspect(int bookIndex, bool useBattleRecipe = false)
         {
             GameRun run = _host.Run;
             if (run == null || bookIndex != 0)
@@ -168,7 +168,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
                     ? _host.CaptureActionSelection()
                     : ActionSelectSnapshot.None;
                 _inspectShowsActionAxis = ShouldShowActionAxis(_host.CurrentView);
-                _inspectUsesBattleRecipe = _host.CurrentView == GameplayView.Food;
+                _inspectUsesBattleRecipe = useBattleRecipe;
             }
 
             _host.SwitchTo(GameplayView.RecipeInspect);
@@ -388,7 +388,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
             _eventDeleteChanged = null;
         }
 
-        private IReadOnlyList<RecipeBookSlot> BuildBattleReadonlyEntries(int bookIndex)
+        private IReadOnlyList<RecipeReadonlyDishEntry> BuildBattleReadonlyEntries(int bookIndex)
         {
             BattleSession session = _host.Session;
             if (session == null || bookIndex < 0 || bookIndex >= session.Slots.Count)
@@ -396,11 +396,12 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 return null;
             }
 
-            IReadOnlyList<RecipeSlotEntry> source = session.Slots[bookIndex].Entries;
-            var entries = new List<RecipeBookSlot>(source.Count);
+            IReadOnlyList<BattleRecipeEntrySnapshot> source =
+                session.GetBattleRecipeEntries(bookIndex);
+            var entries = new List<RecipeReadonlyDishEntry>(source.Count);
             for (int i = 0; i < source.Count; i++)
             {
-                RecipeSlotEntry entry = source[i];
+                BattleRecipeEntrySnapshot entry = source[i];
                 if (entry == null)
                 {
                     continue;
@@ -411,7 +412,11 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 AddRange(value => slot.AddExtraSkill(value), entry.ExtraSkillIds);
                 slot.RestoreScoreFlatBonus(entry.ScoreFlatBonus);
                 slot.RestoreScoreMultiplier(entry.ScoreMultiplier);
-                entries.Add(slot);
+                entries.Add(new RecipeReadonlyDishEntry(
+                    slot,
+                    entry.Status,
+                    entry.SkillsDisabled,
+                    entry.ExcludedFromScore));
             }
 
             return entries;

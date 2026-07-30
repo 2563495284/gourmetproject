@@ -21,6 +21,11 @@ namespace GourmetProject.Gameplay.Battle
         private readonly ScoreCalculator _calculator;
         private readonly List<RecipeSlot> _slots;
         private readonly List<string> _recipeBaseIds = new List<string>();
+        private readonly List<TrackedRecipeEntry> _trackedRecipeEntries = new List<TrackedRecipeEntry>();
+        private readonly Dictionary<RecipeSlotEntry, TrackedRecipeEntry> _trackedRecipeEntriesBySource =
+            new Dictionary<RecipeSlotEntry, TrackedRecipeEntry>();
+        private readonly Dictionary<int, TrackedRecipeEntry> _trackedRecipeEntriesByDishId =
+            new Dictionary<int, TrackedRecipeEntry>();
         private readonly Dictionary<string, int> _mealSettled = new Dictionary<string, int>();
         private readonly Dictionary<string, int> _runSettled = new Dictionary<string, int>();
         private readonly List<RecipeScoreFlatDelta> _lastRecipeScoreFlatDeltas = new List<RecipeScoreFlatDelta>();
@@ -33,13 +38,6 @@ namespace GourmetProject.Gameplay.Battle
         private float _randomServeMultiplierMin;
         private float _randomServeMultiplierMax;
         private float _randomServeMultiplierStep;
-        private float _alternateServeMultiplierLow = 1f;
-        private float _alternateServeMultiplierHigh = 1f;
-        private string _insertDishId = string.Empty;
-        private int _insertDishWindowSize;
-        private int _insertDishCountPerWindow;
-        private int _successfulBellPrepares;
-        private readonly HashSet<int> _insertDishPositions = new HashSet<int>();
 
         public BattleSession(
             GpTable board,
@@ -109,6 +107,9 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>玩家点击铃铛并成功让出菜口出现食物时扣除的金币。</summary>
         public int GoldCostPerBellServe { get; set; }
 
+        /// <summary>玩家点击铃铛出菜时，食物变为馒头的概率。</summary>
+        public float BellServeMantouChance { get; set; }
+
         public bool AutoServeSecondDish { get; set; }
 
         public bool RemoveFirstServedDishes { get; set; }
@@ -116,13 +117,6 @@ namespace GourmetProject.Gameplay.Battle
         public int FirstServedDishesToRemove { get; set; }
 
         public bool AlternateServeMultiplier { get; set; }
-
-        public void ConfigureAlternateServeMultiplier(float low, float high)
-        {
-            _alternateServeMultiplierLow = low;
-            _alternateServeMultiplierHigh = high;
-            AlternateServeMultiplier = true;
-        }
 
         public bool RandomServeMultiplier { get; set; }
 
@@ -142,7 +136,7 @@ namespace GourmetProject.Gameplay.Battle
 
         public int MinimumServesForScore { get; set; }
 
-        public float BaseScoreMultiplier { get; set; } = 1f;
+        public bool HalveBaseScore { get; set; }
 
         /// <summary>本局已上菜次数。</summary>
         public int ServesUsed { get; private set; }
@@ -183,6 +177,37 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>本次品鉴菜谱内容（BaseId 列表，供菜谱检测）。</summary>
         public IReadOnlyList<string> RecipeBaseIds => _recipeBaseIds;
 
+        /// <summary>
+        /// 返回本场开局经 Boss 修正后的完整菜谱。已出餐、丢弃或移除的条目不会从该列表消失。
+        /// “不能放置”由当前餐桌空间、结算状态与上菜次数上限实时计算。
+        /// </summary>
+        public IReadOnlyList<BattleRecipeEntrySnapshot> GetBattleRecipeEntries(int slotIndex)
+        {
+            var result = new List<BattleRecipeEntrySnapshot>();
+            foreach (TrackedRecipeEntry tracked in _trackedRecipeEntries)
+            {
+                if (tracked.SlotIndex != slotIndex)
+                {
+                    continue;
+                }
+
+                RecipeSlotEntry entry = tracked.Entry;
+                result.Add(new BattleRecipeEntrySnapshot(
+                    tracked.EntryId,
+                    tracked.SlotIndex,
+                    entry.DishId,
+                    entry.ExtraFlavorIds,
+                    entry.ExtraSkillIds,
+                    entry.ScoreMultiplier,
+                    entry.ScoreFlatBonus,
+                    entry.DisableSkills,
+                    entry.ExcludeFromScore,
+                    ResolveDisplayStatus(tracked)));
+            }
+
+            return result;
+        }
+
         /// <summary>一次甜蜜传递请求成功落到至少一个目标后触发。</summary>
         public event Action<SkillTransferRequest> SweetTransferTriggered;
 
@@ -200,19 +225,6 @@ namespace GourmetProject.Gameplay.Battle
         }
 
         /// <summary>
-        /// 配置铃铛出菜序列中的独立插入菜品。每个窗口会随机选择指定数量的位置，
-        /// 命中时直接从菜品表读取该菜，不消耗或替换菜谱条目。
-        /// </summary>
-        public void ConfigureInsertedDishSequence(string dishId, int windowSize, int countPerWindow)
-        {
-            _insertDishId = dishId ?? string.Empty;
-            _insertDishWindowSize = Math.Max(0, windowSize);
-            _insertDishCountPerWindow = Math.Max(0, Math.Min(countPerWindow, _insertDishWindowSize));
-            _successfulBellPrepares = 0;
-            GenerateInsertDishPositions();
-        }
-
-        /// <summary>
         /// 丢弃当前出餐口食物。食物已从本局菜谱副本取出，因此这里只清空暂存态；
         /// 不写回 GameRun 菜谱，也不触发上菜次数、技能或费用。
         /// </summary>
@@ -223,7 +235,31 @@ namespace GourmetProject.Gameplay.Battle
                 return false;
             }
 
+            SetTrackedStatus(PreparedServe.Entry, BattleRecipeEntryStatus.Discarded);
             PreparedServe = null;
+            FoodDiscardsUsed++;
+            return true;
+        }
+
+        /// <summary>
+        /// 丢弃一份已经落桌的食物并消耗一次丢弃次数。
+        /// 该操作不回滚落桌时已经触发的上菜次数、技能或费用；表现层只应对仍处于可移动期的刚上桌食物调用。
+        /// </summary>
+        public bool TryDiscardPlacedDish(DishInstance dish)
+        {
+            if (IsSettled || dish == null || FoodDiscardsRemaining <= 0)
+            {
+                return false;
+            }
+
+            DishInstance placedDish = FindDishById(dish.Id);
+            if (!ReferenceEquals(placedDish, dish))
+            {
+                return false;
+            }
+
+            DiningTable.RemoveDish(dish);
+            SetTrackedDishStatus(dish.Id, BattleRecipeEntryStatus.Discarded);
             FoodDiscardsUsed++;
             return true;
         }
@@ -320,121 +356,79 @@ namespace GourmetProject.Gameplay.Battle
             }
 
             RecipeSlot slot = _slots[slotIndex];
-            bool insertConfiguredDish = triggeredByServingBell && ShouldInsertDishOnNextBellPrepare();
-            RecipeSlotEntry entry;
-            DishDef servedDish;
-            IReadOnlyList<Placement> placements;
-
-            if (insertConfiguredDish)
+            if (slot.IsEmpty)
             {
-                servedDish = _db.GetDish(_insertDishId);
-                if (servedDish == null)
-                {
-                    return ServePrepareResult.Fail(ServePrepareOutcome.NoFittingDish);
-                }
-
-                entry = new RecipeSlotEntry(_insertDishId);
-                placements = FindServePlacements(servedDish, entry);
-                if (placements.Count == 0)
-                {
-                    return ServePrepareResult.Fail(ServePrepareOutcome.NoFittingDish);
-                }
-            }
-            else
-            {
-                if (slot.IsEmpty)
-                {
-                    return ServePrepareResult.Fail(ServePrepareOutcome.SlotEmpty);
-                }
-
-                var candidates = new List<ServeCandidate>();
-                for (int i = 0; i < slot.Entries.Count; i++)
-                {
-                    DishDef dish = _db.GetDish(slot.Entries[i].DishId);
-                    if (dish == null)
-                    {
-                        continue;
-                    }
-
-                    List<Placement> candidatePlacements = FindServePlacements(dish, slot.Entries[i]);
-                    if (candidatePlacements.Count > 0)
-                    {
-                        candidates.Add(new ServeCandidate(i, dish, candidatePlacements));
-                    }
-                }
-
-                if (candidates.Count == 0)
-                {
-                    return ServePrepareResult.Fail(ServePrepareOutcome.NoFittingDish);
-                }
-
-                ServeCandidate chosen = candidates[_rng.Range(0, candidates.Count)];
-                entry = slot.RemoveEntryAt(chosen.SlotEntryIndex);
-                servedDish = chosen.Dish;
-                placements = chosen.Placements;
+                return ServePrepareResult.Fail(ServePrepareOutcome.SlotEmpty);
             }
 
-            Placement initialPlacement = placements[0];
-            List<string> skills = ComposeServeSkills(servedDish, entry);
-            List<string> flavors = ComposeServeFlavors(servedDish, entry);
+            var candidates = new List<ServeCandidate>();
+            for (int i = 0; i < slot.Entries.Count; i++)
+            {
+                DishDef dish = _db.GetDish(slot.Entries[i].DishId);
+                if (dish == null)
+                {
+                    continue;
+                }
+
+                List<Placement> placements = FindServePlacements(dish, slot.Entries[i]);
+
+                if (placements.Count > 0)
+                {
+                    candidates.Add(new ServeCandidate(i, dish, placements));
+                }
+            }
+
+            if (candidates.Count == 0)
+            {
+                return ServePrepareResult.Fail(ServePrepareOutcome.NoFittingDish);
+            }
+
+            ServeCandidate chosen = candidates[_rng.Range(0, candidates.Count)];
+            RecipeSlotEntry entry = slot.RemoveEntryAt(chosen.SlotEntryIndex);
+            bool becomesMantou = triggeredByServingBell
+                && BellServeMantouChance > 0f
+                && _rng.NextBool(Math.Min(1d, BellServeMantouChance));
+            DishDef servedDish = becomesMantou ? CreateMantouDefinition(chosen.Dish) : chosen.Dish;
+            Placement initialPlacement = chosen.Placements[0];
+            List<string> skills = becomesMantou
+                ? new List<string>()
+                : ComposeServeSkills(servedDish, entry);
+            List<string> flavors = becomesMantou
+                ? new List<string>()
+                : ComposeServeFlavors(servedDish, entry);
             var instance = new DishInstance(_nextInstanceId++, servedDish, initialPlacement, skills, flavors);
             instance.SetSourceRecipeIndex(slotIndex, entry.SourceDishIndex);
-            PreparedServe = new PreparedServeDish(slotIndex, entry, instance, placements);
-            if (triggeredByServingBell)
+            PreparedServe = new PreparedServeDish(slotIndex, entry, instance, chosen.Placements);
+            SetTrackedStatus(entry, BattleRecipeEntryStatus.WaitingForPlacement);
+            if (triggeredByServingBell && GoldCostPerBellServe > 0)
             {
-                AdvanceBellPrepareSequence();
-                if (GoldCostPerBellServe > 0)
-                {
-                    PendingGold -= GoldCostPerBellServe;
-                }
+                PendingGold -= GoldCostPerBellServe;
             }
 
             return new ServePrepareResult(ServePrepareOutcome.Prepared, PreparedServe);
         }
 
-        private bool ShouldInsertDishOnNextBellPrepare()
+        private static DishDef CreateMantouDefinition(DishDef source)
         {
-            if (_insertDishWindowSize <= 0
-                || _insertDishCountPerWindow <= 0
-                || string.IsNullOrEmpty(_insertDishId))
-            {
-                return false;
-            }
-
-            int positionInWindow = _successfulBellPrepares % _insertDishWindowSize + 1;
-            return _insertDishPositions.Contains(positionInWindow);
-        }
-
-        private void AdvanceBellPrepareSequence()
-        {
-            _successfulBellPrepares++;
-            if (_insertDishWindowSize > 0 && _successfulBellPrepares % _insertDishWindowSize == 0)
-            {
-                GenerateInsertDishPositions();
-            }
-        }
-
-        private void GenerateInsertDishPositions()
-        {
-            _insertDishPositions.Clear();
-            if (_insertDishWindowSize <= 0
-                || _insertDishCountPerWindow <= 0
-                || string.IsNullOrEmpty(_insertDishId))
-            {
-                return;
-            }
-
-            var positions = new List<int>(_insertDishWindowSize);
-            for (int position = 1; position <= _insertDishWindowSize; position++)
-            {
-                positions.Add(position);
-            }
-
-            _rng.Shuffle(positions);
-            for (int i = 0; i < _insertDishCountPerWindow; i++)
-            {
-                _insertDishPositions.Add(positions[i]);
-            }
+            // 馒头沿用原菜的分数、形状与摆放朝向，避免“变成馒头”后突然无处可放；
+            // 但移除原菜技能、风味和分类，并用现有 dumpling 图标表现。
+            return new DishDef(
+                $"{source.Id}_boss_mantou",
+                "馒头",
+                source.Deliciousness,
+                source.Shape,
+                source.HiddenMin,
+                source.HiddenMax,
+                source.BaseWeight,
+                Array.Empty<string>(),
+                string.Empty,
+                source.AllowRotate,
+                "dumpling",
+                source.Price,
+                source.RotationIndex,
+                string.Empty,
+                source.CountAs,
+                source.SortOrder);
         }
 
         /// <summary>
@@ -460,6 +454,7 @@ namespace GourmetProject.Gameplay.Battle
             ApplyEntryFlags(instance, entry);
             ApplyServeModifiers(instance);
             DiningTable.Place(instance);
+            TrackServedDish(entry, instance);
             ServesUsed++;
             Served?.Invoke(instance, ServesUsed);
 
@@ -479,6 +474,7 @@ namespace GourmetProject.Gameplay.Battle
             {
                 _appetizerRemoved++;
                 DiningTable.RemoveDish(instance);
+                SetTrackedDishStatus(instance.Id, BattleRecipeEntryStatus.Removed);
                 removedAfterServe = true;
             }
 
@@ -655,17 +651,14 @@ namespace GourmetProject.Gameplay.Battle
                 return;
             }
 
-            if (Math.Abs(BaseScoreMultiplier - 1f) > 0.0001f)
+            if (HalveBaseScore)
             {
-                instance.MultiplyTemporaryBase(BaseScoreMultiplier);
+                instance.MultiplyTemporaryBase(0.5f);
             }
 
             if (AlternateServeMultiplier)
             {
-                instance.MultiplyServeMultiplier(
-                    ServesUsed % 2 == 0
-                        ? _alternateServeMultiplierLow
-                        : _alternateServeMultiplierHigh);
+                instance.MultiplyServeMultiplier(ServesUsed % 2 == 0 ? 0.5f : 1.5f);
             }
             else if (RandomServeMultiplier)
             {
@@ -708,11 +701,22 @@ namespace GourmetProject.Gameplay.Battle
 
         private void CaptureRecipeSnapshot()
         {
-            foreach (RecipeSlot slot in _slots)
+            int entryId = 1;
+            for (int slotIndex = 0; slotIndex < _slots.Count; slotIndex++)
             {
-                foreach (string dishId in slot.Remaining)
+                RecipeSlot slot = _slots[slotIndex];
+                foreach (RecipeSlotEntry entry in slot.Entries)
                 {
-                    DishDef def = _db.GetDish(dishId);
+                    if (entry == null)
+                    {
+                        continue;
+                    }
+
+                    var tracked = new TrackedRecipeEntry(entryId++, slotIndex, entry);
+                    _trackedRecipeEntries.Add(tracked);
+                    _trackedRecipeEntriesBySource[entry] = tracked;
+
+                    DishDef def = _db.GetDish(entry.DishId);
                     if (def != null)
                     {
                         _recipeBaseIds.Add(def.BaseId);
@@ -1011,7 +1015,40 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>读档恢复待领奖界面时，把会话标记为已结算的只读 UI 状态；不触发任何结算副作用。</summary>
         public void RestoreSettledForRewardView(int total)
         {
-            LastResult = new ScoreResult(Array.Empty<DishScore>(), Math.Max(0, total), 0f, 1f);
+            RestoreSettledForRewardView(
+                total,
+                -1,
+                Array.Empty<DishScore>(),
+                Math.Max(0, total),
+                0f,
+                1f,
+                hasDetailedScore: false);
+        }
+
+        /// <summary>
+        /// 从待领奖快照恢复只读结算状态。层数与详细分数均为表现恢复数据，不重复执行结算技能或资源副作用。
+        /// </summary>
+        public void RestoreSettledForRewardView(
+            int total,
+            int finalHappyCakeLayers,
+            IReadOnlyList<DishScore> dishScores,
+            float rawSum,
+            float finalFlat,
+            float finalMultiplier,
+            bool hasDetailedScore)
+        {
+            if (finalHappyCakeLayers >= 0)
+            {
+                SetHappyCakeLayers(finalHappyCakeLayers);
+            }
+
+            LastResult = hasDetailedScore
+                ? new ScoreResult(
+                    dishScores ?? Array.Empty<DishScore>(),
+                    rawSum,
+                    finalFlat,
+                    finalMultiplier)
+                : new ScoreResult(Array.Empty<DishScore>(), Math.Max(0, total), 0f, 1f);
             IsSettled = true;
         }
 
@@ -1023,6 +1060,11 @@ namespace GourmetProject.Gameplay.Battle
             if (IsSettled)
             {
                 return;
+            }
+
+            foreach (DishInstance dish in DiningTable.Dishes)
+            {
+                SetTrackedDishStatus(dish.Id, BattleRecipeEntryStatus.Removed);
             }
 
             DiningTable.Clear();
@@ -1150,6 +1192,7 @@ namespace GourmetProject.Gameplay.Battle
             }
 
             DiningTable.RemoveDish(dish);
+            SetTrackedDishStatus(dish.Id, BattleRecipeEntryStatus.Removed);
             return true;
         }
 
@@ -1232,15 +1275,6 @@ namespace GourmetProject.Gameplay.Battle
                 return false;
             }
 
-            if (ShouldInsertDishOnNextBellPrepare())
-            {
-                DishDef insertedDish = _db.GetDish(_insertDishId);
-                if (insertedDish != null && DiningTable.CanFit(insertedDish))
-                {
-                    return true;
-                }
-            }
-
             foreach (RecipeSlot slot in _slots)
             {
                 if (slot.IsEmpty)
@@ -1259,6 +1293,71 @@ namespace GourmetProject.Gameplay.Battle
             }
 
             return false;
+        }
+
+        private BattleRecipeEntryStatus ResolveDisplayStatus(TrackedRecipeEntry tracked)
+        {
+            if (tracked.Status != BattleRecipeEntryStatus.Normal)
+            {
+                return tracked.Status;
+            }
+
+            if (IsSettled || (MaxServes >= 0 && ServesUsed >= MaxServes))
+            {
+                return BattleRecipeEntryStatus.CannotPlace;
+            }
+
+            DishDef dish = _db.GetDish(tracked.Entry.DishId);
+            return dish != null && FindServePlacements(dish, tracked.Entry).Count > 0
+                ? BattleRecipeEntryStatus.Normal
+                : BattleRecipeEntryStatus.CannotPlace;
+        }
+
+        private void SetTrackedStatus(RecipeSlotEntry entry, BattleRecipeEntryStatus status)
+        {
+            if (entry != null && _trackedRecipeEntriesBySource.TryGetValue(entry, out TrackedRecipeEntry tracked))
+            {
+                tracked.Status = status;
+            }
+        }
+
+        private void TrackServedDish(RecipeSlotEntry entry, DishInstance dish)
+        {
+            if (entry == null
+                || dish == null
+                || !_trackedRecipeEntriesBySource.TryGetValue(entry, out TrackedRecipeEntry tracked))
+            {
+                return;
+            }
+
+            tracked.Status = BattleRecipeEntryStatus.Served;
+            _trackedRecipeEntriesByDishId[dish.Id] = tracked;
+        }
+
+        private void SetTrackedDishStatus(int dishId, BattleRecipeEntryStatus status)
+        {
+            if (_trackedRecipeEntriesByDishId.TryGetValue(dishId, out TrackedRecipeEntry tracked))
+            {
+                tracked.Status = status;
+            }
+        }
+
+        private sealed class TrackedRecipeEntry
+        {
+            public TrackedRecipeEntry(int entryId, int slotIndex, RecipeSlotEntry entry)
+            {
+                EntryId = entryId;
+                SlotIndex = slotIndex;
+                Entry = entry;
+            }
+
+            public int EntryId { get; }
+
+            public int SlotIndex { get; }
+
+            public RecipeSlotEntry Entry { get; }
+
+            public BattleRecipeEntryStatus Status { get; set; } = BattleRecipeEntryStatus.Normal;
         }
 
         private sealed class AllDishMultiplierFlatSource : IScoreEffectSource

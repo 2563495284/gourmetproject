@@ -53,7 +53,8 @@ namespace GourmetProject.Game.UI.Meta
 
         private FoodTipsData BuildRecipeDishTipsData(
             DishDef def,
-            RecipeBookSlot slot)
+            RecipeBookSlot slot,
+            RecipeReadonlyDishEntry readonlyEntry = null)
         {
             List<string> skillIds =
                 ComposeSkillIds(def, slot?.ExtraSkillIds);
@@ -87,7 +88,8 @@ namespace GourmetProject.Game.UI.Meta
             var summary = new FoodSummaryTipsData(
                 def.Name,
                 skills,
-                flavorNames);
+                flavorNames,
+                readonlyEntry?.SkillsDisabled == true);
             float multiplier = slot != null ? slot.ScoreMultiplier : 1f;
             float score = def.Deliciousness
                 + (slot != null ? slot.ScoreFlatBonus : 0f);
@@ -97,15 +99,25 @@ namespace GourmetProject.Game.UI.Meta
                 Array.Empty<FoodMaterialTipsEntry>(),
                 flavorDetails,
                 Array.Empty<FoodInfoEntry>(),
-                BuildRecipeSpecialTags(skillIds));
+                BuildRecipeSpecialTags(
+                    skillIds,
+                    readonlyEntry?.ExcludedFromScore == true));
         }
 
         private IReadOnlyList<FoodInfoEntry> BuildRecipeSpecialTags(
-            IReadOnlyList<string> skillIds)
+            IReadOnlyList<string> skillIds,
+            bool excludedFromScore = false)
         {
             if (skillIds == null || Database == null)
             {
-                return Array.Empty<FoodInfoEntry>();
+                return excludedFromScore
+                    ? new[]
+                    {
+                        new FoodInfoEntry(
+                            "不参与计分",
+                            "本场 Boss 修正：该食物上菜后不会计入最终分数。"),
+                    }
+                    : Array.Empty<FoodInfoEntry>();
             }
 
             var termIds = new List<string>();
@@ -124,6 +136,13 @@ namespace GourmetProject.Game.UI.Meta
                     term != null
                         ? new FoodInfoEntry(term.Name, term.Desc)
                         : new FoodInfoEntry(termId, string.Empty));
+            }
+
+            if (excludedFromScore)
+            {
+                tags.Add(new FoodInfoEntry(
+                    "不参与计分",
+                    "本场 Boss 修正：该食物上菜后不会计入最终分数。"));
             }
 
             return tags;

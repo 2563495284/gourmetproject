@@ -67,7 +67,7 @@ namespace GourmetProject.Game.UI.Hud
         public bool CanAcceptDropAt(Vector2 screenPoint)
         {
             if (!isActiveAndEnabled
-                || _session?.PreparedServe == null
+                || _session == null
                 || _session.FoodDiscardsRemaining <= 0)
             {
                 return false;
@@ -84,7 +84,7 @@ namespace GourmetProject.Game.UI.Hud
 
         public void SetDragHovered(bool hovered)
         {
-            hovered &= _session?.PreparedServe != null && _session.FoodDiscardsRemaining > 0;
+            hovered &= _session != null && _session.FoodDiscardsRemaining > 0;
             if (_dragHovered == hovered)
             {
                 return;

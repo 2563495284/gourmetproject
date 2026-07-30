@@ -1,4 +1,5 @@
 using System;
+using GourmetProject.Core.Utility;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Gameplay.Battle;
 using UnityEngine;
@@ -22,6 +23,10 @@ namespace GourmetProject.Game.UI.Hud
     public sealed class ServingOutletView : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
     {
         private const float PreparedDishRaycastPadding = 24f;
+        private const float FlavorStainScale = 8f;
+        private const float FlavorStainThreshold = 0.62f;
+        private const float FlavorStainSoftness = 0.12f;
+        private const float FlavorStainDarken = 0.12f;
 
         [SerializeField] private RecipeCardView _recipeSummary;
         [SerializeField] private Button _serveButton;
@@ -45,6 +50,7 @@ namespace GourmetProject.Game.UI.Hud
         private Camera _worldCamera;
         private Canvas _worldCanvas;
         private ServingOutletDishHoverTrigger _dishHoverTrigger;
+        private Material _dishFlavorMaterial;
 
         public ServingOutletState State { get; private set; }
 
@@ -176,7 +182,12 @@ namespace GourmetProject.Game.UI.Hud
                 {
                     _dishImage.sprite = _spriteProvider.Get(prepared.Definition);
                     _dishImage.preserveAspect = true;
+                    ApplyPreparedDishVisual(prepared);
                     SetDishAlpha(1f);
+                }
+                else
+                {
+                    ResetPreparedDishVisual();
                 }
             }
 
@@ -202,6 +213,48 @@ namespace GourmetProject.Game.UI.Hud
                 _canvasGroup.interactable = true;
                 _canvasGroup.blocksRaycasts = true;
             }
+        }
+
+        private void ApplyPreparedDishVisual(PreparedServeDish prepared)
+        {
+            if (_dishImage == null || prepared?.Dish == null)
+            {
+                ResetPreparedDishVisual();
+                return;
+            }
+
+            // 使用本次已准备菜品的实际摆放朝向，与拖拽 ghost/最终落桌保持一致。
+            // 「麻」旋转后若无合法位置，玩法层会回退原朝向，不能在这里仅按风味重新计算。
+            int rotationIndex = prepared.Dish.Placement.RotationIndex;
+            _dishImage.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -90f * rotationIndex);
+
+            var settings = new FlavorStainPalette.Settings(
+                FlavorStainScale,
+                FlavorStainThreshold,
+                FlavorStainSoftness,
+                FlavorStainDarken,
+                (float)(StableHash.Fnv1a64(prepared.Definition.Id) & 0xFFFFFF));
+            FlavorStainPalette.ApplyToGraphic(
+                _dishImage,
+                prepared.Dish.FlavorIds,
+                ref _dishFlavorMaterial,
+                settings);
+        }
+
+        private void ResetPreparedDishVisual()
+        {
+            if (_dishImage == null)
+            {
+                return;
+            }
+
+            _dishImage.rectTransform.localRotation = Quaternion.identity;
+            _dishImage.material = null;
+        }
+
+        private void OnDestroy()
+        {
+            FlavorStainPalette.ReleaseMaterial(ref _dishFlavorMaterial);
         }
 
         public void OnBeginDrag(PointerEventData eventData)

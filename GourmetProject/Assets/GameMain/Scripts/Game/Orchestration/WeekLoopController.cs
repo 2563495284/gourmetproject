@@ -105,11 +105,24 @@ namespace GourmetProject.Game.Orchestration
 
             if (_run.HasPendingGenericRewards)
             {
+                if (_run.PendingGenericRewardsConfirmBattleAfterDone && _run.HasPendingRewardBattleView)
+                {
+                    CurrentBattleActionContext = _run.LastActionContext;
+                    _afterBattleWin = ContinueAfterRecoveredBattleReward;
+                    _view.RestorePendingRewardBattleView();
+                }
+
                 GameApp.UI.OpenUIForm(
                     UIForms.Reward,
                     UIForms.GroupDialog,
                     RewardFormOpenArgs.GenericQueue(_run.PendingGenericRewardsConfirmBattleAfterDone));
                 return;
+            }
+
+            if (_run.HasPendingRewardBattleView)
+            {
+                _run.ClearPendingRewardBattleView();
+                RunPersistence.Save(_run);
             }
 
             if (_run.HasPendingActionExecution)
