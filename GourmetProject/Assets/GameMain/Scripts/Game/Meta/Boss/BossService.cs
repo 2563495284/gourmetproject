@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using GourmetProject.Core.Rng;
+using GourmetProject.Game.Meta.BossDebuffs;
 using GourmetProject.Runtime;
 using Log = GourmetProject.Core.Diagnostics.Log;
 using GourmetProject.Game.Run;
@@ -33,6 +34,7 @@ namespace GourmetProject.Game.Meta
         public static cfg.BossDebuff RollBossDebuff(GameRun run, IRandomStream rng, bool mutateHistoryOnExhaustion = true)
         {
             cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
+            BossDebuffModelRegistry.ValidateDefinitions(tables);
             var available = new List<cfg.BossDebuff>();
             foreach (cfg.BossDebuff debuff in tables.TbBossDebuff.DataList)
             {

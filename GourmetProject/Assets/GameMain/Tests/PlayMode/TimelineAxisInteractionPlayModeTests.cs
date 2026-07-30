@@ -741,6 +741,7 @@ namespace GourmetProject.Tests.PlayMode
                 int requiredScore,
                 string modifier,
                 string key,
+                string bossDebuffId,
                 ActionExecutionContext actionContext)
             {
                 Assert.Fail("Effect node should not start a battle.");

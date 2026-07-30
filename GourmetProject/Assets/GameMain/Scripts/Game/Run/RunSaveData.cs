@@ -415,6 +415,7 @@ namespace GourmetProject.Game.Run
         public int RequiredScore;
         public int RawRequiredScore;
         public string Modifier;
+        public string BossDebuffId;
         public string BattleKey;
         public bool IsBoss;
         public int LastTotal;
