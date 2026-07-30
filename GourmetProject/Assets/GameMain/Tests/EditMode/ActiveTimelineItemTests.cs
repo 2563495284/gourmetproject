@@ -85,8 +85,8 @@ namespace GourmetProject.Tests.EditMode
                 ["item_skip_node"] = "跳过下一个收取利息节点",
                 ["item_skip_reward_node"] = "跳过下一个幸运事件节点",
                 ["item_gold_week_clear"] = "将失去所有金币的节点行动\n添加至本周末尾",
-                ["item_double_daily_cost_repeat_node"] = "日常行动消耗天数加倍\n节点事件可以执行2次",
-                ["item_timeline_stop_chance"] = "遇到节点事件时\n时间轴有30%概率会停止",
+                ["item_double_daily_cost_repeat_node"] = "日常行动消耗天数加倍\n节点行动可以执行2次",
+                ["item_timeline_stop_chance"] = "遇到节点行动时\n时间轴有30%概率会停止",
             };
 
             foreach (KeyValuePair<string, string> pair in expected)

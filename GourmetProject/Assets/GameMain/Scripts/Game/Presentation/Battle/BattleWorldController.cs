@@ -1292,6 +1292,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _movingPiece = piece;
             _movingOriginalPlacement = dish.Placement;
             _movingHoverPlacement = null;
+            SetOutletDiscardHover(false);
             _session.DiningTable.RemoveDish(dish);
             ClearDishScopeHighlights();
             piece.SetDragPresentation(true);
@@ -1309,6 +1310,17 @@ namespace GourmetProject.Game.Presentation.Battle
             Vector3 world = ScreenToWorld(screenPoint);
             SampleDragPointer(world);
             _movingPiece.MoveVisualCenterToWorld(world);
+            bool hoveringDiscard = _session.FoodDiscardsRemaining > 0
+                && _preparedDishDiscardHitTest?.Invoke(screenPoint) == true;
+            SetOutletDiscardHover(hoveringDiscard);
+            if (hoveringDiscard)
+            {
+                _movingHoverPlacement = null;
+                _boardView.ClearDragPlacementFeedback();
+                ClearDishScopeHighlights();
+                return;
+            }
+
             DishDragPlacementResult result = EvaluateDragPlacement(_movingPiece, world);
             if (result != null
                 && result.CanCommit
@@ -1340,6 +1352,33 @@ namespace GourmetProject.Game.Presentation.Battle
             _boardView?.ClearDragPlacementFeedback();
             DishPieceView piece = _movingPiece;
             DishInstance dish = piece.Instance;
+            if (_outletHoveringDiscard)
+            {
+                dish.Relocate(_movingOriginalPlacement);
+                _session.DiningTable.Place(dish);
+                bool discarded = _session.TryDiscardPlacedDish(dish);
+                SetOutletDiscardHover(false);
+                if (discarded)
+                {
+                    string dishName = dish.Def.Name;
+                    piece.gameObject.SetActive(false);
+                    _movingPiece = null;
+                    _movingHoverPlacement = null;
+                    ResetDragPointerTracking();
+                    LockMovableDish();
+                    RebuildPlacedPieces();
+                    _boardView.Sync();
+                    SetMessage($"已丢弃：{dishName}");
+                    RefreshAll();
+                    _stateChanged?.Invoke();
+                    return;
+                }
+
+                // 命中后状态若已失效，仍按原有移动逻辑把菜安全放回餐桌。
+                _session.DiningTable.RemoveDish(dish);
+                _movingHoverPlacement = null;
+            }
+
             bool placedAtHoveredPosition = _movingHoverPlacement.HasValue;
             Placement placement = _movingHoverPlacement ?? _movingOriginalPlacement;
             IReadOnlyList<int> affectedDishIds = placedAtHoveredPosition

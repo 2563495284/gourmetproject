@@ -204,6 +204,28 @@ namespace GourmetProject.Gameplay.Battle
             return true;
         }
 
+        /// <summary>
+        /// 丢弃一份已经落桌的食物并消耗一次丢弃次数。
+        /// 该操作不回滚落桌时已经触发的上菜次数、技能或费用；表现层只应对仍处于可移动期的刚上桌食物调用。
+        /// </summary>
+        public bool TryDiscardPlacedDish(DishInstance dish)
+        {
+            if (IsSettled || dish == null || FoodDiscardsRemaining <= 0)
+            {
+                return false;
+            }
+
+            DishInstance placedDish = FindDishById(dish.Id);
+            if (!ReferenceEquals(placedDish, dish))
+            {
+                return false;
+            }
+
+            DiningTable.RemoveDish(dish);
+            FoodDiscardsUsed++;
+            return true;
+        }
+
         public float SweetTransferTargetMultiplier { get; set; } = 1f;
 
         public float SweetTransferSourceMultiplier { get; set; } = 1f;
