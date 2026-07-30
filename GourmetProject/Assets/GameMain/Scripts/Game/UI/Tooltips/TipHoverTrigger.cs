@@ -18,13 +18,20 @@ namespace GourmetProject.Game.UI.Tooltips
     /// 调用对应子类的 Bind 填好。<see cref="_tip"/> 可在 Inspector 预先指定，也可运行时
     /// 通过 <see cref="SetTip"/> 注入共享的 Tips 实例。
     /// </summary>
-    public sealed class TipHoverTrigger : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+    public sealed class TipHoverTrigger :
+        MonoBehaviour,
+        IPointerEnterHandler,
+        IPointerExitHandler,
+        IPointerMoveHandler
     {
         [Tooltip("要显隐的 Tips 视图；留空则运行时用 SetTip 注入。")]
         [SerializeField] private ActionTipView _tip;
 
         [Tooltip("用于避让定位的目标 RectTransform；留空则使用当前物体。")]
         [SerializeField] private RectTransform _targetOverride;
+
+        [Tooltip("可选的实际悬停区域；组件可挂在上层射线节点，但仅在指针位于此区域时显示 Tips。")]
+        [SerializeField] private RectTransform _hoverRegionOverride;
 
         [Tooltip("是否让 Tips 跟随指针（在同一 Canvas 下按屏幕坐标定位）。")]
         [SerializeField] private bool _followPointer = true;
@@ -44,6 +51,8 @@ namespace GourmetProject.Game.UI.Tooltips
         private Action _showTip;
         private Action _hideTip;
         private Action _beforeShow;
+        private bool _pointerInsideOwner;
+        private bool _isShown;
 
         /// <summary>运行时注入 / 替换目标 Tips（多个触发器可共用一个 Tips 实例）。</summary>
         public void SetTip(ActionTipView tip)
@@ -55,6 +64,12 @@ namespace GourmetProject.Game.UI.Tooltips
         public void SetTarget(RectTransform target)
         {
             _targetOverride = target;
+        }
+
+        /// <summary>限制实际触发悬停的矩形；用于视觉节点自身不接收射线的场景。</summary>
+        public void SetHoverRegion(RectTransform hoverRegion)
+        {
+            _hoverRegionOverride = hoverRegion;
         }
 
         /// <summary>设置是否由本触发器负责定位 Tips；全屏 overlay 类 Tips 可自行定位子模块。</summary>
@@ -102,9 +117,36 @@ namespace GourmetProject.Game.UI.Tooltips
             _showTip = null;
             _hideTip = null;
             _beforeShow = null;
+            _pointerInsideOwner = false;
+            _isShown = false;
         }
 
         public void OnPointerEnter(PointerEventData eventData)
+        {
+            _pointerInsideOwner = true;
+            UpdateHoverState(eventData);
+        }
+
+        public void OnPointerMove(PointerEventData eventData)
+        {
+            if (_pointerInsideOwner)
+            {
+                UpdateHoverState(eventData);
+            }
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            _pointerInsideOwner = false;
+            if (_isShown && ActiveTip != null)
+            {
+                HideTip();
+            }
+
+            _isShown = false;
+        }
+
+        private void UpdateHoverState(PointerEventData eventData)
         {
             MonoBehaviour tip = ActiveTip;
             if (tip == null)
@@ -112,7 +154,29 @@ namespace GourmetProject.Game.UI.Tooltips
                 return;
             }
 
+            bool insideHoverRegion = _hoverRegionOverride == null
+                || RectTransformUtility.RectangleContainsScreenPoint(
+                    _hoverRegionOverride,
+                    eventData.position,
+                    eventData.enterEventCamera);
+            if (!insideHoverRegion)
+            {
+                if (_isShown)
+                {
+                    HideTip();
+                    _isShown = false;
+                }
+
+                return;
+            }
+
+            if (_isShown)
+            {
+                return;
+            }
+
             ShowTip(tip);
+            _isShown = true;
             _beforeShow?.Invoke();
             tip.transform.SetAsLastSibling();
             Canvas.ForceUpdateCanvases();
@@ -120,14 +184,6 @@ namespace GourmetProject.Game.UI.Tooltips
             if (_followPointer)
             {
                 PositionAt(eventData);
-            }
-        }
-
-        public void OnPointerExit(PointerEventData eventData)
-        {
-            if (ActiveTip != null)
-            {
-                HideTip();
             }
         }
 

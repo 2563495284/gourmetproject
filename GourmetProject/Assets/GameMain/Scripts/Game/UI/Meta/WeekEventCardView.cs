@@ -333,7 +333,13 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            TipHoverTrigger trigger = _rewardIconImage.GetComponent<TipHoverTrigger>();
+            TipHoverTrigger legacyTrigger = _rewardIconImage.GetComponent<TipHoverTrigger>();
+            legacyTrigger?.ClearTip();
+
+            GameObject triggerObject = _pickButton != null
+                ? _pickButton.gameObject
+                : _rewardIconImage.gameObject;
+            TipHoverTrigger trigger = triggerObject.GetComponent<TipHoverTrigger>();
             if (!visible
                 || _rewardTip == null
                 || action == null
@@ -345,10 +351,11 @@ namespace GourmetProject.Game.UI.Meta
 
             if (trigger == null)
             {
-                trigger = _rewardIconImage.gameObject.AddComponent<TipHoverTrigger>();
+                trigger = triggerObject.AddComponent<TipHoverTrigger>();
             }
 
             trigger.SetTarget(_rewardIconImage.rectTransform);
+            trigger.SetHoverRegion(_rewardIconImage.rectTransform);
             trigger.SetTip(
                 _rewardTip,
                 () => _rewardTip.Bind(action.RewardTitle, action.RewardDesc));
