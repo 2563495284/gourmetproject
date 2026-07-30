@@ -2685,7 +2685,11 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            if (_session == null || _session.IsSettled || _session.PreparedServe != null)
+            BattleWorldController world = _world ?? BattleWorldController.Instance;
+            if (_session == null
+                || _session.IsSettled
+                || _session.PreparedServe != null
+                || (world != null && world.IsFoodInteractionBusy))
             {
                 return;
             }
