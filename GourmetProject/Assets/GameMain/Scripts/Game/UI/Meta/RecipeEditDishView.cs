@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using DG.Tweening;
 using GourmetProject.Game.UI.Widgets;
+using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Model;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -47,6 +48,9 @@ namespace GourmetProject.Game.UI.Meta
         private bool _hovered;
         private ScrollRect _panScrollRect;
         private RecipeWarehouseItemFrameGraphic _warehouseHighlight;
+        private Image _battleStatusOverlay;
+        private Image _battleStatusBadge;
+        private Text _battleStatusText;
         private DishIconPreviewMode _previewMode;
         private bool _warehouseClickable;
         private bool _suppressClick;
@@ -90,7 +94,8 @@ namespace GourmetProject.Game.UI.Meta
             Action<RecipeEditDishView> onHoverEnter = null,
             Action<RecipeEditDishView> onHoverExit = null,
             IReadOnlyList<string> flavorIds = null,
-            DishIconPreviewMode previewMode = DishIconPreviewMode.Card)
+            DishIconPreviewMode previewMode = DishIconPreviewMode.Card,
+            BattleRecipeEntryStatus? battleStatus = null)
         {
             BookIndex = bookIndex;
             DishIndex = dishIndex;
@@ -126,6 +131,7 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             ConfigureWarehouseStyle();
+            ConfigureBattleStatus(battleStatus);
             EnsureButton();
             if (_button != null)
             {
@@ -537,6 +543,149 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             _warehouseHighlight.Configure(highlighted, _warehouseClickable);
+        }
+
+        private void ConfigureBattleStatus(BattleRecipeEntryStatus? status)
+        {
+            if (!status.HasValue)
+            {
+                if (_battleStatusOverlay != null)
+                {
+                    _battleStatusOverlay.gameObject.SetActive(false);
+                }
+
+                if (_battleStatusBadge != null)
+                {
+                    _battleStatusBadge.gameObject.SetActive(false);
+                }
+
+                return;
+            }
+
+            EnsureBattleStatusVisuals();
+            if (_battleStatusOverlay == null || _battleStatusBadge == null || _battleStatusText == null)
+            {
+                return;
+            }
+
+            (string label, Color color, float overlayAlpha) = BattleStatusStyle(status.Value);
+            Color overlayColor = color;
+            overlayColor.a = overlayAlpha;
+            _battleStatusOverlay.color = overlayColor;
+            _battleStatusOverlay.gameObject.SetActive(true);
+
+            Color badgeColor = color;
+            badgeColor.a = 0.94f;
+            _battleStatusBadge.color = badgeColor;
+            _battleStatusBadge.gameObject.SetActive(true);
+            _battleStatusBadge.transform.SetAsLastSibling();
+            _battleStatusText.text = label;
+        }
+
+        private void EnsureBattleStatusVisuals()
+        {
+            if (_battleStatusOverlay == null)
+            {
+                Transform existing = transform.Find("BattleStatusOverlay");
+                _battleStatusOverlay = existing != null
+                    ? existing.GetComponent<Image>()
+                    : null;
+            }
+
+            if (_battleStatusOverlay == null)
+            {
+                var overlayObject = new GameObject(
+                    "BattleStatusOverlay",
+                    typeof(RectTransform),
+                    typeof(CanvasRenderer),
+                    typeof(Image));
+                overlayObject.layer = gameObject.layer;
+                RectTransform overlayRect = overlayObject.GetComponent<RectTransform>();
+                overlayRect.SetParent(transform, false);
+                overlayRect.anchorMin = Vector2.zero;
+                overlayRect.anchorMax = Vector2.one;
+                overlayRect.offsetMin = Vector2.zero;
+                overlayRect.offsetMax = Vector2.zero;
+                _battleStatusOverlay = overlayObject.GetComponent<Image>();
+                _battleStatusOverlay.raycastTarget = false;
+            }
+
+            if (_battleStatusBadge == null)
+            {
+                Transform existing = transform.Find("BattleStatusBadge");
+                _battleStatusBadge = existing != null
+                    ? existing.GetComponent<Image>()
+                    : null;
+            }
+
+            if (_battleStatusBadge == null)
+            {
+                var badgeObject = new GameObject(
+                    "BattleStatusBadge",
+                    typeof(RectTransform),
+                    typeof(CanvasRenderer),
+                    typeof(Image));
+                badgeObject.layer = gameObject.layer;
+                RectTransform badgeRect = badgeObject.GetComponent<RectTransform>();
+                badgeRect.SetParent(transform, false);
+                badgeRect.anchorMin = new Vector2(1f, 1f);
+                badgeRect.anchorMax = new Vector2(1f, 1f);
+                badgeRect.pivot = new Vector2(1f, 1f);
+                badgeRect.anchoredPosition = new Vector2(-6f, -6f);
+                badgeRect.sizeDelta = new Vector2(96f, 28f);
+                _battleStatusBadge = badgeObject.GetComponent<Image>();
+                _battleStatusBadge.raycastTarget = false;
+            }
+
+            if (_battleStatusText == null)
+            {
+                _battleStatusText =
+                    _battleStatusBadge.GetComponentInChildren<Text>(true);
+            }
+
+            if (_battleStatusText == null)
+            {
+                var textObject = new GameObject(
+                    "Label",
+                    typeof(RectTransform),
+                    typeof(CanvasRenderer),
+                    typeof(Text));
+                textObject.layer = gameObject.layer;
+                RectTransform textRect = textObject.GetComponent<RectTransform>();
+                textRect.SetParent(_battleStatusBadge.transform, false);
+                textRect.anchorMin = Vector2.zero;
+                textRect.anchorMax = Vector2.one;
+                textRect.offsetMin = new Vector2(4f, 1f);
+                textRect.offsetMax = new Vector2(-4f, -1f);
+                _battleStatusText = textObject.GetComponent<Text>();
+                _battleStatusText.font =
+                    Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                _battleStatusText.fontSize = 14;
+                _battleStatusText.alignment = TextAnchor.MiddleCenter;
+                _battleStatusText.color = Color.white;
+                _battleStatusText.raycastTarget = false;
+            }
+        }
+
+        private static (string Label, Color Color, float OverlayAlpha) BattleStatusStyle(
+            BattleRecipeEntryStatus status)
+        {
+            return status switch
+            {
+                BattleRecipeEntryStatus.Normal =>
+                    ("正常", new Color(0.20f, 0.58f, 0.27f, 1f), 0.04f),
+                BattleRecipeEntryStatus.CannotPlace =>
+                    ("不能放置", new Color(0.38f, 0.38f, 0.38f, 1f), 0.28f),
+                BattleRecipeEntryStatus.WaitingForPlacement =>
+                    ("待摆放", new Color(0.88f, 0.55f, 0.10f, 1f), 0.12f),
+                BattleRecipeEntryStatus.Served =>
+                    ("已上菜", new Color(0.16f, 0.48f, 0.72f, 1f), 0.18f),
+                BattleRecipeEntryStatus.Discarded =>
+                    ("已丢弃", new Color(0.72f, 0.22f, 0.16f, 1f), 0.34f),
+                BattleRecipeEntryStatus.Removed =>
+                    ("已移除", new Color(0.42f, 0.30f, 0.52f, 1f), 0.34f),
+                _ => ("正常", new Color(0.20f, 0.58f, 0.27f, 1f), 0.04f),
+            };
         }
     }
 }

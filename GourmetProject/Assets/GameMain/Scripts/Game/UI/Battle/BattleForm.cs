@@ -852,9 +852,9 @@ namespace GourmetProject.Game.UI.Battle
             _recipeBookPage?.OpenActiveItemTarget(item, onCancel, onTargetConfirmed, onOpened);
         }
 
-        private void OpenRecipeInspect(int bookIndex)
+        private void OpenRecipeInspect(int bookIndex, bool useBattleRecipe = false)
         {
-            _recipeBookPage?.OpenInspect(bookIndex);
+            _recipeBookPage?.OpenInspect(bookIndex, useBattleRecipe);
         }
 
         internal void CancelActiveItemRecipeTarget()
@@ -1180,7 +1180,7 @@ namespace GourmetProject.Game.UI.Battle
             servingOutlet?.Bind(
                 _session,
                 ServeFromOutlet,
-                () => OpenRecipeInspect(0),
+                () => OpenRecipeInspect(0, useBattleRecipe: true),
                 () => OnServingOutletDishHoverEntered(servingOutlet),
                 OnServingOutletDishHoverExited,
                 world == null ? null : screen => world.BeginServingOutletDrag(screen),
