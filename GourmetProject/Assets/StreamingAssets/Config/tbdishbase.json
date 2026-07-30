@@ -557,5 +557,18 @@
       "XXX"
     ],
     "sortOrder": 400
+  },
+  {
+    "id": "mantou",
+    "name": "馒头",
+    "deliciousness": 10,
+    "allowRotate": false,
+    "skills": "",
+    "category": "",
+    "countAs": 1,
+    "shapeRows": [
+      "X"
+    ],
+    "sortOrder": 10000
   }
 ]
