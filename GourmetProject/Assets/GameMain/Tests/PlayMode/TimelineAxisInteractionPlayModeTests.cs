@@ -302,6 +302,45 @@ namespace GourmetProject.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator DiscardActiveItem_OnDailyActionSelectionKeepsCurrentActionCards()
+        {
+            CreateRun(out GameRun run, out cfg.Tables tables);
+            ItemDefinition item = ItemDefinition.Get(
+                tables,
+                "item_active_execute_past_node",
+                cfg.ItemKind.Active);
+            run.AcquireItem(item.Id, fallbackGold: 0);
+
+            GameObject root = BuildAxis(out ActionAxisBar axis, out _);
+            var hostObject = new GameObject(
+                "BattleForm",
+                typeof(RectTransform),
+                typeof(BattleForm));
+            hostObject.transform.SetParent(root.transform, false);
+            BattleForm host = hostObject.GetComponent<BattleForm>();
+            SetPrivate(host, "_run", run);
+            SetPrivate(host, "_actionAxisBar", axis);
+            SetPrivate(host, "_current", GameplayView.ActionSelect);
+            ActionCardDeck deck = BuildDeckWithSentinel(
+                root.transform,
+                out WeekEventCardView existingActionCard);
+            SetPrivate(host, "_deck", deck);
+            AttachAxisBinder(host, axis);
+
+            DiscardActiveItem(host, item);
+            yield return null;
+
+            Assert.That(run.HasItem(item.Id), Is.False);
+            Assert.That(
+                GetDeckCards(deck),
+                Has.Member(existingActionCard),
+                "丢弃主动道具只应刷新道具栏和行动轴，不得重建当前日常行动卡。");
+
+            Object.Destroy(root);
+            yield return null;
+        }
+
+        [UnityTest]
         public IEnumerator ExecuteFutureAndPastItems_UseAxisArrowWithoutPreviewAndCommitOnClick()
         {
             CreateRun(out GameRun run, out cfg.Tables tables);
@@ -1085,6 +1124,22 @@ namespace GourmetProject.Tests.PlayMode
                 BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.That(beginUse, Is.Not.Null);
             beginUse.Invoke(coordinator, new object[] { item, slot });
+        }
+
+        private static void DiscardActiveItem(BattleForm host, ItemDefinition item)
+        {
+            System.Type coordinatorType = typeof(BattleForm).Assembly.GetType(
+                "GourmetProject.Game.UI.Battle.ActiveItemUseCoordinator");
+            Assert.That(coordinatorType, Is.Not.Null);
+            object coordinator = coordinatorType
+                .GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                .Single()
+                .Invoke(new object[] { host });
+            MethodInfo discard = coordinatorType.GetMethod(
+                "Discard",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(discard, Is.Not.Null);
+            discard.Invoke(coordinator, new object[] { item });
         }
 
         private static void SetPrivate(object target, string fieldName, object value)

@@ -225,12 +225,11 @@ namespace GourmetProject.Game.UI.Battle
             if (!run.RemoveItem(item.Id))
             {
                 _host.ShowActiveItemMessage($"{item.Name}：没有可丢弃的道具。");
-                _host.RefreshAfterActiveItem(boardChanged: false);
                 return;
             }
 
             _host.ShowActiveItemMessage($"{item.Name}：已丢弃。");
-            _host.RefreshAfterActiveItem(boardChanged: false);
+            _host.RefreshPersistentHud();
         }
 
         private void BeginTargeting(IActiveUseContext ctx, ItemDefinition item, RunItemSlotView slot, IReadOnlyList<ActiveTarget> targets)
