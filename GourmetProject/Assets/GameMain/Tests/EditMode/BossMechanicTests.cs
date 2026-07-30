@@ -3,6 +3,7 @@ using GourmetProject.Config;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Meta;
+using GourmetProject.Game.Meta.BossDebuffs;
 using GourmetProject.Game.Run;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
@@ -38,7 +39,9 @@ namespace GourmetProject.Tests.EditMode
                 new Xoshiro256SS(20260730UL),
                 new[] { slot },
                 requiredScore: 1);
-            session.ConfigureInsertedDishSequence("mantou", windowSize: 5, countPerWindow: 1);
+            BossDebuffModelRegistry
+                .Create(CreateRun(), _tables.TbBossDebuff.Get("debuff_carb_meal"))
+                .ApplyToBattle(session);
 
             int[] insertedPerWindow = { 0, 0 };
             for (int outputIndex = 0; outputIndex < 10; outputIndex++)
@@ -64,17 +67,31 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void BossMechanicNumbers_AreLoadedFromBossTable()
+        public void BossDebuffModels_CoverConfigExactly()
         {
-            cfg.BossDebuff carb = _tables.TbBossDebuff.Get("debuff_carb_meal");
-            Assert.That(carb.InsertDishId, Is.EqualTo("mantou"));
-            Assert.That(carb.InsertDishWindowSize, Is.EqualTo(5));
-            Assert.That(carb.InsertDishCountPerWindow, Is.EqualTo(1));
+            Assert.DoesNotThrow(() => BossDebuffModelRegistry.ValidateDefinitions(_tables));
+            Assert.That(
+                BossDebuffModelRegistry.RegisteredIds.OrderBy(id => id),
+                Is.EqualTo(_tables.TbBossDebuff.DataList.Select(row => row.Id).OrderBy(id => id)));
+        }
 
-            cfg.BossDebuff dark = _tables.TbBossDebuff.Get("debuff_dark_cuisine");
-            Assert.That(dark.RandomServeMultiplierMin, Is.EqualTo(0.5f));
-            Assert.That(dark.RandomServeMultiplierMax, Is.EqualTo(1.5f));
-            Assert.That(dark.RandomServeMultiplierStep, Is.EqualTo(0.1f));
+        [TestCase("debuff_omakase", nameof(BattleSession.FoodDiscardLimit), 0f)]
+        [TestCase("debuff_dine_and_dash", nameof(BattleSession.GoldCostPerBellServe), 5f)]
+        [TestCase("debuff_fine_dining", nameof(BattleSession.BaseScoreMultiplier), 0.5f)]
+        [TestCase("debuff_appetizer", nameof(BattleSession.FirstServedDishesToRemove), 2f)]
+        [TestCase("debuff_buffet", nameof(BattleSession.MinimumServesForScore), 10f)]
+        public void SessionBossDebuffModels_ApplyClassOwnedValues(
+            string debuffId,
+            string propertyName,
+            float expected)
+        {
+            BattleSession session = CreateSession();
+            BossDebuffModelRegistry
+                .Create(CreateRun(), _tables.TbBossDebuff.Get(debuffId))
+                .ApplyToBattle(session);
+
+            object actual = typeof(BattleSession).GetProperty(propertyName)?.GetValue(session);
+            Assert.That(System.Convert.ToSingle(actual), Is.EqualTo(expected));
         }
 
         [Test]
@@ -112,6 +129,19 @@ namespace GourmetProject.Tests.EditMode
                 _database,
                 _tables.TbCharacter.DataList[0].Id,
                 "boss-mechanic-tests");
+        }
+
+        private BattleSession CreateSession()
+        {
+            var slot = new RecipeSlot(
+                "test",
+                new[] { new RecipeSlotEntry(_database.AllDishes.First().Id) });
+            return new BattleSession(
+                new DiningTable(10, 1),
+                _database,
+                new Xoshiro256SS(20260730UL),
+                new[] { slot },
+                requiredScore: 1);
         }
     }
 }

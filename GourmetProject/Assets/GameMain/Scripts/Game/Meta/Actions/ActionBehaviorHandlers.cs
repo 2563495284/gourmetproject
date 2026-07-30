@@ -73,7 +73,7 @@ namespace GourmetProject.Game.Meta
                 string battleKey = $"boss_{bossKey}_{debuff?.Id ?? "none"}";
                 return ActionOutcome.Battle(
                     bossRequired,
-                    debuff?.Modifier ?? string.Empty,
+                    string.Empty,
                     battleKey,
                     isBoss: true,
                     bossId: boss.Id,

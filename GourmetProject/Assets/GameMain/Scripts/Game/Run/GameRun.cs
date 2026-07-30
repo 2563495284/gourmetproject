@@ -2324,6 +2324,7 @@ namespace GourmetProject.Game.Run
                 RequiredScore = data.RequiredScore,
                 RawRequiredScore = data.RawRequiredScore,
                 Modifier = data.Modifier ?? string.Empty,
+                BossDebuffId = data.BossDebuffId ?? string.Empty,
                 BattleKey = data.BattleKey ?? string.Empty,
                 IsBoss = data.IsBoss,
                 LastTotal = data.LastTotal,
@@ -2438,17 +2439,22 @@ namespace GourmetProject.Game.Run
         public bool HasNextWeek => WeekIndex < TotalWeeks;
 
         /// <summary>
-        /// 构建一局美食挑战战斗。<paramref name="requiredScore"/> 目标分、<paramref name="modifier"/> 特殊机制、
+        /// 构建一局美食挑战战斗。<paramref name="requiredScore"/> 为目标分，
+        /// <paramref name="bossDebuffId"/> 选择 Boss Debuff 模型，
         /// <paramref name="key"/> 用于派生确定性随机流（同一周内不同天/不同战斗需用不同 key 才能各自独立复现）。
         /// </summary>
-        public BattleSession BuildBattleSession(int requiredScore, string modifier, string key)
+        public BattleSession BuildBattleSession(
+            int requiredScore,
+            string modifier,
+            string key,
+            string bossDebuffId = "")
         {
-            return BattleSessionFactory.Build(this, requiredScore, modifier, key);
+            return BattleSessionFactory.Build(this, requiredScore, modifier, key, bossDebuffId);
         }
 
-        public GpTable BuildTablePreviewFromFragments(string modifier = "")
+        public GpTable BuildTablePreviewFromFragments(string modifier = "", string bossDebuffId = "")
         {
-            return BattleSessionFactory.BuildTablePreview(this, modifier);
+            return BattleSessionFactory.BuildTablePreview(this, modifier, bossDebuffId);
         }
 
         /// <summary>「调味小票」落地：给菜谱中的一道菜永久附加一个风味。越界或空 id 返回 false。</summary>
