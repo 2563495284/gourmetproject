@@ -23,11 +23,12 @@ namespace GourmetProject.Game.Presentation.Battle
     public sealed class DiningTableEditController : MonoBehaviour
     {
         private const int EditTraySortingOrder = 150;
-        private const int EditDragSortingOrder = 260;
+        private const int EditDragSortingOrder = -70;
         private const float EditDragGrabDuration = 0.12f;
         private const float EditDragReturnDuration = 0.16f;
         private const float EditTableLayoutTweenDuration = 0.8f;
         private const float EditGhostOutlineWidth = 0.075f;
+        private const float EditDragFillAlpha = 0.5f;
         private const float EditBoundsWarningWidth = 0.055f;
         private const float EditTrayCellJitter = 0.045f;
         private const float EditTrayCellRotation = 4f;
@@ -1260,7 +1261,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 var local = new Vector3((cellPos.X - avgX) * pitch, -(cellPos.Y - avgY) * pitch, 0f);
                 cell.Configure(cellPos, local, _cellSize, FragmentCellSprite(def, cellPos), null);
                 cell.SetColor(EditFragmentFillColor);
-                cell.SetSortingOrder(EditDragSortingOrder);
+                cell.SetSorting(BattleSorting.Fx, EditDragSortingOrder);
                 _editDragCells.Add(cell);
             }
         }
@@ -1321,8 +1322,8 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 if (cell != null)
                 {
-                    cell.SetOutline(color, EditGhostOutlineWidth, fillAlpha: 1f);
-                    cell.SetSortingOrder(EditDragSortingOrder);
+                    cell.SetOutline(color, EditGhostOutlineWidth, fillAlpha: EditDragFillAlpha);
+                    cell.SetSorting(BattleSorting.Fx, EditDragSortingOrder);
                 }
             }
         }
@@ -1335,7 +1336,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 {
                     cell.ClearOutline();
                     cell.SetColor(EditFragmentFillColor);
-                    cell.SetSortingOrder(EditDragSortingOrder);
+                    cell.SetSorting(BattleSorting.Fx, EditDragSortingOrder);
                 }
             }
         }

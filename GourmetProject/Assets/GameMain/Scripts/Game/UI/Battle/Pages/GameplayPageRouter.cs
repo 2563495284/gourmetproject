@@ -38,6 +38,8 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         EventPagePanel EventPagePanel { get; }
 
+        GameObject BoardEditPanel { get; }
+
         Button BoardEditActionButton { get; }
 
         bool RecipeInspectShowsActionAxis { get; }
@@ -110,10 +112,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
             _host.RandomizedItemsPanel?.Close();
             SetActive(_host.EventPagePanel, false);
 
-            if (_host.BoardEditActionButton != null)
-            {
-                _host.BoardEditActionButton.gameObject.SetActive(false);
-            }
+            SetActive(_host.BoardEditPanel, false);
 
             _host.SetFoodActionsVisible(false);
 
@@ -177,10 +176,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
             SetActive(_host.RandomizedItemsPanel, randomizedItems);
             SetActive(_host.EventPagePanel, eventPage);
 
-            if (_host.BoardEditActionButton != null)
-            {
-                _host.BoardEditActionButton.gameObject.SetActive(view == GameplayView.TableEdit);
-            }
+            SetActive(_host.BoardEditPanel, view == GameplayView.TableEdit);
 
             _host.SetActionAxisVisible(actionSelect || shop || eventPage || (recipeInspect && _host.RecipeInspectShowsActionAxis));
             _host.SetFoodActionsVisible(view == GameplayView.Food);

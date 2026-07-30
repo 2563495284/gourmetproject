@@ -109,6 +109,7 @@ namespace GourmetProject.Game.UI.Battle
         [SerializeField] private EventPagePanel _eventPagePanel;
 
         [Header("DiningTable Edit")]
+        [SerializeField] private GameObject _boardEditPanel;
         [FormerlySerializedAs("_boardEditSkipButton")]
         [SerializeField] private Button _boardEditActionButton;
 
@@ -837,6 +838,7 @@ namespace GourmetProject.Game.UI.Battle
         RewardItemChoicePanel IGameplayPageRouterHost.RewardItemChoicePanel => _rewardItemChoicePanel;
         RandomizedItemsPanel IGameplayPageRouterHost.RandomizedItemsPanel => _randomizedItemsPanel;
         EventPagePanel IGameplayPageRouterHost.EventPagePanel => _eventPagePanel;
+        GameObject IGameplayPageRouterHost.BoardEditPanel => _boardEditPanel;
         Button IGameplayPageRouterHost.BoardEditActionButton => _boardEditActionButton;
         bool IGameplayPageRouterHost.RecipeInspectShowsActionAxis => _recipeBookPage?.InspectShowsActionAxis == true;
         void IGameplayPageRouterHost.OnLeavingPage(GameplayView current, GameplayView next) => _recipeBookPage?.OnLeavingPage(current, next);

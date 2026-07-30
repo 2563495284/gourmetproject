@@ -19,6 +19,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private static readonly Color VoidPlaceholderColor = new Color(0.85f, 0.85f, 0.85f, 0.22f);
         private const int DragFeedbackSortingOrder = -80;
         private const int TransientRegionOutlineLayer = 999;
+        private const float FragmentPlacementFeedbackFillAlpha = 1.0f;
 
         private bool _voidAsPlaceholder;
 
@@ -255,7 +256,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 overlay.SetOutline(
                     color,
                     center ? 0.12f : 0.08f,
-                    dishPlacement ? 0f : center ? 0.28f : 0.16f);
+                    dishPlacement ? 0f : FragmentPlacementFeedbackFillAlpha);
                 overlay.SetSorting(BattleSorting.Fx, DragFeedbackSortingOrder);
             }
 
