@@ -527,6 +527,7 @@ namespace GourmetProject.Game.Presentation.Battle
             CancelServeInteractions();
             _session = null;
             SetFoodWorldElementsVisible(false);
+            SetPendingRewardPresentationVisible(false);
             ClearPlacedPieces();
 
             _boardEdit.BeginTableFragmentChoice(request);
