@@ -57,7 +57,7 @@
   {
     "id": "m_gold",
     "name": "金",
-    "desc": "占据 2 格金餐桌时\n+ 10 金币",
+    "desc": "占据 2 格金餐桌时\n+ 15 金币",
     "effectType": 6,
     "effectParam": [
       "2"
@@ -70,7 +70,7 @@
   {
     "id": "m_silver",
     "name": "银",
-    "desc": "占据 2 格银餐桌时\n1/3 概率获得主动道具",
+    "desc": "占据 2 格银餐桌时\n1/2 概率获得主动道具",
     "effectType": 7,
     "effectParam": [
       "2"
