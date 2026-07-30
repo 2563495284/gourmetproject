@@ -46,6 +46,7 @@ namespace GourmetProject.Tests.EditMode
                 RequiredScore = 120,
                 RawRequiredScore = 100,
                 Modifier = "test",
+                BossDebuffId = "debuff_carb_meal",
                 BattleKey = "battle",
                 LastTotal = 88,
                 FinalHappyCakeLayers = 7,
@@ -83,6 +84,7 @@ namespace GourmetProject.Tests.EditMode
             PendingRewardBattleViewSaveData actual = restored.GetPendingRewardBattleView();
 
             Assert.That(actual, Is.Not.Null);
+            Assert.That(actual.BossDebuffId, Is.EqualTo("debuff_carb_meal"));
             Assert.That(actual.FinalHappyCakeLayers, Is.EqualTo(7));
             Assert.That(actual.HasDetailedScore, Is.True);
             Assert.That(actual.RawSum, Is.EqualTo(80f));

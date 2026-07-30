@@ -33,7 +33,12 @@ namespace GourmetProject.Game.Orchestration
 
         void ShowTimelineNodeSkipped(cfg.TimelineNode node, Action onDone);
 
-        void StartBattle(int requiredScore, string modifier, string key, ActionExecutionContext actionContext);
+        void StartBattle(
+            int requiredScore,
+            string modifier,
+            string key,
+            string bossDebuffId,
+            ActionExecutionContext actionContext);
 
         void ShowNotice(string title, string message, Action onContinue);
 
@@ -955,7 +960,7 @@ namespace GourmetProject.Game.Orchestration
                     outcome.Modifier,
                     outcome.BattleKey,
                     true,
-                    outcome.BossId,
+                    outcome.BossDebuffId,
                     onContinue,
                     context,
                     beforeReward: () => CompleteBossBeforeReward(outcome, boss, onBossComplete));
@@ -1418,7 +1423,7 @@ namespace GourmetProject.Game.Orchestration
             string modifier,
             string key,
             bool isBoss,
-            string bossId,
+            string bossDebuffId,
             Action onWin,
             ActionExecutionContext actionContext = null,
             Action<ScoreResult> onLose = null,
@@ -1430,7 +1435,7 @@ namespace GourmetProject.Game.Orchestration
             CurrentBattleActionContext = actionContext;
             _currentBattleIsBoss = isBoss;
             _view.HideResultPanel();
-            _view.StartBattle(requiredScore, modifier, key, actionContext);
+            _view.StartBattle(requiredScore, modifier, key, bossDebuffId, actionContext);
         }
 
         private void OnVictory()

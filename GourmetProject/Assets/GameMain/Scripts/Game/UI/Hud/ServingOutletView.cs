@@ -28,7 +28,8 @@ namespace GourmetProject.Game.UI.Hud
         private const float FlavorStainSoftness = 0.12f;
         private const float FlavorStainDarken = 0.12f;
 
-        [SerializeField] private RecipeCardView _recipeSummary;
+        [SerializeField] private Button _recipeInfoButton;
+        [SerializeField] private Text _recipeInfoText;
         [SerializeField] private Button _serveButton;
         [SerializeField] private Image _serveBellImage;
         [SerializeField] private Image _dishImage;
@@ -115,10 +116,7 @@ namespace GourmetProject.Game.UI.Hud
                 }
             }
 
-            _recipeSummary?.Bind(
-                $"{placeable}<color=#35B84A>✓</color> {blocked}<color=#E33A3A>×</color>",
-                onInspect != null,
-                onInspect);
+            BindRecipeInfo(placeable, blocked, onInspect);
 
             bool limitReached = session != null
                 && session.MaxServes >= 0
@@ -212,6 +210,25 @@ namespace GourmetProject.Game.UI.Hud
                 _canvasGroup.alpha = 1f;
                 _canvasGroup.interactable = true;
                 _canvasGroup.blocksRaycasts = true;
+            }
+        }
+
+        private void BindRecipeInfo(int placeable, int blocked, Action onInspect)
+        {
+            SetText(
+                _recipeInfoText,
+                $"{placeable}<color=#35B84A>✓</color> {blocked}<color=#E33A3A>×</color>");
+
+            if (_recipeInfoButton == null)
+            {
+                return;
+            }
+
+            _recipeInfoButton.onClick.RemoveAllListeners();
+            _recipeInfoButton.interactable = onInspect != null;
+            if (onInspect != null)
+            {
+                _recipeInfoButton.onClick.AddListener(() => onInspect());
             }
         }
 

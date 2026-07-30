@@ -153,6 +153,7 @@ namespace GourmetProject.Game.UI.Battle
         private Action _currentTimelineNodePick;
         private int _activeBattleRawRequiredScore;
         private string _activeBattleModifier = string.Empty;
+        private string _activeBossDebuffId = string.Empty;
         private string _activeBattleKey = string.Empty;
         private bool _activeBattleIsBoss;
         private bool _rewardPeekOnly;
@@ -362,6 +363,7 @@ namespace GourmetProject.Game.UI.Battle
                 RequiredScore = _session.RequiredScore,
                 RawRequiredScore = _activeBattleRawRequiredScore > 0 ? _activeBattleRawRequiredScore : _session.RequiredScore,
                 Modifier = _activeBattleModifier ?? string.Empty,
+                BossDebuffId = _activeBossDebuffId ?? string.Empty,
                 BattleKey = _activeBattleKey ?? string.Empty,
                 IsBoss = _activeBattleIsBoss,
                 LastTotal = _session.LastResult.Total,
@@ -452,14 +454,19 @@ namespace GourmetProject.Game.UI.Battle
 
             _activeBattleRawRequiredScore = snapshot.RawRequiredScore > 0 ? snapshot.RawRequiredScore : snapshot.RequiredScore;
             _activeBattleModifier = snapshot.Modifier ?? string.Empty;
+            _activeBossDebuffId = snapshot.BossDebuffId ?? string.Empty;
             _activeBattleKey = string.IsNullOrEmpty(snapshot.BattleKey)
                 ? (_run.PendingRewardKey ?? string.Empty)
                 : snapshot.BattleKey;
             _activeBattleIsBoss = snapshot.IsBoss;
-            _currentBossDebuff = _activeBattleIsBoss ? ResolveBossDebuff(_activeBattleModifier) : null;
+            _currentBossDebuff = _activeBattleIsBoss ? ResolveBossDebuff(_activeBossDebuffId) : null;
 
             UnsubscribeCakeLayerChanges();
-            _session = _run.BuildBattleSession(_activeBattleRawRequiredScore, _activeBattleModifier, _activeBattleKey);
+            _session = _run.BuildBattleSession(
+                _activeBattleRawRequiredScore,
+                _activeBattleModifier,
+                _activeBattleKey,
+                _activeBossDebuffId);
             _pendingSettlementCakeLayers = null;
             _session.DiningTable.Clear();
             RestorePendingRewardBattleDishes(_session, snapshot);
@@ -2204,19 +2211,25 @@ namespace GourmetProject.Game.UI.Battle
 
         // —— 战斗 ——
 
-        public void StartBattle(int requiredScore, string modifier, string key, ActionExecutionContext actionContext)
+        public void StartBattle(
+            int requiredScore,
+            string modifier,
+            string key,
+            string bossDebuffId,
+            ActionExecutionContext actionContext)
         {
             HideResultPanel();
             _infoColumn?.SetBattleScoreOverride(null);
             _infoColumn?.ScoreFire?.Hide();
             _activeBattleRawRequiredScore = requiredScore;
             _activeBattleModifier = modifier ?? string.Empty;
+            _activeBossDebuffId = bossDebuffId ?? string.Empty;
             _activeBattleKey = key ?? string.Empty;
             _activeBattleIsBoss = IsBossFoodAction(actionContext);
-            _currentBossDebuff = _activeBattleIsBoss ? ResolveBossDebuff(modifier) : null;
+            _currentBossDebuff = _activeBattleIsBoss ? ResolveBossDebuff(_activeBossDebuffId) : null;
             SetMessage(string.Empty);
             UnsubscribeCakeLayerChanges();
-            _session = _run.BuildBattleSession(requiredScore, modifier, key);
+            _session = _run.BuildBattleSession(requiredScore, modifier, key, _activeBossDebuffId);
             _displayedCakeLayers = _session.HappyCakeLayers;
             _pendingSettlementCakeLayers = null;
             _session.Served += OnBattleServed;
@@ -2275,9 +2288,9 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnBattleServed(DishInstance dish, int servesUsed) => RefreshPersistent();
 
-        private cfg.BossDebuff ResolveBossDebuff(string modifier)
+        private cfg.BossDebuff ResolveBossDebuff(string bossDebuffId)
         {
-            if (string.IsNullOrEmpty(modifier))
+            if (string.IsNullOrEmpty(bossDebuffId))
             {
                 return null;
             }
@@ -2288,15 +2301,7 @@ namespace GourmetProject.Game.UI.Battle
                 return null;
             }
 
-            foreach (cfg.BossDebuff debuff in tables.TbBossDebuff.DataList)
-            {
-                if (debuff != null && debuff.Modifier == modifier)
-                {
-                    return debuff;
-                }
-            }
-
-            return null;
+            return tables.TbBossDebuff.GetOrDefault(bossDebuffId);
         }
 
         private bool IsBossFoodAction(ActionExecutionContext actionContext)
