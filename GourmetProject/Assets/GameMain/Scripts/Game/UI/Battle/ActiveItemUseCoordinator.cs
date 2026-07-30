@@ -95,6 +95,16 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
+            if (_timelineAxisTargeting
+                && _candidateTargets.Count == 0
+                && Time.frameCount > _targetFrame
+                && Mouse.current != null
+                && Mouse.current.leftButton.wasPressedThisFrame)
+            {
+                CancelTargeting();
+                return;
+            }
+
             if (_recipePanelTargeting)
             {
                 return;
@@ -180,12 +190,8 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            IReadOnlyList<ActiveTarget> targets = ctx.EnumerateTargets(item);
-            if (targets == null || targets.Count == 0)
-            {
-                _host.ShowActiveItemMessage($"{item.Name}：没有可选目标。");
-                return;
-            }
+            IReadOnlyList<ActiveTarget> targets =
+                ctx.EnumerateTargets(item) ?? Array.Empty<ActiveTarget>();
 
             if (ShouldUseRecipePanelTargeting(item))
             {

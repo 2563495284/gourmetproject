@@ -513,6 +513,66 @@ namespace GourmetProject.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator ExecutePastItem_WithoutEligibleTargetStillBeginsAxisTargeting()
+        {
+            CreateRun(out GameRun run, out cfg.Tables tables);
+            cfg.GameAction action = tables.TbAction.DataList.First(
+                candidate => candidate.Id == "act_gold_clear");
+            run.BeginTimeline(
+                "test",
+                7f,
+                new[] { new RuntimeTimelineNode("current_node", "test", 1, action.Id) });
+            run.CurrentDay = 1f;
+
+            ItemDefinition item = ItemDefinition.Get(
+                tables,
+                "item_active_execute_past_node",
+                cfg.ItemKind.Active);
+            run.AcquireItem(item.Id, fallbackGold: 0);
+
+            GameObject root = BuildAxis(out ActionAxisBar axis, out _);
+            var hostObject = new GameObject(
+                "BattleForm",
+                typeof(RectTransform),
+                typeof(BattleForm));
+            hostObject.transform.SetParent(root.transform, false);
+            BattleForm host = hostObject.GetComponent<BattleForm>();
+            SetPrivate(host, "_run", run);
+            SetPrivate(host, "_actionAxisBar", axis);
+            SetPrivate(host, "_current", GameplayView.ActionSelect);
+            SetPrivate(host, "_loop", new WeekLoopController(run, null));
+            SetPrivate(host, "_currentTimelineNodeCard", TimelineService.GetNode(run, "current_node"));
+            AttachAxisBinder(host, axis);
+
+            TargetArrowView arrowTemplate = BuildArrowTemplate();
+            SetPrivate(host, "_activeItemTargetArrowPrefab", arrowTemplate);
+            RunItemSlotView slot = BuildItemSlot(root.transform);
+
+            BeginUseActiveItem(host, item, slot);
+            yield return null;
+
+            Assert.That(axis.SelectionMode, Is.EqualTo(TimelineAxisSelectionMode.ExecuteNode));
+            Assert.That(run.HasItem(item.Id), Is.True, "未选择目标时不得消费复制单。");
+            Assert.That(
+                root.GetComponentsInChildren<TargetArrowView>(true)
+                    .Any(view => view.gameObject.name.Contains("(Clone)")),
+                Is.True,
+                "即使当前没有合法目标，也必须进入行动轴瞄准并显示箭头。");
+
+            axis.CancelSelection();
+            yield return null;
+            Assert.That(axis.SelectionMode, Is.EqualTo(TimelineAxisSelectionMode.None));
+            Assert.That(
+                root.GetComponentsInChildren<TargetArrowView>(true)
+                    .Any(view => view.gameObject.name.Contains("(Clone)")),
+                Is.False);
+
+            Object.Destroy(root);
+            Object.Destroy(arrowTemplate.gameObject);
+            yield return null;
+        }
+
+        [UnityTest]
         public IEnumerator NodeCompletion_RescansDueNodesAndRunsNewCurrentDayNodeNext()
         {
             CreateRun(out GameRun run, out cfg.Tables tables);
