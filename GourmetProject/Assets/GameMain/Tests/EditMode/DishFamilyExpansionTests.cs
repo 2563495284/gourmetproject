@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using GourmetProject.Config;
+using GourmetProject.Core.Rng;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Meta;
@@ -112,6 +114,45 @@ namespace GourmetProject.Tests.EditMode
                     flavor.SortOrder,
                     Is.EqualTo(configured.SortOrder));
             }
+        }
+
+        [Test]
+        public void GluttonInitialRecipe_AllCandidatesExistAndRollsFourteenOrFifteenDishes()
+        {
+            RecipeDef recipe = _database.GetRecipe("recipe_glutton");
+            Assert.That(recipe, Is.Not.Null);
+
+            foreach (string dishId in RecipeRoller.CollectPossibleDishIds(recipe))
+            {
+                Assert.That(
+                    _database.GetDish(dishId),
+                    Is.Not.Null,
+                    $"初始菜谱引用了未生成的菜品 '{dishId}'。");
+            }
+
+            bool rolledFourteen = false;
+            bool rolledFifteen = false;
+            for (ulong seed = 1; seed <= 128; seed++)
+            {
+                List<string> rolled =
+                    RecipeRoller.Roll(recipe, _database, new Xoshiro256SS(seed));
+                rolledFourteen |= rolled.Count == 14;
+                rolledFifteen |= rolled.Count == 15;
+                Assert.That(
+                    rolled.Count == 14 || rolled.Count == 15,
+                    Is.True,
+                    $"初始菜谱数量应为 14 或 15，实际为 {rolled.Count}。");
+
+                for (int arrow = 1; arrow <= 4; arrow++)
+                {
+                    Assert.That(
+                        rolled.Count(id => id == $"arrow_cookie_{arrow}"),
+                        Is.EqualTo(3));
+                }
+            }
+
+            Assert.That(rolledFourteen, Is.True);
+            Assert.That(rolledFifteen, Is.True);
         }
 
         [Test]
