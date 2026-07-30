@@ -318,18 +318,6 @@ namespace GourmetProject.Game.UI.Meta
             BattleForm.Active?.OnRewardConfirmed();
         }
 
-        /// <summary>通用奖励保持自动完成；Food 战斗奖励必须等待玩家明确点击“继续行动”。</summary>
-        private bool TryAutoComplete(bool closeForm)
-        {
-            if (!_genericMode || _offer == null || _run == null || !_offer.IsFullyClaimed)
-            {
-                return false;
-            }
-
-            CompleteRewards(closeForm);
-            return true;
-        }
-
         private void Close()
         {
             GameApp.UI.CloseUIForm(UIForm);
@@ -430,15 +418,8 @@ namespace GourmetProject.Game.UI.Meta
                 }
             }
 
-            SaveCurrentOffer();
+            CacheCurrentOffer();
             RefreshBattlePersistentHud();
-
-            // 只剩金币这一个奖励，领完直接等效于点「继续」。
-            if (TryAutoComplete(closeForm: true))
-            {
-                return;
-            }
-
             RefreshOffer();
         }
 
@@ -473,7 +454,7 @@ namespace GourmetProject.Game.UI.Meta
                     RewardGranter.ApplyFragmentPack(_run, groupChoices);
                 }
 
-                SaveCurrentOffer();
+                CacheCurrentOffer();
 
                 Close();
                 BattleForm.Active?.OpenRewardTableEdit(placed =>
@@ -481,14 +462,7 @@ namespace GourmetProject.Game.UI.Meta
                     if (placed && !IsChoiceResolved(groupIndex))
                     {
                         MarkChoiceClaimed(groupIndex, index);
-                        SaveCurrentOffer();
-                    }
-
-                    // 拼完碎片（placed）且这是最后一个奖励：不再弹回 RewardForm，直接等效于点「继续」。
-                    // 若在餐桌编辑里选择跳过（!placed），碎片奖励仍保留，照常弹回 RewardForm。
-                    if (TryAutoComplete(closeForm: false))
-                    {
-                        return;
+                        CacheCurrentOffer();
                     }
 
                     ReopenReward();
@@ -502,14 +476,8 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             MarkChoiceClaimed(groupIndex, index);
-            SaveCurrentOffer();
+            CacheCurrentOffer();
             RefreshBattlePersistentHud();
-
-            if (TryAutoComplete(closeForm: true))
-            {
-                return;
-            }
-
             RefreshOffer();
         }
 
@@ -601,7 +569,7 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             MarkChoiceClaimed(groupIndex, choiceIndex);
-            SaveCurrentOffer();
+            CacheCurrentOffer();
             RefreshBattlePersistentHud();
             if (!IsChoiceResolved(groupIndex))
             {
@@ -635,7 +603,7 @@ namespace GourmetProject.Game.UI.Meta
                 _allowResultPeek ? RewardFormOpenArgs.BattleReward() : null);
         }
 
-        private void SaveCurrentOffer()
+        private void CacheCurrentOffer()
         {
             if (_genericMode)
             {
@@ -645,9 +613,6 @@ namespace GourmetProject.Game.UI.Meta
             {
                 _run.SetPendingRewardOffer(_rewardKey, _offer);
             }
-
-            // 奖励应用与 claimed index 更新都在 SuppressSave 区间内完成，到这里一次性持久化。
-            RunPersistence.Save(_run);
         }
 
         private void MarkChoiceClaimed(int groupIndex, int index)
@@ -1060,13 +1025,8 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             MarkChoiceClaimed(groupIndex, index);
-            SaveCurrentOffer();
+            CacheCurrentOffer();
             RefreshBattlePersistentHud();
-
-            if (TryAutoComplete(closeForm: false))
-            {
-                return;
-            }
 
             if (!IsChoiceResolved(groupIndex) && IsItemPack(currentChoices)
                 && OpenItemChoicePopup(groupIndex, currentChoices, closeRewardFormOnOpen: false))
@@ -1105,14 +1065,8 @@ namespace GourmetProject.Game.UI.Meta
                 MarkChoiceClaimed(groupIndex, i);
             }
 
-            SaveCurrentOffer();
+            CacheCurrentOffer();
             RefreshBattlePersistentHud();
-
-            if (TryAutoComplete(closeForm: true))
-            {
-                return;
-            }
-
             RefreshOffer();
         }
 

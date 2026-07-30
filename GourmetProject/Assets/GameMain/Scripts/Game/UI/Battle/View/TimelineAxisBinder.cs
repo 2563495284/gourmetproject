@@ -17,25 +17,22 @@ namespace GourmetProject.Game.UI.Battle.View
     internal sealed class TimelineAxisBinder
     {
         private readonly ActionAxisBar _axis;
-        private readonly Func<ShopNodeTipView> _shopTip;
-        private readonly Func<InterestNodeTipView> _interestTip;
-        private readonly Func<BossFeastTipView> _bossTip;
+        private readonly Func<TimelineNodeTipView> _timelineTip;
 
         public TimelineAxisBinder(
             ActionAxisBar axis,
-            Func<ShopNodeTipView> shopTip,
-            Func<InterestNodeTipView> interestTip,
-            Func<BossFeastTipView> bossTip)
+            Func<TimelineNodeTipView> timelineTip)
         {
             _axis = axis;
-            _shopTip = shopTip;
-            _interestTip = interestTip;
-            _bossTip = bossTip;
+            _timelineTip = timelineTip;
         }
 
-        public void Rebuild(GameRun run)
+        public void Rebuild(GameRun run, string executingNodeId = null)
         {
-            _axis?.Build(run, (node, go) => ConfigureNodeTip(run, node, go));
+            _axis?.Build(
+                run,
+                (node, go) => ConfigureNodeTip(run, node, go),
+                executingNodeId);
         }
 
         public bool BeginActiveItemTargeting(
@@ -145,59 +142,26 @@ namespace GourmetProject.Game.UI.Battle.View
                 return;
             }
 
-            switch (ActionDisplay.KindOf(run?.Tables, action))
+            TimelineNodeTipView tip = _timelineTip?.Invoke();
+            if (tip == null)
             {
-                case ActionDisplayKind.Shop:
-                {
-                    ShopNodeTipView tip = _shopTip?.Invoke();
-                    if (tip != null)
-                    {
-                        trigger.SetTip(tip, () => tip.Bind(action, node.Day));
-                    }
-
-                    break;
-                }
-
-                case ActionDisplayKind.Interest:
-                {
-                    InterestNodeTipView tip = _interestTip?.Invoke();
-                    if (tip != null)
-                    {
-                        trigger.SetTip(tip, () => BindInterestNodeTip(run, tip, node, action));
-                    }
-
-                    break;
-                }
-
-                case ActionDisplayKind.Boss:
-                {
-                    BossFeastTipView tip = _bossTip?.Invoke();
-                    if (tip != null)
-                    {
-                        trigger.SetTip(tip, () => BindBossNodeTip(run, tip, node, action));
-                    }
-
-                    break;
-                }
-
-                default:
-                {
-                    ShopNodeTipView tip = _shopTip?.Invoke();
-                    if (tip != null)
-                    {
-                        trigger.SetTip(tip, () => tip.Bind(action, node.Day));
-                    }
-                    else
-                    {
-                        trigger.ClearTip();
-                    }
-
-                    break;
-                }
+                trigger.ClearTip();
+                return;
             }
+
+            bool isBoss = ActionDisplay.KindOf(run?.Tables, action) == ActionDisplayKind.Boss;
+            trigger.SetTip(
+                tip,
+                isBoss
+                    ? () => BindBossNodeTip(run, tip, node, action)
+                    : () => BindActionNodeTip(run, tip, node, action));
         }
 
-        private static void BindInterestNodeTip(GameRun run, InterestNodeTipView tip, cfg.TimelineNode node, cfg.GameAction action)
+        private static void BindActionNodeTip(
+            GameRun run,
+            TimelineNodeTipView tip,
+            cfg.TimelineNode node,
+            cfg.GameAction action)
         {
             if (tip == null || node == null || action == null)
             {
@@ -205,10 +169,14 @@ namespace GourmetProject.Game.UI.Battle.View
             }
 
             string desc = EventService.FormatRuntimeText(run, action.Desc);
-            tip.Bind(action.Name, desc, node.Day);
+            tip.Bind(action.Name, desc, $"节点天数：{node.Day}天");
         }
 
-        private static void BindBossNodeTip(GameRun run, BossFeastTipView tip, cfg.TimelineNode node, cfg.GameAction action)
+        private static void BindBossNodeTip(
+            GameRun run,
+            TimelineNodeTipView tip,
+            cfg.TimelineNode node,
+            cfg.GameAction action)
         {
             if (tip == null || node == null)
             {
@@ -218,7 +186,10 @@ namespace GourmetProject.Game.UI.Battle.View
             cfg.Food boss = PreviewBoss(run, node, action);
             if (boss == null)
             {
-                tip.Bind("Bug", "不应该出现此条信息，请联系开发者。", run?.RequiredScore ?? 0);
+                tip.Bind(
+                    "Bug",
+                    "不应该出现此条信息，请联系开发者。",
+                    $"美味度要求：{(run?.RequiredScore ?? 0):N0}");
                 return;
             }
 
@@ -229,7 +200,7 @@ namespace GourmetProject.Game.UI.Battle.View
                     new ActionExecutionContext(action) { TargetScoreDayOverride = node.Day },
                     debuff?.TargetScoreHiddenOffset ?? 0)
                 : 0;
-            tip.Bind(debuff.Name, debuff.Desc, required);
+            tip.Bind(debuff.Name, debuff.Desc, $"美味度要求：{required:N0}");
         }
 
         private static cfg.Food PreviewBoss(GameRun run, cfg.TimelineNode node, cfg.GameAction action)

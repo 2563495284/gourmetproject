@@ -19,12 +19,12 @@ namespace GourmetProject.Game.UI.Battle.View
         public const float PassiveFlashStagger = 0.12f;
         public const float FoodControlOffsetMin = 100f;
         public const float FoodControlOffsetMax = 400f;
-        public const float FoodSpeedMin = 1.1f;
-        public const float FoodSpeedMax = 1.25f;
-        public const float FoodAccelerationMin = 2f;
-        public const float FoodAccelerationMax = 2.5f;
-        public const float FoodDurationMin = 1f;
-        public const float FoodDurationMax = 1.75f;
+        public const float FoodSpeedMin = 3.3f;
+        public const float FoodSpeedMax = 3.75f;
+        public const float FoodAccelerationMin = 4f;
+        public const float FoodAccelerationMax = 5f;
+        public const float FoodDurationMin = 0.5f;
+        public const float FoodDurationMax = 0.8f;
 
         private static readonly Color FoodDarkColor = new(0.16f, 0.16f, 0.16f, 1f);
         private static readonly Color OuterTrailColor = new(1f, 0.18f, 0.035f, 0.9f);

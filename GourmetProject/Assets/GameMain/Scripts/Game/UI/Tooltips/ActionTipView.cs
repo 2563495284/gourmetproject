@@ -4,12 +4,11 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI.Tooltips
 {
     /// <summary>
-    /// 行动轴节点 / 道具 hover Tips 的共享基类（对应原型图 Tips.png 的四张卡）。
-    /// 统一结构：左侧图标 + 卡片（标题 / 描述框 / 可选底部信息行）。
+    /// 行动轴节点 / 道具 hover Tips 的共享基类。
+    /// 统一结构：卡片（标题 / 描述框 / 可选底部信息行）。
     ///
-    /// 每类 Tips 有独立 prefab（<c>BossFeastTipView</c> / <c>ShopNodeTipView</c> /
-    /// <c>InterestNodeTipView</c> / <c>ItemTipView</c>），各自的子类只负责把业务数据
-    /// 翻译成标题 / 描述 / 底行文案，公共展示 / 显隐逻辑全部收敛在此基类，避免四处漂移。
+    /// 行动轴节点共用 <c>TimelineNodeTipView</c>，道具使用带动态词条布局的
+    /// <c>ItemTipView</c>；公共展示 / 显隐逻辑收敛在此基类。
     ///
     /// 作为可挂在任意 Canvas 下的 MonoBehaviour View（非 UGuiForm），
     /// 通过 <see cref="Show"/> / <see cref="Hide"/> 驱动，配合 <c>TipHoverTrigger</c>

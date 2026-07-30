@@ -5,23 +5,19 @@ using Log = GourmetProject.Core.Diagnostics.Log;
 namespace GourmetProject.Game.UI.Battle.View
 {
     /// <summary>
-    /// 战斗界面 hover Tip 注册表：持有 4 类 Tip 预制体，惰性实例化到界面根下并缓存。
-    /// 供右栏道具（ItemTip）与行动轴（Shop/Interest/Boss 节点 Tip）按需取用，界面关闭时统一隐藏。
+    /// 战斗界面 hover Tip 注册表：持有道具、行动轴和食物 Tip 预制体，
+    /// 惰性实例化到界面根下并缓存，界面关闭时统一隐藏。
     /// </summary>
     public sealed class BattleTipRegistry : MonoBehaviour
     {
         private const string Tag = "Battle";
 
         [SerializeField] private ItemTipView _itemTipPrefab;
-        [SerializeField] private ShopNodeTipView _shopNodeTipPrefab;
-        [SerializeField] private InterestNodeTipView _interestNodeTipPrefab;
-        [SerializeField] private BossFeastTipView _bossFeastTipPrefab;
+        [SerializeField] private TimelineNodeTipView _timelineNodeTipPrefab;
         [SerializeField] private FoodTipsView _foodTipsPrefab;
 
         private ItemTipView _itemTip;
-        private ShopNodeTipView _shopTip;
-        private InterestNodeTipView _interestTip;
-        private BossFeastTipView _bossTip;
+        private TimelineNodeTipView _timelineNodeTip;
         private FoodTipsView _foodTip;
 
         public ItemTipView Item
@@ -37,42 +33,16 @@ namespace GourmetProject.Game.UI.Battle.View
             }
         }
 
-        public ShopNodeTipView Shop
+        public TimelineNodeTipView Timeline
         {
             get
             {
-                if (_shopTip == null)
+                if (_timelineNodeTip == null)
                 {
-                    _shopTip = Create(_shopNodeTipPrefab, "ShopNodeTipView_Runtime");
+                    _timelineNodeTip = Create(_timelineNodeTipPrefab, "TimelineNodeTipView_Runtime");
                 }
 
-                return _shopTip;
-            }
-        }
-
-        public InterestNodeTipView Interest
-        {
-            get
-            {
-                if (_interestTip == null)
-                {
-                    _interestTip = Create(_interestNodeTipPrefab, "InterestNodeTipView_Runtime");
-                }
-
-                return _interestTip;
-            }
-        }
-
-        public BossFeastTipView Boss
-        {
-            get
-            {
-                if (_bossTip == null)
-                {
-                    _bossTip = Create(_bossFeastTipPrefab, "BossFeastTipView_Runtime");
-                }
-
-                return _bossTip;
+                return _timelineNodeTip;
             }
         }
 
@@ -93,18 +63,14 @@ namespace GourmetProject.Game.UI.Battle.View
         public void EnsureAll()
         {
             _ = Item;
-            _ = Shop;
-            _ = Interest;
-            _ = Boss;
+            _ = Timeline;
             _ = Food;
         }
 
         public void HideAll()
         {
             _itemTip?.Hide();
-            _shopTip?.Hide();
-            _interestTip?.Hide();
-            _bossTip?.Hide();
+            _timelineNodeTip?.Hide();
             _foodTip?.Hide();
         }
 

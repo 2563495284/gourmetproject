@@ -20,6 +20,11 @@ namespace GourmetProject.Game.UI.Hud
         private static readonly Color CompletedOutline = new Color(0.30f, 0.29f, 0.27f, 0.58f);
         private static readonly Color BossOutline = new Color(1f, 0.63f, 0.08f, 0.95f);
         private static readonly Color PreviewOutline = new Color(0.02f, 0.82f, 0.66f, 0.95f);
+        private static readonly Color NormalIcon = Color.white;
+        private static readonly Color CompletedIcon = new Color(0.56f, 0.56f, 0.56f, 0.82f);
+        private static readonly Color ExecutingGlowMin = new Color(1f, 0.62f, 0.08f, 0.34f);
+        private static readonly Color ExecutingGlowMax = new Color(1f, 0.84f, 0.32f, 0.82f);
+        private const float CompletedScale = 0.82f;
 
         [Header("Prefab 引用")]
         [SerializeField] private RectTransform _rect;
@@ -33,12 +38,15 @@ namespace GourmetProject.Game.UI.Hud
 
         private RectTransform _dayAnchor;
         private Vector3 _authoredScale = Vector3.one;
+        private Vector3 _boundScale = Vector3.one;
         private Color _tailColor = NormalFill;
         private Color _boundOutlineColor = NormalOutline;
         private Vector2 _boundOutlineDistance = new Vector2(1f, -1f);
         private float _boundAlpha = 1f;
         private bool _pulse;
+        private bool _executing;
         private bool _removing;
+        private Outline _executingGlow;
         private Tween _layoutTween;
         private Tween _visibilityTween;
 
@@ -48,18 +56,28 @@ namespace GourmetProject.Game.UI.Hud
         {
             EnsureRefs();
             _authoredScale = Rect.localScale;
+            _boundScale = _authoredScale;
         }
 
-        public void Bind(Sprite icon, bool completed, bool boss, bool preview, bool negative = false)
+        public void Bind(
+            Sprite icon,
+            bool completed,
+            bool executing,
+            bool boss,
+            bool preview,
+            bool negative = false)
         {
             EnsureRefs();
             _icon.sprite = icon;
             _icon.enabled = icon != null;
+            _icon.color = completed && !preview ? CompletedIcon : NormalIcon;
 
             _tailColor = preview
                 ? PreviewFill
                 : (completed ? CompletedFill : (negative ? NegativeFill : NormalFill));
             _boundAlpha = completed && !preview ? 0.74f : 1f;
+            _boundScale = _authoredScale * (completed && !preview ? CompletedScale : 1f);
+            _executing = executing && !completed && !preview;
             _canvasGroup.alpha = _boundAlpha;
             _canvasGroup.blocksRaycasts = !preview;
             _hitArea.raycastTarget = !preview;
@@ -73,9 +91,16 @@ namespace GourmetProject.Game.UI.Hud
                 preview || boss ? new Vector2(2f, -2f) : new Vector2(1f, -1f);
             _outline.effectColor = _boundOutlineColor;
             _outline.effectDistance = _boundOutlineDistance;
+            _executingGlow.enabled = _executing;
+            if (_executing)
+            {
+                _executingGlow.effectColor = ExecutingGlowMax;
+                _executingGlow.effectDistance = new Vector2(4f, -4f);
+            }
+
             if (!_removing)
             {
-                Rect.localScale = _authoredScale;
+                Rect.localScale = _boundScale;
             }
 
             RefreshTail();
@@ -90,7 +115,7 @@ namespace GourmetProject.Game.UI.Hud
             float x,
             int stackIndex)
         {
-            Bind(icon, completed, boss, preview, negative: false);
+            Bind(icon, completed, executing: false, boss, preview, negative: false);
             float axisX = Mathf.Clamp01(x);
             Rect.anchorMin = new Vector2(axisX, 0.48f);
             Rect.anchorMax = new Vector2(axisX, 0.48f);
@@ -148,7 +173,7 @@ namespace GourmetProject.Game.UI.Hud
             _visibilityTween?.Kill();
             _removing = false;
             _canvasGroup.alpha = 0f;
-            Rect.localScale = _authoredScale * 0.75f;
+            Rect.localScale = _boundScale * 0.75f;
             float progress = 0f;
             _visibilityTween = DOTween.To(
                     () => progress,
@@ -157,8 +182,8 @@ namespace GourmetProject.Game.UI.Hud
                         progress = value;
                         _canvasGroup.alpha = value;
                         Rect.localScale = Vector3.LerpUnclamped(
-                            _authoredScale * 0.75f,
-                            _authoredScale,
+                            _boundScale * 0.75f,
+                            _boundScale,
                             value);
                     },
                     1f,
@@ -188,7 +213,7 @@ namespace GourmetProject.Game.UI.Hud
                         _canvasGroup.alpha = Mathf.Lerp(startAlpha, 0f, value);
                         Rect.localScale = Vector3.LerpUnclamped(
                             startScale,
-                            _authoredScale * 0.65f,
+                            _boundScale * 0.65f,
                             value);
                     },
                     1f,
@@ -232,7 +257,7 @@ namespace GourmetProject.Game.UI.Hud
                 _outline.enabled = false;
                 if (!_removing)
                 {
-                    Rect.localScale = _authoredScale;
+                    Rect.localScale = _boundScale;
                 }
 
                 return;
@@ -258,19 +283,31 @@ namespace GourmetProject.Game.UI.Hud
             _outline.effectDistance = _boundOutlineDistance;
             if (!_removing)
             {
-                Rect.localScale = _authoredScale;
+                Rect.localScale = _boundScale;
             }
         }
 
         private void Update()
         {
-            if (!_pulse || _removing)
+            if (_removing)
             {
                 return;
             }
 
-            float scale = 1f + Mathf.Sin(Time.unscaledTime * 7f) * 0.035f;
-            Rect.localScale = _authoredScale * scale;
+            if (_pulse)
+            {
+                float scale = 1f + Mathf.Sin(Time.unscaledTime * 7f) * 0.035f;
+                Rect.localScale = _boundScale * scale;
+            }
+
+            if (_executing && _executingGlow != null)
+            {
+                float pulse = Mathf.Sin(Time.unscaledTime * 5f) * 0.5f + 0.5f;
+                _executingGlow.effectColor =
+                    Color.LerpUnclamped(ExecutingGlowMin, ExecutingGlowMax, pulse);
+                float distance = Mathf.LerpUnclamped(3f, 5f, pulse);
+                _executingGlow.effectDistance = new Vector2(distance, -distance);
+            }
         }
 
         private void LateUpdate()
@@ -302,6 +339,26 @@ namespace GourmetProject.Game.UI.Hud
             _canvasGroup ??= GetComponent<CanvasGroup>();
             _pointer ??= GetComponent<TimelineAxisPointerTarget>();
             _hitArea ??= GetComponent<Graphic>();
+            if (_icon != null && _outline != null && _executingGlow == null)
+            {
+                Outline[] outlines = _icon.GetComponents<Outline>();
+                foreach (Outline outline in outlines)
+                {
+                    if (outline != _outline)
+                    {
+                        _executingGlow = outline;
+                        break;
+                    }
+                }
+
+                if (_executingGlow == null)
+                {
+                    _executingGlow = _icon.gameObject.AddComponent<Outline>();
+                }
+
+                _executingGlow.enabled = false;
+            }
+
             if (_tail != null)
             {
                 _tail.enabled = false;

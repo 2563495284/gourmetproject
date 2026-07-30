@@ -469,6 +469,51 @@ namespace GourmetProject.Tests.PlayMode
             yield return null;
         }
 
+        [UnityTest]
+        public IEnumerator NodeExecutionVisuals_CompletedShrinksAndExecutingGlows()
+        {
+            CreateRun(out GameRun run, out cfg.Tables tables);
+            cfg.GameAction action = tables.TbAction.DataList.First();
+            run.BeginTimeline(
+                "test",
+                7f,
+                new[]
+                {
+                    new RuntimeTimelineNode("completed", "test", 2, action.Id),
+                    new RuntimeTimelineNode("executing", "test", 3, action.Id),
+                });
+            run.MarkNodeTriggered("completed");
+
+            GameObject root = BuildAxis(out ActionAxisBar axis, out _);
+            axis.Build(run, executingNodeId: "executing");
+            yield return null;
+
+            TimelineNodeBubbleView completed = axis.GetDayGroup(2)
+                .transform.Find("NodeBubble_completed")
+                .GetComponent<TimelineNodeBubbleView>();
+            TimelineNodeBubbleView executing = axis.GetDayGroup(3)
+                .transform.Find("NodeBubble_executing")
+                .GetComponent<TimelineNodeBubbleView>();
+            CanvasGroup completedCanvas = completed.GetComponent<CanvasGroup>();
+            Image completedIcon = completed.transform.Find("Icon").GetComponent<Image>();
+            Outline[] executingOutlines =
+                executing.transform.Find("Icon").GetComponents<Outline>();
+
+            Assert.That(completed.Rect.localScale.x, Is.EqualTo(0.82f).Within(0.001f));
+            Assert.That(completedCanvas.alpha, Is.LessThan(0.8f));
+            Assert.That(completedIcon.color.r, Is.EqualTo(completedIcon.color.g).Within(0.001f));
+            Assert.That(completedIcon.color.g, Is.EqualTo(completedIcon.color.b).Within(0.001f));
+            Assert.That(executing.Rect.localScale, Is.EqualTo(Vector3.one));
+            Assert.That(
+                executingOutlines.Any(outline =>
+                    outline.enabled && outline.effectDistance.magnitude > 4f),
+                Is.True,
+                "执行中的节点应启用额外的外发光描边。");
+
+            Object.Destroy(root);
+            yield return null;
+        }
+
         private static void CreateRun(out GameRun run, out cfg.Tables tables)
         {
             var config = new ConfigService();
@@ -789,7 +834,7 @@ namespace GourmetProject.Tests.PlayMode
             ConstructorInfo binderConstructor = binderType.GetConstructors(
                     BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
                 .Single();
-            object binder = binderConstructor.Invoke(new object[] { axis, null, null, null });
+            object binder = binderConstructor.Invoke(new object[] { axis, null });
             SetPrivate(host, "_axisBinder", binder);
         }
 

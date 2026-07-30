@@ -38,6 +38,8 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         ItemTipView ItemTips();
 
+        void PlayRewardDishSelectionFly(RewardDishChoiceCardView sourceCard);
+
         void PlayRandomizedItemFlys(IReadOnlyList<RandomizedItemResult> results);
     }
 
@@ -71,7 +73,8 @@ namespace GourmetProject.Game.UI.Battle.Pages
                     choices,
                     onChoiceSelected,
                     onSkip,
-                    _host.FoodTips);
+                    _host.FoodTips,
+                    _host.PlayRewardDishSelectionFly);
             });
             return true;
         }
@@ -107,7 +110,8 @@ namespace GourmetProject.Game.UI.Battle.Pages
                         return true;
                     },
                     () => RestoreAfterAcquireView(previous),
-                    _host.FoodTips);
+                    _host.FoodTips,
+                    _host.PlayRewardDishSelectionFly);
             });
             return true;
         }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Model;
@@ -62,6 +63,44 @@ namespace GourmetProject.Tests.PlayMode
             UnityEngine.Object.Destroy(root);
             UnityEngine.Object.Destroy(sprite.texture);
             UnityEngine.Object.Destroy(sprite);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator OverlapPointerHit_UsesSameTopmostDishForHoverAndDrag()
+        {
+            DishPieceView older = BuildPiece(out GameObject olderRoot, out Sprite olderSprite);
+            DishPieceView newer = BuildPiece(out GameObject newerRoot, out Sprite newerSprite);
+            olderRoot.transform.position = Vector3.zero;
+            newerRoot.transform.position = new Vector3(0.7f, 0f, 0f);
+            var ordered = new List<DishPieceView> { older, newer };
+            Func<DishPieceView, Vector2, bool> filter =
+                (candidate, world) => TemporaryAreaPointerHit.IsTopmostAt(
+                    candidate,
+                    ordered,
+                    world);
+            older.SetPointerHitFilter(filter);
+            newer.SetPointerHitFilter(filter);
+            yield return null;
+
+            var overlap = new Vector2(1.1f, 0f);
+            Assert.That(older.ContainsWorldPoint(overlap), Is.True);
+            Assert.That(newer.ContainsWorldPoint(overlap), Is.True);
+            Assert.That(older.AcceptsPointerAtWorldPoint(overlap), Is.False);
+            Assert.That(newer.AcceptsPointerAtWorldPoint(overlap), Is.True);
+
+            var olderExposed = Vector2.zero;
+            Assert.That(older.ContainsWorldPoint(olderExposed), Is.True);
+            Assert.That(newer.ContainsWorldPoint(olderExposed), Is.False);
+            Assert.That(older.AcceptsPointerAtWorldPoint(olderExposed), Is.True);
+            Assert.That(newer.AcceptsPointerAtWorldPoint(olderExposed), Is.False);
+
+            UnityEngine.Object.Destroy(olderRoot);
+            UnityEngine.Object.Destroy(newerRoot);
+            UnityEngine.Object.Destroy(olderSprite.texture);
+            UnityEngine.Object.Destroy(newerSprite.texture);
+            UnityEngine.Object.Destroy(olderSprite);
+            UnityEngine.Object.Destroy(newerSprite);
             yield return null;
         }
 

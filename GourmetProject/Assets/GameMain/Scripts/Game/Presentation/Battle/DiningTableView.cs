@@ -18,6 +18,8 @@ namespace GourmetProject.Game.Presentation.Battle
         // 餐桌编辑页：把「胃外虚格」显示为浅色占位（原型里的虚线格），让玩家看到可扩展的最大网格范围。
         private static readonly Color VoidPlaceholderColor = new Color(0.85f, 0.85f, 0.85f, 0.22f);
         private const int DragFeedbackSortingOrder = -80;
+        private const int TransientRegionOutlineLayer = 999;
+        private const float FragmentPlacementFeedbackFillAlpha = 1.0f;
 
         private bool _voidAsPlaceholder;
 
@@ -254,7 +256,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 overlay.SetOutline(
                     color,
                     center ? 0.12f : 0.08f,
-                    dishPlacement ? 0f : center ? 0.28f : 0.16f);
+                    dishPlacement ? 0f : FragmentPlacementFeedbackFillAlpha);
                 overlay.SetSorting(BattleSorting.Fx, DragFeedbackSortingOrder);
             }
 
@@ -310,6 +312,32 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
+        /// <summary>
+        /// 显示一组任意网格坐标的不规则外轮廓。餐桌碎片暂放时目标格尚未写入餐桌，
+        /// 因此这里不要求坐标已经是 ExistingCell。
+        /// </summary>
+        public void ShowTransientGridRegionOutline(IReadOnlyList<GridPos> cells, Color color, float width)
+        {
+            ShowRegionOutline(
+                cells,
+                BattleScopeHighlightChannel.Persistent,
+                TransientRegionOutlineLayer,
+                color,
+                width,
+                null);
+        }
+
+        public void ClearTransientGridRegionOutline()
+        {
+            int key = ScopeLayerKey(
+                BattleScopeHighlightChannel.Persistent,
+                TransientRegionOutlineLayer);
+            if (_scopeRegionOutlines.TryGetValue(key, out BattleScopeRegionOutlineView outline))
+            {
+                outline?.Hide();
+            }
+        }
+
         public void SetScopeRegionHighlight(
             IReadOnlyList<GridPos> cells,
             BattleScopeHighlightChannel channel,
@@ -324,10 +352,6 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             bool hasCell = false;
-            int minX = int.MaxValue;
-            int minY = int.MaxValue;
-            int maxX = int.MinValue;
-            int maxY = int.MinValue;
             var validCells = new List<GridPos>();
             foreach (GridPos cell in cells)
             {
@@ -338,15 +362,39 @@ namespace GourmetProject.Game.Presentation.Battle
 
                 hasCell = true;
                 validCells.Add(cell);
-                minX = Mathf.Min(minX, cell.X);
-                minY = Mathf.Min(minY, cell.Y);
-                maxX = Mathf.Max(maxX, cell.X);
-                maxY = Mathf.Max(maxY, cell.Y);
             }
 
             if (!hasCell)
             {
                 return;
+            }
+
+            ShowRegionOutline(validCells, channel, layer, color, width, materialOverride);
+        }
+
+        private void ShowRegionOutline(
+            IReadOnlyList<GridPos> cells,
+            BattleScopeHighlightChannel channel,
+            int layer,
+            Color color,
+            float width,
+            Material materialOverride)
+        {
+            if (cells == null || cells.Count == 0 || Mapper == null)
+            {
+                return;
+            }
+
+            int minX = int.MaxValue;
+            int minY = int.MaxValue;
+            int maxX = int.MinValue;
+            int maxY = int.MinValue;
+            foreach (GridPos cell in cells)
+            {
+                minX = Mathf.Min(minX, cell.X);
+                minY = Mathf.Min(minY, cell.Y);
+                maxX = Mathf.Max(maxX, cell.X);
+                maxY = Mathf.Max(maxY, cell.Y);
             }
 
             BattleScopeRegionOutlineView outline = EnsureScopeRegionOutline(channel, layer);
@@ -364,7 +412,7 @@ namespace GourmetProject.Game.Presentation.Battle
             outline.Show(
                 channel,
                 layer,
-                validCells,
+                cells,
                 minX,
                 minY,
                 maxX,

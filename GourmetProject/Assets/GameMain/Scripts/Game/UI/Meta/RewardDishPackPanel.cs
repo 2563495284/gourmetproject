@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using GourmetProject.Game;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
-using GourmetProject.Game.UI.Common;
 using GourmetProject.Game.UI.Tooltips;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Runtime;
@@ -13,7 +12,7 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>
-    /// 菜品奖励选择页。候选菜品居中展示，点击后通过二次确认完成领取。
+    /// 菜品奖励选择页。候选菜品居中展示，点击后直接完成领取。
     /// </summary>
     public sealed class RewardDishPackPanel : MonoBehaviour
     {
@@ -29,9 +28,9 @@ namespace GourmetProject.Game.UI.Meta
         private Func<int, bool> _onChoiceSelected;
         private Action _onSkip;
         private Func<FoodTipsView> _getFoodTips;
+        private Action<RewardDishChoiceCardView> _playSelectionFly;
         private RewardDishChoiceCardView _hoveredCard;
         private bool _resolved;
-        private bool _confirmPending;
         private bool _wired;
 
         private void Awake()
@@ -50,7 +49,8 @@ namespace GourmetProject.Game.UI.Meta
             IReadOnlyList<RewardChoice> choices,
             Func<int, bool> onChoiceSelected,
             Action onSkip,
-            Func<FoodTipsView> getFoodTips = null)
+            Func<FoodTipsView> getFoodTips = null,
+            Action<RewardDishChoiceCardView> playSelectionFly = null)
         {
             EnsureWired();
             HideDishTips();
@@ -60,8 +60,8 @@ namespace GourmetProject.Game.UI.Meta
             _onChoiceSelected = onChoiceSelected;
             _onSkip = onSkip;
             _getFoodTips = getFoodTips;
+            _playSelectionFly = playSelectionFly;
             _resolved = false;
-            _confirmPending = false;
             _choices.Clear();
 
             if (choices != null)
@@ -83,7 +83,7 @@ namespace GourmetProject.Game.UI.Meta
 
             if (_promptText != null)
             {
-                _promptText.text = "选择一个菜品";
+                _promptText.text = "选择一个食物加入食谱";
             }
 
             BuildCards();
@@ -98,8 +98,8 @@ namespace GourmetProject.Game.UI.Meta
             _onChoiceSelected = null;
             _onSkip = null;
             _getFoodTips = null;
+            _playSelectionFly = null;
             _resolved = false;
-            _confirmPending = false;
 
             if (_panelRoot != null)
             {
@@ -178,35 +178,23 @@ namespace GourmetProject.Game.UI.Meta
 
         private void OnChoiceClicked(RewardDishChoiceCardView card, int choiceIndex)
         {
-            if (_resolved || _confirmPending || choiceIndex < 0 || choiceIndex >= _choices.Count)
+            if (_resolved || choiceIndex < 0 || choiceIndex >= _choices.Count)
             {
                 return;
             }
 
             HideDishTips();
-            _confirmPending = true;
-            RewardChoice choice = _choices[choiceIndex];
-            string choiceName = string.IsNullOrWhiteSpace(choice.Name) ? choice.Id : choice.Name;
-            var data = new ConfirmDialogData
-            {
-                Title = "确认选择菜品",
-                Message = $"确定选择「{choiceName}」吗？",
-                ConfirmText = "选择",
-                CancelText = "返回",
-                OnConfirm = () => ConfirmChoice(card, choiceIndex),
-                OnCancel = () => _confirmPending = false,
-            };
-            GameApp.UI.OpenUIForm(UIForms.ConfirmDialog, UIForms.GroupDialog, data);
+            SelectChoice(card, choiceIndex);
         }
 
-        private void ConfirmChoice(RewardDishChoiceCardView card, int choiceIndex)
+        private void SelectChoice(RewardDishChoiceCardView card, int choiceIndex)
         {
-            _confirmPending = false;
             if (_resolved || choiceIndex < 0 || choiceIndex >= _choices.Count || _onChoiceSelected == null)
             {
                 return;
             }
 
+            Action<RewardDishChoiceCardView> playSelectionFly = _playSelectionFly;
             // 先锁住当前批次；n 选 m 回调可能同步 Open 下一批剩余候选，并把 _resolved 重置为 false。
             _resolved = true;
             if (!_onChoiceSelected.Invoke(choiceIndex))
@@ -216,6 +204,7 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
+            playSelectionFly?.Invoke(card);
             if (!_resolved)
             {
                 return;
@@ -229,7 +218,7 @@ namespace GourmetProject.Game.UI.Meta
 
         private void OnSkipClicked()
         {
-            if (_resolved || _confirmPending)
+            if (_resolved)
             {
                 return;
             }

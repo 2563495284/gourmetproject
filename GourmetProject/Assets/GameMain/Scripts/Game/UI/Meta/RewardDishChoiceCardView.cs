@@ -28,7 +28,7 @@ namespace GourmetProject.Game.UI.Meta
 
         public int ChoiceIndex => _choiceIndex;
 
-        public RectTransform TipPlacementTarget
+        public RectTransform SelectionFlySource
         {
             get
             {
@@ -37,6 +37,19 @@ namespace GourmetProject.Game.UI.Meta
                     ? _dishPreview.transform as RectTransform
                     : transform as RectTransform;
             }
+        }
+
+        public RectTransform TipPlacementTarget
+        {
+            get => SelectionFlySource;
+        }
+
+        public RenderTexture CaptureSelectionFlyTexture()
+        {
+            EnsureRefs();
+            return _dishPreview != null
+                ? _dishPreview.CopyCurrentTexture()
+                : null;
         }
 
         public void Bind(

@@ -51,6 +51,7 @@ namespace GourmetProject.Game.UI.Battle
     {
         private const string Tag = "Battle";
         private const float RandomizedItemFlyDuration = 0.42f;
+        private static readonly Color BoardEditConfirmColor = new Color(0.08f, 0.62f, 0.12f, 1f);
 
         private enum FoodTipsHoverOwner
         {
@@ -108,7 +109,9 @@ namespace GourmetProject.Game.UI.Battle
         [SerializeField] private EventPagePanel _eventPagePanel;
 
         [Header("DiningTable Edit")]
-        [SerializeField] private Button _boardEditSkipButton;
+        [SerializeField] private GameObject _boardEditPanel;
+        [FormerlySerializedAs("_boardEditSkipButton")]
+        [SerializeField] private Button _boardEditActionButton;
 
         [Header("Right Column - Items")]
         [SerializeField] private BattleItemsColumn _itemsColumn;
@@ -130,6 +133,9 @@ namespace GourmetProject.Game.UI.Battle
         private bool _inBattle;
         private GameplayView _current = GameplayView.None;
         private Action<bool> _afterRewardTableEdit;
+        private bool _boardEditActionCanConfirm;
+        private bool _boardEditActionInteractable;
+        private Color _boardEditSkipColor = new Color(0.72f, 0.02f, 0.02f, 1f);
 
         private GameRun _run;
         private BattleSession _session;
@@ -204,16 +210,22 @@ namespace GourmetProject.Game.UI.Battle
             _cakeLayerBuffHud = GetComponent<CakeLayerBuffHud>();
             _foodBar?.Bind(OnEatClicked, OnDoodleClearClicked, OnDoodleToggleClicked);
 
-            if (_boardEditSkipButton != null)
+            if (_boardEditActionButton != null)
             {
-                _boardEditSkipButton.onClick.AddListener(OnTableEditSkipClicked);
+                _boardEditActionButton.onClick.AddListener(OnTableEditActionClicked);
+                if (_boardEditActionButton.targetGraphic != null)
+                {
+                    _boardEditSkipColor = _boardEditActionButton.targetGraphic.color;
+                }
+
+                ApplyTableEditActionState(new TableFragmentEditActionState(
+                    canConfirm: false,
+                    interactable: false));
             }
 
             _axisBinder = new TimelineAxisBinder(
                 _actionAxisBar,
-                () => _tips != null ? _tips.Shop : null,
-                () => _tips != null ? _tips.Interest : null,
-                () => _tips != null ? _tips.Boss : null);
+                () => _tips != null ? _tips.Timeline : null);
             _tableCoordinator = new TableViewCoordinator(this);
             _pageRouter = new GameplayPageRouter(this);
             _shopPage = new ShopPageCoordinator(this);
@@ -826,7 +838,8 @@ namespace GourmetProject.Game.UI.Battle
         RewardItemChoicePanel IGameplayPageRouterHost.RewardItemChoicePanel => _rewardItemChoicePanel;
         RandomizedItemsPanel IGameplayPageRouterHost.RandomizedItemsPanel => _randomizedItemsPanel;
         EventPagePanel IGameplayPageRouterHost.EventPagePanel => _eventPagePanel;
-        Button IGameplayPageRouterHost.BoardEditSkipButton => _boardEditSkipButton;
+        GameObject IGameplayPageRouterHost.BoardEditPanel => _boardEditPanel;
+        Button IGameplayPageRouterHost.BoardEditActionButton => _boardEditActionButton;
         bool IGameplayPageRouterHost.RecipeInspectShowsActionAxis => _recipeBookPage?.InspectShowsActionAxis == true;
         void IGameplayPageRouterHost.OnLeavingPage(GameplayView current, GameplayView next) => _recipeBookPage?.OnLeavingPage(current, next);
         void IGameplayPageRouterHost.OnBeforeApplyPage(GameplayView view)
@@ -886,6 +899,8 @@ namespace GourmetProject.Game.UI.Battle
         void IRewardPageHost.RestoreBattleWorld() => RestoreBattleWorld();
         FoodTipsView IRewardPageHost.FoodTips() => _tips != null ? _tips.Food : null;
         ItemTipView IRewardPageHost.ItemTips() => _tips != null ? _tips.Item : null;
+        void IRewardPageHost.PlayRewardDishSelectionFly(RewardDishChoiceCardView sourceCard) =>
+            PlayRewardDishSelectionFly(sourceCard);
         void IRewardPageHost.PlayRandomizedItemFlys(IReadOnlyList<RandomizedItemResult> results) => PlayRandomizedItemFlys(results);
 
         EventPagePanel IEventPageHost.EventPagePanel => _eventPagePanel;
@@ -1072,7 +1087,7 @@ namespace GourmetProject.Game.UI.Battle
                 _run,
                 candidateIds,
                 completed,
-                OpenTableFragmentPlacementConfirmation);
+                ApplyTableEditActionState);
             SwitchTo(
                 GameplayView.TableEdit,
                 () => world.BeginTableFragmentChoice(request),
@@ -1258,34 +1273,45 @@ namespace GourmetProject.Game.UI.Battle
             SwitchTo(GameplayView.None, onShown: () => cb?.Invoke(placed));
         }
 
-        private void OpenTableFragmentPlacementConfirmation(TableFragmentPlacementConfirmationRequest request)
+        private void ApplyTableEditActionState(TableFragmentEditActionState state)
         {
-            if (request == null)
+            _boardEditActionCanConfirm = state.CanConfirm;
+            _boardEditActionInteractable = state.Interactable;
+            if (_boardEditActionButton == null)
             {
                 return;
             }
 
-            HideFoodTips();
-            var data = new ConfirmDialogData
+            _boardEditActionButton.interactable = state.Interactable;
+            if (_boardEditActionButton.targetGraphic != null)
             {
-                Title = "确认拼接",
-                Message = "确定要将这块餐桌碎片拼到当前餐桌上吗？",
-                ConfirmText = "确认拼接",
-                CancelText = "取消",
-                OnConfirm = request.Confirm,
-                OnCancel = request.Cancel,
-            };
-            GameApp.UI.OpenUIForm(UIForms.ConfirmDialog, UIForms.GroupDialog, data);
+                _boardEditActionButton.targetGraphic.color =
+                    state.CanConfirm ? BoardEditConfirmColor : _boardEditSkipColor;
+            }
+
+            Text label = _boardEditActionButton.GetComponentInChildren<Text>(true);
+            if (label != null)
+            {
+                label.text = state.CanConfirm ? "确认" : "跳过";
+            }
         }
 
-        private void OnTableEditSkipClicked()
+        private void OnTableEditActionClicked()
         {
-            if (_rewardPeekOnly)
+            if (_rewardPeekOnly || !_boardEditActionInteractable)
             {
                 return;
             }
 
-            (_world ?? BattleWorldController.Instance)?.SkipTableEditPack();
+            BattleWorldController world = _world ?? BattleWorldController.Instance;
+            if (_boardEditActionCanConfirm)
+            {
+                world?.ConfirmTableEditPlacement();
+            }
+            else
+            {
+                world?.SkipTableEditPack();
+            }
         }
 
         private void SetActionAxisVisible(bool visible)
@@ -1455,7 +1481,7 @@ namespace GourmetProject.Game.UI.Battle
 
         private void RebuildActionAxis()
         {
-            _axisBinder?.Rebuild(_run);
+            _axisBinder?.Rebuild(_run, _currentTimelineNodeCard?.Id);
         }
 
         private void HideAllTips()
@@ -1549,6 +1575,60 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             ShopPurchaseAnimationStarted?.Invoke(ShopEntryKind.Dish);
+        }
+
+        private void PlayRewardDishSelectionFly(RewardDishChoiceCardView sourceCard)
+        {
+            if (sourceCard == null)
+            {
+                return;
+            }
+
+            Canvas canvas = GetComponentInParent<Canvas>();
+            RectTransform layer = canvas != null ? canvas.transform as RectTransform : transform.root as RectTransform;
+            RectTransform sourceRect = sourceCard.SelectionFlySource;
+            RectTransform target = _infoColumn?.ViewRecipeButtonRect;
+            if (layer == null || sourceRect == null || target == null)
+            {
+                return;
+            }
+
+            Canvas.ForceUpdateCanvases();
+            if (!TryGetRectInLayer(sourceRect, layer, out RectSnapshot start) ||
+                !TryGetRectInLayer(target, layer, out RectSnapshot end))
+            {
+                return;
+            }
+
+            RenderTexture texture = sourceCard.CaptureSelectionFlyTexture();
+            if (texture == null)
+            {
+                return;
+            }
+
+            ShopPurchaseFlyView fly = CreateShopPurchaseFly(layer);
+            if (fly == null)
+            {
+                ReleasePurchaseTexture(texture);
+                return;
+            }
+
+            RegisterShopPurchaseFly(fly);
+            try
+            {
+                fly.PlayFood(
+                    start.Center,
+                    start.Size,
+                    end.Center,
+                    texture,
+                    null,
+                    () => UnregisterShopPurchaseFly(fly));
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception, fly);
+                fly.Cancel();
+            }
         }
 
         private void PlayShopItemPurchase(

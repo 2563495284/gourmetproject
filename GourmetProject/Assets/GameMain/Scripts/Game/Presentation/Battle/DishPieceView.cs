@@ -158,6 +158,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private Action<DishPieceView, Vector2> _moveBegin;
         private Action<Vector2> _moveUpdate;
         private Action<Vector2> _moveEnd;
+        private Func<DishPieceView, Vector2, bool> _pointerHitFilter;
         private bool _clickEnabled = true;
         private bool _suppressPrimaryUntilReleased;
         private bool _hovered;
@@ -240,6 +241,16 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             _hoverEntered = entered;
             _hoverExited = exited;
+        }
+
+        /// <summary>
+        /// 为重叠表现注入唯一命中过滤器。Hover、点击和拖拽起始共用同一判定，
+        /// 避免多个 DishPieceView 在同一帧分别抢占输入。
+        /// </summary>
+        public void SetPointerHitFilter(Func<DishPieceView, Vector2, bool> filter)
+        {
+            _pointerHitFilter = filter;
+            SetHovered(false);
         }
 
         /// <summary>
@@ -1925,7 +1936,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             Vector2 world = WorldInput.MouseWorld(cam);
-            if (ContainsOccupiedCellAtWorldPoint(world))
+            if (AcceptsPointerAtWorldPoint(world))
             {
                 if (_moveBegin != null)
                 {
@@ -1954,13 +1965,19 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            bool pointerInside = ContainsOccupiedCellAtWorldPoint(WorldInput.MouseWorld(cam));
+            bool pointerInside = AcceptsPointerAtWorldPoint(WorldInput.MouseWorld(cam));
             if (!_hovered && WorldInput.PointerOverUi)
             {
                 return;
             }
 
             SetHovered(pointerInside);
+        }
+
+        internal bool AcceptsPointerAtWorldPoint(Vector2 world)
+        {
+            return ContainsOccupiedCellAtWorldPoint(world)
+                && (_pointerHitFilter == null || _pointerHitFilter(this, world));
         }
 
         private bool ContainsOccupiedCellAtWorldPoint(Vector2 world)

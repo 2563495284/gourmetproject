@@ -8,7 +8,7 @@ namespace GourmetProject.Tests.EditMode
     public sealed class TemporaryAreaStackLayoutTests
     {
         private const float PaddingRatio = 0.84f;
-        private const float VisibleRatio = 0.5f;
+        private const float VisibleRatio = 0.7f;
         private const float Epsilon = 0.0001f;
 
         [Test]
@@ -27,7 +27,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void MoreDishes_CompressHorizontalSpacingWithoutChangingScale()
+        public void MoreDishes_ShrinkUniformlyAndPreserveVisibleRatio()
         {
             Rect rect = Rect.MinMaxRect(-2f, -1f, 2f, 1f);
             var twoFootprints = Repeat(new Vector2(2f, 1f), 2);
@@ -47,7 +47,13 @@ namespace GourmetProject.Tests.EditMode
             float twoStep = two[1].Center.x - two[0].Center.x;
             float fourStep = four[1].Center.x - four[0].Center.x;
             Assert.That(fourStep, Is.LessThan(twoStep));
-            Assert.That(four[0].Scale, Is.EqualTo(two[0].Scale).Within(Epsilon));
+            Assert.That(four[0].Scale, Is.LessThan(two[0].Scale));
+            Assert.That(
+                twoStep / (twoFootprints[0].x * two[0].Scale),
+                Is.EqualTo(VisibleRatio).Within(Epsilon));
+            Assert.That(
+                fourStep / (fourFootprints[0].x * four[0].Scale),
+                Is.EqualTo(VisibleRatio).Within(Epsilon));
             AssertStrictlyIncreasing(four);
             AssertInside(rect, four, fourFootprints);
         }
