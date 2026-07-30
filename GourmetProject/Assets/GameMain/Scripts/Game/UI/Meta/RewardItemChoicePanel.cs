@@ -18,17 +18,6 @@ namespace GourmetProject.Game.UI.Meta
         private bool _resolved;
         private GameRun _run;
 
-        private void OnDisable()
-        {
-            ClearCards();
-            _resolved = false;
-            _run = null;
-            if (_skipButton != null)
-            {
-                _skipButton.onClick.RemoveAllListeners();
-            }
-        }
-
         public void Open(
             string title,
             IReadOnlyList<RewardChoice> choices,

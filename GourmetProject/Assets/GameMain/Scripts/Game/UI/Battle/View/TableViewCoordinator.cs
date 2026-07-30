@@ -185,7 +185,7 @@ namespace GourmetProject.Game.UI.Battle.View
                         () => CompleteBackTransition(onBack));
                     break;
                 case GameplayView.ActionSelect:
-                    world?.HideWorld();
+                    world?.SuspendWorld();
                     ActionSelectSnapshot snap = _snapshot;
                     _snapshot = ActionSelectSnapshot.None;
                     _host.SwitchTo(
@@ -204,7 +204,7 @@ namespace GourmetProject.Game.UI.Battle.View
                     }
                     else
                     {
-                        world?.HideWorld();
+                        world?.SuspendWorld();
                         _host.SwitchTo(
                             GameplayView.Shop,
                             onShown: () => CompleteBackTransition(onBack));
@@ -212,7 +212,7 @@ namespace GourmetProject.Game.UI.Battle.View
 
                     break;
                 default:
-                    world?.HideWorld();
+                    world?.SuspendWorld();
                     _host.SwitchTo(target, onShown: () => CompleteBackTransition(onBack));
                     break;
             }

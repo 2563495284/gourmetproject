@@ -32,6 +32,8 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         void ShowActionSelection();
 
+        void RestoreBattleWorld();
+
         FoodTipsView FoodTips();
 
         ItemTipView ItemTips();
@@ -221,10 +223,12 @@ namespace GourmetProject.Game.UI.Battle.Pages
                     break;
                 case GameplayView.Shop:
                 case GameplayView.RecipeSelection:
-                case GameplayView.Food:
                 case GameplayView.TableEdit:
                 case GameplayView.TableView:
                     _host.SwitchTo(target);
+                    break;
+                case GameplayView.Food:
+                    _host.SwitchTo(GameplayView.Food, _host.RestoreBattleWorld);
                     break;
                 default:
                     _host.SwitchTo(GameplayView.Shop);
@@ -298,7 +302,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
                     _host.SwitchTo(GameplayView.RecipeSelection);
                     break;
                 case GameplayView.Food:
-                    _host.SwitchTo(GameplayView.Food);
+                    _host.SwitchTo(GameplayView.Food, _host.RestoreBattleWorld);
                     break;
                 default:
                     _host.SwitchTo(GameplayView.Shop);

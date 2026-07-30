@@ -277,7 +277,7 @@ namespace GourmetProject.Game.UI.Battle
 
         private void Update()
         {
-            if (_rewardPeekOnly)
+            if (_rewardPeekOnly || HasPendingBattleRewardLifecycle)
             {
                 return;
             }
@@ -288,6 +288,9 @@ namespace GourmetProject.Game.UI.Battle
         // —— 周循环编排（代理到 WeekLoopController）——
 
         public int LastBattleTotal => _session?.LastResult?.Total ?? 0;
+
+        private bool HasPendingBattleRewardLifecycle
+            => _session?.IsSettled == true && _run?.HasPendingRewardBattleView == true;
 
         /// <summary>进入（或继续）一周：随机/沿用行动轴后开始行动循环。</summary>
         public void BeginWeek()
@@ -318,6 +321,10 @@ namespace GourmetProject.Game.UI.Battle
         /// <summary>RewardForm 发奖确认后回调：继续战斗后的编排续接。</summary>
         public void OnRewardConfirmed()
         {
+            UnsubscribeCakeLayerChanges();
+            _session?.ClearHappyCakeLayers();
+            _displayedCakeLayers = 0;
+            _pendingSettlementCakeLayers = null;
             _loop?.OnRewardConfirmed();
         }
 
@@ -358,8 +365,23 @@ namespace GourmetProject.Game.UI.Battle
                 BattleKey = _activeBattleKey ?? string.Empty,
                 IsBoss = _activeBattleIsBoss,
                 LastTotal = _session.LastResult.Total,
+                FinalHappyCakeLayers = _session.HappyCakeLayers,
+                HasDetailedScore = true,
+                RawSum = _session.LastResult.RawSum,
+                FinalFlat = _session.LastResult.FinalFlat,
+                FinalMultiplier = _session.LastResult.FinalMultiplier,
                 Dishes = new List<PendingRewardBattleDishSaveData>(),
+                Cakes = new List<PendingRewardCakeVisualSaveData>(),
             };
+
+            var scoresByDishId = new Dictionary<int, DishScore>();
+            foreach (DishScore score in _session.LastResult.DishScores)
+            {
+                if (score != null)
+                {
+                    scoresByDishId[score.DishInstanceId] = score;
+                }
+            }
 
             foreach (DishInstance dish in _session.DiningTable.Dishes)
             {
@@ -368,6 +390,7 @@ namespace GourmetProject.Game.UI.Battle
                     continue;
                 }
 
+                scoresByDishId.TryGetValue(dish.Id, out DishScore dishScore);
                 snapshot.Dishes.Add(new PendingRewardBattleDishSaveData
                 {
                     Id = dish.Id,
@@ -388,7 +411,28 @@ namespace GourmetProject.Game.UI.Battle
                     SkillsDisabled = dish.SkillsDisabled,
                     ExcludedFromScore = dish.ExcludedFromScore,
                     IsTemporary = dish.IsTemporary,
+                    HasDishScore = dishScore != null,
+                    ScoreBaseValue = dishScore?.BaseValue ?? 0f,
+                    ScoreFlatBonus = dishScore?.FlatBonus ?? 0f,
+                    ScoreMultiplier = dishScore?.Multiplier ?? 1f,
                 });
+            }
+
+            BattleWorldController world = _world ?? BattleWorldController.Instance;
+            if (world != null)
+            {
+                foreach (CakeLayerVisualState cake in world.CapturePendingRewardCakeVisuals())
+                {
+                    snapshot.Cakes.Add(new PendingRewardCakeVisualSaveData
+                    {
+                        ViewportX = cake.ViewportX,
+                        ViewportY = cake.ViewportY,
+                        RotationZ = cake.RotationZ,
+                        ScaleX = cake.ScaleX,
+                        ScaleY = cake.ScaleY,
+                        ScaleZ = cake.ScaleZ,
+                    });
+                }
             }
 
             _run.SetPendingRewardBattleView(snapshot);
@@ -416,12 +460,20 @@ namespace GourmetProject.Game.UI.Battle
 
             UnsubscribeCakeLayerChanges();
             _session = _run.BuildBattleSession(_activeBattleRawRequiredScore, _activeBattleModifier, _activeBattleKey);
-            _displayedCakeLayers = _session.HappyCakeLayers;
             _pendingSettlementCakeLayers = null;
-            _session.HappyCakeLayersChanged += OnHappyCakeLayersChanged;
             _session.DiningTable.Clear();
             RestorePendingRewardBattleDishes(_session, snapshot);
-            _session.RestoreSettledForRewardView(snapshot.LastTotal);
+            List<DishScore> dishScores = RestorePendingRewardDishScores(snapshot);
+            _session.RestoreSettledForRewardView(
+                snapshot.LastTotal,
+                snapshot.FinalHappyCakeLayers,
+                dishScores,
+                snapshot.RawSum,
+                snapshot.FinalFlat,
+                snapshot.FinalMultiplier,
+                snapshot.HasDetailedScore);
+            _displayedCakeLayers = _session.HappyCakeLayers;
+            _session.HappyCakeLayersChanged += OnHappyCakeLayersChanged;
 
             SwitchTo(GameplayView.Food);
 
@@ -445,8 +497,65 @@ namespace GourmetProject.Game.UI.Battle
             _world.SetDishHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
             _world.SetCellHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
             _world.SetTableFragmentHoverCallbacks(OnTableFragmentHoverEntered, OnTableFragmentHoverExited);
+            RestorePendingRewardPresentation(snapshot);
             SetSettlementScore(snapshot.LastTotal);
             RefreshAll();
+        }
+
+        private static List<DishScore> RestorePendingRewardDishScores(PendingRewardBattleViewSaveData snapshot)
+        {
+            var result = new List<DishScore>();
+            if (snapshot?.Dishes == null || !snapshot.HasDetailedScore)
+            {
+                return result;
+            }
+
+            foreach (PendingRewardBattleDishSaveData dish in snapshot.Dishes)
+            {
+                if (dish == null || !dish.HasDishScore)
+                {
+                    continue;
+                }
+
+                result.Add(new DishScore(
+                    dish.Id,
+                    dish.DishId ?? string.Empty,
+                    dish.ScoreBaseValue,
+                    dish.ScoreFlatBonus,
+                    dish.ScoreMultiplier));
+            }
+
+            return result;
+        }
+
+        private void RestorePendingRewardPresentation(PendingRewardBattleViewSaveData snapshot)
+        {
+            if (_world == null || snapshot == null)
+            {
+                return;
+            }
+
+            var cakes = new List<CakeLayerVisualState>();
+            if (snapshot.Cakes != null)
+            {
+                foreach (PendingRewardCakeVisualSaveData cake in snapshot.Cakes)
+                {
+                    if (cake == null)
+                    {
+                        continue;
+                    }
+
+                    cakes.Add(new CakeLayerVisualState(
+                        cake.ViewportX,
+                        cake.ViewportY,
+                        cake.RotationZ,
+                        cake.ScaleX,
+                        cake.ScaleY,
+                        cake.ScaleZ));
+                }
+            }
+
+            _world.RestorePendingRewardPresentation(cakes, _session?.LastResult?.DishScores);
         }
 
         private void RestorePendingRewardBattleDishes(BattleSession session, PendingRewardBattleViewSaveData snapshot)
@@ -767,6 +876,7 @@ namespace GourmetProject.Game.UI.Battle
         void IRewardPageHost.SwitchTo(GameplayView view, Action buildCenter, Action onShown) => SwitchTo(view, buildCenter, onShown);
         void IRewardPageHost.RefreshPersistent() => RefreshPersistent();
         void IRewardPageHost.ShowActionSelection() => ShowActionSelection();
+        void IRewardPageHost.RestoreBattleWorld() => RestoreBattleWorld();
         FoodTipsView IRewardPageHost.FoodTips() => _tips != null ? _tips.Food : null;
         ItemTipView IRewardPageHost.ItemTips() => _tips != null ? _tips.Item : null;
         void IRewardPageHost.PlayRandomizedItemFlys(IReadOnlyList<RandomizedItemResult> results) => PlayRandomizedItemFlys(results);
@@ -1079,7 +1189,29 @@ namespace GourmetProject.Game.UI.Battle
             _world.SetDishHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
             _world.SetCellHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
             _world.SetTableFragmentHoverCallbacks(OnTableFragmentHoverEntered, OnTableFragmentHoverExited);
+            if (_session.IsSettled && _run.HasPendingRewardBattleView)
+            {
+                RestorePendingRewardPresentation(_run.GetPendingRewardBattleView());
+            }
             RefreshAll();
+        }
+
+        /// <summary>奖励窗重新显示前，先退出查看页并恢复其原始返回页。</summary>
+        public void ReturnToPendingRewardView(Action onReturned)
+        {
+            if (_current == GameplayView.TableView && _tableCoordinator != null)
+            {
+                _tableCoordinator.Back(onReturned);
+                return;
+            }
+
+            if (_current == GameplayView.RecipeInspect && _recipeBookPage != null)
+            {
+                _recipeBookPage.CloseInspect(onReturned);
+                return;
+            }
+
+            onReturned?.Invoke();
         }
 
         private void BindWorldHoverCallbacks()
@@ -1104,9 +1236,18 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnRewardTableEditDone(bool placed)
         {
-            (_world ?? BattleWorldController.Instance)?.HideWorld();
+            (_world ?? BattleWorldController.Instance)?.SuspendWorld();
             Action<bool> cb = _afterRewardTableEdit;
             _afterRewardTableEdit = null;
+            if (_session != null && _session.IsSettled && _run?.HasPendingRewardBattleView == true)
+            {
+                SwitchTo(
+                    GameplayView.Food,
+                    RestoreBattleWorld,
+                    () => cb?.Invoke(placed));
+                return;
+            }
+
             SwitchTo(GameplayView.None, onShown: () => cb?.Invoke(placed));
         }
 
@@ -1210,7 +1351,7 @@ namespace GourmetProject.Game.UI.Battle
 
         private void ServeFromOutlet()
         {
-            if (_rewardPeekOnly)
+            if (_rewardPeekOnly || HasPendingBattleRewardLifecycle)
             {
                 return;
             }
@@ -1869,7 +2010,7 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnSettingsClicked()
         {
-            if (_rewardPeekOnly)
+            if (_rewardPeekOnly || HasPendingBattleRewardLifecycle)
             {
                 return;
             }
@@ -1879,7 +2020,7 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnViewRecipeClicked()
         {
-            if (_rewardPeekOnly || _run == null || _current == GameplayView.None)
+            if (_run == null || _current == GameplayView.None)
             {
                 return;
             }
@@ -2013,11 +2154,6 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnViewTableClicked()
         {
-            if (_rewardPeekOnly)
-            {
-                return;
-            }
-
             if (_tableCoordinator == null)
             {
                 return;
@@ -2539,7 +2675,7 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnEatClicked()
         {
-            if (_rewardPeekOnly)
+            if (_rewardPeekOnly || HasPendingBattleRewardLifecycle)
             {
                 return;
             }
@@ -2641,11 +2777,10 @@ namespace GourmetProject.Game.UI.Battle
             _infoColumn?.SetBattleScoreOverride(null);
             RefreshAll();
 
-            // Food 结算完成后本局层数必须归零；先保留最终值，供层数金币、跨局保留等结算读取。
+            // 待领奖期间保留最终层数和世界表现；只有玩家明确点击“继续行动”才结束本场生命周期。
             BattleSession settledSession = _session;
             int finalHappyCakeLayers = settledSession?.HappyCakeLayers ?? 0;
             bool isWin = settledSession != null && settledSession.IsWin;
-            settledSession?.ClearHappyCakeLayers();
             _loop?.OnBattleSettled(result, isWin, finalHappyCakeLayers);
         }
 
@@ -2692,7 +2827,7 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnDoodleClearClicked()
         {
-            if (_rewardPeekOnly)
+            if (_rewardPeekOnly || HasPendingBattleRewardLifecycle)
             {
                 return;
             }
@@ -2703,7 +2838,7 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnDoodleToggleClicked()
         {
-            if (_rewardPeekOnly)
+            if (_rewardPeekOnly || HasPendingBattleRewardLifecycle)
             {
                 return;
             }
@@ -2725,7 +2860,7 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnActiveItemClicked(string itemId, RunItemSlotView slot)
         {
-            if (_rewardPeekOnly)
+            if (_rewardPeekOnly || HasPendingBattleRewardLifecycle)
             {
                 return;
             }

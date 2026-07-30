@@ -558,6 +558,7 @@ namespace GourmetProject.Game.Presentation.Battle
             CancelServeInteractions();
             SetFoodWorldElementsVisible(false);
             HideWorldPanels();
+            SetPendingRewardPresentationVisible(false);
             ClearPlacedPieces();
 
             _boardEdit.BeginTableView(run, tableOverride);
@@ -588,6 +589,7 @@ namespace GourmetProject.Game.Presentation.Battle
             CancelServeInteractions();
             SetFoodWorldElementsVisible(false);
             HideWorldPanels();
+            SetPendingRewardPresentationVisible(false);
             ClearPlacedPieces();
 
             _boardEdit.BeginCellTargeting(run, tableOverride);
@@ -721,6 +723,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             gameObject.SetActive(true);
             CancelPresentationTasks();
+            ClearPendingRewardPresentation();
             _worldMode = WorldMode.Food;
             _settling = false;
             ComputeViewport();
@@ -791,6 +794,13 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public void HideWorld()
         {
+            SuspendWorld();
+            ClearPendingRewardPresentation();
+        }
+
+        /// <summary>页面临时离开 Battle 世界；保留待领奖蛋糕与菜品分数标签，供返回 Food 时恢复。</summary>
+        public void SuspendWorld()
+        {
             CancelPresentationTasks();
             ResetTableViewFade();
             if (_boardEdit != null && _boardEdit.IsEditing)
@@ -803,8 +813,46 @@ namespace GourmetProject.Game.Presentation.Battle
             CancelServeInteractions();
             SetFoodWorldElementsVisible(false);
             _worldMode = WorldMode.Hidden;
-            _cakeLayerFx?.Clear();
             gameObject.SetActive(false);
+        }
+
+        public List<CakeLayerVisualState> CapturePendingRewardCakeVisuals()
+        {
+            EnsureCakeLayerFx();
+            return _cakeLayerFx != null
+                ? _cakeLayerFx.CaptureState()
+                : new List<CakeLayerVisualState>();
+        }
+
+        /// <summary>世界重建后，无动画恢复待领奖的蛋糕与菜品贡献标签。</summary>
+        public void RestorePendingRewardPresentation(
+            IReadOnlyList<CakeLayerVisualState> cakes,
+            IReadOnlyList<DishScore> dishScores)
+        {
+            EnsureCakeLayerFx();
+            _cakeLayerFx?.RestoreState(cakes);
+            EnsureSequencer();
+            if (_sequencer != null && _boardView?.Mapper != null)
+            {
+                _sequencer.RestoreDishValueBadges(
+                    dishScores,
+                    _dishViewsById,
+                    _boardView.Mapper,
+                    _fxRoot);
+            }
+        }
+
+        public void SetPendingRewardPresentationVisible(bool visible)
+        {
+            _cakeLayerFx?.SetVisible(visible);
+            _sequencer?.SetRetainedDishValueBadgesVisible(visible);
+        }
+
+        /// <summary>新战斗、战败、继续行动或退出玩法时最终销毁待领奖表现。</summary>
+        public void ClearPendingRewardPresentation()
+        {
+            _cakeLayerFx?.Clear();
+            _sequencer?.ClearRetainedDishValueBadges();
         }
 
         /// <summary>战斗结束后清理本场运行时餐桌表现，避免已摆菜品残留到后续非战斗状态。</summary>
@@ -816,6 +864,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _session = null;
             ClearPlacedPieces();
             _doodle?.Clear();
+            ClearPendingRewardPresentation();
         }
 
         private void FadeTableViewTo(float targetAlpha, float duration, Action onComplete, bool clearOnComplete)

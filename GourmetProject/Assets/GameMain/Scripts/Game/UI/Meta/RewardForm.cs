@@ -186,7 +186,7 @@ namespace GourmetProject.Game.UI.Meta
         {
             if (_peekHidden)
             {
-                ShowFromResultPeek();
+                RestorePeekChildren();
             }
 
             BattleForm.Active?.SetRewardPeekOnly(false);
@@ -259,11 +259,16 @@ namespace GourmetProject.Game.UI.Meta
                 _run.ClearPendingGenericRewardOffer(_genericRewardKey);
                 if (LoadNextGenericReward())
                 {
+                    RunPersistence.Save(_run);
                     RefreshOffer();
                     return;
                 }
 
                 _run.PendingGenericRewardsConfirmBattleAfterDone = false;
+                if (_confirmBattleRewardAfterGeneric)
+                {
+                    _run.ClearPendingRewardBattleView();
+                }
                 RunPersistence.Save(_run);
 
                 if (closeForm)
@@ -291,6 +296,7 @@ namespace GourmetProject.Game.UI.Meta
                 _run.PendingGenericRewardsConfirmBattleAfterDone = true;
                 if (LoadNextGenericReward())
                 {
+                    RunPersistence.Save(_run);
                     if (!closeForm)
                     {
                         ReopenReward();
@@ -302,6 +308,7 @@ namespace GourmetProject.Game.UI.Meta
                 }
             }
 
+            _run.ClearPendingRewardBattleView();
             RunPersistence.Save(_run);
             if (closeForm)
             {
@@ -311,10 +318,10 @@ namespace GourmetProject.Game.UI.Meta
             BattleForm.Active?.OnRewardConfirmed();
         }
 
-        /// <summary>领取动作后：若这是最后一个奖励（offer 已全部领取），直接等效于点「继续」。</summary>
+        /// <summary>通用奖励保持自动完成；Food 战斗奖励必须等待玩家明确点击“继续行动”。</summary>
         private bool TryAutoComplete(bool closeForm)
         {
-            if (_offer == null || _run == null || !_offer.IsFullyClaimed)
+            if (!_genericMode || _offer == null || _run == null || !_offer.IsFullyClaimed)
             {
                 return false;
             }
@@ -376,6 +383,18 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
+            BattleForm battle = BattleForm.Active;
+            if (battle != null)
+            {
+                battle.ReturnToPendingRewardView(RestorePeekChildren);
+                return;
+            }
+
+            RestorePeekChildren();
+        }
+
+        private void RestorePeekChildren()
+        {
             for (int i = 0; i < _peekChildStates.Count; i++)
             {
                 PeekChildState state = _peekChildStates[i];
@@ -504,7 +523,10 @@ namespace GourmetProject.Game.UI.Meta
             return GroupFor(groupIndex).IsClaimed(index);
         }
 
-        private void OpenDishPack(int groupIndex, IReadOnlyList<RewardChoice> groupChoices)
+        private void OpenDishPack(
+            int groupIndex,
+            IReadOnlyList<RewardChoice> groupChoices,
+            bool closeRewardFormOnOpen = true)
         {
             BattleForm battle = BattleForm.Active;
             if (battle == null || groupChoices == null || groupChoices.Count == 0)
@@ -512,13 +534,42 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
+            var remainingChoices = new List<RewardChoice>();
+            var sourceIndices = new List<int>();
+            for (int i = 0; i < groupChoices.Count; i++)
+            {
+                if (IsChoiceClaimed(groupIndex, i) || groupChoices[i] == null)
+                {
+                    continue;
+                }
+
+                remainingChoices.Add(groupChoices[i]);
+                sourceIndices.Add(i);
+            }
+
+            if (remainingChoices.Count == 0)
+            {
+                return;
+            }
+
             bool opened = battle.OpenRewardDishPack(
-                groupChoices,
-                choiceIndex => ClaimDishChoice(groupIndex, choiceIndex, groupChoices),
+                remainingChoices,
+                displayIndex =>
+                {
+                    if (displayIndex < 0 || displayIndex >= sourceIndices.Count)
+                    {
+                        return false;
+                    }
+
+                    return ClaimDishChoice(groupIndex, sourceIndices[displayIndex], groupChoices);
+                },
                 ReopenReward);
             if (opened)
             {
-                Close();
+                if (closeRewardFormOnOpen)
+                {
+                    Close();
+                }
             }
         }
 
@@ -527,34 +578,43 @@ namespace GourmetProject.Game.UI.Meta
             int choiceIndex,
             IReadOnlyList<RewardChoice> groupChoices)
         {
-            if (_offer == null || _run == null || groupChoices == null || IsChoiceResolved(groupIndex)
-                || choiceIndex < 0 || choiceIndex >= groupChoices.Count)
+            if (!RestoreRewardContextForCallback()
+                || groupChoices == null
+                || IsChoiceResolved(groupIndex)
+                || choiceIndex < 0
+                || choiceIndex >= groupChoices.Count
+                || IsChoiceClaimed(groupIndex, choiceIndex))
             {
                 return false;
             }
 
             RewardChoice choice = groupChoices[choiceIndex];
-            if (!RewardGranter.ApplyDishChoice(_run, choice))
+            bool applied;
+            using (RunPersistence.SuppressSave())
+            {
+                applied = RewardGranter.ApplyDishChoice(_run, choice);
+            }
+
+            if (!applied)
             {
                 return false;
             }
 
             MarkChoiceClaimed(groupIndex, choiceIndex);
-            SaveOfferAndReopenReward();
-            return true;
-        }
-
-        private void SaveOfferAndReopenReward()
-        {
             SaveCurrentOffer();
-
-            // 菜品是最后一个奖励且已放入菜谱：直接等效于点「继续」，不再弹回 RewardForm。
-            if (TryAutoComplete(closeForm: false))
+            RefreshBattlePersistentHud();
+            if (!IsChoiceResolved(groupIndex))
             {
-                return;
+                OpenDishPack(
+                    groupIndex,
+                    GroupFor(groupIndex).Choices,
+                    closeRewardFormOnOpen: false);
             }
-
-            ReopenReward();
+            else
+            {
+                ReopenReward();
+            }
+            return true;
         }
 
         private void ReopenReward()
@@ -580,10 +640,14 @@ namespace GourmetProject.Game.UI.Meta
             if (_genericMode)
             {
                 _run.SetPendingGenericRewardOffer(_genericRewardKey, _offer);
-                return;
+            }
+            else
+            {
+                _run.SetPendingRewardOffer(_rewardKey, _offer);
             }
 
-            _run.SetPendingRewardOffer(_rewardKey, _offer);
+            // 奖励应用与 claimed index 更新都在 SuppressSave 区间内完成，到这里一次性持久化。
+            RunPersistence.Save(_run);
         }
 
         private void MarkChoiceClaimed(int groupIndex, int index)

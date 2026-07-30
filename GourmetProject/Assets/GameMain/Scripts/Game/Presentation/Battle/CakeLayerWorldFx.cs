@@ -4,6 +4,33 @@ using UnityEngine;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
+    /// <summary>单个欢乐蛋糕的分辨率无关视觉状态。</summary>
+    public readonly struct CakeLayerVisualState
+    {
+        public CakeLayerVisualState(
+            float viewportX,
+            float viewportY,
+            float rotationZ,
+            float scaleX,
+            float scaleY,
+            float scaleZ)
+        {
+            ViewportX = viewportX;
+            ViewportY = viewportY;
+            RotationZ = rotationZ;
+            ScaleX = scaleX;
+            ScaleY = scaleY;
+            ScaleZ = scaleZ;
+        }
+
+        public float ViewportX { get; }
+        public float ViewportY { get; }
+        public float RotationZ { get; }
+        public float ScaleX { get; }
+        public float ScaleY { get; }
+        public float ScaleZ { get; }
+    }
+
     /// <summary>欢乐蛋糕层数的世界表现：增加时从画面上方落下，消耗时随机溶解已有蛋糕。</summary>
     public sealed class CakeLayerWorldFx : MonoBehaviour
     {
@@ -70,6 +97,76 @@ namespace GourmetProject.Game.Presentation.Battle
             for (int i = _root.childCount - 1; i >= 0; i--)
             {
                 Destroy(_root.GetChild(i).gameObject);
+            }
+        }
+
+        public List<CakeLayerVisualState> CaptureState()
+        {
+            var result = new List<CakeLayerVisualState>(_cakes.Count);
+            if (_camera == null)
+            {
+                return result;
+            }
+
+            foreach (SpriteRenderer cake in _cakes)
+            {
+                if (cake == null)
+                {
+                    continue;
+                }
+
+                Transform cakeTransform = cake.transform;
+                Vector3 viewport = _camera.WorldToViewportPoint(cakeTransform.position);
+                Vector3 scale = cakeTransform.localScale;
+                result.Add(new CakeLayerVisualState(
+                    viewport.x,
+                    viewport.y,
+                    cakeTransform.eulerAngles.z,
+                    scale.x,
+                    scale.y,
+                    scale.z));
+            }
+
+            return result;
+        }
+
+        public void RestoreState(IReadOnlyList<CakeLayerVisualState> states)
+        {
+            Clear();
+            if (_root != null)
+            {
+                _root.gameObject.SetActive(true);
+            }
+
+            if (_camera == null || states == null)
+            {
+                return;
+            }
+
+            float cameraDepth = Mathf.Abs(_camera.transform.position.z);
+            for (int i = 0; i < states.Count; i++)
+            {
+                CakeLayerVisualState state = states[i];
+                Vector3 world = _camera.ViewportToWorldPoint(
+                    new Vector3(state.ViewportX, state.ViewportY, cameraDepth));
+                world.z = 0f;
+                SpriteRenderer cake = CreateCake(world, animate: false, staggerIndex: 0);
+                if (cake == null)
+                {
+                    continue;
+                }
+
+                Transform cakeTransform = cake.transform;
+                cakeTransform.rotation = Quaternion.Euler(0f, 0f, state.RotationZ);
+                cakeTransform.localScale = new Vector3(state.ScaleX, state.ScaleY, state.ScaleZ);
+            }
+        }
+
+        public void SetVisible(bool visible)
+        {
+            if (_root != null)
+            {
+                _root.gameObject.SetActive(visible);
             }
         }
 

@@ -1015,7 +1015,40 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>读档恢复待领奖界面时，把会话标记为已结算的只读 UI 状态；不触发任何结算副作用。</summary>
         public void RestoreSettledForRewardView(int total)
         {
-            LastResult = new ScoreResult(Array.Empty<DishScore>(), Math.Max(0, total), 0f, 1f);
+            RestoreSettledForRewardView(
+                total,
+                -1,
+                Array.Empty<DishScore>(),
+                Math.Max(0, total),
+                0f,
+                1f,
+                hasDetailedScore: false);
+        }
+
+        /// <summary>
+        /// 从待领奖快照恢复只读结算状态。层数与详细分数均为表现恢复数据，不重复执行结算技能或资源副作用。
+        /// </summary>
+        public void RestoreSettledForRewardView(
+            int total,
+            int finalHappyCakeLayers,
+            IReadOnlyList<DishScore> dishScores,
+            float rawSum,
+            float finalFlat,
+            float finalMultiplier,
+            bool hasDetailedScore)
+        {
+            if (finalHappyCakeLayers >= 0)
+            {
+                SetHappyCakeLayers(finalHappyCakeLayers);
+            }
+
+            LastResult = hasDetailedScore
+                ? new ScoreResult(
+                    dishScores ?? Array.Empty<DishScore>(),
+                    rawSum,
+                    finalFlat,
+                    finalMultiplier)
+                : new ScoreResult(Array.Empty<DishScore>(), Math.Max(0, total), 0f, 1f);
             IsSettled = true;
         }
 
