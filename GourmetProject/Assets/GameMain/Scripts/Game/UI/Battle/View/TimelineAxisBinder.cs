@@ -37,6 +37,7 @@ namespace GourmetProject.Game.UI.Battle.View
 
         public bool BeginActiveItemTargeting(
             GameRun run,
+            string executingNodeId,
             ItemDefinition item,
             IReadOnlyList<ActiveTarget> targets,
             Action<ActiveTarget> onConfirm,
@@ -47,7 +48,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 return false;
             }
 
-            Rebuild(run);
+            Rebuild(run, executingNodeId);
             if (ItemActiveUsage.IsTimelineAddEffect(item.EffectType))
             {
                 var days = new List<int>(targets.Count);

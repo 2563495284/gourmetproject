@@ -212,12 +212,6 @@ namespace GourmetProject.Game.UI.Hud
                 }
             }
 
-            if (_targetableNodeIds.Count == 0)
-            {
-                EndSelection(rebuild: false);
-                return false;
-            }
-
             RebuildAxisChrome();
             ReconcileNodeGroups(animate: false);
             ApplySelectionMode();

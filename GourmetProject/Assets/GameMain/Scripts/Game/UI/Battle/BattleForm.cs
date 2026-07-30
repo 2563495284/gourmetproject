@@ -1003,7 +1003,13 @@ namespace GourmetProject.Game.UI.Battle
         {
             SetActionAxisVisible(true);
             bool opened = _axisBinder != null
-                && _axisBinder.BeginActiveItemTargeting(_run, item, targets, onConfirm, onCancel);
+                && _axisBinder.BeginActiveItemTargeting(
+                    _run,
+                    _currentTimelineNodeCard?.Id,
+                    item,
+                    targets,
+                    onConfirm,
+                    onCancel);
             if (opened)
             {
                 HideAllTips();
