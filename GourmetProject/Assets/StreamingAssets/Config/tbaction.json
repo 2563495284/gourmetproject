@@ -134,7 +134,7 @@
   {
     "id": "act_reward",
     "name": "幸运事件",
-    "desc": "",
+    "desc": "幸运的未知事件",
     "behavior": 2,
     "foodId": "",
     "effectType": 0,
@@ -146,7 +146,7 @@
   {
     "id": "act_shop",
     "name": "商店采购",
-    "desc": "",
+    "desc": "摆满了\n琳琅满目的食物与道具",
     "behavior": 4,
     "foodId": "",
     "effectType": 0,
@@ -158,7 +158,7 @@
   {
     "id": "act_interest",
     "name": "收取利息",
-    "desc": "",
+    "desc": "满5金币收获1金币\n最多收获30金币",
     "behavior": 5,
     "foodId": "",
     "effectType": 0,
@@ -182,7 +182,7 @@
   {
     "id": "act_loan_repay",
     "name": "偿还高利贷",
-    "desc": "",
+    "desc": "扣除400金币",
     "behavior": 6,
     "foodId": "",
     "effectType": 1,
@@ -194,7 +194,7 @@
   {
     "id": "act_gold_clear",
     "name": "月末清算",
-    "desc": "",
+    "desc": "扣除所有金币",
     "behavior": 6,
     "foodId": "",
     "effectType": 24,

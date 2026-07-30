@@ -146,7 +146,7 @@ namespace GourmetProject.Game.UI.Battle.View
                     ShopNodeTipView tip = _shopTip?.Invoke();
                     if (tip != null)
                     {
-                        trigger.SetTip(tip, () => tip.Bind(node.Day));
+                        trigger.SetTip(tip, () => tip.Bind(action, node.Day));
                     }
 
                     break;
