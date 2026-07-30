@@ -138,42 +138,8 @@ namespace GourmetProject.Game.UI.Battle.View
             cfg.GameAction action = TimelineService.NodeAction(run, node);
             if (action == null)
             {
-                case ActionDisplayKind.Shop:
-                {
-                    ShopNodeTipView tip = _shopTip?.Invoke();
-                    if (tip != null)
-                    {
-                        trigger.SetTip(tip, () => tip.Bind(action, node.Day));
-                    }
-
-                    break;
-                }
-
-                case ActionDisplayKind.Interest:
-                {
-                    InterestNodeTipView tip = _interestTip?.Invoke();
-                    if (tip != null)
-                    {
-                        trigger.SetTip(tip, () => BindInterestNodeTip(run, tip, node, action));
-                    }
-
-                    break;
-                }
-
-                case ActionDisplayKind.Boss:
-                {
-                    BossFeastTipView tip = _bossTip?.Invoke();
-                    if (tip != null)
-                    {
-                        trigger.SetTip(tip, () => BindBossNodeTip(run, tip, node, action));
-                    }
-
-                    break;
-                }
-
-                default:
-                    trigger.ClearTip();
-                    break;
+                trigger.ClearTip();
+                return;
             }
 
             TimelineNodeTipView tip = _timelineTip?.Invoke();
