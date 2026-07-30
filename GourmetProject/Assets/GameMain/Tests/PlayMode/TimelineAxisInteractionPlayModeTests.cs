@@ -13,6 +13,7 @@ using GourmetProject.Game.UI.Hud;
 using GourmetProject.Game.UI.Meta;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Scoring;
+using GourmetProject.Runtime;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -304,7 +305,8 @@ namespace GourmetProject.Tests.PlayMode
         public IEnumerator ExecuteFutureAndPastItems_UseAxisArrowWithoutPreviewAndCommitOnClick()
         {
             CreateRun(out GameRun run, out cfg.Tables tables);
-            cfg.GameAction action = tables.TbAction.DataList.First();
+            cfg.GameAction action = tables.TbAction.DataList.First(
+                candidate => candidate.Id == "act_gold_clear");
             run.BeginTimeline(
                 "test",
                 7f,
@@ -338,8 +340,12 @@ namespace GourmetProject.Tests.PlayMode
             BattleForm host = hostObject.GetComponent<BattleForm>();
             SetPrivate(host, "_run", run);
             SetPrivate(host, "_actionAxisBar", axis);
-            SetPrivate(host, "_current", GameplayView.Shop);
+            SetPrivate(host, "_current", GameplayView.ActionSelect);
             SetPrivate(host, "_loop", new WeekLoopController(run, null));
+            ActionCardDeck deck = BuildDeckWithSentinel(
+                root.transform,
+                out WeekEventCardView existingActionCard);
+            SetPrivate(host, "_deck", deck);
             AttachAxisBinder(host, axis);
 
             TargetArrowView arrowTemplate = BuildArrowTemplate();
@@ -364,6 +370,142 @@ namespace GourmetProject.Tests.PlayMode
                 slot,
                 targetDay: 1,
                 targetNodeId: "past_node");
+            Assert.That(
+                GetDeckCards(deck),
+                Has.Member(existingActionCard),
+                "复制单只应刷新行动轴，不得打断或重建当前日常行动卡。");
+
+            string[] copiedNodeIds = run.RuntimeTimelineNodes
+                .Where(node =>
+                    node.SourceItemId == futureItem.Id
+                    || node.SourceItemId == pastItem.Id)
+                .Select(node => node.Id)
+                .ToArray();
+            var view = new AutoNodeLoopView(run, action.Id, addCurrentDayNodeOnFirstCard: false);
+            var loop = new WeekLoopController(run, view);
+            var dailyChoice = new ActionChoice(
+                action,
+                "daily_test",
+                run.ActionStepIndex,
+                run.RunActionStepIndex,
+                1f);
+            using (RunPersistence.SuppressSave())
+            {
+                loop.OnActionPicked(dailyChoice);
+            }
+
+            Assert.That(
+                view.ShownNodeIds,
+                Is.EqualTo(copiedNodeIds),
+                "本次日常行动完整结算后应检测并执行当天的复制节点。");
+            Assert.That(view.OpenWeekMapCount, Is.EqualTo(1));
+
+            Object.Destroy(root);
+            Object.Destroy(arrowTemplate.gameObject);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator ExecuteFutureAndPastItems_DuringNodeSelectionPreserveCardAndDrainSameDayNodes()
+        {
+            CreateRun(out GameRun run, out cfg.Tables tables);
+            cfg.GameAction effect = tables.TbAction.DataList.First(
+                action => action.Id == "act_gold_clear");
+            run.BeginTimeline(
+                "test",
+                7f,
+                new[]
+                {
+                    new RuntimeTimelineNode("past_node", "test", 1, effect.Id),
+                    new RuntimeTimelineNode("current_node", "test", 2, effect.Id),
+                    new RuntimeTimelineNode("future_node", "test", 4, effect.Id),
+                });
+            run.CurrentDay = 2f;
+            run.MarkNodeTriggered("past_node");
+
+            ItemDefinition futureItem = ItemDefinition.Get(
+                tables,
+                "item_active_execute_future_node",
+                cfg.ItemKind.Active);
+            ItemDefinition pastItem = ItemDefinition.Get(
+                tables,
+                "item_active_execute_past_node",
+                cfg.ItemKind.Active);
+            run.AcquireItem(futureItem.Id, fallbackGold: 0);
+            run.AcquireItem(pastItem.Id, fallbackGold: 0);
+
+            GameObject root = BuildAxis(out ActionAxisBar axis, out _);
+            var hostObject = new GameObject(
+                "BattleForm",
+                typeof(RectTransform),
+                typeof(BattleForm));
+            hostObject.transform.SetParent(root.transform, false);
+            BattleForm host = hostObject.GetComponent<BattleForm>();
+            SetPrivate(host, "_run", run);
+            SetPrivate(host, "_actionAxisBar", axis);
+            SetPrivate(host, "_current", GameplayView.ActionSelect);
+            SetPrivate(host, "_loop", new WeekLoopController(run, null));
+            SetPrivate(host, "_currentTimelineNodeCard", TimelineService.GetNode(run, "current_node"));
+            ActionCardDeck deck = BuildDeckWithSentinel(
+                root.transform,
+                out WeekEventCardView existingNodeCard);
+            SetPrivate(host, "_deck", deck);
+            AttachAxisBinder(host, axis);
+
+            TargetArrowView arrowTemplate = BuildArrowTemplate();
+            SetPrivate(host, "_activeItemTargetArrowPrefab", arrowTemplate);
+            RunItemSlotView slot = BuildItemSlot(root.transform);
+
+            yield return UseExecuteItemAndAssert(
+                root,
+                host,
+                run,
+                axis,
+                futureItem,
+                slot,
+                targetDay: 4,
+                targetNodeId: "future_node");
+            AssertExecutingNodeGlow(axis, 2, "current_node");
+
+            yield return UseExecuteItemAndAssert(
+                root,
+                host,
+                run,
+                axis,
+                pastItem,
+                slot,
+                targetDay: 1,
+                targetNodeId: "past_node");
+            AssertExecutingNodeGlow(axis, 2, "current_node");
+            Assert.That(
+                GetDeckCards(deck),
+                Has.Member(existingNodeCard),
+                "节点选择期间使用复制单不得替换当前节点卡。");
+
+            string[] copiedNodeIds = run.RuntimeTimelineNodes
+                .Where(node =>
+                    node.SourceItemId == futureItem.Id
+                    || node.SourceItemId == pastItem.Id)
+                .Select(node => node.Id)
+                .ToArray();
+            Assert.That(copiedNodeIds, Has.Length.EqualTo(2));
+            Assert.That(
+                copiedNodeIds.All(id => TimelineService.GetNode(run, id).Day == 2),
+                Is.True);
+
+            var view = new AutoNodeLoopView(run, effect.Id, addCurrentDayNodeOnFirstCard: false);
+            var loop = new WeekLoopController(run, view);
+            using (RunPersistence.SuppressSave())
+            {
+                loop.PromptNextAction();
+            }
+
+            Assert.That(
+                view.ShownNodeIds,
+                Is.EqualTo(new[] { "current_node", copiedNodeIds[0], copiedNodeIds[1] }),
+                "当前节点结算后应按创建顺序执行所有同日复制节点。");
+            Assert.That(view.OpenWeekMapCount, Is.EqualTo(1));
+            Assert.That(run.IsNodeTriggered("future_node"), Is.False);
 
             Object.Destroy(root);
             Object.Destroy(arrowTemplate.gameObject);
@@ -516,6 +658,13 @@ namespace GourmetProject.Tests.PlayMode
 
         private static void CreateRun(out GameRun run, out cfg.Tables tables)
         {
+            var random = new GourmetProject.Core.Rng.RandomService();
+            random.Init(0x54494D454C494E45UL);
+            typeof(GameApp)
+                .GetProperty(nameof(GameApp.Random))
+                ?.GetSetMethod(nonPublic: true)
+                ?.Invoke(null, new object[] { random });
+
             var config = new ConfigService();
             config.LoadAll();
             tables = config.Tables;
@@ -715,16 +864,37 @@ namespace GourmetProject.Tests.PlayMode
                 "新版本加急单不得再写入旧的额外执行队列。");
         }
 
+        private static void AssertExecutingNodeGlow(
+            ActionAxisBar axis,
+            int day,
+            string nodeId)
+        {
+            TimelineNodeBubbleView executing = axis.GetDayGroup(day)
+                .transform.Find($"NodeBubble_{nodeId}")
+                .GetComponent<TimelineNodeBubbleView>();
+            Outline[] outlines = executing.transform.Find("Icon").GetComponents<Outline>();
+            Assert.That(
+                outlines.Any(outline =>
+                    outline.enabled && outline.effectDistance.magnitude > 4f),
+                Is.True,
+                "复制单瞄准与提交后必须保留当前节点的执行中高亮。");
+        }
+
         private sealed class AutoNodeLoopView : IWeekLoopView
         {
             private readonly GameRun _run;
             private readonly string _actionId;
+            private readonly bool _addCurrentDayNodeOnFirstCard;
             private bool _addedCurrentDayNode;
 
-            public AutoNodeLoopView(GameRun run, string actionId)
+            public AutoNodeLoopView(
+                GameRun run,
+                string actionId,
+                bool addCurrentDayNodeOnFirstCard = true)
             {
                 _run = run;
                 _actionId = actionId;
+                _addCurrentDayNodeOnFirstCard = addCurrentDayNodeOnFirstCard;
             }
 
             public int LastBattleTotal => 0;
@@ -766,7 +936,7 @@ namespace GourmetProject.Tests.PlayMode
                 System.Action onPick)
             {
                 ShownNodeIds.Add(node.Id);
-                if (!_addedCurrentDayNode)
+                if (_addCurrentDayNodeOnFirstCard && !_addedCurrentDayNode)
                 {
                     _addedCurrentDayNode = true;
                     AddedNodeId = _run.AddRuntimeTimelineNodeAtDay(

@@ -125,9 +125,7 @@ namespace GourmetProject.Game.Meta
                         || ctx == ActiveUseContextKind.Reward;
                 case ItemEffectTypes.TimelineExecuteFuture:
                 case ItemEffectTypes.TimelineExecutePast:
-                    return ctx == ActiveUseContextKind.ActionSelect
-                        || ctx == ActiveUseContextKind.Shop
-                        || ctx == ActiveUseContextKind.Event;
+                    return ctx == ActiveUseContextKind.ActionSelect;
                 case ItemEffectTypes.TimelineExecuteNext:
                 case ItemEffectTypes.TimelineAddRewardNode:
                 case ItemEffectTypes.TimelineAddInterestNode:

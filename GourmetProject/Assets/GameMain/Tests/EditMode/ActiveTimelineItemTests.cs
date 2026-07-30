@@ -199,6 +199,46 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void TimelineCopyItems_CanOnlyBeUsedDuringActionSelection()
+        {
+            string[] itemIds =
+            {
+                "item_active_execute_future_node",
+                "item_active_execute_past_node",
+            };
+
+            foreach (string itemId in itemIds)
+            {
+                ItemDefinition item = ItemDefinition.Get(
+                    _tables,
+                    itemId,
+                    cfg.ItemKind.Active);
+
+                Assert.That(item, Is.Not.Null, itemId);
+                Assert.That(
+                    ItemActiveUsage.CanUse(item, ActiveUseContextKind.ActionSelect),
+                    Is.True,
+                    itemId);
+                Assert.That(
+                    ItemActiveUsage.CanUse(item, ActiveUseContextKind.Shop),
+                    Is.False,
+                    itemId);
+                Assert.That(
+                    ItemActiveUsage.CanUse(item, ActiveUseContextKind.Event),
+                    Is.False,
+                    itemId);
+                Assert.That(
+                    ItemActiveUsage.CanUse(item, ActiveUseContextKind.Reward),
+                    Is.False,
+                    itemId);
+                Assert.That(
+                    ItemActiveUsage.CanUse(item, ActiveUseContextKind.Battle),
+                    Is.False,
+                    itemId);
+            }
+        }
+
+        [Test]
         public void ActiveItems_AreClassifiedForRewardPools()
         {
             foreach (cfg.ActiveItem active in _tables.TbActiveItem.DataList)

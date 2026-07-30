@@ -4,7 +4,9 @@
     "references": [
         "GourmetProject.Game",
         "GourmetProject.Config",
-        "GourmetProject.Gameplay"
+        "GourmetProject.Gameplay",
+        "GourmetProject.Core",
+        "GourmetProject.Runtime"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

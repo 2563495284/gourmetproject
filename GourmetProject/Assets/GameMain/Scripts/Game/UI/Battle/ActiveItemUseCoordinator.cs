@@ -791,15 +791,6 @@ namespace GourmetProject.Game.UI.Battle
                 return false;
             }
 
-            if ((item.EffectType == ItemEffectTypes.TimelineExecuteFuture
-                    || item.EffectType == ItemEffectTypes.TimelineExecutePast)
-                && contextKind == ActiveUseContextKind.ActionSelect
-                && !_host.IsDailyActionSelectionActive)
-            {
-                reason = "时间轴节点卡期间不能使用加急单。";
-                return false;
-            }
-
             if (item.EffectType == ItemEffectTypes.ResetBossDebuff
                 && TimelineService.GetNearestUntriggeredBossNode(run) == null)
             {
@@ -837,12 +828,6 @@ namespace GourmetProject.Game.UI.Battle
             if (ctx == null)
             {
                 reason = "当前界面不能使用。";
-                return false;
-            }
-
-            if (ItemActiveUsage.RequiresTarget(item) && ctx.EnumerateTargets(item).Count == 0)
-            {
-                reason = "没有可选目标。";
                 return false;
             }
 
@@ -1023,9 +1008,16 @@ namespace GourmetProject.Game.UI.Battle
 
         private bool IsTimelineAxisContextValid()
         {
+            if (_host.CurrentView == GameplayView.ActionSelect)
+            {
+                return _host.IsDailyActionSelectionActive
+                    || (_pendingItem != null
+                        && (_pendingItem.EffectType == ItemEffectTypes.TimelineExecuteFuture
+                            || _pendingItem.EffectType == ItemEffectTypes.TimelineExecutePast));
+            }
+
             return _host.CurrentView == GameplayView.Shop
-                || _host.CurrentView == GameplayView.Event
-                || (_host.CurrentView == GameplayView.ActionSelect && _host.IsDailyActionSelectionActive);
+                || _host.CurrentView == GameplayView.Event;
         }
 
         private static bool ShouldPlayCellMaterialApply(ItemDefinition item, IReadOnlyList<ActiveTarget> targets)
