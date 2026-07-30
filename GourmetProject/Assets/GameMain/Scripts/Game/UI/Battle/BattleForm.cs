@@ -51,6 +51,7 @@ namespace GourmetProject.Game.UI.Battle
     {
         private const string Tag = "Battle";
         private const float RandomizedItemFlyDuration = 0.42f;
+        private static readonly Color BoardEditConfirmColor = new Color(0.08f, 0.62f, 0.12f, 1f);
 
         private enum FoodTipsHoverOwner
         {
@@ -108,7 +109,8 @@ namespace GourmetProject.Game.UI.Battle
         [SerializeField] private EventPagePanel _eventPagePanel;
 
         [Header("DiningTable Edit")]
-        [SerializeField] private Button _boardEditSkipButton;
+        [FormerlySerializedAs("_boardEditSkipButton")]
+        [SerializeField] private Button _boardEditActionButton;
 
         [Header("Right Column - Items")]
         [SerializeField] private BattleItemsColumn _itemsColumn;
@@ -130,6 +132,9 @@ namespace GourmetProject.Game.UI.Battle
         private bool _inBattle;
         private GameplayView _current = GameplayView.None;
         private Action<bool> _afterRewardTableEdit;
+        private bool _boardEditActionCanConfirm;
+        private bool _boardEditActionInteractable;
+        private Color _boardEditSkipColor = new Color(0.72f, 0.02f, 0.02f, 1f);
 
         private GameRun _run;
         private BattleSession _session;
@@ -204,9 +209,17 @@ namespace GourmetProject.Game.UI.Battle
             _cakeLayerBuffHud = GetComponent<CakeLayerBuffHud>();
             _foodBar?.Bind(OnEatClicked, OnDoodleClearClicked, OnDoodleToggleClicked);
 
-            if (_boardEditSkipButton != null)
+            if (_boardEditActionButton != null)
             {
-                _boardEditSkipButton.onClick.AddListener(OnTableEditSkipClicked);
+                _boardEditActionButton.onClick.AddListener(OnTableEditActionClicked);
+                if (_boardEditActionButton.targetGraphic != null)
+                {
+                    _boardEditSkipColor = _boardEditActionButton.targetGraphic.color;
+                }
+
+                ApplyTableEditActionState(new TableFragmentEditActionState(
+                    canConfirm: false,
+                    interactable: false));
             }
 
             _axisBinder = new TimelineAxisBinder(
@@ -824,7 +837,7 @@ namespace GourmetProject.Game.UI.Battle
         RewardItemChoicePanel IGameplayPageRouterHost.RewardItemChoicePanel => _rewardItemChoicePanel;
         RandomizedItemsPanel IGameplayPageRouterHost.RandomizedItemsPanel => _randomizedItemsPanel;
         EventPagePanel IGameplayPageRouterHost.EventPagePanel => _eventPagePanel;
-        Button IGameplayPageRouterHost.BoardEditSkipButton => _boardEditSkipButton;
+        Button IGameplayPageRouterHost.BoardEditActionButton => _boardEditActionButton;
         bool IGameplayPageRouterHost.RecipeInspectShowsActionAxis => _recipeBookPage?.InspectShowsActionAxis == true;
         void IGameplayPageRouterHost.OnLeavingPage(GameplayView current, GameplayView next) => _recipeBookPage?.OnLeavingPage(current, next);
         void IGameplayPageRouterHost.OnBeforeApplyPage(GameplayView view)
@@ -1072,7 +1085,7 @@ namespace GourmetProject.Game.UI.Battle
                 _run,
                 candidateIds,
                 completed,
-                OpenTableFragmentPlacementConfirmation);
+                ApplyTableEditActionState);
             SwitchTo(
                 GameplayView.TableEdit,
                 () => world.BeginTableFragmentChoice(request),
@@ -1258,34 +1271,45 @@ namespace GourmetProject.Game.UI.Battle
             SwitchTo(GameplayView.None, onShown: () => cb?.Invoke(placed));
         }
 
-        private void OpenTableFragmentPlacementConfirmation(TableFragmentPlacementConfirmationRequest request)
+        private void ApplyTableEditActionState(TableFragmentEditActionState state)
         {
-            if (request == null)
+            _boardEditActionCanConfirm = state.CanConfirm;
+            _boardEditActionInteractable = state.Interactable;
+            if (_boardEditActionButton == null)
             {
                 return;
             }
 
-            HideFoodTips();
-            var data = new ConfirmDialogData
+            _boardEditActionButton.interactable = state.Interactable;
+            if (_boardEditActionButton.targetGraphic != null)
             {
-                Title = "确认拼接",
-                Message = "确定要将这块餐桌碎片拼到当前餐桌上吗？",
-                ConfirmText = "确认拼接",
-                CancelText = "取消",
-                OnConfirm = request.Confirm,
-                OnCancel = request.Cancel,
-            };
-            GameApp.UI.OpenUIForm(UIForms.ConfirmDialog, UIForms.GroupDialog, data);
+                _boardEditActionButton.targetGraphic.color =
+                    state.CanConfirm ? BoardEditConfirmColor : _boardEditSkipColor;
+            }
+
+            Text label = _boardEditActionButton.GetComponentInChildren<Text>(true);
+            if (label != null)
+            {
+                label.text = state.CanConfirm ? "确认" : "跳过";
+            }
         }
 
-        private void OnTableEditSkipClicked()
+        private void OnTableEditActionClicked()
         {
-            if (_rewardPeekOnly)
+            if (_rewardPeekOnly || !_boardEditActionInteractable)
             {
                 return;
             }
 
-            (_world ?? BattleWorldController.Instance)?.SkipTableEditPack();
+            BattleWorldController world = _world ?? BattleWorldController.Instance;
+            if (_boardEditActionCanConfirm)
+            {
+                world?.ConfirmTableEditPlacement();
+            }
+            else
+            {
+                world?.SkipTableEditPack();
+            }
         }
 
         private void SetActionAxisVisible(bool visible)

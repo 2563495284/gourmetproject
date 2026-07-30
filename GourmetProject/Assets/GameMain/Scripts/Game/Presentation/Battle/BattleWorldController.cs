@@ -520,17 +520,13 @@ namespace GourmetProject.Game.Presentation.Battle
         public void BeginTableEdit(
             GameRun run,
             IReadOnlyList<string> candidateIds,
-            Action<bool> onDone,
-            Action<Action, Action> requestPlacementConfirmation = null)
+            Action<bool> onDone)
         {
-            Action<TableFragmentPlacementConfirmationRequest> confirmation = requestPlacementConfirmation == null
-                ? null
-                : request => requestPlacementConfirmation(request.Confirm, request.Cancel);
             BeginTableFragmentChoice(new TableFragmentChoiceRequest(
                 run,
                 candidateIds,
                 onDone,
-                confirmation));
+                null));
         }
 
         public void BeginTableFragmentChoice(TableFragmentChoiceRequest request)
@@ -783,6 +779,16 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _boardEdit.SkipTableEditPack();
+        }
+
+        public void ConfirmTableEditPlacement()
+        {
+            if (_worldMode != WorldMode.TableEdit || _boardEdit == null || !_boardEdit.IsEditing)
+            {
+                return;
+            }
+
+            _boardEdit.ConfirmTableEditPlacement();
         }
 
         private void OnDestroy()

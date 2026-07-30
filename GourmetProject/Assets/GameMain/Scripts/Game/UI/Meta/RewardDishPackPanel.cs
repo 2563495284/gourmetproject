@@ -83,7 +83,7 @@ namespace GourmetProject.Game.UI.Meta
 
             if (_promptText != null)
             {
-                _promptText.text = "选择一个菜品";
+                _promptText.text = "选择一个食物加入食谱";
             }
 
             BuildCards();

@@ -14,7 +14,7 @@ namespace GourmetProject.Game.Presentation.Battle
             GameRun run,
             IReadOnlyList<string> candidateIds,
             Action<bool> completed,
-            Action<TableFragmentPlacementConfirmationRequest> requestPlacementConfirmation)
+            Action<TableFragmentEditActionState> editActionStateChanged)
         {
             SessionVersion = System.Threading.Interlocked.Increment(ref _nextSessionVersion);
             Run = run;
@@ -32,7 +32,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             CandidateIds = snapshot;
             Completed = completed;
-            RequestPlacementConfirmation = requestPlacementConfirmation;
+            EditActionStateChanged = editActionStateChanged;
         }
 
         public GameRun Run { get; }
@@ -43,7 +43,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public Action<bool> Completed { get; }
 
-        public Action<TableFragmentPlacementConfirmationRequest> RequestPlacementConfirmation { get; }
+        public Action<TableFragmentEditActionState> EditActionStateChanged { get; }
     }
 
     public readonly struct TableFragmentHoverInfo
@@ -69,34 +69,16 @@ namespace GourmetProject.Game.Presentation.Battle
         public Bounds WorldBounds { get; }
     }
 
-    public sealed class TableFragmentPlacementConfirmationRequest
+    public readonly struct TableFragmentEditActionState
     {
-        public TableFragmentPlacementConfirmationRequest(
-            int sessionVersion,
-            int requestId,
-            TableFragmentDef fragment,
-            GridPos origin,
-            Action confirm,
-            Action cancel)
+        public TableFragmentEditActionState(bool canConfirm, bool interactable)
         {
-            SessionVersion = sessionVersion;
-            RequestId = requestId;
-            Fragment = fragment;
-            Origin = origin;
-            Confirm = confirm;
-            Cancel = cancel;
+            CanConfirm = canConfirm;
+            Interactable = interactable;
         }
 
-        public int SessionVersion { get; }
+        public bool CanConfirm { get; }
 
-        public int RequestId { get; }
-
-        public TableFragmentDef Fragment { get; }
-
-        public GridPos Origin { get; }
-
-        public Action Confirm { get; }
-
-        public Action Cancel { get; }
+        public bool Interactable { get; }
     }
 }
