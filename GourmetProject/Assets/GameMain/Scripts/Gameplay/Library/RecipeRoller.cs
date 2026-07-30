@@ -16,6 +16,71 @@ namespace GourmetProject.Gameplay.Library
     /// </summary>
     public static class RecipeRoller
     {
+        /// <summary>
+        /// 收集菜谱最终可能包含的菜品。固定菜品与所有可达随机候选按配置首次出现
+        /// 顺序合并去重；不会实际消耗随机流。
+        /// </summary>
+        public static List<string> CollectPossibleDishIds(RecipeDef recipe)
+        {
+            if (recipe == null)
+            {
+                throw new ArgumentNullException(nameof(recipe));
+            }
+
+            var result = new List<string>();
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            foreach (string fixedDish in recipe.FixedDishes)
+            {
+                AddCandidate(result, seen, fixedDish);
+            }
+
+            var reachableGroups = new bool[recipe.Groups.Count];
+            foreach (RecipeRollPlanDef plan in recipe.RollPlans)
+            {
+                if (plan == null || plan.Weight <= 0f)
+                {
+                    continue;
+                }
+
+                int count = Math.Min(
+                    reachableGroups.Length,
+                    plan.GroupCounts.Count);
+                for (int groupIndex = 0; groupIndex < count; groupIndex++)
+                {
+                    if (plan.GroupCounts[groupIndex] > 0)
+                    {
+                        reachableGroups[groupIndex] = true;
+                    }
+                }
+            }
+
+            for (int groupIndex = 0;
+                 groupIndex < recipe.Groups.Count;
+                 groupIndex++)
+            {
+                if (!reachableGroups[groupIndex])
+                {
+                    continue;
+                }
+
+                RecipeGroupDef group = recipe.Groups[groupIndex];
+                if (group == null)
+                {
+                    continue;
+                }
+
+                foreach (RecipeEntryDef entry in group.Pool)
+                {
+                    if (entry != null && entry.Weight > 0f)
+                    {
+                        AddCandidate(result, seen, entry.DishId);
+                    }
+                }
+            }
+
+            return result;
+        }
+
         public static List<string> Roll(RecipeDef recipe, GameplayDatabase db, IRandomStream stream)
         {
             if (recipe == null)
@@ -81,6 +146,17 @@ namespace GourmetProject.Gameplay.Library
             }
 
             return result;
+        }
+
+        private static void AddCandidate(
+            List<string> result,
+            HashSet<string> seen,
+            string dishId)
+        {
+            if (!string.IsNullOrEmpty(dishId) && seen.Add(dishId))
+            {
+                result.Add(dishId);
+            }
         }
 
         private static RecipeRollPlanDef PickPlan(IReadOnlyList<RecipeRollPlanDef> plans, IRandomStream stream)

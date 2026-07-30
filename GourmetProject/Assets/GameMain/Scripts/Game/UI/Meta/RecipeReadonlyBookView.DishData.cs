@@ -62,7 +62,7 @@ namespace GourmetProject.Game.UI.Meta
             var skills = new List<FoodInfoEntry>();
             foreach (string skillId in skillIds)
             {
-                SkillDef skill = _run.Database.GetSkill(skillId);
+                SkillDef skill = Database.GetSkill(skillId);
                 if (skill != null)
                 {
                     skills.Add(new FoodInfoEntry(skill.Name, skill.Desc));
@@ -73,7 +73,7 @@ namespace GourmetProject.Game.UI.Meta
             var flavorDetails = new List<FoodInfoEntry>();
             foreach (string flavorId in flavorIds)
             {
-                FlavorDef flavor = _run.Database.GetFlavor(flavorId);
+                FlavorDef flavor = Database.GetFlavor(flavorId);
                 if (flavor == null)
                 {
                     continue;
@@ -103,7 +103,7 @@ namespace GourmetProject.Game.UI.Meta
         private IReadOnlyList<FoodInfoEntry> BuildRecipeSpecialTags(
             IReadOnlyList<string> skillIds)
         {
-            if (skillIds == null || _run?.Database == null)
+            if (skillIds == null || Database == null)
             {
                 return Array.Empty<FoodInfoEntry>();
             }
@@ -111,7 +111,7 @@ namespace GourmetProject.Game.UI.Meta
             var termIds = new List<string>();
             foreach (string skillId in skillIds)
             {
-                SkillDef skill = _run.Database.GetSkill(skillId);
+                SkillDef skill = Database.GetSkill(skillId);
                 AddUniqueRange(termIds, skill?.TermIds);
             }
 
@@ -192,7 +192,7 @@ namespace GourmetProject.Game.UI.Meta
         {
             var items = new List<RecipeDisplaySortItem>(
                 entries?.Count ?? 0);
-            if (entries == null || _run?.Database == null)
+            if (entries == null || Database == null)
             {
                 return new List<int>();
             }
@@ -202,13 +202,13 @@ namespace GourmetProject.Game.UI.Meta
                 RecipeBookSlot slot = entries[index];
                 DishDef dish = slot == null
                     ? null
-                    : _run.Database.GetDish(slot.DishId);
+                    : Database.GetDish(slot.DishId);
                 var flavorKeys = new List<FlavorDisplaySortKey>();
                 foreach (string flavorId in ComposeFlavorIds(
                              dish,
                              slot?.ExtraFlavorIds))
                 {
-                    FlavorDef flavor = _run.Database.GetFlavor(flavorId);
+                    FlavorDef flavor = Database.GetFlavor(flavorId);
                     flavorKeys.Add(
                         new FlavorDisplaySortKey(
                             flavor?.SortOrder ?? int.MaxValue,
@@ -335,7 +335,7 @@ namespace GourmetProject.Game.UI.Meta
 
         private string DishShapeText(string dishId)
         {
-            DishDef dish = _run?.Database.GetDish(dishId);
+            DishDef dish = Database?.GetDish(dishId);
             return dish?.Shape == null
                 ? string.Empty
                 : $"{dish.Shape.Width}x{dish.Shape.Height}";

@@ -4,6 +4,7 @@ using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Tooltips;
 using GourmetProject.Game.UI.Widgets;
+using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Runtime;
 using UnityEngine;
@@ -33,6 +34,7 @@ namespace GourmetProject.Game.UI.Meta
 
         private readonly List<RecipeEditDishView> _spawnedDishes = new();
         private GameRun _run;
+        private GameplayDatabase _database;
         private Action _onExit;
         private Action _onChanged;
         private Func<FoodTipsView> _getFoodTips;
@@ -86,6 +88,45 @@ namespace GourmetProject.Game.UI.Meta
         }
 
         /// <summary>
+        /// 不依赖运行中局面的只读候选池预览：禁用拖拽/点击，并隐藏返回按钮。
+        /// </summary>
+        public void OpenForReadonlyDishPool(
+            GameplayDatabase database,
+            IReadOnlyList<string> dishIds,
+            string title,
+            Func<FoodTipsView> getFoodTips = null)
+        {
+            if (database == null)
+            {
+                throw new ArgumentNullException(nameof(database));
+            }
+
+            EnsureWired();
+            _run = null;
+            _database = database;
+            _onExit = null;
+            _onChanged = null;
+            _getFoodTips = getFoodTips;
+            _readonlyEntriesBookIndex = 0;
+
+            var entries = new List<RecipeBookSlot>(
+                dishIds?.Count ?? 0);
+            if (dishIds != null)
+            {
+                foreach (string dishId in dishIds)
+                {
+                    if (!string.IsNullOrEmpty(dishId))
+                    {
+                        entries.Add(new RecipeBookSlot(dishId));
+                    }
+                }
+            }
+
+            _readonlyEntries = entries;
+            _stateMachine.Switch(new ReadonlyDishPoolState(title));
+        }
+
+        /// <summary>
         /// 以主动道具选择态打开菜谱面板：禁用拖拽/删除，只允许点击菜品进入确认。
         /// </summary>
         public void OpenForActiveRecipeDish(
@@ -131,6 +172,7 @@ namespace GourmetProject.Game.UI.Meta
         {
             EnsureWired();
             _run = run;
+            _database = run?.Database;
             _onExit = request.OnExit;
             _onChanged = request.OnChanged;
             _getFoodTips = getFoodTips;
@@ -242,7 +284,7 @@ namespace GourmetProject.Game.UI.Meta
 
             RecipeReadonlyBookState state = _stateMachine?.Current;
             if (state == null
-                || _run == null
+                || Database == null
                 || _warehouseContainer == null
                 || _warehousePrefab == null
                 || _dishPrefab == null)
@@ -255,6 +297,11 @@ namespace GourmetProject.Game.UI.Meta
                 ? $"删除食物　花费 {ShopService.DeleteCost(_run)} 金币"
                 : state.PanelTitle;
             SetText(_titleText, title);
+            if (_backButton != null)
+            {
+                _backButton.gameObject.SetActive(state.ShowExitButton);
+            }
+
             SetButtonText(_backButton, state.ExitButtonText);
 
             const int bookIndex = 0;
@@ -304,7 +351,7 @@ namespace GourmetProject.Game.UI.Meta
             RecipeReadonlyBookState state)
         {
             string dishId = slot.DishId;
-            DishDef def = _run.Database.GetDish(dishId);
+            DishDef def = Database.GetDish(dishId);
             RecipeEditDishView dish = Instantiate(_dishPrefab, dishContainer);
             dish.gameObject.name =
                 $"RecipeDish_{bookIndex + 1}_{dishIndex + 1}";
@@ -337,6 +384,8 @@ namespace GourmetProject.Game.UI.Meta
                 ? _run.RecipeEntries
                 : Array.Empty<RecipeBookSlot>();
         }
+
+        private GameplayDatabase Database => _run?.Database ?? _database;
 
         private void DisableLegacyWarehouseLayout()
         {
@@ -389,7 +438,7 @@ namespace GourmetProject.Game.UI.Meta
 
         private void ShowRecipeDishTips(RecipeEditDishView dish)
         {
-            if (dish == null || _run == null)
+            if (dish == null || Database == null)
             {
                 return;
             }
@@ -400,15 +449,15 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            var target = new ActiveTarget(
-                string.Empty,
-                dish.BookIndex,
-                dish.DishIndex,
-                cfg.ItemTargetKind.RecipeDish);
-            RecipeBookSlot slot = RecipeSlot(target);
+            IReadOnlyList<RecipeBookSlot> entries =
+                EntriesForBook(dish.BookIndex);
+            RecipeBookSlot slot =
+                dish.DishIndex >= 0 && dish.DishIndex < entries.Count
+                    ? entries[dish.DishIndex]
+                    : null;
             DishDef def = slot == null
                 ? null
-                : _run.Database.GetDish(slot.DishId);
+                : Database.GetDish(slot.DishId);
             if (slot == null || def == null)
             {
                 return;
@@ -444,7 +493,15 @@ namespace GourmetProject.Game.UI.Meta
         {
             if (_warehouse != null)
             {
-                Destroy(_warehouse.gameObject);
+                if (Application.isPlaying)
+                {
+                    Destroy(_warehouse.gameObject);
+                }
+                else
+                {
+                    DestroyImmediate(_warehouse.gameObject);
+                }
+
                 _warehouse = null;
             }
 
