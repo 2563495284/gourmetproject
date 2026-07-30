@@ -143,34 +143,23 @@ namespace GourmetProject.Game.Meta
         }
     }
 
-    /// <summary>利息行为：按当前金币每满阈值发放金币（受利息上限限制），即时结算。</summary>
+    /// <summary>利息行为：打开行动配置指向的专用事件；具体结算由事件选项效果执行。</summary>
     public sealed class InterestBehaviorHandler : IActionBehaviorHandler
     {
         public cfg.ActionBehavior Behavior => cfg.ActionBehavior.Interest;
 
         public ActionOutcome Execute(GameRun run, ActionExecutionContext context, IRandomStream rng)
         {
-            int threshold = run.InterestThreshold;
-            int goldPer = run.InterestGoldPer > 0 ? run.InterestGoldPer : 1;
-            int maxGain = run.InterestCap;
-            int gold = TimelineMath.Interest(run.Gold, threshold, goldPer, maxGain);
-            run.Gold += gold;
-
-            string msg;
-            if (gold > 0)
+            string eventId = context.Action.EffectParam;
+            cfg.GameEvent ev = string.IsNullOrWhiteSpace(eventId)
+                ? null
+                : run.Tables.TbEvent.GetOrDefault(eventId);
+            if (ev == null)
             {
-                msg = $"利息结算：金币 +{gold}（每满 {threshold} 金币得 {goldPer}，最高 {maxGain}），当前 {run.Gold}。";
-            }
-            else if (maxGain <= 0)
-            {
-                msg = "当前利息上限为 0，本次没有利息。";
-            }
-            else
-            {
-                msg = $"金币不足 {threshold}，本次没有利息。";
+                return ActionOutcome.Immediate($"事件配置缺失：{eventId}");
             }
 
-            return ActionOutcome.Immediate(msg);
+            return ActionOutcome.Event(ev.Id);
         }
     }
 

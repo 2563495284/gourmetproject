@@ -14,7 +14,8 @@
     ],
     "effectParams": [
       "-"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_midnight_menu",
@@ -31,7 +32,8 @@
     ],
     "effectParams": [
       "-"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_midnight_leave",
@@ -48,7 +50,8 @@
     ],
     "effectParams": [
       "-"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_recipe_page_cover",
@@ -65,7 +68,8 @@
     ],
     "effectParams": [
       "Dish"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_recipe_page_body",
@@ -82,7 +86,8 @@
     ],
     "effectParams": [
       "dish_choice_3|祖传菜谱残页"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_recipe_page_sell",
@@ -99,7 +104,8 @@
     ],
     "effectParams": [
       "-"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_carpenter_wood",
@@ -116,7 +122,8 @@
     ],
     "effectParams": [
       "lay_wood"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_carpenter_stone",
@@ -133,7 +140,8 @@
     ],
     "effectParams": [
       "lay_stone"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_carpenter_metal",
@@ -150,7 +158,8 @@
     ],
     "effectParams": [
       "lay_metal"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_statue_gold",
@@ -170,7 +179,8 @@
     "effectParams": [
       "-",
       "passive_choice_1"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_statue_dish",
@@ -190,7 +200,8 @@
     "effectParams": [
       "-",
       "passive_choice_1"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_statue_steal",
@@ -213,7 +224,8 @@
       "-",
       "active_grant_1",
       "-"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_sign_food_street",
@@ -230,7 +242,8 @@
     ],
     "effectParams": [
       "Dish"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_sign_secondhand",
@@ -247,7 +260,8 @@
     ],
     "effectParams": [
       "PassiveItem"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_sign_mall",
@@ -264,7 +278,8 @@
     ],
     "effectParams": [
       "Gold"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_delivery_normal",
@@ -284,7 +299,8 @@
     "effectParams": [
       "-",
       "-"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_delivery_luxury",
@@ -304,7 +320,8 @@
     "effectParams": [
       "-",
       "-"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_delivery_reject",
@@ -321,7 +338,8 @@
     ],
     "effectParams": [
       "-"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_advance_passive",
@@ -341,7 +359,8 @@
     "effectParams": [
       "passive_choice_1",
       "PassiveItem"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_advance_fragment",
@@ -361,7 +380,8 @@
     "effectParams": [
       "fragment_choice_3",
       "Fragment"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_advance_active",
@@ -381,7 +401,8 @@
     "effectParams": [
       "active_grant_1",
       "-1"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_casserole_i_food",
@@ -401,7 +422,8 @@
     "effectParams": [
       "-",
       "-"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_casserole_i_flavored",
@@ -421,7 +443,8 @@
     "effectParams": [
       "flavored",
       "wishing_casserole|act_event"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_casserole_i_gold",
@@ -441,7 +464,8 @@
     "effectParams": [
       "-",
       "passive_choice_1"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_casserole_ii_flavored",
@@ -461,7 +485,8 @@
     "effectParams": [
       "flavored",
       "flavored_dish_3"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_casserole_ii_gold",
@@ -481,7 +506,8 @@
     "effectParams": [
       "-",
       "legendary_choice_1"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_casserole_ii_actives",
@@ -498,7 +524,8 @@
     ],
     "effectParams": [
       "-"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_roast_meat_pork",
@@ -515,7 +542,8 @@
     ],
     "effectParams": [
       "-"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_roast_meat_beef",
@@ -532,7 +560,8 @@
     ],
     "effectParams": [
       "被毒死了"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_roast_meat_mutton",
@@ -549,7 +578,8 @@
     ],
     "effectParams": [
       "-"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_roast_meat_pork_all",
@@ -566,7 +596,8 @@
     ],
     "effectParams": [
       "dish_grant_1|获得食物烤猪肉"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_roast_meat_pork_half",
@@ -583,7 +614,8 @@
     ],
     "effectParams": [
       "-"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_roast_meat_pork_other_half",
@@ -600,7 +632,8 @@
     ],
     "effectParams": [
       "dish_grant_1|获得食物烤猪肉"
-    ]
+    ],
+    "autoEnd": false
   },
   {
     "id": "opt_roast_meat_mutton_all",
@@ -617,6 +650,25 @@
     ],
     "effectParams": [
       "dish_grant_1|获得食物烤羊肉"
-    ]
+    ],
+    "autoEnd": false
+  },
+  {
+    "id": "opt_interest_collect",
+    "eventId": "ev_interest",
+    "parentId": "",
+    "text": "金币 +{gain}",
+    "resultText": "",
+    "condition": "",
+    "effectTypes": [
+      29
+    ],
+    "effectValues": [
+      0
+    ],
+    "effectParams": [
+      "ev_interest"
+    ],
+    "autoEnd": true
   }
 ]
