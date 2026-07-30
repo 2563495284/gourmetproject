@@ -134,7 +134,7 @@
   {
     "id": "act_reward",
     "name": "幸运事件",
-    "desc": "幸运的未知事件",
+    "desc": "这是好事啊",
     "behavior": 2,
     "foodId": "",
     "effectType": 0,
@@ -146,7 +146,7 @@
   {
     "id": "act_shop",
     "name": "商店采购",
-    "desc": "摆满了\n琳琅满目的食物与道具",
+    "desc": "琳琅满目的食物与道具",
     "behavior": 4,
     "foodId": "",
     "effectType": 0,

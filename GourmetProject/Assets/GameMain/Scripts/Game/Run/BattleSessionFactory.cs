@@ -72,6 +72,9 @@ namespace GourmetProject.Game.Run
                 gameBase.RandomServeMultiplierMin,
                 gameBase.RandomServeMultiplierMax,
                 gameBase.RandomServeMultiplierStep);
+            session.ConfigureCookieServePity(
+                gameBase.ServeCookiePityCount,
+                gameBase.ServeCookieDishIds);
 
             // 蛋糕层数族道具：初始层数 / 阈值下调 / 叠层加速。
             session.CakeLayerThresholdReduction = itemRuntime.CakeThresholdReduction();

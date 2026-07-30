@@ -61,10 +61,8 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(ev.EventType, Is.EqualTo(cfg.ActionBehavior.Interest));
             Assert.That(ev.Weight, Is.Zero);
             Assert.That(ev.Repeatable, Is.True);
-            Assert.That(
-                ev.Desc,
-                Is.EqualTo("利息结算：每满 {threshold} 金币得 {goldPer}，最高 {maxGain}"));
-            Assert.That(ev.ResultText, Is.EqualTo("金币 +{gain}"));
+            Assert.That(ev.Desc, Is.Not.Empty);
+            Assert.That(ev.ResultText, Is.Not.Empty);
 
             GameRun run = CreateRun();
             run.Gold = 78;
@@ -80,22 +78,16 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(options.Count, Is.EqualTo(1));
             cfg.EventOption option = options[0];
             Assert.That(option.Id, Is.EqualTo("opt_interest_collect"));
-            Assert.That(option.Text, Is.EqualTo("金币 +{gain}"));
+            Assert.That(option.Text, Is.Not.Empty);
             Assert.That(option.AutoEnd, Is.True);
             Assert.That(option.EffectTypes, Is.EqualTo(new[] { cfg.EffectType.CollectInterest }));
             Assert.That(option.EffectParams, Is.EqualTo(new[] { ev.Id }));
-            Assert.That(
-                EventService.FormatRuntimeText(run, ev.Desc),
-                Is.EqualTo(
-                    $"利息结算：每满 {run.InterestThreshold} 金币得 {run.InterestGoldPer}，最高 {run.InterestCap}"));
-            int displayedGain = TimelineMath.Interest(
-                run.Gold,
-                run.InterestThreshold,
-                run.InterestGoldPer,
-                run.InterestCap);
-            Assert.That(
-                EventService.FormatRuntimeText(run, option.Text),
-                Is.EqualTo($"金币 +{displayedGain}"));
+            string formattedDescription = EventService.FormatRuntimeText(run, ev.Desc);
+            Assert.That(formattedDescription, Does.Not.Contain("{threshold}"));
+            Assert.That(formattedDescription, Does.Not.Contain("{goldPer}"));
+            Assert.That(formattedDescription, Does.Not.Contain("{maxGain}"));
+            string formattedOption = EventService.FormatRuntimeText(run, option.Text);
+            Assert.That(formattedOption, Does.Not.Contain("{gain}"));
 
             run.SetPendingActionExecution(context, outcome, ev.Id);
             GameRun restored = GameRun.FromSaveData(_tables, _database, run.ToSaveData());

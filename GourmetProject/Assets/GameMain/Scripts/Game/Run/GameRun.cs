@@ -38,6 +38,7 @@ namespace GourmetProject.Game.Run
         private readonly List<string> _pendingFragmentPack = new List<string>();
         private int _fragmentPackPurchaseCount;
         private int _deleteDishCount;
+        private int _currentShopDeleteDishCount;
 
         // 餐桌碎片开包时随机出的局部材质落点。候选阶段即确定，之后随已拼贴碎片保存。
         private readonly Dictionary<string, List<CellMaterial>> _fragmentMaterialRolls =
@@ -610,6 +611,14 @@ namespace GourmetProject.Game.Run
 
         public int DeleteDishCount => _deleteDishCount;
 
+        public int CurrentShopDeleteDishCount => _currentShopDeleteDishCount;
+
+        /// <summary>进入一次新的商店时重置本次删菜计数；从存档恢复当前商店时不调用。</summary>
+        public void BeginShopVisit()
+        {
+            _currentShopDeleteDishCount = 0;
+        }
+
         public void RecordFragmentPackPurchased()
         {
             _fragmentPackPurchaseCount++;
@@ -618,6 +627,7 @@ namespace GourmetProject.Game.Run
         public void RecordDishDeleted()
         {
             _deleteDishCount++;
+            _currentShopDeleteDishCount++;
         }
 
         public TableFragmentDef GetTableFragmentDef(string fragmentId)
@@ -1756,6 +1766,7 @@ namespace GourmetProject.Game.Run
                 PendingFragmentPackIds = new List<string>(_pendingFragmentPack),
                 FragmentPackPurchaseCount = _fragmentPackPurchaseCount,
                 DeleteDishCount = _deleteDishCount,
+                CurrentShopDeleteDishCount = _currentShopDeleteDishCount,
                 RunSettledCounts = new Dictionary<string, int>(_runSettledCounts),
                 CurrentTimelineId = CurrentTimelineId,
                 CurrentTimelineWeekIndex = CurrentTimelineWeekIndex,
@@ -1951,6 +1962,7 @@ namespace GourmetProject.Game.Run
 
             run._fragmentPackPurchaseCount = System.Math.Max(0, data.FragmentPackPurchaseCount);
             run._deleteDishCount = System.Math.Max(0, data.DeleteDishCount);
+            run._currentShopDeleteDishCount = System.Math.Max(0, data.CurrentShopDeleteDishCount);
 
             if (data.RunSettledCounts != null)
             {

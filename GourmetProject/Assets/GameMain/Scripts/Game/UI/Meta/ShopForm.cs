@@ -165,17 +165,20 @@ namespace GourmetProject.Game.UI.Meta
 
             _deleteFoodCard.gameObject.SetActive(true);
             int cost = ShopService.DeleteCost(_run);
+            int limit = ShopService.DeleteDishLimit(_run);
+            int remaining = ShopService.DeleteDishRemaining(_run);
+            string limitDesc = limit > 0
+                ? $"本次商店剩余 {remaining}/{limit} 次。"
+                : "本次商店不限删除次数。";
             var entry = new ShopEntry(
                 ShopEntryKind.Dish,
                 "__delete_food_service__",
                 "删除食物",
-                "从菜谱中选择一道食物删除。",
+                $"从菜谱中选择一道食物删除。\n{limitDesc}",
                 cost,
                 cost);
             bool canUse = _onOpenDeleteDish != null
-                && _run.RecipeEntries.Count > 0
-                && _run.Gold >= cost
-                && !new ItemRuntime(_run).BlockRemoveDish();
+                && ShopService.CanDeleteDish(_run);
             Sprite icon = Resources.Load<Sprite>("Sprites/Items/discount_remove");
             _deleteFoodCard.Bind(new ShopBuyItemViewContext(
                 _run,
@@ -190,9 +193,7 @@ namespace GourmetProject.Game.UI.Meta
         {
             if (_run == null
                 || _onOpenDeleteDish == null
-                || _run.RecipeEntries.Count == 0
-                || _run.Gold < ShopService.DeleteCost(_run)
-                || new ItemRuntime(_run).BlockRemoveDish())
+                || !ShopService.CanDeleteDish(_run))
             {
                 return false;
             }

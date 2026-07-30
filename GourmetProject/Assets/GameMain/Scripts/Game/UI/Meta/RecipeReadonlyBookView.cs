@@ -298,9 +298,20 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             DisableLegacyWarehouseLayout();
-            string title = state is ShopDeleteDishState
-                ? $"删除食物　花费 {ShopService.DeleteCost(_run)} 金币"
-                : state.PanelTitle;
+            string title;
+            if (state is ShopDeleteDishState)
+            {
+                int limit = ShopService.DeleteDishLimit(_run);
+                string remaining = limit > 0
+                    ? $"　剩余 {ShopService.DeleteDishRemaining(_run)}/{limit} 次"
+                    : string.Empty;
+                title = $"删除食物　花费 {ShopService.DeleteCost(_run)} 金币{remaining}";
+            }
+            else
+            {
+                title = state.PanelTitle;
+            }
+
             SetText(_titleText, title);
             if (_backButton != null)
             {
@@ -360,13 +371,16 @@ namespace GourmetProject.Game.UI.Meta
             RecipeEditDishView dish = Instantiate(_dishPrefab, dishContainer);
             dish.gameObject.name =
                 $"RecipeDish_{bookIndex + 1}_{dishIndex + 1}";
+            bool canClickDish = state.CanClickDish
+                && (!(state is ShopDeleteDishState)
+                    || ShopService.CanDeleteDish(_run));
             dish.Bind(
                 def?.Name ?? dishId,
                 DishShapeText(dishId),
                 bookIndex,
                 dishIndex,
                 false,
-                state.CanClickDish ? OnRecipeDishClicked : null,
+                canClickDish ? OnRecipeDishClicked : null,
                 def,
                 null,
                 null,

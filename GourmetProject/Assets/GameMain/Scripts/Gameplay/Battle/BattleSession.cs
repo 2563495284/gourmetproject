@@ -46,6 +46,10 @@ namespace GourmetProject.Gameplay.Battle
         private int _insertDishCountPerWindow;
         private int _successfulBellPrepares;
         private readonly HashSet<int> _insertDishPositions = new HashSet<int>();
+        private int _serveCookiePityCount;
+        private int _consecutiveCookiePrepares;
+        private readonly HashSet<string> _serveCookieDishIds =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         public BattleSession(
             GpTable board,
@@ -144,6 +148,29 @@ namespace GourmetProject.Gameplay.Battle
             _randomServeMultiplierStep = step > 0f ? step : 0f;
         }
 
+        /// <summary>
+        /// 配置连续饼干出菜保底。连续达到 count 次后，下一次普通出菜优先从当前可摆入的
+        /// 非饼干候选中按占格数加权抽取；没有可摆入的非饼干时回退原候选。count=0 表示关闭。
+        /// </summary>
+        public void ConfigureCookieServePity(int count, IEnumerable<string> cookieDishIds)
+        {
+            _serveCookiePityCount = Math.Max(0, count);
+            _consecutiveCookiePrepares = 0;
+            _serveCookieDishIds.Clear();
+            if (cookieDishIds == null)
+            {
+                return;
+            }
+
+            foreach (string dishId in cookieDishIds)
+            {
+                if (!string.IsNullOrWhiteSpace(dishId))
+                {
+                    _serveCookieDishIds.Add(dishId.Trim());
+                }
+            }
+        }
+
         public bool ReverseSettlementOrder { get; set; }
 
         public int MinimumServesForScore { get; set; }
@@ -152,6 +179,9 @@ namespace GourmetProject.Gameplay.Battle
 
         /// <summary>本局已上菜次数。</summary>
         public int ServesUsed { get; private set; }
+
+        /// <summary>当前连续成功出现在出餐口的饼干数量。</summary>
+        public int ConsecutiveCookiePrepares => _consecutiveCookiePrepares;
 
         /// <summary>本局允许从出餐口丢弃食物的总次数。</summary>
         public int FoodDiscardLimit { get; private set; }
@@ -435,7 +465,14 @@ namespace GourmetProject.Gameplay.Battle
                     return ServePrepareResult.Fail(ServePrepareOutcome.NoFittingDish);
                 }
 
-                ServeCandidate chosen = candidates[_rng.Range(0, candidates.Count)];
+                List<ServeCandidate> rollCandidates = PreferNonCookieCandidates(candidates);
+                var weights = new List<float>(rollCandidates.Count);
+                foreach (ServeCandidate candidate in rollCandidates)
+                {
+                    weights.Add(Math.Max(1, candidate.Dish.Shape.CellCount));
+                }
+
+                ServeCandidate chosen = rollCandidates[_rng.WeightedPickIndex(weights)];
                 entry = slot.RemoveEntryAt(chosen.SlotEntryIndex);
                 servedDish = chosen.Dish;
                 placements = chosen.Placements;
@@ -448,6 +485,7 @@ namespace GourmetProject.Gameplay.Battle
             instance.SetSourceRecipeIndex(slotIndex, entry.SourceDishIndex);
             PreparedServe = new PreparedServeDish(slotIndex, entry, instance, placements);
             SetTrackedStatus(entry, BattleRecipeEntryStatus.WaitingForPlacement);
+            RecordPreparedDishForCookiePity(servedDish);
             if (triggeredByServingBell)
             {
                 AdvanceBellPrepareSequence();
@@ -458,6 +496,52 @@ namespace GourmetProject.Gameplay.Battle
             }
 
             return new ServePrepareResult(ServePrepareOutcome.Prepared, PreparedServe);
+        }
+
+        private List<ServeCandidate> PreferNonCookieCandidates(List<ServeCandidate> candidates)
+        {
+            if (_serveCookiePityCount <= 0
+                || _consecutiveCookiePrepares < _serveCookiePityCount
+                || _serveCookieDishIds.Count == 0)
+            {
+                return candidates;
+            }
+
+            var nonCookieCandidates = new List<ServeCandidate>();
+            foreach (ServeCandidate candidate in candidates)
+            {
+                if (!IsCookieDish(candidate.Dish))
+                {
+                    nonCookieCandidates.Add(candidate);
+                }
+            }
+
+            return nonCookieCandidates.Count > 0 ? nonCookieCandidates : candidates;
+        }
+
+        private void RecordPreparedDishForCookiePity(DishDef dish)
+        {
+            if (_serveCookiePityCount <= 0 || _serveCookieDishIds.Count == 0)
+            {
+                _consecutiveCookiePrepares = 0;
+                return;
+            }
+
+            if (IsCookieDish(dish))
+            {
+                _consecutiveCookiePrepares++;
+            }
+            else
+            {
+                _consecutiveCookiePrepares = 0;
+            }
+        }
+
+        private bool IsCookieDish(DishDef dish)
+        {
+            return dish != null
+                && (_serveCookieDishIds.Contains(dish.Id)
+                    || _serveCookieDishIds.Contains(dish.BaseId));
         }
 
         private bool ShouldInsertDishOnNextBellPrepare()

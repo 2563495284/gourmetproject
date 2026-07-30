@@ -32,6 +32,14 @@
     "defaultRandomWeight": 1,
     "randomServeMultiplierMin": 0.5,
     "randomServeMultiplierMax": 1.5,
-    "randomServeMultiplierStep": 0.1
+    "randomServeMultiplierStep": 0.1,
+    "shopDeleteDishLimit": 1,
+    "serveCookiePityCount": 4,
+    "serveCookieDishIds": [
+      "arrow_cookie_1",
+      "arrow_cookie_2",
+      "arrow_cookie_3",
+      "arrow_cookie_4"
+    ]
   }
 ]

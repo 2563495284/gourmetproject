@@ -549,16 +549,45 @@ namespace GourmetProject.Game.Meta
             return run.ModifyEventShopPrice(new ItemRuntime(run).ModifyDeletePrice(DeleteDishCostBase(run)));
         }
 
+        /// <summary>每次商店可删除食物次数；0 表示不限。</summary>
+        public static int DeleteDishLimit(GameRun run)
+        {
+            return System.Math.Max(0, run?.Tables?.TbGameBase?.ShopDeleteDishLimit ?? 0);
+        }
+
+        /// <summary>当前商店剩余可删除次数；不限时返回 int.MaxValue。</summary>
+        public static int DeleteDishRemaining(GameRun run)
+        {
+            if (run == null)
+            {
+                return 0;
+            }
+
+            int limit = DeleteDishLimit(run);
+            return limit <= 0
+                ? int.MaxValue
+                : System.Math.Max(0, limit - run.CurrentShopDeleteDishCount);
+        }
+
+        public static bool CanDeleteDish(GameRun run)
+        {
+            return run != null
+                && DeleteDishRemaining(run) > 0
+                && run.RecipeEntries.Count > 0
+                && run.Gold >= DeleteCost(run)
+                && !new ItemRuntime(run).BlockRemoveDish();
+        }
+
         /// <summary>删除菜谱池中的一道菜，花费金币。持有「囤积癖」时禁止删除。</summary>
         public static bool DeleteDish(GameRun run, string dishId)
         {
-            if (run == null || new ItemRuntime(run).BlockRemoveDish())
+            if (!CanDeleteDish(run))
             {
                 return false;
             }
 
             int cost = DeleteCost(run);
-            if (run.Gold < cost || !run.RemoveBonusDish(dishId))
+            if (!run.RemoveBonusDish(dishId))
             {
                 return false;
             }
@@ -570,13 +599,13 @@ namespace GourmetProject.Game.Meta
 
         public static bool DeleteDishAt(GameRun run, int dishIndex)
         {
-            if (run == null || new ItemRuntime(run).BlockRemoveDish())
+            if (!CanDeleteDish(run))
             {
                 return false;
             }
 
             int cost = DeleteCost(run);
-            if (run.Gold < cost || !run.RemoveBonusDishAt(dishIndex))
+            if (!run.RemoveBonusDishAt(dishIndex))
             {
                 return false;
             }

@@ -113,6 +113,9 @@ namespace GourmetProject.Game.Run
         /// <summary>本局商店/菜谱编辑成功删除菜品次数，用于递增定价。</summary>
         public int DeleteDishCount;
 
+        /// <summary>当前这次商店已删除食物次数；新商店重置，商店内读档保留。</summary>
+        public int CurrentShopDeleteDishCount;
+
         /// <summary>整局累计已结算的菜品 BaseId 次数（技能「大局相同检测」）。</summary>
         public Dictionary<string, int> RunSettledCounts = new Dictionary<string, int>();
 

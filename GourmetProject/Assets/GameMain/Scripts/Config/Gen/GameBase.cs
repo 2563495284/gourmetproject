@@ -38,6 +38,9 @@ public sealed partial class GameBase : Luban.BeanBase
         { if(!_buf["randomServeMultiplierMin"].IsNumber) { throw new SerializationException(); }  RandomServeMultiplierMin = _buf["randomServeMultiplierMin"]; }
         { if(!_buf["randomServeMultiplierMax"].IsNumber) { throw new SerializationException(); }  RandomServeMultiplierMax = _buf["randomServeMultiplierMax"]; }
         { if(!_buf["randomServeMultiplierStep"].IsNumber) { throw new SerializationException(); }  RandomServeMultiplierStep = _buf["randomServeMultiplierStep"]; }
+        { if(!_buf["shopDeleteDishLimit"].IsNumber) { throw new SerializationException(); }  ShopDeleteDishLimit = _buf["shopDeleteDishLimit"]; }
+        { if(!_buf["serveCookiePityCount"].IsNumber) { throw new SerializationException(); }  ServeCookiePityCount = _buf["serveCookiePityCount"]; }
+        { var __json0 = _buf["serveCookieDishIds"]; if(!__json0.IsArray) { throw new SerializationException(); } ServeCookieDishIds = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  ServeCookieDishIds.Add(__v0); }   }
     }
 
     public static GameBase DeserializeGameBase(JSONNode _buf)
@@ -129,6 +132,18 @@ public sealed partial class GameBase : Luban.BeanBase
     /// 黑暗料理随机上菜倍率步长
     /// </summary>
     public readonly float RandomServeMultiplierStep;
+    /// <summary>
+    /// 每次进入商店最多可删除食物次数（0=不限）
+    /// </summary>
+    public readonly int ShopDeleteDishLimit;
+    /// <summary>
+    /// 连续出菜均为饼干达到该次数后，下一次优先非饼干（0=关闭）
+    /// </summary>
+    public readonly int ServeCookiePityCount;
+    /// <summary>
+    /// 出菜保底认定为饼干的食物本体ID列表
+    /// </summary>
+    public readonly System.Collections.Generic.List<string> ServeCookieDishIds;
    
     public const int __ID__ = -1705057789;
     public override int GetTypeId() => __ID__;
@@ -161,6 +176,9 @@ public sealed partial class GameBase : Luban.BeanBase
         + "randomServeMultiplierMin:" + RandomServeMultiplierMin + ","
         + "randomServeMultiplierMax:" + RandomServeMultiplierMax + ","
         + "randomServeMultiplierStep:" + RandomServeMultiplierStep + ","
+        + "shopDeleteDishLimit:" + ShopDeleteDishLimit + ","
+        + "serveCookiePityCount:" + ServeCookiePityCount + ","
+        + "serveCookieDishIds:" + Luban.StringUtil.CollectionToString(ServeCookieDishIds) + ","
         + "}";
     }
 }

@@ -167,7 +167,7 @@ namespace GourmetProject.Game.UI.Meta
 
             Bind(CardName(action), string.Empty, action.MinCostDays, onPick);
             SetArt(CardSpriteFor(action));
-            SetRewardBadge(action.Behavior == cfg.ActionBehavior.Food, FoodRewardKind(action));
+            SetFoodRewardBadge(action);
         }
 
         /// <summary>行动组候选绑定，使用本次选择快照中的耗时。</summary>
@@ -181,7 +181,7 @@ namespace GourmetProject.Game.UI.Meta
 
             Bind(CardName(choice.Action), string.Empty, choice.CostDays, onPick);
             SetArt(CardSpriteFor(choice.Action));
-            SetRewardBadge(choice.Action.Behavior == cfg.ActionBehavior.Food, FoodRewardKind(choice.Action));
+            SetFoodRewardBadge(choice.Action);
         }
 
         private static cfg.Food ResolveFood(cfg.GameAction action) => FoodService.Resolve(GameApp.Config.Tables, action);
@@ -193,9 +193,13 @@ namespace GourmetProject.Game.UI.Meta
             return food != null ? food.Name : action.Name;
         }
 
-        private static cfg.RewardKind FoodRewardKind(cfg.GameAction action)
+        private void SetFoodRewardBadge(cfg.GameAction action)
         {
-            return ResolveFood(action)?.RewardKind ?? default;
+            cfg.Food food = action?.Behavior == cfg.ActionBehavior.Food ? ResolveFood(action) : null;
+            SetRewardBadge(
+                food != null,
+                food?.RewardKind ?? default,
+                food?.ActionKind == cfg.FoodActionKind.Super);
         }
 
         public void Bind(string name, string desc, float costDays, Action onPick)
@@ -287,7 +291,7 @@ namespace GourmetProject.Game.UI.Meta
             _artImage.color = Color.white;
         }
 
-        private void SetRewardBadge(bool visible, cfg.RewardKind kind = default)
+        private void SetRewardBadge(bool visible, cfg.RewardKind kind = default, bool showAlert = false)
         {
             if (_rewardBadgeImage != null)
             {
@@ -296,8 +300,9 @@ namespace GourmetProject.Game.UI.Meta
 
             if (_rewardBadgeText != null)
             {
-                _rewardBadgeText.gameObject.SetActive(visible);
-                _rewardBadgeText.text = visible ? "!" : string.Empty;
+                bool alertVisible = visible && showAlert;
+                _rewardBadgeText.gameObject.SetActive(alertVisible);
+                _rewardBadgeText.text = alertVisible ? "!" : string.Empty;
             }
 
             if (_rewardIconImage != null)
@@ -376,17 +381,21 @@ namespace GourmetProject.Game.UI.Meta
             switch (kind)
             {
                 case cfg.RewardKind.Gold:
-                    spriteName = "icon_coin";
+                    spriteName = "reward_badge_gold";
                     break;
                 case cfg.RewardKind.FragmentChoice:
-                    spriteName = "ui_icon_shop_fragment";
+                    spriteName = "reward_badge_table_cell";
                     break;
                 case cfg.RewardKind.PassiveItemChoice:
-                    spriteName = "ui_icon_shop_passive";
+                    spriteName = "reward_badge_passive_item";
+                    break;
+                case cfg.RewardKind.ActiveItemStrengthen:
+                    spriteName = "reward_badge_active_strengthen";
+                    break;
+                case cfg.RewardKind.ActiveItemAdjust:
+                    spriteName = "reward_badge_active_adjust";
                     break;
                 case cfg.RewardKind.ActiveItemGrant:
-                case cfg.RewardKind.ActiveItemStrengthen:
-                case cfg.RewardKind.ActiveItemAdjust:
                     spriteName = "ui_icon_shop_active";
                     break;
                 case cfg.RewardKind.DishChoice:

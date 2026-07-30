@@ -1380,6 +1380,8 @@ namespace GourmetProject.Game.Orchestration
 
         private void OpenShopThen(Action onClose, ActionExecutionContext context, ActionOutcome outcome)
         {
+            _run?.BeginShopVisit();
+
             // 商会返利（GoldOnShopEnter）：进入商店时额外获得金币（每次进入结算一次）。
             var itemRuntime = new ItemRuntime(_run);
             int shopGold = itemRuntime.ShopEnterGold();

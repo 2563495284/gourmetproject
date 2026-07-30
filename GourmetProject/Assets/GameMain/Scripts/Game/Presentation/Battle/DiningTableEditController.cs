@@ -28,9 +28,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private const float EditTableLayoutTweenDuration = 0.8f;
         private const float EditGhostOutlineWidth = 0.075f;
         private const float EditBoundsWarningWidth = 0.055f;
-        private const float EditTrayCellJitter = 0.045f;
-        private const float EditTrayCellRotation = 4f;
-        private const float EditTrayCellScaleJitter = 0.035f;
+        private const float EditTrayGroupRotation = 5f;
 
         // 编辑页餐桌定位的底部边距：比 Food 态更大，给候选碎片托盘条让位。
         private const float EditTableBottomMargin = 3.6f;
@@ -1009,6 +1007,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 Vector2 columnCenter = _editTrayColumnCenters[i];
                 float centerGridX = (bounds.xMin + bounds.xMax - 1) * 0.5f;
                 float centerGridY = (bounds.yMin + bounds.yMax - 1) * 0.5f;
+                Quaternion groupRotation = TrayRotationForCandidate(i);
                 bool hasWorldBounds = false;
                 Bounds worldBounds = default;
                 foreach (GridPos c in cells)
@@ -1019,14 +1018,13 @@ namespace GourmetProject.Game.Presentation.Battle
                         continue;
                     }
 
-                    var local = new Vector3(
-                        columnCenter.x + (c.X - centerGridX) * _editTraySize,
-                        columnCenter.y - (c.Y - centerGridY) * _editTraySize,
+                    var offset = new Vector3(
+                        (c.X - centerGridX) * _editTraySize,
+                        -(c.Y - centerGridY) * _editTraySize,
                         0f);
-                    ApplyTrayCellOffset(i, c, ref local, out Quaternion rotation, out float scale);
+                    Vector3 local = new Vector3(columnCenter.x, columnCenter.y, 0f) + groupRotation * offset;
                     cell.Configure(c, local, _editTraySize, FragmentCellSprite(shown, c), null);
-                    cell.transform.localRotation = rotation;
-                    cell.transform.localScale *= scale;
+                    cell.transform.localRotation = groupRotation;
                     cell.SetColor(EditFragmentFillColor);
                     cell.SetSortingOrder(EditTraySortingOrder);
                     _editTrayCells.Add(cell);
@@ -1209,17 +1207,11 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        private static void ApplyTrayCellOffset(int candidateIndex, GridPos cell, ref Vector3 position, out Quaternion rotation, out float scale)
+        private static Quaternion TrayRotationForCandidate(int candidateIndex)
         {
-            int hash = candidateIndex * 73856093 ^ cell.X * 19349663 ^ cell.Y * 83492791;
-            float jitterX = HashToSignedUnit(hash) * EditTrayCellJitter;
-            float jitterY = HashToSignedUnit(hash >> 3) * EditTrayCellJitter;
-            float angle = HashToSignedUnit(hash >> 6) * EditTrayCellRotation;
-            float scaleOffset = HashToSignedUnit(hash >> 9) * EditTrayCellScaleJitter;
-
-            position += new Vector3(jitterX, jitterY, 0f);
-            rotation = Quaternion.Euler(0f, 0f, angle);
-            scale = 1f + scaleOffset;
+            int hash = (candidateIndex + 1) * 73856093;
+            float angle = HashToSignedUnit(hash) * EditTrayGroupRotation;
+            return Quaternion.Euler(0f, 0f, angle);
         }
 
         private static float HashToSignedUnit(int hash)

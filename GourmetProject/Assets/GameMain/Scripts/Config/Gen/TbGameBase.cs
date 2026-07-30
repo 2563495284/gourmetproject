@@ -115,6 +115,18 @@ public partial class TbGameBase
     /// 黑暗料理随机上菜倍率步长
     /// </summary>
      public float RandomServeMultiplierStep => _data.RandomServeMultiplierStep;
+    /// <summary>
+    /// 每次进入商店最多可删除食物次数（0=不限）
+    /// </summary>
+     public int ShopDeleteDishLimit => _data.ShopDeleteDishLimit;
+    /// <summary>
+    /// 连续出菜均为饼干达到该次数后，下一次优先非饼干（0=关闭）
+    /// </summary>
+     public int ServeCookiePityCount => _data.ServeCookiePityCount;
+    /// <summary>
+    /// 出菜保底认定为饼干的食物本体ID列表
+    /// </summary>
+     public System.Collections.Generic.List<string> ServeCookieDishIds => _data.ServeCookieDishIds;
     
     public void ResolveRef(Tables tables)
     {

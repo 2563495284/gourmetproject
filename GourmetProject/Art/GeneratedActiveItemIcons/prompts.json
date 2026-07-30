@@ -1,0 +1,142 @@
+[
+  {
+    "id": "item_active_season_sweet",
+    "resource": "active_season_sweet",
+    "family": "strengthen",
+    "master": true,
+    "change": "Keep the single oversized honey dipper and one honey drop as the only visible supply."
+  },
+  {
+    "id": "item_active_season_bitter",
+    "resource": "active_season_bitter",
+    "family": "strengthen",
+    "change": "Replace the box contents with one oversized dark olive bitter-herb leaf and one small dark-brown herbal root tip. The leaf is dominant."
+  },
+  {
+    "id": "item_active_season_umami",
+    "resource": "active_season_umami",
+    "family": "strengthen",
+    "change": "Replace the box contents with one oversized shiitake mushroom and one small dark-green kombu strip. The mushroom is dominant."
+  },
+  {
+    "id": "item_active_season_numb",
+    "resource": "active_season_numb",
+    "family": "strengthen",
+    "change": "Replace the box contents with one oversized cluster of red Sichuan pepper husks and one small pale-cyan tingling spark."
+  },
+  {
+    "id": "item_active_season_sour",
+    "resource": "active_season_sour",
+    "family": "strengthen",
+    "change": "Replace the box contents with one oversized bright-yellow lemon half and one small juice drop."
+  },
+  {
+    "id": "item_active_season_salty",
+    "resource": "active_season_salty",
+    "family": "strengthen",
+    "change": "Replace the box contents with one oversized white-and-blue salt shaker and three large visible salt grains."
+  },
+  {
+    "id": "item_active_lay_cherry",
+    "resource": "active_lay_cherry",
+    "family": "strengthen",
+    "change": "Replace the box contents with one oversized reddish cherry-wood rectangular tabletop panel, with one broad curved wood-grain line."
+  },
+  {
+    "id": "item_active_lay_walnut",
+    "resource": "active_lay_walnut",
+    "family": "strengthen",
+    "change": "Replace the box contents with one oversized dark walnut rectangular tabletop panel, with one broad flowing dark wood-grain line."
+  },
+  {
+    "id": "item_active_lay_marble",
+    "resource": "active_lay_marble",
+    "family": "strengthen",
+    "change": "Replace the box contents with one oversized thick white marble rectangular tabletop slab, with only two broad gray-and-gold veins."
+  },
+  {
+    "id": "item_active_lay_obsidian",
+    "resource": "active_lay_obsidian",
+    "family": "strengthen",
+    "change": "Replace the box contents with one oversized thick glossy black obsidian rectangular tabletop slab, with only two broad violet highlights."
+  },
+  {
+    "id": "item_active_lay_emerald",
+    "resource": "active_lay_emerald",
+    "family": "strengthen",
+    "change": "Replace the box contents with one oversized thick emerald-green rectangular tabletop slab matching the marble slab proportions, with two broad pale-green veins and one restrained gold inlay line. It must not look like a faceted gemstone."
+  },
+  {
+    "id": "item_active_lay_gold",
+    "resource": "active_lay_gold",
+    "family": "strengthen",
+    "change": "Replace the box contents with one oversized thick warm-gold rectangular metal tabletop panel, with one broad diagonal reflection and a dark beveled edge."
+  },
+  {
+    "id": "item_active_lay_silver",
+    "resource": "active_lay_silver",
+    "family": "strengthen",
+    "change": "Replace the box contents with one oversized thick cool-silver rectangular metal tabletop panel, with one broad pale-blue reflection and a dark beveled edge."
+  },
+  {
+    "id": "item_active_reroll_action",
+    "resource": "active_reroll_action",
+    "family": "adjust",
+    "master": true,
+    "change": "Keep the single oversized circular reroll arrow as the only effect symbol."
+  },
+  {
+    "id": "item_active_half_next_action_cost",
+    "resource": "active_half_next_action_cost",
+    "family": "adjust",
+    "change": "Replace the central symbol with one oversized clock split vertically in half: left half solid cyan, right half pale, with two simple clock hands."
+  },
+  {
+    "id": "item_active_reroll_last_boss_debuff",
+    "resource": "active_reroll_last_boss_debuff",
+    "family": "adjust",
+    "change": "Replace the central symbol with one oversized covered serving cloche encircled by one simple reroll arrow."
+  },
+  {
+    "id": "item_active_add_reward_node",
+    "resource": "active_add_reward_node",
+    "family": "adjust",
+    "change": "Replace the central symbol with one oversized blue gift box and one large white plus sign attached at the lower-right."
+  },
+  {
+    "id": "item_active_add_interest_node",
+    "resource": "active_add_interest_node",
+    "family": "adjust",
+    "change": "Replace the central symbol with one oversized stack of three blue-gold coins and one large white plus sign attached at the lower-right."
+  },
+  {
+    "id": "item_active_add_shop_node",
+    "resource": "active_add_shop_node",
+    "family": "adjust",
+    "change": "Replace the central symbol with one oversized blue shop awning and one large white plus sign attached at the lower-right."
+  },
+  {
+    "id": "item_active_add_lottery_node",
+    "resource": "active_add_lottery_node",
+    "family": "adjust",
+    "change": "Replace the central symbol with one oversized blue lottery machine showing one large yellow ball, plus one large white plus sign attached at the lower-right."
+  },
+  {
+    "id": "item_active_delete_timeline_node",
+    "resource": "active_delete_timeline_node",
+    "family": "adjust",
+    "change": "Replace the central symbol with one oversized red timeline-node circle covered by a bold red X cancellation mark."
+  },
+  {
+    "id": "item_active_execute_future_node",
+    "resource": "active_execute_future_node",
+    "family": "adjust",
+    "change": "Replace the central symbol with one oversized dark-cyan fast-forward double-chevron pointing right and ending at one bright cyan timeline-node circle."
+  },
+  {
+    "id": "item_active_execute_past_node",
+    "resource": "active_execute_past_node",
+    "family": "adjust",
+    "change": "Replace the central symbol with one oversized dark-cyan rewind double-chevron pointing left and ending at one warm amber timeline-node circle."
+  }
+]
