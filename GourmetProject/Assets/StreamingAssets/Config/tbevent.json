@@ -7,7 +7,8 @@
     "preconditions": "",
     "weight": 1,
     "repeatable": true,
-    "bgSprite": ""
+    "bgSprite": "",
+    "resultText": ""
   },
   {
     "id": "ev_ancestral_recipe_page",
@@ -17,7 +18,8 @@
     "preconditions": "",
     "weight": 1,
     "repeatable": true,
-    "bgSprite": ""
+    "bgSprite": "",
+    "resultText": ""
   },
   {
     "id": "ev_table_carpenter",
@@ -27,7 +29,8 @@
     "preconditions": "",
     "weight": 1,
     "repeatable": true,
-    "bgSprite": ""
+    "bgSprite": "",
+    "resultText": ""
   },
   {
     "id": "ev_kitchen_god_statue",
@@ -37,7 +40,8 @@
     "preconditions": "",
     "weight": 1,
     "repeatable": true,
-    "bgSprite": ""
+    "bgSprite": "",
+    "resultText": ""
   },
   {
     "id": "ev_crossroad_sign",
@@ -47,7 +51,8 @@
     "preconditions": "",
     "weight": 1,
     "repeatable": true,
-    "bgSprite": ""
+    "bgSprite": "",
+    "resultText": ""
   },
   {
     "id": "ev_delivery_order",
@@ -57,7 +62,8 @@
     "preconditions": "",
     "weight": 1,
     "repeatable": true,
-    "bgSprite": ""
+    "bgSprite": "",
+    "resultText": ""
   },
   {
     "id": "ev_black_market_advance",
@@ -67,7 +73,8 @@
     "preconditions": "",
     "weight": 1,
     "repeatable": true,
-    "bgSprite": ""
+    "bgSprite": "",
+    "resultText": ""
   },
   {
     "id": "ev_wishing_casserole_i",
@@ -77,7 +84,8 @@
     "preconditions": "",
     "weight": 1,
     "repeatable": false,
-    "bgSprite": ""
+    "bgSprite": "",
+    "resultText": ""
   },
   {
     "id": "ev_wishing_casserole_ii",
@@ -87,7 +95,8 @@
     "preconditions": "eventCounterReached:wishing_casserole",
     "weight": 1,
     "repeatable": false,
-    "bgSprite": ""
+    "bgSprite": "",
+    "resultText": ""
   },
   {
     "id": "ev_roast_meat",
@@ -97,6 +106,18 @@
     "preconditions": "",
     "weight": 0,
     "repeatable": true,
-    "bgSprite": ""
+    "bgSprite": "",
+    "resultText": ""
+  },
+  {
+    "id": "ev_interest",
+    "name": "收取利息",
+    "desc": "每满 {threshold} 金币获得 {goldPer}金币，最高 {maxGain}金币",
+    "eventType": 5,
+    "preconditions": "",
+    "weight": 0,
+    "repeatable": true,
+    "bgSprite": "",
+    "resultText": "金币 +{gain}"
   }
 ]

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using GourmetProject.Core.Rng;
 using GourmetProject.Runtime;
 using GourmetProject.Game.Run;
@@ -111,12 +112,39 @@ namespace GourmetProject.Game.Meta
                 case cfg.EffectType.GainLegendaryItem:
                     return EnqueueConfigReward(run, rng, effectParam, "传奇道具", 80);
 
+                case cfg.EffectType.CollectInterest:
+                    return CollectInterest(run, effectParam);
+
                 case cfg.EffectType.UiTodo:
                     return string.IsNullOrWhiteSpace(effectParam) ? "TODO: 后续接入 UI 交互。" : effectParam;
 
                 default:
                     return string.Empty;
             }
+        }
+
+        private static string CollectInterest(GameRun run, string eventId)
+        {
+            cfg.GameEvent ev = string.IsNullOrWhiteSpace(eventId)
+                ? null
+                : run.Tables.TbEvent.GetOrDefault(eventId);
+            if (ev == null)
+            {
+                return $"事件配置缺失：{eventId}";
+            }
+
+            int threshold = run.InterestThreshold;
+            int goldPer = run.InterestGoldPer > 0 ? run.InterestGoldPer : 1;
+            int maxGain = run.InterestCap;
+            int gain = TimelineMath.Interest(run.Gold, threshold, goldPer, maxGain);
+            run.Gold += gain;
+
+            return (ev.ResultText ?? string.Empty)
+                .Replace("{gain}", gain.ToString(CultureInfo.InvariantCulture))
+                .Replace("{threshold}", threshold.ToString(CultureInfo.InvariantCulture))
+                .Replace("{goldPer}", goldPer.ToString(CultureInfo.InvariantCulture))
+                .Replace("{maxGain}", maxGain.ToString(CultureInfo.InvariantCulture))
+                .Replace("{currentGold}", run.Gold.ToString(CultureInfo.InvariantCulture));
         }
 
         private static string AddHiddenScoreOffset(GameRun run, float amount, string param)

@@ -163,7 +163,7 @@
     "foodId": "",
     "effectType": 0,
     "effectValue": 0,
-    "effectParam": "",
+    "effectParam": "ev_interest",
     "minCostDays": 0,
     "maxCostDays": 0
   },

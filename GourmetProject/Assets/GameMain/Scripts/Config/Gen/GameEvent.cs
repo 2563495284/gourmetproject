@@ -25,6 +25,7 @@ public sealed partial class GameEvent : Luban.BeanBase
         { if(!_buf["weight"].IsNumber) { throw new SerializationException(); }  Weight = _buf["weight"]; }
         { if(!_buf["repeatable"].IsBoolean) { throw new SerializationException(); }  Repeatable = _buf["repeatable"]; }
         { if(!_buf["bgSprite"].IsString) { throw new SerializationException(); }  BgSprite = _buf["bgSprite"]; }
+        { if(!_buf["resultText"].IsString) { throw new SerializationException(); }  ResultText = _buf["resultText"]; }
     }
 
     public static GameEvent DeserializeGameEvent(JSONNode _buf)
@@ -64,6 +65,10 @@ public sealed partial class GameEvent : Luban.BeanBase
     /// 事件背景 Sprite(Resources 路径,空=默认占位)
     /// </summary>
     public readonly string BgSprite;
+    /// <summary>
+    /// 终止型事件结果文本模板；利息事件支持 {gain}/{threshold}/{goldPer}/{maxGain}/{currentGold}
+    /// </summary>
+    public readonly string ResultText;
    
     public const int __ID__ = -1313800792;
     public override int GetTypeId() => __ID__;
@@ -83,6 +88,7 @@ public sealed partial class GameEvent : Luban.BeanBase
         + "weight:" + Weight + ","
         + "repeatable:" + Repeatable + ","
         + "bgSprite:" + BgSprite + ","
+        + "resultText:" + ResultText + ","
         + "}";
     }
 }
