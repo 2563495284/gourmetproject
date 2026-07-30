@@ -41,10 +41,8 @@ namespace GourmetProject.Game.UI.Meta
 
         private void OnDisable()
         {
+            // 页面切换（菜谱/餐桌）只是挂起；候选、回调和已选状态只能由显式 Close 销毁。
             HideDishTips();
-            ClearCards();
-            _resolved = false;
-            _confirmPending = false;
         }
 
         public void Open(
@@ -209,13 +207,20 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
+            // 先锁住当前批次；n 选 m 回调可能同步 Open 下一批剩余候选，并把 _resolved 重置为 false。
+            _resolved = true;
             if (!_onChoiceSelected.Invoke(choiceIndex))
             {
+                _resolved = false;
                 card?.PlayTargetFailed();
                 return;
             }
 
-            _resolved = true;
+            if (!_resolved)
+            {
+                return;
+            }
+
             for (int i = 0; i < _spawnedCards.Count; i++)
             {
                 _spawnedCards[i]?.SetResolved(true);

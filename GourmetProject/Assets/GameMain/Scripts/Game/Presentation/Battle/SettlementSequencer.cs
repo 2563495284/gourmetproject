@@ -21,6 +21,7 @@ namespace GourmetProject.Game.Presentation.Battle
     /// </summary>
     public sealed class SettlementSequencer : MonoBehaviour
     {
+        private readonly Dictionary<int, DishValueBadge> _retainedDishValueBadges = new();
         private const float SourceCueRise = 0.12f;
         private const float SourceCueDuration = 0.62f;
         private const float SourceCueStackOffset = 0.12f;
@@ -120,8 +121,10 @@ namespace GourmetProject.Game.Presentation.Battle
             renderScore?.Invoke(0);
             SettlementPlaybackPlan plan = BuildSettlementPlaybackPlan(result, dishViews, baselineSnapshot);
             var playback = new SettlementPlaybackState(CountSettlementCues(plan), scoreFire);
-            var dishValueBadges = new Dictionary<int, DishValueBadge>();
+            ClearRetainedDishValueBadges();
+            Dictionary<int, DishValueBadge> dishValueBadges = _retainedDishValueBadges;
             var sweetTransferPlayback = new SweetTransferPlaybackState();
+            bool completed = false;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             using CancellationTokenSource debugScorePauseCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             _debugScorePaused = false;
@@ -192,6 +195,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     cancellationToken);
                 renderScore?.Invoke(result.Total);
                 await PlayFinalScorePopupAsync(result.Total, mapper.Center, fxRoot, cancellationToken);
+                completed = true;
             }
             finally
             {
@@ -203,7 +207,10 @@ namespace GourmetProject.Game.Presentation.Battle
 #endif
                 RestoreSettlementSpeed();
                 scoreFire?.Hide();
-                ClearDishValueBadges(dishValueBadges);
+                if (!completed)
+                {
+                    ClearRetainedDishValueBadges();
+                }
             }
         }
 
@@ -242,6 +249,7 @@ namespace GourmetProject.Game.Presentation.Battle
             ClearDebugScorePauseState();
 #endif
             RestoreSettlementSpeed();
+            ClearRetainedDishValueBadges();
         }
 
         private async Awaitable PlayCueAsync(
@@ -740,14 +748,9 @@ namespace GourmetProject.Game.Presentation.Battle
                 .SetLink(view.gameObject);
         }
 
-        private static void ClearDishValueBadges(Dictionary<int, DishValueBadge> dishValueBadges)
+        public void ClearRetainedDishValueBadges()
         {
-            if (dishValueBadges == null)
-            {
-                return;
-            }
-
-            foreach (DishValueBadge badge in dishValueBadges.Values)
+            foreach (DishValueBadge badge in _retainedDishValueBadges.Values)
             {
                 if (badge?.View != null)
                 {
@@ -755,7 +758,53 @@ namespace GourmetProject.Game.Presentation.Battle
                 }
             }
 
-            dishValueBadges.Clear();
+            _retainedDishValueBadges.Clear();
+        }
+
+        public void SetRetainedDishValueBadgesVisible(bool visible)
+        {
+            foreach (DishValueBadge badge in _retainedDishValueBadges.Values)
+            {
+                if (badge?.View != null)
+                {
+                    badge.View.gameObject.SetActive(visible);
+                }
+            }
+        }
+
+        /// <summary>待领奖读档或页面往返后，按结算明细无动画重建菜品贡献标签。</summary>
+        public void RestoreDishValueBadges(
+            IReadOnlyList<DishScore> dishScores,
+            IReadOnlyDictionary<int, DishPieceView> dishViews,
+            DiningTableCoordinateMapper mapper,
+            Transform fxRoot)
+        {
+            ClearRetainedDishValueBadges();
+            if (dishScores == null || dishViews == null || mapper == null || fxRoot == null)
+            {
+                return;
+            }
+
+            foreach (DishScore score in dishScores)
+            {
+                if (score == null
+                    || !dishViews.TryGetValue(score.DishInstanceId, out DishPieceView view)
+                    || view == null
+                    || view.Instance == null)
+                {
+                    continue;
+                }
+
+                var badge = new DishValueBadge(score.BaseValue, score.Multiplier);
+                badge.Apply(DishValueChange.FlatBonus(score.FlatBonus));
+                badge.View = DishValueBadgeView.Spawn(
+                    _dishValueBadgePrefab,
+                    fxRoot,
+                    DishValueAnchor(view.Instance, mapper),
+                    FormatDishValue(score.Contribution));
+                badge.IsVisible = badge.View != null;
+                _retainedDishValueBadges[score.DishInstanceId] = badge;
+            }
         }
 
         private async Awaitable PlayFinalScorePopupAsync(

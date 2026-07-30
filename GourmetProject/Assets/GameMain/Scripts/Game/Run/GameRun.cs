@@ -1280,7 +1280,7 @@ namespace GourmetProject.Game.Run
             ClearPendingActionExecution();
             ClearPendingActionChoices();
             ClearPendingShopStock();
-            ClearPendingRewardOffer();
+            ClearPendingBattleReward();
         }
 
         public void AdvanceActionStep()
@@ -1569,7 +1569,6 @@ namespace GourmetProject.Game.Run
         {
             _pendingRewardKey = string.Empty;
             _pendingRewardOffer = null;
-            ClearPendingRewardBattleView();
         }
 
         public bool HasPendingRewardBattleView => _pendingRewardBattleView != null;
@@ -1587,6 +1586,13 @@ namespace GourmetProject.Game.Run
         public void ClearPendingRewardBattleView()
         {
             _pendingRewardBattleView = null;
+        }
+
+        /// <summary>待领奖 Food 生命周期真正结束时，同时清除奖励内容和结算画面快照。</summary>
+        public void ClearPendingBattleReward()
+        {
+            ClearPendingRewardOffer();
+            ClearPendingRewardBattleView();
         }
 
         public bool HasPendingGenericRewards => _pendingGenericRewards.Count > 0;
@@ -2321,8 +2327,35 @@ namespace GourmetProject.Game.Run
                 BattleKey = data.BattleKey ?? string.Empty,
                 IsBoss = data.IsBoss,
                 LastTotal = data.LastTotal,
+                FinalHappyCakeLayers = data.FinalHappyCakeLayers,
+                HasDetailedScore = data.HasDetailedScore,
+                RawSum = data.RawSum,
+                FinalFlat = data.FinalFlat,
+                FinalMultiplier = data.FinalMultiplier,
                 Dishes = new List<PendingRewardBattleDishSaveData>(),
+                Cakes = new List<PendingRewardCakeVisualSaveData>(),
             };
+
+            if (data.Cakes != null)
+            {
+                foreach (PendingRewardCakeVisualSaveData cake in data.Cakes)
+                {
+                    if (cake == null)
+                    {
+                        continue;
+                    }
+
+                    result.Cakes.Add(new PendingRewardCakeVisualSaveData
+                    {
+                        ViewportX = cake.ViewportX,
+                        ViewportY = cake.ViewportY,
+                        RotationZ = cake.RotationZ,
+                        ScaleX = cake.ScaleX,
+                        ScaleY = cake.ScaleY,
+                        ScaleZ = cake.ScaleZ,
+                    });
+                }
+            }
 
             if (data.Dishes == null)
             {
@@ -2356,6 +2389,10 @@ namespace GourmetProject.Game.Run
                     SkillsDisabled = dish.SkillsDisabled,
                     ExcludedFromScore = dish.ExcludedFromScore,
                     IsTemporary = dish.IsTemporary,
+                    HasDishScore = dish.HasDishScore,
+                    ScoreBaseValue = dish.ScoreBaseValue,
+                    ScoreFlatBonus = dish.ScoreFlatBonus,
+                    ScoreMultiplier = dish.ScoreMultiplier,
                 });
             }
 

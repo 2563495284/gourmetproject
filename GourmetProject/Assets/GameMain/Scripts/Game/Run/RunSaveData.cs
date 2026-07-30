@@ -418,7 +418,14 @@ namespace GourmetProject.Game.Run
         public string BattleKey;
         public bool IsBoss;
         public int LastTotal;
+        // -1 表示旧存档未保存最终层数；不可用运行时默认值冒充已确认的结算结果。
+        public int FinalHappyCakeLayers = -1;
+        public bool HasDetailedScore;
+        public float RawSum;
+        public float FinalFlat;
+        public float FinalMultiplier = 1f;
         public List<PendingRewardBattleDishSaveData> Dishes = new List<PendingRewardBattleDishSaveData>();
+        public List<PendingRewardCakeVisualSaveData> Cakes = new List<PendingRewardCakeVisualSaveData>();
     }
 
     [Serializable]
@@ -442,6 +449,21 @@ namespace GourmetProject.Game.Run
         public bool SkillsDisabled;
         public bool ExcludedFromScore;
         public bool IsTemporary;
+        public bool HasDishScore;
+        public float ScoreBaseValue;
+        public float ScoreFlatBonus;
+        public float ScoreMultiplier = 1f;
+    }
+
+    [Serializable]
+    public sealed class PendingRewardCakeVisualSaveData
+    {
+        public float ViewportX;
+        public float ViewportY;
+        public float RotationZ;
+        public float ScaleX = 1f;
+        public float ScaleY = 1f;
+        public float ScaleZ = 1f;
     }
 
     [Serializable]
