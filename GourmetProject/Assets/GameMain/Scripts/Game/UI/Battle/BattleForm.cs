@@ -886,6 +886,8 @@ namespace GourmetProject.Game.UI.Battle
         void IRewardPageHost.RestoreBattleWorld() => RestoreBattleWorld();
         FoodTipsView IRewardPageHost.FoodTips() => _tips != null ? _tips.Food : null;
         ItemTipView IRewardPageHost.ItemTips() => _tips != null ? _tips.Item : null;
+        void IRewardPageHost.PlayRewardDishSelectionFly(RewardDishChoiceCardView sourceCard) =>
+            PlayRewardDishSelectionFly(sourceCard);
         void IRewardPageHost.PlayRandomizedItemFlys(IReadOnlyList<RandomizedItemResult> results) => PlayRandomizedItemFlys(results);
 
         EventPagePanel IEventPageHost.EventPagePanel => _eventPagePanel;
@@ -1549,6 +1551,60 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             ShopPurchaseAnimationStarted?.Invoke(ShopEntryKind.Dish);
+        }
+
+        private void PlayRewardDishSelectionFly(RewardDishChoiceCardView sourceCard)
+        {
+            if (sourceCard == null)
+            {
+                return;
+            }
+
+            Canvas canvas = GetComponentInParent<Canvas>();
+            RectTransform layer = canvas != null ? canvas.transform as RectTransform : transform.root as RectTransform;
+            RectTransform sourceRect = sourceCard.SelectionFlySource;
+            RectTransform target = _infoColumn?.ViewRecipeButtonRect;
+            if (layer == null || sourceRect == null || target == null)
+            {
+                return;
+            }
+
+            Canvas.ForceUpdateCanvases();
+            if (!TryGetRectInLayer(sourceRect, layer, out RectSnapshot start) ||
+                !TryGetRectInLayer(target, layer, out RectSnapshot end))
+            {
+                return;
+            }
+
+            RenderTexture texture = sourceCard.CaptureSelectionFlyTexture();
+            if (texture == null)
+            {
+                return;
+            }
+
+            ShopPurchaseFlyView fly = CreateShopPurchaseFly(layer);
+            if (fly == null)
+            {
+                ReleasePurchaseTexture(texture);
+                return;
+            }
+
+            RegisterShopPurchaseFly(fly);
+            try
+            {
+                fly.PlayFood(
+                    start.Center,
+                    start.Size,
+                    end.Center,
+                    texture,
+                    null,
+                    () => UnregisterShopPurchaseFly(fly));
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception, fly);
+                fly.Cancel();
+            }
         }
 
         private void PlayShopItemPurchase(
