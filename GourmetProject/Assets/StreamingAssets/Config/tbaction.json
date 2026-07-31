@@ -10,8 +10,8 @@
     "effectParam": "",
     "minCostDays": 0.7,
     "maxCostDays": 1.2,
-    "rewardTitle": "金币",
-    "rewardDesc": "完成营业额外得\n一些金币"
+    "rewardTitle": "一些金币",
+    "rewardDesc": "用于商店采购"
   },
   {
     "id": "act_food_fragment",
@@ -25,7 +25,7 @@
     "minCostDays": 0.7,
     "maxCostDays": 1.2,
     "rewardTitle": "餐桌格",
-    "rewardDesc": "完成营业额外得\n餐桌格3选1"
+    "rewardDesc": "扩大餐桌大小"
   },
   {
     "id": "act_food_passive",
@@ -38,8 +38,8 @@
     "effectParam": "",
     "minCostDays": 0.7,
     "maxCostDays": 1.2,
-    "rewardTitle": "道具",
-    "rewardDesc": "完成营业额外得\n道具2选1"
+    "rewardTitle": "道具2选1",
+    "rewardDesc": "带来持续性的增益"
   },
   {
     "id": "act_food_active_strengthen",
@@ -52,8 +52,8 @@
     "effectParam": "",
     "minCostDays": 0.7,
     "maxCostDays": 1.2,
-    "rewardTitle": "强化箱",
-    "rewardDesc": "完成营业额外得\n强化箱2选1"
+    "rewardTitle": "强化箱2选1",
+    "rewardDesc": "强化食物与餐桌格"
   },
   {
     "id": "act_food_active_adjust",
@@ -66,8 +66,8 @@
     "effectParam": "",
     "minCostDays": 0.7,
     "maxCostDays": 1.2,
-    "rewardTitle": "调整单",
-    "rewardDesc": "完成营业额外得\n调整单2选1"
+    "rewardTitle": "调整单2选1",
+    "rewardDesc": "调整行动与时间轴"
   },
   {
     "id": "act_food_hard_gold",
@@ -80,8 +80,8 @@
     "effectParam": "",
     "minCostDays": 0.8,
     "maxCostDays": 1.3,
-    "rewardTitle": "金币",
-    "rewardDesc": "完成营业额外得\n大量金币"
+    "rewardTitle": "大量金币",
+    "rewardDesc": "用于商店采购"
   },
   {
     "id": "act_food_hard_fragment",
@@ -94,8 +94,8 @@
     "effectParam": "",
     "minCostDays": 0.8,
     "maxCostDays": 1.3,
-    "rewardTitle": "餐桌格",
-    "rewardDesc": "完成营业额外得\n更大的餐桌格3选1"
+    "rewardTitle": "大餐桌格",
+    "rewardDesc": "扩大餐桌大小"
   },
   {
     "id": "act_food_hard_passive",
@@ -108,8 +108,8 @@
     "effectParam": "",
     "minCostDays": 0.8,
     "maxCostDays": 1.3,
-    "rewardTitle": "道具",
-    "rewardDesc": "完成营业额外得\n道具4选1"
+    "rewardTitle": "道具4选1",
+    "rewardDesc": "带来持续性的增益"
   },
   {
     "id": "act_food_hard_active_strengthen",
@@ -122,8 +122,8 @@
     "effectParam": "",
     "minCostDays": 0.8,
     "maxCostDays": 1.3,
-    "rewardTitle": "强化箱",
-    "rewardDesc": "完成营业额外得\n强化箱4选1"
+    "rewardTitle": "强化箱4选1",
+    "rewardDesc": "强化食物与餐桌格"
   },
   {
     "id": "act_food_hard_active_adjust",
@@ -136,8 +136,8 @@
     "effectParam": "",
     "minCostDays": 0.8,
     "maxCostDays": 1.3,
-    "rewardTitle": "调整单",
-    "rewardDesc": "完成营业额外得\n调整单4选1"
+    "rewardTitle": "调整单4选1",
+    "rewardDesc": "调整行动与时间轴"
   },
   {
     "id": "act_event",

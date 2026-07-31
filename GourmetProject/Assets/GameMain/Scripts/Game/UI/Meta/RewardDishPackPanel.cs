@@ -33,6 +33,8 @@ namespace GourmetProject.Game.UI.Meta
         private bool _resolved;
         private bool _wired;
 
+        internal IReadOnlyList<RewardChoice> CurrentChoices => _choices;
+
         private void Awake()
         {
             EnsureWired();

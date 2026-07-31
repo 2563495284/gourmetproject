@@ -75,6 +75,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
                     onSkip,
                     _host.FoodTips,
                     _host.PlayRewardDishSelectionFly);
+                _host.RefreshPersistent();
             });
             return true;
         }
@@ -112,6 +113,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
                     () => RestoreAfterAcquireView(previous),
                     _host.FoodTips,
                     _host.PlayRewardDishSelectionFly);
+                _host.RefreshPersistent();
             });
             return true;
         }

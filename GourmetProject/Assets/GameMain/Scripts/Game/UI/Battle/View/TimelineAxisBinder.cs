@@ -170,7 +170,7 @@ namespace GourmetProject.Game.UI.Battle.View
             }
 
             string desc = EventService.FormatRuntimeText(run, action.Desc);
-            tip.Bind(action.Name, desc, $"节点天数：{node.Day}天");
+            tip.Bind(action.Name, desc);
         }
 
         private static void BindBossNodeTip(
@@ -189,19 +189,12 @@ namespace GourmetProject.Game.UI.Battle.View
             {
                 tip.Bind(
                     "Bug",
-                    "不应该出现此条信息，请联系开发者。",
-                    $"美味度要求：{(run?.RequiredScore ?? 0):N0}");
+                    "不应该出现此条信息，请联系开发者。");
                 return;
             }
 
             cfg.BossDebuff debuff = PreviewBossDebuff(run, node, action);
-            int required = run != null
-                ? HiddenScoreService.TargetScore(
-                    run,
-                    new ActionExecutionContext(action) { TargetScoreDayOverride = node.Day },
-                    debuff?.TargetScoreHiddenOffset ?? 0)
-                : 0;
-            tip.Bind(debuff.Name, debuff.Desc, $"美味度要求：{required:N0}");
+            tip.Bind(debuff.Name, debuff.Desc);
         }
 
         private static cfg.Food PreviewBoss(GameRun run, cfg.TimelineNode node, cfg.GameAction action)

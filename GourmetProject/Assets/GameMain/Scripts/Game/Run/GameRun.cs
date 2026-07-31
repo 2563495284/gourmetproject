@@ -63,7 +63,7 @@ namespace GourmetProject.Game.Run
         private string _forcedBossDebuffId = string.Empty;
         private readonly List<string> _actionGroupSequence = new List<string>();
 
-        // —— 本周大组计划（周开始时一次性预排，供 EnsureCurrentGroup 消费；随存档保存）——
+        // —— 旧版本周大组预排（仅保留读写旧存档；新随机逻辑完全忽略）——
         private readonly List<string> _actionWeekPlan = new List<string>();
         private int _actionWeekPlanWeek;          // 0 = 未构建；否则为计划所属周
         private int _actionWeekPlanStartRunStep;   // 本周计划对应的整局行动步起点
@@ -1120,16 +1120,16 @@ namespace GourmetProject.Game.Run
 
         public IReadOnlyList<string> ActionGroupSequence => _actionGroupSequence;
 
-        /// <summary>本周大组计划（周内第 i 步对应 [i]；空=无计划，全部按权重遅延生成）。</summary>
+        /// <summary>旧版本周大组计划；仅用于旧存档兼容，新随机逻辑不读取。</summary>
         public IReadOnlyList<string> ActionWeekPlan => _actionWeekPlan;
 
-        /// <summary>本周计划所属周（0=未构建）。</summary>
+        /// <summary>旧版计划所属周（0=未构建）。</summary>
         public int ActionWeekPlanWeek => _actionWeekPlanWeek;
 
-        /// <summary>本周计划对应的整局行动步起点（weekLocalIndex = RunActionStepIndex - 该值）。</summary>
+        /// <summary>旧版计划对应的整局行动步起点。</summary>
         public int ActionWeekPlanStartRunStep => _actionWeekPlanStartRunStep;
 
-        /// <summary>设置（或读档恢复）本周大组计划。</summary>
+        /// <summary>设置或读档恢复旧版计划；仅为存档兼容保留。</summary>
         public void SetActionWeekPlan(int week, int startRunStep, IEnumerable<string> plan)
         {
             _actionWeekPlanWeek = week;

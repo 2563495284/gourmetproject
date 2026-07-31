@@ -55,6 +55,8 @@ namespace GourmetProject.Game.UI.Meta
         private Action _onOpenDeleteDish;
         private Func<ShopEntry, ShopBuyItemViewBase, bool> _onBuy;
 
+        internal IReadOnlyList<ShopEntry> CurrentStock => _stock;
+
         private sealed class ShopCardSlot
         {
             public ShopEntry Entry;
