@@ -1437,15 +1437,20 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            if (_session == null)
+            bool shouldShow = HappyCakeHudVisibility.ShouldShow(
+                _run,
+                _current,
+                _rewardDishPackPanel != null ? _rewardDishPackPanel.CurrentChoices : null,
+                _shopPanel != null ? _shopPanel.CurrentStock : null);
+            if (!shouldShow)
             {
                 _cakeLayerBuffHud.Hide();
             }
             else
             {
                 _cakeLayerBuffHud.Bind(
-                    _displayedCakeLayers,
-                    _session.Database?.CakeLayerBuffs,
+                    _session != null ? _displayedCakeLayers : 0,
+                    _session?.Database?.CakeLayerBuffs ?? _run?.Database?.CakeLayerBuffs,
                     _tips != null ? _tips.Item : null);
             }
 

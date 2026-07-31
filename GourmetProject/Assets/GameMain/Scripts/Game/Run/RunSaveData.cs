@@ -181,13 +181,13 @@ namespace GourmetProject.Game.Run
         /// <summary>已生成的整局行动组序列。</summary>
         public List<string> ActionGroupSequence = new List<string>();
 
-        /// <summary>本周大组计划（周开始预排；空=无计划，读档后按需重建）。</summary>
+        /// <summary>旧版本周大组计划；仅保留以兼容旧存档，新随机逻辑忽略。</summary>
         public List<string> ActionWeekPlan = new List<string>();
 
-        /// <summary>本周计划所属周（0=未构建）。</summary>
+        /// <summary>旧版计划所属周（0=未构建）。</summary>
         public int ActionWeekPlanWeek;
 
-        /// <summary>本周计划对应的整局行动步起点。</summary>
+        /// <summary>旧版计划对应的整局行动步起点。</summary>
         public int ActionWeekPlanStartRunStep;
 
         /// <summary>本周已结算的节点 id。</summary>

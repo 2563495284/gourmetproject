@@ -20,8 +20,12 @@ namespace GourmetProject.Game.UI.Battle.View
         public void Bind(Action onEat, Action onDoodleClear, Action onDoodleToggle)
         {
             Wire(_eatButton, onEat);
-            Wire(_doodleClearButton, onDoodleClear);
-            Wire(_doodleToggleButton, onDoodleToggle);
+
+            // 涂鸦功能与回调暂时保留，仅屏蔽两个入口按钮；需要恢复时重新启用并取消下方注释。
+            _doodleClearButton?.gameObject.SetActive(false);
+            _doodleToggleButton?.gameObject.SetActive(false);
+            // Wire(_doodleClearButton, onDoodleClear);
+            // Wire(_doodleToggleButton, onDoodleToggle);
         }
 
         public void SetVisible(bool visible)

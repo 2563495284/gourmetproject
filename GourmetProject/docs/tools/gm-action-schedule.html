@@ -1,9 +1,10 @@
 <!doctype html>
+<!-- 行动日程配置基准模拟工具 -->
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>行动轴 GM 随机预览</title>
+  <title>行动日程 GM：单局与频率统计</title>
   <style>
     :root {
       --bg: #15110f;
@@ -31,9 +32,9 @@
     }
 
     header {
-      padding: 28px 32px 18px;
+      padding: 26px 32px 18px;
       border-bottom: 1px solid var(--line);
-      background: rgba(21, 17, 15, 0.86);
+      background: rgba(21, 17, 15, 0.88);
       position: sticky;
       top: 0;
       z-index: 10;
@@ -46,6 +47,11 @@
       letter-spacing: 0.04em;
     }
 
+    h2,
+    h3 {
+      margin: 0;
+    }
+
     .hint {
       margin: 0;
       color: var(--muted);
@@ -53,25 +59,50 @@
     }
 
     main {
-      padding: 24px 32px 40px;
-      max-width: 1440px;
+      padding: 24px 32px 44px;
+      max-width: 1540px;
       margin: 0 auto;
     }
 
     .toolbar,
     .status,
+    .panel,
     .sample,
-    .week {
+    .week,
+    .stat-week {
       border: 1px solid var(--line);
       background: rgba(33, 26, 22, 0.92);
       border-radius: 16px;
       box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
     }
 
+    .mode-tabs {
+      display: inline-flex;
+      gap: 6px;
+      padding: 5px;
+      margin-bottom: 16px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(21, 17, 15, 0.7);
+    }
+
+    .mode-tab {
+      min-width: 152px;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      box-shadow: none;
+    }
+
+    .mode-tab.active {
+      color: #24150c;
+      background: linear-gradient(180deg, #ffc46b, #e58c26);
+    }
+
     .toolbar {
       padding: 18px;
       display: grid;
-      grid-template-columns: repeat(6, minmax(120px, 1fr));
+      grid-template-columns: repeat(6, minmax(130px, 1fr));
       gap: 14px;
       align-items: end;
     }
@@ -114,9 +145,15 @@
       font-weight: 600;
     }
 
+    button.danger {
+      background: rgba(255, 117, 107, 0.14);
+      color: #ffd4d0;
+      border-color: rgba(255, 117, 107, 0.5);
+    }
+
     button:disabled {
       cursor: not-allowed;
-      opacity: 0.55;
+      opacity: 0.5;
     }
 
     .wide {
@@ -131,6 +168,36 @@
       gap: 12px;
       align-items: center;
       flex-wrap: wrap;
+    }
+
+    .panel {
+      margin-top: 18px;
+      padding: 18px;
+    }
+
+    .panel-head,
+    .sample > h2,
+    .week h3,
+    .stat-week h3 {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .panel-head {
+      margin-bottom: 12px;
+    }
+
+    .panel-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .is-hidden {
+      display: none !important;
     }
 
     .ok {
@@ -152,6 +219,7 @@
     }
 
     .chip {
+      display: inline-block;
       padding: 4px 8px;
       border: 1px solid var(--line);
       border-radius: 999px;
@@ -162,30 +230,50 @@
     }
 
     .sample {
-      margin: 18px 0;
+      margin-top: 18px;
       padding: 18px;
     }
 
     .sample > h2 {
-      margin: 0 0 14px;
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
+      margin-bottom: 14px;
       font-size: 20px;
     }
 
-    .week {
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(150px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .summary-card {
+      padding: 11px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(43, 34, 29, 0.78);
+    }
+
+    .summary-card strong {
+      display: block;
+      color: var(--accent);
+      font-size: 17px;
+    }
+
+    .summary-card span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .week,
+    .stat-week {
       margin: 14px 0;
       padding: 14px;
       background: rgba(43, 34, 29, 0.9);
     }
 
-    .week h3 {
-      margin: 0 0 10px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
+    .week h3,
+    .stat-week h3 {
+      margin-bottom: 10px;
       font-size: 17px;
     }
 
@@ -215,11 +303,15 @@
       font-size: 12px;
     }
 
+    .table-scroll,
+    .heatmap-wrap {
+      overflow-x: auto;
+      border-radius: 12px;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
-      overflow: hidden;
-      border-radius: 12px;
       font-size: 13px;
     }
 
@@ -235,30 +327,23 @@
       color: var(--muted);
       background: rgba(21, 17, 15, 0.42);
       font-weight: 600;
+      white-space: nowrap;
     }
 
     tr:last-child td {
       border-bottom: 0;
     }
 
-    .choice {
-      display: inline-block;
-      margin: 0 6px 6px 0;
-      padding: 4px 7px;
-      border-radius: 8px;
-      background: #34271f;
-      border: 1px solid #4d392d;
-    }
-
-    .choice.selected {
-      background: rgba(106, 212, 161, 0.16);
-      border-color: rgba(106, 212, 161, 0.68);
-      color: #d9ffe8;
+    small {
+      color: var(--muted);
     }
 
     details {
-      margin-top: 10px;
       color: var(--muted);
+    }
+
+    details + details {
+      margin-top: 8px;
     }
 
     summary {
@@ -276,39 +361,169 @@
       max-height: 240px;
     }
 
-    @media (max-width: 980px) {
-      header,
-      main {
-        padding-left: 16px;
-        padding-right: 16px;
+    .choice {
+      display: inline-block;
+      margin: 0 6px 6px 0;
+      padding: 4px 7px;
+      border-radius: 8px;
+      background: #34271f;
+      border: 1px solid #4d392d;
+    }
+
+    .choice.selected {
+      background: rgba(106, 212, 161, 0.16);
+      border-color: rgba(106, 212, 161, 0.68);
+      color: #d9ffe8;
+    }
+
+    .progress {
+      height: 12px;
+      margin: 12px 0 6px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(21, 17, 15, 0.65);
+    }
+
+    .progress-fill {
+      width: 0;
+      height: 100%;
+      background: linear-gradient(90deg, #e58c26, #6ad4a1);
+      transition: width 0.12s ease-out;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .bar-list {
+      display: grid;
+      gap: 9px;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: minmax(138px, 0.8fr) minmax(160px, 1.7fr);
+      gap: 10px;
+      align-items: center;
+    }
+
+    .bar-label strong,
+    .bar-label small {
+      display: block;
+    }
+
+    .bar-track {
+      position: relative;
+      min-height: 42px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(21, 17, 15, 0.55);
+    }
+
+    .bar-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      min-width: 2px;
+      opacity: 0.48;
+    }
+
+    .bar-values {
+      position: relative;
+      z-index: 1;
+      padding: 5px 8px;
+      font-size: 12px;
+    }
+
+    .bar-values strong {
+      font-size: 14px;
+      margin-right: 5px;
+    }
+
+    .heatmap {
+      width: max-content;
+      min-width: 100%;
+    }
+
+    .heatmap th:first-child,
+    .heatmap td:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      min-width: 150px;
+      background: #2b221d;
+    }
+
+    .heat-cell {
+      min-width: 72px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .heat-cell small {
+      display: block;
+      font-size: 10px;
+    }
+
+    .explain {
+      margin: 10px 0 0;
+      padding: 10px 12px;
+      border-left: 3px solid var(--accent);
+      border-radius: 8px;
+      background: rgba(255, 184, 77, 0.08);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 1100px) {
+      .toolbar {
+        grid-template-columns: repeat(3, 1fr);
       }
 
-      .toolbar {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 760px) {
+      header,
+      main {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+
+      .toolbar,
+      .summary-grid {
         grid-template-columns: 1fr 1fr;
       }
 
       .wide {
         grid-column: span 2;
       }
+
+      .bar-row {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>行动轴 GM 随机预览</h1>
-    <p class="hint">输入周数 n 和随机次数 m，按当前配置生成每次随机的周行动轴、轴节点、行动组、小组、n 选一行动与随机推进结果。</p>
+    <h1>行动日程 GM：单局与频率统计</h1>
+    <p class="hint">配置基准模拟：按当前配置生成 1–4 周日常行动。不会结算局内事件、奖励和道具效果，因此不代表完整实机流程。</p>
   </header>
 
   <main>
+    <div class="mode-tabs" role="tablist" aria-label="GM 模式">
+      <button id="singleModeTab" class="mode-tab active" role="tab" aria-selected="true">随机一局</button>
+      <button id="batchModeTab" class="mode-tab" role="tab" aria-selected="false">大量随机统计</button>
+    </div>
+
     <section class="toolbar">
-      <label>
-        周数 n
-        <input id="weekCount" type="number" min="1" max="52" value="4">
-      </label>
-      <label>
-        随机次数 m
-        <input id="sampleCount" type="number" min="1" max="200" value="3">
-      </label>
       <label>
         随机种子
         <input id="seed" value="gm-preview">
@@ -320,26 +535,68 @@
       <label>
         推进策略
         <select id="pickMode">
-          <option value="random">随机选择一个候选</option>
-          <option value="first">总是选择第一个候选</option>
+          <option value="random">随机选择候选</option>
+          <option value="first">总选第一个</option>
           <option value="shortest">选择耗时最短</option>
           <option value="longest">选择耗时最长</option>
         </select>
       </label>
       <label>
-        单周行动上限
-        <input id="maxActionsPerWeek" type="number" min="1" max="200" value="40">
+        每周固定行动次数
+        <input id="actionsPerWeek" type="number" min="1" max="200" step="1" value="8">
       </label>
-      <button id="runBtn">生成</button>
       <button id="loadBtn" class="secondary">重新读取配置</button>
       <label class="wide">
-        配置目录/文件（fetch 失败时使用，选择 Assets/StreamingAssets/Config）
+        自动读取失败时，选择 Assets/StreamingAssets/Config
         <input id="fileInput" type="file" multiple webkitdirectory>
       </label>
     </section>
 
-    <section id="status" class="status">正在尝试读取 <code>../Assets/StreamingAssets/Config/*.json</code> ...</section>
-    <section id="output"></section>
+    <section id="configStatus" class="status">正在读取 <code>../../Assets/StreamingAssets/Config/*.json</code> ...</section>
+
+    <section id="singlePanel" class="panel" role="tabpanel">
+      <div class="panel-head">
+        <div>
+          <h2>随机一局：第 1–4 周</h2>
+          <small>主表聚焦日常行动的大组、小组；候选、计数和轴节点可展开查看。</small>
+        </div>
+        <div class="panel-actions">
+          <button id="runSingleBtn">按当前种子重跑</button>
+          <button id="newSeedBtn" class="secondary">换一个种子</button>
+        </div>
+      </div>
+      <section id="singleStatus" class="status">配置加载后自动生成。</section>
+      <div id="singleOutput"></div>
+    </section>
+
+    <section id="batchPanel" class="panel is-hidden" role="tabpanel">
+      <div class="panel-head">
+        <div>
+          <h2>大量随机：每周大组频率</h2>
+          <small>批量模式只保留聚合结果，不保存逐局明细。</small>
+        </div>
+        <div class="panel-actions">
+          <label>
+            统计局数
+            <select id="batchCount">
+              <option value="1000">1,000</option>
+              <option value="10000" selected>10,000</option>
+              <option value="100000">100,000</option>
+            </select>
+          </label>
+          <button id="runBatchBtn">开始统计</button>
+          <button id="cancelBatchBtn" class="danger" disabled>停止统计</button>
+        </div>
+      </div>
+      <div class="explain">
+        每局的第 1–4 周都会生成设定数量的日常行动；行动轴到达终点后，后续抽取的天数停在终点。修改次数后，请重新运行单局或批量统计。行动占比 = 该大组出现次数 ÷ 该周全部日常行动步。<code>maxGuaranteeCounts</code> 是候选优先范围，不是硬上限；全部达到后会进入自由随机并允许继续超过。
+      </div>
+      <div class="progress" aria-label="统计进度">
+        <div id="progressFill" class="progress-fill"></div>
+      </div>
+      <section id="batchStatus" class="status">选择局数后开始统计。</section>
+      <div id="batchOutput"></div>
+    </section>
   </main>
 
   <script>
@@ -352,10 +609,10 @@
       "tbaction",
       "tbactionlargegroup",
       "tbactionsmallgroup",
-      "tbactionschedulerule",
       "tbcharacter",
       "tbevent",
-      "tbfood"
+      "tbfood",
+      "tbgamebase"
     ];
 
     const ACTION_BEHAVIOR = {
@@ -367,19 +624,277 @@
       Interest: 5
     };
 
-    let tables = null;
-    let diagnostics = [];
+    const MASK_64 = (1n << 64n) - 1n;
+    const MASK_32 = (1n << 32n) - 1n;
+    const FNV64_OFFSET = 14695981039346656037n;
+    const FNV64_PRIME = 1099511628211n;
+    const SPLITMIX_GAMMA = 0x9E3779B97F4A7C15n;
+    const SPLITMIX_MUL_1 = 0xBF58476D1CE4E5B9n;
+    const SPLITMIX_MUL_2 = 0x94D049BB133111EBn;
+    const FLOAT_EPSILON = 1.401298464324817e-45;
+    const INVALID_GROUP_ID = "__invalid_group__";
+    const GROUP_COLORS = [
+      "#ffb84d",
+      "#6ad4a1",
+      "#73a7ff",
+      "#d78cff",
+      "#ff7f76",
+      "#f7df64",
+      "#66d9e8",
+      "#b8c0cc"
+    ];
 
-    const statusEl = document.getElementById("status");
-    const outputEl = document.getElementById("output");
+    let tables = null;
+    let diagnostics = new Set();
+    let activeBatchTask = null;
+    let batchTaskSerial = 0;
+    let configRevision = 0;
+
+    const configStatusEl = document.getElementById("configStatus");
+    const singleStatusEl = document.getElementById("singleStatus");
+    const batchStatusEl = document.getElementById("batchStatus");
+    const singleOutputEl = document.getElementById("singleOutput");
+    const batchOutputEl = document.getElementById("batchOutput");
+    const singlePanelEl = document.getElementById("singlePanel");
+    const batchPanelEl = document.getElementById("batchPanel");
+    const singleModeTabEl = document.getElementById("singleModeTab");
+    const batchModeTabEl = document.getElementById("batchModeTab");
+    const seedEl = document.getElementById("seed");
     const characterEl = document.getElementById("character");
-    const runBtn = document.getElementById("runBtn");
+    const pickModeEl = document.getElementById("pickMode");
+    const actionsPerWeekEl = document.getElementById("actionsPerWeek");
+    const batchCountEl = document.getElementById("batchCount");
+    const runSingleBtn = document.getElementById("runSingleBtn");
+    const newSeedBtn = document.getElementById("newSeedBtn");
+    const runBatchBtn = document.getElementById("runBatchBtn");
+    const cancelBatchBtn = document.getElementById("cancelBatchBtn");
+    const progressFillEl = document.getElementById("progressFill");
     const loadBtn = document.getElementById("loadBtn");
     const fileInput = document.getElementById("fileInput");
 
-    function setStatus(message, kind = "") {
-      statusEl.className = `status ${kind}`;
-      statusEl.innerHTML = message;
+    function u64(value) {
+      return value & MASK_64;
+    }
+
+    function fnv1a64(text) {
+      const source = String(text ?? "");
+      let hash = FNV64_OFFSET;
+      for (let index = 0; index < source.length; index++) {
+        const code = source.charCodeAt(index);
+        hash = u64((hash ^ BigInt(code & 0xff)) * FNV64_PRIME);
+        hash = u64((hash ^ BigInt((code >> 8) & 0xff)) * FNV64_PRIME);
+      }
+      return hash;
+    }
+
+    function splitMix64Next(holder) {
+      holder.value = u64(holder.value + SPLITMIX_GAMMA);
+      let value = holder.value;
+      value = u64((value ^ (value >> 30n)) * SPLITMIX_MUL_1);
+      value = u64((value ^ (value >> 27n)) * SPLITMIX_MUL_2);
+      return u64(value ^ (value >> 31n));
+    }
+
+    function splitMix64Mix(seed) {
+      return splitMix64Next({ value: u64(seed) });
+    }
+
+    function parseMasterSeed(seedText) {
+      const source = String(seedText ?? "");
+      if (/^\d+$/.test(source)) {
+        const numeric = BigInt(source);
+        if (numeric <= MASK_64) {
+          return numeric;
+        }
+      }
+      return fnv1a64(source);
+    }
+
+    function deriveStreamSeed(masterSeed, name) {
+      let combined = u64(masterSeed);
+      const addition = u64(
+        fnv1a64(name)
+        + SPLITMIX_GAMMA
+        + u64(combined << 6n)
+        + (combined >> 2n)
+      );
+      combined = u64(combined ^ addition);
+      return splitMix64Mix(combined);
+    }
+
+    function rotateLeft64(value, shift) {
+      const bits = BigInt(shift);
+      return u64((u64(value) << bits) | (u64(value) >> (64n - bits)));
+    }
+
+    class Xoshiro256SS {
+      constructor(seed) {
+        const holder = { value: u64(seed) };
+        this.s0 = splitMix64Next(holder);
+        this.s1 = splitMix64Next(holder);
+        this.s2 = splitMix64Next(holder);
+        this.s3 = splitMix64Next(holder);
+        if ((this.s0 | this.s1 | this.s2 | this.s3) === 0n) {
+          this.s0 = SPLITMIX_GAMMA;
+        }
+      }
+
+      nextULong() {
+        const result = u64(rotateLeft64(u64(this.s1 * 5n), 7) * 9n);
+        const t = u64(this.s1 << 17n);
+        this.s2 = u64(this.s2 ^ this.s0);
+        this.s3 = u64(this.s3 ^ this.s1);
+        this.s1 = u64(this.s1 ^ this.s2);
+        this.s0 = u64(this.s0 ^ this.s3);
+        this.s2 = u64(this.s2 ^ t);
+        this.s3 = rotateLeft64(this.s3, 45);
+        return result;
+      }
+
+      nextUInt() {
+        return Number((this.nextULong() >> 32n) & MASK_32);
+      }
+
+      nextBoundedUInt(bound) {
+        const normalized = Number(bound) >>> 0;
+        if (normalized === 0) {
+          return 0;
+        }
+
+        let x = this.nextUInt();
+        let product = BigInt(x) * BigInt(normalized);
+        let low = Number(product & MASK_32);
+        if (low < normalized) {
+          const threshold = Number(((1n << 32n) - BigInt(normalized)) % BigInt(normalized));
+          while (low < threshold) {
+            x = this.nextUInt();
+            product = BigInt(x) * BigInt(normalized);
+            low = Number(product & MASK_32);
+          }
+        }
+        return Number((product >> 32n) & MASK_32);
+      }
+
+      range(minInclusive, maxExclusive) {
+        if (maxExclusive <= minInclusive) {
+          return minInclusive;
+        }
+        const span = maxExclusive - minInclusive;
+        return minInclusive + this.nextBoundedUInt(span);
+      }
+
+      nextDouble() {
+        return Number(this.nextULong() >> 11n) / 9007199254740992;
+      }
+
+      weightedPickIndex(weights) {
+        if (!Array.isArray(weights) || weights.length === 0) {
+          throw new Error("Weights must not be empty.");
+        }
+
+        let total = 0;
+        for (const rawWeight of weights) {
+          const weight = Number(rawWeight);
+          if (Number.isFinite(weight) && weight > 0) {
+            total += weight;
+          }
+        }
+        if (!(total > 0)) {
+          throw new Error("Sum of weights must be positive.");
+        }
+
+        const roll = this.nextDouble() * total;
+        let accumulated = 0;
+        for (let index = 0; index < weights.length; index++) {
+          const weight = Number(weights[index]);
+          if (!(weight > 0) || !Number.isFinite(weight)) {
+            continue;
+          }
+          accumulated += weight;
+          if (roll < accumulated) {
+            return index;
+          }
+        }
+        return weights.length - 1;
+      }
+    }
+
+    class DeterministicRandomService {
+      constructor(seedText) {
+        this.seedText = String(seedText ?? "");
+        this.masterSeed = parseMasterSeed(this.seedText);
+        this.streams = new Map();
+      }
+
+      domainStream(domain, instanceKey) {
+        const cacheKey = `${domain}\u0001${instanceKey}`;
+        if (!this.streams.has(cacheKey)) {
+          const domainSeed = deriveStreamSeed(this.masterSeed, domain);
+          const instanceSeed = deriveStreamSeed(domainSeed, instanceKey);
+          this.streams.set(cacheKey, new Xoshiro256SS(instanceSeed));
+        }
+        return this.streams.get(cacheKey);
+      }
+    }
+
+    function rngSelfTest() {
+      const errors = [];
+      const expectedMaster = "A74584F39DE50BD8";
+      const master = parseMasterSeed("gm-preview").toString(16).toUpperCase().padStart(16, "0");
+      if (master !== expectedMaster) {
+        errors.push(`MasterSeed ${master} != ${expectedMaster}`);
+      }
+
+      const actionLongs = [
+        "FC4E808EFCA46DD4",
+        "2A2EAEEA7BBF9A18",
+        "86DC5984DB106AA8",
+        "1B7054B69AE6BA47"
+      ];
+      const actionStream = new DeterministicRandomService("gm-preview")
+        .domainStream("action", "r0_w1_d0.0_s0");
+      const actualLongs = actionLongs.map(() =>
+        actionStream.nextULong().toString(16).toUpperCase().padStart(16, "0")
+      );
+      if (actualLongs.join(",") !== actionLongs.join(",")) {
+        errors.push(`Action NextULong ${actualLongs.join(",")}`);
+      }
+
+      const rangeStream = new DeterministicRandomService("gm-preview")
+        .domainStream("action", "r0_w1_d0.0_s0");
+      const expectedRanges = [9, 1, 5, 1, 7, 1, 0, 0, 9, 3];
+      const actualRanges = expectedRanges.map(() => rangeStream.range(0, 10));
+      if (actualRanges.join(",") !== expectedRanges.join(",")) {
+        errors.push(`Action Range ${actualRanges.join(",")}`);
+      }
+
+      const weightedStream = new DeterministicRandomService("gm-preview")
+        .domainStream("map", "w1");
+      const expectedWeighted = [1, 2, 3, 2, 3, 3, 3, 2, 3, 3];
+      const actualWeighted = expectedWeighted.map(() =>
+        weightedStream.weightedPickIndex([0, 100, 300, 600])
+      );
+      if (actualWeighted.join(",") !== expectedWeighted.join(",")) {
+        errors.push(`Map Weighted ${actualWeighted.join(",")}`);
+      }
+      return errors;
+    }
+
+    const RNG_SELF_TEST_ERRORS = rngSelfTest();
+
+    function setMode(mode) {
+      const single = mode === "single";
+      singlePanelEl.classList.toggle("is-hidden", !single);
+      batchPanelEl.classList.toggle("is-hidden", single);
+      singleModeTabEl.classList.toggle("active", single);
+      batchModeTabEl.classList.toggle("active", !single);
+      singleModeTabEl.setAttribute("aria-selected", String(single));
+      batchModeTabEl.setAttribute("aria-selected", String(!single));
+    }
+
+    function setStatus(element, message, kind = "") {
+      element.className = `status ${kind}`.trim();
+      element.innerHTML = message;
     }
 
     function esc(value) {
@@ -399,73 +914,28 @@
       return map;
     }
 
-    function xmur3(str) {
-      let h = 1779033703 ^ str.length;
-      for (let i = 0; i < str.length; i++) {
-        h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
-        h = (h << 13) | (h >>> 19);
-      }
-      return function seed() {
-        h = Math.imul(h ^ (h >>> 16), 2246822507);
-        h = Math.imul(h ^ (h >>> 13), 3266489909);
-        return (h ^= h >>> 16) >>> 0;
-      };
+    function resetDiagnostics() {
+      diagnostics = new Set();
     }
 
-    function mulberry32(seed) {
-      return function next() {
-        let t = seed += 0x6D2B79F5;
-        t = Math.imul(t ^ (t >>> 15), t | 1);
-        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-      };
+    function addDiagnostic(message) {
+      if (diagnostics.size < 60) {
+        diagnostics.add(message);
+      }
     }
 
-    class Rng {
-      constructor(seedText) {
-        this.seedText = String(seedText ?? "");
-        this.next = mulberry32(xmur3(this.seedText)());
+    function diagnosticsHtml() {
+      if (diagnostics.size === 0) {
+        return "";
       }
-
-      fork(domain, key) {
-        return new Rng(`${this.seedText}:${domain}:${key}`);
-      }
-
-      range(minInclusive, maxExclusive) {
-        if (maxExclusive <= minInclusive) {
-          return minInclusive;
-        }
-
-        return Math.floor(this.next() * (maxExclusive - minInclusive)) + minInclusive;
-      }
-
-      weightedPickIndex(weights) {
-        let total = 0;
-        for (const weight of weights) {
-          if (Number.isFinite(weight) && weight > 0) {
-            total += weight;
-          }
-        }
-
-        if (total <= 0) {
-          return weights.length > 0 ? 0 : -1;
-        }
-
-        let roll = this.next() * total;
-        for (let i = 0; i < weights.length; i++) {
-          const weight = Number.isFinite(weights[i]) && weights[i] > 0 ? weights[i] : 0;
-          if (roll < weight) {
-            return i;
-          }
-          roll -= weight;
-        }
-
-        return weights.length - 1;
-      }
+      const messages = Array.from(diagnostics);
+      return `<details><summary>诊断信息 ${messages.length} 条</summary><pre>${esc(messages.join("\n"))}</pre></details>`;
     }
 
     function quantizeDay(value) {
-      return Math.round(value * 10) / 10;
+      const scaled = Math.fround(value) * 10;
+      const rounded = scaled >= 0 ? Math.floor(scaled + 0.5) : Math.ceil(scaled - 0.5);
+      return rounded / 10;
     }
 
     function dayKey(value) {
@@ -476,39 +946,12 @@
       return `r${run.runActionStepIndex}_w${run.weekIndex}_d${dayKey(run.currentDay)}_s${run.actionStepIndex}`;
     }
 
-    function parseIds(ids) {
-      if (!ids) {
-        return [];
-      }
-      return String(ids)
-        .split(/[|,]/)
-        .map(x => x.trim())
-        .filter(Boolean);
-    }
-
-    function containsId(ids, value) {
-      return parseIds(ids).includes(value);
-    }
-
-    function containsAnyRule(group) {
-      return parseIds(group?.ruleIds).length > 0;
-    }
-
     function preconditionSatisfied(text) {
       if (!text || !String(text).trim()) {
         return true;
       }
-
-      diagnostics.push(`暂按满足处理未知前置条件：${text}`);
+      addDiagnostic(`暂按满足处理未知前置条件：${text}`);
       return true;
-    }
-
-    function activeThisWeek(rule, weekIndex) {
-      const activeWeeks = Array.isArray(rule.activeWeeks) ? rule.activeWeeks : [];
-      if (activeWeeks.length === 0) {
-        return true;
-      }
-      return activeWeeks.includes(Math.max(1, weekIndex));
     }
 
     function fallbackWeight(group, weekIndex) {
@@ -516,219 +959,109 @@
       if (weights.length === 0) {
         return 1;
       }
-
-      const idx = Math.min(Math.max(0, weekIndex - 1), weights.length - 1);
-      const weight = Number(weights[idx]) || 0;
-      return weight > 0 ? weight : 0;
+      const index = Math.min(Math.max(0, weekIndex - 1), weights.length - 1);
+      const weight = Math.fround(Number(weights[index]) || 0);
+      return weight > 0 && Number.isFinite(weight) ? weight : 0;
     }
 
-    function isGroupSelectable(run, group) {
-      if (!group) {
-        return false;
+    function guaranteeAt(group, field, weekIndex, weekActionIndex) {
+      const weeks = Array.isArray(group?.[field]) ? group[field] : [];
+      const week = weeks[weekIndex - 1];
+      if (!Array.isArray(week) || weekActionIndex < 0 || weekActionIndex >= week.length) {
+        return null;
       }
-      if (fallbackWeight(group, run.weekIndex) <= 0 && !containsAnyRule(group)) {
-        return false;
-      }
-      return true;
-    }
-
-    function removeAvoid(groups, avoidId) {
-      if (groups.length <= 1 || !avoidId) {
-        return groups;
-      }
-      return groups.filter(group => group.id !== avoidId);
+      const value = Number(week[weekActionIndex]);
+      return Number.isFinite(value) && value >= 0 ? value : null;
     }
 
     function pickWeightedByFallback(run, groups, rng) {
       if (groups.length === 0) {
         return "";
       }
+      if (groups.length === 1) {
+        return groups[0]?.id || "";
+      }
 
-      const weights = groups.map(group => {
-        const weight = fallbackWeight(group, run.weekIndex);
-        return weight > 0 ? weight : 0.0001;
+      const weights = groups.map(group => fallbackWeight(group, run.weekIndex));
+      const total = weights.reduce((sum, weight) => sum + (weight > 0 ? weight : 0), 0);
+      const index = total > 0
+        ? rng.weightedPickIndex(weights)
+        : rng.range(0, groups.length);
+      return groups[Math.max(0, Math.min(index, groups.length - 1))]?.id || "";
+    }
+
+    function groupsBelow(run, groups, counts, weekActionIndex, field) {
+      return groups.filter(group => {
+        const target = guaranteeAt(group, field, run.weekIndex, weekActionIndex);
+        return target !== null && (counts.get(group.id) || 0) < target;
       });
-      return groups[rng.weightedPickIndex(weights)]?.id || "";
     }
 
-    function pickRuleGroup(run, rule, rng) {
-      const groups = tables.actionLargeGroups.filter(group =>
-        containsId(group.ruleIds, rule.id) && isGroupSelectable(run, group)
-      );
-      return pickWeightedByFallback(run, groups, rng);
-    }
+    function pickLargeGroup(run, rng, nextRunStep) {
+      const groups = tables.actionLargeGroups.slice();
+      const weekStart = Math.max(0, run.runActionStepIndex - run.actionStepIndex);
+      const weekActionIndex = Math.max(0, nextRunStep - weekStart);
+      const counts = run.weekGroupCounts;
 
-    function wouldExceedMaxCountAt(run, candidate, slots, weekStep, rules) {
-      for (const rule of rules) {
-        if ((rule.maxCount || 0) <= 0 || !containsId(candidate.ruleIds, rule.id)) {
-          continue;
-        }
-
-        const lo = Math.max(1, rule.minRunStep || 0);
-        const hi = Math.min(rule.maxRunStep || 0, slots.length);
-        if (weekStep < lo || weekStep > hi) {
-          continue;
-        }
-
-        let count = 0;
-        for (let s = lo; s <= hi; s++) {
-          const id = slots[s - 1];
-          if (!id) {
-            continue;
-          }
-
-          const group = tables.largeById.get(id);
-          if (group && containsId(group.ruleIds, rule.id)) {
-            count++;
-          }
-        }
-
-        if (count >= rule.maxCount) {
-          return true;
-        }
+      let stage = "min";
+      let candidates = groupsBelow(run, groups, counts, weekActionIndex, "minGuaranteeCounts");
+      if (candidates.length === 0) {
+        stage = "max";
+        candidates = groupsBelow(run, groups, counts, weekActionIndex, "maxGuaranteeCounts");
+      }
+      if (candidates.length === 0) {
+        stage = "free";
+        candidates = groups;
       }
 
-      return false;
-    }
-
-    function pickWeightedFill(run, rng, weekStep, prevGroup, nextGroup, rules, slots) {
-      let groups = tables.actionLargeGroups.filter(group =>
-        isGroupSelectable(run, group) && !wouldExceedMaxCountAt(run, group, slots, weekStep, rules)
-      );
-
-      if (groups.length === 0) {
-        groups = tables.actionLargeGroups.filter(group => isGroupSelectable(run, group));
-      }
-
-      groups = removeAvoid(groups, prevGroup);
-      groups = removeAvoid(groups, nextGroup);
-      return pickWeightedByFallback(run, groups, rng);
-    }
-
-    function buildWeekPlan(run, rng, planStartRunStep) {
-      const rules = tables.actionScheduleRules
-        .filter(rule => (rule.maxRunStep || 0) > 0 && preconditionSatisfied(rule.preconditions) && activeThisWeek(rule, run.weekIndex))
-        .sort((a, b) => (b.priority - a.priority) || String(a.id).localeCompare(String(b.id)));
-
-      const horizon = rules.reduce((max, rule) => Math.max(max, rule.maxRunStep || 0), 0);
-      if (horizon <= 0) {
-        return [];
-      }
-
-      const slots = Array(horizon).fill("");
-
-      for (const rule of rules) {
-        const lo = Math.max(1, rule.minRunStep || 0);
-        const hi = Math.min(rule.maxRunStep || 0, horizon);
-        if (lo > hi) {
-          continue;
-        }
-
-        const maxCount = (rule.maxCount || 0) > 0 ? rule.maxCount : Number.MAX_SAFE_INTEGER;
-        const need = Math.min(Math.max(0, rule.minCount || 0), maxCount);
-        if (need <= 0) {
-          continue;
-        }
-
-        const free = [];
-        for (let s = lo; s <= hi; s++) {
-          if (!slots[s - 1]) {
-            free.push(s);
-          }
-        }
-
-        let placed = 0;
-        while (placed < need && free.length > 0) {
-          const pickIndex = free.length === 1 ? 0 : rng.range(0, free.length);
-          const slot = free[pickIndex];
-          free.splice(pickIndex, 1);
-
-          const groupId = pickRuleGroup(run, rule, rng);
-          if (!groupId) {
-            diagnostics.push(`规则 ${rule.id} 没有可用大组，已放弃剩余保底。`);
-            break;
-          }
-
-          slots[slot - 1] = groupId;
-          placed++;
-        }
-      }
-
-      let prevGroup = planStartRunStep > 0 && planStartRunStep - 1 < run.actionGroupSequence.length
-        ? run.actionGroupSequence[planStartRunStep - 1]
-        : "";
-
-      for (let i = 0; i < horizon; i++) {
-        if (slots[i]) {
-          prevGroup = slots[i];
-          continue;
-        }
-
-        const nextGroup = i + 1 < horizon ? slots[i + 1] : "";
-        const groupId = pickWeightedFill(run, rng, i + 1, prevGroup, nextGroup, rules, slots);
-        slots[i] = groupId;
-        prevGroup = groupId;
-      }
-
-      return slots;
-    }
-
-    function ensureWeekPlan(run, rng, nextRunStep) {
-      if (run.actionWeekPlanWeek === run.weekIndex) {
-        return;
-      }
-      run.actionWeekPlan = buildWeekPlan(run, rng, nextRunStep);
-      run.actionWeekPlanWeek = run.weekIndex;
-      run.actionWeekPlanStartRunStep = nextRunStep;
-    }
-
-    function pickBeyondWindow(run, rng) {
-      const prevGroup = run.actionGroupSequence.length > 0
-        ? run.actionGroupSequence[run.actionGroupSequence.length - 1]
-        : "";
-      let groups = tables.actionLargeGroups.filter(group => isGroupSelectable(run, group));
-      groups = removeAvoid(groups, prevGroup);
-      return pickWeightedByFallback(run, groups, rng);
+      return {
+        groupId: pickWeightedByFallback(run, candidates, rng),
+        stage,
+        weekActionIndex,
+        candidateIds: candidates.map(group => group.id),
+        counts: Object.fromEntries(groups.map(group => [group.id, counts.get(group.id) || 0]))
+      };
     }
 
     function ensureCurrentGroup(run, rng) {
       while (run.actionGroupSequence.length <= run.runActionStepIndex) {
         const nextRunStep = run.actionGroupSequence.length;
-        ensureWeekPlan(run, rng, nextRunStep);
-
-        const weekLocalIndex = nextRunStep - run.actionWeekPlanStartRunStep;
-        let groupId = "";
-        if (weekLocalIndex >= 0 && weekLocalIndex < run.actionWeekPlan.length) {
-          groupId = run.actionWeekPlan[weekLocalIndex] || "";
+        const decision = pickLargeGroup(run, rng, nextRunStep);
+        run.actionGroupSequence.push(decision.groupId);
+        run.actionGroupDecisions.set(nextRunStep, decision);
+        if (decision.groupId) {
+          run.weekGroupCounts.set(
+            decision.groupId,
+            (run.weekGroupCounts.get(decision.groupId) || 0) + 1
+          );
         }
-
-        if (!groupId) {
-          groupId = pickBeyondWindow(run, rng);
-        }
-
-        run.actionGroupSequence.push(groupId);
       }
-
-      return run.actionGroupSequence[run.runActionStepIndex] || "";
+      return {
+        groupId: run.actionGroupSequence[run.runActionStepIndex] || "",
+        decision: run.actionGroupDecisions.get(run.runActionStepIndex) || null
+      };
     }
 
     function pickSmall(large, rng) {
       const smalls = [];
       const weights = [];
+      const defaultWeight = Math.max(
+        FLOAT_EPSILON,
+        Math.fround(Number(tables.gameBase.defaultRandomWeight) || 0)
+      );
       for (const smallGroupId of large.smallGroupIds || []) {
         const small = tables.smallById.get(smallGroupId);
-        if (small) {
-          smalls.push(small);
-          weights.push((small.weight || 0) > 0 ? small.weight : 1);
-        } else {
-          diagnostics.push(`大组 ${large.id} 引用了不存在的小组：${smallGroupId}`);
+        if (!small) {
+          addDiagnostic(`大组 ${large.id} 引用了不存在的小组：${smallGroupId}`);
+          continue;
         }
+        smalls.push(small);
+        const weight = Math.fround(Number(small.weight));
+        weights.push(weight > 0 ? weight : defaultWeight);
       }
-
       if (smalls.length === 0) {
         return null;
       }
-
       return smalls[rng.weightedPickIndex(weights)] || null;
     }
 
@@ -743,9 +1076,9 @@
               type === ACTION_BEHAVIOR.Reward ||
               type === ACTION_BEHAVIOR.Negative)
           : eventTypes.includes(behavior);
-        return categoryMatches &&
-          (event.weight || 0) > 0 &&
-          preconditionSatisfied(event.preconditions);
+        return categoryMatches
+          && (event.weight || 0) > 0
+          && preconditionSatisfied(event.preconditions);
       });
     }
 
@@ -753,7 +1086,6 @@
       if (!action) {
         return false;
       }
-
       switch (action.behavior) {
         case ACTION_BEHAVIOR.Food:
           return action.foodId === "food_boss" || !action.foodId || tables.foodById.has(action.foodId);
@@ -768,42 +1100,44 @@
     }
 
     function rollCostDays(action, rng) {
-      let min = Number(action?.minCostDays || 0);
-      let max = Number(action?.maxCostDays || 0) > 0 ? Number(action.maxCostDays) : min;
+      let min = Math.fround(Number(action?.minCostDays || 0));
+      let max = Number(action?.maxCostDays || 0) > 0
+        ? Math.fround(Number(action.maxCostDays))
+        : min;
       if (max < min) {
         [min, max] = [max, min];
       }
-
-      const minTenths = Math.round(min * 10);
-      const maxTenths = Math.round(max * 10);
-      const tenths = minTenths === maxTenths ? minTenths : rng.range(minTenths, maxTenths + 1);
+      const minTenths = Math.round(Math.fround(min * 10));
+      const maxTenths = Math.round(Math.fround(max * 10));
+      const tenths = minTenths === maxTenths
+        ? minTenths
+        : rng.range(minTenths, maxTenths + 1);
       return quantizeDay(tenths / 10);
     }
 
-    function generateChoices(run, rng, count = 3) {
-      const largeId = ensureCurrentGroup(run, rng);
+    function generateChoices(run, rng) {
+      const groupRoll = ensureCurrentGroup(run, rng);
+      const largeId = groupRoll.groupId;
       const large = largeId ? tables.largeById.get(largeId) : null;
       if (!large) {
-        return { largeId, large: null, small: null, choices: [] };
+        return { largeId, large: null, small: null, choices: [], groupDecision: groupRoll.decision };
       }
 
       const small = pickSmall(large, rng);
       if (!small) {
-        return { largeId, large, small: null, choices: [] };
+        return { largeId, large, small: null, choices: [], groupDecision: groupRoll.decision };
       }
 
       const choices = [];
-      const limit = Math.min(count, 3);
+      const choiceCount = Math.max(1, Number(tables.gameBase.actionChoiceCount) || 1);
       for (const actionId of small.actionIds || []) {
-        if (choices.length >= limit) {
+        if (choices.length >= choiceCount) {
           break;
         }
-
         const action = tables.actionById.get(actionId);
         if (!isActionAvailable(action)) {
           continue;
         }
-
         choices.push({
           action,
           costDays: rollCostDays(action, rng),
@@ -812,15 +1146,7 @@
           runStepIndex: run.runActionStepIndex
         });
       }
-
-      return { largeId, large, small, choices };
-    }
-
-    function matchesPool(pool, timelineId) {
-      if (!pool) {
-        return true;
-      }
-      return String(pool).split(",").map(x => x.trim()).includes(timelineId);
+      return { largeId, large, small, choices, groupDecision: groupRoll.decision };
     }
 
     function rollWeekTimeline(run, rng, character) {
@@ -829,24 +1155,22 @@
       const weights = week?.timelineWeights || [];
       const pairCount = Math.min(ids.length, weights.length);
       if (ids.length !== weights.length) {
-        diagnostics.push(`第 ${run.weekIndex} 周 timelineIds/timelineWeights 长度不一致，只使用前 ${pairCount} 对。`);
+        addDiagnostic(`第 ${run.weekIndex} 周 timelineIds/timelineWeights 长度不一致，只使用前 ${pairCount} 对。`);
       }
 
       const candidates = [];
       const candidateWeights = [];
-      for (let i = 0; i < pairCount; i++) {
-        const timelineId = String(ids[i] || "").trim();
-        const weight = Number(weights[i] || 0);
-        if (!timelineId || weight <= 0 || !matchesPool(character?.timelinePool || "", timelineId)) {
+      for (let index = 0; index < pairCount; index++) {
+        const timelineId = String(ids[index] || "").trim();
+        const weight = Math.fround(Number(weights[index] || 0));
+        if (!timelineId || weight <= 0) {
           continue;
         }
-
         const timeline = tables.timelineById.get(timelineId);
         if (!timeline) {
-          diagnostics.push(`第 ${run.weekIndex} 周配置了不存在的行动轴：${timelineId}`);
+          addDiagnostic(`第 ${run.weekIndex} 周配置了不存在的行动轴：${timelineId}`);
           continue;
         }
-
         candidates.push(timeline);
         candidateWeights.push(weight);
       }
@@ -856,13 +1180,20 @@
         run.timelineLengthDays = 7;
         run.currentDay = 0;
         run.actionStepIndex = 0;
-        diagnostics.push(`第 ${run.weekIndex} 周无匹配行动轴，回退 7 天空轴。`);
+        addDiagnostic(`第 ${run.weekIndex} 周无匹配行动轴，回退 7 天空轴。`);
         return null;
       }
 
       const chosen = candidates[rng.weightedPickIndex(candidateWeights)];
       run.currentTimelineId = chosen.id;
-      run.timelineLengthDays = chosen.baseLengthDays > 0 ? chosen.baseLengthDays : 7;
+      const maxNodeDay = (chosen.nodeDays || []).reduce(
+        (maximum, day) => Math.max(maximum, Number(day) || 0),
+        0
+      );
+      run.timelineLengthDays = quantizeDay(Math.max(
+        chosen.baseLengthDays > 0 ? Math.fround(chosen.baseLengthDays) : 7,
+        maxNodeDay
+      ));
       run.currentDay = 0;
       run.actionStepIndex = 0;
       return chosen;
@@ -877,26 +1208,26 @@
       const actionIds = timeline.nodeActionIds || [];
       const count = Math.min(days.length, actionIds.length);
       const nodes = [];
-      for (let i = 0; i < count; i++) {
-        const day = Number(days[i]);
-        const actionId = actionIds[i];
+      for (let index = 0; index < count; index++) {
+        const day = Number(days[index]);
+        const actionId = actionIds[index];
         if (day > 0 && actionId) {
           nodes.push({
-            id: `cfg_${timelineId}_d${day}_${i}`,
+            id: `cfg_${timelineId}_d${day}_${index}`,
             timelineId,
             day,
             actionId
           });
         }
       }
-      return nodes.sort((a, b) => a.day - b.day);
+      return nodes.sort((left, right) => left.day - right.day);
     }
 
-    function collectPassedNodes(run, prevDay, newDay) {
-      return timelineNodes(run.currentTimelineId).filter(node =>
-        node.day > prevDay + 0.0001 &&
-        node.day <= newDay + 0.0001 &&
-        !run.triggeredNodeIds.has(node.id)
+    function collectPassedNodes(run, nodes, previousDay, newDay) {
+      return nodes.filter(node =>
+        node.day > previousDay + 0.0001
+        && node.day <= newDay + 0.0001
+        && !run.triggeredNodeIds.has(node.id)
       );
     }
 
@@ -904,25 +1235,28 @@
       if (choices.length === 0) {
         return null;
       }
-
       if (mode === "first") {
         return choices[0];
       }
-
       if (mode === "shortest") {
-        return choices.reduce((best, cur) => cur.costDays < best.costDays ? cur : best, choices[0]);
+        return choices.reduce(
+          (best, current) => current.costDays < best.costDays ? current : best,
+          choices[0]
+        );
       }
-
       if (mode === "longest") {
-        return choices.reduce((best, cur) => cur.costDays > best.costDays ? cur : best, choices[0]);
+        return choices.reduce(
+          (best, current) => current.costDays > best.costDays ? current : best,
+          choices[0]
+        );
       }
-
       return choices[rng.range(0, choices.length)];
     }
 
-    function simulateSample(sampleIndex, options) {
-      const rootRng = new Rng(`${options.seed}:sample${sampleIndex}`);
+    function simulateGame(seedText, options, hooks = {}) {
+      const random = new DeterministicRandomService(seedText);
       const character = tables.characterById.get(options.characterId) || tables.characters[0] || null;
+      const collectDetails = hooks.collectDetails === true;
       const run = {
         weekIndex: 1,
         currentTimelineId: "",
@@ -931,81 +1265,115 @@
         actionStepIndex: 0,
         runActionStepIndex: 0,
         actionGroupSequence: [],
-        actionWeekPlan: [],
-        actionWeekPlanWeek: 0,
-        actionWeekPlanStartRunStep: 0,
+        actionGroupDecisions: new Map(),
+        weekGroupCounts: new Map(),
         triggeredNodeIds: new Set()
       };
+      const weeks = collectDetails ? [] : null;
 
-      const weeks = [];
-      for (let weekIndex = 1; weekIndex <= options.weekCount; weekIndex++) {
+      for (let weekIndex = 1; weekIndex <= 4; weekIndex++) {
         run.weekIndex = weekIndex;
         run.triggeredNodeIds.clear();
-        const mapRng = rootRng.fork("map", `w${weekIndex}`);
+        run.weekGroupCounts.clear();
+        const mapRng = random.domainStream("map", `w${weekIndex}`);
         const timeline = rollWeekTimeline(run, mapRng, character);
         const nodes = timelineNodes(run.currentTimelineId);
-        const actions = [];
+        const actions = collectDetails ? [] : null;
 
-        let guard = 0;
-        while (run.currentDay < run.timelineLengthDays - 0.0001 && guard < options.maxActionsPerWeek) {
-          guard++;
-          const prevDay = run.currentDay;
+        for (let actionIndex = 0; actionIndex < options.actionsPerWeek; actionIndex++) {
+          const previousDay = run.currentDay;
           const key = actionChoiceKey(run);
-          const actionRng = rootRng.fork("action", key);
+          const actionRng = random.domainStream("action", key);
           const generated = generateChoices(run, actionRng);
-          const pickRng = rootRng.fork("gm-pick", `${sampleIndex}:${key}`);
+          const pickRng = random.domainStream("gm-pick", key);
           const selected = pickChoice(generated.choices, options.pickMode, pickRng);
-
-          let newDay = prevDay;
-          let passedNodes = [];
-          if (selected) {
-            newDay = Math.min(run.timelineLengthDays, quantizeDay(prevDay + selected.costDays));
-            passedNodes = collectPassedNodes(run, prevDay, newDay);
-            for (const node of passedNodes) {
-              run.triggeredNodeIds.add(node.id);
-            }
-          } else {
-            newDay = Math.min(run.timelineLengthDays, quantizeDay(prevDay + 1));
-            passedNodes = collectPassedNodes(run, prevDay, newDay);
-            for (const node of passedNodes) {
-              run.triggeredNodeIds.add(node.id);
-            }
+          const newDay = selected
+            ? Math.min(
+              run.timelineLengthDays,
+              quantizeDay(Math.fround(previousDay + selected.costDays))
+            )
+            : Math.min(run.timelineLengthDays, quantizeDay(previousDay + 1));
+          const passedNodes = collectDetails
+            ? collectPassedNodes(run, nodes, previousDay, newDay)
+            : [];
+          for (const node of passedNodes) {
+            run.triggeredNodeIds.add(node.id);
           }
 
-          actions.push({
+          const row = {
+            weekIndex,
             key,
             step: run.actionStepIndex,
             runStep: run.runActionStepIndex,
-            fromDay: prevDay,
+            fromDay: previousDay,
             toDay: newDay,
             group: generated.large,
+            groupDecision: generated.groupDecision,
             small: generated.small,
-            choices: generated.choices,
-            selected,
+            choices: collectDetails ? generated.choices : [],
+            selected: collectDetails ? selected : null,
             passedNodes
-          });
+          };
+          hooks.onAction?.(row);
+          if (collectDetails) {
+            actions.push(row);
+          }
 
           run.currentDay = newDay;
           run.actionStepIndex++;
           run.runActionStepIndex++;
         }
 
-        if (guard >= options.maxActionsPerWeek) {
-          diagnostics.push(`样本 ${sampleIndex} 第 ${weekIndex} 周达到单周行动上限，已停止该周模拟。`);
+        if (collectDetails) {
+          weeks.push({
+            weekIndex,
+            timeline,
+            lengthDays: run.timelineLengthDays,
+            nodes,
+            actions,
+            finalDay: run.currentDay
+          });
         }
-
-        weeks.push({
-          weekIndex,
-          timeline,
-          lengthDays: run.timelineLengthDays,
-          nodes,
-          actions,
-          plan: run.actionWeekPlan.slice(),
-          finalDay: run.currentDay
-        });
       }
 
-      return { sampleIndex, character, weeks };
+      return collectDetails ? { seedText, character, weeks } : null;
+    }
+
+    function collectOptions() {
+      const parsedActionsPerWeek = Number(actionsPerWeekEl.value);
+      const actionsPerWeek = Math.max(
+        1,
+        Math.min(
+          200,
+          Number.isFinite(parsedActionsPerWeek) ? Math.trunc(parsedActionsPerWeek) : 8
+        )
+      );
+      actionsPerWeekEl.value = String(actionsPerWeek);
+      return {
+        seed: seedEl.value || "gm-preview",
+        characterId: characterEl.value,
+        pickMode: pickModeEl.value,
+        actionsPerWeek
+      };
+    }
+
+    function stageLabel(stage) {
+      if (stage === "min") {
+        return "最小保底";
+      }
+      if (stage === "max") {
+        return "最大保底";
+      }
+      return "自由权重";
+    }
+
+    function pickModeLabel(mode) {
+      return {
+        random: "随机选择候选",
+        first: "总选第一个",
+        shortest: "选择耗时最短",
+        longest: "选择耗时最长"
+      }[mode] || mode;
     }
 
     function actionLabel(action) {
@@ -1016,6 +1384,16 @@
       return `${action.name || action.id} (${action.id}${food})`;
     }
 
+    function renderChoices(row) {
+      if (row.choices.length === 0) {
+        return `<span class="error">无候选，按休息 +1 天推进</span>`;
+      }
+      return row.choices.map(choice => {
+        const selected = choice === row.selected ? " selected" : "";
+        return `<span class="choice${selected}">${esc(actionLabel(choice.action))} / ${choice.costDays.toFixed(1)}天</span>`;
+      }).join("");
+    }
+
     function renderAxis(week) {
       const nodesByDay = new Map();
       for (const node of week.nodes) {
@@ -1024,7 +1402,6 @@
         }
         nodesByDay.get(node.day).push(node);
       }
-
       const days = [];
       for (let day = 1; day <= Math.ceil(week.lengthDays); day++) {
         const nodes = nodesByDay.get(day) || [];
@@ -1043,121 +1420,465 @@
       return `<div class="axis">${days.join("")}</div>`;
     }
 
-    function renderChoices(row) {
-      if (row.choices.length === 0) {
-        return `<span class="error">无候选，按休息 +1 天推进</span>`;
-      }
-
-      return row.choices.map(choice => {
-        const selected = choice === row.selected ? " selected" : "";
-        return `<span class="choice${selected}">${esc(actionLabel(choice.action))} / ${choice.costDays.toFixed(1)}天</span>`;
-      }).join("");
-    }
-
-    function renderWeek(week) {
+    function renderSingleWeek(week) {
       const rows = week.actions.map(row => {
+        const decision = row.groupDecision;
+        const groupId = row.group?.id || "";
+        const beforeCount = decision?.counts?.[groupId] || 0;
+        const afterCount = groupId ? beforeCount + 1 : 0;
+        const candidateText = decision?.candidateIds?.join(", ") || "-";
+        const countText = decision
+          ? Object.entries(decision.counts)
+            .map(([id, count]) => `${id}:${count}`)
+            .join(", ")
+          : "-";
         const nodeText = row.passedNodes.length > 0
           ? row.passedNodes.map(node => {
             const action = tables.actionById.get(node.actionId);
-            return `${node.day}天:${action?.name || node.actionId}(${node.id})`;
+            return `${node.day}天：${action?.name || node.actionId} (${node.id})`;
           }).join("<br>")
-          : `<span class="chip">无</span>`;
+          : "无";
 
         return `
           <tr>
-            <td>#${row.step + 1}<br><span class="chip">run ${row.runStep}</span></td>
+            <td><strong>#${row.step + 1}</strong><br><small>整局 #${row.runStep + 1}</small></td>
             <td>${row.fromDay.toFixed(1)} → ${row.toDay.toFixed(1)}</td>
-            <td>${esc(row.group?.name || row.group?.id || "无")}<br><span class="chip">${esc(row.group?.id || "-")}</span></td>
-            <td>${esc(row.small?.name || row.small?.id || "无")}<br><span class="chip">${esc(row.small?.id || "-")}</span></td>
-            <td>${renderChoices(row)}</td>
-            <td>${nodeText}</td>
+            <td>
+              <strong>${esc(row.group?.name || "无")}</strong><br>
+              <span class="chip">${esc(groupId || "-")}</span>
+            </td>
+            <td>
+              <strong>${esc(row.small?.name || "无")}</strong><br>
+              <span class="chip">${esc(row.small?.id || "-")}</span>
+            </td>
+            <td><span class="chip">${esc(stageLabel(decision?.stage))}</span></td>
+            <td>${afterCount}</td>
+            <td>
+              <details>
+                <summary>查看调试详情</summary>
+                <p><strong>候选大组：</strong>${esc(candidateText)}</p>
+                <p><strong>抽前计数：</strong>${esc(countText)}</p>
+                <p><strong>行动候选：</strong><br>${renderChoices(row)}</p>
+                <p><strong>经过节点：</strong><br>${nodeText}</p>
+                <small>随机 key：${esc(row.key)}</small>
+              </details>
+            </td>
           </tr>
         `;
       }).join("");
 
-      const timelineName = week.timeline ? week.timeline.id : "空轴";
+      const timelineName = week.timeline?.id || "空轴";
       const nodeChips = week.nodes.map(node => {
         const action = tables.actionById.get(node.actionId);
-        return `<span class="chip">D${node.day} ${esc(action?.name || node.actionId)} / ${esc(node.id)}</span>`;
+        return `<span class="chip">D${node.day} ${esc(action?.name || node.actionId)}</span>`;
       }).join("");
 
       return `
         <section class="week">
           <h3>
             <span>第 ${week.weekIndex} 周：${esc(timelineName)} / ${week.lengthDays} 天</span>
-            <span class="chip">${week.actions.length} 次行动，结束于 ${week.finalDay.toFixed(1)} 天</span>
+            <span class="chip">${week.actions.length} 次日常行动</span>
           </h3>
-          <div class="chips">${nodeChips || `<span class="chip">无节点</span>`}</div>
-          ${renderAxis(week)}
-          <table>
-            <thead>
-              <tr>
-                <th>步数</th>
-                <th>天数推进</th>
-                <th>大组</th>
-                <th>小组</th>
-                <th>行动候选（高亮=GM 推进所选）</th>
-                <th>经过轴节点</th>
-              </tr>
-            </thead>
-            <tbody>${rows || `<tr><td colspan="6">本周没有生成行动。</td></tr>`}</tbody>
-          </table>
           <details>
-            <summary>本周大组计划</summary>
-            <pre>${esc(week.plan.map((id, idx) => `${idx + 1}. ${id} ${tables.largeById.get(id)?.name || ""}`).join("\n") || "空")}</pre>
+            <summary>查看行动轴与节点</summary>
+            <div class="chips">${nodeChips || `<span class="chip">无节点</span>`}</div>
+            ${renderAxis(week)}
           </details>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>周内序号</th>
+                  <th>天数推进</th>
+                  <th>大组</th>
+                  <th>小组</th>
+                  <th>命中方式</th>
+                  <th>抽后本周次数</th>
+                  <th>详情</th>
+                </tr>
+              </thead>
+              <tbody>${rows || `<tr><td colspan="7">本周没有生成日常行动。</td></tr>`}</tbody>
+            </table>
+          </div>
         </section>
       `;
     }
 
-    function renderSample(sample) {
-      const totalActions = sample.weeks.reduce((sum, week) => sum + week.actions.length, 0);
+    function renderSingleGame(game) {
+      const totalActions = game.weeks.reduce((sum, week) => sum + week.actions.length, 0);
+      const summaries = game.weeks.map(week => `
+        <div class="summary-card">
+          <strong>第 ${week.weekIndex} 周 · ${week.actions.length} 次</strong>
+          <span>${week.timeline?.id || "空轴"} / ${week.lengthDays} 天</span>
+        </div>
+      `).join("");
       return `
         <section class="sample">
           <h2>
-            <span>随机 #${sample.sampleIndex}</span>
-            <span class="chip">${esc(sample.character?.name || sample.character?.id || "无角色")} / ${totalActions} 次行动</span>
+            <span>${esc(game.character?.name || game.character?.id || "无角色")}</span>
+            <span class="chip">种子：${esc(game.seedText)} / 共 ${totalActions} 次行动</span>
           </h2>
-          ${sample.weeks.map(renderWeek).join("")}
+          <div class="summary-grid">${summaries}</div>
+          ${game.weeks.map(renderSingleWeek).join("")}
         </section>
       `;
     }
 
-    function collectOptions() {
+    function runSingle() {
+      if (!tables) {
+        setStatus(singleStatusEl, "配置尚未加载。", "error");
+        return;
+      }
+      cancelRunningBatch(true);
+      resetDiagnostics();
+      const options = collectOptions();
+      try {
+        const game = simulateGame(options.seed, options, { collectDetails: true });
+        singleOutputEl.innerHTML = renderSingleGame(game);
+        setStatus(
+          singleStatusEl,
+          `<span class="ok">已生成第 1–4 周。</span><span class="chip">种子：${esc(options.seed)}</span>${diagnosticsHtml()}`,
+          diagnostics.size > 0 ? "warn" : "ok"
+        );
+      } catch (error) {
+        setStatus(singleStatusEl, `<span class="error">生成失败：${esc(error.message)}</span>`, "error");
+      }
+    }
+
+    function createWeekStats(weekIndex) {
+      const groups = new Map();
+      for (const group of tables.actionLargeGroups) {
+        groups.set(group.id, {
+          id: group.id,
+          count: 0,
+          hitGames: 0,
+          stages: { min: 0, max: 0, free: 0 }
+        });
+      }
       return {
-        weekCount: Math.max(1, Number(document.getElementById("weekCount").value) || 1),
-        sampleCount: Math.max(1, Number(document.getElementById("sampleCount").value) || 1),
-        seed: document.getElementById("seed").value || "gm-preview",
-        characterId: characterEl.value,
-        pickMode: document.getElementById("pickMode").value,
-        maxActionsPerWeek: Math.max(1, Number(document.getElementById("maxActionsPerWeek").value) || 40)
+        weekIndex,
+        totalActions: 0,
+        groups,
+        slots: []
       };
     }
 
-    function runSimulation() {
+    function createBatchStats(requestedGames) {
+      return {
+        requestedGames,
+        completedGames: 0,
+        weeks: [1, 2, 3, 4].map(createWeekStats)
+      };
+    }
+
+    function ensureGroupStats(weekStats, groupId) {
+      if (!weekStats.groups.has(groupId)) {
+        weekStats.groups.set(groupId, {
+          id: groupId,
+          count: 0,
+          hitGames: 0,
+          stages: { min: 0, max: 0, free: 0 }
+        });
+      }
+      return weekStats.groups.get(groupId);
+    }
+
+    function accumulateGame(stats, seedText, options) {
+      const seenByWeek = [new Set(), new Set(), new Set(), new Set()];
+      simulateGame(seedText, options, {
+        onAction(row) {
+          const weekStats = stats.weeks[row.weekIndex - 1];
+          const groupId = row.group?.id || INVALID_GROUP_ID;
+          const groupStats = ensureGroupStats(weekStats, groupId);
+          const stage = ["min", "max", "free"].includes(row.groupDecision?.stage)
+            ? row.groupDecision.stage
+            : "free";
+
+          weekStats.totalActions++;
+          groupStats.count++;
+          groupStats.stages[stage]++;
+          seenByWeek[row.weekIndex - 1].add(groupId);
+
+          if (!weekStats.slots[row.step]) {
+            weekStats.slots[row.step] = { reached: 0, groups: new Map() };
+          }
+          const slot = weekStats.slots[row.step];
+          slot.reached++;
+          slot.groups.set(groupId, (slot.groups.get(groupId) || 0) + 1);
+        }
+      });
+
+      for (let week = 0; week < seenByWeek.length; week++) {
+        for (const groupId of seenByWeek[week]) {
+          ensureGroupStats(stats.weeks[week], groupId).hitGames++;
+        }
+      }
+      stats.completedGames++;
+    }
+
+    function statsGroupIds(weekStats) {
+      const ids = tables.actionLargeGroups.map(group => group.id);
+      const invalid = weekStats.groups.get(INVALID_GROUP_ID);
+      if (invalid?.count > 0) {
+        ids.push(INVALID_GROUP_ID);
+      }
+      return ids;
+    }
+
+    function groupDisplay(groupId) {
+      if (groupId === INVALID_GROUP_ID) {
+        return { name: "异常：未解析大组", id: groupId };
+      }
+      const group = tables.largeById.get(groupId);
+      return { name: group?.name || groupId, id: groupId };
+    }
+
+    function groupColor(groupId) {
+      const index = tables.actionLargeGroups.findIndex(group => group.id === groupId);
+      return groupId === INVALID_GROUP_ID
+        ? "#ff756b"
+        : GROUP_COLORS[(index < 0 ? GROUP_COLORS.length - 1 : index) % GROUP_COLORS.length];
+    }
+
+    function formatInteger(value) {
+      return Number(value || 0).toLocaleString("zh-CN");
+    }
+
+    function formatPercent(ratio, digits = 2) {
+      return `${(Number.isFinite(ratio) ? ratio * 100 : 0).toFixed(digits)}%`;
+    }
+
+    function renderBarRow(weekStats, groupId, completedGames) {
+      const stats = weekStats.groups.get(groupId) || {
+        count: 0,
+        hitGames: 0,
+        stages: { min: 0, max: 0, free: 0 }
+      };
+      const display = groupDisplay(groupId);
+      const ratio = weekStats.totalActions > 0 ? stats.count / weekStats.totalActions : 0;
+      const average = completedGames > 0 ? stats.count / completedGames : 0;
+      const hitRate = completedGames > 0 ? stats.hitGames / completedGames : 0;
+      const group = tables.largeById.get(groupId);
+      const weight = group ? fallbackWeight(group, weekStats.weekIndex) : 0;
+
+      return `
+        <div class="bar-row">
+          <div class="bar-label">
+            <strong>${esc(display.name)}</strong>
+            <small>${esc(display.id)} · 当周权重 ${weight}</small>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill" style="width:${Math.max(0, Math.min(100, ratio * 100))}%;background:${groupColor(groupId)}"></div>
+            <div class="bar-values">
+              <strong>${formatPercent(ratio)}</strong>
+              ${formatInteger(stats.count)} 次 · 每局 ${average.toFixed(3)} · 命中局 ${formatPercent(hitRate)}
+              <br>
+              <small>最小 ${formatInteger(stats.stages.min)} / 最大 ${formatInteger(stats.stages.max)} / 自由 ${formatInteger(stats.stages.free)}</small>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderHeatmap(weekStats) {
+      const slots = weekStats.slots;
+      if (slots.length === 0) {
+        return `<p class="warn">本周无行动序号数据。</p>`;
+      }
+      const header = slots.map((slot, index) =>
+        `<th title="${formatInteger(slot?.reached || 0)} 局到达">#${index + 1}<br><small>${formatInteger(slot?.reached || 0)}局</small></th>`
+      ).join("");
+      const rows = statsGroupIds(weekStats).map(groupId => {
+        const display = groupDisplay(groupId);
+        const cells = slots.map(slot => {
+          const reached = slot?.reached || 0;
+          const count = slot?.groups.get(groupId) || 0;
+          const ratio = reached > 0 ? count / reached : 0;
+          const alpha = reached > 0 ? 0.08 + Math.min(0.78, ratio * 0.95) : 0;
+          return `
+            <td
+              class="heat-cell"
+              style="background:rgba(255,184,77,${alpha.toFixed(3)})"
+              title="${esc(display.name)}：${formatInteger(count)} / ${formatInteger(reached)}"
+            >
+              ${reached > 0 ? formatPercent(ratio, 1) : "—"}
+              <small>${formatInteger(count)}次</small>
+            </td>
+          `;
+        }).join("");
+        return `
+          <tr>
+            <td><strong>${esc(display.name)}</strong><br><small>${esc(display.id)}</small></td>
+            ${cells}
+          </tr>
+        `;
+      }).join("");
+
+      return `
+        <details>
+          <summary>按第 N 次行动查看大组分布</summary>
+          <p><small>每列分母为实际到达该行动序号的游戏数，因此同一列百分比合计为 100%。</small></p>
+          <div class="heatmap-wrap">
+            <table class="heatmap">
+              <thead><tr><th>大组</th>${header}</tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        </details>
+      `;
+    }
+
+    function renderWeekStats(weekStats, completedGames) {
+      const averageActions = completedGames > 0
+        ? weekStats.totalActions / completedGames
+        : 0;
+      return `
+        <section class="stat-week">
+          <h3>
+            <span>第 ${weekStats.weekIndex} 周</span>
+            <span class="chip">共 ${formatInteger(weekStats.totalActions)} 次 / 每局 ${averageActions.toFixed(2)} 次</span>
+          </h3>
+          <div class="bar-list">
+            ${statsGroupIds(weekStats)
+              .map(groupId => renderBarRow(weekStats, groupId, completedGames))
+              .join("")}
+          </div>
+          ${renderHeatmap(weekStats)}
+        </section>
+      `;
+    }
+
+    function validateBatchStats(stats) {
+      const errors = [];
+      for (const week of stats.weeks) {
+        const groupTotal = Array.from(week.groups.values())
+          .reduce((sum, group) => sum + group.count, 0);
+        if (groupTotal !== week.totalActions) {
+          errors.push(`第${week.weekIndex}周大组总数 ${groupTotal} != 行动总数 ${week.totalActions}`);
+        }
+        for (const group of week.groups.values()) {
+          const stageTotal = group.stages.min + group.stages.max + group.stages.free;
+          if (stageTotal !== group.count) {
+            errors.push(`第${week.weekIndex}周 ${group.id} 阶段总数 ${stageTotal} != 出现次数 ${group.count}`);
+          }
+        }
+        for (let index = 0; index < week.slots.length; index++) {
+          const slot = week.slots[index];
+          const slotTotal = Array.from(slot.groups.values()).reduce((sum, count) => sum + count, 0);
+          if (slotTotal !== slot.reached) {
+            errors.push(`第${week.weekIndex}周第${index + 1}次行动计数 ${slotTotal} != 到达数 ${slot.reached}`);
+          }
+        }
+      }
+      return errors;
+    }
+
+    function renderBatchStats(stats, options, stopped) {
+      const label = stopped ? "已停止" : "统计完成";
+      batchOutputEl.innerHTML = `
+        <section class="sample">
+          <h2>
+            <span>${label}：${formatInteger(stats.completedGames)} 局</span>
+            <span class="chip">基础种子：${esc(options.seed)} / ${esc(pickModeLabel(options.pickMode))}</span>
+          </h2>
+          <div class="stats-grid">
+            ${stats.weeks.map(week => renderWeekStats(week, stats.completedGames)).join("")}
+          </div>
+        </section>
+      `;
+    }
+
+    function updateBatchProgress(completed, total) {
+      const ratio = total > 0 ? completed / total : 0;
+      progressFillEl.style.width = `${Math.max(0, Math.min(100, ratio * 100))}%`;
+      setStatus(
+        batchStatusEl,
+        `<span class="ok">正在统计 ${formatInteger(completed)} / ${formatInteger(total)} 局</span><span class="chip">${formatPercent(ratio, 1)}</span>`,
+        "ok"
+      );
+    }
+
+    function cancelRunningBatch(discardResults = false) {
+      if (activeBatchTask) {
+        activeBatchTask.cancelled = true;
+        activeBatchTask.discardResults ||= discardResults;
+      }
+    }
+
+    async function runBatch() {
       if (!tables) {
-        setStatus("配置尚未加载。请点击“重新读取配置”，或选择 Assets/StreamingAssets/Config 目录。", "error");
+        setStatus(batchStatusEl, "配置尚未加载。", "error");
         return;
       }
 
-      diagnostics = [];
-      const options = collectOptions();
-      const samples = [];
-      for (let i = 1; i <= options.sampleCount; i++) {
-        samples.push(simulateSample(i, options));
-      }
+      cancelRunningBatch(true);
+      const task = {
+        id: ++batchTaskSerial,
+        revision: configRevision,
+        cancelled: false,
+        discardResults: false
+      };
+      activeBatchTask = task;
+      runBatchBtn.disabled = true;
+      cancelBatchBtn.disabled = false;
+      batchCountEl.disabled = true;
+      batchOutputEl.innerHTML = "";
+      progressFillEl.style.width = "0%";
+      resetDiagnostics();
 
-      outputEl.innerHTML = samples.map(renderSample).join("");
-      const diagText = Array.from(new Set(diagnostics)).slice(0, 60);
-      const diagHtml = diagText.length > 0
-        ? `<details open><summary>诊断信息 ${diagText.length} 条</summary><pre>${esc(diagText.join("\n"))}</pre></details>`
-        : "";
-      setStatus(`
-        <span class="ok">已生成 ${options.sampleCount} 次随机，覆盖 ${options.weekCount} 周。</span>
-        <span class="chip">种子：${esc(options.seed)}</span>
-        <span class="chip">策略：${esc(document.getElementById("pickMode").selectedOptions[0].textContent)}</span>
-        ${diagHtml}
-      `, diagText.length > 0 ? "warn" : "ok");
+      const options = collectOptions();
+      const requestedGames = Math.max(1, Math.min(100000, Number(batchCountEl.value) || 10000));
+      const stats = createBatchStats(requestedGames);
+      let sliceStart = performance.now();
+
+      try {
+        for (let gameIndex = 1; gameIndex <= requestedGames; gameIndex++) {
+          if (
+            task.cancelled
+            || task.revision !== configRevision
+            || activeBatchTask !== task
+          ) {
+            break;
+          }
+          const gameSeed = gameIndex === 1
+            ? options.seed
+            : `${options.seed}:sample${gameIndex}`;
+          accumulateGame(stats, gameSeed, options);
+
+          if (performance.now() - sliceStart >= 12 || gameIndex === requestedGames) {
+            updateBatchProgress(stats.completedGames, requestedGames);
+            await new Promise(resolve => setTimeout(resolve, 0));
+            sliceStart = performance.now();
+          }
+        }
+
+        if (task.discardResults || task.revision !== configRevision || activeBatchTask !== task) {
+          return;
+        }
+
+        const validationErrors = validateBatchStats(stats);
+        for (const error of validationErrors) {
+          addDiagnostic(`统计校验失败：${error}`);
+        }
+        renderBatchStats(stats, options, task.cancelled);
+        const stoppedText = task.cancelled
+          ? `<span class="warn">已停止，以下结果基于 ${formatInteger(stats.completedGames)} 局。</span>`
+          : `<span class="ok">已完成 ${formatInteger(stats.completedGames)} 局。</span>`;
+        setStatus(
+          batchStatusEl,
+          `${stoppedText}<span class="chip">种子：${esc(options.seed)}</span>${diagnosticsHtml()}`,
+          diagnostics.size > 0 || task.cancelled ? "warn" : "ok"
+        );
+      } catch (error) {
+        setStatus(batchStatusEl, `<span class="error">统计失败：${esc(error.message)}</span>`, "error");
+      } finally {
+        if (activeBatchTask === task) {
+          activeBatchTask = null;
+          runBatchBtn.disabled = false;
+          cancelBatchBtn.disabled = true;
+          batchCountEl.disabled = false;
+        }
+      }
     }
 
     function normalizeTables(raw) {
@@ -1167,12 +1888,14 @@
         actions: raw.tbaction || [],
         actionLargeGroups: raw.tbactionlargegroup || [],
         actionSmallGroups: raw.tbactionsmallgroup || [],
-        actionScheduleRules: raw.tbactionschedulerule || [],
         characters: raw.tbcharacter || [],
         events: raw.tbevent || [],
-        foods: raw.tbfood || []
+        foods: raw.tbfood || [],
+        gameBase: (raw.tbgamebase || [])[0] || {
+          actionChoiceCount: 3,
+          defaultRandomWeight: 1
+        }
       };
-
       normalized.weekById = new Map(normalized.weeks.map(row => [Number(row.id), row]));
       normalized.timelineById = byId(normalized.timelines);
       normalized.actionById = byId(normalized.actions);
@@ -1184,6 +1907,7 @@
     }
 
     function updateCharacterOptions() {
+      const previous = characterEl.value;
       characterEl.innerHTML = "";
       for (const character of tables.characters) {
         const option = document.createElement("option");
@@ -1191,6 +1915,30 @@
         option.textContent = `${character.name || character.id} (${character.id})`;
         characterEl.appendChild(option);
       }
+      if (previous && tables.characterById.has(previous)) {
+        characterEl.value = previous;
+      }
+    }
+
+    function applyLoadedTables(raw, sourceLabel) {
+      cancelRunningBatch(true);
+      configRevision++;
+      tables = normalizeTables(raw);
+      updateCharacterOptions();
+      if (RNG_SELF_TEST_ERRORS.length > 0) {
+        setStatus(
+          configStatusEl,
+          `<span class="error">随机算法自检失败：${esc(RNG_SELF_TEST_ERRORS.join("；"))}</span>`,
+          "error"
+        );
+        return;
+      }
+      setStatus(
+        configStatusEl,
+        `<span class="ok">配置加载成功。</span><span class="chip">${esc(sourceLabel)}</span><span class="chip">${tables.actionLargeGroups.length} 个大组 / ${tables.actionSmallGroups.length} 个小组</span>`,
+        "ok"
+      );
+      runSingle();
     }
 
     async function loadViaFetch() {
@@ -1202,11 +1950,7 @@
         }
         raw[name] = await response.json();
       }
-
-      tables = normalizeTables(raw);
-      updateCharacterOptions();
-      setStatus(`<span class="ok">配置加载成功。</span><span class="chip">来源：${esc(CONFIG_DIR)}</span>`, "ok");
-      runSimulation();
+      applyLoadedTables(raw, CONFIG_DIR);
     }
 
     async function loadViaFiles(files) {
@@ -1219,34 +1963,50 @@
         }
         raw[name] = JSON.parse(await file.text());
       }
-
-      tables = normalizeTables(raw);
-      updateCharacterOptions();
-      setStatus(`<span class="ok">配置加载成功。</span><span class="chip">来源：手动选择文件</span>`, "ok");
-      runSimulation();
+      applyLoadedTables(raw, "手动选择配置目录");
     }
 
-    runBtn.addEventListener("click", runSimulation);
+    function generateSeedText() {
+      if (globalThis.crypto?.getRandomValues) {
+        const parts = new Uint32Array(2);
+        globalThis.crypto.getRandomValues(parts);
+        return `GM-${parts[0].toString(16).padStart(8, "0")}${parts[1].toString(16).padStart(8, "0")}`;
+      }
+      return `GM-${Date.now().toString(36)}`;
+    }
+
+    singleModeTabEl.addEventListener("click", () => setMode("single"));
+    batchModeTabEl.addEventListener("click", () => setMode("batch"));
+    runSingleBtn.addEventListener("click", runSingle);
+    newSeedBtn.addEventListener("click", () => {
+      seedEl.value = generateSeedText();
+      runSingle();
+    });
+    runBatchBtn.addEventListener("click", runBatch);
+    cancelBatchBtn.addEventListener("click", () => cancelRunningBatch(false));
     loadBtn.addEventListener("click", () => {
-      setStatus(`正在尝试读取 <code>${CONFIG_DIR}*.json</code> ...`);
+      cancelRunningBatch(true);
+      setStatus(configStatusEl, `正在读取 <code>${esc(CONFIG_DIR)}*.json</code> ...`);
       loadViaFetch().catch(error => {
-        setStatus(`
-          <span class="error">自动读取失败：${esc(error.message)}</span>
-          <span>如果你是双击打开 HTML，浏览器可能禁止 file:// fetch。请改用本地 HTTP 服务打开，或在上方选择 Assets/StreamingAssets/Config 目录。</span>
-        `, "error");
+        setStatus(
+          configStatusEl,
+          `<span class="error">自动读取失败：${esc(error.message)}</span><span>请通过本地 HTTP 打开，或选择配置目录。</span>`,
+          "error"
+        );
       });
     });
     fileInput.addEventListener("change", () => {
       loadViaFiles(fileInput.files).catch(error => {
-        setStatus(`<span class="error">手动加载失败：${esc(error.message)}</span>`, "error");
+        setStatus(configStatusEl, `<span class="error">手动加载失败：${esc(error.message)}</span>`, "error");
       });
     });
 
     loadViaFetch().catch(error => {
-      setStatus(`
-        <span class="error">自动读取失败：${esc(error.message)}</span>
-        <span>可以在上方选择 <code>Assets/StreamingAssets/Config</code> 目录加载配置。</span>
-      `, "error");
+      setStatus(
+        configStatusEl,
+        `<span class="error">自动读取失败：${esc(error.message)}</span><span>如果是双击打开页面，请选择 Assets/StreamingAssets/Config 目录，或改用本地 HTTP 服务。</span>`,
+        "error"
+      );
     });
   </script>
 </body>
