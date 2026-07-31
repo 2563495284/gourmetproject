@@ -1,5 +1,7 @@
 using System;
 using System.IO;
+using GourmetProject.Game.Presentation.Battle;
+using GourmetProject.Game.UI.Hud;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Game.UI.Meta;
 using GourmetProject.Game.UI.Widgets;
@@ -15,6 +17,9 @@ namespace GourmetProject.Editor
         private const string ShopFoodPrefabPath = "Assets/GameMain/Content/Prefabs/UI/ShopFoodBuyItemView.prefab";
         private const string ShopBuyCardPrefabPath = "Assets/GameMain/Content/Prefabs/UI/ShopBuyCardView.prefab";
         private const string RecipeEditDishPrefabPath = "Assets/GameMain/Content/Prefabs/UI/RecipeEditDishView.prefab";
+        private const string RewardFormPrefabPath = "Assets/GameMain/Content/Prefabs/UI/RewardForm.prefab";
+        private const string ServingOutletPrefabPath = "Assets/GameMain/Content/Prefabs/UI/Hud/ServingOutlet.prefab";
+        private const string DishPiecePrefabPath = "Assets/GameMain/Content/Prefabs/Battle/DishPiece.prefab";
         private const string CellPrefabPath = "Assets/GameMain/Content/Prefabs/Battle/DiningTableCell.prefab";
         private const string BadgePrefabPath = "Assets/GameMain/Content/Prefabs/Battle/DishValueBadge.prefab";
         [MenuItem("GourmetProject/UI/Rebuild Dish Icon Previews")]
@@ -32,6 +37,9 @@ namespace GourmetProject.Editor
             PatchShopFoodPrefab(cellPrefab, badgePrefab);
             PatchShopBuyCardPrefab(cellPrefab, badgePrefab);
             PatchRecipeEditDishPrefab(cellPrefab, badgePrefab);
+            PatchRewardFormPrefab(cellPrefab, badgePrefab);
+            PatchServingOutletPrefab(cellPrefab, badgePrefab);
+            PatchDishPiecePrefab(badgePrefab);
             AssetDatabase.SaveAssets();
             Debug.Log("All dish icon RenderTexture previews rebuilt.");
         }
@@ -171,6 +179,87 @@ namespace GourmetProject.Editor
             }
         }
 
+        private static void PatchRewardFormPrefab(GameObject cellPrefab, GameObject badgePrefab)
+        {
+            GameObject root = PrefabUtility.LoadPrefabContents(RewardFormPrefabPath);
+            try
+            {
+                RewardChoiceRowView row = root.GetComponentInChildren<RewardChoiceRowView>(true);
+                Transform iconFrame = row?.transform.Find("IconFrame");
+                if (row == null || iconFrame == null)
+                {
+                    Debug.LogError("RewardForm prefab is missing RewardChoiceRowView or IconFrame.");
+                    return;
+                }
+
+                RectTransform container = EnsureContainer(iconFrame, "DishRenderTexture");
+                Stretch(container, 4f);
+                DishIconRenderTexturePreview preview = EnsureOutput(container, cellPrefab, badgePrefab);
+                SetObjectReference(row, "_dishPreview", preview);
+                container.SetAsLastSibling();
+                PrefabUtility.SaveAsPrefabAsset(root, RewardFormPrefabPath);
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+        }
+
+        private static void PatchServingOutletPrefab(GameObject cellPrefab, GameObject badgePrefab)
+        {
+            GameObject root = PrefabUtility.LoadPrefabContents(ServingOutletPrefabPath);
+            try
+            {
+                ServingOutletView outlet = root.GetComponentInChildren<ServingOutletView>(true);
+                Transform preparedDish = FindDescendant(root.transform, "PreparedDish");
+                if (outlet == null || preparedDish == null)
+                {
+                    Debug.LogError("ServingOutlet prefab is missing ServingOutletView or PreparedDish.");
+                    return;
+                }
+
+                Image legacyImage = preparedDish.GetComponent<Image>();
+                if (legacyImage != null)
+                {
+                    legacyImage.enabled = false;
+                    legacyImage.raycastTarget = false;
+                }
+
+                RectTransform container = EnsureContainer(preparedDish, "DishRenderTexture");
+                Stretch(container, 0f);
+                DishIconRenderTexturePreview preview = EnsureOutput(container, cellPrefab, badgePrefab);
+                SetObjectReference(outlet, "_dishPreview", preview);
+                container.SetAsLastSibling();
+                PrefabUtility.SaveAsPrefabAsset(root, ServingOutletPrefabPath);
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+        }
+
+        private static void PatchDishPiecePrefab(GameObject badgePrefab)
+        {
+            GameObject root = PrefabUtility.LoadPrefabContents(DishPiecePrefabPath);
+            try
+            {
+                DishPieceView piece = root.GetComponent<DishPieceView>();
+                Component badgeView = FindComponentByTypeName(badgePrefab, "DishValueBadgeView");
+                if (piece == null || badgeView == null)
+                {
+                    Debug.LogError("DishPiece or DishValueBadge prefab is missing its view component.");
+                    return;
+                }
+
+                SetObjectReference(piece, "_dishValueBadgePrefab", badgeView);
+                PrefabUtility.SaveAsPrefabAsset(root, DishPiecePrefabPath);
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+        }
+
         private static DishIconRenderTexturePreview ReplaceLegacyPreview(
             GameObject root,
             GameObject cellPrefab,
@@ -265,6 +354,50 @@ namespace GourmetProject.Editor
             rect.offsetMin = new Vector2(inset, inset);
             rect.offsetMax = new Vector2(-inset, -inset);
             rect.localScale = Vector3.one;
+        }
+
+        private static Transform FindDescendant(Transform root, string name)
+        {
+            if (root == null)
+            {
+                return null;
+            }
+
+            if (root.name == name)
+            {
+                return root;
+            }
+
+            for (int i = 0; i < root.childCount; i++)
+            {
+                Transform found = FindDescendant(root.GetChild(i), name);
+                if (found != null)
+                {
+                    return found;
+                }
+            }
+
+            return null;
+        }
+
+        private static Component FindComponentByTypeName(GameObject target, string typeName)
+        {
+            if (target == null)
+            {
+                return null;
+            }
+
+            Component[] components = target.GetComponents<Component>();
+            for (int i = 0; i < components.Length; i++)
+            {
+                Component component = components[i];
+                if (component != null && component.GetType().Name == typeName)
+                {
+                    return component;
+                }
+            }
+
+            return null;
         }
 
         private static void SetObjectReference(UnityEngine.Object target, string propertyName, UnityEngine.Object value)

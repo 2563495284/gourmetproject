@@ -96,6 +96,10 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private BoxCollider2D _collider;
         [Tooltip("放置合法性发光层（子物体 PlacementGlow 上的 SpriteRenderer）。")]
         [SerializeField] private SpriteRenderer _placementGlow;
+        [Tooltip("常驻美味值标签 prefab。运行时实例化到菜品根节点，避免跟随本体旋转/晃动。")]
+        [SerializeField] private DishValueBadgeView _dishValueBadgePrefab;
+        [Tooltip("美味值标签上边缘相对最上方占格顶边的偏移。")]
+        [SerializeField] private float _dishValueTopEdgeOffset;
 
         [Header("落定反馈（仅作用于本体视觉枢轴，不影响格子锚点/碰撞盒）")]
         [SerializeField] private bool _useOccupiedCentroidPivot = true;
@@ -185,12 +189,17 @@ namespace GourmetProject.Game.Presentation.Battle
         private readonly Dictionary<SpriteRenderer, Color> _activeItemDimColors = new Dictionary<SpriteRenderer, Color>();
         private MaterialPropertyBlock _activeItemTransformBlock;
         private Sequence _activeItemFlavorSequence;
+        private DishValueBadgeView _dishValueBadge;
+        private Vector3 _dishValueBadgeBaseScale = Vector3.one;
+        private float? _dishValueBadgeOverride;
 
         public DishInstance Instance { get; private set; }
 
         public int RotationIndex { get; private set; }
 
         public DishShape CurrentShape { get; private set; }
+
+        internal DishValueBadgeView DishValueBadge => _dishValueBadge;
 
         public void BuildPlaced(DishInstance instance, Sprite sprite, float cellSize, float pitch, Action<DishInstance> clicked)
         {
@@ -199,9 +208,61 @@ namespace GourmetProject.Game.Presentation.Battle
             _cellSize = cellSize;
             _pitch = pitch;
             _clicked = clicked;
+            _dishValueBadgeOverride = null;
             RotationIndex = instance.Placement.RotationIndex;
             CurrentShape = instance.Placement.Orientation;
             RebuildCells(CurrentShape);
+        }
+
+        internal void RefreshDishValueBadge()
+        {
+            if (Instance == null)
+            {
+                return;
+            }
+
+            EnsureDishValueBadge(CurrentShape);
+            ApplyDishValueBadge(
+                _dishValueBadgeOverride
+                ?? DishValueDisplay.CurrentContribution(Instance));
+        }
+
+        internal void SetDishValueBadge(float value)
+        {
+            _dishValueBadgeOverride = value;
+            ApplyDishValueBadge(value);
+        }
+
+        internal void ClearDishValueBadgeOverride()
+        {
+            _dishValueBadgeOverride = null;
+            RefreshDishValueBadge();
+        }
+
+        private void ApplyDishValueBadge(float value)
+        {
+            if (_dishValueBadge != null)
+            {
+                _dishValueBadge.SetValue(DishValueDisplay.Format(value));
+            }
+        }
+
+        internal void PunchDishValueBadge(float scale, float duration)
+        {
+            if (_dishValueBadge == null)
+            {
+                return;
+            }
+
+            Transform badgeTransform = _dishValueBadge.transform;
+            badgeTransform.DOKill(false);
+            badgeTransform.localScale = _dishValueBadgeBaseScale;
+            badgeTransform.DOPunchScale(
+                    Vector3.one * scale,
+                    duration,
+                    1,
+                    0.45f)
+                .SetLink(_dishValueBadge.gameObject);
         }
 
         public void UpdatePlacement(Placement placement)
@@ -560,6 +621,8 @@ namespace GourmetProject.Game.Presentation.Battle
                     ? _spriteRenderer.sortingOrder + 1
                     : BattleSorting.OrderBody + 1 + _sortingOrderOffset;
             }
+
+            ApplyDishValueBadgeSorting();
         }
 
         /// <summary>
@@ -1438,6 +1501,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             ConfigureContactShadow(shape);
             ConfigureFootprintSprite(shape);
+            EnsureDishValueBadge(shape);
             ApplyLiftHeight(_liftHeight);
             if (_dragPresentationActive)
             {
@@ -1448,6 +1512,113 @@ namespace GourmetProject.Game.Presentation.Battle
                 Mathf.Max(_cellSize, shape.Width * _pitch - (_pitch - _cellSize)),
                 Mathf.Max(_cellSize, shape.Height * _pitch - (_pitch - _cellSize)));
             _collider.offset = new Vector2((shape.Width - 1) * _pitch * 0.5f, -(shape.Height - 1) * _pitch * 0.5f);
+        }
+
+        private void EnsureDishValueBadge(DishShape shape)
+        {
+            if (shape == null || _dishValueBadgePrefab == null)
+            {
+                return;
+            }
+
+            if (_dishValueBadge == null)
+            {
+                _dishValueBadge = Instantiate(_dishValueBadgePrefab, transform);
+                _dishValueBadge.name = "DishValueBadge";
+                _dishValueBadge.transform.localRotation = Quaternion.identity;
+                _dishValueBadgeBaseScale = _dishValueBadge.transform.localScale;
+            }
+
+            FindTopContinuousRun(shape.Cells, out int row, out int startX, out int endX);
+            float panelHeight = _dishValueBadge.PanelHeight * Mathf.Abs(_dishValueBadge.transform.localScale.y);
+            _dishValueBadge.transform.localPosition = new Vector3(
+                (startX + endX) * _pitch * 0.5f,
+                -row * _pitch + _cellSize * 0.5f - panelHeight * 0.5f + _dishValueTopEdgeOffset,
+                0f);
+            ApplyDishValueBadgeSorting();
+            if (Instance != null)
+            {
+                ApplyDishValueBadge(
+                    _dishValueBadgeOverride
+                    ?? DishValueDisplay.CurrentContribution(Instance));
+            }
+        }
+
+        private void ApplyDishValueBadgeSorting()
+        {
+            if (_dishValueBadge == null)
+            {
+                return;
+            }
+
+            string layer = _flying ? BattleSorting.PiecesFlying : BattleSorting.Fx;
+            int order = _flying
+                ? BattleSorting.OrderBody + 5 + _sortingOrderOffset
+                : BattleSorting.OrderFloatingText + _sortingOrderOffset;
+            _dishValueBadge.ConfigureSorting(layer, order);
+        }
+
+        private static void FindTopContinuousRun(
+            IReadOnlyList<GridPos> cells,
+            out int row,
+            out int startX,
+            out int endX)
+        {
+            row = 0;
+            startX = 0;
+            endX = 0;
+            if (cells == null || cells.Count == 0)
+            {
+                return;
+            }
+
+            row = int.MaxValue;
+            for (int i = 0; i < cells.Count; i++)
+            {
+                row = Mathf.Min(row, cells[i].Y);
+            }
+
+            var xs = new List<int>();
+            for (int i = 0; i < cells.Count; i++)
+            {
+                if (cells[i].Y == row)
+                {
+                    xs.Add(cells[i].X);
+                }
+            }
+
+            xs.Sort();
+            startX = endX = xs[0];
+            int currentStart = xs[0];
+            int currentEnd = xs[0];
+            for (int i = 1; i < xs.Count; i++)
+            {
+                int x = xs[i];
+                if (x <= currentEnd)
+                {
+                    continue;
+                }
+
+                if (x == currentEnd + 1)
+                {
+                    currentEnd = x;
+                    continue;
+                }
+
+                if (currentEnd - currentStart > endX - startX)
+                {
+                    startX = currentStart;
+                    endX = currentEnd;
+                }
+
+                currentStart = currentEnd = x;
+            }
+
+            if (currentEnd - currentStart > endX - startX)
+            {
+                startX = currentStart;
+                endX = currentEnd;
+            }
         }
 
         /// <summary>

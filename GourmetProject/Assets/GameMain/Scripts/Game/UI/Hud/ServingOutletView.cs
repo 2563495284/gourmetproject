@@ -1,6 +1,6 @@
 using System;
-using GourmetProject.Core.Utility;
 using GourmetProject.Game.Presentation.Battle;
+using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Gameplay.Battle;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -23,16 +23,12 @@ namespace GourmetProject.Game.UI.Hud
     public sealed class ServingOutletView : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
     {
         private const float PreparedDishRaycastPadding = 24f;
-        private const float FlavorStainScale = 8f;
-        private const float FlavorStainThreshold = 0.62f;
-        private const float FlavorStainSoftness = 0.12f;
-        private const float FlavorStainDarken = 0.12f;
 
         [SerializeField] private Button _recipeInfoButton;
         [SerializeField] private Text _recipeInfoText;
         [SerializeField] private Button _serveButton;
         [SerializeField] private Image _serveBellImage;
-        [SerializeField] private Image _dishImage;
+        [SerializeField] private DishIconRenderTexturePreview _dishPreview;
         [SerializeField] private Text _titleText;
         [SerializeField] private Text _statusText;
         [SerializeField] private CanvasGroup _canvasGroup;
@@ -43,7 +39,6 @@ namespace GourmetProject.Game.UI.Hud
         [SerializeField] private Color _blockedColor = new Color(0.72f, 0.72f, 0.68f, 1f);
         [SerializeField] private Image _background;
 
-        private readonly DishSpriteProvider _spriteProvider = new DishSpriteProvider();
         private Action<Vector2> _beginDrag;
         private Action<Vector2> _drag;
         private Func<Vector2, bool> _endDrag;
@@ -51,7 +46,6 @@ namespace GourmetProject.Game.UI.Hud
         private Camera _worldCamera;
         private Canvas _worldCanvas;
         private ServingOutletDishHoverTrigger _dishHoverTrigger;
-        private Material _dishFlavorMaterial;
 
         public ServingOutletState State { get; private set; }
 
@@ -169,23 +163,28 @@ namespace GourmetProject.Game.UI.Hud
                 _serveBellImage.color = bellColor;
             }
 
-            if (_dishImage != null)
+            if (_dishPreview != null)
             {
-                _dishImage.gameObject.SetActive(waitingForDrag);
-                _dishImage.raycastTarget = waitingForDrag;
-                _dishImage.raycastPadding = waitingForDrag
+                _dishPreview.gameObject.SetActive(waitingForDrag);
+                _dishPreview.SetRaycastTarget(waitingForDrag);
+                _dishPreview.SetRaycastPadding(waitingForDrag
                     ? Vector4.one * -PreparedDishRaycastPadding
-                    : Vector4.zero;
+                    : Vector4.zero);
                 if (waitingForDrag)
                 {
-                    _dishImage.sprite = _spriteProvider.Get(prepared.Definition);
-                    _dishImage.preserveAspect = true;
-                    ApplyPreparedDishVisual(prepared);
+                    int value = Mathf.RoundToInt(
+                        DishValueDisplay.CurrentContribution(prepared.Dish));
+                    _dishPreview.Bind(
+                        prepared.Definition,
+                        deliciousnessOverride: value,
+                        flavorIds: prepared.Dish.FlavorIds,
+                        mode: DishIconPreviewMode.Warehouse,
+                        rotationIndexOverride: prepared.Dish.Placement.RotationIndex);
                     SetDishAlpha(1f);
                 }
                 else
                 {
-                    ResetPreparedDishVisual();
+                    _dishPreview.Hide();
                 }
             }
 
@@ -232,48 +231,6 @@ namespace GourmetProject.Game.UI.Hud
             }
         }
 
-        private void ApplyPreparedDishVisual(PreparedServeDish prepared)
-        {
-            if (_dishImage == null || prepared?.Dish == null)
-            {
-                ResetPreparedDishVisual();
-                return;
-            }
-
-            // 使用本次已准备菜品的实际摆放朝向，与拖拽 ghost/最终落桌保持一致。
-            // 「麻」旋转后若无合法位置，玩法层会回退原朝向，不能在这里仅按风味重新计算。
-            int rotationIndex = prepared.Dish.Placement.RotationIndex;
-            _dishImage.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -90f * rotationIndex);
-
-            var settings = new FlavorStainPalette.Settings(
-                FlavorStainScale,
-                FlavorStainThreshold,
-                FlavorStainSoftness,
-                FlavorStainDarken,
-                (float)(StableHash.Fnv1a64(prepared.Definition.Id) & 0xFFFFFF));
-            FlavorStainPalette.ApplyToGraphic(
-                _dishImage,
-                prepared.Dish.FlavorIds,
-                ref _dishFlavorMaterial,
-                settings);
-        }
-
-        private void ResetPreparedDishVisual()
-        {
-            if (_dishImage == null)
-            {
-                return;
-            }
-
-            _dishImage.rectTransform.localRotation = Quaternion.identity;
-            _dishImage.material = null;
-        }
-
-        private void OnDestroy()
-        {
-            FlavorStainPalette.ReleaseMaterial(ref _dishFlavorMaterial);
-        }
-
         public void OnBeginDrag(PointerEventData eventData)
         {
             if (State != ServingOutletState.WaitingForDishDrag || eventData == null)
@@ -318,26 +275,24 @@ namespace GourmetProject.Game.UI.Hud
 
         private void SetDishAlpha(float alpha)
         {
-            if (_dishImage == null)
+            if (_dishPreview == null)
             {
                 return;
             }
 
-            Color color = _dishImage.color;
-            color.a = alpha;
-            _dishImage.color = color;
+            _dishPreview.SetAlpha(alpha);
         }
 
         public Bounds DishWorldBounds
         {
             get
             {
-                if (_dishImage == null)
+                if (_dishPreview == null)
                 {
                     return new Bounds(transform.position, Vector3.zero);
                 }
 
-                RectTransform rect = _dishImage.rectTransform;
+                var rect = (RectTransform)_dishPreview.transform;
                 var corners = new Vector3[4];
                 rect.GetWorldCorners(corners);
                 var bounds = new Bounds(corners[0], Vector3.zero);
@@ -352,9 +307,9 @@ namespace GourmetProject.Game.UI.Hud
 
         private void EnsureDishHoverTrigger()
         {
-            if (_dishHoverTrigger == null && _dishImage != null)
+            if (_dishHoverTrigger == null && _dishPreview != null)
             {
-                _dishHoverTrigger = _dishImage.GetComponent<ServingOutletDishHoverTrigger>();
+                _dishHoverTrigger = _dishPreview.GetComponentInParent<ServingOutletDishHoverTrigger>();
             }
 
             if (_dishHoverTrigger == null)

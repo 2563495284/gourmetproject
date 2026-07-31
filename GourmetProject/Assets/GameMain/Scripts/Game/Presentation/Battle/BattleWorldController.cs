@@ -983,6 +983,20 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             _cakeLayerFx?.Clear();
             _sequencer?.ClearRetainedDishValueBadges();
+            ClearDishValueBadgeOverrides();
+        }
+
+        private void ClearDishValueBadgeOverrides()
+        {
+            for (int i = 0; i < _placedPieces.Count; i++)
+            {
+                _placedPieces[i]?.ClearDishValueBadgeOverride();
+            }
+
+            for (int i = 0; i < _temporaryAreaPieces.Count; i++)
+            {
+                _temporaryAreaPieces[i]?.ClearDishValueBadgeOverride();
+            }
         }
 
         /// <summary>战斗结束后清理本场运行时餐桌表现，避免已摆菜品残留到后续非战斗状态。</summary>
@@ -1243,6 +1257,42 @@ namespace GourmetProject.Game.Presentation.Battle
 
             _boardView.Sync();
             LayoutTemporaryAreaPieces();
+            RefreshDishValueBadges();
+        }
+
+        private void RefreshDishValueBadges()
+        {
+            var refreshed = new HashSet<DishPieceView>();
+            RefreshDishValueBadges(_placedPieces, refreshed);
+            RefreshDishValueBadges(_temporaryAreaPieces, refreshed);
+            RefreshDishValueBadge(_outletDragPiece, refreshed);
+            RefreshDishValueBadge(_movingPiece, refreshed);
+            RefreshDishValueBadge(_temporaryAreaDragPiece, refreshed);
+        }
+
+        private static void RefreshDishValueBadges(
+            IReadOnlyList<DishPieceView> pieces,
+            ISet<DishPieceView> refreshed)
+        {
+            if (pieces == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < pieces.Count; i++)
+            {
+                RefreshDishValueBadge(pieces[i], refreshed);
+            }
+        }
+
+        private static void RefreshDishValueBadge(
+            DishPieceView piece,
+            ISet<DishPieceView> refreshed)
+        {
+            if (piece != null && refreshed.Add(piece))
+            {
+                piece.RefreshDishValueBadge();
+            }
         }
 
         public void PlayCakeLayerChange(int before, int after)

@@ -78,6 +78,26 @@ namespace GourmetProject.Game.UI.Widgets
             }
         }
 
+        public void SetRaycastPadding(Vector4 padding)
+        {
+            EnsureRefs();
+            if (_targetImage != null)
+            {
+                _targetImage.raycastPadding = padding;
+            }
+        }
+
+        public void SetAlpha(float alpha)
+        {
+            EnsureRefs();
+            if (_targetImage != null)
+            {
+                Color color = _targetImage.color;
+                color.a = Mathf.Clamp01(alpha);
+                _targetImage.color = color;
+            }
+        }
+
         public static Vector2 DisplaySizeForGrid(
             Vector2 prefabThreeByThreeSize,
             Vector2Int gridSize)
@@ -94,7 +114,8 @@ namespace GourmetProject.Game.UI.Widgets
 
         public static Vector2Int DisplayedGridSizeFor(
             DishDef dish,
-            IReadOnlyList<string> flavorIds = null)
+            IReadOnlyList<string> flavorIds = null,
+            int? rotationIndexOverride = null)
         {
             if (dish?.Shape == null)
             {
@@ -107,9 +128,10 @@ namespace GourmetProject.Game.UI.Widgets
                 displayFlavors = new[] { dish.FlavorId };
             }
 
-            int rotationIndex = FlavorStainPalette.DisplayRotationIndex(
-                dish.RotationIndex,
-                displayFlavors);
+            int rotationIndex = rotationIndexOverride
+                ?? FlavorStainPalette.DisplayRotationIndex(
+                    dish.RotationIndex,
+                    displayFlavors);
             DishShape displayShape = dish.Shape.RotatedBy(rotationIndex);
             return new Vector2Int(displayShape.Width, displayShape.Height);
         }
@@ -119,12 +141,16 @@ namespace GourmetProject.Game.UI.Widgets
             Sprite spriteOverride = null,
             int? deliciousnessOverride = null,
             IReadOnlyList<string> flavorIds = null,
-            DishIconPreviewMode mode = DishIconPreviewMode.Card)
+            DishIconPreviewMode mode = DishIconPreviewMode.Card,
+            int? rotationIndexOverride = null)
         {
             EnsureRefs();
             ReleaseTexture();
             _mode = mode;
-            DisplayedGridSize = DisplayedGridSizeFor(dish, flavorIds);
+            DisplayedGridSize = DisplayedGridSizeFor(
+                dish,
+                flavorIds,
+                rotationIndexOverride);
 
             if (dish?.Shape == null || _targetImage == null)
             {
@@ -147,7 +173,8 @@ namespace GourmetProject.Game.UI.Widgets
                 _cellPrefab,
                 _badgePrefab,
                 _pixelsPerCell,
-                mode);
+                mode,
+                rotationIndexOverride);
 
             _targetImage.texture = _renderTexture;
             _targetImage.color = Color.white;

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
-using GourmetProject.Core.Utility;
-using GourmetProject.Game.Presentation.Battle;
+using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Gameplay.Model;
 using UnityEngine;
 using UnityEngine.UI;
@@ -15,16 +14,15 @@ namespace GourmetProject.Game.UI.Meta
     {
         [SerializeField] private Image _background;
         [SerializeField] private Image _icon;
+        [SerializeField] private DishIconRenderTexturePreview _dishPreview;
         [SerializeField] private Text _titleText;
         [SerializeField] private Text _descriptionText;
         [SerializeField] private Text _stateText;
         [SerializeField] private Button _button;
 
-        private static readonly Color NormalColor = new Color(0.97f, 0.94f, 0.86f, 1f);
-        private static readonly Color SelectedColor = new Color(1f, 0.82f, 0.42f, 1f);
-        private static readonly Color GrantedColor = new Color(0.88f, 0.96f, 0.82f, 1f);
-        private readonly List<string> _flavorScratch = new();
-        private Material _flavorMaterial;
+        private static readonly Color NormalColor = new(0.97f, 0.94f, 0.86f, 1f);
+        private static readonly Color SelectedColor = new(1f, 0.82f, 0.42f, 1f);
+        private static readonly Color GrantedColor = new(0.88f, 0.96f, 0.82f, 1f);
 
         public void Bind(
             string title,
@@ -45,12 +43,34 @@ namespace GourmetProject.Game.UI.Meta
                 _background.color = granted ? GrantedColor : selected ? SelectedColor : NormalColor;
             }
 
+            bool useDishPreview = dish != null && _dishPreview != null;
+            if (_dishPreview != null)
+            {
+                if (dish != null)
+                {
+                    _dishPreview.gameObject.SetActive(true);
+                    _dishPreview.Bind(
+                        dish,
+                        icon,
+                        dish.Deliciousness,
+                        flavorIds,
+                        DishIconPreviewMode.Warehouse);
+                    _dishPreview.SetRaycastTarget(false);
+                }
+                else
+                {
+                    _dishPreview.Hide();
+                    _dishPreview.gameObject.SetActive(false);
+                }
+            }
+
             if (_icon != null)
             {
-                _icon.enabled = icon != null;
+                _icon.enabled = !useDishPreview && icon != null;
                 _icon.sprite = icon;
                 _icon.preserveAspect = true;
-                ApplyDishIconVisual(dish, flavorIds);
+                _icon.rectTransform.localRotation = Quaternion.identity;
+                _icon.material = null;
             }
 
             if (_titleText != null)
@@ -83,11 +103,6 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
-        private void OnDestroy()
-        {
-            FlavorStainPalette.ReleaseMaterial(ref _flavorMaterial);
-        }
-
         private void EnsureRefs()
         {
             if (_background == null)
@@ -106,6 +121,15 @@ namespace GourmetProject.Game.UI.Meta
                 _icon = icon != null ? icon.GetComponent<Image>() : null;
             }
 
+            if (_dishPreview == null)
+            {
+                Transform preview = transform.Find("IconFrame/DishRenderTexture/Output")
+                    ?? transform.Find("DishRenderTexture/Output");
+                _dishPreview = preview != null
+                    ? preview.GetComponent<DishIconRenderTexturePreview>()
+                    : null;
+            }
+
             if (_titleText == null)
             {
                 Transform title = transform.Find("Texts/Title") ?? transform.Find("Title");
@@ -122,48 +146,6 @@ namespace GourmetProject.Game.UI.Meta
             {
                 Transform state = transform.Find("State") ?? transform.Find("StateText");
                 _stateText = state != null ? state.GetComponent<Text>() : null;
-            }
-        }
-
-        private void ApplyDishIconVisual(DishDef dish, IReadOnlyList<string> flavorIds)
-        {
-            if (_icon == null)
-            {
-                return;
-            }
-
-            RectTransform rect = _icon.rectTransform;
-            if (dish == null || _icon.sprite == null)
-            {
-                rect.localRotation = Quaternion.identity;
-                _icon.material = null;
-                return;
-            }
-
-            ComposeFlavorScratch(dish, flavorIds);
-            int rotationIndex = FlavorStainPalette.DisplayRotationIndex(dish.RotationIndex, _flavorScratch);
-            rect.localRotation = Quaternion.Euler(0f, 0f, -90f * rotationIndex);
-
-            var settings = new FlavorStainPalette.Settings(
-                8f,
-                0.62f,
-                0.12f,
-                0.12f,
-                (float)(StableHash.Fnv1a64(dish.Id) & 0xFFFFFF));
-            FlavorStainPalette.ApplyToGraphic(_icon, _flavorScratch, ref _flavorMaterial, settings);
-        }
-
-        private void ComposeFlavorScratch(DishDef dish, IReadOnlyList<string> flavorIds)
-        {
-            _flavorScratch.Clear();
-            if (!string.IsNullOrEmpty(dish.FlavorId))
-            {
-                _flavorScratch.Add(dish.FlavorId);
-            }
-
-            if (flavorIds != null)
-            {
-                _flavorScratch.AddRange(flavorIds);
             }
         }
     }

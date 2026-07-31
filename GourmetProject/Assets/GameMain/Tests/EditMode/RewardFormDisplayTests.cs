@@ -6,6 +6,7 @@ using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Meta;
+using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Gameplay.Data;
 using NUnit.Framework;
 using UnityEditor;
@@ -48,6 +49,12 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(
                     rows.FindAll(RowShowsClaimedState),
                     Is.Empty);
+                Assert.That(
+                    rows.FindAll(RowShowsDishPreview),
+                    Has.Count.EqualTo(1));
+                Assert.That(
+                    rows.FindAll(RowShowsGenericIcon),
+                    Has.Count.EqualTo(2));
             });
         }
 
@@ -197,6 +204,21 @@ namespace GourmetProject.Tests.EditMode
         {
             Button button = GetField<Button>(row, "_button");
             return button != null && button.interactable;
+        }
+
+        private static bool RowShowsDishPreview(RewardChoiceRowView row)
+        {
+            DishIconRenderTexturePreview preview =
+                GetField<DishIconRenderTexturePreview>(row, "_dishPreview");
+            return preview != null
+                && preview.gameObject.activeSelf
+                && preview.CurrentTexture != null;
+        }
+
+        private static bool RowShowsGenericIcon(RewardChoiceRowView row)
+        {
+            Image icon = GetField<Image>(row, "_icon");
+            return icon != null && icon.enabled && icon.sprite != null;
         }
 
         private static T GetField<T>(object target, string name)

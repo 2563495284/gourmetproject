@@ -411,7 +411,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b3e902e92750145bea49a2277b359ce8, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Gameplay.Presentation.DishPieceView
   _shadowBaseAlpha: 0.5
   _shadowGroundScale: 1.22
@@ -435,6 +435,8 @@ MonoBehaviour:
   _shadowHaloRenderer: {fileID: 2000032}
   _collider: {fileID: 8981609610198139404}
   _placementGlow: {fileID: 4549533738029501594}
+  _dishValueBadgePrefab: {fileID: 7481417833520339617, guid: 9ff8bbea9b3da4ac7ba3eda713852b62, type: 3}
+  _dishValueTopEdgeOffset: 0
   _useOccupiedCentroidPivot: 1
   _landPunchScale: 1.12
   _landPunchDuration: 0.16
@@ -446,6 +448,7 @@ MonoBehaviour:
   _scopeAffectedShakeCycles: 2.25
   _serveLandImpactScale: 1.02
   _serveLandImpactDuration: 0.14
+  _digestDissolveDuration: 0.85
   _stainScale: 8
   _stainThreshold: 0.62
   _stainSoftness: 0.12

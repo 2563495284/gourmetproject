@@ -49,7 +49,8 @@ namespace GourmetProject.Game.Presentation.Battle
             GameObject cellPrefab,
             GameObject badgePrefab,
             int pixelsPerCell,
-            DishIconPreviewMode mode)
+            DishIconPreviewMode mode,
+            int? rotationIndexOverride = null)
         {
             if (dish?.Shape == null || sprite == null || cellPrefab == null || badgePrefab == null)
             {
@@ -64,7 +65,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 cellPrefab,
                 badgePrefab,
                 Mathf.Clamp(pixelsPerCell, 32, 256),
-                mode);
+                mode,
+                rotationIndexOverride);
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -209,14 +211,16 @@ namespace GourmetProject.Game.Presentation.Battle
             GameObject cellPrefab,
             GameObject badgePrefab,
             int pixelsPerCell,
-            DishIconPreviewMode mode)
+            DishIconPreviewMode mode,
+            int? rotationIndexOverride)
         {
             ClearStage();
 
             ComposeFlavorIds(dish, flavorIds);
-            int rotationIndex = FlavorStainPalette.DisplayRotationIndex(
-                dish.RotationIndex,
-                _flavorScratch);
+            int rotationIndex = rotationIndexOverride
+                ?? FlavorStainPalette.DisplayRotationIndex(
+                    dish.RotationIndex,
+                    _flavorScratch);
             DishShape displayShape = dish.Shape.RotatedBy(rotationIndex);
             Vector2Int boardSize = new(displayShape.Width, displayShape.Height);
             int boardWidth = boardSize.x;
@@ -400,7 +404,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _badge.transform.localPosition = new Vector3(0f, badgeY, 0f);
             _badge.transform.localScale = Vector3.one * BadgeScale;
             SetLayerRecursively(_badge.gameObject, _previewLayer);
-            _badge.SetValue(deliciousness.ToString());
+            _badge.SetValue(DishValueDisplay.Format(deliciousness));
             _spawnedObjects.Add(_badge.gameObject);
         }
 
