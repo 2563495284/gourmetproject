@@ -20,7 +20,7 @@ public sealed partial class GameEvent : Luban.BeanBase
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
         { if(!_buf["name"].IsString) { throw new SerializationException(); }  Name = _buf["name"]; }
         { if(!_buf["desc"].IsString) { throw new SerializationException(); }  Desc = _buf["desc"]; }
-        { if(!_buf["eventType"].IsNumber) { throw new SerializationException(); }  EventType = (ActionBehavior)_buf["eventType"].AsInt; }
+        { var __json0 = _buf["eventTypes"]; if(!__json0.IsArray) { throw new SerializationException(); } EventTypes = new System.Collections.Generic.List<ActionBehavior>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { ActionBehavior __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = (ActionBehavior)__e0.AsInt; }  EventTypes.Add(__v0); }   }
         { if(!_buf["preconditions"].IsString) { throw new SerializationException(); }  Preconditions = _buf["preconditions"]; }
         { if(!_buf["weight"].IsNumber) { throw new SerializationException(); }  Weight = _buf["weight"]; }
         { if(!_buf["repeatable"].IsBoolean) { throw new SerializationException(); }  Repeatable = _buf["repeatable"]; }
@@ -46,9 +46,9 @@ public sealed partial class GameEvent : Luban.BeanBase
     /// </summary>
     public readonly string Desc;
     /// <summary>
-    /// 事件分类(Event/Reward/Negative,决定被哪种行动 roll)
+    /// 事件分类列表（|分隔；首项决定权重/保底，其余项也加入对应行动池）
     /// </summary>
-    public readonly ActionBehavior EventType;
+    public readonly System.Collections.Generic.List<ActionBehavior> EventTypes;
     /// <summary>
     /// 出现前置条件
     /// </summary>
@@ -83,7 +83,7 @@ public sealed partial class GameEvent : Luban.BeanBase
         + "id:" + Id + ","
         + "name:" + Name + ","
         + "desc:" + Desc + ","
-        + "eventType:" + EventType + ","
+        + "eventTypes:" + Luban.StringUtil.CollectionToString(EventTypes) + ","
         + "preconditions:" + Preconditions + ","
         + "weight:" + Weight + ","
         + "repeatable:" + Repeatable + ","

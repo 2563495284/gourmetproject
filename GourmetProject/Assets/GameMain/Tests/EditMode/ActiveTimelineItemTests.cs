@@ -58,7 +58,8 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(action.EffectParam, Is.EqualTo("ev_interest"));
 
             cfg.GameEvent ev = _tables.TbEvent.Get(action.EffectParam);
-            Assert.That(ev.EventType, Is.EqualTo(cfg.ActionBehavior.Interest));
+            Assert.That(ev.PrimaryEventType, Is.EqualTo(cfg.ActionBehavior.Interest));
+            Assert.That(ev.EventTypes, Is.EqualTo(new[] { cfg.ActionBehavior.Interest }));
             Assert.That(ev.Weight, Is.Zero);
             Assert.That(ev.Repeatable, Is.True);
             Assert.That(ev.Desc, Is.Not.Empty);

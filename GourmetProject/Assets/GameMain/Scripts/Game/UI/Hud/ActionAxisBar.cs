@@ -25,7 +25,7 @@ namespace GourmetProject.Game.UI.Hud
         [Header("引用")]
         [SerializeField] private RectTransform _container;
         [SerializeField] private RectTransform _positionMarker;
-        [SerializeField] private Text _remainingDaysText;
+        [SerializeField] private Text _currentDayText;
         [SerializeField] private Image _fillTemplate;
         [SerializeField] private Image _tickTemplate;
         [SerializeField] private Text _dayLabelTemplate;
@@ -270,7 +270,7 @@ namespace GourmetProject.Game.UI.Hud
             BuildRail(ratio);
             BuildDayPoints(wholeDays, length);
             PositionMarker(ratio);
-            RefreshRemainingDays(length);
+            RefreshCurrentDay();
             BringGroupsToFront();
         }
 
@@ -734,13 +734,13 @@ namespace GourmetProject.Game.UI.Hud
                 new Vector2(0f, _positionMarker.anchoredPosition.y);
         }
 
-        private void RefreshRemainingDays(float length)
+        private void RefreshCurrentDay()
         {
-            if (_remainingDaysText != null)
+            if (_currentDayText != null)
             {
-                float remaining = Mathf.Max(0f, length - _run.CurrentDay);
-                _remainingDaysText.text =
-                    $"{remaining.ToString("0.#", CultureInfo.InvariantCulture)}天";
+                float currentDay = Mathf.Max(0f, _run.CurrentDay);
+                _currentDayText.text =
+                    $"第{currentDay.ToString("0.#", CultureInfo.InvariantCulture)}天";
             }
         }
 
@@ -786,9 +786,9 @@ namespace GourmetProject.Game.UI.Hud
 
         private Font ResolveFont()
         {
-            if (_remainingDaysText != null && _remainingDaysText.font != null)
+            if (_currentDayText != null && _currentDayText.font != null)
             {
-                return _remainingDaysText.font;
+                return _currentDayText.font;
             }
 
             if (_cachedFont == null)

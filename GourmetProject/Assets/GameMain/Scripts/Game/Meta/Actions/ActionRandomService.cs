@@ -47,13 +47,15 @@ namespace GourmetProject.Game.Meta
             }
         }
 
-        /// <summary><paramref name="eventType"/> 为 null 时不按分类过滤（任意类型可用即可）。</summary>
+        /// <summary><paramref name="eventType"/> 为 null 时使用 Event/Reward/Negative 合并池。</summary>
         private static bool HasEligibleEvent(GameRun run, cfg.ActionBehavior? eventType)
         {
             cfg.Tables tables = run.Tables ?? GameApp.Config.Tables;
             foreach (cfg.GameEvent ev in tables.TbEvent.DataList)
             {
-                if (ev.Weight <= 0f || (eventType.HasValue && ev.EventType != eventType.Value))
+                if (ev.Weight <= 0f
+                    || (eventType.HasValue && !ev.HasEventType(eventType.Value))
+                    || (!eventType.HasValue && !ev.IsActionEventPoolMember))
                 {
                     continue;
                 }
