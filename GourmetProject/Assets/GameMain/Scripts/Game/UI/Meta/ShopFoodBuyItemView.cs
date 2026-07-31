@@ -32,7 +32,8 @@ namespace GourmetProject.Game.UI.Meta
             RawImage interactionGraphic = null;
             if (_dishIconPreview != null && context?.Dish != null)
             {
-                _dishIconPreview.Bind(context.Dish, context.Icon, context.Dish.Deliciousness);
+                _dishIconPreview.Bind(
+                    DishPreviewRequest.FromDefinition(context.Dish, context.Icon));
                 _dishIconPreview.SetRaycastTarget(true);
                 interactionGraphic = _dishIconPreview.GetComponent<RawImage>();
             }

@@ -84,6 +84,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private readonly List<DishPieceView> _placedPieces = new List<DishPieceView>();
         private readonly Dictionary<int, DishPieceView> _dishViewsById = new Dictionary<int, DishPieceView>();
         private readonly List<DishPieceView> _temporaryAreaPieces = new List<DishPieceView>();
+        private readonly HashSet<DishPieceView> _dishValueBadgeRefreshSet = new();
         private readonly Dictionary<int, DishPieceView> _temporaryAreaViewsById = new Dictionary<int, DishPieceView>();
         private readonly Dictionary<int, float> _pendingServeMultiplierFlat = new Dictionary<int, float>();
 
@@ -966,16 +967,13 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 _sequencer.RestoreDishValueBadges(
                     dishScores,
-                    _dishViewsById,
-                    _boardView.Mapper,
-                    _fxRoot);
+                    _dishViewsById);
             }
         }
 
         public void SetPendingRewardPresentationVisible(bool visible)
         {
             _cakeLayerFx?.SetVisible(visible);
-            _sequencer?.SetRetainedDishValueBadgesVisible(visible);
         }
 
         /// <summary>新战斗、战败、继续行动或退出玩法时最终销毁待领奖表现。</summary>
@@ -1262,12 +1260,12 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void RefreshDishValueBadges()
         {
-            var refreshed = new HashSet<DishPieceView>();
-            RefreshDishValueBadges(_placedPieces, refreshed);
-            RefreshDishValueBadges(_temporaryAreaPieces, refreshed);
-            RefreshDishValueBadge(_outletDragPiece, refreshed);
-            RefreshDishValueBadge(_movingPiece, refreshed);
-            RefreshDishValueBadge(_temporaryAreaDragPiece, refreshed);
+            _dishValueBadgeRefreshSet.Clear();
+            RefreshDishValueBadges(_placedPieces, _dishValueBadgeRefreshSet);
+            RefreshDishValueBadges(_temporaryAreaPieces, _dishValueBadgeRefreshSet);
+            RefreshDishValueBadge(_outletDragPiece, _dishValueBadgeRefreshSet);
+            RefreshDishValueBadge(_movingPiece, _dishValueBadgeRefreshSet);
+            RefreshDishValueBadge(_temporaryAreaDragPiece, _dishValueBadgeRefreshSet);
         }
 
         private static void RefreshDishValueBadges(

@@ -25,11 +25,17 @@ namespace GourmetProject.Editor
         [MenuItem("GourmetProject/UI/Rebuild Dish Icon Previews")]
         private static void RebuildDishIconPreviews()
         {
-            GameObject cellPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(CellPrefabPath);
-            GameObject badgePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(BadgePrefabPath);
+            GameObject cellRoot = AssetDatabase.LoadAssetAtPath<GameObject>(CellPrefabPath);
+            GameObject badgeRoot = AssetDatabase.LoadAssetAtPath<GameObject>(BadgePrefabPath);
+            SpriteRenderer cellPrefab = cellRoot != null
+                ? cellRoot.GetComponent<SpriteRenderer>()
+                : null;
+            Component badgePrefab =
+                FindComponentByTypeName(badgeRoot, "DishValueBadgeView");
             if (cellPrefab == null || badgePrefab == null)
             {
-                Debug.LogError("Dish icon preview builder could not find DiningTableCell or DishValueBadge prefab.");
+                Debug.LogError(
+                    "Dish icon preview builder could not find the DiningTableCell SpriteRenderer or DishValueBadgeView.");
                 return;
             }
 
@@ -97,10 +103,11 @@ namespace GourmetProject.Editor
             }
         }
 
-        private static void PatchRewardPrefab(GameObject cellPrefab, GameObject badgePrefab)
+        private static void PatchRewardPrefab(
+            SpriteRenderer cellPrefab,
+            Component badgePrefab)
         {
-            GameObject root = PrefabUtility.LoadPrefabContents(RewardPrefabPath);
-            try
+            PatchPrefab(RewardPrefabPath, root =>
             {
                 Transform card = root.transform.Find("ChoiceContainer/RewardDishChoiceCardTemplate");
                 Transform iconFrame = card?.Find("IconFrame");
@@ -115,74 +122,68 @@ namespace GourmetProject.Editor
                 DishIconRenderTexturePreview preview = EnsureOutput(container, cellPrefab, badgePrefab);
                 SetObjectReference(card.GetComponent<RewardDishChoiceCardView>(), "_dishPreview", preview);
                 container.SetAsLastSibling();
-                PrefabUtility.SaveAsPrefabAsset(root, RewardPrefabPath);
-            }
-            finally
-            {
-                PrefabUtility.UnloadPrefabContents(root);
-            }
+            });
         }
 
-        private static void PatchShopFoodPrefab(GameObject cellPrefab, GameObject badgePrefab)
+        private static void PatchShopFoodPrefab(
+            SpriteRenderer cellPrefab,
+            Component badgePrefab)
         {
-            GameObject root = PrefabUtility.LoadPrefabContents(ShopFoodPrefabPath);
-            try
+            PatchPrefab(ShopFoodPrefabPath, root =>
             {
                 RectTransform container = EnsureContainer(root.transform, "DishRenderTexture");
+                Transform duplicateContainer =
+                    root.transform.Find("Visual/DishRenderTexture");
+                if (duplicateContainer != null
+                    && duplicateContainer != container.transform)
+                {
+                    UnityEngine.Object.DestroyImmediate(
+                        duplicateContainer.gameObject,
+                        true);
+                }
+
                 container.anchorMin = container.anchorMax = container.pivot = new Vector2(0.5f, 0.5f);
                 container.anchoredPosition = new Vector2(0f, 15f);
                 container.sizeDelta = new Vector2(70f, 70f);
 
                 DishIconRenderTexturePreview preview = EnsureOutput(container, cellPrefab, badgePrefab);
                 SetObjectReference(root.GetComponent<ShopFoodBuyItemView>(), "_dishIconPreview", preview);
-                PrefabUtility.SaveAsPrefabAsset(root, ShopFoodPrefabPath);
-            }
-            finally
-            {
-                PrefabUtility.UnloadPrefabContents(root);
-            }
+            });
         }
 
-        private static void PatchShopBuyCardPrefab(GameObject cellPrefab, GameObject badgePrefab)
+        private static void PatchShopBuyCardPrefab(
+            SpriteRenderer cellPrefab,
+            Component badgePrefab)
         {
-            GameObject root = PrefabUtility.LoadPrefabContents(ShopBuyCardPrefabPath);
-            try
+            PatchPrefab(ShopBuyCardPrefabPath, root =>
             {
                 DishIconRenderTexturePreview preview = ReplaceLegacyPreview(
                     root,
                     cellPrefab,
                     badgePrefab);
                 SetObjectReference(root.GetComponent<ShopBuyCardView>(), "_dishIconPreview", preview);
-                PrefabUtility.SaveAsPrefabAsset(root, ShopBuyCardPrefabPath);
-            }
-            finally
-            {
-                PrefabUtility.UnloadPrefabContents(root);
-            }
+            });
         }
 
-        private static void PatchRecipeEditDishPrefab(GameObject cellPrefab, GameObject badgePrefab)
+        private static void PatchRecipeEditDishPrefab(
+            SpriteRenderer cellPrefab,
+            Component badgePrefab)
         {
-            GameObject root = PrefabUtility.LoadPrefabContents(RecipeEditDishPrefabPath);
-            try
+            PatchPrefab(RecipeEditDishPrefabPath, root =>
             {
                 DishIconRenderTexturePreview preview = ReplaceLegacyPreview(
                     root,
                     cellPrefab,
                     badgePrefab);
                 SetObjectReference(root.GetComponent<RecipeEditDishView>(), "_dishPreview", preview);
-                PrefabUtility.SaveAsPrefabAsset(root, RecipeEditDishPrefabPath);
-            }
-            finally
-            {
-                PrefabUtility.UnloadPrefabContents(root);
-            }
+            });
         }
 
-        private static void PatchRewardFormPrefab(GameObject cellPrefab, GameObject badgePrefab)
+        private static void PatchRewardFormPrefab(
+            SpriteRenderer cellPrefab,
+            Component badgePrefab)
         {
-            GameObject root = PrefabUtility.LoadPrefabContents(RewardFormPrefabPath);
-            try
+            PatchPrefab(RewardFormPrefabPath, root =>
             {
                 RewardChoiceRowView row = root.GetComponentInChildren<RewardChoiceRowView>(true);
                 Transform iconFrame = row?.transform.Find("IconFrame");
@@ -197,18 +198,14 @@ namespace GourmetProject.Editor
                 DishIconRenderTexturePreview preview = EnsureOutput(container, cellPrefab, badgePrefab);
                 SetObjectReference(row, "_dishPreview", preview);
                 container.SetAsLastSibling();
-                PrefabUtility.SaveAsPrefabAsset(root, RewardFormPrefabPath);
-            }
-            finally
-            {
-                PrefabUtility.UnloadPrefabContents(root);
-            }
+            });
         }
 
-        private static void PatchServingOutletPrefab(GameObject cellPrefab, GameObject badgePrefab)
+        private static void PatchServingOutletPrefab(
+            SpriteRenderer cellPrefab,
+            Component badgePrefab)
         {
-            GameObject root = PrefabUtility.LoadPrefabContents(ServingOutletPrefabPath);
-            try
+            PatchPrefab(ServingOutletPrefabPath, root =>
             {
                 ServingOutletView outlet = root.GetComponentInChildren<ServingOutletView>(true);
                 Transform preparedDish = FindDescendant(root.transform, "PreparedDish");
@@ -218,41 +215,52 @@ namespace GourmetProject.Editor
                     return;
                 }
 
+                ServingOutletDishHoverTrigger hoverTrigger =
+                    preparedDish.GetComponent<ServingOutletDishHoverTrigger>()
+                    ?? preparedDish.gameObject.AddComponent<ServingOutletDishHoverTrigger>();
                 Image legacyImage = preparedDish.GetComponent<Image>();
                 if (legacyImage != null)
                 {
-                    legacyImage.enabled = false;
-                    legacyImage.raycastTarget = false;
+                    UnityEngine.Object.DestroyImmediate(legacyImage, true);
                 }
 
                 RectTransform container = EnsureContainer(preparedDish, "DishRenderTexture");
                 Stretch(container, 0f);
                 DishIconRenderTexturePreview preview = EnsureOutput(container, cellPrefab, badgePrefab);
+                SetObjectReference(outlet, "_preparedDishRoot", preparedDish);
                 SetObjectReference(outlet, "_dishPreview", preview);
+                SetObjectReference(outlet, "_dishHoverTrigger", hoverTrigger);
+                SetObjectReference(outlet, "_worldCanvas", outlet.GetComponent<Canvas>());
                 container.SetAsLastSibling();
-                PrefabUtility.SaveAsPrefabAsset(root, ServingOutletPrefabPath);
-            }
-            finally
-            {
-                PrefabUtility.UnloadPrefabContents(root);
-            }
+            });
         }
 
-        private static void PatchDishPiecePrefab(GameObject badgePrefab)
+        private static void PatchDishPiecePrefab(Component badgePrefab)
         {
-            GameObject root = PrefabUtility.LoadPrefabContents(DishPiecePrefabPath);
-            try
+            PatchPrefab(DishPiecePrefabPath, root =>
             {
                 DishPieceView piece = root.GetComponent<DishPieceView>();
-                Component badgeView = FindComponentByTypeName(badgePrefab, "DishValueBadgeView");
-                if (piece == null || badgeView == null)
+                DishPieceValueBadgePresenter presenter =
+                    root.GetComponent<DishPieceValueBadgePresenter>()
+                    ?? root.AddComponent<DishPieceValueBadgePresenter>();
+                if (piece == null || presenter == null || badgePrefab == null)
                 {
                     Debug.LogError("DishPiece or DishValueBadge prefab is missing its view component.");
                     return;
                 }
 
-                SetObjectReference(piece, "_dishValueBadgePrefab", badgeView);
-                PrefabUtility.SaveAsPrefabAsset(root, DishPiecePrefabPath);
+                SetObjectReference(piece, "_dishValueBadgePresenter", presenter);
+                SetObjectReference(presenter, "_badgePrefab", badgePrefab);
+            });
+        }
+
+        private static void PatchPrefab(string path, Action<GameObject> patch)
+        {
+            GameObject root = PrefabUtility.LoadPrefabContents(path);
+            try
+            {
+                patch(root);
+                PrefabUtility.SaveAsPrefabAsset(root, path);
             }
             finally
             {
@@ -262,8 +270,8 @@ namespace GourmetProject.Editor
 
         private static DishIconRenderTexturePreview ReplaceLegacyPreview(
             GameObject root,
-            GameObject cellPrefab,
-            GameObject badgePrefab)
+            SpriteRenderer cellPrefab,
+            Component badgePrefab)
         {
             DishIconRenderTexturePreview existing =
                 root.GetComponentInChildren<DishIconRenderTexturePreview>(true);
@@ -297,8 +305,8 @@ namespace GourmetProject.Editor
 
         private static DishIconRenderTexturePreview EnsureOutput(
             RectTransform container,
-            GameObject cellPrefab,
-            GameObject badgePrefab)
+            SpriteRenderer cellPrefab,
+            Component badgePrefab)
         {
             Transform existing = container.Find("Output");
             GameObject output;
@@ -338,6 +346,7 @@ namespace GourmetProject.Editor
                 ?? output.AddComponent<DishIconRenderTexturePreview>();
             var serialized = new SerializedObject(preview);
             serialized.FindProperty("_targetImage").objectReferenceValue = rawImage;
+            serialized.FindProperty("_aspectRatioFitter").objectReferenceValue = fitter;
             serialized.FindProperty("_cellPrefab").objectReferenceValue = cellPrefab;
             serialized.FindProperty("_badgePrefab").objectReferenceValue = badgePrefab;
             serialized.FindProperty("_pixelsPerCell").intValue = 96;

@@ -376,6 +376,7 @@ GameObject:
   - component: {fileID: 6360976513378910154}
   - component: {fileID: 8981609610198139403}
   - component: {fileID: 8981609610198139404}
+  - component: {fileID: 2759962042206279977}
   m_Layer: 0
   m_Name: DishPiece
   m_TagString: Untagged
@@ -435,8 +436,7 @@ MonoBehaviour:
   _shadowHaloRenderer: {fileID: 2000032}
   _collider: {fileID: 8981609610198139404}
   _placementGlow: {fileID: 4549533738029501594}
-  _dishValueBadgePrefab: {fileID: 7481417833520339617, guid: 9ff8bbea9b3da4ac7ba3eda713852b62, type: 3}
-  _dishValueTopEdgeOffset: 0
+  _dishValueBadgePresenter: {fileID: 2759962042206279977}
   _useOccupiedCentroidPivot: 1
   _landPunchScale: 1.12
   _landPunchDuration: 0.16
@@ -511,6 +511,19 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 1, y: 1}
   m_EdgeRadius: 0
+--- !u!114 &2759962042206279977
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5636890178799557976}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5ea0513513d41468cb947dde72fbf03a, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Presentation.Battle.DishPieceValueBadgePresenter
+  _badgePrefab: {fileID: 7481417833520339617, guid: 9ff8bbea9b3da4ac7ba3eda713852b62, type: 3}
 --- !u!1 &8128761378632723173
 GameObject:
   m_ObjectHideFlags: 0

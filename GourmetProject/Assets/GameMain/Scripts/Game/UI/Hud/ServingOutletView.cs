@@ -28,10 +28,13 @@ namespace GourmetProject.Game.UI.Hud
         [SerializeField] private Text _recipeInfoText;
         [SerializeField] private Button _serveButton;
         [SerializeField] private Image _serveBellImage;
+        [SerializeField] private RectTransform _preparedDishRoot;
         [SerializeField] private DishIconRenderTexturePreview _dishPreview;
+        [SerializeField] private ServingOutletDishHoverTrigger _dishHoverTrigger;
         [SerializeField] private Text _titleText;
         [SerializeField] private Text _statusText;
         [SerializeField] private CanvasGroup _canvasGroup;
+        [SerializeField] private Canvas _worldCanvas;
 
         [Header("State Colors")]
         [SerializeField] private Color _readyColor = new Color(0.86f, 0.98f, 0.76f, 1f);
@@ -44,18 +47,17 @@ namespace GourmetProject.Game.UI.Hud
         private Func<Vector2, bool> _endDrag;
         private bool _dragging;
         private Camera _worldCamera;
-        private Canvas _worldCanvas;
-        private ServingOutletDishHoverTrigger _dishHoverTrigger;
 
         public ServingOutletState State { get; private set; }
 
         public void ConfigureWorldSpace(Camera worldCamera)
         {
             _worldCamera = worldCamera != null ? worldCamera : Camera.main;
-            _worldCanvas = GetComponent<Canvas>();
             if (_worldCanvas == null)
             {
-                Debug.LogError($"{nameof(ServingOutletView)} 缺少 World Space Canvas。", this);
+                Debug.LogError(
+                    $"{nameof(ServingOutletView)} prefab 未绑定 World Space Canvas。",
+                    this);
                 return;
             }
 
@@ -89,8 +91,16 @@ namespace GourmetProject.Game.UI.Hud
             _drag = drag;
             _endDrag = endDrag;
             _dragging = false;
-            EnsureDishHoverTrigger();
-            _dishHoverTrigger?.Bind(onDishHoverEntered, onDishHoverExited);
+            if (_dishHoverTrigger == null)
+            {
+                Debug.LogError(
+                    $"{nameof(ServingOutletView)} prefab 未绑定 {nameof(ServingOutletDishHoverTrigger)}。",
+                    this);
+            }
+            else
+            {
+                _dishHoverTrigger.Bind(onDishHoverEntered, onDishHoverExited);
+            }
 
             int placeable = 0;
             int blocked = 0;
@@ -150,6 +160,11 @@ namespace GourmetProject.Game.UI.Hud
             SetText(_titleText, "出餐口");
 
             bool waitingForDrag = state == ServingOutletState.WaitingForDishDrag && prepared != null;
+            if (_preparedDishRoot != null)
+            {
+                _preparedDishRoot.gameObject.SetActive(waitingForDrag);
+            }
+
             if (!waitingForDrag)
             {
                 _dishHoverTrigger?.CancelHover();
@@ -172,14 +187,8 @@ namespace GourmetProject.Game.UI.Hud
                     : Vector4.zero);
                 if (waitingForDrag)
                 {
-                    int value = Mathf.RoundToInt(
-                        DishValueDisplay.CurrentContribution(prepared.Dish));
                     _dishPreview.Bind(
-                        prepared.Definition,
-                        deliciousnessOverride: value,
-                        flavorIds: prepared.Dish.FlavorIds,
-                        mode: DishIconPreviewMode.Warehouse,
-                        rotationIndexOverride: prepared.Dish.Placement.RotationIndex);
+                        DishPreviewRequest.FromInstance(prepared.Dish));
                     SetDishAlpha(1f);
                 }
                 else
@@ -302,19 +311,6 @@ namespace GourmetProject.Game.UI.Hud
                 }
 
                 return bounds;
-            }
-        }
-
-        private void EnsureDishHoverTrigger()
-        {
-            if (_dishHoverTrigger == null && _dishPreview != null)
-            {
-                _dishHoverTrigger = _dishPreview.GetComponentInParent<ServingOutletDishHoverTrigger>();
-            }
-
-            if (_dishHoverTrigger == null)
-            {
-                Debug.LogError($"{nameof(ServingOutletView)} prefab 的 PreparedDish 缺少 {nameof(ServingOutletDishHoverTrigger)}。", this);
             }
         }
 

@@ -50,11 +50,11 @@ namespace GourmetProject.Game.UI.Meta
                 {
                     _dishPreview.gameObject.SetActive(true);
                     _dishPreview.Bind(
-                        dish,
-                        icon,
-                        dish.Deliciousness,
-                        flavorIds,
-                        DishIconPreviewMode.Warehouse);
+                        DishPreviewRequest.FromDefinition(
+                            dish,
+                            icon,
+                            flavorIds,
+                            DishIconPreviewMode.Warehouse));
                     _dishPreview.SetRaycastTarget(false);
                 }
                 else

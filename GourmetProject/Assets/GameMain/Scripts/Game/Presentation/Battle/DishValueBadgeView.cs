@@ -14,16 +14,14 @@ namespace GourmetProject.Game.Presentation.Battle
         private string _sortingLayer = BattleSorting.Fx;
         private int _sortingOrder = BattleSorting.OrderFloatingText;
 
-        public float PanelHeight
+        /// <summary>Badge 根节点到最高可见 Sprite 边缘的本地距离。</summary>
+        public float TopExtent
         {
             get
             {
-                if (_background == null || _background.sprite == null)
-                {
-                    return 0f;
-                }
-
-                return _background.sprite.bounds.size.y * Mathf.Abs(_background.transform.localScale.y);
+                return Mathf.Max(
+                    SpriteTopExtent(_background),
+                    SpriteTopExtent(_icon));
             }
         }
 
@@ -49,6 +47,19 @@ namespace GourmetProject.Game.Presentation.Battle
             BattleSorting.Apply(_valueMeshRenderer, _sortingLayer, _sortingOrder + 2);
             BattleSorting.Apply(_background, _sortingLayer, _sortingOrder);
             BattleSorting.Apply(_icon, _sortingLayer, _sortingOrder + 3);
+        }
+
+        private static float SpriteTopExtent(SpriteRenderer renderer)
+        {
+            if (renderer == null || renderer.sprite == null)
+            {
+                return 0f;
+            }
+
+            Transform spriteTransform = renderer.transform;
+            return spriteTransform.localPosition.y
+                + renderer.sprite.bounds.max.y
+                * Mathf.Abs(spriteTransform.localScale.y);
         }
     }
 }

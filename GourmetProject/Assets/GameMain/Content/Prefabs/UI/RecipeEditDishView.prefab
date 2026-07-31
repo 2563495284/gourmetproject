@@ -250,8 +250,9 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Widgets.DishIconRenderTexturePreview
   _targetImage: {fileID: 6111532489728506660}
-  _cellPrefab: {fileID: 7200723304387205229, guid: 51f2e9c520382400dbab9879cf9e2308, type: 3}
-  _badgePrefab: {fileID: 4634900531494509900, guid: 9ff8bbea9b3da4ac7ba3eda713852b62, type: 3}
+  _aspectRatioFitter: {fileID: 4039076293785383330}
+  _cellPrefab: {fileID: 2114907035925378248, guid: 51f2e9c520382400dbab9879cf9e2308, type: 3}
+  _badgePrefab: {fileID: 7481417833520339617, guid: 9ff8bbea9b3da4ac7ba3eda713852b62, type: 3}
   _pixelsPerCell: 96
   _prefabThreeByThreeSize: {x: 0, y: 0}
 --- !u!1 &8050265926661897624
