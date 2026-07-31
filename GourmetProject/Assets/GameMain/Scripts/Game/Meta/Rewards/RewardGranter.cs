@@ -59,6 +59,46 @@ namespace GourmetProject.Game.Meta
                 : null;
         }
 
+        /// <summary>
+        /// 从已经选定的 reward_slot 构建奖励。抽奖机先把空奖与各槽放在同一个权重池中，
+        /// 因而必须复用已经命中的槽，避免在组内二次随机。
+        /// </summary>
+        public static RewardOffer BuildConfigOffer(
+            GameRun run,
+            IRandomStream rng,
+            cfg.RewardSlot slot,
+            ActionExecutionContext actionContext = null)
+        {
+            if (run == null || rng == null || slot == null)
+            {
+                return null;
+            }
+
+            var context = new RewardContext(
+                run.Tables,
+                run,
+                null,
+                null,
+                rng,
+                0,
+                actionContext,
+                consumeEventChoiceCountDelta: false);
+            System.Collections.Generic.List<RewardChoice> choices = RewardPoolService.RollChoices(context, slot);
+            int requiredPickCount = choices.Count > 0
+                ? System.Math.Min(choices.Count, System.Math.Max(1, slot.RequiredPickCount))
+                : 0;
+            if (requiredPickCount > 0 && slot.Kind == cfg.RewardKind.DishChoice)
+            {
+                requiredPickCount = System.Math.Min(
+                    choices.Count,
+                    System.Math.Max(1, requiredPickCount + new ItemRuntime(run).ChoiceTimesBonus()));
+            }
+
+            return choices.Count > 0
+                ? new RewardOffer(0, choices, null, baseGoldClaimed: true, mainRequiredChoiceCount: requiredPickCount)
+                : null;
+        }
+
         public static RewardChoiceGroup BuildConfigChoiceGroup(
             GameRun run,
             IRandomStream rng,

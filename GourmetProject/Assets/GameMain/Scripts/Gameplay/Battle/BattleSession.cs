@@ -845,7 +845,7 @@ namespace GourmetProject.Gameplay.Battle
                 _recipeBaseIds);
         }
 
-        /// <summary>收集当前仍未上菜的菜谱条目（槽索引 + dishId），供酸/咸在结算开始时遍历。</summary>
+        /// <summary>收集当前仍未上菜的菜谱条目及其全部风味，供酸/咸在结算开始时遍历。</summary>
         private List<UnservedRecipeDish> BuildUnservedRecipeDishes()
         {
             var result = new List<UnservedRecipeDish>();
@@ -853,7 +853,13 @@ namespace GourmetProject.Gameplay.Battle
             {
                 foreach (RecipeSlotEntry entry in _slots[slotIndex].Entries)
                 {
-                    result.Add(new UnservedRecipeDish(slotIndex, entry.DishId));
+                    DishDef dish = _db.GetDish(entry.DishId);
+                    result.Add(new UnservedRecipeDish(
+                        slotIndex,
+                        entry.DishId,
+                        dish != null
+                            ? ComposeServeFlavors(dish, entry)
+                            : new List<string>(entry.ExtraFlavorIds)));
                 }
             }
 

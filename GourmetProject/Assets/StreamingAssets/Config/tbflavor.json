@@ -26,7 +26,7 @@
   {
     "id": "t_rust",
     "name": "鲜",
-    "desc": "结算时\n+8金币",
+    "desc": "结算时\n+10金币",
     "effectType": 7,
     "effectParam": [],
     "effectValue": [

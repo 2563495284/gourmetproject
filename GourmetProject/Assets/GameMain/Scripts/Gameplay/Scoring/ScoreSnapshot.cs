@@ -142,17 +142,20 @@ namespace GourmetProject.Gameplay.Scoring
         public IReadOnlyList<UnservedRecipeDish> UnservedRecipeDishes { get; }
     }
 
-    /// <summary>一条未上菜的菜谱条目：来自哪个菜谱槽（0 基）+ 菜品变体 id。</summary>
+    /// <summary>一条未上菜的菜谱条目：来源槽、菜品 id，以及按获得顺序排列的全部风味。</summary>
     public readonly struct UnservedRecipeDish
     {
-        public UnservedRecipeDish(int slotIndex, string dishId)
+        public UnservedRecipeDish(int slotIndex, string dishId, IReadOnlyList<string> flavorIds = null)
         {
             SlotIndex = slotIndex;
             DishId = dishId;
+            FlavorIds = flavorIds ?? Array.Empty<string>();
         }
 
         public int SlotIndex { get; }
 
         public string DishId { get; }
+
+        public IReadOnlyList<string> FlavorIds { get; }
     }
 }

@@ -245,7 +245,7 @@ namespace GourmetProject.Game.Meta
             for (int dishIndex = 0; dishIndex < recipe.Count; dishIndex++)
             {
                 allTargets.Add(dishIndex);
-                if (recipe[dishIndex].ExtraFlavorIds.Count == 0)
+                if (run.GetRecipeFlavorIds(dishIndex).Count == 0)
                 {
                     emptyFlavorTargets.Add(dishIndex);
                 }

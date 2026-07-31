@@ -249,6 +249,9 @@ namespace GourmetProject.Game.Run
 
         /// <summary>通用领奖队列结束后是否要续接战斗胜利流程。</summary>
         public bool PendingGenericRewardsConfirmBattleAfterDone;
+
+        /// <summary>通用领奖队列结束后的续接目标；旧存档仍由上面的布尔字段恢复 Battle。</summary>
+        public PendingGenericRewardContinuationKind PendingGenericRewardContinuation;
     }
 
     [Serializable]
@@ -321,6 +324,22 @@ namespace GourmetProject.Game.Run
     }
 
     [Serializable]
+    public enum SlotExecutionStage
+    {
+        Ready = 0,
+        EmptyResult = 1,
+        AwaitingReward = 2,
+    }
+
+    [Serializable]
+    public enum PendingGenericRewardContinuationKind
+    {
+        None = 0,
+        Battle = 1,
+        Slot = 2,
+    }
+
+    [Serializable]
     public sealed class PendingActionExecutionSaveData
     {
         public string ActionId;
@@ -345,6 +364,10 @@ namespace GourmetProject.Game.Run
         public string BossId;
         public string BossDebuffId;
         public string EventId;
+        public string SlotEventId;
+        public int SlotSpinsUsed;
+        public SlotExecutionStage SlotStage;
+        public string SlotRewardKey;
     }
 
     [Serializable]

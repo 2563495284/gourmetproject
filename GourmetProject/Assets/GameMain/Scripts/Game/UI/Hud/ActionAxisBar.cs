@@ -805,24 +805,41 @@ namespace GourmetProject.Game.UI.Hud
 
         private Sprite NodeSprite(ActionDisplayKind kind)
         {
+            Sprite configured = kind switch
+            {
+                ActionDisplayKind.Boss => _bossNodeSprite,
+                ActionDisplayKind.Interest => _interestNodeSprite,
+                ActionDisplayKind.Shop => _shopNodeSprite,
+                ActionDisplayKind.Event
+                    or ActionDisplayKind.Reward
+                    or ActionDisplayKind.Negative
+                    or ActionDisplayKind.Slot => _eventNodeSprite,
+                _ => null,
+            };
+
+            if (configured != null)
+            {
+                return configured;
+            }
+
+            string resourceName = NodeSpriteResourceName(kind);
+            return string.IsNullOrEmpty(resourceName)
+                ? null
+                : Resources.Load<Sprite>($"Sprites/UI/{resourceName}");
+        }
+
+        internal static string NodeSpriteResourceName(ActionDisplayKind kind)
+        {
             return kind switch
             {
-                ActionDisplayKind.Boss => _bossNodeSprite != null
-                    ? _bossNodeSprite
-                    : Resources.Load<Sprite>("Sprites/UI/icon_axis_boss"),
-                ActionDisplayKind.Interest => _interestNodeSprite != null
-                    ? _interestNodeSprite
-                    : Resources.Load<Sprite>("Sprites/UI/icon_axis_interest"),
-                ActionDisplayKind.Shop => _shopNodeSprite != null
-                    ? _shopNodeSprite
-                    : Resources.Load<Sprite>("Sprites/UI/icon_axis_shop"),
-                ActionDisplayKind.Event or ActionDisplayKind.Reward => _eventNodeSprite != null
-                    ? _eventNodeSprite
-                    : Resources.Load<Sprite>("Sprites/UI/icon_axis_event"),
-                ActionDisplayKind.Negative => _eventNodeSprite != null
-                    ? _eventNodeSprite
-                    : Resources.Load<Sprite>("Sprites/UI/icon_axis_event"),
-                _ => null,
+                ActionDisplayKind.Boss => "icon_axis_boss",
+                ActionDisplayKind.Interest => "icon_axis_interest",
+                ActionDisplayKind.Shop => "icon_axis_shop",
+                ActionDisplayKind.Event
+                    or ActionDisplayKind.Reward
+                    or ActionDisplayKind.Negative
+                    or ActionDisplayKind.Slot => "icon_axis_event",
+                _ => string.Empty,
             };
         }
 

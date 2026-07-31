@@ -291,7 +291,7 @@
     "specialTags": "",
     "effectType": "TimelineAddLotteryNode",
     "effectValue": 0,
-    "effectParam": "",
+    "effectParam": "act_slot",
     "baseWeight": 1,
     "targetKind": 6,
     "targetCount": 1,

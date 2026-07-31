@@ -13,6 +13,7 @@ namespace GourmetProject.Game.Meta
         Negative,
         Shop,
         Interest,
+        Slot,
     }
 
     public static class ActionDisplay
@@ -43,6 +44,8 @@ namespace GourmetProject.Game.Meta
                     return ActionDisplayKind.Shop;
                 case cfg.ActionBehavior.Interest:
                     return ActionDisplayKind.Interest;
+                case cfg.ActionBehavior.Slot:
+                    return ActionDisplayKind.Slot;
                 case cfg.ActionBehavior.Effect:
                     return ActionDisplayKind.Negative;
                 case cfg.ActionBehavior.Event:

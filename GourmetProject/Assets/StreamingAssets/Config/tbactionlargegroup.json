@@ -2,7 +2,6 @@
   {
     "id": "lg_normal",
     "name": "普通美食大组",
-    "ruleIds": "",
     "fallbackWeights": [
       400,
       300,
@@ -77,7 +76,6 @@
   {
     "id": "lg_normalHard",
     "name": "普通困难美食大组",
-    "ruleIds": "",
     "fallbackWeights": [
       200,
       200,
@@ -212,7 +210,6 @@
   {
     "id": "lg_hard",
     "name": "困难美食大组",
-    "ruleIds": "",
     "fallbackWeights": [
       100,
       100,
@@ -287,7 +284,6 @@
   {
     "id": "lg_event",
     "name": "事件大组",
-    "ruleIds": "",
     "fallbackWeights": [
       100,
       100,
@@ -343,7 +339,6 @@
   {
     "id": "lg_normalEvent",
     "name": "普通事件大组",
-    "ruleIds": "",
     "fallbackWeights": [
       150,
       150,
@@ -413,7 +408,6 @@
   {
     "id": "lg_normalHardEvent",
     "name": "普通困难事件大组",
-    "ruleIds": "",
     "fallbackWeights": [
       100,
       100,
@@ -478,7 +472,6 @@
   {
     "id": "lg_hardEvent",
     "name": "困难事件大组",
-    "ruleIds": "",
     "fallbackWeights": [
       50,
       50,

@@ -22,22 +22,29 @@ namespace GourmetProject.Gameplay.Scoring
                 return;
             }
 
-            IEnumerable<(UnservedRecipeDish Entry, DishDef Def, FlavorDef Flavor)> ordered = unserved
+            IEnumerable<(UnservedRecipeDish Entry, DishDef Def)> orderedEntries = unserved
                 .Select(u => (Entry: u, Def: snapshot.Db.GetDish(u.DishId)))
                 .Where(x => x.Def != null)
-                .Select(x => (x.Entry, x.Def, Flavor: snapshot.Db.GetFlavor(x.Def.FlavorId)))
-                .Where(x => x.Flavor != null && IsRecipeFlavor(x.Flavor.EffectType))
                 .OrderBy(x => x.Entry.SlotIndex)
                 .ThenByDescending(x => x.Def.Shape.CellCount)
                 .ThenBy(x => x.Entry.DishId);
 
-            foreach ((UnservedRecipeDish _, DishDef _, FlavorDef flavor) in ordered)
+            foreach ((UnservedRecipeDish entry, DishDef _) in orderedEntries)
             {
-                collector.Add(new ScoreEffectEntry(
-                    ScorePhase.BeforeAll,
-                    ScoreSource.DishFlavor(flavor, null),
-                    new RecipeFlavorEffect(flavor),
-                    dish: null));
+                foreach (string flavorId in entry.FlavorIds)
+                {
+                    FlavorDef flavor = snapshot.Db.GetFlavor(flavorId);
+                    if (flavor == null || !IsRecipeFlavor(flavor.EffectType))
+                    {
+                        continue;
+                    }
+
+                    collector.Add(new ScoreEffectEntry(
+                        ScorePhase.BeforeAll,
+                        ScoreSource.DishFlavor(flavor, null),
+                        new RecipeFlavorEffect(flavor),
+                        dish: null));
+                }
             }
         }
 

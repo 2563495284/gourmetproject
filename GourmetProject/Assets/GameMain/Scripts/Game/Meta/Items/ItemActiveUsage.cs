@@ -150,7 +150,7 @@ namespace GourmetProject.Game.Meta
 
         public static bool IsTodoTimelineEffect(string effectType)
         {
-            return effectType == ItemEffectTypes.TimelineAddLotteryNode;
+            return false;
         }
     }
 }

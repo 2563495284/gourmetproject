@@ -77,6 +77,7 @@ namespace GourmetProject.Game.Run
         private PendingRewardBattleViewSaveData _pendingRewardBattleView;
         private PendingActionExecutionSaveData _pendingActionExecution;
         private bool _pendingGenericRewardsConfirmBattleAfterDone;
+        private PendingGenericRewardContinuationKind _pendingGenericRewardContinuation;
         private int _activeUseIndex;
         private int _nextDailyActionHalfCostStacks;
         private readonly List<string> _pendingExtraTimelineNodeIds = new List<string>();
@@ -1380,7 +1381,30 @@ namespace GourmetProject.Game.Run
                 BossId = outcome?.BossId ?? string.Empty,
                 BossDebuffId = outcome?.BossDebuffId ?? string.Empty,
                 EventId = resolvedEventId ?? outcome?.EventId ?? string.Empty,
+                SlotEventId = outcome?.SlotEventId ?? string.Empty,
+                SlotSpinsUsed = 0,
+                SlotStage = SlotExecutionStage.Ready,
+                SlotRewardKey = string.Empty,
             };
+        }
+
+        public bool SetPendingSlotExecutionState(
+            string slotEventId,
+            int spinsUsed,
+            SlotExecutionStage stage,
+            string rewardKey = null)
+        {
+            if (_pendingActionExecution == null
+                || _pendingActionExecution.OutcomeKind != ActionOutcomeKind.Slot)
+            {
+                return false;
+            }
+
+            _pendingActionExecution.SlotEventId = slotEventId ?? string.Empty;
+            _pendingActionExecution.SlotSpinsUsed = System.Math.Max(0, spinsUsed);
+            _pendingActionExecution.SlotStage = stage;
+            _pendingActionExecution.SlotRewardKey = rewardKey ?? string.Empty;
+            return true;
         }
 
         public void ClearPendingActionExecution()
@@ -1609,8 +1633,40 @@ namespace GourmetProject.Game.Run
 
         public bool PendingGenericRewardsConfirmBattleAfterDone
         {
-            get => _pendingGenericRewardsConfirmBattleAfterDone;
-            set => _pendingGenericRewardsConfirmBattleAfterDone = value;
+            get => PendingGenericRewardContinuation == PendingGenericRewardContinuationKind.Battle;
+            set
+            {
+                _pendingGenericRewardsConfirmBattleAfterDone = value;
+                if (value)
+                {
+                    _pendingGenericRewardContinuation = PendingGenericRewardContinuationKind.Battle;
+                }
+                else if (_pendingGenericRewardContinuation == PendingGenericRewardContinuationKind.Battle)
+                {
+                    _pendingGenericRewardContinuation = PendingGenericRewardContinuationKind.None;
+                }
+            }
+        }
+
+        public PendingGenericRewardContinuationKind PendingGenericRewardContinuation
+        {
+            get
+            {
+                if (_pendingGenericRewardContinuation != PendingGenericRewardContinuationKind.None)
+                {
+                    return _pendingGenericRewardContinuation;
+                }
+
+                return _pendingGenericRewardsConfirmBattleAfterDone
+                    ? PendingGenericRewardContinuationKind.Battle
+                    : PendingGenericRewardContinuationKind.None;
+            }
+            set
+            {
+                _pendingGenericRewardContinuation = value;
+                _pendingGenericRewardsConfirmBattleAfterDone =
+                    value == PendingGenericRewardContinuationKind.Battle;
+            }
         }
 
         public void EnqueueGenericRewardOffer(string key, string title, RewardOffer offer)
@@ -1818,6 +1874,7 @@ namespace GourmetProject.Game.Run
                 PendingRewardBattleView = ClonePendingRewardBattleView(_pendingRewardBattleView),
                 PendingGenericRewards = CloneGenericRewardSaveData(_pendingGenericRewards),
                 PendingGenericRewardsConfirmBattleAfterDone = _pendingGenericRewardsConfirmBattleAfterDone,
+                PendingGenericRewardContinuation = PendingGenericRewardContinuation,
             };
         }
 
@@ -2101,6 +2158,12 @@ namespace GourmetProject.Game.Run
             run._pendingRewardOffer = data.PendingRewardOffer;
             run._pendingRewardBattleView = ClonePendingRewardBattleView(data.PendingRewardBattleView);
             run._pendingGenericRewardsConfirmBattleAfterDone = data.PendingGenericRewardsConfirmBattleAfterDone;
+            run._pendingGenericRewardContinuation =
+                data.PendingGenericRewardContinuation != PendingGenericRewardContinuationKind.None
+                    ? data.PendingGenericRewardContinuation
+                    : (data.PendingGenericRewardsConfirmBattleAfterDone
+                        ? PendingGenericRewardContinuationKind.Battle
+                        : PendingGenericRewardContinuationKind.None);
             if (data.PendingGenericRewards != null)
             {
                 run._pendingGenericRewards.AddRange(CloneGenericRewardSaveData(data.PendingGenericRewards));
@@ -2443,6 +2506,10 @@ namespace GourmetProject.Game.Run
                 BossId = data.BossId ?? string.Empty,
                 BossDebuffId = data.BossDebuffId ?? string.Empty,
                 EventId = data.EventId ?? string.Empty,
+                SlotEventId = data.SlotEventId ?? string.Empty,
+                SlotSpinsUsed = System.Math.Max(0, data.SlotSpinsUsed),
+                SlotStage = data.SlotStage,
+                SlotRewardKey = data.SlotRewardKey ?? string.Empty,
             };
         }
 
@@ -2469,7 +2536,10 @@ namespace GourmetProject.Game.Run
             return BattleSessionFactory.BuildTablePreview(this, modifier, bossDebuffId);
         }
 
-        /// <summary>「调味小票」落地：给菜谱中的一道菜永久附加一个风味。越界或空 id 返回 false。</summary>
+        /// <summary>
+        /// 给菜谱中的一道菜永久添加风味。自带风味与后续风味共用总上限；
+        /// 达到上限时淘汰最早获得的风味。
+        /// </summary>
         public bool AddRecipeFlavor(int dishIndex, string flavorId)
         {
             if (string.IsNullOrEmpty(flavorId) || dishIndex < 0 || dishIndex >= _recipe.Count)
@@ -2477,13 +2547,54 @@ namespace GourmetProject.Game.Run
                 return false;
             }
 
-            _recipe[dishIndex].AddFlavor(flavorId, FoodFlavorLimit);
+            RecipeBookSlot slot = _recipe[dishIndex];
+            int limit = FoodFlavorLimit;
+            while (RecipeFlavorCount(slot) >= limit)
+            {
+                DishDef dish = Database.GetDish(slot.DishId);
+                if (dish != null && dish.HasFlavor)
+                {
+                    slot.ReplaceDishId(dish.BaseId);
+                }
+                else if (!slot.RemoveOldestFlavor())
+                {
+                    break;
+                }
+            }
+
+            slot.AddFlavor(flavorId);
             return true;
         }
 
         public bool RemoveRecipeFlavor(int dishIndex, string flavorId)
         {
-            return dishIndex >= 0 && dishIndex < _recipe.Count && _recipe[dishIndex].RemoveFlavor(flavorId);
+            if (dishIndex < 0 || dishIndex >= _recipe.Count)
+            {
+                return false;
+            }
+
+            RecipeBookSlot slot = _recipe[dishIndex];
+            DishDef dish = Database.GetDish(slot.DishId);
+            if (!string.IsNullOrEmpty(flavorId)
+                && dish != null
+                && string.Equals(dish.FlavorId, flavorId, System.StringComparison.Ordinal))
+            {
+                slot.ReplaceDishId(dish.BaseId);
+                return true;
+            }
+
+            if (slot.RemoveFlavor(flavorId))
+            {
+                return true;
+            }
+
+            if (string.IsNullOrEmpty(flavorId) && dish != null && dish.HasFlavor)
+            {
+                slot.ReplaceDishId(dish.BaseId);
+                return true;
+            }
+
+            return false;
         }
 
         public bool ReplaceRecipeFlavor(int dishIndex, string toFlavorId)
@@ -2493,7 +2604,55 @@ namespace GourmetProject.Game.Run
                 return false;
             }
 
-            return dishIndex >= 0 && dishIndex < _recipe.Count && _recipe[dishIndex].ReplaceFlavor(toFlavorId);
+            if (dishIndex < 0 || dishIndex >= _recipe.Count)
+            {
+                return false;
+            }
+
+            RecipeBookSlot slot = _recipe[dishIndex];
+            if (slot.HasExtraFlavors)
+            {
+                return slot.ReplaceFlavor(toFlavorId);
+            }
+
+            DishDef dish = Database.GetDish(slot.DishId);
+            if (dish != null && dish.HasFlavor)
+            {
+                slot.ReplaceDishId(dish.BaseId);
+            }
+
+            slot.AddFlavor(toFlavorId);
+            return true;
+        }
+
+        public IReadOnlyList<string> GetRecipeFlavorIds(int dishIndex)
+        {
+            if (dishIndex < 0 || dishIndex >= _recipe.Count)
+            {
+                return System.Array.Empty<string>();
+            }
+
+            RecipeBookSlot slot = _recipe[dishIndex];
+            DishDef dish = Database.GetDish(slot.DishId);
+            var result = new List<string>(slot.ExtraFlavorIds.Count + 1);
+            if (dish != null && dish.HasFlavor)
+            {
+                result.Add(dish.FlavorId);
+            }
+
+            result.AddRange(slot.ExtraFlavorIds);
+            return result;
+        }
+
+        private int RecipeFlavorCount(RecipeBookSlot slot)
+        {
+            if (slot == null)
+            {
+                return 0;
+            }
+
+            DishDef dish = Database.GetDish(slot.DishId);
+            return slot.ExtraFlavorIds.Count + (dish != null && dish.HasFlavor ? 1 : 0);
         }
 
         public bool AddRecipeExtraSkill(int dishIndex, string skillId)
@@ -2738,12 +2897,12 @@ namespace GourmetProject.Game.Run
             }
 
             var slot = new RecipeBookSlot(dishId);
+            _recipe.Add(slot);
             if (!string.IsNullOrEmpty(flavorId))
             {
-                slot.AddFlavor(flavorId, FoodFlavorLimit);
+                AddRecipeFlavor(_recipe.Count - 1, flavorId);
             }
 
-            _recipe.Add(slot);
             RebuildBonusDishCache();
             return true;
         }
@@ -2756,8 +2915,8 @@ namespace GourmetProject.Game.Run
             }
 
             var slot = new RecipeBookSlot(dishId);
-            slot.AddFlavor(flavorId, FoodFlavorLimit);
             _recipe.Add(slot);
+            AddRecipeFlavor(_recipe.Count - 1, flavorId);
             RebuildBonusDishCache();
             return true;
         }

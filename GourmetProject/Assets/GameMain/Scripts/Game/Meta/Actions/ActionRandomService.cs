@@ -42,6 +42,9 @@ namespace GourmetProject.Game.Meta
                 case cfg.ActionBehavior.Negative:
                     return HasEligibleEvent(run, action.Behavior);
 
+                case cfg.ActionBehavior.Slot:
+                    return SlotService.TryGetConfig(run, action, out _, out _);
+
                 default:
                     return true;
             }

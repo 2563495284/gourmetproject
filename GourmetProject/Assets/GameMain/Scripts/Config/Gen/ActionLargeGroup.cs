@@ -19,7 +19,6 @@ public sealed partial class ActionLargeGroup : Luban.BeanBase
     {
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
         { if(!_buf["name"].IsString) { throw new SerializationException(); }  Name = _buf["name"]; }
-        { if(!_buf["ruleIds"].IsString) { throw new SerializationException(); }  RuleIds = _buf["ruleIds"]; }
         { var __json0 = _buf["fallbackWeights"]; if(!__json0.IsArray) { throw new SerializationException(); } FallbackWeights = new System.Collections.Generic.List<float>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { float __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  FallbackWeights.Add(__v0); }   }
         { var __json0 = _buf["minGuaranteeCounts"]; if(!__json0.IsArray) { throw new SerializationException(); } MinGuaranteeCounts = new System.Collections.Generic.List<System.Collections.Generic.List<int>>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { System.Collections.Generic.List<int> __v0;  { var __json1 = __e0; if(!__json1.IsArray) { throw new SerializationException(); } __v0 = new System.Collections.Generic.List<int>(__json1.Count); foreach(JSONNode __e1 in __json1.Children) { int __v1;  { if(!__e1.IsNumber) { throw new SerializationException(); }  __v1 = __e1; }  __v0.Add(__v1); }   }  MinGuaranteeCounts.Add(__v0); }   }
         { var __json0 = _buf["maxGuaranteeCounts"]; if(!__json0.IsArray) { throw new SerializationException(); } MaxGuaranteeCounts = new System.Collections.Generic.List<System.Collections.Generic.List<int>>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { System.Collections.Generic.List<int> __v0;  { var __json1 = __e0; if(!__json1.IsArray) { throw new SerializationException(); } __v0 = new System.Collections.Generic.List<int>(__json1.Count); foreach(JSONNode __e1 in __json1.Children) { int __v1;  { if(!__e1.IsNumber) { throw new SerializationException(); }  __v1 = __e1; }  __v0.Add(__v1); }   }  MaxGuaranteeCounts.Add(__v0); }   }
@@ -39,10 +38,6 @@ public sealed partial class ActionLargeGroup : Luban.BeanBase
     /// 大组名
     /// </summary>
     public readonly string Name;
-    /// <summary>
-    /// 兼容旧日程规则ID（当前大组随机逻辑不再使用）
-    /// </summary>
-    public readonly string RuleIds;
     /// <summary>
     /// 随机权重（按周逐行配置）
     /// </summary>
@@ -72,7 +67,6 @@ public sealed partial class ActionLargeGroup : Luban.BeanBase
         return "{ "
         + "id:" + Id + ","
         + "name:" + Name + ","
-        + "ruleIds:" + RuleIds + ","
         + "fallbackWeights:" + Luban.StringUtil.CollectionToString(FallbackWeights) + ","
         + "minGuaranteeCounts:" + Luban.StringUtil.CollectionToString(MinGuaranteeCounts) + ","
         + "maxGuaranteeCounts:" + Luban.StringUtil.CollectionToString(MaxGuaranteeCounts) + ","

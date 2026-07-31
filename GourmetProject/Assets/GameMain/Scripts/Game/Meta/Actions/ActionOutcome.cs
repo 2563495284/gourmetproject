@@ -15,6 +15,9 @@ namespace GourmetProject.Game.Meta
 
         /// <summary>需要打开商店。</summary>
         Shop,
+
+        /// <summary>需要打开独立的抽奖机流程。追加在末尾以保持旧存档枚举值稳定。</summary>
+        Slot,
     }
 
     /// <summary>行动执行结果：告诉编排层（BattleForm）下一步该做什么。</summary>
@@ -51,6 +54,9 @@ namespace GourmetProject.Game.Meta
         /// <summary>事件行动 id（Event）：指向 behavior=Event 的原子行动；为空或指向 Roll 行动时由编排层随机。</summary>
         public string EventId { get; private set; } = string.Empty;
 
+        /// <summary>抽奖机配置事件 id（Slot）：由行动 effectParam 直接指定，不进入事件随机池。</summary>
+        public string SlotEventId { get; private set; } = string.Empty;
+
         public static ActionOutcome Immediate(string feedback) =>
             new ActionOutcome(ActionOutcomeKind.Immediate) { Feedback = feedback ?? string.Empty };
 
@@ -67,6 +73,9 @@ namespace GourmetProject.Game.Meta
 
         public static ActionOutcome Event(string eventId) =>
             new ActionOutcome(ActionOutcomeKind.Event) { EventId = eventId ?? string.Empty };
+
+        public static ActionOutcome Slot(string slotEventId) =>
+            new ActionOutcome(ActionOutcomeKind.Slot) { SlotEventId = slotEventId ?? string.Empty };
 
         public static ActionOutcome Shop() => new ActionOutcome(ActionOutcomeKind.Shop);
     }

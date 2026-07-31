@@ -6,6 +6,7 @@ using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Hud;
+using GourmetProject.Game.UI.Meta;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Runtime;
 using NUnit.Framework;
@@ -275,12 +276,12 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void OnlyLotteryTimelineEffect_RemainsTodo()
+        public void TimelineEffects_AreNoLongerMarkedTodo()
         {
             Assert.That(ItemActiveUsage.IsTodoTimelineEffect(ItemEffectTypes.TimelineAddRewardNode), Is.False);
             Assert.That(ItemActiveUsage.IsTodoTimelineEffect(ItemEffectTypes.TimelineAddInterestNode), Is.False);
             Assert.That(ItemActiveUsage.IsTodoTimelineEffect(ItemEffectTypes.TimelineAddShopNode), Is.False);
-            Assert.That(ItemActiveUsage.IsTodoTimelineEffect(ItemEffectTypes.TimelineAddLotteryNode), Is.True);
+            Assert.That(ItemActiveUsage.IsTodoTimelineEffect(ItemEffectTypes.TimelineAddLotteryNode), Is.False);
             Assert.That(ItemActiveUsage.IsTodoTimelineEffect(ItemEffectTypes.TimelineDeleteNode), Is.False);
             Assert.That(ItemActiveUsage.IsTodoTimelineEffect(ItemEffectTypes.TimelineExecuteFuture), Is.False);
         }
@@ -371,6 +372,74 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(
                 TimelineService.GetNodes(run).Any(node => node.Day == 7),
                 Is.True);
+        }
+
+        [Test]
+        public void LotteryTimelineAddItem_PlacesConfiguredSlotAction()
+        {
+            GameRun run = CreateRun();
+            run.BeginTimeline("test", 7f);
+            ItemDefinition item = ItemDefinition.Get(
+                _tables,
+                "item_active_add_lottery_node",
+                cfg.ItemKind.Active);
+
+            Assert.That(item, Is.Not.Null);
+            Assert.That(item.EffectParam, Is.EqualTo("act_slot"));
+            cfg.GameAction action = _tables.TbAction.GetOrDefault(item.EffectParam);
+            Assert.That(action, Is.Not.Null);
+            Assert.That(action.Behavior, Is.EqualTo(cfg.ActionBehavior.Slot));
+
+            var context = new ActionSelectUseContext(run, null);
+            ActiveItemUseResult result = ActiveItemEffectRegistry.Apply(
+                context,
+                item,
+                new[] { new ActiveTarget("4", 4, targetKind: cfg.ItemTargetKind.Global) });
+
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.CreatedTimelineNodeId, Is.Not.Empty);
+            cfg.TimelineNode node = TimelineService.GetNode(run, result.CreatedTimelineNodeId);
+            Assert.That(node, Is.Not.Null);
+            Assert.That(node.Day, Is.EqualTo(4));
+            Assert.That(node.ActionId, Is.EqualTo("act_slot"));
+            Assert.That(
+                run.RuntimeTimelineNodes.Single(runtimeNode => runtimeNode.Id == result.CreatedTimelineNodeId).SourceItemId,
+                Is.EqualTo(item.Id));
+        }
+
+        [TestCase(2)]
+        [TestCase(5)]
+        public void LotteryTimelineAddItem_AllowsCurrentAndFutureDates(int targetDay)
+        {
+            GameRun run = CreateRun();
+            run.BeginTimeline("test", 7f);
+            run.CurrentDay = 2f;
+            ItemDefinition item = ItemDefinition.Get(
+                _tables,
+                "item_active_add_lottery_node",
+                cfg.ItemKind.Active);
+
+            ActiveItemUseResult result = ActiveItemEffectRegistry.Apply(
+                new ActionSelectUseContext(run, null),
+                item,
+                new[] { new ActiveTarget(targetDay.ToString(), targetDay, targetKind: cfg.ItemTargetKind.Global) });
+
+            Assert.That(result.Success, Is.True);
+            Assert.That(TimelineService.GetNode(run, result.CreatedTimelineNodeId)?.Day, Is.EqualTo(targetDay));
+        }
+
+        [Test]
+        public void SlotAction_UsesDedicatedKindWithExistingEventArt()
+        {
+            cfg.GameAction action = _tables.TbAction.GetOrDefault("act_slot");
+
+            Assert.That(action, Is.Not.Null);
+            Assert.That(action.Behavior, Is.EqualTo(cfg.ActionBehavior.Slot));
+            Assert.That(ActionDisplay.KindOf(_tables, action), Is.EqualTo(ActionDisplayKind.Slot));
+            Assert.That(WeekEventCardView.CardSpriteNameFor(action), Is.EqualTo("card_action_event"));
+            Assert.That(
+                ActionAxisBar.NodeSpriteResourceName(ActionDisplayKind.Slot),
+                Is.EqualTo("icon_axis_event"));
         }
 
         [Test]

@@ -94,6 +94,23 @@ namespace GourmetProject.Gameplay.Board
             }
         }
 
+        /// <summary>按总风味上限追加；满槽时移除最早获得的风味。</summary>
+        public void AddFlavor(string flavorId, int flavorLimit)
+        {
+            if (string.IsNullOrEmpty(flavorId))
+            {
+                return;
+            }
+
+            flavorLimit = Math.Max(1, flavorLimit);
+            while (_flavorIds.Count >= flavorLimit)
+            {
+                _flavorIds.RemoveAt(0);
+            }
+
+            _flavorIds.Add(flavorId);
+        }
+
         public bool RemoveFlavor(string flavorId)
         {
             if (_flavorIds.Count == 0)

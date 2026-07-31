@@ -342,6 +342,12 @@ namespace GourmetProject.Game.UI.Battle
             _loop?.OnRewardConfirmed();
         }
 
+        /// <summary>抽奖机奖励领取完成后，回到同一台抽奖机或结束已达上限的节点。</summary>
+        public void OnSlotRewardConfirmed()
+        {
+            _loop?.OnSlotRewardConfirmed();
+        }
+
         public void CloseRewardOperationPages()
         {
             _rewardPage?.CloseRewardPages();
@@ -2875,7 +2881,9 @@ namespace GourmetProject.Game.UI.Battle
                 _run.AddSettledCounts(_session.LastSettledIncrements);
             }
 
-            _infoColumn?.SetBattleScoreOverride(null);
+            // 领奖期间允许隐藏奖励页查看本场结果，因此保留最终美味值；
+            // 奖励全部领取并离开营业时，HideBattleWorld 会再将其清空。
+            _infoColumn?.SetBattleScoreOverride(result.Total);
             RefreshAll();
 
             // 待领奖期间保留最终层数和世界表现；只有玩家明确点击“继续行动”才结束本场生命周期。

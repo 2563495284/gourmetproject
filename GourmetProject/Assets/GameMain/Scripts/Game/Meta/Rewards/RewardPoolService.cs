@@ -36,7 +36,7 @@ namespace GourmetProject.Game.Meta
                 return result;
             }
 
-            if (context.Run != null)
+            if (context.Run != null && context.ConsumeEventChoiceCountDelta)
             {
                 count = Math.Max(1, count + context.Run.ConsumeEventChoiceCountDelta());
             }

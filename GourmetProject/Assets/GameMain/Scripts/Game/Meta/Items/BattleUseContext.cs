@@ -129,21 +129,12 @@ namespace GourmetProject.Game.Meta
                 return false;
             }
 
-            RecipeBookSlot source = Run.RecipeEntries[sourceIndex];
-            bool replacesLastFlavor = source.ExtraFlavorIds.Count >= Run.FoodFlavorLimit;
             if (!Run.AddRecipeFlavor(sourceIndex, flavorId))
             {
                 return false;
             }
 
-            if (replacesLastFlavor)
-            {
-                dish.ReplaceFlavor(flavorId);
-            }
-            else
-            {
-                dish.AddFlavor(flavorId);
-            }
+            dish.AddFlavor(flavorId, Run.FoodFlavorLimit);
 
             FlavorDef flavor = Run.Database?.GetFlavor(flavorId);
             if (flavor != null && flavor.EffectType == FlavorEffectType.Rotate)
@@ -355,13 +346,12 @@ namespace GourmetProject.Game.Meta
             IReadOnlyList<RecipeBookSlot> dishes = run.RecipeEntries;
             for (int dish = 0; dish < dishes.Count; dish++)
             {
-                RecipeBookSlot slot = dishes[dish];
-                if (slot == null)
+                if (dishes[dish] == null)
                 {
                     continue;
                 }
 
-                IReadOnlyList<string> flavors = slot.ExtraFlavorIds;
+                IReadOnlyList<string> flavors = run.GetRecipeFlavorIds(dish);
                 if (flavors.Count == 0)
                 {
                     targets.Add(new ActiveTarget(string.Empty, 0, dish, cfg.ItemTargetKind.FlavorSlot));
