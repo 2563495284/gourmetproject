@@ -8195,6 +8195,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Tooltips.TipHoverTrigger
   _tip: {fileID: 0}
   _targetOverride: {fileID: 4107324773470427077}
+  _hoverRegionOverride: {fileID: 0}
   _followPointer: 1
   _pointerOffset: {x: 24, y: -24}
   _targetGap: 12
@@ -9161,10 +9162,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 7861907012364848866}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: -1.2000003}
-  m_AnchorMax: {x: 0, y: -1.2000003}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 147.45605, y: 20.79004}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: -25}
+  m_SizeDelta: {x: 150, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &6082768971413324180
 CanvasRenderer:
@@ -9205,7 +9206,7 @@ MonoBehaviour:
     m_AlignByGeometry: 0
     m_RichText: 1
     m_HorizontalOverflow: 1
-    m_VerticalOverflow: 0
+    m_VerticalOverflow: 1
     m_LineSpacing: 1
   m_Text: "0\u5929"
 --- !u!1 &7582584959773982493
