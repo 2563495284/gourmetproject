@@ -11,7 +11,6 @@ namespace GourmetProject.Game.UI.Tooltips
         [SerializeField] private CanvasGroup _canvasGroup;
         [SerializeField] private Text _scoreText;
         [SerializeField] private Text _multiplierText;
-        [SerializeField] private Text _deliciousnessText;
 
         public void Bind(FoodScoreTipsData data)
         {
@@ -23,7 +22,6 @@ namespace GourmetProject.Game.UI.Tooltips
             data ??= FoodScoreTipsData.Empty;
             _scoreText.text = $"分数 {FoodTipUiUtility.FormatNumber(data.Score)}";
             _multiplierText.text = $"倍率 x{FoodTipUiUtility.FormatNumber(data.Multiplier)}";
-            _deliciousnessText.text = $"美味度 {FoodTipUiUtility.FormatNumber(data.Deliciousness)}";
             Show();
         }
 
@@ -63,7 +61,6 @@ namespace GourmetProject.Game.UI.Tooltips
             bool valid = true;
             valid &= ReportMissing(_scoreText, nameof(_scoreText));
             valid &= ReportMissing(_multiplierText, nameof(_multiplierText));
-            valid &= ReportMissing(_deliciousnessText, nameof(_deliciousnessText));
             return valid;
         }
 

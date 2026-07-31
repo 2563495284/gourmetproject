@@ -12,7 +12,7 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI.Battle.View
 {
     /// <summary>
-    /// 常驻壳右栏道具组件：被动道具滚动网格（2 列）+ 固定主动道具槽（每份实例占一格）。
+    /// 常驻壳右栏道具组件：被动道具滚动网格（2 列）+ 主动道具叠放区（每份实例占一格）。
     /// 战斗中满足 targetKind 可用性的主动道具可点击使用，否则点击看信息；hover 显示道具 Tip。
     /// </summary>
     public sealed class BattleItemsColumn : MonoBehaviour
@@ -22,16 +22,36 @@ namespace GourmetProject.Game.UI.Battle.View
         private const float PassiveSlotPadding = 2f;
         private const float PassiveSlotSpacing = 4f;
         private const float PassiveScrollEpsilon = 0.5f;
+        private static readonly Color ActiveItemsFullColor = new Color32(232, 72, 72, 255);
 
         [SerializeField] private RectTransform _passiveItemsContainer;
         [SerializeField] private RectTransform _passiveItemsContent;
         [SerializeField] private ScrollRect _passiveItemsScrollRect;
         [SerializeField] private RunItemSlotView _itemSlotPrefab;
+        [SerializeField] private RectTransform _activeSlotsContainer;
+        [SerializeField] private Text _activeItemsInfo;
         [SerializeField] private RunItemSlotView[] _activeItemSlots;
 
         private readonly List<RunItemSlotView> _passiveSlots = new List<RunItemSlotView>();
+        private readonly List<RunItemSlotView> _activeSlots = new List<RunItemSlotView>();
         private readonly Dictionary<string, RunItemSlotView> _passiveSlotByItemId = new Dictionary<string, RunItemSlotView>();
         private readonly Dictionary<string, RunItemSlotView> _activeSlotByItemId = new Dictionary<string, RunItemSlotView>();
+        private Color _activeItemsInfoNormalColor = Color.white;
+        private bool _hasActiveItemsInfoNormalColor;
+        private int _visibleActiveSlotCount;
+
+        private void Awake()
+        {
+            EnsureActiveItemsRefs();
+        }
+
+        private void OnRectTransformDimensionsChange()
+        {
+            if (_visibleActiveSlotCount > 0)
+            {
+                LayoutActiveSlots(_visibleActiveSlotCount);
+            }
+        }
 
         /// <summary>刷新右栏道具：被动网格 + 主动槽。onActiveItemClicked 用于打开主动道具操作气泡。</summary>
         public void Refresh(
@@ -47,6 +67,8 @@ namespace GourmetProject.Game.UI.Battle.View
             _activeSlotByItemId.Clear();
             if (run == null)
             {
+                RefreshActiveItemsInfo(0, 0);
+                SetActiveSlotCount(0);
                 return;
             }
 
@@ -411,10 +433,6 @@ namespace GourmetProject.Game.UI.Battle.View
         {
             center = Vector2.zero;
             size = Vector2.zero;
-            if (_activeItemSlots == null)
-            {
-                return false;
-            }
 
             int index = -1;
             cfg.Tables tables = GameApp.Config.Tables;
@@ -434,14 +452,17 @@ namespace GourmetProject.Game.UI.Battle.View
                 }
             }
 
-            if (index < 0 || index >= _activeItemSlots.Length || _activeItemSlots[index] == null)
+            int activeCount = activeIndex + 1;
+            SetActiveSlotCount(activeCount);
+            if (index < 0 || index >= _activeSlots.Count || _activeSlots[index] == null)
             {
                 return false;
             }
 
             // ActiveSlot 根 RectTransform 仅用于锚点定位，BattleForm prefab 中其尺寸为 0。
             // 使用真实 Icon 的矩形，否则动画目标会被钳成 1×1 像素而完全不可见。
-            RectTransform target = _activeItemSlots[index].VisualRectTransform;
+            Canvas.ForceUpdateCanvases();
+            RectTransform target = _activeSlots[index].VisualRectTransform;
             return TryGetRectInLayer(target, layer, out center, out size);
         }
 
@@ -543,11 +564,6 @@ namespace GourmetProject.Game.UI.Battle.View
             Action<string, RunItemSlotView> onActiveItemClicked,
             Action<ItemDefinition, RunItemState> onShowItemInfo)
         {
-            if (_activeItemSlots == null)
-            {
-                return;
-            }
-
             // 主动道具每份实例都占用一个全局消耗槽，同 id 也不聚合。
             var activeStates = new List<RunItemState>();
             foreach (RunItemState state in run.Items)
@@ -561,39 +577,184 @@ namespace GourmetProject.Game.UI.Battle.View
                 activeStates.Add(state);
             }
 
-            for (int i = 0; i < _activeItemSlots.Length; i++)
+            RefreshActiveItemsInfo(activeStates.Count, run.ActiveSlotCapacity);
+            SetActiveSlotCount(activeStates.Count);
+
+            int visibleCount = Mathf.Min(activeStates.Count, _activeSlots.Count);
+            for (int i = 0; i < visibleCount; i++)
             {
-                RunItemSlotView slot = _activeItemSlots[i];
+                RunItemSlotView slot = _activeSlots[i];
                 if (slot == null)
                 {
                     continue;
                 }
 
-                if (i < activeStates.Count)
+                RunItemState state = activeStates[i];
+                ItemDefinition item = ItemDefinition.Get(tables, state.ItemId, cfg.ItemKind.Active);
+                ItemDefinition captured = item;
+
+                string capturedId = state.ItemId;
+                RunItemSlotView capturedSlot = slot;
+                Action onClick = () => onActiveItemClicked?.Invoke(capturedId, capturedSlot);
+
+                slot.Bind(
+                    RunItemSlotView.LoadIcon(item),
+                    RunItemSlotView.ShortName(item.Name),
+                    string.Empty,
+                    RunItemSlotView.QualityColor(item.Quality),
+                    activeItemsInteractable,
+                    onClick);
+                slot.SetTip(tipView, captured);
+                _activeSlotByItemId[state.ItemId] = slot;
+            }
+        }
+
+        private void EnsureActiveItemsRefs()
+        {
+            if (_activeSlotsContainer == null)
+            {
+                _activeSlotsContainer = transform.Find("ActiveItems/ActiveSlots") as RectTransform;
+            }
+
+            if (_activeItemsInfo == null)
+            {
+                Transform info = transform.Find("ActiveItems/Info");
+                _activeItemsInfo = info != null ? info.GetComponent<Text>() : null;
+            }
+
+            if (!_hasActiveItemsInfoNormalColor && _activeItemsInfo != null)
+            {
+                _activeItemsInfoNormalColor = _activeItemsInfo.color;
+                _hasActiveItemsInfoNormalColor = true;
+            }
+
+            if (_activeSlotsContainer != null)
+            {
+                VerticalLayoutGroup layoutGroup = _activeSlotsContainer.GetComponent<VerticalLayoutGroup>();
+                if (layoutGroup != null)
                 {
-                    RunItemState state = activeStates[i];
-                    ItemDefinition item = ItemDefinition.Get(tables, state.ItemId, cfg.ItemKind.Active);
-                    ItemDefinition captured = item;
-
-                    string capturedId = state.ItemId;
-                    RunItemSlotView capturedSlot = slot;
-                    Action onClick = () => onActiveItemClicked?.Invoke(capturedId, capturedSlot);
-
-                    slot.Bind(
-                        RunItemSlotView.LoadIcon(item),
-                        RunItemSlotView.ShortName(item.Name),
-                        string.Empty,
-                        RunItemSlotView.QualityColor(item.Quality),
-                        activeItemsInteractable,
-                        onClick);
-                    slot.SetTip(tipView, captured);
-                    _activeSlotByItemId[state.ItemId] = slot;
+                    layoutGroup.enabled = false;
                 }
-                else
+            }
+        }
+
+        private void EnsureActiveSlotPool(int requiredCount)
+        {
+            EnsureActiveItemsRefs();
+            if (_activeSlots.Count == 0 && _activeItemSlots != null)
+            {
+                foreach (RunItemSlotView slot in _activeItemSlots)
+                {
+                    if (slot != null && !_activeSlots.Contains(slot))
+                    {
+                        _activeSlots.Add(slot);
+                    }
+                }
+            }
+
+            if (_activeSlotsContainer == null || _itemSlotPrefab == null)
+            {
+                return;
+            }
+
+            while (_activeSlots.Count < requiredCount)
+            {
+                RunItemSlotView slot = Instantiate(_itemSlotPrefab, _activeSlotsContainer);
+                slot.gameObject.name = $"ActiveSlot_{_activeSlots.Count + 1}";
+                slot.SetEmpty();
+                slot.gameObject.SetActive(false);
+                _activeSlots.Add(slot);
+            }
+        }
+
+        private void SetActiveSlotCount(int count)
+        {
+            int requestedCount = Mathf.Max(0, count);
+            EnsureActiveSlotPool(requestedCount);
+            int visibleCount = Mathf.Min(requestedCount, _activeSlots.Count);
+
+            for (int i = 0; i < _activeSlots.Count; i++)
+            {
+                RunItemSlotView slot = _activeSlots[i];
+                if (slot == null)
+                {
+                    continue;
+                }
+
+                bool visible = i < visibleCount;
+                if (!visible)
                 {
                     slot.SetEmpty();
                 }
+
+                slot.gameObject.SetActive(visible);
             }
+
+            _visibleActiveSlotCount = visibleCount;
+            LayoutActiveSlots(visibleCount);
+        }
+
+        private void LayoutActiveSlots(int count)
+        {
+            EnsureActiveItemsRefs();
+            if (_activeSlotsContainer == null || count <= 0)
+            {
+                return;
+            }
+
+            float containerHeight = _activeSlotsContainer.rect.height;
+            if (containerHeight <= 0f)
+            {
+                containerHeight = Mathf.Abs(_activeSlotsContainer.sizeDelta.y);
+            }
+
+            float slotHeight = 0f;
+            for (int i = 0; i < count && i < _activeSlots.Count; i++)
+            {
+                RunItemSlotView slot = _activeSlots[i];
+                RectTransform visual = slot != null ? slot.VisualRectTransform : null;
+                if (visual != null)
+                {
+                    slotHeight = Mathf.Max(slotHeight, visual.rect.height, Mathf.Abs(visual.sizeDelta.y));
+                }
+            }
+
+            float spacing = count > 1
+                ? Mathf.Max(0f, containerHeight - slotHeight) / (count - 1)
+                : 0f;
+            float firstY = spacing * (count - 1) * 0.5f;
+
+            for (int i = 0; i < count && i < _activeSlots.Count; i++)
+            {
+                RunItemSlotView slot = _activeSlots[i];
+                RectTransform rect = slot != null ? slot.RectTransform : null;
+                if (rect == null)
+                {
+                    continue;
+                }
+
+                rect.anchorMin = new Vector2(0.5f, 0.5f);
+                rect.anchorMax = new Vector2(0.5f, 0.5f);
+                rect.pivot = new Vector2(0.5f, 0.5f);
+                rect.sizeDelta = Vector2.zero;
+                rect.anchoredPosition = new Vector2(0f, firstY - spacing * i);
+                rect.localScale = Vector3.one;
+            }
+        }
+
+        private void RefreshActiveItemsInfo(int count, int capacity)
+        {
+            EnsureActiveItemsRefs();
+            if (_activeItemsInfo == null)
+            {
+                return;
+            }
+
+            int safeCount = Mathf.Max(0, count);
+            int safeCapacity = Mathf.Max(0, capacity);
+            _activeItemsInfo.text = $"{safeCount}/{safeCapacity}";
+            bool isFull = safeCapacity > 0 && safeCount >= safeCapacity;
+            _activeItemsInfo.color = isFull ? ActiveItemsFullColor : _activeItemsInfoNormalColor;
         }
 
         private void ClearPassiveSlots()
