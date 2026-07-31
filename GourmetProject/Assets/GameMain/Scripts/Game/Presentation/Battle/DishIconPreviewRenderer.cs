@@ -10,7 +10,8 @@ using UnityEngine.SceneManagement;
 namespace GourmetProject.Game.Presentation.Battle
 {
     /// <summary>
-    /// 在独立运行时场景中复用一套棋盘、菜品和美味值标签，并把结果渲染到每个 UI 预览自己的 RenderTexture。
+    /// 在当前活动场景的隐藏运行时 Rig 中复用一套棋盘、菜品和美味值标签，
+    /// 并把结果渲染到每个 UI 预览自己的 RenderTexture。
     /// </summary>
     internal sealed class DishIconPreviewRenderer : MonoBehaviour
     {
@@ -29,7 +30,6 @@ namespace GourmetProject.Game.Presentation.Battle
         private static readonly Color PreviewBackgroundColor = Color.white;
 
         private static DishIconPreviewRenderer _instance;
-        private static int _sceneSerial;
 
         private readonly List<GameObject> _spawnedObjects = new();
         private readonly List<string> _flavorScratch = new();
@@ -46,10 +46,11 @@ namespace GourmetProject.Game.Presentation.Battle
             Sprite sprite,
             int deliciousness,
             IReadOnlyList<string> flavorIds,
-            GameObject cellPrefab,
-            GameObject badgePrefab,
+            SpriteRenderer cellPrefab,
+            DishValueBadgeView badgePrefab,
             int pixelsPerCell,
-            DishIconPreviewMode mode)
+            DishIconPreviewMode mode,
+            int? rotationIndexOverride = null)
         {
             if (dish?.Shape == null || sprite == null || cellPrefab == null || badgePrefab == null)
             {
@@ -64,7 +65,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 cellPrefab,
                 badgePrefab,
                 Mathf.Clamp(pixelsPerCell, 32, 256),
-                mode);
+                mode,
+                rotationIndexOverride);
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -72,7 +74,6 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             PurgeStaleInstances();
             _instance = null;
-            _sceneSerial = 0;
         }
 
         private static DishIconPreviewRenderer Instance
@@ -90,19 +91,12 @@ namespace GourmetProject.Game.Presentation.Battle
                 // magenta error material through every transparent part of the new sprites.
                 PurgeStaleInstances();
 
-                Scene previousActiveScene = SceneManager.GetActiveScene();
-                Scene scene = CreatePreviewScene();
-                if (previousActiveScene.IsValid() && previousActiveScene.isLoaded)
-                {
-                    SceneManager.SetActiveScene(previousActiveScene);
-                }
-
                 var root = new GameObject(RuntimeSceneName)
                 {
                     hideFlags = HideFlags.HideAndDontSave,
                 };
-                root.transform.position = StagePositionFor(scene);
-                SceneManager.MoveGameObjectToScene(root, scene);
+                root.transform.position =
+                    StagePositionFor(SceneManager.GetActiveScene());
                 _instance = root.AddComponent<DishIconPreviewRenderer>();
                 _instance.BuildRig();
                 return _instance;
@@ -154,14 +148,14 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             gameObject.layer = _previewLayer;
-            var cameraObject = new GameObject("Dish Icon Camera", typeof(Camera))
+            var cameraObject = new GameObject("Dish Icon Camera")
             {
                 hideFlags = HideFlags.HideAndDontSave,
                 layer = _previewLayer,
             };
             cameraObject.transform.SetParent(transform, false);
             cameraObject.transform.localPosition = new Vector3(0f, 0f, -10f);
-            _camera = cameraObject.GetComponent<Camera>();
+            _camera = cameraObject.AddComponent<Camera>();
             _camera.enabled = false;
             _camera.orthographic = true;
             _camera.nearClipPlane = 0.1f;
@@ -172,13 +166,13 @@ namespace GourmetProject.Game.Presentation.Battle
             _camera.allowMSAA = false;
             _camera.cullingMask = 1 << _previewLayer;
 
-            var lightObject = new GameObject("Directional Light", typeof(Light))
+            var lightObject = new GameObject("Directional Light")
             {
                 hideFlags = HideFlags.HideAndDontSave,
                 layer = _previewLayer,
             };
             lightObject.transform.SetParent(transform, false);
-            Light mainLight = lightObject.GetComponent<Light>();
+            Light mainLight = lightObject.AddComponent<Light>();
             mainLight.type = LightType.Directional;
             mainLight.intensity = 1f;
             mainLight.cullingMask = 1 << _previewLayer;
@@ -206,17 +200,20 @@ namespace GourmetProject.Game.Presentation.Battle
             Sprite sprite,
             int deliciousness,
             IReadOnlyList<string> flavorIds,
-            GameObject cellPrefab,
-            GameObject badgePrefab,
+            SpriteRenderer cellPrefab,
+            DishValueBadgeView badgePrefab,
             int pixelsPerCell,
-            DishIconPreviewMode mode)
+            DishIconPreviewMode mode,
+            int? rotationIndexOverride)
         {
+            MoveRigToActiveScene();
             ClearStage();
 
             ComposeFlavorIds(dish, flavorIds);
-            int rotationIndex = FlavorStainPalette.DisplayRotationIndex(
-                dish.RotationIndex,
-                _flavorScratch);
+            int rotationIndex = rotationIndexOverride
+                ?? FlavorStainPalette.DisplayRotationIndex(
+                    dish.RotationIndex,
+                    _flavorScratch);
             DishShape displayShape = dish.Shape.RotatedBy(rotationIndex);
             Vector2Int boardSize = new(displayShape.Width, displayShape.Height);
             int boardWidth = boardSize.x;
@@ -228,7 +225,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             BuildDish(dish.Shape, rotationIndex, sprite, dish.Id);
-            BuildBadge(badgePrefab, displayShape, deliciousness, mode);
+            BuildBadge(badgePrefab, displayShape, deliciousness);
 
             int textureWidth = boardWidth * pixelsPerCell;
             int textureHeight = boardHeight * pixelsPerCell;
@@ -260,27 +257,30 @@ namespace GourmetProject.Game.Presentation.Battle
             _camera.backgroundColor = backgroundColor;
             _camera.aspect = (float)boardWidth / boardHeight;
             _camera.orthographicSize = boardHeight * CellSize * 0.5f;
-            var request = new RenderPipeline.StandardRequest
-            {
-                destination = texture,
-            };
-            if (RenderPipeline.SupportsRenderRequest(_camera, request))
-            {
-                RenderPipeline.SubmitRenderRequest(_camera, request);
-            }
-            else
-            {
-                _camera.targetTexture = texture;
-                _camera.Render();
-                _camera.targetTexture = null;
-            }
+            _camera.targetTexture = texture;
+            _camera.Render();
+            _camera.targetTexture = null;
 
             return texture;
         }
 
-        private void BuildBoard(GameObject cellPrefab, int width, int height)
+        private void MoveRigToActiveScene()
         {
-            Sprite cellSprite = cellPrefab.GetComponent<SpriteRenderer>()?.sprite;
+            Scene activeScene = SceneManager.GetActiveScene();
+            if (!activeScene.IsValid()
+                || !activeScene.isLoaded
+                || gameObject.scene == activeScene)
+            {
+                return;
+            }
+
+            SceneManager.MoveGameObjectToScene(gameObject, activeScene);
+            transform.position = StagePositionFor(activeScene);
+        }
+
+        private void BuildBoard(SpriteRenderer cellPrefab, int width, int height)
+        {
+            Sprite cellSprite = cellPrefab.sprite;
             if (cellSprite == null)
             {
                 Sprite[] resourceSprites = Resources.LoadAll<Sprite>("Sprites/UI/board_cell");
@@ -377,30 +377,32 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         private void BuildBadge(
-            GameObject badgePrefab,
+            DishValueBadgeView badgePrefab,
             DishShape displayShape,
-            int deliciousness,
-            DishIconPreviewMode mode)
+            int deliciousness)
         {
-            DishValueBadgeView prefabView = badgePrefab.GetComponent<DishValueBadgeView>();
-            if (prefabView == null)
+            if (badgePrefab == null)
             {
                 return;
             }
 
-            float badgeTopInset = mode == DishIconPreviewMode.Warehouse ? 0.42f : 0.12f;
-            float badgeY = displayShape.Height * CellSize * 0.5f - badgeTopInset;
-            _badge = Instantiate(prefabView, transform);
+            _badge = Instantiate(badgePrefab, transform);
             if (_badge == null)
             {
                 return;
             }
 
             _badge.gameObject.hideFlags = HideFlags.HideAndDontSave;
-            _badge.transform.localPosition = new Vector3(0f, badgeY, 0f);
             _badge.transform.localScale = Vector3.one * BadgeScale;
+            float badgeTopExtent = _badge.TopExtent
+                * Mathf.Abs(_badge.transform.localScale.y);
+            _badge.transform.localPosition = DishBadgeLayout.PositionFromShapeCenter(
+                displayShape,
+                CellSize,
+                CellSize,
+                badgeTopExtent);
             SetLayerRecursively(_badge.gameObject, _previewLayer);
-            _badge.SetValue(deliciousness.ToString());
+            _badge.SetValue(DishValueDisplay.Format(deliciousness));
             _spawnedObjects.Add(_badge.gameObject);
         }
 
@@ -445,24 +447,5 @@ namespace GourmetProject.Game.Presentation.Battle
             _dishRoot.localScale = Vector3.one;
         }
 
-        private static Scene CreatePreviewScene()
-        {
-            string sceneName;
-            do
-            {
-                sceneName = $"{RuntimeSceneName}_{++_sceneSerial}";
-            }
-            while (SceneManager.GetSceneByName(sceneName).IsValid());
-
-#if UNITY_EDITOR
-            if (!Application.isPlaying)
-            {
-                Scene editorScene = UnityEditor.SceneManagement.EditorSceneManager.NewPreviewScene();
-                editorScene.name = sceneName;
-                return editorScene;
-            }
-#endif
-            return SceneManager.CreateScene(sceneName);
-        }
     }
 }

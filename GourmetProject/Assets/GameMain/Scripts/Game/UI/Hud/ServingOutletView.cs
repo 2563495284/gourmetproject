@@ -1,6 +1,6 @@
 using System;
-using GourmetProject.Core.Utility;
 using GourmetProject.Game.Presentation.Battle;
+using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Gameplay.Battle;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -23,19 +23,18 @@ namespace GourmetProject.Game.UI.Hud
     public sealed class ServingOutletView : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
     {
         private const float PreparedDishRaycastPadding = 24f;
-        private const float FlavorStainScale = 8f;
-        private const float FlavorStainThreshold = 0.62f;
-        private const float FlavorStainSoftness = 0.12f;
-        private const float FlavorStainDarken = 0.12f;
 
         [SerializeField] private Button _recipeInfoButton;
         [SerializeField] private Text _recipeInfoText;
         [SerializeField] private Button _serveButton;
         [SerializeField] private Image _serveBellImage;
-        [SerializeField] private Image _dishImage;
+        [SerializeField] private RectTransform _preparedDishRoot;
+        [SerializeField] private DishIconRenderTexturePreview _dishPreview;
+        [SerializeField] private ServingOutletDishHoverTrigger _dishHoverTrigger;
         [SerializeField] private Text _titleText;
         [SerializeField] private Text _statusText;
         [SerializeField] private CanvasGroup _canvasGroup;
+        [SerializeField] private Canvas _worldCanvas;
 
         [Header("State Colors")]
         [SerializeField] private Color _readyColor = new Color(0.86f, 0.98f, 0.76f, 1f);
@@ -43,25 +42,22 @@ namespace GourmetProject.Game.UI.Hud
         [SerializeField] private Color _blockedColor = new Color(0.72f, 0.72f, 0.68f, 1f);
         [SerializeField] private Image _background;
 
-        private readonly DishSpriteProvider _spriteProvider = new DishSpriteProvider();
         private Action<Vector2> _beginDrag;
         private Action<Vector2> _drag;
         private Func<Vector2, bool> _endDrag;
         private bool _dragging;
         private Camera _worldCamera;
-        private Canvas _worldCanvas;
-        private ServingOutletDishHoverTrigger _dishHoverTrigger;
-        private Material _dishFlavorMaterial;
 
         public ServingOutletState State { get; private set; }
 
         public void ConfigureWorldSpace(Camera worldCamera)
         {
             _worldCamera = worldCamera != null ? worldCamera : Camera.main;
-            _worldCanvas = GetComponent<Canvas>();
             if (_worldCanvas == null)
             {
-                Debug.LogError($"{nameof(ServingOutletView)} 缺少 World Space Canvas。", this);
+                Debug.LogError(
+                    $"{nameof(ServingOutletView)} prefab 未绑定 World Space Canvas。",
+                    this);
                 return;
             }
 
@@ -95,8 +91,16 @@ namespace GourmetProject.Game.UI.Hud
             _drag = drag;
             _endDrag = endDrag;
             _dragging = false;
-            EnsureDishHoverTrigger();
-            _dishHoverTrigger?.Bind(onDishHoverEntered, onDishHoverExited);
+            if (_dishHoverTrigger == null)
+            {
+                Debug.LogError(
+                    $"{nameof(ServingOutletView)} prefab 未绑定 {nameof(ServingOutletDishHoverTrigger)}。",
+                    this);
+            }
+            else
+            {
+                _dishHoverTrigger.Bind(onDishHoverEntered, onDishHoverExited);
+            }
 
             int placeable = 0;
             int blocked = 0;
@@ -156,6 +160,11 @@ namespace GourmetProject.Game.UI.Hud
             SetText(_titleText, "出餐口");
 
             bool waitingForDrag = state == ServingOutletState.WaitingForDishDrag && prepared != null;
+            if (_preparedDishRoot != null)
+            {
+                _preparedDishRoot.gameObject.SetActive(waitingForDrag);
+            }
+
             if (!waitingForDrag)
             {
                 _dishHoverTrigger?.CancelHover();
@@ -169,23 +178,22 @@ namespace GourmetProject.Game.UI.Hud
                 _serveBellImage.color = bellColor;
             }
 
-            if (_dishImage != null)
+            if (_dishPreview != null)
             {
-                _dishImage.gameObject.SetActive(waitingForDrag);
-                _dishImage.raycastTarget = waitingForDrag;
-                _dishImage.raycastPadding = waitingForDrag
+                _dishPreview.gameObject.SetActive(waitingForDrag);
+                _dishPreview.SetRaycastTarget(waitingForDrag);
+                _dishPreview.SetRaycastPadding(waitingForDrag
                     ? Vector4.one * -PreparedDishRaycastPadding
-                    : Vector4.zero;
+                    : Vector4.zero);
                 if (waitingForDrag)
                 {
-                    _dishImage.sprite = _spriteProvider.Get(prepared.Definition);
-                    _dishImage.preserveAspect = true;
-                    ApplyPreparedDishVisual(prepared);
+                    _dishPreview.Bind(
+                        DishPreviewRequest.FromInstance(prepared.Dish));
                     SetDishAlpha(1f);
                 }
                 else
                 {
-                    ResetPreparedDishVisual();
+                    _dishPreview.Hide();
                 }
             }
 
@@ -232,48 +240,6 @@ namespace GourmetProject.Game.UI.Hud
             }
         }
 
-        private void ApplyPreparedDishVisual(PreparedServeDish prepared)
-        {
-            if (_dishImage == null || prepared?.Dish == null)
-            {
-                ResetPreparedDishVisual();
-                return;
-            }
-
-            // 使用本次已准备菜品的实际摆放朝向，与拖拽 ghost/最终落桌保持一致。
-            // 「麻」旋转后若无合法位置，玩法层会回退原朝向，不能在这里仅按风味重新计算。
-            int rotationIndex = prepared.Dish.Placement.RotationIndex;
-            _dishImage.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -90f * rotationIndex);
-
-            var settings = new FlavorStainPalette.Settings(
-                FlavorStainScale,
-                FlavorStainThreshold,
-                FlavorStainSoftness,
-                FlavorStainDarken,
-                (float)(StableHash.Fnv1a64(prepared.Definition.Id) & 0xFFFFFF));
-            FlavorStainPalette.ApplyToGraphic(
-                _dishImage,
-                prepared.Dish.FlavorIds,
-                ref _dishFlavorMaterial,
-                settings);
-        }
-
-        private void ResetPreparedDishVisual()
-        {
-            if (_dishImage == null)
-            {
-                return;
-            }
-
-            _dishImage.rectTransform.localRotation = Quaternion.identity;
-            _dishImage.material = null;
-        }
-
-        private void OnDestroy()
-        {
-            FlavorStainPalette.ReleaseMaterial(ref _dishFlavorMaterial);
-        }
-
         public void OnBeginDrag(PointerEventData eventData)
         {
             if (State != ServingOutletState.WaitingForDishDrag || eventData == null)
@@ -318,26 +284,24 @@ namespace GourmetProject.Game.UI.Hud
 
         private void SetDishAlpha(float alpha)
         {
-            if (_dishImage == null)
+            if (_dishPreview == null)
             {
                 return;
             }
 
-            Color color = _dishImage.color;
-            color.a = alpha;
-            _dishImage.color = color;
+            _dishPreview.SetAlpha(alpha);
         }
 
         public Bounds DishWorldBounds
         {
             get
             {
-                if (_dishImage == null)
+                if (_dishPreview == null)
                 {
                     return new Bounds(transform.position, Vector3.zero);
                 }
 
-                RectTransform rect = _dishImage.rectTransform;
+                var rect = (RectTransform)_dishPreview.transform;
                 var corners = new Vector3[4];
                 rect.GetWorldCorners(corners);
                 var bounds = new Bounds(corners[0], Vector3.zero);
@@ -347,19 +311,6 @@ namespace GourmetProject.Game.UI.Hud
                 }
 
                 return bounds;
-            }
-        }
-
-        private void EnsureDishHoverTrigger()
-        {
-            if (_dishHoverTrigger == null && _dishImage != null)
-            {
-                _dishHoverTrigger = _dishImage.GetComponent<ServingOutletDishHoverTrigger>();
-            }
-
-            if (_dishHoverTrigger == null)
-            {
-                Debug.LogError($"{nameof(ServingOutletView)} prefab 的 PreparedDish 缺少 {nameof(ServingOutletDishHoverTrigger)}。", this);
             }
         }
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using DG.Tweening;
 using GourmetProject.Game.Presentation.Battle;
+using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Model;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,6 +13,66 @@ namespace GourmetProject.Game.UI.Widgets
     {
         Card,
         Warehouse,
+    }
+
+    public readonly struct DishPreviewRequest
+    {
+        public DishPreviewRequest(
+            DishDef dish,
+            Sprite sprite,
+            int value,
+            IReadOnlyList<string> flavorIds,
+            DishIconPreviewMode mode,
+            int? rotationIndex)
+        {
+            Dish = dish;
+            Sprite = sprite;
+            Value = value;
+            FlavorIds = flavorIds;
+            Mode = mode;
+            RotationIndex = rotationIndex;
+        }
+
+        public DishDef Dish { get; }
+
+        public Sprite Sprite { get; }
+
+        public int Value { get; }
+
+        public IReadOnlyList<string> FlavorIds { get; }
+
+        public DishIconPreviewMode Mode { get; }
+
+        public int? RotationIndex { get; }
+
+        public static DishPreviewRequest FromDefinition(
+            DishDef dish,
+            Sprite sprite = null,
+            IReadOnlyList<string> flavorIds = null,
+            DishIconPreviewMode mode = DishIconPreviewMode.Card)
+        {
+            return new DishPreviewRequest(
+                dish,
+                sprite,
+                dish?.Deliciousness ?? 0,
+                flavorIds,
+                mode,
+                null);
+        }
+
+        public static DishPreviewRequest FromInstance(
+            DishInstance dish,
+            Sprite sprite = null,
+            DishIconPreviewMode mode = DishIconPreviewMode.Warehouse)
+        {
+            return new DishPreviewRequest(
+                dish?.Def,
+                sprite,
+                Mathf.RoundToInt(DishValueDisplay.CurrentContribution(dish)),
+                dish?.FlavorIds,
+                mode,
+                dish?.Placement.RotationIndex);
+        }
     }
 
     /// <summary>
@@ -28,8 +89,9 @@ namespace GourmetProject.Game.UI.Widgets
         private static readonly Color TransformFlashColor = new(1.85f, 1.85f, 1.85f, 1f);
 
         [SerializeField] private RawImage _targetImage;
-        [SerializeField] private GameObject _cellPrefab;
-        [SerializeField] private GameObject _badgePrefab;
+        [SerializeField] private AspectRatioFitter _aspectRatioFitter;
+        [SerializeField] private SpriteRenderer _cellPrefab;
+        [SerializeField] private DishValueBadgeView _badgePrefab;
         [SerializeField, Range(32, 256)] private int _pixelsPerCell = 96;
         [SerializeField, HideInInspector] private Vector2 _prefabThreeByThreeSize;
 
@@ -37,6 +99,14 @@ namespace GourmetProject.Game.UI.Widgets
         private Sequence _transformSequence;
         private RectTransform _displaySizeTarget;
         private DishIconPreviewMode _mode;
+        private DishDef _boundDish;
+        private Sprite _boundSprite;
+        private int _boundValue;
+        private DishIconPreviewMode _boundMode;
+        private int? _boundRotationIndex;
+        private readonly List<string> _boundFlavorIds = new();
+        private bool _boundFlavorIdsWereNull;
+        private bool _hasBinding;
 
         public RenderTexture CurrentTexture => _renderTexture;
 
@@ -78,6 +148,26 @@ namespace GourmetProject.Game.UI.Widgets
             }
         }
 
+        public void SetRaycastPadding(Vector4 padding)
+        {
+            EnsureRefs();
+            if (_targetImage != null)
+            {
+                _targetImage.raycastPadding = padding;
+            }
+        }
+
+        public void SetAlpha(float alpha)
+        {
+            EnsureRefs();
+            if (_targetImage != null)
+            {
+                Color color = _targetImage.color;
+                color.a = Mathf.Clamp01(alpha);
+                _targetImage.color = color;
+            }
+        }
+
         public static Vector2 DisplaySizeForGrid(
             Vector2 prefabThreeByThreeSize,
             Vector2Int gridSize)
@@ -94,7 +184,8 @@ namespace GourmetProject.Game.UI.Widgets
 
         public static Vector2Int DisplayedGridSizeFor(
             DishDef dish,
-            IReadOnlyList<string> flavorIds = null)
+            IReadOnlyList<string> flavorIds = null,
+            int? rotationIndexOverride = null)
         {
             if (dish?.Shape == null)
             {
@@ -107,9 +198,10 @@ namespace GourmetProject.Game.UI.Widgets
                 displayFlavors = new[] { dish.FlavorId };
             }
 
-            int rotationIndex = FlavorStainPalette.DisplayRotationIndex(
-                dish.RotationIndex,
-                displayFlavors);
+            int rotationIndex = rotationIndexOverride
+                ?? FlavorStainPalette.DisplayRotationIndex(
+                    dish.RotationIndex,
+                    displayFlavors);
             DishShape displayShape = dish.Shape.RotatedBy(rotationIndex);
             return new Vector2Int(displayShape.Width, displayShape.Height);
         }
@@ -119,12 +211,28 @@ namespace GourmetProject.Game.UI.Widgets
             Sprite spriteOverride = null,
             int? deliciousnessOverride = null,
             IReadOnlyList<string> flavorIds = null,
-            DishIconPreviewMode mode = DishIconPreviewMode.Card)
+            DishIconPreviewMode mode = DishIconPreviewMode.Card,
+            int? rotationIndexOverride = null)
+        {
+            Bind(new DishPreviewRequest(
+                dish,
+                spriteOverride,
+                deliciousnessOverride ?? dish?.Deliciousness ?? 0,
+                flavorIds,
+                mode,
+                rotationIndexOverride));
+        }
+
+        public void Bind(DishPreviewRequest request)
         {
             EnsureRefs();
-            ReleaseTexture();
-            _mode = mode;
-            DisplayedGridSize = DisplayedGridSizeFor(dish, flavorIds);
+            DishDef dish = request.Dish;
+            Sprite sprite = request.Sprite ?? ContentIconLoader.LoadDish(dish);
+            _mode = request.Mode;
+            DisplayedGridSize = DisplayedGridSizeFor(
+                dish,
+                request.FlavorIds,
+                request.RotationIndex);
 
             if (dish?.Shape == null || _targetImage == null)
             {
@@ -132,47 +240,33 @@ namespace GourmetProject.Game.UI.Widgets
                 return;
             }
 
-            Sprite sprite = spriteOverride ?? ContentIconLoader.LoadDish(dish);
             if (sprite == null || _cellPrefab == null || _badgePrefab == null)
             {
                 Hide();
                 return;
             }
 
+            if (MatchesBinding(request, sprite)
+                && _renderTexture != null
+                && _renderTexture.IsCreated())
+            {
+                ApplyTextureToTarget(request.Mode);
+                return;
+            }
+
+            ReleaseTexture();
             _renderTexture = DishIconPreviewRenderer.Render(
                 dish,
                 sprite,
-                deliciousnessOverride ?? dish.Deliciousness,
-                flavorIds,
+                request.Value,
+                request.FlavorIds,
                 _cellPrefab,
                 _badgePrefab,
                 _pixelsPerCell,
-                mode);
-
-            _targetImage.texture = _renderTexture;
-            _targetImage.color = Color.white;
-            _targetImage.enabled = _renderTexture != null;
-            gameObject.SetActive(_renderTexture != null);
-
-            if (_renderTexture != null)
-            {
-                Vector2Int renderedGridSize = new(
-                    _renderTexture.width / _pixelsPerCell,
-                    _renderTexture.height / _pixelsPerCell);
-                if (mode == DishIconPreviewMode.Card)
-                {
-                    ApplyDisplaySize(renderedGridSize);
-                }
-
-                AspectRatioFitter fitter = GetComponent<AspectRatioFitter>();
-                if (fitter == null)
-                {
-                    fitter = gameObject.AddComponent<AspectRatioFitter>();
-                }
-
-                fitter.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
-                fitter.aspectRatio = (float)_renderTexture.width / _renderTexture.height;
-            }
+                request.Mode,
+                request.RotationIndex);
+            CaptureBinding(request, sprite);
+            ApplyTextureToTarget(request.Mode);
         }
 
         private void OnEnable()
@@ -239,6 +333,7 @@ namespace GourmetProject.Game.UI.Widgets
             EnsureRefs();
             KillTransformSequence();
             ReleaseTexture();
+            ClearBinding();
             if (_targetImage != null)
             {
                 _targetImage.texture = null;
@@ -270,11 +365,6 @@ namespace GourmetProject.Game.UI.Widgets
 
         private void EnsureRefs()
         {
-            if (_targetImage == null)
-            {
-                _targetImage = GetComponent<RawImage>();
-            }
-
             if (_displaySizeTarget == null)
             {
                 _displaySizeTarget =
@@ -384,6 +474,96 @@ namespace GourmetProject.Game.UI.Widgets
             }
 
             _renderTexture = null;
+        }
+
+        private bool MatchesBinding(DishPreviewRequest request, Sprite resolvedSprite)
+        {
+            if (!_hasBinding
+                || !ReferenceEquals(_boundDish, request.Dish)
+                || !ReferenceEquals(_boundSprite, resolvedSprite)
+                || _boundValue != request.Value
+                || _boundMode != request.Mode
+                || _boundRotationIndex != request.RotationIndex
+                || _boundFlavorIdsWereNull != (request.FlavorIds == null))
+            {
+                return false;
+            }
+
+            int flavorCount = request.FlavorIds?.Count ?? 0;
+            if (_boundFlavorIds.Count != flavorCount)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < flavorCount; i++)
+            {
+                if (!string.Equals(_boundFlavorIds[i], request.FlavorIds[i], StringComparison.Ordinal))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private void CaptureBinding(DishPreviewRequest request, Sprite resolvedSprite)
+        {
+            _boundDish = request.Dish;
+            _boundSprite = resolvedSprite;
+            _boundValue = request.Value;
+            _boundMode = request.Mode;
+            _boundRotationIndex = request.RotationIndex;
+            _boundFlavorIdsWereNull = request.FlavorIds == null;
+            _boundFlavorIds.Clear();
+            if (request.FlavorIds != null)
+            {
+                for (int i = 0; i < request.FlavorIds.Count; i++)
+                {
+                    _boundFlavorIds.Add(request.FlavorIds[i]);
+                }
+            }
+
+            _hasBinding = _renderTexture != null;
+        }
+
+        private void ClearBinding()
+        {
+            _boundDish = null;
+            _boundSprite = null;
+            _boundValue = 0;
+            _boundMode = default;
+            _boundRotationIndex = null;
+            _boundFlavorIdsWereNull = false;
+            _boundFlavorIds.Clear();
+            _hasBinding = false;
+        }
+
+        private void ApplyTextureToTarget(DishIconPreviewMode mode)
+        {
+            _targetImage.texture = _renderTexture;
+            _targetImage.color = Color.white;
+            _targetImage.enabled = _renderTexture != null;
+            gameObject.SetActive(_renderTexture != null);
+            if (_renderTexture == null)
+            {
+                return;
+            }
+
+            Vector2Int renderedGridSize = new(
+                _renderTexture.width / _pixelsPerCell,
+                _renderTexture.height / _pixelsPerCell);
+            if (mode == DishIconPreviewMode.Card)
+            {
+                ApplyDisplaySize(renderedGridSize);
+            }
+
+            if (_aspectRatioFitter != null)
+            {
+                _aspectRatioFitter.aspectMode =
+                    AspectRatioFitter.AspectMode.FitInParent;
+                _aspectRatioFitter.aspectRatio =
+                    (float)_renderTexture.width / _renderTexture.height;
+            }
         }
     }
 }

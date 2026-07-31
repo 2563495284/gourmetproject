@@ -96,6 +96,8 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private BoxCollider2D _collider;
         [Tooltip("放置合法性发光层（子物体 PlacementGlow 上的 SpriteRenderer）。")]
         [SerializeField] private SpriteRenderer _placementGlow;
+        [Tooltip("常驻美味值标签的独立表现器。")]
+        [SerializeField] private DishPieceValueBadgePresenter _dishValueBadgePresenter;
 
         [Header("落定反馈（仅作用于本体视觉枢轴，不影响格子锚点/碰撞盒）")]
         [SerializeField] private bool _useOccupiedCentroidPivot = true;
@@ -185,12 +187,19 @@ namespace GourmetProject.Game.Presentation.Battle
         private readonly Dictionary<SpriteRenderer, Color> _activeItemDimColors = new Dictionary<SpriteRenderer, Color>();
         private MaterialPropertyBlock _activeItemTransformBlock;
         private Sequence _activeItemFlavorSequence;
-
         public DishInstance Instance { get; private set; }
 
         public int RotationIndex { get; private set; }
 
         public DishShape CurrentShape { get; private set; }
+
+        internal DishValueBadgeView DishValueBadge =>
+            _dishValueBadgePresenter != null ? _dishValueBadgePresenter.View : null;
+
+        internal Vector3 DishValueBadgeWorldPosition =>
+            _dishValueBadgePresenter != null
+                ? _dishValueBadgePresenter.WorldPosition
+                : transform.position;
 
         public void BuildPlaced(DishInstance instance, Sprite sprite, float cellSize, float pitch, Action<DishInstance> clicked)
         {
@@ -199,9 +208,42 @@ namespace GourmetProject.Game.Presentation.Battle
             _cellSize = cellSize;
             _pitch = pitch;
             _clicked = clicked;
+            _dishValueBadgePresenter?.Bind(instance);
             RotationIndex = instance.Placement.RotationIndex;
             CurrentShape = instance.Placement.Orientation;
             RebuildCells(CurrentShape);
+        }
+
+        internal void RefreshDishValueBadge()
+        {
+            if (_dishValueBadgePresenter == null)
+            {
+                return;
+            }
+
+            if (_dishValueBadgePresenter.View == null)
+            {
+                _dishValueBadgePresenter.UpdateLayout(CurrentShape, _cellSize, _pitch);
+            }
+            else
+            {
+                _dishValueBadgePresenter.Refresh();
+            }
+        }
+
+        internal void SetDishValueBadge(float value)
+        {
+            _dishValueBadgePresenter?.SetOverride(value);
+        }
+
+        internal void ClearDishValueBadgeOverride()
+        {
+            _dishValueBadgePresenter?.ClearOverride();
+        }
+
+        internal void PunchDishValueBadge(float scale, float duration)
+        {
+            _dishValueBadgePresenter?.Punch(scale, duration);
         }
 
         public void UpdatePlacement(Placement placement)
@@ -560,6 +602,8 @@ namespace GourmetProject.Game.Presentation.Battle
                     ? _spriteRenderer.sortingOrder + 1
                     : BattleSorting.OrderBody + 1 + _sortingOrderOffset;
             }
+
+            _dishValueBadgePresenter?.SetSorting(_flying, _sortingOrderOffset);
         }
 
         /// <summary>
@@ -1438,6 +1482,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             ConfigureContactShadow(shape);
             ConfigureFootprintSprite(shape);
+            _dishValueBadgePresenter?.UpdateLayout(shape, _cellSize, _pitch);
             ApplyLiftHeight(_liftHeight);
             if (_dragPresentationActive)
             {

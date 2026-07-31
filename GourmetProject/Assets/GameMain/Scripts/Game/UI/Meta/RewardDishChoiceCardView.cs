@@ -81,7 +81,8 @@ namespace GourmetProject.Game.UI.Meta
 
             if (_dishPreview != null && dish != null)
             {
-                _dishPreview.Bind(dish, icon, dish.Deliciousness);
+                _dishPreview.Bind(
+                    DishPreviewRequest.FromDefinition(dish, icon));
             }
             else
             {

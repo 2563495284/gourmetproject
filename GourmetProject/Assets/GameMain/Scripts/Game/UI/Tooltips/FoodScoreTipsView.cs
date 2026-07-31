@@ -20,8 +20,8 @@ namespace GourmetProject.Game.UI.Tooltips
             }
 
             data ??= FoodScoreTipsData.Empty;
-            _scoreText.text = $"分数 {FoodTipUiUtility.FormatNumber(data.Score)}";
-            _multiplierText.text = $"倍率 x{FoodTipUiUtility.FormatNumber(data.Multiplier)}";
+            _scoreText.text = $"{FoodTipUiUtility.FormatNumber(data.Score)}";
+            _multiplierText.text = $"{FoodTipUiUtility.FormatNumber(data.Multiplier)}";
             Show();
         }
 

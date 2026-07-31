@@ -84,6 +84,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private readonly List<DishPieceView> _placedPieces = new List<DishPieceView>();
         private readonly Dictionary<int, DishPieceView> _dishViewsById = new Dictionary<int, DishPieceView>();
         private readonly List<DishPieceView> _temporaryAreaPieces = new List<DishPieceView>();
+        private readonly HashSet<DishPieceView> _dishValueBadgeRefreshSet = new();
         private readonly Dictionary<int, DishPieceView> _temporaryAreaViewsById = new Dictionary<int, DishPieceView>();
         private readonly Dictionary<int, float> _pendingServeMultiplierFlat = new Dictionary<int, float>();
 
@@ -966,16 +967,13 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 _sequencer.RestoreDishValueBadges(
                     dishScores,
-                    _dishViewsById,
-                    _boardView.Mapper,
-                    _fxRoot);
+                    _dishViewsById);
             }
         }
 
         public void SetPendingRewardPresentationVisible(bool visible)
         {
             _cakeLayerFx?.SetVisible(visible);
-            _sequencer?.SetRetainedDishValueBadgesVisible(visible);
         }
 
         /// <summary>新战斗、战败、继续行动或退出玩法时最终销毁待领奖表现。</summary>
@@ -983,6 +981,20 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             _cakeLayerFx?.Clear();
             _sequencer?.ClearRetainedDishValueBadges();
+            ClearDishValueBadgeOverrides();
+        }
+
+        private void ClearDishValueBadgeOverrides()
+        {
+            for (int i = 0; i < _placedPieces.Count; i++)
+            {
+                _placedPieces[i]?.ClearDishValueBadgeOverride();
+            }
+
+            for (int i = 0; i < _temporaryAreaPieces.Count; i++)
+            {
+                _temporaryAreaPieces[i]?.ClearDishValueBadgeOverride();
+            }
         }
 
         /// <summary>战斗结束后清理本场运行时餐桌表现，避免已摆菜品残留到后续非战斗状态。</summary>
@@ -1243,6 +1255,42 @@ namespace GourmetProject.Game.Presentation.Battle
 
             _boardView.Sync();
             LayoutTemporaryAreaPieces();
+            RefreshDishValueBadges();
+        }
+
+        private void RefreshDishValueBadges()
+        {
+            _dishValueBadgeRefreshSet.Clear();
+            RefreshDishValueBadges(_placedPieces, _dishValueBadgeRefreshSet);
+            RefreshDishValueBadges(_temporaryAreaPieces, _dishValueBadgeRefreshSet);
+            RefreshDishValueBadge(_outletDragPiece, _dishValueBadgeRefreshSet);
+            RefreshDishValueBadge(_movingPiece, _dishValueBadgeRefreshSet);
+            RefreshDishValueBadge(_temporaryAreaDragPiece, _dishValueBadgeRefreshSet);
+        }
+
+        private static void RefreshDishValueBadges(
+            IReadOnlyList<DishPieceView> pieces,
+            ISet<DishPieceView> refreshed)
+        {
+            if (pieces == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < pieces.Count; i++)
+            {
+                RefreshDishValueBadge(pieces[i], refreshed);
+            }
+        }
+
+        private static void RefreshDishValueBadge(
+            DishPieceView piece,
+            ISet<DishPieceView> refreshed)
+        {
+            if (piece != null && refreshed.Add(piece))
+            {
+                piece.RefreshDishValueBadge();
+            }
         }
 
         public void PlayCakeLayerChange(int before, int after)

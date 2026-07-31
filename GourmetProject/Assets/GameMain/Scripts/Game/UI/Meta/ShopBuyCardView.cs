@@ -91,7 +91,8 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            _dishIconPreview?.Bind(context.Dish, context.Icon, context.Dish.Deliciousness);
+            _dishIconPreview?.Bind(
+                DishPreviewRequest.FromDefinition(context.Dish, context.Icon));
             UseIconAsHitTargetOnly();
         }
     }

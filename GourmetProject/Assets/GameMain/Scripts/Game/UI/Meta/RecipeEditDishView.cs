@@ -119,9 +119,10 @@ namespace GourmetProject.Game.UI.Meta
                 if (dishDef != null)
                 {
                     _dishPreview.Bind(
-                        dishDef,
-                        flavorIds: flavorIds,
-                        mode: previewMode);
+                        DishPreviewRequest.FromDefinition(
+                            dishDef,
+                            flavorIds: flavorIds,
+                            mode: previewMode));
                     DisplayedGridSize = _dishPreview.DisplayedGridSize;
                 }
                 else

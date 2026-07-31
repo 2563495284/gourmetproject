@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
-    /// <summary>结算期间常驻在菜品顶部的美味值标签。</summary>
+    /// <summary>常驻在菜品顶部的美味值标签。</summary>
     internal sealed class DishValueBadgeView : MonoBehaviour
     {
         [Header("固定结构（prefab 预拼）")]
@@ -11,38 +11,18 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private MeshRenderer _valueMeshRenderer;
         [SerializeField] private TextMesh _valueText;
 
+        private string _sortingLayer = BattleSorting.Fx;
         private int _sortingOrder = BattleSorting.OrderFloatingText;
 
-        public float PanelHeight
+        /// <summary>Badge 根节点到最高可见 Sprite 边缘的本地距离。</summary>
+        public float TopExtent
         {
             get
             {
-                if (_background == null || _background.sprite == null)
-                {
-                    return 0f;
-                }
-
-                return _background.sprite.bounds.size.y * Mathf.Abs(_background.transform.localScale.y);
+                return Mathf.Max(
+                    SpriteTopExtent(_background),
+                    SpriteTopExtent(_icon));
             }
-        }
-
-        public static DishValueBadgeView Spawn(
-            DishValueBadgeView prefab,
-            Transform parent,
-            Vector3 worldPos,
-            string text)
-        {
-            if (prefab == null)
-            {
-                Debug.LogError($"{nameof(DishValueBadgeView)} 缺少 prefab。");
-                return null;
-            }
-
-            DishValueBadgeView view = Instantiate(prefab, parent);
-            view.transform.position = worldPos;
-            view._sortingOrder = WorldLabelSorting.NextOrder();
-            view.SetValue(text);
-            return view;
         }
 
         public void SetValue(string text)
@@ -55,11 +35,31 @@ namespace GourmetProject.Game.Presentation.Battle
             ApplySortingOrder();
         }
 
+        public void ConfigureSorting(string sortingLayer, int sortingOrder)
+        {
+            _sortingLayer = sortingLayer;
+            _sortingOrder = sortingOrder;
+            ApplySortingOrder();
+        }
+
         private void ApplySortingOrder()
         {
-            BattleSorting.Apply(_valueMeshRenderer, BattleSorting.Fx, _sortingOrder + 2);
-            BattleSorting.Apply(_background, BattleSorting.Fx, _sortingOrder);
-            BattleSorting.Apply(_icon, BattleSorting.Fx, _sortingOrder + 3);
+            BattleSorting.Apply(_valueMeshRenderer, _sortingLayer, _sortingOrder + 2);
+            BattleSorting.Apply(_background, _sortingLayer, _sortingOrder);
+            BattleSorting.Apply(_icon, _sortingLayer, _sortingOrder + 3);
+        }
+
+        private static float SpriteTopExtent(SpriteRenderer renderer)
+        {
+            if (renderer == null || renderer.sprite == null)
+            {
+                return 0f;
+            }
+
+            Transform spriteTransform = renderer.transform;
+            return spriteTransform.localPosition.y
+                + renderer.sprite.bounds.max.y
+                * Mathf.Abs(spriteTransform.localScale.y);
         }
     }
 }
