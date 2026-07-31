@@ -9115,7 +9115,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Hud.ActionAxisBar
   _container: {fileID: 7247389596145362146}
   _positionMarker: {fileID: 7861907012364848866}
-  _remainingDaysText: {fileID: 1892112033539927778}
+  _currentDayText: {fileID: 1892112033539927778}
   _fillTemplate: {fileID: 1638203881279440844}
   _tickTemplate: {fileID: 7323911526127876659}
   _dayLabelTemplate: {fileID: 1309673116625800570}
@@ -9142,7 +9142,7 @@ GameObject:
   - component: {fileID: 6082768971413324180}
   - component: {fileID: 1892112033539927778}
   m_Layer: 0
-  m_Name: RemainingDays
+  m_Name: CurrentDay
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
