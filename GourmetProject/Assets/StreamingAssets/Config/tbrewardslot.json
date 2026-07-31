@@ -22,7 +22,10 @@
     "goldHiddenOffset": [
       0,
       0
-    ]
+    ],
+    "name": "基础菜品选择",
+    "desc": "从菜品池中挑选一个基础菜品加入菜谱池。",
+    "ruleTemplate": "从 {choiceCount} 个菜品中选择 {requiredPickCount} 个。"
   },
   {
     "id": "slot_specific_gold",
@@ -47,7 +50,10 @@
     "goldHiddenOffset": [
       10,
       30
-    ]
+    ],
+    "name": "额外金币",
+    "desc": "领取一笔由当前美食结算生成的额外金币。",
+    "ruleTemplate": "获得 {requiredPickCount} 份金币奖励。"
   },
   {
     "id": "slot_specific_fragment",
@@ -72,7 +78,10 @@
     "goldHiddenOffset": [
       0,
       0
-    ]
+    ],
+    "name": "餐桌碎片选择",
+    "desc": "从餐桌碎片池中挑选一块碎片并进入餐桌编辑。",
+    "ruleTemplate": "从 {choiceCount} 个餐桌碎片中选择 {requiredPickCount} 个。"
   },
   {
     "id": "slot_specific_passive",
@@ -97,7 +106,10 @@
     "goldHiddenOffset": [
       0,
       0
-    ]
+    ],
+    "name": "被动道具选择",
+    "desc": "从可用被动道具中挑选一个，获得后持续生效。",
+    "ruleTemplate": "从 {choiceCount} 个被动道具中选择 {requiredPickCount} 个。"
   },
   {
     "id": "slot_specific_active_strengthen",
@@ -122,7 +134,10 @@
     "goldHiddenOffset": [
       0,
       0
-    ]
+    ],
+    "name": "主动道具强化选择",
+    "desc": "从强化类主动道具中挑选一个。",
+    "ruleTemplate": "从 {choiceCount} 个主动道具强化中选择 {requiredPickCount} 个。"
   },
   {
     "id": "slot_specific_active_adjust",
@@ -147,7 +162,10 @@
     "goldHiddenOffset": [
       0,
       0
-    ]
+    ],
+    "name": "主动道具调整选择",
+    "desc": "从调整类主动道具中挑选一个。",
+    "ruleTemplate": "从 {choiceCount} 个主动道具调整中选择 {requiredPickCount} 个。"
   },
   {
     "id": "slot_specific_hard_passive",
@@ -172,7 +190,10 @@
     "goldHiddenOffset": [
       0,
       0
-    ]
+    ],
+    "name": "困难被动道具选择",
+    "desc": "从更高阶的被动道具中挑选一个，获得后持续生效。",
+    "ruleTemplate": "从 {choiceCount} 个困难被动道具中选择 {requiredPickCount} 个。"
   },
   {
     "id": "slot_specific_hard_active_strengthen",
@@ -197,7 +218,10 @@
     "goldHiddenOffset": [
       0,
       0
-    ]
+    ],
+    "name": "困难主动道具强化选择",
+    "desc": "从更高阶的强化类主动道具中挑选一个。",
+    "ruleTemplate": "从 {choiceCount} 个困难主动道具强化中选择 {requiredPickCount} 个。"
   },
   {
     "id": "slot_specific_hard_active_adjust",
@@ -222,7 +246,10 @@
     "goldHiddenOffset": [
       0,
       0
-    ]
+    ],
+    "name": "困难主动道具调整选择",
+    "desc": "从更高阶的调整类主动道具中挑选一个。",
+    "ruleTemplate": "从 {choiceCount} 个困难主动道具调整中选择 {requiredPickCount} 个。"
   },
   {
     "id": "slot_boss_dish",
@@ -247,7 +274,10 @@
     "goldHiddenOffset": [
       0,
       0
-    ]
+    ],
+    "name": "Boss 菜品选择",
+    "desc": "击败 Boss 后从高阶菜品中挑选一个加入菜谱池。",
+    "ruleTemplate": "从 {choiceCount} 个 Boss 菜品中选择 {requiredPickCount} 个。"
   },
   {
     "id": "slot_boss_passive",
@@ -272,7 +302,10 @@
     "goldHiddenOffset": [
       0,
       0
-    ]
+    ],
+    "name": "Boss 被动道具选择",
+    "desc": "击败 Boss 后从专属被动道具中挑选一个。",
+    "ruleTemplate": "从 {choiceCount} 个 Boss 被动道具中选择 {requiredPickCount} 个。"
   },
   {
     "id": "slot_boss_fragment",
@@ -297,7 +330,10 @@
     "goldHiddenOffset": [
       0,
       0
-    ]
+    ],
+    "name": "Boss 餐桌碎片选择",
+    "desc": "击败 Boss 后从高阶餐桌碎片中挑选一块。",
+    "ruleTemplate": "从 {choiceCount} 个 Boss 餐桌碎片中选择 {requiredPickCount} 个。"
   },
   {
     "id": "slot_boss_gold",
@@ -322,7 +358,10 @@
     "goldHiddenOffset": [
       50,
       0
-    ]
+    ],
+    "name": "Boss 金币奖励",
+    "desc": "领取击败 Boss 后获得的额外金币。",
+    "ruleTemplate": "获得 {requiredPickCount} 份 Boss 金币奖励。"
   },
   {
     "id": "dish_choice_3",
@@ -347,7 +386,10 @@
     "goldHiddenOffset": [
       0,
       0
-    ]
+    ],
+    "name": "菜品选择",
+    "desc": "从随机菜品中挑选一个加入菜谱池。",
+    "ruleTemplate": "从 {choiceCount} 个菜品中选择 {requiredPickCount} 个。"
   },
   {
     "id": "dish_grant_1",
@@ -372,7 +414,10 @@
     "goldHiddenOffset": [
       0,
       0
-    ]
+    ],
+    "name": "随机菜品",
+    "desc": "随机获得一个菜品并加入菜谱池。",
+    "ruleTemplate": "随机获得 {requiredPickCount} 个菜品。"
   },
   {
     "id": "passive_choice_1",
@@ -397,7 +442,10 @@
     "goldHiddenOffset": [
       0,
       0
-    ]
+    ],
+    "name": "随机被动道具",
+    "desc": "随机获得一个被动道具，获得后持续生效。",
+    "ruleTemplate": "随机获得 {requiredPickCount} 个被动道具。"
   },
   {
     "id": "passive_choice_3",
@@ -422,7 +470,10 @@
     "goldHiddenOffset": [
       0,
       0
-    ]
+    ],
+    "name": "被动道具选择",
+    "desc": "从随机被动道具中挑选一个，获得后持续生效。",
+    "ruleTemplate": "从 {choiceCount} 个被动道具中选择 {requiredPickCount} 个。"
   },
   {
     "id": "passive_grant_2",
@@ -447,7 +498,10 @@
     "goldHiddenOffset": [
       0,
       0
-    ]
+    ],
+    "name": "被动道具奖励",
+    "desc": "获得本组全部被动道具，获得后持续生效。",
+    "ruleTemplate": "获得全部 {choiceCount} 个被动道具。"
   },
   {
     "id": "active_grant_1",
@@ -472,7 +526,10 @@
     "goldHiddenOffset": [
       0,
       0
-    ]
+    ],
+    "name": "随机主动道具",
+    "desc": "随机获得一个可在战斗中使用的主动道具。",
+    "ruleTemplate": "随机获得 {requiredPickCount} 个主动道具。"
   },
   {
     "id": "active_grant_2",
@@ -497,7 +554,10 @@
     "goldHiddenOffset": [
       0,
       0
-    ]
+    ],
+    "name": "主动道具奖励",
+    "desc": "获得本组全部主动道具，可在战斗中使用。",
+    "ruleTemplate": "获得全部 {choiceCount} 个主动道具。"
   },
   {
     "id": "active_choice_3",
@@ -522,7 +582,10 @@
     "goldHiddenOffset": [
       0,
       0
-    ]
+    ],
+    "name": "主动道具选择",
+    "desc": "从随机主动道具中挑选一个，可在战斗中使用。",
+    "ruleTemplate": "从 {choiceCount} 个主动道具中选择 {requiredPickCount} 个。"
   },
   {
     "id": "fragment_choice_3",
@@ -547,7 +610,10 @@
     "goldHiddenOffset": [
       0,
       0
-    ]
+    ],
+    "name": "餐桌碎片选择",
+    "desc": "从餐桌碎片中挑选一块并进入餐桌编辑。",
+    "ruleTemplate": "从 {choiceCount} 个餐桌碎片中选择 {requiredPickCount} 个。"
   },
   {
     "id": "flavored_dish_3",
@@ -572,7 +638,10 @@
     "goldHiddenOffset": [
       0,
       0
-    ]
+    ],
+    "name": "风味菜品奖励",
+    "desc": "获得本组全部风味菜品并加入菜谱池。",
+    "ruleTemplate": "获得全部 {choiceCount} 个风味菜品。"
   },
   {
     "id": "legendary_choice_1",
@@ -597,7 +666,10 @@
     "goldHiddenOffset": [
       0,
       0
-    ]
+    ],
+    "name": "随机传说道具",
+    "desc": "随机获得一个传说品质的被动道具。",
+    "ruleTemplate": "随机获得 {requiredPickCount} 个传说道具。"
   },
   {
     "id": "lay_wood",
@@ -622,7 +694,10 @@
     "goldHiddenOffset": [
       0,
       0
-    ]
+    ],
+    "name": "随机木质铺设道具",
+    "desc": "随机获得一个木质铺设类主动道具。",
+    "ruleTemplate": "随机获得 {requiredPickCount} 个木质铺设道具。"
   },
   {
     "id": "lay_stone",
@@ -647,7 +722,10 @@
     "goldHiddenOffset": [
       0,
       0
-    ]
+    ],
+    "name": "随机石质铺设道具",
+    "desc": "随机获得一个石质铺设类主动道具。",
+    "ruleTemplate": "随机获得 {requiredPickCount} 个石质铺设道具。"
   },
   {
     "id": "lay_metal",
@@ -672,6 +750,9 @@
     "goldHiddenOffset": [
       0,
       0
-    ]
+    ],
+    "name": "随机金属铺设道具",
+    "desc": "随机获得一个金属铺设类主动道具。",
+    "ruleTemplate": "随机获得 {requiredPickCount} 个金属铺设道具。"
   }
 ]

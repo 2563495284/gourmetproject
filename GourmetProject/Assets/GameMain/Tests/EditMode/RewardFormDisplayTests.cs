@@ -2,11 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using GourmetProject.Config;
+using GourmetProject.Core.Rng;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Meta;
 using GourmetProject.Game.UI.Widgets;
+using GourmetProject.Game.UI.Tooltips;
 using GourmetProject.Gameplay.Data;
 using NUnit.Framework;
 using UnityEditor;
@@ -90,6 +92,132 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(
                     rows.FindAll(RowButtonIsInteractable),
                     Has.Count.EqualTo(2));
+            });
+        }
+
+        [Test]
+        public void SingleDish_ShowsActualRewardWithSlotDescriptionAndFoodTips()
+        {
+            var group = new RewardChoiceGroup(
+                "随机菜品",
+                new[] { Choice(cfg.RewardKind.DishChoice, "cake_slice", "蛋糕切角") },
+                description: "随机菜品配置描述",
+                ruleText: "随机获得 1 个菜品。",
+                sourceSlotId: "dish_grant_1");
+            RewardOffer offer = new RewardOffer(0, new[] { group }, null, baseGoldClaimed: true);
+
+            WithRenderedOffer(offer, rows =>
+            {
+                Assert.That(rows, Has.Count.EqualTo(1));
+                Assert.That(RowTitle(rows[0]), Is.EqualTo("蛋糕切角"));
+                Assert.That(RowDescription(rows[0]), Is.EqualTo("随机菜品配置描述"));
+                Assert.That(rows[0].GetComponent<TipHoverTrigger>(), Is.Not.Null);
+            });
+        }
+
+        [Test]
+        public void SinglePassive_ShowsRolledItemDescriptionAndItemTips()
+        {
+            GameRun run = CreateRun();
+            RewardChoiceGroup group = RewardGranter.BuildConfigChoiceGroup(
+                run,
+                new Xoshiro256SS(7UL),
+                "passive_choice_1",
+                "调用方标题");
+            Assert.That(group, Is.Not.Null);
+
+            RewardOffer offer = new RewardOffer(0, new[] { group }, null, baseGoldClaimed: true);
+            WithRenderedOffer(offer, rows =>
+            {
+                Assert.That(rows, Has.Count.EqualTo(1));
+                Assert.That(RowTitle(rows[0]), Is.EqualTo(group.Choices[0].Name));
+                Assert.That(RowDescription(rows[0]), Does.StartWith(group.Choices[0].Description));
+                Assert.That(rows[0].GetComponent<TipHoverTrigger>(), Is.Not.Null);
+            });
+        }
+
+        [Test]
+        public void SingleActive_ShowsRolledItemDescriptionAndItemTips()
+        {
+            GameRun run = CreateRun();
+            RewardChoiceGroup group = RewardGranter.BuildConfigChoiceGroup(
+                run,
+                new Xoshiro256SS(11UL),
+                "active_grant_1",
+                "调用方标题");
+            Assert.That(group, Is.Not.Null);
+
+            RewardOffer offer = new RewardOffer(0, new[] { group }, null, baseGoldClaimed: true);
+            WithRenderedOffer(offer, rows =>
+            {
+                Assert.That(rows, Has.Count.EqualTo(1));
+                Assert.That(RowTitle(rows[0]), Is.EqualTo(group.Choices[0].Name));
+                Assert.That(RowDescription(rows[0]), Does.StartWith(group.Choices[0].Description));
+                Assert.That(rows[0].GetComponent<TipHoverTrigger>(), Is.Not.Null);
+            });
+        }
+
+        [Test]
+        public void MultiChoicePack_UsesConfiguredGroupPresentation()
+        {
+            var group = new RewardChoiceGroup(
+                "配置选择名称",
+                new[]
+                {
+                    Choice(cfg.RewardKind.PassiveItemChoice, "item_a", "道具 A"),
+                    Choice(cfg.RewardKind.PassiveItemChoice, "item_b", "道具 B"),
+                },
+                description: "配置用途描述",
+                ruleText: "从 2 个被动道具中选择 1 个。",
+                sourceSlotId: "slot_configured");
+            RewardOffer offer = new RewardOffer(0, new[] { group }, null, baseGoldClaimed: true);
+
+            WithRenderedOffer(offer, rows =>
+            {
+                Assert.That(rows, Has.Count.EqualTo(1));
+                Assert.That(RowTitle(rows[0]), Is.EqualTo("配置选择名称"));
+                Assert.That(
+                    RowDescription(rows[0]),
+                    Is.EqualTo("配置用途描述\n从 2 个被动道具中选择 1 个。"));
+            });
+        }
+
+        [Test]
+        public void SingleFallbackGold_ShowsActualConvertedReward()
+        {
+            RewardChoice fallback = RewardChoice.Gold(20, "折算金币", isFallback: true);
+            var group = new RewardChoiceGroup(
+                "原道具选择",
+                new[] { fallback },
+                description: "候选不足时折算",
+                ruleText: "随机获得 1 个金币。",
+                sourceSlotId: "slot_empty_pool");
+            RewardOffer offer = new RewardOffer(0, new[] { group }, null, baseGoldClaimed: true);
+
+            WithRenderedOffer(offer, rows =>
+            {
+                Assert.That(rows, Has.Count.EqualTo(1));
+                Assert.That(RowTitle(rows[0]), Is.EqualTo("折算金币"));
+                Assert.That(RowDescription(rows[0]), Is.EqualTo("领取后获得金币 +20。"));
+            });
+        }
+
+        [Test]
+        public void SingleFragment_RemainsAConfiguredChoicePack()
+        {
+            var group = new RewardChoiceGroup(
+                "餐桌碎片选择",
+                new[] { Choice(cfg.RewardKind.FragmentChoice, "fragment_square", "方形碎片") },
+                description: "碎片包描述",
+                ruleText: "从 1 个餐桌碎片中选择 1 个。",
+                sourceSlotId: "fragment_test");
+            RewardOffer offer = new RewardOffer(0, new[] { group }, null, baseGoldClaimed: true);
+
+            WithRenderedOffer(offer, rows =>
+            {
+                Assert.That(rows, Has.Count.EqualTo(1));
+                Assert.That(RowTitle(rows[0]), Is.EqualTo("餐桌碎片选择"));
+                Assert.That(RowDescription(rows[0]), Is.EqualTo("碎片包描述\n从 1 个餐桌碎片中选择 1 个。"));
             });
         }
 
@@ -219,6 +347,16 @@ namespace GourmetProject.Tests.EditMode
         {
             Image icon = GetField<Image>(row, "_icon");
             return icon != null && icon.enabled && icon.sprite != null;
+        }
+
+        private static string RowTitle(RewardChoiceRowView row)
+        {
+            return GetField<Text>(row, "_titleText")?.text ?? string.Empty;
+        }
+
+        private static string RowDescription(RewardChoiceRowView row)
+        {
+            return GetField<Text>(row, "_descriptionText")?.text ?? string.Empty;
         }
 
         private static T GetField<T>(object target, string name)

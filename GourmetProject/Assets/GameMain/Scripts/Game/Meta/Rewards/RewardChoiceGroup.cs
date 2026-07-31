@@ -12,9 +12,15 @@ namespace GourmetProject.Game.Meta
             IReadOnlyList<RewardChoice> choices,
             int requiredChoiceCount = 1,
             IReadOnlyList<int> claimedIndices = null,
-            bool skipped = false)
+            bool skipped = false,
+            string description = null,
+            string ruleText = null,
+            string sourceSlotId = null)
         {
             Title = title ?? string.Empty;
+            Description = description ?? string.Empty;
+            RuleText = ruleText ?? string.Empty;
+            SourceSlotId = sourceSlotId ?? string.Empty;
             _choices = new List<RewardChoice>(choices ?? System.Array.Empty<RewardChoice>());
             _claimedIndices = BuildIndices(claimedIndices);
             RequiredChoiceCount = NormalizeRequiredCount(requiredChoiceCount, _choices.Count);
@@ -22,6 +28,12 @@ namespace GourmetProject.Game.Meta
         }
 
         public string Title { get; }
+
+        public string Description { get; }
+
+        public string RuleText { get; }
+
+        public string SourceSlotId { get; }
 
         public IReadOnlyList<RewardChoice> Choices => _choices;
 

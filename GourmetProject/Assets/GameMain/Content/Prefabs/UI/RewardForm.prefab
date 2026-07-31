@@ -458,6 +458,8 @@ MonoBehaviour:
   _peekReturnButton: {fileID: 3990600396014983703}
   _rewardListContent: {fileID: 3360003636929527104}
   _rewardRowTemplate: {fileID: 6345975659798972639}
+  _foodTipsPrefab: {fileID: 7013095112852541377, guid: ea2c95d613a824d08884a70e0025c9df, type: 3}
+  _itemTipPrefab: {fileID: 8646951620094238264, guid: 49d929799dca94ac9bec5bb3a1fbffec, type: 3}
   _rewardScrollRect: {fileID: 5509968672440071565}
   _rewardScrollbar: {fileID: 8334743653056553860}
   _rewardScrollbarIdleSeconds: 0.8
