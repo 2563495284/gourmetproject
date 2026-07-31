@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using GourmetProject.Runtime;
+using GourmetProject.Runtime.Settings;
 using UnityEngine;
 
 namespace GourmetProject.Game.Settings
@@ -110,15 +111,15 @@ namespace GourmetProject.Game.Settings
                 },
             });
 
-            // —— 画面：垂直同步 ——
-            list.Add(new SettingDescriptor
-            {
-                Id = "Display.VSync",
-                Label = "垂直同步",
-                ControlType = SettingControlType.Toggle,
-                GetToggleValue = () => settings.VSync,
-                SetToggleValue = v => settings.VSync = v,
-            });
+            // // —— 画面：垂直同步 ——
+            // list.Add(new SettingDescriptor
+            // {
+            //     Id = "Display.VSync",
+            //     Label = "垂直同步",
+            //     ControlType = SettingControlType.Toggle,
+            //     GetToggleValue = () => settings.VSync,
+            //     SetToggleValue = v => settings.VSync = v,
+            // });
 
             // —— 画面：目标帧率 ——
             list.Add(new SettingDescriptor
@@ -193,6 +194,16 @@ namespace GourmetProject.Game.Settings
                         settings.Language = languageCodes[i];
                     }
                 },
+            });
+
+            // —— 游戏：结算演出 ——
+            list.Add(new SettingDescriptor
+            {
+                Id = SettingsService.KeySettlementAcceleration,
+                Label = "结算加速",
+                ControlType = SettingControlType.Toggle,
+                GetToggleValue = () => settings.SettlementAcceleration,
+                SetToggleValue = v => settings.SettlementAcceleration = v,
             });
 
             // —— 扩展示例（默认注释关闭）——

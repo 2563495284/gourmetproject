@@ -421,6 +421,9 @@ namespace GourmetProject.Game.Run
     public sealed class RewardChoiceGroupSaveData
     {
         public string Title;
+        public string Description;
+        public string RuleText;
+        public string SourceSlotId;
         public int RequiredChoiceCount = 1;
         public bool Skipped;
         public List<int> ClaimedIndices = new List<int>();

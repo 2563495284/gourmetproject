@@ -2230,6 +2230,9 @@ namespace GourmetProject.Game.Run
                 : new RewardChoiceGroupSaveData
                 {
                     Title = group.Title,
+                    Description = group.Description,
+                    RuleText = group.RuleText,
+                    SourceSlotId = group.SourceSlotId,
                     RequiredChoiceCount = group.RequiredChoiceCount,
                     Skipped = group.Skipped,
                     ClaimedIndices = new List<int>(group.ClaimedIndices),
@@ -2331,7 +2334,10 @@ namespace GourmetProject.Game.Run
                     FromSaveData(group.Choices),
                     group.RequiredChoiceCount,
                     group.ClaimedIndices,
-                    group.Skipped);
+                    group.Skipped,
+                    group.Description,
+                    group.RuleText,
+                    group.SourceSlotId);
         }
 
         private static List<RewardChoice> FromSaveData(List<RewardChoiceSaveData> choices)

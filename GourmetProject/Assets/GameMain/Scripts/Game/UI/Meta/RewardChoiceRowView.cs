@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using GourmetProject.Game.UI.Widgets;
+using GourmetProject.Game.UI.Tooltips;
 using GourmetProject.Gameplay.Model;
 using UnityEngine;
 using UnityEngine.UI;
@@ -23,6 +24,23 @@ namespace GourmetProject.Game.UI.Meta
         private static readonly Color NormalColor = new(0.97f, 0.94f, 0.86f, 1f);
         private static readonly Color SelectedColor = new(1f, 0.82f, 0.42f, 1f);
         private static readonly Color GrantedColor = new(0.88f, 0.96f, 0.82f, 1f);
+
+        public RectTransform TipPlacementTarget
+        {
+            get
+            {
+                EnsureRefs();
+                return _dishPreview != null && _dishPreview.gameObject.activeSelf
+                    ? _dishPreview.transform as RectTransform
+                    : _icon != null ? _icon.rectTransform : transform as RectTransform;
+            }
+        }
+
+        public TipHoverTrigger EnsureTipTrigger()
+        {
+            TipHoverTrigger trigger = GetComponent<TipHoverTrigger>();
+            return trigger != null ? trigger : gameObject.AddComponent<TipHoverTrigger>();
+        }
 
         public void Bind(
             string title,

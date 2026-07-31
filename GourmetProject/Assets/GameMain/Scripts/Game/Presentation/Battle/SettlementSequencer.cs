@@ -7,6 +7,7 @@ using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
+using GourmetProject.Runtime;
 using UnityEngine;
 using UnityEngine.Serialization;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -37,7 +38,6 @@ namespace GourmetProject.Game.Presentation.Battle
         private const string InitialDishBaseBatchKey = "initial:dish-bases";
 
         [Header("结算加速（小丑牌式：按 cue 进度越来越快）")]
-        [SerializeField] private bool _useGlobalTimeScale = true;
         [SerializeField] private float _startSpeed = 1f;
         [SerializeField] private float _maxSpeed = 3f;
         [SerializeField] private float _speedCurveExponent = 1.35f;
@@ -53,6 +53,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private bool _hasSavedTimeScale;
         private float _savedTimeScale = 1f;
         private float _currentSettlementSpeed = 1f;
+        private bool _settlementAccelerationEnabled;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         [SerializeField, Tooltip("开发版结算调试：Space 暂停/继续时的当前状态。")]
         private bool _debugScorePaused;
@@ -856,11 +857,16 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void BeginSettlementSpeed()
         {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
             _currentSettlementSpeed = 1f;
-#else
+            _settlementAccelerationEnabled =
+                GameApp.Settings != null && GameApp.Settings.SettlementAcceleration;
+            if (!_settlementAccelerationEnabled)
+            {
+                return;
+            }
+
             _currentSettlementSpeed = Mathf.Max(0.0001f, _startSpeed);
-            if (!_useGlobalTimeScale || _hasSavedTimeScale)
+            if (_hasSavedTimeScale)
             {
                 return;
             }
@@ -868,19 +874,18 @@ namespace GourmetProject.Game.Presentation.Battle
             _savedTimeScale = Time.timeScale;
             _hasSavedTimeScale = true;
             Time.timeScale = _currentSettlementSpeed;
-#endif
         }
 
         private void RestoreSettlementSpeed()
         {
-            if (!_hasSavedTimeScale)
+            if (_hasSavedTimeScale)
             {
-                return;
+                Time.timeScale = _savedTimeScale;
+                _hasSavedTimeScale = false;
             }
 
-            Time.timeScale = _savedTimeScale;
-            _currentSettlementSpeed = Mathf.Max(0.0001f, _savedTimeScale);
-            _hasSavedTimeScale = false;
+            _currentSettlementSpeed = 1f;
+            _settlementAccelerationEnabled = false;
         }
 
         private void AdvanceSettlementSpeed(SettlementPlaybackState playback, SettlementCueKind kind)
@@ -895,18 +900,21 @@ namespace GourmetProject.Game.Presentation.Battle
                 : Mathf.Clamp01((float)playback.CueIndex / (playback.CueCount - 1));
             playback.CueIndex++;
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            _currentSettlementSpeed = 1f;
-#else
-            float curve = Mathf.Pow(normalized, Mathf.Max(0.0001f, _speedCurveExponent));
-            float start = Mathf.Max(0.0001f, _startSpeed);
-            float max = Mathf.Max(start, _maxSpeed);
-            _currentSettlementSpeed = Mathf.Lerp(start, max, curve);
-            if (_useGlobalTimeScale && _hasSavedTimeScale)
+            if (_settlementAccelerationEnabled)
             {
-                Time.timeScale = _currentSettlementSpeed;
+                float curve = Mathf.Pow(normalized, Mathf.Max(0.0001f, _speedCurveExponent));
+                float start = Mathf.Max(0.0001f, _startSpeed);
+                float max = Mathf.Max(start, _maxSpeed);
+                _currentSettlementSpeed = Mathf.Lerp(start, max, curve);
+                if (_hasSavedTimeScale)
+                {
+                    Time.timeScale = _currentSettlementSpeed;
+                }
             }
-#endif
+            else
+            {
+                _currentSettlementSpeed = 1f;
+            }
 
             playback.ScoreFire?.SetIntensity(normalized, _currentSettlementSpeed);
             NotifySettlementCue(kind, _currentSettlementSpeed, normalized);

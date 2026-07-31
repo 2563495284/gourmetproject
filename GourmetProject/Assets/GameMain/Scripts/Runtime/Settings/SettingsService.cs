@@ -34,6 +34,9 @@ namespace GourmetProject.Runtime.Settings
         public const string KeyVSync = "Display.VSync";
         public const string KeyTargetFrameRate = "Display.TargetFrameRate";
 
+        // 游戏演出偏好键。
+        public const string KeySettlementAcceleration = "Gameplay.SettlementAcceleration";
+
         public SettingsService(SettingComponent setting)
         {
             _setting = setting ?? throw new ArgumentNullException(nameof(setting));
@@ -107,6 +110,13 @@ namespace GourmetProject.Runtime.Settings
         {
             get => _setting.GetInt(KeyTargetFrameRate, -1);
             set => _setting.SetInt(KeyTargetFrameRate, value);
+        }
+
+        /// <summary>结算演出是否按 cue 进度逐步加速。</summary>
+        public bool SettlementAcceleration
+        {
+            get => _setting.GetBool(KeySettlementAcceleration, false);
+            set => _setting.SetBool(KeySettlementAcceleration, value);
         }
 
         /// <summary>

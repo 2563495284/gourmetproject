@@ -19,7 +19,7 @@ namespace GourmetProject.Game.UI.Meta
         private GameRun _run;
 
         public void Open(
-            string title,
+            RewardChoiceGroup group,
             IReadOnlyList<RewardChoice> choices,
             cfg.ItemKind kind,
             Action<int> onPick,
@@ -34,7 +34,7 @@ namespace GourmetProject.Game.UI.Meta
 
             if (_titleText != null)
             {
-                _titleText.text = string.IsNullOrWhiteSpace(title) ? "选择一个道具" : title;
+                _titleText.text = BuildGroupText(group);
             }
 
             int count = choices?.Count ?? 0;
@@ -93,6 +93,33 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             gameObject.SetActive(false);
+        }
+
+        private static string BuildGroupText(RewardChoiceGroup group)
+        {
+            if (group == null)
+            {
+                return "选择一个道具";
+            }
+
+            var lines = new List<string>();
+            if (!string.IsNullOrWhiteSpace(group.Title))
+            {
+                lines.Add(group.Title);
+            }
+            if (!string.IsNullOrWhiteSpace(group.Description))
+            {
+                lines.Add(group.Description);
+            }
+            if (!string.IsNullOrWhiteSpace(group.RuleText))
+            {
+                lines.Add(group.RuleText);
+            }
+            if (group.RequiredChoiceCount > 1)
+            {
+                lines.Add($"已选 {group.ClaimedIndices.Count}/{group.RequiredChoiceCount}");
+            }
+            return lines.Count > 0 ? string.Join("\n", lines) : "选择一个道具";
         }
 
         private RewardItemChoiceCardView CreateCard(RewardChoice choice, cfg.ItemKind kind, ItemTipView itemTip, Action onClick)

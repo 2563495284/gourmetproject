@@ -312,7 +312,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e64883374cc04a3f8c2f50f5c999882, type: 3}
   m_Name: 
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Gameplay.Presentation.SettlementSequencer
-  _useGlobalTimeScale: 1
   _startSpeed: 1
   _maxSpeed: 3
   _speedCurveExponent: 1.35

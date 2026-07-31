@@ -9,7 +9,7 @@ namespace GourmetProject.Game.UI.Meta
     public sealed class RecipeWarehouseView : MonoBehaviour
     {
         private static readonly Color DefaultSurfaceColor =
-            new(0.075f, 0.09f, 0.095f, 1f);
+            new(0.96f, 0.945f, 0.91f, 1f);
         private static readonly Color DefaultGridColor =
             new(0.34f, 0.39f, 0.4f, 0.82f);
 

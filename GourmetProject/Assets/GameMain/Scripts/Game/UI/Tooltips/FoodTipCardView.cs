@@ -9,6 +9,7 @@ namespace GourmetProject.Game.UI.Tooltips
     {
         [SerializeField] private Text _titleText;
         [SerializeField] private Text _descText;
+        [SerializeField] private Outline _outline;
 
         public float PreferredTitleWidth => _titleText != null && _titleText.gameObject.activeSelf
             ? _titleText.preferredWidth
@@ -37,6 +38,7 @@ namespace GourmetProject.Game.UI.Tooltips
 
             bool hasTitle = !string.IsNullOrEmpty(title);
             _titleText.gameObject.SetActive(hasTitle);
+            _outline.enabled = hasTitle;
             _titleText.text = title ?? string.Empty;
             _descText.text = desc ?? string.Empty;
             SetDebuffed(debuffed);

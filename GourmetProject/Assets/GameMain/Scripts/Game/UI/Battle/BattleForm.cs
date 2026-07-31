@@ -1108,11 +1108,12 @@ namespace GourmetProject.Game.UI.Battle
         }
 
         public bool OpenRewardDishPack(
+            RewardChoiceGroup group,
             IReadOnlyList<RewardChoice> choices,
             Func<int, bool> onChoiceSelected,
             Action onSkip)
         {
-            return _rewardPage != null && _rewardPage.OpenRewardDishPack(choices, onChoiceSelected, onSkip);
+            return _rewardPage != null && _rewardPage.OpenRewardDishPack(group, choices, onChoiceSelected, onSkip);
         }
 
         public bool OpenAcquireDishPack(string title, IReadOnlyList<RewardChoice> choices)
@@ -1126,13 +1127,13 @@ namespace GourmetProject.Game.UI.Battle
         }
 
         public bool OpenRewardItemChoices(
-            string title,
+            RewardChoiceGroup group,
             IReadOnlyList<RewardChoice> choices,
             cfg.ItemKind kind,
             Action<int> onPick,
             Action onSkip)
         {
-            return _rewardPage != null && _rewardPage.OpenRewardItemChoices(title, choices, kind, onPick, onSkip);
+            return _rewardPage != null && _rewardPage.OpenRewardItemChoices(group, choices, kind, onPick, onSkip);
         }
 
         public bool OpenRandomizedItemsPanel(string title, IReadOnlyList<RandomizedItemResult> results)

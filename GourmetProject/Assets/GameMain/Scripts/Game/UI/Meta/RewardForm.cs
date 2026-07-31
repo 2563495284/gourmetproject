@@ -20,6 +20,7 @@ using GourmetProject.Game.UI.Common;
 using GourmetProject.Game.UI.Menu;
 using GourmetProject.Game.UI.Meta;
 using GourmetProject.Game.UI.Widgets;
+using GourmetProject.Game.UI.Tooltips;
 
 namespace GourmetProject.Game.UI.Meta
 {
@@ -83,6 +84,9 @@ namespace GourmetProject.Game.UI.Meta
         [SerializeField] private Button _peekReturnButton;
         [SerializeField] private RectTransform _rewardListContent;
         [SerializeField] private RewardChoiceRowView _rewardRowTemplate;
+        [Header("Reward Tips")]
+        [SerializeField] private FoodTipsView _foodTipsPrefab;
+        [SerializeField] private ItemTipView _itemTipPrefab;
         [Header("Reward Scrollbar")]
         [SerializeField] private ScrollRect _rewardScrollRect;
         [SerializeField] private Scrollbar _rewardScrollbar;
@@ -112,6 +116,8 @@ namespace GourmetProject.Game.UI.Meta
         private bool _peekHidden;
         private int _expandedChoicePackGroupIndex = NoExpandedChoicePackGroup;
         private readonly List<PeekChildState> _peekChildStates = new List<PeekChildState>();
+        private FoodTipsView _foodTipsView;
+        private ItemTipView _itemTipView;
 
         protected override void OnInit(object userData)
         {
@@ -128,12 +134,15 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             ConfigureRewardScrollbar();
+            EnsureTipViews();
         }
 
         protected override void OnOpen(object userData)
         {
             base.OnOpen(userData);
             ConfigureRewardScrollbar();
+            EnsureTipViews();
+            HideTips();
             HideRewardScrollbar(immediate: true);
 
             _run = GameRunContext.Current;
@@ -220,6 +229,7 @@ namespace GourmetProject.Game.UI.Meta
                 HideRewardScrollbar(immediate: true);
             }
 
+            HideTips();
             base.OnClose(isShutdown, userData);
         }
 
@@ -239,6 +249,8 @@ namespace GourmetProject.Game.UI.Meta
 
         private void RefreshOffer()
         {
+            EnsureTipViews();
+            HideTips();
             _titleText.text = _genericMode && !string.IsNullOrEmpty(_genericRewardTitle)
                 ? _genericRewardTitle
                 : "奖励";
@@ -473,7 +485,20 @@ namespace GourmetProject.Game.UI.Meta
 
             if (choice.Kind == cfg.RewardKind.DishChoice)
             {
-                OpenDishPack(groupIndex, groupChoices);
+                bool applied;
+                using (RunPersistence.SuppressSave())
+                {
+                    applied = RewardGranter.ApplyDishChoice(_run, choice);
+                }
+
+                if (applied)
+                {
+                    HideTips();
+                    MarkChoiceClaimed(groupIndex, index);
+                    CacheCurrentOffer();
+                    RefreshBattlePersistentHud();
+                    RefreshOffer();
+                }
                 return;
             }
 
@@ -551,6 +576,7 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             bool opened = battle.OpenRewardDishPack(
+                GroupFor(groupIndex),
                 remainingChoices,
                 displayIndex =>
                 {
@@ -741,10 +767,10 @@ namespace GourmetProject.Game.UI.Meta
             for (int i = 0; i < _offer.FixedGroups.Count; i++)
             {
                 RewardChoiceGroup group = _offer.FixedGroups[i];
-                AddChoiceRows(string.IsNullOrEmpty(group.Title) ? "固定奖励" : group.Title, group.Choices, groupIndex: i);
+                AddChoiceRows(group, groupIndex: i);
             }
 
-            AddChoiceRows(_genericMode ? "随机食物" : "特定奖励", _offer.SpecificGroup.Choices, groupIndex: -1);
+            AddChoiceRows(_offer.SpecificGroup, groupIndex: -1);
             Canvas.ForceUpdateCanvases();
             LayoutRebuilder.ForceRebuildLayoutImmediate(_rewardListContent);
             if (_rewardScrollRect != null)
@@ -855,11 +881,9 @@ namespace GourmetProject.Game.UI.Meta
                 ClaimBaseGold);
         }
 
-        private void AddChoiceRows(
-            string groupName,
-            IReadOnlyList<RewardChoice> choices,
-            int groupIndex)
+        private void AddChoiceRows(RewardChoiceGroup group, int groupIndex)
         {
+            IReadOnlyList<RewardChoice> choices = group?.Choices;
             if (choices == null || choices.Count == 0)
             {
                 return;
@@ -870,9 +894,9 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            if (ShouldShowChoicePackRow(choices, groupIndex))
+            if (ShouldShowChoicePackRow(group, groupIndex))
             {
-                AddChoicePackRow(groupName, choices, groupIndex);
+                AddChoicePackRow(group, groupIndex);
                 return;
             }
 
@@ -892,8 +916,8 @@ namespace GourmetProject.Game.UI.Meta
                 }
 
                 row.Bind(
-                    BuildChoiceTitle(groupName, choice),
-                    BuildChoiceDescription(choice),
+                    string.IsNullOrWhiteSpace(choice?.Name) ? FallbackGroupTitle(group) : choice.Name,
+                    BuildDirectChoiceDescription(choice, group),
                     LoadChoiceIcon(choice),
                     false,
                     true,
@@ -901,14 +925,13 @@ namespace GourmetProject.Game.UI.Meta
                     () => ClaimChoice(groupIndex, index, choices),
                     dish: DishForChoice(choice),
                     flavorIds: FlavorIdsForChoice(choice));
+                BindDirectChoiceTip(row, choice);
             }
         }
 
-        private void AddChoicePackRow(
-            string groupName,
-            IReadOnlyList<RewardChoice> choices,
-            int groupIndex)
+        private void AddChoicePackRow(RewardChoiceGroup group, int groupIndex)
         {
+            IReadOnlyList<RewardChoice> choices = group.Choices;
             RewardChoiceRowView row = CreateRewardRow();
             if (row == null)
             {
@@ -916,10 +939,9 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             RewardChoice firstChoice = FirstUnclaimedChoice(choices, groupIndex) ?? choices[0];
-            string packName = ChoicePackName(choices);
             row.Bind(
-                $"{groupName}：{packName}选择包",
-                BuildChoicePackDescription(choices, groupIndex, packName),
+                FallbackGroupTitle(group),
+                BuildGroupDescription(group),
                 LoadChoiceIcon(firstChoice),
                 false,
                 true,
@@ -997,9 +1019,8 @@ namespace GourmetProject.Game.UI.Meta
             cfg.ItemKind itemKind = IsActiveItemReward(remainingChoices[0].Kind)
                 ? cfg.ItemKind.Active
                 : cfg.ItemKind.Passive;
-            string title = BuildItemChoicePopupTitle(choices, groupIndex);
             bool opened = battle.OpenRewardItemChoices(
-                title,
+                GroupFor(groupIndex),
                 remainingChoices,
                 itemKind,
                 pickedIndex =>
@@ -1116,41 +1137,29 @@ namespace GourmetProject.Game.UI.Meta
             return row;
         }
 
-        private string BuildChoiceTitle(string groupName, RewardChoice choice)
+        private string BuildDirectChoiceDescription(RewardChoice choice, RewardChoiceGroup group)
         {
             if (choice == null)
             {
-                return groupName;
+                return group?.Description ?? string.Empty;
             }
 
-            string category;
-            switch (choice.Kind)
+            string description = BuildChoiceDescription(choice);
+            if (choice.Kind == cfg.RewardKind.DishChoice && string.IsNullOrWhiteSpace(choice.Description))
             {
-                case cfg.RewardKind.Gold:
-                    category = "金币";
-                    break;
-                case cfg.RewardKind.DishChoice:
-                    category = "菜品选择包";
-                    break;
-                case cfg.RewardKind.FragmentChoice:
-                    category = "碎片选择包";
-                    break;
-                case cfg.RewardKind.PassiveItemChoice:
-                    category = "被动道具";
-                    break;
-                case cfg.RewardKind.ActiveItemGrant:
-                case cfg.RewardKind.ActiveItemStrengthen:
-                case cfg.RewardKind.ActiveItemAdjust:
-                    category = "主动道具";
-                    break;
-                default:
-                    category = "奖励";
-                    break;
+                description = !string.IsNullOrWhiteSpace(group?.Description)
+                    ? group.Description
+                    : description;
             }
 
-            return string.IsNullOrEmpty(choice.Name)
-                ? $"{groupName}：{category}"
-                : $"{groupName}：{category} - {choice.Name}";
+            if (IsActiveItemReward(choice.Kind) && _run != null && !_run.HasFreeActiveSlot)
+            {
+                description = string.IsNullOrWhiteSpace(description)
+                    ? "主动道具槽已满，领取后会折算金币。"
+                    : $"{description}\n主动道具槽已满，领取后会折算金币。";
+            }
+
+            return description;
         }
 
         private static string BuildChoiceDescription(RewardChoice choice)
@@ -1221,9 +1230,18 @@ namespace GourmetProject.Game.UI.Meta
             return true;
         }
 
-        private bool ShouldShowChoicePackRow(IReadOnlyList<RewardChoice> choices, int groupIndex)
+        private bool ShouldShowChoicePackRow(RewardChoiceGroup group, int groupIndex)
         {
-            if (choices == null || choices.Count <= 1)
+            IReadOnlyList<RewardChoice> choices = group?.Choices;
+            if (choices == null || choices.Count == 0)
+            {
+                return false;
+            }
+
+            bool direct = choices.Count == 1
+                && group.RequiredChoiceCount == 1
+                && choices[0]?.Kind != cfg.RewardKind.FragmentChoice;
+            if (direct)
             {
                 return false;
             }
@@ -1236,38 +1254,41 @@ namespace GourmetProject.Game.UI.Meta
             return _expandedChoicePackGroupIndex != groupIndex;
         }
 
-        private string BuildItemChoicePopupTitle(IReadOnlyList<RewardChoice> choices, int groupIndex)
+        private static string FallbackGroupTitle(RewardChoiceGroup group)
         {
-            RewardChoiceGroup group = GroupFor(groupIndex);
-            string itemName = ChoicePackName(choices);
-            int currentPick = group.ClaimedIndices.Count + 1;
-            int required = group.RequiredChoiceCount;
-            return required <= 1
-                ? $"选择一个{itemName}"
-                : $"选择{itemName}（{currentPick}/{required}）";
+            return !string.IsNullOrWhiteSpace(group?.Title)
+                ? group.Title
+                : ChoicePackName(group?.Choices);
         }
 
-        private string BuildChoicePackDescription(IReadOnlyList<RewardChoice> choices, int groupIndex, string packName)
+        private static string BuildGroupDescription(RewardChoiceGroup group)
         {
-            RewardChoiceGroup group = GroupFor(groupIndex);
-            int required = group.RequiredChoiceCount;
-            int claimed = group.ClaimedIndices.Count;
-            if (required >= choices.Count)
+            if (group == null)
             {
-                return $"点击后获得这 {choices.Count} 个{packName}。";
+                return string.Empty;
             }
 
-            if (IsDishPack(choices))
+            string rule = !string.IsNullOrWhiteSpace(group.RuleText)
+                ? group.RuleText
+                : BuildLegacyRuleText(group);
+            return string.IsNullOrWhiteSpace(group.Description)
+                ? rule
+                : string.IsNullOrWhiteSpace(rule) ? group.Description : $"{group.Description}\n{rule}";
+        }
+
+        private static string BuildLegacyRuleText(RewardChoiceGroup group)
+        {
+            int count = group?.Choices?.Count ?? 0;
+            int required = group?.RequiredChoiceCount ?? 0;
+            string kind = ChoicePackName(group?.Choices);
+            if (count == 1 && required == 1)
             {
-                return $"点击后从 {choices.Count} 个菜品中选择 {required} 个放入菜谱。（已选 {claimed}/{required}）";
+                return $"随机获得 1 个{kind}。";
             }
 
-            if (IsFragmentPack(choices))
-            {
-                return $"点击后从 {choices.Count} 个餐桌碎片中选择 {required} 个拼贴。（已选 {claimed}/{required}）";
-            }
-
-            return $"点击后从 {choices.Count} 个{packName}中选择 {required} 个。（已选 {claimed}/{required}）";
+            return required >= count
+                ? $"获得全部 {count} 个{kind}。"
+                : $"从 {count} 个{kind}中选择 {required} 个。";
         }
 
         private RewardChoice FirstUnclaimedChoice(IReadOnlyList<RewardChoice> choices, int groupIndex)
@@ -1398,6 +1419,101 @@ namespace GourmetProject.Game.UI.Meta
             return kind == cfg.RewardKind.ActiveItemGrant ||
                    kind == cfg.RewardKind.ActiveItemStrengthen ||
                    kind == cfg.RewardKind.ActiveItemAdjust;
+        }
+
+        private void EnsureTipViews()
+        {
+            if (_foodTipsView == null && _foodTipsPrefab != null)
+            {
+                _foodTipsView = Instantiate(_foodTipsPrefab, TipLayerParent(), false);
+                _foodTipsView.gameObject.name = "RewardFoodTipsView_Runtime";
+            }
+
+            if (_itemTipView == null && _itemTipPrefab != null)
+            {
+                _itemTipView = Instantiate(_itemTipPrefab, TipLayerParent(), false);
+                _itemTipView.gameObject.name = "RewardItemTipView_Runtime";
+            }
+
+            HideTips();
+            MoveTipToTop(_foodTipsView);
+            MoveTipToTop(_itemTipView);
+        }
+
+        private Transform TipLayerParent()
+        {
+            Canvas canvas = GetComponentInParent<Canvas>();
+            return canvas != null ? canvas.transform : transform;
+        }
+
+        private void MoveTipToTop(MonoBehaviour tip)
+        {
+            if (tip == null)
+            {
+                return;
+            }
+
+            Transform parent = TipLayerParent();
+            if (tip.transform.parent != parent)
+            {
+                tip.transform.SetParent(parent, false);
+            }
+
+            tip.transform.SetAsLastSibling();
+        }
+
+        private void HideTips()
+        {
+            _foodTipsView?.Hide();
+            _itemTipView?.Hide();
+        }
+
+        private void BindDirectChoiceTip(RewardChoiceRowView row, RewardChoice choice)
+        {
+            if (row == null || choice == null)
+            {
+                return;
+            }
+
+            TipHoverTrigger trigger = row.EnsureTipTrigger();
+            trigger.SetTarget(row.TipPlacementTarget);
+            trigger.SetFollowPointer(true);
+
+            if (choice.Kind == cfg.RewardKind.DishChoice && _foodTipsView != null)
+            {
+                FoodTipsData data = RewardDishPackPanel.BuildDishTipsData(_run, choice);
+                if (data != null)
+                {
+                    trigger.SetTip(
+                        _foodTipsView,
+                        _foodTipsView.Show,
+                        _foodTipsView.Hide,
+                        () =>
+                        {
+                            _foodTipsView.Bind(data);
+                            MoveTipToTop(_foodTipsView);
+                        });
+                    return;
+                }
+            }
+
+            if ((choice.Kind == cfg.RewardKind.PassiveItemChoice || IsActiveItemReward(choice.Kind))
+                && _itemTipView != null)
+            {
+                cfg.ItemKind kind = IsActiveItemReward(choice.Kind) ? cfg.ItemKind.Active : cfg.ItemKind.Passive;
+                ItemDefinition item = ItemDefinition.Get(_run?.Tables ?? GameApp.Config.Tables, choice.Id, kind);
+                if (item != null)
+                {
+                    trigger.SetTip(_itemTipView, () =>
+                    {
+                        _itemTipView.Bind(item);
+                        MoveTipToTop(_itemTipView);
+                    });
+                    return;
+                }
+            }
+
+            trigger.ClearTip();
         }
 
         private static void SetButtonLabel(Button button, string text)

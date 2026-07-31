@@ -32,7 +32,9 @@ namespace GourmetProject.Game.Meta
             int hidden = Math.Max(0, HiddenForSlot(context, slot) + HiddenOffsetForSlot(context, slot));
             if (slot.Kind == cfg.RewardKind.Gold)
             {
-                result.Add(RewardChoice.Gold(RollGoldRewardAmount(context, slot), "额外金币"));
+                result.Add(RewardChoice.Gold(
+                    RollGoldRewardAmount(context, slot),
+                    string.IsNullOrWhiteSpace(slot.Name) ? "额外金币" : slot.Name));
                 return result;
             }
 
@@ -120,7 +122,7 @@ namespace GourmetProject.Game.Meta
                     cfg.RewardKind.DishChoice,
                     dish.Id,
                     dish.Name,
-                    $"加入菜谱池，美味度 {dish.Deliciousness}"));
+                    string.Empty));
             }
         }
 
@@ -157,12 +159,11 @@ namespace GourmetProject.Game.Meta
 
         private static RewardChoice BuildItemChoice(cfg.ItemKind kind, cfg.RewardKind rewardKind, ItemDefinition item)
         {
-            string desc = item.IsPassive ? $"被动道具 · {item.Quality}" : "主动道具";
             return new RewardChoice(
                 kind == cfg.ItemKind.Passive ? cfg.RewardKind.PassiveItemChoice : rewardKind,
                 item.Id,
                 item.Name,
-                desc);
+                item.Desc);
         }
 
         private static void RollFragmentChoices(

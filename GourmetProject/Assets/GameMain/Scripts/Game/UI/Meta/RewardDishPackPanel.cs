@@ -48,6 +48,7 @@ namespace GourmetProject.Game.UI.Meta
 
         public void Open(
             GameRun run,
+            RewardChoiceGroup group,
             IReadOnlyList<RewardChoice> choices,
             Func<int, bool> onChoiceSelected,
             Action onSkip,
@@ -85,10 +86,33 @@ namespace GourmetProject.Game.UI.Meta
 
             if (_promptText != null)
             {
-                _promptText.text = "选择一个食物加入食谱";
+                _promptText.text = BuildGroupText(group, "选择一个食物加入食谱");
             }
 
             BuildCards();
+        }
+
+        private static string BuildGroupText(RewardChoiceGroup group, string fallback)
+        {
+            if (group == null)
+            {
+                return fallback;
+            }
+
+            var lines = new List<string>();
+            if (!string.IsNullOrWhiteSpace(group.Title))
+            {
+                lines.Add(group.Title);
+            }
+            if (!string.IsNullOrWhiteSpace(group.Description))
+            {
+                lines.Add(group.Description);
+            }
+            if (!string.IsNullOrWhiteSpace(group.RuleText))
+            {
+                lines.Add(group.RuleText);
+            }
+            return lines.Count > 0 ? string.Join("\n", lines) : fallback;
         }
 
         public void Close()
@@ -270,7 +294,7 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             _hoveredCard = card;
-            tips.Bind(BuildDishTipsData(def, slot));
+            tips.Bind(BuildDishTipsData(_run, def, slot));
             tips.Show();
             tips.transform.SetAsLastSibling();
             tips.PlaceAroundRectTransform(card.TipPlacementTarget, GetComponentInParent<Canvas>());
@@ -291,14 +315,32 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
-        private FoodTipsData BuildDishTipsData(DishDef def, RecipeBookSlot slot)
+        public static FoodTipsData BuildDishTipsData(GameRun run, RewardChoice choice)
+        {
+            DishDef def = run?.Database?.GetDish(choice?.Id);
+            if (def == null)
+            {
+                return null;
+            }
+
+            RecipeBookSlot slot = null;
+            if (!string.IsNullOrEmpty(choice.FlavorId))
+            {
+                slot = new RecipeBookSlot(choice.Id);
+                slot.AddFlavor(choice.FlavorId);
+            }
+
+            return BuildDishTipsData(run, def, slot);
+        }
+
+        private static FoodTipsData BuildDishTipsData(GameRun run, DishDef def, RecipeBookSlot slot)
         {
             List<string> skillIds = ComposeSkillIds(def, slot?.ExtraSkillIds);
             List<string> flavorIds = ComposeFlavorIds(def, slot?.ExtraFlavorIds);
             var skills = new List<FoodInfoEntry>();
             foreach (string skillId in skillIds)
             {
-                SkillDef skill = _run.Database.GetSkill(skillId);
+                SkillDef skill = run.Database.GetSkill(skillId);
                 if (skill != null)
                 {
                     skills.Add(new FoodInfoEntry(skill.Name, skill.Desc));
@@ -309,7 +351,7 @@ namespace GourmetProject.Game.UI.Meta
             var flavorDetails = new List<FoodInfoEntry>();
             foreach (string flavorId in flavorIds)
             {
-                FlavorDef flavor = _run.Database.GetFlavor(flavorId);
+                FlavorDef flavor = run.Database.GetFlavor(flavorId);
                 if (flavor == null)
                 {
                     continue;
@@ -328,12 +370,14 @@ namespace GourmetProject.Game.UI.Meta
                 Array.Empty<FoodMaterialTipsEntry>(),
                 flavorDetails,
                 Array.Empty<FoodInfoEntry>(),
-                BuildRecipeSpecialTags(skillIds));
+                BuildRecipeSpecialTags(run, skillIds));
         }
 
-        private IReadOnlyList<FoodInfoEntry> BuildRecipeSpecialTags(IReadOnlyList<string> skillIds)
+        private static IReadOnlyList<FoodInfoEntry> BuildRecipeSpecialTags(
+            GameRun run,
+            IReadOnlyList<string> skillIds)
         {
-            if (skillIds == null || _run?.Database == null)
+            if (skillIds == null || run?.Database == null)
             {
                 return Array.Empty<FoodInfoEntry>();
             }
@@ -341,7 +385,7 @@ namespace GourmetProject.Game.UI.Meta
             var termIds = new List<string>();
             foreach (string skillId in skillIds)
             {
-                SkillDef skill = _run.Database.GetSkill(skillId);
+                SkillDef skill = run.Database.GetSkill(skillId);
                 AddUniqueRange(termIds, skill?.TermIds);
             }
 

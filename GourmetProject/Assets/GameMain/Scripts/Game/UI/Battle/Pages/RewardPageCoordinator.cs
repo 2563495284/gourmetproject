@@ -55,6 +55,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
         }
 
         public bool OpenRewardDishPack(
+            RewardChoiceGroup group,
             IReadOnlyList<RewardChoice> choices,
             Func<int, bool> onChoiceSelected,
             Action onSkip)
@@ -70,6 +71,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
             {
                 _host.RewardDishPackPanel.Open(
                     _host.Run,
+                    group,
                     choices,
                     onChoiceSelected,
                     onSkip,
@@ -93,6 +95,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
             {
                 _host.RewardDishPackPanel.Open(
                     _host.Run,
+                    new RewardChoiceGroup(title, choices),
                     choices,
                     choiceIndex =>
                     {
@@ -121,7 +124,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
         public bool OpenRewardItemChoices(string title, IReadOnlyList<RewardChoice> choices, cfg.ItemKind kind)
         {
             return OpenRewardItemChoices(
-                title,
+                new RewardChoiceGroup(title, choices),
                 choices,
                 kind,
                 index =>
@@ -136,7 +139,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
         }
 
         public bool OpenRewardItemChoices(
-            string title,
+            RewardChoiceGroup group,
             IReadOnlyList<RewardChoice> choices,
             cfg.ItemKind kind,
             Action<int> onPick,
@@ -158,7 +161,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
             _host.SwitchTo(GameplayView.RewardItemChoice, () =>
             {
                 _host.RewardItemChoicePanel.Open(
-                    string.IsNullOrWhiteSpace(title) ? "选择一个道具" : title,
+                    group,
                     choices,
                     kind,
                     index =>
