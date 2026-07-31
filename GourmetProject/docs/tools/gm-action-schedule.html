@@ -542,8 +542,8 @@
         </select>
       </label>
       <label>
-        单周行动上限
-        <input id="maxActionsPerWeek" type="number" min="1" max="200" value="40">
+        每周固定行动次数
+        <input id="actionsPerWeek" type="number" min="1" max="200" step="1" value="8">
       </label>
       <button id="loadBtn" class="secondary">重新读取配置</button>
       <label class="wide">
@@ -589,7 +589,7 @@
         </div>
       </div>
       <div class="explain">
-        行动占比 = 该大组出现次数 ÷ 该周全部日常行动步。<code>maxGuaranteeCounts</code> 是候选优先范围，不是硬上限；全部达到后会进入自由随机并允许继续超过。
+        每局的第 1–4 周都会生成设定数量的日常行动；行动轴到达终点后，后续抽取的天数停在终点。修改次数后，请重新运行单局或批量统计。行动占比 = 该大组出现次数 ÷ 该周全部日常行动步。<code>maxGuaranteeCounts</code> 是候选优先范围，不是硬上限；全部达到后会进入自由随机并允许继续超过。
       </div>
       <div class="progress" aria-label="统计进度">
         <div id="progressFill" class="progress-fill"></div>
@@ -662,7 +662,7 @@
     const seedEl = document.getElementById("seed");
     const characterEl = document.getElementById("character");
     const pickModeEl = document.getElementById("pickMode");
-    const maxActionsEl = document.getElementById("maxActionsPerWeek");
+    const actionsPerWeekEl = document.getElementById("actionsPerWeek");
     const batchCountEl = document.getElementById("batchCount");
     const runSingleBtn = document.getElementById("runSingleBtn");
     const newSeedBtn = document.getElementById("newSeedBtn");
@@ -1280,12 +1280,7 @@
         const nodes = timelineNodes(run.currentTimelineId);
         const actions = collectDetails ? [] : null;
 
-        let guard = 0;
-        while (
-          run.currentDay < run.timelineLengthDays - 0.0001
-          && guard < options.maxActionsPerWeek
-        ) {
-          guard++;
+        for (let actionIndex = 0; actionIndex < options.actionsPerWeek; actionIndex++) {
           const previousDay = run.currentDay;
           const key = actionChoiceKey(run);
           const actionRng = random.domainStream("action", key);
@@ -1329,9 +1324,6 @@
           run.runActionStepIndex++;
         }
 
-        if (guard >= options.maxActionsPerWeek) {
-          addDiagnostic(`第 ${weekIndex} 周至少一局达到单周行动上限 ${options.maxActionsPerWeek}。`);
-        }
         if (collectDetails) {
           weeks.push({
             weekIndex,
@@ -1348,11 +1340,20 @@
     }
 
     function collectOptions() {
+      const parsedActionsPerWeek = Number(actionsPerWeekEl.value);
+      const actionsPerWeek = Math.max(
+        1,
+        Math.min(
+          200,
+          Number.isFinite(parsedActionsPerWeek) ? Math.trunc(parsedActionsPerWeek) : 8
+        )
+      );
+      actionsPerWeekEl.value = String(actionsPerWeek);
       return {
         seed: seedEl.value || "gm-preview",
         characterId: characterEl.value,
         pickMode: pickModeEl.value,
-        maxActionsPerWeek: Math.max(1, Math.min(200, Number(maxActionsEl.value) || 40))
+        actionsPerWeek
       };
     }
 
