@@ -110,6 +110,15 @@ namespace GourmetProject.Game.UI.Widgets
 
         public RenderTexture CurrentTexture => _renderTexture;
 
+        public RawImage TargetImage
+        {
+            get
+            {
+                EnsureRefs();
+                return _targetImage;
+            }
+        }
+
         public Vector2Int DisplayedGridSize { get; private set; }
 
         /// <summary>
@@ -365,6 +374,8 @@ namespace GourmetProject.Game.UI.Widgets
 
         private void EnsureRefs()
         {
+            _targetImage ??= GetComponent<RawImage>();
+            _aspectRatioFitter ??= GetComponent<AspectRatioFitter>();
             if (_displaySizeTarget == null)
             {
                 _displaySizeTarget =
