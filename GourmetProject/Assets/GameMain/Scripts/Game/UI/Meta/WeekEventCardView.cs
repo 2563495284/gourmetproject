@@ -203,10 +203,11 @@ namespace GourmetProject.Game.UI.Meta
         private void SetFoodRewardBadge(cfg.GameAction action)
         {
             cfg.Food food = action?.Behavior == cfg.ActionBehavior.Food ? ResolveFood(action) : null;
+            cfg.FoodActionKind actionKind = food?.ActionKind ?? cfg.FoodActionKind.Normal;
             SetRewardBadge(
                 food != null,
                 food?.RewardKind ?? default,
-                food?.ActionKind == cfg.FoodActionKind.Super,
+                actionKind,
                 action);
         }
 
@@ -302,7 +303,7 @@ namespace GourmetProject.Game.UI.Meta
         private void SetRewardBadge(
             bool visible,
             cfg.RewardKind kind = default,
-            bool showAlert = false,
+            cfg.FoodActionKind actionKind = cfg.FoodActionKind.Normal,
             cfg.GameAction action = null)
         {
             if (_rewardBadgeImage != null)
@@ -312,7 +313,7 @@ namespace GourmetProject.Game.UI.Meta
 
             if (_rewardBadgeText != null)
             {
-                bool alertVisible = visible && showAlert;
+                bool alertVisible = visible && actionKind == cfg.FoodActionKind.Super;
                 _rewardBadgeText.gameObject.SetActive(alertVisible);
                 _rewardBadgeText.text = alertVisible ? "!" : string.Empty;
             }
@@ -320,7 +321,7 @@ namespace GourmetProject.Game.UI.Meta
             if (_rewardIconImage != null)
             {
                 _rewardIconImage.gameObject.SetActive(visible);
-                _rewardIconImage.sprite = visible ? RewardIconFor(kind) : null;
+                _rewardIconImage.sprite = visible ? RewardIconFor(actionKind, kind) : null;
                 _rewardIconImage.color = Color.white;
                 BindRewardTip(visible, action);
             }
@@ -467,37 +468,37 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
-        private static Sprite RewardIconFor(cfg.RewardKind kind)
+        internal static string RewardIconSpriteName(
+            cfg.FoodActionKind actionKind,
+            cfg.RewardKind kind)
         {
-            string spriteName;
+            bool isSuper = actionKind == cfg.FoodActionKind.Super;
             switch (kind)
             {
                 case cfg.RewardKind.Gold:
-                    spriteName = "reward_badge_gold";
-                    break;
+                    return isSuper ? "reward_badge_gold_large" : "reward_badge_gold";
                 case cfg.RewardKind.FragmentChoice:
-                    spriteName = "reward_badge_table_cell";
-                    break;
+                    return isSuper ? "reward_badge_table_cell_large" : "reward_badge_table_cell";
                 case cfg.RewardKind.PassiveItemChoice:
-                    spriteName = "reward_badge_passive_item";
-                    break;
+                    return isSuper ? "reward_badge_passive_item_4" : "reward_badge_passive_item";
                 case cfg.RewardKind.ActiveItemStrengthen:
-                    spriteName = "reward_badge_active_strengthen";
-                    break;
+                    return isSuper ? "reward_badge_active_strengthen_4" : "reward_badge_active_strengthen";
                 case cfg.RewardKind.ActiveItemAdjust:
-                    spriteName = "reward_badge_active_adjust";
-                    break;
+                    return isSuper ? "reward_badge_active_adjust_4" : "reward_badge_active_adjust";
                 case cfg.RewardKind.ActiveItemGrant:
-                    spriteName = "ui_icon_shop_active";
-                    break;
+                    return "ui_icon_shop_active";
                 case cfg.RewardKind.DishChoice:
-                    spriteName = "ui_icon_shop_food";
-                    break;
+                    return "ui_icon_shop_food";
                 default:
-                    spriteName = "ui_icon_shop_food";
-                    break;
+                    return "ui_icon_shop_food";
             }
+        }
 
+        private static Sprite RewardIconFor(
+            cfg.FoodActionKind actionKind,
+            cfg.RewardKind kind)
+        {
+            string spriteName = RewardIconSpriteName(actionKind, kind);
             return Resources.Load<Sprite>($"Sprites/UI/{spriteName}");
         }
 

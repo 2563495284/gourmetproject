@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 事件明细：eventType 分类(Event/Reward/Negative)，公共 preconditions/weight/repeatable。
+/// 事件明细：eventTypes 用 | 配置多个分类；首项决定权重/保底，全部分类参与对应事件池。公共 preconditions/weight/repeatable。
 /// </summary>
 public partial class TbEvent
 {

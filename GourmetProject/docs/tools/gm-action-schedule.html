@@ -732,12 +732,21 @@
       return smalls[rng.weightedPickIndex(weights)] || null;
     }
 
-    function hasEligibleEvent(behavior) {
-      return tables.events.some(event =>
-        event.eventType === behavior &&
-        (event.weight || 0) > 0 &&
-        preconditionSatisfied(event.preconditions)
-      );
+    function hasEligibleEvent(behavior = null) {
+      return tables.events.some(event => {
+        const eventTypes = Array.isArray(event.eventTypes)
+          ? event.eventTypes
+          : [event.eventType].filter(type => type !== undefined);
+        const categoryMatches = behavior === null
+          ? eventTypes.some(type =>
+              type === ACTION_BEHAVIOR.Event ||
+              type === ACTION_BEHAVIOR.Reward ||
+              type === ACTION_BEHAVIOR.Negative)
+          : eventTypes.includes(behavior);
+        return categoryMatches &&
+          (event.weight || 0) > 0 &&
+          preconditionSatisfied(event.preconditions);
+      });
     }
 
     function isActionAvailable(action) {
@@ -749,6 +758,7 @@
         case ACTION_BEHAVIOR.Food:
           return action.foodId === "food_boss" || !action.foodId || tables.foodById.has(action.foodId);
         case ACTION_BEHAVIOR.Event:
+          return hasEligibleEvent();
         case ACTION_BEHAVIOR.Reward:
         case ACTION_BEHAVIOR.Negative:
           return hasEligibleEvent(action.behavior);

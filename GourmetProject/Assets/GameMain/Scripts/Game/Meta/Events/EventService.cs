@@ -135,14 +135,14 @@ namespace GourmetProject.Game.Meta
                 .Replace("{currentGold}", run.Gold.ToString(CultureInfo.InvariantCulture));
         }
 
-        /// <summary>从指定分类池（eventType=Event/Reward/Negative）中按权重/前置/可重复随机一个事件。</summary>
+        /// <summary>从指定分类池（eventTypes 包含 Event/Reward/Negative）中按权重/前置/可重复随机一个事件。</summary>
         public static cfg.GameEvent RollEvent(GameRun run, IRandomStream rng, cfg.ActionBehavior eventType)
         {
             cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
             var candidates = new List<cfg.GameEvent>();
             foreach (cfg.GameEvent ev in tables.TbEvent.DataList)
             {
-                if (ev.EventType != eventType || ev.Weight <= 0f)
+                if (!ev.HasEventType(eventType) || ev.Weight <= 0f)
                 {
                     continue;
                 }
@@ -172,11 +172,11 @@ namespace GourmetProject.Game.Meta
             {
                 float defaultWeight = System.Math.Max(float.Epsilon, tables.TbGameBase.DefaultRandomWeight);
                 float weight = ev.Weight > 0f ? ev.Weight : defaultWeight;
-                if (ev.EventType == cfg.ActionBehavior.Reward)
+                if (ev.PrimaryEventType == cfg.ActionBehavior.Reward)
                 {
                     weight *= System.Math.Max(0f, rewardMul);
                 }
-                else if (ev.EventType == cfg.ActionBehavior.Event)
+                else if (ev.PrimaryEventType == cfg.ActionBehavior.Event)
                 {
                     weight *= System.Math.Max(0f, eventMul);
                 }
@@ -203,7 +203,7 @@ namespace GourmetProject.Game.Meta
             var weights = new List<float>();
             foreach (cfg.GameEvent ev in tables.TbEvent.DataList)
             {
-                if (ev.Weight <= 0f)
+                if (!ev.IsActionEventPoolMember || ev.Weight <= 0f)
                 {
                     continue;
                 }
@@ -220,11 +220,11 @@ namespace GourmetProject.Game.Meta
                 }
 
                 float w = ev.Weight;
-                if (ev.EventType == cfg.ActionBehavior.Reward)
+                if (ev.PrimaryEventType == cfg.ActionBehavior.Reward)
                 {
                     w *= rewardMul;
                 }
-                else if (ev.EventType == cfg.ActionBehavior.Event)
+                else if (ev.PrimaryEventType == cfg.ActionBehavior.Event)
                 {
                     w *= eventMul;
                 }
@@ -241,11 +241,11 @@ namespace GourmetProject.Game.Meta
             }
 
             cfg.GameEvent picked = candidates[rng.WeightedPickIndex(weights)];
-            if (picked != null && picked.EventType == cfg.ActionBehavior.Reward && System.Math.Abs(rewardMul - 1f) > 0.0001f)
+            if (picked != null && picked.PrimaryEventType == cfg.ActionBehavior.Reward && System.Math.Abs(rewardMul - 1f) > 0.0001f)
             {
                 itemRuntime.FlashTriggered(m => System.Math.Abs(m.LuckyEventChanceBonus()) > 0.0001f);
             }
-            else if (picked != null && picked.EventType == cfg.ActionBehavior.Event && System.Math.Abs(eventMul - 1f) > 0.0001f)
+            else if (picked != null && picked.PrimaryEventType == cfg.ActionBehavior.Event && System.Math.Abs(eventMul - 1f) > 0.0001f)
             {
                 itemRuntime.FlashTriggered(m => System.Math.Abs(m.MoreEventsBonus()) > 0.0001f);
             }
@@ -289,7 +289,7 @@ namespace GourmetProject.Game.Meta
             }
 
             cfg.GameEvent ev = RollActionEvent(run, rng);
-            if (ev != null && guarantee != null && ev.EventType == cfg.ActionBehavior.Event)
+            if (ev != null && guarantee != null && ev.PrimaryEventType == cfg.ActionBehavior.Event)
             {
                 guarantee.IncrementEventGuaranteeStreak();
             }
