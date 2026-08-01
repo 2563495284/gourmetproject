@@ -32,6 +32,7 @@ namespace GourmetProject.Game.Meta
             Add(new EventBehaviorHandler(cfg.ActionBehavior.Event));
             Add(new EventBehaviorHandler(cfg.ActionBehavior.Reward));
             Add(new EventBehaviorHandler(cfg.ActionBehavior.Negative));
+            Add(new SlotBehaviorHandler());
             Add(new ShopBehaviorHandler());
             Add(new InterestBehaviorHandler());
             Add(new EffectBehaviorHandler());
@@ -160,6 +161,20 @@ namespace GourmetProject.Game.Meta
             }
 
             return ActionOutcome.Event(ev.Id);
+        }
+    }
+
+    /// <summary>
+    /// 抽奖机行为：只产出独立的 Slot outcome。配置由行动 effectParam 直接指向，
+    /// 不通过 EventService，也不会进入事件保底、事件计数或事件完成被动。
+    /// </summary>
+    public sealed class SlotBehaviorHandler : IActionBehaviorHandler
+    {
+        public cfg.ActionBehavior Behavior => cfg.ActionBehavior.Slot;
+
+        public ActionOutcome Execute(GameRun run, ActionExecutionContext context, IRandomStream rng)
+        {
+            return ActionOutcome.Slot(context?.Action?.EffectParam);
         }
     }
 

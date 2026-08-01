@@ -7,9 +7,11 @@ using GourmetProject.Core.Rng;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Meta;
+using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Library;
 using GourmetProject.Gameplay.Model;
+using GourmetProject.Gameplay.Scoring;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -200,6 +202,60 @@ namespace GourmetProject.Tests.EditMode
             {
                 UnityEngine.Object.DestroyImmediate(gameObject);
             }
+        }
+
+        [Test]
+        public void AddRecipeFlavor_UsesTotalLimitAndReplacesOldestFlavor()
+        {
+            var run = new GameRun(
+                _tables,
+                _database,
+                _tables.TbCharacter.DataList[0].Id,
+                "recipe-flavor-limit-tests");
+            run.AcquireItem(
+                "item_flavor_double_slot",
+                fallbackGold: 0,
+                fireOnAcquire: false);
+            Assert.That(run.FoodFlavorLimit, Is.EqualTo(2));
+
+            Assert.That(run.AddBonusDish("jellyt_sour"), Is.True);
+            int dishIndex = run.RecipeEntries.Count - 1;
+
+            Assert.That(run.AddRecipeFlavor(dishIndex, "t_sweet"), Is.True);
+            Assert.That(
+                run.GetRecipeFlavorIds(dishIndex),
+                Is.EqualTo(new[] { "t_sour", "t_sweet" }));
+
+            Assert.That(run.AddRecipeFlavor(dishIndex, "t_rust"), Is.True);
+            Assert.That(
+                run.GetRecipeFlavorIds(dishIndex),
+                Is.EqualTo(new[] { "t_sweet", "t_rust" }));
+            Assert.That(
+                run.RecipeEntries[dishIndex].DishId,
+                Is.EqualTo("jelly"));
+        }
+
+        [Test]
+        public void RecipeFlavorEffectSource_ReadsAllPersistedUnservedFlavors()
+        {
+            var snapshot = new ScoreSnapshot(
+                new DiningTable(1, 1),
+                _database,
+                unservedRecipeDishes: new[]
+                {
+                    new UnservedRecipeDish(
+                        0,
+                        "jelly",
+                        new[] { "t_sour", "t_salty" }),
+                });
+            var collector = new ScoreEffectCollector();
+
+            new RecipeFlavorEffectSource().CollectEffects(snapshot, collector);
+
+            Assert.That(collector.Entries.Count, Is.EqualTo(2));
+            Assert.That(
+                collector.Entries.Select(entry => entry.Source.Id),
+                Is.EqualTo(new[] { "t_sour", "t_salty" }));
         }
 
         [Test]

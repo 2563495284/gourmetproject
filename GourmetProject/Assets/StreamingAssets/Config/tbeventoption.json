@@ -670,5 +670,41 @@
       "ev_interest"
     ],
     "autoEnd": true
+  },
+  {
+    "id": "opt_slot_machine_spin",
+    "eventId": "ev_slot_machine",
+    "parentId": "",
+    "text": "{slotCostText}（{slotStatus}）",
+    "resultText": "",
+    "condition": "",
+    "effectTypes": [
+      0
+    ],
+    "effectValues": [
+      0
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": false
+  },
+  {
+    "id": "opt_slot_machine_leave",
+    "eventId": "ev_slot_machine",
+    "parentId": "",
+    "text": "离开",
+    "resultText": "",
+    "condition": "",
+    "effectTypes": [
+      0
+    ],
+    "effectValues": [
+      0
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": true
   }
 ]

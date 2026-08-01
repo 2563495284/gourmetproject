@@ -68,5 +68,11 @@
     "kind": 2,
     "allowFallback": true,
     "specialTags": []
+  },
+  {
+    "id": "pool_active",
+    "kind": 2,
+    "allowFallback": true,
+    "specialTags": []
   }
 ]

@@ -16,7 +16,8 @@ namespace GourmetProject.Game.Meta
             IRandomStream rng,
             int baseGold = 0,
             ActionExecutionContext actionContext = null,
-            MetaProgressSaveData progress = null)
+            MetaProgressSaveData progress = null,
+            bool consumeEventChoiceCountDelta = true)
         {
             Tables = tables;
             Run = run;
@@ -26,6 +27,7 @@ namespace GourmetProject.Game.Meta
             BaseGold = baseGold;
             ActionContext = actionContext;
             Progress = progress;
+            ConsumeEventChoiceCountDelta = consumeEventChoiceCountDelta;
         }
 
         public cfg.Tables Tables { get; }
@@ -43,6 +45,8 @@ namespace GourmetProject.Game.Meta
         public ActionExecutionContext ActionContext { get; }
 
         public MetaProgressSaveData Progress { get; }
+
+        public bool ConsumeEventChoiceCountDelta { get; }
 
         public int RewardHiddenScore => DishHiddenScore;
 

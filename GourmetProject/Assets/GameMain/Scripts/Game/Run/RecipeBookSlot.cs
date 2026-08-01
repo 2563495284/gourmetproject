@@ -3,8 +3,9 @@ using System.Collections.Generic;
 namespace GourmetProject.Game.Run
 {
     /// <summary>
-    /// 菜谱一格条目：dishId + 玩家用「调味小票」永久附加的额外风味。
-    /// 额外风味绑定在条目对象上，随移动/删除一起走，避免与 dishId 列表错位。
+    /// 菜谱一格条目：dishId + 玩家后续获得的风味。
+    /// dishId 自带风味与后续风味在玩法上组成同一个有序队列；内部仍分别保存，
+    /// 以兼容现有菜品变体与存档结构。
     /// </summary>
     public sealed class RecipeBookSlot
     {
@@ -18,9 +19,9 @@ namespace GourmetProject.Game.Run
             DishId = dishId ?? string.Empty;
         }
 
-        public string DishId { get; }
+        public string DishId { get; private set; }
 
-        /// <summary>玩家永久附加的额外风味 id（可叠加，与菜谱变体自带风味叠加）。</summary>
+        /// <summary>取得食物后继续获得的风味 id，按获得时间从早到晚排列。</summary>
         public IReadOnlyList<string> ExtraFlavorIds => _extraFlavorIds;
 
         public IReadOnlyList<string> ExtraSkillIds => _extraSkillIds;
@@ -31,6 +32,14 @@ namespace GourmetProject.Game.Run
 
         public bool HasExtraFlavors => _extraFlavorIds.Count > 0;
 
+        public void ReplaceDishId(string dishId)
+        {
+            if (!string.IsNullOrEmpty(dishId))
+            {
+                DishId = dishId;
+            }
+        }
+
         public void AddFlavor(string flavorId, int flavorLimit = int.MaxValue)
         {
             if (string.IsNullOrEmpty(flavorId))
@@ -39,13 +48,23 @@ namespace GourmetProject.Game.Run
             }
 
             flavorLimit = System.Math.Max(1, flavorLimit);
-            if (_extraFlavorIds.Count < flavorLimit)
+            if (_extraFlavorIds.Count >= flavorLimit)
             {
-                _extraFlavorIds.Add(flavorId);
-                return;
+                _extraFlavorIds.RemoveAt(0);
             }
 
-            _extraFlavorIds[_extraFlavorIds.Count - 1] = flavorId;
+            _extraFlavorIds.Add(flavorId);
+        }
+
+        public bool RemoveOldestFlavor()
+        {
+            if (_extraFlavorIds.Count == 0)
+            {
+                return false;
+            }
+
+            _extraFlavorIds.RemoveAt(0);
+            return true;
         }
 
         public bool RemoveFlavor(string flavorId)

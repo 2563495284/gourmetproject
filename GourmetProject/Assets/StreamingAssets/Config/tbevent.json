@@ -10,7 +10,12 @@
     "weight": 1,
     "repeatable": true,
     "bgSprite": "",
-    "resultText": ""
+    "resultText": "",
+    "slotRewardGroupId": "",
+    "slotEmptyWeight": 0,
+    "slotFreeSpins": 0,
+    "slotPaidCost": 0,
+    "slotMaxSpins": 0
   },
   {
     "id": "ev_ancestral_recipe_page",
@@ -24,7 +29,12 @@
     "weight": 1,
     "repeatable": true,
     "bgSprite": "",
-    "resultText": ""
+    "resultText": "",
+    "slotRewardGroupId": "",
+    "slotEmptyWeight": 0,
+    "slotFreeSpins": 0,
+    "slotPaidCost": 0,
+    "slotMaxSpins": 0
   },
   {
     "id": "ev_table_carpenter",
@@ -38,7 +48,12 @@
     "weight": 1,
     "repeatable": true,
     "bgSprite": "",
-    "resultText": ""
+    "resultText": "",
+    "slotRewardGroupId": "",
+    "slotEmptyWeight": 0,
+    "slotFreeSpins": 0,
+    "slotPaidCost": 0,
+    "slotMaxSpins": 0
   },
   {
     "id": "ev_kitchen_god_statue",
@@ -51,7 +66,12 @@
     "weight": 1,
     "repeatable": true,
     "bgSprite": "",
-    "resultText": ""
+    "resultText": "",
+    "slotRewardGroupId": "",
+    "slotEmptyWeight": 0,
+    "slotFreeSpins": 0,
+    "slotPaidCost": 0,
+    "slotMaxSpins": 0
   },
   {
     "id": "ev_crossroad_sign",
@@ -64,7 +84,12 @@
     "weight": 1,
     "repeatable": true,
     "bgSprite": "",
-    "resultText": ""
+    "resultText": "",
+    "slotRewardGroupId": "",
+    "slotEmptyWeight": 0,
+    "slotFreeSpins": 0,
+    "slotPaidCost": 0,
+    "slotMaxSpins": 0
   },
   {
     "id": "ev_delivery_order",
@@ -77,7 +102,12 @@
     "weight": 1,
     "repeatable": true,
     "bgSprite": "",
-    "resultText": ""
+    "resultText": "",
+    "slotRewardGroupId": "",
+    "slotEmptyWeight": 0,
+    "slotFreeSpins": 0,
+    "slotPaidCost": 0,
+    "slotMaxSpins": 0
   },
   {
     "id": "ev_black_market_advance",
@@ -90,7 +120,12 @@
     "weight": 1,
     "repeatable": true,
     "bgSprite": "",
-    "resultText": ""
+    "resultText": "",
+    "slotRewardGroupId": "",
+    "slotEmptyWeight": 0,
+    "slotFreeSpins": 0,
+    "slotPaidCost": 0,
+    "slotMaxSpins": 0
   },
   {
     "id": "ev_wishing_casserole_i",
@@ -103,7 +138,12 @@
     "weight": 1,
     "repeatable": false,
     "bgSprite": "",
-    "resultText": ""
+    "resultText": "",
+    "slotRewardGroupId": "",
+    "slotEmptyWeight": 0,
+    "slotFreeSpins": 0,
+    "slotPaidCost": 0,
+    "slotMaxSpins": 0
   },
   {
     "id": "ev_wishing_casserole_ii",
@@ -116,7 +156,12 @@
     "weight": 1,
     "repeatable": false,
     "bgSprite": "",
-    "resultText": ""
+    "resultText": "",
+    "slotRewardGroupId": "",
+    "slotEmptyWeight": 0,
+    "slotFreeSpins": 0,
+    "slotPaidCost": 0,
+    "slotMaxSpins": 0
   },
   {
     "id": "ev_roast_meat",
@@ -129,7 +174,12 @@
     "weight": 0,
     "repeatable": true,
     "bgSprite": "",
-    "resultText": ""
+    "resultText": "",
+    "slotRewardGroupId": "",
+    "slotEmptyWeight": 0,
+    "slotFreeSpins": 0,
+    "slotPaidCost": 0,
+    "slotMaxSpins": 0
   },
   {
     "id": "ev_interest",
@@ -142,6 +192,29 @@
     "weight": 0,
     "repeatable": true,
     "bgSprite": "",
-    "resultText": "金币 +{gain}"
+    "resultText": "金币 +{gain}",
+    "slotRewardGroupId": "",
+    "slotEmptyWeight": 0,
+    "slotFreeSpins": 0,
+    "slotPaidCost": 0,
+    "slotMaxSpins": 0
+  },
+  {
+    "id": "ev_slot_machine",
+    "name": "抽奖机",
+    "desc": "第一次免费，之后可投入金币继续抽奖。结果会在抽取后揭晓。",
+    "eventTypes": [
+      7
+    ],
+    "preconditions": "",
+    "weight": 0,
+    "repeatable": true,
+    "bgSprite": "",
+    "resultText": "这次什么也没有。",
+    "slotRewardGroupId": "slot_machine_basic",
+    "slotEmptyWeight": 40,
+    "slotFreeSpins": 1,
+    "slotPaidCost": 20,
+    "slotMaxSpins": 5
   }
 ]

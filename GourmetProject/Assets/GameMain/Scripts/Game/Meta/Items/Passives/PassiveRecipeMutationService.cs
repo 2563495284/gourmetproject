@@ -141,8 +141,7 @@ namespace GourmetProject.Game.Meta.Passives
             IReadOnlyList<RecipeBookSlot> entries = run.RecipeEntries;
             for (int dish = 0; dish < entries.Count; dish++)
             {
-                DishDef def = run.Database.GetDish(entries[dish].DishId);
-                if ((def != null && def.HasFlavor) || entries[dish].ExtraFlavorIds.Count > 0)
+                if (run.GetRecipeFlavorIds(dish).Count > 0)
                 {
                     targets.Add(new RecipeTarget(dish));
                 }
@@ -162,7 +161,7 @@ namespace GourmetProject.Game.Meta.Passives
             IReadOnlyList<RecipeBookSlot> entries = run.RecipeEntries;
             for (int dish = 0; dish < entries.Count; dish++)
             {
-                if (entries[dish].ExtraFlavorIds.Count < run.FoodFlavorLimit)
+                if (run.GetRecipeFlavorIds(dish).Count < run.FoodFlavorLimit)
                 {
                     targets.Add(new RecipeTarget(dish));
                 }
@@ -303,7 +302,7 @@ namespace GourmetProject.Game.Meta.Passives
             IReadOnlyList<RecipeBookSlot> entries = run.RecipeEntries;
             for (int dish = 0; dish < entries.Count; dish++)
             {
-                if (entries[dish].ExtraFlavorIds.Count > 0)
+                if (run.GetRecipeFlavorIds(dish).Count > 0)
                 {
                     targets.Add(new RecipeTarget(dish));
                 }

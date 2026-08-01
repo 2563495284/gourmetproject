@@ -132,6 +132,7 @@ namespace GourmetProject.Game.UI.Meta
                     BindNodeCard(DefaultBossTitle, string.Empty, "card_node_boss", onPick);
                     break;
                 case ActionDisplayKind.Event:
+                case ActionDisplayKind.Slot:
                     BindNodeCard(string.IsNullOrEmpty(action.Name) ? "事件" : action.Name, string.Empty, "card_action_event", onPick);
                     break;
                 default:
@@ -364,9 +365,17 @@ namespace GourmetProject.Game.UI.Meta
 
         private static Sprite CardSpriteFor(cfg.GameAction action)
         {
+            string spriteName = CardSpriteNameFor(action);
+            return string.IsNullOrEmpty(spriteName)
+                ? null
+                : Resources.Load<Sprite>($"Sprites/UI/{spriteName}");
+        }
+
+        internal static string CardSpriteNameFor(cfg.GameAction action)
+        {
             if (action == null)
             {
-                return null;
+                return string.Empty;
             }
 
             string spriteName;
@@ -387,6 +396,7 @@ namespace GourmetProject.Game.UI.Meta
 
                     break;
                 case cfg.ActionBehavior.Event:
+                case cfg.ActionBehavior.Slot:
                     spriteName = "card_action_event";
                     break;
                 case cfg.ActionBehavior.Reward:
@@ -407,7 +417,7 @@ namespace GourmetProject.Game.UI.Meta
                     break;
             }
 
-            return Resources.Load<Sprite>($"Sprites/UI/{spriteName}");
+            return spriteName;
         }
 
         internal static string FoodRewardSpriteName(

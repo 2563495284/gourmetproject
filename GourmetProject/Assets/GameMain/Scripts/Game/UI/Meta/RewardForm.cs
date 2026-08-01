@@ -26,27 +26,48 @@ namespace GourmetProject.Game.UI.Meta
 {
     public sealed class RewardFormOpenArgs
     {
-        private RewardFormOpenArgs(bool useGenericQueue, bool confirmBattleRewardAfterDone, bool allowResultPeek)
+        private RewardFormOpenArgs(
+            bool useGenericQueue,
+            PendingGenericRewardContinuationKind genericRewardContinuation,
+            bool allowResultPeek)
         {
             UseGenericQueue = useGenericQueue;
-            ConfirmBattleRewardAfterDone = confirmBattleRewardAfterDone;
+            GenericRewardContinuation = genericRewardContinuation;
             AllowResultPeek = allowResultPeek;
         }
 
         public bool UseGenericQueue { get; }
 
-        public bool ConfirmBattleRewardAfterDone { get; }
+        public PendingGenericRewardContinuationKind GenericRewardContinuation { get; }
+
+        public bool ConfirmBattleRewardAfterDone =>
+            GenericRewardContinuation == PendingGenericRewardContinuationKind.Battle;
 
         public bool AllowResultPeek { get; }
 
         public static RewardFormOpenArgs BattleReward(bool allowResultPeek = true)
         {
-            return new RewardFormOpenArgs(false, false, allowResultPeek);
+            return new RewardFormOpenArgs(
+                false,
+                PendingGenericRewardContinuationKind.None,
+                allowResultPeek);
         }
 
         public static RewardFormOpenArgs GenericQueue(bool confirmBattleRewardAfterDone = false, bool allowResultPeek = false)
         {
-            return new RewardFormOpenArgs(true, confirmBattleRewardAfterDone, allowResultPeek);
+            return new RewardFormOpenArgs(
+                true,
+                confirmBattleRewardAfterDone
+                    ? PendingGenericRewardContinuationKind.Battle
+                    : PendingGenericRewardContinuationKind.None,
+                allowResultPeek);
+        }
+
+        public static RewardFormOpenArgs GenericQueue(
+            PendingGenericRewardContinuationKind continuation,
+            bool allowResultPeek = false)
+        {
+            return new RewardFormOpenArgs(true, continuation, allowResultPeek);
         }
     }
 
@@ -90,6 +111,7 @@ namespace GourmetProject.Game.UI.Meta
         private bool _rewardScrollbarVisible;
         private bool _genericMode;
         private bool _confirmBattleRewardAfterGeneric;
+        private PendingGenericRewardContinuationKind _genericRewardContinuation;
         private bool _allowResultPeek;
         private bool _peekHidden;
         private int _expandedChoicePackGroupIndex = NoExpandedChoicePackGroup;
@@ -132,12 +154,14 @@ namespace GourmetProject.Game.UI.Meta
 
             RewardFormOpenArgs args = userData as RewardFormOpenArgs;
             _genericMode = args != null && args.UseGenericQueue;
-            _confirmBattleRewardAfterGeneric = args != null
-                ? args.ConfirmBattleRewardAfterDone
-                : _run.PendingGenericRewardsConfirmBattleAfterDone;
+            _genericRewardContinuation = args != null
+                ? args.GenericRewardContinuation
+                : _run.PendingGenericRewardContinuation;
+            _confirmBattleRewardAfterGeneric =
+                _genericRewardContinuation == PendingGenericRewardContinuationKind.Battle;
             if (_genericMode)
             {
-                _run.PendingGenericRewardsConfirmBattleAfterDone = _confirmBattleRewardAfterGeneric;
+                _run.PendingGenericRewardContinuation = _genericRewardContinuation;
             }
 
             _allowResultPeek = args != null && args.AllowResultPeek;
@@ -276,7 +300,8 @@ namespace GourmetProject.Game.UI.Meta
                     return;
                 }
 
-                _run.PendingGenericRewardsConfirmBattleAfterDone = false;
+                PendingGenericRewardContinuationKind continuation = _genericRewardContinuation;
+                _run.PendingGenericRewardContinuation = PendingGenericRewardContinuationKind.None;
                 if (_confirmBattleRewardAfterGeneric)
                 {
                     _run.ClearPendingRewardBattleView();
@@ -288,9 +313,13 @@ namespace GourmetProject.Game.UI.Meta
                     Close();
                 }
 
-                if (_confirmBattleRewardAfterGeneric)
+                if (continuation == PendingGenericRewardContinuationKind.Battle)
                 {
                     BattleForm.Active?.OnRewardConfirmed();
+                }
+                else if (continuation == PendingGenericRewardContinuationKind.Slot)
+                {
+                    BattleForm.Active?.OnSlotRewardConfirmed();
                 }
                 else if (!closeForm)
                 {
@@ -305,7 +334,8 @@ namespace GourmetProject.Game.UI.Meta
             {
                 _genericMode = true;
                 _confirmBattleRewardAfterGeneric = true;
-                _run.PendingGenericRewardsConfirmBattleAfterDone = true;
+                _genericRewardContinuation = PendingGenericRewardContinuationKind.Battle;
+                _run.PendingGenericRewardContinuation = PendingGenericRewardContinuationKind.Battle;
                 if (LoadNextGenericReward())
                 {
                     RunPersistence.Save(_run);
@@ -619,7 +649,7 @@ namespace GourmetProject.Game.UI.Meta
                 GameApp.UI.OpenUIForm(
                     UIForms.Reward,
                     UIForms.GroupDialog,
-                    RewardFormOpenArgs.GenericQueue(_confirmBattleRewardAfterGeneric, _allowResultPeek));
+                    RewardFormOpenArgs.GenericQueue(_genericRewardContinuation, _allowResultPeek));
                 return;
             }
 
@@ -639,6 +669,9 @@ namespace GourmetProject.Game.UI.Meta
             {
                 _run.SetPendingRewardOffer(_rewardKey, _offer);
             }
+
+            // 奖励效果与“已领取”标记在同一份存档中提交，避免在二者之间读档后重复发放。
+            RunPersistence.Save(_run);
         }
 
         private void MarkChoiceClaimed(int groupIndex, int index)

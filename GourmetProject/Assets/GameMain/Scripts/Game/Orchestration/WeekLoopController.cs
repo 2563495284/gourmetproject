@@ -110,7 +110,10 @@ namespace GourmetProject.Game.Orchestration
 
             if (_run.HasPendingGenericRewards)
             {
-                if (_run.PendingGenericRewardsConfirmBattleAfterDone && _run.HasPendingRewardBattleView)
+                PendingGenericRewardContinuationKind continuation =
+                    _run.PendingGenericRewardContinuation;
+                if (continuation == PendingGenericRewardContinuationKind.Battle
+                    && _run.HasPendingRewardBattleView)
                 {
                     CurrentBattleActionContext = _run.LastActionContext;
                     _afterBattleWin = ContinueAfterRecoveredBattleReward;
@@ -120,7 +123,7 @@ namespace GourmetProject.Game.Orchestration
                 GameApp.UI.OpenUIForm(
                     UIForms.Reward,
                     UIForms.GroupDialog,
-                    RewardFormOpenArgs.GenericQueue(_run.PendingGenericRewardsConfirmBattleAfterDone));
+                    RewardFormOpenArgs.GenericQueue(continuation));
                 return;
             }
 
@@ -157,6 +160,11 @@ namespace GourmetProject.Game.Orchestration
             ActionExecutionContext context = RestoreActionContext(data);
             if (context == null || !context.IsValid)
             {
+                if (_run.PendingGenericRewardContinuation == PendingGenericRewardContinuationKind.Slot)
+                {
+                    _run.PendingGenericRewardContinuation = PendingGenericRewardContinuationKind.None;
+                }
+
                 _run.ClearPendingActionExecution();
                 RunPersistence.Save(_run);
                 PromptNextAction();
@@ -233,6 +241,8 @@ namespace GourmetProject.Game.Orchestration
                         data.BossDebuffId);
                 case ActionOutcomeKind.Event:
                     return ActionOutcome.Event(data.EventId);
+                case ActionOutcomeKind.Slot:
+                    return ActionOutcome.Slot(data.SlotEventId);
                 case ActionOutcomeKind.Shop:
                     return ActionOutcome.Shop();
                 default:
@@ -501,6 +511,38 @@ namespace GourmetProject.Game.Orchestration
         public void OnRewardConfirmed()
         {
             ContinueBattleWin(hideBattleWorld: true);
+        }
+
+        /// <summary>抽奖机奖励领取完毕：恢复同一 pending 行动，不走战斗/事件完成逻辑。</summary>
+        public void OnSlotRewardConfirmed()
+        {
+            PendingActionExecutionSaveData data = _run.GetPendingActionExecution();
+            ActionExecutionContext context = RestoreActionContext(data);
+            if (data == null
+                || data.OutcomeKind != ActionOutcomeKind.Slot
+                || context == null
+                || !context.IsValid)
+            {
+                _run.PendingGenericRewardContinuation = PendingGenericRewardContinuationKind.None;
+                _run.ClearPendingActionExecution();
+                RunPersistence.Save(_run);
+                PromptNextAction();
+                return;
+            }
+
+            _run.PendingGenericRewardContinuation = PendingGenericRewardContinuationKind.None;
+            _run.SetPendingSlotExecutionState(
+                data.SlotEventId,
+                data.SlotSpinsUsed,
+                SlotExecutionStage.Ready);
+            RunPersistence.Save(_run);
+
+            ActionOutcome outcome = ActionOutcome.Slot(data.SlotEventId);
+            ResolveSlotAction(
+                context,
+                BuildRecoveredPendingContinuation(context, outcome),
+                outcome,
+                restoringPending: true);
         }
 
         private void ContinueBattleWin(bool hideBattleWorld)
@@ -890,6 +932,9 @@ namespace GourmetProject.Game.Orchestration
                         ResolveEventAction(context, onContinue, outcome);
                     }
                     break;
+                case ActionOutcomeKind.Slot:
+                    ResolveSlotAction(context, onContinue, outcome, restoringPending);
+                    break;
                 case ActionOutcomeKind.Battle:
                     if (!restoringPending)
                     {
@@ -1005,6 +1050,270 @@ namespace GourmetProject.Game.Orchestration
             }
 
             return false;
+        }
+
+        private void ResolveSlotAction(
+            ActionExecutionContext context,
+            Action onDone,
+            ActionOutcome outcome,
+            bool restoringPending)
+        {
+            if (!restoringPending)
+            {
+                SavePendingActionExecution(context, outcome);
+            }
+
+            PendingActionExecutionSaveData data = _run.GetPendingActionExecution();
+            if (data == null || data.OutcomeKind != ActionOutcomeKind.Slot)
+            {
+                FinishSlotAction(onDone);
+                return;
+            }
+
+            string savedSlotEventId = !string.IsNullOrWhiteSpace(data.SlotEventId)
+                ? data.SlotEventId
+                : outcome?.SlotEventId;
+            if (!SlotService.TryGetConfig(
+                    _run,
+                    context?.Action,
+                    savedSlotEventId,
+                    out SlotMachineConfig config,
+                    out string error))
+            {
+                _view.ShowNotice(
+                    context?.Action?.Name ?? "抽奖机",
+                    string.IsNullOrWhiteSpace(error) ? "抽奖机配置无效，本次节点已结束。" : error,
+                    () => FinishSlotAction(onDone));
+                return;
+            }
+
+            // 奖励队列比 pending action 更早恢复。若仍有奖励则继续领奖；若队列已清空，
+            // 说明奖励已经领取但回调尚未执行，直接恢复 Ready，避免重抽或重复扣费。
+            if (data.SlotStage == SlotExecutionStage.AwaitingReward)
+            {
+                if (_run.HasPendingGenericRewards)
+                {
+                    _run.PendingGenericRewardContinuation = PendingGenericRewardContinuationKind.Slot;
+                    RunPersistence.Save(_run);
+                    GameApp.UI.OpenUIForm(
+                        UIForms.Reward,
+                        UIForms.GroupDialog,
+                        RewardFormOpenArgs.GenericQueue(PendingGenericRewardContinuationKind.Slot));
+                    return;
+                }
+
+                _run.PendingGenericRewardContinuation = PendingGenericRewardContinuationKind.None;
+                _run.SetPendingSlotExecutionState(
+                    config.Event.Id,
+                    data.SlotSpinsUsed,
+                    SlotExecutionStage.Ready);
+                RunPersistence.Save(_run);
+                data = _run.GetPendingActionExecution();
+            }
+
+            if (data.SlotStage == SlotExecutionStage.EmptyResult)
+            {
+                ShowSlotEmptyResult(context, config, data.SlotSpinsUsed, onDone);
+                return;
+            }
+
+            if (data.SlotSpinsUsed >= config.MaxSpins)
+            {
+                FinishSlotAction(onDone);
+                return;
+            }
+
+            ShowSlotMachine(context, config, data.SlotSpinsUsed, onDone);
+        }
+
+        private void ShowSlotMachine(
+            ActionExecutionContext context,
+            SlotMachineConfig config,
+            int spinsUsed,
+            Action onDone)
+        {
+            int safeSpins = System.Math.Max(0, System.Math.Min(spinsUsed, config.MaxSpins));
+            int cost = SlotService.CostForNextSpin(config, safeSpins);
+            bool canAfford = cost <= 0 || _run.Gold >= cost;
+            bool canSpin = safeSpins < config.MaxSpins && canAfford;
+            var optionTexts = new List<string>(config.Options.Count);
+            var optionEnabled = new List<bool>(config.Options.Count);
+            for (int i = 0; i < config.Options.Count; i++)
+            {
+                cfg.EventOption option = config.Options[i];
+                optionTexts.Add(
+                    SlotService.FormatOptionText(
+                        _run,
+                        config,
+                        option,
+                        safeSpins,
+                        canAfford));
+                optionEnabled.Add(
+                    option?.Id == SlotService.SpinOptionId
+                        ? canSpin && PreconditionEvaluator.IsSatisfied(_run, option.Condition)
+                        : option?.Id == SlotService.LeaveOptionId);
+            }
+
+            _view.ShowEventPage(
+                config.Event.Name,
+                EventService.FormatRuntimeText(_run, config.Event.Desc),
+                string.Empty,
+                config.Event.BgSprite,
+                optionTexts,
+                optionEnabled,
+                index =>
+                {
+                    if (index < 0 || index >= config.Options.Count)
+                    {
+                        return;
+                    }
+
+                    cfg.EventOption selected = config.Options[index];
+                    if (selected?.Id == SlotService.SpinOptionId && optionEnabled[index])
+                    {
+                        SpinSlot(context, config, safeSpins, onDone);
+                    }
+                    else if (selected?.Id == SlotService.LeaveOptionId)
+                    {
+                        FinishSlotAction(onDone);
+                    }
+                },
+                onEnd: null);
+        }
+
+        private void SpinSlot(
+            ActionExecutionContext context,
+            SlotMachineConfig config,
+            int expectedSpinsUsed,
+            Action onDone)
+        {
+            PendingActionExecutionSaveData data = _run.GetPendingActionExecution();
+            if (data == null
+                || data.OutcomeKind != ActionOutcomeKind.Slot
+                || data.SlotStage != SlotExecutionStage.Ready
+                || data.SlotSpinsUsed != expectedSpinsUsed
+                || expectedSpinsUsed >= config.MaxSpins)
+            {
+                ResolveSlotAction(
+                    context,
+                    onDone,
+                    ActionOutcome.Slot(config.Event.Id),
+                    restoringPending: true);
+                return;
+            }
+
+            int cost = SlotService.CostForNextSpin(config, expectedSpinsUsed);
+            if (cost > 0 && _run.Gold < cost)
+            {
+                ShowSlotMachine(context, config, expectedSpinsUsed, onDone);
+                return;
+            }
+
+            int spinIndex = expectedSpinsUsed + 1;
+            string spinKey = SlotService.BuildSpinKey(_run, context, spinIndex);
+            IRandomStream rng = GameApp.Random?.DomainStream(SeedDomains.Slot, spinKey);
+            SlotSpinResult result = SlotService.Roll(_run, config, rng, context);
+            if (!result.Success)
+            {
+                _view.ShowNotice(
+                    config.Event.Name,
+                    string.IsNullOrWhiteSpace(result.Error) ? "抽奖失败，请检查配置。" : result.Error,
+                    () => ShowSlotMachine(context, config, expectedSpinsUsed, onDone));
+                return;
+            }
+
+            if (cost > 0)
+            {
+                _run.Gold -= cost;
+            }
+
+            if (result.IsEmpty)
+            {
+                _run.SetPendingSlotExecutionState(
+                    config.Event.Id,
+                    spinIndex,
+                    SlotExecutionStage.EmptyResult);
+                RunPersistence.Save(_run);
+                ShowSlotEmptyResult(context, config, spinIndex, onDone);
+                return;
+            }
+
+            string rewardKey = $"slot_{spinKey}";
+            _run.SetPendingSlotExecutionState(
+                config.Event.Id,
+                spinIndex,
+                SlotExecutionStage.AwaitingReward,
+                rewardKey);
+            _run.EnqueueGenericRewardOffer(rewardKey, config.Event.Name, result.Offer);
+            _run.PendingGenericRewardContinuation = PendingGenericRewardContinuationKind.Slot;
+            RunPersistence.Save(_run);
+            GameApp.UI.OpenUIForm(
+                UIForms.Reward,
+                UIForms.GroupDialog,
+                RewardFormOpenArgs.GenericQueue(PendingGenericRewardContinuationKind.Slot));
+        }
+
+        private void ShowSlotEmptyResult(
+            ActionExecutionContext context,
+            SlotMachineConfig config,
+            int spinsUsed,
+            Action onDone)
+        {
+            bool finished = spinsUsed >= config.MaxSpins;
+            string text = string.IsNullOrWhiteSpace(config.Event.ResultText)
+                ? "这次什么也没有"
+                : config.Event.ResultText;
+            _view.ShowEventPage(
+                config.Event.Name,
+                EventService.FormatRuntimeText(_run, text),
+                finished ? "结束" : "继续",
+                config.Event.BgSprite,
+                Array.Empty<string>(),
+                Array.Empty<bool>(),
+                onPick: null,
+                onEnd: () =>
+                {
+                    PendingActionExecutionSaveData current = _run.GetPendingActionExecution();
+                    if (current == null
+                        || current.OutcomeKind != ActionOutcomeKind.Slot
+                        || current.SlotStage != SlotExecutionStage.EmptyResult
+                        || current.SlotSpinsUsed != spinsUsed)
+                    {
+                        return;
+                    }
+
+                    _run.SetPendingSlotExecutionState(
+                        config.Event.Id,
+                        spinsUsed,
+                        SlotExecutionStage.Ready);
+                    RunPersistence.Save(_run);
+                    if (finished)
+                    {
+                        FinishSlotAction(onDone);
+                    }
+                    else
+                    {
+                        ShowSlotMachine(context, config, spinsUsed, onDone);
+                    }
+                });
+        }
+
+        private void FinishSlotAction(Action onDone)
+        {
+            if (_run.PendingGenericRewardContinuation == PendingGenericRewardContinuationKind.Slot)
+            {
+                _run.PendingGenericRewardContinuation = PendingGenericRewardContinuationKind.None;
+            }
+
+            if (onDone != null)
+            {
+                onDone.Invoke();
+                return;
+            }
+
+            _run.ClearPendingActionExecution();
+            RunPersistence.Save(_run);
+            PromptNextAction();
         }
 
         /// <summary>

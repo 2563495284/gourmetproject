@@ -79,10 +79,6 @@ public partial class Tables
     /// </summary>
     public TbGoldRewardCurve TbGoldRewardCurve {get; }
     /// <summary>
-    /// 整局行动日程规则：按整局行动序号窗口和优先级填充行动组序列。
-    /// </summary>
-    public TbActionScheduleRule TbActionScheduleRule {get; }
-    /// <summary>
     /// 解锁规则：一条规则定义一个跨局可解锁目标。
     /// </summary>
     public TbUnlockRule TbUnlockRule {get; }
@@ -131,7 +127,7 @@ public partial class Tables
     /// </summary>
     public TbActionSmallGroup TbActionSmallGroup {get; }
     /// <summary>
-    /// 行动大组：内嵌 smallGroupIds(list,string)，按保底权重与日程规则参与随机。
+    /// 行动大组：内嵌 smallGroupIds(list,string)，按保底上下限与每周权重参与随机。
     /// </summary>
     public TbActionLargeGroup TbActionLargeGroup {get; }
     /// <summary>
@@ -161,7 +157,6 @@ public partial class Tables
         TbTimeline = new TbTimeline(loader("tbtimeline"));
         TbHiddenScoreCurve = new TbHiddenScoreCurve(loader("tbhiddenscorecurve"));
         TbGoldRewardCurve = new TbGoldRewardCurve(loader("tbgoldrewardcurve"));
-        TbActionScheduleRule = new TbActionScheduleRule(loader("tbactionschedulerule"));
         TbUnlockRule = new TbUnlockRule(loader("tbunlockrule"));
         TbUnlockCondition = new TbUnlockCondition(loader("tbunlockcondition"));
         TbSkill = new TbSkill(loader("tbskill"));
@@ -198,7 +193,6 @@ public partial class Tables
         TbTimeline.ResolveRef(this);
         TbHiddenScoreCurve.ResolveRef(this);
         TbGoldRewardCurve.ResolveRef(this);
-        TbActionScheduleRule.ResolveRef(this);
         TbUnlockRule.ResolveRef(this);
         TbUnlockCondition.ResolveRef(this);
         TbSkill.ResolveRef(this);

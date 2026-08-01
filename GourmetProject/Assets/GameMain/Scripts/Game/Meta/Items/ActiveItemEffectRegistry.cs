@@ -171,6 +171,36 @@ namespace GourmetProject.Game.Meta
                             createdTimelineNodeId: addedNodeId)
                         : new ActiveItemUseResult(false, false, $"{item.Name}：无法添加到所选日期。");
 
+                case ItemEffectTypes.TimelineAddLotteryNode:
+                    if (targets == null || targets.Count == 0)
+                    {
+                        return new ActiveItemUseResult(false, false, $"{item.Name}：请先选择日期。");
+                    }
+
+                    cfg.GameAction slotAction =
+                        ctx.Run?.Tables?.TbAction?.GetOrDefault(item.EffectParam);
+                    if (!SlotService.TryGetConfig(
+                            ctx.Run,
+                            slotAction,
+                            out _,
+                            out string slotConfigError))
+                    {
+                        string reason = string.IsNullOrWhiteSpace(slotConfigError)
+                            ? "抽奖机配置无效。"
+                            : slotConfigError;
+                        return new ActiveItemUseResult(false, false, $"{item.Name}：{reason}");
+                    }
+
+                    string lotteryNodeId =
+                        ctx.AddTimelineNodeWithId(item.EffectParam, targets[0].X, item.Id);
+                    return !string.IsNullOrEmpty(lotteryNodeId)
+                        ? new ActiveItemUseResult(
+                            true,
+                            false,
+                            $"{item.Name}：已添加到第 {targets[0].X} 天。",
+                            createdTimelineNodeId: lotteryNodeId)
+                        : new ActiveItemUseResult(false, false, $"{item.Name}：无法添加到所选日期。");
+
                 case ItemEffectTypes.TimelineDeleteNode:
                     if (targets == null || targets.Count == 0)
                     {
@@ -183,9 +213,6 @@ namespace GourmetProject.Game.Meta
                             false,
                             $"{item.Name}：已删除所选节点。")
                         : new ActiveItemUseResult(false, false, $"{item.Name}：所选节点已经无法删除。");
-
-                case ItemEffectTypes.TimelineAddLotteryNode:
-                    return new ActiveItemUseResult(false, false, $"{item.Name}：功能开发中。");
 
                 default:
                     return new ActiveItemUseResult(true, false, $"使用了 {item.Name}。");

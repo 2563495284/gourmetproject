@@ -105,11 +105,11 @@ namespace GourmetProject.Game.UI.Battle.View
                 if (showScore)
                 {
                     int score = _battleScoreOverride ?? 0;
-                    _scoreReqText.text = $"<size=28>分数要求</size>\n\n{score}\n/\n{session.RequiredScore}";
+                    _scoreReqText.text = $"<size=28>美味值要求</size>\n\n{score}\n/\n{session.RequiredScore}";
                 }
                 else
                 {
-                    _scoreReqText.text = "<size=28>分数要求</size>\n\n-\n/\n-";
+                    _scoreReqText.text = "<size=28>美味值要求</size>\n\n-\n/\n-";
                 }
             }
 

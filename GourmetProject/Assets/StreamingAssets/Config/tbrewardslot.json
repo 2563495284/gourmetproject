@@ -754,5 +754,117 @@
     "name": "随机金属铺设道具",
     "desc": "随机获得一个金属铺设类主动道具。",
     "ruleTemplate": "随机获得 {requiredPickCount} 个金属铺设道具。"
+  },
+  {
+    "id": "slot_machine_gold",
+    "groupId": "slot_machine_basic",
+    "kind": 1,
+    "choiceCount": 1,
+    "requiredPickCount": 1,
+    "weight": 35,
+    "poolId": "",
+    "dishHiddenOffset": [
+      0,
+      0
+    ],
+    "passiveItemHiddenOffset": [
+      0,
+      0
+    ],
+    "fragmentHiddenOffset": [
+      0,
+      0
+    ],
+    "goldHiddenOffset": [
+      10,
+      30
+    ],
+    "name": "抽奖机金币",
+    "desc": "从抽奖机中获得一笔金币奖励。",
+    "ruleTemplate": "获得 {requiredPickCount} 份金币奖励。"
+  },
+  {
+    "id": "slot_machine_fragment",
+    "groupId": "slot_machine_basic",
+    "kind": 5,
+    "choiceCount": 3,
+    "requiredPickCount": 1,
+    "weight": 15,
+    "poolId": "pool_fragment",
+    "dishHiddenOffset": [
+      0,
+      0
+    ],
+    "passiveItemHiddenOffset": [
+      0,
+      0
+    ],
+    "fragmentHiddenOffset": [
+      0,
+      6
+    ],
+    "goldHiddenOffset": [
+      0,
+      0
+    ],
+    "name": "抽奖机餐桌碎片",
+    "desc": "从抽奖机的餐桌碎片候选中挑选一块。",
+    "ruleTemplate": "从 {choiceCount} 个餐桌碎片中选择 {requiredPickCount} 个。"
+  },
+  {
+    "id": "slot_machine_active",
+    "groupId": "slot_machine_basic",
+    "kind": 4,
+    "choiceCount": 1,
+    "requiredPickCount": 1,
+    "weight": 5,
+    "poolId": "pool_active",
+    "dishHiddenOffset": [
+      0,
+      0
+    ],
+    "passiveItemHiddenOffset": [
+      0,
+      0
+    ],
+    "fragmentHiddenOffset": [
+      0,
+      0
+    ],
+    "goldHiddenOffset": [
+      0,
+      0
+    ],
+    "name": "抽奖机主动道具",
+    "desc": "从抽奖机中获得一个可在战斗中使用的主动道具。",
+    "ruleTemplate": "随机获得 {requiredPickCount} 个主动道具。"
+  },
+  {
+    "id": "slot_machine_passive",
+    "groupId": "slot_machine_basic",
+    "kind": 3,
+    "choiceCount": 2,
+    "requiredPickCount": 1,
+    "weight": 5,
+    "poolId": "pool_passive",
+    "dishHiddenOffset": [
+      0,
+      0
+    ],
+    "passiveItemHiddenOffset": [
+      3,
+      6
+    ],
+    "fragmentHiddenOffset": [
+      0,
+      0
+    ],
+    "goldHiddenOffset": [
+      0,
+      0
+    ],
+    "name": "抽奖机被动道具",
+    "desc": "从抽奖机候选中挑选一个被动道具，获得后持续生效。",
+    "ruleTemplate": "从 {choiceCount} 个被动道具中选择 {requiredPickCount} 个。"
   }
 ]

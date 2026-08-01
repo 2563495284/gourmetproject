@@ -210,6 +210,20 @@
     "rewardDesc": ""
   },
   {
+    "id": "act_slot",
+    "name": "抽奖机",
+    "desc": "投入金币，抽取未知奖励",
+    "behavior": 7,
+    "foodId": "",
+    "effectType": 0,
+    "effectValue": 0,
+    "effectParam": "ev_slot_machine",
+    "minCostDays": 0,
+    "maxCostDays": 0,
+    "rewardTitle": "",
+    "rewardDesc": ""
+  },
+  {
     "id": "act_loan_repay",
     "name": "偿还高利贷",
     "desc": "扣除400金币",

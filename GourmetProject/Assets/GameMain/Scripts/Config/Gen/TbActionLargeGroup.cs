@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 行动大组：内嵌 smallGroupIds(list,string)，按保底权重与日程规则参与随机。
+/// 行动大组：内嵌 smallGroupIds(list,string)，按保底上下限与每周权重参与随机。
 /// </summary>
 public partial class TbActionLargeGroup
 {

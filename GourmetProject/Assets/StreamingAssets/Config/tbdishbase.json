@@ -1,7 +1,7 @@
 [
   {
     "id": "arrow_cookie_1",
-    "name": "箭头饼干1",
+    "name": "右箭头饼干",
     "deliciousness": 10,
     "allowRotate": false,
     "skills": "sk_arrow_cookie_1",
@@ -14,7 +14,7 @@
   },
   {
     "id": "arrow_cookie_2",
-    "name": "箭头饼干2",
+    "name": "左箭头饼干",
     "deliciousness": 10,
     "allowRotate": false,
     "skills": "sk_arrow_cookie_2",
@@ -27,7 +27,7 @@
   },
   {
     "id": "arrow_cookie_3",
-    "name": "箭头饼干3",
+    "name": "下箭头饼干",
     "deliciousness": 10,
     "allowRotate": false,
     "skills": "sk_arrow_cookie_3",
@@ -41,7 +41,7 @@
   },
   {
     "id": "arrow_cookie_4",
-    "name": "箭头饼干4",
+    "name": "上箭头饼干",
     "deliciousness": 10,
     "allowRotate": false,
     "skills": "sk_arrow_cookie_4",

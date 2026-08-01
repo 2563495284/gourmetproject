@@ -24,6 +24,9 @@ namespace GourmetProject.Core.Rng
         /// <summary>随机事件抽取与选项结算。</summary>
         public const string Event = "event";
 
+        /// <summary>抽奖机结果；与事件、通用奖励随机流隔离。</summary>
+        public const string Slot = "slot";
+
         /// <summary>Boss 加权抽取。</summary>
         public const string Boss = "boss";
 

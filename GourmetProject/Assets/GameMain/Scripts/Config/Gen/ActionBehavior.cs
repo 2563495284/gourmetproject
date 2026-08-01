@@ -23,6 +23,10 @@ namespace cfg
         Shop = 4,
         Interest = 5,
         Effect = 6,
+        /// <summary>
+        /// 独立抽奖机行动
+        /// </summary>
+        Slot = 7,
     }
 
 } 
