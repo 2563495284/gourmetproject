@@ -527,7 +527,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 run,
                 candidateIds,
                 onDone,
-                null));
+                null,
+                run?.PendingFragmentPackRotations));
         }
 
         public void BeginTableFragmentChoice(TableFragmentChoiceRequest request)

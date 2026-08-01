@@ -813,17 +813,8 @@ namespace GourmetProject.Tests.PlayMode
             marker.anchorMin = new Vector2(0f, 0.05f);
             marker.anchorMax = new Vector2(0.03f, 0.18f);
 
-            var remainingObject = new GameObject(
-                "Remaining",
-                typeof(RectTransform),
-                typeof(Text));
-            remainingObject.transform.SetParent(axisObject.transform, false);
-            Text remaining = remainingObject.GetComponent<Text>();
-            remaining.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-
             SetPrivate(axis, "_container", container);
             SetPrivate(axis, "_positionMarker", marker);
-            SetPrivate(axis, "_remainingDaysText", remaining);
             return root;
         }
 

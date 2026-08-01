@@ -77,6 +77,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private GpTable _editTable;
         private Action<bool> _editOnDone;
         private readonly List<TableFragmentDef> _editCandidates = new List<TableFragmentDef>();
+        private readonly List<int> _editCandidateRotations = new List<int>();
         private int _editSelected = -1;
         private FragmentChoiceInteractionState _fragmentChoiceState;
         private int _choiceSessionVersion;
@@ -202,12 +203,18 @@ namespace GourmetProject.Game.Presentation.Battle
             ConfigureEditMaxBounds(run);
 
             _editCandidates.Clear();
-            foreach (string id in request.CandidateIds)
+            _editCandidateRotations.Clear();
+            for (int i = 0; i < request.CandidateIds.Count; i++)
             {
+                string id = request.CandidateIds[i];
                 TableFragmentDef def = run.GetTableFragmentDef(id);
                 if (def != null)
                 {
-                    _editCandidates.Add(def);
+                    int rotation = i < request.CandidateRotations.Count
+                        ? request.CandidateRotations[i]
+                        : 0;
+                    _editCandidates.Add(def.Rotated(rotation));
+                    _editCandidateRotations.Add(rotation);
                 }
             }
 
@@ -233,7 +240,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 run,
                 candidateIds,
                 onDone,
-                null));
+                null,
+                run?.PendingFragmentPackRotations));
         }
 
         /// <summary>进入只读餐桌视图：复用编辑页餐桌布局，但不显示候选碎片托盘，也不启用拖拽输入。</summary>
@@ -315,6 +323,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _currentPlacementEvaluation = null;
             _stagedAbsoluteCells.Clear();
             _editCandidates.Clear();
+            _editCandidateRotations.Clear();
             ClearGhost();
             _boardView?.ClearTransientGridRegionOutline();
             ClearDragVisual();
@@ -676,7 +685,10 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             string fragmentId = _editCandidates[_editSelected].Id;
-            if (!_editRun.AddFragmentPlacement(fragmentId, 0, origin))
+            int rotation = _editSelected < _editCandidateRotations.Count
+                ? _editCandidateRotations[_editSelected]
+                : 0;
+            if (!_editRun.AddFragmentPlacement(fragmentId, rotation, origin))
             {
                 ReturnCandidateDrag();
                 return;

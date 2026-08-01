@@ -137,13 +137,12 @@ namespace GourmetProject.Game.UI.Tooltips
 
         public void OnPointerExit(PointerEventData eventData)
         {
-            _pointerInsideOwner = false;
-            if (_isShown && ActiveTip != null)
-            {
-                HideTip();
-            }
+            HideActiveTip();
+        }
 
-            _isShown = false;
+        private void OnDisable()
+        {
+            HideActiveTip();
         }
 
         private void UpdateHoverState(PointerEventData eventData)
@@ -234,6 +233,17 @@ namespace GourmetProject.Game.UI.Tooltips
         }
 
         private MonoBehaviour ActiveTip => _tipView != null ? _tipView : _tip;
+
+        private void HideActiveTip()
+        {
+            _pointerInsideOwner = false;
+            if (_isShown && ActiveTip != null)
+            {
+                HideTip();
+            }
+
+            _isShown = false;
+        }
 
         private void ShowTip(MonoBehaviour tip)
         {
