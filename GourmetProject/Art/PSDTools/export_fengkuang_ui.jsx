@@ -16,6 +16,9 @@
         { file: "Backgrounds/bg_main_menu.png", paths: ["封面/图层 1", "封面/图层 2"], bounds: [0, 0, 1920, 1080] },
         { file: "Backgrounds/bg_battle.png", paths: ["图层 26"], bounds: [0, 0, 1920, 1080] },
         { file: "Branding/logo_game_title.png", paths: ["封面/组 1"] },
+        { file: "Branding/menu_start_prompt.png", paths: ["封面/开始游戏"] },
+        { file: "Branding/menu_label_settings.png", paths: ["封面/设置"] },
+        { file: "Branding/menu_label_quit.png", paths: ["封面/退出"] },
         { file: "Icons/icon_menu_arrow_left.png", paths: ["封面/图层 4"] },
         { file: "Icons/icon_menu_arrow_right.png", paths: ["封面/图层 5"] },
 

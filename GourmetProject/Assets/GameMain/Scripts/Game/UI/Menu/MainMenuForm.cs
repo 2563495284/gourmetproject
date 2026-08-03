@@ -2,6 +2,7 @@ using GourmetProject.Game.Adapter;
 using GourmetProject.Runtime;
 using GourmetProject.Runtime.UI;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using UnityGameFramework.Runtime;
 using GourmetProject.Game.UI;
@@ -20,6 +21,11 @@ namespace GourmetProject.Game.UI.Menu
         private Button _startButton;
         private Button _settingsButton;
         private Button _quitButton;
+        private RectTransform _leftSelectionArrow;
+        private RectTransform _rightSelectionArrow;
+
+        private const float SelectionArrowGap = 27.5f;
+        private const float SelectionArrowVerticalOffset = -2.5f;
 
         protected override void OnInit(object userData)
         {
@@ -28,10 +34,16 @@ namespace GourmetProject.Game.UI.Menu
             _startButton = FindRequiredComponentInChildren<Button>("StartButton");
             _settingsButton = FindRequiredComponentInChildren<Button>("SettingsButton");
             _quitButton = FindRequiredComponentInChildren<Button>("QuitButton");
+            _leftSelectionArrow = FindRequiredComponentInChildren<RectTransform>("SelectionArrowLeft");
+            _rightSelectionArrow = FindRequiredComponentInChildren<RectTransform>("SelectionArrowRight");
 
             _startButton.onClick.AddListener(OnStartClicked);
             _settingsButton.onClick.AddListener(OnSettingsClicked);
             _quitButton.onClick.AddListener(OnQuitClicked);
+
+            BindSelectionArrowEvents(_startButton);
+            BindSelectionArrowEvents(_settingsButton);
+            BindSelectionArrowEvents(_quitButton);
         }
 
         protected override void OnOpen(object userData)
@@ -45,6 +57,41 @@ namespace GourmetProject.Game.UI.Menu
             {
                 startupBackground.SetActive(false);
             }
+
+            MoveSelectionArrows(_startButton);
+        }
+
+        private void BindSelectionArrowEvents(Button button)
+        {
+            EventTrigger trigger = button.GetComponent<EventTrigger>();
+            if (trigger == null)
+            {
+                trigger = button.gameObject.AddComponent<EventTrigger>();
+            }
+
+            AddSelectionArrowEvent(trigger, EventTriggerType.PointerEnter, button);
+            AddSelectionArrowEvent(trigger, EventTriggerType.Select, button);
+        }
+
+        private void AddSelectionArrowEvent(EventTrigger trigger, EventTriggerType eventType, Button button)
+        {
+            var entry = new EventTrigger.Entry { eventID = eventType };
+            entry.callback.AddListener(_ => MoveSelectionArrows(button));
+            trigger.triggers.Add(entry);
+        }
+
+        private void MoveSelectionArrows(Button button)
+        {
+            var target = (RectTransform)button.transform;
+            Vector2 targetPosition = target.anchoredPosition;
+            float horizontalOffset = target.rect.width * 0.5f + SelectionArrowGap;
+
+            _leftSelectionArrow.anchoredPosition = new Vector2(
+                targetPosition.x - horizontalOffset - _leftSelectionArrow.rect.width * 0.5f,
+                targetPosition.y + SelectionArrowVerticalOffset);
+            _rightSelectionArrow.anchoredPosition = new Vector2(
+                targetPosition.x + horizontalOffset + _rightSelectionArrow.rect.width * 0.5f,
+                targetPosition.y + SelectionArrowVerticalOffset);
         }
 
         private void OnStartClicked()
