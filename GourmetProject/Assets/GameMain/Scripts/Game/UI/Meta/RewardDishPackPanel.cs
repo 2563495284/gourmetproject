@@ -361,7 +361,15 @@ namespace GourmetProject.Game.UI.Meta
                 flavorDetails.Add(new FoodInfoEntry(flavor.Name, flavor.Desc));
             }
 
-            var summary = new FoodSummaryTipsData(def.Name, skills, flavorNames);
+            var summary = new FoodSummaryTipsData(
+                def.Name,
+                skills,
+                flavorNames,
+                countAs: FoodTipsDataFactory.ResolveIntrinsicCountAs(
+                    def,
+                    skillIds,
+                    flavorIds,
+                    run.Database));
             float multiplier = slot != null ? slot.ScoreMultiplier : 1f;
             float score = def.Deliciousness + (slot != null ? slot.ScoreFlatBonus : 0f);
             return new FoodTipsData(

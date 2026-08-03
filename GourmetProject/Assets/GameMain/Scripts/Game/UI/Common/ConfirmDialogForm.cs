@@ -1,5 +1,6 @@
 using GourmetProject.Runtime;
 using GourmetProject.Runtime.UI;
+using UnityEngine;
 using UnityEngine.UI;
 using GourmetProject.Game.UI;
 using GourmetProject.Game.UI.Battle;
@@ -21,6 +22,8 @@ namespace GourmetProject.Game.UI.Common
         private Button _cancelButton;
         private Text _confirmLabel;
         private Text _cancelLabel;
+        private RectTransform _confirmButtonRect;
+        private Vector2 _confirmTwoButtonPosition;
 
         private ConfirmDialogData _data;
 
@@ -34,6 +37,8 @@ namespace GourmetProject.Game.UI.Common
             _cancelButton = CachedTransform.Find("Window/CancelButton").GetComponent<Button>();
             _confirmLabel = _confirmButton.transform.Find("Text").GetComponent<Text>();
             _cancelLabel = _cancelButton.transform.Find("Text").GetComponent<Text>();
+            _confirmButtonRect = (RectTransform)_confirmButton.transform;
+            _confirmTwoButtonPosition = _confirmButtonRect.anchoredPosition;
 
             _confirmButton.onClick.AddListener(OnConfirmClicked);
             _cancelButton.onClick.AddListener(OnCancelClicked);
@@ -49,8 +54,12 @@ namespace GourmetProject.Game.UI.Common
             _confirmLabel.text = _data.ConfirmText;
             _cancelLabel.text = _data.CancelText;
 
-            // 取消文案为空时作为单按钮通知弹窗（隐藏取消按钮）。
-            _cancelButton.gameObject.SetActive(!string.IsNullOrEmpty(_data.CancelText));
+            // 取消文案为空时作为单按钮通知弹窗，并将确认按钮居中。
+            bool showCancelButton = !string.IsNullOrEmpty(_data.CancelText);
+            _cancelButton.gameObject.SetActive(showCancelButton);
+            _confirmButtonRect.anchoredPosition = showCancelButton
+                ? _confirmTwoButtonPosition
+                : new Vector2(0f, _confirmTwoButtonPosition.y);
         }
 
         protected override void OnClose(bool isShutdown, object userData)

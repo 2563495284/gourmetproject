@@ -19,6 +19,15 @@ namespace GourmetProject.Game.Run
         public int WeekIndex;
         public int Gold;
 
+        /// <summary>本局爱心上限。</summary>
+        public int HeartCapacity;
+
+        /// <summary>本局当前剩余爱心。</summary>
+        public int HeartsRemaining;
+
+        /// <summary>已经扣心、等待播放或恢复的碎心演出。</summary>
+        public PendingHeartBreakSaveData PendingHeartBreak;
+
         /// <summary>本局利息节点金币阈值。</summary>
         public int InterestThreshold = -1;
 
@@ -445,6 +454,15 @@ namespace GourmetProject.Game.Run
     }
 
     [Serializable]
+    public sealed class PendingHeartBreakSaveData
+    {
+        public int BeforeHeartCount;
+        public int AfterHeartCount;
+        public int BattleTotal;
+        public bool IsTerminal;
+    }
+
+    [Serializable]
     public sealed class PendingRewardBattleViewSaveData
     {
         public int RequiredScore;
@@ -489,6 +507,7 @@ namespace GourmetProject.Game.Run
         public float ScoreBaseValue;
         public float ScoreFlatBonus;
         public float ScoreMultiplier = 1f;
+        public int ScoreEffectiveCountAs = 1;
     }
 
     [Serializable]

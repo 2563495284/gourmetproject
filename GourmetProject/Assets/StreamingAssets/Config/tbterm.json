@@ -73,5 +73,10 @@
     "id": "m_silver",
     "name": "银",
     "desc": "占据 2 格银餐桌时\n1/2概率获得主动道具"
+  },
+  {
+    "id": "term_food_count_as",
+    "name": "食物",
+    "desc": "视为{x}个食物"
   }
 ]

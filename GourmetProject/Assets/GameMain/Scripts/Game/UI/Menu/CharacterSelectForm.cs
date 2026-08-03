@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Flow;
+using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Battle;
 using GourmetProject.Game.UI.Common;
 using GourmetProject.Game.UI.Meta;
@@ -19,13 +20,14 @@ namespace GourmetProject.Game.UI.Menu
 {
     /// <summary>
     /// 角色选择界面（仿杀戮尖塔）：左右箭头切换角色，翻页圆点指示当前位置，
-    /// 「选中」确认开局（播放转场），「返回」回主菜单。
+    /// 根据存档状态提供继续游戏或选择角色开新局入口，「返回」回主菜单。
     /// 角色列表、名称、描述、立绘路径与开局角色 id 均来自 <c>TbCharacter</c>。
     /// </summary>
     public sealed class CharacterSelectForm : UGuiForm
     {
         private const string Tag = "CharacterSelect";
         private const float RecipeButtonGlowPadding = 28f;
+        private const float ActionButtonHorizontalOffset = 130f;
 
         private static readonly Color DotSelected = new(1f, 0.6f, 0.16f, 1f);
         private static readonly Color DotNormal = new(1f, 1f, 1f, 0.45f);
@@ -38,6 +40,7 @@ namespace GourmetProject.Game.UI.Menu
         public Button _leftArrow;
         public Button _rightArrow;
         public Button _confirmButton;
+        public Button _continueButton;
         public Button _backButton;
         public Image _portraitImage;
         [SerializeField] private RecipeReadonlyBookView _recipeReadonlyBookView;
@@ -53,6 +56,8 @@ namespace GourmetProject.Game.UI.Menu
         private Material _recipeViewGlowMaterial;
         private FoodTipsView _foodTipsView;
         private bool _recipeViewOpen;
+        private Text _confirmLabel;
+        private Vector2 _confirmButtonDefaultPosition;
         private int _index;
 
         protected override void OnInit(object userData)
@@ -60,10 +65,13 @@ namespace GourmetProject.Game.UI.Menu
             base.OnInit(userData);
             EnsureReferences();
             CollectDots();
+            _confirmButtonDefaultPosition =
+                _confirmButton.GetComponent<RectTransform>().anchoredPosition;
 
             _leftArrow.onClick.AddListener(OnPrevClicked);
             _rightArrow.onClick.AddListener(OnNextClicked);
             _confirmButton.onClick.AddListener(OnConfirmClicked);
+            _continueButton.onClick.AddListener(OnContinueClicked);
             _backButton.onClick.AddListener(OnBackClicked);
             _recipeViewButton.onClick.AddListener(OnRecipeViewClicked);
         }
@@ -76,6 +84,7 @@ namespace GourmetProject.Game.UI.Menu
             ReloadGameplayDatabase();
             _index = 0;
             SetRecipeViewOpen(false);
+            RefreshSaveEntryState();
             Refresh();
         }
 
@@ -127,6 +136,58 @@ namespace GourmetProject.Game.UI.Menu
             }
 
             cfg.Character character = _characters[_index];
+            if (RunPersistence.HasSave)
+            {
+                var dialogData = new ConfirmDialogData
+                {
+                    Title = "开始新游戏",
+                    Message = "开始新游戏将会失去当前存档，是否继续？",
+                    ConfirmText = "开始新游戏",
+                    CancelText = "取消",
+                    OnConfirm = () => ConfirmStartNewRun(character),
+                };
+                GameApp.UI.OpenUIForm(
+                    UIForms.ConfirmDialog,
+                    UIForms.GroupDialog,
+                    dialogData);
+                return;
+            }
+
+            StartNewRun(character);
+        }
+
+        private void OnContinueClicked()
+        {
+            if (!RunPersistence.HasSave)
+            {
+                RefreshSaveEntryState();
+                return;
+            }
+
+            ShowBattleTransition(() =>
+            {
+                GameApp.UI.CloseUIForm(UIForm);
+                GameplayEntryRequest.RequestContinue();
+            });
+        }
+
+        private static void ConfirmStartNewRun(cfg.Character character)
+        {
+            RunPersistence.Delete();
+            StartNewRun(character);
+        }
+
+        private static void StartNewRun(cfg.Character character)
+        {
+            ShowBattleTransition(() =>
+            {
+                Log.Info($"Selected character '{character.Id}', starting run.", Tag);
+                GameplayEntryRequest.RequestNewRun(character.Id);
+            });
+        }
+
+        private static void ShowBattleTransition(Action onCovered)
+        {
             var data = new CartoonSceneTransitionData
             {
                 TransitionType = CartoonTransitionType.Fade,
@@ -134,15 +195,30 @@ namespace GourmetProject.Game.UI.Menu
                 CoverDuration = 0.42f,
                 HoldDuration = 0.2f,
                 RevealDuration = 0.34f,
-                OnCovered = () =>
-                {
-                    Log.Info($"Selected character '{character.Id}', starting run.", Tag);
-                    GameplayEntryRequest.RequestNewRun(character.Id);
-                },
+                OnCovered = onCovered,
                 IsReadyToReveal = IsBattleReady,
             };
 
             CartoonSceneTransitionForm.Show(data);
+        }
+
+        private void RefreshSaveEntryState()
+        {
+            bool hasSave = RunPersistence.HasSave;
+            _continueButton.gameObject.SetActive(hasSave);
+            _confirmLabel.text = hasSave ? "开始新游戏" : "开始游戏";
+
+            RectTransform confirmRect =
+                _confirmButton.GetComponent<RectTransform>();
+            confirmRect.anchoredPosition = _confirmButtonDefaultPosition
+                + (hasSave
+                    ? Vector2.right * ActionButtonHorizontalOffset
+                    : Vector2.zero);
+
+            RectTransform continueRect =
+                _continueButton.GetComponent<RectTransform>();
+            continueRect.anchoredPosition = _confirmButtonDefaultPosition
+                + Vector2.left * ActionButtonHorizontalOffset;
         }
 
         private static bool IsBattleReady()
@@ -463,6 +539,8 @@ namespace GourmetProject.Game.UI.Menu
             _leftArrow ??= FindRequiredComponentInChildren<Button>("LeftArrow");
             _rightArrow ??= FindRequiredComponentInChildren<Button>("RightArrow");
             _confirmButton ??= FindRequiredComponentInChildren<Button>("ConfirmButton");
+            _continueButton ??= FindRequiredComponentInChildren<Button>(
+                "ContinueButton");
             _backButton ??= FindRequiredComponentInChildren<Button>(
                 "BackButton",
                 _recipeReadonlyBookView?.transform);
@@ -471,6 +549,14 @@ namespace GourmetProject.Game.UI.Menu
                 FindRequiredComponentInChildren<Button>("RecipeViewButton");
             _recipeViewGlow ??=
                 FindOptionalComponentInChildren<Image>("TargetGlow");
+
+            _confirmLabel = _confirmButton.transform.Find("Text")
+                ?.GetComponent<Text>();
+            if (_confirmLabel == null)
+            {
+                throw new MissingComponentException(
+                    "CharacterSelectForm requires ConfirmButton/Text with component Text.");
+            }
         }
 
         private static Sprite LoadPortrait(string resourcePath)

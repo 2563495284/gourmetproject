@@ -11,6 +11,9 @@ namespace GourmetProject.Game.UI.Tooltips
     {
         [SerializeField] private CanvasGroup _canvasGroup;
         [SerializeField] private Text _nameText;
+        [SerializeField] private RectTransform _duplicateView;
+        [SerializeField] private RectTransform _countAsView;
+        [SerializeField] private Text _countAsText;
         [SerializeField] private RectTransform _skillsContent;
         [SerializeField] private RectTransform _flavorContent;
         [SerializeField] private FoodTipCardView _skillCardPrefab;
@@ -23,6 +26,7 @@ namespace GourmetProject.Game.UI.Tooltips
         private const float MaxWidth = 330f;
         private const float SummaryHorizontalPadding = 24f;
         private const float SkillCardHorizontalPadding = 20f;
+        private const float SkillDescPanelHorizontalPadding = 20f;
         private const string MinWidthSampleText = "十十十十十十十十十十";
 
         public void Bind(FoodSummaryTipsData data)
@@ -35,6 +39,10 @@ namespace GourmetProject.Game.UI.Tooltips
             data ??= FoodSummaryTipsData.Empty;
 
             _nameText.text = data.FoodName;
+            _duplicateView.gameObject.SetActive(data.IsTemporaryCopy);
+            bool showCountAs = data.CountAs > 1;
+            _countAsView.gameObject.SetActive(showCountAs);
+            _countAsText.text = data.CountAs.ToString();
             float skillsTextWidth = BuildSkills(data.Skills, data.SkillsDisabled);
             BuildFlavors(data.Flavors);
             ResizeToContent(skillsTextWidth, data.Flavors);
@@ -141,7 +149,10 @@ namespace GourmetProject.Game.UI.Tooltips
             {
                 preferredWidth = Mathf.Max(
                     preferredWidth,
-                    skillsTextWidth + SummaryHorizontalPadding + SkillCardHorizontalPadding);
+                    skillsTextWidth
+                    + SummaryHorizontalPadding
+                    + SkillCardHorizontalPadding
+                    + SkillDescPanelHorizontalPadding);
             }
 
             if (flavors != null && flavors.Count > 0)
@@ -163,13 +174,17 @@ namespace GourmetProject.Game.UI.Tooltips
 
             return _skillCardPrefab.PreferredDescWidthFor(MinWidthSampleText)
                 + SummaryHorizontalPadding
-                + SkillCardHorizontalPadding;
+                + SkillCardHorizontalPadding
+                + SkillDescPanelHorizontalPadding;
         }
 
         private bool ValidateReferences()
         {
             bool valid = true;
             valid &= ReportMissing(_nameText, nameof(_nameText));
+            valid &= ReportMissing(_duplicateView, nameof(_duplicateView));
+            valid &= ReportMissing(_countAsView, nameof(_countAsView));
+            valid &= ReportMissing(_countAsText, nameof(_countAsText));
             valid &= ReportMissing(_skillsContent, nameof(_skillsContent));
             valid &= ReportMissing(_flavorContent, nameof(_flavorContent));
             valid &= ReportMissing(_skillCardPrefab, nameof(_skillCardPrefab));

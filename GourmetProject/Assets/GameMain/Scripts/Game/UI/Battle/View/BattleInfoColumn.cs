@@ -1,6 +1,7 @@
 using System;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Game.Run;
+using GourmetProject.Game.UI.Common;
 using GourmetProject.Gameplay.Battle;
 using UnityEngine;
 using UnityEngine.UI;
@@ -18,6 +19,7 @@ namespace GourmetProject.Game.UI.Battle.View
 
         [SerializeField] private Text _weekText;
         [SerializeField] private Text _goldText;
+        [SerializeField] private Text _heartText;
         [SerializeField] private Text _scoreReqText;
         [SerializeField] private Button _viewRecipeButton;
         [SerializeField] private Button _viewTableButton;
@@ -97,6 +99,11 @@ namespace GourmetProject.Game.UI.Battle.View
             if (_goldText != null)
             {
                 _goldText.text =$"金币：{run.Gold}";
+            }
+
+            if (_heartText != null)
+            {
+                _heartText.text = HeartDisplayText.Build(run.HeartsRemaining, run.HeartCapacity);
             }
 
             if (_scoreReqText != null)

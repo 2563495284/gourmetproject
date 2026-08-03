@@ -131,6 +131,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8496131090154238917}
   - component: {fileID: 1809828373335150686}
+  - component: {fileID: 9134757985598208230}
   m_Layer: 0
   m_Name: DefeatForm
   m_TagString: Untagged
@@ -172,6 +173,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Meta.DefeatForm
   _resultText: {fileID: 3722613967825721348}
   _resultButton: {fileID: 1599180765904517342}
+  _transitionGroup: {fileID: 9134757985598208230}
+  _transitionPanel: {fileID: 3432207238461280416}
+--- !u!225 &9134757985598208230
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2494071936349376157}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &3153350951655136426
 GameObject:
   m_ObjectHideFlags: 0

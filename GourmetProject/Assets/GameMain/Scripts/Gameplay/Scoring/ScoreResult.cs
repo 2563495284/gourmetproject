@@ -8,13 +8,20 @@ namespace GourmetProject.Gameplay.Scoring
     {
         private const double ContributionIntegerEpsilon = 0.0001d;
 
-        public DishScore(int dishInstanceId, string dishId, float baseValue, float flatBonus, float multiplier)
+        public DishScore(
+            int dishInstanceId,
+            string dishId,
+            float baseValue,
+            float flatBonus,
+            float multiplier,
+            int effectiveCountAs = 1)
         {
             DishInstanceId = dishInstanceId;
             DishId = dishId;
             BaseValue = baseValue;
             FlatBonus = flatBonus;
             Multiplier = multiplier;
+            EffectiveCountAs = System.Math.Max(1, effectiveCountAs);
         }
 
         public int DishInstanceId { get; }
@@ -26,6 +33,9 @@ namespace GourmetProject.Gameplay.Scoring
         public float FlatBonus { get; }
 
         public float Multiplier { get; }
+
+        /// <summary>本次结算使用的实际「视为食物数」（含 live AddCountAs 与全局加成）。</summary>
+        public int EffectiveCountAs { get; }
 
         /// <summary>本菜品最终贡献 = (美味度 + 加法) × 乘区 后向上取整。</summary>
         public float Contribution => CeilContribution(BaseValue + FlatBonus, Multiplier);

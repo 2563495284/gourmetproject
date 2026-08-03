@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Scoring;
+using GourmetProject.Runtime;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -12,6 +13,8 @@ namespace GourmetProject.Game.UI.Tooltips
     /// </summary>
     public sealed class FoodTipsView : MonoBehaviour
     {
+        private const string CountAsTermId = "term_food_count_as";
+
         [SerializeField] private CanvasGroup _canvasGroup;
         [SerializeField] private FoodMaterialTipsView _materialsView;
         [SerializeField] private FoodScoreTipsView _scoreView;
@@ -71,7 +74,10 @@ namespace GourmetProject.Game.UI.Tooltips
             _scoreView.Bind(data.Score);
             _summaryView.Bind(data.Summary);
             BuildInfoCards(_flavorDetailsRoot, data.FlavorDetails, "FlavorDetail");
-            BuildInfoCards(_specialTagsRoot, data.SpecialTags, "SpecialTag");
+            BuildInfoCards(
+                _specialTagsRoot,
+                BuildSpecialTagsWithCountAs(data.SpecialTags, data.Summary.CountAs),
+                "SpecialTag");
             BuildInfoCards(_transferredSubSkillsRoot, data.TransferredSubSkills, "TransferredSubSkill");
         }
 
@@ -232,6 +238,30 @@ namespace GourmetProject.Game.UI.Tooltips
                 card.name = $"{prefix}_{i}";
                 card.Bind(entry.Title, entry.Desc);
             }
+        }
+
+        private static IReadOnlyList<FoodInfoEntry> BuildSpecialTagsWithCountAs(
+            IReadOnlyList<FoodInfoEntry> entries,
+            int countAs)
+        {
+            if (countAs <= 1)
+            {
+                return entries;
+            }
+
+            int sourceCount = entries?.Count ?? 0;
+            var result = new List<FoodInfoEntry>(sourceCount + 1);
+            for (int i = 0; i < sourceCount; i++)
+            {
+                result.Add(entries[i]);
+            }
+
+            cfg.Term term = GameApp.Config?.Tables?.TbTerm?.GetOrDefault(CountAsTermId);
+            string title = !string.IsNullOrEmpty(term?.Name) ? term.Name : "食物";
+            string template = !string.IsNullOrEmpty(term?.Desc) ? term.Desc : "视为{x}个食物";
+            string desc = template.Replace("{x}", countAs.ToString());
+            result.Add(new FoodInfoEntry(title, desc));
+            return result;
         }
 
         private bool ReportMissing(Object reference, string fieldName)

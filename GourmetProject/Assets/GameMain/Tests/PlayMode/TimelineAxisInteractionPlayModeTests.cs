@@ -1057,6 +1057,11 @@ namespace GourmetProject.Tests.PlayMode
                 onContinue?.Invoke();
             }
 
+            public void ShowHeartBreak(HeartBreakFormOpenArgs args, System.Action onComplete)
+            {
+                onComplete?.Invoke();
+            }
+
             public void OpenEventRecipeDishDelete(
                 GameRun run,
                 string title,

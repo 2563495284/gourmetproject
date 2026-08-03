@@ -27,6 +27,7 @@ namespace GourmetProject.Game.UI
         public const string Reward = "Assets/GameMain/Content/Prefabs/UI/RewardForm.prefab";
         public const string Result = "Assets/GameMain/Content/Prefabs/UI/ResultForm.prefab";
         public const string Defeat = "Assets/GameMain/Content/Prefabs/UI/DefeatForm.prefab";
+        public const string HeartBreak = "Assets/GameMain/Content/Prefabs/UI/HeartBreakForm.prefab";
 
         // 主存档槽位：用于判断“开始游戏 / 继续游戏”。
         public const string GameSaveSlot = "slot0";

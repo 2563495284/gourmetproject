@@ -1,3 +1,5 @@
+using System;
+using DG.Tweening;
 using GourmetProject.Game.Flow;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
@@ -18,9 +20,13 @@ namespace GourmetProject.Game.UI.Meta
     {
         [SerializeField] private Text _resultText;
         [SerializeField] private Button _resultButton;
+        [SerializeField] private CanvasGroup _transitionGroup;
+        [SerializeField] private RectTransform _transitionPanel;
 
         private GameRun _run;
         private MetaProgressUpdate _pendingProgressUpdate;
+        private Sequence _transitionSequence;
+        private bool _closing;
 
         protected override void OnInit(object userData)
         {
@@ -31,11 +37,12 @@ namespace GourmetProject.Game.UI.Meta
         protected override void OnOpen(object userData)
         {
             base.OnOpen(userData);
+            PrepareOpenTransition();
 
             _run = GameRunContext.Current;
             if (_run == null)
             {
-                Close();
+                CloseImmediate();
                 return;
             }
 
@@ -52,6 +59,16 @@ namespace GourmetProject.Game.UI.Meta
             {
                 label.text = summary.ButtonLabel;
             }
+
+            PlayOpenTransition();
+        }
+
+        protected override void OnClose(bool isShutdown, object userData)
+        {
+            _transitionSequence?.Kill();
+            _transitionSequence = null;
+            _closing = false;
+            base.OnClose(isShutdown, userData);
         }
 
         private void OnConfirm()
@@ -63,13 +80,92 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             RunPersistence.Delete();
-            Close();
-            GameplayFlowSignal.RequestReturnToMenu();
+            CloseAnimated(GameplayFlowSignal.RequestReturnToMenu);
         }
 
-        private void Close()
+        private void CloseImmediate()
         {
             GameApp.UI.CloseUIForm(UIForm);
+        }
+
+        private void PrepareOpenTransition()
+        {
+            _transitionSequence?.Kill();
+            _closing = false;
+            _resultButton.interactable = true;
+            if (_transitionGroup != null)
+            {
+                _transitionGroup.alpha = 0f;
+                _transitionGroup.blocksRaycasts = false;
+            }
+
+            if (_transitionPanel != null)
+            {
+                _transitionPanel.localScale = Vector3.one * 0.94f;
+            }
+        }
+
+        private void PlayOpenTransition()
+        {
+            _transitionSequence = DOTween.Sequence().SetUpdate(true).SetTarget(this);
+            if (_transitionGroup != null)
+            {
+                _transitionSequence.Append(DOTween.To(
+                    () => _transitionGroup.alpha,
+                    value => _transitionGroup.alpha = value,
+                    1f,
+                    0.2f).SetEase(Ease.OutQuad));
+            }
+
+            if (_transitionPanel != null)
+            {
+                _transitionSequence.Join(_transitionPanel.DOScale(1f, 0.24f).SetEase(Ease.OutCubic));
+            }
+
+            _transitionSequence.OnComplete(() =>
+            {
+                if (_transitionGroup != null)
+                {
+                    _transitionGroup.blocksRaycasts = true;
+                }
+            });
+        }
+
+        private void CloseAnimated(Action onClosed)
+        {
+            if (_closing)
+            {
+                return;
+            }
+
+            _closing = true;
+            _resultButton.interactable = false;
+            if (_transitionGroup != null)
+            {
+                _transitionGroup.blocksRaycasts = false;
+            }
+
+            _transitionSequence?.Kill();
+            _transitionSequence = DOTween.Sequence().SetUpdate(true).SetTarget(this);
+            if (_transitionGroup != null)
+            {
+                _transitionSequence.Append(DOTween.To(
+                    () => _transitionGroup.alpha,
+                    value => _transitionGroup.alpha = value,
+                    0f,
+                    0.16f).SetEase(Ease.InQuad));
+            }
+
+            if (_transitionPanel != null)
+            {
+                _transitionSequence.Join(_transitionPanel.DOScale(0.96f, 0.16f).SetEase(Ease.InQuad));
+            }
+
+            _transitionSequence.OnComplete(() =>
+            {
+                CloseImmediate();
+                onClosed?.Invoke();
+            });
         }
     }
 

@@ -77,6 +77,7 @@ namespace GourmetProject.Game.Run
         private string _pendingRewardKey = string.Empty;
         private RewardOfferSaveData _pendingRewardOffer;
         private PendingRewardBattleViewSaveData _pendingRewardBattleView;
+        private PendingHeartBreakSaveData _pendingHeartBreak;
         private PendingActionExecutionSaveData _pendingActionExecution;
         private bool _pendingGenericRewardsConfirmBattleAfterDone;
         private PendingGenericRewardContinuationKind _pendingGenericRewardContinuation;
@@ -125,6 +126,8 @@ namespace GourmetProject.Game.Run
 
             cfg.TbGameBase gameBase = _tables.TbGameBase;
             Gold = System.Math.Max(0, gameBase.InitialGold);
+            _heartCapacity = System.Math.Max(1, gameBase.InitialHeartCount);
+            _heartsRemaining = _heartCapacity;
             _interestThreshold = System.Math.Max(0, gameBase.InterestThreshold);
             _interestGoldPer = gameBase.InterestGoldPer > 0 ? gameBase.InterestGoldPer : 1;
             _interestCap = System.Math.Max(0, gameBase.InitialInterestCap);
@@ -162,6 +165,47 @@ namespace GourmetProject.Game.Run
         }
 
         public int Gold { get; set; }
+
+        private int _heartCapacity;
+        private int _heartsRemaining;
+
+        public int HeartCapacity => _heartCapacity;
+
+        public int HeartsRemaining => _heartsRemaining;
+
+        /// <summary>扣除一颗爱心；当前值已经为 0 时不再扣除。</summary>
+        public bool TryLoseHeart(out int before, out int after)
+        {
+            before = _heartsRemaining;
+            if (_heartsRemaining <= 0)
+            {
+                after = 0;
+                return false;
+            }
+
+            _heartsRemaining--;
+            after = _heartsRemaining;
+            return true;
+        }
+
+        /// <summary>恢复当前爱心，不超过上限。</summary>
+        public int RestoreHearts(int amount)
+        {
+            if (amount > 0)
+            {
+                _heartsRemaining = System.Math.Min(_heartCapacity, _heartsRemaining + amount);
+            }
+
+            return _heartsRemaining;
+        }
+
+        /// <summary>调整爱心上限；上限至少为 1，降低上限时同步压低当前值。</summary>
+        public int AdjustHeartCapacity(int delta)
+        {
+            _heartCapacity = System.Math.Max(1, _heartCapacity + delta);
+            _heartsRemaining = System.Math.Min(_heartsRemaining, _heartCapacity);
+            return _heartCapacity;
+        }
 
         public int FoodFlavorLimit
         {
@@ -1632,6 +1676,23 @@ namespace GourmetProject.Game.Run
             _pendingRewardBattleView = null;
         }
 
+        public bool HasPendingHeartBreak => _pendingHeartBreak != null;
+
+        public PendingHeartBreakSaveData GetPendingHeartBreak()
+        {
+            return ClonePendingHeartBreak(_pendingHeartBreak);
+        }
+
+        public void SetPendingHeartBreak(PendingHeartBreakSaveData data)
+        {
+            _pendingHeartBreak = ClonePendingHeartBreak(data);
+        }
+
+        public void ClearPendingHeartBreak()
+        {
+            _pendingHeartBreak = null;
+        }
+
         /// <summary>待领奖 Food 生命周期真正结束时，同时清除奖励内容和结算画面快照。</summary>
         public void ClearPendingBattleReward()
         {
@@ -1799,6 +1860,9 @@ namespace GourmetProject.Game.Run
                 SeedText = SeedText,
                 WeekIndex = WeekIndex,
                 Gold = Gold,
+                HeartCapacity = _heartCapacity,
+                HeartsRemaining = _heartsRemaining,
+                PendingHeartBreak = ClonePendingHeartBreak(_pendingHeartBreak),
                 InterestThreshold = _interestThreshold,
                 InterestGoldPer = _interestGoldPer,
                 InterestCap = _interestCap,
@@ -1895,6 +1959,9 @@ namespace GourmetProject.Game.Run
         {
             var run = new GameRun(tables, database, data.CharacterId, data.SeedText, data.WeekIndex, initializeCharacterLoadout: false);
             run.Gold = data.Gold;
+            run._heartCapacity = System.Math.Max(1, data.HeartCapacity);
+            run._heartsRemaining = System.Math.Max(0, System.Math.Min(data.HeartsRemaining, run._heartCapacity));
+            run._pendingHeartBreak = ClonePendingHeartBreak(data.PendingHeartBreak);
             run._interestThreshold = data.InterestThreshold >= 0
                 ? data.InterestThreshold
                 : System.Math.Max(0, tables.TbGameBase.InterestThreshold);
@@ -2505,10 +2572,27 @@ namespace GourmetProject.Game.Run
                     ScoreBaseValue = dish.ScoreBaseValue,
                     ScoreFlatBonus = dish.ScoreFlatBonus,
                     ScoreMultiplier = dish.ScoreMultiplier,
+                    ScoreEffectiveCountAs = dish.ScoreEffectiveCountAs,
                 });
             }
 
             return result;
+        }
+
+        private static PendingHeartBreakSaveData ClonePendingHeartBreak(PendingHeartBreakSaveData data)
+        {
+            if (data == null)
+            {
+                return null;
+            }
+
+            return new PendingHeartBreakSaveData
+            {
+                BeforeHeartCount = data.BeforeHeartCount,
+                AfterHeartCount = data.AfterHeartCount,
+                BattleTotal = data.BattleTotal,
+                IsTerminal = data.IsTerminal,
+            };
         }
 
         private static PendingActionExecutionSaveData ClonePendingActionExecution(PendingActionExecutionSaveData data)

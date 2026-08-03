@@ -632,7 +632,13 @@ namespace GourmetProject.Gameplay.Scoring
             foreach (int id in _order)
             {
                 DishAccumulator a = _accums[id];
-                var score = new DishScore(a.Dish.Id, a.Dish.Def.Id, a.Base, a.Flat, a.Mult);
+                var score = new DishScore(
+                    a.Dish.Id,
+                    a.Dish.Def.Id,
+                    a.Base,
+                    a.Flat,
+                    a.Mult,
+                    GetEffectiveCountAs(a.Dish));
                 _dishScores.Add(score);
                 RawSum += score.Contribution;
             }

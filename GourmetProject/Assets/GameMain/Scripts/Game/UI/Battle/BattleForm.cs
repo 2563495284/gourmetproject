@@ -436,6 +436,7 @@ namespace GourmetProject.Game.UI.Battle
                     ScoreBaseValue = dishScore?.BaseValue ?? 0f,
                     ScoreFlatBonus = dishScore?.FlatBonus ?? 0f,
                     ScoreMultiplier = dishScore?.Multiplier ?? 1f,
+                    ScoreEffectiveCountAs = dishScore?.EffectiveCountAs ?? Math.Max(1, dish.EffectiveCountAs),
                 });
             }
 
@@ -548,7 +549,8 @@ namespace GourmetProject.Game.UI.Battle
                     dish.DishId ?? string.Empty,
                     dish.ScoreBaseValue,
                     dish.ScoreFlatBonus,
-                    dish.ScoreMultiplier));
+                    dish.ScoreMultiplier,
+                    dish.ScoreEffectiveCountAs));
             }
 
             return result;
@@ -2423,6 +2425,24 @@ namespace GourmetProject.Game.UI.Battle
             }
         }
 
+        public void ShowHeartBreak(HeartBreakFormOpenArgs args, Action onComplete)
+        {
+            if (args == null)
+            {
+                onComplete?.Invoke();
+                return;
+            }
+
+            RefreshAll();
+            var openArgs = new HeartBreakFormOpenArgs(
+                args.BeforeHeartCount,
+                args.AfterHeartCount,
+                args.HeartCapacity,
+                args.IsTerminal,
+                onComplete);
+            GameApp.UI.OpenUIForm(UIForms.HeartBreak, UIForms.GroupDialog, openArgs);
+        }
+
         // —— 战斗 ——
 
         public void StartBattle(
@@ -2612,12 +2632,23 @@ namespace GourmetProject.Game.UI.Battle
             // 结算演出进行中：只显示已被演出揭示到的分数/倍率/技能；演出走完后（_settlementReveal 清空）恢复完整结果。
             if (_settlementReveal != null && _settlementReveal.TryBuildReveal(piece.Instance, out FoodTipsReveal reveal))
             {
-                tips.Bind(FoodTipsDataFactory.BuildRevealed(piece.Instance, _session.DiningTable, _session.Database, reveal));
+                tips.Bind(FoodTipsDataFactory.BuildRevealed(
+                    piece.Instance,
+                    _session.DiningTable,
+                    _session.Database,
+                    reveal,
+                    _session.LastResult,
+                    _session.IsSettled ? null : _session.PreviewEffectiveCountAs(piece.Instance)));
             }
             else
             {
                 ScoreResult preview = _session.IsSettled ? _session.LastResult : null;
-                tips.Bind(piece.Instance, _session.DiningTable, _session.Database, preview);
+                tips.Bind(FoodTipsDataFactory.Build(
+                    piece.Instance,
+                    _session.DiningTable,
+                    _session.Database,
+                    preview,
+                    _session.IsSettled ? null : _session.PreviewEffectiveCountAs(piece.Instance)));
             }
 
             tips.Show();
