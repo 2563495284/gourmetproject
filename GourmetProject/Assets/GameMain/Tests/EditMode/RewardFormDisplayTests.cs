@@ -22,6 +22,20 @@ namespace GourmetProject.Tests.EditMode
         private const string RewardFormPrefabPath =
             "Assets/GameMain/Content/Prefabs/UI/RewardForm.prefab";
 
+        private static readonly object[] FoodRewardPresentationCases =
+        {
+            new object[] { "act_food_gold", "reward_badge_gold", true },
+            new object[] { "act_food_fragment", "reward_badge_table_cell", false },
+            new object[] { "act_food_passive", "reward_badge_passive_item", false },
+            new object[] { "act_food_active_strengthen", "reward_badge_active_strengthen", false },
+            new object[] { "act_food_active_adjust", "reward_badge_active_adjust", false },
+            new object[] { "act_food_hard_gold", "reward_badge_gold_large", true },
+            new object[] { "act_food_hard_fragment", "reward_badge_table_cell_large", false },
+            new object[] { "act_food_hard_passive", "reward_badge_passive_item_4", false },
+            new object[] { "act_food_hard_active_strengthen", "reward_badge_active_strengthen_4", false },
+            new object[] { "act_food_hard_active_adjust", "reward_badge_active_adjust_4", false },
+        };
+
         private cfg.Tables _tables;
         private GameplayDatabase _database;
 
@@ -57,6 +71,161 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(
                     rows.FindAll(RowShowsGenericIcon),
                     Has.Count.EqualTo(2));
+                Assert.That(RowIconSpriteName(rows[0]), Is.EqualTo("reward_badge_gold"));
+            });
+        }
+
+        [TestCaseSource(nameof(FoodRewardPresentationCases))]
+        public void FoodBattleOffer_UsesFixedAndSpecificActionBadges(
+            string actionId,
+            string expectedSpecificSprite,
+            bool expectDirectSpecificRow)
+        {
+            GameRun run = CreateRun();
+            RewardOffer offer = GenerateFoodOffer(run, actionId);
+
+            Assert.That(offer, Is.Not.Null, actionId);
+            Assert.That(offer.FixedGroups, Has.Count.GreaterThanOrEqualTo(1), actionId);
+            Assert.That(offer.SpecificGroup.HasChoices, Is.True, actionId);
+            Assert.That(
+                offer.SpecificGroup.Choices.Count == 1,
+                Is.EqualTo(expectDirectSpecificRow),
+                $"{actionId} 未覆盖预期的 {(expectDirectSpecificRow ? "direct" : "pack")} 渲染路径");
+
+            WithRenderedOffer(run, offer, rows =>
+            {
+                Assert.That(rows, Has.Count.EqualTo(3), actionId);
+                Assert.That(RowIconSpriteName(rows[0]), Is.EqualTo("reward_badge_gold"), actionId);
+                Assert.That(RowIconSpriteName(rows[1]), Is.EqualTo("reward_badge_base_dish"), actionId);
+                Assert.That(RowShowsDishPreview(rows[1]), Is.False, actionId);
+                Assert.That(RowShowsGenericIcon(rows[1]), Is.True, actionId);
+                Assert.That(RowIconSpriteName(rows[2]), Is.EqualTo(expectedSpecificSprite), actionId);
+                Assert.That(RowShowsDishPreview(rows[2]), Is.False, actionId);
+                Assert.That(RowShowsGenericIcon(rows[2]), Is.True, actionId);
+            });
+        }
+
+        [Test]
+        public void FoodBattleOffer_PresentationSourceSurvivesPendingOfferRoundTrip()
+        {
+            const string rewardKey = "reward-form-source-roundtrip";
+            GameRun run = CreateRun();
+            RewardOffer offer = GenerateFoodOffer(run, "act_food_hard_passive");
+            run.SetPendingRewardOffer(rewardKey, offer);
+
+            GameRun restored = GameRun.FromSaveData(_tables, _database, run.ToSaveData());
+            RewardOffer restoredOffer = restored.GetPendingRewardOffer(rewardKey);
+
+            Assert.That(restoredOffer, Is.Not.Null);
+            WithRenderedOffer(restored, restoredOffer, rows =>
+            {
+                Assert.That(rows, Has.Count.EqualTo(3));
+                Assert.That(RowIconSpriteName(rows[0]), Is.EqualTo("reward_badge_gold"));
+                Assert.That(RowIconSpriteName(rows[1]), Is.EqualTo("reward_badge_base_dish"));
+                Assert.That(RowShowsDishPreview(rows[1]), Is.False);
+                Assert.That(RowIconSpriteName(rows[2]), Is.EqualTo("reward_badge_passive_item_4"));
+            });
+        }
+
+        [Test]
+        public void MissingFoodContext_FallsBackToLegacyChoicePresentation()
+        {
+            RewardOffer offer = CreateOffer(
+                baseGoldClaimed: false,
+                fixedClaimedIndices: null,
+                specificClaimedIndices: null);
+
+            WithRenderedOffer(offer, rows =>
+            {
+                Assert.That(rows, Has.Count.EqualTo(3));
+                Assert.That(RowIconSpriteName(rows[0]), Is.EqualTo("reward_badge_gold"));
+                Assert.That(RowShowsDishPreview(rows[1]), Is.True);
+                Assert.That(RowShowsGenericIcon(rows[1]), Is.False);
+                Assert.That(RowIconSpriteName(rows[2]), Is.Not.EqualTo("reward_badge_active_strengthen"));
+                Assert.That(RowIconSpriteName(rows[2]), Is.Not.EqualTo("reward_badge_active_strengthen_4"));
+            });
+        }
+
+        [Test]
+        public void LegacyFoodOfferWithoutSourceSlot_UsesStructuralBaseDishFallback()
+        {
+            GameRun run = CreateRun();
+            run.SetLastActionContext(new ActionExecutionContext(
+                _tables.TbAction.Get("act_food_active_strengthen")));
+            RewardOffer offer = CreateOffer(
+                baseGoldClaimed: false,
+                fixedClaimedIndices: null,
+                specificClaimedIndices: null);
+
+            WithRenderedOffer(run, offer, rows =>
+            {
+                Assert.That(rows, Has.Count.EqualTo(3));
+                Assert.That(RowIconSpriteName(rows[1]), Is.EqualTo("reward_badge_base_dish"));
+                Assert.That(RowShowsDishPreview(rows[1]), Is.False);
+                Assert.That(RowIconSpriteName(rows[2]), Is.EqualTo("reward_badge_active_strengthen"));
+            });
+        }
+
+        [Test]
+        public void BossReward_KeepsLegacyChoicePresentation()
+        {
+            GameRun run = CreateRun();
+            run.SetLastActionContext(new ActionExecutionContext(
+                _tables.TbAction.Get("act_boss")));
+            RewardOffer offer = CreateOffer(
+                baseGoldClaimed: false,
+                fixedClaimedIndices: null,
+                specificClaimedIndices: null);
+
+            WithRenderedOffer(run, offer, rows =>
+            {
+                Assert.That(rows, Has.Count.EqualTo(3));
+                Assert.That(RowShowsDishPreview(rows[1]), Is.True);
+                Assert.That(RowShowsGenericIcon(rows[1]), Is.False);
+                Assert.That(RowIconSpriteName(rows[2]), Is.Not.EqualTo("reward_badge_active_strengthen"));
+            });
+        }
+
+        [Test]
+        public void GenericConfiguredOffer_IsNotMisidentifiedAsFoodBattleReward()
+        {
+            GameRun run = CreateRun();
+            RewardOffer offer = RewardGranter.BuildConfigOffer(
+                run,
+                new Xoshiro256SS(19UL),
+                "specific_passive");
+
+            Assert.That(offer, Is.Not.Null);
+            WithRenderedOffer(run, offer, rows =>
+            {
+                Assert.That(rows, Has.Count.EqualTo(1));
+                Assert.That(RowShowsGenericIcon(rows[0]), Is.True);
+                Assert.That(RowIconSpriteName(rows[0]), Does.Not.StartWith("reward_badge_"));
+            });
+        }
+
+        [Test]
+        public void SlotConfiguredOffer_IsNotMisidentifiedAsFoodBattleReward()
+        {
+            GameRun run = CreateRun();
+            cfg.GameAction slotAction = _tables.TbAction.Get("act_slot");
+            cfg.RewardSlot slot = _tables.TbRewardSlot.Get("slot_machine_passive");
+            var actionContext = new ActionExecutionContext(slotAction);
+            run.SetLastActionContext(actionContext);
+            RewardOffer offer = RewardGranter.BuildConfigOffer(
+                run,
+                new Xoshiro256SS(23UL),
+                slot,
+                actionContext);
+
+            Assert.That(slotAction, Is.Not.Null);
+            Assert.That(slot, Is.Not.Null);
+            Assert.That(offer, Is.Not.Null);
+            WithRenderedOffer(run, offer, rows =>
+            {
+                Assert.That(rows, Has.Count.EqualTo(1));
+                Assert.That(RowShowsGenericIcon(rows[0]), Is.True);
+                Assert.That(RowIconSpriteName(rows[0]), Does.Not.StartWith("reward_badge_"));
             });
         }
 
@@ -225,6 +394,14 @@ namespace GourmetProject.Tests.EditMode
             RewardOffer offer,
             Action<List<RewardChoiceRowView>> assertion)
         {
+            WithRenderedOffer(CreateRun(), offer, assertion);
+        }
+
+        private void WithRenderedOffer(
+            GameRun run,
+            RewardOffer offer,
+            Action<List<RewardChoiceRowView>> assertion)
+        {
             GameObject prefab =
                 AssetDatabase.LoadAssetAtPath<GameObject>(
                     RewardFormPrefabPath);
@@ -240,7 +417,7 @@ namespace GourmetProject.Tests.EditMode
                         component.GetType().FullName ==
                         "GourmetProject.Game.UI.Meta.RewardForm");
                 Assert.That(form, Is.Not.Null);
-                SetField(form, "_run", CreateRun());
+                SetField(form, "_run", run);
                 SetField(form, "_offer", offer);
                 Invoke(form, "RefreshOffer");
 
@@ -253,6 +430,47 @@ namespace GourmetProject.Tests.EditMode
             {
                 UnityEngine.Object.DestroyImmediate(instance);
             }
+        }
+
+        private RewardOffer GenerateFoodOffer(GameRun run, string actionId)
+        {
+            cfg.GameAction action = _tables.TbAction.Get(actionId);
+            Assert.That(action, Is.Not.Null, actionId);
+            Assert.That(action.Behavior, Is.EqualTo(cfg.ActionBehavior.Food), actionId);
+            cfg.Food food = FoodService.Resolve(_tables, action);
+            Assert.That(food, Is.Not.Null, actionId);
+            Assert.That(
+                WeekEventCardView.RewardIconSpriteName(food.ActionKind, food.RewardKind),
+                Is.Not.Empty,
+                actionId);
+
+            var actionContext = new ActionExecutionContext(action);
+            run.SetLastActionContext(actionContext);
+
+            var fixedGroup = new RewardChoiceGroup(
+                "基础菜品",
+                new[]
+                {
+                    Choice(cfg.RewardKind.DishChoice, "cake_slice", "蛋糕切角"),
+                    Choice(cfg.RewardKind.DishChoice, "eclair", "闪电泡芙"),
+                    Choice(cfg.RewardKind.DishChoice, "cheesecake", "芝士蛋糕"),
+                },
+                sourceSlotId: "slot_base_dish");
+
+            int specificChoiceCount = food.RewardKind == cfg.RewardKind.Gold ? 1 : 3;
+            var specificChoices = new List<RewardChoice>(specificChoiceCount);
+            for (int i = 0; i < specificChoiceCount; i++)
+            {
+                specificChoices.Add(Choice(
+                    food.RewardKind,
+                    $"presentation_{actionId}_{i}",
+                    $"特定奖励 {i + 1}"));
+            }
+
+            var specificGroup = new RewardChoiceGroup(
+                "特定奖励",
+                specificChoices);
+            return new RewardOffer(28, new[] { fixedGroup }, specificGroup);
         }
 
         private RewardOffer CreateOffer(
@@ -347,6 +565,14 @@ namespace GourmetProject.Tests.EditMode
         {
             Image icon = GetField<Image>(row, "_icon");
             return icon != null && icon.enabled && icon.sprite != null;
+        }
+
+        private static string RowIconSpriteName(RewardChoiceRowView row)
+        {
+            Image icon = GetField<Image>(row, "_icon");
+            return icon != null && icon.enabled && icon.sprite != null
+                ? icon.sprite.name
+                : string.Empty;
         }
 
         private static string RowTitle(RewardChoiceRowView row)

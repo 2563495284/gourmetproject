@@ -123,11 +123,15 @@ namespace GourmetProject.Tests.EditMode
 
             foreach (KeyValuePair<(cfg.FoodActionKind, cfg.RewardKind), string> mapping in expected)
             {
+                string resolved = RewardBadgeResolver.SpriteNameFor(
+                    mapping.Key.Item1,
+                    mapping.Key.Item2);
                 string actual = WeekEventCardView.RewardIconSpriteName(
                     mapping.Key.Item1,
                     mapping.Key.Item2);
 
-                Assert.That(actual, Is.EqualTo(mapping.Value));
+                Assert.That(resolved, Is.EqualTo(mapping.Value));
+                Assert.That(actual, Is.EqualTo(resolved), $"{mapping.Key} 行动卡未复用共享奖励徽章映射");
                 Assert.That(actualNames.Add(actual), Is.True, $"{mapping.Key} 与其他行动复用了同一张奖励徽章");
 
                 Sprite sprite = Resources.Load<Sprite>($"Sprites/UI/{actual}");
