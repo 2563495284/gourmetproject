@@ -16,16 +16,13 @@ using GourmetProject.Game.UI.Widgets;
 namespace GourmetProject.Game.UI.Menu
 {
     /// <summary>
-    /// 设置界面。根据 <see cref="SettingsCatalog"/> 的描述符动态生成设置行，
-    /// 完全数据驱动——新增设置项不需要改本类。
+    /// 设置界面。设置行预制在 SettingsForm/Content 中，运行时只绑定
+    /// <see cref="SettingsCatalog"/> 的数据与交互。
     /// </summary>
     public sealed class SettingsForm : UGuiForm
     {
-        [SerializeField] private GameObject _dropdownRowPrefab;
-        [SerializeField] private GameObject _sliderRowPrefab;
-        [SerializeField] private GameObject _toggleRowPrefab;
+        [SerializeField] private List<GameObject> _settingRows = new List<GameObject>();
 
-        private Transform _content;
         private Button _applyButton;
         private Button _backButton;
         private GameObject _gameplayActions;
@@ -33,14 +30,10 @@ namespace GourmetProject.Game.UI.Menu
         private Button _abandonRunButton;
 
         private readonly List<SettingDescriptor> _descriptors = new List<SettingDescriptor>();
-        private readonly List<GameObject> _rows = new List<GameObject>();
-        private bool _inGameplay;
-
         protected override void OnInit(object userData)
         {
             base.OnInit(userData);
 
-            _content = CachedTransform.Find("Content");
             _applyButton = CachedTransform.Find("ApplyButton").GetComponent<Button>();
             _backButton = CachedTransform.Find("BackButton").GetComponent<Button>();
             _gameplayActions = CachedTransform.Find("GameplayActions")?.gameObject;
@@ -57,10 +50,10 @@ namespace GourmetProject.Game.UI.Menu
         {
             base.OnOpen(userData);
 
-            _inGameplay = userData is SettingsFormData { InGameplay: true };
             if (_gameplayActions != null)
             {
-                _gameplayActions.SetActive(_inGameplay);
+                // GameplayActions 的返回主菜单/放弃游戏入口暂不展示，保留对象与逻辑供后续启用。
+                _gameplayActions.SetActive(false);
             }
 
             BuildRows();
@@ -68,47 +61,39 @@ namespace GourmetProject.Game.UI.Menu
 
         protected override void OnClose(bool isShutdown, object userData)
         {
-            ClearRows();
+            UnbindRows();
             base.OnClose(isShutdown, userData);
         }
 
         private void BuildRows()
         {
-            ClearRows();
+            UnbindRows();
             _descriptors.Clear();
             _descriptors.AddRange(SettingsCatalog.BuildDefault());
 
-            foreach (var descriptor in _descriptors)
+            int boundCount = Mathf.Min(_descriptors.Count, _settingRows.Count);
+            for (int i = 0; i < _settingRows.Count; i++)
             {
-                GameObject row = InstantiateRow(descriptor.ControlType);
+                GameObject row = _settingRows[i];
                 if (row == null)
                 {
                     continue;
                 }
 
-                _rows.Add(row);
-                BindRow(descriptor, row.transform);
-            }
-        }
-
-        private GameObject InstantiateRow(SettingControlType type)
-        {
-            GameObject prefab = type switch
-            {
-                SettingControlType.Dropdown => _dropdownRowPrefab,
-                SettingControlType.Slider => _sliderRowPrefab,
-                SettingControlType.Toggle => _toggleRowPrefab,
-                _ => null,
-            };
-
-            if (prefab == null)
-            {
-                return null;
+                bool shouldShow = i < boundCount;
+                row.SetActive(shouldShow);
+                if (shouldShow)
+                {
+                    BindRow(_descriptors[i], row.transform);
+                }
             }
 
-            GameObject row = Instantiate(prefab, _content, false);
-            row.transform.localScale = Vector3.one;
-            return row;
+            if (_descriptors.Count != _settingRows.Count)
+            {
+                Debug.LogWarning(
+                    $"SettingsForm 预制行数量({_settingRows.Count})与设置描述符数量({_descriptors.Count})不一致。",
+                    this);
+            }
         }
 
         private static void BindRow(SettingDescriptor descriptor, Transform row)
@@ -121,6 +106,7 @@ namespace GourmetProject.Game.UI.Menu
                 case SettingControlType.Dropdown:
                 {
                     var dropdown = row.Find("Dropdown").GetComponent<Dropdown>();
+                    dropdown.onValueChanged.RemoveAllListeners();
                     dropdown.ClearOptions();
                     dropdown.AddOptions(descriptor.GetOptions());
                     dropdown.SetValueWithoutNotify(descriptor.GetSelectedIndex());
@@ -132,6 +118,7 @@ namespace GourmetProject.Game.UI.Menu
                 {
                     var slider = row.Find("Slider").GetComponent<Slider>();
                     var valueText = row.Find("Value").GetComponent<Text>();
+                    slider.onValueChanged.RemoveAllListeners();
                     slider.minValue = descriptor.SliderMin;
                     slider.maxValue = descriptor.SliderMax;
                     slider.wholeNumbers = descriptor.SliderWholeNumbers;
@@ -149,6 +136,7 @@ namespace GourmetProject.Game.UI.Menu
                 case SettingControlType.Toggle:
                 {
                     var toggle = row.Find("Toggle").GetComponent<Toggle>();
+                    toggle.onValueChanged.RemoveAllListeners();
                     toggle.SetIsOnWithoutNotify(descriptor.GetToggleValue());
                     toggle.onValueChanged.AddListener(v => descriptor.SetToggleValue(v));
                     break;
@@ -161,17 +149,20 @@ namespace GourmetProject.Game.UI.Menu
             return descriptor.FormatSliderValue != null ? descriptor.FormatSliderValue(value) : value.ToString("0.00");
         }
 
-        private void ClearRows()
+        private void UnbindRows()
         {
-            foreach (var row in _rows)
+            foreach (var row in _settingRows)
             {
-                if (row != null)
+                if (row == null)
                 {
-                    Destroy(row);
+                    continue;
                 }
-            }
 
-            _rows.Clear();
+                Transform rowTransform = row.transform;
+                rowTransform.Find("Dropdown")?.GetComponent<Dropdown>()?.onValueChanged.RemoveAllListeners();
+                rowTransform.Find("Slider")?.GetComponent<Slider>()?.onValueChanged.RemoveAllListeners();
+                rowTransform.Find("Toggle")?.GetComponent<Toggle>()?.onValueChanged.RemoveAllListeners();
+            }
         }
 
         private void OnApplyClicked()
