@@ -119,6 +119,9 @@ namespace GourmetProject.Game.Run
         /// <summary>当前这次商店已删除食物次数；新商店重置，商店内读档保留。</summary>
         public int CurrentShopDeleteDishCount;
 
+        /// <summary>当前这次商店已成功购买碎片包次数；新商店重置，商店内读档保留。</summary>
+        public int CurrentShopFragmentPackPurchaseCount;
+
         /// <summary>整局累计已结算的菜品 BaseId 次数（技能「大局相同检测」）。</summary>
         public Dictionary<string, int> RunSettledCounts = new Dictionary<string, int>();
 

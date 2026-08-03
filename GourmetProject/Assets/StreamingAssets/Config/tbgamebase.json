@@ -12,18 +12,17 @@
     "foodFlavorLimit": 1,
     "foodDeleteCount": 2,
     "fragmentPackPrices": [
-      30,
-      45,
       60,
+      60,
+      80,
       80,
       100
     ],
     "deleteDishPrices": [
-      20,
-      25,
-      30,
       40,
-      50
+      50,
+      60,
+      80
     ],
     "shopPriceFluctuationPct": 0.2,
     "actionChoiceCount": 3,
@@ -40,6 +39,7 @@
       "arrow_cookie_2",
       "arrow_cookie_3",
       "arrow_cookie_4"
-    ]
+    ],
+    "shopFragmentPackPurchaseLimit": 1
   }
 ]

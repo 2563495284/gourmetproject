@@ -487,6 +487,11 @@ namespace GourmetProject.Game.Meta
                 return false;
             }
 
+            if (entry.Kind == ShopEntryKind.Fragment && !CanPurchaseFragmentPack(run))
+            {
+                return false;
+            }
+
             int price = CurrentPrice(run, entry);
             entry.SetPrice(price);
             if (run.Gold < price)
@@ -536,6 +541,33 @@ namespace GourmetProject.Game.Meta
             }
 
             return true;
+        }
+
+        /// <summary>每次进入商店可购买碎片包次数；0 表示不限。</summary>
+        public static int FragmentPackPurchaseLimit(GameRun run)
+        {
+            return System.Math.Max(0, run?.Tables?.TbGameBase?.ShopFragmentPackPurchaseLimit ?? 0);
+        }
+
+        /// <summary>当前商店剩余可购买碎片包次数；不限时返回 int.MaxValue。</summary>
+        public static int FragmentPackPurchaseRemaining(GameRun run)
+        {
+            if (run == null)
+            {
+                return 0;
+            }
+
+            int limit = FragmentPackPurchaseLimit(run);
+            return limit <= 0
+                ? int.MaxValue
+                : System.Math.Max(0, limit - run.CurrentShopFragmentPackPurchaseCount);
+        }
+
+        public static bool CanPurchaseFragmentPack(GameRun run)
+        {
+            return run != null
+                && run.PendingFragmentPack.Count == 0
+                && FragmentPackPurchaseRemaining(run) > 0;
         }
 
         /// <summary>当前删牌花费（含道具折扣/固定价/涨价修正）。</summary>

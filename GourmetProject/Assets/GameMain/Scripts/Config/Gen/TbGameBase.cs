@@ -127,6 +127,10 @@ public partial class TbGameBase
     /// 出菜保底认定为饼干的食物本体ID列表
     /// </summary>
      public System.Collections.Generic.List<string> ServeCookieDishIds => _data.ServeCookieDishIds;
+    /// <summary>
+    /// 每次进入商店最多可购买碎片包次数（0=不限）
+    /// </summary>
+     public int ShopFragmentPackPurchaseLimit => _data.ShopFragmentPackPurchaseLimit;
     
     public void ResolveRef(Tables tables)
     {

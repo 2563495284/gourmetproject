@@ -392,10 +392,13 @@ namespace GourmetProject.Game.UI.Meta
             DishDef dish = entry.IsStocked && entry.Kind == ShopEntryKind.Dish
                 ? _run.Database.GetDish(entry.Id)
                 : null;
+            bool canPurchase = entry.IsStocked
+                && _run.Gold >= entry.Price
+                && (entry.Kind != ShopEntryKind.Fragment || ShopService.CanPurchaseFragmentPack(_run));
             slot.Card.Bind(new ShopBuyItemViewContext(
                 _run,
                 entry,
-                entry.IsStocked && _run.Gold >= entry.Price,
+                canPurchase,
                 icon,
                 dish,
                 BuyImmediate));

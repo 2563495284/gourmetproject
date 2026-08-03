@@ -40,6 +40,7 @@ namespace GourmetProject.Game.Run
         private int _fragmentPackPurchaseCount;
         private int _deleteDishCount;
         private int _currentShopDeleteDishCount;
+        private int _currentShopFragmentPackPurchaseCount;
 
         // 餐桌碎片开包时随机出的局部材质落点。候选阶段即确定，之后随已拼贴碎片保存。
         private readonly Dictionary<string, List<CellMaterial>> _fragmentMaterialRolls =
@@ -618,15 +619,20 @@ namespace GourmetProject.Game.Run
 
         public int CurrentShopDeleteDishCount => _currentShopDeleteDishCount;
 
-        /// <summary>进入一次新的商店时重置本次删菜计数；从存档恢复当前商店时不调用。</summary>
+        public int CurrentShopFragmentPackPurchaseCount => _currentShopFragmentPackPurchaseCount;
+
+        /// <summary>进入一次新的商店时重置本次商店状态；从存档恢复当前商店时不调用。</summary>
         public void BeginShopVisit()
         {
             _currentShopDeleteDishCount = 0;
+            _currentShopFragmentPackPurchaseCount = 0;
+            ClearPendingShopStock();
         }
 
         public void RecordFragmentPackPurchased()
         {
             _fragmentPackPurchaseCount++;
+            _currentShopFragmentPackPurchaseCount++;
         }
 
         public void RecordDishDeleted()
@@ -1828,6 +1834,7 @@ namespace GourmetProject.Game.Run
                 FragmentPackPurchaseCount = _fragmentPackPurchaseCount,
                 DeleteDishCount = _deleteDishCount,
                 CurrentShopDeleteDishCount = _currentShopDeleteDishCount,
+                CurrentShopFragmentPackPurchaseCount = _currentShopFragmentPackPurchaseCount,
                 RunSettledCounts = new Dictionary<string, int>(_runSettledCounts),
                 CurrentTimelineId = CurrentTimelineId,
                 CurrentTimelineWeekIndex = CurrentTimelineWeekIndex,
@@ -2039,6 +2046,8 @@ namespace GourmetProject.Game.Run
             run._fragmentPackPurchaseCount = System.Math.Max(0, data.FragmentPackPurchaseCount);
             run._deleteDishCount = System.Math.Max(0, data.DeleteDishCount);
             run._currentShopDeleteDishCount = System.Math.Max(0, data.CurrentShopDeleteDishCount);
+            run._currentShopFragmentPackPurchaseCount =
+                System.Math.Max(0, data.CurrentShopFragmentPackPurchaseCount);
 
             if (data.RunSettledCounts != null)
             {
