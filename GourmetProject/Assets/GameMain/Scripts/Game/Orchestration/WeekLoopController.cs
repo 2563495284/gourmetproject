@@ -1050,20 +1050,16 @@ namespace GourmetProject.Game.Orchestration
         {
             cfg.Tables tables = _run.Tables ?? GameApp.Config.Tables;
             cfg.Food boss = tables.TbFood.GetOrDefault(outcome.BossId);
-            string title = boss != null ? $"Boss：{boss.Name}" : "Boss";
-            _view.ShowNotice(title, $"目标分 {outcome.RequiredScore}，准备应战！", () =>
-            {
-                _run.MarkBossDebuffRolled(outcome.BossDebuffId);
-                StartBattle(
-                    outcome.RequiredScore,
-                    outcome.Modifier,
-                    outcome.BattleKey,
-                    true,
-                    outcome.BossDebuffId,
-                    onContinue,
-                    context,
-                    beforeReward: () => CompleteBossBeforeReward(outcome, boss, onBossComplete));
-            });
+            _run.MarkBossDebuffRolled(outcome.BossDebuffId);
+            StartBattle(
+                outcome.RequiredScore,
+                outcome.Modifier,
+                outcome.BattleKey,
+                true,
+                outcome.BossDebuffId,
+                onContinue,
+                context,
+                beforeReward: () => CompleteBossBeforeReward(outcome, boss, onBossComplete));
         }
 
         private void CompleteBossBeforeReward(ActionOutcome outcome, cfg.Food boss, Action onBossComplete)

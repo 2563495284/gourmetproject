@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DG.Tweening;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Game.Run;
 using GourmetProject.Gameplay.Battle;
@@ -16,6 +17,9 @@ namespace GourmetProject.Game.UI.Battle.View
     {
         private const string ViewTableLabel = "查看餐桌：";
         private const string StomachBackLabel = "返回";
+        private const float ScoreTitleDefaultY = 190f;
+        private const float ScoreTitleBossY = 102f;
+        private const float BossStatTransitionDuration = 0.24f;
 
         [SerializeField] private Text _weekText;
         [SerializeField] private Text _goldText;
@@ -33,12 +37,16 @@ namespace GourmetProject.Game.UI.Battle.View
         [SerializeField] private Text _discardCountText;
         [SerializeField] private Button _settingsButton;
         [SerializeField] private SettlementScoreFireView _scoreFire;
+        [SerializeField] private RectTransform _scoreTitlePanel;
         [SerializeField] private GameObject _bossStat;
         [SerializeField] private Text _bossTitleText;
         [SerializeField] private Text _bossSkillText;
 
         private readonly List<Image> _heartItems = new List<Image>();
         private int? _battleScoreOverride;
+        private RectTransform _bossStatRect;
+        private bool _bossStatPresented;
+        private Sequence _bossStatTransition;
 
         public SettlementScoreFireView ScoreFire => _scoreFire;
         public RectTransform ViewRecipeButtonRect =>
@@ -48,7 +56,13 @@ namespace GourmetProject.Game.UI.Battle.View
 
         private void Awake()
         {
-            SetBossStatVisible(false);
+            _bossStatRect = _bossStat != null ? _bossStat.transform as RectTransform : null;
+            ResetBossStatPresentation();
+        }
+
+        private void OnDisable()
+        {
+            ResetBossStatPresentation();
         }
 
         /// <summary>接线按钮回调（由壳在 OnInit 调用一次）。</summary>
@@ -229,9 +243,9 @@ namespace GourmetProject.Game.UI.Battle.View
         private void RefreshBossStat(GameplayView current, BattleSession session, cfg.BossDebuff bossDebuff)
         {
             bool visible = current == GameplayView.Food && session != null && bossDebuff != null;
-            SetBossStatVisible(visible);
             if (!visible)
             {
+                SetBossStatVisible(false);
                 return;
             }
 
@@ -244,13 +258,109 @@ namespace GourmetProject.Game.UI.Battle.View
             {
                 _bossSkillText.text = bossDebuff.Desc ?? string.Empty;
             }
+
+            SetBossStatVisible(true);
         }
 
         private void SetBossStatVisible(bool visible)
         {
-            if (_bossStat != null && _bossStat.activeSelf != visible)
+            if (_bossStat == null || _bossStatPresented == visible)
             {
-                _bossStat.SetActive(visible);
+                return;
+            }
+
+            _bossStatPresented = visible;
+            KillBossStatTransition();
+
+            if (visible)
+            {
+                _bossStat.SetActive(true);
+                SetScoreTitleY(ScoreTitleDefaultY);
+                SetBossStatScale(Vector3.zero);
+
+                _bossStatTransition = DOTween.Sequence()
+                    .SetUpdate(true)
+                    .SetLink(gameObject);
+                if (_scoreTitlePanel != null)
+                {
+                    _bossStatTransition.Join(
+                        _scoreTitlePanel.DOAnchorPosY(ScoreTitleBossY, BossStatTransitionDuration)
+                            .SetEase(Ease.OutCubic));
+                }
+
+                if (_bossStatRect != null)
+                {
+                    _bossStatTransition.Join(
+                        _bossStatRect.DOScale(1f, BossStatTransitionDuration)
+                            .SetEase(Ease.OutBack));
+                }
+
+                return;
+            }
+
+            _bossStatTransition = DOTween.Sequence()
+                .SetUpdate(true)
+                .SetLink(gameObject);
+            if (_scoreTitlePanel != null)
+            {
+                _bossStatTransition.Join(
+                    _scoreTitlePanel.DOAnchorPosY(ScoreTitleDefaultY, BossStatTransitionDuration)
+                        .SetEase(Ease.InCubic));
+            }
+
+            if (_bossStatRect != null)
+            {
+                _bossStatTransition.Join(
+                    _bossStatRect.DOScale(0f, BossStatTransitionDuration)
+                        .SetEase(Ease.InCubic));
+            }
+
+            _bossStatTransition.OnComplete(() =>
+            {
+                if (!_bossStatPresented)
+                {
+                    _bossStat.SetActive(false);
+                }
+            });
+        }
+
+        private void ResetBossStatPresentation()
+        {
+            KillBossStatTransition();
+            _bossStatPresented = false;
+            SetScoreTitleY(ScoreTitleDefaultY);
+            SetBossStatScale(Vector3.zero);
+            if (_bossStat != null)
+            {
+                _bossStat.SetActive(false);
+            }
+        }
+
+        private void KillBossStatTransition()
+        {
+            _bossStatTransition?.Kill();
+            _bossStatTransition = null;
+            _scoreTitlePanel?.DOKill();
+            _bossStatRect?.DOKill();
+        }
+
+        private void SetScoreTitleY(float y)
+        {
+            if (_scoreTitlePanel == null)
+            {
+                return;
+            }
+
+            Vector2 position = _scoreTitlePanel.anchoredPosition;
+            position.y = y;
+            _scoreTitlePanel.anchoredPosition = position;
+        }
+
+        private void SetBossStatScale(Vector3 scale)
+        {
+            if (_bossStatRect != null)
+            {
+                _bossStatRect.localScale = scale;
             }
         }
     }

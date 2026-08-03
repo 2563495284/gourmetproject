@@ -44,6 +44,7 @@ namespace GourmetProject.Tests.EditMode
                 "_discardCountText",
                 "_settingsButton",
                 "_scoreFire",
+                "_scoreTitlePanel",
                 "_bossStat",
                 "_bossTitleText",
                 "_bossSkillText",
@@ -72,6 +73,7 @@ namespace GourmetProject.Tests.EditMode
             RectTransform background = left.Find("Background") as RectTransform;
             RectTransform week = left.Find("WeekCard") as RectTransform;
             RectTransform gold = left.Find("CurrencyCard") as RectTransform;
+            RectTransform scoreTitle = left.Find("ScoreTitlePanel") as RectTransform;
             RectTransform boss = left.Find("BossStat") as RectTransform;
             RectTransform score = left.Find("ScoreSection") as RectTransform;
             RectTransform stats = left.Find("StatsSection") as RectTransform;
@@ -79,18 +81,21 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(background, Is.Not.Null);
             Assert.That(week, Is.Not.Null);
             Assert.That(gold, Is.Not.Null);
+            Assert.That(scoreTitle, Is.Not.Null);
             Assert.That(boss, Is.Not.Null);
             Assert.That(score, Is.Not.Null);
             Assert.That(stats, Is.Not.Null);
             Assert.That(settings, Is.Not.Null);
             Assert.That(week.anchoredPosition.y, Is.EqualTo(483f).Within(0.01f));
             Assert.That(gold.anchoredPosition.y, Is.EqualTo(353.5f).Within(0.01f));
+            Assert.That(scoreTitle.anchoredPosition.y, Is.EqualTo(190f).Within(0.01f));
             Assert.That(score.anchoredPosition.y, Is.EqualTo(40.5f).Within(0.01f));
             Assert.That(stats.anchoredPosition.y, Is.EqualTo(-289.5f).Within(0.01f));
             Assert.That(settings.anchoredPosition.y, Is.EqualTo(-534f).Within(0.01f));
 
             Assert.That(boss.gameObject.activeSelf, Is.False);
-            Assert.That(boss.anchoredPosition.x + boss.sizeDelta.x * 0.5f,
+            Assert.That(boss.pivot, Is.EqualTo(new Vector2(0.27f, 0f)));
+            Assert.That(boss.anchoredPosition.x + boss.sizeDelta.x * (1f - boss.pivot.x),
                 Is.GreaterThan((left.rect.width * 0.5f)), "Boss 卡应允许越过 LeftColumn 右边界。");
         }
 

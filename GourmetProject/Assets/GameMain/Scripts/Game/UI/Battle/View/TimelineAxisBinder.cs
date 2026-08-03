@@ -1,11 +1,9 @@
 using System;
 using System.Collections.Generic;
-using GourmetProject.Core.Rng;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Hud;
 using GourmetProject.Game.UI.Tooltips;
-using GourmetProject.Runtime;
 using UnityEngine;
 
 namespace GourmetProject.Game.UI.Battle.View
@@ -193,8 +191,8 @@ namespace GourmetProject.Game.UI.Battle.View
                 return;
             }
 
-            cfg.BossDebuff debuff = PreviewBossDebuff(run, node, action);
-            tip.Bind(debuff.Name, debuff.Desc);
+            cfg.BossDebuff debuff = BossService.PreviewBossDebuff(run, node);
+            tip.Bind(debuff?.Name ?? string.Empty, debuff?.Desc ?? string.Empty);
         }
 
         private static cfg.Food PreviewBoss(GameRun run, cfg.TimelineNode node, cfg.GameAction action)
@@ -204,26 +202,5 @@ namespace GourmetProject.Game.UI.Battle.View
                 : null;
         }
 
-        private static cfg.BossDebuff PreviewBossDebuff(GameRun run, cfg.TimelineNode node, cfg.GameAction action)
-        {
-            if (run == null || node == null || action == null)
-            {
-                return null;
-            }
-
-            string bossKey = $"w{run.WeekIndex}_{node.Id}";
-            IRandomStream rng = GameApp.Random.DomainStream(
-                SeedDomains.Boss,
-                BossService.BuildBossDebuffSeedKey(run, bossKey, node.Id));
-            RngState state = rng.State;
-            try
-            {
-                return BossService.RollBossDebuff(run, rng, mutateHistoryOnExhaustion: false);
-            }
-            finally
-            {
-                rng.State = state;
-            }
-        }
     }
 }

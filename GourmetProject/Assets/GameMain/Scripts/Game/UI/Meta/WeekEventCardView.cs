@@ -26,7 +26,6 @@ namespace GourmetProject.Game.UI.Meta
     public sealed class WeekEventCardView : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
         private const string NodeEventFooter = "节点行动";
-        private const string DefaultBossTitle = "周末盛宴\n恶魔";
         private const float GlowPadding = 48f;
         private const float DefaultHideDuration = 0.2f;
         private const float DefaultPickEffectHold = 0.5f;
@@ -129,7 +128,8 @@ namespace GourmetProject.Game.UI.Meta
                     BindNodeCard("收取利息", string.Empty, "card_node_interest", onPick);
                     break;
                 case ActionDisplayKind.Boss:
-                    BindNodeCard(DefaultBossTitle, string.Empty, "card_node_boss", onPick);
+                    cfg.BossDebuff bossDebuff = BossService.PreviewBossDebuff(GameRunContext.Current, node);
+                    BindNodeCard(BossTitle(bossDebuff?.Name), string.Empty, "card_node_boss", onPick);
                     break;
                 case ActionDisplayKind.Event:
                     BindNodeCard(string.IsNullOrEmpty(action.Name) ? "事件" : action.Name, string.Empty, "card_action_event", onPick);
@@ -154,6 +154,13 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             BindNodeCard($"周末盛宴\n{bossName}", desc, "card_node_boss", onPick);
+        }
+
+        public static string BossTitle(string bossDebuffName)
+        {
+            return string.IsNullOrWhiteSpace(bossDebuffName)
+                ? "星级评鉴"
+                : $"星级评鉴：（{bossDebuffName}）";
         }
 
         public void BindNodeCard(string title, string desc, string artSpriteName, Action onPick)
