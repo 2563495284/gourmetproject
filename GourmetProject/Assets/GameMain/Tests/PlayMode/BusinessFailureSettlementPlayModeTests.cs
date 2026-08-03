@@ -100,6 +100,8 @@ namespace GourmetProject.Tests.PlayMode
 
             public void HideBattleWorld() { }
 
+            public void ResetBossBattlePresentation() { }
+
             public void SavePendingRewardBattleView()
             {
                 _run.SetPendingRewardBattleView(new PendingRewardBattleViewSaveData());
