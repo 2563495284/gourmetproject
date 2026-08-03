@@ -42,6 +42,8 @@ namespace GourmetProject.Game.Orchestration
 
         void ShowNotice(string title, string message, Action onContinue);
 
+        void ShowHeartBreak(HeartBreakFormOpenArgs args, Action onComplete);
+
         void OpenEventRecipeDishDelete(
             GameRun run,
             string title,
@@ -73,7 +75,6 @@ namespace GourmetProject.Game.Orchestration
 
         private Action _afterNodes;
         private Action _afterBattleWin;
-        private Action<ScoreResult> _afterBattleLose;
         private Action _beforeBattleReward;
         private Action _afterShop;
         private bool _currentBattleIsBoss;
@@ -96,6 +97,12 @@ namespace GourmetProject.Game.Orchestration
         public void BeginWeek()
         {
             _view.HideResultPanel();
+
+            if (_run.HasPendingHeartBreak)
+            {
+                OpenPendingHeartBreak();
+                return;
+            }
 
             if (_run.HasPendingRewardOffer)
             {
@@ -421,10 +428,6 @@ namespace GourmetProject.Game.Orchestration
             if (isWin)
             {
                 ApplyCakeLayerGold(finalHappyCakeLayers);
-            }
-
-            if (isWin)
-            {
                 Action beforeReward = _beforeBattleReward;
                 _beforeBattleReward = null;
                 beforeReward?.Invoke();
@@ -435,36 +438,66 @@ namespace GourmetProject.Game.Orchestration
                 return;
             }
 
-            _currentBattleIsBoss = false;
-            _beforeBattleReward = null;
-            // 未达标时立即退出美食态；胜利领奖期间保留 Battle 场景，供 RewardForm 隐藏后查看结果。
-            _view.HideBattleWorld();
-
-            if (_afterBattleLose != null)
+            if (_run.HeartsRemaining <= 1 && _run.TryConsumeUndying())
             {
-                Action<ScoreResult> cb = _afterBattleLose;
-                _afterBattleLose = null;
-                _afterBattleWin = null;
-                CurrentBattleActionContext = null;
-                cb.Invoke(result);
-            }
-            else if (_run.TryConsumeUndying())
-            {
-                // 名刀·加护：常规挑战未达标时不失败，消耗该道具后照常继续编排（不发奖）。
+                // 最后一颗心优先由名刀·加护挡下；不扣心、不发奖，沿用原继续逻辑。
+                _beforeBattleReward = null;
+                _currentBattleIsBoss = false;
+                _view.HideBattleWorld();
                 _view.ShowNotice("名刀·加护", "分数未达标，但名刀·加护替你挡下了失败（道具已消耗）。", () =>
                 {
                     Action cb = _afterBattleWin;
                     _afterBattleWin = null;
-                    _afterBattleLose = null;
                     CurrentBattleActionContext = null;
                     cb?.Invoke();
                 });
+                return;
+            }
+
+            if (!_run.TryLoseHeart(out int before, out int after))
+            {
+                // 防御性兜底：开发期旧存档或中断状态可能已经为 0；仍必须先展示最后碎心页，不能直跳失败页。
+                _beforeBattleReward = null;
+                _currentBattleIsBoss = false;
+                _view.SavePendingRewardBattleView();
+                _run.SetPendingHeartBreak(new PendingHeartBreakSaveData
+                {
+                    BeforeHeartCount = 0,
+                    AfterHeartCount = 0,
+                    BattleTotal = result?.Total ?? 0,
+                    IsTerminal = true,
+                });
+                RunPersistence.Save(_run);
+                ShowPendingHeartBreak();
+                return;
+            }
+
+            bool terminal = after <= 0;
+            _run.SetPendingHeartBreak(new PendingHeartBreakSaveData
+            {
+                BeforeHeartCount = before,
+                AfterHeartCount = after,
+                BattleTotal = result?.Total ?? 0,
+                IsTerminal = terminal,
+            });
+            if (!terminal)
+            {
+                // 非致命碎心按通关处理：Boss 完成、蛋糕金币及奖励包都与达标路径一致。
+                ApplyCakeLayerGold(finalHappyCakeLayers);
+                Action beforeReward = _beforeBattleReward;
+                _beforeBattleReward = null;
+                beforeReward?.Invoke();
+                EnsurePendingBattleReward(CurrentBattleActionContext);
             }
             else
             {
-                // 常规美食/Boss 挑战不达标即失败；事件战斗可通过 onLose 覆盖为惩罚后继续。
-                _view.ShowRunResult(false, result.Total);
+                _beforeBattleReward = null;
+                _view.SavePendingRewardBattleView();
             }
+
+            _currentBattleIsBoss = false;
+            RunPersistence.Save(_run);
+            ShowPendingHeartBreak();
         }
 
         private void ApplyCakeLayerGold(int finalHappyCakeLayers)
@@ -549,7 +582,6 @@ namespace GourmetProject.Game.Orchestration
         {
             Action cb = _afterBattleWin;
             _afterBattleWin = null;
-            _afterBattleLose = null;
             _beforeBattleReward = null;
             CurrentBattleActionContext = null;
             _currentBattleIsBoss = false;
@@ -573,6 +605,53 @@ namespace GourmetProject.Game.Orchestration
             _afterBattleWin = ContinueAfterRecoveredBattleReward;
             _beforeBattleReward = null;
             _view.RestorePendingRewardBattleView();
+            GameApp.UI.OpenUIForm(UIForms.Reward, UIForms.GroupDialog, RewardFormOpenArgs.BattleReward());
+        }
+
+        private void OpenPendingHeartBreak()
+        {
+            CurrentBattleActionContext = _run.LastActionContext;
+            _afterBattleWin = ContinueAfterRecoveredBattleReward;
+            _beforeBattleReward = null;
+            if (_run.HasPendingRewardBattleView)
+            {
+                _view.RestorePendingRewardBattleView();
+            }
+
+            ShowPendingHeartBreak();
+        }
+
+        private void ShowPendingHeartBreak()
+        {
+            PendingHeartBreakSaveData pending = _run.GetPendingHeartBreak();
+            if (pending == null)
+            {
+                return;
+            }
+
+            var args = new HeartBreakFormOpenArgs(
+                pending.BeforeHeartCount,
+                pending.AfterHeartCount,
+                _run.HeartCapacity,
+                pending.IsTerminal);
+            _view.ShowHeartBreak(args, () => OnHeartBreakComplete(pending));
+        }
+
+        private void OnHeartBreakComplete(PendingHeartBreakSaveData pending)
+        {
+            if (pending == null)
+            {
+                return;
+            }
+
+            if (pending.IsTerminal)
+            {
+                _view.ShowRunResult(false, pending.BattleTotal);
+                return;
+            }
+
+            _run.ClearPendingHeartBreak();
+            RunPersistence.Save(_run);
             GameApp.UI.OpenUIForm(UIForms.Reward, UIForms.GroupDialog, RewardFormOpenArgs.BattleReward());
         }
 
@@ -1642,8 +1721,7 @@ namespace GourmetProject.Game.Orchestration
                         false,
                         null,
                         onDone,
-                        null,
-                        battleResult => OnEventBattleFailed(result, battleResult, onDone));
+                        null);
                     break;
                 }
 
@@ -1667,14 +1745,6 @@ namespace GourmetProject.Game.Orchestration
                     onDone?.Invoke();
                     break;
             }
-        }
-
-        private void OnEventBattleFailed(EventResolveResult result, ScoreResult battleResult, Action onDone)
-        {
-            _view.HideBattleWorld();
-            int score = battleResult?.Total ?? 0;
-            string message = $"事件挑战未达标（{score}/{result.RequiredScore}），本次事件继续结算。";
-            _view.ShowNotice("事件挑战失败", message, onDone);
         }
 
         private void ClearPendingNodes()
@@ -1723,11 +1793,9 @@ namespace GourmetProject.Game.Orchestration
             string bossDebuffId,
             Action onWin,
             ActionExecutionContext actionContext = null,
-            Action<ScoreResult> onLose = null,
             Action beforeReward = null)
         {
             _afterBattleWin = onWin;
-            _afterBattleLose = onLose;
             _beforeBattleReward = beforeReward;
             CurrentBattleActionContext = actionContext;
             _currentBattleIsBoss = isBoss;

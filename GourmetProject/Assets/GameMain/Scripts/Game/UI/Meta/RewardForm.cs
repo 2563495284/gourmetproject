@@ -94,6 +94,9 @@ namespace GourmetProject.Game.UI.Meta
         [SerializeField] private float _rewardScrollbarIdleSeconds = 0.8f;
         [Min(0f)]
         [SerializeField] private float _rewardScrollbarFadeSeconds = 0.2f;
+        [Header("Form Transition")]
+        [SerializeField] private CanvasGroup _transitionGroup;
+        [SerializeField] private RectTransform _transitionPanel;
 
         private const int NoExpandedChoicePackGroup = int.MinValue;
 
@@ -118,6 +121,8 @@ namespace GourmetProject.Game.UI.Meta
         private readonly List<PeekChildState> _peekChildStates = new List<PeekChildState>();
         private FoodTipsView _foodTipsView;
         private ItemTipView _itemTipView;
+        private Sequence _transitionSequence;
+        private bool _isClosing;
 
         protected override void OnInit(object userData)
         {
@@ -140,6 +145,7 @@ namespace GourmetProject.Game.UI.Meta
         protected override void OnOpen(object userData)
         {
             base.OnOpen(userData);
+            PrepareOpenTransition();
             ConfigureRewardScrollbar();
             EnsureTipViews();
             HideTips();
@@ -184,6 +190,7 @@ namespace GourmetProject.Game.UI.Meta
                 _lastTotal = 0;
                 _lastTarget = 0;
                 RefreshOffer();
+                PlayOpenTransition();
                 return;
             }
 
@@ -213,6 +220,7 @@ namespace GourmetProject.Game.UI.Meta
             _lastTarget = target;
 
             RefreshOffer();
+            PlayOpenTransition();
         }
 
         protected override void OnClose(bool isShutdown, object userData)
@@ -230,6 +238,9 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             HideTips();
+            _transitionSequence?.Kill();
+            _transitionSequence = null;
+            _isClosing = false;
             base.OnClose(isShutdown, userData);
         }
 
@@ -308,22 +319,29 @@ namespace GourmetProject.Game.UI.Meta
                 }
                 RunPersistence.Save(_run);
 
+                Action continueFlow = () =>
+                {
+                    if (continuation == PendingGenericRewardContinuationKind.Battle)
+                    {
+                        BattleForm.Active?.OnRewardConfirmed();
+                    }
+                    else if (continuation == PendingGenericRewardContinuationKind.Slot)
+                    {
+                        BattleForm.Active?.OnSlotRewardConfirmed();
+                    }
+                    else if (!closeForm)
+                    {
+                        BattleForm.Active?.OpenShop();
+                    }
+                };
+
                 if (closeForm)
                 {
-                    Close();
+                    Close(continueFlow);
                 }
-
-                if (continuation == PendingGenericRewardContinuationKind.Battle)
+                else
                 {
-                    BattleForm.Active?.OnRewardConfirmed();
-                }
-                else if (continuation == PendingGenericRewardContinuationKind.Slot)
-                {
-                    BattleForm.Active?.OnSlotRewardConfirmed();
-                }
-                else if (!closeForm)
-                {
-                    BattleForm.Active?.OpenShop();
+                    continueFlow.Invoke();
                 }
 
                 return;
@@ -352,17 +370,101 @@ namespace GourmetProject.Game.UI.Meta
 
             _run.ClearPendingRewardBattleView();
             RunPersistence.Save(_run);
+            Action confirmBattle = () => BattleForm.Active?.OnRewardConfirmed();
             if (closeForm)
             {
-                Close();
+                Close(confirmBattle);
             }
-
-            BattleForm.Active?.OnRewardConfirmed();
+            else
+            {
+                confirmBattle.Invoke();
+            }
         }
 
         private void Close()
         {
-            GameApp.UI.CloseUIForm(UIForm);
+            Close(null);
+        }
+
+        private void Close(Action onClosed)
+        {
+            if (_isClosing)
+            {
+                return;
+            }
+
+            _isClosing = true;
+            _continueButton.interactable = false;
+            if (_transitionGroup != null)
+            {
+                _transitionGroup.blocksRaycasts = false;
+            }
+
+            _transitionSequence?.Kill();
+            _transitionSequence = DOTween.Sequence().SetUpdate(true).SetTarget(this);
+            if (_transitionGroup != null)
+            {
+                _transitionSequence.Append(DOTween.To(
+                    () => _transitionGroup.alpha,
+                    value => _transitionGroup.alpha = value,
+                    0f,
+                    0.16f).SetEase(Ease.InQuad));
+            }
+
+            if (_transitionPanel != null)
+            {
+                _transitionSequence.Join(_transitionPanel.DOScale(0.96f, 0.16f).SetEase(Ease.InQuad));
+            }
+
+            _transitionSequence.OnComplete(() =>
+            {
+                GameApp.UI.CloseUIForm(UIForm);
+                onClosed?.Invoke();
+            });
+        }
+
+        private void PrepareOpenTransition()
+        {
+            _transitionSequence?.Kill();
+            _isClosing = false;
+            _continueButton.interactable = true;
+            if (_transitionGroup != null)
+            {
+                _transitionGroup.alpha = 0f;
+                _transitionGroup.blocksRaycasts = false;
+            }
+
+            if (_transitionPanel != null)
+            {
+                _transitionPanel.localScale = Vector3.one * 0.94f;
+            }
+        }
+
+        private void PlayOpenTransition()
+        {
+            _transitionSequence?.Kill();
+            _transitionSequence = DOTween.Sequence().SetUpdate(true).SetTarget(this);
+            if (_transitionGroup != null)
+            {
+                _transitionSequence.Append(DOTween.To(
+                    () => _transitionGroup.alpha,
+                    value => _transitionGroup.alpha = value,
+                    1f,
+                    0.2f).SetEase(Ease.OutQuad));
+            }
+
+            if (_transitionPanel != null)
+            {
+                _transitionSequence.Join(_transitionPanel.DOScale(1f, 0.24f).SetEase(Ease.OutCubic));
+            }
+
+            _transitionSequence.OnComplete(() =>
+            {
+                if (_transitionGroup != null)
+                {
+                    _transitionGroup.blocksRaycasts = true;
+                }
+            });
         }
 
         private void ConfigurePeekButtons()

@@ -14,7 +14,7 @@ namespace GourmetProject.Game.Run
 {
     /// <summary>
     /// 运行存档读写：把 <see cref="GameRun"/> 与存档槽位、随机种子初始化串起来。
-    /// 存档槽位沿用 <see cref="UIForms.GameSaveSlot"/>，与主菜单「继续游戏」判定一致。
+    /// 存档槽位沿用 <see cref="UIForms.GameSaveSlot"/>，与角色选择界面的存档入口判定一致。
     /// </summary>
     public static class RunPersistence
     {

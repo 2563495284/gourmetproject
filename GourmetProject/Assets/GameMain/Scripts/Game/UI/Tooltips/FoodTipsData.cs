@@ -49,12 +49,20 @@ namespace GourmetProject.Game.UI.Tooltips
             Array.Empty<FoodInfoEntry>(),
             Array.Empty<string>());
 
-        public FoodSummaryTipsData(string foodName, IReadOnlyList<FoodInfoEntry> skills, IReadOnlyList<string> flavors, bool skillsDisabled = false)
+        public FoodSummaryTipsData(
+            string foodName,
+            IReadOnlyList<FoodInfoEntry> skills,
+            IReadOnlyList<string> flavors,
+            bool skillsDisabled = false,
+            bool isTemporaryCopy = false,
+            int countAs = 1)
         {
             FoodName = foodName ?? string.Empty;
             Skills = skills ?? Array.Empty<FoodInfoEntry>();
             Flavors = flavors ?? Array.Empty<string>();
             SkillsDisabled = skillsDisabled;
+            IsTemporaryCopy = isTemporaryCopy;
+            CountAs = Math.Max(1, countAs);
         }
 
         public string FoodName { get; }
@@ -64,6 +72,12 @@ namespace GourmetProject.Game.UI.Tooltips
         public IReadOnlyList<string> Flavors { get; }
 
         public bool SkillsDisabled { get; }
+
+        /// <summary>是否为临时复制产生的食物；永久复制品不属于该标记。</summary>
+        public bool IsTemporaryCopy { get; }
+
+        /// <summary>当前展示场景下的实际「视为食物数」。</summary>
+        public int CountAs { get; }
     }
 
     public sealed class FoodScoreTipsData
@@ -150,7 +164,8 @@ namespace GourmetProject.Game.UI.Tooltips
             DishInstance dish,
             DiningTable table,
             GameplayDatabase db,
-            ScoreResult scoreResult = null)
+            ScoreResult scoreResult = null,
+            int? effectiveCountAsOverride = null)
         {
             if (dish == null)
             {
@@ -158,25 +173,33 @@ namespace GourmetProject.Game.UI.Tooltips
             }
 
             DishScore score = FindScore(scoreResult, dish.Id);
-            return Build(dish, table, db, score);
+            return Build(dish, table, db, score, effectiveCountAsOverride);
         }
 
         public static FoodTipsData Build(
             DishInstance dish,
             DiningTable table,
             GameplayDatabase db,
-            DishScore score)
+            DishScore score,
+            int? effectiveCountAsOverride = null)
         {
             if (dish == null)
             {
                 return new FoodTipsData(null, null, null, null, null, null);
             }
 
+            int effectiveCountAs = Math.Max(
+                1,
+                effectiveCountAsOverride
+                    ?? score?.EffectiveCountAs
+                    ?? ResolveIntrinsicCountAs(dish.Def, dish.SkillIds, dish.FlavorIds, db));
             var summary = new FoodSummaryTipsData(
                 dish.Def != null ? dish.Def.Name : string.Empty,
                 BuildSkills(dish, db, -1),
                 BuildFlavorNames(dish, db),
-                dish.SkillsDisabled);
+                dish.SkillsDisabled,
+                dish.IsTemporary,
+                effectiveCountAs);
 
             float scoreValue;
             float multiplier;
@@ -208,7 +231,9 @@ namespace GourmetProject.Game.UI.Tooltips
             DishInstance dish,
             DiningTable table,
             GameplayDatabase db,
-            FoodTipsReveal reveal)
+            FoodTipsReveal reveal,
+            ScoreResult scoreResult = null,
+            int? effectiveCountAsOverride = null)
         {
             if (dish == null)
             {
@@ -217,11 +242,19 @@ namespace GourmetProject.Game.UI.Tooltips
 
             reveal ??= new FoodTipsReveal(dish.BaseScoreBeforeSettlement, dish.BaseMultiplierBeforeSettlement, -1, -1);
 
+            DishScore score = FindScore(scoreResult, dish.Id);
+            int effectiveCountAs = Math.Max(
+                1,
+                effectiveCountAsOverride
+                    ?? score?.EffectiveCountAs
+                    ?? ResolveIntrinsicCountAs(dish.Def, dish.SkillIds, dish.FlavorIds, db));
             var summary = new FoodSummaryTipsData(
                 dish.Def != null ? dish.Def.Name : string.Empty,
                 BuildSkills(dish, db, reveal.MaxSkills),
                 BuildFlavorNames(dish, db),
-                dish.SkillsDisabled);
+                dish.SkillsDisabled,
+                dish.IsTemporary,
+                effectiveCountAs);
 
             return new FoodTipsData(
                 summary,
@@ -230,6 +263,48 @@ namespace GourmetProject.Game.UI.Tooltips
                 BuildFlavorDetails(dish, db),
                 BuildTransferredSubSkills(dish, reveal.MaxTransferred),
                 BuildSpecialTags(dish, db, reveal.MaxSkills, reveal.MaxTransferred));
+        }
+
+        /// <summary>
+        /// 无餐桌预览使用的固有数量：把食物单独放入最小餐桌并复用正式结算，
+        /// 因而静态 CountAs、自身/范围 AddCountAs 与占格规则保持同一语义。
+        /// </summary>
+        public static int ResolveIntrinsicCountAs(
+            DishDef definition,
+            IReadOnlyList<string> skillIds,
+            IReadOnlyList<string> flavorIds,
+            GameplayDatabase db)
+        {
+            if (definition == null)
+            {
+                return 1;
+            }
+
+            if (db == null)
+            {
+                return Math.Max(1, definition.CountAs);
+            }
+
+            int width = Math.Max(1, definition.Shape.Width);
+            int height = Math.Max(1, definition.Shape.Height);
+            var table = new DiningTable(width, height);
+            var placement = new Placement(definition.Shape, 0, new GridPos(0, 0));
+            var dish = new DishInstance(1, definition, placement, skillIds, flavorIds);
+            table.Place(dish);
+
+            DishScore score = FindScore(new ScoreCalculator().Calculate(table, db), dish.Id);
+            return score != null
+                ? score.EffectiveCountAs
+                : Math.Max(1, definition.CountAs);
+        }
+
+        public static int ResolveIntrinsicCountAs(DishDef definition, GameplayDatabase db)
+        {
+            return ResolveIntrinsicCountAs(
+                definition,
+                definition?.SkillIds,
+                Array.Empty<string>(),
+                db);
         }
 
         private static DishScore FindScore(ScoreResult result, int dishId)

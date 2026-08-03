@@ -127,6 +127,10 @@ public partial class TbGameBase
     /// 出菜保底认定为饼干的食物本体ID列表
     /// </summary>
      public System.Collections.Generic.List<string> ServeCookieDishIds => _data.ServeCookieDishIds;
+    /// <summary>
+    /// 开局爱心数量（同时初始化当前爱心与爱心上限）
+    /// </summary>
+     public int InitialHeartCount => _data.InitialHeartCount;
     
     public void ResolveRef(Tables tables)
     {

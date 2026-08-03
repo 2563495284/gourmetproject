@@ -687,6 +687,39 @@ namespace GourmetProject.Gameplay.Battle
                 return ZeroScoreResult();
             }
 
+            return CalculatePreviewScore();
+        }
+
+        /// <summary>
+        /// 返回当前餐桌状态下的实际「视为食物数」。未结算时复用完整但无副作用的预览结算；
+        /// 结算后读取最终结果，避免把 live 规则在变化后的状态上重新计算。
+        /// </summary>
+        public int PreviewEffectiveCountAs(DishInstance dish)
+        {
+            if (dish == null)
+            {
+                return 1;
+            }
+
+            ScoreResult result = IsSettled && LastResult != null
+                ? LastResult
+                : CalculatePreviewScore();
+            if (result?.DishScores != null)
+            {
+                foreach (DishScore score in result.DishScores)
+                {
+                    if (score != null && score.DishInstanceId == dish.Id)
+                    {
+                        return score.EffectiveCountAs;
+                    }
+                }
+            }
+
+            return Math.Max(1, dish.EffectiveCountAs);
+        }
+
+        private ScoreResult CalculatePreviewScore()
+        {
             return _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, extraSources: BuildSettlementExtraSources(), history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes());
         }
 

@@ -34,6 +34,9 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(snapshot.FinalMultiplier, Is.EqualTo(1f));
             Assert.That(snapshot.Dishes, Is.Empty);
             Assert.That(snapshot.Cakes, Is.Empty);
+            Assert.That(
+                new PendingRewardBattleDishSaveData().ScoreEffectiveCountAs,
+                Is.EqualTo(1));
         }
 
         [Test]
@@ -64,6 +67,7 @@ namespace GourmetProject.Tests.EditMode
                         ScoreBaseValue = 31f,
                         ScoreFlatBonus = 5f,
                         ScoreMultiplier = 1.5f,
+                        ScoreEffectiveCountAs = 10,
                     },
                 },
                 Cakes = new List<PendingRewardCakeVisualSaveData>
@@ -93,6 +97,7 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(actual.Dishes[0].ScoreBaseValue, Is.EqualTo(31f));
             Assert.That(actual.Dishes[0].ScoreFlatBonus, Is.EqualTo(5f));
             Assert.That(actual.Dishes[0].ScoreMultiplier, Is.EqualTo(1.5f));
+            Assert.That(actual.Dishes[0].ScoreEffectiveCountAs, Is.EqualTo(10));
             Assert.That(actual.Cakes, Has.Count.EqualTo(1));
             Assert.That(actual.Cakes[0].ViewportX, Is.EqualTo(0.25f));
             Assert.That(actual.Cakes[0].ViewportY, Is.EqualTo(0.75f));

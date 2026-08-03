@@ -89,7 +89,12 @@ namespace GourmetProject.Game.UI.Meta
                 def.Name,
                 skills,
                 flavorNames,
-                readonlyEntry?.SkillsDisabled == true);
+                readonlyEntry?.SkillsDisabled == true,
+                countAs: FoodTipsDataFactory.ResolveIntrinsicCountAs(
+                    def,
+                    skillIds,
+                    flavorIds,
+                    Database));
             float multiplier = slot != null ? slot.ScoreMultiplier : 1f;
             float score = def.Deliciousness
                 + (slot != null ? slot.ScoreFlatBonus : 0f);
