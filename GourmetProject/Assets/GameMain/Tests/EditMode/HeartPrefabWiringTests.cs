@@ -9,40 +9,89 @@ namespace GourmetProject.Tests.EditMode
     public sealed class HeartPrefabWiringTests
     {
         private const string BattlePrefabPath = "Assets/GameMain/Content/Prefabs/UI/BattleForm.prefab";
+        private const string BattleHeartItemPrefabPath = "Assets/GameMain/Content/Prefabs/UI/Hud/BattleHeartItem.prefab";
         private const string HeartBreakPrefabPath = "Assets/GameMain/Content/Prefabs/UI/HeartBreakForm.prefab";
         private const string RewardPrefabPath = "Assets/GameMain/Content/Prefabs/UI/RewardForm.prefab";
         private const string DefeatPrefabPath = "Assets/GameMain/Content/Prefabs/UI/DefeatForm.prefab";
 
         [Test]
-        public void BattleInfoColumn_HasHeartTextAndNonOverlappingCards()
+        public void BattleInfoColumn_HasStaticReferenceLayoutAndDynamicHeartPrefab()
         {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(BattlePrefabPath);
             Assert.That(prefab, Is.Not.Null);
 
-            Transform left = prefab.transform.Find("HudFrame/LeftColumn");
+            RectTransform left = prefab.transform.Find("HudFrame/LeftColumn") as RectTransform;
             Assert.That(left, Is.Not.Null);
             BattleInfoColumn column = left.GetComponent<BattleInfoColumn>();
             Assert.That(column, Is.Not.Null);
 
             var serialized = new SerializedObject(column);
-            Text heart = serialized.FindProperty("_heartText").objectReferenceValue as Text;
-            Assert.That(heart, Is.Not.Null);
-            Assert.That(heart.name, Is.EqualTo("HeartValue"));
-            Assert.That(heart.resizeTextForBestFit, Is.True);
-            Assert.That(heart.font, Is.Not.Null);
-            Assert.That(heart.font.HasCharacter('♥'), Is.True);
+            string[] references =
+            {
+                "_weekText",
+                "_goldText",
+                "_heartContainer",
+                "_heartItemPrefab",
+                "_heartActiveSprite",
+                "_heartEmptySprite",
+                "_scoreCurrentText",
+                "_scoreRequiredText",
+                "_viewRecipeButton",
+                "_viewRecipeCountText",
+                "_viewTableButton",
+                "_viewTableLabelText",
+                "_viewTableCountText",
+                "_discardCountText",
+                "_settingsButton",
+                "_scoreFire",
+                "_bossStat",
+                "_bossTitleText",
+                "_bossSkillText",
+            };
+            foreach (string reference in references)
+            {
+                SerializedProperty property = serialized.FindProperty(reference);
+                Assert.That(property, Is.Not.Null, $"BattleInfoColumn 缺少序列化字段 {reference}。");
+                Assert.That(property.objectReferenceValue, Is.Not.Null, $"BattleInfoColumn 缺少 {reference} 引用。");
+            }
 
-            RectTransform week = left.Find("WeekStat") as RectTransform;
-            RectTransform gold = left.Find("GoldStat") as RectTransform;
+            RectTransform heartContainer = left.Find("HeartContainer") as RectTransform;
+            Assert.That(heartContainer, Is.Not.Null);
+            HorizontalLayoutGroup heartLayout = heartContainer.GetComponent<HorizontalLayoutGroup>();
+            Assert.That(heartLayout, Is.Not.Null);
+            Assert.That(heartLayout.spacing, Is.EqualTo(20f));
+
+            GameObject heartPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(BattleHeartItemPrefabPath);
+            Assert.That(heartPrefab, Is.Not.Null);
+            Image heartImage = heartPrefab.GetComponent<Image>();
+            Assert.That(heartImage, Is.Not.Null);
+            Assert.That(heartImage.sprite, Is.Not.Null);
+            Assert.That(heartImage.raycastTarget, Is.False);
+            Assert.That((heartPrefab.transform as RectTransform).sizeDelta, Is.EqualTo(new Vector2(48f, 45f)));
+
+            RectTransform background = left.Find("Background") as RectTransform;
+            RectTransform week = left.Find("WeekCard") as RectTransform;
+            RectTransform gold = left.Find("CurrencyCard") as RectTransform;
             RectTransform boss = left.Find("BossStat") as RectTransform;
-            RectTransform score = left.Find("LeftColumnScoreStat") as RectTransform;
+            RectTransform score = left.Find("ScoreSection") as RectTransform;
+            RectTransform stats = left.Find("StatsSection") as RectTransform;
+            RectTransform settings = left.Find("SettingsCard") as RectTransform;
+            Assert.That(background, Is.Not.Null);
             Assert.That(week, Is.Not.Null);
             Assert.That(gold, Is.Not.Null);
             Assert.That(boss, Is.Not.Null);
             Assert.That(score, Is.Not.Null);
-            Assert.That(Top(gold), Is.LessThan(Bottom(week)));
-            Assert.That(Top(boss), Is.LessThan(Bottom(gold)));
-            Assert.That(Top(score), Is.LessThan(Bottom(boss)));
+            Assert.That(stats, Is.Not.Null);
+            Assert.That(settings, Is.Not.Null);
+            Assert.That(week.anchoredPosition.y, Is.EqualTo(483f).Within(0.01f));
+            Assert.That(gold.anchoredPosition.y, Is.EqualTo(353.5f).Within(0.01f));
+            Assert.That(score.anchoredPosition.y, Is.EqualTo(40.5f).Within(0.01f));
+            Assert.That(stats.anchoredPosition.y, Is.EqualTo(-289.5f).Within(0.01f));
+            Assert.That(settings.anchoredPosition.y, Is.EqualTo(-534f).Within(0.01f));
+
+            Assert.That(boss.gameObject.activeSelf, Is.False);
+            Assert.That(boss.anchoredPosition.x + boss.sizeDelta.x * 0.5f,
+                Is.GreaterThan((left.rect.width * 0.5f)), "Boss 卡应允许越过 LeftColumn 右边界。");
         }
 
         [Test]
@@ -113,14 +162,5 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(serialized.FindProperty("_transitionPanel").objectReferenceValue, Is.Not.Null);
         }
 
-        private static float Top(RectTransform rect)
-        {
-            return rect.anchoredPosition.y + rect.sizeDelta.y * (1f - rect.pivot.y);
-        }
-
-        private static float Bottom(RectTransform rect)
-        {
-            return rect.anchoredPosition.y - rect.sizeDelta.y * rect.pivot.y;
-        }
     }
 }
