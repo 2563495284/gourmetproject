@@ -77,7 +77,7 @@ namespace cfg
         /// </summary>
         AddRandomRecipeFlavor = 14,
         /// <summary>
-        /// 从指定道具列表随机获得道具(value=次数,param=id|id)
+        /// 按奖励槽组生成道具奖励(param=奖励槽组ID)
         /// </summary>
         GainSpecificItem = 15,
         /// <summary>

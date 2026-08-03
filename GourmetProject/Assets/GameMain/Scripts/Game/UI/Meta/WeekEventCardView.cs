@@ -132,8 +132,10 @@ namespace GourmetProject.Game.UI.Meta
                     BindNodeCard(DefaultBossTitle, string.Empty, "card_node_boss", onPick);
                     break;
                 case ActionDisplayKind.Event:
-                case ActionDisplayKind.Slot:
                     BindNodeCard(string.IsNullOrEmpty(action.Name) ? "事件" : action.Name, string.Empty, "card_action_event", onPick);
+                    break;
+                case ActionDisplayKind.Slot:
+                    BindNodeCard(string.IsNullOrEmpty(action.Name) ? "抽奖机" : action.Name, string.Empty, "card_action_slot", onPick);
                     break;
                 default:
                     BindNodeCard(string.IsNullOrEmpty(action.Name) ? "事件" : action.Name, string.Empty, "card_action_event", onPick);
@@ -396,8 +398,10 @@ namespace GourmetProject.Game.UI.Meta
 
                     break;
                 case cfg.ActionBehavior.Event:
-                case cfg.ActionBehavior.Slot:
                     spriteName = "card_action_event";
+                    break;
+                case cfg.ActionBehavior.Slot:
+                    spriteName = "card_action_slot";
                     break;
                 case cfg.ActionBehavior.Reward:
                     spriteName = "card_action_reward";
@@ -413,7 +417,7 @@ namespace GourmetProject.Game.UI.Meta
                     spriteName = "card_node_interest";
                     break;
                 default:
-                    spriteName = "card_action_event";
+                    spriteName = "card_action_generic";
                     break;
             }
 
@@ -482,26 +486,7 @@ namespace GourmetProject.Game.UI.Meta
             cfg.FoodActionKind actionKind,
             cfg.RewardKind kind)
         {
-            bool isSuper = actionKind == cfg.FoodActionKind.Super;
-            switch (kind)
-            {
-                case cfg.RewardKind.Gold:
-                    return isSuper ? "reward_badge_gold_large" : "reward_badge_gold";
-                case cfg.RewardKind.FragmentChoice:
-                    return isSuper ? "reward_badge_table_cell_large" : "reward_badge_table_cell";
-                case cfg.RewardKind.PassiveItemChoice:
-                    return isSuper ? "reward_badge_passive_item_4" : "reward_badge_passive_item";
-                case cfg.RewardKind.ActiveItemStrengthen:
-                    return isSuper ? "reward_badge_active_strengthen_4" : "reward_badge_active_strengthen";
-                case cfg.RewardKind.ActiveItemAdjust:
-                    return isSuper ? "reward_badge_active_adjust_4" : "reward_badge_active_adjust";
-                case cfg.RewardKind.ActiveItemGrant:
-                    return "ui_icon_shop_active";
-                case cfg.RewardKind.DishChoice:
-                    return "ui_icon_shop_food";
-                default:
-                    return "ui_icon_shop_food";
-            }
+            return RewardBadgeResolver.SpriteNameFor(actionKind, kind);
         }
 
         private static Sprite RewardIconFor(

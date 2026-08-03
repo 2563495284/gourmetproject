@@ -17,7 +17,8 @@ namespace GourmetProject.Game.Meta
             Desc = passive.Desc;
             Quality = passive.Quality;
             SpecialTags = passive.SpecialTags;
-            TermIds = SplitTermIds(passive.TermId);
+            PoolTags = System.Array.Empty<string>();
+            TermIds = SplitPipeList(passive.TermId);
             // 被动道具已按 itemId → PassiveItemModel 绑定，不再依赖 effectType；此处不读配置列（便于后续从表中移除）。
             EffectType = string.Empty;
             EffectValue = passive.EffectValue;
@@ -44,7 +45,8 @@ namespace GourmetProject.Game.Meta
             Desc = active.Desc;
             Quality = cfg.ItemQuality.Common;
             SpecialTags = cfg.ItemSpecialTag.None;
-            TermIds = SplitTermIds(active.TermId);
+            PoolTags = SplitPipeList(active.SpecialTags);
+            TermIds = SplitPipeList(active.TermId);
             EffectType = active.EffectType;
             EffectValue = active.EffectValue;
             EffectParam = active.EffectParam;
@@ -75,6 +77,9 @@ namespace GourmetProject.Game.Meta
         public cfg.ItemQuality Quality { get; }
 
         public cfg.ItemSpecialTag SpecialTags { get; }
+
+        /// <summary>主动道具参与奖励池筛选的标签（配置 specialTags 列，| 分隔）。</summary>
+        public IReadOnlyList<string> PoolTags { get; }
 
         /// <summary>道具关联的专有名词 id（已去重）；来源为配置 termId 列（| 分隔）。供 tips 展示名词解释。</summary>
         public IReadOnlyList<string> TermIds { get; }
@@ -115,6 +120,24 @@ namespace GourmetProject.Game.Meta
 
         public bool HasSpecialTag(cfg.ItemSpecialTag tag) => ItemTagFilter.HasTag(SpecialTags, tag);
 
+        public bool HasPoolTag(string tag)
+        {
+            if (string.IsNullOrEmpty(tag))
+            {
+                return false;
+            }
+
+            foreach (string poolTag in PoolTags)
+            {
+                if (poolTag == tag)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public float HiddenScoreOffset(HiddenScorePurpose purpose)
         {
             switch (purpose)
@@ -134,7 +157,7 @@ namespace GourmetProject.Game.Meta
             }
         }
 
-        private static IReadOnlyList<string> SplitTermIds(string value)
+        private static IReadOnlyList<string> SplitPipeList(string value)
         {
             if (string.IsNullOrEmpty(value))
             {

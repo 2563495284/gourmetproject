@@ -976,7 +976,7 @@ namespace GourmetProject.Game.UI.Meta
             row.Bind(
                 $"金币 +{_offer.BaseGold}",
                 "点击领取固定金币。",
-                LoadGoldIcon(),
+                LoadBaseGoldIcon(),
                 false,
                 true,
                 false,
@@ -1017,16 +1017,18 @@ namespace GourmetProject.Game.UI.Meta
                     return;
                 }
 
+                Sprite icon = LoadGroupRowIcon(group, groupIndex, choice, out bool suppressDishPreview);
+
                 row.Bind(
                     string.IsNullOrWhiteSpace(choice?.Name) ? FallbackGroupTitle(group) : choice.Name,
                     BuildDirectChoiceDescription(choice, group),
-                    LoadChoiceIcon(choice),
+                    icon,
                     false,
                     true,
                     false,
                     () => ClaimChoice(groupIndex, index, choices),
-                    dish: DishForChoice(choice),
-                    flavorIds: FlavorIdsForChoice(choice));
+                    dish: suppressDishPreview ? null : DishForChoice(choice),
+                    flavorIds: suppressDishPreview ? null : FlavorIdsForChoice(choice));
                 BindDirectChoiceTip(row, choice);
             }
         }
@@ -1041,16 +1043,17 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             RewardChoice firstChoice = FirstUnclaimedChoice(choices, groupIndex) ?? choices[0];
+            Sprite icon = LoadGroupRowIcon(group, groupIndex, firstChoice, out bool suppressDishPreview);
             row.Bind(
                 FallbackGroupTitle(group),
                 BuildGroupDescription(group),
-                LoadChoiceIcon(firstChoice),
+                icon,
                 false,
                 true,
                 false,
                 () => OpenChoicePack(groupIndex, choices),
-                dish: DishForChoice(firstChoice),
-                flavorIds: FlavorIdsForChoice(firstChoice));
+                dish: suppressDishPreview ? null : DishForChoice(firstChoice),
+                flavorIds: suppressDishPreview ? null : FlavorIdsForChoice(firstChoice));
         }
 
         private void OpenChoicePack(int groupIndex, IReadOnlyList<RewardChoice> choices)
@@ -1480,6 +1483,94 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
+        private Sprite LoadGroupRowIcon(
+            RewardChoiceGroup group,
+            int groupIndex,
+            RewardChoice fallbackChoice,
+            out bool suppressDishPreview)
+        {
+            suppressDishPreview = false;
+            cfg.Food sourceFood = ResolveFoodRewardSource();
+            if (sourceFood == null)
+            {
+                return LoadChoiceIcon(fallbackChoice);
+            }
+
+            string spriteName = string.Empty;
+            if (groupIndex < 0)
+            {
+                spriteName = RewardBadgeResolver.SpriteNameFor(
+                    sourceFood.ActionKind,
+                    sourceFood.RewardKind);
+            }
+            else if (IsBaseDishGroup(group, groupIndex))
+            {
+                spriteName = RewardBadgeResolver.BaseDishSpriteName;
+            }
+
+            Sprite icon = string.IsNullOrEmpty(spriteName)
+                ? null
+                : Resources.Load<Sprite>($"Sprites/UI/{spriteName}");
+            if (icon == null)
+            {
+                return LoadChoiceIcon(fallbackChoice);
+            }
+
+            suppressDishPreview = true;
+            return icon;
+        }
+
+        private cfg.Food ResolveFoodRewardSource()
+        {
+            if (_genericMode || _run == null)
+            {
+                return null;
+            }
+
+            ActionExecutionContext context = BattleForm.Active?.CurrentBattleActionContext;
+            if (context == null || context.Action == null)
+            {
+                context = _run.LastActionContext;
+            }
+
+            cfg.GameAction action = context?.Action;
+            if (action == null || action.Behavior != cfg.ActionBehavior.Food)
+            {
+                return null;
+            }
+
+            cfg.Food food = FoodService.Resolve(_run.Tables, action);
+            return food != null
+                && (food.ActionKind == cfg.FoodActionKind.Normal
+                    || food.ActionKind == cfg.FoodActionKind.Super)
+                ? food
+                : null;
+        }
+
+        private bool IsBaseDishGroup(RewardChoiceGroup group, int groupIndex)
+        {
+            if (group == null || groupIndex < 0 || !IsDishPack(group.Choices))
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrEmpty(group.SourceSlotId))
+            {
+                foreach (cfg.RewardSlot slot in _run.Tables.TbRewardSlot.DataList)
+                {
+                    if (string.Equals(slot.Id, group.SourceSlotId, StringComparison.Ordinal))
+                    {
+                        return string.Equals(slot.GroupId, "base_dish", StringComparison.Ordinal);
+                    }
+                }
+
+                return false;
+            }
+
+            // 旧档没有 SourceSlotId；普通/困难美食奖励的第一个固定菜品组就是基础菜品。
+            return groupIndex == 0;
+        }
+
         private DishDef DishForChoice(RewardChoice choice)
         {
             return choice != null && choice.Kind == cfg.RewardKind.DishChoice
@@ -1514,6 +1605,12 @@ namespace GourmetProject.Game.UI.Meta
         {
             return Resources.Load<Sprite>("Sprites/UI/icon_coin")
                 ?? Resources.Load<Sprite>("Sprites/UI/card_action_food_gold");
+        }
+
+        private static Sprite LoadBaseGoldIcon()
+        {
+            return Resources.Load<Sprite>("Sprites/UI/reward_badge_gold")
+                ?? LoadGoldIcon();
         }
 
         private static bool IsActiveItemReward(cfg.RewardKind kind)

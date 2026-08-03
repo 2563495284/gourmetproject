@@ -24,6 +24,18 @@ namespace cfg
         /// 分数构筑标签
         /// </summary>
         ScoreBuild = 1,
+        /// <summary>
+        /// 木质铺设道具标签
+        /// </summary>
+        LayWood = 2,
+        /// <summary>
+        /// 石质铺设道具标签
+        /// </summary>
+        LayStone = 3,
+        /// <summary>
+        /// 金属铺设道具标签
+        /// </summary>
+        LayMetal = 4,
     }
 
 } 
