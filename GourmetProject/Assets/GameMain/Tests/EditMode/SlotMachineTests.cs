@@ -102,7 +102,7 @@ namespace GourmetProject.Tests.EditMode
             AttachPassiveModelUsingDefinition(
                 run,
                 "item_slot_win_chance",
-                _tables.TbPassiveItem.Get("item_lucky_chance")); // effectValue = 0.2
+                _tables.TbPassiveItem.Get("item_slot_win_chance")); // effectValue = 0.2
             SlotMachineConfig machine = LoadMachine(run);
 
             IReadOnlyList<float> weights = SlotService.BuildRollWeights(run, machine);

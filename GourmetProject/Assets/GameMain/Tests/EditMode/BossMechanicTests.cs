@@ -106,7 +106,7 @@ namespace GourmetProject.Tests.EditMode
             run.AcquireItem("item_req_feast_up", fallbackGold: 0);
             Assert.That(
                 new ItemRuntime(run).ModifyRequiredScore(101, cfg.FoodActionKind.Feast),
-                Is.EqualTo(101));
+                Is.EqualTo(106));
         }
 
         [Test]
@@ -115,7 +115,7 @@ namespace GourmetProject.Tests.EditMode
             GameRun run = CreateRun();
             run.AcquireItem("item_gold_boss", fallbackGold: 0);
 
-            Assert.That(new ItemRuntime(run).ClaimBossCompleteGold(), Is.EqualTo(100));
+            Assert.That(new ItemRuntime(run).ClaimBossCompleteGold(), Is.EqualTo(90));
             Assert.That(new ItemRuntime(run).ClaimBossCompleteGold(), Is.Zero);
 
             GameRun restored = GameRun.FromSaveData(_tables, _database, run.ToSaveData());

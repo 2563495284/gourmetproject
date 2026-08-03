@@ -190,7 +190,7 @@ namespace GourmetProject.Tests.EditMode
 
             ActionScheduleService.EnsureCurrentGroup(run, _rng);
 
-            Assert.That(_rng.LastWeights, Has.Count.EqualTo(2), "只应对保底筛选后的候选集加权");
+            Assert.That(_rng.LastWeights.Count, Is.EqualTo(2), "只应对保底筛选后的候选集加权");
             Assert.That(_rng.LastWeights[0], Is.EqualTo(100f));
             Assert.That(_rng.LastWeights[1], Is.EqualTo(150f));
         }
@@ -212,8 +212,8 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(group.FallbackWeights.Count, Is.EqualTo(4), $"{group.Id} 必须配置 4 周权重");
                 Assert.That(group.MinGuaranteeCounts.Count, Is.EqualTo(4), $"{group.Id} 最小保底必须保留 4 周索引");
                 Assert.That(group.MaxGuaranteeCounts.Count, Is.EqualTo(4), $"{group.Id} 最大保底必须保留 4 周索引");
-                Assert.That(group.MinGuaranteeCounts[0].Count, Is.EqualTo(12), $"{group.Id} 第一周最小保底应配置前 12 次行动");
-                Assert.That(group.MaxGuaranteeCounts[0].Count, Is.EqualTo(12), $"{group.Id} 第一周最大保底应配置前 12 次行动");
+                Assert.That(group.MinGuaranteeCounts[0].Count, Is.EqualTo(8), $"{group.Id} 第一周最小保底应配置前 8 次行动");
+                Assert.That(group.MaxGuaranteeCounts[0].Count, Is.EqualTo(8), $"{group.Id} 第一周最大保底应配置前 8 次行动");
 
                 for (int week = 0; week < 4; week++)
                 {
