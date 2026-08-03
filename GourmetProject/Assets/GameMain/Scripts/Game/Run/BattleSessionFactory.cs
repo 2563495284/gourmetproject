@@ -113,6 +113,60 @@ namespace GourmetProject.Game.Run
         }
 
         /// <summary>
+        /// 数值实验室入口：对已按快照摆好的餐桌装配正式道具、蛋糕与 Boss 结算规则。
+        /// 随机流由调用方注入，不读取或推进全局随机状态。
+        /// </summary>
+        public static BattleSession BuildBalancePreview(
+            GameRun run,
+            GpTable populatedBoard,
+            int requiredScore,
+            string bossDebuffId,
+            IRandomStream random,
+            int initialHappyCakeLayers)
+        {
+            if (run == null) throw new System.ArgumentNullException(nameof(run));
+            if (populatedBoard == null) throw new System.ArgumentNullException(nameof(populatedBoard));
+            if (random == null) throw new System.ArgumentNullException(nameof(random));
+
+            var calculator = new ScoreCalculator(effectSources: ItemScoreEffectAdapter.BuildScoreSources(run));
+            var session = new BattleSession(
+                populatedBoard,
+                run.Database,
+                random,
+                System.Array.Empty<RecipeSlot>(),
+                requiredScore,
+                calculator,
+                run.RunSettledCounts);
+            var itemRuntime = new ItemRuntime(run);
+            session.ExtraCountAsPerDish = ItemScoreEffectAdapter.ExtraCountAsPerDish(run);
+            session.CakeLayerThresholdReduction = itemRuntime.CakeThresholdReduction();
+            session.CakeLayerAccelBonus = itemRuntime.CakeAccelBonus();
+            session.SweetTransferTargetMultiplier = itemRuntime.SweetTransferTargetMultiplier();
+            session.SweetTransferSourceMultiplier = itemRuntime.SweetTransferSourceMultiplier();
+            session.SeedHappyCakeLayers(System.Math.Max(0, initialHappyCakeLayers + itemRuntime.CakeInitialLayers()));
+
+            cfg.BossDebuff bossDebuff = ResolveBossDebuff(run, bossDebuffId);
+            BossDebuffModel bossModel = bossDebuff != null ? BossDebuffModelRegistry.Create(run, bossDebuff) : null;
+            bossModel?.ApplyToBattle(session);
+            ApplyPassiveItems(run, session);
+            return session;
+        }
+
+        /// <summary>数值实验室专用造盘入口；显式随机流保证不污染正式运行。</summary>
+        public static GpTable BuildTablePreviewForBalance(GameRun run, string bossDebuffId, IRandomStream random)
+        {
+            if (run == null) throw new System.ArgumentNullException(nameof(run));
+            if (random == null) throw new System.ArgumentNullException(nameof(random));
+            cfg.Character character = run.Tables.TbCharacter.GetOrDefault(run.CharacterId);
+            cfg.BossDebuff bossDebuff = ResolveBossDebuff(run, bossDebuffId);
+            BossDebuffModel model = bossDebuff != null ? BossDebuffModelRegistry.Create(run, bossDebuff) : null;
+            int recipeEntryCount = run.RecipeEntries?.Count ?? 0;
+            GpTable table = BuildTable(run, character, model, recipeEntryCount, random);
+            model?.ModifyPreparedTable(table, recipeEntryCount, random);
+            return table;
+        }
+
+        /// <summary>
         /// 由角色配置构建本局餐桌：初始胃形状取自碎片库，最大包围盒取角色 max 尺寸。
         /// Boss Debuff 模型可在构建前调整最大包围盒（初始碎片超出部分自动裁掉）。
         /// </summary>

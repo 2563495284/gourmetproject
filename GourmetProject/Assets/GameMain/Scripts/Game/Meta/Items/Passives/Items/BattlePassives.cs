@@ -62,6 +62,7 @@ namespace GourmetProject.Game.Meta.Passives
 
     [Preserve]
     [PassiveItemModel("item_extra_active_slots")]
+    [PassiveItemModel("item_extra_active_slots_max")]
     public sealed class ExtraActiveSlotModel : PassiveItemModel
     {
         public override int ExtraActiveSlots() => (int)Value;

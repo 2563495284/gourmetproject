@@ -29,7 +29,7 @@ namespace GourmetProject.Game.Meta
                 count = Math.Max(1, count + new ItemRuntime(context.Run).ChoiceCountDelta());
             }
 
-            int hidden = Math.Max(0, HiddenForSlot(context, slot) + HiddenOffsetForSlot(context, slot));
+            int hidden = ResolveHiddenScoreForSlot(context, slot);
             if (slot.Kind == cfg.RewardKind.Gold)
             {
                 result.Add(RewardChoice.Gold(
@@ -393,6 +393,14 @@ namespace GourmetProject.Game.Meta
             return weight;
         }
 
+        /// <summary>主动道具抽取完全不读取隐藏分或奖励槽隐藏分修正。</summary>
+        internal static int ResolveHiddenScoreForSlot(RewardContext context, cfg.RewardSlot slot)
+        {
+            return slot == null
+                ? 0
+                : Math.Max(0, HiddenForSlot(context, slot) + HiddenOffsetForSlot(context, slot));
+        }
+
         private static int HiddenForSlot(RewardContext context, cfg.RewardSlot slot)
         {
             switch (slot.Kind)
@@ -404,7 +412,7 @@ namespace GourmetProject.Game.Meta
                 case cfg.RewardKind.ActiveItemGrant:
                 case cfg.RewardKind.ActiveItemStrengthen:
                 case cfg.RewardKind.ActiveItemAdjust:
-                    return context.PassiveItemHiddenScore;
+                    return 0;
                 case cfg.RewardKind.FragmentChoice:
                     return context.FragmentHiddenScore;
                 default:
@@ -419,9 +427,9 @@ namespace GourmetProject.Game.Meta
             {
                 cfg.RewardKind.DishChoice => ListOffset(slot.DishHiddenOffset, tierIndex),
                 cfg.RewardKind.PassiveItemChoice => ListOffset(slot.PassiveItemHiddenOffset, tierIndex),
-                cfg.RewardKind.ActiveItemGrant => ListOffset(slot.PassiveItemHiddenOffset, tierIndex),
-                cfg.RewardKind.ActiveItemStrengthen => ListOffset(slot.PassiveItemHiddenOffset, tierIndex),
-                cfg.RewardKind.ActiveItemAdjust => ListOffset(slot.PassiveItemHiddenOffset, tierIndex),
+                cfg.RewardKind.ActiveItemGrant => 0,
+                cfg.RewardKind.ActiveItemStrengthen => 0,
+                cfg.RewardKind.ActiveItemAdjust => 0,
                 cfg.RewardKind.FragmentChoice => ListOffset(slot.FragmentHiddenOffset, tierIndex),
                 cfg.RewardKind.Gold => ListOffset(slot.GoldHiddenOffset, tierIndex),
                 _ => 0,

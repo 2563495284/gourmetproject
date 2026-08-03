@@ -90,7 +90,7 @@
   {
     "id": "debuff_carb_meal",
     "name": "碳水餐",
-    "desc": "每5次出菜随机插入1个馒头",
+    "desc": "出菜时有可能是馒头",
     "weight": 1,
     "unlockCondition": "",
     "targetScoreHiddenOffset": 0.35

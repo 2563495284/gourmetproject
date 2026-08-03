@@ -96,6 +96,14 @@ namespace GourmetProject.Game.Meta.Passives
         {
         }
 
+        /// <summary>
+        /// 新一周行动轴建立后，把本模型声明的每周效果应用到运行态时间轴。
+        /// 默认无效果；由 <see cref="ItemRuntime.ApplyWeekTimelinePassives"/> 统一派发。
+        /// </summary>
+        public virtual void ApplyToWeekTimeline()
+        {
+        }
+
         // ================= 价格族（透传折叠：price => price'） =================
 
         public virtual float ModifyShopPrice(ShopEntryKind kind, float price) => price;
@@ -123,7 +131,8 @@ namespace GourmetProject.Game.Meta.Passives
         /// <summary>美食奖励金币百分比修正（累加）。</summary>
         public virtual float MealRewardGoldPct() => 0f;
 
-        public virtual int EventCompleteGold() => 0;
+        /// <summary>每次进入一个根事件页面时获得的金币。</summary>
+        public virtual int EventEnterGold() => 0;
 
         public virtual int BossCompleteGold() => 0;
 
@@ -198,6 +207,17 @@ namespace GourmetProject.Game.Meta.Passives
             ActionExecutionContext actionContext,
             IRandomStream rng) => offer;
 
+        /// <summary>
+        /// 一场 Food 战斗完成时触发。与胜利奖励生成解耦，因此失败但仍存活时也会调用；
+        /// <paramref name="survived"/> 为 false 时，模型仍可累计进度，但不应发放续局奖励。
+        /// </summary>
+        public virtual RewardOffer OnFoodBattleSettled(
+            ActionExecutionContext actionContext,
+            bool survived,
+            IRandomStream rng) => null;
+
+        public virtual string FoodBattleSettlementRewardTitle => Def?.Name ?? "额外奖励";
+
         // ================= 事件 / 行动概率族 =================
 
         /// <summary>遇到奖励事件的额外概率（分发器累加）。</summary>
@@ -206,10 +226,16 @@ namespace GourmetProject.Game.Meta.Passives
         /// <summary>遇到事件的额外概率（分发器累加）。</summary>
         public virtual float MoreEventsBonus() => 0f;
 
-        /// <summary>每 N 个事件保底一个奖励事件的周期（取最大；无则 0）。</summary>
+        /// <summary>包含 Super 行动的大组权重增幅（分发器累加）。</summary>
+        public virtual float SuperActionLargeGroupWeightBonus() => 0f;
+
+        /// <summary>抽奖机中奖归一概率增幅（分发器累加）。</summary>
+        public virtual float SlotWinChanceBonus() => 0f;
+
+        /// <summary>奖励保底前需要经历的自然事件抽取数（取最大；无则 0）。</summary>
         public virtual int LuckyEventGuaranteeEvery() => 0;
 
-        /// <summary>LuckyEventGuarantee 保底计数：自上次保底奖励以来 act_event 抽到的 Event 型结果数。</summary>
+        /// <summary>LuckyEventGuarantee 保底计数：自上次保底以来已完成的自然 act_event 抽取数。</summary>
         public virtual int EventGuaranteeStreak => 0;
 
         public virtual void IncrementEventGuaranteeStreak()
@@ -325,6 +351,30 @@ namespace GourmetProject.Game.Meta.Passives
         {
             int value = ParseStateInt(data, key, fallback ? 1 : 0);
             return value != 0;
+        }
+
+        protected static string ParseStateString(string data, string key, string fallback = "")
+        {
+            if (string.IsNullOrEmpty(data))
+            {
+                return fallback ?? string.Empty;
+            }
+
+            foreach (string token in data.Split(';', ',', '|'))
+            {
+                int idx = token.IndexOf(':');
+                if (idx < 0)
+                {
+                    continue;
+                }
+
+                if (string.Equals(token.Substring(0, idx).Trim(), key, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return token.Substring(idx + 1).Trim();
+                }
+            }
+
+            return fallback ?? string.Empty;
         }
 
         protected static string JoinState(params string[] entries)

@@ -137,7 +137,7 @@ namespace GourmetProject.Tests.EditMode
             var expected = new Dictionary<string, string>
             {
                 ["item_extra_interest"] = "将一个收取利息\n添加至每周末尾",
-                ["item_loan"] = "获得200金币\n将失去400金币的节点行动\n添加至本周末尾",
+                ["item_loan"] = "获得100金币\n将失去200金币的节点行动\n添加至本周末尾",
                 ["item_timeline_random"] = "打乱时间轴的节点行动",
                 ["item_extra_day"] = "每周长度变为8天",
                 ["item_block_active"] = "无法再使用主动道具\n立即获得600金币",
@@ -637,7 +637,7 @@ namespace GourmetProject.Tests.EditMode
             run.AcquireItem("item_loan", 0);
             run.AcquireItem("item_gold_week_clear", 0);
 
-            Assert.That(run.Gold, Is.EqualTo(beforeGold + 200));
+            Assert.That(run.Gold, Is.EqualTo(beforeGold + 100));
             Assert.That(
                 run.RuntimeTimelineNodes.Select(node => node.ActionId),
                 Is.EquivalentTo(new[] { "act_loan_repay", "act_gold_clear" }));
@@ -899,6 +899,42 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(pending.TimelineStopChance, Is.EqualTo(0.3f));
             Assert.That(pending.NodeRepeatIndex, Is.EqualTo(2));
             Assert.That(pending.NodeRepeatTotal, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void EventEntryGold_GrantsOnce_PersistsAndExcludesInterestPage()
+        {
+            GameRun run = CreateRun();
+            run.AcquireItem("item_gold_on_event", 0);
+            cfg.GameAction eventAction = _tables.TbAction.Get("act_event");
+            cfg.GameEvent ev = _tables.TbEvent.DataList.First(value =>
+                value.EventTypes.Contains(cfg.ActionBehavior.Event));
+            run.SetPendingActionExecution(
+                new ActionExecutionContext(eventAction),
+                ActionOutcome.Event(ev.Id),
+                ev.Id);
+
+            int before = run.Gold;
+            Assert.That(EventService.TryGrantEventEntryGold(run, out int granted), Is.True);
+            Assert.That(granted, Is.EqualTo(15));
+            Assert.That(run.Gold, Is.EqualTo(before + 15));
+            Assert.That(EventService.TryGrantEventEntryGold(run, out _), Is.False);
+
+            GameRun restored = GameRun.FromSaveData(_tables, _database, run.ToSaveData());
+            Assert.That(EventService.TryGrantEventEntryGold(restored, out _), Is.False,
+                "恢复同一根事件页面时不得重复发放");
+            int afterEntry = restored.Gold;
+            EventService.OnEventFinished(restored, ev, EventResolveResult.Immediate("done"));
+            Assert.That(restored.Gold, Is.EqualTo(afterEntry), "结束事件时不再发放第二次金币");
+
+            cfg.GameAction interestAction = _tables.TbAction.Get("act_interest");
+            cfg.GameEvent interestEvent = _tables.TbEvent.Get(interestAction.EffectParam);
+            restored.SetPendingActionExecution(
+                new ActionExecutionContext(interestAction),
+                ActionOutcome.Event(interestEvent.Id),
+                interestEvent.Id);
+            Assert.That(EventService.TryGrantEventEntryGold(restored, out _), Is.False,
+                "利息仅复用事件 UI，不属于 Event/Reward/Negative 事件入口");
         }
 
         [Test]

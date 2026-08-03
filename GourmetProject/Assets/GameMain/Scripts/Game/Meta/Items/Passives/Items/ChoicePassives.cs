@@ -97,11 +97,55 @@ namespace GourmetProject.Game.Meta.Passives
 
     [Preserve]
     [PassiveItemModel("item_extra_item_choice")]
-    public sealed class ExtraItemChoiceModel : NormalFoodExtraChoiceModel
+    public sealed class ExtraItemChoiceModel : PassiveItemModel
     {
-        public ExtraItemChoiceModel()
-            : base("passive_choice_3", "额外道具")
+        private const int DefaultEvery = 4;
+
+        private int _superFoodCount;
+
+        public override string InfoText => _superFoodCount.ToString(CultureInfo.InvariantCulture);
+
+        public override string FoodBattleSettlementRewardTitle => "额外道具";
+
+        public override RewardOffer OnFoodBattleSettled(
+            ActionExecutionContext actionContext,
+            bool survived,
+            IRandomStream rng)
         {
+            cfg.Food food = FoodService.Resolve(Run?.Tables, actionContext?.Action);
+            if (food == null || food.ActionKind != cfg.FoodActionKind.Super)
+            {
+                return null;
+            }
+
+            _superFoodCount++;
+            int every = System.Math.Max(1, PassiveParam.ParseInt(Param, "every", DefaultEvery));
+            if (_superFoodCount < every)
+            {
+                RefreshInfoText();
+                return null;
+            }
+
+            _superFoodCount -= every;
+            RewardOffer offer = survived && rng != null
+                ? RewardGranter.BuildConfigOffer(Run, rng, "passive_choice_3", actionContext)
+                : null;
+            if (offer != null)
+            {
+                Flash();
+            }
+
+            RefreshInfoText();
+            return offer;
+        }
+
+        public override string CaptureState()
+            => JoinState(CaptureIconState(), $"count:{_superFoodCount.ToString(CultureInfo.InvariantCulture)}");
+
+        public override void RestoreState(string data)
+        {
+            RestoreIconState(data);
+            _superFoodCount = System.Math.Max(0, ParseStateInt(data, "count", 0));
         }
     }
 }

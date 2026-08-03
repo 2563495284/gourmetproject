@@ -1,5 +1,4 @@
 using UnityEngine.Scripting;
-using Log = GourmetProject.Core.Diagnostics.Log;
 
 namespace GourmetProject.Game.Meta.Passives
 {
@@ -47,20 +46,6 @@ namespace GourmetProject.Game.Meta.Passives
         public override void OnAcquired()
         {
             PassiveOnAcquireEffects.DiscardNegatives(Run, int.MaxValue, goldPer: System.Math.Max(0, (int)Value));
-            MarkIconUsed();
-        }
-    }
-
-    // —— TODO(passive-item): 需选目标 / UI / 未就绪子系统；获得时占位（与现状一致，仅日志）——
-
-    /// <summary>获得时占位日志基类。</summary>
-    public abstract class TodoOnAcquireModel : PassiveItemModel
-    {
-        protected abstract string EffectName { get; }
-
-        public override void OnAcquired()
-        {
-            Log.Info($"OnAcquire 效果 {EffectName}({ItemId}) 尚未实装，已忽略。", "Item");
             MarkIconUsed();
         }
     }

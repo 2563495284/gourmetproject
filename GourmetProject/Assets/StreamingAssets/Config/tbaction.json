@@ -226,11 +226,11 @@
   {
     "id": "act_loan_repay",
     "name": "偿还高利贷",
-    "desc": "扣除400金币",
+    "desc": "扣除200金币",
     "behavior": 6,
     "foodId": "",
     "effectType": 1,
-    "effectValue": -400,
+    "effectValue": -200,
     "effectParam": "",
     "minCostDays": 0,
     "maxCostDays": 0,

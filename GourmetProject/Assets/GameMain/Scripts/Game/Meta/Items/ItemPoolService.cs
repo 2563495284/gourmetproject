@@ -143,6 +143,11 @@ namespace GourmetProject.Game.Meta
             tables ??= GameApp.Config.Tables;
             float defaultWeight = System.Math.Max(float.Epsilon, tables.TbGameBase.DefaultRandomWeight);
             float baseWeight = item.BaseWeight > 0f ? item.BaseWeight : defaultWeight;
+            if (item.IsActive)
+            {
+                return baseWeight;
+            }
+
             return RewardPoolService.HiddenScoreWeight(baseWeight, HiddenMean(item), hidden, distanceFloor);
         }
 

@@ -8,11 +8,11 @@ namespace GourmetProject.Game.Meta.Passives
     /// <summary>被动道具 effectParam 解析工具（key:value，分隔符 ; , |）。</summary>
     internal static class PassiveParam
     {
-        public static int ParseInt(string param, string key, int fallback)
+        public static string ParseString(string param, string key, string fallback = "")
         {
             if (string.IsNullOrEmpty(param))
             {
-                return fallback;
+                return fallback ?? string.Empty;
             }
 
             foreach (string token in param.Split(';', ',', '|'))
@@ -23,14 +23,19 @@ namespace GourmetProject.Game.Meta.Passives
                     continue;
                 }
 
-                if (string.Equals(token.Substring(0, idx).Trim(), key, StringComparison.OrdinalIgnoreCase)
-                    && int.TryParse(token.Substring(idx + 1).Trim(), out int v))
+                if (string.Equals(token.Substring(0, idx).Trim(), key, StringComparison.OrdinalIgnoreCase))
                 {
-                    return v;
+                    return token.Substring(idx + 1).Trim();
                 }
             }
 
-            return fallback;
+            return fallback ?? string.Empty;
+        }
+
+        public static int ParseInt(string param, string key, int fallback)
+        {
+            string value = ParseString(param, key);
+            return int.TryParse(value, out int parsed) ? parsed : fallback;
         }
     }
 

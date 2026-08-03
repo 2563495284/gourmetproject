@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Run;
+using Log = GourmetProject.Core.Diagnostics.Log;
 
 namespace GourmetProject.Game.Meta
 {
@@ -80,6 +81,8 @@ namespace GourmetProject.Game.Meta
     /// </summary>
     public static class SlotService
     {
+        private const string Tag = "Slot";
+
         public const string SpinOptionId = "opt_slot_machine_spin";
         public const string LeaveOptionId = "opt_slot_machine_leave";
 
@@ -264,16 +267,7 @@ namespace GourmetProject.Game.Meta
                 return SlotSpinResult.Failed("抽奖机随机参数不完整。");
             }
 
-            var weights = new List<float>(config.RewardSlots.Count + 1)
-            {
-                Math.Max(0f, config.EmptyWeight)
-            };
-            float defaultWeight = Math.Max(float.Epsilon, run.Tables.TbGameBase.DefaultRandomWeight);
-            for (int i = 0; i < config.RewardSlots.Count; i++)
-            {
-                cfg.RewardSlot slot = config.RewardSlots[i];
-                weights.Add(slot.Weight > 0f ? slot.Weight : defaultWeight);
-            }
+            List<float> weights = BuildRollWeights(run, config);
 
             int index = rng.WeightedPickIndex(weights);
             if (index == 0)
@@ -284,6 +278,75 @@ namespace GourmetProject.Game.Meta
             cfg.RewardSlot chosen = config.RewardSlots[index - 1];
             RewardOffer offer = RewardGranter.BuildConfigOffer(run, rng, chosen, actionContext);
             return SlotSpinResult.Reward(offer);
+        }
+
+        /// <summary>
+        /// 第 0 项是空奖，后续项与 RewardSlots 同序。被动道具先将归一后的总中奖率
+        /// 乘以 (1 + bonus)，奖励槽内部比例保持不变，空奖占剩余概率。
+        /// </summary>
+        internal static List<float> BuildRollWeights(GameRun run, SlotMachineConfig config)
+        {
+            var baseWeights = new List<float>(config.RewardSlots.Count + 1)
+            {
+                Math.Max(0f, config.EmptyWeight)
+            };
+            float defaultWeight = Math.Max(float.Epsilon, run.Tables.TbGameBase.DefaultRandomWeight);
+            for (int i = 0; i < config.RewardSlots.Count; i++)
+            {
+                cfg.RewardSlot slot = config.RewardSlots[i];
+                baseWeights.Add(slot.Weight > 0f ? slot.Weight : defaultWeight);
+            }
+
+            float bonus = new ItemRuntime(run).SlotWinChanceBonus();
+            return ApplyWinChanceBonus(baseWeights, bonus, config.Event?.Id);
+        }
+
+        internal static List<float> ApplyWinChanceBonus(
+            IReadOnlyList<float> baseWeights,
+            float bonus,
+            string machineId = null)
+        {
+            var result = new List<float>(baseWeights?.Count ?? 0);
+            if (baseWeights == null || baseWeights.Count == 0)
+            {
+                return result;
+            }
+
+            double total = 0d;
+            for (int i = 0; i < baseWeights.Count; i++)
+            {
+                float weight = Math.Max(0f, baseWeights[i]);
+                result.Add(weight);
+                total += weight;
+            }
+
+            double emptyWeight = result[0];
+            double rewardWeight = total - emptyWeight;
+            if (!(total > 0d) || !(rewardWeight > 0d) || float.IsNaN(bonus))
+            {
+                return result;
+            }
+
+            double baseWinChance = rewardWeight / total;
+            double multiplier = Math.Max(0d, 1d + bonus);
+            double rawWinChance = baseWinChance * multiplier;
+            double adjustedWinChance = Math.Min(1d, rawWinChance);
+            if (rawWinChance > 1d && !string.IsNullOrEmpty(machineId))
+            {
+                Log.Warning(
+                    $"抽奖机 {machineId} 中奖率加成后为 {rawWinChance:P2}，已封顶为 100%。",
+                    Tag);
+            }
+
+            double adjustedRewardWeight = total * adjustedWinChance;
+            double rewardScale = adjustedRewardWeight / rewardWeight;
+            result[0] = (float)(total * (1d - adjustedWinChance));
+            for (int i = 1; i < result.Count; i++)
+            {
+                result[i] = (float)(result[i] * rewardScale);
+            }
+
+            return result;
         }
 
         public static int CostForNextSpin(SlotMachineConfig config, int spinsUsed)

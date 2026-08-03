@@ -19,8 +19,37 @@ namespace GourmetProject.Game.Meta.Passives
         public override float MoreEventsBonus() => Value;
     }
 
+    /// <summary>超级计划：候选保底筛选完成后，提高包含 Super 行动的大组权重。</summary>
+    [Preserve]
+    [PassiveItemModel("item_more_super_actions")]
+    public sealed class MoreSuperActionsModel : PassiveItemModel
+    {
+        public override float SuperActionLargeGroupWeightBonus() => Value;
+    }
+
+    /// <summary>幸运摇杆：提高抽奖机归一后的总中奖概率。</summary>
+    [Preserve]
+    [PassiveItemModel("item_slot_win_chance")]
+    public sealed class SlotWinChanceModel : PassiveItemModel
+    {
+        public override float SlotWinChanceBonus() => Value;
+    }
+
+    /// <summary>奖励隐藏分增益：数值直接来自对应隐藏分列，由基类按用途透传。</summary>
+    [Preserve]
+    [PassiveItemModel("item_dish_hidden_bonus")]
+    [PassiveItemModel("item_fragment_hidden_bonus")]
+    [PassiveItemModel("item_passive_hidden_bonus")]
+    [PassiveItemModel("item_better_food_rewards")]
+    [PassiveItemModel("item_larger_fragment_rewards")]
+    [PassiveItemModel("item_better_passive_rewards")]
+    public sealed class HiddenScoreBonusModel : PassiveItemModel
+    {
+    }
+
     /// <summary>
-    /// 好运连连：每 x 个事件保底一个奖励事件。计数器（自上次保底以来抽到的 Event 型结果数）
+    /// 好运连连：经历配置数量的自然事件后，下一次（即第 value+1 次）保底奖励事件。
+    /// 计数器记录自上次保底以来已完成的自然抽取数，不因自然抽到 Reward 而重置。
     /// 作为本模型的 per-instance 状态，只在持有时存在并随存档序列化。
     /// </summary>
     [Preserve]
@@ -29,7 +58,7 @@ namespace GourmetProject.Game.Meta.Passives
     {
         private int _streak;
 
-        public override int LuckyEventGuaranteeEvery() => (int)Value;
+        public override int LuckyEventGuaranteeEvery() => System.Math.Max(0, (int)Value);
 
         public override int EventGuaranteeStreak => _streak;
 

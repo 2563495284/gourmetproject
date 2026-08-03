@@ -49,6 +49,10 @@ namespace GourmetProject.Game.Run
         // 整局累计已结算的菜品 BaseId 次数（供技能「大局相同检测」，随存档保存）。
         private readonly Dictionary<string, int> _runSettledCounts = new Dictionary<string, int>();
 
+        // 已完成普通/超级营业结算的 BattleKey；用于保证结算副作用至多执行一次。
+        private readonly HashSet<string> _settledFoodBattleKeys =
+            new HashSet<string>(System.StringComparer.Ordinal);
+
         // —— 行动轴状态 ——
         private readonly List<string> _triggeredNodeIds = new List<string>();
 
@@ -717,6 +721,12 @@ namespace GourmetProject.Game.Run
                 _runSettledCounts.TryGetValue(kv.Key, out int cur);
                 _runSettledCounts[kv.Key] = cur + kv.Value;
             }
+        }
+
+        /// <summary>首次记录营业战斗结算返回 true；同一 key 再次进入返回 false。</summary>
+        public bool TryMarkFoodBattleSettled(string battleKey)
+        {
+            return !string.IsNullOrEmpty(battleKey) && _settledFoodBattleKeys.Add(battleKey);
         }
 
         /// <summary>本周要求分的临时覆盖（&lt;0 表示无覆盖）。事件「歇业」等可降低本周目标。</summary>
@@ -1435,11 +1445,29 @@ namespace GourmetProject.Game.Run
                 BossId = outcome?.BossId ?? string.Empty,
                 BossDebuffId = outcome?.BossDebuffId ?? string.Empty,
                 EventId = resolvedEventId ?? outcome?.EventId ?? string.Empty,
+                EventEntryGoldGranted = false,
                 SlotEventId = outcome?.SlotEventId ?? string.Empty,
                 SlotSpinsUsed = 0,
                 SlotStage = SlotExecutionStage.Ready,
                 SlotRewardKey = string.Empty,
             };
+        }
+
+        /// <summary>
+        /// 原子标记当前根事件的「进入事件」金币已发放。返回 false 表示没有待处理事件或已经发过，
+        /// 用于阻止事件页恢复、重复回调和读档续接重复加钱。
+        /// </summary>
+        public bool TryMarkPendingEventEntryGoldGranted()
+        {
+            if (_pendingActionExecution == null
+                || string.IsNullOrEmpty(_pendingActionExecution.EventId)
+                || _pendingActionExecution.EventEntryGoldGranted)
+            {
+                return false;
+            }
+
+            _pendingActionExecution.EventEntryGoldGranted = true;
+            return true;
         }
 
         public bool SetPendingSlotExecutionState(
@@ -1900,6 +1928,7 @@ namespace GourmetProject.Game.Run
                 CurrentShopDeleteDishCount = _currentShopDeleteDishCount,
                 CurrentShopFragmentPackPurchaseCount = _currentShopFragmentPackPurchaseCount,
                 RunSettledCounts = new Dictionary<string, int>(_runSettledCounts),
+                SettledFoodBattleKeys = new List<string>(_settledFoodBattleKeys),
                 CurrentTimelineId = CurrentTimelineId,
                 CurrentTimelineWeekIndex = CurrentTimelineWeekIndex,
                 TimelineLengthDays = TimelineLengthDays,
@@ -2025,18 +2054,25 @@ namespace GourmetProject.Game.Run
                     }
 
                     ItemDefinition def = ItemDefinition.Get(tables, item.ItemId);
+                    if (def == null)
+                    {
+                        // 配置删改后，旧档可能仍残留已经不存在的道具。未知条目不能继续进入
+                        // 持有列表，否则会形成无模型、不可见、也无法正常移除的“幽灵道具”。
+                        Log.Warning($"存档包含未知道具，已安全跳过：{item.ItemId}。", "RunSave");
+                        continue;
+                    }
 
                     // 旧档迁移：主动道具曾用单条 + Count 表示堆叠，这里展开为多份实例；
                     // Count<=0 的旧「僵尸条目」直接丢弃（用完即不存在）。被动道具恒为一条。
                     int instances = 1;
-                    if (def != null && def.Kind == cfg.ItemKind.Active)
+                    if (def.Kind == cfg.ItemKind.Active)
                     {
                         instances = System.Math.Max(0, item.Count);
                     }
 
                     for (int k = 0; k < instances; k++)
                     {
-                        if (def != null && def.Kind == cfg.ItemKind.Passive && run.GetItemState(item.ItemId) != null)
+                        if (def.Kind == cfg.ItemKind.Passive && run.GetItemState(item.ItemId) != null)
                         {
                             continue;
                         }
@@ -2045,13 +2081,25 @@ namespace GourmetProject.Game.Run
                         run._items.Add(state);
 
                         // 被动道具读档：重建行为模型并恢复 per-instance 状态（不重复触发 OnAcquired）。
-                        if (def != null && def.Kind == cfg.ItemKind.Passive)
+                        if (def.Kind == cfg.ItemKind.Passive)
                         {
                             GourmetProject.Game.Meta.Passives.PassiveItemModel model = run.BindPassiveModel(state, def);
                             model.RestoreState(item.StateJson ?? string.Empty);
                         }
                     }
                 }
+            }
+
+            // 这两个旧全局计数只有对应被动仍在场时才有语义。配置移除/旧档缺项时清零，
+            // 避免被跳过的未知道具继续从全局字段暗中生效；不发金币或其它补偿。
+            if (!run.HasItem("item_gold_meal_bonus"))
+            {
+                run._mealBonusRemaining = 0;
+            }
+
+            if (!run.HasItem("item_score_to_one"))
+            {
+                run._scoreToOneRemaining = 0;
             }
 
 
@@ -2121,6 +2169,17 @@ namespace GourmetProject.Game.Run
                 foreach (KeyValuePair<string, int> kv in data.RunSettledCounts)
                 {
                     run._runSettledCounts[kv.Key] = kv.Value;
+                }
+            }
+
+            if (data.SettledFoodBattleKeys != null)
+            {
+                foreach (string battleKey in data.SettledFoodBattleKeys)
+                {
+                    if (!string.IsNullOrEmpty(battleKey))
+                    {
+                        run._settledFoodBattleKeys.Add(battleKey);
+                    }
                 }
             }
 
@@ -2626,6 +2685,7 @@ namespace GourmetProject.Game.Run
                 BossId = data.BossId ?? string.Empty,
                 BossDebuffId = data.BossDebuffId ?? string.Empty,
                 EventId = data.EventId ?? string.Empty,
+                EventEntryGoldGranted = data.EventEntryGoldGranted,
                 SlotEventId = data.SlotEventId ?? string.Empty,
                 SlotSpinsUsed = System.Math.Max(0, data.SlotSpinsUsed),
                 SlotStage = data.SlotStage,

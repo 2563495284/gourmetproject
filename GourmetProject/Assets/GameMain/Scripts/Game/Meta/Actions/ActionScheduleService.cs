@@ -318,9 +318,15 @@ namespace GourmetProject.Game.Meta
 
             var weights = new List<float>(groups.Count);
             float total = 0f;
+            cfg.Tables tables = run.Tables ?? GameApp.Config.Tables;
+            float superActionBonus = new ItemRuntime(run).SuperActionLargeGroupWeightBonus();
             foreach (cfg.ActionLargeGroup group in groups)
             {
                 float w = FallbackWeight(group, run.WeekIndex);
+                w = ApplySuperActionWeightBonus(
+                    w,
+                    ContainsSuperAction(tables, group),
+                    superActionBonus);
                 if (!(w > 0f) || float.IsNaN(w) || float.IsInfinity(w))
                 {
                     w = 0f;
@@ -335,6 +341,49 @@ namespace GourmetProject.Game.Meta
                 : rng.Range(0, groups.Count);
             index = Math.Max(0, Math.Min(index, groups.Count - 1));
             return groups[index].Id;
+        }
+
+        /// <summary>
+        /// 大组保底候选集确定之后，仅对其中包含 Super 行动的大组乘以 (1 + bonus)。
+        /// </summary>
+        internal static float ApplySuperActionWeightBonus(float baseWeight, bool containsSuper, float bonus)
+        {
+            if (!containsSuper || !(baseWeight > 0f) || float.IsNaN(bonus))
+            {
+                return baseWeight;
+            }
+
+            float multiplier = Math.Max(0f, 1f + bonus);
+            return baseWeight * multiplier;
+        }
+
+        internal static bool ContainsSuperAction(cfg.Tables tables, cfg.ActionLargeGroup group)
+        {
+            if (tables == null || group?.SmallGroupIds == null)
+            {
+                return false;
+            }
+
+            foreach (string smallGroupId in group.SmallGroupIds)
+            {
+                cfg.ActionSmallGroup small = tables.TbActionSmallGroup.GetOrDefault(smallGroupId);
+                if (small?.ActionIds == null)
+                {
+                    continue;
+                }
+
+                foreach (string actionId in small.ActionIds)
+                {
+                    cfg.GameAction action = tables.TbAction.GetOrDefault(actionId);
+                    cfg.Food food = FoodService.Resolve(tables, action);
+                    if (food?.ActionKind == cfg.FoodActionKind.Super)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         /// <summary>大组保底权重：按当前周(1-based)取 fallbackWeights[周-1]，越界取最后一个；空列表按 1。</summary>
