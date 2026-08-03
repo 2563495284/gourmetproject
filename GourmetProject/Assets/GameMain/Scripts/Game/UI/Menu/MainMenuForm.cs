@@ -112,8 +112,8 @@ namespace GourmetProject.Game.UI.Menu
             {
                 Title = "退出游戏",
                 Message = "确定要退出游戏吗？",
-                ConfirmText = "退出",
-                CancelText = "取消",
+                ConfirmText = "应用",
+                CancelText = "返回",
                 OnConfirm = () => GameEntry.Shutdown(ShutdownType.Quit),
             };
             GameApp.UI.OpenUIForm(UIForms.ConfirmDialog, UIForms.GroupDialog, data);
