@@ -55,19 +55,25 @@
     "id": "pool_lay_wood",
     "kind": 2,
     "allowFallback": true,
-    "specialTags": []
+    "specialTags": [
+      2
+    ]
   },
   {
     "id": "pool_lay_stone",
     "kind": 2,
     "allowFallback": true,
-    "specialTags": []
+    "specialTags": [
+      3
+    ]
   },
   {
     "id": "pool_lay_metal",
     "kind": 2,
     "allowFallback": true,
-    "specialTags": []
+    "specialTags": [
+      4
+    ]
   },
   {
     "id": "pool_active",

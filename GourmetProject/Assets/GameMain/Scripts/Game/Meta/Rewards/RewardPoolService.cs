@@ -250,6 +250,11 @@ namespace GourmetProject.Game.Meta
                 return false;
             }
 
+            if (!MatchesMaterialPoolTag(item, pool))
+            {
+                return false;
+            }
+
             return pool.Kind switch
             {
                 cfg.RewardPoolKind.ActiveItemStrengthen =>
@@ -258,6 +263,38 @@ namespace GourmetProject.Game.Meta
                     item.IsActive && item.ActiveItemCategory == cfg.ActiveItemCategory.Adjust,
                 _ => true,
             };
+        }
+
+        private static bool MatchesMaterialPoolTag(ItemDefinition item, cfg.RewardPool pool)
+        {
+            if (!item.IsActive || pool.SpecialTags == null || pool.SpecialTags.Count == 0)
+            {
+                return true;
+            }
+
+            bool hasMaterialFilter = false;
+            foreach (cfg.RewardPoolSpecialTag tag in pool.SpecialTags)
+            {
+                if (!IsMaterialPoolTag(tag))
+                {
+                    continue;
+                }
+
+                hasMaterialFilter = true;
+                if (item.HasPoolTag(tag.ToString()))
+                {
+                    return true;
+                }
+            }
+
+            return !hasMaterialFilter;
+        }
+
+        private static bool IsMaterialPoolTag(cfg.RewardPoolSpecialTag tag)
+        {
+            return tag == cfg.RewardPoolSpecialTag.LayWood ||
+                   tag == cfg.RewardPoolSpecialTag.LayStone ||
+                   tag == cfg.RewardPoolSpecialTag.LayMetal;
         }
 
         private static List<TableFragmentDef> BuildFragmentCandidates(RewardContext context, int hidden, bool strictHidden)

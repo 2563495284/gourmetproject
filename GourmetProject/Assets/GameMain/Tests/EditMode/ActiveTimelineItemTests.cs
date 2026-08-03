@@ -429,14 +429,14 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void SlotAction_UsesDedicatedKindWithExistingEventArt()
+        public void SlotAction_UsesDedicatedKindAndCardArt()
         {
             cfg.GameAction action = _tables.TbAction.GetOrDefault("act_slot");
 
             Assert.That(action, Is.Not.Null);
             Assert.That(action.Behavior, Is.EqualTo(cfg.ActionBehavior.Slot));
             Assert.That(ActionDisplay.KindOf(_tables, action), Is.EqualTo(ActionDisplayKind.Slot));
-            Assert.That(WeekEventCardView.CardSpriteNameFor(action), Is.EqualTo("card_action_event"));
+            Assert.That(WeekEventCardView.CardSpriteNameFor(action), Is.EqualTo("card_action_slot"));
             Assert.That(
                 ActionAxisBar.NodeSpriteResourceName(ActionDisplayKind.Slot),
                 Is.EqualTo("icon_axis_event"));

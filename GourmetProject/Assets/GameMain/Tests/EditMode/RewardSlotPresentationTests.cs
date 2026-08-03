@@ -12,6 +12,25 @@ namespace GourmetProject.Tests.EditMode
 {
     public sealed class RewardSlotPresentationTests
     {
+        private static readonly object[] MaterialRewardCases =
+        {
+            new object[]
+            {
+                "lay_wood",
+                new[] { "item_active_lay_cherry", "item_active_lay_walnut" },
+            },
+            new object[]
+            {
+                "lay_stone",
+                new[] { "item_active_lay_marble", "item_active_lay_obsidian", "item_active_lay_emerald" },
+            },
+            new object[]
+            {
+                "lay_metal",
+                new[] { "item_active_lay_gold", "item_active_lay_silver" },
+            },
+        };
+
         private cfg.Tables _tables;
         private GameplayDatabase _database;
 
@@ -117,6 +136,47 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(actual.RuleText, Is.Empty);
             Assert.That(actual.SourceSlotId, Is.Empty);
             Assert.That(actual.Choices.Single().Id, Is.EqualTo("legacy_item"));
+        }
+
+        [TestCaseSource(nameof(MaterialRewardCases))]
+        public void MaterialRewardSlot_OnlyRollsItemsWithMatchingMaterialTag(
+            string slotGroupId,
+            string[] expectedItemIds)
+        {
+            GameRun run = CreateRun();
+
+            for (ulong seed = 1; seed <= 64; seed++)
+            {
+                RewardChoiceGroup group = RewardGranter.BuildConfigChoiceGroup(
+                    run,
+                    new Xoshiro256SS(seed),
+                    slotGroupId,
+                    "材料奖励");
+
+                Assert.That(group, Is.Not.Null, $"seed={seed}");
+                Assert.That(group.Choices, Has.Count.EqualTo(1), $"seed={seed}");
+                Assert.That(expectedItemIds, Does.Contain(group.Choices[0].Id), $"seed={seed}");
+            }
+        }
+
+        [Test]
+        public void CarpenterMetalOption_EnqueuesOnlyMetalMaterialRewards()
+        {
+            cfg.EventOption option = _tables.TbEventOption.Get("opt_carpenter_metal");
+            string[] expectedItemIds = { "item_active_lay_gold", "item_active_lay_silver" };
+
+            for (ulong seed = 1; seed <= 32; seed++)
+            {
+                GameRun run = CreateRun();
+                EventService.ResolveOption(run, option, new Xoshiro256SS(seed));
+
+                Assert.That(
+                    run.TryPeekPendingGenericReward(out _, out _, out RewardOffer offer),
+                    Is.True,
+                    $"seed={seed}");
+                Assert.That(offer.MainChoices, Has.Count.EqualTo(1), $"seed={seed}");
+                Assert.That(expectedItemIds, Does.Contain(offer.MainChoices[0].Id), $"seed={seed}");
+            }
         }
 
         private GameRun CreateRun()
