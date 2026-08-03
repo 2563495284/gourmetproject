@@ -23,6 +23,7 @@ namespace GourmetProject.Game.UI.Tooltips
         private const float MaxWidth = 330f;
         private const float SummaryHorizontalPadding = 24f;
         private const float SkillCardHorizontalPadding = 20f;
+        private const float SkillDescPanelHorizontalPadding = 20f;
         private const string MinWidthSampleText = "十十十十十十十十十十";
 
         public void Bind(FoodSummaryTipsData data)
@@ -141,7 +142,10 @@ namespace GourmetProject.Game.UI.Tooltips
             {
                 preferredWidth = Mathf.Max(
                     preferredWidth,
-                    skillsTextWidth + SummaryHorizontalPadding + SkillCardHorizontalPadding);
+                    skillsTextWidth
+                    + SummaryHorizontalPadding
+                    + SkillCardHorizontalPadding
+                    + SkillDescPanelHorizontalPadding);
             }
 
             if (flavors != null && flavors.Count > 0)
@@ -163,7 +167,8 @@ namespace GourmetProject.Game.UI.Tooltips
 
             return _skillCardPrefab.PreferredDescWidthFor(MinWidthSampleText)
                 + SummaryHorizontalPadding
-                + SkillCardHorizontalPadding;
+                + SkillCardHorizontalPadding
+                + SkillDescPanelHorizontalPadding;
         }
 
         private bool ValidateReferences()
