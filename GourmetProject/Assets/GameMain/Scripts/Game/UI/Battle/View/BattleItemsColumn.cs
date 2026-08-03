@@ -702,27 +702,29 @@ namespace GourmetProject.Game.UI.Battle.View
                 return;
             }
 
-            float containerHeight = _activeSlotsContainer.rect.height;
-            if (containerHeight <= 0f)
+            float containerWidth = _activeSlotsContainer.rect.width;
+            if (containerWidth <= 0f && _activeSlotsContainer.parent is RectTransform parent)
             {
-                containerHeight = Mathf.Abs(_activeSlotsContainer.sizeDelta.y);
+                containerWidth = parent.rect.width;
             }
 
-            float slotHeight = 0f;
+            float slotWidth = 0f;
             for (int i = 0; i < count && i < _activeSlots.Count; i++)
             {
                 RunItemSlotView slot = _activeSlots[i];
                 RectTransform visual = slot != null ? slot.VisualRectTransform : null;
                 if (visual != null)
                 {
-                    slotHeight = Mathf.Max(slotHeight, visual.rect.height, Mathf.Abs(visual.sizeDelta.y));
+                    slotWidth = Mathf.Max(slotWidth, visual.rect.width, Mathf.Abs(visual.sizeDelta.x));
                 }
             }
 
+            // 首尾图标贴合容器两侧；槽位越多，中心间距越小，形成横向重叠。
+            float centerSpan = Mathf.Max(0f, containerWidth - slotWidth);
             float spacing = count > 1
-                ? Mathf.Max(0f, containerHeight - slotHeight) / (count - 1)
+                ? centerSpan / (count - 1)
                 : 0f;
-            float firstY = spacing * (count - 1) * 0.5f;
+            float firstX = -centerSpan * 0.5f;
 
             for (int i = 0; i < count && i < _activeSlots.Count; i++)
             {
@@ -736,8 +738,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 rect.anchorMin = new Vector2(0.5f, 0.5f);
                 rect.anchorMax = new Vector2(0.5f, 0.5f);
                 rect.pivot = new Vector2(0.5f, 0.5f);
-                rect.sizeDelta = Vector2.zero;
-                rect.anchoredPosition = new Vector2(0f, firstY - spacing * i);
+                rect.anchoredPosition = new Vector2(firstX + spacing * i, 0f);
                 rect.localScale = Vector3.one;
             }
         }

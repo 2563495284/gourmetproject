@@ -107,6 +107,9 @@ namespace GourmetProject.Game.Run
         /// <summary>已购买但尚未拼贴的碎片包内容（rolled 出的候选碎片 id）；拼贴或跳过后清空。</summary>
         public List<string> PendingFragmentPackIds = new List<string>();
 
+        /// <summary>与 PendingFragmentPackIds 同下标的顺时针旋转次数（0..3）；旧档缺省 → 0。</summary>
+        public List<int> PendingFragmentPackRotations = new List<int>();
+
         /// <summary>本局商店碎片包成功购买次数，用于递增定价。</summary>
         public int FragmentPackPurchaseCount;
 
@@ -505,5 +508,6 @@ namespace GourmetProject.Game.Run
         public string Description;
         public int GoldAmount;
         public bool IsFallbackGold;
+        public int FragmentRotation;
     }
 }

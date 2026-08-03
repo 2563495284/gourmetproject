@@ -184,12 +184,14 @@ namespace GourmetProject.Game.Meta
                 int index = PickHiddenWeighted(context, candidates, hidden, HiddenScoreDistanceFloor(context));
                 TableFragmentDef fragment = candidates[index];
                 candidates.RemoveAt(index);
+                int counterClockwiseQuarterTurns = context.Rng.Range(0, 4);
                 result.Add(new RewardChoice(
                     cfg.RewardKind.FragmentChoice,
                     fragment.Id,
                     fragment.Id,
                     $"扩展餐桌",
-                    HiddenScoreService.FragmentFallbackGold(context.Run, context.ActionContext)));
+                    HiddenScoreService.FragmentFallbackGold(context.Run, context.ActionContext),
+                    fragmentRotation: (4 - counterClockwiseQuarterTurns) % 4));
             }
         }
 

@@ -908,6 +908,11 @@ namespace GourmetProject.Game.UI.Battle
         ItemTipView IRewardPageHost.ItemTips() => _tips != null ? _tips.Item : null;
         void IRewardPageHost.PlayRewardDishSelectionFly(RewardDishChoiceCardView sourceCard) =>
             PlayRewardDishSelectionFly(sourceCard);
+        Action IRewardPageHost.PrepareRewardItemSelectionFly(
+            RewardChoice choice,
+            cfg.ItemKind kind,
+            RewardItemChoiceCardView sourceCard) =>
+            PrepareRewardItemSelectionFly(choice, kind, sourceCard);
         void IRewardPageHost.PlayRandomizedItemFlys(IReadOnlyList<RandomizedItemResult> results) => PlayRandomizedItemFlys(results);
 
         EventPagePanel IEventPageHost.EventPagePanel => _eventPagePanel;
@@ -1100,7 +1105,8 @@ namespace GourmetProject.Game.UI.Battle
                 _run,
                 candidateIds,
                 completed,
-                ApplyTableEditActionState);
+                ApplyTableEditActionState,
+                _run.PendingFragmentPackRotations);
             SwitchTo(
                 GameplayView.TableEdit,
                 () => world.BeginTableFragmentChoice(request),
@@ -1642,6 +1648,115 @@ namespace GourmetProject.Game.UI.Battle
                     texture,
                     null,
                     () => UnregisterShopPurchaseFly(fly));
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception, fly);
+                fly.Cancel();
+            }
+        }
+
+        private Action PrepareRewardItemSelectionFly(
+            RewardChoice choice,
+            cfg.ItemKind kind,
+            RewardItemChoiceCardView sourceCard)
+        {
+            if (choice == null || sourceCard == null)
+            {
+                return null;
+            }
+
+            Canvas canvas = GetComponentInParent<Canvas>();
+            RectTransform layer = canvas != null ? canvas.transform as RectTransform : transform.root as RectTransform;
+            RectTransform sourceRect = sourceCard.SelectionFlySource;
+            if (layer == null || sourceRect == null)
+            {
+                return null;
+            }
+
+            Canvas.ForceUpdateCanvases();
+            if (!TryGetRectInLayer(sourceRect, layer, out RectSnapshot start))
+            {
+                return null;
+            }
+
+            ItemDefinition item = ItemDefinition.Get(GameApp.Config.Tables, choice.Id, kind);
+            if (item == null)
+            {
+                return null;
+            }
+
+            string itemId = item.Id;
+            cfg.ItemKind itemKind = item.Kind;
+            Sprite sprite =
+                sourceCard.SelectionFlySprite ??
+                RunItemSlotView.LoadIcon(item) ??
+                LoadShopItemFallbackIcon(itemKind);
+            Color fallbackColor = RunItemSlotView.QualityColor(item.Quality);
+            return () => PlayRewardItemSelectionFly(
+                itemId,
+                itemKind,
+                layer,
+                start,
+                sprite,
+                fallbackColor);
+        }
+
+        private void PlayRewardItemSelectionFly(
+            string itemId,
+            cfg.ItemKind kind,
+            RectTransform layer,
+            RectSnapshot start,
+            Sprite sprite,
+            Color fallbackColor)
+        {
+            if (_run == null ||
+                _itemsColumn == null ||
+                layer == null ||
+                !_itemsColumn.TryGetItemFlyTarget(
+                    _run,
+                    itemId,
+                    kind,
+                    layer,
+                    out Vector2 targetCenter,
+                    out Vector2 targetSize))
+            {
+                return;
+            }
+
+            ShopPurchaseFlyView fly = CreateShopPurchaseFly(layer);
+            if (fly == null)
+            {
+                return;
+            }
+
+            _shopItemFlyInFlight++;
+            RegisterShopPurchaseFly(fly);
+            try
+            {
+                if (kind == cfg.ItemKind.Active)
+                {
+                    fly.PlayActive(
+                        start.Center,
+                        targetCenter,
+                        targetSize,
+                        sprite,
+                        fallbackColor,
+                        OnShopItemFlyArrived,
+                        () => UnregisterShopPurchaseFly(fly));
+                }
+                else
+                {
+                    fly.PlayPassive(
+                        start.Center,
+                        start.Size,
+                        targetCenter,
+                        targetSize,
+                        sprite,
+                        fallbackColor,
+                        OnShopItemFlyArrived,
+                        () => UnregisterShopPurchaseFly(fly));
+                }
             }
             catch (Exception exception)
             {

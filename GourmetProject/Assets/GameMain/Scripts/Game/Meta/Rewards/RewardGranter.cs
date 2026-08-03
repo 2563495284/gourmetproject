@@ -317,12 +317,14 @@ namespace GourmetProject.Game.Meta
             }
 
             var ids = new System.Collections.Generic.List<string>(choices.Count);
+            var rotations = new System.Collections.Generic.List<int>(choices.Count);
             for (int i = 0; i < choices.Count; i++)
             {
                 RewardChoice choice = choices[i];
                 if (choice != null && choice.Kind == cfg.RewardKind.FragmentChoice && !string.IsNullOrEmpty(choice.Id))
                 {
                     ids.Add(choice.Id);
+                    rotations.Add(choice.FragmentRotation);
                 }
             }
 
@@ -331,7 +333,7 @@ namespace GourmetProject.Game.Meta
                 return string.Empty;
             }
 
-            run.SetPendingFragmentPack(ids);
+            run.SetPendingFragmentPack(ids, rotations);
             return ids.Count > 1 ? $"获得餐桌碎片包：{ids.Count} 选 1" : "获得餐桌碎片包";
         }
 

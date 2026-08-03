@@ -40,6 +40,11 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         void PlayRewardDishSelectionFly(RewardDishChoiceCardView sourceCard);
 
+        Action PrepareRewardItemSelectionFly(
+            RewardChoice choice,
+            cfg.ItemKind kind,
+            RewardItemChoiceCardView sourceCard);
+
         void PlayRandomizedItemFlys(IReadOnlyList<RandomizedItemResult> results);
     }
 
@@ -164,11 +169,16 @@ namespace GourmetProject.Game.UI.Battle.Pages
                     group,
                     choices,
                     kind,
-                    index =>
+                    (sourceCard, index) =>
                     {
+                        Action playSelectionFly =
+                            index >= 0 && index < choices.Count
+                                ? _host.PrepareRewardItemSelectionFly(choices[index], kind, sourceCard)
+                                : null;
                         _host.RewardItemChoicePanel.Close();
                         RestoreAfterAcquireView(previous);
                         onPick?.Invoke(index);
+                        playSelectionFly?.Invoke();
                     },
                     () =>
                     {

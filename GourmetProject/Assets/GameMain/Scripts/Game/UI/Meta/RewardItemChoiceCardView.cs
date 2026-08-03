@@ -16,6 +16,12 @@ namespace GourmetProject.Game.UI.Meta
         [SerializeField] private Text _descriptionText;
         [SerializeField] private Button _button;
 
+        public RectTransform SelectionFlySource =>
+            _icon != null ? _icon.rectTransform : transform as RectTransform;
+
+        public Sprite SelectionFlySprite =>
+            _icon != null && _icon.enabled ? _icon.sprite : null;
+
         public void Bind(
             RewardChoice choice,
             cfg.ItemKind kind,

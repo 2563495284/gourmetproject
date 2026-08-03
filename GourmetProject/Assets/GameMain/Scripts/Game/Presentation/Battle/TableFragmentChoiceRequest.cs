@@ -14,23 +14,31 @@ namespace GourmetProject.Game.Presentation.Battle
             GameRun run,
             IReadOnlyList<string> candidateIds,
             Action<bool> completed,
-            Action<TableFragmentEditActionState> editActionStateChanged)
+            Action<TableFragmentEditActionState> editActionStateChanged,
+            IReadOnlyList<int> candidateRotations = null)
         {
             SessionVersion = System.Threading.Interlocked.Increment(ref _nextSessionVersion);
             Run = run;
             var snapshot = new List<string>(candidateIds?.Count ?? 0);
+            var rotationSnapshot = new List<int>(candidateIds?.Count ?? 0);
             if (candidateIds != null)
             {
-                foreach (string id in candidateIds)
+                for (int i = 0; i < candidateIds.Count; i++)
                 {
+                    string id = candidateIds[i];
                     if (!string.IsNullOrEmpty(id))
                     {
                         snapshot.Add(id);
+                        int rotation = candidateRotations != null && i < candidateRotations.Count
+                            ? candidateRotations[i]
+                            : 0;
+                        rotationSnapshot.Add(((rotation % 4) + 4) % 4);
                     }
                 }
             }
 
             CandidateIds = snapshot;
+            CandidateRotations = rotationSnapshot;
             Completed = completed;
             EditActionStateChanged = editActionStateChanged;
         }
@@ -40,6 +48,8 @@ namespace GourmetProject.Game.Presentation.Battle
         public int SessionVersion { get; }
 
         public IReadOnlyList<string> CandidateIds { get; }
+
+        public IReadOnlyList<int> CandidateRotations { get; }
 
         public Action<bool> Completed { get; }
 

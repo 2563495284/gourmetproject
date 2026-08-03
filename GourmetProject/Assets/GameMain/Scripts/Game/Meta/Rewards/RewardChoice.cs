@@ -13,7 +13,8 @@ namespace GourmetProject.Game.Meta
             string description,
             int goldAmount = 0,
             bool isFallbackGold = false,
-            string flavorId = null)
+            string flavorId = null,
+            int fragmentRotation = 0)
         {
             Kind = kind;
             Id = id ?? string.Empty;
@@ -22,6 +23,7 @@ namespace GourmetProject.Game.Meta
             GoldAmount = goldAmount;
             IsFallbackGold = isFallbackGold;
             FlavorId = flavorId ?? string.Empty;
+            FragmentRotation = ((fragmentRotation % 4) + 4) % 4;
         }
 
         public cfg.RewardKind Kind { get; }
@@ -38,6 +40,9 @@ namespace GourmetProject.Game.Meta
 
         /// <summary>菜品奖励附带的风味 id；空表示无附带风味。</summary>
         public string FlavorId { get; }
+
+        /// <summary>餐桌碎片候选抽取时已确定的顺时针旋转次数（0..3）。</summary>
+        public int FragmentRotation { get; }
 
         public string DisplayText
         {

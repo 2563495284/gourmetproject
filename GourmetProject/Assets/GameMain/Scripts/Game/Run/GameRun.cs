@@ -34,8 +34,9 @@ namespace GourmetProject.Game.Run
         // 玩家用「铺台小票」永久附加的格子材质（坐标 → 材质 id）；拼桌时叠加进餐桌材质表。
         private readonly List<CellMaterialOverride> _cellMaterialOverrides = new List<CellMaterialOverride>();
 
-        // 已购买待拼贴的碎片包内容（rolled 出的候选碎片 id）；拼贴或跳过后清空。
+        // 已购买待拼贴的碎片包内容（rolled 出的候选碎片 id + 已随机方向）；拼贴或跳过后清空。
         private readonly List<string> _pendingFragmentPack = new List<string>();
+        private readonly List<int> _pendingFragmentPackRotations = new List<int>();
         private int _fragmentPackPurchaseCount;
         private int _deleteDishCount;
         private int _currentShopDeleteDishCount;
@@ -607,6 +608,9 @@ namespace GourmetProject.Game.Run
 
         /// <summary>已购买待拼贴的碎片包候选碎片 id（三选一）；为空表示没有待处理的碎片包。</summary>
         public IReadOnlyList<string> PendingFragmentPack => _pendingFragmentPack;
+
+        /// <summary>与 <see cref="PendingFragmentPack"/> 同下标的顺时针旋转次数（0..3）。</summary>
+        public IReadOnlyList<int> PendingFragmentPackRotations => _pendingFragmentPackRotations;
 
         public int FragmentPackPurchaseCount => _fragmentPackPurchaseCount;
 
@@ -1820,6 +1824,7 @@ namespace GourmetProject.Game.Run
                 FragmentMaterialRolls = ToFragmentMaterialRollSaveData(),
                 CellMaterialOverrides = ToCellMaterialSaveData(),
                 PendingFragmentPackIds = new List<string>(_pendingFragmentPack),
+                PendingFragmentPackRotations = new List<int>(_pendingFragmentPackRotations),
                 FragmentPackPurchaseCount = _fragmentPackPurchaseCount,
                 DeleteDishCount = _deleteDishCount,
                 CurrentShopDeleteDishCount = _currentShopDeleteDishCount,
@@ -2014,7 +2019,21 @@ namespace GourmetProject.Game.Run
 
             if (data.PendingFragmentPackIds != null)
             {
-                run._pendingFragmentPack.AddRange(data.PendingFragmentPackIds);
+                for (int i = 0; i < data.PendingFragmentPackIds.Count; i++)
+                {
+                    string fragmentId = data.PendingFragmentPackIds[i];
+                    if (string.IsNullOrEmpty(fragmentId))
+                    {
+                        continue;
+                    }
+
+                    run._pendingFragmentPack.Add(fragmentId);
+                    int rotation = data.PendingFragmentPackRotations != null
+                        && i < data.PendingFragmentPackRotations.Count
+                            ? data.PendingFragmentPackRotations[i]
+                            : 0;
+                    run._pendingFragmentPackRotations.Add(((rotation % 4) + 4) % 4);
+                }
             }
 
             run._fragmentPackPurchaseCount = System.Math.Max(0, data.FragmentPackPurchaseCount);
@@ -2263,6 +2282,7 @@ namespace GourmetProject.Game.Run
                     Description = choice.Description,
                     GoldAmount = choice.GoldAmount,
                     IsFallbackGold = choice.IsFallbackGold,
+                    FragmentRotation = choice.FragmentRotation,
                 });
             }
 
@@ -2361,7 +2381,8 @@ namespace GourmetProject.Game.Run
                     choice.Name,
                     choice.Description,
                     choice.GoldAmount,
-                    choice.IsFallbackGold));
+                    choice.IsFallbackGold,
+                    fragmentRotation: choice.FragmentRotation));
             }
 
             return result;
@@ -2967,20 +2988,60 @@ namespace GourmetProject.Game.Run
             return true;
         }
 
-        /// <summary>置入一份已购买待拼贴的碎片包（三选一候选 id）。</summary>
-        public void SetPendingFragmentPack(IEnumerable<string> fragmentIds, IRandomStream materialRng = null)
+        /// <summary>
+        /// 置入一份待拼贴碎片包。每个候选独立从逆时针 0°/90°/180°/270° 中抽取方向，
+        /// 内部转换为现有放置系统使用的顺时针旋转次数。
+        /// </summary>
+        public void SetPendingFragmentPack(
+            IEnumerable<string> fragmentIds,
+            IRandomStream materialRng = null,
+            IRandomStream rotationRng = null)
+        {
+            SetPendingFragmentPackInternal(fragmentIds, null, materialRng, rotationRng);
+        }
+
+        /// <summary>置入方向已在候选抽取阶段确定的待拼贴碎片包。</summary>
+        public void SetPendingFragmentPack(
+            IEnumerable<string> fragmentIds,
+            IReadOnlyList<int> rotations,
+            IRandomStream materialRng = null)
+        {
+            SetPendingFragmentPackInternal(fragmentIds, rotations, materialRng, null);
+        }
+
+        private void SetPendingFragmentPackInternal(
+            IEnumerable<string> fragmentIds,
+            IReadOnlyList<int> rotations,
+            IRandomStream materialRng,
+            IRandomStream rotationRng)
         {
             ClearPendingFragmentMaterialRolls();
             _pendingFragmentPack.Clear();
+            _pendingFragmentPackRotations.Clear();
             if (fragmentIds != null)
             {
+                IRandomStream directionRng = rotationRng ?? FragmentRotationRollStream();
+                int index = 0;
                 foreach (string id in fragmentIds)
                 {
                     if (!string.IsNullOrEmpty(id))
                     {
                         _pendingFragmentPack.Add(id);
+                        if (rotations != null && index < rotations.Count)
+                        {
+                            int rotation = rotations[index];
+                            _pendingFragmentPackRotations.Add(((rotation % 4) + 4) % 4);
+                        }
+                        else
+                        {
+                            int counterClockwiseQuarterTurns = directionRng?.Range(0, 4) ?? 0;
+                            _pendingFragmentPackRotations.Add((4 - counterClockwiseQuarterTurns) % 4);
+                        }
+
                         EnsureFragmentMaterialRoll(id, materialRng);
                     }
+
+                    index++;
                 }
             }
         }
@@ -2990,6 +3051,7 @@ namespace GourmetProject.Game.Run
         {
             ClearPendingFragmentMaterialRolls();
             _pendingFragmentPack.Clear();
+            _pendingFragmentPackRotations.Clear();
         }
 
         private void EnsureFragmentMaterialRoll(string fragmentId, IRandomStream rng)
@@ -3012,6 +3074,13 @@ namespace GourmetProject.Game.Run
         {
             return GameApp.Random != null && GameApp.Random.IsInitialized
                 ? GameApp.Random.DomainStream(SeedDomains.Reward, "fragment_material_rolls")
+                : null;
+        }
+
+        private IRandomStream FragmentRotationRollStream()
+        {
+            return GameApp.Random != null && GameApp.Random.IsInitialized
+                ? GameApp.Random.DomainStream(SeedDomains.Reward, "fragment_rotation_rolls")
                 : null;
         }
 

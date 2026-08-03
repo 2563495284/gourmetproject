@@ -17,19 +17,22 @@ namespace GourmetProject.Game.UI.Meta
         [SerializeField] private RewardItemChoiceCardView _cardPrefab;
         private bool _resolved;
         private GameRun _run;
+        private ItemTipView _itemTip;
 
         public void Open(
             RewardChoiceGroup group,
             IReadOnlyList<RewardChoice> choices,
             cfg.ItemKind kind,
-            Action<int> onPick,
+            Action<RewardItemChoiceCardView, int> onPick,
             Action onSkip,
             GameRun run = null,
             ItemTipView itemTip = null)
         {
+            _itemTip?.Hide();
             ClearCards();
             _resolved = false;
             _run = run;
+            _itemTip = itemTip;
             gameObject.SetActive(true);
 
             if (_titleText != null)
@@ -50,7 +53,8 @@ namespace GourmetProject.Game.UI.Meta
             {
                 int index = i;
                 RewardChoice choice = choices[i];
-                RewardItemChoiceCardView card = CreateCard(choice, kind, itemTip, () =>
+                RewardItemChoiceCardView card = null;
+                card = CreateCard(choice, kind, itemTip, () =>
                 {
                     if (_resolved)
                     {
@@ -58,7 +62,7 @@ namespace GourmetProject.Game.UI.Meta
                     }
 
                     _resolved = true;
-                    onPick?.Invoke(index);
+                    onPick?.Invoke(card, index);
                 });
                 if (card != null)
                 {
@@ -84,6 +88,8 @@ namespace GourmetProject.Game.UI.Meta
 
         public void Close()
         {
+            _itemTip?.Hide();
+            _itemTip = null;
             ClearCards();
             _run = null;
             _resolved = false;
