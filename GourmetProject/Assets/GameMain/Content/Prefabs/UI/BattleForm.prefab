@@ -6394,6 +6394,7 @@ MonoBehaviour:
   _discardCountText: {fileID: 8948585886128072784}
   _settingsButton: {fileID: 2667286126325329124}
   _scoreFire: {fileID: 8740086970903889922}
+  _scoreTitlePanel: {fileID: 2973568736520910992}
   _bossStat: {fileID: 9026963313272420588}
   _bossTitleText: {fileID: 127109287677001441}
   _bossSkillText: {fileID: 5308866058911795158}

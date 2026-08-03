@@ -56,7 +56,7 @@ namespace GourmetProject.Game.UI.Battle.View
 
         private void Awake()
         {
-            _bossStatRect = _bossStat != null ? _bossStat.transform as RectTransform : null;
+            EnsureBossStatRect();
             ResetBossStatPresentation();
         }
 
@@ -94,7 +94,7 @@ namespace GourmetProject.Game.UI.Battle.View
         }
 
         /// <summary>刷新左栏常驻信息：周/金币（局外）与分数要求（局内为真值，非战斗态占位）。</summary>
-        public void Refresh(GameRun run, BattleSession session, GameplayView current, BattleWorldController world, cfg.BossDebuff bossDebuff = null)
+        public void Refresh(GameRun run, BattleSession session, GameplayView current, BattleWorldController world)
         {
             if (run == null)
             {
@@ -156,8 +156,33 @@ namespace GourmetProject.Game.UI.Battle.View
                     ? session.FoodDiscardsRemaining.ToString("D2")
                     : "--";
             }
+        }
 
-            RefreshBossStat(current, session, bossDebuff);
+        /// <summary>
+        /// 显式切换 Boss 战展示生命周期。页面刷新不会改变该状态；只有战斗开始、奖励完成等
+        /// 生命周期边界调用此方法，避免临时页面切换重复播放动画。
+        /// </summary>
+        public void SetBossBattlePresentation(cfg.BossDebuff bossDebuff, bool active, bool animate)
+        {
+            EnsureBossStatRect();
+            bool shouldPresent = active && bossDebuff != null && _bossStat != null;
+            if (!shouldPresent)
+            {
+                SetBossStatVisible(false, animate);
+                return;
+            }
+
+            if (_bossTitleText != null)
+            {
+                _bossTitleText.text = bossDebuff.Name ?? string.Empty;
+            }
+
+            if (_bossSkillText != null)
+            {
+                _bossSkillText.text = bossDebuff.Desc ?? string.Empty;
+            }
+
+            SetBossStatVisible(true, animate);
         }
 
         public void ResetTableLabel()
@@ -240,32 +265,30 @@ namespace GourmetProject.Game.UI.Battle.View
                 : $"{prefix}十{digits[ones]}";
         }
 
-        private void RefreshBossStat(GameplayView current, BattleSession session, cfg.BossDebuff bossDebuff)
+        private void SetBossStatVisible(bool visible, bool animate)
         {
-            bool visible = current == GameplayView.Food && session != null && bossDebuff != null;
-            if (!visible)
+            if (_bossStat == null)
             {
-                SetBossStatVisible(false);
                 return;
             }
 
-            if (_bossTitleText != null)
+            if (_bossStatPresented == visible)
             {
-                _bossTitleText.text = bossDebuff.Name ?? string.Empty;
-            }
+                if (!animate)
+                {
+                    if (visible)
+                    {
+                        KillBossStatTransition();
+                        _bossStat.SetActive(true);
+                        SetScoreTitleY(ScoreTitleBossY);
+                        SetBossStatScale(Vector3.one);
+                    }
+                    else
+                    {
+                        ResetBossStatPresentation();
+                    }
+                }
 
-            if (_bossSkillText != null)
-            {
-                _bossSkillText.text = bossDebuff.Desc ?? string.Empty;
-            }
-
-            SetBossStatVisible(true);
-        }
-
-        private void SetBossStatVisible(bool visible)
-        {
-            if (_bossStat == null || _bossStatPresented == visible)
-            {
                 return;
             }
 
@@ -275,6 +298,14 @@ namespace GourmetProject.Game.UI.Battle.View
             if (visible)
             {
                 _bossStat.SetActive(true);
+
+                if (!animate)
+                {
+                    SetScoreTitleY(ScoreTitleBossY);
+                    SetBossStatScale(Vector3.one);
+                    return;
+                }
+
                 SetScoreTitleY(ScoreTitleDefaultY);
                 SetBossStatScale(Vector3.zero);
 
@@ -295,6 +326,12 @@ namespace GourmetProject.Game.UI.Battle.View
                             .SetEase(Ease.OutBack));
                 }
 
+                return;
+            }
+
+            if (!animate)
+            {
+                ResetBossStatPresentation();
                 return;
             }
 
@@ -326,6 +363,7 @@ namespace GourmetProject.Game.UI.Battle.View
 
         private void ResetBossStatPresentation()
         {
+            EnsureBossStatRect();
             KillBossStatTransition();
             _bossStatPresented = false;
             SetScoreTitleY(ScoreTitleDefaultY);
@@ -342,6 +380,14 @@ namespace GourmetProject.Game.UI.Battle.View
             _bossStatTransition = null;
             _scoreTitlePanel?.DOKill();
             _bossStatRect?.DOKill();
+        }
+
+        private void EnsureBossStatRect()
+        {
+            if (_bossStatRect == null && _bossStat != null)
+            {
+                _bossStatRect = _bossStat.transform as RectTransform;
+            }
         }
 
         private void SetScoreTitleY(float y)

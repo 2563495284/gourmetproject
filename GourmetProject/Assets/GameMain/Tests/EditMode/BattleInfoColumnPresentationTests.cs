@@ -111,6 +111,137 @@ namespace GourmetProject.Tests.EditMode
             }
         }
 
+        [Test]
+        public void BossPresentation_RemainsActiveAcrossPageRefreshesUntilExplicitlyEnded()
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(BattlePrefabPath);
+            GameObject instance = PrefabUtility.InstantiatePrefab(prefab) as GameObject;
+            try
+            {
+                BattleInfoColumn column = instance.transform
+                    .Find("HudFrame/LeftColumn")
+                    .GetComponent<BattleInfoColumn>();
+                GameRun run = CreateRun();
+                BattleSession session = CreateSession(requiredScore: 120);
+                cfg.BossDebuff debuff = _tables.TbBossDebuff.Get("debuff_carb_meal");
+                RectTransform scoreTitle = RectTransformReference(column, "_scoreTitlePanel");
+                GameObject bossStat = GameObjectReference(column, "_bossStat");
+                RectTransform bossStatRect = bossStat.transform as RectTransform;
+
+                column.SetBossBattlePresentation(debuff, true, animate: false);
+
+                Assert.That(scoreTitle.anchoredPosition.y, Is.EqualTo(102f));
+                Assert.That(bossStat.activeSelf, Is.True);
+                Assert.That(bossStatRect.localScale, Is.EqualTo(Vector3.one));
+
+                column.Refresh(run, session, GameplayView.TableView, null);
+                column.Refresh(run, session, GameplayView.RecipeInspect, null);
+                column.Refresh(run, session, GameplayView.RewardDishPack, null);
+                column.Refresh(run, session, GameplayView.Food, null);
+
+                Assert.That(scoreTitle.anchoredPosition.y, Is.EqualTo(102f));
+                Assert.That(bossStat.activeSelf, Is.True);
+                Assert.That(bossStatRect.localScale, Is.EqualTo(Vector3.one));
+
+                column.SetBossBattlePresentation(null, false, animate: false);
+
+                Assert.That(scoreTitle.anchoredPosition.y, Is.EqualTo(190f));
+                Assert.That(bossStat.activeSelf, Is.False);
+                Assert.That(bossStatRect.localScale, Is.EqualTo(Vector3.zero));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
+        }
+
+        [Test]
+        public void BossPresentation_RepeatedActivationDoesNotRestartTransition()
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(BattlePrefabPath);
+            GameObject instance = PrefabUtility.InstantiatePrefab(prefab) as GameObject;
+            try
+            {
+                BattleInfoColumn column = instance.transform
+                    .Find("HudFrame/LeftColumn")
+                    .GetComponent<BattleInfoColumn>();
+                cfg.BossDebuff debuff = _tables.TbBossDebuff.Get("debuff_carb_meal");
+                RectTransform scoreTitle = RectTransformReference(column, "_scoreTitlePanel");
+                GameObject bossStat = GameObjectReference(column, "_bossStat");
+                RectTransform bossStatRect = bossStat.transform as RectTransform;
+
+                column.SetBossBattlePresentation(debuff, true, animate: true);
+                scoreTitle.anchoredPosition = new Vector2(scoreTitle.anchoredPosition.x, 150f);
+                bossStatRect.localScale = Vector3.one * 0.5f;
+
+                column.SetBossBattlePresentation(debuff, true, animate: true);
+
+                Assert.That(scoreTitle.anchoredPosition.y, Is.EqualTo(150f));
+                Assert.That(bossStatRect.localScale, Is.EqualTo(Vector3.one * 0.5f));
+
+                column.SetBossBattlePresentation(null, false, animate: false);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
+        }
+
+        [Test]
+        public void BossPresentation_MissingDebuffKeepsDefaultLayout()
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(BattlePrefabPath);
+            GameObject instance = PrefabUtility.InstantiatePrefab(prefab) as GameObject;
+            try
+            {
+                BattleInfoColumn column = instance.transform
+                    .Find("HudFrame/LeftColumn")
+                    .GetComponent<BattleInfoColumn>();
+                RectTransform scoreTitle = RectTransformReference(column, "_scoreTitlePanel");
+                GameObject bossStat = GameObjectReference(column, "_bossStat");
+
+                column.SetBossBattlePresentation(null, true, animate: true);
+
+                Assert.That(scoreTitle.anchoredPosition.y, Is.EqualTo(190f));
+                Assert.That(bossStat.activeSelf, Is.False);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
+        }
+
+        [Test]
+        public void BossPresentation_ImmediateResetFinishesRunningExitAtDefaultLayout()
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(BattlePrefabPath);
+            GameObject instance = PrefabUtility.InstantiatePrefab(prefab) as GameObject;
+            try
+            {
+                BattleInfoColumn column = instance.transform
+                    .Find("HudFrame/LeftColumn")
+                    .GetComponent<BattleInfoColumn>();
+                cfg.BossDebuff debuff = _tables.TbBossDebuff.Get("debuff_carb_meal");
+                RectTransform scoreTitle = RectTransformReference(column, "_scoreTitlePanel");
+                GameObject bossStat = GameObjectReference(column, "_bossStat");
+                RectTransform bossStatRect = bossStat.transform as RectTransform;
+
+                column.SetBossBattlePresentation(debuff, true, animate: false);
+                column.SetBossBattlePresentation(null, false, animate: true);
+
+                Assert.That(bossStat.activeSelf, Is.True);
+                column.SetBossBattlePresentation(null, false, animate: false);
+
+                Assert.That(scoreTitle.anchoredPosition.y, Is.EqualTo(190f));
+                Assert.That(bossStatRect.localScale, Is.EqualTo(Vector3.zero));
+                Assert.That(bossStat.activeSelf, Is.False);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
+        }
+
         private GameRun CreateRun()
         {
             string characterId = _tables.TbCharacter.DataList.First().Id;
@@ -131,5 +262,16 @@ namespace GourmetProject.Tests.EditMode
         {
             return new SerializedObject(column).FindProperty(propertyName).objectReferenceValue as Text;
         }
+
+        private static RectTransform RectTransformReference(BattleInfoColumn column, string propertyName)
+        {
+            return new SerializedObject(column).FindProperty(propertyName).objectReferenceValue as RectTransform;
+        }
+
+        private static GameObject GameObjectReference(BattleInfoColumn column, string propertyName)
+        {
+            return new SerializedObject(column).FindProperty(propertyName).objectReferenceValue as GameObject;
+        }
+
     }
 }

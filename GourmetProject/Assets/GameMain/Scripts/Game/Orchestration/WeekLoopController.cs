@@ -18,6 +18,8 @@ namespace GourmetProject.Game.Orchestration
 
         void HideBattleWorld();
 
+        void ResetBossBattlePresentation();
+
         void SavePendingRewardBattleView();
 
         void RestorePendingRewardBattleView();
@@ -443,6 +445,7 @@ namespace GourmetProject.Game.Orchestration
                 // 最后一颗心优先由名刀·加护挡下；不扣心、不发奖，沿用原继续逻辑。
                 _beforeBattleReward = null;
                 _currentBattleIsBoss = false;
+                _view.ResetBossBattlePresentation();
                 _view.HideBattleWorld();
                 _view.ShowNotice("名刀·加护", "分数未达标，但名刀·加护替你挡下了失败（道具已消耗）。", () =>
                 {
