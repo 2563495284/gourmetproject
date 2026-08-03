@@ -271,6 +271,7 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             _discardSettlementCallbacks = true;
+            ResetBossBattlePresentation();
             CancelActiveShopPurchaseAnimations();
             _settlementReveal = null;
             _loop = null;
@@ -335,6 +336,7 @@ namespace GourmetProject.Game.UI.Battle
         /// <summary>RewardForm 发奖确认后回调：继续战斗后的编排续接。</summary>
         public void OnRewardConfirmed()
         {
+            _infoColumn?.SetBossBattlePresentation(null, false, true);
             UnsubscribeCakeLayerChanges();
             _session?.ClearHappyCakeLayers();
             _displayedCakeLayers = 0;
@@ -368,6 +370,11 @@ namespace GourmetProject.Game.UI.Battle
             BattleWorldController world = _world ?? BattleWorldController.Instance;
             world?.HideWorld();
             world?.ClearBattleTable();
+        }
+
+        public void ResetBossBattlePresentation()
+        {
+            _infoColumn?.SetBossBattlePresentation(null, false, false);
         }
 
         public void SavePendingRewardBattleView()
@@ -480,6 +487,10 @@ namespace GourmetProject.Game.UI.Battle
                 : snapshot.BattleKey;
             _activeBattleIsBoss = snapshot.IsBoss;
             _currentBossDebuff = _activeBattleIsBoss ? ResolveBossDebuff(_activeBossDebuffId) : null;
+            _infoColumn?.SetBossBattlePresentation(
+                _currentBossDebuff,
+                _activeBattleIsBoss,
+                animate: false);
 
             UnsubscribeCakeLayerChanges();
             _session = _run.BuildBattleSession(
@@ -1429,7 +1440,7 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             BattleWorldController world = _world ?? BattleWorldController.Instance;
-            _infoColumn?.Refresh(_run, _session, _current, world, _currentBossDebuff);
+            _infoColumn?.Refresh(_run, _session, _current, world);
             RefreshCakeLayerBuff();
 
             if (refreshItems)
@@ -2413,6 +2424,7 @@ namespace GourmetProject.Game.UI.Battle
 
         public void ShowRunResult(bool win, int total)
         {
+            ResetBossBattlePresentation();
             _world?.HideWorld();
             HideHud();
             if (win)
@@ -2461,6 +2473,10 @@ namespace GourmetProject.Game.UI.Battle
             _activeBattleKey = key ?? string.Empty;
             _activeBattleIsBoss = IsBossFoodAction(actionContext);
             _currentBossDebuff = _activeBattleIsBoss ? ResolveBossDebuff(_activeBossDebuffId) : null;
+            _infoColumn?.SetBossBattlePresentation(
+                _currentBossDebuff,
+                _activeBattleIsBoss,
+                animate: _activeBattleIsBoss && _currentBossDebuff != null);
             SetMessage(string.Empty);
             UnsubscribeCakeLayerChanges();
             _session = _run.BuildBattleSession(requiredScore, modifier, key, _activeBossDebuffId);

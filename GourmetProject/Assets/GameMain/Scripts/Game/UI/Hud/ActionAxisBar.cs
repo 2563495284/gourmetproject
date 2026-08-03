@@ -43,7 +43,6 @@ namespace GourmetProject.Game.UI.Hud
         [SerializeField] private Color _fillColor = new Color(0.30f, 0.76f, 0.28f, 0.95f);
         [SerializeField] private Color _tickColor = new Color(1f, 0.66f, 0.08f, 1f);
         [SerializeField] private Color _dayTextColor = new Color(0.22f, 0.12f, 0.07f, 1f);
-        [SerializeField] private float _nodeIconHeight = 26f;
 
         private readonly List<GameObject> _axisSpawned = new List<GameObject>();
         private readonly Dictionary<int, Image> _dayDots = new Dictionary<int, Image>();

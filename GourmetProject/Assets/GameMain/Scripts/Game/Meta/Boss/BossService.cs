@@ -77,6 +77,29 @@ namespace GourmetProject.Game.Meta
             return candidates[rng.WeightedPickIndex(weights)];
         }
 
+        /// <summary>预览行动轴 Boss 节点将使用的 Debuff，不推进对应随机流。</summary>
+        public static cfg.BossDebuff PreviewBossDebuff(GameRun run, cfg.TimelineNode node)
+        {
+            if (run == null || node == null)
+            {
+                return null;
+            }
+
+            string bossKey = $"w{run.WeekIndex}_{node.Id}";
+            IRandomStream rng = GameApp.Random.DomainStream(
+                SeedDomains.Boss,
+                BuildBossDebuffSeedKey(run, bossKey, node.Id));
+            RngState state = rng.State;
+            try
+            {
+                return RollBossDebuff(run, rng, mutateHistoryOnExhaustion: false);
+            }
+            finally
+            {
+                rng.State = state;
+            }
+        }
+
         public static string BuildBossDebuffSeedKey(GameRun run, string bossKey, string sourceNodeId = null)
         {
             int rerollIndex = run != null

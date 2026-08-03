@@ -7,6 +7,7 @@
         "GourmetProject.Core",
         "GourmetProject.Config",
         "GourmetProject.Gameplay",
+        "DOTween.Modules",
         "Luban.Runtime",
         "Unity.InputSystem",
         "Unity.RenderPipelines.Universal.2D.Runtime"

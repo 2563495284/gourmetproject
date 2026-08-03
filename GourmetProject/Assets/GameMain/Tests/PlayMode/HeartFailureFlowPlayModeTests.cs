@@ -156,6 +156,7 @@ namespace GourmetProject.Tests.PlayMode
             public bool NoticeShown { get; private set; }
 
             public void HideBattleWorld() { }
+            public void ResetBossBattlePresentation() { }
 
             public void SavePendingRewardBattleView()
             {

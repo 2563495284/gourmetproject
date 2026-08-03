@@ -8,6 +8,14 @@ namespace GourmetProject.Tests.EditMode
     public sealed class WeekEventCardArtMappingTests
     {
         [Test]
+        public void BossTitle_UsesDebuffName()
+        {
+            Assert.That(
+                WeekEventCardView.BossTitle("纵情享乐"),
+                Is.EqualTo("星级评鉴：（纵情享乐）"));
+        }
+
+        [Test]
         public void FoodActions_MapNormalAndHardRewardsToTenDistinctCardResources()
         {
             var expected = new Dictionary<(cfg.FoodActionKind, cfg.RewardKind), string>

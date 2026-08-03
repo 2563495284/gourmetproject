@@ -18,6 +18,8 @@ namespace GourmetProject.Game.Orchestration
 
         void HideBattleWorld();
 
+        void ResetBossBattlePresentation();
+
         void SavePendingRewardBattleView();
 
         void RestorePendingRewardBattleView();
@@ -461,6 +463,7 @@ namespace GourmetProject.Game.Orchestration
                 SettleSuperFoodPassives(battleFood, battleContext, settledBattleKey, survived: true);
                 _beforeBattleReward = null;
                 _currentBattleIsBoss = false;
+                _view.ResetBossBattlePresentation();
                 _view.HideBattleWorld();
                 RunPersistence.Save(_run);
                 _view.ShowNotice("名刀·加护", "分数未达标，但名刀·加护替你挡下了失败（道具已消耗）。", () =>
@@ -1143,20 +1146,16 @@ namespace GourmetProject.Game.Orchestration
         {
             cfg.Tables tables = _run.Tables ?? GameApp.Config.Tables;
             cfg.Food boss = tables.TbFood.GetOrDefault(outcome.BossId);
-            string title = boss != null ? $"Boss：{boss.Name}" : "Boss";
-            _view.ShowNotice(title, $"目标分 {outcome.RequiredScore}，准备应战！", () =>
-            {
-                _run.MarkBossDebuffRolled(outcome.BossDebuffId);
-                StartBattle(
-                    outcome.RequiredScore,
-                    outcome.Modifier,
-                    outcome.BattleKey,
-                    true,
-                    outcome.BossDebuffId,
-                    onContinue,
-                    context,
-                    beforeReward: () => CompleteBossBeforeReward(outcome, boss, onBossComplete));
-            });
+            _run.MarkBossDebuffRolled(outcome.BossDebuffId);
+            StartBattle(
+                outcome.RequiredScore,
+                outcome.Modifier,
+                outcome.BattleKey,
+                true,
+                outcome.BossDebuffId,
+                onContinue,
+                context,
+                beforeReward: () => CompleteBossBeforeReward(outcome, boss, onBossComplete));
         }
 
         private void CompleteBossBeforeReward(ActionOutcome outcome, cfg.Food boss, Action onBossComplete)

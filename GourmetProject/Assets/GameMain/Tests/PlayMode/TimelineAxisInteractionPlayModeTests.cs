@@ -999,6 +999,10 @@ namespace GourmetProject.Tests.PlayMode
             {
             }
 
+            public void ResetBossBattlePresentation()
+            {
+            }
+
             public void SavePendingRewardBattleView()
             {
             }
