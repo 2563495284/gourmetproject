@@ -1125,6 +1125,9 @@ MonoBehaviour:
   - {fileID: 6100591243911159670}
   - {fileID: 9178311340551020401}
   - {fileID: 8696939999638976260}
+  _applyButton: {fileID: 1827334612719691047}
+  _backButton: {fileID: 5433880333685756754}
+  _returnMenuButton: {fileID: 3189667248098635229}
 --- !u!114 &546284883743138822
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -1,16 +1,13 @@
 using System.Collections.Generic;
 using GourmetProject.Game.Flow;
-using GourmetProject.Game.Run;
 using GourmetProject.Game.Settings;
 using GourmetProject.Runtime;
 using GourmetProject.Runtime.UI;
 using UnityEngine;
 using UnityEngine.UI;
 using GourmetProject.Game.UI;
-using GourmetProject.Game.UI.Battle;
 using GourmetProject.Game.UI.Common;
 using GourmetProject.Game.UI.Menu;
-using GourmetProject.Game.UI.Meta;
 using GourmetProject.Game.UI.Widgets;
 
 namespace GourmetProject.Game.UI.Menu
@@ -22,39 +19,28 @@ namespace GourmetProject.Game.UI.Menu
     public sealed class SettingsForm : UGuiForm
     {
         [SerializeField] private List<GameObject> _settingRows = new List<GameObject>();
+        [SerializeField] private Button _applyButton;
+        [SerializeField] private Button _backButton;
+        [SerializeField] private Button _returnMenuButton;
 
-        private Button _applyButton;
-        private Button _backButton;
-        private GameObject _gameplayActions;
-        private Button _returnMenuButton;
-        private Button _abandonRunButton;
+        private bool _inGameplay;
 
         private readonly List<SettingDescriptor> _descriptors = new List<SettingDescriptor>();
         protected override void OnInit(object userData)
         {
             base.OnInit(userData);
 
-            _applyButton = CachedTransform.Find("ApplyButton").GetComponent<Button>();
-            _backButton = CachedTransform.Find("BackButton").GetComponent<Button>();
-            _gameplayActions = CachedTransform.Find("GameplayActions")?.gameObject;
-            _returnMenuButton = FindOptionalButton("ReturnMenuButton");
-            _abandonRunButton = FindOptionalButton("AbandonRunButton");
-
             _applyButton.onClick.AddListener(OnApplyClicked);
             _backButton.onClick.AddListener(OnBackClicked);
-            _returnMenuButton?.onClick.AddListener(OnReturnMenuClicked);
-            _abandonRunButton?.onClick.AddListener(OnAbandonRunClicked);
+            _returnMenuButton.onClick.AddListener(OnReturnMenuClicked);
         }
 
         protected override void OnOpen(object userData)
         {
             base.OnOpen(userData);
 
-            if (_gameplayActions != null)
-            {
-                // GameplayActions 的返回主菜单/放弃游戏入口暂不展示，保留对象与逻辑供后续启用。
-                _gameplayActions.SetActive(false);
-            }
+            _inGameplay = userData is SettingsFormData data && data.InGameplay;
+            _returnMenuButton.gameObject.SetActive(_inGameplay);
 
             BuildRows();
         }
@@ -184,6 +170,11 @@ namespace GourmetProject.Game.UI.Menu
 
         private void OnReturnMenuClicked()
         {
+            if (!_inGameplay)
+            {
+                return;
+            }
+
             var data = new ConfirmDialogData
             {
                 Title = "返回主菜单",
@@ -191,19 +182,6 @@ namespace GourmetProject.Game.UI.Menu
                 ConfirmText = "返回",
                 CancelText = "取消",
                 OnConfirm = ReturnToMenuWithoutSave,
-            };
-            GameApp.UI.OpenUIForm(UIForms.ConfirmDialog, UIForms.GroupDialog, data);
-        }
-
-        private void OnAbandonRunClicked()
-        {
-            var data = new ConfirmDialogData
-            {
-                Title = "放弃游戏",
-                Message = "确定放弃当前游戏吗？这会按失败结算并删除当前运行存档。",
-                ConfirmText = "放弃",
-                CancelText = "取消",
-                OnConfirm = OpenDefeatFromSettings,
             };
             GameApp.UI.OpenUIForm(UIForms.ConfirmDialog, UIForms.GroupDialog, data);
         }
@@ -225,28 +203,6 @@ namespace GourmetProject.Game.UI.Menu
             };
 
             CartoonSceneTransitionForm.Show(data);
-        }
-
-        private void OpenDefeatFromSettings()
-        {
-            int total = BattleForm.Active?.LastBattleTotal ?? 0;
-            GameApp.UI.CloseUIForm(UIForm);
-            GameApp.UI.OpenUIForm(UIForms.Defeat, UIForms.GroupDialog, new GourmetProject.Game.UI.Meta.DefeatFormData(total));
-        }
-
-        private Button FindOptionalButton(string childName)
-        {
-            Transform[] children = CachedTransform.GetComponentsInChildren<Transform>(true);
-            for (int i = 0; i < children.Length; i++)
-            {
-                Transform child = children[i];
-                if (child.name == childName && child.TryGetComponent(out Button button))
-                {
-                    return button;
-                }
-            }
-
-            return null;
         }
     }
 
