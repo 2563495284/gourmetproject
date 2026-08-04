@@ -28,6 +28,7 @@ namespace GourmetProject.Game.Presentation.Battle
         ActiveMultiplierAdd = 11,
         GenericValueChanged = 12,
         TriggerSweetTransferActivatorPulse = 13,
+        SweetTransferResult = 14,
     }
 
     /// <summary>
@@ -37,12 +38,12 @@ namespace GourmetProject.Game.Presentation.Battle
     /// </summary>
     public sealed class DishPieceView : MonoBehaviour
     {
-        private const float SettlementFeedbackDurationScale = 2f;
-
         private static readonly int OutlineColorId = Shader.PropertyToID("_OutlineColor");
         private static readonly int OutlineWidthId = Shader.PropertyToID("_OutlineWidth");
         private static readonly int FillAlphaId = Shader.PropertyToID("_FillAlpha");
         private static readonly int GlowIntensityId = Shader.PropertyToID("_GlowIntensity");
+        private static readonly int OuterAlphaId = Shader.PropertyToID("_OuterAlpha");
+        private static readonly int InnerAlphaId = Shader.PropertyToID("_InnerAlpha");
         private static readonly int PulseSpeedId = Shader.PropertyToID("_PulseSpeed");
         private static readonly int PulseAmplitudeId = Shader.PropertyToID("_PulseAmplitude");
         private static readonly int PulseFrequencyId = Shader.PropertyToID("_PulseFrequency");
@@ -185,6 +186,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private bool _sweetTransferSourceActive;
         private bool _triggerSweetTransferActivatorActive;
         private readonly Dictionary<SpriteRenderer, Color> _activeItemDimColors = new Dictionary<SpriteRenderer, Color>();
+        private readonly Dictionary<SpriteRenderer, Color> _settlementFocusColors = new Dictionary<SpriteRenderer, Color>();
         private MaterialPropertyBlock _activeItemTransformBlock;
         private Sequence _activeItemFlavorSequence;
         public DishInstance Instance { get; private set; }
@@ -345,11 +347,7 @@ namespace GourmetProject.Game.Presentation.Battle
             EnsureRefs();
             if (!show)
             {
-                if (_placementGlow != null)
-                {
-                    _placementGlow.gameObject.SetActive(false);
-                }
-
+                HidePlacementGlow();
                 return;
             }
 
@@ -436,6 +434,56 @@ namespace GourmetProject.Game.Presentation.Battle
                 original.a *= 0.5f;
                 renderer.color = original;
             }
+        }
+
+        /// <summary>
+        /// 结算舞台独立亮度通道。首次调用时精确记录当前颜色，后续亮度变化都从记录值计算，
+        /// 不覆盖主动道具选择或 Ghost 状态。
+        /// </summary>
+        public void SetSettlementFocus(float brightness)
+        {
+            EnsureRefs();
+            if (_spriteRenderer == null)
+            {
+                return;
+            }
+
+            if (_settlementFocusColors.Count == 0)
+            {
+                foreach (SpriteRenderer renderer in _spriteRenderer.GetComponentsInChildren<SpriteRenderer>(true))
+                {
+                    _settlementFocusColors[renderer] = renderer.color;
+                }
+            }
+
+            float factor = Mathf.Clamp01(brightness);
+            foreach (KeyValuePair<SpriteRenderer, Color> entry in _settlementFocusColors)
+            {
+                if (entry.Key == null)
+                {
+                    continue;
+                }
+
+                Color color = entry.Value;
+                color.r *= factor;
+                color.g *= factor;
+                color.b *= factor;
+                color.a *= Mathf.Lerp(0.72f, 1f, factor);
+                entry.Key.color = color;
+            }
+        }
+
+        public void ClearSettlementFocus()
+        {
+            foreach (KeyValuePair<SpriteRenderer, Color> entry in _settlementFocusColors)
+            {
+                if (entry.Key != null)
+                {
+                    entry.Key.color = entry.Value;
+                }
+            }
+
+            _settlementFocusColors.Clear();
         }
 
         /// <summary>
@@ -759,7 +807,7 @@ namespace GourmetProject.Game.Presentation.Battle
         /// 放置后提示“会被新食物 scope 影响”：围绕当前位置做很轻的衰减抖动，
         /// 不移动菜品根节点，因此不会改变占格、碰撞盒或餐桌数据。
         /// </summary>
-        public void PlayScopeAffectedShake()
+        public void PlayScopeAffectedShake(float durationScale = 1f)
         {
             EnsureRefs();
             int version = ++_scopeAffectedVersion;
@@ -773,7 +821,9 @@ namespace GourmetProject.Game.Presentation.Battle
 
             _scopeAffectedTarget = target;
             _scopeAffectedBasePosition = target.localPosition;
-            float duration = Mathf.Max(0.0001f, _scopeAffectedShakeDuration);
+            float duration = Mathf.Max(
+                0.0001f,
+                _scopeAffectedShakeDuration * Mathf.Max(0.05f, durationScale));
             float cycles = Mathf.Max(0f, _scopeAffectedShakeCycles);
             float distance = Mathf.Max(0f, _scopeAffectedShakeCells) * Mathf.Max(_cellSize, 0.01f);
             Vector3 basePosition = _scopeAffectedBasePosition;
@@ -977,9 +1027,9 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            if ((_settlementFeedbackTween == null || !_settlementFeedbackTween.active) && _placementGlow != null)
+            if (_settlementFeedbackTween == null || !_settlementFeedbackTween.active)
             {
-                _placementGlow.gameObject.SetActive(false);
+                HidePlacementGlow();
             }
         }
 
@@ -1005,12 +1055,15 @@ namespace GourmetProject.Game.Presentation.Battle
                 }
                 else
                 {
-                    _placementGlow.gameObject.SetActive(false);
+                    HidePlacementGlow();
                 }
             }
         }
 
-        public async Awaitable PlaySettlementFeedbackAsync(SettlementDishFeedbackKind kind, CancellationToken cancellationToken)
+        public async Awaitable PlaySettlementFeedbackAsync(
+            SettlementDishFeedbackKind kind,
+            CancellationToken cancellationToken,
+            float durationScale = 1f)
         {
             EnsureRefs();
             _scopeAffectedVersion++;
@@ -1035,9 +1088,10 @@ namespace GourmetProject.Game.Presentation.Battle
             _settlementFeedbackBaseScale = target.localScale;
             _settlementFeedbackBaseRotation = target.localRotation;
             _settlementFeedbackKind = kind;
-            ShowSettlementGlow(profile);
+            float safeDurationScale = Mathf.Max(0.05f, durationScale);
+            ShowSettlementGlow(profile, safeDurationScale);
 
-            float duration = Mathf.Max(0.0001f, profile.Duration * SettlementFeedbackDurationScale);
+            float duration = Mathf.Max(0.0001f, profile.Duration * safeDurationScale);
             _settlementFeedbackTween = DOVirtual.Float(0f, 1f, duration, progress =>
                 {
                     if (target == null || version != _settlementFeedbackVersion)
@@ -1077,7 +1131,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         rotationDegrees: 0f,
                         rotationCycles: 0f,
                         pulseCount: 1f,
-                        glowColor: new Color(1f, 0.92f, 0.58f, 0.72f),
+                        glowColor: SettlementAttributePalette.WithAlpha(SettlementAttributePalette.BaseScore, 0.72f),
                         glowWidth: 0.055f,
                         glowInflate: 1.035f,
                         glowFillAlpha: 0.02f,
@@ -1138,6 +1192,27 @@ namespace GourmetProject.Game.Presentation.Battle
                         glowPulseAmplitude: 0.22f,
                         anticipationFraction: 0.12f);
 
+                case SettlementDishFeedbackKind.SweetTransferResult:
+                    return new SettlementFeedbackProfile(
+                        duration: 0.30f,
+                        anticipationScale: 0.96f,
+                        peakScale: new Vector2(1.12f, 1.08f),
+                        liftInCells: 0.035f,
+                        sideInCells: 0.03f,
+                        rotationDegrees: 4f,
+                        rotationCycles: 1.5f,
+                        pulseCount: 1f,
+                        glowColor: new Color(1f, 0.30f, 0.68f, 0.92f),
+                        glowWidth: 0.065f,
+                        glowInflate: 1.06f,
+                        glowFillAlpha: 0f,
+                        glowPulseSpeed: 5f,
+                        glowPulseAmplitude: 0.12f,
+                        anticipationFraction: 0.08f,
+                        glowInnerAlpha: 0.10f,
+                        glowOuterAlpha: 0.90f,
+                        glowIntensity: 1.35f);
+
                 case SettlementDishFeedbackKind.CopiedSkillTriggered:
                     return new SettlementFeedbackProfile(
                         duration: 0.44f,
@@ -1166,7 +1241,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         rotationDegrees: 4f,
                         rotationCycles: 2f,
                         pulseCount: 2f,
-                        glowColor: new Color(0.72f, 0.46f, 1f, 0.95f),
+                        glowColor: SettlementAttributePalette.WithAlpha(SettlementAttributePalette.Special, 0.95f),
                         glowWidth: 0.12f,
                         glowInflate: 1.10f,
                         glowFillAlpha: 0.10f,
@@ -1181,7 +1256,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         liftInCells: 0.055f,
                         sideInCells: 0f,
                         rotationDegrees: 1.5f,
-                        color: new Color(0.32f, 1f, 0.48f, 0.86f));
+                        color: SettlementAttributePalette.WithAlpha(SettlementAttributePalette.BaseScore, 0.86f));
 
                 case SettlementDishFeedbackKind.ActiveFlatBonus:
                     return BonusProfile(
@@ -1190,7 +1265,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         liftInCells: 0.13f,
                         sideInCells: 0f,
                         rotationDegrees: 2.5f,
-                        color: new Color(0.24f, 1f, 0.42f, 0.96f));
+                        color: SettlementAttributePalette.WithAlpha(SettlementAttributePalette.BaseScore, 0.96f));
 
                 case SettlementDishFeedbackKind.PassiveMultiplier:
                     return BonusProfile(
@@ -1199,7 +1274,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         liftInCells: 0.03f,
                         sideInCells: 0f,
                         rotationDegrees: 5f,
-                        color: new Color(1f, 0.28f, 0.20f, 0.86f));
+                        color: SettlementAttributePalette.WithAlpha(SettlementAttributePalette.MultiplyMultiplier, 0.86f));
 
                 case SettlementDishFeedbackKind.ActiveMultiplier:
                     return BonusProfile(
@@ -1208,7 +1283,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         liftInCells: 0.05f,
                         sideInCells: 0f,
                         rotationDegrees: 9f,
-                        color: new Color(1f, 0.20f, 0.12f, 0.98f));
+                        color: SettlementAttributePalette.WithAlpha(SettlementAttributePalette.MultiplyMultiplier, 0.98f));
 
                 case SettlementDishFeedbackKind.PassiveMultiplierAdd:
                     return BonusProfile(
@@ -1217,7 +1292,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         liftInCells: 0.025f,
                         sideInCells: 0.04f,
                         rotationDegrees: 3f,
-                        color: new Color(1f, 0.70f, 0.16f, 0.86f));
+                        color: SettlementAttributePalette.WithAlpha(SettlementAttributePalette.AddMultiplier, 0.86f));
 
                 case SettlementDishFeedbackKind.ActiveMultiplierAdd:
                     return BonusProfile(
@@ -1226,7 +1301,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         liftInCells: 0.04f,
                         sideInCells: 0.065f,
                         rotationDegrees: 5f,
-                        color: new Color(1f, 0.62f, 0.08f, 0.98f));
+                        color: SettlementAttributePalette.WithAlpha(SettlementAttributePalette.AddMultiplier, 0.98f));
 
                 case SettlementDishFeedbackKind.GenericValueChanged:
                 default:
@@ -1239,7 +1314,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         rotationDegrees: _deliciousnessGainWobbleDegrees,
                         rotationCycles: _deliciousnessGainWobbleCycles,
                         pulseCount: 1f,
-                        glowColor: new Color(0.45f, 0.90f, 1f, 0.78f),
+                        glowColor: SettlementAttributePalette.WithAlpha(SettlementAttributePalette.Special, 0.78f),
                         glowWidth: 0.07f,
                         glowInflate: 1.05f,
                         glowFillAlpha: 0.025f,
@@ -1312,7 +1387,7 @@ namespace GourmetProject.Game.Presentation.Battle
             target.localRotation = _settlementFeedbackBaseRotation * Quaternion.Euler(0f, 0f, rotation);
         }
 
-        private void ShowSettlementGlow(SettlementFeedbackProfile profile)
+        private void ShowSettlementGlow(SettlementFeedbackProfile profile, float durationScale)
         {
             if (_placementGlow == null)
             {
@@ -1329,8 +1404,11 @@ namespace GourmetProject.Game.Presentation.Battle
                 profile.GlowInflate,
                 sortingOrderOffset: 2,
                 materialOverride: null,
-                pulseSpeed: profile.GlowPulseSpeed / SettlementFeedbackDurationScale,
-                pulseAmplitude: profile.GlowPulseAmplitude);
+                pulseSpeed: profile.GlowPulseSpeed / Mathf.Max(0.05f, durationScale),
+                pulseAmplitude: profile.GlowPulseAmplitude,
+                innerAlpha: profile.GlowInnerAlpha,
+                outerAlpha: profile.GlowOuterAlpha,
+                glowIntensity: profile.GlowIntensity);
         }
 
         private void ShowSweetTransferSourceGlow()
@@ -1345,13 +1423,16 @@ namespace GourmetProject.Game.Presentation.Battle
                 _placementGlow,
                 ref _placementGlowBlock,
                 new Color(1f, 0.30f, 0.68f, 0.98f),
-                outlineWidth: 0.13f,
-                fillAlpha: 0.055f,
-                inflate: 1.11f,
+                outlineWidth: 0.065f,
+                fillAlpha: 0f,
+                inflate: 1.06f,
                 sortingOrderOffset: 3,
                 materialOverride: null,
-                pulseSpeed: 4.5f / SettlementFeedbackDurationScale,
-                pulseAmplitude: 0.26f);
+                pulseSpeed: 4f,
+                pulseAmplitude: 0.12f,
+                innerAlpha: 0.10f,
+                outerAlpha: 0.90f,
+                glowIntensity: 1.35f);
         }
 
         private void ShowTriggerSweetTransferActivatorGlow()
@@ -1371,7 +1452,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 inflate: 1.12f,
                 sortingOrderOffset: 4,
                 materialOverride: null,
-                pulseSpeed: 3.4f / SettlementFeedbackDurationScale,
+                pulseSpeed: 3.4f,
                 pulseAmplitude: 0.24f);
         }
 
@@ -1401,9 +1482,33 @@ namespace GourmetProject.Game.Presentation.Battle
                 }
                 else
                 {
-                    _placementGlow.gameObject.SetActive(false);
+                    HidePlacementGlow();
                 }
             }
+        }
+
+        private void HidePlacementGlow()
+        {
+            if (_placementGlow == null)
+            {
+                return;
+            }
+
+            _placementGlowBlock ??= new MaterialPropertyBlock();
+            _placementGlowBlock.Clear();
+            _placementGlowBlock.SetColor(OutlineColorId, Color.clear);
+            _placementGlowBlock.SetFloat(OutlineWidthId, 0f);
+            _placementGlowBlock.SetFloat(FillAlphaId, 0f);
+            _placementGlowBlock.SetFloat(GlowIntensityId, 0f);
+            _placementGlowBlock.SetFloat(OuterAlphaId, 0f);
+            _placementGlowBlock.SetFloat(InnerAlphaId, 0f);
+            _placementGlowBlock.SetFloat(PulseSpeedId, 0f);
+            _placementGlowBlock.SetFloat(PulseAmplitudeId, 0f);
+            _placementGlowBlock.SetFloat(PulseFrequencyId, 0f);
+            _placementGlowBlock.SetFloat(UvInflateId, 1f);
+            _placementGlowBlock.SetVector(SpriteUvRectId, Vector4.zero);
+            _placementGlow.SetPropertyBlock(_placementGlowBlock);
+            _placementGlow.gameObject.SetActive(false);
         }
 
         private void StopScopeAffectedShake(bool restoreTransform)
@@ -1436,7 +1541,10 @@ namespace GourmetProject.Game.Presentation.Battle
                 float glowFillAlpha,
                 float glowPulseSpeed,
                 float glowPulseAmplitude,
-                float anticipationFraction = 0f)
+                float anticipationFraction = 0f,
+                float glowInnerAlpha = 0.68f,
+                float glowOuterAlpha = 1f,
+                float glowIntensity = -1f)
             {
                 Duration = duration;
                 AnticipationScale = anticipationScale;
@@ -1453,6 +1561,9 @@ namespace GourmetProject.Game.Presentation.Battle
                 GlowPulseSpeed = glowPulseSpeed;
                 GlowPulseAmplitude = glowPulseAmplitude;
                 AnticipationFraction = anticipationFraction;
+                GlowInnerAlpha = glowInnerAlpha;
+                GlowOuterAlpha = glowOuterAlpha;
+                GlowIntensity = glowIntensity;
             }
 
             public float Duration { get; }
@@ -1470,6 +1581,9 @@ namespace GourmetProject.Game.Presentation.Battle
             public float GlowPulseSpeed { get; }
             public float GlowPulseAmplitude { get; }
             public float AnticipationFraction { get; }
+            public float GlowInnerAlpha { get; }
+            public float GlowOuterAlpha { get; }
+            public float GlowIntensity { get; }
         }
 
         private void RebuildCells(DishShape shape)
@@ -1814,7 +1928,10 @@ namespace GourmetProject.Game.Presentation.Battle
             int sortingOrderOffset,
             Material materialOverride,
             float pulseSpeed,
-            float pulseAmplitude)
+            float pulseAmplitude,
+            float innerAlpha = 0.68f,
+            float outerAlpha = 1f,
+            float glowIntensity = -1f)
         {
             if (renderer == null || _spriteRenderer == null)
             {
@@ -1867,7 +1984,9 @@ namespace GourmetProject.Game.Presentation.Battle
             block.SetColor(OutlineColorId, color);
             block.SetFloat(OutlineWidthId, Mathf.Clamp(outlineWidth, 0f, 0.2f));
             block.SetFloat(FillAlphaId, Mathf.Clamp01(fillAlpha));
-            block.SetFloat(GlowIntensityId, _outlineGlowIntensity);
+            block.SetFloat(GlowIntensityId, glowIntensity >= 0f ? glowIntensity : _outlineGlowIntensity);
+            block.SetFloat(OuterAlphaId, Mathf.Clamp01(outerAlpha));
+            block.SetFloat(InnerAlphaId, Mathf.Clamp01(innerAlpha));
             block.SetFloat(PulseSpeedId, Mathf.Max(0f, pulseSpeed));
             block.SetFloat(PulseAmplitudeId, Mathf.Clamp(pulseAmplitude, 0f, 0.5f));
             block.SetFloat(PulseFrequencyId, Mathf.Max(0f, _pulseFrequency));
@@ -2076,6 +2195,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void OnDisable()
         {
+            ClearSettlementFocus();
             SetActiveItemTargetDimmed(false);
             if (_activeItemFlavorSequence != null)
             {

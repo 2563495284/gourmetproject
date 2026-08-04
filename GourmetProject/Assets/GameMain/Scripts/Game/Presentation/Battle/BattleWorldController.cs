@@ -2836,6 +2836,7 @@ namespace GourmetProject.Game.Presentation.Battle
             SettlementScoreFireView scoreFire,
             Action<SettlementRevealSignal> onReveal,
             Action<string> onPassiveTriggered,
+            Action<SettlementBeatSignal> onBeat,
             Action onComplete)
         {
             if (_sequencer == null || _session == null || result == null)
@@ -2868,8 +2869,9 @@ namespace GourmetProject.Game.Presentation.Battle
                     scoreFire,
                     RenderSettlementScore,
                     onReveal,
-                    null,
+                    OnSettlementScope,
                     onPassiveTriggered,
+                    onBeat,
                     baselineSnapshot,
                     token);
             }
@@ -2892,6 +2894,18 @@ namespace GourmetProject.Game.Presentation.Battle
         private void RenderSettlementScore(int score)
         {
             _settlementScoreSink?.Invoke(score);
+        }
+
+        private void OnSettlementScope(SettlementScopeSignal signal)
+        {
+            EnsureScopeHighlights();
+            if (signal.IsEmpty || signal.Trace == null)
+            {
+                _scopeHighlights?.ClearSettlement();
+                return;
+            }
+
+            _scopeHighlights?.ShowSettlement(_boardView, signal.Trace);
         }
 
     }

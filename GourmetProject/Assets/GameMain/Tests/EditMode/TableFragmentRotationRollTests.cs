@@ -7,7 +7,9 @@ using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Game.Run;
+using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
+using GourmetProject.Gameplay.Model;
 using NUnit.Framework;
 
 namespace GourmetProject.Tests.EditMode
@@ -97,6 +99,46 @@ namespace GourmetProject.Tests.EditMode
             RewardGranter.ApplyFragmentPack(run, choices);
 
             Assert.That(run.PendingFragmentPackRotations, Is.EqualTo(new[] { 0, 3, 2, 1 }));
+        }
+
+        [Test]
+        public void BuildFromExpandedLocalBounds_RebuildsPlacedFragmentWithSavedRotation()
+        {
+            var initial = new TableFragmentDef(
+                "initial",
+                new[] { "X" },
+                0,
+                0,
+                1f,
+                Array.Empty<string>(),
+                Array.Empty<CellMaterial>());
+            var fragment = new TableFragmentDef(
+                "asymmetric_l",
+                new[] { "XX", "X." },
+                0,
+                0,
+                1f,
+                Array.Empty<string>(),
+                new[] { new CellMaterial(new GridPos(1, 0), "material_test") });
+            var placement = new TableFragmentPlacement(
+                fragment.Id,
+                rotation: 1,
+                origin: new GridPos(4, 5));
+
+            DiningTable board = TableFragmentBuilder.BuildFromExpandedLocalBounds(
+                initial,
+                null,
+                new[] { placement },
+                id => id == fragment.Id ? fragment : null,
+                maxWidth: 4,
+                maxHeight: 4,
+                canvasWidth: 12,
+                canvasHeight: 12,
+                initialOrigin: new GridPos(4, 4));
+
+            Assert.That(board.Exists(new GridPos(5, 6)), Is.True, "旋转后的右下格应进入最终餐桌");
+            Assert.That(board.Exists(new GridPos(4, 6)), Is.False, "旋转前才存在的左下格不应进入最终餐桌");
+            Assert.That(board.MaterialsAt(new GridPos(5, 6)), Does.Contain("material_test"));
         }
 
         private static RewardChoice FragmentChoice(string id, int rotation)

@@ -33,7 +33,8 @@ namespace GourmetProject.Gameplay.Scoring
             float before,
             float after,
             string message,
-            SkillExecutionTrace trace = null)
+            SkillExecutionTrace trace = null,
+            int executionGroupId = 0)
         {
             Phase = phase;
             Kind = kind;
@@ -46,6 +47,7 @@ namespace GourmetProject.Gameplay.Scoring
             After = after;
             Message = message ?? string.Empty;
             Trace = trace;
+            ExecutionGroupId = executionGroupId;
         }
 
         public ScorePhase Phase { get; }
@@ -69,5 +71,11 @@ namespace GourmetProject.Gameplay.Scoring
         public string Message { get; }
 
         public SkillExecutionTrace Trace { get; }
+
+        /// <summary>
+        /// 产生该明细的效果执行批次。0 表示基础分或没有效果上下文；
+        /// 仅供解释与演出分组，不参与计分。
+        /// </summary>
+        public int ExecutionGroupId { get; }
     }
 }

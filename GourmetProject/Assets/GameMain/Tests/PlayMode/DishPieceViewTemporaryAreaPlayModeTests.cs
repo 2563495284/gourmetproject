@@ -104,6 +104,46 @@ namespace GourmetProject.Tests.PlayMode
             yield return null;
         }
 
+        [UnityTest]
+        public IEnumerator SweetTransferSourceGlow_IsPinkOutlineOnlyAndClearsPropertyBlock()
+        {
+            DishPieceView piece = BuildPiece(out GameObject root, out Sprite sprite);
+            SpriteRenderer glow = root.transform.Find("VisualPivot/Sprite/PlacementGlow")
+                .GetComponent<SpriteRenderer>();
+
+            piece.BeginSweetTransferSourceFeedback();
+            yield return null;
+
+            Assert.That(glow.gameObject.activeSelf, Is.True);
+            var block = new MaterialPropertyBlock();
+            glow.GetPropertyBlock(block);
+            Color color = block.GetColor(Shader.PropertyToID("_OutlineColor"));
+            Assert.That(color.r, Is.EqualTo(1f).Within(0.001f));
+            Assert.That(color.g, Is.EqualTo(0.30f).Within(0.001f));
+            Assert.That(color.b, Is.EqualTo(0.68f).Within(0.001f));
+            Assert.That(block.GetFloat(Shader.PropertyToID("_FillAlpha")), Is.Zero.Within(0.001f));
+            Assert.That(block.GetFloat(Shader.PropertyToID("_OutlineWidth")), Is.EqualTo(0.065f).Within(0.001f));
+            Assert.That(block.GetFloat(Shader.PropertyToID("_InnerAlpha")), Is.EqualTo(0.10f).Within(0.001f));
+            Assert.That(block.GetFloat(Shader.PropertyToID("_GlowIntensity")), Is.EqualTo(1.35f).Within(0.001f));
+
+            piece.EndSweetTransferSourceFeedback();
+            yield return null;
+
+            Assert.That(glow.gameObject.activeSelf, Is.False);
+            block.Clear();
+            glow.GetPropertyBlock(block);
+            Assert.That(block.GetColor(Shader.PropertyToID("_OutlineColor")), Is.EqualTo(Color.clear));
+            Assert.That(block.GetFloat(Shader.PropertyToID("_OutlineWidth")), Is.Zero.Within(0.001f));
+            Assert.That(block.GetFloat(Shader.PropertyToID("_FillAlpha")), Is.Zero.Within(0.001f));
+            Assert.That(block.GetFloat(Shader.PropertyToID("_GlowIntensity")), Is.Zero.Within(0.001f));
+            Assert.That(block.GetFloat(Shader.PropertyToID("_PulseAmplitude")), Is.Zero.Within(0.001f));
+
+            UnityEngine.Object.Destroy(root);
+            UnityEngine.Object.Destroy(sprite.texture);
+            UnityEngine.Object.Destroy(sprite);
+            yield return null;
+        }
+
         private static DishPieceView BuildPiece(out GameObject root, out Sprite sprite)
         {
             root = new GameObject("DishPiece");

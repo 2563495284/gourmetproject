@@ -242,7 +242,7 @@ namespace GourmetProject.Gameplay.Board
 
         /// <summary>
         /// 运行期局部坐标造盘：最大胃尺寸只约束当前胃形的局部包围框，DiningTable 画布可更大以容纳负向扩展。
-        /// 玩家拼贴碎片固定不旋转；旧存档里的 rotation 字段会被忽略。
+        /// 玩家拼贴碎片使用存档中的 rotation 重建，保证最终餐桌与编辑期预览方向一致。
         /// </summary>
         public static DiningTable BuildFromExpandedLocalBounds(
             TableFragmentDef initial,
@@ -291,12 +291,13 @@ namespace GourmetProject.Gameplay.Board
                         continue;
                     }
 
-                    if (GetFragmentPlacementStatusWithinMaxBounds(existing, def, placement.Origin, maxWidth, maxHeight) != FragmentPlacementStatus.Valid)
+                    TableFragmentDef rotated = def.Rotated(placement.Rotation);
+                    if (GetFragmentPlacementStatusWithinMaxBounds(existing, rotated, placement.Origin, maxWidth, maxHeight) != FragmentPlacementStatus.Valid)
                     {
                         continue;
                     }
 
-                    AddFragmentCells(def, placement.Origin, canvasWidth, canvasHeight, existing, materials, clipToBounds: false);
+                    AddFragmentCells(rotated, placement.Origin, canvasWidth, canvasHeight, existing, materials, clipToBounds: false);
                 }
             }
 

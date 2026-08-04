@@ -44,6 +44,8 @@ namespace GourmetProject.Gameplay.Scoring
         private bool _finalized;
         private bool _isResolvingCommands;
         private int _commandsExecuted;
+        private int _nextExecutionGroupId;
+        private int _currentExecutionGroupId;
 
         public ScoreContext(ScoreSnapshot snapshot)
         {
@@ -233,7 +235,16 @@ namespace GourmetProject.Gameplay.Scoring
         {
             int dishInstanceId = Dish != null ? Dish.Id : 0;
             string dishId = Dish != null ? Dish.Def.Id : string.Empty;
-            _events.Add(new ScoreEvent(type, Phase, Source, dishInstanceId, dishId, CurrentCell, message, Trace));
+            _events.Add(new ScoreEvent(
+                type,
+                Phase,
+                Source,
+                dishInstanceId,
+                dishId,
+                CurrentCell,
+                message,
+                Trace,
+                _currentExecutionGroupId));
         }
 
         public void BeginDish(DishInstance dish)
@@ -284,6 +295,7 @@ namespace GourmetProject.Gameplay.Scoring
             GridPos? previousCell = CurrentCell;
             IEffectDef previousEffectDef = EffectDef;
             SkillExecutionTrace previousTrace = Trace;
+            int previousExecutionGroupId = _currentExecutionGroupId;
             if (entry.Dish != null)
             {
                 Dish = entry.Dish;
@@ -295,6 +307,7 @@ namespace GourmetProject.Gameplay.Scoring
             CurrentCell = entry.Cell;
             EffectDef = entry.EffectDef;
             Trace = entry.Trace;
+            _currentExecutionGroupId = ++_nextExecutionGroupId;
             string effectName = Source.Name;
             EmitEvent(ScoreEventType.EffectStarted, $"开始效果 {effectName}");
             try
@@ -312,6 +325,7 @@ namespace GourmetProject.Gameplay.Scoring
                 CurrentCell = previousCell;
                 EffectDef = previousEffectDef;
                 Trace = previousTrace;
+                _currentExecutionGroupId = previousExecutionGroupId;
             }
         }
 
@@ -604,7 +618,14 @@ namespace GourmetProject.Gameplay.Scoring
                 return;
             }
 
-            _commands.Enqueue(new PendingScoreCommand(command, Phase, Source, CurrentCell, EffectDef, Trace));
+            _commands.Enqueue(new PendingScoreCommand(
+                command,
+                Phase,
+                Source,
+                CurrentCell,
+                EffectDef,
+                Trace,
+                _currentExecutionGroupId));
             ResolveCommandQueue();
         }
 
@@ -665,7 +686,8 @@ namespace GourmetProject.Gameplay.Scoring
                     Snapshot.InitialFinalFlat,
                     0f,
                     FinalFlat,
-                    $"局级加法 +{Snapshot.InitialFinalFlat}"));
+                    $"局级加法 +{Snapshot.InitialFinalFlat}",
+                    executionGroupId: ++_nextExecutionGroupId));
             }
 
             if (Math.Abs(Snapshot.InitialFinalMultiplier - 1f) > 0.0001f)
@@ -680,7 +702,8 @@ namespace GourmetProject.Gameplay.Scoring
                     Snapshot.InitialFinalMultiplier,
                     1f,
                     FinalMultiplier,
-                    $"局级乘区 x{Snapshot.InitialFinalMultiplier}"));
+                    $"局级乘区 x{Snapshot.InitialFinalMultiplier}",
+                    executionGroupId: ++_nextExecutionGroupId));
             }
         }
 
@@ -822,11 +845,13 @@ namespace GourmetProject.Gameplay.Scoring
                     GridPos? previousCell = CurrentCell;
                     IEffectDef previousEffectDef = EffectDef;
                     SkillExecutionTrace previousTrace = Trace;
+                    int previousExecutionGroupId = _currentExecutionGroupId;
                     Phase = pending.Phase;
                     Source = pending.Source;
                     CurrentCell = pending.Cell;
                     EffectDef = pending.EffectDef;
                     Trace = pending.Trace;
+                    _currentExecutionGroupId = pending.ExecutionGroupId;
                     try
                     {
                         EmitEvent(ScoreEventType.CommandExecuted, $"执行命令 {pending.Command.Name}");
@@ -839,6 +864,7 @@ namespace GourmetProject.Gameplay.Scoring
                         CurrentCell = previousCell;
                         EffectDef = previousEffectDef;
                         Trace = previousTrace;
+                        _currentExecutionGroupId = previousExecutionGroupId;
                     }
                 }
             }
@@ -854,7 +880,19 @@ namespace GourmetProject.Gameplay.Scoring
             string dishId = accum != null ? accum.Dish.Def.Id : (Dish != null ? Dish.Def.Id : string.Empty);
             string sourceName = Source != null ? Source.Name : string.Empty;
             string message = string.IsNullOrEmpty(sourceName) ? fallbackMessage : $"{sourceName}: {fallbackMessage}";
-            _lines.Add(new ScoreLine(Phase, kind, Source, dishInstanceId, dishId, CurrentCell, value, before, after, message, Trace));
+            _lines.Add(new ScoreLine(
+                Phase,
+                kind,
+                Source,
+                dishInstanceId,
+                dishId,
+                CurrentCell,
+                value,
+                before,
+                after,
+                message,
+                Trace,
+                _currentExecutionGroupId));
         }
 
         private sealed class PendingScoreCommand
@@ -865,7 +903,8 @@ namespace GourmetProject.Gameplay.Scoring
                 ScoreSource source,
                 GridPos? cell,
                 IEffectDef effectDef,
-                SkillExecutionTrace trace)
+                SkillExecutionTrace trace,
+                int executionGroupId)
             {
                 Command = command;
                 Phase = phase;
@@ -873,6 +912,7 @@ namespace GourmetProject.Gameplay.Scoring
                 Cell = cell;
                 EffectDef = effectDef;
                 Trace = trace;
+                ExecutionGroupId = executionGroupId;
             }
 
             public IScoreCommand Command { get; }
@@ -886,6 +926,8 @@ namespace GourmetProject.Gameplay.Scoring
             public IEffectDef EffectDef { get; }
 
             public SkillExecutionTrace Trace { get; }
+
+            public int ExecutionGroupId { get; }
         }
     }
 

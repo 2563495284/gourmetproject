@@ -2990,6 +2990,7 @@ namespace GourmetProject.Game.UI.Battle
                     _infoColumn != null ? _infoColumn.ScoreFire : null,
                     OnSettlementReveal,
                     OnSettlementPassiveTriggered,
+                    null,
                     () => OnSettlementComplete(result));
             }
             else

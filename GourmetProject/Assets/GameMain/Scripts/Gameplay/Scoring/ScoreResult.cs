@@ -154,7 +154,8 @@ namespace GourmetProject.Gameplay.Scoring
             string dishId,
             GridPos? cell,
             string message,
-            SkillExecutionTrace trace = null)
+            SkillExecutionTrace trace = null,
+            int executionGroupId = 0)
         {
             Type = type;
             Phase = phase;
@@ -164,6 +165,7 @@ namespace GourmetProject.Gameplay.Scoring
             Cell = cell;
             Message = message ?? string.Empty;
             Trace = trace;
+            ExecutionGroupId = executionGroupId;
         }
 
         public ScoreEventType Type { get; }
@@ -181,5 +183,8 @@ namespace GourmetProject.Gameplay.Scoring
         public string Message { get; }
 
         public SkillExecutionTrace Trace { get; }
+
+        /// <summary>与同次效果产生的 <see cref="ScoreLine"/> 对齐，仅供解释与演出分组。</summary>
+        public int ExecutionGroupId { get; }
     }
 }

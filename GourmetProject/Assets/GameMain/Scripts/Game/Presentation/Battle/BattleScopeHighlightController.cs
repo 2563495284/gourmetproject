@@ -21,6 +21,7 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private Color[] _subSkillPalette;
         [SerializeField] private float _persistentCellWidth = 0.048f;
         [SerializeField] private float _flashCellWidth = 0.085f;
+        [SerializeField] private float _settlementCellWidth = 0.072f;
         [SerializeField] private float _flashDuration = 0.32f;
         [SerializeField] private Material _sweetTransferMaterial;
         [SerializeField] private Material _copySkillMaterial;
@@ -75,6 +76,23 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             ClearChannel(BattleScopeHighlightChannel.Persistent);
             ClearChannel(BattleScopeHighlightChannel.Flash);
+            ClearChannel(BattleScopeHighlightChannel.Settlement);
+        }
+
+        /// <summary>结算舞台专用的持续范围，直到当前效果组收束时显式清除。</summary>
+        public void ShowSettlement(DiningTableView tableView, SkillExecutionTrace trace)
+        {
+            _activeTableView = tableView;
+            ClearChannel(BattleScopeHighlightChannel.Settlement);
+            if (trace != null)
+            {
+                RenderTrace(BattleScopeHighlightChannel.Settlement, trace, 0, persistent: false);
+            }
+        }
+
+        public void ClearSettlement()
+        {
+            ClearChannel(BattleScopeHighlightChannel.Settlement);
         }
 
         private async Awaitable ClearFlashAfterAsync(int version, CancellationToken cancellationToken)
@@ -101,11 +119,18 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            float cellWidth = persistent ? _persistentCellWidth : _flashCellWidth;
+            float cellWidth = channel == BattleScopeHighlightChannel.Settlement
+                ? _settlementCellWidth
+                : persistent ? _persistentCellWidth : _flashCellWidth;
             int baseLayer = Mathf.Max(0, index);
             int visualIndex = trace.VisualIndex >= 0 ? trace.VisualIndex : baseLayer;
             Color targetColor = PaletteColor(visualIndex * 2);
             Color conditionColor = PaletteColor(visualIndex * 2 + 1);
+            if (channel == BattleScopeHighlightChannel.Settlement)
+            {
+                targetColor = SettlementThemeColor(trace);
+                conditionColor = Color.Lerp(targetColor, new Color(1f, 0.88f, 0.46f, 0.88f), 0.42f);
+            }
             Material material = MaterialFor(trace);
 
             int conditionLayer = 2 + baseLayer * 2;
@@ -201,6 +226,16 @@ namespace GourmetProject.Game.Presentation.Battle
                 SkillExecutionKind.SweetTransfer => _sweetTransferMaterial,
                 SkillExecutionKind.CopiedSkill => _copySkillMaterial,
                 _ => null,
+            };
+        }
+
+        private static Color SettlementThemeColor(SkillExecutionTrace trace)
+        {
+            return trace.Kind switch
+            {
+                SkillExecutionKind.SweetTransfer => new Color(1f, 0.30f, 0.68f, 0.96f),
+                SkillExecutionKind.CopiedSkill => new Color(0.24f, 0.88f, 1f, 0.96f),
+                _ => new Color(1f, 0.72f, 0.18f, 0.96f),
             };
         }
     }
