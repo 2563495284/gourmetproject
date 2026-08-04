@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading;
 using DG.Tweening;
 using UnityEngine;
@@ -12,6 +13,10 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private float _minimumArcHeight = 0.22f;
         [SerializeField] private float _arcHeightPerUnit = 0.14f;
         [SerializeField] private Color _color = new(1f, 0.24f, 0.68f, 1f);
+        [SerializeField] private int _trailPointCount = 6;
+        [SerializeField] private int _arrivalDotCount = 10;
+        [SerializeField] private float _trailSpacing = 0.075f;
+        [SerializeField] private float _arrivalRadius = 0.36f;
 
         private Tween _tween;
 
@@ -59,6 +64,20 @@ namespace GourmetProject.Game.Presentation.Battle
             SpriteRenderStyle.ApplyUnlitMaterial(_renderer);
             BattleSorting.Apply(_renderer, BattleSorting.Fx, BattleSorting.OrderFloatingText - 1);
 
+            var trailPoints = new List<SpriteRenderer>();
+            for (int i = 0; i < Mathf.Max(0, _trailPointCount); i++)
+            {
+                trailPoints.Add(CreatePoint($"Trail_{i}", BattleSorting.OrderFloatingText - 2, 0.72f));
+            }
+
+            var arrivalDots = new List<SpriteRenderer>();
+            for (int i = 0; i < Mathf.Max(0, _arrivalDotCount); i++)
+            {
+                SpriteRenderer dot = CreatePoint($"Arrival_{i}", BattleSorting.OrderFloatingText - 1, 0.46f);
+                dot.color = Color.clear;
+                arrivalDots.Add(dot);
+            }
+
             transform.position = start;
             transform.localScale = Vector3.one * (_size * 0.55f);
             float distance = Vector2.Distance(start, end);
@@ -73,24 +92,84 @@ namespace GourmetProject.Game.Presentation.Battle
                     }
 
                     float t = Mathf.Clamp01(progress);
-                    float inverse = 1f - t;
-                    transform.position = inverse * inverse * start
-                        + 2f * inverse * t * control
-                        + t * t * end;
+                    float travel = Mathf.Clamp01(t / 0.80f);
+                    transform.position = Bezier(start, control, end, travel);
 
-                    float pulse = Mathf.Sin(t * Mathf.PI);
+                    float pulse = Mathf.Sin(travel * Mathf.PI);
                     transform.localScale = Vector3.one * (_size * Mathf.Lerp(0.55f, 1.22f, pulse));
 
-                    float fadeIn = Mathf.Clamp01(t / 0.12f);
-                    float fadeOut = Mathf.Clamp01((1f - t) / 0.18f);
+                    float fadeIn = Mathf.Clamp01(travel / 0.12f);
+                    float fadeOut = Mathf.Clamp01((0.88f - t) / 0.10f);
                     Color color = _color;
                     color.a *= Mathf.Min(fadeIn, fadeOut);
                     _renderer.color = color;
+
+                    for (int i = 0; i < trailPoints.Count; i++)
+                    {
+                        SpriteRenderer trail = trailPoints[i];
+                        if (trail == null)
+                        {
+                            continue;
+                        }
+
+                        float delay = (i + 1) * Mathf.Max(0.01f, _trailSpacing);
+                        float pointT = travel - delay;
+                        if (pointT <= 0f || t >= 0.90f)
+                        {
+                            trail.color = Color.clear;
+                            continue;
+                        }
+
+                        trail.transform.position = Bezier(start, control, end, Mathf.Clamp01(pointT));
+                        float trailFade = 1f - (i + 1f) / (trailPoints.Count + 1f);
+                        Color trailColor = _color;
+                        trailColor.a *= 0.68f * trailFade * Mathf.Clamp01((0.90f - t) / 0.10f);
+                        trail.color = trailColor;
+                    }
+
+                    float arrival = Mathf.Clamp01((t - 0.70f) / 0.30f);
+                    float radius = Mathf.Lerp(_size * 0.18f, Mathf.Max(_size, _arrivalRadius), arrival);
+                    float ringAlpha = Mathf.Sin(arrival * Mathf.PI) * 0.82f;
+                    for (int i = 0; i < arrivalDots.Count; i++)
+                    {
+                        SpriteRenderer dot = arrivalDots[i];
+                        if (dot == null)
+                        {
+                            continue;
+                        }
+
+                        float angle = Mathf.PI * 2f * i / Mathf.Max(1, arrivalDots.Count);
+                        dot.transform.position = end + new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * radius;
+                        Color dotColor = new Color(1f, 0.78f, 0.94f, ringAlpha);
+                        dot.color = dotColor;
+                    }
                 })
                 .SetEase(Ease.InOutSine)
                 .SetLink(gameObject);
 
             await PresentationTween.AwaitCompletionAsync(_tween, cancellationToken);
+        }
+
+        private SpriteRenderer CreatePoint(string name, int sortingOrder, float relativeScale)
+        {
+            GameObject point = new(name);
+            point.transform.SetParent(transform, false);
+            point.transform.localScale = Vector3.one * Mathf.Max(0.01f, relativeScale);
+            SpriteRenderer renderer = point.AddComponent<SpriteRenderer>();
+            renderer.sprite = BattleShadow.SoftShadowSprite;
+            renderer.color = _color;
+            SpriteRenderStyle.ApplyUnlitMaterial(renderer);
+            BattleSorting.Apply(renderer, BattleSorting.Fx, sortingOrder);
+            return renderer;
+        }
+
+        private static Vector3 Bezier(Vector3 start, Vector3 control, Vector3 end, float t)
+        {
+            float clamped = Mathf.Clamp01(t);
+            float inverse = 1f - clamped;
+            return inverse * inverse * start
+                + 2f * inverse * clamped * control
+                + clamped * clamped * end;
         }
 
         private void EnsureRenderer()

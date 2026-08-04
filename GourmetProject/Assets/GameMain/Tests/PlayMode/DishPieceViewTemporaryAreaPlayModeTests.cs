@@ -105,7 +105,7 @@ namespace GourmetProject.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator SweetTransferSourceGlow_IsPinkOutlineOnlyAndClearsPropertyBlock()
+        public IEnumerator SweetTransferSourceIdentity_DoesNotTintDishSprite()
         {
             DishPieceView piece = BuildPiece(out GameObject root, out Sprite sprite);
             SpriteRenderer glow = root.transform.Find("VisualPivot/Sprite/PlacementGlow")
@@ -114,17 +114,14 @@ namespace GourmetProject.Tests.PlayMode
             piece.BeginSweetTransferSourceFeedback();
             yield return null;
 
-            Assert.That(glow.gameObject.activeSelf, Is.True);
+            Assert.That(glow.gameObject.activeSelf, Is.False);
             var block = new MaterialPropertyBlock();
             glow.GetPropertyBlock(block);
-            Color color = block.GetColor(Shader.PropertyToID("_OutlineColor"));
-            Assert.That(color.r, Is.EqualTo(1f).Within(0.001f));
-            Assert.That(color.g, Is.EqualTo(0.30f).Within(0.001f));
-            Assert.That(color.b, Is.EqualTo(0.68f).Within(0.001f));
+            Assert.That(block.GetColor(Shader.PropertyToID("_OutlineColor")), Is.EqualTo(Color.clear));
             Assert.That(block.GetFloat(Shader.PropertyToID("_FillAlpha")), Is.Zero.Within(0.001f));
-            Assert.That(block.GetFloat(Shader.PropertyToID("_OutlineWidth")), Is.EqualTo(0.065f).Within(0.001f));
-            Assert.That(block.GetFloat(Shader.PropertyToID("_InnerAlpha")), Is.EqualTo(0.10f).Within(0.001f));
-            Assert.That(block.GetFloat(Shader.PropertyToID("_GlowIntensity")), Is.EqualTo(1.35f).Within(0.001f));
+            Assert.That(block.GetFloat(Shader.PropertyToID("_OutlineWidth")), Is.Zero.Within(0.001f));
+            Assert.That(block.GetFloat(Shader.PropertyToID("_InnerAlpha")), Is.Zero.Within(0.001f));
+            Assert.That(block.GetFloat(Shader.PropertyToID("_GlowIntensity")), Is.Zero.Within(0.001f));
 
             piece.EndSweetTransferSourceFeedback();
             yield return null;
@@ -137,6 +134,61 @@ namespace GourmetProject.Tests.PlayMode
             Assert.That(block.GetFloat(Shader.PropertyToID("_FillAlpha")), Is.Zero.Within(0.001f));
             Assert.That(block.GetFloat(Shader.PropertyToID("_GlowIntensity")), Is.Zero.Within(0.001f));
             Assert.That(block.GetFloat(Shader.PropertyToID("_PulseAmplitude")), Is.Zero.Within(0.001f));
+
+            UnityEngine.Object.Destroy(root);
+            UnityEngine.Object.Destroy(sprite.texture);
+            UnityEngine.Object.Destroy(sprite);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator SweetTransferExecutorIdentity_DoesNotTintDishSprite()
+        {
+            DishPieceView piece = BuildPiece(out GameObject root, out Sprite sprite);
+            SpriteRenderer glow = root.transform.Find("VisualPivot/Sprite/PlacementGlow")
+                .GetComponent<SpriteRenderer>();
+
+            piece.BeginSweetTransferExecutorFeedback();
+            yield return null;
+
+            var block = new MaterialPropertyBlock();
+            glow.GetPropertyBlock(block);
+            Assert.That(glow.gameObject.activeSelf, Is.False);
+            Assert.That(block.GetColor(Shader.PropertyToID("_OutlineColor")), Is.EqualTo(Color.clear));
+            Assert.That(block.GetFloat(Shader.PropertyToID("_OutlineWidth")), Is.Zero.Within(0.001f));
+
+            piece.EndSweetTransferExecutorFeedback();
+            yield return null;
+
+            Assert.That(glow.gameObject.activeSelf, Is.False);
+
+            UnityEngine.Object.Destroy(root);
+            UnityEngine.Object.Destroy(sprite.texture);
+            UnityEngine.Object.Destroy(sprite);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator SettlementFocus_DimsRgbWithoutMakingDishTransparentOrChangingShadow()
+        {
+            DishPieceView piece = BuildPiece(out GameObject root, out Sprite sprite);
+            SpriteRenderer body = root.transform.Find("VisualPivot/Sprite").GetComponent<SpriteRenderer>();
+            SpriteRenderer shadow = root.transform.Find("Shadow").GetComponent<SpriteRenderer>();
+            Color originalBody = new Color(0.80f, 0.60f, 0.40f, 0.73f);
+            body.color = originalBody;
+            Color originalShadow = shadow.color;
+
+            piece.SetSettlementFocus(0.40f);
+            yield return null;
+
+            Assert.That(body.color.r, Is.EqualTo(originalBody.r * 0.40f).Within(0.001f));
+            Assert.That(body.color.g, Is.EqualTo(originalBody.g * 0.40f).Within(0.001f));
+            Assert.That(body.color.b, Is.EqualTo(originalBody.b * 0.40f).Within(0.001f));
+            Assert.That(body.color.a, Is.EqualTo(originalBody.a).Within(0.001f));
+            Assert.That(shadow.color, Is.EqualTo(originalShadow));
+
+            piece.ClearSettlementFocus();
+            Assert.That(body.color, Is.EqualTo(originalBody));
 
             UnityEngine.Object.Destroy(root);
             UnityEngine.Object.Destroy(sprite.texture);

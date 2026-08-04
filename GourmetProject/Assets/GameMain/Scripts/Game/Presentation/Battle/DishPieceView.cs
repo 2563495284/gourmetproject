@@ -29,6 +29,7 @@ namespace GourmetProject.Game.Presentation.Battle
         GenericValueChanged = 12,
         TriggerSweetTransferActivatorPulse = 13,
         SweetTransferResult = 14,
+        SweetTransferExecutor = 15,
     }
 
     /// <summary>
@@ -184,6 +185,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private int _settlementFeedbackVersion;
         private SettlementDishFeedbackKind _settlementFeedbackKind;
         private bool _sweetTransferSourceActive;
+        private bool _sweetTransferExecutorActive;
         private bool _triggerSweetTransferActivatorActive;
         private readonly Dictionary<SpriteRenderer, Color> _activeItemDimColors = new Dictionary<SpriteRenderer, Color>();
         private readonly Dictionary<SpriteRenderer, Color> _settlementFocusColors = new Dictionary<SpriteRenderer, Color>();
@@ -468,7 +470,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 color.r *= factor;
                 color.g *= factor;
                 color.b *= factor;
-                color.a *= Mathf.Lerp(0.72f, 1f, factor);
                 entry.Key.color = color;
             }
         }
@@ -1012,7 +1013,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _sweetTransferSourceActive = true;
             if (_settlementFeedbackTween == null || !_settlementFeedbackTween.active)
             {
-                ShowSweetTransferSourceGlow();
+                HidePlacementGlow();
             }
         }
 
@@ -1029,7 +1030,26 @@ namespace GourmetProject.Game.Presentation.Battle
 
             if (_settlementFeedbackTween == null || !_settlementFeedbackTween.active)
             {
+                RestorePersistentSweetTransferGlow();
+            }
+        }
+
+        public void BeginSweetTransferExecutorFeedback()
+        {
+            EnsureRefs();
+            _sweetTransferExecutorActive = true;
+            if (_settlementFeedbackTween == null || !_settlementFeedbackTween.active)
+            {
                 HidePlacementGlow();
+            }
+        }
+
+        public void EndSweetTransferExecutorFeedback()
+        {
+            _sweetTransferExecutorActive = false;
+            if (_settlementFeedbackTween == null || !_settlementFeedbackTween.active)
+            {
+                RestorePersistentSweetTransferGlow();
             }
         }
 
@@ -1049,14 +1069,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _triggerSweetTransferActivatorActive = false;
             if ((_settlementFeedbackTween == null || !_settlementFeedbackTween.active) && _placementGlow != null)
             {
-                if (_sweetTransferSourceActive && isActiveAndEnabled)
-                {
-                    ShowSweetTransferSourceGlow();
-                }
-                else
-                {
-                    HidePlacementGlow();
-                }
+                RestorePersistentSweetTransferGlow();
             }
         }
 
@@ -1184,13 +1197,16 @@ namespace GourmetProject.Game.Presentation.Battle
                         rotationDegrees: 7f,
                         rotationCycles: 2f,
                         pulseCount: 2f,
-                        glowColor: new Color(1f, 0.35f, 0.72f, 0.95f),
-                        glowWidth: 0.11f,
+                        glowColor: Color.clear,
+                        glowWidth: 0f,
                         glowInflate: 1.09f,
-                        glowFillAlpha: 0.09f,
-                        glowPulseSpeed: 12f,
-                        glowPulseAmplitude: 0.22f,
-                        anticipationFraction: 0.12f);
+                        glowFillAlpha: 0f,
+                        glowPulseSpeed: 0f,
+                        glowPulseAmplitude: 0f,
+                        anticipationFraction: 0.12f,
+                        glowInnerAlpha: 0f,
+                        glowOuterAlpha: 0f,
+                        glowIntensity: 0f);
 
                 case SettlementDishFeedbackKind.SweetTransferResult:
                     return new SettlementFeedbackProfile(
@@ -1202,16 +1218,37 @@ namespace GourmetProject.Game.Presentation.Battle
                         rotationDegrees: 4f,
                         rotationCycles: 1.5f,
                         pulseCount: 1f,
-                        glowColor: new Color(1f, 0.30f, 0.68f, 0.92f),
-                        glowWidth: 0.065f,
+                        glowColor: Color.clear,
+                        glowWidth: 0f,
                         glowInflate: 1.06f,
                         glowFillAlpha: 0f,
-                        glowPulseSpeed: 5f,
-                        glowPulseAmplitude: 0.12f,
+                        glowPulseSpeed: 0f,
+                        glowPulseAmplitude: 0f,
                         anticipationFraction: 0.08f,
-                        glowInnerAlpha: 0.10f,
-                        glowOuterAlpha: 0.90f,
-                        glowIntensity: 1.35f);
+                        glowInnerAlpha: 0f,
+                        glowOuterAlpha: 0f,
+                        glowIntensity: 0f);
+
+                case SettlementDishFeedbackKind.SweetTransferExecutor:
+                    return new SettlementFeedbackProfile(
+                        duration: 0.34f,
+                        anticipationScale: 0.92f,
+                        peakScale: new Vector2(1.18f, 1.14f),
+                        liftInCells: 0.055f,
+                        sideInCells: 0f,
+                        rotationDegrees: 3.5f,
+                        rotationCycles: 1.5f,
+                        pulseCount: 1.5f,
+                        glowColor: Color.clear,
+                        glowWidth: 0f,
+                        glowInflate: 1.075f,
+                        glowFillAlpha: 0f,
+                        glowPulseSpeed: 0f,
+                        glowPulseAmplitude: 0f,
+                        anticipationFraction: 0.12f,
+                        glowInnerAlpha: 0f,
+                        glowOuterAlpha: 0f,
+                        glowIntensity: 0f);
 
                 case SettlementDishFeedbackKind.CopiedSkillTriggered:
                     return new SettlementFeedbackProfile(
@@ -1413,26 +1450,9 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void ShowSweetTransferSourceGlow()
         {
-            if (_placementGlow == null)
-            {
-                return;
-            }
-
-            _placementGlow.gameObject.SetActive(true);
-            ConfigureOutlineGlowRenderer(
-                _placementGlow,
-                ref _placementGlowBlock,
-                new Color(1f, 0.30f, 0.68f, 0.98f),
-                outlineWidth: 0.065f,
-                fillAlpha: 0f,
-                inflate: 1.06f,
-                sortingOrderOffset: 3,
-                materialOverride: null,
-                pulseSpeed: 4f,
-                pulseAmplitude: 0.12f,
-                innerAlpha: 0.10f,
-                outerAlpha: 0.90f,
-                glowIntensity: 1.35f);
+            // 角色身份由舞台聚光、方向轨迹和文案表达。轮廓 Shader 在细长菜品上
+            // 会把内部像素染成整块荧光色，因此持续状态不再覆盖菜品本体。
+            HidePlacementGlow();
         }
 
         private void ShowTriggerSweetTransferActivatorGlow()
@@ -1456,6 +1476,11 @@ namespace GourmetProject.Game.Presentation.Battle
                 pulseAmplitude: 0.24f);
         }
 
+        private void ShowSweetTransferExecutorGlow()
+        {
+            HidePlacementGlow();
+        }
+
         private void StopSettlementFeedback(bool restoreTransform)
         {
             _settlementFeedbackTween?.Kill();
@@ -1476,6 +1501,10 @@ namespace GourmetProject.Game.Presentation.Battle
                 {
                     ShowTriggerSweetTransferActivatorGlow();
                 }
+                else if (_sweetTransferExecutorActive && isActiveAndEnabled)
+                {
+                    ShowSweetTransferExecutorGlow();
+                }
                 else if (_sweetTransferSourceActive && isActiveAndEnabled)
                 {
                     ShowSweetTransferSourceGlow();
@@ -1484,6 +1513,31 @@ namespace GourmetProject.Game.Presentation.Battle
                 {
                     HidePlacementGlow();
                 }
+            }
+        }
+
+        private void RestorePersistentSweetTransferGlow()
+        {
+            if (_placementGlow == null)
+            {
+                return;
+            }
+
+            if (_triggerSweetTransferActivatorActive && isActiveAndEnabled)
+            {
+                ShowTriggerSweetTransferActivatorGlow();
+            }
+            else if (_sweetTransferExecutorActive && isActiveAndEnabled)
+            {
+                ShowSweetTransferExecutorGlow();
+            }
+            else if (_sweetTransferSourceActive && isActiveAndEnabled)
+            {
+                ShowSweetTransferSourceGlow();
+            }
+            else
+            {
+                HidePlacementGlow();
             }
         }
 
@@ -2206,6 +2260,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _sweetTransferSourceActive = false;
+            _sweetTransferExecutorActive = false;
             _triggerSweetTransferActivatorActive = false;
             _scopeAffectedVersion++;
             StopScopeAffectedShake(restoreTransform: true);

@@ -14,6 +14,10 @@ namespace GourmetProject.Game.Presentation.Battle
     /// </summary>
     public sealed class SettlementStageView : MonoBehaviour
     {
+        private const float DimmedDishBrightness = 0.72f;
+        private const float ScopeDishBrightness = 0.86f;
+        private const float SweetTransferSourceBrightness = 0.82f;
+
         private readonly List<GameObject> _transients = new();
         private IReadOnlyDictionary<int, DishPieceView> _dishViews;
         private DiningTableCoordinateMapper _mapper;
@@ -65,7 +69,8 @@ namespace GourmetProject.Game.Presentation.Battle
         internal async Awaitable FocusSourceAsync(
             SettlementEffectGroup group,
             float duration,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            bool actorAlreadyIntroduced = false)
         {
             EndGroupImmediate();
             if (group == null)
@@ -74,6 +79,13 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             ApplyFocus(group.ActorDishInstanceId, group.TargetDishIds);
+            if (group.Trace?.Kind == SkillExecutionKind.SweetTransfer
+                && group.Trace.OwnerDishInstanceId > 0
+                && group.Trace.OwnerDishInstanceId != group.ActorDishInstanceId)
+            {
+                TryGetDish(group.Trace.OwnerDishInstanceId)?.SetSettlementFocus(SweetTransferSourceBrightness);
+            }
+
             Color theme = ThemeFor(group.Trace, group.Source);
             DishPieceView actor = TryGetDish(group.ActorDishInstanceId);
             Vector3 anchor = actor != null
@@ -81,7 +93,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 : _mapper.Center + Vector3.up * 0.72f;
             SpawnSpotlight(actor != null ? actor.WorldBounds : default, anchor, theme);
 
-            if (actor != null)
+            if (actor != null && !actorAlreadyIntroduced)
             {
                 _ = PlayFeedbackSafelyAsync(
                     actor,
@@ -92,12 +104,96 @@ namespace GourmetProject.Game.Presentation.Battle
 
             await SpawnLabelAsync(
                 anchor,
-                "效果触发",
-                group.SourceName,
+                group.Trace?.Kind == SkillExecutionKind.SweetTransfer ? "执行技能" : "效果触发",
+                group.Trace?.Kind == SkillExecutionKind.SweetTransfer
+                    ? ReadableName(group.Trace.SkillName, group.SourceName)
+                    : group.SourceName,
                 theme,
                 duration,
                 cancellationToken,
                 holdUntilCleared: true);
+        }
+
+        internal async Awaitable PlaySweetTransferHandoffAsync(
+            SettlementSweetTransferPresentationContext context,
+            DishPieceView source,
+            DishPieceView executor,
+            SweetTransferParticleView particlePrefab,
+            float sourceDuration,
+            float travelDuration,
+            float executorDuration,
+            CancellationToken cancellationToken)
+        {
+            EndGroupImmediate();
+            DimAllDishes();
+            Color theme = new Color(1f, 0.30f, 0.68f, 1f);
+            string sourceName = ReadableName(context.SourceName, "技能来源");
+            string executorName = ReadableName(context.ExecutorName, "接收者");
+            string skillName = ReadableName(context.SkillName, "甜蜜传递技能");
+
+            source?.SetSettlementFocus(1f);
+            if (source == null || executor == null)
+            {
+                executor?.SetSettlementFocus(1f);
+                if (executor != null)
+                {
+                    executor.BeginSweetTransferExecutorFeedback();
+                    _ = PlayFeedbackSafelyAsync(
+                        executor,
+                        SettlementDishFeedbackKind.SweetTransferExecutor,
+                        cancellationToken,
+                        durationScale: Mathf.Max(0.05f, executorDuration / 0.34f));
+                }
+
+                await SpawnLabelAsync(
+                    _mapper.Center + Vector3.up * 0.45f,
+                    "甜蜜传递",
+                    $"{sourceName} 的技能由 {executorName} 执行",
+                    theme,
+                    Mathf.Max(0.0001f, sourceDuration + travelDuration + executorDuration),
+                    cancellationToken);
+                return;
+            }
+
+            Vector3 sourceAnchor = source.WorldBounds.center
+                + Vector3.up * (source.WorldBounds.extents.y + 0.42f);
+            await SpawnLabelAsync(
+                sourceAnchor,
+                "技能来源",
+                sourceName,
+                theme,
+                sourceDuration,
+                cancellationToken);
+
+            if (!context.IsSelfTransfer)
+            {
+                await SweetTransferParticleView.PlayAsync(
+                    particlePrefab,
+                    _fxRoot,
+                    source.WorldBounds.center,
+                    executor.WorldBounds.center,
+                    travelDuration,
+                    cancellationToken);
+                source.SetSettlementFocus(SweetTransferSourceBrightness);
+            }
+
+            executor.SetSettlementFocus(1f);
+            executor.BeginSweetTransferExecutorFeedback();
+            _ = PlayFeedbackSafelyAsync(
+                executor,
+                SettlementDishFeedbackKind.SweetTransferExecutor,
+                cancellationToken,
+                durationScale: Mathf.Max(0.05f, executorDuration / 0.34f));
+
+            Vector3 executorAnchor = executor.WorldBounds.center
+                + Vector3.up * (executor.WorldBounds.extents.y + 0.42f);
+            await SpawnLabelAsync(
+                executorAnchor,
+                context.IsSelfTransfer ? "自身执行" : "接收并执行",
+                $"{executorName} · {skillName}",
+                theme,
+                executorDuration,
+                cancellationToken);
         }
 
         internal async Awaitable ShowScopeAsync(
@@ -115,7 +211,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         continue;
                     }
 
-                    target.SetSettlementFocus(0.72f);
+                    target.SetSettlementFocus(ScopeDishBrightness);
                     target.PlayScopeAffectedShake(Mathf.Max(0.05f, duration / 0.40f));
                 }
             }
@@ -130,6 +226,8 @@ namespace GourmetProject.Game.Presentation.Battle
             float dishContribution,
             int runningTotal,
             float duration,
+            int stackIndex,
+            int stackCount,
             CancellationToken cancellationToken)
         {
             Color theme = ResultThemeFor(line);
@@ -146,6 +244,11 @@ namespace GourmetProject.Game.Presentation.Battle
             Vector3 anchor = target != null
                 ? target.DishValueBadgeWorldPosition + Vector3.down * 0.42f
                 : _mapper.Center + Vector3.up * 0.20f;
+            if (stackCount > 1)
+            {
+                float centeredIndex = stackIndex - (stackCount - 1) * 0.5f;
+                anchor += Vector3.up * (centeredIndex * 0.54f);
+            }
             await SpawnLabelAsync(
                 anchor,
                 ResultHeader(line),
@@ -257,8 +360,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 float brightness = entry.Key == actorDishInstanceId
                     ? 1f
                     : targetDishIds != null && targetDishIds.Contains(entry.Key)
-                        ? 0.72f
-                        : 0.40f;
+                        ? ScopeDishBrightness
+                        : DimmedDishBrightness;
                 view.SetSettlementFocus(brightness);
             }
         }
@@ -285,7 +388,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             foreach (DishPieceView view in _dishViews.Values)
             {
-                view?.SetSettlementFocus(0.40f);
+                view?.SetSettlementFocus(DimmedDishBrightness);
             }
         }
 
@@ -497,10 +600,15 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             return trace?.Kind switch
             {
-                SkillExecutionKind.SweetTransfer => SettlementDishFeedbackKind.SweetTransferSkillTriggered,
+                SkillExecutionKind.SweetTransfer => SettlementDishFeedbackKind.SweetTransferExecutor,
                 SkillExecutionKind.CopiedSkill => SettlementDishFeedbackKind.CopiedSkillTriggered,
                 _ => SettlementDishFeedbackKind.GenericSkillTriggered,
             };
+        }
+
+        private static string ReadableName(string preferred, string fallback)
+        {
+            return !string.IsNullOrWhiteSpace(preferred) ? preferred : fallback;
         }
 
         internal static SettlementDishFeedbackKind FeedbackFor(ScoreLine line)

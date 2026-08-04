@@ -65,6 +65,116 @@ namespace GourmetProject.Game.Presentation.Battle
         }
     }
 
+    internal readonly struct SettlementSweetTransferPresentationKey : IEquatable<SettlementSweetTransferPresentationKey>
+    {
+        public SettlementSweetTransferPresentationKey(
+            int sourceDishInstanceId,
+            int executorDishInstanceId,
+            string skillId)
+        {
+            SourceDishInstanceId = sourceDishInstanceId;
+            ExecutorDishInstanceId = executorDishInstanceId;
+            SkillId = skillId ?? string.Empty;
+        }
+
+        public int SourceDishInstanceId { get; }
+        public int ExecutorDishInstanceId { get; }
+        public string SkillId { get; }
+        public bool IsEmpty => SourceDishInstanceId <= 0 || ExecutorDishInstanceId <= 0;
+
+        public bool Equals(SettlementSweetTransferPresentationKey other)
+        {
+            return SourceDishInstanceId == other.SourceDishInstanceId
+                && ExecutorDishInstanceId == other.ExecutorDishInstanceId
+                && string.Equals(SkillId, other.SkillId, StringComparison.Ordinal);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is SettlementSweetTransferPresentationKey other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = SourceDishInstanceId;
+                hash = (hash * 397) ^ ExecutorDishInstanceId;
+                hash = (hash * 397) ^ StringComparer.Ordinal.GetHashCode(SkillId ?? string.Empty);
+                return hash;
+            }
+        }
+    }
+
+    internal readonly struct SettlementSweetTransferPresentationContext
+    {
+        private SettlementSweetTransferPresentationContext(
+            int sourceDishInstanceId,
+            int executorDishInstanceId,
+            string sourceName,
+            string executorName,
+            string skillId,
+            string skillName,
+            int executionGroupId)
+        {
+            SourceDishInstanceId = sourceDishInstanceId;
+            ExecutorDishInstanceId = executorDishInstanceId;
+            SourceName = sourceName ?? string.Empty;
+            ExecutorName = executorName ?? string.Empty;
+            SkillId = skillId ?? string.Empty;
+            SkillName = skillName ?? SkillId;
+            ExecutionGroupId = executionGroupId;
+        }
+
+        public int SourceDishInstanceId { get; }
+        public int ExecutorDishInstanceId { get; }
+        public string SourceName { get; }
+        public string ExecutorName { get; }
+        public string SkillId { get; }
+        public string SkillName { get; }
+        public int ExecutionGroupId { get; }
+        public bool IsValid => SourceDishInstanceId > 0 && ExecutorDishInstanceId > 0;
+        public bool IsSelfTransfer => IsValid && SourceDishInstanceId == ExecutorDishInstanceId;
+        public SettlementSweetTransferPresentationKey Key => new(
+            SourceDishInstanceId,
+            ExecutorDishInstanceId,
+            SkillId);
+
+        public bool RequiresHandoffAfter(SettlementSweetTransferPresentationKey previous)
+        {
+            return IsValid && !Key.Equals(previous);
+        }
+
+        public static SettlementSweetTransferPresentationContext FromGroup(SettlementEffectGroup group)
+        {
+            return group != null ? FromTrace(group.Trace, group.GroupId) : default;
+        }
+
+        public static SettlementSweetTransferPresentationContext FromLine(ScoreLine line)
+        {
+            return line != null ? FromTrace(line.Trace, line.ExecutionGroupId) : default;
+        }
+
+        private static SettlementSweetTransferPresentationContext FromTrace(
+            SkillExecutionTrace trace,
+            int executionGroupId)
+        {
+            if (trace == null || trace.Kind != SkillExecutionKind.SweetTransfer)
+            {
+                return default;
+            }
+
+            return new SettlementSweetTransferPresentationContext(
+                trace.OwnerDishInstanceId,
+                trace.RuntimeSelfDishInstanceId,
+                trace.OwnerDishName,
+                trace.RuntimeSelfDishName,
+                trace.SkillId,
+                trace.SkillName,
+                executionGroupId);
+        }
+    }
+
     public enum SettlementBeatKind
     {
         SourceStarted = 0,
@@ -354,6 +464,12 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             get
             {
+                if (Trace?.Kind == SkillExecutionKind.SweetTransfer
+                    && Trace.RuntimeSelfDishInstanceId > 0)
+                {
+                    return Trace.RuntimeSelfDishInstanceId;
+                }
+
                 if (Trace != null && Trace.OwnerDishInstanceId > 0)
                 {
                     return Trace.OwnerDishInstanceId;

@@ -273,6 +273,68 @@ namespace GourmetProject.Tests.EditMode
                 Is.EqualTo(new Color32(169, 120, 255, 255)));
         }
 
+        [Test]
+        public void SweetTransferPresentation_UsesRuntimeSelfAsExecutorAndDeduplicatesBySkill()
+        {
+            SkillExecutionTrace firstTrace = SweetTransferTrace(
+                sourceDishId: 11,
+                executorDishId: 22,
+                skillId: "skill_caramel",
+                skillName: "焦糖加分",
+                ruleId: "rule_a");
+            var firstGroup = new SettlementEffectGroup(
+                Line(
+                    ScoreLineKind.DishFlat,
+                    new ScoreSource(ScoreSourceType.DishSkill, "skill_caramel", "来源菜", 11, "source"),
+                    22,
+                    3f,
+                    0f,
+                    3f,
+                    executionGroupId: 41,
+                    trace: firstTrace));
+
+            SettlementSweetTransferPresentationContext first =
+                SettlementSweetTransferPresentationContext.FromGroup(firstGroup);
+
+            Assert.That(first.IsValid, Is.True);
+            Assert.That(first.SourceDishInstanceId, Is.EqualTo(11));
+            Assert.That(first.ExecutorDishInstanceId, Is.EqualTo(22));
+            Assert.That(firstGroup.ActorDishInstanceId, Is.EqualTo(22));
+            Assert.That(first.RequiresHandoffAfter(default), Is.True);
+
+            SkillExecutionTrace sameSkillNextRule = SweetTransferTrace(
+                11,
+                22,
+                "skill_caramel",
+                "焦糖加分",
+                "rule_b");
+            SettlementSweetTransferPresentationContext sameSkill =
+                SettlementSweetTransferPresentationContext.FromLine(
+                    Line(
+                        ScoreLineKind.DishMultiplierAdd,
+                        null,
+                        22,
+                        0.5f,
+                        1f,
+                        1.5f,
+                        executionGroupId: 42,
+                        trace: sameSkillNextRule));
+            Assert.That(sameSkill.RequiresHandoffAfter(first.Key), Is.False);
+
+            SettlementSweetTransferPresentationContext differentSkill =
+                SettlementSweetTransferPresentationContext.FromLine(
+                    Line(
+                        ScoreLineKind.DishFlat,
+                        null,
+                        22,
+                        2f,
+                        0f,
+                        2f,
+                        executionGroupId: 43,
+                        trace: SweetTransferTrace(11, 22, "skill_other", "另一技能", "rule_a")));
+            Assert.That(differentSkill.RequiresHandoffAfter(first.Key), Is.True);
+        }
+
         private static ScoreLine Line(
             ScoreLineKind kind,
             ScoreSource source,
@@ -280,7 +342,8 @@ namespace GourmetProject.Tests.EditMode
             float value,
             float before,
             float after,
-            int executionGroupId = 0)
+            int executionGroupId = 0,
+            SkillExecutionTrace trace = null)
         {
             return new ScoreLine(
                 ScorePhase.DishSkills,
@@ -293,7 +356,35 @@ namespace GourmetProject.Tests.EditMode
                 before,
                 after,
                 kind.ToString(),
+                trace,
                 executionGroupId: executionGroupId);
+        }
+
+        private static SkillExecutionTrace SweetTransferTrace(
+            int sourceDishId,
+            int executorDishId,
+            string skillId,
+            string skillName,
+            string ruleId)
+        {
+            return new SkillExecutionTrace(
+                SkillExecutionKind.SweetTransfer,
+                sourceDishId,
+                "source_dish",
+                "来源菜",
+                executorDishId,
+                "executor_dish",
+                "执行菜",
+                skillId,
+                skillName,
+                ruleId,
+                0,
+                SkillTrigger.OnSettle,
+                SkillActionType.AddFlat,
+                SkillConditionType.None,
+                SkillScope.Self,
+                SkillScope.Self,
+                "甜蜜传递");
         }
     }
 }
