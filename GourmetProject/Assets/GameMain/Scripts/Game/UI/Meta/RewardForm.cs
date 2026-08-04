@@ -773,8 +773,8 @@ namespace GourmetProject.Game.UI.Meta
                 _run.SetPendingRewardOffer(_rewardKey, _offer);
             }
 
-            // 奖励效果与“已领取”标记在同一份存档中提交，避免在二者之间读档后重复发放。
-            RunPersistence.Save(_run);
+            // 领取阶段只更新运行时状态；点“完成/继续行动”后由 CompleteRewards 统一落盘。
+            // 这样中途退出会整体回到领奖前，不会留下半完成的奖励存档。
         }
 
         private void MarkChoiceClaimed(int groupIndex, int index)
@@ -982,6 +982,7 @@ namespace GourmetProject.Game.UI.Meta
                 true,
                 false,
                 ClaimBaseGold);
+            row.DisableTipTrigger();
         }
 
         private void AddChoiceRows(RewardChoiceGroup group, int groupIndex)
@@ -1675,9 +1676,16 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
+            if (choice.Kind == cfg.RewardKind.Gold || choice.IsFallbackGold)
+            {
+                row.DisableTipTrigger();
+                return;
+            }
+
             TipHoverTrigger trigger = row.EnsureTipTrigger();
             trigger.SetTarget(row.TipPlacementTarget);
             trigger.SetFollowPointer(true);
+            trigger.SetPreferVerticalPlacement(true);
 
             if (choice.Kind == cfg.RewardKind.DishChoice && _foodTipsView != null)
             {

@@ -40,7 +40,25 @@ namespace GourmetProject.Game.UI.Meta
         public TipHoverTrigger EnsureTipTrigger()
         {
             TipHoverTrigger trigger = GetComponent<TipHoverTrigger>();
-            return trigger != null ? trigger : gameObject.AddComponent<TipHoverTrigger>();
+            if (trigger == null)
+            {
+                trigger = gameObject.AddComponent<TipHoverTrigger>();
+            }
+
+            trigger.enabled = true;
+            return trigger;
+        }
+
+        public void DisableTipTrigger()
+        {
+            TipHoverTrigger trigger = GetComponent<TipHoverTrigger>();
+            if (trigger == null)
+            {
+                return;
+            }
+
+            trigger.ClearTip();
+            trigger.enabled = false;
         }
 
         public void Bind(

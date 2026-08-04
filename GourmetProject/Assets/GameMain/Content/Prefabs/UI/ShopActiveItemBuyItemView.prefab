@@ -128,7 +128,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Meta.ShopActiveItemBuyItemView
   _buyButton: {fileID: 4719521885201320055}
-  _itemIcon: {fileID: 8824540311259494599}
+  _itemIcon: {fileID: 1879703325217066510}
   _buyLabel: {fileID: 7621205451759874817}
 --- !u!222 &7456794520888149866
 CanvasRenderer:
@@ -303,14 +303,3 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
---- !u!114 &8824540311259494599 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 6569492578486720619, guid: 904bce5f6ed064bb59ae1aa54cced993, type: 3}
-  m_PrefabInstance: {fileID: 2403961335663075500}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image

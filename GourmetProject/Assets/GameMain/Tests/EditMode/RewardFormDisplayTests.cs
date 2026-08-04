@@ -73,6 +73,7 @@ namespace GourmetProject.Tests.EditMode
                     rows.FindAll(RowShowsGenericIcon),
                     Has.Count.EqualTo(2));
                 Assert.That(RowIconSpriteName(rows[0]), Is.EqualTo("reward_badge_gold"));
+                Assert.That(rows[0].GetComponent<TipHoverTrigger>(), Is.Null);
             });
         }
 
@@ -282,6 +283,7 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(RowTitle(rows[0]), Is.EqualTo("蛋糕切角"));
                 Assert.That(RowDescription(rows[0]), Is.EqualTo("随机菜品配置描述"));
                 Assert.That(rows[0].GetComponent<TipHoverTrigger>(), Is.Not.Null);
+                Assert.That(RowTipsPreferVertical(rows[0]), Is.True);
             });
         }
 
@@ -303,6 +305,7 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(RowTitle(rows[0]), Is.EqualTo(group.Choices[0].Name));
                 Assert.That(RowDescription(rows[0]), Does.StartWith(group.Choices[0].Description));
                 Assert.That(rows[0].GetComponent<TipHoverTrigger>(), Is.Not.Null);
+                Assert.That(RowTipsPreferVertical(rows[0]), Is.True);
             });
         }
 
@@ -324,6 +327,7 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(RowTitle(rows[0]), Is.EqualTo(group.Choices[0].Name));
                 Assert.That(RowDescription(rows[0]), Does.StartWith(group.Choices[0].Description));
                 Assert.That(rows[0].GetComponent<TipHoverTrigger>(), Is.Not.Null);
+                Assert.That(RowTipsPreferVertical(rows[0]), Is.True);
             });
         }
 
@@ -369,6 +373,7 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(rows, Has.Count.EqualTo(1));
                 Assert.That(RowTitle(rows[0]), Is.EqualTo("折算金币"));
                 Assert.That(RowDescription(rows[0]), Is.EqualTo("领取后获得金币 +20。"));
+                Assert.That(rows[0].GetComponent<TipHoverTrigger>(), Is.Null);
             });
         }
 
@@ -574,6 +579,12 @@ namespace GourmetProject.Tests.EditMode
             return icon != null && icon.enabled && icon.sprite != null
                 ? icon.sprite.name
                 : string.Empty;
+        }
+
+        private static bool RowTipsPreferVertical(RewardChoiceRowView row)
+        {
+            TipHoverTrigger trigger = row.GetComponent<TipHoverTrigger>();
+            return trigger != null && GetField<bool>(trigger, "_preferVerticalPlacement");
         }
 
         private static string RowTitle(RewardChoiceRowView row)
