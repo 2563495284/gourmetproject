@@ -1505,9 +1505,9 @@ namespace GourmetProject.Game.UI.Battle
             RefreshFoodActions();
         }
 
-        internal void RefreshPersistentHud()
+        internal void RefreshPersistentHud(bool refreshItems = true)
         {
-            RefreshPersistent();
+            RefreshPersistent(refreshItems);
         }
 
         private void RefreshCakeLayerBuff()
@@ -1676,33 +1676,53 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
+            PlayRewardDishSelectionFly(
+                sourceCard.SelectionFlySource,
+                sourceCard.CaptureSelectionFlyTexture);
+        }
+
+        internal bool PlayRewardDishSelectionFly(RewardChoiceRowView sourceRow)
+        {
+            return sourceRow != null && PlayRewardDishSelectionFly(
+                sourceRow.SelectionFlySource,
+                sourceRow.CaptureSelectionFlyTexture);
+        }
+
+        private bool PlayRewardDishSelectionFly(
+            RectTransform sourceRect,
+            Func<RenderTexture> captureTexture)
+        {
+            if (sourceRect == null || captureTexture == null)
+            {
+                return false;
+            }
+
             Canvas canvas = GetComponentInParent<Canvas>();
             RectTransform layer = canvas != null ? canvas.transform as RectTransform : transform.root as RectTransform;
-            RectTransform sourceRect = sourceCard.SelectionFlySource;
             RectTransform target = _infoColumn?.ViewRecipeButtonRect;
             if (layer == null || sourceRect == null || target == null)
             {
-                return;
+                return false;
             }
 
             Canvas.ForceUpdateCanvases();
             if (!TryGetRectInLayer(sourceRect, layer, out RectSnapshot start) ||
                 !TryGetRectInLayer(target, layer, out RectSnapshot end))
             {
-                return;
+                return false;
             }
 
-            RenderTexture texture = sourceCard.CaptureSelectionFlyTexture();
+            RenderTexture texture = captureTexture.Invoke();
             if (texture == null)
             {
-                return;
+                return false;
             }
 
             ShopPurchaseFlyView fly = CreateShopPurchaseFly(layer);
             if (fly == null)
             {
                 ReleasePurchaseTexture(texture);
-                return;
+                return false;
             }
 
             RegisterShopPurchaseFly(fly);
@@ -1720,7 +1740,10 @@ namespace GourmetProject.Game.UI.Battle
             {
                 Debug.LogException(exception, fly);
                 fly.Cancel();
+                return false;
             }
+
+            return true;
         }
 
         private Action PrepareRewardItemSelectionFly(
@@ -1733,10 +1756,42 @@ namespace GourmetProject.Game.UI.Battle
                 return null;
             }
 
+            Func<bool> play = PrepareRewardItemSelectionFly(
+                choice,
+                kind,
+                sourceCard.SelectionFlySource,
+                sourceCard.SelectionFlySprite);
+            return play == null ? null : () => play.Invoke();
+        }
+
+        internal Func<bool> PrepareRewardItemSelectionFly(
+            RewardChoice choice,
+            cfg.ItemKind kind,
+            RewardChoiceRowView sourceRow)
+        {
+            return sourceRow == null
+                ? null
+                : PrepareRewardItemSelectionFly(
+                    choice,
+                    kind,
+                    sourceRow.SelectionFlySource,
+                    sourceRow.SelectionFlySprite);
+        }
+
+        private Func<bool> PrepareRewardItemSelectionFly(
+            RewardChoice choice,
+            cfg.ItemKind kind,
+            RectTransform sourceRect,
+            Sprite sourceSprite)
+        {
+            if (choice == null || sourceRect == null)
+            {
+                return null;
+            }
+
             Canvas canvas = GetComponentInParent<Canvas>();
             RectTransform layer = canvas != null ? canvas.transform as RectTransform : transform.root as RectTransform;
-            RectTransform sourceRect = sourceCard.SelectionFlySource;
-            if (layer == null || sourceRect == null)
+            if (layer == null)
             {
                 return null;
             }
@@ -1756,8 +1811,8 @@ namespace GourmetProject.Game.UI.Battle
             string itemId = item.Id;
             cfg.ItemKind itemKind = item.Kind;
             Sprite sprite =
-                sourceCard.SelectionFlySprite ??
                 RunItemSlotView.LoadIcon(item) ??
+                sourceSprite ??
                 LoadShopItemFallbackIcon(itemKind);
             Color fallbackColor = RunItemSlotView.QualityColor(item.Quality);
             return () => PlayRewardItemSelectionFly(
@@ -1769,7 +1824,7 @@ namespace GourmetProject.Game.UI.Battle
                 fallbackColor);
         }
 
-        private void PlayRewardItemSelectionFly(
+        private bool PlayRewardItemSelectionFly(
             string itemId,
             cfg.ItemKind kind,
             RectTransform layer,
@@ -1788,13 +1843,13 @@ namespace GourmetProject.Game.UI.Battle
                     out Vector2 targetCenter,
                     out Vector2 targetSize))
             {
-                return;
+                return false;
             }
 
             ShopPurchaseFlyView fly = CreateShopPurchaseFly(layer);
             if (fly == null)
             {
-                return;
+                return false;
             }
 
             _shopItemFlyInFlight++;
@@ -1829,7 +1884,11 @@ namespace GourmetProject.Game.UI.Battle
             {
                 Debug.LogException(exception, fly);
                 fly.Cancel();
+                OnShopItemFlyArrived();
+                return false;
             }
+
+            return true;
         }
 
         private void PlayShopItemPurchase(

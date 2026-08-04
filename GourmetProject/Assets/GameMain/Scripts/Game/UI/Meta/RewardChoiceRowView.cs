@@ -25,6 +25,7 @@ namespace GourmetProject.Game.UI.Meta
         private static readonly Color NormalColor = new(0.97f, 0.94f, 0.86f, 1f);
         private static readonly Color SelectedColor = new(1f, 0.82f, 0.42f, 1f);
         private static readonly Color GrantedColor = new(0.88f, 0.96f, 0.82f, 1f);
+        private Sprite _selectionFlySprite;
 
         public RectTransform TipPlacementTarget
         {
@@ -35,6 +36,27 @@ namespace GourmetProject.Game.UI.Meta
                     ? _dishPreview.transform as RectTransform
                     : _icon != null ? _icon.rectTransform : transform as RectTransform;
             }
+        }
+
+        public RectTransform SelectionFlySource => TipPlacementTarget;
+
+        public Sprite SelectionFlySprite
+        {
+            get
+            {
+                EnsureRefs();
+                return _selectionFlySprite != null
+                    ? _selectionFlySprite
+                    : _icon != null && _icon.enabled ? _icon.sprite : null;
+            }
+        }
+
+        public RenderTexture CaptureSelectionFlyTexture()
+        {
+            EnsureRefs();
+            return _dishPreview != null
+                ? _dishPreview.CopyCurrentTexture()
+                : null;
         }
 
         public TipHoverTrigger EnsureTipTrigger()
@@ -71,16 +93,20 @@ namespace GourmetProject.Game.UI.Meta
             Action onClick,
             string stateOverride = null,
             DishDef dish = null,
-            IReadOnlyList<string> flavorIds = null)
+            IReadOnlyList<string> flavorIds = null,
+            bool showDishPreview = true,
+            Sprite selectionFlySprite = null)
         {
             EnsureRefs();
+            _selectionFlySprite = selectionFlySprite;
 
             if (_background != null)
             {
                 _background.color = granted ? GrantedColor : selected ? SelectedColor : NormalColor;
             }
 
-            bool useDishPreview = dish != null && _dishPreview != null;
+            bool hasDishPreview = dish != null && _dishPreview != null;
+            bool useDishPreview = hasDishPreview && showDishPreview;
             if (_dishPreview != null)
             {
                 if (dish != null)
@@ -89,10 +115,11 @@ namespace GourmetProject.Game.UI.Meta
                     _dishPreview.Bind(
                         DishPreviewRequest.FromDefinition(
                             dish,
-                            icon,
+                            selectionFlySprite ?? icon,
                             flavorIds,
                             DishIconPreviewMode.Warehouse));
                     _dishPreview.SetRaycastTarget(false);
+                    _dishPreview.gameObject.SetActive(showDishPreview);
                 }
                 else
                 {

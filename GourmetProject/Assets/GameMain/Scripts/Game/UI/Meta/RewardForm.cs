@@ -568,7 +568,11 @@ namespace GourmetProject.Game.UI.Meta
             RefreshOffer();
         }
 
-        private void ClaimChoice(int groupIndex, int index, IReadOnlyList<RewardChoice> groupChoices)
+        private void ClaimChoice(
+            int groupIndex,
+            int index,
+            IReadOnlyList<RewardChoice> groupChoices,
+            RewardChoiceRowView sourceRow)
         {
             if (_offer == null || groupChoices == null || index < 0 || index >= groupChoices.Count)
             {
@@ -596,6 +600,7 @@ namespace GourmetProject.Game.UI.Meta
 
                 if (applied)
                 {
+                    BattleForm.Active?.PlayRewardDishSelectionFly(sourceRow);
                     HideTips();
                     MarkChoiceClaimed(groupIndex, index);
                     CacheCurrentOffer();
@@ -628,14 +633,28 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
+            bool isItemReward = choice.Kind == cfg.RewardKind.PassiveItemChoice
+                || IsActiveItemReward(choice.Kind);
+            int itemCountBefore = isItemReward ? _run.GetItemCount(choice.Id) : 0;
+            Func<bool> playItemFly = isItemReward
+                ? BattleForm.Active?.PrepareRewardItemSelectionFly(
+                    choice,
+                    IsActiveItemReward(choice.Kind) ? cfg.ItemKind.Active : cfg.ItemKind.Passive,
+                    sourceRow)
+                : null;
+
             using (RunPersistence.SuppressSave())
             {
                 RewardGranter.ApplyChoice(_run, choice);
             }
 
+            bool itemFlyStarted = isItemReward
+                && _run.GetItemCount(choice.Id) > itemCountBefore
+                && playItemFly?.Invoke() == true;
+
             MarkChoiceClaimed(groupIndex, index);
             CacheCurrentOffer();
-            RefreshBattlePersistentHud();
+            RefreshBattlePersistentHud(refreshItems: !itemFlyStarted);
             RefreshOffer();
         }
 
@@ -786,9 +805,9 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
-        private static void RefreshBattlePersistentHud()
+        private static void RefreshBattlePersistentHud(bool refreshItems = true)
         {
-            BattleForm.Active?.RefreshPersistentHud();
+            BattleForm.Active?.RefreshPersistentHud(refreshItems);
         }
 
         private RewardChoiceGroup GroupFor(int groupIndex)
@@ -1028,9 +1047,11 @@ namespace GourmetProject.Game.UI.Meta
                     false,
                     true,
                     false,
-                    () => ClaimChoice(groupIndex, index, choices),
-                    dish: suppressDishPreview ? null : DishForChoice(choice),
-                    flavorIds: suppressDishPreview ? null : FlavorIdsForChoice(choice));
+                    () => ClaimChoice(groupIndex, index, choices, row),
+                    dish: DishForChoice(choice),
+                    flavorIds: FlavorIdsForChoice(choice),
+                    showDishPreview: !suppressDishPreview,
+                    selectionFlySprite: LoadChoiceIcon(choice));
                 BindDirectChoiceTip(row, choice);
             }
         }
@@ -1075,7 +1096,7 @@ namespace GourmetProject.Game.UI.Meta
 
             if (IsFragmentPack(choices))
             {
-                ClaimChoice(groupIndex, 0, choices);
+                ClaimChoice(groupIndex, 0, choices, null);
                 return;
             }
 

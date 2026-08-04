@@ -7,8 +7,8 @@
     "initialActionRerollCount": 0,
     "baseActiveSlots": 4,
     "shopFoodSaleSlotCount": 3,
-    "shopPassiveItemSaleSlotCount": 2,
-    "shopActiveItemSaleSlotCount": 2,
+    "shopPassiveItemSaleSlotCount": 3,
+    "shopActiveItemSaleSlotCount": 3,
     "foodFlavorLimit": 1,
     "foodDeleteCount": 2,
     "fragmentPackPrices": [

@@ -285,6 +285,30 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(RowDescription(rows[0]), Is.EqualTo("随机食物配置描述"));
                 Assert.That(rows[0].GetComponent<TipHoverTrigger>(), Is.Not.Null);
                 Assert.That(RowTipsPreferVertical(rows[0]), Is.True);
+                Assert.That(rows[0].SelectionFlySource, Is.Not.Null);
+                Assert.That(RowHasDishFlyTexture(rows[0]), Is.True);
+            });
+        }
+
+        [Test]
+        public void FoodBattleDirectDishBadge_KeepsHiddenDishTextureForFlyAnimation()
+        {
+            GameRun run = CreateRun();
+            run.SetLastActionContext(new ActionExecutionContext(
+                _tables.TbAction.Get("act_food_gold")));
+            var group = new RewardChoiceGroup(
+                "基础食物",
+                new[] { Choice(cfg.RewardKind.DishChoice, "cake_slice", "蛋糕切角") },
+                sourceSlotId: "slot_base_dish");
+            RewardOffer offer = new RewardOffer(0, new[] { group }, null, baseGoldClaimed: true);
+
+            WithRenderedOffer(run, offer, rows =>
+            {
+                Assert.That(rows, Has.Count.EqualTo(1));
+                Assert.That(RowShowsDishPreview(rows[0]), Is.False);
+                Assert.That(RowShowsGenericIcon(rows[0]), Is.True);
+                Assert.That(RowHasDishFlyTexture(rows[0]), Is.True);
+                Assert.That(rows[0].SelectionFlySource, Is.Not.Null);
             });
         }
 
@@ -307,6 +331,8 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(RowDescription(rows[0]), Does.StartWith(group.Choices[0].Description));
                 Assert.That(rows[0].GetComponent<TipHoverTrigger>(), Is.Not.Null);
                 Assert.That(RowTipsPreferVertical(rows[0]), Is.True);
+                Assert.That(rows[0].SelectionFlySource, Is.Not.Null);
+                Assert.That(rows[0].SelectionFlySprite, Is.Not.Null);
             });
         }
 
@@ -329,6 +355,31 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(RowDescription(rows[0]), Does.StartWith(group.Choices[0].Description));
                 Assert.That(rows[0].GetComponent<TipHoverTrigger>(), Is.Not.Null);
                 Assert.That(RowTipsPreferVertical(rows[0]), Is.True);
+                Assert.That(rows[0].SelectionFlySource, Is.Not.Null);
+                Assert.That(rows[0].SelectionFlySprite, Is.Not.Null);
+            });
+        }
+
+        [Test]
+        public void FoodBattleDirectItemBadge_UsesActualItemSpriteForFlyAnimation()
+        {
+            GameRun run = CreateRun();
+            run.SetLastActionContext(new ActionExecutionContext(
+                _tables.TbAction.Get("act_food_passive")));
+            RewardChoiceGroup group = RewardGranter.BuildConfigChoiceGroup(
+                run,
+                new Xoshiro256SS(31UL),
+                "passive_choice_1",
+                "装饰品奖励");
+            Assert.That(group, Is.Not.Null);
+            RewardOffer offer = new RewardOffer(0, null, group, baseGoldClaimed: true);
+
+            WithRenderedOffer(run, offer, rows =>
+            {
+                Assert.That(rows, Has.Count.EqualTo(1));
+                Assert.That(RowIconSpriteName(rows[0]), Is.EqualTo("reward_badge_passive_item"));
+                Assert.That(rows[0].SelectionFlySprite, Is.Not.Null);
+                Assert.That(rows[0].SelectionFlySprite.name, Is.Not.EqualTo(RowIconSpriteName(rows[0])));
             });
         }
 
@@ -566,6 +617,13 @@ namespace GourmetProject.Tests.EditMode
             return preview != null
                 && preview.gameObject.activeSelf
                 && preview.CurrentTexture != null;
+        }
+
+        private static bool RowHasDishFlyTexture(RewardChoiceRowView row)
+        {
+            DishIconRenderTexturePreview preview =
+                GetField<DishIconRenderTexturePreview>(row, "_dishPreview");
+            return preview != null && preview.CurrentTexture != null;
         }
 
         private static bool RowShowsGenericIcon(RewardChoiceRowView row)

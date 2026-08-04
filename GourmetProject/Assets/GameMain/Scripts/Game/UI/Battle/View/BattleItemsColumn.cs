@@ -19,7 +19,6 @@ namespace GourmetProject.Game.UI.Battle.View
     public sealed class BattleItemsColumn : MonoBehaviour
     {
         private const int PassiveSlotColumns = 2;
-        private const int PassiveVisibleRows = 5;
         private const float PassiveSlotPadding = 2f;
         private const float PassiveSlotSpacing = 4f;
         private const float PassiveScrollEpsilon = 0.5f;
@@ -32,6 +31,7 @@ namespace GourmetProject.Game.UI.Battle.View
         [SerializeField] private RectTransform _passiveItemsContainer;
         [SerializeField] private RectTransform _passiveItemsContent;
         [SerializeField] private ScrollRect _passiveItemsScrollRect;
+        private RunItemSlotView _passiveItemTemplate;
         [SerializeField] private RunItemSlotView _itemSlotPrefab;
         [SerializeField] private RectTransform _activeSlotsContainer;
         [SerializeField] private TMP_Text _activeItemsInfo;
@@ -47,6 +47,12 @@ namespace GourmetProject.Game.UI.Battle.View
 
         private void Awake()
         {
+            EnsurePassiveItemsContent();
+            if (_passiveItemTemplate != null)
+            {
+                _passiveItemTemplate.gameObject.SetActive(false);
+            }
+
             EnsureActiveItemsRefs();
         }
 
@@ -138,7 +144,7 @@ namespace GourmetProject.Game.UI.Battle.View
             Action<ItemDefinition, RunItemState> onShowItemInfo)
         {
             RectTransform content = EnsurePassiveItemsContent();
-            if (content == null || _itemSlotPrefab == null)
+            if (content == null || _passiveItemTemplate == null)
             {
                 return;
             }
@@ -153,7 +159,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 }
             }
 
-            Vector2 slotSize = CalculatePassiveSlotSize();
+            Vector2 slotSize = GetPassiveSlotSize();
             int rows = Mathf.Max(1, Mathf.CeilToInt(passive.Count / (float)PassiveSlotColumns));
             float contentHeight = CalculatePassiveContentHeight(rows, slotSize.y);
             ConfigurePassiveContent(content, contentHeight);
@@ -163,10 +169,11 @@ namespace GourmetProject.Game.UI.Battle.View
             {
                 RunItemState state = passive[i];
                 ItemDefinition item = ItemDefinition.Get(tables, state.ItemId, cfg.ItemKind.Passive);
-                RunItemSlotView slot = Instantiate(_itemSlotPrefab, content);
+                RunItemSlotView slot = Instantiate(_passiveItemTemplate, content);
                 slot.gameObject.name = $"PassiveSlot_{i}";
                 var rect = (RectTransform)slot.transform;
                 LayoutPassiveSlot(rect, i, slotSize);
+                slot.gameObject.SetActive(true);
 
                 ItemDefinition captured = item;
                 RunItemState capturedState = state;
@@ -216,6 +223,17 @@ namespace GourmetProject.Game.UI.Battle.View
             }
 
             _passiveItemsContent.gameObject.SetActive(true);
+            if (_passiveItemTemplate == null)
+            {
+                Transform template = _passiveItemsContent.Find("Template");
+                _passiveItemTemplate = template != null ? template.GetComponent<RunItemSlotView>() : null;
+                if (_passiveItemTemplate == null)
+                {
+                    Debug.LogError($"{nameof(BattleItemsColumn)} prefab 缺少装饰品 Template。", this);
+                    return null;
+                }
+            }
+
             if (_passiveItemsScrollRect != null)
             {
                 _passiveItemsScrollRect.content = _passiveItemsContent;
@@ -262,18 +280,21 @@ namespace GourmetProject.Game.UI.Battle.View
             }
 
             _passiveItemsScrollRect.horizontal = false;
+            _passiveItemsScrollRect.vertical = true;
             _passiveItemsScrollRect.movementType = ScrollRect.MovementType.Clamped;
             _passiveItemsScrollRect.scrollSensitivity = 24f;
         }
 
-        private Vector2 CalculatePassiveSlotSize()
+        private Vector2 GetPassiveSlotSize()
         {
-            Rect viewportRect = _passiveItemsContainer.rect;
-            float viewportWidth = viewportRect.width > 0f ? viewportRect.width : 180f;
-            float viewportHeight = viewportRect.height > 0f ? viewportRect.height : 480f;
-            float width = Mathf.Max(1f, viewportWidth - PassiveSlotPadding * 2f - PassiveSlotSpacing * (PassiveSlotColumns - 1));
-            float height = Mathf.Max(1f, viewportHeight - PassiveSlotPadding * 2f - PassiveSlotSpacing * (PassiveVisibleRows - 1));
-            return new Vector2(width / PassiveSlotColumns, height / PassiveVisibleRows);
+            RectTransform templateRect = _passiveItemTemplate != null ? _passiveItemTemplate.RectTransform : null;
+            if (templateRect == null)
+            {
+                return Vector2.one;
+            }
+
+            Vector2 size = templateRect.rect.size;
+            return new Vector2(Mathf.Max(1f, size.x), Mathf.Max(1f, size.y));
         }
 
         private float CalculatePassiveContentHeight(int rows, float slotHeight)
@@ -307,7 +328,6 @@ namespace GourmetProject.Game.UI.Battle.View
             }
 
             bool canScroll = contentHeight > GetPassiveViewportHeight() + PassiveScrollEpsilon;
-            _passiveItemsScrollRect.vertical = canScroll;
             if (canScroll)
             {
                 _passiveItemsScrollRect.verticalNormalizedPosition = 1f;
@@ -396,7 +416,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 return false;
             }
 
-            Vector2 slotSize = CalculatePassiveSlotSize();
+            Vector2 slotSize = GetPassiveSlotSize();
             int rows = Mathf.Max(1, Mathf.CeilToInt(passiveCount / (float)PassiveSlotColumns));
             float contentHeight = CalculatePassiveContentHeight(rows, slotSize.y);
             ConfigurePassiveContent(content, contentHeight);
@@ -545,7 +565,6 @@ namespace GourmetProject.Game.UI.Battle.View
             rect.anchorMin = new Vector2(0f, 1f);
             rect.anchorMax = new Vector2(0f, 1f);
             rect.pivot = new Vector2(0f, 1f);
-            rect.sizeDelta = slotSize;
             rect.anchoredPosition = PassiveSlotAnchoredPosition(index, slotSize);
             rect.localScale = Vector3.one;
         }
