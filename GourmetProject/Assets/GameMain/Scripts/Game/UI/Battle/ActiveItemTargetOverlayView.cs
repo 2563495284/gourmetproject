@@ -21,7 +21,6 @@ namespace GourmetProject.Game.UI.Battle
 
         private void Awake()
         {
-            ValidateStructure();
         }
 
         public void ConfigureButtons(Action onConfirm, Action onCancel)
@@ -44,47 +43,6 @@ namespace GourmetProject.Game.UI.Battle
         public TMP_Text LabelOf(Button button)
         {
             return button != null ? button.GetComponentInChildren<TMP_Text>(true) : null;
-        }
-
-        private void ValidateStructure()
-        {
-            if (_panel == null)
-            {
-                _panel = transform.Find("Panel") as RectTransform;
-            }
-
-            if (_promptText == null && _panel != null)
-            {
-                Transform prompt = _panel.Find("Prompt");
-                _promptText = prompt != null ? prompt.GetComponent<TMP_Text>() : null;
-            }
-
-            if (_confirmButton == null && _panel != null)
-            {
-                Transform confirm = _panel.Find("ConfirmButton");
-                _confirmButton = confirm != null ? confirm.GetComponent<Button>() : null;
-            }
-
-            if (_cancelButton == null && _panel != null)
-            {
-                Transform cancel = _panel.Find("CancelButton");
-                _cancelButton = cancel != null ? cancel.GetComponent<Button>() : null;
-            }
-
-            if (_targetButtonPrefab == null && _panel != null)
-            {
-                Transform targetButton = _panel.Find("TargetButtonTemplate");
-                _targetButtonPrefab = targetButton != null ? targetButton.GetComponent<Button>() : null;
-            }
-
-            if (_panel == null || _promptText == null || _confirmButton == null || _cancelButton == null || _targetButtonPrefab == null)
-            {
-                Debug.LogError($"{nameof(ActiveItemTargetOverlayView)} prefab 缺少 Panel/Prompt/ConfirmButton/CancelButton/TargetButtonTemplate。", this);
-            }
-            else
-            {
-                _targetButtonPrefab.gameObject.SetActive(false);
-            }
         }
 
         private static void BindButton(Button button, Action action)

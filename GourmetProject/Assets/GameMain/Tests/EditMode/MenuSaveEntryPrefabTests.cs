@@ -12,6 +12,8 @@ namespace GourmetProject.Tests.EditMode
             "Assets/GameMain/Content/Prefabs/UI/MainMenuForm.prefab";
         private const string CharacterSelectPrefabPath =
             "Assets/GameMain/Content/Prefabs/UI/CharacterSelectForm.prefab";
+        private const string ConfirmDialogPrefabPath =
+            "Assets/GameMain/Content/Prefabs/UI/ConfirmDialogForm.prefab";
 
         [Test]
         public void MainMenu_HasFixedStartEntryAndNoAbandonButton()
@@ -63,6 +65,94 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(
                 serialized.FindProperty("_continueButton").objectReferenceValue,
                 Is.SameAs(continueButton));
+
+            string[] requiredReferenceProperties =
+            {
+                "_nameText",
+                "_descText",
+                "_leftArrow",
+                "_rightArrow",
+                "_confirmButton",
+                "_continueButton",
+                "_backButton",
+                "_confirmLabel",
+                "_recipeReadonlyBookView",
+                "_recipeViewButton",
+                "_recipeViewGlow",
+                "_foodTipsPrefab",
+            };
+            foreach (string propertyName in requiredReferenceProperties)
+            {
+                Assert.That(
+                    serialized.FindProperty(propertyName).objectReferenceValue,
+                    Is.Not.Null,
+                    propertyName);
+            }
+
+            SerializedProperty dots = serialized.FindProperty("_dots");
+            Assert.That(dots.arraySize, Is.GreaterThan(0));
+            for (int i = 0; i < dots.arraySize; i++)
+            {
+                Assert.That(
+                    dots.GetArrayElementAtIndex(i).objectReferenceValue,
+                    Is.Not.Null,
+                    $"_dots[{i}]");
+            }
+        }
+
+        [Test]
+        public void CharacterSelect_ResolvesAllRequiredReferences()
+        {
+            GameObject prefab = PrefabUtility.LoadPrefabContents(
+                CharacterSelectPrefabPath);
+            try
+            {
+                Component form = prefab.GetComponent("CharacterSelectForm");
+                Assert.That(form, Is.Not.Null);
+
+                System.Reflection.MethodInfo ensureReferences =
+                    form.GetType().GetMethod(
+                        "EnsureReferences",
+                        System.Reflection.BindingFlags.Instance
+                        | System.Reflection.BindingFlags.NonPublic);
+                Assert.That(ensureReferences, Is.Not.Null);
+                Assert.DoesNotThrow(
+                    () => ensureReferences.Invoke(form, null));
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(prefab);
+            }
+        }
+
+        [Test]
+        public void ConfirmDialog_HasAllSerializedReferences()
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                ConfirmDialogPrefabPath);
+            Assert.That(prefab, Is.Not.Null);
+
+            Component form = prefab.GetComponent("ConfirmDialogForm");
+            Assert.That(form, Is.Not.Null);
+            var serialized = new SerializedObject(form);
+
+            string[] requiredReferenceProperties =
+            {
+                "_titleText",
+                "_messageText",
+                "_confirmButton",
+                "_cancelButton",
+                "_confirmLabel",
+                "_cancelLabel",
+                "_confirmButtonRect",
+            };
+            foreach (string propertyName in requiredReferenceProperties)
+            {
+                Assert.That(
+                    serialized.FindProperty(propertyName).objectReferenceValue,
+                    Is.Not.Null,
+                    propertyName);
+            }
         }
 
         private static Transform FindDescendant(

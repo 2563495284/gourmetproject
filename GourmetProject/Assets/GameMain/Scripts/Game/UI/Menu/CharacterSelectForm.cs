@@ -36,20 +36,21 @@ namespace GourmetProject.Game.UI.Menu
             new(0.25f, 1f, 0.35f, 0.9f);
         private static readonly int QuadSizeId = Shader.PropertyToID("_QuadSize");
         private static readonly int PaddingId = Shader.PropertyToID("_Padding");
-        public TMP_Text _nameText;
-        public TMP_Text _descText;
-        public Button _leftArrow;
-        public Button _rightArrow;
-        public Button _confirmButton;
-        public Button _continueButton;
-        public Button _backButton;
-        public Image _portraitImage;
+        [SerializeField] private TMP_Text _nameText;
+        [SerializeField] private TMP_Text _descText;
+        [SerializeField] private Button _leftArrow;
+        [SerializeField] private Button _rightArrow;
+        [SerializeField] private Button _confirmButton;
+        [SerializeField] private Button _continueButton;
+        [SerializeField] private Button _backButton;
+        [SerializeField] private TMP_Text _confirmLabel;
+        [SerializeField] private Image _portraitImage;
         [SerializeField] private RecipeReadonlyBookView _recipeReadonlyBookView;
         [SerializeField] private Button _recipeViewButton;
         [SerializeField] private Image _recipeViewGlow;
         [SerializeField] private FoodTipsView _foodTipsPrefab;
 
-        private readonly List<Image> _dots = new();
+        [SerializeField] private List<Image> _dots = new();
         private IReadOnlyList<cfg.Character> _characters = Array.Empty<cfg.Character>();
         private IReadOnlyList<string> _recipePreviewDishIds =
             Array.Empty<string>();
@@ -57,7 +58,6 @@ namespace GourmetProject.Game.UI.Menu
         private Material _recipeViewGlowMaterial;
         private FoodTipsView _foodTipsView;
         private bool _recipeViewOpen;
-        private TMP_Text _confirmLabel;
         private Vector2 _confirmButtonDefaultPosition;
         private int _index;
 
@@ -65,7 +65,6 @@ namespace GourmetProject.Game.UI.Menu
         {
             base.OnInit(userData);
             EnsureReferences();
-            CollectDots();
             _confirmButtonDefaultPosition =
                 _confirmButton.GetComponent<RectTransform>().anchoredPosition;
 
@@ -498,25 +497,6 @@ namespace GourmetProject.Game.UI.Menu
             _recipeViewGlow.material = _recipeViewGlowMaterial;
         }
 
-        private void CollectDots()
-        {
-            _dots.Clear();
-
-            Transform dotsRoot = FindChild("PageDots");
-            if (dotsRoot == null)
-            {
-                return;
-            }
-
-            foreach (Transform child in dotsRoot)
-            {
-                if (child.TryGetComponent(out Image image))
-                {
-                    _dots.Add(image);
-                }
-            }
-        }
-
         private void RefreshDots()
         {
             for (int i = 0; i < _dots.Count; i++)
@@ -532,31 +512,41 @@ namespace GourmetProject.Game.UI.Menu
 
         private void EnsureReferences()
         {
-            _recipeReadonlyBookView ??=
-                FindOptionalComponentInChildren<RecipeReadonlyBookView>(
-                    "RecipeReadonlyBookView");
-            _nameText ??= FindRequiredComponentInChildren<TMP_Text>("CharacterName");
-            _descText ??= FindRequiredComponentInChildren<TMP_Text>("CharacterDesc");
-            _leftArrow ??= FindRequiredComponentInChildren<Button>("LeftArrow");
-            _rightArrow ??= FindRequiredComponentInChildren<Button>("RightArrow");
-            _confirmButton ??= FindRequiredComponentInChildren<Button>("ConfirmButton");
-            _continueButton ??= FindRequiredComponentInChildren<Button>(
-                "ContinueButton");
-            _backButton ??= FindRequiredComponentInChildren<Button>(
-                "BackButton",
-                _recipeReadonlyBookView?.transform);
-            _portraitImage ??= FindOptionalComponentInChildren<Image>("CharacterPortrait");
-            _recipeViewButton ??=
-                FindRequiredComponentInChildren<Button>("RecipeViewButton");
-            _recipeViewGlow ??=
-                FindOptionalComponentInChildren<Image>("TargetGlow");
+            RequireReference(_nameText, nameof(_nameText));
+            RequireReference(_descText, nameof(_descText));
+            RequireReference(_leftArrow, nameof(_leftArrow));
+            RequireReference(_rightArrow, nameof(_rightArrow));
+            RequireReference(_confirmButton, nameof(_confirmButton));
+            RequireReference(_continueButton, nameof(_continueButton));
+            RequireReference(_backButton, nameof(_backButton));
+            RequireReference(_confirmLabel, nameof(_confirmLabel));
+            RequireReference(
+                _recipeReadonlyBookView,
+                nameof(_recipeReadonlyBookView));
+            RequireReference(_recipeViewButton, nameof(_recipeViewButton));
+            RequireReference(_recipeViewGlow, nameof(_recipeViewGlow));
+            RequireReference(_foodTipsPrefab, nameof(_foodTipsPrefab));
 
-            _confirmLabel = _confirmButton.transform.Find("TMP_Text")
-                ?.GetComponent<TMP_Text>();
-            if (_confirmLabel == null)
+            if (_dots == null || _dots.Count == 0)
             {
                 throw new MissingComponentException(
-                    "CharacterSelectForm requires ConfirmButton/TMP_Text with component TMP_Text.");
+                    "CharacterSelectForm requires serialized page dot references.");
+            }
+
+            for (int i = 0; i < _dots.Count; i++)
+            {
+                RequireReference(_dots[i], $"{nameof(_dots)}[{i}]");
+            }
+        }
+
+        private static void RequireReference(
+            UnityEngine.Object reference,
+            string fieldName)
+        {
+            if (reference == null)
+            {
+                throw new MissingReferenceException(
+                    $"CharacterSelectForm requires serialized reference '{fieldName}'.");
             }
         }
 
@@ -578,54 +568,5 @@ namespace GourmetProject.Game.UI.Menu
             _portraitImage.enabled = portrait != null;
         }
 
-        private Transform FindChild(string childName)
-        {
-            foreach (Transform child in CachedTransform.GetComponentsInChildren<Transform>(true))
-            {
-                if (child.name == childName)
-                {
-                    return child;
-                }
-            }
-
-            return null;
-        }
-
-        private T FindRequiredComponentInChildren<T>(
-            string childName,
-            Transform excludedRoot = null) where T : Component
-        {
-            T component = FindOptionalComponentInChildren<T>(
-                childName,
-                excludedRoot);
-            if (component != null)
-            {
-                return component;
-            }
-
-            throw new MissingComponentException($"CharacterSelectForm requires child '{childName}' with component {typeof(T).Name}.");
-        }
-
-        private T FindOptionalComponentInChildren<T>(
-            string childName,
-            Transform excludedRoot = null) where T : Component
-        {
-            foreach (Transform child in CachedTransform.GetComponentsInChildren<Transform>(true))
-            {
-                if (excludedRoot != null
-                    && (child == excludedRoot
-                        || child.IsChildOf(excludedRoot)))
-                {
-                    continue;
-                }
-
-                if (child.name == childName && child.TryGetComponent(out T component))
-                {
-                    return component;
-                }
-            }
-
-            return null;
-        }
     }
 }

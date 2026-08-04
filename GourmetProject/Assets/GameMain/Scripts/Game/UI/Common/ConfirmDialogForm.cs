@@ -17,13 +17,13 @@ namespace GourmetProject.Game.UI.Common
     /// </summary>
     public sealed class ConfirmDialogForm : UGuiForm
     {
-        private TMP_Text _titleText;
-        private TMP_Text _messageText;
-        private Button _confirmButton;
-        private Button _cancelButton;
-        private TMP_Text _confirmLabel;
-        private TMP_Text _cancelLabel;
-        private RectTransform _confirmButtonRect;
+        [SerializeField] private TMP_Text _titleText;
+        [SerializeField] private TMP_Text _messageText;
+        [SerializeField] private Button _confirmButton;
+        [SerializeField] private Button _cancelButton;
+        [SerializeField] private TMP_Text _confirmLabel;
+        [SerializeField] private TMP_Text _cancelLabel;
+        [SerializeField] private RectTransform _confirmButtonRect;
         private Vector2 _confirmTwoButtonPosition;
 
         private ConfirmDialogData _data;
@@ -31,14 +31,7 @@ namespace GourmetProject.Game.UI.Common
         protected override void OnInit(object userData)
         {
             base.OnInit(userData);
-
-            _titleText = CachedTransform.Find("Window/Title").GetComponent<TMP_Text>();
-            _messageText = CachedTransform.Find("Window/Message").GetComponent<TMP_Text>();
-            _confirmButton = CachedTransform.Find("Window/ConfirmButton").GetComponent<Button>();
-            _cancelButton = CachedTransform.Find("Window/CancelButton").GetComponent<Button>();
-            _confirmLabel = _confirmButton.transform.Find("TMP_Text").GetComponent<TMP_Text>();
-            _cancelLabel = _cancelButton.transform.Find("TMP_Text").GetComponent<TMP_Text>();
-            _confirmButtonRect = (RectTransform)_confirmButton.transform;
+            EnsureReferences();
             _confirmTwoButtonPosition = _confirmButtonRect.anchoredPosition;
 
             _confirmButton.onClick.AddListener(OnConfirmClicked);
@@ -81,6 +74,28 @@ namespace GourmetProject.Game.UI.Common
             var callback = _data?.OnCancel;
             GameApp.UI.CloseUIForm(UIForm);
             callback?.Invoke();
+        }
+
+        private void EnsureReferences()
+        {
+            RequireReference(_titleText, nameof(_titleText));
+            RequireReference(_messageText, nameof(_messageText));
+            RequireReference(_confirmButton, nameof(_confirmButton));
+            RequireReference(_cancelButton, nameof(_cancelButton));
+            RequireReference(_confirmLabel, nameof(_confirmLabel));
+            RequireReference(_cancelLabel, nameof(_cancelLabel));
+            RequireReference(_confirmButtonRect, nameof(_confirmButtonRect));
+        }
+
+        private static void RequireReference(
+            Object reference,
+            string fieldName)
+        {
+            if (reference == null)
+            {
+                throw new MissingReferenceException(
+                    $"ConfirmDialogForm requires serialized reference '{fieldName}'.");
+            }
         }
     }
 }

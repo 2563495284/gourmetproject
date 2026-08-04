@@ -49,18 +49,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3eb08768279e5459abe83092750a8b95, type: 3}
   m_Name: 
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.CharacterSelectForm
-  _nameText: {fileID: 0}
-  _descText: {fileID: 0}
-  _leftArrow: {fileID: 0}
-  _rightArrow: {fileID: 0}
+  _nameText: {fileID: 2857044607615988416}
+  _descText: {fileID: 232104418968602855}
+  _leftArrow: {fileID: 1084}
+  _rightArrow: {fileID: 1094}
   _confirmButton: {fileID: 1844008155429161559}
   _continueButton: {fileID: 5899951108249833976}
   _backButton: {fileID: 7037337993800105864}
+  _confirmLabel: {fileID: 3453207642264516818}
   _portraitImage: {fileID: 0}
   _recipeReadonlyBookView: {fileID: 2535713309897631935}
   _recipeViewButton: {fileID: 8635841125379671651}
   _recipeViewGlow: {fileID: 890000000000000004}
   _foodTipsPrefab: {fileID: 7013095112852541377, guid: ea2c95d613a824d08884a70e0025c9df, type: 3}
+  _dots:
+  - {fileID: 1133}
+  - {fileID: 1143}
+  - {fileID: 1153}
 --- !u!1 &1010
 GameObject:
   m_ObjectHideFlags: 0
@@ -2275,6 +2280,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
+--- !u!114 &3453207642264516818 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5233011122286777261, guid: 904bce5f6ed064bb59ae1aa54cced993, type: 3}
+  m_PrefabInstance: {fileID: 7454339113731582847}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
 --- !u!224 &8772713377730337292 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 2219660794846146931, guid: 904bce5f6ed064bb59ae1aa54cced993, type: 3}

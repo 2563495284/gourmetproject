@@ -641,6 +641,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d1e96e6c0522a41d3a82d7bcdca5dd05, type: 3}
   m_Name: 
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.ConfirmDialogForm
+  _titleText: {fileID: 7873020128602363321}
+  _messageText: {fileID: 2221783215858289807}
+  _confirmButton: {fileID: 8670032094543892985}
+  _cancelButton: {fileID: 6289371035226635169}
+  _confirmLabel: {fileID: 5522308577367986068}
+  _cancelLabel: {fileID: 3611172887586724003}
+  _confirmButtonRect: {fileID: 3933317449305573824}
 --- !u!1 &4716496587120633320
 GameObject:
   m_ObjectHideFlags: 0
