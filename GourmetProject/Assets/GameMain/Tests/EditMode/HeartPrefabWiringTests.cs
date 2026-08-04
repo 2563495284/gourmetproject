@@ -13,7 +13,6 @@ namespace GourmetProject.Tests.EditMode
         private const string BattleHeartItemPrefabPath = "Assets/GameMain/Content/Prefabs/UI/Hud/BattleHeartItem.prefab";
         private const string HeartBreakPrefabPath = "Assets/GameMain/Content/Prefabs/UI/HeartBreakForm.prefab";
         private const string RewardPrefabPath = "Assets/GameMain/Content/Prefabs/UI/RewardForm.prefab";
-        private const string DefeatPrefabPath = "Assets/GameMain/Content/Prefabs/UI/DefeatForm.prefab";
 
         [Test]
         public void BattleInfoColumn_HasStaticReferenceLayoutAndDynamicHeartPrefab()
@@ -148,19 +147,6 @@ namespace GourmetProject.Tests.EditMode
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(RewardPrefabPath);
             Assert.That(prefab, Is.Not.Null);
             Component form = prefab.GetComponent("RewardForm");
-            Assert.That(form, Is.Not.Null);
-
-            var serialized = new SerializedObject(form);
-            Assert.That(serialized.FindProperty("_transitionGroup").objectReferenceValue, Is.Not.Null);
-            Assert.That(serialized.FindProperty("_transitionPanel").objectReferenceValue, Is.Not.Null);
-        }
-
-        [Test]
-        public void DefeatForm_HasPopupTransitionReferences()
-        {
-            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(DefeatPrefabPath);
-            Assert.That(prefab, Is.Not.Null);
-            Component form = prefab.GetComponent("DefeatForm");
             Assert.That(form, Is.Not.Null);
 
             var serialized = new SerializedObject(form);

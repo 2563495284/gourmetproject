@@ -16,7 +16,7 @@ namespace GourmetProject.Game.Meta
 
     /// <summary>
     /// 局外结算：根据运行状态生成胜/负结算文本（周数、击败 Boss、金币、构筑规模、触发事件、新解锁等）。
-    /// 当前没有独立结算 prefab，复用 BattleForm 的结果面板展示这段文本。
+    /// 结算界面使用这份摘要填充胜利结果页或失败确认弹窗。
     /// </summary>
     public static class SettlementService
     {
