@@ -71,7 +71,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void TmpDropdownsHaveCaptionAndItemTextReferences()
+        public void TmpDropdownsHaveCompleteTemplateAndTextReferences()
         {
             foreach (string path in FindAssets("t:Prefab", ContentRoot))
             {
@@ -80,8 +80,23 @@ namespace GourmetProject.Tests.EditMode
                 {
                     foreach (TMP_Dropdown dropdown in root.GetComponentsInChildren<TMP_Dropdown>(true))
                     {
+                        Assert.That(dropdown.template, Is.Not.Null, $"{path}: {dropdown.name} template");
+                        Toggle itemToggle = dropdown.template.GetComponentInChildren<Toggle>(true);
+                        Assert.That(itemToggle, Is.Not.Null, $"{path}: {dropdown.name} template item Toggle");
+                        Assert.That(
+                            itemToggle.transform,
+                            Is.Not.SameAs(dropdown.template),
+                            $"{path}: {dropdown.name} item Toggle must be a template child");
+                        Assert.That(
+                            itemToggle.transform.parent,
+                            Is.InstanceOf<RectTransform>(),
+                            $"{path}: {dropdown.name} item Toggle parent RectTransform");
                         Assert.That(dropdown.captionText, Is.Not.Null, $"{path}: {dropdown.name} captionText");
                         Assert.That(dropdown.itemText, Is.Not.Null, $"{path}: {dropdown.name} itemText");
+                        Assert.That(
+                            dropdown.itemText.transform.IsChildOf(itemToggle.transform),
+                            Is.True,
+                            $"{path}: {dropdown.name} itemText must belong to the item Toggle");
                     }
                 }
                 finally
