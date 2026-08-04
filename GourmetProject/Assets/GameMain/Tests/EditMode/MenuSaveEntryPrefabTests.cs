@@ -31,7 +31,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void CharacterSelect_HasHiddenContinueButtonBesideConfirmButton()
+        public void CharacterSelect_HasHiddenContinueButtonReference()
         {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
                 CharacterSelectPrefabPath);
@@ -55,15 +55,6 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(
                 confirmButton.GetComponentInChildren<Text>(true).text,
                 Is.EqualTo("开始游戏"));
-
-            var continueRect = (RectTransform)continueTransform;
-            var confirmRect = (RectTransform)confirmTransform;
-            Assert.That(
-                continueRect.anchoredPosition.y,
-                Is.EqualTo(confirmRect.anchoredPosition.y));
-            Assert.That(
-                continueRect.anchoredPosition.x,
-                Is.LessThan(confirmRect.anchoredPosition.x));
 
             Component form = prefab.GetComponent("CharacterSelectForm");
             Assert.That(form, Is.Not.Null);

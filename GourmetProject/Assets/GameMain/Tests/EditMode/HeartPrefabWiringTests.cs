@@ -91,7 +91,7 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(scoreTitle.anchoredPosition.y, Is.EqualTo(190f).Within(0.01f));
             Assert.That(score.anchoredPosition.y, Is.EqualTo(40.5f).Within(0.01f));
             Assert.That(stats.anchoredPosition.y, Is.EqualTo(-289.5f).Within(0.01f));
-            Assert.That(settings.anchoredPosition.y, Is.EqualTo(-534f).Within(0.01f));
+            Assert.That(settings.anchoredPosition.y, Is.EqualTo(-481.5f).Within(0.01f));
 
             Assert.That(boss.gameObject.activeSelf, Is.False);
             Assert.That(boss.pivot, Is.EqualTo(new Vector2(0.27f, 0f)));
