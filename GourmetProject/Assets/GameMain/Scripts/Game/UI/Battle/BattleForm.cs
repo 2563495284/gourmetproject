@@ -104,8 +104,7 @@ namespace GourmetProject.Game.UI.Battle
 
         [Header("Reward Dish Pack (center)")]
         [SerializeField] private RewardDishPackPanel _rewardDishPackPanel;
-        [SerializeField] private RewardItemChoicePanel _rewardItemChoicePanelPrefab;
-        private RewardItemChoicePanel _rewardItemChoicePanel;
+        [SerializeField] private RewardItemChoicePanel _rewardItemChoicePanel;
         [SerializeField] private RandomizedItemsPanel _randomizedItemsPanel;
 
         [Header("Event Page (center)")]
@@ -910,14 +909,8 @@ namespace GourmetProject.Game.UI.Battle
 
         GameRun IRewardPageHost.Run => _run;
         GameplayView IRewardPageHost.CurrentView => _current;
-        RectTransform IRewardPageHost.CenterTransform => _center != null ? _center.transform as RectTransform : null;
         RewardDishPackPanel IRewardPageHost.RewardDishPackPanel => _rewardDishPackPanel;
-        RewardItemChoicePanel IRewardPageHost.RewardItemChoicePanel
-        {
-            get => _rewardItemChoicePanel;
-            set => _rewardItemChoicePanel = value;
-        }
-        RewardItemChoicePanel IRewardPageHost.RewardItemChoicePanelPrefab => _rewardItemChoicePanelPrefab;
+        RewardItemChoicePanel IRewardPageHost.RewardItemChoicePanel => _rewardItemChoicePanel;
         RandomizedItemsPanel IRewardPageHost.RandomizedItemsPanel => _randomizedItemsPanel;
         void IRewardPageHost.SwitchTo(GameplayView view, Action buildCenter, Action onShown) => SwitchTo(view, buildCenter, onShown);
         void IRewardPageHost.RefreshPersistent() => RefreshPersistent();

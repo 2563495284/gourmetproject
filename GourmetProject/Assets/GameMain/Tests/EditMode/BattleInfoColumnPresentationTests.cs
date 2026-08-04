@@ -6,6 +6,7 @@ using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Battle;
 using GourmetProject.Game.UI.Battle.View;
+using GourmetProject.Game.UI.Meta;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
@@ -150,6 +151,20 @@ namespace GourmetProject.Tests.EditMode
             {
                 UnityEngine.Object.DestroyImmediate(panelInstance);
             }
+        }
+
+        [Test]
+        public void RewardItemChoicePanel_IsPreloadedUnderBattleFormCenter()
+        {
+            GameObject battlePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(BattlePrefabPath);
+            Component battle = battlePrefab.GetComponent("BattleForm");
+            RewardItemChoicePanel panelReference = new SerializedObject(battle)
+                .FindProperty("_rewardItemChoicePanel")
+                .objectReferenceValue as RewardItemChoicePanel;
+
+            Assert.That(panelReference, Is.Not.Null);
+            Assert.That(panelReference.transform.parent, Is.EqualTo(battlePrefab.transform.Find("HudFrame/Center")));
+            Assert.That(panelReference.gameObject.activeSelf, Is.False);
         }
 
         [Test]

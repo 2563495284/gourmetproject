@@ -16,13 +16,9 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         GameplayView CurrentView { get; }
 
-        RectTransform CenterTransform { get; }
-
         RewardDishPackPanel RewardDishPackPanel { get; }
 
-        RewardItemChoicePanel RewardItemChoicePanel { get; set; }
-
-        RewardItemChoicePanel RewardItemChoicePanelPrefab { get; }
+        RewardItemChoicePanel RewardItemChoicePanel { get; }
 
         RandomizedItemsPanel RandomizedItemsPanel { get; }
 
@@ -155,9 +151,9 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 return false;
             }
 
-            EnsureRewardItemChoicePanel();
             if (_host.RewardItemChoicePanel == null)
             {
+                Log.Error("BattleForm: reward item choice panel is not configured.", Tag);
                 return false;
             }
 
@@ -273,37 +269,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
             return view == GameplayView.RewardDishPack
                 || view == GameplayView.RewardItemChoice
                 || view == GameplayView.RandomizedItems;
-        }
-
-        private void EnsureRewardItemChoicePanel()
-        {
-            if (_host.RewardItemChoicePanel != null || _host.CenterTransform == null)
-            {
-                return;
-            }
-
-            if (_host.RewardItemChoicePanelPrefab == null)
-            {
-                Debug.LogError("BattleForm 缺少奖励道具选择面板 prefab。");
-                return;
-            }
-
-            RewardItemChoicePanel panel = UnityEngine.Object.Instantiate(
-                _host.RewardItemChoicePanelPrefab,
-                _host.CenterTransform);
-            RectTransform rect = panel.transform as RectTransform;
-            if (rect != null)
-            {
-                rect.anchorMin = new Vector2(0.18f, 0.03f);
-                rect.anchorMax = new Vector2(0.82f, 0.9f);
-                rect.offsetMin = Vector2.zero;
-                rect.offsetMax = Vector2.zero;
-                rect.anchoredPosition = Vector2.zero;
-                rect.localScale = Vector3.one;
-            }
-
-            panel.gameObject.SetActive(false);
-            _host.RewardItemChoicePanel = panel;
         }
 
         private void RestoreAfterAcquireView(GameplayView previous)
