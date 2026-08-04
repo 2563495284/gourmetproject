@@ -146,6 +146,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             try
             {
+                var baseTasks = new List<Awaitable>(plan.BaseBeats.Count);
                 for (int i = 0; i < plan.BaseBeats.Count; i++)
                 {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -168,12 +169,18 @@ namespace GourmetProject.Game.Presentation.Battle
                         view?.Instance?.Def?.Name ?? beat.DishId,
                         beat.DishInstanceId,
                         playback);
-                    await _stage.PlayBaseAsync(
+                    baseTasks.Add(_stage.PlayBaseAsync(
                         view,
                         view?.Instance?.Def?.Name ?? beat.DishId,
                         contribution,
                         ScaleSettlementDuration(_baseDishDuration),
-                        cancellationToken);
+                        cancellationToken));
+                }
+
+                // 账本按正式顺序更新，但所有基础贡献动画均已在同一帧启动。
+                for (int i = 0; i < baseTasks.Count; i++)
+                {
+                    await baseTasks[i];
                 }
 
                 for (int groupIndex = 0; groupIndex < plan.Groups.Count; groupIndex++)

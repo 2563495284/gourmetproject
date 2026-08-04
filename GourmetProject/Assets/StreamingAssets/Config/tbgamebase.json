@@ -5,7 +5,7 @@
     "interestThreshold": 5,
     "interestGoldPer": 1,
     "initialActionRerollCount": 0,
-    "baseActiveSlots": 2,
+    "baseActiveSlots": 4,
     "shopFoodSaleSlotCount": 3,
     "shopPassiveItemSaleSlotCount": 2,
     "shopActiveItemSaleSlotCount": 2,

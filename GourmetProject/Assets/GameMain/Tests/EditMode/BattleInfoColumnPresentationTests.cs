@@ -20,6 +20,7 @@ namespace GourmetProject.Tests.EditMode
     public sealed class BattleInfoColumnPresentationTests
     {
         private const string BattlePrefabPath = "Assets/GameMain/Content/Prefabs/UI/BattleForm.prefab";
+        private const string ViewTablePanelPrefabPath = "Assets/GameMain/Content/Prefabs/UI/ViewTablePanel.prefab";
 
         private cfg.Tables _tables;
         private GameplayDatabase _database;
@@ -66,8 +67,9 @@ namespace GourmetProject.Tests.EditMode
 
                 column.Refresh(run, session, GameplayView.TableView, null);
 
-                Assert.That(TextReference(column, "_viewTableLabelText").text, Is.EqualTo("返回"));
-                Assert.That(TextReference(column, "_viewTableCountText").gameObject.activeSelf, Is.False);
+                Assert.That(TextReference(column, "_viewTableLabelText").text, Is.EqualTo("查看餐桌："));
+                Assert.That(TextReference(column, "_viewTableCountText").gameObject.activeSelf, Is.True);
+                Assert.That(ButtonReference(column, "_viewTableButton").interactable, Is.False);
             }
             finally
             {
@@ -109,6 +111,44 @@ namespace GourmetProject.Tests.EditMode
             finally
             {
                 UnityEngine.Object.DestroyImmediate(instance);
+            }
+        }
+
+        [Test]
+        public void ViewTablePanel_IsWiredToBattleFormAndExitButtonInvokesCallback()
+        {
+            GameObject battlePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(BattlePrefabPath);
+            Component battle = battlePrefab.GetComponent("BattleForm");
+            GameObject panelReference = new SerializedObject(battle)
+                .FindProperty("_viewTablePanel")
+                .objectReferenceValue as GameObject;
+
+            Assert.That(panelReference, Is.Not.Null);
+            Assert.That(panelReference.name, Is.EqualTo("ViewTablePanel"));
+            Assert.That(panelReference.GetComponent<ViewTablePanel>(), Is.Not.Null);
+
+            GameObject panelPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ViewTablePanelPrefabPath);
+            GameObject panelInstance = PrefabUtility.InstantiatePrefab(panelPrefab) as GameObject;
+            try
+            {
+                ViewTablePanel panel = panelInstance.GetComponent<ViewTablePanel>();
+                Assert.That(panel, Is.Not.Null);
+
+                Button exitButton = new SerializedObject(panel)
+                    .FindProperty("_exitEditButton")
+                    .objectReferenceValue as Button;
+                bool exited = false;
+
+                Assert.That(exitButton, Is.Not.Null);
+
+                panel.Bind(() => exited = true);
+                exitButton.onClick.Invoke();
+
+                Assert.That(exited, Is.True);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(panelInstance);
             }
         }
 
@@ -267,6 +307,11 @@ namespace GourmetProject.Tests.EditMode
         private static RectTransform RectTransformReference(BattleInfoColumn column, string propertyName)
         {
             return new SerializedObject(column).FindProperty(propertyName).objectReferenceValue as RectTransform;
+        }
+
+        private static Button ButtonReference(BattleInfoColumn column, string propertyName)
+        {
+            return new SerializedObject(column).FindProperty(propertyName).objectReferenceValue as Button;
         }
 
         private static GameObject GameObjectReference(BattleInfoColumn column, string propertyName)

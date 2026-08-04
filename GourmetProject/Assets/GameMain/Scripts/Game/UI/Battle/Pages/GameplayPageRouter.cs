@@ -22,6 +22,8 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         GameObject Backdrop { get; }
 
+        GameObject ViewTablePanel { get; }
+
         GameObject ActionSelectionPanel { get; }
 
         ActionCardDeck Deck { get; }
@@ -111,6 +113,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
             _host.RewardItemChoicePanel?.Close();
             _host.RandomizedItemsPanel?.Close();
             SetActive(_host.EventPagePanel, false);
+            SetActive(_host.ViewTablePanel, false);
 
             SetActive(_host.BoardEditPanel, false);
 
@@ -166,6 +169,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
             bool randomizedItems = view == GameplayView.RandomizedItems;
             bool eventPage = view == GameplayView.Event;
             bool recipeInspect = view == GameplayView.RecipeInspect;
+            bool tableView = view == GameplayView.TableView;
             bool worldView = view == GameplayView.Food || view == GameplayView.TableEdit || view == GameplayView.TableView;
 
             SetActive(_host.ActionSelectionPanel, actionSelect);
@@ -175,6 +179,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
             SetActive(_host.RewardItemChoicePanel, rewardItemChoice);
             SetActive(_host.RandomizedItemsPanel, randomizedItems);
             SetActive(_host.EventPagePanel, eventPage);
+            SetActive(_host.ViewTablePanel, tableView);
 
             SetActive(_host.BoardEditPanel, view == GameplayView.TableEdit);
 

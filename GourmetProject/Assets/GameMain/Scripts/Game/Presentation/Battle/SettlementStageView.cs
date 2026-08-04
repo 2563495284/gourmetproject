@@ -44,8 +44,6 @@ namespace GourmetProject.Game.Presentation.Battle
             float duration,
             CancellationToken cancellationToken)
         {
-            // 基础菜之间直接切换聚焦，不能先 ClearFocus；否则会闪出一帧全桌全亮。
-            ApplyFocus(view?.Instance != null ? view.Instance.Id : 0, null);
             if (view != null)
             {
                 _ = PlayFeedbackSafelyAsync(

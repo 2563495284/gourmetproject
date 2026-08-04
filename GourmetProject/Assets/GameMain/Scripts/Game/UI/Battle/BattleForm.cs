@@ -78,6 +78,9 @@ namespace GourmetProject.Game.UI.Battle
         [Tooltip("HUD 里的空区矩形：世界餐桌将 fit 并居中锁定在该屏幕区域内。")]
         [SerializeField] private RectTransform _boardArea;
 
+        [Header("DiningTable View")]
+        [SerializeField] private GameObject _viewTablePanel;
+
         [Header("Left Column")]
         [SerializeField] private BattleInfoColumn _infoColumn;
 
@@ -208,6 +211,7 @@ namespace GourmetProject.Game.UI.Battle
             base.OnInit(userData);
 
             _infoColumn?.Bind(OnSettingsClicked, OnViewTableClicked, OnViewRecipeClicked);
+            _viewTablePanel?.GetComponent<ViewTablePanel>()?.Bind(OnExitTableViewClicked);
             _cakeLayerBuffHud = GetComponent<CakeLayerBuffHud>();
             _foodBar?.Bind(OnEatClicked, OnDoodleClearClicked, OnDoodleToggleClicked);
 
@@ -851,6 +855,7 @@ namespace GourmetProject.Game.UI.Battle
         CanvasGroup IGameplayPageRouterHost.Center => _center;
         GameObject IGameplayPageRouterHost.HudFrame => _hudFrame;
         GameObject IGameplayPageRouterHost.Backdrop => _backdrop;
+        GameObject IGameplayPageRouterHost.ViewTablePanel => _viewTablePanel;
         GameObject IGameplayPageRouterHost.ActionSelectionPanel => _actionSelectionPanel;
         ActionCardDeck IGameplayPageRouterHost.Deck => _deck;
         ShopForm IGameplayPageRouterHost.ShopPanel => _shopPanel;
@@ -2404,7 +2409,6 @@ namespace GourmetProject.Game.UI.Battle
 
             if (_current == GameplayView.TableView)
             {
-                _tableCoordinator.Back();
                 return;
             }
 
@@ -2415,6 +2419,18 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             _tableCoordinator.Open();
+        }
+
+        private void OnExitTableViewClicked()
+        {
+            if (_tableCoordinator == null
+                || _current != GameplayView.TableView
+                || IsViewToggleTransitioning())
+            {
+                return;
+            }
+
+            _tableCoordinator.Back();
         }
 
         private bool IsViewToggleTransitioning()

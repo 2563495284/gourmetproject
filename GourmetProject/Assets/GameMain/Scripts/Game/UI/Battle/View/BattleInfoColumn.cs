@@ -17,7 +17,6 @@ namespace GourmetProject.Game.UI.Battle.View
     public sealed class BattleInfoColumn : MonoBehaviour
     {
         private const string ViewTableLabel = "查看餐桌：";
-        private const string StomachBackLabel = "返回";
         private const float ScoreTitleDefaultY = 190f;
         private const float ScoreTitleBossY = 102f;
         private const float BossStatTransitionDuration = 0.24f;
@@ -104,18 +103,16 @@ namespace GourmetProject.Game.UI.Battle.View
 
             if (_viewTableButton != null)
             {
-                bool stomachView = current == GameplayView.TableView;
-                _viewTableButton.interactable = stomachView
-                    || (world != null && current != GameplayView.None && world.CanEnterTableView);
-                SetTableLabel(stomachView ? StomachBackLabel : ViewTableLabel);
+                _viewTableButton.interactable = current != GameplayView.TableView
+                    && world != null
+                    && current != GameplayView.None
+                    && world.CanEnterTableView;
+                SetTableLabel(ViewTableLabel);
 
                 if (_viewTableCountText != null)
                 {
-                    _viewTableCountText.gameObject.SetActive(!stomachView);
-                    if (!stomachView)
-                    {
-                        _viewTableCountText.text = ResolveTableCellCount(run, session, world).ToString();
-                    }
+                    _viewTableCountText.gameObject.SetActive(true);
+                    _viewTableCountText.text = ResolveTableCellCount(run, session, world).ToString();
                 }
             }
 

@@ -335,13 +335,16 @@ namespace GourmetProject.Game.Run
             }
         }
 
-        /// <summary>主动道具消耗槽总容量 = 基础槽 + ExtraActiveSlot 被动加成（下限 0）。</summary>
+        private const int MaxActiveSlotCapacity = 9;
+
+        /// <summary>主动道具消耗槽总容量 = 基础槽 + ExtraActiveSlot 被动加成（范围 0..9）。</summary>
         public int ActiveSlotCapacity
         {
             get
             {
                 int baseSlots = _tables.TbGameBase.BaseActiveSlots;
-                return System.Math.Max(0, baseSlots + new ItemRuntime(this).ExtraActiveSlots());
+                int capacity = baseSlots + new ItemRuntime(this).ExtraActiveSlots();
+                return System.Math.Min(MaxActiveSlotCapacity, System.Math.Max(0, capacity));
             }
         }
 

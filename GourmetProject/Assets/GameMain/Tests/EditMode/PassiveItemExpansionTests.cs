@@ -76,6 +76,19 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void ActiveSlotCapacity_StartsAtFourAndCapsAtNine()
+        {
+            GameRun run = CreateRun();
+
+            Assert.That(_tables.TbGameBase.BaseActiveSlots, Is.EqualTo(4));
+            Assert.That(run.ActiveSlotCapacity, Is.EqualTo(4));
+
+            AttachPassiveModel(run, "item_extra_active_slots_max", effectValue: 20f);
+
+            Assert.That(run.ActiveSlotCapacity, Is.EqualTo(9));
+        }
+
+        [Test]
         public void HiddenScoreBonus_UsesConfiguredRewardChannelsAndHasNoGoldChannel()
         {
             GameRun run = CreateRun();

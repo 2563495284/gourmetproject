@@ -23,6 +23,10 @@ namespace GourmetProject.Game.UI.Battle.View
         private const float PassiveSlotPadding = 2f;
         private const float PassiveSlotSpacing = 4f;
         private const float PassiveScrollEpsilon = 0.5f;
+        private const int MaxActiveSlotCount = 9;
+        private const float ActiveSlotPadding = 4f;
+        private const float ActiveSlotSpacing = 4f;
+        private const float ActiveSlotFallbackSize = 150f;
         private static readonly Color ActiveItemsFullColor = new Color32(232, 72, 72, 255);
 
         [SerializeField] private RectTransform _passiveItemsContainer;
@@ -670,7 +674,7 @@ namespace GourmetProject.Game.UI.Battle.View
 
         private void SetActiveSlotCount(int count)
         {
-            int requestedCount = Mathf.Max(0, count);
+            int requestedCount = Mathf.Clamp(count, 0, MaxActiveSlotCount);
             EnsureActiveSlotPool(requestedCount);
             int visibleCount = Mathf.Min(requestedCount, _activeSlots.Count);
 
@@ -703,44 +707,106 @@ namespace GourmetProject.Game.UI.Battle.View
                 return;
             }
 
+            int visibleCount = Mathf.Min(count, _activeSlots.Count, MaxActiveSlotCount);
+            int[] rowCounts = ActiveSlotRowCounts(visibleCount);
             float containerWidth = _activeSlotsContainer.rect.width;
-            if (containerWidth <= 0f && _activeSlotsContainer.parent is RectTransform parent)
+            float containerHeight = _activeSlotsContainer.rect.height;
+            if ((containerWidth <= 0f || containerHeight <= 0f) &&
+                _activeSlotsContainer.parent is RectTransform parent)
             {
-                containerWidth = parent.rect.width;
+                containerWidth = containerWidth > 0f ? containerWidth : parent.rect.width;
+                containerHeight = containerHeight > 0f ? containerHeight : parent.rect.height;
             }
 
-            float slotWidth = 0f;
-            for (int i = 0; i < count && i < _activeSlots.Count; i++)
+            float baseSlotSize = 0f;
+            for (int i = 0; i < visibleCount; i++)
             {
                 RunItemSlotView slot = _activeSlots[i];
                 RectTransform visual = slot != null ? slot.VisualRectTransform : null;
                 if (visual != null)
                 {
-                    slotWidth = Mathf.Max(slotWidth, visual.rect.width, Mathf.Abs(visual.sizeDelta.x));
+                    baseSlotSize = Mathf.Max(
+                        baseSlotSize,
+                        visual.rect.width,
+                        visual.rect.height,
+                        Mathf.Abs(visual.sizeDelta.x),
+                        Mathf.Abs(visual.sizeDelta.y));
                 }
             }
 
-            // 首尾图标贴合容器两侧；槽位越多，中心间距越小，形成横向重叠。
-            float centerSpan = Mathf.Max(0f, containerWidth - slotWidth);
-            float spacing = count > 1
-                ? centerSpan / (count - 1)
-                : 0f;
-            float firstX = -centerSpan * 0.5f;
-
-            for (int i = 0; i < count && i < _activeSlots.Count; i++)
+            baseSlotSize = baseSlotSize > 0f ? baseSlotSize : ActiveSlotFallbackSize;
+            int maxColumns = 1;
+            for (int row = 0; row < rowCounts.Length; row++)
             {
-                RunItemSlotView slot = _activeSlots[i];
-                RectTransform rect = slot != null ? slot.RectTransform : null;
-                if (rect == null)
-                {
-                    continue;
-                }
+                maxColumns = Mathf.Max(maxColumns, rowCounts[row]);
+            }
 
-                rect.anchorMin = new Vector2(0.5f, 0.5f);
-                rect.anchorMax = new Vector2(0.5f, 0.5f);
-                rect.pivot = new Vector2(0.5f, 0.5f);
-                rect.anchoredPosition = new Vector2(firstX + spacing * i, 0f);
-                rect.localScale = Vector3.one;
+            float availableWidth = Mathf.Max(
+                1f,
+                containerWidth - ActiveSlotPadding * 2f - ActiveSlotSpacing * (maxColumns - 1));
+            float availableHeight = Mathf.Max(
+                1f,
+                containerHeight - ActiveSlotPadding * 2f - ActiveSlotSpacing * (rowCounts.Length - 1));
+            float slotSize = Mathf.Min(
+                baseSlotSize,
+                availableWidth / maxColumns,
+                availableHeight / rowCounts.Length);
+            float slotScale = slotSize / baseSlotSize;
+            float totalHeight = rowCounts.Length * slotSize +
+                                (rowCounts.Length - 1) * ActiveSlotSpacing;
+
+            int slotIndex = 0;
+            for (int row = 0; row < rowCounts.Length; row++)
+            {
+                int columns = rowCounts[row];
+                float totalWidth = columns * slotSize + (columns - 1) * ActiveSlotSpacing;
+                float firstX = -totalWidth * 0.5f + slotSize * 0.5f;
+                float y = totalHeight * 0.5f - slotSize * 0.5f -
+                          row * (slotSize + ActiveSlotSpacing);
+
+                for (int column = 0; column < columns && slotIndex < visibleCount; column++, slotIndex++)
+                {
+                    RunItemSlotView slot = _activeSlots[slotIndex];
+                    RectTransform rect = slot != null ? slot.RectTransform : null;
+                    if (rect == null)
+                    {
+                        continue;
+                    }
+
+                    rect.anchorMin = new Vector2(0.5f, 0.5f);
+                    rect.anchorMax = new Vector2(0.5f, 0.5f);
+                    rect.pivot = new Vector2(0.5f, 0.5f);
+                    rect.sizeDelta = new Vector2(baseSlotSize, baseSlotSize);
+                    rect.anchoredPosition = new Vector2(
+                        firstX + column * (slotSize + ActiveSlotSpacing),
+                        y);
+                    rect.localScale = Vector3.one * slotScale;
+                }
+            }
+        }
+
+        private static int[] ActiveSlotRowCounts(int count)
+        {
+            switch (count)
+            {
+                case 1:
+                    return new[] { 1 };
+                case 2:
+                    return new[] { 2 };
+                case 3:
+                    return new[] { 2, 1 };
+                case 4:
+                    return new[] { 2, 2 };
+                case 5:
+                    return new[] { 3, 2 };
+                case 6:
+                    return new[] { 3, 3 };
+                case 7:
+                    return new[] { 3, 2, 2 };
+                case 8:
+                    return new[] { 3, 3, 2 };
+                default:
+                    return new[] { 3, 3, 3 };
             }
         }
 
