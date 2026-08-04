@@ -12,7 +12,7 @@ using TMPro;
 namespace GourmetProject.Game.UI.Hud
 {
     /// <summary>
-    /// 主动道具点击后的使用/丢弃气泡。对标 STS2 药水 popup：只负责 UI 分流，不直接执行业务。
+    /// 消耗品点击后的使用/丢弃气泡。对标 STS2 药水 popup：只负责 UI 分流，不直接执行业务。
     /// </summary>
     [RequireComponent(typeof(RectTransform))]
     public sealed class ActiveItemActionPopup : MonoBehaviour, IPointerClickHandler
@@ -78,7 +78,7 @@ namespace GourmetProject.Game.UI.Hud
 
             if (_titleText != null)
             {
-                _titleText.text = item != null ? item.Name : "主动道具";
+                _titleText.text = item != null ? item.Name : "消耗品";
             }
 
             if (_reasonText != null)

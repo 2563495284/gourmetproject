@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 菜谱随机小组：仅配置组ID与组内带权放回随机池，菜谱通过 groupIds 正向引用。
+/// 食谱随机小组：仅配置组ID与组内带权放回随机池，食谱通过 groupIds 正向引用。
 /// </summary>
 public partial class TbRecipeGroup
 {

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace GourmetProject.Gameplay.Model
 {
     /// <summary>
-    /// 菜品风味定义（单槽，后者替换前者）。纯数据，由 Game 层从 Luban TbFlavor 适配生成。
+    /// 食物风味定义（单槽，后者替换前者）。纯数据，由 Game 层从 Luban TbFlavor 适配生成。
     /// </summary>
     public sealed class FlavorDef : IEffectDef
     {
@@ -48,7 +48,7 @@ namespace GourmetProject.Gameplay.Model
 
         public string TermId { get; }
 
-        /// <summary>同一菜品本体下的风味展示顺序；数值越小越靠前。</summary>
+        /// <summary>同一食物本体下的风味展示顺序；数值越小越靠前。</summary>
         public int SortOrder { get; }
 
         public bool HasTerm => !string.IsNullOrEmpty(TermId);

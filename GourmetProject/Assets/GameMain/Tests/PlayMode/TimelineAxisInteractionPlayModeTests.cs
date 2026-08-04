@@ -139,7 +139,7 @@ namespace GourmetProject.Tests.PlayMode
 
             yield return new WaitForSecondsRealtime(0.25f);
 
-            Assert.That(run.HasItem(item.Id), Is.False, "添加成功后必须消耗主动道具。");
+            Assert.That(run.HasItem(item.Id), Is.False, "添加成功后必须消耗消耗品。");
             Assert.That(
                 TimelineService.GetNodes(run)
                     .Any(node => node.Day == 3 && node.ActionId == item.EffectParam),
@@ -148,7 +148,7 @@ namespace GourmetProject.Tests.PlayMode
             Assert.That(
                 GetDeckCards(deck),
                 Has.Member(existingActionCard),
-                "只修改行动轴时不得重建当前日常/节点行动卡或播放其刷新效果。");
+                "只修改时间轴时不得重建当前日常/节点行动卡或播放其刷新效果。");
             Assert.That(axis.SelectionMode, Is.EqualTo(TimelineAxisSelectionMode.None));
             Assert.That(
                 root.GetComponentsInChildren<TargetArrowView>(true)
@@ -197,7 +197,7 @@ namespace GourmetProject.Tests.PlayMode
             Assert.That(
                 existing.anchoredPosition.x + preview.anchoredPosition.x,
                 Is.EqualTo(0f).Within(0.1f),
-                "最后一天的气泡应以日期点为中心展开，不向行动轴内部偏移。");
+                "最后一天的气泡应以日期点为中心展开，不向时间轴内部偏移。");
 
             Object.Destroy(root);
             yield return null;
@@ -295,7 +295,7 @@ namespace GourmetProject.Tests.PlayMode
             Assert.That(
                 GetDeckCards(deck),
                 Has.Member(existingActionCard),
-                "重掷 Boss Debuff 只应刷新行动轴，不得重建当前日常行动卡。");
+                "重掷 Boss Debuff 只应刷新时间轴，不得重建当前普通行动卡。");
 
             Object.Destroy(root);
             yield return null;
@@ -334,7 +334,7 @@ namespace GourmetProject.Tests.PlayMode
             Assert.That(
                 GetDeckCards(deck),
                 Has.Member(existingActionCard),
-                "丢弃主动道具只应刷新道具栏和行动轴，不得重建当前日常行动卡。");
+                "丢弃消耗品只应刷新装饰品和消耗品栏和时间轴，不得重建当前普通行动卡。");
 
             Object.Destroy(root);
             yield return null;
@@ -412,7 +412,7 @@ namespace GourmetProject.Tests.PlayMode
             Assert.That(
                 GetDeckCards(deck),
                 Has.Member(existingActionCard),
-                "复制单只应刷新行动轴，不得打断或重建当前日常行动卡。");
+                "复制单只应刷新时间轴，不得打断或重建当前普通行动卡。");
 
             string[] copiedNodeIds = run.RuntimeTimelineNodes
                 .Where(node =>
@@ -436,7 +436,7 @@ namespace GourmetProject.Tests.PlayMode
             Assert.That(
                 view.ShownNodeIds,
                 Is.EqualTo(copiedNodeIds),
-                "本次日常行动完整结算后应检测并执行当天的复制节点。");
+                "本次普通行动完整结算后应检测并执行当天的复制节点。");
             Assert.That(view.OpenWeekMapCount, Is.EqualTo(1));
 
             Object.Destroy(root);
@@ -596,7 +596,7 @@ namespace GourmetProject.Tests.PlayMode
                 root.GetComponentsInChildren<TargetArrowView>(true)
                     .Any(view => view.gameObject.name.Contains("(Clone)")),
                 Is.True,
-                "即使当前没有合法目标，也必须进入行动轴瞄准并显示箭头。");
+                "即使当前没有合法目标，也必须进入时间轴瞄准并显示箭头。");
 
             axis.CancelSelection();
             yield return null;
@@ -638,7 +638,7 @@ namespace GourmetProject.Tests.PlayMode
             Assert.That(
                 view.ShownNodeIds,
                 Is.EqualTo(new[] { "current_static", view.AddedNodeId }),
-                "当前节点结束后必须重扫行动轴，并优先执行新加入的同日节点。");
+                "当前节点结束后必须重扫时间轴，并优先执行新加入的同日节点。");
             Assert.That(run.IsNodeTriggered("current_static"), Is.True);
             Assert.That(run.IsNodeTriggered(view.AddedNodeId), Is.True);
             Assert.That(run.IsNodeTriggered("future_static"), Is.False);

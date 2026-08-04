@@ -30,7 +30,7 @@ namespace GourmetProject.Game.Orchestration
 
         void OpenShop();
 
-        /// <summary>行动轴节点卡片：先展示节点卡，玩家点击后再执行节点效果。</summary>
+        /// <summary>时间轴节点卡片：先展示节点卡，玩家点击后再执行节点效果。</summary>
         void ShowTimelineNodeCard(cfg.TimelineNode node, int? interestMaxGain, Action onPick);
 
         void ShowTimelineNodeSkipped(cfg.TimelineNode node, Action onDone);
@@ -68,7 +68,7 @@ namespace GourmetProject.Game.Orchestration
     }
 
     /// <summary>
-    /// 局外周循环编排器：行动选择、时间轴节点、事件/商店/战斗续接都在这里推进。
+    /// 局外周循环编排器：行动选择、时间轴节点、事件/商店/经营挑战续接都在这里推进。
     /// </summary>
     public sealed class WeekLoopController
     {
@@ -95,7 +95,7 @@ namespace GourmetProject.Game.Orchestration
             return _run.RemoveRuntimeTimelineNode(nodeId);
         }
 
-        /// <summary>进入（或继续）一周：随机/沿用行动轴后开始行动循环。</summary>
+        /// <summary>进入（或继续）一周：随机/沿用时间轴后开始行动循环。</summary>
         public void BeginWeek()
         {
             _view.HideResultPanel();
@@ -150,8 +150,8 @@ namespace GourmetProject.Game.Orchestration
 
             _view.HideBattleWorld();
 
-            // 无行动轴，或换周后仍拿着上一周行动轴 → 随机一条新行动轴。
-            // 同周即使 CurrentDay 已到末尾，也先交给 PromptNextAction 恢复尚未点击的行动轴节点卡。
+            // 无时间轴，或换周后仍拿着上一周时间轴 → 随机一条新时间轴。
+            // 同周即使 CurrentDay 已到末尾，也先交给 PromptNextAction 恢复尚未点击的时间轴节点卡。
             if (string.IsNullOrEmpty(_run.CurrentTimelineId) || _run.CurrentTimelineWeekIndex != _run.WeekIndex)
             {
                 _run.RequiredScoreOverride = -1;
@@ -287,7 +287,7 @@ namespace GourmetProject.Game.Orchestration
             return () => _run.ClearPendingActionExecution();
         }
 
-        /// <summary>行动轴未走完则弹「n 选一行动」；走完则进入下一周。</summary>
+        /// <summary>时间轴未走完则弹「n 选一行动」；走完则进入下一周。</summary>
         public void PromptNextAction()
         {
             RepairIncompleteTriggeredBossNodes();
@@ -348,7 +348,7 @@ namespace GourmetProject.Game.Orchestration
             }
         }
 
-        /// <summary>读档/回到行动选择时，优先补处理当前天数已经到达但尚未结算的行动轴节点。</summary>
+        /// <summary>读档/回到行动选择时，优先补处理当前天数已经到达但尚未结算的时间轴节点。</summary>
         private bool ResolveDueNodes(Action onDone)
         {
             if (_run == null || _run.CurrentDay <= TimelineMath.Epsilon)
@@ -391,7 +391,7 @@ namespace GourmetProject.Game.Orchestration
             ActionOutcome outcome = ActionExecutor.Execute(_run, context, rng);
 
             // 进入行动时只记录可恢复的 pending 页面，不推进天数/步数；只有玩家明确结算
-            // （商店退出、事件选完、战斗结算、通知点继续）时才 Commit（推进天数/步数 + 标记已用）。
+            // （商店退出、事件选完、经营挑战结算、通知点继续）时才 Commit（推进天数/步数 + 标记已用）。
             bool committed = false;
 
             void Commit()
@@ -445,7 +445,7 @@ namespace GourmetProject.Game.Orchestration
 
             if (isWin)
             {
-                SettleSuperFoodPassives(battleFood, battleContext, settledBattleKey, survived: true);
+                SettleFoodPassives(battleFood, battleContext, settledBattleKey, survived: true);
                 ApplyCakeLayerGold(finalHappyCakeLayers);
                 Action beforeReward = _beforeBattleReward;
                 _beforeBattleReward = null;
@@ -459,30 +459,29 @@ namespace GourmetProject.Game.Orchestration
 
             if (_run.HeartsRemaining <= 1 && _run.TryConsumeUndying())
             {
-                // 最后一颗心优先由名刀·加护挡下；不扣心、不发奖，沿用原继续逻辑。
-                SettleSuperFoodPassives(battleFood, battleContext, settledBattleKey, survived: true);
+                // 最后一颗心优先由名刀挡下：不失去红心，仍按“失败但存活”完整结算本场奖励。
+                // 兼容旧存档已经为 0 心的中断状态：名刀生效后显式保证至少 1 心。
+                if (_run.HeartsRemaining < 1)
+                {
+                    _run.RestoreHearts(1);
+                }
+
+                SettleFoodPassives(battleFood, battleContext, settledBattleKey, survived: true);
+                ApplyCakeLayerGold(finalHappyCakeLayers);
+                Action beforeReward = _beforeBattleReward;
                 _beforeBattleReward = null;
+                beforeReward?.Invoke();
+                EnsurePendingBattleReward(battleContext);
                 _currentBattleIsBoss = false;
                 _view.ResetBossBattlePresentation();
-                _view.HideBattleWorld();
                 RunPersistence.Save(_run);
-                _view.ShowNotice("名刀·加护", "分数未达标，但名刀·加护替你挡下了失败（道具已消耗）。", () =>
+                string itemName = ItemDefinition.Get(_run.Tables, "item_famous_knife")?.Name ?? "名刀";
+                _view.ShowNotice(itemName, $"分数未达标，但{itemName}替你挡下了失败（装饰品和消耗品已消耗）。", () =>
                 {
-                    if (_run.HasPendingGenericRewards)
-                    {
-                        _run.PendingGenericRewardContinuation = PendingGenericRewardContinuationKind.Battle;
-                        RunPersistence.Save(_run);
-                        GameApp.UI.OpenUIForm(
-                            UIForms.Reward,
-                            UIForms.GroupDialog,
-                            RewardFormOpenArgs.GenericQueue(PendingGenericRewardContinuationKind.Battle));
-                        return;
-                    }
-
-                    Action cb = _afterBattleWin;
-                    _afterBattleWin = null;
-                    CurrentBattleActionContext = null;
-                    cb?.Invoke();
+                    GameApp.UI.OpenUIForm(
+                        UIForms.Reward,
+                        UIForms.GroupDialog,
+                        RewardFormOpenArgs.BattleReward());
                 });
                 return;
             }
@@ -490,7 +489,7 @@ namespace GourmetProject.Game.Orchestration
             if (!_run.TryLoseHeart(out int before, out int after))
             {
                 // 防御性兜底：开发期旧存档或中断状态可能已经为 0；仍必须先展示最后碎心页，不能直跳失败页。
-                SettleSuperFoodPassives(battleFood, battleContext, settledBattleKey, survived: false);
+                SettleFoodPassives(battleFood, battleContext, settledBattleKey, survived: false);
                 _beforeBattleReward = null;
                 _currentBattleIsBoss = false;
                 _view.SavePendingRewardBattleView();
@@ -507,7 +506,7 @@ namespace GourmetProject.Game.Orchestration
             }
 
             bool terminal = after <= 0;
-            SettleSuperFoodPassives(battleFood, battleContext, settledBattleKey, survived: !terminal);
+            SettleFoodPassives(battleFood, battleContext, settledBattleKey, survived: !terminal);
             _run.SetPendingHeartBreak(new PendingHeartBreakSaveData
             {
                 BeforeHeartCount = before,
@@ -566,13 +565,13 @@ namespace GourmetProject.Game.Orchestration
             itemRuntime.RefreshInfoText(m => m.ItemId == "item_gold_meal_bonus");
         }
 
-        private void SettleSuperFoodPassives(
+        private void SettleFoodPassives(
             cfg.Food food,
             ActionExecutionContext actionContext,
             string settledBattleKey,
             bool survived)
         {
-            if (food?.ActionKind != cfg.FoodActionKind.Super)
+            if (food == null)
             {
                 return;
             }
@@ -636,13 +635,13 @@ namespace GourmetProject.Game.Orchestration
             });
         }
 
-        /// <summary>RewardForm 发奖确认后回调：继续战斗后的编排续接。</summary>
+        /// <summary>RewardForm 发奖确认后回调：继续经营挑战后的编排续接。</summary>
         public void OnRewardConfirmed()
         {
             ContinueBattleWin(hideBattleWorld: true);
         }
 
-        /// <summary>抽奖机奖励领取完毕：恢复同一 pending 行动，不走战斗/事件完成逻辑。</summary>
+        /// <summary>抽奖机奖励领取完毕：恢复同一 pending 行动，不走经营挑战/事件完成逻辑。</summary>
         public void OnSlotRewardConfirmed()
         {
             PendingActionExecutionSaveData data = _run.GetPendingActionExecution();
@@ -795,7 +794,7 @@ namespace GourmetProject.Game.Orchestration
             RunPersistence.Save(_run);
         }
 
-        /// <summary>行动轴走完：推进到下一周（最终周胜利由 Boss 节点判定）。</summary>
+        /// <summary>时间轴走完：推进到下一周（最终周胜利由 Boss 节点判定）。</summary>
         private void EndWeek()
         {
             ApplyEndOfWeekItemSettlement();
@@ -807,7 +806,7 @@ namespace GourmetProject.Game.Orchestration
 
         /// <summary>
         /// 周末兼容结算：旧存档遗留债务仍会扣除，最后按「保底基金」补足下限。
-        /// 新获得的高利贷与月光族均由周末行动轴节点结算，不再走这里。
+        /// 新获得的高利贷与月光族均由周末时间轴节点结算，不再走这里。
         /// </summary>
         private void ApplyEndOfWeekItemSettlement()
         {
@@ -845,7 +844,7 @@ namespace GourmetProject.Game.Orchestration
 
         private void ProcessNextNode()
         {
-            // 每个节点完整结束后重新读取运行态行动轴。这样节点内容期间新增的
+            // 每个节点完整结束后重新读取运行态时间轴。这样节点内容期间新增的
             // 当前日节点会按日期/创建顺序插入，且不会被旧的队列快照漏掉。
             cfg.TimelineNode node = TimelineService.GetNextDueUntriggeredNode(_run);
             if (node == null)
@@ -874,7 +873,7 @@ namespace GourmetProject.Game.Orchestration
                 return;
             }
 
-            // 节点即「放置来源的原子行动」：先展示放置行动卡，玩家点击后走与随机行动完全相同的执行路径。
+            // 节点即「放置来源的原子行动」：先展示放置行动卡，玩家点击后走与普通行动完全相同的执行路径。
             _view.ShowTimelineNodeCard(node, InterestMaxGain(), () => ExecutePlacedAction(node, action));
         }
 
@@ -956,7 +955,7 @@ namespace GourmetProject.Game.Orchestration
                 () => _run.ClearPendingActionExecution());
         }
 
-        /// <summary>放置行动执行：与随机行动共用 <see cref="ActionExecutor"/> 与 <see cref="DispatchOutcome"/>，节点不消耗天数/步数。</summary>
+        /// <summary>放置行动执行：与普通行动共用 <see cref="ActionExecutor"/> 与 <see cref="DispatchOutcome"/>，节点不消耗天数/步数。</summary>
         private void ExecutePlacedAction(cfg.TimelineNode node, cfg.GameAction action)
         {
             int repeatTotal = FoodService.IsBossAction(_run?.Tables, action)
@@ -1061,7 +1060,7 @@ namespace GourmetProject.Game.Orchestration
             return _run != null ? _run.InterestCap : 0;
         }
 
-        /// <summary>行动执行结果的统一续接：随机行动与放置节点共用；Boss 战领奖后推进/通关。</summary>
+        /// <summary>行动执行结果的统一续接：普通行动与放置节点共用；Boss 战领奖后推进/通关。</summary>
         private void DispatchOutcome(
             ActionOutcome outcome,
             ActionExecutionContext context,
@@ -1661,7 +1660,7 @@ namespace GourmetProject.Game.Orchestration
         {
             result ??= EventResolveResult.Immediate(string.Empty);
 
-            // 战斗、商店和结局节点是立即终点，不再显示普通结果按钮。
+            // 经营挑战、商店和结局节点是立即终点，不再显示普通结果按钮。
             if (result.FollowUpKind != EventFollowUpKind.None)
             {
                 EventService.OnEventFinished(_run, ev, result);

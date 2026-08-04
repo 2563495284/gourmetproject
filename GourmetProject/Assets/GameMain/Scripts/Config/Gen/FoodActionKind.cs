@@ -12,20 +12,20 @@
 namespace cfg
 { 
     /// <summary>
-    /// 美食行动类型：区分普通、超级与盛宴 Boss
+    /// 经营挑战类型：区分日常营业、火热营业与星级评鉴
     /// </summary>
     public enum FoodActionKind
     {
         /// <summary>
-        /// 普通美食行动
+        /// 日常营业行动
         /// </summary>
         Normal = 0,
         /// <summary>
-        /// 超级美食行动
+        /// 火热营业行动
         /// </summary>
         Super = 1,
         /// <summary>
-        /// 盛宴(Boss)
+        /// 星级评鉴
         /// </summary>
         Feast = 2,
     }

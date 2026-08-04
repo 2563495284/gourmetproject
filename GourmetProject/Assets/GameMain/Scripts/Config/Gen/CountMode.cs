@@ -17,7 +17,7 @@ namespace cfg
     public enum CountMode
     {
         /// <summary>
-        /// 每有1个:count=raw
+        /// 每有1 个:count=raw
         /// </summary>
         Per = 0,
         /// <summary>

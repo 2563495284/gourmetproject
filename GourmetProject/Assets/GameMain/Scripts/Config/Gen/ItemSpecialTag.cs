@@ -12,7 +12,7 @@
 namespace cfg
 { 
     /// <summary>
-    /// 道具特殊标签
+    /// 装饰品和消耗品特殊标签
     /// </summary>
     public enum ItemSpecialTag
     {
@@ -21,7 +21,7 @@ namespace cfg
         /// </summary>
         None = 0,
         /// <summary>
-        /// 负面道具
+        /// 诅咒装饰品
         /// </summary>
         Negative = 1,
     }

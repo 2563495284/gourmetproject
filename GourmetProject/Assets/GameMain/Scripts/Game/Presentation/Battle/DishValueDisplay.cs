@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
-    /// <summary>统一菜品美味值的实时计算与显示格式。</summary>
+    /// <summary>统一食物美味值的实时计算与显示格式。</summary>
     public static class DishValueDisplay
     {
         public static float CurrentContribution(DishInstance dish)

@@ -20,9 +20,9 @@ using TMPro;
 namespace GourmetProject.Game.UI.Menu
 {
     /// <summary>
-    /// 角色选择界面（仿杀戮尖塔）：左右箭头切换角色，翻页圆点指示当前位置，
-    /// 根据存档状态提供继续游戏或选择角色开新局入口，「返回」回主菜单。
-    /// 角色列表、名称、描述、立绘路径与开局角色 id 均来自 <c>TbCharacter</c>。
+    /// 经营方向选择界面（仿杀戮尖塔）：左右箭头切换经营方向，翻页圆点指示当前位置，
+    /// 根据存档状态提供继续游戏或选择经营方向开新局入口，「返回」回主菜单。
+    /// 经营方向列表、名称、描述、立绘路径与开局经营方向 id 均来自 <c>TbCharacter</c>。
     /// </summary>
     public sealed class CharacterSelectForm : UGuiForm
     {
@@ -378,7 +378,7 @@ namespace GourmetProject.Game.UI.Menu
             _recipeReadonlyBookView.OpenForReadonlyDishPool(
                 _database,
                 _recipePreviewDishIds,
-                "可能获得的菜品",
+                "可能获得的食物",
                 GetFoodTips);
             SetRecipeViewOpen(true);
         }

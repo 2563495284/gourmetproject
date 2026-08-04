@@ -15,7 +15,7 @@ namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>
     /// 商店「中部态」面板：作为 <c>BattleForm</c> 常驻壳的中部内容之一（不再是独立弹层）。
-    /// 常驻壳（左列信息 / 行动轴 / 右列道具）由 BattleForm 提供，本面板负责中部购买区
+    /// 常驻壳（左列信息 / 时间轴 / 右列装饰品和消耗品）由 BattleForm 提供，本面板负责中部购买区
     /// （食物 / 碎片包 / 被动 / 主动）与「删除食物」商店服务。购买该服务时切换到
     /// <see cref="RecipeReadonlyBookView"/> 选择目标并二次确认。
     /// </summary>
@@ -78,7 +78,7 @@ namespace GourmetProject.Game.UI.Meta
         /// <param name="run">当前肉鸽运行。</param>
         /// <param name="stock">页面协调器准备好的库存快照。</param>
         /// <param name="onLeave">点「离开商店」时回调（BattleForm 继续周循环编排）。</param>
-        /// <param name="onOpenDeleteDish">点「删除食物」时回调：BattleForm 打开菜谱选择页。</param>
+        /// <param name="onOpenDeleteDish">点「删除食物」时回调：BattleForm 打开食谱选择页。</param>
         public void Open(
             GameRun run,
             IReadOnlyList<ShopEntry> stock,
@@ -141,7 +141,7 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            // UI 与购买共用 ShopService.CurrentPrice：重建卡片前刷新，避免被动道具/事件改价后仍显示旧表价。
+            // UI 与购买共用 ShopService.CurrentPrice：重建卡片前刷新，避免装饰品/事件改价后仍显示旧表价。
             ShopService.RefreshStockPrices(_run, _stock);
             ClearBoundSlots();
             EnsureTipViews();
@@ -177,7 +177,7 @@ namespace GourmetProject.Game.UI.Meta
                 ShopEntryKind.Dish,
                 "__delete_food_service__",
                 "删除食物",
-                $"从菜谱中选择一道食物删除。\n{limitDesc}",
+                $"从食谱中选择一道食物删除。\n{limitDesc}",
                 cost,
                 cost);
             bool canUse = _onOpenDeleteDish != null

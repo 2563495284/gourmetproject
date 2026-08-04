@@ -15,14 +15,14 @@ using GourmetProject.Game.Meta;
 namespace GourmetProject.Game.Run
 {
     /// <summary>
-    /// 一次肉鸽运行（局外状态）：角色、周进度、金币、道具，以及玩法静态数据库。
-    /// 负责为「当前周」构建局内战斗会话。可被存档（见阶段 5 的 RunSaveData）。
+    /// 一次肉鸽运行（局外状态）：经营方向、周进度、金币、装饰品和消耗品，以及玩法静态数据库。
+    /// 负责为「当前周」构建局内经营挑战会话。可被存档（见阶段 5 的 RunSaveData）。
     /// </summary>
     public sealed class GameRun : IPreconditionContext
     {
         private readonly cfg.Tables _tables;
 
-        // 被动道具同一 id 唯一一条且不升级；主动道具同一 id 可有多条，每条为一份独立实例。
+        // 装饰品同一 id 唯一一条且不升级；消耗品同一 id 可有多条，每条为一份独立实例。
         private readonly List<RunItemState> _items = new List<RunItemState>();
         private readonly List<string> _bonusDishIds = new List<string>();
         private readonly List<RecipeBookSlot> _recipe = new List<RecipeBookSlot>();
@@ -42,21 +42,21 @@ namespace GourmetProject.Game.Run
         private int _currentShopDeleteDishCount;
         private int _currentShopFragmentPackPurchaseCount;
 
-        // 餐桌碎片开包时随机出的局部材质落点。候选阶段即确定，之后随已拼贴碎片保存。
+        // 餐桌格开包时随机出的局部材质落点。候选阶段即确定，之后随已拼贴碎片保存。
         private readonly Dictionary<string, List<CellMaterial>> _fragmentMaterialRolls =
             new Dictionary<string, List<CellMaterial>>(System.StringComparer.Ordinal);
 
-        // 整局累计已结算的菜品 BaseId 次数（供技能「大局相同检测」，随存档保存）。
+        // 整局累计已结算的食物 BaseId 次数（供技能「大局相同检测」，随存档保存）。
         private readonly Dictionary<string, int> _runSettledCounts = new Dictionary<string, int>();
 
-        // 已完成普通/超级营业结算的 BattleKey；用于保证结算副作用至多执行一次。
+        // 已完成日常营业/火热营业结算的 BattleKey；用于保证结算副作用至多执行一次。
         private readonly HashSet<string> _settledFoodBattleKeys =
             new HashSet<string>(System.StringComparer.Ordinal);
 
-        // —— 行动轴状态 ——
+        // —— 时间轴状态 ——
         private readonly List<string> _triggeredNodeIds = new List<string>();
 
-        // 当前周行动轴节点快照：周开始时从配置复制，之后可被道具改写；随 BeginTimeline（换周）重建。
+        // 当前周时间轴节点快照：周开始时从配置复制，之后可被装饰品和消耗品改写；随 BeginTimeline（换周）重建。
         private readonly List<RuntimeTimelineNode> _runtimeTimelineNodes = new List<RuntimeTimelineNode>();
         private int _runtimeTimelineNodeSerial;
         private readonly List<string> _usedEventIds = new List<string>();
@@ -94,10 +94,10 @@ namespace GourmetProject.Game.Run
         private int _actionRerollCount;
         private int _weekIndex = 1;
 
-        // —— 被动道具计数状态（随存档保存）——
+        // —— 装饰品计数状态（随存档保存）——
         private int _loanDebt;            // 高利贷待扣债务，下一周结算时扣除
-        private int _mealBonusRemaining;  // 「美食分红」剩余生效局数（GoldMealBonus）
-        private int _scoreToOneRemaining; // 「分数变1」剩余生效局数（RequiredScoreToOne，非盛宴）
+        private int _mealBonusRemaining;  // 「食物分红」剩余生效局数（GoldMealBonus）
+        private int _scoreToOneRemaining; // 「分数变1」剩余生效局数（RequiredScoreToOne，非星级评鉴）
 
         // —— 事件运行状态（随存档保存）——
         private float _eventTargetScoreHiddenOffset;
@@ -224,7 +224,7 @@ namespace GourmetProject.Game.Run
 
         public int InterestGoldPer => _interestGoldPer;
 
-        /// <summary>当前运行的利息节点单次最高收益，本局基础值可被道具提高。</summary>
+        /// <summary>当前运行的利息节点单次最高收益，本局基础值可被装饰品和消耗品提高。</summary>
         public int InterestCap
         {
             get
@@ -249,8 +249,13 @@ namespace GourmetProject.Game.Run
             _retainedHappyCakeLayers = System.Math.Max(0, layers);
         }
 
+        public void ClearRetainedHappyCakeLayers()
+        {
+            _retainedHappyCakeLayers = 0;
+        }
+
         /// <summary>
-        /// 尝试消耗一件「不死」道具（名刀·加护）：持有时移除一件并返回 true，
+        /// 尝试消耗一件「不死」装饰品和消耗品（名刀·加护）：持有时移除一件并返回 true，
         /// 供结算失败判定改为「不失败」。无则返回 false。
         /// </summary>
         public bool TryConsumeUndying()
@@ -268,7 +273,7 @@ namespace GourmetProject.Game.Run
             return false;
         }
 
-        /// <summary>为一份被动道具构建并绑定行为模型（挂到 state.Model 并返回）。</summary>
+        /// <summary>为一份装饰品构建并绑定行为模型（挂到 state.Model 并返回）。</summary>
         private GourmetProject.Game.Meta.Passives.PassiveItemModel BindPassiveModel(RunItemState state, ItemDefinition item)
         {
             GourmetProject.Game.Meta.Passives.PassiveItemModel model =
@@ -280,7 +285,7 @@ namespace GourmetProject.Game.Run
 
         public IReadOnlyList<RunItemState> Items => _items;
 
-        /// <summary>当前在场（持有）的被动道具模型集合，供 <see cref="GourmetProject.Game.Meta.ItemRuntime"/> 折叠钩子。</summary>
+        /// <summary>当前在场（持有）的装饰品模型集合，供 <see cref="GourmetProject.Game.Meta.ItemRuntime"/> 折叠钩子。</summary>
         public IEnumerable<GourmetProject.Game.Meta.Passives.PassiveItemModel> PassiveModels
         {
             get
@@ -295,10 +300,10 @@ namespace GourmetProject.Game.Run
             }
         }
 
-        /// <summary>被动道具持有条目（同 id 唯一，不占消耗槽）。</summary>
+        /// <summary>装饰品持有条目（同 id 唯一，不占消耗槽）。</summary>
         public IEnumerable<RunItemState> PassiveItemStates => ItemStatesOfKind(cfg.ItemKind.Passive);
 
-        /// <summary>主动道具持有实例（每份占一个消耗槽）。</summary>
+        /// <summary>消耗品持有实例（每份占一个消耗槽）。</summary>
         public IEnumerable<RunItemState> ActiveItemStates => ItemStatesOfKind(cfg.ItemKind.Active);
 
         private IEnumerable<RunItemState> ItemStatesOfKind(cfg.ItemKind kind)
@@ -316,7 +321,7 @@ namespace GourmetProject.Game.Run
             return result;
         }
 
-        /// <summary>当前占用的主动道具槽数（= 主动实例份数）。</summary>
+        /// <summary>当前占用的消耗品槽数（= 主动实例份数）。</summary>
         public int ActiveItemCount
         {
             get
@@ -337,7 +342,7 @@ namespace GourmetProject.Game.Run
 
         private const int MaxActiveSlotCapacity = 9;
 
-        /// <summary>主动道具消耗槽总容量 = 基础槽 + ExtraActiveSlot 被动加成（范围 0..9）。</summary>
+        /// <summary>消耗品消耗槽总容量 = 基础槽 + ExtraActiveSlot 被动加成（范围 0..9）。</summary>
         public int ActiveSlotCapacity
         {
             get
@@ -348,13 +353,13 @@ namespace GourmetProject.Game.Run
             }
         }
 
-        /// <summary>主动道具是否还有空槽。</summary>
+        /// <summary>消耗品是否还有空槽。</summary>
         public bool HasFreeActiveSlot => ActiveItemCount < ActiveSlotCapacity;
 
-        /// <summary>主动道具累计使用序号；随机类主动效果按它派生随机流。</summary>
+        /// <summary>消耗品累计使用序号；随机类主动效果按它派生随机流。</summary>
         public int ActiveUseIndex => _activeUseIndex;
 
-        /// <summary>取下一个主动道具随机流 key 并推进使用序号（保证生成/复制类效果同种子可复现）。</summary>
+        /// <summary>取下一个消耗品随机流 key 并推进使用序号（保证生成/复制类效果同种子可复现）。</summary>
         public string NextActiveUseKey()
         {
             return $"active_{_activeUseIndex++}";
@@ -381,7 +386,7 @@ namespace GourmetProject.Game.Run
             return true;
         }
 
-        // —— 被动道具计数状态 API ——
+        // —— 装饰品计数状态 API ——
 
         /// <summary>高利贷待扣债务（下一周结算时扣除）。</summary>
         public int LoanDebt => _loanDebt;
@@ -403,10 +408,10 @@ namespace GourmetProject.Game.Run
             return debt;
         }
 
-        /// <summary>「美食分红」剩余生效局数（GoldMealBonus）。</summary>
+        /// <summary>「食物分红」剩余生效局数（GoldMealBonus）。</summary>
         public int MealBonusRemaining => _mealBonusRemaining;
 
-        /// <summary>增加「美食分红」生效局数（获得道具时初始化）。</summary>
+        /// <summary>增加「食物分红」生效局数（获得装饰品和消耗品时初始化）。</summary>
         public void AddMealBonusMeals(int meals)
         {
             if (meals > 0)
@@ -415,7 +420,7 @@ namespace GourmetProject.Game.Run
             }
         }
 
-        /// <summary>消耗一局「美食分红」额度。</summary>
+        /// <summary>消耗一局「食物分红」额度。</summary>
         public void ConsumeMealBonusMeal()
         {
             if (_mealBonusRemaining > 0)
@@ -424,10 +429,15 @@ namespace GourmetProject.Game.Run
             }
         }
 
-        /// <summary>「分数变1」剩余生效局数（非盛宴，RequiredScoreToOne）。</summary>
+        public void ClearMealBonusMeals()
+        {
+            _mealBonusRemaining = 0;
+        }
+
+        /// <summary>「分数变1」剩余生效局数（非星级评鉴，RequiredScoreToOne）。</summary>
         public int ScoreToOneRemaining => _scoreToOneRemaining;
 
-        /// <summary>增加「分数变1」生效局数（获得道具时初始化）。</summary>
+        /// <summary>增加「分数变1」生效局数（获得装饰品和消耗品时初始化）。</summary>
         public void AddScoreToOneMeals(int meals)
         {
             if (meals > 0)
@@ -443,6 +453,11 @@ namespace GourmetProject.Game.Run
             {
                 _scoreToOneRemaining--;
             }
+        }
+
+        public void ClearScoreToOneMeals()
+        {
+            _scoreToOneRemaining = 0;
         }
 
         public float EventHiddenScoreOffset(HiddenScorePurpose purpose)
@@ -705,10 +720,10 @@ namespace GourmetProject.Game.Run
                 : def;
         }
 
-        /// <summary>餐桌碎片总数（奖励自动附着 + 手动拼贴），供统计/预览展示。</summary>
+        /// <summary>餐桌格总数（奖励自动附着 + 手动拼贴），供统计/预览展示。</summary>
         public int StomachFragmentCount => _stomachFragmentIds.Count + _fragmentPlacements.Count;
 
-        /// <summary>整局累计已结算的菜品 BaseId 次数（大局历史）。</summary>
+        /// <summary>整局累计已结算的食物 BaseId 次数（大局历史）。</summary>
         public IReadOnlyDictionary<string, int> RunSettledCounts => _runSettledCounts;
 
         /// <summary>把一次结算的各 BaseId 增量累加进大局历史。</summary>
@@ -726,7 +741,7 @@ namespace GourmetProject.Game.Run
             }
         }
 
-        /// <summary>首次记录营业战斗结算返回 true；同一 key 再次进入返回 false。</summary>
+        /// <summary>首次记录营业经营挑战结算返回 true；同一 key 再次进入返回 false。</summary>
         public bool TryMarkFoodBattleSettled(string battleKey)
         {
             return !string.IsNullOrEmpty(battleKey) && _settledFoodBattleKeys.Add(battleKey);
@@ -735,14 +750,14 @@ namespace GourmetProject.Game.Run
         /// <summary>本周要求分的临时覆盖（&lt;0 表示无覆盖）。事件「歇业」等可降低本周目标。</summary>
         public int RequiredScoreOverride { get; set; } = -1;
 
-        // —— 行动轴运行状态 ——
-        /// <summary>本周行动轴 id。</summary>
+        // —— 时间轴运行状态 ——
+        /// <summary>本周时间轴 id。</summary>
         public string CurrentTimelineId { get; set; } = string.Empty;
 
-        /// <summary>当前行动轴所属周。</summary>
+        /// <summary>当前时间轴所属周。</summary>
         public int CurrentTimelineWeekIndex { get; set; }
 
-        /// <summary>本周行动轴长度（天，0.1 粒度）。</summary>
+        /// <summary>本周时间轴长度（天，0.1 粒度）。</summary>
         public float TimelineLengthDays { get; set; }
 
         /// <summary>当前天数游标（0..TimelineLengthDays，0.1 粒度）。</summary>
@@ -750,7 +765,7 @@ namespace GourmetProject.Game.Run
 
         public IReadOnlyList<string> TriggeredNodeIds => _triggeredNodeIds;
 
-        /// <summary>当前周行动轴节点快照（配置节点 + 道具插入/改写后的节点）。</summary>
+        /// <summary>当前周时间轴节点快照（配置节点 + 装饰品和消耗品插入/改写后的节点）。</summary>
         public IReadOnlyList<RuntimeTimelineNode> RuntimeTimelineNodes => _runtimeTimelineNodes;
 
         public int NextDailyActionHalfCostStacks => _nextDailyActionHalfCostStacks;
@@ -784,7 +799,7 @@ namespace GourmetProject.Game.Run
             return GourmetProject.Game.Meta.TimelineMath.Quantize(cost);
         }
 
-        /// <summary>生成日常行动选项时快照持有被动的耗时倍率；之后获得/失去道具不追溯。</summary>
+        /// <summary>生成普通行动选项时快照持有被动的耗时倍率；之后获得/失去装饰品和消耗品不追溯。</summary>
         public float SnapshotDailyActionCost(float baseCostDays)
         {
             float multiplier = new ItemRuntime(this).DailyActionCostMultiplier();
@@ -836,7 +851,7 @@ namespace GourmetProject.Game.Run
         }
 
         /// <summary>
-        /// 兼容被动道具的随机追加路径：仍优先寻找当前或未来的空整数日，实际创建统一走定点接口。
+        /// 兼容装饰品的随机追加路径：仍优先寻找当前或未来的空整数日，实际创建统一走定点接口。
         /// </summary>
         public string AddRuntimeTimelineNode(string actionId, IRandomStream rng = null)
         {
@@ -876,7 +891,7 @@ namespace GourmetProject.Game.Run
         }
 
         /// <summary>
-        /// 在玩家指定的当前或未来整数日追加一个行动轴节点。同一天允许叠放多个节点。
+        /// 在玩家指定的当前或未来整数日追加一个时间轴节点。同一天允许叠放多个节点。
         /// </summary>
         public string AddRuntimeTimelineNodeAtDay(string actionId, int day, string sourceItemId = "")
             => AddRuntimeTimelineNodeAtDayInternal(actionId, day, sourceItemId, false);
@@ -1323,7 +1338,7 @@ namespace GourmetProject.Game.Run
             return true;
         }
 
-        /// <summary>开始一条新的本周行动轴：重置天数游标、节点结算记录与本周行动使用记录。</summary>
+        /// <summary>开始一条新的本周时间轴：重置天数游标、节点结算记录与本周行动使用记录。</summary>
         public void BeginTimeline(string timelineId, float lengthDays)
         {
             BeginTimeline(timelineId, lengthDays, null);
@@ -1986,7 +2001,7 @@ namespace GourmetProject.Game.Run
             };
         }
 
-        /// <summary>从存档数据重建运行（不重复发放初始道具，整段持有列表以存档为准）。</summary>
+        /// <summary>从存档数据重建运行（不重复发放初始装饰品和消耗品，整段持有列表以存档为准）。</summary>
         public static GameRun FromSaveData(cfg.Tables tables, GameplayDatabase database, RunSaveData data)
         {
             var run = new GameRun(tables, database, data.CharacterId, data.SeedText, data.WeekIndex, initializeCharacterLoadout: false);
@@ -2059,14 +2074,14 @@ namespace GourmetProject.Game.Run
                     ItemDefinition def = ItemDefinition.Get(tables, item.ItemId);
                     if (def == null)
                     {
-                        // 配置删改后，旧档可能仍残留已经不存在的道具。未知条目不能继续进入
-                        // 持有列表，否则会形成无模型、不可见、也无法正常移除的“幽灵道具”。
-                        Log.Warning($"存档包含未知道具，已安全跳过：{item.ItemId}。", "RunSave");
+                        // 配置删改后，旧档可能仍残留已经不存在的装饰品和消耗品。未知条目不能继续进入
+                        // 持有列表，否则会形成无模型、不可见、也无法正常移除的“幽灵装饰品和消耗品”。
+                        Log.Warning($"存档包含未知装饰品和消耗品，已安全跳过：{item.ItemId}。", "RunSave");
                         continue;
                     }
 
-                    // 旧档迁移：主动道具曾用单条 + Count 表示堆叠，这里展开为多份实例；
-                    // Count<=0 的旧「僵尸条目」直接丢弃（用完即不存在）。被动道具恒为一条。
+                    // 旧档迁移：消耗品曾用单条 + Count 表示堆叠，这里展开为多份实例；
+                    // Count<=0 的旧「僵尸条目」直接丢弃（用完即不存在）。装饰品恒为一条。
                     int instances = 1;
                     if (def.Kind == cfg.ItemKind.Active)
                     {
@@ -2083,7 +2098,7 @@ namespace GourmetProject.Game.Run
                         var state = new RunItemState(item.ItemId, item.Level);
                         run._items.Add(state);
 
-                        // 被动道具读档：重建行为模型并恢复 per-instance 状态（不重复触发 OnAcquired）。
+                        // 装饰品读档：重建行为模型并恢复 per-instance 状态（不重复触发 OnAcquired）。
                         if (def.Kind == cfg.ItemKind.Passive)
                         {
                             GourmetProject.Game.Meta.Passives.PassiveItemModel model = run.BindPassiveModel(state, def);
@@ -2094,7 +2109,7 @@ namespace GourmetProject.Game.Run
             }
 
             // 这两个旧全局计数只有对应被动仍在场时才有语义。配置移除/旧档缺项时清零，
-            // 避免被跳过的未知道具继续从全局字段暗中生效；不发金币或其它补偿。
+            // 避免被跳过的未知装饰品和消耗品继续从全局字段暗中生效；不发金币或其它补偿。
             if (!run.HasItem("item_gold_meal_bonus"))
             {
                 run._mealBonusRemaining = 0;
@@ -2103,6 +2118,11 @@ namespace GourmetProject.Game.Run
             if (!run.HasItem("item_score_to_one"))
             {
                 run._scoreToOneRemaining = 0;
+            }
+
+            if (!run.HasItem("item_cake_retain"))
+            {
+                run._retainedHappyCakeLayers = 0;
             }
 
 
@@ -2701,9 +2721,9 @@ namespace GourmetProject.Game.Run
         public bool HasNextWeek => WeekIndex < TotalWeeks;
 
         /// <summary>
-        /// 构建一局美食挑战战斗。<paramref name="requiredScore"/> 为目标分，
+        /// 构建一局经营挑战经营挑战。<paramref name="requiredScore"/> 为目标美味值，
         /// <paramref name="bossDebuffId"/> 选择 Boss Debuff 模型，
-        /// <paramref name="key"/> 用于派生确定性随机流（同一周内不同天/不同战斗需用不同 key 才能各自独立复现）。
+        /// <paramref name="key"/> 用于派生确定性随机流（同一周内不同天/不同经营挑战需用不同 key 才能各自独立复现）。
         /// </summary>
         public BattleSession BuildBattleSession(
             int requiredScore,
@@ -2720,7 +2740,7 @@ namespace GourmetProject.Game.Run
         }
 
         /// <summary>
-        /// 给菜谱中的一道菜永久添加风味。自带风味与后续风味共用总上限；
+        /// 给食谱中的1 个食物永久添加风味。自带风味与后续风味共用总上限；
         /// 达到上限时淘汰最早获得的风味。
         /// </summary>
         public bool AddRecipeFlavor(int dishIndex, string flavorId)
@@ -2928,10 +2948,10 @@ namespace GourmetProject.Game.Run
             return true;
         }
 
-        /// <summary>美食行动目标分：隐藏分曲线结果 × 倍率（倍率 &lt;= 0 视为 1）。</summary>
+        /// <summary>经营挑战行动目标美味值：隐藏分曲线结果 × 倍率（倍率 &lt;= 0 视为 1）。</summary>
         public int ComputeFoodRequiredScore(float multiplier)
         {
-            // 「分数变1」（RequiredScoreToOne）：非盛宴美食剩余生效局数内，要求分固定为 1（计数消耗在每局奖励结算时）。
+            // 「分数变1」（RequiredScoreToOne）：非星级评鉴食物剩余生效局数内，要求分固定为 1（计数消耗在每局奖励结算时）。
             if (_scoreToOneRemaining > 0)
             {
                 return 1;
@@ -2944,7 +2964,7 @@ namespace GourmetProject.Game.Run
 
             int baseReq = RequiredScore;
             int scaled = System.Math.Max(1, (int)System.Math.Round(baseReq * multiplier, System.MidpointRounding.AwayFromZero));
-            // 超级美食倍率 > 1 视为 Super 档，否则普通档；道具目标分修正随档位施加。
+            // 火热营业倍率 > 1 视为 Super 档，否则普通档；装饰品和消耗品目标美味值修正随档位施加。
             cfg.FoodActionKind tier = multiplier > 1f ? cfg.FoodActionKind.Super : cfg.FoodActionKind.Normal;
             return new ItemRuntime(this).ModifyRequiredScore(scaled, tier);
         }
@@ -2985,7 +3005,7 @@ namespace GourmetProject.Game.Run
             return false;
         }
 
-        /// <summary>当前持有该道具的份数：被动道具为 0/1，主动道具为实例条目数。</summary>
+        /// <summary>当前持有该装饰品和消耗品的份数：装饰品为 0/1，消耗品为实例条目数。</summary>
         public int GetItemCount(string itemId)
         {
             if (string.IsNullOrEmpty(itemId))
@@ -3017,8 +3037,8 @@ namespace GourmetProject.Game.Run
         }
 
         /// <summary>
-        /// 获得一件道具。<paramref name="fireOnAcquire"/> 为 true 时，被动道具首次加入成功后会立即结算
-        /// 其「获得时(OnAcquire)」一次性效果；存档恢复 / 角色初始道具应传 false，避免重复触发。
+        /// 获得一件装饰品和消耗品。<paramref name="fireOnAcquire"/> 为 true 时，装饰品首次加入成功后会立即结算
+        /// 其「获得时(OnAcquire)」一次性效果；存档恢复 / 经营方向初始装饰品和消耗品应传 false，避免重复触发。
         /// </summary>
         public ItemAcquireResult AcquireItem(string itemId, int fallbackGold, bool fireOnAcquire = true)
         {
@@ -3048,7 +3068,7 @@ namespace GourmetProject.Game.Run
                 return new ItemAcquireResult(ItemAcquireOutcome.ConvertedToGold, itemId, item.Name, 1, 1, fallbackGold);
             }
 
-            // 主动道具：每份占一个全局消耗槽；槽满则折算金币（不再有 per-item 囤积上限）。
+            // 消耗品：每份占一个全局消耗槽；槽满则折算金币（不再有 per-item 囤积上限）。
             if (!HasFreeActiveSlot || !ItemPoolService.CanEnterPool(this, item))
             {
                 Gold += fallbackGold;
@@ -3070,6 +3090,22 @@ namespace GourmetProject.Game.Run
             _recipe.Add(new RecipeBookSlot(dishId));
             RebuildBonusDishCache();
             return true;
+        }
+
+        /// <summary>
+        /// 完整复制食谱中的一格食物并追加到食谱末尾。
+        /// 后续风味、额外技能及永久分数修正都会随格子一并复制。
+        /// </summary>
+        public int CloneRecipeEntry(int dishIndex)
+        {
+            if (dishIndex < 0 || dishIndex >= _recipe.Count)
+            {
+                return -1;
+            }
+
+            _recipe.Add(_recipe[dishIndex].Clone());
+            RebuildBonusDishCache();
+            return _recipe.Count - 1;
         }
 
         public bool AddBonusDish(string dishId, string flavorId)
@@ -3104,7 +3140,7 @@ namespace GourmetProject.Game.Run
             return true;
         }
 
-        /// <summary>从菜谱奖励池移除一道菜（商店删菜）。</summary>
+        /// <summary>从食谱奖励池移除1 个食物（商店删菜）。</summary>
         public bool RemoveBonusDish(string dishId)
         {
             int idx = _recipe.FindIndex(s => s.DishId == dishId);
@@ -3304,7 +3340,7 @@ namespace GourmetProject.Game.Run
                 return false;
             }
 
-            // 基于当前实际胃形判断；餐桌碎片奖励固定朝向，不允许旋转。
+            // 基于当前实际胃形判断；餐桌格奖励固定朝向，不允许旋转。
             GpTable board = BattleSessionFactory.BuildTablePreview(this);
             cfg.Character character = Tables.TbCharacter.GetOrDefault(CharacterId);
             int maxW = character.MaxDiningTableWidth;
@@ -3312,7 +3348,7 @@ namespace GourmetProject.Game.Run
             return TableFragmentBuilder.CanAttachAnywhereLocalBounds(board, fragment, maxW, maxH);
         }
 
-        /// <summary>移除一份道具（被动整条移除；主动移除其中一份实例）。供商店出售、事件移除等使用。</summary>
+        /// <summary>移除一份装饰品和消耗品（被动整条移除；主动移除其中一份实例）。供商店出售、事件移除等使用。</summary>
         public bool RemoveItem(string itemId)
         {
             return RemoveOneInstance(itemId);
@@ -3625,7 +3661,7 @@ namespace GourmetProject.Game.Run
             RebuildBonusDishCache();
         }
 
-        /// <summary>使用一份主动道具：使用后该实例直接移除（不存在数量消耗的中间态）。</summary>
+        /// <summary>使用一份消耗品：使用后该实例直接移除（不存在数量消耗的中间态）。</summary>
         public bool UseActiveItem(string itemId)
         {
             ItemDefinition item = ItemDefinition.Get(_tables, itemId, cfg.ItemKind.Active);

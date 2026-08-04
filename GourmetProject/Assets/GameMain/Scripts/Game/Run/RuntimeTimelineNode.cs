@@ -1,7 +1,7 @@
 namespace GourmetProject.Game.Run
 {
     /// <summary>
-    /// 当前周行动轴节点快照。周开始时从配置复制，之后被被动/主动道具直接改写并随存档保存。
+    /// 当前周时间轴节点快照。周开始时从配置复制，之后被被动/消耗品直接改写并随存档保存。
     /// 与配置 <c>cfg.TimelineNode</c> 语义一致。
     /// </summary>
     public readonly struct RuntimeTimelineNode

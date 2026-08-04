@@ -73,6 +73,7 @@ namespace GourmetProject.Tests.EditMode
                     rows.FindAll(RowShowsGenericIcon),
                     Has.Count.EqualTo(2));
                 Assert.That(RowIconSpriteName(rows[0]), Is.EqualTo("reward_badge_gold"));
+                Assert.That(RowDescription(rows[0]), Is.EqualTo("点击领取"));
             });
         }
 
@@ -269,10 +270,10 @@ namespace GourmetProject.Tests.EditMode
         public void SingleDish_ShowsActualRewardWithSlotDescriptionAndFoodTips()
         {
             var group = new RewardChoiceGroup(
-                "随机菜品",
+                "随机食物",
                 new[] { Choice(cfg.RewardKind.DishChoice, "cake_slice", "蛋糕切角") },
-                description: "随机菜品配置描述",
-                ruleText: "随机获得 1 个菜品。",
+                description: "随机食物配置描述",
+                ruleText: "随机获得 1 个食物。",
                 sourceSlotId: "dish_grant_1");
             RewardOffer offer = new RewardOffer(0, new[] { group }, null, baseGoldClaimed: true);
 
@@ -280,7 +281,7 @@ namespace GourmetProject.Tests.EditMode
             {
                 Assert.That(rows, Has.Count.EqualTo(1));
                 Assert.That(RowTitle(rows[0]), Is.EqualTo("蛋糕切角"));
-                Assert.That(RowDescription(rows[0]), Is.EqualTo("随机菜品配置描述"));
+                Assert.That(RowDescription(rows[0]), Is.EqualTo("随机食物配置描述"));
                 Assert.That(rows[0].GetComponent<TipHoverTrigger>(), Is.Not.Null);
             });
         }
@@ -328,17 +329,17 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void MultiChoicePack_UsesConfiguredGroupPresentation()
+        public void MultiChoicePack_ShowsOnlyConfiguredRuleText()
         {
             var group = new RewardChoiceGroup(
                 "配置选择名称",
                 new[]
                 {
-                    Choice(cfg.RewardKind.PassiveItemChoice, "item_a", "道具 A"),
-                    Choice(cfg.RewardKind.PassiveItemChoice, "item_b", "道具 B"),
+                    Choice(cfg.RewardKind.PassiveItemChoice, "item_a", "装饰品和消耗品 A"),
+                    Choice(cfg.RewardKind.PassiveItemChoice, "item_b", "装饰品和消耗品 B"),
                 },
                 description: "配置用途描述",
-                ruleText: "从 2 个被动道具中选择 1 个。",
+                ruleText: "从 2 个装饰品中选择 1 个。",
                 sourceSlotId: "slot_configured");
             RewardOffer offer = new RewardOffer(0, new[] { group }, null, baseGoldClaimed: true);
 
@@ -348,7 +349,7 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(RowTitle(rows[0]), Is.EqualTo("配置选择名称"));
                 Assert.That(
                     RowDescription(rows[0]),
-                    Is.EqualTo("配置用途描述\n从 2 个被动道具中选择 1 个。"));
+                    Is.EqualTo("从 2 个装饰品中选择 1 个。"));
             });
         }
 
@@ -357,7 +358,7 @@ namespace GourmetProject.Tests.EditMode
         {
             RewardChoice fallback = RewardChoice.Gold(20, "折算金币", isFallback: true);
             var group = new RewardChoiceGroup(
-                "原道具选择",
+                "原装饰品和消耗品选择",
                 new[] { fallback },
                 description: "候选不足时折算",
                 ruleText: "随机获得 1 个金币。",
@@ -376,18 +377,18 @@ namespace GourmetProject.Tests.EditMode
         public void SingleFragment_RemainsAConfiguredChoicePack()
         {
             var group = new RewardChoiceGroup(
-                "餐桌碎片选择",
+                "餐桌格选择",
                 new[] { Choice(cfg.RewardKind.FragmentChoice, "fragment_square", "方形碎片") },
                 description: "碎片包描述",
-                ruleText: "从 1 个餐桌碎片中选择 1 个。",
+                ruleText: "从 1 个餐桌格中选择 1 个。",
                 sourceSlotId: "fragment_test");
             RewardOffer offer = new RewardOffer(0, new[] { group }, null, baseGoldClaimed: true);
 
             WithRenderedOffer(offer, rows =>
             {
                 Assert.That(rows, Has.Count.EqualTo(1));
-                Assert.That(RowTitle(rows[0]), Is.EqualTo("餐桌碎片选择"));
-                Assert.That(RowDescription(rows[0]), Is.EqualTo("碎片包描述\n从 1 个餐桌碎片中选择 1 个。"));
+                Assert.That(RowTitle(rows[0]), Is.EqualTo("餐桌格选择"));
+                Assert.That(RowDescription(rows[0]), Is.EqualTo("从 1 个餐桌格中选择 1 个。"));
             });
         }
 
@@ -449,7 +450,7 @@ namespace GourmetProject.Tests.EditMode
             run.SetLastActionContext(actionContext);
 
             var fixedGroup = new RewardChoiceGroup(
-                "基础菜品",
+                "基础食物",
                 new[]
                 {
                     Choice(cfg.RewardKind.DishChoice, "cake_slice", "蛋糕切角"),
@@ -503,7 +504,7 @@ namespace GourmetProject.Tests.EditMode
             };
 
             var fixedGroup = new RewardChoiceGroup(
-                "基础菜品",
+                "基础食物",
                 dishChoices,
                 fixedRequiredChoiceCount,
                 fixedClaimedIndices);

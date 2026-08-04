@@ -40,7 +40,7 @@ public sealed partial class CakeLayerBuff : Luban.BeanBase
     /// </summary>
     public readonly int Order;
     /// <summary>
-    /// 层数阈值(&gt;=生效)
+    /// 层数阈值(≥生效)
     /// </summary>
     public readonly int Threshold;
     /// <summary>

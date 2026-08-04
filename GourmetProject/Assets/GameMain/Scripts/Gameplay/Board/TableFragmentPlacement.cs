@@ -4,7 +4,7 @@ using GourmetProject.Gameplay.Model;
 namespace GourmetProject.Gameplay.Board
 {
     /// <summary>
-    /// 玩家手动拼贴的一块餐桌碎片放置：碎片 id + 顺时针旋转次数(0..3) + 左上原点格。
+    /// 玩家手动拼贴的一块餐桌格放置：碎片 id + 顺时针旋转次数(0..3) + 左上原点格。
     /// 用于存档与重建餐桌，保证拼贴结果可复现。
     /// </summary>
     [Serializable]

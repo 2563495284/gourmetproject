@@ -47,7 +47,7 @@ namespace GourmetProject.Game.UI.Tooltips
             }
         }
 
-        /// <summary>揭示某道菜「乘区」的当前累加值（ScoreLine.After）。</summary>
+        /// <summary>揭示某道菜「倍率」的当前累加值（ScoreLine.After）。</summary>
         public void RevealMultiplier(int dishInstanceId, float multiplierAfter)
         {
             if (_byDish.TryGetValue(dishInstanceId, out DishReveal reveal))

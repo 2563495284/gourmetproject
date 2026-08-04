@@ -12,16 +12,16 @@
 namespace cfg
 { 
     /// <summary>
-    /// 主动道具分类
+    /// 消耗品分类
     /// </summary>
     public enum ActiveItemCategory
     {
         /// <summary>
-        /// 强化类主动道具
+        /// 强化类消耗品
         /// </summary>
         Strengthen = 0,
         /// <summary>
-        /// 调整类主动道具
+        /// 调整类消耗品
         /// </summary>
         Adjust = 1,
     }

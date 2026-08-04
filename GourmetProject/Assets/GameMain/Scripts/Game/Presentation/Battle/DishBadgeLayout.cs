@@ -89,7 +89,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         /// <summary>
         /// 以左上角占用格的中心为原点，统一计算 Badge 中心位置。
-        /// Badge 的上边缘始终与菜品最上方连续格的上边缘对齐。
+        /// Badge 的上边缘始终与食物最上方连续格的上边缘对齐。
         /// </summary>
         public static Vector3 PositionFromTopLeftCellOrigin(
             DishShape shape,
@@ -112,7 +112,7 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>
-        /// 以整个菜品包围盒中心为原点，使用与世界菜品完全相同的 Badge 锚点。
+        /// 以整个食物包围盒中心为原点，使用与世界食物完全相同的 Badge 锚点。
         /// </summary>
         public static Vector3 PositionFromShapeCenter(
             DishShape shape,

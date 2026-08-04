@@ -25,11 +25,11 @@ namespace cfg
         /// </summary>
         GainGold = 1,
         /// <summary>
-        /// 降低本周目标分
+        /// 降低本周目标美味值
         /// </summary>
         LowerReq = 2,
         /// <summary>
-        /// 获得道具(param=Active/Passive)
+        /// 获得装饰品或消耗品(param=Active/Passive)
         /// </summary>
         GainItem = 3,
         /// <summary>
@@ -37,15 +37,15 @@ namespace cfg
         /// </summary>
         Gamble = 4,
         /// <summary>
-        /// 菜谱加菜(占位折金币)
+        /// 食谱加菜(占位折金币)
         /// </summary>
         AddDish = 5,
         /// <summary>
-        /// 提升菜品(占位折金币)
+        /// 提升食物(占位折金币)
         /// </summary>
         UpgradeDish = 6,
         /// <summary>
-        /// 跟进:进入美食战斗(value=目标分,param=modifier)
+        /// 跟进:进入经营挑战(value=目标美味值,param=modifier)
         /// </summary>
         FoodBattle = 7,
         /// <summary>
@@ -65,43 +65,43 @@ namespace cfg
         /// </summary>
         AddHiddenScoreOffset = 11,
         /// <summary>
-        /// 入队菜品多选一奖励(value=候选数,param=标题)
+        /// 入队食物多选一奖励(value=候选数,param=标题)
         /// </summary>
         EnqueueDishChoice = 12,
         /// <summary>
-        /// 入队道具多选一奖励(value=候选数,param=Active/Passive|标题)
+        /// 入队装饰品或消耗品多选一奖励(value=候选数,param=Active/Passive|标题)
         /// </summary>
         EnqueueItemChoice = 13,
         /// <summary>
-        /// 给菜谱随机菜品添加随机风味(value=次数,优先无额外风味)
+        /// 给食谱随机食物添加随机风味(value=次数,优先无额外风味)
         /// </summary>
         AddRandomRecipeFlavor = 14,
         /// <summary>
-        /// 按奖励槽组生成道具奖励(param=奖励槽组ID)
+        /// 按奖励槽组生成装饰品或消耗品奖励(param=奖励槽组ID)
         /// </summary>
         GainSpecificItem = 15,
         /// <summary>
-        /// 获得餐桌碎片包(value=候选数)
+        /// 获得餐桌格包(value=候选数)
         /// </summary>
         GrantFragmentPack = 16,
         /// <summary>
-        /// 商店价格百分比修正(value=0.25 表示+25%)
+        /// 商店价格百分比修正(value=0.25 表示 +25%)
         /// </summary>
         AddShopPricePct = 17,
         /// <summary>
-        /// 后续奖励候选数惩罚(value=次数,param=数量变化,如-1)
+        /// 后续奖励候选数惩罚(value=次数,param=数量变化,如 -1)
         /// </summary>
         AddChoiceCountPenalty = 18,
         /// <summary>
-        /// 下一场美食目标分隐藏分偏移(value=偏移)
+        /// 下一场经营挑战目标美味值隐藏分偏移(value=偏移)
         /// </summary>
         AddNextFoodTargetOffset = 19,
         /// <summary>
-        /// 下一次美食奖励额外金币(value=金币)
+        /// 下一场经营挑战奖励额外金币(value=金币)
         /// </summary>
         AddNextMealGold = 20,
         /// <summary>
-        /// 失去所有主动道具并按件获得金币(value=每件金币)
+        /// 失去所有消耗品并按件获得金币(value=每件金币)
         /// </summary>
         RemoveActiveItemsForGold = 21,
         /// <summary>
@@ -109,7 +109,7 @@ namespace cfg
         /// </summary>
         IncrementEventCounter = 22,
         /// <summary>
-        /// 获得随机带风味菜品(value=数量)
+        /// 获得随机带风味食物(value=数量)
         /// </summary>
         GainRandomFlavoredDishes = 23,
         /// <summary>
@@ -117,7 +117,7 @@ namespace cfg
         /// </summary>
         LoseAllGold = 24,
         /// <summary>
-        /// 获得传奇被动道具，缺少传奇时回退高品质被动
+        /// 获得传奇装饰品，缺少传奇时回退高品质被动
         /// </summary>
         GainLegendaryItem = 25,
         /// <summary>
@@ -125,11 +125,11 @@ namespace cfg
         /// </summary>
         UiTodo = 26,
         /// <summary>
-        /// 随机删除菜谱菜品(value=数量,param=flavored时只删带风味菜)
+        /// 随机删除食谱食物(value=数量,param=flavored时只删带风味菜)
         /// </summary>
         RemoveRandomRecipeDish = 27,
         /// <summary>
-        /// 交互选择并删除菜谱中1道菜(事件专用)
+        /// 交互选择并删除食谱中1 个食物(事件专用)
         /// </summary>
         SelectRemoveRecipeDish = 28,
         /// <summary>

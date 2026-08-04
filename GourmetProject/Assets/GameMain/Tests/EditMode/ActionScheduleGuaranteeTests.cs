@@ -205,6 +205,81 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void EventActionBonus_IsAppliedAfterGuaranteeFilteringAndFlashesWhenPicked()
+        {
+            ResetGroupRules();
+            cfg.ActionLargeGroup normal = Group("lg_normal");
+            cfg.ActionLargeGroup containsEvent = Group("lg_event");
+            SetWeight(normal, 100f);
+            SetWeight(containsEvent, 100f);
+            SetBounds(normal.MinGuaranteeCounts, new[] { 1 });
+            SetBounds(containsEvent.MinGuaranteeCounts, new[] { 1 });
+            GameRun run = CreateRun();
+            PassiveItemModel model = AttachPassiveModel(run, "item_more_events", effectValue: 0.5f);
+            var itemRuntime = new ItemRuntime(run);
+            bool flashed = false;
+            model.Flashed += _ => flashed = true;
+            var rng = new HighestWeightRandomStream();
+
+            string picked = ActionScheduleService.EnsureCurrentGroup(run, rng);
+
+            Assert.That(itemRuntime.MoreEventsBonus(), Is.Zero,
+                "街角路牌不应再修改进入 act_event 后的事件内部分类权重。");
+            Assert.That(itemRuntime.EventActionLargeGroupWeightBonus(), Is.EqualTo(0.5f));
+            Assert.That(rng.LastWeights, Is.EqualTo(new[] { 100f, 150f }),
+                "应只对保底筛选后的 Event 大组乘以 1.5。");
+            Assert.That(picked, Is.EqualTo(containsEvent.Id));
+            Assert.That(flashed, Is.True, "多候选中实际选中受加成大组时应反馈。");
+        }
+
+        [Test]
+        public void EventActionBonus_DoesNotReviveZeroWeightGroup()
+        {
+            ResetGroupRules();
+            cfg.ActionLargeGroup normal = Group("lg_normal");
+            cfg.ActionLargeGroup containsEvent = Group("lg_event");
+            SetWeight(normal, 100f);
+            SetWeight(containsEvent, 0f);
+            GameRun run = CreateRun();
+            AttachPassiveModel(run, "item_more_events", effectValue: 0.5f);
+
+            string picked = ActionScheduleService.EnsureCurrentGroup(run, _rng);
+
+            int eventIndex = _tables.TbActionLargeGroup.DataList
+                .ToList()
+                .FindIndex(group => group.Id == containsEvent.Id);
+            Assert.That(eventIndex, Is.GreaterThanOrEqualTo(0));
+            Assert.That(_rng.LastWeights[eventIndex], Is.Zero);
+            Assert.That(picked, Is.EqualTo(normal.Id));
+        }
+
+        [Test]
+        public void EventActionBonus_SingleGuaranteedCandidateDoesNotFlash()
+        {
+            ResetGroupRules();
+            cfg.ActionLargeGroup only = Group("lg_event");
+            SetWeight(only, 100f);
+            SetBounds(only.MinGuaranteeCounts, new[] { 1 });
+            GameRun run = CreateRun();
+            PassiveItemModel model = AttachPassiveModel(run, "item_more_events", effectValue: 0.5f);
+            bool flashed = false;
+            model.Flashed += _ => flashed = true;
+
+            string picked = ActionScheduleService.EnsureCurrentGroup(run, _rng);
+
+            Assert.That(picked, Is.EqualTo(only.Id));
+            Assert.That(flashed, Is.False, "保底只剩一个候选时没有发生概率竞争，不应反馈。");
+        }
+
+        [Test]
+        public void EventActionGroupDetection_FollowsContainedActionBehavior()
+        {
+            Assert.That(ActionScheduleService.ContainsEventAction(_tables, Group("lg_normal")), Is.False);
+            Assert.That(ActionScheduleService.ContainsEventAction(_tables, Group("lg_event")), Is.True);
+            Assert.That(ActionScheduleService.ContainsEventAction(_tables, Group("lg_normalEvent")), Is.True);
+        }
+
+        [Test]
         public void ShippedConfigurationHasAlignedWeeklyBoundsAndValidRanges()
         {
             foreach (cfg.ActionLargeGroup group in _tables.TbActionLargeGroup.DataList)
@@ -282,11 +357,11 @@ namespace GourmetProject.Tests.EditMode
             run.AdvanceActionStep();
         }
 
-        private static void AttachPassiveModel(GameRun run, string itemId, float effectValue)
+        private static PassiveItemModel AttachPassiveModel(GameRun run, string itemId, float effectValue)
         {
             string json = $@"{{
                 ""id"":""{itemId}"",
-                ""name"":""测试道具"",
+                ""name"":""测试装饰品和消耗品"",
                 ""desc"":"""",
                 ""quality"":0,
                 ""specialTags"":0,
@@ -308,6 +383,7 @@ namespace GourmetProject.Tests.EditMode
             model.Bind(run, definition, state);
             state.Model = model;
             ((List<RunItemState>)run.Items).Add(state);
+            return model;
         }
 
         private sealed class FirstPositiveRandomStream : IRandomStream
@@ -348,6 +424,50 @@ namespace GourmetProject.Tests.EditMode
                 }
 
                 return 0;
+            }
+        }
+
+        private sealed class HighestWeightRandomStream : IRandomStream
+        {
+            public IReadOnlyList<float> LastWeights { get; private set; } = Array.Empty<float>();
+
+            public RngState State { get; set; }
+
+            public uint NextUInt() => 0;
+
+            public ulong NextULong() => 0;
+
+            public int Range(int minInclusive, int maxExclusive) => minInclusive;
+
+            public float Range(float minInclusive, float maxExclusive) => minInclusive;
+
+            public float NextFloat() => 0f;
+
+            public double NextDouble() => 0.0;
+
+            public bool NextBool(double probability = 0.5) => probability > 0.0;
+
+            public void Shuffle<T>(IList<T> list)
+            {
+            }
+
+            public T Pick<T>(IReadOnlyList<T> list) => list[0];
+
+            public int WeightedPickIndex(IReadOnlyList<float> weights)
+            {
+                LastWeights = weights.ToArray();
+                int bestIndex = 0;
+                float bestWeight = float.NegativeInfinity;
+                for (int index = 0; index < weights.Count; index++)
+                {
+                    if (weights[index] > bestWeight)
+                    {
+                        bestIndex = index;
+                        bestWeight = weights[index];
+                    }
+                }
+
+                return bestIndex;
             }
         }
     }

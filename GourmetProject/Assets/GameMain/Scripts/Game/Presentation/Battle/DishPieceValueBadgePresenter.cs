@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
-    /// <summary>负责世界菜品 Badge 的实例、布局、数值覆盖、排序与反馈动画。</summary>
+    /// <summary>负责世界食物 Badge 的实例、布局、数值覆盖、排序与反馈动画。</summary>
     public sealed class DishPieceValueBadgePresenter : MonoBehaviour
     {
         [SerializeField] private DishValueBadgeView _badgePrefab;

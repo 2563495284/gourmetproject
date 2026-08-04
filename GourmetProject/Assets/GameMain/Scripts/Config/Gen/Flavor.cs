@@ -61,7 +61,7 @@ public sealed partial class Flavor : Luban.BeanBase
     /// </summary>
     public readonly string TermId;
     /// <summary>
-    /// 同一菜品本体下的风味展示顺序(升序)
+    /// 同一食物本体下的风味展示顺序(升序)
     /// </summary>
     public readonly int SortOrder;
    

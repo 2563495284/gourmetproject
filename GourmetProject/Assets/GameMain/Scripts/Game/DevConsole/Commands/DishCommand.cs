@@ -7,14 +7,14 @@ using GourmetProject.Runtime;
 
 namespace GourmetProject.Game.DevConsole.Commands
 {
-    /// <summary>给当前对局的菜谱添加一道菜（按菜品变体 id）。</summary>
+    /// <summary>给当前对局的食谱添加1 个食物（按食物变体 id）。</summary>
     public sealed class DishCommand : ConsoleCommand
     {
         public override string CmdName => "dish";
 
         public override string Args => "<dish-id:string>";
 
-        public override string Description => "向第一本菜谱末尾添加一道菜（按变体 id）。";
+        public override string Description => "向第一本食谱末尾添加1 个食物（按变体 id）。";
 
         public override CmdResult Execute(string[] args)
         {
@@ -32,11 +32,11 @@ namespace GourmetProject.Game.DevConsole.Commands
             GameRun run = GameRunContext.Current;
             if (!run.AddBonusDish(dishId))
             {
-                return CmdResult.Fail($"添加失败：找不到菜品 '{dishId}' 或菜谱已满。");
+                return CmdResult.Fail($"添加失败：找不到食物 '{dishId}' 或食谱已满。");
             }
 
             BattleForm.Active?.RefreshPersistentHud();
-            return CmdResult.Ok($"已添加菜品 '{dishId}' 到第一本菜谱。");
+            return CmdResult.Ok($"已添加食物 '{dishId}' 到第一本食谱。");
         }
 
         public override IReadOnlyList<string> GetCompletions(string[] args)

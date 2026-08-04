@@ -4,7 +4,7 @@ using GourmetProject.Game.Run;
 
 namespace GourmetProject.Game.Meta
 {
-    /// <summary>行动轴节点的轻量引用（id + 整天位置），用于纯逻辑运算与单测。</summary>
+    /// <summary>时间轴节点的轻量引用（id + 整天位置），用于纯逻辑运算与单测。</summary>
     public readonly struct NodeRef
     {
         public NodeRef(string id, int day)
@@ -18,7 +18,7 @@ namespace GourmetProject.Game.Meta
     }
 
     /// <summary>
-    /// 行动轴纯数学：天数推进、区间节点检测、利息计算。无任何引擎/配置依赖，便于 EditMode 单测。
+    /// 时间轴纯数学：天数推进、区间节点检测、利息计算。无任何引擎/配置依赖，便于 EditMode 单测。
     /// 运行时的 <see cref="TimelineService"/> 与编排层复用这里的规则，避免逻辑漂移。
     /// 天数以 0.1 天为粒度：推进结果统一量化到一位小数，避免多次 0.1 累加的浮点漂移。
     /// </summary>
@@ -45,7 +45,7 @@ namespace GourmetProject.Game.Meta
             return Math.Max(1, (int)Math.Ceiling(currentDay - Epsilon));
         }
 
-        /// <summary>是否走完行动轴（含浮点容差）。</summary>
+        /// <summary>是否走完时间轴（含浮点容差）。</summary>
         public static bool IsFinished(float currentDay, float lengthDays) => currentDay >= lengthDays - Epsilon;
 
         /// <summary>利息：每满 threshold 金币发放 goldPer 金币，并按 maxGain 封顶。</summary>

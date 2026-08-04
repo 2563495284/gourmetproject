@@ -8,7 +8,7 @@ using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 
 namespace GourmetProject.Gameplay.Scoring
 {
-    /// <summary>把带「前提×行为」规则的菜品技能转换为结算效果条目（OnSettle 触发）。</summary>
+    /// <summary>把带「前提×行为」规则的食物技能转换为结算效果条目（OnSettle 触发）。</summary>
     public sealed class SkillRuleEffectSource : IScoreEffectSource
     {
         public void CollectEffects(ScoreSnapshot snapshot, ScoreEffectCollector collector)

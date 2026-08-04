@@ -9,7 +9,7 @@ using GourmetProject.Gameplay.Model;
 namespace GourmetProject.Game.Meta
 {
     /// <summary>
-    /// 局外即时效果结算（金币/道具/降目标/赌博/加菜…）。奖励/负面行动与事件选项共用，避免规则漂移。
+    /// 局外即时效果结算（金币/装饰品和消耗品/降目标/赌博/加菜…）。奖励/负面行动与事件选项共用，避免规则漂移。
     /// 只处理「即时」类 <see cref="cfg.EffectType"/>；跟进类（FoodBattle/Shop/GameOver/Victory）由
     /// <see cref="EventService"/> 转成 <see cref="EventResolveResult"/> 的后续动作，不在这里结算。
     /// 数值为占位经济，可在配置中调整。返回给玩家看的反馈文案。
@@ -34,10 +34,10 @@ namespace GourmetProject.Game.Meta
                 case cfg.EffectType.LowerReq:
                     int baseReq = run.RequiredScore;
                     run.RequiredScoreOverride = RoundToInt(baseReq * (1f - effectValue));
-                    return $"本周目标分降低至 {run.RequiredScoreOverride}。";
+                    return $"本周目标美味值降低至 {run.RequiredScoreOverride}。";
 
                 case cfg.EffectType.GainItem:
-                    return EnqueueConfigReward(run, rng, effectParam, "获得道具", 40);
+                    return EnqueueConfigReward(run, rng, effectParam, "获得装饰品和消耗品", 40);
 
                 case cfg.EffectType.Gamble:
                     if (rng.NextBool())
@@ -50,30 +50,30 @@ namespace GourmetProject.Game.Meta
                     return $"豪赌失败…金币 -{value}。";
 
                 case cfg.EffectType.AddDish:
-                    return EnqueueConfigReward(run, rng, effectParam, "菜品奖励", 30);
+                    return EnqueueConfigReward(run, rng, effectParam, "食物奖励", 30);
 
                 case cfg.EffectType.UpgradeDish:
-                    // 「提升菜品」是改造而非发放，暂折金币占位（不在本次奖励统一范围）。
+                    // 「提升食物」是改造而非发放，暂折金币占位（不在本次奖励统一范围）。
                     run.Gold += System.Math.Max(1, value) * 15;
-                    return $"暂以金币 +{System.Math.Max(1, value) * 15} 折算（菜品成长后续接入）。";
+                    return $"暂以金币 +{System.Math.Max(1, value) * 15} 折算（食物成长后续接入）。";
 
                 case cfg.EffectType.AddHiddenScoreOffset:
                     return AddHiddenScoreOffset(run, effectValue, effectParam);
 
                 case cfg.EffectType.EnqueueDishChoice:
-                    return EnqueueConfigReward(run, rng, effectParam, "菜品奖励", 30);
+                    return EnqueueConfigReward(run, rng, effectParam, "食物奖励", 30);
 
                 case cfg.EffectType.EnqueueItemChoice:
-                    return EnqueueConfigReward(run, rng, effectParam, "道具奖励", 40);
+                    return EnqueueConfigReward(run, rng, effectParam, "装饰品和消耗品奖励", 40);
 
                 case cfg.EffectType.AddRandomRecipeFlavor:
                     return AddRandomRecipeFlavor(run, rng, System.Math.Max(1, value));
 
                 case cfg.EffectType.GainSpecificItem:
-                    return EnqueueConfigReward(run, rng, effectParam, "获得道具", 40);
+                    return EnqueueConfigReward(run, rng, effectParam, "获得装饰品和消耗品", 40);
 
                 case cfg.EffectType.GrantFragmentPack:
-                    return EnqueueConfigReward(run, rng, effectParam, "餐桌碎片", 40);
+                    return EnqueueConfigReward(run, rng, effectParam, "餐桌格", 40);
 
                 case cfg.EffectType.AddShopPricePct:
                     run.AddEventShopPricePct(effectValue);
@@ -86,11 +86,11 @@ namespace GourmetProject.Game.Meta
 
                 case cfg.EffectType.AddNextFoodTargetOffset:
                     run.AddNextFoodTargetScoreHiddenOffset(effectValue);
-                    return $"下一场美食挑战目标分隐藏分 {FormatSigned(effectValue)}。";
+                    return $"下一场经营挑战目标美味值隐藏分 {FormatSigned(effectValue)}。";
 
                 case cfg.EffectType.AddNextMealGold:
                     run.AddNextMealRewardGold(value);
-                    return $"下一次美食奖励金币 +{value}。";
+                    return $"下一场经营挑战奖励金币 +{value}。";
 
                 case cfg.EffectType.RemoveActiveItemsForGold:
                     return RemoveActiveItemsForGold(run, value);
@@ -99,7 +99,7 @@ namespace GourmetProject.Game.Meta
                     return IncrementEventCounter(run, value, effectParam);
 
                 case cfg.EffectType.GainRandomFlavoredDishes:
-                    return EnqueueConfigReward(run, rng, effectParam, "风味美食", 60);
+                    return EnqueueConfigReward(run, rng, effectParam, "风味食物", 60);
 
                 case cfg.EffectType.RemoveRandomRecipeDish:
                     return RemoveRandomRecipeDish(run, rng, System.Math.Max(1, value), effectParam);
@@ -110,7 +110,7 @@ namespace GourmetProject.Game.Meta
                     return $"失去所有金币（-{lost}）。";
 
                 case cfg.EffectType.GainLegendaryItem:
-                    return EnqueueConfigReward(run, rng, effectParam, "传奇道具", 80);
+                    return EnqueueConfigReward(run, rng, effectParam, "传奇装饰品和消耗品", 80);
 
                 case cfg.EffectType.CollectInterest:
                     return CollectInterest(run, effectParam);
@@ -253,7 +253,7 @@ namespace GourmetProject.Game.Meta
 
             if (allTargets.Count == 0)
             {
-                return "菜谱为空，无法添加风味。";
+                return "食谱为空，无法添加风味。";
             }
 
             List<FlavorDef> flavors = AllFlavors(run);
@@ -276,7 +276,7 @@ namespace GourmetProject.Game.Meta
                 }
             }
 
-            return applied > 0 ? $"为菜谱中的 {applied} 道菜添加了随机风味。" : "没有菜品获得风味。";
+            return applied > 0 ? $"为食谱中的 {applied} 道菜添加了随机风味。" : "没有食物获得风味。";
         }
 
         private static string RemoveRandomRecipeDish(GameRun run, IRandomStream rng, int count, string param)
@@ -300,10 +300,10 @@ namespace GourmetProject.Game.Meta
 
             if (removed <= 0)
             {
-                return requireFlavor ? "菜谱中没有带风味的美食可献上。" : "菜谱为空，无法献上美食。";
+                return requireFlavor ? "食谱中没有带风味的食物可献上。" : "食谱为空，无法献上食物。";
             }
 
-            return requireFlavor ? $"随机献上了 {removed} 道带风味的美食。" : $"随机献上了 {removed} 道美食。";
+            return requireFlavor ? $"随机献上了 {removed} 道带风味的食物。" : $"随机献上了 {removed} 道食物。";
         }
 
         private static List<(int DishIndex, string DishName)> RecipeDishTargets(GameRun run, bool requireFlavor)
@@ -351,7 +351,7 @@ namespace GourmetProject.Game.Meta
 
             int gained = removed * System.Math.Max(0, goldPerItem);
             run.Gold += gained;
-            return removed > 0 ? $"失去主动道具 {removed} 个，获得金币 {gained}。" : "没有主动道具可献上。";
+            return removed > 0 ? $"失去消耗品 {removed} 个，获得金币 {gained}。" : "没有消耗品可献上。";
         }
 
         private static string IncrementEventCounter(GameRun run, int threshold, string param)

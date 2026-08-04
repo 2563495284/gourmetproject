@@ -1,8 +1,8 @@
 namespace GourmetProject.Game.Meta
 {
     /// <summary>
-    /// 主动道具目标类型 → 「是否需选目标」「在哪些情境可用」的推导。
-    /// usableContext 不单独配置，由 <c>targetKind</c> 推导（见 docs/design/道具.md 第 4 节）。
+    /// 消耗品目标类型 → 「是否需选目标」「在哪些情境可用」的推导。
+    /// usableContext 不单独配置，由 <c>targetKind</c> 推导（见 docs/design/装饰品和消耗品.md 第 4 节）。
     /// </summary>
     public static class ItemActiveUsage
     {
@@ -39,10 +39,10 @@ namespace GourmetProject.Game.Meta
             switch (kind)
             {
                 case cfg.ItemTargetKind.DiningTableDish:
-                    // 餐桌菜是本局临时目标，只在战斗内存在。
+                    // 餐桌菜是本局临时目标，只在经营挑战内存在。
                     return ctx == ActiveUseContextKind.Battle;
                 case cfg.ItemTargetKind.RecipeDish:
-                    // 永久改菜谱：任意情境（含战斗）都可用。
+                    // 永久改食谱：任意情境（含经营挑战）都可用。
                     return true;
                 case cfg.ItemTargetKind.DiningTableCell:
                 case cfg.ItemTargetKind.Material:
@@ -57,7 +57,7 @@ namespace GourmetProject.Game.Meta
             }
         }
 
-        /// <summary>某道具是否可在指定情境使用（由 kind + targetKind + effectType 推导）。</summary>
+        /// <summary>某装饰品和消耗品是否可在指定情境使用（由 kind + targetKind + effectType 推导）。</summary>
         public static bool CanUse(ItemDefinition item, ActiveUseContextKind ctx)
         {
             if (item == null || item.Kind != cfg.ItemKind.Active)
@@ -83,7 +83,7 @@ namespace GourmetProject.Game.Meta
             return IsUsableIn(item.TargetKind, ctx);
         }
 
-        /// <summary>调味与铺台小票只能在尚未结算的 Food 战斗主界面使用。</summary>
+        /// <summary>调味与铺台小票只能在尚未结算的 Food 经营挑战主界面使用。</summary>
         public static bool RequiresFoodBattle(ItemDefinition item)
         {
             return item != null
@@ -91,7 +91,7 @@ namespace GourmetProject.Game.Meta
                     || item.EffectType == ItemEffectTypes.AddMaterial);
         }
 
-        /// <summary>排程小票效果（操作行动轴/Boss，局外/地图专用）。</summary>
+        /// <summary>排程小票效果（操作时间轴/Boss，局外/地图专用）。</summary>
         public static bool IsScheduleEffect(string effectType)
         {
             switch (effectType)

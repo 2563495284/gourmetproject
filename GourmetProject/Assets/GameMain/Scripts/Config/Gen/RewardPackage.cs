@@ -32,7 +32,7 @@ public sealed partial class RewardPackage : Luban.BeanBase
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 基础菜品奖励槽组 id。
+    /// 基础食物奖励槽组 id。
     /// </summary>
     public readonly System.Collections.Generic.List<string> BaseDishSlotGroupId;
     /// <summary>

@@ -5,7 +5,7 @@ using GourmetProject.Game.Run;
 namespace GourmetProject.Game.Presentation.Battle
 {
     /// <summary>
-    /// 战斗世界统一使用 Unlit 平涂材质：不依赖 Light2D 受光，画面靠 sprite 原色 + URP 2D 卡通后处理出味，
+    /// 经营挑战世界统一使用 Unlit 平涂材质：不依赖 Light2D 受光，画面靠 sprite 原色 + URP 2D 卡通后处理出味，
     /// 避免「分层 ↔ 灯目标排序层」的耦合坑。SpriteRenderer 在 URP 2D 下默认材质是 Lit，必须显式改 Unlit。
     /// </summary>
     internal static class SpriteRenderStyle

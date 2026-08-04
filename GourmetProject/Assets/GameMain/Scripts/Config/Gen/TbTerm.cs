@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 专有名词：菜品详情右侧框单独解释。
+/// 专有名词：食物详情右侧框单独解释。
 /// </summary>
 public partial class TbTerm
 {

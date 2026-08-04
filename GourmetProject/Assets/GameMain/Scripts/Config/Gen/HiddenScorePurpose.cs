@@ -17,19 +17,19 @@ namespace cfg
     public enum HiddenScorePurpose
     {
         /// <summary>
-        /// 目标分曲线
+        /// 目标美味值曲线
         /// </summary>
         TargetScore = 0,
         /// <summary>
-        /// 菜品奖励隐藏分
+        /// 食物奖励隐藏分
         /// </summary>
         Dish = 1,
         /// <summary>
-        /// 被动道具奖励隐藏分
+        /// 装饰品奖励隐藏分
         /// </summary>
         PassiveItem = 2,
         /// <summary>
-        /// 餐桌碎片奖励隐藏分
+        /// 餐桌格奖励隐藏分
         /// </summary>
         Fragment = 3,
         /// <summary>

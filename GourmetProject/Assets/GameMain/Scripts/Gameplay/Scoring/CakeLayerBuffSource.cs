@@ -45,7 +45,7 @@ namespace GourmetProject.Gameplay.Scoring
                 return;
             }
 
-            // 道具「蛋糕捷径」下调每档需求层数（下限 0）。
+            // 装饰品和消耗品「蛋糕捷径」下调每档需求层数（下限 0）。
             int reduction = ctx.Snapshot?.CakeLayerThresholdReduction ?? 0;
 
             foreach (CakeLayerBuffDef buff in _buffs)

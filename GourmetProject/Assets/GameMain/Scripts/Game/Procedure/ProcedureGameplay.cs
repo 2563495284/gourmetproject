@@ -22,15 +22,15 @@ using Log = GourmetProject.Core.Diagnostics.Log;
 namespace GourmetProject.Game.Procedure
 {
     /// <summary>
-    /// 玩法流程：从菜单切入后，建立（或继续）一次肉鸽运行，加载独立战斗场景并打开局内战斗界面。
-    /// 局外周循环（领奖、事件、商店）在此流程内通过 UI 切换推进；战斗全程停留在 Battle.unity。
+    /// 玩法流程：从菜单切入后，建立（或继续）一次肉鸽运行，加载独立经营挑战场景并打开局内经营挑战界面。
+    /// 局外周循环（领奖、事件、商店）在此流程内通过 UI 切换推进；经营挑战全程停留在 Battle.unity。
     /// </summary>
     public sealed class ProcedureGameplay : ProcedureBase
     {
         private const string Tag = "Gameplay";
         private const string BattleSceneName = "Battle";
 
-        // 进入战斗时缓存的菜单相机（Launch 场景），战斗期间禁用、返回时恢复。
+        // 进入经营挑战时缓存的菜单相机（Launch 场景），经营挑战期间禁用、返回时恢复。
         private Camera _menuCamera;
         private bool _battleSceneRequested;
         private bool _sceneEventsSubscribed;
@@ -94,7 +94,7 @@ namespace GourmetProject.Game.Procedure
             base.OnLeave(procedureOwner, isShutdown);
         }
 
-        // —— 战斗场景加载 / 卸载 ——
+        // —— 经营挑战场景加载 / 卸载 ——
 
         private void LoadBattleScene()
         {
@@ -120,7 +120,7 @@ namespace GourmetProject.Game.Procedure
                 SceneManager.SetActiveScene(battle);
             }
 
-            // 单场景观感：战斗相机就绪后再禁用菜单相机，避免出现「无相机渲染」帧。
+            // 单场景观感：经营挑战相机就绪后再禁用菜单相机，避免出现「无相机渲染」帧。
             if (_menuCamera != null)
             {
                 _menuCamera.gameObject.SetActive(false);

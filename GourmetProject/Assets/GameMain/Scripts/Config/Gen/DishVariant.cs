@@ -35,11 +35,11 @@ public sealed partial class DishVariant : Luban.BeanBase
     }
 
     /// <summary>
-    /// 菜品族ID(无风味菜品ID)
+    /// 食物族ID(无风味食物ID)
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 引用的菜品基础ID
+    /// 引用的食物基础ID
     /// </summary>
     public readonly string BaseId;
     /// <summary>

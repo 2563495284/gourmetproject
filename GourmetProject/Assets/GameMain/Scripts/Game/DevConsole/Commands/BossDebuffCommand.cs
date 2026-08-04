@@ -6,7 +6,7 @@ using GourmetProject.Runtime;
 
 namespace GourmetProject.Game.DevConsole.Commands
 {
-    /// <summary>指定本周 Boss Debuff，便于调试盛宴机制。</summary>
+    /// <summary>指定本周 Boss Debuff，便于调试星级评鉴机制。</summary>
     public sealed class BossDebuffCommand : ConsoleCommand
     {
         private const string ClearArg = "clear";

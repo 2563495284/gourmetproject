@@ -120,7 +120,7 @@ namespace GourmetProject.Game.UI.Meta
                     {
                         new FoodInfoEntry(
                             "不参与计分",
-                            "本场 Boss 修正：该食物上菜后不会计入最终分数。"),
+                            "本场 Boss 修正：该食物上菜后不会计入美味值。"),
                     }
                     : Array.Empty<FoodInfoEntry>();
             }
@@ -147,7 +147,7 @@ namespace GourmetProject.Game.UI.Meta
             {
                 tags.Add(new FoodInfoEntry(
                     "不参与计分",
-                    "本场 Boss 修正：该食物上菜后不会计入最终分数。"));
+                    "本场 Boss 修正：该食物上菜后不会计入美味值。"));
             }
 
             return tags;
@@ -208,8 +208,8 @@ namespace GourmetProject.Game.UI.Meta
         }
 
         /// <summary>
-        /// 返回用于生成 UI 的原始菜谱索引顺序。视觉上按菜品本体和风味排序，
-        /// 但绑定到视图的索引仍是原始索引，避免删除/道具目标因排序而错位。
+        /// 返回用于生成 UI 的原始食谱索引顺序。视觉上按食物本体和风味排序，
+        /// 但绑定到视图的索引仍是原始索引，避免删除/装饰品和消耗品目标因排序而错位。
         /// </summary>
         private List<int> BuildDishDisplayOrder(
             IReadOnlyList<RecipeBookSlot> entries)

@@ -38,10 +38,10 @@ namespace GourmetProject.Game.Meta
 
         public bool IsFallbackGold { get; }
 
-        /// <summary>菜品奖励附带的风味 id；空表示无附带风味。</summary>
+        /// <summary>食物奖励附带的风味 id；空表示无附带风味。</summary>
         public string FlavorId { get; }
 
-        /// <summary>餐桌碎片候选抽取时已确定的顺时针旋转次数（0..3）。</summary>
+        /// <summary>餐桌格候选抽取时已确定的顺时针旋转次数（0..3）。</summary>
         public int FragmentRotation { get; }
 
         public string DisplayText

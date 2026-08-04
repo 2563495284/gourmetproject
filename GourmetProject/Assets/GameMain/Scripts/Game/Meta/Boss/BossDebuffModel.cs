@@ -23,7 +23,7 @@ namespace GourmetProject.Game.Meta.BossDebuffs
     }
 
     /// <summary>
-    /// 单场 Boss Debuff 行为模型。每个配置 id 对应一个子类，只覆写需要参与的战斗装配阶段。
+    /// 单场 Boss Debuff 行为模型。每个配置 id 对应一个子类，只覆写需要参与的经营挑战装配阶段。
     /// 机制数值由子类拥有；配置只保留展示、抽取、解锁和隐藏分元数据。
     /// </summary>
     public abstract class BossDebuffModel
@@ -45,7 +45,7 @@ namespace GourmetProject.Game.Meta.BossDebuffs
         {
         }
 
-        /// <summary>在创建餐桌前修改本场菜谱条目。</summary>
+        /// <summary>在创建餐桌前修改本场食谱条目。</summary>
         public virtual void ModifyRecipeSlots(List<RecipeSlot> slots, IRandomStream rng)
         {
         }

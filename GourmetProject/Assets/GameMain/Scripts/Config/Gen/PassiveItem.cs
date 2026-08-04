@@ -40,19 +40,19 @@ public sealed partial class PassiveItem : Luban.BeanBase
     }
 
     /// <summary>
-    /// 道具ID
+    /// 装饰品ID
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 道具名称
+    /// 装饰品名称
     /// </summary>
     public readonly string Name;
     /// <summary>
-    /// 道具描述
+    /// 装饰品描述
     /// </summary>
     public readonly string Desc;
     /// <summary>
-    /// 道具品质
+    /// 装饰品品质
     /// </summary>
     public readonly ItemQuality Quality;
     /// <summary>
@@ -76,7 +76,7 @@ public sealed partial class PassiveItem : Luban.BeanBase
     /// </summary>
     public readonly HiddenRange HiddenRange;
     /// <summary>
-    /// 目标分隐藏分修正
+    /// 目标美味值隐藏分修正
     /// </summary>
     public readonly int TargetScoreHiddenOffset;
     /// <summary>
@@ -84,11 +84,11 @@ public sealed partial class PassiveItem : Luban.BeanBase
     /// </summary>
     public readonly int DishHiddenOffset;
     /// <summary>
-    /// 被动道具隐藏分修正
+    /// 装饰品隐藏分修正
     /// </summary>
     public readonly int PassiveItemHiddenOffset;
     /// <summary>
-    /// 餐桌格子隐藏分修正
+    /// 餐桌格隐藏分修正
     /// </summary>
     public readonly int FragmentHiddenOffset;
     /// <summary>

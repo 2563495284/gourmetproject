@@ -7,17 +7,17 @@ using GourmetProject.Gameplay.Model;
 namespace GourmetProject.Gameplay.Library
 {
     /// <summary>
-    /// 初始菜谱生成（遵循策划文档）：
-    /// 1) 固定菜品总会进入菜谱；
+    /// 初始食谱生成（遵循策划文档）：
+    /// 1) 固定食物总会进入食谱；
     /// 2) 先按权重选择一套数量方案；
-    /// 3) 数量方案按菜谱配置的 groupIds 顺序指定各小组的抽取数量；
+    /// 3) 数量方案按食谱配置的 groupIds 顺序指定各小组的抽取数量；
     /// 4) 每个小组内按权重「放回」随机，受每菜最多次数限制。
-    /// 结果为菜谱牌组的菜品 id 列表（固定在前，各小组结果依次在后，顺序稳定可复现）。
+    /// 结果为食谱食谱的食物 id 列表（固定在前，各小组结果依次在后，顺序稳定可复现）。
     /// </summary>
     public static class RecipeRoller
     {
         /// <summary>
-        /// 收集菜谱最终可能包含的菜品。固定菜品与所有可达随机候选按配置首次出现
+        /// 收集食谱最终可能包含的食物。固定食物与所有可达随机候选按配置首次出现
         /// 顺序合并去重；不会实际消耗随机流。
         /// </summary>
         public static List<string> CollectPossibleDishIds(RecipeDef recipe)
@@ -113,8 +113,8 @@ namespace GourmetProject.Gameplay.Library
             if (plan.GroupCounts.Count != recipe.Groups.Count)
             {
                 throw new InvalidOperationException(
-                    $"菜谱 '{recipe.Id}' 的数量方案 '{plan.Id}' 配置了 {plan.GroupCounts.Count} 个数量，" +
-                    $"但菜谱共有 {recipe.Groups.Count} 个小组。");
+                    $"食谱 '{recipe.Id}' 的数量方案 '{plan.Id}' 配置了 {plan.GroupCounts.Count} 个数量，" +
+                    $"但食谱共有 {recipe.Groups.Count} 个小组。");
             }
 
             var rolledCounts = new Dictionary<string, int>(StringComparer.Ordinal);
@@ -125,7 +125,7 @@ namespace GourmetProject.Gameplay.Library
                 if (targetCount < 0)
                 {
                     throw new InvalidOperationException(
-                        $"菜谱 '{recipe.Id}' 的数量方案 '{plan.Id}' 在小组 '{group.Id}' 配置了负数 {targetCount}。");
+                        $"食谱 '{recipe.Id}' 的数量方案 '{plan.Id}' 在小组 '{group.Id}' 配置了负数 {targetCount}。");
                 }
 
                 for (int i = 0; i < targetCount; i++)
@@ -134,7 +134,7 @@ namespace GourmetProject.Gameplay.Library
                     if (available.Count == 0)
                     {
                         throw new InvalidOperationException(
-                            $"菜谱 '{recipe.Id}' 的小组 '{group.Id}' 需要抽取 {targetCount} 个菜品，" +
+                            $"食谱 '{recipe.Id}' 的小组 '{group.Id}' 需要抽取 {targetCount} 个食物，" +
                             $"但抽到第 {i + 1} 个时池已因权重或 maxCount 耗尽。");
                     }
 

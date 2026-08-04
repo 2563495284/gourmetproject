@@ -35,7 +35,7 @@ namespace GourmetProject.Gameplay.Scoring
 
         public IScoreEffect Effect { get; }
 
-        /// <summary>指定菜品时只在该菜品结算；为空且处于逐菜阶段时，会对每道菜执行一次。</summary>
+        /// <summary>指定食物时只在该食物结算；为空且处于逐菜阶段时，会对每道菜执行一次。</summary>
         public DishInstance Dish { get; }
 
         public IEffectDef EffectDef { get; }

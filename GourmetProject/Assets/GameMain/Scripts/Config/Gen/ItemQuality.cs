@@ -12,7 +12,7 @@
 namespace cfg
 { 
     /// <summary>
-    /// 道具品质
+    /// 装饰品和消耗品品质
     /// </summary>
     public enum ItemQuality
     {

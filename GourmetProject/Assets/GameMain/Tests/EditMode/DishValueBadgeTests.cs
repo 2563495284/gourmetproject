@@ -177,7 +177,7 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(
                     CountVisiblePixels(preview.CurrentTexture),
                     Is.GreaterThan(0),
-                    "出餐口 RenderTexture 必须实际画出菜品和 Badge，不能只是创建空纹理。");
+                    "出菜口 RenderTexture 必须实际画出食物和 Badge，不能只是创建空纹理。");
             }
             finally
             {

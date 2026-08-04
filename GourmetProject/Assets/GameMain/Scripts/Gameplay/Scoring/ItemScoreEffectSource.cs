@@ -7,7 +7,7 @@ using GourmetProject.Gameplay.Model;
 namespace GourmetProject.Gameplay.Scoring
 {
     /// <summary>
-    /// 一条被动道具的结算规格（纯基元数据，不依赖 cfg/Game）：由 Game 层从道具配置映射而来。
+    /// 一条装饰品的结算规格（纯基元数据，不依赖 cfg/Game）：由 Game 层从装饰品和消耗品配置映射而来。
     /// </summary>
     public readonly struct ItemScoreSpec
     {
@@ -32,7 +32,7 @@ namespace GourmetProject.Gameplay.Scoring
     }
 
     /// <summary>
-    /// 被动道具结算效果来源：把持有道具的结算类效果统一转成 <see cref="IScoreEffect"/> 条目，
+    /// 装饰品结算效果来源：把持有装饰品和消耗品的结算类效果统一转成 <see cref="IScoreEffect"/> 条目，
     /// 复用小丑牌式阶段结算管线。局级加/乘（FinalAddFlat/Mult）仍走 BattleSession.FinalFlat/Multiplier 快路径，
     /// 本来源只负责「逐菜/条件/顺序」类被动效果。
     /// </summary>
@@ -60,6 +60,8 @@ namespace GourmetProject.Gameplay.Scoring
                     // 再按 ScoreLine 顺序播放，因此 BeforeAll 明细会紧跟基础分批次出现，
                     // 且后续技能的倍率 before/after 会自然包含这次加成，不会视觉倒退。
                     ItemScoreEffectType.NthServeMultFlat => ScorePhase.BeforeAll,
+                    ItemScoreEffectType.AllDishFlat => ScorePhase.BeforeAll,
+                    ItemScoreEffectType.AllDishMultFlat => ScorePhase.BeforeAll,
                     ItemScoreEffectType.CountThresholdFinalMult => ScorePhase.Final,
                     _ => ScorePhase.AfterAllDishes,
                 };
@@ -73,7 +75,7 @@ namespace GourmetProject.Gameplay.Scoring
         }
     }
 
-    /// <summary>单条被动道具结算效果：在全局阶段一次性遍历餐桌按类型施加。</summary>
+    /// <summary>单条装饰品结算效果：在全局阶段一次性遍历餐桌按类型施加。</summary>
     public sealed class ItemScoreEffect : IScoreEffect
     {
         private readonly ItemScoreSpec _spec;
@@ -95,6 +97,28 @@ namespace GourmetProject.Gameplay.Scoring
 
             switch (_spec.Type)
             {
+                case ItemScoreEffectType.AllDishFlat:
+                    if (Math.Abs(value) > 0.0001f)
+                    {
+                        foreach (DishInstance d in ctx.Snapshot.DishesInDefaultOrder)
+                        {
+                            ctx.AddFlatTo(d, value);
+                        }
+                    }
+
+                    break;
+
+                case ItemScoreEffectType.AllDishMultFlat:
+                    if (Math.Abs(value) > 0.0001f)
+                    {
+                        foreach (DishInstance d in ctx.Snapshot.DishesInDefaultOrder)
+                        {
+                            ctx.AddMultFlatTo(d, value);
+                        }
+                    }
+
+                    break;
+
                 case ItemScoreEffectType.TagBonus:
                     foreach (DishInstance d in dishes)
                     {
@@ -125,7 +149,7 @@ namespace GourmetProject.Gameplay.Scoring
                 case ItemScoreEffectType.CountThresholdFinalMult:
                 {
                     // 「食物数门槛」统一读取每道菜本次结算的实际 CountAs：
-                    // 静态 CountAs、菜品运行时加成、技能 AddCountAs 与 item_count_as_all 都已汇总在这里。
+                    // 静态 CountAs、食物运行时加成、技能 AddCountAs 与 item_count_as_all 都已汇总在这里。
                     int count = dishes.Sum(ctx.GetEffectiveCountAs);
                     if (MatchesThreshold(count, _spec.Param))
                     {
@@ -263,11 +287,11 @@ namespace GourmetProject.Gameplay.Scoring
         }
     }
 
-    /// <summary>道具标签匹配：把 effectParam 解析为对餐桌菜品的判定（分类/风味/技能）。</summary>
+    /// <summary>装饰品和消耗品标签匹配：把 effectParam 解析为对餐桌食物的判定（分类/风味/技能）。</summary>
     public static class ItemDishMatcher
     {
         /// <summary>
-        /// 判定一道菜是否匹配 <paramref name="param"/>。支持前缀精确匹配：
+        /// 判定1 个食物是否匹配 <paramref name="param"/>。支持前缀精确匹配：
         /// <c>cat:xxx</c>（分类）、<c>flavor:xxx</c>（风味 id）、<c>skill:xxx</c>（含某技能 id）。
         /// 无前缀时依次尝试分类/风味/技能。空 param 匹配所有菜。
         /// </summary>

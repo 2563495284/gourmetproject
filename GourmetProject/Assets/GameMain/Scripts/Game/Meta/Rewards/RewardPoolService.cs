@@ -393,7 +393,7 @@ namespace GourmetProject.Game.Meta
             return weight;
         }
 
-        /// <summary>主动道具抽取完全不读取隐藏分或奖励槽隐藏分修正。</summary>
+        /// <summary>消耗品抽取完全不读取隐藏分或奖励槽隐藏分修正。</summary>
         internal static int ResolveHiddenScoreForSlot(RewardContext context, cfg.RewardSlot slot)
         {
             return slot == null

@@ -12,7 +12,7 @@ using TMPro;
 namespace GourmetProject.Game.UI.Battle.View
 {
     /// <summary>
-    /// 中部行动卡组：行动 n 选一 / 事件 n 选一 / 行动轴节点单卡三种铺卡，含出场/退场 tween 与跳过按钮。
+    /// 中部行动卡组：行动 n 选一 / 事件 n 选一 / 时间轴节点单卡三种铺卡，含出场/退场 tween 与跳过按钮。
     /// 组件挂在 CenterContent（行动选择面板）上；「选择后做什么」由壳通过回调注入，卡组只管构建与动画。
     /// </summary>
     public sealed class ActionCardDeck : MonoBehaviour
@@ -123,7 +123,7 @@ namespace GourmetProject.Game.UI.Battle.View
             }
         }
 
-        /// <summary>行动轴节点单卡：点击后回调 onPick；无法构建时走 onEmpty 兜底。</summary>
+        /// <summary>时间轴节点单卡：点击后回调 onPick；无法构建时走 onEmpty 兜底。</summary>
         public void ShowTimelineNode(cfg.TimelineNode node, int? interestMaxGain, Action onPick, Action onEmpty)
         {
             ShowTimelineNode(node, null, null, interestMaxGain, onPick, onEmpty);

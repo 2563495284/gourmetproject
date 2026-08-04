@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace GourmetProject.Game.Meta
 {
     /// <summary>
-    /// 运行时代码使用的统一道具定义视图。配置源已拆成被动/主动两张表，
+    /// 运行时代码使用的统一装饰品和消耗品定义视图。配置源已拆成被动/主动两张表，
     /// 这里负责收敛公共字段和按 id 查询，避免业务层到处判断具体表类型。
     /// </summary>
     public sealed class ItemDefinition
@@ -19,7 +19,7 @@ namespace GourmetProject.Game.Meta
             SpecialTags = passive.SpecialTags;
             PoolTags = System.Array.Empty<string>();
             TermIds = SplitPipeList(passive.TermId);
-            // 被动道具已按 itemId → PassiveItemModel 绑定，不再依赖 effectType；此处不读配置列（便于后续从表中移除）。
+            // 装饰品已按 itemId → PassiveItemModel 绑定，不再依赖 effectType；此处不读配置列（便于后续从表中移除）。
             EffectType = string.Empty;
             EffectValue = passive.EffectValue;
             EffectParam = passive.EffectParam;
@@ -76,10 +76,10 @@ namespace GourmetProject.Game.Meta
 
         public cfg.ItemSpecialTag SpecialTags { get; }
 
-        /// <summary>主动道具参与奖励池筛选的标签（配置 specialTags 列，| 分隔）。</summary>
+        /// <summary>消耗品参与奖励池筛选的标签（配置 specialTags 列，| 分隔）。</summary>
         public IReadOnlyList<string> PoolTags { get; }
 
-        /// <summary>道具关联的专有名词 id（已去重）；来源为配置 termId 列（| 分隔）。供 tips 展示名词解释。</summary>
+        /// <summary>装饰品和消耗品关联的专有名词 id（已去重）；来源为配置 termId 列（| 分隔）。供 tips 展示名词解释。</summary>
         public IReadOnlyList<string> TermIds { get; }
 
         public string EffectType { get; }

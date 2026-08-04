@@ -90,13 +90,13 @@ namespace GourmetProject.Game.UI.Tooltips
             Multiplier = multiplier;
         }
 
-        /// <summary>分数：基础美味度 + 加法分。</summary>
+        /// <summary>分数：基础分数 + 加法分。</summary>
         public float Score { get; }
 
-        /// <summary>倍率：本食物当前乘区。</summary>
+        /// <summary>倍率：本食物当前倍率。</summary>
         public float Multiplier { get; }
 
-        /// <summary>美味度：倍率 * 分数 后向上取整。</summary>
+        /// <summary>美味值：倍率 * 分数 后向上取整。</summary>
         public float Deliciousness => DishScore.CeilContribution(Score, Multiplier);
     }
 
@@ -145,10 +145,10 @@ namespace GourmetProject.Game.UI.Tooltips
             MaxTransferred = maxTransferred;
         }
 
-        /// <summary>已揭示的分数（基础美味度 + 已表演的加法分）。</summary>
+        /// <summary>已揭示的分数（基础分数 + 已表演的加法分）。</summary>
         public float Score { get; }
 
-        /// <summary>已揭示的倍率（已表演到的乘区）。</summary>
+        /// <summary>已揭示的倍率（已表演到的倍率）。</summary>
         public float Multiplier { get; }
 
         /// <summary>技能列表最多显示前几条（含复制技能追加项）；-1 表示全部。</summary>

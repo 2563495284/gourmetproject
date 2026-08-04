@@ -49,7 +49,6 @@ namespace GourmetProject.Tests.EditMode
             foreach (cfg.RewardSlot slot in _tables.TbRewardSlot.DataList)
             {
                 Assert.That(slot.Name, Is.Not.Empty, slot.Id);
-                Assert.That(slot.Desc, Is.Not.Empty, slot.Id);
                 Assert.That(slot.RuleTemplate, Is.Not.Empty, slot.Id);
 
                 string withoutKnownPlaceholders = slot.RuleTemplate
@@ -74,10 +73,10 @@ namespace GourmetProject.Tests.EditMode
 
             Assert.That(group, Is.Not.Null);
             Assert.That(group.SourceSlotId, Is.EqualTo("passive_choice_3"));
-            Assert.That(group.Title, Is.EqualTo("被动道具选择"));
-            Assert.That(group.Description, Is.Not.Empty);
+            Assert.That(group.Title, Is.EqualTo("装饰品选择"));
+            Assert.That(group.Description, Is.Empty);
             Assert.That(group.Choices, Has.Count.EqualTo(2));
-            Assert.That(group.RuleText, Does.Contain("2 个被动道具"));
+            Assert.That(group.RuleText, Does.Contain("2 个装饰品"));
             Assert.That(group.RuleText, Does.Not.Contain("{choiceCount}"));
             Assert.That(group.Choices.All(choice => !string.IsNullOrWhiteSpace(choice.Description)), Is.True);
         }
@@ -119,7 +118,7 @@ namespace GourmetProject.Tests.EditMode
                     {
                         new RewardChoiceGroup(
                             "旧奖励",
-                            new[] { new RewardChoice(cfg.RewardKind.PassiveItemChoice, "legacy_item", "旧道具", "旧描述") }),
+                            new[] { new RewardChoice(cfg.RewardKind.PassiveItemChoice, "legacy_item", "旧装饰品和消耗品", "旧描述") }),
                     },
                     null,
                     baseGoldClaimed: true));

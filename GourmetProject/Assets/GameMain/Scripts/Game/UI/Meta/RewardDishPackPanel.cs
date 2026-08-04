@@ -13,7 +13,7 @@ using TMPro;
 namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>
-    /// 菜品奖励选择页。候选菜品居中展示，点击后直接完成领取。
+    /// 食物奖励选择页。候选食物居中展示，点击后直接完成领取。
     /// </summary>
     public sealed class RewardDishPackPanel : MonoBehaviour
     {
@@ -43,7 +43,7 @@ namespace GourmetProject.Game.UI.Meta
 
         private void OnDisable()
         {
-            // 页面切换（菜谱/餐桌）只是挂起；候选、回调和已选状态只能由显式 Close 销毁。
+            // 页面切换（食谱/餐桌）只是挂起；候选、回调和已选状态只能由显式 Close 销毁。
             HideDishTips();
         }
 

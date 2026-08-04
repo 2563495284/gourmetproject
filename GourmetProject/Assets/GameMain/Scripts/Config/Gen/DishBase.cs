@@ -34,15 +34,15 @@ public sealed partial class DishBase : Luban.BeanBase
     }
 
     /// <summary>
-    /// 菜品基础ID
+    /// 食物基础ID
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 菜品名称
+    /// 食物名称
     /// </summary>
     public readonly string Name;
     /// <summary>
-    /// 基础美味度
+    /// 基础分数
     /// </summary>
     public readonly int Deliciousness;
     /// <summary>
@@ -54,7 +54,7 @@ public sealed partial class DishBase : Luban.BeanBase
     /// </summary>
     public readonly string Skills;
     /// <summary>
-    /// 菜品分类(如cake;空=无)
+    /// 食物分类(如cake;空=无)
     /// </summary>
     public readonly string Category;
     /// <summary>
@@ -62,11 +62,11 @@ public sealed partial class DishBase : Luban.BeanBase
     /// </summary>
     public readonly int CountAs;
     /// <summary>
-    /// 菜品形状行列表
+    /// 食物形状行列表
     /// </summary>
     public readonly System.Collections.Generic.List<string> ShapeRows;
     /// <summary>
-    /// 菜谱展示顺序(升序:从上到下、从左到右)
+    /// 食谱展示顺序(升序:从上到下、从左到右)
     /// </summary>
     public readonly int SortOrder;
    

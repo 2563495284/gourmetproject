@@ -9,7 +9,7 @@
 
 ## 目录
 
-- `Backgrounds`：主菜单与战斗背景
+- `Backgrounds`：主菜单与经营挑战背景
 - `Branding`：风格化游戏标题
 - `Controls`：按钮、下拉框、滑条、开关、卡牌槽
 - `Icons`：金币、爱心、齿轮、菜单箭头

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GourmetProject.Config;
+using GourmetProject.Core.Rng;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Orchestration;
@@ -9,6 +10,7 @@ using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Meta;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Scoring;
+using GourmetProject.Runtime;
 using NUnit.Framework;
 
 namespace GourmetProject.Tests.PlayMode
@@ -25,13 +27,32 @@ namespace GourmetProject.Tests.PlayMode
             config.LoadAll();
             _tables = config.Tables;
             _database = GameplayContentBuilder.BuildDatabase(_tables);
+
+            var random = new RandomService();
+            random.Init("heart-failure-flow-tests");
+            typeof(GameApp)
+                .GetProperty(nameof(GameApp.Random))
+                ?.GetSetMethod(nonPublic: true)
+                ?.Invoke(null, new object[] { random });
         }
 
-        [Test]
-        public void NonTerminalFailure_SavesHeartBreakAndKeepsRewardPending()
+        [TestCase(cfg.FoodActionKind.Normal)]
+        [TestCase(cfg.FoodActionKind.Super)]
+        [TestCase(cfg.FoodActionKind.Feast)]
+        public void NonTerminalFoodFailure_SavesHeartBreakAndKeepsRewardPending(
+            cfg.FoodActionKind actionKind)
         {
             GameRun run = CreateRun();
-            string rewardKey = GameRun.BuildRewardKey(run.WeekIndex, run.CurrentDay, null);
+            run.AcquireItem("item_extra_food_choice", fallbackGold: 0);
+            cfg.GameAction action = ActionOfKind(actionKind);
+            var context = new ActionExecutionContext(
+                action,
+                0,
+                0,
+                "heart-failure-flow",
+                action.MinCostDays);
+            run.SetLastActionContext(context);
+            string rewardKey = GameRun.BuildRewardKey(run.WeekIndex, run.CurrentDay, context);
             run.SetPendingRewardOffer(
                 rewardKey,
                 new RewardOffer(
@@ -55,6 +76,10 @@ namespace GourmetProject.Tests.PlayMode
             Assert.That(run.HasPendingRewardOffer, Is.True);
             Assert.That(view.HeartBreakArgs, Is.Not.Null);
             Assert.That(view.RunResultShown, Is.False);
+            Assert.That(
+                run.PassiveModels.Single(model => model.ItemId == "item_extra_food_choice").InfoText,
+                Is.EqualTo(actionKind == cfg.FoodActionKind.Normal ? "1" : "0"),
+                "加餐只统计已经结算的日常营业，非致命失败也必须计数");
         }
 
         [Test]
@@ -77,6 +102,88 @@ namespace GourmetProject.Tests.PlayMode
             Assert.That(view.RunResultTotal, Is.EqualTo(17));
         }
 
+        [TestCase(1)]
+        [TestCase(0)]
+        public void FamousKnifeFailure_RestoresOneHeartAndCreatesRewardAfterConsumingItem(
+            int startingHearts)
+        {
+            GameRun run = CreateRunAtHearts(startingHearts);
+            Assert.That(
+                run.AcquireItem("item_famous_knife", fallbackGold: 0).Outcome,
+                Is.EqualTo(ItemAcquireOutcome.Added));
+            cfg.GameAction action = ActionOfKind(cfg.FoodActionKind.Normal);
+            var context = new ActionExecutionContext(
+                action,
+                0,
+                0,
+                "famous-knife-failure",
+                action.MinCostDays);
+            run.SetLastActionContext(context);
+            string rewardKey = GameRun.BuildRewardKey(run.WeekIndex, run.CurrentDay, context);
+            Assert.That(run.GetPendingRewardOffer(rewardKey), Is.Null, "测试必须由本次结算现场生成奖励");
+            var view = new RecordingLoopView(run) { CompleteNoticeImmediately = false };
+            var controller = new WeekLoopController(run, view);
+
+            using (RunPersistence.SuppressSave())
+            {
+                controller.OnBattleSettled(Result(17), isWin: false, finalHappyCakeLayers: 0);
+            }
+
+            Assert.That(run.HeartsRemaining, Is.EqualTo(1));
+            Assert.That(run.GetItemState("item_famous_knife"), Is.Null);
+            Assert.That(run.GetPendingRewardOffer(rewardKey), Is.Not.Null,
+                "名刀保住最后一颗心后仍需现场生成本场奖励");
+            Assert.That(view.NoticeShown, Is.True);
+            Assert.That(view.HeartBreakArgs, Is.Null);
+            Assert.That(view.RunResultShown, Is.False);
+
+            GameRun restored = GameRun.FromSaveData(_tables, _database, run.ToSaveData());
+            Assert.That(restored.HeartsRemaining, Is.EqualTo(1));
+            Assert.That(restored.GetItemState("item_famous_knife"), Is.Null);
+            Assert.That(restored.GetPendingRewardOffer(rewardKey), Is.Not.Null,
+                "名刀结算后的待领奖状态必须可随存档恢复");
+        }
+
+        [Test]
+        public void SixthNormalFailureWhileAlive_QueuesBaseAndExtraFoodRewards()
+        {
+            GameRun run = CreateRun();
+            run.AcquireItem("item_extra_food_choice", fallbackGold: 0);
+            run.PassiveModels
+                .Single(model => model.ItemId == "item_extra_food_choice")
+                .RestoreState("count:5");
+            cfg.GameAction action = ActionOfKind(cfg.FoodActionKind.Normal);
+            var context = new ActionExecutionContext(
+                action,
+                0,
+                0,
+                "sixth-normal-failure",
+                action.MinCostDays);
+            run.SetLastActionContext(context);
+            string rewardKey = GameRun.BuildRewardKey(run.WeekIndex, run.CurrentDay, context);
+            run.SetPendingRewardOffer(
+                rewardKey,
+                new RewardOffer(
+                    0,
+                    Array.Empty<RewardChoice>(),
+                    Array.Empty<RewardChoice>(),
+                    baseGoldClaimed: true));
+            var view = new RecordingLoopView(run);
+            var controller = new WeekLoopController(run, view);
+
+            using (RunPersistence.SuppressSave())
+            {
+                controller.OnBattleSettled(Result(21), isWin: false, finalHappyCakeLayers: 0);
+            }
+
+            Assert.That(run.HeartsRemaining, Is.EqualTo(2));
+            Assert.That(run.HasPendingRewardOffer, Is.True, "失去红心后仍存活时保留本场基础领奖");
+            Assert.That(run.HasPendingGenericRewards, Is.True, "第 6 次日常营业失败也应产生加餐领奖");
+            Assert.That(
+                run.PassiveModels.Single(model => model.ItemId == "item_extra_food_choice").InfoText,
+                Is.EqualTo("0"));
+        }
+
         [Test]
         public void AlreadyZeroHeartState_StillShowsTerminalHeartBreakBeforeDefeat()
         {
@@ -96,26 +203,6 @@ namespace GourmetProject.Tests.PlayMode
             Assert.That(view.RunResultShown, Is.True);
         }
 
-        [Test]
-        public void LastHeartWithFamousKnife_DoesNotBreakHeartOrGrantReward()
-        {
-            GameRun run = CreateRunAtHearts(1);
-            run.AcquireItem("item_famous_knife", fallbackGold: 0);
-            var view = new RecordingLoopView(run);
-            var controller = new WeekLoopController(run, view);
-
-            using (RunPersistence.SuppressSave())
-            {
-                controller.OnBattleSettled(Result(5), isWin: false, finalHappyCakeLayers: 0);
-            }
-
-            Assert.That(run.HeartsRemaining, Is.EqualTo(1));
-            Assert.That(run.Items.Any(item => item.ItemId == "item_famous_knife"), Is.False);
-            Assert.That(view.NoticeShown, Is.True);
-            Assert.That(view.HeartBreakArgs, Is.Null);
-            Assert.That(run.HasPendingRewardOffer, Is.False);
-        }
-
         private GameRun CreateRunAtHearts(int hearts)
         {
             GameRun run = CreateRun();
@@ -131,6 +218,12 @@ namespace GourmetProject.Tests.PlayMode
         {
             string characterId = _tables.TbCharacter.DataList.First().Id;
             return new GameRun(_tables, _database, characterId, "heart-failure-flow-tests");
+        }
+
+        private cfg.GameAction ActionOfKind(cfg.FoodActionKind kind)
+        {
+            return _tables.TbAction.DataList.First(action =>
+                FoodService.Resolve(_tables, action)?.ActionKind == kind);
         }
 
         private static ScoreResult Result(float total)
@@ -149,6 +242,7 @@ namespace GourmetProject.Tests.PlayMode
 
             public int LastBattleTotal => 0;
             public bool CompleteHeartBreakImmediately { get; set; }
+            public bool CompleteNoticeImmediately { get; set; } = true;
             public HeartBreakFormOpenArgs HeartBreakArgs { get; private set; }
             public bool RunResultShown { get; private set; }
             public bool RunResultWin { get; private set; }
@@ -181,7 +275,10 @@ namespace GourmetProject.Tests.PlayMode
             public void ShowNotice(string title, string message, Action onContinue)
             {
                 NoticeShown = true;
-                onContinue?.Invoke();
+                if (CompleteNoticeImmediately)
+                {
+                    onContinue?.Invoke();
+                }
             }
 
             public void ShowHeartBreak(HeartBreakFormOpenArgs args, Action onComplete)

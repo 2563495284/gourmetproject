@@ -76,32 +76,32 @@ namespace GourmetProject.Game.Balance
         {
             var errors = new List<string>();
             if (checkpoint == null) return new List<string> { "Checkpoint 为空。" };
-            if (tables.TbCharacter.GetOrDefault(checkpoint.CharacterId) == null) errors.Add($"角色不存在：{checkpoint.CharacterId}");
+            if (tables.TbCharacter.GetOrDefault(checkpoint.CharacterId) == null) errors.Add($"经营方向不存在：{checkpoint.CharacterId}");
             if (!string.IsNullOrEmpty(checkpoint.BossDebuffId) && tables.TbBossDebuff.GetOrDefault(checkpoint.BossDebuffId) == null) errors.Add($"Boss Debuff 不存在：{checkpoint.BossDebuffId}");
             var passives = new HashSet<string>(StringComparer.Ordinal);
             for (int i = 0; i < checkpoint.Items.Count; i++)
             {
                 BalanceItemEntry item = checkpoint.Items[i];
                 ItemDefinition def = ItemDefinition.Get(tables, item.ItemId);
-                if (def == null) errors.Add($"道具不存在：{item.ItemId}");
-                else if (def.IsPassive && !passives.Add(item.ItemId)) errors.Add($"被动道具不可重复：{item.ItemId}");
+                if (def == null) errors.Add($"装饰品和消耗品不存在：{item.ItemId}");
+                else if (def.IsPassive && !passives.Add(item.ItemId)) errors.Add($"装饰品不可重复：{item.ItemId}");
             }
             foreach (string id in checkpoint.TableFragmentIds)
-                if (database.GetFragment(id) == null) errors.Add($"餐桌碎片不存在：{id}");
+                if (database.GetFragment(id) == null) errors.Add($"餐桌格不存在：{id}");
             foreach (BalanceFragmentPlacement p in checkpoint.FragmentPlacements)
-                if (database.GetFragment(p.FragmentId) == null) errors.Add($"餐桌碎片不存在：{p.FragmentId}");
+                if (database.GetFragment(p.FragmentId) == null) errors.Add($"餐桌格不存在：{p.FragmentId}");
             foreach (BalanceCellMaterial m in checkpoint.CellMaterials)
                 if (database.GetMaterial(m.MaterialId) == null) errors.Add($"材质不存在：{m.MaterialId}");
             for (int i = 0; i < checkpoint.Dishes.Count; i++)
             {
                 BuildReplayStep step = checkpoint.Dishes[i];
-                if (database.GetDish(step.DishId) == null) errors.Add($"菜品不存在：{step.DishId}");
+                if (database.GetDish(step.DishId) == null) errors.Add($"食物不存在：{step.DishId}");
                 foreach (string id in step.ExtraSkillIds)
                     if (database.GetSkill(id) == null) errors.Add($"技能不存在：{id}");
                 foreach (string id in step.ExtraFlavorIds)
                     if (database.GetFlavor(id) == null) errors.Add($"风味不存在：{id}");
                 foreach (WeightedDishReplacement replacement in step.Replacements)
-                    if (database.GetDish(replacement.DishId) == null) errors.Add($"替代菜品不存在：{replacement.DishId}");
+                    if (database.GetDish(replacement.DishId) == null) errors.Add($"替代食物不存在：{replacement.DishId}");
             }
             if (errors.Count == 0)
             {
@@ -158,7 +158,7 @@ namespace GourmetProject.Game.Balance
                     var weights = step.Replacements.Select(v => Math.Max(0f, v.Weight)).ToList();
                     if (weights.Sum() > 0f) dishId = step.Replacements[random.WeightedPickIndex(weights)].DishId;
                 }
-                DishDef def = database.GetDish(dishId) ?? throw new InvalidOperationException($"菜品不存在：{dishId}");
+                DishDef def = database.GetDish(dishId) ?? throw new InvalidOperationException($"食物不存在：{dishId}");
                 float flatFactor = perturb ? random.Range(Math.Min(p.PermanentFlatMinFactor, p.PermanentFlatMaxFactor), Math.Max(p.PermanentFlatMinFactor, p.PermanentFlatMaxFactor) + float.Epsilon) : 1f;
                 float multFactor = perturb ? random.Range(Math.Min(p.PermanentMultiplierMinFactor, p.PermanentMultiplierMaxFactor), Math.Max(p.PermanentMultiplierMinFactor, p.PermanentMultiplierMaxFactor) + float.Epsilon) : 1f;
                 result.Add(new ResolvedDish { Index = i, Step = step, Def = def, Retained = retained, PermanentFlat = step.PermanentFlat * flatFactor, PermanentMultiplier = step.PermanentMultiplier * multFactor });

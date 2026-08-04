@@ -6,7 +6,7 @@ using GourmetProject.Game.Run;
 namespace GourmetProject.Game.Presentation.Battle
 {
     /// <summary>
-    /// 战斗世界的渲染分层：用命名 Sorting Layer 划分大层级（与 ProjectSettings/TagManager 中的定义一致），
+    /// 经营挑战世界的渲染分层：用命名 Sorting Layer 划分大层级（与 ProjectSettings/TagManager 中的定义一致），
     /// 每层内再用很小的 order 做细分，避免散落的 sortingOrder magic number。
     /// 层级从后到前：Background → DiningTable → Pieces → WorldUI → Fx → PiecesFlying。
     /// </summary>
@@ -15,10 +15,10 @@ namespace GourmetProject.Game.Presentation.Battle
         /// <summary>桌布等背景。</summary>
         public const string Background = "Background";
 
-        /// <summary>餐桌格子。</summary>
+        /// <summary>餐桌格。</summary>
         public const string DiningTable = "DiningTable";
 
-        /// <summary>已摆放的菜品（阴影 + 本体）。</summary>
+        /// <summary>已摆放的食物（阴影 + 本体）。</summary>
         public const string Pieces = "Pieces";
 
         /// <summary>场景内按钮与分数/提示文字等世界 UI。</summary>
@@ -27,10 +27,10 @@ namespace GourmetProject.Game.Presentation.Battle
         /// <summary>结算演出特效：飘字、光脉冲等。</summary>
         public const string Fx = "Fx";
 
-        /// <summary>上菜飞行中的菜品，临时压在所有静态层之上。</summary>
+        /// <summary>上菜飞行中的食物，临时压在所有静态层之上。</summary>
         public const string PiecesFlying = "PiecesFlying";
 
-        /// <summary>玩家自由涂鸦笔迹，压在所有战斗内容之上（最顶层）。</summary>
+        /// <summary>玩家自由涂鸦笔迹，压在所有经营挑战内容之上（最顶层）。</summary>
         public const string Doodle = "Doodle";
 
         // —— 层内细分 order ——

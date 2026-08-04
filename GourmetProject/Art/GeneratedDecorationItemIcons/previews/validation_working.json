@@ -1,0 +1,2464 @@
+{
+  "expected": 91,
+  "present": 91,
+  "valid": 71,
+  "items": [
+    {
+      "index": 1,
+      "id": "item_randomize_items",
+      "name": "洗好的扑克",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/randomize_items.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        48,
+        74,
+        473,
+        439
+      ],
+      "minimum_margin": 39,
+      "bbox_coverage": 0.5918,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 2,
+      "id": "item_gold_random",
+      "name": "陶瓷招财猫",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/gold_random.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        83,
+        31,
+        426,
+        462
+      ],
+      "minimum_margin": 31,
+      "bbox_coverage": 0.5639,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 3,
+      "id": "item_gold_meal_bonus",
+      "name": "柜台小费罐",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/gold_meal_bonus.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        64,
+        36,
+        451,
+        476
+      ],
+      "minimum_margin": 36,
+      "bbox_coverage": 0.6496,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 4,
+      "id": "item_gold_boss",
+      "name": "金边奖杯",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/gold_boss.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        59,
+        45,
+        460,
+        446
+      ],
+      "minimum_margin": 45,
+      "bbox_coverage": 0.6134,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 5,
+      "id": "item_gold_percent",
+      "name": "黄铜算盘",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/gold_percent.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        43,
+        69,
+        469,
+        437
+      ],
+      "minimum_margin": 43,
+      "bbox_coverage": 0.598,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 6,
+      "id": "item_trash_upgrade",
+      "name": "藤编纸篓",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/trash_upgrade.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        86,
+        53,
+        426,
+        449
+      ],
+      "minimum_margin": 53,
+      "bbox_coverage": 0.5136,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 7,
+      "id": "item_trash_expand",
+      "name": "壁挂废物桶",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/trash_expand.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        87,
+        35,
+        429,
+        462
+      ],
+      "minimum_margin": 35,
+      "bbox_coverage": 0.5571,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 8,
+      "id": "item_trash_evolve",
+      "name": "脚踏垃圾桶",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/trash_evolve.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        113,
+        44,
+        403,
+        450
+      ],
+      "minimum_margin": 44,
+      "bbox_coverage": 0.4491,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 9,
+      "id": "item_trash_mutate",
+      "name": "推盖垃圾桶",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/trash_mutate.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        78,
+        48,
+        436,
+        455
+      ],
+      "minimum_margin": 48,
+      "bbox_coverage": 0.5558,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 10,
+      "id": "item_discount_food",
+      "name": "香草盆栽",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/discount_food.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        76,
+        27,
+        422,
+        479
+      ],
+      "minimum_margin": 27,
+      "bbox_coverage": 0.5966,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 11,
+      "id": "item_discount_fragment",
+      "name": "餐桌模型",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/discount_fragment.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        39,
+        59,
+        474,
+        463
+      ],
+      "minimum_margin": 38,
+      "bbox_coverage": 0.6704,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 12,
+      "id": "item_discount_active",
+      "name": "强化券匣",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/discount_active.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        35,
+        42,
+        471,
+        476
+      ],
+      "minimum_margin": 35,
+      "bbox_coverage": 0.7218,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 13,
+      "id": "item_discount_adjust",
+      "name": "调整单夹",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/discount_adjust.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        106,
+        26,
+        402,
+        482
+      ],
+      "minimum_margin": 26,
+      "bbox_coverage": 0.5149,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 14,
+      "id": "item_discount_passive",
+      "name": "装饰样板墙",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/discount_passive.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        36,
+        69,
+        478,
+        456
+      ],
+      "minimum_margin": 34,
+      "bbox_coverage": 0.6525,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 15,
+      "id": "item_discount_remove",
+      "name": "抽页食谱夹",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/discount_remove.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        73,
+        31,
+        435,
+        478
+      ],
+      "minimum_margin": 31,
+      "bbox_coverage": 0.6173,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 16,
+      "id": "item_discount_food_festival",
+      "name": "丰收菜篮",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/discount_food_festival.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        34,
+        55,
+        480,
+        445
+      ],
+      "minimum_margin": 32,
+      "bbox_coverage": 0.6635,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 17,
+      "id": "item_discount_fragment_festival",
+      "name": "宴会桌模型",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/discount_fragment_festival.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        17,
+        99,
+        496,
+        444
+      ],
+      "minimum_margin": 16,
+      "bbox_coverage": 0.6304,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 18,
+      "id": "item_discount_active_festival",
+      "name": "金边强化券",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/discount_active_festival.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        58,
+        42,
+        450,
+        462
+      ],
+      "minimum_margin": 42,
+      "bbox_coverage": 0.6281,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 19,
+      "id": "item_discount_adjust_festival",
+      "name": "烫金调整单",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/discount_adjust_festival.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        77,
+        34,
+        429,
+        473
+      ],
+      "minimum_margin": 34,
+      "bbox_coverage": 0.5895,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 20,
+      "id": "item_discount_passive_festival",
+      "name": "多层展柜",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/discount_passive_festival.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        79,
+        35,
+        433,
+        477
+      ],
+      "minimum_margin": 35,
+      "bbox_coverage": 0.5969,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 21,
+      "id": "item_discount_remove_festival",
+      "name": "可擦食谱板",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/discount_remove_festival.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        45,
+        65,
+        460,
+        462
+      ],
+      "minimum_margin": 45,
+      "bbox_coverage": 0.6285,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 22,
+      "id": "item_famous_knife",
+      "name": "名刀展示架",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/famous_knife.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        27,
+        120,
+        477,
+        407
+      ],
+      "minimum_margin": 27,
+      "bbox_coverage": 0.4927,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 23,
+      "id": "item_heart_flat_all",
+      "name": "暖心壁灯",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/heart_flat_all.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        73,
+        46,
+        440,
+        437
+      ],
+      "minimum_margin": 46,
+      "bbox_coverage": 0.5474,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 24,
+      "id": "item_empty_heart_mult_all",
+      "name": "裂纹心形镜",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/empty_heart_mult_all.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        91,
+        39,
+        424,
+        468
+      ],
+      "minimum_margin": 39,
+      "bbox_coverage": 0.545,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 25,
+      "id": "item_score_to_one",
+      "name": "开业纪念照",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/score_to_one.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        81,
+        52,
+        424,
+        442
+      ],
+      "minimum_margin": 52,
+      "bbox_coverage": 0.5103,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 26,
+      "id": "item_req_normal_down",
+      "name": "家常菜挂画",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/req_normal_down.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        57,
+        44,
+        457,
+        473
+      ],
+      "minimum_margin": 39,
+      "bbox_coverage": 0.6546,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 27,
+      "id": "item_req_super_down",
+      "name": "红格桌布",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/req_super_down.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        50,
+        67,
+        464,
+        442
+      ],
+      "minimum_margin": 48,
+      "bbox_coverage": 0.5922,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 28,
+      "id": "item_req_feast_down",
+      "name": "金边证书框",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/req_feast_down.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        83,
+        42,
+        441,
+        459
+      ],
+      "minimum_margin": 42,
+      "bbox_coverage": 0.5695,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 29,
+      "id": "item_count_le_mult",
+      "name": "素色桌旗",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/count_le_mult.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        83,
+        92,
+        448,
+        413
+      ],
+      "minimum_margin": 64,
+      "bbox_coverage": 0.4469,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 30,
+      "id": "item_count_ge_mult",
+      "name": "多层餐盘架",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/count_ge_mult.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        102,
+        28,
+        408,
+        472
+      ],
+      "minimum_margin": 28,
+      "bbox_coverage": 0.5183,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 31,
+      "id": "item_perma_flat_all",
+      "name": "青花调味罐",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/perma_flat_all.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        92,
+        61,
+        428,
+        444
+      ],
+      "minimum_margin": 61,
+      "bbox_coverage": 0.4909,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 32,
+      "id": "item_perma_flat_all_plus",
+      "name": "成套调味罐",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/perma_flat_all_plus.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        42,
+        116,
+        470,
+        402
+      ],
+      "minimum_margin": 42,
+      "bbox_coverage": 0.4669,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 33,
+      "id": "item_gold_on_shop",
+      "name": "供货商合影",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/gold_on_shop.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        51,
+        68,
+        457,
+        463
+      ],
+      "minimum_margin": 49,
+      "bbox_coverage": 0.6118,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 34,
+      "id": "item_extra_interest",
+      "name": "挂墙周历",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/extra_interest.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        51,
+        81,
+        469,
+        392
+      ],
+      "minimum_margin": 43,
+      "bbox_coverage": 0.4959,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 35,
+      "id": "item_interest_cap",
+      "name": "聚宝盆摆件",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/interest_cap.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        45,
+        61,
+        467,
+        464
+      ],
+      "minimum_margin": 45,
+      "bbox_coverage": 0.6488,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 36,
+      "id": "item_loan",
+      "name": "挂账记录板",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/loan.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        40,
+        54,
+        466,
+        451
+      ],
+      "minimum_margin": 40,
+      "bbox_coverage": 0.6451,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 37,
+      "id": "item_timeline_random",
+      "name": "命运骰子",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/timeline_random.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        34,
+        53,
+        479,
+        448
+      ],
+      "minimum_margin": 33,
+      "bbox_coverage": 0.6705,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 38,
+      "id": "item_extra_day",
+      "name": "第八日启程",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/extra_day.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        41,
+        43,
+        477,
+        452
+      ],
+      "minimum_margin": 35,
+      "bbox_coverage": 0.6803,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 39,
+      "id": "item_week_minus",
+      "name": "黄铜沙漏",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/week_minus.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        134,
+        24,
+        378,
+        457
+      ],
+      "minimum_margin": 24,
+      "bbox_coverage": 0.403,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 40,
+      "id": "item_every3_next_mult",
+      "name": "木制节拍器",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/every3_next_mult.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        97,
+        31,
+        412,
+        478
+      ],
+      "minimum_margin": 31,
+      "bbox_coverage": 0.5371,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 41,
+      "id": "item_first_+2",
+      "name": "迎客灯笼",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/first_+2.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        137,
+        34,
+        375,
+        461
+      ],
+      "minimum_margin": 34,
+      "bbox_coverage": 0.3877,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 42,
+      "id": "item_last_+2",
+      "name": "餐后茶具",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/last_+2.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        37,
+        69,
+        479,
+        429
+      ],
+      "minimum_margin": 33,
+      "bbox_coverage": 0.607,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 43,
+      "id": "item_extra_active_slots",
+      "name": "墙面置物架",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/extra_active_slots.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        46,
+        76,
+        463,
+        449
+      ],
+      "minimum_margin": 46,
+      "bbox_coverage": 0.5933,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 44,
+      "id": "item_extra_active_slots_max",
+      "name": "整墙储物架",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/extra_active_slots_max.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        41,
+        104,
+        474,
+        396
+      ],
+      "minimum_margin": 38,
+      "bbox_coverage": 0.4823,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 45,
+      "id": "item_gold_on_active",
+      "name": "皮面账单夹",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/gold_on_active.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        39,
+        50,
+        479,
+        439
+      ],
+      "minimum_margin": 33,
+      "bbox_coverage": 0.6529,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 46,
+      "id": "item_block_active",
+      "name": "封条备品柜",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/block_active.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        96,
+        36,
+        418,
+        459
+      ],
+      "minimum_margin": 36,
+      "bbox_coverage": 0.5196,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 47,
+      "id": "item_flavor_enhance",
+      "name": "彩釉调料瓶组",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/flavor_enhance.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        63,
+        63,
+        448,
+        432
+      ],
+      "minimum_margin": 63,
+      "bbox_coverage": 0.5419,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 48,
+      "id": "item_flavor_remove_gold",
+      "name": "复古台秤",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/flavor_remove_gold.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        91,
+        40,
+        410,
+        460
+      ],
+      "minimum_margin": 40,
+      "bbox_coverage": 0.5111,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 49,
+      "id": "item_flavor_remove_double",
+      "name": "小石磨",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/flavor_remove_double.png",
+      "exists": true,
+      "size": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        153,
+        88,
+        1112,
+        1097
+      ],
+      "minimum_margin": 88,
+      "bbox_coverage": 0.6153,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": false
+    },
+    {
+      "index": 50,
+      "id": "item_flavor_double_slot",
+      "name": "双格蘸料碟",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/flavor_double_slot.png",
+      "exists": true,
+      "size": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        94,
+        279,
+        1173,
+        988
+      ],
+      "minimum_margin": 81,
+      "bbox_coverage": 0.4865,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": false
+    },
+    {
+      "index": 51,
+      "id": "item_celltag_enhance",
+      "name": "拼花砖壁饰",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/celltag_enhance.png",
+      "exists": true,
+      "size": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        123,
+        139,
+        1130,
+        1126
+      ],
+      "minimum_margin": 123,
+      "bbox_coverage": 0.6321,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": false
+    },
+    {
+      "index": 52,
+      "id": "item_lucky_guarantee",
+      "name": "四叶草标本框",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/lucky_guarantee.png",
+      "exists": true,
+      "size": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        166,
+        170,
+        1121,
+        1092
+      ],
+      "minimum_margin": 133,
+      "bbox_coverage": 0.5599,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": false
+    },
+    {
+      "index": 53,
+      "id": "item_lucky_chance",
+      "name": "四叶草福袋",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/lucky_chance.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        72,
+        33,
+        443,
+        467
+      ],
+      "minimum_margin": 33,
+      "bbox_coverage": 0.6142,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 54,
+      "id": "item_more_events",
+      "name": "街角路牌",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/more_events.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        49,
+        33,
+        463,
+        479
+      ],
+      "minimum_margin": 33,
+      "bbox_coverage": 0.7044,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 55,
+      "id": "item_more_super_actions",
+      "name": "霓虹招牌",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/more_super_actions.png",
+      "exists": true,
+      "size": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        110,
+        143,
+        1136,
+        1089
+      ],
+      "minimum_margin": 110,
+      "bbox_coverage": 0.6172,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": false
+    },
+    {
+      "index": 56,
+      "id": "item_slot_win_chance",
+      "name": "彩球抽奖筒",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/slot_win_chance.png",
+      "exists": true,
+      "size": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        156,
+        124,
+        1170,
+        1085
+      ],
+      "minimum_margin": 84,
+      "bbox_coverage": 0.6197,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": false
+    },
+    {
+      "index": 57,
+      "id": "item_dish_hidden_bonus",
+      "name": "主厨推荐板",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/dish_hidden_bonus.png",
+      "exists": true,
+      "size": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        62,
+        102,
+        1180,
+        1125
+      ],
+      "minimum_margin": 62,
+      "bbox_coverage": 0.7273,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": false
+    },
+    {
+      "index": 58,
+      "id": "item_fragment_hidden_bonus",
+      "name": "拼接长桌",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/fragment_hidden_bonus.png",
+      "exists": true,
+      "size": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        38,
+        258,
+        1224,
+        1035
+      ],
+      "minimum_margin": 30,
+      "bbox_coverage": 0.586,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": false
+    },
+    {
+      "index": 59,
+      "id": "item_passive_hidden_bonus",
+      "name": "古董展示柜",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/passive_hidden_bonus.png",
+      "exists": true,
+      "size": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        163,
+        122,
+        1093,
+        1120
+      ],
+      "minimum_margin": 122,
+      "bbox_coverage": 0.5902,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": false
+    },
+    {
+      "index": 60,
+      "id": "item_gold_on_event",
+      "name": "纪念币展示框",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/gold_on_event.png",
+      "exists": true,
+      "size": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        131,
+        106,
+        1125,
+        1093
+      ],
+      "minimum_margin": 106,
+      "bbox_coverage": 0.6239,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": false
+    },
+    {
+      "index": 61,
+      "id": "item_shop_restock",
+      "name": "食材保鲜架",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/shop_restock.png",
+      "exists": true,
+      "size": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        133,
+        98,
+        1140,
+        1158
+      ],
+      "minimum_margin": 96,
+      "bbox_coverage": 0.6788,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": false
+    },
+    {
+      "index": 62,
+      "id": "item_shop_restock_active",
+      "name": "柜台备品篮",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/shop_restock_active.png",
+      "exists": true,
+      "size": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        92,
+        114,
+        1164,
+        1088
+      ],
+      "minimum_margin": 90,
+      "bbox_coverage": 0.664,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": false
+    },
+    {
+      "index": 63,
+      "id": "item_shop_restock_passive",
+      "name": "壁龛摆件墙",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/shop_restock_passive.png",
+      "exists": true,
+      "size": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        50,
+        183,
+        1211,
+        1009
+      ],
+      "minimum_margin": 43,
+      "bbox_coverage": 0.6098,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": false
+    },
+    {
+      "index": 64,
+      "id": "item_choice_count_plus1",
+      "name": "活页食谱册",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/choice_count_plus1.png",
+      "exists": true,
+      "size": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        23,
+        147,
+        1244,
+        1070
+      ],
+      "minimum_margin": 10,
+      "bbox_coverage": 0.7167,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": false
+    },
+    {
+      "index": 65,
+      "id": "item_extra_food_choice",
+      "name": "点心展示架",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/extra_food_choice.png",
+      "exists": true,
+      "size": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        295,
+        26,
+        942,
+        1191
+      ],
+      "minimum_margin": 26,
+      "bbox_coverage": 0.4793,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": false
+    },
+    {
+      "index": 66,
+      "id": "item_extra_item_choice",
+      "name": "杂货展示架",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/extra_item_choice.png",
+      "exists": true,
+      "size": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        47,
+        184,
+        1164,
+        1057
+      ],
+      "minimum_margin": 47,
+      "bbox_coverage": 0.6201,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": false
+    },
+    {
+      "index": 67,
+      "id": "item_copy_food",
+      "name": "双盖餐盘",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/copy_food.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        20,
+        79,
+        494,
+        399
+      ],
+      "minimum_margin": 18,
+      "bbox_coverage": 0.5786,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 68,
+      "id": "item_discard_negative",
+      "name": "藤编收纳筐",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/discard_negative.png",
+      "exists": true,
+      "size": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        117,
+        116,
+        1160,
+        1124
+      ],
+      "minimum_margin": 94,
+      "bbox_coverage": 0.6686,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": false
+    },
+    {
+      "index": 69,
+      "id": "item_discard_negative_gold",
+      "name": "旧餐具寄卖架",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/discard_negative_gold.png",
+      "exists": true,
+      "size": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        191,
+        82,
+        1024,
+        1143
+      ],
+      "minimum_margin": 82,
+      "bbox_coverage": 0.562,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": false
+    },
+    {
+      "index": 70,
+      "id": "item_gold_meal_penalty",
+      "name": "故障收银机",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/gold_meal_penalty.png",
+      "exists": true,
+      "size": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        117,
+        88,
+        1117,
+        1158
+      ],
+      "minimum_margin": 88,
+      "bbox_coverage": 0.6804,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": false
+    },
+    {
+      "index": 71,
+      "id": "item_shop_price_up",
+      "name": "破损商品架",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/shop_price_up.png",
+      "exists": true,
+      "size": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        183,
+        98,
+        1056,
+        1138
+      ],
+      "minimum_margin": 98,
+      "bbox_coverage": 0.5774,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": false
+    },
+    {
+      "index": 72,
+      "id": "item_no_remove",
+      "name": "上锁食品柜",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/no_remove.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        88,
+        40,
+        439,
+        470
+      ],
+      "minimum_margin": 40,
+      "bbox_coverage": 0.5758,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 73,
+      "id": "item_skip_node",
+      "name": "落灰打卡钟",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/skip_node.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        83,
+        37,
+        429,
+        449
+      ],
+      "minimum_margin": 37,
+      "bbox_coverage": 0.5438,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 74,
+      "id": "item_skip_reward_node",
+      "name": "褪色招财猫",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/skip_reward_node.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        91,
+        36,
+        414,
+        489
+      ],
+      "minimum_margin": 23,
+      "bbox_coverage": 0.5582,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 75,
+      "id": "item_choice_minus1",
+      "name": "缺角食谱板",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/choice_minus1.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        86,
+        52,
+        441,
+        461
+      ],
+      "minimum_margin": 51,
+      "bbox_coverage": 0.5539,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 76,
+      "id": "item_req_normal_up",
+      "name": "挑剔留言簿",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/req_normal_up.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        25,
+        76,
+        483,
+        430
+      ],
+      "minimum_margin": 25,
+      "bbox_coverage": 0.6185,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 77,
+      "id": "item_req_super_up",
+      "name": "爆单警示灯",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/req_super_up.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        70,
+        46,
+        447,
+        476
+      ],
+      "minimum_margin": 36,
+      "bbox_coverage": 0.6184,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 78,
+      "id": "item_req_feast_up",
+      "name": "评鉴整改书",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/req_feast_up.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        76,
+        51,
+        447,
+        452
+      ],
+      "minimum_margin": 51,
+      "bbox_coverage": 0.5675,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 79,
+      "id": "item_gold_week_clear",
+      "name": "逾期账单夹",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/gold_week_clear.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        34,
+        66,
+        478,
+        450
+      ],
+      "minimum_margin": 34,
+      "bbox_coverage": 0.6504,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 80,
+      "id": "item_double_daily_cost_repeat_node",
+      "name": "双栏排班板",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/double_daily_cost_repeat_node.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        71,
+        36,
+        443,
+        468
+      ],
+      "minimum_margin": 36,
+      "bbox_coverage": 0.613,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 81,
+      "id": "item_timeline_stop_chance",
+      "name": "停摆挂钟",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/timeline_stop_chance.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        62,
+        40,
+        450,
+        457
+      ],
+      "minimum_margin": 40,
+      "bbox_coverage": 0.6172,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 82,
+      "id": "item_count_as_all",
+      "name": "九格拼盘",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/count_as_all.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        17,
+        69,
+        482,
+        450
+      ],
+      "minimum_margin": 17,
+      "bbox_coverage": 0.6758,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 83,
+      "id": "item_transfer_target_mult",
+      "name": "大号糖果盘",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/transfer_target_mult.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        15,
+        89,
+        494,
+        423
+      ],
+      "minimum_margin": 15,
+      "bbox_coverage": 0.6103,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 84,
+      "id": "item_transfer_source_mult",
+      "name": "长嘴糖浆壶",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/transfer_source_mult.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        69,
+        53,
+        441,
+        441
+      ],
+      "minimum_margin": 53,
+      "bbox_coverage": 0.5506,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 85,
+      "id": "item_skill_count_mult",
+      "name": "主厨刀架",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/skill_count_mult.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        56,
+        35,
+        438,
+        479
+      ],
+      "minimum_margin": 33,
+      "bbox_coverage": 0.647,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 86,
+      "id": "item_gold_on_transfer",
+      "name": "黄铜传菜铃",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/gold_on_transfer.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        78,
+        69,
+        453,
+        439
+      ],
+      "minimum_margin": 59,
+      "bbox_coverage": 0.5293,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 87,
+      "id": "item_cake_retain",
+      "name": "玻璃蛋糕罩",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/cake_retain.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        52,
+        35,
+        464,
+        462
+      ],
+      "minimum_margin": 35,
+      "bbox_coverage": 0.6711,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 88,
+      "id": "item_cake_init_bonus",
+      "name": "厚底蛋糕托",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/cake_init_bonus.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        74,
+        44,
+        439,
+        478
+      ],
+      "minimum_margin": 34,
+      "bbox_coverage": 0.6043,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 89,
+      "id": "item_cake_accel",
+      "name": "可叠蛋糕托",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/cake_accel.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        68,
+        63,
+        445,
+        469
+      ],
+      "minimum_margin": 43,
+      "bbox_coverage": 0.5839,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 90,
+      "id": "item_cake_to_gold",
+      "name": "蛋糕价签架",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/cake_to_gold.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        50,
+        52,
+        489,
+        453
+      ],
+      "minimum_margin": 23,
+      "bbox_coverage": 0.6715,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 91,
+      "id": "item_cake_req_minus",
+      "name": "迷你蛋糕模",
+      "path": "GourmetProject/Art/GeneratedDecorationItemIcons/final/cake_req_minus.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        38,
+        82,
+        475,
+        428
+      ],
+      "minimum_margin": 37,
+      "bbox_coverage": 0.5768,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    }
+  ]
+}

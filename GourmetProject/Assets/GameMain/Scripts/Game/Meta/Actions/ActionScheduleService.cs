@@ -24,8 +24,8 @@ namespace GourmetProject.Game.Meta
                 return result;
             }
 
-            // 事件概率族被动（LuckyEventChance/MoreEvents/LuckyEventGuarantee）作用于「抽事件」层，
-            //   实现见 EventService.RollActionEvent 与 WeekLoopController.ResolveEventAction，不在此大组/小组权重里注入。
+            // LuckyEventChance/LuckyEventGuarantee 作用于「抽事件」层；MoreEvents 作用于大组层，
+            // 在下方完成 min/max 保底候选筛选后再修正包含 Event 行动的大组权重。
 
             cfg.Tables tables = run.Tables ?? GameApp.Config.Tables;
             int maxChoiceCount = ActionRandomService.ChoiceCount(run);
@@ -317,9 +317,12 @@ namespace GourmetProject.Game.Meta
             }
 
             var weights = new List<float>(groups.Count);
+            var eventBonusApplied = new List<bool>(groups.Count);
             float total = 0f;
             cfg.Tables tables = run.Tables ?? GameApp.Config.Tables;
-            float superActionBonus = new ItemRuntime(run).SuperActionLargeGroupWeightBonus();
+            var itemRuntime = new ItemRuntime(run);
+            float superActionBonus = itemRuntime.SuperActionLargeGroupWeightBonus();
+            float eventActionBonus = itemRuntime.EventActionLargeGroupWeightBonus();
             foreach (cfg.ActionLargeGroup group in groups)
             {
                 float w = FallbackWeight(group, run.WeekIndex);
@@ -327,11 +330,20 @@ namespace GourmetProject.Game.Meta
                     w,
                     ContainsSuperAction(tables, group),
                     superActionBonus);
+                float beforeEventBonus = w;
+                w = ApplyEventActionWeightBonus(
+                    w,
+                    ContainsEventAction(tables, group),
+                    eventActionBonus);
                 if (!(w > 0f) || float.IsNaN(w) || float.IsInfinity(w))
                 {
                     w = 0f;
                 }
                 weights.Add(w);
+                eventBonusApplied.Add(
+                    beforeEventBonus > 0f
+                    && w > 0f
+                    && Math.Abs(w - beforeEventBonus) > 0.0001f);
                 total += w;
             }
 
@@ -340,6 +352,12 @@ namespace GourmetProject.Game.Meta
                 ? rng.WeightedPickIndex(weights)
                 : rng.Range(0, groups.Count);
             index = Math.Max(0, Math.Min(index, groups.Count - 1));
+            if (eventBonusApplied[index])
+            {
+                itemRuntime.FlashTriggered(
+                    model => Math.Abs(model.EventActionLargeGroupWeightBonus()) > 0.0001f);
+            }
+
             return groups[index].Id;
         }
 
@@ -349,6 +367,21 @@ namespace GourmetProject.Game.Meta
         internal static float ApplySuperActionWeightBonus(float baseWeight, bool containsSuper, float bonus)
         {
             if (!containsSuper || !(baseWeight > 0f) || float.IsNaN(bonus))
+            {
+                return baseWeight;
+            }
+
+            float multiplier = Math.Max(0f, 1f + bonus);
+            return baseWeight * multiplier;
+        }
+
+        /// <summary>
+        /// 大组保底候选集确定之后，仅对其中包含 Event 行动的大组乘以 (1 + bonus)。
+        /// 原始/前序权重为 0 时保持 0，不允许概率装饰品和消耗品复活零权重大组。
+        /// </summary>
+        internal static float ApplyEventActionWeightBonus(float baseWeight, bool containsEvent, float bonus)
+        {
+            if (!containsEvent || !(baseWeight > 0f) || float.IsNaN(bonus))
             {
                 return baseWeight;
             }
@@ -377,6 +410,34 @@ namespace GourmetProject.Game.Meta
                     cfg.GameAction action = tables.TbAction.GetOrDefault(actionId);
                     cfg.Food food = FoodService.Resolve(tables, action);
                     if (food?.ActionKind == cfg.FoodActionKind.Super)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        internal static bool ContainsEventAction(cfg.Tables tables, cfg.ActionLargeGroup group)
+        {
+            if (tables == null || group?.SmallGroupIds == null)
+            {
+                return false;
+            }
+
+            foreach (string smallGroupId in group.SmallGroupIds)
+            {
+                cfg.ActionSmallGroup small = tables.TbActionSmallGroup.GetOrDefault(smallGroupId);
+                if (small?.ActionIds == null)
+                {
+                    continue;
+                }
+
+                foreach (string actionId in small.ActionIds)
+                {
+                    cfg.GameAction action = tables.TbAction.GetOrDefault(actionId);
+                    if (action?.Behavior == cfg.ActionBehavior.Event)
                     {
                         return true;
                     }

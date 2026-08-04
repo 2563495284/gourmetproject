@@ -32,11 +32,11 @@ public sealed partial class Week : Luban.BeanBase
     /// </summary>
     public readonly int Id;
     /// <summary>
-    /// 本周候选行动轴 id 列表
+    /// 本周候选时间轴 id 列表
     /// </summary>
     public readonly System.Collections.Generic.List<string> TimelineIds;
     /// <summary>
-    /// 本周候选行动轴权重列表
+    /// 本周候选时间轴权重列表
     /// </summary>
     public readonly System.Collections.Generic.List<float> TimelineWeights;
    

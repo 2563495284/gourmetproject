@@ -3,7 +3,7 @@ using TMPro;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
-    /// <summary>常驻在菜品顶部的美味值标签。</summary>
+    /// <summary>常驻在食物顶部的美味值标签。</summary>
     internal sealed class DishValueBadgeView : MonoBehaviour
     {
         [Header("固定结构（prefab 预拼）")]

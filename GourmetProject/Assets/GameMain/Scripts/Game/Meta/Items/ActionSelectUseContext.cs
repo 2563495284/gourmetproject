@@ -10,9 +10,9 @@ using GourmetProject.Runtime;
 namespace GourmetProject.Game.Meta
 {
     /// <summary>
-    /// 行动选择情境下的主动道具使用上下文：
-    /// 调味/铺台永久落到 <see cref="GameRun"/>；排程操作行动轴/Boss（重掷/重置/执行下一节点/加奖励节点）。
-    /// 战斗专属能力（清盘/额外上菜/目标菜加减）在此不支持，返回 false。
+    /// 行动选择情境下的消耗品使用上下文：
+    /// 调味/铺台永久落到 <see cref="GameRun"/>；排程操作时间轴/Boss（重掷/重置/执行下一节点/加奖励节点）。
+    /// 经营挑战专属能力（清盘/额外上菜/目标食物加减）在此不支持，返回 false。
     /// </summary>
     public sealed class ActionSelectUseContext : IActiveUseContext
     {
@@ -77,7 +77,7 @@ namespace GourmetProject.Game.Meta
                 case cfg.ItemTargetKind.RecipeDish:
                     return BattleUseContext.EnumerateRecipeDishes(Run);
                 case cfg.ItemTargetKind.DiningTableCell:
-                    // 局外没有战斗餐桌，用预览餐桌（与实战同构）枚举格子。
+                    // 局外没有经营挑战餐桌，用预览餐桌（与实战同构）枚举格子。
                     DiningTable preview = Run != null ? BattleSessionFactory.BuildTablePreview(Run) : null;
                     return BattleUseContext.EnumerateTableCells(preview);
                 case cfg.ItemTargetKind.Material:
@@ -89,7 +89,7 @@ namespace GourmetProject.Game.Meta
             }
         }
 
-        // —— 战斗专属能力：行动选择不支持 ——
+        // —— 经营挑战专属能力：行动选择不支持 ——
 
         public bool ClearBoard() => false;
 
@@ -134,7 +134,7 @@ namespace GourmetProject.Game.Meta
 
         public bool GenerateDish(ActiveTarget target, string dishId, string randomKey) => false;
 
-        // —— 排程：操作行动轴/Boss ——
+        // —— 排程：操作时间轴/Boss ——
 
         public bool RerollCurrentAction()
         {

@@ -11,12 +11,12 @@ namespace GourmetProject.Game.Meta.Passives
         public override float LuckyEventChanceBonus() => Value;
     }
 
-    /// <summary>热闹街区：提高 act_event 抽到 Event 型事件的权重。</summary>
+    /// <summary>街角路牌：候选保底筛选完成后，提高包含 Event 行动的大组权重。</summary>
     [Preserve]
     [PassiveItemModel("item_more_events")]
     public sealed class MoreEventsModel : PassiveItemModel
     {
-        public override float MoreEventsBonus() => Value;
+        public override float EventActionLargeGroupWeightBonus() => Value;
     }
 
     /// <summary>超级计划：候选保底筛选完成后，提高包含 Super 行动的大组权重。</summary>

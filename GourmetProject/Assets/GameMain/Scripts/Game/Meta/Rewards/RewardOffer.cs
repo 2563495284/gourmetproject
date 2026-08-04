@@ -33,7 +33,7 @@ namespace GourmetProject.Game.Meta
             BaseGold = baseGold;
             _fixedGroups = new List<RewardChoiceGroup>
             {
-                new RewardChoiceGroup(GroupTitleFor(mainChoices, "基础菜品"), mainChoices, mainRequiredChoiceCount, MergeIndices(mainChoiceIndices, mainChoiceIndex), mainChoiceSkipped),
+                new RewardChoiceGroup(GroupTitleFor(mainChoices, "基础食物"), mainChoices, mainRequiredChoiceCount, MergeIndices(mainChoiceIndices, mainChoiceIndex), mainChoiceSkipped),
             };
             if (bonusChoices != null && bonusChoices.Count > 0)
             {
@@ -219,13 +219,13 @@ namespace GourmetProject.Game.Meta
                 case cfg.RewardKind.Gold:
                     return "金币奖励";
                 case cfg.RewardKind.DishChoice:
-                    return "基础菜品";
+                    return "基础食物";
                 case cfg.RewardKind.PassiveItemChoice:
-                    return "被动道具";
+                    return "装饰品";
                 case cfg.RewardKind.ActiveItemGrant:
                 case cfg.RewardKind.ActiveItemStrengthen:
                 case cfg.RewardKind.ActiveItemAdjust:
-                    return "主动道具";
+                    return "消耗品";
                 case cfg.RewardKind.FragmentChoice:
                     return "格子奖励";
                 default:

@@ -5,7 +5,7 @@ using TMPro;
 namespace GourmetProject.Game.UI.Tooltips
 {
     /// <summary>
-    /// 模块 2：分数堆叠。视觉上从下到上依次是：美味度、倍率、分数。
+    /// 模块 2：分数堆叠。视觉上从下到上依次是：美味值、倍率、分数。
     /// </summary>
     public sealed class FoodScoreTipsView : MonoBehaviour
     {

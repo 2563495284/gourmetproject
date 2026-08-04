@@ -25,7 +25,7 @@ namespace GourmetProject.Game.Run
         /// <summary>本局当前剩余爱心。</summary>
         public int HeartsRemaining;
 
-        /// <summary>已经扣心、等待播放或恢复的碎心演出。</summary>
+        /// <summary>已经失去红心、等待播放或恢复的碎心演出。</summary>
         public PendingHeartBreakSaveData PendingHeartBreak;
 
         /// <summary>本局利息节点金币阈值。</summary>
@@ -37,13 +37,13 @@ namespace GourmetProject.Game.Run
         /// <summary>本局利息节点单次最高收益基础值。</summary>
         public int InterestCap = -1;
 
-        /// <summary>蛋糕保鲜保留到下一次美食的初始层数。</summary>
+        /// <summary>蛋糕保鲜保留到下一场经营挑战的初始层数。</summary>
         public int RetainedHappyCakeLayers;
 
-        /// <summary>主动道具累计使用次数（单调递增）。随机类主动效果按此序号派生随机流以保证可复现。</summary>
+        /// <summary>消耗品累计使用次数（单调递增）。随机类主动效果按此序号派生随机流以保证可复现。</summary>
         public int ActiveUseIndex;
 
-        /// <summary>剩余半日券层数；每次完成日常行动消费一层。</summary>
+        /// <summary>剩余半日券层数；每次完成普通行动消费一层。</summary>
         public int NextDailyActionHalfCostStacks;
 
         /// <summary>行动选择页剩余刷新次数。</summary>
@@ -52,22 +52,22 @@ namespace GourmetProject.Game.Run
         /// <summary>高利贷待扣债务（下一周结算时扣除）。</summary>
         public int LoanDebt;
 
-        /// <summary>「美食分红」剩余生效局数（GoldMealBonus）。</summary>
+        /// <summary>「食物分红」剩余生效局数（GoldMealBonus）。</summary>
         public int MealBonusRemaining;
 
-        /// <summary>「分数变1」剩余生效局数（RequiredScoreToOne，非盛宴）。</summary>
+        /// <summary>「分数变1」剩余生效局数（RequiredScoreToOne，非星级评鉴）。</summary>
         public int ScoreToOneRemaining;
 
-        /// <summary>事件带来的目标分隐藏分偏移。</summary>
+        /// <summary>事件带来的目标美味值隐藏分偏移。</summary>
         public float EventTargetScoreHiddenOffset;
 
-        /// <summary>事件带来的菜品奖励隐藏分偏移。</summary>
+        /// <summary>事件带来的食物奖励隐藏分偏移。</summary>
         public float EventDishHiddenOffset;
 
-        /// <summary>事件带来的被动道具奖励隐藏分偏移。</summary>
+        /// <summary>事件带来的装饰品奖励隐藏分偏移。</summary>
         public float EventPassiveItemHiddenOffset;
 
-        /// <summary>事件带来的餐桌碎片奖励隐藏分偏移。</summary>
+        /// <summary>事件带来的餐桌格奖励隐藏分偏移。</summary>
         public float EventFragmentHiddenOffset;
 
         /// <summary>事件带来的金币奖励隐藏分偏移。</summary>
@@ -82,10 +82,10 @@ namespace GourmetProject.Game.Run
         /// <summary>后续奖励候选数单次变化，通常为 -1。</summary>
         public int EventChoiceCountDelta;
 
-        /// <summary>下一场美食目标分隐藏分偏移，生成下一场美食时消费。</summary>
+        /// <summary>下一场经营挑战目标美味值隐藏分偏移，生成下一场经营挑战时消费。</summary>
         public float NextFoodTargetScoreHiddenOffset;
 
-        /// <summary>下一次美食领奖额外金币，领取基础金币时消费。</summary>
+        /// <summary>下一场经营挑战领奖额外金币，领取基础金币时消费。</summary>
         public int NextMealRewardGold;
 
         /// <summary>整局累计进入 act_event 行动的次数。</summary>
@@ -101,13 +101,13 @@ namespace GourmetProject.Game.Run
         public List<string> BonusDishIds = new List<string>();
         public RunRecipeBookSaveData Recipe = new RunRecipeBookSaveData();
 
-        /// <summary>奖励获得、自动附着的餐桌碎片 id（无手动位置）。</summary>
+        /// <summary>奖励获得、自动附着的餐桌格 id（无手动位置）。</summary>
         public List<string> TableFragmentIds = new List<string>();
 
         /// <summary>玩家在餐桌编辑页手动拼贴的碎片放置（id + 旋转 + 原点），用于可复现地重建胃形。</summary>
         public List<TableFragmentPlacementSaveData> FragmentPlacements = new List<TableFragmentPlacementSaveData>();
 
-        /// <summary>餐桌碎片开包时已随机好的局部材质落点；随候选/已拼贴碎片保存。</summary>
+        /// <summary>餐桌格开包时已随机好的局部材质落点；随候选/已拼贴碎片保存。</summary>
         public List<TableFragmentMaterialRollSaveData> FragmentMaterialRolls = new List<TableFragmentMaterialRollSaveData>();
 
         /// <summary>玩家用「铺台小票」永久附加的格子材质覆盖（坐标 + 材质 id）；旧档缺省 → 空。</summary>
@@ -122,7 +122,7 @@ namespace GourmetProject.Game.Run
         /// <summary>本局商店碎片包成功购买次数，用于递增定价。</summary>
         public int FragmentPackPurchaseCount;
 
-        /// <summary>本局商店/菜谱编辑成功删除菜品次数，用于递增定价。</summary>
+        /// <summary>本局商店/食谱编辑成功删除食物次数，用于递增定价。</summary>
         public int DeleteDishCount;
 
         /// <summary>当前这次商店已删除食物次数；新商店重置，商店内读档保留。</summary>
@@ -131,20 +131,20 @@ namespace GourmetProject.Game.Run
         /// <summary>当前这次商店已成功购买碎片包次数；新商店重置，商店内读档保留。</summary>
         public int CurrentShopFragmentPackPurchaseCount;
 
-        /// <summary>整局累计已结算的菜品 BaseId 次数（技能「大局相同检测」）。</summary>
+        /// <summary>整局累计已结算的食物 BaseId 次数（技能「大局相同检测」）。</summary>
         public Dictionary<string, int> RunSettledCounts = new Dictionary<string, int>();
 
         /// <summary>已经完成营业结算的 BattleKey；防止结算回调或读档续接重复发放/扣次数。</summary>
         public List<string> SettledFoodBattleKeys = new List<string>();
 
-        // —— 行动轴状态（局外核心循环）——
-        /// <summary>本周行动轴 id（用于读档时按配置重建节点）。</summary>
+        // —— 时间轴状态（局外核心循环）——
+        /// <summary>本周时间轴 id（用于读档时按配置重建节点）。</summary>
         public string CurrentTimelineId;
 
-        /// <summary>当前行动轴所属周；用于区分同周末节点待处理与换周后旧轴残留。</summary>
+        /// <summary>当前时间轴所属周；用于区分同周末节点待处理与换周后旧轴残留。</summary>
         public int CurrentTimelineWeekIndex;
 
-        /// <summary>本周行动轴长度（天，0.1 粒度）。</summary>
+        /// <summary>本周时间轴长度（天，0.1 粒度）。</summary>
         public float TimelineLengthDays;
 
         /// <summary>当前天数游标（0..TimelineLengthDays，0.1 粒度）。旧档为整数天，JSON 数字可直接读入。</summary>
@@ -174,13 +174,13 @@ namespace GourmetProject.Game.Run
         /// <summary>最近一次行动的耗时快照（天，0.1 粒度）。</summary>
         public float LastActionCostDays;
 
-        /// <summary>最近一次行动的来源 key；行动轴节点恢复奖励续接时使用。</summary>
+        /// <summary>最近一次行动的来源 key；时间轴节点恢复奖励续接时使用。</summary>
         public string LastActionSourceKey;
 
-        /// <summary>最近一次行动是否带有目标分天数覆盖。</summary>
+        /// <summary>最近一次行动是否带有目标美味值天数覆盖。</summary>
         public bool LastActionHasTargetScoreDayOverride;
 
-        /// <summary>最近一次行动的目标分天数覆盖值。</summary>
+        /// <summary>最近一次行动的目标美味值天数覆盖值。</summary>
         public float LastActionTargetScoreDayOverride;
 
         public bool LastActionHalfDayBuffApplied;
@@ -211,10 +211,10 @@ namespace GourmetProject.Game.Run
         /// <summary>本周已结算的节点 id。</summary>
         public List<string> TriggeredNodeIds = new List<string>();
 
-        /// <summary>本周由主动道具（奖励单等）动态追加的行动轴节点；换周清空。</summary>
+        /// <summary>本周由消耗品（奖励单等）动态追加的时间轴节点；换周清空。</summary>
         public List<RuntimeTimelineNodeSaveData> RuntimeTimelineNodes = new List<RuntimeTimelineNodeSaveData>();
 
-        /// <summary>本周动态行动轴节点的单调递增序号；删除节点后不回退，避免 id 重复。</summary>
+        /// <summary>本周动态时间轴节点的单调递增序号；删除节点后不回退，避免 id 重复。</summary>
         public int RuntimeTimelineNodeSerial;
 
         /// <summary>已触发事件 id（整局，供结算统计与跨局进度）。</summary>
@@ -259,13 +259,13 @@ namespace GourmetProject.Game.Run
 
         public RewardOfferSaveData PendingRewardOffer;
 
-        /// <summary>战斗胜利后待领奖期间的只读 Food 画面快照；用于读档恢复领奖背景和常驻 HUD。</summary>
+        /// <summary>经营挑战胜利后待领奖期间的只读 Food 画面快照；用于读档恢复领奖背景和常驻 HUD。</summary>
         public PendingRewardBattleViewSaveData PendingRewardBattleView;
 
         /// <summary>通用待领奖队列（被动获得时、商店、事件等非过关奖励来源）。</summary>
         public List<GenericRewardSaveData> PendingGenericRewards = new List<GenericRewardSaveData>();
 
-        /// <summary>通用领奖队列结束后是否要续接战斗胜利流程。</summary>
+        /// <summary>通用领奖队列结束后是否要续接经营挑战胜利流程。</summary>
         public bool PendingGenericRewardsConfirmBattleAfterDone;
 
         /// <summary>通用领奖队列结束后的续接目标；旧存档仍由上面的布尔字段恢复 Battle。</summary>
@@ -278,10 +278,10 @@ namespace GourmetProject.Game.Run
         public string ItemId;
         public int Level = 1;
 
-        /// <summary>旧存档兼容字段：曾经的主动道具持有数量。新档每份实例单独一条，恒为 1。</summary>
+        /// <summary>旧存档兼容字段：曾经的消耗品持有数量。新档每份实例单独一条，恒为 1。</summary>
         public int Count = 1;
 
-        /// <summary>被动道具模型的 per-instance 状态（如 LuckyEventGuarantee 计数）；旧档缺省空串。</summary>
+        /// <summary>装饰品模型的 per-instance 状态（如 LuckyEventGuarantee 计数）；旧档缺省空串。</summary>
         public string StateJson = string.Empty;
     }
 

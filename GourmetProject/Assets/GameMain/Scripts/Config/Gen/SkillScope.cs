@@ -53,7 +53,7 @@ namespace cfg
         /// </summary>
         After = 8,
         /// <summary>
-        /// 菜谱
+        /// 食谱
         /// </summary>
         Recipe = 9,
         /// <summary>

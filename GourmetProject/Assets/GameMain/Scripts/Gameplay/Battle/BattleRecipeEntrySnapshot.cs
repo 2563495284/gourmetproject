@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace GourmetProject.Gameplay.Battle
 {
     /// <summary>
-    /// 战斗菜谱中一个独立条目的当前展示状态。
+    /// 经营挑战食谱中一个独立条目的当前展示状态。
     /// 每个条目在任意时刻只会处于其中一种状态。
     /// </summary>
     public enum BattleRecipeEntryStatus
@@ -18,7 +18,7 @@ namespace GourmetProject.Gameplay.Battle
     }
 
     /// <summary>
-    /// 战斗菜谱只读快照。即使条目已从待出餐列表移除，仍保留在完整菜谱中供 UI 展示。
+    /// 经营挑战食谱只读快照。即使条目已从待出菜列表移除，仍保留在完整食谱中供 UI 展示。
     /// </summary>
     public sealed class BattleRecipeEntrySnapshot
     {

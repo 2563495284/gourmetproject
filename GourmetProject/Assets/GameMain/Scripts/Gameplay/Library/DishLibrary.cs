@@ -6,10 +6,10 @@ using GourmetProject.Gameplay.Model;
 namespace GourmetProject.Gameplay.Library
 {
     /// <summary>
-    /// 菜品库的隐藏分加权随机：给定一个「要求隐藏分」，在隐藏分范围覆盖它的候选菜品中按权重随机取一个。
+    /// 食物库的隐藏分加权随机：给定一个「要求隐藏分」，在隐藏分范围覆盖它的候选食物中按权重随机取一个。
     ///
     /// 权重公式遵循策划文档：w = 基础权重 / max(|a - b|, c)，其中 a = 要求隐藏分，
-    /// b = 菜品隐藏分均值，c 为距离下限，避免均值完全命中时除零。
+    /// b = 食物隐藏分均值，c 为距离下限，避免均值完全命中时除零。
     /// </summary>
     public sealed class DishLibrary
     {
@@ -27,7 +27,7 @@ namespace GourmetProject.Gameplay.Library
 
         public IReadOnlyList<DishDef> Dishes => _dishes;
 
-        /// <summary>计算单个菜品在给定要求隐藏分下的权重（含基础权重系数）。</summary>
+        /// <summary>计算单个食物在给定要求隐藏分下的权重（含基础权重系数）。</summary>
         public static float ComputeWeight(DishDef dish, int requiredHidden, int distanceFloor)
         {
             if (requiredHidden == 0)
@@ -43,7 +43,7 @@ namespace GourmetProject.Gameplay.Library
         }
 
         /// <summary>
-        /// 收集隐藏分范围覆盖要求隐藏分、且通过可选过滤的候选菜品。
+        /// 收集隐藏分范围覆盖要求隐藏分、且通过可选过滤的候选食物。
         /// </summary>
         public List<DishDef> Candidates(int requiredHidden, Func<DishDef, bool> filter = null)
         {
@@ -67,7 +67,7 @@ namespace GourmetProject.Gameplay.Library
         }
 
         /// <summary>
-        /// 按隐藏分加权随机取一个菜品。无候选时返回 null。
+        /// 按隐藏分加权随机取一个食物。无候选时返回 null。
         /// </summary>
         /// <param name="distanceFloor">权重公式中的距离下限 c，由调用方从全局配置传入。</param>
         public DishDef Roll(IRandomStream stream, int requiredHidden, int distanceFloor, Func<DishDef, bool> filter = null)

@@ -1,7 +1,7 @@
 namespace GourmetProject.Game.Meta
 {
     /// <summary>
-    /// 道具 <see cref="cfg.ItemSpecialTag"/> 筛选规则。默认随机池排除负面，仅显式指定奖励池/随机参数时才纳入。
+    /// 装饰品和消耗品 <see cref="cfg.ItemSpecialTag"/> 筛选规则。默认随机池排除负面，仅显式指定奖励池/随机参数时才纳入。
     /// </summary>
     public static class ItemTagFilter
     {
@@ -16,7 +16,7 @@ namespace GourmetProject.Game.Meta
         }
 
         /// <summary>
-        /// <paramref name="requiredTag"/> 为 None：排除负面道具；否则道具须匹配该标签。
+        /// <paramref name="requiredTag"/> 为 None：排除诅咒装饰品；否则装饰品和消耗品须匹配该标签。
         /// </summary>
         public static bool MatchesFilter(
             cfg.ItemSpecialTag itemTag,

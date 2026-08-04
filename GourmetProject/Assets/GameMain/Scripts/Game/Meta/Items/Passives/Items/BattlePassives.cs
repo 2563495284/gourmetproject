@@ -31,6 +31,11 @@ namespace GourmetProject.Game.Meta.Passives
     [PassiveItemModel("item_cake_retain")]
     public sealed class CakeRetainModel : PassiveItemModel
     {
+        public override void OnRemoved()
+        {
+            Run?.ClearRetainedHappyCakeLayers();
+        }
+
         public override bool TryGetCakeRetainFraction(out float value)
         {
             value = Value;
@@ -112,8 +117,13 @@ namespace GourmetProject.Game.Meta.Passives
             }
         }
 
-        public override void OnSweetTransferTriggered(SkillTransferRequest request)
+        public override void OnSweetTransferTriggered(SweetTransferOccurrence occurrence)
         {
+            if (!IsStillHeld)
+            {
+                return;
+            }
+
             _transferCount++;
             Flash();
             RefreshInfoText();

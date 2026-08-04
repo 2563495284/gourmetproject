@@ -2,7 +2,7 @@ namespace GourmetProject.Game.Presentation.Battle
 {
     /// <summary>
     /// 一个结算 cue 播放时对外发出的「揭示信号」：可组合，一条 cue 可同时揭示
-    /// 分数 / 倍率 / 复制技能 / 甜蜜传递卡片（例如目标菜触发甜蜜传递效果时，既揭示加分又揭示传递卡片）。
+    /// 分数 / 倍率 / 复制技能 / 甜蜜传递卡片（例如目标食物触发甜蜜传递效果时，既揭示加分又揭示传递卡片）。
     /// </summary>
     public readonly struct SettlementRevealSignal
     {
@@ -35,7 +35,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public float Flat { get; }
 
-        /// <summary>是否揭示「乘区」维度；<see cref="Multiplier"/> 为该维度累加后的当前值（ScoreLine.After）。</summary>
+        /// <summary>是否揭示「倍率」维度；<see cref="Multiplier"/> 为该维度累加后的当前值（ScoreLine.After）。</summary>
         public bool HasMultiplier { get; }
 
         public float Multiplier { get; }

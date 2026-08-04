@@ -26,7 +26,7 @@ namespace GourmetProject.Game.Meta
         Gold,
     }
 
-    /// <summary>v2 隐藏分统一入口：目标分、奖励池隐藏分、金币区间派生。</summary>
+    /// <summary>v2 隐藏分统一入口：目标美味值、奖励池隐藏分、金币区间派生。</summary>
     public static class HiddenScoreService
     {
         public static int TargetScore(GameRun run, ActionExecutionContext context = null, float extraTargetScoreHiddenOffset = 0f)

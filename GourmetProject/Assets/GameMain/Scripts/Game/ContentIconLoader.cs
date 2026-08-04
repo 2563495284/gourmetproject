@@ -46,6 +46,14 @@ namespace GourmetProject.Game
         {
             switch (itemId)
             {
+                case "item_discount_adjust":
+                case "item_discount_active_festival":
+                case "item_discount_adjust_festival":
+                    return "discount_active";
+                case "item_heart_flat_all":
+                    return "perma_flat_all";
+                case "item_empty_heart_mult_all":
+                    return "perma_mult_all";
                 case "item_shop_restock_active":
                 case "item_shop_restock_passive":
                     return "shop_restock";

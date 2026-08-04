@@ -14,10 +14,51 @@ using Log = GourmetProject.Core.Diagnostics.Log;
 namespace GourmetProject.Game.Run
 {
     /// <summary>
-    /// 根据局外 Run 状态构建一场局内战斗，避免 GameRun 同时承担战斗装配细节。
+    /// 根据局外 Run 状态构建一场局内经营挑战，避免 GameRun 同时承担经营挑战装配细节。
     /// </summary>
     public static class BattleSessionFactory
     {
+        /// <summary>无界面完整局入口：与 Build 相同装配，但随机流完全由调用方提供。</summary>
+        public static BattleSession BuildHeadless(
+            GameRun run, int requiredScore, string modifier, string key, string bossDebuffId, IRandomStream random)
+        {
+            if (run == null) throw new System.ArgumentNullException(nameof(run));
+            if (random == null) throw new System.ArgumentNullException(nameof(random));
+            cfg.BossDebuff bossDebuff = ResolveBossDebuff(run, bossDebuffId);
+            BossDebuffModel model = bossDebuff != null ? BossDebuffModelRegistry.Create(run, bossDebuff) : null;
+            cfg.Character character = run.Tables.TbCharacter.GetOrDefault(run.CharacterId);
+            var entries = new List<RecipeSlotEntry>();
+            for (int i = 0; i < run.RecipeEntries.Count; i++)
+            {
+                RecipeBookSlot slot = run.RecipeEntries[i];
+                if (run.Database.GetDish(slot.DishId) == null) continue;
+                entries.Add(new RecipeSlotEntry(slot.DishId, slot.ExtraFlavorIds, slot.ExtraSkillIds,
+                    slot.ScoreMultiplier, slot.ScoreFlatBonus, 0, i));
+            }
+            var slots = new List<RecipeSlot> { new RecipeSlot("食谱", entries) };
+            model?.ModifyRecipeSlots(slots, random);
+            int count = TotalRecipeEntries(slots);
+            GpTable board = BuildTable(run, character, model, count, random);
+            model?.ModifyPreparedTable(board, count, random);
+            var calculator = new ScoreCalculator(effectSources: ItemScoreEffectAdapter.BuildScoreSources(run));
+            var session = new BattleSession(board, run.Database, random, slots, requiredScore, calculator, run.RunSettledCounts);
+            var items = new ItemRuntime(run);
+            cfg.GameBase gameBase = run.Tables.TbGameBase.Data;
+            session.ExtraCountAsPerDish = ItemScoreEffectAdapter.ExtraCountAsPerDish(run);
+            session.ConfigureFoodDiscardLimit(items.FoodDiscardCapacity());
+            session.ConfigureRandomServeMultiplier(gameBase.RandomServeMultiplierMin, gameBase.RandomServeMultiplierMax, gameBase.RandomServeMultiplierStep);
+            session.ConfigureCookieServePity(gameBase.ServeCookiePityCount, gameBase.ServeCookieDishIds);
+            session.CakeLayerThresholdReduction = items.CakeThresholdReduction();
+            session.CakeLayerAccelBonus = items.CakeAccelBonus();
+            int layers = items.CakeInitialLayers() + run.ConsumeRetainedHappyCakeLayers();
+            if (layers > 0) session.SeedHappyCakeLayers(layers);
+            session.SweetTransferTargetMultiplier = items.SweetTransferTargetMultiplier();
+            session.SweetTransferSourceMultiplier = items.SweetTransferSourceMultiplier();
+            model?.ApplyToBattle(session);
+            ApplyPassiveItems(run, session);
+            return session;
+        }
+
         public static BattleSession Build(
             GameRun run,
             int requiredScore,
@@ -51,7 +92,7 @@ namespace GourmetProject.Game.Run
                         dishIndex));
                 }
             }
-            var slots = new List<RecipeSlot> { new RecipeSlot("菜谱", entries) };
+            var slots = new List<RecipeSlot> { new RecipeSlot("食谱", entries) };
 
             bossDebuffModel?.ModifyRecipeSlots(slots, debuffStream);
 
@@ -61,13 +102,13 @@ namespace GourmetProject.Game.Run
 
             var battleStream = GameApp.Random.DomainStream(SeedDomains.Combat, key);
 
-            // 结算类被动道具（逐菜/条件/顺序）作为效果来源注入结算器；局级加/乘仍走 FinalFlat/Multiplier 快路径。
+            // 结算类装饰品（逐菜/条件/顺序）作为效果来源注入结算器；局级加/乘仍走 FinalFlat/Multiplier 快路径。
             var calculator = new ScoreCalculator(effectSources: ItemScoreEffectAdapter.BuildScoreSources(run));
             var session = new BattleSession(board, run.Database, battleStream, slots, requiredScore, calculator, runSettledCounts: run.RunSettledCounts);
             session.ExtraCountAsPerDish = ItemScoreEffectAdapter.ExtraCountAsPerDish(run);
             var itemRuntime = new ItemRuntime(run);
             cfg.GameBase gameBase = run.Tables.TbGameBase.Data;
-            session.ConfigureFoodDiscardLimit(gameBase.FoodDeleteCount + itemRuntime.FoodDiscardLimitBonus());
+            session.ConfigureFoodDiscardLimit(itemRuntime.FoodDiscardCapacity());
             session.ConfigureRandomServeMultiplier(
                 gameBase.RandomServeMultiplierMin,
                 gameBase.RandomServeMultiplierMax,
@@ -76,7 +117,7 @@ namespace GourmetProject.Game.Run
                 gameBase.ServeCookiePityCount,
                 gameBase.ServeCookieDishIds);
 
-            // 蛋糕层数族道具：初始层数 / 阈值下调 / 叠层加速。
+            // 蛋糕层数族装饰品和消耗品：初始层数 / 阈值下调 / 叠层加速。
             session.CakeLayerThresholdReduction = itemRuntime.CakeThresholdReduction();
             session.CakeLayerAccelBonus = itemRuntime.CakeAccelBonus();
             int initLayers = itemRuntime.CakeInitialLayers() + run.ConsumeRetainedHappyCakeLayers();
@@ -102,9 +143,9 @@ namespace GourmetProject.Game.Run
             BossDebuffModel model = bossDebuff != null
                 ? BossDebuffModelRegistry.Create(run, bossDebuff)
                 : null;
-            var previewStream = GameApp.Random.DomainStream(
-                SeedDomains.Combat,
-                $"table_preview_{bossDebuffId}_debuff_setup");
+            IRandomStream previewStream = GameApp.Random != null
+                ? GameApp.Random.DomainStream(SeedDomains.Combat, $"table_preview_{bossDebuffId}_debuff_setup")
+                : new Xoshiro256SS(StablePreviewSeed(run, bossDebuffId));
             int recipeEntryCount = run?.RecipeEntries?.Count ?? 0;
             GpTable table = BuildTable(run, character, model, recipeEntryCount, previewStream);
             model?.ModifyPreparedTable(table, recipeEntryCount, previewStream);
@@ -112,8 +153,19 @@ namespace GourmetProject.Game.Run
             return table;
         }
 
+        private static ulong StablePreviewSeed(GameRun run, string bossDebuffId)
+        {
+            unchecked
+            {
+                ulong hash = 1469598103934665603UL;
+                string text = $"{run?.CharacterId}|{run?.WeekIndex}|{bossDebuffId}";
+                for (int i = 0; i < text.Length; i++) { hash ^= text[i]; hash *= 1099511628211UL; }
+                return hash;
+            }
+        }
+
         /// <summary>
-        /// 数值实验室入口：对已按快照摆好的餐桌装配正式道具、蛋糕与 Boss 结算规则。
+        /// 数值实验室入口：对已按快照摆好的餐桌装配正式装饰品和消耗品、蛋糕与 Boss 结算规则。
         /// 随机流由调用方注入，不读取或推进全局随机状态。
         /// </summary>
         public static BattleSession BuildBalancePreview(
@@ -167,7 +219,7 @@ namespace GourmetProject.Game.Run
         }
 
         /// <summary>
-        /// 由角色配置构建本局餐桌：初始胃形状取自碎片库，最大包围盒取角色 max 尺寸。
+        /// 由经营方向配置构建本局餐桌：初始胃形状取自碎片库，最大包围盒取经营方向 max 尺寸。
         /// Boss Debuff 模型可在构建前调整最大包围盒（初始碎片超出部分自动裁掉）。
         /// </summary>
         private static GpTable BuildTable(
@@ -184,7 +236,7 @@ namespace GourmetProject.Game.Run
             TableFragmentDef fragment = run.Database.GetFragment(character?.InitialFragmentId);
             if (fragment == null)
             {
-                Log.Warning($"Character '{run.CharacterId}' 无有效初始餐桌碎片 '{character?.InitialFragmentId}'，回退为满 {maxW}x{maxH} 餐桌。", "GameRun");
+                Log.Warning($"Character '{run.CharacterId}' 无有效初始餐桌格 '{character?.InitialFragmentId}'，回退为满 {maxW}x{maxH} 餐桌。", "GameRun");
                 GpTable fallback = new GpTable(maxW, maxH);
                 bossDebuffModel?.ModifyBuiltTable(fallback, recipeEntryCount, rng);
                 ApplyCellMaterialOverrides(fallback, run);
@@ -211,7 +263,7 @@ namespace GourmetProject.Game.Run
             return board;
         }
 
-        /// <summary>把玩家用「铺台小票」永久附加的格子材质叠加进餐桌（拼桌后统一 merge，战斗与预览一致）。</summary>
+        /// <summary>把玩家用「铺台小票」永久附加的格子材质叠加进餐桌（拼桌后统一 merge，经营挑战与预览一致）。</summary>
         private static void ApplyCellMaterialOverrides(GpTable board, GameRun run)
         {
             if (board == null || run == null)
@@ -261,7 +313,7 @@ namespace GourmetProject.Game.Run
             return fragments;
         }
 
-        /// <summary>把被动道具局级修正注入战斗会话（各模型 ApplyToBattle）。</summary>
+        /// <summary>把装饰品局级修正注入经营挑战会话（各模型 ApplyToBattle）。</summary>
         private static void ApplyPassiveItems(GameRun run, BattleSession session)
         {
             foreach (GourmetProject.Game.Meta.Passives.PassiveItemModel model in run.PassiveModels)

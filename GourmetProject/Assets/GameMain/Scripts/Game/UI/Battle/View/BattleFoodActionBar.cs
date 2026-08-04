@@ -8,7 +8,7 @@ using TMPro;
 namespace GourmetProject.Game.UI.Battle.View
 {
     /// <summary>
-    /// 战斗态底部食物操作条：总览 / 吃（结算）/ 清空涂鸦 / 切换涂鸦四个按钮。
+    /// 经营挑战态底部食物操作条：总览 / 吃（结算）/ 清空涂鸦 / 切换涂鸦四个按钮。
     /// 组件挂在 FoodActions 节点上，负责显隐与按钮可点态/文案；点击回调由壳注入（结算等编排仍在壳内）。
     /// </summary>
     public sealed class BattleFoodActionBar : MonoBehaviour

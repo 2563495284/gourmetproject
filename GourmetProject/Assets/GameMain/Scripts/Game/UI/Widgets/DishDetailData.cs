@@ -10,7 +10,7 @@ using GourmetProject.Game.UI.Widgets;
 
 namespace GourmetProject.Game.UI.Widgets
 {
-    /// <summary>打开菜品详情界面（image2）所需的数据：菜品定义 + 用于查技能/风味/名词的数据库 + 该实例的技能与风味。</summary>
+    /// <summary>打开食物详情界面（image2）所需的数据：食物定义 + 用于查技能/风味/名词的数据库 + 该实例的技能与风味。</summary>
     public sealed class DishDetailData
     {
         public DishDetailData(

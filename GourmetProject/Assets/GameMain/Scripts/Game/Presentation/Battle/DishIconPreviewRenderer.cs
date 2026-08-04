@@ -10,7 +10,7 @@ using UnityEngine.SceneManagement;
 namespace GourmetProject.Game.Presentation.Battle
 {
     /// <summary>
-    /// 在当前活动场景的隐藏运行时 Rig 中复用一套棋盘、菜品和美味值标签，
+    /// 在当前活动场景的隐藏运行时 Rig 中复用一套棋盘、食物和美味值标签，
     /// 并把结果渲染到每个 UI 预览自己的 RenderTexture。
     /// </summary>
     internal sealed class DishIconPreviewRenderer : MonoBehaviour

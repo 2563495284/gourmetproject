@@ -76,7 +76,7 @@ namespace GourmetProject.Game.UI.Widgets
     }
 
     /// <summary>
-    /// UI 侧的统一菜品图标：显示矩形棋盘、居中的菜品和 DishValueBadge 美味值。
+    /// UI 侧的统一食物图标：显示矩形棋盘、居中的食物和 DishValueBadge 美味值。
     /// 实际世界对象由共享的独立预览场景渲染，本组件只持有自己的 RenderTexture。
     /// </summary>
     [RequireComponent(typeof(RawImage))]

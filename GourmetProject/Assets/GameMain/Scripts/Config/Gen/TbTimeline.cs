@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 行动轴库：定义行动轴模板与基础长度；具体每周候选池和权重由 Week.timelineIds/timelineWeights 决定。
+/// 时间轴库：定义时间轴模板与基础长度；具体每周候选池和权重由 Week.timelineIds/timelineWeights 决定。
 /// </summary>
 public partial class TbTimeline
 {

@@ -7,8 +7,8 @@ namespace GourmetProject.Game.Meta
 {
     /// <summary>
     /// 行动执行：推进天数、记录上下文，并按 <see cref="cfg.ActionBehavior"/> 分派到对应 handler 产出
-    /// <see cref="ActionOutcome"/> 交给编排层。无论来源（随机 n 选一 / 行动轴放置节点）都走这一条路径。
-    /// 真正的异步表现（战斗、商店、事件弹窗）由编排层（BattleForm）依据 outcome 处理。
+    /// <see cref="ActionOutcome"/> 交给编排层。无论来源（随机 n 选一 / 时间轴放置节点）都走这一条路径。
+    /// 真正的异步表现（经营挑战、商店、事件弹窗）由编排层（BattleForm）依据 outcome 处理。
     /// 注意：这里只做「解析」——设上下文、计算即时效果，均为内存态、不存档。
     /// 步数推进推迟到玩家明确结算时由 <see cref="Commit"/> 提交，避免进入即消耗行动。
     /// </summary>
@@ -37,9 +37,9 @@ namespace GourmetProject.Game.Meta
 
         /// <summary>
         /// 提交一次行动的进度：推进天数/步数。由编排层在玩家明确结算
-        /// （商店退出、事件选完、战斗结算、通知点继续）时调用，存档由调用方负责。
+        /// （商店退出、事件选完、经营挑战结算、通知点继续）时调用，存档由调用方负责。
         /// </summary>
-        /// <returns>提交前的天数，用于结算刚跨过的行动轴节点。</returns>
+        /// <returns>提交前的天数，用于结算刚跨过的时间轴节点。</returns>
         public static float Commit(GameRun run, ActionExecutionContext context)
         {
             if (run == null || context == null || context.Action == null)

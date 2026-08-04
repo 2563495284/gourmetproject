@@ -1,6 +1,7 @@
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
+using GourmetProject.Gameplay.Scoring;
 using UnityEngine.Scripting;
 
 namespace GourmetProject.Game.Meta.Passives
@@ -95,6 +96,11 @@ namespace GourmetProject.Game.Meta.Passives
 
         private void OnServed(BattleSession session, DishInstance dish, int serveIndex)
         {
+            if (!IsStillHeld)
+            {
+                return;
+            }
+
             int every = System.Math.Max(1, PassiveParam.ParseInt(Param, "every", DefaultEvery));
             if (dish == null || serveIndex <= every || serveIndex % (every + 1) != 0)
             {
@@ -118,5 +124,41 @@ namespace GourmetProject.Game.Meta.Passives
     public sealed class CountAsBonusAllModel : PassiveItemModel
     {
         public override int ExtraCountAsPerDish() => (int)Value;
+    }
+
+    /// <summary>暖心壁灯：按本场结算开始时仍拥有的红心数，为每道食物增加加法分。</summary>
+    [Preserve]
+    [PassiveItemModel("item_heart_flat_all")]
+    public sealed class HeartRemainingFlatAllModel : PassiveItemModel
+    {
+        public override System.Collections.Generic.IEnumerable<ItemScoreSpec> BuildScoreSpecs()
+        {
+            int hearts = Run != null ? System.Math.Max(0, Run.HeartsRemaining) : 0;
+            yield return new ItemScoreSpec(
+                ItemScoreEffectType.AllDishFlat,
+                Value * hearts,
+                Param,
+                ItemId,
+                Def?.Name ?? ItemId);
+        }
+    }
+
+    /// <summary>裂纹心形镜：按本场结算开始时的空红心数，为每道食物增加倍率加区。</summary>
+    [Preserve]
+    [PassiveItemModel("item_empty_heart_mult_all")]
+    public sealed class EmptyHeartMultFlatAllModel : PassiveItemModel
+    {
+        public override System.Collections.Generic.IEnumerable<ItemScoreSpec> BuildScoreSpecs()
+        {
+            int emptyHearts = Run != null
+                ? System.Math.Max(0, Run.HeartCapacity - Run.HeartsRemaining)
+                : 0;
+            yield return new ItemScoreSpec(
+                ItemScoreEffectType.AllDishMultFlat,
+                Value * emptyHearts,
+                Param,
+                ItemId,
+                Def?.Name ?? ItemId);
+        }
     }
 }

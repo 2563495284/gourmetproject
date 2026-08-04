@@ -352,7 +352,7 @@ namespace GourmetProject.Gameplay.Scoring
         }
 
         /// <summary>
-        /// 技能复制的候选池：actionParam 含 cat:xxx 时取该分类全部菜品定义的技能（如「蛋糕技能」）；
+        /// 技能复制的候选池：actionParam 含 cat:xxx 时取该分类全部食物定义的技能（如「蛋糕技能」）；
         /// 否则取作用域内其它实例的运行时技能。剔除自身已有技能与复制类技能（避免复制「复制」造成循环）。
         /// </summary>
         internal static List<string> BuildCopyCandidates(GpTable board, GameplayDatabase db, SkillRuleDef rule, DishInstance self)

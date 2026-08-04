@@ -12,7 +12,7 @@ using TMPro;
 namespace GourmetProject.Game.UI.Hud
 {
     /// <summary>
-    /// 常驻 HUD 里的道具槽视图（屏幕空间 UGUI 版）：图标 + 名称 + 角标（等级 Lv/份数 xN）+ 品质描边色 + 点击回调。
+    /// 常驻 HUD 里的装饰品和消耗品槽视图（屏幕空间 UGUI 版）：图标 + 名称 + 角标（等级 Lv/份数 xN）+ 品质描边色 + 点击回调。
     /// 固定结构在 RunItemSlotView.prefab，运行时由 BattleForm 的常驻 HUD 数据驱动实例化并 <see cref="Bind"/>。
     /// </summary>
     public sealed class RunItemSlotView : MonoBehaviour
@@ -41,7 +41,7 @@ namespace GourmetProject.Game.UI.Hud
         public RectTransform RectTransform => transform as RectTransform;
 
         /// <summary>
-        /// 槽位中真正绘制道具图标的矩形。
+        /// 槽位中真正绘制装饰品和消耗品图标的矩形。
         /// 主动槽根节点只负责定位，运行时尺寸可能为 0；飞行动画与闪光应使用此矩形。
         /// </summary>
         public RectTransform VisualRectTransform
@@ -79,7 +79,7 @@ namespace GourmetProject.Game.UI.Hud
             return RectTransformUtility.RectangleContainsScreenPoint(rect, screenPoint, cam);
         }
 
-        /// <summary>绑定一个有内容的道具槽。</summary>
+        /// <summary>绑定一个有内容的装饰品和消耗品槽。</summary>
         public void Bind(
             Sprite icon,
             string name,
@@ -125,7 +125,7 @@ namespace GourmetProject.Game.UI.Hud
             ClearTip();
         }
 
-        /// <summary>把该槽绑定到共享的道具 Tips 实例。</summary>
+        /// <summary>把该槽绑定到共享的装饰品和消耗品 Tips 实例。</summary>
         public void SetTip(ItemTipView tip, ItemDefinition item)
         {
             EnsureRefs();
@@ -136,7 +136,7 @@ namespace GourmetProject.Game.UI.Hud
             }
 
             // Tips 避让要按整个槽位根宽度计算，而不是某个子 Image；
-            // 否则显示在左侧时会从槽位中心向外排布，遮住半个道具。
+            // 否则显示在左侧时会从槽位中心向外排布，遮住半个装饰品和消耗品。
             _tipTrigger.SetTarget(transform as RectTransform);
             _tipTrigger.SetTip(tip, () => tip.Bind(item));
         }
@@ -345,7 +345,7 @@ namespace GourmetProject.Game.UI.Hud
             _iconEffectMaterial.SetFloat(IsWaxId, 0f);
         }
 
-        /// <summary>道具品质对应的槽底色（与战斗世界空间槽保持一致）。</summary>
+        /// <summary>装饰品和消耗品品质对应的槽底色（与经营挑战世界空间槽保持一致）。</summary>
         public static Color QualityColor(cfg.ItemQuality quality)
         {
             switch (quality)
@@ -363,13 +363,13 @@ namespace GourmetProject.Game.UI.Hud
             }
         }
 
-        /// <summary>取道具图标（Resources 路径，缺失返回 null）。</summary>
+        /// <summary>取装饰品和消耗品图标（Resources 路径，缺失返回 null）。</summary>
         public static Sprite LoadIcon(ItemDefinition item)
         {
             return ContentIconLoader.LoadItem(item);
         }
 
-        /// <summary>取道具名前两字作为槽内短名（图标缺失时的兜底展示）。</summary>
+        /// <summary>取装饰品和消耗品名前两字作为槽内短名（图标缺失时的兜底展示）。</summary>
         public static string ShortName(string name)
         {
             if (string.IsNullOrEmpty(name))

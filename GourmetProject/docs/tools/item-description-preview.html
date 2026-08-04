@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>道具/技能描述预览</title>
+  <title>装饰品和消耗品/技能描述预览</title>
   <style>
     :root {
       color-scheme: dark;
@@ -219,14 +219,14 @@
 </head>
 <body>
   <main>
-    <h1>道具/技能描述预览</h1>
+    <h1>装饰品和消耗品/技能描述预览</h1>
     <p class="lead">读取 <code>Assets/StreamingAssets/Config</code>，把描述模板里的参数占位符回填后展示。</p>
 
     <section class="toolbar" aria-label="筛选工具">
       <input id="search" type="search" placeholder="搜索名称、描述或 id" autocomplete="off">
       <select id="mode">
-        <option value="dish">菜品技能拼接（TbSkill）</option>
-        <option value="item">道具描述（TbPassiveItem / TbActiveItem）</option>
+        <option value="dish">食物技能拼接（TbSkill）</option>
+        <option value="item">装饰品和消耗品描述（TbPassiveItem / TbActiveItem）</option>
       </select>
       <button id="toggleParams" type="button" aria-pressed="false">显示参数</button>
     </section>

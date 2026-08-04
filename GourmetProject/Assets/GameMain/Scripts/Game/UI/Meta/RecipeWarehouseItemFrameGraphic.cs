@@ -4,7 +4,7 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>
-    /// 仓库菜品的轻量背景与边框。与 Unity Outline 不同，只绘制真正的四条边。
+    /// 仓库食物的轻量背景与边框。与 Unity Outline 不同，只绘制真正的四条边。
     /// </summary>
     [RequireComponent(typeof(CanvasRenderer))]
     public sealed class RecipeWarehouseItemFrameGraphic : MaskableGraphic

@@ -6,7 +6,7 @@ using GourmetProject.Game.Run;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
-    /// <summary>按菜品名称约定加载菜品 sprite，并提供兜底方块。</summary>
+    /// <summary>按食物名称约定加载食物 sprite，并提供兜底方块。</summary>
     public sealed class DishSpriteProvider
     {
         private Sprite _fallback;

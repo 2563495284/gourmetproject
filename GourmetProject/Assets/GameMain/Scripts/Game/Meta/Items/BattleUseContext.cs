@@ -7,7 +7,7 @@ using GourmetProject.Gameplay.Model;
 
 namespace GourmetProject.Game.Meta
 {
-    /// <summary>战斗情境下的主动道具使用上下文：能力落到 <see cref="BattleSession"/>。</summary>
+    /// <summary>经营挑战情境下的消耗品使用上下文：能力落到 <see cref="BattleSession"/>。</summary>
     public sealed class BattleUseContext : IActiveUseContext
     {
         private readonly BattleSession _session;
@@ -85,7 +85,7 @@ namespace GourmetProject.Game.Meta
 
         public bool DuplicateDish(ActiveTarget target, string randomKey)
         {
-            // 战斗内复制沿用战斗随机流选空位；randomKey 供局外情境派生随机，这里无需使用。
+            // 经营挑战内复制沿用经营挑战随机流选空位；randomKey 供局外情境派生随机，这里无需使用。
             return _session != null && TryGetDishId(target, out int dishId)
                 && _session.DuplicateDishById(dishId);
         }
@@ -108,7 +108,7 @@ namespace GourmetProject.Game.Meta
                 && _session.AddCountAsToDish(dishId, amount);
         }
 
-        // —— 调味/铺台：当前战斗立即同步，并写入本次 Run 内存；落盘仍由既有存档节点负责 ——
+        // —— 调味/铺台：当前经营挑战立即同步，并写入本次 Run 内存；落盘仍由既有存档节点负责 ——
 
         public bool AddFlavorToDish(ActiveTarget target, string flavorId)
         {
@@ -173,7 +173,7 @@ namespace GourmetProject.Game.Meta
 
         public bool ConvertDishCategory(ActiveTarget target, string category)
         {
-            // 当前 DishDef 分类是静态只读数据；分类转换需要引入运行时菜品覆盖后才能可靠落地。
+            // 当前 DishDef 分类是静态只读数据；分类转换需要引入运行时食物覆盖后才能可靠落地。
             return false;
         }
 
@@ -203,7 +203,7 @@ namespace GourmetProject.Game.Meta
             return _session != null && _session.GenerateDishAt(dishId, new GridPos(target.X, target.Y));
         }
 
-        // —— 排程：战斗内不支持操作行动轴/Boss ——
+        // —— 排程：经营挑战内不支持操作时间轴/Boss ——
 
         public bool RerollCurrentAction() => false;
 
@@ -235,7 +235,7 @@ namespace GourmetProject.Game.Meta
             return int.TryParse(target.Id, out dishId);
         }
 
-        /// <summary>枚举菜谱所有条目为候选：Id=dishId，X 固定为 0，Y=菜序（供选目标 UI 与效果定位）。</summary>
+        /// <summary>枚举食谱所有条目为候选：Id=dishId，X 固定为 0，Y=菜序（供选目标 UI 与效果定位）。</summary>
         internal static IReadOnlyList<ActiveTarget> EnumerateRecipeDishes(GameRun run)
         {
             var targets = new List<ActiveTarget>();
@@ -288,7 +288,7 @@ namespace GourmetProject.Game.Meta
         }
 
         /// <summary>
-        /// 调味小票只允许选择能永久写回菜谱条目的桌上菜；临时生成或失去来源的实例不进入候选。
+        /// 调味小票只允许选择能永久写回食谱条目的桌上菜；临时生成或失去来源的实例不进入候选。
         /// </summary>
         internal static IReadOnlyList<ActiveTarget> EnumerateSourceBackedTableDishes(DiningTable table, GameRun run)
         {

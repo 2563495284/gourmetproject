@@ -26,7 +26,7 @@ namespace GourmetProject.Game.UI.Meta
 
             if (_titleText != null)
             {
-                _titleText.text = string.IsNullOrWhiteSpace(title) ? "随机后的道具" : title;
+                _titleText.text = string.IsNullOrWhiteSpace(title) ? "随机后的装饰品和消耗品" : title;
             }
 
             int count = results?.Count ?? 0;

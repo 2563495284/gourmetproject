@@ -5,7 +5,7 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>
-    /// 商店菜品购买时的目标箭头。根节点铺满 Canvas，起点固定在商品卡，终点跟随鼠标。
+    /// 商店食物购买时的目标箭头。根节点铺满 Canvas，起点固定在商品卡，终点跟随鼠标。
     /// </summary>
     [RequireComponent(typeof(RectTransform))]
     public sealed class TargetArrowView : MonoBehaviour

@@ -59,15 +59,15 @@ public sealed partial class HiddenScoreCurve : Luban.BeanBase
     /// </summary>
     public readonly float DayCoeff;
     /// <summary>
-    /// 目标分指数公式常量 k0。
+    /// 目标美味值指数公式常量 k0。
     /// </summary>
     public readonly float ExpConstant;
     /// <summary>
-    /// 目标分指数公式kWeek。
+    /// 目标美味值指数公式kWeek。
     /// </summary>
     public readonly float ExpWeekCoeff;
     /// <summary>
-    /// 目标分指数公式 kDay。
+    /// 目标美味值指数公式 kDay。
     /// </summary>
     public readonly float ExpDayCoeff;
     /// <summary>

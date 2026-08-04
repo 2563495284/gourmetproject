@@ -9,7 +9,7 @@ using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 namespace GourmetProject.Gameplay.Scoring
 {
     /// <summary>
-    /// 「吃」的结算器：把菜品技能、风味、材质以及额外来源收集为阶段化效果队列，
+    /// 「吃」的结算器：把食物技能、风味、材质以及额外来源收集为阶段化效果队列，
     /// 再按确定性顺序执行并输出可解释明细。
     /// </summary>
     public sealed class ScoreCalculator

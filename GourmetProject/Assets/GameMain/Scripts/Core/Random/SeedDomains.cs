@@ -12,13 +12,13 @@ namespace GourmetProject.Core.Rng
     /// </summary>
     public static class SeedDomains
     {
-        /// <summary>每周行动轴 / 关卡布局生成。</summary>
+        /// <summary>每周时间轴 / 关卡布局生成。</summary>
         public const string Map = "map";
 
         /// <summary>行动组调度与「n 选一」候选生成。</summary>
         public const string Action = "action";
 
-        /// <summary>行动 / 事件效果结算、赌博、随机给予道具。</summary>
+        /// <summary>行动 / 事件效果结算、赌博、随机给予装饰品和消耗品。</summary>
         public const string Effect = "effect";
 
         /// <summary>随机事件抽取与选项结算。</summary>
@@ -30,27 +30,27 @@ namespace GourmetProject.Core.Rng
         /// <summary>Boss 加权抽取。</summary>
         public const string Boss = "boss";
 
-        /// <summary>商店刷新（菜品 / 碎片池及槽位等非道具池随机）。</summary>
+        /// <summary>商店刷新（食物 / 碎片池及槽位等非装饰品和消耗品池随机）。</summary>
         public const string Shop = "shop";
 
         /// <summary>
-        /// 道具池抽取专用域，与商店其它随机（菜品/碎片/槽位）隔离，
-        /// 避免调整道具数量时污染同一刷新里的菜品/碎片序列。当前由商店道具栏接入，预留给奖励道具。
+        /// 装饰品和消耗品池抽取专用域，与商店其它随机（食物/碎片/槽位）隔离，
+        /// 避免调整装饰品和消耗品数量时污染同一刷新里的食物/碎片序列。当前由商店装饰品和消耗品栏接入，预留给奖励装饰品和消耗品。
         /// </summary>
         public const string Loot = "loot";
 
         /// <summary>过关奖励（金币区间、额外槽、候选池）。</summary>
         public const string Reward = "reward";
 
-        /// <summary>战斗开局菜谱牌组生成。</summary>
+        /// <summary>经营挑战开局食谱食谱生成。</summary>
         public const string Recipe = "recipe";
 
-        /// <summary>局内战斗上菜 / AI 决策。</summary>
+        /// <summary>局内经营挑战上菜 / AI 决策。</summary>
         public const string Combat = "combat";
 
         /// <summary>
-        /// 主动道具使用副作用（生成/复制/随机类效果落地）专用域。
-        /// 按存档里的「主动道具使用序号」派生实例流，保证同种子同输入下第 K 次使用可复现。
+        /// 消耗品使用副作用（生成/复制/随机类效果落地）专用域。
+        /// 按存档里的「消耗品使用序号」派生实例流，保证同种子同输入下第 K 次使用可复现。
         /// </summary>
         public const string Item = "item";
 

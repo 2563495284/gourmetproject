@@ -16,8 +16,8 @@ namespace GourmetProject.Game.Presentation.Battle
     /// 暂放后可再次拖动，右键取消并返回托盘；空闲时右键或跳过按钮放弃本包。
     /// 亦承载只读「餐桌视图」：复用同一套布局但不显示候选托盘、不接受拖拽输入。
     ///
-    /// 从 BattleWorldController 拆出，作为其协作组件挂在同一战斗场景根上：
-    /// 只持有自身所需的场景引用（餐桌/相机/餐桌格 prefab/菜品根），不再触碰 Food 态私有成员；
+    /// 从 BattleWorldController 拆出，作为其协作组件挂在同一经营挑战场景根上：
+    /// 只持有自身所需的场景引用（餐桌/相机/餐桌格 prefab/食物根），不再触碰 Food 态私有成员；
     /// 世界互斥态（进入/退出）由 BattleWorldController 外壳调度，本类负责编辑/餐桌视图的表现与交互。
     /// </summary>
     public sealed class DiningTableEditController : MonoBehaviour
@@ -158,7 +158,7 @@ namespace GourmetProject.Game.Presentation.Battle
             public int MaxY;
         }
 
-        /// <summary>由外壳注入共享场景引用（餐桌、餐桌格 prefab、菜品根、相机）。</summary>
+        /// <summary>由外壳注入共享场景引用（餐桌、餐桌格 prefab、食物根、相机）。</summary>
         public void Configure(BattleWorldController owner, DiningTableView boardView, DiningTableCellView boardCellPrefab, Transform piecesRoot, Camera camera)
         {
             _owner = owner;
@@ -178,7 +178,7 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>
-        /// 进入统一餐桌碎片选择页。商店与奖励入口只负责传入不同的完成回调。
+        /// 进入统一餐桌格选择页。商店与奖励入口只负责传入不同的完成回调。
         /// 外壳已完成 Food 态清场与世界互斥态切换，这里只做编辑页的构建。
         /// </summary>
         public void BeginTableFragmentChoice(TableFragmentChoiceRequest request)
@@ -262,7 +262,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _state = TableInteractionState.ReadOnlyView;
         }
 
-        /// <summary>进入主动道具选格态：复用餐桌查看布局，但允许外层用世界箭头选择格子。</summary>
+        /// <summary>进入消耗品选格态：复用餐桌查看布局，但允许外层用世界箭头选择格子。</summary>
         public void BeginCellTargeting(GameRun run, GpTable tableOverride = null)
         {
             _editRun = run;
@@ -312,7 +312,7 @@ namespace GourmetProject.Game.Presentation.Battle
             return true;
         }
 
-        /// <summary>退出餐桌编辑页：清理动态内容，恢复餐桌常规显示。外层负责隐藏世界与返回。</summary>
+        /// <summary>退出菜桌编辑页：清理动态内容，恢复餐桌常规显示。外层负责隐藏世界与返回。</summary>
         public void EndTableEdit()
         {
             SetHoveredCandidate(-1);

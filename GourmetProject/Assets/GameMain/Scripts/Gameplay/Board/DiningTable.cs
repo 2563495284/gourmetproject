@@ -6,7 +6,7 @@ namespace GourmetProject.Gameplay.Board
 {
     /// <summary>
     /// 局内餐桌（胃）。在最大 Width×Height 包围盒内，每格有三态：不存在(胃外)/存在且空/被占用。
-    /// 每个存在格还可携带强化标签（结算时附加给占据它的菜品）。
+    /// 每个存在格还可携带强化标签（结算时附加给占据它的食物）。
     /// 不含随机与计分逻辑，便于独立单测。
     /// </summary>
     public sealed class DiningTable
@@ -308,7 +308,7 @@ namespace GourmetProject.Gameplay.Board
             return true;
         }
 
-        /// <summary>枚举某菜品在当前餐桌上的全部合法摆放（朝向 × 原点）。</summary>
+        /// <summary>枚举某食物在当前餐桌上的全部合法摆放（朝向 × 原点）。</summary>
         public List<Placement> FindValidPlacements(DishDef def)
         {
             if (def == null)
@@ -338,7 +338,7 @@ namespace GourmetProject.Gameplay.Board
         }
 
         /// <summary>
-        /// 「麻」专用：把菜品基础形状**逆时针**旋转 <paramref name="ccwSteps"/> 个 90°，
+        /// 「麻」专用：把食物基础形状**逆时针**旋转 <paramref name="ccwSteps"/> 个 90°，
         /// 强制以该唯一朝向枚举全部合法原点（覆盖 AllowRotate 的自由旋转）。返回空列表表示旋转后放不下。
         /// </summary>
         public List<Placement> FindValidPlacementsRotatedCcw(DishDef def, int ccwSteps)
@@ -356,7 +356,7 @@ namespace GourmetProject.Gameplay.Board
         }
 
         /// <summary>
-        /// 以指定的固定朝向枚举全部合法原点。用于临时桌菜品放回餐桌等必须保留当前朝向的场景。
+        /// 以指定的固定朝向枚举全部合法原点。用于临时桌食物放回餐桌等必须保留当前朝向的场景。
         /// </summary>
         public List<Placement> FindValidPlacements(DishShape orientation, int rotationIndex)
         {
@@ -421,8 +421,8 @@ namespace GourmetProject.Gameplay.Board
         }
 
         /// <summary>
-        /// 移除一个已放置实例：把它占据的格子还原为空，并从菜品列表中剔除。
-        /// 从餐桌移除菜品；移动时先移除，再调用 <see cref="Place"/> 放到新位置。
+        /// 移除一个已放置实例：把它占据的格子还原为空，并从食物列表中剔除。
+        /// 从餐桌移除食物；移动时先移除，再调用 <see cref="Place"/> 放到新位置。
         /// </summary>
         public void RemoveDish(DishInstance dish)
         {

@@ -8,8 +8,8 @@ using GourmetProject.Gameplay.Scoring;
 namespace GourmetProject.Game.Meta.Passives
 {
     /// <summary>
-    /// 被动道具「模型」基类（对标杀戮尖塔2 的 RelicModel/AbstractModel）：
-    /// 每个被动道具 id 对应一个子类，只覆写自己关心的钩子；数值来自 <see cref="Definition"/>（Luban 配置），
+    /// 装饰品「模型」基类（对标杀戮尖塔2 的 RelicModel/AbstractModel）：
+    /// 每个装饰品 id 对应一个子类，只覆写自己关心的钩子；数值来自 <see cref="Definition"/>（Luban 配置），
     /// per-instance 运行时状态由子类字段持有并通过 <see cref="CaptureState"/>/<see cref="RestoreState"/> 序列化。
     /// 分发器 <see cref="ItemRuntime"/> 只遍历「在场（持有）」模型折叠结果——未持有即无模型、无副作用。
     /// 所有钩子默认空实现/透传；聚合语义（求和/取最大/累乘）由分发器决定。
@@ -29,6 +29,14 @@ namespace GourmetProject.Game.Meta.Passives
         protected ItemDefinition Definition { get; private set; }
 
         protected RunItemState State { get; private set; }
+
+        /// <summary>
+        /// 当前模型对应的那一件装饰品和消耗品是否仍在持有列表中。
+        /// 经营挑战会话可能仍保存模型注册过的事件委托；必须比较实例而不只比较 ID，
+        /// 避免旧装饰品和消耗品移除后又获得同 ID 时，旧模型也重新产生效果。
+        /// </summary>
+        protected bool IsStillHeld
+            => Run != null && ReferenceEquals(Run.GetItemState(ItemId), State);
 
         /// <summary>配置 effectValue。</summary>
         protected float Value => Definition?.EffectValue ?? 0f;
@@ -86,18 +94,18 @@ namespace GourmetProject.Game.Meta.Passives
 
         // ================= 生命周期 =================
 
-        /// <summary>被动道具首次加入持有列表后立即结算一次（替代 PassiveOnAcquireEffects）。</summary>
+        /// <summary>装饰品首次加入持有列表后立即结算一次（替代 PassiveOnAcquireEffects）。</summary>
         public virtual void OnAcquired()
         {
         }
 
-        /// <summary>被动道具从持有列表移除时（很少用到）。</summary>
+        /// <summary>装饰品从持有列表移除时（很少用到）。</summary>
         public virtual void OnRemoved()
         {
         }
 
         /// <summary>
-        /// 新一周行动轴建立后，把本模型声明的每周效果应用到运行态时间轴。
+        /// 新一周时间轴建立后，把本模型声明的每周效果应用到运行态时间轴。
         /// 默认无效果；由 <see cref="ItemRuntime.ApplyWeekTimelinePassives"/> 统一派发。
         /// </summary>
         public virtual void ApplyToWeekTimeline()
@@ -107,6 +115,13 @@ namespace GourmetProject.Game.Meta.Passives
         // ================= 价格族（透传折叠：price => price'） =================
 
         public virtual float ModifyShopPrice(ShopEntryKind kind, float price) => price;
+
+        /// <summary>
+        /// 按具体商品修正商店价格。默认回退到旧的仅分类重载，保证已有模型和旧调用继续生效；
+        /// 需要区分强化/调整消耗品的模型可通过 <paramref name="itemId"/> 查询消耗品分类。
+        /// </summary>
+        public virtual float ModifyShopPrice(ShopEntryKind kind, string itemId, float price)
+            => ModifyShopPrice(kind, price);
 
         public virtual float ModifyDeletePrice(float price) => price;
 
@@ -121,14 +136,14 @@ namespace GourmetProject.Game.Meta.Passives
 
         public virtual bool AutoRestock(ShopEntryKind kind) => false;
 
-        // ================= 目标分族（百分比累加） =================
+        // ================= 目标美味值族（百分比累加） =================
 
         /// <summary>对某档位要求分的百分比修正（可正可负；分发器累加）。</summary>
         public virtual float RequiredScorePct(cfg.FoodActionKind tier) => 0f;
 
         // ================= 金币 / 利息族 =================
 
-        /// <summary>美食奖励金币百分比修正（累加）。</summary>
+        /// <summary>食物奖励金币百分比修正（累加）。</summary>
         public virtual float MealRewardGoldPct() => 0f;
 
         /// <summary>每次进入一个根事件页面时获得的金币。</summary>
@@ -158,13 +173,13 @@ namespace GourmetProject.Game.Meta.Passives
 
         public virtual int FoodFlavorLimitBonus() => 0;
 
-        /// <summary>日常行动耗时倍率；节点行动和休息不调用。</summary>
+        /// <summary>普通行动耗时倍率；节点行动和休息不调用。</summary>
         public virtual float DailyActionCostMultiplier() => 1f;
 
         /// <summary>自然经过的非 Boss 节点执行次数。</summary>
         public virtual int TimelineNodeRepeatCount() => 1;
 
-        /// <summary>日常行动经过节点日时，时间轴停摆概率。</summary>
+        /// <summary>普通行动经过节点日时，时间轴停摆概率。</summary>
         public virtual float TimelineStopChance() => 0f;
 
         /// <summary>是否消费本被动跳过指定类型的下一个节点。</summary>
@@ -179,7 +194,7 @@ namespace GourmetProject.Game.Meta.Passives
 
         // ================= 不死族 =================
 
-        /// <summary>是否为「不死」道具（供保底与失败判定；本模型对应道具会被消耗移除）。</summary>
+        /// <summary>是否为「不死」装饰品和消耗品（供保底与失败判定；本模型对应装饰品和消耗品会被消耗移除）。</summary>
         public virtual bool IsUndying() => false;
 
         // ================= 上菜族 =================
@@ -190,7 +205,7 @@ namespace GourmetProject.Game.Meta.Passives
         /// <summary>观星「每局前 N 次上菜可预见」的次数（无则 0）。</summary>
         public virtual int StarGazeFirst() => 0;
 
-        /// <summary>每场战斗可额外丢弃的出菜数量（各道具累加）。</summary>
+        /// <summary>每场经营挑战可额外丢弃的出菜数量（各装饰品和消耗品累加）。</summary>
         public virtual int FoodDiscardLimitBonus() => 0;
 
         // ================= 奖励 / 多选一族 =================
@@ -201,14 +216,14 @@ namespace GourmetProject.Game.Meta.Passives
         /// <summary>多选一可选「次数」增加（分发器累加）。</summary>
         public virtual int ChoiceTimesBonus() => 0;
 
-        /// <summary>战斗胜利奖励生成后，允许被动道具追加奖励组。</summary>
+        /// <summary>经营挑战胜利奖励生成后，允许装饰品追加奖励组。</summary>
         public virtual RewardOffer ModifyBattleRewardOffer(
             RewardOffer offer,
             ActionExecutionContext actionContext,
             IRandomStream rng) => offer;
 
         /// <summary>
-        /// 一场 Food 战斗完成时触发。与胜利奖励生成解耦，因此失败但仍存活时也会调用；
+        /// 一场 Food 经营挑战完成时触发。与胜利奖励生成解耦，因此失败但仍存活时也会调用；
         /// <paramref name="survived"/> 为 false 时，模型仍可累计进度，但不应发放续局奖励。
         /// </summary>
         public virtual RewardOffer OnFoodBattleSettled(
@@ -225,6 +240,9 @@ namespace GourmetProject.Game.Meta.Passives
 
         /// <summary>遇到事件的额外概率（分发器累加）。</summary>
         public virtual float MoreEventsBonus() => 0f;
+
+        /// <summary>包含 Event 行动的大组权重增幅（分发器累加）。</summary>
+        public virtual float EventActionLargeGroupWeightBonus() => 0f;
 
         /// <summary>包含 Super 行动的大组权重增幅（分发器累加）。</summary>
         public virtual float SuperActionLargeGroupWeightBonus() => 0f;
@@ -265,33 +283,35 @@ namespace GourmetProject.Game.Meta.Passives
         /// <summary>最终蛋糕层数满足条件时给予的金币。</summary>
         public virtual int GoldForCakeLayers(int happyCakeLayers) => 0;
 
-        /// <summary>跨品鉴保留的蛋糕层数比例（取最大）。返回 false 表示不提供。</summary>
+        /// <summary>跨经营挑战保留的蛋糕层数比例（取最大）。返回 false 表示不提供。</summary>
         public virtual bool TryGetCakeRetainFraction(out float value)
         {
             value = 0f;
             return false;
         }
 
-        // ================= 战斗注入 / 结算族 =================
+        // ================= 经营挑战注入 / 结算族 =================
 
-        /// <summary>把局级修正注入战斗会话（替代 PassiveItemEffectRegistry；Final 加/乘等）。</summary>
+        /// <summary>把局级修正注入经营挑战会话（替代 PassiveItemEffectRegistry；Final 加/乘等）。</summary>
         public virtual void ApplyToBattle(BattleSession session)
         {
         }
 
-        public virtual void OnSweetTransferTriggered(SkillTransferRequest request)
+        public virtual void OnSweetTransferTriggered(SweetTransferOccurrence occurrence)
         {
         }
 
+        /// <summary>每传递到一个目标时，该目标永久倍率的累加值。</summary>
         public virtual bool TryGetSweetTransferTargetMultiplier(out float value)
         {
-            value = 1f;
+            value = 0f;
             return false;
         }
 
+        /// <summary>每传递到一个目标时，来源永久倍率的累加值。</summary>
         public virtual bool TryGetSweetTransferSourceMultiplier(out float value)
         {
-            value = 1f;
+            value = 0f;
             return false;
         }
 

@@ -19,16 +19,16 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>成功上菜并摆上餐桌。</summary>
         Placed,
 
-        /// <summary>该菜谱已无可上菜品。</summary>
+        /// <summary>该食谱已无可上食物。</summary>
         SlotEmpty,
 
-        /// <summary>菜谱里没有任何一道菜能放进当前餐桌（餐桌空间不足）。</summary>
+        /// <summary>食谱里没有任何1 个食物能放进当前餐桌（餐桌空间不足）。</summary>
         NoFittingDish,
 
         /// <summary>本局上菜次数已达上限（Boss 机制「限量供应」修正）。</summary>
         LimitReached,
 
-        /// <summary>出餐口没有等待摆放的食物。</summary>
+        /// <summary>出菜口没有等待摆放的食物。</summary>
         NoPreparedDish,
 
         /// <summary>玩家选择的位置已失效或不能容纳本次食物。</summary>
@@ -36,7 +36,7 @@ namespace GourmetProject.Gameplay.Battle
     }
 
     /// <summary>
-    /// 已从菜谱随机取出、正在出餐口等待玩家摆放的食物。
+    /// 已从食谱随机取出、正在出菜口等待玩家摆放的食物。
     /// 在 <see cref="BattleSession.CommitPreparedServe"/> 前不会占用餐桌，也不会触发上菜效果。
     /// </summary>
     public sealed class PreparedServeDish
@@ -112,7 +112,7 @@ namespace GourmetProject.Gameplay.Battle
         public DishInstance Dish { get; }
 
         /// <summary>
-        /// 菜品完成上菜触发后是否立刻被局内规则移除。
+        /// 食物完成上菜触发后是否立刻被局内规则移除。
         /// 表现层仍可用 <see cref="Dish"/> 播完落地与消失演出，但不能把它重建回餐桌。
         /// </summary>
         public bool RemovedAfterServe { get; }

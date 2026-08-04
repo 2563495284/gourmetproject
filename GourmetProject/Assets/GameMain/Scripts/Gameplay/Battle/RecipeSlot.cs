@@ -4,7 +4,7 @@ using System.Linq;
 namespace GourmetProject.Gameplay.Battle
 {
     /// <summary>
-    /// 一个「菜谱」槽位（image1 的菜谱1/菜谱2）：持有一组待上菜的菜品 id，点击「上菜」时从中随机取出一道。
+    /// 一个「食谱」槽位（image1 的食谱1/食谱2）：持有一组待上菜的食物 id，点击「上菜」时从中随机取出一道。
     /// </summary>
     public sealed class RecipeSlot
     {
@@ -86,7 +86,7 @@ namespace GourmetProject.Gameplay.Battle
         }
     }
 
-    /// <summary>菜谱槽内的一条具体食物记录，可被 Boss Debuff 标记后随上菜传给实例。</summary>
+    /// <summary>食谱槽内的一条具体食物记录，可被 Boss Debuff 标记后随上菜传给实例。</summary>
     public sealed class RecipeSlotEntry
     {
         private readonly List<string> _extraFlavorIds;
@@ -126,7 +126,7 @@ namespace GourmetProject.Gameplay.Battle
 
         public bool ExcludeFromScore { get; private set; }
 
-        /// <summary>玩家用调味小票为该菜谱条目永久附加的额外风味（上菜时与变体自带风味合并）。</summary>
+        /// <summary>玩家用调味小票为该食谱条目永久附加的额外风味（上菜时与变体自带风味合并）。</summary>
         public IReadOnlyList<string> ExtraFlavorIds => _extraFlavorIds;
 
         public IReadOnlyList<string> ExtraSkillIds => _extraSkillIds;

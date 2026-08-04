@@ -71,7 +71,7 @@ public sealed partial class GameBase : Luban.BeanBase
     /// </summary>
     public readonly int InitialActionRerollCount;
     /// <summary>
-    /// 主动道具基础消耗槽数
+    /// 消耗品栏基础栏位数
     /// </summary>
     public readonly int BaseActiveSlots;
     /// <summary>
@@ -79,11 +79,11 @@ public sealed partial class GameBase : Luban.BeanBase
     /// </summary>
     public readonly int ShopFoodSaleSlotCount;
     /// <summary>
-    /// 商店被动道具出售栏位数量
+    /// 商店装饰品出售栏位数量
     /// </summary>
     public readonly int ShopPassiveItemSaleSlotCount;
     /// <summary>
-    /// 商店主动道具出售栏位数量
+    /// 商店消耗品出售栏位数量
     /// </summary>
     public readonly int ShopActiveItemSaleSlotCount;
     /// <summary>
@@ -91,7 +91,7 @@ public sealed partial class GameBase : Luban.BeanBase
     /// </summary>
     public readonly int FoodFlavorLimit;
     /// <summary>
-    /// 美食战斗每局可丢弃出餐食物次数
+    /// 经营挑战每局可丢弃出菜食物次数
     /// </summary>
     public readonly int FoodDeleteCount;
     /// <summary>
@@ -99,11 +99,11 @@ public sealed partial class GameBase : Luban.BeanBase
     /// </summary>
     public readonly System.Collections.Generic.List<int> FragmentPackPrices;
     /// <summary>
-    /// 删除菜品按删除次数递增价格
+    /// 删除食物按删除次数递增价格
     /// </summary>
     public readonly System.Collections.Generic.List<int> DeleteDishPrices;
     /// <summary>
-    /// 商店食物/主动/被动道具基础价格随机浮动比例
+    /// 商店食物/消耗品/装饰品基础价格随机浮动比例
     /// </summary>
     public readonly float ShopPriceFluctuationPct;
     /// <summary>
@@ -111,7 +111,7 @@ public sealed partial class GameBase : Luban.BeanBase
     /// </summary>
     public readonly int ActionChoiceCount;
     /// <summary>
-    /// 隐藏分距离加权下限（菜品/道具/碎片随机池共用）
+    /// 隐藏分距离加权下限（食物/装饰品和消耗品/碎片随机池共用）
     /// </summary>
     public readonly int HiddenScoreDistanceFloor;
     /// <summary>

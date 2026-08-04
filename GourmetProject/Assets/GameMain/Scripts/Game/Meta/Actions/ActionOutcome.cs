@@ -7,7 +7,7 @@ namespace GourmetProject.Game.Meta
         /// <summary>已即时结算，只需展示反馈文案。</summary>
         Immediate,
 
-        /// <summary>需要打开一场美食挑战战斗。</summary>
+        /// <summary>需要打开一场经营挑战经营挑战。</summary>
         Battle,
 
         /// <summary>需要弹出事件（可能带选项）。</summary>
@@ -33,13 +33,13 @@ namespace GourmetProject.Game.Meta
         /// <summary>反馈文案（Immediate）。</summary>
         public string Feedback { get; private set; } = string.Empty;
 
-        /// <summary>战斗目标分（Battle）。</summary>
+        /// <summary>经营挑战目标美味值（Battle）。</summary>
         public int RequiredScore { get; private set; }
 
-        /// <summary>战斗特殊机制（Battle）。</summary>
+        /// <summary>经营挑战特殊机制（Battle）。</summary>
         public string Modifier { get; private set; } = string.Empty;
 
-        /// <summary>战斗随机流 key（Battle）。</summary>
+        /// <summary>经营挑战随机流 key（Battle）。</summary>
         public string BattleKey { get; private set; } = string.Empty;
 
         /// <summary>是否为 Boss 战（Battle）：Boss = 难度为 Boss 的 Food 行为，领奖后推进/通关。</summary>

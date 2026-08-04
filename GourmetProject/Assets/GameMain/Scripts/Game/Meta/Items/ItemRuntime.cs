@@ -22,9 +22,9 @@ namespace GourmetProject.Game.Meta
     }
 
     /// <summary>
-    /// 道具「钩子分发器」门面（对标杀戮尖塔2 的 Hook）：只遍历当前 Run 在场（持有）的被动道具模型
+    /// 装饰品和消耗品「钩子分发器」门面（对标杀戮尖塔2 的 Hook）：只遍历当前 Run 在场（持有）的装饰品模型
     /// <see cref="PassiveItemModel"/>，按各钩子语义折叠（求和/取最大/累乘/任一）。未持有即无模型、无副作用。
-    /// 各子系统（金币/商店/目标分/事件/蛋糕等）继续调用这里的方法，签名保持不变。
+    /// 各子系统（金币/商店/目标美味值/事件/蛋糕等）继续调用这里的方法，签名保持不变。
     /// </summary>
     public sealed class ItemRuntime
     {
@@ -40,13 +40,20 @@ namespace GourmetProject.Game.Meta
 
         // ================= 商店 / 删牌价格族 =================
 
-        /// <summary>按商品类型计算折后价：各模型依次修正（折扣累乘 + 涨价累乘），下限 1。</summary>
+        /// <summary>旧分类入口：无法区分消耗品子分类，保留供旧调用兼容。</summary>
         public int ModifyShopPrice(ShopEntryKind kind, int basePrice)
+            => ModifyShopPrice(kind, string.Empty, basePrice);
+
+        /// <summary>
+        /// 按商品类型与具体商品计算折后价：各模型依持有顺序修正（折扣累乘 + 涨价累乘），下限 1。
+        /// 消耗品折扣通过 <paramref name="itemId"/> 区分强化箱与调整单。
+        /// </summary>
+        public int ModifyShopPrice(ShopEntryKind kind, string itemId, int basePrice)
         {
             float price = basePrice;
             foreach (PassiveItemModel m in Models)
             {
-                price = m.ModifyShopPrice(kind, price);
+                price = m.ModifyShopPrice(kind, itemId, price);
             }
 
             return ClampPrice(price);
@@ -75,7 +82,7 @@ namespace GourmetProject.Game.Meta
             return ClampPrice(price);
         }
 
-        /// <summary>是否禁止删除菜品（负面「囤积癖」）。</summary>
+        /// <summary>是否禁止删除食物（负面「囤积癖」）。</summary>
         public bool BlockRemoveDish() => AnyFlag(m => m.BlockRemoveDish());
 
         /// <summary>指定商品分类是否自动补货；碎片没有任何默认补货。</summary>
@@ -129,9 +136,9 @@ namespace GourmetProject.Game.Meta
             }
         }
 
-        // ================= 目标分修正族 =================
+        // ================= 目标美味值修正族 =================
 
-        /// <summary>按美食档位对要求分做百分比修正（可正可负，多件累加）。下限 1。</summary>
+        /// <summary>按食物档位对要求分做百分比修正（可正可负，多件累加）。下限 1。</summary>
         public int ModifyRequiredScore(int baseReq, cfg.FoodActionKind tier)
         {
             float pct = 0f;
@@ -146,7 +153,7 @@ namespace GourmetProject.Game.Meta
 
         // ================= 金币 / 利息族 =================
 
-        /// <summary>美食奖励金币按百分比修正（累加；含负面「克扣工钱」）。下限 0。</summary>
+        /// <summary>食物奖励金币按百分比修正（累加；含负面「克扣工钱」）。下限 0。</summary>
         public int ModifyMealRewardGold(int baseGold)
         {
             float pct = 0f;
@@ -163,7 +170,7 @@ namespace GourmetProject.Game.Meta
 
         public int BossCompleteGold() => SumInt(m => m.BossCompleteGold());
 
-        /// <summary>领取当前持有道具的 Boss 完成奖励；一次性模型会在领取时写入自身状态。</summary>
+        /// <summary>领取当前持有装饰品和消耗品的 Boss 完成奖励；一次性模型会在领取时写入自身状态。</summary>
         public int ClaimBossCompleteGold()
         {
             int total = 0;
@@ -228,7 +235,7 @@ namespace GourmetProject.Game.Meta
             return System.Math.Max(0f, System.Math.Min(1f, chance));
         }
 
-        /// <summary>新一周行动轴建立后，让当前持有的被动模型各自应用配置驱动的周效果。</summary>
+        /// <summary>新一周时间轴建立后，让当前持有的被动模型各自应用配置驱动的周效果。</summary>
         public void ApplyWeekTimelinePassives()
         {
             foreach (PassiveItemModel m in Models)
@@ -254,7 +261,7 @@ namespace GourmetProject.Game.Meta
             return false;
         }
 
-        /// <summary>道具指定的利息上限目标值（取最大）。</summary>
+        /// <summary>装饰品和消耗品指定的利息上限目标值（取最大）。</summary>
         public int InterestCapOverride()
         {
             int best = 0;
@@ -271,7 +278,7 @@ namespace GourmetProject.Game.Meta
 
         // ================= 不死族 =================
 
-        /// <summary>是否持有「不死」道具（名刀·加护）。</summary>
+        /// <summary>是否持有「不死」装饰品和消耗品（名刀·加护）。</summary>
         public bool HasUndying() => AnyFlag(m => m.IsUndying());
 
         // ================= 上菜族 =================
@@ -282,8 +289,23 @@ namespace GourmetProject.Game.Meta
         /// <summary>观星「每局前 N 次上菜可预见」的次数（取最大；无则 0）。</summary>
         public int StarGazeFirst() => MaxInt(m => m.StarGazeFirst());
 
-        /// <summary>每场战斗可额外丢弃的出菜数量（各道具累加）。</summary>
+        /// <summary>每场经营挑战可额外丢弃的出菜数量（各装饰品和消耗品累加）。</summary>
         public int FoodDiscardLimitBonus() => SumInt(m => m.FoodDiscardLimitBonus());
+
+        /// <summary>
+        /// 当前每场营业 / 星级评鉴的食物丢弃次数上限。
+        /// 局外 HUD 与新建经营挑战会话共用这一个入口，避免两边数值漂移。
+        /// </summary>
+        public int FoodDiscardCapacity()
+        {
+            if (_run == null)
+            {
+                return 0;
+            }
+
+            int baseLimit = _run.Tables?.TbGameBase?.FoodDeleteCount ?? 0;
+            return System.Math.Max(0, baseLimit + FoodDiscardLimitBonus());
+        }
 
         // ================= 奖励 / 多选一族 =================
 
@@ -306,7 +328,7 @@ namespace GourmetProject.Game.Meta
             return offer;
         }
 
-        /// <summary>结算 Food 战斗，并收集需要走独立通用领奖队列的被动奖励。</summary>
+        /// <summary>结算 Food 经营挑战，并收集需要走独立通用领奖队列的被动奖励。</summary>
         public IReadOnlyList<FoodSettlementReward> OnFoodBattleSettled(
             ActionExecutionContext actionContext,
             bool survived,
@@ -328,32 +350,34 @@ namespace GourmetProject.Game.Meta
             return rewards;
         }
 
+        /// <summary>每次成功传递时，目标永久倍率的累加值。</summary>
         public float SweetTransferTargetMultiplier()
         {
-            float best = 1f;
+            float total = 0f;
             foreach (PassiveItemModel m in Models)
             {
-                if (m.TryGetSweetTransferTargetMultiplier(out float v) && v > best)
+                if (m.TryGetSweetTransferTargetMultiplier(out float v) && v > 0f)
                 {
-                    best = v;
+                    total += v;
                 }
             }
 
-            return best;
+            return total;
         }
 
+        /// <summary>每次成功传递时，来源永久倍率的累加值。</summary>
         public float SweetTransferSourceMultiplier()
         {
-            float best = 1f;
+            float total = 0f;
             foreach (PassiveItemModel m in Models)
             {
-                if (m.TryGetSweetTransferSourceMultiplier(out float v) && v > best)
+                if (m.TryGetSweetTransferSourceMultiplier(out float v) && v > 0f)
                 {
-                    best = v;
+                    total += v;
                 }
             }
 
-            return best;
+            return total;
         }
 
         // ================= 事件 / 行动概率族 =================
@@ -363,6 +387,10 @@ namespace GourmetProject.Game.Meta
 
         /// <summary>遇到事件的额外概率（累加）。</summary>
         public float MoreEventsBonus() => SumFloat(m => m.MoreEventsBonus());
+
+        /// <summary>包含 Event 行动的大组权重增幅（累加）。</summary>
+        public float EventActionLargeGroupWeightBonus() =>
+            SumFloat(m => m.EventActionLargeGroupWeightBonus());
 
         /// <summary>包含 Super 行动的大组权重增幅（累加）。</summary>
         public float SuperActionLargeGroupWeightBonus() =>
@@ -376,7 +404,7 @@ namespace GourmetProject.Game.Meta
 
         // ================= 隐藏分族 =================
 
-        /// <summary>按用途聚合持有被动道具的隐藏分常驻修正。</summary>
+        /// <summary>按用途聚合持有装饰品的隐藏分常驻修正。</summary>
         public float HiddenScoreOffset(HiddenScorePurpose purpose) => SumFloat(m => m.HiddenScoreOffset(purpose));
 
         /// <summary>旧通用奖励隐藏分入口；保留为食物奖励隐藏分修正的兼容别名。</summary>
@@ -392,7 +420,7 @@ namespace GourmetProject.Game.Meta
 
         public int GoldForCakeLayers(int happyCakeLayers) => SumInt(m => m.GoldForCakeLayers(happyCakeLayers));
 
-        /// <summary>跨品鉴保留的蛋糕层数比例（取最大；0 表示不保留）。</summary>
+        /// <summary>跨经营挑战保留的蛋糕层数比例（取最大；0 表示不保留）。</summary>
         public float CakeRetainFraction()
         {
             float best = 0f;

@@ -29,7 +29,6 @@ public sealed partial class RewardSlot : Luban.BeanBase
         { var __json0 = _buf["fragmentHiddenOffset"]; if(!__json0.IsArray) { throw new SerializationException(); } FragmentHiddenOffset = new System.Collections.Generic.List<int>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { int __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  FragmentHiddenOffset.Add(__v0); }   }
         { var __json0 = _buf["goldHiddenOffset"]; if(!__json0.IsArray) { throw new SerializationException(); } GoldHiddenOffset = new System.Collections.Generic.List<int>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { int __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  GoldHiddenOffset.Add(__v0); }   }
         { if(!_buf["name"].IsString) { throw new SerializationException(); }  Name = _buf["name"]; }
-        { if(!_buf["desc"].IsString) { throw new SerializationException(); }  Desc = _buf["desc"]; }
         { if(!_buf["ruleTemplate"].IsString) { throw new SerializationException(); }  RuleTemplate = _buf["ruleTemplate"]; }
     }
 
@@ -67,15 +66,15 @@ public sealed partial class RewardSlot : Luban.BeanBase
     /// </summary>
     public readonly string PoolId;
     /// <summary>
-    /// 菜品奖励隐藏分修正
+    /// 食物奖励隐藏分修正
     /// </summary>
     public readonly System.Collections.Generic.List<int> DishHiddenOffset;
     /// <summary>
-    /// 被动道具奖励隐藏分修正
+    /// 装饰品奖励隐藏分修正
     /// </summary>
     public readonly System.Collections.Generic.List<int> PassiveItemHiddenOffset;
     /// <summary>
-    /// 胃部碎片奖励隐藏分修正
+    /// 餐桌格奖励隐藏分修正
     /// </summary>
     public readonly System.Collections.Generic.List<int> FragmentHiddenOffset;
     /// <summary>
@@ -86,10 +85,6 @@ public sealed partial class RewardSlot : Luban.BeanBase
     /// 奖励组显示名称
     /// </summary>
     public readonly string Name;
-    /// <summary>
-    /// 奖励组用途描述
-    /// </summary>
-    public readonly string Desc;
     /// <summary>
     /// 规则文案模板；仅支持 {choiceCount} 与 {requiredPickCount}。
     /// </summary>
@@ -117,7 +112,6 @@ public sealed partial class RewardSlot : Luban.BeanBase
         + "fragmentHiddenOffset:" + Luban.StringUtil.CollectionToString(FragmentHiddenOffset) + ","
         + "goldHiddenOffset:" + Luban.StringUtil.CollectionToString(GoldHiddenOffset) + ","
         + "name:" + Name + ","
-        + "desc:" + Desc + ","
         + "ruleTemplate:" + RuleTemplate + ","
         + "}";
     }

@@ -37,15 +37,15 @@ namespace cfg
         /// </summary>
         AddMult = 4,
         /// <summary>
-        /// 每占1格本材质倍率+值(翡翠)
+        /// 每占1 格本材质倍率+值(翡翠)
         /// </summary>
         AddMultFlatPerCell = 5,
         /// <summary>
-        /// 占&gt;=阈值格获得金币(金)
+        /// 占≥阈值格获得金币(金)
         /// </summary>
         GrantGoldIfCellCount = 6,
         /// <summary>
-        /// 占&gt;=阈值格1/3获得主动道具(银)
+        /// 占≥阈值格1/3获得消耗品(银)
         /// </summary>
         GrantItemRollIfCellCount = 7,
     }

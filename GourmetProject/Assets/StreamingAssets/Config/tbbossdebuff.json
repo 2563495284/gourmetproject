@@ -2,7 +2,7 @@
   {
     "id": "debuff_indulgent",
     "name": "放纵餐",
-    "desc": "获得一行格子",
+    "desc": "获得一行餐桌格",
     "weight": 1,
     "unlockCondition": "",
     "targetScoreHiddenOffset": 0.5
@@ -10,7 +10,7 @@
   {
     "id": "debuff_binge",
     "name": "暴食餐",
-    "desc": "获得一列格子",
+    "desc": "获得一列餐桌格",
     "weight": 1,
     "unlockCondition": "",
     "targetScoreHiddenOffset": 0.5
@@ -18,7 +18,7 @@
   {
     "id": "debuff_kids_meal",
     "name": "儿童餐",
-    "desc": "失去一行格子",
+    "desc": "失去一行餐桌格",
     "weight": 1,
     "unlockCondition": "",
     "targetScoreHiddenOffset": 0.1
@@ -26,7 +26,7 @@
   {
     "id": "debuff_weight_loss",
     "name": "减脂餐",
-    "desc": "失去一列格子",
+    "desc": "失去一列餐桌格",
     "weight": 1,
     "unlockCondition": "",
     "targetScoreHiddenOffset": 0.1
@@ -42,7 +42,7 @@
   {
     "id": "debuff_omakase",
     "name": "Omakase",
-    "desc": "初始食物废弃次数为0",
+    "desc": "初始食物丢弃次数为0",
     "weight": 1,
     "unlockCondition": "",
     "targetScoreHiddenOffset": 0.35
@@ -66,7 +66,7 @@
   {
     "id": "debuff_dine_and_dash",
     "name": "霸王餐",
-    "desc": "每次出菜-5金币",
+    "desc": "每次出菜 -5 金币",
     "weight": 1,
     "unlockCondition": "",
     "targetScoreHiddenOffset": 0.35
@@ -82,7 +82,7 @@
   {
     "id": "debuff_vegetarian",
     "name": "素食",
-    "desc": "部分格子被禁用",
+    "desc": "部分餐桌格被禁用",
     "weight": 1,
     "unlockCondition": "",
     "targetScoreHiddenOffset": 0.35
@@ -114,7 +114,7 @@
   {
     "id": "debuff_appetizer",
     "name": "开胃菜",
-    "desc": "前 2 个上的菜会消失",
+    "desc": "前 2 个上菜的食物会消失",
     "weight": 1,
     "unlockCondition": "",
     "targetScoreHiddenOffset": 0.35
@@ -130,7 +130,7 @@
   {
     "id": "debuff_buffet",
     "name": "自助餐",
-    "desc": "必须上至少 10 个菜",
+    "desc": "必须上菜至少 10 个食物",
     "weight": 1,
     "unlockCondition": "",
     "targetScoreHiddenOffset": 0.35

@@ -33,19 +33,19 @@ namespace cfg
         /// </summary>
         Edge = 3,
         /// <summary>
-        /// 作用域内菜数
+        /// 作用域内食物数量
         /// </summary>
         DishCount = 4,
         /// <summary>
-        /// 作用域内占格数比较阈值的菜数
+        /// 作用域内占格数比较阈值的食物数量
         /// </summary>
         DishSize = 5,
         /// <summary>
-        /// 上菜顺序在前/后的菜数
+        /// 上菜顺序在前/后的食物数量
         /// </summary>
         ServeOrder = 6,
         /// <summary>
-        /// 作用域内同BaseId的菜数
+        /// 作用域内同BaseId的食物数量
         /// </summary>
         SameDish = 7,
         /// <summary>
@@ -53,7 +53,7 @@ namespace cfg
         /// </summary>
         SameKindInRun = 8,
         /// <summary>
-        /// 本次品鉴本种数量/已结算次数
+        /// 本场经营挑战本种数量/已结算次数
         /// </summary>
         SameKindInMeal = 9,
         /// <summary>
@@ -61,11 +61,11 @@ namespace cfg
         /// </summary>
         TagCount = 10,
         /// <summary>
-        /// 作用域内形状匹配condParam的菜数
+        /// 作用域内形状匹配condParam的食物数量
         /// </summary>
         ShapeMatch = 11,
         /// <summary>
-        /// 菜谱内菜数比较阈值(闸门)
+        /// 食谱内食物数量比较阈值(闸门)
         /// </summary>
         RecipeCount = 12,
         /// <summary>
@@ -77,11 +77,11 @@ namespace cfg
         /// </summary>
         OccupiedCell = 14,
         /// <summary>
-        /// 作用域内指定分类(condParam)的菜数
+        /// 作用域内指定分类(condParam)的食物数量
         /// </summary>
         CategoryCount = 15,
         /// <summary>
-        /// 作用域内带某行为类技能(condParam)的菜数
+        /// 作用域内带某行为类技能(condParam)的食物数量
         /// </summary>
         SkillTypeCount = 16,
         /// <summary>

@@ -514,7 +514,7 @@
 <body>
   <header>
     <h1>行动日程 GM：单局与频率统计</h1>
-    <p class="hint">配置基准模拟：按当前配置生成 1–4 周日常行动。不会结算局内事件、奖励和道具效果，因此不代表完整实机流程。</p>
+    <p class="hint">配置基准模拟：按当前配置生成 1–4 周普通行动。不会结算局内事件、奖励和装饰品和消耗品效果，因此不代表完整实机流程。</p>
   </header>
 
   <main>
@@ -529,7 +529,7 @@
         <input id="seed" value="gm-preview">
       </label>
       <label>
-        角色
+        经营方向
         <select id="character"></select>
       </label>
       <label>
@@ -558,7 +558,7 @@
       <div class="panel-head">
         <div>
           <h2>随机一局：第 1–4 周</h2>
-          <small>主表聚焦日常行动的大组、小组；候选、计数和轴节点可展开查看。</small>
+          <small>主表聚焦普通行动的大组、小组；候选、计数和轴节点可展开查看。</small>
         </div>
         <div class="panel-actions">
           <button id="runSingleBtn">按当前种子重跑</button>
@@ -589,7 +589,7 @@
         </div>
       </div>
       <div class="explain">
-        每局的第 1–4 周都会生成设定数量的日常行动；行动轴到达终点后，后续抽取的天数停在终点。修改次数后，请重新运行单局或批量统计。行动占比 = 该大组出现次数 ÷ 该周全部日常行动步。<code>maxGuaranteeCounts</code> 是候选优先范围，不是硬上限；全部达到后会进入自由随机并允许继续超过。
+        每局的第 1–4 周都会生成设定数量的普通行动；时间轴到达终点后，后续抽取的天数停在终点。修改次数后，请重新运行单局或批量统计。行动占比 = 该大组出现次数 ÷ 该周全部普通行动步。<code>maxGuaranteeCounts</code> 是候选优先范围，不是硬上限；全部达到后会进入自由随机并允许继续超过。
       </div>
       <div class="progress" aria-label="统计进度">
         <div id="progressFill" class="progress-fill"></div>
@@ -1168,7 +1168,7 @@
         }
         const timeline = tables.timelineById.get(timelineId);
         if (!timeline) {
-          addDiagnostic(`第 ${run.weekIndex} 周配置了不存在的行动轴：${timelineId}`);
+          addDiagnostic(`第 ${run.weekIndex} 周配置了不存在的时间轴：${timelineId}`);
           continue;
         }
         candidates.push(timeline);
@@ -1180,7 +1180,7 @@
         run.timelineLengthDays = 7;
         run.currentDay = 0;
         run.actionStepIndex = 0;
-        addDiagnostic(`第 ${run.weekIndex} 周无匹配行动轴，回退 7 天空轴。`);
+        addDiagnostic(`第 ${run.weekIndex} 周无匹配时间轴，回退 7 天空轴。`);
         return null;
       }
 
@@ -1477,10 +1477,10 @@
         <section class="week">
           <h3>
             <span>第 ${week.weekIndex} 周：${esc(timelineName)} / ${week.lengthDays} 天</span>
-            <span class="chip">${week.actions.length} 次日常行动</span>
+            <span class="chip">${week.actions.length} 次普通行动</span>
           </h3>
           <details>
-            <summary>查看行动轴与节点</summary>
+            <summary>查看时间轴与节点</summary>
             <div class="chips">${nodeChips || `<span class="chip">无节点</span>`}</div>
             ${renderAxis(week)}
           </details>
@@ -1497,7 +1497,7 @@
                   <th>详情</th>
                 </tr>
               </thead>
-              <tbody>${rows || `<tr><td colspan="7">本周没有生成日常行动。</td></tr>`}</tbody>
+              <tbody>${rows || `<tr><td colspan="7">本周没有生成普通行动。</td></tr>`}</tbody>
             </table>
           </div>
         </section>
@@ -1515,7 +1515,7 @@
       return `
         <section class="sample">
           <h2>
-            <span>${esc(game.character?.name || game.character?.id || "无角色")}</span>
+            <span>${esc(game.character?.name || game.character?.id || "无经营方向")}</span>
             <span class="chip">种子：${esc(game.seedText)} / 共 ${totalActions} 次行动</span>
           </h2>
           <div class="summary-grid">${summaries}</div>

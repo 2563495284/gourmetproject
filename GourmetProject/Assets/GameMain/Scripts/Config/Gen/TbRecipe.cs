@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 菜谱：直接配置有序 groupIds 与带权数量方案 rollPlans；随机小组内容由 TbRecipeGroup 配置。
+/// 食谱：直接配置有序 groupIds 与带权数量方案 rollPlans；随机小组内容由 TbRecipeGroup 配置。
 /// </summary>
 public partial class TbRecipe
 {

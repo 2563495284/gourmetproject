@@ -45,7 +45,7 @@ namespace GourmetProject.Game.Meta
         }
     }
 
-    /// <summary>美食行为：普通/困难读 TbFood 隐藏分目标；Boss 槽取唯一 Boss 美食并随机 Debuff，产出 Boss 战。</summary>
+    /// <summary>食物行为：普通/困难读 TbFood 隐藏分目标；Boss 槽取唯一 Boss 食物并随机 Debuff，产出 Boss 战。</summary>
     public sealed class FoodBehaviorHandler : IActionBehaviorHandler
     {
         public cfg.ActionBehavior Behavior => cfg.ActionBehavior.Food;

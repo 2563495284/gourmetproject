@@ -16,8 +16,8 @@ using TMPro;
 namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>
-    /// 唯一菜谱页面：作为 <c>BattleForm</c> 中部内容区的复用状态视图。
-    /// 承载普通查看、商店删除、事件删除和主动道具选菜流程。
+    /// 唯一食谱页面：作为 <c>BattleForm</c> 中部内容区的复用状态视图。
+    /// 承载普通查看、商店删除、事件删除和消耗品选菜流程。
     /// </summary>
     public sealed partial class RecipeReadonlyBookView : MonoBehaviour
     {
@@ -73,7 +73,7 @@ namespace GourmetProject.Game.UI.Meta
                 getFoodTips);
         }
 
-        /// <summary>只读查看单本菜谱：禁拖拽，菜品只响应悬停 tips。</summary>
+        /// <summary>只读查看单本食谱：禁拖拽，食物只响应悬停 tips。</summary>
         public void OpenForReadonlyBook(
             GameRun run,
             int bookIndex,
@@ -132,7 +132,7 @@ namespace GourmetProject.Game.UI.Meta
         }
 
         /// <summary>
-        /// 以主动道具选择态打开菜谱面板：禁用拖拽/删除，只允许点击菜品进入确认。
+        /// 以消耗品选择态打开食谱面板：禁用拖拽/删除，只允许点击食物进入确认。
         /// </summary>
         public void OpenForActiveRecipeDish(
             GameRun run,

@@ -8,7 +8,7 @@ using GourmetProject.Game.Run;
 namespace GourmetProject.Game.Meta
 {
     /// <summary>
-    /// 美食明细解析 + Boss 解析。Boss 固定为 <see cref="cfg.Food"/> 中唯一 actionKind=Feast 的行；
+    /// 食物明细解析 + Boss 解析。Boss 固定为 <see cref="cfg.Food"/> 中唯一 actionKind=Feast 的行；
     /// 局内变化由 <see cref="RollBossDebuff"/> 不放回随机承担。
     /// </summary>
     public static class BossService
@@ -27,7 +27,7 @@ namespace GourmetProject.Game.Meta
                 }
             }
 
-            Log.Warning($"第 {run?.WeekIndex ?? 0} 周未配置 Boss 美食（actionKind=Feast）。", Tag);
+            Log.Warning($"第 {run?.WeekIndex ?? 0} 周未配置 Boss 食物（actionKind=Feast）。", Tag);
             return null;
         }
 
@@ -77,7 +77,7 @@ namespace GourmetProject.Game.Meta
             return candidates[rng.WeightedPickIndex(weights)];
         }
 
-        /// <summary>预览行动轴 Boss 节点将使用的 Debuff，不推进对应随机流。</summary>
+        /// <summary>预览时间轴 Boss 节点将使用的 Debuff，不推进对应随机流。</summary>
         public static cfg.BossDebuff PreviewBossDebuff(GameRun run, cfg.TimelineNode node)
         {
             if (run == null || node == null)
@@ -156,10 +156,10 @@ namespace GourmetProject.Game.Meta
         }
     }
 
-    /// <summary>美食明细解析：把薄壳 Food 行动映射到其关联的 <see cref="cfg.Food"/> 明细。</summary>
+    /// <summary>食物明细解析：把薄壳 Food 行动映射到其关联的 <see cref="cfg.Food"/> 明细。</summary>
     public static class FoodService
     {
-        /// <summary>取 Food 行动关联的美食明细；非 Food 行为或未配 foodId 返回 null。</summary>
+        /// <summary>取 Food 行动关联的食物明细；非 Food 行为或未配 foodId 返回 null。</summary>
         public static cfg.Food Resolve(cfg.Tables tables, cfg.GameAction action)
         {
             if (action == null || action.Behavior != cfg.ActionBehavior.Food || string.IsNullOrEmpty(action.FoodId))
@@ -208,7 +208,7 @@ namespace GourmetProject.Game.Meta
             return IsFeastFood(food);
         }
 
-        /// <summary>该 Food 行动是否为 Boss 槽（Food 行为且未绑定具体 foodId=执行时取唯一 Boss 美食）。</summary>
+        /// <summary>该 Food 行动是否为 Boss 槽（Food 行为且未绑定具体 foodId=执行时取唯一 Boss 食物）。</summary>
         public static bool IsBossSlot(cfg.GameAction action)
         {
             return action != null && action.Behavior == cfg.ActionBehavior.Food && string.IsNullOrEmpty(action.FoodId);

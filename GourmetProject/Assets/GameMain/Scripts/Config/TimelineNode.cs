@@ -1,4 +1,4 @@
-// 运行时行动轴节点模型。配置节点内嵌于 Timeline，运行时快照转换为此类型供 UI/结算使用。
+// 运行时时间轴节点模型。配置节点内嵌于 Timeline，运行时快照转换为此类型供 UI/结算使用。
 
 using Luban;
 using Luban.SimpleJSON;
@@ -26,7 +26,7 @@ public sealed partial class TimelineNode : Luban.BeanBase
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 所属行动轴模板 id
+    /// 所属时间轴模板 id
     /// </summary>
     public readonly string TimelineId;
     /// <summary>

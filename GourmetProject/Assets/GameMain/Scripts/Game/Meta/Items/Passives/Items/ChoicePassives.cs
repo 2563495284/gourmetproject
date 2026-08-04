@@ -39,29 +39,32 @@ namespace GourmetProject.Game.Meta.Passives
 
         public override string InfoText => _normalFoodCount.ToString(CultureInfo.InvariantCulture);
 
-        public override RewardOffer ModifyBattleRewardOffer(
-            RewardOffer offer,
+        public override string FoodBattleSettlementRewardTitle => _title;
+
+        public override RewardOffer OnFoodBattleSettled(
             ActionExecutionContext actionContext,
+            bool survived,
             IRandomStream rng)
         {
-            if (offer == null || rng == null || !IsNormalFoodAction(actionContext))
+            if (!IsNormalFoodAction(actionContext))
             {
-                return offer;
+                return null;
             }
 
             _normalFoodCount++;
-            int every = DefaultEvery;
+            int every = System.Math.Max(1, PassiveParam.ParseInt(Param, "every", DefaultEvery));
             if (_normalFoodCount < every)
             {
                 RefreshInfoText();
-                return offer;
+                return null;
             }
 
             _normalFoodCount -= every;
-            RewardChoiceGroup group = RewardGranter.BuildConfigChoiceGroup(Run, rng, _slotGroupId, _title, actionContext);
-            if (group != null && group.HasChoices)
+            RewardOffer offer = survived && rng != null
+                ? RewardGranter.BuildConfigOffer(Run, rng, _slotGroupId, actionContext)
+                : null;
+            if (offer != null)
             {
-                offer.AddFixedGroup(group);
                 Flash();
             }
 
@@ -90,7 +93,7 @@ namespace GourmetProject.Game.Meta.Passives
     public sealed class ExtraFoodChoiceModel : NormalFoodExtraChoiceModel
     {
         public ExtraFoodChoiceModel()
-            : base("dish_choice_3", "额外美食")
+            : base("dish_choice_3", "额外食物")
         {
         }
     }
@@ -105,7 +108,7 @@ namespace GourmetProject.Game.Meta.Passives
 
         public override string InfoText => _superFoodCount.ToString(CultureInfo.InvariantCulture);
 
-        public override string FoodBattleSettlementRewardTitle => "额外道具";
+        public override string FoodBattleSettlementRewardTitle => "额外装饰品和消耗品";
 
         public override RewardOffer OnFoodBattleSettled(
             ActionExecutionContext actionContext,

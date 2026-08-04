@@ -7,7 +7,7 @@ namespace GourmetProject.Game.Settings
 {
     /// <summary>
     /// 设置项目录：集中声明界面要展示的全部设置项。这是设置系统的“可扩展入口”——
-    /// 想加新设置（例如战斗倍速）只需在 <see cref="BuildDefault"/> 里再 Add 一个描述符，
+    /// 想加新设置（例如经营挑战倍速）只需在 <see cref="BuildDefault"/> 里再 Add 一个描述符，
     /// UI 会自动按其 <see cref="SettingControlType"/> 渲染对应控件，无需改动 SettingsForm。
     /// </summary>
     public static class SettingsCatalog
@@ -207,12 +207,12 @@ namespace GourmetProject.Game.Settings
             });
 
             // —— 扩展示例（默认注释关闭）——
-            // 想给游戏加“战斗倍速”，把下面这段取消注释即可，无需改 SettingsForm：
+            // 想给游戏加“经营挑战倍速”，把下面这段取消注释即可，无需改 SettingsForm：
             //
             // list.Add(new SettingDescriptor
             // {
             //     Id = "Gameplay.Speed",
-            //     Label = "战斗倍速",
+            //     Label = "经营挑战倍速",
             //     ControlType = SettingControlType.Slider,
             //     SliderMin = 1f,
             //     SliderMax = 4f,

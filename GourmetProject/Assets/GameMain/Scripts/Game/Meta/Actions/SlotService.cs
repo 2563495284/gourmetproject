@@ -281,7 +281,7 @@ namespace GourmetProject.Game.Meta
         }
 
         /// <summary>
-        /// 第 0 项是空奖，后续项与 RewardSlots 同序。被动道具先将归一后的总中奖率
+        /// 第 0 项是空奖，后续项与 RewardSlots 同序。装饰品先将归一后的总中奖率
         /// 乘以 (1 + bonus)，奖励槽内部比例保持不变，空奖占剩余概率。
         /// </summary>
         internal static List<float> BuildRollWeights(GameRun run, SlotMachineConfig config)

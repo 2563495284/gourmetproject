@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace GourmetProject.Game.UI.Hud
 {
-    /// <summary>行动轴节点的 Prefab 视图：图标、程序化尾巴与选择态描边。</summary>
+    /// <summary>时间轴节点的 Prefab 视图：图标、程序化尾巴与选择态描边。</summary>
     [RequireComponent(typeof(RectTransform), typeof(CanvasGroup), typeof(TimelineAxisPointerTarget))]
     public sealed class TimelineNodeBubbleView : MonoBehaviour
     {

@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 被动道具：永久常驻/获得时生效，道具池按隐藏分筛选。specialTags 用 | 分隔，空串=无。
+/// 装饰品：永久常驻或获得时生效，装饰品池按隐藏分筛选。specialTags 用 | 分隔，空串=无。
 /// </summary>
 public partial class TbPassiveItem
 {

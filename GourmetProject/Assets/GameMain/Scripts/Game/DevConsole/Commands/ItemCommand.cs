@@ -7,14 +7,14 @@ using GourmetProject.Runtime;
 
 namespace GourmetProject.Game.DevConsole.Commands
 {
-    /// <summary>给当前对局添加道具（被动 / 主动，参考 STS2 <c>RelicConsoleCmd</c> 的 id 补全）。</summary>
+    /// <summary>给当前对局添加装饰品和消耗品（被动 / 主动，参考 STS2 <c>RelicConsoleCmd</c> 的 id 补全）。</summary>
     public sealed class ItemCommand : ConsoleCommand
     {
         public override string CmdName => "item";
 
         public override string Args => "<item-id:string>";
 
-        public override string Description => "给玩家添加一个道具（被动/主动，按 id）。";
+        public override string Description => "给玩家添加一个装饰品和消耗品（被动/主动，按 id）。";
 
         public override CmdResult Execute(string[] args)
         {
@@ -33,7 +33,7 @@ namespace GourmetProject.Game.DevConsole.Commands
             ItemDefinition def = ItemDefinition.Get(tables, itemId);
             if (def == null)
             {
-                return CmdResult.Fail($"找不到道具 '{itemId}'。");
+                return CmdResult.Fail($"找不到装饰品和消耗品 '{itemId}'。");
             }
 
             GameRun run = GameRunContext.Current;
@@ -41,7 +41,7 @@ namespace GourmetProject.Game.DevConsole.Commands
             BattleForm.Active?.RefreshPersistentHud();
 
             string kind = def.IsPassive ? "被动" : "主动";
-            return CmdResult.Ok($"已添加{kind}道具 '{def.Id}'（{def.Name}）。结果：{result.Outcome}");
+            return CmdResult.Ok($"已添加{kind}装饰品和消耗品 '{def.Id}'（{def.Name}）。结果：{result.Outcome}");
         }
 
         public override IReadOnlyList<string> GetCompletions(string[] args)

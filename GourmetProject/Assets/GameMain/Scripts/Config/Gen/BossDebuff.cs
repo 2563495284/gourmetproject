@@ -51,7 +51,7 @@ public sealed partial class BossDebuff : Luban.BeanBase
     /// </summary>
     public readonly string UnlockCondition;
     /// <summary>
-    /// 目标分隐藏分修正；加到 TargetScore 指数输入。
+    /// 目标美味值隐藏分修正；加到 TargetScore 指数输入。
     /// </summary>
     public readonly float TargetScoreHiddenOffset;
    

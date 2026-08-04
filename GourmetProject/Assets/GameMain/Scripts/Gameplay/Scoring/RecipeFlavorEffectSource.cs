@@ -6,10 +6,10 @@ using GourmetProject.Gameplay.Model;
 namespace GourmetProject.Gameplay.Scoring
 {
     /// <summary>
-    /// 酸/咸「未上菜菜谱结算」来源：结算开始时（<see cref="ScorePhase.BeforeAll"/>），
-    /// 遍历仍未上菜的菜谱条目，若某未上菜菜带酸/咸风味，则作用于场上全部参与结算的食物：
+    /// 酸/咸「未上菜食谱结算」来源：结算开始时（<see cref="ScorePhase.BeforeAll"/>），
+    /// 遍历仍未上菜的食谱条目，若某未上菜菜带酸/咸风味，则作用于场上全部参与结算的食物：
     /// 酸 → 每个场上食物倍率 ×EffectValue（1.5）；咸 → 每个场上食物基础分 +EffectValue（20）。
-    /// 多个未上菜酸/咸条目各触发一次；遍历顺序为菜谱从左到右（槽索引升序），
+    /// 多个未上菜酸/咸条目各触发一次；遍历顺序为食谱从左到右（槽索引升序），
     /// 同槽内从大到小（占格数降序）。
     /// </summary>
     public sealed class RecipeFlavorEffectSource : IScoreEffectSource

@@ -6,7 +6,7 @@
     "category": "cake",
     "effectType": 1,
     "valuePerLayer": 3,
-    "desc": "层数≥1：蛋糕基础分 +3×层数"
+    "desc": "层数≥1：蛋糕基础分数 +3×层数"
   },
   {
     "id": "clb_multflat",

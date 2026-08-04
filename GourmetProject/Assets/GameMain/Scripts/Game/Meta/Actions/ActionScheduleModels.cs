@@ -85,21 +85,21 @@ namespace GourmetProject.Game.Meta
         public bool IsValid => Action != null;
 
         /// <summary>
-        /// 来源标识：用于生成确定性的随机流 key（如 Boss 抽取、战斗流）。
-        /// 放置来源（行动轴节点）设为节点 id；随机来源可留空，由执行侧按步数/天数拼 key。
+        /// 来源标识：用于生成确定性的随机流 key（如 Boss 抽取、经营挑战流）。
+        /// 放置来源（时间轴节点）设为节点 id；随机来源可留空，由执行侧按步数/天数拼 key。
         /// </summary>
         public string SourceKey { get; set; } = string.Empty;
 
-        /// <summary>目标分曲线使用的天数覆盖值；行动轴 Boss 节点用节点所在天数，而非玩家当前游标。</summary>
+        /// <summary>目标美味值曲线使用的天数覆盖值；时间轴 Boss 节点用节点所在天数，而非玩家当前游标。</summary>
         public float? TargetScoreDayOverride { get; set; }
 
-        /// <summary>本次日常行动已应用半日券；提交时消费一层。</summary>
+        /// <summary>本次普通行动已应用半日券；提交时消费一层。</summary>
         public bool HalfDayBuffApplied { get; set; }
 
         /// <summary>额外节点执行：不推进天数/行动步数，也不改变原节点完成状态。</summary>
         public bool IsExtraTimelineExecution { get; set; }
 
-        /// <summary>选择日常行动时快照的时间停摆概率；获得/失去道具不追溯当前行动。</summary>
+        /// <summary>选择普通行动时快照的时间停摆概率；获得/失去装饰品和消耗品不追溯当前行动。</summary>
         public float TimelineStopChance { get; set; }
 
         /// <summary>自然节点本次执行轮次与总次数；Boss 和旧档默认 1/1。</summary>
@@ -112,8 +112,8 @@ namespace GourmetProject.Game.Meta
         public int TimelineStopDay { get; set; }
 
         /// <summary>
-        /// 只有玩家从日常行动选项提交的上下文才消费天数、行动步数和半日券。
-        /// 行动轴节点统一带 SourceKey；额外节点还会额外标记 IsExtraTimelineExecution。
+        /// 只有玩家从普通行动选项提交的上下文才消费天数、行动步数和半日券。
+        /// 时间轴节点统一带 SourceKey；额外节点还会额外标记 IsExtraTimelineExecution。
         /// </summary>
         public bool IsDailyAction =>
             !IsExtraTimelineExecution && string.IsNullOrEmpty(SourceKey);

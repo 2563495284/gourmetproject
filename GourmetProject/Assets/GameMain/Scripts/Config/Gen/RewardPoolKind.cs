@@ -21,11 +21,11 @@ namespace cfg
         ActiveItem = 2,
         Fragment = 3,
         /// <summary>
-        /// 强化类主动道具池
+        /// 强化类消耗品池
         /// </summary>
         ActiveItemStrengthen = 4,
         /// <summary>
-        /// 调整类主动道具池
+        /// 调整类消耗品池
         /// </summary>
         ActiveItemAdjust = 5,
     }

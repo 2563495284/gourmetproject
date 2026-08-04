@@ -580,7 +580,7 @@
     ],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{cscope}食物个数达 {tiers} 时\n倍率 {tiervals}",
+    "descTemplate": "{cscope}食物数量达 {tiers} 时\n倍率 {tiervals}",
     "termId": ""
   },
   {
@@ -1018,7 +1018,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "将餐桌格子总数\n加至欢乐蛋糕层数",
+    "descTemplate": "将餐桌格总数\n加至欢乐蛋糕层数",
     "termId": "clb"
   },
   {
@@ -1124,7 +1124,7 @@
     "actionParam": [],
     "isPassive": false,
     "signed": true,
-    "descTemplate": "{ascope}食物把食物个数加入倍率",
+    "descTemplate": "{ascope}食物把食物数量加入倍率",
     "termId": ""
   },
   {

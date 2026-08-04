@@ -129,7 +129,7 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(
                     _database.GetDish(dishId),
                     Is.Not.Null,
-                    $"初始菜谱引用了未生成的菜品 '{dishId}'。");
+                    $"初始食谱引用了未生成的食物 '{dishId}'。");
             }
 
             bool rolledFourteen = false;
@@ -143,7 +143,7 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(
                     rolled.Count == 14 || rolled.Count == 15,
                     Is.True,
-                    $"初始菜谱数量应为 14 或 15，实际为 {rolled.Count}。");
+                    $"初始食谱数量应为 14 或 15，实际为 {rolled.Count}。");
 
                 for (int arrow = 1; arrow <= 4; arrow++)
                 {

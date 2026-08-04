@@ -3,9 +3,9 @@ using System.Collections.Generic;
 namespace GourmetProject.Gameplay.Tags
 {
     /// <summary>
-    /// 菜品「技能」与「风味」合成，执行策划文档规则：
-    /// 技能数量无上限，全部保留（可被道具追加）；风味单槽，后者替换前者，
-    /// 特殊道具可通过 removeFlavorCap 解除「只能存在单个风味」的上限。
+    /// 食物「技能」与「风味」合成，执行策划文档规则：
+    /// 技能数量无上限，全部保留（可被装饰品和消耗品追加）；风味单槽，后者替换前者，
+    /// 特殊装饰品和消耗品可通过 removeFlavorCap 解除「只能存在单个风味」的上限。
     /// </summary>
     public static class TagComposer
     {
@@ -51,7 +51,7 @@ namespace GourmetProject.Gameplay.Tags
 
         /// <summary>
         /// 风味合成（可解除单槽上限）：removeFlavorCap=false 时最多保留最后一个；
-        /// 为 true 时（特殊道具）保留全部非空风味。
+        /// 为 true 时（特殊装饰品和消耗品）保留全部非空风味。
         /// </summary>
         public static List<string> ComposeFlavors(IEnumerable<string> flavorIds, bool removeFlavorCap = false)
         {

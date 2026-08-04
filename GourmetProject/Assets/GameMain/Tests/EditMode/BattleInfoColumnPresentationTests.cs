@@ -3,6 +3,7 @@ using System.Linq;
 using GourmetProject.Config;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Adapter;
+using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Battle;
 using GourmetProject.Game.UI.Battle.View;
@@ -49,13 +50,15 @@ namespace GourmetProject.Tests.EditMode
                 BattleSession session = CreateSession(requiredScore: 120);
                 session.ConfigureFoodDiscardLimit(3);
 
-                column.Refresh(run, session, GameplayView.ActionSelect, null);
+                column.Refresh(run, null, GameplayView.ActionSelect, null);
 
                 Assert.That(TextReference(column, "_weekText").text, Is.EqualTo("第一周"));
                 Assert.That(TextReference(column, "_goldText").text, Is.EqualTo(run.Gold.ToString()));
                 Assert.That(TextReference(column, "_scoreCurrentText").text, Is.EqualTo("-"));
                 Assert.That(TextReference(column, "_scoreRequiredText").text, Is.EqualTo("-"));
-                Assert.That(TextReference(column, "_discardCountText").text, Is.EqualTo("--"));
+                Assert.That(
+                    TextReference(column, "_discardCountText").text,
+                    Is.EqualTo(new ItemRuntime(run).FoodDiscardCapacity().ToString("D2")));
 
                 column.Refresh(run, session, GameplayView.Food, null);
 
@@ -71,6 +74,7 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(TextReference(column, "_viewTableLabelText").text, Is.EqualTo("查看餐桌："));
                 Assert.That(TextReference(column, "_viewTableCountText").gameObject.activeSelf, Is.True);
                 Assert.That(ButtonReference(column, "_viewTableButton").interactable, Is.False);
+                Assert.That(TextReference(column, "_discardCountText").text, Is.EqualTo("03"));
             }
             finally
             {

@@ -26,7 +26,7 @@
   {
     "id": "t_rust",
     "name": "鲜",
-    "desc": "结算时\n+10金币",
+    "desc": "结算时\n+10 金币",
     "effectType": 7,
     "effectParam": [],
     "effectValue": [
@@ -50,7 +50,7 @@
   {
     "id": "t_sour",
     "name": "酸",
-    "desc": "结算开始时，若在菜谱中\n场上食物倍率 ×1.5",
+    "desc": "结算开始时，若在食谱中\n场上食物倍率 ×1.5",
     "effectType": 10,
     "effectParam": [],
     "effectValue": [
@@ -62,7 +62,7 @@
   {
     "id": "t_salty",
     "name": "咸",
-    "desc": "结算开始时，若在菜谱中\n场上食物基础分+20",
+    "desc": "结算开始时，若在食谱中\n场上食物基础分数 +20",
     "effectType": 11,
     "effectParam": [],
     "effectValue": [

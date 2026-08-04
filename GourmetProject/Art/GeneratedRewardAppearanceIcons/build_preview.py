@@ -10,12 +10,12 @@ FINAL = ROOT / "final"
 ITEMS = [
     ("reward_appearance_gold_small", "一些金币"),
     ("reward_appearance_table_cell_small", "餐桌格"),
-    ("reward_appearance_passive_choice_2", "道具2选1"),
+    ("reward_appearance_passive_choice_2", "装饰品和消耗品2选1"),
     ("reward_appearance_strengthen_choice_2", "强化箱2选1"),
     ("reward_appearance_adjust_choice_2", "调整单2选1"),
     ("reward_appearance_gold_large", "大量金币"),
     ("reward_appearance_table_cell_large", "大餐桌格"),
-    ("reward_appearance_passive_choice_4", "道具4选1"),
+    ("reward_appearance_passive_choice_4", "装饰品和消耗品4选1"),
     ("reward_appearance_strengthen_choice_4", "强化箱4选1"),
     ("reward_appearance_adjust_choice_4", "调整单4选1"),
 ]

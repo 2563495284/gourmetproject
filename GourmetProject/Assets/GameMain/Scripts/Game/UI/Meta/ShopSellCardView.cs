@@ -13,8 +13,8 @@ using TMPro;
 namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>
-    /// 商店「处理」单张已持有道具/菜谱菜品卡视图。固定结构在 ShopSellCardView.prefab，
-    /// 道具名与售价由 <see cref="Bind"/> 数据驱动填充。
+    /// 商店「处理」单张已持有装饰品和消耗品/食谱食物卡视图。固定结构在 ShopSellCardView.prefab，
+    /// 装饰品和消耗品名与售价由 <see cref="Bind"/> 数据驱动填充。
     /// </summary>
     public sealed class ShopSellCardView : MonoBehaviour
     {
@@ -26,7 +26,7 @@ namespace GourmetProject.Game.UI.Meta
             Bind(item.Name, $"卖 +{price}", onSell);
         }
 
-        /// <summary>通用「处理」绑定（出售道具 / 菜谱管理删除菜品）。</summary>
+        /// <summary>通用「处理」绑定（出售装饰品和消耗品 / 食谱管理删除食物）。</summary>
         public void Bind(string name, string buttonLabel, Action onClick)
         {
             _nameText.text = name;
