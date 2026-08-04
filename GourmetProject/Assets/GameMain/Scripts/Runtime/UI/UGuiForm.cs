@@ -32,6 +32,12 @@ namespace GourmetProject.Runtime.UI
 
         protected override void OnOpen(object userData)
         {
+            // DefaultUIGroupHelper does not map GameFramework's logical form depth
+            // to the uGUI hierarchy. A form restored from the object pool therefore
+            // keeps its old sibling index and can render below forms created later.
+            // Move it before activation so every newly opened form is immediately
+            // rendered at the front of its UI group.
+            CachedTransform.SetAsLastSibling();
             base.OnOpen(userData);
         }
 

@@ -310,7 +310,7 @@ namespace GourmetProject.Game.UI.Meta
             TMP_Text label = BuyLabel;
             if (label != null)
             {
-                label.text = _isStocked ? $"购买 {price}" : string.Empty;
+                label.text = _isStocked ? $"金币：{price}" : string.Empty;
             }
         }
 

@@ -56,6 +56,9 @@ namespace GourmetProject.Game.UI.Meta
         private DishIconPreviewMode _previewMode;
         private bool _warehouseClickable;
         private bool _suppressClick;
+        private Tween _failureTween;
+        private RectTransform _failureFeedbackRect;
+        private Vector2 _failureFeedbackOrigin;
 
         public int BookIndex { get; private set; }
         public int DishIndex { get; private set; }
@@ -252,6 +255,51 @@ namespace GourmetProject.Game.UI.Meta
             });
         }
 
+        /// <summary>播放与商店购买失败一致的横向衰减晃动。</summary>
+        public void PlayInteractionFailed()
+        {
+            EnsureDragStateRefs();
+            ResolveDishPreview();
+            StopInteractionFailedFeedback();
+
+            _failureFeedbackRect = _dishPreview != null
+                ? _dishPreview.transform as RectTransform
+                : _rect;
+            if (_failureFeedbackRect == null)
+            {
+                return;
+            }
+
+            _failureFeedbackOrigin = _failureFeedbackRect.anchoredPosition;
+            _failureTween = DOVirtual.Float(0f, 1f, 0.25f, t =>
+                {
+                    if (_failureFeedbackRect == null)
+                    {
+                        return;
+                    }
+
+                    float offset = Mathf.Sin(t * Mathf.PI * 12f)
+                        * 9f
+                        * (1f - t);
+                    _failureFeedbackRect.anchoredPosition =
+                        _failureFeedbackOrigin + new Vector2(offset, 0f);
+                })
+                .SetEase(Ease.Linear)
+                .SetUpdate(true)
+                .SetLink(gameObject)
+                .OnComplete(() =>
+                {
+                    if (_failureFeedbackRect != null)
+                    {
+                        _failureFeedbackRect.anchoredPosition =
+                            _failureFeedbackOrigin;
+                    }
+
+                    _failureTween = null;
+                    _failureFeedbackRect = null;
+                });
+        }
+
         public void OnBeginDrag(PointerEventData eventData)
         {
             if (!_dragEnabled)
@@ -365,6 +413,11 @@ namespace GourmetProject.Game.UI.Meta
             HideHover();
         }
 
+        private void OnDisable()
+        {
+            StopInteractionFailedFeedback();
+        }
+
         private void HideHover()
         {
             if (!_hovered)
@@ -375,6 +428,19 @@ namespace GourmetProject.Game.UI.Meta
             _hovered = false;
             SetWarehouseHighlight(false);
             _onHoverExit?.Invoke(this);
+        }
+
+        private void StopInteractionFailedFeedback()
+        {
+            _failureTween?.Kill();
+            _failureTween = null;
+            if (_failureFeedbackRect != null)
+            {
+                _failureFeedbackRect.anchoredPosition =
+                    _failureFeedbackOrigin;
+            }
+
+            _failureFeedbackRect = null;
         }
 
         private void PrepareAsFloating(Vector3 worldCenter)

@@ -372,9 +372,12 @@ namespace GourmetProject.Game.UI.Meta
             RecipeEditDishView dish = Instantiate(_dishPrefab, dishContainer);
             dish.gameObject.name =
                 $"RecipeDish_{bookIndex + 1}_{dishIndex + 1}";
+            bool shopDeleteLimitExhausted = state is ShopDeleteDishState
+                && ShopService.DeleteDishRemaining(_run) <= 0;
             bool canClickDish = state.CanClickDish
                 && (!(state is ShopDeleteDishState)
-                    || ShopService.CanDeleteDish(_run));
+                    || ShopService.CanDeleteDish(_run)
+                    || shopDeleteLimitExhausted);
             dish.Bind(
                 def?.Name ?? dishId,
                 DishShapeText(dishId),
