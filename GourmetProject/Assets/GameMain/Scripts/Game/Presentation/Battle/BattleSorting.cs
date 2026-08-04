@@ -1,4 +1,5 @@
 using UnityEngine;
+using TMPro;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 
@@ -53,6 +54,27 @@ namespace GourmetProject.Game.Presentation.Battle
 
             renderer.sortingLayerName = layer;
             renderer.sortingOrder = order;
+        }
+
+        /// <summary>
+        /// 把世界空间 TMP 主网格及多图集生成的全部子网格归入同一渲染层。
+        /// 中文字形可能位于 Atlas 1+；此时只设置 text.renderer 会让 TMP_SubMesh 留在 Default 层。
+        /// </summary>
+        public static void Apply(TextMeshPro text, string layer, int order = 0)
+        {
+            if (text == null)
+            {
+                return;
+            }
+
+            text.ForceMeshUpdate(true, true);
+            Apply(text.renderer, layer, order);
+
+            TMP_SubMesh[] subMeshes = text.GetComponentsInChildren<TMP_SubMesh>(true);
+            for (int i = 0; i < subMeshes.Length; i++)
+            {
+                Apply(subMeshes[i].renderer, layer, order);
+            }
         }
     }
 }

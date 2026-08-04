@@ -45,7 +45,15 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void ApplySortingOrder()
         {
-            BattleSorting.Apply(_valueMeshRenderer, _sortingLayer, _sortingOrder + 2);
+            if (_valueText != null)
+            {
+                BattleSorting.Apply(_valueText, _sortingLayer, _sortingOrder + 2);
+            }
+            else
+            {
+                BattleSorting.Apply(_valueMeshRenderer, _sortingLayer, _sortingOrder + 2);
+            }
+
             BattleSorting.Apply(_background, _sortingLayer, _sortingOrder);
             BattleSorting.Apply(_icon, _sortingLayer, _sortingOrder + 3);
         }

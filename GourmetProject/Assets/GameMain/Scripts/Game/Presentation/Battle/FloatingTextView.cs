@@ -91,12 +91,17 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void ApplySortingOrder()
         {
-            BattleSorting.Apply(_effectMeshRenderer, BattleSorting.Fx, _sortingOrder + 2);
+            if (_effectText != null)
+            {
+                BattleSorting.Apply(_effectText, BattleSorting.Fx, _sortingOrder + 2);
+            }
+            else
+            {
+                BattleSorting.Apply(_effectMeshRenderer, BattleSorting.Fx, _sortingOrder + 2);
+            }
+
             BattleSorting.Apply(_background, BattleSorting.Fx, _sortingOrder);
-            BattleSorting.Apply(
-                _sourceText != null ? _sourceText.GetComponent<MeshRenderer>() : null,
-                BattleSorting.Fx,
-                _sortingOrder + 2);
+            BattleSorting.Apply(_sourceText, BattleSorting.Fx, _sortingOrder + 2);
         }
 
         private void Animate(TextMeshPro effect, Vector3 start, float rise, float duration)

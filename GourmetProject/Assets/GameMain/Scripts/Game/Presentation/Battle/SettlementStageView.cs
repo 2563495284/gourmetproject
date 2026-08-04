@@ -533,7 +533,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 ?? TMP_Settings.defaultFontAsset;
             mesh.ForceMeshUpdate(true, true);
 
-            BattleSorting.Apply(mesh.renderer, BattleSorting.Fx, BattleSorting.OrderFloatingText + orderOffset);
+            BattleSorting.Apply(mesh, BattleSorting.Fx, BattleSorting.OrderFloatingText + orderOffset);
             return mesh;
         }
 

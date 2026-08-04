@@ -64,7 +64,7 @@ MonoBehaviour:
   _warehouseContainer: {fileID: 7040490371683412696}
   _warehousePrefab: {fileID: 239492086359488531, guid: 480c54a03e0248be9fa356b19a51c657, type: 3}
   _dishPrefab: {fileID: 5026984067668980655, guid: 1c842cb75485f4b34b79364d1b7be34f, type: 3}
-  _backButton: {fileID: 0}
+  _backButton: {fileID: 9089544418031130628}
 --- !u!1 &905116585536431420
 GameObject:
   m_ObjectHideFlags: 0
@@ -132,8 +132,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "\u7F16\u8F91\u83DC\u8C31   \u62D6\u62FD\u79FB\u52A8 / \u62D6\u5165\u5783\u573E\u6876\u5220\u9664"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 2a438c07708d34c3fafd27b4341313e8, type: 2}
+  m_sharedMaterial: {fileID: -8718148927222724939, guid: 2a438c07708d34c3fafd27b4341313e8, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -378,3 +378,14 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 2219660794846146931, guid: 904bce5f6ed064bb59ae1aa54cced993, type: 3}
   m_PrefabInstance: {fileID: 54208350860310828}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &9089544418031130628 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 9143462041720332584, guid: 904bce5f6ed064bb59ae1aa54cced993, type: 3}
+  m_PrefabInstance: {fileID: 54208350860310828}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
