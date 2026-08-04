@@ -9,6 +9,7 @@ using GourmetProject.Gameplay.Model;
 using GourmetProject.Runtime;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Meta
 {
@@ -24,7 +25,7 @@ namespace GourmetProject.Game.UI.Meta
         [SerializeField] private GameObject _shopPanel;
 
         [Header("Top")]
-        [SerializeField] private Text _goldText;
+        [SerializeField] private TMP_Text _goldText;
         [SerializeField] private Button _leaveButton;
 
         [Header("Shop Sections")]
@@ -813,7 +814,7 @@ namespace GourmetProject.Game.UI.Meta
             _buySlots.Clear();
         }
 
-        private static void SetText(Text text, string value)
+        private static void SetText(TMP_Text text, string value)
         {
             if (text != null)
             {

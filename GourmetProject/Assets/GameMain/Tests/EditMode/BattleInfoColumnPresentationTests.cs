@@ -13,6 +13,7 @@ using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Tests.EditMode
 {
@@ -258,9 +259,9 @@ namespace GourmetProject.Tests.EditMode
                 requiredScore);
         }
 
-        private static Text TextReference(BattleInfoColumn column, string propertyName)
+        private static TMP_Text TextReference(BattleInfoColumn column, string propertyName)
         {
-            return new SerializedObject(column).FindProperty(propertyName).objectReferenceValue as Text;
+            return new SerializedObject(column).FindProperty(propertyName).objectReferenceValue as TMP_Text;
         }
 
         private static RectTransform RectTransformReference(BattleInfoColumn column, string propertyName)

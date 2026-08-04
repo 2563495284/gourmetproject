@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Hud
 {
@@ -10,8 +11,8 @@ namespace GourmetProject.Game.UI.Hud
     public sealed class ActionAxisCellView : MonoBehaviour
     {
         [SerializeField] private Image _background;
-        [SerializeField] private Text _dayText;
-        [SerializeField] private Text _nodeIcon;
+        [SerializeField] private TMP_Text _dayText;
+        [SerializeField] private TMP_Text _nodeIcon;
         [SerializeField] private Image _nodeImage;
 
         private static readonly Color PassedColor = new Color(0.72f, 0.90f, 0.70f, 1f);

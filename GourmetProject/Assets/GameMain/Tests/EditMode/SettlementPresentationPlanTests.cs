@@ -8,6 +8,7 @@ using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
 using NUnit.Framework;
 using UnityEngine;
+using TMPro;
 
 namespace GourmetProject.Tests.EditMode
 {
@@ -167,7 +168,7 @@ namespace GourmetProject.Tests.EditMode
             GameObject root = new("SettlementStageTextTest");
             try
             {
-                TextMesh text = SettlementStageView.CreateText(
+                TextMeshPro text = SettlementStageView.CreateText(
                     root.transform,
                     "Result",
                     "分数 +3 → 18",
@@ -177,8 +178,8 @@ namespace GourmetProject.Tests.EditMode
                     3);
 
                 Assert.That(text.text, Is.EqualTo("分数 +3 → 18"));
-                Assert.That(text.characterSize, Is.EqualTo(0.09f));
-                Assert.That(text.transform.localScale, Is.EqualTo(Vector3.one));
+                Assert.That(text.transform.localScale.x, Is.EqualTo(0.09f * 1.1289f).Within(0.0001f));
+                Assert.That(text.textWrappingMode, Is.EqualTo(TextWrappingModes.NoWrap));
                 Assert.That(text.font, Is.Not.Null);
                 MeshRenderer renderer = text.GetComponent<MeshRenderer>();
                 Assert.That(renderer, Is.Not.Null);

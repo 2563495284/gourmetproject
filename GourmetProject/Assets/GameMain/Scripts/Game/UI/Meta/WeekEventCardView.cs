@@ -16,6 +16,7 @@ using GourmetProject.Game.UI.Menu;
 using GourmetProject.Game.UI.Meta;
 using GourmetProject.Game.UI.Tooltips;
 using GourmetProject.Game.UI.Widgets;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Meta
 {
@@ -34,16 +35,16 @@ namespace GourmetProject.Game.UI.Meta
         private static readonly Color FooterActionColor = new Color(1f, 0.94f, 0.78f, 0.92f);
         private static readonly Color FooterNodeColor = new Color(0.78f, 1f, 0.88f, 0.92f);
 
-        [SerializeField] private Text _nameText;
-        [SerializeField] private Text _descText;
-        [SerializeField] private Text _timeText;
+        [SerializeField] private TMP_Text _nameText;
+        [SerializeField] private TMP_Text _descText;
+        [SerializeField] private TMP_Text _timeText;
         [SerializeField] private Image _artImage;
         [SerializeField] private Image _titleBackingImage;
         [SerializeField] private Image _descBackingImage;
         [SerializeField] private Image _footerBackingImage;
         [SerializeField] private Image _rewardBadgeImage;
         [SerializeField] private Image _rewardIconImage;
-        [SerializeField] private Text _rewardBadgeText;
+        [SerializeField] private TMP_Text _rewardBadgeText;
         [SerializeField] private Button _pickButton;
 
         [Header("Effects - References")]
@@ -271,7 +272,7 @@ namespace GourmetProject.Game.UI.Meta
             SetBacking(_footerBackingImage, visible, backingColor);
         }
 
-        private static void SetText(Text text, string value)
+        private static void SetText(TMP_Text text, string value)
         {
             if (text != null)
             {

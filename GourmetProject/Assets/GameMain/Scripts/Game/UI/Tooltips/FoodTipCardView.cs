@@ -1,14 +1,15 @@
 using GourmetProject.Game.Visual;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Tooltips
 {
     /// <summary>食物 Tips 内复用的小卡片：标题 + 描述。</summary>
     public sealed class FoodTipCardView : MonoBehaviour
     {
-        [SerializeField] private Text _titleText;
-        [SerializeField] private Text _descText;
+        [SerializeField] private TMP_Text _titleText;
+        [SerializeField] private TMP_Text _descText;
         [SerializeField] private Outline _outline;
 
         public float PreferredTitleWidth => _titleText != null && _titleText.gameObject.activeSelf
@@ -24,9 +25,7 @@ namespace GourmetProject.Game.UI.Tooltips
                 return 0f;
             }
 
-            TextGenerationSettings settings = _descText.GetGenerationSettings(Vector2.zero);
-            return _descText.cachedTextGeneratorForLayout.GetPreferredWidth(value ?? string.Empty, settings)
-                / Mathf.Max(1f, _descText.pixelsPerUnit);
+            return _descText.GetPreferredValues(value ?? string.Empty).x;
         }
 
         public void Bind(string title, string desc, bool debuffed = false)
@@ -69,7 +68,7 @@ namespace GourmetProject.Game.UI.Tooltips
             for (int i = 0; i < graphics.Length; i++)
             {
                 Graphic graphic = graphics[i];
-                if (graphic == null || graphic is Text)
+                if (graphic == null || graphic is TMP_Text)
                 {
                     continue;
                 }

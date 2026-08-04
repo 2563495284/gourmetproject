@@ -1,4 +1,5 @@
 using UnityEngine;
+using TMPro;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
@@ -9,7 +10,7 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private SpriteRenderer _background;
         [SerializeField] private SpriteRenderer _icon;
         [SerializeField] private MeshRenderer _valueMeshRenderer;
-        [SerializeField] private TextMesh _valueText;
+        [SerializeField] private TextMeshPro _valueText;
 
         private string _sortingLayer = BattleSorting.Fx;
         private int _sortingOrder = BattleSorting.OrderFloatingText;

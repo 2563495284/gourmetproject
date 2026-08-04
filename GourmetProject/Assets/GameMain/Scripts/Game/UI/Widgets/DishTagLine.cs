@@ -6,6 +6,7 @@ using GourmetProject.Game.UI.Common;
 using GourmetProject.Game.UI.Menu;
 using GourmetProject.Game.UI.Meta;
 using GourmetProject.Game.UI.Widgets;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Widgets
 {
@@ -15,7 +16,7 @@ namespace GourmetProject.Game.UI.Widgets
     /// </summary>
     public sealed class DishTagLine : MonoBehaviour
     {
-        [SerializeField] private Text _text;
+        [SerializeField] private TMP_Text _text;
 
         public void SetText(string text)
         {

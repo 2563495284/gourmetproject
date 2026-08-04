@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Meta
 {
@@ -16,8 +17,8 @@ namespace GourmetProject.Game.UI.Meta
 
         [SerializeField] private Image _backgroundImage;
         [SerializeField] private Sprite _defaultBackgroundSprite;
-        [SerializeField] private Text _titleText;
-        [SerializeField] private Text _descriptionText;
+        [SerializeField] private TMP_Text _titleText;
+        [SerializeField] private TMP_Text _descriptionText;
         [SerializeField] private RectTransform _optionsRoot;
         [SerializeField] private Button _optionButtonTemplate;
 
@@ -79,7 +80,7 @@ namespace GourmetProject.Game.UI.Meta
             Button button = Instantiate(_optionButtonTemplate, _optionsRoot);
             button.gameObject.name = $"EventOption_{index + 1}";
             button.gameObject.SetActive(true);
-            Text text = button.GetComponentInChildren<Text>(true);
+            TMP_Text text = button.GetComponentInChildren<TMP_Text>(true);
             if (text != null)
             {
                 text.text = string.IsNullOrWhiteSpace(label) ? "继续" : label;
@@ -116,7 +117,7 @@ namespace GourmetProject.Game.UI.Meta
             button.gameObject.name = "EventResult";
             button.gameObject.SetActive(true);
 
-            Text text = button.GetComponentInChildren<Text>(true);
+            TMP_Text text = button.GetComponentInChildren<TMP_Text>(true);
             if (text != null)
             {
                 text.text = string.IsNullOrWhiteSpace(resultText) ? "结束" : resultText;
@@ -138,7 +139,7 @@ namespace GourmetProject.Game.UI.Meta
             _spawnedButtons.Add(button);
         }
 
-        private static void ApplyResultButtonWidth(Button button, Text label)
+        private static void ApplyResultButtonWidth(Button button, TMP_Text label)
         {
             float width = Mathf.Max(ResultButtonMinWidth, label.preferredWidth + ResultButtonHorizontalPadding);
             if (button.transform is RectTransform rectTransform)
@@ -205,7 +206,7 @@ namespace GourmetProject.Game.UI.Meta
             // _backgroundImage.color = sprite != null ? Color.white : new Color(0.12f, 0.1f, 0.08f, 0.92f);
         }
 
-        private static void SetText(Text text, string value)
+        private static void SetText(TMP_Text text, string value)
         {
             if (text != null)
             {

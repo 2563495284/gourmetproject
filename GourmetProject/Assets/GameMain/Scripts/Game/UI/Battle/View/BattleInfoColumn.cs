@@ -6,6 +6,7 @@ using GourmetProject.Game.Run;
 using GourmetProject.Gameplay.Battle;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Battle.View
 {
@@ -21,26 +22,26 @@ namespace GourmetProject.Game.UI.Battle.View
         private const float ScoreTitleBossY = 102f;
         private const float BossStatTransitionDuration = 0.24f;
 
-        [SerializeField] private Text _weekText;
-        [SerializeField] private Text _goldText;
+        [SerializeField] private TMP_Text _weekText;
+        [SerializeField] private TMP_Text _goldText;
         [SerializeField] private RectTransform _heartContainer;
         [SerializeField] private Image _heartItemPrefab;
         [SerializeField] private Sprite _heartActiveSprite;
         [SerializeField] private Sprite _heartEmptySprite;
-        [SerializeField] private Text _scoreCurrentText;
-        [SerializeField] private Text _scoreRequiredText;
+        [SerializeField] private TMP_Text _scoreCurrentText;
+        [SerializeField] private TMP_Text _scoreRequiredText;
         [SerializeField] private Button _viewRecipeButton;
-        [SerializeField] private Text _viewRecipeCountText;
+        [SerializeField] private TMP_Text _viewRecipeCountText;
         [SerializeField] private Button _viewTableButton;
-        [SerializeField] private Text _viewTableLabelText;
-        [SerializeField] private Text _viewTableCountText;
-        [SerializeField] private Text _discardCountText;
+        [SerializeField] private TMP_Text _viewTableLabelText;
+        [SerializeField] private TMP_Text _viewTableCountText;
+        [SerializeField] private TMP_Text _discardCountText;
         [SerializeField] private Button _settingsButton;
         [SerializeField] private SettlementScoreFireView _scoreFire;
         [SerializeField] private RectTransform _scoreTitlePanel;
         [SerializeField] private GameObject _bossStat;
-        [SerializeField] private Text _bossTitleText;
-        [SerializeField] private Text _bossSkillText;
+        [SerializeField] private TMP_Text _bossTitleText;
+        [SerializeField] private TMP_Text _bossSkillText;
 
         private readonly List<Image> _heartItems = new List<Image>();
         private int? _battleScoreOverride;

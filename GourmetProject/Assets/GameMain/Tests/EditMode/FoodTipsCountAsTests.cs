@@ -10,6 +10,7 @@ using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Tests.EditMode
 {
@@ -97,7 +98,7 @@ namespace GourmetProject.Tests.EditMode
                     .FindProperty("_duplicateView").objectReferenceValue;
                 var countAsView = (RectTransform)serialized
                     .FindProperty("_countAsView").objectReferenceValue;
-                var countAsText = (Text)serialized
+                var countAsText = (TMP_Text)serialized
                     .FindProperty("_countAsText").objectReferenceValue;
 
                 Assert.That(duplicateView, Is.Not.Null);
@@ -156,7 +157,7 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(specialTagsRoot.gameObject.activeSelf, Is.True);
                 Assert.That(specialTagsRoot.childCount, Is.EqualTo(1));
                 string[] texts = specialTagsRoot
-                    .GetComponentsInChildren<Text>(true)
+                    .GetComponentsInChildren<TMP_Text>(true)
                     .Select(text => text.text)
                     .ToArray();
                 Assert.That(texts, Does.Contain("食物"));

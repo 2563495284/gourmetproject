@@ -10,6 +10,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using GourmetProject.Game.UI;
 using GourmetProject.Game.UI.Battle;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Meta
 {
@@ -18,7 +19,7 @@ namespace GourmetProject.Game.UI.Meta
     /// </summary>
     public sealed class DefeatForm : UGuiForm
     {
-        [SerializeField] private Text _resultText;
+        [SerializeField] private TMP_Text _resultText;
         [SerializeField] private Button _resultButton;
         [SerializeField] private CanvasGroup _transitionGroup;
         [SerializeField] private RectTransform _transitionPanel;
@@ -54,7 +55,7 @@ namespace GourmetProject.Game.UI.Meta
             SettlementSummary summary = SettlementService.Build(_run, false, total, target, _pendingProgressUpdate);
             _resultText.text = $"{summary.Title}\n\n{summary.Body}";
 
-            Text label = _resultButton.GetComponentInChildren<Text>();
+            TMP_Text label = _resultButton.GetComponentInChildren<TMP_Text>();
             if (label != null)
             {
                 label.text = summary.ButtonLabel;

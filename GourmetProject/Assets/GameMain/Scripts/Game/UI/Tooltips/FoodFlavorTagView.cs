@@ -1,12 +1,13 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Tooltips
 {
     /// <summary>风味标签条目：视觉结构由 prefab 提供，脚本只绑定文字。</summary>
     public sealed class FoodFlavorTagView : MonoBehaviour
     {
-        [SerializeField] private Text _labelText;
+        [SerializeField] private TMP_Text _labelText;
 
         public void Bind(string label)
         {

@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Widgets
 {
@@ -10,7 +11,7 @@ namespace GourmetProject.Game.UI.Widgets
     /// </summary>
     public sealed class DishFlavorTag : MonoBehaviour
     {
-        [SerializeField] private Text _labelText;
+        [SerializeField] private TMP_Text _labelText;
 
         public void Set(string flavorName)
         {

@@ -21,6 +21,7 @@ using GourmetProject.Game.UI.Menu;
 using GourmetProject.Game.UI.Meta;
 using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Game.UI.Tooltips;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Meta
 {
@@ -78,7 +79,7 @@ namespace GourmetProject.Game.UI.Meta
     /// </summary>
     public sealed class RewardForm : UGuiForm
     {
-        [SerializeField] private Text _titleText;
+        [SerializeField] private TMP_Text _titleText;
         [SerializeField] private Button _continueButton;
         [SerializeField] private Button _peekHideButton;
         [SerializeField] private Button _peekReturnButton;
@@ -1717,7 +1718,7 @@ namespace GourmetProject.Game.UI.Meta
 
         private static void SetButtonLabel(Button button, string text)
         {
-            Text label = button.GetComponentInChildren<Text>();
+            TMP_Text label = button.GetComponentInChildren<TMP_Text>();
             if (label != null)
             {
                 label.text = text;

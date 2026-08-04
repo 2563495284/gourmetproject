@@ -5,6 +5,7 @@ using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Tooltips;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Meta
 {
@@ -12,7 +13,7 @@ namespace GourmetProject.Game.UI.Meta
     {
         private readonly List<GameObject> _spawned = new();
         [SerializeField] private RectTransform _cardsRoot;
-        [SerializeField] private Text _titleText;
+        [SerializeField] private TMP_Text _titleText;
         [SerializeField] private Button _skipButton;
         [SerializeField] private RewardItemChoiceCardView _cardPrefab;
         private bool _resolved;

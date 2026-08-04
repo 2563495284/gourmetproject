@@ -12,6 +12,7 @@ using GourmetProject.Runtime;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Battle
 {
@@ -30,7 +31,7 @@ namespace GourmetProject.Game.UI.Battle
         private WorldTargetArrow _worldArrow;
         private ActiveItemTargetOverlayView _targetOverlay;
         private RectTransform _targetPanel;
-        private Text _targetPrompt;
+        private TMP_Text _targetPrompt;
         private Button _targetConfirmButton;
         private ItemDefinition _pendingItem;
         private IActiveUseContext _pendingContext;
@@ -521,7 +522,7 @@ namespace GourmetProject.Game.UI.Battle
             rect.sizeDelta = new Vector2(240f, 34f);
             button.onClick.AddListener(() => AddTarget(target));
 
-            Text text = _targetOverlay.LabelOf(button);
+            TMP_Text text = _targetOverlay.LabelOf(button);
             if (text != null)
             {
                 text.text = TargetLabel(target);

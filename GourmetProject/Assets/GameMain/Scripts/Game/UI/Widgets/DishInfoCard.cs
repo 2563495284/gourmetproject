@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Widgets
 {
@@ -10,8 +11,8 @@ namespace GourmetProject.Game.UI.Widgets
     /// </summary>
     public sealed class DishInfoCard : MonoBehaviour
     {
-        [SerializeField] private Text _titleText;
-        [SerializeField] private Text _descText;
+        [SerializeField] private TMP_Text _titleText;
+        [SerializeField] private TMP_Text _descText;
 
         public void Set(string title, string desc)
         {

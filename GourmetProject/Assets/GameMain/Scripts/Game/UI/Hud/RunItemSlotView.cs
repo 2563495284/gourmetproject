@@ -7,6 +7,7 @@ using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Tooltips;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Hud
 {
@@ -25,7 +26,7 @@ namespace GourmetProject.Game.UI.Hud
         [SerializeField] private Button _button;
         [SerializeField] private TipHoverTrigger _tipTrigger;
 
-        [SerializeField] private Text _info;
+        [SerializeField] private TMP_Text _info;
 
         private Material _iconEffectMaterial;
         private Tween _pulseTween;
@@ -227,7 +228,7 @@ namespace GourmetProject.Game.UI.Hud
                     info = transform.Find("Info");
                 }
 
-                _info = info != null ? info.GetComponent<Text>() : null;
+                _info = info != null ? info.GetComponent<TMP_Text>() : null;
             }
         }
 

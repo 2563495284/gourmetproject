@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Tooltips
 {
@@ -10,10 +11,10 @@ namespace GourmetProject.Game.UI.Tooltips
     public sealed class FoodSummaryTipsView : MonoBehaviour
     {
         [SerializeField] private CanvasGroup _canvasGroup;
-        [SerializeField] private Text _nameText;
+        [SerializeField] private TMP_Text _nameText;
         [SerializeField] private RectTransform _duplicateView;
         [SerializeField] private RectTransform _countAsView;
-        [SerializeField] private Text _countAsText;
+        [SerializeField] private TMP_Text _countAsText;
         [SerializeField] private RectTransform _skillsContent;
         [SerializeField] private RectTransform _flavorContent;
         [SerializeField] private FoodTipCardView _skillCardPrefab;

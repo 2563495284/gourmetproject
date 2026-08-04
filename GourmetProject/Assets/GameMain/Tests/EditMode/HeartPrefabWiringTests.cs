@@ -3,6 +3,7 @@ using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Tests.EditMode
 {
@@ -138,7 +139,7 @@ namespace GourmetProject.Tests.EditMode
 
             Button continueButton = prefab.transform.Find("Panel/Content/Continue")?.GetComponent<Button>();
             Assert.That(continueButton, Is.Not.Null);
-            Assert.That(continueButton.GetComponentInChildren<Text>(true).text, Is.EqualTo("继续"));
+            Assert.That(continueButton.GetComponentInChildren<TMP_Text>(true).text, Is.EqualTo("继续"));
         }
 
         [Test]

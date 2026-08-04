@@ -8,6 +8,7 @@ using GourmetProject.Game.UI.Common;
 using GourmetProject.Game.UI.Menu;
 using GourmetProject.Game.UI.Meta;
 using GourmetProject.Game.UI.Widgets;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Meta
 {
@@ -17,7 +18,7 @@ namespace GourmetProject.Game.UI.Meta
     /// </summary>
     public sealed class ShopSellCardView : MonoBehaviour
     {
-        [SerializeField] private Text _nameText;
+        [SerializeField] private TMP_Text _nameText;
         [SerializeField] private Button _sellButton;
 
         public void Bind(ItemDefinition item, int price, Action onSell)
@@ -30,7 +31,7 @@ namespace GourmetProject.Game.UI.Meta
         {
             _nameText.text = name;
 
-            Text label = _sellButton.GetComponentInChildren<Text>();
+            TMP_Text label = _sellButton.GetComponentInChildren<TMP_Text>();
             if (label != null)
             {
                 label.text = buttonLabel;

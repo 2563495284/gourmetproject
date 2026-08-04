@@ -11,6 +11,7 @@ using GourmetProject.Runtime;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Meta
 {
@@ -21,7 +22,7 @@ namespace GourmetProject.Game.UI.Meta
     public sealed partial class RecipeReadonlyBookView : MonoBehaviour
     {
         [Header("Header")]
-        [SerializeField] private Text _titleText;
+        [SerializeField] private TMP_Text _titleText;
 
         [Header("Warehouse")]
         [FormerlySerializedAs("_bookContainer")]
@@ -267,7 +268,7 @@ namespace GourmetProject.Game.UI.Meta
             {
                 Transform title = transform.Find("Title");
                 _titleText = title != null
-                    ? title.GetComponent<Text>()
+                    ? title.GetComponent<TMP_Text>()
                     : null;
             }
 
@@ -576,7 +577,7 @@ namespace GourmetProject.Game.UI.Meta
             _spawnedDishes.Clear();
         }
 
-        private static void SetText(Text text, string value)
+        private static void SetText(TMP_Text text, string value)
         {
             if (text != null)
             {
@@ -586,8 +587,8 @@ namespace GourmetProject.Game.UI.Meta
 
         private static void SetButtonText(Button button, string value)
         {
-            Text text = button != null
-                ? button.GetComponentInChildren<Text>(true)
+            TMP_Text text = button != null
+                ? button.GetComponentInChildren<TMP_Text>(true)
                 : null;
             SetText(text, value);
         }

@@ -8,6 +8,7 @@ using GourmetProject.Game.UI.Common;
 using GourmetProject.Game.UI.Menu;
 using GourmetProject.Game.UI.Meta;
 using GourmetProject.Game.UI.Widgets;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Common
 {
@@ -16,12 +17,12 @@ namespace GourmetProject.Game.UI.Common
     /// </summary>
     public sealed class ConfirmDialogForm : UGuiForm
     {
-        private Text _titleText;
-        private Text _messageText;
+        private TMP_Text _titleText;
+        private TMP_Text _messageText;
         private Button _confirmButton;
         private Button _cancelButton;
-        private Text _confirmLabel;
-        private Text _cancelLabel;
+        private TMP_Text _confirmLabel;
+        private TMP_Text _cancelLabel;
         private RectTransform _confirmButtonRect;
         private Vector2 _confirmTwoButtonPosition;
 
@@ -31,12 +32,12 @@ namespace GourmetProject.Game.UI.Common
         {
             base.OnInit(userData);
 
-            _titleText = CachedTransform.Find("Window/Title").GetComponent<Text>();
-            _messageText = CachedTransform.Find("Window/Message").GetComponent<Text>();
+            _titleText = CachedTransform.Find("Window/Title").GetComponent<TMP_Text>();
+            _messageText = CachedTransform.Find("Window/Message").GetComponent<TMP_Text>();
             _confirmButton = CachedTransform.Find("Window/ConfirmButton").GetComponent<Button>();
             _cancelButton = CachedTransform.Find("Window/CancelButton").GetComponent<Button>();
-            _confirmLabel = _confirmButton.transform.Find("Text").GetComponent<Text>();
-            _cancelLabel = _cancelButton.transform.Find("Text").GetComponent<Text>();
+            _confirmLabel = _confirmButton.transform.Find("TMP_Text").GetComponent<TMP_Text>();
+            _cancelLabel = _cancelButton.transform.Find("TMP_Text").GetComponent<TMP_Text>();
             _confirmButtonRect = (RectTransform)_confirmButton.transform;
             _confirmTwoButtonPosition = _confirmButtonRect.anchoredPosition;
 

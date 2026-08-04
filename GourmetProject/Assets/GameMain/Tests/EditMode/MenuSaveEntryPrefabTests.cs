@@ -2,6 +2,7 @@ using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Tests.EditMode
 {
@@ -23,7 +24,7 @@ namespace GourmetProject.Tests.EditMode
                 ?.GetComponent<Button>();
             Assert.That(startButton, Is.Not.Null);
             Assert.That(
-                startButton.GetComponentInChildren<Text>(true).text,
+                startButton.GetComponentInChildren<TMP_Text>(true).text,
                 Is.EqualTo("开始游戏"));
             Assert.That(
                 FindDescendant(prefab.transform, "AbandonButton"),
@@ -50,10 +51,10 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(continueButton, Is.Not.Null);
             Assert.That(confirmButton, Is.Not.Null);
             Assert.That(
-                continueButton.GetComponentInChildren<Text>(true).text,
+                continueButton.GetComponentInChildren<TMP_Text>(true).text,
                 Is.EqualTo("继续游戏"));
             Assert.That(
-                confirmButton.GetComponentInChildren<Text>(true).text,
+                confirmButton.GetComponentInChildren<TMP_Text>(true).text,
                 Is.EqualTo("开始游戏"));
 
             Component form = prefab.GetComponent("CharacterSelectForm");

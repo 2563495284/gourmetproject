@@ -6,6 +6,7 @@ using GourmetProject.Gameplay.Model;
 using GourmetProject.Runtime;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Battle.View
 {
@@ -17,11 +18,11 @@ namespace GourmetProject.Game.UI.Battle.View
         [Header("Prefab Refs")]
         [SerializeField] private RectTransform _listRoot;
         [SerializeField] private GameObject _slot;
-        [SerializeField] private Text _countText;
+        [SerializeField] private TMP_Text _countText;
         [SerializeField] private TipHoverTrigger _hover;
         private string _desc = string.Empty;
         private GameObject _halfDaySlot;
-        private Text _halfDayCountText;
+        private TMP_Text _halfDayCountText;
         private TipHoverTrigger _halfDayHover;
 
         public void Bind(int layers, IReadOnlyList<CakeLayerBuffDef> buffs, ItemTipView tip)
@@ -107,7 +108,7 @@ namespace GourmetProject.Game.UI.Battle.View
 
             _halfDaySlot = Instantiate(_slot, _listRoot);
             _halfDaySlot.name = "HalfDayCostBuff";
-            _halfDayCountText = _halfDaySlot.transform.Find("LayerCount")?.GetComponent<Text>();
+            _halfDayCountText = _halfDaySlot.transform.Find("LayerCount")?.GetComponent<TMP_Text>();
             _halfDayHover = _halfDaySlot.GetComponent<TipHoverTrigger>();
 
             Transform iconRoot = _halfDaySlot.transform.Find("IconPlaceholder");

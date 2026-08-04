@@ -3,6 +3,7 @@ using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Gameplay.Battle;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Battle.View
 {
@@ -15,7 +16,7 @@ namespace GourmetProject.Game.UI.Battle.View
         [SerializeField] private Button _eatButton;
         [SerializeField] private Button _doodleClearButton;
         [SerializeField] private Button _doodleToggleButton;
-        [SerializeField] private Text _doodleToggleText;
+        [SerializeField] private TMP_Text _doodleToggleText;
 
         public void Bind(Action onEat, Action onDoodleClear, Action onDoodleToggle)
         {

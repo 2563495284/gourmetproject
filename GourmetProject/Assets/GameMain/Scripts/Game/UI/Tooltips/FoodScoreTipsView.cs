@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Tooltips
 {
@@ -9,8 +10,8 @@ namespace GourmetProject.Game.UI.Tooltips
     public sealed class FoodScoreTipsView : MonoBehaviour
     {
         [SerializeField] private CanvasGroup _canvasGroup;
-        [SerializeField] private Text _scoreText;
-        [SerializeField] private Text _multiplierText;
+        [SerializeField] private TMP_Text _scoreText;
+        [SerializeField] private TMP_Text _multiplierText;
 
         public void Bind(FoodScoreTipsData data)
         {

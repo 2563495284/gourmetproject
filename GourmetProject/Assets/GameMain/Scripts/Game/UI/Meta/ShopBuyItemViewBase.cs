@@ -6,6 +6,7 @@ using GourmetProject.Gameplay.Model;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Meta
 {
@@ -49,7 +50,7 @@ namespace GourmetProject.Game.UI.Meta
     {
         [SerializeField] private Button _buyButton;
         [SerializeField] private Image _itemIcon;
-        [SerializeField] private Text _buyLabel;
+        [SerializeField] private TMP_Text _buyLabel;
 
         private RectTransform _rect;
         private RectTransform _iconRect;
@@ -306,14 +307,14 @@ namespace GourmetProject.Game.UI.Meta
 
         private void SetBuyLabel(int price)
         {
-            Text label = BuyLabel;
+            TMP_Text label = BuyLabel;
             if (label != null)
             {
                 label.text = _isStocked ? $"购买 {price}" : string.Empty;
             }
         }
 
-        private Text BuyLabel
+        private TMP_Text BuyLabel
         {
             get
             {
@@ -326,18 +327,18 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
-        private Text ResolveBuyLabel()
+        private TMP_Text ResolveBuyLabel()
         {
             if (_buyButton != null)
             {
-                Text label = _buyButton.GetComponentInChildren<Text>(true);
+                TMP_Text label = _buyButton.GetComponentInChildren<TMP_Text>(true);
                 if (label != null)
                 {
                     return label;
                 }
             }
 
-            return GetComponentInChildren<Text>(true);
+            return GetComponentInChildren<TMP_Text>(true);
         }
 
         private void EnsureDefaultButtonTransition()

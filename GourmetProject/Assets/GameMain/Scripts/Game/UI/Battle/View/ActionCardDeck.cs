@@ -7,6 +7,7 @@ using GourmetProject.Game.UI.Tooltips;
 using GourmetProject.Runtime;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Battle.View
 {
@@ -226,7 +227,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 return;
             }
 
-            Text label = button.GetComponentInChildren<Text>(true);
+            TMP_Text label = button.GetComponentInChildren<TMP_Text>(true);
             if (label != null)
             {
                 label.text = text ?? string.Empty;

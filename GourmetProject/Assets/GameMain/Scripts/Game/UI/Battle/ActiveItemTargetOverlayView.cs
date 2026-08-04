@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Battle
 {
@@ -8,13 +9,13 @@ namespace GourmetProject.Game.UI.Battle
     public sealed class ActiveItemTargetOverlayView : MonoBehaviour
     {
         [SerializeField] private RectTransform _panel;
-        [SerializeField] private Text _promptText;
+        [SerializeField] private TMP_Text _promptText;
         [SerializeField] private Button _confirmButton;
         [SerializeField] private Button _cancelButton;
         [SerializeField] private Button _targetButtonPrefab;
 
         public RectTransform Panel => _panel;
-        public Text PromptText => _promptText;
+        public TMP_Text PromptText => _promptText;
         public Button ConfirmButton => _confirmButton;
         public Button TargetButtonPrefab => _targetButtonPrefab;
 
@@ -40,9 +41,9 @@ namespace GourmetProject.Game.UI.Battle
             rect.localRotation = Quaternion.identity;
         }
 
-        public Text LabelOf(Button button)
+        public TMP_Text LabelOf(Button button)
         {
-            return button != null ? button.GetComponentInChildren<Text>(true) : null;
+            return button != null ? button.GetComponentInChildren<TMP_Text>(true) : null;
         }
 
         private void ValidateStructure()
@@ -55,7 +56,7 @@ namespace GourmetProject.Game.UI.Battle
             if (_promptText == null && _panel != null)
             {
                 Transform prompt = _panel.Find("Prompt");
-                _promptText = prompt != null ? prompt.GetComponent<Text>() : null;
+                _promptText = prompt != null ? prompt.GetComponent<TMP_Text>() : null;
             }
 
             if (_confirmButton == null && _panel != null)

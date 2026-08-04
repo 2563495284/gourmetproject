@@ -8,6 +8,7 @@ using GourmetProject.Gameplay.Model;
 using GourmetProject.Runtime;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Meta
 {
@@ -17,7 +18,7 @@ namespace GourmetProject.Game.UI.Meta
     public sealed class RewardDishPackPanel : MonoBehaviour
     {
         [SerializeField] private GameObject _panelRoot;
-        [SerializeField] private Text _promptText;
+        [SerializeField] private TMP_Text _promptText;
         [SerializeField] private RectTransform _choiceContainer;
         [SerializeField] private RewardDishChoiceCardView _cardTemplate;
         [SerializeField] private Button _skipButton;

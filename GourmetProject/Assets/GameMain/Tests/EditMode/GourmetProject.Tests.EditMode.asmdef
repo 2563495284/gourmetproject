@@ -7,7 +7,8 @@
         "GourmetProject.Gameplay",
         "GourmetProject.Core",
         "GourmetProject.Runtime",
-        "Luban.Runtime"
+        "Luban.Runtime",
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [
         "Editor"

@@ -5,15 +5,16 @@ using GourmetProject.Runtime;
 using GourmetProject.Runtime.UI;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>战斗未达标后的碎心演出；演出结束后由玩家点击“继续”推进。</summary>
     public sealed class HeartBreakForm : UGuiForm
     {
-        [SerializeField] private Text _titleText;
-        [SerializeField] private Text _heartCountText;
-        [SerializeField] private Text _centerHeartText;
+        [SerializeField] private TMP_Text _titleText;
+        [SerializeField] private TMP_Text _heartCountText;
+        [SerializeField] private TMP_Text _centerHeartText;
         [SerializeField] private RectTransform _leftHalf;
         [SerializeField] private RectTransform _rightHalf;
         [SerializeField] private CanvasGroup _crackGroup;

@@ -1,5 +1,6 @@
 using DG.Tweening;
 using UnityEngine;
+using TMPro;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
@@ -8,9 +9,9 @@ namespace GourmetProject.Game.Presentation.Battle
     {
         [Header("固定结构（prefab 预拼）")]
         [SerializeField] private SpriteRenderer _background;
-        [SerializeField] private TextMesh _sourceText;
+        [SerializeField] private TextMeshPro _sourceText;
 
-        [SerializeField] private TextMesh _effectText;
+        [SerializeField] private TextMeshPro _effectText;
 
         [SerializeField] private MeshRenderer _effectMeshRenderer;
         [Header("飘动")]
@@ -98,7 +99,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 _sortingOrder + 2);
         }
 
-        private void Animate(TextMesh effect, Vector3 start, float rise, float duration)
+        private void Animate(TextMeshPro effect, Vector3 start, float rise, float duration)
         {
             Color effectColor = effect.color;
             Color backgroundColor = _background != null ? _background.color : Color.clear;

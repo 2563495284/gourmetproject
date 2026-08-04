@@ -5,6 +5,7 @@ using System.Threading;
 using DG.Tweening;
 using GourmetProject.Gameplay.Scoring;
 using UnityEngine;
+using TMPro;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
@@ -448,7 +449,7 @@ namespace GourmetProject.Game.Presentation.Battle
             background.color = WithAlpha(theme, 0.88f);
             BattleSorting.Apply(background, BattleSorting.Fx, BattleSorting.OrderFloatingText);
 
-            TextMesh headerText = CreateText(
+            TextMeshPro headerText = CreateText(
                 root.transform,
                 "Header",
                 header,
@@ -456,7 +457,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 finalStamp ? 28 : 22,
                 finalStamp ? 0.085f : 0.070f,
                 2);
-            TextMesh bodyText = CreateText(
+            TextMeshPro bodyText = CreateText(
                 root.transform,
                 "Body",
                 body,
@@ -508,7 +509,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        internal static TextMesh CreateText(
+        internal static TextMeshPro CreateText(
             Transform parent,
             string name,
             string text,
@@ -520,29 +521,19 @@ namespace GourmetProject.Game.Presentation.Battle
             GameObject child = new(name);
             child.transform.SetParent(parent, false);
             child.transform.localPosition = new Vector3(0f, localY, -0.02f);
-            child.transform.localScale = Vector3.one;
-            TextMesh mesh = child.AddComponent<TextMesh>();
+            child.transform.localScale = Vector3.one * (characterSize * 1.1289f);
+            TextMeshPro mesh = child.AddComponent<TextMeshPro>();
             mesh.text = text ?? string.Empty;
-            mesh.anchor = TextAnchor.MiddleCenter;
-            mesh.alignment = TextAlignment.Center;
+            mesh.alignment = TextAlignmentOptions.Center;
             mesh.fontSize = fontSize;
-            mesh.characterSize = characterSize;
-            mesh.fontStyle = FontStyle.Bold;
-            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            if (font == null)
-            {
-                font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-            }
+            mesh.fontStyle = FontStyles.Bold;
+            mesh.textWrappingMode = TextWrappingModes.NoWrap;
+            mesh.overflowMode = TextOverflowModes.Overflow;
+            mesh.font = Resources.Load<TMP_FontAsset>("Fonts/AlimamaShuHeiTi-Bold SDF")
+                ?? TMP_Settings.defaultFontAsset;
+            mesh.ForceMeshUpdate(true, true);
 
-            MeshRenderer renderer = child.GetComponent<MeshRenderer>();
-            if (font != null)
-            {
-                mesh.font = font;
-                font.RequestCharactersInTexture(mesh.text, fontSize, mesh.fontStyle);
-                renderer.sharedMaterial = font.material;
-            }
-
-            BattleSorting.Apply(renderer, BattleSorting.Fx, BattleSorting.OrderFloatingText + orderOffset);
+            BattleSorting.Apply(mesh.renderer, BattleSorting.Fx, BattleSorting.OrderFloatingText + orderOffset);
             return mesh;
         }
 

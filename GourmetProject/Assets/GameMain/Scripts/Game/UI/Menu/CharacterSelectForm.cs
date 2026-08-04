@@ -15,6 +15,7 @@ using GourmetProject.Runtime.UI;
 using UnityEngine;
 using UnityEngine.UI;
 using Log = GourmetProject.Core.Diagnostics.Log;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Menu
 {
@@ -35,8 +36,8 @@ namespace GourmetProject.Game.UI.Menu
             new(0.25f, 1f, 0.35f, 0.9f);
         private static readonly int QuadSizeId = Shader.PropertyToID("_QuadSize");
         private static readonly int PaddingId = Shader.PropertyToID("_Padding");
-        public Text _nameText;
-        public Text _descText;
+        public TMP_Text _nameText;
+        public TMP_Text _descText;
         public Button _leftArrow;
         public Button _rightArrow;
         public Button _confirmButton;
@@ -56,7 +57,7 @@ namespace GourmetProject.Game.UI.Menu
         private Material _recipeViewGlowMaterial;
         private FoodTipsView _foodTipsView;
         private bool _recipeViewOpen;
-        private Text _confirmLabel;
+        private TMP_Text _confirmLabel;
         private Vector2 _confirmButtonDefaultPosition;
         private int _index;
 
@@ -534,8 +535,8 @@ namespace GourmetProject.Game.UI.Menu
             _recipeReadonlyBookView ??=
                 FindOptionalComponentInChildren<RecipeReadonlyBookView>(
                     "RecipeReadonlyBookView");
-            _nameText ??= FindRequiredComponentInChildren<Text>("CharacterName");
-            _descText ??= FindRequiredComponentInChildren<Text>("CharacterDesc");
+            _nameText ??= FindRequiredComponentInChildren<TMP_Text>("CharacterName");
+            _descText ??= FindRequiredComponentInChildren<TMP_Text>("CharacterDesc");
             _leftArrow ??= FindRequiredComponentInChildren<Button>("LeftArrow");
             _rightArrow ??= FindRequiredComponentInChildren<Button>("RightArrow");
             _confirmButton ??= FindRequiredComponentInChildren<Button>("ConfirmButton");
@@ -550,12 +551,12 @@ namespace GourmetProject.Game.UI.Menu
             _recipeViewGlow ??=
                 FindOptionalComponentInChildren<Image>("TargetGlow");
 
-            _confirmLabel = _confirmButton.transform.Find("Text")
-                ?.GetComponent<Text>();
+            _confirmLabel = _confirmButton.transform.Find("TMP_Text")
+                ?.GetComponent<TMP_Text>();
             if (_confirmLabel == null)
             {
                 throw new MissingComponentException(
-                    "CharacterSelectForm requires ConfirmButton/Text with component Text.");
+                    "CharacterSelectForm requires ConfirmButton/TMP_Text with component TMP_Text.");
             }
         }
 

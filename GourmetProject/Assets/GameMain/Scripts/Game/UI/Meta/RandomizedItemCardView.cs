@@ -2,6 +2,7 @@ using GourmetProject.Game.Meta;
 using GourmetProject.Game.UI.Hud;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Meta
 {
@@ -9,8 +10,8 @@ namespace GourmetProject.Game.UI.Meta
     {
         [SerializeField] private Image _background;
         [SerializeField] private Image _icon;
-        [SerializeField] private Text _nameText;
-        [SerializeField] private Text _descriptionText;
+        [SerializeField] private TMP_Text _nameText;
+        [SerializeField] private TMP_Text _descriptionText;
 
         public RectTransform Rect => transform as RectTransform;
 
@@ -61,13 +62,13 @@ namespace GourmetProject.Game.UI.Meta
             if (_nameText == null)
             {
                 Transform name = transform.Find("Name");
-                _nameText = name != null ? name.GetComponent<Text>() : null;
+                _nameText = name != null ? name.GetComponent<TMP_Text>() : null;
             }
 
             if (_descriptionText == null)
             {
                 Transform desc = transform.Find("Description");
-                _descriptionText = desc != null ? desc.GetComponent<Text>() : null;
+                _descriptionText = desc != null ? desc.GetComponent<TMP_Text>() : null;
             }
         }
     }

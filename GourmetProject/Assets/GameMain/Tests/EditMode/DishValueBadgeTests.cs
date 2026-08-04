@@ -15,6 +15,7 @@ using GourmetProject.Gameplay.Scoring;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
+using TMPro;
 
 namespace GourmetProject.Tests.EditMode
 {
@@ -207,11 +208,11 @@ namespace GourmetProject.Tests.EditMode
                 Transform badge = FindBadge(instance);
                 Assert.That(badge, Is.Not.Null);
                 Assert.That(CountBadges(instance), Is.EqualTo(1));
-                Assert.That(badge.GetComponentInChildren<TextMesh>(true).text, Is.EqualTo("10"));
+                Assert.That(badge.GetComponentInChildren<TextMeshPro>(true).text, Is.EqualTo("10"));
 
                 dish.AddPermanentFlat(5f);
                 InvokeNonPublic(piece, "RefreshDishValueBadge");
-                Assert.That(badge.GetComponentInChildren<TextMesh>(true).text, Is.EqualTo("15"));
+                Assert.That(badge.GetComponentInChildren<TextMeshPro>(true).text, Is.EqualTo("15"));
 
                 piece.UpdatePlacement(new Placement(
                     dish.Def.Shape,
@@ -233,22 +234,22 @@ namespace GourmetProject.Tests.EditMode
                     new Dictionary<int, DishPieceView> { [dish.Id] = piece });
                 Assert.That(FindBadge(instance), Is.SameAs(badge));
                 Assert.That(CountBadges(instance), Is.EqualTo(1));
-                Assert.That(badge.GetComponentInChildren<TextMesh>(true).text, Is.EqualTo("18"));
+                Assert.That(badge.GetComponentInChildren<TextMeshPro>(true).text, Is.EqualTo("18"));
 
                 dish.AddPermanentFlat(100f);
                 InvokeNonPublic(piece, "RefreshDishValueBadge");
                 Assert.That(
-                    badge.GetComponentInChildren<TextMesh>(true).text,
+                    badge.GetComponentInChildren<TextMeshPro>(true).text,
                     Is.EqualTo("18"),
                     "待领奖期间 RefreshAll 不能覆盖最终结算贡献值。");
 
                 sequencer.ClearRetainedDishValueBadges();
                 Assert.That(FindBadge(instance), Is.SameAs(badge));
                 Assert.That(CountBadges(instance), Is.EqualTo(1));
-                Assert.That(badge.GetComponentInChildren<TextMesh>(true).text, Is.EqualTo("18"));
+                Assert.That(badge.GetComponentInChildren<TextMeshPro>(true).text, Is.EqualTo("18"));
 
                 InvokeNonPublic(piece, "ClearDishValueBadgeOverride");
-                Assert.That(badge.GetComponentInChildren<TextMesh>(true).text, Is.EqualTo("115"));
+                Assert.That(badge.GetComponentInChildren<TextMeshPro>(true).text, Is.EqualTo("115"));
             }
             finally
             {

@@ -5,6 +5,7 @@ using GourmetProject.Game.UI.Tooltips;
 using GourmetProject.Runtime;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Meta
 {
@@ -12,8 +13,8 @@ namespace GourmetProject.Game.UI.Meta
     {
         [SerializeField] private Image _background;
         [SerializeField] private Image _icon;
-        [SerializeField] private Text _nameText;
-        [SerializeField] private Text _descriptionText;
+        [SerializeField] private TMP_Text _nameText;
+        [SerializeField] private TMP_Text _descriptionText;
         [SerializeField] private Button _button;
 
         public RectTransform SelectionFlySource =>

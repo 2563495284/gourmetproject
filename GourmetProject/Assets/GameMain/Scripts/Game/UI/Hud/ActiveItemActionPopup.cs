@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Hud
 {
@@ -18,8 +19,8 @@ namespace GourmetProject.Game.UI.Hud
     {
         [SerializeField] private RectTransform _panel;
         [SerializeField] private CanvasGroup _group;
-        [SerializeField] private Text _titleText;
-        [SerializeField] private Text _reasonText;
+        [SerializeField] private TMP_Text _titleText;
+        [SerializeField] private TMP_Text _reasonText;
         [SerializeField] private Button _useButton;
         [SerializeField] private Button _discardButton;
         [SerializeField] private ItemTipView _itemTipPrefab;
@@ -174,7 +175,7 @@ namespace GourmetProject.Game.UI.Hud
                 return;
             }
 
-            Text text = button.GetComponentInChildren<Text>(true);
+            TMP_Text text = button.GetComponentInChildren<TMP_Text>(true);
             if (text != null)
             {
                 text.text = label;
@@ -413,10 +414,10 @@ namespace GourmetProject.Game.UI.Hud
             }
         }
 
-        private static Text FindText(RectTransform parent, string name)
+        private static TMP_Text FindText(RectTransform parent, string name)
         {
             Transform existing = parent != null ? parent.Find(name) : null;
-            return existing != null ? existing.GetComponent<Text>() : null;
+            return existing != null ? existing.GetComponent<TMP_Text>() : null;
         }
 
         private static Button FindButton(RectTransform parent, string name)

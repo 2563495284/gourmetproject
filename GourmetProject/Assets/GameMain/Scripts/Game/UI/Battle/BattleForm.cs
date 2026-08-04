@@ -31,6 +31,7 @@ using GourmetProject.Game.UI.Battle.States;
 using GourmetProject.Game.UI.Battle.View;
 using GourmetProject.Game.Meta.Passives;
 using UnityEngine.Serialization;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Battle
 {
@@ -128,7 +129,7 @@ namespace GourmetProject.Game.UI.Battle
         [SerializeField] private FoodDiscardBinView _foodDiscardBin;
 
         [Header("Battle Message")]
-        [SerializeField] private Text _messageText;
+        [SerializeField] private TMP_Text _messageText;
 
         private bool _inBattle;
         private GameplayView _current = GameplayView.None;
@@ -174,7 +175,7 @@ namespace GourmetProject.Game.UI.Battle
         private int? _pendingSettlementCakeLayers;
         private int _pendingSettlementCakeLayerBonus;
         [SerializeField] private GameObject _passiveOverlayRoot;
-        [SerializeField] private Text _passiveOverlayText;
+        [SerializeField] private TMP_Text _passiveOverlayText;
         private Sequence _passiveOverlaySeq;
 
         public GameRun Run => _run;
@@ -1322,7 +1323,7 @@ namespace GourmetProject.Game.UI.Battle
                     state.CanConfirm ? BoardEditConfirmColor : _boardEditSkipColor;
             }
 
-            Text label = _boardEditActionButton.GetComponentInChildren<Text>(true);
+            TMP_Text label = _boardEditActionButton.GetComponentInChildren<TMP_Text>(true);
             if (label != null)
             {
                 label.text = state.CanConfirm ? "确认" : "跳过";

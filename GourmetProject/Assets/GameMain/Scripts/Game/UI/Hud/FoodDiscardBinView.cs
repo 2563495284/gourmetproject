@@ -2,6 +2,7 @@ using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Gameplay.Battle;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Hud
 {
@@ -13,8 +14,8 @@ namespace GourmetProject.Game.UI.Hud
     public sealed class FoodDiscardBinView : MonoBehaviour
     {
         [SerializeField] private Image _binImage;
-        [SerializeField] private Text _remainingText;
-        [SerializeField] private Text _hintText;
+        [SerializeField] private TMP_Text _remainingText;
+        [SerializeField] private TMP_Text _hintText;
         [SerializeField] private CanvasGroup _canvasGroup;
         [SerializeField] private Color _normalColor = Color.white;
         [SerializeField] private Color _hoverColor = new Color(1f, 0.45f, 0.32f, 1f);

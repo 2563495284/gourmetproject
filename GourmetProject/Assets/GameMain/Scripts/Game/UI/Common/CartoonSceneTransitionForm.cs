@@ -13,6 +13,7 @@ using GourmetProject.Game.UI.Common;
 using GourmetProject.Game.UI.Menu;
 using GourmetProject.Game.UI.Meta;
 using GourmetProject.Game.UI.Widgets;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Common
 {
@@ -35,7 +36,7 @@ namespace GourmetProject.Game.UI.Common
         [SerializeField] private Image _plateImage;
         [SerializeField] private RectTransform[] _speedLines;
         [SerializeField] private Image[] _speedLineImages;
-        [SerializeField] private Text _messageText;
+        [SerializeField] private TMP_Text _messageText;
         [SerializeField] private Outline _messageOutline;
 
         [Header("Fade")]

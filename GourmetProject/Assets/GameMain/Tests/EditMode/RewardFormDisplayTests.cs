@@ -14,6 +14,7 @@ using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Tests.EditMode
 {
@@ -539,7 +540,7 @@ namespace GourmetProject.Tests.EditMode
         private static bool RowShowsClaimedState(
             RewardChoiceRowView row)
         {
-            Text state = GetField<Text>(row, "_stateText");
+            TMP_Text state = GetField<TMP_Text>(row, "_stateText");
             return state != null &&
                    state.gameObject.activeSelf &&
                    state.text == "已领取";
@@ -577,12 +578,12 @@ namespace GourmetProject.Tests.EditMode
 
         private static string RowTitle(RewardChoiceRowView row)
         {
-            return GetField<Text>(row, "_titleText")?.text ?? string.Empty;
+            return GetField<TMP_Text>(row, "_titleText")?.text ?? string.Empty;
         }
 
         private static string RowDescription(RewardChoiceRowView row)
         {
-            return GetField<Text>(row, "_descriptionText")?.text ?? string.Empty;
+            return GetField<TMP_Text>(row, "_descriptionText")?.text ?? string.Empty;
         }
 
         private static T GetField<T>(object target, string name)

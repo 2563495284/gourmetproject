@@ -5,6 +5,7 @@ using GourmetProject.Gameplay.Battle;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Hud
 {
@@ -25,14 +26,14 @@ namespace GourmetProject.Game.UI.Hud
         private const float PreparedDishRaycastPadding = 24f;
 
         [SerializeField] private Button _recipeInfoButton;
-        [SerializeField] private Text _recipeInfoText;
+        [SerializeField] private TMP_Text _recipeInfoText;
         [SerializeField] private Button _serveButton;
         [SerializeField] private Image _serveBellImage;
         [SerializeField] private RectTransform _preparedDishRoot;
         [SerializeField] private DishIconRenderTexturePreview _dishPreview;
         [SerializeField] private ServingOutletDishHoverTrigger _dishHoverTrigger;
-        [SerializeField] private Text _titleText;
-        [SerializeField] private Text _statusText;
+        [SerializeField] private TMP_Text _titleText;
+        [SerializeField] private TMP_Text _statusText;
         [SerializeField] private CanvasGroup _canvasGroup;
         [SerializeField] private Canvas _worldCanvas;
 
@@ -322,7 +323,7 @@ namespace GourmetProject.Game.UI.Hud
             }
         }
 
-        private static void SetText(Text text, string value)
+        private static void SetText(TMP_Text text, string value)
         {
             if (text != null)
             {

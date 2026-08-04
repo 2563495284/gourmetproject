@@ -6,6 +6,7 @@ using GourmetProject.Game.Run;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Hud
 {
@@ -25,12 +26,12 @@ namespace GourmetProject.Game.UI.Hud
         [Header("引用")]
         [SerializeField] private RectTransform _container;
         [SerializeField] private RectTransform _positionMarker;
-        [SerializeField] private Text _currentDayText;
+        [SerializeField] private TMP_Text _currentDayText;
         [SerializeField] private Image _fillTemplate;
         [SerializeField] private Image _tickTemplate;
-        [SerializeField] private Text _dayLabelTemplate;
+        [SerializeField] private TMP_Text _dayLabelTemplate;
         [SerializeField] private Image _nodeIconTemplate;
-        [SerializeField] private Text _nodeLabelTemplate;
+        [SerializeField] private TMP_Text _nodeLabelTemplate;
         [SerializeField] private TimelineNodeBubbleView _nodeBubblePrefab;
 
         [Header("节点图标")]
@@ -64,7 +65,7 @@ namespace GourmetProject.Game.UI.Hud
         private Action<int> _confirmDay;
         private Action<string> _confirmNode;
         private Action _cancelSelection;
-        private Font _cachedFont;
+        private TMP_FontAsset _cachedFont;
         private Sprite _whiteSprite;
         private string _builtTimelineId;
         private string _presentedExecutingNodeId;
@@ -327,13 +328,13 @@ namespace GourmetProject.Game.UI.Hud
 
                 if (day > 0)
                 {
-                    Text label = CreateText($"DayLabel_{day}", _container);
+                    TMP_Text label = CreateText($"DayLabel_{day}", _container);
                     label.text = day.ToString(CultureInfo.InvariantCulture);
                     label.color = _dayTextColor;
-                    label.alignment = TextAnchor.UpperCenter;
-                    label.resizeTextForBestFit = true;
-                    label.resizeTextMinSize = 9;
-                    label.resizeTextMaxSize = 17;
+                    label.alignment = TextAlignmentOptions.Top;
+                    label.enableAutoSizing = true;
+                    label.fontSizeMin = 9;
+                    label.fontSizeMax = 17;
                     label.raycastTarget = false;
                     SetAnchoredRect(
                         label.rectTransform,
@@ -677,15 +678,15 @@ namespace GourmetProject.Game.UI.Hud
             return image;
         }
 
-        private Text CreateText(string objectName, Transform parent)
+        private TMP_Text CreateText(string objectName, Transform parent)
         {
             var go = new GameObject(
                 objectName,
                 typeof(RectTransform),
                 typeof(CanvasRenderer),
-                typeof(Text));
+                typeof(TextMeshProUGUI));
             go.transform.SetParent(parent, false);
-            var text = go.GetComponent<Text>();
+            var text = go.GetComponent<TMP_Text>();
             text.font = ResolveFont();
             if (parent == _container)
             {
@@ -783,7 +784,7 @@ namespace GourmetProject.Game.UI.Hud
             _hoveredPreviewDay = -1;
         }
 
-        private Font ResolveFont()
+        private TMP_FontAsset ResolveFont()
         {
             if (_currentDayText != null && _currentDayText.font != null)
             {
@@ -792,11 +793,8 @@ namespace GourmetProject.Game.UI.Hud
 
             if (_cachedFont == null)
             {
-                _cachedFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-                if (_cachedFont == null)
-                {
-                    _cachedFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
-                }
+                _cachedFont = Resources.Load<TMP_FontAsset>("Fonts/AlimamaShuHeiTi-Bold SDF")
+                    ?? TMP_Settings.defaultFontAsset;
             }
 
             return _cachedFont;

@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Tooltips
 {
@@ -20,15 +21,15 @@ namespace GourmetProject.Game.UI.Tooltips
         [SerializeField] private CanvasGroup _canvasGroup;
 
         [Header("卡片内容")]
-        [SerializeField] private Text _titleText;
-        [SerializeField] private Text _descText;
+        [SerializeField] private TMP_Text _titleText;
+        [SerializeField] private TMP_Text _descText;
 
         [Header("底部信息行（可空：道具 Tips 无此行）")]
         [SerializeField] private GameObject _footerRoot;
-        [SerializeField] private Text _footerText;
+        [SerializeField] private TMP_Text _footerText;
 
-        protected Text TitleText => _titleText;
-        protected Text DescText => _descText;
+        protected TMP_Text TitleText => _titleText;
+        protected TMP_Text DescText => _descText;
 
         /// <summary>显示 Tips（不吃射线，纯展示）。</summary>
         public void Show()

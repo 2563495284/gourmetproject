@@ -1,13 +1,14 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Tooltips
 {
     /// <summary>材质 Tips 内的单条材质描述：材质名 + 描述。</summary>
     public sealed class FoodMaterialTipItemView : MonoBehaviour
     {
-        [SerializeField] private Text _nameText;
-        [SerializeField] private Text _descText;
+        [SerializeField] private TMP_Text _nameText;
+        [SerializeField] private TMP_Text _descText;
 
         public void Bind(FoodMaterialTipsEntry material)
         {

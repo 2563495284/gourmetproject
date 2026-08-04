@@ -5,6 +5,7 @@ using GourmetProject.Game.UI.Tooltips;
 using GourmetProject.Gameplay.Model;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Meta
 {
@@ -16,9 +17,9 @@ namespace GourmetProject.Game.UI.Meta
         [SerializeField] private Image _background;
         [SerializeField] private Image _icon;
         [SerializeField] private DishIconRenderTexturePreview _dishPreview;
-        [SerializeField] private Text _titleText;
-        [SerializeField] private Text _descriptionText;
-        [SerializeField] private Text _stateText;
+        [SerializeField] private TMP_Text _titleText;
+        [SerializeField] private TMP_Text _descriptionText;
+        [SerializeField] private TMP_Text _stateText;
         [SerializeField] private Button _button;
 
         private static readonly Color NormalColor = new(0.97f, 0.94f, 0.86f, 1f);
@@ -151,19 +152,19 @@ namespace GourmetProject.Game.UI.Meta
             if (_titleText == null)
             {
                 Transform title = transform.Find("Texts/Title") ?? transform.Find("Title");
-                _titleText = title != null ? title.GetComponent<Text>() : null;
+                _titleText = title != null ? title.GetComponent<TMP_Text>() : null;
             }
 
             if (_descriptionText == null)
             {
                 Transform desc = transform.Find("Texts/Description") ?? transform.Find("Description");
-                _descriptionText = desc != null ? desc.GetComponent<Text>() : null;
+                _descriptionText = desc != null ? desc.GetComponent<TMP_Text>() : null;
             }
 
             if (_stateText == null)
             {
                 Transform state = transform.Find("State") ?? transform.Find("StateText");
-                _stateText = state != null ? state.GetComponent<Text>() : null;
+                _stateText = state != null ? state.GetComponent<TMP_Text>() : null;
             }
         }
     }

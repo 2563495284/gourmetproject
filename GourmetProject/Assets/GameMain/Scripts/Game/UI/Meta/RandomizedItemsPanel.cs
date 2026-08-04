@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using GourmetProject.Game.Meta;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Meta
 {
@@ -11,7 +12,7 @@ namespace GourmetProject.Game.UI.Meta
         private readonly List<RectTransform> _cardRects = new();
         private readonly List<RandomizedItemCardView> _spawned = new();
         [SerializeField] private RectTransform _cardsRoot;
-        [SerializeField] private Text _titleText;
+        [SerializeField] private TMP_Text _titleText;
         [SerializeField] private Button _continueButton;
         [SerializeField] private RandomizedItemCardView _cardTemplate;
         private bool _resolved;
@@ -122,7 +123,7 @@ namespace GourmetProject.Game.UI.Meta
             if (_titleText == null)
             {
                 Transform title = transform.Find("Title");
-                _titleText = title != null ? title.GetComponent<Text>() : null;
+                _titleText = title != null ? title.GetComponent<TMP_Text>() : null;
             }
 
             if (_continueButton == null)

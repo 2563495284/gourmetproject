@@ -8,6 +8,7 @@ using GourmetProject.Gameplay.Battle;
 using GourmetProject.Runtime;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Battle.View
 {
@@ -29,7 +30,7 @@ namespace GourmetProject.Game.UI.Battle.View
         [SerializeField] private ScrollRect _passiveItemsScrollRect;
         [SerializeField] private RunItemSlotView _itemSlotPrefab;
         [SerializeField] private RectTransform _activeSlotsContainer;
-        [SerializeField] private Text _activeItemsInfo;
+        [SerializeField] private TMP_Text _activeItemsInfo;
         [SerializeField] private RunItemSlotView[] _activeItemSlots;
 
         private readonly List<RunItemSlotView> _passiveSlots = new List<RunItemSlotView>();
@@ -619,7 +620,7 @@ namespace GourmetProject.Game.UI.Battle.View
             if (_activeItemsInfo == null)
             {
                 Transform info = transform.Find("ActiveItems/Info");
-                _activeItemsInfo = info != null ? info.GetComponent<Text>() : null;
+                _activeItemsInfo = info != null ? info.GetComponent<TMP_Text>() : null;
             }
 
             if (!_hasActiveItemsInfoNormalColor && _activeItemsInfo != null)

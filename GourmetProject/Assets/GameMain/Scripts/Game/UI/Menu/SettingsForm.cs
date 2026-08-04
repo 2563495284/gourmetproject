@@ -9,6 +9,7 @@ using GourmetProject.Game.UI;
 using GourmetProject.Game.UI.Common;
 using GourmetProject.Game.UI.Menu;
 using GourmetProject.Game.UI.Widgets;
+using TMPro;
 
 namespace GourmetProject.Game.UI.Menu
 {
@@ -84,14 +85,14 @@ namespace GourmetProject.Game.UI.Menu
 
         private static void BindRow(SettingDescriptor descriptor, Transform row)
         {
-            var label = row.Find("Label").GetComponent<Text>();
+            var label = row.Find("Label").GetComponent<TMP_Text>();
             label.text = descriptor.Label;
 
             switch (descriptor.ControlType)
             {
                 case SettingControlType.Dropdown:
                 {
-                    var dropdown = row.Find("Dropdown").GetComponent<Dropdown>();
+                    var dropdown = row.Find("Dropdown").GetComponent<TMP_Dropdown>();
                     dropdown.onValueChanged.RemoveAllListeners();
                     dropdown.ClearOptions();
                     dropdown.AddOptions(descriptor.GetOptions());
@@ -103,7 +104,7 @@ namespace GourmetProject.Game.UI.Menu
                 case SettingControlType.Slider:
                 {
                     var slider = row.Find("Slider").GetComponent<Slider>();
-                    var valueText = row.Find("Value").GetComponent<Text>();
+                    var valueText = row.Find("Value").GetComponent<TMP_Text>();
                     slider.onValueChanged.RemoveAllListeners();
                     slider.minValue = descriptor.SliderMin;
                     slider.maxValue = descriptor.SliderMax;
@@ -145,7 +146,7 @@ namespace GourmetProject.Game.UI.Menu
                 }
 
                 Transform rowTransform = row.transform;
-                rowTransform.Find("Dropdown")?.GetComponent<Dropdown>()?.onValueChanged.RemoveAllListeners();
+                rowTransform.Find("Dropdown")?.GetComponent<TMP_Dropdown>()?.onValueChanged.RemoveAllListeners();
                 rowTransform.Find("Slider")?.GetComponent<Slider>()?.onValueChanged.RemoveAllListeners();
                 rowTransform.Find("Toggle")?.GetComponent<Toggle>()?.onValueChanged.RemoveAllListeners();
             }
