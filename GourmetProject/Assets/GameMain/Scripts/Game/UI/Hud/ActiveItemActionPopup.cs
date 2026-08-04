@@ -20,7 +20,6 @@ namespace GourmetProject.Game.UI.Hud
         [SerializeField] private RectTransform _panel;
         [SerializeField] private CanvasGroup _group;
         [SerializeField] private TMP_Text _titleText;
-        [SerializeField] private TMP_Text _reasonText;
         [SerializeField] private Button _useButton;
         [SerializeField] private Button _discardButton;
         [SerializeField] private ItemTipView _itemTipPrefab;
@@ -38,7 +37,6 @@ namespace GourmetProject.Game.UI.Hud
 
         private void Awake()
         {
-            EnsureRefs();
         }
 
         private void OnDestroy()
@@ -70,7 +68,6 @@ namespace GourmetProject.Game.UI.Hud
             Action onDiscard,
             Action onClose)
         {
-            EnsureRefs();
             _closing = false;
             _onUse = onUse;
             _onDiscard = onDiscard;
@@ -79,12 +76,6 @@ namespace GourmetProject.Game.UI.Hud
             if (_titleText != null)
             {
                 _titleText.text = item != null ? item.Name : "主动道具";
-            }
-
-            if (_reasonText != null)
-            {
-                _reasonText.text = canUse ? string.Empty : (disabledReason ?? "现在不能使用。");
-                _reasonText.gameObject.SetActive(!canUse && !string.IsNullOrEmpty(_reasonText.text));
             }
 
             BuildItemTip(item);
@@ -369,61 +360,5 @@ namespace GourmetProject.Game.UI.Hud
             _tween = seq;
         }
 
-        private void EnsureRefs()
-        {
-            if (_group == null)
-            {
-                _group = GetComponent<CanvasGroup>();
-            }
-
-            Image blocker = GetComponent<Image>();
-            if (blocker != null)
-            {
-                blocker.raycastTarget = true;
-            }
-
-            if (_panel == null)
-            {
-                Transform existing = transform.Find("Panel");
-                _panel = existing as RectTransform;
-            }
-
-            if (_titleText == null)
-            {
-                _titleText = FindText(_panel, "Title");
-            }
-
-            if (_reasonText == null)
-            {
-                _reasonText = FindText(_panel, "Reason");
-            }
-
-            if (_useButton == null)
-            {
-                _useButton = FindButton(_panel, "UseButton");
-            }
-
-            if (_discardButton == null)
-            {
-                _discardButton = FindButton(_panel, "DiscardButton");
-            }
-
-            if (_group == null || blocker == null || _panel == null || _titleText == null || _reasonText == null || _useButton == null || _discardButton == null || _itemTipPrefab == null)
-            {
-                Debug.LogError($"{nameof(ActiveItemActionPopup)} prefab 缺少固定 UI 结构或 ItemTipView 引用。", this);
-            }
-        }
-
-        private static TMP_Text FindText(RectTransform parent, string name)
-        {
-            Transform existing = parent != null ? parent.Find(name) : null;
-            return existing != null ? existing.GetComponent<TMP_Text>() : null;
-        }
-
-        private static Button FindButton(RectTransform parent, string name)
-        {
-            Transform existing = parent != null ? parent.Find(name) : null;
-            return existing != null ? existing.GetComponent<Button>() : null;
-        }
     }
 }
