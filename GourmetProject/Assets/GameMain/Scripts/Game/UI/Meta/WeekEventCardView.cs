@@ -161,7 +161,7 @@ namespace GourmetProject.Game.UI.Meta
         {
             return string.IsNullOrWhiteSpace(bossDebuffName)
                 ? "星级评鉴"
-                : $"星级评鉴：（{bossDebuffName}）";
+                : $"星级评鉴\n{bossDebuffName}";
         }
 
         public void BindNodeCard(string title, string desc, string artSpriteName, Action onPick)

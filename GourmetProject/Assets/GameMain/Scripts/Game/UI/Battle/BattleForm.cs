@@ -721,15 +721,6 @@ namespace GourmetProject.Game.UI.Battle
                     GameApp.UI.CloseUIForm(form);
                 }
             }
-
-            if (GameApp.UI.HasUIForm(UIForms.Defeat))
-            {
-                var form = GameApp.UI.GetUIForm(UIForms.Defeat);
-                if (form != null)
-                {
-                    GameApp.UI.CloseUIForm(form);
-                }
-            }
         }
 
         /// <summary>周循环请求「n 选一行动」：在常驻壳中部就地展示行动选择。</summary>
@@ -2507,8 +2498,45 @@ namespace GourmetProject.Game.UI.Battle
             }
             else
             {
-                GameApp.UI.OpenUIForm(UIForms.Defeat, UIForms.GroupDialog, new DefeatFormData(total));
+                ShowDefeatDialog(total);
             }
+        }
+
+        private void ShowDefeatDialog(int total)
+        {
+            GameRun run = GameRunContext.Current;
+            if (run == null)
+            {
+                return;
+            }
+
+            int target = _session?.RequiredScore ?? run.RequiredScore;
+            MetaProgressSaveData progress = MetaProgressPersistence.Load();
+            MetaProgressUpdate progressUpdate =
+                MetaProgressService.EvaluateRunEnd(run, false, total, target, progress);
+            SettlementSummary summary =
+                SettlementService.Build(run, false, total, target, progressUpdate);
+
+            var data = new ConfirmDialogData
+            {
+                Title = summary.Title,
+                Message = summary.Body,
+                ConfirmText = summary.ButtonLabel,
+                CancelText = string.Empty,
+                OnConfirm = () => CompleteDefeatedRun(progressUpdate),
+            };
+            GameApp.UI.OpenUIForm(UIForms.ConfirmDialog, UIForms.GroupDialog, data);
+        }
+
+        private static void CompleteDefeatedRun(MetaProgressUpdate progressUpdate)
+        {
+            if (progressUpdate?.Progress != null)
+            {
+                MetaProgressPersistence.Save(progressUpdate.Progress);
+            }
+
+            RunPersistence.Delete();
+            GameplayFlowSignal.RequestReturnToMenu();
         }
 
         public void ShowHeartBreak(HeartBreakFormOpenArgs args, Action onComplete)
