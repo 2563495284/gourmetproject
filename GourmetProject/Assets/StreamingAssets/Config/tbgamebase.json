@@ -1,14 +1,14 @@
 [
   {
     "initialGold": 50,
-    "initialInterestCap": 30,
-    "interestThreshold": 5,
+    "initialInterestCap": 50,
+    "interestThreshold": 3,
     "interestGoldPer": 1,
     "initialActionRerollCount": 0,
     "baseActiveSlots": 4,
-    "shopFoodSaleSlotCount": 3,
-    "shopPassiveItemSaleSlotCount": 2,
-    "shopActiveItemSaleSlotCount": 2,
+    "shopFoodSaleSlotCount": 4,
+    "shopPassiveItemSaleSlotCount": 3,
+    "shopActiveItemSaleSlotCount": 3,
     "foodFlavorLimit": 1,
     "foodDeleteCount": 2,
     "fragmentPackPrices": [

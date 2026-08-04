@@ -7,6 +7,7 @@ using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Battle;
 using GourmetProject.Game.UI.Battle.View;
+using GourmetProject.Game.UI.Hud;
 using GourmetProject.Game.UI.Meta;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
@@ -169,6 +170,36 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(panelReference, Is.Not.Null);
             Assert.That(panelReference.transform.parent, Is.EqualTo(battlePrefab.transform.Find("HudFrame/Center")));
             Assert.That(panelReference.gameObject.activeSelf, Is.False);
+        }
+
+        [Test]
+        public void PassiveItems_UsesDesignerTemplateAndVerticalScroll()
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(BattlePrefabPath);
+            BattleItemsColumn column = prefab.transform
+                .Find("HudFrame/RightColumn")
+                .GetComponent<BattleItemsColumn>();
+            RunItemSlotView template = prefab.transform
+                .Find("HudFrame/RightColumn/PassiveItems/Content/Template")
+                .GetComponent<RunItemSlotView>();
+            var serialized = new SerializedObject(column);
+            ScrollRect scrollRect = serialized
+                .FindProperty("_passiveItemsScrollRect")
+                .objectReferenceValue as ScrollRect;
+
+            Assert.That(template, Is.Not.Null, "PassiveItems/Content must contain the designer Template.");
+            Assert.That(template.name, Is.EqualTo("Template"));
+            Assert.That(template.transform.parent.name, Is.EqualTo("Content"));
+            Assert.That(template.RectTransform.sizeDelta, Is.EqualTo(new Vector2(120f, 120f)));
+            Assert.That(scrollRect, Is.Not.Null, "BattleItemsColumn._passiveItemsScrollRect must remain wired.");
+            Assert.That(scrollRect.horizontal, Is.False);
+            Assert.That(scrollRect.vertical, Is.True);
+
+            RectTransform visual = template.transform.Find("Image") as RectTransform;
+            Assert.That(visual, Is.Not.Null, "Template must retain its Image visual child.");
+            Assert.That(visual.anchorMin, Is.EqualTo(Vector2.zero));
+            Assert.That(visual.anchorMax, Is.EqualTo(Vector2.one));
+            Assert.That(visual.sizeDelta, Is.EqualTo(Vector2.zero));
         }
 
         [Test]

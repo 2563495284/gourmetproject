@@ -242,7 +242,7 @@
   {
     "id": "item_active_add_reward_node",
     "name": "幸运单",
-    "desc": "添加幸运事件至指定节点上",
+    "desc": "在指定日期添加奖励事件",
     "specialTags": "",
     "effectType": "TimelineAddRewardNode",
     "effectValue": 0,

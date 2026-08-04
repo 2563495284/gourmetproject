@@ -7,6 +7,7 @@
         "GourmetProject.Gameplay",
         "GourmetProject.Core",
         "GourmetProject.Runtime",
+        "UnityGameFramework.Runtime",
         "Luban.Runtime",
         "Unity.TextMeshPro"
     ],

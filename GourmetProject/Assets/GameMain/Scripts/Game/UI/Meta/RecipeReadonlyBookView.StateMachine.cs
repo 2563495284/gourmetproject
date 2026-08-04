@@ -103,6 +103,12 @@ namespace GourmetProject.Game.UI.Meta
 
             public override void OnDishClicked(RecipeReadonlyBookView panel, RecipeEditDishView dish)
             {
+                if (ShopService.DeleteDishRemaining(panel._run) <= 0)
+                {
+                    dish?.PlayInteractionFailed();
+                    return;
+                }
+
                 if (panel.TryBuildRecipeTarget(dish, out ActiveTarget target))
                 {
                     panel.ShowShopDeleteConfirm(target);
