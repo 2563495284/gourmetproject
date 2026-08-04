@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 菜谱小组随机条目：单元格写 dishId,weight,maxCount
+/// 食谱小组随机条目：单元格写 dishId,weight,maxCount
 /// </summary>
 public sealed partial class RecipeEntry : Luban.BeanBase
 {
@@ -31,7 +31,7 @@ public sealed partial class RecipeEntry : Luban.BeanBase
     }
 
     /// <summary>
-    /// 菜品ID
+    /// 食物ID
     /// </summary>
     public readonly string DishId;
     /// <summary>

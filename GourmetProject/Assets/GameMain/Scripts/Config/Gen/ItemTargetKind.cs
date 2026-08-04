@@ -12,7 +12,7 @@
 namespace cfg
 { 
     /// <summary>
-    /// 主动道具目标类型：决定作用对象与可用情境
+    /// 消耗品目标类型：决定作用对象与可用情境
     /// </summary>
     public enum ItemTargetKind
     {
@@ -21,11 +21,11 @@ namespace cfg
         /// </summary>
         None = 0,
         /// <summary>
-        /// 餐桌上的菜(本局临时,仅战斗)
+        /// 餐桌上的菜(本局临时,仅经营挑战)
         /// </summary>
         DiningTableDish = 1,
         /// <summary>
-        /// 菜谱里的菜(永久,任意情境含战斗)
+        /// 食谱里的菜(永久,任意情境含经营挑战)
         /// </summary>
         RecipeDish = 2,
         /// <summary>

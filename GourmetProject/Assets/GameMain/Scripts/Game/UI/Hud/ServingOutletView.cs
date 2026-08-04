@@ -17,7 +17,7 @@ namespace GourmetProject.Game.UI.Hud
     }
 
     /// <summary>
-    /// 战斗底部出餐口：负责显示菜谱可放统计、准备出餐按钮，以及等待玩家拖到餐桌的食物。
+    /// 经营挑战底部出菜口：负责显示食谱可放统计、准备出菜按钮，以及等待玩家拖到餐桌的食物。
     /// 具体餐桌预览与提交由 <see cref="BattleWorldController"/> 完成。
     /// </summary>
     [RequireComponent(typeof(Canvas), typeof(GraphicRaycaster))]
@@ -137,7 +137,7 @@ namespace GourmetProject.Game.UI.Hud
             else
             {
                 string reason = limitReached
-                    ? "本次品鉴已达到上菜上限"
+                    ? "本场经营挑战已达到上菜上限"
                     : slot == null || slot.IsEmpty
                         ? "剩余食物不足"
                         : "剩余食物无法摆入餐桌";
@@ -158,7 +158,7 @@ namespace GourmetProject.Game.UI.Hud
         private void ApplyState(ServingOutletState state, PreparedServeDish prepared, string blockedReason)
         {
             State = state;
-            SetText(_titleText, "出餐口");
+            SetText(_titleText, "出菜口");
 
             bool waitingForDrag = state == ServingOutletState.WaitingForDishDrag && prepared != null;
             if (_preparedDishRoot != null)
@@ -201,7 +201,7 @@ namespace GourmetProject.Game.UI.Hud
             switch (state)
             {
                 case ServingOutletState.WaitingForServe:
-                    SetText(_statusText, "点击出餐");
+                    SetText(_statusText, "点击出菜");
                     SetBackground(_readyColor);
                     break;
                 case ServingOutletState.WaitingForDishDrag:
@@ -209,7 +209,7 @@ namespace GourmetProject.Game.UI.Hud
                     SetBackground(_dragColor);
                     break;
                 default:
-                    SetText(_statusText, blockedReason ?? "没有食物可以出餐");
+                    SetText(_statusText, blockedReason ?? "没有食物可以出菜");
                     SetBackground(_blockedColor);
                     break;
             }

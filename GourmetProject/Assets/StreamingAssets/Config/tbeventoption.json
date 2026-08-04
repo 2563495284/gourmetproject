@@ -4,7 +4,7 @@
     "eventId": "ev_midnight_tasting",
     "parentId": "",
     "text": "试吃样品",
-    "resultText": "摊主把新调的风味塞进你的菜谱",
+    "resultText": "摊主把新调的风味塞进你的食谱",
     "condition": "",
     "effectTypes": [
       14
@@ -21,8 +21,8 @@
     "id": "opt_midnight_menu",
     "eventId": "ev_midnight_tasting",
     "parentId": "",
-    "text": "帮摊主整理菜单",
-    "resultText": "选择一道食物后，摊主会帮你把它从菜谱中删去",
+    "text": "帮摊主整理食谱",
+    "resultText": "选择1 个食物后，摊主会帮你把它从食谱中删去",
     "condition": "hasRecipeDish",
     "effectTypes": [
       28
@@ -76,7 +76,7 @@
     "eventId": "ev_ancestral_recipe_page",
     "parentId": "",
     "text": "抄写正文部分",
-    "resultText": "你获得了一个食物",
+    "resultText": "你获得了1 个食物",
     "condition": "",
     "effectTypes": [
       12
@@ -85,7 +85,7 @@
       3
     ],
     "effectParams": [
-      "dish_choice_3|祖传菜谱残页"
+      "dish_choice_3|祖传食谱残页"
     ],
     "autoEnd": false
   },
@@ -165,7 +165,7 @@
     "id": "opt_statue_gold",
     "eventId": "ev_kitchen_god_statue",
     "parentId": "",
-    "text": "供奉30金币",
+    "text": "供奉30 金币",
     "resultText": "神像前的贡盘轻轻一震",
     "condition": "minGold:30",
     "effectTypes": [
@@ -186,8 +186,8 @@
     "id": "opt_statue_dish",
     "eventId": "ev_kitchen_god_statue",
     "parentId": "",
-    "text": "供奉一道菜",
-    "resultText": "选择一道食物供奉给食神像",
+    "text": "供奉1 个食物",
+    "resultText": "选择1 个食物供奉给食神像",
     "condition": "hasRecipeDish",
     "effectTypes": [
       28,
@@ -286,7 +286,7 @@
     "eventId": "ev_delivery_order",
     "parentId": "",
     "text": "接普通单",
-    "resultText": "你接下普通外卖单，下一场美食挑战目标略有提高",
+    "resultText": "你接下普通外卖单，下一场经营挑战目标略有提高",
     "condition": "",
     "effectTypes": [
       19,
@@ -307,7 +307,7 @@
     "eventId": "ev_delivery_order",
     "parentId": "",
     "text": "接豪华单",
-    "resultText": "你接下豪华外卖单，下一场美食挑战目标明显提高",
+    "resultText": "你接下豪华外卖单，下一场经营挑战目标明显提高",
     "condition": "",
     "effectTypes": [
       19,
@@ -345,8 +345,8 @@
     "id": "opt_advance_passive",
     "eventId": "ev_black_market_advance",
     "parentId": "",
-    "text": "预支被动道具",
-    "resultText": "你提前拿走一个被动道具，相关的运气降低了",
+    "text": "预支装饰品",
+    "resultText": "你提前拿走一个装饰品，相关的运气降低了",
     "condition": "",
     "effectTypes": [
       3,
@@ -366,8 +366,8 @@
     "id": "opt_advance_fragment",
     "eventId": "ev_black_market_advance",
     "parentId": "",
-    "text": "预支餐桌碎片",
-    "resultText": "你提前拿走一包餐桌碎片，相关的运气降低了",
+    "text": "预支餐桌格",
+    "resultText": "你提前拿走一包餐桌格，相关的运气降低了",
     "condition": "",
     "effectTypes": [
       16,
@@ -387,8 +387,8 @@
     "id": "opt_advance_active",
     "eventId": "ev_black_market_advance",
     "parentId": "",
-    "text": "预支主动道具",
-    "resultText": "你提前拿走一个主动道具，后续2次奖励选择少 1 个选项",
+    "text": "预支消耗品",
+    "resultText": "你提前拿走一个消耗品，后续2 次奖励选择少 1 个选项",
     "condition": "",
     "effectTypes": [
       3,
@@ -408,7 +408,7 @@
     "id": "opt_casserole_i_food",
     "eventId": "ev_wishing_casserole_i",
     "parentId": "",
-    "text": "献上一个美食",
+    "text": "献上1 个食物",
     "resultText": "砂锅吞下随机贡品后，吐出几枚金币",
     "condition": "hasRecipeDish",
     "effectTypes": [
@@ -429,8 +429,8 @@
     "id": "opt_casserole_i_flavored",
     "eventId": "ev_wishing_casserole_i",
     "parentId": "",
-    "text": "献上一个独具风味的美食",
-    "resultText": "砂锅吞下1个带风味的美食，只是汤汁颜色变深了一点",
+    "text": "献上一个独具风味的食物",
+    "resultText": "砂锅吞下1 个带风味的食物，只是汤汁颜色变深了一点",
     "condition": "hasFlavoredRecipeDish",
     "effectTypes": [
       27,
@@ -451,7 +451,7 @@
     "eventId": "ev_wishing_casserole_i",
     "parentId": "",
     "text": "献上少量金币",
-    "resultText": "砂锅吐出1个被动道具",
+    "resultText": "砂锅吐出1 个装饰品",
     "condition": "minGold:20",
     "effectTypes": [
       1,
@@ -471,8 +471,8 @@
     "id": "opt_casserole_ii_flavored",
     "eventId": "ev_wishing_casserole_ii",
     "parentId": "",
-    "text": "献上一个独具风味的美食",
-    "resultText": "黑汤翻涌，吐出3个带有风味的美食",
+    "text": "献上一个独具风味的食物",
+    "resultText": "黑汤翻涌，吐出3 个带有风味的食物",
     "condition": "hasFlavoredRecipeDish",
     "effectTypes": [
       27,
@@ -493,7 +493,7 @@
     "eventId": "ev_wishing_casserole_ii",
     "parentId": "",
     "text": "献上一切金币",
-    "resultText": "所有金币沉入锅底，砂锅吐出1个珍贵道具",
+    "resultText": "所有金币沉入锅底，砂锅吐出1 个珍贵装饰品和消耗品",
     "condition": "minGold:1",
     "effectTypes": [
       24,
@@ -513,8 +513,8 @@
     "id": "opt_casserole_ii_actives",
     "eventId": "ev_wishing_casserole_ii",
     "parentId": "",
-    "text": "献上主动道具",
-    "resultText": "主动道具被黑汤吞没，金币从锅沿滚落",
+    "text": "献上消耗品",
+    "resultText": "消耗品被黑汤吞没，金币从锅沿滚落",
     "condition": "",
     "effectTypes": [
       21
@@ -531,7 +531,7 @@
     "id": "opt_roast_meat_pork",
     "eventId": "ev_roast_meat",
     "parentId": "",
-    "text": "吃猪肉，-30金币",
+    "text": "吃猪肉，-30 金币",
     "resultText": "猪肉好香好美味",
     "condition": "",
     "effectTypes": [

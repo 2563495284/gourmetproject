@@ -4,7 +4,7 @@ using UnityEngine.EventSystems;
 
 namespace GourmetProject.Game.UI.Hud
 {
-    /// <summary>行动轴日期点与节点气泡共用的轻量指针事件转发器。</summary>
+    /// <summary>时间轴日期点与节点气泡共用的轻量指针事件转发器。</summary>
     public sealed class TimelineAxisPointerTarget : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
     {
         private Action _entered;

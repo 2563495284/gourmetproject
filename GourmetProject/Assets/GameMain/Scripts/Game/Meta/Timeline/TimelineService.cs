@@ -7,7 +7,7 @@ using GourmetProject.Game.Run;
 namespace GourmetProject.Game.Meta
 {
     /// <summary>
-    /// 行动轴服务：按当前 Week 配置随机一条行动轴，推进天数游标，检测推进区间内经过的节点。
+    /// 时间轴服务：按当前 Week 配置随机一条时间轴，推进天数游标，检测推进区间内经过的节点。
     /// 节点配置内嵌于 <c>TbTimeline</c>，进入周时复制到 <see cref="GameRun"/> 的运行态快照。
     /// </summary>
     public static class TimelineService
@@ -15,7 +15,7 @@ namespace GourmetProject.Game.Meta
         private const string Tag = "Timeline";
         private const float DefaultLengthDays = 7f;
 
-        /// <summary>为当前周随机一条行动轴并初始化天数游标。返回选中的行动轴 id。</summary>
+        /// <summary>为当前周随机一条时间轴并初始化天数游标。返回选中的时间轴 id。</summary>
         public static string RollWeekTimeline(GameRun run, IRandomStream rng)
         {
             if (run == null || rng == null)
@@ -36,7 +36,7 @@ namespace GourmetProject.Game.Meta
 
             if (idCount != weightCount)
             {
-                Log.Warning($"第 {run.WeekIndex} 周行动轴配置长度不一致（ids={idCount}, weights={weightCount}），只使用两边都有值的部分。", Tag);
+                Log.Warning($"第 {run.WeekIndex} 周时间轴配置长度不一致（ids={idCount}, weights={weightCount}），只使用两边都有值的部分。", Tag);
             }
 
             for (int i = 0; i < pairCount; i++)
@@ -51,7 +51,7 @@ namespace GourmetProject.Game.Meta
                 cfg.Timeline tl = tables.TbTimeline.GetOrDefault(timelineId);
                 if (tl == null)
                 {
-                    Log.Warning($"第 {run.WeekIndex} 周配置了不存在的行动轴：{timelineId}。", Tag);
+                    Log.Warning($"第 {run.WeekIndex} 周配置了不存在的时间轴：{timelineId}。", Tag);
                     continue;
                 }
 
@@ -61,7 +61,7 @@ namespace GourmetProject.Game.Meta
 
             if (candidates.Count == 0)
             {
-                Log.Warning($"第 {run.WeekIndex} 周无可用行动轴，回退为 {DefaultLengthDays} 天空轴。", Tag);
+                Log.Warning($"第 {run.WeekIndex} 周无可用时间轴，回退为 {DefaultLengthDays} 天空轴。", Tag);
                 run.BeginTimeline(string.Empty, DefaultLengthDays);
                 ApplyWeekTimelinePassives(run);
                 return string.Empty;
@@ -72,7 +72,7 @@ namespace GourmetProject.Game.Meta
             float length = ResolveTimelineLength(run, chosen, nodes);
             run.BeginTimeline(chosen.Id, length, nodes);
             ApplyWeekTimelinePassives(run);
-            Log.Info($"第 {run.WeekIndex} 周行动轴 = {chosen.Id}（{length} 天）。", Tag);
+            Log.Info($"第 {run.WeekIndex} 周时间轴 = {chosen.Id}（{length} 天）。", Tag);
             return chosen.Id;
         }
 
@@ -93,7 +93,7 @@ namespace GourmetProject.Game.Meta
             return tables.TbAction.GetOrDefault(node.ActionId);
         }
 
-        /// <summary>当前行动轴的全部节点（静态配置 + 主动道具动态追加，按 day 升序）。</summary>
+        /// <summary>当前时间轴的全部节点（静态配置 + 消耗品动态追加，按 day 升序）。</summary>
         public static List<cfg.TimelineNode> GetNodes(GameRun run)
         {
             var nodes = new List<cfg.TimelineNode>();
@@ -102,7 +102,7 @@ namespace GourmetProject.Game.Meta
                 return nodes;
             }
 
-            // 当前周节点已在 BeginTimeline 时复制到 Run；道具后续直接改这份运行态快照。
+            // 当前周节点已在 BeginTimeline 时复制到 Run；装饰品和消耗品后续直接改这份运行态快照。
             foreach (RuntimeTimelineNode rt in run.RuntimeTimelineNodes)
             {
                 if (rt.TimelineId == run.CurrentTimelineId)
@@ -167,7 +167,7 @@ namespace GourmetProject.Game.Meta
             return TimelineMath.Quantize(length);
         }
 
-        /// <summary>取当前行动轴上尚未结算、day 最小的下一个节点（含运行时节点）；无则返回 null。「加急单」用。</summary>
+        /// <summary>取当前时间轴上尚未结算、day 最小的下一个节点（含运行时节点）；无则返回 null。「加急单」用。</summary>
         public static cfg.TimelineNode GetNextUntriggeredNode(GameRun run)
         {
             if (run == null)
@@ -262,7 +262,7 @@ namespace GourmetProject.Game.Meta
             return result;
         }
 
-        /// <summary>取得时间轴上最近的尚未触发 Boss 节点；同一天按节点 ID 升序稳定选择。</summary>
+        /// <summary>取得时间轴上最近的尚未触发 星级评鉴节点；同一天按节点 ID 升序稳定选择。</summary>
         public static cfg.TimelineNode GetNearestUntriggeredBossNode(GameRun run)
         {
             cfg.TimelineNode result = null;
@@ -356,7 +356,7 @@ namespace GourmetProject.Game.Meta
             return passed;
         }
 
-        /// <summary>行动轴是否已走完（天数游标到达/超过轴长度）。</summary>
+        /// <summary>时间轴是否已走完（天数游标到达/超过轴长度）。</summary>
         public static bool IsWeekFinished(GameRun run)
         {
             return TimelineMath.IsFinished(run.CurrentDay, run.TimelineLengthDays);

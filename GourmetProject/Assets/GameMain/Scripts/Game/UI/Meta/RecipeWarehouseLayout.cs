@@ -5,7 +5,7 @@ using UnityEngine;
 namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>
-    /// 统一菜谱仓库的纯逻辑矩形排布器。
+    /// 统一食谱仓库的纯逻辑矩形排布器。
     /// 保持输入顺序，在固定列数内按行优先 first-fit 放置，不依赖任何场景对象。
     /// </summary>
     public static class RecipeWarehouseLayout

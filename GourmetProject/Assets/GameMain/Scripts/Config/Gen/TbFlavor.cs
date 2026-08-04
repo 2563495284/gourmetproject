@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 菜品风味：单槽，后者替换前者。effectType/effectValue 定义简易结算效果。
+/// 食物风味：单槽，后者替换前者。effectType/effectValue 定义简易结算效果。
 /// </summary>
 public partial class TbFlavor
 {

@@ -44,7 +44,7 @@ namespace GourmetProject.Game.UI.Meta
 
         private abstract class RecipeReadonlyBookState
         {
-            public virtual string PanelTitle => "查看菜谱";
+            public virtual string PanelTitle => "查看食谱";
 
             public virtual string ExitButtonText => "取消";
 
@@ -125,7 +125,7 @@ namespace GourmetProject.Game.UI.Meta
                 _bookIndex = bookIndex;
             }
 
-            public override string PanelTitle => "查看菜谱";
+            public override string PanelTitle => "查看食谱";
 
             public override string ExitButtonText => "返回";
 
@@ -153,7 +153,7 @@ namespace GourmetProject.Game.UI.Meta
 
             public override string PanelTitle =>
                 string.IsNullOrWhiteSpace(_title)
-                    ? "可能获得的菜品"
+                    ? "可能获得的食物"
                     : _title;
 
             public override bool ShowExitButton => false;
@@ -181,7 +181,7 @@ namespace GourmetProject.Game.UI.Meta
 
             public override bool CanClickDish => true;
 
-            public override string PanelTitle => _item != null ? _item.Desc : "选择菜品";
+            public override string PanelTitle => _item != null ? _item.Desc : "选择食物";
 
             public override void Enter(RecipeReadonlyBookView panel)
             {
@@ -224,7 +224,7 @@ namespace GourmetProject.Game.UI.Meta
 
             public override bool CanClickDish => true;
 
-            public override string PanelTitle => string.IsNullOrWhiteSpace(_title) ? "选择要删除的菜品" : _title;
+            public override string PanelTitle => string.IsNullOrWhiteSpace(_title) ? "选择要删除的食物" : _title;
 
             public override void Enter(RecipeReadonlyBookView panel)
             {

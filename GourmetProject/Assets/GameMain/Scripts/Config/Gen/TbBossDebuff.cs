@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// Boss 盛宴 Debuff：Boss 美食战斗独立抽取，不放回随机；抽空后重置历史。
+/// 星级评鉴 Debuff：Boss 经营挑战独立抽取，不放回随机；抽空后重置历史。
 /// </summary>
 public partial class TbBossDebuff
 {

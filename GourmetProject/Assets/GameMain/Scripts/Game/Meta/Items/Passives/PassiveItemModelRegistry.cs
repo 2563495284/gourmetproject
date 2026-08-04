@@ -6,7 +6,7 @@ using UnityEngine.Scripting;
 namespace GourmetProject.Game.Meta.Passives
 {
     /// <summary>
-    /// 标注某 <see cref="PassiveItemModel"/> 子类绑定的被动道具 id（对应 tbpassiveitem.id）。
+    /// 标注某 <see cref="PassiveItemModel"/> 子类绑定的装饰品 id（对应 tbpassiveitem.id）。
     /// 一个 id 对应一个子类；<see cref="PassiveItemModelRegistry"/> 反射建表。
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
@@ -20,7 +20,7 @@ namespace GourmetProject.Game.Meta.Passives
         public string ItemId { get; }
     }
 
-    /// <summary>无行为兜底模型：未注册 id 或纯占位（TODO）道具使用，保证每个持有道具都有模型。</summary>
+    /// <summary>无行为兜底模型：未注册 id 或纯占位（TODO）装饰品和消耗品使用，保证每个持有装饰品和消耗品都有模型。</summary>
     [Preserve]
     public sealed class NoopPassiveModel : PassiveItemModel
     {

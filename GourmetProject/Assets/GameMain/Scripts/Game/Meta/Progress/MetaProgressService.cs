@@ -241,18 +241,18 @@ namespace GourmetProject.Game.Meta
                 ItemDefinition item = ItemDefinition.Get(tables, rule.TargetId);
                 if (item != null)
                 {
-                    return item.Kind == cfg.ItemKind.Passive ? "被动道具" : "主动道具";
+                    return item.Kind == cfg.ItemKind.Passive ? "装饰品" : "消耗品";
                 }
             }
 
             switch (rule.TargetType)
             {
                 case cfg.UnlockTargetType.Dish:
-                    return "菜品";
+                    return "食物";
                 case cfg.UnlockTargetType.Boss:
-                    return "Boss";
+                    return "星级评鉴";
                 case cfg.UnlockTargetType.Character:
-                    return "角色";
+                    return "经营方向";
                 case cfg.UnlockTargetType.Mode:
                     return "模式";
                 default:

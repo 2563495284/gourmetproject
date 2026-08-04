@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 菜谱带权数量方案：单元格写 count1,count2,...;weight
+/// 食谱带权数量方案：单元格写 count1,count2,...;weight
 /// </summary>
 public sealed partial class RecipeRollPlan : Luban.BeanBase
 {

@@ -29,19 +29,19 @@ public sealed partial class Timeline : Luban.BeanBase
     }
 
     /// <summary>
-    /// 行动轴模板 id
+    /// 时间轴模板 id
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 行动轴基础长度
+    /// 时间轴基础长度
     /// </summary>
     public readonly int BaseLengthDays;
     /// <summary>
-    /// 行动轴节点日期列表；与 nodeActionIds 同序
+    /// 时间轴节点日期列表；与 nodeActionIds 同序
     /// </summary>
     public readonly System.Collections.Generic.List<int> NodeDays;
     /// <summary>
-    /// 行动轴节点 actionId 列表；与 nodeDays 同序
+    /// 时间轴节点 actionId 列表；与 nodeDays 同序
     /// </summary>
     public readonly System.Collections.Generic.List<string> NodeActionIds;
    

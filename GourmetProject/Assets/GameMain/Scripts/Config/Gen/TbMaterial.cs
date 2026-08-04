@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 餐桌材质：挂在餐桌碎片格上（TableFragment.materialIds 引用）。effectType/effectValue 定义结算效果。
+/// 餐桌材质：挂在餐桌格上（TableFragment.materialIds 引用）。effectType/effectValue 定义结算效果。
 /// </summary>
 public partial class TbMaterial
 {

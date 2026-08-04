@@ -116,7 +116,7 @@ namespace GourmetProject.Game.Meta
         }
 
         /// <summary>
-        /// 组合式奖励 offer：固定金币 + 若干固定槽组 + 一个特定槽组（如全家福 = 金币 + 被动 + 菜品）。全部空则返回 null。
+        /// 组合式奖励 offer：固定金币 + 若干固定槽组 + 一个特定槽组（如全家福 = 金币 + 被动 + 食物）。全部空则返回 null。
         /// </summary>
         public static RewardOffer BuildConfigOffer(
             GameRun run,
@@ -165,13 +165,13 @@ namespace GourmetProject.Game.Meta
             switch (choices[0].Kind)
             {
                 case cfg.RewardKind.DishChoice:
-                    return "菜品";
+                    return "食物";
                 case cfg.RewardKind.PassiveItemChoice:
-                    return "被动道具";
+                    return "装饰品";
                 case cfg.RewardKind.ActiveItemGrant:
                 case cfg.RewardKind.ActiveItemStrengthen:
                 case cfg.RewardKind.ActiveItemAdjust:
-                    return "主动道具";
+                    return "消耗品";
                 case cfg.RewardKind.FragmentChoice:
                     return "格子奖励";
                 default:
@@ -224,7 +224,7 @@ namespace GourmetProject.Game.Meta
                 return string.Empty;
             }
 
-            // 营业基础金币按道具修正（利润提成 / 克扣工钱）；盛宴和其它奖励不属于营业。
+            // 营业基础金币按装饰品和消耗品修正（利润提成 / 克扣工钱）；星级评鉴和其它奖励不属于营业。
             var itemRuntime = new ItemRuntime(run);
             cfg.Food food = FoodService.Resolve(run.Tables, run.LastActionContext?.Action);
             bool isBusiness = food != null
@@ -269,7 +269,7 @@ namespace GourmetProject.Game.Meta
                     bool added = string.IsNullOrEmpty(choice.FlavorId)
                         ? run.AddBonusDish(choice.Id)
                         : run.AddBonusDishWithFlavor(choice.Id, choice.FlavorId);
-                    return added ? $"菜品加入菜谱池：{choice.Name}" : $"菜品折算失败：{choice.Name}";
+                    return added ? $"食物加入食谱：{choice.Name}" : $"食物折算失败：{choice.Name}";
                 case cfg.RewardKind.PassiveItemChoice:
                 case cfg.RewardKind.ActiveItemGrant:
                 case cfg.RewardKind.ActiveItemStrengthen:
@@ -317,7 +317,7 @@ namespace GourmetProject.Game.Meta
             }
 
             run.SetPendingFragmentPack(ids, rotations);
-            return ids.Count > 1 ? $"获得餐桌碎片包：{ids.Count} 选 1" : "获得餐桌碎片包";
+            return ids.Count > 1 ? $"获得餐桌格包：{ids.Count} 选 1" : "获得餐桌格包";
         }
 
         private static cfg.Week ResolveWeek(GameRun run, cfg.Week week)
@@ -387,7 +387,6 @@ namespace GourmetProject.Game.Meta
                 string.IsNullOrWhiteSpace(chosen.Name) ? GroupTitleFor(choices) : chosen.Name,
                 choices,
                 requiredPickCount,
-                description: chosen.Desc,
                 ruleText: ExpandRuleTemplate(chosen.RuleTemplate, choices, requiredPickCount),
                 sourceSlotId: chosen.Id);
         }

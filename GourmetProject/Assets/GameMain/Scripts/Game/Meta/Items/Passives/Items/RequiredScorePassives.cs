@@ -47,6 +47,11 @@ namespace GourmetProject.Game.Meta.Passives
             Run?.AddScoreToOneMeals(PassiveParam.ParseInt(Param, "meals", 0));
         }
 
+        public override void OnRemoved()
+        {
+            Run?.ClearScoreToOneMeals();
+        }
+
         public override bool IsIconUsed => Run != null && Run.ScoreToOneRemaining <= 0;
     }
 }

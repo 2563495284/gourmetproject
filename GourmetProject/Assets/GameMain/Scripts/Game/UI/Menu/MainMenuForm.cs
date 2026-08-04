@@ -96,7 +96,7 @@ namespace GourmetProject.Game.UI.Menu
 
         private void OnStartClicked()
         {
-            // 存档入口统一放在角色选择界面。
+            // 存档入口统一放在经营方向选择界面。
             GameApp.UI.CloseUIForm(UIForm);
             GameApp.UI.OpenUIForm(UIForms.CharacterSelect, UIForms.GroupDefault);
         }

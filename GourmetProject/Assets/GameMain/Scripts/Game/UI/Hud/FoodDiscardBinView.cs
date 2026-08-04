@@ -7,7 +7,7 @@ using TMPro;
 namespace GourmetProject.Game.UI.Hud
 {
     /// <summary>
-    /// 美食战斗左下角的世界空间垃圾桶。只负责显示剩余次数与屏幕点命中，
+    /// 经营挑战左下角的世界空间垃圾桶。只负责显示剩余次数与屏幕点命中，
     /// 实际丢弃由 BattleSession/BattleWorldController 完成。
     /// </summary>
     [RequireComponent(typeof(Canvas), typeof(CanvasGroup))]

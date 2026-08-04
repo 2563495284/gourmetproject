@@ -69,7 +69,7 @@ namespace GourmetProject.Game.Meta
         /// <summary>跨局已解锁目标，格式为 "TargetType:targetId"。</summary>
         public List<string> UnlockedTargetKeys = new List<string>();
 
-        /// <summary>旧字段兼容：早期只支持道具解锁。</summary>
+        /// <summary>旧字段兼容：早期只支持装饰品和消耗品解锁。</summary>
         public List<string> UnlockedItemIds = new List<string>();
         public int CompletedRunCount;
         public int WonRunCount;

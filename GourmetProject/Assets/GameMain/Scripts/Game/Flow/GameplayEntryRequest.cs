@@ -1,7 +1,7 @@
 namespace GourmetProject.Game.Flow
 {
     /// <summary>
-    /// 从菜单（角色选择/继续游戏）向流程层传递「开始局内」请求的轻量信箱。
+    /// 从菜单（经营方向选择/继续游戏）向流程层传递「开始局内」请求的轻量信箱。
     /// 界面不直接切换 GameFramework 流程，改为登记请求，由当前的 ProcedureMenu 轮询后切到 ProcedureGameplay。
     /// </summary>
     public static class GameplayEntryRequest
@@ -18,7 +18,7 @@ namespace GourmetProject.Game.Flow
 
         public static string CharacterId { get; private set; }
 
-        /// <summary>请求以指定角色开新运行。</summary>
+        /// <summary>请求以指定经营方向开新运行。</summary>
         public static void RequestNewRun(string characterId)
         {
             RequestedMode = Mode.NewRun;

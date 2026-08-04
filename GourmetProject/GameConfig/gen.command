@@ -14,6 +14,8 @@ DATA_OUT="$PROJECT_ROOT/Assets/StreamingAssets/Config"
 echo "Luban codegen -> $CODE_OUT"
 echo "Luban data    -> $DATA_OUT"
 
+python3 "$WORKSPACE/check_chinese_terms.py" --source-only
+
 dotnet "$LUBAN_DLL" \
     -t client \
     -c cs-simple-json \
@@ -21,5 +23,7 @@ dotnet "$LUBAN_DLL" \
     --conf "$CONF" \
     -x outputCodeDir="$CODE_OUT" \
     -x outputDataDir="$DATA_OUT"
+
+python3 "$WORKSPACE/check_chinese_terms.py"
 
 echo "Luban generation done."

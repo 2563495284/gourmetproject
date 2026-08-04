@@ -21,16 +21,16 @@ namespace cfg
         DishChoice = 2,
         PassiveItemChoice = 3,
         /// <summary>
-        /// 通用主动道具
+        /// 通用消耗品
         /// </summary>
         ActiveItemGrant = 4,
         FragmentChoice = 5,
         /// <summary>
-        /// 随机强化类主动道具
+        /// 随机强化类消耗品
         /// </summary>
         ActiveItemStrengthen = 6,
         /// <summary>
-        /// 随机调整类主动道具
+        /// 随机调整类消耗品
         /// </summary>
         ActiveItemAdjust = 7,
     }

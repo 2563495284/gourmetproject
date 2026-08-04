@@ -14,8 +14,8 @@ using GourmetProject.Game.UI.Widgets;
 namespace GourmetProject.Game.UI.Widgets
 {
     /// <summary>
-    /// 菜品信息文本的共享生成逻辑：技能/风味行、专有名词解释、hover tooltip 汇总。
-    /// 由菜品详情界面（DishDetailForm）与菜单书 hover tips（DishTooltipView）共用，避免两处实现漂移。
+    /// 食物信息文本的共享生成逻辑：技能/风味行、专有名词解释、hover tooltip 汇总。
+    /// 由食物详情界面（DishDetailForm）与菜单书 hover tips（DishTooltipView）共用，避免两处实现漂移。
     /// </summary>
     public static class DishInfoText
     {
@@ -132,7 +132,7 @@ namespace GourmetProject.Game.UI.Widgets
             return sb.ToString();
         }
 
-        /// <summary>生成菜品 hover tooltip 的完整文本：名称、美味度、形状、技能/风味、名词。</summary>
+        /// <summary>生成食物 hover tooltip 的完整文本：名称、美味值、形状、技能/风味、名词。</summary>
         public static string Tooltip(DishDef def, IReadOnlyList<string> skillIds, string flavorId, GameplayDatabase db)
         {
             if (def == null)
@@ -142,7 +142,7 @@ namespace GourmetProject.Game.UI.Widgets
 
             var sb = new StringBuilder();
             sb.AppendLine(def.Name);
-            sb.AppendLine($"美味度 {def.Deliciousness}　形状 {def.Shape.Width}x{def.Shape.Height}");
+            sb.AppendLine($"美味值 {def.Deliciousness}　形状 {def.Shape.Width}x{def.Shape.Height}");
 
             IReadOnlyList<string> flavorIds = string.IsNullOrEmpty(flavorId)
                 ? System.Array.Empty<string>()

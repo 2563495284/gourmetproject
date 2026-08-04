@@ -23,7 +23,7 @@ namespace GourmetProject.Game.Meta.BossDebuffs
     }
 
     /// <summary>
-    /// 单场 Boss Debuff 行为模型。每个配置 id 对应一个子类，只覆写需要参与的战斗装配阶段。
+    /// 单场 Boss Debuff 行为模型。每个配置 id 对应一个子类，只覆写需要参与的经营挑战装配阶段。
     /// 机制数值由子类拥有；配置只保留展示、抽取、解锁和隐藏分元数据。
     /// </summary>
     public abstract class BossDebuffModel
@@ -45,7 +45,7 @@ namespace GourmetProject.Game.Meta.BossDebuffs
         {
         }
 
-        /// <summary>在创建餐桌前修改本场菜谱条目。</summary>
+        /// <summary>在创建餐桌前修改本场食谱条目。</summary>
         public virtual void ModifyRecipeSlots(List<RecipeSlot> slots, IRandomStream rng)
         {
         }
@@ -90,7 +90,7 @@ namespace GourmetProject.Game.Meta.BossDebuffs
             EnsureBuilt();
             if (!_map.TryGetValue(definition.Id, out Type type))
             {
-                throw new InvalidOperationException($"Boss Debuff '{definition.Id}' 没有对应的模型类。");
+                throw new InvalidOperationException($"星级评鉴 Debuff '{definition.Id}' 没有对应的模型类。");
             }
 
             var model = (BossDebuffModel)Activator.CreateInstance(type);
@@ -117,7 +117,7 @@ namespace GourmetProject.Game.Meta.BossDebuffs
                 configured.Add(definition.Id);
                 if (!_map.ContainsKey(definition.Id))
                 {
-                    throw new InvalidOperationException($"Boss Debuff '{definition.Id}' 没有对应的模型类。");
+                    throw new InvalidOperationException($"星级评鉴 Debuff '{definition.Id}' 没有对应的模型类。");
                 }
             }
 
@@ -125,7 +125,7 @@ namespace GourmetProject.Game.Meta.BossDebuffs
             {
                 if (!configured.Contains(registeredId))
                 {
-                    throw new InvalidOperationException($"Boss Debuff 模型 '{registeredId}' 没有对应的配置行。");
+                    throw new InvalidOperationException($"星级评鉴 Debuff 模型 '{registeredId}' 没有对应的配置行。");
                 }
             }
         }
@@ -155,7 +155,7 @@ namespace GourmetProject.Game.Meta.BossDebuffs
                 if (map.TryGetValue(attr.DebuffId, out Type existing))
                 {
                     throw new InvalidOperationException(
-                        $"Boss Debuff '{attr.DebuffId}' 同时绑定了 {existing.FullName} 与 {type.FullName}。");
+                        $"星级评鉴 Debuff '{attr.DebuffId}' 同时绑定了 {existing.FullName} 与 {type.FullName}。");
                 }
 
                 map.Add(attr.DebuffId, type);

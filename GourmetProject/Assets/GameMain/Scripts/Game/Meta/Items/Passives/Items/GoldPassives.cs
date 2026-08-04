@@ -5,7 +5,7 @@ using UnityEngine.Scripting;
 
 namespace GourmetProject.Game.Meta.Passives
 {
-    /// <summary>美食奖励金币百分比（利润提成 +/克扣工钱 -）。</summary>
+    /// <summary>食物奖励金币百分比（利润提成 +/克扣工钱 -）。</summary>
     [Preserve]
     [PassiveItemModel("item_gold_percent")]
     [PassiveItemModel("item_gold_meal_penalty")]
@@ -198,7 +198,7 @@ namespace GourmetProject.Game.Meta.Passives
         }
     }
 
-    /// <summary>美食分红：获得时登记生效局数；每局额外金币由 MealBonusGoldPerMeal 提供。</summary>
+    /// <summary>食物分红：获得时登记生效局数；每局额外金币由 MealBonusGoldPerMeal 提供。</summary>
     [Preserve]
     [PassiveItemModel("item_gold_meal_bonus")]
     public sealed class MealBonusGoldModel : PassiveItemModel
@@ -206,6 +206,11 @@ namespace GourmetProject.Game.Meta.Passives
         public override void OnAcquired()
         {
             Run?.AddMealBonusMeals(PassiveParam.ParseInt(Param, "meals", 0));
+        }
+
+        public override void OnRemoved()
+        {
+            Run?.ClearMealBonusMeals();
         }
 
         public override bool IsIconUsed => Run != null && Run.MealBonusRemaining <= 0;
@@ -250,7 +255,7 @@ namespace GourmetProject.Game.Meta.Passives
                 return;
             }
 
-            // 先确认还款节点确实落轴，再发放本金；无行动轴/节点落点失败时不会白拿金币。
+            // 先确认还款节点确实落轴，再发放本金；无时间轴/节点落点失败时不会白拿金币。
             if (string.IsNullOrEmpty(Run.AddWeekEndAnchoredTimelineNode("act_loan_repay", ItemId)))
             {
                 return;
@@ -283,9 +288,9 @@ namespace GourmetProject.Game.Meta.Passives
             }
         }
 
-        public override void OnSweetTransferTriggered(SkillTransferRequest request)
+        public override void OnSweetTransferTriggered(SweetTransferOccurrence occurrence)
         {
-            if (_rewarded)
+            if (!IsStillHeld || _rewarded)
             {
                 return;
             }

@@ -5,7 +5,7 @@ using System.Linq;
 namespace GourmetProject.Gameplay.Model
 {
     /// <summary>
-    /// 菜品的占格形状（多连块）。以一组归一化后的格子偏移表示，左上对齐到 (0,0)。
+    /// 食物的占格形状（多连块）。以一组归一化后的格子偏移表示，左上对齐到 (0,0)。
     /// 形状不可变；旋转返回新的实例。
     /// </summary>
     public sealed class DishShape

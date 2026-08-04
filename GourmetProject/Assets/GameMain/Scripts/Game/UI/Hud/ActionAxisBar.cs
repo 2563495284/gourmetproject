@@ -19,7 +19,7 @@ namespace GourmetProject.Game.UI.Hud
     }
 
     /// <summary>
-    /// BattleForm 顶部离散行动轴：整数日期点、同日重叠气泡及主动道具的轴上选点交互。
+    /// BattleForm 顶部离散时间轴：整数日期点、同日重叠气泡及消耗品的轴上选点交互。
     /// </summary>
     public sealed class ActionAxisBar : MonoBehaviour
     {

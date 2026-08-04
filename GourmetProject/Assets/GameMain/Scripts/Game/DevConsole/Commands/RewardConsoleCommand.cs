@@ -25,7 +25,7 @@ namespace GourmetProject.Game.DevConsole.Commands
 
             if (BattleForm.Active == null)
             {
-                return CmdResult.Fail("需要在战斗界面内使用。");
+                return CmdResult.Fail("需要在经营挑战界面内使用。");
             }
 
             if (GameApp.UI.HasUIForm(UIForms.Reward))

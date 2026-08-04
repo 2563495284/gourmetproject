@@ -162,7 +162,7 @@
     "rotation": 0
   },
   {
-    "id": "mousse",
+    "id": "mousset_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "mousse",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,

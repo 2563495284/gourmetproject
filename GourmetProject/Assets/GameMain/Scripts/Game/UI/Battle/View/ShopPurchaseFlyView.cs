@@ -7,7 +7,7 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI.Battle.View
 {
     /// <summary>
-    /// 商店购买视觉副本。食物走带双层轨迹的卡牌弧线，道具走 STS2 对应的药水/遗物入栏表现。
+    /// 商店购买视觉副本。食物走带双层轨迹的卡牌弧线，装饰品和消耗品走 STS2 对应的药水/遗物入栏表现。
     /// 本组件独占传入的 RenderTexture，并保证在完成或中断时释放。
     /// </summary>
     public sealed class ShopPurchaseFlyView : MonoBehaviour

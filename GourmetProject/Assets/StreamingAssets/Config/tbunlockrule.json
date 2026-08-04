@@ -4,7 +4,7 @@
     "targetType": 0,
     "targetId": "item_chef_knife",
     "title": "主厨刀",
-    "desc": "被动道具：主厨刀",
+    "desc": "装饰品：主厨刀",
     "enabled": true,
     "sortOrder": 10
   },
@@ -13,7 +13,7 @@
     "targetType": 0,
     "targetId": "item_extra_serve",
     "title": "加菜券",
-    "desc": "主动道具：加菜券",
+    "desc": "消耗品：加菜券",
     "enabled": true,
     "sortOrder": 20
   },
@@ -22,7 +22,7 @@
     "targetType": 0,
     "targetId": "item_pepper_jar",
     "title": "胡椒罐",
-    "desc": "被动道具：胡椒罐",
+    "desc": "装饰品：胡椒罐",
     "enabled": true,
     "sortOrder": 30
   }

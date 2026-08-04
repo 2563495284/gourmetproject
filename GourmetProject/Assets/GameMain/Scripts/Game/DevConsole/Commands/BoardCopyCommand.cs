@@ -12,7 +12,7 @@ using UnityEngine;
 
 namespace GourmetProject.Game.DevConsole.Commands
 {
-    /// <summary>复制当前战斗的棋盘、结算顺序和明细，供定位演出顺序问题。</summary>
+    /// <summary>复制当前经营挑战的棋盘、结算顺序和明细，供定位演出顺序问题。</summary>
     public sealed class BoardCopyCommand : ConsoleCommand
     {
         public override string CmdName => "boardcopy";
@@ -26,14 +26,14 @@ namespace GourmetProject.Game.DevConsole.Commands
             BattleSession session = BattleForm.Active?.Session;
             if (session?.DiningTable == null || session.Database == null)
             {
-                return CmdResult.Fail("当前没有可导出的美食战斗棋盘。");
+                return CmdResult.Fail("当前没有可导出的经营挑战棋盘。");
             }
 
             ScoreResult result = session.LastResult ?? session.PreviewScore();
             string snapshot = BuildSnapshot(session, result);
             GUIUtility.systemCopyBuffer = snapshot;
             return CmdResult.Ok(
-                $"已复制棋盘调试数据：{session.DiningTable.DishCount} 道菜，"
+                $"已复制餐桌调试数据：{session.DiningTable.DishCount} 个食物，"
                 + $"{result.ScoreLines.Count} 条 ScoreLine，"
                 + $"{result.ScoreEvents.Count} 条 ScoreEvent。");
         }

@@ -4,7 +4,7 @@ using UnityEngine;
 namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>
-    /// 菜谱统一仓库视图：固定列数、矩形占格、自动紧凑排布与纵向浏览。
+    /// 食谱统一仓库视图：固定列数、矩形占格、自动紧凑排布与纵向浏览。
     /// </summary>
     public sealed class RecipeWarehouseView : MonoBehaviour
     {

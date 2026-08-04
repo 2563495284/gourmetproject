@@ -55,7 +55,7 @@ namespace GourmetProject.Gameplay.Scoring
         }
 
         /// <summary>
-        /// 该菜的结算优先级层级：累加其所有 <see cref="Model.FlavorEffectType.SettlementLayer"/> 风味的效果值
+        /// 该食物的结算优先级层级：累加其所有 <see cref="Model.FlavorEffectType.SettlementLayer"/> 风味的效果值
         /// （甜 +1、苦 -1）。默认 0。层级越大越先结算。
         /// </summary>
         public static int SettlementLayerOf(DishInstance dish, GameplayDatabase db)
@@ -79,7 +79,7 @@ namespace GourmetProject.Gameplay.Scoring
         }
 
         /// <summary>
-        /// 同层菜品按实际占用格中最靠前的一格排序。
+        /// 同层食物按实际占用格中最靠前的一格排序。
         /// 避免带空洞形状与其他菜共享 placement origin 时退化为实例创建顺序。
         /// </summary>
         public static int SettlementBoardOrderOf(DishInstance dish, int boardWidth)
@@ -115,13 +115,13 @@ namespace GourmetProject.Gameplay.Scoring
 
         public float InitialFinalMultiplier { get; }
 
-        /// <summary>本次品鉴（meal）开始结算时的全局「欢乐蛋糕层数」。</summary>
+        /// <summary>本场经营挑战（meal）开始结算时的全局「欢乐蛋糕层数」。</summary>
         public int InitialHappyCakeLayers { get; }
 
-        /// <summary>由被动道具（如「小份主义」）提供的每道菜额外「视为食物数」加成，计入计数类前提。</summary>
+        /// <summary>由装饰品（如「小份主义」）提供的每个食物额外「视为食物数」加成，计入计数类前提。</summary>
         public int ExtraCountAsPerDish { get; }
 
-        /// <summary>由被动道具（「蛋糕捷径」）提供的蛋糕层数 buff 阈值下调值（每档需求层数 -reduction）。</summary>
+        /// <summary>由装饰品（「蛋糕捷径」）提供的蛋糕层数 buff 阈值下调值（每档需求层数 -reduction）。</summary>
         public int CakeLayerThresholdReduction { get; }
 
         public IScoreHistory History { get; }
@@ -138,11 +138,11 @@ namespace GourmetProject.Gameplay.Scoring
         /// </summary>
         public Func<IReadOnlyList<int>, int, IReadOnlyList<int>> TransferTargetSelector { get; }
 
-        /// <summary>本次结算时仍未上菜的菜谱条目（槽索引 + dishId），供酸/咸在结算开始时遍历。</summary>
+        /// <summary>本次结算时仍未上菜的食谱条目（槽索引 + dishId），供酸/咸在结算开始时遍历。</summary>
         public IReadOnlyList<UnservedRecipeDish> UnservedRecipeDishes { get; }
     }
 
-    /// <summary>一条未上菜的菜谱条目：来源槽、菜品 id，以及按获得顺序排列的全部风味。</summary>
+    /// <summary>一条未上菜的食谱条目：来源槽、食物 id，以及按获得顺序排列的全部风味。</summary>
     public readonly struct UnservedRecipeDish
     {
         public UnservedRecipeDish(int slotIndex, string dishId, IReadOnlyList<string> flavorIds = null)

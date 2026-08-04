@@ -2,7 +2,7 @@
   {
     "id": "m_cherry",
     "name": "樱桃木",
-    "desc": "分数+60",
+    "desc": "分数 +60",
     "effectType": 1,
     "effectParam": [],
     "effectValue": [
@@ -13,7 +13,7 @@
   {
     "id": "m_walnut",
     "name": "胡桃木",
-    "desc": "分数永久+15",
+    "desc": "分数永久 +15",
     "effectType": 2,
     "effectParam": [],
     "effectValue": [
@@ -24,7 +24,7 @@
   {
     "id": "m_marble",
     "name": "大理石",
-    "desc": "倍率+2",
+    "desc": "倍率 +2",
     "effectType": 3,
     "effectParam": [],
     "effectValue": [
@@ -35,7 +35,7 @@
   {
     "id": "m_obsidian",
     "name": "黑曜石",
-    "desc": "倍率×1.5",
+    "desc": "倍率 ×1.5",
     "effectType": 4,
     "effectParam": [],
     "effectValue": [
@@ -46,7 +46,7 @@
   {
     "id": "m_emerald",
     "name": "翡翠",
-    "desc": "每占 1 格翡翠\n倍率+0.8",
+    "desc": "每占 1 格翡翠\n倍率 +0.8",
     "effectType": 5,
     "effectParam": [],
     "effectValue": [
@@ -70,7 +70,7 @@
   {
     "id": "m_silver",
     "name": "银",
-    "desc": "占据 2 格银餐桌时\n1/2 概率获得主动道具",
+    "desc": "占据 2 格银餐桌时\n1/2 概率获得消耗品",
     "effectType": 7,
     "effectParam": [
       "2"

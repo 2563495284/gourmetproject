@@ -17,11 +17,11 @@ namespace cfg
     public enum UnlockTargetType
     {
         /// <summary>
-        /// 道具
+        /// 装饰品和消耗品
         /// </summary>
         Item = 0,
         /// <summary>
-        /// 菜品
+        /// 食物
         /// </summary>
         Dish = 1,
         /// <summary>
@@ -29,7 +29,7 @@ namespace cfg
         /// </summary>
         Boss = 2,
         /// <summary>
-        /// 角色
+        /// 经营方向
         /// </summary>
         Character = 3,
         /// <summary>

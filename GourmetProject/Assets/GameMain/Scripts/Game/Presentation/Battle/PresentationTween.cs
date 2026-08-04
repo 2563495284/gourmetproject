@@ -6,7 +6,7 @@ using GourmetProject.Game.Run;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
-    /// <summary>战斗表现层共享的 DOTween + Awaitable 补间工具，避免在多个组件里重复实现。</summary>
+    /// <summary>经营挑战表现层共享的 DOTween + Awaitable 补间工具，避免在多个组件里重复实现。</summary>
     internal static class PresentationTween
     {
         public static async Awaitable MoveToAsync(Transform target, Vector3 end, float duration, CancellationToken cancellationToken)

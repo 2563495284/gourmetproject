@@ -6,7 +6,7 @@ using GourmetProject.Runtime;
 namespace GourmetProject.Game.Meta
 {
     /// <summary>
-    /// 道具随机池与默认规则。被动道具不可重复进入随机池；主动道具按持有上限控制。
+    /// 装饰品和消耗品随机池与默认规则。装饰品不可重复进入随机池；消耗品按持有上限控制。
     /// </summary>
     public static class ItemPoolService
     {

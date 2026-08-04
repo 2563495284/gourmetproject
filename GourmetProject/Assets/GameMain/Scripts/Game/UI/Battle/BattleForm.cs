@@ -36,10 +36,10 @@ using TMPro;
 namespace GourmetProject.Game.UI.Battle
 {
     /// <summary>
-    /// 局外周循环编排枢纽 + 局内战斗结果壳。
-    /// 常驻壳（左列信息 / 右列道具 / 顶部行动轴）进入玩法后全程常驻，只有中部内容区在五态间切换：
-    /// 行动选择(含事件 n 选一) / 商店 / 菜谱查看与选择 / 美食战斗 / 餐桌编辑。切换只对中部内容区做 DOTween 渐隐渐显
-    /// （<see cref="UITransition.FadeSwap"/>），常驻壳不参与动画；美食 / 餐桌态在同一 Battle 场景内透出世界空间表现。
+    /// 局外周循环编排枢纽 + 局内经营挑战结果壳。
+    /// 常驻壳（左列信息 / 右列装饰品和消耗品 / 顶部时间轴）进入玩法后全程常驻，只有中部内容区在五态间切换：
+    /// 行动选择(含事件 n 选一) / 商店 / 食谱查看与选择 / 经营挑战 / 餐桌编辑。切换只对中部内容区做 DOTween 渐隐渐显
+    /// （<see cref="UITransition.FadeSwap"/>），常驻壳不参与动画；食物 / 餐桌态在同一 Battle 场景内透出世界空间表现。
     /// </summary>
     public sealed class BattleForm : UGuiForm,
         IWeekLoopView,
@@ -63,7 +63,7 @@ namespace GourmetProject.Game.UI.Battle
             ServingOutlet,
         }
 
-        /// <summary>当前打开的战斗界面，供各弹窗回调推进周循环。</summary>
+        /// <summary>当前打开的经营挑战界面，供各弹窗回调推进周循环。</summary>
         public static BattleForm Active { get; private set; }
 
         [Header("HUD Frame")]
@@ -142,6 +142,8 @@ namespace GourmetProject.Game.UI.Battle
 
         private GameRun _run;
         private BattleSession _session;
+        private BattleSession _foodDiscardCapacitySession;
+        private int _observedFoodDiscardCapacity = -1;
         private BattleWorldController _world;
 
         private WeekLoopController _loop;
@@ -255,8 +257,8 @@ namespace GourmetProject.Game.UI.Battle
 
             Active = this;
             _discardSettlementCallbacks = false;
-            // 尽早绑定场景里的战斗世界单例：否则首次 StartBattle 之前 _world 为 null，
-            // BeginWeek 里的 HideBattleWorld 会变成空操作，导致进场景默认态残留美食专属按钮。
+            // 尽早绑定场景里的经营挑战世界单例：否则首次 StartBattle 之前 _world 为 null，
+            // BeginWeek 里的 HideBattleWorld 会变成空操作，导致进场景默认态残留食物专属按钮。
             _world = BattleWorldController.Instance;
             if (_tips != null)
             {
@@ -290,12 +292,15 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             UnsubscribeCakeLayerChanges();
+            ResetFoodDiscardCapacityTracking();
 
             base.OnClose(isShutdown, userData);
         }
 
         private void Update()
         {
+            SynchronizeFoodDiscardCapacity();
+
             if (_rewardPeekOnly || HasPendingBattleRewardLifecycle)
             {
                 return;
@@ -311,15 +316,16 @@ namespace GourmetProject.Game.UI.Battle
         private bool HasPendingBattleRewardLifecycle
             => _session?.IsSettled == true && _run?.HasPendingRewardBattleView == true;
 
-        /// <summary>进入（或继续）一周：随机/沿用行动轴后开始行动循环。</summary>
+        /// <summary>进入（或继续）一周：随机/沿用时间轴后开始行动循环。</summary>
         public void BeginWeek()
         {
             UnsubscribeCakeLayerChanges();
             _session = null;
+            ResetFoodDiscardCapacityTracking();
             _loop?.BeginWeek();
         }
 
-        /// <summary>行动轴未走完则弹「n 选一行动」；走完则进入下一周。</summary>
+        /// <summary>时间轴未走完则弹「n 选一行动」；走完则进入下一周。</summary>
         public void PromptNextAction()
         {
             _loop?.PromptNextAction();
@@ -337,7 +343,7 @@ namespace GourmetProject.Game.UI.Battle
             _loop?.OnShopClosed();
         }
 
-        /// <summary>RewardForm 发奖确认后回调：继续战斗后的编排续接。</summary>
+        /// <summary>RewardForm 发奖确认后回调：继续经营挑战后的编排续接。</summary>
         public void OnRewardConfirmed()
         {
             _infoColumn?.SetBossBattlePresentation(null, false, true);
@@ -502,6 +508,7 @@ namespace GourmetProject.Game.UI.Battle
                 _activeBattleModifier,
                 _activeBattleKey,
                 _activeBossDebuffId);
+            BeginFoodDiscardCapacityTracking();
             _pendingSettlementCakeLayers = null;
             _session.DiningTable.Clear();
             RestorePendingRewardBattleDishes(_session, snapshot);
@@ -728,7 +735,7 @@ namespace GourmetProject.Game.UI.Battle
             SwitchTo(GameplayView.Shop);
         }
 
-        /// <summary>行动轴节点卡片：先展示节点卡，玩家点击后再执行节点效果。</summary>
+        /// <summary>时间轴节点卡片：先展示节点卡，玩家点击后再执行节点效果。</summary>
         public void ShowTimelineNodeCard(cfg.TimelineNode node, int? interestMaxGain, Action onPick)
         {
             TrackTimelineNodeCard(node, interestMaxGain, onPick);
@@ -802,7 +809,7 @@ namespace GourmetProject.Game.UI.Battle
         // —— 中部态切换中枢（淡入淡出调度 + 派发给状态机）——
 
         /// <summary>
-        /// 切到某一中部态：只对中部内容区 <see cref="_center"/> 做 DOTween 渐隐渐显，常驻壳（左/右/行动轴）不动。
+        /// 切到某一中部态：只对中部内容区 <see cref="_center"/> 做 DOTween 渐隐渐显，常驻壳（左/右/时间轴）不动。
         /// 内容交换（隐藏旧面板 + 启用新面板 + 重建）集中在淡出完成后的 <see cref="GameplayViewStateMachine.Apply"/> 里执行。
         /// </summary>
         private void SwitchTo(GameplayView next, Action buildCenter = null, Action onShown = null)
@@ -832,7 +839,7 @@ namespace GourmetProject.Game.UI.Battle
             _shopPage?.OpenPanel();
         }
 
-        /// <summary>菜谱页面：打开查看、删除或主动道具选菜流程。</summary>
+        /// <summary>食谱页面：打开查看、删除或消耗品选菜流程。</summary>
         private void OpenRecipeBookPanel()
         {
             _recipeBookPage?.OpenPanel();
@@ -988,7 +995,7 @@ namespace GourmetProject.Game.UI.Battle
             _eventPage?.OpenRecipeDishDelete(run, title, onCancel, onTargetConfirmed, onChanged);
         }
 
-        // —— 商店 / 菜谱工作区 / 餐桌编辑入口 ——
+        // —— 商店 / 食谱工作区 / 餐桌编辑入口 ——
 
         internal void OpenActiveItemRecipeTarget(
             ItemDefinition item,
@@ -1062,7 +1069,7 @@ namespace GourmetProject.Game.UI.Battle
             }
         }
 
-        /// <summary>购买碎片包后进入餐桌编辑态（世界空间）：隐藏商店/行动轴，露出餐桌手动拼贴。</summary>
+        /// <summary>购买碎片包后进入餐桌编辑态（世界空间）：隐藏商店/时间轴，露出菜桌手动拼贴。</summary>
         private void OpenTableEdit(Action onShown = null)
         {
             if (_run == null || _run.PendingFragmentPack.Count == 0)
@@ -1358,7 +1365,7 @@ namespace GourmetProject.Game.UI.Battle
             discardBin?.SetVisible(visible);
         }
 
-        /// <summary>初始化战斗态的出餐口、弃置区与世界拖拽回调。</summary>
+        /// <summary>初始化经营挑战态的出菜口、弃置区与世界拖拽回调。</summary>
         private void BuildBattleControls()
         {
             BattleWorldController world = _world ?? BattleWorldController.Instance;
@@ -1421,7 +1428,64 @@ namespace GourmetProject.Game.UI.Battle
             RefreshAll();
         }
 
-        /// <summary>刷新常驻信息：左栏周/金币/分数、右栏道具。</summary>
+        private void BeginFoodDiscardCapacityTracking()
+        {
+            _foodDiscardCapacitySession = _session;
+            _observedFoodDiscardCapacity = _run != null
+                ? new ItemRuntime(_run).FoodDiscardCapacity()
+                : -1;
+        }
+
+        private void ResetFoodDiscardCapacityTracking()
+        {
+            _foodDiscardCapacitySession = null;
+            _observedFoodDiscardCapacity = -1;
+        }
+
+        /// <summary>
+        /// 垃圾桶类装饰可能在经营挑战页存活期间由奖励 / GM 加入。
+        /// 新建会话时已把当时上限配满；此处只应用之后的持有量差值，
+        /// 因此 Boss 的“初始丢弃次数为 0”仍然保留，战中新获得的加成则会实时补到上限和剩余。
+        /// </summary>
+        private void SynchronizeFoodDiscardCapacity()
+        {
+            if (_run == null)
+            {
+                return;
+            }
+
+            int currentCapacity = new ItemRuntime(_run).FoodDiscardCapacity();
+            if (_session == null || _session.IsSettled)
+            {
+                bool changed = _observedFoodDiscardCapacity != currentCapacity;
+                _foodDiscardCapacitySession = _session;
+                _observedFoodDiscardCapacity = currentCapacity;
+                if (changed && _inBattle)
+                {
+                    RefreshPersistent(refreshItems: false);
+                }
+
+                return;
+            }
+
+            if (!ReferenceEquals(_foodDiscardCapacitySession, _session))
+            {
+                BeginFoodDiscardCapacityTracking();
+                return;
+            }
+
+            int delta = currentCapacity - _observedFoodDiscardCapacity;
+            if (delta == 0)
+            {
+                return;
+            }
+
+            _observedFoodDiscardCapacity = currentCapacity;
+            _session.AdjustFoodDiscardLimit(delta);
+            RefreshAll();
+        }
+
+        /// <summary>刷新常驻信息：左栏周/金币/分数、右栏装饰品和消耗品。</summary>
         private void RefreshPersistent(bool refreshItems = true)
         {
             if (_run == null)
@@ -1481,7 +1545,7 @@ namespace GourmetProject.Game.UI.Battle
             _foodBar?.Refresh(_current == GameplayView.Food, _session, world);
         }
 
-        /// <summary>右栏道具：被动网格（2 列）+ 固定主动道具槽，每份主动实例占一格。</summary>
+        /// <summary>右栏装饰品和消耗品：被动网格（2 列）+ 固定消耗品槽，每份主动实例占一格。</summary>
         private void RefreshItems()
         {
             bool activeItemsInteractable =
@@ -1932,7 +1996,7 @@ namespace GourmetProject.Game.UI.Battle
 
             if (_shopItemFlyFxPrefab == null)
             {
-                Debug.LogError($"{nameof(BattleForm)} 缺少商店道具飞行动画 prefab。", this);
+                Debug.LogError($"{nameof(BattleForm)} 缺少商店装饰品和消耗品飞行动画 prefab。", this);
                 onComplete?.Invoke();
                 return;
             }
@@ -2107,7 +2171,7 @@ namespace GourmetProject.Game.UI.Battle
             _currentTimelineNodePick = null;
         }
 
-        /// <summary>行动轴节点单卡：用于商店等节点，点击卡片后才执行节点效果。</summary>
+        /// <summary>时间轴节点单卡：用于商店等节点，点击卡片后才执行节点效果。</summary>
         private void BuildTimelineNodeCard(cfg.TimelineNode node, int? interestMaxGain, Action onPick)
         {
             if (_deck == null)
@@ -2183,7 +2247,7 @@ namespace GourmetProject.Game.UI.Battle
             });
         }
 
-        /// <summary>玩家点击行动轴节点卡片。</summary>
+        /// <summary>玩家点击时间轴节点卡片。</summary>
         private void OnTimelineNodePicked(Action onPick)
         {
             ClearTimelineNodeCard();
@@ -2270,7 +2334,7 @@ namespace GourmetProject.Game.UI.Battle
             {
                 string before = DescribeDishSnapshot(entry.Before);
                 string after = DescribeDishSnapshot(entry.After);
-                lines.Add($"菜谱{entry.BookIndex + 1}-{entry.DishIndex + 1}: {before}  ->  {after}");
+                lines.Add($"食谱{entry.BookIndex + 1}-{entry.DishIndex + 1}: {before}  ->  {after}");
             }
 
             return string.Join("\n", lines);
@@ -2290,7 +2354,7 @@ namespace GourmetProject.Game.UI.Battle
 
         private string BuildTimelineMutationText(TimelineMutationResult result)
         {
-            return $"行动轴已变化：{result.Before.Count} 个节点 -> {result.After.Count} 个节点";
+            return $"时间轴已变化：{result.Before.Count} 个节点 -> {result.After.Count} 个节点";
         }
 
         private string DescribeDishSnapshot(RecipeDishSnapshot snapshot)
@@ -2493,7 +2557,7 @@ namespace GourmetProject.Game.UI.Battle
             GameApp.UI.OpenUIForm(UIForms.HeartBreak, UIForms.GroupDialog, openArgs);
         }
 
-        // —— 战斗 ——
+        // —— 经营挑战 ——
 
         public void StartBattle(
             int requiredScore,
@@ -2518,11 +2582,12 @@ namespace GourmetProject.Game.UI.Battle
             SetMessage(string.Empty);
             UnsubscribeCakeLayerChanges();
             _session = _run.BuildBattleSession(requiredScore, modifier, key, _activeBossDebuffId);
+            BeginFoodDiscardCapacityTracking();
             _displayedCakeLayers = _session.HappyCakeLayers;
             _pendingSettlementCakeLayers = null;
             _session.Served += OnBattleServed;
             _session.HappyCakeLayersChanged += OnHappyCakeLayersChanged;
-            // 常驻壳在战斗中持续显示并接管分数/道具入口（餐桌/菜品仍在世界空间场景）。
+            // 常驻壳在经营挑战中持续显示并接管分数/装饰品和消耗品入口（餐桌/食物仍在世界空间场景）。
             SwitchTo(GameplayView.Food);
 
             _world = BattleWorldController.Instance;
@@ -2994,7 +3059,7 @@ namespace GourmetProject.Game.UI.Battle
 
             if (_session.DiningTable.DishCount == 0)
             {
-                SetMessage("餐桌还是空的，先上几道菜吧。");
+                SetMessage("餐桌还是空的，先上几个食物吧。");
                 return;
             }
 
@@ -3066,7 +3131,7 @@ namespace GourmetProject.Game.UI.Battle
                     _run.Gold = System.Math.Max(0, _run.Gold + gold);
                 }
 
-                // 银材质命中：发放主动道具（掷骰已在 BattleSession 正式结算时完成，这里只落地选取具体道具）。
+                // 银材质命中：发放消耗品（掷骰已在 BattleSession 正式结算时完成，这里只落地选取具体装饰品和消耗品）。
                 int silverItems = _session.PendingActiveItemGrants;
                 if (silverItems > 0)
                 {
@@ -3133,7 +3198,7 @@ namespace GourmetProject.Game.UI.Battle
             }
         }
 
-        // —— 局内交互（透传到战斗世界）——
+        // —— 局内交互（透传到经营挑战世界）——
 
         private void OnDoodleClearClicked()
         {

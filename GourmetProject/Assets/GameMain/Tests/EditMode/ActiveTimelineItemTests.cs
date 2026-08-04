@@ -4,6 +4,7 @@ using GourmetProject.Config;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Meta;
+using GourmetProject.Game.Meta.Passives;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Hud;
 using GourmetProject.Game.UI.Meta;
@@ -137,18 +138,18 @@ namespace GourmetProject.Tests.EditMode
             var expected = new Dictionary<string, string>
             {
                 ["item_extra_interest"] = "将收取利息\n添加至每周末尾",
-                ["item_loan"] = "获得100金币\n将失去200金币的节点行动\n添加至本周末尾",
+                ["item_loan"] = "获得100 金币\n将失去200 金币的节点行动\n添加至本周末尾",
                 ["item_extra_day"] = "每周长度变为8天",
-                ["item_block_active"] = "无法再使用主动道具\n立即获得300金币",
+                ["item_block_active"] = "无法再使用消耗品\n立即获得300 金币",
                 ["item_shop_restock"] = "商店会自动补货食物",
-                ["item_shop_restock_active"] = "商店会自动补货主动道具",
+                ["item_shop_restock_active"] = "商店会自动补货消耗品",
                 ["item_shop_restock_passive"] = "商店会自动补货装饰品",
                 ["item_gold_meal_penalty"] = "营业获得的金币-20%",
                 ["item_skip_node"] = "跳过下一个收取利息节点",
                 ["item_skip_reward_node"] = "跳过下一个幸运事件节点",
                 ["item_gold_week_clear"] = "将失去所有金币的节点行动\n添加至本周末尾",
-                ["item_double_daily_cost_repeat_node"] = "普通行动消耗天数加倍\n节点事件可以执行2次",
-                ["item_timeline_stop_chance"] = "遇到节点事件时\n时间轴有30%概率会停止",
+                ["item_double_daily_cost_repeat_node"] = "普通行动消耗天数加倍\n节点行动可以执行2次",
+                ["item_timeline_stop_chance"] = "遇到节点行动时\n时间轴有30%概率会停止",
             };
 
             foreach (KeyValuePair<string, string> pair in expected)
@@ -343,7 +344,7 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(
                 edgeFirst.Position.x + edgeLast.Position.x,
                 Is.EqualTo(0f).Within(0.001f),
-                "最后一天的气泡仍以日期点为中心，不向行动轴内部偏移。");
+                "最后一天的气泡仍以日期点为中心，不向时间轴内部偏移。");
 
             TimelineNodeFanPose edgeSingle = TimelineNodeFanLayout.Calculate(0, 1);
             Assert.That(edgeSingle.Position.x, Is.EqualTo(0f).Within(0.001f));
@@ -656,6 +657,55 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(
                 TimelineService.GetNodes(run).Select(node => node.Id),
                 Is.EqualTo(Enumerable.Range(1, 12).Select(i => $"dyn_w{run.WeekIndex}_{i}")));
+        }
+
+        [Test]
+        public void TimelineRandomize_OnlyShufflesFutureUntriggeredNonBossActionsAndPersists()
+        {
+            GameRun run = CreateRun();
+            cfg.GameAction[] regular = _tables.TbAction.DataList
+                .Where(action => !FoodService.IsBossAction(_tables, action))
+                .GroupBy(action => action.Id)
+                .Select(group => group.First())
+                .Take(3)
+                .ToArray();
+            cfg.GameAction boss = _tables.TbAction.DataList.First(action => FoodService.IsBossAction(_tables, action));
+            Assert.That(regular, Has.Length.EqualTo(3));
+            run.BeginTimeline(
+                "test",
+                7f,
+                new[]
+                {
+                    new RuntimeTimelineNode("current", "test", 2, regular[0].Id),
+                    new RuntimeTimelineNode("future_a", "test", 4, regular[0].Id),
+                    new RuntimeTimelineNode("triggered_future", "test", 5, regular[1].Id),
+                    new RuntimeTimelineNode("future_b", "test", 5, regular[1].Id),
+                    new RuntimeTimelineNode("future_c", "test", 6, regular[2].Id),
+                    new RuntimeTimelineNode("boss", "test", 7, boss.Id),
+                });
+            run.CurrentDay = 2f;
+            run.MarkNodeTriggered("triggered_future");
+
+            TimelineMutationResult result = PassiveTimelineMutationService.Randomize(
+                run,
+                "命运骰子",
+                new ReverseShuffleRandomStream());
+
+            Assert.That(result.Changed, Is.True);
+            Assert.That(Node(run, "current").ActionId, Is.EqualTo(regular[0].Id));
+            Assert.That(Node(run, "triggered_future").ActionId, Is.EqualTo(regular[1].Id));
+            Assert.That(Node(run, "boss").ActionId, Is.EqualTo(boss.Id));
+            Assert.That(Node(run, "future_a").ActionId, Is.EqualTo(regular[2].Id));
+            Assert.That(Node(run, "future_b").ActionId, Is.EqualTo(regular[1].Id));
+            Assert.That(Node(run, "future_c").ActionId, Is.EqualTo(regular[0].Id));
+            Assert.That(Node(run, "future_a").Day, Is.EqualTo(4));
+            Assert.That(Node(run, "future_b").Day, Is.EqualTo(5));
+            Assert.That(Node(run, "future_c").Day, Is.EqualTo(6));
+
+            GameRun restored = GameRun.FromSaveData(_tables, _database, run.ToSaveData());
+            Assert.That(Node(restored, "future_a").ActionId, Is.EqualTo(regular[2].Id));
+            Assert.That(Node(restored, "future_b").ActionId, Is.EqualTo(regular[1].Id));
+            Assert.That(Node(restored, "future_c").ActionId, Is.EqualTo(regular[0].Id));
         }
 
         [Test]
@@ -1015,6 +1065,46 @@ namespace GourmetProject.Tests.EditMode
         {
             string characterId = _tables.TbCharacter.DataList.First().Id;
             return new GameRun(_tables, _database, characterId, "active-item-tests");
+        }
+
+        private static RuntimeTimelineNode Node(GameRun run, string id)
+            => run.RuntimeTimelineNodes.Single(node => node.Id == id);
+
+        private sealed class ReverseShuffleRandomStream : IRandomStream
+        {
+            public RngState State { get; set; }
+
+            public uint NextUInt() => 0;
+
+            public ulong NextULong() => 0;
+
+            public int Range(int minInclusive, int maxExclusive) => minInclusive;
+
+            public float Range(float minInclusive, float maxExclusive) => minInclusive;
+
+            public float NextFloat() => 0f;
+
+            public double NextDouble() => 0d;
+
+            public bool NextBool(double probability = 0.5d) => probability > 0d;
+
+            public void Shuffle<T>(IList<T> list)
+            {
+                int left = 0;
+                int right = list.Count - 1;
+                while (left < right)
+                {
+                    T value = list[left];
+                    list[left] = list[right];
+                    list[right] = value;
+                    left++;
+                    right--;
+                }
+            }
+
+            public T Pick<T>(IReadOnlyList<T> list) => list[0];
+
+            public int WeightedPickIndex(IReadOnlyList<float> weights) => 0;
         }
     }
 }

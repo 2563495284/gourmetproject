@@ -9,7 +9,7 @@ namespace GourmetProject.Game.Meta
         ConvertedToGold = 4,
     }
 
-    /// <summary>一次道具获得结算的结果，供奖励、事件、商店生成反馈。</summary>
+    /// <summary>一次装饰品和消耗品获得结算的结果，供奖励、事件、商店生成反馈。</summary>
     public readonly struct ItemAcquireResult
     {
         public ItemAcquireResult(ItemAcquireOutcome outcome, string itemId, string itemName, int level, int count, int gold)
@@ -41,9 +41,9 @@ namespace GourmetProject.Game.Meta
             switch (Outcome)
             {
                 case ItemAcquireOutcome.Added:
-                    return $"{prefix}道具「{ItemName}」";
+                    return $"{prefix}装饰品和消耗品「{ItemName}」";
                 case ItemAcquireOutcome.Stacked:
-                    return $"{prefix}主动道具「{ItemName}」+1（持有 {Count}）";
+                    return $"{prefix}消耗品「{ItemName}」+1（持有 {Count}）";
                 case ItemAcquireOutcome.ConvertedToGold:
                     return $"{prefix}金币 +{Gold}";
                 default:

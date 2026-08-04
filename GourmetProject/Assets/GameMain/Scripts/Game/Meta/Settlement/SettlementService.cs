@@ -15,8 +15,8 @@ namespace GourmetProject.Game.Meta
     }
 
     /// <summary>
-    /// 局外结算：根据运行状态生成胜/负结算文本（周数、击败 Boss、金币、构筑规模、触发事件、新解锁等）。
-    /// 结算界面使用这份摘要填充胜利结果页或失败确认弹窗。
+    /// 局外结算：根据运行状态生成游戏通关/失败结算文本（周数、完成星级评鉴、金币、构筑规模、触发事件、新解锁等）。
+    /// 结算界面使用这份摘要填充通关结果页或失败确认弹窗。
     /// </summary>
     public static class SettlementService
     {
@@ -30,17 +30,17 @@ namespace GourmetProject.Game.Meta
             RunStatistics statistics = progressUpdate?.Statistics ?? RunStatisticsService.Build(run, won, lastTotal, lastTarget);
             var body = new StringBuilder();
             body.AppendLine(statistics.Won
-                ? "你征服了最终美食家，餐厅名扬四海！"
-                : "美食挑战失败，餐厅黯然歇业…");
+                ? "你的经营方向达到顶峰，餐厅名扬四海！"
+                : "游戏失败，餐厅黯然歇业……");
             body.AppendLine();
             body.AppendLine($"周数：第 {statistics.WeekIndex} 周{(statistics.IsEndless ? "（无尽）" : string.Empty)}");
             body.AppendLine($"天数：第 {statistics.CurrentDay} 天");
-            body.AppendLine($"本场得分：{statistics.LastTotal} / 目标 {statistics.LastTarget}");
-            body.AppendLine($"击败 Boss：{statistics.CompletedBossIds.Count} 个{BossNames(run, statistics.CompletedBossIds)}");
+            body.AppendLine($"总美味值：{statistics.LastTotal} / 目标美味值：{statistics.LastTarget}");
+            body.AppendLine($"完成星级评鉴：{statistics.CompletedBossIds.Count} 次{BossNames(run, statistics.CompletedBossIds)}");
             body.AppendLine($"金币：{statistics.Gold}");
-            body.AppendLine($"持有道具：{statistics.OwnedItemCount} 件");
-            body.AppendLine($"菜谱附加菜品：{statistics.BonusDishCount} 道");
-            body.AppendLine($"餐桌碎片：{statistics.StomachFragmentCount} 块");
+            body.AppendLine($"持有装饰品和消耗品：{statistics.OwnedItemCount} 个");
+            body.AppendLine($"食谱附加食物：{statistics.BonusDishCount} 个");
+            body.AppendLine($"餐桌格：{statistics.StomachFragmentCount} 个");
             body.AppendLine($"触发事件：{statistics.TriggeredEventCount} 种");
 
             string unlocks = FormatUnlocks(progressUpdate?.NewUnlocks);
@@ -54,7 +54,7 @@ namespace GourmetProject.Game.Meta
             return new SettlementSummary
             {
                 Won = statistics.Won,
-                Title = statistics.Won ? "通关！" : "失败…",
+                Title = statistics.Won ? "游戏通关！" : "游戏失败……",
                 Body = body.ToString().TrimEnd(),
                 ButtonLabel = "返回菜单",
             };

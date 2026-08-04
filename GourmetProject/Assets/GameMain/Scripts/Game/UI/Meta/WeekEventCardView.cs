@@ -150,11 +150,11 @@ namespace GourmetProject.Game.UI.Meta
             string desc = mechanicDesc ?? string.Empty;
             if (requiredScore > 0)
             {
-                string scoreLine = $"美味度要求：{requiredScore.ToString("N0", CultureInfo.InvariantCulture)}";
+                string scoreLine = $"美味值要求：{requiredScore.ToString("N0", CultureInfo.InvariantCulture)}";
                 desc = string.IsNullOrWhiteSpace(desc) ? scoreLine : $"{desc}\n{scoreLine}";
             }
 
-            BindNodeCard($"周末盛宴\n{bossName}", desc, "card_node_boss", onPick);
+            BindNodeCard($"周末星级评鉴\n{bossName}", desc, "card_node_boss", onPick);
         }
 
         public static string BossTitle(string bossDebuffName)
@@ -173,7 +173,7 @@ namespace GourmetProject.Game.UI.Meta
             SetRewardBadge(false);
         }
 
-        /// <summary>行动轴「n 选一行动」绑定。</summary>
+        /// <summary>时间轴「n 选一行动」绑定。</summary>
         public void Bind(cfg.GameAction action, Action onPick)
         {
             if (action == null)
@@ -204,7 +204,7 @@ namespace GourmetProject.Game.UI.Meta
 
         private static cfg.Food ResolveFood(cfg.GameAction action) => FoodService.Resolve(GameApp.Config.Tables, action);
 
-        /// <summary>卡面标题：Food 用美食明细名，其余用行动名。</summary>
+        /// <summary>卡面标题：Food 用食物明细名，其余用行动名。</summary>
         private static string CardName(cfg.GameAction action)
         {
             cfg.Food food = ResolveFood(action);

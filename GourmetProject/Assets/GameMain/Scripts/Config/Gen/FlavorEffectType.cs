@@ -28,7 +28,7 @@ namespace cfg
         /// </summary>
         GrantGold = 7,
         /// <summary>
-        /// 结算优先级层级增量(甜+1/苦-1)，不产生分数效果
+        /// 结算优先级层级增量(甜 +1/苦 -1)，不产生分数效果
         /// </summary>
         SettlementLayer = 8,
         /// <summary>

@@ -17,7 +17,7 @@ namespace cfg
     public enum RewardPoolSpecialTag
     {
         /// <summary>
-        /// Boss奖励池标签
+        /// 星级评鉴奖励池标签
         /// </summary>
         BossReward = 0,
         /// <summary>
@@ -25,15 +25,15 @@ namespace cfg
         /// </summary>
         ScoreBuild = 1,
         /// <summary>
-        /// 木质铺设道具标签
+        /// 木质铺设装饰品和消耗品标签
         /// </summary>
         LayWood = 2,
         /// <summary>
-        /// 石质铺设道具标签
+        /// 石质铺设装饰品和消耗品标签
         /// </summary>
         LayStone = 3,
         /// <summary>
-        /// 金属铺设道具标签
+        /// 金属铺设装饰品和消耗品标签
         /// </summary>
         LayMetal = 4,
     }

@@ -1,7 +1,7 @@
 [
   {
     "id": "lg_normal",
-    "name": "普通美食大组",
+    "name": "日常营业大组",
     "fallbackWeights": [
       400,
       300,
@@ -75,7 +75,7 @@
   },
   {
     "id": "lg_normalHard",
-    "name": "普通困难美食大组",
+    "name": "日常与火热营业大组",
     "fallbackWeights": [
       200,
       200,
@@ -209,7 +209,7 @@
   },
   {
     "id": "lg_hard",
-    "name": "困难美食大组",
+    "name": "困难食物大组",
     "fallbackWeights": [
       100,
       100,

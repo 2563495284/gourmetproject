@@ -63,7 +63,7 @@ namespace GourmetProject.Tests.EditMode
             }
 
             Assert.That(insertedPerWindow, Is.EqualTo(new[] { 1, 1 }));
-            Assert.That(slot.Count, Is.EqualTo(2), "两个馒头是额外插入，不能消耗原菜谱条目。");
+            Assert.That(slot.Count, Is.EqualTo(2), "两个馒头是额外插入，不能消耗原食谱条目。");
         }
 
         [Test]

@@ -5,7 +5,7 @@ using GourmetProject.Gameplay.Model;
 namespace GourmetProject.Gameplay.Board
 {
     /// <summary>
-    /// 由餐桌碎片定义构建餐桌（胃）。直接按字符行解析存在格、按局部 (x,y) 落位格标签，
+    /// 由餐桌格定义构建餐桌（胃）。直接按字符行解析存在格、按局部 (x,y) 落位格标签，
     /// 不走 DishShape 归一化，保证坐标与配置一一对应。本期只构建「初始胃」，扩胃留待后续。
     /// </summary>
     public static class TableFragmentBuilder

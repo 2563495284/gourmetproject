@@ -9,7 +9,7 @@ using UnityEngine;
 namespace GourmetProject.Game.UI.Battle.View
 {
     /// <summary>
-    /// 顶部行动轴（<see cref="ActionAxisBar"/>）的构建 + 每个时间线节点的 hover Tip 装配。
+    /// 顶部时间轴（<see cref="ActionAxisBar"/>）的构建 + 每个时间线节点的 hover Tip 装配。
     /// Tip 视图实例由外层惰性创建后通过 getter 注入，Boss 预览用独立 RNG 快照避免污染随机流。
     /// </summary>
     internal sealed class TimelineAxisBinder

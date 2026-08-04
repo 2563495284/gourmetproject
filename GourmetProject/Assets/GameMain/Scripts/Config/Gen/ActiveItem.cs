@@ -38,15 +38,15 @@ public sealed partial class ActiveItem : Luban.BeanBase
     }
 
     /// <summary>
-    /// 道具ID
+    /// 消耗品ID
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 道具名称
+    /// 消耗品名称
     /// </summary>
     public readonly string Name;
     /// <summary>
-    /// 道具描述
+    /// 消耗品描述
     /// </summary>
     public readonly string Desc;
     /// <summary>
@@ -70,7 +70,7 @@ public sealed partial class ActiveItem : Luban.BeanBase
     /// </summary>
     public readonly float BaseWeight;
     /// <summary>
-    /// 主动道具目标类型(作用对象;决定可用情境)
+    /// 消耗品目标类型(作用对象;决定可用情境)
     /// </summary>
     public readonly ItemTargetKind TargetKind;
     /// <summary>
@@ -86,7 +86,7 @@ public sealed partial class ActiveItem : Luban.BeanBase
     /// </summary>
     public readonly int Price;
     /// <summary>
-    /// 主动道具分类
+    /// 消耗品分类
     /// </summary>
     public readonly ActiveItemCategory Category;
    

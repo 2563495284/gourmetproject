@@ -206,7 +206,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
             _host.SwitchTo(GameplayView.RandomizedItems, () =>
             {
                 _host.RandomizedItemsPanel.Open(
-                    string.IsNullOrWhiteSpace(title) ? "随机后的道具" : title,
+                    string.IsNullOrWhiteSpace(title) ? "随机后的装饰品和消耗品" : title,
                     results,
                     () =>
                     {

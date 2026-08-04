@@ -141,7 +141,7 @@ namespace GourmetProject.Game.UI.Meta
 
         public RecipeBookSlot Slot { get; }
 
-        /// <summary>仅战斗场景 recipeInfoButton 入口提供；为空时保持局外菜谱原有视觉。</summary>
+        /// <summary>仅经营挑战场景 recipeInfoButton 入口提供；为空时保持局外食谱原有视觉。</summary>
         public BattleRecipeEntryStatus? BattleStatus { get; }
 
         public bool SkillsDisabled { get; }

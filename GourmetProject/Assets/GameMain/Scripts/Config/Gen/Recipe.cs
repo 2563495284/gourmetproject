@@ -29,11 +29,11 @@ public sealed partial class Recipe : Luban.BeanBase
     }
 
     /// <summary>
-    /// 菜谱ID
+    /// 食谱ID
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 固定初始菜品
+    /// 固定初始食物
     /// </summary>
     public readonly string FixedDishes;
     /// <summary>

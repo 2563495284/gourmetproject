@@ -7,14 +7,14 @@ using GourmetProject.Game.Run;
 
 namespace GourmetProject.Game.Meta
 {
-    /// <summary>商店一件商品的归一化描述（被动道具 / 主动道具 / 菜品 / 餐桌碎片包）。</summary>
+    /// <summary>商店一件商品的归一化描述（装饰品 / 消耗品 / 食物 / 餐桌格包）。</summary>
     public enum ShopEntryKind
     {
         PassiveItem,
         ActiveItem,
         Dish,
 
-        /// <summary>餐桌碎片包：购买后开出三种碎片形状，进入餐桌编辑页手动拼贴一块。</summary>
+        /// <summary>餐桌格包：购买后开出三种碎片形状，进入餐桌编辑页手动拼贴一块。</summary>
         Fragment,
     }
 
@@ -122,7 +122,7 @@ namespace GourmetProject.Game.Meta
     }
 
     /// <summary>
-    /// 商店服务：根据当前进度「隐藏分」刷新商品（道具 + 菜品 + 餐桌碎片），并处理购买、出售、删菜。
+    /// 商店服务：根据当前进度「隐藏分」刷新商品（装饰品和消耗品 + 食物 + 餐桌格），并处理购买、出售、删菜。
     /// 隐藏分由 <see cref="HiddenScoreService"/> 统一计算，与奖励系统共用同一尺度。
     /// </summary>
     public static class ShopService
@@ -130,8 +130,8 @@ namespace GourmetProject.Game.Meta
         private const string FragmentPackRewardSlotId = "fragment_choice_3";
 
         /// <summary>
-        /// 按隐藏分刷新一批商品。道具（被动/主动）走 <paramref name="lootRng"/>，
-        /// 菜品/碎片走 <paramref name="rng"/>，两者隔离：调整道具数量不会污染菜品/碎片序列。
+        /// 按隐藏分刷新一批商品。装饰品和消耗品（装饰品/消耗品）走 <paramref name="lootRng"/>，
+        /// 食物/碎片走 <paramref name="rng"/>，两者隔离：调整装饰品和消耗品数量不会污染食物/碎片序列。
         /// </summary>
         public static List<ShopEntry> RollStock(cfg.Tables tables, GameRun run, IRandomStream rng, IRandomStream lootRng)
         {
@@ -192,7 +192,7 @@ namespace GourmetProject.Game.Meta
                     ShopEntryKind.Dish,
                     variant.Id,
                     name,
-                    "加入菜谱池的菜品",
+                    "加入食谱的食物",
                     FluctuatePrice(tables, price, rng),
                     dishSlotIndex++));
             }
@@ -306,7 +306,7 @@ namespace GourmetProject.Game.Meta
                             cfg.DishBase baseDish = tables.TbDishBase.GetOrDefault(variant.BaseId);
                             string name = baseDish != null ? baseDish.Name : variant.Id;
                             int price = variant.Price > 0 ? variant.Price : 30;
-                            return CreateEntry(run, kind, variant.Id, name, "加入菜谱池的菜品", FluctuatePrice(tables, price, rng));
+                            return CreateEntry(run, kind, variant.Id, name, "加入食谱的食物", FluctuatePrice(tables, price, rng));
                         }
 
                         return null;
@@ -363,7 +363,7 @@ namespace GourmetProject.Game.Meta
             }
 
             int basePrice = entry.Kind == ShopEntryKind.Fragment ? FragmentPackCost(run) : entry.BasePrice;
-            int itemPrice = new ItemRuntime(run).ModifyShopPrice(entry.Kind, basePrice);
+            int itemPrice = new ItemRuntime(run).ModifyShopPrice(entry.Kind, entry.Id, basePrice);
             return run.ModifyEventShopPrice(itemPrice);
         }
 
@@ -570,7 +570,7 @@ namespace GourmetProject.Game.Meta
                 && FragmentPackPurchaseRemaining(run) > 0;
         }
 
-        /// <summary>当前删牌花费（含道具折扣/固定价/涨价修正）。</summary>
+        /// <summary>当前删牌花费（含装饰品和消耗品折扣/固定价/涨价修正）。</summary>
         public static int DeleteCost(GameRun run)
         {
             if (run == null)
@@ -610,7 +610,7 @@ namespace GourmetProject.Game.Meta
                 && !new ItemRuntime(run).BlockRemoveDish();
         }
 
-        /// <summary>删除菜谱池中的一道菜，花费金币。持有「囤积癖」时禁止删除。</summary>
+        /// <summary>删除食谱中的1 个食物，花费金币。持有「囤积癖」时禁止删除。</summary>
         public static bool DeleteDish(GameRun run, string dishId)
         {
             if (!CanDeleteDish(run))

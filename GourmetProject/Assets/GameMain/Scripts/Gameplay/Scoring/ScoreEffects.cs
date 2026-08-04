@@ -2,19 +2,19 @@ using System;
 
 namespace GourmetProject.Gameplay.Scoring
 {
-    /// <summary>美味度 +EffectValue。</summary>
+    /// <summary>美味值 +EffectValue。</summary>
     public sealed class AddFlatEffect : IScoreEffect
     {
         public void Apply(ScoreContext ctx) => ctx.AddFlat(ctx.EffectDef.EffectValue);
     }
 
-    /// <summary>本菜品贡献 ×EffectValue。</summary>
+    /// <summary>本食物贡献 ×EffectValue。</summary>
     public sealed class AddMultEffect : IScoreEffect
     {
         public void Apply(ScoreContext ctx) => ctx.MultiplyBy(ctx.EffectDef.EffectValue);
     }
 
-    /// <summary>每个相邻菜品，美味度 +EffectValue。</summary>
+    /// <summary>每个相邻食物，美味值 +EffectValue。</summary>
     public sealed class PerAdjacentDishEffect : IScoreEffect
     {
         public void Apply(ScoreContext ctx)
@@ -24,19 +24,19 @@ namespace GourmetProject.Gameplay.Scoring
         }
     }
 
-    /// <summary>餐桌每个空位，美味度 +EffectValue。</summary>
+    /// <summary>餐桌每个空位，美味值 +EffectValue。</summary>
     public sealed class PerEmptyCellEffect : IScoreEffect
     {
         public void Apply(ScoreContext ctx) => ctx.AddFlat(ctx.EffectDef.EffectValue * ctx.DiningTable.EmptyCellCount);
     }
 
-    /// <summary>本菜品每占用一格，美味度 +EffectValue。</summary>
+    /// <summary>本食物每占用一格，美味值 +EffectValue。</summary>
     public sealed class PerOccupiedCellEffect : IScoreEffect
     {
         public void Apply(ScoreContext ctx) => ctx.AddFlat(ctx.EffectDef.EffectValue * ctx.Dish.OccupiedCells.Count);
     }
 
-    /// <summary>餐桌每有一道菜，本菜品贡献 ×(1+EffectValue)（按菜数复利）。</summary>
+    /// <summary>餐桌每有1 个食物，本食物贡献 ×(1+EffectValue)（按菜数复利）。</summary>
     public sealed class PerDishOnBoardEffect : IScoreEffect
     {
         public void Apply(ScoreContext ctx)
@@ -66,7 +66,7 @@ namespace GourmetProject.Gameplay.Scoring
         public void Apply(ScoreContext ctx) => ctx.AddFinalFlat(_value);
     }
 
-    /// <summary>最终总分乘区 × 固定值。用于遗物、周规则或局级效果源。</summary>
+    /// <summary>最终总分倍率 × 固定值。用于遗物、周规则或局级效果源。</summary>
     public sealed class MultiplyFinalEffect : IScoreEffect
     {
         private readonly float _value;

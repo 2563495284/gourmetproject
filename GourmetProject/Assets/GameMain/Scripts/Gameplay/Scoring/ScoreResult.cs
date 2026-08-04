@@ -3,7 +3,7 @@ using GourmetProject.Gameplay.Model;
 
 namespace GourmetProject.Gameplay.Scoring
 {
-    /// <summary>单个菜品的结算明细，供 UI 展示与单测断言。</summary>
+    /// <summary>单个食物的结算明细，供 UI 展示与单测断言。</summary>
     public sealed class DishScore
     {
         private const double ContributionIntegerEpsilon = 0.0001d;
@@ -37,7 +37,7 @@ namespace GourmetProject.Gameplay.Scoring
         /// <summary>本次结算使用的实际「视为食物数」（含 live AddCountAs 与全局加成）。</summary>
         public int EffectiveCountAs { get; }
 
-        /// <summary>本菜品最终贡献 = (美味度 + 加法) × 乘区 后向上取整。</summary>
+        /// <summary>本食物最终贡献 = (美味值 + 加法) × 倍率 后向上取整。</summary>
         public float Contribution => CeilContribution(BaseValue + FlatBonus, Multiplier);
 
         public static float CeilContribution(float score, float multiplier)
@@ -91,13 +91,13 @@ namespace GourmetProject.Gameplay.Scoring
         /// <summary>逐菜结算明细（按结算顺序）。</summary>
         public IReadOnlyList<DishScore> DishScores { get; }
 
-        /// <summary>所有菜品贡献之和（未计局级修正）。</summary>
+        /// <summary>所有食物贡献之和（未计局级修正）。</summary>
         public float RawSum { get; }
 
-        /// <summary>局级加法修正（道具/Buff 注入）。</summary>
+        /// <summary>局级加法修正（装饰品和消耗品/Buff 注入）。</summary>
         public float FinalFlat { get; }
 
-        /// <summary>局级乘区修正（道具/Buff 注入）。</summary>
+        /// <summary>局级倍率修正（装饰品和消耗品/Buff 注入）。</summary>
         public float FinalMultiplier { get; }
 
         /// <summary>可解释结算明细（按实际执行顺序）。</summary>
@@ -109,7 +109,7 @@ namespace GourmetProject.Gameplay.Scoring
         /// <summary>金币增量（经济运营行为产生；正式结算后由 Game 层写回 GameRun.Gold）。</summary>
         public float GoldDelta { get; }
 
-        /// <summary>全局「欢乐蛋糕层数」增量。正式结算后由 Game 层写回品鉴状态。</summary>
+        /// <summary>全局「欢乐蛋糕层数」增量。正式结算后由 Game 层写回经营挑战状态。</summary>
         public int HappyCakeLayerDelta { get; }
 
         /// <summary>技能传递副作用。正式结算后应用到目标实例运行时技能集。</summary>
@@ -118,10 +118,10 @@ namespace GourmetProject.Gameplay.Scoring
         /// <summary>永久加法分增量（实例 Id → 累加值）。正式结算后写回实例。</summary>
         public IReadOnlyDictionary<int, float> PermanentFlatDeltas { get; }
 
-        /// <summary>永久乘区增量（实例 Id → 累乘倍数）。正式结算后写回实例。</summary>
+        /// <summary>永久倍率增量（实例 Id → 累乘倍数）。正式结算后写回实例。</summary>
         public IReadOnlyDictionary<int, float> PermanentMultDeltas { get; }
 
-        /// <summary>银材质登记的「1/3 获得主动道具」掷骰请求次数。正式结算后由 Game 层掷骰发放（预览不掷）。</summary>
+        /// <summary>银材质登记的「1/3 获得消耗品」掷骰请求次数。正式结算后由 Game 层掷骰发放（预览不掷）。</summary>
         public int SilverItemRollRequests { get; }
 
         /// <summary>结算阶段登记的技能复制请求。正式结算后由 BattleSession 用随机流落地。</summary>

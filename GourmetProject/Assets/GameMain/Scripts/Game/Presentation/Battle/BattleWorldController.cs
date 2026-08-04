@@ -16,9 +16,9 @@ using GourmetProject.Game.Run;
 namespace GourmetProject.Game.Presentation.Battle
 {
     /// <summary>
-    /// 战斗内场景表现根控制器：餐桌、后厨、手牌区与拖拽放置。
+    /// 经营挑战内场景表现根控制器：餐桌、后厨、手牌区与拖拽放置。
     /// 现以场景内组件存在：背景/餐桌根/各锚点/分数文本/固定按钮均在 Battle.unity 摆好并通过 SerializeField 注入，
-    /// 运行时只生成数据驱动内容（餐桌格随胃尺寸、菜品、道具槽、结算特效）。
+    /// 运行时只生成数据驱动内容（餐桌格随胃尺寸、食物、装饰品和消耗品槽、结算特效）。
     /// </summary>
     public sealed class BattleWorldController : MonoBehaviour
     {
@@ -26,7 +26,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private const float MaxCellSize = DiningTableLayout.MaxCellSize;
         private const float MinCellSize = DiningTableLayout.MinCellSize;
 
-        // 餐桌居中定位的底部边距：Food 态给出餐口让 2.7，编辑态还要给候选托盘条让到 3.6。
+        // 餐桌居中定位的底部边距：Food 态给出菜口让 2.7，编辑态还要给候选托盘条让到 3.6。
         private const float FoodTableBottomMargin = 2.7f;
         private const float EditTableBottomMargin = 3.6f;
         private const float TemporaryAreaPadding = 0.12f;
@@ -55,7 +55,7 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private BattleDoodleController _doodle;
         [Tooltip("Battle 场景内可直接移动和缩放的餐桌布局区域；存在时优先于 HUD BoardArea。")]
         [SerializeField] private RectTransform _sceneBoardArea;
-        [Tooltip("麻风味旋转后的菜品暂存区。")]
+        [Tooltip("麻风味旋转后的食物暂存区。")]
         [SerializeField] private RectTransform _temporaryArea;
 
         // —— 运行时实例化用的 prefab ——
@@ -137,7 +137,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private readonly Dictionary<SpriteRenderer, float> _tableViewRendererBaseAlphas = new Dictionary<SpriteRenderer, float>();
         private float _tableViewTransitionAlpha = 1f;
 
-        /// <summary>当前已加载战斗场景里的控制器实例（由战斗 UI/流程取用）。</summary>
+        /// <summary>当前已加载经营挑战场景里的控制器实例（由经营挑战 UI/流程取用）。</summary>
         public static BattleWorldController Instance { get; private set; }
 
         public Camera WorldCamera => _camera != null ? _camera : Camera.main;
@@ -167,12 +167,12 @@ namespace GourmetProject.Game.Presentation.Battle
             EnsureTableEdit();
             EnsureScopeHighlights();
 
-            // 默认非美食态：世界餐桌与其专属按钮（总览/吃/涂鸦）默认隐藏，只有 StartBattle→Initialize 才显示。
-            // 场景里 BattleSceneRoot 默认 active，若不在此处收起，行动选择等非美食态一进场景就会露出这堆美食专属按钮。
+            // 默认非食物态：世界餐桌与其专属按钮（总览/吃/涂鸦）默认隐藏，只有 StartBattle→Initialize 才显示。
+            // 场景里 BattleSceneRoot 默认 active，若不在此处收起，行动选择等非食物态一进场景就会露出这堆食物专属按钮。
             HideWorld();
         }
 
-        /// <summary>确保餐桌编辑协作组件存在并注入共享场景引用（运行时挂到同一战斗场景根上）。</summary>
+        /// <summary>确保餐桌编辑协作组件存在并注入共享场景引用（运行时挂到同一经营挑战场景根上）。</summary>
         private void EnsureTableEdit()
         {
             if (_boardEdit == null)
@@ -589,7 +589,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _boardView?.SetCellHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
         }
 
-        /// <summary>进入主动道具餐桌选格态：布局同只读餐桌视图，但外层会用世界箭头接管点击确认/取消。</summary>
+        /// <summary>进入消耗品餐桌选格态：布局同只读餐桌视图，但外层会用世界箭头接管点击确认/取消。</summary>
         public void BeginTableCellTargeting(GameRun run, GpTable tableOverride = null)
         {
             if (run == null)
@@ -852,8 +852,8 @@ namespace GourmetProject.Game.Presentation.Battle
             ComputeViewport();
             BuildTable(session.DiningTable);
             EnsureSequencer();
-            // 道具（被动/主动）与右下角菜谱仍在屏幕空间 HUD；
-            // 出餐口是 World Space Canvas，和餐桌、菜品、上菜/结算演出、涂鸦一起由战斗世界承载。
+            // 装饰品和消耗品（装饰品/消耗品）与右下角食谱仍在屏幕空间 HUD；
+            // 出菜口是 World Space Canvas，和餐桌、食物、上菜/结算演出、涂鸦一起由经营挑战世界承载。
             HideWorldPanels();
             SetFoodWorldElementsVisible(true);
             RebuildPlacedPieces();
@@ -929,7 +929,7 @@ namespace GourmetProject.Game.Presentation.Battle
             ClearPendingRewardPresentation();
         }
 
-        /// <summary>页面临时离开 Battle 世界；保留待领奖蛋糕与菜品分数标签，供返回 Food 时恢复。</summary>
+        /// <summary>页面临时离开 Battle 世界；保留待领奖蛋糕与食物分数标签，供返回 Food 时恢复。</summary>
         public void SuspendWorld()
         {
             CancelPresentationTasks();
@@ -956,7 +956,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 : new List<CakeLayerVisualState>();
         }
 
-        /// <summary>世界重建后，无动画恢复待领奖的蛋糕与菜品贡献标签。</summary>
+        /// <summary>世界重建后，无动画恢复待领奖的蛋糕与食物贡献标签。</summary>
         public void RestorePendingRewardPresentation(
             IReadOnlyList<CakeLayerVisualState> cakes,
             IReadOnlyList<DishScore> dishScores)
@@ -977,7 +977,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _cakeLayerFx?.SetVisible(visible);
         }
 
-        /// <summary>新战斗、战败、继续行动或退出玩法时最终销毁待领奖表现。</summary>
+        /// <summary>新经营挑战、战败、继续行动或退出玩法时最终销毁待领奖表现。</summary>
         public void ClearPendingRewardPresentation()
         {
             _cakeLayerFx?.Clear();
@@ -998,7 +998,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        /// <summary>战斗结束后清理本场运行时餐桌表现，避免已摆菜品残留到后续非战斗状态。</summary>
+        /// <summary>经营挑战结束后清理本场运行时餐桌表现，避免已摆食物残留到后续非经营挑战状态。</summary>
         public void ClearBattleTable()
         {
             CancelPresentationTasks();
@@ -1315,7 +1315,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _cakeLayerFx.Configure(this, _camera);
         }
 
-        /// <summary>隐藏已迁到 HUD 的旧世界空间面板：被动/主动道具槽与旧菜谱书。</summary>
+        /// <summary>隐藏已迁到 HUD 的旧世界空间面板：被动/消耗品槽与旧食谱书。</summary>
         private void HideWorldPanels()
         {
             if (_passiveItemsRoot != null)
@@ -1368,7 +1368,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             LockMovableDish();
-            SetMessage($"已出餐：{result.PreparedDish.Definition.Name}，拖到餐桌上摆放。");
+            SetMessage($"已出菜：{result.PreparedDish.Definition.Name}，拖到餐桌上摆放。");
             RefreshAll();
             _stateChanged?.Invoke();
             return true;
@@ -2321,7 +2321,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _boardCenter = placement.Position;
 
             // 局部空间：餐桌以 DiningTableView.transform 为局部帧（BoardRoot），世界摆放/居中由其 transform 决定。
-            // 保持 scale 恒等、rotation 恒等，避免子级格子/菜品被二次缩放或旋转。
+            // 保持 scale 恒等、rotation 恒等，避免子级格子/食物被二次缩放或旋转。
             _boardView.transform.rotation = Quaternion.identity;
             _boardView.transform.localScale = Vector3.one;
             _boardView.transform.position = _boardCenter;
@@ -2439,7 +2439,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             piece.gameObject.name = $"Dish_{dish.Id}_{dish.Def.Id}";
-            // 菜品挂在 BoardRoot 下，用局部坐标贴格（与餐桌共享局部帧）。
+            // 食物挂在 BoardRoot 下，用局部坐标贴格（与餐桌共享局部帧）。
             piece.transform.localPosition = _boardView.Mapper.CellCenterLocal(dish.Placement.Origin);
             piece.BuildPlaced(dish, _spriteProvider.Get(dish.Def), _cellSize, _cellSize + Gap, _dishClicked);
             piece.SetHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
@@ -2759,7 +2759,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public string DoodleToggleLabel => _doodle != null && _doodle.IsVisible ? "隐藏涂鸦" : "显示涂鸦";
 
-        /// <summary>每次进入战斗时清空笔迹，并把涂鸦层复位为可见。</summary>
+        /// <summary>每次进入经营挑战时清空笔迹，并把涂鸦层复位为可见。</summary>
         public void ResetDoodle()
         {
             if (_doodle == null)
@@ -2817,15 +2817,15 @@ namespace GourmetProject.Game.Presentation.Battle
             switch (outcome)
             {
                 case ServePrepareOutcome.SlotEmpty:
-                    return $"菜谱{slotIndex + 1} 已空。";
+                    return $"食谱{slotIndex + 1} 已空。";
                 case ServePrepareOutcome.NoFittingDish:
                     return "剩余食物都无法摆入当前餐桌。";
                 case ServePrepareOutcome.LimitReached:
-                    return $"限量供应：本局最多上 {_session.MaxServes} 道菜。";
+                    return $"限量供应：本场经营挑战最多上 {_session.MaxServes} 个食物。";
                 case ServePrepareOutcome.AlreadyPrepared:
-                    return "先把出餐口的食物摆上餐桌。";
+                    return "先把出菜口的食物摆上餐桌。";
                 default:
-                    return "现在不能出餐。";
+                    return "现在不能出菜。";
             }
         }
 

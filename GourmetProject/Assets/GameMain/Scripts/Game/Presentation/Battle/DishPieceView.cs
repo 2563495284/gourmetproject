@@ -33,7 +33,7 @@ namespace GourmetProject.Game.Presentation.Battle
     }
 
     /// <summary>
-    /// 已摆放菜品表现：固定结构（接触阴影 + 菜品本体 + 碰撞盒）预拼在 prefab 上，由 <see cref="BuildPlaced"/> 喂数据。
+    /// 已摆放食物表现：固定结构（接触阴影 + 食物本体 + 碰撞盒）预拼在 prefab 上，由 <see cref="BuildPlaced"/> 喂数据。
     /// sprite/缩放/旋转/碰撞尺寸随形状(1x1/2x1/L/T...)与朝向变化，必须运行时计算（见 dish-footprint-sprite 规则）。
     /// 阴影一律走假阴影软暗斑（见 battle-fake-shadow 规则），全程 Unlit 平涂，不依赖 Light2D。
     /// </summary>
@@ -86,9 +86,9 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private float _dragShadowHaloAlpha = 0.20f;
 
         [Header("固定结构（prefab 预拼，运行时引用）")]
-        [Tooltip("菜品本体渲染体（子物体 Sprite 上的 SpriteRenderer）。")]
+        [Tooltip("食物本体渲染体（子物体 Sprite 上的 SpriteRenderer）。")]
         [SerializeField] private SpriteRenderer _spriteRenderer;
-        [Tooltip("菜品本体动画枢轴（子物体 VisualPivot）。多格菜的缩放/晃动绕这里执行，根节点保持贴格。")]
+        [Tooltip("食物本体动画枢轴（子物体 VisualPivot）。多格食物的缩放/晃动绕这里执行，根节点保持贴格。")]
         [SerializeField] private Transform _visualPivot;
         [Tooltip("脚下接触阴影锐利核心层（子物体 Shadow 上的 SpriteRenderer）。")]
         [SerializeField] private SpriteRenderer _shadowRenderer;
@@ -142,7 +142,7 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField, Range(0f, 0.5f)] private float _persistentPulseAmplitude = 0.045f;
         [SerializeField, Range(0f, 64f)] private float _pulseFrequency = 18f;
 
-        [Header("结算标签反馈：美味度增加（仅作用于本体视觉枢轴）")]
+        [Header("结算标签反馈：美味值增加（仅作用于本体视觉枢轴）")]
         [SerializeField] private float _deliciousnessGainPunchScale = 1.18f;
         [SerializeField] private float _deliciousnessGainPunchDuration = 0.18f;
         [SerializeField] private float _deliciousnessGainWobbleDegrees = 5f;
@@ -275,8 +275,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            // 主动道具会在目标点击成功的同一帧恢复菜品交互。
-            // 等这次左键完全释放后再接收点击，避免同一次按下穿透成菜品拖拽。
+            // 消耗品会在目标点击成功的同一帧恢复食物交互。
+            // 等这次左键完全释放后再接收点击，避免同一次按下穿透成食物拖拽。
             if (!wasEnabled && (WorldInput.PrimaryHeld || WorldInput.PrimaryPressedThisFrame))
             {
                 _suppressPrimaryUntilReleased = true;
@@ -399,7 +399,7 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>
-        /// 强化餐桌选格期间，把菜品本体降至原透明度的 50%，并精确恢复每个渲染体原色。
+        /// 强化餐桌选格期间，把食物本体降至原透明度的 50%，并精确恢复每个渲染体原色。
         /// 与拖拽 Ghost 分开管理，避免退出目标选择后把原始 alpha 粗暴改成固定值。
         /// </summary>
         public void SetActiveItemTargetDimmed(bool dimmed)
@@ -440,7 +440,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         /// <summary>
         /// 结算舞台独立亮度通道。首次调用时精确记录当前颜色，后续亮度变化都从记录值计算，
-        /// 不覆盖主动道具选择或 Ghost 状态。
+        /// 不覆盖消耗品选择或 Ghost 状态。
         /// </summary>
         public void SetSettlementFocus(float brightness)
         {
@@ -535,7 +535,7 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>
-        /// 麻风味专用变化：先把当前菜品按新摆放朝向做可见的逆时针旋转，再切换真实占格表现。
+        /// 麻风味专用变化：先把当前食物按新摆放朝向做可见的逆时针旋转，再切换真实占格表现。
         /// 数据层在调用前已经完成迁移；这里只负责从旧朝向平滑过渡到新朝向。
         /// </summary>
         public void PlayActiveItemNumbTransform(Placement rotatedPlacement, Action onComplete)
@@ -731,7 +731,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        /// <summary>只缩放菜品本体视觉枢轴，不改变根节点格子锚点、阴影计算和碰撞盒。</summary>
+        /// <summary>只缩放食物本体视觉枢轴，不改变根节点格子锚点、阴影计算和碰撞盒。</summary>
         public void SetVisualScaleMultiplier(float scale)
         {
             EnsureRefs();
@@ -744,7 +744,7 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>
-        /// 当前朝向下，占用格中心点的平均位置（相对菜品根节点）。
+        /// 当前朝向下，占用格中心点的平均位置（相对食物根节点）。
         /// 拖拽时用它把不规则形状的视觉重心对准鼠标，而不是把原点格对准鼠标。
         /// </summary>
         public Vector3 OccupiedCellCenterLocal()
@@ -806,7 +806,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         /// <summary>
         /// 放置后提示“会被新食物 scope 影响”：围绕当前位置做很轻的衰减抖动，
-        /// 不移动菜品根节点，因此不会改变占格、碰撞盒或餐桌数据。
+        /// 不移动食物根节点，因此不会改变占格、碰撞盒或餐桌数据。
         /// </summary>
         public void PlayScopeAffectedShake(float durationScale = 1f)
         {
@@ -1450,8 +1450,8 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void ShowSweetTransferSourceGlow()
         {
-            // 角色身份由舞台聚光、方向轨迹和文案表达。轮廓 Shader 在细长菜品上
-            // 会把内部像素染成整块荧光色，因此持续状态不再覆盖菜品本体。
+            // 角色身份由舞台聚光、方向轨迹和文案表达。轮廓 Shader 在细长食物上
+            // 会把内部像素染成整块荧光色，因此持续状态不再覆盖食物本体。
             HidePlacementGlow();
         }
 
@@ -1664,7 +1664,7 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>
-        /// 脚下软边接触阴影：用径向羽化暗斑铺满整个脚印，不依赖菜品图留白，必定可见。
+        /// 脚下软边接触阴影：用径向羽化暗斑铺满整个脚印，不依赖食物图留白，必定可见。
         /// 分两层——锐利核心层（贴桌接触）+ 弥散光晕层（高空虚化），都钉在地面脚印中心。
         /// </summary>
         private void ConfigureContactShadow(DishShape shape)
@@ -1699,7 +1699,7 @@ namespace GourmetProject.Game.Presentation.Battle
             if (_shadowHaloRenderer != null)
             {
                 _shadowHaloRenderer.sprite = BattleShadow.DiffuseShadowSprite;
-                // 光晕排在核心层之下（仍在所有菜本体之下），保证锐利核心压在弥散光晕之上。
+                // 光晕排在核心层之下（仍在所有食物本体之下），保证锐利核心压在弥散光晕之上。
                 BattleSorting.Apply(
                     _shadowHaloRenderer,
                     BattleSorting.Pieces,

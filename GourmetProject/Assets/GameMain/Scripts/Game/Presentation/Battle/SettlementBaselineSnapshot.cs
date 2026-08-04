@@ -3,7 +3,7 @@ using GourmetProject.Gameplay.Board;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
-    /// <summary>结算演出开始前的菜品分数基线，避免读取已写回永久效果后的实例值。</summary>
+    /// <summary>结算演出开始前的食物分数基线，避免读取已写回永久效果后的实例值。</summary>
     public sealed class SettlementBaselineSnapshot
     {
         private readonly Dictionary<int, SettlementDishBaseline> _byDish = new();

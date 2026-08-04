@@ -1249,7 +1249,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        /// <summary>待领奖读档或页面往返后，按结算明细无动画恢复菜品贡献值。</summary>
+        /// <summary>待领奖读档或页面往返后，按结算明细无动画恢复食物贡献值。</summary>
         public void RestoreDishValueBadges(
             IReadOnlyList<DishScore> dishScores,
             IReadOnlyDictionary<int, DishPieceView> dishViews)
@@ -1712,7 +1712,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 AddCueStep(plan, line, cue, dishViews, shownDishBases, baselineSnapshot);
             }
 
-            // 甜蜜传递的「卡片揭示」不单独补 cue，而是绑定在目标菜触发传递效果的那条明细上
+            // 甜蜜传递的「卡片揭示」不单独补 cue，而是绑定在目标食物触发传递效果的那条明细上
             //（该明细来源名带 <甜蜜传递> 标签，见 SweetTransferCardDelta），做到触发即显示、时机与演出一致。
 
             if (!hasFinalModifierCue && HasFinalModifier(result))
@@ -1741,18 +1741,18 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 plan.FinalCues.Add(new SettlementCue(
                     SettlementCueKind.SideEffect,
-                    $"获得道具 ×{result.SilverItemRollRequests}",
+                    $"获得装饰品和消耗品 ×{result.SilverItemRollRequests}",
                     sourceName: "银材质"));
             }
 
             // if (result.PermanentFlatDeltas.Count > 0)
             // {
-            //     plan.FinalCues.Add(new SettlementCue(SettlementCueKind.SideEffect, $"永久美味 +{result.PermanentFlatDeltas.Count} 道菜"));
+            //     plan.FinalCues.Add(new SettlementCue(SettlementCueKind.SideEffect, $"永久美味值 +{result.PermanentFlatDeltas.Count} 个食物"));
             // }
 
             // if (result.PermanentMultDeltas.Count > 0)
             // {
-            //     plan.FinalCues.Add(new SettlementCue(SettlementCueKind.SideEffect, $"永久倍率 +{result.PermanentMultDeltas.Count} 道菜"));
+            //     plan.FinalCues.Add(new SettlementCue(SettlementCueKind.SideEffect, $"永久倍率 +{result.PermanentMultDeltas.Count} 个食物"));
             // }
 
             return plan;
@@ -2075,7 +2075,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.SilverItemRoll:
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
-                        $"获得道具 ×{Mathf.RoundToInt(line.Value)}",
+                        $"获得装饰品和消耗品 ×{Mathf.RoundToInt(line.Value)}",
                         sourceName: sourceName);
                     return true;
 

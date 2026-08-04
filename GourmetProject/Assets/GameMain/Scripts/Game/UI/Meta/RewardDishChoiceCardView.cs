@@ -10,7 +10,7 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>
-    /// 菜品奖励选择页中的候选卡片。负责展示、点击和悬浮事件，不再参与拖拽。
+    /// 食物奖励选择页中的候选卡片。负责展示、点击和悬浮事件，不再参与拖拽。
     /// </summary>
     public sealed class RewardDishChoiceCardView : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {

@@ -19,8 +19,8 @@ namespace GourmetProject.Game.Meta
     ///   maxGold:N   当前金币 &lt;= N
     ///   minWeek:N   当前周 &gt;= N
     ///   eventCounterReached:id  指定事件计数目标已达到
-    ///   hasItem:id  持有指定道具
-    ///   hasRecipeDish / hasFlavoredRecipeDish  菜谱中存在任意菜 / 带风味菜
+    ///   hasItem:id  持有指定装饰品和消耗品
+    ///   hasRecipeDish / hasFlavoredRecipeDish  食谱中存在任意菜 / 带风味菜
     /// 空串或未知子条件视为满足（宽松默认，避免误杀配置）。
     /// </summary>
     public static class PreconditionEvaluator

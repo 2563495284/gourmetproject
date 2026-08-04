@@ -3,14 +3,14 @@ using GourmetProject.Game.UI.Battle;
 
 namespace GourmetProject.Game.DevConsole.Commands
 {
-    /// <summary>跳到指定周并重开该周行动轴（参考 STS2 <c>ActConsoleCmd</c> 的跳关思路）。</summary>
+    /// <summary>跳到指定周并重开该周时间轴（参考 STS2 <c>ActConsoleCmd</c> 的跳关思路）。</summary>
     public sealed class WeekCommand : ConsoleCommand
     {
         public override string CmdName => "week";
 
         public override string Args => "<week:int>";
 
-        public override string Description => "跳到指定周并重新随机该周行动轴。";
+        public override string Description => "跳到指定周并重新随机该周时间轴。";
 
         public override CmdResult Execute(string[] args)
         {
@@ -35,11 +35,11 @@ namespace GourmetProject.Game.DevConsole.Commands
             BattleForm battle = BattleForm.Active;
             if (battle == null)
             {
-                return CmdResult.Ok($"已设置周序号为 {run.WeekIndex}（未在战斗界面，进入后生效）。");
+                return CmdResult.Ok($"已设置周序号为 {run.WeekIndex}（未在经营挑战界面，进入后生效）。");
             }
 
             battle.BeginWeek();
-            return CmdResult.Ok($"已跳到第 {run.WeekIndex} 周并重开行动轴。");
+            return CmdResult.Ok($"已跳到第 {run.WeekIndex} 周并重开时间轴。");
         }
     }
 }

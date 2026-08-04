@@ -15,35 +15,35 @@ namespace cfg
 public partial class Tables
 {
     /// <summary>
-    /// 菜品本体：物理属性（id/name/deliciousness/icon/allowRotate/shapeRows）与固有技能（skills→TbSkill）。
+    /// 食物本体：物理属性（id/name/deliciousness/icon/allowRotate/shapeRows）与固有技能（skills→TbSkill）。
     /// </summary>
     public TbDishBase TbDishBase {get; }
     /// <summary>
-    /// 菜品变体：随机菜品库条目。引用本体+风味(flavorId→TbFlavor,单槽)+隐藏分/权重/价格。flavorId 空串=无风味。
+    /// 食物变体：随机食物库条目。引用本体+风味(flavorId→TbFlavor,单槽)+隐藏分/权重/价格。flavorId 空串=无风味。
     /// </summary>
     public TbDishVariant TbDishVariant {get; }
     /// <summary>
-    /// 专有名词：菜品详情右侧框单独解释。
+    /// 专有名词：食物详情右侧框单独解释。
     /// </summary>
     public TbTerm TbTerm {get; }
     /// <summary>
-    /// 角色：配置初始菜谱/胃形状/道具。
+    /// 经营方向：配置初始食谱、餐桌形状、装饰品和消耗品。
     /// </summary>
     public TbCharacter TbCharacter {get; }
     /// <summary>
-    /// 餐桌碎片库：也用作初始餐桌形状来源。materialIds 为该碎片可随机落位的材质列表；碎片不旋转(1x2 与 2x1 视为两个碎片)。&#39;X&#39;=存在格。
+    /// 餐桌格库：也用作初始餐桌形状来源。materialIds 为该餐桌格可随机落位的材质列表；餐桌格不旋转(1x2 与 2x1 视为两个碎片)。&#39;X&#39;=存在格。
     /// </summary>
     public TbTableFragment TbTableFragment {get; }
     /// <summary>
-    /// 菜谱：直接配置有序 groupIds 与带权数量方案 rollPlans；随机小组内容由 TbRecipeGroup 配置。
+    /// 食谱：直接配置有序 groupIds 与带权数量方案 rollPlans；随机小组内容由 TbRecipeGroup 配置。
     /// </summary>
     public TbRecipe TbRecipe {get; }
     /// <summary>
-    /// 被动道具：永久常驻/获得时生效，道具池按隐藏分筛选。specialTags 用 | 分隔，空串=无。
+    /// 装饰品：永久常驻或获得时生效，装饰品池按隐藏分筛选。specialTags 用 | 分隔，空串=无。
     /// </summary>
     public TbPassiveItem TbPassiveItem {get; }
     /// <summary>
-    /// 主动道具：一次性占全局消耗槽，玩家手动使用；不配置隐藏分区间。specialTags 用 | 分隔，空串=无。
+    /// 消耗品：一次性占用消耗品栏位，玩家手动使用；不配置隐藏分区间。specialTags 用 | 分隔，空串=无。
     /// </summary>
     public TbActiveItem TbActiveItem {get; }
     /// <summary>
@@ -55,11 +55,11 @@ public partial class Tables
     /// </summary>
     public TbRewardSlot TbRewardSlot {get; }
     /// <summary>
-    /// 奖励池筛选：specialTags 用 | 分隔；道具不按品质权重筛选。
+    /// 奖励池筛选：specialTags 用 | 分隔；装饰品和消耗品不按品质权重筛选。
     /// </summary>
     public TbRewardPool TbRewardPool {get; }
     /// <summary>
-    /// 周/关卡配置：定义每周候选行动轴列表与行动轴权重。
+    /// 周/关卡配置：定义每周候选时间轴列表与时间轴权重。
     /// </summary>
     public TbWeek TbWeek {get; }
     /// <summary>
@@ -67,7 +67,7 @@ public partial class Tables
     /// </summary>
     public TbAction TbAction {get; }
     /// <summary>
-    /// 行动轴库：定义行动轴模板与基础长度；具体每周候选池和权重由 Week.timelineIds/timelineWeights 决定。
+    /// 时间轴库：定义时间轴模板与基础长度；具体每周候选池和权重由 Week.timelineIds/timelineWeights 决定。
     /// </summary>
     public TbTimeline TbTimeline {get; }
     /// <summary>
@@ -87,19 +87,19 @@ public partial class Tables
     /// </summary>
     public TbUnlockCondition TbUnlockCondition {get; }
     /// <summary>
-    /// 菜品技能元信息：id/termId/descOverride/subSkills(有序引用 sub_skill)。描述由所含子技能占位符模板按顺序自动拼接；descOverride 非空时覆盖。表标题按 termId 术语名(无则空)。
+    /// 食物技能元信息：id/termId/descOverride/subSkills(有序引用 sub_skill)。描述由所含子技能占位符模板按顺序自动拼接；descOverride 非空时覆盖。表标题按 termId 术语名(无则空)。
     /// </summary>
     public TbSkill TbSkill {get; }
     /// <summary>
-    /// 菜品风味：单槽，后者替换前者。effectType/effectValue 定义简易结算效果。
+    /// 食物风味：单槽，后者替换前者。effectType/effectValue 定义简易结算效果。
     /// </summary>
     public TbFlavor TbFlavor {get; }
     /// <summary>
-    /// 餐桌材质：挂在餐桌碎片格上（TableFragment.materialIds 引用）。effectType/effectValue 定义结算效果。
+    /// 餐桌材质：挂在餐桌格上（TableFragment.materialIds 引用）。effectType/effectValue 定义结算效果。
     /// </summary>
     public TbMaterial TbMaterial {get; }
     /// <summary>
-    /// 欢乐蛋糕层数分段buff：结算时读全局层数，layers&gt;=threshold 的档累计应用到 category 分类所有食物。effectType 复用 SkillActionType。
+    /// 欢乐蛋糕层数分段buff：结算时读全局层数，layers≥threshold 的档累计应用到 category 分类所有食物。effectType 复用 SkillActionType。
     /// </summary>
     public TbCakeLayerBuff TbCakeLayerBuff {get; }
     /// <summary>
@@ -107,11 +107,11 @@ public partial class Tables
     /// </summary>
     public TbSubSkill TbSubSkill {get; }
     /// <summary>
-    /// 美食/战斗明细：Food 行动 foodId 关联；actionKind 区分普通/超级/盛宴 Boss。
+    /// 经营挑战明细：Food 行动 foodId 关联；actionKind 区分日常营业/火热营业/星级评鉴。
     /// </summary>
     public TbFood TbFood {get; }
     /// <summary>
-    /// Boss 盛宴 Debuff：Boss 美食战斗独立抽取，不放回随机；抽空后重置历史。
+    /// 星级评鉴 Debuff：Boss 经营挑战独立抽取，不放回随机；抽空后重置历史。
     /// </summary>
     public TbBossDebuff TbBossDebuff {get; }
     /// <summary>
@@ -135,7 +135,7 @@ public partial class Tables
     /// </summary>
     public TbGameBase TbGameBase {get; }
     /// <summary>
-    /// 菜谱随机小组：仅配置组ID与组内带权放回随机池，菜谱通过 groupIds 正向引用。
+    /// 食谱随机小组：仅配置组ID与组内带权放回随机池，食谱通过 groupIds 正向引用。
     /// </summary>
     public TbRecipeGroup TbRecipeGroup {get; }
 

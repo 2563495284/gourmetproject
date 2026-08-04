@@ -30,7 +30,7 @@ namespace GourmetProject.Game.Adapter
                         out cfg.DishBase baseDish))
                 {
                     throw new System.InvalidOperationException(
-                        $"菜品族 '{family.Id}' 引用了不存在的本体 baseId '{family.BaseId}'。");
+                        $"食物族 '{family.Id}' 引用了不存在的本体 baseId '{family.BaseId}'。");
                 }
 
                 referencedBaseIds.Add(family.BaseId);
@@ -49,7 +49,7 @@ namespace GourmetProject.Game.Adapter
                     if (tables.TbFlavor.GetOrDefault(flavorId) == null)
                     {
                         throw new System.InvalidOperationException(
-                            $"菜品族 '{family.Id}' 引用了不存在的风味 '{flavorId}'。");
+                            $"食物族 '{family.Id}' 引用了不存在的风味 '{flavorId}'。");
                     }
 
                     dishes.Add(
@@ -64,7 +64,7 @@ namespace GourmetProject.Game.Adapter
                 }
             }
 
-            // 没有菜品族的本体是系统机制可直接生成的独立菜品（例如 Boss 碳水餐的 mantou）。
+            // 没有食物族的本体是系统机制可直接生成的独立食物（例如 Boss 碳水餐的 mantou）。
             foreach (cfg.DishBase baseDish in tables.TbDishBase.DataList)
             {
                 if (!referencedBaseIds.Contains(baseDish.Id))
@@ -302,7 +302,7 @@ namespace GourmetProject.Game.Adapter
                 if (!configuredGroups.TryGetValue(groupId, out cfg.RecipeGroup configuredGroup))
                 {
                     throw new System.InvalidOperationException(
-                        $"菜谱 '{r.Id}' 引用了不存在的随机小组 '{groupId}'。");
+                        $"食谱 '{r.Id}' 引用了不存在的随机小组 '{groupId}'。");
                 }
 
                 var pool = new List<RecipeEntryDef>(configuredGroup.Pool.Count);
@@ -340,7 +340,7 @@ namespace GourmetProject.Game.Adapter
                 if (!int.TryParse(trimmed, out int count))
                 {
                     throw new System.InvalidOperationException(
-                        $"菜谱 '{recipeId}' 的数量方案包含非法数量 '{trimmed}'。");
+                        $"食谱 '{recipeId}' 的数量方案包含非法数量 '{trimmed}'。");
                 }
 
                 result.Add(count);

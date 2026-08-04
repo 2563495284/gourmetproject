@@ -8,6 +8,42 @@ namespace GourmetProject.Game.Meta.Passives
 {
     public static class PassiveRecipeMutationService
     {
+        public static RecipeMutationResult CopyRandomFood(
+            GameRun run,
+            string title,
+            int count,
+            IRandomStream rng)
+        {
+            var result = new RecipeMutationResult { Title = title };
+            int sourceCount = run?.RecipeEntries.Count ?? 0;
+            if (run == null || rng == null || sourceCount == 0 || count <= 0)
+            {
+                return result;
+            }
+
+            // 候选固定为获得装饰品和消耗品当刻已有的格子，避免一次复制多个时让刚生成的副本
+            // 反过来扩大自身的后续命中权重。
+            for (int i = 0; i < count; i++)
+            {
+                int sourceIndex = rng.Range(0, sourceCount);
+                int clonedIndex = run.CloneRecipeEntry(sourceIndex);
+                if (clonedIndex < 0)
+                {
+                    continue;
+                }
+
+                result.Entries.Add(new RecipeMutationEntry
+                {
+                    BookIndex = 0,
+                    DishIndex = clonedIndex,
+                    Before = new RecipeDishSnapshot(),
+                    After = Snapshot(run, new RecipeTarget(clonedIndex)),
+                });
+            }
+
+            return result;
+        }
+
         public static RecipeMutationResult AddRandomFlavors(GameRun run, string title, int count, IRandomStream rng)
         {
             var result = new RecipeMutationResult { Title = title };

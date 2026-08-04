@@ -8,7 +8,7 @@ using GourmetProject.Gameplay.Model;
 namespace GourmetProject.Game.Meta
 {
     /// <summary>
-    /// 商店/编辑界面的主动道具使用上下文。永久编辑落到 Run；排程小票操作局外核心循环。
+    /// 商店/编辑界面的消耗品使用上下文。永久编辑落到 Run；排程小票操作局外核心循环。
     /// </summary>
     public sealed class ShopUseContext : IActiveUseContext
     {

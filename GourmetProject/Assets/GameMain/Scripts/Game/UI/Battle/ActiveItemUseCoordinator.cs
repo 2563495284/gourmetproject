@@ -17,7 +17,7 @@ using TMPro;
 namespace GourmetProject.Game.UI.Battle
 {
     /// <summary>
-    /// 主动道具使用 UI 协调器：槽位点击 -> 气泡 -> 可选目标选择 -> Apply -> 消耗。
+    /// 消耗品使用 UI 协调器：槽位点击 -> 气泡 -> 可选目标选择 -> Apply -> 消耗。
     /// </summary>
     internal sealed class ActiveItemUseCoordinator
     {
@@ -141,7 +141,7 @@ namespace GourmetProject.Game.UI.Battle
             Transform parent = _host.ActiveItemLayer;
             if (_host.ActiveItemPopupPrefab == null)
             {
-                Debug.LogError($"{nameof(BattleForm)} 缺少主动道具弹窗 prefab。");
+                Debug.LogError($"{nameof(BattleForm)} 缺少消耗品弹窗 prefab。");
                 return;
             }
 
@@ -177,7 +177,7 @@ namespace GourmetProject.Game.UI.Battle
             IActiveUseContext ctx = CreateContext(contextKind);
             if (ctx == null)
             {
-                _host.ShowActiveItemMessage($"{item.Name}：现在不能使用主动道具。");
+                _host.ShowActiveItemMessage($"{item.Name}：现在不能使用消耗品。");
                 return;
             }
 
@@ -225,7 +225,7 @@ namespace GourmetProject.Game.UI.Battle
 
             if (!run.RemoveItem(item.Id))
             {
-                _host.ShowActiveItemMessage($"{item.Name}：没有可丢弃的道具。");
+                _host.ShowActiveItemMessage($"{item.Name}：没有可丢弃的装饰品和消耗品。");
                 return;
             }
 
@@ -273,7 +273,7 @@ namespace GourmetProject.Game.UI.Battle
                 {
                     if (_pendingItem == item && _recipePanelTargeting)
                     {
-                        _host.ShowActiveItemMessage($"{item.Name}：选择菜品，右键或 Esc 取消。");
+                        _host.ShowActiveItemMessage($"{item.Name}：选择食物，右键或 Esc 取消。");
                     }
                 });
         }
@@ -327,7 +327,7 @@ namespace GourmetProject.Game.UI.Battle
             if (!opened)
             {
                 CancelTargeting(showMessage: false);
-                _host.ShowActiveItemMessage($"{item.Name}：行动轴上没有可选目标。");
+                _host.ShowActiveItemMessage($"{item.Name}：时间轴上没有可选目标。");
                 return;
             }
 
@@ -400,7 +400,7 @@ namespace GourmetProject.Game.UI.Battle
             if (_host.ActiveRun?.UseActiveItem(item.Id) != true)
             {
                 CleanupTargeting();
-                _host.ShowActiveItemMessage($"{item.Name}：道具已失效。");
+                _host.ShowActiveItemMessage($"{item.Name}：装饰品和消耗品已失效。");
                 _host.RefreshAfterActiveItem(result.BoardChanged);
                 onComplete?.Invoke();
                 return;
@@ -511,7 +511,7 @@ namespace GourmetProject.Game.UI.Battle
         {
             if (_targetOverlay == null || _targetOverlay.TargetButtonPrefab == null || _targetPanel == null)
             {
-                Debug.LogError("主动道具选目标遮罩缺少 TargetButtonTemplate。");
+                Debug.LogError("消耗品选目标遮罩缺少 TargetButtonTemplate。");
                 return;
             }
 
@@ -591,7 +591,7 @@ namespace GourmetProject.Game.UI.Battle
             if (_host.ActiveRun?.UseActiveItem(item.Id) != true)
             {
                 CleanupTargeting();
-                _host.ShowActiveItemMessage($"{item.Name}：道具已失效。");
+                _host.ShowActiveItemMessage($"{item.Name}：装饰品和消耗品已失效。");
                 _host.RefreshAfterActiveItem(result.BoardChanged);
                 return;
             }
@@ -640,7 +640,7 @@ namespace GourmetProject.Game.UI.Battle
             if (_host.ActiveRun?.UseActiveItem(item.Id) != true)
             {
                 CleanupTargeting();
-                _host.ShowActiveItemMessage($"{item.Name}：道具已失效。");
+                _host.ShowActiveItemMessage($"{item.Name}：装饰品和消耗品已失效。");
                 _host.RefreshAfterActiveItem(result.BoardChanged);
                 return;
             }
@@ -746,7 +746,7 @@ namespace GourmetProject.Game.UI.Battle
                     ctx.DeleteTimelineNode(result.CreatedTimelineNodeId);
                 }
 
-                _host.ShowActiveItemMessage($"{item.Name}：道具已失效。");
+                _host.ShowActiveItemMessage($"{item.Name}：装饰品和消耗品已失效。");
                 _host.RefreshAfterActiveItem(
                     result.BoardChanged,
                     result.ActionChoicesChanged,
@@ -766,13 +766,13 @@ namespace GourmetProject.Game.UI.Battle
             GameRun run = _host.ActiveRun;
             if (run == null || item == null || !run.HasItem(item.Id))
             {
-                reason = "没有可用道具。";
+                reason = "没有可用装饰品和消耗品。";
                 return false;
             }
 
             if (new ItemRuntime(run).BlocksActiveItems())
             {
-                reason = "当前被动效果禁止使用主动道具。";
+                reason = "当前被动效果禁止使用消耗品。";
                 return false;
             }
 
@@ -784,7 +784,7 @@ namespace GourmetProject.Game.UI.Battle
 
             if (item.EffectType == ItemEffectTypes.RerollAction && !_host.IsDailyActionSelectionActive)
             {
-                reason = "只能在日常行动选择时使用。";
+                reason = "只能在普通行动选择时使用。";
                 return false;
             }
 
@@ -800,27 +800,27 @@ namespace GourmetProject.Game.UI.Battle
             if (item.EffectType == ItemEffectTypes.ResetBossDebuff
                 && TimelineService.GetNearestUntriggeredBossNode(run) == null)
             {
-                reason = "没有可重掷的 Boss 节点。";
+                reason = "没有可重掷的 星级评鉴节点。";
                 return false;
             }
 
             if (contextKind == ActiveUseContextKind.Battle && (_host.ActiveSession == null || _host.ActiveSession.IsSettled))
             {
-                reason = "战斗已经结束。";
+                reason = "经营挑战已经结束。";
                 return false;
             }
 
             if (item.EffectType == ItemEffectTypes.HalfNextActionCost
                 && contextKind == ActiveUseContextKind.Battle)
             {
-                reason = "美食战斗中不能使用。";
+                reason = "经营挑战中不能使用。";
                 return false;
             }
 
             if (ItemActiveUsage.RequiresFoodBattle(item)
                 && (_host.CurrentView != GameplayView.Food || !_host.InBattle))
             {
-                reason = "只能在美食战斗中使用。";
+                reason = "只能在经营挑战中使用。";
                 return false;
             }
 
@@ -891,7 +891,7 @@ namespace GourmetProject.Game.UI.Battle
             Transform parent = _host.ActiveItemLayer;
             if (_host.ActiveItemTargetArrowPrefab == null)
             {
-                Debug.LogError($"{nameof(BattleForm)} 缺少主动道具目标箭头 prefab。");
+                Debug.LogError($"{nameof(BattleForm)} 缺少消耗品目标箭头 prefab。");
                 return;
             }
 
@@ -905,7 +905,7 @@ namespace GourmetProject.Game.UI.Battle
             Transform parent = _host.ActiveItemLayer;
             if (_host.ActiveItemTargetOverlayPrefab == null)
             {
-                Debug.LogError($"{nameof(BattleForm)} 缺少主动道具选目标遮罩 prefab。");
+                Debug.LogError($"{nameof(BattleForm)} 缺少消耗品选目标遮罩 prefab。");
                 return;
             }
 
@@ -951,7 +951,7 @@ namespace GourmetProject.Game.UI.Battle
                 case cfg.ItemTargetKind.RecipeDish:
                 {
                     DishDef dish = run?.Database?.GetDish(target.Id);
-                    return $"菜谱{target.X + 1}-{target.Y + 1} {dish?.Name ?? target.Id}";
+                    return $"食谱{target.X + 1}-{target.Y + 1} {dish?.Name ?? target.Id}";
                 }
                 case cfg.ItemTargetKind.DiningTableCell:
                     return $"餐桌格 ({target.X + 1},{target.Y + 1})";
@@ -972,7 +972,7 @@ namespace GourmetProject.Game.UI.Battle
                     string flavor = string.IsNullOrEmpty(target.Id)
                         ? "空风味槽"
                         : run?.Database?.GetFlavor(target.Id)?.Name ?? target.Id;
-                    return $"菜谱{target.X + 1}-{target.Y + 1} {flavor}";
+                    return $"食谱{target.X + 1}-{target.Y + 1} {flavor}";
                 }
                 default:
                     return target.Id;

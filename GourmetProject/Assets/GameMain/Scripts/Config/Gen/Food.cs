@@ -32,11 +32,11 @@ public sealed partial class Food : Luban.BeanBase
     }
 
     /// <summary>
-    /// 美食ID
+    /// 食物ID
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 美食/战斗名称
+    /// 经营挑战名称
     /// </summary>
     public readonly string Name;
     /// <summary>
@@ -44,7 +44,7 @@ public sealed partial class Food : Luban.BeanBase
     /// </summary>
     public readonly string Desc;
     /// <summary>
-    /// 美食行动类型：普通/超级/盛宴(Boss)
+    /// 经营挑战类型：日常营业/火热营业/星级评鉴
     /// </summary>
     public readonly FoodActionKind ActionKind;
     /// <summary>
@@ -56,7 +56,7 @@ public sealed partial class Food : Luban.BeanBase
     /// </summary>
     public readonly string RewardPackageId;
     /// <summary>
-    /// 目标分隐藏分临时修正。
+    /// 目标美味值隐藏分临时修正。
     /// </summary>
     public readonly float TargetScoreHiddenOffset;
    

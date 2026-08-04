@@ -5,8 +5,8 @@ using TMPro;
 namespace GourmetProject.Game.UI.Hud
 {
     /// <summary>
-    /// 行动轴上的单个天格视图：底框 + 天序号 + 可选节点图标（商店/利息/Boss/事件）。
-    /// 固定结构在 ActionAxisCellView.prefab，由 <see cref="ActionAxisBar"/> 按行动轴长度数据驱动实例化。
+    /// 时间轴上的单个天格视图：底框 + 天序号 + 可选节点图标（商店/利息/Boss/事件）。
+    /// 固定结构在 ActionAxisCellView.prefab，由 <see cref="ActionAxisBar"/> 按时间轴长度数据驱动实例化。
     /// </summary>
     public sealed class ActionAxisCellView : MonoBehaviour
     {

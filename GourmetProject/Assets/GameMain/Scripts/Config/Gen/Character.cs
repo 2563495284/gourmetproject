@@ -46,11 +46,11 @@ public sealed partial class Character : Luban.BeanBase
     /// </summary>
     public readonly string Desc;
     /// <summary>
-    /// 角色立绘资源路径
+    /// 经营方向立绘资源路径
     /// </summary>
     public readonly string Portrait;
     /// <summary>
-    /// 初始菜谱ID
+    /// 初始食谱ID
     /// </summary>
     public readonly System.Collections.Generic.List<string> InitialRecipeId;
     /// <summary>
@@ -66,7 +66,7 @@ public sealed partial class Character : Luban.BeanBase
     /// </summary>
     public readonly int MaxDiningTableHeight;
     /// <summary>
-    /// 初始携带道具ID列表
+    /// 初始携带装饰品和消耗品ID列表
     /// </summary>
     public readonly System.Collections.Generic.List<string> StartItems;
    

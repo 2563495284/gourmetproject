@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 角色：配置初始菜谱/胃形状/道具。
+/// 经营方向：配置初始食谱、餐桌形状、装饰品和消耗品。
 /// </summary>
 public partial class TbCharacter
 {

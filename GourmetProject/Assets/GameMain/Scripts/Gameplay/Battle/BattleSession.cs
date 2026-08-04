@@ -10,8 +10,22 @@ using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 
 namespace GourmetProject.Gameplay.Battle
 {
+    /// <summary>一次已经实际落到单个目标的甜蜜传递。</summary>
+    public readonly struct SweetTransferOccurrence
+    {
+        public SweetTransferOccurrence(int sourceInstanceId, int targetInstanceId)
+        {
+            SourceInstanceId = sourceInstanceId;
+            TargetInstanceId = targetInstanceId;
+        }
+
+        public int SourceInstanceId { get; }
+
+        public int TargetInstanceId { get; }
+    }
+
     /// <summary>
-    /// 一局局内战斗的完整逻辑（纯 C#，可单测）：持有餐桌与菜谱槽，处理「准备出餐 / 玩家摆放 / 吃」结算。
+    /// 一局局内经营挑战的完整逻辑（纯 C#，可单测）：持有餐桌与食谱槽，处理「准备出菜 / 玩家摆放 / 吃」结算。
     /// 所有随机经由注入的确定性流，保证同种子可复现。表现层（BattleForm）只读取状态并转发操作。
     /// </summary>
     public sealed class BattleSession
@@ -86,34 +100,34 @@ namespace GourmetProject.Gameplay.Battle
 
         public int RequiredScore { get; }
 
-        /// <summary>局级加法修正（由道具/Buff 注入，影响最终结算）。</summary>
+        /// <summary>局级加法修正（由装饰品和消耗品/Buff 注入，影响最终结算）。</summary>
         public float FinalFlat { get; set; }
 
-        /// <summary>局级乘区修正（由道具/Buff 注入，影响最终结算）。</summary>
+        /// <summary>局级倍率修正（由装饰品和消耗品/Buff 注入，影响最终结算）。</summary>
         public float FinalMultiplier { get; set; } = 1f;
 
-        /// <summary>每道菜额外「视为食物数」（由被动道具注入，影响计数类前提）。</summary>
+        /// <summary>每个食物额外「视为食物数」（由装饰品注入，影响计数类前提）。</summary>
         public int ExtraCountAsPerDish { get; set; }
 
-        /// <summary>蛋糕层数 buff 阈值下调（由被动道具「蛋糕捷径」注入）。</summary>
+        /// <summary>蛋糕层数 buff 阈值下调（由装饰品「蛋糕捷径」注入）。</summary>
         public int CakeLayerThresholdReduction { get; set; }
 
-        /// <summary>蛋糕层数每次净增时的额外加成（由被动道具「蛋糕膨胀」注入）。</summary>
+        /// <summary>蛋糕层数每次净增时的额外加成（由装饰品「蛋糕膨胀」注入）。</summary>
         public int CakeLayerAccelBonus { get; set; }
 
-        /// <summary>设置本次品鉴的初始蛋糕层数（道具「蛋糕打底」/跨局保留）。下限 0。</summary>
+        /// <summary>设置本场经营挑战的初始蛋糕层数（装饰品和消耗品「蛋糕打底」/跨局保留）。下限 0。</summary>
         public void SeedHappyCakeLayers(int layers)
         {
             SetHappyCakeLayers(layers);
         }
 
-        /// <summary>本次美食品鉴结束后清空蛋糕层数。</summary>
+        /// <summary>本场经营挑战经营挑战结束后清空蛋糕层数。</summary>
         public void ClearHappyCakeLayers()
         {
             SetHappyCakeLayers(0);
         }
 
-        /// <summary>本局允许的最大上菜次数（-1 表示不限；Boss 机制「限量供应」会设上限）。</summary>
+        /// <summary>本局允许的最大上菜次数（-1 表示不限；星级评鉴机制「限量供应」会设上限）。</summary>
         public int MaxServes { get; set; } = -1;
 
         /// <summary>玩家点击铃铛并成功让出菜口出现食物时扣除的金币。</summary>
@@ -180,27 +194,27 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>本局已上菜次数。</summary>
         public int ServesUsed { get; private set; }
 
-        /// <summary>当前连续成功出现在出餐口的饼干数量。</summary>
+        /// <summary>当前连续成功出现在出菜口的饼干数量。</summary>
         public int ConsecutiveCookiePrepares => _consecutiveCookiePrepares;
 
-        /// <summary>本局允许从出餐口丢弃食物的总次数。</summary>
+        /// <summary>本局允许从出菜口丢弃食物的总次数。</summary>
         public int FoodDiscardLimit { get; private set; }
 
-        /// <summary>本局已经从出餐口丢弃食物的次数。</summary>
+        /// <summary>本局已经从出菜口丢弃食物的次数。</summary>
         public int FoodDiscardsUsed { get; private set; }
 
         public int FoodDiscardsRemaining => Math.Max(0, FoodDiscardLimit - FoodDiscardsUsed);
 
-        /// <summary>已随机出餐、尚未由玩家摆上餐桌的食物。</summary>
+        /// <summary>已随机出菜、尚未由玩家摆上餐桌的食物。</summary>
         public PreparedServeDish PreparedServe { get; private set; }
 
         /// <summary>
-        /// 因麻风味旋转后暂存在临时桌、尚未放回主餐桌的菜品。
+        /// 因麻风味旋转后暂存在临时桌、尚未放回主餐桌的食物。
         /// 它们不属于 <see cref="DiningTable"/>，因此不参与空间判定、预览分数或结算。
         /// </summary>
         public IReadOnlyList<DishInstance> TemporaryAreaDishes => _temporaryAreaDishes;
 
-        /// <summary>本次品鉴共享的全局「欢乐蛋糕层数」，随上菜/结算累加，跨品鉴重置。</summary>
+        /// <summary>本场经营挑战共享的全局「欢乐蛋糕层数」，随上菜/结算累加，跨经营挑战重置。</summary>
         public int HappyCakeLayers { get; private set; }
 
         /// <summary>是否已结算（吃过）。</summary>
@@ -212,7 +226,7 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>本局待入账的金币增量（上菜 OnServe + 结算经济运营累积；由 Game 层写回 GameRun.Gold）。</summary>
         public float PendingGold { get; private set; }
 
-        /// <summary>本局待发放的主动道具数量（银材质结算掷骰命中累积；由 Game 层在结算后发放）。</summary>
+        /// <summary>本局待发放的消耗品数量（银材质结算掷骰命中累积；由 Game 层在结算后发放）。</summary>
         public int PendingActiveItemGrants { get; private set; }
 
         /// <summary>本次结算各 BaseId 的结算增量（供 Game 层累加进 GameRun 大局历史）。</summary>
@@ -222,11 +236,11 @@ namespace GourmetProject.Gameplay.Battle
 
         public IReadOnlyList<RecipeScoreMultiplierDelta> LastRecipeScoreMultiplierDeltas => _lastRecipeScoreMultiplierDeltas;
 
-        /// <summary>本次品鉴菜谱内容（BaseId 列表，供菜谱检测）。</summary>
+        /// <summary>本场经营挑战食谱内容（BaseId 列表，供食谱检测）。</summary>
         public IReadOnlyList<string> RecipeBaseIds => _recipeBaseIds;
 
         /// <summary>
-        /// 返回本场开局经 Boss 修正后的完整菜谱。已出餐、丢弃或移除的条目不会从该列表消失。
+        /// 返回本场开局经 星级评鉴修正后的完整食谱。已出菜、丢弃或移除的条目不会从该列表消失。
         /// “不能放置”由当前餐桌空间、结算状态与上菜次数上限实时计算。
         /// </summary>
         public IReadOnlyList<BattleRecipeEntrySnapshot> GetBattleRecipeEntries(int slotIndex)
@@ -256,8 +270,8 @@ namespace GourmetProject.Gameplay.Battle
             return result;
         }
 
-        /// <summary>一次甜蜜传递请求成功落到至少一个目标后触发。</summary>
-        public event Action<SkillTransferRequest> SweetTransferTriggered;
+        /// <summary>甜蜜传递实际落到每个目标后各触发一次。</summary>
+        public event Action<SweetTransferOccurrence> SweetTransferTriggered;
 
         public event Action<DishInstance, int> Served;
 
@@ -273,8 +287,23 @@ namespace GourmetProject.Gameplay.Battle
         }
 
         /// <summary>
-        /// 配置铃铛出菜序列中的独立插入菜品。每个窗口会随机选择指定数量的位置，
-        /// 命中时直接从菜品表读取该菜，不消耗或替换菜谱条目。
+        /// 经营挑战进行中因获得 / 移除垃圾桶类装饰而调整本场上限。
+        /// 已消耗次数不回滚：正增量会同时增加上限和当前剩余，
+        /// 负增量最多把剩余压到 0，不会退还已用次数。
+        /// </summary>
+        public void AdjustFoodDiscardLimit(int delta)
+        {
+            if (delta == 0)
+            {
+                return;
+            }
+
+            FoodDiscardLimit = Math.Max(0, FoodDiscardLimit + delta);
+        }
+
+        /// <summary>
+        /// 配置铃铛出菜序列中的独立插入食物。每个窗口会随机选择指定数量的位置，
+        /// 命中时直接从食物表读取该菜，不消耗或替换食谱条目。
         /// </summary>
         public void ConfigureInsertedDishSequence(string dishId, int windowSize, int countPerWindow)
         {
@@ -286,8 +315,8 @@ namespace GourmetProject.Gameplay.Battle
         }
 
         /// <summary>
-        /// 丢弃当前出餐口食物。食物已从本局菜谱副本取出，因此这里只清空暂存态；
-        /// 不写回 GameRun 菜谱，也不触发上菜次数、技能或费用。
+        /// 丢弃当前出菜口食物。食物已从本局食谱副本取出，因此这里只清空暂存态；
+        /// 不写回 GameRun 食谱，也不触发上菜次数、技能或费用。
         /// </summary>
         public bool TryDiscardPreparedServe()
         {
@@ -325,9 +354,11 @@ namespace GourmetProject.Gameplay.Battle
             return true;
         }
 
-        public float SweetTransferTargetMultiplier { get; set; } = 1f;
+        /// <summary>每次传递给目标永久倍率累加的数值（如 0.1）。</summary>
+        public float SweetTransferTargetMultiplier { get; set; }
 
-        public float SweetTransferSourceMultiplier { get; set; } = 1f;
+        /// <summary>每成功传递一个目标，给来源永久倍率累加的数值（如 0.1）。</summary>
+        public float SweetTransferSourceMultiplier { get; set; }
 
         public void AddPendingGold(float amount)
         {
@@ -362,7 +393,7 @@ namespace GourmetProject.Gameplay.Battle
         }
 
         /// <summary>
-        /// 当前餐桌状态下，指定菜谱条目是否至少存在一个合法上菜位置。
+        /// 当前餐桌状态下，指定食谱条目是否至少存在一个合法上菜位置。
         /// 与真正上菜共用同一套风味旋转/回退规则，供 HUD 实时展示可放置状态。
         /// </summary>
         public bool CanFitRecipeEntry(int slotIndex, int entryIndex)
@@ -590,7 +621,7 @@ namespace GourmetProject.Gameplay.Battle
         }
 
         /// <summary>
-        /// 把出餐口食物提交到玩家选择的位置，并在成功落桌后执行上菜次数、技能和费用等副作用。
+        /// 把出菜口食物提交到玩家选择的位置，并在成功落桌后执行上菜次数、技能和费用等副作用。
         /// </summary>
         public ServeResult CommitPreparedServe(Placement placement)
         {
@@ -646,7 +677,7 @@ namespace GourmetProject.Gameplay.Battle
 
         private List<Placement> FindServePlacements(DishDef dish, RecipeSlotEntry entry)
         {
-            // 麻：菜谱里带「麻」风味的菜在上菜前即按逆时针 n×90° 旋转，用旋转后的形状随机放置；放不下则回退不旋转。
+            // 麻：食谱里带「麻」风味的菜在上菜前即按逆时针 n×90° 旋转，用旋转后的形状随机放置；放不下则回退不旋转。
             int numbSteps = NumbStepsFor(ComposeServeFlavors(dish, entry));
             List<Placement> placements = numbSteps > 0
                 ? DiningTable.FindValidPlacementsRotatedCcw(dish, numbSteps)
@@ -772,7 +803,7 @@ namespace GourmetProject.Gameplay.Battle
 
         /// <summary>统计一组风味里「麻」(Rotate) 的逆时针旋转步数（各麻风味 effectValue 之和）。</summary>
         /// <summary>
-        /// 合成上菜风味：菜谱变体自带风味 + 玩家用「调味小票」永久附加的额外风味。
+        /// 合成上菜风味：食谱变体自带风味 + 玩家用「调味小票」永久附加的额外风味。
         /// 有额外风味时解除单槽上限以支持叠加（如甜×n）；无额外风味时沿用单槽语义（后者覆盖）。
         /// </summary>
         private List<string> ComposeServeFlavors(DishDef dish, RecipeSlotEntry entry)
@@ -869,7 +900,7 @@ namespace GourmetProject.Gameplay.Battle
             }
         }
 
-        /// <summary>把历史/菜谱打包为只读快照注入结算（读取本次结算之前的状态）。</summary>
+        /// <summary>把历史/食谱打包为只读快照注入结算（读取本次结算之前的状态）。</summary>
         private IScoreHistory BuildHistory()
         {
             return new ScoreHistory(
@@ -878,7 +909,7 @@ namespace GourmetProject.Gameplay.Battle
                 _recipeBaseIds);
         }
 
-        /// <summary>收集当前仍未上菜的菜谱条目及其全部风味，供酸/咸在结算开始时遍历。</summary>
+        /// <summary>收集当前仍未上菜的食谱条目及其全部风味，供酸/咸在结算开始时遍历。</summary>
         private List<UnservedRecipeDish> BuildUnservedRecipeDishes()
         {
             var result = new List<UnservedRecipeDish>();
@@ -933,7 +964,7 @@ namespace GourmetProject.Gameplay.Battle
             // 金币入账（结算侧效果）。
             PendingGold += result.GoldDelta;
 
-            // 银材质：对每个「1/3 获得道具」请求掷骰（仅正式结算掷，预览不掷，保证可复现纯净）。
+            // 银材质：对每个「1/3 获得装饰品和消耗品」请求掷骰（仅正式结算掷，预览不掷，保证可复现纯净）。
             for (int i = 0; i < result.SilverItemRollRequests; i++)
             {
                 if (_rng.NextBool(1.0 / 3.0))
@@ -942,11 +973,10 @@ namespace GourmetProject.Gameplay.Battle
                 }
             }
 
-            // 全局欢乐蛋糕层数：写回品鉴级计数器（层数净增时叠加道具加速）。
+            // 全局欢乐蛋糕层数：写回经营挑战级计数器（层数净增时叠加装饰品和消耗品加速）。
             SetHappyCakeLayers(HappyCakeLayers + result.HappyCakeLayerDelta + AccelFor(result.HappyCakeLayerDelta));
 
             // 技能传递。
-            var transferSourcesMultiplied = new HashSet<int>();
             foreach (SkillTransferSideEffect transfer in result.SkillTransfers)
             {
                 DishInstance inst = FindInstance(transfer.TargetInstanceId);
@@ -962,16 +992,16 @@ namespace GourmetProject.Gameplay.Battle
                 }
 
                 ApplySweetTransferTargetMultiplier(inst);
-                if (transfer.SourceInstanceId > 0 && transferSourcesMultiplied.Add(transfer.SourceInstanceId))
-                {
-                    ApplySweetTransferSourceMultiplier(FindInstance(transfer.SourceInstanceId));
-                }
+                ApplySweetTransferSourceMultiplier(FindInstance(transfer.SourceInstanceId));
+                SweetTransferTriggered?.Invoke(new SweetTransferOccurrence(
+                    transfer.SourceInstanceId,
+                    transfer.TargetInstanceId));
             }
 
             // 技能复制：结算阶段只登记候选池，正式结算后由会话随机流落地，避免预览消耗 RNG。
             ApplyCopySkillRequests(result.CopySkillRequests);
 
-            // 永久分 / 永久乘区 / 视为食物数：写回实例（品鉴内跨结算持久）。
+            // 永久分 / 永久倍率 / 视为食物数：写回实例（经营挑战内跨结算持久）。
             foreach (KeyValuePair<int, float> kv in result.PermanentFlatDeltas)
             {
                 DishInstance inst = FindInstance(kv.Key);
@@ -1008,7 +1038,7 @@ namespace GourmetProject.Gameplay.Battle
                 }
             }
 
-            // 历史累计：本次结算把盘面每道菜的 BaseId 计入大局/小局。
+            // 历史累计：本次结算把盘面每个食物的 BaseId 计入大局/小局。
             var increments = new Dictionary<string, int>();
             foreach (DishInstance dish in DiningTable.Dishes)
             {
@@ -1056,8 +1086,6 @@ namespace GourmetProject.Gameplay.Battle
                 }
 
                 string sourceLabel = $"{request.SourceName}<甜蜜传递>";
-                bool transferred = false;
-                bool sourceMultiplied = false;
                 foreach (int targetId in targets)
                 {
                     DishInstance target = FindInstance(targetId);
@@ -1072,17 +1100,10 @@ namespace GourmetProject.Gameplay.Battle
                     }
 
                     ApplySweetTransferTargetMultiplier(target);
-                    if (!sourceMultiplied)
-                    {
-                        ApplySweetTransferSourceMultiplier(FindInstance(request.SourceInstanceId));
-                        sourceMultiplied = true;
-                    }
-                    transferred = true;
-                }
-
-                if (transferred)
-                {
-                    SweetTransferTriggered?.Invoke(request);
+                    ApplySweetTransferSourceMultiplier(FindInstance(request.SourceInstanceId));
+                    SweetTransferTriggered?.Invoke(new SweetTransferOccurrence(
+                        request.SourceInstanceId,
+                        targetId));
                 }
             }
         }
@@ -1105,17 +1126,17 @@ namespace GourmetProject.Gameplay.Battle
 
         private void ApplySweetTransferTargetMultiplier(DishInstance target)
         {
-            if (target != null && SweetTransferTargetMultiplier > 0f && Math.Abs(SweetTransferTargetMultiplier - 1f) > 0.0001f)
+            if (target != null && SweetTransferTargetMultiplier > 0f)
             {
-                target.MultiplyPermanentMult(SweetTransferTargetMultiplier);
+                target.AddPermanentMultBonus(SweetTransferTargetMultiplier);
             }
         }
 
         private void ApplySweetTransferSourceMultiplier(DishInstance source)
         {
-            if (source != null && SweetTransferSourceMultiplier > 0f && Math.Abs(SweetTransferSourceMultiplier - 1f) > 0.0001f)
+            if (source != null && SweetTransferSourceMultiplier > 0f)
             {
-                source.MultiplyPermanentMult(SweetTransferSourceMultiplier);
+                source.AddPermanentMultBonus(SweetTransferSourceMultiplier);
             }
         }
 
@@ -1165,7 +1186,7 @@ namespace GourmetProject.Gameplay.Battle
             return selected;
         }
 
-        /// <summary>清理本次品鉴产生的临时克隆实例（品鉴结束时调用）。</summary>
+        /// <summary>清理本场经营挑战产生的临时克隆实例（经营挑战结束时调用）。</summary>
         public void ClearTemporaryDishes()
         {
             var temporaries = new List<DishInstance>();
@@ -1183,7 +1204,7 @@ namespace GourmetProject.Gameplay.Battle
             }
         }
 
-        /// <summary>层数净增（delta&gt;0）时返回额外加速层数，否则 0（道具「蛋糕膨胀」）。</summary>
+        /// <summary>层数净增（delta&gt;0）时返回额外加速层数，否则 0（装饰品和消耗品「蛋糕膨胀」）。</summary>
         private int AccelFor(int delta)
         {
             return delta > 0 ? CakeLayerAccelBonus : 0;
@@ -1254,7 +1275,7 @@ namespace GourmetProject.Gameplay.Battle
 
         public bool IsWin => IsSettled && LastResult != null && LastResult.Total >= RequiredScore;
 
-        /// <summary>清空餐桌（主动道具「重摆铃」）。已结算后不允许。</summary>
+        /// <summary>清空餐桌（消耗品「重摆铃」）。已结算后不允许。</summary>
         public void ClearBoard()
         {
             if (IsSettled)
@@ -1299,7 +1320,7 @@ namespace GourmetProject.Gameplay.Battle
         }
 
         /// <summary>
-        /// 把已上桌菜品从当前朝向逆时针旋转指定步数，并移动到独立临时桌。
+        /// 把已上桌食物从当前朝向逆时针旋转指定步数，并移动到独立临时桌。
         /// 不回滚该菜已发生的上菜次数、OnServe 或费用副作用。
         /// </summary>
         public bool MoveDishToTemporaryAreaAfterRotate(int dishId, int ccwSteps)
@@ -1327,7 +1348,7 @@ namespace GourmetProject.Gameplay.Battle
             return true;
         }
 
-        /// <summary>枚举临时桌菜品以当前固定朝向放回主餐桌的全部合法位置。</summary>
+        /// <summary>枚举临时桌食物以当前固定朝向放回主餐桌的全部合法位置。</summary>
         public IReadOnlyList<Placement> FindTemporaryAreaDishPlacements(int dishId)
         {
             DishInstance dish = FindTemporaryAreaDishById(dishId);
@@ -1342,8 +1363,8 @@ namespace GourmetProject.Gameplay.Battle
         }
 
         /// <summary>
-        /// 把临时桌菜品放回主餐桌。这里只重定位，不再次计入上菜次数，也不触发 OnServe，
-        /// 并且不会读取或修改出餐口的 <see cref="PreparedServe"/>。
+        /// 把临时桌食物放回主餐桌。这里只重定位，不再次计入上菜次数，也不触发 OnServe，
+        /// 并且不会读取或修改出菜口的 <see cref="PreparedServe"/>。
         /// </summary>
         public bool CommitTemporaryAreaDish(int dishId, Placement placement)
         {
@@ -1370,7 +1391,7 @@ namespace GourmetProject.Gameplay.Battle
             return true;
         }
 
-        /// <summary>主动道具：给指定餐桌菜永久加分（对标杀戮尖塔2 火焰药水打目标）。成功返回 true。</summary>
+        /// <summary>消耗品：给指定餐桌菜永久加分（对标杀戮尖塔2 火焰药水打目标）。成功返回 true。</summary>
         public bool AddPermanentScoreToDish(int dishId, float amount)
         {
             if (IsSettled)
@@ -1388,7 +1409,7 @@ namespace GourmetProject.Gameplay.Battle
             return true;
         }
 
-        /// <summary>主动道具：给指定餐桌菜永久乘区加成。成功返回 true。</summary>
+        /// <summary>消耗品：给指定餐桌菜永久倍率加成。成功返回 true。</summary>
         public bool MultiplyScoreOnDish(int dishId, float multiplier)
         {
             if (IsSettled)
@@ -1406,7 +1427,7 @@ namespace GourmetProject.Gameplay.Battle
             return true;
         }
 
-        /// <summary>主动道具：给指定餐桌菜加「视为食物数」。成功返回 true。</summary>
+        /// <summary>消耗品：给指定餐桌菜加「视为食物数」。成功返回 true。</summary>
         public bool AddCountAsToDish(int dishId, int amount)
         {
             if (IsSettled)
@@ -1463,7 +1484,7 @@ namespace GourmetProject.Gameplay.Battle
             return dish != null && dish.ReplaceFlavor(toFlavorId);
         }
 
-        /// <summary>主动道具：移除指定餐桌菜（对标破坏族）。成功返回 true。</summary>
+        /// <summary>消耗品：移除指定餐桌菜（对标破坏族）。成功返回 true。</summary>
         public bool DestroyDishById(int dishId)
         {
             if (IsSettled)
@@ -1483,7 +1504,7 @@ namespace GourmetProject.Gameplay.Battle
         }
 
         /// <summary>
-        /// 主动道具：复制指定餐桌菜到空位（对标增殖族）。摆放位置由战斗随机流选取，
+        /// 消耗品：复制指定餐桌菜到空位（对标增殖族）。摆放位置由经营挑战随机流选取，
         /// 复制产物为常驻实例。空位不足返回 false。
         /// </summary>
         public bool DuplicateDishById(int dishId)
@@ -1548,7 +1569,7 @@ namespace GourmetProject.Gameplay.Battle
             return false;
         }
 
-        /// <summary>当前所有菜谱槽是否都无法再上菜（用于提示玩家结算）。</summary>
+        /// <summary>当前所有食谱槽是否都无法再上菜（用于提示玩家结算）。</summary>
         public bool CanServeAny()
         {
             if (PreparedServe != null)

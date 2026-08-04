@@ -5,7 +5,7 @@ using Log = GourmetProject.Core.Diagnostics.Log;
 namespace GourmetProject.Game.UI.Battle.View
 {
     /// <summary>
-    /// 战斗界面 hover Tip 注册表：持有道具、行动轴和食物 Tip 预制体，
+    /// 经营挑战界面 hover Tip 注册表：持有装饰品和消耗品、时间轴和食物 Tip 预制体，
     /// 惰性实例化到界面根下并缓存，界面关闭时统一隐藏。
     /// </summary>
     public sealed class BattleTipRegistry : MonoBehaviour

@@ -28,7 +28,7 @@ namespace GourmetProject.Gameplay.Model
         /// <summary>首个效果参数；列表为空时为空串。</summary>
         string EffectParam { get; }
 
-        /// <summary>关联的专有名词 id，非空时菜品详情额外展示。</summary>
+        /// <summary>关联的专有名词 id，非空时食物详情额外展示。</summary>
         string TermId { get; }
 
         bool HasTerm { get; }

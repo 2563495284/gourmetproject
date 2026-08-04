@@ -53,7 +53,7 @@ public sealed partial class GameAction : Luban.BeanBase
     /// </summary>
     public readonly ActionBehavior Behavior;
     /// <summary>
-    /// Food:关联具体美食 TbFood.id(1:1)
+    /// Food:关联具体食物 TbFood.id(1:1)
     /// </summary>
     public readonly string FoodId;
     /// <summary>
@@ -69,11 +69,11 @@ public sealed partial class GameAction : Luban.BeanBase
     /// </summary>
     public readonly string EffectParam;
     /// <summary>
-    /// 本次最小耗时(0.1天)
+    /// 本次最小耗时(0.1 天)
     /// </summary>
     public readonly float MinCostDays;
     /// <summary>
-    /// 本次最大耗时(0.1天)
+    /// 本次最大耗时(0.1 天)
     /// </summary>
     public readonly float MaxCostDays;
     /// <summary>

@@ -5,10 +5,10 @@ using TMPro;
 namespace GourmetProject.Game.UI.Tooltips
 {
     /// <summary>
-    /// 行动轴节点 / 道具 hover Tips 的共享基类。
+    /// 时间轴节点 / 装饰品和消耗品 hover Tips 的共享基类。
     /// 统一结构：卡片（标题 / 描述框 / 可选底部信息行）。
     ///
-    /// 行动轴节点共用 <c>TimelineNodeTipView</c>，道具使用带动态词条布局的
+    /// 时间轴节点共用 <c>TimelineNodeTipView</c>，装饰品和消耗品使用带动态词条布局的
     /// <c>ItemTipView</c>；公共展示 / 显隐逻辑收敛在此基类。
     ///
     /// 作为可挂在任意 Canvas 下的 MonoBehaviour View（非 UGuiForm），
@@ -24,7 +24,7 @@ namespace GourmetProject.Game.UI.Tooltips
         [SerializeField] private TMP_Text _titleText;
         [SerializeField] private TMP_Text _descText;
 
-        [Header("底部信息行（可空：道具 Tips 无此行）")]
+        [Header("底部信息行（可空：装饰品和消耗品 Tips 无此行）")]
         [SerializeField] private GameObject _footerRoot;
         [SerializeField] private TMP_Text _footerText;
 

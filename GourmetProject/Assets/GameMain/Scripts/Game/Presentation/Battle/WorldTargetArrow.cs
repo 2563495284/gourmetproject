@@ -4,7 +4,7 @@ using UnityEngine;
 namespace GourmetProject.Game.Presentation.Battle
 {
     /// <summary>
-    /// STS2 风格世界目标箭头：在屏幕空间计算 19 段二次贝塞尔曲线，再投影到战斗世界。
+    /// STS2 风格世界目标箭头：在屏幕空间计算 19 段二次贝塞尔曲线，再投影到经营挑战世界。
     /// 箭头末端沿曲线切线朝向，悬停有效目标时提供颜色与弹性缩放反馈。
     /// </summary>
     public sealed class WorldTargetArrow : MonoBehaviour

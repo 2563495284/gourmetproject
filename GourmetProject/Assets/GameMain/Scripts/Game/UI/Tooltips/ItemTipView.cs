@@ -8,8 +8,8 @@ using UnityEngine;
 namespace GourmetProject.Game.UI.Tooltips
 {
     /// <summary>
-    /// 被动 / 主动道具 hover Tips（原型图第 4 张）：
-    /// 标题「道具名」+ 效果描述框；无底部信息行。
+    /// 被动 / 消耗品 hover Tips（原型图第 4 张）：
+    /// 标题「装饰品和消耗品名」+ 效果描述框；无底部信息行。
     /// 固定结构在 ItemTipView.prefab，内容由 <see cref="Bind"/> 数据驱动。
     /// </summary>
     public sealed class ItemTipView : ActionTipView, ITooltipPlacementAware
@@ -19,7 +19,7 @@ namespace GourmetProject.Game.UI.Tooltips
         [SerializeField] private RectTransform _specialTagsRoot;
         [SerializeField] private FoodTipCardView _infoCardPrefab;
 
-        /// <summary>用配置道具绑定：标题取道具名，描述取效果说明，图标按名称约定加载。</summary>
+        /// <summary>用配置装饰品和消耗品绑定：标题取装饰品和消耗品名，描述取效果说明，图标按名称约定加载。</summary>
         public void Bind(ItemDefinition item)
         {
             if (item == null)

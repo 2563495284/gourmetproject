@@ -18,7 +18,7 @@ namespace GourmetProject.Game.Presentation.Battle
     }
 
     /// <summary>
-    /// 临时桌横向压叠的纯布局计算。所有菜使用统一缩放，并保持固定的可见宽度比例；
+    /// 临时桌横向压叠的纯布局计算。所有食物使用统一缩放，并保持固定的可见宽度比例；
     /// 数量增多或总宽超限时缩小整组，不再把水平间距压到近似重合。
     /// </summary>
     internal static class TemporaryAreaStackLayout

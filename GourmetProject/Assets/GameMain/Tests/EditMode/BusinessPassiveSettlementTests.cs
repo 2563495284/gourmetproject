@@ -5,9 +5,11 @@ using GourmetProject.Config;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Meta;
+using GourmetProject.Game.Meta.Passives;
 using GourmetProject.Game.Run;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Runtime;
+using Luban.SimpleJSON;
 using NUnit.Framework;
 
 namespace GourmetProject.Tests.EditMode
@@ -45,6 +47,20 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void RequiredScore_NormalDownAndUp_AddBeforeSingleRounding()
+        {
+            GameRun run = CreateRun();
+            run.AcquireItem("item_req_normal_down", 0);
+            run.AcquireItem("item_req_normal_up", 0);
+
+            int result = new ItemRuntime(run).ModifyRequiredScore(
+                123,
+                cfg.FoodActionKind.Normal);
+
+            Assert.That(result, Is.EqualTo(123), "-20% 与 +20% 应在同一百分比加区相互抵消");
+        }
+
+        [Test]
         public void ScoreToOne_ConsumesOnBusinessEntryButNotFeast()
         {
             GameRun run = CreateRun();
@@ -60,7 +76,7 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(run.ScoreToOneRemaining, Is.EqualTo(1));
 
             ExecuteFood(run, ActionOfKind(cfg.FoodActionKind.Feast), 1);
-            Assert.That(run.ScoreToOneRemaining, Is.EqualTo(1), "盛宴不属于营业，不消耗免检次数");
+            Assert.That(run.ScoreToOneRemaining, Is.EqualTo(1), "星级评鉴不属于营业，不消耗免检次数");
 
             ActionOutcome super = ExecuteFood(run, ActionOfKind(cfg.FoodActionKind.Super), 2);
             Assert.That(super.RequiredScore, Is.EqualTo(1));
@@ -113,7 +129,7 @@ namespace GourmetProject.Tests.EditMode
             IReadOnlyList<FoodSettlementReward> rewards = new ItemRuntime(restored)
                 .OnFoodBattleSettled(super, survived: true, RewardStream("extra-item-after-save"));
 
-            Assert.That(rewards, Has.Count.EqualTo(1), "扣心但仍存活的第 4 次火热营业也应发奖");
+            Assert.That(rewards, Has.Count.EqualTo(1), "失去红心但仍存活的第 4 次火热营业也应发奖");
             Assert.That(rewards[0].SourceItemId, Is.EqualTo("item_extra_item_choice"));
             Assert.That(rewards[0].Offer.FixedGroups, Is.Not.Empty);
         }
@@ -139,6 +155,59 @@ namespace GourmetProject.Tests.EditMode
                 run.PassiveModels.Single(model => model.ItemId == "item_extra_item_choice").InfoText,
                 Is.EqualTo("0"),
                 "终局失败仍完成第 4 次计数，只是不发续局奖励");
+        }
+
+        [Test]
+        public void ExtraFoodChoice_UsesEffectParamAndCountsTerminalNormalFailure()
+        {
+            GameRun run = CreateRun();
+            PassiveItemModel model = AttachPassiveModel(
+                run,
+                "item_extra_food_choice",
+                "every:2");
+            ActionExecutionContext normal = Context(ActionOfKind(cfg.FoodActionKind.Normal));
+            IRandomStream rng = RewardStream("extra-food-config-period");
+
+            RewardOffer first = model.OnFoodBattleSettled(normal, survived: false, rng);
+            Assert.That(first, Is.Null, "终局失败也应累计日常营业次数，但不能发续局奖励");
+            Assert.That(model.InfoText, Is.EqualTo("1"));
+
+            RewardOffer second = model.OnFoodBattleSettled(normal, survived: true, rng);
+            Assert.That(second, Is.Not.Null, "every:2 应在第二次日常营业结算触发，而不是写死为 6");
+            Assert.That(second.FixedGroups, Is.Not.Empty);
+            Assert.That(model.InfoText, Is.EqualTo("0"));
+        }
+
+        [Test]
+        public void RemovingPassiveByDirectOrReplacementPathClearsOwnedRunState()
+        {
+            GameRun run = CreateRun();
+            run.AcquireItem("item_gold_meal_bonus", 0);
+            run.AcquireItem("item_score_to_one", 0);
+            run.AcquireItem("item_cake_retain", 0);
+            run.SetRetainedHappyCakeLayers(12);
+
+            Assert.That(run.RemoveItem("item_score_to_one"), Is.True);
+            Assert.That(run.ScoreToOneRemaining, Is.Zero);
+
+            run.ReplaceItems(Array.Empty<string>());
+            Assert.That(run.MealBonusRemaining, Is.Zero);
+            Assert.That(run.ConsumeRetainedHappyCakeLayers(), Is.Zero);
+        }
+
+        [Test]
+        public void LoadingRunWithoutSourcePassiveDropsStaleOwnedRunState()
+        {
+            RunSaveData save = CreateRun().ToSaveData();
+            save.MealBonusRemaining = 7;
+            save.ScoreToOneRemaining = 3;
+            save.RetainedHappyCakeLayers = 9;
+
+            GameRun restored = GameRun.FromSaveData(_tables, _database, save);
+
+            Assert.That(restored.MealBonusRemaining, Is.Zero);
+            Assert.That(restored.ScoreToOneRemaining, Is.Zero);
+            Assert.That(restored.ConsumeRetainedHappyCakeLayers(), Is.Zero);
         }
 
         [Test]
@@ -201,6 +270,37 @@ namespace GourmetProject.Tests.EditMode
             var random = new RandomService();
             random.Init("business-passive-reward-stream");
             return random.DomainStream(SeedDomains.Reward, key);
+        }
+
+        private static PassiveItemModel AttachPassiveModel(
+            GameRun run,
+            string itemId,
+            string effectParam)
+        {
+            string json = $@"{{
+                ""id"":""{itemId}"",
+                ""name"":""测试装饰品和消耗品"",
+                ""desc"":"""",
+                ""quality"":0,
+                ""specialTags"":0,
+                ""effectValue"":0,
+                ""effectParam"":""{effectParam}"",
+                ""baseWeight"":1,
+                ""hiddenRange"":{{""min"":0,""max"":0}},
+                ""targetScoreHiddenOffset"":0,
+                ""dishHiddenOffset"":0,
+                ""passiveItemHiddenOffset"":0,
+                ""fragmentHiddenOffset"":0,
+                ""termId"":"""",
+                ""price"":1
+            }}";
+            cfg.PassiveItem configured = cfg.PassiveItem.DeserializePassiveItem(JSON.Parse(json));
+            var state = new RunItemState(itemId, 1);
+            PassiveItemModel model = PassiveItemModelRegistry.Create(itemId);
+            model.Bind(run, ItemDefinition.From(configured), state);
+            state.Model = model;
+            ((List<RunItemState>)run.Items).Add(state);
+            return model;
         }
 
         private GameRun CreateRun()

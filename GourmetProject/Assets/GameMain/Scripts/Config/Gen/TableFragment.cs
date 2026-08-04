@@ -30,7 +30,7 @@ public sealed partial class TableFragment : Luban.BeanBase
     }
 
     /// <summary>
-    /// 餐桌碎片ID
+    /// 餐桌格ID
     /// </summary>
     public readonly string Id;
     /// <summary>

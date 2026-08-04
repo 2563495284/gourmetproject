@@ -3,9 +3,9 @@ using System.Collections.Generic;
 namespace GourmetProject.Game.Run
 {
     /// <summary>
-    /// 菜谱一格条目：dishId + 玩家后续获得的风味。
+    /// 食谱一格条目：dishId + 玩家后续获得的风味。
     /// dishId 自带风味与后续风味在玩法上组成同一个有序队列；内部仍分别保存，
-    /// 以兼容现有菜品变体与存档结构。
+    /// 以兼容现有食物变体与存档结构。
     /// </summary>
     public sealed class RecipeBookSlot
     {

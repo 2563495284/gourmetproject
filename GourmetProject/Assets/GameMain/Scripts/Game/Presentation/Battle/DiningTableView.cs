@@ -226,7 +226,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 display[cell.Position] = cell.State;
             }
 
-            // 餐桌碎片仍显示中心格的整体状态；食物只映射其实际占用格，
+            // 餐桌格仍显示中心格的整体状态；食物只映射其实际占用格，
             // 避免中心格覆盖单格反馈或在不规则形状的空洞中多画一格。
             if (!dishPlacement)
             {
@@ -313,7 +313,7 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>
-        /// 显示一组任意网格坐标的不规则外轮廓。餐桌碎片暂放时目标格尚未写入餐桌，
+        /// 显示一组任意网格坐标的不规则外轮廓。餐桌格暂放时目标格尚未写入餐桌，
         /// 因此这里不要求坐标已经是 ExistingCell。
         /// </summary>
         public void ShowTransientGridRegionOutline(IReadOnlyList<GridPos> cells, Color color, float width)

@@ -21,11 +21,11 @@ namespace cfg
         /// </summary>
         Always = 0,
         /// <summary>
-        /// 本局胜利
+        /// 游戏通关
         /// </summary>
         RunWon = 1,
         /// <summary>
-        /// 本局失败
+        /// 游戏失败
         /// </summary>
         RunLost = 2,
         /// <summary>
@@ -53,11 +53,11 @@ namespace cfg
         /// </summary>
         MinCompletedRuns = 8,
         /// <summary>
-        /// 跨局胜利局数达到 intParam
+        /// 累计游戏通关局数达到 intParam
         /// </summary>
         MinWonRuns = 9,
         /// <summary>
-        /// 跨局失败局数达到 intParam
+        /// 累计游戏失败局数达到 intParam
         /// </summary>
         MinLostRuns = 10,
         /// <summary>

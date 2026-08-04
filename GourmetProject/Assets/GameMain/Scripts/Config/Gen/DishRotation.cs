@@ -12,7 +12,7 @@
 namespace cfg
 { 
     /// <summary>
-    /// 菜品固定旋转朝向(顺时针90度次数)
+    /// 食物固定旋转朝向(顺时针90度次数)
     /// </summary>
     public enum DishRotation
     {

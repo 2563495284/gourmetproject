@@ -11,7 +11,7 @@ namespace GourmetProject.Game.UI.Tooltips
     }
 
     /// <summary>
-    /// 通用「悬停显示 Tips」口子：挂在任意可悬停的 UI 元素上（行动轴节点格 / 道具槽等），
+    /// 通用「悬停显示 Tips」口子：挂在任意可悬停的 UI 元素上（时间轴节点格 / 装饰品和消耗品槽等），
     /// 指针进入时 <see cref="ActionTipView.Show"/> 目标 Tips，离开时 <see cref="ActionTipView.Hide"/>。
     ///
     /// 只负责显隐 + 跟随定位，不关心 Tips 内容——内容由持有方在 <see cref="Show"/> 前

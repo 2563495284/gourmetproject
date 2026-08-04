@@ -6,8 +6,8 @@ using GourmetProject.Game.Run;
 namespace GourmetProject.Game.Presentation.Battle
 {
     /// <summary>
-    /// 战斗内玩家自由涂鸦层（仿杀戮尖塔2画笔）：右键拖动按距离阈值采样，逐笔生成 <see cref="LineRenderer"/> 矢量笔迹，
-    /// 归入最顶 Sorting Layer（<see cref="BattleSorting.Doodle"/>）压在所有战斗内容之上。纯表现，不参与玩法结算。
+    /// 经营挑战内玩家自由涂鸦层（仿杀戮尖塔2画笔）：右键拖动按距离阈值采样，逐笔生成 <see cref="LineRenderer"/> 矢量笔迹，
+    /// 归入最顶 Sorting Layer（<see cref="BattleSorting.Doodle"/>）压在所有经营挑战内容之上。纯表现，不参与玩法结算。
     /// 笔迹挂在子物体 <c>_strokesRoot</c> 下，便于一键清空与整体显隐。
     /// </summary>
     public sealed class BattleDoodleController : MonoBehaviour
@@ -19,7 +19,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private const int CapVertices = 6;
         private const int CornerVertices = 6;
 
-        [Tooltip("用于屏幕→世界坐标换算的战斗相机；为空时回退 Camera.main。")]
+        [Tooltip("用于屏幕→世界坐标换算的经营挑战相机；为空时回退 Camera.main。")]
         [SerializeField] private Camera _camera;
         [Tooltip("预置的笔迹根节点。")]
         [SerializeField] private Transform _strokesRoot;

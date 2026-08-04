@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace GourmetProject.Gameplay.Model
 {
     /// <summary>
-    /// 菜品技能定义（数量无上限）。纯数据，由 Game 层从 Luban TbSkill(正向有序引用) + TbSubSkill(具体子技能) 适配生成。
+    /// 食物技能定义（数量无上限）。纯数据，由 Game 层从 Luban TbSkill(正向有序引用) + TbSubSkill(具体子技能) 适配生成。
     /// Name 为展示标题（术语名；无 termId 则空）。Desc 为运行时拼接：各子技能占位符模板按序回填后用「；」连接，或由 TbSkill.descOverride 覆盖。
     /// </summary>
     public sealed class SkillDef

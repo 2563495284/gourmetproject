@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace GourmetProject.Gameplay.Model
 {
     /// <summary>
-    /// 餐桌格子材质定义（挂在餐桌碎片格上，一格唯一）。纯数据，由 Game 层从 Luban TbMaterial 适配生成。
+    /// 餐桌格材质定义（挂在餐桌格上，一格唯一）。纯数据，由 Game 层从 Luban TbMaterial 适配生成。
     /// 材质用独立的 <see cref="Model.MaterialEffectType"/>，按「食物×材质」聚合结算（携带占格数）。
     /// 仍实现 <see cref="IEffectDef"/> 以复用结算明细/来源展示（其 <see cref="EffectType"/> 恒为 None）。
     /// </summary>

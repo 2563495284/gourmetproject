@@ -5,7 +5,7 @@ using GourmetProject.Gameplay.Scoring;
 
 namespace GourmetProject.Game.Meta.Passives
 {
-    /// <summary>被动道具 effectParam 解析工具（key:value，分隔符 ; , |）。</summary>
+    /// <summary>装饰品 effectParam 解析工具（key:value，分隔符 ; , |）。</summary>
     internal static class PassiveParam
     {
         public static string ParseString(string param, string key, string fallback = "")
@@ -64,7 +64,7 @@ namespace GourmetProject.Game.Meta.Passives
         }
     }
 
-    /// <summary>目标分档位百分比修正家族：对匹配 <see cref="_tier"/> 的档位累加 Value（可正可负）。</summary>
+    /// <summary>目标美味值档位百分比修正家族：对匹配 <see cref="_tier"/> 的档位累加 Value（可正可负）。</summary>
     public abstract class RequiredScorePctModel : PassiveItemModel
     {
         private readonly cfg.FoodActionKind _tier;

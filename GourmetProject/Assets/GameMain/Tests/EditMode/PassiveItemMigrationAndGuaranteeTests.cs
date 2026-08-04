@@ -49,7 +49,7 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(restored.Gold, Is.EqualTo(goldBeforeLoad), "未知条目不应折算或补偿金币");
             Assert.That(restored.MealBonusRemaining, Is.Zero);
             Assert.That(restored.ScoreToOneRemaining, Is.Zero);
-            Assert.That(restored.ToSaveData().Items, Is.Empty, "再次保存时不应保留幽灵道具");
+            Assert.That(restored.ToSaveData().Items, Is.Empty, "再次保存时不应保留幽灵装饰品和消耗品");
         }
 
         [Test]
@@ -120,7 +120,7 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(
                 run.RuntimeTimelineNodes.Count(node => node.SourceItemId == "item_extra_interest"),
                 Is.EqualTo(System.Math.Max(0, configuredInterestNodes - 1)),
-                "同一条周行动轴已经应用过后，即使节点被删除也不应再次补建");
+                "同一条周时间轴已经应用过后，即使节点被删除也不应再次补建");
 
             GameRun restored = GameRun.FromSaveData(_tables, _database, run.ToSaveData());
             new ItemRuntime(restored).ApplyWeekTimelinePassives();

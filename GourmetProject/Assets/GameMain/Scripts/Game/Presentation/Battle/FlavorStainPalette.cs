@@ -35,7 +35,7 @@ namespace GourmetProject.Game.Presentation.Battle
             { "t_bitter", new Color(0.28f, 0.24f, 0.16f, 0.88f) }, // 苦：墨褐
             { "t_numb", new Color(0.60f, 0.40f, 0.78f, 0.82f) },   // 麻：花椒紫褐
             { "t_salty", new Color(0.90f, 0.90f, 0.86f, 0.75f) },  // 咸：浅灰白
-            { "t_feast", new Color(1.00f, 0.82f, 0.28f, 0.82f) },  // 盛宴：金
+            { "t_feast", new Color(1.00f, 0.82f, 0.28f, 0.82f) },  // 星级评鉴：金
             { "t_golden", new Color(1.00f, 0.82f, 0.28f, 0.85f) }, // 黄金：金
             { "t_spicy", new Color(1.00f, 0.23f, 0.19f, 0.88f) },  // 辣：红（配置未来补）
         };

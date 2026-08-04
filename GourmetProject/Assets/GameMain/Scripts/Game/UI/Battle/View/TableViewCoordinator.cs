@@ -48,7 +48,7 @@ namespace GourmetProject.Game.UI.Battle.View
     }
 
     /// <summary>
-    /// 查看餐桌态的进入 / 返回编排：记录来源态并在返回时按来源分派（美食恢复世界、行动选择恢复卡片快照、
+    /// 查看餐桌态的进入 / 返回编排：记录来源态并在返回时按来源分派（食物恢复世界、行动选择恢复卡片快照、
     /// 餐桌编辑续接碎片包等）。快照与返回决策集中于此，BattleForm 只提供 UI 原语。
     /// </summary>
     internal sealed class TableViewCoordinator

@@ -12,7 +12,7 @@
 namespace cfg
 { 
     /// <summary>
-    /// 道具类型：被动/主动
+    /// 装饰品和消耗品类型：装饰品/消耗品
     /// </summary>
     public enum ItemKind
     {

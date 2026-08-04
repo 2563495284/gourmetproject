@@ -13,8 +13,8 @@ using TMPro;
 namespace GourmetProject.Game.UI.Battle.View
 {
     /// <summary>
-    /// 常驻壳右栏道具组件：被动道具滚动网格（2 列）+ 主动道具叠放区（每份实例占一格）。
-    /// 战斗中满足 targetKind 可用性的主动道具可点击使用，否则点击看信息；hover 显示道具 Tip。
+    /// 常驻壳右栏装饰品和消耗品组件：装饰品滚动网格（2 列）+ 消耗品叠放区（每份实例占一格）。
+    /// 经营挑战中满足 targetKind 可用性的消耗品可点击使用，否则点击看信息；hover 显示装饰品和消耗品 Tip。
     /// </summary>
     public sealed class BattleItemsColumn : MonoBehaviour
     {
@@ -58,7 +58,7 @@ namespace GourmetProject.Game.UI.Battle.View
             }
         }
 
-        /// <summary>刷新右栏道具：被动网格 + 主动槽。onActiveItemClicked 用于打开主动道具操作气泡。</summary>
+        /// <summary>刷新右栏装饰品和消耗品：被动网格 + 主动槽。onActiveItemClicked 用于打开消耗品操作气泡。</summary>
         public void Refresh(
             GameRun run,
             BattleSession session,
@@ -206,7 +206,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 Transform content = _passiveItemsContainer.Find("Content");
                 if (content == null)
                 {
-                    Debug.LogError($"{nameof(BattleItemsColumn)} prefab 缺少被动道具 Content 容器。", this);
+                    Debug.LogError($"{nameof(BattleItemsColumn)} prefab 缺少装饰品 Content 容器。", this);
                     return null;
                 }
                 else
@@ -569,7 +569,7 @@ namespace GourmetProject.Game.UI.Battle.View
             Action<string, RunItemSlotView> onActiveItemClicked,
             Action<ItemDefinition, RunItemState> onShowItemInfo)
         {
-            // 主动道具每份实例都占用一个全局消耗槽，同 id 也不聚合。
+            // 消耗品每份实例都占用一个全局消耗槽，同 id 也不聚合。
             var activeStates = new List<RunItemState>();
             foreach (RunItemState state in run.Items)
             {

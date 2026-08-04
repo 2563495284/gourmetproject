@@ -88,7 +88,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 {
                     _halfDayHover.SetTip(
                         tip,
-                        () => tip.Bind("半日券", $"下一次日常行动耗时减半\n剩余次数：{stacks}"));
+                        () => tip.Bind("半日券", $"下一次普通行动耗时减半\n剩余次数：{stacks}"));
                 }
                 else
                 {

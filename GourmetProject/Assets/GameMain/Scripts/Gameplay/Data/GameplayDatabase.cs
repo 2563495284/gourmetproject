@@ -5,7 +5,7 @@ using GourmetProject.Gameplay.Model;
 namespace GourmetProject.Gameplay.Data
 {
     /// <summary>
-    /// 玩法静态数据库：菜品/技能/风味/格子标签/菜谱定义的只读查询入口。
+    /// 玩法静态数据库：食物/技能/风味/格子标签/食谱定义的只读查询入口。
     /// 由 Game 层从 Luban 表适配填充，玩法逻辑只读取，从而与配置实现解耦、可独立单测。
     /// </summary>
     public sealed class GameplayDatabase

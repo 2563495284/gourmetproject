@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 美食/战斗明细：Food 行动 foodId 关联；actionKind 区分普通/超级/盛宴 Boss。
+/// 经营挑战明细：Food 行动 foodId 关联；actionKind 区分日常营业/火热营业/星级评鉴。
 /// </summary>
 public partial class TbFood
 {

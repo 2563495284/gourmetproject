@@ -10,7 +10,7 @@ using TMPro;
 namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>
-    /// 战斗胜利领奖页中的单条奖励卡片。奖励规则由 RewardForm/RewardGranter 处理，本视图只负责展示和点击。
+    /// 经营挑战胜利领奖页中的单条奖励卡片。奖励规则由 RewardForm/RewardGranter 处理，本视图只负责展示和点击。
     /// </summary>
     public sealed class RewardChoiceRowView : MonoBehaviour
     {

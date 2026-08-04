@@ -53,12 +53,12 @@ namespace GourmetProject.Gameplay.Model
         /// <summary>本食物占据 &gt;= 阈值(EffectParam) 格本材质时，获得 EffectValue 金币（金）。</summary>
         GrantGoldIfCellCount = 6,
 
-        /// <summary>本食物占据 &gt;= 阈值(EffectParam) 格本材质时，登记一次 1/3 获得主动道具的掷骰请求（银）。</summary>
+        /// <summary>本食物占据 &gt;= 阈值(EffectParam) 格本材质时，登记一次 1/3 获得消耗品的掷骰请求（银）。</summary>
         GrantItemRollIfCellCount = 7,
     }
 
     /// <summary>
-    /// 道具类型。与 Luban 的 cfg.ItemKind 一一对应。
+    /// 装饰品和消耗品类型。与 Luban 的 cfg.ItemKind 一一对应。
     /// </summary>
     public enum ItemKind
     {

@@ -47,9 +47,9 @@ namespace GourmetProject.Game.UI.Meta
             var data = new ConfirmDialogData
             {
                 Title = string.IsNullOrWhiteSpace(title)
-                    ? "确认删除菜品"
+                    ? "确认删除食物"
                     : title,
-                Message = $"确定要从菜谱中删除「{dishName}」吗？",
+                Message = $"确定要从食谱中删除「{dishName}」吗？",
                 ConfirmText = "删除",
                 CancelText = "返回",
                 OnConfirm = () => onConfirm?.Invoke(target),
@@ -86,7 +86,7 @@ namespace GourmetProject.Game.UI.Meta
             var data = new ConfirmDialogData
             {
                 Title = "确认删除食物",
-                Message = $"花费 {cost} 金币，从菜谱中删除「{def.Name}」？{remaining}",
+                Message = $"花费 {cost} 金币，从食谱中删除「{def.Name}」？{remaining}",
                 ConfirmText = $"删除 -{cost}",
                 CancelText = "返回",
                 OnConfirm = () =>

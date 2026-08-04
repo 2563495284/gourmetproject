@@ -653,7 +653,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 ScoreLineKind.DishMultiplier => "乘倍率",
                 ScoreLineKind.DishMultiplierAdd => "加倍率",
                 ScoreLineKind.FinalFlat => "总分加成",
-                ScoreLineKind.FinalMultiplier => "总分乘区",
+                ScoreLineKind.FinalMultiplier => "总分倍率",
                 ScoreLineKind.Gold => "金币",
                 ScoreLineKind.Layer => "快乐蛋糕",
                 ScoreLineKind.SilverItemRoll => "银材质奖励",
@@ -695,7 +695,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.Layer:
                     return $"层数 {signed}";
                 case ScoreLineKind.SilverItemRoll:
-                    return $"获得道具 ×{Mathf.RoundToInt(line.Value)}";
+                    return $"获得装饰品和消耗品 ×{Mathf.RoundToInt(line.Value)}";
                 case ScoreLineKind.CopySkill:
                     return $"获得技能 ×{Mathf.RoundToInt(line.Value)}";
                 case ScoreLineKind.TriggerSweetTransfer:

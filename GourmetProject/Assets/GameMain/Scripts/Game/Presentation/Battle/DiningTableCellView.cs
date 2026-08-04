@@ -9,7 +9,7 @@ using GourmetProject.Game.Visual;
 namespace GourmetProject.Game.Presentation.Battle
 {
     /// <summary>
-    /// 餐桌格子表现：固定结构（渲染体 + 碰撞盒）摆在 prefab 根节点上，由 <see cref="Configure"/> 喂数据。
+    /// 餐桌格表现：固定结构（渲染体 + 碰撞盒）摆在 prefab 根节点上，由 <see cref="Configure"/> 喂数据。
     /// sprite/位置/尺寸是数据驱动的（随餐桌大小变化），运行时按 sprite 包围盒归一化缩放。
     /// </summary>
     [RequireComponent(typeof(SpriteRenderer), typeof(BoxCollider2D))]

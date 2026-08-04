@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 菜品变体：随机菜品库条目。引用本体+风味(flavorId→TbFlavor,单槽)+隐藏分/权重/价格。flavorId 空串=无风味。
+/// 食物变体：随机食物库条目。引用本体+风味(flavorId→TbFlavor,单槽)+隐藏分/权重/价格。flavorId 空串=无风味。
 /// </summary>
 public partial class TbDishVariant
 {

@@ -10,8 +10,8 @@ namespace GourmetProject.Gameplay.Scoring
 {
     /// <summary>
     /// 结算过程中的可变上下文与累加器。
-    /// 每道菜有独立累加器（加法区/乘区），支持跨菜改分；
-    /// 所有菜在全部阶段跑完后统一定稿（deferred finalization），因此技能可以改到别的菜。
+    /// 每个食物有独立累加器（加法区/倍率），支持跨菜改分；
+    /// 所有食物在全部阶段跑完后统一定稿（deferred finalization），因此技能可以改到别的食物。
     /// 层数/金币/技能传递等对外副作用只累积，不在结算中直接改实例（保证预览安全、纯计算）。
     /// </summary>
     public class ScoreContext
@@ -67,7 +67,7 @@ namespace GourmetProject.Gameplay.Scoring
         }
 
         /// <summary>
-        /// 本次结算每道菜的「视为食物数」实际值（下限 1）：静态定义 + 已持久化运行时加成 + 本次结算即时生效的 AddCountAs 规则。
+        /// 本次结算每个食物的「视为食物数」实际值（下限 1）：静态定义 + 已持久化运行时加成 + 本次结算即时生效的 AddCountAs 规则。
         /// AddCountAs 走 live（每次结算按当前局面重算），不做跨结算持久，故条件类「视为N」在当次结算即生效。
         /// </summary>
         public int GetEffectiveCountAs(DishInstance dish)
@@ -209,16 +209,16 @@ namespace GourmetProject.Gameplay.Scoring
 
         public IReadOnlyList<ScoreEvent> Events => _events;
 
-        /// <summary>本次品鉴开始时的全局欢乐蛋糕层数。</summary>
+        /// <summary>本场经营挑战开始时的全局欢乐蛋糕层数。</summary>
         public int InitialHappyCakeLayers { get; }
 
-        /// <summary>本次结算产生的全局欢乐蛋糕层数增量（正式结算后由 Game 层写回品鉴状态）。</summary>
+        /// <summary>本次结算产生的全局欢乐蛋糕层数增量（正式结算后由 Game 层写回经营挑战状态）。</summary>
         public int HappyCakeLayerDelta => _happyCakeLayerDelta;
 
         /// <summary>结算过程中「当前」的全局欢乐蛋糕层数（初始 + 已产生增量）。</summary>
         public int CurrentHappyCakeLayers => Math.Max(0, InitialHappyCakeLayers + _happyCakeLayerDelta);
 
-        /// <summary>本次结算登记的「银材质」1/3 获得道具掷骰请求次数（正式结算后由 Game 层掷骰发放）。</summary>
+        /// <summary>本次结算登记的「银材质」1/3 获得装饰品和消耗品掷骰请求次数（正式结算后由 Game 层掷骰发放）。</summary>
         public int SilverItemRollRequests => _silverItemRolls;
 
         public IReadOnlyList<SkillTransferSideEffect> SkillTransfers => _skillTransfers;
@@ -228,7 +228,7 @@ namespace GourmetProject.Gameplay.Scoring
         /// <summary>本次结算登记的永久加法分增量（实例 Id → 累加值）。正式结算后写回实例。</summary>
         public IReadOnlyDictionary<int, float> PermanentFlatDeltas => _permanentFlatDeltas;
 
-        /// <summary>本次结算登记的永久乘区增量（实例 Id → 累乘倍数）。正式结算后写回实例。</summary>
+        /// <summary>本次结算登记的永久倍率增量（实例 Id → 累乘倍数）。正式结算后写回实例。</summary>
         public IReadOnlyDictionary<int, float> PermanentMultDeltas => _permanentMultDeltas;
 
         public void EmitEvent(ScoreEventType type, string message)
@@ -278,7 +278,7 @@ namespace GourmetProject.Gameplay.Scoring
                 baseScore,
                 0f,
                 baseScore,
-                $"{Dish.Def.Name} 基础美味度 {baseScore}"));
+                $"{Dish.Def.Name} 基础分数 {baseScore}"));
         }
 
         public void Apply(ScoreEffectEntry entry)
@@ -365,7 +365,7 @@ namespace GourmetProject.Gameplay.Scoring
             SubmitCommand(new MultiplyDishCommand(target.Id, value));
         }
 
-        /// <summary>目标菜「倍率区」加法（倍率+X），区别于乘法的 MultiplyTo。</summary>
+        /// <summary>目标食物「倍率区」加法（倍率+X），区别于乘法的 MultiplyTo。</summary>
         public void AddMultFlatTo(DishInstance target, float value)
         {
             if (target == null)
@@ -376,7 +376,7 @@ namespace GourmetProject.Gameplay.Scoring
             SubmitCommand(new AddDishMultFlatCommand(target.Id, value));
         }
 
-        /// <summary>读取目标菜结算到当前时刻的倍率（含固化倍率与此前已执行的倍率效果）。</summary>
+        /// <summary>读取目标食物结算到当前时刻的倍率（含固化倍率与此前已执行的倍率效果）。</summary>
         public float GetCurrentMultiplier(DishInstance target)
         {
             if (target == null || !_accums.TryGetValue(target.Id, out DishAccumulator accumulator))
@@ -387,7 +387,7 @@ namespace GourmetProject.Gameplay.Scoring
             return accumulator.Mult;
         }
 
-        /// <summary>读取目标菜结算到当前时刻的分数（基础分 + 此前已执行的固定加分，不含倍率）。</summary>
+        /// <summary>读取目标食物结算到当前时刻的分数（基础分 + 此前已执行的固定加分，不含倍率）。</summary>
         public float GetCurrentScore(DishInstance target)
         {
             if (target == null || !_accums.TryGetValue(target.Id, out DishAccumulator accumulator))
@@ -404,8 +404,8 @@ namespace GourmetProject.Gameplay.Scoring
         }
 
         /// <summary>
-        /// 登记一次「1/3 概率获得主动道具」的掷骰请求（银材质）。结算层只累计请求数、不掷骰，
-        /// 保证 PreviewScore 纯净；正式 Settle 后由 Game 层用注入的随机流掷骰并发放道具。
+        /// 登记一次「1/3 概率获得消耗品」的掷骰请求（银材质）。结算层只累计请求数、不掷骰，
+        /// 保证 PreviewScore 纯净；正式 Settle 后由 Game 层用注入的随机流掷骰并发放装饰品和消耗品。
         /// </summary>
         public void RequestSilverItemRoll()
         {
@@ -422,15 +422,15 @@ namespace GourmetProject.Gameplay.Scoring
             SubmitCommand(new MultiplyFinalCommand(value));
         }
 
-        /// <summary>全局「欢乐蛋糕层数」改动（副作用，正式结算后写回品鉴状态）。
-        /// mult=true 时按乘法（可选 floor 表示至少净增 floor 层）。目标菜无关，全局共享一个计数器。</summary>
+        /// <summary>全局「欢乐蛋糕层数」改动（副作用，正式结算后写回经营挑战状态）。
+        /// mult=true 时按乘法（可选 floor 表示至少净增 floor 层）。目标食物无关，全局共享一个计数器。</summary>
         public void AddHappyCakeLayers(float value, bool mult, int floor = 0)
         {
             SubmitCommand(new ChangeHappyCakeLayerCommand(value, mult, floor));
         }
 
         /// <summary>
-        /// 目标菜「永久加法分」+value：本次结算即计入加法区，并登记持久增量（正式结算后写回实例，之后每次结算叠加进基础分）。
+        /// 目标食物「永久加法分」+value：本次结算即计入加法区，并登记持久增量（正式结算后写回实例，之后每次结算叠加进基础分）。
         /// </summary>
         public void AddPermanentFlatTo(DishInstance target, float value)
         {
@@ -445,7 +445,7 @@ namespace GourmetProject.Gameplay.Scoring
         }
 
         /// <summary>
-        /// 目标菜「永久乘区」×value：本次结算即计入乘区，并登记持久倍数（正式结算后写回实例，之后每次结算叠乘进乘区初值）。
+        /// 目标食物「永久倍率」×value：本次结算即计入倍率，并登记持久倍数（正式结算后写回实例，之后每次结算叠乘进倍率初值）。
         /// </summary>
         public void AddPermanentMultTo(DishInstance target, float value)
         {
@@ -640,7 +640,7 @@ namespace GourmetProject.Gameplay.Scoring
             EmitEvent(ScoreEventType.DishCompleted, $"{Dish.Def.Name} 阶段结束");
         }
 
-        /// <summary>所有逐菜阶段跑完后，统一把每道菜的累加器定稿为贡献并求和。</summary>
+        /// <summary>所有逐菜阶段跑完后，统一把每个食物的累加器定稿为贡献并求和。</summary>
         public void FinalizeDishes()
         {
             if (_finalized)
@@ -702,7 +702,7 @@ namespace GourmetProject.Gameplay.Scoring
                     Snapshot.InitialFinalMultiplier,
                     1f,
                     FinalMultiplier,
-                    $"局级乘区 x{Snapshot.InitialFinalMultiplier}",
+                    $"局级倍率 x{Snapshot.InitialFinalMultiplier}",
                     executionGroupId: ++_nextExecutionGroupId));
             }
         }
@@ -723,7 +723,7 @@ namespace GourmetProject.Gameplay.Scoring
 
             float before = a.Flat;
             a.Flat += value;
-            AddLine(a, ScoreLineKind.DishFlat, value, before, a.Flat, $"美味度 +{value}");
+            AddLine(a, ScoreLineKind.DishFlat, value, before, a.Flat, $"美味值 +{value}");
         }
 
         internal void ApplyDishMultiplierCommand(int dishId, float value)
@@ -735,7 +735,7 @@ namespace GourmetProject.Gameplay.Scoring
 
             float before = a.Mult;
             a.Mult *= value;
-            AddLine(a, ScoreLineKind.DishMultiplier, value, before, a.Mult, $"乘区 x{value}");
+            AddLine(a, ScoreLineKind.DishMultiplier, value, before, a.Mult, $"倍率 x{value}");
         }
 
         internal void ApplyDishMultFlatCommand(int dishId, float value)
@@ -761,7 +761,7 @@ namespace GourmetProject.Gameplay.Scoring
         {
             int before = _silverItemRolls;
             _silverItemRolls++;
-            AddLine(_current, ScoreLineKind.SilverItemRoll, 1, before, _silverItemRolls, "登记 1/3 获得主动道具");
+            AddLine(_current, ScoreLineKind.SilverItemRoll, 1, before, _silverItemRolls, "登记 1/3 获得消耗品");
         }
 
         internal void ApplyHappyCakeLayerCommand(float value, bool mult, int floor)
@@ -801,14 +801,14 @@ namespace GourmetProject.Gameplay.Scoring
         {
             float before = FinalMultiplier;
             FinalMultiplier *= value;
-            AddLine(null, ScoreLineKind.FinalMultiplier, value, before, FinalMultiplier, $"总分乘区 x{value}");
+            AddLine(null, ScoreLineKind.FinalMultiplier, value, before, FinalMultiplier, $"总分倍率 x{value}");
         }
 
         private DishAccumulator EnsureAccumulator(DishInstance dish)
         {
             if (!_accums.TryGetValue(dish.Id, out DishAccumulator a))
             {
-                // 永久加分计入基础分、永久乘区计入乘区初值（本实例此前累积的永久量立即生效）。
+                // 永久加分计入基础分、永久倍率计入倍率初值（本实例此前累积的永久量立即生效）。
                 a = new DishAccumulator
                 {
                     Dish = dish,
@@ -946,7 +946,7 @@ namespace GourmetProject.Gameplay.Scoring
 
         public IReadOnlyList<SkillEffect> Effects { get; }
 
-        /// <summary>来源菜名（非空时应用为「源名&lt;甜蜜传递&gt;」来源标签）。</summary>
+        /// <summary>来来源食物名（非空时应用为「源名&lt;甜蜜传递&gt;」来源标签）。</summary>
         public string SourceName { get; }
 
         public int SourceInstanceId { get; }
@@ -962,7 +962,7 @@ namespace GourmetProject.Gameplay.Scoring
         void Execute(ScoreContext context);
     }
 
-    /// <summary>指定菜品加法区增加固定值。</summary>
+    /// <summary>指定食物加法区增加固定值。</summary>
     public sealed class AddDishFlatCommand : IScoreCommand
     {
         private readonly int _dishId;
@@ -979,7 +979,7 @@ namespace GourmetProject.Gameplay.Scoring
         public void Execute(ScoreContext context) => context.ApplyDishFlatCommand(_dishId, _value);
     }
 
-    /// <summary>指定菜品乘区乘以固定值。</summary>
+    /// <summary>指定食物倍率乘以固定值。</summary>
     public sealed class MultiplyDishCommand : IScoreCommand
     {
         private readonly int _dishId;
@@ -996,7 +996,7 @@ namespace GourmetProject.Gameplay.Scoring
         public void Execute(ScoreContext context) => context.ApplyDishMultiplierCommand(_dishId, _value);
     }
 
-    /// <summary>指定菜品倍率区加法（倍率+X）。</summary>
+    /// <summary>指定食物倍率区加法（倍率+X）。</summary>
     public sealed class AddDishMultFlatCommand : IScoreCommand
     {
         private readonly int _dishId;
@@ -1028,7 +1028,7 @@ namespace GourmetProject.Gameplay.Scoring
         public void Execute(ScoreContext context) => context.ApplyGrantGoldCommand(_value);
     }
 
-    /// <summary>登记一次银材质 1/3 获得道具掷骰请求（副作用，不掷骰）。</summary>
+    /// <summary>登记一次银材质 1/3 获得装饰品和消耗品掷骰请求（副作用，不掷骰）。</summary>
     public sealed class RequestSilverItemRollCommand : IScoreCommand
     {
         public string Name => "RequestSilverItemRoll";
@@ -1070,7 +1070,7 @@ namespace GourmetProject.Gameplay.Scoring
         public void Execute(ScoreContext context) => context.ApplyFinalFlatCommand(_value);
     }
 
-    /// <summary>最终总分乘区乘以固定值。</summary>
+    /// <summary>最终总分倍率乘以固定值。</summary>
     public sealed class MultiplyFinalCommand : IScoreCommand
     {
         private readonly float _value;

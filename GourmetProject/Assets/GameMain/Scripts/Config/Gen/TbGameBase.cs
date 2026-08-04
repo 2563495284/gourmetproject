@@ -52,7 +52,7 @@ public partial class TbGameBase
     /// </summary>
      public int InitialActionRerollCount => _data.InitialActionRerollCount;
     /// <summary>
-    /// 主动道具基础消耗槽数
+    /// 消耗品栏基础栏位数
     /// </summary>
      public int BaseActiveSlots => _data.BaseActiveSlots;
     /// <summary>
@@ -60,11 +60,11 @@ public partial class TbGameBase
     /// </summary>
      public int ShopFoodSaleSlotCount => _data.ShopFoodSaleSlotCount;
     /// <summary>
-    /// 商店被动道具出售栏位数量
+    /// 商店装饰品出售栏位数量
     /// </summary>
      public int ShopPassiveItemSaleSlotCount => _data.ShopPassiveItemSaleSlotCount;
     /// <summary>
-    /// 商店主动道具出售栏位数量
+    /// 商店消耗品出售栏位数量
     /// </summary>
      public int ShopActiveItemSaleSlotCount => _data.ShopActiveItemSaleSlotCount;
     /// <summary>
@@ -72,7 +72,7 @@ public partial class TbGameBase
     /// </summary>
      public int FoodFlavorLimit => _data.FoodFlavorLimit;
     /// <summary>
-    /// 美食战斗每局可丢弃出餐食物次数
+    /// 经营挑战每局可丢弃出菜食物次数
     /// </summary>
      public int FoodDeleteCount => _data.FoodDeleteCount;
     /// <summary>
@@ -80,11 +80,11 @@ public partial class TbGameBase
     /// </summary>
      public System.Collections.Generic.List<int> FragmentPackPrices => _data.FragmentPackPrices;
     /// <summary>
-    /// 删除菜品按删除次数递增价格
+    /// 删除食物按删除次数递增价格
     /// </summary>
      public System.Collections.Generic.List<int> DeleteDishPrices => _data.DeleteDishPrices;
     /// <summary>
-    /// 商店食物/主动/被动道具基础价格随机浮动比例
+    /// 商店食物/消耗品/装饰品基础价格随机浮动比例
     /// </summary>
      public float ShopPriceFluctuationPct => _data.ShopPriceFluctuationPct;
     /// <summary>
@@ -92,7 +92,7 @@ public partial class TbGameBase
     /// </summary>
      public int ActionChoiceCount => _data.ActionChoiceCount;
     /// <summary>
-    /// 隐藏分距离加权下限（菜品/道具/碎片随机池共用）
+    /// 隐藏分距离加权下限（食物/装饰品和消耗品/碎片随机池共用）
     /// </summary>
      public int HiddenScoreDistanceFloor => _data.HiddenScoreDistanceFloor;
     /// <summary>

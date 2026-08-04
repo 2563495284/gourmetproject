@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace GourmetProject.Gameplay.Model
 {
     /// <summary>
-    /// 餐桌碎片定义（也用作「初始胃」的形状来源）。纯数据，由 Game 层从 Luban 适配生成。
+    /// 餐桌格定义（也用作「初始胃」的形状来源）。纯数据，由 Game 层从 Luban 适配生成。
     /// <see cref="ShapeRows"/> 保留原始字符行（不做归一化），使 <see cref="CellMaterial"/> 的 (x,y) 与之一一对应。
     /// </summary>
     public sealed class TableFragmentDef

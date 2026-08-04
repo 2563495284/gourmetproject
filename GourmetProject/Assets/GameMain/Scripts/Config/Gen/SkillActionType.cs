@@ -25,7 +25,7 @@ namespace cfg
         /// </summary>
         AddFlat = 1,
         /// <summary>
-        /// 目标乘区*X(叠count次)
+        /// 目标倍率 &#215;X（叠加 count 次）
         /// </summary>
         AddMult = 2,
         /// <summary>
@@ -45,7 +45,7 @@ namespace cfg
         /// </summary>
         GrantGold = 8,
         /// <summary>
-        /// 目标乘区+X*count(加法叠加到倍率)
+        /// 目标倍率 +X&#215;count（加法叠加到倍率）
         /// </summary>
         AddMultFlat = 9,
         /// <summary>
@@ -65,11 +65,11 @@ namespace cfg
         /// </summary>
         TriggerSweetTransfer = 15,
         /// <summary>
-        /// 目标倍率加上来源当前倍率之和；默认来源自身，source:one-cell时来源为所有实际占1格食物
+        /// 目标倍率加上来源当前倍率之和；默认来源自身，source:one-cell时来源为所有实际占1 格食物
         /// </summary>
         AddCurrentMult = 17,
         /// <summary>
-        /// 目标分数加上自身当前分数（基础分+固定加分，不含倍率）
+        /// 目标美味值加上自身当前分数（基础分+固定加分，不含倍率）
         /// </summary>
         AddCurrentScore = 18,
     }

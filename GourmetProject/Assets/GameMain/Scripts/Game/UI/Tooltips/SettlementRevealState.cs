@@ -4,7 +4,7 @@ using GourmetProject.Gameplay.Board;
 namespace GourmetProject.Game.UI.Tooltips
 {
     /// <summary>
-    /// 结算演出「逐菜渐进揭示」状态：点「吃」时按结算前基线快照每道菜，
+    /// 结算演出「逐菜渐进揭示」状态：点「吃」时按结算前基线快照每个食物，
     /// 演出过程中随 cue 逐步揭示分数/倍率/复制技能/甜蜜传递，供 hover tips 与演出同步显示。
     /// </summary>
     public sealed class SettlementRevealState
@@ -47,7 +47,7 @@ namespace GourmetProject.Game.UI.Tooltips
             }
         }
 
-        /// <summary>揭示某道菜「乘区」的当前累加值（ScoreLine.After）。</summary>
+        /// <summary>揭示某道菜「倍率」的当前累加值（ScoreLine.After）。</summary>
         public void RevealMultiplier(int dishInstanceId, float multiplierAfter)
         {
             if (_byDish.TryGetValue(dishInstanceId, out DishReveal reveal))

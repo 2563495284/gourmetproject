@@ -5,7 +5,7 @@ using GourmetProject.Game.Run;
 namespace GourmetProject.Game.Presentation.Battle
 {
     /// <summary>
-    /// 战斗世界共享的「假阴影」资源：程序生成的径向羽化软暗斑，缩放后可当椭圆接触阴影/投影使用。
+    /// 经营挑战世界共享的「假阴影」资源：程序生成的径向羽化软暗斑，缩放后可当椭圆接触阴影/投影使用。
     /// 按 battle-fake-shadow 规则统一走 drop shadow，禁止 Light2D + ShadowCaster2D。
     /// 由 DishPieceView 等表现单元共用，避免重复生成纹理。
     /// </summary>

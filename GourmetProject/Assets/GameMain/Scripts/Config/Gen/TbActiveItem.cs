@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 主动道具：一次性占全局消耗槽，玩家手动使用；不配置隐藏分区间。specialTags 用 | 分隔，空串=无。
+/// 消耗品：一次性占用消耗品栏位，玩家手动使用；不配置隐藏分区间。specialTags 用 | 分隔，空串=无。
 /// </summary>
 public partial class TbActiveItem
 {

@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 欢乐蛋糕层数分段buff：结算时读全局层数，layers&gt;=threshold 的档累计应用到 category 分类所有食物。effectType 复用 SkillActionType。
+/// 欢乐蛋糕层数分段buff：结算时读全局层数，layers≥threshold 的档累计应用到 category 分类所有食物。effectType 复用 SkillActionType。
 /// </summary>
 public partial class TbCakeLayerBuff
 {

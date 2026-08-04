@@ -22,11 +22,66 @@ namespace GourmetProject.Game.Meta.Passives
         }
     }
 
+    public abstract class ActiveItemCategoryDiscountModel : PassiveItemModel
+    {
+        private readonly cfg.ActiveItemCategory _category;
+
+        protected ActiveItemCategoryDiscountModel(cfg.ActiveItemCategory category)
+        {
+            _category = category;
+        }
+
+        public override float ModifyShopPrice(ShopEntryKind kind, float price)
+        {
+            // 旧重载没有商品 ID，只能维持历史上“任意消耗品均打折”的兼容语义。
+            return kind == ShopEntryKind.ActiveItem ? Discount(price) : price;
+        }
+
+        public override float ModifyShopPrice(ShopEntryKind kind, string itemId, float price)
+        {
+            if (kind != ShopEntryKind.ActiveItem)
+            {
+                return price;
+            }
+
+            if (string.IsNullOrEmpty(itemId))
+            {
+                return Discount(price);
+            }
+
+            ItemDefinition item = Run != null
+                ? ItemDefinition.Get(Run.Tables, itemId, cfg.ItemKind.Active)
+                : null;
+            return item != null && item.ActiveItemCategory == _category
+                ? Discount(price)
+                : price;
+        }
+
+        private float Discount(float price)
+        {
+            float discount = Value;
+            return discount > 0f && discount < 1f
+                ? price * (1f - discount)
+                : price;
+        }
+    }
+
     [Preserve]
     [PassiveItemModel("item_discount_active")]
-    public sealed class DiscountActiveModel : ShopDiscountKindModel
+    [PassiveItemModel("item_discount_active_festival")]
+    public sealed class DiscountActiveModel : ActiveItemCategoryDiscountModel
     {
-        public DiscountActiveModel() : base(ShopEntryKind.ActiveItem)
+        public DiscountActiveModel() : base(cfg.ActiveItemCategory.Strengthen)
+        {
+        }
+    }
+
+    [Preserve]
+    [PassiveItemModel("item_discount_adjust")]
+    [PassiveItemModel("item_discount_adjust_festival")]
+    public sealed class DiscountAdjustModel : ActiveItemCategoryDiscountModel
+    {
+        public DiscountAdjustModel() : base(cfg.ActiveItemCategory.Adjust)
         {
         }
     }
@@ -78,7 +133,7 @@ namespace GourmetProject.Game.Meta.Passives
         private float Up(float price) => Value > 0f ? price * (1f + Value) : price;
     }
 
-    /// <summary>负面「囤积癖」：禁止删除菜品。</summary>
+    /// <summary>负面「囤积癖」：禁止删除食物。</summary>
     [Preserve]
     [PassiveItemModel("item_no_remove")]
     public sealed class NoRemoveDishModel : PassiveItemModel

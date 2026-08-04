@@ -164,23 +164,11 @@ namespace GourmetProject.Game.Meta
                 return null;
             }
 
-            var itemRuntime = new ItemRuntime(run);
-            float rewardMul = 1f + itemRuntime.LuckyEventChanceBonus();
-            float eventMul = 1f + itemRuntime.MoreEventsBonus();
             var weights = new List<float>(candidates.Count);
             foreach (cfg.GameEvent ev in candidates)
             {
                 float defaultWeight = System.Math.Max(float.Epsilon, tables.TbGameBase.DefaultRandomWeight);
                 float weight = ev.Weight > 0f ? ev.Weight : defaultWeight;
-                if (ev.PrimaryEventType == cfg.ActionBehavior.Reward)
-                {
-                    weight *= System.Math.Max(0f, rewardMul);
-                }
-                else if (ev.PrimaryEventType == cfg.ActionBehavior.Event)
-                {
-                    weight *= System.Math.Max(0f, eventMul);
-                }
-
                 weights.Add(weight);
             }
 
@@ -189,7 +177,8 @@ namespace GourmetProject.Game.Meta
 
         /// <summary>
         /// act_event 的「全类型合并池」抽取：候选纳入 Event/Reward/Negative 全部类型，
-        /// 并按被动道具修正权重——Reward 项 ×(1+LuckyEventChance)、Event 项 ×(1+MoreEvents)，Negative 不变。
+        /// 并把 eventTypes 包含 Reward 的候选权重 ×(1+LuckyEventChance)；多分类只修正一次，其余候选不变。
+        /// MoreEvents 只作用于行动排期，不参与事件内容池。
         /// 复用 <see cref="RollEvent"/> 的 weight&gt;0 / repeatable / 前置过滤。
         /// </summary>
         public static cfg.GameEvent RollActionEvent(GameRun run, IRandomStream rng)
@@ -197,7 +186,6 @@ namespace GourmetProject.Game.Meta
             cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
             var itemRuntime = new ItemRuntime(run);
             float rewardMul = 1f + itemRuntime.LuckyEventChanceBonus();
-            float eventMul = 1f + itemRuntime.MoreEventsBonus();
 
             var candidates = new List<cfg.GameEvent>();
             var weights = new List<float>();
@@ -220,13 +208,9 @@ namespace GourmetProject.Game.Meta
                 }
 
                 float w = ev.Weight;
-                if (ev.PrimaryEventType == cfg.ActionBehavior.Reward)
+                if (ev.HasEventType(cfg.ActionBehavior.Reward))
                 {
                     w *= rewardMul;
-                }
-                else if (ev.PrimaryEventType == cfg.ActionBehavior.Event)
-                {
-                    w *= eventMul;
                 }
 
                 candidates.Add(ev);
@@ -241,13 +225,11 @@ namespace GourmetProject.Game.Meta
             }
 
             cfg.GameEvent picked = candidates[rng.WeightedPickIndex(weights)];
-            if (picked != null && picked.PrimaryEventType == cfg.ActionBehavior.Reward && System.Math.Abs(rewardMul - 1f) > 0.0001f)
+            if (picked != null
+                && picked.HasEventType(cfg.ActionBehavior.Reward)
+                && System.Math.Abs(rewardMul - 1f) > 0.0001f)
             {
                 itemRuntime.FlashTriggered(m => System.Math.Abs(m.LuckyEventChanceBonus()) > 0.0001f);
-            }
-            else if (picked != null && picked.PrimaryEventType == cfg.ActionBehavior.Event && System.Math.Abs(eventMul - 1f) > 0.0001f)
-            {
-                itemRuntime.FlashTriggered(m => System.Math.Abs(m.MoreEventsBonus()) > 0.0001f);
             }
 
             return picked;
@@ -255,10 +237,10 @@ namespace GourmetProject.Game.Meta
 
         /// <summary>
         /// act_event 的完整抽取入口（唯一 choke point）：
-        /// - 未持有 LuckyEventGuarantee 道具时，仅走 <see cref="RollActionEvent"/> 合并池抽取，不触碰保底计数。
+        /// - 未持有 LuckyEventGuarantee 装饰品和消耗品时，仅走 <see cref="RollActionEvent"/> 合并池抽取，不触碰保底计数。
         /// - 持有时：配置值表示保底前需要经历的自然抽取数；达到后，下一次强制从 Reward 池抽。
         /// - 自然抽到 Reward 也只累计、不重置；强制事件队列优先且不消费保底，保底顺延到下一次抽取。
-        ///   计数状态存于该道具模型（只在持有时存在）。
+        ///   计数状态存于该装饰品和消耗品模型（只在持有时存在）。
         /// </summary>
         public static cfg.GameEvent RollActionEventWithGuarantee(GameRun run, IRandomStream rng)
         {
@@ -380,8 +362,8 @@ namespace GourmetProject.Game.Meta
         }
 
         /// <summary>
-        /// 尝试发放当前待处理根事件的进入金币。即使没有对应道具也会记为已处理，
-        /// 防止玩家在同一事件流程中获得道具后倒发；调用方负责紧接着存档。
+        /// 尝试发放当前待处理根事件的进入金币。即使没有对应装饰品和消耗品也会记为已处理，
+        /// 防止玩家在同一事件流程中获得装饰品和消耗品后倒发；调用方负责紧接着存档。
         /// </summary>
         public static bool TryGrantEventEntryGold(GameRun run, out int gold)
         {
@@ -417,7 +399,7 @@ namespace GourmetProject.Game.Meta
                 case cfg.EffectType.FoodBattle:
                 {
                     int required = effectValue > 0f ? RoundToInt(effectValue) : EventBattleRequiredScore(run);
-                    string feedback = string.IsNullOrEmpty(fallback) ? $"触发美食挑战，目标分 {required}。" : fallback;
+                    string feedback = string.IsNullOrEmpty(fallback) ? $"触发经营挑战，目标美味值 {required}。" : fallback;
                     return EventResolveResult.Battle(feedback, required, effectParam);
                 }
 

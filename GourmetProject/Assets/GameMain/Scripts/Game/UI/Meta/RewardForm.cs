@@ -266,7 +266,7 @@ namespace GourmetProject.Game.UI.Meta
             _titleText.text = _genericMode && !string.IsNullOrEmpty(_genericRewardTitle)
                 ? _genericRewardTitle
                 : "奖励";
-            // 行动轴模型下发奖不再推进周；底部只保留「继续行动」出口。
+            // 时间轴模型下发奖不再推进周；底部只保留「继续行动」出口。
             _continueButton.gameObject.SetActive(true);
 
             SetButtonLabel(_continueButton, _genericMode ? "完成" : "继续行动");
@@ -296,7 +296,7 @@ namespace GourmetProject.Game.UI.Meta
             CompleteRewards(closeForm: true);
         }
 
-        /// <summary>结算并推进：清空 pending offer/碎片包、存档、（可选）关界面并回到行动轴，等效于点「继续」。</summary>
+        /// <summary>结算并推进：清空 pending offer/碎片包、存档、（可选）关界面并回到时间轴，等效于点「继续」。</summary>
         private void CompleteRewards(bool closeForm)
         {
             BattleForm.Active?.CloseRewardOperationPages();
@@ -976,7 +976,7 @@ namespace GourmetProject.Game.UI.Meta
 
             row.Bind(
                 $"金币 +{_offer.BaseGold}",
-                "点击领取固定金币。",
+                "点击领取",
                 LoadBaseGoldIcon(),
                 false,
                 true,
@@ -1048,7 +1048,7 @@ namespace GourmetProject.Game.UI.Meta
             Sprite icon = LoadGroupRowIcon(group, groupIndex, firstChoice, out bool suppressDishPreview);
             row.Bind(
                 FallbackGroupTitle(group),
-                BuildGroupDescription(group),
+                BuildGroupRuleText(group),
                 icon,
                 false,
                 true,
@@ -1262,8 +1262,8 @@ namespace GourmetProject.Game.UI.Meta
             if (IsActiveItemReward(choice.Kind) && _run != null && !_run.HasFreeActiveSlot)
             {
                 description = string.IsNullOrWhiteSpace(description)
-                    ? "主动道具槽已满，领取后会折算金币。"
-                    : $"{description}\n主动道具槽已满，领取后会折算金币。";
+                    ? "消耗品槽已满，领取后会折算金币。"
+                    : $"{description}\n消耗品槽已满，领取后会折算金币。";
             }
 
             return description;
@@ -1289,15 +1289,15 @@ namespace GourmetProject.Game.UI.Meta
             switch (choice.Kind)
             {
                 case cfg.RewardKind.DishChoice:
-                    return "加入菜谱池，后续美食挑战中可能抽到。";
+                    return "加入食谱，后续经营挑战中可能抽到。";
                 case cfg.RewardKind.FragmentChoice:
-                    return "获得餐桌碎片包，进入餐桌编辑后选择并拼贴一块。";
+                    return "获得餐桌格包，进入餐桌编辑后选择并拼贴一块。";
                 case cfg.RewardKind.PassiveItemChoice:
                     return "获得后持续生效，重复获得时会升级或折算。";
                 case cfg.RewardKind.ActiveItemGrant:
                 case cfg.RewardKind.ActiveItemStrengthen:
                 case cfg.RewardKind.ActiveItemAdjust:
-                    return "获得一个主动道具，可在战斗中使用。";
+                    return "获得一个消耗品，可在经营挑战中使用。";
                 default:
                     return "领取后加入本轮运行。";
             }
@@ -1368,19 +1368,16 @@ namespace GourmetProject.Game.UI.Meta
                 : ChoicePackName(group?.Choices);
         }
 
-        private static string BuildGroupDescription(RewardChoiceGroup group)
+        private static string BuildGroupRuleText(RewardChoiceGroup group)
         {
             if (group == null)
             {
                 return string.Empty;
             }
 
-            string rule = !string.IsNullOrWhiteSpace(group.RuleText)
+            return !string.IsNullOrWhiteSpace(group.RuleText)
                 ? group.RuleText
                 : BuildLegacyRuleText(group);
-            return string.IsNullOrWhiteSpace(group.Description)
-                ? rule
-                : string.IsNullOrWhiteSpace(rule) ? group.Description : $"{group.Description}\n{rule}";
         }
 
         private static string BuildLegacyRuleText(RewardChoiceGroup group)
@@ -1433,15 +1430,15 @@ namespace GourmetProject.Game.UI.Meta
                 case cfg.RewardKind.Gold:
                     return "金币";
                 case cfg.RewardKind.DishChoice:
-                    return "菜品";
+                    return "食物";
                 case cfg.RewardKind.FragmentChoice:
                     return "碎片";
                 case cfg.RewardKind.ActiveItemGrant:
                 case cfg.RewardKind.ActiveItemStrengthen:
                 case cfg.RewardKind.ActiveItemAdjust:
-                    return "主动道具";
+                    return "消耗品";
                 case cfg.RewardKind.PassiveItemChoice:
-                    return "被动道具";
+                    return "装饰品";
                 default:
                     return "奖励";
             }
@@ -1569,7 +1566,7 @@ namespace GourmetProject.Game.UI.Meta
                 return false;
             }
 
-            // 旧档没有 SourceSlotId；普通/困难美食奖励的第一个固定菜品组就是基础菜品。
+            // 旧档没有 SourceSlotId；普通/困难食物奖励的第一个固定食物组就是基础食物。
             return groupIndex == 0;
         }
 

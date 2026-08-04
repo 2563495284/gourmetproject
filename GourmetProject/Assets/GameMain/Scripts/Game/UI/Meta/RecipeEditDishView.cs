@@ -13,7 +13,7 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>
-    /// 菜谱中的单个菜品卡。奖励流程支持拖拽；查看/删除/主动道具模式禁用拖拽并响应点击。
+    /// 食谱中的单个食物卡。奖励流程支持拖拽；查看/删除/消耗品模式禁用拖拽并响应点击。
     /// </summary>
     [RequireComponent(typeof(CanvasGroup))]
     public sealed class RecipeEditDishView : MonoBehaviour, IPointerDownHandler, IInitializePotentialDragHandler, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler

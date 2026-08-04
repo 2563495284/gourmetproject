@@ -3,9 +3,9 @@ using System.Collections.Generic;
 namespace GourmetProject.Game.Meta
 {
     /// <summary>
-    /// 道具 <c>effectType</c> 字符串常量集中处。
-    /// 被动道具已改为「itemId → PassiveItemModel」按 id 绑定，不再按 effectType 分发；
-    /// 这里的常量当前主要供主动道具（<see cref="ActiveItemEffectRegistry"/>）与词表参考。
+    /// 装饰品和消耗品 <c>effectType</c> 字符串常量集中处。
+    /// 装饰品已改为「itemId → PassiveItemModel」按 id 绑定，不再按 effectType 分发；
+    /// 这里的常量当前主要供消耗品（<see cref="ActiveItemEffectRegistry"/>）与词表参考。
     /// </summary>
     public static class ItemEffectTypes
     {
@@ -23,22 +23,22 @@ namespace GourmetProject.Game.Meta
         public const string EveryNthServeMult = "EveryNthServeMult";
         public const string CountAsBonusAll = "CountAsBonusAll";
 
-        // —— 主动道具（走 ActiveItemEffectRegistry）——
-        // 无目标（None/Global）战斗/资源操作：
+        // —— 消耗品（走 ActiveItemEffectRegistry）——
+        // 无目标（None/Global）经营挑战/资源操作：
         public const string ClearBoard = "ClearBoard";
         public const string ExtraServe = "ExtraServe";
         // 需选目标（DiningTableDish 等）的目标操作族，对标杀戮尖塔2 药水的 OnUse(target)：
-        public const string AddScore = "AddScore";           // 给目标菜永久加分
-        public const string AddCountAs = "AddCountAs";        // 给目标菜加「视为食物数」
-        public const string AddFlavor = "AddFlavor";          // 给目标菜（菜谱）永久附加风味（effectParam=风味id，调味小票）
+        public const string AddScore = "AddScore";           // 给目标食物永久加分
+        public const string AddCountAs = "AddCountAs";        // 给目标食物加「视为食物数」
+        public const string AddFlavor = "AddFlavor";          // 给目标食物（食谱）永久附加风味（effectParam=风味id，调味小票）
         public const string AddMaterial = "AddMaterial";      // 给目标格永久附加材质（effectParam=材质id，铺台小票）
-        public const string EnhanceFlavor = "EnhanceFlavor";  // 强化目标菜风味
-        public const string ConvertCategory = "ConvertCategory"; // 转换目标菜分类
-        public const string ConvertFlavor = "ConvertFlavor";  // 转换目标菜风味
-        public const string DuplicateDish = "DuplicateDish";  // 复制目标菜
-        public const string GenerateDish = "GenerateDish";    // 生成一道菜（需随机流）
-        public const string DestroyDish = "DestroyDish";      // 移除目标菜
-        public const string RemoveFlavor = "RemoveFlavor";    // 移除目标菜风味
+        public const string EnhanceFlavor = "EnhanceFlavor";  // 强化目标食物风味
+        public const string ConvertCategory = "ConvertCategory"; // 转换目标食物分类
+        public const string ConvertFlavor = "ConvertFlavor";  // 转换目标食物风味
+        public const string DuplicateDish = "DuplicateDish";  // 复制目标食物
+        public const string GenerateDish = "GenerateDish";    // 生成1 个食物（需随机流）
+        public const string DestroyDish = "DestroyDish";      // 移除目标食物
+        public const string RemoveFlavor = "RemoveFlavor";    // 移除目标食物风味
 
         // —— 金币/利息族（走 ItemRuntime gold hook；ProcedureMain/RewardGranter 消费）——
         public const string GoldNow = "GoldNow";
@@ -68,7 +68,7 @@ namespace GourmetProject.Game.Meta
         public const string ShopPriceUp = "ShopPriceUp";
         public const string NoRemoveDish = "NoRemoveDish";
 
-        // —— 目标分修正族（走 ItemRuntime requiredScore hook；GameRun.RequiredScore 消费）——
+        // —— 目标美味值修正族（走 ItemRuntime requiredScore hook；GameRun.RequiredScore 消费）——
         public const string RequiredScoreToOne = "RequiredScoreToOne";
         public const string RequiredScoreNormalPct = "RequiredScoreNormalPct";
         public const string RequiredScoreSuperPct = "RequiredScoreSuperPct";
@@ -147,7 +147,7 @@ namespace GourmetProject.Game.Meta
         public const string TransferSourceMult = "TransferSourceMult";
 
         /// <summary>
-        /// 主动道具合法 <c>effectType</c> 词表（配在 <c>TbActiveItem</c> 的值域）。
+        /// 消耗品合法 <c>effectType</c> 词表（配在 <c>TbActiveItem</c> 的值域）。
         /// 用于填表/运行时守卫：不在此集合内的值视为非法主动效果。
         /// 新增主动效果时：在此登记 + 在 <see cref="ActiveItemEffectRegistry"/> 落地。
         /// </summary>
@@ -181,7 +181,7 @@ namespace GourmetProject.Game.Meta
             TimelineDeleteNode,
         };
 
-        /// <summary>该 effectType 是否为合法的主动道具效果（按主动词表校验）。</summary>
+        /// <summary>该 effectType 是否为合法的消耗品效果（按主动词表校验）。</summary>
         public static bool IsValidActiveEffectType(string effectType)
         {
             return !string.IsNullOrEmpty(effectType) && ActiveEffectTypes.Contains(effectType);

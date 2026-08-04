@@ -9,7 +9,7 @@ using TMPro;
 
 namespace GourmetProject.Game.UI.Meta
 {
-    /// <summary>战斗未达标后的碎心演出；演出结束后由玩家点击“继续”推进。</summary>
+    /// <summary>经营挑战未达标后的碎心演出；演出结束后由玩家点击“继续”推进。</summary>
     public sealed class HeartBreakForm : UGuiForm
     {
         [SerializeField] private TMP_Text _titleText;

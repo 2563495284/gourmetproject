@@ -4,9 +4,9 @@ using System.Collections.Generic;
 namespace GourmetProject.Gameplay.Model
 {
     /// <summary>
-    /// 菜品定义（即随机菜品库的一个条目）。纯数据，由 Game 层把 Luban 的
+    /// 食物定义（即随机食物库的一个条目）。纯数据，由 Game 层把 Luban 的
     /// 本体表 TbDishBase 与变体表 TbDishVariant join 后适配生成。
-    /// 同一 <see cref="BaseId"/> 的不同 DishDef 即「带不同标签视为不同菜品」。
+    /// 同一 <see cref="BaseId"/> 的不同 DishDef 即「带不同标签视为不同食物」。
     /// </summary>
     public sealed class DishDef
     {
@@ -53,7 +53,7 @@ namespace GourmetProject.Gameplay.Model
 
         public string Name { get; }
 
-        /// <summary>美味度（基础分数），用于技能结算与分数结算。</summary>
+        /// <summary>美味值（基础分数），用于技能结算与分数结算。</summary>
         public int Deliciousness { get; }
 
         public DishShape Shape { get; }
@@ -62,7 +62,7 @@ namespace GourmetProject.Gameplay.Model
 
         public int HiddenMax { get; }
 
-        /// <summary>隐藏分均值 b（用于菜品库加权随机）。</summary>
+        /// <summary>隐藏分均值 b（用于食物库加权随机）。</summary>
         public float HiddenMean => (HiddenMin + HiddenMax) * 0.5f;
 
         public float BaseWeight { get; }
@@ -71,12 +71,12 @@ namespace GourmetProject.Gameplay.Model
         public int Price { get; }
 
         /// <summary>
-        /// 菜品初始技能 id 列表（数量无上限）。创建餐桌实例时整份带入，运行时可被道具追加/修改。
+        /// 食物初始技能 id 列表（数量无上限）。创建餐桌实例时整份带入，运行时可被装饰品和消耗品追加/修改。
         /// </summary>
         public IReadOnlyList<string> SkillIds { get; }
 
         /// <summary>
-        /// 菜品初始风味 id（单槽，可空）。再次获得风味会替换原风味，特殊道具可解除单槽上限。
+        /// 食物初始风味 id（单槽，可空）。再次获得风味会替换原风味，特殊装饰品和消耗品可解除单槽上限。
         /// </summary>
         public string FlavorId { get; }
 
@@ -91,7 +91,7 @@ namespace GourmetProject.Gameplay.Model
         /// </summary>
         public int RotationIndex { get; }
 
-        /// <summary>菜品分类（如 cake）；空串=无分类。供分类检测/定向。</summary>
+        /// <summary>食物分类（如 cake）；空串=无分类。供分类检测/定向。</summary>
         public string Category { get; }
 
         /// <summary>是否属于某分类。</summary>
@@ -101,10 +101,10 @@ namespace GourmetProject.Gameplay.Model
         /// <summary>「视为食物数」基础值（默认 1）；技能计数时按此累加。</summary>
         public int CountAs { get; }
 
-        /// <summary>菜谱中的展示顺序；数值越小越靠前。</summary>
+        /// <summary>食谱中的展示顺序；数值越小越靠前。</summary>
         public int SortOrder { get; }
 
-        /// <summary>要求隐藏分是否落在本菜品隐藏分范围内。</summary>
+        /// <summary>要求隐藏分是否落在本食物隐藏分范围内。</summary>
         public bool CoversHiddenScore(int requiredHidden)
             => requiredHidden >= HiddenMin && requiredHidden <= HiddenMax;
     }

@@ -10,8 +10,8 @@ using Log = GourmetProject.Core.Diagnostics.Log;
 namespace GourmetProject.Game.Meta
 {
     /// <summary>
-    /// 被动道具「获得时(OnAcquire)」一次性效果的共享实现工具。
-    /// 重构后不再集中 switch：各道具模型（<see cref="Passives.PassiveItemModel"/>）在 OnAcquired 里按需调用这些工具。
+    /// 装饰品「获得时(OnAcquire)」一次性效果的共享实现工具。
+    /// 重构后不再集中 switch：各装饰品和消耗品模型（<see cref="Passives.PassiveItemModel"/>）在 OnAcquired 里按需调用这些工具。
     /// 仅纯数值 / 资源类效果；需要选目标 / UI / 未就绪子系统的效果由对应模型留占位日志。
     /// </summary>
     public static class PassiveOnAcquireEffects
@@ -44,7 +44,7 @@ namespace GourmetProject.Game.Meta
             run.Gold += System.Math.Max(0, gold);
         }
 
-        /// <summary>丢弃负面道具：最多丢 maxCount 个带 Negative 标签的道具；goldPer>0 时每丢一个给钱。</summary>
+        /// <summary>丢弃诅咒装饰品：最多丢 maxCount 个带 Negative 标签的装饰品和消耗品；goldPer>0 时每丢一个给钱。</summary>
         public static void DiscardNegatives(GameRun run, int maxCount, int goldPer)
         {
             if (run == null || maxCount <= 0)
@@ -83,8 +83,8 @@ namespace GourmetProject.Game.Meta
         }
 
         /// <summary>
-        /// 统一的「获得时发奖」：按道具 EffectParam 指定的 reward_slot 槽组 roll 出 offer，入通用领奖队列并打开 RewardForm。
-        /// 覆盖随机发放 / 多选一 / 碎片 / 风味菜品等，等同于一次正常领奖。
+        /// 统一的「获得时发奖」：按装饰品和消耗品 EffectParam 指定的 reward_slot 槽组 roll 出 offer，入通用领奖队列并打开 RewardForm。
+        /// 覆盖随机发放 / 多选一 / 碎片 / 风味食物等，等同于一次正常领奖。
         /// </summary>
         public static void GrantConfigReward(GameRun run, ItemDefinition sourceItem)
         {
@@ -111,7 +111,7 @@ namespace GourmetProject.Game.Meta
             OpenGenericRewardForm();
         }
 
-        /// <summary>全家福：EffectValue 金币 + EffectParam="被动槽组|菜品槽组" 各发一份，合成一个通用领奖包。</summary>
+        /// <summary>全家福：EffectValue 金币 + EffectParam="装饰品槽组|食物槽组" 各发一份，合成一个通用领奖包。</summary>
         public static void ApplyFamilyPack(GameRun run, ItemDefinition item)
         {
             if (run == null || item == null)

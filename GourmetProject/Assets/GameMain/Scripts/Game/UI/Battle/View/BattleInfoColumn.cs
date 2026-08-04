@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using DG.Tweening;
+using GourmetProject.Game.Meta;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Game.Run;
 using GourmetProject.Gameplay.Battle;
@@ -11,7 +12,7 @@ using TMPro;
 namespace GourmetProject.Game.UI.Battle.View
 {
     /// <summary>
-    /// 常驻壳左栏信息组件：周/金币/分数要求，以及「查看菜谱」「查看餐桌」「设置」按钮。
+    /// 常驻壳左栏信息组件：周/金币/分数要求，以及「查看食谱」「查看餐桌」「设置」按钮。
     /// 数据刷新与「查看餐桌」按钮文案/可点态集中在此，点击通过 <see cref="Bind"/> 回调壳。
     /// </summary>
     public sealed class BattleInfoColumn : MonoBehaviour
@@ -93,7 +94,7 @@ namespace GourmetProject.Game.UI.Battle.View
             _battleScoreOverride = score;
         }
 
-        /// <summary>刷新左栏常驻信息：周/金币（局外）与分数要求（局内为真值，非战斗态占位）。</summary>
+        /// <summary>刷新左栏常驻信息：周/金币（局外）与分数要求（局内为真值，非经营挑战态占位）。</summary>
         public void Refresh(GameRun run, BattleSession session, GameplayView current, BattleWorldController world)
         {
             if (run == null)
@@ -150,14 +151,17 @@ namespace GourmetProject.Game.UI.Battle.View
 
             if (_discardCountText != null)
             {
-                _discardCountText.text = current == GameplayView.Food && session != null
-                    ? session.FoodDiscardsRemaining.ToString("D2")
-                    : "--";
+                // 营业 / 评鉴进行中显示本场剩余；局外与已结算页显示
+                // 当前持有装饰决定的每场最大值，不再用“--”隐藏。
+                int discardCount = session != null && !session.IsSettled
+                    ? session.FoodDiscardsRemaining
+                    : new ItemRuntime(run).FoodDiscardCapacity();
+                _discardCountText.text = discardCount.ToString("D2");
             }
         }
 
         /// <summary>
-        /// 显式切换 Boss 战展示生命周期。页面刷新不会改变该状态；只有战斗开始、奖励完成等
+        /// 显式切换 Boss 战展示生命周期。页面刷新不会改变该状态；只有经营挑战开始、奖励完成等
         /// 生命周期边界调用此方法，避免临时页面切换重复播放动画。
         /// </summary>
         public void SetBossBattlePresentation(cfg.BossDebuff bossDebuff, bool active, bool animate)

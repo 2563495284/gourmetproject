@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GourmetProject.Config;
+using GourmetProject.Core.Rng;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Orchestration;
@@ -9,6 +10,7 @@ using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Meta;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Scoring;
+using GourmetProject.Runtime;
 using NUnit.Framework;
 
 namespace GourmetProject.Tests.PlayMode
@@ -25,6 +27,13 @@ namespace GourmetProject.Tests.PlayMode
             config.LoadAll();
             _tables = config.Tables;
             _database = GameplayContentBuilder.BuildDatabase(_tables);
+
+            var random = new RandomService();
+            random.Init("business-failure-playmode");
+            typeof(GameApp)
+                .GetProperty(nameof(GameApp.Random))
+                ?.GetSetMethod(nonPublic: true)
+                ?.Invoke(null, new object[] { random });
         }
 
         [Test]

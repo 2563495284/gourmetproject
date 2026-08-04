@@ -5,7 +5,7 @@ namespace GourmetProject.Game
     /// </summary>
     public static class SceneNames
     {
-        /// <summary>局内战斗独立场景：选角/继续后由 ProcedureGameplay 加载。</summary>
+        /// <summary>局内经营挑战独立场景：选角/继续后由 ProcedureGameplay 加载。</summary>
         public const string Battle = "Assets/GameMain/Content/Scenes/Battle.unity";
     }
 }

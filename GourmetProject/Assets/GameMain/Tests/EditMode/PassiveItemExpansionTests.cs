@@ -7,7 +7,11 @@ using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Meta.Passives;
 using GourmetProject.Game.Run;
+using GourmetProject.Gameplay.Battle;
+using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
+using GourmetProject.Gameplay.Model;
+using GourmetProject.Gameplay.Scoring;
 using Luban.SimpleJSON;
 using NUnit.Framework;
 
@@ -15,8 +19,34 @@ namespace GourmetProject.Tests.EditMode
 {
     public sealed class PassiveItemExpansionTests
     {
+        private static readonly string[] FinalizedHashItemIds =
+        {
+            "item_discount_active",
+            "item_discount_adjust",
+            "item_discount_active_festival",
+            "item_discount_adjust_festival",
+            "item_famous_knife",
+            "item_heart_flat_all",
+            "item_empty_heart_mult_all",
+            "item_timeline_random",
+            "item_lucky_chance",
+            "item_more_events",
+            "item_copy_food",
+        };
+
         private static readonly string[] NewItemIds =
         {
+            "item_discount_active",
+            "item_discount_adjust",
+            "item_discount_active_festival",
+            "item_discount_adjust_festival",
+            "item_famous_knife",
+            "item_heart_flat_all",
+            "item_empty_heart_mult_all",
+            "item_timeline_random",
+            "item_lucky_chance",
+            "item_more_events",
+            "item_copy_food",
             "item_perma_flat_all_plus",
             "item_extra_active_slots_max",
             "item_more_super_actions",
@@ -54,9 +84,31 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(
                     _tables.TbPassiveItem.GetOrDefault(itemId),
                     Is.Not.Null,
-                    $"新被动道具 {itemId} 未进入运行时配置。");
+                    $"新装饰品 {itemId} 未进入运行时配置。");
                 Assert.That(PassiveItemModelRegistry.HasModel(itemId), Is.True, itemId);
             }
+        }
+
+        [Test]
+        public void FinalizedHashItems_HaveShortNamesAndGeneratedRuntimeDescriptions()
+        {
+            Assert.That(_tables.TbPassiveItem.DataList, Has.Count.EqualTo(91));
+            foreach (string itemId in FinalizedHashItemIds)
+            {
+                cfg.PassiveItem item = _tables.TbPassiveItem.GetOrDefault(itemId);
+                Assert.That(item, Is.Not.Null, itemId);
+                Assert.That(
+                    new System.Globalization.StringInfo(item.Name).LengthInTextElements,
+                    Is.LessThanOrEqualTo(5),
+                    $"{itemId} 的名称超过5个字：{item.Name}");
+            }
+
+            Assert.That(
+                _tables.TbPassiveItem.Get("item_lucky_chance").Desc,
+                Is.EqualTo("事件行动中\n奖励事件随机权重+20%"));
+            Assert.That(
+                _tables.TbPassiveItem.Get("item_more_events").Desc,
+                Is.EqualTo("事件行动大组\n随机权重+20%"));
         }
 
         [TestCase("item_perma_flat_all_plus", typeof(PermanentAddFlatAllModel))]
@@ -163,10 +215,175 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(rng.LastWeights, Is.EqualTo(expected));
         }
 
+        [Test]
+        public void FoodDiscardCapacity_UsesHeldDecorationsAndSurvivesRunRestore()
+        {
+            GameRun run = CreateRun();
+            int baseCapacity = new ItemRuntime(run).FoodDiscardCapacity();
+            cfg.PassiveItem item = _tables.TbPassiveItem.Get("item_trash_evolve");
+
+            ItemAcquireResult acquired = run.AcquireItem(item.Id, fallbackGold: 0);
+
+            Assert.That(acquired.Outcome, Is.EqualTo(ItemAcquireOutcome.Added));
+            Assert.That(
+                new ItemRuntime(run).FoodDiscardCapacity(),
+                Is.EqualTo(baseCapacity + (int)item.EffectValue));
+
+            GameRun restored = GameRun.FromSaveData(_tables, _database, run.ToSaveData());
+            Assert.That(
+                new ItemRuntime(restored).FoodDiscardCapacity(),
+                Is.EqualTo(baseCapacity + (int)item.EffectValue));
+        }
+
+        [Test]
+        public void HeartScorePassives_ReadHeartsWhenBattleSessionSettles()
+        {
+            GameRun run = CreateRun();
+            run.AdjustHeartCapacity(2);
+            AttachPassiveModel(run, "item_heart_flat_all", effectValue: 5f);
+            AttachPassiveModel(run, "item_empty_heart_mult_all", effectValue: 0.1f);
+
+            Assert.That(run.HeartCapacity, Is.EqualTo(5));
+            Assert.That(run.HeartsRemaining, Is.EqualTo(3));
+
+            BattleSession session = BuildHeartPassiveSession(run);
+
+            // 会话构建完成后再变更心数，验证结算不会使用建局时的旧快照。
+            Assert.That(run.TryLoseHeart(out _, out _), Is.True);
+            ScoreResult result = session.Settle();
+
+            Assert.That(run.HeartsRemaining, Is.EqualTo(2));
+            Assert.That(result.DishScores, Has.Count.EqualTo(2));
+            Assert.That(result.DishScores.All(score =>
+                Math.Abs(score.FlatBonus - 10f) < 0.0001f), Is.True);
+            Assert.That(result.DishScores.All(score =>
+                Math.Abs(score.Multiplier - 1.3f) < 0.0001f), Is.True);
+            Assert.That(result.PermanentFlatDeltas, Is.Empty);
+            Assert.That(result.PermanentMultDeltas, Is.Empty);
+            Assert.That(
+                result.ScoreLines.Count(line =>
+                    line.Source?.Type == ScoreSourceType.Relic),
+                Is.EqualTo(4));
+            Assert.That(
+                result.ScoreLines
+                    .Where(line => line.Source?.Type == ScoreSourceType.Relic)
+                    .All(line => line.Phase == ScorePhase.BeforeAll),
+                Is.True);
+        }
+
+        [Test]
+        public void CopyFood_ClonesCompleteRecipeEntryAndRoundTripsSave()
+        {
+            GameRun run = CreateRun();
+            while (run.RecipeEntries.Count > 1)
+            {
+                Assert.That(run.RemoveBonusDishAt(run.RecipeEntries.Count - 1), Is.True);
+            }
+
+            Assert.That(run.RecipeEntries, Has.Count.EqualTo(1));
+            Assert.That(run.AddRecipeFlavor(0, "t_sweet"), Is.True);
+            Assert.That(run.AddRecipeExtraSkill(0, _database.AllSkills.First().Id), Is.True);
+            Assert.That(run.AddRecipeScoreFlat(0, 7f), Is.True);
+            Assert.That(run.MultiplyRecipeScore(0, 1.5f), Is.True);
+            RecipeBookSlot source = run.RecipeEntries[0];
+
+            RecipeMutationResult result = PassiveRecipeMutationService.CopyRandomFood(
+                run,
+                "复制食物",
+                count: 1,
+                rng: new CapturingRandomStream());
+
+            Assert.That(result.HasChanges, Is.True);
+            Assert.That(run.RecipeEntries, Has.Count.EqualTo(2));
+            RecipeBookSlot clone = run.RecipeEntries[1];
+            Assert.That(clone, Is.Not.SameAs(source));
+            Assert.That(clone.DishId, Is.EqualTo(source.DishId));
+            Assert.That(clone.ExtraFlavorIds, Is.EqualTo(source.ExtraFlavorIds));
+            Assert.That(clone.ExtraSkillIds, Is.EqualTo(source.ExtraSkillIds));
+            Assert.That(clone.ScoreFlatBonus, Is.EqualTo(source.ScoreFlatBonus));
+            Assert.That(clone.ScoreMultiplier, Is.EqualTo(source.ScoreMultiplier));
+            Assert.That(result.Entries.Single().DishIndex, Is.EqualTo(1));
+            Assert.That(result.Entries.Single().Before.DishId, Is.Empty);
+            Assert.That(result.Entries.Single().After.DishId, Is.EqualTo(source.DishId));
+
+            GameRun restored = GameRun.FromSaveData(_tables, _database, run.ToSaveData());
+            Assert.That(restored.RecipeEntries, Has.Count.EqualTo(2));
+            RecipeBookSlot restoredClone = restored.RecipeEntries[1];
+            Assert.That(restoredClone.DishId, Is.EqualTo(source.DishId));
+            Assert.That(restoredClone.ExtraFlavorIds, Is.EqualTo(source.ExtraFlavorIds));
+            Assert.That(restoredClone.ExtraSkillIds, Is.EqualTo(source.ExtraSkillIds));
+            Assert.That(restoredClone.ScoreFlatBonus, Is.EqualTo(7f));
+            Assert.That(restoredClone.ScoreMultiplier, Is.EqualTo(1.5f));
+        }
+
+        [Test]
+        public void CopyFood_EmptyRecipeIsSafeNoOp()
+        {
+            GameRun run = CreateRun();
+            while (run.RecipeEntries.Count > 0)
+            {
+                Assert.That(run.RemoveBonusDishAt(run.RecipeEntries.Count - 1), Is.True);
+            }
+
+            RecipeMutationResult result = PassiveRecipeMutationService.CopyRandomFood(
+                run,
+                "复制食物",
+                count: 1,
+                rng: new CapturingRandomStream());
+
+            Assert.That(result.HasChanges, Is.False);
+            Assert.That(run.RecipeEntries, Is.Empty);
+        }
+
         private GameRun CreateRun()
         {
             string characterId = _tables.TbCharacter.DataList.First().Id;
             return new GameRun(_tables, _database, characterId, "passive-expansion-tests");
+        }
+
+        private static BattleSession BuildHeartPassiveSession(GameRun run)
+        {
+            var definition = new DishDef(
+                "heart_passive_test_dish",
+                "测试食物",
+                10,
+                DishShape.FromRows(new[] { "X" }),
+                0,
+                0,
+                1f,
+                Array.Empty<string>(),
+                string.Empty,
+                false);
+            var database = new GameplayDatabase(
+                new[] { definition },
+                Array.Empty<SkillDef>(),
+                Array.Empty<FlavorDef>(),
+                Array.Empty<MaterialDef>(),
+                Array.Empty<RecipeDef>());
+            var table = new DiningTable(2, 1);
+            for (int index = 0; index < 2; index++)
+            {
+                var placement = new Placement(
+                    definition.Shape,
+                    0,
+                    new GridPos(index, 0));
+                table.Place(new DishInstance(
+                    index + 1,
+                    definition,
+                    placement,
+                    Array.Empty<string>(),
+                    Array.Empty<string>()));
+            }
+
+            var calculator = new ScoreCalculator(
+                effectSources: ItemScoreEffectAdapter.BuildScoreSources(run));
+            return new BattleSession(
+                table,
+                database,
+                new Xoshiro256SS(123UL),
+                Array.Empty<RecipeSlot>(),
+                requiredScore: 1,
+                calculator: calculator);
         }
 
         private static PassiveItemModel AttachPassiveModel(
@@ -204,7 +421,7 @@ namespace GourmetProject.Tests.EditMode
             string value = effectValue.ToString(System.Globalization.CultureInfo.InvariantCulture);
             string json = $@"{{
                 ""id"":""{itemId}"",
-                ""name"":""测试道具"",
+                ""name"":""测试装饰品和消耗品"",
                 ""desc"":"""",
                 ""quality"":0,
                 ""specialTags"":0,
