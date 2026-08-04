@@ -76,7 +76,6 @@ MonoBehaviour:
   _titleText: {fileID: 6867028068097176167}
   _useButton: {fileID: 2447284659551836878}
   _discardButton: {fileID: 1172356953644404775}
-  _itemTipPrefab: {fileID: 8646951620094238264, guid: 49d929799dca94ac9bec5bb3a1fbffec, type: 3}
   _fadeDuration: 0.1
   _popDuration: 0.15
   _screenOffset: {x: -120, y: -96}

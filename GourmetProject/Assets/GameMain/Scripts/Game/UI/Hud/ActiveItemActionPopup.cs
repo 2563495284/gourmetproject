@@ -1,8 +1,6 @@
 using System;
 using DG.Tweening;
-using GourmetProject.Game;
 using GourmetProject.Game.Meta;
-using GourmetProject.Game.UI.Tooltips;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -22,7 +20,6 @@ namespace GourmetProject.Game.UI.Hud
         [SerializeField] private TMP_Text _titleText;
         [SerializeField] private Button _useButton;
         [SerializeField] private Button _discardButton;
-        [SerializeField] private ItemTipView _itemTipPrefab;
         [SerializeField] private float _fadeDuration = 0.1f;
         [SerializeField] private float _popDuration = 0.15f;
         [SerializeField] private Vector2 _screenOffset = new Vector2(-120f, -96f);
@@ -32,11 +29,17 @@ namespace GourmetProject.Game.UI.Hud
         private Action _onClose;
         private Tween _tween;
         private bool _closing;
-        private ItemTipView _itemTip;
-        private Image _itemIcon;
 
         private void Awake()
         {
+            Image clickBlocker = GetComponent<Image>();
+            if (clickBlocker == null)
+            {
+                clickBlocker = gameObject.AddComponent<Image>();
+            }
+
+            clickBlocker.color = Color.clear;
+            clickBlocker.raycastTarget = true;
         }
 
         private void OnDestroy()
@@ -78,7 +81,6 @@ namespace GourmetProject.Game.UI.Hud
                 _titleText.text = item != null ? item.Name : "主动道具";
             }
 
-            BuildItemTip(item);
             BindButton(_useButton, "使用", canUse, () =>
             {
                 Action use = _onUse;
@@ -94,7 +96,6 @@ namespace GourmetProject.Game.UI.Hud
 
             StretchRoot();
             PositionPanel(anchorScreenPoint);
-            PositionItemTip(anchorScreenPoint);
             PlayOpen();
         }
 
@@ -138,12 +139,7 @@ namespace GourmetProject.Game.UI.Hud
             Canvas canvas = GetComponentInParent<Canvas>();
             Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
             bool insidePanel = RectTransformUtility.RectangleContainsScreenPoint(_panel, eventData.position, cam);
-            bool insideTip = _itemTip != null
-                && RectTransformUtility.RectangleContainsScreenPoint(
-                    (RectTransform)_itemTip.transform,
-                    eventData.position,
-                    cam);
-            if (!insidePanel && !insideTip)
+            if (!insidePanel)
             {
                 Close();
             }
@@ -210,109 +206,6 @@ namespace GourmetProject.Game.UI.Hud
                 _panel.anchoredPosition = local + _screenOffset;
                 ClampPanel(parent);
             }
-        }
-
-        private void BuildItemTip(ItemDefinition item)
-        {
-            if (_itemTip != null)
-            {
-                Destroy(_itemTip.gameObject);
-                _itemTip = null;
-            }
-
-            if (_itemTipPrefab == null)
-            {
-                Debug.LogError($"{nameof(ActiveItemActionPopup)} prefab 缺少 ItemTipView 引用。", this);
-                return;
-            }
-
-            _itemTip = Instantiate(_itemTipPrefab, transform, false);
-            _itemTip.name = "ItemTip";
-            _itemTip.Bind(item);
-            _itemTip.Show();
-
-            if (_itemIcon == null)
-            {
-                var iconObject = new GameObject(
-                    "ItemIcon",
-                    typeof(RectTransform),
-                    typeof(CanvasRenderer),
-                    typeof(Image));
-                iconObject.transform.SetParent(transform, false);
-                _itemIcon = iconObject.GetComponent<Image>();
-                _itemIcon.preserveAspect = true;
-                _itemIcon.raycastTarget = false;
-            }
-
-            _itemIcon.sprite = ContentIconLoader.LoadItem(item);
-            _itemIcon.gameObject.SetActive(_itemIcon.sprite != null);
-        }
-
-        private void PositionItemTip(Vector2 anchorScreenPoint)
-        {
-            if (_itemTip == null || _panel == null || _itemTip.transform is not RectTransform tipRect)
-            {
-                return;
-            }
-
-            RectTransform parent = tipRect.parent as RectTransform;
-            if (parent == null)
-            {
-                return;
-            }
-
-            tipRect.anchorMin = new Vector2(0.5f, 0.5f);
-            tipRect.anchorMax = new Vector2(0.5f, 0.5f);
-            tipRect.pivot = new Vector2(0.5f, 0.5f);
-
-            float gap = 12f;
-            Vector2 above = _panel.anchoredPosition
-                + Vector2.up * (_panel.rect.height * 0.5f + tipRect.rect.height * 0.5f + gap);
-            Rect bounds = parent.rect;
-            float halfW = Mathf.Max(1f, tipRect.rect.width * 0.5f);
-            float halfH = Mathf.Max(1f, tipRect.rect.height * 0.5f);
-            if (above.y + halfH > bounds.yMax)
-            {
-                above.y = _panel.anchoredPosition.y
-                    - (_panel.rect.height * 0.5f + tipRect.rect.height * 0.5f + gap);
-            }
-
-            above.x = Mathf.Clamp(above.x, bounds.xMin + halfW, bounds.xMax - halfW);
-            above.y = Mathf.Clamp(above.y, bounds.yMin + halfH, bounds.yMax - halfH);
-            tipRect.anchoredPosition = above;
-
-            Canvas canvas = GetComponentInParent<Canvas>();
-            Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
-            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, anchorScreenPoint, cam, out Vector2 anchorLocal))
-            {
-                bool termsLeft = tipRect.anchoredPosition.x < anchorLocal.x;
-                _itemTip.OnPlacedAroundTarget(termsLeft);
-                PositionItemIcon(parent, tipRect, termsLeft);
-            }
-        }
-
-        private void PositionItemIcon(RectTransform parent, RectTransform tipRect, bool termsLeft)
-        {
-            if (_itemIcon == null || !_itemIcon.gameObject.activeSelf)
-            {
-                return;
-            }
-
-            RectTransform iconRect = _itemIcon.rectTransform;
-            iconRect.anchorMin = new Vector2(0.5f, 0.5f);
-            iconRect.anchorMax = new Vector2(0.5f, 0.5f);
-            iconRect.pivot = new Vector2(0.5f, 0.5f);
-            iconRect.sizeDelta = new Vector2(88f, 88f);
-
-            float direction = termsLeft ? 1f : -1f;
-            Vector2 position = tipRect.anchoredPosition
-                + Vector2.right * direction * (tipRect.rect.width * 0.5f + 54f);
-            Rect bounds = parent.rect;
-            float half = iconRect.sizeDelta.x * 0.5f;
-            position.x = Mathf.Clamp(position.x, bounds.xMin + half, bounds.xMax - half);
-            position.y = Mathf.Clamp(position.y, bounds.yMin + half, bounds.yMax - half);
-            iconRect.anchoredPosition = position;
-            iconRect.SetAsLastSibling();
         }
 
         private void ClampPanel(RectTransform parent)
