@@ -27,10 +27,60 @@
     "materialIds": []
   },
   {
-    "id": "frag_4_1",
+    "id": "frag_2_1",
     "baseWeight": 1400,
     "hiddenRange": {
       "min": 10,
+      "max": 100
+    },
+    "shapeRows": [
+      "XX"
+    ],
+    "materialIds": []
+  },
+  {
+    "id": "frag_3_1",
+    "baseWeight": 1400,
+    "hiddenRange": {
+      "min": 10,
+      "max": 100
+    },
+    "shapeRows": [
+      "XXX"
+    ],
+    "materialIds": []
+  },
+  {
+    "id": "frag_3_2",
+    "baseWeight": 1400,
+    "hiddenRange": {
+      "min": 10,
+      "max": 100
+    },
+    "shapeRows": [
+      "XX",
+      ".X"
+    ],
+    "materialIds": []
+  },
+  {
+    "id": "frag_3_3",
+    "baseWeight": 1400,
+    "hiddenRange": {
+      "min": 10,
+      "max": 100
+    },
+    "shapeRows": [
+      "XX",
+      "X."
+    ],
+    "materialIds": []
+  },
+  {
+    "id": "frag_4_1",
+    "baseWeight": 1400,
+    "hiddenRange": {
+      "min": 24,
       "max": 100
     },
     "shapeRows": [
@@ -43,7 +93,7 @@
     "id": "frag_4_2",
     "baseWeight": 1400,
     "hiddenRange": {
-      "min": 10,
+      "min": 24,
       "max": 100
     },
     "shapeRows": [
@@ -57,7 +107,7 @@
     "id": "frag_4_3",
     "baseWeight": 1400,
     "hiddenRange": {
-      "min": 10,
+      "min": 24,
       "max": 100
     },
     "shapeRows": [
@@ -71,7 +121,7 @@
     "id": "frag_4_4",
     "baseWeight": 1400,
     "hiddenRange": {
-      "min": 10,
+      "min": 24,
       "max": 100
     },
     "shapeRows": [
@@ -85,7 +135,7 @@
     "id": "frag_4_5",
     "baseWeight": 1400,
     "hiddenRange": {
-      "min": 10,
+      "min": 24,
       "max": 100
     },
     "shapeRows": [
@@ -99,7 +149,7 @@
     "id": "frag_4_6",
     "baseWeight": 1400,
     "hiddenRange": {
-      "min": 10,
+      "min": 24,
       "max": 100
     },
     "shapeRows": [
@@ -114,7 +164,7 @@
     "id": "frag_5_1",
     "baseWeight": 1400,
     "hiddenRange": {
-      "min": 30,
+      "min": 40,
       "max": 100
     },
     "shapeRows": [
@@ -127,7 +177,7 @@
     "id": "frag_5_2",
     "baseWeight": 1400,
     "hiddenRange": {
-      "min": 30,
+      "min": 40,
       "max": 100
     },
     "shapeRows": [
@@ -140,7 +190,7 @@
     "id": "frag_5_3",
     "baseWeight": 1400,
     "hiddenRange": {
-      "min": 30,
+      "min": 40,
       "max": 100
     },
     "shapeRows": [
@@ -153,7 +203,7 @@
     "id": "frag_5_4",
     "baseWeight": 1400,
     "hiddenRange": {
-      "min": 30,
+      "min": 40,
       "max": 100
     },
     "shapeRows": [
@@ -166,7 +216,7 @@
     "id": "frag_6_1",
     "baseWeight": 1400,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -179,7 +229,7 @@
     "id": "frag_6_2",
     "baseWeight": 1400,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -193,7 +243,7 @@
     "id": "frag_6_3",
     "baseWeight": 1400,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -207,7 +257,7 @@
     "id": "frag_8_1",
     "baseWeight": 1400,
     "hiddenRange": {
-      "min": 50,
+      "min": 60,
       "max": 100
     },
     "shapeRows": [
@@ -220,7 +270,7 @@
     "id": "frag_9_1",
     "baseWeight": 1400,
     "hiddenRange": {
-      "min": 50,
+      "min": 60,
       "max": 100
     },
     "shapeRows": [
@@ -231,10 +281,68 @@
     "materialIds": []
   },
   {
-    "id": "frag_4_1_m_cherry",
+    "id": "frag_2_1_m_cherry",
     "baseWeight": 50,
     "hiddenRange": {
       "min": 40,
+      "max": 100
+    },
+    "shapeRows": [
+      "XX"
+    ],
+    "materialIds": [
+      "m_cherry"
+    ]
+  },
+  {
+    "id": "frag_3_1_m_cherry",
+    "baseWeight": 50,
+    "hiddenRange": {
+      "min": 40,
+      "max": 100
+    },
+    "shapeRows": [
+      "XXX"
+    ],
+    "materialIds": [
+      "m_cherry"
+    ]
+  },
+  {
+    "id": "frag_3_2_m_cherry",
+    "baseWeight": 50,
+    "hiddenRange": {
+      "min": 40,
+      "max": 100
+    },
+    "shapeRows": [
+      "XX",
+      ".X"
+    ],
+    "materialIds": [
+      "m_cherry"
+    ]
+  },
+  {
+    "id": "frag_3_3_m_cherry",
+    "baseWeight": 50,
+    "hiddenRange": {
+      "min": 40,
+      "max": 100
+    },
+    "shapeRows": [
+      "XX",
+      "X."
+    ],
+    "materialIds": [
+      "m_cherry"
+    ]
+  },
+  {
+    "id": "frag_4_1_m_cherry",
+    "baseWeight": 50,
+    "hiddenRange": {
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -249,7 +357,7 @@
     "id": "frag_4_2_m_cherry",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -265,7 +373,7 @@
     "id": "frag_4_3_m_cherry",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -281,7 +389,7 @@
     "id": "frag_4_4_m_cherry",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -297,7 +405,7 @@
     "id": "frag_4_5_m_cherry",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -313,7 +421,7 @@
     "id": "frag_4_6_m_cherry",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -330,7 +438,7 @@
     "id": "frag_5_1_m_cherry",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 60,
       "max": 100
     },
     "shapeRows": [
@@ -345,7 +453,7 @@
     "id": "frag_5_2_m_cherry",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 60,
       "max": 100
     },
     "shapeRows": [
@@ -360,7 +468,7 @@
     "id": "frag_5_3_m_cherry",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 60,
       "max": 100
     },
     "shapeRows": [
@@ -375,7 +483,7 @@
     "id": "frag_5_4_m_cherry",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 60,
       "max": 100
     },
     "shapeRows": [
@@ -390,7 +498,7 @@
     "id": "frag_6_1_m_cherry",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -405,7 +513,7 @@
     "id": "frag_6_2_m_cherry",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -421,7 +529,7 @@
     "id": "frag_6_3_m_cherry",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -437,7 +545,7 @@
     "id": "frag_8_1_m_cherry",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 60,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -452,7 +560,7 @@
     "id": "frag_9_1_m_cherry",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 60,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -465,10 +573,68 @@
     ]
   },
   {
-    "id": "frag_4_1_m_walnut",
+    "id": "frag_2_1_m_walnut",
     "baseWeight": 50,
     "hiddenRange": {
       "min": 40,
+      "max": 100
+    },
+    "shapeRows": [
+      "XX"
+    ],
+    "materialIds": [
+      "m_walnut"
+    ]
+  },
+  {
+    "id": "frag_3_1_m_walnut",
+    "baseWeight": 50,
+    "hiddenRange": {
+      "min": 40,
+      "max": 100
+    },
+    "shapeRows": [
+      "XXX"
+    ],
+    "materialIds": [
+      "m_walnut"
+    ]
+  },
+  {
+    "id": "frag_3_2_m_walnut",
+    "baseWeight": 50,
+    "hiddenRange": {
+      "min": 40,
+      "max": 100
+    },
+    "shapeRows": [
+      "XX",
+      ".X"
+    ],
+    "materialIds": [
+      "m_walnut"
+    ]
+  },
+  {
+    "id": "frag_3_3_m_walnut",
+    "baseWeight": 50,
+    "hiddenRange": {
+      "min": 40,
+      "max": 100
+    },
+    "shapeRows": [
+      "XX",
+      "X."
+    ],
+    "materialIds": [
+      "m_walnut"
+    ]
+  },
+  {
+    "id": "frag_4_1_m_walnut",
+    "baseWeight": 50,
+    "hiddenRange": {
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -483,7 +649,7 @@
     "id": "frag_4_2_m_walnut",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -499,7 +665,7 @@
     "id": "frag_4_3_m_walnut",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -515,7 +681,7 @@
     "id": "frag_4_4_m_walnut",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -531,7 +697,7 @@
     "id": "frag_4_5_m_walnut",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -547,7 +713,7 @@
     "id": "frag_4_6_m_walnut",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -564,7 +730,7 @@
     "id": "frag_5_1_m_walnut",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 60,
       "max": 100
     },
     "shapeRows": [
@@ -579,7 +745,7 @@
     "id": "frag_5_2_m_walnut",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 60,
       "max": 100
     },
     "shapeRows": [
@@ -594,7 +760,7 @@
     "id": "frag_5_3_m_walnut",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 60,
       "max": 100
     },
     "shapeRows": [
@@ -609,7 +775,7 @@
     "id": "frag_5_4_m_walnut",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 60,
       "max": 100
     },
     "shapeRows": [
@@ -624,7 +790,7 @@
     "id": "frag_6_1_m_walnut",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -639,7 +805,7 @@
     "id": "frag_6_2_m_walnut",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -655,7 +821,7 @@
     "id": "frag_6_3_m_walnut",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -671,7 +837,7 @@
     "id": "frag_8_1_m_walnut",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 60,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -686,7 +852,7 @@
     "id": "frag_9_1_m_walnut",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 60,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -699,10 +865,68 @@
     ]
   },
   {
-    "id": "frag_4_1_m_marble",
+    "id": "frag_2_1_m_marble",
     "baseWeight": 50,
     "hiddenRange": {
       "min": 40,
+      "max": 100
+    },
+    "shapeRows": [
+      "XX"
+    ],
+    "materialIds": [
+      "m_marble"
+    ]
+  },
+  {
+    "id": "frag_3_1_m_marble",
+    "baseWeight": 50,
+    "hiddenRange": {
+      "min": 40,
+      "max": 100
+    },
+    "shapeRows": [
+      "XXX"
+    ],
+    "materialIds": [
+      "m_marble"
+    ]
+  },
+  {
+    "id": "frag_3_2_m_marble",
+    "baseWeight": 50,
+    "hiddenRange": {
+      "min": 40,
+      "max": 100
+    },
+    "shapeRows": [
+      "XX",
+      ".X"
+    ],
+    "materialIds": [
+      "m_marble"
+    ]
+  },
+  {
+    "id": "frag_3_3_m_marble",
+    "baseWeight": 50,
+    "hiddenRange": {
+      "min": 40,
+      "max": 100
+    },
+    "shapeRows": [
+      "XX",
+      "X."
+    ],
+    "materialIds": [
+      "m_marble"
+    ]
+  },
+  {
+    "id": "frag_4_1_m_marble",
+    "baseWeight": 50,
+    "hiddenRange": {
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -717,7 +941,7 @@
     "id": "frag_4_2_m_marble",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -733,7 +957,7 @@
     "id": "frag_4_3_m_marble",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -749,7 +973,7 @@
     "id": "frag_4_4_m_marble",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -765,7 +989,7 @@
     "id": "frag_4_5_m_marble",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -781,7 +1005,7 @@
     "id": "frag_4_6_m_marble",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -798,7 +1022,7 @@
     "id": "frag_5_1_m_marble",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 60,
       "max": 100
     },
     "shapeRows": [
@@ -813,7 +1037,7 @@
     "id": "frag_5_2_m_marble",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 60,
       "max": 100
     },
     "shapeRows": [
@@ -828,7 +1052,7 @@
     "id": "frag_5_3_m_marble",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 60,
       "max": 100
     },
     "shapeRows": [
@@ -843,7 +1067,7 @@
     "id": "frag_5_4_m_marble",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 60,
       "max": 100
     },
     "shapeRows": [
@@ -858,7 +1082,7 @@
     "id": "frag_6_1_m_marble",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -873,7 +1097,7 @@
     "id": "frag_6_2_m_marble",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -889,7 +1113,7 @@
     "id": "frag_6_3_m_marble",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -905,7 +1129,7 @@
     "id": "frag_8_1_m_marble",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 60,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -920,7 +1144,7 @@
     "id": "frag_9_1_m_marble",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 60,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -933,10 +1157,68 @@
     ]
   },
   {
-    "id": "frag_4_1_m_obsidian",
+    "id": "frag_2_1_m_obsidian",
     "baseWeight": 50,
     "hiddenRange": {
       "min": 40,
+      "max": 100
+    },
+    "shapeRows": [
+      "XX"
+    ],
+    "materialIds": [
+      "m_obsidian"
+    ]
+  },
+  {
+    "id": "frag_3_1_m_obsidian",
+    "baseWeight": 50,
+    "hiddenRange": {
+      "min": 40,
+      "max": 100
+    },
+    "shapeRows": [
+      "XXX"
+    ],
+    "materialIds": [
+      "m_obsidian"
+    ]
+  },
+  {
+    "id": "frag_3_2_m_obsidian",
+    "baseWeight": 50,
+    "hiddenRange": {
+      "min": 40,
+      "max": 100
+    },
+    "shapeRows": [
+      "XX",
+      ".X"
+    ],
+    "materialIds": [
+      "m_obsidian"
+    ]
+  },
+  {
+    "id": "frag_3_3_m_obsidian",
+    "baseWeight": 50,
+    "hiddenRange": {
+      "min": 40,
+      "max": 100
+    },
+    "shapeRows": [
+      "XX",
+      "X."
+    ],
+    "materialIds": [
+      "m_obsidian"
+    ]
+  },
+  {
+    "id": "frag_4_1_m_obsidian",
+    "baseWeight": 50,
+    "hiddenRange": {
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -951,7 +1233,7 @@
     "id": "frag_4_2_m_obsidian",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -967,7 +1249,7 @@
     "id": "frag_4_3_m_obsidian",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -983,7 +1265,7 @@
     "id": "frag_4_4_m_obsidian",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -999,7 +1281,7 @@
     "id": "frag_4_5_m_obsidian",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -1015,7 +1297,7 @@
     "id": "frag_4_6_m_obsidian",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -1032,7 +1314,7 @@
     "id": "frag_5_1_m_obsidian",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 60,
       "max": 100
     },
     "shapeRows": [
@@ -1047,7 +1329,7 @@
     "id": "frag_5_2_m_obsidian",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 60,
       "max": 100
     },
     "shapeRows": [
@@ -1062,7 +1344,7 @@
     "id": "frag_5_3_m_obsidian",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 60,
       "max": 100
     },
     "shapeRows": [
@@ -1077,7 +1359,7 @@
     "id": "frag_5_4_m_obsidian",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 60,
       "max": 100
     },
     "shapeRows": [
@@ -1092,7 +1374,7 @@
     "id": "frag_6_1_m_obsidian",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -1107,7 +1389,7 @@
     "id": "frag_6_2_m_obsidian",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -1123,7 +1405,7 @@
     "id": "frag_6_3_m_obsidian",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -1139,7 +1421,7 @@
     "id": "frag_8_1_m_obsidian",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 60,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -1154,7 +1436,7 @@
     "id": "frag_9_1_m_obsidian",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 60,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -1167,10 +1449,68 @@
     ]
   },
   {
-    "id": "frag_4_1_m_emerald",
+    "id": "frag_2_1_m_emerald",
     "baseWeight": 50,
     "hiddenRange": {
       "min": 40,
+      "max": 100
+    },
+    "shapeRows": [
+      "XX"
+    ],
+    "materialIds": [
+      "m_emerald"
+    ]
+  },
+  {
+    "id": "frag_3_1_m_emerald",
+    "baseWeight": 50,
+    "hiddenRange": {
+      "min": 40,
+      "max": 100
+    },
+    "shapeRows": [
+      "XXX"
+    ],
+    "materialIds": [
+      "m_emerald"
+    ]
+  },
+  {
+    "id": "frag_3_2_m_emerald",
+    "baseWeight": 50,
+    "hiddenRange": {
+      "min": 40,
+      "max": 100
+    },
+    "shapeRows": [
+      "XX",
+      ".X"
+    ],
+    "materialIds": [
+      "m_emerald"
+    ]
+  },
+  {
+    "id": "frag_3_3_m_emerald",
+    "baseWeight": 50,
+    "hiddenRange": {
+      "min": 40,
+      "max": 100
+    },
+    "shapeRows": [
+      "XX",
+      "X."
+    ],
+    "materialIds": [
+      "m_emerald"
+    ]
+  },
+  {
+    "id": "frag_4_1_m_emerald",
+    "baseWeight": 50,
+    "hiddenRange": {
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -1185,7 +1525,7 @@
     "id": "frag_4_2_m_emerald",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -1201,7 +1541,7 @@
     "id": "frag_4_3_m_emerald",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -1217,7 +1557,7 @@
     "id": "frag_4_4_m_emerald",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -1233,7 +1573,7 @@
     "id": "frag_4_5_m_emerald",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -1249,7 +1589,7 @@
     "id": "frag_4_6_m_emerald",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -1266,7 +1606,7 @@
     "id": "frag_5_1_m_emerald",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 60,
       "max": 100
     },
     "shapeRows": [
@@ -1281,7 +1621,7 @@
     "id": "frag_5_2_m_emerald",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 60,
       "max": 100
     },
     "shapeRows": [
@@ -1296,7 +1636,7 @@
     "id": "frag_5_3_m_emerald",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 60,
       "max": 100
     },
     "shapeRows": [
@@ -1311,7 +1651,7 @@
     "id": "frag_5_4_m_emerald",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 60,
       "max": 100
     },
     "shapeRows": [
@@ -1326,7 +1666,7 @@
     "id": "frag_6_1_m_emerald",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -1341,7 +1681,7 @@
     "id": "frag_6_2_m_emerald",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -1357,7 +1697,7 @@
     "id": "frag_6_3_m_emerald",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -1373,7 +1713,7 @@
     "id": "frag_8_1_m_emerald",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 60,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -1388,7 +1728,7 @@
     "id": "frag_9_1_m_emerald",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 60,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -1401,10 +1741,68 @@
     ]
   },
   {
-    "id": "frag_4_1_m_gold",
+    "id": "frag_2_1_m_gold",
     "baseWeight": 50,
     "hiddenRange": {
       "min": 40,
+      "max": 100
+    },
+    "shapeRows": [
+      "XX"
+    ],
+    "materialIds": [
+      "m_gold"
+    ]
+  },
+  {
+    "id": "frag_3_1_m_gold",
+    "baseWeight": 50,
+    "hiddenRange": {
+      "min": 40,
+      "max": 100
+    },
+    "shapeRows": [
+      "XXX"
+    ],
+    "materialIds": [
+      "m_gold"
+    ]
+  },
+  {
+    "id": "frag_3_2_m_gold",
+    "baseWeight": 50,
+    "hiddenRange": {
+      "min": 40,
+      "max": 100
+    },
+    "shapeRows": [
+      "XX",
+      ".X"
+    ],
+    "materialIds": [
+      "m_gold"
+    ]
+  },
+  {
+    "id": "frag_3_3_m_gold",
+    "baseWeight": 50,
+    "hiddenRange": {
+      "min": 40,
+      "max": 100
+    },
+    "shapeRows": [
+      "XX",
+      "X."
+    ],
+    "materialIds": [
+      "m_gold"
+    ]
+  },
+  {
+    "id": "frag_4_1_m_gold",
+    "baseWeight": 50,
+    "hiddenRange": {
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -1419,7 +1817,7 @@
     "id": "frag_4_2_m_gold",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -1435,7 +1833,7 @@
     "id": "frag_4_3_m_gold",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -1451,7 +1849,7 @@
     "id": "frag_4_4_m_gold",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -1467,7 +1865,7 @@
     "id": "frag_4_5_m_gold",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -1483,7 +1881,7 @@
     "id": "frag_4_6_m_gold",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -1500,7 +1898,7 @@
     "id": "frag_5_1_m_gold",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 60,
       "max": 100
     },
     "shapeRows": [
@@ -1515,7 +1913,7 @@
     "id": "frag_5_2_m_gold",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 60,
       "max": 100
     },
     "shapeRows": [
@@ -1530,7 +1928,7 @@
     "id": "frag_5_3_m_gold",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 60,
       "max": 100
     },
     "shapeRows": [
@@ -1545,7 +1943,7 @@
     "id": "frag_5_4_m_gold",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 60,
       "max": 100
     },
     "shapeRows": [
@@ -1560,7 +1958,7 @@
     "id": "frag_6_1_m_gold",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -1575,7 +1973,7 @@
     "id": "frag_6_2_m_gold",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -1591,7 +1989,7 @@
     "id": "frag_6_3_m_gold",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -1607,7 +2005,7 @@
     "id": "frag_8_1_m_gold",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 60,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -1622,7 +2020,7 @@
     "id": "frag_9_1_m_gold",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 60,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -1635,10 +2033,68 @@
     ]
   },
   {
-    "id": "frag_4_1_m_silver",
+    "id": "frag_2_1_m_silver",
     "baseWeight": 50,
     "hiddenRange": {
       "min": 40,
+      "max": 100
+    },
+    "shapeRows": [
+      "XX"
+    ],
+    "materialIds": [
+      "m_silver"
+    ]
+  },
+  {
+    "id": "frag_3_1_m_silver",
+    "baseWeight": 50,
+    "hiddenRange": {
+      "min": 40,
+      "max": 100
+    },
+    "shapeRows": [
+      "XXX"
+    ],
+    "materialIds": [
+      "m_silver"
+    ]
+  },
+  {
+    "id": "frag_3_2_m_silver",
+    "baseWeight": 50,
+    "hiddenRange": {
+      "min": 40,
+      "max": 100
+    },
+    "shapeRows": [
+      "XX",
+      ".X"
+    ],
+    "materialIds": [
+      "m_silver"
+    ]
+  },
+  {
+    "id": "frag_3_3_m_silver",
+    "baseWeight": 50,
+    "hiddenRange": {
+      "min": 40,
+      "max": 100
+    },
+    "shapeRows": [
+      "XX",
+      "X."
+    ],
+    "materialIds": [
+      "m_silver"
+    ]
+  },
+  {
+    "id": "frag_4_1_m_silver",
+    "baseWeight": 50,
+    "hiddenRange": {
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -1653,7 +2109,7 @@
     "id": "frag_4_2_m_silver",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -1669,7 +2125,7 @@
     "id": "frag_4_3_m_silver",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -1685,7 +2141,7 @@
     "id": "frag_4_4_m_silver",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -1701,7 +2157,7 @@
     "id": "frag_4_5_m_silver",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -1717,7 +2173,7 @@
     "id": "frag_4_6_m_silver",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 40,
+      "min": 50,
       "max": 100
     },
     "shapeRows": [
@@ -1734,7 +2190,7 @@
     "id": "frag_5_1_m_silver",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 60,
       "max": 100
     },
     "shapeRows": [
@@ -1749,7 +2205,7 @@
     "id": "frag_5_2_m_silver",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 60,
       "max": 100
     },
     "shapeRows": [
@@ -1764,7 +2220,7 @@
     "id": "frag_5_3_m_silver",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 60,
       "max": 100
     },
     "shapeRows": [
@@ -1779,7 +2235,7 @@
     "id": "frag_5_4_m_silver",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 60,
       "max": 100
     },
     "shapeRows": [
@@ -1794,7 +2250,7 @@
     "id": "frag_6_1_m_silver",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -1809,7 +2265,7 @@
     "id": "frag_6_2_m_silver",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -1825,7 +2281,7 @@
     "id": "frag_6_3_m_silver",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 50,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -1841,7 +2297,7 @@
     "id": "frag_8_1_m_silver",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 60,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [
@@ -1856,7 +2312,7 @@
     "id": "frag_9_1_m_silver",
     "baseWeight": 50,
     "hiddenRange": {
-      "min": 60,
+      "min": 70,
       "max": 100
     },
     "shapeRows": [

@@ -124,7 +124,9 @@ namespace GourmetProject.Gameplay.Scoring
 
                 case ItemScoreEffectType.CountThresholdFinalMult:
                 {
-                    int count = dishes.Count;
+                    // 「食物数门槛」统一读取每道菜本次结算的实际 CountAs：
+                    // 静态 CountAs、菜品运行时加成、技能 AddCountAs 与 item_count_as_all 都已汇总在这里。
+                    int count = dishes.Sum(ctx.GetEffectiveCountAs);
                     if (MatchesThreshold(count, _spec.Param))
                     {
                         ctx.MultiplyFinalBy(value);

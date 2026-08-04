@@ -99,17 +99,21 @@ namespace GourmetProject.Game.Meta
                 extraTargetScoreHiddenOffset += run.ConsumeNextFoodTargetScoreHiddenOffset();
             }
 
-            if (run != null
-                && food != null
-                && food.ActionKind != cfg.FoodActionKind.Feast
-                && run.ScoreToOneRemaining > 0)
+            var itemRuntime = new ItemRuntime(run);
+            bool isBusiness = food != null
+                && (food.ActionKind == cfg.FoodActionKind.Normal
+                    || food.ActionKind == cfg.FoodActionKind.Super);
+            if (run != null && isBusiness && run.ScoreToOneRemaining > 0)
             {
+                run.ConsumeScoreToOneMeal();
+                itemRuntime.RefreshIconState(m => m.ItemId == "item_score_to_one");
+                itemRuntime.RefreshInfoText(m => m.ItemId == "item_score_to_one");
                 return 1;
             }
 
             int hiddenCurveTarget = HiddenScoreService.TargetScore(run, context, extraTargetScoreHiddenOffset);
-            return food != null && food.ActionKind == cfg.FoodActionKind.Feast
-                ? new ItemRuntime(run).ModifyRequiredScore(hiddenCurveTarget, cfg.FoodActionKind.Feast)
+            return food != null
+                ? itemRuntime.ModifyRequiredScore(hiddenCurveTarget, food.ActionKind)
                 : hiddenCurveTarget;
         }
     }

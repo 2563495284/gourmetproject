@@ -5,6 +5,22 @@ using GourmetProject.Game.Run;
 
 namespace GourmetProject.Game.Meta
 {
+    public sealed class FoodSettlementReward
+    {
+        public FoodSettlementReward(string sourceItemId, string title, RewardOffer offer)
+        {
+            SourceItemId = sourceItemId ?? string.Empty;
+            Title = title ?? string.Empty;
+            Offer = offer;
+        }
+
+        public string SourceItemId { get; }
+
+        public string Title { get; }
+
+        public RewardOffer Offer { get; }
+    }
+
     /// <summary>
     /// 道具「钩子分发器」门面（对标杀戮尖塔2 的 Hook）：只遍历当前 Run 在场（持有）的被动道具模型
     /// <see cref="PassiveItemModel"/>，按各钩子语义折叠（求和/取最大/累乘/任一）。未持有即无模型、无副作用。
@@ -143,7 +159,7 @@ namespace GourmetProject.Game.Meta
             return result < 0 ? 0 : result;
         }
 
-        public int EventCompleteGold() => SumInt(m => m.EventCompleteGold());
+        public int EventEnterGold() => SumInt(m => m.EventEnterGold());
 
         public int BossCompleteGold() => SumInt(m => m.BossCompleteGold());
 
@@ -210,6 +226,15 @@ namespace GourmetProject.Game.Meta
         {
             float chance = SumFloat(m => m.TimelineStopChance());
             return System.Math.Max(0f, System.Math.Min(1f, chance));
+        }
+
+        /// <summary>新一周行动轴建立后，让当前持有的被动模型各自应用配置驱动的周效果。</summary>
+        public void ApplyWeekTimelinePassives()
+        {
+            foreach (PassiveItemModel m in Models)
+            {
+                m.ApplyToWeekTimeline();
+            }
         }
 
         public bool TryConsumeTimelineSkip(cfg.ActionBehavior behavior)
@@ -281,6 +306,28 @@ namespace GourmetProject.Game.Meta
             return offer;
         }
 
+        /// <summary>结算 Food 战斗，并收集需要走独立通用领奖队列的被动奖励。</summary>
+        public IReadOnlyList<FoodSettlementReward> OnFoodBattleSettled(
+            ActionExecutionContext actionContext,
+            bool survived,
+            IRandomStream rng)
+        {
+            var rewards = new List<FoodSettlementReward>();
+            foreach (PassiveItemModel m in Models)
+            {
+                RewardOffer offer = m.OnFoodBattleSettled(actionContext, survived, rng);
+                if (offer != null)
+                {
+                    rewards.Add(new FoodSettlementReward(
+                        m.ItemId,
+                        m.FoodBattleSettlementRewardTitle,
+                        offer));
+                }
+            }
+
+            return rewards;
+        }
+
         public float SweetTransferTargetMultiplier()
         {
             float best = 1f;
@@ -317,7 +364,14 @@ namespace GourmetProject.Game.Meta
         /// <summary>遇到事件的额外概率（累加）。</summary>
         public float MoreEventsBonus() => SumFloat(m => m.MoreEventsBonus());
 
-        /// <summary>每 N 个事件保底一个奖励事件的周期（取最大；无则 0）。</summary>
+        /// <summary>包含 Super 行动的大组权重增幅（累加）。</summary>
+        public float SuperActionLargeGroupWeightBonus() =>
+            SumFloat(m => m.SuperActionLargeGroupWeightBonus());
+
+        /// <summary>抽奖机中奖归一概率增幅（累加）。</summary>
+        public float SlotWinChanceBonus() => SumFloat(m => m.SlotWinChanceBonus());
+
+        /// <summary>奖励保底前需要经历的自然事件抽取数（取最大；无则 0）。</summary>
         public int LuckyEventGuaranteeEvery() => MaxInt(m => m.LuckyEventGuaranteeEvery());
 
         // ================= 隐藏分族 =================

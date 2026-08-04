@@ -78,21 +78,7 @@ namespace GourmetProject.Game.Meta
 
         private static void ApplyWeekTimelinePassives(GameRun run)
         {
-            if (run == null)
-            {
-                return;
-            }
-
-            if (run.HasItem("item_extra_day"))
-            {
-                run.EnsureTimelineLengthAtLeast(8);
-            }
-
-            // 复利账户每周生成一次新的周末利息节点；被玩家删除后本周不会再次补建。
-            if (run.HasItem("item_extra_interest"))
-            {
-                run.AddWeekEndAnchoredTimelineNode("act_interest", "item_extra_interest");
-            }
+            new ItemRuntime(run).ApplyWeekTimelinePassives();
         }
 
         /// <summary>节点引用的原子行动（放置来源）。节点只是「在某天放置某个 action」的引用。</summary>

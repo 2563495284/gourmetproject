@@ -29,9 +29,7 @@ public sealed partial class PassiveItem : Luban.BeanBase
         { if(!_buf["targetScoreHiddenOffset"].IsNumber) { throw new SerializationException(); }  TargetScoreHiddenOffset = _buf["targetScoreHiddenOffset"]; }
         { if(!_buf["dishHiddenOffset"].IsNumber) { throw new SerializationException(); }  DishHiddenOffset = _buf["dishHiddenOffset"]; }
         { if(!_buf["passiveItemHiddenOffset"].IsNumber) { throw new SerializationException(); }  PassiveItemHiddenOffset = _buf["passiveItemHiddenOffset"]; }
-        { if(!_buf["activeItemHiddenOffset"].IsNumber) { throw new SerializationException(); }  ActiveItemHiddenOffset = _buf["activeItemHiddenOffset"]; }
         { if(!_buf["fragmentHiddenOffset"].IsNumber) { throw new SerializationException(); }  FragmentHiddenOffset = _buf["fragmentHiddenOffset"]; }
-        { if(!_buf["goldHiddenOffset"].IsNumber) { throw new SerializationException(); }  GoldHiddenOffset = _buf["goldHiddenOffset"]; }
         { if(!_buf["termId"].IsString) { throw new SerializationException(); }  TermId = _buf["termId"]; }
         { if(!_buf["price"].IsNumber) { throw new SerializationException(); }  Price = _buf["price"]; }
     }
@@ -90,19 +88,11 @@ public sealed partial class PassiveItem : Luban.BeanBase
     /// </summary>
     public readonly int PassiveItemHiddenOffset;
     /// <summary>
-    /// 主动道具隐藏分修正
-    /// </summary>
-    public readonly int ActiveItemHiddenOffset;
-    /// <summary>
     /// 餐桌格子隐藏分修正
     /// </summary>
     public readonly int FragmentHiddenOffset;
     /// <summary>
-    /// 金币隐藏分修正
-    /// </summary>
-    public readonly int GoldHiddenOffset;
-    /// <summary>
-    /// 关联术语ID(可空,| 分隔)
+    /// 关联术语ID(,| 分隔)
     /// </summary>
     public readonly string TermId;
     /// <summary>
@@ -133,9 +123,7 @@ public sealed partial class PassiveItem : Luban.BeanBase
         + "targetScoreHiddenOffset:" + TargetScoreHiddenOffset + ","
         + "dishHiddenOffset:" + DishHiddenOffset + ","
         + "passiveItemHiddenOffset:" + PassiveItemHiddenOffset + ","
-        + "activeItemHiddenOffset:" + ActiveItemHiddenOffset + ","
         + "fragmentHiddenOffset:" + FragmentHiddenOffset + ","
-        + "goldHiddenOffset:" + GoldHiddenOffset + ","
         + "termId:" + TermId + ","
         + "price:" + Price + ","
         + "}";

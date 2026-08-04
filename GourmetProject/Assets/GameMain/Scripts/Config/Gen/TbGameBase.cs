@@ -128,6 +128,10 @@ public partial class TbGameBase
     /// </summary>
      public System.Collections.Generic.List<string> ServeCookieDishIds => _data.ServeCookieDishIds;
     /// <summary>
+    /// 每次进入商店最多可购买碎片包次数（0=不限）
+    /// </summary>
+     public int ShopFragmentPackPurchaseLimit => _data.ShopFragmentPackPurchaseLimit;
+    /// <summary>
     /// 开局爱心数量（同时初始化当前爱心与爱心上限）
     /// </summary>
      public int InitialHeartCount => _data.InitialHeartCount;

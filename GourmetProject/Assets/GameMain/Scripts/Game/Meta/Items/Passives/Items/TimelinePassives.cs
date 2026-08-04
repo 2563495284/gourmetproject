@@ -40,6 +40,11 @@ namespace GourmetProject.Game.Meta.Passives
     {
         public override bool IsIconUsed => false;
 
+        public override void ApplyToWeekTimeline()
+        {
+            Run?.EnsureTimelineLengthAtLeast(System.Math.Max(1, (int)Value));
+        }
+
         public override void OnAcquired()
         {
             var result = new TimelineMutationResult { Title = Def.Name };

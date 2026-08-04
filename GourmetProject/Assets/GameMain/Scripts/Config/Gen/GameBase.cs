@@ -41,6 +41,7 @@ public sealed partial class GameBase : Luban.BeanBase
         { if(!_buf["shopDeleteDishLimit"].IsNumber) { throw new SerializationException(); }  ShopDeleteDishLimit = _buf["shopDeleteDishLimit"]; }
         { if(!_buf["serveCookiePityCount"].IsNumber) { throw new SerializationException(); }  ServeCookiePityCount = _buf["serveCookiePityCount"]; }
         { var __json0 = _buf["serveCookieDishIds"]; if(!__json0.IsArray) { throw new SerializationException(); } ServeCookieDishIds = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  ServeCookieDishIds.Add(__v0); }   }
+        { if(!_buf["shopFragmentPackPurchaseLimit"].IsNumber) { throw new SerializationException(); }  ShopFragmentPackPurchaseLimit = _buf["shopFragmentPackPurchaseLimit"]; }
         { if(!_buf["initialHeartCount"].IsNumber) { throw new SerializationException(); }  InitialHeartCount = _buf["initialHeartCount"]; }
     }
 
@@ -146,6 +147,10 @@ public sealed partial class GameBase : Luban.BeanBase
     /// </summary>
     public readonly System.Collections.Generic.List<string> ServeCookieDishIds;
     /// <summary>
+    /// 每次进入商店最多可购买碎片包次数（0=不限）
+    /// </summary>
+    public readonly int ShopFragmentPackPurchaseLimit;
+    /// <summary>
     /// 开局爱心数量（同时初始化当前爱心与爱心上限）
     /// </summary>
     public readonly int InitialHeartCount;
@@ -184,6 +189,7 @@ public sealed partial class GameBase : Luban.BeanBase
         + "shopDeleteDishLimit:" + ShopDeleteDishLimit + ","
         + "serveCookiePityCount:" + ServeCookiePityCount + ","
         + "serveCookieDishIds:" + Luban.StringUtil.CollectionToString(ServeCookieDishIds) + ","
+        + "shopFragmentPackPurchaseLimit:" + ShopFragmentPackPurchaseLimit + ","
         + "initialHeartCount:" + InitialHeartCount + ","
         + "}";
     }

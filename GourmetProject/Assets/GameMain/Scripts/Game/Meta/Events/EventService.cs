@@ -256,8 +256,9 @@ namespace GourmetProject.Game.Meta
         /// <summary>
         /// act_event 的完整抽取入口（唯一 choke point）：
         /// - 未持有 LuckyEventGuarantee 道具时，仅走 <see cref="RollActionEvent"/> 合并池抽取，不触碰保底计数。
-        /// - 持有时：累计到 x-1 个 Event 型结果后本次强制从 Reward 池抽（命中则清零计数）；否则走合并池抽取，
-        ///   结果为 Event 型才累加计数。计数状态存于该道具模型（只在持有时存在）。
+        /// - 持有时：配置值表示保底前需要经历的自然抽取数；达到后，下一次强制从 Reward 池抽。
+        /// - 自然抽到 Reward 也只累计、不重置；强制事件队列优先且不消费保底，保底顺延到下一次抽取。
+        ///   计数状态存于该道具模型（只在持有时存在）。
         /// </summary>
         public static cfg.GameEvent RollActionEventWithGuarantee(GameRun run, IRandomStream rng)
         {
@@ -272,10 +273,13 @@ namespace GourmetProject.Game.Meta
             }
 
             PassiveItemModel guarantee = FindGuaranteeModel(run);
+            bool guaranteeDue = false;
             if (guarantee != null)
             {
-                int every = guarantee.LuckyEventGuaranteeEvery();
-                if (every > 0 && guarantee.EventGuaranteeStreak >= every - 1)
+                int precedingNaturalDraws = guarantee.LuckyEventGuaranteeEvery();
+                guaranteeDue = precedingNaturalDraws > 0
+                    && guarantee.EventGuaranteeStreak >= precedingNaturalDraws;
+                if (guaranteeDue)
                 {
                     cfg.GameEvent forced = RollEvent(run, rng, cfg.ActionBehavior.Reward);
                     if (forced != null)
@@ -289,7 +293,7 @@ namespace GourmetProject.Game.Meta
             }
 
             cfg.GameEvent ev = RollActionEvent(run, rng);
-            if (ev != null && guarantee != null && ev.PrimaryEventType == cfg.ActionBehavior.Event)
+            if (ev != null && guarantee != null && !guaranteeDue)
             {
                 guarantee.IncrementEventGuaranteeStreak();
             }
@@ -318,7 +322,7 @@ namespace GourmetProject.Game.Meta
         /// <summary>
         /// 结算某个选项：按序施加它的所有效果（多效果并列 list），返回结果。
         /// 跟进类效果（FoodBattle/Shop/GameOver/Victory）至多一个，作为终止分支返回。
-        /// 不在此写 UsedEventIds / 发放事件金币——那些放到事件「终止」时（<see cref="OnEventFinished"/>）。
+        /// 不在此写 UsedEventIds；事件进入金币由行动编排层在根事件页面打开前发放。
         /// </summary>
         public static EventResolveResult ResolveOption(GameRun run, cfg.EventOption option, IRandomStream rng)
         {
@@ -364,7 +368,7 @@ namespace GourmetProject.Game.Meta
             return EventResolveResult.Immediate(feedbacks.Count > 0 ? string.Join("\n", feedbacks) : string.Empty);
         }
 
-        /// <summary>事件到达终止（选项无子页、终止展示页、或跟进类效果）时调用：记录使用并发放事件金币。</summary>
+        /// <summary>事件到达终止（选项无子页、终止展示页、或跟进类效果）时调用：记录使用。</summary>
         public static void OnEventFinished(GameRun run, cfg.GameEvent ev, EventResolveResult result)
         {
             if (run == null || ev == null)
@@ -373,29 +377,37 @@ namespace GourmetProject.Game.Meta
             }
 
             run.MarkEventUsed(ev.Id);
-            GrantEventCompleteGold(run, result);
         }
 
-        /// <summary>事件即时结算完成时发放道具「事件红包」金币（战斗/结局类事件不在此发放）。</summary>
-        private static void GrantEventCompleteGold(GameRun run, EventResolveResult result)
+        /// <summary>
+        /// 尝试发放当前待处理根事件的进入金币。即使没有对应道具也会记为已处理，
+        /// 防止玩家在同一事件流程中获得道具后倒发；调用方负责紧接着存档。
+        /// </summary>
+        public static bool TryGrantEventEntryGold(GameRun run, out int gold)
         {
-            if (run == null || result == null)
+            gold = 0;
+            PendingActionExecutionSaveData pending = run?.GetPendingActionExecution();
+            cfg.GameAction action = pending == null
+                ? null
+                : run.Tables?.TbAction.GetOrDefault(pending.ActionId);
+            cfg.ActionBehavior behavior = action?.Behavior ?? cfg.ActionBehavior.Effect;
+            bool eligible = behavior == cfg.ActionBehavior.Event
+                || behavior == cfg.ActionBehavior.Reward
+                || behavior == cfg.ActionBehavior.Negative;
+            if (!eligible || !run.TryMarkPendingEventEntryGoldGranted())
             {
-                return;
-            }
-
-            if (result.FollowUpKind != EventFollowUpKind.None && result.FollowUpKind != EventFollowUpKind.Shop)
-            {
-                return;
+                return false;
             }
 
             var itemRuntime = new ItemRuntime(run);
-            int gold = itemRuntime.EventCompleteGold();
+            gold = itemRuntime.EventEnterGold();
             if (gold != 0)
             {
-                itemRuntime.FlashTriggered(m => m.EventCompleteGold() != 0);
+                itemRuntime.FlashTriggered(m => m.EventEnterGold() != 0);
                 run.Gold += gold;
             }
+
+            return true;
         }
 
         private static EventResolveResult ResolveEffect(GameRun run, cfg.EffectType effectType, float effectValue, string effectParam, string fallback, IRandomStream rng)

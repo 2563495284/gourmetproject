@@ -425,15 +425,32 @@ namespace GourmetProject.Game.Orchestration
 
         public void OnBattleSettled(ScoreResult result, bool isWin, int finalHappyCakeLayers)
         {
+            ActionExecutionContext battleContext = CurrentBattleActionContext ?? _run.LastActionContext;
+            cfg.Food battleFood = FoodService.Resolve(_run.Tables, battleContext?.Action);
+            bool isBusiness = battleFood != null
+                && (battleFood.ActionKind == cfg.FoodActionKind.Normal
+                    || battleFood.ActionKind == cfg.FoodActionKind.Super);
+            string settledBattleKey = ResolveSettledBattleKey(battleContext);
+            if (isBusiness && !_run.TryMarkFoodBattleSettled(settledBattleKey))
+            {
+                return;
+            }
+
+            if (battleFood?.ActionKind == cfg.FoodActionKind.Normal)
+            {
+                ApplyNormalMealBonus();
+            }
+
             ApplyCakeLayerRetain(finalHappyCakeLayers);
 
             if (isWin)
             {
+                SettleSuperFoodPassives(battleFood, battleContext, settledBattleKey, survived: true);
                 ApplyCakeLayerGold(finalHappyCakeLayers);
                 Action beforeReward = _beforeBattleReward;
                 _beforeBattleReward = null;
                 beforeReward?.Invoke();
-                EnsurePendingBattleReward(CurrentBattleActionContext);
+                EnsurePendingBattleReward(battleContext);
 
                 // 达标：发奖（不推进周），奖励确认后继续编排。
                 GameApp.UI.OpenUIForm(UIForms.Reward, UIForms.GroupDialog, RewardFormOpenArgs.BattleReward());
@@ -443,12 +460,25 @@ namespace GourmetProject.Game.Orchestration
             if (_run.HeartsRemaining <= 1 && _run.TryConsumeUndying())
             {
                 // 最后一颗心优先由名刀·加护挡下；不扣心、不发奖，沿用原继续逻辑。
+                SettleSuperFoodPassives(battleFood, battleContext, settledBattleKey, survived: true);
                 _beforeBattleReward = null;
                 _currentBattleIsBoss = false;
                 _view.ResetBossBattlePresentation();
                 _view.HideBattleWorld();
+                RunPersistence.Save(_run);
                 _view.ShowNotice("名刀·加护", "分数未达标，但名刀·加护替你挡下了失败（道具已消耗）。", () =>
                 {
+                    if (_run.HasPendingGenericRewards)
+                    {
+                        _run.PendingGenericRewardContinuation = PendingGenericRewardContinuationKind.Battle;
+                        RunPersistence.Save(_run);
+                        GameApp.UI.OpenUIForm(
+                            UIForms.Reward,
+                            UIForms.GroupDialog,
+                            RewardFormOpenArgs.GenericQueue(PendingGenericRewardContinuationKind.Battle));
+                        return;
+                    }
+
                     Action cb = _afterBattleWin;
                     _afterBattleWin = null;
                     CurrentBattleActionContext = null;
@@ -460,6 +490,7 @@ namespace GourmetProject.Game.Orchestration
             if (!_run.TryLoseHeart(out int before, out int after))
             {
                 // 防御性兜底：开发期旧存档或中断状态可能已经为 0；仍必须先展示最后碎心页，不能直跳失败页。
+                SettleSuperFoodPassives(battleFood, battleContext, settledBattleKey, survived: false);
                 _beforeBattleReward = null;
                 _currentBattleIsBoss = false;
                 _view.SavePendingRewardBattleView();
@@ -476,6 +507,7 @@ namespace GourmetProject.Game.Orchestration
             }
 
             bool terminal = after <= 0;
+            SettleSuperFoodPassives(battleFood, battleContext, settledBattleKey, survived: !terminal);
             _run.SetPendingHeartBreak(new PendingHeartBreakSaveData
             {
                 BeforeHeartCount = before,
@@ -490,7 +522,7 @@ namespace GourmetProject.Game.Orchestration
                 Action beforeReward = _beforeBattleReward;
                 _beforeBattleReward = null;
                 beforeReward?.Invoke();
-                EnsurePendingBattleReward(CurrentBattleActionContext);
+                EnsurePendingBattleReward(battleContext);
             }
             else
             {
@@ -501,6 +533,67 @@ namespace GourmetProject.Game.Orchestration
             _currentBattleIsBoss = false;
             RunPersistence.Save(_run);
             ShowPendingHeartBreak();
+        }
+
+        private string ResolveSettledBattleKey(ActionExecutionContext actionContext)
+        {
+            PendingActionExecutionSaveData pending = _run.GetPendingActionExecution();
+            if (!string.IsNullOrEmpty(pending?.BattleKey))
+            {
+                return pending.BattleKey;
+            }
+
+            return GameRun.BuildRewardKey(_run.WeekIndex, _run.CurrentDay, actionContext);
+        }
+
+        private void ApplyNormalMealBonus()
+        {
+            if (_run.MealBonusRemaining <= 0)
+            {
+                return;
+            }
+
+            var itemRuntime = new ItemRuntime(_run);
+            int bonusGold = itemRuntime.MealBonusGoldPerMeal();
+            if (bonusGold != 0)
+            {
+                _run.Gold += bonusGold;
+                itemRuntime.FlashTriggered(m => m.ItemId == "item_gold_meal_bonus");
+            }
+
+            _run.ConsumeMealBonusMeal();
+            itemRuntime.RefreshIconState(m => m.ItemId == "item_gold_meal_bonus");
+            itemRuntime.RefreshInfoText(m => m.ItemId == "item_gold_meal_bonus");
+        }
+
+        private void SettleSuperFoodPassives(
+            cfg.Food food,
+            ActionExecutionContext actionContext,
+            string settledBattleKey,
+            bool survived)
+        {
+            if (food?.ActionKind != cfg.FoodActionKind.Super)
+            {
+                return;
+            }
+
+            string rewardSeedKey = $"{settledBattleKey}_food_settlement";
+            IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Reward, rewardSeedKey);
+            IReadOnlyList<FoodSettlementReward> rewards =
+                new ItemRuntime(_run).OnFoodBattleSettled(actionContext, survived, rng);
+            for (int i = 0; i < rewards.Count; i++)
+            {
+                FoodSettlementReward reward = rewards[i];
+                _run.EnqueueGenericRewardOffer(
+                    $"{rewardSeedKey}_{reward.SourceItemId}_{i}",
+                    reward.Title,
+                    reward.Offer);
+            }
+
+            if (rewards.Count > 0)
+            {
+                _run.PendingGenericRewardContinuation = PendingGenericRewardContinuationKind.Battle;
+            }
         }
 
         private void ApplyCakeLayerGold(int finalHappyCakeLayers)
@@ -1421,6 +1514,7 @@ namespace GourmetProject.Game.Orchestration
             if (ev != null)
             {
                 SavePendingActionExecution(context, outcome, ev.Id);
+                GrantEventEntryGoldOnce();
             }
 
             ResolveEvent(ev, onDone);
@@ -1447,7 +1541,23 @@ namespace GourmetProject.Game.Orchestration
                 SavePendingActionExecution(context, outcome, ev.Id);
             }
 
+            GrantEventEntryGoldOnce();
+
             ResolveEvent(ev, onDone);
+        }
+
+        /// <summary>
+        /// 「事件红包」在根事件进入时发放。标记与金币一起保存，保证恢复同一事件页时不重复发放；
+        /// Slot 使用独立流程，不会经过这里。
+        /// </summary>
+        private void GrantEventEntryGoldOnce()
+        {
+            if (!EventService.TryGrantEventEntryGold(_run, out _))
+            {
+                return;
+            }
+
+            RunPersistence.Save(_run);
         }
 
         private void ResolveEvent(cfg.GameEvent ev, Action onDone)
@@ -1773,6 +1883,12 @@ namespace GourmetProject.Game.Orchestration
             if (context != null && outcome != null)
             {
                 SavePendingActionExecution(context, outcome);
+            }
+            else
+            {
+                // 事件选项进入的商店复用原事件 pending，没有新的行动快照可写；
+                // 仍需立即保存本次进入金币，避免中断恢复后丢失本次结算。
+                RunPersistence.Save(_run);
             }
 
             _view.OpenShop();

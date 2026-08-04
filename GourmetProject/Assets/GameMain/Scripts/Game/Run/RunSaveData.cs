@@ -128,8 +128,14 @@ namespace GourmetProject.Game.Run
         /// <summary>当前这次商店已删除食物次数；新商店重置，商店内读档保留。</summary>
         public int CurrentShopDeleteDishCount;
 
+        /// <summary>当前这次商店已成功购买碎片包次数；新商店重置，商店内读档保留。</summary>
+        public int CurrentShopFragmentPackPurchaseCount;
+
         /// <summary>整局累计已结算的菜品 BaseId 次数（技能「大局相同检测」）。</summary>
         public Dictionary<string, int> RunSettledCounts = new Dictionary<string, int>();
+
+        /// <summary>已经完成营业结算的 BattleKey；防止结算回调或读档续接重复发放/扣次数。</summary>
+        public List<string> SettledFoodBattleKeys = new List<string>();
 
         // —— 行动轴状态（局外核心循环）——
         /// <summary>本周行动轴 id（用于读档时按配置重建节点）。</summary>
@@ -376,6 +382,8 @@ namespace GourmetProject.Game.Run
         public string BossId;
         public string BossDebuffId;
         public string EventId;
+        /// <summary>本次根事件进入金币是否已经发放；旧存档缺省 false，恢复时补发一次。</summary>
+        public bool EventEntryGoldGranted;
         public string SlotEventId;
         public int SlotSpinsUsed;
         public SlotExecutionStage SlotStage;

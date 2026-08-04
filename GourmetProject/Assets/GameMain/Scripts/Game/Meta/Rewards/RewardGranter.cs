@@ -224,26 +224,18 @@ namespace GourmetProject.Game.Meta
                 return string.Empty;
             }
 
-            // 美食奖励金币按道具修正（利润提成 / 克扣工钱）。
+            // 营业基础金币按道具修正（利润提成 / 克扣工钱）；盛宴和其它奖励不属于营业。
             var itemRuntime = new ItemRuntime(run);
-            int gold = itemRuntime.ModifyMealRewardGold(offer.BaseGold);
+            cfg.Food food = FoodService.Resolve(run.Tables, run.LastActionContext?.Action);
+            bool isBusiness = food != null
+                && (food.ActionKind == cfg.FoodActionKind.Normal
+                    || food.ActionKind == cfg.FoodActionKind.Super);
+            int gold = isBusiness
+                ? itemRuntime.ModifyMealRewardGold(offer.BaseGold)
+                : offer.BaseGold;
             if (gold != offer.BaseGold)
             {
                 itemRuntime.FlashTriggered(m => System.Math.Abs(m.MealRewardGoldPct()) > 0.0001f);
-            }
-
-            // 美食分红（GoldMealBonus）：剩余生效局数内每局额外金币，并消耗一局额度。
-            if (run.MealBonusRemaining > 0)
-            {
-                int bonusGold = itemRuntime.MealBonusGoldPerMeal();
-                if (bonusGold != 0)
-                {
-                    itemRuntime.FlashTriggered(m => m.MealBonusGoldPerMeal() != 0);
-                }
-
-                gold += bonusGold;
-                run.ConsumeMealBonusMeal();
-                itemRuntime.RefreshIconState(m => m.MealBonusGoldPerMeal() != 0);
             }
 
             int eventBonusGold = run.ConsumeNextMealRewardGold();
@@ -253,15 +245,6 @@ namespace GourmetProject.Game.Meta
             }
 
             run.Gold += gold;
-
-            // 「分数变1」按局递减：普通/超级美食奖励结算视为一局（Boss/盛宴不走此路径）。
-            bool consumedScoreToOne = run.ScoreToOneRemaining > 0;
-            run.ConsumeScoreToOneMeal();
-            if (consumedScoreToOne)
-            {
-                itemRuntime.RefreshIconState(m => m.ItemId == "item_score_to_one");
-                itemRuntime.RefreshInfoText(m => m.ItemId == "item_score_to_one");
-            }
 
             offer.MarkBaseGoldClaimed();
             return $"金币 +{gold}";

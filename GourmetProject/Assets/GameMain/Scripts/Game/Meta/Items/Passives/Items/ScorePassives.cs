@@ -7,6 +7,7 @@ namespace GourmetProject.Game.Meta.Passives
 {
     [Preserve]
     [PassiveItemModel("item_perma_flat_all")]
+    [PassiveItemModel("item_perma_flat_all_plus")]
     public sealed class PermanentAddFlatAllModel : PassiveItemModel
     {
         public override void OnAcquired()

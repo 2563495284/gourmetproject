@@ -49,7 +49,7 @@ namespace GourmetProject.Game.Meta.Passives
     [PassiveItemModel("item_gold_on_event")]
     public sealed class EventGoldModel : PassiveItemModel
     {
-        public override int EventCompleteGold() => (int)Value;
+        public override int EventEnterGold() => (int)Value;
     }
 
     [Preserve]
@@ -105,14 +105,96 @@ namespace GourmetProject.Game.Meta.Passives
     [PassiveItemModel("item_extra_interest")]
     public sealed class ExtraInterestModel : PassiveItemModel
     {
+        private int _appliedTimelineWeek;
+        private string _appliedTimelineId = string.Empty;
+
         public override bool IsIconUsed => false;
 
         public override void OnAcquired()
         {
-            if (Run != null && !string.IsNullOrEmpty(Run.AddWeekEndAnchoredTimelineNode("act_interest", ItemId)))
+            ApplyToWeekTimeline();
+        }
+
+        public override void ApplyToWeekTimeline()
+        {
+            if (Run == null || string.IsNullOrEmpty(Run.CurrentTimelineId))
             {
-                MarkIconUsed();
+                return;
             }
+
+            int timelineWeek = Run.CurrentTimelineWeekIndex;
+            string timelineId = Run.CurrentTimelineId;
+            if (_appliedTimelineWeek == timelineWeek && _appliedTimelineId == timelineId)
+            {
+                return;
+            }
+
+            string actionId = ResolveInterestActionId();
+            if (string.IsNullOrEmpty(actionId))
+            {
+                return;
+            }
+
+            int desiredCount = System.Math.Max(0, (int)Value);
+            int existingCount = 0;
+            foreach (GourmetProject.Game.Run.RuntimeTimelineNode node in Run.RuntimeTimelineNodes)
+            {
+                if (node.WeekEndAnchored
+                    && node.SourceItemId == ItemId
+                    && node.ActionId == actionId)
+                {
+                    existingCount++;
+                }
+            }
+
+            while (existingCount < desiredCount)
+            {
+                if (string.IsNullOrEmpty(Run.AddWeekEndAnchoredTimelineNode(actionId, ItemId)))
+                {
+                    break;
+                }
+
+                existingCount++;
+            }
+
+            if (existingCount >= desiredCount)
+            {
+                _appliedTimelineWeek = timelineWeek;
+                _appliedTimelineId = timelineId;
+            }
+        }
+
+        public override string CaptureState()
+            => JoinState(
+                CaptureIconState(),
+                _appliedTimelineWeek > 0 ? $"timelineWeek:{_appliedTimelineWeek}" : string.Empty,
+                !string.IsNullOrEmpty(_appliedTimelineId) ? $"timelineId:{_appliedTimelineId}" : string.Empty);
+
+        public override void RestoreState(string data)
+        {
+            RestoreIconState(data);
+            _appliedTimelineWeek = System.Math.Max(0, ParseStateInt(data, "timelineWeek", 0));
+            _appliedTimelineId = ParseStateString(data, "timelineId");
+        }
+
+        private string ResolveInterestActionId()
+        {
+            string configuredActionId = PassiveParam.ParseString(Param, "action");
+            if (!string.IsNullOrEmpty(configuredActionId)
+                && Run.Tables.TbAction.GetOrDefault(configuredActionId) != null)
+            {
+                return configuredActionId;
+            }
+
+            foreach (cfg.GameAction action in Run.Tables.TbAction.DataList)
+            {
+                if (action.Behavior == cfg.ActionBehavior.Interest)
+                {
+                    return action.Id;
+                }
+            }
+
+            return string.Empty;
         }
     }
 
@@ -155,11 +237,27 @@ namespace GourmetProject.Game.Meta.Passives
                 return;
             }
 
-            Run.Gold += System.Math.Max(0, (int)Value);
-            if (!string.IsNullOrEmpty(Run.AddWeekEndAnchoredTimelineNode("act_loan_repay", ItemId)))
+            int grant = System.Math.Max(0, (int)Value);
+            int repayment = PassiveParam.ParseInt(Param, "repay", 0);
+            cfg.GameAction repaymentAction = Run.Tables.TbAction.GetOrDefault("act_loan_repay");
+            if (grant <= 0
+                || repayment <= 0
+                || repaymentAction == null
+                || repaymentAction.Behavior != cfg.ActionBehavior.Effect
+                || repaymentAction.EffectType != cfg.EffectType.GainGold
+                || System.Math.Abs(repaymentAction.EffectValue + repayment) > 0.0001f)
             {
-                MarkIconUsed();
+                return;
             }
+
+            // 先确认还款节点确实落轴，再发放本金；无行动轴/节点落点失败时不会白拿金币。
+            if (string.IsNullOrEmpty(Run.AddWeekEndAnchoredTimelineNode("act_loan_repay", ItemId)))
+            {
+                return;
+            }
+
+            Run.Gold += grant;
+            MarkIconUsed();
         }
     }
 
@@ -172,6 +270,8 @@ namespace GourmetProject.Game.Meta.Passives
 
         private int _transferCount;
         private bool _rewarded;
+
+        public override bool IsIconUsed => _rewarded;
 
         public override string InfoText => _transferCount.ToString(CultureInfo.InvariantCulture);
 
@@ -197,6 +297,7 @@ namespace GourmetProject.Game.Meta.Passives
                 Run.Gold += System.Math.Max(0, GoldAmount);
                 _rewarded = true;
                 Flash();
+                RefreshIconState();
             }
 
             RefreshInfoText();

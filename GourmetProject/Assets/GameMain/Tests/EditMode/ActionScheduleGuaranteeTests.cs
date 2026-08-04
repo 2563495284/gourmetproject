@@ -5,8 +5,10 @@ using GourmetProject.Config;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Meta;
+using GourmetProject.Game.Meta.Passives;
 using GourmetProject.Game.Run;
 using GourmetProject.Gameplay.Data;
+using Luban.SimpleJSON;
 using NUnit.Framework;
 
 namespace GourmetProject.Tests.EditMode
@@ -173,6 +175,36 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void SuperActionBonus_IsAppliedAfterGuaranteeCandidateFiltering()
+        {
+            ResetGroupRules();
+            cfg.ActionLargeGroup normal = Group("lg_normal");
+            cfg.ActionLargeGroup containsSuper = Group("lg_normalHard");
+            SetWeight(normal, 100f);
+            SetWeight(containsSuper, 100f);
+            SetBounds(normal.MinGuaranteeCounts, new[] { 1 });
+            SetBounds(containsSuper.MinGuaranteeCounts, new[] { 1 });
+
+            GameRun run = CreateRun();
+            AttachPassiveModel(run, "item_more_super_actions", effectValue: 0.5f);
+
+            ActionScheduleService.EnsureCurrentGroup(run, _rng);
+
+            Assert.That(_rng.LastWeights.Count, Is.EqualTo(2), "只应对保底筛选后的候选集加权");
+            Assert.That(_rng.LastWeights[0], Is.EqualTo(100f));
+            Assert.That(_rng.LastWeights[1], Is.EqualTo(150f));
+        }
+
+        [Test]
+        public void SuperActionGroupDetection_FollowsContainedFoodActions()
+        {
+            Assert.That(ActionScheduleService.ContainsSuperAction(_tables, Group("lg_normal")), Is.False);
+            Assert.That(ActionScheduleService.ContainsSuperAction(_tables, Group("lg_normalHard")), Is.True);
+            Assert.That(ActionScheduleService.ContainsSuperAction(_tables, Group("lg_event")), Is.False);
+            Assert.That(ActionScheduleService.ContainsSuperAction(_tables, Group("lg_hardEvent")), Is.True);
+        }
+
+        [Test]
         public void ShippedConfigurationHasAlignedWeeklyBoundsAndValidRanges()
         {
             foreach (cfg.ActionLargeGroup group in _tables.TbActionLargeGroup.DataList)
@@ -180,8 +212,8 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(group.FallbackWeights.Count, Is.EqualTo(4), $"{group.Id} 必须配置 4 周权重");
                 Assert.That(group.MinGuaranteeCounts.Count, Is.EqualTo(4), $"{group.Id} 最小保底必须保留 4 周索引");
                 Assert.That(group.MaxGuaranteeCounts.Count, Is.EqualTo(4), $"{group.Id} 最大保底必须保留 4 周索引");
-                Assert.That(group.MinGuaranteeCounts[0].Count, Is.EqualTo(12), $"{group.Id} 第一周最小保底应配置前 12 次行动");
-                Assert.That(group.MaxGuaranteeCounts[0].Count, Is.EqualTo(12), $"{group.Id} 第一周最大保底应配置前 12 次行动");
+                Assert.That(group.MinGuaranteeCounts[0].Count, Is.EqualTo(8), $"{group.Id} 第一周最小保底应配置前 8 次行动");
+                Assert.That(group.MaxGuaranteeCounts[0].Count, Is.EqualTo(8), $"{group.Id} 第一周最大保底应配置前 8 次行动");
 
                 for (int week = 0; week < 4; week++)
                 {
@@ -250,8 +282,38 @@ namespace GourmetProject.Tests.EditMode
             run.AdvanceActionStep();
         }
 
+        private static void AttachPassiveModel(GameRun run, string itemId, float effectValue)
+        {
+            string json = $@"{{
+                ""id"":""{itemId}"",
+                ""name"":""测试道具"",
+                ""desc"":"""",
+                ""quality"":0,
+                ""specialTags"":0,
+                ""effectValue"":{effectValue.ToString(System.Globalization.CultureInfo.InvariantCulture)},
+                ""effectParam"":"""",
+                ""baseWeight"":1,
+                ""hiddenRange"":{{""min"":0,""max"":0}},
+                ""targetScoreHiddenOffset"":0,
+                ""dishHiddenOffset"":0,
+                ""passiveItemHiddenOffset"":0,
+                ""fragmentHiddenOffset"":0,
+                ""termId"":"""",
+                ""price"":1
+            }}";
+            ItemDefinition definition = ItemDefinition.From(
+                cfg.PassiveItem.DeserializePassiveItem(JSON.Parse(json)));
+            var state = new RunItemState(itemId, 1);
+            PassiveItemModel model = PassiveItemModelRegistry.Create(itemId);
+            model.Bind(run, definition, state);
+            state.Model = model;
+            ((List<RunItemState>)run.Items).Add(state);
+        }
+
         private sealed class FirstPositiveRandomStream : IRandomStream
         {
+            public IReadOnlyList<float> LastWeights { get; private set; } = Array.Empty<float>();
+
             public RngState State { get; set; }
 
             public uint NextUInt() => 0;
@@ -276,6 +338,7 @@ namespace GourmetProject.Tests.EditMode
 
             public int WeightedPickIndex(IReadOnlyList<float> weights)
             {
+                LastWeights = weights.ToArray();
                 for (int index = 0; index < weights.Count; index++)
                 {
                     if (weights[index] > 0f)

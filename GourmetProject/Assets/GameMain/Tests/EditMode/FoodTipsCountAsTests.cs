@@ -40,6 +40,37 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void CountAsAll_ContributesToEveryFoodCountThreshold()
+        {
+            GameplayDatabase db = CreateDatabase(out DishDef definition);
+            DiningTable table = CreateTableWithDish(definition, out DishInstance dish);
+            dish.AddCountAsBonus(1);
+            var thresholdSource = new ItemScoreEffectSource(new[]
+            {
+                new ItemScoreSpec(
+                    ItemScoreEffectType.CountThresholdFinalMult,
+                    2f,
+                    "gte:8",
+                    "item_count_ge_mult",
+                    "食物数门槛"),
+            });
+
+            ScoreResult withoutCountAsAll = new ScoreCalculator().Calculate(
+                table,
+                db,
+                extraSources: new[] { thresholdSource });
+            ScoreResult withCountAsAll = new ScoreCalculator().Calculate(
+                table,
+                db,
+                extraSources: new[] { thresholdSource },
+                extraCountAsPerDish: 3);
+
+            Assert.That(withoutCountAsAll.FinalMultiplier, Is.EqualTo(1f));
+            Assert.That(withCountAsAll.DishScores.Single().EffectiveCountAs, Is.EqualTo(8));
+            Assert.That(withCountAsAll.FinalMultiplier, Is.EqualTo(2f));
+        }
+
+        [Test]
         public void IntrinsicPreview_ReusesAddCountAsSettlementRules()
         {
             GameplayDatabase db = CreateDatabase(out DishDef definition);

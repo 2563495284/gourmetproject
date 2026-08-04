@@ -4,6 +4,7 @@ namespace GourmetProject.Game.Meta.Passives
 {
     [Preserve]
     [PassiveItemModel("item_discount_food")]
+    [PassiveItemModel("item_discount_food_festival")]
     public sealed class DiscountFoodModel : ShopDiscountKindModel
     {
         public DiscountFoodModel() : base(ShopEntryKind.Dish)
@@ -13,6 +14,7 @@ namespace GourmetProject.Game.Meta.Passives
 
     [Preserve]
     [PassiveItemModel("item_discount_fragment")]
+    [PassiveItemModel("item_discount_fragment_festival")]
     public sealed class DiscountFragmentModel : ShopDiscountKindModel
     {
         public DiscountFragmentModel() : base(ShopEntryKind.Fragment)
@@ -31,6 +33,7 @@ namespace GourmetProject.Game.Meta.Passives
 
     [Preserve]
     [PassiveItemModel("item_discount_passive")]
+    [PassiveItemModel("item_discount_passive_festival")]
     public sealed class DiscountPassiveModel : ShopDiscountKindModel
     {
         public DiscountPassiveModel() : base(ShopEntryKind.PassiveItem)
@@ -41,6 +44,7 @@ namespace GourmetProject.Game.Meta.Passives
     /// <summary>删牌折扣：走 ModifyDeletePrice。</summary>
     [Preserve]
     [PassiveItemModel("item_discount_remove")]
+    [PassiveItemModel("item_discount_remove_festival")]
     public sealed class DiscountRemoveModel : PassiveItemModel
     {
         public override float ModifyDeletePrice(float price)

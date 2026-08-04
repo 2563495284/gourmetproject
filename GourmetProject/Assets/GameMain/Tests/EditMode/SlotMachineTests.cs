@@ -4,6 +4,7 @@ using GourmetProject.Config;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Meta;
+using GourmetProject.Game.Meta.Passives;
 using GourmetProject.Game.Run;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Runtime;
@@ -92,6 +93,39 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(SlotService.CostForNextSpin(machine, 1), Is.EqualTo(20));
             Assert.That(SlotService.CostForNextSpin(machine, 2), Is.EqualTo(20));
             Assert.That(SlotService.CostForNextSpin(machine, 4), Is.EqualTo(20));
+        }
+
+        [Test]
+        public void SlotWinChanceBonus_MultipliesNormalizedChanceAndKeepsRewardRatios()
+        {
+            GameRun run = CreateRun();
+            AttachPassiveModelUsingDefinition(
+                run,
+                "item_slot_win_chance",
+                _tables.TbPassiveItem.Get("item_slot_win_chance")); // effectValue = 0.2
+            SlotMachineConfig machine = LoadMachine(run);
+
+            IReadOnlyList<float> weights = SlotService.BuildRollWeights(run, machine);
+
+            Assert.That(weights, Has.Count.EqualTo(5));
+            Assert.That(weights[0], Is.EqualTo(28f).Within(0.0001f));
+            Assert.That(weights[1], Is.EqualTo(42f).Within(0.0001f));
+            Assert.That(weights[2], Is.EqualTo(18f).Within(0.0001f));
+            Assert.That(weights[3], Is.EqualTo(6f).Within(0.0001f));
+            Assert.That(weights[4], Is.EqualTo(6f).Within(0.0001f));
+            Assert.That(weights.Sum(), Is.EqualTo(100f).Within(0.0001f));
+        }
+
+        [Test]
+        public void SlotWinChanceBonus_OverflowCapsAtCertainWin()
+        {
+            List<float> weights = SlotService.ApplyWinChanceBonus(
+                new[] { 40f, 35f, 15f, 5f, 5f },
+                bonus: 1f);
+
+            Assert.That(weights[0], Is.Zero);
+            Assert.That(weights.Skip(1).Sum(), Is.EqualTo(100f).Within(0.0001f));
+            Assert.That(weights[1] / weights[2], Is.EqualTo(35f / 15f).Within(0.0001f));
         }
 
         [Test]
@@ -250,6 +284,18 @@ namespace GourmetProject.Tests.EditMode
         {
             string characterId = _tables.TbCharacter.DataList.First().Id;
             return new GameRun(_tables, _database, characterId, "slot-machine-tests");
+        }
+
+        private static void AttachPassiveModelUsingDefinition(
+            GameRun run,
+            string registeredItemId,
+            cfg.PassiveItem valueSource)
+        {
+            var state = new RunItemState(registeredItemId, 1);
+            PassiveItemModel model = PassiveItemModelRegistry.Create(registeredItemId);
+            model.Bind(run, ItemDefinition.From(valueSource), state);
+            state.Model = model;
+            ((List<RunItemState>)run.Items).Add(state);
         }
 
         private static void SetGameRandom(RandomService random)
