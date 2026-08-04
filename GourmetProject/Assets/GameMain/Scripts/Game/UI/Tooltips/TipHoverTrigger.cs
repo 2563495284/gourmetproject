@@ -45,6 +45,9 @@ namespace GourmetProject.Game.UI.Tooltips
         [Tooltip("Tips 与 Canvas 边缘之间的最小间距。")]
         [SerializeField] private float _screenPadding = 12f;
 
+        [Tooltip("仅在目标上方或下方放置 Tips；适合横向空间有限的奖励列表。")]
+        [SerializeField] private bool _preferVerticalPlacement;
+
         private MonoBehaviour _tipView;
         private RectTransform _tipRect;
         private Canvas _canvas;
@@ -76,6 +79,12 @@ namespace GourmetProject.Game.UI.Tooltips
         public void SetFollowPointer(bool followPointer)
         {
             _followPointer = followPointer;
+        }
+
+        /// <summary>限制 Tips 只在目标上方或下方选位。</summary>
+        public void SetPreferVerticalPlacement(bool preferVerticalPlacement)
+        {
+            _preferVerticalPlacement = preferVerticalPlacement;
         }
 
         /// <summary>运行时注入 Tips，并提供显示前刷新内容的回调。</summary>
@@ -291,13 +300,19 @@ namespace GourmetProject.Game.UI.Tooltips
             Vector2 tipSize = TipSize();
             Rect parentRect = parent.rect;
 
-            Vector2[] candidates =
-            {
-                new Vector2(targetRect.xMax + _targetGap + tipSize.x * 0.5f, targetRect.center.y),
-                new Vector2(targetRect.xMin - _targetGap - tipSize.x * 0.5f, targetRect.center.y),
-                new Vector2(targetRect.center.x, targetRect.yMax + _targetGap + tipSize.y * 0.5f),
-                new Vector2(targetRect.center.x, targetRect.yMin - _targetGap - tipSize.y * 0.5f),
-            };
+            Vector2[] candidates = _preferVerticalPlacement
+                ? new[]
+                {
+                    new Vector2(targetRect.center.x, targetRect.yMax + _targetGap + tipSize.y * 0.5f),
+                    new Vector2(targetRect.center.x, targetRect.yMin - _targetGap - tipSize.y * 0.5f),
+                }
+                : new[]
+                {
+                    new Vector2(targetRect.xMax + _targetGap + tipSize.x * 0.5f, targetRect.center.y),
+                    new Vector2(targetRect.xMin - _targetGap - tipSize.x * 0.5f, targetRect.center.y),
+                    new Vector2(targetRect.center.x, targetRect.yMax + _targetGap + tipSize.y * 0.5f),
+                    new Vector2(targetRect.center.x, targetRect.yMin - _targetGap - tipSize.y * 0.5f),
+                };
 
             Vector2 best = candidates[0];
             float bestScore = float.MaxValue;
@@ -320,7 +335,9 @@ namespace GourmetProject.Game.UI.Tooltips
             _tipRect.anchoredPosition = best;
             if (ActiveTip is ITooltipPlacementAware placementAware)
             {
-                placementAware.OnPlacedAroundTarget(bestIndex == 1 || best.x < targetRect.center.x);
+                bool placedLeft = !_preferVerticalPlacement
+                    && (bestIndex == 1 || best.x < targetRect.center.x);
+                placementAware.OnPlacedAroundTarget(placedLeft);
             }
 
             // Item tips can lay term cards outside the main tip rect. Their final side is only
