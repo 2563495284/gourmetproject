@@ -6,7 +6,7 @@ using GourmetProject.Runtime;
 
 namespace GourmetProject.Game.DevConsole.Commands
 {
-    /// <summary>指定本周 Boss Debuff，便于调试星级评鉴机制。</summary>
+    /// <summary>指定本周星级评鉴 Debuff，便于调试星级评鉴机制。</summary>
     public sealed class BossDebuffCommand : ConsoleCommand
     {
         private const string ClearArg = "clear";
@@ -15,7 +15,7 @@ namespace GourmetProject.Game.DevConsole.Commands
 
         public override string Args => "<debuff-id:string|clear>";
 
-        public override string Description => "指定本周 Boss 的 Debuff（或 clear 恢复随机）。";
+        public override string Description => "指定本周星级评鉴 的 Debuff（或 clear 恢复随机）。";
 
         public override CmdResult Execute(string[] args)
         {
@@ -34,7 +34,7 @@ namespace GourmetProject.Game.DevConsole.Commands
             if (debuffId == ClearArg)
             {
                 run.ClearForcedBossDebuff();
-                return CmdResult.Ok("已清除本周 Boss Debuff 指定，恢复随机抽取。");
+                return CmdResult.Ok("已清除本周星级评鉴 Debuff 指定，恢复随机抽取。");
             }
 
             cfg.Tables tables = GameApp.Config.Tables;
@@ -51,7 +51,7 @@ namespace GourmetProject.Game.DevConsole.Commands
 
             run.ForceBossDebuffForCurrentWeek(debuff.Id);
             run.ResetBossDebuffRollHistory();
-            return CmdResult.Ok($"本周 Boss Debuff 已指定为 '{debuff.Id}'（{debuff.Name}）。");
+            return CmdResult.Ok($"本周星级评鉴 Debuff 已指定为 '{debuff.Id}'（{debuff.Name}）。");
         }
 
         public override IReadOnlyList<string> GetCompletions(string[] args)

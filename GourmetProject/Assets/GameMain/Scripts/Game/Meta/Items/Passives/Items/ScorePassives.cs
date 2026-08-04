@@ -118,7 +118,7 @@ namespace GourmetProject.Game.Meta.Passives
         }
     }
 
-    /// <summary>所有菜额外「视为食物数」。</summary>
+    /// <summary>所有食物额外「视为食物数」。</summary>
     [Preserve]
     [PassiveItemModel("item_count_as_all")]
     public sealed class CountAsBonusAllModel : PassiveItemModel

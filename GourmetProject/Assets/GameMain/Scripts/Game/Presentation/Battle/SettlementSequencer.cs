@@ -1747,12 +1747,12 @@ namespace GourmetProject.Game.Presentation.Battle
 
             // if (result.PermanentFlatDeltas.Count > 0)
             // {
-            //     plan.FinalCues.Add(new SettlementCue(SettlementCueKind.SideEffect, $"永久美味 +{result.PermanentFlatDeltas.Count} 道菜"));
+            //     plan.FinalCues.Add(new SettlementCue(SettlementCueKind.SideEffect, $"永久美味值 +{result.PermanentFlatDeltas.Count} 个食物"));
             // }
 
             // if (result.PermanentMultDeltas.Count > 0)
             // {
-            //     plan.FinalCues.Add(new SettlementCue(SettlementCueKind.SideEffect, $"永久倍率 +{result.PermanentMultDeltas.Count} 道菜"));
+            //     plan.FinalCues.Add(new SettlementCue(SettlementCueKind.SideEffect, $"永久倍率 +{result.PermanentMultDeltas.Count} 个食物"));
             // }
 
             return plan;

@@ -248,7 +248,7 @@ namespace GourmetProject.Gameplay.Board
 
         /// <summary>
         /// 追加运行时技能并记录来源标签（如「马卡龙&lt;甜蜜传递&gt;」）。已存在则不重复，
-        /// 但仍会补记来源标签（供明细/tips 显示技能是从别的菜获得）。
+        /// 但仍会补记来源标签（供明细/tips 显示技能是从别的食物获得）。
         /// </summary>
         public void AddSkill(string skillId, string sourceLabel)
         {

@@ -161,7 +161,7 @@ namespace GourmetProject.Tests.EditMode
                     .Select(text => text.text)
                     .ToArray();
                 Assert.That(texts, Does.Contain("食物"));
-                Assert.That(texts, Does.Contain("视为4个食物"));
+                Assert.That(texts, Does.Contain("视为4 个食物"));
 
                 view.Bind(new FoodTipsData(
                     FoodSummaryTipsData.Empty,

@@ -106,7 +106,7 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>局级倍率修正（由装饰品和消耗品/Buff 注入，影响最终结算）。</summary>
         public float FinalMultiplier { get; set; } = 1f;
 
-        /// <summary>每道菜额外「视为食物数」（由装饰品注入，影响计数类前提）。</summary>
+        /// <summary>每个食物额外「视为食物数」（由装饰品注入，影响计数类前提）。</summary>
         public int ExtraCountAsPerDish { get; set; }
 
         /// <summary>蛋糕层数 buff 阈值下调（由装饰品「蛋糕捷径」注入）。</summary>
@@ -127,7 +127,7 @@ namespace GourmetProject.Gameplay.Battle
             SetHappyCakeLayers(0);
         }
 
-        /// <summary>本局允许的最大上菜次数（-1 表示不限；Boss 机制「限量供应」会设上限）。</summary>
+        /// <summary>本局允许的最大上菜次数（-1 表示不限；星级评鉴机制「限量供应」会设上限）。</summary>
         public int MaxServes { get; set; } = -1;
 
         /// <summary>玩家点击铃铛并成功让出菜口出现食物时扣除的金币。</summary>
@@ -240,7 +240,7 @@ namespace GourmetProject.Gameplay.Battle
         public IReadOnlyList<string> RecipeBaseIds => _recipeBaseIds;
 
         /// <summary>
-        /// 返回本场开局经 Boss 修正后的完整食谱。已出菜、丢弃或移除的条目不会从该列表消失。
+        /// 返回本场开局经 星级评鉴修正后的完整食谱。已出菜、丢弃或移除的条目不会从该列表消失。
         /// “不能放置”由当前餐桌空间、结算状态与上菜次数上限实时计算。
         /// </summary>
         public IReadOnlyList<BattleRecipeEntrySnapshot> GetBattleRecipeEntries(int slotIndex)
@@ -1038,7 +1038,7 @@ namespace GourmetProject.Gameplay.Battle
                 }
             }
 
-            // 历史累计：本次结算把盘面每道菜的 BaseId 计入大局/小局。
+            // 历史累计：本次结算把盘面每个食物的 BaseId 计入大局/小局。
             var increments = new Dictionary<string, int>();
             foreach (DishInstance dish in DiningTable.Dishes)
             {

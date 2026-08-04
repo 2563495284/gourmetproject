@@ -111,7 +111,7 @@ namespace GourmetProject.Game.Meta
             OpenGenericRewardForm();
         }
 
-        /// <summary>全家福：EffectValue 金币 + EffectParam="被动槽组|食物槽组" 各发一份，合成一个通用领奖包。</summary>
+        /// <summary>全家福：EffectValue 金币 + EffectParam="装饰品槽组|食物槽组" 各发一份，合成一个通用领奖包。</summary>
         public static void ApplyFamilyPack(GameRun run, ItemDefinition item)
         {
             if (run == null || item == null)

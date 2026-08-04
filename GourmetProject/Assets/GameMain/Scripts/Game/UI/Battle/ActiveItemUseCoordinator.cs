@@ -800,7 +800,7 @@ namespace GourmetProject.Game.UI.Battle
             if (item.EffectType == ItemEffectTypes.ResetBossDebuff
                 && TimelineService.GetNearestUntriggeredBossNode(run) == null)
             {
-                reason = "没有可重掷的 Boss 节点。";
+                reason = "没有可重掷的 星级评鉴节点。";
                 return false;
             }
 

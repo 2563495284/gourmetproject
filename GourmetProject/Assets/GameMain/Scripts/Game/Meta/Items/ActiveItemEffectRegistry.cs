@@ -56,7 +56,7 @@ namespace GourmetProject.Game.Meta
                 case ItemEffectTypes.ExtraServe:
                     return ctx.ExtraServe()
                         ? new ActiveItemUseResult(true, true, $"{item.Name}：额外上了1 个食物。")
-                        : new ActiveItemUseResult(false, false, $"{item.Name}：没有能放下的菜了。");
+                        : new ActiveItemUseResult(false, false, $"{item.Name}：没有能放下的食物了。");
 
                 case ItemEffectTypes.GoldNow:
                     if (ctx.Run != null)
@@ -69,7 +69,7 @@ namespace GourmetProject.Game.Meta
                 // —— 需选目标的目标操作族（对标杀戮尖塔2 药水的 OnUse(target)）——
                 case ItemEffectTypes.AddScore:
                     return ApplyToTargets(targets, t => ctx.AddPermanentScore(t, item.EffectValue),
-                        item, "已强化选中的菜。", "现在无法强化选中的菜。");
+                        item, "已强化选中的食物。", "现在无法强化选中的食物。");
 
                 case ItemEffectTypes.AddCountAs:
                     return ApplyToTargets(targets, t => ctx.AddCountAs(t, (int)item.EffectValue),
@@ -77,17 +77,17 @@ namespace GourmetProject.Game.Meta
 
                 case ItemEffectTypes.DestroyDish:
                     return ApplyToTargets(targets, ctx.DestroyDish,
-                        item, "已移除选中的菜。", "现在无法移除选中的菜。");
+                        item, "已移除选中的食物。", "现在无法移除选中的食物。");
 
                 case ItemEffectTypes.DuplicateDish:
                     // 复制/生成类推进主动使用序号，保证同种子下可复现（见 docs/design/装饰品和消耗品.md §7）。
                     return ApplyToTargets(targets, t => ctx.DuplicateDish(t, ctx.Run?.NextActiveUseKey()),
-                        item, "已复制选中的菜。", "现在无法复制（空位不足）。");
+                        item, "已复制选中的食物。", "现在无法复制（空位不足）。");
 
                 // —— 调味小票：给食谱目标食物永久附加风味（effectParam=风味 id）——
                 case ItemEffectTypes.AddFlavor:
                     return ApplyToTargets(targets, t => ctx.AddFlavorToDish(t, item.EffectParam),
-                        item, "已为选中的菜附加风味。", "现在无法为选中的菜附加风味。");
+                        item, "已为选中的食物附加风味。", "现在无法为选中的食物附加风味。");
 
                 case ItemEffectTypes.EnhanceFlavor:
                     return ApplyToTargets(targets, t => ctx.AddFlavorToDish(t, item.EffectParam),
@@ -112,7 +112,7 @@ namespace GourmetProject.Game.Meta
 
                 case ItemEffectTypes.GenerateDish:
                     return ApplyToTargets(targets, t => ctx.GenerateDish(t, item.EffectParam, ctx.Run?.NextActiveUseKey()),
-                        item, "已生成新的菜。", "现在无法生成新的菜。");
+                        item, "已生成新的食物。", "现在无法生成新的食物。");
 
                 // —— 排程小票：Global 无目标，直接调情境钩子（仅地图支持，经营挑战返回 false）——
                 case ItemEffectTypes.RerollAction:
@@ -128,8 +128,8 @@ namespace GourmetProject.Game.Meta
                 case ItemEffectTypes.ResetBossDebuff:
                     // TODO: 为星级评鉴调整单补专属重掷表现；当前先完成确定性随机结果与时间轴提示刷新。
                     return ctx.ResetLastBossDebuff()
-                        ? new ActiveItemUseResult(true, false, $"{item.Name}：已重新随机最后一个 Boss 节点的餐食类别。")
-                        : new ActiveItemUseResult(false, false, $"{item.Name}：没有可重掷的 Boss 节点。");
+                        ? new ActiveItemUseResult(true, false, $"{item.Name}：已重新随机最后一个 星级评鉴节点的餐食类别。")
+                        : new ActiveItemUseResult(false, false, $"{item.Name}：没有可重掷的 星级评鉴节点。");
 
                 case ItemEffectTypes.TimelineExecuteFuture:
                 case ItemEffectTypes.TimelineExecutePast:

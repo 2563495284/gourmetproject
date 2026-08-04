@@ -33,7 +33,7 @@ namespace GourmetProject.Game.DevConsole.Commands
             string snapshot = BuildSnapshot(session, result);
             GUIUtility.systemCopyBuffer = snapshot;
             return CmdResult.Ok(
-                $"已复制棋盘调试数据：{session.DiningTable.DishCount} 道菜，"
+                $"已复制餐桌调试数据：{session.DiningTable.DishCount} 个食物，"
                 + $"{result.ScoreLines.Count} 条 ScoreLine，"
                 + $"{result.ScoreEvents.Count} 条 ScoreEvent。");
         }

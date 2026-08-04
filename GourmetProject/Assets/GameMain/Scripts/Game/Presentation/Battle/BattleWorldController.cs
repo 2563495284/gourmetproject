@@ -852,7 +852,7 @@ namespace GourmetProject.Game.Presentation.Battle
             ComputeViewport();
             BuildTable(session.DiningTable);
             EnsureSequencer();
-            // 装饰品和消耗品（被动/主动）与右下角食谱仍在屏幕空间 HUD；
+            // 装饰品和消耗品（装饰品/消耗品）与右下角食谱仍在屏幕空间 HUD；
             // 出菜口是 World Space Canvas，和餐桌、食物、上菜/结算演出、涂鸦一起由经营挑战世界承载。
             HideWorldPanels();
             SetFoodWorldElementsVisible(true);
@@ -2821,7 +2821,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ServePrepareOutcome.NoFittingDish:
                     return "剩余食物都无法摆入当前餐桌。";
                 case ServePrepareOutcome.LimitReached:
-                    return $"限量供应：本局最多上 {_session.MaxServes} 道菜。";
+                    return $"限量供应：本场经营挑战最多上 {_session.MaxServes} 个食物。";
                 case ServePrepareOutcome.AlreadyPrepared:
                     return "先把出菜口的食物摆上餐桌。";
                 default:

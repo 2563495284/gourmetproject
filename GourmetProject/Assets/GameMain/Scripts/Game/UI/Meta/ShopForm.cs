@@ -16,7 +16,7 @@ namespace GourmetProject.Game.UI.Meta
     /// <summary>
     /// 商店「中部态」面板：作为 <c>BattleForm</c> 常驻壳的中部内容之一（不再是独立弹层）。
     /// 常驻壳（左列信息 / 时间轴 / 右列装饰品和消耗品）由 BattleForm 提供，本面板负责中部购买区
-    /// （食物 / 碎片包 / 被动 / 主动）与「删除食物」商店服务。购买该服务时切换到
+    /// （食物 / 碎片包 / 装饰品/消耗品）与「删除食物」商店服务。购买该服务时切换到
     /// <see cref="RecipeReadonlyBookView"/> 选择目标并二次确认。
     /// </summary>
     public sealed class ShopForm : MonoBehaviour

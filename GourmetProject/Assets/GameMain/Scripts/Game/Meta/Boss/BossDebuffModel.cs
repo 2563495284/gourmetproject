@@ -90,7 +90,7 @@ namespace GourmetProject.Game.Meta.BossDebuffs
             EnsureBuilt();
             if (!_map.TryGetValue(definition.Id, out Type type))
             {
-                throw new InvalidOperationException($"Boss Debuff '{definition.Id}' 没有对应的模型类。");
+                throw new InvalidOperationException($"星级评鉴 Debuff '{definition.Id}' 没有对应的模型类。");
             }
 
             var model = (BossDebuffModel)Activator.CreateInstance(type);
@@ -117,7 +117,7 @@ namespace GourmetProject.Game.Meta.BossDebuffs
                 configured.Add(definition.Id);
                 if (!_map.ContainsKey(definition.Id))
                 {
-                    throw new InvalidOperationException($"Boss Debuff '{definition.Id}' 没有对应的模型类。");
+                    throw new InvalidOperationException($"星级评鉴 Debuff '{definition.Id}' 没有对应的模型类。");
                 }
             }
 
@@ -125,7 +125,7 @@ namespace GourmetProject.Game.Meta.BossDebuffs
             {
                 if (!configured.Contains(registeredId))
                 {
-                    throw new InvalidOperationException($"Boss Debuff 模型 '{registeredId}' 没有对应的配置行。");
+                    throw new InvalidOperationException($"星级评鉴 Debuff 模型 '{registeredId}' 没有对应的配置行。");
                 }
             }
         }
@@ -155,7 +155,7 @@ namespace GourmetProject.Game.Meta.BossDebuffs
                 if (map.TryGetValue(attr.DebuffId, out Type existing))
                 {
                     throw new InvalidOperationException(
-                        $"Boss Debuff '{attr.DebuffId}' 同时绑定了 {existing.FullName} 与 {type.FullName}。");
+                        $"星级评鉴 Debuff '{attr.DebuffId}' 同时绑定了 {existing.FullName} 与 {type.FullName}。");
                 }
 
                 map.Add(attr.DebuffId, type);

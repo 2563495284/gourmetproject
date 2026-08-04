@@ -77,7 +77,7 @@ namespace GourmetProject.Game.Balance
             var errors = new List<string>();
             if (checkpoint == null) return new List<string> { "Checkpoint 为空。" };
             if (tables.TbCharacter.GetOrDefault(checkpoint.CharacterId) == null) errors.Add($"经营方向不存在：{checkpoint.CharacterId}");
-            if (!string.IsNullOrEmpty(checkpoint.BossDebuffId) && tables.TbBossDebuff.GetOrDefault(checkpoint.BossDebuffId) == null) errors.Add($"Boss Debuff 不存在：{checkpoint.BossDebuffId}");
+            if (!string.IsNullOrEmpty(checkpoint.BossDebuffId) && tables.TbBossDebuff.GetOrDefault(checkpoint.BossDebuffId) == null) errors.Add($"星级评鉴 Debuff 不存在：{checkpoint.BossDebuffId}");
             var passives = new HashSet<string>(StringComparer.Ordinal);
             for (int i = 0; i < checkpoint.Items.Count; i++)
             {

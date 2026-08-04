@@ -85,12 +85,12 @@ namespace GourmetProject.Game.Meta
         public bool IsValid => Action != null;
 
         /// <summary>
-        /// 来源标识：用于生成确定性的随机流 key（如 Boss 抽取、经营挑战流）。
+        /// 来源标识：用于生成确定性的随机流 key（如 星级评鉴抽取、经营挑战流）。
         /// 放置来源（时间轴节点）设为节点 id；随机来源可留空，由执行侧按步数/天数拼 key。
         /// </summary>
         public string SourceKey { get; set; } = string.Empty;
 
-        /// <summary>目标美味值曲线使用的天数覆盖值；时间轴 Boss 节点用节点所在天数，而非玩家当前游标。</summary>
+        /// <summary>目标美味值曲线使用的天数覆盖值；时间轴 星级评鉴节点用节点所在天数，而非玩家当前游标。</summary>
         public float? TargetScoreDayOverride { get; set; }
 
         /// <summary>本次普通行动已应用半日券；提交时消费一层。</summary>

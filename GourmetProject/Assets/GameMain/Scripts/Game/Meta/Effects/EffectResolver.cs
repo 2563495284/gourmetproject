@@ -276,7 +276,7 @@ namespace GourmetProject.Game.Meta
                 }
             }
 
-            return applied > 0 ? $"为食谱中的 {applied} 道菜添加了随机风味。" : "没有食物获得风味。";
+            return applied > 0 ? $"为食谱中的 {applied} 个食物添加了随机风味。" : "没有食物获得风味。";
         }
 
         private static string RemoveRandomRecipeDish(GameRun run, IRandomStream rng, int count, string param)

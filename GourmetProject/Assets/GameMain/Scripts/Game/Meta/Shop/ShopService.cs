@@ -130,7 +130,7 @@ namespace GourmetProject.Game.Meta
         private const string FragmentPackRewardSlotId = "fragment_choice_3";
 
         /// <summary>
-        /// 按隐藏分刷新一批商品。装饰品和消耗品（被动/主动）走 <paramref name="lootRng"/>，
+        /// 按隐藏分刷新一批商品。装饰品和消耗品（装饰品/消耗品）走 <paramref name="lootRng"/>，
         /// 食物/碎片走 <paramref name="rng"/>，两者隔离：调整装饰品和消耗品数量不会污染食物/碎片序列。
         /// </summary>
         public static List<ShopEntry> RollStock(cfg.Tables tables, GameRun run, IRandomStream rng, IRandomStream lootRng)

@@ -148,7 +148,7 @@ namespace GourmetProject.Gameplay.Scoring
 
                 case ItemScoreEffectType.CountThresholdFinalMult:
                 {
-                    // 「食物数门槛」统一读取每道菜本次结算的实际 CountAs：
+                    // 「食物数门槛」统一读取每个食物本次结算的实际 CountAs：
                     // 静态 CountAs、食物运行时加成、技能 AddCountAs 与 item_count_as_all 都已汇总在这里。
                     int count = dishes.Sum(ctx.GetEffectiveCountAs);
                     if (MatchesThreshold(count, _spec.Param))
@@ -293,7 +293,7 @@ namespace GourmetProject.Gameplay.Scoring
         /// <summary>
         /// 判定1 个食物是否匹配 <paramref name="param"/>。支持前缀精确匹配：
         /// <c>cat:xxx</c>（分类）、<c>flavor:xxx</c>（风味 id）、<c>skill:xxx</c>（含某技能 id）。
-        /// 无前缀时依次尝试分类/风味/技能。空 param 匹配所有菜。
+        /// 无前缀时依次尝试分类/风味/技能。空 param 匹配所有食物。
         /// </summary>
         public static bool Matches(DishInstance dish, string param)
         {

@@ -703,7 +703,7 @@ namespace GourmetProject.EditorTools
                         EditorGUILayout.LabelField($"W{week.Key} Boss：到达 {bossReach:P1}　通过 {bossPass:P1}　P10 {p10} / P50 {p50} / P90 {p90}　建议要求 {suggested}");
                         EditorGUILayout.LabelField($"　日常营业：{mealPasses}/{mealCount}（{mealRate:P1}）　金币结余 {week.Average(v => v.GoldBalance):0}");
                         if (bossReach < 0.01f)
-                            EditorGUILayout.HelpBox($"W{week.Key} 没有样本到达 Boss；本周 Boss 分位数和建议要求分无效。请先检查日常营业目标曲线或成长供给。", MessageType.Error);
+                            EditorGUILayout.HelpBox($"W{week.Key} 没有样本到达 Boss；本周星级评鉴 分位数和建议要求分无效。请先检查日常营业目标曲线或成长供给。", MessageType.Error);
                         else if (bossReach < 0.5f)
                             EditorGUILayout.HelpBox($"W{week.Key} 只有 {bossReach:P1} 到达 Boss，Boss 样本存在明显幸存者偏差。", MessageType.Warning);
                         if (mealCount > 0 && mealRate < 0.3f)

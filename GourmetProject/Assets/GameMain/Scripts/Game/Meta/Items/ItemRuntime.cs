@@ -170,7 +170,7 @@ namespace GourmetProject.Game.Meta
 
         public int BossCompleteGold() => SumInt(m => m.BossCompleteGold());
 
-        /// <summary>领取当前持有装饰品和消耗品的 Boss 完成奖励；一次性模型会在领取时写入自身状态。</summary>
+        /// <summary>领取当前持有装饰品和消耗品的 星级评鉴完成奖励；一次性模型会在领取时写入自身状态。</summary>
         public int ClaimBossCompleteGold()
         {
             int total = 0;

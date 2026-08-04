@@ -27,7 +27,7 @@ namespace GourmetProject.Game.Meta
                 }
             }
 
-            Log.Warning($"第 {run?.WeekIndex ?? 0} 周未配置 Boss 食物（actionKind=Feast）。", Tag);
+            Log.Warning($"第 {run?.WeekIndex ?? 0} 周未配置 星级评鉴食物（actionKind=Feast）。", Tag);
             return null;
         }
 
@@ -77,7 +77,7 @@ namespace GourmetProject.Game.Meta
             return candidates[rng.WeightedPickIndex(weights)];
         }
 
-        /// <summary>预览时间轴 Boss 节点将使用的 Debuff，不推进对应随机流。</summary>
+        /// <summary>预览时间轴 星级评鉴节点将使用的 Debuff，不推进对应随机流。</summary>
         public static cfg.BossDebuff PreviewBossDebuff(GameRun run, cfg.TimelineNode node)
         {
             if (run == null || node == null)
@@ -208,7 +208,7 @@ namespace GourmetProject.Game.Meta
             return IsFeastFood(food);
         }
 
-        /// <summary>该 Food 行动是否为 Boss 槽（Food 行为且未绑定具体 foodId=执行时取唯一 Boss 食物）。</summary>
+        /// <summary>该 Food 行动是否为 星级评鉴槽（Food 行为且未绑定具体 foodId=执行时取唯一 星级评鉴食物）。</summary>
         public static bool IsBossSlot(cfg.GameAction action)
         {
             return action != null && action.Behavior == cfg.ActionBehavior.Food && string.IsNullOrEmpty(action.FoodId);

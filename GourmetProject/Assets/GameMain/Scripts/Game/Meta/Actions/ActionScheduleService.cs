@@ -75,8 +75,8 @@ namespace GourmetProject.Game.Meta
         }
 
         /// <summary>
-        /// 「行动调整单」重掷：保留上一批里的 Boss 行动（Boss 不可重掷），其余用新 rng 重新生成填满。
-        /// 当前小组池不含 Boss 行动，Boss 过滤为防御性逻辑（未来若加 Boss 小组仍正确）。
+        /// 「行动调整单」重掷：保留上一批里的 星级评鉴行动（Boss 不可重掷），其余用新 rng 重新生成填满。
+        /// 当前小组池不含 星级评鉴行动，Boss 过滤为防御性逻辑（未来若加 Boss 小组仍正确）。
         /// </summary>
         public static List<ActionChoice> RerollChoices(GameRun run, IRandomStream rng, IReadOnlyList<ActionChoice> previous)
         {

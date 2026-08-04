@@ -151,7 +151,7 @@ namespace GourmetProject.Game.Meta.Passives
 
         public virtual int BossCompleteGold() => 0;
 
-        /// <summary>结算一次 Boss 完成奖励；可由有一次性状态的模型在此消费奖励资格。</summary>
+        /// <summary>结算一次 星级评鉴完成奖励；可由有一次性状态的模型在此消费奖励资格。</summary>
         public virtual int ClaimBossCompleteGold() => BossCompleteGold();
 
         public virtual int MealBonusGoldPerMeal() => 0;
@@ -176,7 +176,7 @@ namespace GourmetProject.Game.Meta.Passives
         /// <summary>普通行动耗时倍率；节点行动和休息不调用。</summary>
         public virtual float DailyActionCostMultiplier() => 1f;
 
-        /// <summary>自然经过的非 Boss 节点执行次数。</summary>
+        /// <summary>自然经过的非 星级评鉴节点执行次数。</summary>
         public virtual int TimelineNodeRepeatCount() => 1;
 
         /// <summary>普通行动经过节点日时，时间轴停摆概率。</summary>
@@ -315,7 +315,7 @@ namespace GourmetProject.Game.Meta.Passives
             return false;
         }
 
-        /// <summary>本次结算每道菜额外「视为食物数」加成（分发器累加）。</summary>
+        /// <summary>本次结算每个食物额外「视为食物数」加成（分发器累加）。</summary>
         public virtual int ExtraCountAsPerDish() => 0;
 
         /// <summary>贡献逐菜/条件/顺序类结算规格（替代 ItemScoreEffectAdapter 的 effectType 映射）。</summary>

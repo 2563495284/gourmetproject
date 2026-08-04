@@ -250,7 +250,7 @@ namespace GourmetProject.Game.Meta
                 case cfg.UnlockTargetType.Dish:
                     return "食物";
                 case cfg.UnlockTargetType.Boss:
-                    return "Boss";
+                    return "星级评鉴";
                 case cfg.UnlockTargetType.Character:
                     return "经营方向";
                 case cfg.UnlockTargetType.Mode:

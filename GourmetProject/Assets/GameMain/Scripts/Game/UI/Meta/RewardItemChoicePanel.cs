@@ -106,7 +106,7 @@ namespace GourmetProject.Game.UI.Meta
         {
             if (group == null)
             {
-                return "选择一个装饰品和消耗品";
+                return "选择 1 件装饰品或消耗品";
             }
 
             var lines = new List<string>();
@@ -126,7 +126,7 @@ namespace GourmetProject.Game.UI.Meta
             {
                 lines.Add($"已选 {group.ClaimedIndices.Count}/{group.RequiredChoiceCount}");
             }
-            return lines.Count > 0 ? string.Join("\n", lines) : "选择一个装饰品和消耗品";
+            return lines.Count > 0 ? string.Join("\n", lines) : "选择 1 件装饰品或消耗品";
         }
 
         private RewardItemChoiceCardView CreateCard(RewardChoice choice, cfg.ItemKind kind, ItemTipView itemTip, Action onClick)

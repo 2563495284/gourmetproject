@@ -120,7 +120,7 @@ namespace GourmetProject.Game.UI.Meta
                     {
                         new FoodInfoEntry(
                             "不参与计分",
-                            "本场 Boss 修正：该食物上菜后不会计入美味值。"),
+                            "本场 星级评鉴修正：该食物上菜后不会计入美味值。"),
                     }
                     : Array.Empty<FoodInfoEntry>();
             }
@@ -147,7 +147,7 @@ namespace GourmetProject.Game.UI.Meta
             {
                 tags.Add(new FoodInfoEntry(
                     "不参与计分",
-                    "本场 Boss 修正：该食物上菜后不会计入美味值。"));
+                    "本场 星级评鉴修正：该食物上菜后不会计入美味值。"));
             }
 
             return tags;

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace GourmetProject.Game.Meta
 {
     /// <summary>
-    /// 运行时代码使用的统一装饰品和消耗品定义视图。配置源已拆成被动/主动两张表，
+    /// 运行时代码使用的统一装饰品和消耗品定义视图。配置源已拆成装饰品/消耗品两张表，
     /// 这里负责收敛公共字段和按 id 查询，避免业务层到处判断具体表类型。
     /// </summary>
     public sealed class ItemDefinition

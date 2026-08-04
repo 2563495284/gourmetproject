@@ -25,7 +25,7 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>食谱里没有任何1 个食物能放进当前餐桌（餐桌空间不足）。</summary>
         NoFittingDish,
 
-        /// <summary>本局上菜次数已达上限（Boss 机制「限量供应」修正）。</summary>
+        /// <summary>本局上菜次数已达上限（星级评鉴机制「限量供应」修正）。</summary>
         LimitReached,
 
         /// <summary>出菜口没有等待摆放的食物。</summary>

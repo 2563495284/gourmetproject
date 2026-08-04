@@ -226,13 +226,13 @@ namespace GourmetProject.Game.Run
         /// <summary>Boss Debuff 不放回随机的已抽取记录；抽光后会重置。</summary>
         public List<string> RolledBossDebuffIds = new List<string>();
 
-        /// <summary>本周 Boss Debuff 主动重抽所属周；0=未重抽。</summary>
+        /// <summary>本周星级评鉴 Debuff 主动重抽所属周；0=未重抽。</summary>
         public int BossDebuffRerollWeekIndex;
 
-        /// <summary>本周 Boss Debuff 主动重抽序号，用于改变当前周 Boss 随机 key。</summary>
+        /// <summary>本周星级评鉴 Debuff 主动重抽序号，用于改变当前周 星级评鉴随机 key。</summary>
         public int BossDebuffRerollIndex;
 
-        /// <summary>当前重掷序号只作用于该 Boss 节点。</summary>
+        /// <summary>当前重掷序号只作用于该 星级评鉴节点。</summary>
         public string BossDebuffRerollNodeId;
 
         /// <summary>商店/事件结束后按 FIFO 额外执行的节点 id。</summary>
@@ -241,7 +241,7 @@ namespace GourmetProject.Game.Run
         /// <summary>开发者控制台指定的 Boss Debuff 所属周；0=未指定。</summary>
         public int ForcedBossDebuffWeekIndex;
 
-        /// <summary>开发者控制台指定的本周 Boss Debuff id。</summary>
+        /// <summary>开发者控制台指定的本周星级评鉴 Debuff id。</summary>
         public string ForcedBossDebuffId;
 
         /// <summary>当前行动选择快照 key；同一步 UI 重开时沿用已有候选。</summary>

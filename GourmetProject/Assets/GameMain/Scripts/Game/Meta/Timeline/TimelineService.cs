@@ -262,7 +262,7 @@ namespace GourmetProject.Game.Meta
             return result;
         }
 
-        /// <summary>取得时间轴上最近的尚未触发 Boss 节点；同一天按节点 ID 升序稳定选择。</summary>
+        /// <summary>取得时间轴上最近的尚未触发 星级评鉴节点；同一天按节点 ID 升序稳定选择。</summary>
         public static cfg.TimelineNode GetNearestUntriggeredBossNode(GameRun run)
         {
             cfg.TimelineNode result = null;

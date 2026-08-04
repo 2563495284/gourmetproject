@@ -282,7 +282,7 @@ namespace GourmetProject.Game.Orchestration
 
         private Action BuildRecoveredBossComplete(ActionExecutionContext context)
         {
-            // Boss 完成发生在领奖前。节点的完成/重复轮次统一留给领奖后的 continuation，
+            // 星级评鉴完成发生在领奖前。节点的完成/重复轮次统一留给领奖后的 continuation，
             // 避免把节点过早标记为已结算。
             return () => _run.ClearPendingActionExecution();
         }
@@ -516,7 +516,7 @@ namespace GourmetProject.Game.Orchestration
             });
             if (!terminal)
             {
-                // 非致命碎心按通关处理：Boss 完成、蛋糕金币及奖励包都与达标路径一致。
+                // 非致命碎心按通关处理：星级评鉴完成、蛋糕金币及奖励包都与达标路径一致。
                 ApplyCakeLayerGold(finalHappyCakeLayers);
                 Action beforeReward = _beforeBattleReward;
                 _beforeBattleReward = null;
@@ -794,7 +794,7 @@ namespace GourmetProject.Game.Orchestration
             RunPersistence.Save(_run);
         }
 
-        /// <summary>时间轴走完：推进到下一周（最终周胜利由 Boss 节点判定）。</summary>
+        /// <summary>时间轴走完：推进到下一周（最终周胜利由 星级评鉴节点判定）。</summary>
         private void EndWeek()
         {
             ApplyEndOfWeekItemSettlement();

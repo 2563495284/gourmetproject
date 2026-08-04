@@ -10,8 +10,8 @@ namespace GourmetProject.Gameplay.Scoring
 {
     /// <summary>
     /// 结算过程中的可变上下文与累加器。
-    /// 每道菜有独立累加器（加法区/倍率），支持跨菜改分；
-    /// 所有菜在全部阶段跑完后统一定稿（deferred finalization），因此技能可以改到别的菜。
+    /// 每个食物有独立累加器（加法区/倍率），支持跨菜改分；
+    /// 所有食物在全部阶段跑完后统一定稿（deferred finalization），因此技能可以改到别的食物。
     /// 层数/金币/技能传递等对外副作用只累积，不在结算中直接改实例（保证预览安全、纯计算）。
     /// </summary>
     public class ScoreContext
@@ -67,7 +67,7 @@ namespace GourmetProject.Gameplay.Scoring
         }
 
         /// <summary>
-        /// 本次结算每道菜的「视为食物数」实际值（下限 1）：静态定义 + 已持久化运行时加成 + 本次结算即时生效的 AddCountAs 规则。
+        /// 本次结算每个食物的「视为食物数」实际值（下限 1）：静态定义 + 已持久化运行时加成 + 本次结算即时生效的 AddCountAs 规则。
         /// AddCountAs 走 live（每次结算按当前局面重算），不做跨结算持久，故条件类「视为N」在当次结算即生效。
         /// </summary>
         public int GetEffectiveCountAs(DishInstance dish)
@@ -640,7 +640,7 @@ namespace GourmetProject.Gameplay.Scoring
             EmitEvent(ScoreEventType.DishCompleted, $"{Dish.Def.Name} 阶段结束");
         }
 
-        /// <summary>所有逐菜阶段跑完后，统一把每道菜的累加器定稿为贡献并求和。</summary>
+        /// <summary>所有逐菜阶段跑完后，统一把每个食物的累加器定稿为贡献并求和。</summary>
         public void FinalizeDishes()
         {
             if (_finalized)

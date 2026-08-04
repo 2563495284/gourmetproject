@@ -17,7 +17,7 @@ namespace cfg
     public enum RewardPoolSpecialTag
     {
         /// <summary>
-        /// Boss奖励池标签
+        /// 星级评鉴奖励池标签
         /// </summary>
         BossReward = 0,
         /// <summary>

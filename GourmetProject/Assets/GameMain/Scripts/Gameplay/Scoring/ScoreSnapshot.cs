@@ -55,7 +55,7 @@ namespace GourmetProject.Gameplay.Scoring
         }
 
         /// <summary>
-        /// 该菜的结算优先级层级：累加其所有 <see cref="Model.FlavorEffectType.SettlementLayer"/> 风味的效果值
+        /// 该食物的结算优先级层级：累加其所有 <see cref="Model.FlavorEffectType.SettlementLayer"/> 风味的效果值
         /// （甜 +1、苦 -1）。默认 0。层级越大越先结算。
         /// </summary>
         public static int SettlementLayerOf(DishInstance dish, GameplayDatabase db)
@@ -118,7 +118,7 @@ namespace GourmetProject.Gameplay.Scoring
         /// <summary>本场经营挑战（meal）开始结算时的全局「欢乐蛋糕层数」。</summary>
         public int InitialHappyCakeLayers { get; }
 
-        /// <summary>由装饰品（如「小份主义」）提供的每道菜额外「视为食物数」加成，计入计数类前提。</summary>
+        /// <summary>由装饰品（如「小份主义」）提供的每个食物额外「视为食物数」加成，计入计数类前提。</summary>
         public int ExtraCountAsPerDish { get; }
 
         /// <summary>由装饰品（「蛋糕捷径」）提供的蛋糕层数 buff 阈值下调值（每档需求层数 -reduction）。</summary>

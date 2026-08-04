@@ -88,7 +88,7 @@ namespace GourmetProject.Game.Presentation.Battle
         [Header("固定结构（prefab 预拼，运行时引用）")]
         [Tooltip("食物本体渲染体（子物体 Sprite 上的 SpriteRenderer）。")]
         [SerializeField] private SpriteRenderer _spriteRenderer;
-        [Tooltip("食物本体动画枢轴（子物体 VisualPivot）。多格菜的缩放/晃动绕这里执行，根节点保持贴格。")]
+        [Tooltip("食物本体动画枢轴（子物体 VisualPivot）。多格食物的缩放/晃动绕这里执行，根节点保持贴格。")]
         [SerializeField] private Transform _visualPivot;
         [Tooltip("脚下接触阴影锐利核心层（子物体 Shadow 上的 SpriteRenderer）。")]
         [SerializeField] private SpriteRenderer _shadowRenderer;
@@ -1699,7 +1699,7 @@ namespace GourmetProject.Game.Presentation.Battle
             if (_shadowHaloRenderer != null)
             {
                 _shadowHaloRenderer.sprite = BattleShadow.DiffuseShadowSprite;
-                // 光晕排在核心层之下（仍在所有菜本体之下），保证锐利核心压在弥散光晕之上。
+                // 光晕排在核心层之下（仍在所有食物本体之下），保证锐利核心压在弥散光晕之上。
                 BattleSorting.Apply(
                     _shadowHaloRenderer,
                     BattleSorting.Pieces,

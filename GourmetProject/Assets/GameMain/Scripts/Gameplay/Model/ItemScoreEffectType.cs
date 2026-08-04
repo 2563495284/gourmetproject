@@ -28,10 +28,10 @@ namespace GourmetProject.Gameplay.Model
         /// <summary>食物数量与阈值比较满足时，最终总分倍率 ×value（数量检测；param: "lte:N" 或 "gte:N"）。</summary>
         CountThresholdFinalMult = 6,
 
-        /// <summary>结算时每道菜倍率 +value×(食物总数)（每结算 1 个食物 +value 倍）。</summary>
+        /// <summary>结算时每个食物倍率 +value×(食物总数)（每结算 1 个食物 +value 倍）。</summary>
         PerDishSettledMultFlat = 7,
 
-        /// <summary>结算时每道菜倍率 +value×(餐桌技能总数)（每一个技能 +value 倍）。</summary>
+        /// <summary>结算时每个食物倍率 +value×(餐桌技能总数)（每一个技能 +value 倍）。</summary>
         PerSkillMultFlat = 8,
 
         /// <summary>上菜顺序第 N 个（1-based）的菜倍率 ×value；param: "index:N"，N=-1 表示最后一个。</summary>

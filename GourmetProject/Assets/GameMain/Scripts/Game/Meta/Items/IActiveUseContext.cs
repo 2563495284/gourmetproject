@@ -100,7 +100,7 @@ namespace GourmetProject.Game.Meta
         /// <summary>能力：重掷当前行动选项（保 Boss）。不支持或非选择态返回 false。</summary>
         bool RerollCurrentAction();
 
-        /// <summary>能力：重新随机时间轴上最后一个未结算 Boss 节点的 Debuff。</summary>
+        /// <summary>能力：重新随机时间轴上最后一个未结算 星级评鉴节点的 Debuff。</summary>
         bool ResetLastBossDebuff();
 
         /// <summary>能力：把指定节点当前行动复制到当前或下一个整数日，返回新节点 id。</summary>
