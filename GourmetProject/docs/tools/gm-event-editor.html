@@ -1,0 +1,835 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>事件树编辑器</title>
+  <style>
+    :root {
+      --ink: #39291f;
+      --muted: #76685d;
+      --paper: #fffdf6;
+      --paper-2: #fff7df;
+      --line: #dfcfb8;
+      --accent: #ef8c3b;
+      --accent-dark: #a94f1d;
+      --green: #6f9d64;
+      --green-soft: #e8f3df;
+      --blue: #5a86a8;
+      --blue-soft: #e6f2f7;
+      --red: #bd4c42;
+      --red-soft: #fbe9e5;
+      --yellow: #b47c13;
+      --yellow-soft: #fff2c9;
+      --shadow: 0 10px 28px rgba(75, 45, 24, .12);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% 8%, rgba(255, 215, 131, .48), transparent 26%),
+        radial-gradient(circle at 92% 92%, rgba(168, 215, 180, .34), transparent 24%),
+        #f5ead7;
+      font: 14px/1.5 -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      overflow: hidden;
+    }
+
+    button, input, textarea, select { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    button:disabled { cursor: not-allowed; opacity: .5; }
+
+    .app { height: 100%; display: grid; grid-template-rows: auto 1fr; }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 13px 18px;
+      background: rgba(255, 253, 246, .94);
+      border-bottom: 2px solid #bd8c59;
+      box-shadow: 0 3px 14px rgba(72, 45, 27, .08);
+      z-index: 20;
+    }
+    .brand { min-width: 270px; }
+    .brand h1 { margin: 0; font-size: 23px; letter-spacing: .05em; }
+    .brand small { color: var(--muted); }
+    .toolbar { flex: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .toolbar .spacer { flex: 1; }
+
+    .btn {
+      min-height: 38px;
+      padding: 7px 13px;
+      border: 1px solid #bf8b58;
+      border-radius: 10px;
+      background: #fff8e5;
+      box-shadow: 0 2px 0 rgba(115, 68, 29, .15);
+      font-weight: 650;
+    }
+    .btn:hover { transform: translateY(-1px); background: #fff2cf; }
+    .btn.primary { background: var(--accent); border-color: var(--accent-dark); color: #fff; }
+    .btn.green { background: #7eac6e; border-color: #507747; color: #fff; }
+    .btn.danger { color: var(--red); border-color: #d6a098; background: #fff4f0; }
+    .btn.slim { min-height: 30px; padding: 3px 9px; border-radius: 8px; font-size: 12px; }
+    .save-state { color: var(--muted); white-space: nowrap; }
+    .save-state.dirty { color: var(--red); font-weight: 700; }
+
+    .workspace { min-height: 0; display: grid; grid-template-columns: 286px minmax(520px, 1fr) 390px; }
+    .pane { min-height: 0; background: rgba(255, 253, 246, .88); }
+    .sidebar { border-right: 1px solid var(--line); display: grid; grid-template-rows: auto auto 1fr auto; }
+    .inspector { border-left: 1px solid var(--line); display: grid; grid-template-rows: auto 1fr auto; }
+    .pane-title { padding: 12px 14px 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .pane-title h2 { margin: 0; font-size: 16px; }
+
+    .search-wrap { padding: 0 12px 10px; display: grid; grid-template-columns: 1fr 100px; gap: 7px; }
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid #cfbda5;
+      border-radius: 8px;
+      background: rgba(255,255,255,.86);
+      padding: 7px 9px;
+      outline: none;
+    }
+    input:focus, textarea:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(239,140,59,.15); }
+    textarea { resize: vertical; min-height: 78px; }
+
+    .event-list { overflow: auto; padding: 0 8px 12px; }
+    .event-item {
+      width: 100%;
+      text-align: left;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 3px 8px;
+      padding: 10px 11px;
+      margin: 4px 0;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      background: transparent;
+    }
+    .event-item:hover { background: #fff6df; }
+    .event-item.active { background: #ffe7bd; border-color: #dc9f55; }
+    .event-name { font-weight: 750; }
+    .event-id { color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
+    .type-tags { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 21px;
+      padding: 1px 7px;
+      border-radius: 999px;
+      background: #f2e7d5;
+      color: #69584c;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+    .chip.type { background: var(--green-soft); color: #40653b; }
+    .chip.effect { background: var(--blue-soft); color: #315f7b; }
+    .chip.error { background: var(--red-soft); color: var(--red); }
+    .chip.review { background: #f1e6ff; color: #74459c; }
+    .chip.warning { background: var(--yellow-soft); color: #8c610e; }
+
+    .legend { padding: 9px 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+
+    .center { min-height: 0; display: grid; grid-template-rows: auto minmax(260px, 1fr) 250px; background: rgba(251,244,230,.78); }
+    .graph-toolbar { padding: 9px 12px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--line); }
+    .graph-toolbar strong { margin-right: auto; }
+    .graph-viewport { position: relative; min-height: 0; overflow: auto; background-image: radial-gradient(#cdbb9f 1px, transparent 1px); background-size: 20px 20px; }
+    .graph-canvas { position: relative; min-width: 100%; min-height: 100%; }
+    .edges { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+    .edge { fill: none; stroke: #a87b4f; stroke-width: 2.5; }
+    .edge-label { font-size: 11px; fill: #85603f; paint-order: stroke; stroke: #fbf4e6; stroke-width: 4px; }
+    .nodes { position: absolute; inset: 0; }
+    .node {
+      position: absolute;
+      width: 268px;
+      min-height: 134px;
+      padding: 11px 12px;
+      text-align: left;
+      border: 2px solid #b78a5a;
+      border-radius: 13px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+      transition: transform .12s ease, box-shadow .12s ease;
+    }
+    .node:hover { transform: translateY(-2px); }
+    .node.selected { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(239,140,59,.2), var(--shadow); }
+    .node.root { background: #fff0c9; border-color: #d78832; }
+    .node .kind { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+    .node h3 { margin: 2px 0 5px; font-size: 16px; line-height: 1.3; }
+    .node p { margin: 0; color: #615247; font-size: 12px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .node .node-foot { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px; }
+
+    .preview { border-top: 1px solid var(--line); padding: 13px 16px; overflow: auto; background: rgba(255,253,246,.94); }
+    .preview-head { display: flex; justify-content: space-between; gap: 10px; align-items: center; margin-bottom: 8px; }
+    .preview-head h2 { margin: 0; font-size: 16px; }
+    .game-card { max-width: 780px; margin: 0 auto; background: #fff; border: 2px solid #6d4b2f; border-radius: 12px; padding: 13px 16px; box-shadow: 5px 5px 0 rgba(82,54,33,.13); }
+    .game-card h3 { margin: 0 0 7px; color: #864718; }
+    .game-card p { margin: 5px 0; white-space: pre-wrap; }
+    .choice-row { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 7px; }
+    .choice-preview { border: 1px solid #b58c62; background: #fff6df; border-radius: 8px; padding: 7px 10px; font-weight: 650; }
+    .result-box { background: var(--blue-soft); border-left: 4px solid var(--blue); border-radius: 6px; padding: 8px 10px; }
+
+    .inspector-scroll { overflow: auto; padding: 2px 13px 20px; }
+    .empty { padding: 28px; text-align: center; color: var(--muted); }
+    .section { margin: 10px 0 14px; padding: 11px; border: 1px solid var(--line); border-radius: 11px; background: rgba(255,255,255,.6); }
+    .section h3 { margin: 0 0 9px; font-size: 14px; }
+    .field { display: block; margin: 9px 0; }
+    .field > span { display: flex; justify-content: space-between; color: #67574a; font-size: 12px; font-weight: 650; margin-bottom: 4px; }
+    .field .hint { font-weight: 400; color: #9a897a; }
+    .checks { display: flex; flex-wrap: wrap; gap: 6px; }
+    .check { display: inline-flex; align-items: center; gap: 5px; padding: 5px 8px; border: 1px solid #d8c6ad; border-radius: 8px; background: #fffaf0; }
+    .check input { width: auto; margin: 0; }
+    .inline-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .effect-row { display: grid; grid-template-columns: 1.35fr .65fr 1.2fr auto; gap: 6px; align-items: end; margin: 7px 0; padding: 8px; border-radius: 9px; background: var(--blue-soft); }
+    .effect-row label { font-size: 11px; color: var(--muted); }
+    .effect-row input, .effect-row select { margin-top: 3px; padding: 5px 6px; }
+    .inspector-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .audit { border-top: 1px solid var(--line); background: #fffaf0; }
+    .audit summary { cursor: pointer; padding: 10px 13px; font-weight: 750; }
+    .audit-list { max-height: 240px; overflow: auto; padding: 0 10px 10px; }
+    .audit-item { width: 100%; text-align: left; border: 0; border-radius: 8px; padding: 7px 9px; margin: 3px 0; background: #fff; }
+    .audit-item.error { border-left: 4px solid var(--red); }
+    .audit-item.review { border-left: 4px solid #8a5ab2; }
+    .audit-item.warning { border-left: 4px solid var(--yellow); }
+    .audit-item small { display: block; color: var(--muted); }
+
+    .toast {
+      position: fixed; right: 18px; bottom: 18px; z-index: 50; max-width: 520px;
+      padding: 12px 15px; border-radius: 11px; background: #38281f; color: #fff;
+      box-shadow: var(--shadow); opacity: 0; transform: translateY(10px); pointer-events: none;
+      transition: .18s ease;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.error { background: #873b34; }
+
+    dialog { border: 0; border-radius: 14px; padding: 0; box-shadow: 0 20px 70px rgba(41,27,18,.35); max-width: 760px; width: min(760px, 90vw); }
+    dialog::backdrop { background: rgba(45,31,22,.45); }
+    .dialog-body { padding: 18px; }
+    .dialog-body h2 { margin-top: 0; }
+    .log { max-height: 50vh; overflow: auto; white-space: pre-wrap; background: #281f1a; color: #f7ead4; padding: 12px; border-radius: 9px; font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+    @media (max-width: 1180px) {
+      .workspace { grid-template-columns: 240px minmax(480px, 1fr) 330px; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <h1>事件树编辑器</h1>
+      <small id="sourceInfo">正在读取 event.xlsx…</small>
+    </div>
+    <div class="toolbar">
+      <button class="btn" id="reloadBtn">重新读取</button>
+      <button class="btn" id="newEventBtn">＋ 新事件</button>
+      <button class="btn" id="copyReviewBtn">复制审核摘要</button>
+      <span class="spacer"></span>
+      <span id="saveState" class="save-state">尚未加载</span>
+      <button class="btn green" id="saveBtn">保存 Excel</button>
+      <button class="btn primary" id="generateBtn">运行配置生成</button>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <aside class="pane sidebar">
+      <div class="pane-title"><h2>事件</h2><span id="eventCount" class="chip">0</span></div>
+      <div class="search-wrap">
+        <input id="searchInput" placeholder="搜索名称或 ID">
+        <select id="typeFilter"><option value="">全部分类</option></select>
+      </div>
+      <div id="eventList" class="event-list"></div>
+      <div class="legend">点击事件后，在中间查看完整页面树；橙色是事件根页，白色是选择与结果。</div>
+    </aside>
+
+    <main class="center">
+      <div class="graph-toolbar">
+        <strong id="graphTitle">事件连接</strong>
+        <button class="btn slim" id="addRootBtn">＋ 根选择</button>
+        <button class="btn slim" id="fitBtn">回到左上</button>
+      </div>
+      <div id="graphViewport" class="graph-viewport">
+        <div id="graphCanvas" class="graph-canvas">
+          <svg id="edges" class="edges"><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#a87b4f"></path></marker></defs></svg>
+          <div id="nodes" class="nodes"></div>
+        </div>
+      </div>
+      <section class="preview">
+        <div class="preview-head"><h2>游戏内页面预览</h2><span id="previewPath" class="chip"></span></div>
+        <div id="previewCard" class="game-card"></div>
+      </section>
+    </main>
+
+    <aside class="pane inspector">
+      <div class="pane-title"><h2>编辑内容</h2><span id="selectionKind" class="chip">未选择</span></div>
+      <div id="inspector" class="inspector-scroll"><div class="empty">选择一个事件或选项开始编辑。</div></div>
+      <details class="audit" open>
+        <summary id="auditSummary">审核：等待加载</summary>
+        <div id="auditList" class="audit-list"></div>
+      </details>
+    </aside>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+<dialog id="logDialog"><div class="dialog-body"><h2 id="logTitle">配置生成</h2><pre id="logText" class="log"></pre><p><button class="btn" id="closeLogBtn">关闭</button></p></div></dialog>
+
+<script>
+"use strict";
+
+const API_HEADERS = {"Content-Type": "application/json", "X-Event-Editor": "1"};
+const state = {
+  model: null,
+  selected: {kind: "", id: ""},
+  dirty: false,
+  auditTimer: 0,
+};
+
+const $ = id => document.getElementById(id);
+const esc = value => String(value ?? "").replace(/[&<>'"]/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"})[char]);
+const deepCopy = value => JSON.parse(JSON.stringify(value));
+
+function toast(message, error = false) {
+  const el = $("toast");
+  el.textContent = message;
+  el.className = `toast show${error ? " error" : ""}`;
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => el.className = "toast", 3200);
+}
+
+async function api(path, options = {}) {
+  const response = await fetch(path, options);
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || payload.ok === false) throw new Error(payload.message || `请求失败：${response.status}`);
+  return payload;
+}
+
+function eventById(id) { return state.model?.events.find(item => item.id === id) ?? null; }
+function optionById(id) { return state.model?.options.find(item => item.id === id) ?? null; }
+function selectedEvent() {
+  if (!state.model) return null;
+  if (state.selected.kind === "event") return eventById(state.selected.id);
+  const option = optionById(state.selected.id);
+  return option ? eventById(option.eventId) : null;
+}
+function optionsFor(eventId) { return state.model?.options.filter(item => item.eventId === eventId) ?? []; }
+function childrenOf(eventId, parentId) { return optionsFor(eventId).filter(item => (item.parentId || "") === (parentId || "")); }
+
+function setDirty(value = true) {
+  state.dirty = value;
+  const el = $("saveState");
+  el.textContent = value ? "有未保存修改" : "已与 Excel 同步";
+  el.className = `save-state${value ? " dirty" : ""}`;
+  if (value) scheduleAudit();
+}
+
+function scheduleAudit() {
+  clearTimeout(state.auditTimer);
+  state.auditTimer = setTimeout(refreshAudit, 320);
+}
+
+async function refreshAudit() {
+  if (!state.model) return;
+  try {
+    const result = await api("/api/validate", {method: "POST", headers: API_HEADERS, body: JSON.stringify({model: state.model})});
+    state.model.audit = result.audit;
+    renderAudit();
+    renderEventList();
+  } catch (error) {
+    toast(`审核失败：${error.message}`, true);
+  }
+}
+
+async function loadModel(preserveSelection = false) {
+  if (state.dirty && !confirm("重新读取会放弃尚未保存的修改，继续吗？")) return;
+  const previous = preserveSelection ? {...state.selected} : {kind: "", id: ""};
+  try {
+    const result = await api("/api/model");
+    state.model = result.model;
+    state.selected = previous;
+    if (!eventById(selectedEvent()?.id)) {
+      const first = state.model.events[0];
+      state.selected = first ? {kind: "event", id: first.id} : {kind: "", id: ""};
+    }
+    setDirty(false);
+    renderAll();
+    toast(`已读取 ${state.model.events.length} 个事件。`);
+  } catch (error) {
+    $("sourceInfo").textContent = `读取失败：${error.message}`;
+    toast(error.message, true);
+  }
+}
+
+function issuesFor(eventId, optionId = "") {
+  return (state.model?.audit?.issues ?? []).filter(item => {
+    if (optionId) return item.optionId === optionId;
+    return item.eventId === eventId && !item.optionId;
+  });
+}
+
+function renderAll() {
+  if (!state.model) return;
+  const meta = state.model.meta;
+  $("sourceInfo").textContent = `${meta.sourcePath} · ${meta.sourceModifiedAt}`;
+  $("eventCount").textContent = `${state.model.events.length} 个`;
+  renderTypeFilter();
+  renderEventList();
+  renderGraph();
+  renderInspector();
+  renderPreview();
+  renderAudit();
+}
+
+function editorActionTypes() {
+  const preferred = ["Event", "Reward", "Negative", "Interest", "Slot"];
+  const available = new Set((state.model?.meta?.actionBehaviors ?? []).map(item => item.name));
+  return preferred.filter(item => available.has(item));
+}
+
+function renderTypeFilter() {
+  const current = $("typeFilter").value;
+  $("typeFilter").innerHTML = `<option value="">全部分类</option>${editorActionTypes().map(name => `<option value="${esc(name)}">${esc(name)}</option>`).join("")}`;
+  $("typeFilter").value = current;
+}
+
+function renderEventList() {
+  if (!state.model) return;
+  const search = $("searchInput").value.trim().toLowerCase();
+  const type = $("typeFilter").value;
+  const html = state.model.events.filter(event => {
+    const matchesSearch = !search || event.id.toLowerCase().includes(search) || event.name.toLowerCase().includes(search);
+    return matchesSearch && (!type || event.eventTypes.includes(type));
+  }).map(event => {
+    const allIssues = (state.model.audit?.issues ?? []).filter(item => item.eventId === event.id);
+    const errorCount = allIssues.filter(item => item.severity === "error").length;
+    const reviewCount = allIssues.filter(item => item.severity === "review").length;
+    const warningCount = allIssues.filter(item => item.severity === "warning").length;
+    return `<button class="event-item ${selectedEvent()?.id === event.id ? "active" : ""}" data-event-id="${esc(event.id)}">
+      <span class="event-name">${esc(event.name || "未命名事件")}</span>
+      <span>${errorCount ? `<span class="chip error">${errorCount}</span>` : ""}${reviewCount ? `<span class="chip review">${reviewCount}</span>` : ""}${warningCount ? `<span class="chip warning">${warningCount}</span>` : ""}</span>
+      <span class="event-id">${esc(event.id)}</span>
+      <span></span>
+      <span class="type-tags">${event.eventTypes.map(value => `<span class="chip type">${esc(value)}</span>`).join("")}</span>
+    </button>`;
+  }).join("");
+  $("eventList").innerHTML = html || `<div class="empty">没有符合筛选条件的事件。</div>`;
+  $("eventList").querySelectorAll("[data-event-id]").forEach(button => button.addEventListener("click", () => {
+    state.selected = {kind: "event", id: button.dataset.eventId};
+    renderAll();
+  }));
+}
+
+function computeDepth(option, byId, cache, visiting = new Set()) {
+  if (cache.has(option.id)) return cache.get(option.id);
+  if (!option.parentId || !byId.has(option.parentId)) return 1;
+  if (visiting.has(option.id)) return 1;
+  visiting.add(option.id);
+  const depth = computeDepth(byId.get(option.parentId), byId, cache, visiting) + 1;
+  visiting.delete(option.id);
+  cache.set(option.id, depth);
+  return depth;
+}
+
+function renderGraph() {
+  const event = selectedEvent();
+  if (!event) {
+    $("nodes").innerHTML = `<div class="empty">先选择一个事件。</div>`;
+    $("edges").innerHTML = "";
+    return;
+  }
+  $("graphTitle").textContent = `${event.name} · 页面树`;
+  const options = optionsFor(event.id);
+  const byId = new Map(options.map(item => [item.id, item]));
+  const depthCache = new Map();
+  const levels = new Map([[0, [{kind: "event", id: event.id, data: event}]]]);
+  options.forEach(option => {
+    const depth = computeDepth(option, byId, depthCache);
+    if (!levels.has(depth)) levels.set(depth, []);
+    levels.get(depth).push({kind: "option", id: option.id, data: option});
+  });
+  const positions = new Map();
+  let maxRows = 1;
+  let maxDepth = 0;
+  for (const [depth, nodes] of levels) {
+    maxDepth = Math.max(maxDepth, depth);
+    maxRows = Math.max(maxRows, nodes.length);
+    nodes.forEach((node, index) => positions.set(node.id, {x: 38 + depth * 330, y: 36 + index * 174, depth}));
+  }
+  const width = Math.max($("graphViewport").clientWidth, 360 + maxDepth * 330);
+  const height = Math.max($("graphViewport").clientHeight, 64 + maxRows * 174);
+  $("graphCanvas").style.width = `${width}px`;
+  $("graphCanvas").style.height = `${height}px`;
+
+  const nodeHtml = [];
+  for (const nodes of levels.values()) for (const node of nodes) {
+    const pos = positions.get(node.id);
+    if (node.kind === "event") {
+      const eventIssues = issuesFor(event.id);
+      nodeHtml.push(`<button class="node root ${state.selected.kind === "event" ? "selected" : ""}" style="left:${pos.x}px;top:${pos.y}px" data-node-kind="event" data-node-id="${esc(event.id)}">
+        <span class="kind">事件本体 / 根页</span><h3>${esc(event.name)}</h3><p>${esc(event.desc || "（正文为空）")}</p>
+        <div class="node-foot">${event.eventTypes.map(value => `<span class="chip type">${esc(value)}</span>`).join("")}${eventIssues.map(item => `<span class="chip ${item.severity}">${item.severity}</span>`).join("")}</div>
+      </button>`);
+    } else {
+      const option = node.data;
+      const effects = option.effects ?? [];
+      const nodeIssues = issuesFor(event.id, option.id);
+      nodeHtml.push(`<button class="node ${state.selected.kind === "option" && state.selected.id === option.id ? "selected" : ""}" style="left:${pos.x}px;top:${pos.y}px" data-node-kind="option" data-node-id="${esc(option.id)}">
+        <span class="kind">选择 → 结果</span><h3>${esc(option.text || "未命名选择")}</h3><p>${esc(option.resultText || "（结果正文为空）")}</p>
+        <div class="node-foot">${effects.slice(0, 3).map(effect => `<span class="chip effect">${esc(effect.type)}</span>`).join("")}${effects.length > 3 ? `<span class="chip">+${effects.length - 3}</span>` : ""}${nodeIssues.map(item => `<span class="chip ${item.severity}">${item.severity}</span>`).join("")}</div>
+      </button>`);
+    }
+  }
+  $("nodes").innerHTML = nodeHtml.join("");
+  $("nodes").querySelectorAll("[data-node-kind]").forEach(node => node.addEventListener("click", () => {
+    state.selected = {kind: node.dataset.nodeKind, id: node.dataset.nodeId};
+    renderAll();
+  }));
+
+  const edgeHtml = [];
+  const addEdge = (fromId, toId) => {
+    const from = positions.get(fromId), to = positions.get(toId);
+    if (!from || !to) return;
+    const x1 = from.x + 268, y1 = from.y + 67, x2 = to.x, y2 = to.y + 67;
+    const bend = Math.max(48, (x2 - x1) * .48);
+    edgeHtml.push(`<path class="edge" marker-end="url(#arrow)" d="M ${x1} ${y1} C ${x1 + bend} ${y1}, ${x2 - bend} ${y2}, ${x2} ${y2}"></path><text class="edge-label" x="${(x1+x2)/2 - 18}" y="${(y1+y2)/2 - 7}">选择后</text>`);
+  };
+  options.forEach(option => addEdge(option.parentId || event.id, option.id));
+  $("edges").setAttribute("width", width);
+  $("edges").setAttribute("height", height);
+  $("edges").innerHTML = `<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#a87b4f"></path></marker></defs>${edgeHtml.join("")}`;
+}
+
+function field(label, name, value, options = {}) {
+  const type = options.type || "text";
+  const hint = options.hint ? `<span class="hint">${esc(options.hint)}</span>` : "";
+  if (type === "textarea") return `<label class="field"><span>${esc(label)}${hint}</span><textarea data-field="${esc(name)}" rows="${options.rows || 3}">${esc(value)}</textarea></label>`;
+  if (type === "number") return `<label class="field"><span>${esc(label)}${hint}</span><input data-field="${esc(name)}" type="number" step="${options.step || "1"}" value="${esc(value)}"></label>`;
+  return `<label class="field"><span>${esc(label)}${hint}</span><input data-field="${esc(name)}" value="${esc(value)}"></label>`;
+}
+
+function renderInspector() {
+  const event = selectedEvent();
+  if (!event) {
+    $("inspector").innerHTML = `<div class="empty">没有可编辑内容。</div>`;
+    return;
+  }
+  if (state.selected.kind === "option") renderOptionInspector(optionById(state.selected.id));
+  else renderEventInspector(event);
+}
+
+function renderEventInspector(event) {
+  $("selectionKind").textContent = "事件本体";
+  const types = editorActionTypes().map(name => `<label class="check"><input type="checkbox" data-event-type="${esc(name)}" ${event.eventTypes.includes(name) ? "checked" : ""}>${esc(name)}</label>`).join("");
+  const showSlot = event.eventTypes.includes("Slot");
+  $("inspector").innerHTML = `
+    <section class="section"><h3>根页内容</h3>
+      ${field("事件 ID", "id", event.id, {hint:"保存后作为稳定引用"})}
+      ${field("事件名称", "name", event.name)}
+      ${field("事件正文", "desc", event.desc, {type:"textarea", rows:4})}
+      <label class="field"><span>事件分类 <span class="hint">可多选，顺序按勾选顺序</span></span><div class="checks">${types}</div></label>
+      ${field("出现前置条件", "preconditions", event.preconditions, {hint:"多个条件用 | 连接"})}
+      <div class="inline-fields">${field("随机权重", "weight", event.weight, {type:"number",step:"0.1"})}<label class="field"><span>是否可重复</span><select data-field="repeatable"><option value="true" ${event.repeatable ? "selected" : ""}>是</option><option value="false" ${!event.repeatable ? "selected" : ""}>否</option></select></label></div>
+      ${field("背景 Sprite", "bgSprite", event.bgSprite)}
+      ${field("终止结果模板", "resultText", event.resultText, {type:"textarea",rows:2})}
+    </section>
+    ${showSlot ? `<section class="section"><h3>抽奖机专用配置</h3>${field("奖励槽组", "slotRewardGroupId", event.slotRewardGroupId)}<div class="inline-fields">${field("空奖权重", "slotEmptyWeight", event.slotEmptyWeight, {type:"number",step:"0.1"})}${field("免费次数", "slotFreeSpins", event.slotFreeSpins, {type:"number"})}${field("单次价格", "slotPaidCost", event.slotPaidCost, {type:"number"})}${field("最大次数", "slotMaxSpins", event.slotMaxSpins, {type:"number"})}</div></section>` : ""}
+    <section class="section"><h3>事件操作</h3><div class="inspector-actions"><button class="btn slim" data-action="add-root">＋ 根选择</button><button class="btn slim" data-action="duplicate-event">复制事件</button><button class="btn slim danger" data-action="delete-event">删除事件</button></div></section>`;
+  bindInspector(event, "event");
+}
+
+function renderOptionInspector(option) {
+  if (!option) return;
+  $("selectionKind").textContent = "选择与结果";
+  const eventOptions = optionsFor(option.eventId).filter(item => item.id !== option.id);
+  const parentChoices = [`<option value="" ${!option.parentId ? "selected" : ""}>根页选择</option>`, ...eventOptions.map(item => `<option value="${esc(item.id)}" ${option.parentId === item.id ? "selected" : ""}>${esc(item.text)} · ${esc(item.id)}</option>`)].join("");
+  const effectTypes = state.model.meta.effectTypes;
+  const effectRows = (option.effects ?? []).map((effect, index) => `<div class="effect-row" data-effect-index="${index}">
+    <label>效果类型<select data-effect-field="type">${effectTypes.map(item => `<option value="${esc(item.name)}" ${effect.type === item.name ? "selected" : ""} title="${esc(item.comment)}">${esc(item.name)}</option>`).join("")}</select></label>
+    <label>数值<input data-effect-field="value" type="number" step="0.1" value="${esc(effect.value)}"></label>
+    <label>参数<input data-effect-field="param" value="${esc(effect.param)}"></label>
+    <button class="btn slim danger" data-remove-effect="${index}" title="删除效果">×</button>
+  </div>`).join("");
+  $("inspector").innerHTML = `
+    <section class="section"><h3>选择与页面连接</h3>
+      ${field("选项 ID", "id", option.id)}
+      <label class="field"><span>上一页来源 <span class="hint">决定连线</span></span><select data-field="parentId">${parentChoices}</select></label>
+      ${field("选择按钮文字", "text", option.text)}
+      ${field("选择后的结果 / 下一页正文", "resultText", option.resultText, {type:"textarea",rows:4})}
+      ${field("可选条件", "condition", option.condition, {hint:"空 = 始终可选"})}
+      ${field("条件显示文案", "conditionText", option.conditionText, {hint:"玩家实际看到的要求"})}
+      <label class="field"><span>结算后立即结束</span><select data-field="autoEnd"><option value="false" ${!option.autoEnd ? "selected" : ""}>否</option><option value="true" ${option.autoEnd ? "selected" : ""}>是</option></select></label>
+    </section>
+    <section class="section"><h3>选择后的效果</h3>${effectRows}<button class="btn slim" data-action="add-effect">＋ 添加效果</button></section>
+    <section class="section"><h3>分支操作</h3><div class="inspector-actions"><button class="btn slim" data-action="add-child">＋ 后续选择</button><button class="btn slim" data-action="move-up">上移</button><button class="btn slim" data-action="move-down">下移</button><button class="btn slim" data-action="duplicate-option">复制选择</button><button class="btn slim danger" data-action="delete-option">删除分支</button></div></section>`;
+  bindInspector(option, "option");
+}
+
+function bindInspector(target, kind) {
+  $("inspector").querySelectorAll("[data-field]").forEach(input => {
+    const apply = () => {
+      const fieldName = input.dataset.field;
+      let value = input.value;
+      if (input.type === "number") value = Number(value || 0);
+      if (["repeatable", "autoEnd"].includes(fieldName)) value = value === "true";
+      if (fieldName === "id") renameId(kind, target, value.trim());
+      else target[fieldName] = value;
+      setDirty();
+    };
+    input.addEventListener("input", () => {
+      if (input.tagName === "SELECT" || input.type === "number") return;
+      if (input.dataset.field !== "id") { target[input.dataset.field] = input.value; setDirty(); }
+    });
+    input.addEventListener("change", () => { apply(); renderAll(); });
+  });
+  $("inspector").querySelectorAll("[data-event-type]").forEach(input => input.addEventListener("change", () => {
+    const name = input.dataset.eventType;
+    if (input.checked && !target.eventTypes.includes(name)) target.eventTypes.push(name);
+    if (!input.checked) target.eventTypes = target.eventTypes.filter(value => value !== name);
+    setDirty(); renderAll();
+  }));
+  $("inspector").querySelectorAll("[data-effect-index]").forEach(row => {
+    const index = Number(row.dataset.effectIndex);
+    row.querySelectorAll("[data-effect-field]").forEach(input => {
+      const applyEffectValue = () => {
+        target.effects[index][input.dataset.effectField] = input.dataset.effectField === "value" ? Number(input.value || 0) : input.value;
+        setDirty();
+      };
+      if (input.tagName === "SELECT") {
+        input.addEventListener("change", () => { applyEffectValue(); renderAll(); });
+      } else {
+        input.addEventListener("input", applyEffectValue);
+        input.addEventListener("change", () => { applyEffectValue(); renderAll(); });
+      }
+    });
+  });
+  $("inspector").querySelectorAll("[data-remove-effect]").forEach(button => button.addEventListener("click", () => {
+    target.effects.splice(Number(button.dataset.removeEffect), 1);
+    if (!target.effects.length) target.effects.push({type:"None", value:0, param:"-"});
+    setDirty(); renderAll();
+  }));
+  $("inspector").querySelectorAll("[data-action]").forEach(button => button.addEventListener("click", () => handleAction(button.dataset.action, target)));
+}
+
+function renameId(kind, target, newId) {
+  if (!newId || newId === target.id) return;
+  const oldId = target.id;
+  target.id = newId;
+  if (kind === "event") {
+    state.model.options.filter(item => item.eventId === oldId).forEach(item => item.eventId = newId);
+  } else {
+    state.model.options.filter(item => item.parentId === oldId).forEach(item => item.parentId = newId);
+  }
+  state.selected.id = newId;
+}
+
+function uniqueId(prefix, base) {
+  const used = new Set([...(state.model?.events ?? []).map(item => item.id), ...(state.model?.options ?? []).map(item => item.id)]);
+  let candidate = `${prefix}${base}`.replace(/[^a-z0-9_]/g, "_");
+  let index = 2;
+  while (used.has(candidate)) candidate = `${prefix}${base}_${index++}`;
+  return candidate;
+}
+
+function createOption(eventId, parentId = "") {
+  const suffix = eventId.replace(/^ev_/, "");
+  return {id: uniqueId("opt_", `${suffix}_choice`), eventId, parentId, text:"新选择", resultText:"选择后的结果", condition:"", conditionText:"", autoEnd:false, effects:[{type:"None",value:0,param:"-"}]};
+}
+
+function handleAction(action, target) {
+  if (action === "add-root") return addOption(target.id, "");
+  if (action === "add-child") return addOption(target.eventId, target.id);
+  if (action === "add-effect") { target.effects.push({type:"None",value:0,param:"-"}); setDirty(); renderAll(); return; }
+  if (action === "duplicate-event") return duplicateEvent(target);
+  if (action === "delete-event") return deleteEvent(target);
+  if (action === "duplicate-option") return duplicateOption(target);
+  if (action === "delete-option") return deleteOption(target);
+  if (action === "move-up") return moveOption(target, -1);
+  if (action === "move-down") return moveOption(target, 1);
+}
+
+function addOption(eventId, parentId) {
+  const option = createOption(eventId, parentId);
+  state.model.options.push(option);
+  state.selected = {kind:"option", id:option.id};
+  setDirty(); renderAll();
+}
+
+function duplicateEvent(event) {
+  const copy = deepCopy(event);
+  copy.id = uniqueId("ev_", event.id.replace(/^ev_/, "") + "_copy");
+  copy.name += " 副本";
+  state.model.events.push(copy);
+  const originalOptions = optionsFor(event.id);
+  const idMap = new Map(originalOptions.map(item => [item.id, uniqueId("opt_", item.id.replace(/^opt_/, "") + "_copy")]));
+  originalOptions.forEach(item => {
+    const option = deepCopy(item);
+    option.id = idMap.get(item.id);
+    option.eventId = copy.id;
+    option.parentId = item.parentId ? idMap.get(item.parentId) || "" : "";
+    state.model.options.push(option);
+  });
+  state.selected = {kind:"event",id:copy.id}; setDirty(); renderAll();
+}
+
+function deleteEvent(event) {
+  if (!confirm(`删除事件“${event.name}”及其全部选择？此操作将在保存后写入 Excel。`)) return;
+  state.model.events = state.model.events.filter(item => item.id !== event.id);
+  state.model.options = state.model.options.filter(item => item.eventId !== event.id);
+  const next = state.model.events[0];
+  state.selected = next ? {kind:"event",id:next.id} : {kind:"",id:""};
+  setDirty(); renderAll();
+}
+
+function duplicateOption(option) {
+  const copy = deepCopy(option);
+  copy.id = uniqueId("opt_", option.id.replace(/^opt_/, "") + "_copy");
+  copy.text += " 副本";
+  state.model.options.push(copy);
+  state.selected = {kind:"option",id:copy.id}; setDirty(); renderAll();
+}
+
+function descendantIds(optionId, result = new Set()) {
+  for (const child of state.model.options.filter(item => item.parentId === optionId)) {
+    if (!result.has(child.id)) { result.add(child.id); descendantIds(child.id, result); }
+  }
+  return result;
+}
+
+function deleteOption(option) {
+  const descendants = descendantIds(option.id);
+  const suffix = descendants.size ? `以及 ${descendants.size} 个后续选择` : "";
+  if (!confirm(`删除“${option.text}”${suffix}？`)) return;
+  descendants.add(option.id);
+  state.model.options = state.model.options.filter(item => !descendants.has(item.id));
+  state.selected = {kind:"event",id:option.eventId}; setDirty(); renderAll();
+}
+
+function moveOption(option, delta) {
+  const siblings = state.model.options.filter(item => item.eventId === option.eventId && (item.parentId || "") === (option.parentId || ""));
+  const current = siblings.findIndex(item => item.id === option.id);
+  const next = current + delta;
+  if (current < 0 || next < 0 || next >= siblings.length) return;
+  const a = state.model.options.indexOf(siblings[current]);
+  const b = state.model.options.indexOf(siblings[next]);
+  [state.model.options[a], state.model.options[b]] = [state.model.options[b], state.model.options[a]];
+  setDirty(); renderAll();
+}
+
+function renderPreview() {
+  const event = selectedEvent();
+  if (!event) return;
+  if (state.selected.kind === "event") {
+    const choices = childrenOf(event.id, "");
+    $("previewPath").textContent = "事件根页";
+    $("previewCard").innerHTML = `<h3>${esc(event.name)}</h3><p>${esc(event.desc || "（正文为空）")}</p><div class="choice-row">${choices.length ? choices.map(item => `<span class="choice-preview">${esc(item.text)}</span>`).join("") : `<span class="chip">没有选择，确认后结束</span>`}</div>`;
+    return;
+  }
+  const option = optionById(state.selected.id);
+  if (!option) return;
+  const children = childrenOf(event.id, option.id);
+  $("previewPath").textContent = `${option.text} → ${children.length ? "下一页" : "结束"}`;
+  $("previewCard").innerHTML = `<h3>${esc(event.name)}</h3><p><strong>玩家选择：</strong>${esc(option.text)}</p><div class="result-box"><strong>选择后的结果</strong><p>${esc(option.resultText || "（由效果反馈生成）")}</p></div><div class="type-tags">${option.effects.map(effect => `<span class="chip effect">${esc(effect.type)} ${esc(effect.value)} ${esc(effect.param)}</span>`).join("")}</div><div class="choice-row">${children.map(item => `<span class="choice-preview">${esc(item.text)}</span>`).join("")}${option.autoEnd ? `<span class="chip warning">立即结束</span>` : ""}</div>`;
+}
+
+function renderAudit() {
+  const audit = state.model?.audit;
+  if (!audit) return;
+  const c = audit.counts;
+  $("auditSummary").innerHTML = `审核：<span class="chip error">阻塞 ${c.error}</span> <span class="chip review">需确认 ${c.review}</span> <span class="chip warning">提醒 ${c.warning}</span>`;
+  const order = {error:0,review:1,warning:2,info:3};
+  const items = [...audit.issues].sort((a,b) => order[a.severity] - order[b.severity]);
+  $("auditList").innerHTML = items.length ? items.map((item,index) => `<button class="audit-item ${item.severity}" data-issue-index="${index}"><strong>${item.severity === "error" ? "阻塞" : item.severity === "review" ? "需要逻辑确认" : "提醒"}</strong> ${esc(item.message)}<small>${esc([item.eventId,item.optionId,item.code].filter(Boolean).join(" · "))}</small></button>`).join("") : `<div class="empty">没有发现问题。</div>`;
+  $("auditList").querySelectorAll("[data-issue-index]").forEach((button, sortedIndex) => button.addEventListener("click", () => {
+    const item = items[sortedIndex];
+    if (item.optionId && optionById(item.optionId)) state.selected = {kind:"option",id:item.optionId};
+    else if (item.eventId && eventById(item.eventId)) state.selected = {kind:"event",id:item.eventId};
+    renderAll();
+  }));
+  $("saveBtn").disabled = !audit.canSave;
+}
+
+async function saveWorkbook() {
+  if (!state.model) return;
+  await refreshAudit();
+  const audit = state.model.audit;
+  if (!audit.canSave) { toast("还有阻塞问题，不能保存。", true); return; }
+  if (audit.needsLogicReview && !confirm("存在“需要逻辑确认”的配置。可以先保存草稿，但运行时可能不符合预期。仍然保存 Excel 吗？")) return;
+  try {
+    $("saveBtn").disabled = true;
+    const result = await api("/api/save", {method:"POST",headers:API_HEADERS,body:JSON.stringify({model:state.model,sourceHash:state.model.meta.sourceHash})});
+    state.model = result.model;
+    setDirty(false);
+    renderAll();
+    toast(`已保存，并备份到 ${result.backupPath}`);
+  } catch (error) {
+    toast(`保存失败：${error.message}`, true);
+  } finally {
+    renderAudit();
+  }
+}
+
+async function generateConfig() {
+  if (state.dirty) { toast("请先保存 Excel，再运行配置生成。", true); return; }
+  if (state.model?.audit?.counts?.error) { toast("还有阻塞问题，不能生成。", true); return; }
+  if (state.model?.audit?.needsLogicReview && !confirm("仍有需要逻辑确认的配置，确定现在运行生成吗？")) return;
+  $("generateBtn").disabled = true;
+  $("logTitle").textContent = "正在运行配置生成…";
+  $("logText").textContent = "请稍候。";
+  $("logDialog").showModal();
+  try {
+    const result = await api("/api/generate", {method:"POST",headers:API_HEADERS,body:"{}"});
+    $("logTitle").textContent = result.ok ? "配置生成成功" : "配置生成未通过";
+    $("logText").textContent = result.output || "没有输出。";
+    toast(result.ok ? "配置生成成功。" : "配置生成未通过，请查看报告。", !result.ok);
+  } catch (error) {
+    $("logTitle").textContent = "配置生成失败";
+    $("logText").textContent = error.message;
+    toast(error.message, true);
+  } finally {
+    $("generateBtn").disabled = false;
+  }
+}
+
+function newEvent() {
+  const id = uniqueId("ev_", "new_event");
+  const event = {id,name:"新事件",desc:"在这里填写事件发生时玩家看到的正文。",eventTypes:["Event"],preconditions:"",weight:1,repeatable:true,bgSprite:"",resultText:"",slotRewardGroupId:"",slotEmptyWeight:0,slotFreeSpins:0,slotPaidCost:0,slotMaxSpins:0};
+  state.model.events.push(event);
+  const option = createOption(id, "");
+  state.model.options.push(option);
+  state.selected = {kind:"event",id};
+  setDirty(); renderAll();
+}
+
+async function copyReview() {
+  if (!state.model) return;
+  await refreshAudit();
+  const audit = state.model.audit;
+  const lines = [
+    `事件表审核：${state.model.meta.sourcePath}`,
+    `事件 ${state.model.events.length} 个，选择 ${state.model.options.length} 个。`,
+    `阻塞 ${audit.counts.error}，需要逻辑确认 ${audit.counts.review}，提醒 ${audit.counts.warning}。`,
+    ...audit.issues.map(item => `- [${item.severity}] ${item.eventId || "全局"}${item.optionId ? "/" + item.optionId : ""}: ${item.message}`),
+  ];
+  try { await navigator.clipboard.writeText(lines.join("\n")); toast("审核摘要已复制，可以直接发给 Codex。 "); }
+  catch { toast("浏览器未允许复制，请从审核面板手动复制。", true); }
+}
+
+$("reloadBtn").addEventListener("click", () => loadModel(true));
+$("newEventBtn").addEventListener("click", newEvent);
+$("addRootBtn").addEventListener("click", () => { const event = selectedEvent(); if (event) addOption(event.id, ""); });
+$("fitBtn").addEventListener("click", () => $("graphViewport").scrollTo({left:0,top:0,behavior:"smooth"}));
+$("saveBtn").addEventListener("click", saveWorkbook);
+$("generateBtn").addEventListener("click", generateConfig);
+$("copyReviewBtn").addEventListener("click", copyReview);
+$("searchInput").addEventListener("input", renderEventList);
+$("typeFilter").addEventListener("change", renderEventList);
+$("closeLogBtn").addEventListener("click", () => $("logDialog").close());
+window.addEventListener("beforeunload", event => { if (state.dirty) { event.preventDefault(); event.returnValue = ""; } });
+window.addEventListener("resize", () => state.model && renderGraph());
+
+loadModel();
+</script>
+</body>
+</html>

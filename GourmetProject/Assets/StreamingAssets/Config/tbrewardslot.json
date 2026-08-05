@@ -24,7 +24,7 @@
       0
     ],
     "name": "食物",
-    "ruleTemplate": "从 {choiceCount} 个食物中\n选择 {requiredPickCount} 个加入食谱"
+    "ruleTemplate": "从 {choiceCount} 个食物中选择 {requiredPickCount} 个加入食谱"
   },
   {
     "id": "slot_specific_gold",
@@ -78,7 +78,7 @@
       0
     ],
     "name": "餐桌格",
-    "ruleTemplate": "从 {choiceCount} 个餐桌格中\n选择 {requiredPickCount} 个拼入餐桌"
+    "ruleTemplate": "从 {choiceCount} 个餐桌格中选择 {requiredPickCount} 个拼入餐桌"
   },
   {
     "id": "slot_specific_passive",
@@ -105,7 +105,7 @@
       0
     ],
     "name": "装饰品",
-    "ruleTemplate": "从 {choiceCount} 个装饰品中\n选择 {requiredPickCount} 个"
+    "ruleTemplate": "从 {choiceCount} 个装饰品中选择 {requiredPickCount} 个"
   },
   {
     "id": "slot_specific_active_strengthen",
@@ -132,7 +132,7 @@
       0
     ],
     "name": "强化箱",
-    "ruleTemplate": "从 {choiceCount} 个强化箱中\n选择 {requiredPickCount} 个"
+    "ruleTemplate": "从 {choiceCount} 个强化箱中选择 {requiredPickCount} 个"
   },
   {
     "id": "slot_specific_active_adjust",
@@ -159,7 +159,7 @@
       0
     ],
     "name": "调整单",
-    "ruleTemplate": "从 {choiceCount} 个调整单中\n选择 {requiredPickCount} 个"
+    "ruleTemplate": "从 {choiceCount} 个调整单中选择 {requiredPickCount} 个"
   },
   {
     "id": "slot_specific_hard_passive",
@@ -186,7 +186,7 @@
       0
     ],
     "name": "装饰品",
-    "ruleTemplate": "从 {choiceCount} 个装饰品中\n选择 {requiredPickCount} 个"
+    "ruleTemplate": "从 {choiceCount} 个装饰品中选择 {requiredPickCount} 个"
   },
   {
     "id": "slot_specific_hard_active_strengthen",
@@ -213,7 +213,7 @@
       0
     ],
     "name": "强化箱",
-    "ruleTemplate": "从 {choiceCount} 个强化箱中\n选择 {requiredPickCount} 个"
+    "ruleTemplate": "从 {choiceCount} 个强化箱中选择 {requiredPickCount} 个"
   },
   {
     "id": "slot_specific_hard_active_adjust",
@@ -240,7 +240,7 @@
       0
     ],
     "name": "调整单",
-    "ruleTemplate": "从 {choiceCount} 个调整单中\n选择 {requiredPickCount} 个"
+    "ruleTemplate": "从 {choiceCount} 个调整单中选择 {requiredPickCount} 个"
   },
   {
     "id": "slot_boss_dish",
@@ -267,7 +267,7 @@
       0
     ],
     "name": "食物",
-    "ruleTemplate": "从 {choiceCount} 个食物中\n选择 {requiredPickCount} 个加入食谱"
+    "ruleTemplate": "从 {choiceCount} 个食物中选择 {requiredPickCount} 个加入食谱"
   },
   {
     "id": "slot_boss_passive",
@@ -294,7 +294,7 @@
       0
     ],
     "name": "装饰品",
-    "ruleTemplate": "从 {choiceCount} 个装饰品中\n选择 {requiredPickCount} 个"
+    "ruleTemplate": "从 {choiceCount} 个装饰品中选择 {requiredPickCount} 个"
   },
   {
     "id": "slot_boss_fragment",
@@ -321,7 +321,7 @@
       0
     ],
     "name": "餐桌格",
-    "ruleTemplate": "从 {choiceCount} 个餐桌格中\n选择 {requiredPickCount} 个拼入餐桌"
+    "ruleTemplate": "从 {choiceCount} 个餐桌格中选择 {requiredPickCount} 个拼入餐桌"
   },
   {
     "id": "slot_boss_gold",
@@ -375,7 +375,7 @@
       0
     ],
     "name": "食物",
-    "ruleTemplate": "从 {choiceCount} 个食物中\n选择 {requiredPickCount} 个加入食谱"
+    "ruleTemplate": "从 {choiceCount} 个食物中选择 {requiredPickCount} 个加入食谱"
   },
   {
     "id": "dish_grant_1",
@@ -456,7 +456,7 @@
       0
     ],
     "name": "装饰品",
-    "ruleTemplate": "从 {choiceCount} 个装饰品中\n选择 {requiredPickCount} 个"
+    "ruleTemplate": "从 {choiceCount} 个装饰品中选择 {requiredPickCount} 个"
   },
   {
     "id": "passive_grant_2",
@@ -564,7 +564,7 @@
       0
     ],
     "name": "消耗品选择",
-    "ruleTemplate": "从 {choiceCount} 个消耗品中\n选择 {requiredPickCount} 个"
+    "ruleTemplate": "从 {choiceCount} 个消耗品中选择 {requiredPickCount} 个"
   },
   {
     "id": "fragment_choice_3",
@@ -591,7 +591,7 @@
       0
     ],
     "name": "餐桌格",
-    "ruleTemplate": "从 {choiceCount} 个餐桌格中\n选择 {requiredPickCount} 个"
+    "ruleTemplate": "从 {choiceCount} 个餐桌格中选择 {requiredPickCount} 个"
   },
   {
     "id": "flavored_dish_3",
@@ -780,7 +780,7 @@
       0
     ],
     "name": "餐桌格",
-    "ruleTemplate": "从 {choiceCount} 个餐桌格中\n选择 {requiredPickCount} 个拼入餐桌"
+    "ruleTemplate": "从 {choiceCount} 个餐桌格中选择 {requiredPickCount} 个拼入餐桌"
   },
   {
     "id": "slot_machine_active",
@@ -834,6 +834,6 @@
       0
     ],
     "name": "装饰品",
-    "ruleTemplate": "从 {choiceCount} 个装饰品中\n选择 {requiredPickCount} 个"
+    "ruleTemplate": "从 {choiceCount} 个装饰品中选择 {requiredPickCount} 个"
   }
 ]

@@ -11,11 +11,7 @@
     "repeatable": true,
     "bgSprite": "",
     "resultText": "",
-    "slotRewardGroupId": "",
-    "slotEmptyWeight": 0,
-    "slotFreeSpins": 0,
-    "slotPaidCost": 0,
-    "slotMaxSpins": 0
+    "slotRewardGroupId": ""
   },
   {
     "id": "ev_ancestral_recipe_page",
@@ -30,11 +26,7 @@
     "repeatable": true,
     "bgSprite": "",
     "resultText": "",
-    "slotRewardGroupId": "",
-    "slotEmptyWeight": 0,
-    "slotFreeSpins": 0,
-    "slotPaidCost": 0,
-    "slotMaxSpins": 0
+    "slotRewardGroupId": ""
   },
   {
     "id": "ev_table_carpenter",
@@ -49,11 +41,7 @@
     "repeatable": true,
     "bgSprite": "",
     "resultText": "",
-    "slotRewardGroupId": "",
-    "slotEmptyWeight": 0,
-    "slotFreeSpins": 0,
-    "slotPaidCost": 0,
-    "slotMaxSpins": 0
+    "slotRewardGroupId": ""
   },
   {
     "id": "ev_kitchen_god_statue",
@@ -67,11 +55,7 @@
     "repeatable": true,
     "bgSprite": "",
     "resultText": "",
-    "slotRewardGroupId": "",
-    "slotEmptyWeight": 0,
-    "slotFreeSpins": 0,
-    "slotPaidCost": 0,
-    "slotMaxSpins": 0
+    "slotRewardGroupId": ""
   },
   {
     "id": "ev_crossroad_sign",
@@ -85,11 +69,7 @@
     "repeatable": true,
     "bgSprite": "",
     "resultText": "",
-    "slotRewardGroupId": "",
-    "slotEmptyWeight": 0,
-    "slotFreeSpins": 0,
-    "slotPaidCost": 0,
-    "slotMaxSpins": 0
+    "slotRewardGroupId": ""
   },
   {
     "id": "ev_delivery_order",
@@ -103,11 +83,7 @@
     "repeatable": true,
     "bgSprite": "",
     "resultText": "",
-    "slotRewardGroupId": "",
-    "slotEmptyWeight": 0,
-    "slotFreeSpins": 0,
-    "slotPaidCost": 0,
-    "slotMaxSpins": 0
+    "slotRewardGroupId": ""
   },
   {
     "id": "ev_black_market_advance",
@@ -121,11 +97,7 @@
     "repeatable": true,
     "bgSprite": "",
     "resultText": "",
-    "slotRewardGroupId": "",
-    "slotEmptyWeight": 0,
-    "slotFreeSpins": 0,
-    "slotPaidCost": 0,
-    "slotMaxSpins": 0
+    "slotRewardGroupId": ""
   },
   {
     "id": "ev_wishing_casserole_i",
@@ -139,11 +111,7 @@
     "repeatable": false,
     "bgSprite": "",
     "resultText": "",
-    "slotRewardGroupId": "",
-    "slotEmptyWeight": 0,
-    "slotFreeSpins": 0,
-    "slotPaidCost": 0,
-    "slotMaxSpins": 0
+    "slotRewardGroupId": ""
   },
   {
     "id": "ev_wishing_casserole_ii",
@@ -157,11 +125,7 @@
     "repeatable": false,
     "bgSprite": "",
     "resultText": "",
-    "slotRewardGroupId": "",
-    "slotEmptyWeight": 0,
-    "slotFreeSpins": 0,
-    "slotPaidCost": 0,
-    "slotMaxSpins": 0
+    "slotRewardGroupId": ""
   },
   {
     "id": "ev_roast_meat",
@@ -175,11 +139,7 @@
     "repeatable": true,
     "bgSprite": "",
     "resultText": "",
-    "slotRewardGroupId": "",
-    "slotEmptyWeight": 0,
-    "slotFreeSpins": 0,
-    "slotPaidCost": 0,
-    "slotMaxSpins": 0
+    "slotRewardGroupId": ""
   },
   {
     "id": "ev_interest",
@@ -193,11 +153,7 @@
     "repeatable": true,
     "bgSprite": "",
     "resultText": "金币 +{gain}",
-    "slotRewardGroupId": "",
-    "slotEmptyWeight": 0,
-    "slotFreeSpins": 0,
-    "slotPaidCost": 0,
-    "slotMaxSpins": 0
+    "slotRewardGroupId": ""
   },
   {
     "id": "ev_slot_machine",
@@ -211,10 +167,6 @@
     "repeatable": true,
     "bgSprite": "",
     "resultText": "这次什么也没有。",
-    "slotRewardGroupId": "slot_machine_basic",
-    "slotEmptyWeight": 40,
-    "slotFreeSpins": 1,
-    "slotPaidCost": 20,
-    "slotMaxSpins": 5
+    "slotRewardGroupId": "slot_machine_basic"
   }
 ]

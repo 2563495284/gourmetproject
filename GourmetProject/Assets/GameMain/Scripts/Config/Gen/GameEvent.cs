@@ -27,10 +27,6 @@ public sealed partial class GameEvent : Luban.BeanBase
         { if(!_buf["bgSprite"].IsString) { throw new SerializationException(); }  BgSprite = _buf["bgSprite"]; }
         { if(!_buf["resultText"].IsString) { throw new SerializationException(); }  ResultText = _buf["resultText"]; }
         { if(!_buf["slotRewardGroupId"].IsString) { throw new SerializationException(); }  SlotRewardGroupId = _buf["slotRewardGroupId"]; }
-        { if(!_buf["slotEmptyWeight"].IsNumber) { throw new SerializationException(); }  SlotEmptyWeight = _buf["slotEmptyWeight"]; }
-        { if(!_buf["slotFreeSpins"].IsNumber) { throw new SerializationException(); }  SlotFreeSpins = _buf["slotFreeSpins"]; }
-        { if(!_buf["slotPaidCost"].IsNumber) { throw new SerializationException(); }  SlotPaidCost = _buf["slotPaidCost"]; }
-        { if(!_buf["slotMaxSpins"].IsNumber) { throw new SerializationException(); }  SlotMaxSpins = _buf["slotMaxSpins"]; }
     }
 
     public static GameEvent DeserializeGameEvent(JSONNode _buf)
@@ -51,7 +47,7 @@ public sealed partial class GameEvent : Luban.BeanBase
     /// </summary>
     public readonly string Desc;
     /// <summary>
-    /// 事件分类列表（|分隔；首项决定权重/保底，其余项也加入对应行动池）
+    /// 事件分类列表
     /// </summary>
     public readonly System.Collections.Generic.List<ActionBehavior> EventTypes;
     /// <summary>
@@ -63,7 +59,7 @@ public sealed partial class GameEvent : Luban.BeanBase
     /// </summary>
     public readonly float Weight;
     /// <summary>
-    /// 是否可重复(false 命中后本局不再出)
+    /// 是否可重复
     /// </summary>
     public readonly bool Repeatable;
     /// <summary>
@@ -71,29 +67,13 @@ public sealed partial class GameEvent : Luban.BeanBase
     /// </summary>
     public readonly string BgSprite;
     /// <summary>
-    /// 终止型事件结果文本模板；利息事件支持 {gain}/{threshold}/{goldPer}/{maxGain}/{currentGold}
+    /// 终止型事件结果文本模板
     /// </summary>
     public readonly string ResultText;
     /// <summary>
     /// Slot 奖励槽组ID→reward_slot.groupId
     /// </summary>
     public readonly string SlotRewardGroupId;
-    /// <summary>
-    /// 空奖权重；与奖励槽组权重总和共同计算
-    /// </summary>
-    public readonly float SlotEmptyWeight;
-    /// <summary>
-    /// 每个抽奖机节点的免费抽奖次数
-    /// </summary>
-    public readonly int SlotFreeSpins;
-    /// <summary>
-    /// 免费次数用完后的单次金币价格
-    /// </summary>
-    public readonly int SlotPaidCost;
-    /// <summary>
-    /// 每个抽奖机节点最多抽奖次数
-    /// </summary>
-    public readonly int SlotMaxSpins;
    
     public const int __ID__ = -1313800792;
     public override int GetTypeId() => __ID__;
@@ -115,10 +95,6 @@ public sealed partial class GameEvent : Luban.BeanBase
         + "bgSprite:" + BgSprite + ","
         + "resultText:" + ResultText + ","
         + "slotRewardGroupId:" + SlotRewardGroupId + ","
-        + "slotEmptyWeight:" + SlotEmptyWeight + ","
-        + "slotFreeSpins:" + SlotFreeSpins + ","
-        + "slotPaidCost:" + SlotPaidCost + ","
-        + "slotMaxSpins:" + SlotMaxSpins + ","
         + "}";
     }
 }

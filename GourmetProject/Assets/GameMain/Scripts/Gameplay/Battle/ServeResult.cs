@@ -78,7 +78,7 @@ namespace GourmetProject.Gameplay.Battle
         Confirm,
     }
 
-    /// <summary>已经占用餐桌格子、但仍等待玩家执行“上菜”或“确认”的食物。</summary>
+    /// <summary>已经占用餐桌格、但仍等待玩家执行“上菜”或“确认”的食物。</summary>
     public sealed class PendingDishPlacement
     {
         internal PendingDishPlacement(

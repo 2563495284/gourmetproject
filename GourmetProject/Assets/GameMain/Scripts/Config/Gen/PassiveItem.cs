@@ -72,7 +72,7 @@ public sealed partial class PassiveItem : Luban.BeanBase
     /// </summary>
     public readonly float BaseWeight;
     /// <summary>
-    /// 出现隐藏分区间(单元格: min,max)
+    /// 出现隐藏分区间(单元格:min,max)
     /// </summary>
     public readonly HiddenRange HiddenRange;
     /// <summary>
@@ -92,7 +92,7 @@ public sealed partial class PassiveItem : Luban.BeanBase
     /// </summary>
     public readonly int FragmentHiddenOffset;
     /// <summary>
-    /// 关联术语ID(,| 分隔)
+    /// 关联术语ID(,|分隔)
     /// </summary>
     public readonly string TermId;
     /// <summary>

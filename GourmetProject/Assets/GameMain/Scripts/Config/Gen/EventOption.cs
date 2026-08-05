@@ -52,15 +52,15 @@ public sealed partial class EventOption : Luban.BeanBase
     /// </summary>
     public readonly string Text;
     /// <summary>
-    /// 选中后的结果/子页正文(有子选项时作子页正文;空则回退效果反馈)
+    /// 选中后的结果/子页正文
     /// </summary>
     public readonly string ResultText;
     /// <summary>
-    /// 选项前置条件(空=恒可见,复用行动前置语法)
+    /// 选项前置条件
     /// </summary>
     public readonly string Condition;
     /// <summary>
-    /// 选项前置条件显示文案(condition非空时必填,原样显示)
+    /// 选项前置条件显示文案
     /// </summary>
     public readonly string ConditionText;
     /// <summary>

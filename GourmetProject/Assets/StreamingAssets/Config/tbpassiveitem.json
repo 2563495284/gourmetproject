@@ -2,7 +2,7 @@
   {
     "id": "item_randomize_items",
     "name": "洗好的扑克",
-    "desc": "所有装饰品和消耗品替换为随机的装饰品和消耗品",
+    "desc": "所有装饰品\n替换为随机的装饰品",
     "quality": 2,
     "specialTags": 0,
     "effectValue": 0,
@@ -22,7 +22,7 @@
   {
     "id": "item_gold_random",
     "name": "陶瓷招财猫",
-    "desc": "获得 20～140 金币",
+    "desc": "获得20～140金币",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 0,
@@ -42,7 +42,7 @@
   {
     "id": "item_gold_meal_bonus",
     "name": "柜台小费罐",
-    "desc": "接下来10 次日常营业\n额外获得10 金币",
+    "desc": "接下来10次日常营业\n额外获得10金币",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 10,
@@ -62,7 +62,7 @@
   {
     "id": "item_gold_boss",
     "name": "金边奖杯",
-    "desc": "完成下次星级评鉴\n额外 +90 金币",
+    "desc": "完成下次星级评鉴\n额外+90金币",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 90,
@@ -82,7 +82,7 @@
   {
     "id": "item_gold_percent",
     "name": "黄铜算盘",
-    "desc": "营业结束获得的金币\n额外 +15%",
+    "desc": "营业获得的金币\n额外+15%",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 0.15,
@@ -102,7 +102,7 @@
   {
     "id": "item_trash_upgrade",
     "name": "藤编纸篓",
-    "desc": "丢弃次数 +1",
+    "desc": "丢弃次数+1",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 1,
@@ -122,7 +122,7 @@
   {
     "id": "item_trash_expand",
     "name": "壁挂废物桶",
-    "desc": "丢弃次数 +1",
+    "desc": "丢弃次数+1",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 1,
@@ -142,7 +142,7 @@
   {
     "id": "item_trash_evolve",
     "name": "脚踏垃圾桶",
-    "desc": "丢弃次数 +2",
+    "desc": "丢弃次数+2",
     "quality": 2,
     "specialTags": 0,
     "effectValue": 2,
@@ -162,7 +162,7 @@
   {
     "id": "item_trash_mutate",
     "name": "推盖垃圾桶",
-    "desc": "丢弃次数 +2",
+    "desc": "丢弃次数+2",
     "quality": 2,
     "specialTags": 0,
     "effectValue": 2,
@@ -182,7 +182,7 @@
   {
     "id": "item_discount_food",
     "name": "香草盆栽",
-    "desc": "食物价格 -10%",
+    "desc": "食物价格-10%",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 0.1,
@@ -202,7 +202,7 @@
   {
     "id": "item_discount_fragment",
     "name": "餐桌模型",
-    "desc": "餐桌格价格 -15%",
+    "desc": "餐桌格价格-15%",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 0.15,
@@ -222,7 +222,7 @@
   {
     "id": "item_discount_active",
     "name": "强化券匣",
-    "desc": "强化类消耗品价格 -15%",
+    "desc": "强化箱价格-15%",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 0.15,
@@ -242,7 +242,7 @@
   {
     "id": "item_discount_adjust",
     "name": "调整单夹",
-    "desc": "调整类消耗品价格 -15%",
+    "desc": "调整单价格-15%",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 0.15,
@@ -262,7 +262,7 @@
   {
     "id": "item_discount_passive",
     "name": "装饰样板墙",
-    "desc": "装饰品价格 -15%",
+    "desc": "装饰品价格-15%",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 0.15,
@@ -282,7 +282,7 @@
   {
     "id": "item_discount_remove",
     "name": "抽页食谱夹",
-    "desc": "删除食物价格 -15%",
+    "desc": "删除食物价格-15%",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 0.15,
@@ -302,7 +302,7 @@
   {
     "id": "item_discount_food_festival",
     "name": "丰收菜篮",
-    "desc": "食物价格 -20%",
+    "desc": "食物价格-20%",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 0.2,
@@ -322,7 +322,7 @@
   {
     "id": "item_discount_fragment_festival",
     "name": "宴会桌模型",
-    "desc": "餐桌格价格 -25%",
+    "desc": "餐桌格价格-25%",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 0.25,
@@ -342,7 +342,7 @@
   {
     "id": "item_discount_active_festival",
     "name": "金边强化券",
-    "desc": "强化类消耗品价格 -25%",
+    "desc": "强化箱价格-25%",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 0.25,
@@ -362,7 +362,7 @@
   {
     "id": "item_discount_adjust_festival",
     "name": "烫金调整单",
-    "desc": "调整类消耗品价格 -25%",
+    "desc": "调整单价格-25%",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 0.25,
@@ -382,7 +382,7 @@
   {
     "id": "item_discount_passive_festival",
     "name": "多层展柜",
-    "desc": "装饰品价格 -25%",
+    "desc": "装饰品价格-25%",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 0.25,
@@ -402,7 +402,7 @@
   {
     "id": "item_discount_remove_festival",
     "name": "可擦食谱板",
-    "desc": "删除食物价格 -25%",
+    "desc": "删除食物价格-25%",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 0.25,
@@ -422,7 +422,7 @@
   {
     "id": "item_famous_knife",
     "name": "名刀展示架",
-    "desc": "即将失败时\n恢复至1 颗红心\n生效1 次后失效",
+    "desc": "即将失败时\n恢复至1颗红心\n生效1次后失效",
     "quality": 2,
     "specialTags": 0,
     "effectValue": 0,
@@ -442,7 +442,7 @@
   {
     "id": "item_heart_flat_all",
     "name": "暖心壁灯",
-    "desc": "结算开始\n每拥有1 颗红心\n所有食物分数 +5",
+    "desc": "结算开始\n每拥有1颗红心\n所有食物分数+5",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 5,
@@ -462,7 +462,7 @@
   {
     "id": "item_empty_heart_mult_all",
     "name": "裂纹心形镜",
-    "desc": "结算开始\n每拥有1 个空红心\n所有食物倍率 +0.1",
+    "desc": "结算开始\n每拥有1个空红心\n所有食物倍率+0.1",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 0.1,
@@ -482,7 +482,7 @@
   {
     "id": "item_score_to_one",
     "name": "开业纪念照",
-    "desc": "接下来2 次营业\n目标美味值为1",
+    "desc": "接下来2次营业\n目标美味值为1",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 0,
@@ -502,7 +502,7 @@
   {
     "id": "item_req_normal_down",
     "name": "家常菜挂画",
-    "desc": "日常营业目标美味值 -20%",
+    "desc": "日常营业\n目标美味值-20%",
     "quality": 0,
     "specialTags": 0,
     "effectValue": -0.2,
@@ -522,7 +522,7 @@
   {
     "id": "item_req_super_down",
     "name": "红格桌布",
-    "desc": "火热营业目标美味值 -20%",
+    "desc": "火热营业\n目标美味值-20%",
     "quality": 0,
     "specialTags": 0,
     "effectValue": -0.2,
@@ -542,7 +542,7 @@
   {
     "id": "item_req_feast_down",
     "name": "金边证书框",
-    "desc": "星级评鉴目标美味值 -15%",
+    "desc": "星级评鉴\n目标美味值-15%",
     "quality": 1,
     "specialTags": 0,
     "effectValue": -0.15,
@@ -562,7 +562,7 @@
   {
     "id": "item_count_le_mult",
     "name": "素色桌旗",
-    "desc": "结算开始\n若食物数量≤15\n所有食物倍率 ×1.2",
+    "desc": "结算开始\n若食物数量≤15\n所有食物倍率×1.2",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 1.2,
@@ -582,7 +582,7 @@
   {
     "id": "item_count_ge_mult",
     "name": "多层餐盘架",
-    "desc": "结算开始\n若食物数量≥25\n所有食物倍率 ×1.2",
+    "desc": "结算开始\n若食物数量≥25\n所有食物倍率×1.2",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 1.2,
@@ -602,7 +602,7 @@
   {
     "id": "item_perma_flat_all",
     "name": "青花调味罐",
-    "desc": "获得时\n所有食物分数永久 +5",
+    "desc": "获得时\n所有食物分数永久+5",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 5,
@@ -622,7 +622,7 @@
   {
     "id": "item_perma_flat_all_plus",
     "name": "成套调味罐",
-    "desc": "获得时\n当前所有食物分数永久 +10",
+    "desc": "获得时\n所有食物分数永久+10",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 10,
@@ -642,7 +642,7 @@
   {
     "id": "item_gold_on_shop",
     "name": "供货商合影",
-    "desc": "进入商店采购\n获得15 金币",
+    "desc": "进入商店采购\n获得15金币",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 15,
@@ -682,7 +682,7 @@
   {
     "id": "item_interest_cap",
     "name": "聚宝盆摆件",
-    "desc": "利息上限扩展到100 金币",
+    "desc": "利息上限扩展到100金币",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 100,
@@ -702,7 +702,7 @@
   {
     "id": "item_loan",
     "name": "挂账记录板",
-    "desc": "获得100 金币\n将失去200 金币的节点行动\n添加至本周末尾",
+    "desc": "获得100金币\n将失去200金币的节点行动\n添加至本周末尾",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 100,
@@ -742,7 +742,7 @@
   {
     "id": "item_extra_day",
     "name": "第八日启程",
-    "desc": "每周长度变为8 天",
+    "desc": "每周长度变为8天",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 8,
@@ -762,7 +762,7 @@
   {
     "id": "item_week_minus",
     "name": "黄铜沙漏",
-    "desc": "周数 -1",
+    "desc": "周数-1",
     "quality": 3,
     "specialTags": 0,
     "effectValue": 1,
@@ -782,7 +782,7 @@
   {
     "id": "item_every3_next_mult",
     "name": "木制节拍器",
-    "desc": "每上菜3 个食物后\n下个食物倍率 +0.5",
+    "desc": "每上菜3个食物后\n下个食物倍率+0.5",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 0.5,
@@ -802,7 +802,7 @@
   {
     "id": "item_first_+2",
     "name": "迎客灯笼",
-    "desc": "首个上菜的食物\n倍率 +1",
+    "desc": "首个上菜的食物\n倍率+1",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 1,
@@ -822,7 +822,7 @@
   {
     "id": "item_last_+2",
     "name": "餐后茶具",
-    "desc": "最后上菜的食物\n倍率 +1",
+    "desc": "最后上菜的食物\n倍率+1",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 1,
@@ -842,7 +842,7 @@
   {
     "id": "item_extra_active_slots",
     "name": "墙面置物架",
-    "desc": "增加2 个消耗品栏",
+    "desc": "增加2个消耗品栏",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 2,
@@ -862,7 +862,7 @@
   {
     "id": "item_extra_active_slots_max",
     "name": "整墙储物架",
-    "desc": "增加3 个消耗品栏",
+    "desc": "增加3个消耗品栏",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 3,
@@ -882,7 +882,7 @@
   {
     "id": "item_gold_on_active",
     "name": "皮面账单夹",
-    "desc": "使用消耗品时\n获得5 金币",
+    "desc": "使用消耗品时\n获得5金币",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 5,
@@ -902,7 +902,7 @@
   {
     "id": "item_block_active",
     "name": "封条备品柜",
-    "desc": "无法再使用消耗品\n立即获得300 金币",
+    "desc": "无法再使用消耗品\n立即获得300金币",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 300,
@@ -922,7 +922,7 @@
   {
     "id": "item_flavor_enhance",
     "name": "彩釉调料瓶组",
-    "desc": "为2 个食物添加随机风味",
+    "desc": "为2个食物添加随机风味",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 2,
@@ -942,7 +942,7 @@
   {
     "id": "item_flavor_remove_gold",
     "name": "复古台秤",
-    "desc": "移除1 个食物的风味\n获得90 金币",
+    "desc": "移除1个食物的风味\n获得90金币",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 90,
@@ -962,7 +962,7 @@
   {
     "id": "item_flavor_remove_double",
     "name": "小石磨",
-    "desc": "移除1 个食物的风味\n其分数翻倍",
+    "desc": "移除1个食物的风味\n其分数翻倍",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 2,
@@ -1002,7 +1002,7 @@
   {
     "id": "item_celltag_enhance",
     "name": "拼花砖壁饰",
-    "desc": "为2 个餐桌格\n强化随机材质",
+    "desc": "为2个餐桌格\n强化随机材质",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 2,
@@ -1082,7 +1082,7 @@
   {
     "id": "item_more_super_actions",
     "name": "霓虹招牌",
-    "desc": "火热营业相关行动大组\n随机权重 +50%",
+    "desc": "更容易遇见火热营业",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 0.5,
@@ -1102,7 +1102,7 @@
   {
     "id": "item_slot_win_chance",
     "name": "彩球抽奖筒",
-    "desc": "抽奖机各奖项概率×1.2\n空奖概率相应降低",
+    "desc": "抽奖机更容易中奖",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 0.2,
@@ -1262,7 +1262,7 @@
   {
     "id": "item_choice_count_plus1",
     "name": "活页食谱册",
-    "desc": "选择食物时\n可选数量 +1",
+    "desc": "选择食物时\n可选数量+1",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 1,
@@ -1282,7 +1282,7 @@
   {
     "id": "item_extra_food_choice",
     "name": "点心展示架",
-    "desc": "每6 次日常营业\n额外获得3选一食物",
+    "desc": "每6次日常营业\n额外获得3选一食物",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 0,
@@ -1302,7 +1302,7 @@
   {
     "id": "item_extra_item_choice",
     "name": "杂货展示架",
-    "desc": "每4 次火热营业\n额外获得3选一装饰品",
+    "desc": "每4次火热营业\n额外获得3选一装饰品",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 0,
@@ -1322,7 +1322,7 @@
   {
     "id": "item_copy_food",
     "name": "双盖餐盘",
-    "desc": "获得时\n随机复制1 个已有食物",
+    "desc": "获得时\n随机复制1个已有食物",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 1,
@@ -1362,7 +1362,7 @@
   {
     "id": "item_discard_negative_gold",
     "name": "旧餐具寄卖架",
-    "desc": "丢弃所有诅咒装饰品\n每丢弃一个获得30 金币",
+    "desc": "丢弃所有诅咒装饰品\n每丢弃一个获得30金币",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 30,
@@ -1382,7 +1382,7 @@
   {
     "id": "item_gold_meal_penalty",
     "name": "故障收银机",
-    "desc": "营业获得的金币 -20%",
+    "desc": "营业获得的金币-20%",
     "quality": 0,
     "specialTags": 1,
     "effectValue": -0.2,
@@ -1402,7 +1402,7 @@
   {
     "id": "item_shop_price_up",
     "name": "破损商品架",
-    "desc": "商店与删除食物价格 +20%",
+    "desc": "商店与删除食物价格+20%",
     "quality": 0,
     "specialTags": 1,
     "effectValue": 0.2,
@@ -1482,7 +1482,7 @@
   {
     "id": "item_choice_minus1",
     "name": "缺角食谱板",
-    "desc": "多选一食物时\n可选数量 -1",
+    "desc": "多选一食物时\n可选数量-1",
     "quality": 0,
     "specialTags": 1,
     "effectValue": -1,
@@ -1502,7 +1502,7 @@
   {
     "id": "item_req_normal_up",
     "name": "挑剔留言簿",
-    "desc": "日常营业目标美味值 +20%",
+    "desc": "日常营业目标美味值+20%",
     "quality": 0,
     "specialTags": 1,
     "effectValue": 0.2,
@@ -1522,7 +1522,7 @@
   {
     "id": "item_req_super_up",
     "name": "爆单警示灯",
-    "desc": "火热营业目标美味值 +20%",
+    "desc": "火热营业目标美味值+20%",
     "quality": 0,
     "specialTags": 1,
     "effectValue": 0.2,
@@ -1542,7 +1542,7 @@
   {
     "id": "item_req_feast_up",
     "name": "评鉴整改书",
-    "desc": "星级评鉴目标美味值 +20%",
+    "desc": "星级评鉴目标美味值+20%",
     "quality": 0,
     "specialTags": 1,
     "effectValue": 0.2,
@@ -1582,7 +1582,7 @@
   {
     "id": "item_double_daily_cost_repeat_node",
     "name": "双栏排班板",
-    "desc": "普通行动消耗天数加倍\n节点行动可以执行2 次",
+    "desc": "普通行动消耗天数加倍\n节点行动可以执行2次",
     "quality": 2,
     "specialTags": 0,
     "effectValue": 2,
@@ -1622,7 +1622,7 @@
   {
     "id": "item_count_as_all",
     "name": "九格拼盘",
-    "desc": "所有食物额外被视为2 个食物",
+    "desc": "所有食物额外被视为2个食物",
     "quality": 3,
     "specialTags": 0,
     "effectValue": 2,
@@ -1642,7 +1642,7 @@
   {
     "id": "item_transfer_target_mult",
     "name": "大号糖果盘",
-    "desc": "甜蜜传递时\n每个被传递方倍率 +0.1",
+    "desc": "甜蜜传递时\n每个被传递方倍率+0.1",
     "quality": 2,
     "specialTags": 0,
     "effectValue": 0.1,
@@ -1662,7 +1662,7 @@
   {
     "id": "item_transfer_source_mult",
     "name": "长嘴糖浆壶",
-    "desc": "甜蜜传递时\n传递方每成功传递1 个目标\n倍率 +0.1",
+    "desc": "甜蜜传递时\n传递方每成功传递1个目标\n倍率+0.1",
     "quality": 2,
     "specialTags": 0,
     "effectValue": 0.1,
@@ -1682,7 +1682,7 @@
   {
     "id": "item_skill_count_mult",
     "name": "主厨刀架",
-    "desc": "结算时每有1 个技能\n倍率 +0.2",
+    "desc": "结算时每有1个技能\n倍率+0.2",
     "quality": 2,
     "specialTags": 0,
     "effectValue": 0.2,
@@ -1702,7 +1702,7 @@
   {
     "id": "item_gold_on_transfer",
     "name": "黄铜传菜铃",
-    "desc": "累计甜蜜传递10 次后\n获得10 金币（仅一次）",
+    "desc": "累计甜蜜传递10次后\n获得10金币（仅一次）",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 10,
@@ -1742,7 +1742,7 @@
   {
     "id": "item_cake_init_bonus",
     "name": "厚底蛋糕托",
-    "desc": "蛋糕层数\n初始额外获得10 层",
+    "desc": "蛋糕层数\n初始额外获得10层",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 10,
@@ -1762,7 +1762,7 @@
   {
     "id": "item_cake_accel",
     "name": "可叠蛋糕托",
-    "desc": "蛋糕层数增加时\n额外加1 层",
+    "desc": "蛋糕层数增加时\n额外加1层",
     "quality": 2,
     "specialTags": 0,
     "effectValue": 1,
@@ -1782,7 +1782,7 @@
   {
     "id": "item_cake_to_gold",
     "name": "蛋糕价签架",
-    "desc": "蛋糕层数大于100 层时\n获得10 金币",
+    "desc": "蛋糕层数大于100层时\n获得10金币",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 10,
@@ -1802,7 +1802,7 @@
   {
     "id": "item_cake_req_minus",
     "name": "迷你蛋糕模",
-    "desc": "蛋糕效果需求的层数 -10",
+    "desc": "蛋糕效果需求的层数-10",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 10,

@@ -78,7 +78,7 @@ public sealed partial class ActiveItem : Luban.BeanBase
     /// </summary>
     public readonly int TargetCount;
     /// <summary>
-    /// 关联术语ID(可空,| 分隔)
+    /// 关联术语ID(可空,|分隔)
     /// </summary>
     public readonly string TermId;
     /// <summary>
