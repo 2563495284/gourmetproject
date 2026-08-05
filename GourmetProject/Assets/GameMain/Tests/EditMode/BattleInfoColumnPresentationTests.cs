@@ -53,7 +53,7 @@ namespace GourmetProject.Tests.EditMode
 
                 column.Refresh(run, null, GameplayView.ActionSelect, null);
 
-                Assert.That(TextReference(column, "_weekText").text, Is.EqualTo("第一周"));
+                Assert.That(TextReference(column, "_weekText").text, Is.EqualTo("1/4周"));
                 Assert.That(TextReference(column, "_goldText").text, Is.EqualTo(run.Gold.ToString()));
                 Assert.That(TextReference(column, "_scoreCurrentText").text, Is.EqualTo("-"));
                 Assert.That(TextReference(column, "_scoreRequiredText").text, Is.EqualTo("-"));
@@ -76,6 +76,32 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(TextReference(column, "_viewTableCountText").gameObject.activeSelf, Is.True);
                 Assert.That(ButtonReference(column, "_viewTableButton").interactable, Is.False);
                 Assert.That(TextReference(column, "_discardCountText").text, Is.EqualTo("03"));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
+        }
+
+        [TestCase(1, "1/4周")]
+        [TestCase(2, "2/4周")]
+        [TestCase(4, "4/4周")]
+        [TestCase(5, "无尽第1关")]
+        public void Refresh_FormatsConfiguredAndEndlessWeekText(int weekIndex, string expected)
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(BattlePrefabPath);
+            GameObject instance = PrefabUtility.InstantiatePrefab(prefab) as GameObject;
+            try
+            {
+                BattleInfoColumn column = instance.transform
+                    .Find("HudFrame/LeftColumn")
+                    .GetComponent<BattleInfoColumn>();
+                GameRun run = CreateRun();
+                run.SetWeekIndex(weekIndex);
+
+                column.Refresh(run, null, GameplayView.ActionSelect, null);
+
+                Assert.That(TextReference(column, "_weekText").text, Is.EqualTo(expected));
             }
             finally
             {

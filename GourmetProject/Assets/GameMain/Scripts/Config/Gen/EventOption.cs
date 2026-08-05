@@ -23,6 +23,7 @@ public sealed partial class EventOption : Luban.BeanBase
         { if(!_buf["text"].IsString) { throw new SerializationException(); }  Text = _buf["text"]; }
         { if(!_buf["resultText"].IsString) { throw new SerializationException(); }  ResultText = _buf["resultText"]; }
         { if(!_buf["condition"].IsString) { throw new SerializationException(); }  Condition = _buf["condition"]; }
+        { if(!_buf["conditionText"].IsString) { throw new SerializationException(); }  ConditionText = _buf["conditionText"]; }
         { var __json0 = _buf["effectTypes"]; if(!__json0.IsArray) { throw new SerializationException(); } EffectTypes = new System.Collections.Generic.List<EffectType>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { EffectType __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = (EffectType)__e0.AsInt; }  EffectTypes.Add(__v0); }   }
         { var __json0 = _buf["effectValues"]; if(!__json0.IsArray) { throw new SerializationException(); } EffectValues = new System.Collections.Generic.List<float>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { float __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  EffectValues.Add(__v0); }   }
         { var __json0 = _buf["effectParams"]; if(!__json0.IsArray) { throw new SerializationException(); } EffectParams = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  EffectParams.Add(__v0); }   }
@@ -59,6 +60,10 @@ public sealed partial class EventOption : Luban.BeanBase
     /// </summary>
     public readonly string Condition;
     /// <summary>
+    /// 选项前置条件显示文案(condition非空时必填,原样显示)
+    /// </summary>
+    public readonly string ConditionText;
+    /// <summary>
     /// 效果类型列表
     /// </summary>
     public readonly System.Collections.Generic.List<EffectType> EffectTypes;
@@ -91,6 +96,7 @@ public sealed partial class EventOption : Luban.BeanBase
         + "text:" + Text + ","
         + "resultText:" + ResultText + ","
         + "condition:" + Condition + ","
+        + "conditionText:" + ConditionText + ","
         + "effectTypes:" + Luban.StringUtil.CollectionToString(EffectTypes) + ","
         + "effectValues:" + Luban.StringUtil.CollectionToString(EffectValues) + ","
         + "effectParams:" + Luban.StringUtil.CollectionToString(EffectParams) + ","

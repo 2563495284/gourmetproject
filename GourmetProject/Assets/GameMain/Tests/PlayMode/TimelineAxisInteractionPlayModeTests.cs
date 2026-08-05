@@ -1082,6 +1082,7 @@ namespace GourmetProject.Tests.PlayMode
                 string resultButtonText,
                 string bgSprite,
                 IReadOnlyList<string> options,
+                IReadOnlyList<string> optionRequirements,
                 IReadOnlyList<bool> optionEnabled,
                 System.Action<int> onPick,
                 System.Action onEnd)

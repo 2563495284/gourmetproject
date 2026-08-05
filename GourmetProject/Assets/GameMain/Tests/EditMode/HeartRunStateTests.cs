@@ -29,6 +29,17 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void GameBase_TotalWeeksMatchesConfiguredWeekRows()
+        {
+            Assert.That(_tables.TbGameBase.TotalWeeks, Is.EqualTo(4));
+            Assert.That(_tables.TbGameBase.TotalWeeks, Is.GreaterThanOrEqualTo(1));
+            Assert.That(_tables.TbGameBase.TotalWeeks, Is.LessThanOrEqualTo(_tables.TbWeek.DataList.Count));
+
+            GameRun run = CreateRun();
+            Assert.That(run.TotalWeeks, Is.EqualTo(4));
+        }
+
+        [Test]
         public void NewRun_InitializesHeartCurrentAndCapacity()
         {
             GameRun run = CreateRun();

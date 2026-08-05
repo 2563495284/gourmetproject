@@ -14,6 +14,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
             string resultButtonText,
             string backgroundSprite,
             IReadOnlyList<string> options,
+            IReadOnlyList<string> optionRequirements,
             IReadOnlyList<bool> optionEnabled,
             Action<int> onPick,
             Action onEnd)
@@ -23,6 +24,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
             ResultButtonText = resultButtonText;
             BackgroundSprite = backgroundSprite;
             Options = options;
+            OptionRequirements = optionRequirements;
             OptionEnabled = optionEnabled;
             OnPick = onPick;
             OnEnd = onEnd;
@@ -37,6 +39,8 @@ namespace GourmetProject.Game.UI.Battle.Pages
         public string BackgroundSprite { get; }
 
         public IReadOnlyList<string> Options { get; }
+
+        public IReadOnlyList<string> OptionRequirements { get; }
 
         public IReadOnlyList<bool> OptionEnabled { get; }
 
@@ -80,6 +84,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
                         request.ResultButtonText,
                         request.BackgroundSprite,
                         request.Options,
+                        request.OptionRequirements,
                         request.OptionEnabled,
                         request.OnPick,
                         request.OnEnd);

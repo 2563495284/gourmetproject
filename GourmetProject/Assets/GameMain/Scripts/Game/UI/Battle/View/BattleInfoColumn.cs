@@ -121,7 +121,7 @@ namespace GourmetProject.Game.UI.Battle.View
             {
                 _weekText.text = run.IsEndless
                     ? $"无尽第{run.WeekIndex - run.TotalWeeks}关"
-                    : $"第{FormatChineseNumber(run.WeekIndex)}周";
+                    : $"{run.WeekIndex}/{run.TotalWeeks}周";
             }
 
             if (_goldText != null)
@@ -244,27 +244,6 @@ namespace GourmetProject.Game.UI.Battle.View
             }
 
             return run.BuildTablePreviewFromFragments()?.CellCapacity ?? 0;
-        }
-
-        private static string FormatChineseNumber(int value)
-        {
-            if (value <= 0 || value >= 100)
-            {
-                return value.ToString();
-            }
-
-            string[] digits = { "零", "一", "二", "三", "四", "五", "六", "七", "八", "九" };
-            if (value < 10)
-            {
-                return digits[value];
-            }
-
-            int tens = value / 10;
-            int ones = value % 10;
-            string prefix = tens == 1 ? string.Empty : digits[tens];
-            return ones == 0
-                ? $"{prefix}十"
-                : $"{prefix}十{digits[ones]}";
         }
 
         private void SetBossStatVisible(bool visible, bool animate)

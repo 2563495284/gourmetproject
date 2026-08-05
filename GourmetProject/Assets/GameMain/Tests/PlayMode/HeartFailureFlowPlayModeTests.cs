@@ -203,6 +203,112 @@ namespace GourmetProject.Tests.PlayMode
             Assert.That(view.RunResultShown, Is.True);
         }
 
+        [Test]
+        public void FinishedFinalWeek_WithRemainingHeart_WinsWithoutBossCompletion()
+        {
+            GameRun run = CreateFinishedWeek(_tables.TbGameBase.TotalWeeks);
+            var view = new RecordingLoopView(run);
+            var controller = new WeekLoopController(run, view);
+
+            using (RunPersistence.SuppressSave())
+            {
+                controller.PromptNextAction();
+            }
+
+            Assert.That(view.RunResultShown, Is.True);
+            Assert.That(view.RunResultWin, Is.True);
+            Assert.That(run.WeekIndex, Is.EqualTo(run.TotalWeeks));
+        }
+
+        [Test]
+        public void FinishedFinalWeek_ExecutesDueWeekEndNodeBeforeVictory()
+        {
+            GameRun run = CreateRun();
+            run.SetWeekIndex(run.TotalWeeks);
+            run.Gold = 250;
+            run.BeginTimeline(
+                "final-week-node-test",
+                1f,
+                new[]
+                {
+                    new RuntimeTimelineNode(
+                        "final-week-repayment",
+                        "final-week-node-test",
+                        1,
+                        "act_loan_repay"),
+                });
+            run.CurrentDay = 1f;
+            var view = new RecordingLoopView(run);
+            var controller = new WeekLoopController(run, view);
+
+            using (RunPersistence.SuppressSave())
+            {
+                controller.PromptNextAction();
+            }
+
+            Assert.That(run.IsNodeTriggered("final-week-repayment"), Is.True);
+            Assert.That(run.Gold, Is.EqualTo(50));
+            Assert.That(view.RunResultShown, Is.True);
+            Assert.That(view.RunResultWin, Is.True);
+        }
+
+        [Test]
+        public void FinishedFinalWeek_AppliesLegacyDebtBeforeVictory()
+        {
+            GameRun run = CreateFinishedWeek(_tables.TbGameBase.TotalWeeks);
+            run.Gold = 80;
+            run.RegisterLoanDebt(30);
+            var view = new RecordingLoopView(run);
+            var controller = new WeekLoopController(run, view);
+
+            using (RunPersistence.SuppressSave())
+            {
+                controller.PromptNextAction();
+            }
+
+            Assert.That(run.Gold, Is.EqualTo(50));
+            Assert.That(run.LoanDebt, Is.Zero);
+            Assert.That(view.RunResultWin, Is.True);
+        }
+
+        [Test]
+        public void FinishedFinalWeek_WithNoHeart_LosesWithoutAdvancing()
+        {
+            GameRun run = CreateFinishedWeek(_tables.TbGameBase.TotalWeeks);
+            while (run.HeartsRemaining > 0)
+            {
+                run.TryLoseHeart(out _, out _);
+            }
+
+            var view = new RecordingLoopView(run);
+            var controller = new WeekLoopController(run, view);
+
+            using (RunPersistence.SuppressSave())
+            {
+                controller.PromptNextAction();
+            }
+
+            Assert.That(view.RunResultShown, Is.True);
+            Assert.That(view.RunResultWin, Is.False);
+            Assert.That(run.WeekIndex, Is.EqualTo(run.TotalWeeks));
+        }
+
+        [Test]
+        public void FinishedPreviousWeek_AdvancesWithoutVictory()
+        {
+            GameRun run = CreateFinishedWeek(_tables.TbGameBase.TotalWeeks - 1);
+            var view = new RecordingLoopView(run);
+            var controller = new WeekLoopController(run, view);
+
+            using (RunPersistence.SuppressSave())
+            {
+                controller.PromptNextAction();
+            }
+
+            Assert.That(run.WeekIndex, Is.EqualTo(run.TotalWeeks));
+            Assert.That(view.RunResultShown, Is.False);
+        }
+
         private GameRun CreateRunAtHearts(int hearts)
         {
             GameRun run = CreateRun();
@@ -218,6 +324,15 @@ namespace GourmetProject.Tests.PlayMode
         {
             string characterId = _tables.TbCharacter.DataList.First().Id;
             return new GameRun(_tables, _database, characterId, "heart-failure-flow-tests");
+        }
+
+        private GameRun CreateFinishedWeek(int weekIndex)
+        {
+            GameRun run = CreateRun();
+            run.SetWeekIndex(weekIndex);
+            run.BeginTimeline("finished-week-test", 1f);
+            run.CurrentDay = 1f;
+            return run;
         }
 
         private cfg.GameAction ActionOfKind(cfg.FoodActionKind kind)
@@ -262,7 +377,10 @@ namespace GourmetProject.Tests.PlayMode
             public void OpenWeekMap() { }
             public void OpenShop() { }
 
-            public void ShowTimelineNodeCard(cfg.TimelineNode node, int? interestMaxGain, Action onPick) { }
+            public void ShowTimelineNodeCard(cfg.TimelineNode node, int? interestMaxGain, Action onPick)
+            {
+                onPick?.Invoke();
+            }
             public void ShowTimelineNodeSkipped(cfg.TimelineNode node, Action onDone) { }
 
             public void StartBattle(
@@ -303,6 +421,7 @@ namespace GourmetProject.Tests.PlayMode
                 string resultButtonText,
                 string bgSprite,
                 IReadOnlyList<string> options,
+                IReadOnlyList<string> optionRequirements,
                 IReadOnlyList<bool> optionEnabled,
                 Action<int> onPick,
                 Action onEnd) { }

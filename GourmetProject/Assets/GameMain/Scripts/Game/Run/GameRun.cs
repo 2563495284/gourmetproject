@@ -2716,7 +2716,8 @@ namespace GourmetProject.Game.Run
             };
         }
 
-        public int TotalWeeks => _tables.TbWeek.DataList.Count;
+        /// <summary>本局需要完成的总周数，由 game_base 统一配置。</summary>
+        public int TotalWeeks => _tables.TbGameBase.TotalWeeks;
 
         public bool HasNextWeek => WeekIndex < TotalWeeks;
 
@@ -2994,15 +2995,21 @@ namespace GourmetProject.Game.Run
 
         public bool HasRecipeDish(bool requireFlavor)
         {
+            return GetRecipeDishCount(requireFlavor) > 0;
+        }
+
+        public int GetRecipeDishCount(bool requireFlavor)
+        {
+            int count = 0;
             for (int dishIndex = 0; dishIndex < _recipe.Count; dishIndex++)
             {
                 if (!requireFlavor || RecipeSlotHasFlavor(_recipe[dishIndex]))
                 {
-                    return true;
+                    count++;
                 }
             }
 
-            return false;
+            return count;
         }
 
         /// <summary>当前持有该装饰品和消耗品的份数：装饰品为 0/1，消耗品为实例条目数。</summary>

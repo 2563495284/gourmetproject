@@ -60,6 +60,7 @@ namespace GourmetProject.Game.Orchestration
             string resultButtonText,
             string bgSprite,
             IReadOnlyList<string> options,
+            IReadOnlyList<string> optionRequirements,
             IReadOnlyList<bool> optionEnabled,
             Action<int> onPick,
             Action onEnd);
@@ -299,9 +300,9 @@ namespace GourmetProject.Game.Orchestration
 
             if (TimelineService.IsWeekFinished(_run))
             {
-                if (IsFinalWeekVictoryReady())
+                if (IsConfiguredFinalWeek())
                 {
-                    OnVictory();
+                    CompleteFinalWeek();
                 }
                 else
                 {
@@ -794,7 +795,7 @@ namespace GourmetProject.Game.Orchestration
             RunPersistence.Save(_run);
         }
 
-        /// <summary>时间轴走完：推进到下一周（最终周胜利由 星级评鉴节点判定）。</summary>
+        /// <summary>时间轴走完：完成周末兼容结算并推进到下一周。</summary>
         private void EndWeek()
         {
             ApplyEndOfWeekItemSettlement();
@@ -1197,29 +1198,28 @@ namespace GourmetProject.Game.Orchestration
             _run.Gold += bossGold;
         }
 
-        private bool IsFinalWeekVictoryReady()
+        private bool IsConfiguredFinalWeek()
         {
-            if (_run == null || _run.IsEndless || _run.WeekIndex < _run.TotalWeeks)
+            return _run != null
+                && !_run.IsEndless
+                && _run.WeekIndex == _run.TotalWeeks;
+        }
+
+        /// <summary>
+        /// 最终周的所有到期节点都已结算后，再执行旧存档兼容结算并按红心决定胜负。
+        /// </summary>
+        private void CompleteFinalWeek()
+        {
+            ApplyEndOfWeekItemSettlement();
+            RunPersistence.Save(_run);
+            if (_run.HeartsRemaining > 0)
             {
-                return false;
+                OnVictory();
+                return;
             }
 
-            foreach (cfg.TimelineNode node in TimelineService.GetNodes(_run))
-            {
-                cfg.GameAction action = TimelineService.NodeAction(_run, node);
-                if (!FoodService.IsBossAction(_run.Tables, action) || !_run.IsNodeTriggered(node.Id))
-                {
-                    continue;
-                }
-
-                cfg.Food boss = FoodService.ResolveBoss(_run, action);
-                if (boss != null && _run.IsBossCompleted(boss.Id))
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            _view.HideBattleWorld();
+            _view.ShowRunResult(false, _view.LastBattleTotal);
         }
 
         private void ResolveSlotAction(
@@ -1330,6 +1330,7 @@ namespace GourmetProject.Game.Orchestration
                 string.Empty,
                 config.Event.BgSprite,
                 optionTexts,
+                Array.Empty<string>(),
                 optionEnabled,
                 index =>
                 {
@@ -1438,6 +1439,7 @@ namespace GourmetProject.Game.Orchestration
                 EventService.FormatRuntimeText(_run, text),
                 finished ? "结束" : "继续",
                 config.Event.BgSprite,
+                Array.Empty<string>(),
                 Array.Empty<string>(),
                 Array.Empty<bool>(),
                 onPick: null,
@@ -1590,7 +1592,7 @@ namespace GourmetProject.Game.Orchestration
                 hasEnabledOption |= enabled;
             }
 
-            if (pageOptions.Count == 0 || !hasEnabledOption)
+            if (pageOptions.Count == 0)
             {
                 ShowEventPage(
                     ev,
@@ -1598,6 +1600,22 @@ namespace GourmetProject.Game.Orchestration
                     "结束",
                     new List<cfg.EventOption>(),
                     new List<bool>(),
+                    onPick: null,
+                    onEnd: () =>
+                    {
+                        FinishEventAndContinue(ev, EventResolveResult.Immediate(string.Empty), onDone);
+                    });
+                return;
+            }
+
+            if (!hasEnabledOption)
+            {
+                ShowEventPage(
+                    ev,
+                    pageDescription,
+                    "离开",
+                    pageOptions,
+                    optionEnabled,
                     onPick: null,
                     onEnd: () =>
                     {
@@ -1621,8 +1639,11 @@ namespace GourmetProject.Game.Orchestration
                         return;
                     }
 
-                    if (index >= shownEnabled.Count || !shownEnabled[index])
+                    if (index >= shownEnabled.Count
+                        || !shownEnabled[index]
+                        || !PreconditionEvaluator.IsSatisfied(_run, shown[index].Condition))
                     {
+                        EnterEventPage(ev, pageDescription, shown, rng, onDone);
                         return;
                     }
 
@@ -1788,11 +1809,13 @@ namespace GourmetProject.Game.Orchestration
             Action onEnd)
         {
             var optionTexts = new List<string>();
+            var optionRequirements = new List<string>();
             if (options != null)
             {
                 foreach (cfg.EventOption option in options)
                 {
                     optionTexts.Add(EventService.FormatRuntimeText(_run, option.Text));
+                    optionRequirements.Add(ResolveConditionText(_run, option));
                 }
             }
 
@@ -1804,9 +1827,28 @@ namespace GourmetProject.Game.Orchestration
                 EventService.FormatRuntimeText(_run, resultButtonText),
                 ev != null ? ev.BgSprite : string.Empty,
                 optionTexts,
+                optionRequirements,
                 optionEnabled,
                 onPick,
                 onEnd);
+        }
+
+        internal static string ResolveConditionText(GameRun run, cfg.EventOption option)
+        {
+            if (option == null || string.IsNullOrWhiteSpace(option.Condition))
+            {
+                return string.Empty;
+            }
+
+            if (string.IsNullOrWhiteSpace(option.ConditionText))
+            {
+                UnityEngine.Debug.LogWarning(
+                    $"事件选项 {option.Id} 配置了 condition，但未配置 conditionText。" +
+                    "事件页将显示配置错误提示。");
+                return "条件文案未配置";
+            }
+
+            return EventService.FormatRuntimeText(run, option.ConditionText);
         }
 
         private void ContinueEventResult(string title, string eventId, EventResolveResult result, Action onDone)

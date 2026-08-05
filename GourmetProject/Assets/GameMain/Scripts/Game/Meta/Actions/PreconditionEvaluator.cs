@@ -9,6 +9,7 @@ namespace GourmetProject.Game.Meta
         int ActEventActionCount { get; }
         bool HasItem(string itemId);
         bool HasRecipeDish(bool requireFlavor);
+        int GetRecipeDishCount(bool requireFlavor);
         int GetEventCounter(string counterId);
     }
 
@@ -20,7 +21,8 @@ namespace GourmetProject.Game.Meta
     ///   minWeek:N   当前周 &gt;= N
     ///   eventCounterReached:id  指定事件计数目标已达到
     ///   hasItem:id  持有指定装饰品和消耗品
-    ///   hasRecipeDish / hasFlavoredRecipeDish  食谱中存在任意菜 / 带风味菜
+    ///   hasRecipeDish / hasFlavoredRecipeDish  食谱中存在任意食物 / 带风味食物
+    ///   minRecipeDish:N / minFlavoredRecipeDish:N  食谱中至少有 N 个食物 / 带风味食物
     /// 空串或未知子条件视为满足（宽松默认，避免误杀配置）。
     /// </summary>
     public static class PreconditionEvaluator
@@ -76,6 +78,14 @@ namespace GourmetProject.Game.Meta
                     return ctx.HasRecipeDish(requireFlavor: false);
                 case "hasFlavoredRecipeDish":
                     return ctx.HasRecipeDish(requireFlavor: true);
+                case "minRecipeDish":
+                    return int.TryParse(value, out int minDishCount)
+                        && minDishCount >= 0
+                        && ctx.GetRecipeDishCount(requireFlavor: false) >= minDishCount;
+                case "minFlavoredRecipeDish":
+                    return int.TryParse(value, out int minFlavoredDishCount)
+                        && minFlavoredDishCount >= 0
+                        && ctx.GetRecipeDishCount(requireFlavor: true) >= minFlavoredDishCount;
                 default:
                     return true;
             }

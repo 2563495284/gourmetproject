@@ -135,6 +135,10 @@ public partial class TbGameBase
     /// 开局爱心数量（同时初始化当前爱心与爱心上限）
     /// </summary>
      public int InitialHeartCount => _data.InitialHeartCount;
+    /// <summary>
+    /// 一局游戏总周数
+    /// </summary>
+     public int TotalWeeks => _data.TotalWeeks;
     
     public void ResolveRef(Tables tables)
     {

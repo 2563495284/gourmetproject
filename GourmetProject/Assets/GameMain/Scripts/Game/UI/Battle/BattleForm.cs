@@ -970,6 +970,7 @@ namespace GourmetProject.Game.UI.Battle
             string resultButtonText,
             string bgSprite,
             IReadOnlyList<string> options,
+            IReadOnlyList<string> optionRequirements,
             IReadOnlyList<bool> optionEnabled,
             Action<int> onPick,
             Action onEnd)
@@ -980,6 +981,7 @@ namespace GourmetProject.Game.UI.Battle
                 resultButtonText,
                 bgSprite,
                 options,
+                optionRequirements,
                 optionEnabled,
                 onPick,
                 onEnd));
