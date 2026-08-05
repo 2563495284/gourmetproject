@@ -72,7 +72,9 @@ namespace GourmetProject.Tests.EditMode
                 + "\"effectTypes\":[0],"
                 + "\"effectValues\":[0],"
                 + "\"effectParams\":[\"-\"],"
-                + "\"autoEnd\":false"
+                + "\"autoEnd\":false,"
+                + "\"branchWeight\":0,"
+                + "\"branchPageText\":\"\""
                 + "}";
             return cfg.EventOption.DeserializeEventOption(JSON.Parse(json));
         }

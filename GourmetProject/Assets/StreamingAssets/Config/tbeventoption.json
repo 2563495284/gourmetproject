@@ -16,7 +16,9 @@
     "effectParams": [
       "-"
     ],
-    "autoEnd": false
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_midnight_menu",
@@ -35,7 +37,9 @@
     "effectParams": [
       "-"
     ],
-    "autoEnd": false
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_midnight_leave",
@@ -54,7 +58,9 @@
     "effectParams": [
       "-"
     ],
-    "autoEnd": false
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_recipe_page_cover",
@@ -73,7 +79,9 @@
     "effectParams": [
       "-"
     ],
-    "autoEnd": false
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_recipe_page_body",
@@ -92,7 +100,9 @@
     "effectParams": [
       "-"
     ],
-    "autoEnd": false
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_recipe_page_sell",
@@ -111,7 +121,9 @@
     "effectParams": [
       "-"
     ],
-    "autoEnd": false
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_carpenter_wood",
@@ -130,7 +142,9 @@
     "effectParams": [
       "-"
     ],
-    "autoEnd": false
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_carpenter_stone",
@@ -149,7 +163,9 @@
     "effectParams": [
       "-"
     ],
-    "autoEnd": false
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_carpenter_metal",
@@ -168,7 +184,9 @@
     "effectParams": [
       "-"
     ],
-    "autoEnd": false
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_statue_gold",
@@ -187,7 +205,9 @@
     "effectParams": [
       "-"
     ],
-    "autoEnd": false
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_statue_dish",
@@ -206,7 +226,9 @@
     "effectParams": [
       "-"
     ],
-    "autoEnd": false
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_statue_steal",
@@ -225,7 +247,9 @@
     "effectParams": [
       "-"
     ],
-    "autoEnd": false
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_sign_food_street",
@@ -244,7 +268,9 @@
     "effectParams": [
       "-"
     ],
-    "autoEnd": false
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_sign_secondhand",
@@ -263,7 +289,9 @@
     "effectParams": [
       "-"
     ],
-    "autoEnd": false
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_interest_collect",
@@ -282,7 +310,9 @@
     "effectParams": [
       "ev_interest"
     ],
-    "autoEnd": true
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_slot_machine_spin",
@@ -301,7 +331,9 @@
     "effectParams": [
       "-"
     ],
-    "autoEnd": true
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_slot_machine_leave",
@@ -320,7 +352,9 @@
     "effectParams": [
       "-"
     ],
-    "autoEnd": true
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_midnight_tasting_choice",
@@ -339,7 +373,9 @@
     "effectParams": [
       "Dish"
     ],
-    "autoEnd": true
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_midnight_tasting_choice_2",
@@ -358,7 +394,9 @@
     "effectParams": [
       "Next"
     ],
-    "autoEnd": true
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_midnight_tasting_choice_3",
@@ -377,7 +415,9 @@
     "effectParams": [
       "-"
     ],
-    "autoEnd": true
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_ancestral_recipe_page_choice",
@@ -396,7 +436,9 @@
     "effectParams": [
       "CurrentWeek"
     ],
-    "autoEnd": true
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_ancestral_recipe_page_choice_2",
@@ -415,7 +457,9 @@
     "effectParams": [
       "Ids:item_active_season_sweet,item_active_season_bitter,item_active_season_umami,item_active_season_numb,item_active_season_sour,item_active_season_salty|Replace"
     ],
-    "autoEnd": true
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_ancestral_recipe_page_choice_3",
@@ -440,7 +484,9 @@
       "-",
       "-"
     ],
-    "autoEnd": true
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_table_carpenter_choice",
@@ -459,7 +505,9 @@
     "effectParams": [
       "Ids:item_active_lay_marble,item_active_lay_obsidian,item_active_lay_emerald|Replace"
     ],
-    "autoEnd": true
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_table_carpenter_choice_2",
@@ -478,7 +526,9 @@
     "effectParams": [
       "Ids:item_active_lay_cherry,item_active_lay_walnut|Replace"
     ],
-    "autoEnd": true
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_table_carpenter_choice_3",
@@ -497,7 +547,9 @@
     "effectParams": [
       "Ids:item_active_lay_gold,item_active_lay_silver|Replace"
     ],
-    "autoEnd": true
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_kitchen_god_statue_choice",
@@ -519,7 +571,9 @@
       "-",
       "Positive"
     ],
-    "autoEnd": true
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_kitchen_god_statue_choice_2",
@@ -544,7 +598,9 @@
       "-",
       "Negative"
     ],
-    "autoEnd": true
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_kitchen_god_statue_choice_3",
@@ -569,7 +625,9 @@
       "active_grant_1",
       "Next"
     ],
-    "autoEnd": true
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_crossroad_sign_choice",
@@ -588,7 +646,9 @@
     "effectParams": [
       "-"
     ],
-    "autoEnd": true
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_crossroad_sign_choice_2",
@@ -607,7 +667,9 @@
     "effectParams": [
       "Dish"
     ],
-    "autoEnd": true
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_new_event_choice",
@@ -626,7 +688,9 @@
     "effectParams": [
       "-"
     ],
-    "autoEnd": false
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_new_event_choice_2",
@@ -645,7 +709,9 @@
     "effectParams": [
       "-"
     ],
-    "autoEnd": true
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_new_event_choice_3",
@@ -664,7 +730,9 @@
     "effectParams": [
       "-"
     ],
-    "autoEnd": false
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_new_event_choice_4",
@@ -683,7 +751,9 @@
     "effectParams": [
       "-"
     ],
-    "autoEnd": false
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_new_event_choice_5",
@@ -702,7 +772,9 @@
     "effectParams": [
       "Dish"
     ],
-    "autoEnd": true
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_new_event_choice_6",
@@ -721,7 +793,9 @@
     "effectParams": [
       "-"
     ],
-    "autoEnd": false
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_new_event_choice_7",
@@ -740,7 +814,9 @@
     "effectParams": [
       "-"
     ],
-    "autoEnd": false
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_new_event_choice_8",
@@ -759,7 +835,9 @@
     "effectParams": [
       "Adjust|Replace"
     ],
-    "autoEnd": true
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
   },
   {
     "id": "opt_new_event_choice_9",
@@ -778,6 +856,8 @@
     "effectParams": [
       "Positive"
     ],
-    "autoEnd": true
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
   }
 ]

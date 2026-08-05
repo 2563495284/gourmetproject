@@ -28,6 +28,8 @@ public sealed partial class EventOption : Luban.BeanBase
         { var __json0 = _buf["effectValues"]; if(!__json0.IsArray) { throw new SerializationException(); } EffectValues = new System.Collections.Generic.List<float>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { float __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  EffectValues.Add(__v0); }   }
         { var __json0 = _buf["effectParams"]; if(!__json0.IsArray) { throw new SerializationException(); } EffectParams = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  EffectParams.Add(__v0); }   }
         { if(!_buf["autoEnd"].IsBoolean) { throw new SerializationException(); }  AutoEnd = _buf["autoEnd"]; }
+        { if(!_buf["branchWeight"].IsNumber) { throw new SerializationException(); }  BranchWeight = _buf["branchWeight"]; }
+        { if(!_buf["branchPageText"].IsString) { throw new SerializationException(); }  BranchPageText = _buf["branchPageText"]; }
     }
 
     public static EventOption DeserializeEventOption(JSONNode _buf)
@@ -79,6 +81,14 @@ public sealed partial class EventOption : Luban.BeanBase
     /// 选中并结算效果后立即结束事件，不显示结果确认页
     /// </summary>
     public readonly bool AutoEnd;
+    /// <summary>
+    /// 同一父选项下随机子分支相对权重；同组全部为 0 时保持手动选择
+    /// </summary>
+    public readonly float BranchWeight;
+    /// <summary>
+    /// 随机命中该子选项后显示的页面正文（空=沿用父选项结果正文）
+    /// </summary>
+    public readonly string BranchPageText;
    
     public const int __ID__ = 1656861583;
     public override int GetTypeId() => __ID__;
@@ -101,6 +111,8 @@ public sealed partial class EventOption : Luban.BeanBase
         + "effectValues:" + Luban.StringUtil.CollectionToString(EffectValues) + ","
         + "effectParams:" + Luban.StringUtil.CollectionToString(EffectParams) + ","
         + "autoEnd:" + AutoEnd + ","
+        + "branchWeight:" + BranchWeight + ","
+        + "branchPageText:" + BranchPageText + ","
         + "}";
     }
 }
