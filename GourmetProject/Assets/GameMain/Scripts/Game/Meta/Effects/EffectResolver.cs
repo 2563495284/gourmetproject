@@ -139,6 +139,9 @@ namespace GourmetProject.Game.Meta
                 case cfg.EffectType.GrantRandomPassiveItems:
                     return GrantRandomItems(run, rng, cfg.ItemKind.Passive, System.Math.Max(1, value), effectParam);
 
+                case cfg.EffectType.LoseEscalatingGold:
+                    return LoseEscalatingGold(run, value, effectParam);
+
                 case cfg.EffectType.UiTodo:
                     return string.IsNullOrWhiteSpace(effectParam) ? "TODO: 后续接入 UI 交互。" : effectParam;
 
@@ -532,6 +535,28 @@ namespace GourmetProject.Game.Meta
             }
 
             return $"砂锅反应累计 {current}/{System.Math.Max(1, threshold)}。";
+        }
+
+        private static string LoseEscalatingGold(GameRun run, int firstCost, string param)
+        {
+            string[] parts = SplitParamList(param);
+            string counterId = parts.Length > 0 ? parts[0] : "event_escalating_gold";
+            int increment = parts.Length > 1 ? ParseInt(parts[1], firstCost) : firstCost;
+            firstCost = System.Math.Max(0, firstCost);
+            increment = System.Math.Max(0, increment);
+
+            // threshold=0 表示只使用 GameRun 已持久化的通用事件计数，不触发强制事件或封顶。
+            int triggerCount = run.IncrementEventCounter(counterId, 0, string.Empty);
+            int required = firstCost + increment * System.Math.Max(0, triggerCount - 1);
+            int paid = System.Math.Min(run.Gold, required);
+            run.Gold -= paid;
+
+            if (paid < required)
+            {
+                return $"第 {triggerCount} 次中毒，被送往医院抢救；抢救费应为 {required} 金币，现有 {paid} 金币已全部支付。";
+            }
+
+            return $"第 {triggerCount} 次中毒，被送往医院抢救，支付 {paid} 金币。";
         }
 
         private static List<FlavorDef> AllFlavors(GameRun run)

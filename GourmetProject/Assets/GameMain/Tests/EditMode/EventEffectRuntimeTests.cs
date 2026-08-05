@@ -111,6 +111,67 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void EscalatingHospitalFee_IncreasesAcrossRunAndClampsAtZero()
+        {
+            GameRun run = CreateRun();
+            run.Gold = 100;
+
+            string first = EffectResolver.Apply(
+                run,
+                cfg.EffectType.LoseEscalatingGold,
+                20,
+                "mushroom_poison|20",
+                new Xoshiro256SS(1UL));
+            Assert.That(run.Gold, Is.EqualTo(80));
+            Assert.That(first, Does.Contain("第 1 次中毒"));
+
+            GameRun restored = GameRun.FromSaveData(_tables, _database, run.ToSaveData());
+            string second = EffectResolver.Apply(
+                restored,
+                cfg.EffectType.LoseEscalatingGold,
+                20,
+                "mushroom_poison|20",
+                new Xoshiro256SS(2UL));
+            Assert.That(restored.Gold, Is.EqualTo(40));
+            Assert.That(second, Does.Contain("第 2 次中毒"));
+
+            string third = EffectResolver.Apply(
+                restored,
+                cfg.EffectType.LoseEscalatingGold,
+                20,
+                "mushroom_poison|20",
+                new Xoshiro256SS(3UL));
+            Assert.That(restored.Gold, Is.Zero, "金币不足时应扣到 0，不应出现负数");
+            Assert.That(third, Does.Contain("抢救费应为 60 金币"));
+        }
+
+        [Test]
+        public void MushroomFeast_ConfiguresEligibilityBranchesAndRewards()
+        {
+            cfg.GameEvent mushroom = _tables.TbEvent.Get("ev_crossroad_sign");
+            Assert.That(mushroom.Preconditions, Is.EqualTo("minGold:61"));
+
+            GameRun run = CreateRun();
+            run.Gold = 60;
+            Assert.That(PreconditionEvaluator.IsSatisfied(run, mushroom.Preconditions), Is.False);
+            run.Gold = 61;
+            Assert.That(PreconditionEvaluator.IsSatisfied(run, mushroom.Preconditions), Is.True);
+
+            AssertOption("opt_mushroom_white_poison", 20f, cfg.EffectType.LoseEscalatingGold, 20f);
+            AssertOption("opt_mushroom_white_safe", 80f, cfg.EffectType.None, 0f);
+            AssertOption("opt_mushroom_red_poison", 40f, cfg.EffectType.LoseEscalatingGold, 20f);
+            AssertOption("opt_mushroom_red_safe", 60f, cfg.EffectType.None, 0f);
+            AssertOption("opt_mushroom_green_poison", 60f, cfg.EffectType.LoseEscalatingGold, 20f);
+            AssertOption("opt_mushroom_green_safe", 40f, cfg.EffectType.GainLegendaryItem, 1f);
+
+            cfg.EventOption whiteCashout = _tables.TbEventOption.Get("opt_mushroom_white_cashout");
+            cfg.EventOption redCashout = _tables.TbEventOption.Get("opt_mushroom_red_cashout");
+            Assert.That(whiteCashout.EffectValues[0], Is.EqualTo(70f));
+            Assert.That(redCashout.EffectValues[0], Is.EqualTo(120f));
+            Assert.That(_tables.TbEventOption.Get("opt_mushroom_green_safe").EffectParams[0], Does.StartWith("legendary_choice_1"));
+        }
+
+        [Test]
         public void EventTree_ParentsOnlyNavigateAndLeavesAutoEnd()
         {
             var parentIds = new HashSet<string>();
@@ -166,6 +227,16 @@ namespace GourmetProject.Tests.EditMode
             }
 
             throw new AssertionException($"没有找到 {kind} 经营挑战行动");
+        }
+
+        private void AssertOption(string id, float branchWeight, cfg.EffectType effectType, float effectValue)
+        {
+            cfg.EventOption option = _tables.TbEventOption.Get(id);
+            Assert.That(option.BranchWeight, Is.EqualTo(branchWeight), id);
+            Assert.That(option.BranchPageText, Is.Not.Empty, id);
+            Assert.That(option.Text, Is.Not.Empty, id);
+            Assert.That(option.EffectTypes[0], Is.EqualTo(effectType), id);
+            Assert.That(option.EffectValues[0], Is.EqualTo(effectValue), id);
         }
 
         private static RewardOffer EmptyOffer(int baseGold)
