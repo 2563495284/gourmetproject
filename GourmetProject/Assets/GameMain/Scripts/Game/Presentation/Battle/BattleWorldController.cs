@@ -8,6 +8,7 @@ using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
 using GourmetProject.Runtime;
+using GourmetProject.Runtime.UI;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -260,6 +261,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             EnsureTableEdit();
             EnsureScopeHighlights();
+            UIButtonSoundFeedback.Install(transform);
             if (!DoodleEnabled && _doodle != null)
             {
                 _doodle.Clear();
@@ -1437,6 +1439,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 {
                     button = Instantiate(_comButtonPrefab, _pendingDishActionsRoot);
                     button.gameObject.name = $"PendingDishAction_{dishId}";
+                    UIButtonSoundFeedback.Install(button);
                     button.onClick.RemoveAllListeners();
                     button.onClick.AddListener(() =>
                     {
@@ -1780,6 +1783,7 @@ namespace GourmetProject.Game.Presentation.Battle
             piece.SetDragPresentation(true);
             BeginDragPointerTracking(ScreenToWorld(screenPoint));
             UpdateServingOutletDrag(screenPoint);
+            GameApp.Audio.PlayPickup();
         }
 
         public void UpdateServingOutletDrag(Vector2 screenPoint)
@@ -1873,6 +1877,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             RebuildPlacedPieces();
             _boardView.Sync();
+            GameApp.Audio.PlayPlacement();
             PlayDropDust(placement, footprintSize, releaseVelocity);
             PlayScopeAffectedDishFeedback(affectedDishIds);
             SetMessage($"已摆放：{result.Dish.Def.Name}，点击下方“上菜”按钮确认。");
@@ -2064,6 +2069,7 @@ namespace GourmetProject.Game.Presentation.Battle
             SetPendingDishActionButtonVisible(dish.Id, false);
             BeginDragPointerTracking(ScreenToWorld(screenPoint));
             UpdateMovableDishDrag(screenPoint);
+            GameApp.Audio.PlayPickup();
         }
 
         private void UpdateMovableDishDrag(Vector2 screenPoint)
@@ -2166,6 +2172,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _boardView.Sync();
             if (placedAtHoveredPosition)
             {
+                GameApp.Audio.PlayPlacement();
                 PlayDropDust(placement, footprintSize, releaseVelocity);
                 PlayScopeAffectedDishFeedback(affectedDishIds);
                 FlashServeScopeHighlights(dish, GetPresentationToken());
@@ -2200,6 +2207,7 @@ namespace GourmetProject.Game.Presentation.Battle
             piece.SetDragPresentation(true);
             BeginDragPointerTracking(ScreenToWorld(screenPoint));
             UpdateTemporaryAreaDishDrag(screenPoint);
+            GameApp.Audio.PlayPickup();
         }
 
         private bool IsTemporaryAreaPointerHitAccepted(
@@ -2310,6 +2318,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _boardView.Sync();
             LayoutTemporaryAreaPieces(animated: true);
             RefreshTemporaryAreaVisibility(animated: true);
+            GameApp.Audio.PlayPlacement();
             PlayDropDust(placement, footprintSize, releaseVelocity);
             FlashServeScopeHighlights(dish, GetPresentationToken());
             PendingDishPlacement pending = _session.FindPendingDishPlacement(dish.Id);

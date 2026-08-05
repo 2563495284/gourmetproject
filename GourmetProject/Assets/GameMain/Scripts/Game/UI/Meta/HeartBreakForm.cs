@@ -51,6 +51,7 @@ namespace GourmetProject.Game.UI.Meta
             _closing = false;
             _onComplete = args.OnComplete;
             Bind(args);
+            GameApp.Audio.PlayLossFanfare();
             Play();
         }
 

@@ -68,7 +68,7 @@ namespace GourmetProject.Runtime.UI
             }
         }
 
-        internal static void Install(Transform root)
+        public static void Install(Transform root)
         {
             if (root == null)
             {
@@ -78,16 +78,20 @@ namespace GourmetProject.Runtime.UI
             Button[] buttons = root.GetComponentsInChildren<Button>(true);
             for (int i = 0; i < buttons.Length; i++)
             {
-                Button button = buttons[i];
-                if (button != null && button.GetComponent<UIButtonSoundFeedback>() == null)
-                {
-                    button.gameObject.AddComponent<UIButtonSoundFeedback>();
-                }
+                Install(buttons[i]);
             }
 
             if (root.GetComponent<UIButtonSoundFeedbackInstaller>() == null)
             {
                 root.gameObject.AddComponent<UIButtonSoundFeedbackInstaller>();
+            }
+        }
+
+        public static void Install(Button button)
+        {
+            if (button != null && button.GetComponent<UIButtonSoundFeedback>() == null)
+            {
+                button.gameObject.AddComponent<UIButtonSoundFeedback>();
             }
         }
 

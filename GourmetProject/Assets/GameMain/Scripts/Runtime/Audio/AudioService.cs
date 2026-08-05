@@ -19,6 +19,9 @@ namespace GourmetProject.Runtime.Audio
         private const string ResourceSoundRoot = "Sounds/";
         private const string ButtonSound = SoundRoot + "button.ogg";
         private const string CancelSound = SoundRoot + "cancel.ogg";
+        private const string PlacementSound = SoundRoot + "Thud.wav";
+        private const string PickupSound = SoundRoot + "Pop.wav";
+        private const string LossFanfareSound = SoundRoot + "Fanfare_loss.mp3";
         private const string SingleSettlementHitSound = SoundRoot + "multhit1.ogg";
         private const string MultipleSettlementHitSound = SoundRoot + "multhit2.ogg";
 
@@ -77,6 +80,21 @@ namespace GourmetProject.Runtime.Audio
         public int PlayCancelClick()
         {
             return PlaySound(CancelSound);
+        }
+
+        public int PlayPlacement()
+        {
+            return PlaySound(PlacementSound);
+        }
+
+        public int PlayPickup()
+        {
+            return PlaySound(PickupSound);
+        }
+
+        public int PlayLossFanfare()
+        {
+            return PlaySound(LossFanfareSound);
         }
 
         public int PlayRandomCoin()

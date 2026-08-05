@@ -2,11 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using DG.Tweening;
+using GourmetProject.Game.Run;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Model;
+using GourmetProject.Runtime;
 using UnityEngine;
 using GpTable = GourmetProject.Gameplay.Board.DiningTable;
-using GourmetProject.Game.Run;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
@@ -519,6 +520,7 @@ namespace GourmetProject.Game.Presentation.Battle
             StartDragAnimation(mouseWorld, Vector3.one, EditDragGrabDuration, keepFollowing: true);
             ClearGhost();
             PublishEditActionState(canConfirm: false, interactable: false);
+            GameApp.Audio.PlayPickup();
         }
 
         private void BeginStagedDrag(Vector3 mouseWorld)
@@ -539,6 +541,7 @@ namespace GourmetProject.Game.Presentation.Battle
             StartDragAnimation(mouseWorld, Vector3.one, EditDragGrabDuration, keepFollowing: true);
             ClearGhost();
             PublishEditActionState(canConfirm: true, interactable: false);
+            GameApp.Audio.PlayPickup();
         }
 
         private void ReturnCandidateDrag()
@@ -671,6 +674,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 _stagedAbsoluteCells,
                 EditStagedOutlineColor,
                 EditStagedOutlineWidth);
+            GameApp.Audio.PlayPlacement();
             PublishEditActionState(canConfirm: true, interactable: true);
         }
 
