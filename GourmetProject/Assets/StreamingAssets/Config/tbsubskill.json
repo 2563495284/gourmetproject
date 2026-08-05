@@ -598,11 +598,11 @@
       1.5
     ],
     "actionParam": [
-      "when:transfer;resultscope:RowAndSelf"
+      "when:transfer;resultscope:ColumnAndSelf"
     ],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "自身结算后，给{ascope}食物挂上甜蜜传递 Buff\n其成功发动甜蜜传递时，使软糖本行倍率 ×{0}",
+    "descTemplate": "{cscope}\n发动甜蜜传递，倍率 ×{0}",
     "termId": ""
   },
   {
@@ -1062,7 +1062,7 @@
     ],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "自身结算后，给{ascope}食物挂上甜蜜传递 Buff\n其成功发动甜蜜传递时，额外选择 {0} 个目标",
+    "descTemplate": "{ascope}食物发动甜蜜传递时\n额外选择 {0} 个目标",
     "termId": "term_sweet_transfer"
   },
   {
