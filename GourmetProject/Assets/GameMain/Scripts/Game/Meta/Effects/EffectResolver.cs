@@ -115,6 +115,30 @@ namespace GourmetProject.Game.Meta
                 case cfg.EffectType.CollectInterest:
                     return CollectInterest(run, effectParam);
 
+                case cfg.EffectType.AddBusinessGoldPct:
+                    bool nextBusiness = string.Equals(effectParam, "Next", StringComparison.OrdinalIgnoreCase);
+                    run.AddBusinessGoldPct(effectValue, nextBusiness);
+                    return nextBusiness
+                        ? $"下一次营业基础金币 {FormatMultiplier(effectValue)}。"
+                        : $"本周后续营业基础金币 {FormatMultiplier(effectValue)}。";
+
+                case cfg.EffectType.AddAllRecipeScoreFlat:
+                    return AddAllRecipeScoreFlat(run, effectValue);
+
+                case cfg.EffectType.AddBossTargetScorePct:
+                    run.AddBossTargetScorePct(effectValue);
+                    return $"后续星级评鉴目标美味值 {FormatMultiplier(effectValue)}。";
+
+                case cfg.EffectType.AddBossBaseGoldPct:
+                    run.AddBossBaseGoldPct(effectValue);
+                    return $"后续星级评鉴基础金币 {FormatMultiplier(effectValue)}。";
+
+                case cfg.EffectType.GrantRandomActiveItems:
+                    return GrantRandomItems(run, rng, cfg.ItemKind.Active, System.Math.Max(1, value), effectParam);
+
+                case cfg.EffectType.GrantRandomPassiveItems:
+                    return GrantRandomItems(run, rng, cfg.ItemKind.Passive, System.Math.Max(1, value), effectParam);
+
                 case cfg.EffectType.UiTodo:
                     return string.IsNullOrWhiteSpace(effectParam) ? "TODO: 后续接入 UI 交互。" : effectParam;
 
@@ -263,20 +287,156 @@ namespace GourmetProject.Game.Meta
             }
 
             int applied = 0;
-            for (int i = 0; i < count; i++)
+            int targetCount = System.Math.Min(count, allTargets.Count);
+            for (int i = 0; i < targetCount && allTargets.Count > 0; i++)
             {
                 List<int> pool = emptyFlavorTargets.Count > 0 ? emptyFlavorTargets : allTargets;
                 int targetIndex = rng != null ? rng.Range(0, pool.Count) : 0;
                 int dishIndex = pool[targetIndex];
-                string flavorId = PickFlavor(flavors, rng).Id;
-                if (run.AddRecipeFlavor(dishIndex, flavorId))
+                List<FlavorDef> availableFlavors = AvailableFlavors(run, dishIndex, flavors);
+                if (availableFlavors.Count > 0
+                    && run.AddRecipeFlavor(dishIndex, PickFlavor(availableFlavors, rng).Id))
                 {
                     applied++;
-                    emptyFlavorTargets.Remove(dishIndex);
                 }
+
+                emptyFlavorTargets.Remove(dishIndex);
+                allTargets.Remove(dishIndex);
             }
 
             return applied > 0 ? $"为食谱中的 {applied} 个食物添加了随机风味。" : "没有食物获得风味。";
+        }
+
+        private static List<FlavorDef> AvailableFlavors(GameRun run, int dishIndex, IReadOnlyList<FlavorDef> flavors)
+        {
+            var available = new List<FlavorDef>();
+            IReadOnlyList<string> existing = run.GetRecipeFlavorIds(dishIndex);
+            foreach (FlavorDef flavor in flavors)
+            {
+                bool duplicate = false;
+                for (int i = 0; i < existing.Count; i++)
+                {
+                    if (existing[i] == flavor.Id)
+                    {
+                        duplicate = true;
+                        break;
+                    }
+                }
+
+                if (!duplicate)
+                {
+                    available.Add(flavor);
+                }
+            }
+
+            return available;
+        }
+
+        private static string AddAllRecipeScoreFlat(GameRun run, float amount)
+        {
+            int affected = 0;
+            int recipeCount = run.RecipeEntries.Count;
+            for (int dishIndex = 0; dishIndex < recipeCount; dishIndex++)
+            {
+                if (run.AddRecipeScoreFlat(dishIndex, amount))
+                {
+                    affected++;
+                }
+            }
+
+            return affected > 0
+                ? $"触发时已有的 {affected} 个食物永久分数 {FormatSigned(amount)}。"
+                : "食谱为空，没有食物获得分数。";
+        }
+
+        private static string GrantRandomItems(
+            GameRun run,
+            IRandomStream rng,
+            cfg.ItemKind kind,
+            int count,
+            string param)
+        {
+            if (rng == null)
+            {
+                return "奖励生成失败：缺少随机流。";
+            }
+
+            IReadOnlyCollection<string> allowedIds = null;
+            cfg.ActiveItemCategory? activeCategory = null;
+            bool? requireNegative = null;
+            bool withReplacement = false;
+            string normalized = NormalizeParam(param);
+            if (kind == cfg.ItemKind.Active)
+            {
+                withReplacement = normalized.IndexOf("Replace", StringComparison.OrdinalIgnoreCase) >= 0;
+                if (normalized.IndexOf("Adjust", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    activeCategory = cfg.ActiveItemCategory.Adjust;
+                }
+                else
+                {
+                    allowedIds = ParseItemIds(normalized);
+                }
+            }
+            else
+            {
+                requireNegative = string.Equals(normalized, "Negative", StringComparison.OrdinalIgnoreCase);
+            }
+
+            List<ItemDefinition> items = ItemPoolService.RollFiltered(
+                run.Tables,
+                run,
+                kind,
+                rng,
+                count,
+                allowedIds,
+                activeCategory,
+                requireNegative,
+                withReplacement);
+            if (items.Count == 0)
+            {
+                const int fallbackGold = 40;
+                run.Gold += fallbackGold;
+                return $"奖励池为空，折算金币 +{fallbackGold}。";
+            }
+
+            var choices = new List<RewardChoice>(items.Count);
+            foreach (ItemDefinition item in items)
+            {
+                cfg.RewardKind rewardKind = item.IsPassive
+                    ? cfg.RewardKind.PassiveItemChoice
+                    : (item.ActiveItemCategory == cfg.ActiveItemCategory.Adjust
+                        ? cfg.RewardKind.ActiveItemAdjust
+                        : cfg.RewardKind.ActiveItemStrengthen);
+                choices.Add(new RewardChoice(rewardKind, item.Id, item.Name, item.Desc, goldAmount: 40));
+            }
+
+            string title = kind == cfg.ItemKind.Passive ? "装饰品奖励" : "消耗品奖励";
+            var group = new RewardChoiceGroup(title, choices, choices.Count, ruleText: "点击领取");
+            var offer = new RewardOffer(0, new[] { group }, null, baseGoldClaimed: true);
+            run.EnqueueGenericRewardOffer(BuildGenericRewardKey(run, kind.ToString(), title), title, offer);
+            return $"获得 {items.Count} 个{(kind == cfg.ItemKind.Passive ? "装饰品" : "消耗品")}。";
+        }
+
+        private static IReadOnlyCollection<string> ParseItemIds(string param)
+        {
+            var ids = new List<string>();
+            string[] parts = SplitParamList(param);
+            for (int i = 0; i < parts.Length; i++)
+            {
+                string part = parts[i];
+                if (part.StartsWith("Ids:", StringComparison.OrdinalIgnoreCase))
+                {
+                    part = part.Substring(4);
+                }
+
+                if (part.StartsWith("item_", StringComparison.OrdinalIgnoreCase))
+                {
+                    ids.Add(part);
+                }
+            }
+
+            return ids;
         }
 
         private static string RemoveRandomRecipeDish(GameRun run, IRandomStream rng, int count, string param)
@@ -434,6 +594,11 @@ namespace GourmetProject.Game.Meta
         private static string FormatPct(float pct)
         {
             return $"{System.Math.Round(pct * 100f, 1, System.MidpointRounding.AwayFromZero)}%";
+        }
+
+        private static string FormatMultiplier(float pct)
+        {
+            return $"×{System.Math.Max(0f, 1f + pct).ToString("0.##", CultureInfo.InvariantCulture)}";
         }
 
         private static string FormatSigned(float value)

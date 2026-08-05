@@ -136,6 +136,30 @@ namespace cfg
         /// 按当前金币及运行时利息参数结算；param=事件ID，读取event.resultText模板
         /// </summary>
         CollectInterest = 29,
+        /// <summary>
+        /// 营业基础金币百分比修正(value=百分比,param=Next/CurrentWeek)
+        /// </summary>
+        AddBusinessGoldPct = 30,
+        /// <summary>
+        /// 触发时食谱中已有的全部食物永久分数增加(value=分数)
+        /// </summary>
+        AddAllRecipeScoreFlat = 31,
+        /// <summary>
+        /// 后续星级评鉴目标美味值永久百分比修正(value=百分比)
+        /// </summary>
+        AddBossTargetScorePct = 32,
+        /// <summary>
+        /// 后续星级评鉴基础金币永久百分比修正(value=百分比)
+        /// </summary>
+        AddBossBaseGoldPct = 33,
+        /// <summary>
+        /// 随机消耗品(value=数量,param=指定ID列表或Adjust；支持放回)
+        /// </summary>
+        GrantRandomActiveItems = 34,
+        /// <summary>
+        /// 随机装饰品(value=数量,param=Positive/Negative)
+        /// </summary>
+        GrantRandomPassiveItems = 35,
     }
 
 } 

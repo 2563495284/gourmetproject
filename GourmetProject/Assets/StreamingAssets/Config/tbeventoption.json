@@ -3,15 +3,15 @@
     "id": "opt_midnight_sample",
     "eventId": "ev_midnight_tasting",
     "parentId": "",
-    "text": "试吃样品",
-    "resultText": "摊主把新调的风味塞进你的食谱",
+    "text": "不切直接吃",
+    "resultText": "新鲜的红香肠，肉香浓密",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
-      14
+      0
     ],
     "effectValues": [
-      1
+      0
     ],
     "effectParams": [
       "-"
@@ -22,15 +22,15 @@
     "id": "opt_midnight_menu",
     "eventId": "ev_midnight_tasting",
     "parentId": "",
-    "text": "帮摊主整理食谱",
-    "resultText": "选择1 个食物后，摊主会帮你把它从食谱中删去",
-    "condition": "hasRecipeDish",
+    "text": "切成章鱼的样子",
+    "resultText": "红香肠被切两刀，在沸水的作用下弯曲起来",
+    "condition": "",
     "conditionText": "",
     "effectTypes": [
-      28
+      0
     ],
     "effectValues": [
-      1
+      0
     ],
     "effectParams": [
       "-"
@@ -41,8 +41,8 @@
     "id": "opt_midnight_leave",
     "eventId": "ev_midnight_tasting",
     "parentId": "",
-    "text": "赶路离开",
-    "resultText": "你没有停留，继续赶路",
+    "text": "来碗泡面配着吃",
+    "resultText": "厨师称赞，“不愧是老吃家”，奉上独门秘籍",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
@@ -60,18 +60,18 @@
     "id": "opt_recipe_page_cover",
     "eventId": "ev_ancestral_recipe_page",
     "parentId": "",
-    "text": "抄写扉页部分",
-    "resultText": "你记下了食物线索，相关的运气提高了",
+    "text": "我不是来看你变魔术的",
+    "resultText": "“我是来吃饭的，不是来看你变魔术的，要装神弄鬼你回法国”",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
-      11
+      0
     ],
     "effectValues": [
-      5
+      0
     ],
     "effectParams": [
-      "Dish"
+      "-"
     ],
     "autoEnd": false
   },
@@ -79,18 +79,18 @@
     "id": "opt_recipe_page_body",
     "eventId": "ev_ancestral_recipe_page",
     "parentId": "",
-    "text": "抄写正文部分",
-    "resultText": "你获得了1 个食物",
+    "text": "尝尝沙拉",
+    "resultText": "你发现沙拉别有一番滋味，调料方式出乎意料",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
-      12
+      0
     ],
     "effectValues": [
-      3
+      0
     ],
     "effectParams": [
-      "dish_choice_3|祖传食谱残页"
+      "-"
     ],
     "autoEnd": false
   },
@@ -98,15 +98,15 @@
     "id": "opt_recipe_page_sell",
     "eventId": "ev_ancestral_recipe_page",
     "parentId": "",
-    "text": "卖给商店老板",
-    "resultText": "商店老板收下残页，付给你一袋金币",
+    "text": "比试厨艺",
+    "resultText": "你做了一道家常菜“葱爆牛肉”，味道惊人，餐厅名声大噪",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
-      1
+      0
     ],
     "effectValues": [
-      40
+      0
     ],
     "effectParams": [
       "-"
@@ -117,18 +117,18 @@
     "id": "opt_carpenter_wood",
     "eventId": "ev_table_carpenter",
     "parentId": "",
-    "text": "选择木料",
-    "resultText": "木匠递给你一张木料采购单",
+    "text": "修改为石料",
+    "resultText": "木匠从卡车上搬下来两个石料箱",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
-      15
+      0
     ],
     "effectValues": [
-      1
+      0
     ],
     "effectParams": [
-      "lay_wood"
+      "-"
     ],
     "autoEnd": false
   },
@@ -136,18 +136,18 @@
     "id": "opt_carpenter_stone",
     "eventId": "ev_table_carpenter",
     "parentId": "",
-    "text": "选择石料",
-    "resultText": "木匠递给你一张石料采购单",
+    "text": "修改为木料",
+    "resultText": "木匠从卡车上搬下来两个木料箱",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
-      15
+      0
     ],
     "effectValues": [
-      1
+      0
     ],
     "effectParams": [
-      "lay_stone"
+      "-"
     ],
     "autoEnd": false
   },
@@ -156,17 +156,17 @@
     "eventId": "ev_table_carpenter",
     "parentId": "",
     "text": "选择金属料",
-    "resultText": "木匠递给你一张金属采购单",
+    "resultText": "木匠从卡车上搬下来两个金属料箱",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
-      15
+      0
     ],
     "effectValues": [
-      1
+      0
     ],
     "effectParams": [
-      "lay_metal"
+      "-"
     ],
     "autoEnd": false
   },
@@ -174,21 +174,18 @@
     "id": "opt_statue_gold",
     "eventId": "ev_kitchen_god_statue",
     "parentId": "",
-    "text": "供奉30 金币",
-    "resultText": "神像前的贡盘轻轻一震",
+    "text": "申诉负面舆论",
+    "resultText": "经平台核实，对方的言论不实，特此赠予餐厅一件装饰品，以表安慰",
     "condition": "minGold:30",
-    "conditionText": "",
+    "conditionText": "需要至少 30 金币",
     "effectTypes": [
-      1,
-      3
+      0
     ],
     "effectValues": [
-      -30,
       0
     ],
     "effectParams": [
-      "-",
-      "passive_choice_1"
+      "-"
     ],
     "autoEnd": false
   },
@@ -196,21 +193,18 @@
     "id": "opt_statue_dish",
     "eventId": "ev_kitchen_god_statue",
     "parentId": "",
-    "text": "供奉1 个食物",
-    "resultText": "选择1 个食物供奉给食神像",
+    "text": "激情互喷",
+    "resultText": "争论吸引了大量关注，有支持也有贬低",
     "condition": "hasRecipeDish",
-    "conditionText": "",
+    "conditionText": "需要食谱中至少有 1 个食物",
     "effectTypes": [
-      28,
-      3
+      0
     ],
     "effectValues": [
-      1,
       0
     ],
     "effectParams": [
-      "-",
-      "passive_choice_1"
+      "-"
     ],
     "autoEnd": false
   },
@@ -218,23 +212,17 @@
     "id": "opt_statue_steal",
     "eventId": "ev_kitchen_god_statue",
     "parentId": "",
-    "text": "偷走贡品",
-    "resultText": "你抱走贡品，附近商店很快听说了此事",
+    "text": "置之不理",
+    "resultText": "消极的应对给餐厅带来了一些影响，不过很快平息",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
-      1,
-      3,
-      17
+      0
     ],
     "effectValues": [
-      100,
-      0,
-      0.25
+      0
     ],
     "effectParams": [
-      "-",
-      "active_grant_1",
       "-"
     ],
     "autoEnd": false
@@ -243,18 +231,18 @@
     "id": "opt_sign_food_street",
     "eventId": "ev_crossroad_sign",
     "parentId": "",
-    "text": "指向美食街",
-    "resultText": "招牌指向灯火通明的美食街，相关的运气提高了",
+    "text": "我来尝一下这个蘑菇",
+    "resultText": "十分美味",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
-      11
+      0
     ],
     "effectValues": [
-      3
+      0
     ],
     "effectParams": [
-      "Dish"
+      "-"
     ],
     "autoEnd": false
   },
@@ -262,90 +250,8 @@
     "id": "opt_sign_secondhand",
     "eventId": "ev_crossroad_sign",
     "parentId": "",
-    "text": "指向旧货巷",
-    "resultText": "招牌指向堆满旧货的小巷，相关的运气提高了",
-    "condition": "",
-    "conditionText": "",
-    "effectTypes": [
-      11
-    ],
-    "effectValues": [
-      3
-    ],
-    "effectParams": [
-      "PassiveItem"
-    ],
-    "autoEnd": false
-  },
-  {
-    "id": "opt_sign_mall",
-    "eventId": "ev_crossroad_sign",
-    "parentId": "",
-    "text": "指向商场",
-    "resultText": "招牌指向商场，相关的运气提高了",
-    "condition": "",
-    "conditionText": "",
-    "effectTypes": [
-      11
-    ],
-    "effectValues": [
-      5
-    ],
-    "effectParams": [
-      "Gold"
-    ],
-    "autoEnd": false
-  },
-  {
-    "id": "opt_delivery_normal",
-    "eventId": "ev_delivery_order",
-    "parentId": "",
-    "text": "接普通单",
-    "resultText": "你接下普通外卖单，下一场经营挑战目标略有提高",
-    "condition": "",
-    "conditionText": "",
-    "effectTypes": [
-      19,
-      20
-    ],
-    "effectValues": [
-      5,
-      30
-    ],
-    "effectParams": [
-      "-",
-      "-"
-    ],
-    "autoEnd": false
-  },
-  {
-    "id": "opt_delivery_luxury",
-    "eventId": "ev_delivery_order",
-    "parentId": "",
-    "text": "接豪华单",
-    "resultText": "你接下豪华外卖单，下一场经营挑战目标明显提高",
-    "condition": "",
-    "conditionText": "",
-    "effectTypes": [
-      19,
-      20
-    ],
-    "effectValues": [
-      10,
-      80
-    ],
-    "effectParams": [
-      "-",
-      "-"
-    ],
-    "autoEnd": false
-  },
-  {
-    "id": "opt_delivery_reject",
-    "eventId": "ev_delivery_order",
-    "parentId": "",
-    "text": "拒接",
-    "resultText": "你合上外卖箱，没有接单",
+    "text": "还是卖给客人吧",
+    "resultText": "明智的选择，还是一朝被蛇咬，十年怕井绳呢",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
@@ -356,334 +262,6 @@
     ],
     "effectParams": [
       "-"
-    ],
-    "autoEnd": false
-  },
-  {
-    "id": "opt_advance_passive",
-    "eventId": "ev_black_market_advance",
-    "parentId": "",
-    "text": "预支装饰品",
-    "resultText": "你提前拿走一个装饰品，相关的运气降低了",
-    "condition": "",
-    "conditionText": "",
-    "effectTypes": [
-      3,
-      11
-    ],
-    "effectValues": [
-      0,
-      -5
-    ],
-    "effectParams": [
-      "passive_choice_1",
-      "PassiveItem"
-    ],
-    "autoEnd": false
-  },
-  {
-    "id": "opt_advance_fragment",
-    "eventId": "ev_black_market_advance",
-    "parentId": "",
-    "text": "预支餐桌格",
-    "resultText": "你提前拿走一包餐桌格，相关的运气降低了",
-    "condition": "",
-    "conditionText": "",
-    "effectTypes": [
-      16,
-      11
-    ],
-    "effectValues": [
-      3,
-      -5
-    ],
-    "effectParams": [
-      "fragment_choice_3",
-      "Fragment"
-    ],
-    "autoEnd": false
-  },
-  {
-    "id": "opt_advance_active",
-    "eventId": "ev_black_market_advance",
-    "parentId": "",
-    "text": "预支消耗品",
-    "resultText": "你提前拿走一个消耗品，后续2 次奖励选择少 1 个选项",
-    "condition": "",
-    "conditionText": "",
-    "effectTypes": [
-      3,
-      18
-    ],
-    "effectValues": [
-      0,
-      2
-    ],
-    "effectParams": [
-      "active_grant_1",
-      "-1"
-    ],
-    "autoEnd": false
-  },
-  {
-    "id": "opt_casserole_i_food",
-    "eventId": "ev_wishing_casserole_i",
-    "parentId": "",
-    "text": "献上1 个食物",
-    "resultText": "砂锅吞下随机贡品后，吐出几枚金币",
-    "condition": "hasRecipeDish",
-    "conditionText": "",
-    "effectTypes": [
-      27,
-      1
-    ],
-    "effectValues": [
-      1,
-      20
-    ],
-    "effectParams": [
-      "-",
-      "-"
-    ],
-    "autoEnd": false
-  },
-  {
-    "id": "opt_casserole_i_flavored",
-    "eventId": "ev_wishing_casserole_i",
-    "parentId": "",
-    "text": "献上一个独具风味的食物",
-    "resultText": "砂锅吞下1 个带风味的食物，只是汤汁颜色变深了一点",
-    "condition": "hasFlavoredRecipeDish",
-    "conditionText": "",
-    "effectTypes": [
-      27,
-      22
-    ],
-    "effectValues": [
-      1,
-      3
-    ],
-    "effectParams": [
-      "flavored",
-      "wishing_casserole|act_event"
-    ],
-    "autoEnd": false
-  },
-  {
-    "id": "opt_casserole_i_gold",
-    "eventId": "ev_wishing_casserole_i",
-    "parentId": "",
-    "text": "献上少量金币",
-    "resultText": "砂锅吐出1 个装饰品",
-    "condition": "minGold:20",
-    "conditionText": "",
-    "effectTypes": [
-      1,
-      3
-    ],
-    "effectValues": [
-      -20,
-      0
-    ],
-    "effectParams": [
-      "-",
-      "passive_choice_1"
-    ],
-    "autoEnd": false
-  },
-  {
-    "id": "opt_casserole_ii_flavored",
-    "eventId": "ev_wishing_casserole_ii",
-    "parentId": "",
-    "text": "献上一个独具风味的食物",
-    "resultText": "黑汤翻涌，吐出3 个带有风味的食物",
-    "condition": "hasFlavoredRecipeDish",
-    "conditionText": "",
-    "effectTypes": [
-      27,
-      23
-    ],
-    "effectValues": [
-      1,
-      3
-    ],
-    "effectParams": [
-      "flavored",
-      "flavored_dish_3"
-    ],
-    "autoEnd": false
-  },
-  {
-    "id": "opt_casserole_ii_gold",
-    "eventId": "ev_wishing_casserole_ii",
-    "parentId": "",
-    "text": "献上一切金币",
-    "resultText": "所有金币沉入锅底，砂锅吐出1 个珍贵装饰品和消耗品",
-    "condition": "minGold:1",
-    "conditionText": "",
-    "effectTypes": [
-      24,
-      25
-    ],
-    "effectValues": [
-      0,
-      1
-    ],
-    "effectParams": [
-      "-",
-      "legendary_choice_1"
-    ],
-    "autoEnd": false
-  },
-  {
-    "id": "opt_casserole_ii_actives",
-    "eventId": "ev_wishing_casserole_ii",
-    "parentId": "",
-    "text": "献上消耗品",
-    "resultText": "消耗品被黑汤吞没，金币从锅沿滚落",
-    "condition": "",
-    "conditionText": "",
-    "effectTypes": [
-      21
-    ],
-    "effectValues": [
-      100
-    ],
-    "effectParams": [
-      "-"
-    ],
-    "autoEnd": false
-  },
-  {
-    "id": "opt_roast_meat_pork",
-    "eventId": "ev_roast_meat",
-    "parentId": "",
-    "text": "吃猪肉，-30 金币",
-    "resultText": "猪肉好香好美味",
-    "condition": "",
-    "conditionText": "",
-    "effectTypes": [
-      1
-    ],
-    "effectValues": [
-      -30
-    ],
-    "effectParams": [
-      "-"
-    ],
-    "autoEnd": false
-  },
-  {
-    "id": "opt_roast_meat_beef",
-    "eventId": "ev_roast_meat",
-    "parentId": "",
-    "text": "吃牛肉",
-    "resultText": "被毒死了",
-    "condition": "",
-    "conditionText": "",
-    "effectTypes": [
-      9
-    ],
-    "effectValues": [
-      0
-    ],
-    "effectParams": [
-      "被毒死了"
-    ],
-    "autoEnd": false
-  },
-  {
-    "id": "opt_roast_meat_mutton",
-    "eventId": "ev_roast_meat",
-    "parentId": "",
-    "text": "吃羊肉",
-    "resultText": "羊肉好香好美味",
-    "condition": "",
-    "conditionText": "",
-    "effectTypes": [
-      0
-    ],
-    "effectValues": [
-      0
-    ],
-    "effectParams": [
-      "-"
-    ],
-    "autoEnd": false
-  },
-  {
-    "id": "opt_roast_meat_pork_all",
-    "eventId": "ev_roast_meat",
-    "parentId": "opt_roast_meat_pork",
-    "text": "全部吃完",
-    "resultText": "获得食物烤猪肉",
-    "condition": "",
-    "conditionText": "",
-    "effectTypes": [
-      5
-    ],
-    "effectValues": [
-      1
-    ],
-    "effectParams": [
-      "dish_grant_1|获得食物烤猪肉"
-    ],
-    "autoEnd": false
-  },
-  {
-    "id": "opt_roast_meat_pork_half",
-    "eventId": "ev_roast_meat",
-    "parentId": "opt_roast_meat_pork",
-    "text": "吃一半",
-    "resultText": "非常开心",
-    "condition": "",
-    "conditionText": "",
-    "effectTypes": [
-      0
-    ],
-    "effectValues": [
-      0
-    ],
-    "effectParams": [
-      "-"
-    ],
-    "autoEnd": false
-  },
-  {
-    "id": "opt_roast_meat_pork_other_half",
-    "eventId": "ev_roast_meat",
-    "parentId": "opt_roast_meat_pork_half",
-    "text": "吃另一半",
-    "resultText": "获得食物烤猪肉",
-    "condition": "",
-    "conditionText": "",
-    "effectTypes": [
-      5
-    ],
-    "effectValues": [
-      1
-    ],
-    "effectParams": [
-      "dish_grant_1|获得食物烤猪肉"
-    ],
-    "autoEnd": false
-  },
-  {
-    "id": "opt_roast_meat_mutton_all",
-    "eventId": "ev_roast_meat",
-    "parentId": "opt_roast_meat_mutton",
-    "text": "全部吃完",
-    "resultText": "获得食物烤羊肉",
-    "condition": "",
-    "conditionText": "",
-    "effectTypes": [
-      5
-    ],
-    "effectValues": [
-      1
-    ],
-    "effectParams": [
-      "dish_grant_1|获得食物烤羊肉"
     ],
     "autoEnd": false
   },
@@ -723,7 +301,7 @@
     "effectParams": [
       "-"
     ],
-    "autoEnd": false
+    "autoEnd": true
   },
   {
     "id": "opt_slot_machine_leave",
@@ -741,6 +319,464 @@
     ],
     "effectParams": [
       "-"
+    ],
+    "autoEnd": true
+  },
+  {
+    "id": "opt_midnight_tasting_choice",
+    "eventId": "ev_midnight_tasting",
+    "parentId": "opt_midnight_sample",
+    "text": "对食物的理解加深了！后续更容易获得更好的食物",
+    "resultText": "食物奖励隐藏分永久 +5。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      11
+    ],
+    "effectValues": [
+      5
+    ],
+    "effectParams": [
+      "Dish"
+    ],
+    "autoEnd": true
+  },
+  {
+    "id": "opt_midnight_tasting_choice_2",
+    "eventId": "ev_midnight_tasting",
+    "parentId": "opt_midnight_menu",
+    "text": "心情大好，下次营业获得的金币额外+60%",
+    "resultText": "下一次营业基础金币 ×1.6。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      30
+    ],
+    "effectValues": [
+      0.6
+    ],
+    "effectParams": [
+      "Next"
+    ],
+    "autoEnd": true
+  },
+  {
+    "id": "opt_midnight_tasting_choice_3",
+    "eventId": "ev_midnight_tasting",
+    "parentId": "opt_midnight_leave",
+    "text": "所有食物分数+2！这就是知识的力量",
+    "resultText": "触发时食谱中已有的全部食物永久分数 +2。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      31
+    ],
+    "effectValues": [
+      2
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": true
+  },
+  {
+    "id": "opt_ancestral_recipe_page_choice",
+    "eventId": "ev_ancestral_recipe_page",
+    "parentId": "opt_recipe_page_sell",
+    "text": "本周后续营业的金币奖励提升30%",
+    "resultText": "本周后续营业基础金币 ×1.3。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      30
+    ],
+    "effectValues": [
+      0.3
+    ],
+    "effectParams": [
+      "CurrentWeek"
+    ],
+    "autoEnd": true
+  },
+  {
+    "id": "opt_ancestral_recipe_page_choice_2",
+    "eventId": "ev_ancestral_recipe_page",
+    "parentId": "opt_recipe_page_body",
+    "text": "获得两个调味相关的消耗品",
+    "resultText": "从六种调味箱中放回随机获得 2 个。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      34
+    ],
+    "effectValues": [
+      2
+    ],
+    "effectParams": [
+      "Ids:item_active_season_sweet,item_active_season_bitter,item_active_season_umami,item_active_season_numb,item_active_season_sour,item_active_season_salty|Replace"
+    ],
+    "autoEnd": true
+  },
+  {
+    "id": "opt_ancestral_recipe_page_choice_3",
+    "eventId": "ev_ancestral_recipe_page",
+    "parentId": "opt_recipe_page_cover",
+    "text": "星级评鉴美味值要求提升20%，金币奖励翻倍",
+    "resultText": "食物奖励隐藏分 +5；后续星级评鉴目标 ×1.2，基础金币 ×2。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      11,
+      32,
+      33
+    ],
+    "effectValues": [
+      5,
+      0.2,
+      1
+    ],
+    "effectParams": [
+      "Dish",
+      "-",
+      "-"
+    ],
+    "autoEnd": true
+  },
+  {
+    "id": "opt_table_carpenter_choice",
+    "eventId": "ev_table_carpenter",
+    "parentId": "opt_carpenter_wood",
+    "text": "获得两个石料类强化箱",
+    "resultText": "从三种石料箱中放回随机获得 2 个。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      34
+    ],
+    "effectValues": [
+      2
+    ],
+    "effectParams": [
+      "Ids:item_active_lay_marble,item_active_lay_obsidian,item_active_lay_emerald|Replace"
+    ],
+    "autoEnd": true
+  },
+  {
+    "id": "opt_table_carpenter_choice_2",
+    "eventId": "ev_table_carpenter",
+    "parentId": "opt_carpenter_stone",
+    "text": "获得两个木料类强化箱",
+    "resultText": "从两种木料箱中放回随机获得 2 个。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      34
+    ],
+    "effectValues": [
+      2
+    ],
+    "effectParams": [
+      "Ids:item_active_lay_cherry,item_active_lay_walnut|Replace"
+    ],
+    "autoEnd": true
+  },
+  {
+    "id": "opt_table_carpenter_choice_3",
+    "eventId": "ev_table_carpenter",
+    "parentId": "opt_carpenter_metal",
+    "text": "获得两个金属料强化箱",
+    "resultText": "从两种金属箱中放回随机获得 2 个。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      34
+    ],
+    "effectValues": [
+      2
+    ],
+    "effectParams": [
+      "Ids:item_active_lay_gold,item_active_lay_silver|Replace"
+    ],
+    "autoEnd": true
+  },
+  {
+    "id": "opt_kitchen_god_statue_choice",
+    "eventId": "ev_kitchen_god_statue",
+    "parentId": "opt_statue_gold",
+    "text": "获得一个随机装饰品",
+    "resultText": "支付 30 金币，随机获得 1 个非诅咒装饰品。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      1,
+      35
+    ],
+    "effectValues": [
+      -30,
+      1
+    ],
+    "effectParams": [
+      "-",
+      "Positive"
+    ],
+    "autoEnd": true
+  },
+  {
+    "id": "opt_kitchen_god_statue_choice_2",
+    "eventId": "ev_kitchen_god_statue",
+    "parentId": "opt_statue_dish",
+    "text": "获得100金币，获得一个负面装饰品",
+    "resultText": "永久删除 1 个食物，获得 100 金币和 1 个诅咒装饰品。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      28,
+      1,
+      35
+    ],
+    "effectValues": [
+      1,
+      100,
+      1
+    ],
+    "effectParams": [
+      "-",
+      "-",
+      "Negative"
+    ],
+    "autoEnd": true
+  },
+  {
+    "id": "opt_kitchen_god_statue_choice_3",
+    "eventId": "ev_kitchen_god_statue",
+    "parentId": "opt_statue_steal",
+    "text": "接受这次影响",
+    "resultText": "获得 100 金币和 1 个随机消耗品；下一次营业基础金币 ×0.6。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      1,
+      3,
+      30
+    ],
+    "effectValues": [
+      100,
+      0,
+      -0.4
+    ],
+    "effectParams": [
+      "-",
+      "active_grant_1",
+      "Next"
+    ],
+    "autoEnd": true
+  },
+  {
+    "id": "opt_crossroad_sign_choice",
+    "eventId": "ev_crossroad_sign",
+    "parentId": "opt_sign_secondhand",
+    "text": "领取 50 金币",
+    "resultText": "获得 50 金币。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      1
+    ],
+    "effectValues": [
+      50
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": true
+  },
+  {
+    "id": "opt_crossroad_sign_choice_2",
+    "eventId": "ev_crossroad_sign",
+    "parentId": "opt_sign_food_street",
+    "text": "记住这份鲜味",
+    "resultText": "食物奖励隐藏分永久 +3。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      11
+    ],
+    "effectValues": [
+      3
+    ],
+    "effectParams": [
+      "Dish"
+    ],
+    "autoEnd": true
+  },
+  {
+    "id": "opt_new_event_choice",
+    "eventId": "ev_new_event",
+    "parentId": "",
+    "text": "喝迎宾酒",
+    "resultText": "慢慢品尝，味道别有一番风味",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      0
+    ],
+    "effectValues": [
+      0
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": false
+  },
+  {
+    "id": "opt_new_event_choice_2",
+    "eventId": "ev_new_event",
+    "parentId": "opt_new_event_choice",
+    "text": "为随机两个食物添加风味",
+    "resultText": "为随机 2 个不同食物添加随机风味，优先选择没有风味的食物。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      14
+    ],
+    "effectValues": [
+      2
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": true
+  },
+  {
+    "id": "opt_new_event_choice_3",
+    "eventId": "ev_new_event",
+    "parentId": "",
+    "text": "吃蔬菜棒蘸酱",
+    "resultText": "蔬菜棒很新鲜，酱咸香合适",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      0
+    ],
+    "effectValues": [
+      0
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": false
+  },
+  {
+    "id": "opt_new_event_choice_4",
+    "eventId": "ev_new_event",
+    "parentId": "",
+    "text": "吃汉堡肉",
+    "resultText": "感觉味道怪怪的，身体有些不舒服",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      0
+    ],
+    "effectValues": [
+      0
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": false
+  },
+  {
+    "id": "opt_new_event_choice_5",
+    "eventId": "ev_new_event",
+    "parentId": "opt_new_event_choice_3",
+    "text": "对食物的理解提升了！更容易获得更好的食物",
+    "resultText": "食物奖励隐藏分永久 +5。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      11
+    ],
+    "effectValues": [
+      5
+    ],
+    "effectParams": [
+      "Dish"
+    ],
+    "autoEnd": true
+  },
+  {
+    "id": "opt_new_event_choice_6",
+    "eventId": "ev_new_event",
+    "parentId": "opt_new_event_choice_4",
+    "text": "休息两天，店内活动适当调整",
+    "resultText": "身体不舒服就应该休息啦，稍后调整下店里活动的安排就好",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      0
+    ],
+    "effectValues": [
+      0
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": false
+  },
+  {
+    "id": "opt_new_event_choice_7",
+    "eventId": "ev_new_event",
+    "parentId": "opt_new_event_choice_4",
+    "text": "坚持工作",
+    "resultText": "顾客听说了店长的事迹，纷纷投来感动的目光，一个小孩子捧着一个装饰品给你",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      0
+    ],
+    "effectValues": [
+      0
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": false
+  },
+  {
+    "id": "opt_new_event_choice_8",
+    "eventId": "ev_new_event",
+    "parentId": "opt_new_event_choice_6",
+    "text": "获得两个调整单类的消耗品",
+    "resultText": "从全部调整单中放回随机获得 2 个。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      34
+    ],
+    "effectValues": [
+      2
+    ],
+    "effectParams": [
+      "Adjust|Replace"
+    ],
+    "autoEnd": true
+  },
+  {
+    "id": "opt_new_event_choice_9",
+    "eventId": "ev_new_event",
+    "parentId": "opt_new_event_choice_7",
+    "text": "获得一个装饰品",
+    "resultText": "随机获得 1 个非诅咒装饰品。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      35
+    ],
+    "effectValues": [
+      1
+    ],
+    "effectParams": [
+      "Positive"
     ],
     "autoEnd": true
   }

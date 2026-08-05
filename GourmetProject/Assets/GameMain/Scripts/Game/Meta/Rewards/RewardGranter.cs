@@ -230,10 +230,16 @@ namespace GourmetProject.Game.Meta
             bool isBusiness = food != null
                 && (food.ActionKind == cfg.FoodActionKind.Normal
                     || food.ActionKind == cfg.FoodActionKind.Super);
-            int gold = isBusiness
-                ? itemRuntime.ModifyMealRewardGold(offer.BaseGold)
-                : offer.BaseGold;
-            if (gold != offer.BaseGold)
+            bool isBoss = food != null && food.ActionKind == cfg.FoodActionKind.Feast;
+            float itemMultiplier = isBusiness ? itemRuntime.MealRewardGoldMultiplier() : 1f;
+            float eventMultiplier = isBusiness
+                ? run.CurrentWeekBusinessGoldMultiplier * run.ConsumeNextBusinessGoldMultiplier()
+                : (isBoss ? run.BossBaseGoldMultiplier : 1f);
+            int gold = (int)System.Math.Round(
+                offer.BaseGold * itemMultiplier * eventMultiplier,
+                System.MidpointRounding.AwayFromZero);
+            gold = System.Math.Max(0, gold);
+            if (isBusiness && System.Math.Abs(itemMultiplier - 1f) > 0.0001f)
             {
                 itemRuntime.FlashTriggered(m => System.Math.Abs(m.MealRewardGoldPct()) > 0.0001f);
             }

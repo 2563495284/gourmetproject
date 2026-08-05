@@ -47,7 +47,7 @@ public sealed partial class GameEvent : Luban.BeanBase
     /// </summary>
     public readonly string Desc;
     /// <summary>
-    /// 事件分类列表
+    /// 事件分类列表（|分隔；一个事件可属于多个分类）
     /// </summary>
     public readonly System.Collections.Generic.List<ActionBehavior> EventTypes;
     /// <summary>

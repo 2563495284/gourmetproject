@@ -309,7 +309,7 @@ namespace GourmetProject.Game.UI.Battle
             TMP_Text text = go.GetComponent<TMP_Text>();
             text.fontSize = size;
             text.color = color;
-            text.enableWordWrapping = true;
+            text.textWrappingMode = TextWrappingModes.Normal;
             text.raycastTarget = false;
             return text;
         }

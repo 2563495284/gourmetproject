@@ -24,7 +24,7 @@ namespace GourmetProject.Game.Presentation.Battle
     /// </summary>
     public sealed class BattleWorldController : MonoBehaviour
     {
-        private const bool DoodleEnabled = false;
+        private static readonly bool DoodleEnabled = false;
         public const float Gap = DiningTableLayout.Gap;
         private const float MaxCellSize = DiningTableLayout.MaxCellSize;
         private const float MinCellSize = DiningTableLayout.MinCellSize;

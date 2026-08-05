@@ -156,14 +156,19 @@ namespace GourmetProject.Game.Meta
         /// <summary>食物奖励金币按百分比修正（累加；含负面「克扣工钱」）。下限 0。</summary>
         public int ModifyMealRewardGold(int baseGold)
         {
+            int result = (int)System.Math.Round(baseGold * MealRewardGoldMultiplier(), System.MidpointRounding.AwayFromZero);
+            return result < 0 ? 0 : result;
+        }
+
+        public float MealRewardGoldMultiplier()
+        {
             float pct = 0f;
             foreach (PassiveItemModel m in Models)
             {
                 pct += m.MealRewardGoldPct();
             }
 
-            int result = (int)System.Math.Round(baseGold * (1f + pct), System.MidpointRounding.AwayFromZero);
-            return result < 0 ? 0 : result;
+            return System.Math.Max(0f, 1f + pct);
         }
 
         public int EventEnterGold() => SumInt(m => m.EventEnterGold());

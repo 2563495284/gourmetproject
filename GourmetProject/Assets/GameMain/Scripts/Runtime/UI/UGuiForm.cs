@@ -10,7 +10,7 @@ namespace GourmetProject.Runtime.UI
     public abstract class UGuiForm : UIFormLogic
     {
         /// <summary>缓存的 Transform。</summary>
-        public Transform CachedTransform { get; private set; }
+        public new Transform CachedTransform { get; private set; }
 
         protected override void OnInit(object userData)
         {

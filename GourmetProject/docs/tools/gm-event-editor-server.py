@@ -29,6 +29,7 @@ from xml.etree import ElementTree as ET
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_WORKBOOK = PROJECT_ROOT / "GameConfig" / "Datas" / "event.xlsx"
 EDITOR_HTML = Path(__file__).with_name("gm-event-editor.html")
+EFFECT_REQUESTS_FILE_NAME = "event_effect_requests.json"
 GENERATED_EVENT_JSON = PROJECT_ROOT / "Assets" / "StreamingAssets" / "Config" / "tbevent.json"
 EFFECT_ENUM_CS = PROJECT_ROOT / "Assets" / "GameMain" / "Scripts" / "Config" / "Gen" / "EffectType.cs"
 ACTION_ENUM_CS = PROJECT_ROOT / "Assets" / "GameMain" / "Scripts" / "Config" / "Gen" / "ActionBehavior.cs"
@@ -340,6 +341,42 @@ def load_generated_events() -> dict[str, dict[str, Any]]:
         return {}
 
 
+def effect_requests_path(workbook_path: Path) -> Path:
+    return workbook_path.with_name(EFFECT_REQUESTS_FILE_NAME)
+
+
+def load_effect_requests(workbook_path: Path) -> dict[str, str]:
+    path = effect_requests_path(workbook_path)
+    if not path.exists():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        raw_options = payload.get("options", {}) if isinstance(payload, dict) else {}
+        if not isinstance(raw_options, dict):
+            return {}
+        return {
+            as_text(option_id): as_text(request)
+            for option_id, request in raw_options.items()
+            if as_text(request)
+        }
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def save_effect_requests(workbook_path: Path, options: list[dict[str, Any]]) -> None:
+    path = effect_requests_path(workbook_path)
+    requests = {
+        as_text(option.get("id")): as_text(option.get("effectRequest"))
+        for option in options
+        if as_text(option.get("id")) and as_text(option.get("effectRequest"))
+    }
+    payload = {"version": 1, "options": requests}
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp_path = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    temp_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    os.replace(temp_path, path)
+
+
 def load_model(workbook_path: Path) -> dict[str, Any]:
     document = XlsxDocument(workbook_path)
     event_rows, _, _ = document.rows("event")
@@ -378,6 +415,7 @@ def load_model(workbook_path: Path) -> dict[str, Any]:
         events.append(event)
 
     option_headers = [as_text(value) for value in option_rows[0][1:]]
+    effect_requests = load_effect_requests(workbook_path)
     options: list[dict[str, Any]] = []
     current: dict[str, Any] | None = None
     for row in option_rows[3:]:
@@ -392,6 +430,7 @@ def load_model(workbook_path: Path) -> dict[str, Any]:
                 "resultText": as_text(record.get("resultText")),
                 "condition": as_text(record.get("condition")),
                 "conditionText": as_text(record.get("conditionText")),
+                "effectRequest": effect_requests.get(option_id, ""),
                 "autoEnd": as_bool(record.get("autoEnd")),
                 "effects": [],
             }
@@ -510,6 +549,9 @@ def validate_model(model: dict[str, Any]) -> dict[str, Any]:
             issues.append(issue("warning", "condition-text-unused", "没有条件却填写了条件文案，游戏不会用它控制可选状态。", event_id, option_id))
         if condition_text and re.fullmatch(r"\d+(?:\.\d+)?", condition_text):
             issues.append(issue("warning", "condition-text-number", f"条件文案“{condition_text}”看起来像占位数字，请确认玩家文案。", event_id, option_id))
+        effect_request = as_text(option.get("effectRequest"))
+        if effect_request:
+            issues.append(issue("review", "effect-request", f"自然语言效果待实现：{effect_request}", event_id, option_id))
         effects = option.get("effects") if isinstance(option.get("effects"), list) else []
         if not effects:
             issues.append(issue("warning", "effect-empty", "该选项没有效果；如只用于进入子页可忽略。", event_id, option_id))
@@ -598,7 +640,8 @@ def normalize_option(option: dict[str, Any]) -> dict[str, Any]:
         "id": as_text(option.get("id")), "eventId": as_text(option.get("eventId")),
         "parentId": as_text(option.get("parentId")), "text": as_text(option.get("text")),
         "resultText": as_text(option.get("resultText")), "condition": as_text(option.get("condition")),
-        "conditionText": as_text(option.get("conditionText")), "autoEnd": bool(option.get("autoEnd")), "effects": effects,
+        "conditionText": as_text(option.get("conditionText")), "effectRequest": as_text(option.get("effectRequest")),
+        "autoEnd": bool(option.get("autoEnd")), "effects": effects,
     }
 
 
@@ -655,6 +698,7 @@ def save_model(workbook_path: Path, model: dict[str, Any], source_hash: str) -> 
     document.replace_sheet("event", event_matrix)
     document.replace_sheet("event_option", option_matrix)
     backup = document.save_atomic(workbook_path)
+    save_effect_requests(workbook_path, normalized["options"])
     reloaded = load_model(workbook_path)
     return {"model": reloaded, "backupPath": str(backup), "audit": audit}
 

@@ -1,8 +1,8 @@
 [
   {
     "id": "ev_midnight_tasting",
-    "name": "深夜试吃摊",
-    "desc": "时间轴进入夜间事件节点时，一个试菜摊主拿出刚调好的风味样品，邀请你把它放进本周食谱。",
+    "name": "午夜食堂",
+    "desc": "深夜时分，一家食堂悄然开启，厨师端出一道红香肠，说到，“要切成章鱼的样子吗”",
     "eventTypes": [
       0
     ],
@@ -15,8 +15,8 @@
   },
   {
     "id": "ev_ancestral_recipe_page",
-    "name": "祖传食谱残页",
-    "desc": "你得到一页油渍斑驳的食谱残页，上面记录的不是固定食物，而是一组食物线索。",
+    "name": "决战食神",
+    "desc": "你去对面新开的西餐厅，点了一份沙拉，店员将水浇到沙拉上，说到“没见过吧，这是生长沙拉，里面所有元素都是可食用的”",
     "eventTypes": [
       0,
       2
@@ -30,8 +30,8 @@
   },
   {
     "id": "ev_table_carpenter",
-    "name": "拼桌木匠",
-    "desc": "一个木匠正在修补餐桌格，愿意把边角料拼进你的餐桌。",
+    "name": "木匠吉佩托",
+    "desc": "一位技艺精湛的木匠造访，询问你是否需要强化一下餐桌",
     "eventTypes": [
       0,
       2
@@ -45,8 +45,8 @@
   },
   {
     "id": "ev_kitchen_god_statue",
-    "name": "食神像",
-    "desc": "旧街尽头有一座食神像，贡品被摆在不同材质的餐桌格上。",
+    "name": "举报风波",
+    "desc": "隔壁的餐厅，在网上发表污蔑的言论，希望以此获得竞争优势",
     "eventTypes": [
       0
     ],
@@ -59,83 +59,13 @@
   },
   {
     "id": "ev_crossroad_sign",
-    "name": "岔路招牌",
-    "desc": "时间轴前方出现会旋转的招牌，可以把本周剩余节奏导向不同收益类型。",
+    "name": "蘑菇盛宴",
+    "desc": "主厨端出来一份蘑菇煲，其中各种鲜香的鲜艳蘑菇，让你既忍不住吞咽口水，又担心安全",
     "eventTypes": [
       0
     ],
     "preconditions": "",
     "weight": 1,
-    "repeatable": true,
-    "bgSprite": "",
-    "resultText": "",
-    "slotRewardGroupId": ""
-  },
-  {
-    "id": "ev_delivery_order",
-    "name": "限时外卖单",
-    "desc": "外卖箱上的计时器开始倒数，下一场经营挑战具有更高的目标美味值。",
-    "eventTypes": [
-      0
-    ],
-    "preconditions": "",
-    "weight": 1,
-    "repeatable": true,
-    "bgSprite": "",
-    "resultText": "",
-    "slotRewardGroupId": ""
-  },
-  {
-    "id": "ev_black_market_advance",
-    "name": "黑市预支券",
-    "desc": "黑市商人递来预支券，允许你提前拿走未来几次奖励的一部分。",
-    "eventTypes": [
-      0
-    ],
-    "preconditions": "",
-    "weight": 1,
-    "repeatable": true,
-    "bgSprite": "",
-    "resultText": "",
-    "slotRewardGroupId": ""
-  },
-  {
-    "id": "ev_wishing_casserole_i",
-    "name": "许愿砂锅I",
-    "desc": "砂锅中有着粘稠的白色汤汁，旁边写着“投入珍贵之物可以获得奖励”",
-    "eventTypes": [
-      0
-    ],
-    "preconditions": "",
-    "weight": 1,
-    "repeatable": false,
-    "bgSprite": "",
-    "resultText": "",
-    "slotRewardGroupId": ""
-  },
-  {
-    "id": "ev_wishing_casserole_ii",
-    "name": "许愿砂锅II",
-    "desc": "砂锅中有着粘稠的黑色汤汁，旁边写着“投入珍贵之物可以获得奖励”",
-    "eventTypes": [
-      0
-    ],
-    "preconditions": "eventCounterReached:wishing_casserole",
-    "weight": 1,
-    "repeatable": false,
-    "bgSprite": "",
-    "resultText": "",
-    "slotRewardGroupId": ""
-  },
-  {
-    "id": "ev_roast_meat",
-    "name": "吃烤肉",
-    "desc": "香气扑鼻的烤肉在桌子上",
-    "eventTypes": [
-      0
-    ],
-    "preconditions": "",
-    "weight": 0,
     "repeatable": true,
     "bgSprite": "",
     "resultText": "",
@@ -158,7 +88,7 @@
   {
     "id": "ev_slot_machine",
     "name": "抽奖机",
-    "desc": "一个华丽的机器，投入金币有概率获得餐桌格奖励",
+    "desc": "一个华丽的机器，投入金币有概率获得任何奖励",
     "eventTypes": [
       7
     ],
@@ -168,5 +98,19 @@
     "bgSprite": "",
     "resultText": "这次什么也没有。",
     "slotRewardGroupId": "slot_machine_basic"
+  },
+  {
+    "id": "ev_new_event",
+    "name": "会员制餐厅",
+    "desc": "你与另一位朋友德川相约同去一处会员制餐厅就餐。服务员上了三道菜，分别是迎宾酒、蔬菜棒蘸酱、汉堡肉",
+    "eventTypes": [
+      0
+    ],
+    "preconditions": "",
+    "weight": 1,
+    "repeatable": true,
+    "bgSprite": "",
+    "resultText": "",
+    "slotRewardGroupId": ""
   }
 ]

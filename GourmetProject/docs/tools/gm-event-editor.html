@@ -151,8 +151,12 @@
       background: var(--paper);
       box-shadow: var(--shadow);
       transition: transform .12s ease, box-shadow .12s ease;
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
     }
     .node:hover { transform: translateY(-2px); }
+    .node.dragging { cursor: grabbing; transition: none; transform: none; z-index: 10; }
     .node.selected { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(239,140,59,.2), var(--shadow); }
     .node.root { background: #fff0c9; border-color: #d78832; }
     .node .kind { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
@@ -184,6 +188,8 @@
     .effect-row { display: grid; grid-template-columns: 1.35fr .65fr 1.2fr auto; gap: 6px; align-items: end; margin: 7px 0; padding: 8px; border-radius: 9px; background: var(--blue-soft); }
     .effect-row label { font-size: 11px; color: var(--muted); }
     .effect-row input, .effect-row select { margin-top: 3px; padding: 5px 6px; }
+    .advanced-effects { margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 8px; }
+    .advanced-effects summary { cursor: pointer; color: var(--muted); font-size: 12px; font-weight: 700; }
     .inspector-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 
     .audit { border-top: 1px solid var(--line); background: #fffaf0; }
@@ -241,7 +247,7 @@
         <select id="typeFilter"><option value="">全部分类</option></select>
       </div>
       <div id="eventList" class="event-list"></div>
-      <div class="legend">点击事件后，在中间查看完整页面树；橙色是事件根页，白色是选择与结果。</div>
+      <div class="legend">点击事件后，在中间查看完整页面树；板子可拖动，位置会自动保存在本机浏览器。</div>
     </aside>
 
     <main class="center">
@@ -285,11 +291,31 @@ const state = {
   selected: {kind: "", id: ""},
   dirty: false,
   auditTimer: 0,
+  layout: {},
 };
 
 const $ = id => document.getElementById(id);
 const esc = value => String(value ?? "").replace(/[&<>'"]/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"})[char]);
 const deepCopy = value => JSON.parse(JSON.stringify(value));
+const LAYOUT_STORAGE_KEY = "gourmet-event-editor-layout-v1";
+
+function loadLayout() {
+  try {
+    const value = JSON.parse(localStorage.getItem(LAYOUT_STORAGE_KEY) || "{}");
+    return value && typeof value === "object" ? value : {};
+  } catch { return {}; }
+}
+
+function saveLayout() {
+  localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(state.layout));
+}
+
+function layoutFor(eventId) {
+  if (!state.layout[eventId]) state.layout[eventId] = {};
+  return state.layout[eventId];
+}
+
+state.layout = loadLayout();
 
 function toast(message, error = false) {
   const el = $("toast");
@@ -432,6 +458,90 @@ function computeDepth(option, byId, cache, visiting = new Set()) {
   return depth;
 }
 
+function graphSize(positions) {
+  let maxX = 0, maxY = 0;
+  positions.forEach(position => {
+    maxX = Math.max(maxX, position.x + 306);
+    maxY = Math.max(maxY, position.y + 170);
+  });
+  return {
+    width: Math.max($("graphViewport").clientWidth, maxX),
+    height: Math.max($("graphViewport").clientHeight, maxY),
+  };
+}
+
+function drawEdges(event, options, positions, size) {
+  const edgeHtml = [];
+  const addEdge = (fromId, toId) => {
+    const from = positions.get(fromId), to = positions.get(toId);
+    if (!from || !to) return;
+    const x1 = from.x + 268, y1 = from.y + 67, x2 = to.x, y2 = to.y + 67;
+    const bend = Math.max(48, Math.abs(x2 - x1) * .48);
+    edgeHtml.push(`<path class="edge" marker-end="url(#arrow)" d="M ${x1} ${y1} C ${x1 + bend} ${y1}, ${x2 - bend} ${y2}, ${x2} ${y2}"></path><text class="edge-label" x="${(x1+x2)/2 - 18}" y="${(y1+y2)/2 - 7}">选择后</text>`);
+  };
+  options.forEach(option => addEdge(option.parentId || event.id, option.id));
+  $("edges").setAttribute("width", size.width);
+  $("edges").setAttribute("height", size.height);
+  $("edges").innerHTML = `<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#a87b4f"></path></marker></defs>${edgeHtml.join("")}`;
+}
+
+function bindGraphNodes(event, options, positions) {
+  $("nodes").querySelectorAll("[data-node-kind]").forEach(node => {
+    node.addEventListener("pointerdown", pointerDown => {
+      if (pointerDown.button !== 0) return;
+      const nodeId = node.dataset.nodeId;
+      const origin = positions.get(nodeId);
+      if (!origin) return;
+      const startX = pointerDown.clientX, startY = pointerDown.clientY;
+      let dragged = false;
+      node.setPointerCapture(pointerDown.pointerId);
+      node.classList.add("dragging");
+
+      const move = pointerMove => {
+        const deltaX = pointerMove.clientX - startX;
+        const deltaY = pointerMove.clientY - startY;
+        if (!dragged && Math.hypot(deltaX, deltaY) < 4) return;
+        dragged = true;
+        const position = {x: Math.max(12, origin.x + deltaX), y: Math.max(12, origin.y + deltaY)};
+        positions.set(nodeId, position);
+        node.style.left = `${position.x}px`;
+        node.style.top = `${position.y}px`;
+        const size = graphSize(positions);
+        $("graphCanvas").style.width = `${size.width}px`;
+        $("graphCanvas").style.height = `${size.height}px`;
+        drawEdges(event, options, positions, size);
+      };
+
+      const end = pointerUp => {
+        node.removeEventListener("pointermove", move);
+        node.removeEventListener("pointerup", end);
+        node.removeEventListener("pointercancel", end);
+        node.classList.remove("dragging");
+        if (!dragged) return;
+        const position = positions.get(nodeId);
+        layoutFor(event.id)[nodeId] = {x: Math.round(position.x), y: Math.round(position.y)};
+        saveLayout();
+        node.dataset.skipClick = "true";
+        pointerUp.preventDefault();
+      };
+
+      node.addEventListener("pointermove", move);
+      node.addEventListener("pointerup", end);
+      node.addEventListener("pointercancel", end);
+    });
+
+    node.addEventListener("click", eventClick => {
+      if (node.dataset.skipClick) {
+        delete node.dataset.skipClick;
+        eventClick.preventDefault();
+        return;
+      }
+      state.selected = {kind: node.dataset.nodeKind, id: node.dataset.nodeId};
+      renderAll();
+    });
+  });
+}
+
 function renderGraph() {
   const event = selectedEvent();
   if (!event) {
@@ -450,17 +560,17 @@ function renderGraph() {
     levels.get(depth).push({kind: "option", id: option.id, data: option});
   });
   const positions = new Map();
-  let maxRows = 1;
-  let maxDepth = 0;
+  const savedLayout = layoutFor(event.id);
   for (const [depth, nodes] of levels) {
-    maxDepth = Math.max(maxDepth, depth);
-    maxRows = Math.max(maxRows, nodes.length);
-    nodes.forEach((node, index) => positions.set(node.id, {x: 38 + depth * 330, y: 36 + index * 174, depth}));
+    nodes.forEach((node, index) => {
+      const automatic = {x: 38 + depth * 330, y: 36 + index * 174};
+      const saved = savedLayout[node.id];
+      positions.set(node.id, saved && Number.isFinite(saved.x) && Number.isFinite(saved.y) ? saved : automatic);
+    });
   }
-  const width = Math.max($("graphViewport").clientWidth, 360 + maxDepth * 330);
-  const height = Math.max($("graphViewport").clientHeight, 64 + maxRows * 174);
-  $("graphCanvas").style.width = `${width}px`;
-  $("graphCanvas").style.height = `${height}px`;
+  const size = graphSize(positions);
+  $("graphCanvas").style.width = `${size.width}px`;
+  $("graphCanvas").style.height = `${size.height}px`;
 
   const nodeHtml = [];
   for (const nodes of levels.values()) for (const node of nodes) {
@@ -477,28 +587,13 @@ function renderGraph() {
       const nodeIssues = issuesFor(event.id, option.id);
       nodeHtml.push(`<button class="node ${state.selected.kind === "option" && state.selected.id === option.id ? "selected" : ""}" style="left:${pos.x}px;top:${pos.y}px" data-node-kind="option" data-node-id="${esc(option.id)}">
         <span class="kind">选择 → 结果</span><h3>${esc(option.text || "未命名选择")}</h3><p>${esc(option.resultText || "（结果正文为空）")}</p>
-        <div class="node-foot">${effects.slice(0, 3).map(effect => `<span class="chip effect">${esc(effect.type)}</span>`).join("")}${effects.length > 3 ? `<span class="chip">+${effects.length - 3}</span>` : ""}${nodeIssues.map(item => `<span class="chip ${item.severity}">${item.severity}</span>`).join("")}</div>
+        <div class="node-foot">${option.effectRequest ? `<span class="chip review">待实现效果</span>` : ""}${effects.slice(0, 3).map(effect => `<span class="chip effect">${esc(effect.type)}</span>`).join("")}${effects.length > 3 ? `<span class="chip">+${effects.length - 3}</span>` : ""}${nodeIssues.map(item => `<span class="chip ${item.severity}">${item.severity}</span>`).join("")}</div>
       </button>`);
     }
   }
   $("nodes").innerHTML = nodeHtml.join("");
-  $("nodes").querySelectorAll("[data-node-kind]").forEach(node => node.addEventListener("click", () => {
-    state.selected = {kind: node.dataset.nodeKind, id: node.dataset.nodeId};
-    renderAll();
-  }));
-
-  const edgeHtml = [];
-  const addEdge = (fromId, toId) => {
-    const from = positions.get(fromId), to = positions.get(toId);
-    if (!from || !to) return;
-    const x1 = from.x + 268, y1 = from.y + 67, x2 = to.x, y2 = to.y + 67;
-    const bend = Math.max(48, (x2 - x1) * .48);
-    edgeHtml.push(`<path class="edge" marker-end="url(#arrow)" d="M ${x1} ${y1} C ${x1 + bend} ${y1}, ${x2 - bend} ${y2}, ${x2} ${y2}"></path><text class="edge-label" x="${(x1+x2)/2 - 18}" y="${(y1+y2)/2 - 7}">选择后</text>`);
-  };
-  options.forEach(option => addEdge(option.parentId || event.id, option.id));
-  $("edges").setAttribute("width", width);
-  $("edges").setAttribute("height", height);
-  $("edges").innerHTML = `<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#a87b4f"></path></marker></defs>${edgeHtml.join("")}`;
+  bindGraphNodes(event, options, positions);
+  drawEdges(event, options, positions, size);
 }
 
 function field(label, name, value, options = {}) {
@@ -561,7 +656,10 @@ function renderOptionInspector(option) {
       ${field("条件显示文案", "conditionText", option.conditionText, {hint:"玩家实际看到的要求"})}
       <label class="field"><span>结算后立即结束</span><select data-field="autoEnd"><option value="false" ${!option.autoEnd ? "selected" : ""}>否</option><option value="true" ${option.autoEnd ? "selected" : ""}>是</option></select></label>
     </section>
-    <section class="section"><h3>选择后的效果</h3>${effectRows}<button class="btn slim" data-action="add-effect">＋ 添加效果</button></section>
+    <section class="section"><h3>选择后的效果</h3>
+      ${field("用自然语言描述效果", "effectRequest", option.effectRequest || "", {type:"textarea",rows:4,hint:"保存后进入 Codex 审核，不会直接猜测运行逻辑"})}
+      <details class="advanced-effects"><summary>查看已实现效果（高级）</summary>${effectRows}<button class="btn slim" data-action="add-effect">＋ 添加效果</button></details>
+    </section>
     <section class="section"><h3>分支操作</h3><div class="inspector-actions"><button class="btn slim" data-action="add-child">＋ 后续选择</button><button class="btn slim" data-action="move-up">上移</button><button class="btn slim" data-action="move-down">下移</button><button class="btn slim" data-action="duplicate-option">复制选择</button><button class="btn slim danger" data-action="delete-option">删除分支</button></div></section>`;
   bindInspector(option, "option");
 }
@@ -618,8 +716,20 @@ function renameId(kind, target, newId) {
   target.id = newId;
   if (kind === "event") {
     state.model.options.filter(item => item.eventId === oldId).forEach(item => item.eventId = newId);
+    const oldLayout = state.layout[oldId];
+    if (oldLayout) {
+      if (oldLayout[oldId]) oldLayout[newId] = oldLayout[oldId];
+      delete oldLayout[oldId];
+      state.layout[newId] = oldLayout;
+      delete state.layout[oldId];
+      saveLayout();
+    }
   } else {
     state.model.options.filter(item => item.parentId === oldId).forEach(item => item.parentId = newId);
+    const optionLayout = layoutFor(target.eventId);
+    if (optionLayout[oldId]) optionLayout[newId] = optionLayout[oldId];
+    delete optionLayout[oldId];
+    saveLayout();
   }
   state.selected.id = newId;
 }
@@ -634,7 +744,7 @@ function uniqueId(prefix, base) {
 
 function createOption(eventId, parentId = "") {
   const suffix = eventId.replace(/^ev_/, "");
-  return {id: uniqueId("opt_", `${suffix}_choice`), eventId, parentId, text:"新选择", resultText:"选择后的结果", condition:"", conditionText:"", autoEnd:false, effects:[{type:"None",value:0,param:"-"}]};
+  return {id: uniqueId("opt_", `${suffix}_choice`), eventId, parentId, text:"新选择", resultText:"选择后的结果", condition:"", conditionText:"", effectRequest:"", autoEnd:false, effects:[{type:"None",value:0,param:"-"}]};
 }
 
 function handleAction(action, target) {
@@ -677,6 +787,8 @@ function deleteEvent(event) {
   if (!confirm(`删除事件“${event.name}”及其全部选择？此操作将在保存后写入 Excel。`)) return;
   state.model.events = state.model.events.filter(item => item.id !== event.id);
   state.model.options = state.model.options.filter(item => item.eventId !== event.id);
+  delete state.layout[event.id];
+  saveLayout();
   const next = state.model.events[0];
   state.selected = next ? {kind:"event",id:next.id} : {kind:"",id:""};
   setDirty(); renderAll();
@@ -703,6 +815,9 @@ function deleteOption(option) {
   if (!confirm(`删除“${option.text}”${suffix}？`)) return;
   descendants.add(option.id);
   state.model.options = state.model.options.filter(item => !descendants.has(item.id));
+  const optionLayout = layoutFor(option.eventId);
+  descendants.forEach(id => delete optionLayout[id]);
+  saveLayout();
   state.selected = {kind:"event",id:option.eventId}; setDirty(); renderAll();
 }
 
@@ -730,7 +845,7 @@ function renderPreview() {
   if (!option) return;
   const children = childrenOf(event.id, option.id);
   $("previewPath").textContent = `${option.text} → ${children.length ? "下一页" : "结束"}`;
-  $("previewCard").innerHTML = `<h3>${esc(event.name)}</h3><p><strong>玩家选择：</strong>${esc(option.text)}</p><div class="result-box"><strong>选择后的结果</strong><p>${esc(option.resultText || "（由效果反馈生成）")}</p></div><div class="type-tags">${option.effects.map(effect => `<span class="chip effect">${esc(effect.type)} ${esc(effect.value)} ${esc(effect.param)}</span>`).join("")}</div><div class="choice-row">${children.map(item => `<span class="choice-preview">${esc(item.text)}</span>`).join("")}${option.autoEnd ? `<span class="chip warning">立即结束</span>` : ""}</div>`;
+  $("previewCard").innerHTML = `<h3>${esc(event.name)}</h3><p><strong>玩家选择：</strong>${esc(option.text)}</p><div class="result-box"><strong>选择后的结果</strong><p>${esc(option.resultText || "（由效果反馈生成）")}</p></div><div class="type-tags">${option.effectRequest ? `<span class="chip review">待实现：${esc(option.effectRequest)}</span>` : ""}${option.effects.map(effect => `<span class="chip effect">${esc(effect.type)} ${esc(effect.value)} ${esc(effect.param)}</span>`).join("")}</div><div class="choice-row">${children.map(item => `<span class="choice-preview">${esc(item.text)}</span>`).join("")}${option.autoEnd ? `<span class="chip warning">立即结束</span>` : ""}</div>`;
 }
 
 function renderAudit() {

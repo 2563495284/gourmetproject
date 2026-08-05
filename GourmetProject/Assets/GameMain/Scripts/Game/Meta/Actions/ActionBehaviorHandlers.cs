@@ -112,9 +112,12 @@ namespace GourmetProject.Game.Meta
             }
 
             int hiddenCurveTarget = HiddenScoreService.TargetScore(run, context, extraTargetScoreHiddenOffset);
-            return food != null
+            int target = food != null
                 ? itemRuntime.ModifyRequiredScore(hiddenCurveTarget, food.ActionKind)
                 : hiddenCurveTarget;
+            return run != null && food != null && food.ActionKind == cfg.FoodActionKind.Feast
+                ? run.ModifyBossTargetScore(target)
+                : target;
         }
     }
 

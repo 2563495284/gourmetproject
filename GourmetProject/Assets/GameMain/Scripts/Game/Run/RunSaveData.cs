@@ -88,6 +88,21 @@ namespace GourmetProject.Game.Run
         /// <summary>下一场经营挑战领奖额外金币，领取基础金币时消费。</summary>
         public int NextMealRewardGold;
 
+        /// <summary>下一次营业基础金币倍率；旧存档缺失时为 1。</summary>
+        public float NextBusinessGoldMultiplier = 1f;
+
+        /// <summary>本周后续营业基础金币倍率；旧存档缺失时为 1。</summary>
+        public float CurrentWeekBusinessGoldMultiplier = 1f;
+
+        /// <summary>本周营业倍率所属周；与当前周不一致时倍率视为 1。</summary>
+        public int CurrentWeekBusinessGoldWeek;
+
+        /// <summary>后续星级评鉴目标美味值永久百分比修正。</summary>
+        public float BossTargetScorePct;
+
+        /// <summary>后续星级评鉴基础金币永久百分比修正。</summary>
+        public float BossBaseGoldPct;
+
         /// <summary>整局累计进入 act_event 行动的次数。</summary>
         public int ActEventActionCount;
 

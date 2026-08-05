@@ -110,6 +110,11 @@ namespace GourmetProject.Game.Run
         private int _eventChoiceCountDelta;
         private float _nextFoodTargetScoreHiddenOffset;
         private int _nextMealRewardGold;
+        private float _nextBusinessGoldMultiplier = 1f;
+        private float _currentWeekBusinessGoldMultiplier = 1f;
+        private int _currentWeekBusinessGoldWeek;
+        private float _bossTargetScorePct;
+        private float _bossBaseGoldPct;
         private int _actEventActionCount;
         private readonly Dictionary<string, int> _eventCounters = new Dictionary<string, int>();
         private readonly List<string> _forcedEventIds = new List<string>();
@@ -561,6 +566,56 @@ namespace GourmetProject.Game.Run
             return amount;
         }
 
+        public float CurrentWeekBusinessGoldMultiplier =>
+            _currentWeekBusinessGoldWeek == WeekIndex
+                ? System.Math.Max(0f, _currentWeekBusinessGoldMultiplier)
+                : 1f;
+
+        public void AddBusinessGoldPct(float pct, bool nextBusiness)
+        {
+            float multiplier = System.Math.Max(0f, 1f + pct);
+            if (nextBusiness)
+            {
+                _nextBusinessGoldMultiplier *= multiplier;
+                return;
+            }
+
+            if (_currentWeekBusinessGoldWeek != WeekIndex)
+            {
+                _currentWeekBusinessGoldWeek = WeekIndex;
+                _currentWeekBusinessGoldMultiplier = 1f;
+            }
+
+            _currentWeekBusinessGoldMultiplier *= multiplier;
+        }
+
+        public float ConsumeNextBusinessGoldMultiplier()
+        {
+            float multiplier = System.Math.Max(0f, _nextBusinessGoldMultiplier);
+            _nextBusinessGoldMultiplier = 1f;
+            return multiplier;
+        }
+
+        public void AddBossTargetScorePct(float pct)
+        {
+            _bossTargetScorePct += pct;
+        }
+
+        public void AddBossBaseGoldPct(float pct)
+        {
+            _bossBaseGoldPct += pct;
+        }
+
+        public int ModifyBossTargetScore(int targetScore)
+        {
+            int result = (int)System.Math.Round(
+                targetScore * System.Math.Max(0f, 1f + _bossTargetScorePct),
+                System.MidpointRounding.AwayFromZero);
+            return System.Math.Max(1, result);
+        }
+
+        public float BossBaseGoldMultiplier => System.Math.Max(0f, 1f + _bossBaseGoldPct);
+
         public int ActEventActionCount => _actEventActionCount;
 
         public int MarkActEventActionEntered()
@@ -835,7 +890,14 @@ namespace GourmetProject.Game.Run
 
         public void SetWeekIndex(int weekIndex)
         {
-            WeekIndex = System.Math.Max(1, weekIndex);
+            int normalized = System.Math.Max(1, weekIndex);
+            if (normalized != WeekIndex)
+            {
+                _currentWeekBusinessGoldMultiplier = 1f;
+                _currentWeekBusinessGoldWeek = 0;
+            }
+
+            WeekIndex = normalized;
         }
 
         public void IncrementWeek()
@@ -1929,6 +1991,11 @@ namespace GourmetProject.Game.Run
                 EventChoiceCountDelta = _eventChoiceCountDelta,
                 NextFoodTargetScoreHiddenOffset = _nextFoodTargetScoreHiddenOffset,
                 NextMealRewardGold = _nextMealRewardGold,
+                NextBusinessGoldMultiplier = _nextBusinessGoldMultiplier,
+                CurrentWeekBusinessGoldMultiplier = _currentWeekBusinessGoldMultiplier,
+                CurrentWeekBusinessGoldWeek = _currentWeekBusinessGoldWeek,
+                BossTargetScorePct = _bossTargetScorePct,
+                BossBaseGoldPct = _bossBaseGoldPct,
                 ActEventActionCount = _actEventActionCount,
                 EventCounters = new Dictionary<string, int>(_eventCounters),
                 ForcedEventIds = new List<string>(_forcedEventIds),
@@ -2037,6 +2104,11 @@ namespace GourmetProject.Game.Run
             run._eventChoiceCountDelta = data.EventChoiceCountDelta;
             run._nextFoodTargetScoreHiddenOffset = data.NextFoodTargetScoreHiddenOffset;
             run._nextMealRewardGold = data.NextMealRewardGold;
+            run._nextBusinessGoldMultiplier = System.Math.Max(0f, data.NextBusinessGoldMultiplier);
+            run._currentWeekBusinessGoldMultiplier = System.Math.Max(0f, data.CurrentWeekBusinessGoldMultiplier);
+            run._currentWeekBusinessGoldWeek = data.CurrentWeekBusinessGoldWeek;
+            run._bossTargetScorePct = data.BossTargetScorePct;
+            run._bossBaseGoldPct = data.BossBaseGoldPct;
             run._actEventActionCount = System.Math.Max(0, data.ActEventActionCount);
             if (data.EventCounters != null)
             {

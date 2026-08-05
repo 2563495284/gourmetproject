@@ -100,6 +100,74 @@ namespace GourmetProject.Game.Meta
             return true;
         }
 
+        /// <summary>
+        /// 事件专用的定向物品抽取。仍沿用正常解锁、唯一性、隐藏分和基础权重规则；
+        /// 消耗品可按指定 ID 或分类筛选，并按配置决定是否放回。
+        /// </summary>
+        public static List<ItemDefinition> RollFiltered(
+            cfg.Tables tables,
+            GameRun run,
+            cfg.ItemKind kind,
+            IRandomStream rng,
+            int count,
+            IReadOnlyCollection<string> allowedIds,
+            cfg.ActiveItemCategory? activeCategory,
+            bool? requireNegative,
+            bool withReplacement,
+            MetaProgressSaveData progress = null)
+        {
+            var result = new List<ItemDefinition>();
+            if (tables == null || run == null || rng == null || count <= 0)
+            {
+                return result;
+            }
+
+            progress ??= MetaProgressPersistence.Load();
+            int hidden = HiddenScoreService.PassiveItemHiddenScore(run, run.LastActionContext);
+            int distanceFloor = System.Math.Max(1, tables.TbGameBase.HiddenScoreDistanceFloor);
+            List<ItemDefinition> candidates = BuildFilteredCandidates(
+                tables,
+                run,
+                kind,
+                allowedIds,
+                activeCategory,
+                requireNegative,
+                hidden,
+                strictHidden: kind == cfg.ItemKind.Passive,
+                progress);
+            if (candidates.Count == 0 && kind == cfg.ItemKind.Passive)
+            {
+                candidates = BuildFilteredCandidates(
+                    tables,
+                    run,
+                    kind,
+                    allowedIds,
+                    activeCategory,
+                    requireNegative,
+                    hidden,
+                    strictHidden: false,
+                    progress);
+            }
+
+            for (int i = 0; i < count && candidates.Count > 0; i++)
+            {
+                var weights = new List<float>(candidates.Count);
+                foreach (ItemDefinition item in candidates)
+                {
+                    weights.Add(GetWeight(item, hidden, distanceFloor, tables));
+                }
+
+                int index = rng.WeightedPickIndex(weights);
+                result.Add(candidates[index]);
+                if (!withReplacement)
+                {
+                    candidates.RemoveAt(index);
+                }
+            }
+
+            return result;
+        }
+
         public static float GetEffectValue(ItemDefinition item)
         {
             return item != null ? item.EffectValue : 0f;
@@ -136,6 +204,54 @@ namespace GourmetProject.Game.Meta
             }
 
             return candidates;
+        }
+
+        private static List<ItemDefinition> BuildFilteredCandidates(
+            cfg.Tables tables,
+            GameRun run,
+            cfg.ItemKind kind,
+            IReadOnlyCollection<string> allowedIds,
+            cfg.ActiveItemCategory? activeCategory,
+            bool? requireNegative,
+            int hidden,
+            bool strictHidden,
+            MetaProgressSaveData progress)
+        {
+            var candidates = new List<ItemDefinition>();
+            foreach (ItemDefinition item in ItemDefinition.All(tables, kind))
+            {
+                if (!CanEnterPool(run, item)
+                    || !MetaProgressService.IsItemUnlockedForPool(tables, item, progress)
+                    || !ContainsId(allowedIds, item.Id)
+                    || (activeCategory.HasValue && (!item.IsActive || item.ActiveItemCategory != activeCategory.Value))
+                    || (requireNegative.HasValue && (!item.IsPassive || item.IsNegative != requireNegative.Value))
+                    || (strictHidden && !CoversHidden(item, hidden)))
+                {
+                    continue;
+                }
+
+                candidates.Add(item);
+            }
+
+            return candidates;
+        }
+
+        private static bool ContainsId(IReadOnlyCollection<string> allowedIds, string id)
+        {
+            if (allowedIds == null || allowedIds.Count == 0)
+            {
+                return true;
+            }
+
+            foreach (string allowedId in allowedIds)
+            {
+                if (allowedId == id)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static float GetWeight(ItemDefinition item, int hidden, int distanceFloor, cfg.Tables tables)
