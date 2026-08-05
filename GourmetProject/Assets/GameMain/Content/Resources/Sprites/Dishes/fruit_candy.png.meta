@@ -103,10 +103,10 @@ TextureImporter:
       name: fruit_candy_0
       rect:
         serializedVersion: 2
-        x: 32
-        y: 72
-        width: 447
-        height: 914
+        x: 0
+        y: 0
+        width: 512
+        height: 1024
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

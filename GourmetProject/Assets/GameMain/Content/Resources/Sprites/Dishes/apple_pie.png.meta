@@ -103,10 +103,10 @@ TextureImporter:
       name: apple_pie_0
       rect:
         serializedVersion: 2
-        x: 38
-        y: 42
-        width: 948
-        height: 1452
+        x: 0
+        y: 0
+        width: 1536
+        height: 1536
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

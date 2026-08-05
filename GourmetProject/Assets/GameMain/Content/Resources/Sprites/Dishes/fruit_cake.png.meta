@@ -103,10 +103,10 @@ TextureImporter:
       name: fruit_cake_0
       rect:
         serializedVersion: 2
-        x: 13
+        x: 0
         y: 0
-        width: 1002
-        height: 1527
+        width: 1024
+        height: 1536
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

@@ -103,10 +103,10 @@ TextureImporter:
       name: taosu_0
       rect:
         serializedVersion: 2
-        x: 27
-        y: 76
-        width: 975
-        height: 874
+        x: 0
+        y: 0
+        width: 1024
+        height: 1024
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

@@ -103,10 +103,10 @@ TextureImporter:
       name: arrow_cookie_4_0
       rect:
         serializedVersion: 2
-        x: 31
-        y: 60
-        width: 450
-        height: 904
+        x: 0
+        y: 0
+        width: 512
+        height: 1024
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

@@ -103,10 +103,10 @@ TextureImporter:
       name: choco_bar_0
       rect:
         serializedVersion: 2
-        x: 17
-        y: 29
-        width: 1503
-        height: 455
+        x: 0
+        y: 0
+        width: 512
+        height: 1024
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

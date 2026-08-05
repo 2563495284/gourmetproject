@@ -103,10 +103,10 @@ TextureImporter:
       name: cupcake_0
       rect:
         serializedVersion: 2
-        x: 185
-        y: 40
-        width: 654
-        height: 432
+        x: 0
+        y: 0
+        width: 1024
+        height: 512
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
