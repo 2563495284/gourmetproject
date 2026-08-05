@@ -27,7 +27,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private const float StainDarken = 0.12f;
         private static readonly Vector3 StageWorldPosition = new(10000f, 10000f, 0f);
         private const float StageSlotSpacing = 64f;
-        private static readonly Color PreviewBackgroundColor = Color.white;
+        private static readonly Color PreviewBackgroundColor = Color.clear;
 
         private static DishIconPreviewRenderer _instance;
 

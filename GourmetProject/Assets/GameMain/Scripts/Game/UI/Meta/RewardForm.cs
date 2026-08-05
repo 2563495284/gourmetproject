@@ -191,7 +191,10 @@ namespace GourmetProject.Game.UI.Meta
                 _lastTotal = 0;
                 _lastTarget = 0;
                 RefreshOffer();
-                PlayOpenTransition();
+                if (!_isClosing)
+                {
+                    PlayOpenTransition();
+                }
                 return;
             }
 
@@ -221,7 +224,10 @@ namespace GourmetProject.Game.UI.Meta
             _lastTarget = target;
 
             RefreshOffer();
-            PlayOpenTransition();
+            if (!_isClosing)
+            {
+                PlayOpenTransition();
+            }
         }
 
         protected override void OnClose(bool isShutdown, object userData)
@@ -263,6 +269,15 @@ namespace GourmetProject.Game.UI.Meta
         {
             EnsureTipViews();
             HideTips();
+
+            // 存档恢复或异步回调仍可能让已完成的 offer 进入刷新流程；此时不渲染空列表，
+            // 直接复用“继续行动”的完整收尾流程。
+            if (_offer?.IsFullyClaimed == true)
+            {
+                CompleteRewards(closeForm: true);
+                return;
+            }
+
             _titleText.text = _genericMode && !string.IsNullOrEmpty(_genericRewardTitle)
                 ? _genericRewardTitle
                 : "奖励";
@@ -297,7 +312,7 @@ namespace GourmetProject.Game.UI.Meta
         }
 
         /// <summary>结算并推进：清空 pending offer/碎片包、存档、（可选）关界面并回到时间轴，等效于点「继续」。</summary>
-        private void CompleteRewards(bool closeForm)
+        private void CompleteRewards(bool closeForm, bool rewardFormAlreadyClosed = false)
         {
             BattleForm.Active?.CloseRewardOperationPages();
             _run.ClearPendingFragmentPack();
@@ -308,6 +323,12 @@ namespace GourmetProject.Game.UI.Meta
                 if (LoadNextGenericReward())
                 {
                     RunPersistence.Save(_run);
+                    if (rewardFormAlreadyClosed)
+                    {
+                        ReopenReward();
+                        return;
+                    }
+
                     RefreshOffer();
                     return;
                 }
@@ -336,7 +357,7 @@ namespace GourmetProject.Game.UI.Meta
                     }
                 };
 
-                if (closeForm)
+                if (closeForm && !rewardFormAlreadyClosed)
                 {
                     Close(continueFlow);
                 }
@@ -358,7 +379,7 @@ namespace GourmetProject.Game.UI.Meta
                 if (LoadNextGenericReward())
                 {
                     RunPersistence.Save(_run);
-                    if (!closeForm)
+                    if (!closeForm || rewardFormAlreadyClosed)
                     {
                         ReopenReward();
                         return;
@@ -372,7 +393,7 @@ namespace GourmetProject.Game.UI.Meta
             _run.ClearPendingRewardBattleView();
             RunPersistence.Save(_run);
             Action confirmBattle = () => BattleForm.Active?.OnRewardConfirmed();
-            if (closeForm)
+            if (closeForm && !rewardFormAlreadyClosed)
             {
                 Close(confirmBattle);
             }
@@ -754,6 +775,15 @@ namespace GourmetProject.Game.UI.Meta
         private void ReopenReward()
         {
             BattleForm.Active?.CloseRewardOperationPages();
+
+            // 外部领奖页完成时 RewardForm 本来就已关闭。先检查当前 offer，若已经领完则直接
+            // 结算并续接；只有仍有可领取内容（或下一份奖励）时才重新创建 RewardForm。
+            if (RestoreRewardContextForCallback() && _offer.IsFullyClaimed)
+            {
+                CompleteRewards(closeForm: true, rewardFormAlreadyClosed: true);
+                return;
+            }
+
             if (_genericMode)
             {
                 GameApp.UI.OpenUIForm(
