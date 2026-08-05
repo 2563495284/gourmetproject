@@ -342,6 +342,16 @@ function selectedEvent() {
 }
 function optionsFor(eventId) { return state.model?.options.filter(item => item.eventId === eventId) ?? []; }
 function childrenOf(eventId, parentId) { return optionsFor(eventId).filter(item => (item.parentId || "") === (parentId || "")); }
+function branchProbability(option) {
+  if (!option?.parentId || Number(option.branchWeight || 0) <= 0) return null;
+  const siblings = childrenOf(option.eventId, option.parentId);
+  const total = siblings.reduce((sum, item) => sum + Math.max(0, Number(item.branchWeight || 0)), 0);
+  return total > 0 ? Number(option.branchWeight) / total : null;
+}
+function formatProbability(value) {
+  const percent = value * 100;
+  return `${Number.isInteger(percent) ? percent : percent.toFixed(1)}%`;
+}
 
 function setDirty(value = true) {
   state.dirty = value;
@@ -472,14 +482,16 @@ function graphSize(positions) {
 
 function drawEdges(event, options, positions, size) {
   const edgeHtml = [];
-  const addEdge = (fromId, toId) => {
-    const from = positions.get(fromId), to = positions.get(toId);
+  const addEdge = (fromId, option) => {
+    const from = positions.get(fromId), to = positions.get(option.id);
     if (!from || !to) return;
     const x1 = from.x + 268, y1 = from.y + 67, x2 = to.x, y2 = to.y + 67;
     const bend = Math.max(48, Math.abs(x2 - x1) * .48);
-    edgeHtml.push(`<path class="edge" marker-end="url(#arrow)" d="M ${x1} ${y1} C ${x1 + bend} ${y1}, ${x2 - bend} ${y2}, ${x2} ${y2}"></path><text class="edge-label" x="${(x1+x2)/2 - 18}" y="${(y1+y2)/2 - 7}">选择后</text>`);
+    const probability = branchProbability(option);
+    const label = probability === null ? "选择后" : `随机 ${formatProbability(probability)}`;
+    edgeHtml.push(`<path class="edge" marker-end="url(#arrow)" d="M ${x1} ${y1} C ${x1 + bend} ${y1}, ${x2 - bend} ${y2}, ${x2} ${y2}"></path><text class="edge-label" x="${(x1+x2)/2 - 18}" y="${(y1+y2)/2 - 7}">${label}</text>`);
   };
-  options.forEach(option => addEdge(option.parentId || event.id, option.id));
+  options.forEach(option => addEdge(option.parentId || event.id, option));
   $("edges").setAttribute("width", size.width);
   $("edges").setAttribute("height", size.height);
   $("edges").innerHTML = `<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#a87b4f"></path></marker></defs>${edgeHtml.join("")}`;
@@ -585,9 +597,10 @@ function renderGraph() {
       const option = node.data;
       const effects = option.effects ?? [];
       const nodeIssues = issuesFor(event.id, option.id);
+      const probability = branchProbability(option);
       nodeHtml.push(`<button class="node ${state.selected.kind === "option" && state.selected.id === option.id ? "selected" : ""}" style="left:${pos.x}px;top:${pos.y}px" data-node-kind="option" data-node-id="${esc(option.id)}">
-        <span class="kind">选择 → 结果</span><h3>${esc(option.text || "未命名选择")}</h3><p>${esc(option.resultText || "（结果正文为空）")}</p>
-        <div class="node-foot">${option.effectRequest ? `<span class="chip review">待实现效果</span>` : ""}${effects.slice(0, 3).map(effect => `<span class="chip effect">${esc(effect.type)}</span>`).join("")}${effects.length > 3 ? `<span class="chip">+${effects.length - 3}</span>` : ""}${nodeIssues.map(item => `<span class="chip ${item.severity}">${item.severity}</span>`).join("")}</div>
+        <span class="kind">${probability === null ? "选择 → 结果" : `随机分支 ${formatProbability(probability)}`}</span><h3>${esc(option.text || "未命名选择")}</h3><p>${esc(probability !== null && option.branchPageText ? option.branchPageText : option.resultText || "（结果正文为空）")}</p>
+        <div class="node-foot">${probability === null ? "" : `<span class="chip type">权重 ${esc(option.branchWeight)}</span>`}${option.effectRequest ? `<span class="chip review">待实现效果</span>` : ""}${effects.slice(0, 3).map(effect => `<span class="chip effect">${esc(effect.type)}</span>`).join("")}${effects.length > 3 ? `<span class="chip">+${effects.length - 3}</span>` : ""}${nodeIssues.map(item => `<span class="chip ${item.severity}">${item.severity}</span>`).join("")}</div>
       </button>`);
     }
   }
@@ -651,7 +664,9 @@ function renderOptionInspector(option) {
       ${field("选项 ID", "id", option.id)}
       <label class="field"><span>上一页来源 <span class="hint">决定连线</span></span><select data-field="parentId">${parentChoices}</select></label>
       ${field("选择按钮文字", "text", option.text)}
-      ${field("选择后的结果 / 下一页正文", "resultText", option.resultText, {type:"textarea",rows:4})}
+      ${field("点击按钮后的结果 / 下一页正文", "resultText", option.resultText, {type:"textarea",rows:4})}
+      <div class="inline-fields">${field("随机分支权重", "branchWeight", option.branchWeight || 0, {type:"number",step:"0.1",hint:"同级填 20 / 80 即为 20% / 80%；全部为 0 时手动选择"})}</div>
+      ${field("随机命中后的页面正文", "branchPageText", option.branchPageText || "", {type:"textarea",rows:4,hint:"只在父节点按权重随机命中本子项时显示；空则沿用父选项结果正文"})}
       ${field("可选条件", "condition", option.condition, {hint:"空 = 始终可选"})}
       ${field("条件显示文案", "conditionText", option.conditionText, {hint:"玩家实际看到的要求"})}
       <label class="field"><span>结算后立即结束</span><select data-field="autoEnd"><option value="false" ${!option.autoEnd ? "selected" : ""}>否</option><option value="true" ${option.autoEnd ? "selected" : ""}>是</option></select></label>
@@ -744,7 +759,7 @@ function uniqueId(prefix, base) {
 
 function createOption(eventId, parentId = "") {
   const suffix = eventId.replace(/^ev_/, "");
-  return {id: uniqueId("opt_", `${suffix}_choice`), eventId, parentId, text:"新选择", resultText:"选择后的结果", condition:"", conditionText:"", effectRequest:"", autoEnd:false, effects:[{type:"None",value:0,param:"-"}]};
+  return {id: uniqueId("opt_", `${suffix}_choice`), eventId, parentId, text:"新选择", resultText:"选择后的结果", condition:"", conditionText:"", effectRequest:"", autoEnd:false, branchWeight:0, branchPageText:"", effects:[{type:"None",value:0,param:"-"}]};
 }
 
 function handleAction(action, target) {
@@ -844,8 +859,9 @@ function renderPreview() {
   const option = optionById(state.selected.id);
   if (!option) return;
   const children = childrenOf(event.id, option.id);
+  const probability = branchProbability(option);
   $("previewPath").textContent = `${option.text} → ${children.length ? "下一页" : "结束"}`;
-  $("previewCard").innerHTML = `<h3>${esc(event.name)}</h3><p><strong>玩家选择：</strong>${esc(option.text)}</p><div class="result-box"><strong>选择后的结果</strong><p>${esc(option.resultText || "（由效果反馈生成）")}</p></div><div class="type-tags">${option.effectRequest ? `<span class="chip review">待实现：${esc(option.effectRequest)}</span>` : ""}${option.effects.map(effect => `<span class="chip effect">${esc(effect.type)} ${esc(effect.value)} ${esc(effect.param)}</span>`).join("")}</div><div class="choice-row">${children.map(item => `<span class="choice-preview">${esc(item.text)}</span>`).join("")}${option.autoEnd ? `<span class="chip warning">立即结束</span>` : ""}</div>`;
+  $("previewCard").innerHTML = `<h3>${esc(event.name)}</h3>${probability === null ? "" : `<div class="result-box"><strong>随机命中页面 · ${formatProbability(probability)}</strong><p>${esc(option.branchPageText || "（沿用父选项结果正文）")}</p><div class="choice-row"><span class="choice-preview">${esc(option.text)}</span></div></div>`}<p><strong>玩家选择：</strong>${esc(option.text)}</p><div class="result-box"><strong>点击后的结果</strong><p>${esc(option.resultText || "（由效果反馈生成）")}</p></div><div class="type-tags">${option.effectRequest ? `<span class="chip review">待实现：${esc(option.effectRequest)}</span>` : ""}${option.effects.map(effect => `<span class="chip effect">${esc(effect.type)} ${esc(effect.value)} ${esc(effect.param)}</span>`).join("")}</div><div class="choice-row">${children.map(item => { const childProbability = branchProbability(item); return `<span class="choice-preview">${esc(item.text)}${childProbability === null ? "" : ` · ${formatProbability(childProbability)}`}</span>`; }).join("")}${option.autoEnd ? `<span class="chip warning">立即结束</span>` : ""}</div>`;
 }
 
 function renderAudit() {

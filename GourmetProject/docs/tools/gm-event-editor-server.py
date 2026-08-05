@@ -62,7 +62,7 @@ EVENT_TYPES = {
 
 OPTION_COLUMNS = [
     "id", "eventId", "parentId", "text", "resultText", "condition", "conditionText",
-    "*effectTypes", "*effectValues", "*effectParams", "autoEnd",
+    "*effectTypes", "*effectValues", "*effectParams", "autoEnd", "branchWeight", "branchPageText",
 ]
 OPTION_COMMENTS = {
     "id": "选项ID", "eventId": "所属事件ID→event.id", "parentId": "父选项ID→event_option.id",
@@ -70,11 +70,14 @@ OPTION_COMMENTS = {
     "condition": "选项前置条件", "conditionText": "选项前置条件显示文案",
     "*effectTypes": "效果类型列表", "*effectValues": "效果数值列表",
     "*effectParams": "效果参数列表", "autoEnd": "选中并结算效果后立即结束事件，不显示结果确认页",
+    "branchWeight": "同一父选项下随机子分支相对权重；同组全部为 0 时保持手动选择",
+    "branchPageText": "随机命中该子选项后显示的页面正文（空=沿用父选项结果正文）",
 }
 OPTION_TYPES = {
     "id": "string", "eventId": "string", "parentId": "string", "text": "string", "resultText": "string",
     "condition": "string", "conditionText": "string", "*effectTypes": "list,EffectType",
     "*effectValues": "list,float", "*effectParams": "list,string", "autoEnd": "bool",
+    "branchWeight": "float", "branchPageText": "string",
 }
 
 FOLLOW_UP_EFFECTS = {"FoodBattle", "Shop", "GameOver", "Victory"}
@@ -153,6 +156,7 @@ class XlsxDocument:
             target = targets.get(rel_id, "")
             if not target:
                 continue
+            target = target.lstrip("/")
             path = str(PurePosixPath("xl") / target) if not target.startswith("xl/") else target
             result[sheet.attrib.get("name", "")] = str(PurePosixPath(path))
         return result
@@ -432,6 +436,8 @@ def load_model(workbook_path: Path) -> dict[str, Any]:
                 "conditionText": as_text(record.get("conditionText")),
                 "effectRequest": effect_requests.get(option_id, ""),
                 "autoEnd": as_bool(record.get("autoEnd")),
+                "branchWeight": as_float(record.get("branchWeight")),
+                "branchPageText": as_text(record.get("branchPageText")),
                 "effects": [],
             }
             options.append(current)
@@ -457,6 +463,7 @@ def load_model(workbook_path: Path) -> dict[str, Any]:
         "sourceHash": sha256_file(workbook_path),
         "sourceModifiedAt": datetime.fromtimestamp(workbook_path.stat().st_mtime).isoformat(timespec="seconds"),
         "missingEventColumns": [column for column in EVENT_COLUMNS if column not in raw_event_headers],
+        "missingOptionColumns": [column for column in OPTION_COLUMNS if column not in option_headers],
     }
     model = {"events": events, "options": options, "meta": meta}
     model["audit"] = validate_model(model)
@@ -540,6 +547,13 @@ def validate_model(model: dict[str, Any]) -> dict[str, Any]:
             issues.append(issue("error", "option-event-missing", f"所属事件不存在：{event_id}", event_id, option_id))
         if not as_text(option.get("text")):
             issues.append(issue("error", "option-text-empty", "选项按钮文字不能为空。", event_id, option_id))
+        branch_weight = as_float(option.get("branchWeight"))
+        if branch_weight < 0:
+            issues.append(issue("error", "branch-weight-negative", "随机分支权重不能小于 0。", event_id, option_id))
+        if branch_weight > 0 and not as_text(option.get("parentId")):
+            issues.append(issue("error", "branch-weight-root", "根页选项不能配置随机分支权重；请把权重配在父选项之后的子选项上。", event_id, option_id))
+        if as_text(option.get("branchPageText")) and branch_weight <= 0:
+            issues.append(issue("warning", "branch-page-text-unused", "填写了随机命中页面正文，但该子选项未配置正权重。", event_id, option_id))
         condition = as_text(option.get("condition"))
         condition_text = as_text(option.get("conditionText"))
         issues.extend(condition_issues(condition, event_id, option_id))
@@ -615,6 +629,9 @@ def validate_model(model: dict[str, Any]) -> dict[str, Any]:
     missing_columns = model.get("meta", {}).get("missingEventColumns", [])
     if missing_columns:
         issues.append(issue("warning", "schema-columns-missing", "event 表缺少字段：" + "、".join(missing_columns) + "；保存时编辑器会按当前生成配置补齐。"))
+    missing_option_columns = model.get("meta", {}).get("missingOptionColumns", [])
+    if missing_option_columns:
+        issues.append(issue("warning", "option-schema-columns-missing", "event_option 表缺少字段：" + "、".join(missing_option_columns) + "；保存时编辑器会按当前生成配置补齐。"))
 
     counts = {severity: sum(1 for item in issues if item["severity"] == severity) for severity in ("error", "review", "warning", "info")}
     return {"issues": issues, "counts": counts, "canSave": counts["error"] == 0, "needsLogicReview": counts["review"] > 0}
@@ -641,7 +658,8 @@ def normalize_option(option: dict[str, Any]) -> dict[str, Any]:
         "parentId": as_text(option.get("parentId")), "text": as_text(option.get("text")),
         "resultText": as_text(option.get("resultText")), "condition": as_text(option.get("condition")),
         "conditionText": as_text(option.get("conditionText")), "effectRequest": as_text(option.get("effectRequest")),
-        "autoEnd": bool(option.get("autoEnd")), "effects": effects,
+        "autoEnd": bool(option.get("autoEnd")), "branchWeight": as_float(option.get("branchWeight")),
+        "branchPageText": as_text(option.get("branchPageText")), "effects": effects,
     }
 
 
@@ -677,6 +695,8 @@ def workbook_matrices(model: dict[str, Any]) -> tuple[list[list[Any]], list[list
                 option["condition"] if first else None,
                 option["conditionText"] if first else None,
                 effect["type"], effect["value"], effect["param"], option["autoEnd"] if first else None,
+                option["branchWeight"] if first else None,
+                option["branchPageText"] if first else None,
             ])
     return event_matrix, option_matrix
 

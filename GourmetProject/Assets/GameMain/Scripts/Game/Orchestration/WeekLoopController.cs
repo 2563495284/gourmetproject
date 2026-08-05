@@ -1699,6 +1699,22 @@ namespace GourmetProject.Game.Orchestration
             if (children.Count > 0)
             {
                 string nextDescription = ResolveEventPageText(option, result, pageDescription);
+                if (EventService.TryRollWeightedChild(children, rng, out cfg.EventOption randomChild))
+                {
+                    if (!string.IsNullOrWhiteSpace(randomChild.BranchPageText))
+                    {
+                        nextDescription = randomChild.BranchPageText;
+                    }
+
+                    EnterEventPage(
+                        ev,
+                        nextDescription,
+                        new List<cfg.EventOption> { randomChild },
+                        rng,
+                        onDone);
+                    return;
+                }
+
                 EnterEventPage(ev, nextDescription, children, rng, onDone);
                 return;
             }

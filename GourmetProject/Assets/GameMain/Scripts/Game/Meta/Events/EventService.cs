@@ -115,6 +115,41 @@ namespace GourmetProject.Game.Meta
             return options;
         }
 
+        /// <summary>
+        /// 同一父选项下只要存在正权重子项，就进入随机分支模式并只返回其中一个子项。
+        /// 条件在命中后的事件页照常判断，因此不参与权重筛选。
+        /// </summary>
+        public static bool TryRollWeightedChild(
+            IReadOnlyList<cfg.EventOption> children,
+            IRandomStream rng,
+            out cfg.EventOption selected)
+        {
+            selected = null;
+            if (children == null || children.Count == 0 || rng == null)
+            {
+                return false;
+            }
+
+            var weights = new List<float>(children.Count);
+            bool hasPositiveWeight = false;
+            for (int i = 0; i < children.Count; i++)
+            {
+                float weight = children[i] != null && children[i].BranchWeight > 0f
+                    ? children[i].BranchWeight
+                    : 0f;
+                weights.Add(weight);
+                hasPositiveWeight |= weight > 0f;
+            }
+
+            if (!hasPositiveWeight)
+            {
+                return false;
+            }
+
+            selected = children[rng.WeightedPickIndex(weights)];
+            return selected != null;
+        }
+
         /// <summary>将事件正文/选项中的运行时利息占位符替换为当前数值。</summary>
         public static string FormatRuntimeText(GameRun run, string template)
         {

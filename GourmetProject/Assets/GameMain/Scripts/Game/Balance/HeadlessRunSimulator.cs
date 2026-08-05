@@ -333,7 +333,20 @@ namespace GourmetProject.Game.Balance
                     ? EventService.GetRootOptions(run, ev.Id)
                     : EventService.GetChildOptions(run, ev.Id, parent);
                 if (options.Count == 0) break;
-                cfg.EventOption option = options[rng.Range(0, options.Count)];
+                cfg.EventOption option;
+                if (!string.IsNullOrEmpty(parent)
+                    && EventService.TryRollWeightedChild(options, rng, out cfg.EventOption randomChild))
+                {
+                    option = randomChild;
+                    if (!PreconditionEvaluator.IsSatisfied(run, option.Condition))
+                    {
+                        break;
+                    }
+                }
+                else
+                {
+                    option = options[rng.Range(0, options.Count)];
+                }
                 parent = option.Id;
                 result = EventService.ResolveOption(run, option, rng);
                 if (result.IsBattle)
