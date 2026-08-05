@@ -534,7 +534,7 @@ function renderEventInspector(event) {
       ${field("背景 Sprite", "bgSprite", event.bgSprite)}
       ${field("终止结果模板", "resultText", event.resultText, {type:"textarea",rows:2})}
     </section>
-    ${showSlot ? `<section class="section"><h3>抽奖机专用配置</h3>${field("奖励槽组", "slotRewardGroupId", event.slotRewardGroupId)}<div class="inline-fields">${field("空奖权重", "slotEmptyWeight", event.slotEmptyWeight, {type:"number",step:"0.1"})}${field("免费次数", "slotFreeSpins", event.slotFreeSpins, {type:"number"})}${field("单次价格", "slotPaidCost", event.slotPaidCost, {type:"number"})}${field("最大次数", "slotMaxSpins", event.slotMaxSpins, {type:"number"})}</div></section>` : ""}
+    ${showSlot ? `<section class="section"><h3>抽奖机专用配置</h3>${field("奖励槽组", "slotRewardGroupId", event.slotRewardGroupId)}<p class="hint">空奖权重、免费次数、单次价格和最大次数统一在 game_base 表配置。</p></section>` : ""}
     <section class="section"><h3>事件操作</h3><div class="inspector-actions"><button class="btn slim" data-action="add-root">＋ 根选择</button><button class="btn slim" data-action="duplicate-event">复制事件</button><button class="btn slim danger" data-action="delete-event">删除事件</button></div></section>`;
   bindInspector(event, "event");
 }
@@ -794,7 +794,7 @@ async function generateConfig() {
 
 function newEvent() {
   const id = uniqueId("ev_", "new_event");
-  const event = {id,name:"新事件",desc:"在这里填写事件发生时玩家看到的正文。",eventTypes:["Event"],preconditions:"",weight:1,repeatable:true,bgSprite:"",resultText:"",slotRewardGroupId:"",slotEmptyWeight:0,slotFreeSpins:0,slotPaidCost:0,slotMaxSpins:0};
+  const event = {id,name:"新事件",desc:"在这里填写事件发生时玩家看到的正文。",eventTypes:["Event"],preconditions:"",weight:1,repeatable:true,bgSprite:"",resultText:"",slotRewardGroupId:""};
   state.model.events.push(event);
   const option = createOption(id, "");
   state.model.options.push(option);

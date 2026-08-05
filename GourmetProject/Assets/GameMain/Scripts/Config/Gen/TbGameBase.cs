@@ -139,6 +139,22 @@ public partial class TbGameBase
     /// 一局游戏总周数
     /// </summary>
      public int TotalWeeks => _data.TotalWeeks;
+    /// <summary>
+    /// 抽奖机空奖权重
+    /// </summary>
+     public float SlotEmptyWeight => _data.SlotEmptyWeight;
+    /// <summary>
+    /// 每个抽奖机节点的免费抽奖次数
+    /// </summary>
+     public int SlotFreeSpins => _data.SlotFreeSpins;
+    /// <summary>
+    /// 抽奖机免费次数用完后的单次金币价格
+    /// </summary>
+     public int SlotPaidCost => _data.SlotPaidCost;
+    /// <summary>
+    /// 每个抽奖机节点最多抽奖次数
+    /// </summary>
+     public int SlotMaxSpins => _data.SlotMaxSpins;
     
     public void ResolveRef(Tables tables)
     {

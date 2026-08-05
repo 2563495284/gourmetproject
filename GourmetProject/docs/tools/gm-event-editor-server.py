@@ -45,22 +45,18 @@ ET.register_namespace("r", REL_NS)
 
 EVENT_COLUMNS = [
     "id", "name", "desc", "eventTypes", "preconditions", "weight", "repeatable",
-    "bgSprite", "resultText", "slotRewardGroupId", "slotEmptyWeight", "slotFreeSpins",
-    "slotPaidCost", "slotMaxSpins",
+    "bgSprite", "resultText", "slotRewardGroupId",
 ]
 EVENT_COMMENTS = {
     "id": "事件ID", "name": "事件名称", "desc": "事件描述(初始/根页正文)",
     "eventTypes": "事件分类列表（|分隔；一个事件可属于多个分类）", "preconditions": "出现前置条件",
     "weight": "随机权重", "repeatable": "是否可重复", "bgSprite": "事件背景 Sprite(Resources 路径,空=默认占位)",
     "resultText": "终止型事件结果文本模板", "slotRewardGroupId": "Slot 奖励槽组ID→reward_slot.groupId",
-    "slotEmptyWeight": "空奖权重；与奖励槽组权重总和共同计算", "slotFreeSpins": "每个抽奖机节点免费抽奖次数",
-    "slotPaidCost": "免费次数用完后的单次金币价格", "slotMaxSpins": "每个抽奖机节点最多抽奖次数",
 }
 EVENT_TYPES = {
     "id": "string", "name": "string", "desc": "string", "eventTypes": "(list#sep=|),ActionBehavior",
     "preconditions": "string", "weight": "float", "repeatable": "bool", "bgSprite": "string",
-    "resultText": "string", "slotRewardGroupId": "string", "slotEmptyWeight": "float",
-    "slotFreeSpins": "int", "slotPaidCost": "int", "slotMaxSpins": "int",
+    "resultText": "string", "slotRewardGroupId": "string",
 }
 
 OPTION_COLUMNS = [
@@ -378,10 +374,6 @@ def load_model(workbook_path: Path) -> dict[str, Any]:
             "bgSprite": as_text(record.get("bgSprite") or fallback.get("bgSprite")),
             "resultText": as_text(record.get("resultText") or fallback.get("resultText")),
             "slotRewardGroupId": as_text(record.get("slotRewardGroupId") or fallback.get("slotRewardGroupId")),
-            "slotEmptyWeight": as_float(record.get("slotEmptyWeight"), as_float(fallback.get("slotEmptyWeight"))),
-            "slotFreeSpins": as_int(record.get("slotFreeSpins"), as_int(fallback.get("slotFreeSpins"))),
-            "slotPaidCost": as_int(record.get("slotPaidCost"), as_int(fallback.get("slotPaidCost"))),
-            "slotMaxSpins": as_int(record.get("slotMaxSpins"), as_int(fallback.get("slotMaxSpins"))),
         }
         events.append(event)
 
@@ -491,10 +483,6 @@ def validate_model(model: dict[str, Any]) -> dict[str, Any]:
         if "Slot" in categories:
             if not as_text(event.get("slotRewardGroupId")):
                 issues.append(issue("error", "slot-group-empty", "Slot 事件必须配置奖励槽组。", event_id))
-            if as_int(event.get("slotMaxSpins")) <= 0:
-                issues.append(issue("error", "slot-max-spins", "Slot 最大抽奖次数必须大于 0。", event_id))
-            if as_int(event.get("slotFreeSpins")) < 0 or as_int(event.get("slotPaidCost")) < 0 or as_float(event.get("slotEmptyWeight")) < 0:
-                issues.append(issue("error", "slot-negative", "Slot 次数、价格和空奖权重不能为负数。", event_id))
 
     option_by_id: dict[str, dict[str, Any]] = {}
     for option in options:
@@ -597,8 +585,6 @@ def normalize_event(event: dict[str, Any]) -> dict[str, Any]:
         "preconditions": as_text(event.get("preconditions")), "weight": as_float(event.get("weight")),
         "repeatable": bool(event.get("repeatable")), "bgSprite": as_text(event.get("bgSprite")),
         "resultText": as_text(event.get("resultText")), "slotRewardGroupId": as_text(event.get("slotRewardGroupId")),
-        "slotEmptyWeight": as_float(event.get("slotEmptyWeight")), "slotFreeSpins": as_int(event.get("slotFreeSpins")),
-        "slotPaidCost": as_int(event.get("slotPaidCost")), "slotMaxSpins": as_int(event.get("slotMaxSpins")),
     }
 
 
@@ -627,7 +613,6 @@ def workbook_matrices(model: dict[str, Any]) -> tuple[list[list[Any]], list[list
         event_matrix.append([
             None, event["id"], event["name"], event["desc"], "|".join(event["eventTypes"]), event["preconditions"],
             event["weight"], event["repeatable"], event["bgSprite"], event["resultText"], event["slotRewardGroupId"],
-            event["slotEmptyWeight"], event["slotFreeSpins"], event["slotPaidCost"], event["slotMaxSpins"],
         ])
 
     option_matrix: list[list[Any]] = [

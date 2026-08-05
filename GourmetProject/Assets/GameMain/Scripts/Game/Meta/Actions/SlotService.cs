@@ -212,10 +212,11 @@ namespace GourmetProject.Game.Meta
                 return false;
             }
 
-            int maxSpins = ev.SlotMaxSpins;
-            int freeSpins = ev.SlotFreeSpins;
-            int paidCost = ev.SlotPaidCost;
-            float emptyWeight = ev.SlotEmptyWeight;
+            cfg.TbGameBase gameBase = run.Tables.TbGameBase;
+            int maxSpins = gameBase.SlotMaxSpins;
+            int freeSpins = gameBase.SlotFreeSpins;
+            int paidCost = gameBase.SlotPaidCost;
+            float emptyWeight = gameBase.SlotEmptyWeight;
             if (maxSpins <= 0)
             {
                 error = $"抽奖机 {ev.Id} 的最大次数必须大于 0。";

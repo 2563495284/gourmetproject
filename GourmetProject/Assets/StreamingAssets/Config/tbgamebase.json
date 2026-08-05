@@ -42,6 +42,10 @@
     ],
     "shopFragmentPackPurchaseLimit": 1,
     "initialHeartCount": 3,
-    "totalWeeks": 4
+    "totalWeeks": 4,
+    "slotEmptyWeight": 40,
+    "slotFreeSpins": 1,
+    "slotPaidCost": 20,
+    "slotMaxSpins": 5
   }
 ]
