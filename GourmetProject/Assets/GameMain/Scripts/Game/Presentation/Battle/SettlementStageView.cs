@@ -5,6 +5,7 @@ using System.Threading;
 using DG.Tweening;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
+using GourmetProject.Runtime;
 using UnityEngine;
 using TMPro;
 
@@ -148,6 +149,8 @@ namespace GourmetProject.Game.Presentation.Battle
 
             if (actor != null && !actorAlreadyIntroduced)
             {
+                // 来源食物开始技能触发表现（放大/摆动）的同一瞬间播放单体音效。
+                GameApp.Audio.PlaySettlementHit(1);
                 _ = PlayFeedbackSafelyAsync(
                     actor,
                     ActorFeedbackFor(group.Trace),
@@ -309,6 +312,7 @@ namespace GourmetProject.Game.Presentation.Battle
             float duration,
             CancellationToken cancellationToken)
         {
+            var shakenTargets = new List<DishPieceView>();
             if (group != null && _dishViews != null)
             {
                 foreach (int id in group.TargetDishIds)
@@ -319,9 +323,21 @@ namespace GourmetProject.Game.Presentation.Battle
                         continue;
                     }
 
-                    target.SetSettlementFocus(ScopeDishBrightness);
-                    target.PlayScopeAffectedShake(Mathf.Max(0.05f, duration / 0.40f));
+                    shakenTargets.Add(target);
                 }
+            }
+
+            if (shakenTargets.Count > 1)
+            {
+                // 多个作用域目标在同一帧开始表现时，只播放一次集体音效。
+                GameApp.Audio.PlaySettlementHit(shakenTargets.Count);
+            }
+
+            for (int i = 0; i < shakenTargets.Count; i++)
+            {
+                DishPieceView target = shakenTargets[i];
+                target.SetSettlementFocus(ScopeDishBrightness);
+                target.PlayScopeAffectedShake(Mathf.Max(0.05f, duration / 0.40f));
             }
 
             await Awaitable.WaitForSecondsAsync(Mathf.Max(0.0001f, duration), cancellationToken);

@@ -687,7 +687,17 @@ MonoBehaviour:
   m_CustomSoundGroupHelper: {fileID: 0}
   m_SoundAgentHelperTypeName: UnityGameFramework.Runtime.DefaultSoundAgentHelper
   m_CustomSoundAgentHelper: {fileID: 0}
-  m_SoundGroups: []
+  m_SoundGroups:
+  - m_Name: Music
+    m_AvoidBeingReplacedBySamePriority: 0
+    m_Mute: 0
+    m_Volume: 1
+    m_AgentHelperCount: 1
+  - m_Name: Sound
+    m_AvoidBeingReplacedBySamePriority: 0
+    m_Mute: 0
+    m_Volume: 1
+    m_AgentHelperCount: 8
 --- !u!114 &11417814
 MonoBehaviour:
   m_ObjectHideFlags: 1

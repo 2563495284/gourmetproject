@@ -92,7 +92,8 @@ namespace GourmetProject.Runtime
             };
             Save = new JsonSaveService(System.IO.Path.Combine(Application.persistentDataPath, "saves"), saveOptions);
 
-            Settings = new SettingsService(Setting);
+            Settings = new SettingsService(Setting, Sound);
+            _audio = new AudioService(Sound, Settings.ApplyAudioSettings);
             Config = new global::GourmetProject.Config.ConfigService();
             Settings.ApplyAll();
 

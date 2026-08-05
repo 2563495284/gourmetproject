@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://fglts3engcf7"
+path="res://.godot/imported/Jolly Tavern of Vicious Folkalore - Start.ogg-305fefda0551969eb3f9f88d9fa4dcfe.oggvorbisstr"
+
+[deps]
+
+source_file="res://Assets/Sound/BGM/Jolly Tavern of Vicious Folkalore - Start.ogg"
+dest_files=["res://.godot/imported/Jolly Tavern of Vicious Folkalore - Start.ogg-305fefda0551969eb3f9f88d9fa4dcfe.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4
