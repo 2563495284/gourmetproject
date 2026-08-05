@@ -2907,15 +2907,6 @@ namespace GourmetProject.Game.Presentation.Battle
             // 食物挂在 BoardRoot 下，用局部坐标贴格（与餐桌共享局部帧）。
             piece.transform.localPosition = _boardView.Mapper.CellCenterLocal(dish.Placement.Origin);
             piece.BuildPlaced(dish, _spriteProvider.Get(dish.Def), _cellSize, _cellSize + Gap, _dishClicked);
-            PendingDishPlacement pending = _session?.FindPendingDishPlacement(dish.Id);
-            bool suppressVeganReveal = pending != null
-                && pending.IsOnDiningTable
-                && dish.ExcludedFromScore
-                && string.Equals(
-                    _session?.BossDebuffPresentation?.DebuffId,
-                    "debuff_vegan_meal",
-                    StringComparison.Ordinal);
-            piece.SetDebuffVisualSuppressed(suppressVeganReveal);
             if (_bossPresentationBusy)
             {
                 piece.SetClickEnabled(false);

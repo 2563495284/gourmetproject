@@ -542,6 +542,17 @@ namespace GourmetProject.Game.UI.Tooltips
 
         private static IReadOnlyList<FoodInfoEntry> BuildSpecialTags(DishInstance dish, GameplayDatabase db, int maxSkills, int maxTransferred)
         {
+            var tags = new List<FoodInfoEntry>();
+            if (dish.SkillsDisabled)
+            {
+                tags.Add(new FoodInfoEntry("技能失效", "该食物的技能不会生效。"));
+            }
+
+            if (dish.ExcludedFromScore)
+            {
+                tags.Add(new FoodInfoEntry("不计分", "该食物不会参与结算得分。"));
+            }
+
             // 收集去重后的 termId（技能各子技能 + 甜蜜传递外来子技能），再解析为术语说明卡。
             var termIds = new List<string>();
             if (db != null && dish.SkillIds != null)
@@ -566,7 +577,6 @@ namespace GourmetProject.Game.UI.Tooltips
                 }
             }
 
-            var tags = new List<FoodInfoEntry>(termIds.Count);
             foreach (string termId in termIds)
             {
                 cfg.Term term = GourmetProject.Runtime.GameApp.Config?.Tables?.TbTerm?.GetOrDefault(termId);

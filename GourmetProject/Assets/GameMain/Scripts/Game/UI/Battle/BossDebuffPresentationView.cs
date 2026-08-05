@@ -184,18 +184,17 @@ namespace GourmetProject.Game.UI.Battle
             Vector2 above = HandOffscreenPosition(target.x);
             _hand.anchoredPosition = above;
             _hand.localRotation = Quaternion.identity;
-            _handGroup.alpha = 0f;
+            _handGroup.alpha = 1f;
             _hand.SetAsLastSibling();
             Sequence sequence = DOTween.Sequence()
                 .SetUpdate(true)
                 .SetLink(_hand.gameObject)
-                .Append(_handGroup.DOFade(1f, 0.12f))
-                .Join(_hand.DOAnchorPos(target, 0.36f).SetEase(Ease.OutCubic))
+                .Append(_hand.DOAnchorPos(target, 0.36f).SetEase(Ease.OutCubic))
                 .Append(_hand.DOPunchAnchorPos(new Vector2(0f, -12f), 0.20f, 3, 0.2f))
                 .AppendInterval(Mathf.Max(0f, hold))
-                .Append(_hand.DOAnchorPos(above, 0.34f).SetEase(Ease.InCubic))
-                .Join(_handGroup.DOFade(0f, 0.22f));
+                .Append(_hand.DOAnchorPos(above, 0.34f).SetEase(Ease.InCubic));
             await AwaitTweenAsync(sequence, token);
+            _handGroup.alpha = 0f;
         }
 
         public async Awaitable GrabDishAsync(
@@ -299,12 +298,12 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             Vector2 exit = HandOffscreenPosition(targets[targets.Count - 1].x);
-            Sequence leave = DOTween.Sequence()
+            Tween leave = _hand.DOAnchorPos(exit, 0.34f)
+                .SetEase(Ease.InCubic)
                 .SetUpdate(true)
-                .SetLink(_hand.gameObject)
-                .Append(_hand.DOAnchorPos(exit, 0.34f).SetEase(Ease.InCubic))
-                .Join(_handGroup.DOFade(0f, 0.22f));
+                .SetLink(_hand.gameObject);
             await AwaitTweenAsync(leave, token);
+            _handGroup.alpha = 0f;
         }
 
         public async Awaitable ShowCueAsync(Vector2 screenPoint, string text, CancellationToken token)

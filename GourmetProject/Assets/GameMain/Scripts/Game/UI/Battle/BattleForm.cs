@@ -2786,7 +2786,6 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            _world.TryGetDishScreenPoint(dishId, out Vector2 dishPoint);
             PendingDishConfirmResult result = _world.ConfirmPendingDishForPresentation(dishId);
             if (!result.Success)
             {
@@ -2805,21 +2804,7 @@ namespace GourmetProject.Game.UI.Battle
                 {
                     await _world.PlayPendingServeTriggerCuesAsync(token);
 
-                    if (string.Equals(debuffId, "debuff_vegan_meal", StringComparison.Ordinal)
-                        && result.Dish?.ExcludedFromScore == true)
-                    {
-                        await _bossPresentation.PointAsync(dishPoint, token, 0.12f);
-                        _world.RevealDishDebuffVisual(result.Dish.Id);
-                        await ShowBossDialogueAsync("我不喜欢", token);
-                    }
-                    else if (string.Equals(debuffId, "debuff_light_meal", StringComparison.Ordinal)
-                        && result.Dish?.SkillsDisabled == true)
-                    {
-                        await _bossPresentation.PointAsync(dishPoint, token, 0.12f);
-                        await _bossPresentation.ShowCueAsync(dishPoint, "技能失效", token);
-                        await ShowBossDialogueAsync("太花里胡哨了", token);
-                    }
-                    else if (string.Equals(debuffId, "debuff_appetizer", StringComparison.Ordinal)
+                    if (string.Equals(debuffId, "debuff_appetizer", StringComparison.Ordinal)
                         && result.RemovedAfterServe)
                     {
                         if (_world.TryGetDishGrabVisual(result.Dish.Id, out DishGrabVisualSnapshot dishVisual))

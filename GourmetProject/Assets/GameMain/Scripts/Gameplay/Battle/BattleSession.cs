@@ -691,6 +691,9 @@ namespace GourmetProject.Gameplay.Battle
             List<string> skills = ComposeServeSkills(servedDish, entry);
             List<string> flavors = ComposeServeFlavors(servedDish, entry);
             var instance = new DishInstance(_nextInstanceId++, servedDish, initialPlacement, skills, flavors);
+            // Boss recipe-entry state must be visible as soon as the dish reaches the outlet,
+            // so outlet/preplacement tips describe the dish that will actually be served.
+            ApplyPreparedEntryFlags(instance, entry);
             instance.SetSourceRecipeIndex(slotIndex, entry.SourceDishIndex);
             PreparedServe = new PreparedServeDish(
                 slotIndex,
@@ -819,8 +822,7 @@ namespace GourmetProject.Gameplay.Battle
             PreparedServe = null;
             DishInstance instance = prepared.Dish;
             instance.Relocate(placement);
-            RecipeSlotEntry entry = prepared.Entry;
-            ApplyEntryFlags(instance, entry);
+            ApplyPlacementEntryModifiers(instance, prepared.Entry);
             DiningTable.Place(instance);
             _pendingDishPlacements[instance.Id] = new PendingDishPlacement(
                 instance,
@@ -854,7 +856,6 @@ namespace GourmetProject.Gameplay.Battle
             }
 
             RecipeSlotEntry entry = pending.PreparedServe?.Entry;
-            ApplyConfirmedEntryFlags(instance, entry);
             TrackServedDish(entry, instance);
             ServesUsed++;
             instance.SetServeOrder(ServesUsed);
@@ -1108,29 +1109,7 @@ namespace GourmetProject.Gameplay.Battle
             return steps;
         }
 
-        private void ApplyEntryFlags(DishInstance instance, RecipeSlotEntry entry)
-        {
-            if (entry == null)
-            {
-                return;
-            }
-
-            if (entry.ScoreMultiplier > 0f && Math.Abs(entry.ScoreMultiplier - 1f) > 0.0001f)
-            {
-                instance.MultiplyPermanentMult(entry.ScoreMultiplier);
-            }
-
-            if (Math.Abs(entry.ScoreFlatBonus) > 0.0001f)
-            {
-                instance.AddPermanentFlat(entry.ScoreFlatBonus);
-            }
-        }
-
-        /// <summary>
-        /// 斋饭/清淡餐标记属于“确认上菜”效果。预摆阶段不能提前写入实例，
-        /// 否则 hover tips 和预览结算会把尚未上菜的食物显示成已禁用。
-        /// </summary>
-        private static void ApplyConfirmedEntryFlags(DishInstance instance, RecipeSlotEntry entry)
+        private static void ApplyPreparedEntryFlags(DishInstance instance, RecipeSlotEntry entry)
         {
             if (instance == null || entry == null)
             {
@@ -1145,6 +1124,24 @@ namespace GourmetProject.Gameplay.Battle
             if (entry.ExcludeFromScore)
             {
                 instance.ExcludeFromScore();
+            }
+        }
+
+        private static void ApplyPlacementEntryModifiers(DishInstance instance, RecipeSlotEntry entry)
+        {
+            if (instance == null || entry == null)
+            {
+                return;
+            }
+
+            if (entry.ScoreMultiplier > 0f && Math.Abs(entry.ScoreMultiplier - 1f) > 0.0001f)
+            {
+                instance.MultiplyPermanentMult(entry.ScoreMultiplier);
+            }
+
+            if (Math.Abs(entry.ScoreFlatBonus) > 0.0001f)
+            {
+                instance.AddPermanentFlat(entry.ScoreFlatBonus);
             }
         }
 
