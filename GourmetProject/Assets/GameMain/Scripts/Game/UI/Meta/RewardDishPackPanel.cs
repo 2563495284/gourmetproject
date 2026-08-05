@@ -25,14 +25,18 @@ namespace GourmetProject.Game.UI.Meta
 
         private readonly List<RewardDishChoiceCardView> _spawnedCards = new();
         private readonly List<RewardChoice> _choices = new();
+        private readonly HashSet<int> _claimedOnPage = new();
         private GameRun _run;
         private Func<int, bool> _onChoiceSelected;
-        private Action _onSkip;
+        private Action _onFinish;
         private Func<FoodTipsView> _getFoodTips;
         private Action<RewardDishChoiceCardView> _playSelectionFly;
         private RewardDishChoiceCardView _hoveredCard;
         private bool _resolved;
         private bool _wired;
+        private string _basePrompt = string.Empty;
+        private int _requiredPicks;
+        private int _claimedBeforeOpen;
 
         internal IReadOnlyList<RewardChoice> CurrentChoices => _choices;
 
@@ -52,7 +56,7 @@ namespace GourmetProject.Game.UI.Meta
             RewardChoiceGroup group,
             IReadOnlyList<RewardChoice> choices,
             Func<int, bool> onChoiceSelected,
-            Action onSkip,
+            Action onFinish,
             Func<FoodTipsView> getFoodTips = null,
             Action<RewardDishChoiceCardView> playSelectionFly = null)
         {
@@ -62,11 +66,12 @@ namespace GourmetProject.Game.UI.Meta
 
             _run = run;
             _onChoiceSelected = onChoiceSelected;
-            _onSkip = onSkip;
+            _onFinish = onFinish;
             _getFoodTips = getFoodTips;
             _playSelectionFly = playSelectionFly;
             _resolved = false;
             _choices.Clear();
+            _claimedOnPage.Clear();
 
             if (choices != null)
             {
@@ -85,12 +90,13 @@ namespace GourmetProject.Game.UI.Meta
                 _panelRoot.SetActive(true);
             }
 
-            if (_promptText != null)
-            {
-                _promptText.text = BuildGroupText(group, "选择一个食物加入食谱");
-            }
+            _basePrompt = BuildGroupText(group, "选择一个食物加入食谱");
+            _claimedBeforeOpen = group?.ClaimedIndices.Count ?? 0;
+            int remainingRequired = (group?.RequiredChoiceCount ?? 1) - _claimedBeforeOpen;
+            _requiredPicks = Mathf.Clamp(remainingRequired, 1, Mathf.Max(1, _choices.Count));
 
             BuildCards();
+            RefreshPresentation();
         }
 
         private static string BuildGroupText(RewardChoiceGroup group, string fallback)
@@ -123,9 +129,13 @@ namespace GourmetProject.Game.UI.Meta
             _choices.Clear();
             _run = null;
             _onChoiceSelected = null;
-            _onSkip = null;
+            _onFinish = null;
             _getFoodTips = null;
             _playSelectionFly = null;
+            _basePrompt = string.Empty;
+            _requiredPicks = 0;
+            _claimedBeforeOpen = 0;
+            _claimedOnPage.Clear();
             _resolved = false;
 
             if (_panelRoot != null)
@@ -205,7 +215,10 @@ namespace GourmetProject.Game.UI.Meta
 
         private void OnChoiceClicked(RewardDishChoiceCardView card, int choiceIndex)
         {
-            if (_resolved || choiceIndex < 0 || choiceIndex >= _choices.Count)
+            if (_resolved
+                || choiceIndex < 0
+                || choiceIndex >= _choices.Count
+                || _claimedOnPage.Contains(choiceIndex))
             {
                 return;
             }
@@ -216,30 +229,25 @@ namespace GourmetProject.Game.UI.Meta
 
         private void SelectChoice(RewardDishChoiceCardView card, int choiceIndex)
         {
-            if (_resolved || choiceIndex < 0 || choiceIndex >= _choices.Count || _onChoiceSelected == null)
+            if (_resolved || _onChoiceSelected == null)
             {
                 return;
             }
 
-            Action<RewardDishChoiceCardView> playSelectionFly = _playSelectionFly;
-            // 先锁住当前批次；n 选 m 回调可能同步 Open 下一批剩余候选，并把 _resolved 重置为 false。
-            _resolved = true;
             if (!_onChoiceSelected.Invoke(choiceIndex))
             {
-                _resolved = false;
                 card?.PlayTargetFailed();
                 return;
             }
 
-            playSelectionFly?.Invoke(card);
-            if (!_resolved)
-            {
-                return;
-            }
+            _claimedOnPage.Add(choiceIndex);
+            card?.SetResolved(true);
+            _playSelectionFly?.Invoke(card);
+            RefreshPresentation();
 
-            for (int i = 0; i < _spawnedCards.Count; i++)
+            if (_claimedOnPage.Count >= _requiredPicks)
             {
-                _spawnedCards[i]?.SetResolved(true);
+                Finish();
             }
         }
 
@@ -250,8 +258,42 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
+            Finish();
+        }
+
+        private void Finish()
+        {
+            if (_resolved)
+            {
+                return;
+            }
+
             _resolved = true;
-            _onSkip?.Invoke();
+            _onFinish?.Invoke();
+        }
+
+        private void RefreshPresentation()
+        {
+            if (_promptText != null)
+            {
+                int claimed = _claimedBeforeOpen + _claimedOnPage.Count;
+                int required = _claimedBeforeOpen + _requiredPicks;
+                _promptText.text = required > 1
+                    ? $"{_basePrompt}\n已领 {claimed}/{required}"
+                    : _basePrompt;
+            }
+
+            if (_skipButton != null)
+            {
+                _skipButton.interactable = true;
+                TMP_Text label = _skipButton.GetComponentInChildren<TMP_Text>(true);
+                if (label != null)
+                {
+                    label.text = _claimedBeforeOpen + _claimedOnPage.Count > 0
+                        ? "结束"
+                        : "离开";
+                }
+            }
         }
 
         private Sprite LoadDishIcon(DishDef dish)

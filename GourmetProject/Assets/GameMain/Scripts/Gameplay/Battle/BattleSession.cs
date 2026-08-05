@@ -106,6 +106,14 @@ namespace GourmetProject.Gameplay.Battle
 
         public GpTable DiningTable { get; }
 
+        /// <summary>仅供 Boss 演出层读取的装配差分；不参与玩法判定和随机。</summary>
+        public BossDebuffPresentationPlan BossDebuffPresentation { get; private set; }
+
+        public void AttachBossDebuffPresentation(BossDebuffPresentationPlan presentation)
+        {
+            BossDebuffPresentation = presentation;
+        }
+
         public GameplayDatabase Database => _db;
 
         public IReadOnlyList<RecipeSlot> Slots => _slots;
@@ -684,7 +692,12 @@ namespace GourmetProject.Gameplay.Battle
             List<string> flavors = ComposeServeFlavors(servedDish, entry);
             var instance = new DishInstance(_nextInstanceId++, servedDish, initialPlacement, skills, flavors);
             instance.SetSourceRecipeIndex(slotIndex, entry.SourceDishIndex);
-            PreparedServe = new PreparedServeDish(slotIndex, entry, instance, placements);
+            PreparedServe = new PreparedServeDish(
+                slotIndex,
+                entry,
+                instance,
+                placements,
+                isBossInsertedDish: insertConfiguredDish);
             SetTrackedStatus(entry, BattleRecipeEntryStatus.WaitingForPlacement);
             RecordPreparedDishForCookiePity(servedDish);
             if (triggeredByAutomaticOutput)

@@ -171,12 +171,14 @@ namespace GourmetProject.Gameplay.Battle
             int slotIndex,
             RecipeSlotEntry entry,
             DishInstance dish,
-            IReadOnlyList<Placement> placements)
+            IReadOnlyList<Placement> placements,
+            bool isBossInsertedDish = false)
         {
             SlotIndex = slotIndex;
             Entry = entry ?? throw new ArgumentNullException(nameof(entry));
             Dish = dish ?? throw new ArgumentNullException(nameof(dish));
             Placements = placements ?? Array.Empty<Placement>();
+            IsBossInsertedDish = isBossInsertedDish;
         }
 
         public int SlotIndex { get; }
@@ -188,6 +190,9 @@ namespace GourmetProject.Gameplay.Battle
         public DishDef Definition => Dish.Def;
 
         public IReadOnlyList<Placement> Placements { get; }
+
+        /// <summary>是否为 Boss Debuff 在自动出菜序列中额外插入的食物。</summary>
+        public bool IsBossInsertedDish { get; }
 
         public bool Contains(Placement placement)
         {

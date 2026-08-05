@@ -23,6 +23,7 @@ public sealed partial class BossDebuff : Luban.BeanBase
         { if(!_buf["weight"].IsNumber) { throw new SerializationException(); }  Weight = _buf["weight"]; }
         { if(!_buf["unlockCondition"].IsString) { throw new SerializationException(); }  UnlockCondition = _buf["unlockCondition"]; }
         { if(!_buf["targetScoreHiddenOffset"].IsNumber) { throw new SerializationException(); }  TargetScoreHiddenOffset = _buf["targetScoreHiddenOffset"]; }
+        { var __json0 = _buf["dialogues"]; if(!__json0.IsArray) { throw new SerializationException(); } Dialogues = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  Dialogues.Add(__v0); }   }
     }
 
     public static BossDebuff DeserializeBossDebuff(JSONNode _buf)
@@ -54,6 +55,10 @@ public sealed partial class BossDebuff : Luban.BeanBase
     /// 目标美味值隐藏分修正；加到 TargetScore 指数输入。
     /// </summary>
     public readonly float TargetScoreHiddenOffset;
+    /// <summary>
+    /// Boss 演出对白；支持多行配置，单场不放回随机。
+    /// </summary>
+    public readonly System.Collections.Generic.List<string> Dialogues;
    
     public const int __ID__ = 737555009;
     public override int GetTypeId() => __ID__;
@@ -71,6 +76,7 @@ public sealed partial class BossDebuff : Luban.BeanBase
         + "weight:" + Weight + ","
         + "unlockCondition:" + UnlockCondition + ","
         + "targetScoreHiddenOffset:" + TargetScoreHiddenOffset + ","
+        + "dialogues:" + Luban.StringUtil.CollectionToString(Dialogues) + ","
         + "}";
     }
 }

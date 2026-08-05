@@ -115,16 +115,16 @@ namespace GourmetProject.Game.Presentation.Battle
             float? duration = null,
             float delay = 0f)
         {
-            FloatingTextView.SpawnEffect(
-                _settlementEffectLabelPrefab,
+            EnsureStage();
+            _stage.PlayTransientEffect(
                 parent != null ? parent : transform,
                 worldPos,
                 sourceName,
                 effectText,
-                rise,
-                duration,
                 effectColor,
-                delay);
+                duration ?? 0.78f,
+                delay,
+                destroyCancellationToken);
         }
 
         public async Awaitable PlayAsync(
@@ -243,6 +243,16 @@ namespace GourmetProject.Game.Presentation.Battle
                             DishPieceView executorView = TryGetDishView(
                                 handoffContext.ExecutorDishInstanceId,
                                 dishViews);
+                            int transferredDelta = CountNewTransferredSkills(
+                                handoffContext,
+                                executorView,
+                                baselineSnapshot);
+                            if (transferredDelta > 0)
+                            {
+                                onReveal?.Invoke(SettlementRevealSignal.TransferredReveal(
+                                    handoffContext.ExecutorDishInstanceId,
+                                    transferredDelta));
+                            }
                             await _stage.PlaySweetTransferHandoffAsync(
                                 handoffContext,
                                 sourceView,
@@ -1467,12 +1477,47 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>
-        /// 判定某条明细是否来自「甜蜜传递」外来子技能（来源标签带 &lt;甜蜜传递&gt;）。
-        /// 是则该明细在揭示分数/倍率的同时，一并揭示 1 张传递卡片（最终数量由 tips 工厂按实际条数封顶）。
+        /// 传递卡片现在统一在交接节拍揭示；计分明细不再重复增加卡片数量。
+        /// 保留此入口以兼容旧 cue 构建路径。
         /// </summary>
         private static int SweetTransferCardDelta(ScoreSource source)
         {
-            return source != null && !string.IsNullOrEmpty(source.Name) && source.Name.Contains("甜蜜传递") ? 1 : 0;
+            return 0;
+        }
+
+        internal static int CountNewTransferredSkills(
+            SettlementSweetTransferPresentationContext context,
+            DishPieceView executorView,
+            SettlementBaselineSnapshot baselineSnapshot)
+        {
+            if (!context.IsValid || executorView?.Instance?.TransferredSkills == null)
+            {
+                return 0;
+            }
+
+            int baselineCount = baselineSnapshot != null
+                && baselineSnapshot.TryGet(context.ExecutorDishInstanceId, out SettlementDishBaseline baseline)
+                    ? baseline.TransferredSkillCount
+                    : 0;
+            IReadOnlyList<TransferredSkill> transferred = executorView.Instance.TransferredSkills;
+            int count = 0;
+            for (int i = Mathf.Clamp(baselineCount, 0, transferred.Count); i < transferred.Count; i++)
+            {
+                TransferredSkill entry = transferred[i];
+                if (entry == null
+                    || entry.SourceInstanceId != context.SourceDishInstanceId
+                    || !string.Equals(
+                        entry.Effect?.Rule?.SkillId,
+                        context.SkillId,
+                        StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                count++;
+            }
+
+            return count;
         }
 
         private static int CountSettlementCues(SettlementPlaybackPlan plan)

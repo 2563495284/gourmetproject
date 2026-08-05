@@ -183,6 +183,73 @@ namespace GourmetProject.Game.UI.Battle.View
             BindCompletionCallbacks();
         }
 
+        /// <summary>Boss 贪食餐复用食物飞行轨迹；直接使用食物 Sprite，不创建或接管 RenderTexture。</summary>
+        public void PlayFoodSprite(
+            Vector2 startCenter,
+            Vector2 startSize,
+            Vector2 endCenter,
+            Sprite sprite,
+            Action onArrived,
+            Action onFinished)
+        {
+            _onArrived = onArrived;
+            _onFinished = onFinished;
+            ConfigureSprite(sprite, Color.white);
+            ConfigureRect(_rect, startCenter, startSize);
+
+            var random = new System.Random(unchecked(Environment.TickCount * 397 ^ GetInstanceID()));
+            float offset = RandomRange(random, FoodControlOffsetMin, FoodControlOffsetMax);
+            float speed = RandomRange(random, FoodSpeedMin, FoodSpeedMax);
+            float acceleration = RandomRange(random, FoodAccelerationMin, FoodAccelerationMax);
+            float duration = RandomRange(random, FoodDurationMin, FoodDurationMax);
+            Vector2 control = CalculateFoodControlPoint(
+                startCenter,
+                endCenter,
+                offset,
+                _layer.rect.center.x);
+
+            ShopPurchaseTrailGraphic outerTrail = CreateTrail("FoodTrailOuter", 18f, OuterTrailColor);
+            ShopPurchaseTrailGraphic innerTrail = CreateTrail("FoodTrailInner", 10f, InnerTrailColor);
+            ShopPurchaseSparkGraphic sparks = CreateSparks("FoodTrailSparks");
+            _rect.SetAsLastSibling();
+
+            _sequence = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
+            _sequence.Append(DOVirtual.Float(0f, 1f, duration, normalized =>
+            {
+                float progress = EvaluateAcceleratedProgress(normalized, speed, acceleration);
+                Vector2 position = CalculateQuadraticBezier(startCenter, control, endCenter, progress);
+                Vector2 tangent = CalculateQuadraticTangent(startCenter, control, endCenter, progress);
+                _rect.anchoredPosition = position;
+                if (tangent.sqrMagnitude > 0.001f)
+                {
+                    _rect.localEulerAngles = new Vector3(
+                        0f,
+                        0f,
+                        Mathf.Atan2(tangent.y, tangent.x) * Mathf.Rad2Deg - 90f);
+                }
+
+                float intro = Mathf.Clamp01(progress * 3f);
+                _rect.localScale = Vector3.one * Mathf.Lerp(1f, 0.1f, intro);
+                SetVisualColor(Color.Lerp(Color.white, FoodDarkColor, intro));
+                outerTrail?.AddPoint(position);
+                innerTrail?.AddPoint(position);
+                sparks?.Tick(position, Time.unscaledDeltaTime, true);
+            }).SetEase(Ease.Linear));
+            _sequence.AppendCallback(CompleteArrival);
+            _sequence.Append(DOVirtual.Float(0f, 1f, 0.28f, progress =>
+            {
+                _rect.localScale = Vector3.one * Mathf.Lerp(0.1f, 0f, progress);
+                float trailFade = progress <= 0.25f
+                    ? 1f
+                    : 1f - (progress - 0.25f) / 0.75f;
+                if (outerTrail != null) outerTrail.Fade = trailFade;
+                if (innerTrail != null) innerTrail.Fade = trailFade;
+                sparks?.Tick(endCenter, Time.unscaledDeltaTime, false);
+                if (sparks != null) sparks.Fade = trailFade;
+            }).SetEase(Ease.InQuad));
+            BindCompletionCallbacks();
+        }
+
         public void PlayPassive(
             Vector2 startCenter,
             Vector2 startSize,

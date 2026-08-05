@@ -16,6 +16,7 @@ namespace GourmetProject.Game.UI.Meta
         [SerializeField] private TMP_Text _nameText;
         [SerializeField] private TMP_Text _descriptionText;
         [SerializeField] private Button _button;
+        private CanvasGroup _canvasGroup;
 
         public RectTransform SelectionFlySource =>
             _icon != null ? _icon.rectTransform : transform as RectTransform;
@@ -35,7 +36,9 @@ namespace GourmetProject.Game.UI.Meta
 
             if (_background != null)
             {
-                _background.color = item != null ? RunItemSlotView.QualityColor(item.Quality) : new Color(0.88f, 0.82f, 0.70f, 1f);
+                _background.color = item != null
+                    ? RunItemSlotView.QualityColor(item.Quality)
+                    : new Color(0.88f, 0.82f, 0.70f, 1f);
             }
 
             if (_icon != null)
@@ -70,6 +73,20 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             BindTip(itemTip, item);
+            SetResolved(false);
+        }
+
+        public void SetResolved(bool resolved)
+        {
+            if (_button != null)
+            {
+                _button.interactable = !resolved;
+            }
+
+            _canvasGroup ??= GetComponent<CanvasGroup>() ?? gameObject.AddComponent<CanvasGroup>();
+            _canvasGroup.alpha = resolved ? 0.45f : 1f;
+            _canvasGroup.interactable = !resolved;
+            _canvasGroup.blocksRaycasts = !resolved;
         }
 
         private void BindTip(ItemTipView itemTip, ItemDefinition item)

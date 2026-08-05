@@ -17,7 +17,8 @@ namespace GourmetProject.Game.Presentation.Battle
 
             _byDish[dish.Id] = new SettlementDishBaseline(
                 dish.BaseScoreBeforeSettlement,
-                dish.BaseMultiplierBeforeSettlement);
+                dish.BaseMultiplierBeforeSettlement,
+                dish.TransferredSkills?.Count ?? 0);
         }
 
         public bool TryGet(int dishInstanceId, out SettlementDishBaseline baseline)
@@ -28,14 +29,17 @@ namespace GourmetProject.Game.Presentation.Battle
 
     public readonly struct SettlementDishBaseline
     {
-        public SettlementDishBaseline(float baseScore, float multiplier)
+        public SettlementDishBaseline(float baseScore, float multiplier, int transferredSkillCount = 0)
         {
             BaseScore = baseScore;
             Multiplier = multiplier;
+            TransferredSkillCount = System.Math.Max(0, transferredSkillCount);
         }
 
         public float BaseScore { get; }
 
         public float Multiplier { get; }
+
+        public int TransferredSkillCount { get; }
     }
 }

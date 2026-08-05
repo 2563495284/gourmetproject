@@ -48,8 +48,38 @@ namespace GourmetProject.Game.UI.Hud
         private Func<Vector2, bool> _endDrag;
         private bool _dragging;
         private Camera _worldCamera;
+        private int? _recipeCountPresentationOverride;
 
         public ServingOutletState State { get; private set; }
+
+        public RectTransform RecipeInfoButtonRect
+            => _recipeInfoButton != null ? _recipeInfoButton.transform as RectTransform : null;
+
+        public bool TryGetRecipeInfoButtonScreenPoint(out Vector2 screenPoint)
+        {
+            screenPoint = default;
+            RectTransform rect = RecipeInfoButtonRect;
+            if (rect == null || !rect.gameObject.activeInHierarchy)
+            {
+                return false;
+            }
+
+            Canvas canvas = rect.GetComponentInParent<Canvas>();
+            Camera camera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay
+                ? canvas.worldCamera != null ? canvas.worldCamera : _worldCamera
+                : null;
+            screenPoint = RectTransformUtility.WorldToScreenPoint(
+                camera,
+                rect.TransformPoint(rect.rect.center));
+            return true;
+        }
+
+        public void SetRecipeCountPresentationOverride(int? count)
+        {
+            _recipeCountPresentationOverride = count.HasValue
+                ? Mathf.Max(0, count.Value)
+                : null;
+        }
 
         public void ConfigureWorldSpace(Camera worldCamera)
         {
@@ -238,9 +268,9 @@ namespace GourmetProject.Game.UI.Hud
 
         private void BindRecipeInfo(int placeable, int blocked, Action onInspect)
         {
-            SetText(
-                _recipeInfoText,
-                $"{placeable}<color=#35B84A>✓</color> {blocked}<color=#E33A3A>×</color>");
+            SetText(_recipeInfoText, _recipeCountPresentationOverride.HasValue
+                ? $"{_recipeCountPresentationOverride.Value} 份"
+                : $"{placeable}<color=#35B84A>✓</color> {blocked}<color=#E33A3A>×</color>");
 
             if (_recipeInfoButton == null)
             {
