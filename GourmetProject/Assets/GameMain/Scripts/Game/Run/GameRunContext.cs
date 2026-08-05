@@ -1,5 +1,7 @@
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Meta;
+using UnityEngine;
+
 namespace GourmetProject.Game.Run
 {
     /// <summary>
@@ -15,5 +17,15 @@ namespace GourmetProject.Game.Run
         public static void Set(GameRun run) => Current = run;
 
         public static void Clear() => Current = null;
+
+        /// <summary>
+        /// 关闭 Domain Reload 的编辑器会跨 Play Session 保留静态字段。
+        /// 每次启动都清空旧运行，避免新建的 RandomService 与上一次的 GameRun 脱节。
+        /// </summary>
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+        {
+            Current = null;
+        }
     }
 }

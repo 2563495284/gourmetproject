@@ -69,6 +69,12 @@ namespace GourmetProject.Game.Procedure
                 return;
             }
 
+            // Domain Reload 被禁用时，项目静态上下文可能来自上一轮 Play Session，
+            // 而 Runtime 层的 RandomService 已在 SubsystemRegistration 中重新创建。
+            // 正常读档会 Restore 完整随机快照；这里作为流程边界的防御性兜底，
+            // 保证任何有效 GameRun 都不会带着未初始化的随机服务进入 Battle。
+            EnsureRandomInitialized();
+
             GameplayFlowSignal.Consume();
             LoadBattleScene();
         }
@@ -199,6 +205,19 @@ namespace GourmetProject.Game.Procedure
             var run = new GameRun(tables, db, characterId, seed, weekIndex: 1);
             GameRunContext.Set(run);
             Log.Info($"New run started. character={characterId}, seed={seed}.", Tag);
+        }
+
+        private static void EnsureRandomInitialized()
+        {
+            if (GameApp.Random.IsInitialized)
+            {
+                return;
+            }
+
+            GameApp.Random.Init(GameRunContext.Current.SeedText);
+            Log.Warning(
+                "ProcedureGameplay: restored RandomService from the active run seed.",
+                Tag);
         }
 
         private static void CloseMenuForms()

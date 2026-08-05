@@ -1,3 +1,5 @@
+using UnityEngine;
+
 namespace GourmetProject.Game.Flow
 {
     /// <summary>
@@ -38,6 +40,14 @@ namespace GourmetProject.Game.Flow
         public static void Consume()
         {
             Pending = false;
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+        {
+            Pending = false;
+            RequestedMode = Mode.NewRun;
+            CharacterId = null;
         }
     }
 }

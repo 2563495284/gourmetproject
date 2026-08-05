@@ -1,3 +1,5 @@
+using UnityEngine;
+
 namespace GourmetProject.Game.Flow
 {
     /// <summary>
@@ -11,5 +13,11 @@ namespace GourmetProject.Game.Flow
         public static void RequestReturnToMenu() => ReturnToMenuRequested = true;
 
         public static void Consume() => ReturnToMenuRequested = false;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+        {
+            ReturnToMenuRequested = false;
+        }
     }
 }
