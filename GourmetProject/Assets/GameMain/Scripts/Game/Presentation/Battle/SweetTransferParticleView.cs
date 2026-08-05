@@ -26,6 +26,38 @@ namespace GourmetProject.Game.Presentation.Battle
             Vector3 start,
             Vector3 end,
             float duration,
+            CancellationToken cancellationToken,
+            Color? colorOverride = null)
+        {
+            if (prefab == null)
+            {
+                return;
+            }
+
+            SweetTransferParticleView view = Instantiate(prefab, parent);
+            try
+            {
+                if (colorOverride.HasValue)
+                {
+                    view._color = colorOverride.Value;
+                }
+
+                await view.PlayInternalAsync(start, end, duration, cancellationToken);
+            }
+            finally
+            {
+                if (view != null)
+                {
+                    Destroy(view.gameObject);
+                }
+            }
+        }
+
+        public static async Awaitable PlayFailureAsync(
+            SweetTransferParticleView prefab,
+            Transform parent,
+            Vector3 anchor,
+            float duration,
             CancellationToken cancellationToken)
         {
             if (prefab == null)
@@ -36,7 +68,7 @@ namespace GourmetProject.Game.Presentation.Battle
             SweetTransferParticleView view = Instantiate(prefab, parent);
             try
             {
-                await view.PlayInternalAsync(start, end, duration, cancellationToken);
+                await view.PlayFailureInternalAsync(anchor, duration, cancellationToken);
             }
             finally
             {
@@ -45,6 +77,57 @@ namespace GourmetProject.Game.Presentation.Battle
                     Destroy(view.gameObject);
                 }
             }
+        }
+
+        private async Awaitable PlayFailureInternalAsync(
+            Vector3 anchor,
+            float duration,
+            CancellationToken cancellationToken)
+        {
+            EnsureRenderer();
+            if (_renderer == null)
+            {
+                return;
+            }
+
+            _renderer.sprite = BattleShadow.SoftShadowSprite;
+            SpriteRenderStyle.ApplyUnlitMaterial(_renderer);
+            BattleSorting.Apply(_renderer, BattleSorting.Fx, BattleSorting.OrderFloatingText - 1);
+            transform.position = anchor;
+
+            var fadingDots = new List<SpriteRenderer>();
+            for (int i = 0; i < Mathf.Max(5, _arrivalDotCount / 2); i++)
+            {
+                fadingDots.Add(CreatePoint($"Failed_{i}", BattleSorting.OrderFloatingText - 2, 0.42f));
+            }
+
+            float safeDuration = Mathf.Max(0.0001f, duration);
+            _tween = DOVirtual.Float(0f, 1f, safeDuration, progress =>
+                {
+                    float t = Mathf.Clamp01(progress);
+                    float recoil = Mathf.Sin(t * Mathf.PI * 5f) * (1f - t) * _size * 0.22f;
+                    transform.position = anchor + Vector3.right * recoil;
+                    transform.localScale = Vector3.one * _size * Mathf.Lerp(1.05f, 0.08f, t * t);
+                    Color core = _color;
+                    core.a *= 1f - t;
+                    _renderer.color = core;
+
+                    for (int i = 0; i < fadingDots.Count; i++)
+                    {
+                        float angle = Mathf.PI * 2f * i / Mathf.Max(1, fadingDots.Count);
+                        float radius = Mathf.Sin(t * Mathf.PI) * _size * 1.25f;
+                        SpriteRenderer dot = fadingDots[i];
+                        dot.transform.position = anchor
+                            + new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * radius;
+                        Color dotColor = _color;
+                        dotColor.a *= (1f - t) * 0.72f;
+                        dot.color = dotColor;
+                    }
+                })
+                .SetEase(Ease.InCubic)
+                .SetLink(gameObject);
+
+            await PresentationTween.AwaitCompletionAsync(_tween, cancellationToken);
         }
 
         private async Awaitable PlayInternalAsync(

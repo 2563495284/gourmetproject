@@ -35,6 +35,7 @@ namespace GourmetProject.Gameplay.Scoring
         private int _happyCakeLayerDelta;
         private int _silverItemRolls;
         private readonly List<SkillTransferSideEffect> _skillTransfers = new List<SkillTransferSideEffect>();
+        private readonly List<SweetTransferBuffRegistration> _sweetTransferBuffs = new List<SweetTransferBuffRegistration>();
         private readonly List<CopySkillRequest> _copySkillRequests = new List<CopySkillRequest>();
         private readonly Dictionary<int, float> _permanentFlatDeltas = new Dictionary<int, float>();
         private readonly Dictionary<int, float> _permanentMultDeltas = new Dictionary<int, float>();
@@ -471,13 +472,187 @@ namespace GourmetProject.Gameplay.Scoring
             EmitEvent(ScoreEventType.CommandExecuted, $"技能传递给 {target.Def.Name}（{effects.Count} 个）");
         }
 
-        /// <summary>记录一次「代触发甜蜜传递」技能命中来源食物，仅供施放者的结算演出。</summary>
-        public void RecordTriggerSweetTransfer(DishInstance sourceDish, int sourceCount)
+        /// <summary>
+        /// 在当前规则真正轮到结算时，为作用域内食物登记甜蜜传递 Buff。
+        /// 注册只存在于本次 <see cref="ScoreContext"/>，因此天然遵守实际结算顺序。
+        /// </summary>
+        public void RegisterSweetTransferBuff(
+            DishInstance owner,
+            SkillRuleDef rule,
+            IReadOnlyList<DishInstance> targets,
+            int conditionCount)
         {
+            if (owner == null || rule == null || targets == null || targets.Count == 0 || conditionCount <= 0)
+            {
+                return;
+            }
+
+            var ids = new List<int>();
+            var cells = new List<GridPos>();
+            var seenIds = new HashSet<int>();
+            var seenCells = new HashSet<GridPos>();
+            foreach (DishInstance target in targets)
+            {
+                if (target == null || !seenIds.Add(target.Id))
+                {
+                    continue;
+                }
+
+                ids.Add(target.Id);
+                foreach (GridPos cell in target.OccupiedCells)
+                {
+                    if (seenCells.Add(cell))
+                    {
+                        cells.Add(cell);
+                    }
+                }
+            }
+
+            if (ids.Count == 0)
+            {
+                return;
+            }
+
+            SkillExecutionTrace trace = Trace?.WithVisualTargets(ids, cells);
+            _sweetTransferBuffs.Add(new SweetTransferBuffRegistration(
+                owner,
+                rule,
+                conditionCount,
+                ids,
+                Source,
+                trace));
+            AddLine(
+                EnsureAccumulator(owner),
+                ScoreLineKind.SweetTransferBuffApplied,
+                ids.Count,
+                0f,
+                ids.Count,
+                $"挂载甜蜜传递 Buff ×{ids.Count}",
+                Source,
+                trace);
+        }
+
+        public IReadOnlyList<SweetTransferBuffRegistration> SweetTransferBuffsFor(DishInstance source)
+        {
+            if (source == null || _sweetTransferBuffs.Count == 0)
+            {
+                return Array.Empty<SweetTransferBuffRegistration>();
+            }
+
+            var result = new List<SweetTransferBuffRegistration>();
+            foreach (SweetTransferBuffRegistration registration in _sweetTransferBuffs)
+            {
+                if (registration.TargetDishInstanceIds.Contains(source.Id))
+                {
+                    result.Add(registration);
+                }
+            }
+
+            return result;
+        }
+
+        public void RecordSweetTransferBuffTriggered(
+            SweetTransferBuffRegistration registration,
+            DishInstance transferSource,
+            float value,
+            IReadOnlyList<DishInstance> visualTargets)
+        {
+            if (registration?.Owner == null || transferSource == null)
+            {
+                return;
+            }
+
+            var ids = new List<int>();
+            var cells = new List<GridPos>();
+            var seenIds = new HashSet<int>();
+            var seenCells = new HashSet<GridPos>();
+            if (visualTargets != null)
+            {
+                foreach (DishInstance target in visualTargets)
+                {
+                    if (target == null || !seenIds.Add(target.Id))
+                    {
+                        continue;
+                    }
+
+                    ids.Add(target.Id);
+                    foreach (GridPos cell in target.OccupiedCells)
+                    {
+                        if (seenCells.Add(cell))
+                        {
+                            cells.Add(cell);
+                        }
+                    }
+                }
+            }
+
+            SkillExecutionTrace trace = registration.Trace?.WithRuntimeContext(
+                registration.Owner,
+                transferSource,
+                ids,
+                cells);
+            AddLine(
+                EnsureAccumulator(registration.Owner),
+                ScoreLineKind.SweetTransferBuffTriggered,
+                value,
+                0f,
+                value,
+                $"响应 {transferSource.Def.Name} 的甜蜜传递",
+                registration.Source,
+                trace);
+        }
+
+        public void RecordSweetTransferFailed(DishInstance sourceDish)
+        {
+            if (sourceDish == null)
+            {
+                return;
+            }
+
+            SkillExecutionTrace trace = Trace?.WithVisualTargets(
+                Array.Empty<int>(),
+                Array.Empty<GridPos>());
+            AddLine(
+                EnsureAccumulator(sourceDish),
+                ScoreLineKind.SweetTransferFailed,
+                0f,
+                0f,
+                0f,
+                "没有可传递目标",
+                Source,
+                trace);
+        }
+
+        /// <summary>记录一次「代触发甜蜜传递」技能命中来源食物，仅供施放者的结算演出。</summary>
+        public void RecordTriggerSweetTransfer(DishInstance sourceDish, IReadOnlyList<DishInstance> sources)
+        {
+            int sourceCount = sources?.Count ?? 0;
             if (sourceDish == null || sourceCount <= 0)
             {
                 return;
             }
+
+            var ids = new List<int>();
+            var cells = new List<GridPos>();
+            var seenCells = new HashSet<GridPos>();
+            foreach (DishInstance source in sources)
+            {
+                if (source == null)
+                {
+                    continue;
+                }
+
+                ids.Add(source.Id);
+                foreach (GridPos cell in source.OccupiedCells)
+                {
+                    if (seenCells.Add(cell))
+                    {
+                        cells.Add(cell);
+                    }
+                }
+            }
+
+            SkillExecutionTrace trace = Trace?.WithVisualTargets(ids, cells);
 
             AddLine(
                 EnsureAccumulator(sourceDish),
@@ -485,7 +660,9 @@ namespace GourmetProject.Gameplay.Scoring
                 sourceCount,
                 0f,
                 sourceCount,
-                $"代触发甜蜜传递 ×{sourceCount}");
+                $"代触发甜蜜传递 ×{sourceCount}",
+                Source,
+                trace);
         }
 
         /// <summary>记录「代触发」流程中某个来源食物开始执行，供逐个演出与状态收尾。</summary>
@@ -496,13 +673,45 @@ namespace GourmetProject.Gameplay.Scoring
                 return;
             }
 
+            ScoreSource source = Source;
+            SkillExecutionTrace trace = Trace;
+            foreach (string skillId in sourceDish.SkillIds)
+            {
+                SkillDef skill = Db?.GetSkill(skillId);
+                SkillRuleDef transferRule = skill?.Rules?.FirstOrDefault(rule =>
+                    rule.Trigger == SkillTrigger.OnSettle
+                    && rule.ActionType == SkillActionType.TransferSkills);
+                if (transferRule == null)
+                {
+                    continue;
+                }
+
+                string sourceLabel = sourceDish.GetSkillSource(skillId);
+                source = string.IsNullOrEmpty(sourceLabel)
+                    ? ScoreSource.DishSkill(skill, sourceDish)
+                    : ScoreSource.TransferredDishSkill(skill, sourceDish, sourceLabel);
+                trace = SkillExecutionTrace.Create(
+                    Db,
+                    DiningTable,
+                    sourceDish,
+                    sourceDish,
+                    skill,
+                    transferRule,
+                    SkillRuleEffectSource.TraceKindForSourceLabel(sourceLabel),
+                    sourceLabel,
+                    SkillScopeVisualMode.CandidateScope);
+                break;
+            }
+
             AddLine(
                 EnsureAccumulator(sourceDish),
                 ScoreLineKind.TriggeredSweetTransferSource,
                 index,
                 0f,
                 total,
-                $"触发甜蜜传递 {index}/{total}");
+                $"触发甜蜜传递 {index}/{total}",
+                source,
+                trace);
         }
 
         public void ResolveTransferredEffect(ScoreEffectEntry entry)
@@ -874,16 +1083,26 @@ namespace GourmetProject.Gameplay.Scoring
             }
         }
 
-        private void AddLine(DishAccumulator accum, ScoreLineKind kind, float value, float before, float after, string fallbackMessage)
+        private void AddLine(
+            DishAccumulator accum,
+            ScoreLineKind kind,
+            float value,
+            float before,
+            float after,
+            string fallbackMessage,
+            ScoreSource sourceOverride = null,
+            SkillExecutionTrace traceOverride = null)
         {
             int dishInstanceId = accum != null ? accum.Dish.Id : (Dish != null ? Dish.Id : 0);
             string dishId = accum != null ? accum.Dish.Def.Id : (Dish != null ? Dish.Def.Id : string.Empty);
-            string sourceName = Source != null ? Source.Name : string.Empty;
+            ScoreSource lineSource = sourceOverride ?? Source;
+            SkillExecutionTrace lineTrace = traceOverride ?? Trace;
+            string sourceName = lineSource != null ? lineSource.Name : string.Empty;
             string message = string.IsNullOrEmpty(sourceName) ? fallbackMessage : $"{sourceName}: {fallbackMessage}";
             _lines.Add(new ScoreLine(
                 Phase,
                 kind,
-                Source,
+                lineSource,
                 dishInstanceId,
                 dishId,
                 CurrentCell,
@@ -891,7 +1110,7 @@ namespace GourmetProject.Gameplay.Scoring
                 before,
                 after,
                 message,
-                Trace,
+                lineTrace,
                 _currentExecutionGroupId));
         }
 
@@ -929,6 +1148,38 @@ namespace GourmetProject.Gameplay.Scoring
 
             public int ExecutionGroupId { get; }
         }
+    }
+
+    /// <summary>结算期甜蜜传递 Buff。仅存于 ScoreContext，不写入食物实例或存档。</summary>
+    public sealed class SweetTransferBuffRegistration
+    {
+        public SweetTransferBuffRegistration(
+            DishInstance owner,
+            SkillRuleDef rule,
+            int conditionCount,
+            IReadOnlyList<int> targetDishInstanceIds,
+            ScoreSource source,
+            SkillExecutionTrace trace)
+        {
+            Owner = owner;
+            Rule = rule;
+            ConditionCount = conditionCount;
+            TargetDishInstanceIds = targetDishInstanceIds ?? Array.Empty<int>();
+            Source = source;
+            Trace = trace;
+        }
+
+        public DishInstance Owner { get; }
+
+        public SkillRuleDef Rule { get; }
+
+        public int ConditionCount { get; }
+
+        public IReadOnlyList<int> TargetDishInstanceIds { get; }
+
+        public ScoreSource Source { get; }
+
+        public SkillExecutionTrace Trace { get; }
     }
 
     /// <summary>技能传递副作用：把外来子技能(Effects) 追加给某目标实例（可带来源名，用于「源名&lt;甜蜜传递&gt;」展示）。</summary>

@@ -17,6 +17,9 @@ namespace GourmetProject.Gameplay.Scoring
         CopySkill = 10,
         TriggerSweetTransfer = 11,
         TriggeredSweetTransferSource = 12,
+        SweetTransferBuffApplied = 13,
+        SweetTransferBuffTriggered = 14,
+        SweetTransferFailed = 15,
     }
 
     /// <summary>一次具体分数变化的可解释记录。</summary>

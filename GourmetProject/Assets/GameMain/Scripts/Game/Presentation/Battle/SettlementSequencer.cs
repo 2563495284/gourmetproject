@@ -152,6 +152,7 @@ namespace GourmetProject.Game.Presentation.Battle
             var playback = new SettlementPlaybackState(plan.ResultBeatCount, null);
             var ledger = new SettlementRunningLedger(result.DishScores, baselineSnapshot);
             ClearRetainedDishValueBadges();
+            ClearSweetTransferBuffMarkers(dishViews);
             var sweetTransferPlayback = new SweetTransferPlaybackState();
             bool completed = false;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -342,6 +343,19 @@ namespace GourmetProject.Game.Presentation.Battle
                             fxRoot,
                             cancellationToken);
 
+                        if (line.Kind == ScoreLineKind.SweetTransferBuffApplied)
+                        {
+                            ApplySweetTransferBuffMarkers(line, dishViews);
+                        }
+                        else if (line.Kind == ScoreLineKind.SweetTransferBuffTriggered)
+                        {
+                            await PlaySweetTransferBuffTriggerAsync(line, dishViews, cancellationToken);
+                        }
+                        else if (line.Kind == ScoreLineKind.SweetTransferFailed)
+                        {
+                            await PlaySweetTransferFailureAsync(line, dishViews, cancellationToken);
+                        }
+
                         float contribution = ledger.Apply(line);
                         dishViews.TryGetValue(line.DishInstanceId, out DishPieceView target);
                         if (target != null && ChangesDishValue(line.Kind))
@@ -423,6 +437,7 @@ namespace GourmetProject.Game.Presentation.Battle
             finally
             {
                 ClearSweetTransferVisuals(sweetTransferPlayback, dishViews);
+                ClearSweetTransferBuffMarkers(dishViews);
                 onScope?.Invoke(default);
                 _stage?.ClearImmediate();
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -617,6 +632,9 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.CopySkill:
                 case ScoreLineKind.TriggerSweetTransfer:
                 case ScoreLineKind.TriggeredSweetTransferSource:
+                case ScoreLineKind.SweetTransferBuffApplied:
+                case ScoreLineKind.SweetTransferBuffTriggered:
+                case ScoreLineKind.SweetTransferFailed:
                     return SettlementCueKind.SideEffect;
                 default:
                     return SettlementCueKind.DishContribution;
@@ -1030,6 +1048,75 @@ namespace GourmetProject.Game.Presentation.Battle
                 receiver.WorldBounds.center,
                 ScaleSettlementDuration(SweetTransferParticleDuration),
                 cancellationToken);
+        }
+
+        private static void ApplySweetTransferBuffMarkers(
+            ScoreLine line,
+            IReadOnlyDictionary<int, DishPieceView> dishViews)
+        {
+            if (line?.Trace == null || dishViews == null)
+            {
+                return;
+            }
+
+            IReadOnlyList<int> targetIds = line.Trace.VisualTargetDishInstanceIds;
+            for (int i = 0; i < targetIds.Count; i++)
+            {
+                if (dishViews.TryGetValue(targetIds[i], out DishPieceView target) && target != null)
+                {
+                    target.AddSweetTransferBuffMarker(line.Trace.ActionType);
+                }
+            }
+        }
+
+        private async Awaitable PlaySweetTransferBuffTriggerAsync(
+            ScoreLine line,
+            IReadOnlyDictionary<int, DishPieceView> dishViews,
+            CancellationToken cancellationToken)
+        {
+            SkillExecutionTrace trace = line?.Trace;
+            if (trace == null || dishViews == null)
+            {
+                return;
+            }
+
+            dishViews.TryGetValue(trace.RuntimeSelfDishInstanceId, out DishPieceView source);
+            dishViews.TryGetValue(trace.OwnerDishInstanceId, out DishPieceView owner);
+            await _stage.PlaySweetTransferBuffTriggerAsync(
+                source,
+                owner,
+                _sweetTransferParticlePrefab,
+                trace.ActionType,
+                ScaleSettlementDuration(SweetTransferParticleDuration),
+                cancellationToken);
+        }
+
+        private async Awaitable PlaySweetTransferFailureAsync(
+            ScoreLine line,
+            IReadOnlyDictionary<int, DishPieceView> dishViews,
+            CancellationToken cancellationToken)
+        {
+            int sourceId = line?.Trace?.RuntimeSelfDishInstanceId ?? line?.DishInstanceId ?? 0;
+            DishPieceView source = TryGetDishView(sourceId, dishViews);
+            await _stage.PlaySweetTransferFailureAsync(
+                source,
+                _sweetTransferParticlePrefab,
+                ScaleSettlementDuration(SweetTransferParticleDuration),
+                cancellationToken);
+        }
+
+        private static void ClearSweetTransferBuffMarkers(
+            IReadOnlyDictionary<int, DishPieceView> dishViews)
+        {
+            if (dishViews == null)
+            {
+                return;
+            }
+
+            foreach (DishPieceView view in dishViews.Values)
+            {
+                view?.ClearSweetTransferBuffMarkers();
+            }
         }
 
         private static bool SynchronizeSweetTransferSource(
@@ -2172,6 +2259,34 @@ namespace GourmetProject.Game.Presentation.Battle
                         triggerSweetTransferPhase: line.Value >= line.After
                             ? TriggerSweetTransferCuePhase.FinalSourceStarted
                             : TriggerSweetTransferCuePhase.SourceStarted,
+                        sourceName: sourceName);
+                    return true;
+
+                case ScoreLineKind.SweetTransferBuffApplied:
+                    cue = new SettlementCue(
+                        SettlementCueKind.SideEffect,
+                        line.Trace?.ActionType == SkillActionType.TriggerSweetTransfer
+                            ? "挂载甜蜜传递 +2"
+                            : "挂载甜蜜传递 ×1.5",
+                        feedbackKind: SettlementDishFeedbackKind.GenericSkillTriggered,
+                        sourceName: sourceName);
+                    return true;
+
+                case ScoreLineKind.SweetTransferBuffTriggered:
+                    cue = new SettlementCue(
+                        SettlementCueKind.SideEffect,
+                        line.Trace?.ActionType == SkillActionType.TriggerSweetTransfer
+                            ? $"额外选择 +{Mathf.RoundToInt(line.Value)}"
+                            : $"本行倍率 ×{line.Value:0.##}",
+                        feedbackKind: SettlementDishFeedbackKind.GenericSkillTriggered,
+                        sourceName: sourceName);
+                    return true;
+
+                case ScoreLineKind.SweetTransferFailed:
+                    cue = new SettlementCue(
+                        SettlementCueKind.SideEffect,
+                        "没有可传递目标",
+                        feedbackKind: SettlementDishFeedbackKind.SweetTransferFailed,
                         sourceName: sourceName);
                     return true;
 

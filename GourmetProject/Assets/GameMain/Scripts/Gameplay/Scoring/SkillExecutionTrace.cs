@@ -137,6 +137,64 @@ namespace GourmetProject.Gameplay.Scoring
                 visualIndex);
         }
 
+        public SkillExecutionTrace WithVisualTargets(
+            IReadOnlyList<int> visualTargetDishInstanceIds,
+            IReadOnlyList<GridPos> visualTargetCells)
+        {
+            return new SkillExecutionTrace(
+                Kind,
+                OwnerDishInstanceId,
+                OwnerDishId,
+                OwnerDishName,
+                RuntimeSelfDishInstanceId,
+                RuntimeSelfDishId,
+                RuntimeSelfDishName,
+                SkillId,
+                SkillName,
+                RuleId,
+                RuleOrder,
+                Trigger,
+                ActionType,
+                ConditionType,
+                ConditionScope,
+                ActionScope,
+                SourceLabel,
+                visualTargetDishInstanceIds,
+                visualTargetCells,
+                ConditionCells,
+                VisualIndex);
+        }
+
+        public SkillExecutionTrace WithRuntimeContext(
+            DishInstance owner,
+            DishInstance runtimeSelf,
+            IReadOnlyList<int> visualTargetDishInstanceIds,
+            IReadOnlyList<GridPos> visualTargetCells)
+        {
+            return new SkillExecutionTrace(
+                Kind,
+                owner != null ? owner.Id : OwnerDishInstanceId,
+                owner?.Def?.Id ?? OwnerDishId,
+                owner?.Def?.Name ?? OwnerDishName,
+                runtimeSelf != null ? runtimeSelf.Id : RuntimeSelfDishInstanceId,
+                runtimeSelf?.Def?.Id ?? RuntimeSelfDishId,
+                runtimeSelf?.Def?.Name ?? RuntimeSelfDishName,
+                SkillId,
+                SkillName,
+                RuleId,
+                RuleOrder,
+                Trigger,
+                ActionType,
+                ConditionType,
+                ConditionScope,
+                ActionScope,
+                SourceLabel,
+                visualTargetDishInstanceIds,
+                visualTargetCells,
+                ConditionCells,
+                VisualIndex);
+        }
+
         public static SkillExecutionTrace Create(
             GameplayDatabase db,
             DiningTable board,

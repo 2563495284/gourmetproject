@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using DG.Tweening;
+using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
 using UnityEngine;
 using TMPro;
@@ -245,6 +246,61 @@ namespace GourmetProject.Game.Presentation.Battle
                 $"{executorName} · {skillName}",
                 theme,
                 executorDuration,
+                cancellationToken);
+        }
+
+        internal async Awaitable PlaySweetTransferBuffTriggerAsync(
+            DishPieceView transferSource,
+            DishPieceView buffOwner,
+            SweetTransferParticleView particlePrefab,
+            SkillActionType actionType,
+            float duration,
+            CancellationToken cancellationToken)
+        {
+            if (transferSource == null || buffOwner == null)
+            {
+                return;
+            }
+
+            Color theme = actionType == SkillActionType.TriggerSweetTransfer
+                ? new Color32(54, 224, 242, 255)
+                : new Color32(255, 84, 178, 255);
+            await SweetTransferParticleView.PlayAsync(
+                particlePrefab,
+                _fxRoot,
+                transferSource.WorldBounds.center,
+                buffOwner.WorldBounds.center,
+                duration,
+                cancellationToken,
+                theme);
+            await PlayFeedbackSafelyAsync(
+                buffOwner,
+                SettlementDishFeedbackKind.GenericSkillTriggered,
+                cancellationToken,
+                durationScale: Mathf.Max(0.05f, duration / 0.34f));
+        }
+
+        internal async Awaitable PlaySweetTransferFailureAsync(
+            DishPieceView source,
+            SweetTransferParticleView particlePrefab,
+            float duration,
+            CancellationToken cancellationToken)
+        {
+            if (source == null)
+            {
+                return;
+            }
+
+            await PlayFeedbackSafelyAsync(
+                source,
+                SettlementDishFeedbackKind.SweetTransferSkillTriggered,
+                cancellationToken,
+                durationScale: Mathf.Max(0.05f, duration / 0.42f));
+            await SweetTransferParticleView.PlayFailureAsync(
+                particlePrefab,
+                _fxRoot,
+                source.WorldBounds.center,
+                duration,
                 cancellationToken);
         }
 
@@ -676,6 +732,11 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.TriggerSweetTransfer:
                 case ScoreLineKind.TriggeredSweetTransferSource:
                     return SettlementDishFeedbackKind.SweetTransferResult;
+                case ScoreLineKind.SweetTransferFailed:
+                    return SettlementDishFeedbackKind.SweetTransferFailed;
+                case ScoreLineKind.SweetTransferBuffApplied:
+                case ScoreLineKind.SweetTransferBuffTriggered:
+                    return SettlementDishFeedbackKind.GenericSkillTriggered;
                 default:
                     return SettlementDishFeedbackKind.GenericValueChanged;
             }
@@ -688,10 +749,23 @@ namespace GourmetProject.Game.Presentation.Battle
                 return SettlementAttributePalette.Special;
             }
 
+            if (line.Kind == ScoreLineKind.SweetTransferFailed)
+            {
+                return new Color32(224, 106, 132, 255);
+            }
+
+            if (line.Kind == ScoreLineKind.SweetTransferBuffApplied
+                || line.Kind == ScoreLineKind.SweetTransferBuffTriggered)
+            {
+                return line.Trace?.ActionType == SkillActionType.TriggerSweetTransfer
+                    ? new Color32(54, 224, 242, 255)
+                    : new Color32(255, 84, 178, 255);
+            }
+
             return line.Kind == ScoreLineKind.TriggerSweetTransfer
                 || line.Kind == ScoreLineKind.TriggeredSweetTransferSource
-                    ? new Color32(255, 77, 173, 255)
-                    : SettlementAttributePalette.For(line.Kind);
+                ? new Color32(255, 77, 173, 255)
+                : SettlementAttributePalette.For(line.Kind);
         }
 
         private static string ResultHeader(ScoreLine line)
@@ -714,6 +788,9 @@ namespace GourmetProject.Game.Presentation.Battle
                 ScoreLineKind.CopySkill => "技能复制",
                 ScoreLineKind.TriggerSweetTransfer => "甜蜜传递",
                 ScoreLineKind.TriggeredSweetTransferSource => "传递来源",
+                ScoreLineKind.SweetTransferBuffApplied => "甜蜜 Buff",
+                ScoreLineKind.SweetTransferBuffTriggered => "Buff 响应",
+                ScoreLineKind.SweetTransferFailed => "甜蜜传递",
                 _ => "结算结果",
             };
         }
@@ -726,7 +803,8 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             if (Mathf.Abs(line.Value) <= 0.001f
-                && line.Kind != ScoreLineKind.FinalMultiplier)
+                && line.Kind != ScoreLineKind.FinalMultiplier
+                && line.Kind != ScoreLineKind.SweetTransferFailed)
             {
                 return "无变化";
             }
@@ -756,6 +834,14 @@ namespace GourmetProject.Game.Presentation.Battle
                     return line.Value > 1f ? $"触发 ×{Mathf.RoundToInt(line.Value)}" : "触发甜蜜传递";
                 case ScoreLineKind.TriggeredSweetTransferSource:
                     return "来源已接力";
+                case ScoreLineKind.SweetTransferBuffApplied:
+                    return $"挂载目标 ×{Mathf.RoundToInt(line.Value)}";
+                case ScoreLineKind.SweetTransferBuffTriggered:
+                    return line.Trace?.ActionType == SkillActionType.TriggerSweetTransfer
+                        ? $"额外目标 +{Mathf.RoundToInt(line.Value)}"
+                        : $"本行倍率 ×{line.Value:0.##}";
+                case ScoreLineKind.SweetTransferFailed:
+                    return "没有可传递目标";
                 default:
                     return string.IsNullOrEmpty(line.Message) ? signed : line.Message;
             }

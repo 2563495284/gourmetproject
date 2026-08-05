@@ -51,9 +51,11 @@ namespace GourmetProject.Gameplay.Scoring
 
             IReadOnlyList<DishInstance> targetDishes = ResolveVisualActionDishes(db, board, self, rule, mode);
             List<int> targetIds = targetDishes.Select(d => d.Id).Distinct().ToList();
-            List<GridPos> targetCells = mode == SkillScopeVisualMode.CandidateScope
-                ? VisualCellsForScope(db, board, self, rule, rule.ActionScope, isActionScope: true)
-                : CellsForDishes(targetDishes);
+            List<GridPos> targetCells = rule.ActionType == SkillActionType.TransferSkills
+                ? board.ExistingCells()
+                : mode == SkillScopeVisualMode.CandidateScope
+                    ? VisualCellsForScope(db, board, self, rule, rule.ActionScope, isActionScope: true)
+                    : CellsForDishes(targetDishes);
             if (targetCells.Count == 0)
             {
                 targetCells = VisualCellsForScope(db, board, self, rule, rule.ActionScope, isActionScope: true);
@@ -90,6 +92,16 @@ namespace GourmetProject.Gameplay.Scoring
                 return ResolveSweetTransferSources(db, board, self, rule);
             }
 
+            // “甜蜜传递 X 个食物”的接收者固定从全场其它食物中随机选择。
+            // 即使旧配置误把第一个子技能的作用域复制到传递规则，也不能限制候选池。
+            if (rule.ActionType == SkillActionType.TransferSkills)
+            {
+                return ApplyActionCount(
+                    SkillConditionEvaluator.ScopeDishes(board, self, SkillScope.Other),
+                    rule,
+                    mode);
+            }
+
             if (rule.ActionType == SkillActionType.AddLayer
                 || rule.ActionType == SkillActionType.ConsumeLayer
                 || rule.ActionType == SkillActionType.GrantGold)
@@ -98,11 +110,6 @@ namespace GourmetProject.Gameplay.Scoring
             }
 
             List<DishInstance> dishes = ResolveScopeDishes(db, board, self, rule, includeSelfForSelfScope: true);
-            if (rule.ActionType == SkillActionType.TransferSkills)
-            {
-                dishes.RemoveAll(d => d.Id == self.Id);
-            }
-
             return ApplyActionCount(dishes, rule, mode);
         }
 
