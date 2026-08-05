@@ -3331,16 +3331,6 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _settling = true;
-            SetTemporaryAreaVisible(false, animated: false);
-
-            foreach (DishPieceView piece in _temporaryAreaPieces)
-            {
-                if (piece != null)
-                {
-                    piece.gameObject.SetActive(false);
-                }
-            }
-
             _scopeHighlights?.ClearAll();
             CancellationToken token = GetPresentationToken();
             try
