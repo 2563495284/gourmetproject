@@ -109,7 +109,7 @@ namespace GourmetProject.Gameplay.Scoring
             }
         }
 
-        private static SkillExecutionKind TraceKindForSourceLabel(string sourceLabel)
+        internal static SkillExecutionKind TraceKindForSourceLabel(string sourceLabel)
         {
             if (string.IsNullOrEmpty(sourceLabel))
             {
@@ -226,10 +226,11 @@ namespace GourmetProject.Gameplay.Scoring
                 value = _rule.ActionValue;
             }
 
-            // 甜蜜传递事件修饰器是被动声明：只在某道菜真正发动 TransferSkills 时读取，
-            // 自身轮到结算时不直接派发分数/触发传递。
+            // 甜蜜传递修饰器在自身真正轮到结算时，才把 Buff 挂到当前作用域目标。
+            // 后续 TransferSkills 只读取已经登记的 Buff，从而严格遵守结算优先级。
             if (IsSweetTransferModifier(_rule))
             {
+                ctx.RegisterSweetTransferBuff(_self, _rule, SweetTransferBuffTargets(ctx), count);
                 return;
             }
 
@@ -281,8 +282,7 @@ namespace GourmetProject.Gameplay.Scoring
 
                 case SkillActionType.TransferSkills:
                 {
-                    ApplySweetTransferSourceModifiers(ctx);
-                    ExecuteOneSweetTransfer(ctx, SweetTransferExtraTargetCount(ctx));
+                    ExecuteOneSweetTransfer(ctx);
                     break;
                 }
 
@@ -303,7 +303,7 @@ namespace GourmetProject.Gameplay.Scoring
                     // 只代执行来源的 TransferSkills 子技能：把其他可传递子技能交给目标，
                     // 不重跑来源技能中的加分/倍率等其他子技能。
                     IReadOnlyList<DishInstance> sources = SweetTransferSources(ctx);
-                    ctx.RecordTriggerSweetTransfer(_self, sources.Count);
+                    ctx.RecordTriggerSweetTransfer(_self, sources);
                     for (int i = 0; i < sources.Count; i++)
                     {
                         DishInstance source = sources[i];
@@ -338,7 +338,7 @@ namespace GourmetProject.Gameplay.Scoring
         private float TierValue(int tier) => TierValue(_rule, tier);
 
         /// <summary>执行一轮甜蜜传递：每次调用都会重新解析/随机目标。</summary>
-        private void ExecuteOneSweetTransfer(ScoreContext ctx, int extraTargetCount)
+        private void ExecuteOneSweetTransfer(ScoreContext ctx)
         {
             IReadOnlyList<SkillEffect> effects = EffectsToTransfer(ctx.Db, _rule);
             if (effects.Count == 0)
@@ -346,16 +346,29 @@ namespace GourmetProject.Gameplay.Scoring
                 return;
             }
 
-            string sourceName = CurrentSkillSourceName(ctx);
-            foreach (DishInstance t in TransferTargets(ctx, extraTargetCount))
+            IReadOnlyList<DishInstance> candidates = TransferCandidates(ctx);
+            if (candidates.Count == 0)
             {
-                if (t.Id == _self.Id)
-                {
-                    continue;
-                }
+                ctx.RecordSweetTransferFailed(_self);
+                return;
+            }
 
-                ctx.RecordSkillTransfer(t, effects, sourceName, _self.Id);
-                ResolveTransferredEffects(ctx, t, effects, sourceName);
+            IReadOnlyList<SweetTransferBuffRegistration> buffs = ctx.SweetTransferBuffsFor(_self);
+            int extraTargetCount = ExtraTargetCount(buffs);
+            IReadOnlyList<DishInstance> targets = SelectTransferTargets(ctx, candidates, extraTargetCount);
+            if (targets.Count == 0)
+            {
+                ctx.RecordSweetTransferFailed(_self);
+                return;
+            }
+
+            ApplyRegisteredSweetTransferBuffs(ctx, buffs, targets);
+
+            string sourceName = CurrentSkillSourceName(ctx);
+            foreach (DishInstance target in targets)
+            {
+                ctx.RecordSkillTransfer(target, effects, sourceName, _self.Id);
+                ResolveTransferredEffects(ctx, target, effects, sourceName);
             }
         }
 
@@ -390,13 +403,38 @@ namespace GourmetProject.Gameplay.Scoring
                     if (transferRule.Trigger == SkillTrigger.OnSettle
                         && transferRule.ActionType == SkillActionType.TransferSkills)
                     {
-                        new SkillRuleEffect(transferRule, source).Apply(ctx);
+                        string sourceLabel = source.GetSkillSource(skillId);
+                        ScoreSource scoreSource = string.IsNullOrEmpty(sourceLabel)
+                            ? ScoreSource.DishSkill(skill, source)
+                            : ScoreSource.TransferredDishSkill(skill, source, sourceLabel);
+                        int boardOrder = source.Placement.Origin.Y * ctx.DiningTable.Width
+                            + source.Placement.Origin.X;
+                        var entry = new ScoreEffectEntry(
+                            ScorePhase.DishSkills,
+                            scoreSource,
+                            new SkillRuleEffect(transferRule, source),
+                            source,
+                            null,
+                            null,
+                            transferRule.Order,
+                            boardOrder,
+                            SkillExecutionTrace.Create(
+                                ctx.Db,
+                                ctx.DiningTable,
+                                source,
+                                source,
+                                skill,
+                                transferRule,
+                                SkillRuleEffectSource.TraceKindForSourceLabel(sourceLabel),
+                                sourceLabel,
+                                SkillScopeVisualMode.CandidateScope));
+                        ctx.ResolveTransferredEffect(entry);
                     }
                 }
             }
         }
 
-        private IReadOnlyList<DishInstance> TransferTargets(ScoreContext ctx, int extraTargetCount)
+        private IReadOnlyList<DishInstance> TransferCandidates(ScoreContext ctx)
         {
             IReadOnlyList<DishInstance> candidates = SkillScopeResolver.ResolveActionTargetDishes(
                 ctx.Db,
@@ -404,19 +442,30 @@ namespace GourmetProject.Gameplay.Scoring
                 _self,
                 _rule,
                 SkillScopeVisualMode.CandidateScope);
-            var candidateIds = new List<int>();
+            var result = new List<DishInstance>();
+            var seen = new HashSet<int>();
             foreach (DishInstance dish in candidates)
             {
-                if (dish != null && dish.Id != _self.Id && !candidateIds.Contains(dish.Id))
+                if (dish != null && dish.Id != _self.Id && seen.Add(dish.Id))
                 {
-                    candidateIds.Add(dish.Id);
+                    result.Add(dish);
                 }
             }
 
-            if (candidateIds.Count == 0)
+            return result;
+        }
+
+        private IReadOnlyList<DishInstance> SelectTransferTargets(
+            ScoreContext ctx,
+            IReadOnlyList<DishInstance> candidates,
+            int extraTargetCount)
+        {
+            if (candidates == null || candidates.Count == 0)
             {
                 return Array.Empty<DishInstance>();
             }
+
+            var candidateIds = candidates.Select(dish => dish.Id).ToList();
 
             int requested = _rule.ActionCount <= 0
                 ? candidateIds.Count
@@ -438,7 +487,7 @@ namespace GourmetProject.Gameplay.Scoring
                     continue;
                 }
 
-                DishInstance dish = ctx.DiningTable.Dishes.FirstOrDefault(d => d.Id == selectedId);
+                DishInstance dish = candidates.FirstOrDefault(d => d.Id == selectedId);
                 if (dish != null)
                 {
                     result.Add(dish);
@@ -453,49 +502,20 @@ namespace GourmetProject.Gameplay.Scoring
             return result;
         }
 
-        private void ApplySweetTransferSourceModifiers(ScoreContext ctx)
-        {
-            foreach ((DishInstance owner, SkillRuleDef modifier) in SweetTransferModifiers(ctx))
-            {
-                if (!HasActionParam(modifier, "when:transfer")
-                    || (modifier.ActionType != SkillActionType.AddMult
-                        && modifier.ActionType != SkillActionType.AddMultFlat))
-                {
-                    continue;
-                }
-
-                int count = SkillConditionEvaluator.Evaluate(modifier, ctx, owner);
-                if (count <= 0)
-                {
-                    continue;
-                }
-
-                if (modifier.ActionType == SkillActionType.AddMultFlat)
-                {
-                    ctx.AddMultFlatTo(_self, modifier.ActionValue * count);
-                    continue;
-                }
-
-                float factor = HasActionParam(modifier, "linear")
-                    ? 1f + modifier.ActionValue * count
-                    : (float)Math.Pow(modifier.ActionValue, count);
-                ctx.MultiplyTo(_self, factor);
-            }
-        }
-
-        private int SweetTransferExtraTargetCount(ScoreContext ctx)
+        private static int ExtraTargetCount(IReadOnlyList<SweetTransferBuffRegistration> buffs)
         {
             int extra = 0;
-            foreach ((DishInstance owner, SkillRuleDef modifier) in SweetTransferModifiers(ctx))
+            if (buffs == null)
             {
-                if (modifier.ActionType != SkillActionType.TriggerSweetTransfer
-                    || !HasActionParam(modifier, "modifier:add-targets"))
-                {
-                    continue;
-                }
+                return extra;
+            }
 
-                int count = SkillConditionEvaluator.Evaluate(modifier, ctx, owner);
-                if (count <= 0)
+            foreach (SweetTransferBuffRegistration buff in buffs)
+            {
+                SkillRuleDef rule = buff?.Rule;
+                if (rule == null
+                    || rule.ActionType != SkillActionType.TriggerSweetTransfer
+                    || !HasActionParam(rule, "modifier:add-targets"))
                 {
                     continue;
                 }
@@ -503,69 +523,124 @@ namespace GourmetProject.Gameplay.Scoring
                 extra += Math.Max(
                     0,
                     (int)Math.Round(
-                        modifier.ActionValue * count,
+                        rule.ActionValue * buff.ConditionCount,
                         MidpointRounding.AwayFromZero));
             }
 
             return extra;
         }
 
-        private IEnumerable<(DishInstance Owner, SkillRuleDef Rule)> SweetTransferModifiers(ScoreContext ctx)
+        private void ApplyRegisteredSweetTransferBuffs(
+            ScoreContext ctx,
+            IReadOnlyList<SweetTransferBuffRegistration> buffs,
+            IReadOnlyList<DishInstance> transferTargets)
         {
-            foreach (DishInstance owner in ctx.DiningTable.Dishes)
+            if (buffs == null || buffs.Count == 0)
             {
-                if (owner == null || owner.SkillsDisabled)
+                return;
+            }
+
+            // 先表现/登记棉花糖的目标数修饰，再结算软糖倍率响应。
+            foreach (SweetTransferBuffRegistration buff in buffs)
+            {
+                SkillRuleDef rule = buff?.Rule;
+                if (rule == null
+                    || rule.ActionType != SkillActionType.TriggerSweetTransfer
+                    || !HasActionParam(rule, "modifier:add-targets"))
                 {
                     continue;
                 }
 
-                foreach (SkillRuleDef candidate in RulesOf(ctx.Db, owner))
-                {
-                    if (candidate == null
-                        || candidate.Trigger != _rule.Trigger
-                        || !IsSweetTransferModifier(candidate))
-                    {
-                        continue;
-                    }
+                int extra = Math.Max(
+                    0,
+                    (int)Math.Round(
+                        rule.ActionValue * buff.ConditionCount,
+                        MidpointRounding.AwayFromZero));
+                ResolveSweetTransferBuffTrigger(ctx, buff, transferTargets, extra, applyMultiplier: false);
+            }
 
-                    IReadOnlyList<DishInstance> targets =
-                        SkillScopeResolver.ResolveActionTargetDishes(
-                            ctx.Db,
-                            ctx.DiningTable,
-                            owner,
-                            candidate,
-                            SkillScopeVisualMode.ResolvedTargets);
-                    if (targets.Any(dish => dish.Id == _self.Id))
-                    {
-                        yield return (owner, candidate);
-                    }
+            foreach (SweetTransferBuffRegistration buff in buffs)
+            {
+                SkillRuleDef rule = buff?.Rule;
+                if (rule == null
+                    || !HasActionParam(rule, "when:transfer")
+                    || (rule.ActionType != SkillActionType.AddMult
+                        && rule.ActionType != SkillActionType.AddMultFlat))
+                {
+                    continue;
                 }
+
+                SkillScope resultScope = ParseResultScope(rule, SkillScope.RowAndSelf);
+                IReadOnlyList<DishInstance> resultTargets = SkillConditionEvaluator.ScopeDishes(
+                    ctx.DiningTable,
+                    buff.Owner,
+                    resultScope);
+                float value = rule.ActionType == SkillActionType.AddMultFlat
+                    ? rule.ActionValue * buff.ConditionCount
+                    : HasActionParam(rule, "linear")
+                        ? 1f + rule.ActionValue * buff.ConditionCount
+                        : (float)Math.Pow(rule.ActionValue, buff.ConditionCount);
+                ResolveSweetTransferBuffTrigger(ctx, buff, resultTargets, value, applyMultiplier: true);
             }
         }
 
-        private static IEnumerable<SkillRuleDef> RulesOf(GameplayDatabase db, DishInstance dish)
+        private void ResolveSweetTransferBuffTrigger(
+            ScoreContext ctx,
+            SweetTransferBuffRegistration buff,
+            IReadOnlyList<DishInstance> targets,
+            float value,
+            bool applyMultiplier)
         {
-            foreach (string skillId in dish.SkillIds)
+            if (ctx == null || buff?.Owner == null || buff.Rule == null)
             {
-                SkillDef skill = db?.GetSkill(skillId);
-                if (skill == null || !skill.HasRules)
+                return;
+            }
+
+            var targetList = targets?.Where(target => target != null).Distinct().ToArray()
+                ?? Array.Empty<DishInstance>();
+            var ids = targetList.Select(target => target.Id).ToArray();
+            var cells = targetList.SelectMany(target => target.OccupiedCells).Distinct().ToArray();
+            SkillExecutionTrace trace = buff.Trace?.WithRuntimeContext(buff.Owner, _self, ids, cells);
+            int boardOrder = buff.Owner.Placement.Origin.Y * ctx.DiningTable.Width
+                + buff.Owner.Placement.Origin.X;
+            var entry = new ScoreEffectEntry(
+                ScorePhase.DishSkills,
+                buff.Source,
+                new SweetTransferBuffTriggerEffect(buff, _self, targetList, value, applyMultiplier),
+                buff.Owner,
+                null,
+                null,
+                buff.Rule.Order,
+                boardOrder,
+                trace);
+            ctx.ResolveTransferredEffect(entry);
+        }
+
+        private static SkillScope ParseResultScope(SkillRuleDef rule, SkillScope fallback)
+        {
+            foreach (string param in rule.ActionParams)
+            {
+                if (string.IsNullOrEmpty(param))
                 {
                     continue;
                 }
 
-                foreach (SkillRuleDef rule in skill.Rules)
+                int index = param.IndexOf("resultscope:", StringComparison.OrdinalIgnoreCase);
+                if (index < 0)
                 {
-                    yield return rule;
+                    continue;
+                }
+
+                string value = param.Substring(index + "resultscope:".Length)
+                    .Split(';', ',', '|')[0]
+                    .Trim();
+                if (Enum.TryParse(value, ignoreCase: true, out SkillScope scope))
+                {
+                    return scope;
                 }
             }
 
-            foreach (TransferredSkill transferred in dish.TransferredSkills)
-            {
-                if (transferred?.Rule != null)
-                {
-                    yield return transferred.Rule;
-                }
-            }
+            return fallback;
         }
 
         private static bool IsSweetTransferModifier(SkillRuleDef rule)
@@ -827,6 +902,14 @@ namespace GourmetProject.Gameplay.Scoring
                 SkillScopeVisualMode.ResolvedTargets);
         }
 
+        private IReadOnlyList<DishInstance> SweetTransferBuffTargets(ScoreContext ctx)
+        {
+            return SkillConditionEvaluator.ScopeDishes(
+                ctx.DiningTable,
+                _self,
+                _rule.ActionScope);
+        }
+
         /// <summary>
         /// 动态倍率来源。默认取技能运行时自身；<c>actionParam=source:one-cell</c> 时，
         /// 取餐桌上全部实际占 1 格的食物。倍率在行为执行前统一快照，避免目标包含来源时边加边读。
@@ -911,6 +994,56 @@ namespace GourmetProject.Gameplay.Scoring
             }
 
             return false;
+        }
+    }
+
+    /// <summary>在一次成功甜蜜传递中，以 Buff 所有者为来源生成独立 trigger 明细与倍率结果。</summary>
+    internal sealed class SweetTransferBuffTriggerEffect : IScoreEffect
+    {
+        private readonly SweetTransferBuffRegistration _registration;
+        private readonly DishInstance _transferSource;
+        private readonly IReadOnlyList<DishInstance> _targets;
+        private readonly float _value;
+        private readonly bool _applyMultiplier;
+
+        public SweetTransferBuffTriggerEffect(
+            SweetTransferBuffRegistration registration,
+            DishInstance transferSource,
+            IReadOnlyList<DishInstance> targets,
+            float value,
+            bool applyMultiplier)
+        {
+            _registration = registration;
+            _transferSource = transferSource;
+            _targets = targets ?? Array.Empty<DishInstance>();
+            _value = value;
+            _applyMultiplier = applyMultiplier;
+        }
+
+        public void Apply(ScoreContext ctx)
+        {
+            if (ctx == null || _registration == null || _transferSource == null)
+            {
+                return;
+            }
+
+            ctx.RecordSweetTransferBuffTriggered(_registration, _transferSource, _value, _targets);
+            if (!_applyMultiplier)
+            {
+                return;
+            }
+
+            foreach (DishInstance target in _targets)
+            {
+                if (_registration.Rule.ActionType == SkillActionType.AddMultFlat)
+                {
+                    ctx.AddMultFlatTo(target, _value);
+                }
+                else
+                {
+                    ctx.MultiplyTo(target, _value);
+                }
+            }
         }
     }
 }

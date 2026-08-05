@@ -168,7 +168,7 @@
     "condMode": 2,
     "condParam": "",
     "actionType": 5,
-    "actionScope": 19,
+    "actionScope": 15,
     "actionCount": 1,
     "actionValue": [
       0
@@ -268,7 +268,7 @@
     "condMode": 2,
     "condParam": "",
     "actionType": 5,
-    "actionScope": 18,
+    "actionScope": 15,
     "actionCount": 2,
     "actionValue": [
       0
@@ -308,7 +308,7 @@
     "condMode": 2,
     "condParam": "",
     "actionType": 5,
-    "actionScope": 12,
+    "actionScope": 15,
     "actionCount": 1,
     "actionValue": [
       0
@@ -468,7 +468,7 @@
     "condMode": 2,
     "condParam": "",
     "actionType": 5,
-    "actionScope": 19,
+    "actionScope": 15,
     "actionCount": 1,
     "actionValue": [
       0
@@ -587,7 +587,7 @@
     "id": "sk_gummy_1",
     "trigger": 0,
     "condType": 0,
-    "condScope": 13,
+    "condScope": 14,
     "condUnit": 0,
     "condMode": 2,
     "condParam": "",
@@ -598,7 +598,7 @@
       1.5
     ],
     "actionParam": [
-      "when:transfer"
+      "when:transfer;resultscope:ColumnAndSelf"
     ],
     "isPassive": false,
     "signed": false,
@@ -634,7 +634,7 @@
     "condMode": 2,
     "condParam": "",
     "actionType": 5,
-    "actionScope": 12,
+    "actionScope": 15,
     "actionCount": 1,
     "actionValue": [
       0
@@ -864,7 +864,7 @@
     "condMode": 2,
     "condParam": "",
     "actionType": 5,
-    "actionScope": 11,
+    "actionScope": 15,
     "actionCount": 3,
     "actionValue": [
       0
@@ -948,7 +948,7 @@
     "condMode": 2,
     "condParam": "",
     "actionType": 5,
-    "actionScope": 19,
+    "actionScope": 15,
     "actionCount": 1,
     "actionValue": [
       0
@@ -1058,7 +1058,7 @@
       2
     ],
     "actionParam": [
-      "modifier:add-targets;skilltype:TransferSkills"
+      "modifier:add-targets"
     ],
     "isPassive": false,
     "signed": false,

@@ -8,6 +8,7 @@ using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
 using GourmetProject.Runtime;
+using GourmetProject.Runtime.UI;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -225,6 +226,19 @@ namespace GourmetProject.Game.Presentation.Battle
             return false;
         }
 
+        public bool TryGetDishGrabVisual(int dishId, out DishGrabVisualSnapshot snapshot)
+        {
+            if (_dishViewsById.TryGetValue(dishId, out DishPieceView view)
+                && view != null
+                && view.TryCaptureGrabVisual(WorldCamera, out snapshot))
+            {
+                return true;
+            }
+
+            snapshot = default;
+            return false;
+        }
+
         public void RevealDishDebuffVisual(int dishId)
         {
             if (_dishViewsById.TryGetValue(dishId, out DishPieceView view) && view != null)
@@ -247,6 +261,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             EnsureTableEdit();
             EnsureScopeHighlights();
+            UIButtonSoundFeedback.Install(transform);
             if (!DoodleEnabled && _doodle != null)
             {
                 _doodle.Clear();
@@ -1424,6 +1439,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 {
                     button = Instantiate(_comButtonPrefab, _pendingDishActionsRoot);
                     button.gameObject.name = $"PendingDishAction_{dishId}";
+                    UIButtonSoundFeedback.Install(button);
                     button.onClick.RemoveAllListeners();
                     button.onClick.AddListener(() =>
                     {
@@ -1536,6 +1552,41 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public PendingDishConfirmResult ConfirmPendingDishForPresentation(int dishId)
             => _session?.ConfirmPendingDish(dishId) ?? PendingDishConfirmResult.Fail();
+
+        public async Awaitable CommitPendingDishVisualStateAsync(
+            PendingDishConfirmResult result,
+            CancellationToken cancellationToken)
+        {
+            if (!result.Success || result.Dish == null)
+            {
+                RefreshPendingDishActionButtons();
+                return;
+            }
+
+            int dishId = result.Dish.Id;
+            if (_dishViewsById.TryGetValue(dishId, out DishPieceView piece) && piece != null)
+            {
+                piece.SetMoveCallbacks(null, null, null);
+                piece.SetPlacementGlow(false, false);
+                piece.SetGhost(false);
+                piece.SetClickEnabled(false);
+            }
+
+            // 数据层已经确认上菜；先撤掉“上菜/确认”按钮并切成锁定菜表现，
+            // 后续被动 Cue 与 Boss 手势才能建立在正确的视觉状态上。
+            RefreshPendingDishActionButtons();
+            _boardView?.Sync();
+            RefreshDishValueBadges();
+            SetMessage(result.ActionKind == PendingDishActionKind.Serve
+                ? $"上菜：{result.Dish.Def.Name}"
+                : $"已确认摆放：{result.Dish.Def.Name}");
+            _stateChanged?.Invoke();
+
+            if (result.ActionKind == PendingDishActionKind.Serve && piece != null)
+            {
+                await piece.PlayServeLandImpactFeedbackAsync(cancellationToken);
+            }
+        }
 
         public void FinalizePendingDishPresentation(
             PendingDishConfirmResult result,
@@ -1732,6 +1783,7 @@ namespace GourmetProject.Game.Presentation.Battle
             piece.SetDragPresentation(true);
             BeginDragPointerTracking(ScreenToWorld(screenPoint));
             UpdateServingOutletDrag(screenPoint);
+            GameApp.Audio.PlayPickup();
         }
 
         public void UpdateServingOutletDrag(Vector2 screenPoint)
@@ -1825,6 +1877,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             RebuildPlacedPieces();
             _boardView.Sync();
+            GameApp.Audio.PlayPlacement();
             PlayDropDust(placement, footprintSize, releaseVelocity);
             PlayScopeAffectedDishFeedback(affectedDishIds);
             SetMessage($"已摆放：{result.Dish.Def.Name}，点击下方“上菜”按钮确认。");
@@ -2016,6 +2069,7 @@ namespace GourmetProject.Game.Presentation.Battle
             SetPendingDishActionButtonVisible(dish.Id, false);
             BeginDragPointerTracking(ScreenToWorld(screenPoint));
             UpdateMovableDishDrag(screenPoint);
+            GameApp.Audio.PlayPickup();
         }
 
         private void UpdateMovableDishDrag(Vector2 screenPoint)
@@ -2118,6 +2172,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _boardView.Sync();
             if (placedAtHoveredPosition)
             {
+                GameApp.Audio.PlayPlacement();
                 PlayDropDust(placement, footprintSize, releaseVelocity);
                 PlayScopeAffectedDishFeedback(affectedDishIds);
                 FlashServeScopeHighlights(dish, GetPresentationToken());
@@ -2152,6 +2207,7 @@ namespace GourmetProject.Game.Presentation.Battle
             piece.SetDragPresentation(true);
             BeginDragPointerTracking(ScreenToWorld(screenPoint));
             UpdateTemporaryAreaDishDrag(screenPoint);
+            GameApp.Audio.PlayPickup();
         }
 
         private bool IsTemporaryAreaPointerHitAccepted(
@@ -2262,6 +2318,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _boardView.Sync();
             LayoutTemporaryAreaPieces(animated: true);
             RefreshTemporaryAreaVisibility(animated: true);
+            GameApp.Audio.PlayPlacement();
             PlayDropDust(placement, footprintSize, releaseVelocity);
             FlashServeScopeHighlights(dish, GetPresentationToken());
             PendingDishPlacement pending = _session.FindPendingDishPlacement(dish.Id);
@@ -2859,15 +2916,6 @@ namespace GourmetProject.Game.Presentation.Battle
             // 食物挂在 BoardRoot 下，用局部坐标贴格（与餐桌共享局部帧）。
             piece.transform.localPosition = _boardView.Mapper.CellCenterLocal(dish.Placement.Origin);
             piece.BuildPlaced(dish, _spriteProvider.Get(dish.Def), _cellSize, _cellSize + Gap, _dishClicked);
-            PendingDishPlacement pending = _session?.FindPendingDishPlacement(dish.Id);
-            bool suppressVeganReveal = pending != null
-                && pending.IsOnDiningTable
-                && dish.ExcludedFromScore
-                && string.Equals(
-                    _session?.BossDebuffPresentation?.DebuffId,
-                    "debuff_vegan_meal",
-                    StringComparison.Ordinal);
-            piece.SetDebuffVisualSuppressed(suppressVeganReveal);
             if (_bossPresentationBusy)
             {
                 piece.SetClickEnabled(false);

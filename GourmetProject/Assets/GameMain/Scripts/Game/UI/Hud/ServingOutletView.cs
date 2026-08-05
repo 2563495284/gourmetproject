@@ -2,6 +2,7 @@ using System;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Gameplay.Battle;
+using GourmetProject.Runtime.UI;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -117,6 +118,9 @@ namespace GourmetProject.Game.UI.Hud
             Action<Vector2> drag,
             Func<Vector2, bool> endDrag)
         {
+            UIButtonSoundFeedback.Install(_recipeInfoButton);
+            UIButtonSoundFeedback.Install(_serveButton);
+
             _beginDrag = beginDrag;
             _drag = drag;
             _endDrag = endDrag;

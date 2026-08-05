@@ -35,6 +35,10 @@ namespace GourmetProject.Editor
                 "Assets/GameMain/Content/Art/Materials",
                 "Assets/GameMain/Content/Resources/Materials"),
             new ResourceDefinition(
+                "audio/sounds",
+                "t:AudioClip",
+                "Assets/GameMain/Content/Resources/Sounds"),
+            new ResourceDefinition(
                 "prefabs/battle",
                 "t:Prefab",
                 "Assets/GameMain/Content/Prefabs/Battle"),

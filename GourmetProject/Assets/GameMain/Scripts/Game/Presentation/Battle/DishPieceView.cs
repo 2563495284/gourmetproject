@@ -9,6 +9,7 @@ using UnityEngine;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.Visual;
+using TMPro;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
@@ -30,6 +31,36 @@ namespace GourmetProject.Game.Presentation.Battle
         TriggerSweetTransferActivatorPulse = 13,
         SweetTransferResult = 14,
         SweetTransferExecutor = 15,
+        SweetTransferFailed = 16,
+    }
+
+    public readonly struct DishGrabVisualSnapshot
+    {
+        public DishGrabVisualSnapshot(
+            Sprite sprite,
+            Color color,
+            Vector2 screenCenter,
+            Vector2 screenSize,
+            float screenRotationDegrees,
+            bool flipX,
+            bool flipY)
+        {
+            Sprite = sprite;
+            Color = color;
+            ScreenCenter = screenCenter;
+            ScreenSize = screenSize;
+            ScreenRotationDegrees = screenRotationDegrees;
+            FlipX = flipX;
+            FlipY = flipY;
+        }
+
+        public Sprite Sprite { get; }
+        public Color Color { get; }
+        public Vector2 ScreenCenter { get; }
+        public Vector2 ScreenSize { get; }
+        public float ScreenRotationDegrees { get; }
+        public bool FlipX { get; }
+        public bool FlipY { get; }
     }
 
     /// <summary>
@@ -187,6 +218,9 @@ namespace GourmetProject.Game.Presentation.Battle
         private bool _sweetTransferSourceActive;
         private bool _sweetTransferExecutorActive;
         private bool _triggerSweetTransferActivatorActive;
+        private Transform _sweetTransferBuffMarkerRoot;
+        private int _gummyBuffLayers;
+        private int _marshmallowBuffLayers;
         private readonly Dictionary<SpriteRenderer, Color> _activeItemDimColors = new Dictionary<SpriteRenderer, Color>();
         private readonly Dictionary<SpriteRenderer, Color> _settlementFocusColors = new Dictionary<SpriteRenderer, Color>();
         private MaterialPropertyBlock _activeItemTransformBlock;
@@ -205,6 +239,79 @@ namespace GourmetProject.Game.Presentation.Battle
             _dishValueBadgePresenter != null
                 ? _dishValueBadgePresenter.WorldPosition
                 : transform.position;
+
+        internal void AddSweetTransferBuffMarker(SkillActionType actionType)
+        {
+            if (actionType == SkillActionType.TriggerSweetTransfer)
+            {
+                _marshmallowBuffLayers++;
+            }
+            else
+            {
+                _gummyBuffLayers++;
+            }
+
+            RebuildSweetTransferBuffMarkers();
+        }
+
+        internal void ClearSweetTransferBuffMarkers()
+        {
+            _gummyBuffLayers = 0;
+            _marshmallowBuffLayers = 0;
+            if (_sweetTransferBuffMarkerRoot != null)
+            {
+                Destroy(_sweetTransferBuffMarkerRoot.gameObject);
+                _sweetTransferBuffMarkerRoot = null;
+            }
+        }
+
+        private void RebuildSweetTransferBuffMarkers()
+        {
+            if (_sweetTransferBuffMarkerRoot != null)
+            {
+                Destroy(_sweetTransferBuffMarkerRoot.gameObject);
+            }
+
+            GameObject root = new("SweetTransferBuffMarkers");
+            root.transform.SetParent(transform, false);
+            Bounds bounds = WorldBounds;
+            Vector3 worldAnchor = new(
+                bounds.center.x,
+                bounds.max.y + Mathf.Max(0.16f, _cellSize * 0.13f),
+                transform.position.z - 0.03f);
+            root.transform.localPosition = transform.InverseTransformPoint(worldAnchor);
+            _sweetTransferBuffMarkerRoot = root.transform;
+
+            float x = _gummyBuffLayers > 0 && _marshmallowBuffLayers > 0 ? -0.28f : 0f;
+            if (_gummyBuffLayers > 0)
+            {
+                string suffix = _gummyBuffLayers > 1 ? $" ×{_gummyBuffLayers}" : string.Empty;
+                CreateSweetTransferBuffText("GummyBuff", $"×1.5{suffix}", x, new Color32(255, 84, 178, 255));
+                x += 0.56f;
+            }
+
+            if (_marshmallowBuffLayers > 0)
+            {
+                string suffix = _marshmallowBuffLayers > 1 ? $" ×{_marshmallowBuffLayers}" : string.Empty;
+                CreateSweetTransferBuffText("MarshmallowBuff", $"+2{suffix}", x, new Color32(54, 224, 242, 255));
+            }
+        }
+
+        private void CreateSweetTransferBuffText(string name, string text, float localX, Color color)
+        {
+            TextMeshPro mesh = SettlementStageView.CreateText(
+                _sweetTransferBuffMarkerRoot,
+                name,
+                text,
+                0f,
+                3,
+                0.18f,
+                8);
+            mesh.transform.localPosition += Vector3.right * localX;
+            mesh.color = color;
+            mesh.outlineColor = new Color32(44, 22, 52, 230);
+            mesh.outlineWidth = 0.18f;
+        }
 
         public void BuildPlaced(DishInstance instance, Sprite sprite, float cellSize, float pitch, Action<DishInstance> clicked)
         {
@@ -339,6 +446,42 @@ namespace GourmetProject.Game.Presentation.Battle
 
                 return new Bounds(transform.position, Vector3.one);
             }
+        }
+
+        public bool TryCaptureGrabVisual(Camera camera, out DishGrabVisualSnapshot snapshot)
+        {
+            snapshot = default;
+            EnsureRefs();
+            if (camera == null || _spriteRenderer == null || _spriteRenderer.sprite == null)
+            {
+                return false;
+            }
+
+            Bounds spriteBounds = _spriteRenderer.sprite.bounds;
+            Transform rendererTransform = _spriteRenderer.transform;
+            Vector3 localCenter = spriteBounds.center;
+            Vector2 center = camera.WorldToScreenPoint(rendererTransform.TransformPoint(localCenter));
+            Vector2 right = camera.WorldToScreenPoint(rendererTransform.TransformPoint(
+                localCenter + Vector3.right * spriteBounds.extents.x));
+            Vector2 up = camera.WorldToScreenPoint(rendererTransform.TransformPoint(
+                localCenter + Vector3.up * spriteBounds.extents.y));
+            Vector2 rightDelta = right - center;
+            Vector2 upDelta = up - center;
+            Vector2 size = new Vector2(rightDelta.magnitude * 2f, upDelta.magnitude * 2f);
+            if (size.x <= 0.5f || size.y <= 0.5f)
+            {
+                return false;
+            }
+
+            snapshot = new DishGrabVisualSnapshot(
+                _spriteRenderer.sprite,
+                _spriteRenderer.color,
+                center,
+                size,
+                Mathf.Atan2(rightDelta.y, rightDelta.x) * Mathf.Rad2Deg,
+                _spriteRenderer.flipX,
+                _spriteRenderer.flipY);
+            return true;
         }
 
         public void SetDebuffVisualSuppressed(bool suppressed)
@@ -1271,6 +1414,24 @@ namespace GourmetProject.Game.Presentation.Battle
                         glowInnerAlpha: 0f,
                         glowOuterAlpha: 0f,
                         glowIntensity: 0f);
+
+                case SettlementDishFeedbackKind.SweetTransferFailed:
+                    return new SettlementFeedbackProfile(
+                        duration: 0.34f,
+                        anticipationScale: 1.06f,
+                        peakScale: new Vector2(0.91f, 0.96f),
+                        liftInCells: -0.015f,
+                        sideInCells: 0.075f,
+                        rotationDegrees: 5f,
+                        rotationCycles: 2.5f,
+                        pulseCount: 1f,
+                        glowColor: new Color(1f, 0.28f, 0.52f, 0.42f),
+                        glowWidth: 0.055f,
+                        glowInflate: 1.035f,
+                        glowFillAlpha: 0.015f,
+                        glowPulseSpeed: 6f,
+                        glowPulseAmplitude: 0.06f,
+                        anticipationFraction: 0.20f);
 
                 case SettlementDishFeedbackKind.CopiedSkillTriggered:
                     return new SettlementFeedbackProfile(
@@ -2275,6 +2436,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void OnDisable()
         {
+            ClearSweetTransferBuffMarkers();
             ClearSettlementFocus();
             SetActiveItemTargetDimmed(false);
             if (_activeItemFlavorSequence != null)

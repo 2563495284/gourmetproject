@@ -83,7 +83,15 @@ namespace GourmetProject.Game.UI.Meta
                 _button.interactable = !resolved;
             }
 
-            _canvasGroup ??= GetComponent<CanvasGroup>() ?? gameObject.AddComponent<CanvasGroup>();
+            if (_canvasGroup == null)
+            {
+                _canvasGroup = GetComponent<CanvasGroup>();
+                if (_canvasGroup == null)
+                {
+                    _canvasGroup = gameObject.AddComponent<CanvasGroup>();
+                }
+            }
+
             _canvasGroup.alpha = resolved ? 0.45f : 1f;
             _canvasGroup.interactable = !resolved;
             _canvasGroup.blocksRaycasts = !resolved;

@@ -691,6 +691,9 @@ namespace GourmetProject.Gameplay.Battle
             List<string> skills = ComposeServeSkills(servedDish, entry);
             List<string> flavors = ComposeServeFlavors(servedDish, entry);
             var instance = new DishInstance(_nextInstanceId++, servedDish, initialPlacement, skills, flavors);
+            // Boss recipe-entry state must be visible as soon as the dish reaches the outlet,
+            // so outlet/preplacement tips describe the dish that will actually be served.
+            ApplyPreparedEntryFlags(instance, entry);
             instance.SetSourceRecipeIndex(slotIndex, entry.SourceDishIndex);
             PreparedServe = new PreparedServeDish(
                 slotIndex,
@@ -819,8 +822,7 @@ namespace GourmetProject.Gameplay.Battle
             PreparedServe = null;
             DishInstance instance = prepared.Dish;
             instance.Relocate(placement);
-            RecipeSlotEntry entry = prepared.Entry;
-            ApplyEntryFlags(instance, entry);
+            ApplyPlacementEntryModifiers(instance, prepared.Entry);
             DiningTable.Place(instance);
             _pendingDishPlacements[instance.Id] = new PendingDishPlacement(
                 instance,
@@ -1107,9 +1109,9 @@ namespace GourmetProject.Gameplay.Battle
             return steps;
         }
 
-        private void ApplyEntryFlags(DishInstance instance, RecipeSlotEntry entry)
+        private static void ApplyPreparedEntryFlags(DishInstance instance, RecipeSlotEntry entry)
         {
-            if (entry == null)
+            if (instance == null || entry == null)
             {
                 return;
             }
@@ -1122,6 +1124,14 @@ namespace GourmetProject.Gameplay.Battle
             if (entry.ExcludeFromScore)
             {
                 instance.ExcludeFromScore();
+            }
+        }
+
+        private static void ApplyPlacementEntryModifiers(DishInstance instance, RecipeSlotEntry entry)
+        {
+            if (instance == null || entry == null)
+            {
+                return;
             }
 
             if (entry.ScoreMultiplier > 0f && Math.Abs(entry.ScoreMultiplier - 1f) > 0.0001f)

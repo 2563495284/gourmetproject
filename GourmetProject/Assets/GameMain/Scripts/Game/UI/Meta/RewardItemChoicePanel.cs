@@ -91,6 +91,11 @@ namespace GourmetProject.Game.UI.Meta
 
             ConfigureActionButton(group?.RequiredChoiceCount > 1);
             RefreshPresentation();
+            Canvas.ForceUpdateCanvases();
+            if (_cardsRoot != null)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(_cardsRoot);
+            }
         }
 
         public void Close()

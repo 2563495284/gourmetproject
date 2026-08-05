@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://m3wplhjc23mw"
+path="res://.godot/imported/Check-In with Drinks and Slices - Start.ogg-18ad779709ec513a0410d34635bdb6b2.oggvorbisstr"
+
+[deps]
+
+source_file="res://Assets/Sound/BGM/Check-In with Drinks and Slices - Start.ogg"
+dest_files=["res://.godot/imported/Check-In with Drinks and Slices - Start.ogg-18ad779709ec513a0410d34635bdb6b2.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

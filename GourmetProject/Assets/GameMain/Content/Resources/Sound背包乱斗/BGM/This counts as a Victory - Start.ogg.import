@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://daf0cwnm6pc1c"
+path="res://.godot/imported/This counts as a Victory - Start.ogg-3dabe7da48a91371c27e3372783b6bd3.oggvorbisstr"
+
+[deps]
+
+source_file="res://Assets/Sound/BGM/This counts as a Victory - Start.ogg"
+dest_files=["res://.godot/imported/This counts as a Victory - Start.ogg-3dabe7da48a91371c27e3372783b6bd3.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://qtm4os87835d"
+path="res://.godot/imported/Who Brought Bananas To A Sword Fight - Start.ogg-9ce8b6a378e5cc265620469cff4b8ada.oggvorbisstr"
+
+[deps]
+
+source_file="res://Assets/Sound/BGM/Who Brought Bananas To A Sword Fight - Start.ogg"
+dest_files=["res://.godot/imported/Who Brought Bananas To A Sword Fight - Start.ogg-9ce8b6a378e5cc265620469cff4b8ada.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -1,5 +1,6 @@
 using System;
 using GourmetProject.Core.Diagnostics;
+using GourmetProject.Runtime.Audio;
 using UnityEngine;
 using UnityGameFramework.Runtime;
 using Log = GourmetProject.Core.Diagnostics.Log;
@@ -18,6 +19,7 @@ namespace GourmetProject.Runtime.Settings
         private const int DefaultResolutionHeight = 1080;
 
         private readonly SettingComponent _setting;
+        private readonly SoundComponent _sound;
 
         // 通用设置键。
         public const string KeyMasterVolume = "Audio.MasterVolume";
@@ -37,9 +39,10 @@ namespace GourmetProject.Runtime.Settings
         // 游戏演出偏好键。
         public const string KeySettlementAcceleration = "Gameplay.SettlementAcceleration";
 
-        public SettingsService(SettingComponent setting)
+        public SettingsService(SettingComponent setting, SoundComponent sound)
         {
             _setting = setting ?? throw new ArgumentNullException(nameof(setting));
+            _sound = sound ?? throw new ArgumentNullException(nameof(sound));
         }
 
         public float MasterVolume
@@ -154,10 +157,28 @@ namespace GourmetProject.Runtime.Settings
                 Tag);
         }
 
-        /// <summary>把所有可在运行时即时生效的设置统一应用一次（目前为画面偏好）。</summary>
+        /// <summary>把当前音量和静音偏好应用到 GameFramework 声音组。</summary>
+        public void ApplyAudioSettings()
+        {
+            float master = Muted ? 0f : MasterVolume;
+            var music = _sound.GetSoundGroup(AudioService.GroupMusic);
+            if (music != null)
+            {
+                music.Volume = master * MusicVolume;
+            }
+
+            var sound = _sound.GetSoundGroup(AudioService.GroupSound);
+            if (sound != null)
+            {
+                sound.Volume = master * SoundVolume;
+            }
+        }
+
+        /// <summary>把所有可在运行时即时生效的设置统一应用一次。</summary>
         public void ApplyAll()
         {
             ApplyDisplaySettings();
+            ApplyAudioSettings();
         }
 
         // 透传访问，便于玩法层存放自定义偏好而不必再包一层。

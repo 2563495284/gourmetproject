@@ -28,10 +28,14 @@ namespace GourmetProject.Runtime.UI
                 rect.localScale = Vector3.one;
                 rect.localPosition = Vector3.zero;
             }
+
+            UIButtonSoundFeedback.Install(CachedTransform);
         }
 
         protected override void OnOpen(object userData)
         {
+            UIButtonSoundFeedback.Install(CachedTransform);
+
             // DefaultUIGroupHelper does not map GameFramework's logical form depth
             // to the uGUI hierarchy. A form restored from the object pool therefore
             // keeps its old sibling index and can render below forms created later.

@@ -1,6 +1,7 @@
 using System;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Gameplay.Battle;
+using GourmetProject.Runtime.UI;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -20,6 +21,10 @@ namespace GourmetProject.Game.UI.Battle.View
 
         public void Bind(Action onEat, Action onDoodleClear, Action onDoodleToggle)
         {
+            UIButtonSoundFeedback.Install(_eatButton);
+            UIButtonSoundFeedback.Install(_doodleClearButton);
+            UIButtonSoundFeedback.Install(_doodleToggleButton);
+
             Wire(_eatButton, onEat);
 
             // 涂鸦功能与回调暂时保留，仅屏蔽两个入口按钮；需要恢复时重新启用并取消下方注释。

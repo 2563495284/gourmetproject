@@ -69,6 +69,27 @@ namespace GourmetProject.Runtime
         public static SettingComponent Setting => GFEntry.GetComponent<SettingComponent>();
 
         /// <summary>
+        /// 清理禁用域重载时跨运行保留的项目服务引用。
+        /// </summary>
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+        {
+            _servicesInitialized = false;
+
+            Random = null;
+            Save = null;
+            Settings = null;
+            Config = null;
+
+            _assets = null;
+            _audio = null;
+            _scenes = null;
+            _l10n = null;
+
+            ServiceLocator.Instance.Clear();
+        }
+
+        /// <summary>
         /// 初始化与玩法无关的基础服务。幂等：重复调用只生效一次。
         /// 由 ProcedureLaunch 在 GameFramework 启动后调用。
         /// </summary>
@@ -92,7 +113,8 @@ namespace GourmetProject.Runtime
             };
             Save = new JsonSaveService(System.IO.Path.Combine(Application.persistentDataPath, "saves"), saveOptions);
 
-            Settings = new SettingsService(Setting);
+            Settings = new SettingsService(Setting, Sound);
+            _audio = new AudioService(Sound, Settings.ApplyAudioSettings);
             Config = new global::GourmetProject.Config.ConfigService();
             Settings.ApplyAll();
 

@@ -26,6 +26,19 @@ namespace UnityGameFramework.Runtime
         internal const int GameFrameworkSceneId = 0;
 
         /// <summary>
+        /// 重置静态组件注册表。
+        /// </summary>
+        /// <remarks>
+        /// 禁用域重载时，Unity 会在两次运行模式之间保留静态字段，但场景中的组件仍会被销毁。
+        /// 在子系统注册阶段清空旧引用，确保新一轮运行注册并返回当前场景中的组件。
+        /// </remarks>
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetComponents()
+        {
+            s_GameFrameworkComponents.Clear();
+        }
+
+        /// <summary>
         /// 获取游戏框架组件。
         /// </summary>
         /// <typeparam name="T">要获取的游戏框架组件类型。</typeparam>

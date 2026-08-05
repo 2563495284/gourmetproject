@@ -10,6 +10,17 @@ namespace GourmetProject.Tests.PlayMode
 {
     public sealed class BossDebuffPresentationPlayModeTests
     {
+        [Test]
+        public void Presentation_UsesDistinctPointAndGrabHandSprites()
+        {
+            Sprite pointHand = Resources.Load<Sprite>("Sprites/UI/serve_point_hand");
+            Sprite grabHand = Resources.Load<Sprite>("Sprites/UI/serve_hand");
+
+            Assert.That(pointHand, Is.Not.Null);
+            Assert.That(grabHand, Is.Not.Null);
+            Assert.That(pointHand, Is.Not.SameAs(grabHand));
+        }
+
         [UnityTest]
         public IEnumerator PresentationLock_ReleasesAfterSequenceCompletes()
         {

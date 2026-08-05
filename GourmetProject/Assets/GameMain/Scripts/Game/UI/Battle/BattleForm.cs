@@ -159,6 +159,7 @@ namespace GourmetProject.Game.UI.Battle
         private ActiveItemUseCoordinator _activeItemUse;
         private int _shopItemFlyInFlight;
         private readonly HashSet<ShopPurchaseFlyView> _activeShopPurchaseFlys = new();
+        private int? _battleMusicSerialId;
         private cfg.BossDebuff _currentBossDebuff;
         private BossDebuffPresentationView _bossPresentation;
         private BossDialogueShuffleBag _bossDialogueBag;
@@ -268,6 +269,8 @@ namespace GourmetProject.Game.UI.Battle
 
             Active = this;
             _discardSettlementCallbacks = false;
+            _run.GoldChanged -= OnGoldChanged;
+            _run.GoldChanged += OnGoldChanged;
             // 尽早绑定场景里的经营挑战世界单例：否则首次 StartBattle 之前 _world 为 null，
             // BeginWeek 里的 HideBattleWorld 会变成空操作，导致进场景默认态残留食物专属按钮。
             _world = BattleWorldController.Instance;
@@ -288,6 +291,11 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             _discardSettlementCallbacks = true;
+            if (_run != null)
+            {
+                _run.GoldChanged -= OnGoldChanged;
+            }
+            StopBattleMusic(0.15f);
             CancelBossPresentation();
             ResetBossBattlePresentation();
             CancelActiveShopPurchaseAnimations();
@@ -2666,6 +2674,8 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
+            StartBattleMusic();
+
             _world.SetTableArea(_boardArea);
             bool runOpeningPresentation = _activeBattleIsBoss
                 && bossPlan != null
@@ -2786,7 +2796,6 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            _world.TryGetDishScreenPoint(dishId, out Vector2 dishPoint);
             PendingDishConfirmResult result = _world.ConfirmPendingDishForPresentation(dishId);
             if (!result.Success)
             {
@@ -2794,34 +2803,43 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            string debuffId = _session?.BossDebuffPresentation?.DebuffId ?? string.Empty;
-            if (result.ActionKind == PendingDishActionKind.Serve)
+            try
             {
-                if (string.Equals(debuffId, "debuff_vegan_meal", StringComparison.Ordinal)
-                    && result.Dish?.ExcludedFromScore == true)
+                // Commit the dish's served appearance before any OnServe cue or boss reveal.
+                // Data-side OnServe hooks have already resolved inside ConfirmPendingDishForPresentation.
+                await _world.CommitPendingDishVisualStateAsync(result, token);
+
+                string debuffId = _session?.BossDebuffPresentation?.DebuffId ?? string.Empty;
+                if (result.ActionKind == PendingDishActionKind.Serve)
                 {
-                    await _bossPresentation.PointAsync(dishPoint, token, 0.12f);
-                    _world.RevealDishDebuffVisual(result.Dish.Id);
-                    await ShowBossDialogueAsync("我不喜欢", token);
-                }
-                else if (string.Equals(debuffId, "debuff_light_meal", StringComparison.Ordinal)
-                    && result.Dish?.SkillsDisabled == true)
-                {
-                    await _bossPresentation.PointAsync(dishPoint, token, 0.12f);
-                    await _bossPresentation.ShowCueAsync(dishPoint, "技能失效", token);
-                    await ShowBossDialogueAsync("太花里胡哨了", token);
-                }
-                else if (string.Equals(debuffId, "debuff_appetizer", StringComparison.Ordinal)
-                    && result.RemovedAfterServe)
-                {
-                    await _bossPresentation.GrabAsync(dishPoint, token);
-                    _world.SetDishPresentationVisible(result.Dish.Id, false);
-                    await ShowBossDialogueAsync("我先吃一点", token);
+                    await _world.PlayPendingServeTriggerCuesAsync(token);
+
+                    if (string.Equals(debuffId, "debuff_appetizer", StringComparison.Ordinal)
+                        && result.RemovedAfterServe)
+                    {
+                        if (_world.TryGetDishGrabVisual(result.Dish.Id, out DishGrabVisualSnapshot dishVisual))
+                        {
+                            await _bossPresentation.GrabDishAsync(
+                                dishVisual,
+                                () => _world.SetDishPresentationVisible(result.Dish.Id, false),
+                                token);
+                        }
+                        else
+                        {
+                            _world.SetDishPresentationVisible(result.Dish.Id, false);
+                        }
+
+                        await ShowBossDialogueAsync("我先吃一点", token);
+                    }
                 }
             }
+            finally
+            {
+                // Confirmation already changed gameplay state. Always reconcile the world view,
+                // even when page closure cancels a hand/cue tween midway through the sequence.
+                _world?.FinalizePendingDishPresentation(result, prepareNextDish: false);
+            }
 
-            await _world.PlayPendingServeTriggerCuesAsync(token);
-            _world.FinalizePendingDishPresentation(result, prepareNextDish: false);
             if (prepareNextDish)
             {
                 _world.EnsureNextDishPrepared(0, allowDuringBossPresentation: true);
@@ -3543,6 +3561,8 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
+            StopBattleMusic(0.8f);
+
             // 演出走完：清空渐进揭示态，hover 恢复展示完整结算结果。
             _settlementReveal = null;
             if (_pendingSettlementCakeLayers.HasValue)
@@ -3592,6 +3612,31 @@ namespace GourmetProject.Game.UI.Battle
             int finalHappyCakeLayers = settledSession?.HappyCakeLayers ?? 0;
             bool isWin = settledSession != null && settledSession.IsWin;
             _loop?.OnBattleSettled(result, isWin, finalHappyCakeLayers);
+        }
+
+        private void OnGoldChanged(int before, int after)
+        {
+            if (after > before)
+            {
+                GameApp.Audio.PlayRandomCoin();
+            }
+        }
+
+        private void StartBattleMusic()
+        {
+            StopBattleMusic(0.1f);
+            _battleMusicSerialId = GameApp.Audio.PlayRandomBattleMusic();
+        }
+
+        private void StopBattleMusic(float fadeOutSeconds)
+        {
+            if (!_battleMusicSerialId.HasValue)
+            {
+                return;
+            }
+
+            GameApp.Audio.Stop(_battleMusicSerialId.Value, fadeOutSeconds);
+            _battleMusicSerialId = null;
         }
 
         private void OnSettlementPassiveTriggered(string itemId)

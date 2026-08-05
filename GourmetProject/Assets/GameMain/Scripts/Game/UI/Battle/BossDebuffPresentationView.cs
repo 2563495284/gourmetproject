@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using DG.Tweening;
+using GourmetProject.Game.Presentation.Battle;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -22,6 +23,10 @@ namespace GourmetProject.Game.UI.Battle
         private TMP_Text _dialogueText;
         private RectTransform _hand;
         private CanvasGroup _handGroup;
+        private Sprite _pointHandSprite;
+        private Sprite _grabHandSprite;
+        private RectTransform _grabbedDish;
+        private CanvasGroup _grabbedDishGroup;
         private RectTransform _cue;
         private CanvasGroup _cueGroup;
         private TMP_Text _cueText;
@@ -73,7 +78,13 @@ namespace GourmetProject.Game.UI.Battle
             _dialogueText.rectTransform.offsetMax = new Vector2(-58f, -82f);
             _dialogueText.alignment = TextAlignmentOptions.Center;
 
-            _hand = CreateImage("BossHand", Resources.Load<Sprite>("Sprites/UI/serve_hand"));
+            _pointHandSprite = Resources.Load<Sprite>("Sprites/UI/serve_point_hand");
+            _grabHandSprite = Resources.Load<Sprite>("Sprites/UI/serve_hand");
+            _grabbedDish = CreateImage("BossGrabbedDish", null);
+            _grabbedDishGroup = _grabbedDish.gameObject.AddComponent<CanvasGroup>();
+            _grabbedDishGroup.alpha = 0f;
+
+            _hand = CreateImage("BossHand", _pointHandSprite ?? _grabHandSprite);
             _hand.sizeDelta = new Vector2(190f, 190f);
             _hand.pivot = new Vector2(0.5f, 0.08f);
             _handGroup = _hand.gameObject.AddComponent<CanvasGroup>();
@@ -168,38 +179,73 @@ namespace GourmetProject.Game.UI.Battle
         public async Awaitable PointAsync(Vector2 screenPoint, CancellationToken token, float hold = 0.38f)
         {
             EnsureBuilt();
-            Vector2 target = ScreenToLocal(screenPoint) + new Vector2(0f, 48f);
-            _hand.anchoredPosition = target + new Vector2(0f, 150f);
-            _hand.localRotation = Quaternion.Euler(0f, 0f, -8f);
-            _handGroup.alpha = 0f;
-            Sequence sequence = DOTween.Sequence()
-                .SetUpdate(true)
-                .SetLink(_hand.gameObject)
-                .Append(_handGroup.DOFade(1f, 0.12f))
-                .Join(_hand.DOAnchorPos(target, 0.28f).SetEase(Ease.OutCubic))
-                .Append(_hand.DOPunchAnchorPos(new Vector2(0f, -18f), 0.24f, 4, 0.3f))
-                .AppendInterval(Mathf.Max(0f, hold))
-                .Append(_handGroup.DOFade(0f, 0.16f));
-            await AwaitTweenAsync(sequence, token);
-        }
-
-        public async Awaitable GrabAsync(Vector2 screenPoint, CancellationToken token)
-        {
-            EnsureBuilt();
-            Vector2 target = ScreenToLocal(screenPoint) + new Vector2(0f, 30f);
-            Vector2 above = new Vector2(target.x, _overlay.rect.yMax + 220f);
+            Vector2 target = ScreenToLocal(screenPoint);
+            ConfigureHand(_pointHandSprite ?? _grabHandSprite, target, pivotY: 0.02f, minimumHeight: 620f);
+            Vector2 above = HandOffscreenPosition(target.x);
             _hand.anchoredPosition = above;
             _hand.localRotation = Quaternion.identity;
             _handGroup.alpha = 1f;
+            _hand.SetAsLastSibling();
             Sequence sequence = DOTween.Sequence()
                 .SetUpdate(true)
                 .SetLink(_hand.gameObject)
                 .Append(_hand.DOAnchorPos(target, 0.36f).SetEase(Ease.OutCubic))
-                .Append(_hand.DOPunchAnchorPos(new Vector2(0f, -24f), 0.2f, 4, 0.2f))
-                .AppendInterval(0.12f)
-                .Append(_hand.DOAnchorPos(above, 0.42f).SetEase(Ease.InCubic))
-                .Join(_handGroup.DOFade(0f, 0.32f));
+                .Append(_hand.DOPunchAnchorPos(new Vector2(0f, -12f), 0.20f, 3, 0.2f))
+                .AppendInterval(Mathf.Max(0f, hold))
+                .Append(_hand.DOAnchorPos(above, 0.34f).SetEase(Ease.InCubic));
             await AwaitTweenAsync(sequence, token);
+            _handGroup.alpha = 0f;
+        }
+
+        public async Awaitable GrabDishAsync(
+            DishGrabVisualSnapshot dishVisual,
+            Action onVisualTakenOver,
+            CancellationToken token)
+        {
+            EnsureBuilt();
+            if (dishVisual.Sprite == null)
+            {
+                return;
+            }
+
+            Vector2 target = ScreenToLocal(dishVisual.ScreenCenter);
+            ConfigureHand(_grabHandSprite, target, pivotY: 0.18f, minimumHeight: 680f);
+            Vector2 above = HandOffscreenPosition(target.x);
+
+            Vector2 halfScreenSize = dishVisual.ScreenSize * 0.5f;
+            Vector2 localMin = ScreenToLocal(dishVisual.ScreenCenter - halfScreenSize);
+            Vector2 localMax = ScreenToLocal(dishVisual.ScreenCenter + halfScreenSize);
+            _grabbedDish.sizeDelta = new Vector2(
+                Mathf.Max(80f, Mathf.Abs(localMax.x - localMin.x)),
+                Mathf.Max(80f, Mathf.Abs(localMax.y - localMin.y)));
+            _grabbedDish.anchoredPosition = target;
+            _grabbedDish.localRotation = Quaternion.Euler(0f, 0f, dishVisual.ScreenRotationDegrees);
+            _grabbedDish.localScale = new Vector3(
+                dishVisual.FlipX ? -1f : 1f,
+                dishVisual.FlipY ? -1f : 1f,
+                1f);
+            Image dishImage = _grabbedDish.GetComponent<Image>();
+            dishImage.sprite = dishVisual.Sprite;
+            dishImage.color = dishVisual.Color;
+            _grabbedDishGroup.alpha = 1f;
+            _grabbedDish.SetAsLastSibling();
+
+            _hand.anchoredPosition = above;
+            _hand.localRotation = Quaternion.identity;
+            _handGroup.alpha = 1f;
+            _hand.SetAsLastSibling();
+            onVisualTakenOver?.Invoke();
+
+            Sequence sequence = DOTween.Sequence()
+                .SetUpdate(true)
+                .SetLink(_hand.gameObject)
+                .Append(_hand.DOAnchorPos(target, 0.42f).SetEase(Ease.OutCubic))
+                .AppendInterval(0.14f)
+                .Append(_hand.DOAnchorPos(above, 0.50f).SetEase(Ease.InCubic))
+                .Join(_grabbedDish.DOAnchorPos(above, 0.50f).SetEase(Ease.InCubic));
+            await AwaitTweenAsync(sequence, token);
+            _handGroup.alpha = 0f;
+            _grabbedDishGroup.alpha = 0f;
         }
 
         public async Awaitable SweepAsync(
@@ -213,13 +259,36 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             EnsureBuilt();
-            _handGroup.alpha = 1f;
-            _hand.localRotation = Quaternion.Euler(0f, 0f, -12f);
-            _hand.anchoredPosition = ScreenToLocal(screenPoints[0]) + new Vector2(-120f, 90f);
+            var targets = new List<Vector2>(screenPoints.Count);
+            float lowestY = float.MaxValue;
             for (int i = 0; i < screenPoints.Count; i++)
             {
-                Vector2 target = ScreenToLocal(screenPoints[i]) + new Vector2(0f, 50f);
-                Tween move = _hand.DOAnchorPos(target, 0.22f)
+                Vector2 local = ScreenToLocal(screenPoints[i]);
+                targets.Add(local);
+                lowestY = Mathf.Min(lowestY, local.y);
+            }
+
+            ConfigureHand(
+                _pointHandSprite ?? _grabHandSprite,
+                new Vector2(0f, lowestY),
+                pivotY: 0.02f,
+                minimumHeight: 620f);
+            _handGroup.alpha = 1f;
+            _hand.localRotation = Quaternion.identity;
+            _hand.anchoredPosition = HandOffscreenPosition(targets[0].x);
+            _hand.SetAsLastSibling();
+
+            Tween enter = _hand.DOAnchorPos(targets[0], 0.36f)
+                .SetEase(Ease.OutCubic)
+                .SetUpdate(true)
+                .SetLink(_hand.gameObject);
+            await AwaitTweenAsync(enter, token);
+            onReached?.Invoke(0);
+            await WaitUnscaledAsync(0.08f, token);
+
+            for (int i = 1; i < targets.Count; i++)
+            {
+                Tween move = _hand.DOAnchorPos(targets[i], 0.22f)
                     .SetEase(Ease.InOutSine)
                     .SetUpdate(true)
                     .SetLink(_hand.gameObject);
@@ -228,8 +297,13 @@ namespace GourmetProject.Game.UI.Battle
                 await WaitUnscaledAsync(0.08f, token);
             }
 
-            Tween fade = _handGroup.DOFade(0f, 0.18f).SetUpdate(true).SetLink(_hand.gameObject);
-            await AwaitTweenAsync(fade, token);
+            Vector2 exit = HandOffscreenPosition(targets[targets.Count - 1].x);
+            Tween leave = _hand.DOAnchorPos(exit, 0.34f)
+                .SetEase(Ease.InCubic)
+                .SetUpdate(true)
+                .SetLink(_hand.gameObject);
+            await AwaitTweenAsync(leave, token);
+            _handGroup.alpha = 0f;
         }
 
         public async Awaitable ShowCueAsync(Vector2 screenPoint, string text, CancellationToken token)
@@ -314,6 +388,33 @@ namespace GourmetProject.Game.UI.Battle
             return text;
         }
 
+        private void ConfigureHand(
+            Sprite sprite,
+            Vector2 target,
+            float pivotY,
+            float minimumHeight)
+        {
+            Canvas.ForceUpdateCanvases();
+            Image image = _hand.GetComponent<Image>();
+            image.sprite = sprite;
+            image.color = Color.white;
+            _hand.pivot = new Vector2(0.5f, Mathf.Clamp01(pivotY));
+            float heightAbovePivot = Mathf.Max(0.05f, 1f - _hand.pivot.y);
+            float requiredHeight = (_overlay.rect.yMax - target.y + 80f) / heightAbovePivot;
+            float height = Mathf.Max(minimumHeight, requiredHeight);
+            float aspect = sprite != null && sprite.rect.height > 0f
+                ? sprite.rect.width / sprite.rect.height
+                : 0.5f;
+            _hand.sizeDelta = new Vector2(height * aspect, height);
+            _hand.localScale = Vector3.one;
+        }
+
+        private Vector2 HandOffscreenPosition(float x)
+        {
+            float belowPivot = _hand.pivot.y * _hand.rect.height;
+            return new Vector2(x, _overlay.rect.yMax + belowPivot + 80f);
+        }
+
         private Vector2 ScreenToLocal(Vector2 screenPoint)
         {
             Canvas canvas = _overlay.GetComponentInParent<Canvas>();
@@ -336,6 +437,7 @@ namespace GourmetProject.Game.UI.Battle
         {
             if (_bubbleGroup != null) _bubbleGroup.alpha = 0f;
             if (_handGroup != null) _handGroup.alpha = 0f;
+            if (_grabbedDishGroup != null) _grabbedDishGroup.alpha = 0f;
             if (_cueGroup != null) _cueGroup.alpha = 0f;
         }
 

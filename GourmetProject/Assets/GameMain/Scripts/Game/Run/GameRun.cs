@@ -173,7 +173,26 @@ namespace GourmetProject.Game.Run
             set => _weekIndex = System.Math.Max(1, value);
         }
 
-        public int Gold { get; set; }
+        private int _gold;
+
+        /// <summary>金币发生变化时通知表现层；参数依次为变化前、变化后。</summary>
+        public event System.Action<int, int> GoldChanged;
+
+        public int Gold
+        {
+            get => _gold;
+            set
+            {
+                if (_gold == value)
+                {
+                    return;
+                }
+
+                int before = _gold;
+                _gold = value;
+                GoldChanged?.Invoke(before, _gold);
+            }
+        }
 
         private int _heartCapacity;
         private int _heartsRemaining;

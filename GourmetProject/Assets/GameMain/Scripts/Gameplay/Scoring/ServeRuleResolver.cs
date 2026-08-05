@@ -156,7 +156,7 @@ namespace GourmetProject.Gameplay.Scoring
                 case SkillActionType.TransferSkills:
                 {
                     // 甜蜜传递：把「本子技能所在 skill 内的其它子技能」打包为外来子技能载荷，
-                    // 收集候选（作用域内有食物的其它菜），落地随机取 N 由 BattleSession 用 RNG 执行。
+                    // 收集全场其它食物作为候选，落地随机取 N 由 BattleSession 用 RNG 执行。
                     IReadOnlyList<SkillEffect> effects = SkillRuleEffect.EffectsToTransfer(db, rule);
                     if (effects.Count > 0)
                     {
@@ -460,7 +460,7 @@ namespace GourmetProject.Gameplay.Scoring
             return false;
         }
 
-        /// <summary>甜蜜传递的候选目标：作用域内「有食物」的其它菜（不做 ActionCount 截断，随机取 N 交由 BattleSession）。</summary>
+        /// <summary>甜蜜传递的候选目标：全场其它食物（不做 ActionCount 截断，随机取 N 交由 BattleSession）。</summary>
         private static IReadOnlyList<DishInstance> ScopeDishesForTransfer(
             GpTable board,
             GameplayDatabase db,

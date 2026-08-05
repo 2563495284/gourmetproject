@@ -59,7 +59,13 @@ namespace UnityGameFramework.Runtime
             }
             set
             {
-                m_AudioSource.time = value;
+                // Unity 6 logs an error when AudioSource.time is assigned before an
+                // AudioClip has been bound. SoundAgent.Reset does exactly that while
+                // constructing the agent, so defer the assignment until a clip exists.
+                if (m_AudioSource.clip != null)
+                {
+                    m_AudioSource.time = value;
+                }
             }
         }
 
