@@ -1237,6 +1237,7 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             RewardChoiceRowView row = Instantiate(_rewardRowTemplate, _rewardListContent);
+            UIButtonSoundFeedback.Install(row.transform);
             row.gameObject.SetActive(true);
             _spawnedRows.Add(row);
             return row;
