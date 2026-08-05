@@ -47,7 +47,7 @@ namespace GourmetProject.Tests.EditMode
             for (int outputIndex = 0; outputIndex < 10; outputIndex++)
             {
                 int countBefore = slot.Count;
-                ServePrepareResult prepared = session.PrepareServeFromBell(0);
+                ServePrepareResult prepared = session.PrepareServeAutomatically(0);
 
                 Assert.That(prepared.Success, Is.True, $"output {outputIndex + 1}");
                 Assert.That(prepared.PreparedDish.Definition, Is.SameAs(_database.GetDish("mantou")));
@@ -76,7 +76,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [TestCase("debuff_omakase", nameof(BattleSession.FoodDiscardLimit), 0f)]
-        [TestCase("debuff_dine_and_dash", nameof(BattleSession.GoldCostPerBellServe), 5f)]
+        [TestCase("debuff_dine_and_dash", nameof(BattleSession.GoldCostPerConfirmedServe), 5f)]
         [TestCase("debuff_fine_dining", nameof(BattleSession.BaseScoreMultiplier), 0.5f)]
         [TestCase("debuff_appetizer", nameof(BattleSession.FirstServedDishesToRemove), 2f)]
         [TestCase("debuff_buffet", nameof(BattleSession.MinimumServesForScore), 10f)]

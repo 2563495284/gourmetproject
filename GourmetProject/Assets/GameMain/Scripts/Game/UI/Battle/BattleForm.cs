@@ -1383,7 +1383,6 @@ namespace GourmetProject.Game.UI.Battle
 
             servingOutlet?.Bind(
                 _session,
-                ServeFromOutlet,
                 () => OpenRecipeInspect(0, useBattleRecipe: true),
                 () => OnServingOutletDishHoverEntered(servingOutlet),
                 OnServingOutletDishHoverExited,
@@ -1410,22 +1409,6 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             return _foodDiscardBin;
-        }
-
-        private void ServeFromOutlet()
-        {
-            if (_rewardPeekOnly || HasPendingBattleRewardLifecycle)
-            {
-                return;
-            }
-
-            if (_world == null || _session == null || _session.IsSettled)
-            {
-                return;
-            }
-
-            _world.TryPrepareServeDish(0);
-            RefreshAll();
         }
 
         private void BeginFoodDiscardCapacityTracking()
@@ -3120,6 +3103,15 @@ namespace GourmetProject.Game.UI.Battle
             {
                 SetMessage("餐桌还是空的，先上几个食物吧。");
                 return;
+            }
+
+            if (world != null)
+            {
+                world.ConfirmPendingTableDishesForSettlement();
+            }
+            else
+            {
+                _session.ConfirmAllPendingTableDishes();
             }
 
             // 结算前拍基线：演出用它逐 cue 揭示，hover tips 与表演同步，而非一上来就显示全部结算信息。

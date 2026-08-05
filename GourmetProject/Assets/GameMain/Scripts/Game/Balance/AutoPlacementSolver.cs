@@ -42,7 +42,8 @@ namespace GourmetProject.Game.Balance
                     result.HasLegalSolution = false;
                     break;
                 }
-                if (!session.CommitPreparedServe(best).Success)
+                ServeResult placed = session.PreplacePreparedServe(best);
+                if (!placed.Success || !session.ConfirmPendingDish(placed.Dish.Id).Success)
                 {
                     result.HasLegalSolution = false;
                     break;

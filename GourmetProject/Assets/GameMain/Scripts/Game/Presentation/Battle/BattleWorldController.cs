@@ -9,6 +9,8 @@ using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
 using GourmetProject.Runtime;
 using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
 using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
@@ -64,6 +66,8 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private DishPieceView _dishPiecePrefab;
         [SerializeField] private WorldTargetArrow _worldTargetArrowPrefab;
         [SerializeField] private DishDropDustView _dishDropDustPrefab;
+        [Tooltip("预摆菜下方使用的通用按钮。必须引用 UI/ComButton prefab。")]
+        [SerializeField] private Button _comButtonPrefab;
 
         // 餐桌优先锁定到 Battle 场景的布局区域；场景未配置时才使用 BattleForm 的 HUD BoardArea。
         private const float BoardAreaMinCellSize = 0.12f;
@@ -87,6 +91,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private readonly HashSet<DishPieceView> _dishValueBadgeRefreshSet = new();
         private readonly Dictionary<int, DishPieceView> _temporaryAreaViewsById = new Dictionary<int, DishPieceView>();
         private readonly Dictionary<int, float> _pendingServeMultiplierFlat = new Dictionary<int, float>();
+        private readonly Dictionary<int, Button> _pendingDishActionButtons = new Dictionary<int, Button>();
 
         private enum WorldMode
         {
@@ -102,7 +107,6 @@ namespace GourmetProject.Game.Presentation.Battle
         private bool _settling;
         private DishPieceView _outletDragPiece;
         private Placement? _outletHoverPlacement;
-        private int _movableDishId = -1;
         private DishPieceView _movingPiece;
         private Placement _movingOriginalPlacement;
         private Placement? _movingHoverPlacement;
@@ -133,6 +137,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private CancellationTokenSource _presentationCts;
         private Tween _tableViewFadeTween;
         private CanvasGroup _temporaryAreaCanvasGroup;
+        private RectTransform _pendingDishActionsRoot;
         private Tween _temporaryAreaFadeTween;
         private readonly Dictionary<SpriteRenderer, float> _tableViewRendererBaseAlphas = new Dictionary<SpriteRenderer, float>();
         private float _tableViewTransitionAlpha = 1f;
@@ -856,6 +861,7 @@ namespace GourmetProject.Game.Presentation.Battle
             // 出菜口是 World Space Canvas，和餐桌、食物、上菜/结算演出、涂鸦一起由经营挑战世界承载。
             HideWorldPanels();
             SetFoodWorldElementsVisible(true);
+            EnsureNextDishPrepared();
             RebuildPlacedPieces();
             if (resetDoodle)
             {
@@ -1005,6 +1011,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _settling = false;
             CancelServeInteractions();
             _session = null;
+            ClearPendingDishActionButtons();
             ClearPlacedPieces();
             SetTemporaryAreaVisible(false, animated: false);
             _doodle?.Clear();
@@ -1104,6 +1111,11 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void SetFoodWorldElementsVisible(bool visible)
         {
+            if (_pendingDishActionsRoot != null)
+            {
+                _pendingDishActionsRoot.gameObject.SetActive(visible);
+            }
+
             if (visible)
             {
                 RefreshTemporaryAreaVisibility(animated: false);
@@ -1249,14 +1261,175 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            if (_session.PreparedServe != null)
-            {
-                LockMovableDish();
-            }
-
             _boardView.Sync();
             LayoutTemporaryAreaPieces();
             RefreshDishValueBadges();
+            RefreshPendingDishActionButtons();
+        }
+
+        private void EnsurePendingDishActionsRoot()
+        {
+            if (_pendingDishActionsRoot != null)
+            {
+                return;
+            }
+
+            var root = new GameObject(
+                "PendingDishActionsCanvas",
+                typeof(RectTransform),
+                typeof(Canvas),
+                typeof(GraphicRaycaster));
+            root.layer = 5;
+            _pendingDishActionsRoot = (RectTransform)root.transform;
+            _pendingDishActionsRoot.SetParent(transform, false);
+            _pendingDishActionsRoot.sizeDelta = new Vector2(1920f, 1080f);
+            _pendingDishActionsRoot.localScale = Vector3.one * 0.01f;
+
+            Canvas canvas = root.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.WorldSpace;
+            canvas.worldCamera = WorldCamera;
+            canvas.overrideSorting = true;
+            canvas.sortingLayerName = BattleSorting.WorldUi;
+            canvas.sortingOrder = 3;
+        }
+
+        private void RefreshPendingDishActionButtons()
+        {
+            if (_session == null || _comButtonPrefab == null)
+            {
+                ClearPendingDishActionButtons();
+                return;
+            }
+
+            EnsurePendingDishActionsRoot();
+            bool visible = _worldMode == WorldMode.Food && !_settling;
+            _pendingDishActionsRoot.gameObject.SetActive(visible);
+            var liveDishIds = new HashSet<int>();
+
+            foreach (PendingDishPlacement pending in _session.PendingDishPlacements)
+            {
+                if (!pending.IsOnDiningTable
+                    || !_dishViewsById.TryGetValue(pending.Dish.Id, out DishPieceView piece)
+                    || piece == null)
+                {
+                    continue;
+                }
+
+                int dishId = pending.Dish.Id;
+                liveDishIds.Add(dishId);
+                if (!_pendingDishActionButtons.TryGetValue(dishId, out Button button) || button == null)
+                {
+                    button = Instantiate(_comButtonPrefab, _pendingDishActionsRoot);
+                    button.gameObject.name = $"PendingDishAction_{dishId}";
+                    button.onClick.RemoveAllListeners();
+                    button.onClick.AddListener(() => ConfirmPendingDishFromButton(dishId));
+                    _pendingDishActionButtons[dishId] = button;
+                }
+
+                TMP_Text label = button.GetComponentInChildren<TMP_Text>(true);
+                if (label != null)
+                {
+                    label.text = pending.ActionKind == PendingDishActionKind.Serve ? "上菜" : "确认";
+                }
+
+                Bounds bounds = piece.WorldBounds;
+                button.transform.position = new Vector3(
+                    bounds.center.x,
+                    bounds.min.y - Mathf.Max(0.28f, _cellSize * 0.38f),
+                    -0.2f);
+                button.transform.localRotation = Quaternion.identity;
+                button.transform.localScale = Vector3.one * 0.72f;
+                button.gameObject.SetActive(visible && piece != _movingPiece);
+            }
+
+            var staleDishIds = new List<int>();
+            foreach (KeyValuePair<int, Button> entry in _pendingDishActionButtons)
+            {
+                if (!liveDishIds.Contains(entry.Key))
+                {
+                    if (entry.Value != null)
+                    {
+                        Destroy(entry.Value.gameObject);
+                    }
+
+                    staleDishIds.Add(entry.Key);
+                }
+            }
+
+            foreach (int dishId in staleDishIds)
+            {
+                _pendingDishActionButtons.Remove(dishId);
+            }
+        }
+
+        private void SetPendingDishActionButtonVisible(int dishId, bool visible)
+        {
+            if (_pendingDishActionButtons.TryGetValue(dishId, out Button button) && button != null)
+            {
+                button.gameObject.SetActive(visible);
+            }
+        }
+
+        private void ClearPendingDishActionButtons()
+        {
+            foreach (Button button in _pendingDishActionButtons.Values)
+            {
+                if (button != null)
+                {
+                    Destroy(button.gameObject);
+                }
+            }
+
+            _pendingDishActionButtons.Clear();
+        }
+
+        private void ConfirmPendingDishFromButton(int dishId)
+        {
+            if (_session == null || IsFoodInteractionBusy)
+            {
+                return;
+            }
+
+            PendingDishConfirmResult result = _session.ConfirmPendingDish(dishId);
+            if (!result.Success)
+            {
+                RefreshPendingDishActionButtons();
+                return;
+            }
+
+            RebuildPlacedPieces();
+            _boardView.Sync();
+            if (result.ActionKind == PendingDishActionKind.Serve)
+            {
+                PlayPendingServeMultiplierTexts();
+                if (!result.RemovedAfterServe)
+                {
+                    FlashServeScopeHighlights(result.Dish, GetPresentationToken());
+                }
+
+                SetMessage(result.RemovedAfterServe
+                    ? $"开胃菜消化了：{result.Dish.Def.Name}"
+                    : $"上菜：{result.Dish.Def.Name}");
+            }
+            else
+            {
+                SetMessage($"已确认摆放：{result.Dish.Def.Name}");
+            }
+
+            EnsureNextDishPrepared();
+            RefreshAll();
+            _stateChanged?.Invoke();
+        }
+
+        public IReadOnlyList<PendingDishConfirmResult> ConfirmPendingTableDishesForSettlement()
+        {
+            IReadOnlyList<PendingDishConfirmResult> results =
+                _session?.ConfirmAllPendingTableDishes()
+                ?? Array.Empty<PendingDishConfirmResult>();
+            ClearPendingDishActionButtons();
+            RebuildPlacedPieces();
+            _boardView?.Sync();
+            return results;
         }
 
         private void RefreshDishValueBadges()
@@ -1336,6 +1509,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
+            EnsureNextDishPrepared();
             RebuildPlacedPieces();
             if (_activeItemDishesDimmed)
             {
@@ -1345,10 +1519,12 @@ namespace GourmetProject.Game.Presentation.Battle
             RefreshAll();
         }
 
-        public bool TryPrepareServeDish(int slotIndex)
+        public bool EnsureNextDishPrepared(int slotIndex = 0)
         {
             if (_session == null
                 || _session.IsSettled
+                || _session.PreparedServe != null
+                || _session.HasPendingTablePlacements
                 || _settling
                 || _activeItemTransitioning
                 || _outletDragPiece != null
@@ -1358,21 +1534,20 @@ namespace GourmetProject.Game.Presentation.Battle
                 return false;
             }
 
-            ServePrepareResult result = _session.PrepareServeFromBell(slotIndex);
+            ServePrepareResult result = _session.PrepareServeAutomatically(slotIndex);
             if (!result.Success)
             {
-                SetMessage(PrepareServeMessage(result.Outcome, slotIndex));
                 RefreshAll();
-                _stateChanged?.Invoke();
                 return false;
             }
 
-            LockMovableDish();
             SetMessage($"已出菜：{result.PreparedDish.Definition.Name}，拖到餐桌上摆放。");
             RefreshAll();
-            _stateChanged?.Invoke();
             return true;
         }
+
+        [Obsolete("Food output is automatic. Use EnsureNextDishPrepared.")]
+        public bool TryPrepareServeDish(int slotIndex) => EnsureNextDishPrepared(slotIndex);
 
         public void BeginServingOutletDrag(Vector2 screenPoint)
         {
@@ -1456,6 +1631,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 if (_session.TryDiscardPreparedServe())
                 {
                     SetMessage($"已丢弃：{dishName}");
+                    EnsureNextDishPrepared();
                     RefreshAll();
                     _stateChanged?.Invoke();
                     return true;
@@ -1481,7 +1657,7 @@ namespace GourmetProject.Game.Presentation.Battle
             Vector2 footprintSize = _outletDragPiece.FootprintWorldSize;
             Vector2 releaseVelocity = _dragPointerVelocity;
             ClearOutletDragPreview();
-            ServeResult result = _session.CommitPreparedServe(placement);
+            ServeResult result = _session.PreplacePreparedServe(placement);
             if (!result.Success)
             {
                 SetMessage("摆放位置已失效，请重新拖动。");
@@ -1490,18 +1666,12 @@ namespace GourmetProject.Game.Presentation.Battle
                 return false;
             }
 
-            _movableDishId = !result.RemovedAfterServe && _session.PreparedServe == null
-                ? result.Dish.Id
-                : -1;
             RebuildPlacedPieces();
             _boardView.Sync();
             PlayDropDust(placement, footprintSize, releaseVelocity);
             PlayScopeAffectedDishFeedback(affectedDishIds);
-            SetMessage(result.RemovedAfterServe
-                ? $"开胃菜消化了：{result.Dish.Def.Name}"
-                : $"上菜：{result.Dish.Def.Name}");
-            PlayPendingServeMultiplierTexts();
-            FlashServeScopeHighlights(result.Dish, GetPresentationToken());
+            SetMessage($"已摆放：{result.Dish.Def.Name}，点击下方“上菜”按钮确认。");
+            RefreshPendingDishActionButtons();
             _stateChanged?.Invoke();
             return true;
         }
@@ -1602,10 +1772,13 @@ namespace GourmetProject.Game.Presentation.Battle
         private void BeginMovableDishDrag(DishPieceView piece, Vector2 screenPoint)
         {
             DishInstance dish = piece?.Instance;
+            PendingDishPlacement pending = dish != null
+                ? _session?.FindPendingDishPlacement(dish.Id)
+                : null;
             if (dish == null
-                || dish.Id != _movableDishId
                 || _session == null
-                || _session.PreparedServe != null
+                || pending == null
+                || !pending.IsOnDiningTable
                 || _settling
                 || _activeItemTransitioning
                 || _outletDragPiece != null
@@ -1621,6 +1794,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _session.DiningTable.RemoveDish(dish);
             ClearDishScopeHighlights();
             piece.SetDragPresentation(true);
+            SetPendingDishActionButtonVisible(dish.Id, false);
             BeginDragPointerTracking(ScreenToWorld(screenPoint));
             UpdateMovableDishDrag(screenPoint);
         }
@@ -1690,10 +1864,10 @@ namespace GourmetProject.Game.Presentation.Battle
                     _movingPiece = null;
                     _movingHoverPlacement = null;
                     ResetDragPointerTracking();
-                    LockMovableDish();
                     RebuildPlacedPieces();
                     _boardView.Sync();
                     SetMessage($"已丢弃：{dishName}");
+                    EnsureNextDishPrepared();
                     RefreshAll();
                     _stateChanged?.Invoke();
                     return;
@@ -1729,6 +1903,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 FlashServeScopeHighlights(dish, GetPresentationToken());
             }
 
+            RefreshPendingDishActionButtons();
             _stateChanged?.Invoke();
         }
 
@@ -1781,6 +1956,17 @@ namespace GourmetProject.Game.Presentation.Battle
             Vector3 world = ScreenToWorld(screenPoint);
             SampleDragPointer(world);
             _temporaryAreaDragPiece.MoveVisualCenterToWorld(world);
+            bool hoveringDiscard = _session.FoodDiscardsRemaining > 0
+                && _preparedDishDiscardHitTest?.Invoke(screenPoint) == true;
+            SetOutletDiscardHover(hoveringDiscard);
+            if (hoveringDiscard)
+            {
+                _temporaryAreaHoverPlacement = null;
+                _boardView.ClearDragPlacementFeedback();
+                ClearDishScopeHighlights();
+                return;
+            }
+
             DishDragPlacementResult result = EvaluateDragPlacement(_temporaryAreaDragPiece, world);
             if (result != null
                 && result.CanCommit
@@ -1822,7 +2008,24 @@ namespace GourmetProject.Game.Presentation.Battle
             _temporaryAreaHoverPlacement = null;
             ResetDragPointerTracking();
 
-            if (!hovered.HasValue || !_session.CommitTemporaryAreaDish(dish.Id, hovered.Value))
+            if (_outletHoveringDiscard)
+            {
+                SetOutletDiscardHover(false);
+                if (_session.TryDiscardTemporaryAreaDish(dish.Id))
+                {
+                    string dishName = dish.Def.Name;
+                    piece.gameObject.SetActive(false);
+                    RebuildPlacedPieces();
+                    _boardView.Sync();
+                    SetMessage($"已丢弃：{dishName}");
+                    EnsureNextDishPrepared();
+                    RefreshAll();
+                    _stateChanged?.Invoke();
+                    return;
+                }
+            }
+
+            if (!hovered.HasValue || !_session.PreplaceTemporaryAreaDish(dish.Id, hovered.Value))
             {
                 piece.SetDragPresentation(false);
                 piece.SetGhost(false);
@@ -1840,7 +2043,10 @@ namespace GourmetProject.Game.Presentation.Battle
             RefreshTemporaryAreaVisibility(animated: true);
             PlayDropDust(placement, footprintSize, releaseVelocity);
             FlashServeScopeHighlights(dish, GetPresentationToken());
-            SetMessage($"重新摆上餐桌：{dish.Def.Name}");
+            PendingDishPlacement pending = _session.FindPendingDishPlacement(dish.Id);
+            string actionLabel = pending?.ActionKind == PendingDishActionKind.Serve ? "上菜" : "确认";
+            SetMessage($"已摆放：{dish.Def.Name}，点击下方“{actionLabel}”按钮确认。");
+            RefreshPendingDishActionButtons();
             _stateChanged?.Invoke();
         }
 
@@ -2180,17 +2386,6 @@ namespace GourmetProject.Game.Presentation.Battle
             return sum / shape.CellCount;
         }
 
-        private void LockMovableDish()
-        {
-            if (_movableDishId > 0 && _dishViewsById.TryGetValue(_movableDishId, out DishPieceView piece) && piece != null)
-            {
-                piece.SetMoveCallbacks(null, null, null);
-                piece.SetPlacementGlow(false, false);
-            }
-
-            _movableDishId = -1;
-        }
-
         private void CancelServeInteractions()
         {
             ClearDishScopeHighlights();
@@ -2222,8 +2417,8 @@ namespace GourmetProject.Game.Presentation.Battle
             _temporaryAreaDragPiece = null;
             _temporaryAreaHoverPlacement = null;
             ResetDragPointerTracking();
-            LockMovableDish();
             LayoutTemporaryAreaPieces();
+            RefreshPendingDishActionButtons();
         }
 
         private bool IsDishOnTable(int dishId)
@@ -2451,7 +2646,8 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void ConfigurePlacedPieceInteraction(DishPieceView piece, DishInstance dish)
         {
-            if (dish.Id == _movableDishId && _session?.PreparedServe == null)
+            PendingDishPlacement pending = _session?.FindPendingDishPlacement(dish.Id);
+            if (pending != null && pending.IsOnDiningTable)
             {
                 piece.SetMoveCallbacks(BeginMovableDishDrag, UpdateMovableDishDrag, EndMovableDishDrag);
                 piece.SetPlacementGlow(true, true);
@@ -2824,6 +3020,8 @@ namespace GourmetProject.Game.Presentation.Battle
                     return $"限量供应：本场经营挑战最多上 {_session.MaxServes} 个食物。";
                 case ServePrepareOutcome.AlreadyPrepared:
                     return "先把出菜口的食物摆上餐桌。";
+                case ServePrepareOutcome.PendingPlacement:
+                    return "先完成餐桌上的上菜或确认。";
                 default:
                     return "现在不能出菜。";
             }

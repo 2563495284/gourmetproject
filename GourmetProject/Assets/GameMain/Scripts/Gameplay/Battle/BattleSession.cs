@@ -45,6 +45,8 @@ namespace GourmetProject.Gameplay.Battle
         private readonly List<RecipeScoreFlatDelta> _lastRecipeScoreFlatDeltas = new List<RecipeScoreFlatDelta>();
         private readonly List<RecipeScoreMultiplierDelta> _lastRecipeScoreMultiplierDeltas = new List<RecipeScoreMultiplierDelta>();
         private readonly List<DishInstance> _temporaryAreaDishes = new List<DishInstance>();
+        private readonly Dictionary<int, PendingDishPlacement> _pendingDishPlacements =
+            new Dictionary<int, PendingDishPlacement>();
         private int _nextInstanceId = 1;
         private int _appetizerRemoved;
         private float _settlementDishMultiplierFlat;
@@ -130,10 +132,8 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>本局允许的最大上菜次数（-1 表示不限；星级评鉴机制「限量供应」会设上限）。</summary>
         public int MaxServes { get; set; } = -1;
 
-        /// <summary>玩家点击铃铛并成功让出菜口出现食物时扣除的金币。</summary>
-        public int GoldCostPerBellServe { get; set; }
-
-        public bool AutoServeSecondDish { get; set; }
+        /// <summary>玩家真正确认“上菜”时扣除的金币。</summary>
+        public int GoldCostPerConfirmedServe { get; set; }
 
         public bool RemoveFirstServedDishes { get; set; }
 
@@ -213,6 +213,30 @@ namespace GourmetProject.Gameplay.Battle
         /// 它们不属于 <see cref="DiningTable"/>，因此不参与空间判定、预览分数或结算。
         /// </summary>
         public IReadOnlyList<DishInstance> TemporaryAreaDishes => _temporaryAreaDishes;
+
+        public IReadOnlyCollection<PendingDishPlacement> PendingDishPlacements
+            => _pendingDishPlacements.Values;
+
+        public bool HasPendingTablePlacements
+        {
+            get
+            {
+                foreach (PendingDishPlacement pending in _pendingDishPlacements.Values)
+                {
+                    if (pending.IsOnDiningTable)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        public PendingDishPlacement FindPendingDishPlacement(int dishId)
+            => _pendingDishPlacements.TryGetValue(dishId, out PendingDishPlacement pending)
+                ? pending
+                : null;
 
         /// <summary>本场经营挑战共享的全局「欢乐蛋糕层数」，随上菜/结算累加，跨经营挑战重置。</summary>
         public int HappyCakeLayers { get; private set; }
@@ -333,7 +357,7 @@ namespace GourmetProject.Gameplay.Battle
 
         /// <summary>
         /// 丢弃一份已经落桌的食物并消耗一次丢弃次数。
-        /// 该操作不回滚落桌时已经触发的上菜次数、技能或费用；表现层只应对仍处于可移动期的刚上桌食物调用。
+        /// 已正式上菜的副作用不回滚；预摆菜则只清理预摆状态，不触发上菜。
         /// </summary>
         public bool TryDiscardPlacedDish(DishInstance dish)
         {
@@ -349,7 +373,29 @@ namespace GourmetProject.Gameplay.Battle
             }
 
             DiningTable.RemoveDish(dish);
-            SetTrackedDishStatus(dish.Id, BattleRecipeEntryStatus.Discarded);
+            MarkDishStatusBeforePendingRemoval(dish.Id, BattleRecipeEntryStatus.Discarded);
+            _pendingDishPlacements.Remove(dish.Id);
+            FoodDiscardsUsed++;
+            return true;
+        }
+
+        /// <summary>直接丢弃仍在临时桌上的菜，包括从预摆餐桌被旋转回临时桌的菜。</summary>
+        public bool TryDiscardTemporaryAreaDish(int dishId)
+        {
+            if (IsSettled || FoodDiscardsRemaining <= 0)
+            {
+                return false;
+            }
+
+            DishInstance dish = FindTemporaryAreaDishById(dishId);
+            if (dish == null)
+            {
+                return false;
+            }
+
+            _temporaryAreaDishes.Remove(dish);
+            MarkDishStatusBeforePendingRemoval(dish.Id, BattleRecipeEntryStatus.Discarded);
+            _pendingDishPlacements.Remove(dish.Id);
             FoodDiscardsUsed++;
             return true;
         }
@@ -419,18 +465,34 @@ namespace GourmetProject.Gameplay.Battle
         /// </summary>
         public ServePrepareResult PrepareServe(int slotIndex)
         {
-            return PrepareServeCore(slotIndex, triggeredByServingBell: false);
+            return PrepareServeCore(slotIndex, triggeredByAutomaticOutput: false);
         }
 
         /// <summary>
-        /// 玩家点击铃铛出菜：成功后出菜口出现食物，并触发对应 Boss 效果。
+        /// 自动出菜：成功后出菜口出现食物，并推进依赖出菜序列的 Boss 效果。
         /// </summary>
-        public ServePrepareResult PrepareServeFromBell(int slotIndex)
+        public ServePrepareResult PrepareServeAutomatically(int slotIndex)
         {
-            return PrepareServeCore(slotIndex, triggeredByServingBell: true);
+            if (IsSettled)
+            {
+                return ServePrepareResult.Fail(ServePrepareOutcome.LimitReached);
+            }
+
+            if (HasPendingTablePlacements)
+            {
+                return ServePrepareResult.Fail(ServePrepareOutcome.PendingPlacement);
+            }
+
+            return PrepareServeCore(slotIndex, triggeredByAutomaticOutput: true);
         }
 
-        private ServePrepareResult PrepareServeCore(int slotIndex, bool triggeredByServingBell)
+        [Obsolete("Use PrepareServeAutomatically for the automatic battle output flow.")]
+        public ServePrepareResult PrepareServeFromBell(int slotIndex)
+        {
+            return PrepareServeAutomatically(slotIndex);
+        }
+
+        private ServePrepareResult PrepareServeCore(int slotIndex, bool triggeredByAutomaticOutput)
         {
             if (PreparedServe != null)
             {
@@ -448,7 +510,7 @@ namespace GourmetProject.Gameplay.Battle
             }
 
             RecipeSlot slot = _slots[slotIndex];
-            bool insertConfiguredDish = triggeredByServingBell && ShouldInsertDishOnNextBellPrepare();
+            bool insertConfiguredDish = triggeredByAutomaticOutput && ShouldInsertDishOnNextBellPrepare();
             RecipeSlotEntry entry;
             DishDef servedDish;
             IReadOnlyList<Placement> placements;
@@ -517,13 +579,9 @@ namespace GourmetProject.Gameplay.Battle
             PreparedServe = new PreparedServeDish(slotIndex, entry, instance, placements);
             SetTrackedStatus(entry, BattleRecipeEntryStatus.WaitingForPlacement);
             RecordPreparedDishForCookiePity(servedDish);
-            if (triggeredByServingBell)
+            if (triggeredByAutomaticOutput)
             {
                 AdvanceBellPrepareSequence();
-                if (GoldCostPerBellServe > 0)
-                {
-                    PendingGold -= GoldCostPerBellServe;
-                }
             }
 
             return new ServePrepareResult(ServePrepareOutcome.Prepared, PreparedServe);
@@ -621,9 +679,10 @@ namespace GourmetProject.Gameplay.Battle
         }
 
         /// <summary>
-        /// 把出菜口食物提交到玩家选择的位置，并在成功落桌后执行上菜次数、技能和费用等副作用。
+        /// 把出菜口食物预摆到玩家选择的位置。预摆会占用餐桌并参与预览，
+        /// 但在 <see cref="ConfirmPendingDish"/> 前不增加上菜次数或触发 OnServe。
         /// </summary>
-        public ServeResult CommitPreparedServe(Placement placement)
+        public ServeResult PreplacePreparedServe(Placement placement)
         {
             PreparedServeDish prepared = PreparedServe;
             if (prepared == null)
@@ -643,8 +702,44 @@ namespace GourmetProject.Gameplay.Battle
             ApplyEntryFlags(instance, entry);
             ApplyServeModifiers(instance);
             DiningTable.Place(instance);
+            _pendingDishPlacements[instance.Id] = new PendingDishPlacement(
+                instance,
+                PendingDishActionKind.Serve,
+                prepared,
+                isOnDiningTable: true);
+
+            return new ServeResult(ServeOutcome.Placed, instance);
+        }
+
+        /// <summary>确认一份餐桌预摆菜；出菜口来源执行上菜，临时桌来源只确认位置。</summary>
+        public PendingDishConfirmResult ConfirmPendingDish(int dishId)
+        {
+            if (IsSettled
+                || !_pendingDishPlacements.TryGetValue(dishId, out PendingDishPlacement pending)
+                || !pending.IsOnDiningTable
+                || !ReferenceEquals(FindDishById(dishId), pending.Dish))
+            {
+                return PendingDishConfirmResult.Fail();
+            }
+
+            _pendingDishPlacements.Remove(dishId);
+            DishInstance instance = pending.Dish;
+            if (pending.ActionKind == PendingDishActionKind.Confirm)
+            {
+                return new PendingDishConfirmResult(
+                    true,
+                    instance,
+                    PendingDishActionKind.Confirm);
+            }
+
+            RecipeSlotEntry entry = pending.PreparedServe?.Entry;
             TrackServedDish(entry, instance);
             ServesUsed++;
+            if (GoldCostPerConfirmedServe > 0)
+            {
+                PendingGold -= GoldCostPerConfirmedServe;
+            }
+
             Served?.Invoke(instance, ServesUsed);
 
             // 上菜时（OnServe）规则：直接改运行时状态（技能）并积累金币/全局层数。
@@ -667,12 +762,51 @@ namespace GourmetProject.Gameplay.Battle
                 removedAfterServe = true;
             }
 
-            if (AutoServeSecondDish)
+            return new PendingDishConfirmResult(
+                true,
+                instance,
+                PendingDishActionKind.Serve,
+                removedAfterServe);
+        }
+
+        /// <summary>结算前确认所有仍在餐桌上的预摆菜；临时桌与出菜口内容保持不变。</summary>
+        public IReadOnlyList<PendingDishConfirmResult> ConfirmAllPendingTableDishes()
+        {
+            var dishIds = new List<int>();
+            foreach (PendingDishPlacement pending in _pendingDishPlacements.Values)
             {
-                PrepareServe(prepared.SlotIndex);
+                if (pending.IsOnDiningTable)
+                {
+                    dishIds.Add(pending.Dish.Id);
+                }
             }
 
-            return new ServeResult(ServeOutcome.Placed, instance, removedAfterServe);
+            var results = new List<PendingDishConfirmResult>(dishIds.Count);
+            foreach (int dishId in dishIds)
+            {
+                PendingDishConfirmResult result = ConfirmPendingDish(dishId);
+                if (result.Success)
+                {
+                    results.Add(result);
+                }
+            }
+
+            return results;
+        }
+
+        /// <summary>保留给求解器与旧测试的原子操作：预摆后立即上菜。</summary>
+        public ServeResult CommitPreparedServe(Placement placement)
+        {
+            ServeResult placed = PreplacePreparedServe(placement);
+            if (!placed.Success)
+            {
+                return placed;
+            }
+
+            PendingDishConfirmResult confirmed = ConfirmPendingDish(placed.Dish.Id);
+            return confirmed.Success
+                ? new ServeResult(ServeOutcome.Placed, confirmed.Dish, confirmed.RemovedAfterServe)
+                : ServeResult.Fail(ServeOutcome.NoPreparedDish);
         }
 
         private List<Placement> FindServePlacements(DishDef dish, RecipeSlotEntry entry)
@@ -757,6 +891,7 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>「吃」：结算、应用副作用（金币/层数/技能传递/历史）并记录结果。</summary>
         public ScoreResult Settle()
         {
+            ConfirmAllPendingTableDishes();
             ScoreResult result = MinimumServesForScore > 0 && ServesUsed < MinimumServesForScore
                 ? ZeroScoreResult()
                 : _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, extraSources: BuildSettlementExtraSources(), history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes(), copySkillSelector: SelectCopySkills, transferTargetSelector: SelectTransferTargets);
@@ -1285,10 +1420,11 @@ namespace GourmetProject.Gameplay.Battle
 
             foreach (DishInstance dish in DiningTable.Dishes)
             {
-                SetTrackedDishStatus(dish.Id, BattleRecipeEntryStatus.Removed);
+                MarkDishStatusBeforePendingRemoval(dish.Id, BattleRecipeEntryStatus.Removed);
             }
 
             DiningTable.Clear();
+            RemovePendingPlacementsNotOnTable();
         }
 
         /// <summary>按 Id 查找餐桌上的菜；不存在返回 null。</summary>
@@ -1345,6 +1481,10 @@ namespace GourmetProject.Gameplay.Battle
             DiningTable.RemoveDish(dish);
             dish.Relocate(rotatedPlacement);
             _temporaryAreaDishes.Add(dish);
+            if (_pendingDishPlacements.TryGetValue(dish.Id, out PendingDishPlacement pending))
+            {
+                pending.IsOnDiningTable = false;
+            }
             return true;
         }
 
@@ -1363,10 +1503,10 @@ namespace GourmetProject.Gameplay.Battle
         }
 
         /// <summary>
-        /// 把临时桌食物放回主餐桌。这里只重定位，不再次计入上菜次数，也不触发 OnServe，
-        /// 并且不会读取或修改出菜口的 <see cref="PreparedServe"/>。
+        /// 把临时桌食物预摆回主餐桌，等待玩家点击“确认”。
+        /// 如果它原本就是尚未上菜的预摆菜，则保留“上菜”动作。
         /// </summary>
-        public bool CommitTemporaryAreaDish(int dishId, Placement placement)
+        public bool PreplaceTemporaryAreaDish(int dishId, Placement placement)
         {
             if (IsSettled)
             {
@@ -1388,7 +1528,31 @@ namespace GourmetProject.Gameplay.Battle
             dish.Relocate(committedPlacement);
             DiningTable.Place(dish);
             _temporaryAreaDishes.Remove(dish);
+            if (_pendingDishPlacements.TryGetValue(dish.Id, out PendingDishPlacement pending))
+            {
+                pending.IsOnDiningTable = true;
+            }
+            else
+            {
+                _pendingDishPlacements[dish.Id] = new PendingDishPlacement(
+                    dish,
+                    PendingDishActionKind.Confirm,
+                    preparedServe: null,
+                    isOnDiningTable: true);
+            }
+
             return true;
+        }
+
+        /// <summary>保留旧原子语义：放回临时桌菜并立即确认。</summary>
+        public bool CommitTemporaryAreaDish(int dishId, Placement placement)
+        {
+            if (!PreplaceTemporaryAreaDish(dishId, placement))
+            {
+                return false;
+            }
+
+            return ConfirmPendingDish(dishId).Success;
         }
 
         /// <summary>消耗品：给指定餐桌菜永久加分（对标杀戮尖塔2 火焰药水打目标）。成功返回 true。</summary>
@@ -1499,7 +1663,8 @@ namespace GourmetProject.Gameplay.Battle
             }
 
             DiningTable.RemoveDish(dish);
-            SetTrackedDishStatus(dish.Id, BattleRecipeEntryStatus.Removed);
+            MarkDishStatusBeforePendingRemoval(dish.Id, BattleRecipeEntryStatus.Removed);
+            _pendingDishPlacements.Remove(dish.Id);
             return true;
         }
 
@@ -1572,7 +1737,7 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>当前所有食谱槽是否都无法再上菜（用于提示玩家结算）。</summary>
         public bool CanServeAny()
         {
-            if (PreparedServe != null)
+            if (PreparedServe != null || HasPendingTablePlacements)
             {
                 return true;
             }
@@ -1655,6 +1820,37 @@ namespace GourmetProject.Gameplay.Battle
             if (_trackedRecipeEntriesByDishId.TryGetValue(dishId, out TrackedRecipeEntry tracked))
             {
                 tracked.Status = status;
+            }
+        }
+
+        private void MarkDishStatusBeforePendingRemoval(
+            int dishId,
+            BattleRecipeEntryStatus status)
+        {
+            if (_pendingDishPlacements.TryGetValue(dishId, out PendingDishPlacement pending)
+                && pending.ActionKind == PendingDishActionKind.Serve)
+            {
+                SetTrackedStatus(pending.PreparedServe?.Entry, status);
+                return;
+            }
+
+            SetTrackedDishStatus(dishId, status);
+        }
+
+        private void RemovePendingPlacementsNotOnTable()
+        {
+            var removedIds = new List<int>();
+            foreach (PendingDishPlacement pending in _pendingDishPlacements.Values)
+            {
+                if (pending.IsOnDiningTable && FindDishById(pending.Dish.Id) == null)
+                {
+                    removedIds.Add(pending.Dish.Id);
+                }
+            }
+
+            foreach (int dishId in removedIds)
+            {
+                _pendingDishPlacements.Remove(dishId);
             }
         }
 

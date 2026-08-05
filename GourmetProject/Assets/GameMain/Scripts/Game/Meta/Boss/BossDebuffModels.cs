@@ -109,7 +109,7 @@ namespace GourmetProject.Game.Meta.BossDebuffs
     [BossDebuffModel("debuff_dine_and_dash")]
     public sealed class DineAndDashBossDebuffModel : BossDebuffModel
     {
-        public override void ApplyToBattle(BattleSession session) => session.GoldCostPerBellServe = 5;
+        public override void ApplyToBattle(BattleSession session) => session.GoldCostPerConfirmedServe = 5;
     }
 
     [Preserve]

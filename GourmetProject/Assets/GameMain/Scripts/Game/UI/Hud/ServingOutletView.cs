@@ -11,13 +11,13 @@ namespace GourmetProject.Game.UI.Hud
 {
     public enum ServingOutletState
     {
-        WaitingForServe,
         WaitingForDishDrag,
+        WaitingForPendingConfirmation,
         NoDishCanServe,
     }
 
     /// <summary>
-    /// 经营挑战底部出菜口：负责显示食谱可放统计、准备出菜按钮，以及等待玩家拖到餐桌的食物。
+    /// 经营挑战底部出菜口：负责显示食谱可放统计，以及等待玩家拖到餐桌的自动出菜食物。
     /// 具体餐桌预览与提交由 <see cref="BattleWorldController"/> 完成。
     /// </summary>
     [RequireComponent(typeof(Canvas), typeof(GraphicRaycaster))]
@@ -80,7 +80,6 @@ namespace GourmetProject.Game.UI.Hud
 
         public void Bind(
             BattleSession session,
-            Action onServe,
             Action onInspect,
             Func<bool> onDishHoverEntered,
             Action onDishHoverExited,
@@ -130,9 +129,9 @@ namespace GourmetProject.Game.UI.Hud
             {
                 ApplyState(ServingOutletState.WaitingForDishDrag, session.PreparedServe, null);
             }
-            else if (session != null && !session.IsSettled && !limitReached && placeable > 0)
+            else if (session != null && !session.IsSettled && session.HasPendingTablePlacements)
             {
-                ApplyState(ServingOutletState.WaitingForServe, null, null);
+                ApplyState(ServingOutletState.WaitingForPendingConfirmation, null, null);
             }
             else
             {
@@ -147,12 +146,30 @@ namespace GourmetProject.Game.UI.Hud
             if (_serveButton != null)
             {
                 _serveButton.onClick.RemoveAllListeners();
-                _serveButton.interactable = State == ServingOutletState.WaitingForServe;
-                if (onServe != null)
-                {
-                    _serveButton.onClick.AddListener(() => onServe());
-                }
+                _serveButton.interactable = false;
+                _serveButton.gameObject.SetActive(false);
             }
+        }
+
+        // 兼容仍使用旧参数表的 UI 测试/调用方；出菜口已经自动出菜，onServe 会被忽略。
+        public void Bind(
+            BattleSession session,
+            Action onServe,
+            Action onInspect,
+            Func<bool> onDishHoverEntered,
+            Action onDishHoverExited,
+            Action<Vector2> beginDrag,
+            Action<Vector2> drag,
+            Func<Vector2, bool> endDrag)
+        {
+            Bind(
+                session,
+                onInspect,
+                onDishHoverEntered,
+                onDishHoverExited,
+                beginDrag,
+                drag,
+                endDrag);
         }
 
         private void ApplyState(ServingOutletState state, PreparedServeDish prepared, string blockedReason)
@@ -173,10 +190,7 @@ namespace GourmetProject.Game.UI.Hud
 
             if (_serveBellImage != null)
             {
-                _serveBellImage.gameObject.SetActive(!waitingForDrag);
-                Color bellColor = _serveBellImage.color;
-                bellColor.a = state == ServingOutletState.NoDishCanServe ? 0.38f : 1f;
-                _serveBellImage.color = bellColor;
+                _serveBellImage.gameObject.SetActive(false);
             }
 
             if (_dishPreview != null)
@@ -200,8 +214,8 @@ namespace GourmetProject.Game.UI.Hud
 
             switch (state)
             {
-                case ServingOutletState.WaitingForServe:
-                    SetText(_statusText, "点击出菜");
+                case ServingOutletState.WaitingForPendingConfirmation:
+                    SetText(_statusText, "请先完成餐桌上的上菜或确认");
                     SetBackground(_readyColor);
                     break;
                 case ServingOutletState.WaitingForDishDrag:
