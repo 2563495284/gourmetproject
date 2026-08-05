@@ -488,7 +488,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f97969416aa9040f8aa21845b23712ad, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.WeekEventCardView
+  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Meta.WeekEventCardView
   _nameText: {fileID: 5758427606429411472}
   _descText: {fileID: 3148146531934193758}
   _timeText: {fileID: 4029991733427498184}
