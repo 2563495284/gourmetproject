@@ -252,48 +252,6 @@
     "branchPageText": ""
   },
   {
-    "id": "opt_sign_food_street",
-    "eventId": "ev_crossroad_sign",
-    "parentId": "",
-    "text": "我来尝一下这个蘑菇",
-    "resultText": "十分美味",
-    "condition": "",
-    "conditionText": "",
-    "effectTypes": [
-      0
-    ],
-    "effectValues": [
-      0
-    ],
-    "effectParams": [
-      "-"
-    ],
-    "autoEnd": false,
-    "branchWeight": 0,
-    "branchPageText": ""
-  },
-  {
-    "id": "opt_sign_secondhand",
-    "eventId": "ev_crossroad_sign",
-    "parentId": "",
-    "text": "还是卖给客人吧",
-    "resultText": "明智的选择，还是一朝被蛇咬，十年怕井绳呢",
-    "condition": "",
-    "conditionText": "",
-    "effectTypes": [
-      0
-    ],
-    "effectValues": [
-      0
-    ],
-    "effectParams": [
-      "-"
-    ],
-    "autoEnd": false,
-    "branchWeight": 0,
-    "branchPageText": ""
-  },
-  {
     "id": "opt_interest_collect",
     "eventId": "ev_interest",
     "parentId": "",
@@ -466,21 +424,18 @@
     "eventId": "ev_ancestral_recipe_page",
     "parentId": "opt_recipe_page_cover",
     "text": "星级评鉴美味值要求提升20%，金币奖励翻倍",
-    "resultText": "食物奖励隐藏分 +5；后续星级评鉴目标 ×1.2，基础金币 ×2。",
+    "resultText": "后续星级评鉴目标 ×1.2，基础金币 ×2。",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
-      11,
       32,
       33
     ],
     "effectValues": [
-      5,
       0.2,
       1
     ],
     "effectParams": [
-      "Dish",
       "-",
       "-"
     ],
@@ -492,7 +447,7 @@
     "id": "opt_table_carpenter_choice",
     "eventId": "ev_table_carpenter",
     "parentId": "opt_carpenter_wood",
-    "text": "获得两个石料类强化箱",
+    "text": "获得2个石料类强化箱",
     "resultText": "从三种石料箱中放回随机获得 2 个。",
     "condition": "",
     "conditionText": "",
@@ -513,7 +468,7 @@
     "id": "opt_table_carpenter_choice_2",
     "eventId": "ev_table_carpenter",
     "parentId": "opt_carpenter_stone",
-    "text": "获得两个木料类强化箱",
+    "text": "获得2个木料类强化箱",
     "resultText": "从两种木料箱中放回随机获得 2 个。",
     "condition": "",
     "conditionText": "",
@@ -534,7 +489,7 @@
     "id": "opt_table_carpenter_choice_3",
     "eventId": "ev_table_carpenter",
     "parentId": "opt_carpenter_metal",
-    "text": "获得两个金属料强化箱",
+    "text": "获得2个金属料强化箱",
     "resultText": "从两种金属箱中放回随机获得 2 个。",
     "condition": "",
     "conditionText": "",
@@ -555,7 +510,7 @@
     "id": "opt_kitchen_god_statue_choice",
     "eventId": "ev_kitchen_god_statue",
     "parentId": "opt_statue_gold",
-    "text": "获得一个随机装饰品",
+    "text": "获得1个装饰品",
     "resultText": "支付 30 金币，随机获得 1 个非诅咒装饰品。",
     "condition": "",
     "conditionText": "",
@@ -579,22 +534,19 @@
     "id": "opt_kitchen_god_statue_choice_2",
     "eventId": "ev_kitchen_god_statue",
     "parentId": "opt_statue_dish",
-    "text": "获得100金币，获得一个负面装饰品",
-    "resultText": "永久删除 1 个食物，获得 100 金币和 1 个诅咒装饰品。",
+    "text": "获得100金币和1个负面装饰品",
+    "resultText": "获得 100 金币和 1 个诅咒装饰品。",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
-      28,
       1,
       35
     ],
     "effectValues": [
-      1,
       100,
       1
     ],
     "effectParams": [
-      "-",
       "-",
       "Negative"
     ],
@@ -606,66 +558,18 @@
     "id": "opt_kitchen_god_statue_choice_3",
     "eventId": "ev_kitchen_god_statue",
     "parentId": "opt_statue_steal",
-    "text": "接受这次影响",
+    "text": "下次营业金币-40%",
     "resultText": "获得 100 金币和 1 个随机消耗品；下一次营业基础金币 ×0.6。",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
-      1,
-      3,
       30
     ],
     "effectValues": [
-      100,
-      0,
       -0.4
     ],
     "effectParams": [
-      "-",
-      "active_grant_1",
       "Next"
-    ],
-    "autoEnd": true,
-    "branchWeight": 0,
-    "branchPageText": ""
-  },
-  {
-    "id": "opt_crossroad_sign_choice",
-    "eventId": "ev_crossroad_sign",
-    "parentId": "opt_sign_secondhand",
-    "text": "领取 50 金币",
-    "resultText": "获得 50 金币。",
-    "condition": "",
-    "conditionText": "",
-    "effectTypes": [
-      1
-    ],
-    "effectValues": [
-      50
-    ],
-    "effectParams": [
-      "-"
-    ],
-    "autoEnd": true,
-    "branchWeight": 0,
-    "branchPageText": ""
-  },
-  {
-    "id": "opt_crossroad_sign_choice_2",
-    "eventId": "ev_crossroad_sign",
-    "parentId": "opt_sign_food_street",
-    "text": "记住这份鲜味",
-    "resultText": "食物奖励隐藏分永久 +3。",
-    "condition": "",
-    "conditionText": "",
-    "effectTypes": [
-      11
-    ],
-    "effectValues": [
-      3
-    ],
-    "effectParams": [
-      "Dish"
     ],
     "autoEnd": true,
     "branchWeight": 0,
@@ -859,5 +763,278 @@
     "autoEnd": true,
     "branchWeight": 0,
     "branchPageText": ""
+  },
+  {
+    "id": "opt_sign_food_street",
+    "eventId": "ev_crossroad_sign",
+    "parentId": "",
+    "text": "依次品尝三种蘑菇",
+    "resultText": "先从白色蘑菇开始。每次安全尝完都可以见好就收，也可以继续挑战下一种蘑菇。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      0
+    ],
+    "effectValues": [
+      0
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
+  },
+  {
+    "id": "opt_sign_secondhand",
+    "eventId": "ev_crossroad_sign",
+    "parentId": "",
+    "text": "还是卖给客人吧",
+    "resultText": "明智的选择，还是一朝被蛇咬，十年怕井绳呢",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      0
+    ],
+    "effectValues": [
+      0
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
+  },
+  {
+    "id": "opt_crossroad_sign_choice",
+    "eventId": "ev_crossroad_sign",
+    "parentId": "opt_sign_secondhand",
+    "text": "领取 50 金币",
+    "resultText": "获得 50 金币。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      1
+    ],
+    "effectValues": [
+      50
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
+  },
+  {
+    "id": "opt_mushroom_white_poison",
+    "eventId": "ev_crossroad_sign",
+    "parentId": "opt_sign_food_street",
+    "text": "糟了，白色蘑菇有毒",
+    "resultText": "你被紧急送往医院抢救。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      36
+    ],
+    "effectValues": [
+      20
+    ],
+    "effectParams": [
+      "mushroom_poison|20"
+    ],
+    "autoEnd": true,
+    "branchWeight": 20,
+    "branchPageText": "白色蘑菇刚入口，舌尖便开始发麻，眼前的餐厅转了起来。"
+  },
+  {
+    "id": "opt_mushroom_white_safe",
+    "eventId": "ev_crossroad_sign",
+    "parentId": "opt_sign_food_street",
+    "text": "白色蘑菇很安全",
+    "resultText": "白色蘑菇鲜甜爽脆。要带着这份好运离开，还是继续品尝红色蘑菇？",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      0
+    ],
+    "effectValues": [
+      0
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": false,
+    "branchWeight": 80,
+    "branchPageText": "白色蘑菇清甜鲜嫩，吃完后身体毫无异样。"
+  },
+  {
+    "id": "opt_mushroom_white_cashout",
+    "eventId": "ev_crossroad_sign",
+    "parentId": "opt_mushroom_white_safe",
+    "text": "见好就收，领取 70 金币",
+    "resultText": "你把剩下的白色蘑菇卖给了识货的客人，获得 70 金币。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      1
+    ],
+    "effectValues": [
+      70
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
+  },
+  {
+    "id": "opt_mushroom_try_red",
+    "eventId": "ev_crossroad_sign",
+    "parentId": "opt_mushroom_white_safe",
+    "text": "继续品尝红色蘑菇",
+    "resultText": "你夹起了颜色鲜艳的红色蘑菇。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      0
+    ],
+    "effectValues": [
+      0
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
+  },
+  {
+    "id": "opt_mushroom_red_poison",
+    "eventId": "ev_crossroad_sign",
+    "parentId": "opt_mushroom_try_red",
+    "text": "糟了，红色蘑菇有毒",
+    "resultText": "毒性来势汹汹，你再次被送往医院抢救。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      36
+    ],
+    "effectValues": [
+      20
+    ],
+    "effectParams": [
+      "mushroom_poison|20"
+    ],
+    "autoEnd": true,
+    "branchWeight": 40,
+    "branchPageText": "红色蘑菇辛辣得反常，没过多久，你的视线便开始模糊。"
+  },
+  {
+    "id": "opt_mushroom_red_safe",
+    "eventId": "ev_crossroad_sign",
+    "parentId": "opt_mushroom_try_red",
+    "text": "红色蘑菇也很安全",
+    "resultText": "红色蘑菇带着微微果香。现在收手已经收获颇丰，或者再尝最后的绿色蘑菇。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      0
+    ],
+    "effectValues": [
+      0
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": false,
+    "branchWeight": 60,
+    "branchPageText": "红色蘑菇入口微辣，却没有任何毒性，你又安全过了一关。"
+  },
+  {
+    "id": "opt_mushroom_red_cashout",
+    "eventId": "ev_crossroad_sign",
+    "parentId": "opt_mushroom_red_safe",
+    "text": "稳妥收手，领取 120 金币",
+    "resultText": "你把剩余蘑菇高价转让，获得 120 金币。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      1
+    ],
+    "effectValues": [
+      120
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
+  },
+  {
+    "id": "opt_mushroom_try_green",
+    "eventId": "ev_crossroad_sign",
+    "parentId": "opt_mushroom_red_safe",
+    "text": "挑战绿色蘑菇",
+    "resultText": "最后一朵绿色蘑菇散发着危险又迷人的清香。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      0
+    ],
+    "effectValues": [
+      0
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
+  },
+  {
+    "id": "opt_mushroom_green_poison",
+    "eventId": "ev_crossroad_sign",
+    "parentId": "opt_mushroom_try_green",
+    "text": "糟了，绿色蘑菇有剧毒",
+    "resultText": "你倒在餐桌旁，被火速送往医院抢救。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      36
+    ],
+    "effectValues": [
+      20
+    ],
+    "effectParams": [
+      "mushroom_poison|20"
+    ],
+    "autoEnd": true,
+    "branchWeight": 60,
+    "branchPageText": "绿色蘑菇鲜得惊人——紧接着，房间里的所有东西都变成了绿色。"
+  },
+  {
+    "id": "opt_mushroom_green_safe",
+    "eventId": "ev_crossroad_sign",
+    "parentId": "opt_mushroom_try_green",
+    "text": "三种蘑菇全都安全",
+    "resultText": "你完整记住了三种蘑菇的风味，并获得 1 个传奇装饰品。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      25
+    ],
+    "effectValues": [
+      1
+    ],
+    "effectParams": [
+      "legendary_choice_1|蘑菇盛宴"
+    ],
+    "autoEnd": true,
+    "branchWeight": 40,
+    "branchPageText": "绿色蘑菇化成一股清香。你连过三关，主厨惊讶地捧出了珍藏礼物。"
   }
 ]

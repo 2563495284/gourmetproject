@@ -64,7 +64,7 @@
     "eventTypes": [
       0
     ],
-    "preconditions": "",
+    "preconditions": "minGold:61",
     "weight": 1,
     "repeatable": true,
     "bgSprite": "",

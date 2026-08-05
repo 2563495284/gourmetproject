@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import errno
 import hashlib
 import json
 import os
@@ -22,7 +23,9 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path, PurePosixPath
 from typing import Any
+from urllib.error import URLError
 from urllib.parse import urlparse
+from urllib.request import urlopen
 from xml.etree import ElementTree as ET
 
 
@@ -33,6 +36,7 @@ EFFECT_REQUESTS_FILE_NAME = "event_effect_requests.json"
 GENERATED_EVENT_JSON = PROJECT_ROOT / "Assets" / "StreamingAssets" / "Config" / "tbevent.json"
 EFFECT_ENUM_CS = PROJECT_ROOT / "Assets" / "GameMain" / "Scripts" / "Config" / "Gen" / "EffectType.cs"
 ACTION_ENUM_CS = PROJECT_ROOT / "Assets" / "GameMain" / "Scripts" / "Config" / "Gen" / "ActionBehavior.cs"
+SERVER_VERSION = 2
 
 NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
 REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
@@ -767,7 +771,7 @@ class EditorHandler(BaseHTTPRequestHandler):
                 self._json({"ok": True, "model": load_model(self.workbook_path)})
                 return
             if path == "/api/health":
-                self._json({"ok": True, "workbook": str(self.workbook_path)})
+                self._json({"ok": True, "serverVersion": SERVER_VERSION, "workbook": str(self.workbook_path)})
                 return
             self._error("页面不存在", 404)
         except Exception as exc:  # noqa: BLE001
@@ -822,9 +826,40 @@ def main() -> int:
     if not EDITOR_HTML.exists():
         print(f"找不到编辑器页面：{EDITOR_HTML}", file=sys.stderr)
         return 2
-    server = ThreadingHTTPServer(("127.0.0.1", args.port), EditorHandler)
+
+    for candidate_port in range(args.port, args.port + 21):
+        try:
+            with urlopen(f"http://127.0.0.1:{candidate_port}/api/health", timeout=0.15) as response:
+                health = json.loads(response.read().decode("utf-8"))
+            if health.get("serverVersion") != SERVER_VERSION:
+                continue
+            if Path(as_text(health.get("workbook"))).expanduser().resolve() != workbook:
+                continue
+            url = f"http://127.0.0.1:{candidate_port}/"
+            print(f"事件编辑器已在运行：{url}")
+            if not args.no_open:
+                webbrowser.open(url)
+            return 0
+        except (OSError, URLError, ValueError, json.JSONDecodeError):
+            continue
+
+    server: ThreadingHTTPServer | None = None
+    selected_port = args.port
+    for candidate_port in range(args.port, args.port + 21):
+        try:
+            server = ThreadingHTTPServer(("127.0.0.1", candidate_port), EditorHandler)
+            selected_port = candidate_port
+            break
+        except OSError as exc:
+            if exc.errno != errno.EADDRINUSE:
+                raise
+    if server is None:
+        print(f"端口 {args.port}～{args.port + 20} 均被占用，无法启动事件编辑器。", file=sys.stderr)
+        return 3
     server.workbook_path = workbook  # type: ignore[attr-defined]
-    url = f"http://127.0.0.1:{args.port}/"
+    url = f"http://127.0.0.1:{selected_port}/"
+    if selected_port != args.port:
+        print(f"端口 {args.port} 已被占用，自动改用 {selected_port}。")
     print(f"事件编辑器已启动：{url}")
     print(f"当前事件表：{workbook}")
     print("按 Ctrl+C 停止。")

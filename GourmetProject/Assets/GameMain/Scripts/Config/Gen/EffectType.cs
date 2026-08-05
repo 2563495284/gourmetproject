@@ -160,6 +160,10 @@ namespace cfg
         /// 随机装饰品(value=数量,param=Positive/Negative)
         /// </summary>
         GrantRandomPassiveItems = 35,
+        /// <summary>
+        /// 递增扣除金币(value=首次金额,param=counterId|每次增量；不足扣到0)
+        /// </summary>
+        LoseEscalatingGold = 36,
     }
 
 } 
