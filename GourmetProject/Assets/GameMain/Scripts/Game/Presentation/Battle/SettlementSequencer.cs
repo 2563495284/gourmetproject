@@ -105,6 +105,28 @@ namespace GourmetProject.Game.Presentation.Battle
                 duration);
         }
 
+        public void PlayFloatingEffect(
+            Transform parent,
+            Vector3 worldPos,
+            string sourceName,
+            string effectText,
+            Color effectColor,
+            float? rise = null,
+            float? duration = null,
+            float delay = 0f)
+        {
+            FloatingTextView.SpawnEffect(
+                _settlementEffectLabelPrefab,
+                parent != null ? parent : transform,
+                worldPos,
+                sourceName,
+                effectText,
+                rise,
+                duration,
+                effectColor,
+                delay);
+        }
+
         public async Awaitable PlayAsync(
             BattleSession session,
             ScoreResult result,

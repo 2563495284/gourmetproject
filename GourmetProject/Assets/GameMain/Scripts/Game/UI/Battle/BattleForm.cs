@@ -1237,7 +1237,8 @@ namespace GourmetProject.Game.UI.Battle
                 RefreshAll,
                 null,
                 OnDishClicked,
-                resetDoodle: false);
+                resetDoodle: false,
+                serveTriggerCueSink: OnServeTriggerCue);
             _world.SetDishHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
             _world.SetCellHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
             _world.SetTableFragmentHoverCallbacks(OnTableFragmentHoverEntered, OnTableFragmentHoverExited);
@@ -2647,7 +2648,8 @@ namespace GourmetProject.Game.UI.Battle
                 SetSettlementScore,
                 RefreshAll,
                 null,
-                OnDishClicked);
+                OnDishClicked,
+                serveTriggerCueSink: OnServeTriggerCue);
             _world.SetDishHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
             _world.SetCellHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
             _world.SetTableFragmentHoverCallbacks(OnTableFragmentHoverEntered, OnTableFragmentHoverExited);
@@ -2682,6 +2684,34 @@ namespace GourmetProject.Game.UI.Battle
         }
 
         private void OnBattleServed(DishInstance dish, int servesUsed) => RefreshPersistent();
+
+        private void OnServeTriggerCue(ServeTriggerCue cue)
+        {
+            if (cue == null)
+            {
+                return;
+            }
+
+            if (cue.PulseSource)
+            {
+                if (cue.SourceKind == ServeCueSourceKind.PassiveItem && _run != null)
+                {
+                    new ItemRuntime(_run).FlashTriggered(model =>
+                        string.Equals(model.ItemId, cue.SourceId, StringComparison.Ordinal));
+                }
+                else if (cue.SourceKind == ServeCueSourceKind.BossDebuff)
+                {
+                    _infoColumn?.PlayBossDebuffTrigger(cue.SourceId);
+                }
+            }
+
+            RefreshPersistent(refreshItems: false);
+            if (_hoveredDishPiece?.Instance != null
+                && _hoveredDishPiece.Instance.Id == cue.DishId)
+            {
+                RebindHoveredDishTips(_hoveredDishPiece);
+            }
+        }
 
         private cfg.BossDebuff ResolveBossDebuff(string bossDebuffId)
         {

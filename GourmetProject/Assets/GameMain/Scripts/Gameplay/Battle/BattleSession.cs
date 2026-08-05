@@ -57,6 +57,16 @@ namespace GourmetProject.Gameplay.Battle
         private float _randomServeMultiplierStep;
         private float _alternateServeMultiplierLow = 1f;
         private float _alternateServeMultiplierHigh = 1f;
+        private string _alternateServeMultiplierSourceId = string.Empty;
+        private string _alternateServeMultiplierSourceName = string.Empty;
+        private string _randomServeMultiplierSourceId = string.Empty;
+        private string _randomServeMultiplierSourceName = string.Empty;
+        private string _baseScoreMultiplierSourceId = string.Empty;
+        private string _baseScoreMultiplierSourceName = string.Empty;
+        private string _confirmedServeGoldCostSourceId = string.Empty;
+        private string _confirmedServeGoldCostSourceName = string.Empty;
+        private readonly List<LastServedDishMultiplierRule> _lastServedDishMultiplierRules =
+            new List<LastServedDishMultiplierRule>();
         private string _insertDishId = string.Empty;
         private int _insertDishWindowSize;
         private int _insertDishCountPerWindow;
@@ -141,16 +151,27 @@ namespace GourmetProject.Gameplay.Battle
 
         public bool AlternateServeMultiplier { get; set; }
 
-        public void ConfigureAlternateServeMultiplier(float low, float high)
+        public void ConfigureAlternateServeMultiplier(
+            float low,
+            float high,
+            string sourceId = null,
+            string sourceName = null)
         {
             _alternateServeMultiplierLow = low;
             _alternateServeMultiplierHigh = high;
+            _alternateServeMultiplierSourceId = sourceId ?? string.Empty;
+            _alternateServeMultiplierSourceName = sourceName ?? string.Empty;
             AlternateServeMultiplier = true;
         }
 
         public bool RandomServeMultiplier { get; set; }
 
-        public void ConfigureRandomServeMultiplier(float min, float max, float step)
+        public void ConfigureRandomServeMultiplier(
+            float min,
+            float max,
+            float step,
+            string sourceId = null,
+            string sourceName = null)
         {
             if (max < min)
             {
@@ -160,6 +181,22 @@ namespace GourmetProject.Gameplay.Battle
             _randomServeMultiplierMin = min;
             _randomServeMultiplierMax = max;
             _randomServeMultiplierStep = step > 0f ? step : 0f;
+            _randomServeMultiplierSourceId = sourceId ?? string.Empty;
+            _randomServeMultiplierSourceName = sourceName ?? string.Empty;
+        }
+
+        public void ConfigureConfirmedServeGoldCost(int cost, string sourceId, string sourceName)
+        {
+            GoldCostPerConfirmedServe = Math.Max(0, cost);
+            _confirmedServeGoldCostSourceId = sourceId ?? string.Empty;
+            _confirmedServeGoldCostSourceName = sourceName ?? string.Empty;
+        }
+
+        public void ConfigureBaseScoreMultiplier(float multiplier, string sourceId, string sourceName)
+        {
+            BaseScoreMultiplier = multiplier;
+            _baseScoreMultiplierSourceId = sourceId ?? string.Empty;
+            _baseScoreMultiplierSourceName = sourceName ?? string.Empty;
         }
 
         /// <summary>
@@ -304,6 +341,8 @@ namespace GourmetProject.Gameplay.Battle
 
         public event Action<DishInstance, float> ServeMultiplierFlatApplied;
 
+        public event Action<ServeTriggerCue> ServeTriggerCueRaised;
+
         public void ConfigureFoodDiscardLimit(int count)
         {
             FoodDiscardLimit = Math.Max(0, count);
@@ -376,6 +415,7 @@ namespace GourmetProject.Gameplay.Battle
             MarkDishStatusBeforePendingRemoval(dish.Id, BattleRecipeEntryStatus.Discarded);
             _pendingDishPlacements.Remove(dish.Id);
             FoodDiscardsUsed++;
+            ReevaluateLastServedDishMultipliers();
             return true;
         }
 
@@ -397,6 +437,7 @@ namespace GourmetProject.Gameplay.Battle
             MarkDishStatusBeforePendingRemoval(dish.Id, BattleRecipeEntryStatus.Discarded);
             _pendingDishPlacements.Remove(dish.Id);
             FoodDiscardsUsed++;
+            ReevaluateLastServedDishMultipliers();
             return true;
         }
 
@@ -420,6 +461,73 @@ namespace GourmetProject.Gameplay.Battle
 
             dish.AddServeMultiplierFlat(value);
             ServeMultiplierFlatApplied?.Invoke(dish, value);
+        }
+
+        public void AddPassiveServeMultiplierFlat(
+            DishInstance dish,
+            float value,
+            string itemId,
+            string itemName)
+        {
+            if (dish == null || string.IsNullOrEmpty(itemId) || Math.Abs(value) < 0.0001f)
+            {
+                return;
+            }
+
+            float desired = dish.ServeMultiplierFlatForSource(itemId) + value;
+            SetServeMultiplierFlatForSource(
+                dish,
+                itemId,
+                desired,
+                ServeCueSourceKind.PassiveItem,
+                itemName,
+                $"倍率 {FormatSigned(value)}",
+                ServeCuePresentationKind.Gain,
+                pulseSource: true);
+        }
+
+        public void ConfigureLastServedDishMultiplierFlat(
+            string itemId,
+            string itemName,
+            float value,
+            Func<bool> isActive = null)
+        {
+            if (string.IsNullOrEmpty(itemId) || Math.Abs(value) < 0.0001f)
+            {
+                return;
+            }
+
+            for (int i = 0; i < _lastServedDishMultiplierRules.Count; i++)
+            {
+                if (string.Equals(
+                        _lastServedDishMultiplierRules[i].SourceId,
+                        itemId,
+                        StringComparison.Ordinal))
+                {
+                    return;
+                }
+            }
+
+            _lastServedDishMultiplierRules.Add(new LastServedDishMultiplierRule(
+                itemId,
+                itemName,
+                value,
+                isActive));
+            ReevaluateLastServedDishMultipliers();
+        }
+
+        /// <summary>
+        /// 让指定来源在当前装饰品持有顺序的位置刷新“最后正式上菜”目标。
+        /// 桌面移动、丢弃和销毁仍由会话统一刷新全部来源。
+        /// </summary>
+        public void RefreshLastServedDishMultiplierFlat(string itemId)
+        {
+            if (string.IsNullOrEmpty(itemId))
+            {
+                return;
+            }
+
+            ReevaluateLastServedDishMultipliers(itemId);
         }
 
         public void ApplySettlementDishMultiplierFlat(float value, string itemId, string itemName)
@@ -700,7 +808,6 @@ namespace GourmetProject.Gameplay.Battle
             instance.Relocate(placement);
             RecipeSlotEntry entry = prepared.Entry;
             ApplyEntryFlags(instance, entry);
-            ApplyServeModifiers(instance);
             DiningTable.Place(instance);
             _pendingDishPlacements[instance.Id] = new PendingDishPlacement(
                 instance,
@@ -726,6 +833,7 @@ namespace GourmetProject.Gameplay.Battle
             DishInstance instance = pending.Dish;
             if (pending.ActionKind == PendingDishActionKind.Confirm)
             {
+                ReevaluateLastServedDishMultipliers();
                 return new PendingDishConfirmResult(
                     true,
                     instance,
@@ -735,12 +843,24 @@ namespace GourmetProject.Gameplay.Battle
             RecipeSlotEntry entry = pending.PreparedServe?.Entry;
             TrackServedDish(entry, instance);
             ServesUsed++;
+            instance.SetServeOrder(ServesUsed);
+            ApplyConfirmedServeModifiers(instance, ServesUsed);
             if (GoldCostPerConfirmedServe > 0)
             {
                 PendingGold -= GoldCostPerConfirmedServe;
+                RaiseServeTriggerCue(new ServeTriggerCue(
+                    ServeCueSourceKind.BossDebuff,
+                    _confirmedServeGoldCostSourceId,
+                    _confirmedServeGoldCostSourceName,
+                    instance.Id,
+                    ServeCueEffectKind.GoldDelta,
+                    -GoldCostPerConfirmedServe,
+                    $"金币 -{GoldCostPerConfirmedServe}",
+                    ServeCuePresentationKind.Penalty));
             }
 
             Served?.Invoke(instance, ServesUsed);
+            ReevaluateLastServedDishMultipliers();
 
             // 上菜时（OnServe）规则：直接改运行时状态（技能）并积累金币/全局层数。
             if (!instance.SkillsDisabled)
@@ -760,6 +880,7 @@ namespace GourmetProject.Gameplay.Battle
                 DiningTable.RemoveDish(instance);
                 SetTrackedDishStatus(instance.Id, BattleRecipeEntryStatus.Removed);
                 removedAfterServe = true;
+                ReevaluateLastServedDishMultipliers();
             }
 
             return new PendingDishConfirmResult(
@@ -1001,7 +1122,7 @@ namespace GourmetProject.Gameplay.Battle
             }
         }
 
-        private void ApplyServeModifiers(DishInstance instance)
+        private void ApplyConfirmedServeModifiers(DishInstance instance, int serveIndex)
         {
             if (instance == null)
             {
@@ -1011,14 +1132,34 @@ namespace GourmetProject.Gameplay.Battle
             if (Math.Abs(BaseScoreMultiplier - 1f) > 0.0001f)
             {
                 instance.MultiplyTemporaryBase(BaseScoreMultiplier);
+                RaiseServeTriggerCue(new ServeTriggerCue(
+                    ServeCueSourceKind.BossDebuff,
+                    _baseScoreMultiplierSourceId,
+                    _baseScoreMultiplierSourceName,
+                    instance.Id,
+                    ServeCueEffectKind.BaseScoreFactor,
+                    BaseScoreMultiplier,
+                    $"基础分 ×{FormatNumber(BaseScoreMultiplier)}",
+                    ServeCuePresentationKind.Penalty));
             }
 
             if (AlternateServeMultiplier)
             {
-                instance.MultiplyServeMultiplier(
-                    ServesUsed % 2 == 0
-                        ? _alternateServeMultiplierLow
-                        : _alternateServeMultiplierHigh);
+                float multiplier = serveIndex % 2 == 1
+                    ? _alternateServeMultiplierLow
+                    : _alternateServeMultiplierHigh;
+                instance.MultiplyServeMultiplier(multiplier);
+                RaiseServeTriggerCue(new ServeTriggerCue(
+                    ServeCueSourceKind.BossDebuff,
+                    _alternateServeMultiplierSourceId,
+                    _alternateServeMultiplierSourceName,
+                    instance.Id,
+                    ServeCueEffectKind.MultiplierFactor,
+                    multiplier,
+                    $"倍率 ×{FormatNumber(multiplier)}",
+                    multiplier >= 1f
+                        ? ServeCuePresentationKind.Gain
+                        : ServeCuePresentationKind.Penalty));
             }
             else if (RandomServeMultiplier)
             {
@@ -1032,8 +1173,130 @@ namespace GourmetProject.Gameplay.Battle
                 int stepIndex = stepCount > 0 ? _rng.Range(0, stepCount + 1) : 0;
                 float multiplier = Math.Min(_randomServeMultiplierMax, _randomServeMultiplierMin + stepIndex * _randomServeMultiplierStep);
                 instance.MultiplyServeMultiplier(multiplier);
+                RaiseServeTriggerCue(new ServeTriggerCue(
+                    ServeCueSourceKind.BossDebuff,
+                    _randomServeMultiplierSourceId,
+                    _randomServeMultiplierSourceName,
+                    instance.Id,
+                    ServeCueEffectKind.MultiplierFactor,
+                    multiplier,
+                    $"倍率 ×{FormatNumber(multiplier)}",
+                    multiplier >= 1f
+                        ? ServeCuePresentationKind.Gain
+                        : ServeCuePresentationKind.Penalty));
             }
         }
+
+        private void ReevaluateLastServedDishMultipliers(string sourceId = null)
+        {
+            if (_lastServedDishMultiplierRules.Count == 0)
+            {
+                return;
+            }
+
+            DishInstance latest = null;
+            foreach (DishInstance dish in DiningTable.Dishes)
+            {
+                if (dish.ServeOrder > 0
+                    && (latest == null || dish.ServeOrder > latest.ServeOrder))
+                {
+                    latest = dish;
+                }
+            }
+
+            foreach (LastServedDishMultiplierRule rule in _lastServedDishMultiplierRules)
+            {
+                if (!string.IsNullOrEmpty(sourceId)
+                    && !string.Equals(rule.SourceId, sourceId, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                DishInstance next = rule.IsActive == null || rule.IsActive()
+                    ? latest
+                    : null;
+                if (ReferenceEquals(rule.CurrentDish, next))
+                {
+                    continue;
+                }
+
+                DishInstance previous = rule.CurrentDish;
+                if (previous != null)
+                {
+                    SetServeMultiplierFlatForSource(
+                        previous,
+                        rule.SourceId,
+                        0f,
+                        ServeCueSourceKind.PassiveItem,
+                        rule.SourceName,
+                        $"倍率 {FormatSigned(-rule.Value)}（效果转移）",
+                        ServeCuePresentationKind.Cancel,
+                        pulseSource: next == null);
+                }
+
+                rule.CurrentDish = next;
+                if (next != null)
+                {
+                    SetServeMultiplierFlatForSource(
+                        next,
+                        rule.SourceId,
+                        rule.Value,
+                        ServeCueSourceKind.PassiveItem,
+                        rule.SourceName,
+                        $"倍率 {FormatSigned(rule.Value)}",
+                        ServeCuePresentationKind.Gain,
+                        pulseSource: true);
+                }
+            }
+        }
+
+        private void SetServeMultiplierFlatForSource(
+            DishInstance dish,
+            string sourceId,
+            float desiredValue,
+            ServeCueSourceKind sourceKind,
+            string sourceName,
+            string text,
+            ServeCuePresentationKind presentationKind,
+            bool pulseSource)
+        {
+            if (dish == null || string.IsNullOrEmpty(sourceId))
+            {
+                return;
+            }
+
+            float delta = dish.SetServeMultiplierFlatForSource(sourceId, desiredValue);
+            if (Math.Abs(delta) < 0.0001f)
+            {
+                return;
+            }
+
+            ServeMultiplierFlatApplied?.Invoke(dish, delta);
+            RaiseServeTriggerCue(new ServeTriggerCue(
+                sourceKind,
+                sourceId,
+                sourceName,
+                dish.Id,
+                ServeCueEffectKind.MultiplierFlat,
+                delta,
+                text,
+                presentationKind,
+                pulseSource));
+        }
+
+        private void RaiseServeTriggerCue(ServeTriggerCue cue)
+        {
+            if (cue != null && !string.IsNullOrEmpty(cue.SourceId))
+            {
+                ServeTriggerCueRaised?.Invoke(cue);
+            }
+        }
+
+        private static string FormatSigned(float value)
+            => value >= 0f ? $"+{FormatNumber(value)}" : FormatNumber(value);
+
+        private static string FormatNumber(float value)
+            => value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
 
         /// <summary>把历史/食谱打包为只读快照注入结算（读取本次结算之前的状态）。</summary>
         private IScoreHistory BuildHistory()
@@ -1425,6 +1688,7 @@ namespace GourmetProject.Gameplay.Battle
 
             DiningTable.Clear();
             RemovePendingPlacementsNotOnTable();
+            ReevaluateLastServedDishMultipliers();
         }
 
         /// <summary>按 Id 查找餐桌上的菜；不存在返回 null。</summary>
@@ -1485,6 +1749,7 @@ namespace GourmetProject.Gameplay.Battle
             {
                 pending.IsOnDiningTable = false;
             }
+            ReevaluateLastServedDishMultipliers();
             return true;
         }
 
@@ -1665,6 +1930,7 @@ namespace GourmetProject.Gameplay.Battle
             DiningTable.RemoveDish(dish);
             MarkDishStatusBeforePendingRemoval(dish.Id, BattleRecipeEntryStatus.Removed);
             _pendingDishPlacements.Remove(dish.Id);
+            ReevaluateLastServedDishMultipliers();
             return true;
         }
 
@@ -1695,9 +1961,26 @@ namespace GourmetProject.Gameplay.Battle
             var clone = new DishInstance(_nextInstanceId++, source.Def, placement, source.SkillIds, source.FlavorIds);
             clone.SetSourceRecipeIndex(source.SourceSlotIndex, source.SourceDishIndex);
             clone.CopySkillSourcesFrom(source);
+            clone.CopyServeMultiplierFlatSourcesFrom(source, sourceId => !IsLastServedMultiplierSource(sourceId));
             clone.CopyTransferredSkillsFrom(source);
             DiningTable.Place(clone);
             return true;
+        }
+
+        private bool IsLastServedMultiplierSource(string sourceId)
+        {
+            for (int i = 0; i < _lastServedDishMultiplierRules.Count; i++)
+            {
+                if (string.Equals(
+                        _lastServedDishMultiplierRules[i].SourceId,
+                        sourceId,
+                        StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public bool GenerateDishAt(string dishId, GridPos origin)
@@ -1852,6 +2135,31 @@ namespace GourmetProject.Gameplay.Battle
             {
                 _pendingDishPlacements.Remove(dishId);
             }
+        }
+
+        private sealed class LastServedDishMultiplierRule
+        {
+            public LastServedDishMultiplierRule(
+                string sourceId,
+                string sourceName,
+                float value,
+                Func<bool> isActive)
+            {
+                SourceId = sourceId;
+                SourceName = sourceName ?? sourceId;
+                Value = value;
+                IsActive = isActive;
+            }
+
+            public string SourceId { get; }
+
+            public string SourceName { get; }
+
+            public float Value { get; }
+
+            public Func<bool> IsActive { get; }
+
+            public DishInstance CurrentDish { get; set; }
         }
 
         private sealed class TrackedRecipeEntry

@@ -66,7 +66,7 @@
   {
     "id": "debuff_dine_and_dash",
     "name": "霸王餐",
-    "desc": "每次出菜 -5 金币",
+    "desc": "每次上菜 -5 金币",
     "weight": 1,
     "unlockCondition": "",
     "targetScoreHiddenOffset": 0.35

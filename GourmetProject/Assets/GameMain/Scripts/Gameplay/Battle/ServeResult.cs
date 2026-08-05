@@ -5,6 +5,73 @@ using GourmetProject.Gameplay.Model;
 
 namespace GourmetProject.Gameplay.Battle
 {
+    public enum ServeCueSourceKind
+    {
+        PassiveItem,
+        BossDebuff,
+    }
+
+    public enum ServeCueEffectKind
+    {
+        MultiplierFlat,
+        MultiplierFactor,
+        BaseScoreFactor,
+        GoldDelta,
+    }
+
+    public enum ServeCuePresentationKind
+    {
+        Gain,
+        Cancel,
+        Penalty,
+    }
+
+    /// <summary>正式上菜或“最后菜”目标变化时产生的一条即时表现信号。</summary>
+    public sealed class ServeTriggerCue
+    {
+        public ServeTriggerCue(
+            ServeCueSourceKind sourceKind,
+            string sourceId,
+            string sourceName,
+            int dishId,
+            ServeCueEffectKind effectKind,
+            float value,
+            string text,
+            ServeCuePresentationKind presentationKind,
+            bool pulseSource = true)
+        {
+            SourceKind = sourceKind;
+            SourceId = sourceId ?? string.Empty;
+            SourceName = sourceName ?? string.Empty;
+            DishId = dishId;
+            EffectKind = effectKind;
+            Value = value;
+            Text = text ?? string.Empty;
+            PresentationKind = presentationKind;
+            PulseSource = pulseSource;
+        }
+
+        public ServeCueSourceKind SourceKind { get; }
+
+        public string SourceId { get; }
+
+        public string SourceName { get; }
+
+        /// <summary>目标菜实例 Id；金币等无菜目标效果为 0。</summary>
+        public int DishId { get; }
+
+        public ServeCueEffectKind EffectKind { get; }
+
+        public float Value { get; }
+
+        public string Text { get; }
+
+        public ServeCuePresentationKind PresentationKind { get; }
+
+        /// <summary>同一来源的一组转移 Cue 只让来源 UI 脉冲一次。</summary>
+        public bool PulseSource { get; }
+    }
+
     public enum PendingDishActionKind
     {
         Serve,

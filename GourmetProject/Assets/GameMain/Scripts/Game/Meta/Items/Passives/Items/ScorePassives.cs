@@ -58,14 +58,46 @@ namespace GourmetProject.Game.Meta.Passives
         }
     }
 
-    /// <summary>指定上菜顺序倍率 +N（first/last 由 effectParam index 区分）。</summary>
+    /// <summary>首个正式上菜立即获得倍率 +N。</summary>
     [Preserve]
     [PassiveItemModel("item_first_+2")]
-    [PassiveItemModel("item_last_+2")]
-    public sealed class NthServeMultFlatModel : ScoreSpecModel
+    public sealed class FirstServeMultFlatModel : PassiveItemModel
     {
-        public NthServeMultFlatModel() : base(ItemScoreEffectType.NthServeMultFlat)
+        public override void ApplyToBattle(BattleSession session)
         {
+            if (session != null)
+            {
+                session.Served += (dish, serveIndex) => OnServed(session, dish, serveIndex);
+            }
+        }
+
+        private void OnServed(BattleSession session, DishInstance dish, int serveIndex)
+        {
+            if (!IsStillHeld || dish == null || serveIndex != 1 || Value <= 0f)
+            {
+                return;
+            }
+
+            session.AddPassiveServeMultiplierFlat(dish, Value, ItemId, Def?.Name);
+        }
+    }
+
+    /// <summary>倍率加成始终跟随当前餐桌上正式上菜顺序最晚的菜。</summary>
+    [Preserve]
+    [PassiveItemModel("item_last_+2")]
+    public sealed class LastServeMultFlatModel : PassiveItemModel
+    {
+        public override void ApplyToBattle(BattleSession session)
+        {
+            if (session != null && Value > 0f)
+            {
+                session.ConfigureLastServedDishMultiplierFlat(
+                    ItemId,
+                    Def?.Name,
+                    Value,
+                    () => IsStillHeld);
+                session.Served += (_, _) => session.RefreshLastServedDishMultiplierFlat(ItemId);
+            }
         }
     }
 
@@ -113,8 +145,7 @@ namespace GourmetProject.Game.Meta.Passives
                 return;
             }
 
-            session.AddServeMultiplierFlat(dish, value);
-            Flash();
+            session.AddPassiveServeMultiplierFlat(dish, value, ItemId, Def?.Name);
         }
     }
 
