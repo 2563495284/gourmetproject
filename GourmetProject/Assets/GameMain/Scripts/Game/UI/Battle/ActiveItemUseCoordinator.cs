@@ -624,6 +624,14 @@ namespace GourmetProject.Game.UI.Battle
             {
                 bool movedToTemporaryArea = int.TryParse(target.Id, out int dishId)
                     && _host.ActiveSession?.FindTemporaryAreaDishById(dishId) != null;
+                if (movedToTemporaryArea)
+                {
+                    // The numb animation owns the table-to-temporary-area visual transition, so the
+                    // regular board sync is intentionally skipped below. Resume automatic output
+                    // explicitly once that transition has released the world's interaction lock.
+                    world?.EnsureNextDishPrepared();
+                }
+
                 _host.RefreshAfterActiveItem(
                     result.BoardChanged && !movedToTemporaryArea,
                     result.ActionChoicesChanged);

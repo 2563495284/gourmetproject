@@ -126,7 +126,9 @@ namespace GourmetProject.Game.UI.Battle
         [SerializeField] private ActiveItemTargetOverlayView _activeItemTargetOverlayPrefab;
         [SerializeField] private GameObject _shopItemFlyFxPrefab;
 
-        [Header("Food Actions")]
+        [Header("Food Battle (center)")]
+        [Tooltip("美食战斗专属 UI 根节点：MessageText / FoodActions / BuffList。")]
+        [SerializeField] private GameObject _foodBattlePanel;
         [SerializeField] private BattleFoodActionBar _foodBar;
         [SerializeField] private ServingOutletView _servingOutlet;
         [SerializeField] private FoodDiscardBinView _foodDiscardBin;
@@ -895,7 +897,7 @@ namespace GourmetProject.Game.UI.Battle
         }
 
         void IGameplayPageRouterHost.SetActionAxisVisible(bool visible) => SetActionAxisVisible(visible);
-        void IGameplayPageRouterHost.SetFoodActionsVisible(bool visible) => SetFoodActionsVisible(visible);
+        void IGameplayPageRouterHost.SetFoodBattlePanelVisible(bool visible) => SetFoodBattlePanelVisible(visible);
         void IGameplayPageRouterHost.RebuildActionAxis() => RebuildActionAxis();
         void IGameplayPageRouterHost.OpenShopPanel() => _shopPage?.OpenPanel();
         void IGameplayPageRouterHost.OpenRecipeBookPanel() => _recipeBookPage?.OpenPanel();
@@ -1376,8 +1378,13 @@ namespace GourmetProject.Game.UI.Battle
             }
         }
 
-        private void SetFoodActionsVisible(bool visible)
+        private void SetFoodBattlePanelVisible(bool visible)
         {
+            if (_foodBattlePanel != null)
+            {
+                _foodBattlePanel.SetActive(visible);
+            }
+
             _foodBar?.SetVisible(visible);
             ServingOutletView servingOutlet = ResolveServingOutlet();
             BattleWorldController world = _world ?? BattleWorldController.Instance;

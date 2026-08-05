@@ -52,7 +52,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         void SetActionAxisVisible(bool visible);
 
-        void SetFoodActionsVisible(bool visible);
+        void SetFoodBattlePanelVisible(bool visible);
 
         void RebuildActionAxis();
 
@@ -117,7 +117,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
             SetActive(_host.BoardEditPanel, false);
 
-            _host.SetFoodActionsVisible(false);
+            _host.SetFoodBattlePanelVisible(false);
 
             if (_host.HudFrame != null)
             {
@@ -184,7 +184,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
             SetActive(_host.BoardEditPanel, view == GameplayView.TableEdit);
 
             _host.SetActionAxisVisible(actionSelect || shop || eventPage || (recipeInspect && _host.RecipeInspectShowsActionAxis));
-            _host.SetFoodActionsVisible(view == GameplayView.Food);
+            _host.SetFoodBattlePanelVisible(view == GameplayView.Food);
 
             if (_host.Backdrop != null)
             {
