@@ -1022,7 +1022,7 @@
   {
     "id": "item_lucky_guarantee",
     "name": "四叶草标本框",
-    "desc": "每经历 4 个事件\n下次事件必定带来奖励",
+    "desc": "经历4 个事件后\n下个事件一定为奖励",
     "quality": 2,
     "specialTags": 0,
     "effectValue": 4,
@@ -1042,7 +1042,7 @@
   {
     "id": "item_lucky_chance",
     "name": "四叶草福袋",
-    "desc": "更容易遇到奖励事件",
+    "desc": "事件行动中\n奖励事件随机权重 +20%",
     "quality": 2,
     "specialTags": 0,
     "effectValue": 0.2,
@@ -1062,7 +1062,7 @@
   {
     "id": "item_more_events",
     "name": "街角路牌",
-    "desc": "更容易遇到事件",
+    "desc": "事件行动大组\n随机权重 +20%",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 0.2,
@@ -1182,7 +1182,7 @@
   {
     "id": "item_gold_on_event",
     "name": "纪念币展示框",
-    "desc": "每次进入事件\n获得 15 金币",
+    "desc": "进入事件时\n获得15 金币",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 15,
@@ -1462,7 +1462,7 @@
   {
     "id": "item_skip_reward_node",
     "name": "褪色招财猫",
-    "desc": "跳过下一次奖励事件",
+    "desc": "跳过下一个幸运事件节点",
     "quality": 0,
     "specialTags": 1,
     "effectValue": 1,

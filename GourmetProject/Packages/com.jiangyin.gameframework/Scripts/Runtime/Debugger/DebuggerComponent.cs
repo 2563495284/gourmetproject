@@ -241,6 +241,13 @@ namespace UnityGameFramework.Runtime
 
         private void Update()
         {
+            // Unity 在运行中重载脚本域时不会再次调用 Awake，非序列化字段会被清空。
+            // 懒初始化可避免调试器在重载后的第一帧持续抛出空引用异常。
+            if (m_FpsCounter == null)
+            {
+                m_FpsCounter = new FpsCounter(0.5f);
+            }
+
             m_FpsCounter.Update(Time.deltaTime, Time.unscaledDeltaTime);
         }
 

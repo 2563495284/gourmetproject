@@ -103,9 +103,9 @@ TextureImporter:
       name: chocolate_strip_0
       rect:
         serializedVersion: 2
-        x: 33
+        x: 0
         y: 0
-        width: 446
+        width: 512
         height: 1536
       alignment: 0
       pivot: {x: 0, y: 0}

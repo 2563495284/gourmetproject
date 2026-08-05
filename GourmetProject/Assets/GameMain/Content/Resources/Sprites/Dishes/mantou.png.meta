@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: d0be796690cce4bf1bd02b6e287e4dd1
+guid: 26f5fbc9e772415fb99a8cf37e9328ef
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -2515165020970988701
-    second: arrow_cookie_4_0
+      213: -470615782115783786
+    second: mantou_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: arrow_cookie_4_0
+      name: mantou_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
         width: 512
-        height: 1024
+        height: 512
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 36b49854db6581dd0800000000000000
-      internalID: -2515165020970988701
+      spriteID: 5e3ab55e71a34b6da2cc694b65ab2a96
+      internalID: -470615782115783786
       vertices: []
       indices: 
       edges: []
@@ -125,7 +125,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 5e97eb03825dee720800000000000000
+    spriteID: cd1e29d7febc48f399338feb2f5fc381
     internalID: 0
     vertices: []
     indices: 
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      arrow_cookie_4_0: -2515165020970988701
+      mantou_0: -470615782115783786
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

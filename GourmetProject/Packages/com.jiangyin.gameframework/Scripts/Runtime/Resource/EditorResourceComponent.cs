@@ -575,6 +575,28 @@ namespace UnityGameFramework.Runtime
 
         private void Update()
         {
+            // Unity 在运行中重载脚本域时不会再次调用 Awake，非序列化集合会被清空。
+            // 这里恢复空集合，避免编辑器资源模式在重载后持续抛出空引用异常。
+            if (m_CachedAssets == null)
+            {
+                m_CachedAssets = new Dictionary<string, UnityEngine.Object>(StringComparer.Ordinal);
+            }
+
+            if (m_LoadAssetInfos == null)
+            {
+                m_LoadAssetInfos = new GameFrameworkLinkedList<LoadAssetInfo>();
+            }
+
+            if (m_LoadSceneInfos == null)
+            {
+                m_LoadSceneInfos = new GameFrameworkLinkedList<LoadSceneInfo>();
+            }
+
+            if (m_UnloadSceneInfos == null)
+            {
+                m_UnloadSceneInfos = new GameFrameworkLinkedList<UnloadSceneInfo>();
+            }
+
             if (m_LoadAssetInfos.Count > 0)
             {
                 int count = 0;

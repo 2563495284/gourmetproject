@@ -103,10 +103,10 @@ TextureImporter:
       name: jelly_0
       rect:
         serializedVersion: 2
-        x: 62
-        y: 97
-        width: 388
-        height: 318
+        x: 0
+        y: 0
+        width: 1024
+        height: 512
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
