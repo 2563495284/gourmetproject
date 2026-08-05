@@ -854,6 +854,7 @@ namespace GourmetProject.Gameplay.Battle
             }
 
             RecipeSlotEntry entry = pending.PreparedServe?.Entry;
+            ApplyConfirmedEntryFlags(instance, entry);
             TrackServedDish(entry, instance);
             ServesUsed++;
             instance.SetServeOrder(ServesUsed);
@@ -1114,16 +1115,6 @@ namespace GourmetProject.Gameplay.Battle
                 return;
             }
 
-            if (entry.DisableSkills)
-            {
-                instance.DisableSkills();
-            }
-
-            if (entry.ExcludeFromScore)
-            {
-                instance.ExcludeFromScore();
-            }
-
             if (entry.ScoreMultiplier > 0f && Math.Abs(entry.ScoreMultiplier - 1f) > 0.0001f)
             {
                 instance.MultiplyPermanentMult(entry.ScoreMultiplier);
@@ -1132,6 +1123,28 @@ namespace GourmetProject.Gameplay.Battle
             if (Math.Abs(entry.ScoreFlatBonus) > 0.0001f)
             {
                 instance.AddPermanentFlat(entry.ScoreFlatBonus);
+            }
+        }
+
+        /// <summary>
+        /// 斋饭/清淡餐标记属于“确认上菜”效果。预摆阶段不能提前写入实例，
+        /// 否则 hover tips 和预览结算会把尚未上菜的食物显示成已禁用。
+        /// </summary>
+        private static void ApplyConfirmedEntryFlags(DishInstance instance, RecipeSlotEntry entry)
+        {
+            if (instance == null || entry == null)
+            {
+                return;
+            }
+
+            if (entry.DisableSkills)
+            {
+                instance.DisableSkills();
+            }
+
+            if (entry.ExcludeFromScore)
+            {
+                instance.ExcludeFromScore();
             }
         }
 

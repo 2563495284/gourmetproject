@@ -225,6 +225,19 @@ namespace GourmetProject.Game.Presentation.Battle
             return false;
         }
 
+        public bool TryGetDishGrabVisual(int dishId, out DishGrabVisualSnapshot snapshot)
+        {
+            if (_dishViewsById.TryGetValue(dishId, out DishPieceView view)
+                && view != null
+                && view.TryCaptureGrabVisual(WorldCamera, out snapshot))
+            {
+                return true;
+            }
+
+            snapshot = default;
+            return false;
+        }
+
         public void RevealDishDebuffVisual(int dishId)
         {
             if (_dishViewsById.TryGetValue(dishId, out DishPieceView view) && view != null)
@@ -1536,6 +1549,41 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public PendingDishConfirmResult ConfirmPendingDishForPresentation(int dishId)
             => _session?.ConfirmPendingDish(dishId) ?? PendingDishConfirmResult.Fail();
+
+        public async Awaitable CommitPendingDishVisualStateAsync(
+            PendingDishConfirmResult result,
+            CancellationToken cancellationToken)
+        {
+            if (!result.Success || result.Dish == null)
+            {
+                RefreshPendingDishActionButtons();
+                return;
+            }
+
+            int dishId = result.Dish.Id;
+            if (_dishViewsById.TryGetValue(dishId, out DishPieceView piece) && piece != null)
+            {
+                piece.SetMoveCallbacks(null, null, null);
+                piece.SetPlacementGlow(false, false);
+                piece.SetGhost(false);
+                piece.SetClickEnabled(false);
+            }
+
+            // 数据层已经确认上菜；先撤掉“上菜/确认”按钮并切成锁定菜表现，
+            // 后续被动 Cue 与 Boss 手势才能建立在正确的视觉状态上。
+            RefreshPendingDishActionButtons();
+            _boardView?.Sync();
+            RefreshDishValueBadges();
+            SetMessage(result.ActionKind == PendingDishActionKind.Serve
+                ? $"上菜：{result.Dish.Def.Name}"
+                : $"已确认摆放：{result.Dish.Def.Name}");
+            _stateChanged?.Invoke();
+
+            if (result.ActionKind == PendingDishActionKind.Serve && piece != null)
+            {
+                await piece.PlayServeLandImpactFeedbackAsync(cancellationToken);
+            }
+        }
 
         public void FinalizePendingDishPresentation(
             PendingDishConfirmResult result,

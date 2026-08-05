@@ -32,6 +32,35 @@ namespace GourmetProject.Game.Presentation.Battle
         SweetTransferExecutor = 15,
     }
 
+    public readonly struct DishGrabVisualSnapshot
+    {
+        public DishGrabVisualSnapshot(
+            Sprite sprite,
+            Color color,
+            Vector2 screenCenter,
+            Vector2 screenSize,
+            float screenRotationDegrees,
+            bool flipX,
+            bool flipY)
+        {
+            Sprite = sprite;
+            Color = color;
+            ScreenCenter = screenCenter;
+            ScreenSize = screenSize;
+            ScreenRotationDegrees = screenRotationDegrees;
+            FlipX = flipX;
+            FlipY = flipY;
+        }
+
+        public Sprite Sprite { get; }
+        public Color Color { get; }
+        public Vector2 ScreenCenter { get; }
+        public Vector2 ScreenSize { get; }
+        public float ScreenRotationDegrees { get; }
+        public bool FlipX { get; }
+        public bool FlipY { get; }
+    }
+
     /// <summary>
     /// 已摆放食物表现：固定结构（接触阴影 + 食物本体 + 碰撞盒）预拼在 prefab 上，由 <see cref="BuildPlaced"/> 喂数据。
     /// sprite/缩放/旋转/碰撞尺寸随形状(1x1/2x1/L/T...)与朝向变化，必须运行时计算（见 dish-footprint-sprite 规则）。
@@ -339,6 +368,42 @@ namespace GourmetProject.Game.Presentation.Battle
 
                 return new Bounds(transform.position, Vector3.one);
             }
+        }
+
+        public bool TryCaptureGrabVisual(Camera camera, out DishGrabVisualSnapshot snapshot)
+        {
+            snapshot = default;
+            EnsureRefs();
+            if (camera == null || _spriteRenderer == null || _spriteRenderer.sprite == null)
+            {
+                return false;
+            }
+
+            Bounds spriteBounds = _spriteRenderer.sprite.bounds;
+            Transform rendererTransform = _spriteRenderer.transform;
+            Vector3 localCenter = spriteBounds.center;
+            Vector2 center = camera.WorldToScreenPoint(rendererTransform.TransformPoint(localCenter));
+            Vector2 right = camera.WorldToScreenPoint(rendererTransform.TransformPoint(
+                localCenter + Vector3.right * spriteBounds.extents.x));
+            Vector2 up = camera.WorldToScreenPoint(rendererTransform.TransformPoint(
+                localCenter + Vector3.up * spriteBounds.extents.y));
+            Vector2 rightDelta = right - center;
+            Vector2 upDelta = up - center;
+            Vector2 size = new Vector2(rightDelta.magnitude * 2f, upDelta.magnitude * 2f);
+            if (size.x <= 0.5f || size.y <= 0.5f)
+            {
+                return false;
+            }
+
+            snapshot = new DishGrabVisualSnapshot(
+                _spriteRenderer.sprite,
+                _spriteRenderer.color,
+                center,
+                size,
+                Mathf.Atan2(rightDelta.y, rightDelta.x) * Mathf.Rad2Deg,
+                _spriteRenderer.flipX,
+                _spriteRenderer.flipY);
+            return true;
         }
 
         public void SetDebuffVisualSuppressed(bool suppressed)
