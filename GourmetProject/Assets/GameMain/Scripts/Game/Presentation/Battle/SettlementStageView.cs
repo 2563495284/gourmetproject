@@ -37,6 +37,59 @@ namespace GourmetProject.Game.Presentation.Battle
             _fxRoot = fxRoot != null ? fxRoot : transform;
         }
 
+        internal void PlayTransientEffect(
+            Transform parent,
+            Vector3 anchor,
+            string sourceName,
+            string effectText,
+            Color theme,
+            float duration,
+            float delay,
+            CancellationToken cancellationToken)
+        {
+            _ = PlayTransientEffectAsync(
+                parent,
+                anchor,
+                sourceName,
+                effectText,
+                theme,
+                duration,
+                delay,
+                cancellationToken);
+        }
+
+        private async Awaitable PlayTransientEffectAsync(
+            Transform parent,
+            Vector3 anchor,
+            string sourceName,
+            string effectText,
+            Color theme,
+            float duration,
+            float delay,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                if (delay > 0f)
+                {
+                    await Awaitable.WaitForSecondsAsync(delay, cancellationToken);
+                }
+
+                await SpawnLabelAsync(
+                    anchor,
+                    ReadableName(sourceName, "效果触发"),
+                    effectText,
+                    theme,
+                    duration,
+                    cancellationToken,
+                    parentOverride: parent);
+            }
+            catch (OperationCanceledException)
+            {
+                // 页面关闭或新一轮演出开始时，尚未完成的即时提示直接结束。
+            }
+        }
+
         public async Awaitable PlayBaseAsync(
             DishPieceView view,
             string dishName,
@@ -429,10 +482,11 @@ namespace GourmetProject.Game.Presentation.Battle
             float duration,
             CancellationToken cancellationToken,
             bool holdUntilCleared = false,
-            bool finalStamp = false)
+            bool finalStamp = false,
+            Transform parentOverride = null)
         {
             GameObject root = new("SettlementStageLabel");
-            root.transform.SetParent(_fxRoot, worldPositionStays: true);
+            root.transform.SetParent(parentOverride != null ? parentOverride : _fxRoot, worldPositionStays: true);
             root.transform.position = anchor;
             _transients.Add(root);
 

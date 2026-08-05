@@ -734,11 +734,10 @@ namespace GourmetProject.Game.UI.Meta
                 return false;
             }
 
-            RewardChoice choice = groupChoices[choiceIndex];
             bool applied;
             using (RunPersistence.SuppressSave())
             {
-                applied = RewardGranter.ApplyDishChoice(_run, choice);
+                applied = RewardGranter.ApplyDishChoice(_run, groupChoices[choiceIndex]);
             }
 
             if (!applied)
@@ -749,17 +748,6 @@ namespace GourmetProject.Game.UI.Meta
             MarkChoiceClaimed(groupIndex, choiceIndex);
             CacheCurrentOffer();
             RefreshBattlePersistentHud();
-            if (!IsChoiceResolved(groupIndex))
-            {
-                OpenDishPack(
-                    groupIndex,
-                    GroupFor(groupIndex).Choices,
-                    closeRewardFormOnOpen: false);
-            }
-            else
-            {
-                ReopenReward();
-            }
             return true;
         }
 
@@ -1187,15 +1175,12 @@ namespace GourmetProject.Game.UI.Meta
 
             RewardChoiceGroup group = GroupFor(groupIndex);
             IReadOnlyList<RewardChoice> currentChoices = group.Choices;
-            if (currentChoices == null || IsChoiceResolved(groupIndex)
-                || index < 0 || index >= currentChoices.Count || IsChoiceClaimed(groupIndex, index))
-            {
-                ReopenReward();
-                return;
-            }
-
-            RewardChoice choice = currentChoices[index];
-            if (choice == null)
+            if (currentChoices == null
+                || IsChoiceResolved(groupIndex)
+                || index < 0
+                || index >= currentChoices.Count
+                || currentChoices[index] == null
+                || IsChoiceClaimed(groupIndex, index))
             {
                 ReopenReward();
                 return;
@@ -1203,20 +1188,12 @@ namespace GourmetProject.Game.UI.Meta
 
             using (RunPersistence.SuppressSave())
             {
-                RewardGranter.ApplyChoice(_run, choice);
+                RewardGranter.ApplyChoice(_run, currentChoices[index]);
             }
 
             MarkChoiceClaimed(groupIndex, index);
             CacheCurrentOffer();
             RefreshBattlePersistentHud();
-
-            if (!IsChoiceResolved(groupIndex) && IsItemPack(currentChoices)
-                && OpenItemChoicePopup(groupIndex, currentChoices, closeRewardFormOnOpen: false))
-            {
-                return;
-            }
-
-            ReopenReward();
         }
 
         private void ClaimAllRemainingChoices(int groupIndex, IReadOnlyList<RewardChoice> choices)

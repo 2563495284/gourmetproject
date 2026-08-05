@@ -59,7 +59,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
             RewardChoiceGroup group,
             IReadOnlyList<RewardChoice> choices,
             Func<int, bool> onChoiceSelected,
-            Action onSkip)
+            Action onFinish)
         {
             if (_host.Run == null || _host.RewardDishPackPanel == null)
             {
@@ -75,7 +75,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
                     group,
                     choices,
                     onChoiceSelected,
-                    onSkip,
+                    onFinish,
                     _host.FoodTips,
                     _host.PlayRewardDishSelectionFly);
                 _host.RefreshPersistent();
@@ -100,18 +100,14 @@ namespace GourmetProject.Game.UI.Battle.Pages
                     choices,
                     choiceIndex =>
                     {
-                        if (choiceIndex < 0 || choiceIndex >= choices.Count)
-                        {
-                            return false;
-                        }
-
-                        if (!RewardGranter.ApplyDishChoice(_host.Run, choices[choiceIndex]))
+                        if (choiceIndex < 0
+                            || choiceIndex >= choices.Count
+                            || !RewardGranter.ApplyDishChoice(_host.Run, choices[choiceIndex]))
                         {
                             return false;
                         }
 
                         RunPersistence.Save(_host.Run);
-                        RestoreAfterAcquireView(previous);
                         return true;
                     },
                     () => RestoreAfterAcquireView(previous),
@@ -133,8 +129,9 @@ namespace GourmetProject.Game.UI.Battle.Pages
                     if (index >= 0 && index < choices.Count)
                     {
                         RewardGranter.ApplyChoice(_host.Run, choices[index]);
-                        RunPersistence.Save(_host.Run);
                     }
+
+                    RunPersistence.Save(_host.Run);
                 },
                 null);
         }
@@ -144,7 +141,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
             IReadOnlyList<RewardChoice> choices,
             cfg.ItemKind kind,
             Action<int> onPick,
-            Action onSkip)
+            Action onFinish)
         {
             if (_host.Run == null || choices == null || choices.Count == 0)
             {
@@ -167,12 +164,15 @@ namespace GourmetProject.Game.UI.Battle.Pages
                     kind,
                     (sourceCard, index) =>
                     {
-                        Action playSelectionFly =
-                            index >= 0 && index < choices.Count
-                                ? _host.PrepareRewardItemSelectionFly(choices[index], kind, sourceCard)
-                                : null;
-                        _host.RewardItemChoicePanel.Close();
-                        RestoreAfterAcquireView(previous);
+                        Action playSelectionFly = null;
+                        if (index >= 0 && index < choices.Count)
+                        {
+                            playSelectionFly = _host.PrepareRewardItemSelectionFly(
+                                choices[index],
+                                kind,
+                                sourceCard);
+                        }
+
                         onPick?.Invoke(index);
                         playSelectionFly?.Invoke();
                     },
@@ -180,7 +180,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
                     {
                         _host.RewardItemChoicePanel.Close();
                         RestoreAfterAcquireView(previous);
-                        onSkip?.Invoke();
+                        onFinish?.Invoke();
                     },
                     _host.Run,
                     _host.ItemTips());

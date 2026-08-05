@@ -28,7 +28,6 @@ namespace GourmetProject.Game.UI.Battle
 
         private ActiveItemActionPopup _popup;
         private TargetArrowView _uiArrow;
-        private WorldTargetArrow _worldArrow;
         private ActiveItemTargetOverlayView _targetOverlay;
         private RectTransform _targetPanel;
         private TMP_Text _targetPrompt;
@@ -435,19 +434,15 @@ namespace GourmetProject.Game.UI.Battle
             bool dimPlacedDishes = _pendingItem.EffectType == ItemEffectTypes.AddMaterial;
             world.BeginActiveItemWorldTargeting(dimPlacedDishes);
             CaptureAndHideCursor();
-            _worldArrow = WorldTargetArrow.Create(
-                world.ActiveTargetArrowPrefab,
-                world.ActiveTargetRoot,
-                world.ActiveTargetCellSize,
-                world.WorldCamera,
-                _pendingStartScreen);
-            if (_worldArrow == null)
+            CreateUiArrow();
+            if (_uiArrow == null)
             {
                 CancelTargeting();
                 return;
             }
 
-            _worldArrow.UpdateTo(Mouse.current != null ? Mouse.current.position.ReadValue() : _pendingStartScreen);
+            _uiArrow.SetEndScreenPoint(
+                Mouse.current != null ? Mouse.current.position.ReadValue() : _pendingStartScreen);
             _host.ShowActiveItemMessage($"{_pendingItem.Name}：选择目标，右键或 Esc 取消。");
         }
 
@@ -461,7 +456,7 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             Vector2 pointer = Mouse.current != null ? Mouse.current.position.ReadValue() : _pendingStartScreen;
-            _worldArrow?.UpdateTo(pointer);
+            _uiArrow?.SetEndScreenPoint(pointer);
 
             bool pointerHasTarget = _pendingItem.TargetKind == cfg.ItemTargetKind.DiningTableCell
                 ? world.TryPointerCellTarget(out ActiveTarget hovered)
@@ -473,7 +468,6 @@ namespace GourmetProject.Game.UI.Battle
                 _candidateTargets,
                 _selectedTargets,
                 hoverTarget);
-            _worldArrow?.SetTargetHighlighted(hasHover);
 
             if (Time.frameCount <= _targetFrame || !WorldInput.PrimaryPressedThisFrame)
             {
@@ -520,7 +514,7 @@ namespace GourmetProject.Game.UI.Battle
             button.gameObject.SetActive(true);
             var rect = (RectTransform)button.transform;
             rect.sizeDelta = new Vector2(240f, 34f);
-            button.onClick.AddListener(() => AddTarget(target));
+            button.onClick.AddListener(() => AddTarget(target, button));
 
             TMP_Text text = _targetOverlay.LabelOf(button);
             if (text != null)
@@ -531,17 +525,31 @@ namespace GourmetProject.Game.UI.Battle
             _targetButtons.Add(button.gameObject);
         }
 
-        private void AddTarget(ActiveTarget target)
+        private void AddTarget(ActiveTarget target, Button sourceButton = null)
         {
             if (ContainsTarget(_selectedTargets, target))
+            {
+                if (RequiredTargetCount() > 1)
+                {
+                    RemoveTarget(_selectedTargets, target);
+                    SetTargetButtonSelected(sourceButton, false);
+                    RefreshConfirmButton();
+                    RefreshTargetPrompt();
+                }
+                return;
+            }
+
+            if (_selectedTargets.Count >= RequiredTargetCount())
             {
                 return;
             }
 
             _selectedTargets.Add(target);
+            SetTargetButtonSelected(sourceButton, true);
             RefreshConfirmButton();
+            RefreshTargetPrompt();
 
-            if (_selectedTargets.Count >= RequiredTargetCount())
+            if (RequiredTargetCount() == 1)
             {
                 CompleteTargeting();
             }
@@ -552,6 +560,11 @@ namespace GourmetProject.Game.UI.Battle
             if (_pendingContext == null || _pendingItem == null)
             {
                 CancelTargeting(showMessage: false);
+                return;
+            }
+
+            if (_selectedTargets.Count < RequiredTargetCount())
+            {
                 return;
             }
 
@@ -697,8 +710,6 @@ namespace GourmetProject.Game.UI.Battle
             _timelineAxisTargeting = false;
             _selectedTargets.Clear();
             _candidateTargets.Clear();
-            _worldArrow?.Destroy();
-            _worldArrow = null;
             RestoreCursorState();
             if (_uiArrow != null)
             {
@@ -924,6 +935,42 @@ namespace GourmetProject.Game.UI.Battle
             if (_targetConfirmButton != null)
             {
                 _targetConfirmButton.interactable = _selectedTargets.Count >= RequiredTargetCount();
+            }
+        }
+
+        private void RefreshTargetPrompt()
+        {
+            if (_targetPrompt != null && _pendingItem != null)
+            {
+                _targetPrompt.text = $"{_pendingItem.Name}：已选 {_selectedTargets.Count}/{RequiredTargetCount()}";
+            }
+        }
+
+        private static void SetTargetButtonSelected(Button button, bool selected)
+        {
+            if (button?.targetGraphic == null)
+            {
+                return;
+            }
+
+            button.targetGraphic.color = selected
+                ? new Color(0.48f, 0.92f, 0.58f, 1f)
+                : Color.white;
+        }
+
+        private static void RemoveTarget(List<ActiveTarget> targets, ActiveTarget candidate)
+        {
+            for (int i = 0; i < targets.Count; i++)
+            {
+                ActiveTarget target = targets[i];
+                if (target.TargetKind == candidate.TargetKind
+                    && target.Id == candidate.Id
+                    && target.X == candidate.X
+                    && target.Y == candidate.Y)
+                {
+                    targets.RemoveAt(i);
+                    return;
+                }
             }
         }
 

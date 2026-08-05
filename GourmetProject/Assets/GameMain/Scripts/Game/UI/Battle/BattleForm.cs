@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using DG.Tweening;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Adapter;
@@ -159,6 +160,10 @@ namespace GourmetProject.Game.UI.Battle
         private int _shopItemFlyInFlight;
         private readonly HashSet<ShopPurchaseFlyView> _activeShopPurchaseFlys = new();
         private cfg.BossDebuff _currentBossDebuff;
+        private BossDebuffPresentationView _bossPresentation;
+        private BossDialogueShuffleBag _bossDialogueBag;
+        private CancellationTokenSource _bossPresentationCts;
+        private bool _bossDiscardRevealPending;
         private cfg.TimelineNode _currentTimelineNodeCard;
         private int? _currentTimelineNodeInterestMaxGain;
         private Action _currentTimelineNodePick;
@@ -215,6 +220,12 @@ namespace GourmetProject.Game.UI.Battle
             _viewTablePanel?.GetComponent<ViewTablePanel>()?.Bind(OnExitTableViewClicked);
             _cakeLayerBuffHud = GetComponent<CakeLayerBuffHud>();
             _foodBar?.Bind(OnEatClicked, OnDoodleClearClicked, OnDoodleToggleClicked);
+            _bossPresentation = GetComponent<BossDebuffPresentationView>();
+            if (_bossPresentation == null)
+            {
+                _bossPresentation = gameObject.AddComponent<BossDebuffPresentationView>();
+            }
+            _bossPresentation.EnsureBuilt();
 
             if (_boardEditActionButton != null)
             {
@@ -277,6 +288,7 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             _discardSettlementCallbacks = true;
+            CancelBossPresentation();
             ResetBossBattlePresentation();
             CancelActiveShopPurchaseAnimations();
             _settlementReveal = null;
@@ -376,6 +388,7 @@ namespace GourmetProject.Game.UI.Battle
 
         public void HideBattleWorld()
         {
+            CancelBossPresentation();
             _infoColumn?.SetBattleScoreOverride(null);
             BattleWorldController world = _world ?? BattleWorldController.Instance;
             world?.HideWorld();
@@ -1129,9 +1142,9 @@ namespace GourmetProject.Game.UI.Battle
             RewardChoiceGroup group,
             IReadOnlyList<RewardChoice> choices,
             Func<int, bool> onChoiceSelected,
-            Action onSkip)
+            Action onFinish)
         {
-            return _rewardPage != null && _rewardPage.OpenRewardDishPack(group, choices, onChoiceSelected, onSkip);
+            return _rewardPage != null && _rewardPage.OpenRewardDishPack(group, choices, onChoiceSelected, onFinish);
         }
 
         public bool OpenAcquireDishPack(string title, IReadOnlyList<RewardChoice> choices)
@@ -1149,9 +1162,9 @@ namespace GourmetProject.Game.UI.Battle
             IReadOnlyList<RewardChoice> choices,
             cfg.ItemKind kind,
             Action<int> onPick,
-            Action onSkip)
+            Action onFinish)
         {
-            return _rewardPage != null && _rewardPage.OpenRewardItemChoices(group, choices, kind, onPick, onSkip);
+            return _rewardPage != null && _rewardPage.OpenRewardItemChoices(group, choices, kind, onPick, onFinish);
         }
 
         public bool OpenRandomizedItemsPanel(string title, IReadOnlyList<RandomizedItemResult> results)
@@ -1239,7 +1252,8 @@ namespace GourmetProject.Game.UI.Battle
                 RefreshAll,
                 null,
                 OnDishClicked,
-                resetDoodle: false);
+                resetDoodle: false,
+                serveTriggerCueSink: OnServeTriggerCue);
             _world.SetDishHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
             _world.SetCellHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
             _world.SetTableFragmentHoverCallbacks(OnTableFragmentHoverEntered, OnTableFragmentHoverExited);
@@ -1364,7 +1378,7 @@ namespace GourmetProject.Game.UI.Battle
             FoodDiscardBinView discardBin = ResolveFoodDiscardBin();
             discardBin?.ConfigureWorldSpace(world != null ? world.WorldCamera : Camera.main);
             discardBin?.Bind(_session);
-            discardBin?.SetVisible(visible);
+            discardBin?.SetVisible(visible && !_bossDiscardRevealPending);
         }
 
         /// <summary>初始化经营挑战态的出菜口、弃置区与世界拖拽回调。</summary>
@@ -1385,7 +1399,6 @@ namespace GourmetProject.Game.UI.Battle
 
             servingOutlet?.Bind(
                 _session,
-                ServeFromOutlet,
                 () => OpenRecipeInspect(0, useBattleRecipe: true),
                 () => OnServingOutletDishHoverEntered(servingOutlet),
                 OnServingOutletDishHoverExited,
@@ -1412,22 +1425,6 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             return _foodDiscardBin;
-        }
-
-        private void ServeFromOutlet()
-        {
-            if (_rewardPeekOnly || HasPendingBattleRewardLifecycle)
-            {
-                return;
-            }
-
-            if (_world == null || _session == null || _session.IsSettled)
-            {
-                return;
-            }
-
-            _world.TryPrepareServeDish(0);
-            RefreshAll();
         }
 
         private void BeginFoodDiscardCapacityTracking()
@@ -2627,6 +2624,7 @@ namespace GourmetProject.Game.UI.Battle
             string bossDebuffId,
             ActionExecutionContext actionContext)
         {
+            CancelBossPresentation();
             HideResultPanel();
             _infoColumn?.SetBattleScoreOverride(null);
             _infoColumn?.ScoreFire?.Hide();
@@ -2643,6 +2641,16 @@ namespace GourmetProject.Game.UI.Battle
             SetMessage(string.Empty);
             UnsubscribeCakeLayerChanges();
             _session = _run.BuildBattleSession(requiredScore, modifier, key, _activeBossDebuffId);
+            BossDebuffPresentationPlan bossPlan = _session.BossDebuffPresentation;
+            _bossDiscardRevealPending = _activeBattleIsBoss
+                && string.Equals(bossPlan?.DebuffId, "debuff_omakase", StringComparison.Ordinal);
+            if (_activeBattleIsBoss && bossPlan != null && GameApp.Random != null)
+            {
+                _bossDialogueBag = new BossDialogueShuffleBag(
+                    bossPlan.Dialogues,
+                    GameApp.Random.Cosmetic($"boss_dialogue_{key}_{bossPlan.DebuffId}"));
+                _bossPresentationCts = CancellationTokenSource.CreateLinkedTokenSource(destroyCancellationToken);
+            }
             BeginFoodDiscardCapacityTracking();
             _displayedCakeLayers = _session.HappyCakeLayers;
             _pendingSettlementCakeLayers = null;
@@ -2659,6 +2667,14 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             _world.SetTableArea(_boardArea);
+            bool runOpeningPresentation = _activeBattleIsBoss
+                && bossPlan != null
+                && (bossPlan.HasIntroPresentation
+                    || string.Equals(bossPlan.DebuffId, "debuff_carb_meal", StringComparison.Ordinal));
+            if (string.Equals(bossPlan?.DebuffId, "debuff_gluttony", StringComparison.Ordinal))
+            {
+                _servingOutlet?.SetRecipeCountPresentationOverride(bossPlan.InitialRecipeEntryCount);
+            }
             _world.Initialize(
                 _run,
                 _session,
@@ -2666,11 +2682,22 @@ namespace GourmetProject.Game.UI.Battle
                 SetSettlementScore,
                 RefreshAll,
                 null,
-                OnDishClicked);
+                OnDishClicked,
+                serveTriggerCueSink: OnServeTriggerCue,
+                pendingDishConfirmRequested: OnPendingDishConfirmRequested,
+                prepareNextDish: !runOpeningPresentation);
+            if (_activeBattleIsBoss && bossPlan != null)
+            {
+                _world.StageBossPresentation(bossPlan);
+            }
             _world.SetDishHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
             _world.SetCellHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
             _world.SetTableFragmentHoverCallbacks(OnTableFragmentHoverEntered, OnTableFragmentHoverExited);
             RefreshAll();
+            if (runOpeningPresentation)
+            {
+                _ = PlayBossOpeningPresentationAsync(bossPlan);
+            }
         }
 
         private void OnHappyCakeLayersChanged(int before, int after)
@@ -2682,6 +2709,289 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             ApplyCakeLayerPresentation(after);
+        }
+
+        private async Awaitable PlayBossOpeningPresentationAsync(BossDebuffPresentationPlan plan)
+        {
+            await PlayBossLockedAsync(async token =>
+            {
+                await Awaitable.NextFrameAsync(token);
+                switch (plan.DebuffId)
+                {
+                    case "debuff_vegetarian":
+                        foreach (GridPos cell in plan.DisabledCells)
+                        {
+                            if (_world.TryGetCellScreenPoint(cell, out Vector2 point))
+                            {
+                                await _bossPresentation.PointAsync(point, token, 0.12f);
+                            }
+                            _world.RevealBossDisabledCell(cell);
+                        }
+                        await ShowBossDialogueAsync("这几块别放肉。", token);
+                        break;
+
+                    case "debuff_indulgent":
+                    case "debuff_binge":
+                        await ShowBossDialogueAsync("我要多吃点", token);
+                        await SweepCellsAsync(plan.AddedCells, _world.RevealBossAddedCell, token);
+                        break;
+
+                    case "debuff_weight_loss":
+                    case "debuff_kids_meal":
+                        await ShowBossDialogueAsync("我要少吃点", token);
+                        await SweepCellsAsync(plan.RemovedCells, _world.RevealBossRemovedCell, token);
+                        break;
+
+                    case "debuff_gluttony":
+                        await ShowBossDialogueAsync("都给我再来一份", token);
+                        await PlayGluttonyRecipeFlyAsync(plan, token);
+                        break;
+
+                    case "debuff_omakase":
+                        await ShowBossDialogueAsync("我不喜欢浪费", token);
+                        _bossDiscardRevealPending = false;
+                        ResolveFoodDiscardBin()?.SetVisible(true);
+                        break;
+                }
+
+                _world.FinishBossPresentation();
+                _servingOutlet?.SetRecipeCountPresentationOverride(null);
+                RefreshAll();
+                _world.EnsureNextDishPrepared(0, allowDuringBossPresentation: true);
+                await ShowCarbDialogueIfNeededAsync(token);
+            });
+        }
+
+        private async void OnPendingDishConfirmRequested(int dishId)
+        {
+            if (_session == null
+                || _session.IsSettled
+                || _bossPresentation?.IsPlaying == true
+                || (_world != null && _world.IsFoodInteractionBusy))
+            {
+                return;
+            }
+
+            await PlayBossLockedAsync(token =>
+                ConfirmPendingDishPresentationAsync(dishId, prepareNextDish: true, token));
+        }
+
+        private async Awaitable ConfirmPendingDishPresentationAsync(
+            int dishId,
+            bool prepareNextDish,
+            CancellationToken token)
+        {
+            if (_world == null)
+            {
+                return;
+            }
+
+            _world.TryGetDishScreenPoint(dishId, out Vector2 dishPoint);
+            PendingDishConfirmResult result = _world.ConfirmPendingDishForPresentation(dishId);
+            if (!result.Success)
+            {
+                _world.FinalizePendingDishPresentation(result, prepareNextDish: false);
+                return;
+            }
+
+            string debuffId = _session?.BossDebuffPresentation?.DebuffId ?? string.Empty;
+            if (result.ActionKind == PendingDishActionKind.Serve)
+            {
+                if (string.Equals(debuffId, "debuff_vegan_meal", StringComparison.Ordinal)
+                    && result.Dish?.ExcludedFromScore == true)
+                {
+                    await _bossPresentation.PointAsync(dishPoint, token, 0.12f);
+                    _world.RevealDishDebuffVisual(result.Dish.Id);
+                    await ShowBossDialogueAsync("我不喜欢", token);
+                }
+                else if (string.Equals(debuffId, "debuff_light_meal", StringComparison.Ordinal)
+                    && result.Dish?.SkillsDisabled == true)
+                {
+                    await _bossPresentation.PointAsync(dishPoint, token, 0.12f);
+                    await _bossPresentation.ShowCueAsync(dishPoint, "技能失效", token);
+                    await ShowBossDialogueAsync("太花里胡哨了", token);
+                }
+                else if (string.Equals(debuffId, "debuff_appetizer", StringComparison.Ordinal)
+                    && result.RemovedAfterServe)
+                {
+                    await _bossPresentation.GrabAsync(dishPoint, token);
+                    _world.SetDishPresentationVisible(result.Dish.Id, false);
+                    await ShowBossDialogueAsync("我先吃一点", token);
+                }
+            }
+
+            await _world.PlayPendingServeTriggerCuesAsync(token);
+            _world.FinalizePendingDishPresentation(result, prepareNextDish: false);
+            if (prepareNextDish)
+            {
+                _world.EnsureNextDishPrepared(0, allowDuringBossPresentation: true);
+                await ShowCarbDialogueIfNeededAsync(token);
+            }
+        }
+
+        private async Awaitable ShowCarbDialogueIfNeededAsync(CancellationToken token)
+        {
+            if (string.Equals(
+                    _session?.BossDebuffPresentation?.DebuffId,
+                    "debuff_carb_meal",
+                    StringComparison.Ordinal)
+                && _session?.PreparedServe?.IsBossInsertedDish == true)
+            {
+                await ShowBossDialogueAsync("先给我来点这个", token);
+            }
+        }
+
+        private async Awaitable SweepCellsAsync(
+            IReadOnlyList<GridPos> cells,
+            Action<GridPos> reveal,
+            CancellationToken token)
+        {
+            var points = new List<Vector2>();
+            var visibleCells = new List<GridPos>();
+            if (cells != null)
+            {
+                foreach (GridPos cell in cells)
+                {
+                    if (_world.TryGetCellScreenPoint(cell, out Vector2 point))
+                    {
+                        points.Add(point);
+                        visibleCells.Add(cell);
+                    }
+                    else
+                    {
+                        reveal?.Invoke(cell);
+                    }
+                }
+            }
+
+            await _bossPresentation.SweepAsync(
+                points,
+                index => reveal?.Invoke(visibleCells[index]),
+                token);
+        }
+
+        private async Awaitable PlayGluttonyRecipeFlyAsync(
+            BossDebuffPresentationPlan plan,
+            CancellationToken token)
+        {
+            Canvas canvas = GetComponentInParent<Canvas>();
+            RectTransform layer = canvas != null
+                ? canvas.transform as RectTransform
+                : transform.root as RectTransform;
+            Canvas.ForceUpdateCanvases();
+            Camera layerCamera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay
+                ? canvas.worldCamera
+                : null;
+            if (layer == null
+                || _servingOutlet == null
+                || !_servingOutlet.TryGetRecipeInfoButtonScreenPoint(out Vector2 targetScreenPoint)
+                || !RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                    layer,
+                    targetScreenPoint,
+                    layerCamera,
+                    out Vector2 recipeInfoButtonCenter)
+                || plan.DuplicatedDishIds.Count == 0)
+            {
+                return;
+            }
+
+            IRandomStream cosmetic = GameApp.Random.Cosmetic(
+                $"boss_gluttony_{_activeBattleKey}_{plan.DebuffId}");
+            var spriteProvider = new DishSpriteProvider();
+            int arrived = 0;
+            int finished = 0;
+            int total = plan.DuplicatedDishIds.Count;
+            foreach (string dishId in plan.DuplicatedDishIds)
+            {
+                token.ThrowIfCancellationRequested();
+                ShopPurchaseFlyView fly = CreateShopPurchaseFly(layer);
+                if (fly == null)
+                {
+                    arrived++;
+                    finished++;
+                    continue;
+                }
+
+                RegisterShopPurchaseFly(fly);
+                float marginX = Mathf.Min(110f, layer.rect.width * 0.15f);
+                float marginY = Mathf.Min(90f, layer.rect.height * 0.15f);
+                Vector2 start = new Vector2(
+                    cosmetic.Range(layer.rect.xMin + marginX, layer.rect.xMax - marginX),
+                    cosmetic.Range(layer.rect.yMin + marginY, layer.rect.yMax - marginY));
+                Sprite sprite = spriteProvider.Get(_run.Database.GetDish(dishId));
+                fly.PlayFoodSprite(
+                    start,
+                    new Vector2(112f, 112f),
+                    recipeInfoButtonCenter,
+                    sprite,
+                    () =>
+                    {
+                        arrived++;
+                        _servingOutlet?.SetRecipeCountPresentationOverride(
+                            plan.InitialRecipeEntryCount + arrived);
+                        RefreshFoodActions();
+                    },
+                    () =>
+                    {
+                        finished++;
+                        UnregisterShopPurchaseFly(fly);
+                    });
+            }
+
+            while (finished < total)
+            {
+                token.ThrowIfCancellationRequested();
+                await Awaitable.NextFrameAsync(token);
+            }
+        }
+
+        private async Awaitable ShowBossDialogueAsync(
+            string fallback,
+            CancellationToken token,
+            float extraHoldSeconds = 0f)
+        {
+            string dialogue = _bossDialogueBag?.Draw();
+            await _bossPresentation.ShowDialogueAsync(
+                string.IsNullOrEmpty(dialogue) ? fallback : dialogue,
+                token,
+                extraHoldSeconds);
+        }
+
+        private async Awaitable PlayBossLockedAsync(Func<CancellationToken, Awaitable> sequence)
+        {
+            if (_bossPresentation == null || _world == null)
+            {
+                return;
+            }
+
+            if (_bossPresentationCts == null || _bossPresentationCts.IsCancellationRequested)
+            {
+                _bossPresentationCts?.Dispose();
+                _bossPresentationCts = CancellationTokenSource.CreateLinkedTokenSource(destroyCancellationToken);
+            }
+
+            _world.SetBossPresentationBusy(true);
+            try
+            {
+                await _bossPresentation.PlayLockedAsync(sequence, _bossPresentationCts.Token);
+            }
+            finally
+            {
+                _world?.SetBossPresentationBusy(false);
+                RefreshAll();
+            }
+        }
+
+        private void CancelBossPresentation()
+        {
+            _bossPresentationCts?.Cancel();
+            _bossPresentationCts?.Dispose();
+            _bossPresentationCts = null;
+            _bossDialogueBag = null;
+            _bossDiscardRevealPending = false;
+            _bossPresentation?.CancelCurrent();
+            (_world ?? BattleWorldController.Instance)?.SetBossPresentationBusy(false);
+            _servingOutlet?.SetRecipeCountPresentationOverride(null);
         }
 
         private void ApplyCakeLayerPresentation(int targetLayers)
@@ -2701,6 +3011,34 @@ namespace GourmetProject.Game.UI.Battle
         }
 
         private void OnBattleServed(DishInstance dish, int servesUsed) => RefreshPersistent();
+
+        private void OnServeTriggerCue(ServeTriggerCue cue)
+        {
+            if (cue == null)
+            {
+                return;
+            }
+
+            if (cue.PulseSource)
+            {
+                if (cue.SourceKind == ServeCueSourceKind.PassiveItem && _run != null)
+                {
+                    new ItemRuntime(_run).FlashTriggered(model =>
+                        string.Equals(model.ItemId, cue.SourceId, StringComparison.Ordinal));
+                }
+                else if (cue.SourceKind == ServeCueSourceKind.BossDebuff)
+                {
+                    _infoColumn?.PlayBossDebuffTrigger(cue.SourceId);
+                }
+            }
+
+            RefreshPersistent(refreshItems: false);
+            if (_hoveredDishPiece?.Instance != null
+                && _hoveredDishPiece.Instance.Id == cue.DishId)
+            {
+                RebindHoveredDishTips(_hoveredDishPiece);
+            }
+        }
 
         private cfg.BossDebuff ResolveBossDebuff(string bossDebuffId)
         {
@@ -3103,7 +3441,7 @@ namespace GourmetProject.Game.UI.Battle
             world.SetTableFragmentHoverCallbacks(null, null);
         }
 
-        private void OnEatClicked()
+        private async void OnEatClicked()
         {
             if (_rewardPeekOnly || HasPendingBattleRewardLifecycle)
             {
@@ -3121,6 +3459,42 @@ namespace GourmetProject.Game.UI.Battle
             if (_session.DiningTable.DishCount == 0)
             {
                 SetMessage("餐桌还是空的，先上几个食物吧。");
+                return;
+            }
+
+            await PlayBossLockedAsync(async token =>
+            {
+                var pendingIds = new List<int>();
+                foreach (PendingDishPlacement pending in _session.PendingDishPlacements)
+                {
+                    if (pending.IsOnDiningTable)
+                    {
+                        pendingIds.Add(pending.Dish.Id);
+                    }
+                }
+
+                foreach (int dishId in pendingIds)
+                {
+                    await ConfirmPendingDishPresentationAsync(
+                        dishId,
+                        prepareNextDish: false,
+                        token);
+                }
+
+                string debuffId = _session.BossDebuffPresentation?.DebuffId ?? string.Empty;
+                if (string.Equals(debuffId, "debuff_late_night", StringComparison.Ordinal))
+                {
+                    await ShowBossDialogueAsync("最后上的，先吃。", token);
+                }
+                else if (string.Equals(debuffId, "debuff_buffet", StringComparison.Ordinal)
+                    && _session.ServesUsed < _session.MinimumServesForScore)
+                {
+                    await ShowBossDialogueAsync("就这点够谁吃", token, extraHoldSeconds: 2f);
+                }
+            });
+
+            if (_discardSettlementCallbacks || Active != this || _session == null || _session.IsSettled)
+            {
                 return;
             }
 

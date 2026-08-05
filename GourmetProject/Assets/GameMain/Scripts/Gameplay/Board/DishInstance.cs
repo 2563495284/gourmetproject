@@ -16,6 +16,8 @@ namespace GourmetProject.Gameplay.Board
         private readonly List<string> _flavorIds;
         private readonly Dictionary<string, string> _skillSources = new Dictionary<string, string>();
         private readonly List<TransferredSkill> _transferredSkills = new List<TransferredSkill>();
+        private readonly Dictionary<string, float> _serveMultiplierFlatBySource =
+            new Dictionary<string, float>(StringComparer.Ordinal);
 
         public DishInstance(int id, DishDef def, Placement placement, IReadOnlyList<string> skillIds, IReadOnlyList<string> flavorIds)
         {
@@ -42,6 +44,9 @@ namespace GourmetProject.Gameplay.Board
 
         /// <summary>餐桌内唯一序号，用于稳定排序与表现层映射。</summary>
         public int Id { get; }
+
+        /// <summary>正式上菜顺序（1-based）；预摆、复制及仅确认的菜为 0。</summary>
+        public int ServeOrder { get; private set; }
 
         public DishDef Def { get; }
 
@@ -171,7 +176,10 @@ namespace GourmetProject.Gameplay.Board
         public float BaseScoreBeforeSettlement => (Def.Deliciousness + PermanentFlatBonus) * TemporaryBaseMultiplier;
 
         /// <summary>结算前「固化倍率」：永久倍率 × 上菜临时倍率（不含本次结算临时触发的倍率）。</summary>
-        public float BaseMultiplierBeforeSettlement => PermanentMultBonus * ServeMultiplier + ServeMultiplierFlatBonus;
+        public float BaseMultiplierBeforeSettlement
+            => PermanentMultBonus * ServeMultiplier
+                + ServeMultiplierFlatBonus
+                + _serveMultiplierFlatBySource.Values.Sum();
 
         /// <summary>本实例技能是否失效（清淡餐）。</summary>
         public bool SkillsDisabled { get; private set; }
@@ -228,6 +236,57 @@ namespace GourmetProject.Gameplay.Board
         public void AddServeMultiplierFlat(float value)
         {
             ServeMultiplierFlatBonus += value;
+        }
+
+        public void SetServeOrder(int serveOrder)
+        {
+            ServeOrder = Math.Max(0, serveOrder);
+        }
+
+        /// <summary>设置指定来源的独立倍率加值，返回相对旧值的变化量。</summary>
+        public float SetServeMultiplierFlatForSource(string sourceId, float value)
+        {
+            if (string.IsNullOrEmpty(sourceId))
+            {
+                return 0f;
+            }
+
+            _serveMultiplierFlatBySource.TryGetValue(sourceId, out float before);
+            if (Math.Abs(value) < 0.0001f)
+            {
+                _serveMultiplierFlatBySource.Remove(sourceId);
+            }
+            else
+            {
+                _serveMultiplierFlatBySource[sourceId] = value;
+            }
+
+            return value - before;
+        }
+
+        public float ServeMultiplierFlatForSource(string sourceId)
+            => !string.IsNullOrEmpty(sourceId)
+                && _serveMultiplierFlatBySource.TryGetValue(sourceId, out float value)
+                    ? value
+                    : 0f;
+
+        /// <summary>复制来源化倍率；调用方可排除必须保持唯一目标的动态来源。</summary>
+        public void CopyServeMultiplierFlatSourcesFrom(
+            DishInstance other,
+            Func<string, bool> includeSource = null)
+        {
+            if (other == null)
+            {
+                return;
+            }
+
+            foreach (KeyValuePair<string, float> entry in other._serveMultiplierFlatBySource)
+            {
+                if (includeSource == null || includeSource(entry.Key))
+                {
+                    _serveMultiplierFlatBySource[entry.Key] = entry.Value;
+                }
+            }
         }
 
         public void DisableSkills()

@@ -190,6 +190,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private readonly Dictionary<SpriteRenderer, Color> _activeItemDimColors = new Dictionary<SpriteRenderer, Color>();
         private readonly Dictionary<SpriteRenderer, Color> _settlementFocusColors = new Dictionary<SpriteRenderer, Color>();
         private MaterialPropertyBlock _activeItemTransformBlock;
+        private bool _debuffVisualSuppressed;
         private Sequence _activeItemFlavorSequence;
         public DishInstance Instance { get; private set; }
 
@@ -339,6 +340,27 @@ namespace GourmetProject.Game.Presentation.Battle
                 return new Bounds(transform.position, Vector3.one);
             }
         }
+
+        public void SetDebuffVisualSuppressed(bool suppressed)
+        {
+            _debuffVisualSuppressed = suppressed;
+            if (_spriteRenderer == null)
+            {
+                return;
+            }
+
+            if (suppressed)
+            {
+                DebuffVisualStyle.ClearSprite(_spriteRenderer);
+                ApplyFlavorStain();
+            }
+            else
+            {
+                ApplyDebuffVisual();
+            }
+        }
+
+        public void RevealDebuffVisual() => SetDebuffVisualSuppressed(false);
 
         /// <summary>
         /// 放置可否的外轮廓发光：绿=可放，红=不可放；关闭则隐藏。
@@ -1776,7 +1798,10 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void ApplyDebuffVisual()
         {
-            if (_spriteRenderer == null || Instance == null || !Instance.ExcludedFromScore)
+            if (_spriteRenderer == null
+                || Instance == null
+                || !Instance.ExcludedFromScore
+                || _debuffVisualSuppressed)
             {
                 return;
             }
@@ -2183,12 +2208,13 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            bool pointerInside = AcceptsPointerAtWorldPoint(WorldInput.MouseWorld(cam));
-            if (!_hovered && WorldInput.PointerOverUi)
+            if (WorldInput.PointerOverUi)
             {
+                SetHovered(false);
                 return;
             }
 
+            bool pointerInside = AcceptsPointerAtWorldPoint(WorldInput.MouseWorld(cam));
             SetHovered(pointerInside);
         }
 

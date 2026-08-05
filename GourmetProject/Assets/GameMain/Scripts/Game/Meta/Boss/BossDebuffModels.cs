@@ -109,14 +109,16 @@ namespace GourmetProject.Game.Meta.BossDebuffs
     [BossDebuffModel("debuff_dine_and_dash")]
     public sealed class DineAndDashBossDebuffModel : BossDebuffModel
     {
-        public override void ApplyToBattle(BattleSession session) => session.GoldCostPerBellServe = 5;
+        public override void ApplyToBattle(BattleSession session)
+            => session.ConfigureConfirmedServeGoldCost(5, DebuffId, Definition?.Name);
     }
 
     [Preserve]
     [BossDebuffModel("debuff_fine_dining")]
     public sealed class FineDiningBossDebuffModel : BossDebuffModel
     {
-        public override void ApplyToBattle(BattleSession session) => session.BaseScoreMultiplier = 0.5f;
+        public override void ApplyToBattle(BattleSession session)
+            => session.ConfigureBaseScoreMultiplier(0.5f, DebuffId, Definition?.Name);
     }
 
     [Preserve]
@@ -160,7 +162,12 @@ namespace GourmetProject.Game.Meta.BossDebuffs
     {
         public override void ApplyToBattle(BattleSession session)
         {
-            session.ConfigureRandomServeMultiplier(0.5f, 1.5f, 0.1f);
+            session.ConfigureRandomServeMultiplier(
+                0.5f,
+                1.5f,
+                0.1f,
+                DebuffId,
+                Definition?.Name);
             session.RandomServeMultiplier = true;
         }
     }
@@ -188,7 +195,11 @@ namespace GourmetProject.Game.Meta.BossDebuffs
     public sealed class TastingBossDebuffModel : BossDebuffModel
     {
         public override void ApplyToBattle(BattleSession session)
-            => session.ConfigureAlternateServeMultiplier(0.5f, 1.5f);
+            => session.ConfigureAlternateServeMultiplier(
+                0.5f,
+                1.5f,
+                DebuffId,
+                Definition?.Name);
     }
 
     [Preserve]

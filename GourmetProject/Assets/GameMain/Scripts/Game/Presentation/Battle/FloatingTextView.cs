@@ -39,7 +39,9 @@ namespace GourmetProject.Game.Presentation.Battle
             string sourceName,
             string effectText,
             float? rise = null,
-            float? duration = null)
+            float? duration = null,
+            Color? effectColor = null,
+            float delay = 0f)
         {
             if (prefab == null)
             {
@@ -50,21 +52,27 @@ namespace GourmetProject.Game.Presentation.Battle
             FloatingTextView view = Instantiate(prefab, parent);
             view.transform.position = worldPos;
             view._sortingOrder = WorldLabelSorting.NextOrder();
-            view.PlayEffect(sourceName, effectText, rise, duration);
+            view.PlayEffect(sourceName, effectText, rise, duration, effectColor, delay);
         }
 
         private void PlayEffect(
             string sourceName,
             string effectText,
             float? rise,
-            float? duration)
+            float? duration,
+            Color? effectColor,
+            float delay)
         {
             KillAnimation();
 
             _effectText.text = effectText;
+            if (effectColor.HasValue)
+            {
+                _effectText.color = effectColor.Value;
+            }
             ConfigureSourceText(sourceName);
             ApplySortingOrder();
-            Animate(_effectText, transform.position, rise ?? _rise, duration ?? _duration);
+            Animate(_effectText, transform.position, rise ?? _rise, duration ?? _duration, delay);
         }
 
         private void OnDestroy()
@@ -104,11 +112,25 @@ namespace GourmetProject.Game.Presentation.Battle
             BattleSorting.Apply(_sourceText, BattleSorting.Fx, _sortingOrder + 2);
         }
 
-        private void Animate(TextMeshPro effect, Vector3 start, float rise, float duration)
+        private void Animate(TextMeshPro effect, Vector3 start, float rise, float duration, float delay)
         {
             Color effectColor = effect.color;
             Color backgroundColor = _background != null ? _background.color : Color.clear;
             Color sourceColor = _sourceText != null ? _sourceText.color : Color.clear;
+            if (delay > 0f)
+            {
+                effect.color = WithAlpha(effectColor, 0f);
+                if (_background != null)
+                {
+                    _background.color = WithAlpha(backgroundColor, 0f);
+                }
+
+                if (_sourceText != null)
+                {
+                    _sourceText.color = WithAlpha(sourceColor, 0f);
+                }
+            }
+
             _tween = DOVirtual.Float(0f, 1f, Mathf.Max(0.0001f, duration), t =>
                 {
                     if (effect == null)
@@ -127,6 +149,24 @@ namespace GourmetProject.Game.Presentation.Battle
                     if (_sourceText != null)
                     {
                         _sourceText.color = WithAlpha(sourceColor, alpha);
+                    }
+                })
+                .SetDelay(Mathf.Max(0f, delay))
+                .OnStart(() =>
+                {
+                    if (effect != null)
+                    {
+                        effect.color = effectColor;
+                    }
+
+                    if (_background != null)
+                    {
+                        _background.color = backgroundColor;
+                    }
+
+                    if (_sourceText != null)
+                    {
+                        _sourceText.color = sourceColor;
                     }
                 })
                 .SetEase(Ease.Linear)

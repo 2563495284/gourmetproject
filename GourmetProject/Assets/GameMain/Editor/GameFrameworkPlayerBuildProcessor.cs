@@ -76,14 +76,6 @@ namespace GourmetProject.Editor
                 "t:Texture2D",
                 "Assets/GameMain/Content/Resources/Sprites/UI"),
             new ResourceDefinition(
-                "sprites/ui-layout",
-                "t:Texture2D",
-                "Assets/GameMain/Development/ArtPreviews/BattleFormUI/split_simple_v01/pieces/left_button_bottom.png",
-                "Assets/GameMain/Development/ArtPreviews/BattleFormUI/split_simple_v01/pieces/left_button_top.png",
-                "Assets/GameMain/Development/ArtPreviews/BattleFormUI/split_simple_v01/pieces/left_coin_card.png",
-                "Assets/GameMain/Development/ArtPreviews/BattleFormUI/split_simple_v01/pieces/left_score_card.png",
-                "Assets/GameMain/Development/ArtPreviews/BattleFormUI/split_simple_v01/pieces/left_week_card.png"),
-            new ResourceDefinition(
                 "textures/effects",
                 "t:Texture2D",
                 "Assets/GameMain/Content/Resources/Particles",

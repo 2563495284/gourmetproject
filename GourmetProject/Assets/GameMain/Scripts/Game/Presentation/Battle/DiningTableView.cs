@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using GourmetProject.Gameplay.Board;
+using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Model;
 using UnityEngine;
 using GpTable = GourmetProject.Gameplay.Board.DiningTable;
@@ -30,6 +31,10 @@ namespace GourmetProject.Game.Presentation.Battle
         private readonly Dictionary<int, BattleScopeRegionOutlineView> _scopeRegionOutlines = new Dictionary<int, BattleScopeRegionOutlineView>();
         private readonly Dictionary<string, Sprite> _materialCellSprites = new Dictionary<string, Sprite>();
         private readonly List<DiningTableCellView> _dragFeedbackCells = new List<DiningTableCellView>();
+        private readonly HashSet<GridPos> _presentationHiddenCells = new HashSet<GridPos>();
+        private readonly HashSet<GridPos> _presentationSuppressedDisabledCells = new HashSet<GridPos>();
+        private readonly HashSet<GridPos> _presentationRemovedTombstones = new HashSet<GridPos>();
+        private readonly HashSet<GridPos> _presentationNormalRemovedCells = new HashSet<GridPos>();
         private Sprite _cellSprite;
         private float _cellSize;
         private GpTable _board;
@@ -109,7 +114,17 @@ namespace GourmetProject.Game.Presentation.Battle
                 GridPos pos = kv.Key;
                 DiningTableCellView view = kv.Value;
                 view.SetSprite(CellSpriteFor(pos), _cellSize);
-                if (!_board.Exists(pos))
+                if (_presentationHiddenCells.Contains(pos))
+                {
+                    view.SetColor(VoidColor);
+                    view.SetDebuffed(false);
+                }
+                else if (_presentationRemovedTombstones.Contains(pos))
+                {
+                    view.SetColor(EmptyColor);
+                    view.SetDebuffed(!_presentationNormalRemovedCells.Contains(pos));
+                }
+                else if (!_board.Exists(pos))
                 {
                     view.SetColor(_voidAsPlaceholder ? VoidPlaceholderColor : VoidColor);
                     view.SetDebuffed(false);
@@ -117,9 +132,66 @@ namespace GourmetProject.Game.Presentation.Battle
                 else
                 {
                     view.SetColor(EmptyColor);
-                    view.SetDebuffed(_board.IsDisabled(pos));
+                    view.SetDebuffed(
+                        _board.IsDisabled(pos)
+                        && !_presentationSuppressedDisabledCells.Contains(pos));
                 }
             }
+        }
+
+        public void StageBossPresentation(BossDebuffPresentationPlan plan)
+        {
+            _presentationHiddenCells.Clear();
+            _presentationSuppressedDisabledCells.Clear();
+            _presentationRemovedTombstones.Clear();
+            _presentationNormalRemovedCells.Clear();
+            if (plan != null)
+            {
+                _presentationHiddenCells.UnionWith(plan.AddedCells);
+                _presentationSuppressedDisabledCells.UnionWith(plan.DisabledCells);
+                _presentationRemovedTombstones.UnionWith(plan.RemovedCells);
+                _presentationNormalRemovedCells.UnionWith(plan.RemovedCells);
+            }
+
+            Sync();
+        }
+
+        public void RevealAddedCell(GridPos pos)
+        {
+            _presentationHiddenCells.Remove(pos);
+            Sync();
+        }
+
+        public void RevealDisabledCell(GridPos pos)
+        {
+            _presentationSuppressedDisabledCells.Remove(pos);
+            Sync();
+        }
+
+        public void RevealRemovedCell(GridPos pos)
+        {
+            _presentationNormalRemovedCells.Remove(pos);
+            Sync();
+        }
+
+        public void FinishBossPresentation()
+        {
+            _presentationHiddenCells.Clear();
+            _presentationSuppressedDisabledCells.Clear();
+            _presentationNormalRemovedCells.Clear();
+            Sync();
+        }
+
+        public bool TryGetCellWorldPosition(GridPos pos, out Vector3 worldPosition)
+        {
+            if (_cells.TryGetValue(pos, out DiningTableCellView view) && view != null)
+            {
+                worldPosition = view.transform.position;
+                return true;
+            }
+
+            worldPosition = Vector3.zero;
+            return false;
         }
 
         private Sprite CellSpriteFor(GridPos pos)
@@ -447,6 +519,10 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void Clear()
         {
+            _presentationHiddenCells.Clear();
+            _presentationSuppressedDisabledCells.Clear();
+            _presentationRemovedTombstones.Clear();
+            _presentationNormalRemovedCells.Clear();
             foreach (DiningTableCellView overlay in _dragFeedbackCells)
             {
                 if (overlay != null)

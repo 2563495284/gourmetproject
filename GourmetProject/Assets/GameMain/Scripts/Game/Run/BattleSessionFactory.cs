@@ -36,12 +36,17 @@ namespace GourmetProject.Game.Run
                     slot.ScoreMultiplier, slot.ScoreFlatBonus, 0, i));
             }
             var slots = new List<RecipeSlot> { new RecipeSlot("食谱", entries) };
+            BossDebuffPresentationPlan presentation = CreatePresentationPlan(bossDebuff, slots);
             model?.ModifyRecipeSlots(slots, random);
+            CaptureRecipePresentation(presentation, slots);
             int count = TotalRecipeEntries(slots);
-            GpTable board = BuildTable(run, character, model, count, random);
+            GpTable board = BuildTable(run, character, model, count, random, presentation);
+            HashSet<GridPos> disabledBefore = CaptureDisabledCells(board);
             model?.ModifyPreparedTable(board, count, random);
+            CaptureDisabledPresentation(presentation, board, disabledBefore);
             var calculator = new ScoreCalculator(effectSources: ItemScoreEffectAdapter.BuildScoreSources(run));
             var session = new BattleSession(board, run.Database, random, slots, requiredScore, calculator, run.RunSettledCounts);
+            session.AttachBossDebuffPresentation(presentation);
             var items = new ItemRuntime(run);
             cfg.GameBase gameBase = run.Tables.TbGameBase.Data;
             session.ExtraCountAsPerDish = ItemScoreEffectAdapter.ExtraCountAsPerDish(run);
@@ -94,17 +99,29 @@ namespace GourmetProject.Game.Run
             }
             var slots = new List<RecipeSlot> { new RecipeSlot("食谱", entries) };
 
+            BossDebuffPresentationPlan presentation = CreatePresentationPlan(bossDebuff, slots);
+
             bossDebuffModel?.ModifyRecipeSlots(slots, debuffStream);
+            CaptureRecipePresentation(presentation, slots);
 
             int recipeEntryCount = TotalRecipeEntries(slots);
-            GpTable board = BuildTable(run, character, bossDebuffModel, recipeEntryCount, debuffStream);
+            GpTable board = BuildTable(
+                run,
+                character,
+                bossDebuffModel,
+                recipeEntryCount,
+                debuffStream,
+                presentation);
+            HashSet<GridPos> disabledBefore = CaptureDisabledCells(board);
             bossDebuffModel?.ModifyPreparedTable(board, recipeEntryCount, debuffStream);
+            CaptureDisabledPresentation(presentation, board, disabledBefore);
 
             var battleStream = GameApp.Random.DomainStream(SeedDomains.Combat, key);
 
             // 结算类装饰品（逐菜/条件/顺序）作为效果来源注入结算器；局级加/乘仍走 FinalFlat/Multiplier 快路径。
             var calculator = new ScoreCalculator(effectSources: ItemScoreEffectAdapter.BuildScoreSources(run));
             var session = new BattleSession(board, run.Database, battleStream, slots, requiredScore, calculator, runSettledCounts: run.RunSettledCounts);
+            session.AttachBossDebuffPresentation(presentation);
             session.ExtraCountAsPerDish = ItemScoreEffectAdapter.ExtraCountAsPerDish(run);
             var itemRuntime = new ItemRuntime(run);
             cfg.GameBase gameBase = run.Tables.TbGameBase.Data;
@@ -227,7 +244,8 @@ namespace GourmetProject.Game.Run
             cfg.Character character,
             BossDebuffModel bossDebuffModel,
             int recipeEntryCount,
-            IRandomStream rng)
+            IRandomStream rng,
+            BossDebuffPresentationPlan presentation = null)
         {
             int maxW = character.MaxDiningTableWidth;
             int maxH = character.MaxDiningTableHeight;
@@ -238,7 +256,9 @@ namespace GourmetProject.Game.Run
             {
                 Log.Warning($"Character '{run.CharacterId}' 无有效初始餐桌格 '{character?.InitialFragmentId}'，回退为满 {maxW}x{maxH} 餐桌。", "GameRun");
                 GpTable fallback = new GpTable(maxW, maxH);
+                HashSet<GridPos> before = CaptureExistingCells(fallback);
                 bossDebuffModel?.ModifyBuiltTable(fallback, recipeEntryCount, rng);
+                CaptureBuiltTablePresentation(presentation, fallback, before);
                 ApplyCellMaterialOverrides(fallback, run);
                 return fallback;
             }
@@ -258,9 +278,123 @@ namespace GourmetProject.Game.Run
                 canvasW,
                 canvasH,
                 initialOrigin);
+            HashSet<GridPos> existingBefore = CaptureExistingCells(board);
             bossDebuffModel?.ModifyBuiltTable(board, recipeEntryCount, rng);
+            CaptureBuiltTablePresentation(presentation, board, existingBefore);
             ApplyCellMaterialOverrides(board, run);
             return board;
+        }
+
+        private static BossDebuffPresentationPlan CreatePresentationPlan(
+            cfg.BossDebuff definition,
+            List<RecipeSlot> slots)
+        {
+            if (definition == null)
+            {
+                return null;
+            }
+
+            var presentation = new BossDebuffPresentationPlan(definition.Id, definition.Dialogues);
+            int initial = TotalRecipeEntries(slots);
+            presentation.SetRecipeEntryCounts(initial, initial);
+            return presentation;
+        }
+
+        private static void CaptureRecipePresentation(
+            BossDebuffPresentationPlan presentation,
+            List<RecipeSlot> slots)
+        {
+            if (presentation == null)
+            {
+                return;
+            }
+
+            presentation.SetRecipeEntryCounts(
+                presentation.InitialRecipeEntryCount,
+                TotalRecipeEntries(slots));
+            int skip = presentation.InitialRecipeEntryCount;
+            int index = 0;
+            foreach (RecipeSlot slot in slots)
+            {
+                foreach (RecipeSlotEntry entry in slot.Entries)
+                {
+                    if (index++ >= skip)
+                    {
+                        presentation.DuplicatedDishIds.Add(entry.DishId);
+                    }
+                }
+            }
+        }
+
+        private static HashSet<GridPos> CaptureExistingCells(GpTable board)
+            => board != null
+                ? new HashSet<GridPos>(board.ExistingCells())
+                : new HashSet<GridPos>();
+
+        private static HashSet<GridPos> CaptureDisabledCells(GpTable board)
+        {
+            var result = new HashSet<GridPos>();
+            if (board == null)
+            {
+                return result;
+            }
+
+            foreach (GridPos cell in board.ExistingCells())
+            {
+                if (board.IsDisabled(cell))
+                {
+                    result.Add(cell);
+                }
+            }
+
+            return result;
+        }
+
+        private static void CaptureBuiltTablePresentation(
+            BossDebuffPresentationPlan presentation,
+            GpTable board,
+            HashSet<GridPos> before)
+        {
+            if (presentation == null || board == null || before == null)
+            {
+                return;
+            }
+
+            HashSet<GridPos> after = CaptureExistingCells(board);
+            foreach (GridPos cell in after)
+            {
+                if (!before.Contains(cell))
+                {
+                    presentation.AddedCells.Add(cell);
+                }
+            }
+
+            foreach (GridPos cell in before)
+            {
+                if (!after.Contains(cell))
+                {
+                    presentation.RemovedCells.Add(cell);
+                }
+            }
+        }
+
+        private static void CaptureDisabledPresentation(
+            BossDebuffPresentationPlan presentation,
+            GpTable board,
+            HashSet<GridPos> before)
+        {
+            if (presentation == null || board == null)
+            {
+                return;
+            }
+
+            foreach (GridPos cell in CaptureDisabledCells(board))
+            {
+                if (before == null || !before.Contains(cell))
+                {
+                    presentation.DisabledCells.Add(cell);
+                }
+            }
         }
 
         /// <summary>把玩家用「铺台小票」永久附加的格子材质叠加进餐桌（拼桌后统一 merge，经营挑战与预览一致）。</summary>

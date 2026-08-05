@@ -5,6 +5,129 @@ using GourmetProject.Gameplay.Model;
 
 namespace GourmetProject.Gameplay.Battle
 {
+    public enum ServeCueSourceKind
+    {
+        PassiveItem,
+        BossDebuff,
+    }
+
+    public enum ServeCueEffectKind
+    {
+        MultiplierFlat,
+        MultiplierFactor,
+        BaseScoreFactor,
+        GoldDelta,
+    }
+
+    public enum ServeCuePresentationKind
+    {
+        Gain,
+        Cancel,
+        Penalty,
+    }
+
+    /// <summary>正式上菜或“最后菜”目标变化时产生的一条即时表现信号。</summary>
+    public sealed class ServeTriggerCue
+    {
+        public ServeTriggerCue(
+            ServeCueSourceKind sourceKind,
+            string sourceId,
+            string sourceName,
+            int dishId,
+            ServeCueEffectKind effectKind,
+            float value,
+            string text,
+            ServeCuePresentationKind presentationKind,
+            bool pulseSource = true)
+        {
+            SourceKind = sourceKind;
+            SourceId = sourceId ?? string.Empty;
+            SourceName = sourceName ?? string.Empty;
+            DishId = dishId;
+            EffectKind = effectKind;
+            Value = value;
+            Text = text ?? string.Empty;
+            PresentationKind = presentationKind;
+            PulseSource = pulseSource;
+        }
+
+        public ServeCueSourceKind SourceKind { get; }
+
+        public string SourceId { get; }
+
+        public string SourceName { get; }
+
+        /// <summary>目标菜实例 Id；金币等无菜目标效果为 0。</summary>
+        public int DishId { get; }
+
+        public ServeCueEffectKind EffectKind { get; }
+
+        public float Value { get; }
+
+        public string Text { get; }
+
+        public ServeCuePresentationKind PresentationKind { get; }
+
+        /// <summary>同一来源的一组转移 Cue 只让来源 UI 脉冲一次。</summary>
+        public bool PulseSource { get; }
+    }
+
+    public enum PendingDishActionKind
+    {
+        Serve,
+        Confirm,
+    }
+
+    /// <summary>已经占用餐桌格子、但仍等待玩家执行“上菜”或“确认”的食物。</summary>
+    public sealed class PendingDishPlacement
+    {
+        internal PendingDishPlacement(
+            DishInstance dish,
+            PendingDishActionKind actionKind,
+            PreparedServeDish preparedServe,
+            bool isOnDiningTable)
+        {
+            Dish = dish ?? throw new ArgumentNullException(nameof(dish));
+            ActionKind = actionKind;
+            PreparedServe = preparedServe;
+            IsOnDiningTable = isOnDiningTable;
+        }
+
+        public DishInstance Dish { get; }
+
+        public PendingDishActionKind ActionKind { get; }
+
+        public bool IsOnDiningTable { get; internal set; }
+
+        internal PreparedServeDish PreparedServe { get; }
+    }
+
+    public readonly struct PendingDishConfirmResult
+    {
+        public PendingDishConfirmResult(
+            bool success,
+            DishInstance dish,
+            PendingDishActionKind actionKind,
+            bool removedAfterServe = false)
+        {
+            Success = success;
+            Dish = dish;
+            ActionKind = actionKind;
+            RemovedAfterServe = removedAfterServe;
+        }
+
+        public bool Success { get; }
+
+        public DishInstance Dish { get; }
+
+        public PendingDishActionKind ActionKind { get; }
+
+        public bool RemovedAfterServe { get; }
+
+        public static PendingDishConfirmResult Fail()
+            => new PendingDishConfirmResult(false, null, PendingDishActionKind.Confirm);
+    }
+
     public enum ServePrepareOutcome
     {
         Prepared,
@@ -12,6 +135,9 @@ namespace GourmetProject.Gameplay.Battle
         SlotEmpty,
         NoFittingDish,
         LimitReached,
+
+        /// <summary>餐桌上仍有等待“上菜/确认”的预摆菜。</summary>
+        PendingPlacement,
     }
 
     public enum ServeOutcome
@@ -37,7 +163,7 @@ namespace GourmetProject.Gameplay.Battle
 
     /// <summary>
     /// 已从食谱随机取出、正在出菜口等待玩家摆放的食物。
-    /// 在 <see cref="BattleSession.CommitPreparedServe"/> 前不会占用餐桌，也不会触发上菜效果。
+    /// 预摆前不占用餐桌；预摆后会参与实时预览，确认前不会触发正式上菜效果。
     /// </summary>
     public sealed class PreparedServeDish
     {
@@ -45,12 +171,14 @@ namespace GourmetProject.Gameplay.Battle
             int slotIndex,
             RecipeSlotEntry entry,
             DishInstance dish,
-            IReadOnlyList<Placement> placements)
+            IReadOnlyList<Placement> placements,
+            bool isBossInsertedDish = false)
         {
             SlotIndex = slotIndex;
             Entry = entry ?? throw new ArgumentNullException(nameof(entry));
             Dish = dish ?? throw new ArgumentNullException(nameof(dish));
             Placements = placements ?? Array.Empty<Placement>();
+            IsBossInsertedDish = isBossInsertedDish;
         }
 
         public int SlotIndex { get; }
@@ -62,6 +190,9 @@ namespace GourmetProject.Gameplay.Battle
         public DishDef Definition => Dish.Def;
 
         public IReadOnlyList<Placement> Placements { get; }
+
+        /// <summary>是否为 Boss Debuff 在自动出菜序列中额外插入的食物。</summary>
+        public bool IsBossInsertedDish { get; }
 
         public bool Contains(Placement placement)
         {

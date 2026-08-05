@@ -47,6 +47,7 @@ namespace GourmetProject.Game.UI.Battle.View
         private int? _battleScoreOverride;
         private RectTransform _bossStatRect;
         private bool _bossStatPresented;
+        private string _presentedBossDebuffId = string.Empty;
         private Sequence _bossStatTransition;
 
         public SettlementScoreFireView ScoreFire => _scoreFire;
@@ -126,7 +127,14 @@ namespace GourmetProject.Game.UI.Battle.View
 
             if (_goldText != null)
             {
-                _goldText.text = run.Gold.ToString();
+                int displayedGold = current == GameplayView.Food
+                    && session != null
+                    && !session.IsSettled
+                    ? Mathf.Max(0, run.Gold + (int)Math.Round(
+                        session.PendingGold,
+                        MidpointRounding.AwayFromZero))
+                    : run.Gold;
+                _goldText.text = displayedGold.ToString();
             }
 
             RefreshHearts(run.HeartsRemaining, run.HeartCapacity);
@@ -170,6 +178,7 @@ namespace GourmetProject.Game.UI.Battle.View
             bool shouldPresent = active && bossDebuff != null && _bossStat != null;
             if (!shouldPresent)
             {
+                _presentedBossDebuffId = string.Empty;
                 SetBossStatVisible(false, animate);
                 return;
             }
@@ -184,7 +193,27 @@ namespace GourmetProject.Game.UI.Battle.View
                 _bossSkillText.text = bossDebuff.Desc ?? string.Empty;
             }
 
+            _presentedBossDebuffId = bossDebuff.Id ?? string.Empty;
+
             SetBossStatVisible(true, animate);
+        }
+
+        public void PlayBossDebuffTrigger(string debuffId)
+        {
+            if (!_bossStatPresented
+                || _bossStatRect == null
+                || string.IsNullOrEmpty(debuffId)
+                || !string.Equals(_presentedBossDebuffId, debuffId, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _bossStatRect.DOKill(complete: true);
+            _bossStatRect.localScale = Vector3.one;
+            _bossStatRect
+                .DOPunchScale(Vector3.one * 0.13f, 0.3f, vibrato: 7, elasticity: 0.62f)
+                .SetUpdate(true)
+                .SetLink(gameObject);
         }
 
         public void ResetTableLabel()
@@ -347,6 +376,7 @@ namespace GourmetProject.Game.UI.Battle.View
             EnsureBossStatRect();
             KillBossStatTransition();
             _bossStatPresented = false;
+            _presentedBossDebuffId = string.Empty;
             SetScoreTitleY(ScoreTitleDefaultY);
             SetBossStatScale(Vector3.zero);
             if (_bossStat != null)
