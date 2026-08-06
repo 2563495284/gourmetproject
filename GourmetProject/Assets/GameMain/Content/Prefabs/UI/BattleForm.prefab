@@ -58,7 +58,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0, g: 0, b: 0, a: 0}
@@ -5759,11 +5759,11 @@ MonoBehaviour:
   _center: {fileID: 7676145344708295009}
   _centerTransitionCover: {fileID: 4915564063417827371}
   _pageTransitionSettings:
-    CenterFadeOut: 0.12
-    CenterFadeIn: 0.18
-    CoverDuration: 0.16
-    CoveredHoldDuration: 0.03
-    RevealDuration: 0.24
+    CenterFadeOut: 0.24
+    CenterFadeIn: 0.36
+    CoverDuration: 0.32
+    CoveredHoldDuration: 0.06
+    RevealDuration: 0.48
   _boardArea: {fileID: 6593648879111919264}
   _viewTablePanel: {fileID: 1714816787577083954}
   _infoColumn: {fileID: 8908260162901051242}
@@ -14571,6 +14571,10 @@ PrefabInstance:
       propertyPath: m_AnchorMax.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4286282131309578626, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4655387328460587560, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
       propertyPath: m_SizeDelta.y
       value: -30
@@ -14593,6 +14597,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6588615304285433176, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
       propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588615304285433176, guid: 1285f25f92cf4afd8a04d553e8e1fcbd, type: 3}
+      propertyPath: m_SizeDelta.x
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
