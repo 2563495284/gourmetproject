@@ -79,6 +79,8 @@ namespace GourmetProject.Game.UI.Meta
     /// </summary>
     public sealed class RewardForm : UGuiForm
     {
+        internal static RewardForm Active { get; private set; }
+
         [SerializeField] private TMP_Text _titleText;
         [SerializeField] private Button _continueButton;
         [SerializeField] private Button _peekHideButton;
@@ -119,6 +121,7 @@ namespace GourmetProject.Game.UI.Meta
         private PendingGenericRewardContinuationKind _genericRewardContinuation;
         private bool _allowResultPeek;
         private bool _peekHidden;
+        private bool _peekInspectionActive;
         private int _expandedChoicePackGroupIndex = NoExpandedChoicePackGroup;
         private readonly List<PeekChildState> _peekChildStates = new List<PeekChildState>();
         private FoodTipsView _foodTipsView;
@@ -129,6 +132,9 @@ namespace GourmetProject.Game.UI.Meta
         private Vector2 _transitionPanelRestingPosition;
         private bool _hasBuiltRewardRows;
         private bool _isClosing;
+        private bool _isSuspendedForRewardSubflow;
+        private bool _completingFromRewardSubflow;
+        private float _suspendedScrollPosition = 1f;
 
         private RewardFormTransitionSettings TransitionSettings =>
             _transitionSettings ?? (_transitionSettings = new RewardFormTransitionSettings());
@@ -160,6 +166,7 @@ namespace GourmetProject.Game.UI.Meta
         protected override void OnOpen(object userData)
         {
             base.OnOpen(userData);
+            Active = this;
             PrepareOpenTransition();
             ConfigureRewardScrollbar();
             EnsureRewardListGroup();
@@ -188,6 +195,9 @@ namespace GourmetProject.Game.UI.Meta
 
             _allowResultPeek = args != null && args.AllowResultPeek;
             _peekHidden = false;
+            _peekInspectionActive = false;
+            _isSuspendedForRewardSubflow = false;
+            _completingFromRewardSubflow = false;
             _peekChildStates.Clear();
             ConfigurePeekButtons();
             _genericRewardKey = string.Empty;
@@ -279,12 +289,28 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             _isClosing = false;
+            _isSuspendedForRewardSubflow = false;
+            _completingFromRewardSubflow = false;
+            _peekInspectionActive = false;
+            if (_transitionGroup != null)
+            {
+                // UIForm 会复用同一个实例。最后一项奖励从子流程直接关闭时，挂起阶段留下的
+                // interactable=false 不能泄漏到下一次打开。
+                _transitionGroup.interactable = true;
+                _transitionGroup.blocksRaycasts = true;
+            }
+            if (ReferenceEquals(Active, this))
+            {
+                Active = null;
+            }
             base.OnClose(isShutdown, userData);
         }
 
         private void Update()
         {
-            if (!_rewardScrollbarVisible || _rewardScrollbarGroup == null)
+            if (_isSuspendedForRewardSubflow
+                || !_rewardScrollbarVisible
+                || _rewardScrollbarGroup == null)
             {
                 return;
             }
@@ -343,7 +369,7 @@ namespace GourmetProject.Game.UI.Meta
         }
 
         /// <summary>结算并推进：清空 pending offer/碎片包、存档、（可选）关界面并回到时间轴，等效于点「继续」。</summary>
-        private void CompleteRewards(bool closeForm, bool rewardFormAlreadyClosed = false)
+        private void CompleteRewards(bool closeForm)
         {
             BattleForm.Active?.CloseRewardOperationPages();
             _run.ClearPendingFragmentPack();
@@ -354,12 +380,6 @@ namespace GourmetProject.Game.UI.Meta
                 if (LoadNextGenericReward())
                 {
                     RunPersistence.Save(_run);
-                    if (rewardFormAlreadyClosed)
-                    {
-                        ReopenReward();
-                        return;
-                    }
-
                     RefreshOffer();
                     return;
                 }
@@ -388,7 +408,7 @@ namespace GourmetProject.Game.UI.Meta
                     }
                 };
 
-                if (closeForm && !rewardFormAlreadyClosed)
+                if (closeForm)
                 {
                     Close(continueFlow);
                 }
@@ -410,12 +430,6 @@ namespace GourmetProject.Game.UI.Meta
                 if (LoadNextGenericReward())
                 {
                     RunPersistence.Save(_run);
-                    if (!closeForm || rewardFormAlreadyClosed)
-                    {
-                        ReopenReward();
-                        return;
-                    }
-
                     RefreshOffer();
                     return;
                 }
@@ -424,7 +438,7 @@ namespace GourmetProject.Game.UI.Meta
             _run.ClearPendingRewardBattleView();
             RunPersistence.Save(_run);
             Action confirmBattle = () => BattleForm.Active?.OnRewardConfirmed();
-            if (closeForm && !rewardFormAlreadyClosed)
+            if (closeForm)
             {
                 Close(confirmBattle);
             }
@@ -485,6 +499,7 @@ namespace GourmetProject.Game.UI.Meta
             if (_transitionGroup != null)
             {
                 _transitionGroup.alpha = 0f;
+                _transitionGroup.interactable = true;
                 _transitionGroup.blocksRaycasts = false;
             }
 
@@ -520,6 +535,7 @@ namespace GourmetProject.Game.UI.Meta
             {
                 if (_transitionGroup != null)
                 {
+                    _transitionGroup.interactable = true;
                     _transitionGroup.blocksRaycasts = true;
                 }
             });
@@ -534,8 +550,20 @@ namespace GourmetProject.Game.UI.Meta
 
             if (_peekReturnButton != null)
             {
-                _peekReturnButton.gameObject.SetActive(_allowResultPeek && _peekHidden);
+                _peekReturnButton.gameObject.SetActive(
+                    _allowResultPeek && _peekHidden && !_peekInspectionActive);
             }
+        }
+
+        internal void SetResultPeekInspectionActive(bool active)
+        {
+            if (!_peekHidden || _peekInspectionActive == active)
+            {
+                return;
+            }
+
+            _peekInspectionActive = active;
+            ConfigurePeekButtons();
         }
 
         private void HideForResultPeek()
@@ -596,6 +624,7 @@ namespace GourmetProject.Game.UI.Meta
 
             _peekChildStates.Clear();
             _peekHidden = false;
+            _peekInspectionActive = false;
             ConfigurePeekButtons();
             BattleForm.Active?.SetRewardPeekOnly(false);
         }
@@ -676,8 +705,7 @@ namespace GourmetProject.Game.UI.Meta
 
                 CacheCurrentOffer();
 
-                Close();
-                BattleForm.Active?.OpenRewardTableEdit(placed =>
+                bool opened = BattleForm.Active?.OpenRewardTableEdit(placed =>
                 {
                     if (placed && !IsChoiceResolved(groupIndex))
                     {
@@ -685,8 +713,12 @@ namespace GourmetProject.Game.UI.Meta
                         CacheCurrentOffer();
                     }
 
-                    ReopenReward();
-                });
+                    ResumeFromRewardSubflow();
+                }) == true;
+                if (opened)
+                {
+                    SuspendForRewardSubflow();
+                }
                 return;
             }
 
@@ -766,12 +798,12 @@ namespace GourmetProject.Game.UI.Meta
 
                     return ClaimDishChoice(groupIndex, sourceIndices[displayIndex], groupChoices);
                 },
-                ReopenReward);
+                ResumeFromRewardSubflow);
             if (opened)
             {
                 if (closeRewardFormOnOpen)
                 {
-                    Close();
+                    SuspendForRewardSubflow();
                 }
             }
         }
@@ -808,31 +840,98 @@ namespace GourmetProject.Game.UI.Meta
             return true;
         }
 
-        private void ReopenReward()
+        internal void SuspendForRewardSubflow()
         {
-            BattleForm.Active?.CloseRewardOperationPages();
-
-            // 外部领奖页完成时 RewardForm 本来就已关闭。先检查当前 offer，若已经领完则直接
-            // 结算并续接；只有仍有可领取内容（或下一份奖励）时才重新创建 RewardForm。
-            if (RestoreRewardContextForCallback() && _offer.IsFullyClaimed)
+            if (_isSuspendedForRewardSubflow || _isClosing)
             {
-                CompleteRewards(closeForm: true, rewardFormAlreadyClosed: true);
                 return;
             }
 
-            if (_genericMode)
+            _isSuspendedForRewardSubflow = true;
+            _suspendedScrollPosition = _rewardScrollRect != null
+                ? _rewardScrollRect.verticalNormalizedPosition
+                : 1f;
+            _transitionSequence?.Kill();
+            _transitionSequence = null;
+            _rewardRowsSequence?.Kill();
+            _rewardRowsSequence = null;
+            HideTips();
+            HideRewardScrollbar(immediate: true);
+            if (_transitionGroup != null)
             {
-                GameApp.UI.OpenUIForm(
-                    UIForms.Reward,
-                    UIForms.GroupDialog,
-                    RewardFormOpenArgs.GenericQueue(_genericRewardContinuation, _allowResultPeek));
+                _transitionGroup.alpha = 0f;
+                _transitionGroup.interactable = false;
+                _transitionGroup.blocksRaycasts = false;
+            }
+        }
+
+        internal void ResumeFromRewardSubflow()
+        {
+            if (!_isSuspendedForRewardSubflow || _isClosing)
+            {
                 return;
             }
 
-            GameApp.UI.OpenUIForm(
-                UIForms.Reward,
-                UIForms.GroupDialog,
-                _allowResultPeek ? RewardFormOpenArgs.BattleReward() : null);
+            _isSuspendedForRewardSubflow = false;
+            if (!RestoreRewardContextForCallback())
+            {
+                CompleteFromRewardSubflow();
+                return;
+            }
+
+            if (_offer.IsFullyClaimed)
+            {
+                CompleteFromRewardSubflow();
+                return;
+            }
+
+            RefreshOfferPreservingScroll(_suspendedScrollPosition);
+            RestoreAfterRewardSubflow();
+        }
+
+        internal void CompleteFromRewardSubflow()
+        {
+            if (_completingFromRewardSubflow || _isClosing)
+            {
+                return;
+            }
+
+            _isSuspendedForRewardSubflow = false;
+            _completingFromRewardSubflow = true;
+            CompleteRewards(closeForm: true);
+
+            // 通用奖励队列可能在同一个 RewardForm 实例中继续下一份奖励。
+            if (!_isClosing && _offer != null && !_offer.IsFullyClaimed)
+            {
+                _completingFromRewardSubflow = false;
+                RestoreAfterRewardSubflow();
+            }
+        }
+
+        private void RefreshOfferPreservingScroll(float scrollPosition)
+        {
+            RefreshOffer();
+            if (_isClosing || _rewardScrollRect == null)
+            {
+                return;
+            }
+
+            Canvas.ForceUpdateCanvases();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_rewardListContent);
+            _rewardScrollRect.StopMovement();
+            _rewardScrollRect.verticalNormalizedPosition = Mathf.Clamp01(scrollPosition);
+        }
+
+        private void RestoreAfterRewardSubflow()
+        {
+            if (_transitionGroup != null)
+            {
+                _transitionGroup.alpha = 1f;
+                _transitionGroup.interactable = true;
+                _transitionGroup.blocksRaycasts = true;
+            }
+
+            _continueButton.interactable = true;
         }
 
         private void CacheCurrentOffer()
@@ -1276,18 +1375,17 @@ namespace GourmetProject.Game.UI.Meta
                 {
                     if (pickedIndex < 0 || pickedIndex >= sourceIndices.Count)
                     {
-                        ReopenReward();
                         return;
                     }
 
                     ClaimItemChoiceFromPopup(groupIndex, sourceIndices[pickedIndex]);
                 },
-                ReopenReward);
+                ResumeFromRewardSubflow);
             if (opened)
             {
                 if (closeRewardFormOnOpen)
                 {
-                    Close();
+                    SuspendForRewardSubflow();
                 }
 
                 return true;
@@ -1302,7 +1400,6 @@ namespace GourmetProject.Game.UI.Meta
         {
             if (!RestoreRewardContextForCallback())
             {
-                ReopenReward();
                 return;
             }
 
@@ -1315,7 +1412,6 @@ namespace GourmetProject.Game.UI.Meta
                 || currentChoices[index] == null
                 || IsChoiceClaimed(groupIndex, index))
             {
-                ReopenReward();
                 return;
             }
 

@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using GourmetProject.Game.UI.Battle;
+using GourmetProject.Game.UI.Battle.Pages;
 using GourmetProject.Game.UI.Common;
 using GourmetProject.Game.UI.Meta;
 using NUnit.Framework;
@@ -332,6 +333,161 @@ namespace GourmetProject.Tests.PlayMode
 
                 Assert.That(contentGroup.alpha, Is.EqualTo(1f).Within(0.001f),
                     "领取奖励后的列表重建不能把整组列表淡出到黑色背景");
+            }
+            finally
+            {
+                UnityEngine.Object.Destroy(formObject);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator RewardSubflowLayer_EveryHandoffFrameHasVisibleInputOwner()
+        {
+            var root = new GameObject("BattleRoot", typeof(RectTransform));
+            var center = new GameObject("ShopSource", typeof(RectTransform));
+            var layerObject = new GameObject(
+                "RewardSubflowLayer",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image),
+                typeof(CanvasGroup),
+                typeof(RewardSubflowLayer));
+            var child = new GameObject("RewardChild", typeof(RectTransform), typeof(CanvasGroup));
+
+            try
+            {
+                center.transform.SetParent(root.transform, false);
+                layerObject.transform.SetParent(root.transform, false);
+                child.transform.SetParent(layerObject.transform, false);
+                int sourceInstanceId = center.GetInstanceID();
+                var layer = layerObject.GetComponent<RewardSubflowLayer>();
+                CanvasGroup childGroup = child.GetComponent<CanvasGroup>();
+
+                layer.Initialize();
+                Assert.That(center.activeInHierarchy, Is.True);
+
+                layer.Prepare();
+                yield return null;
+                Assert.That(layer.IsVisible, Is.True);
+                Assert.That(center.activeInHierarchy, Is.True);
+
+                layer.Show(childGroup);
+                yield return null;
+                Assert.That(child.activeInHierarchy, Is.True);
+                Assert.That(layer.IsVisible, Is.True);
+
+                // 返回交接帧先恢复来源（它一直保活），覆盖层继续拦截；下一帧才撤覆盖层也不会空窗。
+                layer.Hide(childGroup);
+                yield return null;
+                Assert.That(layer.IsVisible, Is.True);
+                Assert.That(center.activeInHierarchy, Is.True);
+                Assert.That(center.GetInstanceID(), Is.EqualTo(sourceInstanceId));
+
+                layer.HideImmediate();
+                yield return null;
+                Assert.That(layer.IsVisible, Is.False);
+                Assert.That(center.activeInHierarchy, Is.True);
+                Assert.That(center.GetInstanceID(), Is.EqualTo(sourceInstanceId));
+            }
+            finally
+            {
+                UnityEngine.Object.Destroy(root);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator RewardForm_SuspendIsIdempotentAndKeepsSameInstanceRegistered()
+        {
+            var formObject = new GameObject(
+                "RewardForm",
+                typeof(RectTransform),
+                typeof(CanvasGroup),
+                typeof(RewardForm));
+            var continueObject = new GameObject(
+                "ContinueButton",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image),
+                typeof(Button));
+            try
+            {
+                continueObject.transform.SetParent(formObject.transform, false);
+                RewardForm form = formObject.GetComponent<RewardForm>();
+                CanvasGroup group = formObject.GetComponent<CanvasGroup>();
+                const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
+                typeof(RewardForm).GetField("_transitionGroup", flags)?.SetValue(form, group);
+                typeof(RewardForm).GetField("_continueButton", flags)?.SetValue(
+                    form,
+                    continueObject.GetComponent<Button>());
+                int instanceId = formObject.GetInstanceID();
+
+                MethodInfo suspend = typeof(RewardForm).GetMethod(
+                    "SuspendForRewardSubflow",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.That(suspend, Is.Not.Null);
+                suspend.Invoke(form, null);
+                suspend.Invoke(form, null);
+                yield return null;
+
+                Assert.That(formObject.activeInHierarchy, Is.True);
+                Assert.That(formObject.GetInstanceID(), Is.EqualTo(instanceId));
+                Assert.That(group.alpha, Is.EqualTo(0f).Within(0.001f));
+                Assert.That(group.interactable, Is.False);
+                Assert.That(group.blocksRaycasts, Is.False);
+
+                MethodInfo prepareOpen = typeof(RewardForm).GetMethod(
+                    "PrepareOpenTransition",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.That(prepareOpen, Is.Not.Null);
+                prepareOpen.Invoke(form, null);
+                yield return null;
+
+                Assert.That(formObject.GetInstanceID(), Is.EqualTo(instanceId));
+                Assert.That(group.interactable, Is.True,
+                    "UIForm 复用同一实例重新打开时必须清除领奖子流程留下的禁用状态。");
+                Assert.That(group.blocksRaycasts, Is.False,
+                    "打开动画完成前仍由 blocksRaycasts 控制输入时机。");
+            }
+            finally
+            {
+                UnityEngine.Object.Destroy(formObject);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator RewardForm_HidesReturnButtonWhileInspectingResultPages()
+        {
+            var formObject = new GameObject("RewardForm", typeof(RectTransform), typeof(RewardForm));
+            var returnObject = new GameObject(
+                "ReturnRewardButton",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image),
+                typeof(Button));
+            try
+            {
+                returnObject.transform.SetParent(formObject.transform, false);
+                RewardForm form = formObject.GetComponent<RewardForm>();
+                Button returnButton = returnObject.GetComponent<Button>();
+                const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
+                typeof(RewardForm).GetField("_peekReturnButton", flags)?.SetValue(form, returnButton);
+                typeof(RewardForm).GetField("_allowResultPeek", flags)?.SetValue(form, true);
+                typeof(RewardForm).GetField("_peekHidden", flags)?.SetValue(form, true);
+                typeof(RewardForm).GetMethod("ConfigurePeekButtons", flags)?.Invoke(form, null);
+                MethodInfo setInspection = typeof(RewardForm).GetMethod(
+                    "SetResultPeekInspectionActive",
+                    flags);
+                Assert.That(setInspection, Is.Not.Null);
+
+                Assert.That(returnObject.activeSelf, Is.True);
+                setInspection.Invoke(form, new object[] { true });
+                yield return null;
+                Assert.That(returnObject.activeSelf, Is.False,
+                    "查看餐桌/菜谱期间不应把‘返回奖励’覆盖在查看页上。");
+
+                setInspection.Invoke(form, new object[] { false });
+                yield return null;
+                Assert.That(returnObject.activeSelf, Is.True);
             }
             finally
             {

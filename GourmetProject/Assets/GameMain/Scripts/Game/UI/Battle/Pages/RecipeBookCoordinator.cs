@@ -315,9 +315,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
                     break;
                 case GameplayView.Shop:
                 case GameplayView.Event:
-                case GameplayView.RewardDishPack:
-                case GameplayView.RewardItemChoice:
-                case GameplayView.RandomizedItems:
                 case GameplayView.TableEdit:
                 case GameplayView.TableView:
                     _host.SwitchTo(returnView, onShown: onRestored);

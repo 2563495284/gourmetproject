@@ -37,39 +37,6 @@ namespace GourmetProject.Game.UI.Battle.States
         }
     }
 
-    /// <summary>食物包发奖态：中部由 buildCenter 构建食物包三选一。</summary>
-    internal sealed class RewardDishPackState : IGameplayViewState
-    {
-        public GameplayView Kind => GameplayView.RewardDishPack;
-
-        public void Enter(IBattleViewHost host, Action buildCenter)
-        {
-            buildCenter?.Invoke();
-        }
-    }
-
-    /// <summary>装饰品和消耗品获得 n 选一态：中部由装饰品和消耗品选择面板构建。</summary>
-    internal sealed class RewardItemChoiceState : IGameplayViewState
-    {
-        public GameplayView Kind => GameplayView.RewardItemChoice;
-
-        public void Enter(IBattleViewHost host, Action buildCenter)
-        {
-            buildCenter?.Invoke();
-        }
-    }
-
-    /// <summary>随机化装饰品和消耗品结果态：中部展示结果列表，等待玩家继续后播放飞入。</summary>
-    internal sealed class RandomizedItemsState : IGameplayViewState
-    {
-        public GameplayView Kind => GameplayView.RandomizedItems;
-
-        public void Enter(IBattleViewHost host, Action buildCenter)
-        {
-            buildCenter?.Invoke();
-        }
-    }
-
     /// <summary>事件页态：时间轴常驻，中部由 EventPagePanel 构建。</summary>
     internal sealed class EventState : IGameplayViewState
     {

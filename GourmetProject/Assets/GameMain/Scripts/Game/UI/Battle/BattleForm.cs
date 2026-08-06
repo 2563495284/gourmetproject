@@ -107,6 +107,7 @@ namespace GourmetProject.Game.UI.Battle
         [SerializeField] private RecipeReadonlyBookView _recipeReadonlyBookView;
 
         [Header("Reward Dish Pack (center)")]
+        [SerializeField] private RewardSubflowLayer _rewardSubflowLayer;
         [SerializeField] private RewardDishPackPanel _rewardDishPackPanel;
         [SerializeField] private RewardItemChoicePanel _rewardItemChoicePanel;
         [SerializeField] private RandomizedItemsPanel _randomizedItemsPanel;
@@ -139,6 +140,23 @@ namespace GourmetProject.Game.UI.Battle
         private bool _inBattle;
         private GameplayView _current = GameplayView.None;
         private Action<bool> _afterRewardTableEdit;
+        private bool _rewardTableEditActive;
+        private GameplayView _rewardTableEditRootView = GameplayView.None;
+        private CanvasGroup _rewardTableEditAxisGroup;
+        private float _rewardTableEditCenterAlpha;
+        private bool _rewardTableEditCenterInteractable;
+        private bool _rewardTableEditCenterBlocksRaycasts;
+        private float _rewardTableEditAxisAlpha;
+        private bool _rewardTableEditAxisInteractable;
+        private bool _rewardTableEditAxisBlocksRaycasts;
+        private bool _rewardTableEditBackdropActive;
+        private Transform _boardEditOriginalParent;
+        private int _boardEditOriginalSiblingIndex;
+        private Vector2 _boardEditOriginalAnchorMin;
+        private Vector2 _boardEditOriginalAnchorMax;
+        private Vector2 _boardEditOriginalPosition;
+        private Vector2 _boardEditOriginalSize;
+        private Vector2 _boardEditOriginalPivot;
         private bool _boardEditActionCanConfirm;
         private bool _boardEditActionInteractable;
         private Color _boardEditSkipColor = new Color(0.72f, 0.02f, 0.02f, 1f);
@@ -194,6 +212,10 @@ namespace GourmetProject.Game.UI.Battle
         public GameRun Run => _run;
         public BattleSession Session => _session;
         public event Action<ShopEntryKind> ShopPurchaseAnimationStarted;
+        public event Action PreparingChild;
+        public event Action ChildReady;
+        public event Action PreparingReturn;
+        public event Action ParentRestored;
         public ActionExecutionContext CurrentBattleActionContext => _loop?.CurrentBattleActionContext;
         internal GameRun ActiveRun => _run;
         internal BattleSession ActiveSession => _session;
@@ -203,6 +225,7 @@ namespace GourmetProject.Game.UI.Battle
         internal bool IsDailyActionSelectionActive =>
             _current == GameplayView.ActionSelect && _currentTimelineNodeCard == null;
         internal bool IsViewingBattleTable => _tableCoordinator != null && _tableCoordinator.IsViewingBattleTable;
+        internal bool IsRewardTableEditActive => _rewardTableEditActive;
         internal BattleWorldController ActiveWorld => _world ?? BattleWorldController.Instance;
         internal ActiveItemActionPopup ActiveItemPopupPrefab => _activeItemPopupPrefab;
         internal TargetArrowView ActiveItemTargetArrowPrefab => _activeItemTargetArrowPrefab;
@@ -221,6 +244,7 @@ namespace GourmetProject.Game.UI.Battle
             base.OnInit(userData);
 
             EnsureCenterTransitionCover();
+            EnsureRewardSubflowLayer();
 
             _infoColumn?.Bind(OnSettingsClicked, OnViewTableClicked, OnViewRecipeClicked);
             _viewTablePanel?.GetComponent<ViewTablePanel>()?.Bind(OnExitTableViewClicked);
@@ -305,6 +329,8 @@ namespace GourmetProject.Game.UI.Battle
             CancelBossPresentation();
             ResetBossBattlePresentation();
             CancelActiveShopPurchaseAnimations();
+            _rewardPage?.CloseRewardPages();
+            CancelRewardTableEditSubflow();
             _settlementReveal = null;
             _loop = null;
             _activeItemUse?.Dispose();
@@ -844,6 +870,10 @@ namespace GourmetProject.Game.UI.Battle
             _pageRouter?.SwitchTo(next, buildCenter, () =>
             {
                 SyncPageStateFromRouter();
+                if (_rewardPeekOnly && !InspectionNavigationContext.IsInspectionView(_current))
+                {
+                    RewardForm.Active?.SetResultPeekInspectionActive(false);
+                }
                 onShown?.Invoke();
             });
             SyncPageStateFromRouter();
@@ -910,6 +940,17 @@ namespace GourmetProject.Game.UI.Battle
             _centerTransitionCover.blocksRaycasts = false;
         }
 
+        private void EnsureRewardSubflowLayer()
+        {
+            if (_rewardSubflowLayer == null)
+            {
+                Debug.LogError($"{nameof(BattleForm)} 缺少 RewardSubflowLayer prefab 引用。", this);
+                return;
+            }
+
+            _rewardSubflowLayer.Initialize();
+        }
+
         private void OnPageCovered(GameplayView current, GameplayView next)
         {
             if (InspectionNavigationContext.IsInspectionView(current)
@@ -959,10 +1000,7 @@ namespace GourmetProject.Game.UI.Battle
             return next == GameplayView.Food
                 || next == GameplayView.TableEdit
                 || next == GameplayView.TableView
-                || next == GameplayView.RecipeInspect
-                || next == GameplayView.RewardDishPack
-                || next == GameplayView.RewardItemChoice
-                || next == GameplayView.RandomizedItems;
+                || next == GameplayView.RecipeInspect;
         }
 
         private void SyncPageStateFromRouter()
@@ -1002,15 +1040,19 @@ namespace GourmetProject.Game.UI.Battle
         ActionCardDeck IGameplayPageRouterHost.Deck => _deck;
         ShopForm IGameplayPageRouterHost.ShopPanel => _shopPanel;
         RecipeReadonlyBookView IGameplayPageRouterHost.RecipeReadonlyBookView => _recipeReadonlyBookView;
-        RewardDishPackPanel IGameplayPageRouterHost.RewardDishPackPanel => _rewardDishPackPanel;
-        RewardItemChoicePanel IGameplayPageRouterHost.RewardItemChoicePanel => _rewardItemChoicePanel;
-        RandomizedItemsPanel IGameplayPageRouterHost.RandomizedItemsPanel => _randomizedItemsPanel;
         EventPagePanel IGameplayPageRouterHost.EventPagePanel => _eventPagePanel;
         GameObject IGameplayPageRouterHost.BoardEditPanel => _boardEditPanel;
         Button IGameplayPageRouterHost.BoardEditActionButton => _boardEditActionButton;
         bool IGameplayPageRouterHost.RecipeInspectShowsActionAxis => _recipeBookPage?.InspectShowsActionAxis == true;
         bool IGameplayPageRouterHost.ActionAxisVisible => _actionAxisBar != null && _actionAxisBar.gameObject.activeSelf;
-        void IGameplayPageRouterHost.OnLeavingPage(GameplayView current, GameplayView next) => _recipeBookPage?.OnLeavingPage(current, next);
+        void IGameplayPageRouterHost.OnLeavingPage(GameplayView current, GameplayView next)
+        {
+            _recipeBookPage?.OnLeavingPage(current, next);
+            if (_rewardPeekOnly && InspectionNavigationContext.IsInspectionView(next))
+            {
+                RewardForm.Active?.SetResultPeekInspectionActive(true);
+            }
+        }
         void IGameplayPageRouterHost.OnPageCovered(GameplayView current, GameplayView next) => OnPageCovered(current, next);
         void IGameplayPageRouterHost.OnBeforeApplyPage(GameplayView view)
         {
@@ -1054,14 +1096,36 @@ namespace GourmetProject.Game.UI.Battle
         void IShopPageHost.PlayShopPurchaseAnimation(ShopEntry entry, ShopBuyItemViewBase sourceCard) => PlayShopPurchaseAnimation(entry, sourceCard);
 
         GameRun IRewardPageHost.Run => _run;
-        GameplayView IRewardPageHost.CurrentView => _current;
         RewardDishPackPanel IRewardPageHost.RewardDishPackPanel => _rewardDishPackPanel;
         RewardItemChoicePanel IRewardPageHost.RewardItemChoicePanel => _rewardItemChoicePanel;
         RandomizedItemsPanel IRewardPageHost.RandomizedItemsPanel => _randomizedItemsPanel;
-        void IRewardPageHost.SwitchTo(GameplayView view, Action buildCenter, Action onShown) => SwitchTo(view, buildCenter, onShown);
+        void IRewardPageHost.PrepareRewardSubflowLayer()
+        {
+            EnsureRewardSubflowLayer();
+            _rewardSubflowLayer?.Prepare();
+        }
+        void IRewardPageHost.ShowRewardSubflowPanel(Component panel) => _rewardSubflowLayer?.Show(panel);
+        void IRewardPageHost.HideRewardSubflowPanel(Component panel) => _rewardSubflowLayer?.Hide(panel);
+        void IRewardPageHost.HideRewardSubflowLayer() => _rewardSubflowLayer?.HideImmediate();
+        void IRewardPageHost.NotifyRewardSubflowLifecycle(RewardSubflowLifecycle lifecycle)
+        {
+            switch (lifecycle)
+            {
+                case RewardSubflowLifecycle.PreparingChild:
+                    PreparingChild?.Invoke();
+                    break;
+                case RewardSubflowLifecycle.ChildReady:
+                    ChildReady?.Invoke();
+                    break;
+                case RewardSubflowLifecycle.PreparingReturn:
+                    PreparingReturn?.Invoke();
+                    break;
+                case RewardSubflowLifecycle.ParentRestored:
+                    ParentRestored?.Invoke();
+                    break;
+            }
+        }
         void IRewardPageHost.RefreshPersistent() => RefreshPersistent();
-        void IRewardPageHost.ShowActionSelection(Action onShown) => ShowActionSelection(onShown);
-        void IRewardPageHost.RestoreBattleWorld() => RestoreBattleWorld();
         FoodTipsView IRewardPageHost.FoodTips() => _tips != null ? _tips.Food : null;
         ItemTipView IRewardPageHost.ItemTips() => _tips != null ? _tips.Item : null;
         void IRewardPageHost.PlayRewardDishSelectionFly(RewardDishChoiceCardView sourceCard) =>
@@ -1231,34 +1295,44 @@ namespace GourmetProject.Game.UI.Battle
             OpenTableFragmentChoice(_run.PendingFragmentPack, OnTableEditDone, onShown);
         }
 
-        public void OpenRewardTableEdit(Action<bool> onDone)
+        public bool OpenRewardTableEdit(Action<bool> onDone)
         {
-            OpenRewardTableEdit(_run != null ? _run.PendingFragmentPack : null, onDone);
+            return OpenRewardTableEdit(_run != null ? _run.PendingFragmentPack : null, onDone);
         }
 
-        public void OpenRewardTableEdit(IReadOnlyList<string> candidateIds, Action<bool> onDone)
+        public bool OpenRewardTableEdit(IReadOnlyList<string> candidateIds, Action<bool> onDone)
         {
             if (_run == null || candidateIds == null || candidateIds.Count == 0)
             {
                 onDone?.Invoke(false);
-                return;
+                return false;
             }
 
             _afterRewardTableEdit = onDone;
-            OpenTableFragmentChoice(candidateIds, OnRewardTableEditDone);
+            if (OpenTableFragmentChoice(candidateIds, OnRewardTableEditDone))
+            {
+                return true;
+            }
+
+            _afterRewardTableEdit = null;
+            return false;
         }
 
-        private void OpenTableFragmentChoice(
+        private bool OpenTableFragmentChoice(
             IReadOnlyList<string> candidateIds,
             Action<bool> completed,
             Action onShown = null)
         {
             BattleWorldController world = _world ?? BattleWorldController.Instance;
-            if (world == null || _run == null || candidateIds == null || candidateIds.Count == 0)
+            if (_rewardTableEditActive
+                || world == null
+                || _run == null
+                || candidateIds == null
+                || candidateIds.Count == 0)
             {
                 completed?.Invoke(false);
                 onShown?.Invoke();
-                return;
+                return false;
             }
 
             var request = new TableFragmentChoiceRequest(
@@ -1267,10 +1341,226 @@ namespace GourmetProject.Game.UI.Battle
                 completed,
                 ApplyTableEditActionState,
                 _run.PendingFragmentPackRotations);
-            SwitchTo(
-                GameplayView.TableEdit,
-                () => world.BeginTableFragmentChoice(request),
-                onShown);
+            BeginRewardTableEditSubflow(world, request);
+            onShown?.Invoke();
+            return true;
+        }
+
+        private void BeginRewardTableEditSubflow(
+            BattleWorldController world,
+            TableFragmentChoiceRequest request)
+        {
+            _rewardTableEditActive = true;
+            _rewardTableEditRootView = _current;
+            PreparingChild?.Invoke();
+
+            CaptureRewardTableEditShell();
+
+            // 来源页仍保持完整可见时先把世界和编辑控件构建完；最后才在同一帧软隐藏来源。
+            _world = world;
+            world.SetTableArea(_boardArea);
+            world.BeginTableFragmentChoice(request);
+            MoveBoardEditPanelToTransientLayer();
+
+            if (_backdrop != null)
+            {
+                _backdrop.SetActive(false);
+            }
+
+            if (_center != null)
+            {
+                _center.alpha = 0f;
+                _center.interactable = false;
+                _center.blocksRaycasts = false;
+            }
+
+            if (_rewardTableEditAxisGroup != null)
+            {
+                _rewardTableEditAxisGroup.alpha = 0f;
+                _rewardTableEditAxisGroup.interactable = false;
+                _rewardTableEditAxisGroup.blocksRaycasts = false;
+            }
+
+            ChildReady?.Invoke();
+        }
+
+        private void CaptureRewardTableEditShell()
+        {
+            if (_center != null)
+            {
+                _rewardTableEditCenterAlpha = _center.alpha;
+                _rewardTableEditCenterInteractable = _center.interactable;
+                _rewardTableEditCenterBlocksRaycasts = _center.blocksRaycasts;
+            }
+
+            if (_actionAxisBar != null)
+            {
+                _rewardTableEditAxisGroup = _actionAxisBar.GetComponent<CanvasGroup>();
+                if (_rewardTableEditAxisGroup == null)
+                {
+                    _rewardTableEditAxisGroup = _actionAxisBar.gameObject.AddComponent<CanvasGroup>();
+                }
+
+                _rewardTableEditAxisAlpha = _rewardTableEditAxisGroup.alpha;
+                _rewardTableEditAxisInteractable = _rewardTableEditAxisGroup.interactable;
+                _rewardTableEditAxisBlocksRaycasts = _rewardTableEditAxisGroup.blocksRaycasts;
+            }
+
+            _rewardTableEditBackdropActive = _backdrop != null && _backdrop.activeSelf;
+
+            RectTransform boardRect = _boardEditPanel != null
+                ? _boardEditPanel.transform as RectTransform
+                : null;
+            if (boardRect == null)
+            {
+                return;
+            }
+
+            _boardEditOriginalParent = boardRect.parent;
+            _boardEditOriginalSiblingIndex = boardRect.GetSiblingIndex();
+            _boardEditOriginalAnchorMin = boardRect.anchorMin;
+            _boardEditOriginalAnchorMax = boardRect.anchorMax;
+            _boardEditOriginalPosition = boardRect.anchoredPosition;
+            _boardEditOriginalSize = boardRect.sizeDelta;
+            _boardEditOriginalPivot = boardRect.pivot;
+        }
+
+        private void MoveBoardEditPanelToTransientLayer()
+        {
+            RectTransform boardRect = _boardEditPanel != null
+                ? _boardEditPanel.transform as RectTransform
+                : null;
+            Transform parent = _hudFrame != null ? _hudFrame.transform : transform;
+            if (boardRect == null)
+            {
+                return;
+            }
+
+            boardRect.SetParent(parent, false);
+            RectTransform centerRect = _center != null ? _center.transform as RectTransform : null;
+            if (centerRect != null)
+            {
+                boardRect.anchorMin = centerRect.anchorMin;
+                boardRect.anchorMax = centerRect.anchorMax;
+                boardRect.anchoredPosition = centerRect.anchoredPosition;
+                boardRect.sizeDelta = centerRect.sizeDelta;
+                boardRect.pivot = centerRect.pivot;
+            }
+
+            boardRect.SetAsLastSibling();
+            Transform left = DirectChildUnder(parent, _infoColumn != null ? _infoColumn.transform : null);
+            Transform right = DirectChildUnder(parent, _itemsColumn != null ? _itemsColumn.transform : null);
+            int beforeColumns = parent.childCount - 1;
+            if (left != null)
+            {
+                beforeColumns = Mathf.Min(beforeColumns, left.GetSiblingIndex());
+            }
+            if (right != null)
+            {
+                beforeColumns = Mathf.Min(beforeColumns, right.GetSiblingIndex());
+            }
+            boardRect.SetSiblingIndex(beforeColumns);
+            _boardEditPanel.SetActive(true);
+        }
+
+        private void RestoreRewardTableEditSubflow(bool invokeLifecycle)
+        {
+            if (invokeLifecycle)
+            {
+                PreparingReturn?.Invoke();
+            }
+
+            BattleWorldController world = _world ?? BattleWorldController.Instance;
+            if (_rewardTableEditRootView == GameplayView.Food)
+            {
+                RestoreBattleWorld();
+            }
+            else
+            {
+                world?.HideWorld();
+            }
+
+            RestoreRewardTableEditShell();
+        }
+
+        private void RestoreRewardTableEditShell()
+        {
+            if (_center != null)
+            {
+                _center.alpha = _rewardTableEditCenterAlpha;
+                _center.interactable = _rewardTableEditCenterInteractable;
+                _center.blocksRaycasts = _rewardTableEditCenterBlocksRaycasts;
+            }
+
+            if (_rewardTableEditAxisGroup != null)
+            {
+                _rewardTableEditAxisGroup.alpha = _rewardTableEditAxisAlpha;
+                _rewardTableEditAxisGroup.interactable = _rewardTableEditAxisInteractable;
+                _rewardTableEditAxisGroup.blocksRaycasts = _rewardTableEditAxisBlocksRaycasts;
+            }
+
+            if (_backdrop != null)
+            {
+                _backdrop.SetActive(_rewardTableEditBackdropActive);
+            }
+        }
+
+        private void FinishRewardTableEditSubflow(bool placed, Action<bool> completed)
+        {
+            if (!_rewardTableEditActive)
+            {
+                return;
+            }
+
+            _rewardTableEditActive = false;
+            RestoreRewardTableEditSubflow(invokeLifecycle: true);
+
+            // RewardForm 在编辑页仍位于最上层但处于透明挂起态；先同步恢复它，再撤编辑控件。
+            completed?.Invoke(placed);
+            RestoreBoardEditPanelParent();
+            _rewardTableEditRootView = GameplayView.None;
+            ParentRestored?.Invoke();
+        }
+
+        private void RestoreBoardEditPanelParent()
+        {
+            RectTransform boardRect = _boardEditPanel != null
+                ? _boardEditPanel.transform as RectTransform
+                : null;
+            if (boardRect == null)
+            {
+                return;
+            }
+
+            _boardEditPanel.SetActive(false);
+            if (_boardEditOriginalParent != null)
+            {
+                boardRect.SetParent(_boardEditOriginalParent, false);
+                boardRect.SetSiblingIndex(Mathf.Clamp(
+                    _boardEditOriginalSiblingIndex,
+                    0,
+                    Mathf.Max(0, _boardEditOriginalParent.childCount - 1)));
+                boardRect.anchorMin = _boardEditOriginalAnchorMin;
+                boardRect.anchorMax = _boardEditOriginalAnchorMax;
+                boardRect.anchoredPosition = _boardEditOriginalPosition;
+                boardRect.sizeDelta = _boardEditOriginalSize;
+                boardRect.pivot = _boardEditOriginalPivot;
+            }
+        }
+
+        private void CancelRewardTableEditSubflow()
+        {
+            if (!_rewardTableEditActive)
+            {
+                return;
+            }
+
+            _rewardTableEditActive = false;
+            (_world ?? BattleWorldController.Instance)?.HideWorld();
+            RestoreRewardTableEditShell();
+            RestoreBoardEditPanelParent();
+            _afterRewardTableEdit = null;
+            _rewardTableEditRootView = GameplayView.None;
         }
 
         public bool OpenRewardDishPack(
@@ -1433,25 +1723,20 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnTableEditDone(bool placed)
         {
-            (_world ?? BattleWorldController.Instance)?.HideWorld();
-            SwitchTo(GameplayView.Shop);
+            FinishRewardTableEditSubflow(placed, null);
         }
 
         private void OnRewardTableEditDone(bool placed)
         {
-            (_world ?? BattleWorldController.Instance)?.SuspendWorld();
             Action<bool> cb = _afterRewardTableEdit;
             _afterRewardTableEdit = null;
-            if (_session != null && _session.IsSettled && _run?.HasPendingRewardBattleView == true)
+            if (!_rewardTableEditActive)
             {
-                SwitchTo(
-                    GameplayView.Food,
-                    RestoreBattleWorld,
-                    () => cb?.Invoke(placed));
+                cb?.Invoke(placed);
                 return;
             }
 
-            SwitchTo(GameplayView.None, onShown: () => cb?.Invoke(placed));
+            FinishRewardTableEditSubflow(placed, cb);
         }
 
         private void ApplyTableEditActionState(TableFragmentEditActionState state)
@@ -1659,6 +1944,7 @@ namespace GourmetProject.Game.UI.Battle
             bool shouldShow = HappyCakeHudVisibility.ShouldShow(
                 _run,
                 _current,
+                _rewardDishPackPanel != null && _rewardDishPackPanel.gameObject.activeInHierarchy,
                 _rewardDishPackPanel != null ? _rewardDishPackPanel.CurrentChoices : null,
                 _shopPanel != null ? _shopPanel.CurrentStock : null);
             if (!shouldShow)
@@ -2476,6 +2762,8 @@ namespace GourmetProject.Game.UI.Battle
         private void HideHud()
         {
             _rewardPeekOnly = false;
+            _rewardPage?.CloseRewardPages();
+            CancelRewardTableEditSubflow();
             ClearTimelineNodeCard();
             _pageRouter?.HideHud();
             _tableCoordinator?.CancelPendingTransition();
@@ -3411,13 +3699,16 @@ namespace GourmetProject.Game.UI.Battle
 
             if (_current != GameplayView.Food
                 && _current != GameplayView.TableView
-                && _current != GameplayView.TableEdit)
+                && _current != GameplayView.TableEdit
+                && !_rewardTableEditActive)
             {
                 return;
             }
 
             BattleWorldController world = _world ?? BattleWorldController.Instance;
-            if (_current == GameplayView.TableEdit && world != null && world.IsTableEditDragging)
+            if ((_current == GameplayView.TableEdit || _rewardTableEditActive)
+                && world != null
+                && world.IsTableEditDragging)
             {
                 HideCellMaterialTips(cell);
                 return;
@@ -3477,7 +3768,7 @@ namespace GourmetProject.Game.UI.Battle
                 return table != null && db != null;
             }
 
-            if (_current == GameplayView.TableEdit && _run != null)
+            if ((_current == GameplayView.TableEdit || _rewardTableEditActive) && _run != null)
             {
                 table = (_world ?? BattleWorldController.Instance)?.ActiveTable;
                 db = _run.Database;
@@ -3512,7 +3803,7 @@ namespace GourmetProject.Game.UI.Battle
         private void OnTableFragmentHoverEntered(TableFragmentHoverInfo info)
         {
             TableFragmentDef fragment = info.Definition;
-            if (_current != GameplayView.TableEdit
+            if ((_current != GameplayView.TableEdit && !_rewardTableEditActive)
                 || fragment == null
                 || _run?.Database == null
                 || _tips == null)
@@ -3621,11 +3912,11 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            if (_session.DiningTable.DishCount == 0)
-            {
-                SetMessage("餐桌还是空的，先上几个食物吧。");
-                return;
-            }
+            // if (_session.DiningTable.DishCount == 0)
+            // {
+            //     SetMessage("餐桌还是空的，先上几个食物吧。");
+            //     return;
+            // }
 
             await PlayBossLockedAsync(async token =>
             {

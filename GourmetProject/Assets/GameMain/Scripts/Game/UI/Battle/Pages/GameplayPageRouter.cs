@@ -37,12 +37,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         RecipeReadonlyBookView RecipeReadonlyBookView { get; }
 
-        RewardDishPackPanel RewardDishPackPanel { get; }
-
-        RewardItemChoicePanel RewardItemChoicePanel { get; }
-
-        RandomizedItemsPanel RandomizedItemsPanel { get; }
-
         EventPagePanel EventPagePanel { get; }
 
         GameObject BoardEditPanel { get; }
@@ -185,9 +179,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
             SetActive(_host.ActionSelectionPanel, false);
             SetActive(_host.ShopPanel, false);
             SetActive(_host.RecipeReadonlyBookView, false);
-            SetActive(_host.RewardDishPackPanel, false);
-            _host.RewardItemChoicePanel?.Close();
-            _host.RandomizedItemsPanel?.Close();
             SetActive(_host.EventPagePanel, false);
             SetActive(_host.ViewTablePanel, false);
 
@@ -250,9 +241,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
             bool actionSelect = view == GameplayView.ActionSelect;
             bool shop = view == GameplayView.Shop;
             bool recipeSelection = view == GameplayView.RecipeSelection;
-            bool rewardDishPack = view == GameplayView.RewardDishPack;
-            bool rewardItemChoice = view == GameplayView.RewardItemChoice;
-            bool randomizedItems = view == GameplayView.RandomizedItems;
             bool eventPage = view == GameplayView.Event;
             bool recipeInspect = view == GameplayView.RecipeInspect;
             bool tableView = view == GameplayView.TableView;
@@ -261,9 +249,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
             SetActive(_host.ActionSelectionPanel, actionSelect);
             SetActive(_host.ShopPanel, shop);
             SetActive(_host.RecipeReadonlyBookView, recipeSelection || recipeInspect);
-            SetActive(_host.RewardDishPackPanel, rewardDishPack);
-            SetActive(_host.RewardItemChoicePanel, rewardItemChoice);
-            SetActive(_host.RandomizedItemsPanel, randomizedItems);
             SetActive(_host.EventPagePanel, eventPage);
             SetActive(_host.ViewTablePanel, tableView);
 
