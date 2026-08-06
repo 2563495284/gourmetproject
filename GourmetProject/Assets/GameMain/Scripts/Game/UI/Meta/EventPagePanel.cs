@@ -111,7 +111,7 @@ namespace GourmetProject.Game.UI.Meta
                     }
 
                     _resolved = true;
-                    ClearButtons();
+                    SetButtonsInteractable(false);
                     onPick?.Invoke(index);
                 });
             }
@@ -290,6 +290,7 @@ namespace GourmetProject.Game.UI.Meta
                 }
 
                 _resolved = true;
+                SetButtonsInteractable(false);
                 onEnd?.Invoke();
             });
             _spawnedButtons.Add(button);
@@ -315,6 +316,17 @@ namespace GourmetProject.Game.UI.Meta
                 layoutElement.minWidth = width;
                 layoutElement.preferredWidth = width;
                 layoutElement.flexibleWidth = 0f;
+            }
+        }
+
+        private void SetButtonsInteractable(bool interactable)
+        {
+            foreach (Button button in _spawnedButtons)
+            {
+                if (button != null)
+                {
+                    button.interactable = interactable;
+                }
             }
         }
 

@@ -51,6 +51,8 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
     internal interface IEventPageHost
     {
+        GameplayView CurrentView { get; }
+
         EventPagePanel EventPagePanel { get; }
 
         void SwitchTo(GameplayView view, Action buildCenter = null, Action onShown = null);
@@ -74,32 +76,43 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         public void Show(EventPageRequest request)
         {
-            _host.SwitchTo(GameplayView.Event, () =>
+            // 事件内部翻页仍属于同一个 Event view，直接刷新内容，避免整块 Center 再次淡出淡入。
+            if (_host.CurrentView == GameplayView.Event
+                && _host.EventPagePanel != null
+                && _host.EventPagePanel.gameObject.activeInHierarchy)
             {
-                if (_host.EventPagePanel != null)
-                {
-                    _host.EventPagePanel.Open(
-                        request.Title,
-                        request.Description,
-                        request.ResultButtonText,
-                        request.BackgroundSprite,
-                        request.Options,
-                        request.OptionRequirements,
-                        request.OptionEnabled,
-                        request.OnPick,
-                        request.OnEnd);
-                }
-                else if (!string.IsNullOrWhiteSpace(request.ResultButtonText)
-                    || request.Options == null
-                    || request.Options.Count == 0)
-                {
-                    request.OnEnd?.Invoke();
-                }
-                else
-                {
-                    request.OnPick?.Invoke(0);
-                }
-            });
+                Open(request);
+                return;
+            }
+
+            _host.SwitchTo(GameplayView.Event, () => Open(request));
+        }
+
+        private void Open(EventPageRequest request)
+        {
+            if (_host.EventPagePanel != null)
+            {
+                _host.EventPagePanel.Open(
+                    request.Title,
+                    request.Description,
+                    request.ResultButtonText,
+                    request.BackgroundSprite,
+                    request.Options,
+                    request.OptionRequirements,
+                    request.OptionEnabled,
+                    request.OnPick,
+                    request.OnEnd);
+            }
+            else if (!string.IsNullOrWhiteSpace(request.ResultButtonText)
+                || request.Options == null
+                || request.Options.Count == 0)
+            {
+                request.OnEnd?.Invoke();
+            }
+            else
+            {
+                request.OnPick?.Invoke(0);
+            }
         }
 
         public void OpenRecipeDishDelete(

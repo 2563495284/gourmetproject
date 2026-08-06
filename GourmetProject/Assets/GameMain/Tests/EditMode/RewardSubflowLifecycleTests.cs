@@ -52,6 +52,72 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void BattleFormPrefab_TableFragmentRewardCanSoftHideTheCompleteBattleShell()
+        {
+            const string path = "Assets/GameMain/Content/Prefabs/UI/BattleForm.prefab";
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            Assert.That(prefab, Is.Not.Null);
+
+            BattleForm battle = prefab.GetComponent<BattleForm>();
+            Assert.That(battle, Is.Not.Null);
+            var serialized = new SerializedObject(battle);
+
+            (string property, string hierarchyPath)[] shellGroups =
+            {
+                ("_rewardTableEditActionAxisGroup", "HudFrame/TopAxis"),
+                ("_rewardTableEditLeftColumnGroup", "HudFrame/LeftColumn"),
+                ("_rewardTableEditRightColumnGroup", "HudFrame/RightColumn"),
+            };
+
+            foreach ((string property, string hierarchyPath) in shellGroups)
+            {
+                Transform root = prefab.transform.Find(hierarchyPath);
+                Assert.That(root, Is.Not.Null, hierarchyPath);
+                CanvasGroup group = root.GetComponent<CanvasGroup>();
+                Assert.That(group, Is.Not.Null,
+                    $"{hierarchyPath} 必须在 prefab 上固定 CanvasGroup，禁止运行时生成。");
+                Assert.That(
+                    serialized.FindProperty(property).objectReferenceValue,
+                    Is.SameAs(group),
+                    property);
+            }
+        }
+
+        [Test]
+        public void TableFragmentRewardShell_SoftHideRestoresExactCanvasGroupState()
+        {
+            Type snapshotType = typeof(BattleForm).GetNestedType(
+                "CanvasGroupSnapshot",
+                System.Reflection.BindingFlags.NonPublic);
+            Assert.That(snapshotType, Is.Not.Null);
+
+            object snapshot = Activator.CreateInstance(snapshotType);
+            var root = new GameObject("BattleShell", typeof(CanvasGroup));
+            CanvasGroup group = root.GetComponent<CanvasGroup>();
+            group.alpha = 0.42f;
+            group.interactable = false;
+            group.blocksRaycasts = true;
+
+            try
+            {
+                snapshotType.GetMethod("Capture").Invoke(snapshot, new object[] { group });
+                snapshotType.GetMethod("Hide").Invoke(snapshot, null);
+                Assert.That(group.alpha, Is.Zero);
+                Assert.That(group.interactable, Is.False);
+                Assert.That(group.blocksRaycasts, Is.False);
+
+                snapshotType.GetMethod("Restore").Invoke(snapshot, null);
+                Assert.That(group.alpha, Is.EqualTo(0.42f));
+                Assert.That(group.interactable, Is.False);
+                Assert.That(group.blocksRaycasts, Is.True);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
         public void RecipeInspect_DisablesRecipeButtonLikeTableInspect()
         {
             Assert.That(BattleInfoColumn.CanOpenRecipeInspection(GameplayView.RecipeInspect), Is.False);
