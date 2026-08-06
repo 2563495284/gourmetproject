@@ -12,29 +12,27 @@ namespace GourmetProject.Game.Meta
     {
         public SlotMachineConfig(
             cfg.GameEvent ev,
-            string rewardGroupId,
-            float emptyWeight,
+            float emptyProbability,
             int freeSpins,
             int paidCost,
             int maxSpins,
             IReadOnlyList<cfg.RewardSlot> rewardSlots,
+            IReadOnlyList<float> rewardProbabilities,
             IReadOnlyList<cfg.EventOption> options)
         {
             Event = ev;
-            RewardGroupId = rewardGroupId ?? string.Empty;
-            EmptyWeight = Math.Max(0f, emptyWeight);
+            EmptyProbability = Math.Max(0f, emptyProbability);
             FreeSpins = Math.Max(0, freeSpins);
             PaidCost = Math.Max(0, paidCost);
             MaxSpins = Math.Max(1, maxSpins);
             RewardSlots = rewardSlots ?? Array.Empty<cfg.RewardSlot>();
+            RewardProbabilities = rewardProbabilities ?? Array.Empty<float>();
             Options = options ?? Array.Empty<cfg.EventOption>();
         }
 
         public cfg.GameEvent Event { get; }
 
-        public string RewardGroupId { get; }
-
-        public float EmptyWeight { get; }
+        public float EmptyProbability { get; }
 
         public int FreeSpins { get; }
 
@@ -43,6 +41,8 @@ namespace GourmetProject.Game.Meta
         public int MaxSpins { get; }
 
         public IReadOnlyList<cfg.RewardSlot> RewardSlots { get; }
+
+        public IReadOnlyList<float> RewardProbabilities { get; }
 
         public IReadOnlyList<cfg.EventOption> Options { get; }
     }
@@ -192,23 +192,61 @@ namespace GourmetProject.Game.Meta
                 return false;
             }
 
-            string rewardGroupId = ev.SlotRewardGroupId;
+            IReadOnlyList<string> rewardSlotIds = ev.SlotRewardSlotIds;
+            IReadOnlyList<float> rewardProbabilities = ev.SlotRewardProbabilities;
             var slots = new List<cfg.RewardSlot>();
-            if (!string.IsNullOrWhiteSpace(rewardGroupId))
+            var probabilities = new List<float>();
+            if (rewardSlotIds == null || rewardSlotIds.Count == 0)
             {
-                foreach (cfg.RewardSlot slot in run.Tables.TbRewardSlot.DataList)
-                {
-                    if (slot != null
-                        && string.Equals(slot.GroupId, rewardGroupId, StringComparison.Ordinal))
-                    {
-                        slots.Add(slot);
-                    }
-                }
+                error = $"抽奖机 {ev.Id} 未配置奖励槽。";
+                return false;
             }
 
-            if (slots.Count == 0)
+            if (rewardProbabilities == null || rewardSlotIds.Count != rewardProbabilities.Count)
             {
-                error = $"抽奖机奖励槽组为空：{rewardGroupId}";
+                error = $"抽奖机 {ev.Id} 的奖励槽数量与奖励概率数量不一致。";
+                return false;
+            }
+
+            var seenSlotIds = new HashSet<string>(StringComparer.Ordinal);
+            double totalProbability = ev.SlotEmptyProbability;
+            if (!IsProbability(ev.SlotEmptyProbability))
+            {
+                error = $"抽奖机 {ev.Id} 的空奖概率必须在 0～1 之间。";
+                return false;
+            }
+
+            for (int i = 0; i < rewardSlotIds.Count; i++)
+            {
+                string rewardSlotId = rewardSlotIds[i];
+                if (string.IsNullOrWhiteSpace(rewardSlotId) || !seenSlotIds.Add(rewardSlotId))
+                {
+                    error = $"抽奖机 {ev.Id} 含有空白或重复的奖励槽 ID：{rewardSlotId}";
+                    return false;
+                }
+
+                cfg.RewardSlot slot = run.Tables.TbRewardSlot.GetOrDefault(rewardSlotId);
+                if (slot == null)
+                {
+                    error = $"抽奖机 {ev.Id} 引用了不存在的奖励槽：{rewardSlotId}";
+                    return false;
+                }
+
+                float probability = rewardProbabilities[i];
+                if (!IsProbability(probability))
+                {
+                    error = $"抽奖机 {ev.Id} 的奖励概率必须在 0～1 之间：{rewardSlotId}";
+                    return false;
+                }
+
+                slots.Add(slot);
+                probabilities.Add(probability);
+                totalProbability += probability;
+            }
+
+            if (Math.Abs(totalProbability - 1d) > 0.0001d)
+            {
+                error = $"抽奖机 {ev.Id} 的空奖与奖励概率合计必须为 100%，当前为 {totalProbability:P2}。";
                 return false;
             }
 
@@ -216,46 +254,32 @@ namespace GourmetProject.Game.Meta
             int maxSpins = gameBase.SlotMaxSpins;
             int freeSpins = gameBase.SlotFreeSpins;
             int paidCost = gameBase.SlotPaidCost;
-            float emptyWeight = gameBase.SlotEmptyWeight;
             if (maxSpins <= 0)
             {
                 error = $"抽奖机 {ev.Id} 的最大次数必须大于 0。";
                 return false;
             }
 
-            if (freeSpins < 0 || paidCost < 0 || emptyWeight < 0f)
+            if (freeSpins < 0 || paidCost < 0)
             {
-                error = $"抽奖机 {ev.Id} 含有负数次数、价格或权重。";
-                return false;
-            }
-
-            float defaultWeight = Math.Max(float.Epsilon, run.Tables.TbGameBase.DefaultRandomWeight);
-            double totalWeight = Math.Max(0f, emptyWeight);
-            for (int i = 0; i < slots.Count; i++)
-            {
-                totalWeight += slots[i].Weight > 0f ? slots[i].Weight : defaultWeight;
-            }
-
-            if (totalWeight <= 0d)
-            {
-                error = $"抽奖机 {ev.Id} 的总权重必须大于 0。";
+                error = $"抽奖机 {ev.Id} 含有负数次数或价格。";
                 return false;
             }
 
             config = new SlotMachineConfig(
                 ev,
-                rewardGroupId,
-                emptyWeight,
+                ev.SlotEmptyProbability,
                 freeSpins,
                 paidCost,
                 maxSpins,
                 slots,
+                probabilities,
                 options);
             return true;
         }
 
         /// <summary>
-        /// 测试友好的纯抽取入口：空奖与各 reward_slot 在同一个权重池中只抽一次。
+        /// 测试友好的纯抽取入口：空奖与各 reward_slot 按事件配置概率只抽一次。
         /// </summary>
         public static SlotSpinResult Roll(
             GameRun run,
@@ -287,15 +311,13 @@ namespace GourmetProject.Game.Meta
         /// </summary>
         internal static List<float> BuildRollWeights(GameRun run, SlotMachineConfig config)
         {
-            var baseWeights = new List<float>(config.RewardSlots.Count + 1)
+            var baseWeights = new List<float>(config.RewardProbabilities.Count + 1)
             {
-                Math.Max(0f, config.EmptyWeight)
+                Math.Max(0f, config.EmptyProbability)
             };
-            float defaultWeight = Math.Max(float.Epsilon, run.Tables.TbGameBase.DefaultRandomWeight);
-            for (int i = 0; i < config.RewardSlots.Count; i++)
+            for (int i = 0; i < config.RewardProbabilities.Count; i++)
             {
-                cfg.RewardSlot slot = config.RewardSlots[i];
-                baseWeights.Add(slot.Weight > 0f ? slot.Weight : defaultWeight);
+                baseWeights.Add(Math.Max(0f, config.RewardProbabilities[i]));
             }
 
             float bonus = new ItemRuntime(run).SlotWinChanceBonus();
@@ -348,6 +370,14 @@ namespace GourmetProject.Game.Meta
             }
 
             return result;
+        }
+
+        private static bool IsProbability(float value)
+        {
+            return !float.IsNaN(value)
+                && !float.IsInfinity(value)
+                && value >= 0f
+                && value <= 1f;
         }
 
         public static int CostForNextSpin(SlotMachineConfig config, int spinsUsed)

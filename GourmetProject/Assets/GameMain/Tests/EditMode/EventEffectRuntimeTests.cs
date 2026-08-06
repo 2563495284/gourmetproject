@@ -172,6 +172,41 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void Slot_UsesEventProbabilitiesInsteadOfRewardSlotWeights()
+        {
+            GameRun run = CreateRun();
+            cfg.GameAction action = _tables.TbAction.Get("act_slot");
+
+            Assert.That(SlotService.TryGetConfig(run, action, out SlotMachineConfig config, out string error), Is.True, error);
+            Assert.That(config.EmptyProbability, Is.EqualTo(0.4f).Within(0.0001f));
+            Assert.That(config.RewardSlots.Count, Is.EqualTo(4));
+            Assert.That(config.RewardSlots[0].Id, Is.EqualTo("slot_machine_gold"));
+            Assert.That(config.RewardSlots[1].Id, Is.EqualTo("slot_machine_fragment"));
+            Assert.That(config.RewardSlots[2].Id, Is.EqualTo("slot_machine_active"));
+            Assert.That(config.RewardSlots[3].Id, Is.EqualTo("slot_machine_passive"));
+            Assert.That(config.RewardProbabilities, Is.EqualTo(new[] { 0.35f, 0.15f, 0.05f, 0.05f }));
+
+            IReadOnlyList<float> weights = SlotService.BuildRollWeights(run, config);
+            Assert.That(weights, Is.EqualTo(new[] { 0.4f, 0.35f, 0.15f, 0.05f, 0.05f }));
+            Assert.That(weights[1], Is.Not.EqualTo(config.RewardSlots[0].Weight));
+        }
+
+        [Test]
+        public void SlotWinChanceBonus_AdjustsTotalChanceAndPreservesRewardRatios()
+        {
+            IReadOnlyList<float> adjusted = SlotService.ApplyWinChanceBonus(
+                new[] { 0.4f, 0.35f, 0.15f, 0.05f, 0.05f },
+                0.2f,
+                "ev_slot_machine");
+
+            Assert.That(adjusted[0], Is.EqualTo(0.28f).Within(0.0001f));
+            Assert.That(adjusted[1], Is.EqualTo(0.42f).Within(0.0001f));
+            Assert.That(adjusted[2], Is.EqualTo(0.18f).Within(0.0001f));
+            Assert.That(adjusted[3], Is.EqualTo(0.06f).Within(0.0001f));
+            Assert.That(adjusted[4], Is.EqualTo(0.06f).Within(0.0001f));
+        }
+
+        [Test]
         public void EventTree_ParentsOnlyNavigateAndLeavesAutoEnd()
         {
             var parentIds = new HashSet<string>();

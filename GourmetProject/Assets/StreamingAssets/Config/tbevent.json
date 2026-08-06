@@ -9,9 +9,11 @@
     "preconditions": "",
     "weight": 1,
     "repeatable": true,
-    "bgSprite": "",
+    "bgSprite": "Sprites/UI/Events/event_midnight_tasting",
     "resultText": "",
-    "slotRewardGroupId": ""
+    "slotEmptyProbability": 0,
+    "slotRewardSlotIds": [],
+    "slotRewardProbabilities": []
   },
   {
     "id": "ev_ancestral_recipe_page",
@@ -24,9 +26,11 @@
     "preconditions": "",
     "weight": 1,
     "repeatable": true,
-    "bgSprite": "",
+    "bgSprite": "Sprites/UI/Events/event_ancestral_recipe_page",
     "resultText": "",
-    "slotRewardGroupId": ""
+    "slotEmptyProbability": 0,
+    "slotRewardSlotIds": [],
+    "slotRewardProbabilities": []
   },
   {
     "id": "ev_table_carpenter",
@@ -39,9 +43,11 @@
     "preconditions": "",
     "weight": 1,
     "repeatable": true,
-    "bgSprite": "",
+    "bgSprite": "Sprites/UI/Events/event_table_carpenter",
     "resultText": "",
-    "slotRewardGroupId": ""
+    "slotEmptyProbability": 0,
+    "slotRewardSlotIds": [],
+    "slotRewardProbabilities": []
   },
   {
     "id": "ev_kitchen_god_statue",
@@ -53,9 +59,11 @@
     "preconditions": "",
     "weight": 1,
     "repeatable": true,
-    "bgSprite": "",
+    "bgSprite": "Sprites/UI/Events/event_kitchen_god_statue",
     "resultText": "",
-    "slotRewardGroupId": ""
+    "slotEmptyProbability": 0,
+    "slotRewardSlotIds": [],
+    "slotRewardProbabilities": []
   },
   {
     "id": "ev_crossroad_sign",
@@ -67,9 +75,11 @@
     "preconditions": "minGold:61",
     "weight": 1,
     "repeatable": true,
-    "bgSprite": "",
+    "bgSprite": "Sprites/UI/Events/event_crossroad_sign",
     "resultText": "",
-    "slotRewardGroupId": ""
+    "slotEmptyProbability": 0,
+    "slotRewardSlotIds": [],
+    "slotRewardProbabilities": []
   },
   {
     "id": "ev_interest",
@@ -81,9 +91,11 @@
     "preconditions": "",
     "weight": 0,
     "repeatable": true,
-    "bgSprite": "",
+    "bgSprite": "Sprites/UI/Events/event_interest",
     "resultText": "金币 +{gain}",
-    "slotRewardGroupId": ""
+    "slotEmptyProbability": 0,
+    "slotRewardSlotIds": [],
+    "slotRewardProbabilities": []
   },
   {
     "id": "ev_slot_machine",
@@ -95,9 +107,21 @@
     "preconditions": "",
     "weight": 0,
     "repeatable": true,
-    "bgSprite": "",
+    "bgSprite": "Sprites/UI/Events/event_slot_machine",
     "resultText": "这次什么也没有。",
-    "slotRewardGroupId": "slot_machine_basic"
+    "slotEmptyProbability": 0.4,
+    "slotRewardSlotIds": [
+      "slot_machine_gold",
+      "slot_machine_fragment",
+      "slot_machine_active",
+      "slot_machine_passive"
+    ],
+    "slotRewardProbabilities": [
+      0.35,
+      0.15,
+      0.05,
+      0.05
+    ]
   },
   {
     "id": "ev_new_event",
@@ -109,8 +133,10 @@
     "preconditions": "",
     "weight": 1,
     "repeatable": true,
-    "bgSprite": "",
+    "bgSprite": "Sprites/UI/Events/event_new_event",
     "resultText": "",
-    "slotRewardGroupId": ""
+    "slotEmptyProbability": 0,
+    "slotRewardSlotIds": [],
+    "slotRewardProbabilities": []
   }
 ]

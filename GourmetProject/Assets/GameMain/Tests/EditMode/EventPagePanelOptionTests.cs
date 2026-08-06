@@ -94,6 +94,48 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(left, Is.True);
         }
 
+        [Test]
+        public void Open_LoadsConfiguredEventIllustrationIntoDedicatedArea()
+        {
+            _panel.Open(
+                "午夜食堂",
+                "描述",
+                string.Empty,
+                "Sprites/UI/Events/event_midnight_tasting",
+                Array.Empty<string>(),
+                Array.Empty<string>(),
+                Array.Empty<bool>(),
+                onPick: null,
+                onEnd: null);
+
+            Image illustration = GetPrivateField<Image>("_illustrationImage");
+            Assert.That(illustration, Is.Not.Null);
+            Assert.That(illustration.gameObject.name, Is.EqualTo("Illustration"));
+            Assert.That(illustration.gameObject.activeSelf, Is.True);
+            Assert.That(illustration.sprite, Is.Not.Null);
+            Assert.That(illustration.preserveAspect, Is.True);
+        }
+
+        [Test]
+        public void Open_HidesIllustrationWhenTablePathIsEmpty()
+        {
+            _panel.Open(
+                "事件",
+                "描述",
+                string.Empty,
+                string.Empty,
+                Array.Empty<string>(),
+                Array.Empty<string>(),
+                Array.Empty<bool>(),
+                onPick: null,
+                onEnd: null);
+
+            Image illustration = GetPrivateField<Image>("_illustrationImage");
+            Assert.That(illustration, Is.Not.Null);
+            Assert.That(illustration.gameObject.activeSelf, Is.False);
+            Assert.That(illustration.sprite, Is.Null);
+        }
+
         private static Button CreateButtonTemplate(Transform parent)
         {
             var buttonObject = new GameObject(
@@ -153,6 +195,15 @@ namespace GourmetProject.Tests.EditMode
                 BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.That(field, Is.Not.Null, $"缺少字段 {name}");
             field.SetValue(_panel, value);
+        }
+
+        private T GetPrivateField<T>(string name) where T : class
+        {
+            FieldInfo field = typeof(EventPagePanel).GetField(
+                name,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null, $"缺少字段 {name}");
+            return field.GetValue(_panel) as T;
         }
     }
 }

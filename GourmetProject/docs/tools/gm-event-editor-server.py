@@ -36,7 +36,7 @@ EFFECT_REQUESTS_FILE_NAME = "event_effect_requests.json"
 GENERATED_EVENT_JSON = PROJECT_ROOT / "Assets" / "StreamingAssets" / "Config" / "tbevent.json"
 EFFECT_ENUM_CS = PROJECT_ROOT / "Assets" / "GameMain" / "Scripts" / "Config" / "Gen" / "EffectType.cs"
 ACTION_ENUM_CS = PROJECT_ROOT / "Assets" / "GameMain" / "Scripts" / "Config" / "Gen" / "ActionBehavior.cs"
-SERVER_VERSION = 2
+SERVER_VERSION = 3
 
 NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
 REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
@@ -50,18 +50,21 @@ ET.register_namespace("r", REL_NS)
 
 EVENT_COLUMNS = [
     "id", "name", "desc", "eventTypes", "preconditions", "weight", "repeatable",
-    "bgSprite", "resultText", "slotRewardGroupId",
+    "bgSprite", "resultText", "slotEmptyProbability", "slotRewardSlotIds", "slotRewardProbabilities",
 ]
 EVENT_COMMENTS = {
     "id": "事件ID", "name": "事件名称", "desc": "事件描述(初始/根页正文)",
     "eventTypes": "事件分类列表（|分隔；一个事件可属于多个分类）", "preconditions": "出现前置条件",
-    "weight": "随机权重", "repeatable": "是否可重复", "bgSprite": "事件背景 Sprite(Resources 路径,空=默认占位)",
-    "resultText": "终止型事件结果文本模板", "slotRewardGroupId": "Slot 奖励槽组ID→reward_slot.groupId",
+    "weight": "随机权重", "repeatable": "是否可重复", "bgSprite": "事件插画 Sprite（Resources 路径，空=不显示）",
+    "resultText": "终止型事件结果文本模板", "slotEmptyProbability": "Slot 空奖概率（0～1）",
+    "slotRewardSlotIds": "Slot 奖励槽 ID 列表（逗号分隔）",
+    "slotRewardProbabilities": "Slot 奖励概率列表（逗号分隔，与奖励槽一一对应）",
 }
 EVENT_TYPES = {
     "id": "string", "name": "string", "desc": "string", "eventTypes": "(list#sep=|),ActionBehavior",
     "preconditions": "string", "weight": "float", "repeatable": "bool", "bgSprite": "string",
-    "resultText": "string", "slotRewardGroupId": "string",
+    "resultText": "string", "slotEmptyProbability": "float",
+    "slotRewardSlotIds": "(list#sep=,),string", "slotRewardProbabilities": "(list#sep=,),float",
 }
 
 OPTION_COLUMNS = [
@@ -335,6 +338,12 @@ def as_bool(value: Any) -> bool:
     return as_text(value).lower() in {"1", "true", "yes"}
 
 
+def as_list(value: Any) -> list[Any]:
+    if isinstance(value, list):
+        return value
+    return [item.strip() for item in as_text(value).split(",") if item.strip()]
+
+
 def row_dict(headers: list[str], row: list[Any]) -> dict[str, Any]:
     return {header: row[index] if index < len(row) else "" for index, header in enumerate(headers) if header}
 
@@ -418,7 +427,9 @@ def load_model(workbook_path: Path) -> dict[str, Any]:
             "repeatable": as_bool(record.get("repeatable")) if "repeatable" in record else bool(fallback.get("repeatable", True)),
             "bgSprite": as_text(record.get("bgSprite") or fallback.get("bgSprite")),
             "resultText": as_text(record.get("resultText") or fallback.get("resultText")),
-            "slotRewardGroupId": as_text(record.get("slotRewardGroupId") or fallback.get("slotRewardGroupId")),
+            "slotEmptyProbability": as_float(record.get("slotEmptyProbability"), as_float(fallback.get("slotEmptyProbability"))),
+            "slotRewardSlotIds": [as_text(value) for value in as_list(record.get("slotRewardSlotIds") or fallback.get("slotRewardSlotIds")) if as_text(value)],
+            "slotRewardProbabilities": [as_float(value) for value in as_list(record.get("slotRewardProbabilities") or fallback.get("slotRewardProbabilities"))],
         }
         events.append(event)
 
@@ -531,8 +542,20 @@ def validate_model(model: dict[str, Any]) -> dict[str, Any]:
             issues.append(issue("warning", "event-zero-weight", "该事件属于随机池但权重为 0，不会被自然抽到。", event_id))
         issues.extend(condition_issues(as_text(event.get("preconditions")), event_id))
         if "Slot" in categories:
-            if not as_text(event.get("slotRewardGroupId")):
-                issues.append(issue("error", "slot-group-empty", "Slot 事件必须配置奖励槽组。", event_id))
+            empty_probability = as_float(event.get("slotEmptyProbability"))
+            slot_ids = [as_text(value) for value in as_list(event.get("slotRewardSlotIds")) if as_text(value)]
+            probabilities = [as_float(value) for value in as_list(event.get("slotRewardProbabilities"))]
+            if not slot_ids:
+                issues.append(issue("error", "slot-rewards-empty", "Slot 事件必须至少配置一个奖励槽。", event_id))
+            if len(slot_ids) != len(probabilities):
+                issues.append(issue("error", "slot-probability-count", "Slot 奖励槽数量与奖励概率数量必须一致。", event_id))
+            if len(slot_ids) != len(set(slot_ids)):
+                issues.append(issue("error", "slot-reward-duplicate", "Slot 奖励槽 ID 不能重复。", event_id))
+            if not 0 <= empty_probability <= 1 or any(not 0 <= value <= 1 for value in probabilities):
+                issues.append(issue("error", "slot-probability-range", "Slot 的每项概率都必须在 0～1 之间。", event_id))
+            total_probability = empty_probability + sum(probabilities)
+            if abs(total_probability - 1) > 0.0001:
+                issues.append(issue("error", "slot-probability-total", f"Slot 空奖与奖励概率合计必须为 100%，当前为 {total_probability:.2%}。", event_id))
 
     option_by_id: dict[str, dict[str, Any]] = {}
     for option in options:
@@ -647,7 +670,10 @@ def normalize_event(event: dict[str, Any]) -> dict[str, Any]:
         "eventTypes": [as_text(value) for value in event.get("eventTypes", []) if as_text(value)],
         "preconditions": as_text(event.get("preconditions")), "weight": as_float(event.get("weight")),
         "repeatable": bool(event.get("repeatable")), "bgSprite": as_text(event.get("bgSprite")),
-        "resultText": as_text(event.get("resultText")), "slotRewardGroupId": as_text(event.get("slotRewardGroupId")),
+        "resultText": as_text(event.get("resultText")),
+        "slotEmptyProbability": as_float(event.get("slotEmptyProbability")),
+        "slotRewardSlotIds": [as_text(value) for value in as_list(event.get("slotRewardSlotIds")) if as_text(value)],
+        "slotRewardProbabilities": [as_float(value) for value in as_list(event.get("slotRewardProbabilities"))],
     }
 
 
@@ -677,7 +703,9 @@ def workbook_matrices(model: dict[str, Any]) -> tuple[list[list[Any]], list[list
         event = normalize_event(raw)
         event_matrix.append([
             None, event["id"], event["name"], event["desc"], "|".join(event["eventTypes"]), event["preconditions"],
-            event["weight"], event["repeatable"], event["bgSprite"], event["resultText"], event["slotRewardGroupId"],
+            event["weight"], event["repeatable"], event["bgSprite"], event["resultText"],
+            event["slotEmptyProbability"], ",".join(event["slotRewardSlotIds"]),
+            ",".join(format(value, "g") for value in event["slotRewardProbabilities"]),
         ])
 
     option_matrix: list[list[Any]] = [

@@ -26,7 +26,9 @@ public sealed partial class GameEvent : Luban.BeanBase
         { if(!_buf["repeatable"].IsBoolean) { throw new SerializationException(); }  Repeatable = _buf["repeatable"]; }
         { if(!_buf["bgSprite"].IsString) { throw new SerializationException(); }  BgSprite = _buf["bgSprite"]; }
         { if(!_buf["resultText"].IsString) { throw new SerializationException(); }  ResultText = _buf["resultText"]; }
-        { if(!_buf["slotRewardGroupId"].IsString) { throw new SerializationException(); }  SlotRewardGroupId = _buf["slotRewardGroupId"]; }
+        { if(!_buf["slotEmptyProbability"].IsNumber) { throw new SerializationException(); }  SlotEmptyProbability = _buf["slotEmptyProbability"]; }
+        { var __json0 = _buf["slotRewardSlotIds"]; if(!__json0.IsArray) { throw new SerializationException(); } SlotRewardSlotIds = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  SlotRewardSlotIds.Add(__v0); }   }
+        { var __json0 = _buf["slotRewardProbabilities"]; if(!__json0.IsArray) { throw new SerializationException(); } SlotRewardProbabilities = new System.Collections.Generic.List<float>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { float __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  SlotRewardProbabilities.Add(__v0); }   }
     }
 
     public static GameEvent DeserializeGameEvent(JSONNode _buf)
@@ -63,7 +65,7 @@ public sealed partial class GameEvent : Luban.BeanBase
     /// </summary>
     public readonly bool Repeatable;
     /// <summary>
-    /// 事件背景 Sprite(Resources 路径,空=默认占位)
+    /// 事件插画 Sprite（Resources 路径，空=不显示）
     /// </summary>
     public readonly string BgSprite;
     /// <summary>
@@ -71,9 +73,17 @@ public sealed partial class GameEvent : Luban.BeanBase
     /// </summary>
     public readonly string ResultText;
     /// <summary>
-    /// Slot 奖励槽组ID→reward_slot.groupId
+    /// Slot 空奖概率（0～1）
     /// </summary>
-    public readonly string SlotRewardGroupId;
+    public readonly float SlotEmptyProbability;
+    /// <summary>
+    /// Slot 奖励槽 ID 列表（逗号分隔）
+    /// </summary>
+    public readonly System.Collections.Generic.List<string> SlotRewardSlotIds;
+    /// <summary>
+    /// Slot 奖励概率列表（逗号分隔，与奖励槽一一对应）
+    /// </summary>
+    public readonly System.Collections.Generic.List<float> SlotRewardProbabilities;
    
     public const int __ID__ = -1313800792;
     public override int GetTypeId() => __ID__;
@@ -94,7 +104,9 @@ public sealed partial class GameEvent : Luban.BeanBase
         + "repeatable:" + Repeatable + ","
         + "bgSprite:" + BgSprite + ","
         + "resultText:" + ResultText + ","
-        + "slotRewardGroupId:" + SlotRewardGroupId + ","
+        + "slotEmptyProbability:" + SlotEmptyProbability + ","
+        + "slotRewardSlotIds:" + Luban.StringUtil.CollectionToString(SlotRewardSlotIds) + ","
+        + "slotRewardProbabilities:" + Luban.StringUtil.CollectionToString(SlotRewardProbabilities) + ","
         + "}";
     }
 }

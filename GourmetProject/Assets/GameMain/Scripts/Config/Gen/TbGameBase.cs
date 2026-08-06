@@ -140,10 +140,6 @@ public partial class TbGameBase
     /// </summary>
      public int TotalWeeks => _data.TotalWeeks;
     /// <summary>
-    /// 抽奖机空奖权重
-    /// </summary>
-     public float SlotEmptyWeight => _data.SlotEmptyWeight;
-    /// <summary>
     /// 每个抽奖机节点的免费抽奖次数
     /// </summary>
      public int SlotFreeSpins => _data.SlotFreeSpins;
