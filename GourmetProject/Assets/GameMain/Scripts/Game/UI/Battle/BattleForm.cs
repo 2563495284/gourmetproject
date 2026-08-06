@@ -2870,14 +2870,10 @@ namespace GourmetProject.Game.UI.Battle
                 switch (plan.DebuffId)
                 {
                     case "debuff_vegetarian":
-                        foreach (GridPos cell in plan.DisabledCells)
-                        {
-                            if (_world.TryGetCellScreenPoint(cell, out Vector2 point))
-                            {
-                                await _bossPresentation.PointAsync(point, token, 0.12f);
-                            }
-                            _world.RevealBossDisabledCell(cell);
-                        }
+                        await SweepCellsAsync(
+                            plan.DisabledCells,
+                            _world.RevealBossDisabledCell,
+                            token);
                         await ShowBossDialogueAsync("这几块别放肉。", token);
                         break;
 
@@ -3007,19 +3003,16 @@ namespace GourmetProject.Game.UI.Battle
         {
             var points = new List<Vector2>();
             var visibleCells = new List<GridPos>();
-            if (cells != null)
+            foreach (GridPos cell in OrderCellsForBossPointing(cells))
             {
-                foreach (GridPos cell in cells)
+                if (_world.TryGetCellScreenPoint(cell, out Vector2 point))
                 {
-                    if (_world.TryGetCellScreenPoint(cell, out Vector2 point))
-                    {
-                        points.Add(point);
-                        visibleCells.Add(cell);
-                    }
-                    else
-                    {
-                        reveal?.Invoke(cell);
-                    }
+                    points.Add(point);
+                    visibleCells.Add(cell);
+                }
+                else
+                {
+                    reveal?.Invoke(cell);
                 }
             }
 
@@ -3027,6 +3020,22 @@ namespace GourmetProject.Game.UI.Battle
                 points,
                 index => reveal?.Invoke(visibleCells[index]),
                 token);
+        }
+
+        /// <summary>Boss 逐格指向统一从最下行开始，每行由右向左，再逐行向上。</summary>
+        private static List<GridPos> OrderCellsForBossPointing(IReadOnlyList<GridPos> cells)
+        {
+            var ordered = cells != null
+                ? new List<GridPos>(cells)
+                : new List<GridPos>();
+            ordered.Sort((left, right) =>
+            {
+                int rowOrder = right.Y.CompareTo(left.Y);
+                return rowOrder != 0
+                    ? rowOrder
+                    : right.X.CompareTo(left.X);
+            });
+            return ordered;
         }
 
         private async Awaitable PlayGluttonyRecipeFlyAsync(
