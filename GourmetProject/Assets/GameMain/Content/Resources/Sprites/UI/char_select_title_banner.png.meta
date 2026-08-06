@@ -103,8 +103,8 @@ TextureImporter:
       name: char_select_title_banner_0
       rect:
         serializedVersion: 2
-        x: 69
-        y: 229
+        x: 0
+        y: 0
         width: 1137
         height: 379
       alignment: 0

@@ -17,10 +17,6 @@ namespace GourmetProject.Game.UI.Meta
         private const float OptionHeight = 100f;
         private const float RequirementHeight = 28f;
         private const float RequirementInset = 8f;
-        // 给顶部常驻时间轴留出空间，避免节点和进度线压在事件插画上。
-        private static readonly Vector2 IllustrationAnchorMin = new(0.05f, 0.465f);
-        private static readonly Vector2 IllustrationAnchorMax = new(0.95f, 0.845f);
-
         [SerializeField] private Image _backgroundImage;
         [SerializeField] private Sprite _defaultBackgroundSprite;
         [SerializeField] private Image _illustrationImage;
@@ -373,6 +369,7 @@ namespace GourmetProject.Game.UI.Meta
         {
             if (_illustrationImage != null)
             {
+                ConfigureIllustrationImage(_illustrationImage);
                 return _illustrationImage;
             }
 
@@ -384,20 +381,37 @@ namespace GourmetProject.Game.UI.Meta
             illustrationObject.layer = gameObject.layer;
             RectTransform rect = illustrationObject.GetComponent<RectTransform>();
             rect.SetParent(transform, false);
-            rect.anchorMin = IllustrationAnchorMin;
-            rect.anchorMax = IllustrationAnchorMax;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-            rect.SetSiblingIndex(Mathf.Max(0, transform.childCount - 2));
 
             _illustrationImage = illustrationObject.GetComponent<Image>();
-            _illustrationImage.type = Image.Type.Simple;
-            _illustrationImage.preserveAspect = true;
-            _illustrationImage.raycastTarget = false;
-            _illustrationImage.color = Color.white;
+            ConfigureIllustrationImage(_illustrationImage);
             _illustrationImage.enabled = false;
             illustrationObject.SetActive(false);
             return _illustrationImage;
+        }
+
+        private void ConfigureIllustrationImage(Image illustration)
+        {
+            if (illustration == null)
+            {
+                return;
+            }
+
+            if (illustration.transform is RectTransform rect)
+            {
+                rect.anchorMin = Vector2.zero;
+                rect.anchorMax = Vector2.one;
+                rect.offsetMin = Vector2.zero;
+                rect.offsetMax = Vector2.zero;
+
+                // 保持插画位于 Shade 之上、Content 之下：颜色清晰，同时不会盖住标题和选项。
+                rect.SetSiblingIndex(Mathf.Max(0, transform.childCount - 2));
+            }
+
+            illustration.type = Image.Type.Simple;
+            // 事件图按照 EventPanel 的 Background 安全区构图，直接铺满以避免露底或窄条显示。
+            illustration.preserveAspect = false;
+            illustration.raycastTarget = false;
+            illustration.color = Color.white;
         }
 
         private static string NormalizeResourcePath(string spritePath)
