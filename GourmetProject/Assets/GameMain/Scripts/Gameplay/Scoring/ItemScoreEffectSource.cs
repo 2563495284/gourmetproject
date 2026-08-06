@@ -172,11 +172,11 @@ namespace GourmetProject.Gameplay.Scoring
 
                 case ItemScoreEffectType.PerSkillMultFlat:
                 {
-                    int totalSkills = dishes.Sum(d => d.SkillIds.Count);
-                    float add = value * totalSkills;
-                    if (Math.Abs(add) > 0.0001f)
+                    // 每份食物只按自己的技能数量获得倍率，不把其他食物的技能算进来。
+                    foreach (DishInstance d in ctx.Snapshot.DishesInDefaultOrder)
                     {
-                        foreach (DishInstance d in dishes)
+                        float add = value * d.SkillIds.Count;
+                        if (Math.Abs(add) > 0.0001f)
                         {
                             ctx.AddMultFlatTo(d, add);
                         }

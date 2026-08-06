@@ -1385,10 +1385,10 @@ namespace GourmetProject.Gameplay.Battle
             // 金币入账（结算侧效果）。
             PendingGold += result.GoldDelta;
 
-            // 银材质：对每个「1/3 获得装饰品和消耗品」请求掷骰（仅正式结算掷，预览不掷，保证可复现纯净）。
+            // 银材质：对每个「1/2 获得消耗品」请求掷骰（仅正式结算掷，预览不掷，保证可复现纯净）。
             for (int i = 0; i < result.SilverItemRollRequests; i++)
             {
-                if (_rng.NextBool(1.0 / 3.0))
+                if (_rng.NextBool(1.0 / 2.0))
                 {
                     PendingActiveItemGrants++;
                 }
