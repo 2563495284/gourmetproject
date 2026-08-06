@@ -5,8 +5,13 @@ using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Battle;
 using GourmetProject.Game.UI.Battle.Pages;
 using GourmetProject.Game.UI.Battle.View;
+using GourmetProject.Game.UI.Hud;
 using GourmetProject.Game.UI.Meta;
 using GourmetProject.Game.UI.Tooltips;
+using GourmetProject.Game.UI.Widgets;
+using GourmetProject.Game.Visual;
+using GourmetProject.Gameplay.Battle;
+using GourmetProject.Gameplay.Model;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.UI;
@@ -226,6 +231,117 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(recipeButton, Is.Not.Null);
             Assert.That(recipeButton.targetGraphic, Is.TypeOf<TMPro.TextMeshProUGUI>(),
                 "Button disabled 色应直接作用于‘查看菜谱’字体，与查看餐桌一致。");
+        }
+
+        [Test]
+        public void RecipeDishDisplayValue_IncludesPermanentScoreModifiers()
+        {
+            var def = new DishDef(
+                "test_dish",
+                "Test Dish",
+                30,
+                DishShape.FromRows(new[] { "X" }),
+                0,
+                0,
+                1f,
+                Array.Empty<string>(),
+                string.Empty,
+                false);
+            var slot = new RecipeBookSlot(def.Id);
+            slot.AddScoreFlat(60f);
+            slot.MultiplyScore(1.5f);
+
+            Assert.That(
+                RecipeReadonlyBookView.ResolveRecipeDishDisplayValue(def, slot),
+                Is.EqualTo(135));
+        }
+
+        [Test]
+        public void ShopDeleteFoodServiceItem_CanStayVisibleWhilePurchaseIsRejected()
+        {
+            const string path =
+                "Assets/GameMain/Content/Prefabs/UI/ShopDeleteFoodServiceItem.prefab";
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            GameObject instance = UnityEngine.Object.Instantiate(prefab);
+
+            try
+            {
+                ShopBuyItemViewBase card =
+                    instance.GetComponent<ShopBuyItemViewBase>();
+                var serialized = new SerializedObject(card);
+                Button buyButton = serialized.FindProperty("_buyButton")
+                    .objectReferenceValue as Button;
+
+                card.SetStocked(true);
+                card.SetPurchaseEnabled(false);
+
+                Assert.That(instance.activeSelf, Is.True);
+                Assert.That(buyButton, Is.Not.Null);
+                Assert.That(buyButton.interactable, Is.False);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
+        }
+
+        [Test]
+        public void ActiveItemPopup_ShowsDescriptionAndBlockedUseReason()
+        {
+            string text = ActiveItemActionPopup.BuildDescription(
+                "丢弃一份食物。",
+                canUse: false,
+                "当前奖励流程中不能使用消耗品。");
+
+            StringAssert.Contains("丢弃一份食物。", text);
+            StringAssert.Contains("暂不可使用", text);
+            StringAssert.Contains("当前奖励流程中不能使用消耗品。", text);
+        }
+
+        [Test]
+        public void ActiveItemPopup_DoesNotShowBlockedReasonWhenUseIsAllowed()
+        {
+            string text = ActiveItemActionPopup.BuildDescription(
+                "丢弃一份食物。",
+                canUse: true,
+                "不应显示");
+
+            Assert.That(text, Is.EqualTo("丢弃一份食物。"));
+        }
+
+        [Test]
+        public void BattleRecipeCannotPlace_UsesNormalDishShader()
+        {
+            const string path =
+                "Assets/GameMain/Content/Prefabs/UI/RecipeEditDishView.prefab";
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            GameObject instance = UnityEngine.Object.Instantiate(prefab);
+
+            try
+            {
+                RecipeEditDishView dish =
+                    instance.GetComponent<RecipeEditDishView>();
+                DishIconRenderTexturePreview preview =
+                    instance.GetComponentInChildren<DishIconRenderTexturePreview>(true);
+
+                Assert.That(dish, Is.Not.Null);
+                Assert.That(preview, Is.Not.Null);
+                dish.Bind(
+                    "测试食物",
+                    string.Empty,
+                    0,
+                    0,
+                    dragEnabled: false,
+                    battleStatus: BattleRecipeEntryStatus.CannotPlace);
+
+                Assert.That(
+                    DebuffVisualStyle.IsAppliedToGraphic(preview.TargetImage),
+                    Is.False);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
         }
 
         [Test]

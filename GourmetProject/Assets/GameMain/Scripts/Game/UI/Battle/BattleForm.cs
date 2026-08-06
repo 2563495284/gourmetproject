@@ -419,6 +419,9 @@ namespace GourmetProject.Game.UI.Battle
         private bool HasPendingBattleRewardLifecycle
             => _session?.IsSettled == true && _run?.HasPendingRewardBattleView == true;
 
+        internal bool IsActiveItemUseBlocked
+            => _rewardPeekOnly || HasPendingBattleRewardLifecycle;
+
         /// <summary>进入（或继续）一周：随机/沿用时间轴后开始行动循环。</summary>
         public void BeginWeek()
         {
@@ -1583,6 +1586,7 @@ namespace GourmetProject.Game.UI.Battle
 
             _rewardTableEditActive = false;
             RestoreRewardTableEditSubflow(invokeLifecycle: true);
+            RefreshPersistent();
 
             // RewardForm 在编辑页仍位于最上层但处于透明挂起态；先同步恢复它，再撤编辑控件。
             completed?.Invoke(placed);
@@ -2042,14 +2046,11 @@ namespace GourmetProject.Game.UI.Battle
         /// <summary>右栏装饰品和消耗品：被动网格（2 列）+ 固定消耗品槽，每份主动实例占一格。</summary>
         private void RefreshItems()
         {
-            bool activeItemsInteractable =
-                _activeItemUse == null
-                || !_activeItemUse.IsRecipePanelTargeting;
             _itemsColumn?.Refresh(
                 _run,
                 _session,
                 _inBattle,
-                activeItemsInteractable,
+                true,
                 _tips != null ? _tips.Item : null,
                 OnActiveItemClicked,
                 ShowItemInfo);
@@ -4232,11 +4233,6 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnActiveItemClicked(string itemId, RunItemSlotView slot)
         {
-            if (_rewardPeekOnly || HasPendingBattleRewardLifecycle)
-            {
-                return;
-            }
-
             _activeItemUse?.OpenActionPopup(itemId, slot);
         }
 

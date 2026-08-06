@@ -54,6 +54,7 @@ namespace GourmetProject.Game.UI.Meta
         private bool _hovered;
         private ScrollRect _panScrollRect;
         private DishIconPreviewMode _previewMode;
+        private int? _deliciousnessOverride;
         private bool _warehouseClickable;
         private bool _suppressClick;
         private Tween _failureTween;
@@ -100,7 +101,8 @@ namespace GourmetProject.Game.UI.Meta
             Action<RecipeEditDishView> onHoverExit = null,
             IReadOnlyList<string> flavorIds = null,
             DishIconPreviewMode previewMode = DishIconPreviewMode.Card,
-            BattleRecipeEntryStatus? battleStatus = null)
+            BattleRecipeEntryStatus? battleStatus = null,
+            int? deliciousnessOverride = null)
         {
             BookIndex = bookIndex;
             DishIndex = dishIndex;
@@ -114,6 +116,7 @@ namespace GourmetProject.Game.UI.Meta
             _dropHandled = false;
             _hovered = false;
             _previewMode = previewMode;
+            _deliciousnessOverride = deliciousnessOverride;
             _warehouseClickable = onClick != null;
             DisplayedGridSize = DishIconRenderTexturePreview.DisplayedGridSizeFor(
                 dishDef,
@@ -124,10 +127,10 @@ namespace GourmetProject.Game.UI.Meta
                 if (dishDef != null)
                 {
                     _dishPreview.Bind(
-                        DishPreviewRequest.FromDefinition(
-                            dishDef,
-                            flavorIds: flavorIds,
-                            mode: previewMode));
+                        dishDef,
+                        deliciousnessOverride: deliciousnessOverride,
+                        flavorIds: flavorIds,
+                        mode: previewMode);
                     DisplayedGridSize = _dishPreview.DisplayedGridSize;
                 }
                 else
@@ -243,16 +246,20 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            _dishPreview.PlayTransformTo(dishDef, flavorIds, () =>
-            {
-                if (_canvasGroup != null)
+            _dishPreview.PlayTransformTo(
+                dishDef,
+                flavorIds,
+                _deliciousnessOverride,
+                () =>
                 {
-                    _canvasGroup.blocksRaycasts = true;
-                    _canvasGroup.alpha = 1f;
-                }
+                    if (_canvasGroup != null)
+                    {
+                        _canvasGroup.blocksRaycasts = true;
+                        _canvasGroup.alpha = 1f;
+                    }
 
-                onComplete?.Invoke();
-            });
+                    onComplete?.Invoke();
+                });
         }
 
         /// <summary>播放与商店购买失败一致的横向衰减晃动。</summary>
@@ -629,9 +636,6 @@ namespace GourmetProject.Game.UI.Meta
                         _battleStatusOverlay.gameObject.SetActive(true);
                     }
 
-                    break;
-                case BattleRecipeEntryStatus.CannotPlace:
-                    DebuffVisualStyle.ApplyToGraphic(foodImage);
                     break;
                 case BattleRecipeEntryStatus.Served:
                 case BattleRecipeEntryStatus.Discarded:

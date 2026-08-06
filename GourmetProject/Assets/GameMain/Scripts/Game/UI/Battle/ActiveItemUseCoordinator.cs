@@ -118,9 +118,10 @@ namespace GourmetProject.Game.UI.Battle
 
         public void OpenActionPopup(string itemId, RunItemSlotView slot)
         {
-            if (_recipePanelTargeting)
+            bool interruptedRecipeTargeting = _recipePanelTargeting;
+            if (interruptedRecipeTargeting)
             {
-                return;
+                _host.CancelActiveItemRecipeTarget();
             }
 
             ClosePopup();
@@ -136,6 +137,12 @@ namespace GourmetProject.Game.UI.Battle
             slot.HideTip();
             ActiveUseContextKind contextKind = ResolveContextKind();
             bool canUse = CanUse(item, contextKind, out string reason);
+            if (interruptedRecipeTargeting)
+            {
+                canUse = false;
+                reason = "已取消当前目标选择，请重新点击使用。";
+            }
+
             bool canDiscard = run.HasItem(itemId);
             Transform parent = _host.ActiveItemLayer;
             if (_host.ActiveItemPopupPrefab == null)
@@ -786,6 +793,12 @@ namespace GourmetProject.Game.UI.Battle
             if (run == null || item == null || !run.HasItem(item.Id))
             {
                 reason = "没有可用装饰品和消耗品。";
+                return false;
+            }
+
+            if (_host.IsActiveItemUseBlocked)
+            {
+                reason = "当前奖励流程中不能使用消耗品。";
                 return false;
             }
 

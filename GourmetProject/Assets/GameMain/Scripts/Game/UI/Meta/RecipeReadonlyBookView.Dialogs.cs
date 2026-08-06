@@ -79,14 +79,10 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             int cost = ShopService.DeleteCost(_run);
-            int limit = ShopService.DeleteDishLimit(_run);
-            string remaining = limit > 0
-                ? $"\n本次商店删除后剩余 {System.Math.Max(0, ShopService.DeleteDishRemaining(_run) - 1)}/{limit} 次。"
-                : string.Empty;
             var data = new ConfirmDialogData
             {
                 Title = "确认删除食物",
-                Message = $"花费 {cost} 金币，从食谱中删除「{def.Name}」？{remaining}",
+                Message = $"花费 {cost} 金币\n从食谱中删除「{def.Name}」？",
                 ConfirmText = $"删除 -{cost}",
                 CancelText = "返回",
                 OnConfirm = () =>
@@ -98,7 +94,7 @@ namespace GourmetProject.Game.UI.Meta
                     }
 
                     _onChanged?.Invoke();
-                    RebuildWarehouseForCurrentState();
+                    _onExit?.Invoke();
                 },
             };
             GameApp.UI.OpenUIForm(

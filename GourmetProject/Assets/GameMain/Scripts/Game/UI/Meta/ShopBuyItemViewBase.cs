@@ -48,6 +48,8 @@ namespace GourmetProject.Game.UI.Meta
     /// </summary>
     public abstract class ShopBuyItemViewBase : MonoBehaviour
     {
+        private static readonly Color InsufficientGoldColor = Color.red;
+
         [SerializeField] private Button _buyButton;
         [SerializeField] private Image _itemIcon;
         [SerializeField] private TMP_Text _buyLabel;
@@ -64,6 +66,8 @@ namespace GourmetProject.Game.UI.Meta
         private Tween _failureTween;
         private Selectable.Transition _defaultButtonTransition;
         private bool _hasDefaultButtonTransition;
+        private Color _defaultBuyLabelColor;
+        private bool _hasDefaultBuyLabelColor;
 
         public ShopEntry Entry => _context?.Entry;
 
@@ -76,7 +80,10 @@ namespace GourmetProject.Game.UI.Meta
             _usesTargeting = UsesTargeting(context);
             EnsurePointerProxy();
             ConfigureContent(context);
-            SetBuyLabel(_isStocked ? context.Entry.Price : 0);
+            bool insufficientGold = _isStocked
+                && context.Run != null
+                && context.Run.Gold < context.Entry.Price;
+            SetBuyLabel(_isStocked ? context.Entry.Price : 0, insufficientGold);
 
             if (_buyButton == null)
             {
@@ -114,6 +121,18 @@ namespace GourmetProject.Game.UI.Meta
             if (_buyButton != null)
             {
                 _buyButton.interactable = stocked;
+            }
+        }
+
+        /// <summary>
+        /// 在保持商品卡可见的前提下显式控制购买按钮。用于删除食物等商店服务，
+        /// 余额不足时价格仍可见且标红，但按钮不会进入后续选择页。
+        /// </summary>
+        public void SetPurchaseEnabled(bool enabled)
+        {
+            if (_buyButton != null)
+            {
+                _buyButton.interactable = _isStocked && enabled;
             }
         }
 
@@ -305,12 +324,21 @@ namespace GourmetProject.Game.UI.Meta
             _context?.OnTargetPointerUp?.Invoke(this, _context.Entry, eventData.position);
         }
 
-        private void SetBuyLabel(int price)
+        private void SetBuyLabel(int price, bool insufficientGold)
         {
             TMP_Text label = BuyLabel;
             if (label != null)
             {
+                if (!_hasDefaultBuyLabelColor)
+                {
+                    _defaultBuyLabelColor = label.color;
+                    _hasDefaultBuyLabelColor = true;
+                }
+
                 label.text = _isStocked ? $"金币：{price}" : string.Empty;
+                label.color = insufficientGold
+                    ? InsufficientGoldColor
+                    : _defaultBuyLabelColor;
             }
         }
 

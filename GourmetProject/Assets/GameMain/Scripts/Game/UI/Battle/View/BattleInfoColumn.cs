@@ -146,7 +146,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 if (_viewTableCountText != null)
                 {
                     _viewTableCountText.gameObject.SetActive(true);
-                    _viewTableCountText.text = ResolveTableCellCount(run, session, world).ToString();
+                    _viewTableCountText.text = ResolveTableCellCount(run, session, current, world).ToString();
                 }
             }
 
@@ -315,14 +315,23 @@ namespace GourmetProject.Game.UI.Battle.View
             }
         }
 
-        private static int ResolveTableCellCount(GameRun run, BattleSession session, BattleWorldController world)
+        private static int ResolveTableCellCount(
+            GameRun run,
+            BattleSession session,
+            GameplayView current,
+            BattleWorldController world)
         {
-            if (world != null && world.ActiveTable != null)
+            // 餐桌查看/编辑页以当前世界表现为准；它可能包含尚未提交的编辑预览。
+            if ((current == GameplayView.TableEdit || current == GameplayView.TableView)
+                && world != null
+                && world.ActiveTable != null)
             {
                 return world.ActiveTable.CellCapacity;
             }
 
-            if (session?.DiningTable != null)
+            // 经营尚未结算时使用本场餐桌快照。结算领奖后 GameRun 已加入新餐桌格，
+            // 但 BattleSession 仍是本场开始时的旧快照，此时必须回退到运行态餐桌。
+            if (session != null && !session.IsSettled && session.DiningTable != null)
             {
                 return session.DiningTable.CellCapacity;
             }

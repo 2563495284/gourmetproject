@@ -18,6 +18,7 @@ namespace GourmetProject.Game.UI.Hud
         [SerializeField] private RectTransform _panel;
         [SerializeField] private CanvasGroup _group;
         [SerializeField] private TMP_Text _titleText;
+        [SerializeField] private TMP_Text _descriptionText;
         [SerializeField] private Button _useButton;
         [SerializeField] private Button _discardButton;
         [SerializeField] private float _fadeDuration = 0.1f;
@@ -40,6 +41,8 @@ namespace GourmetProject.Game.UI.Hud
 
             clickBlocker.color = Color.clear;
             clickBlocker.raycastTarget = true;
+
+            EnsureDescriptionText();
         }
 
         private void OnDestroy()
@@ -79,6 +82,12 @@ namespace GourmetProject.Game.UI.Hud
             if (_titleText != null)
             {
                 _titleText.text = item != null ? item.Name : "消耗品";
+            }
+
+            TMP_Text description = EnsureDescriptionText();
+            if (description != null)
+            {
+                description.text = BuildDescription(item?.Desc, canUse, disabledReason);
             }
 
             BindButton(_useButton, "使用", canUse, () =>
@@ -174,6 +183,58 @@ namespace GourmetProject.Game.UI.Hud
             {
                 button.onClick.AddListener(() => action());
             }
+        }
+
+        internal static string BuildDescription(
+            string itemDescription,
+            bool canUse,
+            string disabledReason)
+        {
+            string description = itemDescription?.Trim() ?? string.Empty;
+            if (canUse || string.IsNullOrWhiteSpace(disabledReason))
+            {
+                return description;
+            }
+
+            string warning = $"<color=#C73737>暂不可使用：{disabledReason.Trim()}</color>";
+            return string.IsNullOrEmpty(description)
+                ? warning
+                : $"{description}\n{warning}";
+        }
+
+        private TMP_Text EnsureDescriptionText()
+        {
+            if (_descriptionText != null)
+            {
+                return _descriptionText;
+            }
+
+            if (_titleText == null || _panel == null)
+            {
+                return null;
+            }
+
+            _descriptionText = Instantiate(_titleText, _panel);
+            _descriptionText.name = "Description";
+            _descriptionText.text = string.Empty;
+            _descriptionText.fontStyle = FontStyles.Normal;
+            _descriptionText.fontSize = 16f;
+            _descriptionText.fontSizeMin = 16f;
+            _descriptionText.fontSizeMax = 16f;
+            _descriptionText.alignment = TextAlignmentOptions.TopLeft;
+            _descriptionText.enableWordWrapping = true;
+            _descriptionText.raycastTarget = false;
+            _descriptionText.transform.SetSiblingIndex(_titleText.transform.GetSiblingIndex() + 1);
+
+            if (_descriptionText.transform is RectTransform descriptionRect)
+            {
+                descriptionRect.sizeDelta = new Vector2(216f, 88f);
+            }
+
+            Vector2 panelSize = _panel.sizeDelta;
+            panelSize.y = Mathf.Max(panelSize.y, 270f);
+            _panel.sizeDelta = panelSize;
+            return _descriptionText;
         }
 
         private void StretchRoot()

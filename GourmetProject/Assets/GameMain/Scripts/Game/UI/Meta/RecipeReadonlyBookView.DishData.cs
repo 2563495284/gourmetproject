@@ -5,12 +5,28 @@ using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Tooltips;
 using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Gameplay.Model;
+using GourmetProject.Gameplay.Scoring;
 using GourmetProject.Runtime;
 
 namespace GourmetProject.Game.UI.Meta
 {
     public sealed partial class RecipeReadonlyBookView
     {
+        internal static int ResolveRecipeDishDisplayValue(
+            DishDef def,
+            RecipeBookSlot slot)
+        {
+            if (def == null)
+            {
+                return 0;
+            }
+
+            float score = def.Deliciousness
+                + (slot != null ? slot.ScoreFlatBonus : 0f);
+            float multiplier = slot != null ? slot.ScoreMultiplier : 1f;
+            return (int)DishScore.CeilContribution(score, multiplier);
+        }
+
         private bool TryBuildRecipeTarget(
             RecipeEditDishView dish,
             out ActiveTarget target)

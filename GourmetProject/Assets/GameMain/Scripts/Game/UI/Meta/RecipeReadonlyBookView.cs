@@ -302,11 +302,7 @@ namespace GourmetProject.Game.UI.Meta
             string title;
             if (state is ShopDeleteDishState)
             {
-                int limit = ShopService.DeleteDishLimit(_run);
-                string remaining = limit > 0
-                    ? $"　剩余 {ShopService.DeleteDishRemaining(_run)}/{limit} 次"
-                    : string.Empty;
-                title = $"删除食物　花费 {ShopService.DeleteCost(_run)} 金币{remaining}";
+                title = "选择一个食物进行删除";
             }
             else
             {
@@ -392,7 +388,8 @@ namespace GourmetProject.Game.UI.Meta
                 HideRecipeDishTips,
                 ComposeFlavorIds(def, slot.ExtraFlavorIds),
                 DishIconPreviewMode.Warehouse,
-                BattleStatusFor(bookIndex, dishIndex));
+                BattleStatusFor(bookIndex, dishIndex),
+                ResolveRecipeDishDisplayValue(def, slot));
             _spawnedDishes.Add(dish);
         }
 

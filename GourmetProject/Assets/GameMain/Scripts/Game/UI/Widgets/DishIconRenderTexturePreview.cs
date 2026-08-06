@@ -287,13 +287,18 @@ namespace GourmetProject.Game.UI.Widgets
         public void PlayTransformTo(
             DishDef dish,
             IReadOnlyList<string> flavorIds,
+            int? deliciousnessOverride,
             Action onComplete)
         {
             EnsureRefs();
             KillTransformSequence();
             if (dish?.Shape == null || _targetImage == null)
             {
-                Bind(dish, flavorIds: flavorIds, mode: _mode);
+                Bind(
+                    dish,
+                    deliciousnessOverride: deliciousnessOverride,
+                    flavorIds: flavorIds,
+                    mode: _mode);
                 onComplete?.Invoke();
                 return;
             }
@@ -304,7 +309,11 @@ namespace GourmetProject.Game.UI.Widgets
                 .Append(target.DOPunchScale(Vector3.one * 0.08f, 0.24f, vibrato: 6, elasticity: 0.6f))
                 .InsertCallback(TransformInDuration, () =>
                 {
-                    Bind(dish, flavorIds: flavorIds, mode: _mode);
+                    Bind(
+                        dish,
+                        deliciousnessOverride: deliciousnessOverride,
+                        flavorIds: flavorIds,
+                        mode: _mode);
                     if (_targetImage != null)
                     {
                         _targetImage.color = TransformFlashColor;
