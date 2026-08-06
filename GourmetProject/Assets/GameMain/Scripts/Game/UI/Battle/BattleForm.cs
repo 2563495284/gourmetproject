@@ -136,9 +136,6 @@ namespace GourmetProject.Game.UI.Battle
         [SerializeField] private ServingOutletView _servingOutlet;
         [SerializeField] private FoodDiscardBinView _foodDiscardBin;
 
-        [Header("Battle Message")]
-        [SerializeField] private TMP_Text _messageText;
-
         private bool _inBattle;
         private GameplayView _current = GameplayView.None;
         private Action<bool> _afterRewardTableEdit;
@@ -3937,14 +3934,7 @@ namespace GourmetProject.Game.UI.Battle
 
         private void SetMessage(string message)
         {
-            if (_messageText == null)
-            {
-                return;
-            }
-
-            string text = message ?? string.Empty;
-            _messageText.text = text;
-            _messageText.gameObject.SetActive(!string.IsNullOrEmpty(text));
+            return;
         }
 
         private void SetSettlementScore(int score)
