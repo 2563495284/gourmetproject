@@ -17,9 +17,13 @@ namespace GourmetProject.Game.UI.Meta
         private const float OptionHeight = 100f;
         private const float RequirementHeight = 28f;
         private const float RequirementInset = 8f;
+        // 给顶部常驻时间轴留出空间，避免节点和进度线压在事件插画上。
+        private static readonly Vector2 IllustrationAnchorMin = new(0.05f, 0.465f);
+        private static readonly Vector2 IllustrationAnchorMax = new(0.95f, 0.845f);
 
         [SerializeField] private Image _backgroundImage;
         [SerializeField] private Sprite _defaultBackgroundSprite;
+        [SerializeField] private Image _illustrationImage;
         [SerializeField] private TMP_Text _titleText;
         [SerializeField] private TMP_Text _descriptionText;
         [SerializeField] private RectTransform _optionsRoot;
@@ -45,7 +49,7 @@ namespace GourmetProject.Game.UI.Meta
             SetText(_titleText, title);
             SetText(_descriptionText, description);
             SetVisible(_descriptionText, !string.IsNullOrWhiteSpace(description));
-            SetBackground(bgSpritePath);
+            SetIllustration(bgSpritePath);
 
             int count = options?.Count ?? 0;
             bool showResultButton = !string.IsNullOrWhiteSpace(resultButtonText) || count == 0;
@@ -343,29 +347,80 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
-        private void SetBackground(string spritePath)
+        private void SetIllustration(string spritePath)
         {
-            if (_backgroundImage == null)
+            Image illustration = EnsureIllustrationImage();
+            if (illustration == null)
             {
                 return;
             }
 
-            // Sprite sprite = null;
-            // if (!string.IsNullOrWhiteSpace(spritePath))
-            // {
-            //     sprite = Resources.Load<Sprite>(spritePath);
-            // }
+            string resourcePath = NormalizeResourcePath(spritePath);
+            Sprite sprite = string.IsNullOrWhiteSpace(resourcePath)
+                ? null
+                : Resources.Load<Sprite>(resourcePath);
+            illustration.sprite = sprite;
+            illustration.enabled = sprite != null;
+            illustration.gameObject.SetActive(sprite != null);
 
-            // if (sprite == null)
-            // {
-            //     sprite = _defaultBackgroundSprite != null
-            //         ? _defaultBackgroundSprite
-            //         : Resources.Load<Sprite>("Sprites/UI/card_action_event");
-            // }
+            if (sprite == null && !string.IsNullOrWhiteSpace(resourcePath))
+            {
+                Debug.LogWarning($"事件插画加载失败：{resourcePath}");
+            }
+        }
 
-            // _backgroundImage.sprite = sprite;
-            // _backgroundImage.enabled = sprite != null;
-            // _backgroundImage.color = sprite != null ? Color.white : new Color(0.12f, 0.1f, 0.08f, 0.92f);
+        private Image EnsureIllustrationImage()
+        {
+            if (_illustrationImage != null)
+            {
+                return _illustrationImage;
+            }
+
+            var illustrationObject = new GameObject(
+                "Illustration",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image));
+            illustrationObject.layer = gameObject.layer;
+            RectTransform rect = illustrationObject.GetComponent<RectTransform>();
+            rect.SetParent(transform, false);
+            rect.anchorMin = IllustrationAnchorMin;
+            rect.anchorMax = IllustrationAnchorMax;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            rect.SetSiblingIndex(Mathf.Max(0, transform.childCount - 2));
+
+            _illustrationImage = illustrationObject.GetComponent<Image>();
+            _illustrationImage.type = Image.Type.Simple;
+            _illustrationImage.preserveAspect = true;
+            _illustrationImage.raycastTarget = false;
+            _illustrationImage.color = Color.white;
+            _illustrationImage.enabled = false;
+            illustrationObject.SetActive(false);
+            return _illustrationImage;
+        }
+
+        private static string NormalizeResourcePath(string spritePath)
+        {
+            if (string.IsNullOrWhiteSpace(spritePath))
+            {
+                return string.Empty;
+            }
+
+            string path = spritePath.Trim().Replace('\\', '/');
+            const string resourcesSegment = "/Resources/";
+            int resourcesIndex = path.IndexOf(resourcesSegment, StringComparison.OrdinalIgnoreCase);
+            if (resourcesIndex >= 0)
+            {
+                path = path.Substring(resourcesIndex + resourcesSegment.Length);
+            }
+
+            if (path.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+            {
+                path = path.Substring(0, path.Length - 4);
+            }
+
+            return path.TrimStart('/');
         }
 
         private static void SetText(TMP_Text text, string value)

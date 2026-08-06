@@ -44,7 +44,6 @@ public sealed partial class GameBase : Luban.BeanBase
         { if(!_buf["shopFragmentPackPurchaseLimit"].IsNumber) { throw new SerializationException(); }  ShopFragmentPackPurchaseLimit = _buf["shopFragmentPackPurchaseLimit"]; }
         { if(!_buf["initialHeartCount"].IsNumber) { throw new SerializationException(); }  InitialHeartCount = _buf["initialHeartCount"]; }
         { if(!_buf["totalWeeks"].IsNumber) { throw new SerializationException(); }  TotalWeeks = _buf["totalWeeks"]; }
-        { if(!_buf["slotEmptyWeight"].IsNumber) { throw new SerializationException(); }  SlotEmptyWeight = _buf["slotEmptyWeight"]; }
         { if(!_buf["slotFreeSpins"].IsNumber) { throw new SerializationException(); }  SlotFreeSpins = _buf["slotFreeSpins"]; }
         { if(!_buf["slotPaidCost"].IsNumber) { throw new SerializationException(); }  SlotPaidCost = _buf["slotPaidCost"]; }
         { if(!_buf["slotMaxSpins"].IsNumber) { throw new SerializationException(); }  SlotMaxSpins = _buf["slotMaxSpins"]; }
@@ -164,10 +163,6 @@ public sealed partial class GameBase : Luban.BeanBase
     /// </summary>
     public readonly int TotalWeeks;
     /// <summary>
-    /// 抽奖机空奖权重
-    /// </summary>
-    public readonly float SlotEmptyWeight;
-    /// <summary>
     /// 每个抽奖机节点的免费抽奖次数
     /// </summary>
     public readonly int SlotFreeSpins;
@@ -217,7 +212,6 @@ public sealed partial class GameBase : Luban.BeanBase
         + "shopFragmentPackPurchaseLimit:" + ShopFragmentPackPurchaseLimit + ","
         + "initialHeartCount:" + InitialHeartCount + ","
         + "totalWeeks:" + TotalWeeks + ","
-        + "slotEmptyWeight:" + SlotEmptyWeight + ","
         + "slotFreeSpins:" + SlotFreeSpins + ","
         + "slotPaidCost:" + SlotPaidCost + ","
         + "slotMaxSpins:" + SlotMaxSpins + ","

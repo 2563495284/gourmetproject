@@ -639,10 +639,15 @@ function renderEventInspector(event) {
       <label class="field"><span>事件分类 <span class="hint">可多选，顺序按勾选顺序</span></span><div class="checks">${types}</div></label>
       ${field("出现前置条件", "preconditions", event.preconditions, {hint:"多个条件用 | 连接"})}
       <div class="inline-fields">${field("随机权重", "weight", event.weight, {type:"number",step:"0.1"})}<label class="field"><span>是否可重复</span><select data-field="repeatable"><option value="true" ${event.repeatable ? "selected" : ""}>是</option><option value="false" ${!event.repeatable ? "selected" : ""}>否</option></select></label></div>
-      ${field("背景 Sprite", "bgSprite", event.bgSprite)}
+      ${field("事件插画 Sprite", "bgSprite", event.bgSprite)}
       ${field("终止结果模板", "resultText", event.resultText, {type:"textarea",rows:2})}
     </section>
-    ${showSlot ? `<section class="section"><h3>抽奖机专用配置</h3>${field("奖励槽组", "slotRewardGroupId", event.slotRewardGroupId)}<p class="hint">空奖权重、免费次数、单次价格和最大次数统一在 game_base 表配置。</p></section>` : ""}
+    ${showSlot ? `<section class="section"><h3>抽奖机专用配置</h3>
+      ${field("空奖概率", "slotEmptyProbability", event.slotEmptyProbability ?? 0, {type:"number",step:"0.01",hint:"0～1"})}
+      ${field("奖励槽 ID", "slotRewardSlotIds", (event.slotRewardSlotIds ?? []).join(","), {hint:"逗号分隔，顺序与概率一一对应"})}
+      ${field("奖励概率", "slotRewardProbabilities", (event.slotRewardProbabilities ?? []).join(","), {hint:"逗号分隔；空奖与全部奖励合计必须为 1"})}
+      <p class="hint">免费次数、单次价格和最大次数仍在 game_base 表配置。</p>
+    </section>` : ""}
     <section class="section"><h3>事件操作</h3><div class="inspector-actions"><button class="btn slim" data-action="add-root">＋ 根选择</button><button class="btn slim" data-action="duplicate-event">复制事件</button><button class="btn slim danger" data-action="delete-event">删除事件</button></div></section>`;
   bindInspector(event, "event");
 }
@@ -681,18 +686,24 @@ function renderOptionInspector(option) {
 
 function bindInspector(target, kind) {
   $("inspector").querySelectorAll("[data-field]").forEach(input => {
+    const parseValue = () => {
+      const fieldName = input.dataset.field;
+      if (fieldName === "slotRewardSlotIds") return input.value.split(",").map(value => value.trim()).filter(Boolean);
+      if (fieldName === "slotRewardProbabilities") return input.value.split(",").map(value => Number(value.trim())).filter(value => Number.isFinite(value));
+      if (input.type === "number") return Number(input.value || 0);
+      if (["repeatable", "autoEnd"].includes(fieldName)) return input.value === "true";
+      return input.value;
+    };
     const apply = () => {
       const fieldName = input.dataset.field;
-      let value = input.value;
-      if (input.type === "number") value = Number(value || 0);
-      if (["repeatable", "autoEnd"].includes(fieldName)) value = value === "true";
+      const value = parseValue();
       if (fieldName === "id") renameId(kind, target, value.trim());
       else target[fieldName] = value;
       setDirty();
     };
     input.addEventListener("input", () => {
       if (input.tagName === "SELECT" || input.type === "number") return;
-      if (input.dataset.field !== "id") { target[input.dataset.field] = input.value; setDirty(); }
+      if (input.dataset.field !== "id") { target[input.dataset.field] = parseValue(); setDirty(); }
     });
     input.addEventListener("change", () => { apply(); renderAll(); });
   });
@@ -925,7 +936,7 @@ async function generateConfig() {
 
 function newEvent() {
   const id = uniqueId("ev_", "new_event");
-  const event = {id,name:"新事件",desc:"在这里填写事件发生时玩家看到的正文。",eventTypes:["Event"],preconditions:"",weight:1,repeatable:true,bgSprite:"",resultText:"",slotRewardGroupId:""};
+  const event = {id,name:"新事件",desc:"在这里填写事件发生时玩家看到的正文。",eventTypes:["Event"],preconditions:"",weight:1,repeatable:true,bgSprite:"",resultText:"",slotEmptyProbability:0,slotRewardSlotIds:[],slotRewardProbabilities:[]};
   state.model.events.push(event);
   const option = createOption(id, "");
   state.model.options.push(option);
