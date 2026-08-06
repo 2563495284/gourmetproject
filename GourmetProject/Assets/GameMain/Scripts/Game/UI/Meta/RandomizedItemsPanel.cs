@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using DG.Tweening;
 using GourmetProject.Game.Meta;
+using GourmetProject.Game.UI.Common;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -16,6 +18,14 @@ namespace GourmetProject.Game.UI.Meta
         [SerializeField] private Button _continueButton;
         [SerializeField] private RandomizedItemCardView _cardTemplate;
         private bool _resolved;
+        private Sequence _entrySequence;
+        [SerializeField] private StaggerTransitionSettings _cardTransition = new StaggerTransitionSettings();
+
+        private void OnDisable()
+        {
+            _entrySequence?.Kill();
+            _entrySequence = null;
+        }
 
         public void Open(string title, IReadOnlyList<RandomizedItemResult> results, Action onContinue)
         {
@@ -49,10 +59,26 @@ namespace GourmetProject.Game.UI.Meta
                     onContinue?.Invoke();
                 });
             }
+
+            Canvas.ForceUpdateCanvases();
+            if (_cardsRoot != null)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(_cardsRoot);
+            }
+
+            _entrySequence?.Kill();
+            StaggerTransitionSettings settings = _cardTransition ?? new StaggerTransitionSettings();
+            _entrySequence = UITransition.StaggerIn(
+                _cardRects,
+                settings.Duration,
+                settings.Interval,
+                settings.MaxDelay);
         }
 
         public void Close()
         {
+            _entrySequence?.Kill();
+            _entrySequence = null;
             ClearCards();
             gameObject.SetActive(false);
         }

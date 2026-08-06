@@ -74,6 +74,9 @@ namespace GourmetProject.Game.UI.Battle
         [Header("Center (切换动画区)")]
         [Tooltip("中部内容区根的 CanvasGroup：五态切换时对它做渐隐渐显；常驻壳不在其下。")]
         [SerializeField] private CanvasGroup _center;
+        [Tooltip("独立的中部世界遮罩；范围与 Center 一致，不包含左右常驻栏。")]
+        [SerializeField] private CanvasGroup _centerTransitionCover;
+        [SerializeField] private GameplayTransitionSettings _pageTransitionSettings = new GameplayTransitionSettings();
 
         [Header("DiningTable Area (餐桌锁定区)")]
         [Tooltip("HUD 里的空区矩形：世界餐桌将 fit 并居中锁定在该屏幕区域内。")]
@@ -152,6 +155,7 @@ namespace GourmetProject.Game.UI.Battle
         private WeekLoopController _loop;
 
         private TimelineAxisBinder _axisBinder;
+        private InspectionNavigationContext _inspectionNavigation;
         private TableViewCoordinator _tableCoordinator;
         private GameplayPageRouter _pageRouter;
         private ShopPageCoordinator _shopPage;
@@ -219,6 +223,8 @@ namespace GourmetProject.Game.UI.Battle
         {
             base.OnInit(userData);
 
+            EnsureCenterTransitionCover();
+
             _infoColumn?.Bind(OnSettingsClicked, OnViewTableClicked, OnViewRecipeClicked);
             _viewTablePanel?.GetComponent<ViewTablePanel>()?.Bind(OnExitTableViewClicked);
             _cakeLayerBuffHud = GetComponent<CakeLayerBuffHud>();
@@ -247,10 +253,11 @@ namespace GourmetProject.Game.UI.Battle
                 _actionAxisBar,
                 () => _tips != null ? _tips.Timeline : null);
             _deck?.SetRewardTip(() => _tips != null ? _tips.Item : null);
-            _tableCoordinator = new TableViewCoordinator(this);
+            _inspectionNavigation = new InspectionNavigationContext();
+            _tableCoordinator = new TableViewCoordinator(this, _inspectionNavigation);
             _pageRouter = new GameplayPageRouter(this);
             _shopPage = new ShopPageCoordinator(this);
-            _recipeBookPage = new RecipeBookCoordinator(this);
+            _recipeBookPage = new RecipeBookCoordinator(this, _inspectionNavigation);
             _rewardPage = new RewardPageCoordinator(this);
             _eventPage = new EventPageCoordinator(this);
             _activeItemUse = new ActiveItemUseCoordinator(this);
@@ -845,6 +852,122 @@ namespace GourmetProject.Game.UI.Battle
             SyncPageStateFromRouter();
         }
 
+        private void EnsureCenterTransitionCover()
+        {
+            if (_centerTransitionCover == null)
+            {
+                Transform parent = _hudFrame != null ? _hudFrame.transform : transform;
+                var coverObject = new GameObject(
+                    "CenterTransitionCover",
+                    typeof(RectTransform),
+                    typeof(CanvasRenderer),
+                    typeof(Image),
+                    typeof(CanvasGroup));
+                RectTransform coverRect = coverObject.GetComponent<RectTransform>();
+                coverRect.SetParent(parent, false);
+
+                RectTransform centerRect = _center != null ? _center.transform as RectTransform : null;
+                if (centerRect != null && centerRect.parent == parent)
+                {
+                    coverRect.anchorMin = centerRect.anchorMin;
+                    coverRect.anchorMax = centerRect.anchorMax;
+                    coverRect.anchoredPosition = centerRect.anchoredPosition;
+                    coverRect.sizeDelta = centerRect.sizeDelta;
+                    coverRect.pivot = centerRect.pivot;
+                }
+                else
+                {
+                    coverRect.anchorMin = new Vector2(0.165f, 0f);
+                    coverRect.anchorMax = new Vector2(0.835f, 1f);
+                    coverRect.anchoredPosition = Vector2.zero;
+                    coverRect.sizeDelta = Vector2.zero;
+                }
+
+                _centerTransitionCover = coverObject.GetComponent<CanvasGroup>();
+            }
+
+            Image coverImage = _centerTransitionCover.GetComponent<Image>();
+            if (coverImage != null)
+            {
+                coverImage.color = Color.black;
+                coverImage.raycastTarget = true;
+            }
+
+            Transform coverTransform = _centerTransitionCover.transform;
+            Transform coverParent = coverTransform.parent;
+            Transform axisRoot = DirectChildUnder(coverParent, _actionAxisBar != null
+                ? _actionAxisBar.transform
+                : null);
+            coverTransform.SetAsLastSibling();
+            if (axisRoot != null)
+            {
+                coverTransform.SetSiblingIndex(axisRoot.GetSiblingIndex() + 1);
+            }
+            else if (_center != null && _center.transform.parent == coverParent)
+            {
+                coverTransform.SetSiblingIndex(_center.transform.GetSiblingIndex() + 1);
+            }
+
+            _centerTransitionCover.alpha = 0f;
+            _centerTransitionCover.interactable = false;
+            _centerTransitionCover.blocksRaycasts = false;
+        }
+
+        private void OnPageCovered(GameplayView current, GameplayView next)
+        {
+            if (InspectionNavigationContext.IsInspectionView(current)
+                && !InspectionNavigationContext.IsInspectionView(next))
+            {
+                _inspectionNavigation?.Clear();
+            }
+
+            if (current == next || !GameplayPageRouter.IsWorldView(current))
+            {
+                return;
+            }
+
+            BattleWorldController world = _world ?? BattleWorldController.Instance;
+            if (world == null)
+            {
+                return;
+            }
+
+            if (current == GameplayView.Food && !PreservesFoodWorld(next))
+            {
+                HideBattleWorld();
+                return;
+            }
+
+            world.SuspendWorld();
+        }
+
+        private static Transform DirectChildUnder(Transform parent, Transform descendant)
+        {
+            if (parent == null || descendant == null)
+            {
+                return null;
+            }
+
+            Transform current = descendant;
+            while (current.parent != null && current.parent != parent)
+            {
+                current = current.parent;
+            }
+
+            return current.parent == parent ? current : null;
+        }
+
+        private static bool PreservesFoodWorld(GameplayView next)
+        {
+            return next == GameplayView.Food
+                || next == GameplayView.TableEdit
+                || next == GameplayView.TableView
+                || next == GameplayView.RecipeInspect
+                || next == GameplayView.RewardDishPack
+                || next == GameplayView.RewardItemChoice
+                || next == GameplayView.RandomizedItems;
+        }
+
         private void SyncPageStateFromRouter()
         {
             if (_pageRouter == null)
@@ -873,6 +996,8 @@ namespace GourmetProject.Game.UI.Battle
         GameRun IGameplayPageRouterHost.Run => _run;
         BattleWorldController IGameplayPageRouterHost.World => _world ?? BattleWorldController.Instance;
         CanvasGroup IGameplayPageRouterHost.Center => _center;
+        CanvasGroup IGameplayPageRouterHost.CenterTransitionCover => _centerTransitionCover;
+        GameplayTransitionSettings IGameplayPageRouterHost.TransitionSettings => _pageTransitionSettings;
         GameObject IGameplayPageRouterHost.HudFrame => _hudFrame;
         GameObject IGameplayPageRouterHost.Backdrop => _backdrop;
         GameObject IGameplayPageRouterHost.ViewTablePanel => _viewTablePanel;
@@ -887,7 +1012,9 @@ namespace GourmetProject.Game.UI.Battle
         GameObject IGameplayPageRouterHost.BoardEditPanel => _boardEditPanel;
         Button IGameplayPageRouterHost.BoardEditActionButton => _boardEditActionButton;
         bool IGameplayPageRouterHost.RecipeInspectShowsActionAxis => _recipeBookPage?.InspectShowsActionAxis == true;
+        bool IGameplayPageRouterHost.ActionAxisVisible => _actionAxisBar != null && _actionAxisBar.gameObject.activeSelf;
         void IGameplayPageRouterHost.OnLeavingPage(GameplayView current, GameplayView next) => _recipeBookPage?.OnLeavingPage(current, next);
+        void IGameplayPageRouterHost.OnPageCovered(GameplayView current, GameplayView next) => OnPageCovered(current, next);
         void IGameplayPageRouterHost.OnBeforeApplyPage(GameplayView view)
         {
             if (view != GameplayView.Food)
@@ -915,6 +1042,7 @@ namespace GourmetProject.Game.UI.Battle
         ActionSelectSnapshot IRecipeBookHost.CaptureActionSelection() => CaptureActionSelectSnapshot();
         void IRecipeBookHost.RestoreActionSelection(ActionSelectSnapshot snapshot) => RestoreActionSelection(snapshot);
         void IRecipeBookHost.ShowActionSelection(Action onShown) => ShowActionSelection(onShown);
+        void IRecipeBookHost.RestoreBattleWorld() => RestoreBattleWorld();
         void IRecipeBookHost.PlayShowCardsWhenReady() => PlayShowCardsWhenReady();
         FoodTipsView IRecipeBookHost.FoodTips() => _tips != null ? _tips.Food : null;
 
@@ -935,7 +1063,7 @@ namespace GourmetProject.Game.UI.Battle
         RandomizedItemsPanel IRewardPageHost.RandomizedItemsPanel => _randomizedItemsPanel;
         void IRewardPageHost.SwitchTo(GameplayView view, Action buildCenter, Action onShown) => SwitchTo(view, buildCenter, onShown);
         void IRewardPageHost.RefreshPersistent() => RefreshPersistent();
-        void IRewardPageHost.ShowActionSelection() => ShowActionSelection();
+        void IRewardPageHost.ShowActionSelection(Action onShown) => ShowActionSelection(onShown);
         void IRewardPageHost.RestoreBattleWorld() => RestoreBattleWorld();
         FoodTipsView IRewardPageHost.FoodTips() => _tips != null ? _tips.Food : null;
         ItemTipView IRewardPageHost.ItemTips() => _tips != null ? _tips.Item : null;
@@ -2311,11 +2439,6 @@ namespace GourmetProject.Game.UI.Battle
             _run?.ClearPendingActionChoices();
             _deck?.HideThenDestroy(() =>
             {
-                if (_actionSelectionPanel != null)
-                {
-                    _actionSelectionPanel.SetActive(false);
-                }
-
                 _loop?.OnActionPicked(choice);
             });
         }
@@ -2326,11 +2449,6 @@ namespace GourmetProject.Game.UI.Battle
             ClearTimelineNodeCard();
             _deck?.HideThenDestroy(() =>
             {
-                if (_actionSelectionPanel != null)
-                {
-                    _actionSelectionPanel.SetActive(false);
-                }
-
                 onPick?.Invoke();
             });
         }
@@ -2363,6 +2481,8 @@ namespace GourmetProject.Game.UI.Battle
             _rewardPeekOnly = false;
             ClearTimelineNodeCard();
             _pageRouter?.HideHud();
+            _tableCoordinator?.CancelPendingTransition();
+            _inspectionNavigation?.Clear();
             SyncPageStateFromRouter();
             _infoColumn?.ScoreFire?.Hide();
             _infoColumn?.ResetTableLabel();
@@ -2393,7 +2513,11 @@ namespace GourmetProject.Game.UI.Battle
 
             if (_current == GameplayView.TableView && _tableCoordinator != null)
             {
-                _tableCoordinator.Back(() => OpenRecipeInspect(0));
+                Action atSwap = _tableCoordinator.BeginPeerExit();
+                if (atSwap != null)
+                {
+                    _recipeBookPage?.OpenInspect(0, atSwap: atSwap);
+                }
                 return;
             }
 
@@ -2535,7 +2659,7 @@ namespace GourmetProject.Game.UI.Battle
 
             if (_current == GameplayView.RecipeInspect && _recipeBookPage != null)
             {
-                _recipeBookPage.CloseInspect(_tableCoordinator.Open);
+                _tableCoordinator.Open();
                 return;
             }
 
@@ -2556,7 +2680,8 @@ namespace GourmetProject.Game.UI.Battle
 
         private bool IsViewToggleTransitioning()
         {
-            return (_center != null && DOTween.IsTweening(_center, true))
+            return (_pageRouter != null && _pageRouter.IsTransitioning)
+                || (_center != null && DOTween.IsTweening(_center, true))
                 || (_tableCoordinator != null && _tableCoordinator.IsTransitioning);
         }
 
@@ -2671,9 +2796,6 @@ namespace GourmetProject.Game.UI.Battle
             _pendingSettlementCakeLayers = null;
             _session.Served += OnBattleServed;
             _session.HappyCakeLayersChanged += OnHappyCakeLayersChanged;
-            // 常驻壳在经营挑战中持续显示并接管分数/装饰品和消耗品入口（餐桌/食物仍在世界空间场景）。
-            SwitchTo(GameplayView.Food);
-
             _world = BattleWorldController.Instance;
             if (_world == null)
             {
@@ -2681,40 +2803,52 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            StartBattleMusic();
-
-            _world.SetTableArea(_boardArea);
             bool runOpeningPresentation = _activeBattleIsBoss
                 && bossPlan != null
                 && (bossPlan.HasIntroPresentation
                     || string.Equals(bossPlan.DebuffId, "debuff_carb_meal", StringComparison.Ordinal));
-            if (string.Equals(bossPlan?.DebuffId, "debuff_gluttony", StringComparison.Ordinal))
-            {
-                _servingOutlet?.SetRecipeCountPresentationOverride(bossPlan.InitialRecipeEntryCount);
-            }
-            _world.Initialize(
-                _run,
-                _session,
-                SetMessage,
-                SetSettlementScore,
-                RefreshAll,
-                null,
-                OnDishClicked,
-                serveTriggerCueSink: OnServeTriggerCue,
-                pendingDishConfirmRequested: OnPendingDishConfirmRequested,
-                prepareNextDish: !runOpeningPresentation);
-            if (_activeBattleIsBoss && bossPlan != null)
-            {
-                _world.StageBossPresentation(bossPlan);
-            }
-            _world.SetDishHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
-            _world.SetCellHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
-            _world.SetTableFragmentHoverCallbacks(OnTableFragmentHoverEntered, OnTableFragmentHoverExited);
-            RefreshAll();
-            if (runOpeningPresentation)
-            {
-                _ = PlayBossOpeningPresentationAsync(bossPlan);
-            }
+
+            // 世界空间对象不受 Center CanvasGroup 控制，因此必须在中心遮罩完全覆盖后初始化；
+            // Boss 开场演出则等遮罩揭开，避免首个手势或对白被过渡吞掉。
+            SwitchTo(
+                GameplayView.Food,
+                () =>
+                {
+                    StartBattleMusic();
+                    _world.SetTableArea(_boardArea);
+                    if (string.Equals(bossPlan?.DebuffId, "debuff_gluttony", StringComparison.Ordinal))
+                    {
+                        _servingOutlet?.SetRecipeCountPresentationOverride(bossPlan.InitialRecipeEntryCount);
+                    }
+
+                    _world.Initialize(
+                        _run,
+                        _session,
+                        SetMessage,
+                        SetSettlementScore,
+                        RefreshAll,
+                        null,
+                        OnDishClicked,
+                        serveTriggerCueSink: OnServeTriggerCue,
+                        pendingDishConfirmRequested: OnPendingDishConfirmRequested,
+                        prepareNextDish: !runOpeningPresentation);
+                    if (_activeBattleIsBoss && bossPlan != null)
+                    {
+                        _world.StageBossPresentation(bossPlan);
+                    }
+
+                    _world.SetDishHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
+                    _world.SetCellHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
+                    _world.SetTableFragmentHoverCallbacks(OnTableFragmentHoverEntered, OnTableFragmentHoverExited);
+                    RefreshAll();
+                },
+                () =>
+                {
+                    if (runOpeningPresentation)
+                    {
+                        _ = PlayBossOpeningPresentationAsync(bossPlan);
+                    }
+                });
         }
 
         private void OnHappyCakeLayersChanged(int before, int after)

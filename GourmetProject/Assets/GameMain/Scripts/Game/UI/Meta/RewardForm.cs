@@ -98,6 +98,7 @@ namespace GourmetProject.Game.UI.Meta
         [Header("Form Transition")]
         [SerializeField] private CanvasGroup _transitionGroup;
         [SerializeField] private RectTransform _transitionPanel;
+        [SerializeField] private RewardFormTransitionSettings _transitionSettings = new RewardFormTransitionSettings();
 
         private const int NoExpandedChoicePackGroup = int.MinValue;
 
@@ -123,7 +124,15 @@ namespace GourmetProject.Game.UI.Meta
         private FoodTipsView _foodTipsView;
         private ItemTipView _itemTipView;
         private Sequence _transitionSequence;
+        private Sequence _rewardRowsSequence;
+        private Sequence _rewardListSwapSequence;
+        private CanvasGroup _rewardListGroup;
+        private Vector2 _transitionPanelRestingPosition;
+        private bool _hasBuiltRewardRows;
         private bool _isClosing;
+
+        private RewardFormTransitionSettings TransitionSettings =>
+            _transitionSettings ?? (_transitionSettings = new RewardFormTransitionSettings());
 
         protected override void OnInit(object userData)
         {
@@ -139,7 +148,13 @@ namespace GourmetProject.Game.UI.Meta
                 _peekReturnButton.onClick.AddListener(ShowFromResultPeek);
             }
 
+            if (_transitionPanel != null)
+            {
+                _transitionPanelRestingPosition = _transitionPanel.anchoredPosition;
+            }
+
             ConfigureRewardScrollbar();
+            EnsureRewardListGroup();
             EnsureTipViews();
         }
 
@@ -148,6 +163,7 @@ namespace GourmetProject.Game.UI.Meta
             base.OnOpen(userData);
             PrepareOpenTransition();
             ConfigureRewardScrollbar();
+            EnsureRewardListGroup();
             EnsureTipViews();
             HideTips();
             HideRewardScrollbar(immediate: true);
@@ -247,6 +263,24 @@ namespace GourmetProject.Game.UI.Meta
             HideTips();
             _transitionSequence?.Kill();
             _transitionSequence = null;
+            _rewardRowsSequence?.Kill();
+            _rewardRowsSequence = null;
+            _rewardListSwapSequence?.Kill();
+            _rewardListSwapSequence = null;
+            _hasBuiltRewardRows = false;
+            if (_rewardListGroup != null)
+            {
+                _rewardListGroup.alpha = 1f;
+                _rewardListGroup.interactable = true;
+                _rewardListGroup.blocksRaycasts = true;
+            }
+
+            if (_transitionPanel != null)
+            {
+                _transitionPanel.anchoredPosition = _transitionPanelRestingPosition;
+                _transitionPanel.localScale = Vector3.one;
+            }
+
             _isClosing = false;
             base.OnClose(isShutdown, userData);
         }
@@ -417,6 +451,10 @@ namespace GourmetProject.Game.UI.Meta
 
             _isClosing = true;
             _continueButton.interactable = false;
+            _rewardRowsSequence?.Kill();
+            _rewardRowsSequence = null;
+            _rewardListSwapSequence?.Kill();
+            _rewardListSwapSequence = null;
             if (_transitionGroup != null)
             {
                 _transitionGroup.blocksRaycasts = false;
@@ -424,18 +462,14 @@ namespace GourmetProject.Game.UI.Meta
 
             _transitionSequence?.Kill();
             _transitionSequence = DOTween.Sequence().SetUpdate(true).SetTarget(this);
+            RewardFormTransitionSettings settings = TransitionSettings;
             if (_transitionGroup != null)
             {
                 _transitionSequence.Append(DOTween.To(
                     () => _transitionGroup.alpha,
                     value => _transitionGroup.alpha = value,
                     0f,
-                    0.16f).SetEase(Ease.InQuad));
-            }
-
-            if (_transitionPanel != null)
-            {
-                _transitionSequence.Join(_transitionPanel.DOScale(0.96f, 0.16f).SetEase(Ease.InQuad));
+                    settings.CloseDuration).SetEase(Ease.InSine));
             }
 
             _transitionSequence.OnComplete(() =>
@@ -448,6 +482,11 @@ namespace GourmetProject.Game.UI.Meta
         private void PrepareOpenTransition()
         {
             _transitionSequence?.Kill();
+            _rewardRowsSequence?.Kill();
+            _rewardRowsSequence = null;
+            _rewardListSwapSequence?.Kill();
+            _rewardListSwapSequence = null;
+            _hasBuiltRewardRows = false;
             _isClosing = false;
             _continueButton.interactable = true;
             if (_transitionGroup != null)
@@ -458,7 +497,15 @@ namespace GourmetProject.Game.UI.Meta
 
             if (_transitionPanel != null)
             {
-                _transitionPanel.localScale = Vector3.one * 0.94f;
+                _transitionPanel.localScale = Vector3.one;
+                _transitionPanel.anchoredPosition = _transitionPanelRestingPosition;
+            }
+
+            if (_rewardListGroup != null)
+            {
+                _rewardListGroup.alpha = 1f;
+                _rewardListGroup.interactable = true;
+                _rewardListGroup.blocksRaycasts = true;
             }
         }
 
@@ -466,18 +513,14 @@ namespace GourmetProject.Game.UI.Meta
         {
             _transitionSequence?.Kill();
             _transitionSequence = DOTween.Sequence().SetUpdate(true).SetTarget(this);
+            RewardFormTransitionSettings settings = TransitionSettings;
             if (_transitionGroup != null)
             {
                 _transitionSequence.Append(DOTween.To(
                     () => _transitionGroup.alpha,
                     value => _transitionGroup.alpha = value,
                     1f,
-                    0.2f).SetEase(Ease.OutQuad));
-            }
-
-            if (_transitionPanel != null)
-            {
-                _transitionSequence.Join(_transitionPanel.DOScale(1f, 0.24f).SetEase(Ease.OutCubic));
+                    settings.BackgroundFade).SetEase(Ease.OutSine));
             }
 
             _transitionSequence.OnComplete(() =>
@@ -885,6 +928,47 @@ namespace GourmetProject.Game.UI.Meta
 
         private void RebuildRewardRows()
         {
+            EnsureRewardListGroup();
+            _rewardRowsSequence?.Kill();
+            _rewardRowsSequence = null;
+            _rewardListSwapSequence?.Kill();
+            _rewardListSwapSequence = null;
+
+            if (_hasBuiltRewardRows
+                && _spawnedRows.Count > 0
+                && _rewardListGroup != null
+                && isActiveAndEnabled)
+            {
+                _rewardListGroup.interactable = false;
+                _rewardListGroup.blocksRaycasts = false;
+                _rewardListSwapSequence = DOTween.Sequence().SetUpdate(true).SetTarget(_rewardListGroup);
+                _rewardListSwapSequence.Append(DOTween.To(
+                    () => _rewardListGroup.alpha,
+                    value => _rewardListGroup.alpha = value,
+                    0f,
+                    TransitionSettings.ListRefreshFadeOut).SetEase(Ease.InQuad));
+                _rewardListSwapSequence.AppendCallback(() =>
+                {
+                    RebuildRewardRowsImmediate();
+                    RestoreRewardListGroup();
+                    PlayRewardRowsIn();
+                });
+                _rewardListSwapSequence.OnComplete(() => _rewardListSwapSequence = null);
+                _rewardListSwapSequence.OnKill(RestoreRewardListGroup);
+                return;
+            }
+
+            RebuildRewardRowsImmediate();
+            if (_rewardListGroup != null)
+            {
+                RestoreRewardListGroup();
+            }
+
+            PlayRewardRowsIn(startDelay: TransitionSettings.InitialRowsDelay);
+        }
+
+        private void RebuildRewardRowsImmediate()
+        {
             for (int i = 0; i < _spawnedRows.Count; i++)
             {
                 if (_spawnedRows[i] != null)
@@ -920,6 +1004,54 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             HideRewardScrollbar(immediate: true);
+            _hasBuiltRewardRows = true;
+        }
+
+        private void PlayRewardRowsIn(float startDelay = 0f)
+        {
+            _rewardRowsSequence?.Kill();
+            var rects = new List<RectTransform>(_spawnedRows.Count);
+            for (int i = 0; i < _spawnedRows.Count; i++)
+            {
+                if (_spawnedRows[i] != null && _spawnedRows[i].transform is RectTransform rect)
+                {
+                    rects.Add(rect);
+                }
+            }
+
+            StaggerTransitionSettings settings = TransitionSettings.Rows ?? new StaggerTransitionSettings();
+            _rewardRowsSequence = UITransition.StaggerIn(
+                rects,
+                settings.Duration,
+                settings.Interval,
+                settings.MaxDelay,
+                startDelay);
+        }
+
+        private void EnsureRewardListGroup()
+        {
+            if (_rewardListGroup != null || _rewardListContent == null)
+            {
+                return;
+            }
+
+            _rewardListGroup = _rewardListContent.GetComponent<CanvasGroup>();
+            if (_rewardListGroup == null)
+            {
+                _rewardListGroup = _rewardListContent.gameObject.AddComponent<CanvasGroup>();
+            }
+        }
+
+        private void RestoreRewardListGroup()
+        {
+            if (_rewardListGroup == null)
+            {
+                return;
+            }
+
+            _rewardListGroup.alpha = 1f;
+            _rewardListGroup.interactable = true;
+            _rewardListGroup.blocksRaycasts = true;
         }
 
         private void ConfigureRewardScrollbar()
@@ -1374,8 +1506,9 @@ namespace GourmetProject.Game.UI.Meta
                 return false;
             }
 
-            bool direct = choices.Count == 1
-                && group.RequiredChoiceCount == 1
+            // 候选全部必领时已经没有选择行为，直接把每个 roll 结果展示在 RewardForm。
+            // 餐桌格仍需作为整包进入编辑页，不能拆成普通奖励行。
+            bool direct = group.RequiredChoiceCount >= choices.Count
                 && choices[0]?.Kind != cfg.RewardKind.FragmentChoice;
             if (direct)
             {

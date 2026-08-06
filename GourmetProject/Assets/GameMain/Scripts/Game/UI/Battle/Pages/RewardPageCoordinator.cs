@@ -26,7 +26,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         void RefreshPersistent();
 
-        void ShowActionSelection();
+        void ShowActionSelection(Action onShown = null);
 
         void RestoreBattleWorld();
 
@@ -44,11 +44,106 @@ namespace GourmetProject.Game.UI.Battle.Pages
         void PlayRandomizedItemFlys(IReadOnlyList<RandomizedItemResult> results);
     }
 
+    internal readonly struct RandomizedRewardResume
+    {
+        public readonly GameplayView ParentView;
+        public readonly bool ParentCompleted;
+        public readonly Action ParentFinish;
+
+        public RandomizedRewardResume(GameplayView parentView, bool parentCompleted, Action parentFinish)
+        {
+            ParentView = parentView;
+            ParentCompleted = parentCompleted;
+            ParentFinish = parentFinish;
+        }
+    }
+
+    /// <summary>
+    /// 一次领奖操作的导航上下文。根返回页只在首次进入领奖页时记录；随机结果页属于当前领奖页，
+    /// 不得把父领奖页覆盖为新的返回目标。
+    /// </summary>
+    internal sealed class RewardOperationSession
+    {
+        public GameplayView RootReturnView { get; private set; } = GameplayView.None;
+
+        public GameplayView RandomizedParentView { get; private set; } = GameplayView.None;
+
+        public bool RandomizedParentCompleted { get; private set; }
+
+        private Action _deferredParentFinish;
+
+        public void CaptureRoot(GameplayView current)
+        {
+            if (RootReturnView == GameplayView.None && !IsRewardPage(current))
+            {
+                RootReturnView = current;
+            }
+        }
+
+        public void BeginRandomized(GameplayView previous)
+        {
+            RandomizedParentView = IsRewardPage(previous)
+                ? previous
+                : GameplayView.None;
+            RandomizedParentCompleted = false;
+            _deferredParentFinish = null;
+        }
+
+        public bool TryDeferParentCompletion(GameplayView page, Action onFinish)
+        {
+            if (RandomizedParentView != page)
+            {
+                return false;
+            }
+
+            RandomizedParentCompleted = true;
+            _deferredParentFinish = onFinish;
+            return true;
+        }
+
+        public RandomizedRewardResume ConsumeRandomized()
+        {
+            var resume = new RandomizedRewardResume(
+                RandomizedParentView,
+                RandomizedParentCompleted,
+                _deferredParentFinish);
+            ClearRandomized();
+            return resume;
+        }
+
+        public GameplayView ConsumeRoot()
+        {
+            GameplayView target = RootReturnView;
+            RootReturnView = GameplayView.None;
+            return target;
+        }
+
+        public void Clear()
+        {
+            RootReturnView = GameplayView.None;
+            ClearRandomized();
+        }
+
+        public static bool IsRewardPage(GameplayView view)
+        {
+            return view == GameplayView.RewardDishPack
+                || view == GameplayView.RewardItemChoice
+                || view == GameplayView.RandomizedItems;
+        }
+
+        private void ClearRandomized()
+        {
+            RandomizedParentView = GameplayView.None;
+            RandomizedParentCompleted = false;
+            _deferredParentFinish = null;
+        }
+    }
+
     internal sealed class RewardPageCoordinator
     {
         private const string Tag = "Battle";
         private readonly IRewardPageHost _host;
-        private GameplayView _returnView = GameplayView.None;
+        private readonly RewardOperationSession _session = new RewardOperationSession();
 
         public RewardPageCoordinator(IRewardPageHost host)
         {
@@ -67,7 +162,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 return false;
             }
 
-            CaptureReturnView();
+            CaptureReturnView(_host.CurrentView);
             _host.SwitchTo(GameplayView.RewardDishPack, () =>
             {
                 _host.RewardDishPackPanel.Open(
@@ -75,7 +170,10 @@ namespace GourmetProject.Game.UI.Battle.Pages
                     group,
                     choices,
                     onChoiceSelected,
-                    onFinish,
+                    () => FinishRewardPage(
+                        GameplayView.RewardDishPack,
+                        _host.RewardDishPackPanel.Close,
+                        onFinish),
                     _host.FoodTips,
                     _host.PlayRewardDishSelectionFly);
                 _host.RefreshPersistent();
@@ -90,8 +188,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 return false;
             }
 
-            GameplayView previous = _host.CurrentView;
-            CaptureReturnView(previous);
+            CaptureReturnView(_host.CurrentView);
             _host.SwitchTo(GameplayView.RewardDishPack, () =>
             {
                 _host.RewardDishPackPanel.Open(
@@ -110,7 +207,10 @@ namespace GourmetProject.Game.UI.Battle.Pages
                         RunPersistence.Save(_host.Run);
                         return true;
                     },
-                    () => RestoreAfterAcquireView(previous),
+                    () => FinishRewardPage(
+                        GameplayView.RewardDishPack,
+                        _host.RewardDishPackPanel.Close,
+                        null),
                     _host.FoodTips,
                     _host.PlayRewardDishSelectionFly);
                 _host.RefreshPersistent();
@@ -154,8 +254,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 return false;
             }
 
-            GameplayView previous = _host.CurrentView;
-            CaptureReturnView(previous);
+            CaptureReturnView(_host.CurrentView);
             _host.SwitchTo(GameplayView.RewardItemChoice, () =>
             {
                 _host.RewardItemChoicePanel.Open(
@@ -178,9 +277,10 @@ namespace GourmetProject.Game.UI.Battle.Pages
                     },
                     () =>
                     {
-                        _host.RewardItemChoicePanel.Close();
-                        RestoreAfterAcquireView(previous);
-                        onFinish?.Invoke();
+                        FinishRewardPage(
+                            GameplayView.RewardItemChoice,
+                            _host.RewardItemChoicePanel.Close,
+                            onFinish);
                     },
                     _host.Run,
                     _host.ItemTips());
@@ -203,6 +303,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
             GameplayView previous = _host.CurrentView;
             CaptureReturnView(previous);
+            _session.BeginRandomized(previous);
             _host.SwitchTo(GameplayView.RandomizedItems, () =>
             {
                 _host.RandomizedItemsPanel.Open(
@@ -211,8 +312,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
                     () =>
                     {
                         _host.PlayRandomizedItemFlys(results);
-                        _host.RandomizedItemsPanel.Close();
-                        RestoreAfterAcquireView(previous);
+                        CompleteRandomizedItems();
                     });
             });
             return true;
@@ -220,78 +320,117 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         public void CloseRewardPages(bool restoreReturnView = true)
         {
-            _host.RewardDishPackPanel?.Close();
-            _host.RewardItemChoicePanel?.Close();
-            _host.RandomizedItemsPanel?.Close();
+            GameplayView current = _host.CurrentView;
 
-            if (!restoreReturnView || !IsRewardPage(_host.CurrentView))
+            if (restoreReturnView && IsRewardPage(current))
+            {
+                RestoreAfterAcquireView(() =>
+                {
+                    CloseAllRewardPages();
+                    _session.Clear();
+                });
+                return;
+            }
+
+            CloseAllRewardPages();
+            _session.Clear();
+        }
+
+        private void FinishRewardPage(GameplayView page, Action closePage, Action onFinish)
+        {
+            if (_host.CurrentView == GameplayView.RandomizedItems
+                && _session.TryDeferParentCompletion(page, onFinish))
             {
                 return;
             }
 
-            GameplayView target = _returnView;
-            _returnView = GameplayView.None;
-            switch (target)
+            RestoreAfterAcquireView(() =>
             {
-                case GameplayView.ActionSelect:
-                    _host.ShowActionSelection();
-                    break;
-                case GameplayView.Shop:
-                case GameplayView.RecipeSelection:
-                case GameplayView.TableEdit:
-                case GameplayView.TableView:
-                    _host.SwitchTo(target);
-                    break;
-                case GameplayView.Food:
-                    _host.SwitchTo(GameplayView.Food, _host.RestoreBattleWorld);
-                    break;
-                default:
-                    _host.SwitchTo(GameplayView.Shop);
-                    break;
-            }
+                closePage?.Invoke();
+                onFinish?.Invoke();
+            });
         }
 
-        private void CaptureReturnView()
+        private void CompleteRandomizedItems()
         {
-            CaptureReturnView(_host.CurrentView);
+            RandomizedRewardResume resume = _session.ConsumeRandomized();
+            GameplayView parent = resume.ParentView;
+
+            if (IsRewardPage(parent) && !resume.ParentCompleted)
+            {
+                _host.SwitchTo(parent, onShown: _host.RandomizedItemsPanel.Close);
+                return;
+            }
+
+            RestoreAfterAcquireView(() =>
+            {
+                _host.RandomizedItemsPanel.Close();
+                CloseRewardPage(parent);
+                resume.ParentFinish?.Invoke();
+            });
         }
 
         private void CaptureReturnView(GameplayView view)
         {
-            if (!IsRewardPage(view))
-            {
-                _returnView = view;
-            }
+            _session.CaptureRoot(view);
         }
 
         private static bool IsRewardPage(GameplayView view)
         {
-            return view == GameplayView.RewardDishPack
-                || view == GameplayView.RewardItemChoice
-                || view == GameplayView.RandomizedItems;
+            return RewardOperationSession.IsRewardPage(view);
         }
 
-        private void RestoreAfterAcquireView(GameplayView previous)
+        private void RestoreAfterAcquireView(Action onRestored = null)
         {
             _host.RefreshPersistent();
-            switch (previous)
+            GameplayView target = _session.ConsumeRoot();
+            switch (target)
             {
                 case GameplayView.ActionSelect:
-                    _host.ShowActionSelection();
+                    _host.ShowActionSelection(onRestored);
                     break;
                 case GameplayView.Shop:
-                    _host.SwitchTo(GameplayView.Shop);
+                    _host.SwitchTo(GameplayView.Shop, onShown: onRestored);
                     break;
                 case GameplayView.RecipeSelection:
-                    _host.SwitchTo(GameplayView.RecipeSelection);
+                    _host.SwitchTo(GameplayView.RecipeSelection, onShown: onRestored);
+                    break;
+                case GameplayView.Event:
+                case GameplayView.RecipeInspect:
+                case GameplayView.TableEdit:
+                case GameplayView.TableView:
+                    _host.SwitchTo(target, onShown: onRestored);
                     break;
                 case GameplayView.Food:
-                    _host.SwitchTo(GameplayView.Food, _host.RestoreBattleWorld);
+                    _host.SwitchTo(GameplayView.Food, _host.RestoreBattleWorld, onRestored);
                     break;
                 default:
-                    _host.SwitchTo(GameplayView.Shop);
+                    _host.SwitchTo(GameplayView.Shop, onShown: onRestored);
                     break;
             }
+        }
+
+        private void CloseRewardPage(GameplayView page)
+        {
+            switch (page)
+            {
+                case GameplayView.RewardDishPack:
+                    _host.RewardDishPackPanel?.Close();
+                    break;
+                case GameplayView.RewardItemChoice:
+                    _host.RewardItemChoicePanel?.Close();
+                    break;
+                case GameplayView.RandomizedItems:
+                    _host.RandomizedItemsPanel?.Close();
+                    break;
+            }
+        }
+
+        private void CloseAllRewardPages()
+        {
+            _host.RewardDishPackPanel?.Close();
+            _host.RewardItemChoicePanel?.Close();
+            _host.RandomizedItemsPanel?.Close();
         }
     }
 }

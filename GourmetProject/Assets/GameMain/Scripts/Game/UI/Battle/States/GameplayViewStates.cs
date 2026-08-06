@@ -89,6 +89,7 @@ namespace GourmetProject.Game.UI.Battle.States
 
         public void Enter(IBattleViewHost host, Action buildCenter)
         {
+            buildCenter?.Invoke();
             if (host.RecipeInspectShowsActionAxis)
             {
                 host.RebuildActionAxis();

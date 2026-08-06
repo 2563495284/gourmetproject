@@ -103,11 +103,20 @@ namespace GourmetProject.Game.UI.Battle.View
                 return;
             }
 
+            bool canOpenInspection = current != GameplayView.None
+                && current != GameplayView.TableEdit
+                && current != GameplayView.RecipeSelection;
+
+            if (_viewRecipeButton != null)
+            {
+                _viewRecipeButton.interactable = canOpenInspection;
+            }
+
             if (_viewTableButton != null)
             {
-                _viewTableButton.interactable = current != GameplayView.TableView
+                _viewTableButton.interactable = canOpenInspection
+                    && current != GameplayView.TableView
                     && world != null
-                    && current != GameplayView.None
                     && world.CanEnterTableView;
                 SetTableLabel(ViewTableLabel);
 

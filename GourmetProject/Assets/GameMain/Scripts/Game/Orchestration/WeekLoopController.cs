@@ -312,7 +312,6 @@ namespace GourmetProject.Game.Orchestration
                 return;
             }
 
-            _view.HideBattleWorld();
             _view.HideResultPanel();
             _view.OpenWeekMap();
         }
@@ -639,7 +638,7 @@ namespace GourmetProject.Game.Orchestration
         /// <summary>RewardForm 发奖确认后回调：继续经营挑战后的编排续接。</summary>
         public void OnRewardConfirmed()
         {
-            ContinueBattleWin(hideBattleWorld: true);
+            ContinueBattleWin();
         }
 
         /// <summary>抽奖机奖励领取完毕：恢复同一 pending 行动，不走经营挑战/事件完成逻辑。</summary>
@@ -674,18 +673,13 @@ namespace GourmetProject.Game.Orchestration
                 restoringPending: true);
         }
 
-        private void ContinueBattleWin(bool hideBattleWorld)
+        private void ContinueBattleWin()
         {
             Action cb = _afterBattleWin;
             _afterBattleWin = null;
             _beforeBattleReward = null;
             CurrentBattleActionContext = null;
             _currentBattleIsBoss = false;
-            if (hideBattleWorld)
-            {
-                _view.HideBattleWorld();
-            }
-
             if (cb != null)
             {
                 cb.Invoke();
