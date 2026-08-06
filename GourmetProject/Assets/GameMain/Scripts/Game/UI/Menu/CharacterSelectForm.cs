@@ -142,8 +142,8 @@ namespace GourmetProject.Game.UI.Menu
                 {
                     Title = "开始新游戏",
                     Message = "开始新游戏将会失去当前存档，是否继续？",
-                    ConfirmText = "开始新游戏",
-                    CancelText = "取消",
+                    ConfirmText = "是",
+                    CancelText = "否",
                     OnConfirm = () => ConfirmStartNewRun(character),
                 };
                 GameApp.UI.OpenUIForm(
@@ -206,7 +206,7 @@ namespace GourmetProject.Game.UI.Menu
         {
             bool hasSave = RunPersistence.HasSave;
             _continueButton.gameObject.SetActive(hasSave);
-            _confirmLabel.text = hasSave ? "开始新游戏" : "开始游戏";
+            _confirmLabel.text = "新游戏";
 
             RectTransform confirmRect =
                 _confirmButton.GetComponent<RectTransform>();
