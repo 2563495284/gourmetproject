@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using GourmetProject.Game.Meta;
+using GourmetProject.Game.Meta.Passives;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Battle;
 using GourmetProject.Game.UI.Battle.Pages;
@@ -12,6 +13,7 @@ using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Game.Visual;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Model;
+using GourmetProject.Gameplay.Scoring;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.UI;
@@ -342,6 +344,29 @@ namespace GourmetProject.Tests.EditMode
             {
                 UnityEngine.Object.DestroyImmediate(instance);
             }
+        }
+
+        [Test]
+        public void AfterMealTeaSet_TriggersInEarliestSettlementPhase()
+        {
+            var model = new LastServeMultFlatModel();
+            using IEnumerator<ItemScoreSpec> specs =
+                model.BuildScoreSpecs().GetEnumerator();
+
+            Assert.That(specs.MoveNext(), Is.True);
+            Assert.That(
+                specs.Current.Type,
+                Is.EqualTo(ItemScoreEffectType.NthServeMultFlat));
+
+            var collector = new ScoreEffectCollector();
+            new ItemScoreEffectSource(new[] { specs.Current })
+                .CollectEffects(null, collector);
+
+            Assert.That(collector.Entries, Has.Count.EqualTo(1));
+            Assert.That(
+                collector.Entries[0].Phase,
+                Is.EqualTo(ScorePhase.BeforeAll));
+            Assert.That(specs.MoveNext(), Is.False);
         }
 
         [Test]

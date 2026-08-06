@@ -82,22 +82,14 @@ namespace GourmetProject.Game.Meta.Passives
         }
     }
 
-    /// <summary>倍率加成始终跟随当前餐桌上正式上菜顺序最晚的菜。</summary>
+    /// <summary>点击结算后，在最早的结算阶段给最后上菜的食物增加倍率。</summary>
     [Preserve]
     [PassiveItemModel("item_last_+2")]
-    public sealed class LastServeMultFlatModel : PassiveItemModel
+    public sealed class LastServeMultFlatModel : ScoreSpecModel
     {
-        public override void ApplyToBattle(BattleSession session)
+        public LastServeMultFlatModel()
+            : base(ItemScoreEffectType.NthServeMultFlat)
         {
-            if (session != null && Value > 0f)
-            {
-                session.ConfigureLastServedDishMultiplierFlat(
-                    ItemId,
-                    Def?.Name,
-                    Value,
-                    () => IsStillHeld);
-                session.Served += (_, _) => session.RefreshLastServedDishMultiplierFlat(ItemId);
-            }
         }
     }
 
