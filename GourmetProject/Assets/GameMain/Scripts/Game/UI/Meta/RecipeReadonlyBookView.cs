@@ -16,8 +16,8 @@ using TMPro;
 namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>
-    /// 唯一食谱页面：作为 <c>BattleForm</c> 中部内容区的复用状态视图。
-    /// 承载普通查看、商店删除、事件删除和消耗品选菜流程。
+    /// 可复用食谱视图。BattleForm 的功能型实例承载商店删除、事件删除和消耗品选菜；
+    /// 独立查看层拥有另一只实例，仅用于只读查看，二者不共享页面生命周期。
     /// </summary>
     public sealed partial class RecipeReadonlyBookView : MonoBehaviour
     {

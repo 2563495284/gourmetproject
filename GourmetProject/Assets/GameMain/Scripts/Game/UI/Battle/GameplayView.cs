@@ -8,9 +8,7 @@ namespace GourmetProject.Game.UI.Battle
         Shop,
         RecipeSelection,
         Event,
-        RecipeInspect,
         Food,
         TableEdit,
-        TableView,
     }
 }

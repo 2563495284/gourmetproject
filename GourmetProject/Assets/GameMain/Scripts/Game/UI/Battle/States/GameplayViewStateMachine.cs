@@ -12,8 +12,6 @@ namespace GourmetProject.Game.UI.Battle.States
     {
         GameRun Run { get; }
 
-        bool RecipeInspectShowsActionAxis { get; }
-
         /// <summary>按 view 落地常驻壳通用配置：面板显隐 / 时间轴 / 白底 / 刷新常驻信息。</summary>
         void ApplyShellForView(GameplayView view);
 
@@ -36,7 +34,7 @@ namespace GourmetProject.Game.UI.Battle.States
     }
 
     /// <summary>
-    /// 中部八态状态机：只负责把「淡出完成后的落地」派发给对应 <see cref="IGameplayViewState"/>。
+    /// 中部业务页面状态机：只负责把「淡出完成后的落地」派发给对应 <see cref="IGameplayViewState"/>。
     /// 淡入淡出调度与 <c>_current</c>/<c>_inBattle</c> 仍由 BattleForm.SwitchTo 持有，这里保持无状态、纯派发。
     /// </summary>
     internal sealed class GameplayViewStateMachine
@@ -52,10 +50,8 @@ namespace GourmetProject.Game.UI.Battle.States
             Register(new ShopState());
             Register(new RecipeSelectionState());
             Register(new EventState());
-            Register(new RecipeInspectState());
             Register(new FoodState());
             Register(new TableEditState());
-            Register(new TableViewState());
         }
 
         private void Register(IGameplayViewState state)

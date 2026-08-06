@@ -5765,7 +5765,7 @@ MonoBehaviour:
     CoveredHoldDuration: 0.03
     RevealDuration: 0.48
   _boardArea: {fileID: 6593648879111919264}
-  _viewTablePanel: {fileID: 1714816787577083954}
+  _inspectionLayer: {fileID: 910000000000000004}
   _infoColumn: {fileID: 8908260162901051242}
   _actionAxisBar: {fileID: 5155021162524849118}
   _tips: {fileID: 8174460409889470152}
@@ -5792,6 +5792,74 @@ MonoBehaviour:
   _foodDiscardBin: {fileID: 0}
   _passiveOverlayRoot: {fileID: 8097312795551870378}
   _passiveOverlayText: {fileID: 6835625475522133254}
+--- !u!1 &910000000000000001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 910000000000000002}
+  - component: {fileID: 910000000000000003}
+  - component: {fileID: 910000000000000004}
+  m_Layer: 5
+  m_Name: InspectionLayer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!224 &910000000000000002
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 910000000000000001}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 910000000000000012}
+  - {fileID: 35025026173355292}
+  m_Father: {fileID: 7821990121811298790}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.165, y: 0}
+  m_AnchorMax: {x: 0.835, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!225 &910000000000000003
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 910000000000000001}
+  m_Enabled: 1
+  m_Alpha: 0
+  m_Interactable: 0
+  m_BlocksRaycasts: 0
+  m_IgnoreParentGroups: 0
+--- !u!114 &910000000000000004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 910000000000000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f0bad3ddea3414ea05474faf34dd1b0, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Battle.View.BattleInspectionLayer
+  _group: {fileID: 910000000000000003}
+  _recipeView: {fileID: 910000000000000011}
+  _tablePanel: {fileID: 910000000000000013}
+  _fadeOutSeconds: 0.1
+  _fadeInSeconds: 0.14
 --- !u!114 &8174460409889470152
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10302,6 +10370,7 @@ RectTransform:
   - {fileID: 3360030364442441627}
   - {fileID: 5550825317585826242}
   - {fileID: 7583677004690865091}
+  - {fileID: 910000000000000002}
   - {fileID: 1950719379592311}
   - {fileID: 2236648785048287675}
   m_Father: {fileID: 1000000000000000011}
@@ -11880,7 +11949,6 @@ RectTransform:
   - {fileID: 4326582166000000528}
   - {fileID: 8379275912931233916}
   - {fileID: 8242107360382586513}
-  - {fileID: 35025026173355292}
   - {fileID: 4509493887115705472}
   m_Father: {fileID: 7821990121811298790}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -13500,7 +13568,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 8055366757439057992}
+    m_TransformParent: {fileID: 910000000000000002}
     m_Modifications:
     - target: {fileID: 903598187383028668, guid: 50864717e809a4b1d90db6ba95d2d105, type: 3}
       propertyPath: m_Pivot.x
@@ -13617,6 +13685,17 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 1961904882550154898, guid: 50864717e809a4b1d90db6ba95d2d105, type: 3}
   m_PrefabInstance: {fileID: 934029428137737888}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &910000000000000013 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4212218347031121166, guid: 50864717e809a4b1d90db6ba95d2d105, type: 3}
+  m_PrefabInstance: {fileID: 934029428137737888}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4914d53b7e7d4e6c9ea136914aa52db, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Battle.View.ViewTablePanel
 --- !u!1001 &1686396132052158296
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -14350,6 +14429,75 @@ MonoBehaviour:
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 2219660794846146931, guid: 904bce5f6ed064bb59ae1aa54cced993, type: 3}
   m_PrefabInstance: {fileID: 4735078970736154149}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &910000000000000010
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 910000000000000002}
+    m_Modifications:
+    - target: {fileID: 340822506070461114, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+      propertyPath: m_Name
+      value: RecipeInspectionView
+      objectReference: {fileID: 0}
+    - target: {fileID: 340822506070461114, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+--- !u!114 &910000000000000011 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6132651757827371153, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+  m_PrefabInstance: {fileID: 910000000000000010}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3657596b08fef4c39a6270897c5722c6, type: 3}
+  m_Name: RecipeInspectionView
+  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Meta.RecipeReadonlyBookView
+--- !u!224 &910000000000000012 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 7057752991651154827, guid: 34528d52803b847879e14ad815f88c34, type: 3}
+  m_PrefabInstance: {fileID: 910000000000000010}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &6771504526016451995
 PrefabInstance:

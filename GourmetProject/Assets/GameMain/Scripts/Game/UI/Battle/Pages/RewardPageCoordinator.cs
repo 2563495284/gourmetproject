@@ -82,6 +82,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
         private readonly IRewardPageHost _host;
         private readonly List<Frame> _stack = new List<Frame>();
         private bool _returning;
+        private bool _inspectionSuspended;
 
         public RewardPageCoordinator(IRewardPageHost host)
         {
@@ -91,6 +92,38 @@ namespace GourmetProject.Game.UI.Battle.Pages
         public bool IsActive => _stack.Count > 0;
 
         internal int Depth => _stack.Count;
+
+        internal bool IsInspectionSuspended => _inspectionSuspended;
+
+        internal bool SuspendForInspection()
+        {
+            if (_inspectionSuspended || _returning || _stack.Count == 0)
+            {
+                return false;
+            }
+
+            _inspectionSuspended = true;
+            _host.HideRewardSubflowLayer();
+            return true;
+        }
+
+        internal void ResumeFromInspection()
+        {
+            if (!_inspectionSuspended)
+            {
+                return;
+            }
+
+            _inspectionSuspended = false;
+            if (_returning || _stack.Count == 0)
+            {
+                return;
+            }
+
+            Frame top = _stack[_stack.Count - 1];
+            _host.PrepareRewardSubflowLayer();
+            _host.ShowRewardSubflowPanel(top.Panel);
+        }
 
         public bool OpenRewardDishPack(
             RewardChoiceGroup group,
@@ -276,6 +309,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 return;
             }
 
+            _inspectionSuspended = false;
             for (int i = _stack.Count - 1; i >= 0; i--)
             {
                 CloseFrame(_stack[i]);
@@ -302,7 +336,10 @@ namespace GourmetProject.Game.UI.Battle.Pages
             }
 
             _host.NotifyRewardSubflowLifecycle(RewardSubflowLifecycle.PreparingChild);
-            _host.PrepareRewardSubflowLayer();
+            if (!_inspectionSuspended)
+            {
+                _host.PrepareRewardSubflowLayer();
+            }
             if (_stack.Count > 0)
             {
                 _host.HideRewardSubflowPanel(_stack[_stack.Count - 1].Panel);
@@ -319,7 +356,10 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 return;
             }
 
-            _host.ShowRewardSubflowPanel(frame.Panel);
+            if (!_inspectionSuspended)
+            {
+                _host.ShowRewardSubflowPanel(frame.Panel);
+            }
             _host.NotifyRewardSubflowLifecycle(RewardSubflowLifecycle.ChildReady);
         }
 
@@ -359,7 +399,10 @@ namespace GourmetProject.Game.UI.Battle.Pages
             {
                 Frame parent = _stack[_stack.Count - 1];
                 // 先恢复父页的可见和输入，再销毁子页，避免同一帧两层都不可见。
-                _host.ShowRewardSubflowPanel(parent.Panel);
+                if (!_inspectionSuspended)
+                {
+                    _host.ShowRewardSubflowPanel(parent.Panel);
+                }
                 CloseFrame(child);
                 _host.NotifyRewardSubflowLifecycle(RewardSubflowLifecycle.ParentRestored);
                 _returning = false;
@@ -388,6 +431,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
             }
 
             _stack.Clear();
+            _inspectionSuspended = false;
             _host.HideRewardSubflowLayer();
             _host.NotifyRewardSubflowLifecycle(RewardSubflowLifecycle.ParentRestored);
             _returning = false;

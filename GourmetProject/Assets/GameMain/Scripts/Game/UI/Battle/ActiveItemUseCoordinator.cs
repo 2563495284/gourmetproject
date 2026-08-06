@@ -295,7 +295,7 @@ namespace GourmetProject.Game.UI.Battle
             _selectedTargets.Clear();
             _targetFrame = Time.frameCount;
 
-            _host.OpenActiveItemTableCellTarget(() =>
+            bool opened = _host.OpenActiveItemTableCellTarget(() =>
             {
                 if (_pendingItem == item && _tableCellTargeting)
                 {
@@ -305,6 +305,11 @@ namespace GourmetProject.Game.UI.Battle
 
                 _host.CloseActiveItemTableCellTarget();
             });
+            if (!opened)
+            {
+                CancelTargeting(showMessage: false);
+                _host.ShowActiveItemMessage($"{item.Name}：当前不能选择餐桌格子。");
+            }
         }
 
         private void BeginTimelineAxisTargeting(
@@ -892,17 +897,11 @@ namespace GourmetProject.Game.UI.Battle
                 return ActiveUseContextKind.Battle;
             }
 
-            if (_host.CurrentView == GameplayView.TableView && _host.IsViewingBattleTable)
-            {
-                return ActiveUseContextKind.Battle;
-            }
-
             return _host.CurrentView switch
             {
                 GameplayView.Shop => ActiveUseContextKind.Shop,
                 GameplayView.RecipeSelection => ActiveUseContextKind.Shop,
                 GameplayView.TableEdit => ActiveUseContextKind.Shop,
-                GameplayView.TableView => ActiveUseContextKind.Shop,
                 GameplayView.ActionSelect => ActiveUseContextKind.ActionSelect,
                 GameplayView.Event => ActiveUseContextKind.Event,
                 _ => ActiveUseContextKind.Reward,

@@ -49,23 +49,6 @@ namespace GourmetProject.Game.UI.Battle.States
         }
     }
 
-    /// <summary>只读查看唯一食谱：中部交给 RecipeReadonlyBookView。</summary>
-    internal sealed class RecipeInspectState : IGameplayViewState
-    {
-        public GameplayView Kind => GameplayView.RecipeInspect;
-
-        public void Enter(IBattleViewHost host, Action buildCenter)
-        {
-            buildCenter?.Invoke();
-            if (host.RecipeInspectShowsActionAxis)
-            {
-                host.RebuildActionAxis();
-            }
-
-            host.OpenRecipeBookPanel();
-        }
-    }
-
     /// <summary>经营挑战态：世界空间餐桌透出，并初始化出菜口等经营挑战控件。</summary>
     internal sealed class FoodState : IGameplayViewState
     {
@@ -89,14 +72,4 @@ namespace GourmetProject.Game.UI.Battle.States
         }
     }
 
-    /// <summary>查看餐桌态：只读餐桌视图，中部无标题。</summary>
-    internal sealed class TableViewState : IGameplayViewState
-    {
-        public GameplayView Kind => GameplayView.TableView;
-
-        public void Enter(IBattleViewHost host, Action buildCenter)
-        {
-            buildCenter?.Invoke();
-        }
-    }
 }

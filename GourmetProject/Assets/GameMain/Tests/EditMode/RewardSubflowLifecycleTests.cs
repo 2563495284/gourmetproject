@@ -30,6 +30,52 @@ namespace GourmetProject.Tests.EditMode
             CollectionAssert.DoesNotContain(Enum.GetNames(typeof(GameplayView)), "RewardDishPack");
             CollectionAssert.DoesNotContain(Enum.GetNames(typeof(GameplayView)), "RewardItemChoice");
             CollectionAssert.DoesNotContain(Enum.GetNames(typeof(GameplayView)), "RandomizedItems");
+            CollectionAssert.DoesNotContain(Enum.GetNames(typeof(GameplayView)), "RecipeInspect");
+            CollectionAssert.DoesNotContain(Enum.GetNames(typeof(GameplayView)), "TableView");
+        }
+
+        [Test]
+        public void BattleFormPrefab_OwnsIndependentInspectionLayerAndSeparateReadonlyRecipe()
+        {
+            const string path = "Assets/GameMain/Content/Prefabs/UI/BattleForm.prefab";
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            Assert.That(prefab, Is.Not.Null);
+
+            BattleForm battle = prefab.GetComponent<BattleForm>();
+            Transform hud = prefab.transform.Find("HudFrame");
+            Transform rewardLayer = hud?.Find("RewardSubflowLayer");
+            Transform inspectionTransform = hud?.Find("InspectionLayer");
+            Transform leftColumn = hud?.Find("LeftColumn");
+            Assert.That(battle, Is.Not.Null);
+            Assert.That(rewardLayer, Is.Not.Null);
+            Assert.That(inspectionTransform, Is.Not.Null);
+            Assert.That(leftColumn, Is.Not.Null);
+            Assert.That(inspectionTransform.GetComponent<CanvasGroup>(), Is.Not.Null);
+
+            BattleInspectionLayer layer = inspectionTransform.GetComponent<BattleInspectionLayer>();
+            Assert.That(layer, Is.Not.Null);
+            Assert.That(layer.IsConfigured, Is.True);
+            Assert.That(rewardLayer.GetSiblingIndex(), Is.LessThan(inspectionTransform.GetSiblingIndex()));
+            Assert.That(inspectionTransform.GetSiblingIndex(), Is.LessThan(leftColumn.GetSiblingIndex()));
+
+            var battleSerialized = new SerializedObject(battle);
+            Assert.That(
+                battleSerialized.FindProperty("_inspectionLayer").objectReferenceValue,
+                Is.SameAs(layer));
+
+            var layerSerialized = new SerializedObject(layer);
+            Component inspectionRecipe =
+                layerSerialized.FindProperty("_recipeView").objectReferenceValue as Component;
+            Component tablePanel =
+                layerSerialized.FindProperty("_tablePanel").objectReferenceValue as Component;
+            Component functionalRecipe =
+                battleSerialized.FindProperty("_recipeReadonlyBookView").objectReferenceValue as Component;
+            Assert.That(inspectionRecipe, Is.Not.Null);
+            Assert.That(tablePanel, Is.Not.Null);
+            Assert.That(functionalRecipe, Is.Not.Null);
+            Assert.That(inspectionRecipe, Is.Not.SameAs(functionalRecipe));
+            Assert.That(inspectionRecipe.transform.parent, Is.SameAs(inspectionTransform));
+            Assert.That(tablePanel.transform.parent, Is.SameAs(inspectionTransform));
         }
 
         [Test]
@@ -155,7 +201,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void CoveredInspectionSwap_RestoresCenterContentAndBackButtonInput()
+        public void CoveredMainPageSwap_RestoresCenterContentAndBackButtonInput()
         {
             var root = new GameObject("Center", typeof(CanvasGroup));
             CanvasGroup center = root.GetComponent<CanvasGroup>();
@@ -174,18 +220,6 @@ namespace GourmetProject.Tests.EditMode
             {
                 UnityEngine.Object.DestroyImmediate(root);
             }
-        }
-
-        [Test]
-        public void InspectionPeerSwitches_PreserveRewardBattleAsTheReturnOrigin()
-        {
-            var navigation = new InspectionNavigationContext();
-            navigation.Capture(GameplayView.Food, ActionSelectSnapshot.None);
-            navigation.Capture(GameplayView.TableView, ActionSelectSnapshot.None);
-            navigation.Capture(GameplayView.RecipeInspect, ActionSelectSnapshot.None);
-
-            Assert.That(navigation.HasOrigin, Is.True);
-            Assert.That(navigation.ReturnView, Is.EqualTo(GameplayView.Food));
         }
 
         [Test]
@@ -221,10 +255,12 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void RecipeInspect_DisablesRecipeButtonLikeTableInspect()
+        public void RecipeInspectionAvailability_OnlyDependsOnRealGameplayPage()
         {
-            Assert.That(BattleInfoColumn.CanOpenRecipeInspection(GameplayView.RecipeInspect), Is.False);
-            Assert.That(BattleInfoColumn.CanOpenRecipeInspection(GameplayView.TableView), Is.True);
+            Assert.That(BattleInfoColumn.CanOpenRecipeInspection(GameplayView.Shop), Is.True);
+            Assert.That(BattleInfoColumn.CanOpenRecipeInspection(GameplayView.Food), Is.True);
+            Assert.That(BattleInfoColumn.CanOpenRecipeInspection(GameplayView.TableEdit), Is.False);
+            Assert.That(BattleInfoColumn.CanOpenRecipeInspection(GameplayView.RecipeSelection), Is.False);
 
             const string path = "Assets/GameMain/Content/Prefabs/UI/BattleForm.prefab";
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
@@ -462,16 +498,189 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(host.LayerHiddenCount, Is.EqualTo(0));
         }
 
+        [Test]
+        public void RewardSubflowInspectionSuspend_HidesLayerAndRestoresTheSameTopFrameOnce()
+        {
+            var panelObject = new GameObject("RewardPanel", typeof(CanvasGroup));
+            var host = new EmptyRewardHost();
+            var coordinator = new RewardPageCoordinator(host);
+
+            try
+            {
+                Component panel = panelObject.GetComponent<CanvasGroup>();
+                SeedRewardFrame(coordinator, panel);
+
+                Assert.That(coordinator.SuspendForInspection(), Is.True);
+                Assert.That(coordinator.IsInspectionSuspended, Is.True);
+                Assert.That(coordinator.Depth, Is.EqualTo(1));
+                Assert.That(host.LayerHiddenCount, Is.EqualTo(1));
+
+                Assert.That(coordinator.SuspendForInspection(), Is.False);
+                Assert.That(host.LayerHiddenCount, Is.EqualTo(1));
+
+                coordinator.ResumeFromInspection();
+
+                Assert.That(coordinator.IsInspectionSuspended, Is.False);
+                Assert.That(coordinator.Depth, Is.EqualTo(1));
+                Assert.That(host.LayerPreparedCount, Is.EqualTo(1));
+                Assert.That(host.PanelShownCount, Is.EqualTo(1));
+                Assert.That(host.LastShownPanel, Is.SameAs(panel));
+
+                coordinator.ResumeFromInspection();
+                Assert.That(host.LayerPreparedCount, Is.EqualTo(1));
+                Assert.That(host.PanelShownCount, Is.EqualTo(1));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(panelObject);
+            }
+        }
+
+        [Test]
+        public void ClosingRewardSubflowWhileInspectionSuspended_PreventsLaterRestore()
+        {
+            var panelObject = new GameObject("RewardPanel", typeof(CanvasGroup));
+            var host = new EmptyRewardHost();
+            var coordinator = new RewardPageCoordinator(host);
+            int closed = 0;
+
+            try
+            {
+                SeedRewardFrame(coordinator, panelObject.GetComponent<CanvasGroup>(), () => closed++);
+                Assert.That(coordinator.SuspendForInspection(), Is.True);
+
+                coordinator.CloseRewardPages();
+                coordinator.ResumeFromInspection();
+
+                Assert.That(closed, Is.EqualTo(1));
+                Assert.That(coordinator.IsActive, Is.False);
+                Assert.That(coordinator.IsInspectionSuspended, Is.False);
+                Assert.That(host.LayerPreparedCount, Is.Zero);
+                Assert.That(host.PanelShownCount, Is.Zero);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(panelObject);
+            }
+        }
+
+        [Test]
+        public void InspectionForceClose_DuringInitialTransition_RestoresFrozenSourceOnce()
+        {
+            var recipeObject = new GameObject(
+                "InspectionRecipe",
+                typeof(RectTransform),
+                typeof(RecipeReadonlyBookView));
+            var layer = new PendingInspectionLayer(
+                recipeObject.GetComponent<RecipeReadonlyBookView>());
+            var host = new PendingInspectionHost(layer);
+            var coordinator = new BattleInspectionCoordinator(host);
+
+            try
+            {
+                coordinator.OpenRecipe(0);
+
+                Assert.That(host.CurrentView, Is.EqualTo(GameplayView.Shop));
+                Assert.That(host.BeginCount, Is.EqualTo(1));
+                Assert.That(layer.RequestedView, Is.EqualTo(BattleInspectionView.Recipe));
+                Assert.That(coordinator.IsActive, Is.True,
+                    "淡入交换点之前也必须记录为活跃，否则切页会遗留被冻结来源。");
+
+                coordinator.ForceClose();
+                coordinator.ForceClose();
+
+                Assert.That(host.RestoreCount, Is.EqualTo(1));
+                Assert.That(host.RestoredView, Is.EqualTo(GameplayView.Shop));
+                Assert.That(layer.ForceHideCount, Is.EqualTo(2));
+                Assert.That(coordinator.IsActive, Is.False);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(recipeObject);
+            }
+        }
+
+        private sealed class PendingInspectionLayer : IBattleInspectionLayer
+        {
+            public PendingInspectionLayer(RecipeReadonlyBookView recipeView)
+            {
+                RecipeView = recipeView;
+            }
+
+            public BattleInspectionView RequestedView { get; private set; }
+            public int ForceHideCount { get; private set; }
+            public bool IsVisible => RequestedView != BattleInspectionView.None;
+            public bool IsTransitioning => RequestedView != BattleInspectionView.None;
+            public RecipeReadonlyBookView RecipeView { get; }
+            public ViewTablePanel TablePanel => null;
+            public void Initialize() { }
+            public void TransitionTo(BattleInspectionView view, Action atSwap = null, Action onShown = null)
+            {
+                RequestedView = view;
+            }
+            public void Hide(Action onHidden = null)
+            {
+                RequestedView = BattleInspectionView.None;
+                onHidden?.Invoke();
+            }
+            public void ForceHide()
+            {
+                ForceHideCount++;
+                RequestedView = BattleInspectionView.None;
+            }
+        }
+
+        private sealed class PendingInspectionHost : IBattleInspectionHost
+        {
+#pragma warning disable SYSLIB0050
+            private readonly GameRun _run = (GameRun)System.Runtime.Serialization.FormatterServices
+                .GetUninitializedObject(typeof(GameRun));
+#pragma warning restore SYSLIB0050
+
+            public PendingInspectionHost(IBattleInspectionLayer layer)
+            {
+                InspectionLayer = layer;
+            }
+
+            public int BeginCount { get; private set; }
+            public int RestoreCount { get; private set; }
+            public GameplayView RestoredView { get; private set; } = GameplayView.None;
+            public GameRun Run => _run;
+            public BattleSession Session => null;
+            public GameplayView CurrentView => GameplayView.Shop;
+            public BattleWorldController World => null;
+            public IBattleInspectionLayer InspectionLayer { get; }
+            public bool ActionAxisVisible => true;
+            public void SetActionAxisVisible(bool visible) { }
+            public void BeginInspectionSource() => BeginCount++;
+            public void RestoreInspectionSource(GameplayView sourceView)
+            {
+                RestoreCount++;
+                RestoredView = sourceView;
+            }
+            public void RestoreBattleWorld() { }
+            public void BindWorldHoverCallbacks() { }
+            public void RefreshPersistent() { }
+            public FoodTipsView FoodTips() => null;
+        }
+
         private sealed class EmptyRewardHost : IRewardPageHost
         {
             public int LayerHiddenCount { get; private set; }
+            public int LayerPreparedCount { get; private set; }
+            public int PanelShownCount { get; private set; }
+            public Component LastShownPanel { get; private set; }
 
             public GameRun Run => null;
             public RewardDishPackPanel RewardDishPackPanel => null;
             public RewardItemChoicePanel RewardItemChoicePanel => null;
             public RandomizedItemsPanel RandomizedItemsPanel => null;
-            public void PrepareRewardSubflowLayer() { }
-            public void ShowRewardSubflowPanel(Component panel) { }
+            public void PrepareRewardSubflowLayer() => LayerPreparedCount++;
+            public void ShowRewardSubflowPanel(Component panel)
+            {
+                PanelShownCount++;
+                LastShownPanel = panel;
+            }
             public void HideRewardSubflowPanel(Component panel) { }
             public void HideRewardSubflowLayer() => LayerHiddenCount++;
             public void NotifyRewardSubflowLifecycle(RewardSubflowLifecycle lifecycle) { }
@@ -484,6 +693,29 @@ namespace GourmetProject.Tests.EditMode
                 cfg.ItemKind kind,
                 RewardItemChoiceCardView sourceCard) => null;
             public void PlayRandomizedItemFlys(IReadOnlyList<RandomizedItemResult> results) { }
+        }
+
+        private static void SeedRewardFrame(
+            RewardPageCoordinator coordinator,
+            Component panel,
+            Action close = null)
+        {
+            const System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.Instance
+                | System.Reflection.BindingFlags.NonPublic
+                | System.Reflection.BindingFlags.Public;
+            Type frameType = typeof(RewardPageCoordinator).GetNestedType(
+                "Frame",
+                System.Reflection.BindingFlags.NonPublic);
+            Assert.That(frameType, Is.Not.Null);
+
+            object frame = Activator.CreateInstance(frameType);
+            frameType.GetField("Kind", flags)?.SetValue(frame, RewardSubflowKind.DishPack);
+            frameType.GetField("Panel", flags)?.SetValue(frame, panel);
+            frameType.GetField("Close", flags)?.SetValue(frame, close);
+
+            object stack = typeof(RewardPageCoordinator).GetField("_stack", flags)?.GetValue(coordinator);
+            Assert.That(stack, Is.Not.Null);
+            stack.GetType().GetMethod("Add")?.Invoke(stack, new[] { frame });
         }
 
         private static void SetPrivateField(object target, string fieldName, object value)

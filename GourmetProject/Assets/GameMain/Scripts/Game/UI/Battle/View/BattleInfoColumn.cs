@@ -119,7 +119,12 @@ namespace GourmetProject.Game.UI.Battle.View
         }
 
         /// <summary>刷新左栏常驻信息：周/金币（局外）与分数要求（局内为真值，非经营挑战态占位）。</summary>
-        public void Refresh(GameRun run, BattleSession session, GameplayView current, BattleWorldController world)
+        internal void Refresh(
+            GameRun run,
+            BattleSession session,
+            GameplayView current,
+            BattleInspectionView inspection,
+            BattleWorldController world)
         {
             if (run == null)
             {
@@ -130,9 +135,10 @@ namespace GourmetProject.Game.UI.Battle.View
                 && current != GameplayView.TableEdit
                 && current != GameplayView.RecipeSelection;
 
-            _recipeInspectionAvailable = CanOpenRecipeInspection(current);
+            _recipeInspectionAvailable = CanOpenRecipeInspection(current)
+                && inspection != BattleInspectionView.Recipe;
             _tableInspectionAvailable = canOpenInspection
-                && current != GameplayView.TableView
+                && inspection != BattleInspectionView.Table
                 && world != null
                 && world.CanEnterTableView;
             _inspectionAvailabilityInitialized = true;
@@ -146,7 +152,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 if (_viewTableCountText != null)
                 {
                     _viewTableCountText.gameObject.SetActive(true);
-                    _viewTableCountText.text = ResolveTableCellCount(run, session, current, world).ToString();
+                    _viewTableCountText.text = ResolveTableCellCount(run, session, current, inspection, world).ToString();
                 }
             }
 
@@ -159,7 +165,8 @@ namespace GourmetProject.Game.UI.Battle.View
 
             if (_goldText != null)
             {
-                int displayedGold = current == GameplayView.Food
+                int displayedGold = inspection == BattleInspectionView.None
+                    && current == GameplayView.Food
                     && session != null
                     && !session.IsSettled
                     ? Mathf.Max(0, run.Gold + (int)Math.Round(
@@ -176,7 +183,8 @@ namespace GourmetProject.Game.UI.Battle.View
                 _viewRecipeCountText.text = run.RecipeEntries.Count.ToString();
             }
 
-            bool showScore = current == GameplayView.Food
+            bool showScore = inspection == BattleInspectionView.None
+                && current == GameplayView.Food
                 && session != null
                 && (_battleScoreOverride.HasValue || !session.IsSettled);
             if (_scoreCurrentText != null)
@@ -219,8 +227,7 @@ namespace GourmetProject.Game.UI.Battle.View
         {
             return current != GameplayView.None
                 && current != GameplayView.TableEdit
-                && current != GameplayView.RecipeSelection
-                && current != GameplayView.RecipeInspect;
+                && current != GameplayView.RecipeSelection;
         }
 
         /// <summary>
@@ -319,10 +326,11 @@ namespace GourmetProject.Game.UI.Battle.View
             GameRun run,
             BattleSession session,
             GameplayView current,
+            BattleInspectionView inspection,
             BattleWorldController world)
         {
             // 餐桌查看/编辑页以当前世界表现为准；它可能包含尚未提交的编辑预览。
-            if ((current == GameplayView.TableEdit || current == GameplayView.TableView)
+            if ((current == GameplayView.TableEdit || inspection == BattleInspectionView.Table)
                 && world != null
                 && world.ActiveTable != null)
             {
