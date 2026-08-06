@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Meta.Passives;
+using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Battle;
 using GourmetProject.Game.UI.Battle.Pages;
@@ -367,6 +368,28 @@ namespace GourmetProject.Tests.EditMode
                 collector.Entries[0].Phase,
                 Is.EqualTo(ScorePhase.BeforeAll));
             Assert.That(specs.MoveNext(), Is.False);
+        }
+
+        [Test]
+        public void CandyCanePreviewBoard_ContainsOnlyOccupiedCells()
+        {
+            DishShape shape = DishShape.FromRows(new[]
+            {
+                "XX",
+                ".X",
+                ".X",
+            });
+
+            IReadOnlyList<GridPos> cells =
+                DishIconPreviewRenderer.OccupiedBoardCells(shape);
+
+            Assert.That(cells.Count, Is.EqualTo(4));
+            CollectionAssert.Contains(cells, new GridPos(0, 0));
+            CollectionAssert.Contains(cells, new GridPos(1, 0));
+            CollectionAssert.Contains(cells, new GridPos(1, 1));
+            CollectionAssert.Contains(cells, new GridPos(1, 2));
+            CollectionAssert.DoesNotContain(cells, new GridPos(0, 1));
+            CollectionAssert.DoesNotContain(cells, new GridPos(0, 2));
         }
 
         [Test]

@@ -221,7 +221,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             if (mode == DishIconPreviewMode.Card)
             {
-                BuildBoard(cellPrefab, boardWidth, boardHeight);
+                BuildBoard(cellPrefab, displayShape);
             }
 
             BuildDish(dish.Shape, rotationIndex, sprite, dish.Id);
@@ -278,8 +278,21 @@ namespace GourmetProject.Game.Presentation.Battle
             transform.position = StagePositionFor(activeScene);
         }
 
-        private void BuildBoard(SpriteRenderer cellPrefab, int width, int height)
+        internal static IReadOnlyList<GridPos> OccupiedBoardCells(
+            DishShape shape)
         {
+            return shape?.Cells ?? System.Array.Empty<GridPos>();
+        }
+
+        private void BuildBoard(
+            SpriteRenderer cellPrefab,
+            DishShape shape)
+        {
+            if (shape == null)
+            {
+                return;
+            }
+
             Sprite cellSprite = cellPrefab.sprite;
             if (cellSprite == null)
             {
@@ -298,31 +311,30 @@ namespace GourmetProject.Game.Presentation.Battle
             Vector2 spriteSize = cellSprite.bounds.size;
             float scaleX = spriteSize.x > 0f ? CellSize / spriteSize.x : CellSize;
             float scaleY = spriteSize.y > 0f ? CellSize / spriteSize.y : CellSize;
-            float left = -(width - 1) * CellSize * 0.5f;
-            float top = (height - 1) * CellSize * 0.5f;
-            for (int y = 0; y < height; y++)
+            float left = -(shape.Width - 1) * CellSize * 0.5f;
+            float top = (shape.Height - 1) * CellSize * 0.5f;
+            IReadOnlyList<GridPos> cells = OccupiedBoardCells(shape);
+            for (int i = 0; i < cells.Count; i++)
             {
-                for (int x = 0; x < width; x++)
+                GridPos cell = cells[i];
+                var cellObject = new GameObject($"Cell_{cell.X}_{cell.Y}")
                 {
-                    var cellObject = new GameObject($"Cell_{x}_{y}")
-                    {
-                        hideFlags = HideFlags.HideAndDontSave,
-                        layer = _previewLayer,
-                    };
-                    cellObject.transform.SetParent(_boardRoot, false);
-                    cellObject.transform.localPosition = new Vector3(
-                        left + x * CellSize,
-                        top - y * CellSize,
-                        0f);
-                    cellObject.transform.localScale = new Vector3(scaleX, scaleY, 1f);
+                    hideFlags = HideFlags.HideAndDontSave,
+                    layer = _previewLayer,
+                };
+                cellObject.transform.SetParent(_boardRoot, false);
+                cellObject.transform.localPosition = new Vector3(
+                    left + cell.X * CellSize,
+                    top - cell.Y * CellSize,
+                    0f);
+                cellObject.transform.localScale = new Vector3(scaleX, scaleY, 1f);
 
-                    SpriteRenderer cellRenderer = cellObject.AddComponent<SpriteRenderer>();
-                    cellRenderer.sprite = cellSprite;
-                    cellRenderer.color = Color.white;
-                    SpriteRenderStyle.ApplyUnlitMaterial(cellRenderer);
-                    BattleSorting.Apply(cellRenderer, BattleSorting.DiningTable);
-                    _spawnedObjects.Add(cellObject);
-                }
+                SpriteRenderer cellRenderer = cellObject.AddComponent<SpriteRenderer>();
+                cellRenderer.sprite = cellSprite;
+                cellRenderer.color = Color.white;
+                SpriteRenderStyle.ApplyUnlitMaterial(cellRenderer);
+                BattleSorting.Apply(cellRenderer, BattleSorting.DiningTable);
+                _spawnedObjects.Add(cellObject);
             }
         }
 
