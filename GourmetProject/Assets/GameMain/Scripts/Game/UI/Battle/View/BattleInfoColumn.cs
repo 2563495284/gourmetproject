@@ -103,11 +103,20 @@ namespace GourmetProject.Game.UI.Battle.View
                 return;
             }
 
+            bool canOpenInspection = current != GameplayView.None
+                && current != GameplayView.TableEdit
+                && current != GameplayView.RecipeSelection;
+
+            if (_viewRecipeButton != null)
+            {
+                _viewRecipeButton.interactable = CanOpenRecipeInspection(current);
+            }
+
             if (_viewTableButton != null)
             {
-                _viewTableButton.interactable = current != GameplayView.TableView
+                _viewTableButton.interactable = canOpenInspection
+                    && current != GameplayView.TableView
                     && world != null
-                    && current != GameplayView.None
                     && world.CanEnterTableView;
                 SetTableLabel(ViewTableLabel);
 
@@ -166,6 +175,14 @@ namespace GourmetProject.Game.UI.Battle.View
                     : new ItemRuntime(run).FoodDiscardCapacity();
                 _discardCountText.text = discardCount.ToString("D2");
             }
+        }
+
+        internal static bool CanOpenRecipeInspection(GameplayView current)
+        {
+            return current != GameplayView.None
+                && current != GameplayView.TableEdit
+                && current != GameplayView.RecipeSelection
+                && current != GameplayView.RecipeInspect;
         }
 
         /// <summary>

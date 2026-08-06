@@ -21,6 +21,43 @@ namespace GourmetProject.Game.UI.Battle.View
         public static ActionSelectSnapshot None => default;
     }
 
+    /// <summary>
+    /// 菜谱查看与餐桌查看共享的返回锚点。两个查看页互相替换时保留首次来源，
+    /// 只有真正返回来源页或退出查看链时才清空。
+    /// </summary>
+    internal sealed class InspectionNavigationContext
+    {
+        public bool HasOrigin { get; private set; }
+
+        public GameplayView ReturnView { get; private set; } = GameplayView.None;
+
+        public ActionSelectSnapshot ActionSnapshot { get; private set; } = ActionSelectSnapshot.None;
+
+        public void Capture(GameplayView current, ActionSelectSnapshot actionSnapshot)
+        {
+            if (HasOrigin || IsInspectionView(current))
+            {
+                return;
+            }
+
+            HasOrigin = true;
+            ReturnView = current;
+            ActionSnapshot = actionSnapshot;
+        }
+
+        public void Clear()
+        {
+            HasOrigin = false;
+            ReturnView = GameplayView.None;
+            ActionSnapshot = ActionSelectSnapshot.None;
+        }
+
+        public static bool IsInspectionView(GameplayView view)
+        {
+            return view == GameplayView.RecipeInspect || view == GameplayView.TableView;
+        }
+    }
+
     /// <summary>供 <see cref="TableViewCoordinator"/> 回调壳的能力集合，UI 原语仍由 BattleForm 落地。</summary>
     internal interface ITableViewHost
     {
@@ -53,23 +90,26 @@ namespace GourmetProject.Game.UI.Battle.View
     /// </summary>
     internal sealed class TableViewCoordinator
     {
-        private const float TableViewFadeDuration = 0.16f;
-
         private readonly ITableViewHost _host;
-        private GameplayView _returnView = GameplayView.None;
-        private ActionSelectSnapshot _snapshot;
+        private readonly InspectionNavigationContext _navigation;
         private bool _transitioning;
 
-        public TableViewCoordinator(ITableViewHost host)
+        public TableViewCoordinator(ITableViewHost host, InspectionNavigationContext navigation)
         {
             _host = host;
+            _navigation = navigation ?? throw new ArgumentNullException(nameof(navigation));
         }
 
         public bool IsActive => _host.CurrentView == GameplayView.TableView;
 
-        public bool IsViewingBattleTable => IsActive && _returnView == GameplayView.Food;
+        public bool IsViewingBattleTable => IsActive && _navigation.ReturnView == GameplayView.Food;
 
         public bool IsTransitioning => _transitioning;
+
+        public void CancelPendingTransition()
+        {
+            _transitioning = false;
+        }
 
         public void Open()
         {
@@ -85,17 +125,18 @@ namespace GourmetProject.Game.UI.Battle.View
             }
 
             _transitioning = true;
-            _returnView = _host.CurrentView;
-            _snapshot = _returnView == GameplayView.ActionSelect
+            GameplayView previous = _host.CurrentView;
+            _navigation.Capture(
+                previous,
+                previous == GameplayView.ActionSelect
                 ? _host.CaptureActionSelectSnapshot()
-                : ActionSelectSnapshot.None;
+                : ActionSelectSnapshot.None);
             _host.BindWorldHoverCallbacks();
             _host.SwitchTo(GameplayView.TableView, () =>
             {
                 _host.BindWorldHoverCallbacks();
                 world.BeginTableView(_host.Run, SourceBattleTable());
                 _host.BindWorldHoverCallbacks();
-                world.FadeTableViewIn(TableViewFadeDuration);
             }, CompleteTransition);
         }
 
@@ -128,10 +169,12 @@ namespace GourmetProject.Game.UI.Battle.View
                 return;
             }
 
-            _returnView = _host.CurrentView;
-            _snapshot = _returnView == GameplayView.ActionSelect
+            GameplayView previous = _host.CurrentView;
+            _navigation.Capture(
+                previous,
+                previous == GameplayView.ActionSelect
                 ? _host.CaptureActionSelectSnapshot()
-                : ActionSelectSnapshot.None;
+                : ActionSelectSnapshot.None);
             _transitioning = true;
             _host.BindWorldHoverCallbacks();
             _host.SwitchTo(GameplayView.TableView, () =>
@@ -139,7 +182,6 @@ namespace GourmetProject.Game.UI.Battle.View
                 _host.BindWorldHoverCallbacks();
                 world.BeginTableCellTargeting(_host.Run, SourceBattleTable());
                 _host.BindWorldHoverCallbacks();
-                world.FadeTableViewIn(TableViewFadeDuration);
             }, () =>
             {
                 CompleteTransition();
@@ -154,27 +196,20 @@ namespace GourmetProject.Game.UI.Battle.View
                 return;
             }
 
-            GameplayView target = _returnView;
+            GameplayView target = _navigation.ReturnView;
             if (target == GameplayView.None || target == GameplayView.TableView)
             {
                 target = GameplayView.ActionSelect;
             }
 
-            BattleWorldController world = _host.World;
             _transitioning = true;
-            if (world == null)
-            {
-                CompleteBack(target, null, onBack);
-                return;
-            }
-
-            world.FadeTableViewOut(TableViewFadeDuration, () => CompleteBack(target, world, onBack));
+            CompleteBack(target, onBack);
         }
 
-        private void CompleteBack(GameplayView target, BattleWorldController world, Action onBack)
+        private void CompleteBack(GameplayView target, Action onBack)
         {
-            _returnView = GameplayView.None;
-            world?.EndTableView();
+            ActionSelectSnapshot snap = _navigation.ActionSnapshot;
+            _navigation.Clear();
 
             switch (target)
             {
@@ -185,9 +220,6 @@ namespace GourmetProject.Game.UI.Battle.View
                         () => CompleteBackTransition(onBack));
                     break;
                 case GameplayView.ActionSelect:
-                    world?.SuspendWorld();
-                    ActionSelectSnapshot snap = _snapshot;
-                    _snapshot = ActionSelectSnapshot.None;
                     _host.SwitchTo(
                         GameplayView.ActionSelect,
                         () => _host.RestoreActionSelection(snap),
@@ -204,18 +236,32 @@ namespace GourmetProject.Game.UI.Battle.View
                     }
                     else
                     {
-                        world?.SuspendWorld();
                         _host.SwitchTo(
                             GameplayView.Shop,
+                            buildCenter: null,
                             onShown: () => CompleteBackTransition(onBack));
                     }
 
                     break;
                 default:
-                    world?.SuspendWorld();
-                    _host.SwitchTo(target, onShown: () => CompleteBackTransition(onBack));
+                    _host.SwitchTo(
+                        target,
+                        buildCenter: null,
+                        onShown: () => CompleteBackTransition(onBack));
                     break;
             }
+        }
+
+        /// <summary>从餐桌直接切到菜谱时，在目标页 swap 点结束餐桌，不恢复来源页。</summary>
+        public Action BeginPeerExit()
+        {
+            if (_transitioning || !IsActive)
+            {
+                return null;
+            }
+
+            _transitioning = true;
+            return () => _transitioning = false;
         }
 
         private void CompleteBackTransition(Action onBack)
@@ -231,7 +277,7 @@ namespace GourmetProject.Game.UI.Battle.View
 
         private GpTable SourceBattleTable()
         {
-            return _returnView == GameplayView.Food ? _host.Session?.DiningTable : null;
+            return _navigation.ReturnView == GameplayView.Food ? _host.Session?.DiningTable : null;
         }
     }
 }

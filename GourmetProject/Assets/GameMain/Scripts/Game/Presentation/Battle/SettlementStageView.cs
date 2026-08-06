@@ -27,6 +27,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private Transform _fxRoot;
         private GameObject _groupSpotlight;
         private GameObject _groupLabel;
+        private SettlementEffectGroup _resultHitSoundGroup;
 
         public void Configure(
             IReadOnlyDictionary<int, DishPieceView> dishViews,
@@ -327,12 +328,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 }
             }
 
-            if (shakenTargets.Count > 1)
-            {
-                // 多个作用域目标在同一帧开始表现时，只播放一次集体音效。
-                GameApp.Audio.PlaySettlementHit(shakenTargets.Count);
-            }
-
             for (int i = 0; i < shakenTargets.Count; i++)
             {
                 DishPieceView target = shakenTargets[i];
@@ -357,6 +352,7 @@ namespace GourmetProject.Game.Presentation.Battle
             Color theme = ResultThemeFor(line);
             if (target != null)
             {
+                PlayResultHitSoundIfNeeded(group);
                 target.SetSettlementFocus(1f);
                 _ = PlayFeedbackSafelyAsync(
                     target,
@@ -380,6 +376,28 @@ namespace GourmetProject.Game.Presentation.Battle
                 theme,
                 duration,
                 cancellationToken);
+        }
+
+        private void PlayResultHitSoundIfNeeded(SettlementEffectGroup group)
+        {
+            if (group == null || ReferenceEquals(_resultHitSoundGroup, group))
+            {
+                return;
+            }
+
+            _resultHitSoundGroup = group;
+            var targetIds = new HashSet<int>();
+            for (int i = 0; i < group.Lines.Count; i++)
+            {
+                int targetId = group.Lines[i].DishInstanceId;
+                if (targetId > 0 && TryGetDish(targetId) != null)
+                {
+                    targetIds.Add(targetId);
+                }
+            }
+
+            // 技能结果真正开始作用到食物时：单体用 multhit1，多个目标用 multhit2。
+            GameApp.Audio.PlaySettlementHit(targetIds.Count);
         }
 
         public async Awaitable EndGroupAsync(float duration, CancellationToken cancellationToken)

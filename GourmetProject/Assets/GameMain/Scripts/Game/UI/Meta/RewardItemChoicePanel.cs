@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using DG.Tweening;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
+using GourmetProject.Game.UI.Common;
 using GourmetProject.Game.UI.Tooltips;
 using UnityEngine;
 using UnityEngine.UI;
@@ -31,10 +33,18 @@ namespace GourmetProject.Game.UI.Meta
         private Vector2 _actionButtonAnchorMax;
         private Vector2 _actionButtonPivot;
         private Vector2 _actionButtonPosition;
+        private Sequence _entrySequence;
+        [SerializeField] private StaggerTransitionSettings _cardTransition = new StaggerTransitionSettings();
 
         private void Awake()
         {
             CaptureActionButtonLayout();
+        }
+
+        private void OnDisable()
+        {
+            _entrySequence?.Kill();
+            _entrySequence = null;
         }
 
         public void Open(
@@ -96,10 +106,14 @@ namespace GourmetProject.Game.UI.Meta
             {
                 LayoutRebuilder.ForceRebuildLayoutImmediate(_cardsRoot);
             }
+
+            PlayCardsIn();
         }
 
         public void Close()
         {
+            _entrySequence?.Kill();
+            _entrySequence = null;
             _itemTip?.Hide();
             _itemTip = null;
             ClearCards();
@@ -312,6 +326,26 @@ namespace GourmetProject.Game.UI.Meta
 
             _spawned.Clear();
             _cards.Clear();
+        }
+
+        private void PlayCardsIn()
+        {
+            _entrySequence?.Kill();
+            var rects = new List<RectTransform>(_cards.Count);
+            for (int i = 0; i < _cards.Count; i++)
+            {
+                if (_cards[i] != null && _cards[i].transform is RectTransform rect)
+                {
+                    rects.Add(rect);
+                }
+            }
+
+            StaggerTransitionSettings settings = _cardTransition ?? new StaggerTransitionSettings();
+            _entrySequence = UITransition.StaggerIn(
+                rects,
+                settings.Duration,
+                settings.Interval,
+                settings.MaxDelay);
         }
 
     }

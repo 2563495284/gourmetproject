@@ -1,4 +1,5 @@
 using System;
+using DG.Tweening;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Battle.States;
@@ -18,6 +19,10 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         CanvasGroup Center { get; }
 
+        CanvasGroup CenterTransitionCover { get; }
+
+        GameplayTransitionSettings TransitionSettings { get; }
+
         GameObject HudFrame { get; }
 
         GameObject Backdrop { get; }
@@ -32,12 +37,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         RecipeReadonlyBookView RecipeReadonlyBookView { get; }
 
-        RewardDishPackPanel RewardDishPackPanel { get; }
-
-        RewardItemChoicePanel RewardItemChoicePanel { get; }
-
-        RandomizedItemsPanel RandomizedItemsPanel { get; }
-
         EventPagePanel EventPagePanel { get; }
 
         GameObject BoardEditPanel { get; }
@@ -46,7 +45,11 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         bool RecipeInspectShowsActionAxis { get; }
 
+        bool ActionAxisVisible { get; }
+
         void OnLeavingPage(GameplayView current, GameplayView next);
+
+        void OnPageCovered(GameplayView current, GameplayView next);
 
         void OnBeforeApplyPage(GameplayView view);
 
@@ -82,6 +85,10 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         public bool InBattle { get; private set; }
 
+        public bool IsTransitioning => _transitionTween != null && _transitionTween.IsActive();
+
+        private Tween _transitionTween;
+
         GameRun IBattleViewHost.Run => _host.Run;
 
         bool IBattleViewHost.RecipeInspectShowsActionAxis => _host.RecipeInspectShowsActionAxis;
@@ -93,25 +100,85 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 return;
             }
 
+            if (IsTransitioning)
+            {
+                return;
+            }
+
             _host.Deck?.KillPendingShow();
-            _host.OnLeavingPage(Current, next);
+            GameplayView previous = Current;
+            bool previousAxisVisible = _host.ActionAxisVisible;
+            bool nextAxisVisible = ShowsActionAxis(next, _host.RecipeInspectShowsActionAxis);
+            _host.OnLeavingPage(previous, next);
 
             Current = next;
             InBattle = next == GameplayView.Food;
-            UITransition.FadeSwap(_host.Center, () => _states.Apply(next, buildCenter), onDone: onShown);
+            GameplayTransitionSettings settings = _host.TransitionSettings ?? new GameplayTransitionSettings();
+            Action swap = () =>
+            {
+                _host.OnPageCovered(previous, next);
+                _states.Apply(next, buildCenter);
+            };
+            Action done = () =>
+            {
+                _transitionTween = null;
+                onShown?.Invoke();
+            };
+
+            _transitionTween = RequiresCover(previous, next, previousAxisVisible, nextAxisVisible)
+                ? UITransition.CoverSwap(
+                    _host.CenterTransitionCover,
+                    swap,
+                    settings.CoverDuration,
+                    settings.CoveredHoldDuration,
+                    settings.RevealDuration,
+                    done)
+                : UITransition.FadeSwapStable(
+                    _host.Center,
+                    swap,
+                    settings.CenterFadeOut,
+                    settings.CenterFadeIn,
+                    done);
+        }
+
+        internal static bool RequiresWorldCover(GameplayView current, GameplayView next)
+        {
+            return IsWorldView(current) || IsWorldView(next);
+        }
+
+        internal static bool RequiresCover(
+            GameplayView current,
+            GameplayView next,
+            bool currentAxisVisible,
+            bool nextAxisVisible)
+        {
+            return RequiresWorldCover(current, next) || currentAxisVisible != nextAxisVisible;
+        }
+
+        internal static bool ShowsActionAxis(GameplayView view, bool recipeInspectShowsActionAxis)
+        {
+            return view == GameplayView.ActionSelect
+                || view == GameplayView.Shop
+                || view == GameplayView.Event
+                || (view == GameplayView.RecipeInspect && recipeInspectShowsActionAxis);
+        }
+
+        internal static bool IsWorldView(GameplayView view)
+        {
+            return view == GameplayView.Food
+                || view == GameplayView.TableEdit
+                || view == GameplayView.TableView;
         }
 
         public void HideHud()
         {
+            CancelTransition();
             InBattle = false;
             Current = GameplayView.None;
 
             SetActive(_host.ActionSelectionPanel, false);
             SetActive(_host.ShopPanel, false);
             SetActive(_host.RecipeReadonlyBookView, false);
-            SetActive(_host.RewardDishPackPanel, false);
-            _host.RewardItemChoicePanel?.Close();
-            _host.RandomizedItemsPanel?.Close();
             SetActive(_host.EventPagePanel, false);
             SetActive(_host.ViewTablePanel, false);
 
@@ -123,6 +190,16 @@ namespace GourmetProject.Game.UI.Battle.Pages
             {
                 _host.HudFrame.SetActive(false);
             }
+        }
+
+        private void CancelTransition()
+        {
+            if (_transitionTween != null && _transitionTween.IsActive())
+            {
+                _transitionTween.Kill(complete: false);
+            }
+
+            _transitionTween = null;
         }
 
         public ActionSelectSnapshot CaptureActionSelection()
@@ -164,9 +241,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
             bool actionSelect = view == GameplayView.ActionSelect;
             bool shop = view == GameplayView.Shop;
             bool recipeSelection = view == GameplayView.RecipeSelection;
-            bool rewardDishPack = view == GameplayView.RewardDishPack;
-            bool rewardItemChoice = view == GameplayView.RewardItemChoice;
-            bool randomizedItems = view == GameplayView.RandomizedItems;
             bool eventPage = view == GameplayView.Event;
             bool recipeInspect = view == GameplayView.RecipeInspect;
             bool tableView = view == GameplayView.TableView;
@@ -175,9 +249,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
             SetActive(_host.ActionSelectionPanel, actionSelect);
             SetActive(_host.ShopPanel, shop);
             SetActive(_host.RecipeReadonlyBookView, recipeSelection || recipeInspect);
-            SetActive(_host.RewardDishPackPanel, rewardDishPack);
-            SetActive(_host.RewardItemChoicePanel, rewardItemChoice);
-            SetActive(_host.RandomizedItemsPanel, randomizedItems);
             SetActive(_host.EventPagePanel, eventPage);
             SetActive(_host.ViewTablePanel, tableView);
 

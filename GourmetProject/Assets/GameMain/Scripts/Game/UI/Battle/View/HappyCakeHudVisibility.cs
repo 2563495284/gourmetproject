@@ -15,6 +15,7 @@ namespace GourmetProject.Game.UI.Battle.View
         public static bool ShouldShow(
             GameRun run,
             GameplayView currentView,
+            bool rewardDishPackVisible,
             IReadOnlyList<RewardChoice> rewardChoices,
             IReadOnlyList<ShopEntry> shopStock)
         {
@@ -28,7 +29,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 return true;
             }
 
-            if (currentView == GameplayView.RewardDishPack
+            if (rewardDishPackVisible
                 && RewardChoicesContainCake(run, rewardChoices))
             {
                 return true;

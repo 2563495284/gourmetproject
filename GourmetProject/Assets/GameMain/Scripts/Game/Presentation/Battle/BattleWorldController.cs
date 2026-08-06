@@ -155,14 +155,7 @@ namespace GourmetProject.Game.Presentation.Battle
         public bool CanEnterTableView
             => _worldMode != WorldMode.TableView
                 && _worldMode != WorldMode.TableCellTargeting
-                && (_worldMode != WorldMode.Food
-                    || (!_settling
-                        && !_activeItemTransitioning
-                        && !_bossPresentationBusy
-                        && _outletDragPiece == null
-                        && _movingPiece == null
-                        && _temporaryAreaDragPiece == null
-                        && _session?.PreparedServe == null));
+                && (_worldMode != WorldMode.Food || !IsFoodInteractionBusy);
 
         public bool IsFoodInteractionBusy
             => _settling

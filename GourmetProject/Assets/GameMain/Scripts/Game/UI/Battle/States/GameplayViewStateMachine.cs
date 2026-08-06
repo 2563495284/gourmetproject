@@ -51,9 +51,6 @@ namespace GourmetProject.Game.UI.Battle.States
             Register(new ActionSelectState());
             Register(new ShopState());
             Register(new RecipeSelectionState());
-            Register(new RewardDishPackState());
-            Register(new RewardItemChoiceState());
-            Register(new RandomizedItemsState());
             Register(new EventState());
             Register(new RecipeInspectState());
             Register(new FoodState());

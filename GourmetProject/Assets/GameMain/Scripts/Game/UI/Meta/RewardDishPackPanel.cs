@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using DG.Tweening;
 using GourmetProject.Game;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Tooltips;
+using GourmetProject.Game.UI.Common;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Runtime;
 using UnityEngine;
@@ -37,6 +39,8 @@ namespace GourmetProject.Game.UI.Meta
         private string _basePrompt = string.Empty;
         private int _requiredPicks;
         private int _claimedBeforeOpen;
+        private Sequence _entrySequence;
+        [SerializeField] private StaggerTransitionSettings _cardTransition = new StaggerTransitionSettings();
 
         internal IReadOnlyList<RewardChoice> CurrentChoices => _choices;
 
@@ -48,6 +52,8 @@ namespace GourmetProject.Game.UI.Meta
         private void OnDisable()
         {
             // 页面切换（食谱/餐桌）只是挂起；候选、回调和已选状态只能由显式 Close 销毁。
+            _entrySequence?.Kill();
+            _entrySequence = null;
             HideDishTips();
         }
 
@@ -97,6 +103,7 @@ namespace GourmetProject.Game.UI.Meta
 
             BuildCards();
             RefreshPresentation();
+            PlayCardsIn();
         }
 
         private static string BuildGroupText(RewardChoiceGroup group, string fallback)
@@ -124,6 +131,8 @@ namespace GourmetProject.Game.UI.Meta
 
         public void Close()
         {
+            _entrySequence?.Kill();
+            _entrySequence = null;
             HideDishTips();
             ClearCards();
             _choices.Clear();
@@ -211,6 +220,26 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             _spawnedCards.Clear();
+        }
+
+        private void PlayCardsIn()
+        {
+            _entrySequence?.Kill();
+            var rects = new List<RectTransform>(_spawnedCards.Count);
+            for (int i = 0; i < _spawnedCards.Count; i++)
+            {
+                if (_spawnedCards[i] != null && _spawnedCards[i].transform is RectTransform rect)
+                {
+                    rects.Add(rect);
+                }
+            }
+
+            StaggerTransitionSettings settings = _cardTransition ?? new StaggerTransitionSettings();
+            _entrySequence = UITransition.StaggerIn(
+                rects,
+                settings.Duration,
+                settings.Interval,
+                settings.MaxDelay);
         }
 
         private void OnChoiceClicked(RewardDishChoiceCardView card, int choiceIndex)
