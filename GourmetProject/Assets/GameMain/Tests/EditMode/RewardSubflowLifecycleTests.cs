@@ -52,7 +52,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void BattleFormPrefab_TableFragmentRewardCanSoftHideTheCompleteBattleShell()
+        public void BattleFormPrefab_TableFragmentRewardOwnsAuthoredActionAxisGroup()
         {
             const string path = "Assets/GameMain/Content/Prefabs/UI/BattleForm.prefab";
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
@@ -62,25 +62,15 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(battle, Is.Not.Null);
             var serialized = new SerializedObject(battle);
 
-            (string property, string hierarchyPath)[] shellGroups =
-            {
-                ("_rewardTableEditActionAxisGroup", "HudFrame/TopAxis"),
-                ("_rewardTableEditLeftColumnGroup", "HudFrame/LeftColumn"),
-                ("_rewardTableEditRightColumnGroup", "HudFrame/RightColumn"),
-            };
-
-            foreach ((string property, string hierarchyPath) in shellGroups)
-            {
-                Transform root = prefab.transform.Find(hierarchyPath);
-                Assert.That(root, Is.Not.Null, hierarchyPath);
-                CanvasGroup group = root.GetComponent<CanvasGroup>();
-                Assert.That(group, Is.Not.Null,
-                    $"{hierarchyPath} 必须在 prefab 上固定 CanvasGroup，禁止运行时生成。");
-                Assert.That(
-                    serialized.FindProperty(property).objectReferenceValue,
-                    Is.SameAs(group),
-                    property);
-            }
+            const string hierarchyPath = "HudFrame/TopAxis";
+            Transform root = prefab.transform.Find(hierarchyPath);
+            Assert.That(root, Is.Not.Null, hierarchyPath);
+            CanvasGroup group = root.GetComponent<CanvasGroup>();
+            Assert.That(group, Is.Not.Null,
+                $"{hierarchyPath} 必须在 prefab 上固定 CanvasGroup，禁止运行时生成。");
+            Assert.That(
+                serialized.FindProperty("_rewardTableEditActionAxisGroup").objectReferenceValue,
+                Is.SameAs(group));
         }
 
         [Test]

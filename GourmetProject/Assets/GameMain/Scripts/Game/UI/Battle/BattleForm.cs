@@ -124,10 +124,6 @@ namespace GourmetProject.Game.UI.Battle
         [Header("Reward Table Edit Shell")]
         [Tooltip("领奖餐桌格编辑期间软隐藏时间轴；组件固定在 BattleForm prefab 上，不在运行时生成。")]
         [SerializeField] private CanvasGroup _rewardTableEditActionAxisGroup;
-        [Tooltip("领奖餐桌格编辑期间软隐藏左侧 Battle HUD；组件固定在 BattleForm prefab 上。")]
-        [SerializeField] private CanvasGroup _rewardTableEditLeftColumnGroup;
-        [Tooltip("领奖餐桌格编辑期间软隐藏右侧 Battle HUD；组件固定在 BattleForm prefab 上。")]
-        [SerializeField] private CanvasGroup _rewardTableEditRightColumnGroup;
 
         [Header("Right Column - Items")]
         [SerializeField] private BattleItemsColumn _itemsColumn;
@@ -152,8 +148,6 @@ namespace GourmetProject.Game.UI.Battle
         private GameplayView _rewardTableEditRootView = GameplayView.None;
         private CanvasGroupSnapshot _rewardTableEditCenterSnapshot;
         private CanvasGroupSnapshot _rewardTableEditAxisSnapshot;
-        private CanvasGroupSnapshot _rewardTableEditLeftColumnSnapshot;
-        private CanvasGroupSnapshot _rewardTableEditRightColumnSnapshot;
         private bool _rewardTableEditFoodBattlePanelActive;
         private bool _rewardTableEditFoodBarActive;
         private ServingOutletView _rewardTableEditServingOutlet;
@@ -1437,20 +1431,8 @@ namespace GourmetProject.Game.UI.Battle
                 _rewardTableEditActionAxisGroup = _actionAxisBar.GetComponent<CanvasGroup>();
             }
 
-            if (_rewardTableEditLeftColumnGroup == null && _infoColumn != null)
-            {
-                _rewardTableEditLeftColumnGroup = _infoColumn.GetComponent<CanvasGroup>();
-            }
-
-            if (_rewardTableEditRightColumnGroup == null && _itemsColumn != null)
-            {
-                _rewardTableEditRightColumnGroup = _itemsColumn.GetComponent<CanvasGroup>();
-            }
-
             _rewardTableEditCenterSnapshot.Capture(_center);
             _rewardTableEditAxisSnapshot.Capture(_rewardTableEditActionAxisGroup);
-            _rewardTableEditLeftColumnSnapshot.Capture(_rewardTableEditLeftColumnGroup);
-            _rewardTableEditRightColumnSnapshot.Capture(_rewardTableEditRightColumnGroup);
 
             _rewardTableEditFoodBattlePanelActive = _foodBattlePanel != null
                 && _foodBattlePanel.activeSelf;
@@ -1485,8 +1467,6 @@ namespace GourmetProject.Game.UI.Battle
         {
             _rewardTableEditCenterSnapshot.Hide();
             _rewardTableEditAxisSnapshot.Hide();
-            _rewardTableEditLeftColumnSnapshot.Hide();
-            _rewardTableEditRightColumnSnapshot.Hide();
 
             // 出菜口和垃圾桶在世界 Canvas 上，不属于 Center，必须单独关闭。
             SetFoodBattlePanelVisible(false);
@@ -1555,8 +1535,6 @@ namespace GourmetProject.Game.UI.Battle
         {
             _rewardTableEditCenterSnapshot.Restore();
             _rewardTableEditAxisSnapshot.Restore();
-            _rewardTableEditLeftColumnSnapshot.Restore();
-            _rewardTableEditRightColumnSnapshot.Restore();
 
             if (_foodBattlePanel != null)
             {
