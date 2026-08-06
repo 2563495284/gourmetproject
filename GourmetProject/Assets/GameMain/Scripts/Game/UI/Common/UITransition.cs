@@ -28,7 +28,6 @@ namespace GourmetProject.Game.UI.Common
     {
         [Min(0f)] public float BackgroundFade = 0.12f;
         [Min(0f)] public float CloseDuration = 0.10f;
-        [Min(0f)] public float ListRefreshFadeOut = 0.06f;
         [Min(0f)] public float InitialRowsDelay = 0.02f;
         public StaggerTransitionSettings Rows = new StaggerTransitionSettings();
     }
@@ -262,7 +261,6 @@ namespace GourmetProject.Game.UI.Common
 
             var rects = new List<RectTransform>(items.Count);
             var groups = new List<CanvasGroup>(items.Count);
-            var interactableStates = new List<bool>(items.Count);
             var raycastStates = new List<bool>(items.Count);
             Sequence seq = DOTween.Sequence().SetUpdate(true);
 
@@ -281,15 +279,12 @@ namespace GourmetProject.Game.UI.Common
                 }
 
                 DOTween.Kill(group);
-                bool wasInteractable = group.interactable;
                 bool wasBlockingRaycasts = group.blocksRaycasts;
                 group.alpha = 0f;
-                group.interactable = false;
                 group.blocksRaycasts = false;
 
                 rects.Add(rect);
                 groups.Add(group);
-                interactableStates.Add(wasInteractable);
                 raycastStates.Add(wasBlockingRaycasts);
 
                 float delay = Mathf.Max(0f, startDelay)
@@ -313,7 +308,6 @@ namespace GourmetProject.Game.UI.Common
                     if (groups[i] != null)
                     {
                         groups[i].alpha = 1f;
-                        groups[i].interactable = interactableStates[i];
                         groups[i].blocksRaycasts = raycastStates[i];
                     }
                 }

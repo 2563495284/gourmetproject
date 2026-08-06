@@ -125,7 +125,6 @@ namespace GourmetProject.Game.UI.Meta
         private ItemTipView _itemTipView;
         private Sequence _transitionSequence;
         private Sequence _rewardRowsSequence;
-        private Sequence _rewardListSwapSequence;
         private CanvasGroup _rewardListGroup;
         private Vector2 _transitionPanelRestingPosition;
         private bool _hasBuiltRewardRows;
@@ -265,8 +264,6 @@ namespace GourmetProject.Game.UI.Meta
             _transitionSequence = null;
             _rewardRowsSequence?.Kill();
             _rewardRowsSequence = null;
-            _rewardListSwapSequence?.Kill();
-            _rewardListSwapSequence = null;
             _hasBuiltRewardRows = false;
             if (_rewardListGroup != null)
             {
@@ -453,8 +450,6 @@ namespace GourmetProject.Game.UI.Meta
             _continueButton.interactable = false;
             _rewardRowsSequence?.Kill();
             _rewardRowsSequence = null;
-            _rewardListSwapSequence?.Kill();
-            _rewardListSwapSequence = null;
             if (_transitionGroup != null)
             {
                 _transitionGroup.blocksRaycasts = false;
@@ -484,8 +479,6 @@ namespace GourmetProject.Game.UI.Meta
             _transitionSequence?.Kill();
             _rewardRowsSequence?.Kill();
             _rewardRowsSequence = null;
-            _rewardListSwapSequence?.Kill();
-            _rewardListSwapSequence = null;
             _hasBuiltRewardRows = false;
             _isClosing = false;
             _continueButton.interactable = true;
@@ -931,32 +924,7 @@ namespace GourmetProject.Game.UI.Meta
             EnsureRewardListGroup();
             _rewardRowsSequence?.Kill();
             _rewardRowsSequence = null;
-            _rewardListSwapSequence?.Kill();
-            _rewardListSwapSequence = null;
-
-            if (_hasBuiltRewardRows
-                && _spawnedRows.Count > 0
-                && _rewardListGroup != null
-                && isActiveAndEnabled)
-            {
-                _rewardListGroup.interactable = false;
-                _rewardListGroup.blocksRaycasts = false;
-                _rewardListSwapSequence = DOTween.Sequence().SetUpdate(true).SetTarget(_rewardListGroup);
-                _rewardListSwapSequence.Append(DOTween.To(
-                    () => _rewardListGroup.alpha,
-                    value => _rewardListGroup.alpha = value,
-                    0f,
-                    TransitionSettings.ListRefreshFadeOut).SetEase(Ease.InQuad));
-                _rewardListSwapSequence.AppendCallback(() =>
-                {
-                    RebuildRewardRowsImmediate();
-                    RestoreRewardListGroup();
-                    PlayRewardRowsIn();
-                });
-                _rewardListSwapSequence.OnComplete(() => _rewardListSwapSequence = null);
-                _rewardListSwapSequence.OnKill(RestoreRewardListGroup);
-                return;
-            }
+            bool playInitialRowsIn = !_hasBuiltRewardRows;
 
             RebuildRewardRowsImmediate();
             if (_rewardListGroup != null)
@@ -964,7 +932,10 @@ namespace GourmetProject.Game.UI.Meta
                 RestoreRewardListGroup();
             }
 
-            PlayRewardRowsIn(startDelay: TransitionSettings.InitialRowsDelay);
+            if (playInitialRowsIn)
+            {
+                PlayRewardRowsIn(startDelay: TransitionSettings.InitialRowsDelay);
+            }
         }
 
         private void RebuildRewardRowsImmediate()

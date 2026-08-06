@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using GourmetProject.Game.UI.Battle;
 using GourmetProject.Game.UI.Common;
+using GourmetProject.Game.UI.Meta;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -255,6 +256,15 @@ namespace GourmetProject.Tests.PlayMode
                     null,
                     new object[] { rects, 0.02f, 0.01f, 0.03f, 0f });
 
+                for (int i = 0; i < rects.Count; i++)
+                {
+                    CanvasGroup group = rects[i].GetComponent<CanvasGroup>();
+                    Assert.That(group.interactable, Is.True,
+                        "淡入期间不能禁用 CanvasGroup，否则子按钮会切换到 DisabledColor");
+                    Assert.That(group.blocksRaycasts, Is.False,
+                        "淡入期间仍应屏蔽指针点击");
+                }
+
                 float timeout = Time.realtimeSinceStartup + 1f;
                 bool completed = false;
                 while (!completed && Time.realtimeSinceStartup < timeout)
@@ -288,6 +298,44 @@ namespace GourmetProject.Tests.PlayMode
             {
                 Time.timeScale = previousTimeScale;
                 UnityEngine.Object.Destroy(root);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator RewardForm_WhenRowsAreRebuilt_DoesNotFadeListToBlack()
+        {
+            var formObject = new GameObject("RewardForm", typeof(RectTransform), typeof(RewardForm));
+            try
+            {
+                var contentObject = new GameObject("RewardListContent", typeof(RectTransform), typeof(CanvasGroup));
+                contentObject.transform.SetParent(formObject.transform, false);
+                CanvasGroup contentGroup = contentObject.GetComponent<CanvasGroup>();
+
+                var rowObject = new GameObject("RewardRow", typeof(RectTransform), typeof(RewardChoiceRowView));
+                rowObject.transform.SetParent(contentObject.transform, false);
+                RewardChoiceRowView row = rowObject.GetComponent<RewardChoiceRowView>();
+                RewardForm form = formObject.GetComponent<RewardForm>();
+
+                const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
+                typeof(RewardForm).GetField("_rewardListContent", flags)?.SetValue(
+                    form,
+                    contentObject.GetComponent<RectTransform>());
+                typeof(RewardForm).GetField("_hasBuiltRewardRows", flags)?.SetValue(form, true);
+
+                var rows = typeof(RewardForm).GetField("_spawnedRows", flags)?.GetValue(form)
+                    as List<RewardChoiceRowView>;
+                Assert.That(rows, Is.Not.Null);
+                rows.Add(row);
+
+                typeof(RewardForm).GetMethod("RebuildRewardRows", flags)?.Invoke(form, null);
+                yield return null;
+
+                Assert.That(contentGroup.alpha, Is.EqualTo(1f).Within(0.001f),
+                    "领取奖励后的列表重建不能把整组列表淡出到黑色背景");
+            }
+            finally
+            {
+                UnityEngine.Object.Destroy(formObject);
             }
         }
 
