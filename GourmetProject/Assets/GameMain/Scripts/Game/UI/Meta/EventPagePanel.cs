@@ -14,9 +14,7 @@ namespace GourmetProject.Game.UI.Meta
     {
         private const float ResultButtonMinWidth = 128f;
         private const float ResultButtonHorizontalPadding = 56f;
-        private const float OptionHeight = 100f;
         private const float RequirementHeight = 28f;
-        private const float RequirementInset = 8f;
         // 给顶部常驻时间轴留出空间，避免节点和进度线压在事件插画上。
         private static readonly Vector2 IllustrationAnchorMin = new(0.05f, 0.465f);
         private static readonly Vector2 IllustrationAnchorMax = new(0.95f, 0.845f);
@@ -127,11 +125,6 @@ namespace GourmetProject.Game.UI.Meta
             bool interactable)
         {
             bool hasRequirement = !string.IsNullOrWhiteSpace(requirement);
-            if (button.transform is RectTransform buttonRect)
-            {
-                buttonRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, OptionHeight);
-            }
-
             OptionPalette palette = ResolveOptionPalette();
             Image rootImage = button.targetGraphic as Image ?? button.GetComponent<Image>();
             if (rootImage != null)
@@ -154,19 +147,20 @@ namespace GourmetProject.Game.UI.Meta
             title.fontWeight = FontWeight.Medium;
             title.fontSize = hasRequirement ? 28f : 30f;
             title.fontSizeMax = title.fontSize;
-            ConfigureTextRect(title.rectTransform, hasRequirement);
+            title.alignment = TextAlignmentOptions.Center;
 
             if (!hasRequirement)
             {
                 return;
             }
 
-            Image requirementBackground = CreateRequirementBackground(
+            Image requirementBackground = CreateRequirementContainer(
                 button.transform,
-                rootImage != null ? rootImage.sprite : null);
+                rootImage != null ? rootImage.sprite : null,
+                out RectTransform requirementContainer);
             requirementBackground.color = interactable ? palette.Requirement : palette.DisabledRequirement;
 
-            TMP_Text requirementText = Instantiate(title, button.transform);
+            TMP_Text requirementText = Instantiate(title, requirementContainer);
             requirementText.gameObject.name = "RequirementText";
             requirementText.text = requirement;
             requirementText.color = interactable ? palette.RequirementText : palette.DisabledRequirementText;
@@ -175,47 +169,43 @@ namespace GourmetProject.Game.UI.Meta
             requirementText.fontSizeMax = 19f;
             requirementText.fontSizeMin = 12f;
             requirementText.alignment = TextAlignmentOptions.Center;
-            ConfigureRequirementRect(requirementText.rectTransform);
             requirementText.transform.SetAsLastSibling();
         }
 
-        private static Image CreateRequirementBackground(Transform parent, Sprite sprite)
+        private static Image CreateRequirementContainer(
+            Transform parent,
+            Sprite sprite,
+            out RectTransform container)
         {
             var gameObject = new GameObject(
-                "RequirementBackground",
+                "Requirement",
                 typeof(RectTransform),
                 typeof(CanvasRenderer),
-                typeof(Image));
+                typeof(Image),
+                typeof(HorizontalLayoutGroup),
+                typeof(LayoutElement));
             gameObject.layer = parent.gameObject.layer;
-            RectTransform rect = gameObject.GetComponent<RectTransform>();
-            rect.SetParent(parent, false);
-            ConfigureRequirementRect(rect);
-            gameObject.transform.SetAsFirstSibling();
+            container = gameObject.GetComponent<RectTransform>();
+            container.SetParent(parent, false);
+            gameObject.transform.SetAsLastSibling();
 
             Image image = gameObject.GetComponent<Image>();
             image.sprite = sprite;
             image.type = sprite != null ? Image.Type.Sliced : Image.Type.Simple;
             image.raycastTarget = false;
+
+            HorizontalLayoutGroup layout = gameObject.GetComponent<HorizontalLayoutGroup>();
+            layout.childAlignment = TextAnchor.MiddleCenter;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = false;
+            layout.childForceExpandHeight = false;
+
+            LayoutElement layoutElement = gameObject.GetComponent<LayoutElement>();
+            layoutElement.minHeight = RequirementHeight;
+            layoutElement.preferredHeight = RequirementHeight;
+            layoutElement.flexibleHeight = 0f;
             return image;
-        }
-
-        private static void ConfigureTextRect(RectTransform rect, bool hasRequirement)
-        {
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = new Vector2(8f, hasRequirement
-                ? RequirementInset + RequirementHeight + 4f
-                : 4f);
-            rect.offsetMax = new Vector2(-8f, -4f);
-        }
-
-        private static void ConfigureRequirementRect(RectTransform rect)
-        {
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = new Vector2(1f, 0f);
-            rect.pivot = new Vector2(0.5f, 0f);
-            rect.offsetMin = new Vector2(RequirementInset, RequirementInset);
-            rect.offsetMax = new Vector2(-RequirementInset, RequirementInset + RequirementHeight);
         }
 
         private static OptionPalette ResolveOptionPalette()
@@ -308,6 +298,12 @@ namespace GourmetProject.Game.UI.Meta
         private static void ApplyResultButtonWidth(Button button, TMP_Text label)
         {
             float width = Mathf.Max(ResultButtonMinWidth, label.preferredWidth + ResultButtonHorizontalPadding);
+            ContentSizeFitter contentSizeFitter = button.GetComponent<ContentSizeFitter>();
+            if (contentSizeFitter != null)
+            {
+                contentSizeFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            }
+
             if (button.transform is RectTransform rectTransform)
             {
                 rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
