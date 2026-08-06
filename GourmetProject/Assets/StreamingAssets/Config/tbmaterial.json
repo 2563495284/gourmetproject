@@ -57,13 +57,13 @@
   {
     "id": "m_gold",
     "name": "金",
-    "desc": "占据 2 格金餐桌时\n+ 15 金币",
+    "desc": "占据 2 格金餐桌时\n+15 金币",
     "effectType": 6,
     "effectParam": [
       "2"
     ],
     "effectValue": [
-      10
+      15
     ],
     "termId": ""
   },

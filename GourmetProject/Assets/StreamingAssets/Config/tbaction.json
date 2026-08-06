@@ -170,7 +170,7 @@
   {
     "id": "act_shop",
     "name": "商店采购",
-    "desc": "琳琅满目的食物与装饰品和消耗品",
+    "desc": "什么都有",
     "behavior": 4,
     "foodId": "",
     "effectType": 0,
@@ -184,7 +184,7 @@
   {
     "id": "act_interest",
     "name": "收取利息",
-    "desc": "满5 金币收获1 金币\n最多收获30 金币",
+    "desc": "满3金币收获1金币\n最多收获50金币",
     "behavior": 5,
     "foodId": "",
     "effectType": 0,
