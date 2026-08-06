@@ -872,6 +872,12 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
+            if (_rewardTableEditActive)
+            {
+                ShowPassiveOverlay(result.Title, BuildCellMutationText(result), 1.2f, () => RefreshPersistent());
+                return;
+            }
+
             _world = _world ?? BattleWorldController.Instance;
             _world?.SetTableArea(_boardArea);
             bool opened = false;
@@ -918,6 +924,13 @@ namespace GourmetProject.Game.UI.Battle
         /// </summary>
         private void SwitchTo(GameplayView next, Action buildCenter = null, Action onShown = null)
         {
+            // 奖励餐桌格编辑是覆盖在当前页上的临时世界子流程；期间切换主页面会让
+            // Center 的软隐藏快照与页面路由同时持有显示权，最终留下透明查看页。
+            if (_rewardTableEditActive && next != _current)
+            {
+                return;
+            }
+
             _pageRouter?.SwitchTo(next, buildCenter, () =>
             {
                 SyncPageStateFromRouter();
@@ -1143,7 +1156,7 @@ namespace GourmetProject.Game.UI.Battle
         void IShopPageHost.RefreshPersistent(bool refreshItems) => RefreshPersistent(refreshItems);
         void IShopPageHost.OpenDeleteDish() => _recipeBookPage?.OpenShopDelete();
         void IShopPageHost.OpenTableEdit(Action onShown) => OpenTableEdit(onShown);
-        void IShopPageHost.OpenRecipeInspect(int bookIndex) => _recipeBookPage?.OpenInspect(bookIndex);
+        void IShopPageHost.OpenRecipeInspect(int bookIndex) => OpenRecipeInspect(bookIndex);
         void IShopPageHost.PlayShopPurchaseAnimation(ShopEntry entry, ShopBuyItemViewBase sourceCard) => PlayShopPurchaseAnimation(entry, sourceCard);
 
         GameRun IRewardPageHost.Run => _run;
@@ -1274,6 +1287,11 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OpenRecipeInspect(int bookIndex, bool useBattleRecipe = false)
         {
+            if (_rewardTableEditActive)
+            {
+                return;
+            }
+
             _recipeBookPage?.OpenInspect(bookIndex, useBattleRecipe);
         }
 
@@ -1318,7 +1336,7 @@ namespace GourmetProject.Game.UI.Battle
 
         internal void OpenActiveItemTableCellTarget(Action onOpened)
         {
-            if (_tableCoordinator == null)
+            if (_tableCoordinator == null || _rewardTableEditActive)
             {
                 onOpened?.Invoke();
                 return;
@@ -1404,6 +1422,7 @@ namespace GourmetProject.Game.UI.Battle
         {
             _rewardTableEditActive = true;
             _rewardTableEditRootView = _current;
+            _infoColumn?.SetInspectionNavigationBlocked(true);
             PreparingChild?.Invoke();
 
             CaptureRewardTableEditShell();
@@ -1551,6 +1570,8 @@ namespace GourmetProject.Game.UI.Battle
             {
                 _backdrop.SetActive(_rewardTableEditBackdropActive);
             }
+
+            _infoColumn?.SetInspectionNavigationBlocked(false);
         }
 
         private void FinishRewardTableEditSubflow(bool placed, Action<bool> completed)
@@ -2839,6 +2860,11 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
+            if (_rewardTableEditActive)
+            {
+                return;
+            }
+
             if (IsViewToggleTransitioning())
             {
                 return;
@@ -2973,6 +2999,11 @@ namespace GourmetProject.Game.UI.Battle
         private void OnViewTableClicked()
         {
             if (_tableCoordinator == null)
+            {
+                return;
+            }
+
+            if (_rewardTableEditActive)
             {
                 return;
             }

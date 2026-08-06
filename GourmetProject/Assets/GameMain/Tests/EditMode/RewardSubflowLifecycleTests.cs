@@ -35,7 +35,8 @@ namespace GourmetProject.Tests.EditMode
             Transform layerTransform = prefab.transform.Find("HudFrame/RewardSubflowLayer");
             Assert.That(battle, Is.Not.Null);
             Assert.That(layerTransform, Is.Not.Null);
-            Assert.That(layerTransform.gameObject.activeSelf, Is.False);
+            Assert.That(layerTransform.GetComponent<CanvasGroup>(), Is.Not.Null);
+            Assert.That(layerTransform.GetComponent<Image>(), Is.Not.Null);
 
             var serialized = new SerializedObject(battle);
             Component layer = serialized.FindProperty("_rewardSubflowLayer").objectReferenceValue as Component;
@@ -100,6 +101,110 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(group.alpha, Is.EqualTo(0.42f));
                 Assert.That(group.interactable, Is.False);
                 Assert.That(group.blocksRaycasts, Is.True);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void RewardTableEdit_KeepsPersistentColumnVisibleButBlocksInspectionNavigation()
+        {
+            var root = new GameObject("BattleInfo", typeof(BattleInfoColumn));
+            var recipeObject = new GameObject("ViewRecipe", typeof(RectTransform), typeof(Button));
+            var tableObject = new GameObject("ViewTable", typeof(RectTransform), typeof(Button));
+            recipeObject.transform.SetParent(root.transform, false);
+            tableObject.transform.SetParent(root.transform, false);
+            BattleInfoColumn info = root.GetComponent<BattleInfoColumn>();
+            Button recipeButton = recipeObject.GetComponent<Button>();
+            Button tableButton = tableObject.GetComponent<Button>();
+
+            try
+            {
+                var serialized = new SerializedObject(info);
+                serialized.FindProperty("_viewRecipeButton").objectReferenceValue = recipeButton;
+                serialized.FindProperty("_viewTableButton").objectReferenceValue = tableButton;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+
+                Assert.That(root.activeSelf, Is.True);
+                Assert.That(recipeButton.interactable, Is.True);
+                Assert.That(tableButton.interactable, Is.True);
+
+                info.SetInspectionNavigationBlocked(true);
+                Assert.That(root.activeSelf, Is.True, "常驻栏视觉必须保留。");
+                Assert.That(recipeButton.interactable, Is.False);
+                Assert.That(tableButton.interactable, Is.False);
+
+                info.SetInspectionNavigationBlocked(false);
+                Assert.That(recipeButton.interactable, Is.True);
+                Assert.That(tableButton.interactable, Is.True);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void CoveredInspectionSwap_RestoresCenterContentAndBackButtonInput()
+        {
+            var root = new GameObject("Center", typeof(CanvasGroup));
+            CanvasGroup center = root.GetComponent<CanvasGroup>();
+            center.alpha = 0f;
+            center.interactable = false;
+            center.blocksRaycasts = false;
+
+            try
+            {
+                GameplayPageRouter.RestoreCenterForCoveredSwap(center);
+                Assert.That(center.alpha, Is.EqualTo(1f));
+                Assert.That(center.interactable, Is.True);
+                Assert.That(center.blocksRaycasts, Is.True);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void InspectionPeerSwitches_PreserveRewardBattleAsTheReturnOrigin()
+        {
+            var navigation = new InspectionNavigationContext();
+            navigation.Capture(GameplayView.Food, ActionSelectSnapshot.None);
+            navigation.Capture(GameplayView.TableView, ActionSelectSnapshot.None);
+            navigation.Capture(GameplayView.RecipeInspect, ActionSelectSnapshot.None);
+
+            Assert.That(navigation.HasOrigin, Is.True);
+            Assert.That(navigation.ReturnView, Is.EqualTo(GameplayView.Food));
+        }
+
+        [Test]
+        public void RewardResultPeek_RestoresItsReturnButtonAfterLeavingInspection()
+        {
+            var root = new GameObject("RewardForm", typeof(RectTransform), typeof(RewardForm));
+            var returnObject = new GameObject("PeekReturn", typeof(RectTransform), typeof(Button));
+            returnObject.transform.SetParent(root.transform, false);
+            RewardForm reward = root.GetComponent<RewardForm>();
+            Button returnButton = returnObject.GetComponent<Button>();
+
+            try
+            {
+                var serialized = new SerializedObject(reward);
+                serialized.FindProperty("_peekReturnButton").objectReferenceValue = returnButton;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+
+                SetPrivateField(reward, "_allowResultPeek", true);
+                SetPrivateField(reward, "_peekHidden", true);
+
+                reward.SetResultPeekInspectionActive(true);
+                Assert.That(returnObject.activeSelf, Is.False,
+                    "查看页应使用自己的返回按钮，避免两个返回入口重叠。");
+
+                reward.SetResultPeekInspectionActive(false);
+                Assert.That(returnObject.activeSelf, Is.True,
+                    "退出餐桌/菜谱后必须恢复 RewardForm 的返回奖励按钮。");
             }
             finally
             {
@@ -215,6 +320,14 @@ namespace GourmetProject.Tests.EditMode
                 cfg.ItemKind kind,
                 RewardItemChoiceCardView sourceCard) => null;
             public void PlayRandomizedItemFlys(IReadOnlyList<RandomizedItemResult> results) { }
+        }
+
+        private static void SetPrivateField(object target, string fieldName, object value)
+        {
+            target.GetType()
+                .GetField(fieldName, System.Reflection.BindingFlags.Instance
+                    | System.Reflection.BindingFlags.NonPublic)
+                ?.SetValue(target, value);
         }
     }
 }

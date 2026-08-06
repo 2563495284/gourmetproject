@@ -49,6 +49,10 @@ namespace GourmetProject.Game.UI.Battle.View
         private bool _bossStatPresented;
         private string _presentedBossDebuffId = string.Empty;
         private Sequence _bossStatTransition;
+        private bool _inspectionNavigationBlocked;
+        private bool _inspectionAvailabilityInitialized;
+        private bool _recipeInspectionAvailable;
+        private bool _tableInspectionAvailable;
 
         public SettlementScoreFireView ScoreFire => _scoreFire;
         public RectTransform ViewRecipeButtonRect =>
@@ -89,6 +93,25 @@ namespace GourmetProject.Game.UI.Battle.View
             }
         }
 
+        /// <summary>
+        /// 临时领奖编辑期间保留常驻栏视觉，但禁止进入会替换中部/世界状态的查看页。
+        /// 解锁时恢复阻塞前或最近一次 Refresh 计算出的按钮状态。
+        /// </summary>
+        public void SetInspectionNavigationBlocked(bool blocked)
+        {
+            if (!_inspectionAvailabilityInitialized)
+            {
+                _recipeInspectionAvailable = _viewRecipeButton != null
+                    && _viewRecipeButton.interactable;
+                _tableInspectionAvailable = _viewTableButton != null
+                    && _viewTableButton.interactable;
+                _inspectionAvailabilityInitialized = true;
+            }
+
+            _inspectionNavigationBlocked = blocked;
+            ApplyInspectionAvailability();
+        }
+
         /// <summary>结算动画逐步写入当前显示分；为空时按 session 的稳定状态刷新。</summary>
         public void SetBattleScoreOverride(int? score)
         {
@@ -107,17 +130,17 @@ namespace GourmetProject.Game.UI.Battle.View
                 && current != GameplayView.TableEdit
                 && current != GameplayView.RecipeSelection;
 
-            if (_viewRecipeButton != null)
-            {
-                _viewRecipeButton.interactable = CanOpenRecipeInspection(current);
-            }
+            _recipeInspectionAvailable = CanOpenRecipeInspection(current);
+            _tableInspectionAvailable = canOpenInspection
+                && current != GameplayView.TableView
+                && world != null
+                && world.CanEnterTableView;
+            _inspectionAvailabilityInitialized = true;
+
+            ApplyInspectionAvailability();
 
             if (_viewTableButton != null)
             {
-                _viewTableButton.interactable = canOpenInspection
-                    && current != GameplayView.TableView
-                    && world != null
-                    && world.CanEnterTableView;
                 SetTableLabel(ViewTableLabel);
 
                 if (_viewTableCountText != null)
@@ -174,6 +197,21 @@ namespace GourmetProject.Game.UI.Battle.View
                     ? session.FoodDiscardsRemaining
                     : new ItemRuntime(run).FoodDiscardCapacity();
                 _discardCountText.text = discardCount.ToString("D2");
+            }
+        }
+
+        private void ApplyInspectionAvailability()
+        {
+            if (_viewRecipeButton != null)
+            {
+                _viewRecipeButton.interactable = !_inspectionNavigationBlocked
+                    && _recipeInspectionAvailable;
+            }
+
+            if (_viewTableButton != null)
+            {
+                _viewTableButton.interactable = !_inspectionNavigationBlocked
+                    && _tableInspectionAvailable;
             }
         }
 

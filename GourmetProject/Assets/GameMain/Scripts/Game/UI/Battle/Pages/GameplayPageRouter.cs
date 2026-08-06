@@ -114,8 +114,14 @@ namespace GourmetProject.Game.UI.Battle.Pages
             Current = next;
             InBattle = next == GameplayView.Food;
             GameplayTransitionSettings settings = _host.TransitionSettings ?? new GameplayTransitionSettings();
+            bool requiresCover = RequiresCover(previous, next, previousAxisVisible, nextAxisVisible);
             Action swap = () =>
             {
+                if (requiresCover)
+                {
+                    RestoreCenterForCoveredSwap(_host.Center);
+                }
+
                 _host.OnPageCovered(previous, next);
                 _states.Apply(next, buildCenter);
             };
@@ -125,7 +131,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 onShown?.Invoke();
             };
 
-            _transitionTween = RequiresCover(previous, next, previousAxisVisible, nextAxisVisible)
+            _transitionTween = requiresCover
                 ? UITransition.CoverSwap(
                     _host.CenterTransitionCover,
                     swap,
@@ -139,6 +145,22 @@ namespace GourmetProject.Game.UI.Battle.Pages
                     settings.CenterFadeOut,
                     settings.CenterFadeIn,
                     done);
+        }
+
+        /// <summary>
+        /// CoverSwap 在黑幕完全覆盖时交换页面。目标页揭开前强制收敛 Center 的可见/输入状态，
+        /// 避免上一个临时子流程留下的软隐藏状态吞掉查看内容和返回按钮。
+        /// </summary>
+        internal static void RestoreCenterForCoveredSwap(CanvasGroup center)
+        {
+            if (center == null)
+            {
+                return;
+            }
+
+            center.alpha = 1f;
+            center.interactable = true;
+            center.blocksRaycasts = true;
         }
 
         internal static bool RequiresWorldCover(GameplayView current, GameplayView next)
