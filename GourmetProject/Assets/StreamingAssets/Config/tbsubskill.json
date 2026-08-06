@@ -602,7 +602,7 @@
     ],
     "isPassive": false,
     "signed": false,
-    "descTemplate": "{cscope}\n发动甜蜜传递，倍率 ×{0}",
+    "descTemplate": "结算后，{cscope}\n发动甜蜜传递，倍率 ×{0}",
     "termId": ""
   },
   {

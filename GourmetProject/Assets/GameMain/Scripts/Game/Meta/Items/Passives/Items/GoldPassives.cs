@@ -274,9 +274,6 @@ namespace GourmetProject.Game.Meta.Passives
         private const int DefaultGold = 10;
 
         private int _transferCount;
-        private bool _rewarded;
-
-        public override bool IsIconUsed => _rewarded;
 
         public override string InfoText => _transferCount.ToString(CultureInfo.InvariantCulture);
 
@@ -290,7 +287,7 @@ namespace GourmetProject.Game.Meta.Passives
 
         public override void OnSweetTransferTriggered(SweetTransferOccurrence occurrence)
         {
-            if (!IsStillHeld || _rewarded)
+            if (!IsStillHeld)
             {
                 return;
             }
@@ -299,26 +296,30 @@ namespace GourmetProject.Game.Meta.Passives
             int threshold = System.Math.Max(1, PassiveParam.ParseInt(Param, "count", DefaultTransferCount));
             if (_transferCount >= threshold)
             {
-                Run.Gold += System.Math.Max(0, GoldAmount);
-                _rewarded = true;
+                int rewardCount = _transferCount / threshold;
+                _transferCount %= threshold;
+                Run.Gold += System.Math.Max(0, GoldAmount) * rewardCount;
                 Flash();
-                RefreshIconState();
             }
 
             RefreshInfoText();
         }
 
         public override string CaptureState()
-            => JoinState(
-                CaptureIconState(),
-                $"count:{_transferCount.ToString(CultureInfo.InvariantCulture)}",
-                _rewarded ? "rewarded:1" : string.Empty);
+            => $"count:{_transferCount.ToString(CultureInfo.InvariantCulture)}";
 
         public override void RestoreState(string data)
         {
-            RestoreIconState(data);
-            _transferCount = System.Math.Max(0, ParseStateInt(data, "count", 0));
-            _rewarded = ParseStateBool(data, "rewarded", false);
+            int threshold = System.Math.Max(1, PassiveParam.ParseInt(Param, "count", DefaultTransferCount));
+            int restoredCount = System.Math.Max(0, ParseStateInt(data, "count", 0));
+
+            // 旧版本达到门槛后会保存 rewarded:1 且停止累计；奖励已经发过，迁移成新周期的 0 进度。
+            if (ParseStateBool(data, "rewarded", false) && restoredCount >= threshold)
+            {
+                restoredCount %= threshold;
+            }
+
+            _transferCount = restoredCount;
         }
 
         private int GoldAmount => Value > 0f ? (int)Value : DefaultGold;
